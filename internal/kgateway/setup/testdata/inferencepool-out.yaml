@@ -1,0 +1,233 @@
+clusters:
+- connectTimeout: 10s
+  lbPolicy: LEAST_REQUEST
+  loadAssignment:
+    clusterName: endpointpicker_gateway-pool_gwtest_ext_proc
+    endpoints:
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: gateway-pool-endpoint-picker.gwtest.svc.cluster.local
+              portValue: 9002
+        healthStatus: HEALTHY
+  name: endpointpicker_gateway-pool_gwtest_ext_proc
+  type: STRICT_DNS
+  typedExtensionProtocolOptions:
+    envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+      '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+      explicitHttpConfig:
+        http2ProtocolOptions: {}
+- connectTimeout: 5s
+  edsClusterConfig:
+    edsConfig:
+      ads: {}
+      resourceApiVersion: V3
+  metadata: {}
+  name: kube_default_kubernetes_443
+  transportSocketMatches:
+  - match:
+      tlsMode: istio
+    name: tlsMode-istio
+    transportSocket:
+      name: envoy.transport_sockets.tls
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+        commonTlsContext:
+          alpnProtocols:
+          - istio
+          tlsCertificateSdsSecretConfigs:
+          - name: istio_server_cert
+            sdsConfig:
+              apiConfigSource:
+                apiType: GRPC
+                grpcServices:
+                - envoyGrpc:
+                    clusterName: gateway_proxy_sds
+                setNodeOnFirstMessageOnly: true
+                transportApiVersion: V3
+              resourceApiVersion: V3
+          tlsParams: {}
+          validationContextSdsSecretConfig:
+            name: istio_validation_context
+            sdsConfig:
+              apiConfigSource:
+                apiType: GRPC
+                grpcServices:
+                - envoyGrpc:
+                    clusterName: gateway_proxy_sds
+                setNodeOnFirstMessageOnly: true
+                transportApiVersion: V3
+              resourceApiVersion: V3
+        sni: outbound_.443_._.kubernetes.default.svc.cluster.local
+  - match: {}
+    name: tlsMode-disabled
+    transportSocket:
+      name: envoy.transport_sockets.raw_buffer
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.transport_sockets.raw_buffer.v3.RawBuffer
+  type: EDS
+- connectTimeout: 5s
+  edsClusterConfig:
+    edsConfig:
+      ads: {}
+      resourceApiVersion: V3
+  metadata: {}
+  name: kube_gwtest_gateway-pool-endpoint-picker_9002
+  transportSocketMatches:
+  - match:
+      tlsMode: istio
+    name: tlsMode-istio
+    transportSocket:
+      name: envoy.transport_sockets.tls
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+        commonTlsContext:
+          alpnProtocols:
+          - istio
+          tlsCertificateSdsSecretConfigs:
+          - name: istio_server_cert
+            sdsConfig:
+              apiConfigSource:
+                apiType: GRPC
+                grpcServices:
+                - envoyGrpc:
+                    clusterName: gateway_proxy_sds
+                setNodeOnFirstMessageOnly: true
+                transportApiVersion: V3
+              resourceApiVersion: V3
+          tlsParams: {}
+          validationContextSdsSecretConfig:
+            name: istio_validation_context
+            sdsConfig:
+              apiConfigSource:
+                apiType: GRPC
+                grpcServices:
+                - envoyGrpc:
+                    clusterName: gateway_proxy_sds
+                setNodeOnFirstMessageOnly: true
+                transportApiVersion: V3
+              resourceApiVersion: V3
+        sni: outbound_.9002_._.gateway-pool-endpoint-picker.gwtest.svc.cluster.local
+  - match: {}
+    name: tlsMode-disabled
+    transportSocket:
+      name: envoy.transport_sockets.raw_buffer
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.transport_sockets.raw_buffer.v3.RawBuffer
+  type: EDS
+- circuitBreakers:
+    thresholds:
+    - maxConnections: 40000
+      maxPendingRequests: 40000
+      maxRequests: 40000
+  connectTimeout: 1000s
+  lbPolicy: CLUSTER_PROVIDED
+  metadata: {}
+  name: endpointpicker_gateway-pool_gwtest_original_dst
+  originalDstLbConfig:
+    httpHeaderName: x-gateway-destination-endpoint
+    useHttpHeader: true
+  transportSocketMatches:
+  - match:
+      tlsMode: istio
+    name: tlsMode-istio
+    transportSocket:
+      name: envoy.transport_sockets.tls
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+        commonTlsContext:
+          alpnProtocols:
+          - istio
+          tlsCertificateSdsSecretConfigs:
+          - name: istio_server_cert
+            sdsConfig:
+              apiConfigSource:
+                apiType: GRPC
+                grpcServices:
+                - envoyGrpc:
+                    clusterName: gateway_proxy_sds
+                setNodeOnFirstMessageOnly: true
+                transportApiVersion: V3
+              resourceApiVersion: V3
+          tlsParams: {}
+          validationContextSdsSecretConfig:
+            name: istio_validation_context
+            sdsConfig:
+              apiConfigSource:
+                apiType: GRPC
+                grpcServices:
+                - envoyGrpc:
+                    clusterName: gateway_proxy_sds
+                setNodeOnFirstMessageOnly: true
+                transportApiVersion: V3
+              resourceApiVersion: V3
+  - match: {}
+    name: tlsMode-disabled
+    transportSocket:
+      name: envoy.transport_sockets.raw_buffer
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.transport_sockets.raw_buffer.v3.RawBuffer
+  type: ORIGINAL_DST
+listeners:
+- address:
+    socketAddress:
+      address: '::'
+      ipv4Compat: true
+      portValue: 8080
+  filterChains:
+  - filters:
+    - name: envoy.filters.network.http_connection_manager
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+        httpFilters:
+        - name: inferencepool.backend.transformation.kgateway.io
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.ext_proc.v3.ExternalProcessor
+            grpcService:
+              envoyGrpc:
+                authority: gateway-pool-endpoint-picker.gwtest:9002
+                clusterName: endpointpicker_gateway-pool_gwtest_ext_proc
+            messageTimeout: 5s
+            processingMode:
+              requestBodyMode: BUFFERED
+              requestHeaderMode: SEND
+              requestTrailerMode: SKIP
+              responseHeaderMode: SKIP
+              responseTrailerMode: SKIP
+        - name: envoy.filters.http.router
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+        mergeSlashes: true
+        normalizePath: true
+        rds:
+          configSource:
+            ads: {}
+            resourceApiVersion: V3
+          routeConfigName: http
+        statPrefix: http
+        useRemoteAddress: true
+    name: http
+  name: http
+routes:
+- ignorePortInHostMatching: true
+  name: http
+  virtualHosts:
+  - domains:
+    - www.example.com
+    name: http~www_example_com
+    routes:
+    - match:
+        prefix: /
+      name: http~www_example_com-route-0-httproute-gateway-route-gwtest-0-0-matcher-0
+      route:
+        cluster: endpointpicker_gateway-pool_gwtest_original_dst
+      typedPerFilterConfig:
+        inferencepool.backend.transformation.kgateway.io:
+          '@type': type.googleapis.com/envoy.extensions.filters.http.ext_proc.v3.ExtProcPerRoute
+          overrides:
+            grpcService:
+              envoyGrpc:
+                authority: gateway-pool-endpoint-picker.gwtest.svc.cluster.local:9002
+                clusterName: endpointpicker_gateway-pool_gwtest_ext_proc
+              timeout: 10s

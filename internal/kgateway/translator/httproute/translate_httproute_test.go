@@ -11,6 +11,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
+	infextv1a1 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
@@ -25,123 +26,75 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 		ctrl       *gomock.Controller
 		ctx        context.Context
 		gwListener gwv1.Listener
+
+		// Shared variables for all tests
+		up                *ir.BackendObjectIR
+		route             *gwv1.HTTPRoute
+		routeir           *ir.HttpRouteIR
+		routeInfo         *query.RouteInfo
+		parentRef         *gwv1.ParentReference
+		baseReporter      reports.Reporter
+		parentRefReporter reports.ParentRefReporter
+		reportsMap        reports.ReportMap
+
+		// Service backing for routes
+		backingSvc *corev1.Service
+
+		// Inferencepool backing for routes
+		backingPool *infextv1a1.InferencePool
 	)
 	BeforeEach(func() {
 		ctrl = gomock.NewController(GinkgoT())
 		ctx = context.Background()
 		gwListener = gwv1.Listener{}
 
+		// Common setup for both happy path and negative test cases
+		parentRef = &gwv1.ParentReference{
+			Name: "my-gw",
+		}
+		route = &gwv1.HTTPRoute{
+			TypeMeta: metav1.TypeMeta{
+				Kind:       wellknown.HTTPRouteKind,
+				APIVersion: gwv1.GroupVersion.String(),
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "foo-httproute",
+				Namespace: "bar",
+			},
+			Spec: gwv1.HTTPRouteSpec{
+				Hostnames: []gwv1.Hostname{"example.com"},
+				CommonRouteSpec: gwv1.CommonRouteSpec{
+					ParentRefs: []gwv1.ParentReference{
+						*parentRef,
+					},
+				},
+				// Rules are populated in specific test cases
+			},
+		}
+		routeir = &ir.HttpRouteIR{
+			ObjectSource: ir.ObjectSource{
+				Namespace: route.Namespace,
+				Name:      route.Name,
+				Kind:      route.Kind,
+				Group:     gwv1.GroupVersion.Group,
+			},
+			SourceObject: route,
+			ParentRefs:   []gwv1.ParentReference{*parentRef},
+			Hostnames:    []string{"example.com"},
+		}
+
+		// “backingSvc” or “backingPool” are assigned in each test’s BeforeEach if needed.
+
+		reportsMap = reports.NewReportMap()
+		baseReporter = reports.NewReporter(&reportsMap)
+		parentRefReporter = baseReporter.Route(route).ParentRef(parentRef)
 	})
+
 	AfterEach(func() {
 		ctrl.Finish()
 	})
 
-	Context("HTTPRoute resource routing", func() {
-		var (
-			route             *gwv1.HTTPRoute
-			routeir           *ir.HttpRouteIR
-			up                *ir.BackendObjectIR
-			routeInfo         *query.RouteInfo
-			parentRef         *gwv1.ParentReference
-			baseReporter      reports.Reporter
-			parentRefReporter reports.ParentRefReporter
-			reportsMap        reports.ReportMap
-			backingSvc        *corev1.Service
-		)
-
-		BeforeEach(func() {
-			// Common setup for both happy path and negative test cases
-			parentRef = &gwv1.ParentReference{
-				Name: "my-gw",
-			}
-			route = &gwv1.HTTPRoute{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       wellknown.HTTPRouteKind,
-					APIVersion: gwv1.GroupVersion.String(),
-				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "foo-httproute",
-					Namespace: "bar",
-				},
-				Spec: gwv1.HTTPRouteSpec{
-					Hostnames: []gwv1.Hostname{"example.com"},
-					CommonRouteSpec: gwv1.CommonRouteSpec{
-						ParentRefs: []gwv1.ParentReference{
-							*parentRef,
-						},
-					},
-					Rules: []gwv1.HTTPRouteRule{
-						{
-							Matches: []gwv1.HTTPRouteMatch{
-								{Path: &gwv1.HTTPPathMatch{
-									Type:  ptr.To(gwv1.PathMatchPathPrefix),
-									Value: ptr.To("/"),
-								}},
-							},
-							BackendRefs: []gwv1.HTTPBackendRef{
-								{
-									BackendRef: gwv1.BackendRef{
-										BackendObjectReference: gwv1.BackendObjectReference{
-											Name:      gwv1.ObjectName("foo"),
-											Namespace: ptr.To(gwv1.Namespace("bar")),
-											Kind:      ptr.To(gwv1.Kind("Service")),
-											Port:      ptr.To(gwv1.PortNumber(8080)),
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			}
-			backingSvc = &corev1.Service{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "foo",
-					Namespace: "bar",
-				},
-				Spec: corev1.ServiceSpec{
-					Ports: []corev1.ServicePort{{
-						Name: "http",
-						Port: 8080,
-					}},
-				},
-			}
-			up = &ir.BackendObjectIR{
-				ObjectSource: ir.ObjectSource{
-					Namespace: backingSvc.Namespace,
-					Name:      backingSvc.Name,
-					Kind:      "Service",
-					Group:     "",
-				},
-				Port: 8080,
-				Obj:  backingSvc,
-			}
-			routeir = &ir.HttpRouteIR{
-				ObjectSource: ir.ObjectSource{
-					Namespace: route.Namespace,
-					Name:      route.Name,
-					Kind:      route.Kind,
-					Group:     gwv1.GroupVersion.Group,
-				},
-				SourceObject: route,
-				ParentRefs:   []gwv1.ParentReference{*parentRef},
-				Hostnames:    []string{"example.com"},
-				Rules: []ir.HttpRouteRuleIR{
-					{
-						Matches: route.Spec.Rules[0].Matches,
-						Backends: []ir.HttpBackendOrDelegate{
-							{
-								Backend: &ir.BackendRefIR{},
-							},
-						},
-					},
-				},
-			}
-			reportsMap = reports.NewReportMap()
-			baseReporter = reports.NewReporter(&reportsMap)
-			parentRefReporter = baseReporter.Route(route).ParentRef(parentRef)
-		})
-
+	Context("HTTPRoute resource routing with Service backendRef", func() {
 		When("referencing a valid backing service", func() {
 			BeforeEach(func() {
 				// Setup the backing service
@@ -155,6 +108,50 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 							Name: "http",
 							Port: 8080,
 						}},
+					},
+				}
+				// Setup the backendObjIR
+				up = &ir.BackendObjectIR{
+					ObjectSource: ir.ObjectSource{
+						Namespace: backingSvc.Namespace,
+						Name:      backingSvc.Name,
+						Kind:      "Service",
+						Group:     "",
+					},
+					Port: 8080,
+					Obj:  backingSvc,
+				}
+				// Setup the route rules
+				route.Spec.Rules = []gwv1.HTTPRouteRule{
+					{
+						Matches: []gwv1.HTTPRouteMatch{
+							{Path: &gwv1.HTTPPathMatch{
+								Type:  ptr.To(gwv1.PathMatchPathPrefix),
+								Value: ptr.To("/"),
+							}},
+						},
+						BackendRefs: []gwv1.HTTPBackendRef{
+							{
+								BackendRef: gwv1.BackendRef{
+									BackendObjectReference: gwv1.BackendObjectReference{
+										Name:      gwv1.ObjectName("foo"),
+										Namespace: ptr.To(gwv1.Namespace("bar")),
+										Kind:      ptr.To(gwv1.Kind("Service")),
+										Port:      ptr.To(gwv1.PortNumber(8080)),
+									},
+								},
+							},
+						},
+					},
+				}
+				routeir.Rules = []ir.HttpRouteRuleIR{
+					{
+						Matches: route.Spec.Rules[0].Matches,
+						Backends: []ir.HttpBackendOrDelegate{
+							{
+								Backend: &ir.BackendRefIR{},
+							},
+						},
 					},
 				}
 				routeir.Rules[0].Backends[0].Backend.BackendObject = up
@@ -195,6 +192,50 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 
 		When("referencing a non-existent backing service", func() {
 			BeforeEach(func() {
+				// Setup the backendObjIR
+				up = &ir.BackendObjectIR{
+					ObjectSource: ir.ObjectSource{
+						Namespace: backingSvc.Namespace,
+						Name:      backingSvc.Name,
+						Kind:      "Service",
+						Group:     "",
+					},
+					Port: 8080,
+					Obj:  backingSvc,
+				}
+				// Setup the route rules
+				route.Spec.Rules = []gwv1.HTTPRouteRule{
+					{
+						Matches: []gwv1.HTTPRouteMatch{
+							{Path: &gwv1.HTTPPathMatch{
+								Type:  ptr.To(gwv1.PathMatchPathPrefix),
+								Value: ptr.To("/"),
+							}},
+						},
+						BackendRefs: []gwv1.HTTPBackendRef{
+							{
+								BackendRef: gwv1.BackendRef{
+									BackendObjectReference: gwv1.BackendObjectReference{
+										Name:      gwv1.ObjectName("foo"),
+										Namespace: ptr.To(gwv1.Namespace("bar")),
+										Kind:      ptr.To(gwv1.Kind("Service")),
+										Port:      ptr.To(gwv1.PortNumber(8080)),
+									},
+								},
+							},
+						},
+					},
+				}
+				routeir.Rules = []ir.HttpRouteRuleIR{
+					{
+						Matches: route.Spec.Rules[0].Matches,
+						Backends: []ir.HttpBackendOrDelegate{
+							{
+								Backend: &ir.BackendRefIR{},
+							},
+						},
+					},
+				}
 				// simulate a missing service
 				routeir.Rules[0].Backends[0].Backend.Err = errors.New("missing upstream")
 				routeir.Rules[0].Backends[0].Backend.ClusterName = "blackhole_cluster"
@@ -212,6 +253,180 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 				Expect(routes[0].Backends[0].Backend.ClusterName).To(Equal("blackhole_cluster"))
 				Expect(routes[0].Match.Path.Type).To(BeEquivalentTo(ptr.To(gwv1.PathMatchPathPrefix)))
 				Expect(routes[0].Match.Path.Value).To(BeEquivalentTo(ptr.To("/")))
+
+				routeStatus := reportsMap.BuildRouteStatus(ctx, route, "")
+				Expect(routeStatus).NotTo(BeNil())
+				Expect(routeStatus.Parents).To(HaveLen(1))
+				By("verifying the route was accepted")
+				accepted := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionAccepted))
+				Expect(accepted).NotTo(BeNil())
+				Expect(accepted.Status).To(Equal(metav1.ConditionTrue))
+				Expect(accepted.Reason).To(BeEquivalentTo(gwv1.RouteConditionAccepted))
+				By("verifying the route was not able to resolve the backend")
+				resolvedRefs := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionResolvedRefs))
+				Expect(resolvedRefs).NotTo(BeNil())
+				Expect(resolvedRefs.Status).To(Equal(metav1.ConditionFalse))
+				Expect(resolvedRefs.Reason).To(BeEquivalentTo(gwv1.RouteReasonBackendNotFound))
+			})
+		})
+	})
+
+	Context("HTTPRoute resource routing with InferencePool backendRef", func() {
+		BeforeEach(func() {
+			backingPool = &infextv1a1.InferencePool{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       wellknown.InferencePoolKind,
+					APIVersion: infextv1a1.GroupVersion.String(),
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "my-inferencepool",
+					Namespace: "bar",
+				},
+				Spec: infextv1a1.InferencePoolSpec{},
+			}
+		})
+
+		When("referencing a valid backing inferencepool", func() {
+			BeforeEach(func() {
+				route.Spec.Rules = []gwv1.HTTPRouteRule{
+					{
+						Matches: []gwv1.HTTPRouteMatch{
+							{
+								Path: &gwv1.HTTPPathMatch{
+									Type:  ptr.To(gwv1.PathMatchPathPrefix),
+									Value: ptr.To("/"),
+								},
+							},
+						},
+						BackendRefs: []gwv1.HTTPBackendRef{
+							{
+								BackendRef: gwv1.BackendRef{
+									BackendObjectReference: gwv1.BackendObjectReference{
+										Name:      gwv1.ObjectName(backingPool.Name),
+										Namespace: ptr.To(gwv1.Namespace(backingPool.Namespace)),
+										Kind:      ptr.To(gwv1.Kind(wellknown.InferencePoolKind)),
+										Group:     ptr.To(gwv1.Group(infextv1a1.GroupVersion.Group)),
+										Port:      ptr.To(gwv1.PortNumber(9002)),
+									},
+								},
+							},
+						},
+					},
+				}
+
+				// Set a rule referencing the backing InferencePool
+				routeir.Rules = []ir.HttpRouteRuleIR{
+					{
+						Matches: route.Spec.Rules[0].Matches,
+						Backends: []ir.HttpBackendOrDelegate{
+							{
+								Backend: &ir.BackendRefIR{
+									BackendObject: &ir.BackendObjectIR{
+										ObjectSource: ir.ObjectSource{
+											Namespace: backingPool.Namespace,
+											Name:      backingPool.Name,
+											Kind:      wellknown.InferencePoolKind,
+											Group:     infextv1a1.GroupVersion.Group,
+										},
+										Port: 9002,
+										Obj:  backingPool,
+									},
+									ClusterName: "inferencepool_cluster",
+								},
+							},
+						},
+					},
+				}
+
+				routeInfo = &query.RouteInfo{
+					Object: routeir,
+				}
+			})
+
+			It("translates the route correctly", func() {
+				routes := httproute.TranslateGatewayHTTPRouteRules(
+					ctx, gwListener, routeInfo, parentRefReporter, baseReporter)
+
+				Expect(routes).To(HaveLen(1))
+				Expect(routes[0].Name).To(Equal("httproute-foo-httproute-bar-0-0"))
+
+				Expect(routes[0].Backends).To(HaveLen(1))
+				Expect(routes[0].Backends[0].Backend.ClusterName).To(Equal("inferencepool_cluster"))
+
+				routeStatus := reportsMap.BuildRouteStatus(ctx, route, "")
+				Expect(routeStatus).NotTo(BeNil())
+				Expect(routeStatus.Parents).To(HaveLen(1))
+				By("verifying the route was accepted")
+				accepted := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionAccepted))
+				Expect(accepted).NotTo(BeNil())
+				Expect(accepted.Status).To(Equal(metav1.ConditionTrue))
+				Expect(accepted.Reason).To(BeEquivalentTo(gwv1.RouteReasonAccepted))
+				By("verifying the route was resolved correctly")
+				resolvedRefs := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionResolvedRefs))
+				Expect(resolvedRefs).NotTo(BeNil())
+				Expect(resolvedRefs.Status).To(Equal(metav1.ConditionTrue))
+				Expect(resolvedRefs.Reason).To(BeEquivalentTo(gwv1.RouteReasonResolvedRefs))
+			})
+		})
+
+		When("referencing a non-existent backing inferencepool", func() {
+			BeforeEach(func() {
+				route.Spec.Rules = []gwv1.HTTPRouteRule{
+					{
+						Matches: []gwv1.HTTPRouteMatch{{
+							Path: &gwv1.HTTPPathMatch{
+								Type:  ptr.To(gwv1.PathMatchPathPrefix),
+								Value: ptr.To("/"),
+							},
+						}},
+						BackendRefs: []gwv1.HTTPBackendRef{{
+							BackendRef: gwv1.BackendRef{
+								BackendObjectReference: gwv1.BackendObjectReference{
+									Name:      "missing-inferencepool",
+									Namespace: ptr.To(gwv1.Namespace(backingPool.Namespace)),
+									Kind:      ptr.To(gwv1.Kind(wellknown.InferencePoolKind)),
+									Group:     ptr.To(gwv1.Group(infextv1a1.GroupVersion.Group)),
+									Port:      ptr.To(gwv1.PortNumber(9002)),
+								},
+							},
+						}},
+					},
+				}
+
+				routeir.Rules = []ir.HttpRouteRuleIR{
+					{
+						Matches: route.Spec.Rules[0].Matches,
+						Backends: []ir.HttpBackendOrDelegate{
+							{
+								Backend: &ir.BackendRefIR{
+									BackendObject: &ir.BackendObjectIR{
+										ObjectSource: ir.ObjectSource{
+											Namespace: backingPool.Namespace,
+											Name:      "missing-inferencepool",
+											Kind:      wellknown.InferencePoolKind,
+											Group:     infextv1a1.GroupVersion.Group,
+										},
+										Port: 9002,
+									},
+									ClusterName: "blackhole_cluster",
+									Err:         errors.New("inferencepool not found"),
+								},
+							},
+						},
+					},
+				}
+
+				routeInfo = &query.RouteInfo{
+					Object: routeir,
+				}
+			})
+
+			It("falls back to a blackhole cluster", func() {
+				routes := httproute.TranslateGatewayHTTPRouteRules(
+					ctx, gwListener, routeInfo, parentRefReporter, baseReporter)
+
+				Expect(routes).To(HaveLen(1))
+				Expect(routes[0].Backends[0].Backend.ClusterName).To(Equal("blackhole_cluster"))
 
 				routeStatus := reportsMap.BuildRouteStatus(ctx, route, "")
 				Expect(routeStatus).NotTo(BeNil())

@@ -11,7 +11,9 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/utils/ptr"
 
+	infextv1a1 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
@@ -19,17 +21,23 @@ import (
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
 
 var (
-	SvcGk = schema.GroupKind{
+	svcGk = schema.GroupKind{
 		Group: corev1.GroupName,
 		Kind:  "Service",
+	}
+	infPoolGk = schema.GroupKind{
+		Group: infextv1a1.GroupVersion.Group,
+		Kind:  wellknown.InferencePoolKind,
 	}
 )
 
 func backends(refN, refNs string) []any {
-	return []any{httpRouteWithBackendRef(refN, refNs),
+	return []any{
+		httpRouteWithSvcBackendRef(refN, refNs),
 		tcpRouteWithBackendRef(refN, refNs),
 	}
 }
@@ -201,6 +209,123 @@ func TestFailWithWrongNs(t *testing.T) {
 	}
 }
 
+func TestInferencePoolBackendSameNamespace(t *testing.T) {
+	inputs := []any{
+		infPool(""),
+	}
+
+	backend := httpRouteWithInfPoolBackendRef("foo", "")
+	inputs = append(inputs, backend)
+
+	ir := translateRoute(t, inputs)
+	if ir == nil {
+		t.Fatalf("expected ir")
+	}
+	backends := getBackends(ir)
+	if backends == nil {
+		t.Fatalf("expected backends")
+	}
+	if backends[0].Err != nil {
+		t.Fatalf("backend has error %v", backends[0].Err)
+	}
+	if backends[0].BackendObject.Name != "foo" {
+		t.Fatalf("backend incorrect name")
+	}
+	if backends[0].BackendObject.Namespace != "default" {
+		t.Fatalf("backend incorrect ns")
+	}
+	if backends[0].BackendObject.Group != infextv1a1.GroupVersion.Group {
+		t.Fatalf("backend incorrect group")
+	}
+	if backends[0].BackendObject.Kind != wellknown.InferencePoolKind {
+		t.Fatalf("backend incorrect kind")
+	}
+}
+
+func TestInferencePoolDiffNsBackend(t *testing.T) {
+	inputs := []any{
+		infPool("default2"),
+		refGrant(),
+	}
+
+	backend := httpRouteWithInfPoolBackendRef("foo", "default2")
+	inputs = append(inputs, backend)
+	ir := translateRoute(t, inputs)
+	if ir == nil {
+		t.Fatalf("expected ir")
+	}
+	backends := getBackends(ir)
+	if backends == nil {
+		t.Fatalf("expected backends")
+	}
+	if backends[0].Err != nil {
+		t.Fatalf("backend has error %v", backends[0].Err)
+	}
+	if backends[0].BackendObject.Name != "foo" {
+		t.Fatalf("backend incorrect name")
+	}
+	if backends[0].BackendObject.Namespace != "default2" {
+		t.Fatalf("backend incorrect ns")
+	}
+	if backends[0].BackendObject.Group != infextv1a1.GroupVersion.Group {
+		t.Fatalf("backend incorrect group")
+	}
+	if backends[0].BackendObject.Kind != wellknown.InferencePoolKind {
+		t.Fatalf("backend incorrect kind")
+	}
+}
+
+func TestFailInferencePoolBackendWithoutRefGrant(t *testing.T) {
+	inputs := []any{
+		infPool("default2"),
+		// intentionally missing refGrant
+	}
+
+	backend := httpRouteWithInfPoolBackendRef("foo", "default2")
+	inputs = append(inputs, backend)
+
+	ir := translateRoute(t, inputs)
+	if ir == nil {
+		t.Fatalf("expected ir")
+	}
+	backends := getBackends(ir)
+	if backends == nil {
+		t.Fatalf("expected backends")
+	}
+	if backends[0].Err == nil {
+		t.Fatalf("expected backend error")
+	}
+	if !strings.Contains(backends[0].Err.Error(), "missing reference grant") {
+		t.Fatalf("expected missing reference grant error, found: %v", backends[0].Err)
+	}
+}
+
+func TestFailInferencePoolWithRefGrantWrongKind(t *testing.T) {
+	rg := refGrant()
+	rg.Spec.To[1].Kind = gwv1.Kind("WrongKind")
+
+	inputs := []any{
+		infPool("default2"),
+		rg,
+		httpRouteWithInfPoolBackendRef("foo", "default2"),
+	}
+
+	ir := translateRoute(t, inputs)
+	if ir == nil {
+		t.Fatalf("expected ir")
+	}
+	backends := getBackends(ir)
+	if backends == nil {
+		t.Fatalf("expected backends")
+	}
+	if backends[0].Err == nil {
+		t.Fatalf("expected backend error")
+	}
+	if !strings.Contains(backends[0].Err.Error(), "missing reference grant") {
+		t.Fatalf("expected missing reference grant error, found: %v", backends[0].Err)
+	}
+}
+
 func svc(ns string) *corev1.Service {
 	if ns == "" {
 		ns = "default"
@@ -214,6 +339,32 @@ func svc(ns string) *corev1.Service {
 			Ports: []corev1.ServicePort{
 				{
 					Port: 8080,
+				},
+			},
+		},
+	}
+}
+
+func infPool(ns string) *infextv1a1.InferencePool {
+	if ns == "" {
+		ns = "default"
+	}
+	return &infextv1a1.InferencePool{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "foo",
+			Namespace: ns,
+		},
+		Spec: infextv1a1.InferencePoolSpec{
+			Selector:         map[infextv1a1.LabelKey]infextv1a1.LabelValue{},
+			TargetPortNumber: int32(8080),
+			EndpointPickerConfig: infextv1a1.EndpointPickerConfig{
+				ExtensionRef: &infextv1a1.Extension{
+					ExtensionReference: infextv1a1.ExtensionReference{
+						Group:            ptr.To(""),
+						Kind:             ptr.To(string(wellknown.ServiceKind)),
+						Name:             "fake",
+						TargetPortNumber: ptr.To(int32(9002)),
+					},
 				},
 			},
 		},
@@ -244,20 +395,24 @@ func refGrant() *gwv1beta1.ReferenceGrant {
 					Group: gwv1.Group("core"),
 					Kind:  gwv1.Kind("Service"),
 				},
+				{
+					Group: gwv1.Group(infextv1a1.GroupVersion.Group),
+					Kind:  gwv1.Kind(wellknown.InferencePoolKind),
+				},
 			},
 		},
 	}
 }
 
-func k8sUpstreams(services krt.Collection[*corev1.Service]) krt.Collection[ir.BackendObjectIR] {
+func k8sSvcUpstreams(services krt.Collection[*corev1.Service]) krt.Collection[ir.BackendObjectIR] {
 	return krt.NewManyCollection(services, func(kctx krt.HandlerContext, svc *corev1.Service) []ir.BackendObjectIR {
 		uss := []ir.BackendObjectIR{}
 
 		for _, port := range svc.Spec.Ports {
 			uss = append(uss, ir.BackendObjectIR{
 				ObjectSource: ir.ObjectSource{
-					Kind:      SvcGk.Kind,
-					Group:     SvcGk.Group,
+					Kind:      svcGk.Kind,
+					Group:     svcGk.Group,
 					Namespace: svc.Namespace,
 					Name:      svc.Name,
 				},
@@ -269,7 +424,25 @@ func k8sUpstreams(services krt.Collection[*corev1.Service]) krt.Collection[ir.Ba
 	})
 }
 
-func httpRouteWithBackendRef(refN, refNs string) *gwv1.HTTPRoute {
+func infPoolUpstreams(poolCol krt.Collection[*infextv1a1.InferencePool]) krt.Collection[ir.BackendObjectIR] {
+	return krt.NewCollection(poolCol, func(kctx krt.HandlerContext, pool *infextv1a1.InferencePool) *ir.BackendObjectIR {
+		// Create a BackendObjectIR IR representation from the given InferencePool.
+		return &ir.BackendObjectIR{
+			ObjectSource: ir.ObjectSource{
+				Kind:      infPoolGk.Kind,
+				Group:     infPoolGk.Group,
+				Namespace: pool.Namespace,
+				Name:      pool.Name,
+			},
+			Obj:               pool,
+			Port:              pool.Spec.TargetPortNumber,
+			GvPrefix:          "endpoint-picker",
+			CanonicalHostname: "",
+		}
+	})
+}
+
+func httpRouteWithSvcBackendRef(refN, refNs string) *gwv1.HTTPRoute {
 	var ns *gwv1.Namespace
 	if refNs != "" {
 		n := gwv1.Namespace(refNs)
@@ -300,6 +473,41 @@ func httpRouteWithBackendRef(refN, refNs string) *gwv1.HTTPRoute {
 		},
 	}
 }
+
+func httpRouteWithInfPoolBackendRef(refN, refNs string) *gwv1.HTTPRoute {
+	var ns *gwv1.Namespace
+	if refNs != "" {
+		n := gwv1.Namespace(refNs)
+		ns = &n
+	}
+	var port gwv1.PortNumber = 8080
+	return &gwv1.HTTPRoute{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "httproute",
+			Namespace: "default",
+		},
+		Spec: gwv1.HTTPRouteSpec{
+			Rules: []gwv1.HTTPRouteRule{
+				{
+					BackendRefs: []gwv1.HTTPBackendRef{
+						{
+							BackendRef: gwv1.BackendRef{
+								BackendObjectReference: gwv1.BackendObjectReference{
+									Group:     ptr.To(gwv1.Group(infextv1a1.GroupVersion.Group)),
+									Kind:      ptr.To(gwv1.Kind(wellknown.InferencePoolKind)),
+									Name:      gwv1.ObjectName(refN),
+									Namespace: ns,
+									Port:      &port,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
 func tcpRouteWithBackendRef(refN, refNs string) *gwv1a2.TCPRoute {
 	var ns *gwv1.Namespace
 	if refNs != "" {
@@ -337,7 +545,9 @@ func preRouteIndex(t *testing.T, inputs []any) *RoutesIndex {
 	policies := NewPolicyIndex(krtutil.KrtOptions{}, extensionsplug.ContributesPolicies{})
 	refgrants := NewRefGrantIndex(krttest.GetMockCollection[*gwv1beta1.ReferenceGrant](mock))
 	upstreams := NewBackendIndex(krtutil.KrtOptions{}, nil, policies, refgrants)
-	upstreams.AddBackends(SvcGk, k8sUpstreams(services))
+	upstreams.AddBackends(svcGk, k8sSvcUpstreams(services))
+	pools := krttest.GetMockCollection[*infextv1a1.InferencePool](mock)
+	upstreams.AddBackends(infPoolGk, infPoolUpstreams(pools))
 
 	httproutes := krttest.GetMockCollection[*gwv1.HTTPRoute](mock)
 	tcpproutes := krttest.GetMockCollection[*gwv1a2.TCPRoute](mock)
@@ -376,6 +586,14 @@ func translateRoute(t *testing.T, inputs []any) ir.Route {
 	if t := rtidx.Fetch(krt.TestingDummyContext{}, tcpGk, "default", "tcproute"); t != nil {
 		return t.Route
 	}
+
+	/*poolGk := schema.GroupKind{
+		Group: infextv1a1.GroupVersion.Group,
+		Kind:  wellknown.InferencePoolKind,
+	}
+	if t := rtidx.Fetch(krt.TestingDummyContext{}, poolGk, "default", "inferencepool"); t != nil {
+		return t.Route
+	}*/
 
 	h := rtidx.FetchHttp(krt.TestingDummyContext{}, "default", "httproute")
 	if h == nil {

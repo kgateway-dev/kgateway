@@ -61,6 +61,18 @@ rules:
   - update
   - watch
 - apiGroups:
+  - authentication.k8s.io
+  resources:
+  - tokenreviews
+  verbs:
+  - create
+- apiGroups:
+  - authorization.k8s.io
+  resources:
+  - subjectaccessreviews
+  verbs:
+  - create
+- apiGroups:
   - discovery.k8s.io
   resources:
   - endpointslices
@@ -121,10 +133,47 @@ rules:
   - patch
   - update
 - apiGroups:
+  - inference.networking.x-k8s.io
+  resources:
+  - inferencemodels
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - inference.networking.x-k8s.io
+  resources:
+  - inferencepools
+  verbs:
+  - get
+  - list
+  - update
+  - watch
+- apiGroups:
+  - inference.networking.x-k8s.io
+  resources:
+  - inferencepools/status
+  verbs:
+  - patch
+  - update
+- apiGroups:
   - networking.istio.io
   resources:
   - destinationrules
   verbs:
   - get
   - list
+  - watch
+- apiGroups:
+  - rbac.authorization.k8s.io
+  resources:
+  - clusterrolebindings
+  - clusterroles
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
   - watch

@@ -9,6 +9,7 @@ import (
 	"istio.io/istio/pkg/ptr"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	infextv1a1 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
@@ -692,12 +693,24 @@ func (h *RoutesIndex) resolveExtension(kctx krt.HandlerContext, ns string, ext g
 }
 
 func toFromBackendRef(fromns string, ref gwv1.BackendObjectReference) ir.ObjectSource {
-	return ir.ObjectSource{
+	// Defaults to Service kind for returned ObjectSource.
+	ret := ir.ObjectSource{
 		Group:     strOr(ref.Group, ""),
-		Kind:      strOr(ref.Kind, "Service"),
+		Kind:      strOr(ref.Kind, wellknown.ServiceKind),
 		Namespace: strOr(ref.Namespace, fromns),
 		Name:      string(ref.Name),
 	}
+
+	// Change to the InferencePool group/kind if needed.
+	if ref.Group != nil &&
+		*ref.Group == gwv1.Group(infextv1a1.GroupVersion.Group) &&
+		ref.Kind != nil &&
+		*ref.Kind == wellknown.InferencePoolKind {
+		ret.Group = infextv1a1.GroupVersion.Group
+		ret.Kind = wellknown.InferencePoolKind
+	}
+
+	return ret
 }
 
 func (h *RoutesIndex) getBackends(kctx krt.HandlerContext, src ir.ObjectSource, backendRefs []gwv1.HTTPBackendRef) []ir.HttpBackendOrDelegate {

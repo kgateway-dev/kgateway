@@ -347,8 +347,10 @@ func (h *httpRouteConfigurationTranslator) translateRouteAction(
 	// case 0:
 	// TODO: we should never get here
 	case 1:
-		action.ClusterSpecifier = &envoy_config_route_v3.RouteAction_Cluster{
-			Cluster: clusters[0].GetName(),
+		if action.GetCluster() == "" {
+			action.ClusterSpecifier = &envoy_config_route_v3.RouteAction_Cluster{
+				Cluster: clusters[0].GetName(),
+			}
 		}
 		if clusters[0].GetTypedPerFilterConfig() != nil {
 			if outRoute.GetTypedPerFilterConfig() == nil {
