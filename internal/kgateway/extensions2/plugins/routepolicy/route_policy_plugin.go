@@ -22,7 +22,6 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
-	extensionplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
@@ -111,7 +110,7 @@ func (p *routePolicyPluginGwPass) ApplyHCM(ctx context.Context, pCtx *ir.HcmCont
 
 var useRustformations bool
 
-func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensionplug.Plugin {
+func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensionsplug.Plugin {
 	errors := []error{}
 	useRustformations = commoncol.Settings.UseRustFormations // stash the state of the env setup for rustformation usage
 
@@ -147,7 +146,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 		return pol
 	})
 
-	return extensionplug.Plugin{
+	return extensionsplug.Plugin{
 		ContributesPolicies: map[schema.GroupKind]extensionsplug.PolicyPlugin{
 			wellknown.RoutePolicyGVK.GroupKind(): {
 				//AttachmentPoints: []ir.AttachmentPoints{ir.HttpAttachmentPoint},
@@ -406,6 +405,17 @@ func buildTranslateFunc(ctx context.Context, secrets *krtcollections.SecretIndex
 
 		// Apply transformation specific translation
 		transformationForSpec(policyCR.Spec, &outSpec)
+
+		if policyCR.Spec.ExtProc != nil {
+			extproc, err := toEnvoyExtProc(policyCR.Spec.ExtProc, krtctx, commoncol, objSrc)
+			if err != nil {
+				return nil, err
+			}
+			policyIr.ExtProc = &ExtprocIR{
+				Name:    policyCR.Name, // TODO format
+				ExtProc: extproc,
+			}
+		}
 
 		for _, err := range outSpec.errors {
 			contextutils.LoggerFrom(ctx).Error(policyCR.GetNamespace(), policyCR.GetName(), err)
