@@ -79,7 +79,3 @@ func Plugins(ctx context.Context, commoncol *common.CommonCollections) []extensi
 		backendtlspolicy.NewPlugin(ctx, commoncol),
 	}
 }
-
-func AllPlugins(ctx context.Context, commoncol *common.CommonCollections) extensionsplug.Plugin {
-	return MergePlugins(Plugins(ctx, commoncol)...)
-}

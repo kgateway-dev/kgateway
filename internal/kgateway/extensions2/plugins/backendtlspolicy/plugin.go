@@ -157,8 +157,8 @@ func buildTranslateFunc(
 	}
 }
 
-func convertTargetRefs(targetRefs []gwapiv1a2.LocalPolicyTargetReferenceWithSectionName) []ir.PolicyTargetRef {
-	return []ir.PolicyTargetRef{{
+func convertTargetRefs(targetRefs []gwapiv1a2.LocalPolicyTargetReferenceWithSectionName) []ir.PolicyRef {
+	return []ir.PolicyRef{{
 		Kind:  string(targetRefs[0].Kind),
 		Name:  string(targetRefs[0].Name),
 		Group: string(targetRefs[0].Group),

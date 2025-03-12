@@ -132,8 +132,8 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 	}
 }
 
-func convert(targetRef v1alpha1.LocalPolicyTargetReference) []ir.PolicyTargetRef {
-	return []ir.PolicyTargetRef{{
+func convert(targetRef v1alpha1.LocalPolicyTargetReference) []ir.PolicyRef {
+	return []ir.PolicyRef{{
 		Kind:  string(targetRef.Kind),
 		Name:  string(targetRef.Name),
 		Group: string(targetRef.Group),

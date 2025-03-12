@@ -193,7 +193,8 @@ func (s *ProxySyncer) Init(ctx context.Context, isOurGw func(gw *gwv1.Gateway) b
 		krtopts,
 	)
 
-	finalBackends := krt.JoinCollection(backendIndex.Backends(), krtopts.ToOptions("FinalUpstreams")...)
+	// all backends with policies attached in a single collection
+	finalBackends := krt.JoinCollection(backendIndex.Backends(), krtopts.ToOptions("FinalBackends")...)
 
 	// add the upstreams to the common collections, so they are available for policies.
 	s.commonCols.Backends = backendIndex
