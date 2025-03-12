@@ -64,7 +64,7 @@ func (s *testingSuite) TestGatewayWithRoute() {
 
 	// make sure pods are running
 	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, testdefaults.CurlPod.GetNamespace(), metav1.ListOptions{
-		LabelSelector: "app.kubernetes.io/name=curl",
+		LabelSelector: testdefaults.CurlPodLabelSelector,
 	})
 	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, nginxPod.ObjectMeta.GetNamespace(), metav1.ListOptions{
 		LabelSelector: "app.kubernetes.io/name=nginx",
