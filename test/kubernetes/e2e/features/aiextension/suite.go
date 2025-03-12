@@ -56,7 +56,7 @@ func NewSuite(
 func (s *tsuite) SetupSuite() {
 	s.manifests = map[string][]string{
 		"TestRouting":            {commonManifest, backendManifest, routesBasicManifest},
-		"TestRoutingPassthrough": {commonManifest, backendPassthroughManifest, routesWithExtensionManifest},
+		"TestRoutingPassthrough": {commonManifest, backendPassthroughManifest, routesBasicManifest},
 		"TestStreaming":          {commonManifest, backendManifest, routesWithExtensionManifest, routeOptionStreamingManifest},
 	}
 }

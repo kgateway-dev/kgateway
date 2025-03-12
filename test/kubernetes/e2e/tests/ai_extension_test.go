@@ -5,9 +5,13 @@ import (
 	"fmt"
 	"os"
 	"testing"
+	"time"
 
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
@@ -184,5 +188,25 @@ func installProviderMockApp(ctx context.Context, testInstallation *e2e.TestInsta
 	err := testInstallation.ClusterContext.Cli.Apply(ctx, []byte(yaml))
 	if err != nil {
 		panic(fmt.Sprintf("Failed to install mock provider: %v", err))
+	}
+
+	// Wait for the deployment to be ready
+	deployment := &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-ai-provider",
+			Namespace: namespace,
+		},
+	}
+
+	// Wait for the deployment to be ready
+	err = wait.PollUntilContextTimeout(ctx, time.Second, time.Minute*2, true, func(ctx context.Context) (done bool, err error) {
+		if err := testInstallation.ClusterContext.Client.Get(ctx, client.ObjectKeyFromObject(deployment), deployment); err != nil {
+			return false, nil
+		}
+		return deployment.Status.ReadyReplicas == deployment.Status.Replicas, nil
+	})
+
+	if err != nil {
+		panic(fmt.Sprintf("Mock provider deployment failed to become ready: %v", err))
 	}
 }

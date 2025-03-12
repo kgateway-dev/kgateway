@@ -44,7 +44,7 @@ RUN chmod 755 /opt/tiktoken
 USER kgateway
 RUN mkdir -p /home/kgateway
 WORKDIR /home/kgateway
-COPY ${AI_EXTENSION_DIR}/ai_extension .
+COPY ./${AI_EXTENSION_DIR}/ai_extension .
 
 # make sure all messages always reach console
 ENV PYTHONUNBUFFERED=1
