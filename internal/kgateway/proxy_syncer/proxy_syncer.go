@@ -83,10 +83,12 @@ type GatewayXdsResources struct {
 func (r GatewayXdsResources) ResourceName() string {
 	return xds.OwnerNamespaceNameID(wellknown.GatewayApiProxyValue, r.Namespace, r.Name)
 }
+
 func (r GatewayXdsResources) Equals(in GatewayXdsResources) bool {
 	return r.NamespacedName == in.NamespacedName && report{r.reports}.Equals(report{in.reports}) && r.ClustersHash == in.ClustersHash &&
 		r.Routes.Version == in.Routes.Version && r.Listeners.Version == in.Listeners.Version
 }
+
 func sliceToResourcesHash[T proto.Message](slice []T) ([]envoycachetypes.ResourceWithTTL, uint64) {
 	var slicePb []envoycachetypes.ResourceWithTTL
 	var resourcesHash uint64
@@ -179,16 +181,15 @@ func (r report) Equals(in report) bool {
 	return true
 }
 
-// Note: isOurGw is shared between us and the deployer.
-func (s *ProxySyncer) Init(ctx context.Context, isOurGw func(gw *gwv1.Gateway) bool, krtopts krtutil.KrtOptions) error {
+func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) error {
 	ctx = contextutils.WithLogger(ctx, "k8s-gw-proxy-syncer")
 	logger := contextutils.LoggerFrom(ctx)
 
 	kubeGateways, routes, backendIndex, endpointIRs := krtcollections.InitCollections(
 		ctx,
+		s.controllerName,
 		s.plugins,
 		s.istioClient,
-		isOurGw,
 		s.commonCols.RefGrants,
 		krtopts,
 	)

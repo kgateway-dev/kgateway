@@ -6,6 +6,7 @@ import (
 	"slices"
 
 	"istio.io/istio/pkg/kube/krt"
+	"istio.io/istio/pkg/ptr"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -147,13 +148,16 @@ type GatewayIndex struct {
 
 func NewGatewayIndex(
 	krtopts krtutil.KrtOptions,
-	isOurGw func(gw *gwv1.Gateway) bool,
+	controllerName string,
 	policies *PolicyIndex,
 	gws krt.Collection[*gwv1.Gateway],
+	gwClasses krt.Collection[*gwv1.GatewayClass],
 ) *GatewayIndex {
 	h := &GatewayIndex{policies: policies}
 	h.Gateways = krt.NewCollection(gws, func(kctx krt.HandlerContext, i *gwv1.Gateway) *ir.Gateway {
-		if !isOurGw(i) {
+		// only care about gateways use a class controlled by us
+		gwClass := ptr.Flatten(krt.FetchOne(kctx, gwClasses, krt.FilterKey(string(i.Spec.GatewayClassName))))
+		if gwClass == nil || controllerName != string(gwClass.Spec.ControllerName) {
 			return nil
 		}
 		out := ir.Gateway{
@@ -568,6 +572,7 @@ func (h *RoutesIndex) transformTlsRoute(kctx krt.HandlerContext, i *gwv1a2.TLSRo
 		AttachedPolicies: toAttachedPolicies(h.policies.getTargetingPolicies(kctx, extensionsplug.RouteAttachmentPoint, src, "")),
 	}
 }
+
 func (h *RoutesIndex) transformHttpRoute(kctx krt.HandlerContext, i *gwv1.HTTPRoute) *ir.HttpRouteIR {
 	src := ir.ObjectSource{
 		Group:     gwv1.SchemeGroupVersion.Group,
@@ -768,6 +773,7 @@ func tostr(in []gwv1.Hostname) []string {
 	}
 	return out
 }
+
 func emptyIfCore(s string) string {
 	if s == "core" {
 		return ""
