@@ -29,6 +29,14 @@ type routePolicy struct {
 	ct       time.Time
 	spec     v1alpha1.RoutePolicySpec
 	AISecret *ir.Secret
+	ExtProc  *ExtprocIR
+}
+
+type ExtprocIR struct {
+	Name string
+	// BackendRef *envoy_config_route_v3.Route_Route
+	// Extproc    *v1alpha1.ExtProcPolicy
+	ExtProc *envoy_ext_proc_v3.ExternalProcessor
 }
 
 func (d *routePolicy) CreationTime() time.Time {
@@ -40,20 +48,32 @@ func (d *routePolicy) Equals(in any) bool {
 	if !ok {
 		return false
 	}
+
+	// if d.ExtProc != nil && d2.ExtProc != nil {
 	return d.spec == d2.spec
 }
 
 type routePolicyPluginGwPass struct {
 	ir.UnimplementedProxyTranslationPass
 	setAIFilter bool
+	// extprocConfig []*envoy_ext_proc_v3.ExternalProcessor // could have list of backend, name, and config
+	// extprocStage  *v1alpha1.FilterStage
 }
 
 func (p *routePolicyPluginGwPass) ApplyHCM(ctx context.Context, pCtx *ir.HcmContext, out *envoyhttp.HttpConnectionManager) error {
-	// no op
+	routePolicy := pCtx.Policy.(*routePolicy)
+	if routePolicy.ExtProc != nil {
+		extprocFilters, err := ExtprocHCMFilter(routePolicy.ExtProc)
+		if err != nil {
+			return err
+		}
+		out.HttpFilters = append(out.GetHttpFilters(), extprocFilters)
+	}
 	return nil
 }
 
 func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensionplug.Plugin {
+	errors := []error{}
 	col := krtutil.SetupCollectionDynamic[v1alpha1.RoutePolicy](
 		ctx,
 		commoncol.Client,
@@ -61,19 +81,27 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 		commoncol.KrtOpts.ToOptions("RoutePolicy")...,
 	)
 	gk := wellknown.RoutePolicyGVK.GroupKind()
-	translate := buildTranslateFunc(ctx, commoncol.Secrets)
+	translate := buildTranslateFunc(ctx, commoncol.Secrets, commoncol)
 	// RoutePolicy IR will have TypedConfig -> implement backendroute method to add prompt guard, etc.
 	policyCol := krt.NewCollection(col, func(krtctx krt.HandlerContext, policyCR *v1alpha1.RoutePolicy) *ir.PolicyWrapper {
+		objSrc := ir.ObjectSource{
+			Group:     gk.Group,
+			Kind:      gk.Kind,
+			Namespace: policyCR.Namespace,
+			Name:      policyCR.Name,
+		}
+		policyIr, err := translate(krtctx, policyCR, objSrc)
+		if err != nil {
+			contextutils.LoggerFrom(ctx).Error(err)
+			errors = append(errors, err)
+			return nil
+		}
 		var pol = &ir.PolicyWrapper{
-			ObjectSource: ir.ObjectSource{
-				Group:     gk.Group,
-				Kind:      gk.Kind,
-				Namespace: policyCR.Namespace,
-				Name:      policyCR.Name,
-			},
-			Policy:     policyCR,
-			PolicyIR:   translate(krtctx, policyCR),
-			TargetRefs: convert(policyCR.Spec.TargetRef),
+			ObjectSource: objSrc,
+			Policy:       policyCR,
+			PolicyIR:     policyIr,
+			TargetRefs:   convert(policyCR.Spec.TargetRef),
+			Errors:       errors,
 		}
 		return pol
 	})
@@ -112,6 +140,9 @@ func (p *routePolicyPluginGwPass) ApplyVhostPlugin(ctx context.Context, pCtx *ir
 }
 
 // called 0 or more times
+
+// figure out apply for route or route backend
+// maybe both
 func (p *routePolicyPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.RouteContext, outputRoute *envoy_config_route_v3.Route) error {
 	policy, ok := pCtx.Policy.(*routePolicy)
 	if !ok {
@@ -121,6 +152,15 @@ func (p *routePolicyPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.Ro
 	if policy.spec.Timeout > 0 && outputRoute.GetRoute() != nil {
 		outputRoute.GetRoute().Timeout = durationpb.New(time.Second * time.Duration(policy.spec.Timeout))
 	}
+
+	// if policy.ExtProc != nil {
+	// 	err := enableExtprocFilter(outputRoute, policy.ExtProc.Name)
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// }
+
+	// here or apply for route backend????
 
 	// TODO: err/warn/ignore if targetRef is set on non-AI Backend
 
@@ -137,11 +177,19 @@ func (p *routePolicyPluginGwPass) ApplyForBackend(
 	return nil
 }
 
-func (p *routePolicyPluginGwPass) ApplyForRouteBackend(
+func (p *routePolicyPluginGwPass) ApplyForRouteBackend( //Apply for route policy
 	ctx context.Context,
 	policy ir.PolicyIR,
 	pCtx *ir.RouteBackendContext,
 ) error {
+	rtPolicy, ok := policy.(*routePolicy)
+	if !ok {
+		return nil
+	}
+	if rtPolicy.ExtProc != nil {
+		enableExtprocFilter(pCtx, rtPolicy.ExtProc.Name)
+	}
+
 	extprocSettingsProto := pCtx.GetTypedConfig(wellknown.AIExtProcFilterName)
 	if extprocSettingsProto == nil {
 		return nil
@@ -152,17 +200,15 @@ func (p *routePolicyPluginGwPass) ApplyForRouteBackend(
 		return nil
 	}
 
-	rtPolicy, ok := policy.(*routePolicy)
-	if !ok {
-		return nil
-	}
-
 	err := p.processAIRoutePolicy(ctx, rtPolicy.spec.AI, pCtx, extprocSettings, rtPolicy.AISecret)
 	if err != nil {
 		// TODO: report error on status
 		return err
 	}
 
+	// policy has override
+	// pCtx.AddTypedConfig(wellknown.ExtProcFilterName, extprocSettings)
+	// marshelling will happen for you
 	return nil
 }
 
@@ -170,7 +216,28 @@ func (p *routePolicyPluginGwPass) ApplyForRouteBackend(
 // if a plugin emits new filters, they must be with a plugin unique name.
 // any filter returned from route config must be disabled, so it doesnt impact other routes.
 func (p *routePolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.FilterChainCommon) ([]plugins.StagedHttpFilter, error) {
-	return nil, nil
+	// here do nothing
+	// actually can put here instead of httplistenerpolicy
+	// if p.extprocConfig != nil {
+	// 	extprocFilters, err := AddExtprocHTTPFilter(p.extprocConfig, p.extprocStage)
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+	// 	return extprocFilters, nil
+	// }
+
+	// add empty extproc filter
+	// if condition
+	extprocFilter := plugins.MustNewStagedFilter(
+		wellknown.ExtprocFilterName,
+		&envoy_ext_proc_v3.ExternalProcessor{},
+		plugins.FilterStage[plugins.WellKnownFilterStage]{
+			RelativeTo: plugins.WellKnownFilterStage(plugins.AuthZStage),
+			Weight:     1,
+		},
+	)
+
+	return []plugins.StagedHttpFilter{extprocFilter}, nil
 }
 
 func (p *routePolicyPluginGwPass) NetworkFilters(ctx context.Context) ([]plugins.StagedNetworkFilter, error) {
@@ -182,32 +249,43 @@ func (p *routePolicyPluginGwPass) ResourcesToAdd(ctx context.Context) ir.Resourc
 	return ir.Resources{}
 }
 
-func buildTranslateFunc(ctx context.Context, secrets *krtcollections.SecretIndex) func(krtctx krt.HandlerContext, i *v1alpha1.RoutePolicy) *routePolicy {
-	return func(krtctx krt.HandlerContext, policyCR *v1alpha1.RoutePolicy) *routePolicy {
+func buildTranslateFunc(ctx context.Context, secrets *krtcollections.SecretIndex, commoncol *common.CommonCollections) func(krtctx krt.HandlerContext, policyCR *v1alpha1.RoutePolicy, objSrc ir.ObjectSource) (*routePolicy, error) {
+	return func(krtctx krt.HandlerContext, policyCR *v1alpha1.RoutePolicy, objSrc ir.ObjectSource) (*routePolicy, error) {
 		policyIr := routePolicy{ct: policyCR.CreationTimestamp.Time, spec: policyCR.Spec}
+
+		if policyCR.Spec.ExtProc != nil {
+			extproc, err := toEnvoyExtProc(policyCR.Spec.ExtProc, krtctx, commoncol, objSrc)
+			if err != nil {
+				return nil, err
+			}
+			policyIr.ExtProc = &ExtprocIR{
+				Name:    policyCR.Name, // TODO format
+				ExtProc: extproc,
+			}
+		}
 
 		// Check for the presence of the OpenAI Moderation which may require a secret reference
 		if policyCR.Spec.AI == nil ||
 			policyCR.Spec.AI.PromptGuard == nil ||
 			policyCR.Spec.AI.PromptGuard.Request == nil ||
 			policyCR.Spec.AI.PromptGuard.Request.Moderation == nil {
-			return &policyIr
+			return &policyIr, nil
 		}
 
 		secretRef := policyCR.Spec.AI.PromptGuard.Request.Moderation.OpenAIModeration.AuthToken.SecretRef
 		if secretRef == nil {
 			// no secret ref is set
-			return &policyIr
+			return &policyIr, nil
 		}
 
 		// Retrieve and assign the secret
 		secret, err := pluginutils.GetSecretIr(secrets, krtctx, secretRef.Name, policyCR.GetNamespace())
 		if err != nil {
 			contextutils.LoggerFrom(ctx).Error(err)
-			return &policyIr
+			return &policyIr, nil
 		}
 
 		policyIr.AISecret = secret
-		return &policyIr
+		return &policyIr, nil
 	}
 }

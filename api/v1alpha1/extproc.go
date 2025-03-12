@@ -8,10 +8,6 @@ type ExtProcPolicy struct {
 	GrpcService *ExtProcGrpcService `json:"grpcService,omitempty"`
 
 	ProcessingMode *ProcessingMode `json:"processingMode,omitempty"`
-
-	// Where in the HTTP filter chain to insert the filter.
-	// +kubebuilder:validation:Required
-	// FilterStage *FilterStage `json:"filterStage,omitempty"`
 }
 
 // ProcessingMode defines how the filter should interact with the request/response streams

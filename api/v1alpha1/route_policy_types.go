@@ -33,4 +33,5 @@ type RoutePolicySpec struct {
 	// +kubebuilder:validation:Minimum=1
 	Timeout int            `json:"timeout,omitempty"`
 	AI      *AIRoutePolicy `json:"ai,omitempty"`
+	ExtProc *ExtProcPolicy `json:"extProc,omitempty"`
 }
