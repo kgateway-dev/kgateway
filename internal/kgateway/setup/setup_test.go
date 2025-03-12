@@ -1,6 +1,7 @@
 package setup_test
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -136,6 +137,48 @@ func TestScenarios(t *testing.T) {
 	runScenario(t, "testdata", st)
 }
 
+func policyFile() string {
+	p := `apiVersion: audit.k8s.io/v1
+kind: Policy
+rules:
+- level: Metadata
+`
+	// write to temp file:
+	f, err := os.CreateTemp("", "policy.yaml")
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+	_, err = f.WriteString(p)
+	if err != nil {
+		panic(err)
+	}
+	return f.Name()
+}
+
+func addApiServerLogs(t *testing.T, testEnv *envtest.Environment) {
+	apiserverOut := new(bytes.Buffer)
+	apiserverErr := new(bytes.Buffer)
+
+	testEnv.ControlPlane = envtest.ControlPlane{
+		APIServer: &envtest.APIServer{
+			Out: apiserverOut,
+			Err: apiserverErr,
+		},
+	}
+	policy := policyFile()
+	t.Cleanup(func() {
+		os.Remove(policy)
+	})
+	args := testEnv.ControlPlane.APIServer.Configure()
+	args.Append("audit-log-path", "-")
+	args.Append("audit-policy-file", policy)
+	t.Cleanup(func() {
+		t.Log("apiserver out:", apiserverOut.String())
+		t.Log("apiserver err:", apiserverErr.String())
+	})
+}
+
 func runScenario(t *testing.T, scenarioDir string, globalSettings *settings.Settings) {
 	proxy_syncer.UseDetailedUnmarshalling = true
 	writer.set(t)
@@ -151,6 +194,8 @@ func runScenario(t *testing.T, scenarioDir string, globalSettings *settings.Sett
 		BinaryAssetsDirectory: getAssetsDir(t),
 		// web hook to add cluster ips to services
 	}
+	// Enable this if you want api server logs and audit logs.
+	//	addApiServerLogs(t, testEnv)
 	var wg sync.WaitGroup
 	t.Cleanup(wg.Wait)
 
