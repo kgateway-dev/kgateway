@@ -126,7 +126,7 @@ type ExtensionsBuilders struct {
 	Fds  func(ctx context.Context, opts bootstrap.Opts) fds_syncer.Extensions
 }
 
-// RunGlooGatewayUdsFds runs the Gloo Edge control plane components in goroutines and stores
+// RunGlooGatewayUdsFds runs the kgateway control plane components in goroutines and stores
 // configuration in-memory. This is used by the e2e tests in `test/e2e` package.
 func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClients {
 	runOptions.ports = Ports{
@@ -138,7 +138,7 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 	settings := constructTestSettings(runOptions)
 	ctx = settingsutil.WithSettings(ctx, settings)
 
-	// All Gloo Edge components run using a Bootstrap.Opts object
+	// All kgateway components run using a Bootstrap.Opts object
 	// These values are extracted from the Settings object and as part of our SetupSyncer
 	// we pull values off the Settings object to build the Bootstrap.Opts. It would be ideal if we
 	// could use the same setup code, but in the meantime, we use constructTestOpts to mirror the functionality

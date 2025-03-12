@@ -55,7 +55,8 @@ func NewPluginFromCollections(
 					Namespace: svc.Namespace,
 					Name:      svc.Name,
 				},
-				Obj:               svc,
+				Obj: svc,
+				// TODO: fill in ObjIR
 				Port:              port.Port,
 				AppProtocol:       translateAppProtocol(port.AppProtocol),
 				GvPrefix:          "kube",

@@ -12,7 +12,6 @@ func AggregateConcurrent(funcs []func() error) errors.Aggregate {
 	ch := make(chan error, len(funcs))
 	var wg sync.WaitGroup
 	for _, f := range funcs {
-		f := f // capture f
 		wg.Add(1)
 		go func() {
 			defer wg.Done()

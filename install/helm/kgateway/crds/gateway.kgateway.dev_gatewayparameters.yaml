@@ -16,8 +16,6 @@ spec:
     kind: GatewayParameters
     listKind: GatewayParametersList
     plural: gatewayparameters
-    shortNames:
-    - gwp
     singular: gatewayparameters
   scope: Namespaced
   versions:

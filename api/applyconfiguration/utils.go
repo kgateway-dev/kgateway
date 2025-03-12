@@ -37,8 +37,6 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.AnthropicConfigApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("AwsAuth"):
 		return &apiv1alpha1.AwsAuthApplyConfiguration{}
-	case v1alpha1.SchemeGroupVersion.WithKind("AWSAuthIRSA"):
-		return &apiv1alpha1.AWSAuthIRSAApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("AwsBackend"):
 		return &apiv1alpha1.AwsBackendApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("AwsLambda"):
@@ -51,6 +49,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.BackendSpecApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("BackendStatus"):
 		return &apiv1alpha1.BackendStatusApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("BodyTransformation"):
+		return &apiv1alpha1.BodyTransformationApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("CELFilter"):
 		return &apiv1alpha1.CELFilterApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("CustomLabel"):
@@ -91,6 +91,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.GrpcStatusFilterApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("HeaderFilter"):
 		return &apiv1alpha1.HeaderFilterApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("HeaderTransformation"):
+		return &apiv1alpha1.HeaderTransformationApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("Host"):
 		return &apiv1alpha1.HostApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("HTTPListenerPolicy"):
@@ -165,6 +167,10 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.StatusCodeFilterApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("SupportedLLMProvider"):
 		return &apiv1alpha1.SupportedLLMProviderApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("Transform"):
+		return &apiv1alpha1.TransformApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("TransformationPolicy"):
+		return &apiv1alpha1.TransformationPolicyApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("VertexAIConfig"):
 		return &apiv1alpha1.VertexAIConfigApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("Webhook"):

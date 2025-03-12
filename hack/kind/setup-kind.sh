@@ -6,7 +6,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
 # The name of the kind cluster to deploy to
 CLUSTER_NAME="${CLUSTER_NAME:-kind}"
 # The version of the Node Docker image to use for booting the cluster
-CLUSTER_NODE_VERSION="${CLUSTER_NODE_VERSION:-v1.32.2}"
+CLUSTER_NODE_VERSION="${CLUSTER_NODE_VERSION:-v1.31.0}"
 # The version used to tag images
 VERSION="${VERSION:-1.0.0-ci1}"
 # Skip building docker images if we are testing a released version
@@ -21,6 +21,10 @@ CONFORMANCE="${CONFORMANCE:-false}"
 CONFORMANCE_VERSION="${CONFORMANCE_VERSION:-v1.2.0}"
 # The channel of the k8s gateway api conformance tests to run. Requires CONFORMANCE=true
 CONFORMANCE_CHANNEL="${CONFORMANCE_CHANNEL:-"experimental"}"
+# The kind CLI to use. Defaults to the latest version from the kind repo.
+KIND="${KIND:-go tool kind}"
+# If true, use localstack for lambda functions
+LOCALSTACK="${LOCALSTACK:-false}"
 
 function create_kind_cluster_or_skip() {
   activeClusters=$(kind get clusters)
@@ -32,7 +36,7 @@ function create_kind_cluster_or_skip() {
   fi
 
   echo "creating cluster ${CLUSTER_NAME}"
-  kind create cluster \
+  $KIND create cluster \
     --name "$CLUSTER_NAME" \
     --image "kindest/node:$CLUSTER_NODE_VERSION" \
     --config="$SCRIPT_DIR/cluster.yaml"
@@ -79,4 +83,10 @@ if [[ $CONFORMANCE == "true" ]]; then
   echo "Running conformance test setup"
 
   . $SCRIPT_DIR/setup-metalllb-on-kind.sh
+fi
+
+# 7. Setup localstack
+if [[ $LOCALSTACK == "true" ]]; then
+  echo "Setting up localstack"
+  . $SCRIPT_DIR/setup-localstack.sh
 fi

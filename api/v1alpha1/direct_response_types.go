@@ -12,7 +12,7 @@ import (
 // +genclient
 // +kubebuilder:object:root=true
 // +kubebuilder:metadata:labels={app=kgateway,app.kubernetes.io/name=kgateway}
-// +kubebuilder:resource:categories=kgateway,shortName=dr
+// +kubebuilder:resource:categories=kgateway
 // +kubebuilder:subresource:status
 type DirectResponse struct {
 	metav1.TypeMeta   `json:",inline"`

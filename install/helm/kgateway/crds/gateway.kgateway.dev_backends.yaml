@@ -16,8 +16,6 @@ spec:
     kind: Backend
     listKind: BackendList
     plural: backends
-    shortNames:
-    - be
     singular: backend
   scope: Namespaced
   versions:
@@ -468,16 +466,6 @@ spec:
                     type: string
                   auth:
                     properties:
-                      irsa:
-                        properties:
-                          roleARN:
-                            maxLength: 2048
-                            minLength: 1
-                            pattern: ^arn:aws:iam::[0-9]{12}:role/.*
-                            type: string
-                        required:
-                        - roleARN
-                        type: object
                       secret:
                         properties:
                           name:
@@ -498,10 +486,6 @@ spec:
                       rule: '!(has(self.secret) && self.type != ''Secret'')'
                     - message: secret must be specified when type is 'Secret'
                       rule: '!(!has(self.secret) && self.type == ''Secret'')'
-                    - message: irsa must be nil if the type is not 'IRSA'
-                      rule: '!(has(self.irsa) && self.type != ''IRSA'')'
-                    - message: irsa must be specified when type is 'IRSA'
-                      rule: '!(!has(self.irsa) && self.type == ''IRSA'')'
                   lambda:
                     properties:
                       endpointURL:

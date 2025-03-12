@@ -83,7 +83,7 @@ type GwTranslatorFactory func(gw *gwv1.Gateway) KGwTranslator
 type ContributesPolicies map[schema.GroupKind]PolicyPlugin
 
 type Plugin struct {
-	ContributesPolicies
+	ContributesPolicies     ContributesPolicies
 	ContributesBackends     map[schema.GroupKind]BackendPlugin
 	ContributesGwTranslator GwTranslatorFactory
 	// extra has sync beyong primary resources in the collections above

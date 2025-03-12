@@ -279,8 +279,11 @@ func (p *PolicyIndex) getTargetingPolicies(
 		Namespace: targetRef.Namespace,
 	}
 	policies := krt.Fetch(kctx, p.policies, krt.FilterIndex(p.targetRefIndex, targetRefIndexKey))
-	targetRefIndexKey.SectionName = sectionName
-	sectionNamePolicies := krt.Fetch(kctx, p.policies, krt.FilterIndex(p.targetRefIndex, targetRefIndexKey))
+	var sectionNamePolicies []ir.PolicyWrapper
+	if sectionName != "" {
+		targetRefIndexKey.SectionName = sectionName
+		sectionNamePolicies = krt.Fetch(kctx, p.policies, krt.FilterIndex(p.targetRefIndex, targetRefIndexKey))
+	}
 
 	for _, p := range policies {
 		ret = append(ret, ir.PolicyAtt{PolicyIr: p.PolicyIR, GroupKind: p.GetGroupKind(), PolicyTargetRef: &ir.PolicyTargetRef{

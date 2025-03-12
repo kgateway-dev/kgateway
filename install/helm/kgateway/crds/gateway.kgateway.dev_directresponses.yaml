@@ -16,8 +16,6 @@ spec:
     kind: DirectResponse
     listKind: DirectResponseList
     plural: directresponses
-    shortNames:
-    - dr
     singular: directresponse
   scope: Namespaced
   versions:

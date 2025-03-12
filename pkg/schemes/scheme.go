@@ -10,12 +10,13 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
+	gwv1a3 "sigs.k8s.io/gateway-api/apis/v1alpha3"
 	gwv1b1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	kgwv1a1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 )
 
-// SchemeBuilder contains all the Schemes for registering the CRDs with which Gloo Gateway interacts.
+// SchemeBuilder contains all the Schemes for registering the CRDs with which kgateway interacts.
 // We share one SchemeBuilder as there's no harm in registering all I/O types internally.
 var SchemeBuilder = runtime.SchemeBuilder{
 	// K8s Gateway API resources
@@ -30,7 +31,7 @@ var SchemeBuilder = runtime.SchemeBuilder{
 	// Register the apiextensions API group
 	apiextensionsv1.AddToScheme,
 
-	// Solo Kubernetes Gateway API resources
+	// kgateway API resources
 	kgwv1a1.AddToScheme,
 
 	// Solo Edge Gloo API resources
@@ -65,6 +66,9 @@ func GatewayScheme() *runtime.Scheme {
 	}
 	if err := gwv1b1.Install(s); err != nil {
 		panic(fmt.Sprintf("Failed to install gateway v1beta1 scheme: %v", err))
+	}
+	if err := gwv1a3.Install(s); err != nil {
+		panic(fmt.Sprintf("Failed to install gateway v1alpha2 scheme: %v", err))
 	}
 	return s
 }

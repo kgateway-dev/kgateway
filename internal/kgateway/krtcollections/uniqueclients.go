@@ -182,13 +182,14 @@ func (x *callbacksCollection) add(sid int64, r *envoy_service_discovery_v3.Disco
 // Returning an error will end processing and close the stream. OnStreamClosed will still be called.
 func (x *callbacks) OnStreamRequest(sid int64, r *envoy_service_discovery_v3.DiscoveryRequest) error {
 	role := roleFromRequest(r)
-	// as gloo-edge and ggv2 share a control plane, check that this collection only handles ggv2 clients
+	// as gloo-edge and kgateway share a control plane, check that this collection only handles kgateway clients
+	// TODO remove this check if it's no longer needed
 	if !xds.IsKubeGatewayCacheKey(role) {
 		return nil
 	}
 	c := x.collection.Load()
 	if c == nil {
-		return errors.New("ggv2 not initialized")
+		return errors.New("kgateway not initialized")
 	}
 	return c.newStream(sid, r)
 }
@@ -235,13 +236,14 @@ func (x *callbacksCollection) getClients() []ir.UniqlyConnectedClient {
 // request and respond with an error.
 func (x *callbacks) OnFetchRequest(ctx context.Context, r *envoy_service_discovery_v3.DiscoveryRequest) error {
 	role := r.GetNode().GetMetadata().GetFields()[xds.RoleKey].GetStringValue()
-	// as gloo-edge and ggv2 share a control plane, check that this collection only handles ggv2 clients
+	// as gloo-edge and kgateway share a control plane, check that this collection only handles kgateway clients
+	// TODO remove this check if it's no longer needed
 	if !xds.IsKubeGatewayCacheKey(role) {
 		return nil
 	}
 	c := x.collection.Load()
 	if c == nil {
-		return errors.New("ggv2 not initialized")
+		return errors.New("kgateway not initialized")
 	}
 	return c.fetchRequest(ctx, r)
 }

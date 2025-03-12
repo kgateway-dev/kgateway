@@ -25,15 +25,14 @@ inputs:
     required: false
     default: "" # If this is undefined the setup-kind script has its own default value
     description: The version of the gateway-api to use
+  localstack:
+    required: false
+    default: "false"
+    description: Whether to install localstack
 
 runs:
   using: "composite"
   steps:
-    - name: Install kind
-      uses: helm/kind-action@v1.10.0
-      with:
-        install_only: true
-        version: ${{ inputs.kind-version }}
     - uses: azure/setup-kubectl@v4
       id: kubectl
       with:
@@ -48,4 +47,5 @@ runs:
         CLUSTER_NODE_VERSION: ${{ inputs.kind-node-version }}
         ISTIO_VERSION: ${{ inputs.istio-version }}
         CONFORMANCE_VERSION: ${{ inputs.kgateway-api-version }}
+        LOCALSTACK: ${{ inputs.localstack }}
       run: ./hack/kind/setup-kind.sh

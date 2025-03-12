@@ -14,6 +14,29 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/helpers"
 )
 
+// EventuallyPodReady asserts that all containers in the pod are reporting a ready status.
+func (p *Provider) EventuallyPodReady(
+	ctx context.Context,
+	podNamespace string,
+	podName string,
+	timeout ...time.Duration,
+) {
+	currentTimeout, pollingInterval := helpers.GetTimeouts(timeout...)
+
+	p.Gomega.Eventually(func(g gomega.Gomega) {
+		pod, err := p.clusterContext.Clientset.CoreV1().Pods(podNamespace).Get(ctx, podName, metav1.GetOptions{})
+		g.Expect(err).NotTo(gomega.HaveOccurred(), "Failed to get pod")
+		for _, container := range pod.Status.ContainerStatuses {
+			g.Expect(container.Ready).To(gomega.BeTrue(), "Container should be ready")
+			return
+		}
+		g.Expect(fmt.Sprintf("Waiting for pod %s in namespace %s to be ready", podName, podNamespace)).To(gomega.BeTrue())
+	}).
+		WithTimeout(currentTimeout).
+		WithPolling(pollingInterval).
+		Should(gomega.Succeed(), fmt.Sprintf("Pod %s in namespace %s should be ready", podName, podNamespace))
+}
+
 // EventuallyPodsRunning asserts that eventually all pods matching the given ListOptions are in the PodRunning state
 func (p *Provider) EventuallyPodsRunning(
 	ctx context.Context,
