@@ -118,10 +118,7 @@ var _ = BeforeSuite(func() {
 	err = controller.NewBaseGatewayController(ctx, controller.GatewayConfig{
 		Mgr:            mgr,
 		ControllerName: gatewayControllerName,
-		OurGateway: func(gw *apiv1.Gateway) bool {
-			return gwClasses.Has(string(gw.Spec.GatewayClassName))
-		},
-		AutoProvision: true,
+		AutoProvision:  true,
 	})
 	Expect(err).ToNot(HaveOccurred())
 
