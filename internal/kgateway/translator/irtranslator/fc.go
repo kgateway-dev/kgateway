@@ -94,6 +94,7 @@ func (h *filterChainTranslator) initFilterChain(ctx context.Context, fcc ir.Filt
 
 	return fc
 }
+
 func (h *filterChainTranslator) computeHttpFilters(ctx context.Context, l ir.HttpFilterChainIR, reporter reports.ListenerReporter) []*envoy_config_listener_v3.Filter {
 	log := contextutils.LoggerFrom(ctx).Desugar()
 
@@ -118,7 +119,7 @@ func (n *filterChainTranslator) computeNetworkFiltersForHttp(ctx context.Context
 		reporter:        reporter,
 		gateway:         n.gateway, // corresponds to Gateway API listener
 	}
-	networkFilters := sortNetworkFilters(n.computePreHCMFilters(ctx, l, reporter))
+	networkFilters := sortNetworkFilters(n.computeCustomFilters(ctx, l.CustomNetworkFilters, reporter))
 	networkFilter, err := hcm.computeNetworkFilters(ctx, l)
 	if err != nil {
 		return nil, err
@@ -127,7 +128,14 @@ func (n *filterChainTranslator) computeNetworkFiltersForHttp(ctx context.Context
 	return networkFilters, nil
 }
 
-func (n *filterChainTranslator) computePreHCMFilters(ctx context.Context, l ir.HttpFilterChainIR, reporter reports.ListenerReporter) []plugins.StagedNetworkFilter {
+// computeCustomFilters computes all custom filters, first from plugins, second
+// from embedded filters on the FilterChain itself.
+// For HTTP FilterChains these must be added before HCM.
+func (n *filterChainTranslator) computeCustomFilters(
+	ctx context.Context,
+	customNetworkFilters []ir.CustomEnvoyFilter,
+	reporter reports.ListenerReporter,
+) []plugins.StagedNetworkFilter {
 	var networkFilters []plugins.StagedNetworkFilter
 	// Process the network filters.
 	for _, plug := range n.PluginPass {
@@ -149,7 +157,7 @@ func (n *filterChainTranslator) computePreHCMFilters(ctx context.Context, l ir.H
 			networkFilters = append(networkFilters, nf)
 		}
 	}
-	networkFilters = append(networkFilters, convertCustomNetworkFilters(l.CustomNetworkFilters)...)
+	networkFilters = append(networkFilters, convertCustomNetworkFilters(customNetworkFilters)...)
 	return networkFilters
 }
 
@@ -341,7 +349,7 @@ func sortHttpFilters(filters plugins.StagedHttpFilterList) []*envoyhttp.HttpFilt
 }
 
 func (h *filterChainTranslator) computeTcpFilters(ctx context.Context, l ir.TcpIR, reporter reports.ListenerReporter) []*envoy_config_listener_v3.Filter {
-	networkFilters := sortNetworkFilters(h.computeNetworkFiltersForTcp(l))
+	networkFilters := sortNetworkFilters(h.computeCustomFilters(ctx, l.CustomNetworkFilters, reporter))
 
 	cfg := &envoytcp.TcpProxy{
 		StatPrefix: l.FilterChainName,
@@ -370,28 +378,6 @@ func (h *filterChainTranslator) computeTcpFilters(ctx context.Context, l ir.TcpI
 	tcpFilter, _ := NewFilterWithTypedConfig(wellknown.TCPProxy, cfg)
 
 	return append(networkFilters, tcpFilter)
-}
-
-func (t *filterChainTranslator) computeNetworkFiltersForTcp(l ir.TcpIR) []plugins.StagedNetworkFilter {
-	var networkFilters []plugins.StagedNetworkFilter
-	// Process the network filters.
-	//for _, plug := range t.networkPlugins {
-	//	stagedFilters, err := plug.NetworkFiltersTCP(params, t.listener)
-	//	if err != nil {
-	//		validation.AppendTCPListenerError(t.report, validationapi.TcpListenerReport_Error_ProcessingError, err.Error())
-	//	}
-	//
-	//	for _, nf := range stagedFilters {
-	//		if nf.Filter == nil {
-	//			log.Warnf("plugin %v implements NetworkFilters() but returned nil", plug.Name())
-	//			continue
-	//		}
-	//		networkFilters = append(networkFilters, nf)
-	//	}
-	//}
-
-	networkFilters = append(networkFilters, convertCustomNetworkFilters(l.CustomNetworkFilters)...)
-	return networkFilters
 }
 
 func NewFilterWithTypedConfig(name string, config proto.Message) (*envoy_config_listener_v3.Filter, error) {
@@ -488,6 +474,7 @@ func (info *FilterChainInfo) toTransportSocket() *envoy_config_core_v3.Transport
 		ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{TypedConfig: typedConfig},
 	}
 }
+
 func bytesDataSource(s []byte) *envoy_config_core_v3.DataSource {
 	return &envoy_config_core_v3.DataSource{
 		Specifier: &envoy_config_core_v3.DataSource_InlineBytes{
