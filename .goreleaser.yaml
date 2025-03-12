@@ -136,6 +136,9 @@ dockers:
     build_flag_templates:
       - "--pull"
       - "--build-arg=AI_EXTENSION_DIR=/python"
+    extra_files:
+      - python/requirements.txt
+      - python/ai_extension
   - image_templates:
       - &ai_extensions_amd_image "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.AI_EXTENSION_IMAGE_REPO }}:{{ .Env.VERSION }}-amd64"
     use: buildx
@@ -145,6 +148,9 @@ dockers:
     build_flag_templates:
       - "--pull"
       - "--build-arg=AI_EXTENSION_DIR=/python"
+    extra_files:
+      - python/requirements.txt
+      - python/ai_extension
 docker_manifests:
   - name_template: "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.CONTROLLER_IMAGE_REPO }}:{{ .Env.VERSION }}"
     image_templates:
