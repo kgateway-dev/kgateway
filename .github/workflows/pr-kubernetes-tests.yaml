@@ -29,14 +29,14 @@ jobs:
         # March 12, 2025: 13 minutes
         - cluster-name: 'cluster-one'
           go-test-args: '-v -timeout=25m'
-          go-test-run-regex: '^TestKgateway$$/^BasicRouting$$|^TestKgateway$$/^HTTPRouteServices$$|^TestKgateway$$/^TCPRouteServices$$|^TestKgateway$$/^TLSRouteServices$$'
+          go-test-run-regex: '^TestKgateway$$/^BasicRouting$$|^TestKgateway$$/^HTTPRouteServices$$|^TestKgateway$$/^TLSRouteServices$$'
           localstack: 'false'
-        # Mar 12, 2025: TODO minutes
+        # Mar 12, 2025: 3 minutes
         - cluster-name: 'cluster-two'
           go-test-args: '-v -timeout=25m'
-          go-test-run-regex: '^TestKgateway$$/^Backends$$|^TestKgateway$$/^Transforms$$|^TestKgateway$$/^BackendTLSPolicies$$'
+          go-test-run-regex: '^TestKgateway$$/^Backends$$|^TestKgateway$$/^TCPRouteServices$$|^TestKgateway$$/^Transforms$$|^TestKgateway$$/^BackendTLSPolicies$$'
           localstack: 'false'
-        # March 12, 2025: 5 minutes
+        # March 12, 2025: 7 minutes
         - cluster-name: 'cluster-three'
           go-test-args: '-v -timeout=25m'
           go-test-run-regex: '^TestKgateway$$/^Deployer$$|^TestKgateway$$/^RouteDelegation$$|^TestKgateway$$/^Lambda$$'
