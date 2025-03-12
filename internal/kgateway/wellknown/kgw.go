@@ -2,7 +2,7 @@ package wellknown
 
 import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	infextv1a1 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha1"
+	infextv1a2 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 )
@@ -17,7 +17,7 @@ func buildKgatewayGvk(kind string) schema.GroupVersionKind {
 
 func buildInferExtGvk(kind string) schema.GroupVersionKind {
 	return schema.GroupVersionKind{
-		Group:   infextv1a1.GroupVersion.Group,
+		Group:   infextv1a2.GroupVersion.Group,
 		Version: v1alpha1.GroupVersion.Version,
 		Kind:    kind,
 	}

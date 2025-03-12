@@ -22,7 +22,7 @@ import (
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-	infextv1a1 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha1"
+	infextv1a2 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
 	api "sigs.k8s.io/gateway-api/apis/v1"
 
 	gw2_v1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
@@ -1426,10 +1426,10 @@ var _ = Describe("Deployer", func() {
 
 		It("should deploy endpoint picker resources for an InferencePool", func() {
 			// Create a fake InferencePool resource.
-			pool := &infextv1a1.InferencePool{
+			pool := &infextv1a2.InferencePool{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       wellknown.InferencePoolKind,
-					APIVersion: fmt.Sprintf("%s/%s", infextv1a1.GroupVersion.Group, infextv1a1.GroupVersion.Version),
+					APIVersion: fmt.Sprintf("%s/%s", infextv1a2.GroupVersion.Group, infextv1a2.GroupVersion.Version),
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "pool1",
@@ -1514,7 +1514,7 @@ var _ = Describe("Deployer", func() {
 				"-poolName",
 				pool.Name,
 				"-v",
-				"3",
+				"4",
 				"-grpcPort",
 				"9002",
 				"-grpcHealthPort",
@@ -1537,7 +1537,7 @@ func newFakeClientWithObjs(objs ...client.Object) client.Client {
 	for _, obj := range objs {
 		gvk := obj.GetObjectKind().GroupVersionKind()
 		if gvk.Kind == wellknown.InferencePoolKind {
-			if err := infextv1a1.AddToScheme(scheme); err != nil {
+			if err := infextv1a2.AddToScheme(scheme); err != nil {
 				panic(fmt.Sprintf("failed to add InferenceExtension scheme: %v", err))
 			}
 			break

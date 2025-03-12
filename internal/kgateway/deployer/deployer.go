@@ -26,7 +26,7 @@ import (
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-	infextv1a1 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha1"
+	infextv1a2 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
 	api "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
@@ -385,7 +385,7 @@ func (d *Deployer) getValues(gw *api.Gateway, gwParam *v1alpha1.GatewayParameter
 	return vals, nil
 }
 
-func (d *Deployer) getInferExtVals(pool *infextv1a1.InferencePool) (*helmConfig, error) {
+func (d *Deployer) getInferExtVals(pool *infextv1a2.InferencePool) (*helmConfig, error) {
 	if d.inputs.InferenceExtension == nil {
 		return nil, fmt.Errorf("inference extension input not defined for deployer")
 	}
@@ -500,7 +500,7 @@ func (d *Deployer) GetObjsToDeploy(ctx context.Context, gw *api.Gateway) ([]clie
 
 // GetEndpointPickerObjs renders endpoint picker objects using the configured helm chart.
 // It builds Helm values from the given pool and renders objects required by the endpoint picker extension.
-func (d *Deployer) GetEndpointPickerObjs(pool *infextv1a1.InferencePool) ([]client.Object, error) {
+func (d *Deployer) GetEndpointPickerObjs(pool *infextv1a2.InferencePool) ([]client.Object, error) {
 	// Build the helm values for the inference extension.
 	vals, err := d.getInferExtVals(pool)
 	if err != nil {
@@ -560,7 +560,7 @@ func (d *Deployer) DeployObjs(ctx context.Context, objs []client.Object) error {
 // The deployer requires InferencePools to be finalized to remove cluster-scoped resources.
 // This can be removed if the endpoint picker no longer requires cluster-scoped resources.
 // See: https://github.com/kubernetes-sigs/gateway-api-inference-extension/issues/224 for details.
-func (d *Deployer) EnsureFinalizer(ctx context.Context, pool *infextv1a1.InferencePool) error {
+func (d *Deployer) EnsureFinalizer(ctx context.Context, pool *infextv1a2.InferencePool) error {
 	if slices.Contains(pool.Finalizers, wellknown.InferencePoolFinalizer) {
 		return nil
 	}
@@ -570,7 +570,7 @@ func (d *Deployer) EnsureFinalizer(ctx context.Context, pool *infextv1a1.Inferen
 
 // CleanupClusterScopedResources deletes the ClusterRole and ClusterRoleBinding for the given pool.
 // TODO [danehans]: EPP should use role and rolebinding RBAC: https://github.com/kubernetes-sigs/gateway-api-inference-extension/issues/224
-func (d *Deployer) CleanupClusterScopedResources(ctx context.Context, pool *infextv1a1.InferencePool) error {
+func (d *Deployer) CleanupClusterScopedResources(ctx context.Context, pool *infextv1a2.InferencePool) error {
 	// The same release name as in the Helm template.
 	releaseName := fmt.Sprintf("%s-endpoint-picker", pool.Name)
 

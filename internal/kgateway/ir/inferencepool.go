@@ -5,7 +5,7 @@ import (
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	infextv1a1 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha1"
+	infextv1a2 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
@@ -23,22 +23,22 @@ type InferencePool struct {
 }
 
 // NewInferencePool returns the internal representation of the given pool.
-func NewInferencePool(pool *infextv1a1.InferencePool) *InferencePool {
+func NewInferencePool(pool *infextv1a2.InferencePool) *InferencePool {
 	if pool == nil || pool.Spec.ExtensionRef == nil {
 		return nil
 	}
 
 	port := ServicePort{Name: "grpc", PortNum: (int32(grpcPort))}
-	if pool.Spec.ExtensionRef.TargetPortNumber != nil {
-		port.PortNum = *pool.Spec.ExtensionRef.TargetPortNumber
+	if pool.Spec.ExtensionRef.PortNumber != nil {
+		port.PortNum = int32(*pool.Spec.ExtensionRef.PortNumber)
 	}
 
 	svcIR := &Service{
 		ObjectSource: ObjectSource{
-			Group:     infextv1a1.GroupVersion.Group,
+			Group:     infextv1a2.GroupVersion.Group,
 			Kind:      wellknown.InferencePoolKind,
 			Namespace: pool.Namespace,
-			Name:      pool.Spec.ExtensionRef.Name,
+			Name:      string(pool.Spec.ExtensionRef.Name),
 		},
 		Obj:   pool,
 		Ports: []ServicePort{port},
@@ -47,7 +47,7 @@ func NewInferencePool(pool *infextv1a1.InferencePool) *InferencePool {
 	return &InferencePool{
 		ObjMeta:     pool.ObjectMeta,
 		PodSelector: convertSelector(pool.Spec.Selector),
-		TargetPort:  pool.Spec.TargetPortNumber,
+		TargetPort:  int32(pool.Spec.TargetPortNumber),
 		ConfigRef:   svcIR,
 	}
 }
@@ -74,7 +74,7 @@ func (ir *InferencePool) Equals(other any) bool {
 	})
 }
 
-func convertSelector(selector map[infextv1a1.LabelKey]infextv1a1.LabelValue) map[string]string {
+func convertSelector(selector map[infextv1a2.LabelKey]infextv1a2.LabelValue) map[string]string {
 	result := make(map[string]string, len(selector))
 	for k, v := range selector {
 		result[string(k)] = string(v)

@@ -28,9 +28,9 @@ const (
 )
 
 const (
-	InfPoolBackendTransformationFilterName = "inferencepool.backend.transformation.kgateway.io"
-	AIBackendTransformationFilterName      = "ai.backend.transformation.kgateway.io"
-	AIPolicyTransformationFilterName       = "ai.policy.transformation.kgateway.io"
-	AIExtProcFilterName                    = "ai.extproc.kgateway.io"
-	SetMetadataFilterName                  = "envoy.filters.http.set_filter_state"
+	InfPoolTransformationFilterName   = "inferencepool.backend.transformation.kgateway.io"
+	AIBackendTransformationFilterName = "ai.backend.transformation.kgateway.io"
+	AIPolicyTransformationFilterName  = "ai.policy.transformation.kgateway.io"
+	AIExtProcFilterName               = "ai.extproc.kgateway.io"
+	SetMetadataFilterName             = "envoy.filters.http.set_filter_state"
 )

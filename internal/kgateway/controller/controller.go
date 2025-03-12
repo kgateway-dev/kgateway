@@ -17,7 +17,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	infextv1a1 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha1"
+	infextv1a2 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
 	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
@@ -292,7 +292,7 @@ func (c *controllerBuilder) watchInferencePool(ctx context.Context) error {
 	}
 
 	buildr := ctrl.NewControllerManagedBy(c.cfg.Mgr).
-		For(&infextv1a1.InferencePool{}, builder.WithPredicates(
+		For(&infextv1a2.InferencePool{}, builder.WithPredicates(
 			predicate.Or(
 				predicate.AnnotationChangedPredicate{},
 				predicate.GenerationChangedPredicate{},

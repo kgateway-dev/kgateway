@@ -73,12 +73,15 @@ spec:
           - -poolName
           - {{ $endpointPicker.poolName }}
           - -v
-          - "3"
+          - "4"
           - -grpcPort
           - "9002"
           - -grpcHealthPort
           - "9003"
-        image: "registry.k8s.io/gateway-api-inference-extension/epp:v0.1.0"
+        env:
+        - name: USE_STREAMING
+          value: "false"
+        image: "registry.k8s.io/gateway-api-inference-extension/epp:v0.2.0-rc.1"
         imagePullPolicy: IfNotPresent
         ports:
           - containerPort: 9002
@@ -110,7 +113,12 @@ spec:
   selector:
     app: {{ .Release.Name }}
   ports:
-    - protocol: TCP
+    - name: grpc
+      protocol: TCP
       port: 9002
       targetPort: 9002
+    - name: metrics
+      protocol: TCP
+      port: 9090
+      targetPort: 9090
   type: ClusterIP

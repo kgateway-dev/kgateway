@@ -9,7 +9,7 @@ import (
 	"istio.io/istio/pkg/ptr"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
-	infextv1a1 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha1"
+	infextv1a2 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
@@ -703,10 +703,10 @@ func toFromBackendRef(fromns string, ref gwv1.BackendObjectReference) ir.ObjectS
 
 	// Change to the InferencePool group/kind if needed.
 	if ref.Group != nil &&
-		*ref.Group == gwv1.Group(infextv1a1.GroupVersion.Group) &&
+		*ref.Group == gwv1.Group(infextv1a2.GroupVersion.Group) &&
 		ref.Kind != nil &&
 		*ref.Kind == wellknown.InferencePoolKind {
-		ret.Group = infextv1a1.GroupVersion.Group
+		ret.Group = infextv1a2.GroupVersion.Group
 		ret.Kind = wellknown.InferencePoolKind
 	}
 

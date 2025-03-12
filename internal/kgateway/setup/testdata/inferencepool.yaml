@@ -47,7 +47,7 @@ spec:
   selector:
     app: gateway
 ---
-apiVersion: inference.networking.x-k8s.io/v1alpha1
+apiVersion: inference.networking.x-k8s.io/v1alpha2
 kind: InferencePool
 metadata:
   name: gateway-pool
@@ -58,7 +58,7 @@ spec:
     group: ""
     kind: Service
     name: gateway-pool-endpoint-picker
-    targetPortNumber: 9002
+    portNumber: 9002
   selector:
     app: gateway
   targetPortNumber: 8080

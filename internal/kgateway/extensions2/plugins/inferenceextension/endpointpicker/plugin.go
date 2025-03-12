@@ -12,13 +12,15 @@ import (
 	routev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	extprocv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_proc/v3"
 	hcmv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	tlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	upstreamsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	infextv1a1 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha1"
+	"k8s.io/apimachinery/pkg/types"
+	infextv1a2 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	extplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
@@ -31,12 +33,12 @@ import (
 
 func NewPlugin(ctx context.Context, commonCol *common.CommonCollections) extplug.Plugin {
 	poolGVR := schema.GroupVersionResource{
-		Group:    infextv1a1.GroupVersion.Group,
-		Version:  infextv1a1.GroupVersion.Version,
+		Group:    infextv1a2.GroupVersion.Group,
+		Version:  infextv1a2.GroupVersion.Version,
 		Resource: "inferencepools",
 	}
 
-	poolCol := krtutil.SetupCollectionDynamic[infextv1a1.InferencePool](
+	poolCol := krtutil.SetupCollectionDynamic[infextv1a2.InferencePool](
 		ctx,
 		commonCol.Client,
 		poolGVR,
@@ -49,15 +51,15 @@ func NewPlugin(ctx context.Context, commonCol *common.CommonCollections) extplug
 func NewPluginFromCollections(
 	ctx context.Context,
 	commonCol *common.CommonCollections,
-	poolCol krt.Collection[*infextv1a1.InferencePool],
+	poolCol krt.Collection[*infextv1a2.InferencePool],
 ) extplug.Plugin {
 	// The InferencePool group kind used by the BackendObjectIR and the ContributesBackendObjectIRs plugin.
 	gk := schema.GroupKind{
-		Group: infextv1a1.GroupVersion.Group,
+		Group: infextv1a2.GroupVersion.Group,
 		Kind:  wellknown.InferencePoolKind,
 	}
 
-	backendCol := krt.NewCollection(poolCol, func(kctx krt.HandlerContext, pool *infextv1a1.InferencePool) *ir.BackendObjectIR {
+	backendCol := krt.NewCollection(poolCol, func(kctx krt.HandlerContext, pool *infextv1a2.InferencePool) *ir.BackendObjectIR {
 		// Create a BackendObjectIR IR representation from the given InferencePool.
 		return &ir.BackendObjectIR{
 			ObjectSource: ir.ObjectSource{
@@ -74,7 +76,7 @@ func NewPluginFromCollections(
 		}
 	}, commonCol.KrtOpts.ToOptions("InferencePoolIR")...)
 
-	policyCol := krt.NewCollection(poolCol, func(krtctx krt.HandlerContext, pool *infextv1a1.InferencePool) *ir.PolicyWrapper {
+	policyCol := krt.NewCollection(poolCol, func(krtctx krt.HandlerContext, pool *infextv1a2.InferencePool) *ir.PolicyWrapper {
 		// Create a PolicyWrapper IR representation from the given InferencePool.
 		return &ir.PolicyWrapper{
 			ObjectSource: ir.ObjectSource{
@@ -108,50 +110,18 @@ func NewPluginFromCollections(
 	}
 }
 
-// processBackendObjectIR processes the given BackendObjectIR into an ORIGINAL_DST type
-// Envoy cluster.
-func processBackendObjectIR(ctx context.Context, in ir.BackendObjectIR, out *clusterv3.Cluster) {
-	// Large timeout based on upstream working config. See the following for additional details:
-	// https://github.com/kubernetes-sigs/gateway-api-inference-extension/blob/v0.1.0/test/testdata/envoy.yaml
-	out.ConnectTimeout = durationpb.New(1000 * time.Second)
-
-	// Set the cluster type to ORIGINAL_DST.
-	out.ClusterDiscoveryType = &clusterv3.Cluster_Type{
-		Type: clusterv3.Cluster_ORIGINAL_DST,
-	}
-	out.LbPolicy = clusterv3.Cluster_CLUSTER_PROVIDED
-
-	// Use the headers added by the endpoint picker extension.
-	out.LbConfig = &clusterv3.Cluster_OriginalDstLbConfig_{
-		OriginalDstLbConfig: &clusterv3.Cluster_OriginalDstLbConfig{
-			UseHttpHeader:  true,
-			HttpHeaderName: "x-gateway-destination-endpoint",
-		},
-	}
-
-	// Circuit breakers based on upstream working config.
-	out.CircuitBreakers = &clusterv3.CircuitBreakers{
-		Thresholds: []*clusterv3.CircuitBreakers_Thresholds{
-			{
-				MaxConnections:     wrapperspb.UInt32(40000),
-				MaxPendingRequests: wrapperspb.UInt32(40000),
-				MaxRequests:        wrapperspb.UInt32(40000),
-			},
-		},
-	}
-
-	out.Name = clusterNameOriginalDst(in.Name, in.Namespace)
-}
-
 // endpointPickerPass implements ir.ProxyTranslationPass. It collects any references
 // to InferencePools, and returns the “ext_proc” cluster (STRICT_DNS), ext_proc filter,
 // and overrides (per-route ext_proc cluster name, etc).
 type endpointPickerPass struct {
-	usedPool *ir.InferencePool
+	// Instead of a single pool, store multiple pools keyed by NamespacedName.
+	usedPools map[types.NamespacedName]*ir.InferencePool
 }
 
 func newEndpointPickerPass(ctx context.Context, tctx ir.GwTranslationCtx) ir.ProxyTranslationPass {
-	return &endpointPickerPass{}
+	return &endpointPickerPass{
+		usedPools: make(map[types.NamespacedName]*ir.InferencePool),
+	}
 }
 
 func (p *endpointPickerPass) Name() string {
@@ -161,26 +131,33 @@ func (p *endpointPickerPass) Name() string {
 // No-op for these standard translation pass methods.
 func (p *endpointPickerPass) ApplyListenerPlugin(ctx context.Context, lctx *ir.ListenerContext, out *listenerv3.Listener) {
 }
+
 func (p *endpointPickerPass) ApplyHCM(ctx context.Context, hctx *ir.HcmContext, out *hcmv3.HttpConnectionManager) error {
 	return nil
 }
+
 func (p *endpointPickerPass) NetworkFilters(ctx context.Context) ([]plugins.StagedNetworkFilter, error) {
 	return nil, nil
 }
+
 func (p *endpointPickerPass) UpstreamHttpFilters(ctx context.Context) ([]plugins.StagedUpstreamHttpFilter, error) {
 	return nil, nil
 }
+
 func (p *endpointPickerPass) ApplyVhostPlugin(ctx context.Context, vctx *ir.VirtualHostContext, out *routev3.VirtualHost) {
 }
+
 func (p *endpointPickerPass) ApplyForRoute(ctx context.Context, rctx *ir.RouteContext, out *routev3.Route) error {
 	return nil
 }
+
 func (p *endpointPickerPass) ApplyRouteConfigPlugin(
 	ctx context.Context,
 	pCtx *ir.RouteConfigContext,
 	out *routev3.RouteConfiguration,
 ) {
 }
+
 func (p *endpointPickerPass) ApplyForRouteBackend(
 	ctx context.Context,
 	policy ir.PolicyIR,
@@ -189,7 +166,7 @@ func (p *endpointPickerPass) ApplyForRouteBackend(
 	return nil
 }
 
-// ApplyForBackend updates the Envoy route configuration for an InferencePool-backed HTTP route.
+// ApplyForBackend updates the Envoy route for each InferencePool-backed HTTPRoute.
 func (p *endpointPickerPass) ApplyForBackend(
 	ctx context.Context,
 	pCtx *ir.RouteBackendContext,
@@ -200,23 +177,32 @@ func (p *endpointPickerPass) ApplyForBackend(
 		return nil
 	}
 
-	// Store the pool to build clusters in ResourcesToAdd.
-	irPool := pCtx.Backend.ObjIr.(*ir.InferencePool)
-	p.usedPool = irPool
+	// Ensure the backend object is an InferencePool.
+	irPool, ok := pCtx.Backend.ObjIr.(*ir.InferencePool)
+	if !ok || irPool == nil {
+		return nil
+	}
 
-	// Initialize the route action if unset.
+	// Store this pool in our map, keyed by NamespacedName.
+	nn := types.NamespacedName{
+		Namespace: irPool.ObjMeta.GetNamespace(),
+		Name:      irPool.ObjMeta.GetName(),
+	}
+	p.usedPools[nn] = irPool
+
+	// Ensure RouteAction is initialized.
 	if out.GetRoute() == nil {
 		out.Action = &routev3.Route_Route{
 			Route: &routev3.RouteAction{},
 		}
 	}
 
-	// Override the route's cluster to point to the ORIGINAL_DST cluster.
+	// Point the route to the ORIGINAL_DST cluster for this pool.
 	out.GetRoute().ClusterSpecifier = &routev3.RouteAction_Cluster{
 		Cluster: clusterNameOriginalDst(irPool.ObjMeta.GetName(), irPool.ObjMeta.GetNamespace()),
 	}
 
-	// Create the ext_proc per-route override
+	// Build the route-level ext_proc override that points to this pool's ext_proc cluster.
 	override := &extprocv3.ExtProcPerRoute{
 		Override: &extprocv3.ExtProcPerRoute_Overrides{
 			Overrides: &extprocv3.ExtProcOverrides{
@@ -239,75 +225,121 @@ func (p *endpointPickerPass) ApplyForBackend(
 		},
 	}
 
-	// Attach to typed_per_filter_config, referencing the same filter name used in the HCM.
-	pCtx.AddTypedConfig(wellknown.InfPoolBackendTransformationFilterName, override)
+	// Attach per-route override to typed_per_filter_config.
+	pCtx.AddTypedConfig(wellknown.InfPoolTransformationFilterName, override)
 
 	return nil
 }
 
-// HttpFilters inserts one ext_proc filter at the top-level.
+// HttpFilters inserts one ext_proc filter per used InferencePool.
 func (p *endpointPickerPass) HttpFilters(ctx context.Context, fc ir.FilterChainCommon) ([]plugins.StagedHttpFilter, error) {
-	if p == nil || p.usedPool == nil || p.usedPool.ConfigRef == nil {
+	if p == nil || len(p.usedPools) == 0 {
 		return nil, nil
 	}
 
-	pool := p.usedPool
-	clusterName := clusterNameExtProc(pool.ObjMeta.GetName(), pool.ObjMeta.GetNamespace())
-	authority := fmt.Sprintf("%s.%s:%d", pool.ConfigRef.Name, pool.ObjMeta.Namespace, pool.ConfigRef.Ports[0].PortNum)
-
-	return addExtProcHTTPFilter(clusterName, authority)
-}
-
-// addExtProcHTTPFilter returns a top-level ext_proc filter that references
-// the cluster built in ResourcesToAdd(). This filter gets placed in the HCM's http_filters array.
-func addExtProcHTTPFilter(clusterName, authority string) ([]plugins.StagedHttpFilter, error) {
 	var filters []plugins.StagedHttpFilter
 
-	// This is the top-level ext_proc filter config
-	extProcSettings := &extprocv3.ExternalProcessor{
-		GrpcService: &corev3.GrpcService{
-			TargetSpecifier: &corev3.GrpcService_EnvoyGrpc_{
-				EnvoyGrpc: &corev3.GrpcService_EnvoyGrpc{
-					ClusterName: clusterName,
-					Authority:   authority,
+	// For each used pool, create a distinct ext_proc filter referencing that pool’s cluster.
+	for _, pool := range p.usedPools {
+		if pool.ConfigRef == nil || len(pool.ConfigRef.Ports) == 0 {
+			continue
+		}
+
+		clusterName := clusterNameExtProc(pool.ObjMeta.GetName(), pool.ObjMeta.GetNamespace())
+		authority := fmt.Sprintf("%s.%s:%d",
+			pool.ConfigRef.Name,
+			pool.ObjMeta.GetNamespace(),
+			pool.ConfigRef.Ports[0].PortNum,
+		)
+
+		// Use a unique filter name per pool to avoid collisions.
+		filterName := fmt.Sprintf("%s_%s_%s",
+			wellknown.InfPoolTransformationFilterName,
+			pool.ObjMeta.GetNamespace(),
+			pool.ObjMeta.GetName(),
+		)
+
+		extProcSettings := &extprocv3.ExternalProcessor{
+			GrpcService: &corev3.GrpcService{
+				TargetSpecifier: &corev3.GrpcService_EnvoyGrpc_{
+					EnvoyGrpc: &corev3.GrpcService_EnvoyGrpc{
+						ClusterName: clusterName,
+						Authority:   authority,
+					},
 				},
 			},
-		},
-		ProcessingMode: &extprocv3.ProcessingMode{
-			RequestHeaderMode:   extprocv3.ProcessingMode_SEND,
-			RequestBodyMode:     extprocv3.ProcessingMode_BUFFERED,
-			ResponseHeaderMode:  extprocv3.ProcessingMode_SKIP,
-			RequestTrailerMode:  extprocv3.ProcessingMode_SKIP,
-			ResponseTrailerMode: extprocv3.ProcessingMode_SKIP,
-		},
-		MessageTimeout:   durationpb.New(5 * time.Second),
-		FailureModeAllow: false,
-	}
+			ProcessingMode: &extprocv3.ProcessingMode{
+				RequestHeaderMode:   extprocv3.ProcessingMode_SEND,
+				RequestBodyMode:     extprocv3.ProcessingMode_BUFFERED,
+				ResponseHeaderMode:  extprocv3.ProcessingMode_SKIP,
+				RequestTrailerMode:  extprocv3.ProcessingMode_SKIP,
+				ResponseTrailerMode: extprocv3.ProcessingMode_SKIP,
+			},
+			MessageTimeout:   durationpb.New(5 * time.Second),
+			FailureModeAllow: false,
+		}
 
-	stagedFilter, err := plugins.NewStagedFilter(
-		wellknown.InfPoolBackendTransformationFilterName, // Filters must have a unique name.
-		extProcSettings,
-		plugins.BeforeStage(plugins.RouteStage),
-	)
-	if err != nil {
-		return nil, err
+		stagedFilter, err := plugins.NewStagedFilter(
+			filterName, // must be unique
+			extProcSettings,
+			plugins.BeforeStage(plugins.RouteStage),
+		)
+		if err != nil {
+			return nil, err
+		}
+		filters = append(filters, stagedFilter)
 	}
-	filters = append(filters, stagedFilter)
 
 	return filters, nil
 }
 
-// ResourcesToAdd is called one time (per envoy proxy) and replaces GeneratedResources
-// with the returned endpoint picker ext-proc cluster.
+// ResourcesToAdd returns the ext_proc clusters for all used InferencePools.
 func (p *endpointPickerPass) ResourcesToAdd(ctx context.Context) ir.Resources {
-	if p == nil || p.usedPool == nil {
+	if p == nil || len(p.usedPools) == 0 {
 		return ir.Resources{}
 	}
-	// Build an ext-proc cluster per InferencePool
-	return ir.Resources{Clusters: []*clusterv3.Cluster{buildExtProcCluster(p.usedPool)}}
+
+	var clusters []*clusterv3.Cluster
+	for _, pool := range p.usedPools {
+		c := buildExtProcCluster(pool)
+		if c != nil {
+			clusters = append(clusters, c)
+		}
+	}
+
+	return ir.Resources{Clusters: clusters}
 }
 
-// buildExtProcCluster returns a “STRICT_DNS” cluster using the host/port from the given pool.
+// processBackendObjectIR builds the ORIGINAL_DST cluster for each InferencePool.
+func processBackendObjectIR(ctx context.Context, in ir.BackendObjectIR, out *clusterv3.Cluster) {
+	out.ConnectTimeout = durationpb.New(1000 * time.Second)
+
+	out.ClusterDiscoveryType = &clusterv3.Cluster_Type{
+		Type: clusterv3.Cluster_ORIGINAL_DST,
+	}
+
+	out.LbPolicy = clusterv3.Cluster_CLUSTER_PROVIDED
+	out.LbConfig = &clusterv3.Cluster_OriginalDstLbConfig_{
+		OriginalDstLbConfig: &clusterv3.Cluster_OriginalDstLbConfig{
+			UseHttpHeader:  true,
+			HttpHeaderName: "x-gateway-destination-endpoint",
+		},
+	}
+
+	out.CircuitBreakers = &clusterv3.CircuitBreakers{
+		Thresholds: []*clusterv3.CircuitBreakers_Thresholds{
+			{
+				MaxConnections:     wrapperspb.UInt32(40000),
+				MaxPendingRequests: wrapperspb.UInt32(40000),
+				MaxRequests:        wrapperspb.UInt32(40000),
+			},
+		},
+	}
+
+	out.Name = clusterNameOriginalDst(in.Name, in.Namespace)
+}
+
+// buildExtProcCluster builds and returns a “STRICT_DNS” cluster from the given pool.
 func buildExtProcCluster(pool *ir.InferencePool) *clusterv3.Cluster {
 	if pool == nil || pool.ConfigRef == nil || len(pool.ConfigRef.Ports) != 1 {
 		return nil
@@ -344,6 +376,21 @@ func buildExtProcCluster(pool *ir.InferencePool) *clusterv3.Cluster {
 				}},
 			}},
 		},
+		// Ensure Envoy accepts untrusted certificates.
+		TransportSocket: &corev3.TransportSocket{
+			Name: "envoy.transport_sockets.tls",
+			ConfigType: &corev3.TransportSocket_TypedConfig{
+				TypedConfig: func() *anypb.Any {
+					tlsCtx := &tlsv3.UpstreamTlsContext{
+						CommonTlsContext: &tlsv3.CommonTlsContext{
+							ValidationContextType: &tlsv3.CommonTlsContext_ValidationContext{},
+						},
+					}
+					anyTLS, _ := utils.MessageToAny(tlsCtx)
+					return anyTLS
+				}(),
+			},
+		},
 	}
 
 	http2Opts := &upstreamsv3.HttpProtocolOptions{
@@ -356,7 +403,6 @@ func buildExtProcCluster(pool *ir.InferencePool) *clusterv3.Cluster {
 		},
 	}
 
-	// Marshall the HttpProtocolOptions proto message.
 	anyHttp2, _ := utils.MessageToAny(http2Opts)
 	c.TypedExtensionProtocolOptions = map[string]*anypb.Any{
 		"envoy.extensions.upstreams.http.v3.HttpProtocolOptions": anyHttp2,
