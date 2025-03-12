@@ -135,7 +135,7 @@ dockers:
     goarch: arm64
     build_flag_templates:
       - "--pull"
-      - "--build-arg AI_EXTENSION_DIR=python"
+      - "--build-arg=AI_EXTENSION_DIR=/python"
   - image_templates:
       - &ai_extensions_amd_image "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.AI_EXTENSION_IMAGE_REPO }}:{{ .Env.VERSION }}-amd64"
     use: buildx
@@ -144,7 +144,7 @@ dockers:
     goarch: amd64
     build_flag_templates:
       - "--pull"
-      - "--build-arg AI_EXTENSION_DIR=python"
+      - "--build-arg=AI_EXTENSION_DIR=/python"
 docker_manifests:
   - name_template: "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.CONTROLLER_IMAGE_REPO }}:{{ .Env.VERSION }}"
     image_templates:
