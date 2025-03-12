@@ -58,13 +58,21 @@ func (c HttpRouteIR) Equals(in HttpRouteIR) bool {
 	// as backends resolution may change when they are added/remove we need to check equality for them as well
 	// we don't need to check the whole backend, just the cluster name (that may swap in and out of black-hole)
 	// note - if we stop setting cluster to black whole here (and always set it to the expect cluster name) we can remove the backend equality check.
-	return c.ObjectSource == in.ObjectSource && versionEquals(c.SourceObject, in.SourceObject) && c.AttachedPolicies.Equals(in.AttachedPolicies) && c.backendsEqual(in)
+	return c.ObjectSource == in.ObjectSource && versionEquals(c.SourceObject, in.SourceObject) && c.AttachedPolicies.Equals(in.AttachedPolicies) && c.rulesEqual(in)
 }
-func (c HttpRouteIR) backendsEqual(in HttpRouteIR) bool {
+func (c HttpRouteIR) rulesEqual(in HttpRouteIR) bool {
+	// we don't need to check the rules themselves as this is covered by versionEquals.
+	// we do need to check backends and policies
 	if len(c.Rules) != len(in.Rules) {
 		return false
 	}
 	for i, rule := range c.Rules {
+		if !rule.AttachedPolicies.Equals(in.Rules[i].AttachedPolicies) {
+			return false
+		}
+		if !rule.ExtensionRefs.Equals(in.Rules[i].ExtensionRefs) {
+			return false
+		}
 		backendsa := rule.Backends
 		backendsb := in.Rules[i].Backends
 		if len(backendsa) != len(backendsb) {
