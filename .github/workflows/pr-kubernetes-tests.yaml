@@ -29,17 +29,17 @@ jobs:
         # March 10, 2025: 20 minutes
         - cluster-name: 'cluster-one'
           go-test-args: '-v -timeout=25m'
-          go-test-run-regex: '^TestKgateway$$/^BasicRouting$$|^TestKgateway$$/^Deployer$$|^TestKgateway$$/^RouteDelegation$$|^TestKgateway$$/^HTTPRouteServices$$|^TestKgateway$$/^TCPRouteServices$$|^TestKgateway$$/^TLSRouteServices$$|^TestKgateway$$/^Backends$$'
+          go-test-run-regex: '^TestKgateway$$/^BasicRouting$$|^TestKgateway$$/^Deployer$$|^TestKgateway$$/^HTTPRouteServices$$|^TestKgateway$$/^TCPRouteServices$$|^TestKgateway$$/^TLSRouteServices$$'
           localstack: 'false'
         # Mar 4, 2025: TODO minutes
         - cluster-name: 'cluster-two'
           go-test-args: '-v -timeout=25m'
-          go-test-run-regex: '^TestKgateway$$/^Transforms$$|^TestKgateway$$/^BackendTLSPolicies$$'
+          go-test-run-regex: '^TestKgateway$$/^Backends$$|^TestKgateway$$/^Transforms$$|^TestKgateway$$/^BackendTLSPolicies$$'
           localstack: 'false'
         # TODO: measure minutes.
         - cluster-name: 'cluster-three'
           go-test-args: '-v -timeout=25m'
-          go-test-run-regex: '^TestKgateway$$/^Lambda$$'
+          go-test-run-regex: '^TestKgateway$$/^RouteDelegation$$|^TestKgateway$$/^Lambda$$'
           localstack: 'true'
 
 #         # Dec 4, 2024: 23 minutes
