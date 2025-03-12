@@ -64,12 +64,10 @@ spec:
 
 *****/
 
-var (
-	configMapGK = schema.GroupKind{
-		Group: "",
-		Kind:  "ConfigMap",
-	}
-)
+var configMapGK = schema.GroupKind{
+	Group: "",
+	Kind:  "ConfigMap",
+}
 
 // Our policy IR.
 type configMapIr struct {
@@ -118,7 +116,6 @@ func extractTargetRefs(cm *corev1.ConfigMap) []ir.PolicyTargetRef {
 		Kind:  "HTTPRoute",
 		Name:  cm.Annotations["targetRef"],
 	}}
-
 }
 
 // Create a collection of our policies. This will be done by converting a configmap collection
@@ -138,7 +135,7 @@ func ourPolicies(commoncol *common.CommonCollections) krt.Collection[ir.PolicyWr
 			return nil
 		}
 
-		var pol = &ir.PolicyWrapper{
+		pol := &ir.PolicyWrapper{
 			ObjectSource: ir.ObjectSource{
 				Group:     configMapGK.Group,
 				Kind:      configMapGK.Kind,
@@ -151,7 +148,6 @@ func ourPolicies(commoncol *common.CommonCollections) krt.Collection[ir.PolicyWr
 		}
 		return pol
 	}, commoncol.KrtOpts.ToOptions("MetadataPolicies")...)
-
 }
 
 // Our translation pass struct. This holds translation specific state.
@@ -212,8 +208,8 @@ func (s *ourPolicyPass) HttpFilters(ctx context.Context, fc ir.FilterChainCommon
 					},
 				},
 			},
-			plugins.BeforeStage(plugins.AcceptedStage))}, nil
-
+			plugins.BeforeStage(plugins.AcceptedStage)),
+	}, nil
 }
 
 // A function that initializes our plugins.
@@ -236,11 +232,10 @@ func pluginFactory(ctx context.Context, commoncol *common.CommonCollections) []e
 }
 
 func main() {
-
 	// TODO: move setup.StartGGv2 from internal to public.
 	// Start Kgateway and provide our plugin.
 	// This demonstrates how to start Kgateway with a custom plugin.
 	// This binary is the control plane. normally it would be packaged in a docker image and run
 	// in a k8s cluster.
-	setup.StartKgateway(context.Background(), pluginFactory, nil)
+	setup.StartKgateway(context.Background(), pluginFactory)
 }

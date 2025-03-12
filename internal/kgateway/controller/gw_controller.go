@@ -20,7 +20,6 @@ const (
 )
 
 type gatewayReconciler struct {
-	mgr           ctrl.Manager
 	cli           client.Client
 	autoProvision bool
 
