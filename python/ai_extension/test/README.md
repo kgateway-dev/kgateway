@@ -35,7 +35,7 @@ export TEST_GEMINI_BASE_URL="http://$INGRESS_GW_ADDRESS:8080/gemini"
 export TEST_VERTEX_AI_BASE_URL="http://$INGRESS_GW_ADDRESS:8080/vertex-ai"
 ```
 
-You can run the test through the command line from the `projects/ai-extension/ai_extension` directory:
+You can run the test through the command line from the `python/ai_extension` directory:
 ```bash
 python3 -m pytest -vvv --log-cli-level=DEBUG streaming.py -k=openai
 ```
