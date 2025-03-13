@@ -274,14 +274,11 @@ spec:
 		}
 
 		t.Logf("%s finished", t.Name())
-
 	})
-
 }
 
 func runScenario(t *testing.T, scenarioDir string, globalSettings *settings.Settings) {
 	setupEnvTestAndRun(t, globalSettings, func(t *testing.T, ctx context.Context, kdbg *krt.DebugHandler, client istiokube.CLIClient, xdsPort int) {
-
 		// list all yamls in test data
 		files, err := os.ReadDir(scenarioDir)
 		if err != nil {
@@ -306,7 +303,6 @@ func runScenario(t *testing.T, scenarioDir string, globalSettings *settings.Sett
 			}
 		}
 	})
-
 }
 
 func setupEnvTestAndRun(t *testing.T, globalSettings *settings.Settings, run func(t *testing.T,
