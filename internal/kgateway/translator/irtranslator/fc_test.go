@@ -98,7 +98,7 @@ func TestFilterChains(t *testing.T) {
 	)
 
 	expectedChainCount := len(listener.HttpFilterChain) + len(listener.TcpFilterChain)
-	if len(envoyListener.FilterChains) == expectedChainCount {
+	if len(envoyListener.FilterChains) != expectedChainCount {
 		t.Fatal("got", len(envoyListener.FilterChains), "Envoy filter chains, but wanted", expectedChainCount)
 	}
 
