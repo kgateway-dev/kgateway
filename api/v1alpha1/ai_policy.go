@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	"github.com/google/go-cmp/cmp"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
@@ -38,10 +39,7 @@ func (in *AIRoutePolicy) Equals(ai *AIRoutePolicy) bool {
 	}
 
 	// Compare RouteType
-	if (in.RouteType == nil) != (ai.RouteType == nil) {
-		return false
-	}
-	if in.RouteType != nil && *in.RouteType != *ai.RouteType {
+	if !cmp.Equal(in.RouteType, ai.RouteType) {
 		return false
 	}
 

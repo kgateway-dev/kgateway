@@ -57,7 +57,7 @@ func (s *tsuite) SetupSuite() {
 	s.manifests = map[string][]string{
 		"TestRouting":            {commonManifest, backendManifest, routesBasicManifest},
 		"TestRoutingPassthrough": {commonManifest, backendPassthroughManifest, routesBasicManifest},
-		"TestStreaming":          {commonManifest, backendManifest, routesWithExtensionManifest, routeOptionStreamingManifest},
+		"TestStreaming":          {commonManifest, backendManifest, routeOptionStreamingManifest, routesWithExtensionManifest},
 	}
 }
 
@@ -96,6 +96,7 @@ func (s *tsuite) AfterTest(suiteName, testName string) {
 		s.testInst.PreFailHandler(s.ctx)
 	}
 	manifests := s.manifests[testName]
+	fmt.Printf("Deleting manifests for test %s in suite %s", testName, suiteName)
 	for _, manifest := range manifests {
 		err := s.testInst.Actions.Kubectl().DeleteFileSafe(s.ctx, manifest)
 		s.Require().NoError(err)
@@ -123,7 +124,7 @@ func (s *tsuite) invokePytest(test string, extraEnv ...string) {
 	gwURL := s.getGatewayURL()
 	logLevel := os.Getenv("TEST_PYTHON_LOG_LEVEL")
 	if logLevel == "" {
-		logLevel = "INFO"
+		logLevel = "DEBUG"
 	}
 
 	args := []string{"-m", "pytest", test, "-vvv", "--log-cli-level=" + logLevel}

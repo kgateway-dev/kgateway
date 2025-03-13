@@ -25,14 +25,16 @@ type MockResponse struct {
 }
 
 var mockData = map[string]MockResponse{
+	// Non streaming:
 	"793764f12a5e331ae08cecab749a022c23867d03c9db18cf00fc4dd1dc89f132": {FilePath: "mocks/routing/azure_non_streaming.json", IsGzip: false},
-	"dfb4094b64f15e250490d4f6f8a3163c840b4cff09f0c282d41765f0a1d8a7f5": {FilePath: "mocks/routing/openai_non_streaming.json", IsGzip: false},
+	"dfb4094b64f15e250490d4f6f8a3163c840b4cff09f0c282d41765f0a1d8a7f5": {FilePath: "mocks/routing/openai_non_streaming.txt.gz", IsGzip: true},
 	"c9c34d39cb0af7ef19530a58aae8557d951fb1eef1fcaf2b65583cb823ca47a2": {FilePath: "mocks/routing/gemini_non_streaming.json", IsGzip: false},
 	"6be80eb5071d90b7aafefc1e2f11d045acec300c1c71e6bbfce415bb3ede0abd": {FilePath: "mocks/routing/vertex_ai_non_streaming.json", IsGzip: false},
+	// Streaming:
 	"daa5badeb5cfabcb85b36bb0d6d8daa2a63536329f3c48e654137a6b3dc8c3d6": {FilePath: "mocks/streaming/azure_streaming.txt", IsGzip: false},
 	"0e065e8eedf476d066f55668fadb4626ee47fb6452baaadf636366866c2582bf": {FilePath: "mocks/streaming/openai_streaming.txt", IsGzip: false},
-	"3cfe127aeb62bea0bd5f716e2cb41cde7ee716f10253fdaa5ce635e112396e86": {FilePath: "mocks/streaming/gemini_streaming.txt", IsGzip: false},
-	"932f03e0388bfffb32732bf96e2aa76f31967c8e8f073ed835092c2e1146cfa6": {FilePath: "mocks/streaming/vertex_ai_streaming.txt", IsGzip: false},
+	"3c8b0bd3db97733f4a4f1a4214f392b6193577a69da5e908f3d16a74b369024e": {FilePath: "mocks/streaming/gemini_streaming.txt", IsGzip: false},
+	"15044ae8bdb808e1a5cd1aff384464ad5ed9d25f164261b4ea3c287c2153d9e8": {FilePath: "mocks/streaming/vertex_ai_streaming.txt", IsGzip: false},
 }
 
 func getJSONHash(data map[string]interface{}, provider string, stream bool) string {
@@ -60,7 +62,6 @@ func generateSSEStream(c *gin.Context, filePath string) {
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		c.SSEvent("", scanner.Text())
-		time.Sleep(100 * time.Millisecond) // Simulate delay between chunks
 	}
 }
 
@@ -79,6 +80,7 @@ func handleModelResponse(c *gin.Context, requestData map[string]interface{}, pro
 		}
 		c.File(response.FilePath)
 	} else {
+		fmt.Errorf("Mock response not found for data: %v, hash: %s\n", requestData, hash)
 		c.JSON(http.StatusNotFound, gin.H{"message": "Mock response not found"})
 	}
 }

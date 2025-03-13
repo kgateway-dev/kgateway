@@ -78,7 +78,7 @@ func bootstrapEnv(
 	vertexAITokenStr := "fake-vertex-ai-token"
 
 	secretsMap := map[string]map[string]string{
-		"openai-secret":    {"Authorization": "Bearer " + openaiKey},
+		"openai-secret":    {"Authorization": openaiKey},
 		"azure-secret":     {"Authorization": azureOpenAiKey},
 		"gemini-secret":    {"Authorization": geminiKey},
 		"vertex-ai-secret": {"Authorization": vertexAITokenStr},

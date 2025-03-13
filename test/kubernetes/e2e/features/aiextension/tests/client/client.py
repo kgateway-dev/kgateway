@@ -32,7 +32,7 @@ class PassthroughCredentials(credentials.Credentials):
 
     def before_request(self, request, method, url, headers):
         # Passthrough the before_request functionality
-        headers["Authorization"] = f"Bearer {os.environ.get('VERTEX_AI_API_KEY', '')}"
+        headers["Authorization"] = f"Bearer passthrough-vertex-ai-key"
 
 
 TEST_OPENAI_BASE_URL = os.environ.get("TEST_OPENAI_BASE_URL", "")
@@ -45,18 +45,19 @@ passthrough = os.environ.get("TEST_TOKEN_PASSTHROUGH", "false").lower() == "true
 
 class LLMClient:
     openai_client = OpenAI(
-        api_key="fake-openai-key" if passthrough else "FAKE",
+        api_key="passthrough-openai-key" if passthrough else "FAKE",
         base_url=TEST_OPENAI_BASE_URL,
+        max_retries=10,
     )
     azure_openai_client = AzureOpenAI(
-        api_key=("fake-azure-openai-key" if passthrough else "FAKE"),
+        api_key=("passthrough-azure-openai-key" if passthrough else "FAKE"),
         base_url=TEST_AZURE_OPENAI_BASE_URL,
         max_retries=10,
         api_version="2024-02-15-preview",
     )
 
     genai.configure(
-        api_key=("fake-gemini-key" if passthrough else "FAKE"),
+        api_key=("passthrough-gemini-key" if passthrough else "FAKE"),
         client_options={"api_endpoint": TEST_GEMINI_BASE_URL},
         transport="rest",
     )
@@ -67,7 +68,7 @@ class LLMClient:
         location="us-central1",
         api_endpoint=TEST_VERTEX_AI_BASE_URL,
         api_transport="rest",
-        api_key=("fake-vertex-ai-key" if passthrough else "FAKE"),
+        api_key=("passthrough-vertex-ai-key" if passthrough else "FAKE"),
         credentials=PassthroughCredentials() if passthrough else FakeCredentials(),
     )
     vertex_ai_client = GenerativeModel("gemini-1.5-flash-001")
