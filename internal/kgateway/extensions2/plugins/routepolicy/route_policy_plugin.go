@@ -51,7 +51,7 @@ type ExtprocIR struct {
 	Name string
 	// BackendRef *envoy_config_route_v3.Route_Route
 	// Extproc    *v1alpha1.ExtProcPolicy
-	ExtProc *envoy_ext_proc_v3.ExternalProcessor
+	ExtProc *envoy_ext_proc_v3.ExtProcPerRoute
 }
 
 type routeSpecIr struct {
@@ -83,6 +83,10 @@ func (d *routePolicy) Equals(in any) bool {
 		return false
 	}
 
+	if !proto.Equal(d.ExtProc.ExtProc, d2.ExtProc.ExtProc) {
+		return false
+	}
+
 	return true
 }
 
@@ -91,20 +95,19 @@ type routePolicyPluginGwPass struct {
 	// TODO(nfuden): dont abuse httplevel filter in favor of route level
 	rustformationStash map[string]string
 	ir.UnimplementedProxyTranslationPass
-	setAIFilter bool
-	// extprocConfig []*envoy_ext_proc_v3.ExternalProcessor // could have list of backend, name, and config
-	// extprocStage  *v1alpha1.FilterStage
+	setAIFilter      bool
+	setExtprocFilter bool
 }
 
 func (p *routePolicyPluginGwPass) ApplyHCM(ctx context.Context, pCtx *ir.HcmContext, out *envoyhttp.HttpConnectionManager) error {
-	routePolicy := pCtx.Policy.(*routePolicy)
-	if routePolicy.ExtProc != nil {
-		extprocFilters, err := ExtprocHCMFilter(routePolicy.ExtProc)
-		if err != nil {
-			return err
-		}
-		out.HttpFilters = append(out.GetHttpFilters(), extprocFilters)
-	}
+	// routePolicy := pCtx.Policy.(*routePolicy)
+	// if routePolicy.ExtProc != nil {
+	// 	extprocFilters, err := ExtprocHCMFilter(routePolicy.ExtProc)
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// 	out.HttpFilters = append(out.GetHttpFilters(), extprocFilters)
+	// }
 	return nil
 }
 
@@ -228,7 +231,7 @@ func (p *routePolicyPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.Ro
 					TransformationTemplate: &transformationpb.TransformationTemplate{
 						ParseBodyBehavior: transformationpb.TransformationTemplate_DontParse, // Default is to try for JSON... Its kinda nice but failure is bad...
 						DynamicMetadataValues: []*transformationpb.TransformationTemplate_DynamicMetadataValue{
-							&transformationpb.TransformationTemplate_DynamicMetadataValue{
+							{
 								MetadataNamespace: "kgateway",
 								Key:               "route",
 								Value: &transformationpb.InjaTemplate{
@@ -290,14 +293,15 @@ func (p *routePolicyPluginGwPass) ApplyForRouteBackend( //Apply for route policy
 		return nil
 	}
 	if rtPolicy.ExtProc != nil {
-		enableExtprocFilter(pCtx, rtPolicy.ExtProc.Name)
+		p.setExtprocFilter = true // So that HttpFilters will add the filter
+		pCtx.AddTypedConfig(wellknown.ExtprocFilterName, rtPolicy.ExtProc.ExtProc)
 	}
 
-	extprocSettingsProto := pCtx.GetTypedConfig(wellknown.AIExtProcFilterName)
-	if extprocSettingsProto == nil {
+	aiExtprocSettingsProto := pCtx.GetTypedConfig(wellknown.AIExtProcFilterName)
+	if aiExtprocSettingsProto == nil {
 		return nil
 	}
-	extprocSettings, ok := extprocSettingsProto.(*envoy_ext_proc_v3.ExtProcPerRoute)
+	extprocSettings, ok := aiExtprocSettingsProto.(*envoy_ext_proc_v3.ExtProcPerRoute)
 	if !ok {
 		// TODO: internal error
 		return nil
@@ -309,9 +313,6 @@ func (p *routePolicyPluginGwPass) ApplyForRouteBackend( //Apply for route policy
 		return err
 	}
 
-	// policy has override
-	// pCtx.AddTypedConfig(wellknown.ExtProcFilterName, extprocSettings)
-	// marshelling will happen for you
 	return nil
 }
 
@@ -321,17 +322,13 @@ func (p *routePolicyPluginGwPass) ApplyForRouteBackend( //Apply for route policy
 func (p *routePolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.FilterChainCommon) ([]plugins.StagedHttpFilter, error) {
 	filters := []plugins.StagedHttpFilter{}
 	// add empty extproc filter
-	// if condition
-	extprocFilter := plugins.MustNewStagedFilter(
-		wellknown.ExtprocFilterName,
-		&envoy_ext_proc_v3.ExternalProcessor{},
-		plugins.FilterStage[plugins.WellKnownFilterStage]{
-			RelativeTo: plugins.WellKnownFilterStage(plugins.AuthZStage),
-			Weight:     1,
-		},
-	)
-
-	filters = append(filters, extprocFilter)
+	if p.setExtprocFilter {
+		extprocFilters, err := AddExtprocHTTPFilter()
+		if err != nil {
+			return nil, err
+		}
+		filters = append(filters, extprocFilters...)
+	}
 
 	if p.setTransformationInChain {
 		// TODO(nfuden): support stages such as early
@@ -407,7 +404,7 @@ func buildTranslateFunc(ctx context.Context, secrets *krtcollections.SecretIndex
 		transformationForSpec(policyCR.Spec, &outSpec)
 
 		if policyCR.Spec.ExtProc != nil {
-			extproc, err := toEnvoyExtProc(policyCR.Spec.ExtProc, krtctx, commoncol, objSrc)
+			extproc, err := toEnvoyExtProcPerRoute(policyCR.Spec.ExtProc, krtctx, commoncol, objSrc)
 			if err != nil {
 				return nil, err
 			}

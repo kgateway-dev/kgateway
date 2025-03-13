@@ -198,21 +198,11 @@ func (h *hcmNetworkFilterTranslator) computeNetworkFilters(ctx context.Context, 
 
 	pass := h.PluginPass
 
-	extensionRefs := []ir.AttachedPolicies{}
-	for _, vhost := range l.Vhosts {
-		for _, rule := range vhost.Rules {
-			for _, backend := range rule.Backends {
-				extensionRefs = append(extensionRefs, backend.AttachedPolicies)
-			}
-		}
-	}
-
 	// 3. Allow any HCM plugins to make their changes, with respect to any changes the core plugin made
 	attachedPoliciesSlice := []ir.AttachedPolicies{
 		h.gateway.AttachedHttpPolicies,
 		l.AttachedPolicies,
 	}
-	attachedPoliciesSlice = append(attachedPoliciesSlice, extensionRefs...)
 	for _, attachedPolicies := range attachedPoliciesSlice {
 		for gk, pols := range attachedPolicies.Policies {
 			pass := pass[gk]

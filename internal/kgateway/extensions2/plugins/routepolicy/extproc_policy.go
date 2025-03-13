@@ -13,27 +13,68 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
 
-// func AddExtprocHTTPFilter(extProcConfig *envoy_ext_proc_v3.ExternalProcessor, stage *v1alpha1.FilterStage) ([]plugins.StagedHttpFilter, error) {
-// 	if stage == nil {
-// 		return nil, errors.New("filter stage is required")
-// 	}
-// 	extprocFilter, err := plugins.NewStagedFilter(
-// 		filterName(wellknown.ExtprocFilterName),
-// 		extProcConfig,
-// 		plugins.FilterStage[plugins.WellKnownFilterStage]{
-// 			RelativeTo: plugins.WellKnownFilterStage(stage.Stage),
-// 			Weight:     int(stage.Predicate),
-// 		},
-// 	)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	return []plugins.StagedHttpFilter{extprocFilter}, nil
-// }
+func AddExtprocHTTPFilter() ([]plugins.StagedHttpFilter, error) {
+	extprocFilter, err := plugins.NewStagedFilter(
+		wellknown.ExtprocFilterName,
+		&envoy_ext_proc_v3.ExternalProcessor{
+			GrpcService: &envoy_config_core_v3.GrpcService{
+				TargetSpecifier: &envoy_config_core_v3.GrpcService_EnvoyGrpc_{
+					EnvoyGrpc: &envoy_config_core_v3.GrpcService_EnvoyGrpc{
+						ClusterName: "blackhole",
+					},
+				},
+			},
+		},
+		plugins.AfterStage(plugins.WellKnownFilterStage(plugins.AuthZStage)),
+	)
+	if err != nil {
+		return nil, err
+	}
+	return []plugins.StagedHttpFilter{extprocFilter}, nil
+}
+
+func toEnvoyExtProcPerRoute(
+	extprocConfig *v1alpha1.ExtProcPolicy,
+	krtctx krt.HandlerContext,
+	commoncol *common.CommonCollections,
+	parentSrc ir.ObjectSource,
+) (*envoy_ext_proc_v3.ExtProcPerRoute, error) {
+	backend, err := commoncol.Backends.GetBackendFromRef(krtctx, parentSrc, extprocConfig.GrpcService.BackendRef.BackendObjectReference)
+	if err != nil {
+		// return nil, err
+		fmt.Println("error getting backend", err)
+		return nil, err
+	}
+	envoyGrpcService := &envoy_config_core_v3.GrpcService{
+		TargetSpecifier: &envoy_config_core_v3.GrpcService_EnvoyGrpc_{
+			EnvoyGrpc: &envoy_config_core_v3.GrpcService_EnvoyGrpc{
+				ClusterName: backend.ClusterName(),
+			},
+		},
+	}
+	if extprocConfig.GrpcService.Authority != nil {
+		envoyGrpcService.GetEnvoyGrpc().Authority = *extprocConfig.GrpcService.Authority
+	}
+
+	extProcPerRoute := &envoy_ext_proc_v3.ExtProcOverrides{
+		GrpcService: envoyGrpcService,
+	}
+
+	if extprocConfig.ProcessingMode != nil {
+		extProcPerRoute.ProcessingMode = ToEnvoyProcessingMode(extprocConfig.ProcessingMode)
+	}
+
+	return &envoy_ext_proc_v3.ExtProcPerRoute{
+		Override: &envoy_ext_proc_v3.ExtProcPerRoute_Overrides{
+			Overrides: extProcPerRoute,
+		},
+	}, nil
+}
 
 // func enableExtprocFilter(pCtx *ir.RouteContext) {
 // 	extProc := &
@@ -70,7 +111,7 @@ func filterName(name string) string {
 	return fmt.Sprintf("%s/%s", wellknown.ExtprocFilterName, name) // dont need
 }
 
-// all we really need is the backend
+// toEnvoyExtProc converts an ExtProcPolicy to an ExternalProcessor
 func toEnvoyExtProc(
 	extprocConfig *v1alpha1.ExtProcPolicy,
 	krtctx krt.HandlerContext,
