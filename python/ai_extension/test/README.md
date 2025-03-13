@@ -37,8 +37,5 @@ export TEST_VERTEX_AI_BASE_URL="http://$INGRESS_GW_ADDRESS:8080/vertex-ai"
 
 You can run the test through the command line from the `python/ai_extension` directory:
 ```bash
-python3 -m pytest -vvv --log-cli-level=DEBUG streaming.py -k=openai
+python3 -m pytest -vvv --log-cli-level=DEBUG test/test_server.py
 ```
-
-Where the `-k` flag is used to specify which test to run based on the name of the test.
-

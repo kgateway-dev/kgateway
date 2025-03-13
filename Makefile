@@ -362,7 +362,6 @@ export AI_EXTENSION_IMAGE_REPO ?= kgateway-ai-extension
 .PHONY: kgateway-ai-extension-docker
 kgateway-ai-extension-docker:
 	docker buildx build $(LOAD_OR_PUSH) $(DOCKER_BUILD_ARGS_AI_EXT) -f $(AI_EXTENSION_DIR)/Dockerfile $(AI_EXTENSION_DIR) \
-		$(QUAY_EXPIRATION_LABEL) \
 		-t $(IMAGE_REGISTRY)/kgateway-ai-extension:$(VERSION)
 
 #----------------------------------------------------------------------------------
@@ -373,7 +372,6 @@ TEST_AI_PROVIDER_SERVER_DIR := $(ROOTDIR)/test/mocks/mock-ai-provider-server
 .PHONY: test-ai-provider-docker
 test-ai-provider-docker:
 	docker buildx build $(LOAD_OR_PUSH) $(DOCKER_BUILD_ARGS_AI_EXT) -f $(TEST_AI_PROVIDER_SERVER_DIR)/Dockerfile $(TEST_AI_PROVIDER_SERVER_DIR) \
-		$(QUAY_EXPIRATION_LABEL) \
 		-t $(IMAGE_REGISTRY)/test-ai-provider:$(VERSION)
 
 GETTERCHECK ?= go tool github.com/saiskee/gettercheck

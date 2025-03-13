@@ -69,11 +69,11 @@ spec:
     {{- end }}{{/* if .Values.gateway.aiExtension.resources */}}
     {{- if .Values.gateway.aiExtension.env }}
         env:
-    {{ toYaml .Values.gateway.aiExtension.env | indent 6 }}
+            {{ toYaml .Values.gateway.aiExtension.env | nindent 8 }}
     {{- end }} {{/* if .Values.gateway.aiExtension.env */}}
     {{- if .Values.gateway.aiExtension.ports }}
         ports:
-    {{ toYaml .Values.gateway.aiExtension.ports | indent 6 }}
+            {{ toYaml .Values.gateway.aiExtension.ports | nindent 8 }}
     {{- end }} {{/* if .Values.gateway.aiExtension.ports */}}
     {{- end }}{{/* if .Values.gateway.aiExtension.enabled */}}
 {{- end }}

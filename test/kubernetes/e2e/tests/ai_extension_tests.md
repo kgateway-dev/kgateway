@@ -50,8 +50,18 @@ version of kgateway being tested.
 
 Set up python virtualenv and the required routing files from `test/kubernetes/e2e/features/aiextension/testdata/`, then run the python test directly:
 
+First make sure to setup the required environment variables:
+```shell
+export INGRESS_GW_ADDRESS=$(kubectl get svc -n ai-test ai-gateway -o jsonpath="{.status.loadBalancer.ingress[0]['hostname','ip']}")
+export TEST_OPENAI_BASE_URL="http://$INGRESS_GW_ADDRESS:8080/openai"
+export TEST_AZURE_OPENAI_BASE_URL="http://$INGRESS_GW_ADDRESS:8080/azure"
+export TEST_GEMINI_BASE_URL="http://$INGRESS_GW_ADDRESS:8080/gemini"
+export TEST_VERTEX_AI_BASE_URL="http://$INGRESS_GW_ADDRESS:8080/vertex-ai"
+```
+
+You can run the test through the command line from the `projects/ai-extension/ai_extension` directory:
 ```bash
-LOG_LEVEL=debug python3 -m pytest -vvv --log-cli-level=DEBUG /test/kubernetes/e2e/features/aiextension/tests/routing.py -k=vertex_ai
+python3 -m pytest -vvv --log-cli-level=DEBUG streaming.py -k=openai
 ```
 
 Where `-k` should match the `TEST_PYTHON_STRING_MATCH` to run a specific set of tests.

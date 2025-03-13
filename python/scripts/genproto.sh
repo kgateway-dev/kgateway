@@ -4,6 +4,10 @@ set -e
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 
 TMP_DIR=$(mktemp -d)
+if [ $? -ne 0 ]; then
+     echo "$0: Can't create temp directory, exiting..."
+     exit 1
+fi
 
 if [ -z "${ENVOY_VERSION}" ]; then
   echo "ENVOY_VERSION is not set, required to vendor protos"
