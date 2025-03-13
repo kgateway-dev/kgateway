@@ -32,7 +32,7 @@ class PassthroughCredentials(credentials.Credentials):
 
     def before_request(self, request, method, url, headers):
         # Passthrough the before_request functionality
-        headers["Authorization"] = f"Bearer passthrough-vertex-ai-key"
+        headers["Authorization"] = "Bearer passthrough-vertex-ai-key"
 
 
 TEST_OPENAI_BASE_URL = os.environ.get("TEST_OPENAI_BASE_URL", "")
