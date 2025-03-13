@@ -176,8 +176,8 @@ release:
 
     Try installing this release:
     ```
-    helm install --create-namespace --namespace kgateway-system kgateway \
-      oci://{{ .Env.VANITY_REGISTRY }}/charts/kgateway --version {{ .Env.VERSION }}
+    helm install kgateway-crds oci://{{ .Env.VANITY_REGISTRY }}/charts/kgateway-crds --version {{ .Env.VERSION }} --namespace kgateway-system --create-namespace
+    helm install kgateway oci://{{ .Env.VANITY_REGISTRY }}/charts/kgateway --version {{ .Env.VERSION }} --namespace kgateway-system --create-namespace
     ```
 
     For detailed installation instructions and next steps, please visit our [quickstart guide](https://kgateway.dev/docs/quickstart/).
