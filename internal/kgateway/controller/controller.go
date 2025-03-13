@@ -98,32 +98,13 @@ func gatewayToParams(obj client.Object) []string {
 	return []string{}
 }
 
+// gatewayToClass is an IndexerFunc that lists a Gateways that use a given className
 func gatewayToClass(obj client.Object) []string {
 	gw, ok := obj.(*apiv1.Gateway)
 	if !ok {
 		panic(fmt.Sprintf("wrong type %T provided to indexer. expected Gateway", obj))
 	}
 	return []string{string(gw.Spec.GatewayClassName)}
-}
-
-// ourGatewayPredicate only includes Gateways that reference
-// our own controller name.
-func (c *controllerBuilder) ourGatewayPredicate() predicate.Funcs {
-	return predicate.NewPredicateFuncs(func(obj client.Object) bool {
-		gw := obj.(*apiv1.Gateway)
-		// Check the class in the cache
-		var gc apiv1.GatewayClass
-		err := c.cfg.Mgr.GetClient().Get(
-			context.Background(),
-			client.ObjectKey{Name: string(gw.Spec.GatewayClassName)},
-			&gc,
-		)
-		if err != nil {
-			// If we can’t find the GatewayClass in our cache, skip
-			return false
-		}
-		return gc.Spec.ControllerName == apiv1.GatewayController(c.cfg.ControllerName)
-	})
 }
 
 func (c *controllerBuilder) watchGw(ctx context.Context) error {
@@ -149,7 +130,8 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 	buildr := ctrl.NewControllerManagedBy(c.cfg.Mgr).
 		// Don't use WithEventFilter here as it also filters events for Owned objects.
 		For(&apiv1.Gateway{}, builder.WithPredicates(
-			c.ourGatewayPredicate(),
+			// TODO(stevenctl) investigate perf implications of filtering in Reconcile
+			// the tricky part is we want to check a relationship of gateway -> gatewayclass -> controller name
 			predicate.Or(
 				predicate.AnnotationChangedPredicate{},
 				predicate.GenerationChangedPredicate{},
