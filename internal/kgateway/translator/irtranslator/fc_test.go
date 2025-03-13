@@ -97,8 +97,9 @@ func TestFilterChains(t *testing.T) {
 		reporter,
 	)
 
-	if len(envoyListener.FilterChains) == 0 {
-		t.Fatal("no filter chains in output")
+	expectedChainCount := len(listener.HttpFilterChain) + len(listener.TcpFilterChain)
+	if len(envoyListener.FilterChains) == expectedChainCount {
+		t.Fatal("got", len(envoyListener.FilterChains), "Envoy filter chains, but wanted", expectedChainCount)
 	}
 
 	expectedFilters := []string{testPluginFilterName, testCustomFilterName}
