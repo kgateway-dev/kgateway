@@ -204,6 +204,7 @@ def install_kgateway():
     if not kgateway_installed :
         install_helm_cmd = """
             kubectl get crd gateways.gateway.networking.k8s.io &> /dev/null || {{ kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.1.0/standard-install.yaml; }} ;
+            {0} upgrade --install -n {1} --create-namespace kgateway-crds install/helm/kgateway-crds ;
             {0} upgrade --install -n {1} --create-namespace {2} install/helm/kgateway/ --set controller.image.pullPolicy='Never' --set image.registry=ghcr.io/kgateway-dev --set image.tag='{3}'""".format(helm_cmd, settings.get("helm_installation_namespace"), settings.get("helm_installation_name"), image_tag)
         for f in settings.get("helm_values_files") :
             install_helm_cmd = install_helm_cmd + " --values=" + f
