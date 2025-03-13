@@ -83,12 +83,12 @@ jobs:
         if: ${{ github.event_name != 'pull_request' }}
         run: echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ${{ env.IMAGE_REGISTRY }} -u ${{ github.repository_owner }} --password-stdin
 
-      - name: Lint kgateway chart on PRs
+      - name: Lint kgateway charts on PRs
         if: ${{ github.event_name == 'pull_request' }}
-        run: helm lint install/helm/kgateway
+        run: make lint-kgateway-charts
 
       - name: Package kgateway chart
-        run: make package-kgateway-chart
+        run: make package-kgateway-charts
         env:
           VERSION: ${{ needs.setup.outputs.version }}
 
@@ -96,7 +96,7 @@ jobs:
         if: ${{ github.event_name != 'pull_request' }}
         run: |
           helm push _test/kgateway-${{ needs.setup.outputs.version }}.tgz oci://${{ env.IMAGE_REGISTRY }}/charts
-
+          helm push _test/kgateway-crds-${{ needs.setup.outputs.version }}.tgz oci://${{ env.IMAGE_REGISTRY }}/charts
   goreleaser:
     name: goreleaser
     needs: [setup, helm]
@@ -167,6 +167,12 @@ jobs:
 
       - name: Install the released chart
         run: |
+          # install the crds first
+          helm install kgateway-crds oci://${{ env.IMAGE_REGISTRY }}/charts/kgateway-crds \
+            --version ${{ needs.setup.outputs.version }} \
+            --wait --timeout 5m
+
+          # install the main chart
           helm install --create-namespace --namespace kgateway-system kgateway \
             oci://${{ env.IMAGE_REGISTRY }}/charts/kgateway \
             --set image.registry=${{ env.IMAGE_REGISTRY }} \

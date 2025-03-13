@@ -21,7 +21,7 @@ readonly VERSIONS=( v1alpha1 )
 readonly OPENAPI_GEN_DIR=pkg/generated/openapi
 readonly APPLY_CFG_DIR=api/applyconfiguration
 readonly CLIENT_GEN_DIR=pkg/client
-readonly CRD_DIR=install/helm/kgateway/crds
+readonly CRD_DIR=install/helm/kgateway-crds/templates
 # manifests dir only used for outputting rbac artifacts and existing file will be overwritten so no need to clean
 readonly MANIFESTS_DIR=install/helm/kgateway/templates
 

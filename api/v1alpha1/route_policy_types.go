@@ -30,11 +30,9 @@ type RoutePolicyList struct {
 }
 
 type RoutePolicySpec struct {
-	TargetRef LocalPolicyTargetReference `json:"targetRef,omitempty"`
-	// +kubebuilder:validation:Minimum=1
-	Timeout        int                  `json:"timeout,omitempty"`
-	AI             *AIRoutePolicy       `json:"ai,omitempty"`
-	Transformation TransformationPolicy `json:"transformation,omitempty"`
+	TargetRef      LocalPolicyTargetReference `json:"targetRef,omitempty"`
+	AI             *AIRoutePolicy             `json:"ai,omitempty"`
+	Transformation TransformationPolicy       `json:"transformation,omitempty"`
 }
 
 // TransformationPolicy config is used to modify envoy behavior at a route level.

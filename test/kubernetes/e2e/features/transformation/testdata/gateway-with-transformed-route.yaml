@@ -35,7 +35,6 @@ spec:
     group: gateway.networking.k8s.io
     kind: HTTPRoute
     name: example-route
-  timeout: 1
   transformation:
     request:
       set:

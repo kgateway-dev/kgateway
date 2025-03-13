@@ -26,20 +26,20 @@ jobs:
         # Above each test below, we document the latest date/time for the GitHub action step to run
         # NOTE: We use the GitHub action step time (as opposed to the `go test` time), because it is easier to capture
         test:
-        # March 10, 2025: 20 minutes
+        # March 12, 2025: 7 minutes
         - cluster-name: 'cluster-one'
           go-test-args: '-v -timeout=25m'
-          go-test-run-regex: '^TestKgateway$$/^BasicRouting$$|^TestKgateway$$/^Deployer$$|^TestKgateway$$/^RouteDelegation$$|^TestKgateway$$/^HTTPRouteServices$$|^TestKgateway$$/^TCPRouteServices$$|^TestKgateway$$/^TLSRouteServices$$|^TestKgateway$$/^Backends$$'
+          go-test-run-regex: '^TestKgateway$$/^BasicRouting$$|^TestKgateway$$/^HTTPRouteServices$$|^TestKgateway$$/^TLSRouteServices$$'
           localstack: 'false'
-        # Mar 4, 2025: TODO minutes
+        # Mar 12, 2025: 6 minutes
         - cluster-name: 'cluster-two'
           go-test-args: '-v -timeout=25m'
-          go-test-run-regex: '^TestKgateway$$/^Transforms$$|^TestKgateway$$/^BackendTLSPolicies$$'
+          go-test-run-regex: '^TestKgateway$$/^Backends$$|^TestKgateway$$/^TCPRouteServices$$|^TestKgateway$$/^Transforms$$|^TestKgateway$$/^BackendTLSPolicies$$'
           localstack: 'false'
-        # TODO: measure minutes.
+        # March 12, 2025: 7 minutes
         - cluster-name: 'cluster-three'
           go-test-args: '-v -timeout=25m'
-          go-test-run-regex: '^TestKgateway$$/^Lambda$$'
+          go-test-run-regex: '^TestKgateway$$/^Deployer$$|^TestKgateway$$/^RouteDelegation$$|^TestKgateway$$/^Lambda$$'
           localstack: 'true'
 
 #         # Dec 4, 2024: 23 minutes
