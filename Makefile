@@ -502,13 +502,13 @@ HELM_CHART_DIR_CRD=install/helm/kgateway-crds
 package-kgateway-charts: package-kgateway-chart package-kgateway-crd-chart
 
 .PHONY: package-kgateway-chart
-package-kgateway-chart: ## Package the kgateway chart for testing
+package-kgateway-chart: ## Package the kgateway charts
 	mkdir -p $(TEST_ASSET_DIR); \
 	$(HELM) package $(HELM_PACKAGE_ARGS) --destination $(TEST_ASSET_DIR) $(HELM_CHART_DIR); \
 	$(HELM) repo index $(TEST_ASSET_DIR);
 
 .PHONY: package-kgateway-crd-chart
-package-kgateway-crd-chart: ## Package the kgateway crd chart for testing
+package-kgateway-crd-chart: ## Package the kgateway crd chart
 	mkdir -p $(TEST_ASSET_DIR); \
 	$(HELM) package $(HELM_PACKAGE_ARGS) --destination $(TEST_ASSET_DIR) $(HELM_CHART_DIR_CRD); \
 	$(HELM) repo index $(TEST_ASSET_DIR);
