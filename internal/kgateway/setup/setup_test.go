@@ -213,7 +213,7 @@ spec:
     response:
       set:
       - name: x-solo-response
-        value: '{{ request_header("x-solo-request") }}' 
+        value: '{{ request_header("x-solo-request") }}'
       remove:
       - x-solo-request`, `apiVersion: gateway.networking.k8s.io/v1beta1
 kind: HTTPRoute
@@ -248,7 +248,7 @@ spec:
     response:
       set:
       - name: x-solo-response
-        value: '{{ request_header("x-solo-request123") }}' 
+        value: '{{ request_header("x-solo-request123") }}'
       remove:
       - x-solo-request321`)
 
@@ -294,7 +294,7 @@ func runScenario(t *testing.T, scenarioDir string, globalSettings *settings.Sett
 					t.Cleanup(func() {
 						writer.set(parentT)
 					})
-					//sadly tests can't run yet in parallel, as kgateway will add all the k8s services as clusters. this means
+					// sadly tests can't run yet in parallel, as kgateway will add all the k8s services as clusters. this means
 					// that we get test pollution.
 					// once we change it to only include the ones in the proxy, we can re-enable this
 					//				t.Parallel()
@@ -310,7 +310,8 @@ func setupEnvTestAndRun(t *testing.T, globalSettings *settings.Settings, run fun
 	kdbg *krt.DebugHandler,
 	client istiokube.CLIClient,
 	xdsPort int,
-)) {
+),
+) {
 	proxy_syncer.UseDetailedUnmarshalling = true
 	writer.set(t)
 
@@ -388,7 +389,7 @@ func setupEnvTestAndRun(t *testing.T, globalSettings *settings.Settings, run fun
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		setup.StartKgatewayWithConfig(ctx, setupOpts, cfg, builder, nil, nil)
+		setup.StartKgatewayWithConfig(ctx, setupOpts, cfg, builder, nil)
 	}()
 	// give kgateway time to initialize so we don't get
 	// "kgateway not initialized" error
@@ -438,7 +439,7 @@ func testScenario(
 	testyaml := strings.ReplaceAll(string(testyamlbytes), gwname, testgwname)
 
 	yamlfile := filepath.Join(t.TempDir(), "test.yaml")
-	os.WriteFile(yamlfile, []byte(testyaml), 0644)
+	os.WriteFile(yamlfile, []byte(testyaml), 0o644)
 
 	err = client.ApplyYAMLFiles("", yamlfile)
 
@@ -482,7 +483,7 @@ func testScenario(
 		if err != nil {
 			t.Fatalf("failed to serialize xdsDump: %v", err)
 		}
-		os.WriteFile(fout, d, 0644)
+		os.WriteFile(fout, d, 0o644)
 		t.Fatal("wrote out file - nothing to test")
 	}
 	dump.Compare(t, expectedXdsDump)
@@ -533,7 +534,8 @@ func newXdsDumper(t *testing.T, ctx context.Context, xdsPort int, gwname string)
 		dr: &discovery_v3.DiscoveryRequest{Node: &envoycore.Node{
 			Id: "gateway.gwtest",
 			Metadata: &structpb.Struct{
-				Fields: map[string]*structpb.Value{"role": {Kind: &structpb.Value_StringValue{StringValue: fmt.Sprintf("kgateway-kube-gateway-api~%s~%s", "gwtest", gwname)}}}},
+				Fields: map[string]*structpb.Value{"role": {Kind: &structpb.Value_StringValue{StringValue: fmt.Sprintf("kgateway-kube-gateway-api~%s~%s", "gwtest", gwname)}}},
+			},
 		}},
 	}
 

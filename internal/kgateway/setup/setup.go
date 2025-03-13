@@ -26,6 +26,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/internal/version"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
 )
@@ -40,7 +41,7 @@ func Main(customCtx context.Context) error {
 }
 
 func startSetupLoop(ctx context.Context) error {
-	return StartKgateway(ctx, nil, nil)
+	return StartKgateway(ctx, nil)
 }
 
 func createKubeClient(restConfig *rest.Config) (istiokube.Client, error) {
@@ -56,7 +57,6 @@ func createKubeClient(restConfig *rest.Config) (istiokube.Client, error) {
 func StartKgateway(
 	ctx context.Context,
 	extraPlugins func(ctx context.Context, commoncol *common.CommonCollections) []extensionsplug.Plugin,
-	extraGwClasses []string, // TODO: we can remove this and replace with something that watches all GW classes with our controller name
 ) error {
 	logger := contextutils.LoggerFrom(ctx)
 
@@ -76,7 +76,6 @@ func StartKgateway(
 	setupOpts := &controller.SetupOpts{
 		Cache:                  cache,
 		KrtDebugger:            new(krt.DebugHandler),
-		ExtraGatewayClasses:    extraGwClasses,
 		GlobalSettings:         st,
 		PprofBindAddress:       "127.0.0.1:9099",
 		HealthProbeBindAddress: ":9093",
@@ -84,7 +83,7 @@ func StartKgateway(
 	}
 
 	restConfig := ctrl.GetConfigOrDie()
-	return StartKgatewayWithConfig(ctx, setupOpts, restConfig, uccBuilder, extraPlugins, nil)
+	return StartKgatewayWithConfig(ctx, setupOpts, restConfig, uccBuilder, extraPlugins)
 }
 
 func startControlPlane(
@@ -101,7 +100,6 @@ func StartKgatewayWithConfig(
 	restConfig *rest.Config,
 	uccBuilder krtcollections.UniquelyConnectedClientsBulider,
 	extraPlugins func(ctx context.Context, commoncol *common.CommonCollections) []extensionsplug.Plugin,
-	extraGwClasses []string, // TODO: we can remove this and replace with something that watches all GW classes with our controller name
 ) error {
 	ctx = contextutils.WithLogger(ctx, "k8s")
 	logger := contextutils.LoggerFrom(ctx)
@@ -125,12 +123,13 @@ func StartKgatewayWithConfig(
 
 	logger.Info("initializing controller")
 	c, err := controller.NewControllerBuilder(ctx, controller.StartConfig{
-		ExtraPlugins:  extraPlugins,
-		RestConfig:    restConfig,
-		SetupOpts:     setupOpts,
-		Client:        kubeClient,
-		AugmentedPods: augmentedPods,
-		UniqueClients: ucc,
+		ControllerName: wellknown.GatewayControllerName,
+		ExtraPlugins:   extraPlugins,
+		RestConfig:     restConfig,
+		SetupOpts:      setupOpts,
+		Client:         kubeClient,
+		AugmentedPods:  augmentedPods,
+		UniqueClients:  ucc,
 
 		// Dev flag may be useful for development purposes; not currently tied to any user-facing API
 		Dev:        os.Getenv("LOG_LEVEL") == "debug",

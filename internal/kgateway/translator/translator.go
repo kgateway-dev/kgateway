@@ -60,7 +60,6 @@ func NewCombinedTranslator(
 	}
 }
 
-// Note: isOurGw is shared between us and the deployer.
 func (s *CombinedTranslator) Init(ctx context.Context, routes *krtcollections.RoutesIndex) error {
 	ctx = contextutils.WithLogger(ctx, "k8s-gw-proxy-syncer")
 
@@ -91,6 +90,7 @@ func (s *CombinedTranslator) Init(ctx context.Context, routes *krtcollections.Ro
 	)
 	return nil
 }
+
 func (s *CombinedTranslator) HasSynced() bool {
 	for _, sync := range s.waitForSync {
 		if !sync() {
@@ -114,7 +114,6 @@ func (s *CombinedTranslator) buildProxy(kctx krt.HandlerContext, ctx context.Con
 			gatewayTranslator = maybeGatewayTranslator
 		}
 	} else {
-
 	}
 	proxy := gatewayTranslator.Translate(kctx, ctx, &gw, r)
 	if proxy == nil {
