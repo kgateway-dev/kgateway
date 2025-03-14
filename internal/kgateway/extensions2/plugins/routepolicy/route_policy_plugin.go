@@ -48,10 +48,8 @@ type routePolicy struct {
 }
 
 type ExtprocIR struct {
-	Name string
-	// BackendRef *envoy_config_route_v3.Route_Route
-	// Extproc    *v1alpha1.ExtProcPolicy
-	ExtProc *envoy_ext_proc_v3.ExtProcPerRoute
+	Name    string
+	ExtProc *envoy_ext_proc_v3.ExternalProcessor
 }
 
 type routeSpecIr struct {
@@ -104,19 +102,11 @@ type routePolicyPluginGwPass struct {
 	// TODO(nfuden): dont abuse httplevel filter in favor of route level
 	rustformationStash map[string]string
 	ir.UnimplementedProxyTranslationPass
-	setAIFilter      bool
-	setExtprocFilter bool
+	setAIFilter   bool
+	extprocFilter *envoy_ext_proc_v3.ExternalProcessor
 }
 
 func (p *routePolicyPluginGwPass) ApplyHCM(ctx context.Context, pCtx *ir.HcmContext, out *envoyhttp.HttpConnectionManager) error {
-	// routePolicy := pCtx.Policy.(*routePolicy)
-	// if routePolicy.ExtProc != nil {
-	// 	extprocFilters, err := ExtprocHCMFilter(routePolicy.ExtProc)
-	// 	if err != nil {
-	// 		return err
-	// 	}
-	// 	out.HttpFilters = append(out.GetHttpFilters(), extprocFilters)
-	// }
 	return nil
 }
 
@@ -302,8 +292,8 @@ func (p *routePolicyPluginGwPass) ApplyForRouteBackend( //Apply for route policy
 		return nil
 	}
 	if rtPolicy.ExtProc != nil {
-		p.setExtprocFilter = true // So that HttpFilters will add the filter
-		pCtx.AddTypedConfig(wellknown.ExtprocFilterName, rtPolicy.ExtProc.ExtProc)
+		p.extprocFilter = rtPolicy.ExtProc.ExtProc
+		enableExtprocFilter(pCtx)
 	}
 
 	aiExtprocSettingsProto := pCtx.GetTypedConfig(wellknown.AIExtProcFilterName)
@@ -331,8 +321,8 @@ func (p *routePolicyPluginGwPass) ApplyForRouteBackend( //Apply for route policy
 func (p *routePolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.FilterChainCommon) ([]plugins.StagedHttpFilter, error) {
 	filters := []plugins.StagedHttpFilter{}
 	// add empty extproc filter
-	if p.setExtprocFilter {
-		extprocFilters, err := AddExtprocHTTPFilter()
+	if p.extprocFilter != nil {
+		extprocFilters, err := AddExtProcHTTPFilter(p.extprocFilter)
 		if err != nil {
 			return nil, err
 		}
@@ -413,7 +403,7 @@ func buildTranslateFunc(ctx context.Context, secrets *krtcollections.SecretIndex
 		transformationForSpec(policyCR.Spec, &outSpec)
 
 		if policyCR.Spec.ExtProc != nil {
-			extproc, err := toEnvoyExtProcPerRoute(policyCR.Spec.ExtProc, krtctx, commoncol, objSrc)
+			extproc, err := toEnvoyExtProc(policyCR.Spec.ExtProc, krtctx, commoncol, objSrc)
 			if err != nil {
 				return nil, err
 			}

@@ -2,12 +2,14 @@ package routepolicy
 
 import (
 	"fmt"
+	"time"
 
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	routev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_ext_proc_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_proc/v3"
 	hcmv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"google.golang.org/protobuf/types/known/anypb"
+	"google.golang.org/protobuf/types/known/durationpb"
 	"istio.io/istio/pkg/kube/krt"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
@@ -18,6 +20,25 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
 
+func AddExtProcHTTPFilter(extProcConfig *envoy_ext_proc_v3.ExternalProcessor) ([]plugins.StagedHttpFilter, error) {
+	// needed?
+	// if err := extProcConfig.ValidateAll(); err != nil {
+	// 	return nil, err
+	// }
+	// extprocAny, err := utils.MessageToAny(extProcConfig)
+	extprocFilter, err := plugins.NewStagedFilter(
+		wellknown.ExtprocFilterName,
+		extProcConfig,
+		plugins.AfterStage(plugins.WellKnownFilterStage(plugins.AuthZStage)),
+	)
+	// disable the filter by default
+	extprocFilter.Filter.Disabled = true
+	if err != nil {
+		return nil, err
+	}
+	return []plugins.StagedHttpFilter{extprocFilter}, nil
+}
+
 func AddExtprocHTTPFilter() ([]plugins.StagedHttpFilter, error) {
 	extprocFilter, err := plugins.NewStagedFilter(
 		wellknown.ExtprocFilterName,
@@ -25,9 +46,20 @@ func AddExtprocHTTPFilter() ([]plugins.StagedHttpFilter, error) {
 			GrpcService: &envoy_config_core_v3.GrpcService{
 				TargetSpecifier: &envoy_config_core_v3.GrpcService_EnvoyGrpc_{
 					EnvoyGrpc: &envoy_config_core_v3.GrpcService_EnvoyGrpc{
-						ClusterName: "blackhole",
+						ClusterName: "kube_default_ext-proc-grpc_4444", //"kube_default_grpc-ext-proc_9002", //"blackhole22",
+						Authority:   "ext-proc-grpc.default:4444",      //"grpc-ext-proc.default:9002",
 					},
 				},
+				Timeout: durationpb.New(10 * time.Second),
+			},
+			// FailureModeAllow: true,
+			ProcessingMode: &envoy_ext_proc_v3.ProcessingMode{
+				RequestHeaderMode:  envoy_ext_proc_v3.ProcessingMode_SEND,
+				ResponseHeaderMode: envoy_ext_proc_v3.ProcessingMode_SEND,
+				// RequestBodyMode:     envoy_ext_proc_v3.ProcessingMode_STREAMED,
+				ResponseBodyMode:    envoy_ext_proc_v3.ProcessingMode_STREAMED,
+				RequestTrailerMode:  envoy_ext_proc_v3.ProcessingMode_SKIP,
+				ResponseTrailerMode: envoy_ext_proc_v3.ProcessingMode_SKIP,
 			},
 		},
 		plugins.AfterStage(plugins.WellKnownFilterStage(plugins.AuthZStage)),
@@ -81,7 +113,7 @@ func toEnvoyExtProcPerRoute(
 
 // }
 
-func enableExtprocFilter(pCtx *ir.RouteBackendContext, name string) {
+func enableExtprocFilter(pCtx *ir.RouteBackendContext) {
 	cfg := &routev3.FilterConfig{
 		Config: &anypb.Any{},
 	}
