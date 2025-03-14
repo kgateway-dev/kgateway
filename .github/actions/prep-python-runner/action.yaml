@@ -2,12 +2,6 @@ name: Prep Python Runner
 
 description: Common setup steps for Python runners
 
-inputs:
-  working-directory:
-    description: directory to run setup steps in
-    required: false
-    default: '.'
-
 runs:
   using: "composite"
   steps:

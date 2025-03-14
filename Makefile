@@ -364,15 +364,6 @@ kgateway-ai-extension-docker:
 	docker buildx build $(LOAD_OR_PUSH) $(DOCKER_BUILD_ARGS_AI_EXT) -f $(AI_EXTENSION_DIR)/Dockerfile $(AI_EXTENSION_DIR) \
 		-t $(IMAGE_REGISTRY)/kgateway-ai-extension:$(VERSION)
 
-#----------------------------------------------------------------------------------
-# AI Extensions Test Server (for mocking AI Providers)
-#----------------------------------------------------------------------------------
-
-TEST_AI_PROVIDER_SERVER_DIR := $(ROOTDIR)/test/mocks/mock-ai-provider-server
-.PHONY: test-ai-provider-docker
-test-ai-provider-docker:
-	docker buildx build $(LOAD_OR_PUSH) $(DOCKER_BUILD_ARGS_AI_EXT) -f $(TEST_AI_PROVIDER_SERVER_DIR)/Dockerfile $(TEST_AI_PROVIDER_SERVER_DIR) \
-		-t $(IMAGE_REGISTRY)/test-ai-provider:$(VERSION)
 
 GETTERCHECK ?= go tool github.com/saiskee/gettercheck
 # Ensures that accesses for fields which have "getter" functions are exclusively done via said "getter" functions
@@ -776,6 +767,16 @@ kind-list-images: ## List solo-io images in the kind cluster named {CLUSTER_NAME
 .PHONY: kind-prune-images
 kind-prune-images: ## Remove images in the kind cluster named {CLUSTER_NAME}
 	docker exec -ti $(CLUSTER_NAME)-control-plane crictl rmi --prune
+
+#----------------------------------------------------------------------------------
+# AI Extensions Test Server (for mocking AI Providers in e2e tests)
+#----------------------------------------------------------------------------------
+
+TEST_AI_PROVIDER_SERVER_DIR := $(ROOTDIR)/test/mocks/mock-ai-provider-server
+.PHONY: test-ai-provider-docker
+test-ai-provider-docker:
+	docker buildx build $(LOAD_OR_PUSH) $(DOCKER_BUILD_ARGS_AI_EXT) -f $(TEST_AI_PROVIDER_SERVER_DIR)/Dockerfile $(TEST_AI_PROVIDER_SERVER_DIR) \
+		-t $(IMAGE_REGISTRY)/test-ai-provider:$(VERSION)
 
 #----------------------------------------------------------------------------------
 # Targets for running Kubernetes Gateway API conformance tests
