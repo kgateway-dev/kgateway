@@ -1,6 +1,9 @@
 package v1alpha1
 
-import corev1 "k8s.io/api/core/v1"
+import (
+	cmp "github.com/google/go-cmp/cmp"
+	corev1 "k8s.io/api/core/v1"
+)
 
 // +kubebuilder:validation:XValidation:message="There must one and only one LLM or MultiPool can be set",rule="(has(self.llm) && !has(self.multipool)) || (!has(self.llm) && has(self.multipool))"
 // +kubebuilder:validation:MaxProperties=1
@@ -30,6 +33,16 @@ type SupportedLLMProvider struct {
 	Anthropic   *AnthropicConfig   `json:"anthropic,omitempty"`
 	Gemini      *GeminiConfig      `json:"gemini,omitempty"`
 	VertexAI    *VertexAIConfig    `json:"vertexai,omitempty"`
+}
+
+func (in *AIBackend) Equals(ai *AIBackend) bool {
+	if (in == nil) != (ai == nil) {
+		return false
+	}
+	if in == nil {
+		return true
+	}
+	return cmp.Equal(in, ai)
 }
 
 type SingleAuthTokenKind string
@@ -91,24 +104,6 @@ type OpenAIConfig struct {
 	// If unset, the model name is taken from the request.
 	// This setting can be useful when setting up model failover within the same LLM provider.
 	Model *string `json:"model,omitempty"`
-}
-
-func (in *OpenAIConfig) Equals(c1 *OpenAIConfig) bool {
-	if (in == nil) != (c1 == nil) {
-		return false
-	}
-	if in != nil {
-		// Compare all fields from OpenAIConfig
-		if in.Model != nil {
-			if in.Model != c1.Model {
-				return false
-			}
-		}
-		if in.AuthToken.Equals(&c1.AuthToken) {
-			return false
-		}
-	}
-	return true
 }
 
 // AzureOpenAIConfig settings for the [Azure OpenAI](https://learn.microsoft.com/en-us/azure/ai-services/openai/) LLM provider.
