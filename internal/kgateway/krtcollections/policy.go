@@ -524,19 +524,7 @@ func (h *RoutesIndex) ListHttp(kctx krt.HandlerContext, ns string) []ir.HttpRout
 }
 
 func (h *RoutesIndex) RoutesForGateway(kctx krt.HandlerContext, nns types.NamespacedName) []ir.Route {
-	rts := krt.Fetch(kctx, h.routes, krt.FilterIndex(h.byParentRef, targetRefIndexKey{
-		PolicyTargetRef: ir.PolicyTargetRef{
-			Name:  nns.Name,
-			Group: wellknown.GatewayGVK.Group,
-			Kind:  wellknown.GatewayGVK.Kind,
-		},
-		Namespace: nns.Namespace,
-	}))
-	ret := make([]ir.Route, len(rts))
-	for i, r := range rts {
-		ret[i] = r.Route
-	}
-	return ret
+	return h.RoutesFor(kctx, nns, wellknown.GatewayGVK.Group, wellknown.GatewayGVK.Kind)
 }
 
 func (h *RoutesIndex) RoutesFor(kctx krt.HandlerContext, nns types.NamespacedName, group, kind string) []ir.Route {
