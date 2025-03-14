@@ -9,7 +9,7 @@ own waypoint proxy implementation, and kgateway provides a drop-in replacement.
 ## Pre-requisites
 
 1. Istio 1.23 or newer with ambient mode
-2. kgateway <TODO> or newer
+2. kgateway installation
 
 
 ## Install this demo
