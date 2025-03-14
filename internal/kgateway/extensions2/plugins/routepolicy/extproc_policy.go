@@ -20,6 +20,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
 
+// AddExtProcHTTPFilter adds an extproc filter to the http filter chain
 func AddExtProcHTTPFilter(extProcConfig *envoy_ext_proc_v3.ExternalProcessor) ([]plugins.StagedHttpFilter, error) {
 	// needed?
 	// if err := extProcConfig.ValidateAll(); err != nil {

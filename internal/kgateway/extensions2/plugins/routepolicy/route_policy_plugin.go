@@ -183,9 +183,6 @@ func (p *routePolicyPluginGwPass) ApplyVhostPlugin(ctx context.Context, pCtx *ir
 }
 
 // called 0 or more times
-
-// figure out apply for route or route backend
-// maybe both
 func (p *routePolicyPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.RouteContext, outputRoute *envoy_config_route_v3.Route) error {
 	policy, ok := pCtx.Policy.(*routePolicy)
 	if !ok {
@@ -258,15 +255,6 @@ func (p *routePolicyPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.Ro
 		p.setTransformationInChain = true
 	}
 
-	// if policy.ExtProc != nil {
-	// 	err := enableExtprocFilter(outputRoute, policy.ExtProc.Name)
-	// 	if err != nil {
-	// 		return err
-	// 	}
-	// }
-
-	// here or apply for route backend????
-
 	// TODO: err/warn/ignore if targetRef is set on non-AI Backend
 
 	return nil
@@ -320,7 +308,6 @@ func (p *routePolicyPluginGwPass) ApplyForRouteBackend( //Apply for route policy
 // any filter returned from route config must be disabled, so it doesnt impact other routes.
 func (p *routePolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.FilterChainCommon) ([]plugins.StagedHttpFilter, error) {
 	filters := []plugins.StagedHttpFilter{}
-	// add empty extproc filter
 	if p.extprocFilter != nil {
 		extprocFilters, err := AddExtProcHTTPFilter(p.extprocFilter)
 		if err != nil {
