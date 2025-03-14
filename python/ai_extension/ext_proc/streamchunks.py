@@ -468,7 +468,7 @@ class StreamChunks:
         re-align the chunks in the fifo if necessary to make all the end indices on the same chunk
         returns how many chunks should be popped out to send back to envoy
         """
-        # You can find the visualization and explanation of a multi choice example for this logic in test
+        # You can find a multi choice example for this logic in
         # test_align_contents_for_guardrail_multichoices in test_streamchunks.py.
 
         min_chunks_required = 2
