@@ -25,13 +25,12 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/solo-io/go-utils/contextutils"
 )
 
-var (
-	NoFilesFound = errors.New("no k8s files found")
-)
+var NoFilesFound = errors.New("no k8s files found")
 
 func LoadFromFiles(ctx context.Context, filename string) ([]client.Object, error) {
 	fileOrDir, err := os.Stat(filename)
@@ -73,7 +72,9 @@ func LoadFromFiles(ctx context.Context, filename string) ([]client.Object, error
 			if !ok {
 				return nil, errors.Errorf("cannot convert runtime.Object to client.Object: %+v", obj)
 			}
-			if clientObj.GetNamespace() == "" {
+
+			_, isGwc := clientObj.(*gwv1.GatewayClass)
+			if !isGwc && clientObj.GetNamespace() == "" {
 				// fill in default namespace
 				clientObj.SetNamespace("default")
 			}
@@ -174,6 +175,7 @@ func MarshalYaml(m proto.Message) ([]byte, error) {
 	}
 	return yaml.JSONToYAML(jsn)
 }
+
 func MarshalAnyYaml(m any) ([]byte, error) {
 	jsn, err := json.Marshal(m)
 	if err != nil {

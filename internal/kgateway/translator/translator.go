@@ -22,7 +22,6 @@ import (
 	gwtranslator "github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/gateway"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/irtranslator"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
 
 // Combines all the translators needed for xDS translation.
@@ -62,6 +61,7 @@ func NewCombinedTranslator(
 
 func (s *CombinedTranslator) Init(ctx context.Context) error {
 	queries := query.NewData(s.commonCols)
+
 	s.gwtranslator = gwtranslator.NewTranslator(queries)
 	s.irtranslator = &irtranslator.Translator{
 		ContributedPolicies: s.extensions.ContributesPolicies,
@@ -100,10 +100,6 @@ func (s *CombinedTranslator) buildProxy(kctx krt.HandlerContext, ctx context.Con
 		maybeGatewayTranslator := s.extensions.ContributesGwTranslator(gw.Obj)
 		if maybeGatewayTranslator != nil {
 			gatewayTranslator = maybeGatewayTranslator
-		} else if gw.Obj.Spec.GatewayClassName != wellknown.GatewayClassName {
-			// we will hit this when a GatewayClass has us as the controllerName
-			// but no plugin provides a translator for that class.
-			contextutils.LoggerFrom(ctx).Errorf("translation not enabled for Gateway %s (gatewayClass %s)", gw.Name, gw.Obj.Spec.GatewayClassName)
 		}
 	}
 	proxy := gatewayTranslator.Translate(kctx, ctx, &gw, r)

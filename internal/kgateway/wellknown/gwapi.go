@@ -4,9 +4,8 @@ import (
 	apiextv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/util/sets"
 	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
-	apiv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
+	apiv1alpha3 "sigs.k8s.io/gateway-api/apis/v1alpha3"
 	apiv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 )
 
@@ -14,28 +13,17 @@ const (
 	// Group string for Gateway API resources
 	GatewayGroup = apiv1.GroupName
 
-	// Kind string for k8s service
-	ServiceKind = "Service"
+	// Kind strings
+	ServiceKind          = "Service"
+	HTTPRouteKind        = "HTTPRoute"
+	TCPRouteKind         = "TCPRoute"
+	TLSRouteKind         = "TLSRoute"
+	GatewayKind          = "Gateway"
+	GatewayClassKind     = "GatewayClass"
+	ReferenceGrantKind   = "ReferenceGrant"
+	BackendTLSPolicyKind = "BackendTLSPolicy"
 
-	// Kind string for HTTPRoute resource
-	HTTPRouteKind = "HTTPRoute"
-
-	// Kind string for TCPRoute resource
-	TCPRouteKind = "TCPRoute"
-
-	// Kind string for TLSRoute resource
-	TLSRouteKind = "TLSRoute"
-
-	// Kind string for Gateway resource
-	GatewayKind = "Gateway"
-
-	// Kind string for GatewayClass resource
-	GatewayClassKind = "GatewayClass"
-
-	// Kind string for ReferenceGrant resource
-	ReferenceGrantKind = "ReferenceGrant"
-
-	// Kind strings for Gateway API list types
+	// List Kind strings
 	HTTPRouteListKind      = "HTTPRouteList"
 	GatewayListKind        = "GatewayList"
 	GatewayClassListKind   = "GatewayClassList"
@@ -66,41 +54,11 @@ var (
 		Version: apiv1beta1.GroupVersion.Version,
 		Kind:    ReferenceGrantKind,
 	}
-
-	GatewayListGVK = schema.GroupVersionKind{
+	BackendTLSPolicyGVK = schema.GroupVersionKind{
 		Group:   GatewayGroup,
-		Version: apiv1.GroupVersion.Version,
-		Kind:    GatewayListKind,
+		Version: apiv1alpha3.GroupVersion.Version,
+		Kind:    BackendTLSPolicyKind,
 	}
-	GatewayClassListGVK = schema.GroupVersionKind{
-		Group:   GatewayGroup,
-		Version: apiv1.GroupVersion.Version,
-		Kind:    GatewayClassListKind,
-	}
-	HTTPRouteListGVK = schema.GroupVersionKind{
-		Group:   GatewayGroup,
-		Version: apiv1.GroupVersion.Version,
-		Kind:    HTTPRouteListKind,
-	}
-	HTCPRouteListGVK = schema.GroupVersionKind{
-		Group:   GatewayGroup,
-		Version: apiv1alpha2.GroupVersion.Version,
-		Kind:    HTTPRouteListKind,
-	}
-	ReferenceGrantListGVK = schema.GroupVersionKind{
-		Group:   GatewayGroup,
-		Version: apiv1beta1.GroupVersion.Version,
-		Kind:    ReferenceGrantListKind,
-	}
-
-	// GatewayStandardCRDs defines the set of Gateway API CRDs from the standard release channel.
-	GatewayStandardCRDs = sets.New[string](
-		"gatewayclasses.gateway.networking.k8s.io",
-		"gateways.gateway.networking.k8s.io",
-		"httproutes.gateway.networking.k8s.io",
-		"grpcroutes.gateway.networking.k8s.io",
-		"referencegrants.gateway.networking.k8s.io",
-	)
 
 	TCPRouteCRD = apiextv1.CustomResourceDefinition{
 		ObjectMeta: metav1.ObjectMeta{

@@ -6,7 +6,6 @@ package v1alpha1
 // with apply.
 type RoutePolicySpecApplyConfiguration struct {
 	TargetRef      *LocalPolicyTargetReferenceApplyConfiguration `json:"targetRef,omitempty"`
-	Timeout        *int                                          `json:"timeout,omitempty"`
 	AI             *AIRoutePolicyApplyConfiguration              `json:"ai,omitempty"`
 	Transformation *TransformationPolicyApplyConfiguration       `json:"transformation,omitempty"`
 }
@@ -22,14 +21,6 @@ func RoutePolicySpec() *RoutePolicySpecApplyConfiguration {
 // If called multiple times, the TargetRef field is set to the value of the last call.
 func (b *RoutePolicySpecApplyConfiguration) WithTargetRef(value *LocalPolicyTargetReferenceApplyConfiguration) *RoutePolicySpecApplyConfiguration {
 	b.TargetRef = value
-	return b
-}
-
-// WithTimeout sets the Timeout field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the Timeout field is set to the value of the last call.
-func (b *RoutePolicySpecApplyConfiguration) WithTimeout(value int) *RoutePolicySpecApplyConfiguration {
-	b.Timeout = &value
 	return b
 }
 

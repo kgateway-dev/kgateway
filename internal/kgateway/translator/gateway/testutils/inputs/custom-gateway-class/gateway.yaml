@@ -1,0 +1,45 @@
+# add a 3rd party or custom gateway class pointing at our controller
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
+metadata:
+  name: custom-gateway-class
+spec:
+  controllerName: "kgateway.dev/kgateway"
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: example-gateway
+spec:
+  gatewayClassName: custom-gateway-class
+  listeners:
+  - name: http
+    protocol: HTTP
+    port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: example-route
+spec:
+  parentRefs:
+  - name: example-gateway
+  hostnames:
+  - "example.com"
+  rules:
+  - backendRefs:
+    - name: example-svc
+      port: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: example-svc
+spec:
+  selector:
+    test: test
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: test

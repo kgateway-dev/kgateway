@@ -45,6 +45,16 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 			},
 		}),
 	Entry(
+		"http gateway with custom class",
+		translatorTestCase{
+			inputFile:  "custom-gateway-class",
+			outputFile: "custom-gateway-class.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		}),
+	Entry(
 		"https gateway with basic routing",
 		translatorTestCase{
 			inputFile:  "https-routing",

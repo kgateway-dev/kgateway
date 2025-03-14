@@ -17,7 +17,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
 )
 
@@ -33,13 +32,15 @@ type CommonCollections struct {
 	GatewayIndex *krtcollections.GatewayIndex
 	Services     krt.Collection[*corev1.Service]
 
-	Pods      krt.Collection[krtcollections.LocalityPod]
-	RefGrants *krtcollections.RefGrantIndex
+	Pods       krt.Collection[krtcollections.LocalityPod]
+	RefGrants  *krtcollections.RefGrantIndex
+	ConfigMaps krt.Collection[*corev1.ConfigMap]
 
 	// static set of global Settings, non-krt based for dev speed
 	// TODO: this should be refactored to a more correct location,
 	// or even better, be removed entirely and done per Gateway (maybe in GwParams)
-	Settings settings.Settings
+	Settings       settings.Settings
+	controllerName string
 }
 
 func (c *CommonCollections) HasSynced() bool {
@@ -59,6 +60,7 @@ func NewCommonCollections(
 	krtOptions krtutil.KrtOptions,
 	client istiokube.Client,
 	ourClient versioned.Interface,
+	controllerName string,
 	logger logr.Logger,
 	settings settings.Settings,
 ) *CommonCollections {
@@ -89,18 +91,22 @@ func NewCommonCollections(
 	serviceClient := kclient.New[*corev1.Service](client)
 	services := krt.WrapClient(serviceClient, krtOptions.ToOptions("Services")...)
 
-	return &CommonCollections{
-		OurClient: ourClient,
-		Client:    client,
-		KrtOpts:   krtOptions,
+	cmClient := kclient.New[*corev1.ConfigMap](client)
+	cfgmaps := krt.WrapClient(cmClient, krtOptions.ToOptions("ConfigMaps")...)
 
-		// Core stuff
+	return &CommonCollections{
+		OurClient:  ourClient,
+		Client:     client,
+		KrtOpts:    krtOptions,
 		Secrets:    krtcollections.NewSecretIndex(secrets, refgrants),
 		Pods:       krtcollections.NewPodsCollection(client, krtOptions),
 		RefGrants:  refgrants,
 		Settings:   settings,
 		Namespaces: namespaces,
 		Services:   services,
+		ConfigMaps: cfgmaps,
+
+		controllerName: controllerName,
 	}
 }
 
@@ -110,15 +116,14 @@ func NewCommonCollections(
 func (c *CommonCollections) InitPlugins(ctx context.Context, mergedPlugins extensionsplug.Plugin) {
 	kubeGateways, routeIndex, backendIndex, endpointIRs := krtcollections.InitCollections(
 		ctx,
+		c.controllerName,
 		mergedPlugins,
 		c.Client,
 		c.RefGrants,
 		c.KrtOpts,
-		// TODO read this from c.Settings
-		wellknown.GatewayControllerName,
 	)
 
-	// With plugins applied
+	// init plugin-extended collections
 	c.BackendIndex = backendIndex
 	c.Routes = routeIndex
 	c.Endpoints = endpointIRs

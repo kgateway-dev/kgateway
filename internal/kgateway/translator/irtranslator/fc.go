@@ -129,8 +129,8 @@ func (n *filterChainTranslator) computeNetworkFiltersForHttp(ctx context.Context
 }
 
 // computeCustomFilters computes all custom filters, first from plugins, second
-// from embedded filters on the FilterChain itself. For HTTP FilterChains these
-// should be added _before_ the HTTPConnectionManager.
+// from embedded filters on the FilterChain itself.
+// For HTTP FilterChains these must be added before HCM.
 func (n *filterChainTranslator) computeCustomFilters(
 	ctx context.Context,
 	customNetworkFilters []ir.CustomEnvoyFilter,

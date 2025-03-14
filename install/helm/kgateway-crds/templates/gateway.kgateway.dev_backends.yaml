@@ -16,8 +16,6 @@ spec:
     kind: Backend
     listKind: BackendList
     plural: backends
-    shortNames:
-    - be
     singular: backend
   scope: Namespaced
   versions:

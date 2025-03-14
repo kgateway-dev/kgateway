@@ -1,9 +1,11 @@
 package setup_test
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"net"
 	"os"
 	"os/exec"
@@ -14,6 +16,8 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
+
+	stdslice "slices"
 
 	envoycluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -53,10 +57,10 @@ import (
 )
 
 func getAssetsDir(t *testing.T) string {
-	assets := ""
+	var assets string
 	if os.Getenv("KUBEBUILDER_ASSETS") == "" {
 		// set default if not user provided
-		out, err := exec.Command("sh", "-c", "make -sC $(dirname $(go env GOMOD))/internal/kgateway envtest-path").CombinedOutput()
+		out, err := exec.Command("sh", "-c", "make -sC $(dirname $(go env GOMOD)) envtest-path").CombinedOutput()
 		t.Log("out:", string(out))
 		if err != nil {
 			t.Fatalf("failed to get assets dir: %v", err)
@@ -108,6 +112,14 @@ func init() {
 	grpclog.SetLoggerV2(grpclog.NewLoggerV2WithVerbosity(writer, writer, writer, 100))
 }
 
+func TestWithStandardSettings(t *testing.T) {
+	st, err := settings.BuildSettings()
+	if err != nil {
+		t.Fatalf("can't get settings %v", err)
+	}
+	runScenario(t, "testdata/standard", st)
+}
+
 func TestWithAutoDns(t *testing.T) {
 	st, err := settings.BuildSettings()
 	if err != nil {
@@ -129,20 +141,195 @@ func TestScenarios(t *testing.T) {
 	runScenario(t, "testdata", st)
 }
 
+func policyFile() string {
+	p := `apiVersion: audit.k8s.io/v1
+kind: Policy
+rules:
+- level: Metadata
+`
+	// write to temp file:
+	f, err := os.CreateTemp("", "policy.yaml")
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+	_, err = f.WriteString(p)
+	if err != nil {
+		panic(err)
+	}
+	return f.Name()
+}
+
+func addApiServerLogs(t *testing.T, testEnv *envtest.Environment) {
+	apiserverOut := new(bytes.Buffer)
+	apiserverErr := new(bytes.Buffer)
+
+	testEnv.ControlPlane = envtest.ControlPlane{
+		APIServer: &envtest.APIServer{
+			Out: apiserverOut,
+			Err: apiserverErr,
+		},
+	}
+	policy := policyFile()
+	t.Cleanup(func() {
+		os.Remove(policy)
+	})
+	args := testEnv.ControlPlane.APIServer.Configure()
+	args.Append("audit-log-path", "-")
+	args.Append("audit-policy-file", policy)
+	t.Cleanup(func() {
+		t.Log("apiserver out:", apiserverOut.String())
+		t.Log("apiserver err:", apiserverErr.String())
+	})
+}
+
+func TestPolicyUpdate(t *testing.T) {
+	st, err := settings.BuildSettings()
+	if err != nil {
+		t.Fatalf("can't get settings %v", err)
+	}
+	setupEnvTestAndRun(t, st, func(t *testing.T, ctx context.Context, kdbg *krt.DebugHandler, client istiokube.CLIClient, xdsPort int) {
+		client.Kube().CoreV1().Namespaces().Create(ctx, &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "gwtest"}}, metav1.CreateOptions{})
+
+		err = client.ApplyYAMLContents("gwtest", `kind: Gateway
+apiVersion: gateway.networking.k8s.io/v1
+metadata:
+  name: http-gw
+  namespace: gwtest
+spec:
+  gatewayClassName: kgateway
+  listeners:
+  - protocol: HTTP
+    port: 8080
+    name: http
+    allowedRoutes:
+      namespaces:
+        from: All`, `apiVersion: gateway.kgateway.dev/v1alpha1
+kind: RoutePolicy
+metadata:
+  name: transformation
+  namespace: gwtest
+spec:
+  transformation:
+    response:
+      set:
+      - name: x-solo-response
+        value: '{{ request_header("x-solo-request") }}'
+      remove:
+      - x-solo-request`, `apiVersion: gateway.networking.k8s.io/v1beta1
+kind: HTTPRoute
+metadata:
+  name: happypath
+  namespace: gwtest
+spec:
+  parentRefs:
+    - name: http-gw
+  hostnames:
+    - "www.example2.com"
+  rules:
+    - backendRefs:
+        - name: kubernetes
+          port: 443
+      filters:
+      - type: ExtensionRef
+        extensionRef:
+          group: gateway.kgateway.dev
+          kind: RoutePolicy
+          name: transformation`)
+
+		time.Sleep(time.Second / 2)
+
+		err = client.ApplyYAMLContents("gwtest", `apiVersion: gateway.kgateway.dev/v1alpha1
+kind: RoutePolicy
+metadata:
+  name: transformation
+  namespace: gwtest
+spec:
+  transformation:
+    response:
+      set:
+      - name: x-solo-response
+        value: '{{ request_header("x-solo-request123") }}'
+      remove:
+      - x-solo-request321`)
+
+		time.Sleep(time.Second / 2)
+
+		dumper := newXdsDumper(t, ctx, xdsPort, "http-gw")
+		t.Cleanup(dumper.Close)
+		t.Cleanup(func() {
+			if t.Failed() {
+				logKrtState(t, fmt.Sprintf("krt state for failed test: %s", t.Name()), kdbg)
+			} else if os.Getenv("KGW_DUMP_KRT_ON_SUCCESS") == "true" {
+				logKrtState(t, fmt.Sprintf("krt state for successful test: %s", t.Name()), kdbg)
+			}
+		})
+
+		dump := dumper.Dump(t, ctx)
+		pfc := dump.Routes[0].GetVirtualHosts()[0].GetRoutes()[0].GetTypedPerFilterConfig()
+		if len(pfc) != 1 {
+			t.Fatalf("expected 1 filter config, got %d", len(pfc))
+		}
+		if !bytes.Contains(stdslice.Collect(maps.Values(pfc))[0].Value, []byte("x-solo-request321")) {
+			t.Fatalf("expected filter config to contain x-solo-request321")
+		}
+
+		t.Logf("%s finished", t.Name())
+	})
+}
+
 func runScenario(t *testing.T, scenarioDir string, globalSettings *settings.Settings) {
+	setupEnvTestAndRun(t, globalSettings, func(t *testing.T, ctx context.Context, kdbg *krt.DebugHandler, client istiokube.CLIClient, xdsPort int) {
+		// list all yamls in test data
+		files, err := os.ReadDir(scenarioDir)
+		if err != nil {
+			t.Fatalf("failed to read dir: %v", err)
+		}
+		for _, f := range files {
+			// run tests with the yaml files (but not -out.yaml files)/s
+			parentT := t
+			if strings.HasSuffix(f.Name(), ".yaml") && !strings.HasSuffix(f.Name(), "-out.yaml") {
+				fullpath := filepath.Join(scenarioDir, f.Name())
+				t.Run(strings.TrimSuffix(f.Name(), ".yaml"), func(t *testing.T) {
+					writer.set(t)
+					t.Cleanup(func() {
+						writer.set(parentT)
+					})
+					// sadly tests can't run yet in parallel, as kgateway will add all the k8s services as clusters. this means
+					// that we get test pollution.
+					// once we change it to only include the ones in the proxy, we can re-enable this
+					//				t.Parallel()
+					testScenario(t, ctx, kdbg, client, xdsPort, fullpath)
+				})
+			}
+		}
+	})
+}
+
+func setupEnvTestAndRun(t *testing.T, globalSettings *settings.Settings, run func(t *testing.T,
+	ctx context.Context,
+	kdbg *krt.DebugHandler,
+	client istiokube.CLIClient,
+	xdsPort int,
+),
+) {
 	proxy_syncer.UseDetailedUnmarshalling = true
 	writer.set(t)
 
 	testEnv := &envtest.Environment{
 		CRDDirectoryPaths: []string{
 			filepath.Join("..", "crds"),
-			filepath.Join("..", "..", "..", "install", "helm", "kgateway", "crds"),
+			filepath.Join("..", "..", "..", "install", "helm", "kgateway-crds", "templates"),
 			filepath.Join("testdata", "istiocrds"),
 		},
 		ErrorIfCRDPathMissing: true,
 		// set assets dir so we can run without the makefile
 		BinaryAssetsDirectory: getAssetsDir(t),
 		// web hook to add cluster ips to services
+	}
+	// Enable this if you want api server logs and audit logs.
+	if os.Getenv("DEBUG_APISERVER") == "true" {
+		addApiServerLogs(t, testEnv)
 	}
 	var wg sync.WaitGroup
 	t.Cleanup(wg.Wait)
@@ -203,12 +390,13 @@ func runScenario(t *testing.T, scenarioDir string, globalSettings *settings.Sett
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		setup.StartKgatewayWithConfig(ctx, setupOpts, cfg, builder, nil, nil)
+		setup.StartKgatewayWithConfig(ctx, setupOpts, cfg, builder, nil)
 	}()
 	// give kgateway time to initialize so we don't get
 	// "kgateway not initialized" error
 	// this means that it attaches the pod collection to the unique client set collection.
 	time.Sleep(time.Second)
+<<<<<<< HEAD
 
 	// list all yamls in test data
 	files, err := os.ReadDir(scenarioDir)
@@ -233,6 +421,9 @@ func runScenario(t *testing.T, scenarioDir string, globalSettings *settings.Sett
 			})
 		}
 	}
+=======
+	run(t, ctx, setupOpts.KrtDebugger, client, xdsPort)
+>>>>>>> main
 }
 
 func testScenario(
@@ -324,7 +515,7 @@ func testScenario(
 		t.Fatal("wrote out file - nothing to test")
 	}
 	dump.Compare(t, expectedXdsDump)
-	t.Logf("%s passed", t.Name())
+	t.Logf("%s finished", t.Name())
 }
 
 // logKrtState logs the krt state with a message

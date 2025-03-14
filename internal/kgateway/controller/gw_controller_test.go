@@ -9,8 +9,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	api "sigs.k8s.io/gateway-api/apis/v1"
-
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
 
 var _ = Describe("GwController", func() {
@@ -86,7 +84,7 @@ var _ = Describe("GwController", func() {
 			Expect(*gw.Status.Addresses[0].Type).To(Equal(api.IPAddressType))
 			Expect(gw.Status.Addresses[0].Value).To(Equal("127.0.0.1"))
 		},
-		Entry("default gateway class", wellknown.GatewayClassName),
-		Entry("waypoint gateway class", wellknown.WaypointClassName),
+		Entry("default gateway class", gatewayClassName),
+		Entry("alternative gateway class", altGatewayClassName),
 	)
 })

@@ -23,7 +23,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
@@ -210,28 +209,22 @@ func (tc TestCase) Run(t test.Failer, ctx context.Context) (map[types.Namespaced
 	}
 	defer cli.Shutdown()
 
-	// init classes
-	for class := range wellknown.BuiltinGatewayClasses {
-		_, err := cli.GatewayAPI().GatewayV1().GatewayClasses().Create(ctx, &gwv1.GatewayClass{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: string(class),
-			},
-			Spec: gwv1.GatewayClassSpec{
-				// TODO this should be from settings
-				ControllerName: gwv1.GatewayController(wellknown.GatewayControllerName),
-				ParametersRef: &gwv1.ParametersReference{
-					Group:     gwv1.Group(v1alpha1.GroupVersion.Group),
-					Kind:      gwv1.Kind("GatewayParameters"),
-					Name:      wellknown.DefaultGatewayParametersName,
-					Namespace: ptr.To(gwv1.Namespace("default")),
-				},
-			},
-		}, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
-	}
-
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
+
+	// ensure classes used in tests exist and point at our controller
+	gwClasses := append(wellknown.BuiltinGatewayClasses.UnsortedList(), "example-gateway-class")
+	for _, className := range gwClasses {
+		cli.GatewayAPI().GatewayV1().GatewayClasses().Create(ctx, &gwv1.GatewayClass{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: string(className),
+			},
+			Spec: gwv1.GatewayClassSpec{
+				ControllerName: wellknown.GatewayControllerName,
+			},
+		}, metav1.CreateOptions{})
+	}
+
 	krtOpts := krtutil.KrtOptions{
 		Stop: ctx.Done(),
 	}
@@ -245,6 +238,7 @@ func (tc TestCase) Run(t test.Failer, ctx context.Context) (map[types.Namespaced
 		krtOpts,
 		cli,
 		ourCli,
+		wellknown.GatewayControllerName,
 		logr.Discard(),
 		*st,
 	)

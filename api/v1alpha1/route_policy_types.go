@@ -11,7 +11,7 @@ import (
 // +genclient
 // +kubebuilder:object:root=true
 // +kubebuilder:metadata:labels={app=kgateway,app.kubernetes.io/name=kgateway}
-// +kubebuilder:resource:categories=kgateway,shortName=rp
+// +kubebuilder:resource:categories=kgateway
 // +kubebuilder:subresource:status
 // +kubebuilder:metadata:labels="gateway.networking.k8s.io/policy=Direct"
 type RoutePolicy struct {
@@ -30,11 +30,9 @@ type RoutePolicyList struct {
 }
 
 type RoutePolicySpec struct {
-	TargetRef LocalPolicyTargetReference `json:"targetRef,omitempty"`
-	// +kubebuilder:validation:Minimum=1
-	Timeout        int                  `json:"timeout,omitempty"`
-	AI             *AIRoutePolicy       `json:"ai,omitempty"`
-	Transformation TransformationPolicy `json:"transformation,omitempty"`
+	TargetRef      LocalPolicyTargetReference `json:"targetRef,omitempty"`
+	AI             *AIRoutePolicy             `json:"ai,omitempty"`
+	Transformation TransformationPolicy       `json:"transformation,omitempty"`
 }
 
 // TransformationPolicy config is used to modify envoy behavior at a route level.

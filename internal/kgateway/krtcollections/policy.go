@@ -149,15 +149,15 @@ type GatewayIndex struct {
 
 func NewGatewayIndex(
 	krtopts krtutil.KrtOptions,
-	policies *PolicyIndex,
 	controllerName string,
+	policies *PolicyIndex,
 	gws krt.Collection[*gwv1.Gateway],
 	gwClasses krt.Collection[*gwv1.GatewayClass],
 ) *GatewayIndex {
 	h := &GatewayIndex{policies: policies}
 
 	h.Gateways = krt.NewCollection(gws, func(kctx krt.HandlerContext, i *gwv1.Gateway) *ir.Gateway {
-		// only care about gateways that we have a class name for
+		// only care about gateways use a class controlled by us
 		gwClass := ptr.Flatten(krt.FetchOne(kctx, gwClasses, krt.FilterKey(string(i.Spec.GatewayClassName))))
 		if gwClass == nil || controllerName != string(gwClass.Spec.ControllerName) {
 			return nil
@@ -205,10 +205,11 @@ type globalPolicy struct {
 	points extensionsplug.AttachmentPoints
 }
 type PolicyIndex struct {
-	policies       krt.Collection[ir.PolicyWrapper]
-	policiesFetch  map[schema.GroupKind]func(n string, ns string) ir.PolicyIR
-	globalPolicies []globalPolicy
-	targetRefIndex krt.Index[targetRefIndexKey, ir.PolicyWrapper]
+	policies            krt.Collection[ir.PolicyWrapper]
+	policiesByTargetRef krt.Collection[ir.PolicyWrapper]
+	targetRefIndex      krt.Index[targetRefIndexKey, ir.PolicyWrapper]
+	policiesFetch       map[schema.GroupKind]func(n string, ns string) ir.PolicyIR
+	globalPolicies      []globalPolicy
 
 	hasSyncedFuncs []func() bool
 }
@@ -245,8 +246,14 @@ func NewPolicyIndex(krtopts krtutil.KrtOptions, contributesPolicies extensionspl
 	}
 
 	index.policies = krt.JoinCollection(policycols, krtopts.ToOptions("policies")...)
+	index.policiesByTargetRef = krt.NewCollection(index.policies, func(kctx krt.HandlerContext, a ir.PolicyWrapper) *ir.PolicyWrapper {
+		if len(a.TargetRefs) == 0 {
+			return nil
+		}
+		return &a
+	}, krtopts.ToOptions("policiesByTargetRef")...)
 
-	index.targetRefIndex = krt.NewIndex(index.policies, func(p ir.PolicyWrapper) []targetRefIndexKey {
+	index.targetRefIndex = krt.NewIndex(index.policiesByTargetRef, func(p ir.PolicyWrapper) []targetRefIndexKey {
 		ret := make([]targetRefIndexKey, len(p.TargetRefs))
 		for i, tr := range p.TargetRefs {
 			ret[i] = targetRefIndexKey{
@@ -285,9 +292,12 @@ func (p *PolicyIndex) getTargetingPolicies(
 		},
 		Namespace: targetRef.Namespace,
 	}
-	policies := krt.Fetch(kctx, p.policies, krt.FilterIndex(p.targetRefIndex, targetRefIndexKey))
-	targetRefIndexKey.SectionName = sectionName
-	sectionNamePolicies := krt.Fetch(kctx, p.policies, krt.FilterIndex(p.targetRefIndex, targetRefIndexKey))
+	policies := krt.Fetch(kctx, p.policiesByTargetRef, krt.FilterIndex(p.targetRefIndex, targetRefIndexKey))
+	var sectionNamePolicies []ir.PolicyWrapper
+	if sectionName != "" {
+		targetRefIndexKey.SectionName = sectionName
+		sectionNamePolicies = krt.Fetch(kctx, p.policiesByTargetRef, krt.FilterIndex(p.targetRefIndex, targetRefIndexKey))
+	}
 
 	for _, p := range policies {
 		ret = append(ret, ir.PolicyAtt{PolicyIr: p.PolicyIR, GroupKind: p.GetGroupKind(), PolicyTargetRef: &ir.PolicyTargetRef{
@@ -665,7 +675,6 @@ func (h *RoutesIndex) resolveExtension(kctx krt.HandlerContext, ns string, ext g
 			// TODO: report error!!
 			return schema.GroupKind{}, nil
 		}
-		// panic("TODO: handle built in extensions")
 		ref := *ext.ExtensionRef
 		key := ir.ObjectSource{
 			Group:     string(ref.Group),

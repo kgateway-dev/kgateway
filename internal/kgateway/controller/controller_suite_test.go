@@ -17,6 +17,7 @@ import (
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
@@ -42,17 +43,21 @@ var (
 	cancel    context.CancelFunc
 
 	kubeconfig string
+
+	gwClasses = sets.New(gatewayClassName, altGatewayClassName)
 )
 
 const (
+	gatewayClassName      = "clsname"
+	altGatewayClassName   = "clsname-alt"
 	gatewayControllerName = "controller/name"
 )
 
 func getAssetsDir() string {
-	assets := ""
+	var assets string
 	if os.Getenv("KUBEBUILDER_ASSETS") == "" {
 		// set default if not user provided
-		out, err := exec.Command("sh", "-c", "make -sC $(dirname $(go env GOMOD))/internal/kgateway envtest-path").CombinedOutput()
+		out, err := exec.Command("sh", "-c", "make -sC $(dirname $(go env GOMOD)) envtest-path").CombinedOutput()
 		fmt.Fprintln(GinkgoWriter, "out:", string(out))
 		ExpectWithOffset(1, err).NotTo(HaveOccurred())
 		assets = strings.TrimSpace(string(out))
@@ -63,13 +68,13 @@ func getAssetsDir() string {
 var _ = BeforeSuite(func() {
 	log.SetLogger(zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true)))
 
-	ctx, cancel = context.WithCancel(context.TODO())
+	ctx, cancel = context.WithCancel(context.Background())
 
 	By("bootstrapping test environment")
 	testEnv = &envtest.Environment{
 		CRDDirectoryPaths: []string{
 			filepath.Join("..", "crds"),
-			filepath.Join("..", "..", "..", "install", "helm", "kgateway", "crds"),
+			filepath.Join("..", "..", "..", "install", "helm", "kgateway-crds", "templates"),
 		},
 		ErrorIfCRDPathMissing: true,
 		// set assets dir so we can run without the makefile
@@ -87,7 +92,7 @@ var _ = BeforeSuite(func() {
 	Expect(k8sClient).NotTo(BeNil())
 
 	webhookInstallOptions := &testEnv.WebhookInstallOptions
-	mgrOpts := ctrl.Options{
+	mgr, err := ctrl.NewManager(cfg, ctrl.Options{
 		Scheme: scheme,
 		WebhookServer: webhook.NewServer(webhook.Options{
 			Host:    webhookInstallOptions.LocalServingHost,
@@ -101,8 +106,7 @@ var _ = BeforeSuite(func() {
 			// the name validation here.
 			SkipNameValidation: ptr.To(true),
 		},
-	}
-	mgr, err := ctrl.NewManager(cfg, mgrOpts)
+	})
 	Expect(err).ToNot(HaveOccurred())
 
 	kubeconfig = generateKubeConfiguration(cfg)
@@ -110,15 +114,14 @@ var _ = BeforeSuite(func() {
 
 	Expect(err).ToNot(HaveOccurred())
 
-	cfg := controller.GatewayConfig{
+	err = controller.NewBaseGatewayController(ctx, controller.GatewayConfig{
 		Mgr:            mgr,
 		ControllerName: gatewayControllerName,
 		AutoProvision:  true,
-	}
-	err = controller.NewBaseGatewayController(ctx, cfg)
+	})
 	Expect(err).ToNot(HaveOccurred())
 
-	for class := range wellknown.BuiltinGatewayClasses {
+	for class := range gwClasses {
 		err = k8sClient.Create(ctx, &api.GatewayClass{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: string(class),

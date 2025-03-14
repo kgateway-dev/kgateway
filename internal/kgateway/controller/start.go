@@ -28,7 +28,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/proxy_syncer"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
 	glooschemes "github.com/kgateway-dev/kgateway/v2/pkg/schemes"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
@@ -57,6 +56,8 @@ type SetupOpts struct {
 var setupLog = ctrl.Log.WithName("setup")
 
 type StartConfig struct {
+	ControllerName string
+
 	Dev        bool
 	SetupOpts  *SetupOpts
 	RestConfig *rest.Config
@@ -136,6 +137,7 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 		cfg.KrtOptions,
 		cfg.Client,
 		cli,
+		cfg.ControllerName,
 		setupLog,
 		*cfg.SetupOpts.GlobalSettings,
 	)
@@ -146,7 +148,7 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 	setupLog.Info("initializing proxy syncer")
 	proxySyncer := proxy_syncer.NewProxySyncer(
 		ctx,
-		wellknown.GatewayControllerName,
+		cfg.ControllerName,
 		mgr,
 		cfg.Client,
 		cfg.UniqueClients,
@@ -196,9 +198,9 @@ func (c *ControllerBuilder) Start(ctx context.Context) error {
 	integrationEnabled := globalSettings.EnableIstioIntegration
 
 	if err := NewBaseGatewayController(ctx, GatewayConfig{
-		Mgr:            c.mgr,
+		Mgr: c.mgr,
 		// TODO read this from globalSettings
-		ControllerName: wellknown.GatewayControllerName,
+		ControllerName: c.cfg.ControllerName,
 		AutoProvision:  AutoProvision,
 		ControlPlane: deployer.ControlPlaneInfo{
 			XdsHost: xdsHost,

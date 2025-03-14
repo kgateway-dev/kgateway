@@ -17,8 +17,6 @@ spec:
     kind: HTTPListenerPolicy
     listKind: HTTPListenerPolicyList
     plural: httplistenerpolicies
-    shortNames:
-    - hlp
     singular: httplistenerpolicy
   scope: Namespaced
   versions:

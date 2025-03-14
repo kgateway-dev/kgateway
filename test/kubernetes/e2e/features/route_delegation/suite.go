@@ -2,11 +2,13 @@ package route_delegation
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"time"
 
 	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/suite"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
@@ -30,6 +32,9 @@ type tsuite struct {
 	manifests map[string][]string
 
 	manifestObjects map[string][]client.Object
+
+	// resources from common manifest
+	commonResources []client.Object
 }
 
 func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
@@ -41,20 +46,19 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 
 func (s *tsuite) SetupSuite() {
 	s.manifests = map[string][]string{
-		"TestBasic":                       {commonManifest, basicRoutesManifest},
-		"TestRecursive":                   {commonManifest, recursiveRoutesManifest},
-		"TestCyclic":                      {commonManifest, cyclicRoutesManifest},
-		"TestInvalidChild":                {commonManifest, invalidChildRoutesManifest},
-		"TestHeaderQueryMatch":            {commonManifest, headerQueryMatchRoutesManifest},
-		"TestMultipleParents":             {commonManifest, multipleParentsManifest},
-		"TestInvalidChildValidStandalone": {commonManifest, invalidChildValidStandaloneManifest},
-		"TestUnresolvedChild":             {commonManifest, unresolvedChildManifest},
-		"TestMatcherInheritance":          {commonManifest, matcherInheritanceManifest},
+		"TestBasic":                       {basicRoutesManifest},
+		"TestRecursive":                   {recursiveRoutesManifest},
+		"TestCyclic":                      {cyclicRoutesManifest},
+		"TestInvalidChild":                {invalidChildRoutesManifest},
+		"TestHeaderQueryMatch":            {headerQueryMatchRoutesManifest},
+		"TestMultipleParents":             {multipleParentsManifest},
+		"TestInvalidChildValidStandalone": {invalidChildValidStandaloneManifest},
+		"TestUnresolvedChild":             {unresolvedChildManifest},
+		"TestMatcherInheritance":          {matcherInheritanceManifest},
 	}
 	// Not every resource that is applied needs to be verified. We are not testing `kubectl apply`,
 	// but the below code demonstrates how it can be done if necessary
 	s.manifestObjects = map[string][]client.Object{
-		commonManifest:                      {proxyService, proxyDeployment, defaults.CurlPod, httpbinTeam1, httpbinTeam2, gateway},
 		basicRoutesManifest:                 {routeRoot, routeTeam1, routeTeam2},
 		cyclicRoutesManifest:                {routeRoot, routeTeam1, routeTeam2},
 		recursiveRoutesManifest:             {routeRoot, routeTeam1, routeTeam2},
@@ -65,10 +69,56 @@ func (s *tsuite) SetupSuite() {
 		unresolvedChildManifest:             {routeRoot},
 		matcherInheritanceManifest:          {routeParent1, routeParent2, routeTeam1},
 	}
+
+	s.commonResources = []client.Object{
+		// resources from manifest
+		httpbinTeam1Service, httpbinTeam1Deployment, httpbinTeam2Service, httpbinTeam2Deployment, gateway,
+		// deployer-generated resources
+		proxyDeployment, proxyService,
+	}
+
+	// set up common resources once
+	err := s.ti.Actions.Kubectl().ApplyFile(s.ctx, commonManifest)
+	s.Require().NoError(err, "can apply common manifest")
+	s.ti.Assertions.EventuallyObjectsExist(s.ctx, s.commonResources...)
+	// make sure pods are running
+	s.ti.Assertions.EventuallyPodsRunning(s.ctx, httpbinTeam1Deployment.GetNamespace(), metav1.ListOptions{
+		LabelSelector: "app=httpbin,version=v1",
+	})
+	s.ti.Assertions.EventuallyPodsRunning(s.ctx, httpbinTeam2Deployment.GetNamespace(), metav1.ListOptions{
+		LabelSelector: "app=httpbin,version=v2",
+	})
+	s.ti.Assertions.EventuallyPodsRunning(s.ctx, proxyMeta.GetNamespace(), metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("app.kubernetes.io/name=%s", proxyMeta.GetName()),
+	})
+
+	// set up curl once
+	err = s.ti.Actions.Kubectl().ApplyFile(s.ctx, defaults.CurlPodManifest)
+	s.Require().NoError(err, "can apply curl pod manifest")
+	s.ti.Assertions.EventuallyPodsRunning(s.ctx, defaults.CurlPod.GetNamespace(), metav1.ListOptions{
+		LabelSelector: defaults.CurlPodLabelSelector,
+	})
 }
 
 func (s *tsuite) TearDownSuite() {
-	// nothing at the moment
+	// clean up curl
+	err := s.ti.Actions.Kubectl().DeleteFileSafe(s.ctx, defaults.CurlPodManifest)
+	s.Require().NoError(err, "can delete curl pod manifest")
+	s.ti.Assertions.EventuallyObjectsNotExist(s.ctx, defaults.CurlPod)
+
+	// clean up common resources
+	err = s.ti.Actions.Kubectl().DeleteFileSafe(s.ctx, commonManifest)
+	s.Require().NoError(err, "can delete common manifest")
+	s.ti.Assertions.EventuallyObjectsNotExist(s.ctx, s.commonResources...)
+	s.ti.Assertions.EventuallyPodsNotExist(s.ctx, httpbinTeam1Deployment.GetNamespace(), metav1.ListOptions{
+		LabelSelector: "app=httpbin,version=v1",
+	})
+	s.ti.Assertions.EventuallyPodsNotExist(s.ctx, httpbinTeam2Deployment.GetNamespace(), metav1.ListOptions{
+		LabelSelector: "app=httpbin,version=v2",
+	})
+	s.ti.Assertions.EventuallyPodsNotExist(s.ctx, proxyMeta.GetNamespace(), metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("app.kubernetes.io/name=%s", proxyMeta.GetName()),
+	})
 }
 
 func (s *tsuite) BeforeTest(suiteName, testName string) {

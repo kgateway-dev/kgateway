@@ -17,8 +17,6 @@ spec:
     kind: RoutePolicy
     listKind: RoutePolicyList
     plural: routepolicies
-    shortNames:
-    - rp
     singular: routepolicy
   scope: Namespaced
   versions:
@@ -290,9 +288,6 @@ spec:
                 - kind
                 - name
                 type: object
-              timeout:
-                minimum: 1
-                type: integer
               transformation:
                 properties:
                   request:
