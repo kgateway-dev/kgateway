@@ -43,19 +43,6 @@ type CommonCollections struct {
 	controllerName string
 }
 
-type syncables []interface {
-	HasSynced() bool
-}
-
-func (s syncables) HasSynced() bool {
-	for _, s := range s {
-		if s == nil || !s.HasSynced() {
-			return false
-		}
-	}
-	return true
-}
-
 func (c *CommonCollections) HasSynced() bool {
 	// we check nil as well because some of the inner
 	// collections aren't initialized until we call InitPlugins
