@@ -67,7 +67,7 @@ controller:
 gatewayClass:
   enabled: true
   name: "kgateway"
-  description: "KGateway Controller"
+  description: "kgateway controller"
   controllerName: "kgateway.dev/kgateway"
   labels: {}
   annotations: {}
@@ -86,7 +86,7 @@ gatewayClass:
 waypointClass:
   enabled: true
   name: "kgateway-waypoint"
-  description: "KGateway Waypoint Controller"
+  description: "kgateway waypoint controller"
   controllerName: "kgateway.dev/kgateway"
   labels: {}
   annotations:
