@@ -1,0 +1,67 @@
+{
+    "candidates": [
+      {
+        "content": {
+          "role": "model",
+          "parts": [
+            {
+              "text": "A function, a call, a mirror's reflection,\nIt looks at itself, a self-reference,\nA loop of code, a spiral of thought,\nA problem divided, then conquered, I'm taught.\n\nRecursion, a dance of calls and returns,\nA stack of frames, where the program yearns,\nTo break down the task, a smaller one made,\nUntil the base case is reached, the answer is laid.\n\nLike fractals, each piece, a miniature whole,\nA pattern repeating, taking its toll,\nFrom factorial numbers to tree traversals deep,\nRecursion explores, secrets to keep.\n\nBut beware of the trap, the infinite loop,\nA bottomless pit, where programs would droop,\nThe stack overflows, a crash, a downfall,\nRecursion unchecked, can bring us all.\n\nSo learn its power, its beauty, its grace,\nWith careful control, in its intricate space,\nFor problems complex, it offers a way,\nTo solve and to conquer, every single day."
+            }
+          ]
+        },
+        "finishReason": "STOP",
+        "safetyRatings": [
+          {
+            "category": "HARM_CATEGORY_HATE_SPEECH",
+            "probability": "NEGLIGIBLE",
+            "probabilityScore": 0.05029297,
+            "severity": "HARM_SEVERITY_NEGLIGIBLE",
+            "severityScore": 0.03857422
+          },
+          {
+            "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+            "probability": "NEGLIGIBLE",
+            "probabilityScore": 0.048828125,
+            "severity": "HARM_SEVERITY_NEGLIGIBLE",
+            "severityScore": 0.04345703
+          },
+          {
+            "category": "HARM_CATEGORY_HARASSMENT",
+            "probability": "NEGLIGIBLE",
+            "probabilityScore": 0.07470703,
+            "severity": "HARM_SEVERITY_NEGLIGIBLE",
+            "severityScore": 0.044677734
+          },
+          {
+            "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+            "probability": "NEGLIGIBLE",
+            "probabilityScore": 0.026367188,
+            "severity": "HARM_SEVERITY_NEGLIGIBLE",
+            "severityScore": 0.03173828
+          }
+        ],
+        "avgLogprobs": -0.635476337779652
+      }
+    ],
+    "usageMetadata": {
+      "promptTokenCount": 12,
+      "candidatesTokenCount": 220,
+      "totalTokenCount": 232,
+      "promptTokensDetails": [
+        {
+          "modality": "TEXT",
+          "tokenCount": 12
+        }
+      ],
+      "candidatesTokensDetails": [
+        {
+          "modality": "TEXT",
+          "tokenCount": 220
+        }
+      ]
+    },
+    "modelVersion": "gemini-1.5-flash-001",
+    "createTime": "2025-03-10T15:34:03.043181Z",
+    "responseId": "awbPZ63RAo2TmecP05GV8AE"
+  }
+  

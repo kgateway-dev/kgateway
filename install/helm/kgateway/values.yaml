@@ -126,11 +126,7 @@ gateway:
   aiExtension:
     enabled: false
     image:
-      repository: gloo-ai-extension
-      registry: quay.io/solo-io
-      pullPolicy: IfNotPresent
-    env: []
-    ports: []
+      repository: kgateway-ai-extension
   stats:
     enabled: true
     routePrefixRewrite: "/stats/prometheus"

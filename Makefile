@@ -337,6 +337,34 @@ go-generate-apis: ## Run all go generate directives in the repo, including codeg
 go-generate-mocks: ## Runs all generate directives for mockgen in the repo
 	GO111MODULE=on go generate -run="mockgen" ./...
 
+AI_EXTENSION_DIR := $(ROOTDIR)/python
+
+.PHONY: generate-ai-extension-apis
+generate-ai-extension-apis:
+ifeq ($(SKIP_VENV), true)
+	ENVOY_VERSION=$(UPSTREAM_ENVOY_VERSION) $(AI_EXTENSION_DIR)/scripts/genproto.sh
+else
+	( \
+		python3 -m venv .pyenv; \
+		. .pyenv/bin/activate; \
+		pip3 install -r $(AI_EXTENSION_DIR)/scripts/requirements.txt; \
+		ENVOY_VERSION=$(UPSTREAM_ENVOY_VERSION) $(AI_EXTENSION_DIR)/scripts/genproto.sh; \
+		rm -rf .pyenv; \
+	)
+endif
+
+#----------------------------------------------------------------------------------
+# AI Extensions ExtProc Server
+#----------------------------------------------------------------------------------
+
+export AI_EXTENSION_IMAGE_REPO ?= kgateway-ai-extension
+
+.PHONY: kgateway-ai-extension-docker
+kgateway-ai-extension-docker:
+	docker buildx build $(LOAD_OR_PUSH) $(DOCKER_BUILD_ARGS_AI_EXT) -f $(AI_EXTENSION_DIR)/Dockerfile $(AI_EXTENSION_DIR) \
+		-t $(IMAGE_REGISTRY)/kgateway-ai-extension:$(VERSION)
+
+
 GETTERCHECK ?= go tool github.com/saiskee/gettercheck
 # Ensures that accesses for fields which have "getter" functions are exclusively done via said "getter" functions
 # TODO: do we still want this?
@@ -550,11 +578,13 @@ docker-push-%:
 docker-standard: kgateway-docker ## Build docker images (standard only)
 docker-standard: envoy-wrapper-docker
 docker-standard: sds-docker
+docker-standard: kgateway-ai-extension-docker # single image variant
 
 .PHONY: docker-distroless
 docker-distroless: kgateway-distroless-docker ## Build docker images (distroless only)
 docker-distroless: envoy-wrapper-distroless-docker
 docker-distroless: sds-distroless-docker
+docker-distroless: kgateway-ai-extension-docker # single image variant
 
 IMAGE_VARIANT ?= all
 # Build docker images using the defined IMAGE_REGISTRY, VERSION
@@ -573,11 +603,13 @@ endif # distroless images
 docker-standard-push: docker-push-kgateway
 docker-standard-push: docker-push-envoy-wrapper
 docker-standard-push: docker-push-sds
+docker-standard-push: docker-push-kgateway-ai-extension # single image variant
 
 .PHONY: docker-distroless-push
 docker-distroless-push: docker-push-kgateway-distroless
 docker-distroless-push: docker-push-envoy-wrapper-distroless
 docker-distroless-push: docker-push-sds-distroless
+docker-distroless-push: docker-push-kgateway-ai-extension # single image variant
 
 # Push docker images to the defined IMAGE_REGISTRY
 .PHONY: docker-push
@@ -594,11 +626,13 @@ endif # distroless images
 docker-standard-retag: docker-retag-kgateway
 docker-standard-retag: docker-retag-envoy-wrapper
 docker-standard-retag: docker-retag-sds
+docker-standard-retag: docker-retag-kgateway-ai-extension # single image variant
 
 .PHONY: docker-distroless-retag
 docker-distroless-retag: docker-retag-kgateway-distroless
 docker-distroless-retag: docker-retag-envoy-wrapper-distroless
 docker-distroless-retag: docker-retag-sds-distroless
+docker-distroless-retag: docker-retag-kgateway-ai-extension # single image variant
 
 # Re-tag docker images previously pushed to the ORIGINAL_IMAGE_REGISTRY,
 # and tag them with a secondary repository, defined at IMAGE_REGISTRY
@@ -668,11 +702,13 @@ kind-reload-envoy-wrapper:
 kind-build-and-load-standard: kind-build-and-load-kgateway
 kind-build-and-load-standard: kind-build-and-load-envoy-wrapper
 kind-build-and-load-standard: kind-build-and-load-sds
+kind-build-and-load-standard: kind-build-and-load-kgateway-ai-extension # single image variant
 
 .PHONY: kind-build-and-load-distroless
 kind-build-and-load-distroless: kind-build-and-load-kgateway-distroless
 kind-build-and-load-distroless: kind-build-and-load-envoy-wrapper-distroless
 kind-build-and-load-distroless: kind-build-and-load-sds-distroless
+kind-build-and-load-distroless: kind-build-and-load-kgateway-ai-extension # single image variant
 
 .PHONY: kind-build-and-load ## Use to build all images and load them into kind
 kind-build-and-load: # Standard images
@@ -691,11 +727,13 @@ kind-build-and-load: kind-build-and-load-sds
 kind-load-standard: kind-load-kgateway
 kind-load-standard: kind-load-envoy-wrapper
 kind-load-standard: kind-load-sds
+kind-load-standard: kind-load-kgateway-ai-extension # single image variant
 
 .PHONY: kind-build-and-load-distroless
 kind-load-distroless: kind-load-kgateway-distroless
 kind-load-distroless: kind-load-envoy-wrapper-distroless
 kind-load-distroless: kind-load-sds-distroless
+kind-load-distroless: kind-load-kgateway-ai-extension # single image variant
 
 .PHONY: kind-load ## Use to build all images and load them into kind
 kind-load: # Standard images
@@ -729,6 +767,16 @@ kind-list-images: ## List solo-io images in the kind cluster named {CLUSTER_NAME
 .PHONY: kind-prune-images
 kind-prune-images: ## Remove images in the kind cluster named {CLUSTER_NAME}
 	docker exec -ti $(CLUSTER_NAME)-control-plane crictl rmi --prune
+
+#----------------------------------------------------------------------------------
+# AI Extensions Test Server (for mocking AI Providers in e2e tests)
+#----------------------------------------------------------------------------------
+
+TEST_AI_PROVIDER_SERVER_DIR := $(ROOTDIR)/test/mocks/mock-ai-provider-server
+.PHONY: test-ai-provider-docker
+test-ai-provider-docker:
+	docker buildx build $(LOAD_OR_PUSH) $(DOCKER_BUILD_ARGS_AI_EXT) -f $(TEST_AI_PROVIDER_SERVER_DIR)/Dockerfile $(TEST_AI_PROVIDER_SERVER_DIR) \
+		-t $(IMAGE_REGISTRY)/test-ai-provider:$(VERSION)
 
 #----------------------------------------------------------------------------------
 # Targets for running Kubernetes Gateway API conformance tests
