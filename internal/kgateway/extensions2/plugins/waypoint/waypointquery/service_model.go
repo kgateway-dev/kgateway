@@ -38,7 +38,7 @@ type Service struct {
 func (s Service) IsHeadless() bool {
 	switch o := s.Object.(type) {
 	case *corev1.Service:
-		return o.Spec.ClusterIP == "None"
+		return o.Spec.ClusterIP == corev1.ClusterIPNone
 	case *istionetworking.ServiceEntry:
 		return o.Spec.GetResolution() == networkingv1beta1.ServiceEntry_NONE
 	default:
