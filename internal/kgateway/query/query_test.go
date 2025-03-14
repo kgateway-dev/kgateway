@@ -109,7 +109,7 @@ var _ = Describe("Query", func() {
 			Expect(routes.ListenerResults["foo"].Routes).To(HaveLen(1))
 		})
 
-		FIt("should ignore http routes for wrong kind", func() {
+		It("should ignore http routes for wrong kind", func() {
 			gwWithListener := gw()
 			gwWithListener.Spec.Listeners = []apiv1.Listener{
 				{
@@ -918,12 +918,15 @@ func newQueries(initObjs ...client.Object) query.GatewayQueries {
 	}
 	secrets := krtcollections.NewSecretIndex(secretsCol, refgrants)
 	nsCol := krtcollections.NewNamespaceCollectionFromCol(context.Background(), krttest.GetMockCollection[*corev1.Namespace](mock), krtutil.KrtOptions{})
+
+	commonCols := &common.CommonCollections{
+		Routes: rtidx, Secrets: secrets, Namespaces: nsCol,
+	}
+
 	for !rtidx.HasSynced() || !refgrants.HasSynced() || !secrets.HasSynced() || !upstreams.HasSynced() {
 		time.Sleep(time.Second / 10)
 	}
-	return query.NewData(&common.CommonCollections{
-		Routes: rtidx, Secrets: secrets, Namespaces: nsCol,
-	})
+	return query.NewData(commonCols)
 }
 
 func k8sUpstreams(services krt.Collection[*corev1.Service]) krt.Collection[ir.BackendObjectIR] {

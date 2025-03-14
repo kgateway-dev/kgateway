@@ -43,13 +43,28 @@ type CommonCollections struct {
 	controllerName string
 }
 
+type syncables []interface {
+	HasSynced() bool
+}
+
+func (s syncables) HasSynced() bool {
+	for _, s := range s {
+		if s == nil || !s.HasSynced() {
+			return false
+		}
+	}
+	return true
+}
+
 func (c *CommonCollections) HasSynced() bool {
-	return c.Secrets.HasSynced() &&
-		c.BackendIndex.HasSynced() &&
-		c.Routes.HasSynced() &&
-		c.Namespaces.HasSynced() &&
-		c.Pods.HasSynced() &&
-		c.RefGrants.HasSynced()
+	// we check nil as well because some of the inner
+	// collections aren't initialized until we call InitPlugins
+	return c.Secrets != nil && c.Secrets.HasSynced() &&
+		c.BackendIndex != nil && c.BackendIndex.HasSynced() &&
+		c.Routes != nil && c.Routes.HasSynced() &&
+		c.Namespaces != nil && c.Namespaces.HasSynced() &&
+		c.Pods != nil && c.Pods.HasSynced() &&
+		c.RefGrants != nil && c.RefGrants.HasSynced()
 }
 
 // NewCommonCollections initializes the core krt collections.
