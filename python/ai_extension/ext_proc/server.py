@@ -279,10 +279,8 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
         metadict: dict,
         headers: external_processor_pb2.HttpHeaders,
     ):
-        logger.error("parsing handler config %s", metadict)
         if (guardrails := metadict.get("x-req-guardrails-config", "")) != "":
             guardrails_obj = prompt_guard.req_from_json(guardrails)
-            logger.error(f"guardrails_obj: {guardrails_obj}")
             config_hash = metadict.get("x-req-guardrails-config-hash", "")
             if guardrails_obj.custom_response:
                 handler.req_custom_response = guardrails_obj.custom_response
@@ -303,13 +301,11 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
             if guardrails_obj.webhook:
                 handler.req_webhook = guardrails_obj.webhook
             if guardrails_obj.regex:
-                logging.error("!!! has regex prompt guard")
                 handler.req_regex_action = guardrails_obj.regex.action
                 if config_hash in self._req_guard:
                     handler.req_regex = self._req_guard.get(config_hash)
                     logger.debug("reusing cached request regex")
                 else:
-                    logging.error("!!! init presidio")
                     recognizers = init_presidio_config(guardrails_obj.regex)
                     handler.req_regex = recognizers
                     self._req_guard[config_hash] = handler.req_regex
@@ -337,13 +333,9 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
             handler.req_webhook.forwardHeaders if handler.req_webhook else [],
             headers,
         )
-        logger.debug(
-            "auth header: %s", get_http_header(headers.headers, "authorization")
-        )
         auth_header = get_http_header(headers.headers, "authorization").removeprefix(
             "Bearer "
         )
-        logger.debug("auth header found: %s", auth_header)
 
         return external_processor_pb2.ProcessingResponse(
             dynamic_metadata=struct_pb2.Struct(

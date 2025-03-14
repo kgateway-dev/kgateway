@@ -1,5 +1,4 @@
 import gzip
-import logging
 from api.kgateway.policy.ai import authtoken
 from api.envoy.config.core.v3 import base_pb2 as base_pb2
 from api.envoy.service.ext_proc.v3 import external_processor_pb2
@@ -28,10 +27,8 @@ def get_auth_token(
 
 
 def get_http_header(headers: base_pb2.HeaderMap, header_name: str) -> str:
-    logging.debug(f"get_http_header: {header_name}")
     lowered_header = header_name.lower()
     for i in range(headers.headers.__len__()):
-        logging.debug(f"header: {headers.headers[i].key.lower()}")
         if headers.headers[i].key.lower() == lowered_header:
             return headers.headers[i].raw_value.decode("utf-8")
     return "unknown"

@@ -69,8 +69,10 @@ else
   # 3. Build the test helm chart, ensuring we have a chart in the `_test` folder
   VERSION=$VERSION make package-kgateway-charts
 
-  # 4. Build the mock ai provider docker image and load it to the kind cluster
-  VERSION=$VERSION make kind-build-and-load-test-ai-provider
+  # 4. Build the mock ai provider docker image and load it to the kind cluster when the ai extension setup is enabled
+  if [[ $CONFORMANCE == "true" ]]; then
+    VERSION=$VERSION make kind-build-and-load-test-ai-provider
+  fi
 fi
 
 # 5. Build the gloo command line tool, ensuring we have one in the `_output` folder

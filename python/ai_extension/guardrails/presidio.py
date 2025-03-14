@@ -1,4 +1,3 @@
-import logging
 import regex as re
 from api.kgateway.policy.ai import prompt_guard
 from presidio_analyzer import (
@@ -21,7 +20,6 @@ def init_presidio_config(
 ) -> list[EntityRecognizer]:
     recognizers: list[EntityRecognizer] = []
     compiled_regex: list[Pattern] = []
-    logging.error(f"has builtins {guardrails_regex.builtins}")
     for builtin in guardrails_regex.builtins:
         match builtin:
             case prompt_guard.BuiltIn.CREDIT_CARD:
@@ -32,7 +30,6 @@ def init_presidio_config(
                 recognizers.append(PhoneRecognizer())
             case prompt_guard.BuiltIn.EMAIL:
                 recognizers.append(EmailRecognizer())
-    logging.error(f"has match {guardrails_regex.matches}")
     for idx, regex_match in enumerate(guardrails_regex.matches):
         compiled_re = re.compile(regex_match.pattern, global_regex_flage)
         pattern = Pattern(

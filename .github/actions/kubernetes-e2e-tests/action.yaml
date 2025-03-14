@@ -27,8 +27,8 @@ runs:
   steps:
   - name: Prepare Python Runner
     uses: ./.github/actions/prep-python-runner
-    # Cluster four is the only one that needs the python runner (running the ai extension tests)
-    if: ${{ inputs.cluster-name == 'cluster-four' }}
+    # cluster-ai is the only one that needs the python runner (running the ai extension tests)
+    if: ${{ inputs.cluster-name == 'cluster-ai' }}
   - name: Execute tests
     env:
       GO_TEST_USER_ARGS: ${{ inputs.test-args }} -run "${{ inputs.run-regex }}"
