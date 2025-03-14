@@ -146,6 +146,11 @@ clusters:
       typedConfig:
         '@type': type.googleapis.com/envoy.extensions.transport_sockets.raw_buffer.v3.RawBuffer
   type: EDS
+  typedExtensionProtocolOptions:
+    envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+      '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+      explicitHttpConfig:
+        http2ProtocolOptions: {}
 endpoints:
 - clusterName: kube_gwtest_reviews_8080
   endpoints:
@@ -181,9 +186,13 @@ listeners:
       typedConfig:
         '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
         httpFilters:
-        - name: envoy.filters.http.ext_proc
+        - disabled: true
+          name: envoy.filters.http.ext_proc
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.ext_proc.v3.ExternalProcessor
+            grpcService:
+              envoyGrpc:
+                clusterName: kube_gwtest_extproc_9091
         - name: envoy.filters.http.router
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -214,8 +223,5 @@ routes:
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
       typedPerFilterConfig:
         envoy.filters.http.ext_proc:
-          '@type': type.googleapis.com/envoy.extensions.filters.http.ext_proc.v3.ExtProcPerRoute
-          overrides:
-            grpcService:
-              envoyGrpc:
-                clusterName: kube_gwtest_extproc_9091
+          '@type': type.googleapis.com/envoy.config.route.v3.FilterConfig
+          config: {}
