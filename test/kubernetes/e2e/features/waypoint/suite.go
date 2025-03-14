@@ -84,7 +84,10 @@ func (s *testingSuite) SetupSuite() {
 }
 
 func (s *testingSuite) TearDownSuite() {
-	// s.testInstallation.ClusterContext.Cli.DeleteFilePath(s.ctx, commonYAML, "-n", testNamespace)
+	err := s.testInstallation.ClusterContext.Cli.DeleteFilePath(s.ctx, commonYAML, "-n", testNamespace)
+	if err != nil {
+		s.Error(err)
+	}
 }
 
 func (s *testingSuite) applyOrFail(fileName string, namespace string) {

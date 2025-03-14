@@ -44,9 +44,16 @@ func TestKgatewayWaypoint(t *testing.T) {
 	})
 
 	// Download the latest Istio
-	testInstallation.AddIstioctl(ctx)
+	err := testInstallation.AddIstioctl(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	// Install the ambient profile to enable zTunnel
-	testInstallation.InstallRevisionedIstio(ctx, "kgateway-waypoint-rev", "ambient")
+	err = testInstallation.InstallRevisionedIstio(ctx, "kgateway-waypoint-rev", "ambient")
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	// Install kgateway
 	testInstallation.InstallKgatewayFromLocalChart(ctx)

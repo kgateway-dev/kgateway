@@ -14,6 +14,7 @@ metadata:
     app: curl
     version: v1
 spec:
+  terminationGracePeriodSeconds: 0
   serviceAccountName: curl
   containers:
     - name: curl
@@ -45,6 +46,7 @@ metadata:
     app: notcurl
     version: v1
 spec:
+  terminationGracePeriodSeconds: 0
   serviceAccountName: notcurl
   containers:
     - name: notcurl
