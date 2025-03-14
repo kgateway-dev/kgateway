@@ -53,7 +53,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/proxy_syncer"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/setup"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
 
 func getAssetsDir(t *testing.T) string {
@@ -396,34 +395,7 @@ func setupEnvTestAndRun(t *testing.T, globalSettings *settings.Settings, run fun
 	// "kgateway not initialized" error
 	// this means that it attaches the pod collection to the unique client set collection.
 	time.Sleep(time.Second)
-<<<<<<< HEAD
-
-	// list all yamls in test data
-	files, err := os.ReadDir(scenarioDir)
-	if err != nil {
-		t.Fatalf("failed to read dir: %v", err)
-	}
-	for _, f := range files {
-		// run tests with the yaml files (but not -out.yaml files)/s
-		parentT := t
-		if strings.HasSuffix(f.Name(), ".yaml") && !strings.HasSuffix(f.Name(), "-out.yaml") {
-			fullpath := filepath.Join(scenarioDir, f.Name())
-			t.Run(strings.TrimSuffix(f.Name(), ".yaml"), func(t *testing.T) {
-				writer.set(t)
-				t.Cleanup(func() {
-					writer.set(parentT)
-				})
-				// sadly tests can't run yet in parallel, as kgateway will add all the k8s services as clusters. this means
-				// that we get test pollution.
-				// once we change it to only include the ones in the proxy, we can re-enable this
-				//				t.Parallel()
-				testScenario(t, ctx, setupOpts.KrtDebugger, client, xdsPort, fullpath)
-			})
-		}
-	}
-=======
 	run(t, ctx, setupOpts.KrtDebugger, client, xdsPort)
->>>>>>> main
 }
 
 func testScenario(
