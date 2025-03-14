@@ -26,6 +26,9 @@ KIND="${KIND:-go tool kind}"
 # If true, use localstack for lambda functions
 LOCALSTACK="${LOCALSTACK:-false}"
 
+# Export the variables so they are available in the environment
+export VERSION CLUSTER_NAME
+
 function create_kind_cluster_or_skip() {
   activeClusters=$(kind get clusters)
 
@@ -65,12 +68,17 @@ else
 
   # 3. Build the test helm chart, ensuring we have a chart in the `_test` folder
   VERSION=$VERSION make package-kgateway-charts
+
+  # 4. Build the mock ai provider docker image and load it to the kind cluster when the ai extension setup is enabled
+  if [[ $CONFORMANCE == "true" ]]; then
+    VERSION=$VERSION make kind-build-and-load-test-ai-provider
+  fi
 fi
 
-# 4. Build the gloo command line tool, ensuring we have one in the `_output` folder
+# 5. Build the gloo command line tool, ensuring we have one in the `_output` folder
 # make -s build-cli-local
 
-# 5. Apply the Kubernetes Gateway API CRDs
+# 6. Apply the Kubernetes Gateway API CRDs
 # Note, we're using kustomize to apply the CRDs from the k8s gateway api repo as
 # kustomize supports remote GH URLs and provides more flexibility compared to
 # alternatives like running a series of `kubectl apply -f <url>` commands. This
@@ -78,7 +86,7 @@ fi
 # the CRDs yet, or won't be for the foreseeable future.
 kubectl apply --kustomize "https://github.com/kubernetes-sigs/gateway-api/config/crd/$CONFORMANCE_CHANNEL?ref=$CONFORMANCE_VERSION"
 
-# 6. Conformance test setup
+# 7. Conformance test setup
 if [[ $CONFORMANCE == "true" ]]; then
   echo "Running conformance test setup"
 

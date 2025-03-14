@@ -1,0 +1,15 @@
+pytest
+openai
+google.generativeai
+tiktoken
+langchain_core
+langchain
+langchain_community
+opentelemetry-instrumentation-fastapi
+pyright
+ruff==0.9.0 # This should match the version in .github/workflows/lint-python.yaml
+opentelemetry.sdk
+opentelemetry-exporter-otlp
+presidio_analyzer
+presidio_anonymizer
+prometheus_client

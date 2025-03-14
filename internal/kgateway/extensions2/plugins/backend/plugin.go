@@ -44,10 +44,9 @@ const (
 
 // BackendIr is the internal representation of a backend.
 type BackendIr struct {
-	AwsIr         *AwsIr
-	AISecret      *ir.Secret
-	AIMultiSecret map[string]*ir.Secret
-	Errors        []error
+	AwsIr  *AwsIr
+	AIIr   *ai.AIIr
+	Errors []error
 }
 
 func data(s *ir.Secret) map[string][]byte {
@@ -63,16 +62,19 @@ func (u *BackendIr) Equals(other any) bool {
 		return false
 	}
 	// AI
-	if !maps.EqualFunc(data(u.AISecret), data(otherBackend.AISecret), func(a, b []byte) bool {
+	if !maps.EqualFunc(data(u.AIIr.AISecret), data(otherBackend.AIIr.AISecret), func(a, b []byte) bool {
 		return bytes.Equal(a, b)
 	}) {
 		return false
 	}
-	if !maps.EqualFunc(u.AIMultiSecret, otherBackend.AIMultiSecret, func(a, b *ir.Secret) bool {
+	if !maps.EqualFunc(u.AIIr.AIMultiSecret, otherBackend.AIIr.AIMultiSecret, func(a, b *ir.Secret) bool {
 		return maps.EqualFunc(data(a), data(b), func(a, b []byte) bool {
 			return bytes.Equal(a, b)
 		})
 	}) {
+		return false
+	}
+	if !u.AIIr.AIBackend.Equals(otherBackend.AIIr.AIBackend) {
 		return false
 	}
 	// AWS
@@ -205,6 +207,9 @@ func buildTranslateFunc(ctx context.Context, secrets *krtcollections.SecretIndex
 				lambdaFilters:         lambdaFilters,
 			}
 		case v1alpha1.BackendTypeAI:
+			backendIr.AIIr = &ai.AIIr{
+				AIBackend: i.Spec.AI,
+			}
 			ns := i.GetNamespace()
 			if i.Spec.AI.LLM != nil {
 				secretRef := getAISecretRef(i.Spec.AI.LLM.Provider)
@@ -214,12 +219,12 @@ func buildTranslateFunc(ctx context.Context, secrets *krtcollections.SecretIndex
 					if err != nil {
 						backendIr.Errors = append(backendIr.Errors, err)
 					}
-					backendIr.AISecret = secret
+					backendIr.AIIr.AISecret = secret
 				}
 				return &backendIr
 			}
 			if i.Spec.AI.MultiPool != nil {
-				backendIr.AIMultiSecret = map[string]*ir.Secret{}
+				backendIr.AIIr.AIMultiSecret = map[string]*ir.Secret{}
 				for idx, priority := range i.Spec.AI.MultiPool.Priorities {
 					for jdx, pool := range priority.Pool {
 						secretRef := getAISecretRef(pool.Provider)
@@ -231,7 +236,7 @@ func buildTranslateFunc(ctx context.Context, secrets *krtcollections.SecretIndex
 						if err != nil {
 							backendIr.Errors = append(backendIr.Errors, err)
 						}
-						backendIr.AIMultiSecret[getMultiPoolSecretKey(idx, jdx, secretRef.Name)] = secret
+						backendIr.AIIr.AIMultiSecret[getMultiPoolSecretKey(idx, jdx, secretRef.Name)] = secret
 					}
 				}
 			}
@@ -283,7 +288,7 @@ func processBackend(ctx context.Context, in ir.BackendObjectIR, out *envoy_confi
 			log.Error("failed to process aws backend", "error", err)
 		}
 	case spec.Type == v1alpha1.BackendTypeAI:
-		err := ai.ProcessAIBackend(ctx, spec.AI, ir.AISecret, out)
+		err := ai.ProcessAIBackend(ctx, spec.AI, ir.AIIr.AISecret, out)
 		if err != nil {
 			log.Error(err)
 		}

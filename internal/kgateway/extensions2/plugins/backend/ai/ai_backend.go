@@ -16,6 +16,14 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
 
+// AIIr is the internal representation of an AI backend.
+type AIIr struct {
+	AISecret      *ir.Secret
+	AIMultiSecret map[string]*ir.Secret
+	// TODO: preprocess the AIBackend to remove the need for this (https://github.com/kgateway-dev/kgateway/issues/10721)
+	AIBackend *v1alpha1.AIBackend
+}
+
 func ApplyAIBackend(ctx context.Context, aiBackend *v1alpha1.AIBackend, pCtx *ir.RouteBackendContext, out *envoy_config_route_v3.Route) error {
 	// Setup ext-proc route filter config, we will conditionally modify it based on certain route options.
 	// A heavily used part of this config is the `GrpcInitialMetadata`.
