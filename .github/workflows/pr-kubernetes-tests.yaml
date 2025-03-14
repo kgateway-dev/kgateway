@@ -45,7 +45,7 @@ jobs:
         - cluster-name: 'cluster-ai'
           go-test-args: '-v -timeout=25m'
           go-test-run-regex: '^TestAIExtension'
-          localstack: 'true'
+          localstack: 'false'
 
 #         # Dec 4, 2024: 23 minutes
 #         - cluster-name: 'cluster-two'
