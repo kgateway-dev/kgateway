@@ -17,7 +17,7 @@ kind: Gateway
 metadata:
   name: example-gateway
 spec:
-  gatewayClassName: kgateway
+  gatewayClassName: example-gateway-class
   listeners:
   - name: tcp
     protocol: TCP
