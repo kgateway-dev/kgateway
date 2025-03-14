@@ -31,6 +31,9 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
 
+// Derived from upstream Gateway API Inference Extension defaults (testdata/envoy.yaml).
+const DefaultExtProcMaxRequests = 40000
+
 func NewPlugin(ctx context.Context, commonCol *common.CommonCollections) extplug.Plugin {
 	poolGVR := schema.GroupVersionResource{
 		Group:    infextv1a2.GroupVersion.Group,
@@ -72,7 +75,7 @@ func NewPluginFromCollections(
 			Port:              pool.Spec.TargetPortNumber,
 			GvPrefix:          "endpoint-picker",
 			CanonicalHostname: "",
-			ObjIr:             ir.NewInferencePool(pool),
+			ObjIr:             newInferencePool(pool),
 		}
 	}, commonCol.KrtOpts.ToOptions("InferencePoolIR")...)
 
@@ -86,7 +89,7 @@ func NewPluginFromCollections(
 				Name:      pool.Name,
 			},
 			Policy:   pool,
-			PolicyIR: ir.NewInferencePool(pool),
+			PolicyIR: newInferencePool(pool),
 		}
 	})
 
@@ -115,12 +118,12 @@ func NewPluginFromCollections(
 // and overrides (per-route ext_proc cluster name, etc).
 type endpointPickerPass struct {
 	// Instead of a single pool, store multiple pools keyed by NamespacedName.
-	usedPools map[types.NamespacedName]*ir.InferencePool
+	usedPools map[types.NamespacedName]*inferencePool
 }
 
 func newEndpointPickerPass(ctx context.Context, tctx ir.GwTranslationCtx) ir.ProxyTranslationPass {
 	return &endpointPickerPass{
-		usedPools: make(map[types.NamespacedName]*ir.InferencePool),
+		usedPools: make(map[types.NamespacedName]*inferencePool),
 	}
 }
 
@@ -178,15 +181,15 @@ func (p *endpointPickerPass) ApplyForBackend(
 	}
 
 	// Ensure the backend object is an InferencePool.
-	irPool, ok := pCtx.Backend.ObjIr.(*ir.InferencePool)
+	irPool, ok := pCtx.Backend.ObjIr.(*inferencePool)
 	if !ok || irPool == nil {
 		return nil
 	}
 
 	// Store this pool in our map, keyed by NamespacedName.
 	nn := types.NamespacedName{
-		Namespace: irPool.ObjMeta.GetNamespace(),
-		Name:      irPool.ObjMeta.GetName(),
+		Namespace: irPool.objMeta.GetNamespace(),
+		Name:      irPool.objMeta.GetName(),
 	}
 	p.usedPools[nn] = irPool
 
@@ -199,7 +202,7 @@ func (p *endpointPickerPass) ApplyForBackend(
 
 	// Point the route to the ORIGINAL_DST cluster for this pool.
 	out.GetRoute().ClusterSpecifier = &routev3.RouteAction_Cluster{
-		Cluster: clusterNameOriginalDst(irPool.ObjMeta.GetName(), irPool.ObjMeta.GetNamespace()),
+		Cluster: clusterNameOriginalDst(irPool.objMeta.GetName(), irPool.objMeta.GetNamespace()),
 	}
 
 	// Build the route-level ext_proc override that points to this pool's ext_proc cluster.
@@ -211,13 +214,13 @@ func (p *endpointPickerPass) ApplyForBackend(
 					TargetSpecifier: &corev3.GrpcService_EnvoyGrpc_{
 						EnvoyGrpc: &corev3.GrpcService_EnvoyGrpc{
 							ClusterName: clusterNameExtProc(
-								irPool.ObjMeta.GetName(),
-								irPool.ObjMeta.GetNamespace(),
+								irPool.objMeta.GetName(),
+								irPool.objMeta.GetNamespace(),
 							),
-							Authority: fmt.Sprintf("%s.%s.svc.cluster.local:%d",
-								irPool.ConfigRef.Name,
-								irPool.ObjMeta.GetNamespace(),
-								irPool.ConfigRef.Ports[0].PortNum),
+							Authority: fmt.Sprintf("%s.%s.svc:%d",
+								irPool.configRef.Name,
+								irPool.objMeta.GetNamespace(),
+								irPool.configRef.ports[0].portNum),
 						},
 					},
 				},
@@ -241,22 +244,22 @@ func (p *endpointPickerPass) HttpFilters(ctx context.Context, fc ir.FilterChainC
 
 	// For each used pool, create a distinct ext_proc filter referencing that pool’s cluster.
 	for _, pool := range p.usedPools {
-		if pool.ConfigRef == nil || len(pool.ConfigRef.Ports) == 0 {
+		if pool.configRef == nil || len(pool.configRef.ports) == 0 {
 			continue
 		}
 
-		clusterName := clusterNameExtProc(pool.ObjMeta.GetName(), pool.ObjMeta.GetNamespace())
+		clusterName := clusterNameExtProc(pool.objMeta.GetName(), pool.objMeta.GetNamespace())
 		authority := fmt.Sprintf("%s.%s:%d",
-			pool.ConfigRef.Name,
-			pool.ObjMeta.GetNamespace(),
-			pool.ConfigRef.Ports[0].PortNum,
+			pool.configRef.Name,
+			pool.objMeta.GetNamespace(),
+			pool.configRef.ports[0].portNum,
 		)
 
 		// Use a unique filter name per pool to avoid collisions.
 		filterName := fmt.Sprintf("%s_%s_%s",
 			wellknown.InfPoolTransformationFilterName,
-			pool.ObjMeta.GetNamespace(),
-			pool.ObjMeta.GetName(),
+			pool.objMeta.GetNamespace(),
+			pool.objMeta.GetName(),
 		)
 
 		extProcSettings := &extprocv3.ExternalProcessor{
@@ -329,9 +332,9 @@ func processBackendObjectIR(ctx context.Context, in ir.BackendObjectIR, out *clu
 	out.CircuitBreakers = &clusterv3.CircuitBreakers{
 		Thresholds: []*clusterv3.CircuitBreakers_Thresholds{
 			{
-				MaxConnections:     wrapperspb.UInt32(40000),
-				MaxPendingRequests: wrapperspb.UInt32(40000),
-				MaxRequests:        wrapperspb.UInt32(40000),
+				MaxConnections:     wrapperspb.UInt32(DefaultExtProcMaxRequests),
+				MaxPendingRequests: wrapperspb.UInt32(DefaultExtProcMaxRequests),
+				MaxRequests:        wrapperspb.UInt32(DefaultExtProcMaxRequests),
 			},
 		},
 	}
@@ -340,12 +343,12 @@ func processBackendObjectIR(ctx context.Context, in ir.BackendObjectIR, out *clu
 }
 
 // buildExtProcCluster builds and returns a “STRICT_DNS” cluster from the given pool.
-func buildExtProcCluster(pool *ir.InferencePool) *clusterv3.Cluster {
-	if pool == nil || pool.ConfigRef == nil || len(pool.ConfigRef.Ports) != 1 {
+func buildExtProcCluster(pool *inferencePool) *clusterv3.Cluster {
+	if pool == nil || pool.configRef == nil || len(pool.configRef.ports) != 1 {
 		return nil
 	}
 
-	name := clusterNameExtProc(pool.ObjMeta.GetName(), pool.ObjMeta.GetNamespace())
+	name := clusterNameExtProc(pool.objMeta.GetName(), pool.objMeta.GetNamespace())
 	c := &clusterv3.Cluster{
 		Name:           name,
 		ConnectTimeout: durationpb.New(10 * time.Second),
@@ -363,10 +366,10 @@ func buildExtProcCluster(pool *ir.InferencePool) *clusterv3.Cluster {
 							Address: &corev3.Address{
 								Address: &corev3.Address_SocketAddress{
 									SocketAddress: &corev3.SocketAddress{
-										Address:  fmt.Sprintf("%s.%s.svc.cluster.local", pool.ConfigRef.Name, pool.ObjMeta.Namespace),
+										Address:  fmt.Sprintf("%s.%s.svc", pool.configRef.Name, pool.objMeta.Namespace),
 										Protocol: corev3.SocketAddress_TCP,
 										PortSpecifier: &corev3.SocketAddress_PortValue{
-											PortValue: uint32(pool.ConfigRef.Ports[0].PortNum),
+											PortValue: uint32(pool.configRef.ports[0].portNum),
 										},
 									},
 								},

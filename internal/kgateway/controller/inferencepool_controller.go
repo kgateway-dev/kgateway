@@ -65,6 +65,10 @@ func (r *inferencePoolReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	}
 
 	// If no HTTPRoutes reference the pool, skip reconciliation.
+	// TODO [danehans]: The deployer should support switching between an InferencePool/Service backendRef.
+	// For example, check if infra exists for the InferencePool and do cleanup, or cache InferencePools that
+	// have deployed infra, compare, and remove, or label managed InferencePools and drop the need to ref HTTPRoutes.
+	// See the following for details: https://github.com/kubernetes-sigs/gateway-api-inference-extension/issues/489
 	if len(routeList.Items) == 0 {
 		log.Info("No HTTPRoutes reference this InferencePool; skipping reconciliation")
 		return ctrl.Result{}, nil
