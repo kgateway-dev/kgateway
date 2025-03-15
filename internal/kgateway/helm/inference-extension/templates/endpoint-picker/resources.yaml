@@ -81,7 +81,7 @@ spec:
         env:
         - name: USE_STREAMING
           value: "false"
-        image: "registry.k8s.io/gateway-api-inference-extension/epp:v0.2.0-rc.1"
+        image: "registry.k8s.io/gateway-api-inference-extension/epp:v0.2.0"
         imagePullPolicy: IfNotPresent
         ports:
           - containerPort: 9002
