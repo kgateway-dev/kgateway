@@ -1,6 +1,9 @@
 package v1alpha1
 
-import corev1 "k8s.io/api/core/v1"
+import (
+	cmp "github.com/google/go-cmp/cmp"
+	corev1 "k8s.io/api/core/v1"
+)
 
 // +kubebuilder:validation:XValidation:message="There must one and only one LLM or MultiPool can be set",rule="(has(self.llm) && !has(self.multipool)) || (!has(self.llm) && has(self.multipool))"
 // +kubebuilder:validation:MaxProperties=1
@@ -30,6 +33,16 @@ type SupportedLLMProvider struct {
 	Anthropic   *AnthropicConfig   `json:"anthropic,omitempty"`
 	Gemini      *GeminiConfig      `json:"gemini,omitempty"`
 	VertexAI    *VertexAIConfig    `json:"vertexai,omitempty"`
+}
+
+func (in *AIBackend) Equals(ai *AIBackend) bool {
+	if (in == nil) != (ai == nil) {
+		return false
+	}
+	if in == nil {
+		return true
+	}
+	return cmp.Equal(in, ai)
 }
 
 type SingleAuthTokenKind string
@@ -68,6 +81,16 @@ type SingleAuthToken struct {
 	// You might use this option in proofs of concept, controlled development and staging environments,
 	// or well-controlled prod environments that use secrets.
 	SecretRef *corev1.LocalObjectReference `json:"secretRef,omitempty"`
+}
+
+func (in *SingleAuthToken) Equals(token *SingleAuthToken) bool {
+	if in == nil && token == nil {
+		return true
+	}
+	if in == nil || token == nil {
+		return false
+	}
+	return in.Kind == token.Kind && in.Inline == token.Inline && in.SecretRef == token.SecretRef
 }
 
 // OpenAIConfig settings for the [OpenAI](https://platform.openai.com/docs/api-reference/streaming) LLM provider.

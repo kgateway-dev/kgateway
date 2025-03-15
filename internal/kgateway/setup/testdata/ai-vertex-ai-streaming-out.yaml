@@ -84,7 +84,7 @@ clusters:
               auth_token: mysecretkey
               location: us-central1
               model: gemini-1.5-flash-001
-              project: gloo-ee
+              project: kgateway-project
               publisher: google
   metadata: {}
   name: backend_gwtest_vertexai_0

@@ -476,7 +476,6 @@ spec:
                       type:
                         enum:
                         - Secret
-                        - IRSA
                         type: string
                     required:
                     - type

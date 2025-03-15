@@ -102,8 +102,6 @@ type AwsAuthType string
 const (
 	// AwsAuthTypeSecret uses credentials stored in a Kubernetes Secret.
 	AwsAuthTypeSecret AwsAuthType = "Secret"
-	// AwsAuthTypeIRSA uses pod identity (IRSA) to obtain credentials.
-	AwsAuthTypeIRSA AwsAuthType = "IRSA"
 )
 
 // AwsAuth specifies the authentication method to use for the backend.
@@ -114,7 +112,7 @@ type AwsAuth struct {
 	// Type specifies the authentication method to use for the backend.
 	// +unionDiscriminator
 	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:Enum=Secret;IRSA
+	// +kubebuilder:validation:Enum=Secret
 	Type AwsAuthType `json:"type"`
 	// Secret references a Kubernetes Secret containing the AWS credentials.
 	// The Secret must have keys "accessKey", "secretKey", and optionally "sessionToken".
