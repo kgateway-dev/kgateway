@@ -6,9 +6,10 @@ This document serves as a [kgateway](https://github.com/kgateway-dev/kgateway) r
 
 # Submission Process
 Merging a pull request requires the following steps to be completed before the pull request will be merged automatically.
-- Ensure that each of your commits contains a `Signed-off-by` trailer to adhere to [DCO](https://developercertificate.org/) requirements. This can be done by either:
-    - Copying the [hack/devel/githooks/prepare-commit-msg](/hack/devel/githooks/prepare-commit-msg) file to `.git/hooks/prepare-commit-msg` in your copy of this repo (preferred), or
-    - Making sure to use the `-s` / `--signoff` [flag](https://git-scm.com/docs/git-commit#Documentation/git-commit.txt--s) on each commit.
+- Ensure that each of your commits contains a `Signed-off-by` trailer to adhere to [DCO](https://developercertificate.org/) requirements. This can be done by one of the following methods:
+    - Running `make init-git-hooks` which will configure your repo to use the version-controlled [Git hooks](/.githooks) from this repo (preferred)
+    - Manually copying the [.githooks/prepare-commit-msg](/.githooks/prepare-commit-msg) file to `.git/hooks/prepare-commit-msg` in your copy of this repo
+    - Making sure to use the `-s` / `--signoff` [flag](https://git-scm.com/docs/git-commit#Documentation/git-commit.txt--s) on each commit
 - [Open a pull request](https://help.github.com/articles/about-pull-requests/)
 - Pass all [automated tests](automation.md)
 - Get all necessary approvals from reviewers and code owners
