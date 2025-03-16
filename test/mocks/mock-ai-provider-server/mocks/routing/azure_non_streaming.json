@@ -1,0 +1,87 @@
+{
+    "choices": [
+        {
+            "content_filter_results": {
+                "hate": {
+                    "filtered": false,
+                    "severity": "safe"
+                },
+                "protected_material_code": {
+                    "filtered": false,
+                    "detected": false
+                },
+                "protected_material_text": {
+                    "filtered": false,
+                    "detected": false
+                },
+                "self_harm": {
+                    "filtered": false,
+                    "severity": "safe"
+                },
+                "sexual": {
+                    "filtered": false,
+                    "severity": "safe"
+                },
+                "violence": {
+                    "filtered": false,
+                    "severity": "safe"
+                }
+            },
+            "finish_reason": "stop",
+            "index": 0,
+            "logprobs": null,
+            "message": {
+                "content": "In the realm of code, where logic entwines,\nLies a concept of beauty, in loops it defines.\nRecursion, a dance of functions so neat,\nWhere a problem’s big steps meet their small, gentle feet.\n\nImagine a spiral, both deep and profound,\nA journey that circles, yet never unwound.\nWith each call of itself, it seeks to divide,\nA solution so grand, in its depths it’ll hide.\n\n“Fibonacci!” it whispers, in numbers we trace,\nEach term born from two, in a delicate embrace.\nAt zero and one, the seed of it's sown,\nWith each call returning, new values are grown.\n\nBut listen, dear coder, heed this simple lore,\nIn the heart of recursion lies one crucial door:\nA base case, like sunlight, to guide it from night,\nA moment to stop, to say, “All is right.”\n\nFor without this sweet anchor, the code may just spin,\nInto infinite madness, where no ends begin.\nSo strike the right balance, let functions call home,\nIn the forest of logic, let recursion roam.\n\nTo solve the grand puzzles, with elegance and grace,\nEmbrace this fine dance, let it fill up your space.\nFor in each function’s echo, in each layered round,\nLies the magic of recursion, where solutions are found.",
+                "refusal": null,
+                "role": "assistant"
+            }
+        }
+    ],
+    "created": 1741369216,
+    "id": "chatcmpl-B8VyCMgH9glPv71JXZT4q4k947LKZ",
+    "model": "gpt-4o-mini-2024-07-18",
+    "object": "chat.completion",
+    "prompt_filter_results": [
+        {
+            "prompt_index": 0,
+            "content_filter_results": {
+                "hate": {
+                    "filtered": false,
+                    "severity": "safe"
+                },
+                "jailbreak": {
+                    "filtered": false,
+                    "detected": false
+                },
+                "self_harm": {
+                    "filtered": false,
+                    "severity": "safe"
+                },
+                "sexual": {
+                    "filtered": false,
+                    "severity": "safe"
+                },
+                "violence": {
+                    "filtered": false,
+                    "severity": "safe"
+                }
+            }
+        }
+    ],
+    "system_fingerprint": "fp_b705f0c291",
+    "usage": {
+        "completion_tokens": 295,
+        "completion_tokens_details": {
+            "accepted_prediction_tokens": 0,
+            "audio_tokens": 0,
+            "reasoning_tokens": 0,
+            "rejected_prediction_tokens": 0
+        },
+        "prompt_tokens": 39,
+        "prompt_tokens_details": {
+            "audio_tokens": 0,
+            "cached_tokens": 0
+        },
+        "total_tokens": 334
+    }
+}

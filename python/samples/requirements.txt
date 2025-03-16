@@ -1,0 +1,4 @@
+fastapi[standard]
+uvicorn[standard]
+presidio_analyzer
+presidio_anonymizer
