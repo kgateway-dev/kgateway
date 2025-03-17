@@ -362,13 +362,10 @@ func (h *httpRouteConfigurationTranslator) translateRouteAction(
 		}
 
 	default:
-		// Only set the cluster name if unspecified since a plugin may have set a cluster name.
-		if action.GetCluster() == "" {
-			action.ClusterSpecifier = &envoy_config_route_v3.RouteAction_WeightedClusters{
-				WeightedClusters: &envoy_config_route_v3.WeightedCluster{
-					Clusters: clusters,
-				},
-			}
+		action.ClusterSpecifier = &envoy_config_route_v3.RouteAction_WeightedClusters{
+			WeightedClusters: &envoy_config_route_v3.WeightedCluster{
+				Clusters: clusters,
+			},
 		}
 	}
 	return routeAction
