@@ -77,7 +77,13 @@ func (h *httpRouteConfigurationTranslator) computeVirtualHost(
 	var envoyRoutes []*envoy_config_route_v3.Route
 	for i, route := range virtualHost.Rules {
 		// TODO: not sure if we need listener parent ref here or the http parent ref
-		routeReport := h.reporter.Route(route.Parent.SourceObject).ParentRef(&route.ParentRef)
+		var routeReport reports.ParentRefReporter = &reports.ParentRefReport{}
+		if route.Parent != nil {
+			// route may be a fake one that we don't really report,
+			// such as in the waypoint translator where we produce
+			// synthetic routes if there none are attached to the Gateway/Service.
+			routeReport = h.reporter.Route(route.Parent.SourceObject).ParentRef(&route.ParentRef)
+		}
 		generatedName := fmt.Sprintf("%s-route-%d", virtualHost.Name, i)
 		computedRoute := h.envoyRoutes(ctx, routeReport, route, generatedName)
 		if computedRoute != nil {
@@ -182,13 +188,18 @@ func (h *httpRouteConfigurationTranslator) runRoutePlugins(ctx context.Context, 
 		policiesFromDelegateParent = in.DelegateParent.AttachedPolicies
 	}
 
-	attachedPoliciesSlice := []ir.AttachedPolicies{
-		in.Parent.AttachedPolicies,
+	var attachedPoliciesSlice []ir.AttachedPolicies
+	if in.Parent != nil {
+		attachedPoliciesSlice = append(attachedPoliciesSlice,
+			in.Parent.AttachedPolicies,
+		)
+	}
+	attachedPoliciesSlice = append(attachedPoliciesSlice,
 		in.AttachedPolicies,
 		in.ExtensionRefs,
 		policiesFromDelegateParent,
 		// TODO: add policies from the parent's parent recursively
-	}
+	)
 
 	var errs []error
 
@@ -334,7 +345,7 @@ func (h *httpRouteConfigurationTranslator) translateRouteAction(
 	}
 	switch len(clusters) {
 	// case 0:
-	//TODO: we should never get here
+	// TODO: we should never get here
 	case 1:
 		action.ClusterSpecifier = &envoy_config_route_v3.RouteAction_Cluster{
 			Cluster: clusters[0].GetName(),

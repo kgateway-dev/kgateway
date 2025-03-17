@@ -1,20 +1,28 @@
-{{- if .Values.gatewayClass.enabled }}
+{{- range $entry := (list .Values.gatewayClass .Values.waypointClass) }}
+{{- if $entry.enabled }}
 apiVersion: gateway.networking.k8s.io/v1
 kind: GatewayClass
 metadata:
-  name: {{ .Values.gatewayClass.name }}
+  name: {{ $entry.name }}
   labels:
-    {{- include "kgateway.labels" . | nindent 4 }}
-spec:
-  controllerName: {{ .Values.gatewayClass.controllerName }}
-  {{- if .Values.gatewayClass.parametersRef }}
-  parametersRef:
-    {{- with .Values.gatewayClass.parametersRef }}
-    group: {{ .group }}
-    kind: {{ .kind }}
-    name: {{ .name }}
+    {{- include "kgateway.labels" $ | nindent 4 }}
+    {{- with $entry.labels }}
+    {{- toYaml . | nindent 4 }}
     {{- end }}
-    namespace: {{ .Release.Namespace }}
+  annotations:
+    {{- with $entry.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  controllerName: {{ $entry.controllerName }}
+  {{- if $entry.parametersRef.enabled }}
+  parametersRef:
+    group: {{ $entry.parametersRef.group }}
+    kind: {{ $entry.parametersRef.kind }}
+    name: {{ $entry.parametersRef.name }}
+    namespace: {{ $.Release.Namespace }}
   {{- end }}
-  description: {{ .Values.gatewayClass.description | quote }}
+  description: {{ $entry.description | quote }}
+---
+{{- end }}
 {{- end }}

@@ -265,11 +265,11 @@ func (r *gatewayQueries) fetchChildRoutes(
 	var refChildren []ir.HttpRouteIR
 	if string(backendRef.Name) == "" || string(backendRef.Name) == "*" {
 		// Handle wildcard references by listing all HTTPRoutes in the specified namespace
-		routes := r.routes.ListHttp(kctx, delegatedNs)
+		routes := r.collections.Routes.ListHttp(kctx, delegatedNs)
 		refChildren = append(refChildren, routes...)
 	} else {
 		// Lookup a specific child route by its name
-		route := r.routes.FetchHttp(kctx, delegatedNs, string(backendRef.Name))
+		route := r.collections.Routes.FetchHttp(kctx, delegatedNs, string(backendRef.Name))
 		if route == nil {
 			return nil, errors.New("not found")
 		}
@@ -291,7 +291,7 @@ func (r *gatewayQueries) GetRoutesForGateway(kctx krt.HandlerContext, ctx contex
 
 	// Process each route
 	ret := NewRoutesForGwResult()
-	routes := r.routes.RoutesForGateway(kctx, nns)
+	routes := r.collections.Routes.RoutesForGateway(kctx, nns)
 	for _, route := range routes {
 		if err := r.processRoute(kctx, ctx, gw, route, ret); err != nil {
 			return nil, err

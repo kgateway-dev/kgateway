@@ -2,7 +2,6 @@ package gateway_test
 
 import (
 	"context"
-	"fmt"
 	"path/filepath"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -14,6 +13,7 @@ import (
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/gateway/testutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
 )
 
@@ -21,7 +21,7 @@ type translatorTestCase struct {
 	inputFile     string
 	outputFile    string
 	gwNN          types.NamespacedName
-	assertReports func(gwNN types.NamespacedName, reportsMap reports.ReportMap)
+	assertReports testutils.AssertReports
 }
 
 var _ = DescribeTable("Basic GatewayTranslator Tests",
@@ -30,28 +30,9 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 		defer cancel()
 		dir := fsutils.MustGetThisDir()
 
-		results, err := TestCase{
-			InputFiles: []string{filepath.Join(dir, "testutils/inputs/", in.inputFile)},
-		}.Run(GinkgoT(), ctx)
-		Expect(err).NotTo(HaveOccurred())
-		Expect(results).To(HaveLen(1))
-		Expect(results).To(HaveKey(in.gwNN))
-		result := results[in.gwNN]
+		inputFiles := []string{filepath.Join(dir, "testutils/inputs/", in.inputFile)}
 		expectedProxyFile := filepath.Join(dir, "testutils/outputs/", in.outputFile)
-		fmt.Fprintf(GinkgoWriter, "Comparing expected proxy from %s to actual proxy generated from %s\n", in.outputFile, in.inputFile)
-
-		//// do a json round trip to normalize the output (i.e. things like omit empty)
-		//b, _ := json.Marshal(result.Proxy)
-		//var proxy ir.GatewayIR
-		//Expect(json.Unmarshal(b, &proxy)).NotTo(HaveOccurred())
-
-		Expect(CompareProxy(expectedProxyFile, result.Proxy)).To(BeEmpty())
-
-		if in.assertReports != nil {
-			in.assertReports(in.gwNN, result.ReportsMap)
-		} else {
-			Expect(AreReportsSuccess(in.gwNN, result.ReportsMap)).NotTo(HaveOccurred())
-		}
+		testutils.TestTranslation(GinkgoT(), ctx, inputFiles, expectedProxyFile, in.gwNN, in.assertReports)
 	},
 	Entry(
 		"http gateway with basic routing",
@@ -389,28 +370,24 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 
 var _ = DescribeTable("Route Delegation translator",
 	func(inputFile string, errdesc string) {
-		ctx := context.TODO()
 		dir := fsutils.MustGetThisDir()
-
-		results, err := TestCase{
-			InputFiles: []string{filepath.Join(dir, "testutils/inputs/delegation", inputFile)},
-		}.Run(GinkgoT(), ctx)
-
-		Expect(err).NotTo(HaveOccurred())
-		Expect(results).To(HaveLen(1))
-		gwNN := types.NamespacedName{
-			Namespace: "infra",
-			Name:      "example-gateway",
-		}
-		result, ok := results[gwNN]
-		Expect(ok).To(BeTrue())
-		outputProxyFile := filepath.Join(dir, "testutils/outputs/delegation", inputFile)
-		Expect(CompareProxy(outputProxyFile, result.Proxy)).To(BeEmpty())
-		if errdesc == "" {
-			Expect(AreReportsSuccess(gwNN, result.ReportsMap)).NotTo(HaveOccurred())
-		} else {
-			Expect(AreReportsSuccess(gwNN, result.ReportsMap)).To(MatchError(ContainSubstring(errdesc)))
-		}
+		testutils.TestTranslation(
+			GinkgoT(),
+			context.TODO(),
+			[]string{filepath.Join(dir, "testutils/inputs/delegation", inputFile)},
+			filepath.Join(dir, "testutils/outputs/delegation", inputFile),
+			types.NamespacedName{
+				Namespace: "infra",
+				Name:      "example-gateway",
+			},
+			func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
+				if errdesc == "" {
+					Expect(testutils.AreReportsSuccess(gwNN, reportsMap)).NotTo(HaveOccurred())
+				} else {
+					Expect(testutils.AreReportsSuccess(gwNN, reportsMap)).To(MatchError(ContainSubstring(errdesc)))
+				}
+			},
+		)
 	},
 	Entry("Basic config", "basic.yaml", ""),
 	Entry("Child matches parent via parentRefs", "basic_parentref_match.yaml", ""),

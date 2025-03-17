@@ -24,6 +24,15 @@ func IsTruthyValue(value string) bool {
 	return envValue
 }
 
+// IsTruthyOrDefault returns true if a given environment variable has a truthy value,
+// otherwise returns the provided default value.
+func IsEnvTruthyOrDefault(envVarName string, defaultValue bool) bool {
+	if value, ok := os.LookupEnv(envVarName); ok {
+		return IsTruthyValue(value)
+	}
+	return defaultValue
+}
+
 // GetOrDefault returns the value of the environment variable for the given key,
 // or the default value if the environment variable is not set. A value of "" will
 // only be returned if allowEmpty is true. Otherwise, the empty value is ignored and
