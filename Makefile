@@ -337,18 +337,18 @@ go-generate-apis: ## Run all go generate directives in the repo, including codeg
 go-generate-mocks: ## Runs all generate directives for mockgen in the repo
 	GO111MODULE=on go generate -run="mockgen" ./...
 
-AI_EXTENSION_DIR := $(ROOTDIR)/python
+PYTHON_DIR := $(ROOTDIR)/python
 
 .PHONY: generate-ai-extension-apis
 generate-ai-extension-apis:
 ifeq ($(SKIP_VENV), true)
-	ENVOY_VERSION=$(UPSTREAM_ENVOY_VERSION) $(AI_EXTENSION_DIR)/scripts/genproto.sh
+	ENVOY_VERSION=$(UPSTREAM_ENVOY_VERSION) $(PYTHON_DIR)/scripts/genproto.sh
 else
 	( \
 		python3 -m venv .pyenv; \
 		. .pyenv/bin/activate; \
-		pip3 install -r $(AI_EXTENSION_DIR)/scripts/requirements.txt; \
-		ENVOY_VERSION=$(UPSTREAM_ENVOY_VERSION) $(AI_EXTENSION_DIR)/scripts/genproto.sh; \
+		pip3 install -r $(PYTHON_DIR)/scripts/requirements.txt; \
+		ENVOY_VERSION=$(UPSTREAM_ENVOY_VERSION) $(PYTHON_DIR)/scripts/genproto.sh; \
 		rm -rf .pyenv; \
 	)
 endif
@@ -358,12 +358,11 @@ endif
 #----------------------------------------------------------------------------------
 
 export AI_EXTENSION_IMAGE_REPO ?= kgateway-ai-extension
-
 .PHONY: kgateway-ai-extension-docker
 kgateway-ai-extension-docker:
-	docker buildx build $(LOAD_OR_PUSH) $(DOCKER_BUILD_ARGS_AI_EXT) -f $(AI_EXTENSION_DIR)/Dockerfile $(AI_EXTENSION_DIR) \
-		-t $(IMAGE_REGISTRY)/kgateway-ai-extension:$(VERSION)
-
+	docker buildx build $(LOAD_OR_PUSH) $(PLATFORM_MULTIARCH) -f $(PYTHON_DIR)/Dockerfile $(ROOTDIR) \
+		--build-arg PYTHON_DIR=python \
+		-t  $(IMAGE_REGISTRY)/kgateway-ai-extension:$(VERSION)
 
 GETTERCHECK ?= go tool github.com/saiskee/gettercheck
 # Ensures that accesses for fields which have "getter" functions are exclusively done via said "getter" functions
@@ -775,7 +774,7 @@ kind-prune-images: ## Remove images in the kind cluster named {CLUSTER_NAME}
 TEST_AI_PROVIDER_SERVER_DIR := $(ROOTDIR)/test/mocks/mock-ai-provider-server
 .PHONY: test-ai-provider-docker
 test-ai-provider-docker:
-	docker buildx build $(LOAD_OR_PUSH) $(DOCKER_BUILD_ARGS_AI_EXT) -f $(TEST_AI_PROVIDER_SERVER_DIR)/Dockerfile $(TEST_AI_PROVIDER_SERVER_DIR) \
+	docker buildx build $(LOAD_OR_PUSH) $(PLATFORM_MULTIARCH) -f $(TEST_AI_PROVIDER_SERVER_DIR)/Dockerfile $(TEST_AI_PROVIDER_SERVER_DIR) \
 		-t $(IMAGE_REGISTRY)/test-ai-provider:$(VERSION)
 
 #----------------------------------------------------------------------------------
