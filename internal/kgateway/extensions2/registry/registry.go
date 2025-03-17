@@ -18,6 +18,8 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/kubernetes"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/listenerpolicy"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/routepolicy"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/sandwich"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/waypoint"
 )
 
 func mergedGw(funcs []extensionsplug.GwTranslatorFactory) extensionsplug.GwTranslatorFactory {
@@ -77,6 +79,8 @@ func Plugins(ctx context.Context, commoncol *common.CommonCollections) []extensi
 		listenerpolicy.NewPlugin(ctx, commoncol),
 		httplistenerpolicy.NewPlugin(ctx, commoncol),
 		backendtlspolicy.NewPlugin(ctx, commoncol),
+		waypoint.NewPlugin(ctx, commoncol),
+		sandwich.NewPlugin(),
 	}
 }
 

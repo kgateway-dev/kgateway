@@ -124,7 +124,7 @@ var _ = BeforeSuite(func() {
 	for class := range gwClasses {
 		err = k8sClient.Create(ctx, &api.GatewayClass{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: class,
+				Name: string(class),
 			},
 			Spec: api.GatewayClassSpec{
 				ControllerName: api.GatewayController(gatewayControllerName),

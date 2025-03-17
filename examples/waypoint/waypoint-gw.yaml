@@ -1,0 +1,15 @@
+# Deploys a kgateway Waypoint proxy.
+kind: Gateway
+apiVersion: gateway.networking.k8s.io/v1
+metadata:
+  name: httpbin-waypoint
+  namespace: httpbin
+spec:
+  gatewayClassName: kgateway-waypoint
+  listeners:
+  - protocol: istio.io/PROXY
+    port: 15088
+    name: mesh
+    allowedRoutes:
+      namespaces:
+        from: Same

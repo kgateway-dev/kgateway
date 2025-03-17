@@ -27,11 +27,9 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
-	extensions "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/irtranslator"
@@ -130,12 +128,10 @@ func NewProxySyncer(
 	mgr manager.Manager,
 	client kube.Client,
 	uniqueClients krt.Collection[ir.UniqlyConnectedClient],
-	extensionsFactory extensions.K8sGatewayExtensionsFactory,
+	mergedPlugins extensionsplug.Plugin,
 	commonCols *common.CommonCollections,
 	xdsCache envoycache.SnapshotCache,
 ) *ProxySyncer {
-	plugins := extensionsFactory(ctx, commonCols)
-
 	return &ProxySyncer{
 		controllerName:  controllerName,
 		commonCols:      commonCols,
@@ -143,8 +139,8 @@ func NewProxySyncer(
 		istioClient:     client,
 		proxyTranslator: NewProxyTranslator(xdsCache),
 		uniqueClients:   uniqueClients,
-		translator:      translator.NewCombinedTranslator(ctx, plugins, commonCols),
-		plugins:         plugins,
+		translator:      translator.NewCombinedTranslator(ctx, mergedPlugins, commonCols),
+		plugins:         mergedPlugins,
 	}
 }
 
@@ -185,23 +181,11 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) erro
 	ctx = contextutils.WithLogger(ctx, "k8s-gw-proxy-syncer")
 	logger := contextutils.LoggerFrom(ctx)
 
-	kubeGateways, routes, backendIndex, endpointIRs := krtcollections.InitCollections(
-		ctx,
-		s.controllerName,
-		s.plugins,
-		s.istioClient,
-		s.commonCols.RefGrants,
-		krtopts,
-	)
+	finalBackends := krt.JoinCollection(s.commonCols.BackendIndex.Backends(), krtopts.ToOptions("FinalUpstreams")...)
 
-	finalBackends := krt.JoinCollection(backendIndex.Backends(), krtopts.ToOptions("FinalUpstreams")...)
+	s.translator.Init(ctx)
 
-	// add the upstreams to the common collections, so they are available for policies.
-	s.commonCols.Backends = backendIndex
-
-	s.translator.Init(ctx, routes)
-
-	s.mostXdsSnapshots = krt.NewCollection(kubeGateways.Gateways, func(kctx krt.HandlerContext, gw ir.Gateway) *GatewayXdsResources {
+	s.mostXdsSnapshots = krt.NewCollection(s.commonCols.GatewayIndex.Gateways, func(kctx krt.HandlerContext, gw ir.Gateway) *GatewayXdsResources {
 		logger.Debugf("building proxy for kube gw %s version %s", client.ObjectKeyFromObject(gw.Obj), gw.Obj.GetResourceVersion())
 
 		xdsSnap, rm := s.translator.TranslateGateway(kctx, ctx, gw)
@@ -216,7 +200,7 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) erro
 		logger.Desugar(),
 		krtopts,
 		s.uniqueClients,
-		endpointIRs,
+		s.commonCols.Endpoints,
 		s.translator.TranslateEndpoints,
 	)
 	clustersPerClient := NewPerClientEnvoyClusters(
@@ -286,15 +270,11 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) erro
 	})
 
 	s.waitForSync = []cache.InformerSynced{
-		endpointIRs.HasSynced,
-		endpointIRs.HasSynced,
-		backendIndex.HasSynced,
+		s.commonCols.HasSynced,
 		finalBackends.HasSynced,
-		kubeGateways.Gateways.HasSynced,
 		s.perclientSnapCollection.HasSynced,
 		s.mostXdsSnapshots.HasSynced,
 		s.plugins.HasSynced,
-		routes.HasSynced,
 		s.translator.HasSynced,
 	}
 	return nil
