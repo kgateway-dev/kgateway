@@ -139,6 +139,7 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 		cfg.KrtOptions,
 		cfg.Client,
 		cli,
+		mgr.GetClient(),
 		setupLog,
 		*cfg.SetupOpts.GlobalSettings,
 	)

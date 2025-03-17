@@ -8,6 +8,8 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	gwv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/settings"
@@ -20,9 +22,11 @@ import (
 type CommonCollections struct {
 	OurClient versioned.Interface
 	Client    kube.Client
-	KrtOpts   krtutil.KrtOptions
-	Secrets   *krtcollections.SecretIndex
-	Backends  *krtcollections.BackendIndex
+	// full CRUD client, only needed for status writing currently
+	CrudClient client.Client
+	KrtOpts    krtutil.KrtOptions
+	Secrets    *krtcollections.SecretIndex
+	Backends   *krtcollections.BackendIndex
 
 	Pods       krt.Collection[krtcollections.LocalityPod]
 	RefGrants  *krtcollections.RefGrantIndex
@@ -42,6 +46,7 @@ func NewCommonCollections(
 	krtOptions krtutil.KrtOptions,
 	client istiokube.Client,
 	ourClient versioned.Interface,
+	cl client.Client,
 	logger logr.Logger,
 	settings settings.Settings,
 ) *CommonCollections {
@@ -73,6 +78,7 @@ func NewCommonCollections(
 	return &CommonCollections{
 		OurClient:  ourClient,
 		Client:     client,
+		CrudClient: cl,
 		KrtOpts:    krtOptions,
 		Secrets:    krtcollections.NewSecretIndex(secrets, refgrants),
 		Pods:       krtcollections.NewPodsCollection(client, krtOptions),

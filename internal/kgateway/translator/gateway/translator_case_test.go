@@ -189,6 +189,7 @@ func (tc TestCase) Run(t test.Failer, ctx context.Context) (map[types.Namespaced
 		krtOpts,
 		cli,
 		ourCli,
+		nil,
 		logr.Discard(),
 		*st,
 	)

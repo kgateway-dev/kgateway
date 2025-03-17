@@ -312,6 +312,7 @@ func (p *PolicyIndex) getTargetingPolicies(
 				Kind:  p.Kind,
 				Name:  p.Name,
 			},
+			Errors: p.Errors,
 		})
 	}
 	for _, p := range sectionNamePolicies {
@@ -324,6 +325,7 @@ func (p *PolicyIndex) getTargetingPolicies(
 				Name:        p.Name,
 				SectionName: sectionName,
 			},
+			Errors: p.Errors,
 		})
 	}
 	slices.SortFunc(ret, func(a, b ir.PolicyAtt) int {
@@ -770,10 +772,12 @@ func toAttachedPolicies(policies []ir.PolicyAtt) ir.AttachedPolicies {
 			Group: p.GroupKind.Group,
 			Kind:  p.GroupKind.Kind,
 		}
+		// TODO: do not create a new PolicyAtt, just use existing `p`
 		polAtt := ir.PolicyAtt{
 			PolicyIr:  p.PolicyIr,
 			PolicyRef: p.PolicyRef,
 			GroupKind: gk,
+			Errors:    p.Errors,
 		}
 		ret.Policies[gk] = append(ret.Policies[gk], polAtt)
 	}
