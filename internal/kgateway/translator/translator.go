@@ -17,7 +17,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/query"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
 	gwtranslator "github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/gateway"
@@ -60,16 +59,9 @@ func NewCombinedTranslator(
 	}
 }
 
-func (s *CombinedTranslator) Init(ctx context.Context, routes *krtcollections.RoutesIndex) error {
-	ctx = contextutils.WithLogger(ctx, "k8s-gw-proxy-syncer")
+func (s *CombinedTranslator) Init(ctx context.Context) error {
+	queries := query.NewData(s.commonCols)
 
-	nsCol := krtcollections.NewNamespaceCollection(ctx, s.commonCols.Client, s.commonCols.KrtOpts)
-
-	queries := query.NewData(
-		routes,
-		s.commonCols.Secrets,
-		nsCol,
-	)
 	s.gwtranslator = gwtranslator.NewTranslator(queries)
 	s.irtranslator = &irtranslator.Translator{
 		ContributedPolicies: s.extensions.ContributesPolicies,
@@ -86,7 +78,6 @@ func (s *CombinedTranslator) Init(ctx context.Context, routes *krtcollections.Ro
 	s.waitForSync = append(s.waitForSync,
 		s.commonCols.HasSynced,
 		s.extensions.HasSynced,
-		routes.HasSynced,
 	)
 	return nil
 }
@@ -108,12 +99,8 @@ func (s *CombinedTranslator) buildProxy(kctx krt.HandlerContext, ctx context.Con
 	if s.extensions.ContributesGwTranslator != nil {
 		maybeGatewayTranslator := s.extensions.ContributesGwTranslator(gw.Obj)
 		if maybeGatewayTranslator != nil {
-			// TODO: need better error handling here
-			// and filtering out of our gateway classes, like before
-			// contextutils.LoggerFrom(ctx).Errorf("no translator found for Gateway %s (gatewayClass %s)", gw.Name, gw.Obj.Spec.GatewayClassName)
 			gatewayTranslator = maybeGatewayTranslator
 		}
-	} else {
 	}
 	proxy := gatewayTranslator.Translate(kctx, ctx, &gw, r)
 	if proxy == nil {
