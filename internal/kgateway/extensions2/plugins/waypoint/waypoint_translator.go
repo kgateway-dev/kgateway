@@ -29,14 +29,8 @@ import (
 )
 
 const (
-	// IstioPROXYProtocol is the only protocol for a gloo-waypoint's Listener
+	// IstioPROXYProtocol is the only protocol for a kgateway-waypoint's Listener
 	IstioPROXYProtocol = "istio.io/PROXY"
-
-	// GatewayClassName used to trigger waypoint translation
-	GatewayClassName = "gloo-waypoint"
-
-	// EnabledEnv feature gates waypoint config generation.
-	EnabledEnv = "ENABLE_WAYPOINTS"
 )
 
 var _ extensionsplug.KGwTranslator = &waypointTranslator{}
@@ -157,18 +151,11 @@ func buildInboundListener(gw *ir.Gateway, reporter reports.GatewayReporter) (*ir
 
 		// non istio.io/PROXY listeners shouldn't have routes attached
 		reporter.Listener(&l.Listener).SetSupportedKinds([]gwv1.RouteGroupKind{})
-
-		if l.Name == "mesh" && l.Port == 15008 {
-			// TODO(stevenctl) this appeases zTunnel's need to do port-mapping on a
-			// port that it serves itself. Fixed in Istio 1.23. We should leave this
-			// around for a bit just in case.
-			continue
-		}
 		reporter.Listener(&l.Listener).SetCondition(reports.ListenerCondition{
 			Type:    gwv1.ListenerConditionAccepted,
 			Status:  metav1.ConditionFalse,
 			Reason:  gwv1.ListenerReasonInvalid,
-			Message: "Only a 'istio.io/PROXY' listener is allowed for gloo-waypoint Gateways.",
+			Message: "Only a 'istio.io/PROXY' listener is allowed for kgateway-waypoint Gateways.",
 		})
 	}
 	if gatewayListener == nil {
