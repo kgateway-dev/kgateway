@@ -9,10 +9,15 @@ import (
 	"github.com/stretchr/testify/suite"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	gwapiv1a3 "sigs.k8s.io/gateway-api/apis/v1alpha3"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
+	gwv1a3 "sigs.k8s.io/gateway-api/apis/v1alpha3"
 
 	"github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
+	"github.com/kgateway-dev/kgateway/v2/test/helpers"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/defaults"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
@@ -33,9 +38,15 @@ var (
 	}
 	proxyDeployment  = &appsv1.Deployment{ObjectMeta: proxyObjMeta}
 	proxyService     = &corev1.Service{ObjectMeta: proxyObjMeta}
-	backendTlsPolicy = &gwapiv1a3.BackendTLSPolicy{
+	backendTlsPolicy = &gwv1a3.BackendTLSPolicy{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "tls-policy",
+			Namespace: "default",
+		},
+	}
+	configMap = &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "ca",
 			Namespace: "default",
 		},
 	}
@@ -43,6 +54,8 @@ var (
 		Name:      "nginx",
 		Namespace: "default",
 	}
+	svcGroup = ""
+	svcKind  = "Service"
 )
 
 var _ e2e.NewSuiteFunc = NewTestingSuite
@@ -74,7 +87,7 @@ func (s *clientTlsTestingSuite) TestRouteSecureRequestToUpstream() {
 		s.Require().NoError(err)
 	}
 
-	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment, backendTlsPolicy)
+	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment, backendTlsPolicy, configMap)
 	// TODO: make this a specific assertion to remove the need for c/p the label selector
 	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, defaults.CurlPod.GetNamespace(), metav1.ListOptions{
 		LabelSelector: "app.kubernetes.io/name=curl",
@@ -97,5 +110,32 @@ func (s *clientTlsTestingSuite) TestRouteSecureRequestToUpstream() {
 		&matchers.HttpResponse{
 			StatusCode: http.StatusOK,
 			Body:       gomega.ContainSubstring(defaults.NginxResponse),
-		})
+		},
+	)
+
+	currentTimeout, pollingInterval := helpers.GetTimeouts()
+	p := s.testInstallation.Assertions
+	p.Gomega.Eventually(func(g gomega.Gomega) {
+		tlsPol := &gwv1a3.BackendTLSPolicy{}
+		objKey := client.ObjectKeyFromObject(backendTlsPolicy)
+		err := s.testInstallation.ClusterContext.Client.Get(s.ctx, objKey, tlsPol)
+		g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get BackendTLSPolicy %s", objKey)
+
+		g.Expect(tlsPol.Status.Ancestors).To(gomega.HaveLen(1), "ancestors didn't have length of 1")
+		ancestor := tlsPol.Status.Ancestors[0]
+
+		expectedAncestorRef := gwv1a2.ParentReference{
+			Group: (*gwv1.Group)(&svcGroup),
+			Kind:  (*gwv1.Kind)(&svcKind),
+			Name:  "nginx",
+		}
+		g.Expect(ancestor.AncestorRef).To(gomega.BeEquivalentTo(expectedAncestorRef))
+
+		g.Expect(ancestor.Conditions).To(gomega.HaveLen(1), "ancestors conditions wasn't length of 1")
+		cond := meta.FindStatusCondition(ancestor.Conditions, string(gwv1a2.PolicyConditionAccepted))
+		g.Expect(cond).NotTo(gomega.BeNil(), "policy should have accepted condition")
+		g.Expect(cond.Status).To(gomega.Equal(metav1.ConditionTrue), "policy accepted condition should be true")
+		g.Expect(cond.Reason).To(gomega.Equal(string(gwv1a2.PolicyReasonAccepted)), "policy reason should be accepted")
+		g.Expect(cond.Message).To(gomega.Equal("Policy accepted and attached"))
+	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 }
