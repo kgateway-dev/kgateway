@@ -133,12 +133,17 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 		return nil, err
 	}
 	commoncol := common.NewCommonCollections(
+		ctx,
 		cfg.KrtOptions,
 		cfg.Client,
 		cli,
+		cfg.ControllerName,
 		setupLog,
 		*cfg.SetupOpts.GlobalSettings,
 	)
+	mergedPlugins := pluginFactoryWithBuiltin(cfg.ExtraPlugins)(ctx, commoncol)
+	commoncol.InitPlugins(ctx, mergedPlugins)
+
 	// Create the proxy syncer for the Gateway API resources
 	setupLog.Info("initializing proxy syncer")
 	proxySyncer := proxy_syncer.NewProxySyncer(
@@ -147,7 +152,7 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 		mgr,
 		cfg.Client,
 		cfg.UniqueClients,
-		pluginFactoryWithBuiltin(cfg.ExtraPlugins),
+		mergedPlugins,
 		commoncol,
 		cfg.SetupOpts.Cache,
 	)
@@ -193,7 +198,8 @@ func (c *ControllerBuilder) Start(ctx context.Context) error {
 	integrationEnabled := globalSettings.EnableIstioIntegration
 
 	if err := NewBaseGatewayController(ctx, GatewayConfig{
-		Mgr:            c.mgr,
+		Mgr: c.mgr,
+		// TODO read this from globalSettings
 		ControllerName: c.cfg.ControllerName,
 		AutoProvision:  AutoProvision,
 		ControlPlane: deployer.ControlPlaneInfo{

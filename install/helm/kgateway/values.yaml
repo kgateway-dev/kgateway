@@ -66,18 +66,43 @@ controller:
 # GatewayClass configuration
 gatewayClass:
   enabled: true
-  # Name of the GatewayClass to watch for
   name: "kgateway"
-  description: "KGateway Controller"
-  # The controller name that will handle this GatewayClass
+  description: "kgateway controller"
   controllerName: "kgateway.dev/kgateway"
-  # Optional parameters reference
+  labels: {}
+  annotations: {}
+  service:
+    type: LoadBalancer # Default, can be overridden
   parametersRef:
     enabled: true
+    name: "kgateway"
     group: "gateway.kgateway.dev"
     kind: "GatewayParameters"
-    # The name of the GatewayParameters which is attached by parametersRef to the GatewayClass
-    name: "kgateway"
+    podTemplate:
+      extraLabels: {}
+      extraAnnotations: {}
+
+# WaypointClass configuration
+waypointClass:
+  enabled: true
+  name: "kgateway-waypoint"
+  description: "kgateway waypoint controller"
+  controllerName: "kgateway.dev/kgateway"
+  labels: {}
+  annotations:
+    ambient.istio.io/waypoint-inbound-binding: PROXY/15088
+  service:
+    # Waypoints handle east-west traffic.
+    type: ClusterIP
+  parametersRef:
+    enabled: true
+    name: "kgateway-waypoint"
+    group: "gateway.kgateway.dev"
+    kind: "GatewayParameters"
+    podTemplate:
+      extraLabels:
+        istio.io/dataplane-mode: ambient
+      extraAnnotations: {}
 
 # Gateway proxy configuration
 gateway:
@@ -103,10 +128,6 @@ gateway:
   # imposed by the template.
   proxyDeployment:
     replicas: 1
-  # If service or service.type are null, a default of LoadBalancer will be
-  # imposed by the template.
-  service:
-    type: LoadBalancer
   sdsContainer:
     image:
       registry: ""
