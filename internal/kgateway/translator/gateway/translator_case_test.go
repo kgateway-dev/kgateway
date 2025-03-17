@@ -35,6 +35,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/gateway/testutils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/irtranslator"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned/fake"
 )
 
@@ -53,7 +54,7 @@ func CompareProxy(expectedFile string, actualProxy *irtranslator.TranslationResu
 		if err != nil {
 			return "", err
 		}
-		os.WriteFile(expectedFile, d, 0644)
+		os.WriteFile(expectedFile, d, 0o644)
 	}
 
 	expectedProxy, err := testutils.ReadProxyFromFile(expectedFile)
@@ -113,9 +114,7 @@ func AreReportsSuccess(gwNN types.NamespacedName, reportsMap reports.ReportMap) 
 	return nil
 }
 
-var (
-	_ extensionsplug.GetBackendForRefPlugin = testBackendPlugin{}.GetBackendForRefPlugin
-)
+var _ extensionsplug.GetBackendForRefPlugin = testBackendPlugin{}.GetBackendForRefPlugin
 
 type testBackendPlugin struct{}
 
@@ -175,8 +174,22 @@ func (tc TestCase) Run(t test.Failer, ctx context.Context) (map[types.Namespaced
 		clienttest.MakeCRD(t, cli, crd)
 	}
 	defer cli.Shutdown()
+
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
+
+	// ensure classes used in tests exist and point at our controller
+	for _, class := range []string{wellknown.GatewayClassName, "example-gateway-class"} {
+		cli.GatewayAPI().GatewayV1().GatewayClasses().Create(ctx, &gwv1.GatewayClass{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: class,
+			},
+			Spec: gwv1.GatewayClassSpec{
+				ControllerName: wellknown.GatewayControllerName,
+			},
+		}, metav1.CreateOptions{})
+	}
+
 	krtOpts := krtutil.KrtOptions{
 		Stop: ctx.Done(),
 	}
@@ -199,17 +212,14 @@ func (tc TestCase) Run(t test.Failer, ctx context.Context) (map[types.Namespaced
 	extensions := registry.MergePlugins(plugins...)
 	gk := schema.GroupKind{
 		Group: "",
-		Kind:  "test-backend-plugin"}
+		Kind:  "test-backend-plugin",
+	}
 	extensions.ContributesPolicies[gk] = extensionsplug.PolicyPlugin{
 		Name:             "test-backend-plugin",
 		GetBackendForRef: testBackendPlugin{}.GetBackendForRefPlugin,
 	}
 
-	isOurGw := func(gw *gwv1.Gateway) bool {
-		return true
-	}
-
-	gi, ri, ui, ei := krtcollections.InitCollections(ctx, extensions, cli, isOurGw, commoncol.RefGrants, krtOpts)
+	gi, ri, ui, ei := krtcollections.InitCollections(ctx, wellknown.GatewayControllerName, extensions, cli, commoncol.RefGrants, krtOpts)
 
 	translator := translator.NewCombinedTranslator(ctx, extensions, commoncol)
 	translator.Init(ctx, ri)

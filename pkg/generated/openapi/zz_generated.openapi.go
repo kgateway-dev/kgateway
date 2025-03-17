@@ -3326,12 +3326,6 @@ func schema_kgateway_v2_api_v1alpha1_RoutePolicySpec(ref common.ReferenceCallbac
 							Ref:     ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LocalPolicyTargetReference"),
 						},
 					},
-					"timeout": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"integer"},
-							Format: "int32",
-						},
-					},
 					"ai": {
 						SchemaProps: spec.SchemaProps{
 							Ref: ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AIRoutePolicy"),

@@ -23,6 +23,8 @@ type gatewayReconciler struct {
 	cli           client.Client
 	autoProvision bool
 
+	controllerName string
+
 	scheme   *runtime.Scheme
 	deployer *deployer.Deployer
 }
@@ -53,6 +55,21 @@ func (r *gatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	if gw.GetDeletionTimestamp() != nil {
 		// no need to do anything as we have owner refs, so children will be deleted
 		log.Info("gateway deleted, no need for reconciling")
+		return ctrl.Result{}, nil
+	}
+
+	// make sure we're the right controller for this
+	var gwc api.GatewayClass
+	if err := r.cli.Get(
+		ctx,
+		client.ObjectKey{Name: string(gw.Spec.GatewayClassName)},
+		&gwc,
+	); err != nil {
+		log.Error(err, "failed to check controller for GatewayClass")
+		return ctrl.Result{Requeue: true}, err
+	}
+	if gwc.Spec.ControllerName != api.GatewayController(r.controllerName) {
+		// ignore, not our GatewayClass
 		return ctrl.Result{}, nil
 	}
 

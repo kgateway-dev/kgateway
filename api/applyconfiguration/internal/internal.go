@@ -1014,9 +1014,6 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LocalPolicyTargetReference
       default: {}
-    - name: timeout
-      type:
-        scalar: numeric
     - name: transformation
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.TransformationPolicy

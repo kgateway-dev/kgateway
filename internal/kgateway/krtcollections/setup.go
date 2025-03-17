@@ -53,13 +53,23 @@ func registerTypes() {
 			return c.GatewayAPI().GatewayV1().Gateways(namespace).Watch(context.Background(), o)
 		},
 	)
+	kubeclient.Register[*gwv1.GatewayClass](
+		gvr.GatewayClass_v1,
+		gvk.GatewayClass_v1.Kubernetes(),
+		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (runtime.Object, error) {
+			return c.GatewayAPI().GatewayV1().GatewayClasses().List(context.Background(), o)
+		},
+		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
+			return c.GatewayAPI().GatewayV1().GatewayClasses().Watch(context.Background(), o)
+		},
+	)
 }
 
 func InitCollections(
 	ctx context.Context,
+	controllerName string,
 	plugins extensionsplug.Plugin,
 	istioClient kube.Client,
-	isOurGw func(gw *gwv1.Gateway) bool,
 	refgrants *RefGrantIndex,
 	krtopts krtutil.KrtOptions,
 ) (*GatewayIndex, *RoutesIndex, *BackendIndex, krt.Collection[ir.EndpointsForBackend]) {
@@ -69,6 +79,7 @@ func InitCollections(
 	tcproutes := krt.WrapClient(kclient.NewDelayedInformer[*gwv1a2.TCPRoute](istioClient, gvr.TCPRoute, kubetypes.StandardInformer, kclient.Filter{}), krtopts.ToOptions("TCPRoute")...)
 	tlsRoutes := krt.WrapClient(kclient.NewDelayedInformer[*gwv1a2.TLSRoute](istioClient, gvr.TLSRoute, kubetypes.StandardInformer, kclient.Filter{}), krtopts.ToOptions("TLSRoute")...)
 	kubeRawGateways := krt.WrapClient(kclient.New[*gwv1.Gateway](istioClient), krtopts.ToOptions("KubeGateways")...)
+	gatewayClasses := krt.WrapClient(kclient.New[*gwv1.GatewayClass](istioClient), krtopts.ToOptions("KubeGatewayClasses")...)
 
 	policies := NewPolicyIndex(krtopts, plugins.ContributesPolicies)
 	var backendRefPlugins []extensionsplug.GetBackendForRefPlugin
@@ -79,7 +90,7 @@ func InitCollections(
 	}
 	backendIndex := NewBackendIndex(krtopts, backendRefPlugins, policies, refgrants)
 	endpointIRs := initBackends(plugins, backendIndex, krtopts)
-	kubeGateways := NewGatewayIndex(krtopts, isOurGw, policies, kubeRawGateways)
+	kubeGateways := NewGatewayIndex(krtopts, controllerName, policies, kubeRawGateways, gatewayClasses)
 	routes := NewRoutesIndex(krtopts, httpRoutes, tcproutes, tlsRoutes, policies, backendIndex, refgrants)
 	return kubeGateways, routes, backendIndex, endpointIRs
 }

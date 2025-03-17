@@ -1,7 +1,9 @@
 package helmutils
 
 const (
-	ChartName = "kgateway"
+	ChartName    = "kgateway"
+	CRDChartName = "kgateway-crds"
 
-	DefaultChartUri = "oci://ghcr.io/kgateway-dev/charts/kgateway"
+	DefaultChartUri    = "oci://ghcr.io/kgateway-dev/charts/kgateway"
+	DefaultCRDChartUri = "oci://ghcr.io/kgateway-dev/charts/kgateway-crds"
 )
