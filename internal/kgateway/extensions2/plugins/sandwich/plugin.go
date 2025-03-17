@@ -100,14 +100,14 @@ var _ ir.ProxyTranslationPass = &sandwichedTranslationPass{}
 // ApplyListenerPlugin adds a ProxyProtocol ListenerFilter that
 // 1. Overrides source and destination addresses to be what the zTunnel saw.
 // 2. Grabs the ProxyProtocolPeerTLV (0xD0) used to propagate the client identity validated by zTunnel.
-func (p *sandwichedTranslationPass) ApplyListenerPlugin(ctx context.Context, pCtx *ir.ListenerContext, out *envoy_config_listener_v3.Listener) {
+func (s *sandwichedTranslationPass) ApplyListenerPlugin(ctx context.Context, pCtx *ir.ListenerContext, out *envoy_config_listener_v3.Listener) {
 	_, ok := pCtx.Policy.(SandwichedInboundPolicy)
 	if !ok {
 		return
 	}
 
 	out.ListenerFilters = append(out.GetListenerFilters(), ProxyProtocolTLV)
-	p.isSandwiched = true
+	s.isSandwiched = true
 
 	return
 }

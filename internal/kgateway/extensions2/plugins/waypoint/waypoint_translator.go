@@ -78,8 +78,9 @@ func (w *waypointTranslator) Translate(
 		return nil
 	}
 
-	// track unique attached routes attachment happens at the Gateway/Listener
-	// level and at a per-service level
+	// track unique attached routes for reporting
+	// attachment happens at the Gateway/Listener level and at a per-service
+	// level
 	attachedRoutes := sets.New[types.NamespacedName]()
 	for _, hr := range routes {
 		attachedRoutes.Insert(namespacedName(hr))

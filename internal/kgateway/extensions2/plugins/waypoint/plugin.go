@@ -24,7 +24,6 @@ func NewPlugin(
 		queries,
 	)
 	return extensionsplug.Plugin{
-		ContributesPolicies: extensionsplug.ContributesPolicies{},
 		ContributesGwTranslator: func(gw *gwv1.Gateway) extensionsplug.KGwTranslator {
 			if gw.Spec.GatewayClassName != wellknown.WaypointClassName {
 				return nil
