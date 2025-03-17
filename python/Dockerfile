@@ -13,11 +13,10 @@ ENV VIRTUAL_ENV=/opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
 # pass in the AI extension directory
-ARG PYTHON_DIR=./
-ARG AI_EXTENSION_DIR=${PYTHON_DIR}/ai_extension
+ARG PYTHON_DIR
 
 # install requirements
-COPY ${PYTHON_DIR}/requirements.txt .
+COPY $PYTHON_DIR/requirements.txt .
 RUN pip3 install --no-cache-dir wheel
 RUN pip3 install --no-cache-dir -r requirements.txt
 # Pre-download tiktoken encoding model
@@ -30,7 +29,10 @@ RUN python3 -m tldextract --update
 FROM python:3.12-slim-bookworm AS runner-image
 
 RUN apt-get update && apt-get install --no-install-recommends -y build-essential libpq-dev && \
-	apt-get clean && rm -rf /var/lib/apt/lists/*
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# pass in the AI extension directory for this step
+ARG PYTHON_DIR
 
 RUN useradd --create-home kgateway
 COPY --from=builder-image /opt/venv /opt/venv
@@ -44,8 +46,9 @@ RUN chmod 755 /opt/tiktoken
 
 USER kgateway
 RUN mkdir -p /home/kgateway
+RUN mkdir -p /home/kgateway/python
 WORKDIR /home/kgateway
-COPY ./$AI_EXTENSION_DIR .
+COPY $PYTHON_DIR/ai_extension /home/kgateway/python
 
 # make sure all messages always reach console
 ENV PYTHONUNBUFFERED=1
@@ -58,4 +61,4 @@ ENV PATH="/opt/venv/bin:$PATH"
 ENV TLDEXTRACT_CACHE="/opt/tldextract"
 ENV TIKTOKEN_CACHE_DIR="/opt/tiktoken"
 
-CMD ["python3", "ai_extension/main.py"]
+CMD ["python3", "python/main.py"]
