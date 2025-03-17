@@ -82,7 +82,7 @@ func (r *inferencePoolReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	// TODO [danehans]: Manage inferencepool status conditions.
 
 	// Deploy the endpoint picker resources.
-	log.Info("Deploying endpoint picker for InferencePool", "name", pool.Name, "namespace", pool.Namespace)
+	log.Info("Ensuring endpoint picker is deployed for InferencePool")
 	err = r.deployer.DeployObjs(ctx, objs)
 	if err != nil {
 		return ctrl.Result{}, err
