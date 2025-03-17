@@ -1,7 +1,6 @@
 package routepolicy
 
 import (
-	"context"
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
@@ -28,15 +27,49 @@ const (
 	contextString = `{"content":"%s","role":"%s"}`
 )
 
+// AIPolicyIR is the internal representation of an AI policy.
+type AIPolicyIR struct {
+	AISecret       *ir.Secret
+	Extproc        *envoy_ext_proc_v3.ExtProcPerRoute
+	Transformation *envoytransformation.RouteTransformations
+}
+
 func (p *routePolicyPluginGwPass) processAIRoutePolicy(
-	ctx context.Context,
-	aiConfig *v1alpha1.AIRoutePolicy,
 	pCtx *ir.RouteBackendContext,
-	extprocSettings *envoy_ext_proc_v3.ExtProcPerRoute,
-	aiSecret *ir.Secret,
+	ir *AIPolicyIR,
+	extprocSettingsOnRoute *envoy_ext_proc_v3.ExtProcPerRoute,
 ) error {
-	// Setup initial transformation template. This may be modified by further
+	if ir.Extproc == nil || ir.Transformation == nil {
+		// No policy to apply
+		return nil
+	}
+
+	pCtx.AddTypedConfig(wellknown.AIPolicyTransformationFilterName, ir.Transformation)
+
+	mergedExtprocSettings := extprocSettingsOnRoute
+	if mergedExtprocSettings != nil {
+		// merge the extproc settings on the route with the settings on the policy
+		mergedExtprocSettings.GetOverrides().GrpcInitialMetadata = append(extprocSettingsOnRoute.GetOverrides().GetGrpcInitialMetadata(), ir.Extproc.GetOverrides().GetGrpcInitialMetadata()...)
+	} else {
+		// if there is no extproc settings on the route, use the settings on the policy
+		mergedExtprocSettings = ir.Extproc
+	}
+	pCtx.AddTypedConfig(wellknown.AIExtProcFilterName, ir.Extproc)
+
+	return nil
+}
+
+func preProcessAIRoutePolicy(
+	aiConfig *v1alpha1.AIRoutePolicy,
+	ir *AIPolicyIR,
+) error {
+	// Setup initial transformation template and extproc settings. The extproc is configured by the route policy and backend.
 	transformationTemplate := initTransformationTemplate()
+	extprocSettings := &envoy_ext_proc_v3.ExtProcPerRoute{
+		Override: &envoy_ext_proc_v3.ExtProcPerRoute_Overrides{
+			Overrides: &envoy_ext_proc_v3.ExtProcOverrides{},
+		},
+	}
 
 	// If the route options specify this as a chat streaming route, add a header to the ext-proc request
 	if aiConfig.RouteType != nil && *aiConfig.RouteType == v1alpha1.CHAT_STREAMING {
@@ -49,10 +82,9 @@ func (p *routePolicyPluginGwPass) processAIRoutePolicy(
 			Key:   "route_type",
 			Value: &envoytransformation.InjaTemplate{Text: "CHAT_STREAMING"},
 		})
-		p.setAIFilter = true
 	}
 
-	err := handleAIRoutePolicy(aiConfig, extprocSettings, transformationTemplate, aiSecret)
+	err := handleAIRoutePolicy(aiConfig, extprocSettings, transformationTemplate, ir.AISecret)
 	if err != nil {
 		return err
 	}
@@ -74,8 +106,8 @@ func (p *routePolicyPluginGwPass) processAIRoutePolicy(
 			},
 		},
 	}
-	pCtx.AddTypedConfig(wellknown.AIPolicyTransformationFilterName, routeTransformations)
-	pCtx.AddTypedConfig(wellknown.AIExtProcFilterName, extprocSettings)
+	ir.Transformation = routeTransformations
+	ir.Extproc = extprocSettings
 
 	return nil
 }

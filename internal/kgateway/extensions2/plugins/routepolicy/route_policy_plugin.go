@@ -47,13 +47,13 @@ const (
 )
 
 type routePolicy struct {
-	ct       time.Time
-	spec     routeSpecIr
-	AISecret *ir.Secret
+	ct   time.Time
+	spec routeSpecIr
+	ai   *AIPolicyIR
 }
 
 type routeSpecIr struct {
-	AI                         *v1alpha1.AIRoutePolicy
+	AI                         *AIPolicyIR
 	transform                  *anypb.Any
 	rustformation              *anypb.Any
 	rustformationStringToStash string
@@ -79,14 +79,17 @@ func (d *routePolicy) Equals(in any) bool {
 	if !proto.Equal(d.spec.rustformation, d2.spec.rustformation) {
 		return false
 	}
-	if d.AISecret != nil && d2.AISecret != nil && !d.AISecret.Equals(*d2.AISecret) {
+	if d.ai.AISecret != nil && d2.ai.AISecret != nil && !d.ai.AISecret.Equals(*d2.ai.AISecret) {
 		return false
 	}
-	if (d.AISecret != nil) != (d2.AISecret != nil) {
+	if (d.ai.AISecret != nil) != (d2.ai.AISecret != nil) {
 		return false
 	}
 
-	if !d.spec.AI.Equals(d2.spec.AI) {
+	if !proto.Equal(d.ai.Extproc, d2.ai.Extproc) {
+		return false
+	}
+	if !proto.Equal(d.ai.Transformation, d2.ai.Transformation) {
 		return false
 	}
 
@@ -98,7 +101,6 @@ type routePolicyPluginGwPass struct {
 	// TODO(nfuden): dont abuse httplevel filter in favor of route level
 	rustformationStash map[string]string
 	ir.UnimplementedProxyTranslationPass
-	setAIFilter bool
 }
 
 func (p *routePolicyPluginGwPass) ApplyHCM(ctx context.Context, pCtx *ir.HcmContext, out *envoyhttp.HttpConnectionManager) error {
@@ -287,7 +289,7 @@ func (p *routePolicyPluginGwPass) ApplyForRouteBackend(
 		return nil
 	}
 
-	err := p.processAIRoutePolicy(ctx, rtPolicy.spec.AI, pCtx, extprocSettings, rtPolicy.AISecret)
+	err := p.processAIRoutePolicy(pCtx, rtPolicy.ai, extprocSettings)
 	if err != nil {
 		// TODO: report error on status
 		return err
@@ -357,15 +359,21 @@ func (p *routePolicyPluginGwPass) ResourcesToAdd(ctx context.Context) ir.Resourc
 
 func buildTranslateFunc(ctx context.Context, secrets *krtcollections.SecretIndex) func(krtctx krt.HandlerContext, i *v1alpha1.RoutePolicy) *routePolicy {
 	return func(krtctx krt.HandlerContext, policyCR *v1alpha1.RoutePolicy) *routePolicy {
-		policyIr := routePolicy{ct: policyCR.CreationTimestamp.Time}
-
+		policyIr := routePolicy{
+			ct: policyCR.CreationTimestamp.Time,
+			ai: &AIPolicyIR{},
+		}
 		outSpec := routeSpecIr{}
 
-		// Pass along the AI spec as is
-		outSpec.AI = policyCR.Spec.AI
 		// Augment with AI secrets as needed
-		policyIr.AISecret = aiSecretForSpec(ctx, secrets, krtctx, policyCR)
+		policyIr.ai.AISecret = aiSecretForSpec(ctx, secrets, krtctx, policyCR)
 
+		// Preprocess the AI backend
+		err := preProcessAIRoutePolicy(policyCR.Spec.AI, policyIr.ai)
+		if err != nil {
+			// TODO: append errors to return on policyIr
+			contextutils.LoggerFrom(ctx).Error(policyCR.GetNamespace(), policyCR.GetName(), err)
+		}
 		// Apply transformation specific translation
 		transformationForSpec(policyCR.Spec, &outSpec)
 

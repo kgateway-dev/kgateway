@@ -16,6 +16,7 @@ import (
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoywellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/solo-io/go-utils/contextutils"
+	"google.golang.org/protobuf/proto"
 	"istio.io/istio/pkg/config/schema/kubeclient"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
@@ -45,7 +46,7 @@ const (
 // BackendIr is the internal representation of a backend.
 type BackendIr struct {
 	AwsIr  *AwsIr
-	AIIr   *ai.AIIr
+	AIIr   *ai.IR
 	Errors []error
 }
 
@@ -74,7 +75,10 @@ func (u *BackendIr) Equals(other any) bool {
 	}) {
 		return false
 	}
-	if !u.AIIr.AIBackend.Equals(otherBackend.AIIr.AIBackend) {
+	if !proto.Equal(u.AIIr.Extproc, otherBackend.AIIr.Extproc) {
+		return false
+	}
+	if !proto.Equal(u.AIIr.Transformation, otherBackend.AIIr.Transformation) {
 		return false
 	}
 	// AWS
@@ -207,8 +211,10 @@ func buildTranslateFunc(ctx context.Context, secrets *krtcollections.SecretIndex
 				lambdaFilters:         lambdaFilters,
 			}
 		case v1alpha1.BackendTypeAI:
-			backendIr.AIIr = &ai.AIIr{
-				AIBackend: i.Spec.AI,
+			backendIr.AIIr = &ai.IR{}
+			err := ai.PreprocessApplyAIBackend(ctx, i.Spec.AI, backendIr.AIIr)
+			if err != nil {
+				backendIr.Errors = append(backendIr.Errors, err)
 			}
 			ns := i.GetNamespace()
 			if i.Spec.AI.LLM != nil {
@@ -351,9 +357,10 @@ func (p *backendPlugin) ApplyForRoute(ctx context.Context, pCtx *ir.RouteContext
 
 func (p *backendPlugin) ApplyForBackend(ctx context.Context, pCtx *ir.RouteBackendContext, in ir.HttpBackend, out *envoy_config_route_v3.Route) error {
 	backend := pCtx.Backend.Obj.(*v1alpha1.Backend)
+	backendIr := pCtx.Backend.ObjIr.(*BackendIr)
 	switch backend.Spec.Type {
 	case v1alpha1.BackendTypeAI:
-		err := ai.ApplyAIBackend(ctx, backend.Spec.AI, pCtx, out)
+		err := ai.ApplyAIBackend(backendIr.AIIr, pCtx, out)
 		if err != nil {
 			return err
 		}

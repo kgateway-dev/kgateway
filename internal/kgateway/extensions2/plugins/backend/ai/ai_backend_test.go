@@ -163,7 +163,8 @@ func TestApplyAIBackend(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := ApplyAIBackend(context.Background(), tt.aiBackend, tt.pCtx, tt.out)
+			aiIR := &IR{}
+			err := PreprocessApplyAIBackend(context.Background(), tt.aiBackend, aiIR)
 			if tt.expectedError != "" && err == nil {
 				t.Errorf("expected error but got nil")
 			} else if tt.expectedError == "" && err != nil {
@@ -173,6 +174,11 @@ func TestApplyAIBackend(t *testing.T) {
 					t.Errorf("expected error %v but got %v", tt.expectedError, err)
 				}
 			} else if tt.expectedError == "" {
+				err := ApplyAIBackend(aiIR, tt.pCtx, tt.out)
+				if err != nil {
+					t.Errorf("expected no error but got %v", err)
+				}
+
 				if !tt.out.GetRoute().GetAutoHostRewrite().GetValue() {
 					t.Errorf("expected auto host rewrite to be set after AI Backend translation")
 				}

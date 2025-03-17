@@ -16,21 +16,40 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
 
-// AIIr is the internal representation of an AI backend.
-type AIIr struct {
-	AISecret      *ir.Secret
-	AIMultiSecret map[string]*ir.Secret
-	// TODO: preprocess the AIBackend to remove the need for this (https://github.com/kgateway-dev/kgateway/issues/10721)
-	AIBackend *v1alpha1.AIBackend
+// IR is the internal representation of an AI backend.
+type IR struct {
+	AISecret       *ir.Secret
+	AIMultiSecret  map[string]*ir.Secret
+	Transformation *envoytransformation.RouteTransformations
+	Extproc        *envoy_ext_proc_v3.ExtProcPerRoute
 }
 
-func ApplyAIBackend(ctx context.Context, aiBackend *v1alpha1.AIBackend, pCtx *ir.RouteBackendContext, out *envoy_config_route_v3.Route) error {
+func ApplyAIBackend(ir *IR, pCtx *ir.RouteBackendContext, out *envoy_config_route_v3.Route) error {
+	pCtx.AddTypedConfig(wellknown.AIBackendTransformationFilterName, ir.Transformation)
+	pCtx.AddTypedConfig(wellknown.AIExtProcFilterName, ir.Extproc)
+
+	// Add things which require basic AI backend.
+	if out.GetRoute() == nil {
+		// initialize route action if not set
+		out.Action = &envoy_config_route_v3.Route_Route{
+			Route: &envoy_config_route_v3.RouteAction{},
+		}
+	}
+	// LLM providers (open ai, etc.) expect the auto host rewrite to be set
+	out.GetRoute().HostRewriteSpecifier = &envoy_config_route_v3.RouteAction_AutoHostRewrite{
+		AutoHostRewrite: wrapperspb.Bool(true),
+	}
+
+	return nil
+}
+
+func PreprocessApplyAIBackend(ctx context.Context, aiBackend *v1alpha1.AIBackend, ir *IR) error {
 	// Setup ext-proc route filter config, we will conditionally modify it based on certain route options.
 	// A heavily used part of this config is the `GrpcInitialMetadata`.
 	// This is used to add headers to the ext-proc request.
 	// These headers are used to configure the AI server on a per-request basis.
 	// This was the best available way to pass per-route configuration to the AI server.
-	extProcRouteSettingsProto := pCtx.GetTypedConfig(wellknown.AIExtProcFilterName)
+	extProcRouteSettingsProto := ir.Extproc
 	var extProcRouteSettings *envoy_ext_proc_v3.ExtProcPerRoute
 	if extProcRouteSettingsProto == nil {
 		extProcRouteSettings = &envoy_ext_proc_v3.ExtProcPerRoute{
@@ -38,8 +57,6 @@ func ApplyAIBackend(ctx context.Context, aiBackend *v1alpha1.AIBackend, pCtx *ir
 				Overrides: &envoy_ext_proc_v3.ExtProcOverrides{},
 			},
 		}
-	} else {
-		extProcRouteSettings = extProcRouteSettingsProto.(*envoy_ext_proc_v3.ExtProcPerRoute)
 	}
 
 	var llmModel string
@@ -64,18 +81,6 @@ func ApplyAIBackend(ctx context.Context, aiBackend *v1alpha1.AIBackend, pCtx *ir
 		llmProvider = k
 	}
 
-	// Add things which require basic AI backend.
-	if out.GetRoute() == nil {
-		// initialize route action if not set
-		out.Action = &envoy_config_route_v3.Route_Route{
-			Route: &envoy_config_route_v3.RouteAction{},
-		}
-	}
-	// LLM providers (open ai, etc.) expect the auto host rewrite to be set
-	out.GetRoute().HostRewriteSpecifier = &envoy_config_route_v3.RouteAction_AutoHostRewrite{
-		AutoHostRewrite: wrapperspb.Bool(true),
-	}
-
 	//We only want to add the transformation filter if we have a single AI backend
 	//Otherwise we already have the transformation filter added by the weighted destination.
 	transformation := createTransformationTemplate(ctx, aiBackend)
@@ -96,7 +101,8 @@ func ApplyAIBackend(ctx context.Context, aiBackend *v1alpha1.AIBackend, pCtx *ir
 	transformations := &envoytransformation.RouteTransformations{
 		Transformations: []*envoytransformation.RouteTransformations_RouteTransformation{routeTransformation},
 	}
-	pCtx.AddTypedConfig(wellknown.AIBackendTransformationFilterName, transformations)
+	// Store transformations in IR
+	ir.Transformation = transformations
 
 	extProcRouteSettings.GetOverrides().GrpcInitialMetadata = append(extProcRouteSettings.GetOverrides().GetGrpcInitialMetadata(),
 		&envoy_config_core_v3.HeaderValue{
@@ -124,7 +130,9 @@ func ApplyAIBackend(ctx context.Context, aiBackend *v1alpha1.AIBackend, pCtx *ir
 		},
 	)
 
-	pCtx.AddTypedConfig(wellknown.AIExtProcFilterName, extProcRouteSettings)
+	// Store extproc settings in IR
+	ir.Extproc = extProcRouteSettings
+
 	return nil
 }
 
