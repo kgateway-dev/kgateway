@@ -212,7 +212,7 @@ func buildTranslateFunc(ctx context.Context, secrets *krtcollections.SecretIndex
 			}
 		case v1alpha1.BackendTypeAI:
 			backendIr.AIIr = &ai.IR{}
-			err := ai.PreprocessApplyAIBackend(ctx, i.Spec.AI, backendIr.AIIr)
+			err := ai.PreprocessAIBackend(ctx, i.Spec.AI, backendIr.AIIr)
 			if err != nil {
 				backendIr.Errors = append(backendIr.Errors, err)
 			}
@@ -378,7 +378,7 @@ func (p *backendPlugin) ApplyForBackend(ctx context.Context, pCtx *ir.RouteBacke
 				Disabled: true,
 			},
 		}
-		pCtx.AddTypedConfig(wellknown.AIExtProcFilterName, disabledExtprocSettings)
+		pCtx.TypedFilterConfig.AddTypedConfig(wellknown.AIExtProcFilterName, disabledExtprocSettings)
 	}
 
 	return nil

@@ -25,11 +25,9 @@ func TestProcessAIRoutePolicy(t *testing.T) {
 			},
 		},
 	}
-	pCtx := &ir.RouteBackendContext{
-		TypedFilterConfig: &map[string]proto.Message{
-			wellknown.AIExtProcFilterName: extprocSettings,
-		},
-	}
+	typedFilterConfig := ir.TypedFilterConfigMap(map[string]proto.Message{
+		wellknown.AIExtProcFilterName: extprocSettings,
+	})
 
 	t.Run("sets streaming header for chat streaming route", func(t *testing.T) {
 		// Setup
@@ -47,7 +45,7 @@ func TestProcessAIRoutePolicy(t *testing.T) {
 		// Execute
 		err := preProcessAIRoutePolicy(aiConfig, aiIR)
 		require.NoError(t, err)
-		err = plugin.processAIRoutePolicy(pCtx, aiIR, extprocSettings)
+		err = plugin.processAIRoutePolicy(&typedFilterConfig, aiIR)
 		require.NoError(t, err)
 
 		// Verify streaming header was added
@@ -61,11 +59,11 @@ func TestProcessAIRoutePolicy(t *testing.T) {
 		assert.True(t, found, "streaming header not found")
 
 		// Verify transformation and extproc were added to context
-		transformation, ok := pCtx.GetTypedConfig(wellknown.AIPolicyTransformationFilterName).(*envoytransformation.RouteTransformations)
+		transformation, ok := typedFilterConfig.GetTypedConfig(wellknown.AIPolicyTransformationFilterName).(*envoytransformation.RouteTransformations)
 		assert.True(t, ok)
 		assert.NotNil(t, transformation)
 
-		extprocConfig, ok := pCtx.GetTypedConfig(wellknown.AIExtProcFilterName).(*envoy_ext_proc_v3.ExtProcPerRoute)
+		extprocConfig, ok := typedFilterConfig.GetTypedConfig(wellknown.AIExtProcFilterName).(*envoy_ext_proc_v3.ExtProcPerRoute)
 		assert.True(t, ok)
 		assert.Equal(t, extprocSettings, extprocConfig)
 	})
@@ -96,12 +94,12 @@ func TestProcessAIRoutePolicy(t *testing.T) {
 		err := preProcessAIRoutePolicy(aiConfig, aiIR)
 		require.NoError(t, err)
 
-		err = plugin.processAIRoutePolicy(pCtx, aiIR, extprocSettings)
+		err = plugin.processAIRoutePolicy(&typedFilterConfig, aiIR)
 		require.NoError(t, err)
 
 		// Verify
 		require.NoError(t, err)
-		transformation, ok := pCtx.GetTypedConfig(wellknown.AIPolicyTransformationFilterName).(*envoytransformation.RouteTransformations)
+		transformation, ok := typedFilterConfig.GetTypedConfig(wellknown.AIPolicyTransformationFilterName).(*envoytransformation.RouteTransformations)
 		assert.True(t, ok)
 		assert.True(t, len(transformation.Transformations) == 1)
 		assert.True(t, transformation.Transformations[0].GetRequestMatch().GetRequestTransformation().GetLogRequestResponseInfo().GetValue())
@@ -143,12 +141,12 @@ func TestProcessAIRoutePolicy(t *testing.T) {
 		err := preProcessAIRoutePolicy(aiConfig, aiIR)
 		require.NoError(t, err)
 
-		err = plugin.processAIRoutePolicy(pCtx, aiIR, extprocSettings)
+		err = plugin.processAIRoutePolicy(&typedFilterConfig, aiIR)
 		require.NoError(t, err)
 
 		// Verify
 		require.NoError(t, err)
-		routeTransformations, ok := pCtx.GetTypedConfig(wellknown.AIPolicyTransformationFilterName).(*envoytransformation.RouteTransformations)
+		routeTransformations, ok := typedFilterConfig.GetTypedConfig(wellknown.AIPolicyTransformationFilterName).(*envoytransformation.RouteTransformations)
 		assert.True(t, ok)
 		assert.True(t, len(routeTransformations.Transformations) == 1)
 		transformation := routeTransformations.Transformations[0]
@@ -196,7 +194,7 @@ func TestProcessAIRoutePolicy(t *testing.T) {
 		err := preProcessAIRoutePolicy(aiConfig, aiIR)
 		require.NoError(t, err)
 
-		err = plugin.processAIRoutePolicy(pCtx, aiIR, extprocSettings)
+		err = plugin.processAIRoutePolicy(&typedFilterConfig, aiIR)
 		require.NoError(t, err)
 
 		// Verify

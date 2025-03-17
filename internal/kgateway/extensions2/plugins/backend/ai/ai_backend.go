@@ -25,8 +25,15 @@ type IR struct {
 }
 
 func ApplyAIBackend(ir *IR, pCtx *ir.RouteBackendContext, out *envoy_config_route_v3.Route) error {
-	pCtx.AddTypedConfig(wellknown.AIBackendTransformationFilterName, ir.Transformation)
-	pCtx.AddTypedConfig(wellknown.AIExtProcFilterName, ir.Extproc)
+	pCtx.TypedFilterConfig.AddTypedConfig(wellknown.AIBackendTransformationFilterName, ir.Transformation)
+
+	routepolicyExtprocSettingsProto := pCtx.TypedFilterConfig.GetTypedConfig(wellknown.AIExtProcFilterName)
+	if routepolicyExtprocSettingsProto != nil {
+		// merge the Backend extproc config with any config added by the RoutePolicy
+		routeExtprocSettings := routepolicyExtprocSettingsProto.(*envoy_ext_proc_v3.ExtProcPerRoute)
+		ir.Extproc.GetOverrides().GrpcInitialMetadata = append(ir.Extproc.GetOverrides().GetGrpcInitialMetadata(), routeExtprocSettings.GetOverrides().GetGrpcInitialMetadata()...)
+	}
+	pCtx.TypedFilterConfig.AddTypedConfig(wellknown.AIExtProcFilterName, ir.Extproc)
 
 	// Add things which require basic AI backend.
 	if out.GetRoute() == nil {
@@ -43,7 +50,7 @@ func ApplyAIBackend(ir *IR, pCtx *ir.RouteBackendContext, out *envoy_config_rout
 	return nil
 }
 
-func PreprocessApplyAIBackend(ctx context.Context, aiBackend *v1alpha1.AIBackend, ir *IR) error {
+func PreprocessAIBackend(ctx context.Context, aiBackend *v1alpha1.AIBackend, ir *IR) error {
 	// Setup ext-proc route filter config, we will conditionally modify it based on certain route options.
 	// A heavily used part of this config is the `GrpcInitialMetadata`.
 	// This is used to add headers to the ext-proc request.

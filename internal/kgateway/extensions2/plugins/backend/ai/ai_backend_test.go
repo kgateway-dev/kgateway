@@ -19,8 +19,9 @@ import (
 )
 
 func TestApplyAIBackend(t *testing.T) {
+	typedFilterConfig := ir.TypedFilterConfigMap(map[string]proto.Message{})
 	pCtx := &ir.RouteBackendContext{
-		TypedFilterConfig: &map[string]proto.Message{},
+		TypedFilterConfig: &typedFilterConfig,
 		Backend: &ir.BackendObjectIR{
 			ObjectSource: ir.ObjectSource{
 				Group:     "test",
@@ -164,7 +165,7 @@ func TestApplyAIBackend(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			aiIR := &IR{}
-			err := PreprocessApplyAIBackend(context.Background(), tt.aiBackend, aiIR)
+			err := PreprocessAIBackend(context.Background(), tt.aiBackend, aiIR)
 			if tt.expectedError != "" && err == nil {
 				t.Errorf("expected error but got nil")
 			} else if tt.expectedError == "" && err != nil {
