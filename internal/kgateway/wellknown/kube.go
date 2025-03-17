@@ -13,8 +13,7 @@ var (
 	ServiceAccountGVK = corev1.SchemeGroupVersion.WithKind("ServiceAccount")
 
 	// RBAC GVKs
-	ClusterRoleGVK        = rbacv1.SchemeGroupVersion.WithKind("ClusterRoleBinding")
-	ClusterRoleBindingGVK = rbacv1.SchemeGroupVersion.WithKind("ClusterRole")
+	ClusterRoleBindingGVK = rbacv1.SchemeGroupVersion.WithKind("ClusterRoleBinding")
 
 	DeploymentGVK = appsv1.SchemeGroupVersion.WithKind("Deployment")
 )

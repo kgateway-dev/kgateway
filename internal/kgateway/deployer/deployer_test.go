@@ -1456,11 +1456,10 @@ var _ = Describe("Deployer", func() {
 			objs, err := d.GetEndpointPickerObjs(pool)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(objs).NotTo(BeEmpty(), "expected non-empty objects for endpoint picker deployment")
-			Expect(objs).To(HaveLen(5))
+			Expect(objs).To(HaveLen(4))
 
 			// Find the child objects.
 			var sa *corev1.ServiceAccount
-			var clusterRole *rbacv1.ClusterRole
 			var crb *rbacv1.ClusterRoleBinding
 			var dep *appsv1.Deployment
 			var svc *corev1.Service
@@ -1468,8 +1467,6 @@ var _ = Describe("Deployer", func() {
 				switch t := obj.(type) {
 				case *corev1.ServiceAccount:
 					sa = t
-				case *rbacv1.ClusterRole:
-					clusterRole = t
 				case *rbacv1.ClusterRoleBinding:
 					crb = t
 				case *appsv1.Deployment:
@@ -1479,8 +1476,7 @@ var _ = Describe("Deployer", func() {
 				}
 			}
 			Expect(sa).NotTo(BeNil(), "expected a ServiceAccount to be rendered")
-			Expect(clusterRole).NotTo(BeNil(), "expected a Role to be rendered")
-			Expect(crb).NotTo(BeNil(), "expected a RoleBinding to be rendered")
+			Expect(crb).NotTo(BeNil(), "expected a ClusterRoleBinding to be rendered")
 			Expect(dep).NotTo(BeNil(), "expected a Deployment to be rendered")
 			Expect(svc).NotTo(BeNil(), "expected a Service to be rendered")
 
@@ -1502,7 +1498,6 @@ var _ = Describe("Deployer", func() {
 			// Validate that the rendered Deployment and Service have the expected names.
 			expectedName := fmt.Sprintf("%s-endpoint-picker", pool.Name)
 			Expect(sa.Name).To(Equal(expectedName))
-			Expect(clusterRole.Name).To(Equal(expectedName))
 			Expect(crb.Name).To(Equal(expectedName))
 			Expect(dep.Name).To(Equal(expectedName))
 			Expect(svc.Name).To(Equal(expectedName))

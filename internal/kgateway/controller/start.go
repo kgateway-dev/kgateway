@@ -130,29 +130,32 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 	mgr.AddReadyzCheck("ready-ping", healthz.Ping)
 
 	setupLog.Info("initializing kgateway extensions")
-	// Extend the scheme and add the EPP plugin if the InferencePool CRD exists.
-	exists, err := kgtwschemes.AddInferExtV1A2Scheme(cfg.RestConfig, scheme)
-	switch {
-	case err != nil:
-		return nil, err
-	case exists:
-		setupLog.Info("adding endpoint-picker inference extension")
+	// Extend the scheme and add the EPP plugin if the inference extension is enabled and the InferencePool CRD exists.
+	if cfg.SetupOpts.GlobalSettings.EnableInferExt {
+		exists, err := kgtwschemes.AddInferExtV1A2Scheme(cfg.RestConfig, scheme)
+		switch {
+		case err != nil:
+			return nil, err
+		case exists:
+			setupLog.Info("adding endpoint-picker inference extension")
 
-		existingExtraPlugins := cfg.ExtraPlugins
-		cfg.ExtraPlugins = func(ctx context.Context, commoncol *common.CommonCollections) []extensionsplug.Plugin {
-			var plugins []extensionsplug.Plugin
+			existingExtraPlugins := cfg.ExtraPlugins
+			cfg.ExtraPlugins = func(ctx context.Context, commoncol *common.CommonCollections) []extensionsplug.Plugin {
+				var plugins []extensionsplug.Plugin
 
-			// Add the inference extension plugin.
-			plugins = append(plugins, endpointpicker.NewPlugin(ctx, commoncol))
+				// Add the inference extension plugin.
+				plugins = append(plugins, endpointpicker.NewPlugin(ctx, commoncol))
 
-			// If there was an existing ExtraPlugins function, append its plugins too.
-			if existingExtraPlugins != nil {
-				plugins = append(plugins, existingExtraPlugins(ctx, commoncol)...)
+				// If there was an existing ExtraPlugins function, append its plugins too.
+				if existingExtraPlugins != nil {
+					plugins = append(plugins, existingExtraPlugins(ctx, commoncol)...)
+				}
+
+				return plugins
 			}
-
-			return plugins
 		}
 	}
+
 	cli, err := versioned.NewForConfig(cfg.RestConfig)
 	if err != nil {
 		return nil, err
@@ -238,8 +241,8 @@ func (c *ControllerBuilder) Start(ctx context.Context) error {
 		return err
 	}
 
-	// Create the InferencePool controller if the inference extension API group is registered.
-	if c.mgr.GetScheme().IsGroupRegistered(infextv1a2.GroupVersion.Group) {
+	// Create the InferencePool controller if the inference extension feature is enabled and the API group is registered.
+	if globalSettings.EnableInferExt && c.mgr.GetScheme().IsGroupRegistered(infextv1a2.GroupVersion.Group) {
 		poolCfg := &InferencePoolConfig{
 			Mgr: c.mgr,
 			// TODO read this from globalSettings

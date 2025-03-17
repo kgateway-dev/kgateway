@@ -568,19 +568,11 @@ func (d *Deployer) EnsureFinalizer(ctx context.Context, pool *infextv1a2.Inferen
 	return d.cli.Update(ctx, pool)
 }
 
-// CleanupClusterScopedResources deletes the ClusterRole and ClusterRoleBinding for the given pool.
+// CleanupClusterScopedResources deletes the ClusterRoleBinding for the given pool.
 // TODO [danehans]: EPP should use role and rolebinding RBAC: https://github.com/kubernetes-sigs/gateway-api-inference-extension/issues/224
 func (d *Deployer) CleanupClusterScopedResources(ctx context.Context, pool *infextv1a2.InferencePool) error {
 	// The same release name as in the Helm template.
 	releaseName := fmt.Sprintf("%s-endpoint-picker", pool.Name)
-
-	// Delete the ClusterRole.
-	var cr rbacv1.ClusterRole
-	if err := d.cli.Get(ctx, client.ObjectKey{Name: releaseName}, &cr); err == nil {
-		if err := d.cli.Delete(ctx, &cr); err != nil {
-			return fmt.Errorf("failed to delete ClusterRole %s: %w", releaseName, err)
-		}
-	}
 
 	// Delete the ClusterRoleBinding.
 	var crb rbacv1.ClusterRoleBinding
@@ -595,10 +587,7 @@ func (d *Deployer) CleanupClusterScopedResources(ctx context.Context, pool *infe
 
 // IsNamespaced returns true if the resource is namespaced.
 func IsNamespaced(gvk schema.GroupVersionKind) bool {
-	if gvk == wellknown.ClusterRoleGVK || gvk == wellknown.ClusterRoleBindingGVK {
-		return false
-	}
-	return true
+	return gvk != wellknown.ClusterRoleBindingGVK
 }
 
 func loadFs(filesystem fs.FS) (*chart.Chart, error) {
