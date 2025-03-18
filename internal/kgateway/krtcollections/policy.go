@@ -6,6 +6,7 @@ import (
 	"slices"
 
 	"istio.io/istio/pkg/kube/krt"
+	"istio.io/istio/pkg/ptr"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -16,6 +17,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/backendref"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
 
 var (
@@ -158,15 +160,20 @@ type GatewayIndex struct {
 
 func NewGatewayIndex(
 	krtopts krtutil.KrtOptions,
-	isOurGw func(gw *gwv1.Gateway) bool,
+	controllerName string,
 	policies *PolicyIndex,
 	gws krt.Collection[*gwv1.Gateway],
+	gwClasses krt.Collection[*gwv1.GatewayClass],
 ) *GatewayIndex {
 	h := &GatewayIndex{policies: policies}
+
 	h.Gateways = krt.NewCollection(gws, func(kctx krt.HandlerContext, i *gwv1.Gateway) *ir.Gateway {
-		if !isOurGw(i) {
+		// only care about gateways use a class controlled by us
+		gwClass := ptr.Flatten(krt.FetchOne(kctx, gwClasses, krt.FilterKey(string(i.Spec.GatewayClassName))))
+		if gwClass == nil || controllerName != string(gwClass.Spec.ControllerName) {
 			return nil
 		}
+
 		out := ir.Gateway{
 			ObjectSource: ir.ObjectSource{
 				Group:     gwv1.SchemeGroupVersion.Group,
@@ -212,10 +219,11 @@ type globalPolicy struct {
 // MARK: PolicyIndex
 
 type PolicyIndex struct {
-	policies       krt.Collection[ir.PolicyWrapper]
-	policiesFetch  map[schema.GroupKind]func(n string, ns string) ir.PolicyIR
-	globalPolicies []globalPolicy
-	targetRefIndex krt.Index[targetRefIndexKey, ir.PolicyWrapper]
+	policies            krt.Collection[ir.PolicyWrapper]
+	policiesByTargetRef krt.Collection[ir.PolicyWrapper]
+	targetRefIndex      krt.Index[targetRefIndexKey, ir.PolicyWrapper]
+	policiesFetch       map[schema.GroupKind]func(n string, ns string) ir.PolicyIR
+	globalPolicies      []globalPolicy
 
 	hasSyncedFuncs []func() bool
 }
@@ -252,13 +260,19 @@ func NewPolicyIndex(krtopts krtutil.KrtOptions, contributesPolicies extensionspl
 	}
 
 	index.policies = krt.JoinCollection(policycols, krtopts.ToOptions("policies")...)
+	index.policiesByTargetRef = krt.NewCollection(index.policies, func(kctx krt.HandlerContext, a ir.PolicyWrapper) *ir.PolicyWrapper {
+		if len(a.TargetRefs) == 0 {
+			return nil
+		}
+		return &a
+	}, krtopts.ToOptions("policiesByTargetRef")...)
 
-	index.targetRefIndex = krt.NewIndex(index.policies, func(pol ir.PolicyWrapper) []targetRefIndexKey {
-		ret := make([]targetRefIndexKey, len(pol.TargetRefs))
-		for i, tr := range pol.TargetRefs {
+	index.targetRefIndex = krt.NewIndex(index.policiesByTargetRef, func(p ir.PolicyWrapper) []targetRefIndexKey {
+		ret := make([]targetRefIndexKey, len(p.TargetRefs))
+		for i, tr := range p.TargetRefs {
 			ret[i] = targetRefIndexKey{
 				PolicyRef: tr,
-				Namespace: pol.Namespace,
+				Namespace: p.Namespace,
 			}
 		}
 		return ret
@@ -296,11 +310,11 @@ func (p *PolicyIndex) getTargetingPolicies(
 		},
 		Namespace: targetRef.Namespace,
 	}
-	policies := krt.Fetch(kctx, p.policies, krt.FilterIndex(p.targetRefIndex, targetRefIndexKey))
+	policies := krt.Fetch(kctx, p.policiesByTargetRef, krt.FilterIndex(p.targetRefIndex, targetRefIndexKey))
 	var sectionNamePolicies []ir.PolicyWrapper
 	if sectionName != "" {
 		targetRefIndexKey.SectionName = sectionName
-		sectionNamePolicies = krt.Fetch(kctx, p.policies, krt.FilterIndex(p.targetRefIndex, targetRefIndexKey))
+		sectionNamePolicies = krt.Fetch(kctx, p.policiesByTargetRef, krt.FilterIndex(p.targetRefIndex, targetRefIndexKey))
 	}
 
 	for _, p := range policies {
@@ -457,7 +471,7 @@ type RoutesIndex struct {
 	routes          krt.Collection[RouteWrapper]
 	httpRoutes      krt.Collection[ir.HttpRouteIR]
 	httpByNamespace krt.Index[string, ir.HttpRouteIR]
-	byTargetRef     krt.Index[types.NamespacedName, RouteWrapper]
+	byParentRef     krt.Index[targetRefIndexKey, RouteWrapper]
 
 	policies  *PolicyIndex
 	refgrants *RefGrantIndex
@@ -504,20 +518,38 @@ func NewRoutesIndex(
 	httpByNamespace := krt.NewIndex(h.httpRoutes, func(i ir.HttpRouteIR) []string {
 		return []string{i.GetNamespace()}
 	})
-	byTargetRef := krt.NewIndex(h.routes, func(in RouteWrapper) []types.NamespacedName {
+	byParentRef := krt.NewIndex(h.routes, func(in RouteWrapper) []targetRefIndexKey {
 		parentRefs := in.Route.GetParentRefs()
-		ret := make([]types.NamespacedName, len(parentRefs))
+		ret := make([]targetRefIndexKey, len(parentRefs))
 		for i, pRef := range parentRefs {
 			ns := strOr(pRef.Namespace, "")
 			if ns == "" {
 				ns = in.Route.GetNamespace()
 			}
-			ret[i] = types.NamespacedName{Namespace: ns, Name: string(pRef.Name)}
+			// HTTPRoute defaults GK to Gateway
+			group := wellknown.GatewayGVK.Group
+			kind := wellknown.GatewayGVK.Kind
+			if pRef.Group != nil {
+				group = string(*pRef.Group)
+			}
+			if pRef.Kind != nil {
+				kind = string(*pRef.Kind)
+			}
+			// lookup by the root object
+			ret[i] = targetRefIndexKey{
+				Namespace: ns,
+				PolicyRef: ir.PolicyRef{
+					Group: group,
+					Kind:  kind,
+					Name:  string(pRef.Name),
+					// this index intentionally doesn't include sectionName or port
+				},
+			}
 		}
 		return ret
 	})
 	h.httpByNamespace = httpByNamespace
-	h.byTargetRef = byTargetRef
+	h.byParentRef = byParentRef
 	return h
 }
 
@@ -526,7 +558,18 @@ func (h *RoutesIndex) ListHttp(kctx krt.HandlerContext, ns string) []ir.HttpRout
 }
 
 func (h *RoutesIndex) RoutesForGateway(kctx krt.HandlerContext, nns types.NamespacedName) []ir.Route {
-	rts := krt.Fetch(kctx, h.routes, krt.FilterIndex(h.byTargetRef, nns))
+	return h.RoutesFor(kctx, nns, wellknown.GatewayGVK.Group, wellknown.GatewayGVK.Kind)
+}
+
+func (h *RoutesIndex) RoutesFor(kctx krt.HandlerContext, nns types.NamespacedName, group, kind string) []ir.Route {
+	rts := krt.Fetch(kctx, h.routes, krt.FilterIndex(h.byParentRef, targetRefIndexKey{
+		PolicyRef: ir.PolicyRef{
+			Name:  nns.Name,
+			Group: group,
+			Kind:  kind,
+		},
+		Namespace: nns.Namespace,
+	}))
 	ret := make([]ir.Route, len(rts))
 	for i, r := range rts {
 		ret[i] = r.Route
@@ -595,6 +638,7 @@ func (h *RoutesIndex) transformTlsRoute(kctx krt.HandlerContext, i *gwv1a2.TLSRo
 		AttachedPolicies: toAttachedPolicies(h.policies.getTargetingPolicies(kctx, extensionsplug.RouteAttachmentPoint, src, "")),
 	}
 }
+
 func (h *RoutesIndex) transformHttpRoute(kctx krt.HandlerContext, i *gwv1.HTTPRoute) *ir.HttpRouteIR {
 	src := ir.ObjectSource{
 		Group:     gwv1.SchemeGroupVersion.Group,
@@ -653,7 +697,6 @@ func (h *RoutesIndex) resolveExtension(kctx krt.HandlerContext, ns string, ext g
 			// TODO: report error!!
 			return schema.GroupKind{}, nil
 		}
-		// panic("TODO: handle built in extensions")
 		ref := *ext.ExtensionRef
 		key := ir.ObjectSource{
 			Group:     string(ref.Group),
@@ -803,6 +846,7 @@ func tostr(in []gwv1.Hostname) []string {
 	}
 	return out
 }
+
 func emptyIfCore(s string) string {
 	if s == "core" {
 		return ""

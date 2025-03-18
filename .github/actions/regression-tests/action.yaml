@@ -7,11 +7,6 @@ runs:
   steps:
     - name: Prep Go Runner
       uses: ./.github/actions/prep-go-runner
-    - name: Install kind
-      uses: helm/kind-action@v1.10.0
-      with:
-        install_only: true
-        version: ${{ matrix.kube-version.kind }}
     - uses: azure/setup-kubectl@v4
       id: kubectl
       with:

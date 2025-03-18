@@ -4,9 +4,6 @@
 # - team1/httpbin
 # - team2/httpbin
 #
-# Pods:
-# - curl/curl
-#
 # Services:
 # - team1/svc1
 # - team2/svc2
@@ -123,27 +120,6 @@ spec:
           value: /tmp
         ports:
         - containerPort: 8080
----
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: curl
----
-apiVersion: v1
-kind: Pod
-metadata:
-  name: curl
-  namespace: curl
-  labels:
-    app: curl
-spec:
-  containers:
-    - name: curl
-      image: curlimages/curl:7.83.1
-      imagePullPolicy: IfNotPresent
-      command:
-        - "sleep"
-        - "365d"
 ---
 apiVersion: v1
 kind: Namespace

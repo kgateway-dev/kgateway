@@ -33,11 +33,6 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Install kind
-      uses: helm/kind-action@v1.10.0
-      with:
-        install_only: true
-        version: ${{ inputs.kind-version }}
     - uses: azure/setup-kubectl@v4
       id: kubectl
       with:
@@ -53,4 +48,6 @@ runs:
         ISTIO_VERSION: ${{ inputs.istio-version }}
         CONFORMANCE_VERSION: ${{ inputs.kgateway-api-version }}
         LOCALSTACK: ${{ inputs.localstack }}
+        # AI Tests rely on metal LB
+        CONFORMANCE: true
       run: ./hack/kind/setup-kind.sh

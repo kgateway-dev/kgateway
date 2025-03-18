@@ -26,6 +26,8 @@ var (
 
 	CurlPodManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "curl_pod.yaml")
 
+	CurlPodLabelSelector = "app.kubernetes.io/name=curl"
+
 	HttpEchoPod = &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "http-echo",

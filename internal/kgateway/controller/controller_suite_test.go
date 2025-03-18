@@ -29,7 +29,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	api "sigs.k8s.io/gateway-api/apis/v1"
-	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/controller"
@@ -55,10 +54,10 @@ const (
 )
 
 func getAssetsDir() string {
-	assets := ""
+	var assets string
 	if os.Getenv("KUBEBUILDER_ASSETS") == "" {
 		// set default if not user provided
-		out, err := exec.Command("sh", "-c", "make -sC $(dirname $(go env GOMOD))/internal/kgateway envtest-path").CombinedOutput()
+		out, err := exec.Command("sh", "-c", "make -sC $(dirname $(go env GOMOD)) envtest-path").CombinedOutput()
 		fmt.Fprintln(GinkgoWriter, "out:", string(out))
 		ExpectWithOffset(1, err).NotTo(HaveOccurred())
 		assets = strings.TrimSpace(string(out))
@@ -69,13 +68,13 @@ func getAssetsDir() string {
 var _ = BeforeSuite(func() {
 	log.SetLogger(zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true)))
 
-	ctx, cancel = context.WithCancel(context.TODO())
+	ctx, cancel = context.WithCancel(context.Background())
 
 	By("bootstrapping test environment")
 	testEnv = &envtest.Environment{
 		CRDDirectoryPaths: []string{
 			filepath.Join("..", "crds"),
-			filepath.Join("..", "..", "..", "install", "helm", "kgateway", "crds"),
+			filepath.Join("..", "..", "..", "install", "helm", "kgateway-crds", "templates"),
 		},
 		ErrorIfCRDPathMissing: true,
 		// set assets dir so we can run without the makefile
@@ -93,7 +92,7 @@ var _ = BeforeSuite(func() {
 	Expect(k8sClient).NotTo(BeNil())
 
 	webhookInstallOptions := &testEnv.WebhookInstallOptions
-	mgrOpts := ctrl.Options{
+	mgr, err := ctrl.NewManager(cfg, ctrl.Options{
 		Scheme: scheme,
 		WebhookServer: webhook.NewServer(webhook.Options{
 			Host:    webhookInstallOptions.LocalServingHost,
@@ -107,8 +106,7 @@ var _ = BeforeSuite(func() {
 			// the name validation here.
 			SkipNameValidation: ptr.To(true),
 		},
-	}
-	mgr, err := ctrl.NewManager(cfg, mgrOpts)
+	})
 	Expect(err).ToNot(HaveOccurred())
 
 	kubeconfig = generateKubeConfiguration(cfg)
@@ -116,21 +114,17 @@ var _ = BeforeSuite(func() {
 
 	Expect(err).ToNot(HaveOccurred())
 
-	cfg := controller.GatewayConfig{
+	err = controller.NewBaseGatewayController(ctx, controller.GatewayConfig{
 		Mgr:            mgr,
 		ControllerName: gatewayControllerName,
-		OurGateway: func(gw *apiv1.Gateway) bool {
-			return gwClasses.Has(string(gw.Spec.GatewayClassName))
-		},
-		AutoProvision: true,
-	}
-	err = controller.NewBaseGatewayController(ctx, cfg)
+		AutoProvision:  true,
+	})
 	Expect(err).ToNot(HaveOccurred())
 
 	for class := range gwClasses {
 		err = k8sClient.Create(ctx, &api.GatewayClass{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: class,
+				Name: string(class),
 			},
 			Spec: api.GatewayClassSpec{
 				ControllerName: api.GatewayController(gatewayControllerName),

@@ -25,14 +25,13 @@ import (
 )
 
 const (
-	// field name used for indexing
+	// indexes on Gateway
 	GatewayParamsField = "gateway-params"
+	GatewayClassField  = "spec.gatewayClassName"
 )
 
 type GatewayConfig struct {
 	Mgr manager.Manager
-
-	OurGateway func(gw *apiv1.Gateway) bool
 
 	Dev            bool
 	ControllerName string
@@ -57,7 +56,7 @@ func NewBaseGatewayController(ctx context.Context, cfg GatewayConfig) error {
 	return run(ctx,
 		controllerBuilder.watchGwClass,
 		controllerBuilder.watchGw,
-		controllerBuilder.addGwParamsIndexes,
+		controllerBuilder.addIndexes,
 	)
 }
 
@@ -76,8 +75,14 @@ type controllerBuilder struct {
 	reconciler *controllerReconciler
 }
 
-func (c *controllerBuilder) addGwParamsIndexes(ctx context.Context) error {
-	return c.cfg.Mgr.GetFieldIndexer().IndexField(ctx, &apiv1.Gateway{}, GatewayParamsField, gatewayToParams)
+func (c *controllerBuilder) addIndexes(ctx context.Context) error {
+	if err := c.cfg.Mgr.GetFieldIndexer().IndexField(ctx, &apiv1.Gateway{}, GatewayParamsField, gatewayToParams); err != nil {
+		return err
+	}
+	if err := c.cfg.Mgr.GetFieldIndexer().IndexField(ctx, &apiv1.Gateway{}, GatewayClassField, gatewayToClass); err != nil {
+		return err
+	}
+	return nil
 }
 
 // gatewayToParams is an IndexerFunc that gets a GatewayParameters name from a Gateway
@@ -91,6 +96,15 @@ func gatewayToParams(obj client.Object) []string {
 		return []string{gwpName}
 	}
 	return []string{}
+}
+
+// gatewayToClass is an IndexerFunc that lists a Gateways that use a given className
+func gatewayToClass(obj client.Object) []string {
+	gw, ok := obj.(*apiv1.Gateway)
+	if !ok {
+		panic(fmt.Sprintf("wrong type %T provided to indexer. expected Gateway", obj))
+	}
+	return []string{string(gw.Spec.GatewayClassName)}
 }
 
 func (c *controllerBuilder) watchGw(ctx context.Context) error {
@@ -115,20 +129,16 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 
 	buildr := ctrl.NewControllerManagedBy(c.cfg.Mgr).
 		// Don't use WithEventFilter here as it also filters events for Owned objects.
-		For(&apiv1.Gateway{}, builder.WithPredicates(predicate.NewPredicateFuncs(func(object client.Object) bool {
-			// We only care about Gateways that use our GatewayClass
-			if gw, ok := object.(*apiv1.Gateway); ok {
-				return c.cfg.OurGateway(gw)
-			}
-			return false
-		}),
+		For(&apiv1.Gateway{}, builder.WithPredicates(
+			// TODO(stevenctl) investigate perf implications of filtering in Reconcile
+			// the tricky part is we want to check a relationship of gateway -> gatewayclass -> controller name
 			predicate.Or(
 				predicate.AnnotationChangedPredicate{},
 				predicate.GenerationChangedPredicate{},
 			),
 		))
 
-	// watch for changes in GatewayParameters
+	// watch for changes in GatewayParameters and enqueue Gateways that use them
 	cli := c.cfg.Mgr.GetClient()
 	buildr.Watches(&v1alpha1.GatewayParameters{}, handler.EnqueueRequestsFromMapFunc(
 		func(ctx context.Context, obj client.Object) []reconcile.Request {
@@ -150,6 +160,39 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 			}
 			return reqs
 		}))
+	// watch for gatewayclasses managed by our controller and enqueue related gateways
+	buildr.Watches(
+		&apiv1.GatewayClass{},
+		handler.EnqueueRequestsFromMapFunc(func(ctx context.Context, obj client.Object) []reconcile.Request {
+			gc, ok := obj.(*apiv1.GatewayClass)
+			if !ok {
+				return nil
+			}
+			var gwList apiv1.GatewayList
+			if err := c.cfg.Mgr.GetClient().List(
+				ctx,
+				&gwList,
+				client.MatchingFields{GatewayClassField: gc.Name},
+			); err != nil {
+				log.Error(err, "failed listing GatewayClasses in predicate")
+				return nil
+			}
+			reqs := make([]reconcile.Request, 0, len(gwList.Items))
+			for _, gw := range gwList.Items {
+				reqs = append(reqs,
+					reconcile.Request{NamespacedName: client.ObjectKeyFromObject(&gw)},
+				)
+			}
+			return reqs
+		}),
+		builder.WithPredicates(
+			predicate.NewPredicateFuncs(func(o client.Object) bool {
+				gc, ok := o.(*apiv1.GatewayClass)
+				return ok && gc.Spec.ControllerName == apiv1.GatewayController(c.cfg.ControllerName)
+			}),
+			predicate.GenerationChangedPredicate{},
+		),
+	)
 
 	for _, gvk := range gvks {
 		obj, err := c.cfg.Mgr.GetScheme().New(gvk)
@@ -170,10 +213,11 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 	}
 
 	return buildr.Complete(&gatewayReconciler{
-		cli:           c.cfg.Mgr.GetClient(),
-		scheme:        c.cfg.Mgr.GetScheme(),
-		autoProvision: c.cfg.AutoProvision,
-		deployer:      d,
+		cli:            c.cfg.Mgr.GetClient(),
+		scheme:         c.cfg.Mgr.GetScheme(),
+		controllerName: c.cfg.ControllerName,
+		autoProvision:  c.cfg.AutoProvision,
+		deployer:       d,
 	})
 }
 

@@ -23,11 +23,10 @@ jobs:
       uses: actions/setup-go@v5
       with:
         go-version-file: go.mod
-    - name: Build
+    - name: Install dependencies
+      run: make mod-download
+    - name: Build kgateway
       run: go build -v ./internal/kgateway/...
-    - name: Install Test Utils
-      shell: bash
-      run: make -C ./internal/kgateway/ install-go-tools
     - name: Run Tests
       shell: bash
       env:
@@ -39,3 +38,22 @@ jobs:
       # We intentionally ignore the errors while we build out our test coverage, to establish a good baseline
       # However, we should strive to establish a baseline, and then make it required on PRs
       run: make --always-make --ignore-errors validate-test-coverage
+  # Runs the units tests for `python`
+  python_unit_tests:
+    timeout-minutes: 60
+    name: Python Unit Tests
+    env:
+      CONTEXT: Python Unit Tests
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare Python Runner
+        uses: ./.github/actions/prep-python-runner
+
+      - name: Run Tests
+        shell: bash
+        run: |
+          echo "Running python unit tests"
+          cd python/ai_extension
+          python3 -m pytest test
