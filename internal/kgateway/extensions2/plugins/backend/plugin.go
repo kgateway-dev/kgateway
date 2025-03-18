@@ -86,7 +86,7 @@ func (u *BackendIr) Equals(other any) bool {
 
 func registerTypes(ourCli versioned.Interface) {
 	kubeclient.Register[*v1alpha1.Backend](
-		wellknown.BackendGVK.GroupVersion().WithResource("backends"),
+		wellknown.BackendGVR,
 		wellknown.BackendGVK,
 		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (runtime.Object, error) {
 			return ourCli.GatewayV1alpha1().Backends(namespace).List(context.Background(), o)

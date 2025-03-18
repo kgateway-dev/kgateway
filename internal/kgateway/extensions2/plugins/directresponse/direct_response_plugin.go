@@ -62,7 +62,7 @@ func (p *directResponsePluginGwPass) ApplyForBackend(ctx context.Context, pCtx *
 
 func registerTypes(ourCli versioned.Interface) {
 	skubeclient.Register[*v1alpha1.DirectResponse](
-		wellknown.DirectResponseGVK.GroupVersion().WithResource("directresponses"),
+		wellknown.DirectResponseGVR,
 		wellknown.DirectResponseGVK,
 		func(c skubeclient.ClientGetter, namespace string, o metav1.ListOptions) (runtime.Object, error) {
 			return ourCli.GatewayV1alpha1().DirectResponses(namespace).List(context.Background(), o)
