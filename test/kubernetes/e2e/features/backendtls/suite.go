@@ -27,11 +27,13 @@ import (
 )
 
 var (
-	manifests = []string{
+	baseManifests = []string{
 		filepath.Join(fsutils.MustGetThisDir(), "inputs/base.yaml"),
 		filepath.Join(fsutils.MustGetThisDir(), "inputs/nginx.yaml"),
 		defaults.CurlPodManifest,
 	}
+	configMapManifest = filepath.Join(fsutils.MustGetThisDir(), "inputs/configmap.yaml")
+
 	proxyObjMeta = metav1.ObjectMeta{
 		Name:      "gw",
 		Namespace: "default",
@@ -73,16 +75,17 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 	}
 }
 
-func (s *clientTlsTestingSuite) TestRouteSecureRequestToUpstream() {
+func (s *clientTlsTestingSuite) TestBackendTLSPolicyAndStatus() {
 	s.T().Cleanup(func() {
-		for _, manifest := range manifests {
+		for _, manifest := range baseManifests {
 			err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, manifest)
 			s.Require().NoError(err)
 		}
 		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, proxyService, proxyDeployment, backendTlsPolicy)
 	})
 
-	for _, manifest := range manifests {
+	toCreate := append(baseManifests, configMapManifest)
+	for _, manifest := range toCreate {
 		err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, manifest)
 		s.Require().NoError(err)
 	}
@@ -113,6 +116,27 @@ func (s *clientTlsTestingSuite) TestRouteSecureRequestToUpstream() {
 		},
 	)
 
+	s.assertPolicyStatus(metav1.Condition{
+		Type:    string(gwv1a2.PolicyConditionAccepted),
+		Status:  metav1.ConditionTrue,
+		Reason:  string(gwv1a2.PolicyReasonAccepted),
+		Message: "Policy accepted and attached",
+	})
+
+	// delete configmap so we can assert status updates correctly
+	err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, configMapManifest)
+	s.Require().NoError(err)
+
+	s.assertPolicyStatus(metav1.Condition{
+		Type:    string(gwv1a2.PolicyConditionAccepted),
+		Status:  metav1.ConditionFalse,
+		Reason:  string(gwv1a2.PolicyReasonInvalid),
+		Message: `Policy error: "configmap default/ca not found"`,
+	})
+
+}
+
+func (s *clientTlsTestingSuite) assertPolicyStatus(inCondition metav1.Condition) {
 	currentTimeout, pollingInterval := helpers.GetTimeouts()
 	p := s.testInstallation.Assertions
 	p.Gomega.Eventually(func(g gomega.Gomega) {
@@ -132,10 +156,10 @@ func (s *clientTlsTestingSuite) TestRouteSecureRequestToUpstream() {
 		g.Expect(ancestor.AncestorRef).To(gomega.BeEquivalentTo(expectedAncestorRef))
 
 		g.Expect(ancestor.Conditions).To(gomega.HaveLen(1), "ancestors conditions wasn't length of 1")
-		cond := meta.FindStatusCondition(ancestor.Conditions, string(gwv1a2.PolicyConditionAccepted))
+		cond := meta.FindStatusCondition(ancestor.Conditions, inCondition.Type)
 		g.Expect(cond).NotTo(gomega.BeNil(), "policy should have accepted condition")
-		g.Expect(cond.Status).To(gomega.Equal(metav1.ConditionTrue), "policy accepted condition should be true")
-		g.Expect(cond.Reason).To(gomega.Equal(string(gwv1a2.PolicyReasonAccepted)), "policy reason should be accepted")
-		g.Expect(cond.Message).To(gomega.Equal("Policy accepted and attached"))
+		g.Expect(cond.Status).To(gomega.Equal(inCondition.Status), "policy accepted condition should be true")
+		g.Expect(cond.Reason).To(gomega.Equal(inCondition.Reason), "policy reason should be accepted")
+		g.Expect(cond.Message).To(gomega.Equal(inCondition.Message))
 	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 }
