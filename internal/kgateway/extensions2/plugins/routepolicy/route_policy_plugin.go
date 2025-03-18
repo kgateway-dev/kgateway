@@ -296,23 +296,22 @@ func (p *routePolicyPluginGwPass) ApplyForRouteBackend(
 // any filter returned from route config must be disabled, so it doesnt impact other routes.
 func (p *routePolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.FilterChainCommon) ([]plugins.StagedHttpFilter, error) {
 	filters := []plugins.StagedHttpFilter{}
-	if p.setTransformationInChain {
+	if p.setTransformationInChain && !useRustformations {
 		// TODO(nfuden): support stages such as early
 		// first register classic
 		filters = append(filters, plugins.MustNewStagedFilter(transformationFilterNamePrefix,
 			&transformationpb.FilterTransformations{},
 			plugins.BeforeStage(plugins.AcceptedStage)))
-
+	}
+	if p.setTransformationInChain && useRustformations {
 		// ---------------
 		// | END CLASSIC |
 		// ---------------
-
 		// TODO(nfuden/yuvalk): how to do route level correctly probably contribute to dynamic module upstream
 		// smash together configuration
 		filterRouteHashConfig := map[string]string{}
 
 		for k, v := range p.rustformationStash {
-			fmt.Println("k", k, "v", v)
 			filterRouteHashConfig[k] = v
 		}
 
