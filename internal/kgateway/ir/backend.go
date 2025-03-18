@@ -35,6 +35,7 @@ func (c ObjectSource) GetName() string {
 func (c ObjectSource) GetNamespace() string {
 	return c.Namespace
 }
+
 func (c ObjectSource) ResourceName() string {
 	return fmt.Sprintf("%s/%s/%s/%s", c.Group, c.Kind, c.Namespace, c.Name)
 }
@@ -53,6 +54,18 @@ const (
 	DefaultAppProtocol AppProtocol = ""
 	HTTP2AppProtocol   AppProtocol = "http2"
 )
+
+func ParseAppProtocol(appProtocol *string) AppProtocol {
+	if appProtocol == nil {
+		return DefaultAppProtocol
+	}
+	switch *appProtocol {
+	case "kubernetes.io/h2c":
+		return HTTP2AppProtocol
+	default:
+		return DefaultAppProtocol
+	}
+}
 
 type BackendObjectIR struct {
 	// Ref to source object. sometimes the group and kind are not populated from api-server, so
@@ -132,9 +145,11 @@ func (c Secret) Equals(in Secret) bool {
 	return c.ObjectSource.Equals(in.ObjectSource) && versionEquals(c.Obj, in.Obj)
 }
 
-var _ krt.ResourceNamer = Secret{}
-var _ krt.Equaler[Secret] = Secret{}
-var _ json.Marshaler = Secret{}
+var (
+	_ krt.ResourceNamer   = Secret{}
+	_ krt.Equaler[Secret] = Secret{}
+	_ json.Marshaler      = Secret{}
+)
 
 func (l Secret) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {

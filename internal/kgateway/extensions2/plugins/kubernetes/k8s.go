@@ -58,7 +58,7 @@ func NewPluginFromCollections(
 				Obj: svc,
 				// TODO: fill in ObjIR
 				Port:              port.Port,
-				AppProtocol:       translateAppProtocol(port.AppProtocol),
+				AppProtocol:       ir.ParseAppProtocol(port.AppProtocol),
 				GvPrefix:          BackendClusterPrefix,
 				CanonicalHostname: fmt.Sprintf("%s.%s.svc.%s", svc.Name, svc.Namespace, clusterDomain),
 			})
@@ -79,18 +79,6 @@ func NewPluginFromCollections(
 				Backends:  k8sServiceBackends,
 			},
 		},
-	}
-}
-
-func translateAppProtocol(appProtocol *string) ir.AppProtocol {
-	if appProtocol == nil {
-		return ir.DefaultAppProtocol
-	}
-	switch *appProtocol {
-	case "kubernetes.io/h2c":
-		return ir.HTTP2AppProtocol
-	default:
-		return ir.DefaultAppProtocol
 	}
 }
 

@@ -40,7 +40,8 @@ type LocalityPod struct {
 	Addresses       []string
 }
 
-func (c LocalityPod) IP() string {
+// Addresses returns the first address if there are any.
+func (c LocalityPod) Address() string {
 	if len(c.Addresses) == 0 {
 		return ""
 	}

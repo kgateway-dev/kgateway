@@ -1,0 +1,99 @@
+package serviceentry
+
+import (
+	"context"
+
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
+	"go.uber.org/zap"
+
+	networking "istio.io/api/networking/v1alpha3"
+	networkingclient "istio.io/client-go/pkg/apis/networking/v1"
+	"istio.io/istio/pkg/config/schema/gvk"
+	"istio.io/istio/pkg/kube/krt"
+
+	clusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+
+	"k8s.io/utils/ptr"
+)
+
+func initServiceEntryBackend(ctx context.Context, in ir.BackendObjectIR, out *clusterv3.Cluster) {
+	se, ok := in.Obj.(*networkingclient.ServiceEntry)
+	if !ok {
+		return
+	}
+	switch se.Spec.Resolution {
+	case networking.ServiceEntry_STATIC:
+		// STATIC is sometimes EDS
+		if !isEDSServiceEntry(se) {
+			out.ClusterDiscoveryType = &clusterv3.Cluster_Type{
+				Type: clusterv3.Cluster_STATIC,
+			}
+		}
+	case networking.ServiceEntry_DNS:
+		out.ClusterDiscoveryType = &clusterv3.Cluster_Type{
+			Type: clusterv3.Cluster_LOGICAL_DNS,
+		}
+	case networking.ServiceEntry_DNS_ROUND_ROBIN:
+		out.ClusterDiscoveryType = &clusterv3.Cluster_Type{
+			Type: clusterv3.Cluster_STRICT_DNS,
+		}
+	}
+
+	if isEDSServiceEntry(se) {
+		out.ClusterDiscoveryType = &clusterv3.Cluster_Type{
+			Type: clusterv3.Cluster_EDS,
+		}
+		out.EdsClusterConfig = &clusterv3.Cluster_EdsClusterConfig{
+			EdsConfig: &corev3.ConfigSource{
+				ResourceApiVersion: corev3.ApiVersion_V3,
+				ConfigSourceSpecifier: &corev3.ConfigSource_Ads{
+					Ads: &corev3.AggregatedConfigSource{},
+				},
+			},
+		}
+	} else {
+		// STATIC with inline endpoints, or either kind of DNS require an inline load assignment
+		out.LoadAssignment = buildInlineCLA(ctx, in, se)
+	}
+}
+
+// Backends produces a one-to-many collection from ServiceEntry into BackendObjectIR.
+// For each ServiceEntry, we create hosts*ports Backends.
+func Backends(
+	logger *zap.SugaredLogger,
+	ServiceEntries krt.Collection[*networkingclient.ServiceEntry],
+) krt.Collection[ir.BackendObjectIR] {
+	return krt.NewManyCollection(ServiceEntries, func(ctx krt.HandlerContext, se *networkingclient.ServiceEntry) []ir.BackendObjectIR {
+		// passthrough not supported here
+		if se.Spec.GetResolution() == networking.ServiceEntry_NONE {
+			logger.Debugw("skipping ServiceEntry with resolution: NONE", "name", se.GetName(), "namespace", se.GetNamespace())
+			return nil
+		}
+
+		logger.Debugw("converting ServiceEntry to Upstream", "name", se.GetName(), "namespace", se.GetNamespace())
+		var out []ir.BackendObjectIR
+
+		for _, hostname := range se.Spec.Hosts {
+			for _, svcPort := range se.Spec.Ports {
+				be := ir.BackendObjectIR{
+					ObjectSource: ir.ObjectSource{
+						Group:     gvk.ServiceEntry.Group,
+						Kind:      gvk.ServiceEntry.Kind,
+						Namespace: se.GetNamespace(),
+						Name:      se.GetName(),
+					},
+					Port:              int32(svcPort.Number),
+					AppProtocol:       ir.ParseAppProtocol(ptr.To(svcPort.Protocol)),
+					GvPrefix:          BackendClusterPrefix,
+					CanonicalHostname: hostname,
+					Obj:               se,
+					// TODO ObjIr:             nil,
+					AttachedPolicies: ir.AttachedPolicies{},
+				}
+			}
+		}
+
+		return out
+	})
+}
