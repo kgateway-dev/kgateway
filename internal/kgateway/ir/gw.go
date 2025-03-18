@@ -106,4 +106,5 @@ type HttpRouteRuleIR struct {
 	Backends         []HttpBackendOrDelegate
 	Matches          []gwv1.HTTPRouteMatch
 	Name             string
+	Timeouts         *gwv1.HTTPRouteTimeouts
 }

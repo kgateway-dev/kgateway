@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"maps"
 	"regexp"
+	"time"
 
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
@@ -13,6 +14,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
+	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -107,6 +109,7 @@ func (h *httpRouteConfigurationTranslator) computeVirtualHost(
 	return out
 }
 
+// here?
 func (h *httpRouteConfigurationTranslator) envoyRoutes(ctx context.Context,
 	routeReport reports.ParentRefReporter,
 	in ir.HttpRouteRuleMatchIR,
@@ -329,6 +332,22 @@ func (h *httpRouteConfigurationTranslator) translateRouteAction(
 			ClusterNotFoundResponseCode: envoy_config_route_v3.RouteAction_INTERNAL_SERVER_ERROR,
 		}
 	}
+
+	// Set timeout from the HTTPRouteRule if specified
+	if in.Parent != nil && in.Parent.Rules != nil {
+		for _, rule := range in.Parent.Rules {
+			if rule.Timeouts != nil && rule.Timeouts.Request != nil {
+				duration, err := time.ParseDuration(string(*rule.Timeouts.Request))
+				if err == nil {
+					action.Timeout = durationpb.New(duration)
+				} else {
+					contextutils.LoggerFrom(ctx).Error(err)
+				}
+				break
+			}
+		}
+	}
+
 	routeAction := &envoy_config_route_v3.Route_Route{
 		Route: action,
 	}
@@ -426,7 +445,7 @@ var separatedPathRegex = regexp.MustCompile("^[^?#]+[^?#/]$")
 
 func isValidPathSparated(path string) bool {
 	// see envoy docs:
-	//	Expect the value to not contain “?“ or “#“ and not to end in “/“
+	//	Expect the value to not contain "?" or "#" and not to end in "/"
 	return separatedPathRegex.MatchString(path)
 }
 
