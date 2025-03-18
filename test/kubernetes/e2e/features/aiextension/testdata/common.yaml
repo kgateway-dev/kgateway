@@ -19,10 +19,13 @@ apiVersion: gateway.networking.k8s.io/v1
 metadata:
   name: ai-gateway
   namespace: ai-test
-  annotations:
-    gateway.kgateway.dev/gateway-parameters-name: kgateway-gateway-override
 spec:
   gatewayClassName: kgateway
+  infrastructure:
+    parametersRef:
+      name: kgateway-gateway-override
+      group: gateway.kgateway.dev
+      kind: GatewayParameters
   listeners:
   - protocol: HTTP
     port: 8080

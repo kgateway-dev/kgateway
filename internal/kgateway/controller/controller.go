@@ -85,14 +85,20 @@ func (c *controllerBuilder) addIndexes(ctx context.Context) error {
 	return nil
 }
 
-// gatewayToParams is an IndexerFunc that gets a GatewayParameters name from a Gateway
+// gatewayToParams is an IndexerFunc that gets a GatewayParameters name from a Gateway.
+// It first checks the Gateway's spec.infrastructure.parametersRef, then falls back to the
+// Gateway's annotations for the wellknown.GatewayParametersAnnotationName. Returns an empty
+// slice if neither is set.
 func gatewayToParams(obj client.Object) []string {
 	gw, ok := obj.(*apiv1.Gateway)
 	if !ok {
 		panic(fmt.Sprintf("wrong type %T provided to indexer. expected Gateway", obj))
 	}
-	gwpName := gw.GetAnnotations()[wellknown.GatewayParametersAnnotationName]
-	if gwpName != "" {
+	infrastructureRef := gw.Spec.Infrastructure
+	if infrastructureRef != nil && infrastructureRef.ParametersRef != nil {
+		return []string{infrastructureRef.ParametersRef.Name}
+	}
+	if gwpName, ok := gw.GetAnnotations()[wellknown.GatewayParametersAnnotationName]; ok {
 		return []string{gwpName}
 	}
 	return []string{}

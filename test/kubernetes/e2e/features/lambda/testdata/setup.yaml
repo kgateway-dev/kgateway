@@ -22,10 +22,13 @@ kind: Gateway
 metadata:
   name: lambda-gateway
   namespace: lambda-test
-  annotations:
-    gateway.kgateway.dev/gateway-parameters-name: lambda-gateway
 spec:
   gatewayClassName: kgateway
+  infrastructure:
+    parametersRef:
+      name: lambda-gateway
+      group: gateway.kgateway.dev
+      kind: GatewayParameters
   listeners:
   - protocol: HTTP
     port: 8080
