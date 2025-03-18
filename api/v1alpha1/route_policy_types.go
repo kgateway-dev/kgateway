@@ -79,7 +79,7 @@ type Transform struct {
 type InjaTemplate string
 
 // EnvoyHeaderName is the name of a header or pseudo header
-// Based on gateway api v1.HeaderName
+// Based on gateway api v1.Headername but allows a singular : at the start
 //
 // +kubebuilder:validation:MinLength=1
 // +kubebuilder:validation:MaxLength=256
