@@ -27,6 +27,7 @@ import (
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	discovery_v3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	"github.com/go-logr/zapr"
+	"github.com/google/go-cmp/cmp"
 	"github.com/solo-io/go-utils/contextutils"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -35,6 +36,7 @@ import (
 	"google.golang.org/grpc/grpclog"
 	jsonpb "google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/structpb"
 	istiokube "istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/krt"
@@ -420,13 +422,13 @@ func testScenario(
 		err = nil
 	}
 	if err != nil {
-		t.Fatalf("failed to read file: %v", err)
+		t.Fatalf("failed to read file %s: %v", fout, err)
 	}
 
 	var expectedXdsDump xdsDump
 	err = expectedXdsDump.FromYaml(ya)
 	if err != nil {
-		t.Fatalf("failed to read yaml: %v", err)
+		t.Fatalf("failed to read yaml %s: %v", fout, err)
 	}
 	const gwname = "http-gw-for-test"
 	testgwname := "http-" + filepath.Base(fpre)
@@ -763,8 +765,12 @@ func (x *xdsDump) Compare(t *testing.T, other xdsDump) {
 			t.Errorf("route %v not found", c.Name)
 			continue
 		}
-		if !proto.Equal(c, otherc) {
-			t.Errorf("route %v not equal: %v vs %v", c.Name, c, otherc)
+
+		// Ignore VirtualHost ordering
+		vhostFn := func(x, y *envoy_config_route_v3.VirtualHost) bool { return x.Name < y.Name }
+		if diff := cmp.Diff(c, otherc, protocmp.Transform(),
+			protocmp.SortRepeated(vhostFn)); diff != "" {
+			t.Errorf("route %v not equal!\ndiff:\b%s\n", c.Name, diff)
 		}
 	}
 

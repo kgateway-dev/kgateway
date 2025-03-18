@@ -107,7 +107,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 			errors = append(errors, err)
 		}
 
-		var pol = &ir.PolicyWrapper{
+		pol := &ir.PolicyWrapper{
 			ObjectSource: objSrc,
 			Policy:       i,
 			PolicyIR: &httpListenerPolicy{
@@ -115,7 +115,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 				compress:  i.Spec.Compress,
 				accessLog: accessLog,
 			},
-			TargetRefs: convert(i.Spec.TargetRef),
+			TargetRefs: convert(i.Spec.TargetRefs),
 			Errors:     errors,
 		}
 
@@ -125,7 +125,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 	return extensionplug.Plugin{
 		ContributesPolicies: map[schema.GroupKind]extensionsplug.PolicyPlugin{
 			wellknown.HTTPListenerPolicyGVK.GroupKind(): {
-				//AttachmentPoints: []ir.AttachmentPoints{ir.HttpAttachmentPoint},
+				// AttachmentPoints: []ir.AttachmentPoints{ir.HttpAttachmentPoint},
 				NewGatewayTranslationPass: NewGatewayTranslationPass,
 				Policies:                  policyCol,
 			},
@@ -133,17 +133,22 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 	}
 }
 
-func convert(targetRef v1alpha1.LocalPolicyTargetReference) []ir.PolicyTargetRef {
-	return []ir.PolicyTargetRef{{
-		Kind:  string(targetRef.Kind),
-		Name:  string(targetRef.Name),
-		Group: string(targetRef.Group),
-	}}
+func convert(targetRefs []v1alpha1.LocalPolicyTargetReference) []ir.PolicyTargetRef {
+	refs := make([]ir.PolicyTargetRef, 0, len(targetRefs))
+	for _, targetRef := range targetRefs {
+		refs = append(refs, ir.PolicyTargetRef{
+			Kind:  string(targetRef.Kind),
+			Name:  string(targetRef.Name),
+			Group: string(targetRef.Group),
+		})
+	}
+	return refs
 }
 
 func NewGatewayTranslationPass(ctx context.Context, tctx ir.GwTranslationCtx) ir.ProxyTranslationPass {
 	return &httpListenerPolicyPluginGwPass{}
 }
+
 func (p *httpListenerPolicyPluginGwPass) Name() string {
 	return "httplistenerpolicies"
 }
@@ -151,7 +156,8 @@ func (p *httpListenerPolicyPluginGwPass) Name() string {
 func (p *httpListenerPolicyPluginGwPass) ApplyHCM(
 	ctx context.Context,
 	pCtx *ir.HcmContext,
-	out *envoy_hcm.HttpConnectionManager) error {
+	out *envoy_hcm.HttpConnectionManager,
+) error {
 	policy, ok := pCtx.Policy.(*httpListenerPolicy)
 	if !ok {
 		return fmt.Errorf("internal error: expected httplistener policy, got %T", pCtx.Policy)

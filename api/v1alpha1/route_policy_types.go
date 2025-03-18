@@ -29,9 +29,13 @@ type RoutePolicyList struct {
 }
 
 type RoutePolicySpec struct {
-	TargetRef      LocalPolicyTargetReference `json:"targetRef,omitempty"`
-	AI             *AIRoutePolicy             `json:"ai,omitempty"`
-	Transformation TransformationPolicy       `json:"transformation,omitempty"`
+	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:MaxItems=16
+	TargetRefs []LocalPolicyTargetReference `json:"targetRefs,omitempty"`
+
+	AI *AIRoutePolicy `json:"ai,omitempty"`
+
+	Transformation TransformationPolicy `json:"transformation,omitempty"`
 }
 
 // TransformationPolicy config is used to modify envoy behavior at a route level.
@@ -47,7 +51,6 @@ type TransformationPolicy struct {
 // These operations may include changing the actual request/response but may also cause side effects.
 // Side effects may include setting info that can be used in future steps (e.g. dynamic metadata) and can cause envoy to buffer.
 type Transform struct {
-
 	// Set is a list of headers and the value they should be set to.
 	// +optional
 	// +listType=map
