@@ -17,10 +17,11 @@ func TestPolicyStatus(t *testing.T) {
 	}
 	tlsPolicyAtt := ir.PolicyAtt{
 		GroupKind: wellknown.BackendTLSPolicyGVK.GroupKind(),
-		PolicyRef: &ir.PolicyRef{
-			Group: wellknown.BackendTLSPolicyGVK.Group,
-			Kind:  wellknown.BackendTLSPolicyKind,
-			Name:  "tls-policy",
+		PolicyRef: &ir.AttachedPolicyRef{
+			Group:     wellknown.BackendTLSPolicyGVK.Group,
+			Kind:      wellknown.BackendTLSPolicyKind,
+			Name:      "tls-policy",
+			Namespace: "default",
 		},
 		Errors: []error{
 			errors.New("error 1"),
@@ -42,10 +43,11 @@ func TestPolicyStatus(t *testing.T) {
 					connPolGK: []ir.PolicyAtt{
 						ir.PolicyAtt{
 							GroupKind: connPolGK,
-							PolicyRef: &ir.PolicyRef{
-								Group: connPolGK.Group,
-								Kind:  connPolGK.Kind,
-								Name:  "conn-policy",
+							PolicyRef: &ir.AttachedPolicyRef{
+								Group:     connPolGK.Group,
+								Kind:      connPolGK.Kind,
+								Name:      "conn-policy",
+								Namespace: "default",
 							},
 							Errors: []error{},
 						},
@@ -68,10 +70,11 @@ func TestPolicyStatus(t *testing.T) {
 					connPolGK: []ir.PolicyAtt{
 						ir.PolicyAtt{
 							GroupKind: connPolGK,
-							PolicyRef: &ir.PolicyRef{
-								Group: connPolGK.Group,
-								Kind:  connPolGK.Kind,
-								Name:  "conn-policy-2",
+							PolicyRef: &ir.AttachedPolicyRef{
+								Group:     connPolGK.Group,
+								Kind:      connPolGK.Kind,
+								Name:      "conn-policy-2",
+								Namespace: "default",
 							},
 							Errors: []error{
 								errors.New("error 2"),

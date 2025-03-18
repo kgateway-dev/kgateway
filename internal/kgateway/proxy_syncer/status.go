@@ -17,7 +17,7 @@ type attachmentReport struct {
 	Errors   []error
 	Ancestor ir.ObjectSource
 }
-type policyObjsWithReports map[ir.PolicyRef][]attachmentReport
+type policyObjsWithReports map[ir.AttachedPolicyRef][]attachmentReport
 
 type GKPolicyReport struct {
 	SeenPolicies map[schema.GroupKind]plug.PolicyReport
@@ -93,7 +93,7 @@ func generateGkPolicyReport(backends []ir.BackendObjectIR) *GKPolicyReport {
 		}
 		gkPolsMap := seenPolsByGk[gk]
 		if gkPolsMap == nil {
-			gkPolsMap = map[ir.PolicyRef]plug.PolicyWithAncestorReports{}
+			gkPolsMap = map[ir.AttachedPolicyRef]plug.PolicyWithAncestorReports{}
 		}
 		gkPolsMap[policyRef] = reports
 		seenPolsByGk[gk] = gkPolsMap

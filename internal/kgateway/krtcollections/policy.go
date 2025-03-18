@@ -307,10 +307,11 @@ func (p *PolicyIndex) getTargetingPolicies(
 		ret = append(ret, ir.PolicyAtt{
 			GroupKind: p.GetGroupKind(),
 			PolicyIr:  p.PolicyIR,
-			PolicyRef: &ir.PolicyRef{
-				Group: p.Group,
-				Kind:  p.Kind,
-				Name:  p.Name,
+			PolicyRef: &ir.AttachedPolicyRef{
+				Group:     p.Group,
+				Kind:      p.Kind,
+				Name:      p.Name,
+				Namespace: p.Namespace,
 			},
 			Errors: p.Errors,
 		})
@@ -319,10 +320,11 @@ func (p *PolicyIndex) getTargetingPolicies(
 		ret = append(ret, ir.PolicyAtt{
 			GroupKind: p.GetGroupKind(),
 			PolicyIr:  p.PolicyIR,
-			PolicyRef: &ir.PolicyRef{
+			PolicyRef: &ir.AttachedPolicyRef{
 				Group:       p.Group,
 				Kind:        p.Kind,
 				Name:        p.Name,
+				Namespace:   p.Namespace,
 				SectionName: sectionName,
 			},
 			Errors: p.Errors,

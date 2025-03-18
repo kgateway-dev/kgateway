@@ -20,6 +20,16 @@ type PolicyRef struct {
 	SectionName string
 }
 
+type AttachedPolicyRef struct {
+	Group string
+	Kind  string
+	Name  string
+	// policies are local namespace only, but we need this here for usage when
+	// processing attached policy reports
+	Namespace   string
+	SectionName string
+}
+
 type PolicyAtt struct {
 	// GroupKind is the GK of the original policy object
 	GroupKind schema.GroupKind
@@ -29,7 +39,7 @@ type PolicyAtt struct {
 
 	// PolicyRef is a ref to the original policy that is attached (can be used to report status correctly).
 	// nil if the attachment was done via extension ref
-	PolicyRef *PolicyRef
+	PolicyRef *AttachedPolicyRef
 
 	Errors []error
 }
@@ -38,7 +48,7 @@ func (c PolicyAtt) Obj() PolicyIR {
 	return c.PolicyIr
 }
 
-func (c PolicyAtt) TargetRef() *PolicyRef {
+func (c PolicyAtt) TargetRef() *AttachedPolicyRef {
 	return c.PolicyRef
 }
 
