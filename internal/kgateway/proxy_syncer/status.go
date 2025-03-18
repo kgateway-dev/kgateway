@@ -27,14 +27,14 @@ func (r GKPolicyReport) ResourceName() string {
 	return "GKPolicyReport"
 }
 
-func comparePolicyErrors(i, j plug.PolicyErrors) bool {
-	if !slices.Equal(i.Errors, j.Errors) {
+func comparePolicyErrors(i, j []error) bool {
+	if !slices.Equal(i, j) {
 		return false
 	}
 	return true
 }
-func comparePolicyWithAncestorReports(x, y plug.PolicyWithAncestorReports) bool {
-	if !maps.EqualFunc(x.AncestorReports, y.AncestorReports, comparePolicyErrors) {
+func comparePolicyWithAncestorReports(x, y plug.AncestorReports) bool {
+	if !maps.EqualFunc(x, y, comparePolicyErrors) {
 		return false
 	}
 	return true
@@ -76,13 +76,11 @@ func generateGkPolicyReport(backends []ir.BackendObjectIR) *GKPolicyReport {
 	// seenPolsByGk := map[schema.GroupKind][]policyWithAncestorReports{}
 	policiesToAncestorReports := plug.PolicyReport{}
 	for policyRef, reports := range seenPolicyResources {
-		ancestorReports := map[ir.ObjectSource]plug.PolicyErrors{}
+		ancestorReports := map[ir.ObjectSource][]error{}
 		for _, rpt := range reports {
-			ancestorReports[rpt.Ancestor] = plug.PolicyErrors{Errors: rpt.Errors}
+			ancestorReports[rpt.Ancestor] = rpt.Errors
 		}
-		policiesToAncestorReports[policyRef] = plug.PolicyWithAncestorReports{
-			AncestorReports: ancestorReports,
-		}
+		policiesToAncestorReports[policyRef] = ancestorReports
 	}
 
 	seenPolsByGk := map[schema.GroupKind]plug.PolicyReport{}
@@ -93,7 +91,7 @@ func generateGkPolicyReport(backends []ir.BackendObjectIR) *GKPolicyReport {
 		}
 		gkPolsMap := seenPolsByGk[gk]
 		if gkPolsMap == nil {
-			gkPolsMap = map[ir.AttachedPolicyRef]plug.PolicyWithAncestorReports{}
+			gkPolsMap = map[ir.AttachedPolicyRef]plug.AncestorReports{}
 		}
 		gkPolsMap[policyRef] = reports
 		seenPolsByGk[gk] = gkPolsMap
@@ -103,8 +101,7 @@ func generateGkPolicyReport(backends []ir.BackendObjectIR) *GKPolicyReport {
 	}
 }
 
-func BuildPolicyCondition(in plug.PolicyErrors) metav1.Condition {
-	polErrs := in.Errors
+func BuildPolicyCondition(polErrs []error) metav1.Condition {
 	if len(polErrs) == 0 {
 		return metav1.Condition{
 			Type:    string(gwv1a2.PolicyConditionAccepted),

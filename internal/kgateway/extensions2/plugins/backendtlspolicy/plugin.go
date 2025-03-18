@@ -194,8 +194,8 @@ func buildProcessStatus(cl client.Client) func(ctx context.Context, gk schema.Gr
 				continue
 			}
 
-			ancestors := make([]gwv1a2.PolicyAncestorStatus, 0, len(rpt.AncestorReports))
-			for objSrc, policyErrs := range rpt.AncestorReports {
+			ancestors := make([]gwv1a2.PolicyAncestorStatus, 0, len(rpt))
+			for objSrc, policyErrs := range rpt {
 				newAncestor := gwv1.ParentReference{
 					Group: (*gwv1.Group)(&objSrc.Group),
 					Kind:  (*gwv1.Kind)(&objSrc.Kind),
