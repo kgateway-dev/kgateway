@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"reflect"
 	"time"
 
 	"google.golang.org/protobuf/proto"
@@ -24,6 +25,7 @@ import (
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/kube/kubetypes"
+	"istio.io/istio/pkg/slices"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -180,44 +182,58 @@ func buildProcessStatus(cl client.Client) func(ctx context.Context, gk schema.Gr
 		ctx = contextutils.WithLogger(ctx, "backendTlsPolicyStatus")
 		logger := contextutils.LoggerFrom(ctx)
 		for ref, rpt := range polReport {
-			var ns string
+			// get existing policy
+			res := gwv1a3.BackendTLSPolicy{}
+			resNN := types.NamespacedName{
+				Name:      ref.Name,
+				Namespace: ref.Namespace,
+			}
+			err := cl.Get(ctx, resNN, &res)
+			if err != nil {
+				logger.Error("error getting backendtlspolicy", err.Error())
+				continue
+			}
+
 			ancestors := make([]gwv1a2.PolicyAncestorStatus, 0, len(rpt.AncestorReports))
 			for objSrc, policyErrs := range rpt.AncestorReports {
-				// as all policies are local, we cheat here and keep the namespace from
-				// here for use later
-				ns = objSrc.Namespace
+				newAncestor := gwv1.ParentReference{
+					Group: (*gwv1.Group)(&objSrc.Group),
+					Kind:  (*gwv1.Kind)(&objSrc.Kind),
+					Name:  gwv1.ObjectName(objSrc.Name),
+				}
 				pas := gwv1a2.PolicyAncestorStatus{
-					AncestorRef: gwv1.ParentReference{
-						Group: (*gwv1.Group)(&objSrc.Group),
-						Kind:  (*gwv1.Kind)(&objSrc.Kind),
-						Name:  gwv1.ObjectName(objSrc.Name),
-						// no namespace, only local references currently
-					},
+					AncestorRef:    newAncestor,
 					ControllerName: kgwellknown.GatewayControllerName,
 				}
 
+				// check if existing status has this ancestor
 				conditions := make([]metav1.Condition, 0, 1)
+				foundAncestor := slices.FindFunc(res.Status.Ancestors, func(in gwv1a2.PolicyAncestorStatus) bool {
+					groupEq := ptrEquals(newAncestor.Group, in.AncestorRef.Group)
+					kindEq := ptrEquals(newAncestor.Kind, in.AncestorRef.Kind)
+					nameEq := newAncestor.Name == in.AncestorRef.Name
+					return groupEq && kindEq && nameEq
+				})
+				if foundAncestor != nil {
+					copy(conditions, foundAncestor.Conditions)
+				}
 				meta.SetStatusCondition(&conditions, proxy_syncer.BuildPolicyCondition(policyErrs))
 				pas.Conditions = conditions
 
 				ancestors = append(ancestors, pas)
 			}
 
-			res := gwv1a3.BackendTLSPolicy{}
-			resNN := types.NamespacedName{
-				Name:      ref.Name,
-				Namespace: ns,
+			newStatus := gwv1a2.PolicyStatus{
+				Ancestors: ancestors,
 			}
-			err := retry.Do(
+			// if the status is up-to-date, nothing to do
+			if reflect.DeepEqual(newStatus, res.Status) {
+				continue
+			}
+
+			res.Status = newStatus
+			err = retry.Do(
 				func() error {
-					err := cl.Get(ctx, resNN, &res)
-					if err != nil {
-						logger.Info("error getting backendtlspolicy", err.Error())
-						return err
-					}
-					res.Status = gwv1a2.PolicyStatus{
-						Ancestors: ancestors,
-					}
 					if err := cl.Status().Patch(ctx, &res, client.Merge); err != nil {
 						logger.Error(err)
 						return err
@@ -247,4 +263,14 @@ func convertTargetRefs(targetRefs []gwv1a2.LocalPolicyTargetReferenceWithSection
 		Name:  string(targetRefs[0].Name),
 		Group: string(targetRefs[0].Group),
 	}}
+}
+
+func ptrEquals[T comparable](a, b *T) bool {
+	if a == nil && b == nil {
+		return true
+	}
+	if a == nil || b == nil {
+		return false
+	}
+	return *a == *b
 }
