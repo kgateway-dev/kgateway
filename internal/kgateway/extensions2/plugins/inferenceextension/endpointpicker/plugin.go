@@ -14,39 +14,73 @@ import (
 	hcmv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	tlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	upstreamsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
+	"github.com/solo-io/go-utils/contextutils"
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
+	skubeclient "istio.io/istio/pkg/config/schema/kubeclient"
+	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/watch"
 	infextv1a2 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
+	"sigs.k8s.io/gateway-api-inference-extension/client-go/clientset/versioned"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	extplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
 
 // Derived from upstream Gateway API Inference Extension defaults (testdata/envoy.yaml).
 const DefaultExtProcMaxRequests = 40000
 
-func NewPlugin(ctx context.Context, commonCol *common.CommonCollections) extplug.Plugin {
-	poolGVR := schema.GroupVersionResource{
-		Group:    infextv1a2.GroupVersion.Group,
-		Version:  infextv1a2.GroupVersion.Version,
-		Resource: "inferencepools",
+var (
+	inferencePoolGVK = buildInfPoolGvk("InferencePool")
+	inferencePoolGVR = inferencePoolGVK.GroupVersion().WithResource("inferencepools")
+)
+
+func buildInfPoolGvk(kind string) schema.GroupVersionKind {
+	return schema.GroupVersionKind{
+		Group:   infextv1a2.GroupVersion.Group,
+		Version: infextv1a2.GroupVersion.Version,
+		Kind:    kind,
+	}
+}
+
+func registerTypes(cli versioned.Interface) {
+	skubeclient.Register[*infextv1a2.InferencePool](
+		inferencePoolGVR,
+		inferencePoolGVK,
+		func(c skubeclient.ClientGetter, namespace string, o metav1.ListOptions) (runtime.Object, error) {
+			return cli.InferenceV1alpha2().InferencePools(namespace).List(context.Background(), o)
+		},
+		func(c skubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
+			return cli.InferenceV1alpha2().InferencePools(namespace).Watch(context.Background(), o)
+		},
+	)
+}
+
+func NewPlugin(ctx context.Context, commonCol *common.CommonCollections) *extplug.Plugin {
+	log := contextutils.LoggerFrom(ctx)
+
+	// Create the inference extension clientset.
+	cli, err := versioned.NewForConfig(commonCol.Client.RESTConfig())
+	if err != nil {
+		log.Errorf("failed to create inference extension client %w", err)
+		return nil
 	}
 
-	poolCol := krtutil.SetupCollectionDynamic[infextv1a2.InferencePool](
-		ctx,
-		commonCol.Client,
-		poolGVR,
-		commonCol.KrtOpts.ToOptions("InferencePools")...,
-	)
+	// Register the InfencePool type to enable dynamic object translation.
+	registerTypes(cli)
+
+	// Create an InferencePool krt collection.
+	poolCol := krt.WrapClient(kclient.New[*infextv1a2.InferencePool](commonCol.Client), commonCol.KrtOpts.ToOptions("InferencePool")...)
 
 	return NewPluginFromCollections(ctx, commonCol, poolCol)
 }
@@ -55,7 +89,7 @@ func NewPluginFromCollections(
 	ctx context.Context,
 	commonCol *common.CommonCollections,
 	poolCol krt.Collection[*infextv1a2.InferencePool],
-) extplug.Plugin {
+) *extplug.Plugin {
 	// The InferencePool group kind used by the BackendObjectIR and the ContributesBackendObjectIRs plugin.
 	gk := schema.GroupKind{
 		Group: infextv1a2.GroupVersion.Group,
@@ -94,7 +128,7 @@ func NewPluginFromCollections(
 	})
 
 	// Return a plugin that contributes a policy and backend.
-	return extplug.Plugin{
+	return &extplug.Plugin{
 		ContributesBackends: map[schema.GroupKind]extplug.BackendPlugin{
 			gk: {
 				Backends: backendCol,

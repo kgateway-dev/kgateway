@@ -144,7 +144,9 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 				var plugins []extensionsplug.Plugin
 
 				// Add the inference extension plugin.
-				plugins = append(plugins, endpointpicker.NewPlugin(ctx, commoncol))
+				if plug := endpointpicker.NewPlugin(ctx, commoncol); plug != nil {
+					plugins = append(plugins, *plug)
+				}
 
 				// If there was an existing ExtraPlugins function, append its plugins too.
 				if existingExtraPlugins != nil {
