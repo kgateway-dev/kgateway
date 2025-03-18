@@ -18,6 +18,9 @@ type attachmentReport struct {
 	Errors   []error
 	Ancestor ir.ObjectSource
 }
+
+// policyObjsWithReports maps from a policy object to a list of ancestors it was attached to
+// and the associated errors/conditions from the attachment/IR translation, if any
 type policyObjsWithReports map[ir.AttachedPolicyRef][]attachmentReport
 
 type GKPolicyReport struct {
@@ -54,8 +57,11 @@ func (r GKPolicyReport) Equals(in GKPolicyReport) bool {
 	return true
 }
 
-func generateGkPolicyReport(backends []ir.BackendObjectIR) *GKPolicyReport {
+func generateBackendPolicyReport(backends []ir.BackendObjectIR) *GKPolicyReport {
 	seenPolicyResources := policyObjsWithReports{}
+	// iterate all backends and aggregate all policies attached to them
+	// we track each attachment point of the policy to be tracked as an
+	// ancestor for reporting status
 	for _, backendObj := range backends {
 		for _, polAtts := range backendObj.AttachedPolicies.Policies {
 			for _, polAtt := range polAtts {
@@ -74,7 +80,9 @@ func generateGkPolicyReport(backends []ir.BackendObjectIR) *GKPolicyReport {
 			}
 		}
 	}
-	// seenPolsByGk := map[schema.GroupKind][]policyWithAncestorReports{}
+
+	// now generate a map keyed by each policy object we saw during attachment
+	// and store the full set of ancestors/attachments associated with it
 	policiesToAncestorReports := plug.PolicyReport{}
 	for policyRef, reports := range seenPolicyResources {
 		ancestorReports := map[ir.ObjectSource][]error{}
@@ -84,6 +92,9 @@ func generateGkPolicyReport(backends []ir.BackendObjectIR) *GKPolicyReport {
 		policiesToAncestorReports[policyRef] = ancestorReports
 	}
 
+	// finally, we group each policy obj with their associated reports
+	// by GroupKind; this allows us to give each plugin a chance to process
+	// policy reports for its own GroupKind
 	seenPolsByGk := map[schema.GroupKind]plug.PolicyReport{}
 	for policyRef, reports := range policiesToAncestorReports {
 		gk := schema.GroupKind{
@@ -102,6 +113,7 @@ func generateGkPolicyReport(backends []ir.BackendObjectIR) *GKPolicyReport {
 	}
 }
 
+// TODO: find better location for this
 func BuildPolicyCondition(polErrs []error) metav1.Condition {
 	if len(polErrs) == 0 {
 		return metav1.Condition{

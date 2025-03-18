@@ -133,7 +133,6 @@ func (s *clientTlsTestingSuite) TestBackendTLSPolicyAndStatus() {
 		Reason:  string(gwv1a2.PolicyReasonInvalid),
 		Message: `Policy error: "configmap default/ca not found"`,
 	})
-
 }
 
 func (s *clientTlsTestingSuite) assertPolicyStatus(inCondition metav1.Condition) {

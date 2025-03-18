@@ -224,7 +224,7 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) erro
 
 	s.backendPolicyReport = krt.NewSingleton(func(kctx krt.HandlerContext) *GKPolicyReport {
 		backends := krt.Fetch(kctx, finalBackends)
-		gkPolReport := generateGkPolicyReport(backends)
+		gkPolReport := generateBackendPolicyReport(backends)
 		return gkPolReport
 	}, krtopts.ToOptions("BackendsPolicyReport")...)
 
