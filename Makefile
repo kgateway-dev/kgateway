@@ -125,6 +125,10 @@ get_sources = $(shell find $(1) -name "*.go" | grep -v test | grep -v generated.
 
 GOIMPORTS ?= go tool goimports
 
+.PHONY: init-git-hooks
+init-git-hooks:  ## Use the tracked version of Git hooks from this repo
+	git config core.hooksPath .githooks
+
 .PHONY: fmt
 fmt:  ## Format the code with goimports
 	$(GOIMPORTS) -local "github.com/kgateway-dev/kgateway/v2/"  -w $(shell ls -d */ | grep -v vendor)
