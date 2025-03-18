@@ -120,16 +120,6 @@ listeners:
       typedConfig:
         '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
         httpFilters:
-        - name: transformation/helper
-          typedConfig:
-            '@type': type.googleapis.com/envoy.api.v2.filter.http.FilterTransformations
-        - name: dynamic_modules/simple_mutations
-          typedConfig:
-            '@type': type.googleapis.com/envoy.extensions.filters.http.dynamic_modules.v3.DynamicModuleFilter
-            dynamicModuleConfig:
-              name: rust_module
-            filterConfig: '{"route_specific": {}}'
-            filterName: http_simple_mutations
         - name: transformation
           typedConfig:
             '@type': type.googleapis.com/envoy.api.v2.filter.http.FilterTransformations
