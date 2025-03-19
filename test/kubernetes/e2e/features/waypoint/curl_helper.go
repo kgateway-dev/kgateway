@@ -31,14 +31,13 @@ func fqdn(name, ns string) string {
 	return fmt.Sprintf("%s.%s.svc.%s", name, ns, network.GetClusterDomainName())
 }
 
-// TODO test ServiceEntry will use this
-// func (s *testingSuite) assertCurlHost(
-// 	from kubectl.PodExecOptions,
-// 	targetHost string,
-// 	matchers matchers.HttpResponse,
-// ) {
-// 	s.assertCurlInner(from, targetHost, matchers, "")
-// }
+func (s *testingSuite) assertCurlHost(
+	from kubectl.PodExecOptions,
+	targetHost string,
+	matchers matchers.HttpResponse,
+) {
+	s.assertCurlInner(from, targetHost, matchers, "")
+}
 
 func (s *testingSuite) assertCurlInner(
 	from kubectl.PodExecOptions,
