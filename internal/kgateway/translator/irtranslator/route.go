@@ -109,7 +109,6 @@ func (h *httpRouteConfigurationTranslator) computeVirtualHost(
 	return out
 }
 
-// here?
 func (h *httpRouteConfigurationTranslator) envoyRoutes(ctx context.Context,
 	routeReport reports.ParentRefReporter,
 	in ir.HttpRouteRuleMatchIR,
@@ -119,6 +118,20 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(ctx context.Context,
 	if len(in.Backends) > 0 {
 		out.Action = h.translateRouteAction(ctx, in, out)
 	}
+
+	// Set timeout from the HTTPRouteRule if specified
+	for _, rule := range in.Parent.Rules {
+		if rule.Timeouts != nil && rule.Timeouts.Request != nil {
+			duration, err := time.ParseDuration(string(*rule.Timeouts.Request))
+			if err == nil {
+				out.GetRoute().Timeout = durationpb.New(duration)
+			} else {
+				contextutils.LoggerFrom(ctx).Error(err)
+			}
+			break
+		}
+	}
+
 	// run plugins here that may set action
 	err := h.runRoutePlugins(ctx, routeReport, in, out)
 	if err == nil {
@@ -330,21 +343,6 @@ func (h *httpRouteConfigurationTranslator) translateRouteAction(
 	if action == nil {
 		action = &envoy_config_route_v3.RouteAction{
 			ClusterNotFoundResponseCode: envoy_config_route_v3.RouteAction_INTERNAL_SERVER_ERROR,
-		}
-	}
-
-	// Set timeout from the HTTPRouteRule if specified
-	if in.Parent != nil && in.Parent.Rules != nil {
-		for _, rule := range in.Parent.Rules {
-			if rule.Timeouts != nil && rule.Timeouts.Request != nil {
-				duration, err := time.ParseDuration(string(*rule.Timeouts.Request))
-				if err == nil {
-					action.Timeout = durationpb.New(duration)
-				} else {
-					contextutils.LoggerFrom(ctx).Error(err)
-				}
-				break
-			}
 		}
 	}
 
