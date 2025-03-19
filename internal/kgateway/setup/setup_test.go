@@ -138,6 +138,7 @@ func TestScenarios(t *testing.T) {
 	}
 	st.EnableIstioIntegration = true
 	st.EnableAutoMtls = true
+	st.EnableInferExt = true
 
 	runScenario(t, "testdata", st)
 }
