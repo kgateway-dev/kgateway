@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"maps"
 	"regexp"
-	"time"
 
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
@@ -126,15 +125,12 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(ctx context.Context,
 	}
 
 	// Set timeout from the HTTPRouteRule if specified
-	for _, rule := range in.Parent.Rules {
-		if rule.Timeouts != nil && rule.Timeouts.Request != nil {
-			duration, err := time.ParseDuration(string(*rule.Timeouts.Request))
-			if err == nil {
-				out.GetRoute().Timeout = durationpb.New(duration)
-			} else {
-				contextutils.LoggerFrom(ctx).Error(err)
+	if in.Parent != nil {
+		for _, rule := range in.Parent.Rules {
+			if rule.Timeout != nil {
+				out.GetRoute().Timeout = durationpb.New(*rule.Timeout)
+				break
 			}
-			break
 		}
 	}
 
