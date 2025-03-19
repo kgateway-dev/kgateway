@@ -287,9 +287,6 @@ func runScenario(t *testing.T, scenarioDir string, globalSettings *settings.Sett
 		for _, f := range files {
 			// run tests with the yaml files (but not -out.yaml files)/s
 			parentT := t
-			if f.Name() != "backend-timeout.yaml" {
-				continue
-			}
 			if strings.HasSuffix(f.Name(), ".yaml") && !strings.HasSuffix(f.Name(), "-out.yaml") {
 				fullpath := filepath.Join(scenarioDir, f.Name())
 				t.Run(strings.TrimSuffix(f.Name(), ".yaml"), func(t *testing.T) {
