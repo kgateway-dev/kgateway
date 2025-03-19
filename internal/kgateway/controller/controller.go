@@ -21,7 +21,6 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/deployer"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
 
 const (
@@ -86,9 +85,8 @@ func (c *controllerBuilder) addIndexes(ctx context.Context) error {
 }
 
 // gatewayToParams is an IndexerFunc that gets a GatewayParameters name from a Gateway.
-// It first checks the Gateway's spec.infrastructure.parametersRef, then falls back to the
-// Gateway's annotations for the wellknown.GatewayParametersAnnotationName. Returns an empty
-// slice if neither is set.
+// It checks the Gateway's spec.infrastructure.parametersRef, or returns an empty
+// slice when it's not set.
 func gatewayToParams(obj client.Object) []string {
 	gw, ok := obj.(*apiv1.Gateway)
 	if !ok {
@@ -97,9 +95,6 @@ func gatewayToParams(obj client.Object) []string {
 	infrastructureRef := gw.Spec.Infrastructure
 	if infrastructureRef != nil && infrastructureRef.ParametersRef != nil {
 		return []string{infrastructureRef.ParametersRef.Name}
-	}
-	if gwpName, ok := gw.GetAnnotations()[wellknown.GatewayParametersAnnotationName]; ok {
-		return []string{gwpName}
 	}
 	return []string{}
 }

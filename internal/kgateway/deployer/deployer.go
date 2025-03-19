@@ -164,28 +164,21 @@ func (d *Deployer) getGatewayParametersForGateway(ctx context.Context, gw *api.G
 	logger := log.FromContext(ctx)
 
 	// attempt to get the GatewayParameters name from the Gateway. If we can't find it,
-	// we'll check for the default GWP for the GatewayClass. In the case that we find an
-	// explicit reference to a GWP on the GW, we'll use that name and attempt to retrieve
-	// it from the client.
-	var gwpName string
-	switch {
-	case gw.Spec.Infrastructure != nil && gw.Spec.Infrastructure.ParametersRef != nil:
-		gwpName = gw.Spec.Infrastructure.ParametersRef.Name
-		if group := gw.Spec.Infrastructure.ParametersRef.Group; group != v1alpha1.GroupName {
-			return nil, eris.Errorf("invalid group %s for GatewayParameters", group)
-		}
-		if kind := gw.Spec.Infrastructure.ParametersRef.Kind; kind != api.Kind(wellknown.GatewayParametersGVK.Kind) {
-			return nil, eris.Errorf("invalid kind %s for GatewayParameters", kind)
-		}
-	case gw.GetAnnotations()[wellknown.GatewayParametersAnnotationName] != "":
-		gwpName = gw.GetAnnotations()[wellknown.GatewayParametersAnnotationName]
-	default:
-		// there is no custom GatewayParameters; use GatewayParameters attached to GatewayClass.
+	// we'll check for the default GWP for the GatewayClass.
+	if gw.Spec.Infrastructure == nil || gw.Spec.Infrastructure.ParametersRef == nil {
 		logger.V(1).Info("no GatewayParameters found for Gateway, using default",
 			"gatewayName", gw.GetName(),
 			"gatewayNamespace", gw.GetNamespace(),
 		)
 		return d.getDefaultGatewayParameters(ctx, gw)
+	}
+
+	gwpName := gw.Spec.Infrastructure.ParametersRef.Name
+	if group := gw.Spec.Infrastructure.ParametersRef.Group; group != v1alpha1.GroupName {
+		return nil, eris.Errorf("invalid group %s for GatewayParameters", group)
+	}
+	if kind := gw.Spec.Infrastructure.ParametersRef.Kind; kind != api.Kind(wellknown.GatewayParametersGVK.Kind) {
+		return nil, eris.Errorf("invalid kind %s for GatewayParameters", kind)
 	}
 
 	// the GatewayParameters must live in the same namespace as the Gateway

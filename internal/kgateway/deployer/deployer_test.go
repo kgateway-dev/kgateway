@@ -23,7 +23,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	api "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	gw2_v1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/deployer"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
@@ -436,49 +435,6 @@ var _ = Describe("Deployer", func() {
 	})
 
 	Context("Gateway API infrastructure field", func() {
-		It("prefers spec.infrastructure.parametersRef over annotation", func() {
-			gwp := defaultGatewayParams()
-			gwp.Spec.Kube.ServiceAccount.ExtraAnnotations = map[string]string{
-				"override-foo": "override-bar",
-			}
-			gw := &api.Gateway{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "foo",
-					Namespace: defaultNamespace,
-					UID:       "1235",
-					Annotations: map[string]string{
-						wellknown.GatewayParametersAnnotationName: "annotation-gwp", // This should be ignored
-					},
-				},
-				Spec: api.GatewaySpec{
-					GatewayClassName: wellknown.GatewayClassName,
-					Infrastructure: &api.GatewayInfrastructure{
-						ParametersRef: &api.LocalParametersReference{ // Changed from ParametersReference to LocalParametersReference
-							Group: gw2_v1alpha1.GroupName,
-							Kind:  api.Kind(wellknown.GatewayParametersGVK.Kind),
-							Name:  gwp.Name,
-						},
-					},
-				},
-			}
-
-			d, err := deployer.NewDeployer(newFakeClientWithObjs(defaultGatewayClass(), gwp), &deployer.Inputs{
-				ControllerName: wellknown.GatewayControllerName,
-				Dev:            false,
-				ControlPlane: deployer.ControlPlaneInfo{
-					XdsHost: "something.cluster.local",
-					XdsPort: 1234,
-				},
-			})
-			Expect(err).NotTo(HaveOccurred())
-
-			var objs clientObjects
-			objs, err = d.GetObjsToDeploy(context.Background(), gw)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(objs).NotTo(BeEmpty())
-			Expect(objs.findServiceAccount(defaultNamespace, "foo").Annotations["override-foo"]).To(Equal("override-bar"))
-		})
-
 		It("rejects invalid group in spec.infrastructure.parametersRef", func() {
 			gw := &api.Gateway{
 				ObjectMeta: metav1.ObjectMeta{
@@ -543,43 +499,6 @@ var _ = Describe("Deployer", func() {
 
 			_, err = d.GetObjsToDeploy(context.Background(), gw)
 			Expect(err).To(MatchError(`invalid kind InvalidKind for GatewayParameters`))
-		})
-
-		It("falls back to annotation when spec.infrastructure is nil", func() {
-			gwp := defaultGatewayParams()
-			gwp.Spec.Kube.ServiceAccount.ExtraAnnotations = map[string]string{
-				"override-foo": "override-bar",
-			}
-
-			gw := &api.Gateway{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "foo",
-					Namespace: defaultNamespace,
-					UID:       "1235",
-					Annotations: map[string]string{
-						wellknown.GatewayParametersAnnotationName: gwp.Name,
-					},
-				},
-				Spec: api.GatewaySpec{
-					GatewayClassName: wellknown.GatewayClassName,
-				},
-			}
-
-			d, err := deployer.NewDeployer(newFakeClientWithObjs(defaultGatewayClass(), gwp), &deployer.Inputs{
-				ControllerName: wellknown.GatewayControllerName,
-				Dev:            false,
-				ControlPlane: deployer.ControlPlaneInfo{
-					XdsHost: "something.cluster.local",
-					XdsPort: 1234,
-				},
-			})
-			Expect(err).NotTo(HaveOccurred())
-
-			var objs clientObjects
-			objs, err = d.GetObjsToDeploy(context.Background(), gw)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(objs).NotTo(BeEmpty())
-			Expect(objs.findServiceAccount(defaultNamespace, "foo").Annotations["override-foo"]).To(Equal("override-bar"))
 		})
 	})
 
@@ -853,7 +772,7 @@ var _ = Describe("Deployer", func() {
 				gw := defaultGateway()
 				gw.Spec.Infrastructure = &api.GatewayInfrastructure{
 					ParametersRef: &api.LocalParametersReference{
-						Group: v1alpha1.GroupName,
+						Group: gw2_v1alpha1.GroupName,
 						Kind:  api.Kind(wellknown.GatewayParametersGVK.Kind),
 						Name:  gwpName,
 					},
