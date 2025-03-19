@@ -62,6 +62,10 @@ spec:
               value: {{ include "kgateway.fullname" . }}
             - name: KGW_XDS_SERVICE_PORT
               value: {{ .Values.controller.service.ports.grpc | quote }}
+            {{- if .Values.inferenceExtension.enabled }}
+            - name: KGW_ENABLE_INFER_EXT
+              value: "true"
+            {{- end }}
             # TODO: Remove this once the cleanup is done. Required as the gloo-system
             # namespace is the default namespace and conformance will fail as a result.
             - name: POD_NAMESPACE

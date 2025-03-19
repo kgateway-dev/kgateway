@@ -156,3 +156,6 @@ image:
   registry: cr.kgateway.dev/kgateway-dev
   tag: ""
   pullPolicy: IfNotPresent
+
+inferenceExtension:
+  enabled: false
