@@ -5,9 +5,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/solo-io/go-utils/contextutils"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
@@ -18,6 +15,10 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/kube/kubetypes"
 	"istio.io/istio/pkg/slices"
+
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 
 	networking "istio.io/api/networking/v1alpha3"
 	networkingclient "istio.io/client-go/pkg/apis/networking/v1"
@@ -344,14 +345,14 @@ func parseWorkloadEntryLocality(locality string) ir.PodLocality {
 }
 
 func isDNSServiceEntry(se *networkingclient.ServiceEntry) bool {
-	return se.Spec.Resolution == networking.ServiceEntry_DNS ||
-		se.Spec.Resolution == networking.ServiceEntry_DNS_ROUND_ROBIN
+	return se.Spec.GetResolution() == networking.ServiceEntry_DNS ||
+		se.Spec.GetResolution() == networking.ServiceEntry_DNS_ROUND_ROBIN
 }
 
 func isEDSServiceEntry(se *networkingclient.ServiceEntry) bool {
 	return se != nil &&
-		se.Spec.WorkloadSelector != nil &&
-		se.Spec.WorkloadSelector.GetLabels() != nil &&
-		len(se.Spec.WorkloadSelector.GetLabels()) > 0 &&
-		se.Spec.Resolution == networking.ServiceEntry_STATIC
+		se.Spec.GetWorkloadSelector() != nil &&
+		se.Spec.GetWorkloadSelector().GetLabels() != nil &&
+		len(se.Spec.GetWorkloadSelector().GetLabels()) > 0 &&
+		se.Spec.GetResolution() == networking.ServiceEntry_STATIC
 }

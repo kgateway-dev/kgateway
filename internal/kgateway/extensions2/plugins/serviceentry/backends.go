@@ -3,9 +3,10 @@ package serviceentry
 import (
 	"context"
 
+	"go.uber.org/zap"
+
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
-	"go.uber.org/zap"
 
 	networking "istio.io/api/networking/v1alpha3"
 	networkingclient "istio.io/client-go/pkg/apis/networking/v1"
@@ -23,7 +24,7 @@ func initServiceEntryBackend(ctx context.Context, in ir.BackendObjectIR, out *cl
 	if !ok {
 		return
 	}
-	switch se.Spec.Resolution {
+	switch se.Spec.GetResolution() {
 	case networking.ServiceEntry_STATIC:
 		// STATIC is sometimes EDS
 		if !isEDSServiceEntry(se) {
@@ -76,8 +77,8 @@ func backendsCollections(
 		logger.Debugw("converting ServiceEntry to Upstream", "name", se.GetName(), "namespace", se.GetNamespace())
 		var out []ir.BackendObjectIR
 
-		for _, hostname := range se.Spec.Hosts {
-			for _, svcPort := range se.Spec.Ports {
+		for _, hostname := range se.Spec.GetHosts() {
+			for _, svcPort := range se.Spec.GetPorts() {
 				be := ir.BackendObjectIR{
 					ObjectSource: ir.ObjectSource{
 						Group:     gvk.ServiceEntry.Group,
@@ -85,8 +86,8 @@ func backendsCollections(
 						Namespace: se.GetNamespace(),
 						Name:      se.GetName(),
 					},
-					Port:              int32(svcPort.Number),
-					AppProtocol:       ir.ParseAppProtocol(ptr.To(svcPort.Protocol)),
+					Port:              int32(svcPort.GetNumber()),
+					AppProtocol:       ir.ParseAppProtocol(ptr.To(svcPort.GetProtocol())),
 					GvPrefix:          BackendClusterPrefix,
 					CanonicalHostname: hostname,
 					Obj:               se,

@@ -28,7 +28,7 @@ func buildInlineCLA(ctx context.Context, be ir.BackendObjectIR, se *networkingcl
 	logger := contextutils.LoggerFrom(ctx)
 
 	var inlineWorkloads []selectedWorkload
-	for i, e := range se.Spec.Endpoints {
+	for i, e := range se.Spec.GetEndpoints() {
 		converted := selectedWorkloadFromEntry(
 			fmt.Sprintf("%s-endpoints-%d", se.Name, i), // synthetic name
 			se.Namespace, // inherit se namespace
@@ -42,7 +42,7 @@ func buildInlineCLA(ctx context.Context, be ir.BackendObjectIR, se *networkingcl
 	// DNS resolution can use the hosts field if endpoints are empty
 	// https://istio.io/latest/docs/reference/config/networking/service-entry/#ServiceEntry-Resolution
 	if isDNSServiceEntry(se) && len(inlineWorkloads) == 0 {
-		for i, hostname := range se.Spec.Hosts {
+		for i, hostname := range se.Spec.GetHosts() {
 			converted := selectedWorkloadFromEntry(
 				fmt.Sprintf("%s-hosts-%d", se.Name, i), // synthetic name
 				se.Namespace,                           // inherit se namespace
@@ -80,18 +80,14 @@ func endpointsCollection(
 		Backends,
 		func(ctx krt.HandlerContext, be ir.BackendObjectIR) *ir.EndpointsForBackend {
 			se, ok := be.Obj.(*networkingclient.ServiceEntry)
-			println("stevenctl: begin ep builder for ", be.ClusterName())
 			if !ok {
-				println("stevenctl: failed to cast ", be.ClusterName())
 				return nil
 			}
 			if !isEDSServiceEntry(se) {
-				println("stevenctl: not EDS ", be.ClusterName())
 				return nil
 			}
 			workloads := krt.Fetch(ctx, SelectedWorkloads, krt.FilterIndex(selectedWorkloadsIndex, serviceEntryKey(se)))
 
-				println("stevenctl: ", be.ClusterName(), "has ", len(workloads))
 			return endpointsFromWorkloads(se, be, workloads)
 		},
 		krtOpts.ToOptions("ServiceEntryEndpoints")...,
@@ -115,7 +111,7 @@ func endpointsFromWorkloads(
 	// this should never miss, we only call buildInlineCLA using BackendObjectIR
 	// generated from the ServiceEntry iteself
 	var servicePort *networking.ServicePort
-	for _, sp := range se.Spec.Ports {
+	for _, sp := range se.Spec.GetPorts() {
 		if int32(sp.GetNumber()) == be.Port {
 			servicePort = sp
 			break
@@ -131,13 +127,12 @@ func endpointsFromWorkloads(
 	for _, workload := range workloads {
 		address := workload.Address()
 		if address == "" {
-			println("stevenctl: workload has no IP")
 			continue
 		}
 
 		// for static, it must be an IP
 		// for DNS it can be IP or hostname
-		if se.Spec.Resolution == networking.ServiceEntry_STATIC {
+		if se.Spec.GetResolution() == networking.ServiceEntry_STATIC {
 			if net.ParseIP(address) == nil {
 				continue
 			}
@@ -147,7 +142,7 @@ func endpointsFromWorkloads(
 		epPort := workload.mapPort(servicePort.GetName(), seTargetPort)
 
 		// only MESH_INTERNAL can use auto mTLS
-		allowAutoMTLS := se.Spec.Location == networking.ServiceEntry_MESH_INTERNAL
+		allowAutoMTLS := se.Spec.GetLocation() == networking.ServiceEntry_MESH_INTERNAL
 
 		ep := ir.EndpointWithMd{
 			LbEndpoint: krtcollections.CreateLBEndpoint(address, uint32(epPort), workload.AugmentedLabels, allowAutoMTLS),
