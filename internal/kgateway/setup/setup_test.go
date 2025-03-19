@@ -749,11 +749,21 @@ func (x *xdsDump) Compare(t *testing.T, other xdsDump) {
 			t.Errorf("cluster %v not found", otherc.Name)
 			continue
 		}
+		ourCla := ourc.LoadAssignment
+		otherCla := otherc.LoadAssignment
+		compareCla(t, ourCla, otherCla)
+
+		// don't proto.Equal the LoadAssignment
+		ourc.LoadAssignment = nil
+		otherc.LoadAssignment = nil
 		if !proto.Equal(otherc, ourc) {
 			t.Errorf("cluster %v not equal", otherc.Name)
 			t.Errorf("got: %s", ourc.String())
 			t.Errorf("expected: %s", otherc.String())
 		}
+		ourc.LoadAssignment = ourCla
+		otherc.LoadAssignment = otherCla
+
 	}
 	listenerset := map[string]*envoylistener.Listener{}
 	for _, c := range x.Listeners {
@@ -794,25 +804,32 @@ func (x *xdsDump) Compare(t *testing.T, other xdsDump) {
 	}
 	for _, c := range other.Endpoints {
 		otherc := epset[c.ClusterName]
-		if otherc == nil {
-			t.Errorf("ep %v not found", c.ClusterName)
-			continue
-		}
-		ep1 := flattenendpoints(c)
-		ep2 := flattenendpoints(otherc)
-		if !equalset(ep1, ep2) {
-			t.Errorf("ep list %v not equal: %v %v", c.ClusterName, ep1, ep2)
-		}
-		ce := c.Endpoints
-		ocd := otherc.Endpoints
-		c.Endpoints = nil
-		otherc.Endpoints = nil
-		if !proto.Equal(c, otherc) {
-			t.Errorf("ep %v not equal", c.ClusterName)
-		}
-		c.Endpoints = ce
-		otherc.Endpoints = ocd
+		compareCla(t, c, otherc)
 	}
+}
+
+func compareCla(t *testing.T, c, otherc *envoyendpoint.ClusterLoadAssignment) {
+	if (c == nil) != (otherc == nil) {
+		t.Errorf("ep %v not found", c.ClusterName)
+		return
+	}
+	if c == nil || otherc == nil {
+		return
+	}
+	ep1 := flattenendpoints(c)
+	ep2 := flattenendpoints(otherc)
+	if !equalset(ep1, ep2) {
+		t.Errorf("ep list %v not equal: %v %v", c.ClusterName, ep1, ep2)
+	}
+	ce := c.Endpoints
+	ocd := otherc.Endpoints
+	c.Endpoints = nil
+	otherc.Endpoints = nil
+	if !proto.Equal(c, otherc) {
+		t.Errorf("ep %v not equal", c.ClusterName)
+	}
+	c.Endpoints = ce
+	otherc.Endpoints = ocd
 }
 
 func equalset(a, b []*envoyendpoint.LocalityLbEndpoints) bool {
