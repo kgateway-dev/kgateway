@@ -111,6 +111,15 @@ func init() {
 	grpclog.SetLoggerV2(grpclog.NewLoggerV2WithVerbosity(writer, writer, writer, 100))
 }
 
+func TestServiceEntry(t *testing.T) {
+	st, err := settings.BuildSettings()
+	if err != nil {
+		t.Fatalf("can't get settings %v", err)
+	}
+
+	runScenario(t, "testdata/serviceentry", st)
+}
+
 func TestWithStandardSettings(t *testing.T) {
 	st, err := settings.BuildSettings()
 	if err != nil {
@@ -366,6 +375,10 @@ func setupEnvTestAndRun(t *testing.T, globalSettings *settings.Settings, run fun
 	err = client.ApplyYAMLFiles("gwtest", "testdata/setupyaml/pods.yaml")
 	if err != nil {
 		t.Fatalf("failed to apply yaml: %v", err)
+	}
+	err = applyPodStatusFromFile(ctx, client, "gwtest", "testdata/setupyaml/pods.yaml")
+	if err != nil {
+		t.Fatalf("failed to apply pod status: %v", err)
 	}
 
 	// setup xDS server:
@@ -1004,4 +1017,56 @@ func generateKubeConfiguration(t *testing.T, restconfig *rest.Config) string {
 	}
 
 	return tmpfile
+}
+
+// applyPodStatusFromFile reads a YAML file, looks for Pod resources with a Status set,
+// and patches their status into the cluster. Skips any Pods not found or lacking a status.
+func applyPodStatusFromFile(ctx context.Context, c istiokube.CLIClient, defaultNs, filePath string) error {
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return fmt.Errorf("reading YAML file %q: %w", filePath, err)
+	}
+
+	docs := bytes.Split(data, []byte("\n---\n"))
+
+	for _, doc := range docs {
+		doc = bytes.TrimSpace(doc)
+		if len(doc) == 0 {
+			continue
+		}
+
+		pod := &corev1.Pod{}
+		if err := yaml.Unmarshal(doc, pod); err != nil {
+			continue
+		}
+
+		// Skip if there's no status to patch
+		if pod.Status.PodIP == "" && len(pod.Status.PodIPs) == 0 && pod.Status.Phase == "" {
+			continue
+		}
+
+		ns := pod.Namespace
+		if ns == "" {
+			ns = defaultNs
+		}
+
+		podClient := c.Kube().CoreV1().Pods(ns)
+
+		// Retrieve the existing Pod
+		existingPod, err := podClient.Get(ctx, pod.Name, metav1.GetOptions{})
+		if err != nil {
+			return fmt.Errorf("failed to retrieve existing Pod %s/%s: %w", ns, pod.Name, err)
+		}
+
+		// Update the in-memory status
+		existingPod.Status = pod.Status
+
+		// Persist the new status
+		_, err = podClient.UpdateStatus(ctx, existingPod, metav1.UpdateOptions{})
+		if err != nil {
+			return fmt.Errorf("failed to update status for Pod %s/%s: %w", ns, pod.Name, err)
+		}
+	}
+
+	return nil
 }

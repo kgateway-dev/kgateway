@@ -150,6 +150,7 @@ func extractPodIPs(pod *corev1.Pod) []string {
 			return e.IP
 		})
 	} else if pod.Status.PodIP != "" {
+		println("stevenctl able to read pod ip: ", pod.Status.PodIP)
 		return []string{pod.Status.PodIP}
 	}
 	return nil

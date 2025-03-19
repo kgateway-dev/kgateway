@@ -33,11 +33,11 @@ func initServiceEntryBackend(ctx context.Context, in ir.BackendObjectIR, out *cl
 		}
 	case networking.ServiceEntry_DNS:
 		out.ClusterDiscoveryType = &clusterv3.Cluster_Type{
-			Type: clusterv3.Cluster_LOGICAL_DNS,
+			Type: clusterv3.Cluster_STRICT_DNS,
 		}
 	case networking.ServiceEntry_DNS_ROUND_ROBIN:
 		out.ClusterDiscoveryType = &clusterv3.Cluster_Type{
-			Type: clusterv3.Cluster_STRICT_DNS,
+			Type: clusterv3.Cluster_LOGICAL_DNS,
 		}
 	}
 
@@ -67,7 +67,6 @@ func backendsCollections(
 	krtOpts krtutil.KrtOptions,
 ) krt.Collection[ir.BackendObjectIR] {
 	return krt.NewManyCollection(ServiceEntries, func(ctx krt.HandlerContext, se *networkingclient.ServiceEntry) []ir.BackendObjectIR {
-		println("stevenctl: seen se ", se.GetName())
 		// passthrough not supported here
 		if se.Spec.GetResolution() == networking.ServiceEntry_NONE {
 			logger.Debugw("skipping ServiceEntry with resolution: NONE", "name", se.GetName(), "namespace", se.GetNamespace())
@@ -79,7 +78,6 @@ func backendsCollections(
 
 		for _, hostname := range se.Spec.Hosts {
 			for _, svcPort := range se.Spec.Ports {
-				println("stevenctl: backend for ", se.GetName(), hostname, svcPort.Number)
 				be := ir.BackendObjectIR{
 					ObjectSource: ir.ObjectSource{
 						Group:     gvk.ServiceEntry.Group,

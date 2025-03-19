@@ -1,23 +1,26 @@
-apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
-metadata:
-  name: example-gateway
-  namespace: infra
-spec:
-  gatewayClassName: example-gateway-class
-  listeners:
-  - name: http
-    protocol: HTTP
-    port: 80
----
 apiVersion: gateway.networking.k8s.io/v1
+metadata:
+  name: http-gw-for-test
+  namespace: gwtest
+spec:
+  gatewayClassName: kgateway
+  listeners:
+  - protocol: HTTP
+    port: 8080
+    name: http
+    allowedRoutes:
+      namespaces:
+        from: All
+---
+apiVersion: gateway.networking.k8s.io/v1beta1
 kind: HTTPRoute
 metadata:
-  name: example-route
-  namespace: infra
+  name: route-to-upstream
+  namespace: gwtest
 spec:
   parentRefs:
-  - name: example-gateway
+  - name: http-gw-for-test
   hostnames:
   - "se.example.com"
   rules:
@@ -31,7 +34,7 @@ apiVersion: networking.istio.io/v1
 kind: ServiceEntry
 metadata:
   name: example-se
-  namespace: infra
+  namespace: gwtest
 spec:
   hosts:
   - se.example.com
@@ -43,5 +46,4 @@ spec:
   location: MESH_INTERNAL
   workloadSelector:
     labels:
-      test: test
-  endpoints: []
+      app: reviews

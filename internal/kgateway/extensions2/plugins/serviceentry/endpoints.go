@@ -80,13 +80,18 @@ func endpointsCollection(
 		Backends,
 		func(ctx krt.HandlerContext, be ir.BackendObjectIR) *ir.EndpointsForBackend {
 			se, ok := be.Obj.(*networkingclient.ServiceEntry)
+			println("stevenctl: begin ep builder for ", be.ClusterName())
 			if !ok {
+				println("stevenctl: failed to cast ", be.ClusterName())
 				return nil
 			}
 			if !isEDSServiceEntry(se) {
+				println("stevenctl: not EDS ", be.ClusterName())
 				return nil
 			}
 			workloads := krt.Fetch(ctx, SelectedWorkloads, krt.FilterIndex(selectedWorkloadsIndex, serviceEntryKey(se)))
+
+				println("stevenctl: ", be.ClusterName(), "has ", len(workloads))
 			return endpointsFromWorkloads(se, be, workloads)
 		},
 		krtOpts.ToOptions("ServiceEntryEndpoints")...,
@@ -126,6 +131,7 @@ func endpointsFromWorkloads(
 	for _, workload := range workloads {
 		address := workload.Address()
 		if address == "" {
+			println("stevenctl: workload has no IP")
 			continue
 		}
 
