@@ -39,8 +39,8 @@ metadata:
   name: route-test
   namespace: gwtest
 spec:
-  targetRef:
-    group: gateway.networking.k8s.io
+  targetRefs:
+  - group: gateway.networking.k8s.io
     kind: HTTPRoute
     name: route-to-backend
   ai:

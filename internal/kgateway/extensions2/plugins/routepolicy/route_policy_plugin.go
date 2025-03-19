@@ -282,10 +282,8 @@ func (p *routePolicyPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.Ro
 			if err != nil {
 				errs = append(errs, err)
 			}
-
 		}
 	}
-
 	return errors.Join(errs...)
 }
 
