@@ -3,14 +3,12 @@ package deployer
 import (
 	"context"
 
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	testdefaults "github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/defaults"
-
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
+	testdefaults "github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/defaults"
 )
 
 var _ e2e.NewSuiteFunc = NewMinimalDefaultGatewayParametersTestingSuite
