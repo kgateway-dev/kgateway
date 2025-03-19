@@ -124,6 +124,8 @@ rules:
   - networking.istio.io
   resources:
   - destinationrules
+  - serviceentries
+  - workloadentries
   verbs:
   - get
   - list
