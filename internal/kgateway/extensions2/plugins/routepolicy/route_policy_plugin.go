@@ -79,16 +79,21 @@ func (d *routePolicy) Equals(in any) bool {
 	}
 
 	// AI equality checks
-	if d.spec.AI.AISecret != nil && d2.spec.AI.AISecret != nil && !d.spec.AI.AISecret.Equals(*d2.spec.AI.AISecret) {
-		return false
-	}
-	if (d.spec.AI.AISecret != nil) != (d2.spec.AI.AISecret != nil) {
-		return false
-	}
-	if !proto.Equal(d.spec.AI.Extproc, d2.spec.AI.Extproc) {
-		return false
-	}
-	if !proto.Equal(d.spec.AI.Transformation, d2.spec.AI.Transformation) {
+	if d.spec.AI != nil && d2.spec.AI != nil {
+		if d.spec.AI.AISecret != nil && d2.spec.AI.AISecret != nil && !d.spec.AI.AISecret.Equals(*d2.spec.AI.AISecret) {
+			return false
+		}
+		if (d.spec.AI.AISecret != nil) != (d2.spec.AI.AISecret != nil) {
+			return false
+		}
+		if !proto.Equal(d.spec.AI.Extproc, d2.spec.AI.Extproc) {
+			return false
+		}
+		if !proto.Equal(d.spec.AI.Transformation, d2.spec.AI.Transformation) {
+			return false
+		}
+	} else if d.spec.AI != d2.spec.AI {
+		// If one of the AI IR values is nil and the other isn't, not equal
 		return false
 	}
 

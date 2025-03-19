@@ -8,6 +8,7 @@ logger.setLevel(logging.DEBUG)
 
 test_paragraph = "If the doors of perception were cleansed every thing would appear to man as it is, Infinite. For man has closed himself up, till he sees all things through narrow chinks of his cavern."
 
+
 class TestPromptGuardStreaming(LLMClient):
     def test_openai_normal_request_response(self):
         # normal request that does not trigger any guardrail on request and response

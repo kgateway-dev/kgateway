@@ -206,7 +206,11 @@ func TestProcessAIRoutePolicy(t *testing.T) {
 		foundRespConfig := false
 		foundRespHash := false
 
-		for _, header := range extprocSettings.GetOverrides().GrpcInitialMetadata {
+		// Check extproc
+		outputExtprocProto := typedFilterConfig.GetTypedConfig(wellknown.AIExtProcFilterName)
+		assert.NotNil(t, outputExtprocProto)
+		outputExtproc := outputExtprocProto.(*envoy_ext_proc_v3.ExtProcPerRoute)
+		for _, header := range outputExtproc.GetOverrides().GrpcInitialMetadata {
 			switch header.Key {
 			case "x-req-guardrails-config":
 				foundReqConfig = true
@@ -226,6 +230,12 @@ func TestProcessAIRoutePolicy(t *testing.T) {
 		assert.True(t, foundReqHash, "request guardrails hash not found")
 		assert.True(t, foundRespConfig, "response guardrails config not found")
 		assert.True(t, foundRespHash, "response guardrails hash not found")
+
+		// Check transformation
+		outputTransformationProto := typedFilterConfig.GetTypedConfig(wellknown.AIPolicyTransformationFilterName)
+		assert.NotNil(t, outputTransformationProto)
+		outputTransformation := outputTransformationProto.(*envoytransformation.RouteTransformations)
+		assert.Len(t, outputTransformation.Transformations, 1)
 	})
 
 	t.Run("handles error from prompt guard", func(t *testing.T) {
