@@ -46,10 +46,6 @@ import (
 	_ "github.com/kgateway-dev/kgateway/v2/internal/envoyinit/hack/filter_types"
 )
 
-// testBootstrap implements resources.Resource in order to use protoutils.UnmarshalYAML
-// this is hacky but it seems more stable/concise than map-casting all the way down
-// to the field we need.
-
 func unmarshalYaml(data []byte, into proto.Message) error {
 	jsn, err := yaml.YAMLToJSON(data)
 	if err != nil {
@@ -438,6 +434,74 @@ var _ = Describe("Deployer", func() {
 		})
 	})
 
+	Context("Gateway API infrastructure field", func() {
+		It("rejects invalid group in spec.infrastructure.parametersRef", func() {
+			gw := &api.Gateway{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "foo",
+					Namespace: defaultNamespace,
+					UID:       "1235",
+				},
+				Spec: api.GatewaySpec{
+					GatewayClassName: wellknown.GatewayClassName,
+					Infrastructure: &api.GatewayInfrastructure{
+						ParametersRef: &api.LocalParametersReference{
+							Group: "invalid.group",
+							Kind:  api.Kind(wellknown.GatewayParametersGVK.Kind),
+							Name:  "test-gwp",
+						},
+					},
+				},
+			}
+
+			d, err := deployer.NewDeployer(newFakeClientWithObjs(defaultGatewayClass()), &deployer.Inputs{
+				ControllerName: wellknown.GatewayControllerName,
+				Dev:            false,
+				ControlPlane: deployer.ControlPlaneInfo{
+					XdsHost: "something.cluster.local",
+					XdsPort: 1234,
+				},
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+			_, err = d.GetObjsToDeploy(context.Background(), gw)
+			Expect(err).To(MatchError(`invalid group invalid.group for GatewayParameters`))
+		})
+
+		It("rejects invalid kind in spec.infrastructure.parametersRef", func() {
+			gw := &api.Gateway{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "foo",
+					Namespace: defaultNamespace,
+					UID:       "1235",
+				},
+				Spec: api.GatewaySpec{
+					GatewayClassName: wellknown.GatewayClassName,
+					Infrastructure: &api.GatewayInfrastructure{
+						ParametersRef: &api.LocalParametersReference{
+							Group: gw2_v1alpha1.GroupName,
+							Kind:  "InvalidKind",
+							Name:  "test-gwp",
+						},
+					},
+				},
+			}
+
+			d, err := deployer.NewDeployer(newFakeClientWithObjs(defaultGatewayClass()), &deployer.Inputs{
+				ControllerName: wellknown.GatewayControllerName,
+				Dev:            false,
+				ControlPlane: deployer.ControlPlaneInfo{
+					XdsHost: "something.cluster.local",
+					XdsPort: 1234,
+				},
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+			_, err = d.GetObjsToDeploy(context.Background(), gw)
+			Expect(err).To(MatchError(`invalid kind InvalidKind for GatewayParameters`))
+		})
+	})
+
 	Context("Single gwc and gw", func() {
 		type input struct {
 			dInputs        *deployer.Inputs
@@ -706,10 +770,13 @@ var _ = Describe("Deployer", func() {
 
 			defaultGatewayWithGatewayParams = func(gwpName string) *api.Gateway {
 				gw := defaultGateway()
-				gw.Annotations = map[string]string{
-					wellknown.GatewayParametersAnnotationName: gwpName,
+				gw.Spec.Infrastructure = &api.GatewayInfrastructure{
+					ParametersRef: &api.LocalParametersReference{
+						Group: gw2_v1alpha1.GroupName,
+						Kind:  api.Kind(wellknown.GatewayParametersGVK.Kind),
+						Name:  gwpName,
+					},
 				}
-
 				return gw
 			}
 			defaultInput = func() *input {

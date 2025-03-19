@@ -308,7 +308,8 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
                 else:
                     recognizers = init_presidio_config(guardrails_obj.regex)
                     handler.req_regex = recognizers
-                    self._req_guard[config_hash] = handler.req_regex
+                    if handler.req_regex is not None:
+                        self._req_guard[config_hash] = handler.req_regex
 
         if (guardrails := metadict.get("x-resp-guardrails-config", "")) != "":
             guardrails_obj = prompt_guard.resp_from_json(guardrails)
@@ -322,7 +323,8 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
                 else:
                     recognizers = init_presidio_config(guardrails_obj.regex)
                     handler.resp_regex = recognizers
-                    self._resp_guard[config_hash] = handler.resp_regex
+                    if handler.resp_regex is not None:
+                        self._resp_guard[config_hash] = handler.resp_regex
 
         return handler
 
@@ -563,6 +565,7 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
                 #             we still store them for caching
                 return extproc_clear_response_body()
             else:
+                full_body = b""
                 try:
                     full_body = (
                         gzip.decompress(handler.resp.body)

@@ -31,8 +31,8 @@ kind: RoutePolicy
 metadata:
   name: requestresponse-transformer
 spec:
-  targetRef:
-    group: gateway.networking.k8s.io
+  targetRefs:
+  - group: gateway.networking.k8s.io
     kind: HTTPRoute
     name: example-route
   transformation:
