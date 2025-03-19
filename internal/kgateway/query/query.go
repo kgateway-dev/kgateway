@@ -15,6 +15,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	apiv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
@@ -128,25 +129,14 @@ type RouteError struct {
 	Error     Error
 }
 
-type options struct {
-}
-
-type Option func(*options)
-
+// NewData wraps a _pointer_ to CommonCollections. We take a reference because
+// the queries aren't ready until InitPlugins has been called on the
+// CommonCollections.
 func NewData(
-	routes *krtcollections.RoutesIndex,
-	secrets *krtcollections.SecretIndex,
-	namespaces krt.Collection[krtcollections.NamespaceMetadata],
-	opts ...Option,
+	collections *common.CommonCollections,
 ) GatewayQueries {
-	builtOpts := &options{}
-	for _, opt := range opts {
-		opt(builtOpts)
-	}
 	return &gatewayQueries{
-		routes:     routes,
-		secrets:    secrets,
-		namespaces: namespaces,
+		collections: collections,
 	}
 }
 
@@ -159,9 +149,7 @@ func NewRoutesForGwResult() *RoutesForGwResult {
 }
 
 type gatewayQueries struct {
-	routes     *krtcollections.RoutesIndex
-	secrets    *krtcollections.SecretIndex
-	namespaces krt.Collection[krtcollections.NamespaceMetadata]
+	collections *common.CommonCollections
 }
 
 func parentRefMatchListener(ref *apiv1.ParentReference, l *apiv1.Listener) bool {
@@ -264,7 +252,7 @@ func (r *gatewayQueries) GetSecretForRef(kctx krt.HandlerContext, ctx context.Co
 		GroupKind: fromGk,
 		Namespace: fromns,
 	}
-	return r.secrets.GetSecret(kctx, f, secretRef)
+	return r.collections.Secrets.GetSecret(kctx, f, secretRef)
 }
 
 func SameNamespace(ns string) func(krt.HandlerContext, string) bool {
@@ -281,7 +269,7 @@ func AllNamespace() func(krt.HandlerContext, string) bool {
 
 func (r *gatewayQueries) NamespaceSelector(sel labels.Selector) func(krt.HandlerContext, string) bool {
 	return func(kctx krt.HandlerContext, s string) bool {
-		ns := krt.FetchOne(kctx, r.namespaces, krt.FilterKey(s))
+		ns := krt.FetchOne(kctx, r.collections.Namespaces, krt.FilterKey(s))
 		return sel.Matches(labels.Set(ns.Labels))
 	}
 }

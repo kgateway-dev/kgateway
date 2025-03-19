@@ -47,14 +47,16 @@ class Action(Enum):
 class Regex:
     matches: Optional[List[RegexMatch]] = field(default_factory=list)
     builtins: Optional[List[BuiltIn]] = field(default_factory=list)
-    action: Optional[str] = Action.MASK  # Use Action class for default
+    action: Optional[Action] = Action.MASK  # Use Action class for default
 
     @staticmethod
     def from_json(data: dict) -> "Regex":
         matches = [RegexMatch.from_json(m) for m in data.get("matches", [])]
         builtins = [BuiltIn[b] for b in data.get("builtins", [])]
         return Regex(
-            matches=matches, builtins=builtins, action=data.get("action", Action.MASK)
+            matches=matches,
+            builtins=builtins,
+            action=Action(data.get("action", "MASK")),
         )
 
 
@@ -68,7 +70,7 @@ class Host:
         return Host(host=data.get("host", ""), port=data.get("port", 0))
 
 
-class Type:
+class Type(Enum):
     EXACT = "Exact"
     REGULAR_EXPRESSION = "RegularExpression"
 
@@ -82,7 +84,7 @@ class HTTPHeaderMatch:
     @staticmethod
     def from_json(data: dict) -> "HTTPHeaderMatch":
         return HTTPHeaderMatch(
-            type=data.get("type", "Exact"), name=data["name"], value=data["value"]
+            type=Type(data.get("type", "Exact")), name=data["name"], value=data["value"]
         )
 
 
@@ -187,28 +189,7 @@ def req_from_json(data: str) -> PromptguardRequest:
     regex_data = request_data.get("regex")
     regex = None
     if regex_data:
-        matches_data = regex_data.get("matches")
-        matches = []
-        if matches_data:
-            matches = [RegexMatch.from_json(m) for m in matches_data]
-
-        builtins_data = regex_data.get("builtins")
-        builtins = []
-        if builtins_data:
-            builtins = [BuiltIn[b] for b in builtins_data]
-
-        action_data = regex_data.get("action")
-        action = None
-        if action_data:
-            action = action_data
-        else:
-            action = Action.MASK
-
-        regex = Regex(
-            matches=matches,
-            builtins=builtins,
-            action=action,
-        )
+        regex = Regex.from_json(regex_data)
 
     return PromptguardRequest(
         custom_response=custom_response,

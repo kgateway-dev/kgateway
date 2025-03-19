@@ -1,79 +1,73 @@
-{{- if .Values.gatewayClass.parametersRef.enabled }}
+{{- range $entry := (list .Values.gatewayClass .Values.waypointClass) }}
+{{- if and $entry $entry.parametersRef.enabled $entry.enabled }}
+
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: GatewayParameters
 metadata:
-  name: {{ .Values.gatewayClass.parametersRef.name }}
-  namespace: {{ .Release.Namespace }}
+  name: {{ $entry.parametersRef.name }}
+  namespace: {{ $.Release.Namespace }}
   labels:
-    {{- include "kgateway.labels" . | nindent 4 }}
+    {{- include "kgateway.labels" $ | nindent 4 }}
 spec:
   kube:
     deployment:
-      replicas: {{ .Values.replicaCount }}
-    envoyContainer:
-      image:
-        registry: {{ .Values.gateway.envoyContainer.image.registry | default .Values.image.registry }}
-        repository: {{ .Values.gateway.envoyContainer.image.repository }}
-        tag: {{ .Values.gateway.envoyContainer.image.tag | default .Values.image.tag | default .Chart.Version }}
-        pullPolicy: {{ .Values.gateway.envoyContainer.image.pullPolicy | default .Values.image.pullPolicy }}
-      {{- with .Values.gateway.envoyContainer.securityContext }}
-      securityContext:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-    service:
-      type: {{ .Values.gateway.service.type }}
-      {{- with .Values.gateway.service.extraLabels }}
+      replicas: {{ $.Values.gateway.proxyDeployment.replicas | default 1 }}
+    podTemplate:
+    {{- with $entry.parametersRef.podTemplate.extraLabels }}
       extraLabels:
         {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.gateway.service.extraAnnotations }}
+    {{- end }}
+    {{- with $entry.parametersRef.podTemplate.extraAnnotations }}
       extraAnnotations:
         {{- toYaml . | nindent 8 }}
-      {{- end }}
-    {{- with .Values.gateway.podTemplate }}
-    podTemplate:
-      {{- with .extraLabels }}
+    {{- end }}
+    envoyContainer:
+      image:
+        registry: {{ $.Values.gateway.envoyContainer.image.registry | default $.Values.image.registry }}
+        repository: {{ $.Values.gateway.envoyContainer.image.repository }}
+        tag: {{ $.Values.gateway.envoyContainer.image.tag | default $.Values.image.tag | default $.Chart.Version }}
+        pullPolicy: {{ $.Values.image.pullPolicy }}
+    service:
+      type: {{ $entry.service.type | default "LoadBalancer" }}
+    {{- with $entry.service.extraLabels }}
       extraLabels:
         {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- if .probes }}
-      readinessProbe:
-        httpGet:
-          scheme: HTTP
-          port: 8082
-          path: /envoy-hc
-        initialDelaySeconds: 5
-        periodSeconds: 5
-        failureThreshold: 2
-      {{- end }}
     {{- end }}
-    {{- with .Values.gateway.stats }}
+    {{- with $entry.service.extraAnnotations }}
+      extraAnnotations:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+    {{- with $.Values.gateway.stats }}
     stats:
       {{- toYaml . | nindent 6 }}
     {{- end }}
-    {{- if .Values.gateway.aiExtension.enabled }}
+    {{- with $.Values.gateway.aiExtension }}
+    {{- if .enabled }}
     aiExtension:
-        enabled: {{ .Values.gateway.aiExtension.enabled }}
-        image:
-          registry: {{ .Values.gateway.aiExtension.image.registry | default .Values.image.registry }}
-          repository: {{ .Values.gateway.aiExtension.image.repository }}
-          tag: {{ .Values.gateway.aiExtension.image.tag | default .Values.image.tag | default .Chart.Version }}
-          pullPolicy: {{ .Values.gateway.aiExtension.image.pullPolicy | default .Values.image.pullPolicy }}
-    {{- if .Values.gateway.aiExtension.securityContext }}
-        securityContext:
-            {{- toYaml .Values.gateway.aiExtension.securityContext | nindent 8 }}
-    {{- end }}{{/* if .Values.gateway.aiExtension.securityContext */}}
-    {{- if .Values.gateway.aiExtension.resources }}
-        resources:
-            {{- toYaml .Values.gateway.aiExtension.resources | nindent 8 }}
-    {{- end }}{{/* if .Values.gateway.aiExtension.resources */}}
-    {{- if .Values.gateway.aiExtension.env }}
-        env:
-            {{ toYaml .Values.gateway.aiExtension.env | nindent 8 }}
-    {{- end }} {{/* if .Values.gateway.aiExtension.env */}}
-    {{- if .Values.gateway.aiExtension.ports }}
-        ports:
-            {{ toYaml .Values.gateway.aiExtension.ports | nindent 8 }}
-    {{- end }} {{/* if .Values.gateway.aiExtension.ports */}}
-    {{- end }}{{/* if .Values.gateway.aiExtension.enabled */}}
+      enabled: {{ .enabled }}
+      image:
+        registry: {{ .image.registry | default $.Values.image.registry }}
+        repository: {{ .image.repository }}
+        tag: {{ .image.tag | default $.Values.image.tag | default $.Chart.Version }}
+        pullPolicy: {{ .image.pullPolicy | default $.Values.image.pullPolicy }}
+      {{- if .securityContext }}
+      securityContext:
+          {{- toYaml .securityContext | nindent 8 }}
+      {{- end }}
+      {{- if .resources }}
+      resources:
+          {{- toYaml .resources | nindent 8 }}
+      {{- end }}
+      {{- if .env }}
+      env:
+          {{ toYaml .env | nindent 8 }}
+      {{- end }}
+      {{- if .ports }}
+      ports:
+          {{ toYaml .ports | nindent 8 }}
+      {{- end }}
+    {{- end }}
+    {{- end }}
+---
+{{- end }}
 {{- end }}

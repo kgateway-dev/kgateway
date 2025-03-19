@@ -5,9 +5,9 @@ package v1alpha1
 // HTTPListenerPolicySpecApplyConfiguration represents a declarative configuration of the HTTPListenerPolicySpec type for use
 // with apply.
 type HTTPListenerPolicySpecApplyConfiguration struct {
-	TargetRef *LocalPolicyTargetReferenceApplyConfiguration `json:"targetRef,omitempty"`
-	Compress  *bool                                         `json:"compress,omitempty"`
-	AccessLog []AccessLogApplyConfiguration                 `json:"accessLog,omitempty"`
+	TargetRefs []LocalPolicyTargetReferenceApplyConfiguration `json:"targetRefs,omitempty"`
+	Compress   *bool                                          `json:"compress,omitempty"`
+	AccessLog  []AccessLogApplyConfiguration                  `json:"accessLog,omitempty"`
 }
 
 // HTTPListenerPolicySpecApplyConfiguration constructs a declarative configuration of the HTTPListenerPolicySpec type for use with
@@ -16,11 +16,16 @@ func HTTPListenerPolicySpec() *HTTPListenerPolicySpecApplyConfiguration {
 	return &HTTPListenerPolicySpecApplyConfiguration{}
 }
 
-// WithTargetRef sets the TargetRef field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the TargetRef field is set to the value of the last call.
-func (b *HTTPListenerPolicySpecApplyConfiguration) WithTargetRef(value *LocalPolicyTargetReferenceApplyConfiguration) *HTTPListenerPolicySpecApplyConfiguration {
-	b.TargetRef = value
+// WithTargetRefs adds the given value to the TargetRefs field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the TargetRefs field.
+func (b *HTTPListenerPolicySpecApplyConfiguration) WithTargetRefs(values ...*LocalPolicyTargetReferenceApplyConfiguration) *HTTPListenerPolicySpecApplyConfiguration {
+	for i := range values {
+		if values[i] == nil {
+			panic("nil value passed to WithTargetRefs")
+		}
+		b.TargetRefs = append(b.TargetRefs, *values[i])
+	}
 	return b
 }
 

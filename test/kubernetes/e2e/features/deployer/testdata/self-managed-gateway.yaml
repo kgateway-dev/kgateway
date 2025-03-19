@@ -2,10 +2,13 @@ apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:
   name: gw
-  annotations:
-    gateway.kgateway.dev/gateway-parameters-name: "gw-params"
 spec:
   gatewayClassName: kgateway
+  infrastructure:
+    parametersRef:
+      group: gateway.kgateway.dev
+      kind: GatewayParameters
+      name: gw-params
   listeners:
     - protocol: HTTP
       port: 8080

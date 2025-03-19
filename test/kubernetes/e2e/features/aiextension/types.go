@@ -22,6 +22,12 @@ var (
 	// routes to LLM backends with extension ref
 	routesWithExtensionManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "routes-with-extension-ref.yaml")
 
+	// routes to LLM backends with extension ref for prompt guard regex pattern rejection
+	routesWitPGRegexPatternRejectManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "routes-with-pg-regex-pattern-reject.yaml")
+
 	// routes options for streaming
 	routeOptionStreamingManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "streaming.yaml")
+
+	// route policy for prompt guard regex pattern rejection
+	routePolicyPGRegexPatternRejectManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "prompt-guard-regex-pattern-reject.yaml")
 )

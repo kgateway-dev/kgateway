@@ -420,13 +420,15 @@ func (info *FilterChainInfo) toMatch() *envoy_config_listener_v3.FilterChainMatc
 		return nil
 	}
 
-	// right now only sni domains is in the match, so if empty, return a nil match
-	if len(info.Match.SniDomains) == 0 {
+	// if all fields are empty, return nil
+	if len(info.Match.SniDomains) == 0 && info.Match.DestinationPort == nil && len(info.Match.PrefixRanges) == 0 {
 		return nil
 	}
 
 	return &envoy_config_listener_v3.FilterChainMatch{
-		ServerNames: info.Match.SniDomains,
+		ServerNames:     info.Match.SniDomains,
+		DestinationPort: info.Match.DestinationPort,
+		PrefixRanges:    info.Match.PrefixRanges,
 	}
 }
 
