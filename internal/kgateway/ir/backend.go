@@ -48,6 +48,11 @@ func (c ObjectSource) Equals(in ObjectSource) bool {
 	return c.Namespace == in.Namespace && c.Name == in.Name && c.Group == in.Group && c.Kind == in.Kind
 }
 
+type Namespaced interface {
+	GetName() string
+	GetNamespace() string
+}
+
 type AppProtocol string
 
 const (
@@ -88,15 +93,26 @@ type BackendObjectIR struct {
 	// i think so, assuming obj -> objir is a 1:1 mapping.
 	ObjIr interface{ Equals(any) bool }
 
+	// ExtraKey allows ensuring uniqueness in the KRT key
+	// when there is more than one backend per ObjectSource+port.
+	// TODO this is a hack for ServiceEntry to workaround only having one
+	// CanonicalHostname. We should see if it's possible to have multiple
+	// CanonicalHostnames.
+	ExtraKey string
+
 	AttachedPolicies AttachedPolicies
 }
 
 func (c BackendObjectIR) ResourceName() string {
-	return BackendResourceName(c.ObjectSource, c.Port)
+	return BackendResourceName(c.ObjectSource, c.Port, c.ExtraKey)
 }
 
-func BackendResourceName(objSource ObjectSource, port int32) string {
-	return fmt.Sprintf("%s:%d", objSource.ResourceName(), port)
+func BackendResourceName(objSource ObjectSource, port int32, extraKey string) string {
+	key := fmt.Sprintf("%s:%d", objSource.ResourceName(), port)
+	if extraKey != "" {
+		key += extraKey
+	}
+	return key
 }
 
 func (c BackendObjectIR) Equals(in BackendObjectIR) bool {
@@ -120,6 +136,9 @@ func (c BackendObjectIR) ClusterName() string {
 	gvPrefix := c.GvPrefix
 	if c.GvPrefix == "" {
 		gvPrefix = strings.ToLower(c.Kind)
+	}
+	if c.ExtraKey != "" {
+		return fmt.Sprintf("%s_%s_%s_%s_%d", gvPrefix, c.Namespace, c.Name, c.ExtraKey, c.Port)
 	}
 	return fmt.Sprintf("%s_%s_%s_%d", gvPrefix, c.Namespace, c.Name, c.Port)
 	// return fmt.Sprintf("%s~%s:%d", c.GvPrefix, c.ObjectSource.ResourceName(), c.Port)

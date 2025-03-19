@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"go.uber.org/zap"
 
 	networking "istio.io/api/networking/v1alpha3"
@@ -58,13 +59,15 @@ func initServiceEntryBackend(ctx context.Context, in ir.BackendObjectIR, out *cl
 	}
 }
 
-// Backends produces a one-to-many collection from ServiceEntry into BackendObjectIR.
-// For each ServiceEntry, we create hosts*ports Backends.
-func Backends(
+// backendsCollections produces a one-to-many collection from ServiceEntry into BackendObjectIR.
+// For each ServiceEntry, we create hosts*ports BackendObjectIRs.
+func backendsCollections(
 	logger *zap.SugaredLogger,
 	ServiceEntries krt.Collection[*networkingclient.ServiceEntry],
+	krtOpts krtutil.KrtOptions,
 ) krt.Collection[ir.BackendObjectIR] {
 	return krt.NewManyCollection(ServiceEntries, func(ctx krt.HandlerContext, se *networkingclient.ServiceEntry) []ir.BackendObjectIR {
+		println("stevenctl: seen se ", se.GetName())
 		// passthrough not supported here
 		if se.Spec.GetResolution() == networking.ServiceEntry_NONE {
 			logger.Debugw("skipping ServiceEntry with resolution: NONE", "name", se.GetName(), "namespace", se.GetNamespace())
@@ -76,6 +79,7 @@ func Backends(
 
 		for _, hostname := range se.Spec.Hosts {
 			for _, svcPort := range se.Spec.Ports {
+				println("stevenctl: backend for ", se.GetName(), hostname, svcPort.Number)
 				be := ir.BackendObjectIR{
 					ObjectSource: ir.ObjectSource{
 						Group:     gvk.ServiceEntry.Group,
@@ -90,10 +94,17 @@ func Backends(
 					Obj:               se,
 					// TODO ObjIr:             nil,
 					AttachedPolicies: ir.AttachedPolicies{},
+
+					// TODO this is a hack so we don't have key conflicts in krt since we
+					// build per-hostname backends. This means the generic `getBackend`
+					// in policy.go will never work, and we resolve the direct
+					// ServiceEntry backendRefs in our backendref plugin.
+					ExtraKey: hostname,
 				}
+				out = append(out, be)
 			}
 		}
 
 		return out
-	})
+	}, krtOpts.ToOptions("ServiceEntryBackends")...)
 }

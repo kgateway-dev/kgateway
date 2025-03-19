@@ -17,6 +17,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/endpoints"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 )
 
 // buildInlineCLA creates a CLA for non-EDS ServiceEntry.
@@ -73,6 +74,7 @@ func endpointsCollection(
 	Backends krt.Collection[ir.BackendObjectIR],
 	SelectedWorkloads krt.Collection[selectedWorkload],
 	selectedWorkloadsIndex krt.Index[string, selectedWorkload],
+	krtOpts krtutil.KrtOptions,
 ) krt.Collection[ir.EndpointsForBackend] {
 	return krt.NewCollection(
 		Backends,
@@ -84,16 +86,10 @@ func endpointsCollection(
 			if !isEDSServiceEntry(se) {
 				return nil
 			}
-
-			workloads := krt.Fetch(ctx, SelectedWorkloads, krt.FilterIndex(selectedWorkloadsIndex, seKey(se)))
-
-			eps := ir.NewEndpointsForBackend(be)
-			if len(workloads) == 0 {
-				return eps
-			}
-
-			return eps
+			workloads := krt.Fetch(ctx, SelectedWorkloads, krt.FilterIndex(selectedWorkloadsIndex, serviceEntryKey(se)))
+			return endpointsFromWorkloads(se, be, workloads)
 		},
+		krtOpts.ToOptions("ServiceEntryEndpoints")...,
 	)
 }
 
@@ -107,6 +103,10 @@ func endpointsFromWorkloads(
 	be ir.BackendObjectIR,
 	workloads []selectedWorkload,
 ) *ir.EndpointsForBackend {
+	if len(workloads) == 0 {
+		return ir.NewEndpointsForBackend(be)
+	}
+
 	// this should never miss, we only call buildInlineCLA using BackendObjectIR
 	// generated from the ServiceEntry iteself
 	var servicePort *networking.ServicePort

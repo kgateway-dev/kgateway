@@ -79,6 +79,10 @@ func NewPluginFromCollections(
 				Backends:  k8sServiceBackends,
 			},
 		},
+		// TODO consider ContibutesPolicies allowing backendRef by networking.istio.io/Hostname
+		// wellknown.ServiceGCK.GroupKind(): extensionsplug.PolicyPlugin{
+		// 	GetBackendForRef: getBackendForHostnameRef,
+		// },
 	}
 }
 
