@@ -81,8 +81,8 @@ metadata:
   name: accesslog
   namespace: gwtest
 spec:
-  targetRef:
-    group: gateway.networking.k8s.io
+  targetRefs:
+  - group: gateway.networking.k8s.io
     kind: Gateway
     name: http-gw-for-test
   accessLog:

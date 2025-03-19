@@ -5,8 +5,8 @@ package v1alpha1
 // ListenerPolicySpecApplyConfiguration represents a declarative configuration of the ListenerPolicySpec type for use
 // with apply.
 type ListenerPolicySpecApplyConfiguration struct {
-	TargetRef                     *LocalPolicyTargetReferenceApplyConfiguration `json:"targetRef,omitempty"`
-	PerConnectionBufferLimitBytes *uint32                                       `json:"perConnectionBufferLimitBytes,omitempty"`
+	TargetRefs                    []LocalPolicyTargetReferenceApplyConfiguration `json:"targetRefs,omitempty"`
+	PerConnectionBufferLimitBytes *uint32                                        `json:"perConnectionBufferLimitBytes,omitempty"`
 }
 
 // ListenerPolicySpecApplyConfiguration constructs a declarative configuration of the ListenerPolicySpec type for use with
@@ -15,11 +15,16 @@ func ListenerPolicySpec() *ListenerPolicySpecApplyConfiguration {
 	return &ListenerPolicySpecApplyConfiguration{}
 }
 
-// WithTargetRef sets the TargetRef field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the TargetRef field is set to the value of the last call.
-func (b *ListenerPolicySpecApplyConfiguration) WithTargetRef(value *LocalPolicyTargetReferenceApplyConfiguration) *ListenerPolicySpecApplyConfiguration {
-	b.TargetRef = value
+// WithTargetRefs adds the given value to the TargetRefs field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the TargetRefs field.
+func (b *ListenerPolicySpecApplyConfiguration) WithTargetRefs(values ...*LocalPolicyTargetReferenceApplyConfiguration) *ListenerPolicySpecApplyConfiguration {
+	for i := range values {
+		if values[i] == nil {
+			panic("nil value passed to WithTargetRefs")
+		}
+		b.TargetRefs = append(b.TargetRefs, *values[i])
+	}
 	return b
 }
 

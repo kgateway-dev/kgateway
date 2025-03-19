@@ -69,16 +69,34 @@ spec:
         - name: reviews
           port: 8080
 ---
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: HTTPRoute
+metadata:
+  name: my-route2
+  namespace: gwtest
+spec:
+  parentRefs:
+    - name: http-gw-for-test
+  hostnames:
+    - "www.example2.com"
+  rules:
+    - backendRefs:
+        - name: reviews
+          port: 8080
+---
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: RoutePolicy
 metadata:
   name: my-route-policy
   namespace: gwtest
 spec:
-  targetRef:
-    group: gateway.networking.k8s.io
+  targetRefs:
+  - group: gateway.networking.k8s.io
     kind: HTTPRoute
     name: my-route
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: my-route2
   transformation:
     request:
       set:

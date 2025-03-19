@@ -7,6 +7,7 @@ import (
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	"github.com/google/go-cmp/cmp"
 	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 	skubeclient "istio.io/istio/pkg/config/schema/kubeclient"
 	"istio.io/istio/pkg/kube/kclient"
@@ -40,7 +41,7 @@ func (d *listenerPolicy) Equals(in any) bool {
 	if !ok {
 		return false
 	}
-	return d.spec == d2.spec
+	return cmp.Equal(d.spec, d2.spec)
 }
 
 type listenerPolicyPluginGwPass struct {
@@ -71,7 +72,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 	col := krt.WrapClient(kclient.New[*v1alpha1.ListenerPolicy](commoncol.Client), commoncol.KrtOpts.ToOptions("ListenerPolicy")...)
 	gk := wellknown.ListenerPolicyGVK.GroupKind()
 	policyCol := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *v1alpha1.ListenerPolicy) *ir.PolicyWrapper {
-		var pol = &ir.PolicyWrapper{
+		pol := &ir.PolicyWrapper{
 			ObjectSource: ir.ObjectSource{
 				Group:     gk.Group,
 				Kind:      gk.Kind,
@@ -80,7 +81,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 			},
 			Policy:     i,
 			PolicyIR:   &listenerPolicy{ct: i.CreationTimestamp.Time, spec: i.Spec},
-			TargetRefs: convert(i.Spec.TargetRef),
+			TargetRefs: convert(i.Spec.TargetRefs),
 		}
 		return pol
 	})
@@ -88,7 +89,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 	return extensionplug.Plugin{
 		ContributesPolicies: map[schema.GroupKind]extensionsplug.PolicyPlugin{
 			wellknown.ListenerPolicyGVK.GroupKind(): {
-				//AttachmentPoints: []ir.AttachmentPoints{ir.HttpAttachmentPoint},
+				// AttachmentPoints: []ir.AttachmentPoints{ir.HttpAttachmentPoint},
 				NewGatewayTranslationPass: NewGatewayTranslationPass,
 				Policies:                  policyCol,
 			},
@@ -96,17 +97,22 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 	}
 }
 
-func convert(targetRef v1alpha1.LocalPolicyTargetReference) []ir.PolicyTargetRef {
-	return []ir.PolicyTargetRef{{
-		Kind:  string(targetRef.Kind),
-		Name:  string(targetRef.Name),
-		Group: string(targetRef.Group),
-	}}
+func convert(targetRefs []v1alpha1.LocalPolicyTargetReference) []ir.PolicyTargetRef {
+	refs := make([]ir.PolicyTargetRef, 0, len(targetRefs))
+	for _, targetRef := range targetRefs {
+		refs = append(refs, ir.PolicyTargetRef{
+			Kind:  string(targetRef.Kind),
+			Name:  string(targetRef.Name),
+			Group: string(targetRef.Group),
+		})
+	}
+	return refs
 }
 
 func NewGatewayTranslationPass(ctx context.Context, tctx ir.GwTranslationCtx) ir.ProxyTranslationPass {
 	return &listenerPolicyPluginGwPass{}
 }
+
 func (p *listenerPolicy) Name() string {
 	return "listenerpolicies"
 }
@@ -129,7 +135,8 @@ func (p *listenerPolicyPluginGwPass) ApplyListenerPlugin(ctx context.Context, pC
 func (p *listenerPolicyPluginGwPass) ApplyHCM(
 	ctx context.Context,
 	pCtx *ir.HcmContext,
-	out *envoy_hcm.HttpConnectionManager) error {
+	out *envoy_hcm.HttpConnectionManager,
+) error {
 	// no-op, hcm config is handled in http listener plugin
 	return nil
 }
