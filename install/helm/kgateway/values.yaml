@@ -106,8 +106,6 @@ waypointClass:
 
 # Gateway proxy configuration
 gateway:
-  # The name of the Gateway annotation that specifies the name of a GatewayParameters CR
-  parametersAnnotationName: "gateway.kgateway.dev/gateway-parameters-name"
   envoyContainer:
     image:
       registry: ""
@@ -158,3 +156,6 @@ image:
   registry: cr.kgateway.dev/kgateway-dev
   tag: ""
   pullPolicy: IfNotPresent
+
+inferenceExtension:
+  enabled: false

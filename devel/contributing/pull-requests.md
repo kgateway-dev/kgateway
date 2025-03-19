@@ -4,15 +4,15 @@ This doc explains the best practices for submitting a pull request to the [kgate
 It should serve as a reference for all contributors, and be useful especially useful to new and infrequent submitters.
 This document serves as a [kgateway](https://github.com/kgateway-dev/kgateway) repo extension of the [org-level contribution guidelines](https://github.com/kgateway-dev/community/blob/main/CONTRIBUTING.md)
 
-
-
 # Submission Process
 Merging a pull request requires the following steps to be completed before the pull request will be merged automatically.
+- Ensure that each of your commits contains a `Signed-off-by` trailer to adhere to [DCO](https://developercertificate.org/) requirements. This can be done by one of the following methods:
+    - Running `make init-git-hooks` which will configure your repo to use the version-controlled [Git hooks](/.githooks) from this repo (preferred)
+    - Manually copying the [.githooks/prepare-commit-msg](/.githooks/prepare-commit-msg) file to `.git/hooks/prepare-commit-msg` in your copy of this repo
+    - Making sure to use the `-s` / `--signoff` [flag](https://git-scm.com/docs/git-commit#Documentation/git-commit.txt--s) on each commit
 - [Open a pull request](https://help.github.com/articles/about-pull-requests/)
 - Pass all [automated tests](automation.md)
 - Get all necessary approvals from reviewers and code owners
-
-
 
 ## Best Practices for Pull Requests
 Below are some best practices we have found to help PRs get reviewed quickly

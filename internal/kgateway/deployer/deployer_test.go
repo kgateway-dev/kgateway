@@ -15,12 +15,14 @@ import (
 	"google.golang.org/protobuf/proto"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	infextv1a2 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
 	api "sigs.k8s.io/gateway-api/apis/v1"
 
 	gw2_v1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
@@ -45,10 +47,6 @@ import (
 	// is currently broken. see: https://github.com/kgateway-dev/kgateway/issues/10491
 	_ "github.com/kgateway-dev/kgateway/v2/internal/envoyinit/hack/filter_types"
 )
-
-// testBootstrap implements resources.Resource in order to use protoutils.UnmarshalYAML
-// this is hacky but it seems more stable/concise than map-casting all the way down
-// to the field we need.
 
 func unmarshalYaml(data []byte, into proto.Message) error {
 	jsn, err := yaml.YAMLToJSON(data)
@@ -438,6 +436,74 @@ var _ = Describe("Deployer", func() {
 		})
 	})
 
+	Context("Gateway API infrastructure field", func() {
+		It("rejects invalid group in spec.infrastructure.parametersRef", func() {
+			gw := &api.Gateway{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "foo",
+					Namespace: defaultNamespace,
+					UID:       "1235",
+				},
+				Spec: api.GatewaySpec{
+					GatewayClassName: wellknown.GatewayClassName,
+					Infrastructure: &api.GatewayInfrastructure{
+						ParametersRef: &api.LocalParametersReference{
+							Group: "invalid.group",
+							Kind:  api.Kind(wellknown.GatewayParametersGVK.Kind),
+							Name:  "test-gwp",
+						},
+					},
+				},
+			}
+
+			d, err := deployer.NewDeployer(newFakeClientWithObjs(defaultGatewayClass()), &deployer.Inputs{
+				ControllerName: wellknown.GatewayControllerName,
+				Dev:            false,
+				ControlPlane: deployer.ControlPlaneInfo{
+					XdsHost: "something.cluster.local",
+					XdsPort: 1234,
+				},
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+			_, err = d.GetObjsToDeploy(context.Background(), gw)
+			Expect(err).To(MatchError(`invalid group invalid.group for GatewayParameters`))
+		})
+
+		It("rejects invalid kind in spec.infrastructure.parametersRef", func() {
+			gw := &api.Gateway{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "foo",
+					Namespace: defaultNamespace,
+					UID:       "1235",
+				},
+				Spec: api.GatewaySpec{
+					GatewayClassName: wellknown.GatewayClassName,
+					Infrastructure: &api.GatewayInfrastructure{
+						ParametersRef: &api.LocalParametersReference{
+							Group: gw2_v1alpha1.GroupName,
+							Kind:  "InvalidKind",
+							Name:  "test-gwp",
+						},
+					},
+				},
+			}
+
+			d, err := deployer.NewDeployer(newFakeClientWithObjs(defaultGatewayClass()), &deployer.Inputs{
+				ControllerName: wellknown.GatewayControllerName,
+				Dev:            false,
+				ControlPlane: deployer.ControlPlaneInfo{
+					XdsHost: "something.cluster.local",
+					XdsPort: 1234,
+				},
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+			_, err = d.GetObjsToDeploy(context.Background(), gw)
+			Expect(err).To(MatchError(`invalid kind InvalidKind for GatewayParameters`))
+		})
+	})
+
 	Context("Single gwc and gw", func() {
 		type input struct {
 			dInputs        *deployer.Inputs
@@ -706,10 +772,13 @@ var _ = Describe("Deployer", func() {
 
 			defaultGatewayWithGatewayParams = func(gwpName string) *api.Gateway {
 				gw := defaultGateway()
-				gw.Annotations = map[string]string{
-					wellknown.GatewayParametersAnnotationName: gwpName,
+				gw.Spec.Infrastructure = &api.GatewayInfrastructure{
+					ParametersRef: &api.LocalParametersReference{
+						Group: gw2_v1alpha1.GroupName,
+						Kind:  api.Kind(wellknown.GatewayParametersGVK.Kind),
+						Name:  gwpName,
+					},
 				}
-
 				return gw
 			}
 			defaultInput = func() *input {
@@ -1351,12 +1420,127 @@ var _ = Describe("Deployer", func() {
 			}),
 		)
 	})
+
+	Context("Inference Extension endpoint picker", func() {
+		const defaultNamespace = "default"
+
+		It("should deploy endpoint picker resources for an InferencePool", func() {
+			// Create a fake InferencePool resource.
+			pool := &infextv1a2.InferencePool{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       wellknown.InferencePoolKind,
+					APIVersion: fmt.Sprintf("%s/%s", infextv1a2.GroupVersion.Group, infextv1a2.GroupVersion.Version),
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pool1",
+					Namespace: defaultNamespace,
+					UID:       "pool-uid",
+				},
+			}
+
+			// Initialize a new deployer with InferenceExtension inputs.
+			d, err := deployer.NewDeployer(newFakeClientWithObjs(pool), &deployer.Inputs{
+				ControllerName:     wellknown.GatewayControllerName,
+				InferenceExtension: &deployer.InferenceExtInfo{},
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+			// Simulate reconciliation so that the pool gets its finalizer added.
+			err = d.EnsureFinalizer(context.Background(), pool)
+			Expect(err).NotTo(HaveOccurred())
+
+			// Check that the pool itself has the finalizer set.
+			Expect(pool.GetFinalizers()).To(ContainElement(wellknown.InferencePoolFinalizer))
+
+			// Get the endpoint picker objects for the InferencePool.
+			objs, err := d.GetEndpointPickerObjs(pool)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(objs).NotTo(BeEmpty(), "expected non-empty objects for endpoint picker deployment")
+			Expect(objs).To(HaveLen(4))
+
+			// Find the child objects.
+			var sa *corev1.ServiceAccount
+			var crb *rbacv1.ClusterRoleBinding
+			var dep *appsv1.Deployment
+			var svc *corev1.Service
+			for _, obj := range objs {
+				switch t := obj.(type) {
+				case *corev1.ServiceAccount:
+					sa = t
+				case *rbacv1.ClusterRoleBinding:
+					crb = t
+				case *appsv1.Deployment:
+					dep = t
+				case *corev1.Service:
+					svc = t
+				}
+			}
+			Expect(sa).NotTo(BeNil(), "expected a ServiceAccount to be rendered")
+			Expect(crb).NotTo(BeNil(), "expected a ClusterRoleBinding to be rendered")
+			Expect(dep).NotTo(BeNil(), "expected a Deployment to be rendered")
+			Expect(svc).NotTo(BeNil(), "expected a Service to be rendered")
+
+			// Check that owner references are set on all rendered objects to the InferencePool.
+			for _, obj := range objs {
+				gvk := obj.GetObjectKind().GroupVersionKind()
+				if deployer.IsNamespaced(gvk) {
+					ownerRefs := obj.GetOwnerReferences()
+					Expect(ownerRefs).To(HaveLen(1))
+					ref := ownerRefs[0]
+					Expect(ref.Name).To(Equal(pool.Name))
+					Expect(ref.UID).To(Equal(pool.UID))
+					Expect(ref.Kind).To(Equal(pool.Kind))
+					Expect(ref.APIVersion).To(Equal(pool.APIVersion))
+					Expect(*ref.Controller).To(BeTrue())
+				}
+			}
+
+			// Validate that the rendered Deployment and Service have the expected names.
+			expectedName := fmt.Sprintf("%s-endpoint-picker", pool.Name)
+			Expect(sa.Name).To(Equal(expectedName))
+			Expect(crb.Name).To(Equal(expectedName))
+			Expect(dep.Name).To(Equal(expectedName))
+			Expect(svc.Name).To(Equal(expectedName))
+
+			// Check the container args for the expected poolName.
+			Expect(dep.Spec.Template.Spec.Containers).To(HaveLen(1))
+			pickerContainer := dep.Spec.Template.Spec.Containers[0]
+			Expect(pickerContainer.Args).To(Equal([]string{
+				"-poolName",
+				pool.Name,
+				"-v",
+				"4",
+				"-grpcPort",
+				"9002",
+				"-grpcHealthPort",
+				"9003",
+			}))
+		})
+	})
 })
 
 // initialize a fake controller-runtime client with the given list of objects
 func newFakeClientWithObjs(objs ...client.Object) client.Client {
+	scheme := schemes.GatewayScheme()
+
+	// Ensure the rbac types are registered.
+	if err := rbacv1.AddToScheme(scheme); err != nil {
+		panic(fmt.Sprintf("failed to add rbacv1 scheme: %v", err))
+	}
+
+	// Check if any object is an InferencePool, and add its scheme if needed.
+	for _, obj := range objs {
+		gvk := obj.GetObjectKind().GroupVersionKind()
+		if gvk.Kind == wellknown.InferencePoolKind {
+			if err := infextv1a2.AddToScheme(scheme); err != nil {
+				panic(fmt.Sprintf("failed to add InferenceExtension scheme: %v", err))
+			}
+			break
+		}
+	}
+
 	return fake.NewClientBuilder().
-		WithScheme(schemes.GatewayScheme()).
+		WithScheme(scheme).
 		WithObjects(objs...).
 		Build()
 }

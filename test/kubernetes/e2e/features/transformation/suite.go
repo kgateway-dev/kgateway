@@ -4,9 +4,8 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"time"
-
 	"strings"
+	"time"
 
 	"github.com/onsi/gomega"
 	"github.com/stretchr/testify/suite"
@@ -15,13 +14,14 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	envoyadmincli "github.com/kgateway-dev/kgateway/v2/pkg/utils/envoyutils/admincli"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	testmatchers "github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
+	"github.com/kgateway-dev/kgateway/v2/test/helpers"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/defaults"
 	testdefaults "github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/defaults"
-
-	envoyadmincli "github.com/kgateway-dev/kgateway/v2/pkg/utils/envoyutils/admincli"
 )
 
 var _ e2e.NewSuiteFunc = NewTestingSuite
@@ -35,6 +35,11 @@ type testingSuite struct {
 	// testInstallation contains all the metadata/utilities necessary to execute a series of tests
 	// against an installation of kgateway
 	testInstallation *e2e.TestInstallation
+
+	// manifests shared by all tests
+	commonManifests []string
+	// resources from manifests shared by all tests
+	commonResources []client.Object
 }
 
 func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
@@ -44,41 +49,60 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 	}
 }
 
-func (s *testingSuite) TestGatewayWithTransformedRoute() {
-	manifests := []string{
+func (s *testingSuite) SetupSuite() {
+	s.commonManifests = []string{
 		testdefaults.CurlPodManifest,
 		simpleServiceManifest,
 		gatewayWithRouteManifest,
 	}
-	manifestObjects := []client.Object{
-		testdefaults.CurlPod,                               // curl
-		simpleSvc,                                          // echo service
-		proxyService, proxyServiceAccount, proxyDeployment, // proxy
+	s.commonResources = []client.Object{
+		// resources from curl manifest
+		testdefaults.CurlPod,
+		// resources from service manifest
+		simpleSvc, simpleDeployment,
+		// resources from gateway manifest
+		gateway, route, routePolicy,
+		// deployer-generated resources
+		proxyDeployment, proxyService, proxyServiceAccount,
 	}
 
-	s.T().Cleanup(func() {
-		for _, manifest := range manifests {
-			err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, manifest)
-			s.Require().NoError(err)
-		}
-		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, manifestObjects...)
-	})
-
-	for _, manifest := range manifests {
+	// set up common resources once
+	for _, manifest := range s.commonManifests {
 		err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, manifest)
-		s.Require().NoError(err)
+		s.Require().NoError(err, "can apply "+manifest)
 	}
-	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, manifestObjects...)
+	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, s.commonResources...)
 
 	// make sure pods are running
-	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, testdefaults.CurlPod.GetNamespace(), metav1.ListOptions{
-		LabelSelector: "app.kubernetes.io/name=curl",
+	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, defaults.CurlPod.GetNamespace(), metav1.ListOptions{
+		LabelSelector: defaults.CurlPodLabelSelector,
 	})
-
+	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, simpleDeployment.GetNamespace(), metav1.ListOptions{
+		LabelSelector: "app=backend-0,version=v1",
+	})
 	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, proxyObjectMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: "app.kubernetes.io/name=gw",
+		LabelSelector: fmt.Sprintf("app.kubernetes.io/name=%s", proxyObjectMeta.GetName()),
 	})
+}
 
+func (s *testingSuite) TearDownSuite() {
+	// clean up common resources
+	for _, manifest := range s.commonManifests {
+		err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, manifest)
+		s.Require().NoError(err, "can delete "+manifest)
+	}
+	s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, s.commonResources...)
+
+	// make sure pods are gone
+	s.testInstallation.Assertions.EventuallyPodsNotExist(s.ctx, simpleDeployment.GetNamespace(), metav1.ListOptions{
+		LabelSelector: "app=backend-0,version=v1",
+	})
+	s.testInstallation.Assertions.EventuallyPodsNotExist(s.ctx, proxyObjectMeta.GetNamespace(), metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("app.kubernetes.io/name=%s", proxyObjectMeta.GetName()),
+	})
+}
+
+func (s *testingSuite) TestGatewayWithTransformedRoute() {
 	testCasess := []struct {
 		name string
 		opts []curl.Option
@@ -124,66 +148,65 @@ func (s *testingSuite) TestGatewayWithTransformedRoute() {
 }
 
 func (s *testingSuite) TestGatewayRustformationsWithTransformedRoute() {
-	manifests := []string{
-		testdefaults.CurlPodManifest,
-		simpleServiceManifest,
-		gatewayWithRouteManifest,
-	}
-	manifestObjects := []client.Object{
-		testdefaults.CurlPod,                               // curl
-		simpleSvc,                                          // echo service
-		proxyService, proxyServiceAccount, proxyDeployment, // proxy
-	}
-
+	// make a copy of the original controller deployment
 	controllerDeploymentOriginal := &appsv1.Deployment{}
 	err := s.testInstallation.ClusterContext.Client.Get(s.ctx, client.ObjectKey{
 		Namespace: s.testInstallation.Metadata.InstallNamespace,
-		Name:      "kgateway",
+		Name:      helpers.DefaultKgatewayDeploymentName,
 	}, controllerDeploymentOriginal)
 	s.Assert().NoError(err, "has controller deploymnet")
 
-	controllerDeploy := controllerDeploymentOriginal.DeepCopy()
-	// add the environment variable RUSTFORMATIONS to the controller deployment
-
-	env := append(controllerDeploy.Spec.Template.Spec.Containers[0].Env, corev1.EnvVar{
+	// add the environment variable RUSTFORMATIONS to the modified controller deployment
+	rustFormationsEnvVar := corev1.EnvVar{
 		Name:  "KGW_USE_RUST_FORMATIONS",
 		Value: "true",
-	})
-	containers := controllerDeploy.Spec.Template.Spec.Containers
-	containers[0].Env = env
-	controllerDeploy.Spec.Template.Spec.Containers = containers
+	}
+	controllerDeployModified := controllerDeploymentOriginal.DeepCopy()
+	controllerDeployModified.Spec.Template.Spec.Containers[0].Env = append(
+		controllerDeployModified.Spec.Template.Spec.Containers[0].Env,
+		rustFormationsEnvVar,
+	)
 
-	// patch the actual deployment with the new environment variable
-	err = s.testInstallation.ClusterContext.Client.Patch(s.ctx, controllerDeploy, client.MergeFrom(controllerDeploymentOriginal))
+	// patch the deployment
+	controllerDeployModified.ResourceVersion = ""
+	err = s.testInstallation.ClusterContext.Client.Patch(s.ctx, controllerDeployModified, client.MergeFrom(controllerDeploymentOriginal))
 	s.Assert().NoError(err, "patching controller deployment")
 
+	// wait for the changes to be reflected in pod
+	s.testInstallation.Assertions.EventuallyPodContainerContainsEnvVar(
+		s.ctx,
+		s.testInstallation.Metadata.InstallNamespace,
+		metav1.ListOptions{
+			LabelSelector: "app.kubernetes.io/name=kgateway",
+		},
+		helpers.KgatewayContainerName,
+		rustFormationsEnvVar,
+	)
+
 	s.T().Cleanup(func() {
-		for _, manifest := range manifests {
-			err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, manifest)
-			s.Require().NoError(err)
-		}
-		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, manifestObjects...)
-		err = s.testInstallation.ClusterContext.Client.Patch(s.ctx, controllerDeploy, client.MergeFrom(controllerDeploy))
+		// revert to original version of deployment
+		controllerDeploymentOriginal.ResourceVersion = ""
+		err = s.testInstallation.ClusterContext.Client.Patch(s.ctx, controllerDeploymentOriginal, client.MergeFrom(controllerDeployModified))
 		s.Require().NoError(err)
+
+		// make sure the env var is removed
+		s.testInstallation.Assertions.EventuallyPodContainerDoesNotContainEnvVar(
+			s.ctx,
+			s.testInstallation.Metadata.InstallNamespace,
+			metav1.ListOptions{
+				LabelSelector: "app.kubernetes.io/name=kgateway",
+			},
+			helpers.KgatewayContainerName,
+			rustFormationsEnvVar.Name,
+		)
 	})
 
-	for _, manifest := range manifests {
-		err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, manifest)
-		s.Require().NoError(err)
-	}
-	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, manifestObjects...)
-
-	// make sure pods are running
-	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, testdefaults.CurlPod.GetNamespace(), metav1.ListOptions{
-		LabelSelector: "app.kubernetes.io/name=curl",
-	})
-
-	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, proxyObjectMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: "app.kubernetes.io/name=gw",
-	})
-
+	// wait for pods to be running again, since controller deployment was patched
 	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, s.testInstallation.Metadata.InstallNamespace, metav1.ListOptions{
 		LabelSelector: "app.kubernetes.io/name=kgateway",
+	})
+	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, proxyObjectMeta.GetNamespace(), metav1.ListOptions{
+		LabelSelector: "app.kubernetes.io/name=gw",
 	})
 
 	adminClient, closeFwd, err := envoyadmincli.NewPortForwardedClient(s.ctx, "deploy/"+proxyObjectMeta.Name, proxyObjectMeta.Namespace)

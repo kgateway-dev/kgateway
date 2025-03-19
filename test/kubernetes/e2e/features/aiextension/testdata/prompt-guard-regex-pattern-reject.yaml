@@ -1,0 +1,15 @@
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: RoutePolicy
+metadata:
+  name: pg-regex-pattern-reject-policy
+  namespace: ai-test
+spec:
+  ai:
+    promptGuard:
+      request:
+        customResponse:
+          message: "Rejected due to inappropriate content"
+        regex:
+          matches:
+          - pattern: "credit card"
+          action: REJECT

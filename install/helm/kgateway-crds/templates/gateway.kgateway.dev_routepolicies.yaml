@@ -268,26 +268,30 @@ spec:
                     - CHAT_STREAMING
                     type: string
                 type: object
-              targetRef:
-                properties:
-                  group:
-                    maxLength: 253
-                    pattern: ^$|^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
-                    type: string
-                  kind:
-                    maxLength: 63
-                    minLength: 1
-                    pattern: ^[a-zA-Z]([-a-zA-Z0-9]*[a-zA-Z0-9])?$
-                    type: string
-                  name:
-                    maxLength: 253
-                    minLength: 1
-                    type: string
-                required:
-                - group
-                - kind
-                - name
-                type: object
+              targetRefs:
+                items:
+                  properties:
+                    group:
+                      maxLength: 253
+                      pattern: ^$|^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                      type: string
+                    kind:
+                      maxLength: 63
+                      minLength: 1
+                      pattern: ^[a-zA-Z]([-a-zA-Z0-9]*[a-zA-Z0-9])?$
+                      type: string
+                    name:
+                      maxLength: 253
+                      minLength: 1
+                      type: string
+                  required:
+                  - group
+                  - kind
+                  - name
+                  type: object
+                maxItems: 16
+                minItems: 1
+                type: array
               transformation:
                 properties:
                   request:
@@ -298,7 +302,7 @@ spec:
                             name:
                               maxLength: 256
                               minLength: 1
-                              pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
+                              pattern: ^:?[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
                               type: string
                             value:
                               type: string
@@ -335,7 +339,7 @@ spec:
                             name:
                               maxLength: 256
                               minLength: 1
-                              pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
+                              pattern: ^:?[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
                               type: string
                             value:
                               type: string
@@ -356,7 +360,7 @@ spec:
                             name:
                               maxLength: 256
                               minLength: 1
-                              pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
+                              pattern: ^:?[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
                               type: string
                             value:
                               type: string
@@ -393,7 +397,7 @@ spec:
                             name:
                               maxLength: 256
                               minLength: 1
-                              pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
+                              pattern: ^:?[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
                               type: string
                             value:
                               type: string

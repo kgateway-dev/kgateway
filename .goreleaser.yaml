@@ -135,7 +135,6 @@ dockers:
     goarch: arm64
     build_flag_templates:
       - "--pull"
-      - "--build-arg=AI_EXTENSION_DIR=/python/ai_extension"
       - "--build-arg=PYTHON_DIR=/python"
     extra_files:
       - python/requirements.txt
@@ -148,7 +147,6 @@ dockers:
     goarch: amd64
     build_flag_templates:
       - "--pull"
-      - "--build-arg=AI_EXTENSION_DIR=/python/ai_extension"
       - "--build-arg=PYTHON_DIR=/python"
     extra_files:
       - python/requirements.txt
