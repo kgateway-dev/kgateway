@@ -3,7 +3,6 @@ package waypoint
 import (
 	"context"
 	"fmt"
-	"strconv"
 
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -236,6 +235,7 @@ func (t *waypointTranslator) buildServiceChains(
 	var tcpOut []ir.TcpIR
 	// get attached services (istio.io/use-waypoint)
 	services := t.waypointQueries.GetWaypointServices(kctx, ctx, gw.Obj)
+	println("stevenctl waypoint has ", len(services), "services")
 
 	// for each service:
 	// * 1:1 Service port -> filter chain
@@ -372,13 +372,15 @@ func (t *waypointTranslator) buildHTTPVirtualHost(
 // buildDefaultToPortVirtualHost builds a VirtualHost with no routes/policy
 // that will simply forward traffic to the same service port we matched for
 // a per-port filter chain for a single service.
+// TODO this could return multiple vhosts for ServiceEntry as ServiceEntry
+// can supply multiple hostnames, which each map to a separate backend.
 func buildDefaultToPortVirtualHost(
 	svc waypointquery.Service,
 	port waypointquery.ServicePort,
 ) *ir.VirtualHost {
 	virtualHost := &ir.VirtualHost{
 		// TODO for peering, this should be the _original_ name, not the effective name.
-		Name:     "vh_http_" + strconv.Itoa(int(port.Port)) + "_" + svc.GetName() + "_" + svc.GetNamespace(),
+		Name:     svc.DefaultVHostName(port),
 		Hostname: "*",
 		Rules: []ir.HttpRouteRuleMatchIR{{
 			Backends: []ir.HttpBackend{{

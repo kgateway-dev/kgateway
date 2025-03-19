@@ -79,31 +79,44 @@ func backendsCollections(
 
 		for _, hostname := range se.Spec.GetHosts() {
 			for _, svcPort := range se.Spec.GetPorts() {
-				be := ir.BackendObjectIR{
-					ObjectSource: ir.ObjectSource{
-						Group:     gvk.ServiceEntry.Group,
-						Kind:      gvk.ServiceEntry.Kind,
-						Namespace: se.GetNamespace(),
-						Name:      se.GetName(),
-					},
-					Port:              int32(svcPort.GetNumber()),
-					AppProtocol:       ir.ParseAppProtocol(ptr.To(svcPort.GetProtocol())),
-					GvPrefix:          BackendClusterPrefix,
-					CanonicalHostname: hostname,
-					Obj:               se,
-					// TODO ObjIr:             nil,
-					AttachedPolicies: ir.AttachedPolicies{},
-
-					// TODO this is a hack so we don't have key conflicts in krt since we
-					// build per-hostname backends. This means the generic `getBackend`
-					// in policy.go will never work, and we resolve the direct
-					// ServiceEntry backendRefs in our backendref plugin.
-					ExtraKey: hostname,
-				}
-				out = append(out, be)
+				out = append(out, BuildServiceEntryBackendObjectIR(
+					se,
+					hostname,
+					int32(svcPort.GetNumber()),
+					svcPort.GetProtocol(),
+				))
 			}
 		}
 
 		return out
 	}, krtOpts.ToOptions("ServiceEntryBackends")...)
+}
+
+func BuildServiceEntryBackendObjectIR(
+	se *networkingclient.ServiceEntry,
+	hostname string,
+	svcPort int32,
+	svcProtocol string,
+) ir.BackendObjectIR {
+	return ir.BackendObjectIR{
+		ObjectSource: ir.ObjectSource{
+			Group:     gvk.ServiceEntry.Group,
+			Kind:      gvk.ServiceEntry.Kind,
+			Namespace: se.GetNamespace(),
+			Name:      se.GetName(),
+		},
+		Port:              svcPort,
+		AppProtocol:       ir.ParseAppProtocol(ptr.To(svcProtocol)),
+		GvPrefix:          BackendClusterPrefix,
+		CanonicalHostname: hostname,
+		Obj:               se,
+		// TODO ObjIr:             nil,
+		AttachedPolicies: ir.AttachedPolicies{},
+
+		// TODO this is a hack so we don't have key conflicts in krt since we
+		// build per-hostname backends. This means the generic `getBackend`
+		// in policy.go will never work, and we resolve the direct
+		// ServiceEntry backendRefs in our backendref plugin.
+		ExtraKey: hostname,
+	}
 }

@@ -141,14 +141,6 @@ func initServiceEntryCollections(
 	// setup input collections
 	defaultFilter := kclient.Filter{ObjectFilter: commonCols.Client.ObjectFilter()}
 
-	seInformer := kclient.NewDelayedInformer[*networkingclient.ServiceEntry](
-		commonCols.Client,
-		gvr.ServiceEntry,
-		kubetypes.StandardInformer,
-		defaultFilter,
-	)
-	ServiceEntries := krt.WrapClient(seInformer, commonCols.KrtOpts.ToOptions("ServiceEntries")...)
-
 	weInformer := kclient.NewDelayedInformer[*networkingclient.WorkloadEntry](
 		commonCols.Client,
 		gvr.WorkloadEntry,
@@ -158,7 +150,7 @@ func initServiceEntryCollections(
 	WorkloadEntries := krt.WrapClient(weInformer, commonCols.KrtOpts.ToOptions("WorkloadEntries")...)
 
 	// compute intermediate state collections
-	SelectingServiceEntries := krt.NewCollection(ServiceEntries, func(ctx krt.HandlerContext, i *networkingclient.ServiceEntry) *seSelector {
+	SelectingServiceEntries := krt.NewCollection(commonCols.ServiceEntries, func(ctx krt.HandlerContext, i *networkingclient.ServiceEntry) *seSelector {
 		return &seSelector{ServiceEntry: i}
 	}, krt.WithName("SelectingServiceEntries"))
 	SelectedWorkloads, selectedWorkloadsIndex := selectedWorkloads(
@@ -168,7 +160,7 @@ func initServiceEntryCollections(
 	)
 
 	// init the outputs
-	Backends := backendsCollections(logger, ServiceEntries, commonCols.KrtOpts)
+	Backends := backendsCollections(logger, commonCols.ServiceEntries, commonCols.KrtOpts)
 	Endpoints := endpointsCollection(Backends, SelectedWorkloads, selectedWorkloadsIndex, commonCols.KrtOpts)
 	backendsByHostPort := krt.NewIndex(Backends, func(be ir.BackendObjectIR) []hostPortKey {
 		return []hostPortKey{makeHostPortKey(be.CanonicalHostname, int(be.Port))}
@@ -181,7 +173,7 @@ func initServiceEntryCollections(
 	return serviceEntryCollections{
 		logger: contextutils.LoggerFrom(ctx),
 
-		ServiceEntries:  ServiceEntries,
+		ServiceEntries:  commonCols.ServiceEntries,
 		WorkloadEntries: WorkloadEntries,
 
 		SelectedWorkloads:      SelectedWorkloads,
