@@ -109,7 +109,8 @@ func (s *testingSuite) AfterTest(suiteName, testName string) {
 		s.testInstallation.Metadata.InstallNamespace,
 		metav1.ListOptions{
 			LabelSelector: "app.kubernetes.io/name=gw",
-		})
+		},
+	)
 }
 
 func (s *testingSuite) TestProvisionDeploymentAndService() {
@@ -121,10 +122,13 @@ func (s *testingSuite) TestConfigureProxiesFromGatewayParameters() {
 
 	// check that the labels and annotations got passed through from GatewayParameters to the ServiceAccount
 	sa := &corev1.ServiceAccount{}
-	err := s.testInstallation.ClusterContext.Client.Get(s.ctx,
-		types.NamespacedName{Name: proxyObjectMeta.Name, Namespace: proxyObjectMeta.Namespace},
-		sa)
+	err := s.testInstallation.ClusterContext.Client.Get(
+		s.ctx,
+		client.ObjectKeyFromObject(proxyServiceAccount),
+		sa,
+	)
 	s.Require().NoError(err)
+
 	s.testInstallation.Assertions.Gomega.Expect(sa.GetLabels()).To(
 		gomega.HaveKeyWithValue("sa-label-key", "sa-label-val"))
 	s.testInstallation.Assertions.Gomega.Expect(sa.GetAnnotations()).To(
@@ -132,9 +136,11 @@ func (s *testingSuite) TestConfigureProxiesFromGatewayParameters() {
 
 	// check that the labels and annotations got passed through from GatewayParameters to the Service
 	svc := &corev1.Service{}
-	err = s.testInstallation.ClusterContext.Client.Get(s.ctx,
-		types.NamespacedName{Name: proxyObjectMeta.Name, Namespace: proxyObjectMeta.Namespace},
-		svc)
+	err = s.testInstallation.ClusterContext.Client.Get(
+		s.ctx,
+		client.ObjectKeyFromObject(proxyService),
+		svc,
+	)
 	s.Require().NoError(err)
 	s.testInstallation.Assertions.Gomega.Expect(svc.GetLabels()).To(
 		gomega.HaveKeyWithValue("svc-label-key", "svc-label-val"))
@@ -142,11 +148,14 @@ func (s *testingSuite) TestConfigureProxiesFromGatewayParameters() {
 		gomega.HaveKeyWithValue("svc-anno-key", "svc-anno-val"))
 
 	// Update the Gateway to use the custom GatewayParameters
-	gwName := types.NamespacedName{Name: gw.Name, Namespace: gw.Namespace}
-	err = s.testInstallation.ClusterContext.Client.Get(s.ctx, gwName, gw)
+	err = s.testInstallation.ClusterContext.Client.Get(s.ctx, client.ObjectKeyFromObject(gw), gw)
 	s.Require().NoError(err)
 	s.patchGateway(gw.ObjectMeta, func(gw *gwv1.Gateway) {
-		gw.Annotations[wellknown.GatewayParametersAnnotationName] = gwParamsCustom.Name
+		gw.Spec.Infrastructure.ParametersRef = &gwv1.LocalParametersReference{
+			Group: "gateway.kgateway.dev",
+			Kind:  "GatewayParameters",
+			Name:  gwParamsCustom.Name,
+		}
 	})
 
 	// Assert that the expected custom configuration exists.
