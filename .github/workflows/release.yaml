@@ -112,7 +112,7 @@ jobs:
       # ensures that the tagged commit is not stale. Goreleaser will create a new tag
       # and release for the tagged commit.
       - name: Delete v2.0.0-main release if it exists
-        if: ${{ github.ref == 'refs/heads/main' }}
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
         continue-on-error: true
         run: |
           set -x

@@ -40,6 +40,8 @@ spec:
       set:
         - name: x-foo-bar
           value: "foolen_{{header(\"content-length\")}}"
+        - name: ":method"
+          value: "pseudo-not-rejected!"
     response:
       set:
         - name: x-foo-response

@@ -2,7 +2,6 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
 // +kubebuilder:rbac:groups=gateway.kgateway.dev,resources=routepolicies,verbs=get;list;watch
@@ -79,10 +78,18 @@ type Transform struct {
 
 type InjaTemplate string
 
+// EnvoyHeaderName is the name of a header or pseudo header
+// Based on gateway api v1.Headername but allows a singular : at the start
+//
+// +kubebuilder:validation:MinLength=1
+// +kubebuilder:validation:MaxLength=256
+// +kubebuilder:validation:Pattern=`^:?[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$`
+// +k8s:deepcopy-gen=false
+type HeaderName string
 type HeaderTransformation struct {
 	// Name is the name of the header to interact with.
 	// +required
-	Name gwv1.HeaderName `json:"name,omitempty"`
+	Name HeaderName `json:"name,omitempty"`
 	// Value is the template to apply to generate the output value for the header.
 	Value InjaTemplate `json:"value,omitempty"`
 }
