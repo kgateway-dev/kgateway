@@ -147,9 +147,7 @@ func NewPluginFromCollections(
 	}
 }
 
-// endpointPickerPass implements ir.ProxyTranslationPass. It collects any references
-// to InferencePools, and returns the “ext_proc” cluster (STRICT_DNS), ext_proc filter,
-// and overrides (per-route ext_proc cluster name, etc).
+// endpointPickerPass implements ir.ProxyTranslationPass. It collects any references to InferencePools.
 type endpointPickerPass struct {
 	// Instead of a single pool, store multiple pools keyed by NamespacedName.
 	usedPools map[types.NamespacedName]*inferencePool
