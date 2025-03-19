@@ -37,7 +37,7 @@ type AIPolicyIR struct {
 }
 
 func (p *routePolicyPluginGwPass) processAIRoutePolicy(
-	configMap *ir.TypedFilterConfigMap,
+	configMap ir.TypedFilterConfigMap,
 	ir *AIPolicyIR,
 ) error {
 	if ir.Transformation != nil {

@@ -257,7 +257,7 @@ func (h *httpRouteConfigurationTranslator) runRoutePlugins(
 					FilterChainName:   h.fc.FilterChainName,
 					Policy:            pol.PolicyIr,
 					In:                in,
-					TypedFilterConfig: &typedPerFilterConfig,
+					TypedFilterConfig: typedPerFilterConfig,
 				}
 				err := pass.ApplyForRoute(ctx, pctx, out)
 				if err != nil {
@@ -341,7 +341,7 @@ func (h *httpRouteConfigurationTranslator) translateRouteAction(
 		pCtx := ir.RouteBackendContext{
 			FilterChainName:   h.fc.FilterChainName,
 			Backend:           backend.Backend.BackendObject,
-			TypedFilterConfig: &typedPerFilterConfig,
+			TypedFilterConfig: typedPerFilterConfig,
 		}
 
 		// non attached policy translation

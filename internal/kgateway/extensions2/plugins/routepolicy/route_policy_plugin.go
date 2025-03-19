@@ -3,6 +3,7 @@ package routepolicy
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strconv"
 	"time"
@@ -20,7 +21,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/watch"
-	"sigs.k8s.io/kind/pkg/errors"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
@@ -286,7 +286,7 @@ func (p *routePolicyPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.Ro
 		}
 	}
 
-	return errors.NewAggregate(errs)
+	return errors.Join(errs...)
 }
 
 // ApplyForBackend applies regardless if policy is attached

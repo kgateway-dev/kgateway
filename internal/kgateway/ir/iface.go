@@ -51,14 +51,14 @@ type RouteBackendContext struct {
 	FilterChainName string
 	Backend         *BackendObjectIR
 	// todo: make this not public
-	TypedFilterConfig *TypedFilterConfigMap
+	TypedFilterConfig TypedFilterConfigMap
 }
 
 type RouteContext struct {
 	FilterChainName   string
 	Policy            PolicyIR
 	In                HttpRouteRuleMatchIR
-	TypedFilterConfig *TypedFilterConfigMap
+	TypedFilterConfig TypedFilterConfigMap
 }
 
 type HcmContext struct {
@@ -95,6 +95,8 @@ type ProxyTranslationPass interface {
 	)
 	// no policy applied - this is called for every backend in a route.
 	// For this to work the backend needs to register itself as a policy. TODO: rethink this.
+	// Note: TypedFilterConfig should be applied in the pCtx and is shared between ApplyForRoute, ApplyForBackend
+	// and ApplyForRouteBacken (do not apply on the output route directly)
 	ApplyForBackend(
 		ctx context.Context,
 		pCtx *RouteBackendContext,
@@ -102,6 +104,8 @@ type ProxyTranslationPass interface {
 		out *envoy_config_route_v3.Route,
 	) error
 	// Applies a policy attached to a specific Backend (via extensionRef on the BackendRef).
+	// Note: TypedFilterConfig should be applied in the pCtx and is shared between ApplyForRoute, ApplyForBackend
+	// and ApplyForRouteBackend
 	ApplyForRouteBackend(
 		ctx context.Context,
 		policy PolicyIR,
@@ -110,6 +114,8 @@ type ProxyTranslationPass interface {
 	// called 0 or more times (one for each route)
 	// Applies policy for an HTTPRoute that has a policy attached via a targetRef.
 	// The output configures the envoy_config_route_v3.Route
+	// Note: TypedFilterConfig should be applied in the pCtx and is shared between ApplyForRoute, ApplyForBackend
+	// and ApplyForRouteBacken (do not apply on the output route directly)
 	ApplyForRoute(
 		ctx context.Context,
 		pCtx *RouteContext,

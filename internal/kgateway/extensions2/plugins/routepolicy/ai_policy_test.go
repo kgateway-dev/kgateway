@@ -45,7 +45,7 @@ func TestProcessAIRoutePolicy(t *testing.T) {
 		// Execute
 		err := preProcessAIRoutePolicy(aiConfig, aiIR)
 		require.NoError(t, err)
-		err = plugin.processAIRoutePolicy(&typedFilterConfig, aiIR)
+		err = plugin.processAIRoutePolicy(typedFilterConfig, aiIR)
 		require.NoError(t, err)
 
 		// Verify streaming header was added
@@ -94,7 +94,7 @@ func TestProcessAIRoutePolicy(t *testing.T) {
 		err := preProcessAIRoutePolicy(aiConfig, aiIR)
 		require.NoError(t, err)
 
-		err = plugin.processAIRoutePolicy(&typedFilterConfig, aiIR)
+		err = plugin.processAIRoutePolicy(typedFilterConfig, aiIR)
 		require.NoError(t, err)
 
 		// Verify
@@ -141,7 +141,7 @@ func TestProcessAIRoutePolicy(t *testing.T) {
 		err := preProcessAIRoutePolicy(aiConfig, aiIR)
 		require.NoError(t, err)
 
-		err = plugin.processAIRoutePolicy(&typedFilterConfig, aiIR)
+		err = plugin.processAIRoutePolicy(typedFilterConfig, aiIR)
 		require.NoError(t, err)
 
 		// Verify
@@ -194,7 +194,7 @@ func TestProcessAIRoutePolicy(t *testing.T) {
 		err := preProcessAIRoutePolicy(aiConfig, aiIR)
 		require.NoError(t, err)
 
-		err = plugin.processAIRoutePolicy(&typedFilterConfig, aiIR)
+		err = plugin.processAIRoutePolicy(typedFilterConfig, aiIR)
 		require.NoError(t, err)
 
 		// Verify

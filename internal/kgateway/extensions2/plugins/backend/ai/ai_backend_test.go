@@ -21,7 +21,7 @@ import (
 func TestApplyAIBackend(t *testing.T) {
 	typedFilterConfig := ir.TypedFilterConfigMap(map[string]proto.Message{})
 	pCtx := &ir.RouteBackendContext{
-		TypedFilterConfig: &typedFilterConfig,
+		TypedFilterConfig: typedFilterConfig,
 		Backend: &ir.BackendObjectIR{
 			ObjectSource: ir.ObjectSource{
 				Group:     "test",
@@ -185,11 +185,11 @@ func TestApplyAIBackend(t *testing.T) {
 				}
 
 				// assert outputs
-				if len(*tt.expectedTypedConfig) != len(*tt.pCtx.TypedFilterConfig) {
+				if len(*tt.expectedTypedConfig) != len(tt.pCtx.TypedFilterConfig) {
 					t.Errorf("expected %v typed config but got %v", tt.pCtx.TypedFilterConfig, tt.expectedTypedConfig)
 				}
 				expected := *tt.expectedTypedConfig
-				actual := *tt.pCtx.TypedFilterConfig
+				actual := tt.pCtx.TypedFilterConfig
 				for k, v := range expected {
 					expectedVal := expected[k]
 					actualVal := actual[k]
