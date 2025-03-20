@@ -6,22 +6,22 @@ import (
 	v1 "k8s.io/client-go/applyconfigurations/meta/v1"
 )
 
-// ExternalProviderStatusApplyConfiguration represents a declarative configuration of the ExternalProviderStatus type for use
+// GatewayExtensionStatusApplyConfiguration represents a declarative configuration of the GatewayExtensionStatus type for use
 // with apply.
-type ExternalProviderStatusApplyConfiguration struct {
+type GatewayExtensionStatusApplyConfiguration struct {
 	Conditions []v1.ConditionApplyConfiguration `json:"conditions,omitempty"`
 }
 
-// ExternalProviderStatusApplyConfiguration constructs a declarative configuration of the ExternalProviderStatus type for use with
+// GatewayExtensionStatusApplyConfiguration constructs a declarative configuration of the GatewayExtensionStatus type for use with
 // apply.
-func ExternalProviderStatus() *ExternalProviderStatusApplyConfiguration {
-	return &ExternalProviderStatusApplyConfiguration{}
+func GatewayExtensionStatus() *GatewayExtensionStatusApplyConfiguration {
+	return &GatewayExtensionStatusApplyConfiguration{}
 }
 
 // WithConditions adds the given value to the Conditions field in the declarative configuration
 // and returns the receiver, so that objects can be build by chaining "With" function invocations.
 // If called multiple times, values provided by each call will be appended to the Conditions field.
-func (b *ExternalProviderStatusApplyConfiguration) WithConditions(values ...*v1.ConditionApplyConfiguration) *ExternalProviderStatusApplyConfiguration {
+func (b *GatewayExtensionStatusApplyConfiguration) WithConditions(values ...*v1.ConditionApplyConfiguration) *GatewayExtensionStatusApplyConfiguration {
 	for i := range values {
 		if values[i] == nil {
 			panic("nil value passed to WithConditions")

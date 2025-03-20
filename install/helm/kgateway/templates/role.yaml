@@ -71,9 +71,9 @@ rules:
 - apiGroups:
   - gateway.kgateway.dev
   resources:
-  - ExternalProviders
   - backends
   - directresponses
+  - gatewayextensions
   - gatewayparameters
   - httplistenerpolicies
   - listenerpolicies
@@ -85,9 +85,9 @@ rules:
 - apiGroups:
   - gateway.kgateway.dev
   resources:
-  - ExternalProviders/status
   - backends/status
   - directresponses/status
+  - gatewayextensions/status
   - gatewayparameters/status
   - httplistenerpolicies/status
   - listenerpolicies/status

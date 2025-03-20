@@ -7,11 +7,8 @@ import (
 	"strconv"
 	"time"
 
-	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
-	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	exteniondynamicmodulev3 "github.com/envoyproxy/go-control-plane/envoy/extensions/dynamic_modules/v3"
 	dynamicmodulesv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/dynamic_modules/v3"
-	envoy_ext_proc_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_proc/v3"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
@@ -22,6 +19,11 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/watch"
+
+	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoy_ext_authz_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_authz/v3"
+	envoy_ext_proc_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_proc/v3"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
@@ -44,6 +46,7 @@ const (
 	transformationFilterNamePrefix = "transformation"
 	rustformationFilterNamePrefix  = "dynamic_modules/simple_mutations"
 	metadataRouteTransformation    = "transformation/helper"
+	extauthFilterNamePrefix        = "ext_authz"
 )
 
 type routePolicy struct {
@@ -57,6 +60,7 @@ type routeSpecIr struct {
 	transform                  *anypb.Any
 	rustformation              *anypb.Any
 	rustformationStringToStash string
+	extAuth                    *extAuthIR
 	errors                     []error
 }
 
@@ -79,6 +83,7 @@ func (d *routePolicy) Equals(in any) bool {
 	if !proto.Equal(d.spec.rustformation, d2.spec.rustformation) {
 		return false
 	}
+
 	if d.AISecret != nil && d2.AISecret != nil && !d.AISecret.Equals(*d2.AISecret) {
 		return false
 	}
@@ -90,6 +95,12 @@ func (d *routePolicy) Equals(in any) bool {
 		return false
 	}
 
+	if !proto.Equal(d.spec.extAuth.filter, d2.spec.extAuth.filter) {
+		return false
+	}
+	// if d.spec.extAuth.Stage != d2.spec.extAuth.Stage {
+	// 	return false
+	// }
 	return true
 }
 
@@ -98,7 +109,9 @@ type routePolicyPluginGwPass struct {
 	// TODO(nfuden): dont abuse httplevel filter in favor of route level
 	rustformationStash map[string]string
 	ir.UnimplementedProxyTranslationPass
-	setAIFilter bool
+	setAIFilter            bool
+	extAuthListenerEnabled bool
+	extAuth                *extAuthIR
 }
 
 func (p *routePolicyPluginGwPass) ApplyHCM(ctx context.Context, pCtx *ir.HcmContext, out *envoyhttp.HttpConnectionManager) error {
@@ -178,6 +191,7 @@ func (p *routePolicy) Name() string {
 
 // called 1 time for each listener
 func (p *routePolicyPluginGwPass) ApplyListenerPlugin(ctx context.Context, pCtx *ir.ListenerContext, out *envoy_config_listener_v3.Listener) {
+
 }
 
 func (p *routePolicyPluginGwPass) ApplyVhostPlugin(ctx context.Context, pCtx *ir.VirtualHostContext, out *envoy_config_route_v3.VirtualHost) {
@@ -199,6 +213,7 @@ func (p *routePolicyPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.Ro
 		}
 		p.setTransformationInChain = true
 	}
+
 	if policy.spec.rustformation != nil {
 		if outputRoute.GetTypedPerFilterConfig() == nil {
 			outputRoute.TypedPerFilterConfig = make(map[string]*anypb.Any)
@@ -250,6 +265,33 @@ func (p *routePolicyPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.Ro
 		outputRoute.GetTypedPerFilterConfig()[metadataRouteTransformation], _ = utils.MessageToAny(setmetaTransform)
 
 		p.setTransformationInChain = true
+	}
+
+	// Apply ExtAuthz configuration if present
+	// ExtAuth does not allow for most information such as destination
+	// to be set at the route level so we need to smuggle info upwards.
+	if policy.spec.extAuth != nil {
+		if outputRoute.GetTypedPerFilterConfig() == nil {
+			outputRoute.TypedPerFilterConfig = make(map[string]*anypb.Any)
+		}
+
+		// Handle the enabled state
+		if policy.spec.extAuth.enabled == v1alpha1.ExtAuthDisableAll {
+			// Disable the filter for this route
+			outputRoute.GetTypedPerFilterConfig()[string(policy.spec.extAuth.providerName)], _ = utils.MessageToAny(
+				&envoy_ext_authz_v3.ExtAuthzPerRoute{
+					Override: &envoy_ext_authz_v3.ExtAuthzPerRoute_Disabled{
+						Disabled: true,
+					},
+				})
+		} else {
+			outputRoute.GetTypedPerFilterConfig()[string(policy.spec.extAuth.providerName)], _ = utils.MessageToAny(
+				&envoy_ext_authz_v3.ExtAuthzPerRoute{
+					Override: &envoy_ext_authz_v3.ExtAuthzPerRoute_Disabled{
+						Disabled: false,
+					},
+				})
+		}
 	}
 
 	// TODO: err/warn/ignore if targetRef is set on non-AI Backend
@@ -340,6 +382,44 @@ func (p *routePolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.Filter
 			&transformationpb.FilterTransformations{},
 			plugins.AfterStage(plugins.FaultStage)))
 	}
+
+	// Add Ext_authz filter for listener
+
+	if p.extAuth != nil {
+		extAuth := p.extAuth.filter
+		extauthName := p.extAuth.providerName
+
+		var existingFilter plugins.StagedHttpFilter
+		existingFilterIdx := -1
+		for idx, filter := range filters {
+			if filter.Filter.GetName() == extauthName {
+				existingFilter = filter
+				existingFilterIdx = idx
+				break
+			}
+		}
+		if existingFilterIdx == -1 {
+			extAuthFilter := plugins.MustNewStagedFilter(extauthName,
+				extAuth,
+				plugins.DuringStage(plugins.AuthZStage)) //TODO(nfuden): support stages
+			// if listener was not configured then we only have route level config
+			// so we need to make our route level filters disabled by default
+			if !p.extAuthListenerEnabled {
+				extAuthFilter.Filter.Disabled = true
+			}
+			// if
+			if p.extAuth.enabled == v1alpha1.ExtAuthDisableAll {
+				extAuthFilter.Filter.Disabled = false
+			}
+			filters = append(filters, extAuthFilter)
+		} else {
+			if p.extAuth.enabled == v1alpha1.ExtAuthDisableAll {
+				existingFilter.Filter.Disabled = false
+			}
+			filters[existingFilterIdx] = existingFilter
+		}
+	}
+
 	if len(filters) == 0 {
 		return nil, nil
 	}
@@ -368,6 +448,10 @@ func buildTranslateFunc(ctx context.Context, secrets *krtcollections.SecretIndex
 
 		// Apply transformation specific translation
 		transformationForSpec(policyCR.Spec, &outSpec)
+
+		// Apply ExtAuthz specific translation
+
+		extAuthForSpec(&policyCR.Spec, &outSpec)
 
 		for _, err := range outSpec.errors {
 			contextutils.LoggerFrom(ctx).Error(policyCR.GetNamespace(), policyCR.GetName(), err)
@@ -408,6 +492,9 @@ func aiSecretForSpec(
 
 // transformationForSpec translates the transformation spec into and onto the IR policy
 func transformationForSpec(spec v1alpha1.RoutePolicySpec, out *routeSpecIr) {
+	if spec.Transformation != (v1alpha1.TransformationPolicy{}) {
+		return
+	}
 	var err error
 	if !useRustformations {
 		out.transform, err = toTransformFilterConfig(&spec.Transformation)
@@ -423,4 +510,65 @@ func transformationForSpec(spec v1alpha1.RoutePolicySpec, out *routeSpecIr) {
 	}
 	out.rustformation = rustformation
 	out.rustformationStringToStash = string(toStash)
+}
+
+type extAuthIR struct {
+	filter       *envoy_ext_authz_v3.ExtAuthz
+	providerName string
+	enabled      v1alpha1.ExtAuthEnabled
+}
+
+// extAuthForSpec translates the ExtAuthz spec into the Envoy configuration
+func extAuthForSpec(routeSpec *v1alpha1.RoutePolicySpec, out *routeSpecIr) {
+	if routeSpec == nil || routeSpec.ExtAuth == nil {
+		return
+	}
+	spec := routeSpec.ExtAuth
+	// Create the ExtAuthz configuration
+	extAuth := &envoy_ext_authz_v3.ExtAuthz{}
+	if spec.FailureModeAllow != nil {
+		extAuth.FailureModeAllow = *spec.FailureModeAllow
+	}
+	if spec.ClearRouteCache != nil {
+		extAuth.ClearRouteCache = *spec.ClearRouteCache
+	}
+	if spec.IncludePeerCertificate != nil {
+		extAuth.IncludePeerCertificate = *spec.IncludePeerCertificate
+	}
+	if spec.IncludeTLSSession != nil {
+		extAuth.IncludeTlsSession = *spec.IncludeTLSSession
+	}
+
+	// Configure metadata context namespaces if specified
+	if len(spec.MetadataContextNamespaces) > 0 {
+		extAuth.MetadataContextNamespaces = spec.MetadataContextNamespaces
+	}
+
+	// Configure request body buffering if specified
+	if spec.WithRequestBody != nil {
+		extAuth.WithRequestBody = &envoy_ext_authz_v3.BufferSettings{
+			MaxRequestBytes: spec.WithRequestBody.MaxRequestBytes,
+		}
+		if spec.WithRequestBody.AllowPartialMessage != nil {
+			extAuth.GetWithRequestBody().AllowPartialMessage = *spec.WithRequestBody.AllowPartialMessage
+		}
+		if spec.WithRequestBody.PackAsBytes != nil {
+			extAuth.GetWithRequestBody().PackAsBytes = *spec.WithRequestBody.PackAsBytes
+		}
+	}
+
+	if spec.ExtensionRef != nil {
+
+	}
+
+	nameOrPlaceholder := ""
+	if spec.ExtensionRef != nil {
+		nameOrPlaceholder = string(spec.ExtensionRef.Name)
+	}
+
+	out.extAuth = &extAuthIR{
+		filter:       extAuth,
+		providerName: nameOrPlaceholder,
+		enabled:      spec.Enablement,
+	}
 }

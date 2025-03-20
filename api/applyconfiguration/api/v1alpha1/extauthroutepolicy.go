@@ -3,19 +3,23 @@
 package v1alpha1
 
 import (
-	v1 "sigs.k8s.io/gateway-api/apis/v1"
+	v1 "k8s.io/api/core/v1"
+
+	apiv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 )
 
 // ExtAuthRoutePolicyApplyConfiguration represents a declarative configuration of the ExtAuthRoutePolicy type for use
 // with apply.
 type ExtAuthRoutePolicyApplyConfiguration struct {
-	ProviderRef               *v1.LocalObjectReference          `json:"providerRef,omitempty"`
+	ExtensionRef              *v1.LocalObjectReference          `json:"extensionRef,omitempty"`
+	Enablement                *apiv1alpha1.ExtAuthEnabled       `json:"enablement,omitempty"`
 	FailureModeAllow          *bool                             `json:"failureModeAllow,omitempty"`
 	WithRequestBody           *BufferSettingsApplyConfiguration `json:"withRequestBody,omitempty"`
 	ClearRouteCache           *bool                             `json:"clearRouteCache,omitempty"`
 	MetadataContextNamespaces []string                          `json:"metadataContextNamespaces,omitempty"`
 	IncludePeerCertificate    *bool                             `json:"includePeerCertificate,omitempty"`
 	IncludeTLSSession         *bool                             `json:"includeTLSSession,omitempty"`
+	EmitFilterStateStats      *bool                             `json:"emitFilterStateStats,omitempty"`
 }
 
 // ExtAuthRoutePolicyApplyConfiguration constructs a declarative configuration of the ExtAuthRoutePolicy type for use with
@@ -24,11 +28,19 @@ func ExtAuthRoutePolicy() *ExtAuthRoutePolicyApplyConfiguration {
 	return &ExtAuthRoutePolicyApplyConfiguration{}
 }
 
-// WithProviderRef sets the ProviderRef field in the declarative configuration to the given value
+// WithExtensionRef sets the ExtensionRef field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the ProviderRef field is set to the value of the last call.
-func (b *ExtAuthRoutePolicyApplyConfiguration) WithProviderRef(value v1.LocalObjectReference) *ExtAuthRoutePolicyApplyConfiguration {
-	b.ProviderRef = &value
+// If called multiple times, the ExtensionRef field is set to the value of the last call.
+func (b *ExtAuthRoutePolicyApplyConfiguration) WithExtensionRef(value v1.LocalObjectReference) *ExtAuthRoutePolicyApplyConfiguration {
+	b.ExtensionRef = &value
+	return b
+}
+
+// WithEnablement sets the Enablement field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Enablement field is set to the value of the last call.
+func (b *ExtAuthRoutePolicyApplyConfiguration) WithEnablement(value apiv1alpha1.ExtAuthEnabled) *ExtAuthRoutePolicyApplyConfiguration {
+	b.Enablement = &value
 	return b
 }
 
@@ -79,5 +91,13 @@ func (b *ExtAuthRoutePolicyApplyConfiguration) WithIncludePeerCertificate(value 
 // If called multiple times, the IncludeTLSSession field is set to the value of the last call.
 func (b *ExtAuthRoutePolicyApplyConfiguration) WithIncludeTLSSession(value bool) *ExtAuthRoutePolicyApplyConfiguration {
 	b.IncludeTLSSession = &value
+	return b
+}
+
+// WithEmitFilterStateStats sets the EmitFilterStateStats field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the EmitFilterStateStats field is set to the value of the last call.
+func (b *ExtAuthRoutePolicyApplyConfiguration) WithEmitFilterStateStats(value bool) *ExtAuthRoutePolicyApplyConfiguration {
+	b.EmitFilterStateStats = &value
 	return b
 }

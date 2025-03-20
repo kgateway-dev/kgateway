@@ -6,7 +6,7 @@ type BackendExpansion interface{}
 
 type DirectResponseExpansion interface{}
 
-type ExternalProviderExpansion interface{}
+type GatewayExtensionExpansion interface{}
 
 type GatewayParametersExpansion interface{}
 

@@ -73,12 +73,6 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.ExtAuthProviderApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("ExtAuthRoutePolicy"):
 		return &apiv1alpha1.ExtAuthRoutePolicyApplyConfiguration{}
-	case v1alpha1.SchemeGroupVersion.WithKind("ExternalProvider"):
-		return &apiv1alpha1.ExternalProviderApplyConfiguration{}
-	case v1alpha1.SchemeGroupVersion.WithKind("ExternalProviderSpec"):
-		return &apiv1alpha1.ExternalProviderSpecApplyConfiguration{}
-	case v1alpha1.SchemeGroupVersion.WithKind("ExternalProviderStatus"):
-		return &apiv1alpha1.ExternalProviderStatusApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("ExtProcProvider"):
 		return &apiv1alpha1.ExtProcProviderApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("FieldDefault"):
@@ -87,6 +81,12 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.FileSinkApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("FilterType"):
 		return &apiv1alpha1.FilterTypeApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("GatewayExtension"):
+		return &apiv1alpha1.GatewayExtensionApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("GatewayExtensionSpec"):
+		return &apiv1alpha1.GatewayExtensionSpecApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("GatewayExtensionStatus"):
+		return &apiv1alpha1.GatewayExtensionStatusApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("GatewayParameters"):
 		return &apiv1alpha1.GatewayParametersApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("GatewayParametersSpec"):
@@ -133,6 +133,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.MultiPoolConfigApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("OpenAIConfig"):
 		return &apiv1alpha1.OpenAIConfigApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("Placement"):
+		return &apiv1alpha1.PlacementApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("Pod"):
 		return &apiv1alpha1.PodApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("PolicyAncestorStatus"):
@@ -167,8 +169,6 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.ServiceAccountApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("SingleAuthToken"):
 		return &apiv1alpha1.SingleAuthTokenApplyConfiguration{}
-	case v1alpha1.SchemeGroupVersion.WithKind("StageConfig"):
-		return &apiv1alpha1.StageConfigApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("StaticBackend"):
 		return &apiv1alpha1.StaticBackendApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("StatsConfig"):

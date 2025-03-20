@@ -12,58 +12,58 @@ import (
 	apiv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 )
 
-// ExternalProviderApplyConfiguration represents a declarative configuration of the ExternalProvider type for use
+// GatewayExtensionApplyConfiguration represents a declarative configuration of the GatewayExtension type for use
 // with apply.
-type ExternalProviderApplyConfiguration struct {
+type GatewayExtensionApplyConfiguration struct {
 	v1.TypeMetaApplyConfiguration    `json:",inline"`
 	*v1.ObjectMetaApplyConfiguration `json:"metadata,omitempty"`
-	Spec                             *ExternalProviderSpecApplyConfiguration   `json:"spec,omitempty"`
-	Status                           *ExternalProviderStatusApplyConfiguration `json:"status,omitempty"`
+	Spec                             *GatewayExtensionSpecApplyConfiguration   `json:"spec,omitempty"`
+	Status                           *GatewayExtensionStatusApplyConfiguration `json:"status,omitempty"`
 }
 
-// ExternalProvider constructs a declarative configuration of the ExternalProvider type for use with
+// GatewayExtension constructs a declarative configuration of the GatewayExtension type for use with
 // apply.
-func ExternalProvider(name, namespace string) *ExternalProviderApplyConfiguration {
-	b := &ExternalProviderApplyConfiguration{}
+func GatewayExtension(name, namespace string) *GatewayExtensionApplyConfiguration {
+	b := &GatewayExtensionApplyConfiguration{}
 	b.WithName(name)
 	b.WithNamespace(namespace)
-	b.WithKind("ExternalProvider")
+	b.WithKind("GatewayExtension")
 	b.WithAPIVersion("gateway.kgateway.dev/v1alpha1")
 	return b
 }
 
-// ExtractExternalProvider extracts the applied configuration owned by fieldManager from
-// externalProvider. If no managedFields are found in externalProvider for fieldManager, a
-// ExternalProviderApplyConfiguration is returned with only the Name, Namespace (if applicable),
+// ExtractGatewayExtension extracts the applied configuration owned by fieldManager from
+// gatewayExtension. If no managedFields are found in gatewayExtension for fieldManager, a
+// GatewayExtensionApplyConfiguration is returned with only the Name, Namespace (if applicable),
 // APIVersion and Kind populated. It is possible that no managed fields were found for because other
 // field managers have taken ownership of all the fields previously owned by fieldManager, or because
 // the fieldManager never owned fields any fields.
-// externalProvider must be a unmodified ExternalProvider API object that was retrieved from the Kubernetes API.
-// ExtractExternalProvider provides a way to perform a extract/modify-in-place/apply workflow.
+// gatewayExtension must be a unmodified GatewayExtension API object that was retrieved from the Kubernetes API.
+// ExtractGatewayExtension provides a way to perform a extract/modify-in-place/apply workflow.
 // Note that an extracted apply configuration will contain fewer fields than what the fieldManager previously
 // applied if another fieldManager has updated or force applied any of the previously applied fields.
 // Experimental!
-func ExtractExternalProvider(externalProvider *apiv1alpha1.ExternalProvider, fieldManager string) (*ExternalProviderApplyConfiguration, error) {
-	return extractExternalProvider(externalProvider, fieldManager, "")
+func ExtractGatewayExtension(gatewayExtension *apiv1alpha1.GatewayExtension, fieldManager string) (*GatewayExtensionApplyConfiguration, error) {
+	return extractGatewayExtension(gatewayExtension, fieldManager, "")
 }
 
-// ExtractExternalProviderStatus is the same as ExtractExternalProvider except
+// ExtractGatewayExtensionStatus is the same as ExtractGatewayExtension except
 // that it extracts the status subresource applied configuration.
 // Experimental!
-func ExtractExternalProviderStatus(externalProvider *apiv1alpha1.ExternalProvider, fieldManager string) (*ExternalProviderApplyConfiguration, error) {
-	return extractExternalProvider(externalProvider, fieldManager, "status")
+func ExtractGatewayExtensionStatus(gatewayExtension *apiv1alpha1.GatewayExtension, fieldManager string) (*GatewayExtensionApplyConfiguration, error) {
+	return extractGatewayExtension(gatewayExtension, fieldManager, "status")
 }
 
-func extractExternalProvider(externalProvider *apiv1alpha1.ExternalProvider, fieldManager string, subresource string) (*ExternalProviderApplyConfiguration, error) {
-	b := &ExternalProviderApplyConfiguration{}
-	err := managedfields.ExtractInto(externalProvider, internal.Parser().Type("com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExternalProvider"), fieldManager, b, subresource)
+func extractGatewayExtension(gatewayExtension *apiv1alpha1.GatewayExtension, fieldManager string, subresource string) (*GatewayExtensionApplyConfiguration, error) {
+	b := &GatewayExtensionApplyConfiguration{}
+	err := managedfields.ExtractInto(gatewayExtension, internal.Parser().Type("com.github.kgateway-dev.kgateway.v2.api.v1alpha1.GatewayExtension"), fieldManager, b, subresource)
 	if err != nil {
 		return nil, err
 	}
-	b.WithName(externalProvider.Name)
-	b.WithNamespace(externalProvider.Namespace)
+	b.WithName(gatewayExtension.Name)
+	b.WithNamespace(gatewayExtension.Namespace)
 
-	b.WithKind("ExternalProvider")
+	b.WithKind("GatewayExtension")
 	b.WithAPIVersion("gateway.kgateway.dev/v1alpha1")
 	return b, nil
 }
@@ -71,7 +71,7 @@ func extractExternalProvider(externalProvider *apiv1alpha1.ExternalProvider, fie
 // WithKind sets the Kind field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Kind field is set to the value of the last call.
-func (b *ExternalProviderApplyConfiguration) WithKind(value string) *ExternalProviderApplyConfiguration {
+func (b *GatewayExtensionApplyConfiguration) WithKind(value string) *GatewayExtensionApplyConfiguration {
 	b.TypeMetaApplyConfiguration.Kind = &value
 	return b
 }
@@ -79,7 +79,7 @@ func (b *ExternalProviderApplyConfiguration) WithKind(value string) *ExternalPro
 // WithAPIVersion sets the APIVersion field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the APIVersion field is set to the value of the last call.
-func (b *ExternalProviderApplyConfiguration) WithAPIVersion(value string) *ExternalProviderApplyConfiguration {
+func (b *GatewayExtensionApplyConfiguration) WithAPIVersion(value string) *GatewayExtensionApplyConfiguration {
 	b.TypeMetaApplyConfiguration.APIVersion = &value
 	return b
 }
@@ -87,7 +87,7 @@ func (b *ExternalProviderApplyConfiguration) WithAPIVersion(value string) *Exter
 // WithName sets the Name field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Name field is set to the value of the last call.
-func (b *ExternalProviderApplyConfiguration) WithName(value string) *ExternalProviderApplyConfiguration {
+func (b *GatewayExtensionApplyConfiguration) WithName(value string) *GatewayExtensionApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
 	b.ObjectMetaApplyConfiguration.Name = &value
 	return b
@@ -96,7 +96,7 @@ func (b *ExternalProviderApplyConfiguration) WithName(value string) *ExternalPro
 // WithGenerateName sets the GenerateName field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the GenerateName field is set to the value of the last call.
-func (b *ExternalProviderApplyConfiguration) WithGenerateName(value string) *ExternalProviderApplyConfiguration {
+func (b *GatewayExtensionApplyConfiguration) WithGenerateName(value string) *GatewayExtensionApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
 	b.ObjectMetaApplyConfiguration.GenerateName = &value
 	return b
@@ -105,7 +105,7 @@ func (b *ExternalProviderApplyConfiguration) WithGenerateName(value string) *Ext
 // WithNamespace sets the Namespace field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Namespace field is set to the value of the last call.
-func (b *ExternalProviderApplyConfiguration) WithNamespace(value string) *ExternalProviderApplyConfiguration {
+func (b *GatewayExtensionApplyConfiguration) WithNamespace(value string) *GatewayExtensionApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
 	b.ObjectMetaApplyConfiguration.Namespace = &value
 	return b
@@ -114,7 +114,7 @@ func (b *ExternalProviderApplyConfiguration) WithNamespace(value string) *Extern
 // WithUID sets the UID field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the UID field is set to the value of the last call.
-func (b *ExternalProviderApplyConfiguration) WithUID(value types.UID) *ExternalProviderApplyConfiguration {
+func (b *GatewayExtensionApplyConfiguration) WithUID(value types.UID) *GatewayExtensionApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
 	b.ObjectMetaApplyConfiguration.UID = &value
 	return b
@@ -123,7 +123,7 @@ func (b *ExternalProviderApplyConfiguration) WithUID(value types.UID) *ExternalP
 // WithResourceVersion sets the ResourceVersion field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the ResourceVersion field is set to the value of the last call.
-func (b *ExternalProviderApplyConfiguration) WithResourceVersion(value string) *ExternalProviderApplyConfiguration {
+func (b *GatewayExtensionApplyConfiguration) WithResourceVersion(value string) *GatewayExtensionApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
 	b.ObjectMetaApplyConfiguration.ResourceVersion = &value
 	return b
@@ -132,7 +132,7 @@ func (b *ExternalProviderApplyConfiguration) WithResourceVersion(value string) *
 // WithGeneration sets the Generation field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Generation field is set to the value of the last call.
-func (b *ExternalProviderApplyConfiguration) WithGeneration(value int64) *ExternalProviderApplyConfiguration {
+func (b *GatewayExtensionApplyConfiguration) WithGeneration(value int64) *GatewayExtensionApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
 	b.ObjectMetaApplyConfiguration.Generation = &value
 	return b
@@ -141,7 +141,7 @@ func (b *ExternalProviderApplyConfiguration) WithGeneration(value int64) *Extern
 // WithCreationTimestamp sets the CreationTimestamp field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the CreationTimestamp field is set to the value of the last call.
-func (b *ExternalProviderApplyConfiguration) WithCreationTimestamp(value metav1.Time) *ExternalProviderApplyConfiguration {
+func (b *GatewayExtensionApplyConfiguration) WithCreationTimestamp(value metav1.Time) *GatewayExtensionApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
 	b.ObjectMetaApplyConfiguration.CreationTimestamp = &value
 	return b
@@ -150,7 +150,7 @@ func (b *ExternalProviderApplyConfiguration) WithCreationTimestamp(value metav1.
 // WithDeletionTimestamp sets the DeletionTimestamp field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the DeletionTimestamp field is set to the value of the last call.
-func (b *ExternalProviderApplyConfiguration) WithDeletionTimestamp(value metav1.Time) *ExternalProviderApplyConfiguration {
+func (b *GatewayExtensionApplyConfiguration) WithDeletionTimestamp(value metav1.Time) *GatewayExtensionApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
 	b.ObjectMetaApplyConfiguration.DeletionTimestamp = &value
 	return b
@@ -159,7 +159,7 @@ func (b *ExternalProviderApplyConfiguration) WithDeletionTimestamp(value metav1.
 // WithDeletionGracePeriodSeconds sets the DeletionGracePeriodSeconds field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the DeletionGracePeriodSeconds field is set to the value of the last call.
-func (b *ExternalProviderApplyConfiguration) WithDeletionGracePeriodSeconds(value int64) *ExternalProviderApplyConfiguration {
+func (b *GatewayExtensionApplyConfiguration) WithDeletionGracePeriodSeconds(value int64) *GatewayExtensionApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
 	b.ObjectMetaApplyConfiguration.DeletionGracePeriodSeconds = &value
 	return b
@@ -169,7 +169,7 @@ func (b *ExternalProviderApplyConfiguration) WithDeletionGracePeriodSeconds(valu
 // and returns the receiver, so that objects can be build by chaining "With" function invocations.
 // If called multiple times, the entries provided by each call will be put on the Labels field,
 // overwriting an existing map entries in Labels field with the same key.
-func (b *ExternalProviderApplyConfiguration) WithLabels(entries map[string]string) *ExternalProviderApplyConfiguration {
+func (b *GatewayExtensionApplyConfiguration) WithLabels(entries map[string]string) *GatewayExtensionApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
 	if b.ObjectMetaApplyConfiguration.Labels == nil && len(entries) > 0 {
 		b.ObjectMetaApplyConfiguration.Labels = make(map[string]string, len(entries))
@@ -184,7 +184,7 @@ func (b *ExternalProviderApplyConfiguration) WithLabels(entries map[string]strin
 // and returns the receiver, so that objects can be build by chaining "With" function invocations.
 // If called multiple times, the entries provided by each call will be put on the Annotations field,
 // overwriting an existing map entries in Annotations field with the same key.
-func (b *ExternalProviderApplyConfiguration) WithAnnotations(entries map[string]string) *ExternalProviderApplyConfiguration {
+func (b *GatewayExtensionApplyConfiguration) WithAnnotations(entries map[string]string) *GatewayExtensionApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
 	if b.ObjectMetaApplyConfiguration.Annotations == nil && len(entries) > 0 {
 		b.ObjectMetaApplyConfiguration.Annotations = make(map[string]string, len(entries))
@@ -198,7 +198,7 @@ func (b *ExternalProviderApplyConfiguration) WithAnnotations(entries map[string]
 // WithOwnerReferences adds the given value to the OwnerReferences field in the declarative configuration
 // and returns the receiver, so that objects can be build by chaining "With" function invocations.
 // If called multiple times, values provided by each call will be appended to the OwnerReferences field.
-func (b *ExternalProviderApplyConfiguration) WithOwnerReferences(values ...*v1.OwnerReferenceApplyConfiguration) *ExternalProviderApplyConfiguration {
+func (b *GatewayExtensionApplyConfiguration) WithOwnerReferences(values ...*v1.OwnerReferenceApplyConfiguration) *GatewayExtensionApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
 	for i := range values {
 		if values[i] == nil {
@@ -212,7 +212,7 @@ func (b *ExternalProviderApplyConfiguration) WithOwnerReferences(values ...*v1.O
 // WithFinalizers adds the given value to the Finalizers field in the declarative configuration
 // and returns the receiver, so that objects can be build by chaining "With" function invocations.
 // If called multiple times, values provided by each call will be appended to the Finalizers field.
-func (b *ExternalProviderApplyConfiguration) WithFinalizers(values ...string) *ExternalProviderApplyConfiguration {
+func (b *GatewayExtensionApplyConfiguration) WithFinalizers(values ...string) *GatewayExtensionApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
 	for i := range values {
 		b.ObjectMetaApplyConfiguration.Finalizers = append(b.ObjectMetaApplyConfiguration.Finalizers, values[i])
@@ -220,7 +220,7 @@ func (b *ExternalProviderApplyConfiguration) WithFinalizers(values ...string) *E
 	return b
 }
 
-func (b *ExternalProviderApplyConfiguration) ensureObjectMetaApplyConfigurationExists() {
+func (b *GatewayExtensionApplyConfiguration) ensureObjectMetaApplyConfigurationExists() {
 	if b.ObjectMetaApplyConfiguration == nil {
 		b.ObjectMetaApplyConfiguration = &v1.ObjectMetaApplyConfiguration{}
 	}
@@ -229,7 +229,7 @@ func (b *ExternalProviderApplyConfiguration) ensureObjectMetaApplyConfigurationE
 // WithSpec sets the Spec field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Spec field is set to the value of the last call.
-func (b *ExternalProviderApplyConfiguration) WithSpec(value *ExternalProviderSpecApplyConfiguration) *ExternalProviderApplyConfiguration {
+func (b *GatewayExtensionApplyConfiguration) WithSpec(value *GatewayExtensionSpecApplyConfiguration) *GatewayExtensionApplyConfiguration {
 	b.Spec = value
 	return b
 }
@@ -237,13 +237,13 @@ func (b *ExternalProviderApplyConfiguration) WithSpec(value *ExternalProviderSpe
 // WithStatus sets the Status field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Status field is set to the value of the last call.
-func (b *ExternalProviderApplyConfiguration) WithStatus(value *ExternalProviderStatusApplyConfiguration) *ExternalProviderApplyConfiguration {
+func (b *GatewayExtensionApplyConfiguration) WithStatus(value *GatewayExtensionStatusApplyConfiguration) *GatewayExtensionApplyConfiguration {
 	b.Status = value
 	return b
 }
 
 // GetName retrieves the value of the Name field in the declarative configuration.
-func (b *ExternalProviderApplyConfiguration) GetName() *string {
+func (b *GatewayExtensionApplyConfiguration) GetName() *string {
 	b.ensureObjectMetaApplyConfigurationExists()
 	return b.ObjectMetaApplyConfiguration.Name
 }

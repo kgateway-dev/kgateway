@@ -446,6 +446,15 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: clearRouteCache
       type:
         scalar: boolean
+    - name: emitFilterStateStats
+      type:
+        scalar: boolean
+    - name: enablement
+      type:
+        scalar: string
+    - name: extensionRef
+      type:
+        namedType: io.k8s.api.core.v1.LocalObjectReference
     - name: failureModeAllow
       type:
         scalar: boolean
@@ -461,10 +470,6 @@ var schemaYAML = typed.YAMLObject(`types:
           elementType:
             scalar: string
           elementRelationship: associative
-    - name: providerRef
-      type:
-        namedType: io.k8s.sigs.gateway-api.apis.v1.LocalObjectReference
-      default: {}
     - name: withRequestBody
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.BufferSettings
@@ -474,55 +479,6 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: backendRef
       type:
         namedType: io.k8s.sigs.gateway-api.apis.v1.BackendRef
-- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExternalProvider
-  map:
-    fields:
-    - name: apiVersion
-      type:
-        scalar: string
-    - name: kind
-      type:
-        scalar: string
-    - name: metadata
-      type:
-        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta
-      default: {}
-    - name: spec
-      type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExternalProviderSpec
-      default: {}
-    - name: status
-      type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExternalProviderStatus
-      default: {}
-- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExternalProviderSpec
-  map:
-    fields:
-    - name: extAuth
-      type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtAuthProvider
-    - name: extProc
-      type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtProcProvider
-    - name: stage
-      type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.StageConfig
-      default: {}
-    - name: type
-      type:
-        scalar: string
-      default: ""
-- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExternalProviderStatus
-  map:
-    fields:
-    - name: conditions
-      type:
-        list:
-          elementType:
-            namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Condition
-          elementRelationship: associative
-          keys:
-          - type
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.FieldDefault
   map:
     fields:
@@ -577,6 +533,55 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: traceableFilter
       type:
         scalar: boolean
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.GatewayExtension
+  map:
+    fields:
+    - name: apiVersion
+      type:
+        scalar: string
+    - name: kind
+      type:
+        scalar: string
+    - name: metadata
+      type:
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta
+      default: {}
+    - name: spec
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.GatewayExtensionSpec
+      default: {}
+    - name: status
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.GatewayExtensionStatus
+      default: {}
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.GatewayExtensionSpec
+  map:
+    fields:
+    - name: extAuth
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtAuthProvider
+    - name: extProc
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtProcProvider
+    - name: placement
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Placement
+      default: {}
+    - name: type
+      type:
+        scalar: string
+      default: ""
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.GatewayExtensionStatus
+  map:
+    fields:
+    - name: conditions
+      type:
+        list:
+          elementType:
+            namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Condition
+          elementRelationship: associative
+          keys:
+          - type
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.GatewayParameters
   map:
     fields:
@@ -930,6 +935,16 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: model
       type:
         scalar: string
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Placement
+  map:
+    fields:
+    - name: name
+      type:
+        scalar: string
+      default: ""
+    - name: priority
+      type:
+        scalar: numeric
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Pod
   map:
     fields:
@@ -1207,16 +1222,6 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: secretRef
       type:
         namedType: io.k8s.api.core.v1.LocalObjectReference
-- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.StageConfig
-  map:
-    fields:
-    - name: name
-      type:
-        scalar: string
-      default: ""
-    - name: weight
-      type:
-        scalar: numeric
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.StaticBackend
   map:
     fields:
@@ -2379,21 +2384,6 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         scalar: string
     - name: value
-      type:
-        scalar: string
-      default: ""
-- name: io.k8s.sigs.gateway-api.apis.v1.LocalObjectReference
-  map:
-    fields:
-    - name: group
-      type:
-        scalar: string
-      default: ""
-    - name: kind
-      type:
-        scalar: string
-      default: ""
-    - name: name
       type:
         scalar: string
       default: ""

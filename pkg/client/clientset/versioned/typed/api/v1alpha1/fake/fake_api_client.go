@@ -21,8 +21,8 @@ func (c *FakeGatewayV1alpha1) DirectResponses(namespace string) v1alpha1.DirectR
 	return newFakeDirectResponses(c, namespace)
 }
 
-func (c *FakeGatewayV1alpha1) ExternalProviders(namespace string) v1alpha1.ExternalProviderInterface {
-	return newFakeExternalProviders(c, namespace)
+func (c *FakeGatewayV1alpha1) GatewayExtensions(namespace string) v1alpha1.GatewayExtensionInterface {
+	return newFakeGatewayExtensions(c, namespace)
 }
 
 func (c *FakeGatewayV1alpha1) GatewayParameterses(namespace string) v1alpha1.GatewayParametersInterface {

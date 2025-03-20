@@ -72,7 +72,7 @@ func InitCollections(
 	istioClient kube.Client,
 	refgrants *RefGrantIndex,
 	krtopts krtutil.KrtOptions,
-) (*GatewayIndex, *RoutesIndex, *BackendIndex, krt.Collection[ir.EndpointsForBackend]) {
+) (*GatewayIndex, *RoutesIndex, *BackendIndex, *GatewayExtensionIndex, krt.Collection[ir.EndpointsForBackend]) {
 	registerTypes()
 
 	httpRoutes := krt.WrapClient(kclient.New[*gwv1.HTTPRoute](istioClient), krtopts.ToOptions("HTTPRoute")...)
@@ -90,9 +90,10 @@ func InitCollections(
 	}
 	backendIndex := NewBackendIndex(krtopts, backendRefPlugins, policies, refgrants)
 	endpointIRs := initBackends(plugins, backendIndex, krtopts)
-	kubeGateways := NewGatewayIndex(krtopts, controllerName, policies, kubeRawGateways, gatewayClasses)
+	gateways := NewGatewayIndex(krtopts, controllerName, policies, kubeRawGateways, gatewayClasses)
+	gExtensionIndex := NewGatewayExtensionIndex(krtopts, istioClient, policies)
 	routes := NewRoutesIndex(krtopts, httpRoutes, tcproutes, tlsRoutes, policies, backendIndex, refgrants)
-	return kubeGateways, routes, backendIndex, endpointIRs
+	return gateways, routes, backendIndex, gExtensionIndex, endpointIRs
 }
 
 func initBackends(
