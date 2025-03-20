@@ -110,8 +110,8 @@ func configMapToIr(cm *corev1.ConfigMap) *configMapIr {
 }
 
 // Configmaps don't have a target ref, so we extract it from the annotations.
-func extractTargetRefs(cm *corev1.ConfigMap) []ir.PolicyTargetRef {
-	return []ir.PolicyTargetRef{{
+func extractTargetRefs(cm *corev1.ConfigMap) []ir.PolicyRef {
+	return []ir.PolicyRef{{
 		Group: gwv1.GroupName,
 		Kind:  "HTTPRoute",
 		Name:  cm.Annotations["targetRef"],

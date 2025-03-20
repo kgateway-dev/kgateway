@@ -135,6 +135,7 @@ dockers:
     goarch: arm64
     build_flag_templates:
       - "--pull"
+      - "--platform=linux/arm64"
       - "--build-arg=PYTHON_DIR=/python"
     extra_files:
       - python/requirements.txt
@@ -147,6 +148,7 @@ dockers:
     goarch: amd64
     build_flag_templates:
       - "--pull"
+      - "--platform=linux/amd64"
       - "--build-arg=PYTHON_DIR=/python"
     extra_files:
       - python/requirements.txt

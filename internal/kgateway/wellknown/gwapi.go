@@ -23,6 +23,9 @@ const (
 	ReferenceGrantKind   = "ReferenceGrant"
 	BackendTLSPolicyKind = "BackendTLSPolicy"
 
+	// Kind string for InferencePool resource
+	InferencePoolKind = "InferencePool"
+
 	// List Kind strings
 	HTTPRouteListKind      = "HTTPRouteList"
 	GatewayListKind        = "GatewayList"
