@@ -64,10 +64,14 @@ func (s *testingSuite) TestServiceAttached() {
 func (s *testingSuite) TestNamespaceAttached() {
 	s.setNamespaceWaypointOrFail(testNamespace)
 
-	// everything goes through the waypoint
-	s.assertCurlService(fromCurl, "svc-a", testNamespace, hasEnvoy)
-	s.assertCurlService(fromCurl, "svc-b", testNamespace, hasEnvoy)
-	// including ServiceEntry
-	s.assertCurlHost(fromCurl, "se-a.serviceentry.com", hasEnvoy)
-	s.assertCurlHost(fromCurl, "se-b.serviceentry.com", hasEnvoy)
+	s.Run("kube Service", func() {
+		// everything goes through the waypoint
+		s.assertCurlService(fromCurl, "svc-a", testNamespace, hasEnvoy)
+		s.assertCurlService(fromCurl, "svc-b", testNamespace, hasEnvoy)
+	})
+	s.Run("istio ServiceEntry", func() {
+		// including ServiceEntry
+		s.assertCurlHost(fromCurl, "se-a.serviceentry.com", hasEnvoy)
+		s.assertCurlHost(fromCurl, "se-b.serviceentry.com", hasEnvoy)
+	})
 }
