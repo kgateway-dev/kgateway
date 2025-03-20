@@ -85,7 +85,3 @@ func Plugins(ctx context.Context, commoncol *common.CommonCollections) []extensi
 		sandwich.NewPlugin(),
 	}
 }
-
-func AllPlugins(ctx context.Context, commoncol *common.CommonCollections) extensionsplug.Plugin {
-	return MergePlugins(Plugins(ctx, commoncol)...)
-}

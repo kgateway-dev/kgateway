@@ -182,7 +182,7 @@ type PolicyWrapper struct {
 	PolicyIR PolicyIR
 
 	// Where to attach the policy. This usually comes from the policy CRD.
-	TargetRefs []PolicyTargetRef
+	TargetRefs []PolicyRef
 }
 
 func (c PolicyWrapper) ResourceName() string {

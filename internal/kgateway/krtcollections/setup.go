@@ -89,27 +89,28 @@ func InitCollections(
 		}
 	}
 	backendIndex := NewBackendIndex(krtopts, backendRefPlugins, policies, refgrants)
-	endpointIRs := initBackends(plugins, backendIndex, krtopts)
+	initBackends(plugins, backendIndex)
+	endpointIRs := initEndpoints(plugins, krtopts)
 	kubeGateways := NewGatewayIndex(krtopts, controllerName, policies, kubeRawGateways, gatewayClasses)
 	routes := NewRoutesIndex(krtopts, httpRoutes, tcproutes, tlsRoutes, policies, backendIndex, refgrants)
 	return kubeGateways, routes, backendIndex, endpointIRs
 }
 
-func initBackends(
-	plugins extensionsplug.Plugin,
-	upstreamIndex *BackendIndex,
-	krtopts krtutil.KrtOptions,
-) krt.Collection[ir.EndpointsForBackend] {
-	allEndpoints := []krt.Collection[ir.EndpointsForBackend]{}
+func initBackends(plugins extensionsplug.Plugin, backendIndex *BackendIndex) {
 	for gk, plugin := range plugins.ContributesBackends {
 		if plugin.Backends != nil {
-			upstreamIndex.AddBackends(gk, plugin.Backends)
+			backendIndex.AddBackends(gk, plugin.Backends)
 		}
+	}
+}
+
+func initEndpoints(plugins extensionsplug.Plugin, krtopts krtutil.KrtOptions) krt.Collection[ir.EndpointsForBackend] {
+	allEndpoints := []krt.Collection[ir.EndpointsForBackend]{}
+	for _, plugin := range plugins.ContributesBackends {
 		if plugin.Endpoints != nil {
 			allEndpoints = append(allEndpoints, plugin.Endpoints)
 		}
 	}
-
 	// build Endpoint intermediate representation from kubernetes service and extensions
 	// TODO move kube service to be an extension
 	endpointIRs := krt.JoinCollection(allEndpoints, krtopts.ToOptions("EndpointIRs")...)

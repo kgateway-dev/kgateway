@@ -12,6 +12,8 @@ import (
 	"istio.io/istio/pkg/kube/kubetypes"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	gwv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
@@ -25,8 +27,10 @@ import (
 )
 
 type CommonCollections struct {
-	OurClient      versioned.Interface
-	Client         kube.Client
+	OurClient versioned.Interface
+	Client    kube.Client
+	// full CRUD client, only needed for status writing currently
+	CrudClient     client.Client
 	KrtOpts        krtutil.KrtOptions
 	Secrets        *krtcollections.SecretIndex
 	BackendIndex   *krtcollections.BackendIndex
@@ -67,6 +71,7 @@ func NewCommonCollections(
 	krtOptions krtutil.KrtOptions,
 	client istiokube.Client,
 	ourClient versioned.Interface,
+	cl client.Client,
 	controllerName string,
 	logger logr.Logger,
 	settings settings.Settings,
@@ -110,6 +115,7 @@ func NewCommonCollections(
 	return &CommonCollections{
 		OurClient:      ourClient,
 		Client:         client,
+		CrudClient:     cl,
 		KrtOpts:        krtOptions,
 		Secrets:        krtcollections.NewSecretIndex(secrets, refgrants),
 		Pods:           krtcollections.NewPodsCollection(client, krtOptions),
