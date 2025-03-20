@@ -251,6 +251,7 @@ func (tc TestCase) Run(t test.Failer, ctx context.Context) (map[types.Namespaced
 		krtOpts,
 		cli,
 		ourCli,
+		nil,
 		wellknown.GatewayControllerName,
 		logr.Discard(),
 		*st,

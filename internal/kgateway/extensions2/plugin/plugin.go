@@ -56,6 +56,7 @@ type PolicyPlugin struct {
 	ProcessBackend            ProcessBackend
 	PerClientProcessBackend   PerClientProcessBackend
 	PerClientProcessEndpoints EndpointPlugin
+	ProcessPolicyStatus       ProcessPolicyStatus
 
 	Policies       krt.Collection[ir.PolicyWrapper]
 	GlobalPolicies func(krt.HandlerContext, AttachmentPoints) ir.PolicyIR
@@ -89,6 +90,10 @@ type Plugin struct {
 	// extra has sync beyong primary resources in the collections above
 	ExtraHasSynced func() bool
 }
+
+type AncestorReports map[ir.ObjectSource][]error
+type PolicyReport map[ir.AttachedPolicyRef]AncestorReports
+type ProcessPolicyStatus func(ctx context.Context, gk schema.GroupKind, polReport PolicyReport)
 
 func (p PolicyPlugin) AttachmentPoints() AttachmentPoints {
 	var ret AttachmentPoints

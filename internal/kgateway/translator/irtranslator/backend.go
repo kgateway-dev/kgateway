@@ -58,6 +58,53 @@ func (t *BackendTranslator) TranslateBackend(
 	return out, nil
 }
 
+func (t *BackendTranslator) runPolicies(
+	kctx krt.HandlerContext,
+	ctx context.Context,
+	ucc ir.UniqlyConnectedClient,
+	backend ir.BackendObjectIR,
+	out *clusterv3.Cluster,
+) {
+	for gk, policyPlugin := range t.ContributedPolicies {
+		// TODO: in theory it would be nice to do `ProcessBackend` once, and only do
+		// the the per-client processing for each client.
+		// that would require refactoring and thinking about the proper IR, so we'll punt on that for
+		// now, until we have more backend plugin examples to properly understand what it should look
+		// like.
+		if policyPlugin.PerClientProcessBackend != nil {
+			policyPlugin.PerClientProcessBackend(kctx, ctx, ucc, backend, out)
+		}
+
+		if policyPlugin.ProcessBackend == nil {
+			continue
+		}
+		for _, polAttachment := range backend.AttachedPolicies.Policies[gk] {
+			policyPlugin.ProcessBackend(ctx, polAttachment.PolicyIr, backend, out)
+		}
+	}
+}
+
+var (
+	h2Options = func() *anypb.Any {
+		http2ProtocolOptions := &envoy_upstreams_v3.HttpProtocolOptions{
+			UpstreamProtocolOptions: &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig_{
+				ExplicitHttpConfig: &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig{
+					ProtocolConfig: &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig_Http2ProtocolOptions{
+						Http2ProtocolOptions: &envoy_config_core_v3.Http2ProtocolOptions{},
+					},
+				},
+			},
+		}
+
+		a, err := utils.MessageToAny(http2ProtocolOptions)
+		if err != nil {
+			// should never happen - all values are known ahead of time.
+			panic(err)
+		}
+		return a
+	}()
+)
+
 // processDnsLookupFamily modifies clusters that use DNS-based discovery in the following way:
 // 1. explicitly default to 'V4_PREFERRED' (as opposed to the envoy default of effectively V6_PREFERRED)
 // 2. override to value defined in kgateway global setting if present
@@ -95,53 +142,6 @@ func processDnsLookupFamily(out *clusterv3.Cluster, cc *common.CommonCollections
 		out.DnsLookupFamily = clusterv3.Cluster_ALL
 	}
 }
-
-func (t *BackendTranslator) runPolicies(
-	kctx krt.HandlerContext,
-	ctx context.Context,
-	ucc ir.UniqlyConnectedClient,
-	backend ir.BackendObjectIR,
-	out *clusterv3.Cluster,
-) {
-	for gk, policyPlugin := range t.ContributedPolicies {
-		// TODO: in theory it would be nice to do `ProcessBackend` once, and only do
-		// the the per-client processing for each client.
-		// that would require refactoring and thinking about the proper IR, so we'll punt on that for
-		// now, until we have more backend plugin examples to properly understand what it should look
-		// like.
-		if policyPlugin.PerClientProcessBackend != nil {
-			policyPlugin.PerClientProcessBackend(kctx, ctx, ucc, backend, out)
-		}
-
-		if policyPlugin.ProcessBackend == nil {
-			continue
-		}
-		for _, pol := range backend.AttachedPolicies.Policies[gk] {
-			policyPlugin.ProcessBackend(ctx, pol.PolicyIr, backend, out)
-		}
-	}
-}
-
-var (
-	h2Options = func() *anypb.Any {
-		http2ProtocolOptions := &envoy_upstreams_v3.HttpProtocolOptions{
-			UpstreamProtocolOptions: &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig_{
-				ExplicitHttpConfig: &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig{
-					ProtocolConfig: &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig_Http2ProtocolOptions{
-						Http2ProtocolOptions: &envoy_config_core_v3.Http2ProtocolOptions{},
-					},
-				},
-			},
-		}
-
-		a, err := utils.MessageToAny(http2ProtocolOptions)
-		if err != nil {
-			// should never happen - all values are known ahead of time.
-			panic(err)
-		}
-		return a
-	}()
-)
 
 func translateAppProtocol(appProtocol ir.AppProtocol) map[string]*anypb.Any {
 	typedExtensionProtocolOptions := map[string]*anypb.Any{}

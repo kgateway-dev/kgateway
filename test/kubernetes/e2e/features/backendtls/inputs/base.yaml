@@ -41,29 +41,3 @@ spec:
     - group: ""
       kind: ConfigMap
       name: ca
----
-# public cert of self-signed cert loaded into nginx, see nginx.yaml
-apiVersion: v1
-data:
-  ca.crt: |
-    -----BEGIN CERTIFICATE-----
-    MIIC6zCCAdOgAwIBAgIJAPdgL5W5vugOMA0GCSqGSIb3DQEBCwUAMBYxFDASBgNV
-    BAMMC2V4YW1wbGUuY29tMB4XDTI1MDMxMDIyMDY0OVoXDTI1MDQwOTIyMDY0OVow
-    FjEUMBIGA1UEAwwLZXhhbXBsZS5jb20wggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAw
-    ggEKAoIBAQC46DSkpngZavNVgByw/h7rbKyvgzp2wGDW/fPGL0/rkLcKIsIiNgHH
-    6vA0UPTSI3YsHeu+CnQCEhZWk9KhQ2q8etSynUoizIrj2iuxKTEsL3SJ7cI03cpH
-    iQoMuUqp4L4lA6/YXsLkXjHWtnTLKjsvsrjBFiu96ueoje6B2sfcSlYRFI1WgMgZ
-    QP+LALy9tVtMManIqKVr63BG0884AghF3sPo5ryOEP/1Oc9F6Ivf67JfNjMhuBHa
-    hT500hYyuxzjgUPoMWyX1FQ7NL/OWUJ5EXuSnxpDb7edVDVCz+z199S76wpAKEe0
-    hoJG5Ahw1vWNRRBO8gnsSjLAHEw0nXpvAgMBAAGjPDA6MBYGA1UdEQQPMA2CC2V4
-    YW1wbGUuY29tMAsGA1UdDwQEAwIHgDATBgNVHSUEDDAKBggrBgEFBQcDATANBgkq
-    hkiG9w0BAQsFAAOCAQEANRIdAdlJgSsgBdUcO7fmAKAZtlUUPWHa1nq5hzxCkdBj
-    hnGBCE4d8tyffTkL4kZ3cQZmDjeb7KiVL9/OBDjbe3coaKrNeFRZ+0XTJtcnRzrB
-    gRpnXAJvYCbq4AIOkGdUfp2mw1fLdoNaoW8snb6RMV/7YrOSmhUa8H9YeiW3bZIh
-    oOhsl5u5DXaInkTUR4ZOVV6UJVsG+JnN71nFGikcKKMGgOC2rpFP658M3jCHX5yx
-    EGqH5JRIpCX9epfIvFeJWJY8u8G4pg3Sryko72RWwUQBQ5HGInO0nYGU1ff/enW6
-    ywK+felXBiCUKrWKFjChgwmrs2bGAUfegKF/TQtvWQ==
-    -----END CERTIFICATE-----
-kind: ConfigMap
-metadata:
-  name: ca
