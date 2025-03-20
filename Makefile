@@ -163,18 +163,10 @@ GO_VERSION := $(shell cat go.mod | grep -E '^go' | awk '{print $$2}')
 GOTOOLCHAIN ?= go$(GO_VERSION)
 
 GOLANGCI_LINT ?= go tool golangci-lint
-ANALYZE_ARGS ?= --fast --verbose --fix
+ANALYZE_ARGS ?= --fast --verbose
 .PHONY: analyze
 analyze:  ## Run golangci-lint. Override options with ANALYZE_ARGS.
 	GOTOOLCHAIN=$(GOTOOLCHAIN) $(GOLANGCI_LINT) run $(ANALYZE_ARGS) ./...
-	git diff -U3 --exit-code
-
-
-#----------------------------------------------------------------------------
-# Static analysis - effectively what runs in CI
-#----------------------------------------------------------------------------
-.PHONY: static-code-analysis
-static-code-analysis: verify analyze
 
 #----------------------------------------------------------------------------
 # Info
