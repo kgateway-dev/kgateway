@@ -4,7 +4,7 @@ metadata:
   name: openai-opt
   namespace: ai-test
 spec:
-  targetRef:
+  targetRefs:
   - group: gateway.networking.k8s.io
     kind: HTTPRoute
     name: openai
