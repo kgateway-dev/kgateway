@@ -18,7 +18,8 @@ import (
 )
 
 func TestProcessAIRoutePolicy(t *testing.T) {
-	extprocSettings := &envoy_ext_proc_v3.ExtProcPerRoute{
+	// extproc config from backend plugin
+	backendExtprocSettings := &envoy_ext_proc_v3.ExtProcPerRoute{
 		Override: &envoy_ext_proc_v3.ExtProcPerRoute_Overrides{
 			Overrides: &envoy_ext_proc_v3.ExtProcOverrides{
 				GrpcInitialMetadata: []*envoy_config_core_v3.HeaderValue{},
@@ -26,7 +27,7 @@ func TestProcessAIRoutePolicy(t *testing.T) {
 		},
 	}
 	typedFilterConfig := ir.TypedFilterConfigMap(map[string]proto.Message{
-		wellknown.AIExtProcFilterName: extprocSettings,
+		wellknown.AIExtProcFilterName: backendExtprocSettings,
 	})
 
 	t.Run("sets streaming header for chat streaming route", func(t *testing.T) {
@@ -36,10 +37,10 @@ func TestProcessAIRoutePolicy(t *testing.T) {
 		aiConfig := &v1alpha1.AIRoutePolicy{
 			RouteType: &chatStreamingType,
 		}
+		// extproc and transformation will be set by preProcessAIRoutePolicy
 		aiSecret := &ir.Secret{}
 		aiIR := &AIPolicyIR{
 			AISecret: aiSecret,
-			Extproc:  extprocSettings,
 		}
 
 		// Execute
@@ -49,8 +50,9 @@ func TestProcessAIRoutePolicy(t *testing.T) {
 		require.NoError(t, err)
 
 		// Verify streaming header was added
+		extprocSettingsPostPlugin := typedFilterConfig.GetTypedConfig(wellknown.AIExtProcFilterName).(*envoy_ext_proc_v3.ExtProcPerRoute)
 		found := false
-		for _, header := range extprocSettings.GetOverrides().GrpcInitialMetadata {
+		for _, header := range extprocSettingsPostPlugin.GetOverrides().GrpcInitialMetadata {
 			if header.Key == "x-chat-streaming" && header.Value == "true" {
 				found = true
 				break
@@ -62,27 +64,16 @@ func TestProcessAIRoutePolicy(t *testing.T) {
 		transformation, ok := typedFilterConfig.GetTypedConfig(wellknown.AIPolicyTransformationFilterName).(*envoytransformation.RouteTransformations)
 		assert.True(t, ok)
 		assert.NotNil(t, transformation)
-
-		extprocConfig, ok := typedFilterConfig.GetTypedConfig(wellknown.AIExtProcFilterName).(*envoy_ext_proc_v3.ExtProcPerRoute)
-		assert.True(t, ok)
-		assert.Equal(t, extprocSettings, extprocConfig)
 	})
 
 	t.Run("sets debug logging when environment variable is set", func(t *testing.T) {
 		// Setup
 		plugin := &routePolicyPluginGwPass{}
 		aiConfig := &v1alpha1.AIRoutePolicy{}
-		extprocSettings = &envoy_ext_proc_v3.ExtProcPerRoute{
-			Override: &envoy_ext_proc_v3.ExtProcPerRoute_Overrides{
-				Overrides: &envoy_ext_proc_v3.ExtProcOverrides{
-					GrpcInitialMetadata: []*envoy_config_core_v3.HeaderValue{},
-				},
-			},
-		}
+		// extproc and transformation will be set by preProcessAIRoutePolicy
 		aiSecret := &ir.Secret{}
 		aiIR := &AIPolicyIR{
 			AISecret: aiSecret,
-			Extproc:  extprocSettings,
 		}
 
 		// Set env var
@@ -124,19 +115,11 @@ func TestProcessAIRoutePolicy(t *testing.T) {
 				},
 			},
 		}
-		extprocSettings = &envoy_ext_proc_v3.ExtProcPerRoute{
-			Override: &envoy_ext_proc_v3.ExtProcPerRoute_Overrides{
-				Overrides: &envoy_ext_proc_v3.ExtProcOverrides{
-					GrpcInitialMetadata: []*envoy_config_core_v3.HeaderValue{},
-				},
-			},
-		}
+		// extproc and transformation will be set by preProcessAIRoutePolicy
 		aiSecret := &ir.Secret{}
 		aiIR := &AIPolicyIR{
 			AISecret: aiSecret,
-			Extproc:  extprocSettings,
 		}
-
 		// Execute
 		err := preProcessAIRoutePolicy(aiConfig, aiIR)
 		require.NoError(t, err)
@@ -184,10 +167,10 @@ func TestProcessAIRoutePolicy(t *testing.T) {
 				},
 			},
 		}
+		// extproc and transformation will be set by preProcessAIRoutePolicy
 		aiSecret := &ir.Secret{}
 		aiIR := &AIPolicyIR{
 			AISecret: aiSecret,
-			Extproc:  extprocSettings,
 		}
 
 		// Execute
@@ -249,10 +232,10 @@ func TestProcessAIRoutePolicy(t *testing.T) {
 				},
 			},
 		}
+		// extproc and transformation will be set by preProcessAIRoutePolicy
 		aiSecret := &ir.Secret{}
 		aiIR := &AIPolicyIR{
 			AISecret: aiSecret,
-			Extproc:  extprocSettings,
 		}
 
 		// Execute
