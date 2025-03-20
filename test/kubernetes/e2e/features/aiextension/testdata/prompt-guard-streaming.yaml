@@ -5,7 +5,7 @@ metadata:
   namespace: ai-test
 spec:
   targetRef:
-    group: gateway.networking.k8s.io
+  - group: gateway.networking.k8s.io
     kind: HTTPRoute
     name: openai
   ai:

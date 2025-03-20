@@ -36,8 +36,7 @@ var mockData = map[string]MockResponse{
 	"3c8b0bd3db97733f4a4f1a4214f392b6193577a69da5e908f3d16a74b369024e": {FilePath: "mocks/streaming/gemini_streaming.txt", IsGzip: false},
 	"15044ae8bdb808e1a5cd1aff384464ad5ed9d25f164261b4ea3c287c2153d9e8": {FilePath: "mocks/streaming/vertex_ai_streaming.txt", IsGzip: false},
 	// Prompt Guard:
-	"dd472364fe55fcf75df24cd2b7cb1a32f9f8e4d36477c5ba7960de9f112a2d32": {FilePath: "mocks/promptguard/openai-block.json", IsGzip: false},
-	"4cd00b6c9ee533db32725cee3b64cea658c2fc6e8269696cb9b1f3d4403d021b": {FilePath: "mocks/promptguard/openai-mask.json", IsGzip: false},
+	"dd472364fe55fcf75df24cd2b7cb1a32f9f8e4d36477c5ba7960de9f112a2d32": {FilePath: "mocks/promptguard/openai-mask.json", IsGzip: false},
 	"512b50a42206d1a4cc2d7609e6e34b7a23123234bc6b3d682d04c4e6e1d5d401": {FilePath: "mocks/promptguard/vertex-ai.json", IsGzip: false},
 	// Prompt Guard Streaming:
 	"4e1c1a0b4f697df2fe9ad3ac4898dcffcff881e85f271d63c229d208cb60c59c": {FilePath: "mocks/promptguard-streaming/openai-mask.txt", IsGzip: false},

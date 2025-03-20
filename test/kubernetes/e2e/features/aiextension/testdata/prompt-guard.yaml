@@ -16,11 +16,13 @@ spec:
             statusCode: 400
           regex:
             action: REJECT
-            builtins:
-              - PHONE_NUMBER
-              - EMAIL
-              - SSN
-              - CREDIT_CARD
+            matches:
+              - pattern: "phone"
+#            builtins:
+#              - PHONE_NUMBER
+#              - EMAIL
+#              - SSN
+#              - CREDIT_CARD
         response:
           regex:
             builtins:
@@ -35,8 +37,8 @@ metadata:
   name: vertex-ai-opt
   namespace: ai-test
 spec:
-  targetRef:
-    group: gateway.networking.k8s.io
+  targetRefs:
+  - group: gateway.networking.k8s.io
     kind: HTTPRoute
     name: vertex-ai
   ai:

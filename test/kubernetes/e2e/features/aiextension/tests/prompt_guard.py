@@ -38,7 +38,7 @@ class TestPromptGuard(LLMClient):
                 messages=[
                     {
                         "role": "user",
-                        "content": "Remove the - symbol from the the following sentence. my phone-number is: 212-209-6663",
+                        "content": "Remove the - symbol from the following sentence. my phone-number is: 212-209-6663",
                     }
                 ],
             )
