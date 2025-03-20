@@ -82,7 +82,7 @@ metadata:
   namespace: gwtest
 spec:
   perConnectionBufferLimitBytes: 42000
-  targetRef:
-    group: gateway.networking.k8s.io
+  targetRefs:
+  - group: gateway.networking.k8s.io
     kind: Gateway
     name: http-gw-for-test

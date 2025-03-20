@@ -1,5 +1,5 @@
 WEBHOOK_API_SOURCES = docs/export_openapi.py samples/app.py ai_extension/guardrails/api.py
-TEST_DIR = ../../test/kubernetes/e2e/features/aiextension/
+TEST_DIR = ../test/kubernetes/e2e/features/aiextension/
 
 webhooks-openapi.yaml: $(WEBHOOK_API_SOURCES)
 	python docs/export_openapi.py app:app --app-dir samples/ --out docs/$@

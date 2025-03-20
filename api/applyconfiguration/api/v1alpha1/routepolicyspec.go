@@ -5,9 +5,9 @@ package v1alpha1
 // RoutePolicySpecApplyConfiguration represents a declarative configuration of the RoutePolicySpec type for use
 // with apply.
 type RoutePolicySpecApplyConfiguration struct {
-	TargetRef      *LocalPolicyTargetReferenceApplyConfiguration `json:"targetRef,omitempty"`
-	AI             *AIRoutePolicyApplyConfiguration              `json:"ai,omitempty"`
-	Transformation *TransformationPolicyApplyConfiguration       `json:"transformation,omitempty"`
+	TargetRefs     []LocalPolicyTargetReferenceApplyConfiguration `json:"targetRefs,omitempty"`
+	AI             *AIRoutePolicyApplyConfiguration               `json:"ai,omitempty"`
+	Transformation *TransformationPolicyApplyConfiguration        `json:"transformation,omitempty"`
 }
 
 // RoutePolicySpecApplyConfiguration constructs a declarative configuration of the RoutePolicySpec type for use with
@@ -16,11 +16,16 @@ func RoutePolicySpec() *RoutePolicySpecApplyConfiguration {
 	return &RoutePolicySpecApplyConfiguration{}
 }
 
-// WithTargetRef sets the TargetRef field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the TargetRef field is set to the value of the last call.
-func (b *RoutePolicySpecApplyConfiguration) WithTargetRef(value *LocalPolicyTargetReferenceApplyConfiguration) *RoutePolicySpecApplyConfiguration {
-	b.TargetRef = value
+// WithTargetRefs adds the given value to the TargetRefs field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the TargetRefs field.
+func (b *RoutePolicySpecApplyConfiguration) WithTargetRefs(values ...*LocalPolicyTargetReferenceApplyConfiguration) *RoutePolicySpecApplyConfiguration {
+	for i := range values {
+		if values[i] == nil {
+			panic("nil value passed to WithTargetRefs")
+		}
+		b.TargetRefs = append(b.TargetRefs, *values[i])
+	}
 	return b
 }
 
