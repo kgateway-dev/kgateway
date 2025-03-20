@@ -2,7 +2,6 @@ package waypoint
 
 import (
 	"net/http"
-	"testing"
 
 	"github.com/onsi/gomega/gstruct"
 	"istio.io/api/label"
