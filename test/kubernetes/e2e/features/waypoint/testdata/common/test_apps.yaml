@@ -205,7 +205,7 @@ spec:
     name: http
     protocol: HTTP
     targetPort: 5678
-  resolution: DNS
+  resolution: STATIC
   workloadSelector:
     labels:
       app: svc-b
@@ -223,7 +223,7 @@ spec:
     name: http
     protocol: HTTP
     targetPort: 5678
-  resolution: DNS
+  resolution: STATIC
   workloadSelector:
     labels:
       app: svc-b
