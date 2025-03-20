@@ -5,15 +5,19 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
-// not sure why i need to copy this; codegen fails if i dont
+// Select the object to attach the policy to.
+// The object must be in the same namespace as the policy.
+// You can target only one object at a time.
 type LocalPolicyTargetReference struct {
-	// Group is the group of the target resource.
+	// The API group of the target resource.
+	// For Kubernetes Gateway API resources, the group is `gateway.networking.k8s.io`.
 	Group gwv1.Group `json:"group"`
 
-	// Kind is kind of the target resource.
+	// The API kind of the target resource,
+	// such as Gateway or HTTPRoute.
 	Kind gwv1.Kind `json:"kind"`
 
-	// Name is the name of the target resource.
+	// The name of the target resource.
 	Name gwv1.ObjectName `json:"name"`
 }
 
