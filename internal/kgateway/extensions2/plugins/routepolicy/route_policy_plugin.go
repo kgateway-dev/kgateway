@@ -7,18 +7,21 @@ import (
 	"strconv"
 	"time"
 
+	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	exteniondynamicmodulev3 "github.com/envoyproxy/go-control-plane/envoy/extensions/dynamic_modules/v3"
 	dynamicmodulesv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/dynamic_modules/v3"
+	envoy_ext_proc_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_proc/v3"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
-	"google.golang.org/protobuf/types/known/durationpb"
+	skubeclient "istio.io/istio/pkg/config/schema/kubeclient"
+	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-
-	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
-	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
-	envoy_ext_proc_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_proc/v3"
+	"k8s.io/apimachinery/pkg/watch"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
@@ -28,17 +31,19 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
 
 	// TODO(nfuden): remove once rustformations are able to be used in a production environment
 	transformationpb "github.com/solo-io/envoy-gloo/go/config/filter/http/transformation/v2"
 	"github.com/solo-io/go-utils/contextutils"
 )
 
-const transformationFilterNamePrefix = "transformation"
-const rustformationFilterNamePrefix = "dynamic_modules/simple_mutations"
-const metadataRouteTransformation = "transformation/helper"
+const (
+	transformationFilterNamePrefix = "transformation"
+	rustformationFilterNamePrefix  = "dynamic_modules/simple_mutations"
+	metadataRouteTransformation    = "transformation/helper"
+)
 
 type routePolicy struct {
 	ct       time.Time
@@ -53,7 +58,6 @@ type ExtprocIR struct {
 }
 
 type routeSpecIr struct {
-	timeout                    *durationpb.Duration
 	AI                         *v1alpha1.AIRoutePolicy
 	transform                  *anypb.Any
 	rustformation              *anypb.Any
@@ -74,9 +78,6 @@ func (d *routePolicy) Equals(in any) bool {
 	if d.ct != d2.ct {
 		return false
 	}
-	if !proto.Equal(d.spec.timeout, d2.spec.timeout) {
-		return false
-	}
 	if !proto.Equal(d.spec.transform, d2.spec.transform) {
 		return false
 	}
@@ -91,6 +92,10 @@ func (d *routePolicy) Equals(in any) bool {
 	}
 
 	if !proto.Equal(d.ExtProc.ExtProc, d2.ExtProc.ExtProc) {
+		return false
+	}
+
+	if !d.spec.AI.Equals(d2.spec.AI) {
 		return false
 	}
 
@@ -112,16 +117,26 @@ func (p *routePolicyPluginGwPass) ApplyHCM(ctx context.Context, pCtx *ir.HcmCont
 
 var useRustformations bool
 
+func registerTypes(ourCli versioned.Interface) {
+	skubeclient.Register[*v1alpha1.RoutePolicy](
+		wellknown.RoutePolicyGVR,
+		wellknown.RoutePolicyGVK,
+		func(c skubeclient.ClientGetter, namespace string, o metav1.ListOptions) (runtime.Object, error) {
+			return ourCli.GatewayV1alpha1().RoutePolicies(namespace).List(context.Background(), o)
+		},
+		func(c skubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
+			return ourCli.GatewayV1alpha1().RoutePolicies(namespace).Watch(context.Background(), o)
+		},
+	)
+}
+
 func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensionsplug.Plugin {
 	errors := []error{}
+	registerTypes(commoncol.OurClient)
+
 	useRustformations = commoncol.Settings.UseRustFormations // stash the state of the env setup for rustformation usage
 
-	col := krtutil.SetupCollectionDynamic[v1alpha1.RoutePolicy](
-		ctx,
-		commoncol.Client,
-		v1alpha1.SchemeGroupVersion.WithResource("routepolicies"),
-		commoncol.KrtOpts.ToOptions("RoutePolicy")...,
-	)
+	col := krt.WrapClient(kclient.New[*v1alpha1.RoutePolicy](commoncol.Client), commoncol.KrtOpts.ToOptions("RoutePolicy")...)
 	gk := wellknown.RoutePolicyGVK.GroupKind()
 	translate := buildTranslateFunc(ctx, commoncol.Secrets, commoncol)
 	// RoutePolicy IR will have TypedConfig -> implement backendroute method to add prompt guard, etc.
@@ -138,11 +153,11 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 			errors = append(errors, err)
 			return nil
 		}
-		var pol = &ir.PolicyWrapper{
+		pol := &ir.PolicyWrapper{
 			ObjectSource: objSrc,
 			Policy:       policyCR,
 			PolicyIR:     policyIr,
-			TargetRefs:   convert(policyCR.Spec.TargetRef),
+			TargetRefs:   convert(policyCR.Spec.TargetRefs),
 			Errors:       errors,
 		}
 		return pol
@@ -151,7 +166,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 	return extensionsplug.Plugin{
 		ContributesPolicies: map[schema.GroupKind]extensionsplug.PolicyPlugin{
 			wellknown.RoutePolicyGVK.GroupKind(): {
-				//AttachmentPoints: []ir.AttachmentPoints{ir.HttpAttachmentPoint},
+				// AttachmentPoints: []ir.AttachmentPoints{ir.HttpAttachmentPoint},
 				NewGatewayTranslationPass: NewGatewayTranslationPass,
 				Policies:                  policyCol,
 			},
@@ -159,24 +174,28 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 	}
 }
 
-func convert(targetRef v1alpha1.LocalPolicyTargetReference) []ir.PolicyTargetRef {
-	return []ir.PolicyTargetRef{{
-		Kind:  string(targetRef.Kind),
-		Name:  string(targetRef.Name),
-		Group: string(targetRef.Group),
-	}}
+func convert(targetRefs []v1alpha1.LocalPolicyTargetReference) []ir.PolicyRef {
+	refs := make([]ir.PolicyRef, 0, len(targetRefs))
+	for _, targetRef := range targetRefs {
+		refs = append(refs, ir.PolicyRef{
+			Kind:  string(targetRef.Kind),
+			Name:  string(targetRef.Name),
+			Group: string(targetRef.Group),
+		})
+	}
+	return refs
 }
 
 func NewGatewayTranslationPass(ctx context.Context, tctx ir.GwTranslationCtx) ir.ProxyTranslationPass {
 	return &routePolicyPluginGwPass{}
 }
+
 func (p *routePolicy) Name() string {
 	return "routepolicies"
 }
 
 // called 1 time for each listener
 func (p *routePolicyPluginGwPass) ApplyListenerPlugin(ctx context.Context, pCtx *ir.ListenerContext, out *envoy_config_listener_v3.Listener) {
-
 }
 
 func (p *routePolicyPluginGwPass) ApplyVhostPlugin(ctx context.Context, pCtx *ir.VirtualHostContext, out *envoy_config_route_v3.VirtualHost) {
@@ -187,9 +206,6 @@ func (p *routePolicyPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.Ro
 	policy, ok := pCtx.Policy.(*routePolicy)
 	if !ok {
 		return nil
-	}
-	if policy.spec.timeout != nil && outputRoute.GetRoute() != nil {
-		outputRoute.GetRoute().Timeout = policy.spec.timeout
 	}
 
 	if policy.spec.transform != nil {
@@ -243,7 +259,6 @@ func (p *routePolicyPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.Ro
 		setmetaTransform := &transformationpb.RouteTransformations{
 			Transformations: []*transformationpb.RouteTransformations_RouteTransformation{
 				{
-
 					Match: &transformationpb.RouteTransformations_RouteTransformation_RequestMatch_{
 						RequestMatch: reqm,
 					},
@@ -316,23 +331,22 @@ func (p *routePolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.Filter
 		filters = append(filters, extprocFilters...)
 	}
 
-	if p.setTransformationInChain {
+	if p.setTransformationInChain && !useRustformations {
 		// TODO(nfuden): support stages such as early
 		// first register classic
 		filters = append(filters, plugins.MustNewStagedFilter(transformationFilterNamePrefix,
 			&transformationpb.FilterTransformations{},
 			plugins.BeforeStage(plugins.AcceptedStage)))
-
+	}
+	if p.setTransformationInChain && useRustformations {
 		// ---------------
 		// | END CLASSIC |
 		// ---------------
-
 		// TODO(nfuden/yuvalk): how to do route level correctly probably contribute to dynamic module upstream
 		// smash together configuration
 		filterRouteHashConfig := map[string]string{}
 
 		for k, v := range p.rustformationStash {
-			fmt.Println("k", k, "v", v)
 			filterRouteHashConfig[k] = v
 		}
 
@@ -377,10 +391,6 @@ func buildTranslateFunc(ctx context.Context, secrets *krtcollections.SecretIndex
 
 		outSpec := routeSpecIr{}
 
-		if policyCR.Spec.Timeout > 0 {
-			outSpec.timeout = durationpb.New(time.Second * time.Duration(policyCR.Spec.Timeout))
-		}
-
 		// Pass along the AI spec as is
 		outSpec.AI = policyCR.Spec.AI
 		// Augment with AI secrets as needed
@@ -413,7 +423,8 @@ func buildTranslateFunc(ctx context.Context, secrets *krtcollections.SecretIndex
 // will log an error if the secret is needed but not found
 func aiSecretForSpec(
 	ctx context.Context, secrets *krtcollections.SecretIndex,
-	krtctx krt.HandlerContext, policyCR *v1alpha1.RoutePolicy) *ir.Secret {
+	krtctx krt.HandlerContext, policyCR *v1alpha1.RoutePolicy,
+) *ir.Secret {
 	if policyCR.Spec.AI == nil ||
 		policyCR.Spec.AI.PromptGuard == nil ||
 		policyCR.Spec.AI.PromptGuard.Request == nil ||

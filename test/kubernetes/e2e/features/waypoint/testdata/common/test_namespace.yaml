@@ -1,0 +1,7 @@
+# Namespace with ambient enabled
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: waypoint-test-ns
+  labels:
+    istio.io/dataplane-mode: ambient

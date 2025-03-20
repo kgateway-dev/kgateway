@@ -25,6 +25,9 @@ type Settings struct {
 	XdsServicePort uint32 `split_words:"true" default:"9977"`
 
 	UseRustFormations bool `split_words:"true" default:"false"`
+
+	// EnableInferExt defines whether to enable/disable support for Gateway API inference extension.
+	EnableInferExt bool `split_words:"true"`
 }
 
 // BuildSettings returns a zero-valued Settings obj if error is encountered when parsing env

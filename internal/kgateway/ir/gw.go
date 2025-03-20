@@ -13,33 +13,47 @@ type BackendInit struct {
 	InitBackend func(ctx context.Context, in BackendObjectIR, out *envoy_config_cluster_v3.Cluster)
 }
 
-type PolicyTargetRef struct {
+type PolicyRef struct {
 	Group       string
 	Kind        string
 	Name        string
 	SectionName string
 }
 
+type AttachedPolicyRef struct {
+	Group string
+	Kind  string
+	Name  string
+	// policies are local namespace only, but we need this here for usage when
+	// processing attached policy reports
+	Namespace   string
+	SectionName string
+}
+
 type PolicyAtt struct {
+	// GroupKind is the GK of the original policy object
 	GroupKind schema.GroupKind
 	// original object. ideally with structural errors removed.
 	// Opaque to us other than metadata.
 	PolicyIr PolicyIR
 
-	// policy target ref that cause the attachment (can be used to report status correctly). nil if extension ref
-	PolicyTargetRef *PolicyTargetRef
+	// PolicyRef is a ref to the original policy that is attached (can be used to report status correctly).
+	// nil if the attachment was done via extension ref
+	PolicyRef *AttachedPolicyRef
+
+	Errors []error
 }
 
 func (c PolicyAtt) Obj() PolicyIR {
 	return c.PolicyIr
 }
 
-func (c PolicyAtt) TargetRef() *PolicyTargetRef {
-	return c.PolicyTargetRef
+func (c PolicyAtt) TargetRef() *AttachedPolicyRef {
+	return c.PolicyRef
 }
 
 func (c PolicyAtt) Equals(in PolicyAtt) bool {
-	return c.GroupKind == in.GroupKind && ptrEquals(c.PolicyTargetRef, in.PolicyTargetRef) && c.PolicyIr.Equals(in.PolicyIr)
+	return c.GroupKind == in.GroupKind && ptrEquals(c.PolicyRef, in.PolicyRef) && c.PolicyIr.Equals(in.PolicyIr)
 }
 
 func ptrEquals[T comparable](a, b *T) bool {

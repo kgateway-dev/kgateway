@@ -632,10 +632,12 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: compress
       type:
         scalar: boolean
-    - name: targetRef
+    - name: targetRefs
       type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LocalPolicyTargetReference
-      default: {}
+        list:
+          elementType:
+            namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LocalPolicyTargetReference
+          elementRelationship: atomic
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.HeaderFilter
   map:
     fields:
@@ -787,10 +789,12 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: perConnectionBufferLimitBytes
       type:
         scalar: numeric
-    - name: targetRef
+    - name: targetRefs
       type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LocalPolicyTargetReference
-      default: {}
+        list:
+          elementType:
+            namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LocalPolicyTargetReference
+          elementRelationship: atomic
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LocalPolicyTargetReference
   map:
     fields:
@@ -1052,13 +1056,12 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: extProc
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtProcPolicy
-    - name: targetRef
+    - name: targetRefs
       type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LocalPolicyTargetReference
-      default: {}
-    - name: timeout
-      type:
-        scalar: numeric
+        list:
+          elementType:
+            namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LocalPolicyTargetReference
+          elementRelationship: atomic
     - name: transformation
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.TransformationPolicy

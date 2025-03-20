@@ -80,6 +80,10 @@ const (
 
 	// ClusterName is the name of the cluster used for e2e tests
 	ClusterName = "CLUSTER_NAME"
+
+	// This can be used to override the default KubeCtx created.
+	// The default KubeCtx used is "kind-<ClusterName>"
+	KubeCtx = "KUBE_CTX"
 )
 
 // ShouldTearDown returns true if any assets that were created before a test (for example Gloo being installed)

@@ -1,5 +1,3 @@
-//go:build ignore
-
 package cluster
 
 import (
@@ -41,7 +39,7 @@ func InstallMinimalIstio(
 	operatorFileContent := generateIstioOperatorFileContent("", minimalProfile)
 	operatorFile := filepath.Join(os.TempDir(), "istio-operator.yaml")
 
-	err := os.WriteFile(operatorFile, []byte(operatorFileContent), 0644)
+	err := os.WriteFile(operatorFile, []byte(operatorFileContent), 0o644)
 	if err != nil {
 		return fmt.Errorf("failed to write operator file: %w", err)
 	}
@@ -56,7 +54,7 @@ func InstallRevisionedIstio(
 	operatorFileContent := generateIstioOperatorFileContent(revision, profile)
 	operatorFile := filepath.Join(os.TempDir(), "istio-operator.yaml")
 
-	err := os.WriteFile(operatorFile, []byte(operatorFileContent), 0644)
+	err := os.WriteFile(operatorFile, []byte(operatorFileContent), 0o644)
 	if err != nil {
 		return fmt.Errorf("failed to write operator file: %w", err)
 	}
@@ -87,7 +85,8 @@ spec:
 
 func installIstioOperator(
 	ctx context.Context,
-	istioctlBinary, kubeContext, operatorFile string) error {
+	istioctlBinary, kubeContext, operatorFile string,
+) error {
 	if testutils.ShouldSkipIstioInstall() {
 		return nil
 	}
@@ -132,7 +131,7 @@ func downloadIstio(ctx context.Context, version string) (string, error) {
 	if fileInfo != nil {
 		return binaryLocation, nil
 	}
-	if err := os.MkdirAll(binaryDir, 0755); err != nil {
+	if err := os.MkdirAll(binaryDir, 0o755); err != nil {
 		return "", eris.Wrap(err, "create directory")
 	}
 
@@ -157,7 +156,7 @@ func downloadIstio(ctx context.Context, version string) (string, error) {
 			return "", eris.Wrapf(err, "download and extract istioctl, cmd: %s", cmd.Args)
 		}
 		// Change permissions
-		if err := os.Chmod(binaryLocation, 0755); err != nil {
+		if err := os.Chmod(binaryLocation, 0o755); err != nil {
 			return "", eris.Wrap(err, "change permissions")
 		}
 		return binaryLocation, nil

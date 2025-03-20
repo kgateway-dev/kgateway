@@ -27,6 +27,7 @@ import (
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	discovery_v3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	"github.com/go-logr/zapr"
+	"github.com/google/go-cmp/cmp"
 	"github.com/solo-io/go-utils/contextutils"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -35,6 +36,7 @@ import (
 	"google.golang.org/grpc/grpclog"
 	jsonpb "google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/structpb"
 	istiokube "istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/krt"
@@ -136,6 +138,7 @@ func TestScenarios(t *testing.T) {
 	}
 	st.EnableIstioIntegration = true
 	st.EnableAutoMtls = true
+	st.EnableInferExt = true
 
 	runScenario(t, "testdata", st)
 }
@@ -213,7 +216,7 @@ spec:
     response:
       set:
       - name: x-solo-response
-        value: '{{ request_header("x-solo-request") }}' 
+        value: '{{ request_header("x-solo-request") }}'
       remove:
       - x-solo-request`, `apiVersion: gateway.networking.k8s.io/v1beta1
 kind: HTTPRoute
@@ -248,7 +251,7 @@ spec:
     response:
       set:
       - name: x-solo-response
-        value: '{{ request_header("x-solo-request123") }}' 
+        value: '{{ request_header("x-solo-request123") }}'
       remove:
       - x-solo-request321`)
 
@@ -294,7 +297,7 @@ func runScenario(t *testing.T, scenarioDir string, globalSettings *settings.Sett
 					t.Cleanup(func() {
 						writer.set(parentT)
 					})
-					//sadly tests can't run yet in parallel, as kgateway will add all the k8s services as clusters. this means
+					// sadly tests can't run yet in parallel, as kgateway will add all the k8s services as clusters. this means
 					// that we get test pollution.
 					// once we change it to only include the ones in the proxy, we can re-enable this
 					//				t.Parallel()
@@ -310,7 +313,8 @@ func setupEnvTestAndRun(t *testing.T, globalSettings *settings.Settings, run fun
 	kdbg *krt.DebugHandler,
 	client istiokube.CLIClient,
 	xdsPort int,
-)) {
+),
+) {
 	proxy_syncer.UseDetailedUnmarshalling = true
 	writer.set(t)
 
@@ -388,7 +392,7 @@ func setupEnvTestAndRun(t *testing.T, globalSettings *settings.Settings, run fun
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		setup.StartKgatewayWithConfig(ctx, setupOpts, cfg, builder, nil, nil)
+		setup.StartKgatewayWithConfig(ctx, setupOpts, cfg, builder, nil)
 	}()
 	// give kgateway time to initialize so we don't get
 	// "kgateway not initialized" error
@@ -419,13 +423,13 @@ func testScenario(
 		err = nil
 	}
 	if err != nil {
-		t.Fatalf("failed to read file: %v", err)
+		t.Fatalf("failed to read file %s: %v", fout, err)
 	}
 
 	var expectedXdsDump xdsDump
 	err = expectedXdsDump.FromYaml(ya)
 	if err != nil {
-		t.Fatalf("failed to read yaml: %v", err)
+		t.Fatalf("failed to read yaml %s: %v", fout, err)
 	}
 	const gwname = "http-gw-for-test"
 	testgwname := "http-" + filepath.Base(fpre)
@@ -438,7 +442,7 @@ func testScenario(
 	testyaml := strings.ReplaceAll(string(testyamlbytes), gwname, testgwname)
 
 	yamlfile := filepath.Join(t.TempDir(), "test.yaml")
-	os.WriteFile(yamlfile, []byte(testyaml), 0644)
+	os.WriteFile(yamlfile, []byte(testyaml), 0o644)
 
 	err = client.ApplyYAMLFiles("", yamlfile)
 
@@ -482,7 +486,7 @@ func testScenario(
 		if err != nil {
 			t.Fatalf("failed to serialize xdsDump: %v", err)
 		}
-		os.WriteFile(fout, d, 0644)
+		os.WriteFile(fout, d, 0o644)
 		t.Fatal("wrote out file - nothing to test")
 	}
 	dump.Compare(t, expectedXdsDump)
@@ -533,7 +537,8 @@ func newXdsDumper(t *testing.T, ctx context.Context, xdsPort int, gwname string)
 		dr: &discovery_v3.DiscoveryRequest{Node: &envoycore.Node{
 			Id: "gateway.gwtest",
 			Metadata: &structpb.Struct{
-				Fields: map[string]*structpb.Value{"role": {Kind: &structpb.Value_StringValue{StringValue: fmt.Sprintf("kgateway-kube-gateway-api~%s~%s", "gwtest", gwname)}}}},
+				Fields: map[string]*structpb.Value{"role": {Kind: &structpb.Value_StringValue{StringValue: fmt.Sprintf("kgateway-kube-gateway-api~%s~%s", "gwtest", gwname)}}},
+			},
 		}},
 	}
 
@@ -761,8 +766,12 @@ func (x *xdsDump) Compare(t *testing.T, other xdsDump) {
 			t.Errorf("route %v not found", c.Name)
 			continue
 		}
-		if !proto.Equal(c, otherc) {
-			t.Errorf("route %v not equal: %v vs %v", c.Name, c, otherc)
+
+		// Ignore VirtualHost ordering
+		vhostFn := func(x, y *envoy_config_route_v3.VirtualHost) bool { return x.Name < y.Name }
+		if diff := cmp.Diff(c, otherc, protocmp.Transform(),
+			protocmp.SortRepeated(vhostFn)); diff != "" {
+			t.Errorf("route %v not equal!\ndiff:\b%s\n", c.Name, diff)
 		}
 	}
 

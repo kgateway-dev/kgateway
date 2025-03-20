@@ -4,5 +4,10 @@ import (
 	"embed"
 )
 
-//go:embed all:kgateway
-var KgatewayHelmChart embed.FS
+var (
+	//go:embed all:kgateway
+	KgatewayHelmChart embed.FS
+
+	//go:embed all:inference-extension
+	InferenceExtensionHelmChart embed.FS
+)

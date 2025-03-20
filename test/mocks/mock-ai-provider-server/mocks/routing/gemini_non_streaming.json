@@ -1,0 +1,47 @@
+{
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "A function, a call, a mirrored embrace,\nRecursion, a dance in a finite space.\nA puzzle within, a loop in disguise,\nUnraveling layers, before your own eyes.\n\nA problem so large, it seems hard to solve,\nBut break it in pieces, a smaller evolve.\nEach piece a reflection, a call to its kin,\nA recursive journey, where the answer begins.\n\nA base case defines, the end of the road,\nWhere recursion halts, the solution bestowed.\nLike fractals, it branches, a pattern so deep,\nFrom a single call, a whole picture to keep.\n\nFrom Fibonacci's sequence, to trees in the code,\nRecursion unfolds, a story that's told.\nA power to conquer, a logic so neat,\nA symphony of calls, a beautiful feat.\n\nSo embrace the recursion, a powerful tool,\nWith elegance and grace, it can make you feel cool.\nA problem you face, can be broken in half,\nBy recursion's embrace, it's a magical laugh."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0,
+        "safetyRatings": [
+          {
+            "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+            "probability": "NEGLIGIBLE"
+          },
+          {
+            "category": "HARM_CATEGORY_HATE_SPEECH",
+            "probability": "NEGLIGIBLE"
+          },
+          {
+            "category": "HARM_CATEGORY_HARASSMENT",
+            "probability": "NEGLIGIBLE"
+          },
+          {
+            "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+            "probability": "NEGLIGIBLE"
+          }
+        ]
+      }
+    ],
+    "usageMetadata": {
+      "promptTokenCount": 13,
+      "candidatesTokenCount": 228,
+      "totalTokenCount": 241,
+      "promptTokensDetails": [
+        {
+          "modality": "TEXT",
+          "tokenCount": 13
+        }
+      ]
+    },
+    "modelVersion": "gemini-1.5-flash-001"
+  }
+  

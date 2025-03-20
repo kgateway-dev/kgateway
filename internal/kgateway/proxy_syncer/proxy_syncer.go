@@ -27,11 +27,9 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
-	extensions "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
-	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
+	plug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/irtranslator"
@@ -51,7 +49,7 @@ type ProxySyncer struct {
 	mgr        manager.Manager
 	commonCols *common.CommonCollections
 	translator *translator.CombinedTranslator
-	plugins    extensionsplug.Plugin
+	plugins    plug.Plugin
 
 	istioClient     kube.Client
 	proxyTranslator ProxyTranslator
@@ -59,6 +57,7 @@ type ProxySyncer struct {
 	uniqueClients krt.Collection[ir.UniqlyConnectedClient]
 
 	statusReport            krt.Singleton[report]
+	backendPolicyReport     krt.Singleton[GKPolicyReport]
 	mostXdsSnapshots        krt.Collection[GatewayXdsResources]
 	perclientSnapCollection krt.Collection[XdsSnapWrapper]
 
@@ -83,10 +82,12 @@ type GatewayXdsResources struct {
 func (r GatewayXdsResources) ResourceName() string {
 	return xds.OwnerNamespaceNameID(wellknown.GatewayApiProxyValue, r.Namespace, r.Name)
 }
+
 func (r GatewayXdsResources) Equals(in GatewayXdsResources) bool {
 	return r.NamespacedName == in.NamespacedName && report{r.reports}.Equals(report{in.reports}) && r.ClustersHash == in.ClustersHash &&
 		r.Routes.Version == in.Routes.Version && r.Listeners.Version == in.Listeners.Version
 }
+
 func sliceToResourcesHash[T proto.Message](slice []T) ([]envoycachetypes.ResourceWithTTL, uint64) {
 	var slicePb []envoycachetypes.ResourceWithTTL
 	var resourcesHash uint64
@@ -128,12 +129,10 @@ func NewProxySyncer(
 	mgr manager.Manager,
 	client kube.Client,
 	uniqueClients krt.Collection[ir.UniqlyConnectedClient],
-	extensionsFactory extensions.K8sGatewayExtensionsFactory,
+	mergedPlugins plug.Plugin,
 	commonCols *common.CommonCollections,
 	xdsCache envoycache.SnapshotCache,
 ) *ProxySyncer {
-	plugins := extensionsFactory(ctx, commonCols)
-
 	return &ProxySyncer{
 		controllerName:  controllerName,
 		commonCols:      commonCols,
@@ -141,8 +140,8 @@ func NewProxySyncer(
 		istioClient:     client,
 		proxyTranslator: NewProxyTranslator(xdsCache),
 		uniqueClients:   uniqueClients,
-		translator:      translator.NewCombinedTranslator(ctx, plugins, commonCols),
-		plugins:         plugins,
+		translator:      translator.NewCombinedTranslator(ctx, mergedPlugins, commonCols),
+		plugins:         mergedPlugins,
 	}
 }
 
@@ -179,28 +178,16 @@ func (r report) Equals(in report) bool {
 	return true
 }
 
-// Note: isOurGw is shared between us and the deployer.
-func (s *ProxySyncer) Init(ctx context.Context, isOurGw func(gw *gwv1.Gateway) bool, krtopts krtutil.KrtOptions) error {
+func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) error {
 	ctx = contextutils.WithLogger(ctx, "k8s-gw-proxy-syncer")
 	logger := contextutils.LoggerFrom(ctx)
 
-	kubeGateways, routes, backendIndex, endpointIRs := krtcollections.InitCollections(
-		ctx,
-		s.plugins,
-		s.istioClient,
-		isOurGw,
-		s.commonCols.RefGrants,
-		krtopts,
-	)
+	// all backends with policies attached in a single collection
+	finalBackends := krt.JoinCollection(s.commonCols.BackendIndex.Backends(), krtopts.ToOptions("FinalUpstreams")...)
 
-	finalBackends := krt.JoinCollection(backendIndex.Backends(), krtopts.ToOptions("FinalUpstreams")...)
+	s.translator.Init(ctx)
 
-	// add the upstreams to the common collections, so they are available for policies.
-	s.commonCols.Backends = backendIndex
-
-	s.translator.Init(ctx, routes)
-
-	s.mostXdsSnapshots = krt.NewCollection(kubeGateways.Gateways, func(kctx krt.HandlerContext, gw ir.Gateway) *GatewayXdsResources {
+	s.mostXdsSnapshots = krt.NewCollection(s.commonCols.GatewayIndex.Gateways, func(kctx krt.HandlerContext, gw ir.Gateway) *GatewayXdsResources {
 		logger.Debugf("building proxy for kube gw %s version %s", client.ObjectKeyFromObject(gw.Obj), gw.Obj.GetResourceVersion())
 
 		xdsSnap, rm := s.translator.TranslateGateway(kctx, ctx, gw)
@@ -215,7 +202,7 @@ func (s *ProxySyncer) Init(ctx context.Context, isOurGw func(gw *gwv1.Gateway) b
 		logger.Desugar(),
 		krtopts,
 		s.uniqueClients,
-		endpointIRs,
+		s.commonCols.Endpoints,
 		s.translator.TranslateEndpoints,
 	)
 	clustersPerClient := NewPerClientEnvoyClusters(
@@ -225,6 +212,7 @@ func (s *ProxySyncer) Init(ctx context.Context, isOurGw func(gw *gwv1.Gateway) b
 		finalBackends,
 		s.uniqueClients,
 	)
+
 	s.perclientSnapCollection = snapshotPerClient(
 		logger.Desugar(),
 		krtopts,
@@ -233,6 +221,12 @@ func (s *ProxySyncer) Init(ctx context.Context, isOurGw func(gw *gwv1.Gateway) b
 		epPerClient,
 		clustersPerClient,
 	)
+
+	s.backendPolicyReport = krt.NewSingleton(func(kctx krt.HandlerContext) *GKPolicyReport {
+		backends := krt.Fetch(kctx, finalBackends)
+		gkPolReport := generateBackendPolicyReport(backends)
+		return gkPolReport
+	}, krtopts.ToOptions("BackendsPolicyReport")...)
 
 	// as proxies are created, they also contain a reportMap containing status for the Gateway and associated xRoutes (really parentRefs)
 	// here we will merge reports that are per-Proxy to a singleton Report used to persist to k8s on a timer
@@ -285,15 +279,11 @@ func (s *ProxySyncer) Init(ctx context.Context, isOurGw func(gw *gwv1.Gateway) b
 	})
 
 	s.waitForSync = []cache.InformerSynced{
-		endpointIRs.HasSynced,
-		endpointIRs.HasSynced,
-		backendIndex.HasSynced,
+		s.commonCols.HasSynced,
 		finalBackends.HasSynced,
-		kubeGateways.Gateways.HasSynced,
 		s.perclientSnapCollection.HasSynced,
 		s.mostXdsSnapshots.HasSynced,
 		s.plugins.HasSynced,
-		routes.HasSynced,
 		s.translator.HasSynced,
 	}
 	return nil
@@ -302,12 +292,9 @@ func (s *ProxySyncer) Init(ctx context.Context, isOurGw func(gw *gwv1.Gateway) b
 func (s *ProxySyncer) Start(ctx context.Context) error {
 	logger := contextutils.LoggerFrom(ctx)
 	logger.Infof("starting %s Proxy Syncer", s.controllerName)
-	// latestReport will be constantly updated to contain the merged status report for Kube Gateway status
-	// when timer ticks, we will use the state of the mergedReports at that point in time to sync the status to k8s
-	latestReportQueue := utils.NewAsyncQueue[reports.ReportMap]()
-	logger.Infof("waiting for cache to sync")
 
 	// wait for krt collections to sync
+	logger.Infof("waiting for cache to sync")
 	s.istioClient.WaitForCacheSync(
 		"kube gw proxy syncer",
 		ctx.Done(),
@@ -318,10 +305,13 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 	if !s.mgr.GetCache().WaitForCacheSync(ctx) {
 		return errors.New("kube gateway sync loop waiting for all caches to sync failed")
 	}
-
 	logger.Infof("caches warm!")
 
 	// caches are warm, now we can do registrations
+
+	// latestReport will be constantly updated to contain the merged status report for Kube Gateway status
+	// when timer ticks, we will use the state of the mergedReports at that point in time to sync the status to k8s
+	latestReportQueue := utils.NewAsyncQueue[reports.ReportMap]()
 	s.statusReport.Register(func(o krt.Event[report]) {
 		if o.Event == controllers.EventDelete {
 			// TODO: handle garbage collection (see: https://github.com/solo-io/solo-projects/issues/7086)
@@ -329,6 +319,33 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 		}
 		latestReportQueue.Enqueue(o.Latest().reportMap)
 	})
+	go func() {
+		for {
+			latestReport, err := latestReportQueue.Dequeue(ctx)
+			if err != nil {
+				return
+			}
+			s.syncGatewayStatus(ctx, latestReport)
+			s.syncRouteStatus(ctx, latestReport)
+		}
+	}()
+
+	latestBePolReportQueue := utils.NewAsyncQueue[GKPolicyReport]()
+	s.backendPolicyReport.Register(func(o krt.Event[GKPolicyReport]) {
+		if o.Event == controllers.EventDelete {
+			return
+		}
+		latestBePolReportQueue.Enqueue(o.Latest())
+	})
+	go func() {
+		for {
+			latestReport, err := latestBePolReportQueue.Dequeue(ctx)
+			if err != nil {
+				return
+			}
+			s.syncBackendPolicyStatus(ctx, latestReport)
+		}
+	}()
 
 	go func() {
 		timer := time.NewTicker(time.Second * 1)
@@ -376,16 +393,6 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 		}
 	}, true)
 
-	go func() {
-		for {
-			latestReport, err := latestReportQueue.Dequeue(ctx)
-			if err != nil {
-				return
-			}
-			s.syncGatewayStatus(ctx, latestReport)
-			s.syncRouteStatus(ctx, latestReport)
-		}
-	}()
 	<-ctx.Done()
 	return nil
 }
@@ -524,6 +531,20 @@ func (s *ProxySyncer) syncGatewayStatus(ctx context.Context, rm reports.ReportMa
 	}
 	duration := stopwatch.Stop(ctx)
 	logger.Debugf("synced gw status for %d gateways in %s", len(rm.Gateways), duration.String())
+}
+
+// syncGatewayStatus will build and update status for all Gateways in a reportMap
+func (s *ProxySyncer) syncBackendPolicyStatus(ctx context.Context, report GKPolicyReport) {
+	for gk, polReport := range report.SeenPolicies {
+		for k, v := range s.plugins.ContributesPolicies {
+			if gk != k {
+				continue
+			}
+			if v.ProcessPolicyStatus != nil {
+				v.ProcessPolicyStatus(ctx, gk, polReport)
+			}
+		}
+	}
 }
 
 //func applyPostTranslationPlugins(ctx context.Context, pluginRegistry registry.PluginRegistry, translationContext *gwplugins.PostTranslationContext) {

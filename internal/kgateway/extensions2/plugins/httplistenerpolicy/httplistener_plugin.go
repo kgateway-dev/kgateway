@@ -12,8 +12,13 @@ import (
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/solo-io/go-utils/contextutils"
 	"google.golang.org/protobuf/proto"
+	skubeclient "istio.io/istio/pkg/config/schema/kubeclient"
+	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/watch"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
@@ -21,8 +26,8 @@ import (
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
 )
 
 type httpListenerPolicy struct {
@@ -69,14 +74,23 @@ func (p *httpListenerPolicyPluginGwPass) ApplyListenerPlugin(ctx context.Context
 	// no op
 }
 
-func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensionplug.Plugin {
-	// need upstreams for backend refs
-	col := krtutil.SetupCollectionDynamic[v1alpha1.HTTPListenerPolicy](
-		ctx,
-		commoncol.Client,
-		v1alpha1.SchemeGroupVersion.WithResource("httplistenerpolicies"),
-		commoncol.KrtOpts.ToOptions("HTTPListenerPolicy")...,
+func registerTypes(ourCli versioned.Interface) {
+	skubeclient.Register[*v1alpha1.HTTPListenerPolicy](
+		wellknown.HTTPListenerPolicyGVR,
+		wellknown.HTTPListenerPolicyGVK,
+		func(c skubeclient.ClientGetter, namespace string, o metav1.ListOptions) (runtime.Object, error) {
+			return ourCli.GatewayV1alpha1().HTTPListenerPolicies(namespace).List(context.Background(), o)
+		},
+		func(c skubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
+			return ourCli.GatewayV1alpha1().HTTPListenerPolicies(namespace).Watch(context.Background(), o)
+		},
 	)
+}
+
+func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensionplug.Plugin {
+	registerTypes(commoncol.OurClient)
+
+	col := krt.WrapClient(kclient.New[*v1alpha1.HTTPListenerPolicy](commoncol.Client), commoncol.KrtOpts.ToOptions("HTTPListenerPolicy")...)
 	gk := wellknown.HTTPListenerPolicyGVK.GroupKind()
 	policyCol := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *v1alpha1.HTTPListenerPolicy) *ir.PolicyWrapper {
 		objSrc := ir.ObjectSource{
@@ -93,7 +107,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 			errors = append(errors, err)
 		}
 
-		var pol = &ir.PolicyWrapper{
+		pol := &ir.PolicyWrapper{
 			ObjectSource: objSrc,
 			Policy:       i,
 			PolicyIR: &httpListenerPolicy{
@@ -101,7 +115,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 				compress:  i.Spec.Compress,
 				accessLog: accessLog,
 			},
-			TargetRefs: convert(i.Spec.TargetRef),
+			TargetRefs: convert(i.Spec.TargetRefs),
 			Errors:     errors,
 		}
 
@@ -111,7 +125,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 	return extensionplug.Plugin{
 		ContributesPolicies: map[schema.GroupKind]extensionsplug.PolicyPlugin{
 			wellknown.HTTPListenerPolicyGVK.GroupKind(): {
-				//AttachmentPoints: []ir.AttachmentPoints{ir.HttpAttachmentPoint},
+				// AttachmentPoints: []ir.AttachmentPoints{ir.HttpAttachmentPoint},
 				NewGatewayTranslationPass: NewGatewayTranslationPass,
 				Policies:                  policyCol,
 			},
@@ -119,17 +133,22 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 	}
 }
 
-func convert(targetRef v1alpha1.LocalPolicyTargetReference) []ir.PolicyTargetRef {
-	return []ir.PolicyTargetRef{{
-		Kind:  string(targetRef.Kind),
-		Name:  string(targetRef.Name),
-		Group: string(targetRef.Group),
-	}}
+func convert(targetRefs []v1alpha1.LocalPolicyTargetReference) []ir.PolicyRef {
+	refs := make([]ir.PolicyRef, 0, len(targetRefs))
+	for _, targetRef := range targetRefs {
+		refs = append(refs, ir.PolicyRef{
+			Kind:  string(targetRef.Kind),
+			Name:  string(targetRef.Name),
+			Group: string(targetRef.Group),
+		})
+	}
+	return refs
 }
 
 func NewGatewayTranslationPass(ctx context.Context, tctx ir.GwTranslationCtx) ir.ProxyTranslationPass {
 	return &httpListenerPolicyPluginGwPass{}
 }
+
 func (p *httpListenerPolicyPluginGwPass) Name() string {
 	return "httplistenerpolicies"
 }
@@ -137,7 +156,8 @@ func (p *httpListenerPolicyPluginGwPass) Name() string {
 func (p *httpListenerPolicyPluginGwPass) ApplyHCM(
 	ctx context.Context,
 	pCtx *ir.HcmContext,
-	out *envoy_hcm.HttpConnectionManager) error {
+	out *envoy_hcm.HttpConnectionManager,
+) error {
 	policy, ok := pCtx.Policy.(*httpListenerPolicy)
 	if !ok {
 		return fmt.Errorf("internal error: expected httplistener policy, got %T", pCtx.Policy)

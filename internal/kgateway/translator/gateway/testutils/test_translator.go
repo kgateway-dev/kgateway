@@ -1,4 +1,4 @@
-package gateway_test
+package testutils
 
 import (
 	"context"
@@ -6,11 +6,13 @@ import (
 	"os"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 	"google.golang.org/protobuf/testing/protocmp"
 	"istio.io/istio/pkg/config/schema/gvr"
 	kubeclient "istio.io/istio/pkg/kube"
@@ -32,11 +34,44 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/gateway/testutils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/irtranslator"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned/fake"
 )
+
+type AssertReports func(gwNN types.NamespacedName, reportsMap reports.ReportMap)
+
+func TestTranslation(
+	t test.Failer,
+	ctx context.Context,
+	inputFiles []string,
+	outputFile string,
+	gwNN types.NamespacedName,
+	assertReports AssertReports,
+) {
+	results, err := TestCase{
+		InputFiles: inputFiles,
+	}.Run(t, ctx)
+	Expect(err).NotTo(HaveOccurred())
+	// TODO allow expecting multiple gateways in the output (map nns -> outputFile?)
+	Expect(results).To(HaveLen(1))
+	Expect(results).To(HaveKey(gwNN))
+	result := results[gwNN]
+
+	//// do a json round trip to normalize the output (i.e. things like omit empty)
+	//b, _ := json.Marshal(result.Proxy)
+	//var proxy ir.GatewayIR
+	//Expect(json.Unmarshal(b, &proxy)).NotTo(HaveOccurred())
+
+	Expect(CompareProxy(outputFile, result.Proxy)).To(BeEmpty())
+
+	if assertReports != nil {
+		assertReports(gwNN, result.ReportsMap)
+	} else {
+		Expect(AreReportsSuccess(gwNN, result.ReportsMap)).NotTo(HaveOccurred())
+	}
+}
 
 type TestCase struct {
 	InputFiles []string
@@ -49,14 +84,14 @@ type ActualTestResult struct {
 
 func CompareProxy(expectedFile string, actualProxy *irtranslator.TranslationResult) (string, error) {
 	if os.Getenv("UPDATE_OUTPUTS") == "1" {
-		d, err := testutils.MarshalAnyYaml(actualProxy)
+		d, err := MarshalAnyYaml(actualProxy)
 		if err != nil {
 			return "", err
 		}
-		os.WriteFile(expectedFile, d, 0644)
+		os.WriteFile(expectedFile, d, 0o644)
 	}
 
-	expectedProxy, err := testutils.ReadProxyFromFile(expectedFile)
+	expectedProxy, err := ReadProxyFromFile(expectedFile)
 	if err != nil {
 		return "", err
 	}
@@ -113,9 +148,7 @@ func AreReportsSuccess(gwNN types.NamespacedName, reportsMap reports.ReportMap) 
 	return nil
 }
 
-var (
-	_ extensionsplug.GetBackendForRefPlugin = testBackendPlugin{}.GetBackendForRefPlugin
-)
+var _ extensionsplug.GetBackendForRefPlugin = testBackendPlugin{}.GetBackendForRefPlugin
 
 type testBackendPlugin struct{}
 
@@ -141,7 +174,7 @@ func (tc TestCase) Run(t test.Failer, ctx context.Context) (map[types.Namespaced
 		ourObjs []runtime.Object
 	)
 	for _, file := range tc.InputFiles {
-		objs, err := testutils.LoadFromFiles(ctx, file)
+		objs, err := LoadFromFiles(ctx, file)
 		if err != nil {
 			return nil, err
 		}
@@ -175,8 +208,23 @@ func (tc TestCase) Run(t test.Failer, ctx context.Context) (map[types.Namespaced
 		clienttest.MakeCRD(t, cli, crd)
 	}
 	defer cli.Shutdown()
+
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
+
+	// ensure classes used in tests exist and point at our controller
+	gwClasses := append(wellknown.BuiltinGatewayClasses.UnsortedList(), "example-gateway-class")
+	for _, className := range gwClasses {
+		cli.GatewayAPI().GatewayV1().GatewayClasses().Create(ctx, &gwv1.GatewayClass{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: string(className),
+			},
+			Spec: gwv1.GatewayClassSpec{
+				ControllerName: wellknown.GatewayControllerName,
+			},
+		}, metav1.CreateOptions{})
+	}
+
 	krtOpts := krtutil.KrtOptions{
 		Stop: ctx.Done(),
 	}
@@ -186,9 +234,12 @@ func (tc TestCase) Run(t test.Failer, ctx context.Context) (map[types.Namespaced
 		return nil, err
 	}
 	commoncol := common.NewCommonCollections(
+		ctx,
 		krtOpts,
 		cli,
 		ourCli,
+		nil,
+		wellknown.GatewayControllerName,
 		logr.Discard(),
 		*st,
 	)
@@ -197,35 +248,37 @@ func (tc TestCase) Run(t test.Failer, ctx context.Context) (map[types.Namespaced
 	// TODO: consider moving the common code to a util that both proxy syncer and this test call
 	plugins = append(plugins, krtcollections.NewBuiltinPlugin(ctx))
 	extensions := registry.MergePlugins(plugins...)
+
 	gk := schema.GroupKind{
 		Group: "",
-		Kind:  "test-backend-plugin"}
+		Kind:  "test-backend-plugin",
+	}
 	extensions.ContributesPolicies[gk] = extensionsplug.PolicyPlugin{
 		Name:             "test-backend-plugin",
 		GetBackendForRef: testBackendPlugin{}.GetBackendForRefPlugin,
 	}
 
-	isOurGw := func(gw *gwv1.Gateway) bool {
-		return true
-	}
-
-	gi, ri, ui, ei := krtcollections.InitCollections(ctx, extensions, cli, isOurGw, commoncol.RefGrants, krtOpts)
+	commoncol.InitPlugins(ctx, extensions)
 
 	translator := translator.NewCombinedTranslator(ctx, extensions, commoncol)
-	translator.Init(ctx, ri)
+	translator.Init(ctx)
 
 	cli.RunAndWait(ctx.Done())
-	gi.Gateways.WaitUntilSynced(ctx.Done())
-	kubeclient.WaitForCacheSync("routes", ctx.Done(), ri.HasSynced)
+	commoncol.GatewayIndex.Gateways.WaitUntilSynced(ctx.Done())
+
+	kubeclient.WaitForCacheSync("routes", ctx.Done(), commoncol.HasSynced)
+	kubeclient.WaitForCacheSync("routes", ctx.Done(), commoncol.Routes.HasSynced)
 	kubeclient.WaitForCacheSync("extensions", ctx.Done(), extensions.HasSynced)
 	kubeclient.WaitForCacheSync("commoncol", ctx.Done(), commoncol.HasSynced)
 	kubeclient.WaitForCacheSync("translator", ctx.Done(), translator.HasSynced)
-	kubeclient.WaitForCacheSync("backends", ctx.Done(), ui.HasSynced)
-	kubeclient.WaitForCacheSync("endpoints", ctx.Done(), ei.HasSynced)
+	kubeclient.WaitForCacheSync("backends", ctx.Done(), commoncol.BackendIndex.HasSynced)
+	kubeclient.WaitForCacheSync("endpoints", ctx.Done(), commoncol.Endpoints.HasSynced)
+
+	time.Sleep(1 * time.Second)
 
 	results := make(map[types.NamespacedName]ActualTestResult)
 
-	for _, gw := range gi.Gateways.List() {
+	for _, gw := range commoncol.GatewayIndex.Gateways.List() {
 		gwNN := types.NamespacedName{
 			Namespace: gw.Namespace,
 			Name:      gw.Name,
@@ -233,7 +286,7 @@ func (tc TestCase) Run(t test.Failer, ctx context.Context) (map[types.Namespaced
 
 		xdsSnap, reportsMap := translator.TranslateGateway(krt.TestingDummyContext{}, ctx, gw)
 
-		act, _ := testutils.MarshalAnyYaml(xdsSnap)
+		act, _ := MarshalAnyYaml(xdsSnap)
 		fmt.Fprintf(ginkgo.GinkgoWriter, "actual result:\n %s \n", act)
 
 		actual := ActualTestResult{

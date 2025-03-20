@@ -29,6 +29,9 @@ type ListenerPolicyList struct {
 }
 
 type ListenerPolicySpec struct {
-	TargetRef                     LocalPolicyTargetReference `json:"targetRef,omitempty"`
-	PerConnectionBufferLimitBytes uint32                     `json:"perConnectionBufferLimitBytes,omitempty"`
+	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:MaxItems=16
+	TargetRefs []LocalPolicyTargetReference `json:"targetRefs,omitempty"`
+
+	PerConnectionBufferLimitBytes uint32 `json:"perConnectionBufferLimitBytes,omitempty"`
 }
