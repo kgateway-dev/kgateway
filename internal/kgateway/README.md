@@ -1,6 +1,6 @@
-# Gloo Gateway
+# kgateway
 
-Note, all commands should be run from the root of the gloo repo.
+Note, all commands should be run from the root of the kgateway repo.
 
 ## APIs
 
@@ -26,7 +26,8 @@ This will create the kind cluster and build the docker images.
 Next use helm to install the gateway control plane:
 
 ```shell
-helm upgrade -i -n gloo-system gloo ./_test/gloo-1.0.0-ci1.tgz --create-namespace --set kubeGateway.enabled=true
+helm upgrade -i -n kgateway-system kgateway-crds ./_test/kgateway-crds-1.0.1-ci.tgz --create-namespace
+helm upgrade -i -n kgateway-system kgateway ./_test/kgateway-1.0.0-ci1.tgz
 ```
 
 To create a gateway, use the Gateway resource:
@@ -111,15 +112,8 @@ Next we need to install Istio in the cluster along with the bookinfo test applic
 Next use helm to install the gateway control plane with istio integration enabled:
 
 ```shell
-helm upgrade -i -n gloo-system gloo ./_test/gloo-1.0.0-ci1.tgz --create-namespace --set kubeGateway.enabled=true --set global.istioSDS.enabled=true
-```
-
-In order to enable automtls, set it to true in the settings:
-
-```shell
-settings:
-  istioOptions:
-    enableAutoMtls: true
+helm upgrade -i -n kgateway-system kgateway-crds ./_test/kgateway-crds-1.0.1-ci.tgz --create-namespace
+helm upgrade -i -n kgateway-system kgateway ./_test/kgateway-1.0.1-ci.tgz --create-namespace --create-namespace --set gateway.istio.enabled=true
 ```
 
 Then expose the gateway that gets created via the Gateway resource:
