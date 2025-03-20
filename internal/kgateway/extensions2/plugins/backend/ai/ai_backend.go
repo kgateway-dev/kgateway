@@ -56,9 +56,8 @@ func PreprocessAIBackend(ctx context.Context, aiBackend *v1alpha1.AIBackend, ir 
 	// This is used to add headers to the ext-proc request.
 	// These headers are used to configure the AI server on a per-request basis.
 	// This was the best available way to pass per-route configuration to the AI server.
-	extProcRouteSettingsProto := ir.Extproc
-	var extProcRouteSettings *envoy_ext_proc_v3.ExtProcPerRoute
-	if extProcRouteSettingsProto == nil {
+	extProcRouteSettings := ir.Extproc
+	if extProcRouteSettings == nil {
 		extProcRouteSettings = &envoy_ext_proc_v3.ExtProcPerRoute{
 			Override: &envoy_ext_proc_v3.ExtProcPerRoute_Overrides{
 				Overrides: &envoy_ext_proc_v3.ExtProcOverrides{},
