@@ -133,6 +133,7 @@ gateway:
       pullPolicy: IfNotPresent
     logLevel: info
   istio:
+    enabled: true
     istioProxyContainer:
       image:
         repository: proxyv2

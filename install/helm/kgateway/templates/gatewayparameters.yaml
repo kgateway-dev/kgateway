@@ -37,6 +37,26 @@ spec:
       extraAnnotations:
         {{- toYaml . | nindent 8 }}
     {{- end }}
+    {{- if $.Values.gateway.istio.enabled }}
+    sdsContainer:
+      image:
+        registry: {{ $.Values.gateway.sdsContainer.image.registry | default $.Values.image.registry }}
+        repository: {{ $.Values.gateway.sdsContainer.image.repository }}
+        tag: {{ $.Values.gateway.sdsContainer.image.tag | default $.Values.image.tag | default $.Chart.Version }}
+        pullPolicy: {{ $.Values.image.pullPolicy }}
+      logLevel: {{ $.Values.gateway.sdsContainer.logLevel | default "info" }}
+    istio:
+      istioProxyContainer:
+        image:
+          repository: {{ $.Values.gateway.istio.istioProxyContainer.image.repository }}
+          registry: {{ $.Values.gateway.istio.istioProxyContainer.image.registry | default $.Values.image.registry }}
+          tag: {{ $.Values.gateway.istio.istioProxyContainer.image.tag | default $.Values.image.tag | default $.Chart.Version }}
+          pullPolicy: {{ $.Values.image.pullPolicy }}
+        istioDiscoveryAddress: {{ $.Values.gateway.istio.istioDiscoveryAddress }}
+        istioMetaMeshId: {{ $.Values.gateway.istio.istioMetaMeshId }}
+        istioMetaClusterId: {{ $.Values.gateway.istio.istioMetaClusterId }}
+        logLevel: {{ $.Values.gateway.istio.logLevel | default "warning" }}
+    {{- end }}
     {{- with $.Values.gateway.stats }}
     stats:
       {{- toYaml . | nindent 6 }}
