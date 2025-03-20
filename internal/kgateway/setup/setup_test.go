@@ -763,7 +763,6 @@ func (x *xdsDump) Compare(t *testing.T, other xdsDump) {
 		}
 		ourc.LoadAssignment = ourCla
 		otherc.LoadAssignment = otherCla
-
 	}
 	listenerset := map[string]*envoylistener.Listener{}
 	for _, c := range x.Listeners {
