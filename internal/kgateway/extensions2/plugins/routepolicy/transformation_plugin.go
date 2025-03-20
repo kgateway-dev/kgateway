@@ -11,6 +11,7 @@ import (
 	exteniondynamicmodulev3 "github.com/envoyproxy/go-control-plane/envoy/extensions/dynamic_modules/v3"
 	dynamicmodulesv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/dynamic_modules/v3"
 	transformationpb "github.com/solo-io/envoy-gloo/go/config/filter/http/transformation/v2"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 )
@@ -156,10 +157,10 @@ func toRustFormationPerRouteConfig(t *v1alpha1.Transform) (map[string]interface{
 }
 
 // toRustformFilterConfig converts a TransformationPolicy to a RustFormation filter config.
-// The sheape of this function currently resembles that of the traditional API
+// The shape of this function currently resembles that of the traditional API
 // Feel free to change the shape and flow of this function as needed provided there are sufficient unit tests on the configuration output.
 // The most dangerous updates here will be any switch over env variables that we are working on.s
-func toRustformFilterConfig(t *v1alpha1.TransformationPolicy) (*dynamicmodulesv3.DynamicModuleFilter, string, error) {
+func toRustformFilterConfig(t *v1alpha1.TransformationPolicy) (proto.Message, string, error) {
 	if t == nil || *t == (v1alpha1.TransformationPolicy{}) {
 		return nil, "", nil
 	}

@@ -51,9 +51,11 @@ type routePolicy struct {
 }
 
 type routeSpecIr struct {
-	AI                         *AIPolicyIR
-	transform                  *transformationpb.RouteTransformations
-	rustformation              *dynamicmodulesv3.DynamicModuleFilter
+	AI        *AIPolicyIR
+	transform *transformationpb.RouteTransformations
+	// rustformation is currently a *dynamicmodulesv3.DynamicModuleFilter, but can potentially change at some point
+	// in the future so we use proto.Message here
+	rustformation              proto.Message
 	rustformationStringToStash string
 	errors                     []error
 }
@@ -265,12 +267,14 @@ func (p *routePolicyPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.Ro
 			b, ok := backend.Backend.BackendObject.Obj.(*v1alpha1.Backend)
 			if !ok {
 				// AI policy cannot apply to kubernetes services
-				errs = append(errs, fmt.Errorf("targetRef cannot apply to %s backend. AI RoutePolicy must apply only to AI backend", backend.Backend.BackendObject.GetName()))
+				// TODO(npolshak): Report this as a warning on status
+				contextutils.LoggerFrom(ctx).Warnf("targetRef cannot apply to %s backend. AI RoutePolicy must apply only to AI backend", backend.Backend.BackendObject.GetName())
 				continue
 			}
 			if b.Spec.Type != v1alpha1.BackendTypeAI {
 				// AI policy cannot apply to non-AI backends
-				errs = append(errs, fmt.Errorf("backend %s is of type %s. AI RoutePolicy must apply only to AI backend", backend.Backend.BackendObject.GetName(), b.Spec.Type))
+				// TODO(npolshak): Report this as a warning on status
+				contextutils.LoggerFrom(ctx).Warnf("backend %s is of type %s. AI RoutePolicy must apply only to AI backend", backend.Backend.BackendObject.GetName(), b.Spec.Type)
 				continue
 			}
 			aiBackends = append(aiBackends, b)
