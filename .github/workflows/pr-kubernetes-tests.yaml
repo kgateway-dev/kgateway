@@ -29,7 +29,7 @@ jobs:
         # March 18, 2025: 7 minutes
         - cluster-name: 'cluster-one'
           go-test-args: '-v -timeout=25m'
-          go-test-run-regex: '^TestKgateway$$/^BasicRouting$$|^TestKgateway$$/^HTTPRouteServices$$|^TestKgateway$$/^TLSRouteServices$$'
+          go-test-run-regex: '^TestKgateway$$/^BasicRouting$$|^TestKgateway$$/^HTTPRouteServices$$|^TestKgateway$$/^TLSRouteServices$$|^TestKgatewayIstioAutoMtls$$'
           localstack: 'false'
         # Mar 18, 2025: 7 minutes
         - cluster-name: 'cluster-two'

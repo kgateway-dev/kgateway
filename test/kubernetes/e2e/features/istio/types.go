@@ -1,5 +1,3 @@
-//go:build ignore
-
 package istio
 
 import (

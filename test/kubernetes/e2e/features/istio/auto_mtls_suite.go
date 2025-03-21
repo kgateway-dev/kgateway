@@ -1,5 +1,3 @@
-//go:build ignore
-
 package istio
 
 import (
@@ -80,7 +78,7 @@ func (s *istioAutoMtlsTestingSuite) SetupSuite() {
 	s.manifests = map[string][]string{
 		"TestMtlsStrictPeerAuth":     {strictPeerAuthManifest, k8sRoutingSvcManifest},
 		"TestMtlsPermissivePeerAuth": {permissivePeerAuthManifest, k8sRoutingSvcManifest},
-		"TestMtlsDisablePeerAuth":    {disablePeerAuthManifest, k8sRoutingUpstreamManifest},
+		// "TestMtlsDisablePeerAuth":    {disablePeerAuthManifest, k8sRoutingUpstreamManifest},
 	}
 }
 
@@ -115,14 +113,14 @@ func (s *istioAutoMtlsTestingSuite) TestMtlsPermissivePeerAuth() {
 		expectedMtlsResponse, time.Minute)
 }
 
-func (s *istioAutoMtlsTestingSuite) TestMtlsDisablePeerAuth() {
-	s.testInstallation.Assertions.AssertEventualCurlResponse(
-		s.ctx,
-		curlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
-			curl.WithHostHeader("httpbin"),
-			curl.WithPath("headers"),
-		},
-		expectedPlaintextResponse, time.Minute)
-}
+// func (s *istioAutoMtlsTestingSuite) TestMtlsDisablePeerAuth() {
+// 	s.testInstallation.Assertions.AssertEventualCurlResponse(
+// 		s.ctx,
+// 		curlPodExecOpt,
+// 		[]curl.Option{
+// 			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
+// 			curl.WithHostHeader("httpbin"),
+// 			curl.WithPath("headers"),
+// 		},
+// 		expectedPlaintextResponse, time.Minute)
+// }

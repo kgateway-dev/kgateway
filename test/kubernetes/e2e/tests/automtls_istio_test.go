@@ -1,12 +1,9 @@
-//go:build ignore
-
 package tests_test
 
 import (
 	"context"
 	"os"
 	"testing"
-	"time"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
@@ -28,7 +25,6 @@ func TestKgatewayIstioAutoMtls(t *testing.T) {
 		},
 	)
 
-	testHelper := e2e.MustTestHelper(ctx, testInstallation)
 	err := testInstallation.AddIstioctl(ctx)
 	if err != nil {
 		t.Errorf("failed to add istioctl: %v\n", err)
@@ -52,7 +48,7 @@ func TestKgatewayIstioAutoMtls(t *testing.T) {
 			testInstallation.CreateIstioBugReport(ctx)
 		}
 
-		testInstallation.UninstallGlooGatewayWithTestHelper(ctx, testHelper)
+		testInstallation.UninstallKgateway(ctx)
 
 		// Uninstall Istio
 		err = testInstallation.UninstallIstio()
@@ -69,7 +65,7 @@ func TestKgatewayIstioAutoMtls(t *testing.T) {
 
 	// Install Gloo Gateway
 	// istio proxy and sds are added to gateway and take a little longer to start up
-	testInstallation.InstallGlooGatewayWithTestHelper(ctx, testHelper, 10*time.Minute)
+	testInstallation.InstallKgatewayFromLocalChart(ctx)
 
 	AutomtlsIstioSuiteRunner().Run(ctx, t, testInstallation)
 }
