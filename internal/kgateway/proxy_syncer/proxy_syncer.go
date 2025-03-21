@@ -537,7 +537,7 @@ func (s *ProxySyncer) syncGatewayStatus(ctx context.Context, rm reports.ReportMa
 func (s *ProxySyncer) syncBackendPolicyStatus(ctx context.Context, report GKPolicyReport) {
 	for gk, polReport := range report.SeenPolicies {
 		for k, v := range s.plugins.ContributesPolicies {
-			if gk != k {
+			if gk != k.String() {
 				continue
 			}
 			if v.ProcessPolicyStatus != nil {
