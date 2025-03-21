@@ -127,12 +127,7 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(ctx context.Context,
 
 	// Set timeout from the HTTPRouteRule if specified
 	if in.Timeouts != nil && in.Timeouts.Request != nil {
-		duration, err := time.ParseDuration(string(*in.Timeouts.Request))
-		if err == nil {
-			out.GetRoute().Timeout = durationpb.New(duration)
-		} else {
-			contextutils.LoggerFrom(ctx).Error("invalid HTTPRoute timeout", zap.Error(err))
-		}
+		applyRouteTimeout(ctx, out, in.Timeouts.Request)
 	}
 
 	// run plugins here that may set action
@@ -169,6 +164,15 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(ctx context.Context,
 	}
 
 	return out
+}
+
+func applyRouteTimeout(ctx context.Context, route *envoy_config_route_v3.Route, timeout *gwv1.Duration) {
+	duration, err := time.ParseDuration(string(*timeout))
+	if err == nil {
+		route.GetRoute().Timeout = durationpb.New(duration)
+	} else {
+		contextutils.LoggerFrom(ctx).Error("invalid HTTPRoute timeout", zap.Error(err))
+	}
 }
 
 func (h *httpRouteConfigurationTranslator) runVhostPlugins(ctx context.Context, out *envoy_config_route_v3.VirtualHost) {
