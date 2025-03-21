@@ -93,7 +93,7 @@ type Plugin struct {
 
 type AncestorReports map[ir.ObjectSource][]error
 type PolicyReport map[ir.AttachedPolicyRef]AncestorReports
-type ProcessPolicyStatus func(ctx context.Context, gk schema.GroupKind, polReport PolicyReport)
+type ProcessPolicyStatus func(ctx context.Context, gkString string, polReport PolicyReport)
 
 func (p PolicyPlugin) AttachmentPoints() AttachmentPoints {
 	var ret AttachmentPoints
