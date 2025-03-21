@@ -93,14 +93,14 @@ func TestPolicyStatus(t *testing.T) {
 	if len(seenPols) != 2 {
 		t.Fatalf("expected 2 unique GKs, found %d", len(seenPols))
 	}
-	tlsReport, ok := seenPols[wellknown.BackendTLSPolicyGVK.GroupKind()]
+	tlsReport, ok := seenPols[wellknown.BackendTLSPolicyGVK.GroupKind().String()]
 	if !ok {
 		t.Fatal("no policies found for BackendTLSPolicy")
 	}
 	if len(tlsReport) != 1 {
 		t.Fatalf("expected 1 tls policy, found %d", len(tlsReport))
 	}
-	connReport, ok := seenPols[connPolGK]
+	connReport, ok := seenPols[connPolGK.String()]
 	if !ok {
 		t.Fatal("no policies found for ConnPolicy")
 	}
