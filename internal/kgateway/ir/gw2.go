@@ -37,6 +37,7 @@ type HttpRouteRuleMatchIR struct {
 	Match      gwv1.HTTPRouteMatch
 	MatchIndex int
 	Name       string
+	Timeouts   *gwv1.HTTPRouteTimeouts
 }
 
 type ListenerIR struct {

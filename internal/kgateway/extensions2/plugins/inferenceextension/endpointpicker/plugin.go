@@ -147,9 +147,9 @@ func NewPluginFromCollections(
 	}
 }
 
-// endpointPickerPass implements ir.ProxyTranslationPass. It collects any references to InferencePools.
+// endpointPickerPass implements ir.ProxyTranslationPass. It collects any references to IR inferencePools.
 type endpointPickerPass struct {
-	// Instead of a single pool, store multiple pools keyed by NamespacedName.
+	// usedPools defines a map of IR inferencePools keyed by NamespacedName.
 	usedPools map[types.NamespacedName]*inferencePool
 }
 
