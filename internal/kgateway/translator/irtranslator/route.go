@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"maps"
 	"regexp"
+	"time"
 
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
@@ -13,6 +14,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
+	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -122,6 +124,12 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(ctx context.Context,
 	if len(in.Backends) > 0 {
 		out.Action = h.translateRouteAction(ctx, in, out)
 	}
+
+	// Set timeout from the HTTPRouteRule if specified
+	if in.Timeouts != nil && in.Timeouts.Request != nil {
+		applyRouteTimeout(ctx, out, in.Timeouts.Request)
+	}
+
 	// run plugins here that may set action
 	err := h.runRoutePlugins(ctx, routeReport, in, out)
 	if err == nil {
@@ -156,6 +164,15 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(ctx context.Context,
 	}
 
 	return out
+}
+
+func applyRouteTimeout(ctx context.Context, route *envoy_config_route_v3.Route, timeout *gwv1.Duration) {
+	duration, err := time.ParseDuration(string(*timeout))
+	if err == nil {
+		route.GetRoute().Timeout = durationpb.New(duration)
+	} else {
+		contextutils.LoggerFrom(ctx).Error("invalid HTTPRoute timeout", zap.Error(err))
+	}
 }
 
 func (h *httpRouteConfigurationTranslator) runVhostPlugins(ctx context.Context, out *envoy_config_route_v3.VirtualHost) {
@@ -340,6 +357,7 @@ func (h *httpRouteConfigurationTranslator) translateRouteAction(
 			ClusterNotFoundResponseCode: envoy_config_route_v3.RouteAction_INTERNAL_SERVER_ERROR,
 		}
 	}
+
 	routeAction := &envoy_config_route_v3.Route_Route{
 		Route: action,
 	}
@@ -443,7 +461,7 @@ var separatedPathRegex = regexp.MustCompile("^[^?#]+[^?#/]$")
 
 func isValidPathSparated(path string) bool {
 	// see envoy docs:
-	//	Expect the value to not contain “?“ or “#“ and not to end in “/“
+	//	Expect the value to not contain "?" or "#" and not to end in "/"
 	return separatedPathRegex.MatchString(path)
 }
 
