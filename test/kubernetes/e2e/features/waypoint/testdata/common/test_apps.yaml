@@ -197,6 +197,8 @@ kind: ServiceEntry
 metadata:
   name: se-a
 spec:
+  addresses:
+  - 244.244.0.1
   hosts:
   - se-a.serviceentry.com
   location: MESH_INTERNAL
@@ -215,6 +217,8 @@ kind: ServiceEntry
 metadata:
   name: se-b
 spec:
+  addresses:
+  - 244.244.0.2
   hosts:
   - se-b.serviceentry.com
   location: MESH_INTERNAL
