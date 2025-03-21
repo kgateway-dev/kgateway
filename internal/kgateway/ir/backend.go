@@ -76,6 +76,10 @@ type BackendObjectIR struct {
 	ObjIr interface{ Equals(any) bool }
 
 	AttachedPolicies AttachedPolicies
+
+	// Errors is a list of errors, if any, encountered while constructing this BackendObject
+	// Not added to Equals() as it is derived from the inner ObjIr, which is already evaluated
+	Errors []error
 }
 
 func (c BackendObjectIR) ResourceName() string {

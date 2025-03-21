@@ -43,6 +43,7 @@ const (
 )
 
 // BackendIr is the internal representation of a backend.
+// TODO: unexport
 type BackendIr struct {
 	AwsIr  *AwsIr
 	AIIr   *ai.AIIr
@@ -62,24 +63,40 @@ func (u *BackendIr) Equals(other any) bool {
 		return false
 	}
 	// AI
-	if !maps.EqualFunc(data(u.AIIr.AISecret), data(otherBackend.AIIr.AISecret), func(a, b []byte) bool {
-		return bytes.Equal(a, b)
-	}) {
+	if u.AIIr == nil && otherBackend.AIIr != nil {
 		return false
 	}
-	if !maps.EqualFunc(u.AIIr.AIMultiSecret, otherBackend.AIIr.AIMultiSecret, func(a, b *ir.Secret) bool {
-		return maps.EqualFunc(data(a), data(b), func(a, b []byte) bool {
+	if u.AIIr != nil {
+		if otherBackend.AIIr == nil {
+			return false
+		}
+		if !maps.EqualFunc(data(u.AIIr.AISecret), data(otherBackend.AIIr.AISecret), func(a, b []byte) bool {
 			return bytes.Equal(a, b)
-		})
-	}) {
-		return false
-	}
-	if !u.AIIr.AIBackend.Equals(otherBackend.AIIr.AIBackend) {
-		return false
+		}) {
+			return false
+		}
+		if !maps.EqualFunc(u.AIIr.AIMultiSecret, otherBackend.AIIr.AIMultiSecret, func(a, b *ir.Secret) bool {
+			return maps.EqualFunc(data(a), data(b), func(a, b []byte) bool {
+				return bytes.Equal(a, b)
+			})
+		}) {
+			return false
+		}
+		if !u.AIIr.AIBackend.Equals(otherBackend.AIIr.AIBackend) {
+			return false
+		}
 	}
 	// AWS
-	if !u.AwsIr.Equals(otherBackend.AwsIr) {
+	if u.AwsIr == nil && otherBackend.AwsIr != nil {
 		return false
+	}
+	if u.AwsIr != nil {
+		if otherBackend.AwsIr == nil {
+			return false
+		}
+		if !u.AwsIr.Equals(otherBackend.AwsIr) {
+			return false
+		}
 	}
 	return true
 }
@@ -108,9 +125,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 		backendIR := translateFn(krtctx, i)
 		if len(backendIR.Errors) > 0 {
 			contextutils.LoggerFrom(ctx).Error("failed to translate backend", "backend", i.GetName(), "error", errors.Join(backendIR.Errors...))
-			return nil
 		}
-		// resolve secrets
 		return &ir.BackendObjectIR{
 			ObjectSource: ir.ObjectSource{
 				Kind:      gk.Kind,
@@ -122,6 +137,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 			CanonicalHostname: hostname(i),
 			Obj:               i,
 			ObjIr:             backendIR,
+			Errors:            backendIR.Errors,
 		}
 	})
 	endpoints := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *v1alpha1.Backend) *ir.EndpointsForBackend {
@@ -133,8 +149,9 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 				BackendInit: ir.BackendInit{
 					InitBackend: processBackend,
 				},
-				Endpoints: endpoints,
-				Backends:  bcol,
+				Endpoints:            endpoints,
+				Backends:             bcol,
+				ProcessBackendStatus: buildProcessStatus(commoncol.CrudClient),
 			},
 		},
 		ContributesPolicies: map[schema.GroupKind]extensionsplug.PolicyPlugin{
@@ -148,11 +165,10 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 
 // buildTranslateFunc builds a function that translates a Backend to a BackendIr that
 // the plugin can use to build the envoy config.
-//
-// TODO(tim): Any errors encountered here should be returned and stored on the BackendIR
-// so that we can report them in the status once https://github.com/kgateway-dev/kgateway/issues/10555
-// is resolved.
-func buildTranslateFunc(ctx context.Context, secrets *krtcollections.SecretIndex) func(krtctx krt.HandlerContext, i *v1alpha1.Backend) *BackendIr {
+func buildTranslateFunc(
+	ctx context.Context,
+	secrets *krtcollections.SecretIndex,
+) func(krtctx krt.HandlerContext, i *v1alpha1.Backend) *BackendIr {
 	return func(krtctx krt.HandlerContext, i *v1alpha1.Backend) *BackendIr {
 		var backendIr BackendIr
 		switch i.Spec.Type {

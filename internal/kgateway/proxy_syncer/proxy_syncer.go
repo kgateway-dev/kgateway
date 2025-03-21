@@ -7,6 +7,7 @@ import (
 	"maps"
 	"time"
 
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 
@@ -58,6 +59,7 @@ type ProxySyncer struct {
 
 	statusReport            krt.Singleton[report]
 	backendPolicyReport     krt.Singleton[GKPolicyReport]
+	finalBackends           krt.Collection[ir.BackendObjectIR]
 	mostXdsSnapshots        krt.Collection[GatewayXdsResources]
 	perclientSnapCollection krt.Collection[XdsSnapWrapper]
 
@@ -183,7 +185,7 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) erro
 	logger := contextutils.LoggerFrom(ctx)
 
 	// all backends with policies attached in a single collection
-	finalBackends := krt.JoinCollection(s.commonCols.BackendIndex.Backends(), krtopts.ToOptions("FinalUpstreams")...)
+	s.finalBackends = krt.JoinCollection(s.commonCols.BackendIndex.Backends(), krtopts.ToOptions("FinalBackends")...)
 
 	s.translator.Init(ctx)
 
@@ -209,7 +211,7 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) erro
 		ctx,
 		krtopts,
 		s.translator.GetUpstreamTranslator(),
-		finalBackends,
+		s.finalBackends,
 		s.uniqueClients,
 	)
 
@@ -223,7 +225,7 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) erro
 	)
 
 	s.backendPolicyReport = krt.NewSingleton(func(kctx krt.HandlerContext) *GKPolicyReport {
-		backends := krt.Fetch(kctx, finalBackends)
+		backends := krt.Fetch(kctx, s.finalBackends)
 		gkPolReport := generateBackendPolicyReport(backends)
 		return gkPolReport
 	}, krtopts.ToOptions("BackendsPolicyReport")...)
@@ -280,7 +282,7 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) erro
 
 	s.waitForSync = []cache.InformerSynced{
 		s.commonCols.HasSynced,
-		finalBackends.HasSynced,
+		s.finalBackends.HasSynced,
 		s.perclientSnapCollection.HasSynced,
 		s.mostXdsSnapshots.HasSynced,
 		s.plugins.HasSynced,
@@ -347,37 +349,28 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 		}
 	}()
 
-	go func() {
-		timer := time.NewTicker(time.Second * 1)
-		for {
-			select {
-			case <-ctx.Done():
-				logger.Debug("context done, stopping proxy syncer")
-				return
-			case <-timer.C:
-				//				panic("TODO: implement status for plugins")
-				/*
-					snaps := s.mostXdsSnapshots.List()
-					for _, snapWrap := range snaps {
-						var proxiesWithReports []translatorutils.ProxyWithReports
-						proxiesWithReports = append(proxiesWithReports, snapWrap.Reports)
-
-						initStatusPlugins(ctx, proxiesWithReports, snapWrap.pluginRegistry)
-					}
-					for _, snapWrap := range snaps {
-						err := s.proxyTranslator.syncStatus(ctx, snapWrap.proxyKey, snapWrap.fullReports)
-						if err != nil {
-							logger.Errorf("error while syncing proxy '%s': %s", snapWrap.proxyKey, err.Error())
-						}
-
-						var proxiesWithReports []translatorutils.ProxyWithReports
-						proxiesWithReports = append(proxiesWithReports, snapWrap.proxyWithReport)
-						applyStatusPlugins(ctx, proxiesWithReports, snapWrap.pluginRegistry)
-					}
-				*/
+	// Backend status is simply 1:1 with the BackendObject IR so we don't
+	// need to aggregate into a report. As Backends change, let the corresponding
+	// plugin handle status reporting per each Backend
+	s.finalBackends.Register(func(o krt.Event[ir.BackendObjectIR]) {
+		if o.Event == controllers.EventDelete {
+			return
+		}
+		in := o.Latest()
+		for gk, p := range s.plugins.ContributesBackends {
+			inGk := schema.GroupKind{
+				Group: in.ObjectSource.Group,
+				Kind:  in.ObjectSource.Kind,
+			}
+			if inGk != gk {
+				continue
+			}
+			if p.ProcessBackendStatus != nil {
+				// let plugin async report status for the backend
+				go p.ProcessBackendStatus(ctx, in)
 			}
 		}
-	}()
+	})
 
 	s.perclientSnapCollection.RegisterBatch(func(o []krt.Event[XdsSnapWrapper], initialSync bool) {
 		for _, e := range o {
@@ -546,19 +539,6 @@ func (s *ProxySyncer) syncBackendPolicyStatus(ctx context.Context, report GKPoli
 		}
 	}
 }
-
-//func applyPostTranslationPlugins(ctx context.Context, pluginRegistry registry.PluginRegistry, translationContext *gwplugins.PostTranslationContext) {
-//	ctx = contextutils.WithLogger(ctx, "postTranslation")
-//	logger := contextutils.LoggerFrom(ctx)
-//
-//	for _, postTranslationPlugin := range pluginRegistry.GetPostTranslationPlugins() {
-//		err := postTranslationPlugin.ApplyPostTranslationPlugin(ctx, translationContext)
-//		if err != nil {
-//			logger.Errorf("Error applying post-translation plugin: %v", err)
-//			continue
-//		}
-//	}
-//}
 
 var opts = cmp.Options{
 	cmpopts.IgnoreFields(metav1.Condition{}, "LastTransitionTime"),

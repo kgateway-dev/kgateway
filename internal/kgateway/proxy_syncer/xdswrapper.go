@@ -26,7 +26,9 @@ var (
 )
 
 type XdsSnapWrapper struct {
-	snap            *envoycache.Snapshot
+	snap *envoycache.Snapshot
+	// erroredClusters contains clusters that encountered errors during backend translation
+	// TODO: this is not used anywhere, we need surface this somewhere
 	erroredClusters []string
 	proxyKey        string
 }
