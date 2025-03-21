@@ -9,7 +9,6 @@ import (
 // SdsContainerApplyConfiguration represents a declarative configuration of the SdsContainer type for use
 // with apply.
 type SdsContainerApplyConfiguration struct {
-	Enabled         *bool                           `json:"enabled,omitempty"`
 	Image           *ImageApplyConfiguration        `json:"image,omitempty"`
 	SecurityContext *v1.SecurityContext             `json:"securityContext,omitempty"`
 	Resources       *v1.ResourceRequirements        `json:"resources,omitempty"`
@@ -20,14 +19,6 @@ type SdsContainerApplyConfiguration struct {
 // apply.
 func SdsContainer() *SdsContainerApplyConfiguration {
 	return &SdsContainerApplyConfiguration{}
-}
-
-// WithEnabled sets the Enabled field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the Enabled field is set to the value of the last call.
-func (b *SdsContainerApplyConfiguration) WithEnabled(value bool) *SdsContainerApplyConfiguration {
-	b.Enabled = &value
-	return b
 }
 
 // WithImage sets the Image field in the declarative configuration to the given value

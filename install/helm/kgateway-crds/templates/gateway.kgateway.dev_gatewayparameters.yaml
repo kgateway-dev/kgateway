@@ -36,7 +36,6 @@ spec:
                   aiExtension:
                     properties:
                       enabled:
-                        default: false
                         type: boolean
                       env:
                         items:
@@ -270,7 +269,6 @@ spec:
                   deployment:
                     properties:
                       replicas:
-                        default: 1
                         format: int32
                         type: integer
                     type: object
@@ -283,7 +281,6 @@ spec:
                               type: string
                             type: object
                           logLevel:
-                            default: info
                             type: string
                         type: object
                       image:
@@ -406,7 +403,6 @@ spec:
                         type: object
                     type: object
                   floatingUserId:
-                    default: false
                     type: boolean
                   istio:
                     properties:
@@ -1092,9 +1088,6 @@ spec:
                         type: array
                       istioProxyContainer:
                         properties:
-                          enabled:
-                            default: true
-                            type: boolean
                           image:
                             properties:
                               digest:
@@ -1109,16 +1102,12 @@ spec:
                                 type: string
                             type: object
                           istioDiscoveryAddress:
-                            default: istiod.istio-system.svc:15012
                             type: string
                           istioMetaClusterId:
-                            default: Kubernetes
                             type: string
                           istioMetaMeshId:
-                            default: cluster.local
                             type: string
                           logLevel:
-                            default: warning
                             type: string
                           resources:
                             properties:
@@ -1961,12 +1950,8 @@ spec:
                       bootstrap:
                         properties:
                           logLevel:
-                            default: info
                             type: string
                         type: object
-                      enabled:
-                        default: false
-                        type: boolean
                       image:
                         properties:
                           digest:
@@ -2099,7 +2084,6 @@ spec:
                           type: string
                         type: object
                       type:
-                        default: LoadBalancer
                         type: string
                     type: object
                   serviceAccount:
@@ -2116,16 +2100,12 @@ spec:
                   stats:
                     properties:
                       enableStatsRoute:
-                        default: true
                         type: boolean
                       enabled:
-                        default: true
                         type: boolean
                       routePrefixRewrite:
-                        default: /stats/prometheus
                         type: string
                       statsRoutePrefixRewrite:
-                        default: /stats
                         type: string
                     type: object
                 type: object

@@ -2316,13 +2316,6 @@ func schema_kgateway_v2_api_v1alpha1_IstioContainer(ref common.ReferenceCallback
 				Description: "Configuration for the container running the istio-proxy.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
-					"enabled": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Whether to enable the istio-proxy container.",
-							Type:        []string{"boolean"},
-							Format:      "",
-						},
-					},
 					"image": {
 						SchemaProps: spec.SchemaProps{
 							Description: "The envoy container image. See https://kubernetes.io/docs/concepts/containers/images for details.",
@@ -3400,13 +3393,6 @@ func schema_kgateway_v2_api_v1alpha1_SdsContainer(ref common.ReferenceCallback) 
 				Description: "Configuration for the container running Gloo SDS.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
-					"enabled": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Whether to enable the SDS container.",
-							Type:        []string{"boolean"},
-							Format:      "",
-						},
-					},
 					"image": {
 						SchemaProps: spec.SchemaProps{
 							Description: "The SDS container image. See https://kubernetes.io/docs/concepts/containers/images for details.",
@@ -3458,7 +3444,7 @@ func schema_kgateway_v2_api_v1alpha1_Service(ref common.ReferenceCallback) commo
 				Properties: map[string]spec.Schema{
 					"type": {
 						SchemaProps: spec.SchemaProps{
-							Description: "The Kubernetes Service type. Defaults to LoadBalancer.\n\n\nPossible enum values:\n - `\"ClusterIP\"` means a service will only be accessible inside the cluster, via the cluster IP.\n - `\"ExternalName\"` means a service consists of only a reference to an external name that kubedns or equivalent will return as a CNAME record, with no exposing or proxying of any pods involved.\n - `\"LoadBalancer\"` means a service will be exposed via an external load balancer (if the cloud provider supports it), in addition to 'NodePort' type.\n - `\"NodePort\"` means a service will be exposed on one port of every node, in addition to 'ClusterIP' type.",
+							Description: "The Kubernetes Service type.\n\n\nPossible enum values:\n - `\"ClusterIP\"` means a service will only be accessible inside the cluster, via the cluster IP.\n - `\"ExternalName\"` means a service consists of only a reference to an external name that kubedns or equivalent will return as a CNAME record, with no exposing or proxying of any pods involved.\n - `\"LoadBalancer\"` means a service will be exposed via an external load balancer (if the cloud provider supports it), in addition to 'NodePort' type.\n - `\"NodePort\"` means a service will be exposed on one port of every node, in addition to 'ClusterIP' type.",
 							Type:        []string{"string"},
 							Format:      "",
 							Enum:        []interface{}{"ClusterIP", "ExternalName", "LoadBalancer", "NodePort"},
