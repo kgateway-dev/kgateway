@@ -24,7 +24,9 @@ type attachmentReport struct {
 type policyObjsWithReports map[ir.AttachedPolicyRef][]attachmentReport
 
 type GKPolicyReport struct {
-	SeenPolicies map[schema.GroupKind]plug.PolicyReport
+	// SeenPolicies maps from schema.GroupKind.String() to a PolicyReport for
+	// all encountered policies of that GroupKind
+	SeenPolicies map[string]plug.PolicyReport
 }
 
 func (r GKPolicyReport) ResourceName() string {
@@ -95,18 +97,19 @@ func generateBackendPolicyReport(backends []ir.BackendObjectIR) *GKPolicyReport 
 	// finally, we group each policy obj with their associated reports
 	// by GroupKind; this allows us to give each plugin a chance to process
 	// policy reports for its own GroupKind
-	seenPolsByGk := map[schema.GroupKind]plug.PolicyReport{}
+	seenPolsByGk := map[string]plug.PolicyReport{}
 	for policyRef, reports := range policiesToAncestorReports {
 		gk := schema.GroupKind{
 			Group: policyRef.Group,
 			Kind:  policyRef.Kind,
 		}
-		gkPolsMap := seenPolsByGk[gk]
+		gkStr := gk.String()
+		gkPolsMap := seenPolsByGk[gkStr]
 		if gkPolsMap == nil {
 			gkPolsMap = map[ir.AttachedPolicyRef]plug.AncestorReports{}
 		}
 		gkPolsMap[policyRef] = reports
-		seenPolsByGk[gk] = gkPolsMap
+		seenPolsByGk[gkStr] = gkPolsMap
 	}
 	return &GKPolicyReport{
 		SeenPolicies: seenPolsByGk,
