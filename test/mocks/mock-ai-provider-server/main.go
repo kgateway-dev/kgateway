@@ -54,7 +54,7 @@ func getJSONHash(data map[string]interface{}, provider string, stream bool) stri
 	return fmt.Sprintf("%x", hash[:])
 }
 
-func generateSSEStream(c *gin.Context, filePath string) {
+func generateSSEStream(c *gin.Context, filePath, provider string) {
 	file, err := os.Open(filePath)
 	if err != nil {
 		fmt.Printf("failed to open file: %v\n", err)
@@ -69,7 +69,26 @@ func generateSSEStream(c *gin.Context, filePath string) {
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		c.SSEvent("", scanner.Text())
+		if provider == "vertex_ai" || provider == "gemini" {
+			line := scanner.Text()
+			sseMessage := fmt.Sprintf("data: %s\n\r\n\r\n", line)
+
+			// Write directly to response
+			c.Writer.WriteString(sseMessage)
+			c.Writer.Flush()
+		} else {
+			line := scanner.Text()
+			sseMessage := fmt.Sprintf("data: %s\n\n", line)
+
+			// Write directly to response
+			c.Writer.WriteString(sseMessage)
+			c.Writer.Flush()
+		}
+	}
+	if provider == "openai" || provider == "azure" {
+		lastSseMessage := fmt.Sprintf("data: [DONE]\n\n")
+		c.Writer.WriteString(lastSseMessage)
+		c.Writer.Flush()
 	}
 }
 
@@ -79,7 +98,7 @@ func handleModelResponse(c *gin.Context, requestData map[string]interface{}, pro
 
 	if response, exists := mockData[hash]; exists {
 		if stream {
-			generateSSEStream(c, response.FilePath)
+			generateSSEStream(c, response.FilePath, provider)
 			return
 		}
 
