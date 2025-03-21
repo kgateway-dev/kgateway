@@ -137,6 +137,7 @@ func translateGatewayHTTPRouteRule(
 			Backends:          nil,
 			MatchIndex:        idx,
 			Match:             match,
+			Timeouts:          rule.Timeouts,
 		}
 
 		var delegatedRoutes []ir.HttpRouteRuleMatchIR
