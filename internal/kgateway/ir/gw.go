@@ -3,7 +3,6 @@ package ir
 import (
 	"context"
 	"encoding/json"
-	"time"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -121,5 +120,5 @@ type HttpRouteRuleIR struct {
 	Backends         []HttpBackendOrDelegate
 	Matches          []gwv1.HTTPRouteMatch
 	Name             string
-	Timeout          *time.Duration
+	Timeouts         *gwv1.HTTPRouteTimeouts
 }

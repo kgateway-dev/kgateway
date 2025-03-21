@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"slices"
-	"time"
 
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/ptr"
@@ -673,20 +672,10 @@ func (h *RoutesIndex) transformRules(kctx krt.HandlerContext, src ir.ObjectSourc
 			Backends:         h.getBackends(kctx, src, r.BackendRefs),
 			Matches:          r.Matches,
 			Name:             emptyIfNil(r.Name),
-			Timeout:          getTimeout(r),
+			Timeouts:         r.Timeouts,
 		})
 	}
 	return rules
-}
-
-func getTimeout(r gwv1.HTTPRouteRule) *time.Duration {
-	if r.Timeouts != nil && r.Timeouts.Request != nil {
-		duration, err := time.ParseDuration(string(*r.Timeouts.Request))
-		if err == nil {
-			return &duration
-		}
-	}
-	return nil
 }
 
 func (h *RoutesIndex) getExtensionRefs(kctx krt.HandlerContext, ns string, r []gwv1.HTTPRouteFilter) ir.AttachedPolicies {
