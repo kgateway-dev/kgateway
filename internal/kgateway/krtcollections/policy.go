@@ -672,6 +672,7 @@ func (h *RoutesIndex) transformRules(kctx krt.HandlerContext, src ir.ObjectSourc
 			Backends:         h.getBackends(kctx, src, r.BackendRefs),
 			Matches:          r.Matches,
 			Name:             emptyIfNil(r.Name),
+			Timeouts:         r.Timeouts,
 		})
 	}
 	return rules

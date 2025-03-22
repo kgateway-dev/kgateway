@@ -174,9 +174,9 @@ func buildTranslateFunc(
 	}
 }
 
-func buildProcessStatus(cl client.Client) func(ctx context.Context, gk schema.GroupKind, polReport plug.PolicyReport) {
-	return func(ctx context.Context, gk schema.GroupKind, polReport plug.PolicyReport) {
-		if gk != backendTlsPolicyGroupKind.GroupKind() {
+func buildProcessStatus(cl client.Client) func(ctx context.Context, gkStr string, polReport plug.PolicyReport) {
+	return func(ctx context.Context, gkStr string, polReport plug.PolicyReport) {
+		if gkStr != backendTlsPolicyGroupKind.GroupKind().String() {
 			return
 		}
 		ctx = contextutils.WithLogger(ctx, "backendTlsPolicyStatus")
