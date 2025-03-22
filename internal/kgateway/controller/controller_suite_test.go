@@ -9,14 +9,9 @@ import (
 	"strings"
 	"testing"
 
-	"sigs.k8s.io/controller-runtime/pkg/config"
-
-	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -26,17 +21,18 @@ import (
 	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/config"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	infextv1a2 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
 	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/controller"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/deployer"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
 )
 
 var (
@@ -122,6 +118,26 @@ var _ = BeforeSuite(func() {
 	kubeconfig = generateKubeConfiguration(cfg)
 	mgr.GetLogger().Info("starting manager", "kubeconfig", kubeconfig)
 
+	// Ensure the default & alt GCs are created by the controller.
+	ci := map[string]*controller.ClassInfo{}
+	ci[altGatewayClassName] = &controller.ClassInfo{
+		Description: "alt gateway class",
+	}
+	ci[gatewayClassName] = &controller.ClassInfo{
+		Description: "default gateway class",
+	}
+	ch := make(chan event.TypedGenericEvent[client.Object], 1)
+	err = controller.NewGatewayClassProvisioner(mgr, gatewayControllerName, ci, ch)
+	Expect(err).ToNot(HaveOccurred())
+	ch <- event.TypedGenericEvent[client.Object]{
+		Object: &apiv1.GatewayClass{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: gatewayClassName,
+			},
+		},
+	}
+	Expect(err).ToNot(HaveOccurred())
+
 	// Start the Gateway controller.
 	gwCfg := controller.GatewayConfig{
 		Mgr:            mgr,
@@ -132,7 +148,6 @@ var _ = BeforeSuite(func() {
 			Tag:      "latest",
 		},
 	}
-
 	err = controller.NewBaseGatewayController(ctx, gwCfg)
 	Expect(err).ToNot(HaveOccurred())
 
@@ -144,41 +159,6 @@ var _ = BeforeSuite(func() {
 	}
 	err = controller.NewBaseInferencePoolController(ctx, poolCfg, &gwCfg)
 	Expect(err).ToNot(HaveOccurred())
-
-	// Create the default GatewayParameters and GatewayClass.
-	err = k8sClient.Create(ctx, &v1alpha1.GatewayParameters{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      wellknown.DefaultGatewayParametersName,
-			Namespace: "default",
-		},
-		Spec: v1alpha1.GatewayParametersSpec{
-			Kube: &v1alpha1.KubernetesProxyConfig{
-				Service: &v1alpha1.Service{
-					Type: ptr.To(corev1.ServiceTypeLoadBalancer),
-				},
-				Istio: &v1alpha1.IstioIntegration{},
-			},
-		},
-	})
-	Expect(err).NotTo(HaveOccurred())
-
-	for class := range gwClasses {
-		err = k8sClient.Create(ctx, &apiv1.GatewayClass{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: string(class),
-			},
-			Spec: apiv1.GatewayClassSpec{
-				ControllerName: apiv1.GatewayController(gatewayControllerName),
-				ParametersRef: &apiv1.ParametersReference{
-					Group:     apiv1.Group(v1alpha1.GroupVersion.Group),
-					Kind:      "GatewayParameters",
-					Name:      wellknown.DefaultGatewayParametersName,
-					Namespace: ptr.To(apiv1.Namespace("default")),
-				},
-			},
-		})
-		Expect(err).NotTo(HaveOccurred())
-	}
 
 	// Start the manager.
 	go func() {

@@ -66,7 +66,7 @@ func (r *gatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		&gwc,
 	); err != nil {
 		log.Error(err, "failed to check controller for GatewayClass")
-		return ctrl.Result{Requeue: true}, err
+		return ctrl.Result{}, err
 	}
 	if gwc.Spec.ControllerName != api.GatewayController(r.controllerName) {
 		// ignore, not our GatewayClass

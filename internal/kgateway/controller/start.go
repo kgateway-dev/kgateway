@@ -13,11 +13,14 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/config"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	czap "sigs.k8s.io/controller-runtime/pkg/log/zap"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	infextv1a2 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/deployer"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2"
@@ -30,6 +33,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/proxy_syncer"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
 	kgtwschemes "github.com/kgateway-dev/kgateway/v2/pkg/schemes"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
@@ -244,11 +248,46 @@ func (c *ControllerBuilder) Start(ctx context.Context) error {
 		},
 	}
 
+	setupLog.Info("creating gateway class provisioner")
+	// we use a channel to trigger initial reconciliation when no GatewayClass
+	// objects exist in the cluster. this requires a non-cached client to
+	// list the GatewayClass objects as we can't use the cached mgr client until
+	// it's been started.
+	ch := make(chan event.TypedGenericEvent[client.Object], 1)
+	if err := NewGatewayClassProvisioner(c.mgr, c.cfg.ControllerName, GetDefaultClassInfo(), ch); err != nil {
+		setupLog.Error(err, "unable to create gateway class provisioner")
+		return err
+	}
+	cli, err := client.New(c.mgr.GetConfig(), client.Options{
+		Scheme: c.mgr.GetScheme(),
+	})
+	if err != nil {
+		setupLog.Error(err, "unable to create client")
+		return err
+	}
+	var gcs gwv1.GatewayClassList
+	if err := cli.List(ctx, &gcs); err != nil {
+		setupLog.Error(err, "unable to list gatewayclasses")
+		return err
+	}
+	if len(gcs.Items) == 0 {
+		setupLog.Info("no gatewayclasses found, sending event to trigger gateway class provisioner reconciliation")
+		ch <- event.TypedGenericEvent[client.Object]{
+			Object: &gwv1.GatewayClass{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: wellknown.GatewayClassName,
+				},
+			},
+		}
+	}
+
+	setupLog.Info("creating base gateway controller")
 	if err := NewBaseGatewayController(ctx, gwCfg); err != nil {
 		setupLog.Error(err, "unable to create gateway controller")
 		return err
 	}
 
+	setupLog.Info("creating inferencepool controller")
 	// Create the InferencePool controller if the inference extension feature is enabled and the API group is registered.
 	if globalSettings.EnableInferExt && c.mgr.GetScheme().IsGroupRegistered(infextv1a2.GroupVersion.Group) {
 		poolCfg := &InferencePoolConfig{
@@ -263,5 +302,25 @@ func (c *ControllerBuilder) Start(ctx context.Context) error {
 		}
 	}
 
+	setupLog.Info("starting manager")
 	return c.mgr.Start(ctx)
+}
+
+// GetDefaultClassInfo returns the default GatewayClass for the kgateway controller.
+// Exported for testing.
+func GetDefaultClassInfo() map[string]*ClassInfo {
+	return map[string]*ClassInfo{
+		wellknown.GatewayClassName: {
+			Description: "The default GatewayClass for the kgateway controller.",
+			Labels:      map[string]string{},
+			Annotations: map[string]string{},
+		},
+		wellknown.WaypointClassName: {
+			Description: "The default GatewayClass for the kgateway controller.",
+			Labels:      map[string]string{},
+			Annotations: map[string]string{
+				"ambient.istio.io/waypoint-inbound-binding": "PROXY/15088",
+			},
+		},
+	}
 }
