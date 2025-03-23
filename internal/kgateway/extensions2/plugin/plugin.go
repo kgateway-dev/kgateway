@@ -67,9 +67,8 @@ type PolicyPlugin struct {
 
 type BackendPlugin struct {
 	ir.BackendInit
-	Backends             krt.Collection[ir.BackendObjectIR]
-	Endpoints            krt.Collection[ir.EndpointsForBackend]
-	ProcessBackendStatus func(ctx context.Context, backendObj ir.BackendObjectIR)
+	Backends  krt.Collection[ir.BackendObjectIR]
+	Endpoints krt.Collection[ir.EndpointsForBackend]
 }
 
 type KGwTranslator interface {

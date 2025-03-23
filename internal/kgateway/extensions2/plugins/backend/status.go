@@ -8,6 +8,8 @@ import (
 
 	"github.com/avast/retry-go"
 	"github.com/solo-io/go-utils/contextutils"
+	"istio.io/istio/pkg/kube/controllers"
+	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -18,65 +20,75 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 )
 
-func buildProcessStatus(cl client.Client) func(ctx context.Context, backendObj ir.BackendObjectIR) {
-	return func(ctx context.Context, backendObj ir.BackendObjectIR) {
+func buildRegisterCallback(
+	ctx context.Context,
+	cl client.Client,
+	bcol krt.Collection[ir.BackendObjectIR],
+) func() {
+	return func() {
 		ctx = contextutils.WithLogger(ctx, "backendStatus")
 		logger := contextutils.LoggerFrom(ctx)
+		bcol.Register(func(o krt.Event[ir.BackendObjectIR]) {
+			if o.Event == controllers.EventDelete {
+				return
+			}
 
-		res := v1alpha1.Backend{}
-		resNN := types.NamespacedName{
-			Name:      backendObj.Name,
-			Namespace: backendObj.Namespace,
-		}
-		err := retry.Do(
-			func() error {
-				err := cl.Get(ctx, resNN, &res)
-				if err != nil {
-					logger.Error("error getting backend: ", err.Error())
-					return err
-				}
+			in := o.Latest()
+			ir, ok := in.ObjIr.(*BackendIr)
+			if !ok {
+				return
+			}
 
-				ir, ok := backendObj.ObjIr.(*BackendIr)
-				if !ok {
-					// FIXME
-					return nil
-				}
-				newCondition := buildBackendCondition(ir.Errors)
-
-				found := meta.FindStatusCondition(res.Status.Conditions, string(gwv1a2.PolicyConditionAccepted))
-				if found != nil {
-					typeEq := found.Type == newCondition.Type
-					statusEq := found.Status == newCondition.Status
-					reasonEq := found.Reason == newCondition.Reason
-					messageEq := found.Message == newCondition.Message
-					if typeEq && statusEq && reasonEq && messageEq {
-						// condition is already up-to-date, nothing to do
-						return nil
+			resNN := types.NamespacedName{
+				Name:      in.ObjectSource.Name,
+				Namespace: in.ObjectSource.Namespace,
+			}
+			res := v1alpha1.Backend{}
+			err := retry.Do(
+				func() error {
+					err := cl.Get(ctx, resNN, &res)
+					if err != nil {
+						logger.Error("error getting backend: ", err.Error())
+						return err
 					}
-				}
 
-				conditions := make([]metav1.Condition, 0, 1)
-				meta.SetStatusCondition(&conditions, newCondition)
-				res.Status.Conditions = conditions
-				if err := cl.Status().Patch(ctx, &res, client.Merge); err != nil {
-					logger.Error(err)
-					return err
-				}
-				return nil
-			},
-			retry.Attempts(5),
-			retry.Delay(100*time.Millisecond),
-			retry.DelayType(retry.BackOffDelay),
-		)
-		if err != nil {
-			logger.Errorw(
-				"all attempts failed updating backend status",
-				"Backend",
-				resNN.String(),
-				"error",
-				err,
+					newCondition := buildBackendCondition(ir.Errors)
+
+					found := meta.FindStatusCondition(res.Status.Conditions, string(gwv1a2.PolicyConditionAccepted))
+					if found != nil {
+						typeEq := found.Type == newCondition.Type
+						statusEq := found.Status == newCondition.Status
+						reasonEq := found.Reason == newCondition.Reason
+						messageEq := found.Message == newCondition.Message
+						if typeEq && statusEq && reasonEq && messageEq {
+							// condition is already up-to-date, nothing to do
+							return nil
+						}
+					}
+
+					conditions := make([]metav1.Condition, 0, 1)
+					meta.SetStatusCondition(&conditions, newCondition)
+					res.Status.Conditions = conditions
+					if err := cl.Status().Patch(ctx, &res, client.Merge); err != nil {
+						logger.Error(err)
+						return err
+					}
+					return nil
+				},
+				retry.Attempts(5),
+				retry.Delay(100*time.Millisecond),
+				retry.DelayType(retry.BackOffDelay),
 			)
-		}
+			if err != nil {
+				logger.Errorw(
+					"all attempts failed updating backend status",
+					"Backend",
+					resNN.String(),
+					"error",
+					err,
+				)
+			}
+		})
 	}
 }
 

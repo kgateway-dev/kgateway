@@ -7,7 +7,6 @@ import (
 	"maps"
 	"time"
 
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 
@@ -59,7 +58,6 @@ type ProxySyncer struct {
 
 	statusReport            krt.Singleton[report]
 	backendPolicyReport     krt.Singleton[GKPolicyReport]
-	finalBackends           krt.Collection[ir.BackendObjectIR]
 	mostXdsSnapshots        krt.Collection[GatewayXdsResources]
 	perclientSnapCollection krt.Collection[XdsSnapWrapper]
 
@@ -185,7 +183,7 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) erro
 	logger := contextutils.LoggerFrom(ctx)
 
 	// all backends with policies attached in a single collection
-	s.finalBackends = krt.JoinCollection(s.commonCols.BackendIndex.Backends(), krtopts.ToOptions("FinalBackends")...)
+	finalBackends := krt.JoinCollection(s.commonCols.BackendIndex.Backends(), krtopts.ToOptions("FinalBackends")...)
 
 	s.translator.Init(ctx)
 
@@ -211,7 +209,7 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) erro
 		ctx,
 		krtopts,
 		s.translator.GetUpstreamTranslator(),
-		s.finalBackends,
+		finalBackends,
 		s.uniqueClients,
 	)
 
@@ -225,7 +223,7 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) erro
 	)
 
 	s.backendPolicyReport = krt.NewSingleton(func(kctx krt.HandlerContext) *GKPolicyReport {
-		backends := krt.Fetch(kctx, s.finalBackends)
+		backends := krt.Fetch(kctx, finalBackends)
 		gkPolReport := generatePolicyReport(convertBackends(backends))
 		return gkPolReport
 	}, krtopts.ToOptions("BackendsPolicyReport")...)
@@ -288,7 +286,7 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) erro
 
 	s.waitForSync = []cache.InformerSynced{
 		s.commonCols.HasSynced,
-		s.finalBackends.HasSynced,
+		finalBackends.HasSynced,
 		s.perclientSnapCollection.HasSynced,
 		s.mostXdsSnapshots.HasSynced,
 		s.plugins.HasSynced,
@@ -360,29 +358,6 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 			regFunc()
 		}
 	}
-
-	// Backend status is simply 1:1 with the BackendObject IR so we don't
-	// need to aggregate into a report. As Backends change, let the corresponding
-	// plugin handle status reporting per each Backend
-	s.finalBackends.Register(func(o krt.Event[ir.BackendObjectIR]) {
-		if o.Event == controllers.EventDelete {
-			return
-		}
-		in := o.Latest()
-		for gk, p := range s.plugins.ContributesBackends {
-			inGk := schema.GroupKind{
-				Group: in.ObjectSource.Group,
-				Kind:  in.ObjectSource.Kind,
-			}
-			if inGk != gk {
-				continue
-			}
-			if p.ProcessBackendStatus != nil {
-				// let plugin async report status for the backend
-				go p.ProcessBackendStatus(ctx, in)
-			}
-		}
-	})
 
 	s.perclientSnapCollection.RegisterBatch(func(o []krt.Event[XdsSnapWrapper], initialSync bool) {
 		for _, e := range o {

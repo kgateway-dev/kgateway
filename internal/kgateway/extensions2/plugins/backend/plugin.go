@@ -149,9 +149,8 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 				BackendInit: ir.BackendInit{
 					InitBackend: processBackend,
 				},
-				Endpoints:            endpoints,
-				Backends:             bcol,
-				ProcessBackendStatus: buildProcessStatus(commoncol.CrudClient),
+				Endpoints: endpoints,
+				Backends:  bcol,
 			},
 		},
 		ContributesPolicies: map[schema.GroupKind]extensionsplug.PolicyPlugin{
@@ -159,6 +158,9 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 				Name:                      "backend",
 				NewGatewayTranslationPass: newPlug,
 			},
+		},
+		ContributesRegistration: map[schema.GroupKind]func(){
+			wellknown.BackendGVK.GroupKind(): buildRegisterCallback(ctx, commoncol.CrudClient, bcol),
 		},
 	}
 }
