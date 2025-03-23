@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
+	"github.com/avast/retry-go"
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	exteniondynamicmodulev3 "github.com/envoyproxy/go-control-plane/envoy/extensions/dynamic_modules/v3"
@@ -16,12 +18,17 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 	skubeclient "istio.io/istio/pkg/config/schema/kubeclient"
+	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/watch"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
@@ -153,6 +160,9 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 				Policies:                  policyCol,
 			},
 		},
+		ContributesRegistration: map[schema.GroupKind]func(){
+			wellknown.RoutePolicyGVK.GroupKind(): buildRegisterCallback(ctx, commoncol.CrudClient, policyCol),
+		},
 	}
 }
 
@@ -166,6 +176,111 @@ func convert(targetRefs []v1alpha1.LocalPolicyTargetReference) []ir.PolicyRef {
 		})
 	}
 	return refs
+}
+
+// TODO: this should be done as a krt StatusCollection, but bumping istio
+// to use it requires a envoy/g-c-p bump which changes the signatures of dynamic
+// modules; we need to figure that out but not worth investigating until at least
+// basic status reporting is functional
+func buildRegisterCallback(
+	ctx context.Context,
+	cl client.Client,
+	col krt.Collection[ir.PolicyWrapper],
+) func() {
+	return func() {
+		logger := contextutils.LoggerFrom(ctx)
+		col.Register(func(o krt.Event[ir.PolicyWrapper]) {
+			if o.Event == controllers.EventDelete {
+				return
+			}
+
+			in := o.Latest()
+			routePolIr, ok := in.PolicyIR.(*routePolicy)
+			if !ok {
+				return
+			}
+
+			resNN := types.NamespacedName{
+				Name:      in.ObjectSource.Name,
+				Namespace: in.ObjectSource.Namespace,
+			}
+			res := v1alpha1.RoutePolicy{}
+			err := retry.Do(
+				func() error {
+					err := cl.Get(ctx, resNN, &res)
+					if err != nil {
+						logger.Error("error getting route policy: ", err.Error())
+						return err
+					}
+
+					newCondition := buildPolicyCondition(routePolIr.spec.errors)
+
+					found := meta.FindStatusCondition(res.Status.Conditions, string(gwv1a2.PolicyConditionAccepted))
+					if found != nil {
+						typeEq := found.Type == newCondition.Type
+						statusEq := found.Status == newCondition.Status
+						reasonEq := found.Reason == newCondition.Reason
+						messageEq := found.Message == newCondition.Message
+						if typeEq && statusEq && reasonEq && messageEq {
+							// condition is already up-to-date, nothing to do
+							return nil
+						}
+					}
+
+					conditions := make([]metav1.Condition, 0, 1)
+					meta.SetStatusCondition(&conditions, newCondition)
+					res.Status.Conditions = conditions
+					if err := cl.Status().Patch(ctx, &res, client.Merge); err != nil {
+						logger.Error(err)
+						return err
+					}
+					return nil
+				},
+				retry.Attempts(5),
+				retry.Delay(100*time.Millisecond),
+				retry.DelayType(retry.BackOffDelay),
+			)
+			if err != nil {
+				logger.Errorw(
+					"all attempts failed updating route policy status",
+					"Policy",
+					resNN.String(),
+					"error",
+					err,
+				)
+			}
+		})
+	}
+}
+
+func buildPolicyCondition(errs []error) metav1.Condition {
+	if len(errs) == 0 {
+		return metav1.Condition{
+			Type:    "Accepted",
+			Status:  metav1.ConditionTrue,
+			Reason:  "Accepted",
+			Message: "Policy accepted",
+		}
+	}
+	var aggErrs strings.Builder
+	var prologue string
+	if len(errs) == 1 {
+		prologue = "Policy error:"
+	} else {
+		prologue = fmt.Sprintf("Policy has %d errors:", len(errs))
+	}
+	aggErrs.Write([]byte(prologue))
+	for _, err := range errs {
+		aggErrs.Write([]byte(` "`))
+		aggErrs.Write([]byte(err.Error()))
+		aggErrs.Write([]byte(`"`))
+	}
+	return metav1.Condition{
+		Type:    "Accepted",
+		Status:  metav1.ConditionFalse,
+		Reason:  "Invalid",
+		Message: aggErrs.String(),
+	}
 }
 
 func NewGatewayTranslationPass(ctx context.Context, tctx ir.GwTranslationCtx) ir.ProxyTranslationPass {
@@ -290,6 +405,7 @@ func (p *routePolicyPluginGwPass) ApplyForRouteBackend(
 	err := p.processAIRoutePolicy(ctx, rtPolicy.spec.AI, pCtx, extprocSettings, rtPolicy.AISecret)
 	if err != nil {
 		// TODO: report error on status
+		contextutils.LoggerFrom(ctx).Errorf("error while processing AI RoutePolicy: %v", err)
 		return err
 	}
 
@@ -364,7 +480,11 @@ func buildTranslateFunc(ctx context.Context, secrets *krtcollections.SecretIndex
 		// Pass along the AI spec as is
 		outSpec.AI = policyCR.Spec.AI
 		// Augment with AI secrets as needed
-		policyIr.AISecret = aiSecretForSpec(ctx, secrets, krtctx, policyCR)
+		var err error
+		policyIr.AISecret, err = aiSecretForSpec(ctx, secrets, krtctx, policyCR)
+		if err != nil {
+			outSpec.errors = append(outSpec.errors, err)
+		}
 
 		// Apply transformation specific translation
 		transformationForSpec(policyCR.Spec, &outSpec)
@@ -381,29 +501,31 @@ func buildTranslateFunc(ctx context.Context, secrets *krtcollections.SecretIndex
 // aiSecret checks for the presence of the OpenAI Moderation which may require a secret reference
 // will log an error if the secret is needed but not found
 func aiSecretForSpec(
-	ctx context.Context, secrets *krtcollections.SecretIndex,
-	krtctx krt.HandlerContext, policyCR *v1alpha1.RoutePolicy,
-) *ir.Secret {
+	ctx context.Context,
+	secrets *krtcollections.SecretIndex,
+	krtctx krt.HandlerContext,
+	policyCR *v1alpha1.RoutePolicy,
+) (*ir.Secret, error) {
 	if policyCR.Spec.AI == nil ||
 		policyCR.Spec.AI.PromptGuard == nil ||
 		policyCR.Spec.AI.PromptGuard.Request == nil ||
 		policyCR.Spec.AI.PromptGuard.Request.Moderation == nil {
-		return nil
+		return nil, nil
 	}
 
 	secretRef := policyCR.Spec.AI.PromptGuard.Request.Moderation.OpenAIModeration.AuthToken.SecretRef
 	if secretRef == nil {
 		// no secret ref is set
-		return nil
+		return nil, nil
 	}
 
 	// Retrieve and assign the secret
 	secret, err := pluginutils.GetSecretIr(secrets, krtctx, secretRef.Name, policyCR.GetNamespace())
 	if err != nil {
 		contextutils.LoggerFrom(ctx).Error(err)
-		return nil
+		return nil, err
 	}
-	return secret
+	return secret, nil
 }
 
 // transformationForSpec translates the transformation spec into and onto the IR policy

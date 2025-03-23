@@ -18,7 +18,7 @@ type RoutePolicyApplyConfiguration struct {
 	v1.TypeMetaApplyConfiguration    `json:",inline"`
 	*v1.ObjectMetaApplyConfiguration `json:"metadata,omitempty"`
 	Spec                             *RoutePolicySpecApplyConfiguration `json:"spec,omitempty"`
-	Status                           *PolicyStatusApplyConfiguration    `json:"status,omitempty"`
+	Status                           *SimpleStatusApplyConfiguration    `json:"status,omitempty"`
 }
 
 // RoutePolicy constructs a declarative configuration of the RoutePolicy type for use with
@@ -237,7 +237,7 @@ func (b *RoutePolicyApplyConfiguration) WithSpec(value *RoutePolicySpecApplyConf
 // WithStatus sets the Status field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Status field is set to the value of the last call.
-func (b *RoutePolicyApplyConfiguration) WithStatus(value *PolicyStatusApplyConfiguration) *RoutePolicyApplyConfiguration {
+func (b *RoutePolicyApplyConfiguration) WithStatus(value *SimpleStatusApplyConfiguration) *RoutePolicyApplyConfiguration {
 	b.Status = value
 	return b
 }

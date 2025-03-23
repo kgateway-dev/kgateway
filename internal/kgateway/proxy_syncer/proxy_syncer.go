@@ -355,6 +355,12 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 		}
 	}()
 
+	for _, regFunc := range s.plugins.ContributesRegistration {
+		if regFunc != nil {
+			regFunc()
+		}
+	}
+
 	// Backend status is simply 1:1 with the BackendObject IR so we don't
 	// need to aggregate into a report. As Backends change, let the corresponding
 	// plugin handle status reporting per each Backend
