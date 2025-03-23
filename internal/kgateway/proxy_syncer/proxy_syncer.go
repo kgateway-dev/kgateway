@@ -226,9 +226,15 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) erro
 
 	s.backendPolicyReport = krt.NewSingleton(func(kctx krt.HandlerContext) *GKPolicyReport {
 		backends := krt.Fetch(kctx, s.finalBackends)
-		gkPolReport := generateBackendPolicyReport(convertBackends(backends))
+		gkPolReport := generatePolicyReport(convertBackends(backends))
 		return gkPolReport
 	}, krtopts.ToOptions("BackendsPolicyReport")...)
+
+	// TODO: move this into backendPolicyReport, there's nothing special about the attachment point
+	// krt.NewSingleton(func(kctx krt.HandlerContext) *GKPolicyReport {
+	// 	routes := s.commonCols.Routes.FetchAllHttp(kctx)
+	// 	return nil
+	// })
 
 	// as proxies are created, they also contain a reportMap containing status for the Gateway and associated xRoutes (really parentRefs)
 	// here we will merge reports that are per-Proxy to a singleton Report used to persist to k8s on a timer

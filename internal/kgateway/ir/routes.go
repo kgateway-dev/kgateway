@@ -50,6 +50,14 @@ func (c *HttpRouteIR) GetHostnames() []string {
 	return c.Hostnames
 }
 
+func (c HttpRouteIR) GetObjectSource() ObjectSource {
+	return c.ObjectSource
+}
+
+func (c HttpRouteIR) GetAttachedPolicies() AttachedPolicies {
+	return c.AttachedPolicies
+}
+
 var _ krt.ResourceNamer = &HttpRouteIR{}
 var _ krt.ResourceNamer = HttpRouteIR{}
 

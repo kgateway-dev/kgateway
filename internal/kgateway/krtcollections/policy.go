@@ -573,6 +573,10 @@ func (h *RoutesIndex) RoutesFor(kctx krt.HandlerContext, nns types.NamespacedNam
 	return ret
 }
 
+func (h *RoutesIndex) FetchAllHttp(kctx krt.HandlerContext) []ir.HttpRouteIR {
+	return krt.Fetch(kctx, h.httpRoutes)
+}
+
 func (h *RoutesIndex) FetchHttpNamespace(kctx krt.HandlerContext, ns string) []ir.HttpRouteIR {
 	return krt.Fetch(kctx, h.httpRoutes, krt.FilterIndex(h.httpByNamespace, ns))
 }

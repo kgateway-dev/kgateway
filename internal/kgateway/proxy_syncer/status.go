@@ -42,6 +42,14 @@ func convertBackends(backends []ir.BackendObjectIR) []ObjWithAttachedPolicies {
 	return objs
 }
 
+func convertRoutes(routes []ir.HttpRouteIR) []ObjWithAttachedPolicies {
+	objs := make([]ObjWithAttachedPolicies, 0, len(routes))
+	for _, backend := range routes {
+		objs = append(objs, &backend)
+	}
+	return objs
+}
+
 var _ ObjWithAttachedPolicies = ir.BackendObjectIR{}
 
 func (r GKPolicyReport) ResourceName() string {
