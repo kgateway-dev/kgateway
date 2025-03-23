@@ -116,6 +116,14 @@ func (c BackendObjectIR) ClusterName() string {
 	// return fmt.Sprintf("%s~%s:%d", c.GvPrefix, c.ObjectSource.ResourceName(), c.Port)
 }
 
+func (c BackendObjectIR) GetObjectSource() ObjectSource {
+	return c.ObjectSource
+}
+
+func (c BackendObjectIR) GetAttachedPolicies() AttachedPolicies {
+	return c.AttachedPolicies
+}
+
 type Secret struct {
 	// Ref to source object. sometimes the group and kind are not populated from api-server, so
 	// set them explicitly here, and pass this around as the reference.

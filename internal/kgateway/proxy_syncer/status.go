@@ -29,6 +29,21 @@ type GKPolicyReport struct {
 	SeenPolicies map[string]plug.PolicyReport
 }
 
+type ObjWithAttachedPolicies interface {
+	GetAttachedPolicies() ir.AttachedPolicies
+	GetObjectSource() ir.ObjectSource
+}
+
+func convertBackends(backends []ir.BackendObjectIR) []ObjWithAttachedPolicies {
+	objs := make([]ObjWithAttachedPolicies, 0, len(backends))
+	for _, backend := range backends {
+		objs = append(objs, backend)
+	}
+	return objs
+}
+
+var _ ObjWithAttachedPolicies = ir.BackendObjectIR{}
+
 func (r GKPolicyReport) ResourceName() string {
 	return "GKPolicyReport"
 }
@@ -59,13 +74,13 @@ func (r GKPolicyReport) Equals(in GKPolicyReport) bool {
 	return true
 }
 
-func generateBackendPolicyReport(backends []ir.BackendObjectIR) *GKPolicyReport {
+func generatePolicyReport(in []ObjWithAttachedPolicies) *GKPolicyReport {
 	seenPolicyResources := policyObjsWithReports{}
 	// iterate all backends and aggregate all policies attached to them
 	// we track each attachment point of the policy to be tracked as an
 	// ancestor for reporting status
-	for _, backendObj := range backends {
-		for _, polAtts := range backendObj.AttachedPolicies.Policies {
+	for _, obj := range in {
+		for _, polAtts := range obj.GetAttachedPolicies().Policies {
 			for _, polAtt := range polAtts {
 				if polAtt.PolicyRef == nil {
 					// the policyRef may be nil in the case of virtual plugins (e.g. istio settings)
@@ -73,7 +88,7 @@ func generateBackendPolicyReport(backends []ir.BackendObjectIR) *GKPolicyReport 
 					continue
 				}
 				ar := attachmentReport{
-					Ancestor: backendObj.ObjectSource,
+					Ancestor: obj.GetObjectSource(),
 					Errors:   polAtt.Errors,
 				}
 				reports := seenPolicyResources[*polAtt.PolicyRef]
