@@ -11,9 +11,11 @@ import (
 	"github.com/stretchr/testify/suite"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	envoyadmincli "github.com/kgateway-dev/kgateway/v2/pkg/utils/envoyutils/admincli"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
@@ -82,6 +84,13 @@ func (s *testingSuite) SetupSuite() {
 	})
 	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, proxyObjectMeta.GetNamespace(), metav1.ListOptions{
 		LabelSelector: fmt.Sprintf("app.kubernetes.io/name=%s", proxyObjectMeta.GetName()),
+	})
+
+	s.assertStatus(metav1.Condition{
+		Type:    "Accepted",
+		Status:  metav1.ConditionTrue,
+		Reason:  "Accepted",
+		Message: "Policy accepted",
 	})
 }
 
@@ -270,4 +279,23 @@ func (s *testingSuite) TestGatewayRustformationsWithTransformedRoute() {
 			),
 			tc.resp)
 	}
+}
+
+func (s *testingSuite) assertStatus(expected metav1.Condition) {
+	currentTimeout, pollingInterval := helpers.GetTimeouts()
+	p := s.testInstallation.Assertions
+	p.Gomega.Eventually(func(g gomega.Gomega) {
+		be := &v1alpha1.RoutePolicy{}
+		objKey := client.ObjectKeyFromObject(routePolicy)
+		err := s.testInstallation.ClusterContext.Client.Get(s.ctx, objKey, be)
+		g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get route policy %s", objKey)
+
+		actual := be.Status.Conditions
+		g.Expect(actual).To(gomega.HaveLen(1), "condition should have length of 1")
+		cond := meta.FindStatusCondition(actual, expected.Type)
+		g.Expect(cond).NotTo(gomega.BeNil())
+		g.Expect(cond.Status).To(gomega.Equal(expected.Status))
+		g.Expect(cond.Reason).To(gomega.Equal(expected.Reason))
+		g.Expect(cond.Message).To(gomega.Equal(expected.Message))
+	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 }
