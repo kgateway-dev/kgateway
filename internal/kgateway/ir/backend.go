@@ -8,6 +8,7 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
@@ -61,10 +62,7 @@ const (
 )
 
 func ParseAppProtocol(appProtocol *string) AppProtocol {
-	if appProtocol == nil {
-		return DefaultAppProtocol
-	}
-	switch *appProtocol {
+	switch ptr.Deref(appProtocol, "") {
 	case "kubernetes.io/h2c":
 		return HTTP2AppProtocol
 	default:

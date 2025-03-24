@@ -57,13 +57,15 @@ func (s Service) String() string {
 	return fmt.Sprintf("%s(%s/%s)", s.Kind(), s.GetNamespace(), s.GetName())
 }
 
+const maxEnvoyNameLength = 253
+
 func (s Service) DefaultVHostName(port ServicePort) string {
 	name := "vh_http_" + strconv.Itoa(int(port.Port)) + "_" + s.GetName() + "_" + s.GetNamespace()
 	if s.GroupKind.Kind == wellknown.ServiceEntryGVK.Kind {
 		// ServiceEntry
 		name += "_" + s.Hostname()
 	}
-	return name
+	return name[:maxEnvoyNameLength]
 }
 
 func (s Service) BackendRef(port ServicePort) ir.BackendRefIR {
@@ -193,6 +195,7 @@ func (sp ServicePort) IsHTTP() bool {
 }
 
 func fqdn(name, ns string) string {
+	// TODO: reevaluate knative dep, dedupe with pkg/utils/kubeutils/dns.go
 	clusterDomain := network.GetClusterDomainName()
 	return fmt.Sprintf("%s.%s.svc.%s", name, ns, clusterDomain)
 }

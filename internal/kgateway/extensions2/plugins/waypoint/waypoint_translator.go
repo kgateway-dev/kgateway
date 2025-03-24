@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -56,6 +57,8 @@ func (w *waypointTranslator) Translate(
 	gateway *ir.Gateway,
 	reporter reports.Reporter,
 ) *ir.GatewayIR {
+	logger := contextutils.LoggerFrom(ctx)
+
 	gwReporter := reporter.Gateway(gateway.Obj)
 	proxyListener, gwListener := buildInboundListener(gateway, gwReporter)
 	if proxyListener == nil || gwListener == nil {
@@ -67,7 +70,7 @@ func (w *waypointTranslator) Translate(
 	// and get merged with per-service routes
 	routes, err := w.fetchGatewayRoutes(kctx, ctx, gateway, gwListener, reporter, gwReporter)
 	if err != nil {
-		contextutils.LoggerFrom(ctx).Errorf("failed getting HTTPRoutes for Gateway: %v", err)
+		logger.Errorf("failed getting HTTPRoutes for Gateway: %v", err)
 		return nil
 	}
 
@@ -85,6 +88,7 @@ func (w *waypointTranslator) Translate(
 		http, tcp := w.buildServiceChains(
 			kctx,
 			ctx,
+			logger,
 			reporter,
 			gateway,
 			routes,
@@ -225,6 +229,7 @@ func (t *waypointTranslator) fetchGatewayRoutes(
 func (t *waypointTranslator) buildServiceChains(
 	kctx krt.HandlerContext,
 	ctx context.Context,
+	logger *zap.SugaredLogger,
 	baseReporter reports.Reporter,
 	gw *ir.Gateway,
 	gwRoutes []*query.RouteInfo,
@@ -235,7 +240,7 @@ func (t *waypointTranslator) buildServiceChains(
 	var tcpOut []ir.TcpIR
 	// get attached services (istio.io/use-waypoint)
 	services := t.waypointQueries.GetWaypointServices(kctx, ctx, gw.Obj)
-	println("stevenctl waypoint has ", len(services), "services")
+	logger.Debugw("attaching waypoint services", "gateway", namespacedName(gw).String(), "services", len(services))
 
 	// for each service:
 	// * 1:1 Service port -> filter chain
@@ -264,8 +269,8 @@ func (t *waypointTranslator) buildServiceChains(
 		for _, svcPort := range svc.Ports {
 			filterChain, err := initServiceChain(svc, svcPort)
 			if err != nil {
-				// TODO when we support headless, this should be infallible
-				contextutils.LoggerFrom(ctx).Warn(
+				// TODO if/when we support headless, initServiceChain should be infallible
+				logger.Debugw(
 					"service had invalid or missing VIPs",
 					"service",
 					svc.GetName(),

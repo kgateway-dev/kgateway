@@ -40,7 +40,6 @@ func NewPluginFromCollections(
 	endpointSlices krt.Collection[*discoveryv1.EndpointSlice],
 	stngs settings.Settings,
 ) extensionsplug.Plugin {
-	// TODO: reevaluate knative dep, dedupe with pkg/utils/kubeutils/dns.go
 	k8sServiceBackends := krt.NewManyCollection(services, func(kctx krt.HandlerContext, svc *corev1.Service) []ir.BackendObjectIR {
 		uss := []ir.BackendObjectIR{}
 		for _, port := range svc.Spec.Ports {
@@ -79,9 +78,10 @@ func BuildServiceBackendObjectIR(svc *corev1.Service, svcPort int32, svcProtocol
 		},
 		Obj: svc,
 		// TODO: fill in ObjIR
-		Port:              svcPort,
-		AppProtocol:       ir.ParseAppProtocol(&svcProtocol),
-		GvPrefix:          BackendClusterPrefix,
+		Port:        svcPort,
+		AppProtocol: ir.ParseAppProtocol(&svcProtocol),
+		GvPrefix:    BackendClusterPrefix,
+		// TODO: reevaluate knative dep, dedupe with pkg/utils/kubeutils/dns.go
 		CanonicalHostname: fmt.Sprintf("%s.%s.svc.%s", svc.Name, svc.Namespace, network.GetClusterDomainName()),
 	}
 }

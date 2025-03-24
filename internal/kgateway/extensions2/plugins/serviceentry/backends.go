@@ -24,9 +24,12 @@ func initServiceEntryBackend(ctx context.Context, in ir.BackendObjectIR, out *cl
 	if !ok {
 		return
 	}
+
+	// Only ServiceEntry that uses STATIC resolution with a workloadSelector
+	// results in an EDS cluster.
+	// All other cases should result in envoy STATIC or DNS clusters.
 	switch se.Spec.GetResolution() {
 	case networking.ServiceEntry_STATIC:
-		// STATIC is sometimes EDS
 		if !isEDSServiceEntry(se) {
 			out.ClusterDiscoveryType = &clusterv3.Cluster_Type{
 				Type: clusterv3.Cluster_STATIC,

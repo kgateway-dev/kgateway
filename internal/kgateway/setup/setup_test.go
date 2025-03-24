@@ -1044,6 +1044,8 @@ func generateKubeConfiguration(t *testing.T, restconfig *rest.Config) string {
 
 // applyPodStatusFromFile reads a YAML file, looks for Pod resources with a Status set,
 // and patches their status into the cluster. Skips any Pods not found or lacking a status.
+// This is needed because the other places that apply yaml will only apply spec.
+// We now have tests (ServiceEntry) that rely on IPs from Pod status instead of EndpointSlice.
 func applyPodStatusFromFile(ctx context.Context, c istiokube.CLIClient, defaultNs, filePath string) error {
 	data, err := os.ReadFile(filePath)
 	if err != nil {

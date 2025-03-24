@@ -12,7 +12,7 @@ import (
 // getBackendForRef allows two types of reference to ServiceEntry
 //  1. Directly via the ServiceEntry name and namespace
 //  2. Using the `Hostname` kind, targeting any hostname of the SE.
-//     This will pick the _oldest_ created SE if there is name colission.
+//     This will pick the _oldest_ created SE if there is name collision.
 //     Namespace on the ref is ignored.
 //
 // Both of these use the `networking.istio.io` group.
