@@ -250,12 +250,16 @@ func (c *ControllerBuilder) Start(ctx context.Context) error {
 	}
 
 	// Create the InferencePool controller if the inference extension feature is enabled and the API group is registered.
-	if globalSettings.EnableInferExt && c.mgr.GetScheme().IsGroupRegistered(infextv1a2.GroupVersion.Group) {
+	if globalSettings.EnableInferExt &&
+		c.mgr.GetScheme().IsGroupRegistered(infextv1a2.GroupVersion.Group) {
 		poolCfg := &InferencePoolConfig{
 			Mgr: c.mgr,
 			// TODO read this from globalSettings
 			ControllerName: c.cfg.ControllerName,
-			InferenceExt:   new(deployer.InferenceExtInfo),
+		}
+		// Enable the inference extension deployer if set.
+		if globalSettings.InferExtAutoProvision {
+			poolCfg.InferenceExt = new(deployer.InferenceExtInfo)
 		}
 		if err := NewBaseInferencePoolController(ctx, poolCfg, &gwCfg); err != nil {
 			setupLog.Error(err, "unable to create inferencepool controller")
