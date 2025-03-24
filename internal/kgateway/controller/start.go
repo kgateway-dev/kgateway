@@ -237,6 +237,11 @@ func (c *ControllerBuilder) Start(ctx context.Context) error {
 			XdsPort: xdsPort,
 		},
 		IstioIntegrationEnabled: integrationEnabled,
+		ImageInfo: &deployer.ImageInfo{
+			Registry:   globalSettings.DefaultImageRegistry,
+			Tag:        globalSettings.DefaultImageTag,
+			PullPolicy: globalSettings.DefaultImagePullPolicy,
+		},
 	}
 
 	if err := NewBaseGatewayController(ctx, gwCfg); err != nil {

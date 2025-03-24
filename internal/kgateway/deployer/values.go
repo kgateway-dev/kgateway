@@ -6,7 +6,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 )
 
-// The top-level helm values used by the deployer.
+// helmConfig stores the top-level helm values used by the deployer.
 type helmConfig struct {
 	Gateway            *helmGateway            `json:"gateway,omitempty"`
 	InferenceExtension *helmInferenceExtension `json:"inferenceExtension,omitempty"`

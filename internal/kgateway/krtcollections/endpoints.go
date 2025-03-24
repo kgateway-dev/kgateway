@@ -82,8 +82,8 @@ func NewGlooK8sEndpointInputs(
 	}
 }
 
-func NewGlooK8sEndpoints(ctx context.Context, inputs EndpointsInputs) krt.Collection[ir.EndpointsForBackend] {
-	return krt.NewCollection(inputs.Backends, transformK8sEndpoints(ctx, inputs), inputs.KrtOpts.ToOptions("GlooK8sEndpoints")...)
+func NewK8sEndpoints(ctx context.Context, inputs EndpointsInputs) krt.Collection[ir.EndpointsForBackend] {
+	return krt.NewCollection(inputs.Backends, transformK8sEndpoints(ctx, inputs), inputs.KrtOpts.ToOptions("K8sEndpoints")...)
 }
 
 func transformK8sEndpoints(ctx context.Context, inputs EndpointsInputs) func(kctx krt.HandlerContext, backend ir.BackendObjectIR) *ir.EndpointsForBackend {
