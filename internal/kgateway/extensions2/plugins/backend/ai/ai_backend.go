@@ -27,24 +27,31 @@ type IR struct {
 	Extproc        *envoy_ext_proc_v3.ExtProcPerRoute
 }
 
-func (i IR) Equals(otherAIIr *IR) bool {
-	if !maps.EqualFunc(data(i.AISecret), data(otherAIIr.AISecret), func(a, b []byte) bool {
-		return bytes.Equal(a, b)
-	}) {
-		return false
-	}
-	if !maps.EqualFunc(i.AIMultiSecret, otherAIIr.AIMultiSecret, func(a, b *ir.Secret) bool {
-		return maps.EqualFunc(data(a), data(b), func(a, b []byte) bool {
+func (i *IR) Equals(otherAIIr *IR) bool {
+	if i != nil {
+		if otherAIIr == nil {
+			// one of i or otherAIIr is nil, not equal
+			return false
+		}
+
+		if !maps.EqualFunc(data(i.AISecret), data(otherAIIr.AISecret), func(a, b []byte) bool {
 			return bytes.Equal(a, b)
-		})
-	}) {
-		return false
-	}
-	if !proto.Equal(i.Extproc, otherAIIr.Extproc) {
-		return false
-	}
-	if !proto.Equal(i.Transformation, otherAIIr.Transformation) {
-		return false
+		}) {
+			return false
+		}
+		if !maps.EqualFunc(i.AIMultiSecret, otherAIIr.AIMultiSecret, func(a, b *ir.Secret) bool {
+			return maps.EqualFunc(data(a), data(b), func(a, b []byte) bool {
+				return bytes.Equal(a, b)
+			})
+		}) {
+			return false
+		}
+		if !proto.Equal(i.Extproc, otherAIIr.Extproc) {
+			return false
+		}
+		if !proto.Equal(i.Transformation, otherAIIr.Transformation) {
+			return false
+		}
 	}
 	return true
 }
