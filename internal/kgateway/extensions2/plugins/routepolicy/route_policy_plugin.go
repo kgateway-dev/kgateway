@@ -40,9 +40,11 @@ import (
 	"github.com/solo-io/go-utils/contextutils"
 )
 
-const transformationFilterNamePrefix = "transformation"
-const rustformationFilterNamePrefix = "dynamic_modules/simple_mutations"
-const metadataRouteTransformation = "transformation/helper"
+const (
+	transformationFilterNamePrefix = "transformation"
+	rustformationFilterNamePrefix  = "dynamic_modules/simple_mutations"
+	metadataRouteTransformation    = "transformation/helper"
+)
 
 type routePolicy struct {
 	ct       time.Time
@@ -129,7 +131,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 	translate := buildTranslateFunc(ctx, commoncol.Secrets)
 	// RoutePolicy IR will have TypedConfig -> implement backendroute method to add prompt guard, etc.
 	policyCol := krt.NewCollection(col, func(krtctx krt.HandlerContext, policyCR *v1alpha1.RoutePolicy) *ir.PolicyWrapper {
-		var pol = &ir.PolicyWrapper{
+		pol := &ir.PolicyWrapper{
 			ObjectSource: ir.ObjectSource{
 				Group:     gk.Group,
 				Kind:      gk.Kind,
@@ -138,7 +140,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 			},
 			Policy:     policyCR,
 			PolicyIR:   translate(krtctx, policyCR),
-			TargetRefs: convert(policyCR.Spec.TargetRef),
+			TargetRefs: convert(policyCR.Spec.TargetRefs),
 		}
 		return pol
 	})
@@ -146,7 +148,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 	return extensionplug.Plugin{
 		ContributesPolicies: map[schema.GroupKind]extensionsplug.PolicyPlugin{
 			wellknown.RoutePolicyGVK.GroupKind(): {
-				//AttachmentPoints: []ir.AttachmentPoints{ir.HttpAttachmentPoint},
+				// AttachmentPoints: []ir.AttachmentPoints{ir.HttpAttachmentPoint},
 				NewGatewayTranslationPass: NewGatewayTranslationPass,
 				Policies:                  policyCol,
 			},
@@ -154,24 +156,28 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 	}
 }
 
-func convert(targetRef v1alpha1.LocalPolicyTargetReference) []ir.PolicyTargetRef {
-	return []ir.PolicyTargetRef{{
-		Kind:  string(targetRef.Kind),
-		Name:  string(targetRef.Name),
-		Group: string(targetRef.Group),
-	}}
+func convert(targetRefs []v1alpha1.LocalPolicyTargetReference) []ir.PolicyTargetRef {
+	refs := make([]ir.PolicyTargetRef, 0, len(targetRefs))
+	for _, targetRef := range targetRefs {
+		refs = append(refs, ir.PolicyTargetRef{
+			Kind:  string(targetRef.Kind),
+			Name:  string(targetRef.Name),
+			Group: string(targetRef.Group),
+		})
+	}
+	return refs
 }
 
 func NewGatewayTranslationPass(ctx context.Context, tctx ir.GwTranslationCtx) ir.ProxyTranslationPass {
 	return &routePolicyPluginGwPass{}
 }
+
 func (p *routePolicy) Name() string {
 	return "routepolicies"
 }
 
 // called 1 time for each listener
 func (p *routePolicyPluginGwPass) ApplyListenerPlugin(ctx context.Context, pCtx *ir.ListenerContext, out *envoy_config_listener_v3.Listener) {
-
 }
 
 func (p *routePolicyPluginGwPass) ApplyVhostPlugin(ctx context.Context, pCtx *ir.VirtualHostContext, out *envoy_config_route_v3.VirtualHost) {
@@ -219,7 +225,7 @@ func (p *routePolicyPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.Ro
 					TransformationTemplate: &transformationpb.TransformationTemplate{
 						ParseBodyBehavior: transformationpb.TransformationTemplate_DontParse, // Default is to try for JSON... Its kinda nice but failure is bad...
 						DynamicMetadataValues: []*transformationpb.TransformationTemplate_DynamicMetadataValue{
-							&transformationpb.TransformationTemplate_DynamicMetadataValue{
+							{
 								MetadataNamespace: "kgateway",
 								Key:               "route",
 								Value: &transformationpb.InjaTemplate{
@@ -235,7 +241,6 @@ func (p *routePolicyPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.Ro
 		setmetaTransform := &transformationpb.RouteTransformations{
 			Transformations: []*transformationpb.RouteTransformations_RouteTransformation{
 				{
-
 					Match: &transformationpb.RouteTransformations_RouteTransformation_RequestMatch_{
 						RequestMatch: reqm,
 					},
@@ -377,7 +382,8 @@ func buildTranslateFunc(ctx context.Context, secrets *krtcollections.SecretIndex
 // will log an error if the secret is needed but not found
 func aiSecretForSpec(
 	ctx context.Context, secrets *krtcollections.SecretIndex,
-	krtctx krt.HandlerContext, policyCR *v1alpha1.RoutePolicy) *ir.Secret {
+	krtctx krt.HandlerContext, policyCR *v1alpha1.RoutePolicy,
+) *ir.Secret {
 	if policyCR.Spec.AI == nil ||
 		policyCR.Spec.AI.PromptGuard == nil ||
 		policyCR.Spec.AI.PromptGuard.Request == nil ||
