@@ -51,10 +51,12 @@ func (t *BackendTranslator) TranslateBackend(
 	}
 
 	if backend.Errors != nil {
-		// the backend has errors so we can't translate our real cluster.
-		// return a blackhole cluster (in case a consumer attempts to use it)
-		// and the errors to signify to callers it's not a dev error but a real error
-		// on the backend object
+		// the backend has errors so we can't translate our real cluster
+		// so return a blackhole cluster instead. (in case a consumer attempts to use it)
+		// also return the errors to signify to callers it's not a dev error but a real error
+		// from backend object translation.
+		// this cluster will ultimately be dropped before it added to the xDS snapshot
+		// see: internal/kgateway/proxy_syncer/perclient.go
 		out := buildBlackholeCluster(&backend)
 		return out, errors.Join(backend.Errors...)
 	}

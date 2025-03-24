@@ -553,6 +553,10 @@ func NewRoutesIndex(
 	return h
 }
 
+func (h *RoutesIndex) FetchHttpNamespace(kctx krt.HandlerContext, ns string) []ir.HttpRouteIR {
+	return krt.Fetch(kctx, h.httpRoutes, krt.FilterIndex(h.httpByNamespace, ns))
+}
+
 func (h *RoutesIndex) RoutesForGateway(kctx krt.HandlerContext, nns types.NamespacedName) []ir.Route {
 	return h.RoutesFor(kctx, nns, wellknown.GatewayGVK.Group, wellknown.GatewayGVK.Kind)
 }
@@ -571,14 +575,6 @@ func (h *RoutesIndex) RoutesFor(kctx krt.HandlerContext, nns types.NamespacedNam
 		ret[i] = r.Route
 	}
 	return ret
-}
-
-func (h *RoutesIndex) FetchAllHttp(kctx krt.HandlerContext) []ir.HttpRouteIR {
-	return krt.Fetch(kctx, h.httpRoutes)
-}
-
-func (h *RoutesIndex) FetchHttpNamespace(kctx krt.HandlerContext, ns string) []ir.HttpRouteIR {
-	return krt.Fetch(kctx, h.httpRoutes, krt.FilterIndex(h.httpByNamespace, ns))
 }
 
 func (h *RoutesIndex) FetchHttp(kctx krt.HandlerContext, ns, n string) *ir.HttpRouteIR {
