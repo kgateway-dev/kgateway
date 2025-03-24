@@ -194,7 +194,7 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 		return nil, err
 	}
 
-	setupLog.Info("starting controller builder", "GatewayClasses")
+	setupLog.Info("starting controller builder")
 	return &ControllerBuilder{
 		proxySyncer: proxySyncer,
 		cfg:         cfg,
