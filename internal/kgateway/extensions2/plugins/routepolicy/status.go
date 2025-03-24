@@ -17,8 +17,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 
-	// TODO(nfuden): remove once rustformations are able to be used in a production environment
-
 	"github.com/solo-io/go-utils/contextutils"
 )
 
