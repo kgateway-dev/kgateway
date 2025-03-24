@@ -2153,12 +2153,6 @@ func schema_kgateway_v2_api_v1alpha1_HTTPListenerPolicySpec(ref common.Reference
 							},
 						},
 					},
-					"compress": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"boolean"},
-							Format: "",
-						},
-					},
 					"accessLog": {
 						SchemaProps: spec.SchemaProps{
 							Description: "AccessLoggingConfig contains various settings for Envoy's access logging service. See here for more information: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto",

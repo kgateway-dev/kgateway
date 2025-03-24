@@ -611,9 +611,6 @@ var schemaYAML = typed.YAMLObject(`types:
           elementType:
             namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AccessLog
           elementRelationship: atomic
-    - name: compress
-      type:
-        scalar: boolean
     - name: targetRefs
       type:
         list:
