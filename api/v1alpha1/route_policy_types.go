@@ -29,6 +29,7 @@ type RoutePolicyList struct {
 }
 
 type RoutePolicySpec struct {
+
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=16
 	TargetRefs []LocalPolicyTargetReference `json:"targetRefs,omitempty"`
@@ -36,7 +37,8 @@ type RoutePolicySpec struct {
 	AI *AIRoutePolicy `json:"ai,omitempty"`
 
 	Transformation TransformationPolicy `json:"transformation,omitempty"`
-	ExtAuth        *ExtAuthRoutePolicy  `json:"extAuth,omitempty"`
+
+	ExtAuth *ExtAuthRoutePolicy `json:"extAuth,omitempty"`
 }
 
 // TransformationPolicy config is used to modify envoy behavior at a route level.

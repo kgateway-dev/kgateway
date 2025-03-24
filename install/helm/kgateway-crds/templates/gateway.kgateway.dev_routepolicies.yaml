@@ -370,6 +370,84 @@ spec:
                 maxItems: 16
                 minItems: 1
                 type: array
+              extAuth:
+                properties:
+                  clearRouteCache:
+                    default: false
+                    type: boolean
+                  failureModeAllow:
+                    default: false
+                    type: boolean
+                  includePeerCertificate:
+                    default: false
+                    type: boolean
+                  includeTLSSession:
+                    default: false
+                    type: boolean
+                  metadataContextNamespaces:
+                    default: '["jwt"]'
+                    items:
+                      type: string
+                    type: array
+                    x-kubernetes-list-type: set
+                  providerRef:
+                    properties:
+                      group:
+                        maxLength: 253
+                        pattern: ^$|^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                        type: string
+                      kind:
+                        maxLength: 63
+                        minLength: 1
+                        pattern: ^[a-zA-Z]([-a-zA-Z0-9]*[a-zA-Z0-9])?$
+                        type: string
+                      name:
+                        maxLength: 253
+                        minLength: 1
+                        type: string
+                    required:
+                    - group
+                    - kind
+                    - name
+                    type: object
+                  withRequestBody:
+                    properties:
+                      allowPartialMessage:
+                        default: false
+                        type: boolean
+                      maxRequestBytes:
+                        format: int32
+                        minimum: 1
+                        type: integer
+                      packAsBytes:
+                        default: false
+                        type: boolean
+                    required:
+                    - maxRequestBytes
+                    type: object
+                required:
+                - providerRef
+                type: object
+              targetRef:
+                properties:
+                  group:
+                    maxLength: 253
+                    pattern: ^$|^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                    type: string
+                  kind:
+                    maxLength: 63
+                    minLength: 1
+                    pattern: ^[a-zA-Z]([-a-zA-Z0-9]*[a-zA-Z0-9])?$
+                    type: string
+                  name:
+                    maxLength: 253
+                    minLength: 1
+                    type: string
+                required:
+                - group
+                - kind
+                - name
+                type: object
               transformation:
                 properties:
                   request:

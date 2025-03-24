@@ -5,9 +5,9 @@ package v1alpha1
 // RoutePolicySpecApplyConfiguration represents a declarative configuration of the RoutePolicySpec type for use
 // with apply.
 type RoutePolicySpecApplyConfiguration struct {
-	TargetRef      *LocalPolicyTargetReferenceApplyConfiguration `json:"targetRef,omitempty"`
-	AI             *AIRoutePolicyApplyConfiguration              `json:"ai,omitempty"`
-	Transformation *TransformationPolicyApplyConfiguration       `json:"transformation,omitempty"`
+	TargetRefs     []LocalPolicyTargetReferenceApplyConfiguration `json:"targetRefs,omitempty"`
+	AI             *AIRoutePolicyApplyConfiguration               `json:"ai,omitempty"`
+	Transformation *TransformationPolicyApplyConfiguration        `json:"transformation,omitempty"`
 	ExtAuth        *ExtAuthRoutePolicyApplyConfiguration         `json:"extAuth,omitempty"`
 }
 
