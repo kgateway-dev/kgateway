@@ -63,40 +63,24 @@ func (u *BackendIr) Equals(other any) bool {
 		return false
 	}
 	// AI
-	if u.AIIr == nil && otherBackend.AIIr != nil {
+	if !maps.EqualFunc(data(u.AIIr.AISecret), data(otherBackend.AIIr.AISecret), func(a, b []byte) bool {
+		return bytes.Equal(a, b)
+	}) {
 		return false
 	}
-	if u.AIIr != nil {
-		if otherBackend.AIIr == nil {
-			return false
-		}
-		if !maps.EqualFunc(data(u.AIIr.AISecret), data(otherBackend.AIIr.AISecret), func(a, b []byte) bool {
+	if !maps.EqualFunc(u.AIIr.AIMultiSecret, otherBackend.AIIr.AIMultiSecret, func(a, b *ir.Secret) bool {
+		return maps.EqualFunc(data(a), data(b), func(a, b []byte) bool {
 			return bytes.Equal(a, b)
-		}) {
-			return false
-		}
-		if !maps.EqualFunc(u.AIIr.AIMultiSecret, otherBackend.AIIr.AIMultiSecret, func(a, b *ir.Secret) bool {
-			return maps.EqualFunc(data(a), data(b), func(a, b []byte) bool {
-				return bytes.Equal(a, b)
-			})
-		}) {
-			return false
-		}
-		if !u.AIIr.AIBackend.Equals(otherBackend.AIIr.AIBackend) {
-			return false
-		}
+		})
+	}) {
+		return false
+	}
+	if !u.AIIr.AIBackend.Equals(otherBackend.AIIr.AIBackend) {
+		return false
 	}
 	// AWS
-	if u.AwsIr == nil && otherBackend.AwsIr != nil {
+	if !u.AwsIr.Equals(otherBackend.AwsIr) {
 		return false
-	}
-	if u.AwsIr != nil {
-		if otherBackend.AwsIr == nil {
-			return false
-		}
-		if !u.AwsIr.Equals(otherBackend.AwsIr) {
-			return false
-		}
 	}
 	return true
 }
