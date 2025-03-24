@@ -267,18 +267,14 @@ func (p *routePolicyPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.Ro
 			b, ok := backend.Backend.BackendObject.Obj.(*v1alpha1.Backend)
 			if !ok {
 				// AI policy cannot apply to kubernetes services
-				// TODO(npolshak): Report this as a warning on status and replace route with 500
-				invalidBackendErr := fmt.Sprintf("targetRef cannot apply to %s backend. AI RoutePolicy must apply only to AI backend", backend.Backend.BackendObject.GetName())
-				contextutils.LoggerFrom(ctx).Error(invalidBackendErr)
-				errs = append(errs, errors.New(invalidBackendErr))
+				// TODO(npolshak): Report this as a warning on status
+				contextutils.LoggerFrom(ctx).Warnf("targetRef cannot apply to %s backend. AI RoutePolicy must apply only to AI backend", backend.Backend.BackendObject.GetName())
 				continue
 			}
 			if b.Spec.Type != v1alpha1.BackendTypeAI {
 				// AI policy cannot apply to non-AI backends
-				// TODO(npolshak): Report this as a warning on status and replace route with 500
-				invalidBackendTypeErr := fmt.Sprintf("backend %s is of type %s. AI RoutePolicy must apply only to AI backend", backend.Backend.BackendObject.GetName(), b.Spec.Type)
-				contextutils.LoggerFrom(ctx).Error(invalidBackendTypeErr)
-				errs = append(errs, errors.New(invalidBackendTypeErr))
+				// TODO(npolshak): Report this as a warning on status
+				contextutils.LoggerFrom(ctx).Warnf("backend %s is of type %s. AI RoutePolicy must apply only to AI backend", backend.Backend.BackendObject.GetName(), b.Spec.Type)
 				continue
 			}
 			aiBackends = append(aiBackends, b)
