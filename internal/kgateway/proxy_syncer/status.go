@@ -1,14 +1,10 @@
 package proxy_syncer
 
 import (
-	"fmt"
 	"maps"
 	"slices"
-	"strings"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
 	plug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
@@ -128,36 +124,5 @@ func generatePolicyReport(in []ObjWithAttachedPolicies) *GKPolicyReport {
 	}
 	return &GKPolicyReport{
 		SeenPolicies: seenPolsByGk,
-	}
-}
-
-// TODO: find better location for this
-func BuildPolicyCondition(polErrs []error) metav1.Condition {
-	if len(polErrs) == 0 {
-		return metav1.Condition{
-			Type:    string(gwv1a2.PolicyConditionAccepted),
-			Status:  metav1.ConditionTrue,
-			Reason:  string(gwv1a2.PolicyReasonAccepted),
-			Message: "Policy accepted and attached",
-		}
-	}
-	var aggErrs strings.Builder
-	var prologue string
-	if len(polErrs) == 1 {
-		prologue = "Policy error:"
-	} else {
-		prologue = fmt.Sprintf("Policy has %d errors:", len(polErrs))
-	}
-	aggErrs.Write([]byte(prologue))
-	for _, err := range polErrs {
-		aggErrs.Write([]byte(` "`))
-		aggErrs.Write([]byte(err.Error()))
-		aggErrs.Write([]byte(`"`))
-	}
-	return metav1.Condition{
-		Type:    string(gwv1a2.PolicyConditionAccepted),
-		Status:  metav1.ConditionFalse,
-		Reason:  string(gwv1a2.PolicyReasonInvalid),
-		Message: aggErrs.String(),
 	}
 }

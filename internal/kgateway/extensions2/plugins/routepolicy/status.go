@@ -1,11 +1,10 @@
-package backend
+package routepolicy
 
 import (
 	"context"
 	"time"
 
 	"github.com/avast/retry-go"
-	"github.com/solo-io/go-utils/contextutils"
 	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -17,23 +16,30 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
+
+	// TODO(nfuden): remove once rustformations are able to be used in a production environment
+
+	"github.com/solo-io/go-utils/contextutils"
 )
 
+// TODO: this should be done as a krt StatusCollection, but bumping istio
+// to use it requires a envoy/g-c-p bump which changes the signatures of dynamic
+// modules; we need to figure that out but not worth investigating until at least
+// basic status reporting is functional
 func buildRegisterCallback(
 	ctx context.Context,
 	cl client.Client,
-	bcol krt.Collection[ir.BackendObjectIR],
+	col krt.Collection[ir.PolicyWrapper],
 ) func() {
 	return func() {
-		ctx = contextutils.WithLogger(ctx, "backendStatus")
 		logger := contextutils.LoggerFrom(ctx)
-		bcol.Register(func(o krt.Event[ir.BackendObjectIR]) {
+		col.Register(func(o krt.Event[ir.PolicyWrapper]) {
 			if o.Event == controllers.EventDelete {
 				return
 			}
 
 			in := o.Latest()
-			ir, ok := in.ObjIr.(*BackendIr)
+			routePolIr, ok := in.PolicyIR.(*routePolicy)
 			if !ok {
 				return
 			}
@@ -42,16 +48,16 @@ func buildRegisterCallback(
 				Name:      in.ObjectSource.Name,
 				Namespace: in.ObjectSource.Namespace,
 			}
-			res := v1alpha1.Backend{}
+			res := v1alpha1.RoutePolicy{}
 			err := retry.Do(
 				func() error {
 					err := cl.Get(ctx, resNN, &res)
 					if err != nil {
-						logger.Error("error getting backend: ", err.Error())
+						logger.Error("error getting route policy: ", err.Error())
 						return err
 					}
 
-					newCondition := pluginutils.BuildCondition("Backend", ir.Errors)
+					newCondition := pluginutils.BuildCondition("Policy", routePolIr.spec.errors)
 
 					found := meta.FindStatusCondition(res.Status.Conditions, string(gwv1a2.PolicyConditionAccepted))
 					if found != nil {
@@ -80,8 +86,8 @@ func buildRegisterCallback(
 			)
 			if err != nil {
 				logger.Errorw(
-					"all attempts failed updating backend status",
-					"Backend",
+					"all attempts failed updating route policy status",
+					"Policy",
 					resNN.String(),
 					"error",
 					err,
