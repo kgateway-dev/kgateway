@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"maps"
 	"regexp"
 	"time"
 
@@ -121,8 +120,15 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(ctx context.Context,
 	generatedName string,
 ) *envoy_config_route_v3.Route {
 	out := h.initRoutes(in, generatedName)
-	if len(in.Backends) > 0 {
-		out.Action = h.translateRouteAction(ctx, in, out)
+
+	typedPerFilterConfigRoute := ir.TypedFilterConfigMap(map[string]proto.Message{})
+	if len(in.Backends) == 1 {
+		// if there's only one backend, we need to reuse typedPerFilterConfigRoute in both translateRouteAction and runRoutePlugins
+		out.Action = h.translateRouteAction(ctx, in, out, typedPerFilterConfigRoute)
+	} else if len(in.Backends) > 0 {
+		// If there is more than one backend, we translate the backends as WeightedClusters and each weighted cluster
+		// will have a TypedPerFilterConfig that overrides the parent route-level config.
+		out.Action = h.translateRouteAction(ctx, in, out, nil)
 	}
 
 	// Set timeout from the HTTPRouteRule if specified
@@ -131,10 +137,24 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(ctx context.Context,
 	}
 
 	// run plugins here that may set action
-	err := h.runRoutePlugins(ctx, routeReport, in, out)
+	err := h.runRoutePlugins(ctx, routeReport, in, out, typedPerFilterConfigRoute)
 	if err == nil {
 		err = validateEnvoyRoute(out)
 	}
+
+	// apply typed per filter config from translating route action and route plugins
+	typedPerFilterConfigAny := map[string]*anypb.Any{}
+	for k, v := range typedPerFilterConfigRoute {
+		config, err := utils.MessageToAny(v)
+		if err != nil {
+			// TODO: error on status
+			contextutils.LoggerFrom(ctx).Error(err)
+			continue
+		}
+		typedPerFilterConfigAny[k] = config
+	}
+	out.TypedPerFilterConfig = typedPerFilterConfigAny
+
 	if err == nil && out.GetAction() == nil {
 		if in.HasChildren {
 			return nil
@@ -198,7 +218,13 @@ func (h *httpRouteConfigurationTranslator) runVhostPlugins(ctx context.Context, 
 	}
 }
 
-func (h *httpRouteConfigurationTranslator) runRoutePlugins(ctx context.Context, routeReport reports.ParentRefReporter, in ir.HttpRouteRuleMatchIR, out *envoy_config_route_v3.Route) error {
+func (h *httpRouteConfigurationTranslator) runRoutePlugins(
+	ctx context.Context,
+	routeReport reports.ParentRefReporter,
+	in ir.HttpRouteRuleMatchIR,
+	out *envoy_config_route_v3.Route,
+	typedPerFilterConfig ir.TypedFilterConfigMap,
+) error {
 	// all policies up to listener have been applied as vhost polices; we need to apply the httproute policies and below
 	//
 	// NOTE: AttachedPolicies must have policies in the order of lowest priority to highest priority,
@@ -241,9 +267,10 @@ func (h *httpRouteConfigurationTranslator) runRoutePlugins(ctx context.Context, 
 			}
 			for _, pol := range pols {
 				pctx := &ir.RouteContext{
-					FilterChainName: h.fc.FilterChainName,
-					Policy:          pol.PolicyIr,
-					In:              in,
+					FilterChainName:   h.fc.FilterChainName,
+					Policy:            pol.PolicyIr,
+					In:                in,
+					TypedFilterConfig: typedPerFilterConfig,
 				}
 				err := pass.ApplyForRoute(ctx, pctx, out)
 				if err != nil {
@@ -305,6 +332,7 @@ func (h *httpRouteConfigurationTranslator) translateRouteAction(
 	ctx context.Context,
 	in ir.HttpRouteRuleMatchIR,
 	outRoute *envoy_config_route_v3.Route,
+	parentTypedPerFilterConfig ir.TypedFilterConfigMap,
 ) *envoy_config_route_v3.Route_Route {
 	var clusters []*envoy_config_route_v3.WeightedCluster_ClusterWeight
 
@@ -318,12 +346,15 @@ func (h *httpRouteConfigurationTranslator) translateRouteAction(
 			Weight: wrapperspb.UInt32(backend.Backend.Weight),
 		}
 
-		typedPerFilterConfig := map[string]proto.Message{}
+		typedPerFilterConfig := parentTypedPerFilterConfig
+		if parentTypedPerFilterConfig == nil {
+			typedPerFilterConfig = map[string]proto.Message{}
+		}
 
 		pCtx := ir.RouteBackendContext{
 			FilterChainName:   h.fc.FilterChainName,
 			Backend:           backend.Backend.BackendObject,
-			TypedFilterConfig: &typedPerFilterConfig,
+			TypedFilterConfig: typedPerFilterConfig,
 		}
 
 		// non attached policy translation
@@ -348,6 +379,7 @@ func (h *httpRouteConfigurationTranslator) translateRouteAction(
 			contextutils.LoggerFrom(ctx).Error(err)
 		}
 
+		// Translating weighted clusters needs the typed per filter config on each cluster
 		typedPerFilterConfigAny := map[string]*anypb.Any{}
 		for k, v := range typedPerFilterConfig {
 			config, err := utils.MessageToAny(v)
@@ -383,13 +415,7 @@ func (h *httpRouteConfigurationTranslator) translateRouteAction(
 				Cluster: clusters[0].GetName(),
 			}
 		}
-		if clusters[0].GetTypedPerFilterConfig() != nil {
-			if outRoute.GetTypedPerFilterConfig() == nil {
-				outRoute.TypedPerFilterConfig = clusters[0].GetTypedPerFilterConfig()
-			} else {
-				maps.Copy(outRoute.GetTypedPerFilterConfig(), clusters[0].GetTypedPerFilterConfig())
-			}
-		}
+		// Skip setting the typed per filter config here, set it in the envoyRoutes() after runRoutePlugins runs
 
 	default:
 		// Only set weighted clusters if unspecified since a plugin may have set it.

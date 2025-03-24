@@ -10,14 +10,13 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	stdslice "slices"
 	"sort"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
-
-	stdslice "slices"
 
 	envoycluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"

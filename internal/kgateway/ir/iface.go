@@ -27,31 +27,39 @@ type RouteConfigContext struct {
 type VirtualHostContext struct {
 	Policy PolicyIR
 }
+
+type TypedFilterConfigMap map[string]proto.Message
+
+func (r *TypedFilterConfigMap) AddTypedConfig(key string, v proto.Message) {
+	if *r == nil {
+		*r = make(TypedFilterConfigMap)
+	}
+	(*r)[key] = v
+}
+
+func (r *TypedFilterConfigMap) GetTypedConfig(key string) proto.Message {
+	if r == nil || *r == nil {
+		return nil
+	}
+	if v, ok := (*r)[key]; ok {
+		return v
+	}
+	return nil
+}
+
 type RouteBackendContext struct {
 	FilterChainName string
 	Backend         *BackendObjectIR
-	// todo: make this not public
-	TypedFilterConfig *map[string]proto.Message
-}
-
-func (r *RouteBackendContext) AddTypedConfig(key string, v proto.Message) {
-	if *r.TypedFilterConfig == nil {
-		*r.TypedFilterConfig = make(map[string]proto.Message)
-	}
-	(*r.TypedFilterConfig)[key] = v
-}
-
-func (r *RouteBackendContext) GetTypedConfig(key string) proto.Message {
-	if *r.TypedFilterConfig == nil {
-		return nil
-	}
-	return (*r.TypedFilterConfig)[key]
+	// TypedFilterConfig will be output on the Route or WeightedCluster level after all plugins have run
+	TypedFilterConfig TypedFilterConfigMap
 }
 
 type RouteContext struct {
 	FilterChainName string
 	Policy          PolicyIR
 	In              HttpRouteRuleMatchIR
+	// TypedFilterConfig will be output on the Route level after all plugins have run
+	TypedFilterConfig TypedFilterConfigMap
 }
 
 type HcmContext struct {
@@ -86,29 +94,33 @@ type ProxyTranslationPass interface {
 		pCtx *VirtualHostContext,
 		out *envoy_config_route_v3.VirtualHost,
 	)
-	// called 0 or more times (one for each route)
-	// Applies policy for an HTTPRoute that has a policy attached via a targetRef.
-	// The output configures the envoy_config_route_v3.Route
-	ApplyForRoute(
-		ctx context.Context,
-		pCtx *RouteContext,
-		out *envoy_config_route_v3.Route) error
-
 	// no policy applied - this is called for every backend in a route.
 	// For this to work the backend needs to register itself as a policy. TODO: rethink this.
+	// Note: TypedFilterConfig should be applied in the pCtx and is shared between ApplyForRoute, ApplyForBackend
+	// and ApplyForRouteBacken (do not apply on the output route directly)
 	ApplyForBackend(
 		ctx context.Context,
 		pCtx *RouteBackendContext,
 		in HttpBackend,
 		out *envoy_config_route_v3.Route,
 	) error
-
 	// Applies a policy attached to a specific Backend (via extensionRef on the BackendRef).
+	// Note: TypedFilterConfig should be applied in the pCtx and is shared between ApplyForRoute, ApplyForBackend
+	// and ApplyForRouteBackend
 	ApplyForRouteBackend(
 		ctx context.Context,
 		policy PolicyIR,
 		pCtx *RouteBackendContext,
 	) error
+	// called 0 or more times (one for each route)
+	// Applies policy for an HTTPRoute that has a policy attached via a targetRef.
+	// The output configures the envoy_config_route_v3.Route
+	// Note: TypedFilterConfig should be applied in the pCtx and is shared between ApplyForRoute, ApplyForBackend
+	// and ApplyForRouteBacken (do not apply on the output route directly)
+	ApplyForRoute(
+		ctx context.Context,
+		pCtx *RouteContext,
+		out *envoy_config_route_v3.Route) error
 
 	// called 1 time per filter-chain.
 	// If a plugin emits new filters, they must be with a plugin unique name.
