@@ -77,7 +77,7 @@ func toEnvoyExtProcPerRoute(
 	commoncol *common.CommonCollections,
 	parentSrc ir.ObjectSource,
 ) (*envoy_ext_proc_v3.ExtProcPerRoute, error) {
-	backend, err := commoncol.Backends.GetBackendFromRef(krtctx, parentSrc, extprocConfig.GrpcService.BackendRef.BackendObjectReference)
+	backend, err := commoncol.BackendIndex.GetBackendFromRef(krtctx, parentSrc, extprocConfig.GrpcService.BackendRef.BackendObjectReference)
 	if err != nil {
 		// return nil, err
 		fmt.Println("error getting backend", err)
@@ -151,7 +151,7 @@ func toEnvoyExtProc(
 	commoncol *common.CommonCollections,
 	parentSrc ir.ObjectSource,
 ) (*envoy_ext_proc_v3.ExternalProcessor, error) {
-	backend, err := commoncol.Backends.GetBackendFromRef(krtctx, parentSrc, extprocConfig.GrpcService.BackendRef.BackendObjectReference)
+	backend, err := commoncol.BackendIndex.GetBackendFromRef(krtctx, parentSrc, extprocConfig.GrpcService.BackendRef.BackendObjectReference)
 	if err != nil {
 		// return nil, err
 		fmt.Println("error getting backend", err)

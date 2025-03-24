@@ -6,10 +6,9 @@ package v1alpha1
 // with apply.
 type RoutePolicySpecApplyConfiguration struct {
 	TargetRefs     []LocalPolicyTargetReferenceApplyConfiguration `json:"targetRefs,omitempty"`
-	Timeout        *int                                          `json:"timeout,omitempty"`
-	AI             *AIRoutePolicyApplyConfiguration              `json:"ai,omitempty"`
-	Transformation *TransformationPolicyApplyConfiguration       `json:"transformation,omitempty"`
-	ExtProc        *ExtProcPolicyApplyConfiguration              `json:"extProc,omitempty"`
+	AI             *AIRoutePolicyApplyConfiguration               `json:"ai,omitempty"`
+	Transformation *TransformationPolicyApplyConfiguration        `json:"transformation,omitempty"`
+	ExtProc        *ExtProcPolicyApplyConfiguration               `json:"extProc,omitempty"`
 }
 
 // RoutePolicySpecApplyConfiguration constructs a declarative configuration of the RoutePolicySpec type for use with
