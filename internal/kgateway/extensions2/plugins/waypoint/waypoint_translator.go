@@ -22,6 +22,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/httproute"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/stringutils"
 
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/slices"
@@ -313,7 +314,8 @@ func filterChainName(
 		proto = "http"
 	}
 	// TODO(peering) this probably should use non peered name/namespace
-	return fmt.Sprintf("fc_%s_%d_%s_%s", proto, port.Port, svc.GetName(), svc.GetNamespace())
+	name := fmt.Sprintf("fc_%s_%d_%s_%s", proto, port.Port, svc.GetName(), svc.GetNamespace())
+	return stringutils.TruncateMaxLength(name, wellknown.EnvoyConfigNameMaxLen)
 }
 
 func initServiceChain(
@@ -364,8 +366,10 @@ func (t *waypointTranslator) buildHTTPVirtualHost(
 		)...)
 	}
 	return &ir.VirtualHost{
-		// TODO for peering, this should be the _original_ name, not the effective name.
-		Name:     "http_routes_" + svc.GetName() + "_" + svc.GetNamespace(),
+		Name: stringutils.TruncateMaxLength(
+			"http_routes_"+svc.GetName()+"_"+svc.GetNamespace(),
+			wellknown.EnvoyConfigNameMaxLen,
+		),
 		Rules:    translatedRoutes,
 		Hostname: "*",
 		// TODO not sure how this works.. will this also have sectionname-less policies?

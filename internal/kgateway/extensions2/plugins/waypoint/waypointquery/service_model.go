@@ -23,6 +23,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/serviceentry"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/stringutils"
 )
 
 // ErrUnsupportedServiceType should never occur due to unexpected input.
@@ -57,15 +58,13 @@ func (s Service) String() string {
 	return fmt.Sprintf("%s(%s/%s)", s.Kind(), s.GetNamespace(), s.GetName())
 }
 
-const maxEnvoyNameLength = 253
-
 func (s Service) DefaultVHostName(port ServicePort) string {
 	name := "vh_http_" + strconv.Itoa(int(port.Port)) + "_" + s.GetName() + "_" + s.GetNamespace()
 	if s.GroupKind.Kind == wellknown.ServiceEntryGVK.Kind {
 		// ServiceEntry
 		name += "_" + s.Hostname()
 	}
-	return name[:maxEnvoyNameLength]
+	return stringutils.TruncateMaxLength(name, wellknown.EnvoyConfigNameMaxLen)
 }
 
 func (s Service) BackendRef(port ServicePort) ir.BackendRefIR {
