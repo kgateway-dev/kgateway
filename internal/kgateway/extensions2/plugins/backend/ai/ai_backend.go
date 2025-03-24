@@ -1,7 +1,9 @@
 package ai
 
 import (
+	"bytes"
 	"context"
+	"maps"
 	"os"
 
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -9,6 +11,7 @@ import (
 	envoy_ext_proc_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_proc/v3"
 	"github.com/rotisserie/eris"
 	envoytransformation "github.com/solo-io/envoy-gloo/go/config/filter/http/transformation/v2"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
@@ -22,6 +25,35 @@ type IR struct {
 	AIMultiSecret  map[string]*ir.Secret
 	Transformation *envoytransformation.RouteTransformations
 	Extproc        *envoy_ext_proc_v3.ExtProcPerRoute
+}
+
+func (i IR) Equals(otherAIIr *IR) bool {
+	if !maps.EqualFunc(data(i.AISecret), data(otherAIIr.AISecret), func(a, b []byte) bool {
+		return bytes.Equal(a, b)
+	}) {
+		return false
+	}
+	if !maps.EqualFunc(i.AIMultiSecret, otherAIIr.AIMultiSecret, func(a, b *ir.Secret) bool {
+		return maps.EqualFunc(data(a), data(b), func(a, b []byte) bool {
+			return bytes.Equal(a, b)
+		})
+	}) {
+		return false
+	}
+	if !proto.Equal(i.Extproc, otherAIIr.Extproc) {
+		return false
+	}
+	if !proto.Equal(i.Transformation, otherAIIr.Transformation) {
+		return false
+	}
+	return true
+}
+
+func data(s *ir.Secret) map[string][]byte {
+	if s == nil {
+		return nil
+	}
+	return s.Data
 }
 
 func ApplyAIBackend(ir *IR, pCtx *ir.RouteBackendContext, out *envoy_config_route_v3.Route) error {

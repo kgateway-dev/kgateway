@@ -50,14 +50,15 @@ func (r *TypedFilterConfigMap) GetTypedConfig(key string) proto.Message {
 type RouteBackendContext struct {
 	FilterChainName string
 	Backend         *BackendObjectIR
-	// todo: make this not public
+	// TypedFilterConfig will be output on the Route or WeightedCluster level after all plugins have run
 	TypedFilterConfig TypedFilterConfigMap
 }
 
 type RouteContext struct {
-	FilterChainName   string
-	Policy            PolicyIR
-	In                HttpRouteRuleMatchIR
+	FilterChainName string
+	Policy          PolicyIR
+	In              HttpRouteRuleMatchIR
+	// TypedFilterConfig will be output on the Route level after all plugins have run
 	TypedFilterConfig TypedFilterConfigMap
 }
 

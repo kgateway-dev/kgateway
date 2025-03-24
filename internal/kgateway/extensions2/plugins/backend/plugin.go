@@ -1,11 +1,9 @@
 package backend
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
-	"maps"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -16,7 +14,6 @@ import (
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoywellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/solo-io/go-utils/contextutils"
-	"google.golang.org/protobuf/proto"
 	"istio.io/istio/pkg/config/schema/kubeclient"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
@@ -50,35 +47,13 @@ type BackendIr struct {
 	Errors []error
 }
 
-func data(s *ir.Secret) map[string][]byte {
-	if s == nil {
-		return nil
-	}
-	return s.Data
-}
-
 func (u *BackendIr) Equals(other any) bool {
 	otherBackend, ok := other.(*BackendIr)
 	if !ok {
 		return false
 	}
 	// AI
-	if !maps.EqualFunc(data(u.AIIr.AISecret), data(otherBackend.AIIr.AISecret), func(a, b []byte) bool {
-		return bytes.Equal(a, b)
-	}) {
-		return false
-	}
-	if !maps.EqualFunc(u.AIIr.AIMultiSecret, otherBackend.AIIr.AIMultiSecret, func(a, b *ir.Secret) bool {
-		return maps.EqualFunc(data(a), data(b), func(a, b []byte) bool {
-			return bytes.Equal(a, b)
-		})
-	}) {
-		return false
-	}
-	if !proto.Equal(u.AIIr.Extproc, otherBackend.AIIr.Extproc) {
-		return false
-	}
-	if !proto.Equal(u.AIIr.Transformation, otherBackend.AIIr.Transformation) {
+	if !u.AIIr.Equals(otherBackend.AIIr) {
 		return false
 	}
 	// AWS

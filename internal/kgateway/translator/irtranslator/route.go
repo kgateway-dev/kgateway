@@ -122,11 +122,12 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(ctx context.Context,
 	out := h.initRoutes(in, generatedName)
 
 	typedPerFilterConfigRoute := ir.TypedFilterConfigMap(map[string]proto.Message{})
-	// TODO: clean up
 	if len(in.Backends) == 1 {
 		// if there's only one backend, we need to reuse typedPerFilterConfigRoute in both translateRouteAction and runRoutePlugins
 		out.Action = h.translateRouteAction(ctx, in, out, typedPerFilterConfigRoute)
 	} else if len(in.Backends) > 0 {
+		// If there is more than one backend, we translate the backends as WeightedClusters and each weighted cluster
+		// will have a TypedPerFilterConfig that overrides the parent route-level config.
 		out.Action = h.translateRouteAction(ctx, in, out, nil)
 	}
 
