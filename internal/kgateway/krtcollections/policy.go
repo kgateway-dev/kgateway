@@ -657,7 +657,11 @@ func (h *RoutesIndex) transformHttpRoute(kctx krt.HandlerContext, i *gwv1.HTTPRo
 	}
 }
 
-func (h *RoutesIndex) transformRules(kctx krt.HandlerContext, src ir.ObjectSource, i []gwv1.HTTPRouteRule) []ir.HttpRouteRuleIR {
+func (h *RoutesIndex) transformRules(
+	kctx krt.HandlerContext,
+	src ir.ObjectSource,
+	i []gwv1.HTTPRouteRule,
+) []ir.HttpRouteRuleIR {
 	rules := make([]ir.HttpRouteRuleIR, 0, len(i))
 	for _, r := range i {
 		extensionRefs := h.getExtensionRefs(kctx, src.Namespace, r.Filters)

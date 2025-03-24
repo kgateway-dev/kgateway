@@ -200,23 +200,35 @@ func (h *httpRouteConfigurationTranslator) runVhostPlugins(ctx context.Context, 
 
 func (h *httpRouteConfigurationTranslator) runRoutePlugins(ctx context.Context, routeReport reports.ParentRefReporter, in ir.HttpRouteRuleMatchIR, out *envoy_config_route_v3.Route) error {
 	// all policies up to listener have been applied as vhost polices; we need to apply the httproute policies and below
-	var policiesFromDelegateParent ir.AttachedPolicies
-	if in.DelegateParent != nil {
-		policiesFromDelegateParent = in.DelegateParent.AttachedPolicies
-	}
+	//
+	// NOTE: AttachedPolicies must have policies in the order of lowest priority to highest priority,
+	// i.e., route-level policy -> rule-level policy -> delegate parent route-level policy -> delegate parent rule-level policy.
+	// For a given route, ExtensionRefs is higher priority than policies attached using TargetRefs.
 
 	var attachedPoliciesSlice []ir.AttachedPolicies
+	// route-level policy
 	if in.Parent != nil {
 		attachedPoliciesSlice = append(attachedPoliciesSlice,
 			in.Parent.AttachedPolicies,
 		)
 	}
+	// rule-level policies in priority order (lowest to highest)
 	attachedPoliciesSlice = append(attachedPoliciesSlice,
 		in.AttachedPolicies,
 		in.ExtensionRefs,
-		policiesFromDelegateParent,
-		// TODO: add policies from the parent's parent recursively
 	)
+
+	// policies from delegating parent route
+	// TODO: handle multi-level inheritance for delegatee routes (routes with delegating parents)
+	if in.DelegateParent != nil {
+		attachedPoliciesSlice = append(attachedPoliciesSlice, in.DelegateParent.AttachedPolicies)
+	}
+	if in.DelegateParentRule != nil {
+		attachedPoliciesSlice = append(attachedPoliciesSlice,
+			in.DelegateParentRule.AttachedPolicies,
+			in.DelegateParentRule.ExtensionRefs,
+		)
+	}
 
 	var errs []error
 
