@@ -1781,7 +1781,7 @@ var _ = Describe("Deployer", func() {
 	Context("Inference Extension endpoint picker", func() {
 		const defaultNamespace = "default"
 
-		It("should deploy endpoint picker resources for an InferencePool", func() {
+		It("should deploy endpoint picker resources for an InferencePool when autoProvision is enabled", func() {
 			// Create a fake InferencePool resource.
 			pool := &infextv1a2.InferencePool{
 				TypeMeta: metav1.TypeMeta{
@@ -1876,6 +1876,31 @@ var _ = Describe("Deployer", func() {
 				"-grpcHealthPort",
 				"9003",
 			}))
+		})
+
+		It("should deploy endpoint picker resources for an InferencePool when autoProvision is enabled", func() {
+			// Create a fake InferencePool resource.
+			pool := &infextv1a2.InferencePool{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       wellknown.InferencePoolKind,
+					APIVersion: fmt.Sprintf("%s/%s", infextv1a2.GroupVersion.Group, infextv1a2.GroupVersion.Version),
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pool1",
+					Namespace: defaultNamespace,
+					UID:       "pool-uid",
+				},
+			}
+
+			// Initialize a new deployer without InferenceExtension inputs.
+			d, err := deployer.NewDeployer(newFakeClientWithObjs(pool), &deployer.Inputs{
+				ControllerName: wellknown.GatewayControllerName,
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+			// Getting endpoint picker objects for the InferencePool should return an error.
+			_, err = d.GetEndpointPickerObjs(pool)
+			Expect(err).To(HaveOccurred())
 		})
 	})
 })

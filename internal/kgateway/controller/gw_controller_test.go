@@ -1,6 +1,7 @@
 package controller_test
 
 import (
+	"context"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -16,6 +17,22 @@ var _ = Describe("GwController", func() {
 		timeout  = time.Second * 10
 		interval = time.Millisecond * 250
 	)
+
+	BeforeEach(func() {
+		ctx, cancel = context.WithCancel(context.Background())
+
+		var err error
+		cancel, err = createManager(ctx, inferenceExt)
+		Expect(err).NotTo(HaveOccurred())
+	})
+
+	AfterEach(func() {
+		if cancel != nil {
+			cancel()
+		}
+		// ensure goroutines cleanup
+		Eventually(func() bool { return true }).WithTimeout(3 * time.Second).Should(BeTrue())
+	})
 
 	DescribeTable(
 		"should add status to gateway",

@@ -75,7 +75,6 @@ rules:
   - directresponses
   - gatewayparameters
   - httplistenerpolicies
-  - listenerpolicies
   - routepolicies
   verbs:
   - get
@@ -88,7 +87,6 @@ rules:
   - directresponses/status
   - gatewayparameters/status
   - httplistenerpolicies/status
-  - listenerpolicies/status
   - routepolicies/status
   verbs:
   - get
