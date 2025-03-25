@@ -119,7 +119,7 @@ func enableExtprocFilter(pCtx *ir.RouteBackendContext) {
 		Config: &anypb.Any{},
 	}
 
-	pCtx.AddTypedConfig(wellknown.ExtprocFilterName, cfg)
+	pCtx.TypedFilterConfig.AddTypedConfig(wellknown.ExtprocFilterName, cfg)
 }
 
 func ExtprocHCMFilter(extprocIR *ExtprocIR) (*hcmv3.HttpFilter, error) {
