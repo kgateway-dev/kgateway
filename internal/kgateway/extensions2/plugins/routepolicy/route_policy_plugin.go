@@ -3,6 +3,7 @@ package routepolicy
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strconv"
 	"time"
@@ -14,7 +15,6 @@ import (
 	envoy_ext_proc_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_proc/v3"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/known/anypb"
 	skubeclient "istio.io/istio/pkg/config/schema/kubeclient"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
@@ -46,10 +46,9 @@ const (
 )
 
 type routePolicy struct {
-	ct       time.Time
-	spec     routeSpecIr
-	AISecret *ir.Secret
-	ExtProc  *ExtprocIR
+	ct      time.Time
+	spec    routeSpecIr
+	ExtProc *ExtprocIR
 }
 
 type ExtprocIR struct {
@@ -58,9 +57,11 @@ type ExtprocIR struct {
 }
 
 type routeSpecIr struct {
-	AI                         *v1alpha1.AIRoutePolicy
-	transform                  *anypb.Any
-	rustformation              *anypb.Any
+	AI        *AIPolicyIR
+	transform *transformationpb.RouteTransformations
+	// rustformation is currently a *dynamicmodulesv3.DynamicModuleFilter, but can potentially change at some point
+	// in the future so we use proto.Message here
+	rustformation              proto.Message
 	rustformationStringToStash string
 	errors                     []error
 }
@@ -84,18 +85,27 @@ func (d *routePolicy) Equals(in any) bool {
 	if !proto.Equal(d.spec.rustformation, d2.spec.rustformation) {
 		return false
 	}
-	if d.AISecret != nil && d2.AISecret != nil && !d.AISecret.Equals(*d2.AISecret) {
-		return false
-	}
-	if (d.AISecret != nil) != (d2.AISecret != nil) {
-		return false
-	}
 
 	if !proto.Equal(d.ExtProc.ExtProc, d2.ExtProc.ExtProc) {
 		return false
 	}
 
-	if !d.spec.AI.Equals(d2.spec.AI) {
+	// AI equality checks
+	if d.spec.AI != nil && d2.spec.AI != nil {
+		if d.spec.AI.AISecret != nil && d2.spec.AI.AISecret != nil && !d.spec.AI.AISecret.Equals(*d2.spec.AI.AISecret) {
+			return false
+		}
+		if (d.spec.AI.AISecret != nil) != (d2.spec.AI.AISecret != nil) {
+			return false
+		}
+		if !proto.Equal(d.spec.AI.Extproc, d2.spec.AI.Extproc) {
+			return false
+		}
+		if !proto.Equal(d.spec.AI.Transformation, d2.spec.AI.Transformation) {
+			return false
+		}
+	} else if d.spec.AI != d2.spec.AI {
+		// If one of the AI IR values is nil and the other isn't, not equal
 		return false
 	}
 
@@ -107,7 +117,6 @@ type routePolicyPluginGwPass struct {
 	// TODO(nfuden): dont abuse httplevel filter in favor of route level
 	rustformationStash map[string]string
 	ir.UnimplementedProxyTranslationPass
-	setAIFilter   bool
 	extprocFilter *envoy_ext_proc_v3.ExternalProcessor
 }
 
@@ -208,21 +217,17 @@ func (p *routePolicyPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.Ro
 		return nil
 	}
 
+	var errs []error
+
 	if policy.spec.transform != nil {
-		if outputRoute.GetTypedPerFilterConfig() == nil {
-			outputRoute.TypedPerFilterConfig = make(map[string]*anypb.Any)
-		}
 		if policy.spec.transform != nil {
-			outputRoute.GetTypedPerFilterConfig()[transformationFilterNamePrefix] = policy.spec.transform
+			pCtx.TypedFilterConfig.AddTypedConfig(transformationFilterNamePrefix, policy.spec.transform)
 		}
 		p.setTransformationInChain = true
 	}
 	if policy.spec.rustformation != nil {
-		if outputRoute.GetTypedPerFilterConfig() == nil {
-			outputRoute.TypedPerFilterConfig = make(map[string]*anypb.Any)
-		}
 		// TODO(nfuden): get back to this path once we have valid perroute
-		// outputRoute.GetTypedPerFilterConfig()[rustformationFilterNamePrefix] = policy.spec.rustformation
+		// pCtx.TypedFilterConfig.AddTypedConfig(rustformationFilterNamePrefix, policy.spec.rustformation)
 
 		// Hack around not having route level.
 		// Note this is really really bad and rather fragile due to listener draining behaviors
@@ -265,14 +270,44 @@ func (p *routePolicyPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.Ro
 				},
 			},
 		}
-		outputRoute.GetTypedPerFilterConfig()[metadataRouteTransformation], _ = utils.MessageToAny(setmetaTransform)
+		pCtx.TypedFilterConfig.AddTypedConfig(metadataRouteTransformation, setmetaTransform)
 
 		p.setTransformationInChain = true
 	}
 
-	// TODO: err/warn/ignore if targetRef is set on non-AI Backend
+	if policy.spec.AI != nil {
+		var aiBackends []*v1alpha1.Backend
+		// check if the backends selected by targetRef are all AI backends before applying the policy
+		for _, backend := range pCtx.In.Backends {
+			if backend.Backend.BackendObject == nil {
+				// could be nil if not found or no ref grant
+				continue
+			}
+			b, ok := backend.Backend.BackendObject.Obj.(*v1alpha1.Backend)
+			if !ok {
+				// AI policy cannot apply to kubernetes services
+				// TODO(npolshak): Report this as a warning on status
+				contextutils.LoggerFrom(ctx).Warnf("targetRef cannot apply to %s backend. AI RoutePolicy must apply only to AI backend", backend.Backend.BackendObject.GetName())
+				continue
+			}
+			if b.Spec.Type != v1alpha1.BackendTypeAI {
+				// AI policy cannot apply to non-AI backends
+				// TODO(npolshak): Report this as a warning on status
+				contextutils.LoggerFrom(ctx).Warnf("backend %s is of type %s. AI RoutePolicy must apply only to AI backend", backend.Backend.BackendObject.GetName(), b.Spec.Type)
+				continue
+			}
+			aiBackends = append(aiBackends, b)
+		}
 
-	return nil
+		if len(aiBackends) > 0 {
+			// Apply the AI policy to the all AI backends
+			err := p.processAIRoutePolicy(pCtx.TypedFilterConfig, policy.spec.AI)
+			if err != nil {
+				errs = append(errs, err)
+			}
+		}
+	}
+	return errors.Join(errs...)
 }
 
 // ApplyForBackend applies regardless if policy is attached
@@ -299,20 +334,12 @@ func (p *routePolicyPluginGwPass) ApplyForRouteBackend( //Apply for route policy
 		enableExtprocFilter(pCtx)
 	}
 
-	aiExtprocSettingsProto := pCtx.GetTypedConfig(wellknown.AIExtProcFilterName)
-	if aiExtprocSettingsProto == nil {
-		return nil
-	}
-	extprocSettings, ok := aiExtprocSettingsProto.(*envoy_ext_proc_v3.ExtProcPerRoute)
-	if !ok {
-		// TODO: internal error
-		return nil
-	}
-
-	err := p.processAIRoutePolicy(ctx, rtPolicy.spec.AI, pCtx, extprocSettings, rtPolicy.AISecret)
-	if err != nil {
-		// TODO: report error on status
-		return err
+	if rtPolicy.spec.AI.Transformation != nil || rtPolicy.spec.AI.Extproc != nil {
+		err := p.processAIRoutePolicy(pCtx.TypedFilterConfig, rtPolicy.spec.AI)
+		if err != nil {
+			// TODO: report error on status
+			return err
+		}
 	}
 
 	return nil
@@ -391,11 +418,19 @@ func buildTranslateFunc(ctx context.Context, secrets *krtcollections.SecretIndex
 
 		outSpec := routeSpecIr{}
 
-		// Pass along the AI spec as is
-		outSpec.AI = policyCR.Spec.AI
-		// Augment with AI secrets as needed
-		policyIr.AISecret = aiSecretForSpec(ctx, secrets, krtctx, policyCR)
+		if policyCR.Spec.AI != nil {
+			outSpec.AI = &AIPolicyIR{}
 
+			// Augment with AI secrets as needed
+			outSpec.AI.AISecret = aiSecretForSpec(ctx, secrets, krtctx, policyCR)
+
+			// Preprocess the AI backend
+			err := preProcessAIRoutePolicy(policyCR.Spec.AI, outSpec.AI)
+			if err != nil {
+				// TODO: append errors to return on policyIr
+				contextutils.LoggerFrom(ctx).Error(policyCR.GetNamespace(), policyCR.GetName(), err)
+			}
+		}
 		// Apply transformation specific translation
 		transformationForSpec(policyCR.Spec, &outSpec)
 
@@ -458,10 +493,10 @@ func transformationForSpec(spec v1alpha1.RoutePolicySpec, out *routeSpecIr) {
 		return
 	}
 
-	rustformation, toStash, err := torustformFilterConfig(&spec.Transformation)
+	rustformation, toStash, err := toRustformFilterConfig(&spec.Transformation)
 	if err != nil {
 		out.errors = append(out.errors, err)
 	}
 	out.rustformation = rustformation
-	out.rustformationStringToStash = string(toStash)
+	out.rustformationStringToStash = toStash
 }

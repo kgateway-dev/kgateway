@@ -50,7 +50,12 @@ func TestKgatewayWaypoint(t *testing.T) {
 	}
 
 	// Install the ambient profile to enable zTunnel
-	err = testInstallation.InstallRevisionedIstio(ctx, "kgateway-waypoint-rev", "ambient")
+	err = testInstallation.InstallRevisionedIstio(
+		ctx, "kgateway-waypoint-rev", "ambient",
+		// required for ServiceEntry usage
+		// enabled by default in 1.25; we test as far back as 1.23
+		"--set", "values.cni.ambient.dnsCapture=true",
+	)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -35,6 +35,14 @@ var mockData = map[string]MockResponse{
 	"0e065e8eedf476d066f55668fadb4626ee47fb6452baaadf636366866c2582bf": {FilePath: "mocks/streaming/openai_streaming.txt", IsGzip: false},
 	"3c8b0bd3db97733f4a4f1a4214f392b6193577a69da5e908f3d16a74b369024e": {FilePath: "mocks/streaming/gemini_streaming.txt", IsGzip: false},
 	"15044ae8bdb808e1a5cd1aff384464ad5ed9d25f164261b4ea3c287c2153d9e8": {FilePath: "mocks/streaming/vertex_ai_streaming.txt", IsGzip: false},
+	// Prompt Guard:
+	"dd472364fe55fcf75df24cd2b7cb1a32f9f8e4d36477c5ba7960de9f112a2d32": {FilePath: "mocks/promptguard/openai-mask.json", IsGzip: false},
+	"512b50a42206d1a4cc2d7609e6e34b7a23123234bc6b3d682d04c4e6e1d5d401": {FilePath: "mocks/promptguard/vertex-ai.json", IsGzip: false},
+	// Prompt Guard Streaming:
+	"4e1c1a0b4f697df2fe9ad3ac4898dcffcff881e85f271d63c229d208cb60c59c": {FilePath: "mocks/promptguard-streaming/openai-mask.txt", IsGzip: false},
+	"38e35f6adfbc50177014a04cf6484c7cf6b91cc7ccf1328ca246519892cbfd53": {FilePath: "mocks/promptguard-streaming/openai-no-guard.txt", IsGzip: false},
+	"6b473280b6aa5b35b8de94f6a5212811f8fb624785695b3234cf9a88d3075b38": {FilePath: "mocks/promptguard-streaming/vertex-ai-mask.txt", IsGzip: false},
+	"0d86bb4c7d7d3638e251c1fc6d09ef515df3aec19d3a10895dd75c4e30ff505e": {FilePath: "mocks/promptguard-streaming/vertex-ai-no-guard.txt", IsGzip: false},
 }
 
 func getJSONHash(data map[string]interface{}, provider string, stream bool) string {
@@ -46,7 +54,7 @@ func getJSONHash(data map[string]interface{}, provider string, stream bool) stri
 	return fmt.Sprintf("%x", hash[:])
 }
 
-func generateSSEStream(c *gin.Context, filePath string) {
+func generateSSEStream(c *gin.Context, filePath, provider string) {
 	file, err := os.Open(filePath)
 	if err != nil {
 		fmt.Printf("failed to open file: %v\n", err)
@@ -61,7 +69,26 @@ func generateSSEStream(c *gin.Context, filePath string) {
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		c.SSEvent("", scanner.Text())
+		if provider == "vertex_ai" || provider == "gemini" {
+			line := scanner.Text()
+			sseMessage := fmt.Sprintf("data: %s\n\r\n\r\n", line)
+
+			// Write directly to response
+			c.Writer.WriteString(sseMessage)
+			c.Writer.Flush()
+		} else {
+			line := scanner.Text()
+			sseMessage := fmt.Sprintf("data: %s\n\n", line)
+
+			// Write directly to response
+			c.Writer.WriteString(sseMessage)
+			c.Writer.Flush()
+		}
+	}
+	if provider == "openai" || provider == "azure" {
+		lastSseMessage := fmt.Sprintf("data: [DONE]\n\n")
+		c.Writer.WriteString(lastSseMessage)
+		c.Writer.Flush()
 	}
 }
 
@@ -71,7 +98,7 @@ func handleModelResponse(c *gin.Context, requestData map[string]interface{}, pro
 
 	if response, exists := mockData[hash]; exists {
 		if stream {
-			generateSSEStream(c, response.FilePath)
+			generateSSEStream(c, response.FilePath, provider)
 			return
 		}
 

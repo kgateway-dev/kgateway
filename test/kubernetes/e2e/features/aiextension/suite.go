@@ -59,6 +59,8 @@ func (s *tsuite) SetupSuite() {
 		"TestRoutingPassthrough":      {commonManifest, backendPassthroughManifest, routesBasicManifest},
 		"TestStreaming":               {commonManifest, backendManifest, routeOptionStreamingManifest, routesWithExtensionManifest},
 		"TestPromptGuardRejectExtRef": {commonManifest, backendManifest, routePolicyPGRegexPatternRejectManifest, routesWitPGRegexPatternRejectManifest},
+		"TestPromptGuard":             {commonManifest, backendManifest, routesBasicManifest, promptGuardManifest},
+		"TestPromptGuardStreaming":    {commonManifest, backendManifest, routesBasicManifest, promptGuardStreamingManifest},
 	}
 }
 
@@ -121,6 +123,14 @@ func (s *tsuite) TestStreaming() {
 
 func (s *tsuite) TestPromptGuardRejectExtRef() {
 	s.invokePytest("prompt_guard_reject_ext_ref.py")
+}
+
+func (s *tsuite) TestPromptGuard() {
+	s.invokePytest("prompt_guard.py")
+}
+
+func (s *tsuite) TestPromptGuardStreaming() {
+	s.invokePytest("prompt_guard_streaming.py")
 }
 
 func (s *tsuite) invokePytest(test string, extraEnv ...string) {

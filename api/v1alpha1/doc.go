@@ -28,3 +28,5 @@ package v1alpha1
 
 // Istio resources for traffic management
 // +kubebuilder:rbac:groups=networking.istio.io,resources=destinationrules,verbs=get;list;watch
+// +kubebuilder:rbac:groups=networking.istio.io,resources=serviceentries,verbs=get;list;watch
+// +kubebuilder:rbac:groups=networking.istio.io,resources=workloadentries,verbs=get;list;watch

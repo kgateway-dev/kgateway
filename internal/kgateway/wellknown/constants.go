@@ -35,3 +35,7 @@ const (
 	SetMetadataFilterName             = "envoy.filters.http.set_filter_state"
 	ExtprocFilterName                 = "envoy.filters.http.ext_proc"
 )
+
+const (
+	EnvoyConfigNameMaxLen = 253
+)

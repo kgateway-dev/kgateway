@@ -27,7 +27,9 @@ type HttpRouteRuleMatchIR struct {
 	AttachedPolicies AttachedPolicies
 	Parent           *HttpRouteIR
 	// the rule that delegated to us
-	DelegateParent *HttpRouteRuleIR
+	DelegateParentRule *HttpRouteRuleIR
+	// the route that delegated to us
+	DelegateParent *HttpRouteIR
 	HasChildren    bool
 	// if there's an error, the gw-api listener to report it in.
 	ListenerParentRef gwv1.ParentReference

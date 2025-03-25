@@ -202,7 +202,7 @@ routes:
     routes:
     - match:
         path: /v1/chat/completions
-      name: http~test-route-0-httproute-route-to-upstream-gwtest-0-0-matcher-0
+      name: http~test-route-0-httproute-route-to-backend-gwtest-0-0-matcher-0
       route:
         autoHostRewrite: true
         cluster: backend_gwtest_deepseek_0

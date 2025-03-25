@@ -26,6 +26,24 @@ var (
 	}
 )
 
+func (s *testingSuite) TestServiceEntryHostnameHTTPRoute() {
+	s.setNamespaceWaypointOrFail(testNamespace)
+	s.applyOrFail("httproute-hostname.yaml", testNamespace)
+
+	// svc-a has the parent ref, so only have the route there
+	s.assertCurlHost(fromCurl, "se-a.serviceentry.com", hasHTTPRoute)
+	s.assertCurlHost(fromCurl, "se-b.serviceentry.com", noHTTPRoute)
+}
+
+func (s *testingSuite) TestServiceEntryObjectHTTPRoute() {
+	s.setNamespaceWaypointOrFail(testNamespace)
+	s.applyOrFail("httproute-serviceentry.yaml", testNamespace)
+
+	// svc-a has the parent ref, so only have the route there
+	s.assertCurlHost(fromCurl, "se-a.serviceentry.com", hasHTTPRoute)
+	s.assertCurlHost(fromCurl, "se-b.serviceentry.com", noHTTPRoute)
+}
+
 func (s *testingSuite) TestServiceHTTPRoute() {
 	s.setNamespaceWaypointOrFail(testNamespace)
 	s.applyOrFail("httproute-svc.yaml", testNamespace)

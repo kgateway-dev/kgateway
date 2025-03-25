@@ -105,16 +105,5 @@ func (s *testingSuite) applyOrFail(fileName string, namespace string) {
 }
 
 func (s *testingSuite) setNamespaceWaypointOrFail(ns string) {
-	s.T().Cleanup(func() {
-		err := s.testInstallation.ClusterContext.Cli.UnsetLabel(s.ctx, "ns", ns, "", waypointLabel)
-		if err != nil {
-			// this could break other tests
-			s.FailNow("failed removing label", err)
-		}
-	})
-	err := s.testInstallation.ClusterContext.Cli.SetLabel(s.ctx, "ns", ns, "", waypointLabel, gwName)
-	if err != nil {
-		s.FailNow("failed applying label", err)
-		return
-	}
+	s.useWaypointLabelForTest("ns", ns, "")
 }

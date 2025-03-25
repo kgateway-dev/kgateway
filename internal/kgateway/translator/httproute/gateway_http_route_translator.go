@@ -71,7 +71,7 @@ func translateGatewayHTTPRouteRulesUtil(
 	}
 
 	for ruleIdx, rule := range route.Rules {
-		if rule.Matches == nil { //TODO: should this check len() == 0?
+		if rule.Matches == nil { // TODO: should this check len() == 0?
 			// from the spec:
 			// If no matches are specified, the default is a prefix path match on “/”, which has the effect of matching every HTTP request.
 			rule.Matches = []gwv1.HTTPRouteMatch{{}}
@@ -161,7 +161,8 @@ func translateGatewayHTTPRouteRule(
 		// If this parent route has delegatee routes, set the parent on it
 		// so that later when applying plugins we can access and apply policies from it
 		for i := range delegatedRoutes {
-			delegatedRoutes[i].DelegateParent = &rule
+			delegatedRoutes[i].DelegateParentRule = &rule
+			delegatedRoutes[i].DelegateParent = parent
 		}
 
 		// Add the delegatee output routes to the final output list

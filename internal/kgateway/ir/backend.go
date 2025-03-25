@@ -8,6 +8,7 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
@@ -35,6 +36,7 @@ func (c ObjectSource) GetName() string {
 func (c ObjectSource) GetNamespace() string {
 	return c.Namespace
 }
+
 func (c ObjectSource) ResourceName() string {
 	return fmt.Sprintf("%s/%s/%s/%s", c.Group, c.Kind, c.Namespace, c.Name)
 }
@@ -47,12 +49,26 @@ func (c ObjectSource) Equals(in ObjectSource) bool {
 	return c.Namespace == in.Namespace && c.Name == in.Name && c.Group == in.Group && c.Kind == in.Kind
 }
 
+type Namespaced interface {
+	GetName() string
+	GetNamespace() string
+}
+
 type AppProtocol string
 
 const (
 	DefaultAppProtocol AppProtocol = ""
 	HTTP2AppProtocol   AppProtocol = "http2"
 )
+
+func ParseAppProtocol(appProtocol *string) AppProtocol {
+	switch ptr.Deref(appProtocol, "") {
+	case "kubernetes.io/h2c":
+		return HTTP2AppProtocol
+	default:
+		return DefaultAppProtocol
+	}
+}
 
 type BackendObjectIR struct {
 	// Ref to source object. sometimes the group and kind are not populated from api-server, so
@@ -75,15 +91,26 @@ type BackendObjectIR struct {
 	// i think so, assuming obj -> objir is a 1:1 mapping.
 	ObjIr interface{ Equals(any) bool }
 
+	// ExtraKey allows ensuring uniqueness in the KRT key
+	// when there is more than one backend per ObjectSource+port.
+	// TODO this is a hack for ServiceEntry to workaround only having one
+	// CanonicalHostname. We should see if it's possible to have multiple
+	// CanonicalHostnames.
+	ExtraKey string
+
 	AttachedPolicies AttachedPolicies
 }
 
 func (c BackendObjectIR) ResourceName() string {
-	return BackendResourceName(c.ObjectSource, c.Port)
+	return BackendResourceName(c.ObjectSource, c.Port, c.ExtraKey)
 }
 
-func BackendResourceName(objSource ObjectSource, port int32) string {
-	return fmt.Sprintf("%s:%d", objSource.ResourceName(), port)
+func BackendResourceName(objSource ObjectSource, port int32, extraKey string) string {
+	key := fmt.Sprintf("%s:%d", objSource.ResourceName(), port)
+	if extraKey != "" {
+		key += extraKey
+	}
+	return key
 }
 
 func (c BackendObjectIR) Equals(in BackendObjectIR) bool {
@@ -107,6 +134,9 @@ func (c BackendObjectIR) ClusterName() string {
 	gvPrefix := c.GvPrefix
 	if c.GvPrefix == "" {
 		gvPrefix = strings.ToLower(c.Kind)
+	}
+	if c.ExtraKey != "" {
+		return fmt.Sprintf("%s_%s_%s_%s_%d", gvPrefix, c.Namespace, c.Name, c.ExtraKey, c.Port)
 	}
 	return fmt.Sprintf("%s_%s_%s_%d", gvPrefix, c.Namespace, c.Name, c.Port)
 	// return fmt.Sprintf("%s~%s:%d", c.GvPrefix, c.ObjectSource.ResourceName(), c.Port)
@@ -132,9 +162,11 @@ func (c Secret) Equals(in Secret) bool {
 	return c.ObjectSource.Equals(in.ObjectSource) && versionEquals(c.Obj, in.Obj)
 }
 
-var _ krt.ResourceNamer = Secret{}
-var _ krt.Equaler[Secret] = Secret{}
-var _ json.Marshaler = Secret{}
+var (
+	_ krt.ResourceNamer   = Secret{}
+	_ krt.Equaler[Secret] = Secret{}
+	_ json.Marshaler      = Secret{}
+)
 
 func (l Secret) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
