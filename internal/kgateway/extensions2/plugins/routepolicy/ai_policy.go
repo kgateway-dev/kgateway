@@ -14,6 +14,7 @@ import (
 	envoy_ext_proc_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_proc/v3"
 	"github.com/mitchellh/hashstructure"
 	envoytransformation "github.com/solo-io/envoy-gloo/go/config/filter/http/transformation/v2"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"k8s.io/utils/ptr"
 
@@ -45,7 +46,7 @@ func (p *routePolicyPluginGwPass) processAIRoutePolicy(
 	}
 
 	if ir.Extproc != nil {
-		mergedExtprocSettings := ir.Extproc
+		mergedExtprocSettings := proto.Clone(ir.Extproc).(*envoy_ext_proc_v3.ExtProcPerRoute)
 		// Envoy merges GrpcInitialMetadata config from the route, but we need to manually merge if Backend has configured extproc already
 		backendExtprocProto := configMap.GetTypedConfig(wellknown.AIExtProcFilterName)
 		if backendExtprocProto != nil {
