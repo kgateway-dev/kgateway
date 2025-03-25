@@ -117,10 +117,6 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.OpenAIConfigApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("Pod"):
 		return &apiv1alpha1.PodApplyConfiguration{}
-	case v1alpha1.SchemeGroupVersion.WithKind("PolicyAncestorStatus"):
-		return &apiv1alpha1.PolicyAncestorStatusApplyConfiguration{}
-	case v1alpha1.SchemeGroupVersion.WithKind("PolicyStatus"):
-		return &apiv1alpha1.PolicyStatusApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("Priority"):
 		return &apiv1alpha1.PriorityApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("PromptguardRequest"):
