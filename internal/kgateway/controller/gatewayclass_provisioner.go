@@ -10,6 +10,7 @@ import (
 	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -25,6 +26,7 @@ import (
 // to ensure they exist.
 type gatewayClassProvisioner struct {
 	client.Client
+	cache.Informers
 	// classConfigs maps a GatewayClass name to its desired configuration.
 	classConfigs map[string]*ClassInfo
 	// controllerName is the name of the controller that is managing the GatewayClass objects.
@@ -35,54 +37,7 @@ type gatewayClassProvisioner struct {
 }
 
 var _ reconcile.TypedReconciler[reconcile.Request] = &gatewayClassProvisioner{}
-
-// gatewayClassInitializer is responsible for triggering initial reconciliation
-// after caches have synced
-type gatewayClassInitializer struct {
-	mgr                ctrl.Manager
-	initialReconcileCh chan event.TypedGenericEvent[client.Object]
-}
-
-var _ manager.Runnable = &gatewayClassInitializer{}
-
-func newGatewayClassInitializer(mgr ctrl.Manager, ch chan event.TypedGenericEvent[client.Object]) *gatewayClassInitializer {
-	return &gatewayClassInitializer{
-		mgr:                mgr,
-		initialReconcileCh: ch,
-	}
-}
-
-func (g *gatewayClassInitializer) Start(ctx context.Context) error {
-	log := log.FromContext(ctx)
-	log.Info("waiting for cache to sync")
-
-	// Wait for cache to sync
-	if !g.mgr.GetCache().WaitForCacheSync(ctx) {
-		return fmt.Errorf("failed waiting for caches to sync")
-	}
-	log.Info("caches warm!")
-
-	// Now that caches are synced, check if we need to trigger initial reconciliation
-	var gcs apiv1.GatewayClassList
-	if err := g.mgr.GetClient().List(ctx, &gcs); err != nil {
-		return fmt.Errorf("failed to list gatewayclasses: %w", err)
-	}
-	if len(gcs.Items) > 0 {
-		log.Info("gatewayclasses found, skipping initial reconciliation")
-		return nil
-	}
-
-	log.Info("no gatewayclasses found, triggering initial reconciliation")
-	g.initialReconcileCh <- event.TypedGenericEvent[client.Object]{
-		Object: &apiv1.GatewayClass{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "manual",
-			},
-		},
-	}
-
-	return nil
-}
+var _ manager.Runnable = &gatewayClassProvisioner{}
 
 // NewGatewayClassProvisioner creates a new GatewayClassProvisioner. It will
 // watch for kick events on the channel for initial reconciliation and delete
@@ -91,18 +46,17 @@ func (g *gatewayClassInitializer) Start(ctx context.Context) error {
 // overwriting them.
 func NewGatewayClassProvisioner(mgr ctrl.Manager, controllerName string, classConfigs map[string]*ClassInfo) error {
 	initialReconcileCh := make(chan event.TypedGenericEvent[client.Object], 1)
-	initializer := newGatewayClassInitializer(mgr, initialReconcileCh)
-	if err := mgr.Add(initializer); err != nil {
-		return err
-	}
-
 	provisioner := &gatewayClassProvisioner{
 		Client:             mgr.GetClient(),
+		Informers:          mgr.GetCache(),
 		controllerName:     controllerName,
 		classConfigs:       classConfigs,
 		initialReconcileCh: initialReconcileCh,
 	}
 	if err := provisioner.SetupWithManager(mgr); err != nil {
+		return err
+	}
+	if err := mgr.Add(provisioner); err != nil {
 		return err
 	}
 
@@ -168,5 +122,38 @@ func (r *gatewayClassProvisioner) createGatewayClass(ctx context.Context, name s
 	if err := r.Create(ctx, gc); err != nil && !apierrors.IsAlreadyExists(err) {
 		return err
 	}
+	return nil
+}
+
+func (r *gatewayClassProvisioner) Start(ctx context.Context) error {
+	log := log.FromContext(ctx)
+	log.Info("waiting for cache to sync")
+
+	// Wait for cache to sync
+	if !r.WaitForCacheSync(ctx) {
+		return fmt.Errorf("failed waiting for caches to sync")
+	}
+	log.Info("caches warm!")
+
+	// Check whether there are any GatewayClass objects in the cluster to determine
+	// whether we need to manually trigger initial reconciliation.
+	var gcs apiv1.GatewayClassList
+	if err := r.List(ctx, &gcs); err != nil {
+		return fmt.Errorf("failed to list gatewayclasses: %w", err)
+	}
+	if len(gcs.Items) > 0 {
+		log.Info("gatewayclasses found, skipping initial reconciliation")
+		return nil
+	}
+
+	log.Info("no gatewayclasses found, triggering initial reconciliation")
+	r.initialReconcileCh <- event.TypedGenericEvent[client.Object]{
+		Object: &apiv1.GatewayClass{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "manual",
+			},
+		},
+	}
+
 	return nil
 }
