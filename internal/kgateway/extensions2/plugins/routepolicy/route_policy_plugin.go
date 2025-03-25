@@ -161,6 +161,9 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 				Policies:                  policyCol,
 			},
 		},
+		ContributesRegistration: map[schema.GroupKind]func(){
+			wellknown.RoutePolicyGVK.GroupKind(): buildRegisterCallback(ctx, commoncol.CrudClient, policyCol),
+		},
 	}
 }
 
@@ -315,6 +318,7 @@ func (p *routePolicyPluginGwPass) ApplyForRouteBackend(
 		err := p.processAIRoutePolicy(pCtx.TypedFilterConfig, rtPolicy.spec.AI)
 		if err != nil {
 			// TODO: report error on status
+			contextutils.LoggerFrom(ctx).Errorf("error while processing AI RoutePolicy: %v", err)
 			return err
 		}
 	}
@@ -392,10 +396,14 @@ func buildTranslateFunc(ctx context.Context, secrets *krtcollections.SecretIndex
 			outSpec.AI = &AIPolicyIR{}
 
 			// Augment with AI secrets as needed
-			outSpec.AI.AISecret = aiSecretForSpec(ctx, secrets, krtctx, policyCR)
+			var err error
+			outSpec.AI.AISecret, err = aiSecretForSpec(ctx, secrets, krtctx, policyCR)
+			if err != nil {
+				outSpec.errors = append(outSpec.errors, err)
+			}
 
 			// Preprocess the AI backend
-			err := preProcessAIRoutePolicy(policyCR.Spec.AI, outSpec.AI)
+			err = preProcessAIRoutePolicy(policyCR.Spec.AI, outSpec.AI)
 			if err != nil {
 				// TODO: append errors to return on policyIr
 				contextutils.LoggerFrom(ctx).Error(policyCR.GetNamespace(), policyCR.GetName(), err)
@@ -416,29 +424,31 @@ func buildTranslateFunc(ctx context.Context, secrets *krtcollections.SecretIndex
 // aiSecret checks for the presence of the OpenAI Moderation which may require a secret reference
 // will log an error if the secret is needed but not found
 func aiSecretForSpec(
-	ctx context.Context, secrets *krtcollections.SecretIndex,
-	krtctx krt.HandlerContext, policyCR *v1alpha1.RoutePolicy,
-) *ir.Secret {
+	ctx context.Context,
+	secrets *krtcollections.SecretIndex,
+	krtctx krt.HandlerContext,
+	policyCR *v1alpha1.RoutePolicy,
+) (*ir.Secret, error) {
 	if policyCR.Spec.AI == nil ||
 		policyCR.Spec.AI.PromptGuard == nil ||
 		policyCR.Spec.AI.PromptGuard.Request == nil ||
 		policyCR.Spec.AI.PromptGuard.Request.Moderation == nil {
-		return nil
+		return nil, nil
 	}
 
 	secretRef := policyCR.Spec.AI.PromptGuard.Request.Moderation.OpenAIModeration.AuthToken.SecretRef
 	if secretRef == nil {
 		// no secret ref is set
-		return nil
+		return nil, nil
 	}
 
 	// Retrieve and assign the secret
 	secret, err := pluginutils.GetSecretIr(secrets, krtctx, secretRef.Name, policyCR.GetNamespace())
 	if err != nil {
 		contextutils.LoggerFrom(ctx).Error(err)
-		return nil
+		return nil, err
 	}
-	return secret
+	return secret, nil
 }
 
 // transformationForSpec translates the transformation spec into and onto the IR policy

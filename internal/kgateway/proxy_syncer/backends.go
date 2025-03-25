@@ -63,9 +63,10 @@ func NewPerClientEnvoyClusters(
 				continue
 			}
 			uccWithClusterRet = append(uccWithClusterRet, uccWithCluster{
-				Client:         ucc,
-				Cluster:        c,
-				Name:           c.GetName(),
+				Client:  ucc,
+				Cluster: c,
+				Name:    c.GetName(),
+				// pass along the error(s) indicating to consumers that this cluster is not usable
 				Error:          err,
 				ClusterVersion: utils.HashProto(c),
 			})

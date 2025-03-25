@@ -99,6 +99,10 @@ type BackendObjectIR struct {
 	ExtraKey string
 
 	AttachedPolicies AttachedPolicies
+
+	// Errors is a list of errors, if any, encountered while constructing this BackendObject
+	// Not added to Equals() as it is derived from the inner ObjIr, which is already evaluated
+	Errors []error
 }
 
 func (c BackendObjectIR) ResourceName() string {
@@ -140,6 +144,14 @@ func (c BackendObjectIR) ClusterName() string {
 	}
 	return fmt.Sprintf("%s_%s_%s_%d", gvPrefix, c.Namespace, c.Name, c.Port)
 	// return fmt.Sprintf("%s~%s:%d", c.GvPrefix, c.ObjectSource.ResourceName(), c.Port)
+}
+
+func (c BackendObjectIR) GetObjectSource() ObjectSource {
+	return c.ObjectSource
+}
+
+func (c BackendObjectIR) GetAttachedPolicies() AttachedPolicies {
+	return c.AttachedPolicies
 }
 
 type Secret struct {

@@ -41,6 +41,7 @@ const (
 )
 
 // BackendIr is the internal representation of a backend.
+// TODO: unexport
 type BackendIr struct {
 	AwsIr  *AwsIr
 	AIIr   *ai.IR
@@ -87,9 +88,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 		backendIR := translateFn(krtctx, i)
 		if len(backendIR.Errors) > 0 {
 			contextutils.LoggerFrom(ctx).Error("failed to translate backend", "backend", i.GetName(), "error", errors.Join(backendIR.Errors...))
-			return nil
 		}
-		// resolve secrets
 		return &ir.BackendObjectIR{
 			ObjectSource: ir.ObjectSource{
 				Kind:      gk.Kind,
@@ -101,6 +100,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 			CanonicalHostname: hostname(i),
 			Obj:               i,
 			ObjIr:             backendIR,
+			Errors:            backendIR.Errors,
 		}
 	})
 	endpoints := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *v1alpha1.Backend) *ir.EndpointsForBackend {
@@ -122,16 +122,18 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 				NewGatewayTranslationPass: newPlug,
 			},
 		},
+		ContributesRegistration: map[schema.GroupKind]func(){
+			wellknown.BackendGVK.GroupKind(): buildRegisterCallback(ctx, commoncol.CrudClient, bcol),
+		},
 	}
 }
 
 // buildTranslateFunc builds a function that translates a Backend to a BackendIr that
 // the plugin can use to build the envoy config.
-//
-// TODO(tim): Any errors encountered here should be returned and stored on the BackendIR
-// so that we can report them in the status once https://github.com/kgateway-dev/kgateway/issues/10555
-// is resolved.
-func buildTranslateFunc(ctx context.Context, secrets *krtcollections.SecretIndex) func(krtctx krt.HandlerContext, i *v1alpha1.Backend) *BackendIr {
+func buildTranslateFunc(
+	ctx context.Context,
+	secrets *krtcollections.SecretIndex,
+) func(krtctx krt.HandlerContext, i *v1alpha1.Backend) *BackendIr {
 	return func(krtctx krt.HandlerContext, i *v1alpha1.Backend) *BackendIr {
 		var backendIr BackendIr
 		switch i.Spec.Type {

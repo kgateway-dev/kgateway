@@ -71,7 +71,8 @@ Alternatively, you can use a custom debugger launch config that sets the `test.r
 }
 ```
 
-Setting `SKIP_INSTALL` to `true` will skip the installation of Gloo, which is useful to debug against a pre-existing/stable environment with Gloo already installed.
+Setting `SKIP_INSTALL` to `true` will skip the installation of kgateway, which is useful to
+debug against a pre-existing/stable environment with kgateway already installed.
 
 When invoking tests using VSCode's `run test` option, remember to set `"go.testTimeout": "600s"` in the user `settings.json` file as this may default to a lower value such as `30s` which may not be enough time for the e2e test to complete.
 

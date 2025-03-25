@@ -434,6 +434,9 @@ func testScenario(
 		write = true
 		err = nil
 	}
+	if os.Getenv("REFRESH_GOLDEN") == "true" {
+		write = true
+	}
 	if err != nil {
 		t.Fatalf("failed to read file %s: %v", fout, err)
 	}

@@ -60,14 +60,22 @@ func (u *AwsIr) Equals(other any) bool {
 	if !ok {
 		return false
 	}
-	if !u.lambdaEndpoint.Equals(otherAws.lambdaEndpoint) {
+	if u == nil && otherAws != nil {
 		return false
 	}
-	if !u.lambdaFilters.Equals(otherAws.lambdaFilters) {
-		return false
-	}
-	if !proto.Equal(u.lambdaTransportSocket, otherAws.lambdaTransportSocket) {
-		return false
+	if u != nil {
+		if otherAws == nil {
+			return false
+		}
+		if !u.lambdaEndpoint.Equals(otherAws.lambdaEndpoint) {
+			return false
+		}
+		if !u.lambdaFilters.Equals(otherAws.lambdaFilters) {
+			return false
+		}
+		if !proto.Equal(u.lambdaTransportSocket, otherAws.lambdaTransportSocket) {
+			return false
+		}
 	}
 	return true
 }
@@ -163,9 +171,20 @@ type lambdaFilters struct {
 
 // Equals checks if two lambdaFilters objects are equal.
 func (u *lambdaFilters) Equals(other *lambdaFilters) bool {
-	return proto.Equal(u.lambdaConfigAny, other.lambdaConfigAny) &&
-		proto.Equal(u.awsRequestSigningAny, other.awsRequestSigningAny) &&
-		proto.Equal(u.codecConfigAny, other.codecConfigAny)
+	if u == nil && other != nil {
+		return false
+	}
+	if u != nil {
+		if other == nil {
+			return false
+		}
+		return proto.Equal(u.lambdaConfigAny, other.lambdaConfigAny) &&
+			proto.Equal(u.awsRequestSigningAny, other.awsRequestSigningAny) &&
+			proto.Equal(u.codecConfigAny, other.codecConfigAny)
+	}
+
+	// only if both are nil
+	return true
 }
 
 // buildLambdaFilters configures cluster's upstream HTTP filters for the given backend.

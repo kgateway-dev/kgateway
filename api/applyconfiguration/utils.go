@@ -151,6 +151,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.ServiceApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("ServiceAccount"):
 		return &apiv1alpha1.ServiceAccountApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("SimpleStatus"):
+		return &apiv1alpha1.SimpleStatusApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("SingleAuthToken"):
 		return &apiv1alpha1.SingleAuthTokenApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("StaticBackend"):

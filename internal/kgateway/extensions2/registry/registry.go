@@ -48,14 +48,16 @@ func mergeSynced(funcs []func() bool) func() bool {
 
 func MergePlugins(plug ...extensionsplug.Plugin) extensionsplug.Plugin {
 	ret := extensionsplug.Plugin{
-		ContributesPolicies: make(map[schema.GroupKind]extensionsplug.PolicyPlugin),
-		ContributesBackends: make(map[schema.GroupKind]extensionsplug.BackendPlugin),
+		ContributesPolicies:     make(map[schema.GroupKind]extensionsplug.PolicyPlugin),
+		ContributesBackends:     make(map[schema.GroupKind]extensionsplug.BackendPlugin),
+		ContributesRegistration: make(map[schema.GroupKind]func()),
 	}
 	var funcs []extensionsplug.GwTranslatorFactory
 	var hasSynced []func() bool
 	for _, p := range plug {
 		maps.Copy(ret.ContributesPolicies, p.ContributesPolicies)
 		maps.Copy(ret.ContributesBackends, p.ContributesBackends)
+		maps.Copy(ret.ContributesRegistration, p.ContributesRegistration)
 		if p.ContributesGwTranslator != nil {
 			funcs = append(funcs, p.ContributesGwTranslator)
 		}

@@ -18,7 +18,7 @@ type RoutePolicy struct {
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	Spec   RoutePolicySpec `json:"spec,omitempty"`
-	Status PolicyStatus    `json:"status,omitempty"`
+	Status SimpleStatus    `json:"status,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -115,4 +115,14 @@ type BodyTransformation struct {
 	ParseAs BodyParseBehavior `json:"parseAs"`
 	// Value is the template to apply to generate the output value for the body.
 	Value *InjaTemplate `json:"value,omitempty"`
+}
+
+// SimpleStatus defines the observed state of the policy.
+type SimpleStatus struct {
+	// Conditions is the list of conditions for the policy.
+	// +optional
+	// +listType=map
+	// +listMapKey=type
+	// +kubebuilder:validation:MaxItems=8
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }

@@ -1,14 +1,10 @@
 package proxy_syncer
 
 import (
-	"fmt"
 	"maps"
 	"slices"
-	"strings"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
 	plug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
@@ -28,6 +24,21 @@ type GKPolicyReport struct {
 	// all encountered policies of that GroupKind
 	SeenPolicies map[string]plug.PolicyReport
 }
+
+type ObjWithAttachedPolicies interface {
+	GetAttachedPolicies() ir.AttachedPolicies
+	GetObjectSource() ir.ObjectSource
+}
+
+func convertBackends(backends []ir.BackendObjectIR) []ObjWithAttachedPolicies {
+	objs := make([]ObjWithAttachedPolicies, 0, len(backends))
+	for _, backend := range backends {
+		objs = append(objs, backend)
+	}
+	return objs
+}
+
+var _ ObjWithAttachedPolicies = ir.BackendObjectIR{}
 
 func (r GKPolicyReport) ResourceName() string {
 	return "GKPolicyReport"
@@ -59,13 +70,13 @@ func (r GKPolicyReport) Equals(in GKPolicyReport) bool {
 	return true
 }
 
-func generateBackendPolicyReport(backends []ir.BackendObjectIR) *GKPolicyReport {
+func generatePolicyReport(in []ObjWithAttachedPolicies) *GKPolicyReport {
 	seenPolicyResources := policyObjsWithReports{}
 	// iterate all backends and aggregate all policies attached to them
 	// we track each attachment point of the policy to be tracked as an
 	// ancestor for reporting status
-	for _, backendObj := range backends {
-		for _, polAtts := range backendObj.AttachedPolicies.Policies {
+	for _, obj := range in {
+		for _, polAtts := range obj.GetAttachedPolicies().Policies {
 			for _, polAtt := range polAtts {
 				if polAtt.PolicyRef == nil {
 					// the policyRef may be nil in the case of virtual plugins (e.g. istio settings)
@@ -73,7 +84,7 @@ func generateBackendPolicyReport(backends []ir.BackendObjectIR) *GKPolicyReport 
 					continue
 				}
 				ar := attachmentReport{
-					Ancestor: backendObj.ObjectSource,
+					Ancestor: obj.GetObjectSource(),
 					Errors:   polAtt.Errors,
 				}
 				reports := seenPolicyResources[*polAtt.PolicyRef]
@@ -113,36 +124,5 @@ func generateBackendPolicyReport(backends []ir.BackendObjectIR) *GKPolicyReport 
 	}
 	return &GKPolicyReport{
 		SeenPolicies: seenPolsByGk,
-	}
-}
-
-// TODO: find better location for this
-func BuildPolicyCondition(polErrs []error) metav1.Condition {
-	if len(polErrs) == 0 {
-		return metav1.Condition{
-			Type:    string(gwv1a2.PolicyConditionAccepted),
-			Status:  metav1.ConditionTrue,
-			Reason:  string(gwv1a2.PolicyReasonAccepted),
-			Message: "Policy accepted and attached",
-		}
-	}
-	var aggErrs strings.Builder
-	var prologue string
-	if len(polErrs) == 1 {
-		prologue = "Policy error:"
-	} else {
-		prologue = fmt.Sprintf("Policy has %d errors:", len(polErrs))
-	}
-	aggErrs.Write([]byte(prologue))
-	for _, err := range polErrs {
-		aggErrs.Write([]byte(` "`))
-		aggErrs.Write([]byte(err.Error()))
-		aggErrs.Write([]byte(`"`))
-	}
-	return metav1.Condition{
-		Type:    string(gwv1a2.PolicyConditionAccepted),
-		Status:  metav1.ConditionFalse,
-		Reason:  string(gwv1a2.PolicyReasonInvalid),
-		Message: aggErrs.String(),
 	}
 }
