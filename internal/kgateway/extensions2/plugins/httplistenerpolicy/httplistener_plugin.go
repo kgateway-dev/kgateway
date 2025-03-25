@@ -33,6 +33,7 @@ import (
 type httpListenerPolicy struct {
 	ct        time.Time
 	accessLog []*envoyaccesslog.AccessLog
+	errors    []error
 }
 
 func (d *httpListenerPolicy) CreationTime() time.Time {
@@ -94,11 +95,11 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 			Name:      i.Name,
 		}
 
-		errors := []error{}
+		errs := []error{}
 		accessLog, err := convertAccessLogConfig(ctx, i, commoncol, krtctx, objSrc)
 		if err != nil {
 			contextutils.LoggerFrom(ctx).Error(err)
-			errors = append(errors, err)
+			errs = append(errs, err)
 		}
 
 		pol := &ir.PolicyWrapper{
@@ -107,9 +108,9 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 			PolicyIR: &httpListenerPolicy{
 				ct:        i.CreationTimestamp.Time,
 				accessLog: accessLog,
+				errors:    errs,
 			},
 			TargetRefs: convert(i.Spec.TargetRefs),
-			Errors:     errors,
 		}
 
 		return pol
@@ -122,6 +123,9 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 				NewGatewayTranslationPass: NewGatewayTranslationPass,
 				Policies:                  policyCol,
 			},
+		},
+		ContributesRegistration: map[schema.GroupKind]func(){
+			wellknown.HTTPListenerPolicyGVK.GroupKind(): buildRegisterCallback(ctx, commoncol.CrudClient, policyCol),
 		},
 	}
 }

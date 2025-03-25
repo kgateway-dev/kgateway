@@ -2073,14 +2073,14 @@ func schema_kgateway_v2_api_v1alpha1_HTTPListenerPolicy(ref common.ReferenceCall
 					"status": {
 						SchemaProps: spec.SchemaProps{
 							Default: map[string]interface{}{},
-							Ref:     ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.PolicyStatus"),
+							Ref:     ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.SimpleStatus"),
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.HTTPListenerPolicySpec", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.PolicyStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.HTTPListenerPolicySpec", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.SimpleStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 	}
 }
 
