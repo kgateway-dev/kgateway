@@ -6,6 +6,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/backendtls"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/basicrouting"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/deployer"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/extproc"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/lambda"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/route_delegation"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/services/httproute"
@@ -37,6 +38,7 @@ func KubeGatewaySuiteRunner() e2e.SuiteRunner {
 	kubeGatewaySuiteRunner.Register("TCPRouteServices", tcproute.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("TLSRouteServices", tlsroute.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("Transforms", transformation.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("ExtProc", extproc.NewTestingSuite)
 
 	// kubeGatewaySuiteRunner.Register("HttpListenerOptions", http_listener_options.NewTestingSuite)
 	// kubeGatewaySuiteRunner.Register("ListenerOptions", listener_options.NewTestingSuite)
