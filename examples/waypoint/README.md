@@ -42,7 +42,7 @@ east-west traffic for your mesh.
 3. Apply policy to a Service
 
 ```
-kubectl apply -f examples/waypoint/service-http-route.yaml
+kubectl apply -f examples/waypoint/waypoint-http-route.yaml
 ```
 
 This `HTTPRoute` is a bit different; it has a parentRef of a `Service` rather
@@ -52,7 +52,7 @@ For more info, see the [GAMMA Initiative](https://gateway-api.sigs.k8s.io/mesh/g
 4. Send some traffic
 
 ```
-CLIENT=$(kubectl get po -n httpbin -ojsonpath='{.items[0].metadata.name}')
+CLIENT=$(kubectl get po -n httpbin -l app=curl -ojsonpath='{.items[0].metadata.name}')
 kubectl -n httpbin exec $CLIENT -- curl -sS -v httpbin:8000/get
 ```
 

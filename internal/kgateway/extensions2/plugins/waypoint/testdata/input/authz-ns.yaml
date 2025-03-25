@@ -1,0 +1,59 @@
+---
+# The Namespace capture should apply to all the Services in the namespace
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    istio.io/dataplane-mode: ambient
+    istio.io/use-waypoint: example-waypoint
+    kubernetes.io/metadata.name: httpbin
+  name: infra
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: example-waypoint
+  namespace: infra
+spec:
+  gatewayClassName: kgateway-waypoint
+  listeners:
+  - allowedRoutes:
+      namespaces:
+        from: Same
+    name: mesh
+    port: 15088
+    protocol: istio.io/PROXY
+---
+# we should get a filter chain with a default virtualhost that just
+# sends traffic to the corresponding `kube` Service backend
+apiVersion: v1
+kind: Service
+metadata:
+  name: httpbin
+  namespace: infra
+spec:
+  clusterIP: 1.1.1.1
+  ports:
+  - name: http
+    port: 8000
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: httpbin
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: httpbin-authz-svc
+  namespace: infra
+spec:
+  action: DENY
+  rules:
+  - to:
+    - operation:
+        methods:
+        - GET
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: httpbin

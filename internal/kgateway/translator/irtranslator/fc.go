@@ -296,7 +296,7 @@ func (h *hcmNetworkFilterTranslator) computeHttpFilters(ctx context.Context, l i
 			httpFilters = append(httpFilters, httpFilter)
 		}
 	}
-	//	httpFilters = append(httpFilters, CustomHttpFilters(h.listener)...)
+	// httpFilters = append(httpFilters, convertCustomHttpFilters(l.CustomHTTPFilters)...)
 
 	// https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/http/http_filters#filter-ordering
 	// HttpFilter ordering determines the order in which the HCM will execute the filter.

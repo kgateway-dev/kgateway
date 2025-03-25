@@ -95,6 +95,7 @@ type HttpFilterChainIR struct {
 	Vhosts                  []*VirtualHost
 	AttachedPolicies        AttachedPolicies
 	AttachedNetworkPolicies AttachedPolicies
+	CustomHTTPFilters       []CustomEnvoyFilter
 }
 
 type TcpIR struct {
