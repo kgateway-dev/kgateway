@@ -94,7 +94,7 @@ clusters:
             envoy.transport_socket_match:
               tls: "true"
             io.solo.transformation:
-              auth_token: mysecretkey
+              auth_token: mysecretkeytwo
               model: gpt-4.0-turbo
       priority: 1
     - lbEndpoints:
@@ -109,7 +109,7 @@ clusters:
             envoy.transport_socket_match:
               tls: "true"
             io.solo.transformation:
-              auth_token: mysecretkey
+              auth_token: mysecretkeythree
               model: gpt-3.5-turbo
       priority: 2
   metadata: {}
