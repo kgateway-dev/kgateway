@@ -30,4 +30,10 @@ var (
 
 	// route policy for prompt guard regex pattern rejection
 	routePolicyPGRegexPatternRejectManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "prompt-guard-regex-pattern-reject.yaml")
+
+	// prompt guard on the routes
+	promptGuardManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "prompt-guard.yaml")
+
+	// prompt guard (streaming response) on the routes
+	promptGuardStreamingManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "prompt-guard-streaming.yaml")
 )

@@ -1,0 +1,66 @@
+{
+  "candidates": [
+    {
+      "content": {
+        "role": "model",
+        "parts": [
+          {
+            "text": "Here are some example email addresses for Bob, suitable for testing purposes:\n\n**Basic:**\n\n* bob@example.com\n* bob.test@example.com\n* bob123@example.com\n\n**Using Different Domains:**\n\n* bob@test.com\n* bob@example.org\n* bob@mailinator.com (Disposable email service)\n\n**Descriptive:**\n\n* bob.smith@example.com\n* bob.testuser@example.com\n* bob.developer@example.com\n\n**Humorous:**\n\n* bob.the.builder@example.com\n* bob.ross.happy@example.com\n* bob.the.great@example.com\n\n**Important Notes:**\n\n* **Avoid using real email addresses:** These are just examples, and using real addresses could lead to privacy issues.\n* **Choose a domain that fits your testing context:** For example, if you're testing a system for developers, \"example.dev\" might be more appropriate than \"example.com.\"\n* **Consider using a disposable email service:** Mailinator (mentioned above) is a popular choice for testing, as it allows you to create temporary email addresses.\n\n**Remember to always respect privacy and avoid using real personal information when testing.** \n"
+          }
+        ]
+      },
+      "finishReason": "STOP",
+      "safetyRatings": [
+        {
+          "category": "HARM_CATEGORY_HATE_SPEECH",
+          "probability": "NEGLIGIBLE",
+          "probabilityScore": 0.064453125,
+          "severity": "HARM_SEVERITY_NEGLIGIBLE",
+          "severityScore": 0.072753906
+        },
+        {
+          "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+          "probability": "NEGLIGIBLE",
+          "probabilityScore": 0.23535156,
+          "severity": "HARM_SEVERITY_NEGLIGIBLE",
+          "severityScore": 0.12695313
+        },
+        {
+          "category": "HARM_CATEGORY_HARASSMENT",
+          "probability": "NEGLIGIBLE",
+          "probabilityScore": 0.125,
+          "severity": "HARM_SEVERITY_NEGLIGIBLE",
+          "severityScore": 0.036865234
+        },
+        {
+          "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+          "probability": "NEGLIGIBLE",
+          "probabilityScore": 0.08251953,
+          "severity": "HARM_SEVERITY_NEGLIGIBLE",
+          "severityScore": 0.064453125
+        }
+      ],
+      "avgLogprobs": -0.35414154967118738
+    }
+  ],
+  "usageMetadata": {
+    "promptTokenCount": 20,
+    "candidatesTokenCount": 267,
+    "totalTokenCount": 287,
+    "promptTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 20
+      }
+    ],
+    "candidatesTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 267
+      }
+    ]
+  },
+  "modelVersion": "gemini-1.5-flash-001",
+  "createTime": "2025-03-18T21:24:25.375765Z",
+  "responseId": "ieTZZ9X3Fs2Dm9IPnLuemQ0"
+}

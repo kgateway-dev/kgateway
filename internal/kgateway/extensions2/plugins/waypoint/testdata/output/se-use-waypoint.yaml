@@ -1,0 +1,15 @@
+Listeners:
+- address:
+    socketAddress:
+      address: '::'
+      ipv4Compat: true
+      portValue: 15088
+  listenerFilters:
+  - name: envoy.filters.listener.proxy_protocol
+    typedConfig:
+      '@type': type.googleapis.com/envoy.extensions.filters.listener.proxy_protocol.v3.ProxyProtocol
+      rules:
+      - onTlvPresent:
+          key: peer_principal
+        tlvType: 208
+  name: proxy_protocol_inbound

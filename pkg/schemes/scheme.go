@@ -3,6 +3,8 @@ package schemes
 import (
 	"fmt"
 
+	istionetworkingv1 "istio.io/client-go/pkg/apis/networking/v1"
+	istiosecurityv1 "istio.io/client-go/pkg/apis/security/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	discoveryv1 "k8s.io/api/discovery/v1"
@@ -33,6 +35,10 @@ var SchemeBuilder = runtime.SchemeBuilder{
 
 	// kgateway API resources
 	kgwv1a1.AddToScheme,
+
+	// Istio resources
+	istionetworkingv1.AddToScheme,
+	istiosecurityv1.AddToScheme,
 
 	// Solo Edge Gloo API resources
 	// gloov1.AddToScheme,

@@ -50,6 +50,7 @@ func InstallMinimalIstio(
 func InstallRevisionedIstio(
 	ctx context.Context,
 	istioctlBinary, kubeContext, revision, profile string,
+	extraArgs ...string,
 ) error {
 	operatorFileContent := generateIstioOperatorFileContent(revision, profile)
 	operatorFile := filepath.Join(os.TempDir(), "istio-operator.yaml")
@@ -59,7 +60,7 @@ func InstallRevisionedIstio(
 		return fmt.Errorf("failed to write operator file: %w", err)
 	}
 
-	return installIstioOperator(ctx, istioctlBinary, kubeContext, operatorFile)
+	return installIstioOperator(ctx, istioctlBinary, kubeContext, operatorFile, extraArgs...)
 }
 
 // TODO(npolshak): Add Istio dependency to define operator in code instead of writing file
@@ -86,16 +87,20 @@ spec:
 func installIstioOperator(
 	ctx context.Context,
 	istioctlBinary, kubeContext, operatorFile string,
+	extraArgs ...string,
 ) error {
 	if testutils.ShouldSkipIstioInstall() {
 		return nil
 	}
 
 	//  istioctl install -y --context <kube-context> -f <operator-file>
-	cmd := exec.Command(istioctlBinary, "install", "-y", "--context", kubeContext, "-f", operatorFile)
+	args := append([]string{
+		"install", "-y", "--context", kubeContext, "-f", operatorFile,
+	}, extraArgs...)
+	cmd := exec.Command(istioctlBinary, args...)
 
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("istioctl install failed: %w", err)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("istioctl install failed: %w\noutput:\n%s", err, string(out))
 	}
 
 	return ctx.Err()

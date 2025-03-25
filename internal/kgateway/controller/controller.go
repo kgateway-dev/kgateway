@@ -43,6 +43,8 @@ type GatewayConfig struct {
 
 	ControlPlane            deployer.ControlPlaneInfo
 	IstioIntegrationEnabled bool
+
+	ImageInfo *deployer.ImageInfo
 }
 
 func NewBaseGatewayController(ctx context.Context, cfg GatewayConfig) error {
@@ -146,6 +148,7 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 		Dev:                     c.cfg.Dev,
 		IstioIntegrationEnabled: c.cfg.IstioIntegrationEnabled,
 		ControlPlane:            c.cfg.ControlPlane,
+		ImageInfo:               c.cfg.ImageInfo,
 	})
 	if err != nil {
 		return err
@@ -188,7 +191,8 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 				})
 			}
 			return reqs
-		}))
+		}),
+	)
 	// watch for gatewayclasses managed by our controller and enqueue related gateways
 	buildr.Watches(
 		&apiv1.GatewayClass{},
@@ -286,6 +290,7 @@ func (c *controllerBuilder) watchInferencePool(ctx context.Context) error {
 	// Create a deployer using the controllerBuilder as inputs.
 	d, err := deployer.NewDeployer(c.cfg.Mgr.GetClient(), &deployer.Inputs{
 		ControllerName:     c.cfg.ControllerName,
+		ImageInfo:          c.cfg.ImageInfo,
 		InferenceExtension: c.poolCfg.InferenceExt,
 	})
 	if err != nil {

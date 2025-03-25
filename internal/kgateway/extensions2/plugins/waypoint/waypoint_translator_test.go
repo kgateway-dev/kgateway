@@ -24,9 +24,12 @@ var cases = []struct {
 	skip string
 }{
 	{"Service use-waypoint", "svc-use-waypoint", exampleGw, ""},
+	{"ServiceEntry use-waypoint", "se-use-waypoint", exampleGw, ""},
 	{"Namespace use-waypoint", "ns-use-waypoint", exampleGw, ""},
 	{"HTTPRoute on Gateway", "httproute-gateway", exampleGw, ""},
 	{"HTTPRoute on Service", "httproute-svc", exampleGw, ""},
+	{"HTTPRoute on ServiceEntry", "httproute-se", exampleGw, ""},
+	{"HTTPRoute on ServiceEntry via Hostname", "httproute-se-hostname", exampleGw, ""},
 }
 
 func TestWaypointTranslator(t *testing.T) {

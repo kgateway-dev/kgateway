@@ -93,6 +93,8 @@ spec:
   nodeName: worker
   serviceAccount: default
   serviceAccountName: default
+status:
+  podIP: 10.244.1.11
 ---
 apiVersion: v1
 kind: Pod
@@ -110,6 +112,8 @@ spec:
   nodeName: worker2
   serviceAccount: default
   serviceAccountName: default
+status:
+  podIP: 10.244.2.14
 ---
 apiVersion: v1
 kind: Pod
@@ -127,6 +131,8 @@ spec:
   nodeName: worker3
   serviceAccount: default
   serviceAccountName: default
+status:
+  podIP: 10.244.3.3
 ---
 ## while cross regional nodes is usually not a valid k8s setup, we'll add one here for testing purposes
 apiVersion: v1
@@ -164,3 +170,5 @@ spec:
   nodeName: worker4
   serviceAccount: default
   serviceAccountName: default
+status:
+  podIP: 10.244.4.4

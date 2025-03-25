@@ -1,7 +1,6 @@
 package v1alpha1
 
 import (
-	"github.com/google/go-cmp/cmp"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
@@ -28,16 +27,6 @@ type AIRoutePolicy struct {
 	// +kubebuilder:validation:Enum=CHAT;CHAT_STREAMING
 	// +kube:default=CHAT
 	RouteType *RouteType `json:"routeType,omitempty"`
-}
-
-func (in *AIRoutePolicy) Equals(ai *AIRoutePolicy) bool {
-	if (in == nil) != (ai == nil) {
-		return false
-	}
-	if in == nil {
-		return true
-	}
-	return cmp.Equal(in, ai)
 }
 
 // AIPromptEnrichment defines the config to enrich requests sent to the LLM provider by appending and prepending system prompts.

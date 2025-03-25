@@ -194,7 +194,7 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 		return nil, err
 	}
 
-	setupLog.Info("starting controller builder", "GatewayClasses")
+	setupLog.Info("starting controller builder")
 	return &ControllerBuilder{
 		proxySyncer: proxySyncer,
 		cfg:         cfg,
@@ -237,6 +237,11 @@ func (c *ControllerBuilder) Start(ctx context.Context) error {
 			XdsPort: xdsPort,
 		},
 		IstioIntegrationEnabled: integrationEnabled,
+		ImageInfo: &deployer.ImageInfo{
+			Registry:   globalSettings.DefaultImageRegistry,
+			Tag:        globalSettings.DefaultImageTag,
+			PullPolicy: globalSettings.DefaultImagePullPolicy,
+		},
 	}
 
 	if err := NewBaseGatewayController(ctx, gwCfg); err != nil {

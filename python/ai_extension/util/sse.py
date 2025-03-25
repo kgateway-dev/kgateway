@@ -82,7 +82,7 @@ def parse_sse_messages(
     while start_pos < len(data):
         sse_end_pos = data.find(sse_delimiter, start_pos)
         if sse_end_pos < 0:
-            logger.warning(
+            logger.debug(
                 f"cannot find SSE message delimiter! saving data to leftover: {data[start_pos:]}"
             )
             return chunks, data[start_pos:]

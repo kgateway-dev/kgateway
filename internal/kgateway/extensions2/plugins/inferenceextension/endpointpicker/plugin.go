@@ -261,7 +261,7 @@ func (p *endpointPickerPass) ApplyForBackend(
 	}
 
 	// Attach per-route override to typed_per_filter_config.
-	pCtx.AddTypedConfig(wellknown.InfPoolTransformationFilterName, override)
+	pCtx.TypedFilterConfig.AddTypedConfig(wellknown.InfPoolTransformationFilterName, override)
 
 	return nil
 }
