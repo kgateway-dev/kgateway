@@ -46,9 +46,8 @@ const (
 )
 
 type routePolicy struct {
-	ct      time.Time
-	spec    routeSpecIr
-	ExtProc *ExtprocIR
+	ct   time.Time
+	spec routeSpecIr
 }
 
 type ExtprocIR struct {
@@ -58,6 +57,7 @@ type ExtprocIR struct {
 
 type routeSpecIr struct {
 	AI        *AIPolicyIR
+	ExtProc   *ExtprocIR
 	transform *transformationpb.RouteTransformations
 	// rustformation is currently a *dynamicmodulesv3.DynamicModuleFilter, but can potentially change at some point
 	// in the future so we use proto.Message here
@@ -83,10 +83,6 @@ func (d *routePolicy) Equals(in any) bool {
 		return false
 	}
 	if !proto.Equal(d.spec.rustformation, d2.spec.rustformation) {
-		return false
-	}
-
-	if !proto.Equal(d.ExtProc.ExtProc, d2.ExtProc.ExtProc) {
 		return false
 	}
 
@@ -329,8 +325,8 @@ func (p *routePolicyPluginGwPass) ApplyForRouteBackend( //Apply for route policy
 	if !ok {
 		return nil
 	}
-	if rtPolicy.ExtProc != nil {
-		p.extprocFilter = rtPolicy.ExtProc.ExtProc
+	if rtPolicy.spec.ExtProc != nil {
+		p.extprocFilter = rtPolicy.spec.ExtProc.ExtProc
 		enableExtprocFilter(pCtx)
 	}
 
@@ -439,7 +435,7 @@ func buildTranslateFunc(ctx context.Context, secrets *krtcollections.SecretIndex
 			if err != nil {
 				return nil, err
 			}
-			policyIr.ExtProc = &ExtprocIR{
+			outSpec.ExtProc = &ExtprocIR{
 				Name:    policyCR.Name, // TODO format
 				ExtProc: extproc,
 			}
