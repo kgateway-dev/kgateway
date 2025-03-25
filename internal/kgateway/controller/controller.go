@@ -287,16 +287,6 @@ func (c *controllerBuilder) watchInferencePool(ctx context.Context) error {
 		return fmt.Errorf("failed to register HTTPRoute index: %w", err)
 	}
 
-	// Create a deployer using the controllerBuilder as inputs.
-	d, err := deployer.NewDeployer(c.cfg.Mgr.GetClient(), &deployer.Inputs{
-		ControllerName:     c.cfg.ControllerName,
-		ImageInfo:          c.cfg.ImageInfo,
-		InferenceExtension: c.poolCfg.InferenceExt,
-	})
-	if err != nil {
-		return err
-	}
-
 	buildr := ctrl.NewControllerManagedBy(c.cfg.Mgr).
 		For(&infextv1a2.InferencePool{}, builder.WithPredicates(
 			predicate.Or(
@@ -343,35 +333,45 @@ func (c *controllerBuilder) watchInferencePool(ctx context.Context) error {
 			return reqs
 		}))
 
-	// Watch child objects, e.g. Deployments, created by the inference pool deployer.
-	gvks, err := d.GetGvksToWatch(ctx)
-	if err != nil {
-		return err
-	}
-	for _, gvk := range gvks {
-		obj, err := c.cfg.Mgr.GetScheme().New(gvk)
+	// If enabled, create a deployer using the controllerBuilder as inputs.
+	if c.poolCfg.InferenceExt != nil {
+		d, err := deployer.NewDeployer(c.cfg.Mgr.GetClient(), &deployer.Inputs{
+			ControllerName:     c.cfg.ControllerName,
+			ImageInfo:          c.cfg.ImageInfo,
+			InferenceExtension: c.poolCfg.InferenceExt,
+		})
 		if err != nil {
 			return err
 		}
-		clientObj, ok := obj.(client.Object)
-		if !ok {
-			return fmt.Errorf("object %T is not a client.Object", obj)
+		// Watch child objects, e.g. Deployments, created by the inference pool deployer.
+		gvks, err := d.GetGvksToWatch(ctx)
+		if err != nil {
+			return err
 		}
-		log.Info("watching gvk as inferencepool child", "gvk", gvk)
-		var opts []builder.OwnsOption
-		if shouldIgnoreStatusChild(gvk) {
-			opts = append(opts, builder.WithPredicates(predicate.GenerationChangedPredicate{}))
+		for _, gvk := range gvks {
+			obj, err := c.cfg.Mgr.GetScheme().New(gvk)
+			if err != nil {
+				return err
+			}
+			clientObj, ok := obj.(client.Object)
+			if !ok {
+				return fmt.Errorf("object %T is not a client.Object", obj)
+			}
+			log.Info("watching gvk as inferencepool child", "gvk", gvk)
+			var opts []builder.OwnsOption
+			if shouldIgnoreStatusChild(gvk) {
+				opts = append(opts, builder.WithPredicates(predicate.GenerationChangedPredicate{}))
+			}
+			buildr.Owns(clientObj, opts...)
 		}
-		buildr.Owns(clientObj, opts...)
-	}
-
-	r := &inferencePoolReconciler{
-		cli:      c.cfg.Mgr.GetClient(),
-		scheme:   c.cfg.Mgr.GetScheme(),
-		deployer: d,
-	}
-	if err := buildr.Complete(r); err != nil {
-		return err
+		r := &inferencePoolReconciler{
+			cli:      c.cfg.Mgr.GetClient(),
+			scheme:   c.cfg.Mgr.GetScheme(),
+			deployer: d,
+		}
+		if err := buildr.Complete(r); err != nil {
+			return err
+		}
 	}
 
 	return nil

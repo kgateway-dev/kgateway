@@ -21,13 +21,11 @@ var (
 	DirectResponseGVK     = buildKgatewayGvk("DirectResponse")
 	BackendGVK            = buildKgatewayGvk("Backend")
 	RoutePolicyGVK        = buildKgatewayGvk("RoutePolicy")
-	ListenerPolicyGVK     = buildKgatewayGvk("ListenerPolicy")
 	HTTPListenerPolicyGVK = buildKgatewayGvk("HTTPListenerPolicy")
 
 	GatewayParametersGVR  = GatewayParametersGVK.GroupVersion().WithResource("gatewayparameters")
 	DirectResponseGVR     = DirectResponseGVK.GroupVersion().WithResource("directresponses")
 	BackendGVR            = BackendGVK.GroupVersion().WithResource("backends")
 	RoutePolicyGVR        = RoutePolicyGVK.GroupVersion().WithResource("routepolicies")
-	ListenerPolicyGVR     = ListenerPolicyGVK.GroupVersion().WithResource("listenerpolicies")
 	HTTPListenerPolicyGVR = HTTPListenerPolicyGVK.GroupVersion().WithResource("httplistenerpolicies")
 )
