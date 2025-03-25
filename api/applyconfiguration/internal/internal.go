@@ -792,6 +792,12 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         scalar: string
       default: ""
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LocalRateLimitPolicy
+  map:
+    fields:
+    - name: tokenBucket
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.TokenBucket
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Message
   map:
     fields:
@@ -951,6 +957,12 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: replicas
       type:
         scalar: numeric
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.RateLimit
+  map:
+    fields:
+    - name: local
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LocalRateLimitPolicy
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Regex
   map:
     fields:
@@ -1014,6 +1026,9 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: ai
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AIRoutePolicy
+    - name: rateLimit
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.RateLimit
     - name: targetRefs
       type:
         list:
@@ -1153,6 +1168,21 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: vertexai
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.VertexAIConfig
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.TokenBucket
+  map:
+    fields:
+    - name: fillInterval
+      type:
+        scalar: string
+      default: ""
+    - name: maxTokens
+      type:
+        scalar: numeric
+      default: 0
+    - name: tokensPerFill
+      type:
+        scalar: numeric
+      default: 0
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Transform
   map:
     fields:

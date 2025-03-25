@@ -36,6 +36,9 @@ type RoutePolicySpec struct {
 	AI *AIRoutePolicy `json:"ai,omitempty"`
 
 	Transformation TransformationPolicy `json:"transformation,omitempty"`
+
+	// +optional
+	RateLimit *RateLimit `json:"rateLimit,omitempty"`
 }
 
 // TransformationPolicy config is used to modify envoy behavior at a route level.
@@ -115,4 +118,34 @@ type BodyTransformation struct {
 	ParseAs BodyParseBehavior `json:"parseAs"`
 	// Value is the template to apply to generate the output value for the body.
 	Value *InjaTemplate `json:"value,omitempty"`
+}
+
+// RateLimit defines the rate limiting configuration.
+type RateLimit struct {
+	// Local defines the local rate limiting configuration.
+	// +optional
+	Local *LocalRateLimitPolicy `json:"local,omitempty"`
+
+	// Extension defines the extension rate limiting configuration.
+	// +optional
+	// Extension *GatewayExtension `json:"extension,omitempty"`
+}
+
+// LocalRateLimitPolicy defines the local rate limiting configuration.
+type LocalRateLimitPolicy struct {
+	TokenBucket *TokenBucket `json:"tokenBucket,omitempty"`
+}
+
+// TokenBucket defines the rate limiting token bucket configuration.
+type TokenBucket struct {
+	// +required
+	MaxTokens uint32 `json:"maxTokens"`
+
+	// +optional
+	// kubebuilder:default:=1
+	TokensPerFill uint32 `json:"tokensPerFill"`
+
+	// +required
+	// +kubebuilder:validation:Format=duration
+	FillInterval string `json:"fillInterval"`
 }

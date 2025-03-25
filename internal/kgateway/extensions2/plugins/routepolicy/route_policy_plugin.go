@@ -12,6 +12,7 @@ import (
 	exteniondynamicmodulev3 "github.com/envoyproxy/go-control-plane/envoy/extensions/dynamic_modules/v3"
 	dynamicmodulesv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/dynamic_modules/v3"
 	envoy_ext_proc_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_proc/v3"
+	localratelimitv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/local_ratelimit/v3"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
@@ -44,6 +45,8 @@ const (
 	transformationFilterNamePrefix = "transformation"
 	rustformationFilterNamePrefix  = "dynamic_modules/simple_mutations"
 	metadataRouteTransformation    = "transformation/helper"
+	localRateLimitFilterNamePrefix = "ratelimit/local"
+	localRateLimitStatPrefix       = "http_local_rate_limiter"
 )
 
 type routePolicy struct {
@@ -57,6 +60,7 @@ type routeSpecIr struct {
 	transform                  *anypb.Any
 	rustformation              *anypb.Any
 	rustformationStringToStash string
+	localRateLimit             *localratelimitv3.LocalRateLimit
 	errors                     []error
 }
 
@@ -90,6 +94,10 @@ func (d *routePolicy) Equals(in any) bool {
 		return false
 	}
 
+	if !proto.Equal(d.spec.localRateLimit, d2.spec.localRateLimit) {
+		return false
+	}
+
 	return true
 }
 
@@ -98,7 +106,8 @@ type routePolicyPluginGwPass struct {
 	// TODO(nfuden): dont abuse httplevel filter in favor of route level
 	rustformationStash map[string]string
 	ir.UnimplementedProxyTranslationPass
-	setAIFilter bool
+	setAIFilter           bool
+	localRateLimitInChain *localratelimitv3.LocalRateLimit
 }
 
 func (p *routePolicyPluginGwPass) ApplyHCM(ctx context.Context, pCtx *ir.HcmContext, out *envoyhttp.HttpConnectionManager) error {
@@ -178,6 +187,12 @@ func (p *routePolicy) Name() string {
 
 // called 1 time for each listener
 func (p *routePolicyPluginGwPass) ApplyListenerPlugin(ctx context.Context, pCtx *ir.ListenerContext, out *envoy_config_listener_v3.Listener) {
+	policy, ok := pCtx.Policy.(*routePolicy)
+	if !ok {
+		return
+	}
+
+	p.localRateLimitInChain = policy.spec.localRateLimit
 }
 
 func (p *routePolicyPluginGwPass) ApplyVhostPlugin(ctx context.Context, pCtx *ir.VirtualHostContext, out *envoy_config_route_v3.VirtualHost) {
@@ -250,6 +265,24 @@ func (p *routePolicyPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.Ro
 		outputRoute.GetTypedPerFilterConfig()[metadataRouteTransformation], _ = utils.MessageToAny(setmetaTransform)
 
 		p.setTransformationInChain = true
+	}
+
+	if policy.spec.localRateLimit != nil {
+		if outputRoute.GetTypedPerFilterConfig() == nil {
+			outputRoute.TypedPerFilterConfig = make(map[string]*anypb.Any)
+		}
+		pb, err := utils.MessageToAny(policy.spec.localRateLimit)
+		if err != nil {
+			return err
+		}
+		outputRoute.GetTypedPerFilterConfig()[localRateLimitFilterNamePrefix] = pb
+
+		// Add a filter to the chain
+		if p.localRateLimitInChain == nil {
+			p.localRateLimitInChain = &localratelimitv3.LocalRateLimit{
+				StatPrefix: localRateLimitStatPrefix,
+			}
+		}
 	}
 
 	// TODO: err/warn/ignore if targetRef is set on non-AI Backend
@@ -340,6 +373,13 @@ func (p *routePolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.Filter
 			&transformationpb.FilterTransformations{},
 			plugins.AfterStage(plugins.FaultStage)))
 	}
+
+	if p.localRateLimitInChain != nil {
+		filters = append(filters, plugins.MustNewStagedFilter(localRateLimitFilterNamePrefix,
+			p.localRateLimitInChain,
+			plugins.BeforeStage(plugins.AcceptedStage)))
+	}
+
 	if len(filters) == 0 {
 		return nil, nil
 	}
@@ -368,6 +408,9 @@ func buildTranslateFunc(ctx context.Context, secrets *krtcollections.SecretIndex
 
 		// Apply transformation specific translation
 		transformationForSpec(policyCR.Spec, &outSpec)
+
+		// Apply rate limit specific translation
+		localRateLimitForSpec(policyCR.Spec, &outSpec)
 
 		for _, err := range outSpec.errors {
 			contextutils.LoggerFrom(ctx).Error(policyCR.GetNamespace(), policyCR.GetName(), err)
@@ -423,4 +466,20 @@ func transformationForSpec(spec v1alpha1.RoutePolicySpec, out *routeSpecIr) {
 	}
 	out.rustformation = rustformation
 	out.rustformationStringToStash = string(toStash)
+}
+
+func localRateLimitForSpec(spec v1alpha1.RoutePolicySpec, out *routeSpecIr) {
+	if spec.RateLimit == nil || spec.RateLimit.Local == nil {
+		return
+	}
+
+	var err error
+	if spec.RateLimit.Local != nil {
+		out.localRateLimit, err = toLocalRateLimitFilterConfig(spec.RateLimit.Local)
+		if err != nil {
+			out.errors = append(out.errors, err)
+		}
+	}
+
+	// TODO: Support rate limit extension
 }
