@@ -19,10 +19,23 @@ const (
 
 var _ = Describe("GatewayClassProvisioner", func() {
 	var (
-		ctx context.Context
+		ctx    context.Context
+		cancel context.CancelFunc
 	)
 	BeforeEach(func() {
-		ctx = context.Background()
+		ctx, cancel = context.WithCancel(context.Background())
+
+		var err error
+		cancel, err = createManager(ctx, nil)
+		Expect(err).NotTo(HaveOccurred())
+	})
+
+	AfterEach(func() {
+		if cancel != nil {
+			cancel()
+		}
+		// ensure goroutines cleanup
+		Eventually(func() bool { return true }).WithTimeout(3 * time.Second).Should(BeTrue())
 	})
 
 	Context("create", func() {

@@ -24,6 +24,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	infextv1a2 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
 
@@ -163,6 +164,9 @@ func createManager(parentCtx context.Context, inferenceExt *deployer.InferenceEx
 			// the name validation here.
 			SkipNameValidation: ptr.To(true),
 		},
+		Metrics: metricsserver.Options{
+			BindAddress: "0",
+		},
 	})
 	if err != nil {
 		return nil, err
@@ -189,9 +193,9 @@ func createManager(parentCtx context.Context, inferenceExt *deployer.InferenceEx
 	ci[gatewayClassName] = &controller.ClassInfo{
 		Description: "default gateway class",
 	}
-	// Create the provisioner and initializer
-	err = controller.NewGatewayClassProvisioner(mgr, gatewayControllerName, ci)
-	Expect(err).ToNot(HaveOccurred())
+	if err := controller.NewGatewayClassProvisioner(mgr, gatewayControllerName, ci); err != nil {
+		return nil, err
+	}
 
 	poolCfg := &controller.InferencePoolConfig{
 		Mgr:            mgr,
