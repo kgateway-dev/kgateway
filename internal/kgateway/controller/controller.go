@@ -405,7 +405,7 @@ func shouldIgnoreStatusChild(gvk schema.GroupVersionKind) bool {
 func (c *controllerBuilder) watchGwClass(_ context.Context) error {
 	return ctrl.NewControllerManagedBy(c.cfg.Mgr).
 		For(&apiv1.GatewayClass{}, builder.WithPredicates(predicate.Funcs{
-			CreateFunc:  func(e event.CreateEvent) bool { return false },
+			CreateFunc:  func(e event.CreateEvent) bool { return true },
 			DeleteFunc:  func(e event.DeleteEvent) bool { return false },
 			UpdateFunc:  func(e event.UpdateEvent) bool { return true },
 			GenericFunc: func(e event.GenericEvent) bool { return false },
