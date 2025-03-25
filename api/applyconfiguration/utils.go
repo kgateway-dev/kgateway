@@ -107,10 +107,6 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.IstioIntegrationApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("KubernetesProxyConfig"):
 		return &apiv1alpha1.KubernetesProxyConfigApplyConfiguration{}
-	case v1alpha1.SchemeGroupVersion.WithKind("ListenerPolicy"):
-		return &apiv1alpha1.ListenerPolicyApplyConfiguration{}
-	case v1alpha1.SchemeGroupVersion.WithKind("ListenerPolicySpec"):
-		return &apiv1alpha1.ListenerPolicySpecApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("LLMProvider"):
 		return &apiv1alpha1.LLMProviderApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("LocalPolicyTargetReference"):
@@ -157,6 +153,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.ServiceApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("ServiceAccount"):
 		return &apiv1alpha1.ServiceAccountApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("SimpleStatus"):
+		return &apiv1alpha1.SimpleStatusApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("SingleAuthToken"):
 		return &apiv1alpha1.SingleAuthTokenApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("StaticBackend"):

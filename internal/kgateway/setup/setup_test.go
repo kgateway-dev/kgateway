@@ -147,6 +147,7 @@ func TestScenarios(t *testing.T) {
 	st.EnableIstioIntegration = true
 	st.EnableAutoMtls = true
 	st.EnableInferExt = true
+	st.InferExtAutoProvision = true
 
 	runScenario(t, "testdata", st)
 }
@@ -433,6 +434,9 @@ func testScenario(
 	if os.IsNotExist(err) {
 		write = true
 		err = nil
+	}
+	if os.Getenv("REFRESH_GOLDEN") == "true" {
+		write = true
 	}
 	if err != nil {
 		t.Fatalf("failed to read file %s: %v", fout, err)

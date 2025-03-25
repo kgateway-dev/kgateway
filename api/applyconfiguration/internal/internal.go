@@ -629,9 +629,6 @@ var schemaYAML = typed.YAMLObject(`types:
           elementType:
             namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AccessLog
           elementRelationship: atomic
-    - name: compress
-      type:
-        scalar: boolean
     - name: targetRefs
       type:
         list:
@@ -762,39 +759,6 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SupportedLLMProvider
       default: {}
-- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ListenerPolicy
-  map:
-    fields:
-    - name: apiVersion
-      type:
-        scalar: string
-    - name: kind
-      type:
-        scalar: string
-    - name: metadata
-      type:
-        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta
-      default: {}
-    - name: spec
-      type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ListenerPolicySpec
-      default: {}
-    - name: status
-      type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.PolicyStatus
-      default: {}
-- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ListenerPolicySpec
-  map:
-    fields:
-    - name: perConnectionBufferLimitBytes
-      type:
-        scalar: numeric
-    - name: targetRefs
-      type:
-        list:
-          elementType:
-            namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LocalPolicyTargetReference
-          elementRelationship: atomic
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LocalPolicyTargetReference
   map:
     fields:
@@ -1045,7 +1009,7 @@ var schemaYAML = typed.YAMLObject(`types:
       default: {}
     - name: status
       type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.PolicyStatus
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SimpleStatus
       default: {}
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.RoutePolicySpec
   map:
@@ -1131,6 +1095,17 @@ var schemaYAML = typed.YAMLObject(`types:
         map:
           elementType:
             scalar: string
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SimpleStatus
+  map:
+    fields:
+    - name: conditions
+      type:
+        list:
+          elementType:
+            namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Condition
+          elementRelationship: associative
+          keys:
+          - type
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SingleAuthToken
   map:
     fields:

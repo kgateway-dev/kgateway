@@ -296,7 +296,7 @@ clean-gen:
 	rm -rf api/applyconfiguration
 	rm -rf pkg/generated/openapi
 	rm -rf pkg/client
-	rm -rf install/helm/kgateway/crds
+	rm -rf install/helm/kgateway-crds/templates
 
 .PHONY: clean-tests
 clean-tests:

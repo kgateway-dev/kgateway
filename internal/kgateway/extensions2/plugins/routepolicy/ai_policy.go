@@ -14,6 +14,7 @@ import (
 	envoy_ext_proc_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_proc/v3"
 	"github.com/mitchellh/hashstructure"
 	envoytransformation "github.com/solo-io/envoy-gloo/go/config/filter/http/transformation/v2"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"k8s.io/utils/ptr"
 
@@ -38,22 +39,24 @@ type AIPolicyIR struct {
 
 func (p *routePolicyPluginGwPass) processAIRoutePolicy(
 	configMap ir.TypedFilterConfigMap,
-	ir *AIPolicyIR,
+	inIr *AIPolicyIR,
 ) error {
-	if ir.Transformation != nil {
-		configMap.AddTypedConfig(wellknown.AIPolicyTransformationFilterName, ir.Transformation)
+	if inIr.Transformation != nil {
+		configMap.AddTypedConfig(wellknown.AIPolicyTransformationFilterName, inIr.Transformation)
 	}
 
-	if ir.Extproc != nil {
-		mergedExtprocSettings := ir.Extproc
+	if inIr.Extproc != nil {
+		clonedExtProcFromIR := proto.Clone(inIr.Extproc).(*envoy_ext_proc_v3.ExtProcPerRoute)
 		// Envoy merges GrpcInitialMetadata config from the route, but we need to manually merge if Backend has configured extproc already
-		backendExtprocProto := configMap.GetTypedConfig(wellknown.AIExtProcFilterName)
-		if backendExtprocProto != nil {
+		extProcProtoFromPCtx := configMap.GetTypedConfig(wellknown.AIExtProcFilterName)
+		if extProcProtoFromPCtx != nil {
 			// route policy extproc only configures GrpcInitialMetadata
-			mergedExtprocSettings = backendExtprocProto.(*envoy_ext_proc_v3.ExtProcPerRoute)
-			mergedExtprocSettings.GetOverrides().GrpcInitialMetadata = append(mergedExtprocSettings.GetOverrides().GetGrpcInitialMetadata(), ir.Extproc.GetOverrides().GetGrpcInitialMetadata()...)
+			clonedExtProcFromIR = extProcProtoFromPCtx.(*envoy_ext_proc_v3.ExtProcPerRoute)
+			grpcInitMd := clonedExtProcFromIR.GetOverrides().GetGrpcInitialMetadata()
+			grpcInitMd = append(grpcInitMd, inIr.Extproc.GetOverrides().GetGrpcInitialMetadata()...)
+			clonedExtProcFromIR.GetOverrides().GrpcInitialMetadata = grpcInitMd
 		}
-		configMap.AddTypedConfig(wellknown.AIExtProcFilterName, mergedExtprocSettings)
+		configMap.AddTypedConfig(wellknown.AIExtProcFilterName, clonedExtProcFromIR)
 	}
 
 	return nil

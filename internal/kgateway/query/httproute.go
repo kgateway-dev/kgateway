@@ -265,7 +265,7 @@ func (r *gatewayQueries) fetchChildRoutes(
 	var refChildren []ir.HttpRouteIR
 	if string(backendRef.Name) == "" || string(backendRef.Name) == "*" {
 		// Handle wildcard references by listing all HTTPRoutes in the specified namespace
-		routes := r.collections.Routes.ListHttp(kctx, delegatedNs)
+		routes := r.collections.Routes.FetchHttpNamespace(kctx, delegatedNs)
 		refChildren = append(refChildren, routes...)
 	} else {
 		// Lookup a specific child route by its name

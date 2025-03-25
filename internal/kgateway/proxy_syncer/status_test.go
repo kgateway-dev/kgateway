@@ -85,7 +85,7 @@ func TestPolicyStatus(t *testing.T) {
 			},
 		},
 	}
-	gkPolReport := generateBackendPolicyReport(backends)
+	gkPolReport := generatePolicyReport(convertBackends(backends))
 	if gkPolReport == nil {
 		t.Fatal("GKPolicyReport is nil")
 	}

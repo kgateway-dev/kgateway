@@ -553,7 +553,7 @@ func NewRoutesIndex(
 	return h
 }
 
-func (h *RoutesIndex) ListHttp(kctx krt.HandlerContext, ns string) []ir.HttpRouteIR {
+func (h *RoutesIndex) FetchHttpNamespace(kctx krt.HandlerContext, ns string) []ir.HttpRouteIR {
 	return krt.Fetch(kctx, h.httpRoutes, krt.FilterIndex(h.httpByNamespace, ns))
 }
 

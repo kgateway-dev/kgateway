@@ -183,7 +183,7 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) erro
 	logger := contextutils.LoggerFrom(ctx)
 
 	// all backends with policies attached in a single collection
-	finalBackends := krt.JoinCollection(s.commonCols.BackendIndex.Backends(), krtopts.ToOptions("FinalUpstreams")...)
+	finalBackends := krt.JoinCollection(s.commonCols.BackendIndex.Backends(), krtopts.ToOptions("FinalBackends")...)
 
 	s.translator.Init(ctx)
 
@@ -224,7 +224,7 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) erro
 
 	s.backendPolicyReport = krt.NewSingleton(func(kctx krt.HandlerContext) *GKPolicyReport {
 		backends := krt.Fetch(kctx, finalBackends)
-		gkPolReport := generateBackendPolicyReport(backends)
+		gkPolReport := generatePolicyReport(convertBackends(backends))
 		return gkPolReport
 	}, krtopts.ToOptions("BackendsPolicyReport")...)
 
@@ -347,37 +347,11 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 		}
 	}()
 
-	go func() {
-		timer := time.NewTicker(time.Second * 1)
-		for {
-			select {
-			case <-ctx.Done():
-				logger.Debug("context done, stopping proxy syncer")
-				return
-			case <-timer.C:
-				//				panic("TODO: implement status for plugins")
-				/*
-					snaps := s.mostXdsSnapshots.List()
-					for _, snapWrap := range snaps {
-						var proxiesWithReports []translatorutils.ProxyWithReports
-						proxiesWithReports = append(proxiesWithReports, snapWrap.Reports)
-
-						initStatusPlugins(ctx, proxiesWithReports, snapWrap.pluginRegistry)
-					}
-					for _, snapWrap := range snaps {
-						err := s.proxyTranslator.syncStatus(ctx, snapWrap.proxyKey, snapWrap.fullReports)
-						if err != nil {
-							logger.Errorf("error while syncing proxy '%s': %s", snapWrap.proxyKey, err.Error())
-						}
-
-						var proxiesWithReports []translatorutils.ProxyWithReports
-						proxiesWithReports = append(proxiesWithReports, snapWrap.proxyWithReport)
-						applyStatusPlugins(ctx, proxiesWithReports, snapWrap.pluginRegistry)
-					}
-				*/
-			}
+	for _, regFunc := range s.plugins.ContributesRegistration {
+		if regFunc != nil {
+			regFunc()
 		}
-	}()
+	}
 
 	s.perclientSnapCollection.RegisterBatch(func(o []krt.Event[XdsSnapWrapper], initialSync bool) {
 		for _, e := range o {
@@ -546,19 +520,6 @@ func (s *ProxySyncer) syncBackendPolicyStatus(ctx context.Context, report GKPoli
 		}
 	}
 }
-
-//func applyPostTranslationPlugins(ctx context.Context, pluginRegistry registry.PluginRegistry, translationContext *gwplugins.PostTranslationContext) {
-//	ctx = contextutils.WithLogger(ctx, "postTranslation")
-//	logger := contextutils.LoggerFrom(ctx)
-//
-//	for _, postTranslationPlugin := range pluginRegistry.GetPostTranslationPlugins() {
-//		err := postTranslationPlugin.ApplyPostTranslationPlugin(ctx, translationContext)
-//		if err != nil {
-//			logger.Errorf("Error applying post-translation plugin: %v", err)
-//			continue
-//		}
-//	}
-//}
 
 var opts = cmp.Options{
 	cmpopts.IgnoreFields(metav1.Condition{}, "LastTransitionTime"),
