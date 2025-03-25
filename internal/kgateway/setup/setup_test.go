@@ -10,7 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	stdslice "slices"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -39,7 +39,7 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 	istiokube "istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/krt"
-	"istio.io/istio/pkg/slices"
+	istioslices "istio.io/istio/pkg/slices"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
@@ -281,7 +281,7 @@ spec:
 		if len(pfc) != 1 {
 			t.Fatalf("expected 1 filter config, got %d", len(pfc))
 		}
-		if !bytes.Contains(stdslice.Collect(maps.Values(pfc))[0].Value, []byte("x-solo-request321")) {
+		if !bytes.Contains(slices.Collect(maps.Values(pfc))[0].Value, []byte("x-solo-request321")) {
 			t.Fatalf("expected filter config to contain x-solo-request321")
 		}
 
@@ -641,7 +641,7 @@ func (x xdsDumper) Dump(t *testing.T, ctx context.Context) xdsDump {
 	}
 	t.Logf("xds: found %d listeners and %d clusters", len(listeners), len(clusters))
 
-	clusterServiceNames := slices.MapFilter(clusters, func(c *envoycluster.Cluster) *string {
+	clusterServiceNames := istioslices.MapFilter(clusters, func(c *envoycluster.Cluster) *string {
 		if c.GetEdsClusterConfig() != nil {
 			if c.GetEdsClusterConfig().GetServiceName() != "" {
 				s := c.GetEdsClusterConfig().GetServiceName()
@@ -839,7 +839,7 @@ func equalset(a, b []*envoyendpoint.LocalityLbEndpoints) bool {
 		return false
 	}
 	for _, v := range a {
-		if slices.FindFunc(b, func(e *envoyendpoint.LocalityLbEndpoints) bool {
+		if istioslices.FindFunc(b, func(e *envoyendpoint.LocalityLbEndpoints) bool {
 			return proto.Equal(v, e)
 		}) == nil {
 			return false
