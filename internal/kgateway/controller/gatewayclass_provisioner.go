@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -13,6 +14,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
@@ -27,30 +29,87 @@ type gatewayClassProvisioner struct {
 	classConfigs map[string]*ClassInfo
 	// controllerName is the name of the controller that is managing the GatewayClass objects.
 	controllerName string
-	// kick is a channel that is used to trigger initial reconciliation when
+	// initialReconcileCh is a channel that is used to trigger initial reconciliation when
 	// no GatewayClass objects exist in the cluster.
-	kick chan event.TypedGenericEvent[client.Object]
+	initialReconcileCh chan event.TypedGenericEvent[client.Object]
 }
 
 var _ reconcile.TypedReconciler[reconcile.Request] = &gatewayClassProvisioner{}
+
+// gatewayClassInitializer is responsible for triggering initial reconciliation
+// after caches have synced
+type gatewayClassInitializer struct {
+	mgr                ctrl.Manager
+	initialReconcileCh chan event.TypedGenericEvent[client.Object]
+}
+
+var _ manager.Runnable = &gatewayClassInitializer{}
+
+func newGatewayClassInitializer(mgr ctrl.Manager, ch chan event.TypedGenericEvent[client.Object]) *gatewayClassInitializer {
+	return &gatewayClassInitializer{
+		mgr:                mgr,
+		initialReconcileCh: ch,
+	}
+}
+
+func (g *gatewayClassInitializer) Start(ctx context.Context) error {
+	log := log.FromContext(ctx)
+	log.Info("waiting for cache to sync")
+
+	// Wait for cache to sync
+	if !g.mgr.GetCache().WaitForCacheSync(ctx) {
+		return fmt.Errorf("failed waiting for caches to sync")
+	}
+	log.Info("caches warm!")
+
+	// Now that caches are synced, check if we need to trigger initial reconciliation
+	var gcs apiv1.GatewayClassList
+	if err := g.mgr.GetClient().List(ctx, &gcs); err != nil {
+		return fmt.Errorf("failed to list gatewayclasses: %w", err)
+	}
+	if len(gcs.Items) > 0 {
+		log.Info("gatewayclasses found, skipping initial reconciliation")
+		return nil
+	}
+
+	log.Info("no gatewayclasses found, triggering initial reconciliation")
+	g.initialReconcileCh <- event.TypedGenericEvent[client.Object]{
+		Object: &apiv1.GatewayClass{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "manual",
+			},
+		},
+	}
+
+	return nil
+}
 
 // NewGatewayClassProvisioner creates a new GatewayClassProvisioner. It will
 // watch for kick events on the channel for initial reconciliation and delete
 // events to trigger the re-creation of the GatewayClass. Additionally, it ignores
 // update events to allow users to modify the GatewayClasses without this controller
 // overwriting them.
-func NewGatewayClassProvisioner(
-	mgr ctrl.Manager,
-	controllerName string,
-	classConfigs map[string]*ClassInfo,
-	ch chan event.TypedGenericEvent[client.Object],
-) error {
-	r := &gatewayClassProvisioner{
-		Client:         mgr.GetClient(),
-		controllerName: controllerName,
-		classConfigs:   classConfigs,
-		kick:           ch,
+func NewGatewayClassProvisioner(mgr ctrl.Manager, controllerName string, classConfigs map[string]*ClassInfo) error {
+	initialReconcileCh := make(chan event.TypedGenericEvent[client.Object], 1)
+	initializer := newGatewayClassInitializer(mgr, initialReconcileCh)
+	if err := mgr.Add(initializer); err != nil {
+		return err
 	}
+
+	provisioner := &gatewayClassProvisioner{
+		Client:             mgr.GetClient(),
+		controllerName:     controllerName,
+		classConfigs:       classConfigs,
+		initialReconcileCh: initialReconcileCh,
+	}
+	if err := provisioner.SetupWithManager(mgr); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *gatewayClassProvisioner) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		Named("gatewayclass-provisioner").
 		For(&apiv1.GatewayClass{}, builder.WithPredicates(predicate.Funcs{
@@ -59,7 +118,7 @@ func NewGatewayClassProvisioner(
 			UpdateFunc:  func(e event.UpdateEvent) bool { return false },
 			GenericFunc: func(e event.GenericEvent) bool { return false },
 		})).
-		WatchesRawSource(source.Channel(r.kick, handler.TypedEnqueueRequestsFromMapFunc[client.Object, reconcile.Request](
+		WatchesRawSource(source.Channel(r.initialReconcileCh, handler.TypedEnqueueRequestsFromMapFunc[client.Object, reconcile.Request](
 			func(ctx context.Context, o client.Object) []reconcile.Request {
 				return []reconcile.Request{{NamespacedName: client.ObjectKeyFromObject(o)}}
 			},

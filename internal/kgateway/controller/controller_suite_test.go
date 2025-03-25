@@ -23,7 +23,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/config"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
-	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
@@ -126,16 +125,8 @@ var _ = BeforeSuite(func() {
 	ci[gatewayClassName] = &controller.ClassInfo{
 		Description: "default gateway class",
 	}
-	ch := make(chan event.TypedGenericEvent[client.Object], 1)
-	err = controller.NewGatewayClassProvisioner(mgr, gatewayControllerName, ci, ch)
-	Expect(err).ToNot(HaveOccurred())
-	ch <- event.TypedGenericEvent[client.Object]{
-		Object: &apiv1.GatewayClass{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: gatewayClassName,
-			},
-		},
-	}
+	// Create the provisioner and initializer
+	err = controller.NewGatewayClassProvisioner(mgr, gatewayControllerName, ci)
 	Expect(err).ToNot(HaveOccurred())
 
 	// Start the Gateway controller.

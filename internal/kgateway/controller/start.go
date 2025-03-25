@@ -13,14 +13,11 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/config"
-	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	czap "sigs.k8s.io/controller-runtime/pkg/log/zap"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	infextv1a2 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
-	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/deployer"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2"
@@ -249,36 +246,9 @@ func (c *ControllerBuilder) Start(ctx context.Context) error {
 	}
 
 	setupLog.Info("creating gateway class provisioner")
-	// we use a channel to trigger initial reconciliation when no GatewayClass
-	// objects exist in the cluster. this requires a non-cached client to
-	// list the GatewayClass objects as we can't use the cached mgr client until
-	// it's been started.
-	ch := make(chan event.TypedGenericEvent[client.Object], 1)
-	if err := NewGatewayClassProvisioner(c.mgr, c.cfg.ControllerName, GetDefaultClassInfo(), ch); err != nil {
+	if err := NewGatewayClassProvisioner(c.mgr, c.cfg.ControllerName, GetDefaultClassInfo()); err != nil {
 		setupLog.Error(err, "unable to create gateway class provisioner")
 		return err
-	}
-	cli, err := client.New(c.mgr.GetConfig(), client.Options{
-		Scheme: c.mgr.GetScheme(),
-	})
-	if err != nil {
-		setupLog.Error(err, "unable to create client")
-		return err
-	}
-	var gcs gwv1.GatewayClassList
-	if err := cli.List(ctx, &gcs); err != nil {
-		setupLog.Error(err, "unable to list gatewayclasses")
-		return err
-	}
-	if len(gcs.Items) == 0 {
-		setupLog.Info("no gatewayclasses found, sending event to trigger gateway class provisioner reconciliation")
-		ch <- event.TypedGenericEvent[client.Object]{
-			Object: &gwv1.GatewayClass{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: wellknown.GatewayClassName,
-				},
-			},
-		}
 	}
 
 	setupLog.Info("creating base gateway controller")
