@@ -741,39 +741,6 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SupportedLLMProvider
       default: {}
-- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ListenerPolicy
-  map:
-    fields:
-    - name: apiVersion
-      type:
-        scalar: string
-    - name: kind
-      type:
-        scalar: string
-    - name: metadata
-      type:
-        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta
-      default: {}
-    - name: spec
-      type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ListenerPolicySpec
-      default: {}
-    - name: status
-      type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.PolicyStatus
-      default: {}
-- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ListenerPolicySpec
-  map:
-    fields:
-    - name: perConnectionBufferLimitBytes
-      type:
-        scalar: numeric
-    - name: targetRefs
-      type:
-        list:
-          elementType:
-            namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LocalPolicyTargetReference
-          elementRelationship: atomic
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LocalPolicyTargetReference
   map:
     fields:

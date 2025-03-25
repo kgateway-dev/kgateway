@@ -20,7 +20,7 @@ We have 3 main translation lifecycles: Routes & Listeners, Clusters, and Endpoin
 
 Let's focus on the first one - Routes and Listeners, as this is where the majority of the logic is.
 
-Envoy Routes & Listeners translate from Gateways, HTTPRoutes, and user policies (i.e. RoutePolicy, ListenerPolicy, etc).
+Envoy Routes & Listeners translate from Gateways, HTTPRoutes, and user policies (i.e. RoutePolicy, HTTPListenerPolicy, etc).
 
 ## Policies (Contributed by Plugins)
 
