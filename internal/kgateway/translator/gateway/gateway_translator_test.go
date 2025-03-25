@@ -374,7 +374,10 @@ var _ = DescribeTable("Route Delegation translator",
 		testutils.TestTranslation(
 			GinkgoT(),
 			context.TODO(),
-			[]string{filepath.Join(dir, "testutils/inputs/delegation", inputFile)},
+			[]string{
+				filepath.Join(dir, "testutils/inputs/delegation/common.yaml"),
+				filepath.Join(dir, "testutils/inputs/delegation", inputFile),
+			},
 			filepath.Join(dir, "testutils/outputs/delegation", inputFile),
 			types.NamespacedName{
 				Namespace: "infra",
