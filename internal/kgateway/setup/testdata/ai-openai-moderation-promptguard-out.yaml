@@ -65,6 +65,38 @@ clusters:
   type: EDS
 - connectTimeout: 5s
   dnsLookupFamily: V4_PREFERRED
+  loadAssignment:
+    clusterName: backend_gwtest_openai_0
+    endpoints:
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: api.openai.com
+              portValue: 443
+          hostname: api.openai.com
+        metadata:
+          filterMetadata:
+            envoy.transport_socket_match:
+              tls: "true"
+            io.solo.transformation:
+              auth_token: mysecretkey
+              model: gpt-4o
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: api.openai.com
+              portValue: 443
+          hostname: api.openai.com
+        metadata:
+          filterMetadata:
+            envoy.transport_socket_match:
+              tls: "true"
+            io.solo.transformation:
+              auth_token: mysecretkey
+              model: gpt-4.0-turbo
+      priority: 1
   metadata: {}
   name: backend_gwtest_openai_0
   transportSocketMatches:

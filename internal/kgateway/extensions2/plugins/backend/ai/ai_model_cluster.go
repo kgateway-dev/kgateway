@@ -25,12 +25,12 @@ const (
 	tlsPort = 443
 )
 
-func ProcessAIBackend(ctx context.Context, in *v1alpha1.AIBackend, aiSecrets *ir.Secret, out *envoy_config_cluster_v3.Cluster) error {
+func ProcessAIBackend(ctx context.Context, in *v1alpha1.AIBackend, aiSecret *ir.Secret, multiSecrets map[string]*ir.Secret, out *envoy_config_cluster_v3.Cluster) error {
 	if in == nil {
 		return nil
 	}
 
-	if err := buildModelCluster(ctx, in, aiSecrets, out); err != nil {
+	if err := buildModelCluster(ctx, in, aiSecret, multiSecrets, out); err != nil {
 		return err
 	}
 
@@ -41,7 +41,7 @@ func ProcessAIBackend(ctx context.Context, in *v1alpha1.AIBackend, aiSecrets *ir
 // This function is used by the `ProcessBackend` function to build the cluster for the AI backend.
 // It is ALSO used by `ProcessRoute` to create the cluster in the event of backup models being used
 // and fallbacks being required.
-func buildModelCluster(ctx context.Context, aiUs *v1alpha1.AIBackend, aiSecrets *ir.Secret, out *envoy_config_cluster_v3.Cluster) error {
+func buildModelCluster(ctx context.Context, aiUs *v1alpha1.AIBackend, aiSecret *ir.Secret, multiSecrets map[string]*ir.Secret, out *envoy_config_cluster_v3.Cluster) error {
 	// set the type to strict dns to support mutli pool backends
 	out.ClusterDiscoveryType = &envoy_config_cluster_v3.Cluster_Type{
 		Type: envoy_config_cluster_v3.Cluster_STRICT_DNS,
@@ -59,20 +59,45 @@ func buildModelCluster(ctx context.Context, aiUs *v1alpha1.AIBackend, aiSecrets 
 		prioritized = make([]*envoy_config_endpoint_v3.LocalityLbEndpoints, 0, len(aiUs.MultiPool.Priorities))
 		for idx, pool := range aiUs.MultiPool.Priorities {
 			eps := make([]*envoy_config_endpoint_v3.LbEndpoint, 0, len(pool.Pool))
-			for _, ep := range pool.Pool {
+			for jdx, ep := range pool.Pool {
 				var result *envoy_config_endpoint_v3.LbEndpoint
 				var err error
 				epByType[fmt.Sprintf("%T", ep)] = struct{}{}
 				if ep.Provider.OpenAI != nil {
-					result, err = buildOpenAIEndpoint(ep.Provider.OpenAI, ep.HostOverride, aiSecrets)
+					var secretForMultiPool *ir.Secret
+					if ep.Provider.OpenAI.AuthToken.Kind == v1alpha1.SecretRef {
+						secretRef := ep.Provider.OpenAI.AuthToken.SecretRef
+						secretForMultiPool = multiSecrets[GetMultiPoolSecretKey(idx, jdx, secretRef.Name)]
+					}
+					result, err = buildOpenAIEndpoint(ep.Provider.OpenAI, ep.HostOverride, secretForMultiPool)
 				} else if ep.Provider.Anthropic != nil {
-					result, err = buildAnthropicEndpoint(ep.Provider.Anthropic, ep.HostOverride, aiSecrets)
+					var secretForMultiPool *ir.Secret
+					if ep.Provider.Anthropic.AuthToken.Kind == v1alpha1.SecretRef {
+						secretRef := ep.Provider.Anthropic.AuthToken.SecretRef
+						secretForMultiPool = multiSecrets[GetMultiPoolSecretKey(idx, jdx, secretRef.Name)]
+					}
+					result, err = buildAnthropicEndpoint(ep.Provider.Anthropic, ep.HostOverride, secretForMultiPool)
 				} else if ep.Provider.AzureOpenAI != nil {
-					result, err = buildAzureOpenAIEndpoint(ep.Provider.AzureOpenAI, ep.HostOverride, aiSecrets)
+					var secretForMultiPool *ir.Secret
+					if ep.Provider.AzureOpenAI.AuthToken.Kind == v1alpha1.SecretRef {
+						secretRef := ep.Provider.AzureOpenAI.AuthToken.SecretRef
+						secretForMultiPool = multiSecrets[GetMultiPoolSecretKey(idx, jdx, secretRef.Name)]
+					}
+					result, err = buildAzureOpenAIEndpoint(ep.Provider.AzureOpenAI, ep.HostOverride, secretForMultiPool)
 				} else if ep.Provider.Gemini != nil {
-					result, err = buildGeminiEndpoint(ep.Provider.Gemini, ep.HostOverride, aiSecrets)
+					var secretForMultiPool *ir.Secret
+					if ep.Provider.Gemini.AuthToken.Kind == v1alpha1.SecretRef {
+						secretRef := ep.Provider.Gemini.AuthToken.SecretRef
+						secretForMultiPool = multiSecrets[GetMultiPoolSecretKey(idx, jdx, secretRef.Name)]
+					}
+					result, err = buildGeminiEndpoint(ep.Provider.Gemini, ep.HostOverride, secretForMultiPool)
 				} else if ep.Provider.VertexAI != nil {
-					result, err = buildVertexAIEndpoint(ctx, ep.Provider.VertexAI, ep.HostOverride, aiSecrets)
+					var secretForMultiPool *ir.Secret
+					if ep.Provider.VertexAI.AuthToken.Kind == v1alpha1.SecretRef {
+						secretRef := ep.Provider.VertexAI.AuthToken.SecretRef
+						secretForMultiPool = multiSecrets[GetMultiPoolSecretKey(idx, jdx, secretRef.Name)]
+					}
+					result, err = buildVertexAIEndpoint(ctx, ep.Provider.VertexAI, ep.HostOverride, secretForMultiPool)
 				}
 				if err != nil {
 					return err
@@ -89,7 +114,7 @@ func buildModelCluster(ctx context.Context, aiUs *v1alpha1.AIBackend, aiSecrets 
 			return eris.Errorf("multi backend pools must all be of the same type, got %v", epByType)
 		}
 	} else if aiUs.LLM != nil {
-		prioritized, err = buildLLMEndpoint(ctx, aiUs, aiSecrets)
+		prioritized, err = buildLLMEndpoint(ctx, aiUs, aiSecret)
 		if err != nil {
 			return err
 		}
@@ -418,4 +443,8 @@ func defaultBodyTransformation() *envoytransformation.TransformationTemplate_Mer
 			},
 		},
 	}
+}
+
+func GetMultiPoolSecretKey(priorityIdx, poolIdx int, secretName string) string {
+	return fmt.Sprintf("%d-%d-%s", priorityIdx, poolIdx, secretName)
 }

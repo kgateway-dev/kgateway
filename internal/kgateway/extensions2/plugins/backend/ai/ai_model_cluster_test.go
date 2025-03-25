@@ -20,7 +20,7 @@ func TestProcessAIBackend_Empty(t *testing.T) {
 		Name: "test-cluster",
 	}
 
-	err := ProcessAIBackend(ctx, nil, nil, cluster)
+	err := ProcessAIBackend(ctx, nil, nil, nil, cluster)
 
 	assert.NoError(t, err)
 	assert.Equal(t, "test-cluster", cluster.Name)
@@ -49,8 +49,9 @@ func TestProcessAIBackend_OpenAI(t *testing.T) {
 	}
 
 	secrets := &ir.Secret{}
+	multiSecrets := map[string]*ir.Secret{}
 
-	err := ProcessAIBackend(ctx, aiBackend, secrets, cluster)
+	err := ProcessAIBackend(ctx, aiBackend, secrets, multiSecrets, cluster)
 
 	require.NoError(t, err)
 
@@ -117,8 +118,9 @@ func TestProcessAIBackend_Anthropic(t *testing.T) {
 	}
 
 	secrets := &ir.Secret{}
+	multiSecrets := map[string]*ir.Secret{}
 
-	err := ProcessAIBackend(ctx, aiBackend, secrets, cluster)
+	err := ProcessAIBackend(ctx, aiBackend, secrets, multiSecrets, cluster)
 
 	require.NoError(t, err)
 
@@ -167,8 +169,9 @@ func TestProcessAIBackend_AzureOpenAI(t *testing.T) {
 	}
 
 	secrets := &ir.Secret{}
+	multiSecrets := map[string]*ir.Secret{}
 
-	err := ProcessAIBackend(ctx, aiBackend, secrets, cluster)
+	err := ProcessAIBackend(ctx, aiBackend, secrets, multiSecrets, cluster)
 
 	require.NoError(t, err)
 
@@ -217,8 +220,9 @@ func TestProcessAIBackend_Gemini(t *testing.T) {
 	}
 
 	secrets := &ir.Secret{}
+	multiSecrets := map[string]*ir.Secret{}
 
-	err := ProcessAIBackend(ctx, aiBackend, secrets, cluster)
+	err := ProcessAIBackend(ctx, aiBackend, secrets, multiSecrets, cluster)
 
 	require.NoError(t, err)
 
@@ -270,8 +274,9 @@ func TestProcessAIBackend_VertexAI(t *testing.T) {
 	}
 
 	secrets := &ir.Secret{}
+	multiSecrets := map[string]*ir.Secret{}
 
-	err := ProcessAIBackend(ctx, aiBackend, secrets, cluster)
+	err := ProcessAIBackend(ctx, aiBackend, secrets, multiSecrets, cluster)
 
 	require.NoError(t, err)
 
@@ -327,8 +332,9 @@ func TestProcessAIBackend_CustomHost(t *testing.T) {
 	}
 
 	secrets := &ir.Secret{}
+	multiSecrets := map[string]*ir.Secret{}
 
-	err := ProcessAIBackend(ctx, aiBackend, secrets, cluster)
+	err := ProcessAIBackend(ctx, aiBackend, secrets, multiSecrets, cluster)
 
 	require.NoError(t, err)
 
@@ -395,8 +401,9 @@ func TestProcessAIBackend_MultiPool(t *testing.T) {
 	}
 
 	secrets := &ir.Secret{}
+	multiSecrets := map[string]*ir.Secret{}
 
-	err := ProcessAIBackend(ctx, aiBackend, secrets, cluster)
+	err := ProcessAIBackend(ctx, aiBackend, secrets, multiSecrets, cluster)
 
 	require.NoError(t, err)
 
