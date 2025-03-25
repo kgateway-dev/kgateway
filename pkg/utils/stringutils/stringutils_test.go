@@ -21,4 +21,11 @@ var _ = Describe("StringUtils", func() {
 		Entry("Not Found", []string{"one", "two", "three"}, "four", []string{"one", "two", "three"}),
 	)
 
+	DescribeTable("TruncateMaxLength", func(val string, maxLen int, want string) {
+		Expect(TruncateMaxLength(val, maxLen)).To(Equal(want))
+	},
+		Entry("Smaller", "abc", 10, "abc"),
+		Entry("Same", "abc", 3, "abc"),
+		Entry("Longer", "abcdefgh", 3, "abc"),
+	)
 })

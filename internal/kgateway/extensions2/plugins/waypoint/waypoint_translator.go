@@ -3,8 +3,8 @@ package waypoint
 import (
 	"context"
 	"fmt"
-	"strconv"
 
+	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -22,6 +22,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/httproute"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/stringutils"
 
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/slices"
@@ -57,6 +58,8 @@ func (w *waypointTranslator) Translate(
 	gateway *ir.Gateway,
 	reporter reports.Reporter,
 ) *ir.GatewayIR {
+	logger := contextutils.LoggerFrom(ctx)
+
 	gwReporter := reporter.Gateway(gateway.Obj)
 	proxyListener, gwListener := buildInboundListener(gateway, gwReporter)
 	if proxyListener == nil || gwListener == nil {
@@ -68,7 +71,7 @@ func (w *waypointTranslator) Translate(
 	// and get merged with per-service routes
 	routes, err := w.fetchGatewayRoutes(kctx, ctx, gateway, gwListener, reporter, gwReporter)
 	if err != nil {
-		contextutils.LoggerFrom(ctx).Errorf("failed getting HTTPRoutes for Gateway: %v", err)
+		logger.Errorf("failed getting HTTPRoutes for Gateway: %v", err)
 		return nil
 	}
 
@@ -86,6 +89,7 @@ func (w *waypointTranslator) Translate(
 		http, tcp := w.buildServiceChains(
 			kctx,
 			ctx,
+			logger,
 			reporter,
 			gateway,
 			routes,
@@ -226,6 +230,7 @@ func (t *waypointTranslator) fetchGatewayRoutes(
 func (t *waypointTranslator) buildServiceChains(
 	kctx krt.HandlerContext,
 	ctx context.Context,
+	logger *zap.SugaredLogger,
 	baseReporter reports.Reporter,
 	gw *ir.Gateway,
 	gwRoutes []*query.RouteInfo,
@@ -236,6 +241,7 @@ func (t *waypointTranslator) buildServiceChains(
 	var tcpOut []ir.TcpIR
 	// get attached services (istio.io/use-waypoint)
 	services := t.waypointQueries.GetWaypointServices(kctx, ctx, gw.Obj)
+	logger.Debugw("attaching waypoint services", "gateway", namespacedName(gw).String(), "services", len(services))
 
 	// for each service:
 	// * 1:1 Service port -> filter chain
@@ -264,8 +270,8 @@ func (t *waypointTranslator) buildServiceChains(
 		for _, svcPort := range svc.Ports {
 			filterChain, err := initServiceChain(svc, svcPort)
 			if err != nil {
-				// TODO when we support headless, this should be infallible
-				contextutils.LoggerFrom(ctx).Warn(
+				// TODO if/when we support headless, initServiceChain should be infallible
+				logger.Debugw(
 					"service had invalid or missing VIPs",
 					"service",
 					svc.GetName(),
@@ -308,7 +314,8 @@ func filterChainName(
 		proto = "http"
 	}
 	// TODO(peering) this probably should use non peered name/namespace
-	return fmt.Sprintf("fc_%s_%d_%s_%s", proto, port.Port, svc.GetName(), svc.GetNamespace())
+	name := fmt.Sprintf("fc_%s_%d_%s_%s", proto, port.Port, svc.GetName(), svc.GetNamespace())
+	return stringutils.TruncateMaxLength(name, wellknown.EnvoyConfigNameMaxLen)
 }
 
 func initServiceChain(
@@ -359,8 +366,10 @@ func (t *waypointTranslator) buildHTTPVirtualHost(
 		)...)
 	}
 	return &ir.VirtualHost{
-		// TODO for peering, this should be the _original_ name, not the effective name.
-		Name:     "http_routes_" + svc.GetName() + "_" + svc.GetNamespace(),
+		Name: stringutils.TruncateMaxLength(
+			"http_routes_"+svc.GetName()+"_"+svc.GetNamespace(),
+			wellknown.EnvoyConfigNameMaxLen,
+		),
 		Rules:    translatedRoutes,
 		Hostname: "*",
 		// TODO not sure how this works.. will this also have sectionname-less policies?
@@ -372,13 +381,15 @@ func (t *waypointTranslator) buildHTTPVirtualHost(
 // buildDefaultToPortVirtualHost builds a VirtualHost with no routes/policy
 // that will simply forward traffic to the same service port we matched for
 // a per-port filter chain for a single service.
+// TODO this could return multiple vhosts for ServiceEntry as ServiceEntry
+// can supply multiple hostnames, which each map to a separate backend.
 func buildDefaultToPortVirtualHost(
 	svc waypointquery.Service,
 	port waypointquery.ServicePort,
 ) *ir.VirtualHost {
 	virtualHost := &ir.VirtualHost{
 		// TODO for peering, this should be the _original_ name, not the effective name.
-		Name:     "vh_http_" + strconv.Itoa(int(port.Port)) + "_" + svc.GetName() + "_" + svc.GetNamespace(),
+		Name:     svc.DefaultVHostName(port),
 		Hostname: "*",
 		Rules: []ir.HttpRouteRuleMatchIR{{
 			Backends: []ir.HttpBackend{{

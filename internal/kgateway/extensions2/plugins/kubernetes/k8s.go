@@ -11,6 +11,7 @@ import (
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
+	"istio.io/istio/pkg/ptr"
 	corev1 "k8s.io/api/core/v1"
 	discoveryv1 "k8s.io/api/discovery/v1"
 
@@ -20,6 +21,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
 
 const BackendClusterPrefix = "kube"
@@ -38,30 +40,10 @@ func NewPluginFromCollections(
 	endpointSlices krt.Collection[*discoveryv1.EndpointSlice],
 	stngs settings.Settings,
 ) extensionsplug.Plugin {
-	gk := schema.GroupKind{
-		Group: corev1.GroupName,
-		Kind:  "Service",
-	}
-
-	// TODO: reevaluate knative dep, dedupe with pkg/utils/kubeutils/dns.go
-	clusterDomain := network.GetClusterDomainName()
 	k8sServiceBackends := krt.NewManyCollection(services, func(kctx krt.HandlerContext, svc *corev1.Service) []ir.BackendObjectIR {
 		uss := []ir.BackendObjectIR{}
 		for _, port := range svc.Spec.Ports {
-			uss = append(uss, ir.BackendObjectIR{
-				ObjectSource: ir.ObjectSource{
-					Kind:      gk.Kind,
-					Group:     gk.Group,
-					Namespace: svc.Namespace,
-					Name:      svc.Name,
-				},
-				Obj: svc,
-				// TODO: fill in ObjIR
-				Port:              port.Port,
-				AppProtocol:       translateAppProtocol(port.AppProtocol),
-				GvPrefix:          BackendClusterPrefix,
-				CanonicalHostname: fmt.Sprintf("%s.%s.svc.%s", svc.Name, svc.Namespace, clusterDomain),
-			})
+			uss = append(uss, BuildServiceBackendObjectIR(svc, port.Port, ptr.OrDefault(port.AppProtocol, port.Name)))
 		}
 		return uss
 	}, krtOpts.ToOptions("KubernetesServiceBackends")...)
@@ -71,7 +53,7 @@ func NewPluginFromCollections(
 
 	return extensionsplug.Plugin{
 		ContributesBackends: map[schema.GroupKind]extensionsplug.BackendPlugin{
-			gk: {
+			wellknown.ServiceGVK.GroupKind(): {
 				BackendInit: ir.BackendInit{
 					InitBackend: processBackend,
 				},
@@ -79,18 +61,28 @@ func NewPluginFromCollections(
 				Backends:  k8sServiceBackends,
 			},
 		},
+		// TODO consider ContibutesPolicies allowing backendRef by networking.istio.io/Hostname
+		// wellknown.ServiceGCK.GroupKind(): extensionsplug.PolicyPlugin{
+		// 	GetBackendForRef: getBackendForHostnameRef,
+		// },
 	}
 }
 
-func translateAppProtocol(appProtocol *string) ir.AppProtocol {
-	if appProtocol == nil {
-		return ir.DefaultAppProtocol
-	}
-	switch *appProtocol {
-	case "kubernetes.io/h2c":
-		return ir.HTTP2AppProtocol
-	default:
-		return ir.DefaultAppProtocol
+func BuildServiceBackendObjectIR(svc *corev1.Service, svcPort int32, svcProtocol string) ir.BackendObjectIR {
+	return ir.BackendObjectIR{
+		ObjectSource: ir.ObjectSource{
+			Kind:      wellknown.ServiceGVK.Kind,
+			Group:     wellknown.ServiceGVK.Group,
+			Namespace: svc.Namespace,
+			Name:      svc.Name,
+		},
+		Obj: svc,
+		// TODO: fill in ObjIR
+		Port:        svcPort,
+		AppProtocol: ir.ParseAppProtocol(&svcProtocol),
+		GvPrefix:    BackendClusterPrefix,
+		// TODO: reevaluate knative dep, dedupe with pkg/utils/kubeutils/dns.go
+		CanonicalHostname: fmt.Sprintf("%s.%s.svc.%s", svc.Name, svc.Namespace, network.GetClusterDomainName()),
 	}
 }
 

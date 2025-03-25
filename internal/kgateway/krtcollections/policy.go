@@ -123,7 +123,7 @@ func (i *BackendIndex) getBackend(kctx krt.HandlerContext, gk schema.GroupKind, 
 		return nil, ErrUnknownBackendKind
 	}
 
-	up := krt.FetchOne(kctx, col, krt.FilterKey(ir.BackendResourceName(key, port)))
+	up := krt.FetchOne(kctx, col, krt.FilterKey(ir.BackendResourceName(key, port, "")))
 	if up == nil {
 		return nil, &NotFoundError{NotFoundObj: key}
 	}

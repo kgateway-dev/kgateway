@@ -34,3 +34,7 @@ const (
 	AIExtProcFilterName               = "ai.extproc.kgateway.io"
 	SetMetadataFilterName             = "envoy.filters.http.set_filter_state"
 )
+
+const (
+	EnvoyConfigNameMaxLen = 253
+)
