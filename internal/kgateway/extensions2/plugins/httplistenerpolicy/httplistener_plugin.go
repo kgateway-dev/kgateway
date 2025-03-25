@@ -32,7 +32,6 @@ import (
 
 type httpListenerPolicy struct {
 	ct        time.Time
-	compress  bool
 	accessLog []*envoyaccesslog.AccessLog
 }
 
@@ -43,11 +42,6 @@ func (d *httpListenerPolicy) CreationTime() time.Time {
 func (d *httpListenerPolicy) Equals(in any) bool {
 	d2, ok := in.(*httpListenerPolicy)
 	if !ok {
-		return false
-	}
-
-	// Check the TargetRef and Compress fields
-	if d.compress != d2.compress {
 		return false
 	}
 
@@ -112,7 +106,6 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 			Policy:       i,
 			PolicyIR: &httpListenerPolicy{
 				ct:        i.CreationTimestamp.Time,
-				compress:  i.Spec.Compress,
 				accessLog: accessLog,
 			},
 			TargetRefs: convert(i.Spec.TargetRefs),

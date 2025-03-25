@@ -459,8 +459,6 @@ spec:
                       type: object
                   type: object
                 type: array
-              compress:
-                type: boolean
               targetRefs:
                 items:
                   properties:
