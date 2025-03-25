@@ -71,16 +71,6 @@ gatewayClass:
   controllerName: "kgateway.dev/kgateway"
   labels: {}
   annotations: {}
-  service:
-    type: LoadBalancer # Default, can be overridden
-  parametersRef:
-    enabled: true
-    name: "kgateway"
-    group: "gateway.kgateway.dev"
-    kind: "GatewayParameters"
-    podTemplate:
-      extraLabels: {}
-      extraAnnotations: {}
 
 # WaypointClass configuration
 waypointClass:
@@ -91,66 +81,6 @@ waypointClass:
   labels: {}
   annotations:
     ambient.istio.io/waypoint-inbound-binding: PROXY/15088
-  service:
-    # Waypoints handle east-west traffic.
-    type: ClusterIP
-  parametersRef:
-    enabled: true
-    name: "kgateway-waypoint"
-    group: "gateway.kgateway.dev"
-    kind: "GatewayParameters"
-    podTemplate:
-      extraLabels:
-        istio.io/dataplane-mode: ambient
-      extraAnnotations: {}
-
-# Gateway proxy configuration
-gateway:
-  envoyContainer:
-    image:
-      registry: ""
-      repository: envoy-wrapper
-      pullPolicy: IfNotPresent
-      tag: ""
-    securityContext:
-      allowPrivilegeEscalation: false
-      readOnlyRootFilesystem: true
-      runAsNonRoot: true
-      runAsUser: 10101
-      capabilities:
-        drop:
-          - ALL
-        add:
-          - NET_BIND_SERVICE
-  # If proxyDeployment or proxyDeployment.replicas are null, a default of 1 will be
-  # imposed by the template.
-  proxyDeployment:
-    replicas: 1
-  sdsContainer:
-    image:
-      registry: ""
-      repository: sds
-      pullPolicy: IfNotPresent
-    logLevel: info
-  istio:
-    istioProxyContainer:
-      image:
-        repository: proxyv2
-        registry: docker.io/istio
-        tag: 1.22.0
-      logLevel: warning
-      istioDiscoveryAddress: istiod.istio-system.svc:15012
-      istioMetaMeshId: cluster.local
-      istioMetaClusterId: Kubernetes
-  aiExtension:
-    enabled: false
-    image:
-      repository: kgateway-ai-extension
-  stats:
-    enabled: true
-    routePrefixRewrite: "/stats/prometheus"
-    enableStatsRoute: true
-    statsRoutePrefixRewrite: "/stats"
 
 image:
   registry: cr.kgateway.dev/kgateway-dev

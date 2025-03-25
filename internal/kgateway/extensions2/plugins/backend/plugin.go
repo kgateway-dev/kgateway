@@ -1,11 +1,9 @@
 package backend
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
-	"maps"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -43,17 +41,11 @@ const (
 )
 
 // BackendIr is the internal representation of a backend.
+// TODO: unexport
 type BackendIr struct {
 	AwsIr  *AwsIr
-	AIIr   *ai.AIIr
+	AIIr   *ai.IR
 	Errors []error
-}
-
-func data(s *ir.Secret) map[string][]byte {
-	if s == nil {
-		return nil
-	}
-	return s.Data
 }
 
 func (u *BackendIr) Equals(other any) bool {
@@ -62,19 +54,7 @@ func (u *BackendIr) Equals(other any) bool {
 		return false
 	}
 	// AI
-	if !maps.EqualFunc(data(u.AIIr.AISecret), data(otherBackend.AIIr.AISecret), func(a, b []byte) bool {
-		return bytes.Equal(a, b)
-	}) {
-		return false
-	}
-	if !maps.EqualFunc(u.AIIr.AIMultiSecret, otherBackend.AIIr.AIMultiSecret, func(a, b *ir.Secret) bool {
-		return maps.EqualFunc(data(a), data(b), func(a, b []byte) bool {
-			return bytes.Equal(a, b)
-		})
-	}) {
-		return false
-	}
-	if !u.AIIr.AIBackend.Equals(otherBackend.AIIr.AIBackend) {
+	if !u.AIIr.Equals(otherBackend.AIIr) {
 		return false
 	}
 	// AWS
@@ -108,9 +88,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 		backendIR := translateFn(krtctx, i)
 		if len(backendIR.Errors) > 0 {
 			contextutils.LoggerFrom(ctx).Error("failed to translate backend", "backend", i.GetName(), "error", errors.Join(backendIR.Errors...))
-			return nil
 		}
-		// resolve secrets
 		return &ir.BackendObjectIR{
 			ObjectSource: ir.ObjectSource{
 				Kind:      gk.Kind,
@@ -122,6 +100,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 			CanonicalHostname: hostname(i),
 			Obj:               i,
 			ObjIr:             backendIR,
+			Errors:            backendIR.Errors,
 		}
 	})
 	endpoints := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *v1alpha1.Backend) *ir.EndpointsForBackend {
@@ -143,16 +122,18 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 				NewGatewayTranslationPass: newPlug,
 			},
 		},
+		ContributesRegistration: map[schema.GroupKind]func(){
+			wellknown.BackendGVK.GroupKind(): buildRegisterCallback(ctx, commoncol.CrudClient, bcol),
+		},
 	}
 }
 
 // buildTranslateFunc builds a function that translates a Backend to a BackendIr that
 // the plugin can use to build the envoy config.
-//
-// TODO(tim): Any errors encountered here should be returned and stored on the BackendIR
-// so that we can report them in the status once https://github.com/kgateway-dev/kgateway/issues/10555
-// is resolved.
-func buildTranslateFunc(ctx context.Context, secrets *krtcollections.SecretIndex) func(krtctx krt.HandlerContext, i *v1alpha1.Backend) *BackendIr {
+func buildTranslateFunc(
+	ctx context.Context,
+	secrets *krtcollections.SecretIndex,
+) func(krtctx krt.HandlerContext, i *v1alpha1.Backend) *BackendIr {
 	return func(krtctx krt.HandlerContext, i *v1alpha1.Backend) *BackendIr {
 		var backendIr BackendIr
 		switch i.Spec.Type {
@@ -207,8 +188,10 @@ func buildTranslateFunc(ctx context.Context, secrets *krtcollections.SecretIndex
 				lambdaFilters:         lambdaFilters,
 			}
 		case v1alpha1.BackendTypeAI:
-			backendIr.AIIr = &ai.AIIr{
-				AIBackend: i.Spec.AI,
+			backendIr.AIIr = &ai.IR{}
+			err := ai.PreprocessAIBackend(ctx, i.Spec.AI, backendIr.AIIr)
+			if err != nil {
+				backendIr.Errors = append(backendIr.Errors, err)
 			}
 			ns := i.GetNamespace()
 			if i.Spec.AI.LLM != nil {
@@ -351,9 +334,10 @@ func (p *backendPlugin) ApplyForRoute(ctx context.Context, pCtx *ir.RouteContext
 
 func (p *backendPlugin) ApplyForBackend(ctx context.Context, pCtx *ir.RouteBackendContext, in ir.HttpBackend, out *envoy_config_route_v3.Route) error {
 	backend := pCtx.Backend.Obj.(*v1alpha1.Backend)
+	backendIr := pCtx.Backend.ObjIr.(*BackendIr)
 	switch backend.Spec.Type {
 	case v1alpha1.BackendTypeAI:
-		err := ai.ApplyAIBackend(ctx, backend.Spec.AI, pCtx, out)
+		err := ai.ApplyAIBackend(backendIr.AIIr, pCtx, out)
 		if err != nil {
 			return err
 		}
@@ -371,7 +355,7 @@ func (p *backendPlugin) ApplyForBackend(ctx context.Context, pCtx *ir.RouteBacke
 				Disabled: true,
 			},
 		}
-		pCtx.AddTypedConfig(wellknown.AIExtProcFilterName, disabledExtprocSettings)
+		pCtx.TypedFilterConfig.AddTypedConfig(wellknown.AIExtProcFilterName, disabledExtprocSettings)
 	}
 
 	return nil

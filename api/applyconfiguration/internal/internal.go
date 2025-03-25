@@ -611,9 +611,6 @@ var schemaYAML = typed.YAMLObject(`types:
           elementType:
             namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AccessLog
           elementRelationship: atomic
-    - name: compress
-      type:
-        scalar: boolean
     - name: targetRefs
       type:
         list:
@@ -1018,7 +1015,7 @@ var schemaYAML = typed.YAMLObject(`types:
       default: {}
     - name: status
       type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.PolicyStatus
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SimpleStatus
       default: {}
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.RoutePolicySpec
   map:
@@ -1104,6 +1101,17 @@ var schemaYAML = typed.YAMLObject(`types:
         map:
           elementType:
             scalar: string
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SimpleStatus
+  map:
+    fields:
+    - name: conditions
+      type:
+        list:
+          elementType:
+            namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Condition
+          elementRelationship: associative
+          keys:
+          - type
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SingleAuthToken
   map:
     fields:

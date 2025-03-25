@@ -15,14 +15,6 @@ metadata:
     {{- end }}
 spec:
   controllerName: {{ $entry.controllerName }}
-  {{- if $entry.parametersRef.enabled }}
-  parametersRef:
-    group: {{ $entry.parametersRef.group }}
-    kind: {{ $entry.parametersRef.kind }}
-    name: {{ $entry.parametersRef.name }}
-    namespace: {{ $.Release.Namespace }}
-  {{- end }}
-  description: {{ $entry.description | quote }}
 ---
 {{- end }}
 {{- end }}

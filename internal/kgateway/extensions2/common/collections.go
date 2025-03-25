@@ -4,12 +4,16 @@ import (
 	"context"
 
 	"github.com/go-logr/logr"
+	"istio.io/istio/pkg/config/schema/gvr"
 	"istio.io/istio/pkg/kube"
 	istiokube "istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
+	"istio.io/istio/pkg/kube/kubetypes"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	gwv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
@@ -18,19 +22,24 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
+
+	networkingclient "istio.io/client-go/pkg/apis/networking/v1"
 )
 
 type CommonCollections struct {
-	OurClient    versioned.Interface
-	Client       kube.Client
-	KrtOpts      krtutil.KrtOptions
-	Secrets      *krtcollections.SecretIndex
-	BackendIndex *krtcollections.BackendIndex
-	Routes       *krtcollections.RoutesIndex
-	Namespaces   krt.Collection[krtcollections.NamespaceMetadata]
-	Endpoints    krt.Collection[ir.EndpointsForBackend]
-	GatewayIndex *krtcollections.GatewayIndex
-	Services     krt.Collection[*corev1.Service]
+	OurClient versioned.Interface
+	Client    kube.Client
+	// full CRUD client, only needed for status writing currently
+	CrudClient     client.Client
+	KrtOpts        krtutil.KrtOptions
+	Secrets        *krtcollections.SecretIndex
+	BackendIndex   *krtcollections.BackendIndex
+	Routes         *krtcollections.RoutesIndex
+	Namespaces     krt.Collection[krtcollections.NamespaceMetadata]
+	Endpoints      krt.Collection[ir.EndpointsForBackend]
+	GatewayIndex   *krtcollections.GatewayIndex
+	Services       krt.Collection[*corev1.Service]
+	ServiceEntries krt.Collection[*networkingclient.ServiceEntry]
 
 	Pods       krt.Collection[krtcollections.LocalityPod]
 	RefGrants  *krtcollections.RefGrantIndex
@@ -62,6 +71,7 @@ func NewCommonCollections(
 	krtOptions krtutil.KrtOptions,
 	client istiokube.Client,
 	ourClient versioned.Interface,
+	cl client.Client,
 	controllerName string,
 	logger logr.Logger,
 	settings settings.Settings,
@@ -93,20 +103,28 @@ func NewCommonCollections(
 	serviceClient := kclient.New[*corev1.Service](client)
 	services := krt.WrapClient(serviceClient, krtOptions.ToOptions("Services")...)
 
+	seInformer := kclient.NewDelayedInformer[*networkingclient.ServiceEntry](
+		client, gvr.ServiceEntry,
+		kubetypes.StandardInformer, kclient.Filter{ObjectFilter: client.ObjectFilter()},
+	)
+	serviceEntries := krt.WrapClient(seInformer, krtOptions.ToOptions("ServiceEntries")...)
+
 	cmClient := kclient.New[*corev1.ConfigMap](client)
 	cfgmaps := krt.WrapClient(cmClient, krtOptions.ToOptions("ConfigMaps")...)
 
 	return &CommonCollections{
-		OurClient:  ourClient,
-		Client:     client,
-		KrtOpts:    krtOptions,
-		Secrets:    krtcollections.NewSecretIndex(secrets, refgrants),
-		Pods:       krtcollections.NewPodsCollection(client, krtOptions),
-		RefGrants:  refgrants,
-		Settings:   settings,
-		Namespaces: namespaces,
-		Services:   services,
-		ConfigMaps: cfgmaps,
+		OurClient:      ourClient,
+		Client:         client,
+		CrudClient:     cl,
+		KrtOpts:        krtOptions,
+		Secrets:        krtcollections.NewSecretIndex(secrets, refgrants),
+		Pods:           krtcollections.NewPodsCollection(client, krtOptions),
+		RefGrants:      refgrants,
+		Settings:       settings,
+		Namespaces:     namespaces,
+		Services:       services,
+		ServiceEntries: serviceEntries,
+		ConfigMaps:     cfgmaps,
 
 		controllerName: controllerName,
 	}

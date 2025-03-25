@@ -127,6 +127,10 @@ var _ = BeforeSuite(func() {
 		Mgr:            mgr,
 		ControllerName: gatewayControllerName,
 		AutoProvision:  true,
+		ImageInfo: &deployer.ImageInfo{
+			Registry: "ghcr.io/kgateway-dev",
+			Tag:      "latest",
+		},
 	}
 
 	err = controller.NewBaseGatewayController(ctx, gwCfg)

@@ -10,6 +10,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
+	gwv1a3 "sigs.k8s.io/gateway-api/apis/v1alpha3"
 	gwv1b1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	kgwv1a1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
@@ -21,6 +22,7 @@ var SchemeBuilder = runtime.SchemeBuilder{
 	// K8s Gateway API resources
 	gwv1.Install,
 	gwv1a2.Install,
+	gwv1a3.Install,
 	gwv1b1.Install,
 
 	// Kubernetes Core resources

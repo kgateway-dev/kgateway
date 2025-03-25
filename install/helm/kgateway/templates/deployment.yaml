@@ -66,6 +66,12 @@ spec:
             - name: KGW_ENABLE_INFER_EXT
               value: "true"
             {{- end }}
+            - name: KGW_DEFAULT_IMAGE_REGISTRY
+              value: {{ .Values.image.registry }}
+            - name: KGW_DEFAULT_IMAGE_TAG
+              value: {{ .Values.image.tag | default .Chart.Version }}
+            - name: KGW_DEFAULT_IMAGE_PULL_POLICY
+              value: {{ .Values.image.pullPolicy | default "IfNotPresent" }}
             # TODO: Remove this once the cleanup is done. Required as the gloo-system
             # namespace is the default namespace and conformance will fail as a result.
             - name: POD_NAMESPACE

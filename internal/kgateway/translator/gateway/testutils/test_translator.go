@@ -204,6 +204,8 @@ func (tc TestCase) Run(t test.Failer, ctx context.Context) (map[types.Namespaced
 		gvr.Pod,
 		gvr.TCPRoute,
 		gvr.TLSRoute,
+		gvr.ServiceEntry,
+		gvr.WorkloadEntry,
 	} {
 		clienttest.MakeCRD(t, cli, crd)
 	}
@@ -238,6 +240,7 @@ func (tc TestCase) Run(t test.Failer, ctx context.Context) (map[types.Namespaced
 		krtOpts,
 		cli,
 		ourCli,
+		nil,
 		wellknown.GatewayControllerName,
 		logr.Discard(),
 		*st,
