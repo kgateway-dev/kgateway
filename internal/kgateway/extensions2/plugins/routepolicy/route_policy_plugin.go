@@ -314,7 +314,7 @@ func (p *routePolicyPluginGwPass) ApplyForBackend(
 	return nil
 }
 
-func (p *routePolicyPluginGwPass) ApplyForRouteBackend( //Apply for route policy
+func (p *routePolicyPluginGwPass) ApplyForRouteBackend(
 	ctx context.Context,
 	policy ir.PolicyIR,
 	pCtx *ir.RouteBackendContext,
@@ -328,7 +328,7 @@ func (p *routePolicyPluginGwPass) ApplyForRouteBackend( //Apply for route policy
 		enableExtprocFilter(pCtx)
 	}
 
-	if rtPolicy.spec.AI.Transformation != nil || rtPolicy.spec.AI.Extproc != nil {
+	if rtPolicy.spec.AI != nil && (rtPolicy.spec.AI.Transformation != nil || rtPolicy.spec.AI.Extproc != nil) {
 		err := p.processAIRoutePolicy(pCtx.TypedFilterConfig, rtPolicy.spec.AI)
 		if err != nil {
 			// TODO: report error on status
