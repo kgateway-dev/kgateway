@@ -96,7 +96,6 @@ rules:
   - gateway.networking.k8s.io
   resources:
   - backendtlspolicies
-  - gatewayclasses
   - gateways
   - httproutes
   - referencegrants
@@ -118,6 +117,15 @@ rules:
   verbs:
   - patch
   - update
+- apiGroups:
+  - gateway.networking.k8s.io
+  resources:
+  - gatewayclasses
+  verbs:
+  - create
+  - get
+  - list
+  - watch
 - apiGroups:
   - networking.istio.io
   resources:

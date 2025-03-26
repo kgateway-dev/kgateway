@@ -18,6 +18,11 @@ var _ = Describe("GwController", func() {
 		interval = time.Millisecond * 250
 	)
 
+	var (
+		ctx    context.Context
+		cancel context.CancelFunc
+	)
+
 	BeforeEach(func() {
 		ctx, cancel = context.WithCancel(context.Background())
 

@@ -20,7 +20,7 @@ type HTTPListenerPolicy struct {
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	Spec   HTTPListenerPolicySpec `json:"spec,omitempty"`
-	Status PolicyStatus           `json:"status,omitempty"`
+	Status SimpleStatus           `json:"status,omitempty"`
 }
 
 // +kubebuilder:object:root=true
