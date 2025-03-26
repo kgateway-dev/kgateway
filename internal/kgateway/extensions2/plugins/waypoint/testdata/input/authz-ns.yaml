@@ -3,11 +3,9 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  labels:
-    istio.io/dataplane-mode: ambient
-    istio.io/use-waypoint: example-waypoint
-    kubernetes.io/metadata.name: httpbin
   name: infra
+  labels:
+    istio.io/use-waypoint: example-waypoint
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
@@ -17,34 +15,62 @@ metadata:
 spec:
   gatewayClassName: kgateway-waypoint
   listeners:
-  - allowedRoutes:
-      namespaces:
-        from: Same
-    name: mesh
+  - name: proxy
     port: 15088
     protocol: istio.io/PROXY
+---
 ---
 # we should get a filter chain with a default virtualhost that just
 # sends traffic to the corresponding `kube` Service backend
 apiVersion: v1
 kind: Service
 metadata:
-  name: httpbin
+  name: svc-a
   namespace: infra
 spec:
   clusterIP: 1.1.1.1
   ports:
-  - name: http
-    port: 8000
-    protocol: TCP
-    targetPort: 8080
+  - port: 5000
+    name: http
   selector:
-    app: httpbin
+    app: svc-b
+---
+# we should get a filter chain with a default virtualhost that just
+# sends traffic to the corresponding `kube` Service backend
+apiVersion: v1
+kind: Service
+metadata:
+  name: svc-b
+  namespace: infra
+spec:
+  clusterIP: 2.2.2.2
+  ports:
+  - port: 9000
+    name: http
+  selector:
+    app: svc-b
+---
+# we should get a filter chain with a default virtualhost that just
+# sends traffic to the corresponding `kube` Service backend
+apiVersion: v1
+kind: Service
+metadata:
+  name: helloworld
+  namespace: infra
+  labels:
+    istio.io/use-waypoint: example-waypoint
+spec:
+  clusterIP: 1.2.3.4
+  ports:
+  - port: 5000
+    name: http
+  selector:
+    app: helloworld    
 ---
 apiVersion: security.istio.io/v1
 kind: AuthorizationPolicy
 metadata:
-  name: httpbin-authz-svc
+  name: helloworld-authz-svc
   namespace: infra
 spec:
   action: DENY
@@ -56,4 +82,7 @@ spec:
   targetRefs:
   - group: ""
     kind: Service
-    name: httpbin
+    name: helloworld
+  - group: ""
+    kind: Service
+    name: svc-a

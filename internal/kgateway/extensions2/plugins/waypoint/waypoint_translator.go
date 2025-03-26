@@ -102,20 +102,37 @@ func (w *waypointTranslator) Translate(
 		proxyListener.HttpFilterChain = append(proxyListener.HttpFilterChain, http...)
 		proxyListener.TcpFilterChain = append(proxyListener.TcpFilterChain, tcp...)
 	}
+// At the end of Translate function, before the return statement
+logger.Infof("Gateway AttachedListenerPolicies structure type: %T", gateway.AttachedListenerPolicies)
+logger.Infof("Gateway AttachedHttpPolicies structure type: %T", gateway.AttachedHttpPolicies)
 
-	if proxyListener == nil {
-		// shouldn't be possible
-		contextutils.LoggerFrom(ctx).DPanic("PROXY listener was nil")
-		return nil
-	}
+// Check if proxyListener has policy data attached
+logger.Infof("proxyListener struct type: %T", proxyListener)
+logger.Infof("proxyListener HTTP chain count: %d", len(proxyListener.HttpFilterChain))
 
-	// ensure consistent ordering in outputs
-	proxyListener.HttpFilterChain = slices.SortBy(proxyListener.HttpFilterChain, func(fc ir.HttpFilterChainIR) string {
-		return fc.FilterChainName
-	})
-	proxyListener.TcpFilterChain = slices.SortBy(proxyListener.TcpFilterChain, func(fc ir.TcpIR) string {
-		return fc.FilterChainName
-	})
+// Examine the first HTTP chain if available
+if len(proxyListener.HttpFilterChain) > 0 {
+    chain := proxyListener.HttpFilterChain[0]
+    logger.Infof("First HTTP chain name: %s", chain.FilterChainName)
+    logger.Infof("HTTP chain custom filters: %d", len(chain.CustomHTTPFilters))
+    
+    // Log details of each custom filter
+    for i, filter := range chain.CustomHTTPFilters {
+        logger.Infof("  HTTP custom filter #%d: Name=%s", i, filter.Name)
+    }
+}
+
+// Examine the first TCP chain if available
+if len(proxyListener.TcpFilterChain) > 0 {
+    chain := proxyListener.TcpFilterChain[0]
+    logger.Infof("First TCP chain name: %s", chain.FilterChainName)
+    logger.Infof("TCP chain network filters: %d", len(chain.FilterChainCommon.CustomNetworkFilters))
+    
+    // Log details of each network filter
+    for i, filter := range chain.FilterChainCommon.CustomNetworkFilters {
+        logger.Infof("  TCP network filter #%d: Name=%s", i, filter.Name)
+    }
+}
 
 	return &ir.GatewayIR{
 		// single listener
@@ -258,7 +275,7 @@ func (t *waypointTranslator) buildServiceChains(
 	// * TODO TCPRoute
 	for _, svc := range services {
 		tcpRBAC, httpRBAC := BuildRBACForService(authzPolicies, gw.Obj, &svc)
-		logger.Debugw("Generated RBAC filters for %s/%s - TCP: %d, HTTP: %d", 
+		logger.Infof("Generated RBAC filters for %s/%s - TCP: %d, HTTP: %d",
 			svc.GetNamespace(), svc.GetName(), len(tcpRBAC), len(httpRBAC))
 
 		// get Service-specific routes
@@ -302,7 +319,7 @@ func (t *waypointTranslator) buildServiceChains(
 					FilterChainCommon: filterChain,
 					Vhosts:            []*ir.VirtualHost{virtualHostForPort},
 				}
-				
+
 				// Apply HTTP RBAC filters to this HTTP filter chain
 				applyHTTPRBACFilters(&httpChain, httpRBAC, svc)
 				httpOut = append(httpOut, httpChain)
@@ -311,10 +328,10 @@ func (t *waypointTranslator) buildServiceChains(
 					FilterChainCommon: filterChain,
 					BackendRefs:       []ir.BackendRefIR{svc.BackendRef(svcPort)},
 				}
-				
+
 				// Apply TCP RBAC filters to this TCP filter chain
 				applyTCPRBACFilters(&tcpChain, tcpRBAC, svc)
-				
+
 				tcpOut = append(tcpOut, tcpChain)
 			}
 		}

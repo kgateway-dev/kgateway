@@ -296,7 +296,7 @@ func (h *hcmNetworkFilterTranslator) computeHttpFilters(ctx context.Context, l i
 			httpFilters = append(httpFilters, httpFilter)
 		}
 	}
-	// httpFilters = append(httpFilters, convertCustomHttpFilters(l.CustomHTTPFilters)...)
+	httpFilters = append(httpFilters, convertCustomHttpFilters(l.CustomHTTPFilters)...)
 
 	// https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/http/http_filters#filter-ordering
 	// HttpFilter ordering determines the order in which the HCM will execute the filter.
@@ -337,6 +337,25 @@ func (h *hcmNetworkFilterTranslator) computeHttpFilters(ctx context.Context, l i
 	envoyHttpFilters = append(envoyHttpFilters, newStagedFilter.Filter)
 
 	return envoyHttpFilters
+}
+
+func convertCustomHttpFilters(customHttpFilters []ir.CustomEnvoyFilter) []plugins.StagedHttpFilter {
+
+	var out []plugins.StagedHttpFilter
+	for _, customFilter := range customHttpFilters {
+
+		stagedFilter := plugins.StagedHttpFilter{
+			Filter: &envoyhttp.HttpFilter{
+				Name: customFilter.Name,
+				ConfigType: &envoyhttp.HttpFilter_TypedConfig{
+					TypedConfig: customFilter.Config,
+				},
+			},
+			Stage: customFilter.FilterStage,
+		}
+		out = append(out, stagedFilter)
+	}
+	return out
 }
 
 func sortHttpFilters(filters plugins.StagedHttpFilterList) []*envoyhttp.HttpFilter {

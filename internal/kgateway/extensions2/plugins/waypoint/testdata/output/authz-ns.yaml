@@ -6,9 +6,9 @@ Listeners:
       portValue: 15088
   filterChains:
   - filterChainMatch:
-      destinationPort: 8000
+      destinationPort: 9000
       prefixRanges:
-      - addressPrefix: 1.1.1.1
+      - addressPrefix: 2.2.2.2
         prefixLen: 32
     filters:
     - name: proxy_protocol_authority
@@ -34,10 +34,118 @@ Listeners:
           configSource:
             ads: {}
             resourceApiVersion: V3
-          routeConfigName: fc_http_8000_httpbin_infra
+          routeConfigName: fc_http_9000_svc-b_infra
         statPrefix: http
         useRemoteAddress: true
-    name: fc_http_8000_httpbin_infra
+    name: fc_http_9000_svc-b_infra
+  - filterChainMatch:
+      destinationPort: 5000
+      prefixRanges:
+      - addressPrefix: 1.2.3.4
+        prefixLen: 32
+    filters:
+    - name: proxy_protocol_authority
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.network.set_filter_state.v3.Config
+        onNewConnection:
+        - factoryKey: envoy.string
+          formatString:
+            textFormatSource:
+              inlineString: '%DYNAMIC_METADATA(envoy.filters.listener.proxy_protocol:peer_principal)%'
+          objectKey: io.istio.peer_principal
+          sharedWithUpstream: ONCE
+    - name: envoy.filters.network.http_connection_manager
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+        httpFilters:
+        - name: envoy.filters.http.rbac
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.rbac.v3.RBAC
+            rules:
+              action: DENY
+              policies:
+                ns[infra]-policy[helloworld-authz-svc]-rule[0]:
+                  permissions:
+                  - andRules:
+                      rules:
+                      - orRules:
+                          rules:
+                          - header:
+                              name: :method
+                              stringMatch:
+                                exact: GET
+                  principals:
+                  - andIds:
+                      ids:
+                      - any: true
+            shadowRulesStatPrefix: istio_dry_run_allow_
+        - name: envoy.filters.http.router
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+        mergeSlashes: true
+        normalizePath: true
+        rds:
+          configSource:
+            ads: {}
+            resourceApiVersion: V3
+          routeConfigName: fc_http_5000_helloworld_infra
+        statPrefix: http
+        useRemoteAddress: true
+    name: fc_http_5000_helloworld_infra
+  - filterChainMatch:
+      destinationPort: 5000
+      prefixRanges:
+      - addressPrefix: 1.1.1.1
+        prefixLen: 32
+    filters:
+    - name: proxy_protocol_authority
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.network.set_filter_state.v3.Config
+        onNewConnection:
+        - factoryKey: envoy.string
+          formatString:
+            textFormatSource:
+              inlineString: '%DYNAMIC_METADATA(envoy.filters.listener.proxy_protocol:peer_principal)%'
+          objectKey: io.istio.peer_principal
+          sharedWithUpstream: ONCE
+    - name: envoy.filters.network.http_connection_manager
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+        httpFilters:
+        - name: envoy.filters.http.rbac
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.rbac.v3.RBAC
+            rules:
+              action: DENY
+              policies:
+                ns[infra]-policy[helloworld-authz-svc]-rule[0]:
+                  permissions:
+                  - andRules:
+                      rules:
+                      - orRules:
+                          rules:
+                          - header:
+                              name: :method
+                              stringMatch:
+                                exact: GET
+                  principals:
+                  - andIds:
+                      ids:
+                      - any: true
+            shadowRulesStatPrefix: istio_dry_run_allow_
+        - name: envoy.filters.http.router
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+        mergeSlashes: true
+        normalizePath: true
+        rds:
+          configSource:
+            ads: {}
+            resourceApiVersion: V3
+          routeConfigName: fc_http_5000_svc-a_infra
+        statPrefix: http
+        useRemoteAddress: true
+    name: fc_http_5000_svc-a_infra
   listenerFilters:
   - name: envoy.filters.listener.proxy_protocol
     typedConfig:
@@ -49,15 +157,41 @@ Listeners:
   name: proxy_protocol_inbound
 Routes:
 - ignorePortInHostMatching: true
-  name: fc_http_8000_httpbin_infra
+  name: fc_http_9000_svc-b_infra
   virtualHosts:
   - domains:
     - '*'
-    name: vh_http_8000_httpbin_infra
+    name: vh_http_9000_svc-b_infra
     routes:
     - match:
         prefix: /
-      name: vh_http_8000_httpbin_infra-route-0-matcher-0
+      name: vh_http_9000_svc-b_infra-route-0-matcher-0
       route:
-        cluster: kube_infra_httpbin_8000
+        cluster: kube_infra_svc-b_9000
+        clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+- ignorePortInHostMatching: true
+  name: fc_http_5000_helloworld_infra
+  virtualHosts:
+  - domains:
+    - '*'
+    name: vh_http_5000_helloworld_infra
+    routes:
+    - match:
+        prefix: /
+      name: vh_http_5000_helloworld_infra-route-0-matcher-0
+      route:
+        cluster: kube_infra_helloworld_5000
+        clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+- ignorePortInHostMatching: true
+  name: fc_http_5000_svc-a_infra
+  virtualHosts:
+  - domains:
+    - '*'
+    name: vh_http_5000_svc-a_infra
+    routes:
+    - match:
+        prefix: /
+      name: vh_http_5000_svc-a_infra-route-0-matcher-0
+      route:
+        cluster: kube_infra_svc-a_5000
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
