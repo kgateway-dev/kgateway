@@ -20,10 +20,10 @@ func (w *waypointQueries) GetAuthorizationPolicies(kctx krt.HandlerContext, ctx 
 	// Filter policies to only include those targeting services in the target namespace
 	filteredPolicies := make([]*istiosecurity.AuthorizationPolicy, 0, len(policies))
 	for _, policy := range policies {
-		for _, targetRef := range policy.Spec.TargetRefs {
-			if targetRef.Kind == "Service" && targetRef.Group == "" {
+		for _, targetRef := range policy.Spec.GetTargetRefs() {
+			if targetRef.GetKind() == "Service" && targetRef.GetGroup() == "" {
 				// If the policy targets a service in the target namespace, include it
-				targetNamespaceMatches := targetRef.Namespace == "" || targetRef.Namespace == targetNamespace
+				targetNamespaceMatches := targetRef.GetNamespace() == "" || targetRef.GetNamespace() == targetNamespace
 				if targetNamespaceMatches {
 					filteredPolicies = append(filteredPolicies, policy)
 					break

@@ -1,9 +1,10 @@
 package waypoint
 
 import (
+	"google.golang.org/protobuf/types/known/anypb"
+
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/waypoint/waypointquery"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
-	"google.golang.org/protobuf/types/known/anypb"
 )
 
 // applyHTTPRBACFilters applies RBAC filters to an HTTP filter chain

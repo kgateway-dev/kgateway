@@ -15,6 +15,7 @@ import (
 
 	listenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	hcmv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/waypoint/waypointquery"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/filters"
 
@@ -137,7 +138,7 @@ func CustomNetworkFilter(
 		return nil
 	}
 
-	return customFiltersHelper(stage, predicate, f.Name, config)
+	return customFiltersHelper(stage, predicate, f.GetName(), config)
 }
 
 func CustomHTTPFilters(
@@ -159,7 +160,7 @@ func CustomHTTPFilter(
 ) *ir.CustomEnvoyFilter {
 	config := f.GetTypedConfig()
 
-	return customFiltersHelper(stage, predicate, f.Name, config)
+	return customFiltersHelper(stage, predicate, f.GetName(), config)
 }
 
 func customFiltersHelper(
