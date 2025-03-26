@@ -279,6 +279,7 @@ spec:
                             type: string
                           maxTokens:
                             format: int32
+                            minimum: 1
                             type: integer
                           tokensPerFill:
                             format: int32
@@ -287,6 +288,8 @@ spec:
                         - fillInterval
                         - maxTokens
                         type: object
+                    required:
+                    - tokenBucket
                     type: object
                 type: object
               targetRefs:

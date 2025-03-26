@@ -2676,15 +2676,17 @@ func schema_kgateway_v2_api_v1alpha1_LocalRateLimitPolicy(ref common.ReferenceCa
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "LocalRateLimitPolicy defines the local rate limiting configuration.",
+				Description: "LocalRateLimitPolicy represents a policy for local rate limiting. It defines the configuration for rate limiting using a token bucket mechanism.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"tokenBucket": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.TokenBucket"),
+							Description: "TokenBucket represents the configuration for a token bucket local rate-limiting mechanism. It defines the parameters for controlling the rate at which requests are allowed.",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.TokenBucket"),
 						},
 					},
 				},
+				Required: []string{"tokenBucket"},
 			},
 		},
 		Dependencies: []string{
@@ -3150,12 +3152,12 @@ func schema_kgateway_v2_api_v1alpha1_RateLimit(ref common.ReferenceCallback) com
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "RateLimit defines the rate limiting configuration.",
+				Description: "RateLimit defines a rate limiting policy.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"local": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Local defines the local rate limiting configuration.",
+							Description: "Local defines a local rate limiting policy.",
 							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LocalRateLimitPolicy"),
 						},
 					},
@@ -3399,7 +3401,8 @@ func schema_kgateway_v2_api_v1alpha1_RoutePolicySpec(ref common.ReferenceCallbac
 					},
 					"rateLimit": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.RateLimit"),
+							Description: "RateLimit specifies the rate limiting configuration for the policy. This controls the rate at which requests are allowed to be processed.",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.RateLimit"),
 						},
 					},
 				},
@@ -3797,29 +3800,30 @@ func schema_kgateway_v2_api_v1alpha1_TokenBucket(ref common.ReferenceCallback) c
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "TokenBucket defines the rate limiting token bucket configuration.",
+				Description: "TokenBucket defines the configuration for a token bucket rate-limiting mechanism. It controls the rate at which tokens are generated and consumed for a specific operation.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"maxTokens": {
 						SchemaProps: spec.SchemaProps{
-							Default: 0,
-							Type:    []string{"integer"},
-							Format:  "int64",
+							Description: "MaxTokens specifies the maximum number of tokens that the bucket can hold. This value must be greater than or equal to 1. It determines the burst capacity of the rate limiter.",
+							Default:     0,
+							Type:        []string{"integer"},
+							Format:      "int64",
 						},
 					},
 					"tokensPerFill": {
 						SchemaProps: spec.SchemaProps{
-							Description: "kubebuilder:default:=1",
-							Default:     0,
+							Description: "TokensPerFill specifies the number of tokens added to the bucket during each fill interval. If not specified, it defaults to 1. This controls the steady-state rate of token generation. kubebuilder:default:=1",
 							Type:        []string{"integer"},
 							Format:      "int64",
 						},
 					},
 					"fillInterval": {
 						SchemaProps: spec.SchemaProps{
-							Default: "",
-							Type:    []string{"string"},
-							Format:  "",
+							Description: "FillInterval defines the time duration between consecutive token fills. This value must be a valid duration string (e.g., \"1s\", \"500ms\"). It determines the frequency of token replenishment.",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 				},

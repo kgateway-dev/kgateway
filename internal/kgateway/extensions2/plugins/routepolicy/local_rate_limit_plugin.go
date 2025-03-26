@@ -12,6 +12,11 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 )
 
+const (
+	filterEnabledRuntimeKey  = "local_rate_limit_enabled"
+	filterEnforcedRuntimeKey = "local_rate_limit_enforced"
+)
+
 func toLocalRateLimitFilterConfig(t *v1alpha1.LocalRateLimitPolicy) (*localratelimitv3.LocalRateLimit, error) {
 	if t == nil || *t == (v1alpha1.LocalRateLimitPolicy{}) {
 		return nil, nil
@@ -26,23 +31,31 @@ func toLocalRateLimitFilterConfig(t *v1alpha1.LocalRateLimitPolicy) (*localratel
 		StatPrefix: localRateLimitStatPrefix,
 		TokenBucket: &typev3.TokenBucket{
 			MaxTokens:     t.TokenBucket.MaxTokens,
-			TokensPerFill: wrapperspb.UInt32(t.TokenBucket.TokensPerFill),
 			FillInterval:  durationpb.New(fillInterval),
 		},
+		// By default filter is enabled for 0% of the requests. We enable it for all requests.
+		// TODO: Make this configurable in the rate limit policy API.
 		FilterEnabled: &corev3.RuntimeFractionalPercent{
-			RuntimeKey: "local_rate_limit_enabled",
+			RuntimeKey: filterEnabledRuntimeKey,
 			DefaultValue: &typev3.FractionalPercent{
 				Numerator:   100,
 				Denominator: typev3.FractionalPercent_HUNDRED,
 			},
 		},
+		// By default filter is enforced for 0% of the requests (out of the enabled fraction).
+		// We enable it for all requests.
+		// TODO: Make this configurable in the rate limit policy API.
 		FilterEnforced: &corev3.RuntimeFractionalPercent{
-			RuntimeKey: "local_rate_limit_enforced",
+			RuntimeKey: filterEnforcedRuntimeKey,
 			DefaultValue: &typev3.FractionalPercent{
 				Numerator:   100,
 				Denominator: typev3.FractionalPercent_HUNDRED,
 			},
 		},
+	}
+
+	if t.TokenBucket.TokensPerFill != nil {
+		lrl.TokenBucket.TokensPerFill = wrapperspb.UInt32(*t.TokenBucket.TokensPerFill)
 	}
 
 	return lrl, nil

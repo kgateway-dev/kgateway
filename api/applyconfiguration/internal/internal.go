@@ -1190,7 +1190,6 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: tokensPerFill
       type:
         scalar: numeric
-      default: 0
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Transform
   map:
     fields:

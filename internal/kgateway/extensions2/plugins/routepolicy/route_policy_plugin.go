@@ -15,7 +15,6 @@ import (
 	localratelimitv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/local_ratelimit/v3"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/known/anypb"
 	skubeclient "istio.io/istio/pkg/config/schema/kubeclient"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
@@ -276,16 +275,11 @@ func (p *routePolicyPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.Ro
 	}
 
 	if policy.spec.localRateLimit != nil {
-		if outputRoute.GetTypedPerFilterConfig() == nil {
-			outputRoute.TypedPerFilterConfig = make(map[string]*anypb.Any)
-		}
-		pb, err := utils.MessageToAny(policy.spec.localRateLimit)
-		if err != nil {
-			return err
-		}
-		outputRoute.GetTypedPerFilterConfig()[localRateLimitFilterNamePrefix] = pb
+		pCtx.TypedFilterConfig.AddTypedConfig(localRateLimitFilterNamePrefix, policy.spec.localRateLimit)
 
-		// Add a filter to the chain
+		// Add a filter to the chain. When having a rate limit for a route we need to also have a
+		// globally disabled rate limit filter in the chain otherwise it will be ignored.
+		// If there is also rate limit for the listener, it will override this one.
 		if p.localRateLimitInChain == nil {
 			p.localRateLimitInChain = &localratelimitv3.LocalRateLimit{
 				StatPrefix: localRateLimitStatPrefix,
@@ -523,6 +517,8 @@ func localRateLimitForSpec(spec v1alpha1.RoutePolicySpec, out *routeSpecIr) {
 	if spec.RateLimit.Local != nil {
 		out.localRateLimit, err = toLocalRateLimitFilterConfig(spec.RateLimit.Local)
 		if err != nil {
+			// In case of an error with translating the local rate limit configuration,
+			// the route will be dropped
 			out.errors = append(out.errors, err)
 		}
 	}
