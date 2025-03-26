@@ -291,6 +291,8 @@ spec:
                     required:
                     - tokenBucket
                     type: object
+                required:
+                - local
                 type: object
               targetRefs:
                 items:

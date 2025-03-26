@@ -3032,6 +3032,7 @@ func schema_kgateway_v2_api_v1alpha1_RateLimit(ref common.ReferenceCallback) com
 						},
 					},
 				},
+				Required: []string{"local"},
 			},
 		},
 		Dependencies: []string{
