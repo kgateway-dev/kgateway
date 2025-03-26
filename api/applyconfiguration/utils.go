@@ -107,6 +107,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.LLMProviderApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("LocalPolicyTargetReference"):
 		return &apiv1alpha1.LocalPolicyTargetReferenceApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("LocalRateLimitPolicy"):
+		return &apiv1alpha1.LocalRateLimitPolicyApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("Message"):
 		return &apiv1alpha1.MessageApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("Moderation"):
@@ -125,6 +127,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.PromptguardResponseApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("ProxyDeployment"):
 		return &apiv1alpha1.ProxyDeploymentApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("RateLimit"):
+		return &apiv1alpha1.RateLimitApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("Regex"):
 		return &apiv1alpha1.RegexApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("RegexMatch"):
@@ -155,6 +159,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.StatusCodeFilterApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("SupportedLLMProvider"):
 		return &apiv1alpha1.SupportedLLMProviderApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("TokenBucket"):
+		return &apiv1alpha1.TokenBucketApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("Transform"):
 		return &apiv1alpha1.TransformApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("TransformationPolicy"):

@@ -68,6 +68,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.KubernetesProxyConfig":      schema_kgateway_v2_api_v1alpha1_KubernetesProxyConfig(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LLMProvider":                schema_kgateway_v2_api_v1alpha1_LLMProvider(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LocalPolicyTargetReference": schema_kgateway_v2_api_v1alpha1_LocalPolicyTargetReference(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LocalRateLimitPolicy":       schema_kgateway_v2_api_v1alpha1_LocalRateLimitPolicy(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Message":                    schema_kgateway_v2_api_v1alpha1_Message(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Moderation":                 schema_kgateway_v2_api_v1alpha1_Moderation(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.MultiPoolConfig":            schema_kgateway_v2_api_v1alpha1_MultiPoolConfig(ref),
@@ -79,6 +80,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.PromptguardRequest":         schema_kgateway_v2_api_v1alpha1_PromptguardRequest(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.PromptguardResponse":        schema_kgateway_v2_api_v1alpha1_PromptguardResponse(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ProxyDeployment":            schema_kgateway_v2_api_v1alpha1_ProxyDeployment(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.RateLimit":                  schema_kgateway_v2_api_v1alpha1_RateLimit(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Regex":                      schema_kgateway_v2_api_v1alpha1_Regex(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.RegexMatch":                 schema_kgateway_v2_api_v1alpha1_RegexMatch(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ResponseFlagFilter":         schema_kgateway_v2_api_v1alpha1_ResponseFlagFilter(ref),
@@ -96,6 +98,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.StatsConfig":                schema_kgateway_v2_api_v1alpha1_StatsConfig(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.StatusCodeFilter":           schema_kgateway_v2_api_v1alpha1_StatusCodeFilter(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.SupportedLLMProvider":       schema_kgateway_v2_api_v1alpha1_SupportedLLMProvider(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.TokenBucket":                schema_kgateway_v2_api_v1alpha1_TokenBucket(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Transform":                  schema_kgateway_v2_api_v1alpha1_Transform(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.TransformationPolicy":       schema_kgateway_v2_api_v1alpha1_TransformationPolicy(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.VertexAIConfig":             schema_kgateway_v2_api_v1alpha1_VertexAIConfig(ref),
@@ -2539,6 +2542,28 @@ func schema_kgateway_v2_api_v1alpha1_LocalPolicyTargetReference(ref common.Refer
 	}
 }
 
+func schema_kgateway_v2_api_v1alpha1_LocalRateLimitPolicy(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "LocalRateLimitPolicy represents a policy for local rate limiting. It defines the configuration for rate limiting using a token bucket mechanism.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"tokenBucket": {
+						SchemaProps: spec.SchemaProps{
+							Description: "TokenBucket represents the configuration for a token bucket local rate-limiting mechanism. It defines the parameters for controlling the rate at which requests are allowed.",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.TokenBucket"),
+						},
+					},
+				},
+				Required: []string{"tokenBucket"},
+			},
+		},
+		Dependencies: []string{
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.TokenBucket"},
+	}
+}
+
 func schema_kgateway_v2_api_v1alpha1_Message(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -2993,6 +3018,28 @@ func schema_kgateway_v2_api_v1alpha1_ProxyDeployment(ref common.ReferenceCallbac
 	}
 }
 
+func schema_kgateway_v2_api_v1alpha1_RateLimit(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "RateLimit defines a rate limiting policy.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"local": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Local defines a local rate limiting policy.",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LocalRateLimitPolicy"),
+						},
+					},
+				},
+				Required: []string{"local"},
+			},
+		},
+		Dependencies: []string{
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LocalRateLimitPolicy"},
+	}
+}
+
 func schema_kgateway_v2_api_v1alpha1_Regex(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -3223,11 +3270,17 @@ func schema_kgateway_v2_api_v1alpha1_RoutePolicySpec(ref common.ReferenceCallbac
 							Ref:     ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.TransformationPolicy"),
 						},
 					},
+					"rateLimit": {
+						SchemaProps: spec.SchemaProps{
+							Description: "RateLimit specifies the rate limiting configuration for the policy. This controls the rate at which requests are allowed to be processed.",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.RateLimit"),
+						},
+					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AIRoutePolicy", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LocalPolicyTargetReference", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.TransformationPolicy"},
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AIRoutePolicy", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LocalPolicyTargetReference", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.RateLimit", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.TransformationPolicy"},
 	}
 }
 
@@ -3611,6 +3664,43 @@ func schema_kgateway_v2_api_v1alpha1_SupportedLLMProvider(ref common.ReferenceCa
 		},
 		Dependencies: []string{
 			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AnthropicConfig", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AzureOpenAIConfig", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.GeminiConfig", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.OpenAIConfig", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.VertexAIConfig"},
+	}
+}
+
+func schema_kgateway_v2_api_v1alpha1_TokenBucket(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "TokenBucket defines the configuration for a token bucket rate-limiting mechanism. It controls the rate at which tokens are generated and consumed for a specific operation.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"maxTokens": {
+						SchemaProps: spec.SchemaProps{
+							Description: "MaxTokens specifies the maximum number of tokens that the bucket can hold. This value must be greater than or equal to 1. It determines the burst capacity of the rate limiter.",
+							Default:     0,
+							Type:        []string{"integer"},
+							Format:      "int64",
+						},
+					},
+					"tokensPerFill": {
+						SchemaProps: spec.SchemaProps{
+							Description: "TokensPerFill specifies the number of tokens added to the bucket during each fill interval. If not specified, it defaults to 1. This controls the steady-state rate of token generation. kubebuilder:default:=1",
+							Type:        []string{"integer"},
+							Format:      "int64",
+						},
+					},
+					"fillInterval": {
+						SchemaProps: spec.SchemaProps{
+							Description: "FillInterval defines the time duration between consecutive token fills. This value must be a valid duration string (e.g., \"1s\", \"500ms\"). It determines the frequency of token replenishment.",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+				},
+				Required: []string{"maxTokens", "fillInterval"},
+			},
+		},
 	}
 }
 
