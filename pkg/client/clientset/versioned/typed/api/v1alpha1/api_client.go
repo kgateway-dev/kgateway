@@ -17,7 +17,6 @@ type GatewayV1alpha1Interface interface {
 	DirectResponsesGetter
 	GatewayParametersesGetter
 	HTTPListenerPoliciesGetter
-	ListenerPoliciesGetter
 	RoutePoliciesGetter
 }
 
@@ -40,10 +39,6 @@ func (c *GatewayV1alpha1Client) GatewayParameterses(namespace string) GatewayPar
 
 func (c *GatewayV1alpha1Client) HTTPListenerPolicies(namespace string) HTTPListenerPolicyInterface {
 	return newHTTPListenerPolicies(c, namespace)
-}
-
-func (c *GatewayV1alpha1Client) ListenerPolicies(namespace string) ListenerPolicyInterface {
-	return newListenerPolicies(c, namespace)
 }
 
 func (c *GatewayV1alpha1Client) RoutePolicies(namespace string) RoutePolicyInterface {

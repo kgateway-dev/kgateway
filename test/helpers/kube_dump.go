@@ -127,7 +127,6 @@ func recordKubeState(ctx context.Context, kubectlCli *kubectl.Cli, f *os.File) {
 		"directresponses.gateway.kgateway.dev",
 		"gatewayparameters.gateway.kgateway.dev",
 		"httplistenerpolicies.gateway.kgateway.dev",
-		"listenerpolicies.gateway.kgateway.dev",
 		"routepolicies.gateway.kgateway.dev",
 		"upstreams.gateway.kgateway.dev",
 	}

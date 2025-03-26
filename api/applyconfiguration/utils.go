@@ -103,10 +103,6 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.IstioIntegrationApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("KubernetesProxyConfig"):
 		return &apiv1alpha1.KubernetesProxyConfigApplyConfiguration{}
-	case v1alpha1.SchemeGroupVersion.WithKind("ListenerPolicy"):
-		return &apiv1alpha1.ListenerPolicyApplyConfiguration{}
-	case v1alpha1.SchemeGroupVersion.WithKind("ListenerPolicySpec"):
-		return &apiv1alpha1.ListenerPolicySpecApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("LLMProvider"):
 		return &apiv1alpha1.LLMProviderApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("LocalPolicyTargetReference"):
@@ -123,10 +119,6 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.OpenAIConfigApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("Pod"):
 		return &apiv1alpha1.PodApplyConfiguration{}
-	case v1alpha1.SchemeGroupVersion.WithKind("PolicyAncestorStatus"):
-		return &apiv1alpha1.PolicyAncestorStatusApplyConfiguration{}
-	case v1alpha1.SchemeGroupVersion.WithKind("PolicyStatus"):
-		return &apiv1alpha1.PolicyStatusApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("Priority"):
 		return &apiv1alpha1.PriorityApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("PromptguardRequest"):

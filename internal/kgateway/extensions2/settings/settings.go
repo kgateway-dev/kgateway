@@ -28,6 +28,9 @@ type Settings struct {
 
 	// EnableInferExt defines whether to enable/disable support for Gateway API inference extension.
 	EnableInferExt bool `split_words:"true"`
+	// InferExtAutoProvision defines whether to enable/disable the Gateway API inference extension deployer.
+	InferExtAutoProvision bool `split_words:"true"`
+
 	// DefaultImageRegistry is the default image registry to use for the kgateway image.
 	DefaultImageRegistry string `split_words:"true" default:"cr.kgateway.dev"`
 	// DefaultImageTag is the default image tag to use for the kgateway image.
