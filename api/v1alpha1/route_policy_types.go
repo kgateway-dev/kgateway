@@ -135,7 +135,7 @@ type SimpleStatus struct {
 // RateLimit defines a rate limiting policy.
 type RateLimit struct {
 	// Local defines a local rate limiting policy.
-	// +optional
+	// +required
 	Local *LocalRateLimitPolicy `json:"local,omitempty"`
 }
 
@@ -145,7 +145,7 @@ type LocalRateLimitPolicy struct {
 	// TokenBucket represents the configuration for a token bucket local rate-limiting mechanism.
 	// It defines the parameters for controlling the rate at which requests are allowed.
 	// +required
-	TokenBucket *TokenBucket `json:"tokenBucket,omitempty"`
+	TokenBucket *TokenBucket `json:"tokenBucket"`
 }
 
 // TokenBucket defines the configuration for a token bucket rate-limiting mechanism.
