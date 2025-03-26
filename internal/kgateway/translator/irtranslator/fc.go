@@ -340,10 +340,8 @@ func (h *hcmNetworkFilterTranslator) computeHttpFilters(ctx context.Context, l i
 }
 
 func convertCustomHttpFilters(customHttpFilters []ir.CustomEnvoyFilter) []plugins.StagedHttpFilter {
-
 	var out []plugins.StagedHttpFilter
 	for _, customFilter := range customHttpFilters {
-
 		stagedFilter := plugins.StagedHttpFilter{
 			Filter: &envoyhttp.HttpFilter{
 				Name: customFilter.Name,

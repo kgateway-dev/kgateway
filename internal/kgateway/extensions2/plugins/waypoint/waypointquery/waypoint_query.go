@@ -42,7 +42,6 @@ type WaypointQueries interface {
 	GetHTTPRoutesForService(kctx krt.HandlerContext, ctx context.Context, svc *Service) []query.RouteInfo
 
 	// GetAuthorizationPolicies gets all AuthorizationPolicy resources in the targetNamespace and rootNamespace.
-	// Callers should apply attachment logic themselves for particular Gateways and Services.
 	GetAuthorizationPolicies(kctx krt.HandlerContext, ctx context.Context, targetNamespace, rootNamespace string) []*istiosecurity.AuthorizationPolicy
 
 	HasSynced() bool

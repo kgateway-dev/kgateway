@@ -78,7 +78,7 @@ type FilterChainCommon struct {
 	Matcher              FilterChainMatch
 	FilterChainName      string
 	CustomNetworkFilters []CustomEnvoyFilter
-	NetworkFilters       []*anypb.Any 
+	NetworkFilters       []*anypb.Any
 	TLS                  *TlsBundle
 }
 
