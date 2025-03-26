@@ -36,6 +36,11 @@ type RoutePolicySpec struct {
 	AI *AIRoutePolicy `json:"ai,omitempty"`
 
 	Transformation TransformationPolicy `json:"transformation,omitempty"`
+
+	// RateLimit specifies the rate limiting configuration for the policy.
+	// This controls the rate at which requests are allowed to be processed.
+	// +optional
+	RateLimit *RateLimit `json:"rateLimit,omitempty"`
 }
 
 // TransformationPolicy config is used to modify envoy behavior at a route level.
@@ -125,4 +130,45 @@ type SimpleStatus struct {
 	// +listMapKey=type
 	// +kubebuilder:validation:MaxItems=8
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
+}
+
+// RateLimit defines a rate limiting policy.
+type RateLimit struct {
+	// Local defines a local rate limiting policy.
+	// +required
+	Local *LocalRateLimitPolicy `json:"local,omitempty"`
+}
+
+// LocalRateLimitPolicy represents a policy for local rate limiting.
+// It defines the configuration for rate limiting using a token bucket mechanism.
+type LocalRateLimitPolicy struct {
+	// TokenBucket represents the configuration for a token bucket local rate-limiting mechanism.
+	// It defines the parameters for controlling the rate at which requests are allowed.
+	// +required
+	TokenBucket *TokenBucket `json:"tokenBucket"`
+}
+
+// TokenBucket defines the configuration for a token bucket rate-limiting mechanism.
+// It controls the rate at which tokens are generated and consumed for a specific operation.
+type TokenBucket struct {
+	// MaxTokens specifies the maximum number of tokens that the bucket can hold.
+	// This value must be greater than or equal to 1.
+	// It determines the burst capacity of the rate limiter.
+	// +required
+	// +kubebuilder:validation:Minimum=1
+	MaxTokens uint32 `json:"maxTokens"`
+
+	// TokensPerFill specifies the number of tokens added to the bucket during each fill interval.
+	// If not specified, it defaults to 1.
+	// This controls the steady-state rate of token generation.
+	// +optional
+	// kubebuilder:default:=1
+	TokensPerFill *uint32 `json:"tokensPerFill,omitempty"`
+
+	// FillInterval defines the time duration between consecutive token fills.
+	// This value must be a valid duration string (e.g., "1s", "500ms").
+	// It determines the frequency of token replenishment.
+	// +required
+	// +kubebuilder:validation:Format=duration
+	FillInterval string `json:"fillInterval"`
 }

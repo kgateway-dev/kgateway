@@ -268,6 +268,32 @@ spec:
                     - CHAT_STREAMING
                     type: string
                 type: object
+              rateLimit:
+                properties:
+                  local:
+                    properties:
+                      tokenBucket:
+                        properties:
+                          fillInterval:
+                            format: duration
+                            type: string
+                          maxTokens:
+                            format: int32
+                            minimum: 1
+                            type: integer
+                          tokensPerFill:
+                            format: int32
+                            type: integer
+                        required:
+                        - fillInterval
+                        - maxTokens
+                        type: object
+                    required:
+                    - tokenBucket
+                    type: object
+                required:
+                - local
+                type: object
               targetRefs:
                 items:
                   properties:
