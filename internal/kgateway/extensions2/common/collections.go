@@ -30,16 +30,17 @@ type CommonCollections struct {
 	OurClient versioned.Interface
 	Client    kube.Client
 	// full CRUD client, only needed for status writing currently
-	CrudClient     client.Client
-	KrtOpts        krtutil.KrtOptions
-	Secrets        *krtcollections.SecretIndex
-	BackendIndex   *krtcollections.BackendIndex
-	Routes         *krtcollections.RoutesIndex
-	Namespaces     krt.Collection[krtcollections.NamespaceMetadata]
-	Endpoints      krt.Collection[ir.EndpointsForBackend]
-	GatewayIndex   *krtcollections.GatewayIndex
-	Services       krt.Collection[*corev1.Service]
-	ServiceEntries krt.Collection[*networkingclient.ServiceEntry]
+	CrudClient            client.Client
+	KrtOpts               krtutil.KrtOptions
+	Secrets               *krtcollections.SecretIndex
+	BackendIndex          *krtcollections.BackendIndex
+	Routes                *krtcollections.RoutesIndex
+	Namespaces            krt.Collection[krtcollections.NamespaceMetadata]
+	Endpoints             krt.Collection[ir.EndpointsForBackend]
+	GatewayIndex          *krtcollections.GatewayIndex
+	GatewayExtensionIndex *krtcollections.GatewayExtensionIndex
+	Services              krt.Collection[*corev1.Service]
+	ServiceEntries        krt.Collection[*networkingclient.ServiceEntry]
 
 	Pods       krt.Collection[krtcollections.LocalityPod]
 	RefGrants  *krtcollections.RefGrantIndex
@@ -134,11 +135,12 @@ func NewCommonCollections(
 // This can't be part of NewCommonCollections because the setup
 // of plugins themselves rely on a reference to CommonCollections.
 func (c *CommonCollections) InitPlugins(ctx context.Context, mergedPlugins extensionsplug.Plugin) {
-	kubeGateways, routeIndex, backendIndex, endpointIRs := krtcollections.InitCollections(
+	gateways, routeIndex, backendIndex, gatewayExtensionIndex, endpointIRs := krtcollections.InitCollections(
 		ctx,
 		c.controllerName,
 		mergedPlugins,
 		c.Client,
+		c.OurClient,
 		c.RefGrants,
 		c.KrtOpts,
 	)
@@ -147,5 +149,6 @@ func (c *CommonCollections) InitPlugins(ctx context.Context, mergedPlugins exten
 	c.BackendIndex = backendIndex
 	c.Routes = routeIndex
 	c.Endpoints = endpointIRs
-	c.GatewayIndex = kubeGateways
+	c.GatewayIndex = gateways
+	c.GatewayExtensionIndex = gatewayExtensionIndex
 }

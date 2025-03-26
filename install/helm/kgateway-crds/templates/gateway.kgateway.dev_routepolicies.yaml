@@ -268,6 +268,50 @@ spec:
                     - CHAT_STREAMING
                     type: string
                 type: object
+              extAuth:
+                properties:
+                  clearRouteCache:
+                    type: boolean
+                  emitFilterStateStats:
+                    type: boolean
+                  enablement:
+                    enum:
+                    - DisableAll
+                    type: string
+                  extensionRef:
+                    properties:
+                      name:
+                        default: ""
+                        type: string
+                    type: object
+                    x-kubernetes-map-type: atomic
+                  failureModeAllow:
+                    type: boolean
+                  includePeerCertificate:
+                    type: boolean
+                  includeTLSSession:
+                    type: boolean
+                  metadataContextNamespaces:
+                    default:
+                    - jwt
+                    items:
+                      type: string
+                    type: array
+                    x-kubernetes-list-type: set
+                  withRequestBody:
+                    properties:
+                      allowPartialMessage:
+                        type: boolean
+                      maxRequestBytes:
+                        format: int32
+                        minimum: 1
+                        type: integer
+                      packAsBytes:
+                        type: boolean
+                    required:
+                    - maxRequestBytes
+                    type: object
+                type: object
               rateLimit:
                 properties:
                   local:

@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -29,6 +30,7 @@ type RoutePolicyList struct {
 }
 
 type RoutePolicySpec struct {
+
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=16
 	TargetRefs []LocalPolicyTargetReference `json:"targetRefs,omitempty"`
@@ -36,7 +38,10 @@ type RoutePolicySpec struct {
 	AI *AIRoutePolicy `json:"ai,omitempty"`
 
 	Transformation TransformationPolicy `json:"transformation,omitempty"`
-
+	// ExtAuth specifies the external authentication configuration for the policy.
+	// This controls what external server to send requests to for authentication.
+	// +optional
+	ExtAuth *ExtAuthRoutePolicy `json:"extAuth,omitempty"`
 	// RateLimit specifies the rate limiting configuration for the policy.
 	// This controls the rate at which requests are allowed to be processed.
 	// +optional
@@ -130,6 +135,100 @@ type SimpleStatus struct {
 	// +listMapKey=type
 	// +kubebuilder:validation:MaxItems=8
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
+}
+
+// ExtAuthEnabled determines the enabled state of the ExtAuth filter.
+// +kubebuilder:validation:Enum=DisableAll
+type ExtAuthEnabled string
+
+// When we add a new field here we have to be specific around which extensions are enabled/disabled
+// and how these can be overridden by other policies.
+const (
+	// ExtAuthDisableAll disables all instances of the ExtAuth filter for this route.
+	// This is to enable a global disable such as for a health check route.
+	ExtAuthDisableAll ExtAuthEnabled = "DisableAll"
+)
+
+// ExtAuthRoutePolicy configures external authentication for a route.
+// This policy will determine the ext auth server to use and how to  talk to it.
+// Note that most of these fields are passed along as is to Envoy.
+// For more details on particular fields please see the Envoy ExtAuth documentation.
+// https://raw.githubusercontent.com/envoyproxy/envoy/f910f4abea24904aff04ec33a00147184ea7cffa/api/envoy/extensions/filters/http/ext_authz/v3/ext_authz.proto
+type ExtAuthRoutePolicy struct {
+	// ExtensionRef references the ExternalExtension that should be used for authentication.
+	// +optional
+	ExtensionRef *corev1.LocalObjectReference `json:"extensionRef,omitempty"`
+
+	// Enablement determines the enabled state of the ExtAuth filter.
+	// When set to "DisableAll", the filter is disabled for this route.
+	// When empty, the filter is enabled as long as it is not disabled by another policy.
+	// +optional
+	Enablement ExtAuthEnabled `json:"enablement,omitempty"`
+
+	// FailureModeAllow determines the behavior on authorization service errors.
+	// When true, requests will be allowed even if the authorization service fails or returns HTTP 5xx errors.
+	// When unset, the default behavior is false.
+	// +optional
+	FailureModeAllow *bool `json:"failureModeAllow,omitempty"`
+
+	// WithRequestBody allows the request body to be buffered and sent to the authorization service.
+	// Warning buffering has implications for streaming and therefore performance.
+	// +optional
+	WithRequestBody *BufferSettings `json:"withRequestBody,omitempty"`
+
+	// ClearRouteCache allows the authorization service to affect routing decisions.
+	// When unset, the default behavior is false.
+	// +optional
+	ClearRouteCache *bool `json:"clearRouteCache,omitempty"`
+
+	// MetadataContextNamespaces specifies metadata namespaces to pass to the authorization service.
+	// Default to allowing jwt info if processing for jwt is configured.
+	// +optional
+	// +listType=set
+	// +kubebuilder:default={"jwt"}
+	MetadataContextNamespaces []string `json:"metadataContextNamespaces,omitempty"`
+
+	// IncludePeerCertificate determines if the client's X.509 certificate should be sent to the authorization service.
+	// When true, the certificate will be included if available.
+	// When unset, the default behavior is false.
+	// +optional
+	IncludePeerCertificate *bool `json:"includePeerCertificate,omitempty"`
+
+	// IncludeTLSSession determines if TLS session details should be sent to the authorization service.
+	// When true, the SNI name from TLSClientHello will be included if available.
+	// When unset, the default behavior is false.
+	// +optional
+	IncludeTLSSession *bool `json:"includeTLSSession,omitempty"`
+
+	// EmitFilterStateStats determines if per-stream stats should be emitted for access logging.
+	// When true and using Envoy gRPC, emits latency, bytes sent/received, and upstream info.
+	// When true and not using Envoy gRPC, emits only latency.
+	// Stats are only added if a check request is made to the ext_authz service.
+	// When unset, the default behavior is false.
+	// +optional
+	EmitFilterStateStats *bool `json:"emitFilterStateStats,omitempty"`
+}
+
+// BufferSettings configures how the request body should be buffered.
+type BufferSettings struct {
+	// MaxRequestBytes sets the maximum size of a message body to buffer.
+	// Requests exceeding this size will receive HTTP 413 and not be sent to the authorization service.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Minimum=1
+	MaxRequestBytes uint32 `json:"maxRequestBytes"`
+
+	// AllowPartialMessage determines if partial messages should be allowed.
+	// When true, requests will be sent to the authorization service even if they exceed maxRequestBytes.
+	// When unset, the default behavior is false.
+	// +optional
+	AllowPartialMessage *bool `json:"allowPartialMessage,omitempty"`
+
+	// PackAsBytes determines if the body should be sent as raw bytes.
+	// When true, the body is sent as raw bytes in the raw_body field.
+	// When false, the body is sent as UTF-8 string in the body field.
+	// When unset, the default behavior is false.
+	// +optional
+	PackAsBytes *bool `json:"packAsBytes,omitempty"`
 }
 
 // RateLimit defines a rate limiting policy.

@@ -51,6 +51,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.BackendStatusApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("BodyTransformation"):
 		return &apiv1alpha1.BodyTransformationApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("BufferSettings"):
+		return &apiv1alpha1.BufferSettingsApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("CELFilter"):
 		return &apiv1alpha1.CELFilterApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("CustomLabel"):
@@ -67,12 +69,24 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.EnvoyBootstrapApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("EnvoyContainer"):
 		return &apiv1alpha1.EnvoyContainerApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("ExtAuthProvider"):
+		return &apiv1alpha1.ExtAuthProviderApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("ExtAuthRoutePolicy"):
+		return &apiv1alpha1.ExtAuthRoutePolicyApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("ExtProcProvider"):
+		return &apiv1alpha1.ExtProcProviderApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("FieldDefault"):
 		return &apiv1alpha1.FieldDefaultApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("FileSink"):
 		return &apiv1alpha1.FileSinkApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("FilterType"):
 		return &apiv1alpha1.FilterTypeApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("GatewayExtension"):
+		return &apiv1alpha1.GatewayExtensionApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("GatewayExtensionSpec"):
+		return &apiv1alpha1.GatewayExtensionSpecApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("GatewayExtensionStatus"):
+		return &apiv1alpha1.GatewayExtensionStatusApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("GatewayParameters"):
 		return &apiv1alpha1.GatewayParametersApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("GatewayParametersSpec"):
