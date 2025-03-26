@@ -10,6 +10,14 @@ type ExtProcPolicy struct {
 	ProcessingMode *ProcessingMode `json:"processingMode,omitempty"`
 }
 
+type ExtProcGrpcService struct {
+	// The backend gRPC service. Can be any type of supported backend (Kubernetes Service, kgateway Backend, etc..)
+	// +kubebuilder:validation:Required
+	BackendRef *gwv1.BackendRef `json:"backendRef"`
+
+	Authority *string `json:"authority,omitempty"`
+}
+
 // ProcessingMode defines how the filter should interact with the request/response streams
 type ProcessingMode struct {
 	// RequestHeaderMode determines how to handle the request headers
@@ -42,15 +50,3 @@ type ProcessingMode struct {
 	// +optional
 	ResponseTrailerMode *string `json:"responseTrailerMode,omitempty"`
 }
-
-type ExtProcGrpcService struct {
-	// The backend gRPC service. Can be any type of supported backend (Kubernetes Service, kgateway Backend, etc..)
-	// +kubebuilder:validation:Required
-	BackendRef *gwv1.BackendRef `json:"backendRef"`
-
-	Authority *string `json:"authority,omitempty"`
-}
-
-// type ExtProcPolicyRouteSettings struct {
-
-// }
