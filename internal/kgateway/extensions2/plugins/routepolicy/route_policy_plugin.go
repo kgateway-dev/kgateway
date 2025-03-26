@@ -279,7 +279,7 @@ func (p *routePolicyPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.Ro
 
 		// Add a filter to the chain. When having a rate limit for a route we need to also have a
 		// globally disabled rate limit filter in the chain otherwise it will be ignored.
-		// If there is also rate limit for the listener, it will override this one.
+		// If there is also rate limit for the listener, it will not override this one.
 		if p.localRateLimitInChain == nil {
 			p.localRateLimitInChain = &localratelimitv3.LocalRateLimit{
 				StatPrefix: localRateLimitStatPrefix,
