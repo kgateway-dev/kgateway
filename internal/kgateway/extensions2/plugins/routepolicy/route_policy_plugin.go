@@ -152,16 +152,11 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 			Namespace: policyCR.Namespace,
 			Name:      policyCR.Name,
 		}
-		policyIr, err := translate(krtctx, policyCR, objSrc)
-		if err != nil {
-			contextutils.LoggerFrom(ctx).Error(err)
-			errors = append(errors, err)
-			return nil
-		}
+
 		pol := &ir.PolicyWrapper{
 			ObjectSource: objSrc,
 			Policy:       policyCR,
-			PolicyIR:     policyIr,
+			PolicyIR:     translate(krtctx, policyCR, objSrc),
 			TargetRefs:   convert(policyCR.Spec.TargetRefs),
 			Errors:       errors,
 		}
@@ -412,8 +407,8 @@ func (p *routePolicyPluginGwPass) ResourcesToAdd(ctx context.Context) ir.Resourc
 	return ir.Resources{}
 }
 
-func buildTranslateFunc(ctx context.Context, secrets *krtcollections.SecretIndex, commoncol *common.CommonCollections) func(krtctx krt.HandlerContext, policyCR *v1alpha1.RoutePolicy, objSrc ir.ObjectSource) (*routePolicy, error) {
-	return func(krtctx krt.HandlerContext, policyCR *v1alpha1.RoutePolicy, objSrc ir.ObjectSource) (*routePolicy, error) {
+func buildTranslateFunc(ctx context.Context, secrets *krtcollections.SecretIndex, commoncol *common.CommonCollections) func(krtctx krt.HandlerContext, policyCR *v1alpha1.RoutePolicy, objSrc ir.ObjectSource) *routePolicy {
+	return func(krtctx krt.HandlerContext, policyCR *v1alpha1.RoutePolicy, objSrc ir.ObjectSource) *routePolicy {
 		policyIr := routePolicy{ct: policyCR.CreationTimestamp.Time}
 
 		outSpec := routeSpecIr{}
@@ -441,11 +436,12 @@ func buildTranslateFunc(ctx context.Context, secrets *krtcollections.SecretIndex
 		if policyCR.Spec.ExtProc != nil {
 			extproc, err := toEnvoyExtProc(policyCR.Spec.ExtProc, krtctx, commoncol, objSrc)
 			if err != nil {
-				return nil, err
-			}
-			outSpec.ExtProc = &ExtprocIR{
-				Name:    policyCR.Name, // TODO format
-				ExtProc: extproc,
+				outSpec.errors = append(outSpec.errors, err)
+			} else {
+				outSpec.ExtProc = &ExtprocIR{
+					Name:    policyCR.Name, // TODO format
+					ExtProc: extproc,
+				}
 			}
 		}
 
@@ -454,7 +450,7 @@ func buildTranslateFunc(ctx context.Context, secrets *krtcollections.SecretIndex
 		}
 		policyIr.spec = outSpec
 
-		return &policyIr, nil
+		return &policyIr
 	}
 }
 
