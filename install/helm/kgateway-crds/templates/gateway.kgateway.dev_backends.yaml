@@ -466,7 +466,7 @@ spec:
                     type: string
                   auth:
                     properties:
-                      secret:
+                      secretRef:
                         properties:
                           name:
                             default: ""

@@ -114,11 +114,11 @@ type AwsAuth struct {
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Enum=Secret
 	Type AwsAuthType `json:"type"`
-	// Secret references a Kubernetes Secret containing the AWS credentials.
+	// SecretRef references a Kubernetes Secret containing the AWS credentials.
 	// The Secret must have keys "accessKey", "secretKey", and optionally "sessionToken".
 	// +optional
 	// +kubebuilder:validation:Optional
-	Secret *corev1.LocalObjectReference `json:"secret,omitempty"`
+	SecretRef *corev1.LocalObjectReference `json:"secretRef,omitempty"`
 }
 
 const (
