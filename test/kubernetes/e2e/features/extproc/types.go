@@ -19,16 +19,8 @@ var (
 		Name:      "gw",
 		Namespace: "default",
 	}
-	gatewayService      = &corev1.Service{ObjectMeta: gatewayObjectMeta}
-	gatewayDeployment   = &appsv1.Deployment{ObjectMeta: gatewayObjectMeta}
-	httpRouteObjectMeta = metav1.ObjectMeta{
-		Name:      "ext-proc-route",
-		Namespace: "default",
-	}
-	routePolicyObjectMeta = metav1.ObjectMeta{
-		Name:      "route-test",
-		Namespace: "default",
-	}
+	gatewayService    = &corev1.Service{ObjectMeta: gatewayObjectMeta}
+	gatewayDeployment = &appsv1.Deployment{ObjectMeta: gatewayObjectMeta}
 
 	// ExtProc service and deployment
 	extProcService = &corev1.Service{
