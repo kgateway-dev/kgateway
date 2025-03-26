@@ -30,8 +30,8 @@ func toLocalRateLimitFilterConfig(t *v1alpha1.LocalRateLimitPolicy) (*localratel
 	var lrl *localratelimitv3.LocalRateLimit = &localratelimitv3.LocalRateLimit{
 		StatPrefix: localRateLimitStatPrefix,
 		TokenBucket: &typev3.TokenBucket{
-			MaxTokens:     t.TokenBucket.MaxTokens,
-			FillInterval:  durationpb.New(fillInterval),
+			MaxTokens:    t.TokenBucket.MaxTokens,
+			FillInterval: durationpb.New(fillInterval),
 		},
 		// By default filter is enabled for 0% of the requests. We enable it for all requests.
 		// TODO: Make this configurable in the rate limit policy API.
@@ -55,7 +55,7 @@ func toLocalRateLimitFilterConfig(t *v1alpha1.LocalRateLimitPolicy) (*localratel
 	}
 
 	if t.TokenBucket.TokensPerFill != nil {
-		lrl.TokenBucket.TokensPerFill = wrapperspb.UInt32(*t.TokenBucket.TokensPerFill)
+		lrl.GetTokenBucket().TokensPerFill = wrapperspb.UInt32(*t.TokenBucket.TokensPerFill)
 	}
 
 	return lrl, nil
