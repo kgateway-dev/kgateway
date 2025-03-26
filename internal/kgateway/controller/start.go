@@ -30,6 +30,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/proxy_syncer"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
 	kgtwschemes "github.com/kgateway-dev/kgateway/v2/pkg/schemes"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
@@ -244,11 +245,19 @@ func (c *ControllerBuilder) Start(ctx context.Context) error {
 		},
 	}
 
+	setupLog.Info("creating gateway class provisioner")
+	if err := NewGatewayClassProvisioner(c.mgr, c.cfg.ControllerName, GetDefaultClassInfo()); err != nil {
+		setupLog.Error(err, "unable to create gateway class provisioner")
+		return err
+	}
+
+	setupLog.Info("creating base gateway controller")
 	if err := NewBaseGatewayController(ctx, gwCfg); err != nil {
 		setupLog.Error(err, "unable to create gateway controller")
 		return err
 	}
 
+	setupLog.Info("creating inferencepool controller")
 	// Create the InferencePool controller if the inference extension feature is enabled and the API group is registered.
 	if globalSettings.EnableInferExt &&
 		c.mgr.GetScheme().IsGroupRegistered(infextv1a2.GroupVersion.Group) {
@@ -267,5 +276,25 @@ func (c *ControllerBuilder) Start(ctx context.Context) error {
 		}
 	}
 
+	setupLog.Info("starting manager")
 	return c.mgr.Start(ctx)
+}
+
+// GetDefaultClassInfo returns the default GatewayClass for the kgateway controller.
+// Exported for testing.
+func GetDefaultClassInfo() map[string]*ClassInfo {
+	return map[string]*ClassInfo{
+		wellknown.GatewayClassName: {
+			Description: "The default GatewayClass for the kgateway controller.",
+			Labels:      map[string]string{},
+			Annotations: map[string]string{},
+		},
+		wellknown.WaypointClassName: {
+			Description: "The default GatewayClass for the kgateway controller.",
+			Labels:      map[string]string{},
+			Annotations: map[string]string{
+				"ambient.istio.io/waypoint-inbound-binding": "PROXY/15088",
+			},
+		},
+	}
 }

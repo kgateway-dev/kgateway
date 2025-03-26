@@ -63,25 +63,6 @@ controller:
     ports:
       grpc: 9977
 
-# GatewayClass configuration
-gatewayClass:
-  enabled: true
-  name: "kgateway"
-  description: "kgateway controller"
-  controllerName: "kgateway.dev/kgateway"
-  labels: {}
-  annotations: {}
-
-# WaypointClass configuration
-waypointClass:
-  enabled: true
-  name: "kgateway-waypoint"
-  description: "kgateway waypoint controller"
-  controllerName: "kgateway.dev/kgateway"
-  labels: {}
-  annotations:
-    ambient.istio.io/waypoint-inbound-binding: PROXY/15088
-
 image:
   registry: cr.kgateway.dev/kgateway-dev
   tag: ""

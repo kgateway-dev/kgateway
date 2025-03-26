@@ -66,13 +66,14 @@ func data(s *ir.Secret) map[string][]byte {
 func ApplyAIBackend(ir *IR, pCtx *ir.RouteBackendContext, out *envoy_config_route_v3.Route) error {
 	pCtx.TypedFilterConfig.AddTypedConfig(wellknown.AIBackendTransformationFilterName, ir.Transformation)
 
+	copyBackendExtproc := proto.Clone(ir.Extproc).(*envoy_ext_proc_v3.ExtProcPerRoute)
 	routepolicyExtprocSettingsProto := pCtx.TypedFilterConfig.GetTypedConfig(wellknown.AIExtProcFilterName)
 	if routepolicyExtprocSettingsProto != nil {
 		// merge the Backend extproc config with any config added by the RoutePolicy
 		routeExtprocSettings := routepolicyExtprocSettingsProto.(*envoy_ext_proc_v3.ExtProcPerRoute)
-		ir.Extproc.GetOverrides().GrpcInitialMetadata = append(ir.Extproc.GetOverrides().GetGrpcInitialMetadata(), routeExtprocSettings.GetOverrides().GetGrpcInitialMetadata()...)
+		copyBackendExtproc.GetOverrides().GrpcInitialMetadata = append(copyBackendExtproc.GetOverrides().GetGrpcInitialMetadata(), routeExtprocSettings.GetOverrides().GetGrpcInitialMetadata()...)
 	}
-	pCtx.TypedFilterConfig.AddTypedConfig(wellknown.AIExtProcFilterName, ir.Extproc)
+	pCtx.TypedFilterConfig.AddTypedConfig(wellknown.AIExtProcFilterName, copyBackendExtproc)
 
 	// Add things which require basic AI backend.
 	if out.GetRoute() == nil {
