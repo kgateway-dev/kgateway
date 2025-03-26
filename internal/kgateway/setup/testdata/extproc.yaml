@@ -14,23 +14,6 @@ spec:
         namespaces:
           from: All 
 ---
-# apiVersion: v1
-# kind: Service
-# metadata:
-#   labels:
-#     app: backend
-#     service: backend
-#   name: backend
-#   namespace: gwtest
-# spec:
-#   ports:
-#   - name: http
-#     port: 3000
-#     protocol: TCP
-#     targetPort: 3000
-#   selector:
-#     app: backend
-# ---
 apiVersion: v1
 kind: Service
 metadata:
@@ -127,15 +110,3 @@ spec:
               group: gateway.kgateway.dev
               kind: RoutePolicy
               name: route-test
----
-# apiVersion: gateway.kgateway.dev/v1alpha1
-# kind: RoutePolicy
-# metadata:
-#   name: route-test
-#   namespace: gwtest
-# spec:
-#   extProc:
-#     grpcService:
-#       backendRef:
-#         name: extproc
-#         port: 9091
