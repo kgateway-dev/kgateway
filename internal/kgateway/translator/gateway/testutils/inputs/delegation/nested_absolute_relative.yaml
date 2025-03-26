@@ -80,7 +80,7 @@ metadata:
   name: route-a-b
   namespace: a-b
   annotations:
-    delegation.gateway.solo.io/inherit-parent-matcher: "true"
+    delegation.kgateway.dev/inherit-parent-matcher: "true"
 spec:
   rules:
   - matches:
