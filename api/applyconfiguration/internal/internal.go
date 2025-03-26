@@ -421,6 +421,12 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: securityContext
       type:
         namedType: io.k8s.api.core.v1.SecurityContext
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtAuthProvider
+  map:
+    fields:
+    - name: backendRef
+      type:
+        namedType: io.k8s.sigs.gateway-api.apis.v1.BackendRef
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtProcGrpcService
   map:
     fields:
@@ -439,6 +445,12 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: processingMode
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ProcessingMode
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtProcProvider
+  map:
+    fields:
+    - name: backendRef
+      type:
+        namedType: io.k8s.sigs.gateway-api.apis.v1.BackendRef
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.FieldDefault
   map:
     fields:
@@ -493,6 +505,55 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: traceableFilter
       type:
         scalar: boolean
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.GatewayExtension
+  map:
+    fields:
+    - name: apiVersion
+      type:
+        scalar: string
+    - name: kind
+      type:
+        scalar: string
+    - name: metadata
+      type:
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta
+      default: {}
+    - name: spec
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.GatewayExtensionSpec
+      default: {}
+    - name: status
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.GatewayExtensionStatus
+      default: {}
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.GatewayExtensionSpec
+  map:
+    fields:
+    - name: extAuth
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtAuthProvider
+    - name: extProc
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtProcProvider
+    - name: placement
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Placement
+      default: {}
+    - name: type
+      type:
+        scalar: string
+      default: ""
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.GatewayExtensionStatus
+  map:
+    fields:
+    - name: conditions
+      type:
+        list:
+          elementType:
+            namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Condition
+          elementRelationship: associative
+          keys:
+          - type
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.GatewayParameters
   map:
     fields:
@@ -774,6 +835,12 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         scalar: string
       default: ""
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LocalRateLimitPolicy
+  map:
+    fields:
+    - name: tokenBucket
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.TokenBucket
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Message
   map:
     fields:
@@ -810,6 +877,16 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: model
       type:
         scalar: string
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Placement
+  map:
+    fields:
+    - name: name
+      type:
+        scalar: string
+      default: ""
+    - name: priority
+      type:
+        scalar: numeric
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Pod
   map:
     fields:
@@ -918,6 +995,12 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: replicas
       type:
         scalar: numeric
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.RateLimit
+  map:
+    fields:
+    - name: local
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LocalRateLimitPolicy
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Regex
   map:
     fields:
@@ -984,6 +1067,9 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: extProc
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtProcPolicy
+    - name: rateLimit
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.RateLimit
     - name: targetRefs
       type:
         list:
@@ -1134,6 +1220,20 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: vertexai
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.VertexAIConfig
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.TokenBucket
+  map:
+    fields:
+    - name: fillInterval
+      type:
+        scalar: string
+      default: ""
+    - name: maxTokens
+      type:
+        scalar: numeric
+      default: 0
+    - name: tokensPerFill
+      type:
+        scalar: numeric
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Transform
   map:
     fields:
