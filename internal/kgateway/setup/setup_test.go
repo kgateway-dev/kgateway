@@ -145,7 +145,7 @@ func TestScenarios(t *testing.T) {
 		t.Fatalf("can't get settings %v", err)
 	}
 	st.EnableIstioIntegration = true
-	st.EnableAutoMtls = true
+	st.EnableIstioAutoMtls = true
 	st.EnableInferExt = true
 	st.InferExtAutoProvision = true
 

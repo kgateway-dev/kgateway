@@ -900,7 +900,7 @@ var _ = Describe("Deployer", func() {
 			}
 			istioEnabledDeployerInputs = func() *deployer.Inputs {
 				inp := defaultDeployerInputs()
-				inp.IstioIntegrationEnabled = true
+				inp.IstioAutoMtlsEnabled = true
 				return inp
 			}
 

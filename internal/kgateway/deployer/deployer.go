@@ -63,12 +63,12 @@ type InferenceExtInfo struct{}
 
 // Inputs is the set of options used to configure the deployer deployment.
 type Inputs struct {
-	ControllerName          string
-	Dev                     bool
-	IstioIntegrationEnabled bool
-	ControlPlane            ControlPlaneInfo
-	InferenceExtension      *InferenceExtInfo
-	ImageInfo               *ImageInfo
+	ControllerName       string
+	Dev                  bool
+	IstioAutoMtlsEnabled bool
+	ControlPlane         ControlPlaneInfo
+	InferenceExtension   *InferenceExtInfo
+	ImageInfo            *ImageInfo
 }
 
 type ImageInfo struct {
@@ -379,7 +379,7 @@ func (d *Deployer) getValues(gw *api.Gateway, gwParam *v1alpha1.GatewayParameter
 	gateway.Image = getImageValues(envoyContainerConfig.GetImage())
 
 	// istio values
-	gateway.Istio = getIstioValues(d.inputs.IstioIntegrationEnabled, istioConfig)
+	gateway.Istio = getIstioValues(d.inputs.IstioAutoMtlsEnabled, istioConfig)
 	gateway.SdsContainer = getSdsContainerValues(sdsContainerConfig)
 	gateway.IstioContainer = getIstioContainerValues(istioContainerConfig)
 

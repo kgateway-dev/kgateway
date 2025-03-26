@@ -15,7 +15,6 @@ import (
 	sockets_raw_buffer "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/raw_buffer/v3"
 	tlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
-	"github.com/solo-io/go-utils/contextutils"
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
@@ -23,7 +22,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	ourwellknown "github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
 )
 
 var (
@@ -34,9 +32,7 @@ var (
 )
 
 type IstioSettings struct {
-	EnableIstioIntegration      bool
-	EnableAutoMtls              bool
-	EnableIstioSidecarOnGateway bool
+	EnableAutoMtls bool
 }
 
 func (i IstioSettings) ResourceName() string {
@@ -65,18 +61,15 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 	// TODO: if plumb settings from gw class; then they should be in the new translation pass
 	// the problem is that they get applied to an upstream, and currently we don't have access to the gateway
 	// when translating upstreams. if we want we can add the gateway to the context of PerClientProcessUpstream
-	sidecarEnabled := envutils.IsEnvTruthy(ourwellknown.IstioInjectionEnabled)
 	istioSettings := IstioSettings{
-		EnableAutoMtls:              commoncol.Settings.EnableAutoMtls,
-		EnableIstioIntegration:      commoncol.Settings.EnableIstioIntegration,
-		EnableIstioSidecarOnGateway: sidecarEnabled,
+		EnableAutoMtls: commoncol.Settings.EnableIstioAutoMtls,
 	}
 
 	return extensionsplug.Plugin{
 		ContributesPolicies: map[schema.GroupKind]extensionsplug.PolicyPlugin{
 			VirtualIstioGK: {
 				Name:           "istio",
-				ProcessBackend: p.processUpstream,
+				ProcessBackend: p.processBackend,
 				GlobalPolicies: func(_ krt.HandlerContext, _ extensionsplug.AttachmentPoints) ir.PolicyIR {
 					// return static settings which do not change post istioPlugin creation
 					return istioSettings
@@ -103,7 +96,7 @@ func doesClusterHaveSslConfigPresent(_ *envoy_config_cluster_v3.Cluster) bool {
 	return false
 }
 
-func (p istioPlugin) processUpstream(ctx context.Context, ir ir.PolicyIR, in ir.BackendObjectIR, out *envoy_config_cluster_v3.Cluster) {
+func (p istioPlugin) processBackend(ctx context.Context, ir ir.PolicyIR, in ir.BackendObjectIR, out *envoy_config_cluster_v3.Cluster) {
 	var socketmatches []*envoy_config_cluster_v3.Cluster_TransportSocketMatch
 
 	st, ok := ir.(IstioSettings)
@@ -115,26 +108,13 @@ func (p istioPlugin) processUpstream(ctx context.Context, ir ir.PolicyIR, in ir.
 	// 2) the upstream has not disabled auto mtls
 	// 3) the upstream has no sslConfig
 	if st.EnableAutoMtls && !isDisabledForUpstream(in) && !doesClusterHaveSslConfigPresent(out) {
-		// Istio automtls config is not applied if istio integration is disabled on the helm chart.
-		// When istio integration is disabled via istioSds.enabled=false, there is no sds or istio-proxy sidecar present
-		if !st.EnableIstioIntegration {
-			contextutils.LoggerFrom(ctx).Desugar().Error("Istio integration must be enabled to use auto mTLS. Enable integration with istioIntegration.enabled=true")
-		} else {
-			// Note: If EnableIstioSidecarOnGateway is enabled, Istio automtls will not be able to generate the endpoint
-			// metadata from the Pod to match the transport socket match. We will still translate the transport socket match
-			// configuration. EnableIstioSidecarOnGateway should be removed as part of: https://github.com/solo-io/solo-projects/issues/5743
-			if st.EnableIstioSidecarOnGateway {
-				contextutils.LoggerFrom(ctx).Desugar().Warn("Istio sidecar injection (istioIntegration.EnableIstioSidecarOnGateway) should be disabled for Istio automtls mode")
-			}
+		sni := buildSni(in)
 
-			sni := buildSni(in)
-
-			socketmatches = []*envoy_config_cluster_v3.Cluster_TransportSocketMatch{
-				// add istio mtls match
-				createIstioMatch(sni),
-				// plaintext match. Note: this needs to come after the tlsMode-istio match
-				createDefaultIstioMatch(),
-			}
+		socketmatches = []*envoy_config_cluster_v3.Cluster_TransportSocketMatch{
+			// add istio mtls match
+			createIstioMatch(sni),
+			// plaintext match. Note: this needs to come after the tlsMode-istio match
+			createDefaultIstioMatch(),
 		}
 		out.TransportSocketMatches = socketmatches
 	}

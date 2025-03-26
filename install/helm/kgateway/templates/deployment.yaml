@@ -6,9 +6,7 @@ metadata:
   labels:
     {{- include "kgateway.labels" . | nindent 4 }}
 spec:
-  {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
-  {{- end }}
   selector:
     matchLabels:
       {{- include "kgateway.selectorLabels" . | nindent 6 }}
@@ -77,6 +75,12 @@ spec:
               value: {{ .Values.image.tag | default .Chart.Version }}
             - name: KGW_DEFAULT_IMAGE_PULL_POLICY
               value: {{ .Values.image.pullPolicy | default "IfNotPresent" }}
+            {{- if .Values.controller.extraEnv }}
+            {{- range $key, $value := .Values.controller.extraEnv }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+            {{- end }}
             # TODO: Remove this once the cleanup is done. Required as the gloo-system
             # namespace is the default namespace and conformance will fail as a result.
             - name: POD_NAMESPACE

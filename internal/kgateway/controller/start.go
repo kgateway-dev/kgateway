@@ -227,7 +227,7 @@ func (c *ControllerBuilder) Start(ctx context.Context) error {
 	xdsPort := globalSettings.XdsServicePort
 	logger.Info("got xds address for deployer", uzap.String("xds_host", xdsHost), uzap.Uint32("xds_port", xdsPort))
 
-	integrationEnabled := globalSettings.EnableIstioIntegration
+	istioAutoMtlsEnabled := globalSettings.EnableIstioAutoMtls
 
 	gwCfg := GatewayConfig{
 		Mgr:            c.mgr,
@@ -237,7 +237,7 @@ func (c *ControllerBuilder) Start(ctx context.Context) error {
 			XdsHost: xdsHost,
 			XdsPort: xdsPort,
 		},
-		IstioIntegrationEnabled: integrationEnabled,
+		IstioAutoMtlsEnabled: istioAutoMtlsEnabled,
 		ImageInfo: &deployer.ImageInfo{
 			Registry:   globalSettings.DefaultImageRegistry,
 			Tag:        globalSettings.DefaultImageTag,
