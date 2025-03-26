@@ -245,11 +245,12 @@ listeners:
                 clusterName: endpointpicker_gateway-pool_gwtest_ext_proc
             messageTimeout: 5s
             processingMode:
-              requestBodyMode: BUFFERED
+              requestBodyMode: FULL_DUPLEX_STREAMED
+              responseBodyMode: FULL_DUPLEX_STREAMED
               requestHeaderMode: SEND
-              requestTrailerMode: SKIP
-              responseHeaderMode: SKIP
-              responseTrailerMode: SKIP
+              requestTrailerMode: SEND
+              responseHeaderMode: SEND
+              responseTrailerMode: SEND
         - name: envoy.filters.http.router
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
