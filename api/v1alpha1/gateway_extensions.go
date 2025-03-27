@@ -47,6 +47,8 @@ type ExtProcProvider struct {
 	// +kubebuilder:validation:Required
 	BackendRef *gwv1.BackendRef `json:"backendRef"`
 
+	// Authority is the authority header to use for the GRPC service.
+	// +optional
 	Authority *string `json:"authority,omitempty"`
 }
 

@@ -1800,8 +1800,9 @@ func schema_kgateway_v2_api_v1alpha1_ExtProcProvider(ref common.ReferenceCallbac
 					},
 					"authority": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Description: "Authority is the authority header to use for the GRPC service.",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 				},

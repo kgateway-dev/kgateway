@@ -324,6 +324,7 @@ spec:
                   processingMode:
                     properties:
                       requestBodyMode:
+                        default: NONE
                         enum:
                         - NONE
                         - STREAMED
@@ -332,18 +333,21 @@ spec:
                         - FULL_DUPLEX_STREAMED
                         type: string
                       requestHeaderMode:
+                        default: SEND
                         enum:
                         - DEFAULT
                         - SEND
                         - SKIP
                         type: string
                       requestTrailerMode:
+                        default: SKIP
                         enum:
                         - DEFAULT
                         - SEND
                         - SKIP
                         type: string
                       responseBodyMode:
+                        default: NONE
                         enum:
                         - NONE
                         - STREAMED
@@ -352,12 +356,14 @@ spec:
                         - FULL_DUPLEX_STREAMED
                         type: string
                       responseHeaderMode:
+                        default: SEND
                         enum:
                         - DEFAULT
                         - SEND
                         - SKIP
                         type: string
                       responseTrailerMode:
+                        default: SKIP
                         enum:
                         - DEFAULT
                         - SEND
