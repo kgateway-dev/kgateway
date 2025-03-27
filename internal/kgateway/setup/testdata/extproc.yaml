@@ -99,10 +99,6 @@ spec:
   extProc:
     extensionRef:
       name: extproc-ext
-    # grpcService:
-    #   backendRef:
-    #     name: extproc
-    #     port: 9091
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
