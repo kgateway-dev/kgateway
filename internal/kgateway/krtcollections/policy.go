@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"slices"
 
-	"istio.io/istio/pkg/kube"
-	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/ptr"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -15,7 +13,6 @@ import (
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/backendref"
@@ -202,52 +199,6 @@ func NewGatewayIndex(
 		return &out
 	}, krtopts.ToOptions("gateways")...)
 	return h
-}
-
-// GatewayExtensionIndex is a collection of GatewayExtension resources.
-type GatewayExtensionIndex struct {
-	GatewayExtensions krt.Collection[ir.GatewayExtension]
-}
-
-func NewGatewayExtensionIndex(
-	krtopts krtutil.KrtOptions,
-	client kube.Client,
-	policies *PolicyIndex,
-) *GatewayExtensionIndex {
-	geIdx := &GatewayExtensionIndex{}
-	gk := wellknown.GatewayExtensionGVK.GroupKind()
-	col := krt.WrapClient(kclient.New[*v1alpha1.GatewayExtension](client), krtopts.ToOptions("GatewayExtension")...)
-	policyCol := krt.NewCollection(col, func(krtctx krt.HandlerContext, cr *v1alpha1.GatewayExtension) *ir.GatewayExtension {
-		ge := &ir.GatewayExtension{
-			ObjectSource: ir.ObjectSource{
-				Group:     gk.Group,
-				Kind:      gk.Kind,
-				Namespace: cr.Namespace,
-				Name:      cr.Name,
-			},
-		}
-
-		return ge
-	})
-	geIdx.GatewayExtensions = policyCol
-
-	return geIdx
-}
-
-func (geidx *GatewayExtensionIndex) HasSynced() bool {
-	return geidx.GatewayExtensions.HasSynced()
-}
-
-func (geidx *GatewayExtensionIndex) GetGatewayExtensionFromRef(kctx krt.HandlerContext, ref types.NamespacedName) (*ir.GatewayExtension, error) {
-	var err error
-	gext := krt.FetchOne(kctx, geidx.GatewayExtensions, krt.FilterObjectName(
-		ref),
-	)
-	if gext == nil {
-		err = &NotFoundError{NotFoundObj: ir.ObjectSource{Namespace: ref.Namespace, Name: ref.Name, Kind: "GatewayExtension"}}
-	}
-
-	return gext, err
 }
 
 type targetRefIndexKey struct {

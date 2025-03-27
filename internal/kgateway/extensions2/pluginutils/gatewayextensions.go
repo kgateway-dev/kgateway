@@ -4,11 +4,10 @@ import (
 	"fmt"
 
 	"istio.io/istio/pkg/kube/krt"
-	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
 
 // ExtensionTypeError is an error for when an extension type is mismatched
@@ -31,10 +30,21 @@ func ErrInvalidExtensionType(expected, actual v1alpha1.GatewayExtensionType) err
 
 // GetGatewayExtension retrieves a GatewayExtension resource by name and namespace.
 // It returns the extension and any error encountered during retrieval.
-func GetGatewayExtension(extensions *krtcollections.GatewayExtensionIndex, krtctx krt.HandlerContext, extensionName, ns string) (*ir.GatewayExtension, error) {
-	extension, err := extensions.GetGatewayExtensionFromRef(krtctx, types.NamespacedName{Name: extensionName, Namespace: ns})
-	if err != nil {
-		return nil, fmt.Errorf("failed to find secret %s: %v", extensionName, err)
+func GetGatewayExtension(
+	gwExts krt.Collection[ir.GatewayExtension],
+	kctx krt.HandlerContext,
+	extensionName string,
+	ns string,
+) (*ir.GatewayExtension, error) {
+	gwExtKey := ir.ObjectSource{
+		Group:     wellknown.GatewayExtensionGVK.GroupKind().Group,
+		Kind:      wellknown.GatewayExtensionGVK.GroupKind().Kind,
+		Name:      extensionName,
+		Namespace: ns,
 	}
-	return extension, nil
+	gwExt := krt.FetchOne(kctx, gwExts, krt.FilterKey(gwExtKey.ResourceName()))
+	if gwExt == nil {
+		return nil, fmt.Errorf("failed to find GatewayExtension %s", fmt.Sprintf("%s/%s", ns, extensionName))
+	}
+	return gwExt, nil
 }

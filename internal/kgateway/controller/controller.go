@@ -58,8 +58,9 @@ type GatewayConfig struct {
 	AutoProvision bool
 	// ControlPlane sets the default control plane information the deployer will use.
 	ControlPlane deployer.ControlPlaneInfo
-	// IstioIntegrationEnabled enables Istio integration for the controller.
-	IstioIntegrationEnabled bool
+	// IstioAutoMtlsEnabled enables istio auto mtls mode for the controller,
+	// resulting in the deployer to enable istio and sds sidecars on the deployed proxies.
+	IstioAutoMtlsEnabled bool
 	// ImageInfo sets the default image information the deployer will use.
 	ImageInfo *deployer.ImageInfo
 	// ClassInfo sets the default configuration for GatewayClasses managed by this controller.
@@ -164,11 +165,11 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 
 	log.Info("creating gateway deployer", "ctrlname", c.cfg.ControllerName, "server", c.cfg.ControlPlane.XdsHost, "port", c.cfg.ControlPlane.XdsPort)
 	d, err := deployer.NewDeployer(c.cfg.Mgr.GetClient(), &deployer.Inputs{
-		ControllerName:          c.cfg.ControllerName,
-		Dev:                     c.cfg.Dev,
-		IstioIntegrationEnabled: c.cfg.IstioIntegrationEnabled,
-		ControlPlane:            c.cfg.ControlPlane,
-		ImageInfo:               c.cfg.ImageInfo,
+		ControllerName:       c.cfg.ControllerName,
+		Dev:                  c.cfg.Dev,
+		IstioAutoMtlsEnabled: c.cfg.IstioAutoMtlsEnabled,
+		ControlPlane:         c.cfg.ControlPlane,
+		ImageInfo:            c.cfg.ImageInfo,
 	})
 	if err != nil {
 		return err

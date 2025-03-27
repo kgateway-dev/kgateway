@@ -28,6 +28,7 @@ const (
 
 func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensionsplug.Plugin {
 	if !commoncol.Settings.EnableIstioIntegration {
+		// TODO: should this be a standalone flag specific to DR?
 		// don't add support for destination rules if istio integration is not enabled
 		return extensionsplug.Plugin{}
 	}
@@ -43,7 +44,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 		ContributesPolicies: map[schema.GroupKind]extensionsplug.PolicyPlugin{
 			gk: {
 				Name:                      "destrule",
-				PerClientProcessBackend:   d.processUpstream,
+				PerClientProcessBackend:   d.processBackend,
 				PerClientProcessEndpoints: d.processEndpoints,
 			},
 		},
@@ -75,7 +76,7 @@ func (d *destrulePlugin) processEndpoints(kctx krt.HandlerContext, ctx context.C
 	return endpoints.PrioritizeEndpoints(logger, priorityInfo, in, ucc), additionalHash
 }
 
-func (d *destrulePlugin) processUpstream(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniqlyConnectedClient, in ir.BackendObjectIR, outCluster *envoy_config_cluster_v3.Cluster) {
+func (d *destrulePlugin) processBackend(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniqlyConnectedClient, in ir.BackendObjectIR, outCluster *envoy_config_cluster_v3.Cluster) {
 	destrule := d.destinationRulesIndex.FetchDestRulesFor(kctx, ucc.Namespace, in.CanonicalHostname, ucc.Labels)
 	if destrule != nil {
 		trafficPolicy := getTrafficPolicy(destrule, uint32(in.Port))

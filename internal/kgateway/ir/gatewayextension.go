@@ -3,7 +3,7 @@ package ir
 import (
 	"reflect"
 
-	"k8s.io/apimachinery/pkg/runtime/schema"
+	"istio.io/istio/pkg/kube/krt"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 )
@@ -16,9 +16,6 @@ type GatewayExtension struct {
 	// Type indicates the type of the GatewayPolicy.
 	Type v1alpha1.GatewayExtensionType
 
-	// Placement configuration for where this extension should be placed in the filter chain.
-	// Placement v1alpha1.Placement
-
 	// ExtAuth configuration for ExtAuth extension type.
 	ExtAuth *v1alpha1.ExtAuthProvider
 
@@ -26,29 +23,20 @@ type GatewayExtension struct {
 	ExtProc *v1alpha1.ExtProcProvider
 }
 
+var (
+	_ krt.ResourceNamer             = GatewayExtension{}
+	_ krt.Equaler[GatewayExtension] = GatewayExtension{}
+)
+
 // ResourceName returns the unique name for this extension.
-func (e *GatewayExtension) ResourceName() string {
+func (e GatewayExtension) ResourceName() string {
 	return e.ObjectSource.ResourceName()
 }
 
-// GVK returns the GroupVersionKind for this extension.
-func (e *GatewayExtension) GVK() schema.GroupVersionKind {
-	return schema.GroupVersionKind{
-		Group:   "gateway.kgateway.dev",
-		Version: "v1alpha1",
-		Kind:    "GatewayExtension",
-	}
-}
-
-func (e *GatewayExtension) Equals(
-	other *GatewayExtension,
-) bool {
+func (e GatewayExtension) Equals(other GatewayExtension) bool {
 	if e.Type != other.Type {
 		return false
 	}
-	// if e.Placement != other.Placement {
-	// 	return false
-	// }
 	if !reflect.DeepEqual(e.ExtAuth, other.ExtAuth) {
 		return false
 	}

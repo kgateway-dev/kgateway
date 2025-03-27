@@ -1,10 +1,6 @@
-# Gloo Gateway
+# kgateway
 
-Note, all commands should be run from the root of the gloo repo.
-
-## APIs
-
-The Kubernetes Gateway API integration is defined in the [api](./api) directory. For more information on how to add a new API or CRD, see the [API README](./api/README.md).
+Note, all commands should be run from the root of the kgateway repo.
 
 ## Quickstart
 
@@ -26,7 +22,12 @@ This will create the kind cluster and build the docker images.
 Next use helm to install the gateway control plane:
 
 ```shell
-helm upgrade -i -n gloo-system gloo ./_test/gloo-1.0.0-ci1.tgz --create-namespace --set kubeGateway.enabled=true
+helm upgrade -i -n kgateway-system kgateway-crds _test/kgateway-crds-1.0.0-ci1.tgz --version 1.0.0-ci1 \
+          --create-namespace
+
+helm upgrade -i -n kgateway-system kgateway _test/kgateway-1.0.0-ci1.tgz --version 1.0.0-ci1 \
+          --set image.registry=ghcr.io/kgateway-dev \
+          --create-namespace
 ```
 
 To create a gateway, use the Gateway resource:
@@ -102,24 +103,70 @@ This will create the kind cluster, build the docker images.
 ./hack/kind/setup-kind.sh
 ```
 
+Next use helm to install the gateway control plane with istio auto mtls enabled:
+
+```shell
+helm upgrade -i -n kgateway-system kgateway-crds _test/kgateway-crds-1.0.0-ci1.tgz --version 1.0.0-ci1 \
+          --create-namespace
+
+helm upgrade -i -n kgateway-system kgateway _test/kgateway-1.0.0-ci1.tgz --version 1.0.0-ci1 \
+          --set image.registry=ghcr.io/kgateway-dev \
+          --create-namespace \
+          -f - <<EOF
+controller:
+  extraEnv:
+    KGW_ENABLE_ISTIO_AUTO_MTLS: true
+EOF
+```
+
 Next we need to install Istio in the cluster along with the bookinfo test application in the mesh:
 
 ```shell
 ./internal/kgateway/istio.sh
 ```
 
-Next use helm to install the gateway control plane with istio integration enabled:
+To create a gateway, use the Gateway resource:
 
 ```shell
-helm upgrade -i -n gloo-system gloo ./_test/gloo-1.0.0-ci1.tgz --create-namespace --set kubeGateway.enabled=true --set global.istioSDS.enabled=true
+kubectl apply -f - <<EOF
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: http
+spec:
+  gatewayClassName: kgateway
+  listeners:
+  - allowedRoutes:
+      namespaces:
+        from: All
+    name: http
+    port: 8080
+    protocol: HTTP
+EOF
 ```
 
-In order to enable automtls, set it to true in the settings:
+Then create a corresponding HTTPRoute:
 
 ```shell
-settings:
-  istioOptions:
-    enableAutoMtls: true
+kubectl apply -f- <<EOF
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: HTTPRoute
+metadata:
+  name: productpage
+  namespace: bookinfo
+  labels:
+    example: productpage-route
+spec:
+  parentRefs:
+    - name: http
+      namespace: default
+  hostnames:
+    - "www.example.com"
+  rules:
+    - backendRefs:
+        - name: productpage
+          port: 9080
+EOF
 ```
 
 Then expose the gateway that gets created via the Gateway resource:
@@ -131,37 +178,28 @@ kubectl port-forward deployment/http 8080:8080
 Send some traffic through the gateway:
 
 ```shell
-curl -I localhost:8080/productpage -H "host: www.example.com" -v
+curl localhost:8080/productpage -H "host: www.example.com" -v | grep Book
 ```
 
-Test sending traffic to an application not in mtls STRICT mode:
+Now turn on strict mode for bookinfo to ensure the kgateway proxy can still connect:
 
 ```shell
 kubectl apply -f- <<EOF
-apiVersion: gateway.networking.k8s.io/v1beta1
-kind: HTTPRoute
+apiVersion: security.istio.io/v1
+kind: PeerAuthentication
 metadata:
-  name: reviews
+  name: default
   namespace: bookinfo
-  labels:
-    example: reviews-route
 spec:
-  parentRefs:
-    - name: http
-      namespace: default
-  hostnames:
-    - "reviews"
-  rules:
-    - backendRefs:
-        - name: reviews
-          port: 9080
+  mtls:
+    mode: STRICT
 EOF
 ```
 
-Then send traffic to reviews:
+Then send another request:
 
 ```shell
-curl -I localhost:8080/reviews/1 -H "host: reviews" -v
+curl localhost:8080/productpage -H "host: www.example.com" -v | grep Book
 ```
 
 Test sending traffic to an application not in the mesh:
@@ -199,5 +237,5 @@ EOF
 Send traffic to the non-mesh app:
 
 ```shell
-curl -I localhost:8080/hello -H "host: helloworld" -v
+curl localhost:8080/hello -H "host: helloworld" -v
 ```
