@@ -17,9 +17,9 @@ import (
 func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenAPIDefinition {
 	return map[string]common.OpenAPIDefinition{
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AIBackend":                  schema_kgateway_v2_api_v1alpha1_AIBackend(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AIPolicy":                   schema_kgateway_v2_api_v1alpha1_AIPolicy(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AIPromptEnrichment":         schema_kgateway_v2_api_v1alpha1_AIPromptEnrichment(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AIPromptGuard":              schema_kgateway_v2_api_v1alpha1_AIPromptGuard(ref),
-		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AIRoutePolicy":              schema_kgateway_v2_api_v1alpha1_AIRoutePolicy(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AccessLog":                  schema_kgateway_v2_api_v1alpha1_AccessLog(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AccessLogFilter":            schema_kgateway_v2_api_v1alpha1_AccessLogFilter(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AiExtension":                schema_kgateway_v2_api_v1alpha1_AiExtension(ref),
@@ -46,8 +46,8 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.DurationFilter":             schema_kgateway_v2_api_v1alpha1_DurationFilter(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.EnvoyBootstrap":             schema_kgateway_v2_api_v1alpha1_EnvoyBootstrap(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.EnvoyContainer":             schema_kgateway_v2_api_v1alpha1_EnvoyContainer(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtAuthPolicy":              schema_kgateway_v2_api_v1alpha1_ExtAuthPolicy(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtAuthProvider":            schema_kgateway_v2_api_v1alpha1_ExtAuthProvider(ref),
-		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtAuthRoutePolicy":         schema_kgateway_v2_api_v1alpha1_ExtAuthRoutePolicy(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtProcProvider":            schema_kgateway_v2_api_v1alpha1_ExtProcProvider(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.FieldDefault":               schema_kgateway_v2_api_v1alpha1_FieldDefault(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.FileSink":                   schema_kgateway_v2_api_v1alpha1_FileSink(ref),
@@ -489,6 +489,54 @@ func schema_kgateway_v2_api_v1alpha1_AIBackend(ref common.ReferenceCallback) com
 	}
 }
 
+func schema_kgateway_v2_api_v1alpha1_AIPolicy(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "AIPolicy config is used to configure the behavior of the LLM provider on the level of individual routes. These route settings, such as prompt enrichment, retrieval augmented generation (RAG), and semantic caching, are applicable only for routes that send requests to an LLM provider backend.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"promptEnrichment": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Enrich requests sent to the LLM provider by appending and prepending system prompts. This can be configured only for LLM providers that use the `CHAT` or `CHAT_STREAMING` API route type.",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AIPromptEnrichment"),
+						},
+					},
+					"promptGuard": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Set up prompt guards to block unwanted requests to the LLM provider and mask sensitive data. Prompt guards can be used to reject requests based on the content of the prompt, as well as mask responses based on the content of the response.",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AIPromptGuard"),
+						},
+					},
+					"defaults": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Provide defaults to merge with user input fields. Defaults do _not_ override the user input fields, unless you explicitly set `override` to `true`.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.FieldDefault"),
+									},
+								},
+							},
+						},
+					},
+					"routeType": {
+						SchemaProps: spec.SchemaProps{
+							Description: "The type of route to the LLM provider API. Currently, `CHAT` and `CHAT_STREAMING` are supported.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AIPromptEnrichment", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AIPromptGuard", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.FieldDefault"},
+	}
+}
+
 func schema_kgateway_v2_api_v1alpha1_AIPromptEnrichment(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -556,54 +604,6 @@ func schema_kgateway_v2_api_v1alpha1_AIPromptGuard(ref common.ReferenceCallback)
 		},
 		Dependencies: []string{
 			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.PromptguardRequest", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.PromptguardResponse"},
-	}
-}
-
-func schema_kgateway_v2_api_v1alpha1_AIRoutePolicy(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "AIRoutePolicy config is used to configure the behavior of the LLM provider on the level of individual routes. These route settings, such as prompt enrichment, retrieval augmented generation (RAG), and semantic caching, are applicable only for routes that send requests to an LLM provider backend.",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"promptEnrichment": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Enrich requests sent to the LLM provider by appending and prepending system prompts. This can be configured only for LLM providers that use the `CHAT` or `CHAT_STREAMING` API route type.",
-							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AIPromptEnrichment"),
-						},
-					},
-					"promptGuard": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Set up prompt guards to block unwanted requests to the LLM provider and mask sensitive data. Prompt guards can be used to reject requests based on the content of the prompt, as well as mask responses based on the content of the response.",
-							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AIPromptGuard"),
-						},
-					},
-					"defaults": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Provide defaults to merge with user input fields. Defaults do _not_ override the user input fields, unless you explicitly set `override` to `true`.",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.FieldDefault"),
-									},
-								},
-							},
-						},
-					},
-					"routeType": {
-						SchemaProps: spec.SchemaProps{
-							Description: "The type of route to the LLM provider API. Currently, `CHAT` and `CHAT_STREAMING` are supported.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-				},
-			},
-		},
-		Dependencies: []string{
-			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AIPromptEnrichment", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AIPromptGuard", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.FieldDefault"},
 	}
 }
 
@@ -1646,33 +1646,11 @@ func schema_kgateway_v2_api_v1alpha1_EnvoyContainer(ref common.ReferenceCallback
 	}
 }
 
-func schema_kgateway_v2_api_v1alpha1_ExtAuthProvider(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_kgateway_v2_api_v1alpha1_ExtAuthPolicy(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "ExtAuthProvider defines the configuration for an ExtAuth provider.",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"backendRef": {
-						SchemaProps: spec.SchemaProps{
-							Description: "BackendRef references the backend service that will handle the authentication.",
-							Ref:         ref("sigs.k8s.io/gateway-api/apis/v1.BackendRef"),
-						},
-					},
-				},
-				Required: []string{"backendRef"},
-			},
-		},
-		Dependencies: []string{
-			"sigs.k8s.io/gateway-api/apis/v1.BackendRef"},
-	}
-}
-
-func schema_kgateway_v2_api_v1alpha1_ExtAuthRoutePolicy(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "ExtAuthRoutePolicy configures external authentication for a route. This policy will determine the ext auth server to use and how to  talk to it. Note that most of these fields are passed along as is to Envoy. For more details on particular fields please see the Envoy ExtAuth documentation. https://raw.githubusercontent.com/envoyproxy/envoy/f910f4abea24904aff04ec33a00147184ea7cffa/api/envoy/extensions/filters/http/ext_authz/v3/ext_authz.proto",
+				Description: "ExtAuthPolicy configures external authentication for a route. This policy will determine the ext auth server to use and how to  talk to it. Note that most of these fields are passed along as is to Envoy. For more details on particular fields please see the Envoy ExtAuth documentation. https://raw.githubusercontent.com/envoyproxy/envoy/f910f4abea24904aff04ec33a00147184ea7cffa/api/envoy/extensions/filters/http/ext_authz/v3/ext_authz.proto",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"extensionRef": {
@@ -1754,6 +1732,28 @@ func schema_kgateway_v2_api_v1alpha1_ExtAuthRoutePolicy(ref common.ReferenceCall
 		},
 		Dependencies: []string{
 			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.BufferSettings", "k8s.io/api/core/v1.LocalObjectReference"},
+	}
+}
+
+func schema_kgateway_v2_api_v1alpha1_ExtAuthProvider(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "ExtAuthProvider defines the configuration for an ExtAuth provider.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"backendRef": {
+						SchemaProps: spec.SchemaProps{
+							Description: "BackendRef references the backend service that will handle the authentication.",
+							Ref:         ref("sigs.k8s.io/gateway-api/apis/v1.BackendRef"),
+						},
+					},
+				},
+				Required: []string{"backendRef"},
+			},
+		},
+		Dependencies: []string{
+			"sigs.k8s.io/gateway-api/apis/v1.BackendRef"},
 	}
 }
 
@@ -4025,7 +4025,7 @@ func schema_kgateway_v2_api_v1alpha1_TrafficPolicySpec(ref common.ReferenceCallb
 					},
 					"ai": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AIRoutePolicy"),
+							Ref: ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AIPolicy"),
 						},
 					},
 					"transformation": {
@@ -4037,7 +4037,7 @@ func schema_kgateway_v2_api_v1alpha1_TrafficPolicySpec(ref common.ReferenceCallb
 					"extAuth": {
 						SchemaProps: spec.SchemaProps{
 							Description: "ExtAuth specifies the external authentication configuration for the policy. This controls what external server to send requests to for authentication.",
-							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtAuthRoutePolicy"),
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtAuthPolicy"),
 						},
 					},
 					"rateLimit": {
@@ -4050,7 +4050,7 @@ func schema_kgateway_v2_api_v1alpha1_TrafficPolicySpec(ref common.ReferenceCallb
 			},
 		},
 		Dependencies: []string{
-			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AIRoutePolicy", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtAuthRoutePolicy", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LocalPolicyTargetReference", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.RateLimit", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.TransformationPolicy"},
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AIPolicy", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtAuthPolicy", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LocalPolicyTargetReference", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.RateLimit", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.TransformationPolicy"},
 	}
 }
 

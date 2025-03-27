@@ -6,9 +6,9 @@ package v1alpha1
 // with apply.
 type TrafficPolicySpecApplyConfiguration struct {
 	TargetRefs     []LocalPolicyTargetReferenceApplyConfiguration `json:"targetRefs,omitempty"`
-	AI             *AIRoutePolicyApplyConfiguration               `json:"ai,omitempty"`
+	AI             *AIPolicyApplyConfiguration                    `json:"ai,omitempty"`
 	Transformation *TransformationPolicyApplyConfiguration        `json:"transformation,omitempty"`
-	ExtAuth        *ExtAuthRoutePolicyApplyConfiguration          `json:"extAuth,omitempty"`
+	ExtAuth        *ExtAuthPolicyApplyConfiguration               `json:"extAuth,omitempty"`
 	RateLimit      *RateLimitApplyConfiguration                   `json:"rateLimit,omitempty"`
 }
 
@@ -34,7 +34,7 @@ func (b *TrafficPolicySpecApplyConfiguration) WithTargetRefs(values ...*LocalPol
 // WithAI sets the AI field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the AI field is set to the value of the last call.
-func (b *TrafficPolicySpecApplyConfiguration) WithAI(value *AIRoutePolicyApplyConfiguration) *TrafficPolicySpecApplyConfiguration {
+func (b *TrafficPolicySpecApplyConfiguration) WithAI(value *AIPolicyApplyConfiguration) *TrafficPolicySpecApplyConfiguration {
 	b.AI = value
 	return b
 }
@@ -50,7 +50,7 @@ func (b *TrafficPolicySpecApplyConfiguration) WithTransformation(value *Transfor
 // WithExtAuth sets the ExtAuth field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the ExtAuth field is set to the value of the last call.
-func (b *TrafficPolicySpecApplyConfiguration) WithExtAuth(value *ExtAuthRoutePolicyApplyConfiguration) *TrafficPolicySpecApplyConfiguration {
+func (b *TrafficPolicySpecApplyConfiguration) WithExtAuth(value *ExtAuthPolicyApplyConfiguration) *TrafficPolicySpecApplyConfiguration {
 	b.ExtAuth = value
 	return b
 }

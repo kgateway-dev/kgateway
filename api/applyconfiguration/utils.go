@@ -27,12 +27,12 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.AiExtensionApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("AiExtensionStats"):
 		return &apiv1alpha1.AiExtensionStatsApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("AIPolicy"):
+		return &apiv1alpha1.AIPolicyApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("AIPromptEnrichment"):
 		return &apiv1alpha1.AIPromptEnrichmentApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("AIPromptGuard"):
 		return &apiv1alpha1.AIPromptGuardApplyConfiguration{}
-	case v1alpha1.SchemeGroupVersion.WithKind("AIRoutePolicy"):
-		return &apiv1alpha1.AIRoutePolicyApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("AnthropicConfig"):
 		return &apiv1alpha1.AnthropicConfigApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("AwsAuth"):
@@ -69,10 +69,10 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.EnvoyBootstrapApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("EnvoyContainer"):
 		return &apiv1alpha1.EnvoyContainerApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("ExtAuthPolicy"):
+		return &apiv1alpha1.ExtAuthPolicyApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("ExtAuthProvider"):
 		return &apiv1alpha1.ExtAuthProviderApplyConfiguration{}
-	case v1alpha1.SchemeGroupVersion.WithKind("ExtAuthRoutePolicy"):
-		return &apiv1alpha1.ExtAuthRoutePolicyApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("ExtProcProvider"):
 		return &apiv1alpha1.ExtProcProviderApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("FieldDefault"):

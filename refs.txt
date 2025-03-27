@@ -1,0 +1,28 @@
+./internal/kgateway/extensions2/registry/registry.go:		routepolicy.NewPlugin(ctx, commoncol),
+./design/10683.md:// ExtAuthRoutePolicy configures external authentication for a route.
+./design/10683.md:type ExtAuthRoutePolicy struct {
+./design/10683.md:kind: RoutePolicy
+./design/10683.md:kind: RoutePolicy
+./design/10683.md:kind: RoutePolicy
+./design/10683.md:For this initial pass we should implement GatewayExtension and the basic reference on routepolicy. We may want to not implement route level disablement in the first pass.
+./design/10573.md:### Alternative 2: RoutePolicy API
+./design/10573.md:This proposal enables users to configure function-level parameters via the RoutePolicy API. The Backend API is now focused on service-level and connection-level configuration and provides additional composability guarantees. Users that wish to configure function-level parameters can do so via the RoutePolicy API. This proposal has the downside that requires users to configure multiple APIs to get the same functionality. Additionally, there's an open question around whether function-level parameters fall under the policy umbrella (i.e. fit within the scope of the RoutePolicy API).
+./design/10494.md:Note: For the first implementation, a RoutePolicy must be applied to a specific route in the HTTPRoute using an `extensionRef`.
+./design/10494.md:2. A new RoutePolicy sub-object called AI
+./design/10494.md:#### RoutePolicy
+./design/10494.md:The purpose of the new  AI RoutePolicy subsection API is to augment routes with AI specific capabilities. 
+./design/10494.md:        kind: RoutePolicy
+./design/10494.md:kind: RoutePolicy
+./design/10494.md:For example, you can use the AI API RoutePolicy to configure prompt enrichment for an OpenAI LLM. The RoutePolicy
+./design/10494.md:kind: RoutePolicy
+./design/10494.md:For example, you can use the AI API RoutePolicy to configure a prompt guard that parses requests sent to the LLM 
+./design/10494.md:kind: RoutePolicy
+./design/10494.md:The moderation field can be configured on the `RoutePolicy` resource as follows:
+./design/10494.md:kind: RoutePolicy
+./design/10494.md:connect it to the AI API RoutePolicy:
+./design/10494.md:kind: RoutePolicy
+./design/10494.md:based on the `ai.routeType=CHAT_STREAMING` setting in the RoutePolicy resource, ensuring the correct endpoint is used.
+./design/10494.md:The Backend and RoutePolicy plugins will be enhanced to implement the AI-specific APIs.
+./design/10494.md:Currently Backend and RoutePolicy statuses do not exist, but once added they should support the following statuses.
+./design/10494.md:* Unit tests for AI-related features in the RoutePolicy plugin.
+./design/10574.md:Given that transformations are tightly coupled with route based decisions this new transformation policy should be part of the existing route policy and be colocated in the code base with the existing routepolicy.

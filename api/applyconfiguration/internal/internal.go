@@ -32,6 +32,24 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: multipool
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.MultiPoolConfig
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AIPolicy
+  map:
+    fields:
+    - name: defaults
+      type:
+        list:
+          elementType:
+            namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.FieldDefault
+          elementRelationship: atomic
+    - name: promptEnrichment
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AIPromptEnrichment
+    - name: promptGuard
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AIPromptGuard
+    - name: routeType
+      type:
+        scalar: string
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AIPromptEnrichment
   map:
     fields:
@@ -56,24 +74,6 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: response
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.PromptguardResponse
-- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AIRoutePolicy
-  map:
-    fields:
-    - name: defaults
-      type:
-        list:
-          elementType:
-            namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.FieldDefault
-          elementRelationship: atomic
-    - name: promptEnrichment
-      type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AIPromptEnrichment
-    - name: promptGuard
-      type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AIPromptGuard
-    - name: routeType
-      type:
-        scalar: string
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AccessLog
   map:
     fields:
@@ -434,13 +434,7 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: securityContext
       type:
         namedType: io.k8s.api.core.v1.SecurityContext
-- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtAuthProvider
-  map:
-    fields:
-    - name: backendRef
-      type:
-        namedType: io.k8s.sigs.gateway-api.apis.v1.BackendRef
-- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtAuthRoutePolicy
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtAuthPolicy
   map:
     fields:
     - name: clearRouteCache
@@ -473,6 +467,12 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: withRequestBody
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.BufferSettings
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtAuthProvider
+  map:
+    fields:
+    - name: backendRef
+      type:
+        namedType: io.k8s.sigs.gateway-api.apis.v1.BackendRef
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtProcProvider
   map:
     fields:
@@ -1210,10 +1210,10 @@ var schemaYAML = typed.YAMLObject(`types:
     fields:
     - name: ai
       type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AIRoutePolicy
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AIPolicy
     - name: extAuth
       type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtAuthRoutePolicy
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtAuthPolicy
     - name: rateLimit
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.RateLimit

@@ -346,7 +346,7 @@ func (p *trafficPolicyPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.
 		}
 		if len(aiBackends) > 0 {
 			// Apply the AI policy to the all AI backends
-			err := p.processAIRoutePolicy(pCtx.TypedFilterConfig, policy.spec.AI)
+			err := p.processAITrafficPolicy(pCtx.TypedFilterConfig, policy.spec.AI)
 			if err != nil {
 				errs = append(errs, err)
 			}
@@ -398,7 +398,7 @@ func (p *trafficPolicyPluginGwPass) ApplyForRouteBackend(
 	}
 
 	if rtPolicy.spec.AI.Transformation != nil || rtPolicy.spec.AI.Extproc != nil {
-		err := p.processAIRoutePolicy(pCtx.TypedFilterConfig, rtPolicy.spec.AI)
+		err := p.processAITrafficPolicy(pCtx.TypedFilterConfig, rtPolicy.spec.AI)
 		if err != nil {
 			// TODO: report error on status
 			contextutils.LoggerFrom(ctx).Errorf("error while processing AI TrafficPolicy: %v", err)
@@ -542,7 +542,7 @@ func buildTranslateFunc(
 			}
 
 			// Preprocess the AI backend
-			err = preProcessAIRoutePolicy(policyCR.Spec.AI, outSpec.AI)
+			err = preProcessAITrafficPolicy(policyCR.Spec.AI, outSpec.AI)
 			if err != nil {
 				outSpec.errors = append(outSpec.errors, err)
 			}

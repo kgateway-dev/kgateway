@@ -4,12 +4,11 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
-// AIRoutePolicy config is used to configure the behavior of the LLM provider
+// AIPolicy config is used to configure the behavior of the LLM provider
 // on the level of individual routes. These route settings, such as prompt enrichment,
 // retrieval augmented generation (RAG), and semantic caching, are applicable only
 // for routes that send requests to an LLM provider backend.
-type AIRoutePolicy struct {
-
+type AIPolicy struct {
 	// Enrich requests sent to the LLM provider by appending and prepending system prompts.
 	// This can be configured only for LLM providers that use the `CHAT` or `CHAT_STREAMING` API route type.
 	PromptEnrichment *AIPromptEnrichment `json:"promptEnrichment,omitempty"`
@@ -187,7 +186,6 @@ type Moderation struct {
 // Multiple prompt guard configurations can be set, and they will be executed in the following order:
 // webhook → regex → moderation for requests, where each step can reject the request and stop further processing.
 type PromptguardRequest struct {
-
 	// A custom response message to return to the client. If not specified, defaults to
 	// "The request was rejected due to inappropriate content".
 	CustomResponse *CustomResponse `json:"customResponse,omitempty"`

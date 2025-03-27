@@ -34,13 +34,13 @@ type TrafficPolicySpec struct {
 	// +kubebuilder:validation:MaxItems=16
 	TargetRefs []LocalPolicyTargetReference `json:"targetRefs,omitempty"`
 
-	AI *AIRoutePolicy `json:"ai,omitempty"`
+	AI *AIPolicy `json:"ai,omitempty"`
 
 	Transformation TransformationPolicy `json:"transformation,omitempty"`
 	// ExtAuth specifies the external authentication configuration for the policy.
 	// This controls what external server to send requests to for authentication.
 	// +optional
-	ExtAuth *ExtAuthRoutePolicy `json:"extAuth,omitempty"`
+	ExtAuth *ExtAuthPolicy `json:"extAuth,omitempty"`
 	// RateLimit specifies the rate limiting configuration for the policy.
 	// This controls the rate at which requests are allowed to be processed.
 	// +optional
@@ -150,12 +150,12 @@ const (
 	ExtAuthDisableAll ExtAuthEnabled = "DisableAll"
 )
 
-// ExtAuthRoutePolicy configures external authentication for a route.
+// ExtAuthPolicy configures external authentication for a route.
 // This policy will determine the ext auth server to use and how to  talk to it.
 // Note that most of these fields are passed along as is to Envoy.
 // For more details on particular fields please see the Envoy ExtAuth documentation.
 // https://raw.githubusercontent.com/envoyproxy/envoy/f910f4abea24904aff04ec33a00147184ea7cffa/api/envoy/extensions/filters/http/ext_authz/v3/ext_authz.proto
-type ExtAuthRoutePolicy struct {
+type ExtAuthPolicy struct {
 	// ExtensionRef references the ExternalExtension that should be used for authentication.
 	// +optional
 	ExtensionRef *corev1.LocalObjectReference `json:"extensionRef,omitempty"`
