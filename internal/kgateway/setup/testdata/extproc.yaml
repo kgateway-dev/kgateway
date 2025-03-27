@@ -86,9 +86,9 @@ metadata:
 spec:
   type: ExtProc
   extProc:
-    - backendRef:
-        name: extproc
-        port: 9091
+    backendRef:
+      name: extproc
+      port: 9091
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: RoutePolicy
