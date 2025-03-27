@@ -64,7 +64,6 @@ func TestSettings(t *testing.T) {
 			expectedSettings: &settings.Settings{
 				DnsLookupFamily:        "V4_ONLY",
 				EnableIstioIntegration: true,
-				EnableAutoMtls:         true,
                 EnableIstioAutoMtls:    true,
 				IstioNamespace:         "istio-system",
 				XdsServiceName:         "custom-svc",
@@ -101,7 +100,7 @@ func TestSettings(t *testing.T) {
 			expectedSettings: &settings.Settings{
 				DnsLookupFamily:        "V4_PREFERRED",
                 EnableIstioAutoMtls:    true,
-				IstioNamespac e:         "istio-system",
+				IstioNamespace:         "istio-system",
 				XdsServiceName:         wellknown.DefaultXdsService,
 				XdsServicePort:         wellknown.DefaultXdsPort,
 				DefaultImageRegistry:   "cr.kgateway.dev",
