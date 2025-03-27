@@ -12,15 +12,17 @@ import (
 	"istio.io/istio/pkg/config/schema/gvk"
 	gwapi "sigs.k8s.io/gateway-api/apis/v1"
 
-	listenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
-	hcmv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
-
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/waypoint/waypointquery"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/filters"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
+)
+
+const (
+	// TODO: Add configuration for trustDomain and trustDomainAliases in settings
+	// This will allow users to customize the trust domain and its aliases for their cluster
+	defaultTrustDomain = "cluster.local"
 )
 
 var (
@@ -59,10 +61,10 @@ func BuildRBACForService(
 		httpFilters := authzBuilder.BuildHTTP()
 
 		if len(tcpFilters) > 0 {
-			tcpRBAC = append(tcpRBAC, CustomNetworkFilters(tcpFilters, stage, predicate)...)
+			tcpRBAC = append(tcpRBAC, ir.CustomNetworkFilters(tcpFilters, stage, predicate)...)
 		}
 		if len(httpFilters) > 0 {
-			httpRBAC = CustomHTTPFilters(httpFilters, stage, predicate)
+			httpRBAC = ir.CustomHTTPFilters(httpFilters, stage, predicate)
 		}
 	}
 	return tcpRBAC, httpRBAC
@@ -117,76 +119,13 @@ func getAuthzBuilder(
 		return nil
 	}
 
-	trustBundle := trustdomain.NewBundle("cluster.local", nil)
+	trustBundle := trustdomain.NewBundle(defaultTrustDomain, nil)
 	builder := builder.New(trustBundle, nil, policyResult, builder.Option{
 		IsCustomBuilder: false,
 		UseFilterState:  true,
 	})
 
 	return builder
-}
-
-func CustomNetworkFilters(
-	extraFilters []*listenerv3.Filter,
-	stage filters.FilterStage_Stage,
-	predicate filters.FilterStage_Predicate,
-) []*ir.CustomEnvoyFilter {
-	customFilters := make([]*ir.CustomEnvoyFilter, 0, len(extraFilters))
-	for _, f := range extraFilters {
-		customFilters = append(customFilters, CustomNetworkFilter(f, stage, predicate))
-	}
-	return customFilters
-}
-
-func CustomNetworkFilter(
-	f *listenerv3.Filter,
-	stage filters.FilterStage_Stage,
-	predicate filters.FilterStage_Predicate,
-) *ir.CustomEnvoyFilter {
-	config := f.GetTypedConfig()
-	if config == nil {
-		return nil
-	}
-
-	return customFiltersHelper(stage, predicate, f.GetName(), config)
-}
-
-func CustomHTTPFilters(
-	extraFilters []*hcmv3.HttpFilter,
-	stage filters.FilterStage_Stage,
-	predicate filters.FilterStage_Predicate,
-) []*ir.CustomEnvoyFilter {
-	customFilters := make([]*ir.CustomEnvoyFilter, 0, len(extraFilters))
-	for _, f := range extraFilters {
-		customFilters = append(customFilters, CustomHTTPFilter(f, stage, predicate))
-	}
-	return customFilters
-}
-
-func CustomHTTPFilter(
-	f *hcmv3.HttpFilter,
-	stage filters.FilterStage_Stage,
-	predicate filters.FilterStage_Predicate,
-) *ir.CustomEnvoyFilter {
-	config := f.GetTypedConfig()
-
-	return customFiltersHelper(stage, predicate, f.GetName(), config)
-}
-
-func customFiltersHelper(
-	stage filters.FilterStage_Stage,
-	predicate filters.FilterStage_Predicate,
-	name string,
-	config *anypb.Any,
-) *ir.CustomEnvoyFilter {
-	return &ir.CustomEnvoyFilter{
-		FilterStage: plugins.FilterStage[plugins.WellKnownFilterStage]{
-			RelativeTo: plugins.WellKnownFilterStage(int(stage)),
-			Weight:     int(predicate),
-		},
-		Name:   name,
-		Config: config,
-	}
 }
 
 func applyHTTPRBACFilters(httpChain *ir.HttpFilterChainIR, httpRBAC []*ir.CustomEnvoyFilter, svc waypointquery.Service) {
