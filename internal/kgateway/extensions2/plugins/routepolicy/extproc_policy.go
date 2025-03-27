@@ -17,8 +17,8 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
 
-// AddExtProcHTTPFilter adds an extproc filter to the http filter chain
-func AddExtProcHTTPFilter(extProcConfig *envoy_ext_proc_v3.ExternalProcessor) ([]plugins.StagedHttpFilter, error) {
+// addExtProcHTTPFilter adds an extproc filter to the http filter chain
+func addExtProcHTTPFilter(extProcConfig *envoy_ext_proc_v3.ExternalProcessor) ([]plugins.StagedHttpFilter, error) {
 	// needed?
 	// if err := extProcConfig.ValidateAll(); err != nil {
 	// 	return nil, err
@@ -73,7 +73,7 @@ func toEnvoyExtProc(
 	}
 
 	if extprocConfig.ProcessingMode != nil {
-		envoyExtProc.ProcessingMode = ToEnvoyProcessingMode(extprocConfig.ProcessingMode)
+		envoyExtProc.ProcessingMode = toEnvoyProcessingMode(extprocConfig.ProcessingMode)
 	}
 
 	// filter metadata?
@@ -116,8 +116,8 @@ func bodySendModeFromString(mode *string) envoy_ext_proc_v3.ProcessingMode_BodyS
 	}
 }
 
-// ToEnvoyProcessingMode converts our ProcessingMode to envoy's ProcessingMode
-func ToEnvoyProcessingMode(p *v1alpha1.ProcessingMode) *envoy_ext_proc_v3.ProcessingMode {
+// toEnvoyProcessingMode converts our ProcessingMode to envoy's ProcessingMode
+func toEnvoyProcessingMode(p *v1alpha1.ProcessingMode) *envoy_ext_proc_v3.ProcessingMode {
 	if p == nil {
 		return nil
 	}

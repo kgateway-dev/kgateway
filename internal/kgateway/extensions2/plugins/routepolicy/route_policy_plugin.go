@@ -429,7 +429,7 @@ func (p *routePolicyPluginGwPass) ApplyForRouteBackend(
 func (p *routePolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.FilterChainCommon) ([]plugins.StagedHttpFilter, error) {
 	filters := []plugins.StagedHttpFilter{}
 	if p.extprocFilter != nil {
-		extprocFilters, err := AddExtProcHTTPFilter(p.extprocFilter)
+		extprocFilters, err := addExtProcHTTPFilter(p.extprocFilter)
 		if err != nil {
 			return nil, err
 		}
