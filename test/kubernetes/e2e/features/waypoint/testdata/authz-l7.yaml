@@ -5,7 +5,7 @@
 apiVersion: security.istio.io/v1
 kind: AuthorizationPolicy
 metadata:
-  name: authz-l7-allow-curl
+  name: authz-l7-demy-notcurl-svc-b
   namespace: waypoint-test-ns
 spec:
   action: DENY
@@ -16,6 +16,7 @@ spec:
     to:
     - operation:
         methods: ["GET"]
+        ports: ["8080"]
   targetRefs:
   - group: ""
     kind: Service
