@@ -48,7 +48,7 @@ spec:
           - "9003"
         env:
         - name: USE_STREAMING
-          value: "false"
+          value: "true"
         image: "registry.k8s.io/gateway-api-inference-extension/epp:v0.2.0"
         imagePullPolicy: IfNotPresent
         ports:
