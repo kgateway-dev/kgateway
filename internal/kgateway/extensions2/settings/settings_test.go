@@ -32,7 +32,7 @@ func TestSettings(t *testing.T) {
 			expectedSettings: &settings.Settings{
 				DnsLookupFamily:        "V4_PREFERRED",
 				EnableIstioIntegration: false,
-				EnableIstioAutoMtls:    true,
+				EnableIstioAutoMtls:    false,
 				IstioNamespace:         "istio-system",
 				XdsServiceName:         wellknown.DefaultXdsService,
 				XdsServicePort:         wellknown.DefaultXdsPort,
