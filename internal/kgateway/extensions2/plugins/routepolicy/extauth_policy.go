@@ -25,7 +25,8 @@ func extAuthForSpec(
 	commoncol *common.CommonCollections,
 	krtctx krt.HandlerContext,
 	routepolicy *v1alpha1.RoutePolicy,
-	out *routeSpecIr) {
+	out *routeSpecIr,
+) {
 	getter := (func(name, namespace string) (*ir.GatewayExtension, *ir.BackendObjectIR, error) {
 		gExt, err := pluginutils.GetGatewayExtension(commoncol.GatewayExtensions, krtctx, name, namespace)
 		if err != nil {
@@ -47,7 +48,8 @@ func extAuthForSpec(
 func extAuthForSpecWithExtensionFunction(
 	gExtensionGetter func(name, namespace string) (*ir.GatewayExtension, *ir.BackendObjectIR, error),
 	routepolicy *v1alpha1.RoutePolicy,
-	out *routeSpecIr) {
+	out *routeSpecIr,
+) {
 	routeSpec := &routepolicy.Spec
 
 	if routeSpec == nil || routeSpec.ExtAuth == nil {
