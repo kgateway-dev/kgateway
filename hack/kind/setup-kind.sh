@@ -54,7 +54,7 @@ function create_kind_cluster_or_skip() {
 
 # 1. Create a kind cluster (or skip creation if a cluster with name=CLUSTER_NAME already exists)
 # This config is roughly based on: https://kind.sigs.k8s.io/docs/user/ingress/
-# create_kind_cluster_or_skip
+create_kind_cluster_or_skip
 
 if [[ $SKIP_DOCKER == 'true' ]]; then
   # TODO(tim): refactor the Makefile & CI scripts so we're loading local
