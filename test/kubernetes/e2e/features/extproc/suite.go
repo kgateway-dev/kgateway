@@ -18,6 +18,9 @@ import (
 	testdefaults "github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/defaults"
 )
 
+// TODO(tim): manifest mapping
+// TODO(tim): validate the GW pod is ready before running tests
+
 var _ e2e.NewSuiteFunc = NewTestingSuite
 
 // testingSuite is a suite of tests for external processing functionality
@@ -206,79 +209,59 @@ func (s *testingSuite) TestExtProcWithHTTPRouteTargetRef() {
 		})
 }
 
-// // TestExtProcWithSingleRoute tests ExtProc applied to a specific rule within a route
-// func (s *testingSuite) TestExtProcWithSingleRoute() {
-// 	s.activeManifests = []string{singleRouteManifest}
-// 	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, singleRouteManifest)
-// 	s.Require().NoError(err)
+// TestExtProcWithSingleRoute tests ExtProc applied to a specific rule within a route
+func (s *testingSuite) TestExtProcWithSingleRoute() {
+	s.activeManifests = []string{singleRouteManifest}
+	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, singleRouteManifest)
+	s.Require().NoError(err)
 
-// 	// Test route with ExtProc and matching header - should have header modified
-// 	s.testInstallation.Assertions.AssertEventualCurlResponse(
-// 		s.ctx,
-// 		testdefaults.CurlPodExecOpt,
-// 		[]curl.Option{
-// 			curl.WithHost(kubeutils.ServiceFQDN(gatewayService.ObjectMeta)),
-// 			curl.VerboseOutput(),
-// 			curl.WithHostHeader("www.example.com"),
-// 			curl.WithPath("/myapp"),
-// 			curl.WithHeader("x-test", "true"),
-// 			curl.WithHeader("instructions", getInstructionsJson(instructions{
-// 				AddHeaders: map[string]string{"extproctest": "true"},
-// 			})),
-// 		},
-// 		&testmatchers.HttpResponse{
-// 			StatusCode: http.StatusOK,
-// 			Body: gomega.WithTransform(transforms.WithJsonBody(),
-// 				gomega.And(
-// 					gomega.HaveKeyWithValue("headers", gomega.HaveKey("Extproctest")),
-// 				),
-// 			),
-// 		})
+	// TODO: Should header-based routing work?
 
-// 	// Test route with ExtProc but without matching header - should not have header modified
-// 	s.testInstallation.Assertions.AssertEventualCurlResponse(
-// 		s.ctx,
-// 		testdefaults.CurlPodExecOpt,
-// 		[]curl.Option{
-// 			curl.WithHost(kubeutils.ServiceFQDN(gatewayService.ObjectMeta)),
-// 			curl.VerboseOutput(),
-// 			curl.WithHostHeader("www.example.com"),
-// 			curl.WithPath("/myapp"),
-// 			curl.WithHeader("instructions", getInstructionsJson(instructions{
-// 				AddHeaders: map[string]string{"extproctest": "true"},
-// 			})),
-// 		},
-// 		&testmatchers.HttpResponse{
-// 			StatusCode: http.StatusOK,
-// 			Body: gomega.WithTransform(transforms.WithJsonBody(),
-// 				gomega.And(
-// 					gomega.HaveKeyWithValue("headers", gomega.Not(gomega.HaveKey("Extproctest"))),
-// 				),
-// 			),
-// 		})
+	// Test route with ExtProc and matching header - should have header modified
+	s.testInstallation.Assertions.AssertEventualCurlResponse(
+		s.ctx,
+		testdefaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(gatewayService.ObjectMeta)),
+			curl.VerboseOutput(),
+			curl.WithHostHeader("www.example.com"),
+			curl.WithPath("/myapp"),
+			// curl.WithHeader("x-test", "true"),
+			curl.WithHeader("instructions", getInstructionsJson(instructions{
+				AddHeaders: map[string]string{"extproctest": "true"},
+			})),
+		},
+		&testmatchers.HttpResponse{
+			StatusCode: http.StatusOK,
+			Body: gomega.WithTransform(transforms.WithJsonBody(),
+				gomega.And(
+					gomega.HaveKeyWithValue("headers", gomega.HaveKey("Extproctest")),
+				),
+			),
+		})
 
-// 	// Test second rule - should not have header modified
-// 	s.testInstallation.Assertions.AssertEventualCurlResponse(
-// 		s.ctx,
-// 		testdefaults.CurlPodExecOpt,
-// 		[]curl.Option{
-// 			curl.WithHost(kubeutils.ServiceFQDN(gatewayService.ObjectMeta)),
-// 			curl.VerboseOutput(),
-// 			curl.WithHostHeader("www.example.com"),
-// 			curl.WithPort(8080),
-// 			curl.WithHeader("instructions", getInstructionsJson(instructions{
-// 				AddHeaders: map[string]string{"extproctest": "true"},
-// 			})),
-// 		},
-// 		&testmatchers.HttpResponse{
-// 			StatusCode: http.StatusOK,
-// 			Body: gomega.WithTransform(transforms.WithJsonBody(),
-// 				gomega.And(
-// 					gomega.HaveKeyWithValue("headers", gomega.Not(gomega.HaveKey("Extproctest"))),
-// 				),
-// 			),
-// 		})
-// }
+	// Test second rule - should not have header modified
+	s.testInstallation.Assertions.AssertEventualCurlResponse(
+		s.ctx,
+		testdefaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(gatewayService.ObjectMeta)),
+			curl.VerboseOutput(),
+			curl.WithHostHeader("www.example.com"),
+			curl.WithPort(8080),
+			curl.WithHeader("instructions", getInstructionsJson(instructions{
+				AddHeaders: map[string]string{"extproctest": "true"},
+			})),
+		},
+		&testmatchers.HttpResponse{
+			StatusCode: http.StatusOK,
+			Body: gomega.WithTransform(transforms.WithJsonBody(),
+				gomega.And(
+					gomega.HaveKeyWithValue("headers", gomega.Not(gomega.HaveKey("Extproctest"))),
+				),
+			),
+		})
+}
 
 // TestExtProcWithBackendFilter tests backend-level ExtProc filtering
 func (s *testingSuite) TestExtProcWithBackendFilter() {

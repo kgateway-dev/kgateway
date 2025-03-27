@@ -13,9 +13,6 @@ spec:
         - path:
             type: PathPrefix
             value: /myapp
-        - headers:
-            - name: x-test
-              value: "true"
       backendRefs:
         - name: backend
           port: 3000
@@ -41,8 +38,3 @@ spec:
   extProc:
     extensionRef:
       name: ext-proc-extension
-    processingMode:
-      requestHeaderMode: SEND
-      responseHeaderMode: SEND
-      requestBodyMode: NONE
-      responseBodyMode: NONE
