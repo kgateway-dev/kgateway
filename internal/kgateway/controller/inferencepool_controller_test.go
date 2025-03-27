@@ -29,7 +29,7 @@ var _ = Describe("InferencePool controller", func() {
 		BeforeEach(func() {
 			var err error
 			inferenceExt = new(deployer.InferenceExtInfo)
-			cancel, err = createManager(ctx, inferenceExt)
+			cancel, err = createManager(ctx, inferenceExt, nil)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
@@ -174,7 +174,7 @@ var _ = Describe("InferencePool controller", func() {
 		BeforeEach(func() {
 			var err error
 			inferenceExt = nil
-			cancel, err = createManager(ctx, inferenceExt)
+			cancel, err = createManager(ctx, inferenceExt, nil)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
