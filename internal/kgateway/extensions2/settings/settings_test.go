@@ -32,7 +32,7 @@ func TestSettings(t *testing.T) {
 			expectedSettings: &settings.Settings{
 				DnsLookupFamily:        "V4_PREFERRED",
 				EnableIstioIntegration: false,
-				EnableAutoMtls:         false,
+				EnableIstioAutoMtls:    false,
 				XdsServiceName:         wellknown.DefaultXdsService,
 				XdsServicePort:         wellknown.DefaultXdsPort,
 				UseRustFormations:      false,
@@ -48,7 +48,7 @@ func TestSettings(t *testing.T) {
 			envVars: map[string]string{
 				"KGW_DNS_LOOKUP_FAMILY":         "V4_ONLY",
 				"KGW_ENABLE_ISTIO_INTEGRATION":  "true",
-				"KGW_ENABLE_AUTO_MTLS":          "true",
+				"KGW_ENABLE_ISTIO_AUTO_MTLS":    "true",
 				"KGW_STS_CLUSTER_NAME":          "my-cluster",
 				"KGW_STS_URI":                   "my.sts.uri",
 				"KGW_XDS_SERVICE_NAME":          "custom-svc",
@@ -63,7 +63,7 @@ func TestSettings(t *testing.T) {
 			expectedSettings: &settings.Settings{
 				DnsLookupFamily:        "V4_ONLY",
 				EnableIstioIntegration: true,
-				EnableAutoMtls:         true,
+				EnableIstioAutoMtls:    true,
 				XdsServiceName:         "custom-svc",
 				XdsServicePort:         1234,
 				UseRustFormations:      true,
@@ -91,13 +91,13 @@ func TestSettings(t *testing.T) {
 		{
 			name: "ignores other env vars",
 			envVars: map[string]string{
-				"KGW_DOES_NOT_EXIST":   "true",
-				"ANOTHER_VAR":          "abc",
-				"KGW_ENABLE_AUTO_MTLS": "true",
+				"KGW_DOES_NOT_EXIST":         "true",
+				"ANOTHER_VAR":                "abc",
+				"KGW_ENABLE_ISTIO_AUTO_MTLS": "true",
 			},
 			expectedSettings: &settings.Settings{
 				DnsLookupFamily:        "V4_PREFERRED",
-				EnableAutoMtls:         true,
+				EnableIstioAutoMtls:    true,
 				XdsServiceName:         wellknown.DefaultXdsService,
 				XdsServicePort:         wellknown.DefaultXdsPort,
 				DefaultImageRegistry:   "cr.kgateway.dev",
