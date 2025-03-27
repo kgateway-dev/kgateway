@@ -176,7 +176,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 
 	col := krt.WrapClient(kclient.New[*v1alpha1.RoutePolicy](commoncol.Client), commoncol.KrtOpts.ToOptions("RoutePolicy")...)
 	gk := wellknown.RoutePolicyGVK.GroupKind()
-	translate := buildTranslateFunc(ctx, commoncol.Secrets, commoncol.GatewayExtensionIndex)
+	translate := buildTranslateFunc(ctx, commoncol)
 	// RoutePolicy IR will have TypedConfig -> implement backendroute method to add prompt guard, etc.
 	policyCol := krt.NewCollection(col, func(krtctx krt.HandlerContext, policyCR *v1alpha1.RoutePolicy) *ir.PolicyWrapper {
 		pol := &ir.PolicyWrapper{
@@ -521,9 +521,9 @@ func (p *routePolicyPluginGwPass) ResourcesToAdd(ctx context.Context) ir.Resourc
 	return ir.Resources{}
 }
 
-func buildTranslateFunc(ctx context.Context,
-	secrets *krtcollections.SecretIndex,
-	gatewayExtensions *krtcollections.GatewayExtensionIndex,
+func buildTranslateFunc(
+	ctx context.Context,
+	commoncol *common.CommonCollections,
 ) func(krtctx krt.HandlerContext, i *v1alpha1.RoutePolicy) *routePolicy {
 	return func(krtctx krt.HandlerContext, policyCR *v1alpha1.RoutePolicy) *routePolicy {
 		policyIr := routePolicy{
@@ -536,7 +536,7 @@ func buildTranslateFunc(ctx context.Context,
 
 			// Augment with AI secrets as needed
 			var err error
-			outSpec.AI.AISecret, err = aiSecretForSpec(ctx, secrets, krtctx, policyCR)
+			outSpec.AI.AISecret, err = aiSecretForSpec(ctx, commoncol.Secrets, krtctx, policyCR)
 			if err != nil {
 				outSpec.errors = append(outSpec.errors, err)
 			}
@@ -552,7 +552,7 @@ func buildTranslateFunc(ctx context.Context,
 
 		// Apply ExtAuthz specific translation
 
-		extAuthForSpec(gatewayExtensions, krtctx, policyCR, &outSpec)
+		extAuthForSpec(commoncol.GatewayExtensions, krtctx, policyCR, &outSpec)
 		// Apply rate limit specific translation
 		localRateLimitForSpec(policyCR.Spec, &outSpec)
 

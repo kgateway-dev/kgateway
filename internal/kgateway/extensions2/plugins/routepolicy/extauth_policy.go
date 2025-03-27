@@ -11,7 +11,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 )
 
 type extAuthIR struct {
@@ -22,7 +21,7 @@ type extAuthIR struct {
 
 // extAuthForSpec translates the ExtAuthz spec into the Envoy configuration
 func extAuthForSpec(
-	gatewayExtensions *krtcollections.GatewayExtensionIndex,
+	gatewayExtensions krt.Collection[ir.GatewayExtension],
 	krtctx krt.HandlerContext,
 	routepolicy *v1alpha1.RoutePolicy,
 	out *routeSpecIr) {
