@@ -170,7 +170,7 @@ func buildTranslateFunc(
 			var secret *ir.Secret
 			if i.Spec.Aws.Auth != nil && i.Spec.Aws.Auth.Type == v1alpha1.AwsAuthTypeSecret {
 				var err error
-				secret, err = pluginutils.GetSecretIr(secrets, krtctx, i.Spec.Aws.Auth.Secret.Name, i.GetNamespace())
+				secret, err = pluginutils.GetSecretIr(secrets, krtctx, i.Spec.Aws.Auth.SecretRef.Name, i.GetNamespace())
 				if err != nil {
 					backendIr.Errors = append(backendIr.Errors, err)
 				}

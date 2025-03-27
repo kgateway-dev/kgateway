@@ -180,7 +180,7 @@ var schemaYAML = typed.YAMLObject(`types:
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AwsAuth
   map:
     fields:
-    - name: secret
+    - name: secretRef
       type:
         namedType: io.k8s.api.core.v1.LocalObjectReference
     - name: type
@@ -190,8 +190,8 @@ var schemaYAML = typed.YAMLObject(`types:
     unions:
     - discriminator: type
       fields:
-      - fieldName: secret
-        discriminatorValue: Secret
+      - fieldName: secretRef
+        discriminatorValue: SecretRef
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AwsBackend
   map:
     fields:

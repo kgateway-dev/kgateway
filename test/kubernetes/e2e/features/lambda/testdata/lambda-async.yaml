@@ -30,7 +30,7 @@ spec:
     accountId: "000000000000"
     auth:
       type: Secret
-      secret:
+      secretRef:
         name: aws-creds
     lambda:
       functionName: hello-function

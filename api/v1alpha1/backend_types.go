@@ -106,19 +106,19 @@ const (
 
 // AwsAuth specifies the authentication method to use for the backend.
 // +union
-// +kubebuilder:validation:XValidation:message="secret must be nil if the type is not 'Secret'",rule="!(has(self.secret) && self.type != 'Secret')"
-// +kubebuilder:validation:XValidation:message="secret must be specified when type is 'Secret'",rule="!(!has(self.secret) && self.type == 'Secret')"
+// +kubebuilder:validation:XValidation:message="secretRef must be nil if the type is not 'Secret'",rule="!(has(self.secretRef) && self.type != 'Secret')"
+// +kubebuilder:validation:XValidation:message="secretRef must be specified when type is 'Secret'",rule="!(!has(self.secretRef) && self.type == 'Secret')"
 type AwsAuth struct {
 	// Type specifies the authentication method to use for the backend.
 	// +unionDiscriminator
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Enum=Secret
 	Type AwsAuthType `json:"type"`
-	// Secret references a Kubernetes Secret containing the AWS credentials.
+	// SecretRef references a Kubernetes Secret containing the AWS credentials.
 	// The Secret must have keys "accessKey", "secretKey", and optionally "sessionToken".
 	// +optional
 	// +kubebuilder:validation:Optional
-	Secret *corev1.LocalObjectReference `json:"secret,omitempty"`
+	SecretRef *corev1.LocalObjectReference `json:"secretRef,omitempty"`
 }
 
 const (
