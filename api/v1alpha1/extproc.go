@@ -1,10 +1,15 @@
 package v1alpha1
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
 type ExtProcPolicy struct {
+	// ExtensionRef references the ExternalExtension that should be used for authentication.
+	// +optional
+	ExtensionRef *corev1.LocalObjectReference `json:"extensionRef,omitempty"`
+
 	GrpcService *ExtProcGrpcService `json:"grpcService,omitempty"`
 
 	ProcessingMode *ProcessingMode `json:"processingMode,omitempty"`

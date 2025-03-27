@@ -196,7 +196,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 		pol := &ir.PolicyWrapper{
 			ObjectSource: objSrc,
 			Policy:       policyCR,
-			PolicyIR:     translate(krtctx, policyCR, objSrc),
+			PolicyIR:     translate(krtctx, policyCR),
 			TargetRefs:   convert(policyCR.Spec.TargetRefs),
 			Errors:       errors,
 		}
@@ -573,7 +573,7 @@ func buildTranslateFunc(ctx context.Context,
 		transformationForSpec(policyCR.Spec, &outSpec)
 
 		if policyCR.Spec.ExtProc != nil {
-			extproc, err := toEnvoyExtProc(policyCR.Spec.ExtProc, krtctx, commoncol, objSrc)
+			extproc, err := toEnvoyExtProc(policyCR, krtctx, gatewayExtensions)
 			if err != nil {
 				outSpec.errors = append(outSpec.errors, err)
 			} else {

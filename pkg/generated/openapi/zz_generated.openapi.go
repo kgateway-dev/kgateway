@@ -1793,6 +1793,12 @@ func schema_kgateway_v2_api_v1alpha1_ExtProcPolicy(ref common.ReferenceCallback)
 			SchemaProps: spec.SchemaProps{
 				Type: []string{"object"},
 				Properties: map[string]spec.Schema{
+					"extensionRef": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ExtensionRef references the ExternalExtension that should be used for authentication.",
+							Ref:         ref("k8s.io/api/core/v1.LocalObjectReference"),
+						},
+					},
 					"grpcService": {
 						SchemaProps: spec.SchemaProps{
 							Ref: ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtProcGrpcService"),
@@ -1807,7 +1813,7 @@ func schema_kgateway_v2_api_v1alpha1_ExtProcPolicy(ref common.ReferenceCallback)
 			},
 		},
 		Dependencies: []string{
-			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtProcGrpcService", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ProcessingMode"},
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtProcGrpcService", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ProcessingMode", "k8s.io/api/core/v1.LocalObjectReference"},
 	}
 }
 

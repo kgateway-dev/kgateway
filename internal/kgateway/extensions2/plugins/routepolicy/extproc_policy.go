@@ -10,8 +10,9 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
@@ -46,21 +47,20 @@ func enableExtprocFilter(pCtx *ir.RouteBackendContext) {
 
 // toEnvoyExtProc converts an ExtProcPolicy to an ExternalProcessor
 func toEnvoyExtProc(
-	extprocConfig *v1alpha1.ExtProcPolicy,
+	routePolicy *v1alpha1.RoutePolicy,
 	krtctx krt.HandlerContext,
-	commoncol *common.CommonCollections,
-	parentSrc ir.ObjectSource,
+	gatewayExtensions *krtcollections.GatewayExtensionIndex,
 ) (*envoy_ext_proc_v3.ExternalProcessor, error) {
-	backend, err := commoncol.BackendIndex.GetBackendFromRef(krtctx, parentSrc, extprocConfig.GrpcService.BackendRef.BackendObjectReference)
+	extprocConfig := routePolicy.Spec.ExtProc
+	gExt, err := pluginutils.GetGatewayExtension(gatewayExtensions, krtctx, extprocConfig.ExtensionRef.Name, routePolicy.GetNamespace())
 	if err != nil {
-		// return nil, err
 		fmt.Println("error getting backend", err)
 		return nil, err
 	}
 	envoyGrpcService := &envoy_config_core_v3.GrpcService{
 		TargetSpecifier: &envoy_config_core_v3.GrpcService_EnvoyGrpc_{
 			EnvoyGrpc: &envoy_config_core_v3.GrpcService_EnvoyGrpc{
-				ClusterName: backend.ClusterName(),
+				ClusterName: pluginutils.BackendToEnvoyCluster(gExt.ExtProc.BackendRef),
 			},
 		},
 	}

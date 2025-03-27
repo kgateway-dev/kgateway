@@ -485,6 +485,9 @@ var schemaYAML = typed.YAMLObject(`types:
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtProcPolicy
   map:
     fields:
+    - name: extensionRef
+      type:
+        namedType: io.k8s.api.core.v1.LocalObjectReference
     - name: grpcService
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtProcGrpcService

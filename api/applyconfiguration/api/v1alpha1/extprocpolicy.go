@@ -2,9 +2,14 @@
 
 package v1alpha1
 
+import (
+	v1 "k8s.io/api/core/v1"
+)
+
 // ExtProcPolicyApplyConfiguration represents a declarative configuration of the ExtProcPolicy type for use
 // with apply.
 type ExtProcPolicyApplyConfiguration struct {
+	ExtensionRef   *v1.LocalObjectReference              `json:"extensionRef,omitempty"`
 	GrpcService    *ExtProcGrpcServiceApplyConfiguration `json:"grpcService,omitempty"`
 	ProcessingMode *ProcessingModeApplyConfiguration     `json:"processingMode,omitempty"`
 }
@@ -13,6 +18,14 @@ type ExtProcPolicyApplyConfiguration struct {
 // apply.
 func ExtProcPolicy() *ExtProcPolicyApplyConfiguration {
 	return &ExtProcPolicyApplyConfiguration{}
+}
+
+// WithExtensionRef sets the ExtensionRef field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the ExtensionRef field is set to the value of the last call.
+func (b *ExtProcPolicyApplyConfiguration) WithExtensionRef(value v1.LocalObjectReference) *ExtProcPolicyApplyConfiguration {
+	b.ExtensionRef = &value
+	return b
 }
 
 // WithGrpcService sets the GrpcService field in the declarative configuration to the given value
