@@ -2,25 +2,16 @@ package v1alpha1
 
 import (
 	corev1 "k8s.io/api/core/v1"
-	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
 type ExtProcPolicy struct {
 	// ExtensionRef references the GatewayExtension that should be used for external processing.
-	// +optional
+	// +kubebuilder:validation:Required
 	ExtensionRef *corev1.LocalObjectReference `json:"extensionRef,omitempty"`
 
-	GrpcService *ExtProcGrpcService `json:"grpcService,omitempty"`
-
+	// ProcessingMode defines how the filter should interact with the request/response streams
+	// +optional
 	ProcessingMode *ProcessingMode `json:"processingMode,omitempty"`
-}
-
-type ExtProcGrpcService struct {
-	// The backend gRPC service. Can be any type of supported backend (Kubernetes Service, kgateway Backend, etc..)
-	// +kubebuilder:validation:Required
-	BackendRef *gwv1.BackendRef `json:"backendRef"`
-
-	Authority *string `json:"authority,omitempty"`
 }
 
 // ProcessingMode defines how the filter should interact with the request/response streams

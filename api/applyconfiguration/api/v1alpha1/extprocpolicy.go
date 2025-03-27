@@ -9,9 +9,8 @@ import (
 // ExtProcPolicyApplyConfiguration represents a declarative configuration of the ExtProcPolicy type for use
 // with apply.
 type ExtProcPolicyApplyConfiguration struct {
-	ExtensionRef   *v1.LocalObjectReference              `json:"extensionRef,omitempty"`
-	GrpcService    *ExtProcGrpcServiceApplyConfiguration `json:"grpcService,omitempty"`
-	ProcessingMode *ProcessingModeApplyConfiguration     `json:"processingMode,omitempty"`
+	ExtensionRef   *v1.LocalObjectReference          `json:"extensionRef,omitempty"`
+	ProcessingMode *ProcessingModeApplyConfiguration `json:"processingMode,omitempty"`
 }
 
 // ExtProcPolicyApplyConfiguration constructs a declarative configuration of the ExtProcPolicy type for use with
@@ -25,14 +24,6 @@ func ExtProcPolicy() *ExtProcPolicyApplyConfiguration {
 // If called multiple times, the ExtensionRef field is set to the value of the last call.
 func (b *ExtProcPolicyApplyConfiguration) WithExtensionRef(value v1.LocalObjectReference) *ExtProcPolicyApplyConfiguration {
 	b.ExtensionRef = &value
-	return b
-}
-
-// WithGrpcService sets the GrpcService field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the GrpcService field is set to the value of the last call.
-func (b *ExtProcPolicyApplyConfiguration) WithGrpcService(value *ExtProcGrpcServiceApplyConfiguration) *ExtProcPolicyApplyConfiguration {
-	b.GrpcService = value
 	return b
 }
 

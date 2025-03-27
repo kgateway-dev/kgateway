@@ -473,24 +473,12 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: withRequestBody
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.BufferSettings
-- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtProcGrpcService
-  map:
-    fields:
-    - name: authority
-      type:
-        scalar: string
-    - name: backendRef
-      type:
-        namedType: io.k8s.sigs.gateway-api.apis.v1.BackendRef
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtProcPolicy
   map:
     fields:
     - name: extensionRef
       type:
         namedType: io.k8s.api.core.v1.LocalObjectReference
-    - name: grpcService
-      type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtProcGrpcService
     - name: processingMode
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ProcessingMode

@@ -138,6 +138,15 @@ func (d *routePolicy) Equals(in any) bool {
 		}
 	}
 
+	// extproc equality checks
+	if d.spec.ExtProc != nil && d2.spec.ExtProc != nil {
+		if !proto.Equal(d.spec.ExtProc.ExtProc, d2.spec.ExtProc.ExtProc) {
+			return false
+		}
+	} else if d.spec.ExtProc != d2.spec.ExtProc {
+		return false
+	}
+
 	if !proto.Equal(d.spec.localRateLimit, d2.spec.localRateLimit) {
 		return false
 	}
@@ -176,7 +185,6 @@ func registerTypes(ourCli versioned.Interface) {
 }
 
 func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensionsplug.Plugin {
-	errors := []error{}
 	registerTypes(commoncol.OurClient)
 
 	useRustformations = commoncol.Settings.UseRustFormations // stash the state of the env setup for rustformation usage
@@ -198,7 +206,6 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 			Policy:       policyCR,
 			PolicyIR:     translate(krtctx, policyCR),
 			TargetRefs:   convert(policyCR.Spec.TargetRefs),
-			Errors:       errors,
 		}
 		return pol
 	})
