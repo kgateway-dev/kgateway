@@ -10,6 +10,7 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
@@ -48,18 +49,22 @@ func enableExtprocFilter(pCtx *ir.RouteBackendContext) {
 func toEnvoyExtProc(
 	routePolicy *v1alpha1.RoutePolicy,
 	krtctx krt.HandlerContext,
-	gatewayExtensions krt.Collection[ir.GatewayExtension],
+	commoncol *common.CommonCollections,
 ) (*envoy_ext_proc_v3.ExternalProcessor, error) {
 	extprocConfig := routePolicy.Spec.ExtProc
-	gExt, err := pluginutils.GetGatewayExtension(gatewayExtensions, krtctx, extprocConfig.ExtensionRef.Name, routePolicy.GetNamespace())
+	gExt, err := pluginutils.GetGatewayExtension(commoncol.GatewayExtensions, krtctx, extprocConfig.ExtensionRef.Name, routePolicy.GetNamespace())
 	if err != nil {
-		fmt.Println("error getting backend", err)
-		return nil, err
+		return nil, fmt.Errorf("failed to get GatewayExtension %s: %s", extprocConfig.ExtensionRef.Name, err.Error())
+	}
+	backend, err := commoncol.BackendIndex.GetBackendFromRef(krtctx, gExt.ObjectSource, gExt.ExtProc.BackendRef.BackendObjectReference)
+	// TODO: what is the correct behavior? maybe route to static blackhole?
+	if err != nil {
+		return nil, fmt.Errorf("failed to get backend from GatewayExtension %s: %s", gExt.ObjectSource.GetName(), err.Error())
 	}
 	envoyGrpcService := &envoy_config_core_v3.GrpcService{
 		TargetSpecifier: &envoy_config_core_v3.GrpcService_EnvoyGrpc_{
 			EnvoyGrpc: &envoy_config_core_v3.GrpcService_EnvoyGrpc{
-				ClusterName: pluginutils.BackendToEnvoyCluster(gExt.ExtProc.BackendRef),
+				ClusterName: backend.ClusterName(),
 			},
 		},
 	}

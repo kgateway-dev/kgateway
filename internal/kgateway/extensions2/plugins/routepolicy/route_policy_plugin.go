@@ -573,7 +573,7 @@ func buildTranslateFunc(
 		transformationForSpec(policyCR.Spec, &outSpec)
 
 		if policyCR.Spec.ExtProc != nil {
-			extproc, err := toEnvoyExtProc(policyCR, krtctx, commoncol.GatewayExtensions)
+			extproc, err := toEnvoyExtProc(policyCR, krtctx, commoncol)
 			if err != nil {
 				outSpec.errors = append(outSpec.errors, err)
 			} else {
