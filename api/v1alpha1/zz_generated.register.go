@@ -49,6 +49,8 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&BackendList{},
 		&DirectResponse{},
 		&DirectResponseList{},
+		&GatewayExtension{},
+		&GatewayExtensionList{},
 		&GatewayParameters{},
 		&GatewayParametersList{},
 		&HTTPListenerPolicy{},

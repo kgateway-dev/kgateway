@@ -30,6 +30,7 @@ type VirtualHostContext struct {
 
 type TypedFilterConfigMap map[string]proto.Message
 
+// AddTypedConfig SETS the config for a given key. // TODO: consider renaming to SetTypedConfig
 func (r *TypedFilterConfigMap) AddTypedConfig(key string, v proto.Message) {
 	if *r == nil {
 		*r = make(TypedFilterConfigMap)

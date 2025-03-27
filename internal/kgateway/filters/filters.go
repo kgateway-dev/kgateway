@@ -68,9 +68,9 @@ var (
 // relative to one of the pre-defined stages.
 type FilterStage struct {
 	// Stage of the filter chain in which the selected filter should be added.
-	Stage FilterStage_Stage `protobuf:"varint,1,opt,name=stage,proto3,enum=filters.gloo.solo.io.FilterStage_Stage" json:"stage,omitempty"`
+	Stage FilterStage_Stage
 	// How this filter should be placed relative to the stage.
-	Predicate FilterStage_Predicate `protobuf:"varint,2,opt,name=predicate,proto3,enum=filters.gloo.solo.io.FilterStage_Predicate" json:"predicate,omitempty"`
+	Predicate FilterStage_Predicate
 }
 
 func (x *FilterStage) GetStage() FilterStage_Stage {

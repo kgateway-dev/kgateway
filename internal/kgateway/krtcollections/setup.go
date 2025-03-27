@@ -17,12 +17,18 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
 )
 
-func registerTypes() {
+// registertypes for common collections
+
+func registerTypes(ourCli versioned.Interface) {
+	// if it is a sig gateway api then it can pull directly from the kubeclientgetter
 	kubeclient.Register[*gwv1.HTTPRoute](
 		gvr.HTTPRoute_v1,
 		gvk.HTTPRoute_v1.Kubernetes(),
@@ -63,6 +69,19 @@ func registerTypes() {
 			return c.GatewayAPI().GatewayV1().GatewayClasses().Watch(context.Background(), o)
 		},
 	)
+	// if this is our's then use our client
+	// note that in most cases these should be handled and registered per plugin
+	// Only set here if is intended to be reused alot
+	kubeclient.Register[*v1alpha1.GatewayExtension](
+		wellknown.GatewayExtensionGVR,
+		wellknown.GatewayExtensionGVK,
+		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (runtime.Object, error) {
+			return ourCli.GatewayV1alpha1().GatewayExtensions(namespace).List(context.Background(), o)
+		},
+		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
+			return ourCli.GatewayV1alpha1().GatewayExtensions(namespace).Watch(context.Background(), o)
+		},
+	)
 }
 
 func InitCollections(
@@ -70,11 +89,13 @@ func InitCollections(
 	controllerName string,
 	plugins extensionsplug.Plugin,
 	istioClient kube.Client,
+	ourClient versioned.Interface,
 	refgrants *RefGrantIndex,
 	krtopts krtutil.KrtOptions,
-) (*GatewayIndex, *RoutesIndex, *BackendIndex, krt.Collection[ir.EndpointsForBackend]) {
-	registerTypes()
+) (*GatewayIndex, *RoutesIndex, *BackendIndex, *GatewayExtensionIndex, krt.Collection[ir.EndpointsForBackend]) {
+	registerTypes(ourClient)
 
+	// create the KRT clients, remember to also register any needed types in the type registration setup.
 	httpRoutes := krt.WrapClient(kclient.New[*gwv1.HTTPRoute](istioClient), krtopts.ToOptions("HTTPRoute")...)
 	tcproutes := krt.WrapClient(kclient.NewDelayedInformer[*gwv1a2.TCPRoute](istioClient, gvr.TCPRoute, kubetypes.StandardInformer, kclient.Filter{}), krtopts.ToOptions("TCPRoute")...)
 	tlsRoutes := krt.WrapClient(kclient.NewDelayedInformer[*gwv1a2.TLSRoute](istioClient, gvr.TLSRoute, kubetypes.StandardInformer, kclient.Filter{}), krtopts.ToOptions("TLSRoute")...)
@@ -91,9 +112,11 @@ func InitCollections(
 	backendIndex := NewBackendIndex(krtopts, backendRefPlugins, policies, refgrants)
 	initBackends(plugins, backendIndex)
 	endpointIRs := initEndpoints(plugins, krtopts)
-	kubeGateways := NewGatewayIndex(krtopts, controllerName, policies, kubeRawGateways, gatewayClasses)
+	gateways := NewGatewayIndex(krtopts, controllerName, policies, kubeRawGateways, gatewayClasses)
+	gExtensionIndex := NewGatewayExtensionIndex(krtopts, istioClient, policies)
+
 	routes := NewRoutesIndex(krtopts, httpRoutes, tcproutes, tlsRoutes, policies, backendIndex, refgrants)
-	return kubeGateways, routes, backendIndex, endpointIRs
+	return gateways, routes, backendIndex, gExtensionIndex, endpointIRs
 }
 
 func initBackends(plugins extensionsplug.Plugin, backendIndex *BackendIndex) {

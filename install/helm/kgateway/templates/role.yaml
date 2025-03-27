@@ -73,6 +73,7 @@ rules:
   resources:
   - backends
   - directresponses
+  - gatewayextensions
   - gatewayparameters
   - httplistenerpolicies
   - routepolicies
@@ -85,6 +86,7 @@ rules:
   resources:
   - backends/status
   - directresponses/status
+  - gatewayextensions/status
   - gatewayparameters/status
   - httplistenerpolicies/status
   - routepolicies/status
