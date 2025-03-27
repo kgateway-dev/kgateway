@@ -63,8 +63,8 @@ func toEnvoyExtProc(
 			},
 		},
 	}
-	if extprocConfig.GrpcService.Authority != nil {
-		envoyGrpcService.GetEnvoyGrpc().Authority = *extprocConfig.GrpcService.Authority
+	if gExt.ExtProc.Authority != nil {
+		envoyGrpcService.GetEnvoyGrpc().Authority = *gExt.ExtProc.Authority
 	}
 
 	envoyExtProc := &envoy_ext_proc_v3.ExternalProcessor{
