@@ -29,6 +29,7 @@ const (
 	AIPolicyTransformationFilterName  = "ai.policy.transformation.kgateway.io"
 	AIExtProcFilterName               = "ai.extproc.kgateway.io"
 	SetMetadataFilterName             = "envoy.filters.http.set_filter_state"
+	ExtprocFilterName                 = "envoy.filters.http.ext_proc"
 )
 
 const (

@@ -2,26 +2,27 @@
 
 package v1alpha1
 
-// TrafficPolicySpecApplyConfiguration represents a declarative configuration of the TrafficPolicySpec type for use
+// RoutePolicySpecApplyConfiguration represents a declarative configuration of the RoutePolicySpec type for use
 // with apply.
-type TrafficPolicySpecApplyConfiguration struct {
+type RoutePolicySpecApplyConfiguration struct {
 	TargetRefs     []LocalPolicyTargetReferenceApplyConfiguration `json:"targetRefs,omitempty"`
-	AI             *AIPolicyApplyConfiguration                    `json:"ai,omitempty"`
+	AI             *AIRoutePolicyApplyConfiguration               `json:"ai,omitempty"`
 	Transformation *TransformationPolicyApplyConfiguration        `json:"transformation,omitempty"`
-	ExtAuth        *ExtAuthPolicyApplyConfiguration               `json:"extAuth,omitempty"`
+	ExtProc        *ExtProcPolicyApplyConfiguration               `json:"extProc,omitempty"`
+	ExtAuth        *ExtAuthRoutePolicyApplyConfiguration          `json:"extAuth,omitempty"`
 	RateLimit      *RateLimitApplyConfiguration                   `json:"rateLimit,omitempty"`
 }
 
-// TrafficPolicySpecApplyConfiguration constructs a declarative configuration of the TrafficPolicySpec type for use with
+// RoutePolicySpecApplyConfiguration constructs a declarative configuration of the RoutePolicySpec type for use with
 // apply.
-func TrafficPolicySpec() *TrafficPolicySpecApplyConfiguration {
-	return &TrafficPolicySpecApplyConfiguration{}
+func RoutePolicySpec() *RoutePolicySpecApplyConfiguration {
+	return &RoutePolicySpecApplyConfiguration{}
 }
 
 // WithTargetRefs adds the given value to the TargetRefs field in the declarative configuration
 // and returns the receiver, so that objects can be build by chaining "With" function invocations.
 // If called multiple times, values provided by each call will be appended to the TargetRefs field.
-func (b *TrafficPolicySpecApplyConfiguration) WithTargetRefs(values ...*LocalPolicyTargetReferenceApplyConfiguration) *TrafficPolicySpecApplyConfiguration {
+func (b *RoutePolicySpecApplyConfiguration) WithTargetRefs(values ...*LocalPolicyTargetReferenceApplyConfiguration) *RoutePolicySpecApplyConfiguration {
 	for i := range values {
 		if values[i] == nil {
 			panic("nil value passed to WithTargetRefs")
@@ -34,7 +35,7 @@ func (b *TrafficPolicySpecApplyConfiguration) WithTargetRefs(values ...*LocalPol
 // WithAI sets the AI field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the AI field is set to the value of the last call.
-func (b *TrafficPolicySpecApplyConfiguration) WithAI(value *AIPolicyApplyConfiguration) *TrafficPolicySpecApplyConfiguration {
+func (b *RoutePolicySpecApplyConfiguration) WithAI(value *AIRoutePolicyApplyConfiguration) *RoutePolicySpecApplyConfiguration {
 	b.AI = value
 	return b
 }
@@ -42,15 +43,23 @@ func (b *TrafficPolicySpecApplyConfiguration) WithAI(value *AIPolicyApplyConfigu
 // WithTransformation sets the Transformation field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Transformation field is set to the value of the last call.
-func (b *TrafficPolicySpecApplyConfiguration) WithTransformation(value *TransformationPolicyApplyConfiguration) *TrafficPolicySpecApplyConfiguration {
+func (b *RoutePolicySpecApplyConfiguration) WithTransformation(value *TransformationPolicyApplyConfiguration) *RoutePolicySpecApplyConfiguration {
 	b.Transformation = value
+	return b
+}
+
+// WithExtProc sets the ExtProc field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the ExtProc field is set to the value of the last call.
+func (b *RoutePolicySpecApplyConfiguration) WithExtProc(value *ExtProcPolicyApplyConfiguration) *RoutePolicySpecApplyConfiguration {
+	b.ExtProc = value
 	return b
 }
 
 // WithExtAuth sets the ExtAuth field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the ExtAuth field is set to the value of the last call.
-func (b *TrafficPolicySpecApplyConfiguration) WithExtAuth(value *ExtAuthPolicyApplyConfiguration) *TrafficPolicySpecApplyConfiguration {
+func (b *RoutePolicySpecApplyConfiguration) WithExtAuth(value *ExtAuthRoutePolicyApplyConfiguration) *RoutePolicySpecApplyConfiguration {
 	b.ExtAuth = value
 	return b
 }
@@ -58,7 +67,7 @@ func (b *TrafficPolicySpecApplyConfiguration) WithExtAuth(value *ExtAuthPolicyAp
 // WithRateLimit sets the RateLimit field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the RateLimit field is set to the value of the last call.
-func (b *TrafficPolicySpecApplyConfiguration) WithRateLimit(value *RateLimitApplyConfiguration) *TrafficPolicySpecApplyConfiguration {
+func (b *RoutePolicySpecApplyConfiguration) WithRateLimit(value *RateLimitApplyConfiguration) *RoutePolicySpecApplyConfiguration {
 	b.RateLimit = value
 	return b
 }

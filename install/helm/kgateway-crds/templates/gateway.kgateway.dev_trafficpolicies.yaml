@@ -312,6 +312,69 @@ spec:
                     - maxRequestBytes
                     type: object
                 type: object
+              extProc:
+                properties:
+                  extensionRef:
+                    properties:
+                      name:
+                        default: ""
+                        type: string
+                    type: object
+                    x-kubernetes-map-type: atomic
+                  failureModeAllow:
+                    type: boolean
+                  processingMode:
+                    properties:
+                      requestBodyMode:
+                        default: NONE
+                        enum:
+                        - NONE
+                        - STREAMED
+                        - BUFFERED
+                        - BUFFERED_PARTIAL
+                        - FULL_DUPLEX_STREAMED
+                        type: string
+                      requestHeaderMode:
+                        default: SEND
+                        enum:
+                        - DEFAULT
+                        - SEND
+                        - SKIP
+                        type: string
+                      requestTrailerMode:
+                        default: SKIP
+                        enum:
+                        - DEFAULT
+                        - SEND
+                        - SKIP
+                        type: string
+                      responseBodyMode:
+                        default: NONE
+                        enum:
+                        - NONE
+                        - STREAMED
+                        - BUFFERED
+                        - BUFFERED_PARTIAL
+                        - FULL_DUPLEX_STREAMED
+                        type: string
+                      responseHeaderMode:
+                        default: SEND
+                        enum:
+                        - DEFAULT
+                        - SEND
+                        - SKIP
+                        type: string
+                      responseTrailerMode:
+                        default: SKIP
+                        enum:
+                        - DEFAULT
+                        - SEND
+                        - SKIP
+                        type: string
+                    type: object
+                required:
+                - extensionRef
+                type: object
               rateLimit:
                 properties:
                   local:

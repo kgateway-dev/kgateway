@@ -149,7 +149,11 @@ func generateKubeConfiguration(restconfig *rest.Config) string {
 	return tmpfile.Name()
 }
 
-func createManager(parentCtx context.Context, inferenceExt *deployer.InferenceExtInfo) (context.CancelFunc, error) {
+func createManager(
+	parentCtx context.Context,
+	inferenceExt *deployer.InferenceExtInfo,
+	classConfigs map[string]*controller.ClassInfo,
+) (context.CancelFunc, error) {
 	mgr, err := ctrl.NewManager(cfg, ctrl.Options{
 		Scheme: scheme,
 		WebhookServer: webhook.NewServer(webhook.Options{
@@ -185,15 +189,18 @@ func createManager(parentCtx context.Context, inferenceExt *deployer.InferenceEx
 		return nil, err
 	}
 
-	// Ensure the default & alt GCs are created by the controller.
-	ci := map[string]*controller.ClassInfo{}
-	ci[altGatewayClassName] = &controller.ClassInfo{
-		Description: "alt gateway class",
+	// Use the default & alt GCs when no class configs are provided.
+	if classConfigs == nil {
+		classConfigs = map[string]*controller.ClassInfo{}
+		classConfigs[altGatewayClassName] = &controller.ClassInfo{
+			Description: "alt gateway class",
+		}
+		classConfigs[gatewayClassName] = &controller.ClassInfo{
+			Description: "default gateway class",
+		}
 	}
-	ci[gatewayClassName] = &controller.ClassInfo{
-		Description: "default gateway class",
-	}
-	if err := controller.NewGatewayClassProvisioner(mgr, gatewayControllerName, ci); err != nil {
+
+	if err := controller.NewGatewayClassProvisioner(mgr, gatewayControllerName, classConfigs); err != nil {
 		return nil, err
 	}
 

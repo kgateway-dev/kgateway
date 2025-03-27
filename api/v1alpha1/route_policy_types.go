@@ -37,6 +37,11 @@ type TrafficPolicySpec struct {
 	AI *AIPolicy `json:"ai,omitempty"`
 
 	Transformation TransformationPolicy `json:"transformation,omitempty"`
+
+	// ExtProc specifies the external processing configuration for the policy.
+	// +optional
+	ExtProc *ExtProcPolicy `json:"extProc,omitempty"`
+
 	// ExtAuth specifies the external authentication configuration for the policy.
 	// This controls what external server to send requests to for authentication.
 	// +optional

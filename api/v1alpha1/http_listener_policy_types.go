@@ -73,7 +73,7 @@ type GrpcService struct {
 	// +kubebuilder:validation:Required
 	LogName string `json:"logName"`
 
-	// The backend gRPC service. Can be any type of supported backed (Kubernetes Service, kgateway Backend, etc..)
+	// The backend gRPC service. Can be any type of supported backend (Kubernetes Service, kgateway Backend, etc..)
 	// +kubebuilder:validation:Required
 	BackendRef *gwv1.BackendRef `json:"backendRef"`
 

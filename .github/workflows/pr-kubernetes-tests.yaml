@@ -39,7 +39,7 @@ jobs:
         # March 18, 2025: 7 minutes
         - cluster-name: 'cluster-three'
           go-test-args: '-v -timeout=25m'
-          go-test-run-regex: '^TestKgateway$$/^Deployer$$|^TestKgateway$$/^RouteDelegation$$|^TestKgateway$$/^Lambda$$'
+          go-test-run-regex: '^TestKgateway$$/^Deployer$$|^TestKgateway$$/^RouteDelegation$$|^TestKgateway$$/^Lambda$$|^TestKgateway$$/^ExtProc$$'
           localstack: 'true'
         # March 18, 2025: 6 minutes
         - cluster-name: 'cluster-ai'

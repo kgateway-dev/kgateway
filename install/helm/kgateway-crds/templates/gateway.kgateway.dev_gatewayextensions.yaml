@@ -87,48 +87,55 @@ spec:
                 type: object
               extProc:
                 properties:
-                  backendRef:
+                  grpcService:
                     properties:
-                      group:
-                        default: ""
-                        maxLength: 253
-                        pattern: ^$|^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                      authority:
                         type: string
-                      kind:
-                        default: Service
-                        maxLength: 63
-                        minLength: 1
-                        pattern: ^[a-zA-Z]([-a-zA-Z0-9]*[a-zA-Z0-9])?$
-                        type: string
-                      name:
-                        maxLength: 253
-                        minLength: 1
-                        type: string
-                      namespace:
-                        maxLength: 63
-                        minLength: 1
-                        pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
-                        type: string
-                      port:
-                        format: int32
-                        maximum: 65535
-                        minimum: 1
-                        type: integer
-                      weight:
-                        default: 1
-                        format: int32
-                        maximum: 1000000
-                        minimum: 0
-                        type: integer
+                      backendRef:
+                        properties:
+                          group:
+                            default: ""
+                            maxLength: 253
+                            pattern: ^$|^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                            type: string
+                          kind:
+                            default: Service
+                            maxLength: 63
+                            minLength: 1
+                            pattern: ^[a-zA-Z]([-a-zA-Z0-9]*[a-zA-Z0-9])?$
+                            type: string
+                          name:
+                            maxLength: 253
+                            minLength: 1
+                            type: string
+                          namespace:
+                            maxLength: 63
+                            minLength: 1
+                            pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                            type: string
+                          port:
+                            format: int32
+                            maximum: 65535
+                            minimum: 1
+                            type: integer
+                          weight:
+                            default: 1
+                            format: int32
+                            maximum: 1000000
+                            minimum: 0
+                            type: integer
+                        required:
+                        - name
+                        type: object
+                        x-kubernetes-validations:
+                        - message: Must have port for Service reference
+                          rule: '(size(self.group) == 0 && self.kind == ''Service'')
+                            ? has(self.port) : true'
                     required:
-                    - name
+                    - backendRef
                     type: object
-                    x-kubernetes-validations:
-                    - message: Must have port for Service reference
-                      rule: '(size(self.group) == 0 && self.kind == ''Service'') ?
-                        has(self.port) : true'
                 required:
-                - backendRef
+                - grpcService
                 type: object
               type:
                 enum:
