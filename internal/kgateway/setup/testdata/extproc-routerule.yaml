@@ -44,6 +44,19 @@ spec:
   selector:
     app: extproc
 ---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ratings
+  namespace: gwtest
+spec:
+  ports:
+  - port: 8080
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: ratings
+---
 apiVersion: discovery.k8s.io/v1
 kind: EndpointSlice
 metadata:
@@ -112,12 +125,15 @@ spec:
   hostnames:
     - "example.com"
   rules:
-    - backendRefs:
+    - filters:
+      - type: ExtensionRef
+        extensionRef:
+          group: gateway.kgateway.dev
+          kind: RoutePolicy
+          name: route-test
+      backendRefs:
       - name: reviews
         port: 8080
-        filters:
-          - type: ExtensionRef
-            extensionRef:
-              group: gateway.kgateway.dev
-              kind: RoutePolicy
-              name: route-test
+      - name: ratings
+        port: 8080
+
