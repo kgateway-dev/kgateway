@@ -79,16 +79,30 @@ ports:
     protocol: TCP
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: extproc-ext
+  namespace: gwtest
+spec:
+  type: ExtProc
+  extProc:
+    - backendRef:
+        name: extproc
+        port: 9091
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
 kind: RoutePolicy
 metadata:
   name: route-test
   namespace: gwtest
 spec:
   extProc:
-    grpcService:
-      backendRef:
-        name: extproc
-        port: 9091
+    extensionRef:
+      name: extproc-ext
+    # grpcService:
+    #   backendRef:
+    #     name: extproc
+    #     port: 9091
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
