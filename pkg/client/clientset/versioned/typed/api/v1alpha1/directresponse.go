@@ -5,13 +5,14 @@ package v1alpha1
 import (
 	context "context"
 
-	applyconfigurationapiv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/applyconfiguration/api/v1alpha1"
-	apiv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	scheme "github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned/scheme"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	gentype "k8s.io/client-go/gentype"
+
+	applyconfigurationapiv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/applyconfiguration/api/v1alpha1"
+	apiv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	scheme "github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned/scheme"
 )
 
 // DirectResponsesGetter has a method to return a DirectResponseInterface.

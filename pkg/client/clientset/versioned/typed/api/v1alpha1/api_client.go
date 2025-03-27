@@ -5,9 +5,10 @@ package v1alpha1
 import (
 	http "net/http"
 
+	rest "k8s.io/client-go/rest"
+
 	apiv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	scheme "github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned/scheme"
-	rest "k8s.io/client-go/rest"
 )
 
 type GatewayV1alpha1Interface interface {
