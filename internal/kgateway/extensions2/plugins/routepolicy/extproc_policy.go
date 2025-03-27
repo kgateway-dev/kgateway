@@ -12,7 +12,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
@@ -49,7 +48,7 @@ func enableExtprocFilter(pCtx *ir.RouteBackendContext) {
 func toEnvoyExtProc(
 	routePolicy *v1alpha1.RoutePolicy,
 	krtctx krt.HandlerContext,
-	gatewayExtensions *krtcollections.GatewayExtensionIndex,
+	gatewayExtensions krt.Collection[ir.GatewayExtension],
 ) (*envoy_ext_proc_v3.ExternalProcessor, error) {
 	extprocConfig := routePolicy.Spec.ExtProc
 	gExt, err := pluginutils.GetGatewayExtension(gatewayExtensions, krtctx, extprocConfig.ExtensionRef.Name, routePolicy.GetNamespace())
