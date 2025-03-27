@@ -3,16 +3,15 @@
 package fake
 
 import (
+	applyconfiguration "github.com/kgateway-dev/kgateway/v2/api/applyconfiguration"
+	clientset "github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
+	gatewayv1alpha1 "github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned/typed/api/v1alpha1"
+	fakegatewayv1alpha1 "github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned/typed/api/v1alpha1/fake"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"
 	fakediscovery "k8s.io/client-go/discovery/fake"
 	"k8s.io/client-go/testing"
-
-	applyconfiguration "github.com/kgateway-dev/kgateway/v2/api/applyconfiguration"
-	clientset "github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
-	gatewayv1alpha1 "github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned/typed/api/v1alpha1"
-	fakegatewayv1alpha1 "github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned/typed/api/v1alpha1/fake"
 )
 
 // NewSimpleClientset returns a clientset that will respond with the provided objects.

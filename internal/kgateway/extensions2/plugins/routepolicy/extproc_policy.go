@@ -50,12 +50,12 @@ func enableExtprocFilter(pCtx *ir.RouteBackendContext) {
 
 // toEnvoyExtProc converts an ExtProcPolicy to an ExternalProcessor
 func toEnvoyExtProc(
-	routePolicy *v1alpha1.RoutePolicy,
+	trafficPolicy *v1alpha1.TrafficPolicy,
 	krtctx krt.HandlerContext,
 	commoncol *common.CommonCollections,
 ) (*envoy_ext_proc_v3.ExternalProcessor, error) {
-	extprocConfig := routePolicy.Spec.ExtProc
-	gExt, err := pluginutils.GetGatewayExtension(commoncol.GatewayExtensions, krtctx, extprocConfig.ExtensionRef.Name, routePolicy.GetNamespace())
+	extprocConfig := trafficPolicy.Spec.ExtProc
+	gExt, err := pluginutils.GetGatewayExtension(commoncol.GatewayExtensions, krtctx, extprocConfig.ExtensionRef.Name, trafficPolicy.GetNamespace())
 	if err != nil {
 		return nil, fmt.Errorf("failed to get GatewayExtension %s: %s", extprocConfig.ExtensionRef.Name, err.Error())
 	}

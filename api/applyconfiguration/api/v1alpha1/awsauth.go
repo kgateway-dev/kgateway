@@ -3,9 +3,8 @@
 package v1alpha1
 
 import (
-	v1 "k8s.io/api/core/v1"
-
 	apiv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	v1 "k8s.io/api/core/v1"
 )
 
 // AwsAuthApplyConfiguration represents a declarative configuration of the AwsAuth type for use

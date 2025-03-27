@@ -32,6 +32,24 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: multipool
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.MultiPoolConfig
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AIPolicy
+  map:
+    fields:
+    - name: defaults
+      type:
+        list:
+          elementType:
+            namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.FieldDefault
+          elementRelationship: atomic
+    - name: promptEnrichment
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AIPromptEnrichment
+    - name: promptGuard
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AIPromptGuard
+    - name: routeType
+      type:
+        scalar: string
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AIPromptEnrichment
   map:
     fields:
@@ -56,24 +74,6 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: response
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.PromptguardResponse
-- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AIRoutePolicy
-  map:
-    fields:
-    - name: defaults
-      type:
-        list:
-          elementType:
-            namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.FieldDefault
-          elementRelationship: atomic
-    - name: promptEnrichment
-      type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AIPromptEnrichment
-    - name: promptGuard
-      type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AIPromptGuard
-    - name: routeType
-      type:
-        scalar: string
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AccessLog
   map:
     fields:
@@ -434,13 +434,7 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: securityContext
       type:
         namedType: io.k8s.api.core.v1.SecurityContext
-- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtAuthProvider
-  map:
-    fields:
-    - name: backendRef
-      type:
-        namedType: io.k8s.sigs.gateway-api.apis.v1.BackendRef
-- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtAuthRoutePolicy
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtAuthPolicy
   map:
     fields:
     - name: clearRouteCache
@@ -473,6 +467,12 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: withRequestBody
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.BufferSettings
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtAuthProvider
+  map:
+    fields:
+    - name: backendRef
+      type:
+        namedType: io.k8s.sigs.gateway-api.apis.v1.BackendRef
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtProcGrpcService
   map:
     fields:
@@ -1072,52 +1072,6 @@ var schemaYAML = typed.YAMLObject(`types:
           elementType:
             scalar: string
           elementRelationship: atomic
-- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.RoutePolicy
-  map:
-    fields:
-    - name: apiVersion
-      type:
-        scalar: string
-    - name: kind
-      type:
-        scalar: string
-    - name: metadata
-      type:
-        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta
-      default: {}
-    - name: spec
-      type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.RoutePolicySpec
-      default: {}
-    - name: status
-      type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SimpleStatus
-      default: {}
-- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.RoutePolicySpec
-  map:
-    fields:
-    - name: ai
-      type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AIRoutePolicy
-    - name: extAuth
-      type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtAuthRoutePolicy
-    - name: extProc
-      type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtProcPolicy
-    - name: rateLimit
-      type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.RateLimit
-    - name: targetRefs
-      type:
-        list:
-          elementType:
-            namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LocalPolicyTargetReference
-          elementRelationship: atomic
-    - name: transformation
-      type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.TransformationPolicy
-      default: {}
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SdsBootstrap
   map:
     fields:
@@ -1272,6 +1226,52 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: tokensPerFill
       type:
         scalar: numeric
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.TrafficPolicy
+  map:
+    fields:
+    - name: apiVersion
+      type:
+        scalar: string
+    - name: kind
+      type:
+        scalar: string
+    - name: metadata
+      type:
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta
+      default: {}
+    - name: spec
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.TrafficPolicySpec
+      default: {}
+    - name: status
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SimpleStatus
+      default: {}
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.TrafficPolicySpec
+  map:
+    fields:
+    - name: ai
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AIPolicy
+    - name: extAuth
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtAuthPolicy
+    - name: extProc
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtProcPolicy
+    - name: rateLimit
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.RateLimit
+    - name: targetRefs
+      type:
+        list:
+          elementType:
+            namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LocalPolicyTargetReference
+          elementRelationship: atomic
+    - name: transformation
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.TransformationPolicy
+      default: {}
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Transform
   map:
     fields:

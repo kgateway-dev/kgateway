@@ -47,15 +47,15 @@ func extAuthForSpec(
 
 func extAuthForSpecWithExtensionFunction(
 	gExtensionGetter func(name, namespace string) (*ir.GatewayExtension, *ir.BackendObjectIR, error),
-	routepolicy *v1alpha1.TrafficPolicy,
+	trafficpolicy *v1alpha1.TrafficPolicy,
 	out *trafficPolicySpecIr,
 ) {
-	routeSpec := &routepolicy.Spec
+	policySpec := &trafficpolicy.Spec
 
-	if routeSpec == nil || routeSpec.ExtAuth == nil {
+	if policySpec == nil || policySpec.ExtAuth == nil {
 		return
 	}
-	spec := routeSpec.ExtAuth
+	spec := policySpec.ExtAuth
 	// Create the ExtAuthz configuration
 	extAuth := &envoy_ext_authz_v3.ExtAuthz{}
 	if spec.FailureModeAllow != nil {
@@ -90,7 +90,7 @@ func extAuthForSpecWithExtensionFunction(
 	}
 
 	if spec.ExtensionRef != nil {
-		_, backend, err := gExtensionGetter(spec.ExtensionRef.Name, routepolicy.GetNamespace())
+		_, backend, err := gExtensionGetter(spec.ExtensionRef.Name, trafficpolicy.GetNamespace())
 		if err != nil {
 			out.errors = append(out.errors, err)
 			return
