@@ -16,10 +16,9 @@ metadata:
 spec:
   type: ExtProc
   extProc:
-    extensionRef:
-      backendRef:
-        name: ext-proc-grpc
-        port: 4444
+    backendRef:
+      name: ext-proc-grpc
+      port: 4444
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
