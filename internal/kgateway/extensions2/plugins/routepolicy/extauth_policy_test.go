@@ -38,7 +38,7 @@ func TestExtAuthForSpec(t *testing.T) {
 			EmitFilterStateStats: truthy,
 		},
 		}}
-		out := &routeSpecIr{}
+		out := &trafficPolicySpecIr{}
 
 		// Execute
 		extAuthForSpecWithExtensionFunction(gExtGetter, spec, out)
@@ -58,7 +58,7 @@ func TestExtAuthForSpec(t *testing.T) {
 			FailureModeAllow: &truthy,
 		},
 		}}
-		out := &routeSpecIr{}
+		out := &trafficPolicySpecIr{}
 
 		// Execute
 		extAuthForSpecWithExtensionFunction(gExtGetter, spec, out)
@@ -82,7 +82,7 @@ func TestExtAuthForSpec(t *testing.T) {
 			},
 		},
 		}}
-		out := &routeSpecIr{}
+		out := &trafficPolicySpecIr{}
 
 		// Execute
 		extAuthForSpecWithExtensionFunction(gExtGetter, spec, out)
@@ -104,7 +104,7 @@ func TestExtAuthForSpec(t *testing.T) {
 			MetadataContextNamespaces: []string{"jwt", "custom"},
 		},
 		}}
-		out := &routeSpecIr{}
+		out := &trafficPolicySpecIr{}
 
 		// Execute
 		extAuthForSpecWithExtensionFunction(gExtGetter, spec, out)
@@ -125,7 +125,7 @@ func TestExtAuthForSpec(t *testing.T) {
 			IncludeTLSSession:      &truthy,
 		},
 		}}
-		out := &routeSpecIr{}
+		out := &trafficPolicySpecIr{}
 
 		// Execute
 		extAuthForSpecWithExtensionFunction(gExtGetter, spec, out)
@@ -140,10 +140,10 @@ func TestExtAuthForSpec(t *testing.T) {
 func TestApplyForRoute(t *testing.T) {
 	t.Run("applies ext auth configuration to route", func(t *testing.T) {
 		// Setup
-		plugin := &routePolicyPluginGwPass{}
+		plugin := &trafficPolicyPluginGwPass{}
 		ctx := context.Background()
-		policy := &routePolicy{
-			spec: routeSpecIr{
+		policy := &trafficPolicy{
+			spec: trafficPolicySpecIr{
 				extAuth: &extAuthIR{
 					filter: &envoy_ext_authz_v3.ExtAuthz{
 						FailureModeAllow: true,
@@ -170,10 +170,10 @@ func TestApplyForRoute(t *testing.T) {
 
 	t.Run("handles nil ext auth configuration", func(t *testing.T) {
 		// Setup
-		plugin := &routePolicyPluginGwPass{}
+		plugin := &trafficPolicyPluginGwPass{}
 		ctx := context.Background()
-		policy := &routePolicy{
-			spec: routeSpecIr{
+		policy := &trafficPolicy{
+			spec: trafficPolicySpecIr{
 				extAuth: nil,
 			},
 		}
@@ -194,10 +194,10 @@ func TestApplyForRoute(t *testing.T) {
 func TestApplyListenerPlugin(t *testing.T) {
 	t.Run("configures listener with ext auth", func(t *testing.T) {
 		// Setup
-		plugin := &routePolicyPluginGwPass{}
+		plugin := &trafficPolicyPluginGwPass{}
 		ctx := context.Background()
-		policy := &routePolicy{
-			spec: routeSpecIr{
+		policy := &trafficPolicy{
+			spec: trafficPolicySpecIr{
 				extAuth: &extAuthIR{
 					filter: &envoy_ext_authz_v3.ExtAuthz{
 						FailureModeAllow: true,
@@ -237,7 +237,7 @@ func TestApplyListenerPlugin(t *testing.T) {
 func TestHttpFilters(t *testing.T) {
 	t.Run("adds ext auth filter to filter chain", func(t *testing.T) {
 		// Setup
-		plugin := &routePolicyPluginGwPass{
+		plugin := &trafficPolicyPluginGwPass{
 			extAuth: &extAuthIR{
 				filter: &envoy_ext_authz_v3.ExtAuthz{
 					FailureModeAllow: true,
@@ -262,10 +262,10 @@ func TestHttpFilters(t *testing.T) {
 func TestExtAuthPolicyPlugin(t *testing.T) {
 	t.Run("applies ext auth configuration to route", func(t *testing.T) {
 		// Setup
-		plugin := &routePolicyPluginGwPass{}
+		plugin := &trafficPolicyPluginGwPass{}
 		ctx := context.Background()
-		policy := &routePolicy{
-			spec: routeSpecIr{
+		policy := &trafficPolicy{
+			spec: trafficPolicySpecIr{
 				extAuth: &extAuthIR{
 					filter: &envoy_ext_authz_v3.ExtAuthz{
 						FailureModeAllow: true,
@@ -296,10 +296,10 @@ func TestExtAuthPolicyPlugin(t *testing.T) {
 
 	t.Run("handles disabled ext auth configuration", func(t *testing.T) {
 		// Setup
-		plugin := &routePolicyPluginGwPass{}
+		plugin := &trafficPolicyPluginGwPass{}
 		ctx := context.Background()
-		policy := &routePolicy{
-			spec: routeSpecIr{
+		policy := &trafficPolicy{
+			spec: trafficPolicySpecIr{
 				extAuth: &extAuthIR{
 					enablement: v1alpha1.ExtAuthDisableAll,
 				},

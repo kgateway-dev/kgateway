@@ -23,20 +23,22 @@ type extAuthIR struct {
 func extAuthForSpec(
 	gatewayExtensions krt.Collection[ir.GatewayExtension],
 	krtctx krt.HandlerContext,
-	routepolicy *v1alpha1.TrafficPolicy,
-	out *routeSpecIr) {
+	trafficpolicy *v1alpha1.TrafficPolicy,
+	out *trafficPolicySpecIr,
+) {
 	getter := (func(name, namespace string) (*ir.GatewayExtension, error) {
 		return pluginutils.GetGatewayExtension(gatewayExtensions, krtctx, name, namespace)
 	})
 
-	extAuthForSpecWithExtensionFunction(getter, routepolicy, out)
+	extAuthForSpecWithExtensionFunction(getter, trafficpolicy, out)
 }
 
 func extAuthForSpecWithExtensionFunction(
 	gExtensionGetter func(name, namespace string) (*ir.GatewayExtension, error),
-	routepolicy *v1alpha1.TrafficPolicy,
-	out *routeSpecIr) {
-	routeSpec := &routepolicy.Spec
+	trafficpolicy *v1alpha1.TrafficPolicy,
+	out *trafficPolicySpecIr,
+) {
+	routeSpec := &trafficpolicy.Spec
 
 	if routeSpec == nil || routeSpec.ExtAuth == nil {
 		return
@@ -77,7 +79,7 @@ func extAuthForSpecWithExtensionFunction(
 
 	if spec.ExtensionRef != nil {
 		// service, err := commoncol.BackendIndex.GetBackendFromRef(krtctx, parentSrc, log.GrpcService.BackendRef.BackendObjectReference)
-		gExt, err := gExtensionGetter(spec.ExtensionRef.Name, routepolicy.GetNamespace())
+		gExt, err := gExtensionGetter(spec.ExtensionRef.Name, trafficpolicy.GetNamespace())
 		if err != nil {
 			out.errors = append(out.errors, err)
 			return

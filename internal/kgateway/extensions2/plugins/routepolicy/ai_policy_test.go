@@ -32,7 +32,7 @@ func TestProcessAIRoutePolicy(t *testing.T) {
 
 	t.Run("sets streaming header for chat streaming route", func(t *testing.T) {
 		// Setup
-		plugin := &routePolicyPluginGwPass{}
+		plugin := &trafficPolicyPluginGwPass{}
 		chatStreamingType := v1alpha1.CHAT_STREAMING
 		aiConfig := &v1alpha1.AIRoutePolicy{
 			RouteType: &chatStreamingType,
@@ -44,9 +44,9 @@ func TestProcessAIRoutePolicy(t *testing.T) {
 		}
 
 		// Execute
-		err := preProcessAITrafficPolicy(aiConfig, aiIR)
+		err := preProcessAIRoutePolicy(aiConfig, aiIR)
 		require.NoError(t, err)
-		err = plugin.processAITrafficPolicy(typedFilterConfig, aiIR)
+		err = plugin.processAIRoutePolicy(typedFilterConfig, aiIR)
 		require.NoError(t, err)
 
 		// Verify streaming header was added
@@ -68,7 +68,7 @@ func TestProcessAIRoutePolicy(t *testing.T) {
 
 	t.Run("sets debug logging when environment variable is set", func(t *testing.T) {
 		// Setup
-		plugin := &routePolicyPluginGwPass{}
+		plugin := &trafficPolicyPluginGwPass{}
 		aiConfig := &v1alpha1.AIRoutePolicy{}
 		// extproc and transformation will be set by preProcessAIRoutePolicy
 		aiSecret := &ir.Secret{}
@@ -82,10 +82,10 @@ func TestProcessAIRoutePolicy(t *testing.T) {
 		defer os.Setenv("AI_PLUGIN_DEBUG_TRANSFORMATIONS", oldEnv)
 
 		// Execute
-		err := preProcessAITrafficPolicy(aiConfig, aiIR)
+		err := preProcessAIRoutePolicy(aiConfig, aiIR)
 		require.NoError(t, err)
 
-		err = plugin.processAITrafficPolicy(typedFilterConfig, aiIR)
+		err = plugin.processAIRoutePolicy(typedFilterConfig, aiIR)
 		require.NoError(t, err)
 
 		// Verify
@@ -98,7 +98,7 @@ func TestProcessAIRoutePolicy(t *testing.T) {
 
 	t.Run("applies defaults and prompt enrichment", func(t *testing.T) {
 		// Setup
-		plugin := &routePolicyPluginGwPass{}
+		plugin := &trafficPolicyPluginGwPass{}
 		aiConfig := &v1alpha1.AIRoutePolicy{
 			Defaults: []v1alpha1.FieldDefault{
 				{
@@ -121,10 +121,10 @@ func TestProcessAIRoutePolicy(t *testing.T) {
 			AISecret: aiSecret,
 		}
 		// Execute
-		err := preProcessAITrafficPolicy(aiConfig, aiIR)
+		err := preProcessAIRoutePolicy(aiConfig, aiIR)
 		require.NoError(t, err)
 
-		err = plugin.processAITrafficPolicy(typedFilterConfig, aiIR)
+		err = plugin.processAIRoutePolicy(typedFilterConfig, aiIR)
 		require.NoError(t, err)
 
 		// Verify
@@ -148,7 +148,7 @@ func TestProcessAIRoutePolicy(t *testing.T) {
 
 	t.Run("applies prompt guard configuration", func(t *testing.T) {
 		// Setup
-		plugin := &routePolicyPluginGwPass{}
+		plugin := &trafficPolicyPluginGwPass{}
 		aiConfig := &v1alpha1.AIRoutePolicy{
 			PromptGuard: &v1alpha1.AIPromptGuard{
 				Request: &v1alpha1.PromptguardRequest{
@@ -174,10 +174,10 @@ func TestProcessAIRoutePolicy(t *testing.T) {
 		}
 
 		// Execute
-		err := preProcessAITrafficPolicy(aiConfig, aiIR)
+		err := preProcessAIRoutePolicy(aiConfig, aiIR)
 		require.NoError(t, err)
 
-		err = plugin.processAITrafficPolicy(typedFilterConfig, aiIR)
+		err = plugin.processAIRoutePolicy(typedFilterConfig, aiIR)
 		require.NoError(t, err)
 
 		// Verify
@@ -239,7 +239,7 @@ func TestProcessAIRoutePolicy(t *testing.T) {
 		}
 
 		// Execute
-		err := preProcessAITrafficPolicy(aiConfig, aiIR)
+		err := preProcessAIRoutePolicy(aiConfig, aiIR)
 
 		// Verify
 		require.Error(t, err)
