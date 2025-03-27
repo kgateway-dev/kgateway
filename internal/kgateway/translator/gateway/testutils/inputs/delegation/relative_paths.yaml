@@ -1,16 +1,4 @@
 apiVersion: gateway.networking.k8s.io/v1
-kind: Gateway
-metadata:
-  name: example-gateway
-  namespace: infra
-spec:
-  gatewayClassName: example-gateway-class
-  listeners:
-  - name: http
-    protocol: HTTP
-    port: 80
----
-apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
   name: example-route
@@ -64,25 +52,13 @@ spec:
       name: "*"
       namespace: a
 ---
-apiVersion: v1
-kind: Service
-metadata:
-  name: example-svc
-  namespace: infra
-spec:
-  selector:
-    test: test
-  ports:
-    - protocol: TCP
-      port: 80
----
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
   name: route-a
   namespace: a
   annotations:
-    delegation.gateway.solo.io/inherit-parent-matcher: "true"
+    delegation.kgateway.dev/inherit-parent-matcher: "true"
 spec:
   rules:
   - matches:
@@ -122,22 +98,12 @@ metadata:
   name: route-b
   namespace: a
   annotations:
-    delegation.gateway.solo.io/inherit-parent-matcher: "true"
+    delegation.kgateway.dev/inherit-parent-matcher: "true"
 spec:
   rules:
   - backendRefs:
     - name: svc-b
       port: 8090
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: svc-a
-  namespace: a
-spec:
-  ports:
-    - protocol: TCP
-      port: 8080
 ---
 apiVersion: v1
 kind: Service
@@ -148,4 +114,3 @@ spec:
   ports:
     - protocol: TCP
       port: 8090
----

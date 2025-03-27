@@ -55,7 +55,7 @@ metadata:
   name: svc1
   namespace: team1
   annotations:
-    delegation.gateway.solo.io/inherit-parent-matcher: "true"
+    delegation.kgateway.dev/inherit-parent-matcher: "true"
 spec:
   rules:
   - matches:

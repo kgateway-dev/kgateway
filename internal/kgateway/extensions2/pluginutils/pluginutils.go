@@ -1,12 +1,15 @@
 package pluginutils
 
 import (
+	"fmt"
+
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 )
@@ -54,4 +57,15 @@ func SetExtensionProtocolOptions(out *envoy_config_cluster_v3.Cluster, filterNam
 
 	out.GetTypedExtensionProtocolOptions()[filterName] = protoextAny
 	return nil
+}
+
+// BackendToEnvoyCluster converts a name namespaced backendref and creates a valid envoy cluster name
+func BackendToEnvoyCluster(backendRef *gwv1.BackendRef) string {
+	// For non-namespaced resources, return only name
+	if backendRef.Namespace == nil {
+		return string(backendRef.Name)
+	}
+
+	// Don't use dots in the name as it messes up prometheus stats
+	return fmt.Sprintf("%s_%s", backendRef.Name, *backendRef.Namespace)
 }

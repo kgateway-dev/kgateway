@@ -18,7 +18,7 @@ import (
 // inheritMatcherAnnotation is the annotation used on an child HTTPRoute that
 // participates in a delegation chain to indicate that child route should inherit
 // the route matcher from the parent route.
-const inheritMatcherAnnotation = "delegation.gateway.solo.io/inherit-parent-matcher"
+const inheritMatcherAnnotation = "delegation.kgateway.dev/inherit-parent-matcher"
 
 // filterDelegatedChildren filters the referenced children and their rules based
 // on parent matchers, filters their hostnames, and applies parent matcher

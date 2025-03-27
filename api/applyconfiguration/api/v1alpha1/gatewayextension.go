@@ -12,58 +12,58 @@ import (
 	apiv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 )
 
-// ListenerPolicyApplyConfiguration represents a declarative configuration of the ListenerPolicy type for use
+// GatewayExtensionApplyConfiguration represents a declarative configuration of the GatewayExtension type for use
 // with apply.
-type ListenerPolicyApplyConfiguration struct {
+type GatewayExtensionApplyConfiguration struct {
 	v1.TypeMetaApplyConfiguration    `json:",inline"`
 	*v1.ObjectMetaApplyConfiguration `json:"metadata,omitempty"`
-	Spec                             *ListenerPolicySpecApplyConfiguration `json:"spec,omitempty"`
-	Status                           *PolicyStatusApplyConfiguration       `json:"status,omitempty"`
+	Spec                             *GatewayExtensionSpecApplyConfiguration   `json:"spec,omitempty"`
+	Status                           *GatewayExtensionStatusApplyConfiguration `json:"status,omitempty"`
 }
 
-// ListenerPolicy constructs a declarative configuration of the ListenerPolicy type for use with
+// GatewayExtension constructs a declarative configuration of the GatewayExtension type for use with
 // apply.
-func ListenerPolicy(name, namespace string) *ListenerPolicyApplyConfiguration {
-	b := &ListenerPolicyApplyConfiguration{}
+func GatewayExtension(name, namespace string) *GatewayExtensionApplyConfiguration {
+	b := &GatewayExtensionApplyConfiguration{}
 	b.WithName(name)
 	b.WithNamespace(namespace)
-	b.WithKind("ListenerPolicy")
+	b.WithKind("GatewayExtension")
 	b.WithAPIVersion("gateway.kgateway.dev/v1alpha1")
 	return b
 }
 
-// ExtractListenerPolicy extracts the applied configuration owned by fieldManager from
-// listenerPolicy. If no managedFields are found in listenerPolicy for fieldManager, a
-// ListenerPolicyApplyConfiguration is returned with only the Name, Namespace (if applicable),
+// ExtractGatewayExtension extracts the applied configuration owned by fieldManager from
+// gatewayExtension. If no managedFields are found in gatewayExtension for fieldManager, a
+// GatewayExtensionApplyConfiguration is returned with only the Name, Namespace (if applicable),
 // APIVersion and Kind populated. It is possible that no managed fields were found for because other
 // field managers have taken ownership of all the fields previously owned by fieldManager, or because
 // the fieldManager never owned fields any fields.
-// listenerPolicy must be a unmodified ListenerPolicy API object that was retrieved from the Kubernetes API.
-// ExtractListenerPolicy provides a way to perform a extract/modify-in-place/apply workflow.
+// gatewayExtension must be a unmodified GatewayExtension API object that was retrieved from the Kubernetes API.
+// ExtractGatewayExtension provides a way to perform a extract/modify-in-place/apply workflow.
 // Note that an extracted apply configuration will contain fewer fields than what the fieldManager previously
 // applied if another fieldManager has updated or force applied any of the previously applied fields.
 // Experimental!
-func ExtractListenerPolicy(listenerPolicy *apiv1alpha1.ListenerPolicy, fieldManager string) (*ListenerPolicyApplyConfiguration, error) {
-	return extractListenerPolicy(listenerPolicy, fieldManager, "")
+func ExtractGatewayExtension(gatewayExtension *apiv1alpha1.GatewayExtension, fieldManager string) (*GatewayExtensionApplyConfiguration, error) {
+	return extractGatewayExtension(gatewayExtension, fieldManager, "")
 }
 
-// ExtractListenerPolicyStatus is the same as ExtractListenerPolicy except
+// ExtractGatewayExtensionStatus is the same as ExtractGatewayExtension except
 // that it extracts the status subresource applied configuration.
 // Experimental!
-func ExtractListenerPolicyStatus(listenerPolicy *apiv1alpha1.ListenerPolicy, fieldManager string) (*ListenerPolicyApplyConfiguration, error) {
-	return extractListenerPolicy(listenerPolicy, fieldManager, "status")
+func ExtractGatewayExtensionStatus(gatewayExtension *apiv1alpha1.GatewayExtension, fieldManager string) (*GatewayExtensionApplyConfiguration, error) {
+	return extractGatewayExtension(gatewayExtension, fieldManager, "status")
 }
 
-func extractListenerPolicy(listenerPolicy *apiv1alpha1.ListenerPolicy, fieldManager string, subresource string) (*ListenerPolicyApplyConfiguration, error) {
-	b := &ListenerPolicyApplyConfiguration{}
-	err := managedfields.ExtractInto(listenerPolicy, internal.Parser().Type("com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ListenerPolicy"), fieldManager, b, subresource)
+func extractGatewayExtension(gatewayExtension *apiv1alpha1.GatewayExtension, fieldManager string, subresource string) (*GatewayExtensionApplyConfiguration, error) {
+	b := &GatewayExtensionApplyConfiguration{}
+	err := managedfields.ExtractInto(gatewayExtension, internal.Parser().Type("com.github.kgateway-dev.kgateway.v2.api.v1alpha1.GatewayExtension"), fieldManager, b, subresource)
 	if err != nil {
 		return nil, err
 	}
-	b.WithName(listenerPolicy.Name)
-	b.WithNamespace(listenerPolicy.Namespace)
+	b.WithName(gatewayExtension.Name)
+	b.WithNamespace(gatewayExtension.Namespace)
 
-	b.WithKind("ListenerPolicy")
+	b.WithKind("GatewayExtension")
 	b.WithAPIVersion("gateway.kgateway.dev/v1alpha1")
 	return b, nil
 }
@@ -71,7 +71,7 @@ func extractListenerPolicy(listenerPolicy *apiv1alpha1.ListenerPolicy, fieldMana
 // WithKind sets the Kind field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Kind field is set to the value of the last call.
-func (b *ListenerPolicyApplyConfiguration) WithKind(value string) *ListenerPolicyApplyConfiguration {
+func (b *GatewayExtensionApplyConfiguration) WithKind(value string) *GatewayExtensionApplyConfiguration {
 	b.TypeMetaApplyConfiguration.Kind = &value
 	return b
 }
@@ -79,7 +79,7 @@ func (b *ListenerPolicyApplyConfiguration) WithKind(value string) *ListenerPolic
 // WithAPIVersion sets the APIVersion field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the APIVersion field is set to the value of the last call.
-func (b *ListenerPolicyApplyConfiguration) WithAPIVersion(value string) *ListenerPolicyApplyConfiguration {
+func (b *GatewayExtensionApplyConfiguration) WithAPIVersion(value string) *GatewayExtensionApplyConfiguration {
 	b.TypeMetaApplyConfiguration.APIVersion = &value
 	return b
 }
@@ -87,7 +87,7 @@ func (b *ListenerPolicyApplyConfiguration) WithAPIVersion(value string) *Listene
 // WithName sets the Name field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Name field is set to the value of the last call.
-func (b *ListenerPolicyApplyConfiguration) WithName(value string) *ListenerPolicyApplyConfiguration {
+func (b *GatewayExtensionApplyConfiguration) WithName(value string) *GatewayExtensionApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
 	b.ObjectMetaApplyConfiguration.Name = &value
 	return b
@@ -96,7 +96,7 @@ func (b *ListenerPolicyApplyConfiguration) WithName(value string) *ListenerPolic
 // WithGenerateName sets the GenerateName field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the GenerateName field is set to the value of the last call.
-func (b *ListenerPolicyApplyConfiguration) WithGenerateName(value string) *ListenerPolicyApplyConfiguration {
+func (b *GatewayExtensionApplyConfiguration) WithGenerateName(value string) *GatewayExtensionApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
 	b.ObjectMetaApplyConfiguration.GenerateName = &value
 	return b
@@ -105,7 +105,7 @@ func (b *ListenerPolicyApplyConfiguration) WithGenerateName(value string) *Liste
 // WithNamespace sets the Namespace field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Namespace field is set to the value of the last call.
-func (b *ListenerPolicyApplyConfiguration) WithNamespace(value string) *ListenerPolicyApplyConfiguration {
+func (b *GatewayExtensionApplyConfiguration) WithNamespace(value string) *GatewayExtensionApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
 	b.ObjectMetaApplyConfiguration.Namespace = &value
 	return b
@@ -114,7 +114,7 @@ func (b *ListenerPolicyApplyConfiguration) WithNamespace(value string) *Listener
 // WithUID sets the UID field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the UID field is set to the value of the last call.
-func (b *ListenerPolicyApplyConfiguration) WithUID(value types.UID) *ListenerPolicyApplyConfiguration {
+func (b *GatewayExtensionApplyConfiguration) WithUID(value types.UID) *GatewayExtensionApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
 	b.ObjectMetaApplyConfiguration.UID = &value
 	return b
@@ -123,7 +123,7 @@ func (b *ListenerPolicyApplyConfiguration) WithUID(value types.UID) *ListenerPol
 // WithResourceVersion sets the ResourceVersion field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the ResourceVersion field is set to the value of the last call.
-func (b *ListenerPolicyApplyConfiguration) WithResourceVersion(value string) *ListenerPolicyApplyConfiguration {
+func (b *GatewayExtensionApplyConfiguration) WithResourceVersion(value string) *GatewayExtensionApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
 	b.ObjectMetaApplyConfiguration.ResourceVersion = &value
 	return b
@@ -132,7 +132,7 @@ func (b *ListenerPolicyApplyConfiguration) WithResourceVersion(value string) *Li
 // WithGeneration sets the Generation field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Generation field is set to the value of the last call.
-func (b *ListenerPolicyApplyConfiguration) WithGeneration(value int64) *ListenerPolicyApplyConfiguration {
+func (b *GatewayExtensionApplyConfiguration) WithGeneration(value int64) *GatewayExtensionApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
 	b.ObjectMetaApplyConfiguration.Generation = &value
 	return b
@@ -141,7 +141,7 @@ func (b *ListenerPolicyApplyConfiguration) WithGeneration(value int64) *Listener
 // WithCreationTimestamp sets the CreationTimestamp field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the CreationTimestamp field is set to the value of the last call.
-func (b *ListenerPolicyApplyConfiguration) WithCreationTimestamp(value metav1.Time) *ListenerPolicyApplyConfiguration {
+func (b *GatewayExtensionApplyConfiguration) WithCreationTimestamp(value metav1.Time) *GatewayExtensionApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
 	b.ObjectMetaApplyConfiguration.CreationTimestamp = &value
 	return b
@@ -150,7 +150,7 @@ func (b *ListenerPolicyApplyConfiguration) WithCreationTimestamp(value metav1.Ti
 // WithDeletionTimestamp sets the DeletionTimestamp field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the DeletionTimestamp field is set to the value of the last call.
-func (b *ListenerPolicyApplyConfiguration) WithDeletionTimestamp(value metav1.Time) *ListenerPolicyApplyConfiguration {
+func (b *GatewayExtensionApplyConfiguration) WithDeletionTimestamp(value metav1.Time) *GatewayExtensionApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
 	b.ObjectMetaApplyConfiguration.DeletionTimestamp = &value
 	return b
@@ -159,7 +159,7 @@ func (b *ListenerPolicyApplyConfiguration) WithDeletionTimestamp(value metav1.Ti
 // WithDeletionGracePeriodSeconds sets the DeletionGracePeriodSeconds field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the DeletionGracePeriodSeconds field is set to the value of the last call.
-func (b *ListenerPolicyApplyConfiguration) WithDeletionGracePeriodSeconds(value int64) *ListenerPolicyApplyConfiguration {
+func (b *GatewayExtensionApplyConfiguration) WithDeletionGracePeriodSeconds(value int64) *GatewayExtensionApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
 	b.ObjectMetaApplyConfiguration.DeletionGracePeriodSeconds = &value
 	return b
@@ -169,7 +169,7 @@ func (b *ListenerPolicyApplyConfiguration) WithDeletionGracePeriodSeconds(value 
 // and returns the receiver, so that objects can be build by chaining "With" function invocations.
 // If called multiple times, the entries provided by each call will be put on the Labels field,
 // overwriting an existing map entries in Labels field with the same key.
-func (b *ListenerPolicyApplyConfiguration) WithLabels(entries map[string]string) *ListenerPolicyApplyConfiguration {
+func (b *GatewayExtensionApplyConfiguration) WithLabels(entries map[string]string) *GatewayExtensionApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
 	if b.ObjectMetaApplyConfiguration.Labels == nil && len(entries) > 0 {
 		b.ObjectMetaApplyConfiguration.Labels = make(map[string]string, len(entries))
@@ -184,7 +184,7 @@ func (b *ListenerPolicyApplyConfiguration) WithLabels(entries map[string]string)
 // and returns the receiver, so that objects can be build by chaining "With" function invocations.
 // If called multiple times, the entries provided by each call will be put on the Annotations field,
 // overwriting an existing map entries in Annotations field with the same key.
-func (b *ListenerPolicyApplyConfiguration) WithAnnotations(entries map[string]string) *ListenerPolicyApplyConfiguration {
+func (b *GatewayExtensionApplyConfiguration) WithAnnotations(entries map[string]string) *GatewayExtensionApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
 	if b.ObjectMetaApplyConfiguration.Annotations == nil && len(entries) > 0 {
 		b.ObjectMetaApplyConfiguration.Annotations = make(map[string]string, len(entries))
@@ -198,7 +198,7 @@ func (b *ListenerPolicyApplyConfiguration) WithAnnotations(entries map[string]st
 // WithOwnerReferences adds the given value to the OwnerReferences field in the declarative configuration
 // and returns the receiver, so that objects can be build by chaining "With" function invocations.
 // If called multiple times, values provided by each call will be appended to the OwnerReferences field.
-func (b *ListenerPolicyApplyConfiguration) WithOwnerReferences(values ...*v1.OwnerReferenceApplyConfiguration) *ListenerPolicyApplyConfiguration {
+func (b *GatewayExtensionApplyConfiguration) WithOwnerReferences(values ...*v1.OwnerReferenceApplyConfiguration) *GatewayExtensionApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
 	for i := range values {
 		if values[i] == nil {
@@ -212,7 +212,7 @@ func (b *ListenerPolicyApplyConfiguration) WithOwnerReferences(values ...*v1.Own
 // WithFinalizers adds the given value to the Finalizers field in the declarative configuration
 // and returns the receiver, so that objects can be build by chaining "With" function invocations.
 // If called multiple times, values provided by each call will be appended to the Finalizers field.
-func (b *ListenerPolicyApplyConfiguration) WithFinalizers(values ...string) *ListenerPolicyApplyConfiguration {
+func (b *GatewayExtensionApplyConfiguration) WithFinalizers(values ...string) *GatewayExtensionApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
 	for i := range values {
 		b.ObjectMetaApplyConfiguration.Finalizers = append(b.ObjectMetaApplyConfiguration.Finalizers, values[i])
@@ -220,7 +220,7 @@ func (b *ListenerPolicyApplyConfiguration) WithFinalizers(values ...string) *Lis
 	return b
 }
 
-func (b *ListenerPolicyApplyConfiguration) ensureObjectMetaApplyConfigurationExists() {
+func (b *GatewayExtensionApplyConfiguration) ensureObjectMetaApplyConfigurationExists() {
 	if b.ObjectMetaApplyConfiguration == nil {
 		b.ObjectMetaApplyConfiguration = &v1.ObjectMetaApplyConfiguration{}
 	}
@@ -229,7 +229,7 @@ func (b *ListenerPolicyApplyConfiguration) ensureObjectMetaApplyConfigurationExi
 // WithSpec sets the Spec field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Spec field is set to the value of the last call.
-func (b *ListenerPolicyApplyConfiguration) WithSpec(value *ListenerPolicySpecApplyConfiguration) *ListenerPolicyApplyConfiguration {
+func (b *GatewayExtensionApplyConfiguration) WithSpec(value *GatewayExtensionSpecApplyConfiguration) *GatewayExtensionApplyConfiguration {
 	b.Spec = value
 	return b
 }
@@ -237,13 +237,13 @@ func (b *ListenerPolicyApplyConfiguration) WithSpec(value *ListenerPolicySpecApp
 // WithStatus sets the Status field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Status field is set to the value of the last call.
-func (b *ListenerPolicyApplyConfiguration) WithStatus(value *PolicyStatusApplyConfiguration) *ListenerPolicyApplyConfiguration {
+func (b *GatewayExtensionApplyConfiguration) WithStatus(value *GatewayExtensionStatusApplyConfiguration) *GatewayExtensionApplyConfiguration {
 	b.Status = value
 	return b
 }
 
 // GetName retrieves the value of the Name field in the declarative configuration.
-func (b *ListenerPolicyApplyConfiguration) GetName() *string {
+func (b *GatewayExtensionApplyConfiguration) GetName() *string {
 	b.ensureObjectMetaApplyConfigurationExists()
 	return b.ObjectMetaApplyConfiguration.Name
 }

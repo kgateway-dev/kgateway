@@ -36,13 +36,6 @@ resources: {}
   #   cpu: 100m
   #   memory: 128Mi
 
-autoscaling:
-  enabled: false
-  minReplicas: 1
-  maxReplicas: 100
-  targetCPUUtilizationPercentage: 80
-  # targetMemoryUtilizationPercentage: 80
-
 nodeSelector: {}
 
 tolerations: []
@@ -62,25 +55,7 @@ controller:
     type: ClusterIP
     ports:
       grpc: 9977
-
-# GatewayClass configuration
-gatewayClass:
-  enabled: true
-  name: "kgateway"
-  description: "kgateway controller"
-  controllerName: "kgateway.dev/kgateway"
-  labels: {}
-  annotations: {}
-
-# WaypointClass configuration
-waypointClass:
-  enabled: true
-  name: "kgateway-waypoint"
-  description: "kgateway waypoint controller"
-  controllerName: "kgateway.dev/kgateway"
-  labels: {}
-  annotations:
-    ambient.istio.io/waypoint-inbound-binding: PROXY/15088
+  extraEnv: {}
 
 image:
   registry: cr.kgateway.dev/kgateway-dev
@@ -89,3 +64,4 @@ image:
 
 inferenceExtension:
   enabled: false
+  autoProvision: false

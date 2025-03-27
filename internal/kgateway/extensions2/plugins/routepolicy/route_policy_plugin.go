@@ -8,10 +8,9 @@ import (
 	"strconv"
 	"time"
 
-	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
-	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	exteniondynamicmodulev3 "github.com/envoyproxy/go-control-plane/envoy/extensions/dynamic_modules/v3"
 	dynamicmodulesv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/dynamic_modules/v3"
+	localratelimitv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/local_ratelimit/v3"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"google.golang.org/protobuf/proto"
 	skubeclient "istio.io/istio/pkg/config/schema/kubeclient"
@@ -21,6 +20,11 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/watch"
+
+	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoy_ext_authz_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_authz/v3"
+	envoy_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
@@ -41,9 +45,21 @@ import (
 
 const (
 	transformationFilterNamePrefix = "transformation"
+	extAuthGlobalDisableFilterName = "global_disable/ext_auth"
+	extAuthGlobalDisableFilterKey  = "global_disable/ext_auth"
 	rustformationFilterNamePrefix  = "dynamic_modules/simple_mutations"
 	metadataRouteTransformation    = "transformation/helper"
+	extauthFilterNamePrefix        = "ext_auth"
+	localRateLimitFilterNamePrefix = "ratelimit/local"
+	localRateLimitStatPrefix       = "http_local_rate_limiter"
 )
+
+func extAuthFilterName(name string) string {
+	if name == "" {
+		return extauthFilterNamePrefix
+	}
+	return fmt.Sprintf("%s/%s", extauthFilterNamePrefix, name)
+}
 
 type routePolicy struct {
 	ct   time.Time
@@ -57,6 +73,8 @@ type routeSpecIr struct {
 	// in the future so we use proto.Message here
 	rustformation              proto.Message
 	rustformationStringToStash string
+	extAuth                    *extAuthIR
+	localRateLimit             *localratelimitv3.LocalRateLimit
 	errors                     []error
 }
 
@@ -99,6 +117,25 @@ func (d *routePolicy) Equals(in any) bool {
 		return false
 	}
 
+	{
+		extAuth := d.spec.extAuth
+		if extAuth != nil {
+			if !proto.Equal(extAuth.filter, extAuth.filter) {
+				return false
+			}
+			if extAuth.providerName != extAuth.providerName {
+				return false
+			}
+			if extAuth.enablement != extAuth.enablement {
+				return false
+			}
+		}
+	}
+
+	if !proto.Equal(d.spec.localRateLimit, d2.spec.localRateLimit) {
+		return false
+	}
+
 	return true
 }
 
@@ -107,6 +144,9 @@ type routePolicyPluginGwPass struct {
 	// TODO(nfuden): dont abuse httplevel filter in favor of route level
 	rustformationStash map[string]string
 	ir.UnimplementedProxyTranslationPass
+	extAuthListenerEnabled bool
+	extAuth                *extAuthIR
+	localRateLimitInChain  *localratelimitv3.LocalRateLimit
 }
 
 func (p *routePolicyPluginGwPass) ApplyHCM(ctx context.Context, pCtx *ir.HcmContext, out *envoyhttp.HttpConnectionManager) error {
@@ -136,7 +176,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 
 	col := krt.WrapClient(kclient.New[*v1alpha1.RoutePolicy](commoncol.Client), commoncol.KrtOpts.ToOptions("RoutePolicy")...)
 	gk := wellknown.RoutePolicyGVK.GroupKind()
-	translate := buildTranslateFunc(ctx, commoncol.Secrets)
+	translate := buildTranslateFunc(ctx, commoncol)
 	// RoutePolicy IR will have TypedConfig -> implement backendroute method to add prompt guard, etc.
 	policyCol := krt.NewCollection(col, func(krtctx krt.HandlerContext, policyCR *v1alpha1.RoutePolicy) *ir.PolicyWrapper {
 		pol := &ir.PolicyWrapper{
@@ -189,6 +229,14 @@ func (p *routePolicy) Name() string {
 
 // called 1 time for each listener
 func (p *routePolicyPluginGwPass) ApplyListenerPlugin(ctx context.Context, pCtx *ir.ListenerContext, out *envoy_config_listener_v3.Listener) {
+	policy, ok := pCtx.Policy.(*routePolicy)
+	if !ok {
+		return
+	}
+	if policy.spec.extAuth != nil {
+		p.extAuthListenerEnabled = true
+	}
+	p.localRateLimitInChain = policy.spec.localRateLimit
 }
 
 func (p *routePolicyPluginGwPass) ApplyVhostPlugin(ctx context.Context, pCtx *ir.VirtualHostContext, out *envoy_config_route_v3.VirtualHost) {
@@ -209,6 +257,7 @@ func (p *routePolicyPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.Ro
 		}
 		p.setTransformationInChain = true
 	}
+
 	if policy.spec.rustformation != nil {
 		// TODO(nfuden): get back to this path once we have valid perroute
 		// pCtx.TypedFilterConfig.AddTypedConfig(rustformationFilterNamePrefix, policy.spec.rustformation)
@@ -259,6 +308,19 @@ func (p *routePolicyPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.Ro
 		p.setTransformationInChain = true
 	}
 
+	if policy.spec.localRateLimit != nil {
+		pCtx.TypedFilterConfig.AddTypedConfig(localRateLimitFilterNamePrefix, policy.spec.localRateLimit)
+
+		// Add a filter to the chain. When having a rate limit for a route we need to also have a
+		// globally disabled rate limit filter in the chain otherwise it will be ignored.
+		// If there is also rate limit for the listener, it will not override this one.
+		if p.localRateLimitInChain == nil {
+			p.localRateLimitInChain = &localratelimitv3.LocalRateLimit{
+				StatPrefix: localRateLimitStatPrefix,
+			}
+		}
+	}
+
 	if policy.spec.AI != nil {
 		var aiBackends []*v1alpha1.Backend
 		// check if the backends selected by targetRef are all AI backends before applying the policy
@@ -282,7 +344,6 @@ func (p *routePolicyPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.Ro
 			}
 			aiBackends = append(aiBackends, b)
 		}
-
 		if len(aiBackends) > 0 {
 			// Apply the AI policy to the all AI backends
 			err := p.processAIRoutePolicy(pCtx.TypedFilterConfig, policy.spec.AI)
@@ -291,6 +352,28 @@ func (p *routePolicyPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.Ro
 			}
 		}
 	}
+	// Apply ExtAuthz configuration if present
+	// ExtAuth does not allow for most information such as destination
+	// to be set at the route level so we need to smuggle info upwards.
+	if policy.spec.extAuth != nil {
+		// Handle the enablement state
+		if policy.spec.extAuth.enablement == v1alpha1.ExtAuthDisableAll {
+			// Disable the filter under all providers via the metadata match
+			// we have to use the metadata as we dont know what other configurations may have extauth
+			pCtx.TypedFilterConfig.AddTypedConfig(extAuthGlobalDisableFilterName, extAuthEnablementPerRoute())
+		} else {
+			// if you are on a route and not trying to disable it then we need to make sure the provider is enabled.
+			// therefore set the perroute to be disabled: false
+			pCtx.TypedFilterConfig.AddTypedConfig(extAuthFilterName(policy.spec.extAuth.providerName),
+				&envoy_ext_authz_v3.ExtAuthzPerRoute{
+					Override: &envoy_ext_authz_v3.ExtAuthzPerRoute_Disabled{
+						Disabled: false,
+					},
+				},
+			)
+		}
+	}
+
 	return errors.Join(errs...)
 }
 
@@ -370,6 +453,59 @@ func (p *routePolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.Filter
 			&transformationpb.FilterTransformations{},
 			plugins.AfterStage(plugins.FaultStage)))
 	}
+
+	// Add Ext_authz filter for listener
+	if p.extAuth != nil {
+		extAuth := p.extAuth.filter
+
+		// handled opt out from all via metadata this is purely for the fully disabled functionality
+		extAuth.FilterEnabledMetadata = &envoy_matcher_v3.MetadataMatcher{
+			Filter: extAuthGlobalDisableFilterName, // the transformation filter instance's name
+			Invert: true,
+			Path: []*envoy_matcher_v3.MetadataMatcher_PathSegment{
+				{
+					Segment: &envoy_matcher_v3.MetadataMatcher_PathSegment_Key{
+						Key: extAuthGlobalDisableFilterKey, // probably something like "ext-auth-enabled"
+					},
+				},
+			},
+			Value: &envoy_matcher_v3.ValueMatcher{
+				MatchPattern: &envoy_matcher_v3.ValueMatcher_StringMatch{
+					StringMatch: &envoy_matcher_v3.StringMatcher{
+						MatchPattern: &envoy_matcher_v3.StringMatcher_Exact{
+							Exact: "false",
+						},
+					},
+				},
+			},
+		}
+
+		// register the filter that sets metadata so that it can have overrides on the route level
+		filters = append(filters, plugins.MustNewStagedFilter(extAuthGlobalDisableFilterKey,
+			&transformationpb.FilterTransformations{},
+			plugins.BeforeStage(plugins.FaultStage)))
+
+		// add the specific auth filter
+		extauthName := extAuthFilterName(p.extAuth.providerName)
+		extAuthFilter := plugins.MustNewStagedFilter(extauthName,
+			extAuth,
+			plugins.DuringStage(plugins.AuthZStage))
+
+		// handle the two enable attachement cases
+
+		if !p.extAuthListenerEnabled {
+			// handle the case where route level only should be fired
+			extAuthFilter.Filter.Disabled = true
+		}
+
+		filters = append(filters, extAuthFilter)
+	}
+	if p.localRateLimitInChain != nil {
+		filters = append(filters, plugins.MustNewStagedFilter(localRateLimitFilterNamePrefix,
+			p.localRateLimitInChain,
+			plugins.BeforeStage(plugins.AcceptedStage)))
+	}
+
 	if len(filters) == 0 {
 		return nil, nil
 	}
@@ -385,7 +521,10 @@ func (p *routePolicyPluginGwPass) ResourcesToAdd(ctx context.Context) ir.Resourc
 	return ir.Resources{}
 }
 
-func buildTranslateFunc(ctx context.Context, secrets *krtcollections.SecretIndex) func(krtctx krt.HandlerContext, i *v1alpha1.RoutePolicy) *routePolicy {
+func buildTranslateFunc(
+	ctx context.Context,
+	commoncol *common.CommonCollections,
+) func(krtctx krt.HandlerContext, i *v1alpha1.RoutePolicy) *routePolicy {
 	return func(krtctx krt.HandlerContext, policyCR *v1alpha1.RoutePolicy) *routePolicy {
 		policyIr := routePolicy{
 			ct: policyCR.CreationTimestamp.Time,
@@ -397,7 +536,7 @@ func buildTranslateFunc(ctx context.Context, secrets *krtcollections.SecretIndex
 
 			// Augment with AI secrets as needed
 			var err error
-			outSpec.AI.AISecret, err = aiSecretForSpec(ctx, secrets, krtctx, policyCR)
+			outSpec.AI.AISecret, err = aiSecretForSpec(ctx, commoncol.Secrets, krtctx, policyCR)
 			if err != nil {
 				outSpec.errors = append(outSpec.errors, err)
 			}
@@ -405,12 +544,17 @@ func buildTranslateFunc(ctx context.Context, secrets *krtcollections.SecretIndex
 			// Preprocess the AI backend
 			err = preProcessAIRoutePolicy(policyCR.Spec.AI, outSpec.AI)
 			if err != nil {
-				// TODO: append errors to return on policyIr
-				contextutils.LoggerFrom(ctx).Error(policyCR.GetNamespace(), policyCR.GetName(), err)
+				outSpec.errors = append(outSpec.errors, err)
 			}
 		}
 		// Apply transformation specific translation
 		transformationForSpec(policyCR.Spec, &outSpec)
+
+		// Apply ExtAuthz specific translation
+
+		extAuthForSpec(commoncol.GatewayExtensions, krtctx, policyCR, &outSpec)
+		// Apply rate limit specific translation
+		localRateLimitForSpec(policyCR.Spec, &outSpec)
 
 		for _, err := range outSpec.errors {
 			contextutils.LoggerFrom(ctx).Error(policyCR.GetNamespace(), policyCR.GetName(), err)
@@ -453,6 +597,9 @@ func aiSecretForSpec(
 
 // transformationForSpec translates the transformation spec into and onto the IR policy
 func transformationForSpec(spec v1alpha1.RoutePolicySpec, out *routeSpecIr) {
+	if spec.Transformation == (v1alpha1.TransformationPolicy{}) {
+		return
+	}
 	var err error
 	if !useRustformations {
 		out.transform, err = toTransformFilterConfig(&spec.Transformation)
@@ -468,4 +615,22 @@ func transformationForSpec(spec v1alpha1.RoutePolicySpec, out *routeSpecIr) {
 	}
 	out.rustformation = rustformation
 	out.rustformationStringToStash = toStash
+}
+
+func localRateLimitForSpec(spec v1alpha1.RoutePolicySpec, out *routeSpecIr) {
+	if spec.RateLimit == nil || spec.RateLimit.Local == nil {
+		return
+	}
+
+	var err error
+	if spec.RateLimit.Local != nil {
+		out.localRateLimit, err = toLocalRateLimitFilterConfig(spec.RateLimit.Local)
+		if err != nil {
+			// In case of an error with translating the local rate limit configuration,
+			// the route will be dropped
+			out.errors = append(out.errors, err)
+		}
+	}
+
+	// TODO: Support rate limit extension
 }

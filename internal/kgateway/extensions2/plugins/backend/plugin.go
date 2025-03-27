@@ -3,7 +3,6 @@ package backend
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -219,7 +218,7 @@ func buildTranslateFunc(
 						if err != nil {
 							backendIr.Errors = append(backendIr.Errors, err)
 						}
-						backendIr.AIIr.AIMultiSecret[getMultiPoolSecretKey(idx, jdx, secretRef.Name)] = secret
+						backendIr.AIIr.AIMultiSecret[ai.GetMultiPoolSecretKey(idx, jdx, secretRef.Name)] = secret
 					}
 				}
 			}
@@ -271,7 +270,7 @@ func processBackend(ctx context.Context, in ir.BackendObjectIR, out *envoy_confi
 			log.Error("failed to process aws backend", "error", err)
 		}
 	case spec.Type == v1alpha1.BackendTypeAI:
-		err := ai.ProcessAIBackend(ctx, spec.AI, ir.AIIr.AISecret, out)
+		err := ai.ProcessAIBackend(ctx, spec.AI, ir.AIIr.AISecret, ir.AIIr.AIMultiSecret, out)
 		if err != nil {
 			log.Error(err)
 		}
@@ -404,8 +403,4 @@ func (p *backendPlugin) ResourcesToAdd(ctx context.Context) ir.Resources {
 	return ir.Resources{
 		Clusters: additionalClusters,
 	}
-}
-
-func getMultiPoolSecretKey(priorityIdx, poolIdx int, secretName string) string {
-	return fmt.Sprintf("%d-%d-%s", priorityIdx, poolIdx, secretName)
 }

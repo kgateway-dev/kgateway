@@ -21,16 +21,16 @@ func (c *FakeGatewayV1alpha1) DirectResponses(namespace string) v1alpha1.DirectR
 	return newFakeDirectResponses(c, namespace)
 }
 
+func (c *FakeGatewayV1alpha1) GatewayExtensions(namespace string) v1alpha1.GatewayExtensionInterface {
+	return newFakeGatewayExtensions(c, namespace)
+}
+
 func (c *FakeGatewayV1alpha1) GatewayParameterses(namespace string) v1alpha1.GatewayParametersInterface {
 	return newFakeGatewayParameterses(c, namespace)
 }
 
 func (c *FakeGatewayV1alpha1) HTTPListenerPolicies(namespace string) v1alpha1.HTTPListenerPolicyInterface {
 	return newFakeHTTPListenerPolicies(c, namespace)
-}
-
-func (c *FakeGatewayV1alpha1) ListenerPolicies(namespace string) v1alpha1.ListenerPolicyInterface {
-	return newFakeListenerPolicies(c, namespace)
 }
 
 func (c *FakeGatewayV1alpha1) RoutePolicies(namespace string) v1alpha1.RoutePolicyInterface {

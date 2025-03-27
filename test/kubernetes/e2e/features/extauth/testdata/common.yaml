@@ -1,0 +1,28 @@
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayParameters
+metadata:
+  name: kgateway-gateway-override
+  namespace: extauth-test
+spec:
+  kube:
+      env:
+      - name: LOG_LEVEL
+        value: DEBUG
+---
+kind: Gateway
+apiVersion: gateway.networking.k8s.io/v1
+metadata:
+  name: super-gateway
+  namespace: extauth-test
+  annotations:
+    gateway.kgateway.dev/gateway-parameters-name: kgateway-gateway-override
+spec:
+  gatewayClassName: kgateway
+  listeners:
+  - protocol: HTTP
+    port: 8080
+    name: http
+    allowedRoutes:
+      namespaces:
+        from: All
+
