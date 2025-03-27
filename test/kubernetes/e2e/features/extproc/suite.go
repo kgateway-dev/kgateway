@@ -29,6 +29,10 @@ type testingSuite struct {
 	// testInstallation contains all the metadata/utilities necessary to execute a series of tests
 	// against an installation of kgateway
 	testInstallation *e2e.TestInstallation
+
+	// Track active manifests and objects for cleanup
+	activeManifests []string
+	activeObjects   []client.Object
 }
 
 func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
@@ -38,33 +42,26 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 	}
 }
 
-func (s *testingSuite) TestExtProcWithRoute() {
-	manifests := []string{
-		testdefaults.CurlPodManifest,
-		setupManifest,
-	}
-	manifestObjects := []client.Object{
+// SetupSuite runs before all tests in the suite
+func (s *testingSuite) SetupSuite() {
+	// Apply core infrastructure
+	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, setupManifest)
+	s.Require().NoError(err)
+
+	// Apply curl pod for testing
+	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, testdefaults.CurlPodManifest)
+	s.Require().NoError(err)
+
+	// Track core objects
+	s.activeObjects = []client.Object{
 		testdefaults.CurlPod,              // curl
 		extProcService, extProcDeployment, // ext-proc service
 		backendService, backendDeployment, // backend service
 		gatewayService, gatewayDeployment, // gateway service
 	}
 
-	s.T().Cleanup(func() {
-		for _, manifest := range manifests {
-			err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, manifest)
-			s.Require().NoError(err)
-		}
-		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, manifestObjects...)
-	})
-
-	for _, manifest := range manifests {
-		err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, manifest)
-		s.Require().NoError(err)
-	}
-	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, manifestObjects...)
-
-	// make sure pods are running
+	// Wait for core infrastructure to be ready
+	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, s.activeObjects...)
 	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, testdefaults.CurlPod.GetNamespace(), metav1.ListOptions{
 		LabelSelector: testdefaults.CurlPodLabelSelector,
 	})
@@ -74,8 +71,119 @@ func (s *testingSuite) TestExtProcWithRoute() {
 	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, backendDeployment.ObjectMeta.GetNamespace(), metav1.ListOptions{
 		LabelSelector: "app=backend-0",
 	})
+}
 
-	// Should have a successful response to the backend route
+// TearDownSuite cleans up any remaining resources
+func (s *testingSuite) TearDownSuite() {
+	// Clean up core infrastructure
+	err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, setupManifest)
+	s.Require().NoError(err)
+
+	// Clean up curl pod
+	err = s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, testdefaults.CurlPodManifest)
+	s.Require().NoError(err)
+
+	s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, s.activeObjects...)
+}
+
+// SetupTest runs before each test
+func (s *testingSuite) SetupTest() {
+	// Reset active manifests tracking
+	s.activeManifests = nil
+}
+
+// TearDownTest runs after each test
+func (s *testingSuite) TearDownTest() {
+	// Clean up any test-specific manifests
+	for _, manifest := range s.activeManifests {
+		err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, manifest)
+		s.Require().NoError(err)
+	}
+}
+
+// // TestExtProcWithGatewayTargetRef tests ExtProc with targetRef to Gateway
+// func (s *testingSuite) TestExtProcWithGatewayTargetRef() {
+// 	s.activeManifests = []string{gatewayTargetRefManifest}
+// 	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, gatewayTargetRefManifest)
+// 	s.Require().NoError(err)
+
+// 	// Test that ExtProc is applied to all routes through the Gateway
+// 	// First route - should have ExtProc applied
+// 	s.testInstallation.Assertions.AssertEventualCurlResponse(
+// 		s.ctx,
+// 		testdefaults.CurlPodExecOpt,
+// 		[]curl.Option{
+// 			curl.WithHost(kubeutils.ServiceFQDN(gatewayService.ObjectMeta)),
+// 			curl.VerboseOutput(),
+// 			curl.WithHostHeader("www.example.com"),
+// 			curl.WithPort(8080),
+// 			curl.WithHeader("instructions", getInstructionsJson(instructions{
+// 				AddHeaders: map[string]string{"extproctest": "true"},
+// 			})),
+// 		},
+// 		&testmatchers.HttpResponse{
+// 			StatusCode: http.StatusOK,
+// 			Body: gomega.WithTransform(transforms.WithJsonBody(),
+// 				gomega.And(
+// 					gomega.HaveKeyWithValue("headers", gomega.HaveKey("Extproctest")),
+// 				),
+// 			),
+// 		})
+
+// 	// Second route - should also have ExtProc applied
+// 	s.testInstallation.Assertions.AssertEventualCurlResponse(
+// 		s.ctx,
+// 		testdefaults.CurlPodExecOpt,
+// 		[]curl.Option{
+// 			curl.WithHost(kubeutils.ServiceFQDN(gatewayService.ObjectMeta)),
+// 			curl.VerboseOutput(),
+// 			curl.WithHostHeader("www.example.com"),
+// 			curl.WithPath("/myapp"),
+// 			curl.WithPort(8080),
+// 			curl.WithHeader("instructions", getInstructionsJson(instructions{
+// 				AddHeaders: map[string]string{"extproctest": "true"},
+// 			})),
+// 		},
+// 		&testmatchers.HttpResponse{
+// 			StatusCode: http.StatusOK,
+// 			Body: gomega.WithTransform(transforms.WithJsonBody(),
+// 				gomega.And(
+// 					gomega.HaveKeyWithValue("headers", gomega.HaveKey("Extproctest")),
+// 				),
+// 			),
+// 		})
+// }
+
+// TestExtProcWithHTTPRouteTargetRef tests ExtProc with targetRef to HTTPRoute
+func (s *testingSuite) TestExtProcWithHTTPRouteTargetRef() {
+	s.activeManifests = []string{httpRouteTargetRefManifest}
+	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, httpRouteTargetRefManifest)
+	s.Require().NoError(err)
+
+	// Test route with ExtProc - should have header modified
+	s.testInstallation.Assertions.AssertEventualCurlResponse(
+		s.ctx,
+		testdefaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(gatewayService.ObjectMeta)),
+			curl.VerboseOutput(),
+			curl.WithHostHeader("www.example.com"),
+			curl.WithPath("/myapp"),
+			curl.WithPort(8080),
+			curl.WithHeader("instructions", getInstructionsJson(instructions{
+				AddHeaders: map[string]string{"extproctest": "true"},
+			})),
+		},
+		&testmatchers.HttpResponse{
+			StatusCode: http.StatusOK,
+			Body: gomega.WithTransform(transforms.WithJsonBody(),
+				gomega.And(
+					gomega.HaveKeyWithValue("headers", gomega.HaveKey("Extproctest")),
+				),
+			),
+		})
+
+	// Test route without ExtProc - should not have header modified
 	s.testInstallation.Assertions.AssertEventualCurlResponse(
 		s.ctx,
 		testdefaults.CurlPodExecOpt,
@@ -96,8 +204,90 @@ func (s *testingSuite) TestExtProcWithRoute() {
 				),
 			),
 		})
+}
 
-	// Should have a successful response to the extproc route
+// // TestExtProcWithSingleRoute tests ExtProc applied to a specific rule within a route
+// func (s *testingSuite) TestExtProcWithSingleRoute() {
+// 	s.activeManifests = []string{singleRouteManifest}
+// 	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, singleRouteManifest)
+// 	s.Require().NoError(err)
+
+// 	// Test route with ExtProc and matching header - should have header modified
+// 	s.testInstallation.Assertions.AssertEventualCurlResponse(
+// 		s.ctx,
+// 		testdefaults.CurlPodExecOpt,
+// 		[]curl.Option{
+// 			curl.WithHost(kubeutils.ServiceFQDN(gatewayService.ObjectMeta)),
+// 			curl.VerboseOutput(),
+// 			curl.WithHostHeader("www.example.com"),
+// 			curl.WithPath("/myapp"),
+// 			curl.WithHeader("x-test", "true"),
+// 			curl.WithHeader("instructions", getInstructionsJson(instructions{
+// 				AddHeaders: map[string]string{"extproctest": "true"},
+// 			})),
+// 		},
+// 		&testmatchers.HttpResponse{
+// 			StatusCode: http.StatusOK,
+// 			Body: gomega.WithTransform(transforms.WithJsonBody(),
+// 				gomega.And(
+// 					gomega.HaveKeyWithValue("headers", gomega.HaveKey("Extproctest")),
+// 				),
+// 			),
+// 		})
+
+// 	// Test route with ExtProc but without matching header - should not have header modified
+// 	s.testInstallation.Assertions.AssertEventualCurlResponse(
+// 		s.ctx,
+// 		testdefaults.CurlPodExecOpt,
+// 		[]curl.Option{
+// 			curl.WithHost(kubeutils.ServiceFQDN(gatewayService.ObjectMeta)),
+// 			curl.VerboseOutput(),
+// 			curl.WithHostHeader("www.example.com"),
+// 			curl.WithPath("/myapp"),
+// 			curl.WithHeader("instructions", getInstructionsJson(instructions{
+// 				AddHeaders: map[string]string{"extproctest": "true"},
+// 			})),
+// 		},
+// 		&testmatchers.HttpResponse{
+// 			StatusCode: http.StatusOK,
+// 			Body: gomega.WithTransform(transforms.WithJsonBody(),
+// 				gomega.And(
+// 					gomega.HaveKeyWithValue("headers", gomega.Not(gomega.HaveKey("Extproctest"))),
+// 				),
+// 			),
+// 		})
+
+// 	// Test second rule - should not have header modified
+// 	s.testInstallation.Assertions.AssertEventualCurlResponse(
+// 		s.ctx,
+// 		testdefaults.CurlPodExecOpt,
+// 		[]curl.Option{
+// 			curl.WithHost(kubeutils.ServiceFQDN(gatewayService.ObjectMeta)),
+// 			curl.VerboseOutput(),
+// 			curl.WithHostHeader("www.example.com"),
+// 			curl.WithPort(8080),
+// 			curl.WithHeader("instructions", getInstructionsJson(instructions{
+// 				AddHeaders: map[string]string{"extproctest": "true"},
+// 			})),
+// 		},
+// 		&testmatchers.HttpResponse{
+// 			StatusCode: http.StatusOK,
+// 			Body: gomega.WithTransform(transforms.WithJsonBody(),
+// 				gomega.And(
+// 					gomega.HaveKeyWithValue("headers", gomega.Not(gomega.HaveKey("Extproctest"))),
+// 				),
+// 			),
+// 		})
+// }
+
+// TestExtProcWithBackendFilter tests backend-level ExtProc filtering
+func (s *testingSuite) TestExtProcWithBackendFilter() {
+	// Apply the backend filter test manifests
+	s.activeManifests = []string{backendFilterManifest}
+	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, backendFilterManifest)
+	s.Require().NoError(err)
+
+	// Test path with ExtProc enabled
 	s.testInstallation.Assertions.AssertEventualCurlResponse(
 		s.ctx,
 		testdefaults.CurlPodExecOpt,
@@ -105,8 +295,7 @@ func (s *testingSuite) TestExtProcWithRoute() {
 			curl.WithHost(kubeutils.ServiceFQDN(gatewayService.ObjectMeta)),
 			curl.VerboseOutput(),
 			curl.WithHostHeader("www.example.com"),
-			curl.WithPath("/myapp"),
-			curl.WithPort(8080),
+			curl.WithPath("/with-extproc"),
 			curl.WithHeader("instructions", getInstructionsJson(instructions{
 				AddHeaders: map[string]string{"extproctest": "true"},
 			})),
@@ -116,6 +305,28 @@ func (s *testingSuite) TestExtProcWithRoute() {
 			Body: gomega.WithTransform(transforms.WithJsonBody(),
 				gomega.And(
 					gomega.HaveKeyWithValue("headers", gomega.HaveKey("Extproctest")),
+				),
+			),
+		})
+
+	// Test path without ExtProc
+	s.testInstallation.Assertions.AssertEventualCurlResponse(
+		s.ctx,
+		testdefaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(gatewayService.ObjectMeta)),
+			curl.VerboseOutput(),
+			curl.WithHostHeader("www.example.com"),
+			curl.WithPath("/without-extproc"),
+			curl.WithHeader("instructions", getInstructionsJson(instructions{
+				AddHeaders: map[string]string{"extproctest": "true"},
+			})),
+		},
+		&testmatchers.HttpResponse{
+			StatusCode: http.StatusOK,
+			Body: gomega.WithTransform(transforms.WithJsonBody(),
+				gomega.And(
+					gomega.HaveKeyWithValue("headers", gomega.Not(gomega.HaveKey("Extproctest"))),
 				),
 			),
 		})
