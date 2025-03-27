@@ -497,6 +497,9 @@ var schemaYAML = typed.YAMLObject(`types:
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtProcProvider
   map:
     fields:
+    - name: authority
+      type:
+        scalar: string
     - name: backendRef
       type:
         namedType: io.k8s.sigs.gateway-api.apis.v1.BackendRef

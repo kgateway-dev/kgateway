@@ -87,6 +87,8 @@ spec:
                 type: object
               extProc:
                 properties:
+                  authority:
+                    type: string
                   backendRef:
                     properties:
                       group:

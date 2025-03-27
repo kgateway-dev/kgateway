@@ -10,6 +10,7 @@ import (
 // with apply.
 type ExtProcProviderApplyConfiguration struct {
 	BackendRef *v1.BackendRef `json:"backendRef,omitempty"`
+	Authority  *string        `json:"authority,omitempty"`
 }
 
 // ExtProcProviderApplyConfiguration constructs a declarative configuration of the ExtProcProvider type for use with
@@ -23,5 +24,13 @@ func ExtProcProvider() *ExtProcProviderApplyConfiguration {
 // If called multiple times, the BackendRef field is set to the value of the last call.
 func (b *ExtProcProviderApplyConfiguration) WithBackendRef(value v1.BackendRef) *ExtProcProviderApplyConfiguration {
 	b.BackendRef = &value
+	return b
+}
+
+// WithAuthority sets the Authority field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Authority field is set to the value of the last call.
+func (b *ExtProcProviderApplyConfiguration) WithAuthority(value string) *ExtProcProviderApplyConfiguration {
+	b.Authority = &value
 	return b
 }

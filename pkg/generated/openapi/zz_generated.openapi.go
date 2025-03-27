@@ -1795,7 +1795,7 @@ func schema_kgateway_v2_api_v1alpha1_ExtProcPolicy(ref common.ReferenceCallback)
 				Properties: map[string]spec.Schema{
 					"extensionRef": {
 						SchemaProps: spec.SchemaProps{
-							Description: "ExtensionRef references the ExternalExtension that should be used for authentication.",
+							Description: "ExtensionRef references the GatewayExtension that should be used for external processing.",
 							Ref:         ref("k8s.io/api/core/v1.LocalObjectReference"),
 						},
 					},
@@ -1828,6 +1828,12 @@ func schema_kgateway_v2_api_v1alpha1_ExtProcProvider(ref common.ReferenceCallbac
 						SchemaProps: spec.SchemaProps{
 							Description: "BackendRef references the backend service that will handle the processing.",
 							Ref:         ref("sigs.k8s.io/gateway-api/apis/v1.BackendRef"),
+						},
+					},
+					"authority": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
 						},
 					},
 				},
@@ -3731,7 +3737,8 @@ func schema_kgateway_v2_api_v1alpha1_RoutePolicySpec(ref common.ReferenceCallbac
 					},
 					"extProc": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtProcPolicy"),
+							Description: "ExtProc specifies the external processing configuration for the policy.",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtProcPolicy"),
 						},
 					},
 					"extAuth": {

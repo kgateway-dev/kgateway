@@ -6,7 +6,7 @@ import (
 )
 
 type ExtProcPolicy struct {
-	// ExtensionRef references the ExternalExtension that should be used for authentication.
+	// ExtensionRef references the GatewayExtension that should be used for external processing.
 	// +optional
 	ExtensionRef *corev1.LocalObjectReference `json:"extensionRef,omitempty"`
 

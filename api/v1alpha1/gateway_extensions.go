@@ -46,6 +46,8 @@ type ExtProcProvider struct {
 	// BackendRef references the backend service that will handle the processing.
 	// +kubebuilder:validation:Required
 	BackendRef *gwv1.BackendRef `json:"backendRef"`
+
+	Authority *string `json:"authority,omitempty"`
 }
 
 // GatewayExtensionSpec defines the desired state of GatewayExtension.
