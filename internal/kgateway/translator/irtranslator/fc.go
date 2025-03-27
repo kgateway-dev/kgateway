@@ -205,6 +205,7 @@ func (h *hcmNetworkFilterTranslator) computeNetworkFilters(ctx context.Context, 
 	httpConnectionManager.HttpFilters = h.computeHttpFilters(ctx, l)
 
 	pass := h.PluginPass
+
 	// 3. Allow any HCM plugins to make their changes, with respect to any changes the core plugin made
 	attachedPoliciesSlice := []ir.AttachedPolicies{
 		h.gateway.AttachedHttpPolicies,

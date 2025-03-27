@@ -473,12 +473,33 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: withRequestBody
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.BufferSettings
-- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtProcProvider
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtProcGrpcService
   map:
     fields:
+    - name: authority
+      type:
+        scalar: string
     - name: backendRef
       type:
         namedType: io.k8s.sigs.gateway-api.apis.v1.BackendRef
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtProcPolicy
+  map:
+    fields:
+    - name: extensionRef
+      type:
+        namedType: io.k8s.api.core.v1.LocalObjectReference
+    - name: failureModeAllow
+      type:
+        scalar: boolean
+    - name: processingMode
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ProcessingMode
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtProcProvider
+  map:
+    fields:
+    - name: grpcService
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtProcGrpcService
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.FieldDefault
   map:
     fields:
@@ -958,6 +979,27 @@ var schemaYAML = typed.YAMLObject(`types:
           elementType:
             namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LLMProvider
           elementRelationship: atomic
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ProcessingMode
+  map:
+    fields:
+    - name: requestBodyMode
+      type:
+        scalar: string
+    - name: requestHeaderMode
+      type:
+        scalar: string
+    - name: requestTrailerMode
+      type:
+        scalar: string
+    - name: responseBodyMode
+      type:
+        scalar: string
+    - name: responseHeaderMode
+      type:
+        scalar: string
+    - name: responseTrailerMode
+      type:
+        scalar: string
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.PromptguardRequest
   map:
     fields:
@@ -1060,6 +1102,9 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: extAuth
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtAuthRoutePolicy
+    - name: extProc
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtProcPolicy
     - name: rateLimit
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.RateLimit

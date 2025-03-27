@@ -10,6 +10,7 @@ import (
 
 	exteniondynamicmodulev3 "github.com/envoyproxy/go-control-plane/envoy/extensions/dynamic_modules/v3"
 	dynamicmodulesv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/dynamic_modules/v3"
+	envoy_ext_proc_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_proc/v3"
 	localratelimitv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/local_ratelimit/v3"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"google.golang.org/protobuf/proto"
@@ -28,7 +29,6 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
-	extensionplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
@@ -66,8 +66,14 @@ type routePolicy struct {
 	spec routeSpecIr
 }
 
+type ExtprocIR struct {
+	Name    string
+	ExtProc *envoy_ext_proc_v3.ExternalProcessor
+}
+
 type routeSpecIr struct {
 	AI        *AIPolicyIR
+	ExtProc   *ExtprocIR
 	transform *transformationpb.RouteTransformations
 	// rustformation is currently a *dynamicmodulesv3.DynamicModuleFilter, but can potentially change at some point
 	// in the future so we use proto.Message here
@@ -132,6 +138,15 @@ func (d *routePolicy) Equals(in any) bool {
 		}
 	}
 
+	// extproc equality checks
+	if d.spec.ExtProc != nil && d2.spec.ExtProc != nil {
+		if !proto.Equal(d.spec.ExtProc.ExtProc, d2.spec.ExtProc.ExtProc) {
+			return false
+		}
+	} else if d.spec.ExtProc != d2.spec.ExtProc {
+		return false
+	}
+
 	if !proto.Equal(d.spec.localRateLimit, d2.spec.localRateLimit) {
 		return false
 	}
@@ -144,13 +159,13 @@ type routePolicyPluginGwPass struct {
 	// TODO(nfuden): dont abuse httplevel filter in favor of route level
 	rustformationStash map[string]string
 	ir.UnimplementedProxyTranslationPass
+	extprocFilter          *envoy_ext_proc_v3.ExternalProcessor
+	localRateLimitInChain  *localratelimitv3.LocalRateLimit
 	extAuthListenerEnabled bool
 	extAuth                *extAuthIR
-	localRateLimitInChain  *localratelimitv3.LocalRateLimit
 }
 
 func (p *routePolicyPluginGwPass) ApplyHCM(ctx context.Context, pCtx *ir.HcmContext, out *envoyhttp.HttpConnectionManager) error {
-	// no op
 	return nil
 }
 
@@ -169,7 +184,7 @@ func registerTypes(ourCli versioned.Interface) {
 	)
 }
 
-func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensionplug.Plugin {
+func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensionsplug.Plugin {
 	registerTypes(commoncol.OurClient)
 
 	useRustformations = commoncol.Settings.UseRustFormations // stash the state of the env setup for rustformation usage
@@ -179,21 +194,23 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 	translate := buildTranslateFunc(ctx, commoncol)
 	// RoutePolicy IR will have TypedConfig -> implement backendroute method to add prompt guard, etc.
 	policyCol := krt.NewCollection(col, func(krtctx krt.HandlerContext, policyCR *v1alpha1.RoutePolicy) *ir.PolicyWrapper {
+		objSrc := ir.ObjectSource{
+			Group:     gk.Group,
+			Kind:      gk.Kind,
+			Namespace: policyCR.Namespace,
+			Name:      policyCR.Name,
+		}
+
 		pol := &ir.PolicyWrapper{
-			ObjectSource: ir.ObjectSource{
-				Group:     gk.Group,
-				Kind:      gk.Kind,
-				Namespace: policyCR.Namespace,
-				Name:      policyCR.Name,
-			},
-			Policy:     policyCR,
-			PolicyIR:   translate(krtctx, policyCR),
-			TargetRefs: convert(policyCR.Spec.TargetRefs),
+			ObjectSource: objSrc,
+			Policy:       policyCR,
+			PolicyIR:     translate(krtctx, policyCR),
+			TargetRefs:   convert(policyCR.Spec.TargetRefs),
 		}
 		return pol
 	})
 
-	return extensionplug.Plugin{
+	return extensionsplug.Plugin{
 		ContributesPolicies: map[schema.GroupKind]extensionsplug.PolicyPlugin{
 			wellknown.RoutePolicyGVK.GroupKind(): {
 				// AttachmentPoints: []ir.AttachmentPoints{ir.HttpAttachmentPoint},
@@ -374,6 +391,11 @@ func (p *routePolicyPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.Ro
 		}
 	}
 
+	if policy.spec.ExtProc != nil {
+		p.extprocFilter = policy.spec.ExtProc.ExtProc
+		enableExtprocFilterPerRoute(pCtx)
+	}
+
 	return errors.Join(errs...)
 }
 
@@ -396,8 +418,12 @@ func (p *routePolicyPluginGwPass) ApplyForRouteBackend(
 	if !ok {
 		return nil
 	}
+	if rtPolicy.spec.ExtProc != nil {
+		p.extprocFilter = rtPolicy.spec.ExtProc.ExtProc
+		enableExtprocFilter(pCtx)
+	}
 
-	if rtPolicy.spec.AI.Transformation != nil || rtPolicy.spec.AI.Extproc != nil {
+	if rtPolicy.spec.AI != nil && (rtPolicy.spec.AI.Transformation != nil || rtPolicy.spec.AI.Extproc != nil) {
 		err := p.processAIRoutePolicy(pCtx.TypedFilterConfig, rtPolicy.spec.AI)
 		if err != nil {
 			// TODO: report error on status
@@ -414,6 +440,14 @@ func (p *routePolicyPluginGwPass) ApplyForRouteBackend(
 // any filter returned from route config must be disabled, so it doesnt impact other routes.
 func (p *routePolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.FilterChainCommon) ([]plugins.StagedHttpFilter, error) {
 	filters := []plugins.StagedHttpFilter{}
+	if p.extprocFilter != nil {
+		extprocFilters, err := addExtProcHTTPFilter(p.extprocFilter)
+		if err != nil {
+			return nil, err
+		}
+		filters = append(filters, extprocFilters...)
+	}
+
 	if p.setTransformationInChain && !useRustformations {
 		// TODO(nfuden): support stages such as early
 		// first register classic
@@ -549,6 +583,18 @@ func buildTranslateFunc(
 		}
 		// Apply transformation specific translation
 		transformationForSpec(policyCR.Spec, &outSpec)
+
+		if policyCR.Spec.ExtProc != nil {
+			extproc, err := toEnvoyExtProc(policyCR, krtctx, commoncol)
+			if err != nil {
+				outSpec.errors = append(outSpec.errors, err)
+			} else {
+				outSpec.ExtProc = &ExtprocIR{
+					Name:    policyCR.Name, // TODO format
+					ExtProc: extproc,
+				}
+			}
+		}
 
 		// Apply ExtAuthz specific translation
 
