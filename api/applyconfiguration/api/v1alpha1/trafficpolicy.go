@@ -12,58 +12,58 @@ import (
 	apiv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 )
 
-// RoutePolicyApplyConfiguration represents a declarative configuration of the RoutePolicy type for use
+// TrafficPolicyApplyConfiguration represents a declarative configuration of the TrafficPolicy type for use
 // with apply.
-type RoutePolicyApplyConfiguration struct {
+type TrafficPolicyApplyConfiguration struct {
 	v1.TypeMetaApplyConfiguration    `json:",inline"`
 	*v1.ObjectMetaApplyConfiguration `json:"metadata,omitempty"`
-	Spec                             *RoutePolicySpecApplyConfiguration `json:"spec,omitempty"`
-	Status                           *SimpleStatusApplyConfiguration    `json:"status,omitempty"`
+	Spec                             *TrafficPolicySpecApplyConfiguration `json:"spec,omitempty"`
+	Status                           *SimpleStatusApplyConfiguration      `json:"status,omitempty"`
 }
 
-// RoutePolicy constructs a declarative configuration of the RoutePolicy type for use with
+// TrafficPolicy constructs a declarative configuration of the TrafficPolicy type for use with
 // apply.
-func RoutePolicy(name, namespace string) *RoutePolicyApplyConfiguration {
-	b := &RoutePolicyApplyConfiguration{}
+func TrafficPolicy(name, namespace string) *TrafficPolicyApplyConfiguration {
+	b := &TrafficPolicyApplyConfiguration{}
 	b.WithName(name)
 	b.WithNamespace(namespace)
-	b.WithKind("RoutePolicy")
+	b.WithKind("TrafficPolicy")
 	b.WithAPIVersion("gateway.kgateway.dev/v1alpha1")
 	return b
 }
 
-// ExtractRoutePolicy extracts the applied configuration owned by fieldManager from
-// routePolicy. If no managedFields are found in routePolicy for fieldManager, a
-// RoutePolicyApplyConfiguration is returned with only the Name, Namespace (if applicable),
+// ExtractTrafficPolicy extracts the applied configuration owned by fieldManager from
+// trafficPolicy. If no managedFields are found in trafficPolicy for fieldManager, a
+// TrafficPolicyApplyConfiguration is returned with only the Name, Namespace (if applicable),
 // APIVersion and Kind populated. It is possible that no managed fields were found for because other
 // field managers have taken ownership of all the fields previously owned by fieldManager, or because
 // the fieldManager never owned fields any fields.
-// routePolicy must be a unmodified RoutePolicy API object that was retrieved from the Kubernetes API.
-// ExtractRoutePolicy provides a way to perform a extract/modify-in-place/apply workflow.
+// trafficPolicy must be a unmodified TrafficPolicy API object that was retrieved from the Kubernetes API.
+// ExtractTrafficPolicy provides a way to perform a extract/modify-in-place/apply workflow.
 // Note that an extracted apply configuration will contain fewer fields than what the fieldManager previously
 // applied if another fieldManager has updated or force applied any of the previously applied fields.
 // Experimental!
-func ExtractRoutePolicy(routePolicy *apiv1alpha1.RoutePolicy, fieldManager string) (*RoutePolicyApplyConfiguration, error) {
-	return extractRoutePolicy(routePolicy, fieldManager, "")
+func ExtractTrafficPolicy(trafficPolicy *apiv1alpha1.TrafficPolicy, fieldManager string) (*TrafficPolicyApplyConfiguration, error) {
+	return extractTrafficPolicy(trafficPolicy, fieldManager, "")
 }
 
-// ExtractRoutePolicyStatus is the same as ExtractRoutePolicy except
+// ExtractTrafficPolicyStatus is the same as ExtractTrafficPolicy except
 // that it extracts the status subresource applied configuration.
 // Experimental!
-func ExtractRoutePolicyStatus(routePolicy *apiv1alpha1.RoutePolicy, fieldManager string) (*RoutePolicyApplyConfiguration, error) {
-	return extractRoutePolicy(routePolicy, fieldManager, "status")
+func ExtractTrafficPolicyStatus(trafficPolicy *apiv1alpha1.TrafficPolicy, fieldManager string) (*TrafficPolicyApplyConfiguration, error) {
+	return extractTrafficPolicy(trafficPolicy, fieldManager, "status")
 }
 
-func extractRoutePolicy(routePolicy *apiv1alpha1.RoutePolicy, fieldManager string, subresource string) (*RoutePolicyApplyConfiguration, error) {
-	b := &RoutePolicyApplyConfiguration{}
-	err := managedfields.ExtractInto(routePolicy, internal.Parser().Type("com.github.kgateway-dev.kgateway.v2.api.v1alpha1.RoutePolicy"), fieldManager, b, subresource)
+func extractTrafficPolicy(trafficPolicy *apiv1alpha1.TrafficPolicy, fieldManager string, subresource string) (*TrafficPolicyApplyConfiguration, error) {
+	b := &TrafficPolicyApplyConfiguration{}
+	err := managedfields.ExtractInto(trafficPolicy, internal.Parser().Type("com.github.kgateway-dev.kgateway.v2.api.v1alpha1.TrafficPolicy"), fieldManager, b, subresource)
 	if err != nil {
 		return nil, err
 	}
-	b.WithName(routePolicy.Name)
-	b.WithNamespace(routePolicy.Namespace)
+	b.WithName(trafficPolicy.Name)
+	b.WithNamespace(trafficPolicy.Namespace)
 
-	b.WithKind("RoutePolicy")
+	b.WithKind("TrafficPolicy")
 	b.WithAPIVersion("gateway.kgateway.dev/v1alpha1")
 	return b, nil
 }
@@ -71,7 +71,7 @@ func extractRoutePolicy(routePolicy *apiv1alpha1.RoutePolicy, fieldManager strin
 // WithKind sets the Kind field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Kind field is set to the value of the last call.
-func (b *RoutePolicyApplyConfiguration) WithKind(value string) *RoutePolicyApplyConfiguration {
+func (b *TrafficPolicyApplyConfiguration) WithKind(value string) *TrafficPolicyApplyConfiguration {
 	b.TypeMetaApplyConfiguration.Kind = &value
 	return b
 }
@@ -79,7 +79,7 @@ func (b *RoutePolicyApplyConfiguration) WithKind(value string) *RoutePolicyApply
 // WithAPIVersion sets the APIVersion field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the APIVersion field is set to the value of the last call.
-func (b *RoutePolicyApplyConfiguration) WithAPIVersion(value string) *RoutePolicyApplyConfiguration {
+func (b *TrafficPolicyApplyConfiguration) WithAPIVersion(value string) *TrafficPolicyApplyConfiguration {
 	b.TypeMetaApplyConfiguration.APIVersion = &value
 	return b
 }
@@ -87,7 +87,7 @@ func (b *RoutePolicyApplyConfiguration) WithAPIVersion(value string) *RoutePolic
 // WithName sets the Name field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Name field is set to the value of the last call.
-func (b *RoutePolicyApplyConfiguration) WithName(value string) *RoutePolicyApplyConfiguration {
+func (b *TrafficPolicyApplyConfiguration) WithName(value string) *TrafficPolicyApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
 	b.ObjectMetaApplyConfiguration.Name = &value
 	return b
@@ -96,7 +96,7 @@ func (b *RoutePolicyApplyConfiguration) WithName(value string) *RoutePolicyApply
 // WithGenerateName sets the GenerateName field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the GenerateName field is set to the value of the last call.
-func (b *RoutePolicyApplyConfiguration) WithGenerateName(value string) *RoutePolicyApplyConfiguration {
+func (b *TrafficPolicyApplyConfiguration) WithGenerateName(value string) *TrafficPolicyApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
 	b.ObjectMetaApplyConfiguration.GenerateName = &value
 	return b
@@ -105,7 +105,7 @@ func (b *RoutePolicyApplyConfiguration) WithGenerateName(value string) *RoutePol
 // WithNamespace sets the Namespace field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Namespace field is set to the value of the last call.
-func (b *RoutePolicyApplyConfiguration) WithNamespace(value string) *RoutePolicyApplyConfiguration {
+func (b *TrafficPolicyApplyConfiguration) WithNamespace(value string) *TrafficPolicyApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
 	b.ObjectMetaApplyConfiguration.Namespace = &value
 	return b
@@ -114,7 +114,7 @@ func (b *RoutePolicyApplyConfiguration) WithNamespace(value string) *RoutePolicy
 // WithUID sets the UID field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the UID field is set to the value of the last call.
-func (b *RoutePolicyApplyConfiguration) WithUID(value types.UID) *RoutePolicyApplyConfiguration {
+func (b *TrafficPolicyApplyConfiguration) WithUID(value types.UID) *TrafficPolicyApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
 	b.ObjectMetaApplyConfiguration.UID = &value
 	return b
@@ -123,7 +123,7 @@ func (b *RoutePolicyApplyConfiguration) WithUID(value types.UID) *RoutePolicyApp
 // WithResourceVersion sets the ResourceVersion field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the ResourceVersion field is set to the value of the last call.
-func (b *RoutePolicyApplyConfiguration) WithResourceVersion(value string) *RoutePolicyApplyConfiguration {
+func (b *TrafficPolicyApplyConfiguration) WithResourceVersion(value string) *TrafficPolicyApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
 	b.ObjectMetaApplyConfiguration.ResourceVersion = &value
 	return b
@@ -132,7 +132,7 @@ func (b *RoutePolicyApplyConfiguration) WithResourceVersion(value string) *Route
 // WithGeneration sets the Generation field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Generation field is set to the value of the last call.
-func (b *RoutePolicyApplyConfiguration) WithGeneration(value int64) *RoutePolicyApplyConfiguration {
+func (b *TrafficPolicyApplyConfiguration) WithGeneration(value int64) *TrafficPolicyApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
 	b.ObjectMetaApplyConfiguration.Generation = &value
 	return b
@@ -141,7 +141,7 @@ func (b *RoutePolicyApplyConfiguration) WithGeneration(value int64) *RoutePolicy
 // WithCreationTimestamp sets the CreationTimestamp field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the CreationTimestamp field is set to the value of the last call.
-func (b *RoutePolicyApplyConfiguration) WithCreationTimestamp(value metav1.Time) *RoutePolicyApplyConfiguration {
+func (b *TrafficPolicyApplyConfiguration) WithCreationTimestamp(value metav1.Time) *TrafficPolicyApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
 	b.ObjectMetaApplyConfiguration.CreationTimestamp = &value
 	return b
@@ -150,7 +150,7 @@ func (b *RoutePolicyApplyConfiguration) WithCreationTimestamp(value metav1.Time)
 // WithDeletionTimestamp sets the DeletionTimestamp field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the DeletionTimestamp field is set to the value of the last call.
-func (b *RoutePolicyApplyConfiguration) WithDeletionTimestamp(value metav1.Time) *RoutePolicyApplyConfiguration {
+func (b *TrafficPolicyApplyConfiguration) WithDeletionTimestamp(value metav1.Time) *TrafficPolicyApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
 	b.ObjectMetaApplyConfiguration.DeletionTimestamp = &value
 	return b
@@ -159,7 +159,7 @@ func (b *RoutePolicyApplyConfiguration) WithDeletionTimestamp(value metav1.Time)
 // WithDeletionGracePeriodSeconds sets the DeletionGracePeriodSeconds field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the DeletionGracePeriodSeconds field is set to the value of the last call.
-func (b *RoutePolicyApplyConfiguration) WithDeletionGracePeriodSeconds(value int64) *RoutePolicyApplyConfiguration {
+func (b *TrafficPolicyApplyConfiguration) WithDeletionGracePeriodSeconds(value int64) *TrafficPolicyApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
 	b.ObjectMetaApplyConfiguration.DeletionGracePeriodSeconds = &value
 	return b
@@ -169,7 +169,7 @@ func (b *RoutePolicyApplyConfiguration) WithDeletionGracePeriodSeconds(value int
 // and returns the receiver, so that objects can be build by chaining "With" function invocations.
 // If called multiple times, the entries provided by each call will be put on the Labels field,
 // overwriting an existing map entries in Labels field with the same key.
-func (b *RoutePolicyApplyConfiguration) WithLabels(entries map[string]string) *RoutePolicyApplyConfiguration {
+func (b *TrafficPolicyApplyConfiguration) WithLabels(entries map[string]string) *TrafficPolicyApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
 	if b.ObjectMetaApplyConfiguration.Labels == nil && len(entries) > 0 {
 		b.ObjectMetaApplyConfiguration.Labels = make(map[string]string, len(entries))
@@ -184,7 +184,7 @@ func (b *RoutePolicyApplyConfiguration) WithLabels(entries map[string]string) *R
 // and returns the receiver, so that objects can be build by chaining "With" function invocations.
 // If called multiple times, the entries provided by each call will be put on the Annotations field,
 // overwriting an existing map entries in Annotations field with the same key.
-func (b *RoutePolicyApplyConfiguration) WithAnnotations(entries map[string]string) *RoutePolicyApplyConfiguration {
+func (b *TrafficPolicyApplyConfiguration) WithAnnotations(entries map[string]string) *TrafficPolicyApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
 	if b.ObjectMetaApplyConfiguration.Annotations == nil && len(entries) > 0 {
 		b.ObjectMetaApplyConfiguration.Annotations = make(map[string]string, len(entries))
@@ -198,7 +198,7 @@ func (b *RoutePolicyApplyConfiguration) WithAnnotations(entries map[string]strin
 // WithOwnerReferences adds the given value to the OwnerReferences field in the declarative configuration
 // and returns the receiver, so that objects can be build by chaining "With" function invocations.
 // If called multiple times, values provided by each call will be appended to the OwnerReferences field.
-func (b *RoutePolicyApplyConfiguration) WithOwnerReferences(values ...*v1.OwnerReferenceApplyConfiguration) *RoutePolicyApplyConfiguration {
+func (b *TrafficPolicyApplyConfiguration) WithOwnerReferences(values ...*v1.OwnerReferenceApplyConfiguration) *TrafficPolicyApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
 	for i := range values {
 		if values[i] == nil {
@@ -212,7 +212,7 @@ func (b *RoutePolicyApplyConfiguration) WithOwnerReferences(values ...*v1.OwnerR
 // WithFinalizers adds the given value to the Finalizers field in the declarative configuration
 // and returns the receiver, so that objects can be build by chaining "With" function invocations.
 // If called multiple times, values provided by each call will be appended to the Finalizers field.
-func (b *RoutePolicyApplyConfiguration) WithFinalizers(values ...string) *RoutePolicyApplyConfiguration {
+func (b *TrafficPolicyApplyConfiguration) WithFinalizers(values ...string) *TrafficPolicyApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
 	for i := range values {
 		b.ObjectMetaApplyConfiguration.Finalizers = append(b.ObjectMetaApplyConfiguration.Finalizers, values[i])
@@ -220,7 +220,7 @@ func (b *RoutePolicyApplyConfiguration) WithFinalizers(values ...string) *RouteP
 	return b
 }
 
-func (b *RoutePolicyApplyConfiguration) ensureObjectMetaApplyConfigurationExists() {
+func (b *TrafficPolicyApplyConfiguration) ensureObjectMetaApplyConfigurationExists() {
 	if b.ObjectMetaApplyConfiguration == nil {
 		b.ObjectMetaApplyConfiguration = &v1.ObjectMetaApplyConfiguration{}
 	}
@@ -229,7 +229,7 @@ func (b *RoutePolicyApplyConfiguration) ensureObjectMetaApplyConfigurationExists
 // WithSpec sets the Spec field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Spec field is set to the value of the last call.
-func (b *RoutePolicyApplyConfiguration) WithSpec(value *RoutePolicySpecApplyConfiguration) *RoutePolicyApplyConfiguration {
+func (b *TrafficPolicyApplyConfiguration) WithSpec(value *TrafficPolicySpecApplyConfiguration) *TrafficPolicyApplyConfiguration {
 	b.Spec = value
 	return b
 }
@@ -237,13 +237,13 @@ func (b *RoutePolicyApplyConfiguration) WithSpec(value *RoutePolicySpecApplyConf
 // WithStatus sets the Status field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Status field is set to the value of the last call.
-func (b *RoutePolicyApplyConfiguration) WithStatus(value *SimpleStatusApplyConfiguration) *RoutePolicyApplyConfiguration {
+func (b *TrafficPolicyApplyConfiguration) WithStatus(value *SimpleStatusApplyConfiguration) *TrafficPolicyApplyConfiguration {
 	b.Status = value
 	return b
 }
 
 // GetName retrieves the value of the Name field in the declarative configuration.
-func (b *RoutePolicyApplyConfiguration) GetName() *string {
+func (b *TrafficPolicyApplyConfiguration) GetName() *string {
 	b.ensureObjectMetaApplyConfigurationExists()
 	return b.ObjectMetaApplyConfiguration.Name
 }

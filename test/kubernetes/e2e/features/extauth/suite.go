@@ -101,8 +101,8 @@ func (s *testingSuite) TestExtAuthPolicy() {
 	}
 
 	resources := []client.Object{
-		basicSecureRoute, gatewayAttachedRoutePolicy,
-		insecureRoute, insecureRoutePolicy,
+		basicSecureRoute, gatewayAttachedTrafficPolicy,
+		insecureRoute, insecureTrafficPolicy,
 	}
 	s.T().Cleanup(func() {
 		for _, manifest := range manifests {

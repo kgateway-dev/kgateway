@@ -5,8 +5,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// +kubebuilder:rbac:groups=gateway.kgateway.dev,resources=routepolicies,verbs=get;list;watch
-// +kubebuilder:rbac:groups=gateway.kgateway.dev,resources=routepolicies/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=gateway.kgateway.dev,resources=trafficpolicies,verbs=get;list;watch
+// +kubebuilder:rbac:groups=gateway.kgateway.dev,resources=trafficpolicies/status,verbs=get;update;patch
 
 // +genclient
 // +kubebuilder:object:root=true
@@ -14,23 +14,22 @@ import (
 // +kubebuilder:resource:categories=kgateway
 // +kubebuilder:subresource:status
 // +kubebuilder:metadata:labels="gateway.networking.k8s.io/policy=Direct"
-type RoutePolicy struct {
+type TrafficPolicy struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   RoutePolicySpec `json:"spec,omitempty"`
-	Status SimpleStatus    `json:"status,omitempty"`
+	Spec   TrafficPolicySpec `json:"spec,omitempty"`
+	Status SimpleStatus      `json:"status,omitempty"`
 }
 
 // +kubebuilder:object:root=true
-type RoutePolicyList struct {
+type TrafficPolicyList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []RoutePolicy `json:"items"`
+	Items           []TrafficPolicy `json:"items"`
 }
 
-type RoutePolicySpec struct {
-
+type TrafficPolicySpec struct {
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=16
 	TargetRefs []LocalPolicyTargetReference `json:"targetRefs,omitempty"`
@@ -98,14 +97,16 @@ type InjaTemplate string
 // +kubebuilder:validation:MaxLength=256
 // +kubebuilder:validation:Pattern=`^:?[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$`
 // +k8s:deepcopy-gen=false
-type HeaderName string
-type HeaderTransformation struct {
-	// Name is the name of the header to interact with.
-	// +required
-	Name HeaderName `json:"name,omitempty"`
-	// Value is the template to apply to generate the output value for the header.
-	Value InjaTemplate `json:"value,omitempty"`
-}
+type (
+	HeaderName           string
+	HeaderTransformation struct {
+		// Name is the name of the header to interact with.
+		// +required
+		Name HeaderName `json:"name,omitempty"`
+		// Value is the template to apply to generate the output value for the header.
+		Value InjaTemplate `json:"value,omitempty"`
+	}
+)
 
 // BodyparseBehavior defines how the body should be parsed
 // If set to json and the body is not json then the filter will not perform the transformation.

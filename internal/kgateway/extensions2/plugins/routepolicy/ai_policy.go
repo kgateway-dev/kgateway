@@ -37,7 +37,7 @@ type AIPolicyIR struct {
 	Transformation *envoytransformation.RouteTransformations
 }
 
-func (p *routePolicyPluginGwPass) processAIRoutePolicy(
+func (p *routePolicyPluginGwPass) processAITrafficPolicy(
 	configMap ir.TypedFilterConfigMap,
 	inIr *AIPolicyIR,
 ) error {
@@ -62,7 +62,7 @@ func (p *routePolicyPluginGwPass) processAIRoutePolicy(
 	return nil
 }
 
-func preProcessAIRoutePolicy(
+func preProcessAITrafficPolicy(
 	aiConfig *v1alpha1.AIRoutePolicy,
 	ir *AIPolicyIR,
 ) error {

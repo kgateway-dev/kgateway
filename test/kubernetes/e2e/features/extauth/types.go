@@ -77,7 +77,7 @@ var (
 			Namespace: "default",
 		},
 	}
-	gatewayAttachedRoutePolicy = &v1alpha1.RoutePolicy{
+	gatewayAttachedTrafficPolicy = &v1alpha1.TrafficPolicy{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "gw-policy",
 			Namespace: "default",
@@ -89,7 +89,7 @@ var (
 			Namespace: "default",
 		},
 	}
-	insecureRoutePolicy = &v1alpha1.RoutePolicy{
+	insecureTrafficPolicy = &v1alpha1.TrafficPolicy{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "insecure-route-policy",
 			Namespace: "default",

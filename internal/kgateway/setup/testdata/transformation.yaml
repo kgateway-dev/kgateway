@@ -73,11 +73,11 @@ spec:
       - type: ExtensionRef
         extensionRef:
           group: gateway.kgateway.dev
-          kind: RoutePolicy
+          kind: TrafficPolicy
           name: transformation
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
-kind: RoutePolicy
+kind: TrafficPolicy
 metadata:
   name: transformation
   namespace: default

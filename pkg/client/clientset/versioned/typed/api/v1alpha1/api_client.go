@@ -18,7 +18,7 @@ type GatewayV1alpha1Interface interface {
 	GatewayExtensionsGetter
 	GatewayParametersesGetter
 	HTTPListenerPoliciesGetter
-	RoutePoliciesGetter
+	TrafficPoliciesGetter
 }
 
 // GatewayV1alpha1Client is used to interact with features provided by the gateway.kgateway.dev group.
@@ -46,8 +46,8 @@ func (c *GatewayV1alpha1Client) HTTPListenerPolicies(namespace string) HTTPListe
 	return newHTTPListenerPolicies(c, namespace)
 }
 
-func (c *GatewayV1alpha1Client) RoutePolicies(namespace string) RoutePolicyInterface {
-	return newRoutePolicies(c, namespace)
+func (c *GatewayV1alpha1Client) TrafficPolicies(namespace string) TrafficPolicyInterface {
+	return newTrafficPolicies(c, namespace)
 }
 
 // NewForConfig creates a new GatewayV1alpha1Client for the given config.

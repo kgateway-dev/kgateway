@@ -76,7 +76,7 @@ rules:
   - gatewayextensions
   - gatewayparameters
   - httplistenerpolicies
-  - routepolicies
+  - trafficpolicies
   verbs:
   - get
   - list
@@ -89,7 +89,7 @@ rules:
   - gatewayextensions/status
   - gatewayparameters/status
   - httplistenerpolicies/status
-  - routepolicies/status
+  - trafficpolicies/status
   verbs:
   - get
   - patch

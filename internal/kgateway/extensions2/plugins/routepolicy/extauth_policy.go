@@ -23,7 +23,7 @@ type extAuthIR struct {
 func extAuthForSpec(
 	gatewayExtensions krt.Collection[ir.GatewayExtension],
 	krtctx krt.HandlerContext,
-	routepolicy *v1alpha1.RoutePolicy,
+	routepolicy *v1alpha1.TrafficPolicy,
 	out *routeSpecIr) {
 	getter := (func(name, namespace string) (*ir.GatewayExtension, error) {
 		return pluginutils.GetGatewayExtension(gatewayExtensions, krtctx, name, namespace)
@@ -34,7 +34,7 @@ func extAuthForSpec(
 
 func extAuthForSpecWithExtensionFunction(
 	gExtensionGetter func(name, namespace string) (*ir.GatewayExtension, error),
-	routepolicy *v1alpha1.RoutePolicy,
+	routepolicy *v1alpha1.TrafficPolicy,
 	out *routeSpecIr) {
 	routeSpec := &routepolicy.Spec
 

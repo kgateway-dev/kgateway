@@ -157,14 +157,14 @@ func (p *routePolicyPluginGwPass) ApplyHCM(ctx context.Context, pCtx *ir.HcmCont
 var useRustformations bool
 
 func registerTypes(ourCli versioned.Interface) {
-	skubeclient.Register[*v1alpha1.RoutePolicy](
-		wellknown.RoutePolicyGVR,
-		wellknown.RoutePolicyGVK,
+	skubeclient.Register[*v1alpha1.TrafficPolicy](
+		wellknown.TrafficPolicyGVR,
+		wellknown.TrafficPolicyGVK,
 		func(c skubeclient.ClientGetter, namespace string, o metav1.ListOptions) (runtime.Object, error) {
-			return ourCli.GatewayV1alpha1().RoutePolicies(namespace).List(context.Background(), o)
+			return ourCli.GatewayV1alpha1().TrafficPolicies(namespace).List(context.Background(), o)
 		},
 		func(c skubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
-			return ourCli.GatewayV1alpha1().RoutePolicies(namespace).Watch(context.Background(), o)
+			return ourCli.GatewayV1alpha1().TrafficPolicies(namespace).Watch(context.Background(), o)
 		},
 	)
 }
@@ -174,11 +174,11 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 
 	useRustformations = commoncol.Settings.UseRustFormations // stash the state of the env setup for rustformation usage
 
-	col := krt.WrapClient(kclient.New[*v1alpha1.RoutePolicy](commoncol.Client), commoncol.KrtOpts.ToOptions("RoutePolicy")...)
-	gk := wellknown.RoutePolicyGVK.GroupKind()
+	col := krt.WrapClient(kclient.New[*v1alpha1.TrafficPolicy](commoncol.Client), commoncol.KrtOpts.ToOptions("TrafficPolicy")...)
+	gk := wellknown.TrafficPolicyGVK.GroupKind()
 	translate := buildTranslateFunc(ctx, commoncol)
-	// RoutePolicy IR will have TypedConfig -> implement backendroute method to add prompt guard, etc.
-	policyCol := krt.NewCollection(col, func(krtctx krt.HandlerContext, policyCR *v1alpha1.RoutePolicy) *ir.PolicyWrapper {
+	// TrafficPolicy IR will have TypedConfig -> implement backendroute method to add prompt guard, etc.
+	policyCol := krt.NewCollection(col, func(krtctx krt.HandlerContext, policyCR *v1alpha1.TrafficPolicy) *ir.PolicyWrapper {
 		pol := &ir.PolicyWrapper{
 			ObjectSource: ir.ObjectSource{
 				Group:     gk.Group,
@@ -195,14 +195,14 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 
 	return extensionplug.Plugin{
 		ContributesPolicies: map[schema.GroupKind]extensionsplug.PolicyPlugin{
-			wellknown.RoutePolicyGVK.GroupKind(): {
+			wellknown.TrafficPolicyGVK.GroupKind(): {
 				// AttachmentPoints: []ir.AttachmentPoints{ir.HttpAttachmentPoint},
 				NewGatewayTranslationPass: NewGatewayTranslationPass,
 				Policies:                  policyCol,
 			},
 		},
 		ContributesRegistration: map[schema.GroupKind]func(){
-			wellknown.RoutePolicyGVK.GroupKind(): buildRegisterCallback(ctx, commoncol.CrudClient, policyCol),
+			wellknown.TrafficPolicyGVK.GroupKind(): buildRegisterCallback(ctx, commoncol.CrudClient, policyCol),
 		},
 	}
 }
@@ -224,7 +224,7 @@ func NewGatewayTranslationPass(ctx context.Context, tctx ir.GwTranslationCtx) ir
 }
 
 func (p *routePolicy) Name() string {
-	return "routepolicies"
+	return "trafficpolicies"
 }
 
 // called 1 time for each listener
@@ -333,20 +333,20 @@ func (p *routePolicyPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.Ro
 			if !ok {
 				// AI policy cannot apply to kubernetes services
 				// TODO(npolshak): Report this as a warning on status
-				contextutils.LoggerFrom(ctx).Warnf("targetRef cannot apply to %s backend. AI RoutePolicy must apply only to AI backend", backend.Backend.BackendObject.GetName())
+				contextutils.LoggerFrom(ctx).Warnf("targetRef cannot apply to %s backend. AI TrafficPolicy must apply only to AI backend", backend.Backend.BackendObject.GetName())
 				continue
 			}
 			if b.Spec.Type != v1alpha1.BackendTypeAI {
 				// AI policy cannot apply to non-AI backends
 				// TODO(npolshak): Report this as a warning on status
-				contextutils.LoggerFrom(ctx).Warnf("backend %s is of type %s. AI RoutePolicy must apply only to AI backend", backend.Backend.BackendObject.GetName(), b.Spec.Type)
+				contextutils.LoggerFrom(ctx).Warnf("backend %s is of type %s. AI TrafficPolicy must apply only to AI backend", backend.Backend.BackendObject.GetName(), b.Spec.Type)
 				continue
 			}
 			aiBackends = append(aiBackends, b)
 		}
 		if len(aiBackends) > 0 {
 			// Apply the AI policy to the all AI backends
-			err := p.processAIRoutePolicy(pCtx.TypedFilterConfig, policy.spec.AI)
+			err := p.processAITrafficPolicy(pCtx.TypedFilterConfig, policy.spec.AI)
 			if err != nil {
 				errs = append(errs, err)
 			}
@@ -398,10 +398,10 @@ func (p *routePolicyPluginGwPass) ApplyForRouteBackend(
 	}
 
 	if rtPolicy.spec.AI.Transformation != nil || rtPolicy.spec.AI.Extproc != nil {
-		err := p.processAIRoutePolicy(pCtx.TypedFilterConfig, rtPolicy.spec.AI)
+		err := p.processAITrafficPolicy(pCtx.TypedFilterConfig, rtPolicy.spec.AI)
 		if err != nil {
 			// TODO: report error on status
-			contextutils.LoggerFrom(ctx).Errorf("error while processing AI RoutePolicy: %v", err)
+			contextutils.LoggerFrom(ctx).Errorf("error while processing AI TrafficPolicy: %v", err)
 			return err
 		}
 	}
@@ -524,8 +524,8 @@ func (p *routePolicyPluginGwPass) ResourcesToAdd(ctx context.Context) ir.Resourc
 func buildTranslateFunc(
 	ctx context.Context,
 	commoncol *common.CommonCollections,
-) func(krtctx krt.HandlerContext, i *v1alpha1.RoutePolicy) *routePolicy {
-	return func(krtctx krt.HandlerContext, policyCR *v1alpha1.RoutePolicy) *routePolicy {
+) func(krtctx krt.HandlerContext, i *v1alpha1.TrafficPolicy) *routePolicy {
+	return func(krtctx krt.HandlerContext, policyCR *v1alpha1.TrafficPolicy) *routePolicy {
 		policyIr := routePolicy{
 			ct: policyCR.CreationTimestamp.Time,
 		}
@@ -542,7 +542,7 @@ func buildTranslateFunc(
 			}
 
 			// Preprocess the AI backend
-			err = preProcessAIRoutePolicy(policyCR.Spec.AI, outSpec.AI)
+			err = preProcessAITrafficPolicy(policyCR.Spec.AI, outSpec.AI)
 			if err != nil {
 				outSpec.errors = append(outSpec.errors, err)
 			}
@@ -571,7 +571,7 @@ func aiSecretForSpec(
 	ctx context.Context,
 	secrets *krtcollections.SecretIndex,
 	krtctx krt.HandlerContext,
-	policyCR *v1alpha1.RoutePolicy,
+	policyCR *v1alpha1.TrafficPolicy,
 ) (*ir.Secret, error) {
 	if policyCR.Spec.AI == nil ||
 		policyCR.Spec.AI.PromptGuard == nil ||
@@ -596,7 +596,7 @@ func aiSecretForSpec(
 }
 
 // transformationForSpec translates the transformation spec into and onto the IR policy
-func transformationForSpec(spec v1alpha1.RoutePolicySpec, out *routeSpecIr) {
+func transformationForSpec(spec v1alpha1.TrafficPolicySpec, out *routeSpecIr) {
 	if spec.Transformation == (v1alpha1.TransformationPolicy{}) {
 		return
 	}
@@ -617,7 +617,7 @@ func transformationForSpec(spec v1alpha1.RoutePolicySpec, out *routeSpecIr) {
 	out.rustformationStringToStash = toStash
 }
 
-func localRateLimitForSpec(spec v1alpha1.RoutePolicySpec, out *routeSpecIr) {
+func localRateLimitForSpec(spec v1alpha1.TrafficPolicySpec, out *routeSpecIr) {
 	if spec.RateLimit == nil || spec.RateLimit.Local == nil {
 		return
 	}

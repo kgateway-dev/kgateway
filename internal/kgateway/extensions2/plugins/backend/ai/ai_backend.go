@@ -69,7 +69,7 @@ func ApplyAIBackend(ir *IR, pCtx *ir.RouteBackendContext, out *envoy_config_rout
 	copyBackendExtproc := proto.Clone(ir.Extproc).(*envoy_ext_proc_v3.ExtProcPerRoute)
 	routepolicyExtprocSettingsProto := pCtx.TypedFilterConfig.GetTypedConfig(wellknown.AIExtProcFilterName)
 	if routepolicyExtprocSettingsProto != nil {
-		// merge the Backend extproc config with any config added by the RoutePolicy
+		// merge the Backend extproc config with any config added by the TrafficPolicy
 		routeExtprocSettings := routepolicyExtprocSettingsProto.(*envoy_ext_proc_v3.ExtProcPerRoute)
 		copyBackendExtproc.GetOverrides().GrpcInitialMetadata = append(copyBackendExtproc.GetOverrides().GetGrpcInitialMetadata(), routeExtprocSettings.GetOverrides().GetGrpcInitialMetadata()...)
 	}

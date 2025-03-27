@@ -44,9 +44,9 @@ func TestProcessAIRoutePolicy(t *testing.T) {
 		}
 
 		// Execute
-		err := preProcessAIRoutePolicy(aiConfig, aiIR)
+		err := preProcessAITrafficPolicy(aiConfig, aiIR)
 		require.NoError(t, err)
-		err = plugin.processAIRoutePolicy(typedFilterConfig, aiIR)
+		err = plugin.processAITrafficPolicy(typedFilterConfig, aiIR)
 		require.NoError(t, err)
 
 		// Verify streaming header was added
@@ -82,10 +82,10 @@ func TestProcessAIRoutePolicy(t *testing.T) {
 		defer os.Setenv("AI_PLUGIN_DEBUG_TRANSFORMATIONS", oldEnv)
 
 		// Execute
-		err := preProcessAIRoutePolicy(aiConfig, aiIR)
+		err := preProcessAITrafficPolicy(aiConfig, aiIR)
 		require.NoError(t, err)
 
-		err = plugin.processAIRoutePolicy(typedFilterConfig, aiIR)
+		err = plugin.processAITrafficPolicy(typedFilterConfig, aiIR)
 		require.NoError(t, err)
 
 		// Verify
@@ -121,10 +121,10 @@ func TestProcessAIRoutePolicy(t *testing.T) {
 			AISecret: aiSecret,
 		}
 		// Execute
-		err := preProcessAIRoutePolicy(aiConfig, aiIR)
+		err := preProcessAITrafficPolicy(aiConfig, aiIR)
 		require.NoError(t, err)
 
-		err = plugin.processAIRoutePolicy(typedFilterConfig, aiIR)
+		err = plugin.processAITrafficPolicy(typedFilterConfig, aiIR)
 		require.NoError(t, err)
 
 		// Verify
@@ -174,10 +174,10 @@ func TestProcessAIRoutePolicy(t *testing.T) {
 		}
 
 		// Execute
-		err := preProcessAIRoutePolicy(aiConfig, aiIR)
+		err := preProcessAITrafficPolicy(aiConfig, aiIR)
 		require.NoError(t, err)
 
-		err = plugin.processAIRoutePolicy(typedFilterConfig, aiIR)
+		err = plugin.processAITrafficPolicy(typedFilterConfig, aiIR)
 		require.NoError(t, err)
 
 		// Verify
@@ -239,7 +239,7 @@ func TestProcessAIRoutePolicy(t *testing.T) {
 		}
 
 		// Execute
-		err := preProcessAIRoutePolicy(aiConfig, aiIR)
+		err := preProcessAITrafficPolicy(aiConfig, aiIR)
 
 		// Verify
 		require.Error(t, err)

@@ -149,10 +149,6 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.RegexMatchApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("ResponseFlagFilter"):
 		return &apiv1alpha1.ResponseFlagFilterApplyConfiguration{}
-	case v1alpha1.SchemeGroupVersion.WithKind("RoutePolicy"):
-		return &apiv1alpha1.RoutePolicyApplyConfiguration{}
-	case v1alpha1.SchemeGroupVersion.WithKind("RoutePolicySpec"):
-		return &apiv1alpha1.RoutePolicySpecApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("SdsBootstrap"):
 		return &apiv1alpha1.SdsBootstrapApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("SdsContainer"):
@@ -175,6 +171,10 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.SupportedLLMProviderApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("TokenBucket"):
 		return &apiv1alpha1.TokenBucketApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("TrafficPolicy"):
+		return &apiv1alpha1.TrafficPolicyApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("TrafficPolicySpec"):
+		return &apiv1alpha1.TrafficPolicySpecApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("Transform"):
 		return &apiv1alpha1.TransformApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("TransformationPolicy"):
