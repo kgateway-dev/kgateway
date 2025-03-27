@@ -73,6 +73,10 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.ExtAuthProviderApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("ExtAuthRoutePolicy"):
 		return &apiv1alpha1.ExtAuthRoutePolicyApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("ExtProcGrpcService"):
+		return &apiv1alpha1.ExtProcGrpcServiceApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("ExtProcPolicy"):
+		return &apiv1alpha1.ExtProcPolicyApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("ExtProcProvider"):
 		return &apiv1alpha1.ExtProcProviderApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("FieldDefault"):
@@ -135,6 +139,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.PodApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("Priority"):
 		return &apiv1alpha1.PriorityApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("ProcessingMode"):
+		return &apiv1alpha1.ProcessingModeApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("PromptguardRequest"):
 		return &apiv1alpha1.PromptguardRequestApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("PromptguardResponse"):

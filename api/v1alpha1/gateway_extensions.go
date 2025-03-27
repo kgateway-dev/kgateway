@@ -43,9 +43,19 @@ type ExtAuthProvider struct {
 
 // ExtProcProvider defines the configuration for an ExtProc provider.
 type ExtProcProvider struct {
-	// BackendRef references the backend service that will handle the processing.
+	// GrpcService is the GRPC service that will handle the processing.
+	// +kubebuilder:validation:Required
+	GrpcService *ExtProcGrpcService `json:"grpcService"`
+}
+
+type ExtProcGrpcService struct {
+	// BackendRef references the backend GRPC service that will handle the processing.
 	// +kubebuilder:validation:Required
 	BackendRef *gwv1.BackendRef `json:"backendRef"`
+
+	// Authority is the authority header to use for the GRPC service.
+	// +optional
+	Authority *string `json:"authority,omitempty"`
 }
 
 // GatewayExtensionSpec defines the desired state of GatewayExtension.

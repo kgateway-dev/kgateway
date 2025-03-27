@@ -48,6 +48,8 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.EnvoyContainer":             schema_kgateway_v2_api_v1alpha1_EnvoyContainer(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtAuthProvider":            schema_kgateway_v2_api_v1alpha1_ExtAuthProvider(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtAuthRoutePolicy":         schema_kgateway_v2_api_v1alpha1_ExtAuthRoutePolicy(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtProcGrpcService":         schema_kgateway_v2_api_v1alpha1_ExtProcGrpcService(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtProcPolicy":              schema_kgateway_v2_api_v1alpha1_ExtProcPolicy(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtProcProvider":            schema_kgateway_v2_api_v1alpha1_ExtProcProvider(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.FieldDefault":               schema_kgateway_v2_api_v1alpha1_FieldDefault(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.FileSink":                   schema_kgateway_v2_api_v1alpha1_FileSink(ref),
@@ -85,6 +87,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.PolicyAncestorStatus":       schema_kgateway_v2_api_v1alpha1_PolicyAncestorStatus(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.PolicyStatus":               schema_kgateway_v2_api_v1alpha1_PolicyStatus(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Priority":                   schema_kgateway_v2_api_v1alpha1_Priority(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ProcessingMode":             schema_kgateway_v2_api_v1alpha1_ProcessingMode(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.PromptguardRequest":         schema_kgateway_v2_api_v1alpha1_PromptguardRequest(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.PromptguardResponse":        schema_kgateway_v2_api_v1alpha1_PromptguardResponse(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ProxyDeployment":            schema_kgateway_v2_api_v1alpha1_ProxyDeployment(ref),
@@ -1757,17 +1760,23 @@ func schema_kgateway_v2_api_v1alpha1_ExtAuthRoutePolicy(ref common.ReferenceCall
 	}
 }
 
-func schema_kgateway_v2_api_v1alpha1_ExtProcProvider(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_kgateway_v2_api_v1alpha1_ExtProcGrpcService(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "ExtProcProvider defines the configuration for an ExtProc provider.",
-				Type:        []string{"object"},
+				Type: []string{"object"},
 				Properties: map[string]spec.Schema{
 					"backendRef": {
 						SchemaProps: spec.SchemaProps{
-							Description: "BackendRef references the backend service that will handle the processing.",
+							Description: "BackendRef references the backend GRPC service that will handle the processing.",
 							Ref:         ref("sigs.k8s.io/gateway-api/apis/v1.BackendRef"),
+						},
+					},
+					"authority": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Authority is the authority header to use for the GRPC service.",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 				},
@@ -1776,6 +1785,62 @@ func schema_kgateway_v2_api_v1alpha1_ExtProcProvider(ref common.ReferenceCallbac
 		},
 		Dependencies: []string{
 			"sigs.k8s.io/gateway-api/apis/v1.BackendRef"},
+	}
+}
+
+func schema_kgateway_v2_api_v1alpha1_ExtProcPolicy(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"extensionRef": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ExtensionRef references the GatewayExtension that should be used for external processing.",
+							Ref:         ref("k8s.io/api/core/v1.LocalObjectReference"),
+						},
+					},
+					"processingMode": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ProcessingMode defines how the filter should interact with the request/response streams",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ProcessingMode"),
+						},
+					},
+					"failureModeAllow": {
+						SchemaProps: spec.SchemaProps{
+							Description: "FailureModeAllow defines the behavior of the filter when the external processing fails. Defaults to false.",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
+				},
+				Required: []string{"extensionRef"},
+			},
+		},
+		Dependencies: []string{
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ProcessingMode", "k8s.io/api/core/v1.LocalObjectReference"},
+	}
+}
+
+func schema_kgateway_v2_api_v1alpha1_ExtProcProvider(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "ExtProcProvider defines the configuration for an ExtProc provider.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"grpcService": {
+						SchemaProps: spec.SchemaProps{
+							Description: "GrpcService is the GRPC service that will handle the processing.",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtProcGrpcService"),
+						},
+					},
+				},
+				Required: []string{"grpcService"},
+			},
+		},
+		Dependencies: []string{
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtProcGrpcService"},
 	}
 }
 
@@ -2294,7 +2359,7 @@ func schema_kgateway_v2_api_v1alpha1_GrpcService(ref common.ReferenceCallback) c
 					},
 					"backendRef": {
 						SchemaProps: spec.SchemaProps{
-							Description: "The backend gRPC service. Can be any type of supported backed (Kubernetes Service, kgateway Backend, etc..)",
+							Description: "The backend gRPC service. Can be any type of supported backend (Kubernetes Service, kgateway Backend, etc..)",
 							Ref:         ref("sigs.k8s.io/gateway-api/apis/v1.BackendRef"),
 						},
 					},
@@ -3276,6 +3341,61 @@ func schema_kgateway_v2_api_v1alpha1_Priority(ref common.ReferenceCallback) comm
 	}
 }
 
+func schema_kgateway_v2_api_v1alpha1_ProcessingMode(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "ProcessingMode defines how the filter should interact with the request/response streams",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"requestHeaderMode": {
+						SchemaProps: spec.SchemaProps{
+							Description: "RequestHeaderMode determines how to handle the request headers",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"responseHeaderMode": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ResponseHeaderMode determines how to handle the response headers",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"requestBodyMode": {
+						SchemaProps: spec.SchemaProps{
+							Description: "RequestBodyMode determines how to handle the request body",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"responseBodyMode": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ResponseBodyMode determines how to handle the response body",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"requestTrailerMode": {
+						SchemaProps: spec.SchemaProps{
+							Description: "RequestTrailerMode determines how to handle the request trailers",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"responseTrailerMode": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ResponseTrailerMode determines how to handle the response trailers",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
 func schema_kgateway_v2_api_v1alpha1_PromptguardRequest(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -3614,6 +3734,12 @@ func schema_kgateway_v2_api_v1alpha1_RoutePolicySpec(ref common.ReferenceCallbac
 							Ref:     ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.TransformationPolicy"),
 						},
 					},
+					"extProc": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ExtProc specifies the external processing configuration for the policy.",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtProcPolicy"),
+						},
+					},
 					"extAuth": {
 						SchemaProps: spec.SchemaProps{
 							Description: "ExtAuth specifies the external authentication configuration for the policy. This controls what external server to send requests to for authentication.",
@@ -3630,7 +3756,7 @@ func schema_kgateway_v2_api_v1alpha1_RoutePolicySpec(ref common.ReferenceCallbac
 			},
 		},
 		Dependencies: []string{
-			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AIRoutePolicy", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtAuthRoutePolicy", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LocalPolicyTargetReference", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.RateLimit", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.TransformationPolicy"},
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AIRoutePolicy", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtAuthRoutePolicy", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtProcPolicy", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LocalPolicyTargetReference", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.RateLimit", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.TransformationPolicy"},
 	}
 }
 
