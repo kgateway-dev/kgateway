@@ -9,6 +9,7 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 )
@@ -21,19 +22,30 @@ type extAuthIR struct {
 
 // extAuthForSpec translates the ExtAuthz spec into the Envoy configuration
 func extAuthForSpec(
-	gatewayExtensions krt.Collection[ir.GatewayExtension],
+	commoncol *common.CommonCollections,
 	krtctx krt.HandlerContext,
 	routepolicy *v1alpha1.RoutePolicy,
 	out *routeSpecIr) {
-	getter := (func(name, namespace string) (*ir.GatewayExtension, error) {
-		return pluginutils.GetGatewayExtension(gatewayExtensions, krtctx, name, namespace)
+	getter := (func(name, namespace string) (*ir.GatewayExtension, *ir.BackendObjectIR, error) {
+		gExt, err := pluginutils.GetGatewayExtension(commoncol.GatewayExtensions, krtctx, name, namespace)
+		if err != nil {
+			return nil, nil, err
+		}
+		if gExt.Type != v1alpha1.GatewayExtensionTypeExtAuth {
+			return nil, nil, pluginutils.ErrInvalidExtensionType(v1alpha1.GatewayExtensionTypeExtAuth, gExt.Type)
+		}
+		backend, err := commoncol.BackendIndex.GetBackendFromRef(krtctx, gExt.ObjectSource, gExt.ExtAuth.BackendRef.BackendObjectReference)
+		if err != nil {
+			return nil, nil, err
+		}
+		return gExt, backend, nil
 	})
 
 	extAuthForSpecWithExtensionFunction(getter, routepolicy, out)
 }
 
 func extAuthForSpecWithExtensionFunction(
-	gExtensionGetter func(name, namespace string) (*ir.GatewayExtension, error),
+	gExtensionGetter func(name, namespace string) (*ir.GatewayExtension, *ir.BackendObjectIR, error),
 	routepolicy *v1alpha1.RoutePolicy,
 	out *routeSpecIr) {
 	routeSpec := &routepolicy.Spec
@@ -76,22 +88,16 @@ func extAuthForSpecWithExtensionFunction(
 	}
 
 	if spec.ExtensionRef != nil {
-		// service, err := commoncol.BackendIndex.GetBackendFromRef(krtctx, parentSrc, log.GrpcService.BackendRef.BackendObjectReference)
-		gExt, err := gExtensionGetter(spec.ExtensionRef.Name, routepolicy.GetNamespace())
+		_, backend, err := gExtensionGetter(spec.ExtensionRef.Name, routepolicy.GetNamespace())
 		if err != nil {
 			out.errors = append(out.errors, err)
 			return
 		}
-		if gExt.Type != v1alpha1.GatewayExtensionTypeExtAuth {
-			out.errors = append(out.errors, pluginutils.ErrInvalidExtensionType(v1alpha1.GatewayExtensionTypeExtAuth, gExt.Type))
-			return
-		}
-
 		extAuth.Services = &envoy_ext_authz_v3.ExtAuthz_GrpcService{
 			GrpcService: &envoy_core_v3.GrpcService{
 				TargetSpecifier: &envoy_core_v3.GrpcService_EnvoyGrpc_{
 					EnvoyGrpc: &envoy_core_v3.GrpcService_EnvoyGrpc{
-						ClusterName: pluginutils.BackendToEnvoyCluster(gExt.ExtAuth.BackendRef),
+						ClusterName: backend.ClusterName(),
 					},
 				},
 			},
