@@ -81,7 +81,7 @@ spec:
     region: us-west-2
     auth:
       type: Secret
-      secret:
+      secretRef:
         name: aws-creds-multi
     lambda:
       functionName: auth-service
@@ -100,7 +100,7 @@ spec:
     region: us-east-1
     auth:
       type: Secret
-      secret:
+      secretRef:
         name: aws-creds-multi
     lambda:
       functionName: orders-service
@@ -134,7 +134,7 @@ spec:
     region: us-west-2
     auth:
       type: Secret
-      secret:
+      secretRef:
         name: aws-creds-multi
     lambda:
       functionName: integration-service

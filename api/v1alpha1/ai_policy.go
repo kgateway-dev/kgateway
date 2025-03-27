@@ -52,7 +52,7 @@ type AIRoutePolicy struct {
 //	- group: gateway.networking.k8s.io
 //	  kind: HTTPRoute
 //	  name: openai
-//	aiRoutePolicy:
+//	ai:
 //	    promptEnrichment:
 //	      prepend:
 //	      - role: SYSTEM
