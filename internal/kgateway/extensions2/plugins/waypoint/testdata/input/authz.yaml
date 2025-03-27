@@ -19,29 +19,6 @@ spec:
     port: 15088
     protocol: istio.io/PROXY
 ---
-# HTTPRoute parented to the Service only affects one chain
-apiVersion: gateway.networking.k8s.io/v1
-kind: HTTPRoute
-metadata:
-  name: waypoint-route
-  namespace: infra
-spec:
-  parentRefs:
-  - name: svc-a
-    namespace: infra
-    group: ""
-    kind: Service
-  rules:
-  - backendRefs:
-    - name: svc-a
-      port: 5000
-    filters:
-    - type: ResponseHeaderModifier
-      responseHeaderModifier:
-        add:
-        - name: "traversed-waypoint"
-          value: "kgateway-waypoint"
----
 # we should get a filter chain with a default virtualhost that just
 # sends traffic to the corresponding `kube` Service backend
 apiVersion: v1
@@ -72,7 +49,6 @@ spec:
   selector:
     app: svc-b
 ---
-
 # we should get a filter chain with a default virtualhost that just
 # sends traffic to the corresponding `kube` Service backend
 apiVersion: v1
@@ -88,40 +64,26 @@ spec:
   - port: 5000
     name: http
   selector:
-    app: helloworld
+    app: helloworld    
 ---
-# TODO headless services aren't supported so this won't have a corresponding
-# filter chain in the output xDS
-apiVersion: v1
-kind: Service
-metadata:
-  name: helloworld-headless
-  namespace: infra
-  labels:
-    istio.io/use-waypoint: example-waypoint
-spec:
-  clusterIP: None
-  ports:
-  - port: 5000
-    name: http
-  selector:
-    app: helloworld
----
+# we should get a filter chain with two filters that reflect this policy
+# that denies GET requests to helloworld and svc-a services
 apiVersion: security.istio.io/v1
 kind: AuthorizationPolicy
 metadata:
-  name: svc-b-helloworld-authz
+  name: helloworld-authz-svc
   namespace: infra
 spec:
-  targetRefs:
-  - kind: Service
-    group: ""
-    name: svc-b
-  - kind: Service
-    group: ""
-    name: helloworld
   action: DENY
   rules:
   - to:
     - operation:
-        methods: ["GET"]        
+        methods:
+        - GET
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: helloworld
+  - group: ""
+    kind: Service
+    name: svc-a

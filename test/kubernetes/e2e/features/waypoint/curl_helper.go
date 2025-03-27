@@ -14,9 +14,8 @@ import (
 var (
 	testAppPort = 8080
 
-	fromCurl = kubectl.PodExecOptions{Name: "curl", Namespace: testNamespace, Container: "curl"}
-	// TODO this will be used for testing AuthorizationPolicy
-	// fromNotCurl = kubectl.PodExecOptions{Name: "notcurl", Namespace: testNamespace, Container: "notcurl"}
+	fromCurl    = kubectl.PodExecOptions{Name: "curl", Namespace: testNamespace, Container: "curl"}
+	fromNotCurl = kubectl.PodExecOptions{Name: "notcurl", Namespace: testNamespace, Container: "notcurl"}
 )
 
 func (s *testingSuite) assertCurlService(

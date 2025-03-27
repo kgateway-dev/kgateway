@@ -17,6 +17,7 @@ import (
 	istionetworking "istio.io/client-go/pkg/apis/networking/v1"
 	networkingclient "istio.io/client-go/pkg/apis/networking/v1"
 	istioutil "istio.io/istio/pilot/pkg/networking/util"
+	"istio.io/istio/pilot/pkg/serviceregistry/provider"
 	"istio.io/istio/pkg/slices"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/kubernetes"
@@ -134,6 +135,15 @@ func (s Service) Hostname() string {
 		return fqdn(s.GetName(), s.GetNamespace())
 	}
 	return s.Hostnames[0]
+}
+
+// Provider returns the appropriate service provider based on the service type.
+// Returns provider.Kubernetes for regular Kubernetes services and provider.External for ServiceEntries.
+func (s Service) Provider() provider.ID {
+	if s.GroupKind.Kind == wellknown.ServiceEntryGVK.Kind {
+		return provider.External
+	}
+	return provider.Kubernetes
 }
 
 // ErrNoServiceVIPs should occur only due to headless Services that have no

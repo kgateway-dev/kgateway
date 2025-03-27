@@ -9,7 +9,6 @@ import (
 	"istio.io/istio/pilot/pkg/model"
 	"istio.io/istio/pilot/pkg/security/authz/builder"
 	"istio.io/istio/pilot/pkg/security/trustdomain"
-	"istio.io/istio/pilot/pkg/serviceregistry/provider"
 	"istio.io/istio/pkg/config/schema/gvk"
 	gwapi "sigs.k8s.io/gateway-api/apis/v1"
 
@@ -17,16 +16,27 @@ import (
 	hcmv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/waypoint/waypointquery"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/filters"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
 )
 
-const (
-	// TODO RootNamespace should be equiv to what istio sees as root ns
+var (
+	// RootNamespace is the namespace where Istio control plane components are installed.
+	// It is set during initialization via SetRootNamespace() which reads from settings.IstioNamespace.
+	// The default value is "istio-system" if not configured.
 	RootNamespace = "istio-system"
 )
+
+// SetRootNamespace sets the RootNamespace from settings.
+// This should be called during initialization.
+func SetRootNamespace(s *settings.Settings) {
+	if s != nil {
+		RootNamespace = s.IstioNamespace
+	}
+}
 
 // BuildRBACForService gives three lists of filters:
 // tcpRBAC - only used in tcp chains (using this on an HTTP chain could cause improper DENY)
@@ -90,7 +100,7 @@ func getAuthzBuilder(
 			{
 				Name:      svc.GetName(),
 				Namespace: svc.GetNamespace(),
-				Registry:  provider.Kubernetes,
+				Registry:  svc.Provider(),
 			},
 		},
 		WorkloadNamespace: gatewayNamespace,
@@ -176,5 +186,34 @@ func customFiltersHelper(
 		},
 		Name:   name,
 		Config: config,
+	}
+}
+
+func applyHTTPRBACFilters(httpChain *ir.HttpFilterChainIR, httpRBAC []*ir.CustomEnvoyFilter, svc waypointquery.Service) {
+	// Apply RBAC filters regardless of the presence of proxy_protocol_authority
+	if len(httpRBAC) > 0 {
+		// Initialize CustomHTTPFilters if it's nil
+		if httpChain.CustomHTTPFilters == nil {
+			httpChain.CustomHTTPFilters = []ir.CustomEnvoyFilter{}
+		}
+
+		// Add RBAC filters to CustomHTTPFilters
+		for _, f := range httpRBAC {
+			httpChain.CustomHTTPFilters = append(httpChain.CustomHTTPFilters, *f)
+		}
+	}
+}
+
+func applyTCPRBACFilters(tcpChain *ir.TcpIR, tcpRBAC []*ir.CustomEnvoyFilter, svc waypointquery.Service) {
+	// Apply RBAC filters regardless of the presence of proxy_protocol_authority
+	if len(tcpRBAC) > 0 {
+		if tcpChain.NetworkFilters == nil {
+			tcpChain.NetworkFilters = []*anypb.Any{}
+		}
+
+		// Add RBAC filters as built-in network filters
+		for _, f := range tcpRBAC {
+			tcpChain.NetworkFilters = append(tcpChain.NetworkFilters, f.Config)
+		}
 	}
 }

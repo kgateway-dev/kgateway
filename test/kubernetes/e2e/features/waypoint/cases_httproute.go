@@ -24,6 +24,17 @@ var (
 		},
 		Body: gstruct.Ignore(),
 	}
+
+	isOK = matchers.HttpResponse{
+		StatusCode: http.StatusOK,
+		Body:       gstruct.Ignore(),
+	}
+
+	// Response is forbidden
+	isForbidden = matchers.HttpResponse{
+		StatusCode: http.StatusForbidden,
+		Body:       gstruct.Ignore(),
+	}
 )
 
 func (s *testingSuite) TestServiceEntryHostnameHTTPRoute() {
@@ -60,4 +71,15 @@ func (s *testingSuite) TestGatewayHTTPRoute() {
 	// both get the route since we parent to the Gateway
 	s.assertCurlService(fromCurl, "svc-a", testNamespace, hasHTTPRoute)
 	s.assertCurlService(fromCurl, "svc-b", testNamespace, hasHTTPRoute)
+}
+
+func (s *testingSuite) TestGatewayAttachedAuthorizationPolicy() {
+	s.setNamespaceWaypointOrFail(testNamespace)
+	s.applyOrFail("authz-l7.yaml", testNamespace)
+
+	// both get the route since we parent to the Gateway
+	s.assertCurlService(fromCurl, "svc-a", testNamespace, isOK)
+	s.assertCurlService(fromCurl, "svc-b", testNamespace, isOK)
+	s.assertCurlService(fromNotCurl, "svc-a", testNamespace, isOK)
+	s.assertCurlService(fromNotCurl, "svc-b", testNamespace, isForbidden)
 }

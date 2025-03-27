@@ -41,7 +41,7 @@ type WaypointQueries interface {
 	// GetHTTPRoutesForService fetches HTTPRoutes that have the given Service in parentRefs.
 	GetHTTPRoutesForService(kctx krt.HandlerContext, ctx context.Context, svc *Service) []query.RouteInfo
 
-	// GetAuthorizationPolicies gets all AuthorizationPolicy resources in the targetNamespace and rootNamespace.
+	// GetAuthorizationPolicies gets a filtered list of policies in the namespaces that also target services in the targetNamespace
 	GetAuthorizationPolicies(kctx krt.HandlerContext, ctx context.Context, targetNamespace, rootNamespace string) []*istiosecurity.AuthorizationPolicy
 
 	HasSynced() bool
@@ -52,7 +52,6 @@ func NewQueries(
 	gwQueries query.GatewayQueries,
 ) WaypointQueries {
 	waypointedServices, servicesByWaypoint := waypointAttachmentIndex(commonCols)
-	// authzInformer is
 	authzInformer := kclient.NewDelayedInformer[*istiosecurity.AuthorizationPolicy](
 		commonCols.Client,
 		gvr.AuthorizationPolicy,
