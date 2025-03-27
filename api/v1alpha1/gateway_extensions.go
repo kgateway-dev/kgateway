@@ -43,6 +43,12 @@ type ExtAuthProvider struct {
 
 // ExtProcProvider defines the configuration for an ExtProc provider.
 type ExtProcProvider struct {
+	// GrpcService is the GRPC service that will handle the processing.
+	// +kubebuilder:validation:Required
+	GrpcService *ExtProcGrpcService `json:"grpcService"`
+}
+
+type ExtProcGrpcService struct {
 	// BackendRef references the backend GRPC service that will handle the processing.
 	// +kubebuilder:validation:Required
 	BackendRef *gwv1.BackendRef `json:"backendRef"`

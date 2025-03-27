@@ -391,6 +391,11 @@ func (p *routePolicyPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.Ro
 		}
 	}
 
+	if policy.spec.ExtProc != nil {
+		p.extprocFilter = policy.spec.ExtProc.ExtProc
+		enableExtprocFilterPerRoute(pCtx)
+	}
+
 	return errors.Join(errs...)
 }
 

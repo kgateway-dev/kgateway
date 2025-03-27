@@ -9,8 +9,9 @@ import (
 // ExtProcPolicyApplyConfiguration represents a declarative configuration of the ExtProcPolicy type for use
 // with apply.
 type ExtProcPolicyApplyConfiguration struct {
-	ExtensionRef   *v1.LocalObjectReference          `json:"extensionRef,omitempty"`
-	ProcessingMode *ProcessingModeApplyConfiguration `json:"processingMode,omitempty"`
+	ExtensionRef     *v1.LocalObjectReference          `json:"extensionRef,omitempty"`
+	ProcessingMode   *ProcessingModeApplyConfiguration `json:"processingMode,omitempty"`
+	FailureModeAllow *bool                             `json:"failureModeAllow,omitempty"`
 }
 
 // ExtProcPolicyApplyConfiguration constructs a declarative configuration of the ExtProcPolicy type for use with
@@ -32,5 +33,13 @@ func (b *ExtProcPolicyApplyConfiguration) WithExtensionRef(value v1.LocalObjectR
 // If called multiple times, the ProcessingMode field is set to the value of the last call.
 func (b *ExtProcPolicyApplyConfiguration) WithProcessingMode(value *ProcessingModeApplyConfiguration) *ExtProcPolicyApplyConfiguration {
 	b.ProcessingMode = value
+	return b
+}
+
+// WithFailureModeAllow sets the FailureModeAllow field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the FailureModeAllow field is set to the value of the last call.
+func (b *ExtProcPolicyApplyConfiguration) WithFailureModeAllow(value bool) *ExtProcPolicyApplyConfiguration {
+	b.FailureModeAllow = &value
 	return b
 }

@@ -19,11 +19,6 @@ import (
 
 // addExtProcHTTPFilter adds an extproc filter to the http filter chain
 func addExtProcHTTPFilter(extProcConfig *envoy_ext_proc_v3.ExternalProcessor) ([]plugins.StagedHttpFilter, error) {
-	// needed?
-	// if err := extProcConfig.ValidateAll(); err != nil {
-	// 	return nil, err
-	// }
-	// extprocAny, err := utils.MessageToAny(extProcConfig)
 	extprocFilter, err := plugins.NewStagedFilter(
 		wellknown.ExtprocFilterName,
 		extProcConfig,
@@ -35,6 +30,14 @@ func addExtProcHTTPFilter(extProcConfig *envoy_ext_proc_v3.ExternalProcessor) ([
 		return nil, err
 	}
 	return []plugins.StagedHttpFilter{extprocFilter}, nil
+}
+
+func enableExtprocFilterPerRoute(pCtx *ir.RouteContext) {
+	cfg := &routev3.FilterConfig{
+		Config: &anypb.Any{},
+	}
+
+	pCtx.TypedFilterConfig.AddTypedConfig(wellknown.ExtprocFilterName, cfg)
 }
 
 func enableExtprocFilter(pCtx *ir.RouteBackendContext) {
@@ -56,7 +59,7 @@ func toEnvoyExtProc(
 	if err != nil {
 		return nil, fmt.Errorf("failed to get GatewayExtension %s: %s", extprocConfig.ExtensionRef.Name, err.Error())
 	}
-	backend, err := commoncol.BackendIndex.GetBackendFromRef(krtctx, gExt.ObjectSource, gExt.ExtProc.BackendRef.BackendObjectReference)
+	backend, err := commoncol.BackendIndex.GetBackendFromRef(krtctx, gExt.ObjectSource, gExt.ExtProc.GrpcService.BackendRef.BackendObjectReference)
 	// TODO: what is the correct behavior? maybe route to static blackhole?
 	if err != nil {
 		return nil, fmt.Errorf("failed to get backend from GatewayExtension %s: %s", gExt.ObjectSource.GetName(), err.Error())
@@ -68,8 +71,8 @@ func toEnvoyExtProc(
 			},
 		},
 	}
-	if gExt.ExtProc.Authority != nil {
-		envoyGrpcService.GetEnvoyGrpc().Authority = *gExt.ExtProc.Authority
+	if gExt.ExtProc.GrpcService.Authority != nil {
+		envoyGrpcService.GetEnvoyGrpc().Authority = *gExt.ExtProc.GrpcService.Authority
 	}
 
 	envoyExtProc := &envoy_ext_proc_v3.ExternalProcessor{
@@ -80,9 +83,10 @@ func toEnvoyExtProc(
 		envoyExtProc.ProcessingMode = toEnvoyProcessingMode(extprocConfig.ProcessingMode)
 	}
 
-	// filter metadata?
-	// failure mode?
-	// what else to add to config?
+	if extprocConfig.FailureModeAllow != nil {
+		envoyExtProc.FailureModeAllow = *extprocConfig.FailureModeAllow
+	}
+
 	return envoyExtProc, nil
 }
 

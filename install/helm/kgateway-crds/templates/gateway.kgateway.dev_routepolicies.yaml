@@ -321,6 +321,8 @@ spec:
                         type: string
                     type: object
                     x-kubernetes-map-type: atomic
+                  failureModeAllow:
+                    type: boolean
                   processingMode:
                     properties:
                       requestBodyMode:
