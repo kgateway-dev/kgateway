@@ -48,6 +48,7 @@ type ExtProcProvider struct {
 	GrpcService *ExtGrpcService `json:"grpcService"`
 }
 
+// ExtGrpcService defines the GRPC service that will handle the processing.
 type ExtGrpcService struct {
 	// BackendRef references the backend GRPC service.
 	// +kubebuilder:validation:Required
