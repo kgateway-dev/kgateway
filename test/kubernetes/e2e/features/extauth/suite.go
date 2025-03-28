@@ -127,7 +127,7 @@ func (s *testingSuite) TestExtAuthPolicy() {
 		LabelSelector: "app.kubernetes.io/name=super-gateway",
 	}, time.Minute)
 	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, extAuthSvc.GetNamespace(), metav1.ListOptions{
-		LabelSelector: "app.kubernetes.io/name=ext-authz-istio",
+		LabelSelector: "app=ext-authz",
 	})
 
 	testCases := []struct {
@@ -161,6 +161,11 @@ func (s *testingSuite) TestExtAuthPolicy() {
 				"x-ext-authz": "deny",
 			},
 			expectedStatus: http.StatusUnauthorized,
+		},
+		{
+			name:           "request allowed on insecure route",
+			hostname:       "insecureroute.com",
+			expectedStatus: http.StatusOK,
 		},
 	}
 
