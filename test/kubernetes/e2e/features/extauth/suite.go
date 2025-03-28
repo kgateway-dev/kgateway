@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/onsi/gomega"
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -124,22 +125,20 @@ func (s *testingSuite) TestExtAuthPolicy() {
 	s.ensureBasicRunning()
 
 	testCases := []struct {
-		name            string
-		headers         map[string]string
-		hostname        string
-		expectedStatus  int
-		expectedHeaders map[string]interface{}
+		name                         string
+		headers                      map[string]string
+		hostname                     string
+		expectedStatus               int
+		expectedUpstreamBodyContents string
 	}{
 		{
 			name: "request allowed with allow header",
 			headers: map[string]string{
 				"x-ext-authz": "allow",
 			},
-			hostname:       "example.com",
-			expectedStatus: http.StatusOK,
-			expectedHeaders: map[string]interface{}{
-				"X-Ext-Authz-Check-Result": "allowed",
-			},
+			hostname:                     "example.com",
+			expectedStatus:               http.StatusOK,
+			expectedUpstreamBodyContents: "X-Ext-Authz-Check-Result",
 		},
 		{
 			name:           "request denied without allow header",
@@ -183,7 +182,7 @@ func (s *testingSuite) TestExtAuthPolicy() {
 				opts,
 				&testmatchers.HttpResponse{
 					StatusCode: tc.expectedStatus,
-					Headers:    tc.expectedHeaders,
+					Body:       gomega.ContainSubstring(tc.expectedUpstreamBodyContents),
 				})
 		})
 	}
@@ -199,7 +198,7 @@ func (s *testingSuite) TextRouteTargetedExtAuthPolicy() {
 
 	resources := []client.Object{
 		basicSecureRoute,
-		insecureRoute,
+		insecureRoute, insecureTrafficPolicy,
 	}
 	s.T().Cleanup(func() {
 		for _, manifest := range manifests {
@@ -219,11 +218,11 @@ func (s *testingSuite) TextRouteTargetedExtAuthPolicy() {
 	s.ensureBasicRunning()
 
 	testCases := []struct {
-		name            string
-		headers         map[string]string
-		hostname        string
-		expectedStatus  int
-		expectedHeaders map[string]interface{}
+		name                         string
+		headers                      map[string]string
+		hostname                     string
+		expectedStatus               int
+		expectedUpstreamBodyContents string
 	}{
 		{
 			name:           "request allowed by default",
@@ -246,11 +245,9 @@ func (s *testingSuite) TextRouteTargetedExtAuthPolicy() {
 			headers: map[string]string{
 				"x-ext-authz": "allow",
 			},
-			hostname:       "securedroute.com",
-			expectedStatus: http.StatusOK,
-			expectedHeaders: map[string]interface{}{
-				"X-Ext-Authz-Check-Result": "allowed",
-			},
+			hostname:                     "securedroute.com",
+			expectedStatus:               http.StatusOK,
+			expectedUpstreamBodyContents: "X-Ext-Authz-Check-Result",
 		},
 		{
 			name:           "request denied without header on secured route",
@@ -281,7 +278,7 @@ func (s *testingSuite) TextRouteTargetedExtAuthPolicy() {
 				opts,
 				&testmatchers.HttpResponse{
 					StatusCode: tc.expectedStatus,
-					Headers:    tc.expectedHeaders,
+					Body:       gomega.ContainSubstring(tc.expectedUpstreamBodyContents),
 				})
 		})
 	}
