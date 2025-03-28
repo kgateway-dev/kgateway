@@ -93,7 +93,7 @@ func buildEnvoyExtProc(clusterName string, gExt *ir.GatewayExtension, extprocCon
 	}
 
 	if err := envoyExtProc.ValidateAll(); err != nil {
-		return nil, fmt.Errorf("failed to validate envoyExtProc: %s", err.Error())
+		return nil, fmt.Errorf("failed to validate envoyExtProc: %v", err)
 	}
 	return envoyExtProc, nil
 }
