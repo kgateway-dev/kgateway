@@ -123,18 +123,21 @@ func (d *trafficPolicy) Equals(in any) bool {
 		return false
 	}
 
-	{
-		extAuth := d.spec.extAuth
-		if extAuth != nil {
-			if !proto.Equal(extAuth.filter, extAuth.filter) {
-				return false
-			}
-			if extAuth.providerName != extAuth.providerName {
-				return false
-			}
-			if extAuth.enablement != extAuth.enablement {
-				return false
-			}
+	if d.spec.extAuth == nil && d2.spec.extAuth != nil {
+		return false
+	}
+	if d.spec.extAuth != nil {
+		if d2.spec.extAuth == nil {
+			return false
+		}
+		if !proto.Equal(d.spec.extAuth.filter, d2.spec.extAuth.filter) {
+			return false
+		}
+		if d.spec.extAuth.providerName != d2.spec.extAuth.providerName {
+			return false
+		}
+		if d.spec.extAuth.enablement != d2.spec.extAuth.enablement {
+			return false
 		}
 	}
 
@@ -252,6 +255,7 @@ func (p *trafficPolicyPluginGwPass) ApplyListenerPlugin(ctx context.Context, pCt
 	}
 	if policy.spec.extAuth != nil {
 		p.extAuthListenerEnabled = true
+		p.extAuth = policy.spec.extAuth
 	}
 	p.localRateLimitInChain = policy.spec.localRateLimit
 }
@@ -389,6 +393,7 @@ func (p *trafficPolicyPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.
 				},
 			)
 		}
+		p.extAuth = policy.spec.extAuth
 	}
 
 	if policy.spec.ExtProc != nil {
@@ -441,7 +446,8 @@ func (p *trafficPolicyPluginGwPass) ApplyForRouteBackend(
 func (p *trafficPolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.FilterChainCommon) ([]plugins.StagedHttpFilter, error) {
 	filters := []plugins.StagedHttpFilter{}
 	if p.extprocFilter != nil {
-		extprocFilters, err := addExtProcHTTPFilter(p.extprocFilter)
+		extProcFilter := proto.Clone(p.extprocFilter).(*envoy_ext_proc_v3.ExternalProcessor)
+		extprocFilters, err := addExtProcHTTPFilter(extProcFilter)
 		if err != nil {
 			return nil, err
 		}
@@ -490,10 +496,10 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.Filt
 
 	// Add Ext_authz filter for listener
 	if p.extAuth != nil {
-		extAuth := p.extAuth.filter
+		extAuthFilter := proto.Clone(p.extAuth.filter).(*envoy_ext_authz_v3.ExtAuthz)
 
 		// handled opt out from all via metadata this is purely for the fully disabled functionality
-		extAuth.FilterEnabledMetadata = &envoy_matcher_v3.MetadataMatcher{
+		extAuthFilter.FilterEnabledMetadata = &envoy_matcher_v3.MetadataMatcher{
 			Filter: extAuthGlobalDisableFilterName, // the transformation filter instance's name
 			Invert: true,
 			Path: []*envoy_matcher_v3.MetadataMatcher_PathSegment{
@@ -521,18 +527,17 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.Filt
 
 		// add the specific auth filter
 		extauthName := extAuthFilterName(p.extAuth.providerName)
-		extAuthFilter := plugins.MustNewStagedFilter(extauthName,
-			extAuth,
+		stagedExtAuthFilter := plugins.MustNewStagedFilter(extauthName,
+			extAuthFilter,
 			plugins.DuringStage(plugins.AuthZStage))
 
 		// handle the two enable attachement cases
-
 		if !p.extAuthListenerEnabled {
 			// handle the case where route level only should be fired
-			extAuthFilter.Filter.Disabled = true
+			stagedExtAuthFilter.Filter.Disabled = true
 		}
 
-		filters = append(filters, extAuthFilter)
+		filters = append(filters, stagedExtAuthFilter)
 	}
 	if p.localRateLimitInChain != nil {
 		filters = append(filters, plugins.MustNewStagedFilter(localRateLimitFilterNamePrefix,
