@@ -71,12 +71,6 @@ type GatewayExtensionSpec struct {
 	// +kubebuilder:validation:Required
 	Type GatewayExtensionType `json:"type"`
 
-	// Placement configuration for where this extension should be placed in the filter chain.
-	// If not specified, the extension will be placed based on the type of the extension.
-	// For example, ExtAuth will be placed in the AuthZStage by default.
-	// +optional
-	// Placement Placement `json:"placement"`
-
 	// ExtAuth configuration for ExtAuth extension type.
 	// +optional
 	// +unionMember:type=ExtAuth
