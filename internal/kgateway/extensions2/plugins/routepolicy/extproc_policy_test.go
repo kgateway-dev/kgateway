@@ -6,6 +6,7 @@ import (
 	envoy_ext_proc_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_proc/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"k8s.io/utils/ptr"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
@@ -38,7 +39,7 @@ func TestBuildEnvoyExtProc(t *testing.T) {
 			gatewayExt: &ir.GatewayExtension{
 				ExtProc: &v1alpha1.ExtProcProvider{
 					GrpcService: &v1alpha1.ExtGrpcService{
-						Authority: stringPtr("test-authority"),
+						Authority: ptr.To("test-authority"),
 					},
 				},
 			},
@@ -55,7 +56,7 @@ func TestBuildEnvoyExtProc(t *testing.T) {
 				},
 			},
 			extprocConfig: &v1alpha1.ExtProcPolicy{
-				FailureModeAllow: boolPtr(true),
+				FailureModeAllow: ptr.To(true),
 			},
 			validateResult: func(t *testing.T, result *envoy_ext_proc_v3.ExternalProcessor) {
 				assert.True(t, result.FailureModeAllow)
@@ -70,12 +71,12 @@ func TestBuildEnvoyExtProc(t *testing.T) {
 			},
 			extprocConfig: &v1alpha1.ExtProcPolicy{
 				ProcessingMode: &v1alpha1.ProcessingMode{
-					RequestHeaderMode:   stringPtr("SEND"),
-					ResponseHeaderMode:  stringPtr("SKIP"),
-					RequestBodyMode:     stringPtr("STREAMED"),
-					ResponseBodyMode:    stringPtr("BUFFERED"),
-					RequestTrailerMode:  stringPtr("SEND"),
-					ResponseTrailerMode: stringPtr("SKIP"),
+					RequestHeaderMode:   ptr.To("SEND"),
+					ResponseHeaderMode:  ptr.To("SKIP"),
+					RequestBodyMode:     ptr.To("STREAMED"),
+					ResponseBodyMode:    ptr.To("BUFFERED"),
+					RequestTrailerMode:  ptr.To("SEND"),
+					ResponseTrailerMode: ptr.To("SKIP"),
 				},
 			},
 			validateResult: func(t *testing.T, result *envoy_ext_proc_v3.ExternalProcessor) {
@@ -117,12 +118,12 @@ func TestBuildEnvoyExtProc(t *testing.T) {
 			},
 			extprocConfig: &v1alpha1.ExtProcPolicy{
 				ProcessingMode: &v1alpha1.ProcessingMode{
-					RequestHeaderMode:   stringPtr("INVALID"),
-					ResponseHeaderMode:  stringPtr("INVALID"),
-					RequestBodyMode:     stringPtr("INVALID"),
-					ResponseBodyMode:    stringPtr("INVALID"),
-					RequestTrailerMode:  stringPtr("INVALID"),
-					ResponseTrailerMode: stringPtr("INVALID"),
+					RequestHeaderMode:   ptr.To("INVALID"),
+					ResponseHeaderMode:  ptr.To("INVALID"),
+					RequestBodyMode:     ptr.To("INVALID"),
+					ResponseBodyMode:    ptr.To("INVALID"),
+					RequestTrailerMode:  ptr.To("INVALID"),
+					ResponseTrailerMode: ptr.To("INVALID"),
 				},
 			},
 			validateResult: func(t *testing.T, result *envoy_ext_proc_v3.ExternalProcessor) {
@@ -152,13 +153,4 @@ func TestBuildEnvoyExtProc(t *testing.T) {
 			tt.validateResult(t, result)
 		})
 	}
-}
-
-// Helper functions
-func stringPtr(s string) *string {
-	return &s
-}
-
-func boolPtr(b bool) *bool {
-	return &b
 }
