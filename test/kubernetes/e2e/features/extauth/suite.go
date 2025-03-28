@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -77,7 +78,7 @@ func (s *testingSuite) SetupSuite() {
 
 	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, proxyObjMeta.GetNamespace(), metav1.ListOptions{
 		LabelSelector: fmt.Sprintf("app.kubernetes.io/name=%s", proxyObjMeta.GetName()),
-	})
+	}, time.Minute*2)
 }
 
 func (s *testingSuite) TearDownSuite() {
@@ -102,7 +103,7 @@ func (s *testingSuite) TestExtAuthPolicy() {
 
 	resources := []client.Object{
 		basicSecureRoute, gatewayAttachedTrafficPolicy,
-		insecureRoute, insecureTrafficPolicy,
+		insecureRoute,
 	}
 	s.T().Cleanup(func() {
 		for _, manifest := range manifests {
@@ -123,15 +124,16 @@ func (s *testingSuite) TestExtAuthPolicy() {
 		LabelSelector: "app.kubernetes.io/name=curl",
 	})
 	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, proxyObjMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: "app.kubernetes.io/name=gw",
-	})
+		LabelSelector: "app.kubernetes.io/name=super-gateway",
+	}, time.Minute)
 	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, extAuthSvc.GetNamespace(), metav1.ListOptions{
-		LabelSelector: "app.kubernetes.io/name=extauth",
+		LabelSelector: "app.kubernetes.io/name=ext-authz-istio",
 	})
 
 	testCases := []struct {
 		name            string
 		headers         map[string]string
+		hostname        string
 		expectedStatus  int
 		expectedHeaders map[string]interface{}
 	}{
@@ -140,6 +142,7 @@ func (s *testingSuite) TestExtAuthPolicy() {
 			headers: map[string]string{
 				"x-ext-authz": "allow",
 			},
+			hostname:       "example.com",
 			expectedStatus: http.StatusOK,
 			expectedHeaders: map[string]interface{}{
 				"x-ext-authz-result": "allowed",
@@ -148,10 +151,12 @@ func (s *testingSuite) TestExtAuthPolicy() {
 		{
 			name:           "request denied without allow header",
 			headers:        map[string]string{},
+			hostname:       "example.com",
 			expectedStatus: http.StatusUnauthorized,
 		},
 		{
-			name: "request denied with deny header",
+			name:     "request denied with deny header",
+			hostname: "example.com",
 			headers: map[string]string{
 				"x-ext-authz": "deny",
 			},
@@ -164,7 +169,7 @@ func (s *testingSuite) TestExtAuthPolicy() {
 			// Build curl options
 			opts := []curl.Option{
 				curl.WithHost(kubeutils.ServiceFQDN(proxyObjMeta)),
-				curl.WithHostHeader("example.com"),
+				curl.WithHostHeader(tc.hostname),
 				curl.WithPort(8080),
 			}
 

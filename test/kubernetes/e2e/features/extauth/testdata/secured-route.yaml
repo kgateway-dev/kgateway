@@ -1,12 +1,14 @@
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
-  name: example-route-secure
+  namespace: kgateway-test
+  name: route-example-secure
 spec:
   parentRefs:
     - name: super-gateway
+      namespace: kgateway-test
   hostnames:
-    - "example.com"
+    - "secureroute.com"
   rules:
     - backendRefs:
         - name: simple-svc
@@ -16,12 +18,13 @@ spec:
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: TrafficPolicy
 metadata:
+  namespace: kgateway-test
   name: secure-route-policy
 spec:
   targetRefs:
   - group: gateway.networking.k8s.io
     kind: HTTPRoute
-    name: example-route-secure
-  extauth:
-    extension: 
-      name: basic-extauth
+    name: route-example-secure
+  extAuth:
+    extensionRef: 
+      name: basic-extauth2
