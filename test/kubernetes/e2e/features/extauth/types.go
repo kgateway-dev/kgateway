@@ -103,8 +103,9 @@ var (
 	simpleServiceManifest        = getTestFile("service.yaml")
 	extAuthManifest              = getTestFile("ext-authz-server.yaml")
 	securedGatewayPolicyManifest = getTestFile("secured-gateway-policy.yaml")
-	// securedRouteManifest         = getTestFile("secured-route.yaml")
-	insecureRouteManifest = getTestFile("insecure-route.yaml")
+	securedRouteManifest         = getTestFile("secured-route.yaml")
+	secureAndDisableAllManifest  = getTestFile("secure-and-disable-all.yaml")
+	insecureRouteManifest        = getTestFile("insecure-route.yaml")
 )
 
 func getTestFile(filename string) string {
