@@ -18,6 +18,7 @@ type extAuthIR struct {
 	filter       *envoy_ext_authz_v3.ExtAuthz
 	providerName string
 	enablement   v1alpha1.ExtAuthEnabled
+	fromListener bool
 }
 
 // extAuthForSpec translates the ExtAuthz spec into the Envoy configuration
