@@ -136,7 +136,7 @@ func (d *trafficPolicy) Equals(in any) bool {
 		if d.spec.extAuth.providerName != d2.spec.extAuth.providerName {
 			return false
 		}
-		if d.spec.extAuth.enablement != d.spec.extAuth.enablement {
+		if d.spec.extAuth.enablement != d2.spec.extAuth.enablement {
 			return false
 		}
 	}
