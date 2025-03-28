@@ -144,7 +144,7 @@ func (s *testingSuite) TestExtAuthPolicy() {
 			name:           "request denied without allow header",
 			headers:        map[string]string{},
 			hostname:       "example.com",
-			expectedStatus: http.StatusUnauthorized,
+			expectedStatus: http.StatusForbidden,
 		},
 		{
 			name:     "request denied with deny header",
@@ -152,7 +152,7 @@ func (s *testingSuite) TestExtAuthPolicy() {
 			headers: map[string]string{
 				"x-ext-authz": "deny",
 			},
-			expectedStatus: http.StatusUnauthorized,
+			expectedStatus: http.StatusForbidden,
 		},
 		{
 			name:           "request allowed on insecure route",
@@ -253,7 +253,7 @@ func (s *testingSuite) TextRouteTargetedExtAuthPolicy() {
 			name:           "request denied without header on secured route",
 			hostname:       "securedroute.com",
 			headers:        map[string]string{},
-			expectedStatus: http.StatusUnauthorized,
+			expectedStatus: http.StatusForbidden,
 		},
 	}
 
