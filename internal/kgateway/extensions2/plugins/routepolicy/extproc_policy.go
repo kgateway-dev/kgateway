@@ -64,10 +64,15 @@ func toEnvoyExtProc(
 	if err != nil {
 		return nil, fmt.Errorf("failed to get backend from GatewayExtension %s: %s", gExt.ObjectSource.GetName(), err.Error())
 	}
+
+	return buildEnvoyExtProc(backend.ClusterName(), gExt, extprocConfig)
+}
+
+func buildEnvoyExtProc(clusterName string, gExt *ir.GatewayExtension, extprocConfig *v1alpha1.ExtProcPolicy) (*envoy_ext_proc_v3.ExternalProcessor, error) {
 	envoyGrpcService := &envoy_config_core_v3.GrpcService{
 		TargetSpecifier: &envoy_config_core_v3.GrpcService_EnvoyGrpc_{
 			EnvoyGrpc: &envoy_config_core_v3.GrpcService_EnvoyGrpc{
-				ClusterName: backend.ClusterName(),
+				ClusterName: clusterName,
 			},
 		},
 	}
@@ -87,6 +92,9 @@ func toEnvoyExtProc(
 		envoyExtProc.FailureModeAllow = *extprocConfig.FailureModeAllow
 	}
 
+	if err := envoyExtProc.ValidateAll(); err != nil {
+		return nil, fmt.Errorf("failed to validate envoyExtProc: %s", err.Error())
+	}
 	return envoyExtProc, nil
 }
 
