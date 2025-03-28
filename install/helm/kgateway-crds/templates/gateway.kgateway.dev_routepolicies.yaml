@@ -312,6 +312,10 @@ spec:
                     - maxRequestBytes
                     type: object
                 type: object
+                x-kubernetes-validations:
+                - message: only one of 'extensionRef' or 'enablement' may be set
+                  rule: (has(self.extensionRef) && !has(self.enablement)) || (!has(self.extensionRef)
+                    && has(self.enablement))
               extProc:
                 properties:
                   extensionRef:
