@@ -1271,7 +1271,6 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: transformation
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.TransformationPolicy
-      default: {}
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Transform
   map:
     fields:

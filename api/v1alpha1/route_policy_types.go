@@ -34,9 +34,14 @@ type TrafficPolicySpec struct {
 	// +kubebuilder:validation:MaxItems=16
 	TargetRefs []LocalPolicyTargetReference `json:"targetRefs,omitempty"`
 
+	// AI is used to configure AI-based policies for the policy.
+	// +optional
 	AI *AIPolicy `json:"ai,omitempty"`
 
-	Transformation TransformationPolicy `json:"transformation,omitempty"`
+	// Transformation is used to mutate and transform requests and responses
+	// before forwarding them to the destination.
+	// +optional
+	Transformation *TransformationPolicy `json:"transformation,omitempty"`
 
 	// ExtProc specifies the external processing configuration for the policy.
 	// +optional
@@ -46,6 +51,7 @@ type TrafficPolicySpec struct {
 	// This controls what external server to send requests to for authentication.
 	// +optional
 	ExtAuth *ExtAuthPolicy `json:"extAuth,omitempty"`
+
 	// RateLimit specifies the rate limiting configuration for the policy.
 	// This controls the rate at which requests are allowed to be processed.
 	// +optional
@@ -55,8 +61,11 @@ type TrafficPolicySpec struct {
 // TransformationPolicy config is used to modify envoy behavior at a route level.
 // These modifications can be performed on the request and response paths.
 type TransformationPolicy struct {
+	// Request is used to modify the request path.
 	// +optional
 	Request *Transform `json:"request,omitempty"`
+
+	// Response is used to modify the response path.
 	// +optional
 	Response *Transform `json:"response,omitempty"`
 }
@@ -87,9 +96,8 @@ type Transform struct {
 	Remove []string `json:"remove,omitempty"`
 
 	// Body controls both how to parse the body and if needed how to set.
-	// +optional
-	//
 	// If empty, body will not be buffered.
+	// +optional
 	Body *BodyTransformation `json:"body,omitempty"`
 }
 
@@ -119,8 +127,10 @@ type (
 type BodyParseBehavior string
 
 const (
+	// BodyParseBehaviorAsString will parse the body as a string.
 	BodyParseBehaviorAsString BodyParseBehavior = "AsString"
-	BodyParseBehaviorAsJSON   BodyParseBehavior = "AsJson"
+	// BodyParseBehaviorAsJSON will parse the body as a json object.
+	BodyParseBehaviorAsJSON BodyParseBehavior = "AsJson"
 )
 
 // BodyTransformation controls how the body should be parsed and transformed.
@@ -129,7 +139,9 @@ type BodyTransformation struct {
 	// This can make interacting with keys within a json body much easier if AsJson is selected.
 	// +kubebuilder:default=AsString
 	ParseAs BodyParseBehavior `json:"parseAs"`
+
 	// Value is the template to apply to generate the output value for the body.
+	// +optional
 	Value *InjaTemplate `json:"value,omitempty"`
 }
 

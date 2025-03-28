@@ -653,19 +653,19 @@ func aiSecretForSpec(
 
 // transformationForSpec translates the transformation spec into and onto the IR policy
 func transformationForSpec(spec v1alpha1.TrafficPolicySpec, out *trafficPolicySpecIr) {
-	if spec.Transformation == (v1alpha1.TransformationPolicy{}) {
+	if spec.Transformation == nil {
 		return
 	}
 	var err error
 	if !useRustformations {
-		out.transform, err = toTransformFilterConfig(&spec.Transformation)
+		out.transform, err = toTransformFilterConfig(spec.Transformation)
 		if err != nil {
 			out.errors = append(out.errors, err)
 		}
 		return
 	}
 
-	rustformation, toStash, err := toRustformFilterConfig(&spec.Transformation)
+	rustformation, toStash, err := toRustformFilterConfig(spec.Transformation)
 	if err != nil {
 		out.errors = append(out.errors, err)
 	}

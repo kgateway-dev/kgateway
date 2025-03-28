@@ -4147,13 +4147,14 @@ func schema_kgateway_v2_api_v1alpha1_TrafficPolicySpec(ref common.ReferenceCallb
 					},
 					"ai": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AIPolicy"),
+							Description: "AI is used to configure AI-based policies for the policy.",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AIPolicy"),
 						},
 					},
 					"transformation": {
 						SchemaProps: spec.SchemaProps{
-							Default: map[string]interface{}{},
-							Ref:     ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.TransformationPolicy"),
+							Description: "Transformation is used to mutate and transform requests and responses before forwarding them to the destination.",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.TransformationPolicy"),
 						},
 					},
 					"extProc": {
@@ -4255,7 +4256,7 @@ func schema_kgateway_v2_api_v1alpha1_Transform(ref common.ReferenceCallback) com
 					},
 					"body": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Body controls both how to parse the body and if needed how to set.\n\nIf empty, body will not be buffered.",
+							Description: "Body controls both how to parse the body and if needed how to set. If empty, body will not be buffered.",
 							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.BodyTransformation"),
 						},
 					},
@@ -4276,12 +4277,14 @@ func schema_kgateway_v2_api_v1alpha1_TransformationPolicy(ref common.ReferenceCa
 				Properties: map[string]spec.Schema{
 					"request": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Transform"),
+							Description: "Request is used to modify the request path.",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Transform"),
 						},
 					},
 					"response": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Transform"),
+							Description: "Response is used to modify the response path.",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Transform"),
 						},
 					},
 				},
