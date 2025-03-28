@@ -123,18 +123,21 @@ func (d *trafficPolicy) Equals(in any) bool {
 		return false
 	}
 
-	{
-		extAuth := d.spec.extAuth
-		if extAuth != nil {
-			if !proto.Equal(extAuth.filter, extAuth.filter) {
-				return false
-			}
-			if extAuth.providerName != extAuth.providerName {
-				return false
-			}
-			if extAuth.enablement != extAuth.enablement {
-				return false
-			}
+	if d.spec.extAuth == nil && d2.spec.extAuth != nil {
+		return false
+	}
+	if d.spec.extAuth != nil {
+		if d2.spec.extAuth == nil {
+			return false
+		}
+		if !proto.Equal(d.spec.extAuth.filter, d2.spec.extAuth.filter) {
+			return false
+		}
+		if d.spec.extAuth.providerName != d2.spec.extAuth.providerName {
+			return false
+		}
+		if d.spec.extAuth.enablement != d.spec.extAuth.enablement {
+			return false
 		}
 	}
 
