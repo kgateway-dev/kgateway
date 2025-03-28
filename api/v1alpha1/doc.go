@@ -31,3 +31,4 @@ package v1alpha1
 // +kubebuilder:rbac:groups=networking.istio.io,resources=destinationrules,verbs=get;list;watch
 // +kubebuilder:rbac:groups=networking.istio.io,resources=serviceentries,verbs=get;list;watch
 // +kubebuilder:rbac:groups=networking.istio.io,resources=workloadentries,verbs=get;list;watch
+// +kubebuilder:rbac:groups=security.istio.io,resources=authorizationpolicies,verbs=get;list;watch

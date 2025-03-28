@@ -219,6 +219,7 @@ func (tc TestCase) Run(t test.Failer, ctx context.Context) (map[types.Namespaced
 		gvr.TLSRoute,
 		gvr.ServiceEntry,
 		gvr.WorkloadEntry,
+		gvr.AuthorizationPolicy,
 	} {
 		clienttest.MakeCRD(t, cli, crd)
 	}

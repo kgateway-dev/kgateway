@@ -78,6 +78,7 @@ type FilterChainCommon struct {
 	Matcher              FilterChainMatch
 	FilterChainName      string
 	CustomNetworkFilters []CustomEnvoyFilter
+	NetworkFilters       []*anypb.Any
 	TLS                  *TlsBundle
 }
 
@@ -95,6 +96,7 @@ type HttpFilterChainIR struct {
 	Vhosts                  []*VirtualHost
 	AttachedPolicies        AttachedPolicies
 	AttachedNetworkPolicies AttachedPolicies
+	CustomHTTPFilters       []CustomEnvoyFilter
 }
 
 type TcpIR struct {
