@@ -239,7 +239,9 @@ func TestApplyListenerPlugin(t *testing.T) {
 		plugin.ApplyListenerPlugin(ctx, pCtx, listener)
 
 		// Verify
-		assert.True(t, plugin.extAuthListenerEnabled)
+		ir, ok := plugin.extAuthPerProvider["test-extension"]
+		assert.True(t, ok)
+		assert.True(t, ir.fromListener)
 	})
 }
 
@@ -247,11 +249,13 @@ func TestHttpFilters(t *testing.T) {
 	t.Run("adds ext auth filter to filter chain", func(t *testing.T) {
 		// Setup
 		plugin := &trafficPolicyPluginGwPass{
-			extAuth: &extAuthIR{
-				filter: &envoy_ext_authz_v3.ExtAuthz{
-					FailureModeAllow: true,
+			extAuthPerProvider: map[string]*extAuthIR{
+				"test-extension": &extAuthIR{
+					filter: &envoy_ext_authz_v3.ExtAuthz{
+						FailureModeAllow: true,
+					},
+					providerName: "test-extension",
 				},
-				providerName: "test-extension",
 			},
 		}
 		ctx := context.Background()

@@ -225,11 +225,12 @@ listeners:
         - name: global_disable/ext_auth
           typedConfig:
             '@type': type.googleapis.com/envoy.api.v2.filter.http.FilterTransformations
-        - name: ext_auth/app-team-extauth
+        - disabled: true
+          name: ext_auth/app-team-extauth
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthz
             filterEnabledMetadata:
-              filter: global_disable/ext_auth
+              filter: io.solo.transformation
               invert: true
               path:
               - key: global_disable/ext_auth
@@ -239,6 +240,22 @@ listeners:
             grpcService:
               envoyGrpc:
                 clusterName: kube_gwtest_app-team-ext-authz_9000
+            metadataContextNamespaces:
+            - jwt
+        - name: ext_auth/basic-extauth
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthz
+            filterEnabledMetadata:
+              filter: io.solo.transformation
+              invert: true
+              path:
+              - key: global_disable/ext_auth
+              value:
+                stringMatch:
+                  exact: "false"
+            grpcService:
+              envoyGrpc:
+                clusterName: kube_gwtest_ext-authz_9000
             metadataContextNamespaces:
             - jwt
         - name: envoy.filters.http.router
@@ -271,5 +288,5 @@ routes:
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
       typedPerFilterConfig:
         ext_auth/app-team-extauth:
-          '@type': type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthzPerRoute
-          disabled: false
+          '@type': type.googleapis.com/envoy.config.route.v3.FilterConfig
+          config: {}

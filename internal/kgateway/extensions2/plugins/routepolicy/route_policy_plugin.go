@@ -14,6 +14,7 @@ import (
 	localratelimitv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/local_ratelimit/v3"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/anypb"
 	skubeclient "istio.io/istio/pkg/config/schema/kubeclient"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
@@ -24,6 +25,7 @@ import (
 
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	routev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_ext_authz_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_authz/v3"
 	envoy_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 
@@ -44,14 +46,15 @@ import (
 )
 
 const (
-	transformationFilterNamePrefix = "transformation"
-	extAuthGlobalDisableFilterName = "global_disable/ext_auth"
-	extAuthGlobalDisableFilterKey  = "global_disable/ext_auth"
-	rustformationFilterNamePrefix  = "dynamic_modules/simple_mutations"
-	metadataRouteTransformation    = "transformation/helper"
-	extauthFilterNamePrefix        = "ext_auth"
-	localRateLimitFilterNamePrefix = "ratelimit/local"
-	localRateLimitStatPrefix       = "http_local_rate_limiter"
+	transformationFilterNamePrefix        = "transformation"
+	extAuthGlobalDisableFilterName        = "global_disable/ext_auth"
+	extAuthGlobalDisableFilterKey         = "global_disable/ext_auth"
+	rustformationFilterNamePrefix         = "dynamic_modules/simple_mutations"
+	metadataRouteTransformation           = "transformation/helper"
+	extauthFilterNamePrefix               = "ext_auth"
+	localRateLimitFilterNamePrefix        = "ratelimit/local"
+	localRateLimitStatPrefix              = "http_local_rate_limiter"
+	transformationFilterMetadataNamespace = "io.solo.transformation" // TODO: remove this as we move onto rustformations and off envoy-gloo
 )
 
 func extAuthFilterName(name string) string {
@@ -162,10 +165,9 @@ type trafficPolicyPluginGwPass struct {
 	// TODO(nfuden): dont abuse httplevel filter in favor of route level
 	rustformationStash map[string]string
 	ir.UnimplementedProxyTranslationPass
-	extprocFilter          *envoy_ext_proc_v3.ExternalProcessor
-	localRateLimitInChain  *localratelimitv3.LocalRateLimit
-	extAuthListenerEnabled bool
-	extAuth                *extAuthIR
+	extprocFilter         *envoy_ext_proc_v3.ExternalProcessor
+	localRateLimitInChain *localratelimitv3.LocalRateLimit
+	extAuthPerProvider    map[string]*extAuthIR
 }
 
 func (p *trafficPolicyPluginGwPass) ApplyHCM(ctx context.Context, pCtx *ir.HcmContext, out *envoyhttp.HttpConnectionManager) error {
@@ -254,8 +256,11 @@ func (p *trafficPolicyPluginGwPass) ApplyListenerPlugin(ctx context.Context, pCt
 		return
 	}
 	if policy.spec.extAuth != nil {
-		p.extAuthListenerEnabled = true
-		p.extAuth = policy.spec.extAuth
+		if p.extAuthPerProvider == nil {
+			p.extAuthPerProvider = make(map[string]*extAuthIR)
+		}
+		p.extAuthPerProvider[policy.spec.extAuth.providerName] = policy.spec.extAuth
+		p.extAuthPerProvider[policy.spec.extAuth.providerName].fromListener = true
 	}
 	p.localRateLimitInChain = policy.spec.localRateLimit
 }
@@ -383,17 +388,15 @@ func (p *trafficPolicyPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.
 			// we have to use the metadata as we dont know what other configurations may have extauth
 			pCtx.TypedFilterConfig.AddTypedConfig(extAuthGlobalDisableFilterName, extAuthEnablementPerRoute())
 		} else {
-			// if you are on a route and not trying to disable it then we need to make sure the provider is enabled.
-			// therefore set the perroute to be disabled: false
+			// if you are on a route and not trying to disable it then we need to override the top level disable on the filter chain
 			pCtx.TypedFilterConfig.AddTypedConfig(extAuthFilterName(policy.spec.extAuth.providerName),
-				&envoy_ext_authz_v3.ExtAuthzPerRoute{
-					Override: &envoy_ext_authz_v3.ExtAuthzPerRoute_Disabled{
-						Disabled: false,
-					},
-				},
+				&routev3.FilterConfig{Config: &anypb.Any{}},
 			)
 		}
-		p.extAuth = policy.spec.extAuth
+		if p.extAuthPerProvider == nil {
+			p.extAuthPerProvider = make(map[string]*extAuthIR)
+		}
+		p.extAuthPerProvider[policy.spec.extAuth.providerName] = policy.spec.extAuth
 	}
 
 	if policy.spec.ExtProc != nil {
@@ -494,13 +497,20 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.Filt
 			plugins.AfterStage(plugins.FaultStage)))
 	}
 
+	// register the transformation work once
+	if len(p.extAuthPerProvider) != 0 {
+		// register the filter that sets metadata so that it can have overrides on the route level
+		filters = append(filters, plugins.MustNewStagedFilter(extAuthGlobalDisableFilterKey,
+			&transformationpb.FilterTransformations{},
+			plugins.BeforeStage(plugins.FaultStage)))
+	}
 	// Add Ext_authz filter for listener
-	if p.extAuth != nil {
-		extAuthFilter := proto.Clone(p.extAuth.filter).(*envoy_ext_authz_v3.ExtAuthz)
+	for providerName, providerExtauth := range p.extAuthPerProvider {
+		extAuthFilter := proto.Clone(providerExtauth.filter).(*envoy_ext_authz_v3.ExtAuthz)
 
 		// handled opt out from all via metadata this is purely for the fully disabled functionality
 		extAuthFilter.FilterEnabledMetadata = &envoy_matcher_v3.MetadataMatcher{
-			Filter: extAuthGlobalDisableFilterName, // the transformation filter instance's name
+			Filter: transformationFilterMetadataNamespace, // the transformation filter instance's name
 			Invert: true,
 			Path: []*envoy_matcher_v3.MetadataMatcher_PathSegment{
 				{
@@ -520,19 +530,14 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.Filt
 			},
 		}
 
-		// register the filter that sets metadata so that it can have overrides on the route level
-		filters = append(filters, plugins.MustNewStagedFilter(extAuthGlobalDisableFilterKey,
-			&transformationpb.FilterTransformations{},
-			plugins.BeforeStage(plugins.FaultStage)))
-
 		// add the specific auth filter
-		extauthName := extAuthFilterName(p.extAuth.providerName)
+		extauthName := extAuthFilterName(providerName)
 		stagedExtAuthFilter := plugins.MustNewStagedFilter(extauthName,
 			extAuthFilter,
 			plugins.DuringStage(plugins.AuthZStage))
 
 		// handle the two enable attachement cases
-		if !p.extAuthListenerEnabled {
+		if !providerExtauth.fromListener {
 			// handle the case where route level only should be fired
 			stagedExtAuthFilter.Filter.Disabled = true
 		}

@@ -1764,7 +1764,8 @@ func schema_kgateway_v2_api_v1alpha1_ExtGrpcService(ref common.ReferenceCallback
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
+				Description: "ExtGrpcService defines the GRPC service that will handle the processing.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"backendRef": {
 						SchemaProps: spec.SchemaProps{
@@ -1792,7 +1793,8 @@ func schema_kgateway_v2_api_v1alpha1_ExtProcPolicy(ref common.ReferenceCallback)
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
+				Description: "ExtProcPolicy defines the configuration for the Envoy External Processing filter.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"extensionRef": {
 						SchemaProps: spec.SchemaProps{

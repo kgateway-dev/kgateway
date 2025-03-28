@@ -180,7 +180,7 @@ listeners:
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthz
             filterEnabledMetadata:
-              filter: global_disable/ext_auth
+              filter: io.solo.transformation
               invert: true
               path:
               - key: global_disable/ext_auth
