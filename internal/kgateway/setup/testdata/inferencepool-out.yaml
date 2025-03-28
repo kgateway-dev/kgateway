@@ -246,9 +246,9 @@ listeners:
             messageTimeout: 5s
             processingMode:
               requestBodyMode: FULL_DUPLEX_STREAMED
-              responseBodyMode: FULL_DUPLEX_STREAMED
               requestHeaderMode: SEND
               requestTrailerMode: SEND
+              responseBodyMode: FULL_DUPLEX_STREAMED
               responseHeaderMode: SEND
               responseTrailerMode: SEND
         - name: envoy.filters.http.router
