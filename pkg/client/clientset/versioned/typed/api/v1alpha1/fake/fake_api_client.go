@@ -33,8 +33,8 @@ func (c *FakeGatewayV1alpha1) HTTPListenerPolicies(namespace string) v1alpha1.HT
 	return newFakeHTTPListenerPolicies(c, namespace)
 }
 
-func (c *FakeGatewayV1alpha1) RoutePolicies(namespace string) v1alpha1.RoutePolicyInterface {
-	return newFakeRoutePolicies(c, namespace)
+func (c *FakeGatewayV1alpha1) TrafficPolicies(namespace string) v1alpha1.TrafficPolicyInterface {
+	return newFakeTrafficPolicies(c, namespace)
 }
 
 // RESTClient returns a RESTClient that is used to communicate

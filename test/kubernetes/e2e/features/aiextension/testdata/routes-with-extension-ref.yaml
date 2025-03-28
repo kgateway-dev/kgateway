@@ -19,7 +19,7 @@ spec:
             - type: ExtensionRef
               extensionRef:
                 group: gateway.kgateway.dev
-                kind: RoutePolicy
+                kind: TrafficPolicy
                 name: openai-policy
 ---
 apiVersion: gateway.networking.k8s.io/v1
@@ -45,7 +45,7 @@ spec:
             - type: ExtensionRef
               extensionRef:
                 group: gateway.kgateway.dev
-                kind: RoutePolicy
+                kind: TrafficPolicy
                 name: openai-azure-policy
 ---
 apiVersion: gateway.networking.k8s.io/v1
@@ -71,7 +71,7 @@ spec:
             - type: ExtensionRef
               extensionRef:
                 group: gateway.kgateway.dev
-                kind: RoutePolicy
+                kind: TrafficPolicy
                 name: gemini-policy
 ---
 apiVersion: gateway.networking.k8s.io/v1
@@ -97,5 +97,5 @@ spec:
             - type: ExtensionRef
               extensionRef:
                 group: gateway.kgateway.dev
-                kind: RoutePolicy
+                kind: TrafficPolicy
                 name: vertex-ai-policy

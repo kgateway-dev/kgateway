@@ -16,6 +16,10 @@ type Settings struct {
 	EnableIstioIntegration bool `split_words:"true"`
 	EnableIstioAutoMtls    bool `split_words:"true"`
 
+	// IstioNamespace is the namespace where Istio control plane components are installed.
+	// Defaults to "istio-system".
+	IstioNamespace string `split_words:"true" default:"istio-system"`
+
 	// XdsServiceName is the name of the Kubernetes Service that serves xDS config.
 	// It it assumed to be in the kgateway install namespace.
 	XdsServiceName string `split_words:"true" default:"kgateway"`

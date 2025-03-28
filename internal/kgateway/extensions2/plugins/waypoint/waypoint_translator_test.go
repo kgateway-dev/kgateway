@@ -30,6 +30,7 @@ var cases = []struct {
 	{"HTTPRoute on Service", "httproute-svc", exampleGw, ""},
 	{"HTTPRoute on ServiceEntry", "httproute-se", exampleGw, ""},
 	{"HTTPRoute on ServiceEntry via Hostname", "httproute-se-hostname", exampleGw, ""},
+	{"Authz Policies", "authz", exampleGw, ""},
 }
 
 func TestWaypointTranslator(t *testing.T) {

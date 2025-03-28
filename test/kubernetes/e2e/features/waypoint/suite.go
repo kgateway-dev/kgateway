@@ -72,7 +72,8 @@ func (s *testingSuite) SetupSuite() {
 	}{
 		{"app", "svc-a"},
 		{"app", "svc-b"},
-		{"app", "svc-b"},
+		{"app", "curl"},
+		{"app", "notcurl"},
 		{"gateway.networking.k8s.io/gateway-name", gwName},
 	}
 	for _, app := range wantApps {

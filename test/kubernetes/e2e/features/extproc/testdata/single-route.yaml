@@ -20,7 +20,7 @@ spec:
         - type: ExtensionRef
           extensionRef:
             group: gateway.kgateway.dev
-            kind: RoutePolicy
+            kind: TrafficPolicy
             name: single-rule-test
     - matches:
         - path:
@@ -31,7 +31,7 @@ spec:
           port: 3000
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
-kind: RoutePolicy
+kind: TrafficPolicy
 metadata:
   name: single-rule-test
 spec:

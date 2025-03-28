@@ -70,7 +70,7 @@ spec:
           port: 8080
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
-kind: RoutePolicy
+kind: TrafficPolicy
 metadata:
   name: gw-route-rl-policy
   namespace: gwtest
@@ -87,7 +87,7 @@ spec:
         fillInterval: 30s
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
-kind: RoutePolicy
+kind: TrafficPolicy
 metadata:
   name: route-rl-policy
   namespace: gwtest

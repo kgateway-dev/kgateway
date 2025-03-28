@@ -67,10 +67,10 @@ func ApplyAIBackend(ir *IR, pCtx *ir.RouteBackendContext, out *envoy_config_rout
 	pCtx.TypedFilterConfig.AddTypedConfig(wellknown.AIBackendTransformationFilterName, ir.Transformation)
 
 	copyBackendExtproc := proto.Clone(ir.Extproc).(*envoy_ext_proc_v3.ExtProcPerRoute)
-	routepolicyExtprocSettingsProto := pCtx.TypedFilterConfig.GetTypedConfig(wellknown.AIExtProcFilterName)
-	if routepolicyExtprocSettingsProto != nil {
-		// merge the Backend extproc config with any config added by the RoutePolicy
-		routeExtprocSettings := routepolicyExtprocSettingsProto.(*envoy_ext_proc_v3.ExtProcPerRoute)
+	trafficpolicyExtprocSettingsProto := pCtx.TypedFilterConfig.GetTypedConfig(wellknown.AIExtProcFilterName)
+	if trafficpolicyExtprocSettingsProto != nil {
+		// merge the Backend extproc config with any config added by the TrafficPolicy
+		routeExtprocSettings := trafficpolicyExtprocSettingsProto.(*envoy_ext_proc_v3.ExtProcPerRoute)
 		copyBackendExtproc.GetOverrides().GrpcInitialMetadata = append(copyBackendExtproc.GetOverrides().GetGrpcInitialMetadata(), routeExtprocSettings.GetOverrides().GetGrpcInitialMetadata()...)
 	}
 	pCtx.TypedFilterConfig.AddTypedConfig(wellknown.AIExtProcFilterName, copyBackendExtproc)
@@ -127,8 +127,8 @@ func PreprocessAIBackend(ctx context.Context, aiBackend *v1alpha1.AIBackend, ir 
 		llmProvider = k
 	}
 
-	//We only want to add the transformation filter if we have a single AI backend
-	//Otherwise we already have the transformation filter added by the weighted destination.
+	// We only want to add the transformation filter if we have a single AI backend
+	// Otherwise we already have the transformation filter added by the weighted destination.
 	transformation := createTransformationTemplate(ctx, aiBackend)
 	routeTransformation := &envoytransformation.RouteTransformations_RouteTransformation{
 		Match: &envoytransformation.RouteTransformations_RouteTransformation_RequestMatch_{

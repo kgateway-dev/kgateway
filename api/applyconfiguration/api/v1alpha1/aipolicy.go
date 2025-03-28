@@ -6,25 +6,25 @@ import (
 	apiv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 )
 
-// AIRoutePolicyApplyConfiguration represents a declarative configuration of the AIRoutePolicy type for use
+// AIPolicyApplyConfiguration represents a declarative configuration of the AIPolicy type for use
 // with apply.
-type AIRoutePolicyApplyConfiguration struct {
+type AIPolicyApplyConfiguration struct {
 	PromptEnrichment *AIPromptEnrichmentApplyConfiguration `json:"promptEnrichment,omitempty"`
 	PromptGuard      *AIPromptGuardApplyConfiguration      `json:"promptGuard,omitempty"`
 	Defaults         []FieldDefaultApplyConfiguration      `json:"defaults,omitempty"`
 	RouteType        *apiv1alpha1.RouteType                `json:"routeType,omitempty"`
 }
 
-// AIRoutePolicyApplyConfiguration constructs a declarative configuration of the AIRoutePolicy type for use with
+// AIPolicyApplyConfiguration constructs a declarative configuration of the AIPolicy type for use with
 // apply.
-func AIRoutePolicy() *AIRoutePolicyApplyConfiguration {
-	return &AIRoutePolicyApplyConfiguration{}
+func AIPolicy() *AIPolicyApplyConfiguration {
+	return &AIPolicyApplyConfiguration{}
 }
 
 // WithPromptEnrichment sets the PromptEnrichment field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the PromptEnrichment field is set to the value of the last call.
-func (b *AIRoutePolicyApplyConfiguration) WithPromptEnrichment(value *AIPromptEnrichmentApplyConfiguration) *AIRoutePolicyApplyConfiguration {
+func (b *AIPolicyApplyConfiguration) WithPromptEnrichment(value *AIPromptEnrichmentApplyConfiguration) *AIPolicyApplyConfiguration {
 	b.PromptEnrichment = value
 	return b
 }
@@ -32,7 +32,7 @@ func (b *AIRoutePolicyApplyConfiguration) WithPromptEnrichment(value *AIPromptEn
 // WithPromptGuard sets the PromptGuard field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the PromptGuard field is set to the value of the last call.
-func (b *AIRoutePolicyApplyConfiguration) WithPromptGuard(value *AIPromptGuardApplyConfiguration) *AIRoutePolicyApplyConfiguration {
+func (b *AIPolicyApplyConfiguration) WithPromptGuard(value *AIPromptGuardApplyConfiguration) *AIPolicyApplyConfiguration {
 	b.PromptGuard = value
 	return b
 }
@@ -40,7 +40,7 @@ func (b *AIRoutePolicyApplyConfiguration) WithPromptGuard(value *AIPromptGuardAp
 // WithDefaults adds the given value to the Defaults field in the declarative configuration
 // and returns the receiver, so that objects can be build by chaining "With" function invocations.
 // If called multiple times, values provided by each call will be appended to the Defaults field.
-func (b *AIRoutePolicyApplyConfiguration) WithDefaults(values ...*FieldDefaultApplyConfiguration) *AIRoutePolicyApplyConfiguration {
+func (b *AIPolicyApplyConfiguration) WithDefaults(values ...*FieldDefaultApplyConfiguration) *AIPolicyApplyConfiguration {
 	for i := range values {
 		if values[i] == nil {
 			panic("nil value passed to WithDefaults")
@@ -53,7 +53,7 @@ func (b *AIRoutePolicyApplyConfiguration) WithDefaults(values ...*FieldDefaultAp
 // WithRouteType sets the RouteType field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the RouteType field is set to the value of the last call.
-func (b *AIRoutePolicyApplyConfiguration) WithRouteType(value apiv1alpha1.RouteType) *AIRoutePolicyApplyConfiguration {
+func (b *AIPolicyApplyConfiguration) WithRouteType(value apiv1alpha1.RouteType) *AIPolicyApplyConfiguration {
 	b.RouteType = &value
 	return b
 }

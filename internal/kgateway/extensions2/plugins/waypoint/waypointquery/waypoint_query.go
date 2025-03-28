@@ -5,7 +5,11 @@ import (
 	"fmt"
 
 	"istio.io/api/label"
+	istiosecurity "istio.io/client-go/pkg/apis/security/v1"
+	"istio.io/istio/pkg/config/schema/gvr"
+	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
+	"istio.io/istio/pkg/kube/kubetypes"
 	"istio.io/istio/pkg/slices"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -37,6 +41,9 @@ type WaypointQueries interface {
 	// GetHTTPRoutesForService fetches HTTPRoutes that have the given Service in parentRefs.
 	GetHTTPRoutesForService(kctx krt.HandlerContext, ctx context.Context, svc *Service) []query.RouteInfo
 
+	// GetAuthorizationPolicies gets a filtered list of policies in the namespaces that also target services in the targetNamespace
+	GetAuthorizationPolicies(kctx krt.HandlerContext, ctx context.Context, targetNamespace, rootNamespace string) []*istiosecurity.AuthorizationPolicy
+
 	HasSynced() bool
 }
 
@@ -45,11 +52,23 @@ func NewQueries(
 	gwQueries query.GatewayQueries,
 ) WaypointQueries {
 	waypointedServices, servicesByWaypoint := waypointAttachmentIndex(commonCols)
+	authzInformer := kclient.NewDelayedInformer[*istiosecurity.AuthorizationPolicy](
+		commonCols.Client,
+		gvr.AuthorizationPolicy,
+		kubetypes.StandardInformer,
+		kclient.Filter{ObjectFilter: commonCols.Client.ObjectFilter()},
+	)
+	authzPolicies := krt.WrapClient(authzInformer, commonCols.KrtOpts.ToOptions("AuthorizationPolicies")...)
+	byNamespace := krt.NewIndex(authzPolicies, func(p *istiosecurity.AuthorizationPolicy) []string {
+		return []string{p.GetNamespace()}
+	})
 	return &waypointQueries{
 		queries:            gwQueries,
 		commonCols:         commonCols,
 		waypointedServices: waypointedServices,
 		servicesByWaypoint: servicesByWaypoint,
+		authzPolicies:      authzPolicies,
+		byNamespace:        byNamespace,
 	}
 }
 
@@ -59,12 +78,15 @@ type waypointQueries struct {
 
 	waypointedServices krt.Collection[WaypointedService]
 	servicesByWaypoint krt.Index[types.NamespacedName, WaypointedService]
+	authzPolicies      krt.Collection[*istiosecurity.AuthorizationPolicy]
+	byNamespace        krt.Index[string, *istiosecurity.AuthorizationPolicy]
 }
 
 func (w *waypointQueries) HasSynced() bool {
-	return w.waypointedServices.HasSynced()
+	waypointSync := w.waypointedServices.HasSynced()
+	authzSync := w.authzPolicies.HasSynced()
+	return waypointSync && authzSync
 }
-
 func (w *waypointQueries) GetHTTPRoutesForService(
 	kctx krt.HandlerContext,
 	ctx context.Context,

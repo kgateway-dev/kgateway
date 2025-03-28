@@ -1,5 +1,5 @@
 apiVersion: gateway.kgateway.dev/v1alpha1
-kind: RoutePolicy
+kind: TrafficPolicy
 metadata:
   name: gemini-policy
   namespace: ai-test
@@ -8,7 +8,7 @@ spec:
     routeType: CHAT_STREAMING
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
-kind: RoutePolicy
+kind: TrafficPolicy
 metadata:
   name: vertex-ai-policy
   namespace: ai-test

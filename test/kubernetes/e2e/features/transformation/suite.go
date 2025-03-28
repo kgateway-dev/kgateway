@@ -63,7 +63,7 @@ func (s *testingSuite) SetupSuite() {
 		// resources from service manifest
 		simpleSvc, simpleDeployment,
 		// resources from gateway manifest
-		gateway, route, routePolicy,
+		gateway, route, trafficPolicy,
 		// deployer-generated resources
 		proxyDeployment, proxyService, proxyServiceAccount,
 	}
@@ -285,8 +285,8 @@ func (s *testingSuite) assertStatus(expected metav1.Condition) {
 	currentTimeout, pollingInterval := helpers.GetTimeouts()
 	p := s.testInstallation.Assertions
 	p.Gomega.Eventually(func(g gomega.Gomega) {
-		be := &v1alpha1.RoutePolicy{}
-		objKey := client.ObjectKeyFromObject(routePolicy)
+		be := &v1alpha1.TrafficPolicy{}
+		objKey := client.ObjectKeyFromObject(trafficPolicy)
 		err := s.testInstallation.ClusterContext.Client.Get(s.ctx, objKey, be)
 		g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get route policy %s", objKey)
 

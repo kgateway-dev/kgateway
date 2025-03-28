@@ -29,7 +29,7 @@ var (
 	routeOptionStreamingManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "streaming.yaml")
 
 	// route policy for prompt guard regex pattern rejection
-	routePolicyPGRegexPatternRejectManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "prompt-guard-regex-pattern-reject.yaml")
+	trafficPolicyPGRegexPatternRejectManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "prompt-guard-regex-pattern-reject.yaml")
 
 	// prompt guard on the routes
 	promptGuardManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "prompt-guard.yaml")

@@ -20,7 +20,7 @@ spec:
         - type: ExtensionRef
           extensionRef:
             group: gateway.kgateway.dev
-            kind: RoutePolicy
+            kind: TrafficPolicy
             name: pg-regex-pattern-reject-policy
 ---
 apiVersion: gateway.networking.k8s.io/v1
@@ -47,7 +47,7 @@ spec:
         - type: ExtensionRef
           extensionRef:
             group: gateway.kgateway.dev
-            kind: RoutePolicy
+            kind: TrafficPolicy
             name: pg-regex-pattern-reject-policy
 ---
 apiVersion: gateway.networking.k8s.io/v1
@@ -74,7 +74,7 @@ spec:
         - type: ExtensionRef
           extensionRef:
             group: gateway.kgateway.dev
-            kind: RoutePolicy
+            kind: TrafficPolicy
             name: pg-regex-pattern-reject-policy
 ---
 apiVersion: gateway.networking.k8s.io/v1
@@ -101,5 +101,5 @@ spec:
         - type: ExtensionRef
           extensionRef:
             group: gateway.kgateway.dev
-            kind: RoutePolicy
+            kind: TrafficPolicy
             name: pg-regex-pattern-reject-policy

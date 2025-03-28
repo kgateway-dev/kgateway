@@ -12,7 +12,7 @@ spec:
       name: http
       allowedRoutes:
         namespaces:
-          from: All 
+          from: All
 ---
 apiVersion: v1
 kind: Service
@@ -92,7 +92,7 @@ spec:
         port: 9091
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
-kind: RoutePolicy
+kind: TrafficPolicy
 metadata:
   name: route-test
   namespace: gwtest

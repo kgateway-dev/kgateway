@@ -24,6 +24,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/stringutils"
 
+	istiosecurity "istio.io/client-go/pkg/apis/security/v1"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/slices"
 	"istio.io/istio/pkg/util/sets"
@@ -83,6 +84,7 @@ func (w *waypointTranslator) Translate(
 		attachedRoutes.Insert(namespacedName(hr))
 	}
 
+	authzPolicies := w.waypointQueries.GetAuthorizationPolicies(kctx, ctx, gateway.Namespace, RootNamespace)
 	waypointFor := waypointquery.GetWaypointFor(gateway.Obj)
 
 	if waypointFor.ForService() {
@@ -95,6 +97,7 @@ func (w *waypointTranslator) Translate(
 			routes,
 			gwListener,
 			attachedRoutes,
+			authzPolicies,
 		)
 		proxyListener.HttpFilterChain = append(proxyListener.HttpFilterChain, http...)
 		proxyListener.TcpFilterChain = append(proxyListener.TcpFilterChain, tcp...)
@@ -236,6 +239,7 @@ func (t *waypointTranslator) buildServiceChains(
 	gwRoutes []*query.RouteInfo,
 	gwListener *ir.Listener,
 	attachedRoutes sets.Set[types.NamespacedName],
+	authzPolicies []*istiosecurity.AuthorizationPolicy,
 ) ([]ir.HttpFilterChainIR, []ir.TcpIR) {
 	var httpOut []ir.HttpFilterChainIR
 	var tcpOut []ir.TcpIR
@@ -253,6 +257,8 @@ func (t *waypointTranslator) buildServiceChains(
 	// * Just forward traffic
 	// * TODO TCPRoute
 	for _, svc := range services {
+		tcpRBAC, httpRBAC := BuildRBACForService(authzPolicies, gw.Obj, &svc)
+
 		// get Service-specific routes
 		httpRoutes := gwRoutes
 		svcRoutes := t.waypointQueries.GetHTTPRoutesForService(kctx, ctx, &svc)
@@ -290,15 +296,24 @@ func (t *waypointTranslator) buildServiceChains(
 					// that just forwards traffic
 					virtualHostForPort = buildDefaultToPortVirtualHost(svc, svcPort)
 				}
-				httpOut = append(httpOut, ir.HttpFilterChainIR{
+				httpChain := ir.HttpFilterChainIR{
 					FilterChainCommon: filterChain,
 					Vhosts:            []*ir.VirtualHost{virtualHostForPort},
-				})
+				}
+
+				// Apply HTTP RBAC filters to this HTTP filter chain
+				applyHTTPRBACFilters(&httpChain, httpRBAC, svc)
+				httpOut = append(httpOut, httpChain)
 			} else {
-				tcpOut = append(tcpOut, ir.TcpIR{
+				tcpChain := ir.TcpIR{
 					FilterChainCommon: filterChain,
 					BackendRefs:       []ir.BackendRefIR{svc.BackendRef(svcPort)},
-				})
+				}
+
+				// Apply TCP RBAC filters to this TCP filter chain
+				applyTCPRBACFilters(&tcpChain, tcpRBAC, svc)
+
+				tcpOut = append(tcpOut, tcpChain)
 			}
 		}
 	}

@@ -9,7 +9,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
@@ -65,12 +64,11 @@ func NewGatewayClassProvisioner(mgr ctrl.Manager, controllerName string, classCo
 
 func (r *gatewayClassProvisioner) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
+		For(&apiv1.GatewayClass{}).
 		Named("gatewayclass-provisioner").
-		For(&apiv1.GatewayClass{}, builder.WithPredicates(predicate.Funcs{
-			CreateFunc:  func(e event.CreateEvent) bool { return false },
-			DeleteFunc:  func(e event.DeleteEvent) bool { return true },
-			UpdateFunc:  func(e event.UpdateEvent) bool { return false },
-			GenericFunc: func(e event.GenericEvent) bool { return false },
+		WithEventFilter(predicate.NewPredicateFuncs(func(obj client.Object) bool {
+			gc, ok := obj.(*apiv1.GatewayClass)
+			return ok && gc.Spec.ControllerName == apiv1.GatewayController(r.controllerName)
 		})).
 		WatchesRawSource(source.Channel(r.initialReconcileCh, handler.TypedEnqueueRequestsFromMapFunc[client.Object, reconcile.Request](
 			func(ctx context.Context, o client.Object) []reconcile.Request {
@@ -141,16 +139,26 @@ func (r *gatewayClassProvisioner) Start(ctx context.Context) error {
 	if err := r.List(ctx, &gcs); err != nil {
 		return fmt.Errorf("failed to list gatewayclasses: %w", err)
 	}
-	if len(gcs.Items) > 0 {
-		log.Info("gatewayclasses found, skipping initial reconciliation")
+	var missing bool
+	for _, gc := range gcs.Items {
+		if _, exists := r.classConfigs[gc.Name]; !exists {
+			missing = true
+			break
+		}
+	}
+	if len(gcs.Items) > 0 && !missing {
+		log.Info("all required gatewayclasses found, skipping initial reconciliation")
 		return nil
 	}
 
-	log.Info("no gatewayclasses found, triggering initial reconciliation")
+	log.Info("some required gatewayclasses missing, triggering initial reconciliation")
 	r.initialReconcileCh <- event.TypedGenericEvent[client.Object]{
 		Object: &apiv1.GatewayClass{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "manual",
+			},
+			Spec: apiv1.GatewayClassSpec{
+				ControllerName: apiv1.GatewayController(r.controllerName),
 			},
 		},
 	}

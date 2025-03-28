@@ -37,7 +37,7 @@ type AIPolicyIR struct {
 	Transformation *envoytransformation.RouteTransformations
 }
 
-func (p *routePolicyPluginGwPass) processAIRoutePolicy(
+func (p *trafficPolicyPluginGwPass) processAITrafficPolicy(
 	configMap ir.TypedFilterConfigMap,
 	inIr *AIPolicyIR,
 ) error {
@@ -62,8 +62,8 @@ func (p *routePolicyPluginGwPass) processAIRoutePolicy(
 	return nil
 }
 
-func preProcessAIRoutePolicy(
-	aiConfig *v1alpha1.AIRoutePolicy,
+func preProcessAITrafficPolicy(
+	aiConfig *v1alpha1.AIPolicy,
 	ir *AIPolicyIR,
 ) error {
 	// Setup initial transformation template and extproc settings. The extproc is configured by the route policy and backend.
@@ -87,7 +87,7 @@ func preProcessAIRoutePolicy(
 		})
 	}
 
-	err := handleAIRoutePolicy(aiConfig, extprocSettings, transformationTemplate, ir.AISecret)
+	err := handleAITrafficPolicy(aiConfig, extprocSettings, transformationTemplate, ir.AISecret)
 	if err != nil {
 		return err
 	}
@@ -128,8 +128,8 @@ func initTransformationTemplate() *envoytransformation.TransformationTemplate {
 	return transformationTemplate
 }
 
-func handleAIRoutePolicy(
-	aiConfig *v1alpha1.AIRoutePolicy,
+func handleAITrafficPolicy(
+	aiConfig *v1alpha1.AIPolicy,
 	extProcRouteSettings *envoy_ext_proc_v3.ExtProcPerRoute,
 	transformation *envoytransformation.TransformationTemplate,
 	aiSecrets *ir.Secret,

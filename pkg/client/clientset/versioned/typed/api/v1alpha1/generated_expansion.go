@@ -12,4 +12,4 @@ type GatewayParametersExpansion interface{}
 
 type HTTPListenerPolicyExpansion interface{}
 
-type RoutePolicyExpansion interface{}
+type TrafficPolicyExpansion interface{}

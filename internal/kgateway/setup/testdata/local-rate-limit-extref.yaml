@@ -71,7 +71,7 @@ ports:
     protocol: TCP
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
-kind: RoutePolicy
+kind: TrafficPolicy
 metadata:
   name: my-route-policy
   namespace: gwtest
@@ -104,5 +104,5 @@ spec:
           - type: ExtensionRef
             extensionRef:
               group: gateway.kgateway.dev
-              kind: RoutePolicy
+              kind: TrafficPolicy
               name: my-route-policy

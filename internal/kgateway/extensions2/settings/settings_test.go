@@ -33,6 +33,7 @@ func TestSettings(t *testing.T) {
 				DnsLookupFamily:        "V4_PREFERRED",
 				EnableIstioIntegration: false,
 				EnableIstioAutoMtls:    false,
+				IstioNamespace:         "istio-system",
 				XdsServiceName:         wellknown.DefaultXdsService,
 				XdsServicePort:         wellknown.DefaultXdsPort,
 				UseRustFormations:      false,
@@ -64,6 +65,7 @@ func TestSettings(t *testing.T) {
 				DnsLookupFamily:        "V4_ONLY",
 				EnableIstioIntegration: true,
 				EnableIstioAutoMtls:    true,
+				IstioNamespace:         "istio-system",
 				XdsServiceName:         "custom-svc",
 				XdsServicePort:         1234,
 				UseRustFormations:      true,
@@ -98,6 +100,7 @@ func TestSettings(t *testing.T) {
 			expectedSettings: &settings.Settings{
 				DnsLookupFamily:        "V4_PREFERRED",
 				EnableIstioAutoMtls:    true,
+				IstioNamespace:         "istio-system",
 				XdsServiceName:         wellknown.DefaultXdsService,
 				XdsServicePort:         wellknown.DefaultXdsPort,
 				DefaultImageRegistry:   "cr.kgateway.dev",
