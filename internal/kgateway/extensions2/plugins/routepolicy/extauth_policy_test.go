@@ -28,9 +28,14 @@ func TestExtAuthForSpec(t *testing.T) {
 
 		return &ir.GatewayExtension{
 			Type: v1alpha1.GatewayExtensionTypeExtAuth,
-			ExtAuth: &v1alpha1.ExtAuthProvider{BackendRef: &gwv1.BackendRef{
-				BackendObjectReference: backend,
-			}}}, &ir.BackendObjectIR{ObjectSource: ir.ObjectSource{Name: "test-extauth"}}, nil
+			ExtAuth: &v1alpha1.ExtAuthProvider{
+				GrpcService: &v1alpha1.ExtGrpcService{
+					BackendRef: &gwv1.BackendRef{
+						BackendObjectReference: backend,
+					},
+				},
+			},
+		}, &ir.BackendObjectIR{ObjectSource: ir.ObjectSource{Name: "test-extauth"}}, nil
 	}
 
 	t.Run("creates basic ext auth configuration in one pass", func(t *testing.T) {

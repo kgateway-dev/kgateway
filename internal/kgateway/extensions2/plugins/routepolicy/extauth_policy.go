@@ -35,9 +35,16 @@ func extAuthForSpec(
 		if gExt.Type != v1alpha1.GatewayExtensionTypeExtAuth {
 			return nil, nil, pluginutils.ErrInvalidExtensionType(v1alpha1.GatewayExtensionTypeExtAuth, gExt.Type)
 		}
-		backend, err := commoncol.BackendIndex.GetBackendFromRef(krtctx, gExt.ObjectSource, gExt.ExtAuth.BackendRef.BackendObjectReference)
-		if err != nil {
-			return nil, nil, err
+		var backend *ir.BackendObjectIR
+		if gExt.ExtAuth.GrpcService != nil {
+			if gExt.ExtAuth.GrpcService.BackendRef == nil {
+				return nil, nil, nil
+			}
+			backendRef := gExt.ExtAuth.GrpcService.BackendRef.BackendObjectReference
+			backend, err = commoncol.BackendIndex.GetBackendFromRef(krtctx, gExt.ObjectSource, backendRef)
+			if err != nil {
+				return nil, nil, err
+			}
 		}
 		return gExt, backend, nil
 	})
@@ -95,14 +102,16 @@ func extAuthForSpecWithExtensionFunction(
 			out.errors = append(out.errors, err)
 			return
 		}
-		extAuth.Services = &envoy_ext_authz_v3.ExtAuthz_GrpcService{
-			GrpcService: &envoy_core_v3.GrpcService{
-				TargetSpecifier: &envoy_core_v3.GrpcService_EnvoyGrpc_{
-					EnvoyGrpc: &envoy_core_v3.GrpcService_EnvoyGrpc{
-						ClusterName: backend.ClusterName(),
+		if backend != nil {
+			extAuth.Services = &envoy_ext_authz_v3.ExtAuthz_GrpcService{
+				GrpcService: &envoy_core_v3.GrpcService{
+					TargetSpecifier: &envoy_core_v3.GrpcService_EnvoyGrpc_{
+						EnvoyGrpc: &envoy_core_v3.GrpcService_EnvoyGrpc{
+							ClusterName: backend.ClusterName(),
+						},
 					},
 				},
-			},
+			}
 		}
 	}
 
