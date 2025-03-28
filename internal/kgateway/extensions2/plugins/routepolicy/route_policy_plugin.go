@@ -54,7 +54,7 @@ const (
 	extauthFilterNamePrefix               = "ext_auth"
 	localRateLimitFilterNamePrefix        = "ratelimit/local"
 	localRateLimitStatPrefix              = "http_local_rate_limiter"
-	transformationFilterMetadataNamesapce = "io.solo.transformation" // TODO: remove this as we move onto rustformations and off envoy-gloo
+	transformationFilterMetadataNamespace = "io.solo.transformation" // TODO: remove this as we move onto rustformations and off envoy-gloo
 )
 
 func extAuthFilterName(name string) string {
@@ -510,7 +510,7 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.Filt
 
 		// handled opt out from all via metadata this is purely for the fully disabled functionality
 		extAuthFilter.FilterEnabledMetadata = &envoy_matcher_v3.MetadataMatcher{
-			Filter: transformationFilterMetadataNamesapce, // the transformation filter instance's name
+			Filter: transformationFilterMetadataNamespace, // the transformation filter instance's name
 			Invert: true,
 			Path: []*envoy_matcher_v3.MetadataMatcher_PathSegment{
 				{
