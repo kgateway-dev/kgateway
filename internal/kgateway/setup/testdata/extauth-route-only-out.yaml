@@ -173,6 +173,26 @@ listeners:
       typedConfig:
         '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
         httpFilters:
+        - name: global_disable/ext_auth
+          typedConfig:
+            '@type': type.googleapis.com/envoy.api.v2.filter.http.FilterTransformations
+        - disabled: true
+          name: ext_auth/basic-extauth
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthz
+            filterEnabledMetadata:
+              filter: global_disable/ext_auth
+              invert: true
+              path:
+              - key: global_disable/ext_auth
+              value:
+                stringMatch:
+                  exact: "false"
+            grpcService:
+              envoyGrpc:
+                clusterName: kube_gwtest_ext-authz_9000
+            metadataContextNamespaces:
+            - jwt
         - name: envoy.filters.http.router
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router

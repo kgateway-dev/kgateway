@@ -392,6 +392,7 @@ func (p *trafficPolicyPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.
 				},
 			)
 		}
+		p.extAuth = policy.spec.extAuth
 	}
 
 	if policy.spec.ExtProc != nil {
