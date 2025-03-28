@@ -57,12 +57,12 @@ func toEnvoyExtProc(
 	extprocConfig := trafficPolicy.Spec.ExtProc
 	gExt, err := pluginutils.GetGatewayExtension(commoncol.GatewayExtensions, krtctx, extprocConfig.ExtensionRef.Name, trafficPolicy.GetNamespace())
 	if err != nil {
-		return nil, fmt.Errorf("failed to get GatewayExtension %s: %s", extprocConfig.ExtensionRef.Name, err.Error())
+		return nil, fmt.Errorf("failed to get GatewayExtension %s: %v", extprocConfig.ExtensionRef.Name, err)
 	}
 	backend, err := commoncol.BackendIndex.GetBackendFromRef(krtctx, gExt.ObjectSource, gExt.ExtProc.GrpcService.BackendRef.BackendObjectReference)
 	// TODO: what is the correct behavior? maybe route to static blackhole?
 	if err != nil {
-		return nil, fmt.Errorf("failed to get backend from GatewayExtension %s: %s", gExt.ObjectSource.GetName(), err.Error())
+		return nil, fmt.Errorf("failed to get backend from GatewayExtension %s: %v", gExt.ObjectSource.GetName(), err)
 	}
 
 	return buildEnvoyExtProc(backend.ClusterName(), gExt, extprocConfig)
