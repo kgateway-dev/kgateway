@@ -5,8 +5,7 @@
 apiVersion: security.istio.io/v1
 kind: AuthorizationPolicy
 metadata:
-  name: authz-l7-demy-notcurl-svc-b
-  namespace: waypoint-test-ns
+  name: authz-l7-deny-notcurl-svc-b
 spec:
   action: DENY
   rules:
