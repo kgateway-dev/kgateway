@@ -48,7 +48,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.EnvoyContainer":             schema_kgateway_v2_api_v1alpha1_EnvoyContainer(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtAuthPolicy":              schema_kgateway_v2_api_v1alpha1_ExtAuthPolicy(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtAuthProvider":            schema_kgateway_v2_api_v1alpha1_ExtAuthProvider(ref),
-		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtProcGrpcService":         schema_kgateway_v2_api_v1alpha1_ExtProcGrpcService(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtGrpcService":             schema_kgateway_v2_api_v1alpha1_ExtGrpcService(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtProcPolicy":              schema_kgateway_v2_api_v1alpha1_ExtProcPolicy(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtProcProvider":            schema_kgateway_v2_api_v1alpha1_ExtProcProvider(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.FieldDefault":               schema_kgateway_v2_api_v1alpha1_FieldDefault(ref),
@@ -1745,22 +1745,22 @@ func schema_kgateway_v2_api_v1alpha1_ExtAuthProvider(ref common.ReferenceCallbac
 				Description: "ExtAuthProvider defines the configuration for an ExtAuth provider.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
-					"backendRef": {
+					"grpcService": {
 						SchemaProps: spec.SchemaProps{
-							Description: "BackendRef references the backend service that will handle the authentication.",
-							Ref:         ref("sigs.k8s.io/gateway-api/apis/v1.BackendRef"),
+							Description: "GrpcService is the GRPC service that will handle the authentication.",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtGrpcService"),
 						},
 					},
 				},
-				Required: []string{"backendRef"},
+				Required: []string{"grpcService"},
 			},
 		},
 		Dependencies: []string{
-			"sigs.k8s.io/gateway-api/apis/v1.BackendRef"},
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtGrpcService"},
 	}
 }
 
-func schema_kgateway_v2_api_v1alpha1_ExtProcGrpcService(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_kgateway_v2_api_v1alpha1_ExtGrpcService(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -1768,7 +1768,7 @@ func schema_kgateway_v2_api_v1alpha1_ExtProcGrpcService(ref common.ReferenceCall
 				Properties: map[string]spec.Schema{
 					"backendRef": {
 						SchemaProps: spec.SchemaProps{
-							Description: "BackendRef references the backend GRPC service that will handle the processing.",
+							Description: "BackendRef references the backend GRPC service.",
 							Ref:         ref("sigs.k8s.io/gateway-api/apis/v1.BackendRef"),
 						},
 					},
@@ -1832,7 +1832,7 @@ func schema_kgateway_v2_api_v1alpha1_ExtProcProvider(ref common.ReferenceCallbac
 					"grpcService": {
 						SchemaProps: spec.SchemaProps{
 							Description: "GrpcService is the GRPC service that will handle the processing.",
-							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtProcGrpcService"),
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtGrpcService"),
 						},
 					},
 				},
@@ -1840,7 +1840,7 @@ func schema_kgateway_v2_api_v1alpha1_ExtProcProvider(ref common.ReferenceCallbac
 			},
 		},
 		Dependencies: []string{
-			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtProcGrpcService"},
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtGrpcService"},
 	}
 }
 

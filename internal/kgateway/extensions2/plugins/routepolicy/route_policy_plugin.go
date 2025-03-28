@@ -597,8 +597,8 @@ func buildTranslateFunc(
 		}
 
 		// Apply ExtAuthz specific translation
-
 		extAuthForSpec(commoncol, krtctx, policyCR, &outSpec)
+
 		// Apply rate limit specific translation
 		localRateLimitForSpec(policyCR.Spec, &outSpec)
 

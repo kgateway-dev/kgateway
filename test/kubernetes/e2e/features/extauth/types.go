@@ -61,9 +61,11 @@ var (
 		Spec: v1alpha1.GatewayExtensionSpec{
 			Type: v1alpha1.GatewayExtensionTypeExtAuth,
 			ExtAuth: &v1alpha1.ExtAuthProvider{
-				BackendRef: &gwv1.BackendRef{
-					BackendObjectReference: gwv1.BackendObjectReference{
-						Name: "ext-authz",
+				GrpcService: &v1alpha1.ExtGrpcService{
+					BackendRef: &gwv1.BackendRef{
+						BackendObjectReference: gwv1.BackendObjectReference{
+							Name: "ext-authz",
+						},
 					},
 				},
 			},

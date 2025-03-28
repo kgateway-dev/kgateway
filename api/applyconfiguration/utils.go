@@ -73,8 +73,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.ExtAuthPolicyApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("ExtAuthProvider"):
 		return &apiv1alpha1.ExtAuthProviderApplyConfiguration{}
-	case v1alpha1.SchemeGroupVersion.WithKind("ExtProcGrpcService"):
-		return &apiv1alpha1.ExtProcGrpcServiceApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("ExtGrpcService"):
+		return &apiv1alpha1.ExtGrpcServiceApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("ExtProcPolicy"):
 		return &apiv1alpha1.ExtProcPolicyApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("ExtProcProvider"):

@@ -5,7 +5,7 @@ package v1alpha1
 // ExtProcProviderApplyConfiguration represents a declarative configuration of the ExtProcProvider type for use
 // with apply.
 type ExtProcProviderApplyConfiguration struct {
-	GrpcService *ExtProcGrpcServiceApplyConfiguration `json:"grpcService,omitempty"`
+	GrpcService *ExtGrpcServiceApplyConfiguration `json:"grpcService,omitempty"`
 }
 
 // ExtProcProviderApplyConfiguration constructs a declarative configuration of the ExtProcProvider type for use with
@@ -17,7 +17,7 @@ func ExtProcProvider() *ExtProcProviderApplyConfiguration {
 // WithGrpcService sets the GrpcService field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the GrpcService field is set to the value of the last call.
-func (b *ExtProcProviderApplyConfiguration) WithGrpcService(value *ExtProcGrpcServiceApplyConfiguration) *ExtProcProviderApplyConfiguration {
+func (b *ExtProcProviderApplyConfiguration) WithGrpcService(value *ExtGrpcServiceApplyConfiguration) *ExtProcProviderApplyConfiguration {
 	b.GrpcService = value
 	return b
 }

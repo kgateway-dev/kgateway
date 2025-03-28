@@ -470,10 +470,10 @@ var schemaYAML = typed.YAMLObject(`types:
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtAuthProvider
   map:
     fields:
-    - name: backendRef
+    - name: grpcService
       type:
-        namedType: io.k8s.sigs.gateway-api.apis.v1.BackendRef
-- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtProcGrpcService
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtGrpcService
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtGrpcService
   map:
     fields:
     - name: authority
@@ -499,7 +499,7 @@ var schemaYAML = typed.YAMLObject(`types:
     fields:
     - name: grpcService
       type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtProcGrpcService
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtGrpcService
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.FieldDefault
   map:
     fields:
