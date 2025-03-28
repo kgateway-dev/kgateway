@@ -2514,7 +2514,11 @@ func (in *TrafficPolicySpec) DeepCopyInto(out *TrafficPolicySpec) {
 		*out = new(AIPolicy)
 		(*in).DeepCopyInto(*out)
 	}
-	in.Transformation.DeepCopyInto(&out.Transformation)
+	if in.Transformation != nil {
+		in, out := &in.Transformation, &out.Transformation
+		*out = new(TransformationPolicy)
+		(*in).DeepCopyInto(*out)
+	}
 	if in.ExtProc != nil {
 		in, out := &in.ExtProc, &out.ExtProc
 		*out = new(ExtProcPolicy)
