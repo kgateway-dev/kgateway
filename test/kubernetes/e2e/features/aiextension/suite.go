@@ -58,7 +58,7 @@ func (s *tsuite) SetupSuite() {
 		"TestRouting":                 {commonManifest, backendManifest, routesBasicManifest},
 		"TestRoutingPassthrough":      {commonManifest, backendPassthroughManifest, routesBasicManifest},
 		"TestStreaming":               {commonManifest, backendManifest, routeOptionStreamingManifest, routesWithExtensionManifest},
-		"TestPromptGuardRejectExtRef": {commonManifest, backendManifest, routePolicyPGRegexPatternRejectManifest, routesWitPGRegexPatternRejectManifest},
+		"TestPromptGuardRejectExtRef": {commonManifest, backendManifest, trafficPolicyPGRegexPatternRejectManifest, routesWitPGRegexPatternRejectManifest},
 		"TestPromptGuard":             {commonManifest, backendManifest, routesBasicManifest, promptGuardManifest},
 		"TestPromptGuardStreaming":    {commonManifest, backendManifest, routesBasicManifest, promptGuardStreamingManifest},
 	}

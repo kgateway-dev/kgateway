@@ -1,5 +1,5 @@
 apiVersion: gateway.kgateway.dev/v1alpha1
-kind: RoutePolicy
+kind: TrafficPolicy
 metadata:
   name: openai-opt
   namespace: ai-test
@@ -32,7 +32,7 @@ spec:
               - CREDIT_CARD
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
-kind: RoutePolicy
+kind: TrafficPolicy
 metadata:
   name: vertex-ai-opt
   namespace: ai-test

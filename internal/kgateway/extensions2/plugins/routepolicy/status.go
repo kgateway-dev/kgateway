@@ -37,7 +37,7 @@ func buildRegisterCallback(
 			}
 
 			in := o.Latest()
-			routePolIr, ok := in.PolicyIR.(*routePolicy)
+			routePolIr, ok := in.PolicyIR.(*trafficPolicy)
 			if !ok {
 				return
 			}
@@ -46,7 +46,7 @@ func buildRegisterCallback(
 				Name:      in.ObjectSource.Name,
 				Namespace: in.ObjectSource.Namespace,
 			}
-			res := v1alpha1.RoutePolicy{}
+			res := v1alpha1.TrafficPolicy{}
 			err := retry.Do(
 				func() error {
 					err := cl.Get(ctx, resNN, &res)

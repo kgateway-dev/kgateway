@@ -8,16 +8,16 @@ metadata:
     app: kgateway
     app.kubernetes.io/name: kgateway
     gateway.networking.k8s.io/policy: Direct
-  name: routepolicies.gateway.kgateway.dev
+  name: trafficpolicies.gateway.kgateway.dev
 spec:
   group: gateway.kgateway.dev
   names:
     categories:
     - kgateway
-    kind: RoutePolicy
-    listKind: RoutePolicyList
-    plural: routepolicies
-    singular: routepolicy
+    kind: TrafficPolicy
+    listKind: TrafficPolicyList
+    plural: trafficpolicies
+    singular: trafficpolicy
   scope: Namespaced
   versions:
   - name: v1alpha1
@@ -433,9 +433,6 @@ spec:
                         items:
                           properties:
                             name:
-                              maxLength: 256
-                              minLength: 1
-                              pattern: ^:?[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
                               type: string
                             value:
                               type: string
@@ -470,9 +467,6 @@ spec:
                         items:
                           properties:
                             name:
-                              maxLength: 256
-                              minLength: 1
-                              pattern: ^:?[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
                               type: string
                             value:
                               type: string
@@ -491,9 +485,6 @@ spec:
                         items:
                           properties:
                             name:
-                              maxLength: 256
-                              minLength: 1
-                              pattern: ^:?[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
                               type: string
                             value:
                               type: string
@@ -528,9 +519,6 @@ spec:
                         items:
                           properties:
                             name:
-                              maxLength: 256
-                              minLength: 1
-                              pattern: ^:?[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
                               type: string
                             value:
                               type: string

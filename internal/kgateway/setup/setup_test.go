@@ -216,7 +216,7 @@ spec:
     allowedRoutes:
       namespaces:
         from: All`, `apiVersion: gateway.kgateway.dev/v1alpha1
-kind: RoutePolicy
+kind: TrafficPolicy
 metadata:
   name: transformation
   namespace: gwtest
@@ -245,13 +245,13 @@ spec:
       - type: ExtensionRef
         extensionRef:
           group: gateway.kgateway.dev
-          kind: RoutePolicy
+          kind: TrafficPolicy
           name: transformation`)
 
 		time.Sleep(time.Second / 2)
 
 		err = client.ApplyYAMLContents("gwtest", `apiVersion: gateway.kgateway.dev/v1alpha1
-kind: RoutePolicy
+kind: TrafficPolicy
 metadata:
   name: transformation
   namespace: gwtest

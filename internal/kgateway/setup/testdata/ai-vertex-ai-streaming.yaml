@@ -34,7 +34,7 @@ spec:
           group: gateway.kgateway.dev
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
-kind: RoutePolicy
+kind: TrafficPolicy
 metadata:
   name: route-test
   namespace: gwtest
