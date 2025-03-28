@@ -6,23 +6,23 @@ import (
 	v1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
-// ExtProcGrpcServiceApplyConfiguration represents a declarative configuration of the ExtProcGrpcService type for use
+// ExtGrpcServiceApplyConfiguration represents a declarative configuration of the ExtGrpcService type for use
 // with apply.
-type ExtProcGrpcServiceApplyConfiguration struct {
+type ExtGrpcServiceApplyConfiguration struct {
 	BackendRef *v1.BackendRef `json:"backendRef,omitempty"`
 	Authority  *string        `json:"authority,omitempty"`
 }
 
-// ExtProcGrpcServiceApplyConfiguration constructs a declarative configuration of the ExtProcGrpcService type for use with
+// ExtGrpcServiceApplyConfiguration constructs a declarative configuration of the ExtGrpcService type for use with
 // apply.
-func ExtProcGrpcService() *ExtProcGrpcServiceApplyConfiguration {
-	return &ExtProcGrpcServiceApplyConfiguration{}
+func ExtGrpcService() *ExtGrpcServiceApplyConfiguration {
+	return &ExtGrpcServiceApplyConfiguration{}
 }
 
 // WithBackendRef sets the BackendRef field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the BackendRef field is set to the value of the last call.
-func (b *ExtProcGrpcServiceApplyConfiguration) WithBackendRef(value v1.BackendRef) *ExtProcGrpcServiceApplyConfiguration {
+func (b *ExtGrpcServiceApplyConfiguration) WithBackendRef(value v1.BackendRef) *ExtGrpcServiceApplyConfiguration {
 	b.BackendRef = &value
 	return b
 }
@@ -30,7 +30,7 @@ func (b *ExtProcGrpcServiceApplyConfiguration) WithBackendRef(value v1.BackendRe
 // WithAuthority sets the Authority field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Authority field is set to the value of the last call.
-func (b *ExtProcGrpcServiceApplyConfiguration) WithAuthority(value string) *ExtProcGrpcServiceApplyConfiguration {
+func (b *ExtGrpcServiceApplyConfiguration) WithAuthority(value string) *ExtGrpcServiceApplyConfiguration {
 	b.Authority = &value
 	return b
 }
