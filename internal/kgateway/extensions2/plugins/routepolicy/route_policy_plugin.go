@@ -446,7 +446,8 @@ func (p *trafficPolicyPluginGwPass) ApplyForRouteBackend(
 func (p *trafficPolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.FilterChainCommon) ([]plugins.StagedHttpFilter, error) {
 	filters := []plugins.StagedHttpFilter{}
 	if p.extprocFilter != nil {
-		extprocFilters, err := addExtProcHTTPFilter(p.extprocFilter)
+		extProcFilter := proto.Clone(p.extprocFilter).(*envoy_ext_proc_v3.ExternalProcessor)
+		extprocFilters, err := addExtProcHTTPFilter(extProcFilter)
 		if err != nil {
 			return nil, err
 		}
