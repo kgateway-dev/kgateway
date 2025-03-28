@@ -68,7 +68,7 @@ func (p *Provider) EventuallyPodsMatches(
 	}).
 		WithTimeout(currentTimeout).
 		WithPolling(pollingInterval).
-		Should(gomega.Succeed(), fmt.Sprintf("Failed to match pod in namespace %s", podNamespace))
+		Should(gomega.Succeed(), fmt.Sprintf("Failed to match pod in namespace %s, with conditions %v", podNamespace, listOpt))
 }
 
 // EventuallyPodsNotExist asserts that eventually no pods matching the given selector exist on the cluster.

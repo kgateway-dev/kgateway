@@ -1,21 +1,8 @@
-apiVersion: gateway.kgateway.dev/v1alpha1
-kind: GatewayParameters
-metadata:
-  name: kgateway-gateway-override
-  namespace: extauth-test
-spec:
-  kube:
-      env:
-      - name: LOG_LEVEL
-        value: DEBUG
----
 kind: Gateway
 apiVersion: gateway.networking.k8s.io/v1
 metadata:
+  namespace: kgateway-test
   name: super-gateway
-  namespace: extauth-test
-  annotations:
-    gateway.kgateway.dev/gateway-parameters-name: kgateway-gateway-override
 spec:
   gatewayClassName: kgateway
   listeners:
@@ -25,4 +12,29 @@ spec:
     allowedRoutes:
       namespaces:
         from: All
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: HTTPListenerPolicy
+metadata:
+  name: accesslog
+  namespace: kgateway-test
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: super-gateway
+  accessLog:
+    - fileSink:
+        path: /dev/stdout
+        jsonFormat:
+          start_time: "%START_TIME%"
+          method: "%REQ(X-ENVOY-ORIGINAL-METHOD?:METHOD)%"
+          path: "%REQ(X-ENVOY-ORIGINAL-PATH?:PATH)%"
+          protocol: "%PROTOCOL%"
+          response_code: "%RESPONSE_CODE%"
+          response_flags: "%RESPONSE_FLAGS%"
+          total_duration: "%DURATION%"
+          resp_upstream_service_time: "%RESP(X-ENVOY-UPSTREAM-SERVICE-TIME)%"
+          request_id: "%REQ(X-REQUEST-ID)%"
+          metatransform: "%DYNAMIC_METADATA(io.solo.transformation)%"
 
