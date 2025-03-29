@@ -16,6 +16,8 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
 )
 
+const fake_condition = "kgateway.dev/SomeCondition"
+
 var _ = Describe("Reporting Infrastructure", func() {
 	BeforeEach(func() {
 	})
@@ -138,9 +140,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 				rm := reports.NewReportMap()
 
 				reporter := reports.NewReporter(&rm)
-				// initialize RouteReporter to mimic translation loop (i.e. report gets initialized for all Routes)
-				reporter.Route(obj)
-
+				fakeTranslate(reporter, obj)
 				status := rm.BuildRouteStatus(context.Background(), obj, "kgateway")
 
 				Expect(status).NotTo(BeNil())
@@ -158,9 +158,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 				rm := reports.NewReportMap()
 
 				reporter := reports.NewReporter(&rm)
-				// initialize RouteReporter to mimic translation loop (i.e. report gets initialized for all Routes)
-				reporter.Route(obj)
-
+				fakeTranslate(reporter, obj)
 				status := rm.BuildRouteStatus(context.Background(), obj, "gloo-gateway")
 
 				Expect(status).NotTo(BeNil())
@@ -169,22 +167,61 @@ var _ = Describe("Reporting Infrastructure", func() {
 			},
 			Entry("regular httproute", httpRoute(
 				metav1.Condition{
-					Type: "gloo.solo.io/SomeCondition",
+					Type: fake_condition,
 				},
 			)),
 			Entry("regular tcproute", tcpRoute(
 				metav1.Condition{
-					Type: "gloo.solo.io/SomeCondition",
+					Type: fake_condition,
 				},
 			)),
 			Entry("regular tlsroute", tlsRoute(
 				metav1.Condition{
-					Type: "gloo.solo.io/SomeCondition",
+					Type: fake_condition,
 				},
 			)),
 			Entry("delegatee route", delegateeRoute(
 				metav1.Condition{
-					Type: "gloo.solo.io/SomeCondition",
+					Type: fake_condition,
+				},
+			)),
+		)
+
+		DescribeTable("should not report for parentRefs that belong to other controllers",
+			func(obj client.Object) {
+				rm := reports.NewReportMap()
+
+				reporter := reports.NewReporter(&rm)
+
+				// translation will call Route() and ParentRef() for routes it translates out
+				// we use the same pattern here to establish reports that would reflect translation
+				route := &gwv1.HTTPRoute{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "route",
+						Namespace: "default",
+					},
+					Spec: gwv1.HTTPRouteSpec{
+						CommonRouteSpec: gwv1.CommonRouteSpec{
+							ParentRefs: []gwv1.ParentReference{
+								*parentRef(),
+								*otherParentRef(),
+							},
+						},
+					},
+				}
+				// reporter.Route(route)
+				reporter.Route(obj).ParentRef(parentRef())
+
+				status := rm.BuildRouteStatus(context.Background(), route, "gloo-gateway")
+
+				Expect(status).NotTo(BeNil())
+				Expect(status.Parents).To(HaveLen(1))
+				// 2 default positive conditions for the single parentRef we "translated"
+				Expect(status.Parents[0].Conditions).To(HaveLen(2))
+			},
+			Entry("regular httproute", httpRoute(
+				metav1.Condition{
+					Type: fake_condition,
 				},
 			)),
 		)
@@ -249,9 +286,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 				rm := reports.NewReportMap()
 
 				reporter := reports.NewReporter(&rm)
-				// initialize RouteReporter to mimic translation loop (i.e. report gets initialized for all Routes)
-				reporter.Route(obj)
-
+				fakeTranslate(reporter, obj)
 				status := rm.BuildRouteStatus(context.Background(), obj, "kgateway")
 
 				Expect(status).NotTo(BeNil())
@@ -312,8 +347,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 				rm := reports.NewReportMap()
 				reporter := reports.NewReporter(&rm)
 
-				// Initialize RouteReporter to mimic translation loop
-				reporter.Route(obj)
+				fakeTranslate(reporter, obj)
 
 				status := rm.BuildRouteStatus(context.Background(), obj, "kgateway")
 
@@ -358,9 +392,8 @@ var _ = Describe("Reporting Infrastructure", func() {
 				rm := reports.NewReportMap()
 				reporter := reports.NewReporter(&rm)
 
-				// Initialize RouteReporter to mimic translation loop
-				reporter.Route(route1)
-				reporter.Route(route2)
+				fakeTranslate(reporter, route1)
+				fakeTranslate(reporter, route2)
 
 				status1 := rm.BuildRouteStatus(context.Background(), route1, "kgateway")
 				status2 := rm.BuildRouteStatus(context.Background(), route2, "kgateway")
@@ -404,8 +437,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 			rm := reports.NewReportMap()
 			reporter := reports.NewReporter(&rm)
 
-			// Initialize RouteReporter to mimic translation loop
-			reporter.Route(route)
+			fakeTranslate(reporter, route)
 			status := rm.BuildRouteStatus(context.Background(), route, "kgateway")
 
 			Expect(status).NotTo(BeNil())
@@ -416,6 +448,28 @@ var _ = Describe("Reporting Infrastructure", func() {
 		Entry("TLSRoute with missing parent reference", tlsRoute()),
 	)
 })
+
+// fakeTranslate reports for the standard test route with the standard test parentRef
+// Initialize RouteReporter to mimic translation loop
+func fakeTranslate(reporter reports.Reporter, obj client.Object) {
+	switch route := obj.(type) {
+	case *gwv1.HTTPRoute:
+		routeReporter := reporter.Route(route)
+		for _, pr := range route.Spec.ParentRefs {
+			routeReporter.ParentRef(&pr)
+		}
+	case *gwv1a2.TCPRoute:
+		routeReporter := reporter.Route(route)
+		for _, pr := range route.Spec.ParentRefs {
+			routeReporter.ParentRef(&pr)
+		}
+	case *gwv1a2.TLSRoute:
+		routeReporter := reporter.Route(route)
+		for _, pr := range route.Spec.ParentRefs {
+			routeReporter.ParentRef(&pr)
+		}
+	}
+}
 
 func httpRoute(conditions ...metav1.Condition) client.Object {
 	route := &gwv1.HTTPRoute{
@@ -470,7 +524,13 @@ func tlsRoute(conditions ...metav1.Condition) client.Object {
 
 func parentRef() *gwv1.ParentReference {
 	return &gwv1.ParentReference{
-		Name: "parent",
+		Name: "kgateway-gtw",
+	}
+}
+
+func otherParentRef() *gwv1.ParentReference {
+	return &gwv1.ParentReference{
+		Name: "other-gtw",
 	}
 }
 
@@ -504,7 +564,7 @@ func gw() *gwv1.Gateway {
 	gw := &gwv1.Gateway{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "default",
-			Name:      "test",
+			Name:      "kgateway-gtw",
 		},
 	}
 	gw.Spec.Listeners = append(gw.Spec.Listeners, *listener())

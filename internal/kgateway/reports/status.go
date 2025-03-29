@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"slices"
 
+	// "github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/solo-io/go-utils/contextutils"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -120,10 +121,45 @@ func (r *ReportMap) BuildRouteStatus(ctx context.Context, obj client.Object, cNa
 		return nil
 	}
 
+	// now consider parentRefs that are not ours
+	// for now, we only consider Gateways to identify those from a different controller
+	// for _, parentRef := range parentRefs {
+	// 	// confirm parentRef is to a Gateway
+	// 	if parentRef.Group != nil {
+	// 		if *parentRef.Group != "" {
+	// 			if parentRef.Group != (*gwv1.Group)(&gwv1.GroupVersion.Group) {
+	// 				// Group is set to something other than "" or k8s gw api group
+	// 				continue
+	// 			}
+	// 		}
+	// 	}
+	// 	if parentRef.Kind != nil {
+	// 		if *parentRef.Kind != "" {
+	// 			if *parentRef.Kind != wellknown.GatewayKind {
+	// 				// Kind is set to something other than "" or k8s gw gtw kind
+	// 				continue
+	// 			}
+	// 		}
+	// 	}
+	// 	gtw := gwv1.Gateway{
+	// 		ObjectMeta: metav1.ObjectMeta{
+	// 			Name: string(parentRef.Name),
+	// 			Namespace: string(*parentRef.Namespace),
+	// 		},
+	// 	}
+	// 	gr := r.Gateway(&gtw)
+	// 	gr.
+	// }
+
 	// Process the parent references to build the RouteParentStatus
 	routeStatus := gwv1.RouteStatus{}
 	for _, parentRef := range parentRefs {
-		parentStatusReport := routeReport.parentRef(&parentRef)
+		parentStatusReport := routeReport.getParentRef(&parentRef)
+		if parentStatusReport == nil {
+			// this report doesn't have an entry for this parentRef
+			// so we didn't translate it
+			continue
+		}
 		addMissingParentRefConditions(parentStatusReport)
 
 		// Get the status of the current parentRef conditions if they exist

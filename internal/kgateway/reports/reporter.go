@@ -233,6 +233,14 @@ func getParentRefKey(parentRef *gwv1.ParentReference) ParentRefKey {
 	}
 }
 
+func (r *RouteReport) getParentRef(parentRef *gwv1.ParentReference) *ParentRefReport {
+	key := getParentRefKey(parentRef)
+	if r.Parents == nil {
+		r.Parents = make(map[ParentRefKey]*ParentRefReport)
+	}
+	return r.Parents[key]
+}
+
 func (r *RouteReport) parentRef(parentRef *gwv1.ParentReference) *ParentRefReport {
 	key := getParentRefKey(parentRef)
 	if r.Parents == nil {
