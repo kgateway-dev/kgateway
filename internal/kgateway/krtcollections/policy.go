@@ -91,7 +91,7 @@ func (i *BackendIndex) Backends() []krt.Collection[ir.BackendObjectIR] {
 // policies attached.
 func (i *BackendIndex) AddBackends(gk schema.GroupKind, col krt.Collection[ir.BackendObjectIR]) {
 	backendsWithPoliciesCol := krt.NewCollection(col, func(kctx krt.HandlerContext, backendObj ir.BackendObjectIR) *ir.BackendObjectIR {
-		policies := i.policies.getTargetingPolicies(kctx, extensionsplug.BackendAttachmentPoint, backendObj.ObjectSource, "")
+		policies := i.policies.getTargetingPoliciesForBackends(kctx, extensionsplug.BackendAttachmentPoint, backendObj.ObjectSource, "")
 		backendObj.AttachedPolicies = toAttachedPolicies(policies)
 		return &backendObj
 	}, i.krtopts.ToOptions("")...)
@@ -217,13 +217,17 @@ type globalPolicy struct {
 }
 
 // MARK: PolicyIndex
-
-type PolicyIndex struct {
+type policyAndIndex struct {
 	policies            krt.Collection[ir.PolicyWrapper]
 	policiesByTargetRef krt.Collection[ir.PolicyWrapper]
-	targetRefIndex      krt.Index[targetRefIndexKey, ir.PolicyWrapper]
-	policiesFetch       map[schema.GroupKind]func(n string, ns string) ir.PolicyIR
-	globalPolicies      []globalPolicy
+	index               krt.Index[targetRefIndexKey, ir.PolicyWrapper]
+	forBackends         bool
+}
+type PolicyIndex struct {
+	availablePolicies map[schema.GroupKind]policyAndIndex
+
+	policiesFetch  map[schema.GroupKind]func(n string, ns string) ir.PolicyIR
+	globalPolicies []globalPolicy
 
 	hasSyncedFuncs []func() bool
 }
@@ -235,16 +239,48 @@ func (h *PolicyIndex) HasSynced() bool {
 			return false
 		}
 	}
-	return h.policies.HasSynced()
+	for _, pi := range h.availablePolicies {
+		if !pi.policies.HasSynced() {
+			return false
+		}
+		if !pi.policiesByTargetRef.HasSynced() {
+			return false
+		}
+	}
+	return true
 }
 
 func NewPolicyIndex(krtopts krtutil.KrtOptions, contributesPolicies extensionsplug.ContributesPolicies) *PolicyIndex {
-	index := &PolicyIndex{policiesFetch: policyFetcherMap{}}
+	index := &PolicyIndex{policiesFetch: policyFetcherMap{}, availablePolicies: map[schema.GroupKind]policyAndIndex{}}
 
-	var policycols []krt.Collection[ir.PolicyWrapper]
 	for gk, plugin := range contributesPolicies {
 		if plugin.Policies != nil {
-			policycols = append(policycols, plugin.Policies)
+			policies := plugin.Policies
+			forBackends := plugin.ProcessBackend != nil
+			policiesByTargetRef := krt.NewCollection(policies, func(kctx krt.HandlerContext, a ir.PolicyWrapper) *ir.PolicyWrapper {
+				if len(a.TargetRefs) == 0 {
+					return nil
+				}
+				return &a
+			}, krtopts.ToOptions(fmt.Sprintf("%s-policiesByTargetRef", gk.String()))...)
+
+			targetRefIndex := krt.NewIndex(policiesByTargetRef, func(p ir.PolicyWrapper) []targetRefIndexKey {
+				ret := make([]targetRefIndexKey, len(p.TargetRefs))
+				for i, tr := range p.TargetRefs {
+					ret[i] = targetRefIndexKey{
+						PolicyRef: tr,
+						Namespace: p.Namespace,
+					}
+				}
+				return ret
+			})
+
+			index.availablePolicies[gk] = policyAndIndex{
+				policies:            policies,
+				policiesByTargetRef: policiesByTargetRef,
+				index:               targetRefIndex,
+				forBackends:         forBackends,
+			}
 			index.hasSyncedFuncs = append(index.hasSyncedFuncs, plugin.Policies.HasSynced)
 		}
 		if plugin.PoliciesFetch != nil {
@@ -259,34 +295,51 @@ func NewPolicyIndex(krtopts krtutil.KrtOptions, contributesPolicies extensionspl
 		}
 	}
 
-	index.policies = krt.JoinCollection(policycols, krtopts.ToOptions("policies")...)
-	index.policiesByTargetRef = krt.NewCollection(index.policies, func(kctx krt.HandlerContext, a ir.PolicyWrapper) *ir.PolicyWrapper {
-		if len(a.TargetRefs) == 0 {
-			return nil
-		}
-		return &a
-	}, krtopts.ToOptions("policiesByTargetRef")...)
-
-	index.targetRefIndex = krt.NewIndex(index.policiesByTargetRef, func(p ir.PolicyWrapper) []targetRefIndexKey {
-		ret := make([]targetRefIndexKey, len(p.TargetRefs))
-		for i, tr := range p.TargetRefs {
-			ret[i] = targetRefIndexKey{
-				PolicyRef: tr,
-				Namespace: p.Namespace,
-			}
-		}
-		return ret
-	})
 	return index
+}
+func (p *PolicyIndex) fetchByTargetRef(
+	kctx krt.HandlerContext,
+	targetRef targetRefIndexKey,
+	onlyBackends bool,
+) []ir.PolicyWrapper {
+	var ret []ir.PolicyWrapper
+	for _, policyCol := range p.availablePolicies {
+		policies := krt.Fetch(kctx, policyCol.policiesByTargetRef, krt.FilterIndex(policyCol.index, targetRef))
+		if onlyBackends && !policyCol.forBackends {
+			continue
+		}
+		ret = append(ret, policies...)
+	}
+	return ret
 }
 
 // Attachment happens during collection creation (i.e. this file), and not translation. so these methods don't need to be public!
 // note: we may want to change that for global policies maybe.
+
+func (p *PolicyIndex) getTargetingPoliciesForBackends(
+	kctx krt.HandlerContext,
+	pnt extensionsplug.AttachmentPoints,
+	targetRef ir.ObjectSource,
+	sectionName string,
+) []ir.PolicyAtt {
+	return p.getTargetingPoliciesMaybeForBackends(kctx, pnt, targetRef, sectionName, true)
+}
+
 func (p *PolicyIndex) getTargetingPolicies(
 	kctx krt.HandlerContext,
 	pnt extensionsplug.AttachmentPoints,
 	targetRef ir.ObjectSource,
 	sectionName string,
+) []ir.PolicyAtt {
+	return p.getTargetingPoliciesMaybeForBackends(kctx, pnt, targetRef, sectionName, false)
+}
+
+func (p *PolicyIndex) getTargetingPoliciesMaybeForBackends(
+	kctx krt.HandlerContext,
+	pnt extensionsplug.AttachmentPoints,
+	targetRef ir.ObjectSource,
+	sectionName string,
+	onlyBackends bool,
 ) []ir.PolicyAtt {
 	var ret []ir.PolicyAtt
 	for _, gp := range p.globalPolicies {
@@ -310,11 +363,11 @@ func (p *PolicyIndex) getTargetingPolicies(
 		},
 		Namespace: targetRef.Namespace,
 	}
-	policies := krt.Fetch(kctx, p.policiesByTargetRef, krt.FilterIndex(p.targetRefIndex, targetRefIndexKey))
+	policies := p.fetchByTargetRef(kctx, targetRefIndexKey, onlyBackends)
 	var sectionNamePolicies []ir.PolicyWrapper
 	if sectionName != "" {
 		targetRefIndexKey.SectionName = sectionName
-		sectionNamePolicies = krt.Fetch(kctx, p.policiesByTargetRef, krt.FilterIndex(p.targetRefIndex, targetRefIndexKey))
+		sectionNamePolicies = p.fetchByTargetRef(kctx, targetRefIndexKey, onlyBackends)
 	}
 
 	for _, p := range policies {
@@ -357,7 +410,10 @@ func (p *PolicyIndex) fetchPolicy(kctx krt.HandlerContext, policyRef ir.ObjectSo
 			return &ir.PolicyWrapper{PolicyIR: polIr}
 		}
 	}
-	return krt.FetchOne(kctx, p.policies, krt.FilterKey(policyRef.ResourceName()))
+	if pi, ok := p.availablePolicies[gk]; ok {
+		return krt.FetchOne(kctx, pi.policies, krt.FilterKey(policyRef.ResourceName()))
+	}
+	return nil
 }
 
 type refGrantIndexKey struct {
