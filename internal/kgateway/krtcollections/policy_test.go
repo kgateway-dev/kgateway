@@ -544,15 +544,18 @@ func preRouteIndex(t *testing.T, inputs []any) *RoutesIndex {
 
 	policies := NewPolicyIndex(krtutil.KrtOptions{}, extensionsplug.ContributesPolicies{})
 	refgrants := NewRefGrantIndex(krttest.GetMockCollection[*gwv1beta1.ReferenceGrant](mock))
-	upstreams := NewBackendIndex(krtutil.KrtOptions{}, nil, policies, refgrants)
-	upstreams.AddBackends(svcGk, k8sSvcUpstreams(services))
+	backends := NewBackendIndex(krtutil.KrtOptions{}, nil, policies, refgrants)
+	backends.AddBackends(svcGk, k8sSvcUpstreams(services))
 	pools := krttest.GetMockCollection[*infextv1a2.InferencePool](mock)
-	upstreams.AddBackends(infPoolGk, infPoolUpstreams(pools))
+	backends.AddBackends(infPoolGk, infPoolUpstreams(pools))
 
 	httproutes := krttest.GetMockCollection[*gwv1.HTTPRoute](mock)
 	tcpproutes := krttest.GetMockCollection[*gwv1a2.TCPRoute](mock)
 	tlsroutes := krttest.GetMockCollection[*gwv1a2.TLSRoute](mock)
-	rtidx := NewRoutesIndex(krtutil.KrtOptions{}, httproutes, tcpproutes, tlsroutes, policies, upstreams, refgrants)
+	if !backends.HasSynced() {
+		time.Sleep(time.Second)
+	}
+	rtidx := NewRoutesIndex(krtutil.KrtOptions{}, httproutes, tcpproutes, tlsroutes, policies, backends, refgrants)
 	services.WaitUntilSynced(nil)
 	for !rtidx.HasSynced() || !refgrants.HasSynced() {
 		time.Sleep(time.Second / 10)
