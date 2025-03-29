@@ -183,7 +183,7 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) erro
 	logger := contextutils.LoggerFrom(ctx)
 
 	// all backends with policies attached in a single collection
-	finalBackends := krt.JoinCollection(s.commonCols.BackendIndex.Backends(), krtopts.ToOptions("FinalBackends")...)
+	finalBackends := krt.JoinCollection(s.commonCols.BackendIndex.BackendsWithPolicy(), krtopts.ToOptions("FinalBackends")...)
 
 	s.translator.Init(ctx)
 
