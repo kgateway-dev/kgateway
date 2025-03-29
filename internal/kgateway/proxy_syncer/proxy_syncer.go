@@ -379,21 +379,27 @@ func (s *ProxySyncer) syncRouteStatus(ctx context.Context, rm reports.ReportMap)
 	defer stopwatch.Stop(ctx)
 
 	// Helper function to sync route status with retry
-	syncStatusWithRetry := func(routeType string, routeKey client.ObjectKey, getRouteFunc func() client.Object, statusUpdater func(route client.Object) error) error {
-		return retry.Do(func() error {
-			route := getRouteFunc()
-			err := s.mgr.GetClient().Get(ctx, routeKey, route)
-			if err != nil {
-				logger.Errorw(fmt.Sprintf("%s get failed", routeType), "error", err, "route", routeKey)
-				return err
-			}
-			if err := statusUpdater(route); err != nil {
-				logger.Debugw(fmt.Sprintf("%s status update attempt failed", routeType), "error", err,
-					"route", fmt.Sprintf("%s.%s", routeKey.Namespace, routeKey.Name))
-				return err
-			}
-			return nil
-		},
+	syncStatusWithRetry := func(
+		routeType string,
+		routeKey client.ObjectKey,
+		getRouteFunc func() client.Object,
+		statusUpdater func(route client.Object) error,
+	) error {
+		return retry.Do(
+			func() error {
+				route := getRouteFunc()
+				err := s.mgr.GetClient().Get(ctx, routeKey, route)
+				if err != nil {
+					logger.Errorw(fmt.Sprintf("%s get failed", routeType), "error", err, "route", routeKey)
+					return err
+				}
+				if err := statusUpdater(route); err != nil {
+					logger.Debugw(fmt.Sprintf("%s status update attempt failed", routeType), "error", err,
+						"route", fmt.Sprintf("%s.%s", routeKey.Namespace, routeKey.Name))
+					return err
+				}
+				return nil
+			},
 			retry.Attempts(5),
 			retry.Delay(100*time.Millisecond),
 			retry.DelayType(retry.BackOffDelay),
@@ -403,7 +409,6 @@ func (s *ProxySyncer) syncRouteStatus(ctx context.Context, rm reports.ReportMap)
 	// Helper function to build route status and update if needed
 	buildAndUpdateStatus := func(route client.Object, routeType string) error {
 		var status *gwv1.RouteStatus
-
 		switch r := route.(type) {
 		case *gwv1.HTTPRoute:
 			status = rm.BuildRouteStatus(ctx, r, s.controllerName)
@@ -434,9 +439,16 @@ func (s *ProxySyncer) syncRouteStatus(ctx context.Context, rm reports.ReportMap)
 
 	// Sync HTTPRoute statuses
 	for rnn := range rm.HTTPRoutes {
-		err := syncStatusWithRetry(wellknown.HTTPRouteKind, rnn, func() client.Object { return new(gwv1.HTTPRoute) }, func(route client.Object) error {
-			return buildAndUpdateStatus(route, wellknown.HTTPRouteKind)
-		})
+		err := syncStatusWithRetry(
+			wellknown.HTTPRouteKind,
+			rnn,
+			func() client.Object {
+				return new(gwv1.HTTPRoute)
+			},
+			func(route client.Object) error {
+				return buildAndUpdateStatus(route, wellknown.HTTPRouteKind)
+			},
+		)
 		if err != nil {
 			logger.Errorw("all attempts failed at updating HTTPRoute status", "error", err, "route", rnn)
 		}
