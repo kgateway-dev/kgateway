@@ -39,11 +39,12 @@ func (n *NotFoundError) Error() string {
 type BackendIndex struct {
 	// availableBackends maps from the GroupKind of the backend providing plugin that
 	// supplied these backendObjs to a collection of BackendObjIRs that have all attached policies pre-computed
-	availableBackends   map[schema.GroupKind]krt.Collection[ir.BackendObjectIR]
-	backendRefExtension []extensionsplug.GetBackendForRefPlugin
-	policies            *PolicyIndex
-	refgrants           *RefGrantIndex
-	krtopts             krtutil.KrtOptions
+	availableBackends           map[schema.GroupKind]krt.Collection[ir.BackendObjectIR]
+	availableBackendsWithPolicy []krt.Collection[ir.BackendObjectIR]
+	backendRefExtension         []extensionsplug.GetBackendForRefPlugin
+	policies                    *PolicyIndex
+	refgrants                   *RefGrantIndex
+	krtopts                     krtutil.KrtOptions
 }
 
 func NewBackendIndex(
@@ -76,12 +77,8 @@ func (i *BackendIndex) HasSynced() bool {
 	return true
 }
 
-func (i *BackendIndex) Backends() []krt.Collection[ir.BackendObjectIR] {
-	ret := make([]krt.Collection[ir.BackendObjectIR], 0, len(i.availableBackends))
-	for _, u := range i.availableBackends {
-		ret = append(ret, u)
-	}
-	return ret
+func (i *BackendIndex) BackendsWithPolicy() []krt.Collection[ir.BackendObjectIR] {
+	return i.availableBackendsWithPolicy
 }
 
 // AddBackends builds the backends stored in this BackendIndex by deriving a new BackendObjIR collection
@@ -95,7 +92,8 @@ func (i *BackendIndex) AddBackends(gk schema.GroupKind, col krt.Collection[ir.Ba
 		backendObj.AttachedPolicies = toAttachedPolicies(policies)
 		return &backendObj
 	}, i.krtopts.ToOptions("")...)
-	i.availableBackends[gk] = backendsWithPoliciesCol
+	i.availableBackends[gk] = col
+	i.availableBackendsWithPolicy = append(i.availableBackendsWithPolicy, backendsWithPoliciesCol)
 }
 
 // if we want to make this function public, make it do ref grants
