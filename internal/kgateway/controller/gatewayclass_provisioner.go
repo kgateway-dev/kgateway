@@ -124,7 +124,7 @@ func (r *gatewayClassProvisioner) createGatewayClass(ctx context.Context, name s
 }
 
 func (r *gatewayClassProvisioner) Start(ctx context.Context) error {
-	log := log.FromContext(ctx)
+	log := log.FromContext(ctx).WithName("GatewayClassProvisioner")
 	log.Info("waiting for cache to sync")
 
 	// Wait for cache to sync
