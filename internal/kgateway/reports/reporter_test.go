@@ -496,7 +496,8 @@ var _ = Describe("Reporting Infrastructure", func() {
 	)
 })
 
-// fakeTranslate reports for the standard test route with the standard test parentRef
+// fakeTranslate mimics the translation loop and reports for the provided route
+// along with all parentRefs defined in the route
 func fakeTranslate(reporter reports.Reporter, obj client.Object) {
 	// translation will call Route() and ParentRef() for routes it translates out
 	// we use the same pattern here to establish reports that would reflect translation

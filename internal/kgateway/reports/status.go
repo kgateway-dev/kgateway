@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	// "github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/solo-io/go-utils/contextutils"
 	"istio.io/istio/pkg/ptr"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -16,6 +15,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
+
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
 
 // TODO: refactor this struct + methods to better reflect the usage now in proxy_syncer
@@ -99,6 +100,10 @@ func (r *ReportMap) BuildRouteStatus(
 		obj.GetName())
 
 	var existingStatus gwv1.RouteStatus
+	// Default to using spec.ParentRefs when building the parent statuses for a route.
+	// However, for delegatee (child) routes, the parentRefs field is optional and such routes
+	// may not specify it. In this case, we infer the parentRefs form the RouteReport
+	// corresponding to the delegatee (child) route as the route's report is associated to a parentRef.
 	var parentRefs []gwv1.ParentReference
 	switch route := obj.(type) {
 	case *gwv1.HTTPRoute:
@@ -122,14 +127,6 @@ func (r *ReportMap) BuildRouteStatus(
 	default:
 		contextutils.LoggerFrom(ctx).Error(fmt.Errorf("unsupported route type %T", obj), "failed to build route status")
 		return nil
-	}
-
-	// Default to using spec.ParentRefs when building the parent statuses for a route.
-	// However, for delegatee (child) routes, the parentRefs field is optional and such routes
-	// may not specify it. In this case, we infer the parentRefs form the RouteReport
-	// corresponding to the delegatee (child) route as the route's report is associated to a parentRef.
-	if len(parentRefs) == 0 {
-		parentRefs = append(parentRefs, routeReport.parentRefs()...)
 	}
 
 	newStatus := gwv1.RouteStatus{}
