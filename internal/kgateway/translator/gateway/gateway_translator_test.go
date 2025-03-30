@@ -14,6 +14,7 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/gateway/testutils"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
 )
 
@@ -130,7 +131,7 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 						Namespace: "default",
 					},
 				}
-				routeStatus := reportsMap.BuildRouteStatus(context.TODO(), route, "")
+				routeStatus := reportsMap.BuildRouteStatus(context.TODO(), route, wellknown.GatewayControllerName)
 				Expect(routeStatus).NotTo(BeNil())
 				Expect(routeStatus.Parents).To(HaveLen(1))
 				resolvedRefs := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionResolvedRefs))
@@ -154,7 +155,7 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 						Namespace: "default",
 					},
 				}
-				routeStatus := reportsMap.BuildRouteStatus(context.TODO(), route, "")
+				routeStatus := reportsMap.BuildRouteStatus(context.TODO(), route, wellknown.GatewayControllerName)
 				Expect(routeStatus).NotTo(BeNil())
 				Expect(routeStatus.Parents).To(HaveLen(1))
 				resolvedRefs := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionResolvedRefs))
@@ -188,7 +189,7 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 						Namespace: "default",
 					},
 				}
-				routeStatus := reportsMap.BuildRouteStatus(context.TODO(), route, "")
+				routeStatus := reportsMap.BuildRouteStatus(context.TODO(), route, wellknown.GatewayControllerName)
 				Expect(routeStatus).NotTo(BeNil())
 				Expect(routeStatus.Parents).To(HaveLen(1))
 				resolvedRefs := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionResolvedRefs))
@@ -213,7 +214,7 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 						Namespace: "default",
 					},
 				}
-				routeStatus := reportsMap.BuildRouteStatus(context.TODO(), route, "")
+				routeStatus := reportsMap.BuildRouteStatus(context.TODO(), route, wellknown.GatewayControllerName)
 				Expect(routeStatus).NotTo(BeNil())
 				Expect(routeStatus.Parents).To(HaveLen(1))
 				resolvedRefs := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionResolvedRefs))
@@ -238,7 +239,7 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 						Namespace: "default",
 					},
 				}
-				routeStatus := reportsMap.BuildRouteStatus(context.TODO(), route, "")
+				routeStatus := reportsMap.BuildRouteStatus(context.TODO(), route, wellknown.GatewayControllerName)
 				Expect(routeStatus).NotTo(BeNil())
 				Expect(routeStatus.Parents).To(HaveLen(1))
 				resolvedRefs := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionResolvedRefs))
@@ -273,7 +274,7 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 						Namespace: "default",
 					},
 				}
-				routeStatus := reportsMap.BuildRouteStatus(context.TODO(), route, "")
+				routeStatus := reportsMap.BuildRouteStatus(context.TODO(), route, wellknown.GatewayControllerName)
 				Expect(routeStatus).NotTo(BeNil())
 				Expect(routeStatus.Parents).To(HaveLen(1))
 				resolvedRefs := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionResolvedRefs))
@@ -298,7 +299,7 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 						Namespace: "default",
 					},
 				}
-				routeStatus := reportsMap.BuildRouteStatus(context.TODO(), route, "")
+				routeStatus := reportsMap.BuildRouteStatus(context.TODO(), route, wellknown.GatewayControllerName)
 				Expect(routeStatus).NotTo(BeNil())
 				Expect(routeStatus.Parents).To(HaveLen(1))
 				resolvedRefs := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionResolvedRefs))
@@ -323,7 +324,7 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 						Namespace: "default",
 					},
 				}
-				routeStatus := reportsMap.BuildRouteStatus(context.TODO(), route, "")
+				routeStatus := reportsMap.BuildRouteStatus(context.TODO(), route, wellknown.GatewayControllerName)
 				Expect(routeStatus).NotTo(BeNil())
 				Expect(routeStatus.Parents).To(HaveLen(1))
 				resolvedRefs := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionResolvedRefs))
