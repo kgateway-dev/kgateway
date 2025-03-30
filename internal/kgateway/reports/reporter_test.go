@@ -14,9 +14,12 @@ import (
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
 
 const fake_condition = "kgateway.dev/SomeCondition"
+
+var ctx = context.Background()
 
 var _ = Describe("Reporting Infrastructure", func() {
 	BeforeEach(func() {
@@ -141,7 +144,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 
 				reporter := reports.NewReporter(&rm)
 				fakeTranslate(reporter, obj)
-				status := rm.BuildRouteStatus(context.Background(), obj, "kgateway")
+				status := rm.BuildRouteStatus(ctx, obj, wellknown.GatewayControllerName)
 
 				Expect(status).NotTo(BeNil())
 				Expect(status.Parents).To(HaveLen(1))
@@ -159,7 +162,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 
 				reporter := reports.NewReporter(&rm)
 				fakeTranslate(reporter, obj)
-				status := rm.BuildRouteStatus(context.Background(), obj, "gloo-gateway")
+				status := rm.BuildRouteStatus(ctx, obj, wellknown.GatewayControllerName)
 
 				Expect(status).NotTo(BeNil())
 				Expect(status.Parents).To(HaveLen(1))
@@ -193,8 +196,6 @@ var _ = Describe("Reporting Infrastructure", func() {
 
 				reporter := reports.NewReporter(&rm)
 
-				// translation will call Route() and ParentRef() for routes it translates out
-				// we use the same pattern here to establish reports that would reflect translation
 				route := &gwv1.HTTPRoute{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "route",
@@ -208,22 +209,68 @@ var _ = Describe("Reporting Infrastructure", func() {
 							},
 						},
 					},
+					Status: gwv1.HTTPRouteStatus{
+						RouteStatus: gwv1.RouteStatus{
+							Parents: []gwv1.RouteParentStatus{
+								gwv1.RouteParentStatus{
+									ControllerName: "other.io/controller",
+									ParentRef:      *otherParentRef(),
+									Conditions: []metav1.Condition{
+										metav1.Condition{
+											Type:   string(gwv1.RouteConditionAccepted),
+											Status: metav1.ConditionTrue,
+											Reason: string(gwv1.RouteConditionAccepted),
+										},
+									},
+								},
+							},
+						},
+					},
 				}
-				// reporter.Route(route)
+
+				// we only translate our parentRef
 				reporter.Route(obj).ParentRef(parentRef())
 
-				status := rm.BuildRouteStatus(context.Background(), route, "gloo-gateway")
+				status := rm.BuildRouteStatus(ctx, route, wellknown.GatewayControllerName)
 
 				Expect(status).NotTo(BeNil())
-				Expect(status.Parents).To(HaveLen(1))
+				// 1 parent is ours, 1 parent is other
+				Expect(status.Parents).To(HaveLen(2))
 				// 2 default positive conditions for the single parentRef we "translated"
+				// ours will be first due to alphabetical ordering of controller name ('k' vs. 'o')
 				Expect(status.Parents[0].Conditions).To(HaveLen(2))
 			},
-			Entry("regular httproute", httpRoute(
-				metav1.Condition{
-					Type: fake_condition,
+			Entry("httproute", &gwv1.HTTPRoute{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "route",
+					Namespace: "default",
 				},
-			)),
+				Spec: gwv1.HTTPRouteSpec{
+					CommonRouteSpec: gwv1.CommonRouteSpec{
+						ParentRefs: []gwv1.ParentReference{
+							*parentRef(),
+							*otherParentRef(),
+						},
+					},
+				},
+				Status: gwv1.HTTPRouteStatus{
+					RouteStatus: gwv1.RouteStatus{
+						Parents: []gwv1.RouteParentStatus{
+							gwv1.RouteParentStatus{
+								ControllerName: "other.io/controller",
+								ParentRef:      *otherParentRef(),
+								Conditions: []metav1.Condition{
+									metav1.Condition{
+										Type:   string(gwv1.RouteConditionAccepted),
+										Status: metav1.ConditionTrue,
+										Reason: string(gwv1.RouteConditionAccepted),
+									},
+								},
+							},
+						},
+					},
+				},
+			}),
 		)
 
 		DescribeTable("should correctly set negative route conditions from report and not add extra conditions",
@@ -287,7 +334,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 
 				reporter := reports.NewReporter(&rm)
 				fakeTranslate(reporter, obj)
-				status := rm.BuildRouteStatus(context.Background(), obj, "kgateway")
+				status := rm.BuildRouteStatus(context.Background(), obj, wellknown.GatewayControllerName)
 
 				Expect(status).NotTo(BeNil())
 				Expect(status.Parents).To(HaveLen(1))
@@ -308,7 +355,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 					Fail(fmt.Sprintf("unsupported route type: %T", obj))
 				}
 
-				status = rm.BuildRouteStatus(context.Background(), obj, "kgateway")
+				status = rm.BuildRouteStatus(context.Background(), obj, wellknown.GatewayControllerName)
 
 				Expect(status).NotTo(BeNil())
 				Expect(status.Parents).To(HaveLen(1))
@@ -349,7 +396,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 
 				fakeTranslate(reporter, obj)
 
-				status := rm.BuildRouteStatus(context.Background(), obj, "kgateway")
+				status := rm.BuildRouteStatus(ctx, obj, wellknown.GatewayControllerName)
 
 				Expect(status).NotTo(BeNil())
 				Expect(status.Parents).To(HaveLen(2))
@@ -395,8 +442,8 @@ var _ = Describe("Reporting Infrastructure", func() {
 				fakeTranslate(reporter, route1)
 				fakeTranslate(reporter, route2)
 
-				status1 := rm.BuildRouteStatus(context.Background(), route1, "kgateway")
-				status2 := rm.BuildRouteStatus(context.Background(), route2, "kgateway")
+				status1 := rm.BuildRouteStatus(ctx, route1, wellknown.GatewayControllerName)
+				status2 := rm.BuildRouteStatus(ctx, route2, wellknown.GatewayControllerName)
 
 				Expect(status1).NotTo(BeNil())
 				Expect(status1.Parents[0].Conditions).To(HaveLen(2))
@@ -438,7 +485,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 			reporter := reports.NewReporter(&rm)
 
 			fakeTranslate(reporter, route)
-			status := rm.BuildRouteStatus(context.Background(), route, "kgateway")
+			status := rm.BuildRouteStatus(ctx, route, wellknown.GatewayControllerName)
 
 			Expect(status).NotTo(BeNil())
 			Expect(status.Parents).To(BeEmpty())
@@ -450,8 +497,9 @@ var _ = Describe("Reporting Infrastructure", func() {
 })
 
 // fakeTranslate reports for the standard test route with the standard test parentRef
-// Initialize RouteReporter to mimic translation loop
 func fakeTranslate(reporter reports.Reporter, obj client.Object) {
+	// translation will call Route() and ParentRef() for routes it translates out
+	// we use the same pattern here to establish reports that would reflect translation
 	switch route := obj.(type) {
 	case *gwv1.HTTPRoute:
 		routeReporter := reporter.Route(route)
@@ -481,8 +529,9 @@ func httpRoute(conditions ...metav1.Condition) client.Object {
 	route.Spec.CommonRouteSpec.ParentRefs = append(route.Spec.CommonRouteSpec.ParentRefs, *parentRef())
 	if len(conditions) > 0 {
 		route.Status.Parents = append(route.Status.Parents, gwv1.RouteParentStatus{
-			ParentRef:  *parentRef(),
-			Conditions: conditions,
+			ParentRef:      *parentRef(),
+			Conditions:     conditions,
+			ControllerName: wellknown.GatewayControllerName,
 		})
 	}
 	return route
@@ -498,8 +547,9 @@ func tcpRoute(conditions ...metav1.Condition) client.Object {
 	route.Spec.CommonRouteSpec.ParentRefs = append(route.Spec.CommonRouteSpec.ParentRefs, *parentRef())
 	if len(conditions) > 0 {
 		route.Status.Parents = append(route.Status.Parents, gwv1.RouteParentStatus{
-			ParentRef:  *parentRef(),
-			Conditions: conditions,
+			ParentRef:      *parentRef(),
+			Conditions:     conditions,
+			ControllerName: wellknown.GatewayControllerName,
 		})
 	}
 	return route
@@ -515,8 +565,9 @@ func tlsRoute(conditions ...metav1.Condition) client.Object {
 	route.Spec.CommonRouteSpec.ParentRefs = append(route.Spec.CommonRouteSpec.ParentRefs, *parentRef())
 	if len(conditions) > 0 {
 		route.Status.Parents = append(route.Status.Parents, gwv1.RouteParentStatus{
-			ParentRef:  *parentRef(),
-			Conditions: conditions,
+			ParentRef:      *parentRef(),
+			Conditions:     conditions,
+			ControllerName: wellknown.GatewayControllerName,
 		})
 	}
 	return route
@@ -544,8 +595,9 @@ func delegateeRoute(conditions ...metav1.Condition) client.Object {
 	route.Spec.CommonRouteSpec.ParentRefs = append(route.Spec.CommonRouteSpec.ParentRefs, *parentRouteRef())
 	if len(conditions) > 0 {
 		route.Status.Parents = append(route.Status.Parents, gwv1.RouteParentStatus{
-			ParentRef:  *parentRouteRef(),
-			Conditions: conditions,
+			ParentRef:      *parentRouteRef(),
+			Conditions:     conditions,
+			ControllerName: wellknown.GatewayControllerName,
 		})
 	}
 	return route
