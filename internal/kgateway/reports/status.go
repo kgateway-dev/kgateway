@@ -7,7 +7,6 @@ import (
 	"slices"
 	"strings"
 
-	// "github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/solo-io/go-utils/contextutils"
 	"istio.io/istio/pkg/ptr"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -132,7 +131,7 @@ func (r *ReportMap) BuildRouteStatus(
 	newStatus := gwv1.RouteStatus{}
 	// Process the parent references to build the RouteParentStatus
 	for _, parentRef := range parentRefs {
-		parentStatusReport := routeReport.getParentRef(&parentRef)
+		parentStatusReport := routeReport.getParentRefOrNil(&parentRef)
 		if parentStatusReport == nil {
 			// report doesn't have an entry for this parentRef, meaning we didn't translate it
 			// probably because it's a parent that we don't control (e.g. Gateway from diff. controller)
