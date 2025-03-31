@@ -13,8 +13,9 @@ import (
 )
 
 const (
-	filterEnabledRuntimeKey  = "local_rate_limit_enabled"
-	filterEnforcedRuntimeKey = "local_rate_limit_enforced"
+	localRatelimitFilterEnabledRuntimeKey  = "local_rate_limit_enabled"
+	localRatelimitFilterEnforcedRuntimeKey = "local_rate_limit_enforced"
+	localRatelimitFilterDisabledRuntimeKey = "local_rate_limit_disabled"
 )
 
 func toLocalRateLimitFilterConfig(t *v1alpha1.LocalRateLimitPolicy) (*localratelimitv3.LocalRateLimit, error) {
@@ -35,7 +36,7 @@ func toLocalRateLimitFilterConfig(t *v1alpha1.LocalRateLimitPolicy) (*localratel
 			// By default filter is enabled for 0% of the requests. I.e. this config is
 			// disabling local rate limit from the filter chain (if present).
 			FilterEnabled: &corev3.RuntimeFractionalPercent{
-				RuntimeKey:   filterEnabledRuntimeKey,
+				RuntimeKey:   localRatelimitFilterDisabledRuntimeKey,
 				DefaultValue: &typev3.FractionalPercent{},
 			},
 		}, nil
@@ -60,7 +61,7 @@ func toLocalRateLimitFilterConfig(t *v1alpha1.LocalRateLimitPolicy) (*localratel
 		// By default filter is enabled for 0% of the requests. We enable it for all requests.
 		// TODO: Make this configurable in the rate limit policy API.
 		FilterEnabled: &corev3.RuntimeFractionalPercent{
-			RuntimeKey: filterEnabledRuntimeKey,
+			RuntimeKey: localRatelimitFilterEnabledRuntimeKey,
 			DefaultValue: &typev3.FractionalPercent{
 				Numerator:   100,
 				Denominator: typev3.FractionalPercent_HUNDRED,
@@ -70,7 +71,7 @@ func toLocalRateLimitFilterConfig(t *v1alpha1.LocalRateLimitPolicy) (*localratel
 		// We enable it for all requests.
 		// TODO: Make this configurable in the rate limit policy API.
 		FilterEnforced: &corev3.RuntimeFractionalPercent{
-			RuntimeKey: filterEnforcedRuntimeKey,
+			RuntimeKey: localRatelimitFilterEnforcedRuntimeKey,
 			DefaultValue: &typev3.FractionalPercent{
 				Numerator:   100,
 				Denominator: typev3.FractionalPercent_HUNDRED,

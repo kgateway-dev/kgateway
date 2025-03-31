@@ -228,7 +228,7 @@ routes:
           '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
           filterEnabled:
             defaultValue: {}
-            runtimeKey: local_rate_limit_enabled
+            runtimeKey: local_rate_limit_disabled
           statPrefix: http_local_rate_limiter
           tokenBucket:
             fillInterval: 0.000000001s
