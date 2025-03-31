@@ -254,7 +254,7 @@ type BufferSettings struct {
 type RateLimit struct {
 	// Local defines a local rate limiting policy.
 	// +required
-	Local *LocalRateLimitPolicy `json:"local,omitempty"`
+	Local *LocalRateLimitPolicy `json:"local"`
 }
 
 // LocalRateLimitPolicy represents a policy for local rate limiting.
@@ -262,7 +262,7 @@ type RateLimit struct {
 type LocalRateLimitPolicy struct {
 	// TokenBucket represents the configuration for a token bucket local rate-limiting mechanism.
 	// It defines the parameters for controlling the rate at which requests are allowed.
-	// +required
+	// +optional
 	TokenBucket *TokenBucket `json:"tokenBucket"`
 }
 

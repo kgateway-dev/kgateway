@@ -399,8 +399,6 @@ spec:
                         - fillInterval
                         - maxTokens
                         type: object
-                    required:
-                    - tokenBucket
                     type: object
                 required:
                 - local

@@ -2967,7 +2967,6 @@ func schema_kgateway_v2_api_v1alpha1_LocalRateLimitPolicy(ref common.ReferenceCa
 						},
 					},
 				},
-				Required: []string{"tokenBucket"},
 			},
 		},
 		Dependencies: []string{
