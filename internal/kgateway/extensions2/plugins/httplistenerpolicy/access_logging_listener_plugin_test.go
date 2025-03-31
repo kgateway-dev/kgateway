@@ -135,7 +135,7 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 									GrpcService: &envoycore.GrpcService{
 										TargetSpecifier: &envoycore.GrpcService_EnvoyGrpc_{
 											EnvoyGrpc: &envoycore.GrpcService_EnvoyGrpc{
-												ClusterName: "test-service",
+												ClusterName: "backend_default_test-service_0",
 											},
 										},
 									},
@@ -293,7 +293,7 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 									GrpcService: &envoycore.GrpcService{
 										TargetSpecifier: &envoycore.GrpcService_EnvoyGrpc_{
 											EnvoyGrpc: &envoycore.GrpcService_EnvoyGrpc{
-												ClusterName: "test-service",
+												ClusterName: "backend_default_test-service_0",
 											},
 										},
 									},
@@ -636,6 +636,7 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 					map[string]*ir.BackendObjectIR{
 						"grpc-log-0": {
 							ObjectSource: ir.ObjectSource{
+								Kind:      "Backend",
 								Name:      "test-service",
 								Namespace: "default",
 							},
