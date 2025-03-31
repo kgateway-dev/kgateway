@@ -196,7 +196,7 @@ listeners:
             commonConfig:
               grpcService:
                 envoyGrpc:
-                  clusterName: log-test
+                  clusterName: kube_gwtest_log-test_50051
               logName: test-accesslog-service
               transportApiVersion: V3
         httpFilters:
@@ -237,7 +237,7 @@ listeners:
             commonConfig:
               grpcService:
                 envoyGrpc:
-                  clusterName: log-test
+                  clusterName: kube_gwtest_log-test_50051
               logName: test-accesslog-service
               transportApiVersion: V3
         httpFilters:
