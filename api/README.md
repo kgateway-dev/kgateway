@@ -1,6 +1,6 @@
-# APIs for Gloo Gateway - Kubernetes Gateway API Integration
+# APIs for kgateway
 
-This directory contains Go types for custom resources that Gloo Gateway uses with its Kubernetes Gateway API integration.
+This directory contains Go types for kgateway APIs & custom resources. 
 
 ## Adding a new API / CRD
 
@@ -15,22 +15,11 @@ These are the steps required to add a new CRD to be used in the Kubernetes Gatew
         - Include all the appropriate json and kubebuilder annotations on fields and structs.
         - Make sure to include a unique `shortName` in the kubebuilder annotation for the resource.
         - Avoid using slices with pointers. see: https://github.com/kubernetes/code-generator/issues/166
-        - Define RBAC rules using the `+kubebuilder:rbac` annotation (note: this annotation should not belong to the type, but rather the file or package.). Alternativly, define RBAC rules in the helm chart in `install/helm/gloo/templates/44-rbac.yaml`.
+        - RBAC rules are defined in `doc.go` via `+kubebuilder:rbac` annotation (note: this annotation should not belong to the type, but rather the file or package).
     - Define a struct for the resource list (containing the metadata fields and `Items`)
 3. Run codegen via `make generated-code -B`. This will invoke the `controller-gen` command specified in [generate.go](/hack/generate.go), which should result in the following:
     - A `zz_generated.deepcopy.go` file is created in the same directory as the Go types.
     - A `zz_generated.register.go` file is created in the same directory as the Go types. To help with registering the Go types with the scheme.
-    - A CRD file is generated in [install/helm/gloo/crds](/install/helm/gloo/crds)
-    - RBAC role is generated in `install/helm/gloo/files/rbac/role.yaml`
+    - CRDs are generated in the CRD helm chart template dir: `install/helm/kgateway-crds/templates`
+    - RBAC role is generated in `install/helm/kgateway/templates/role.yaml`
     - Updates the `api/applyconfiguration` `pkg/generated` and `pkg/client` folders with kube clients. These are used in plugin initialization and the fake client is used in tests.
-
-## Background
-
-Historically, we have defined Gloo Gateway custom resources using protobuf files, which are then converted to Go types via solo-kit or skv2 codegen. This was also the initial implementation for the kube gateway resources, however we pivoted to using Go types for a few reasons.
-
-Some of our Gloo Gateway APIs depend on Kubernetes [Core](https://github.com/kubernetes/api) and [Apimachinery](https://github.com/kubernetes/apimachinery) APIs, because our user-facing APIs (e.g GatewayParameters) allow users to configure some parts of Kubernetes resources (e.g. pod/container security context, affinity, tolerations) directly.
-
-The source of truth for the Kubernetes APIs are the Go types defined in the Kubernetes repos, and protobuf files get generated from the Go types. Initially, the Gloo Gateway protobuf files imported a copy of the generated Kubernetes protobuf files, but:
-
-- There turned out to be inconsistencies between the structure of the generated protobuf files and the source APIs (e.g. extra embedded fields).
-- Maintaining a copy of the generated files meant that we would need to remember to update them whenever we upgraded Kubernetes library versions in Gloo Gateway.
