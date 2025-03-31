@@ -1,6 +1,8 @@
 # AI Extension E2E Test
 
-The AI extension e2e test is different from the other tests in the sense that it uses a combination of Golang and Python to fully implement the tests. Moreover, it requires access to external LLM providers using their API keys, which implies there are prerequisites to running the tests. This document describes the steps to set up the environment and run the tests.
+The AI extension e2e test is different from the other tests in the sense that it uses a combination of Golang and Python to fully implement the tests.
+Moreover, it requires access to external LLM providers using their API keys, which implies there are prerequisites to running the tests.
+This document describes the steps to set up the environment and run the tests.
 
 ## Prerequisites
 

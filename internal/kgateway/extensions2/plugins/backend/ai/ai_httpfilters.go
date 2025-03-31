@@ -2,6 +2,7 @@ package ai
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
@@ -74,12 +75,26 @@ func AddUpstreamClusterHttpFilters(out *envoy_config_cluster_v3.Cluster) error {
 	}
 
 	if err = translatorutils.MutateHttpOptions(out, func(opts *envoy_upstreams_v3.HttpProtocolOptions) {
-		opts.UpstreamProtocolOptions = &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig_{
-			ExplicitHttpConfig: &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig{
-				ProtocolConfig: &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig_Http2ProtocolOptions{
-					Http2ProtocolOptions: &envoy_config_core_v3.Http2ProtocolOptions{},
+		ts := out.GetTransportSocket()
+		supportsALPN := false
+		if ts != nil {
+			tc := ts.GetTypedConfig()
+			if tc != nil && (strings.Contains(tc.GetTypeUrl(), "UpstreamTlsContext") || strings.Contains(tc.GetTypeUrl(), "QuicUpstreamTransport")) {
+				// if upstream supports ALPN, add the auto config
+				supportsALPN = true
+			}
+		}
+		if supportsALPN {
+			opts.UpstreamProtocolOptions = &envoy_upstreams_v3.HttpProtocolOptions_AutoConfig{
+				AutoConfig: &envoy_upstreams_v3.HttpProtocolOptions_AutoHttpConfig{},
+			}
+		} else {
+			// otherwise we use http1 for upstream that do not support ALPN
+			opts.UpstreamProtocolOptions = &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig_{
+				ExplicitHttpConfig: &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig{
+					ProtocolConfig: &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig_HttpProtocolOptions{},
 				},
-			},
+			}
 		}
 		opts.CommonHttpProtocolOptions = &envoy_config_core_v3.HttpProtocolOptions{
 			IdleTimeout: &durationpb.Duration{

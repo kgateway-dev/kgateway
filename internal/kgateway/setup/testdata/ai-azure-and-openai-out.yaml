@@ -132,7 +132,7 @@ clusters:
       commonHttpProtocolOptions:
         idleTimeout: 30s
       explicitHttpConfig:
-        http2ProtocolOptions: {}
+        httpProtocolOptions: {}
       httpFilters:
       - name: io.kgateway.wait
         typedConfig:
@@ -213,7 +213,7 @@ clusters:
       commonHttpProtocolOptions:
         idleTimeout: 30s
       explicitHttpConfig:
-        http2ProtocolOptions: {}
+        httpProtocolOptions: {}
       httpFilters:
       - name: io.kgateway.wait
         typedConfig:
