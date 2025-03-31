@@ -127,6 +127,7 @@ func StartKgatewayWithConfig(
 
 	logger.Info("initializing controller")
 	c, err := controller.NewControllerBuilder(ctx, controller.StartConfig{
+		// TODO: why do we plumb this through if it's wellknown?
 		ControllerName: wellknown.GatewayControllerName,
 		ExtraPlugins:   extraPlugins,
 		RestConfig:     restConfig,
