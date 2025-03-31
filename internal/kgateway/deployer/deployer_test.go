@@ -1076,12 +1076,10 @@ var _ = Describe("Deployer", func() {
 									Repository: ptr.To("bar"),
 									Tag:        ptr.To("baz"),
 								},
-								Ports: []corev1.ContainerPort{
-									{
-										Name:          "foo",
-										ContainerPort: 80,
-									},
-								},
+								Ports: []corev1.ContainerPort{{
+									Name:          "foo",
+									ContainerPort: 80,
+								}},
 							},
 						},
 					},
@@ -1449,6 +1447,23 @@ var _ = Describe("Deployer", func() {
 					Expect(aiContainer.SecurityContext.RunAsUser).To(BeNil())
 				}
 			}
+
+			By("validating the override values are set in the istio container")
+			Expect(istioProxyContainer.Env).To(ContainElement(corev1.EnvVar{
+				Name:      "CA_ADDR",
+				Value:     *inp.overrideGwp.Spec.Kube.Istio.IstioProxyContainer.IstioDiscoveryAddress,
+				ValueFrom: nil,
+			}))
+			Expect(istioProxyContainer.Env).To(ContainElement(corev1.EnvVar{
+				Name:      "ISTIO_META_MESH_ID",
+				Value:     *inp.overrideGwp.Spec.Kube.Istio.IstioProxyContainer.IstioMetaMeshId,
+				ValueFrom: nil,
+			}))
+			Expect(istioProxyContainer.Env).To(ContainElement(corev1.EnvVar{
+				Name:      "ISTIO_META_CLUSTER_ID",
+				Value:     *inp.overrideGwp.Spec.Kube.Istio.IstioProxyContainer.IstioMetaClusterId,
+				ValueFrom: nil,
+			}))
 
 			bootstrapCfg := objs.getEnvoyConfig(defaultNamespace, defaultConfigMapName)
 			clusters := bootstrapCfg.GetStaticResources().GetClusters()

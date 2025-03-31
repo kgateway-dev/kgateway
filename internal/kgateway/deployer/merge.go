@@ -530,7 +530,6 @@ func deepMergeIstioContainer(dst, src *v1alpha1.IstioContainer) *v1alpha1.IstioC
 	if src == nil {
 		return dst
 	}
-
 	if dst == nil {
 		return src
 	}
@@ -543,20 +542,15 @@ func deepMergeIstioContainer(dst, src *v1alpha1.IstioContainer) *v1alpha1.IstioC
 		dst.LogLevel = src.GetLogLevel()
 	}
 
-	// Do not allow per-gateway overrides of these values if they are set in the default
-	// GatewayParameters populated by helm values
-	if dst.GetIstioDiscoveryAddress() == nil {
-		// Doesn't matter if we're overriding empty with empty
+	if src.GetIstioDiscoveryAddress() != nil {
 		dst.IstioDiscoveryAddress = src.GetIstioDiscoveryAddress()
 	}
 
-	if dst.GetIstioMetaMeshId() == nil {
-		// Doesn't matter if we're overriding empty with empty
+	if src.GetIstioMetaMeshId() != nil {
 		dst.IstioMetaMeshId = src.GetIstioMetaMeshId()
 	}
 
-	if dst.GetIstioMetaClusterId() == nil {
-		// Doesn't matter if we're overriding empty with empty
+	if src.GetIstioMetaClusterId() != nil {
 		dst.IstioMetaClusterId = src.GetIstioMetaClusterId()
 	}
 
