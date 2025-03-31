@@ -89,7 +89,7 @@ func AddUpstreamClusterHttpFilters(out *envoy_config_cluster_v3.Cluster) error {
 				AutoConfig: &envoy_upstreams_v3.HttpProtocolOptions_AutoHttpConfig{},
 			}
 		} else {
-			// otherwise we need to use downstream protocol for upstream that do not support ALPN
+			// otherwise we use http1 for upstream that do not support ALPN
 			opts.UpstreamProtocolOptions = &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig_{
 				ExplicitHttpConfig: &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig{
 					ProtocolConfig: &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig_HttpProtocolOptions{},
