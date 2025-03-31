@@ -41,17 +41,22 @@ func toLocalRateLimitFilterConfig(t *v1alpha1.LocalRateLimitPolicy) (*localratel
 		}, nil
 	}
 
-	fillInterval, err := time.ParseDuration(t.TokenBucket.FillInterval)
-	if err != nil {
-		return nil, err
+	tokenBucket := &typev3.TokenBucket{}
+	if t.TokenBucket != nil {
+		fillInterval, err := time.ParseDuration(t.TokenBucket.FillInterval)
+		if err != nil {
+			return nil, err
+		}
+		tokenBucket.FillInterval = durationpb.New(fillInterval)
+		tokenBucket.MaxTokens = t.TokenBucket.MaxTokens
+		if t.TokenBucket.TokensPerFill != nil {
+			tokenBucket.TokensPerFill = wrapperspb.UInt32(*t.TokenBucket.TokensPerFill)
+		}
 	}
 
 	var lrl *localratelimitv3.LocalRateLimit = &localratelimitv3.LocalRateLimit{
-		StatPrefix: localRateLimitStatPrefix,
-		TokenBucket: &typev3.TokenBucket{
-			MaxTokens:    t.TokenBucket.MaxTokens,
-			FillInterval: durationpb.New(fillInterval),
-		},
+		StatPrefix:  localRateLimitStatPrefix,
+		TokenBucket: tokenBucket,
 		// By default filter is enabled for 0% of the requests. We enable it for all requests.
 		// TODO: Make this configurable in the rate limit policy API.
 		FilterEnabled: &corev3.RuntimeFractionalPercent{
@@ -71,10 +76,6 @@ func toLocalRateLimitFilterConfig(t *v1alpha1.LocalRateLimitPolicy) (*localratel
 				Denominator: typev3.FractionalPercent_HUNDRED,
 			},
 		},
-	}
-
-	if t.TokenBucket.TokensPerFill != nil {
-		lrl.GetTokenBucket().TokensPerFill = wrapperspb.UInt32(*t.TokenBucket.TokensPerFill)
 	}
 
 	return lrl, nil
