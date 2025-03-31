@@ -86,6 +86,9 @@ func (s *testingSuite) TearDownSuite() {
 	s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, s.commonResources...)
 
 	// make sure pods are gone
+	s.testInstallation.Assertions.EventuallyPodsNotExist(s.ctx, testdefaults.CurlPod.GetNamespace(), metav1.ListOptions{
+		LabelSelector: testdefaults.CurlPodLabelSelector,
+	})
 	s.testInstallation.Assertions.EventuallyPodsNotExist(s.ctx, simpleDeployment.GetNamespace(), metav1.ListOptions{
 		LabelSelector: "app=backend-0,version=v1",
 	})

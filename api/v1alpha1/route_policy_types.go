@@ -280,7 +280,7 @@ type TokenBucket struct {
 	// If not specified, it defaults to 1.
 	// This controls the steady-state rate of token generation.
 	// +optional
-	// kubebuilder:default:=1
+	// +kubebuilder:default:=1
 	TokensPerFill *uint32 `json:"tokensPerFill,omitempty"`
 
 	// FillInterval defines the time duration between consecutive token fills.

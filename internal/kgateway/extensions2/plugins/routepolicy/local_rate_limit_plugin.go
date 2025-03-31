@@ -26,20 +26,7 @@ func toLocalRateLimitFilterConfig(t *v1alpha1.LocalRateLimitPolicy) (*localratel
 	// If the local rate limit policy is empty, we add a LocalRateLimit configuration that disables
 	// any other applied local rate limit policy (if any) for the target.
 	if *t == (v1alpha1.LocalRateLimitPolicy{}) {
-		return &localratelimitv3.LocalRateLimit{
-			StatPrefix: localRateLimitStatPrefix,
-			// Config per route requires a token bucket. We create a dummy token bucket.
-			TokenBucket: &typev3.TokenBucket{
-				MaxTokens:    1,
-				FillInterval: durationpb.New(1),
-			},
-			// By default filter is enabled for 0% of the requests. I.e. this config is
-			// disabling local rate limit from the filter chain (if present).
-			FilterEnabled: &corev3.RuntimeFractionalPercent{
-				RuntimeKey:   localRatelimitFilterDisabledRuntimeKey,
-				DefaultValue: &typev3.FractionalPercent{},
-			},
-		}, nil
+		return createDisabledRateLimit(), nil
 	}
 
 	tokenBucket := &typev3.TokenBucket{}
@@ -80,4 +67,22 @@ func toLocalRateLimitFilterConfig(t *v1alpha1.LocalRateLimitPolicy) (*localratel
 	}
 
 	return lrl, nil
+}
+
+// createDisabledRateLimit returns a LocalRateLimit configuration that disables rate limiting.
+// This is used when an empty policy is provided to override any existing rate limit configuration.
+func createDisabledRateLimit() *localratelimitv3.LocalRateLimit {
+	return &localratelimitv3.LocalRateLimit{
+		StatPrefix: localRateLimitStatPrefix,
+		// Config per route requires a token bucket, so we create a minimal one
+		TokenBucket: &typev3.TokenBucket{
+			MaxTokens:    1,
+			FillInterval: durationpb.New(1),
+		},
+		// Set filter enabled to 0% to effectively disable rate limiting
+		FilterEnabled: &corev3.RuntimeFractionalPercent{
+			RuntimeKey:   localRatelimitFilterDisabledRuntimeKey,
+			DefaultValue: &typev3.FractionalPercent{},
+		},
+	}
 }
