@@ -148,7 +148,6 @@ var _ = Describe("GatewayClassProvisioner", func() {
 				if err != nil {
 					return false
 				}
-				GinkgoWriter.Println("gcs.Items", len(gcs.Items))
 				return len(gcs.Items) == 2
 			}, timeout, interval).Should(BeTrue())
 		})
