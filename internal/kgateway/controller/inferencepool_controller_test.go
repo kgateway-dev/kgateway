@@ -97,8 +97,9 @@ var _ = Describe("InferencePool controller", func() {
 					},
 				},
 			}
-			err = k8sClient.Status().Update(ctx, httpRoute)
-			Expect(err).NotTo(HaveOccurred())
+			Eventually(func() error {
+				return k8sClient.Status().Update(ctx, httpRoute)
+			}, "10s", "1s").Should(Succeed())
 
 			// Create an InferencePool resource that is referenced by the HTTPRoute.
 			pool := &infextv1a2.InferencePool{
