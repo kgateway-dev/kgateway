@@ -285,12 +285,12 @@ func (c *ControllerBuilder) Start(ctx context.Context) error {
 func GetDefaultClassInfo() map[string]*ClassInfo {
 	return map[string]*ClassInfo{
 		wellknown.GatewayClassName: {
-			Description: "The default GatewayClass for the kgateway controller.",
+			Description: "Standard class for managing Gateway API ingress traffic.",
 			Labels:      map[string]string{},
 			Annotations: map[string]string{},
 		},
 		wellknown.WaypointClassName: {
-			Description: "The default GatewayClass for the kgateway controller.",
+			Description: "Specialized class for Istio ambient mesh waypoint proxies.",
 			Labels:      map[string]string{},
 			Annotations: map[string]string{
 				"ambient.istio.io/waypoint-inbound-binding": "PROXY/15088",
