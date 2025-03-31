@@ -144,7 +144,7 @@ spec:
           image: %s
           imagePullPolicy: IfNotPresent
           ports:
-            - containerPort: 5001
+            - containerPort: 443
           resources:
             requests:
               cpu: 100m
@@ -162,8 +162,8 @@ spec:
   selector:
     app: test-ai-provider
   ports:
-    - port: 5001
-      targetPort: 5001
+    - port: 443
+      targetPort: 443
   type: ClusterIP`, namespace, image, namespace)
 }
 

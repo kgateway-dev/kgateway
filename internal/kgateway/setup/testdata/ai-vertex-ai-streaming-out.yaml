@@ -134,8 +134,6 @@ clusters:
       '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
       commonHttpProtocolOptions:
         idleTimeout: 30s
-      explicitHttpConfig:
-        http2ProtocolOptions: {}
       httpFilters:
       - name: io.kgateway.wait
         typedConfig:
@@ -149,6 +147,8 @@ clusters:
       - name: envoy.filters.http.upstream_codec
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.http.upstream_codec.v3.UpstreamCodec
+      useDownstreamProtocolConfig:
+        http2ProtocolOptions: {}
 listeners:
 - address:
     socketAddress:

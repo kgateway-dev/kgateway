@@ -79,7 +79,7 @@ func AddUpstreamClusterHttpFilters(out *envoy_config_cluster_v3.Cluster) error {
 		supportsALPN := false
 		if ts != nil {
 			tc := ts.GetTypedConfig()
-			if tc != nil && (strings.Contains(tc.TypeUrl, "UpstreamTlsContext") || strings.Contains(tc.TypeUrl, "QuicUpstreamTransport")) {
+			if tc != nil && (strings.Contains(tc.GetTypeUrl(), "UpstreamTlsContext") || strings.Contains(tc.GetTypeUrl(), "QuicUpstreamTransport")) {
 				// if upstream supports ALPN, add the auto config
 				supportsALPN = true
 			}
