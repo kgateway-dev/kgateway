@@ -89,7 +89,9 @@ var _ = Describe("GwController", func() {
 					IP: "127.0.0.1",
 				}},
 			}
-			Expect(k8sClient.Status().Update(ctx, &svc)).NotTo(HaveOccurred())
+			Eventually(func() error {
+				return k8sClient.Status().Update(ctx, &svc)
+			}, timeout, interval).Should(Succeed())
 
 			Eventually(func() bool {
 				err := k8sClient.Get(ctx, client.ObjectKey{Name: gwName, Namespace: "default"}, &gw)
