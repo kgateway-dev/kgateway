@@ -24,7 +24,7 @@ type AIPolicy struct {
 
 	// The type of route to the LLM provider API. Currently, `CHAT` and `CHAT_STREAMING` are supported.
 	// +kubebuilder:validation:Enum=CHAT;CHAT_STREAMING
-	// +kube:default=CHAT
+	// +kubebuilder:default=CHAT
 	RouteType *RouteType `json:"routeType,omitempty"`
 }
 
