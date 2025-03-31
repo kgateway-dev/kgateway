@@ -2967,7 +2967,6 @@ func schema_kgateway_v2_api_v1alpha1_LocalRateLimitPolicy(ref common.ReferenceCa
 						},
 					},
 				},
-				Required: []string{"tokenBucket"},
 			},
 		},
 		Dependencies: []string{
@@ -4012,7 +4011,7 @@ func schema_kgateway_v2_api_v1alpha1_TokenBucket(ref common.ReferenceCallback) c
 					},
 					"tokensPerFill": {
 						SchemaProps: spec.SchemaProps{
-							Description: "TokensPerFill specifies the number of tokens added to the bucket during each fill interval. If not specified, it defaults to 1. This controls the steady-state rate of token generation. kubebuilder:default:=1",
+							Description: "TokensPerFill specifies the number of tokens added to the bucket during each fill interval. If not specified, it defaults to 1. This controls the steady-state rate of token generation.",
 							Type:        []string{"integer"},
 							Format:      "int64",
 						},

@@ -254,7 +254,7 @@ type BufferSettings struct {
 type RateLimit struct {
 	// Local defines a local rate limiting policy.
 	// +required
-	Local *LocalRateLimitPolicy `json:"local,omitempty"`
+	Local *LocalRateLimitPolicy `json:"local"`
 }
 
 // LocalRateLimitPolicy represents a policy for local rate limiting.
@@ -262,7 +262,7 @@ type RateLimit struct {
 type LocalRateLimitPolicy struct {
 	// TokenBucket represents the configuration for a token bucket local rate-limiting mechanism.
 	// It defines the parameters for controlling the rate at which requests are allowed.
-	// +required
+	// +optional
 	TokenBucket *TokenBucket `json:"tokenBucket"`
 }
 
@@ -280,7 +280,7 @@ type TokenBucket struct {
 	// If not specified, it defaults to 1.
 	// This controls the steady-state rate of token generation.
 	// +optional
-	// kubebuilder:default:=1
+	// +kubebuilder:default:=1
 	TokensPerFill *uint32 `json:"tokensPerFill,omitempty"`
 
 	// FillInterval defines the time duration between consecutive token fills.
