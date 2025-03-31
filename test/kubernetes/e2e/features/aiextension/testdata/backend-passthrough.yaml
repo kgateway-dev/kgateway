@@ -11,7 +11,7 @@ spec:
     llm:
       hostOverride:
         host: test-ai-provider.ai-test.svc.cluster.local
-        port: 5001
+        port: 443
       provider:
         openai:
           authToken:
@@ -30,7 +30,7 @@ spec:
     llm:
       hostOverride:
         host: test-ai-provider.ai-test.svc.cluster.local
-        port: 5001
+        port: 443
       provider:
         azureopenai:
           endpoint: ai-gateway.openai.azure.com
@@ -52,7 +52,7 @@ spec:
     llm:
       hostOverride:
         host: test-ai-provider.ai-test.svc.cluster.local
-        port: 5001
+        port: 443
       provider:
         gemini:
           model: "gemini-1.5-flash-001"
@@ -73,7 +73,7 @@ spec:
     llm:
       hostOverride:
         host: test-ai-provider.ai-test.svc.cluster.local
-        port: 5001
+        port: 443
       provider:
         vertexai:
           model: gemini-1.5-flash-001

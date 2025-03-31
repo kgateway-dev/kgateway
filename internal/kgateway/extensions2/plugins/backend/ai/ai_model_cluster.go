@@ -25,6 +25,14 @@ const (
 	tlsPort = 443
 )
 
+func tlsMatch() *structpb.Struct {
+	return &structpb.Struct{
+		Fields: map[string]*structpb.Value{
+			"tls": structpb.NewStringValue("true"),
+		},
+	}
+}
+
 func ProcessAIBackend(ctx context.Context, in *v1alpha1.AIBackend, aiSecret *ir.Secret, multiSecrets map[string]*ir.Secret, out *envoy_config_cluster_v3.Cluster) error {
 	if in == nil {
 		return nil
@@ -120,11 +128,11 @@ func buildModelCluster(ctx context.Context, aiUs *v1alpha1.AIBackend, aiSecret *
 		}
 	}
 	// attempt to match tls, the default match is always plaintext
-	tlsMatch := &envoy_tls_v3.UpstreamTlsContext{
+	tlsCtx := &envoy_tls_v3.UpstreamTlsContext{
 		CommonTlsContext: &envoy_tls_v3.CommonTlsContext{},
 		AutoHostSni:      true,
 	}
-	tlsMatchAny, err := utils.MessageToAny(tlsMatch)
+	tlsCtxAny, err := utils.MessageToAny(tlsCtx)
 	if err != nil {
 		return err
 	}
@@ -134,9 +142,10 @@ func buildModelCluster(ctx context.Context, aiUs *v1alpha1.AIBackend, aiSecret *
 			TransportSocket: &envoy_config_core_v3.TransportSocket{
 				Name: wellknown.TransportSocketTls,
 				ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{
-					TypedConfig: tlsMatchAny,
+					TypedConfig: tlsCtxAny,
 				},
 			},
+			Match: tlsMatch(),
 		},
 		{
 			Name: "plaintext",
@@ -306,11 +315,7 @@ func buildLocalityLbEndpoint(
 	}
 	if port == tlsPort {
 		// Used for transport socket matching
-		metadata.GetFilterMetadata()["envoy.transport_socket_match"] = &structpb.Struct{
-			Fields: map[string]*structpb.Value{
-				"tls": structpb.NewStringValue("true"),
-			},
-		}
+		metadata.GetFilterMetadata()["envoy.transport_socket_match"] = tlsMatch()
 	}
 	return &envoy_config_endpoint_v3.LbEndpoint{
 		Metadata: metadata,
