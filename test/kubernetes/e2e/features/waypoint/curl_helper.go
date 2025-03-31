@@ -53,15 +53,13 @@ func (s *testingSuite) assertCurlInner(
 		curlOpts = append(curlOpts, curl.WithHeader("Authorization", authHeader))
 	}
 
-	const timeout = time.Minute
-
 	// wait for 1 good response
 	s.testInstallation.Assertions.AssertEventualCurlResponse(
 		s.ctx,
 		from,
 		curlOpts,
 		&matchers,
-		timeout,
+		time.Minute,
 	)
 
 	// then ensure it's consistently working
@@ -70,6 +68,5 @@ func (s *testingSuite) assertCurlInner(
 		from,
 		curlOpts,
 		&matchers,
-		timeout,
 	)
 }
