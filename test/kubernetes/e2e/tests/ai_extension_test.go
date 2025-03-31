@@ -54,6 +54,7 @@ func TestAIExtensions(t *testing.T) {
 
 	// Install kgateway
 	testInstallation.InstallKgatewayFromLocalChart(ctx)
+	testInstallation.Assertions.EventuallyNamespaceExists(ctx, installNs)
 	err := bootstrapEnv(ctx, testInstallation, installNs)
 	if err != nil {
 		t.Error(err)

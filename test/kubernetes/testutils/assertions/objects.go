@@ -71,6 +71,17 @@ func (p *Provider) ExpectNamespaceNotExist(ctx context.Context, ns string) {
 	p.Gomega.Expect(apierrors.IsNotFound(err)).To(BeTrue(), fmt.Sprintf("namespace %s should not be found in cluster", ns))
 }
 
+func (p *Provider) EventuallyNamespaceExists(ctx context.Context, ns string) {
+	p.Gomega.Eventually(ctx, func(innerG Gomega) {
+		_, err := p.clusterContext.Clientset.CoreV1().Namespaces().Get(ctx, ns, metav1.GetOptions{})
+		innerG.Expect(err).NotTo(HaveOccurred(), "namespace %s should exist", ns)
+	}).
+		WithContext(ctx).
+		WithTimeout(time.Second*20).
+		WithPolling(time.Millisecond*200).
+		Should(Succeed(), fmt.Sprintf("namespace %s should exist", ns))
+}
+
 // TODO clean up these functions, as the validation webhook has been removed
 // ExpectObjectAdmitted should be used when applying Policy objects that are subject to the Gloo Gateway Validation Webhook
 // If the testInstallation has validation enabled and the manifest contains a known substring (e.g. `webhook-reject`)

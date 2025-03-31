@@ -90,9 +90,9 @@ func AddUpstreamClusterHttpFilters(out *envoy_config_cluster_v3.Cluster) error {
 			}
 		} else {
 			// otherwise we need to use downstream protocol for upstream that do not support ALPN
-			opts.UpstreamProtocolOptions = &envoy_upstreams_v3.HttpProtocolOptions_UseDownstreamProtocolConfig{
-				UseDownstreamProtocolConfig: &envoy_upstreams_v3.HttpProtocolOptions_UseDownstreamHttpConfig{
-					Http2ProtocolOptions: &envoy_config_core_v3.Http2ProtocolOptions{},
+			opts.UpstreamProtocolOptions = &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig_{
+				ExplicitHttpConfig: &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig{
+					ProtocolConfig: &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig_HttpProtocolOptions{},
 				},
 			}
 		}
