@@ -444,7 +444,7 @@ func (r *controllerReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		Status:             metav1.ConditionTrue,
 		Reason:             string(apiv1.GatewayClassReasonAccepted),
 		ObservedGeneration: gwclass.Generation,
-		// no need to set LastTransitionTime, it will be set automatically by SetStatusCondition
+		Message:            "GatewayClass accepted by kgateway controller",
 	})
 
 	// TODO: This should actually check the version of the CRDs in the cluster to be 100% sure
@@ -453,6 +453,7 @@ func (r *controllerReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		Status:             metav1.ConditionTrue,
 		ObservedGeneration: gwclass.Generation,
 		Reason:             string(apiv1.GatewayClassReasonSupportedVersion),
+		Message:            "Gateway API version supported by kgateway controller",
 	})
 
 	if err := r.cli.Status().Update(ctx, gwclass); err != nil {

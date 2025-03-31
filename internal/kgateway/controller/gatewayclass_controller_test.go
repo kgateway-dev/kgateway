@@ -54,7 +54,7 @@ var _ = Describe("GatewayClass Status Controller", func() {
 			Expect(gc.Status.Conditions[0].Type).Should(Equal(string(apiv1.GatewayClassConditionStatusAccepted)))
 			Expect(gc.Status.Conditions[0].Status).Should(Equal(metav1.ConditionTrue))
 			Expect(gc.Status.Conditions[0].Reason).Should(Equal(string(apiv1.GatewayClassReasonAccepted)))
-			Expect(gc.Status.Conditions[0].Message).Should(BeEmpty())
+			Expect(gc.Status.Conditions[0].Message).Should(ContainSubstring(`accepted by kgateway controller`))
 		})
 
 		It("should set the SupportedVersion=True condition type", func() {
@@ -62,7 +62,7 @@ var _ = Describe("GatewayClass Status Controller", func() {
 			Expect(gc.Status.Conditions[1].Type).Should(Equal(string(apiv1.GatewayClassConditionStatusSupportedVersion)))
 			Expect(gc.Status.Conditions[1].Status).Should(Equal(metav1.ConditionTrue))
 			Expect(gc.Status.Conditions[1].Reason).Should(Equal(string(apiv1.GatewayClassReasonSupportedVersion)))
-			Expect(gc.Status.Conditions[1].Message).Should(BeEmpty())
+			Expect(gc.Status.Conditions[1].Message).Should(ContainSubstring(`supported by kgateway controller`))
 		})
 	})
 })
