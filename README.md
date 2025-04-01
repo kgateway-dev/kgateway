@@ -20,9 +20,7 @@ Kgateway is:
 
 Kgateway is feature-rich, fast, and flexible. It excels in function-level routing, supports legacy apps, microservices and serverless, offers robust discovery capabilities, integrates seamlessly with open-source projects, and is designed to support hybrid applications with various technologies, architectures, protocols, and clouds.
 
-The project was previously known as Gloo, and has been [production-ready since 2019](https://www.solo.io/blog/announcing-gloo-1-0-a-production-ready-envoy-based-api-gateway).
-
-Please see [the migration plan](https://github.com/kgateway-dev/kgateway/issues/10363) for more information and the current status of the change from Gloo to kgateway.
+The project was previously known as Gloo, and has been [production-ready since 2019](https://www.solo.io/blog/announcing-gloo-1-0-a-production-ready-envoy-based-api-gateway). Please see [the migration plan](https://github.com/kgateway-dev/kgateway/issues/10363) for more information and the current status of the change from Gloo to kgateway.
 
 ## Get involved
 - [Join us on our Slack channel](https://kgateway.dev/slack/)
