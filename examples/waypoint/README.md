@@ -110,7 +110,7 @@ CLIENT=$(kubectl get po -n httpbin -l app=curl -ojsonpath='{.items[0].metadata.n
   access-control-allow-credentials: true
   access-control-allow-origin: *
   content-type: application/json; charset=utf-8
-  date: <...ommitted...>
+  date: <...omitted...>
   content-length: 639
   x-envoy-upstream-service-time: 2
   traversed-waypoint: httpbin-waypoint
