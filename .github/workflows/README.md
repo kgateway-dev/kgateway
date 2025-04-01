@@ -1,6 +1,6 @@
 # Github Workflows
 
-## [Gloo Gateway Conformance Tests](./regression-tests.yaml)
+## [Kgateway Conformance Tests](./regression-tests.yaml)
 Conformance tests a pinned version of the [Kubernetes Gateway API Conformance suite](https://github.com/kubernetes-sigs/gateway-api/blob/main/conformance/conformance_test.go).
 
 ### Draft Pull Requests
