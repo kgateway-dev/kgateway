@@ -3,8 +3,9 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/gatewayapi"
 	"os"
+
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/gatewayapi"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/add"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/check"

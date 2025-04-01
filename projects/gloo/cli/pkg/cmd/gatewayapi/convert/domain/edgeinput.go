@@ -2,9 +2,10 @@ package domain
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	"sigs.k8s.io/yaml"
-	"strings"
 )
 
 type GlooEdgeCache struct {

@@ -2,6 +2,8 @@ package convert
 
 import (
 	"fmt"
+	"strings"
+
 	gloogwv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gatewaykube "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
 	"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1"
@@ -17,7 +19,6 @@ import (
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	apixv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
-	"strings"
 )
 
 func (g *GatewayAPIOutput) Convert() error {

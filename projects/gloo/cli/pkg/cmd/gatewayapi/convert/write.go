@@ -2,11 +2,12 @@ package convert
 
 import (
 	"fmt"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/gatewayapi/convert/domain"
 	"os"
 	"path/filepath"
-	"sigs.k8s.io/yaml"
 	"strings"
+
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/gatewayapi/convert/domain"
+	"sigs.k8s.io/yaml"
 )
 
 func (g *GatewayAPIOutput) Write(opts *Options) error {

@@ -2,10 +2,11 @@ package convert
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/gatewayapi/convert/domain"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/spf13/pflag"
-	"os"
 )
 
 type ErrorType string

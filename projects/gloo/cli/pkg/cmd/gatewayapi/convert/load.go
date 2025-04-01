@@ -3,6 +3,10 @@ package convert
 import (
 	"encoding/json"
 	"fmt"
+	"log"
+	"os"
+	"strings"
+
 	"github.com/solo-io/gloo/pkg/schemes"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gatewaykube "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
@@ -14,10 +18,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
-	"log"
-	"os"
 	"sigs.k8s.io/yaml"
-	"strings"
 )
 
 var runtimeScheme *runtime.Scheme

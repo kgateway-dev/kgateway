@@ -1,8 +1,9 @@
 package domain
 
 import (
-	"sigs.k8s.io/yaml"
 	"strings"
+
+	"sigs.k8s.io/yaml"
 )
 
 type GatewayAPICache struct {
