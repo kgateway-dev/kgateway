@@ -91,7 +91,7 @@ CLIENT=$(kubectl get po -n httpbin -l app=curl -ojsonpath='{.items[0].metadata.n
   traversed-waypoint: httpbin-waypoint
   content-length: 19
   content-type: text/plain
-  date: <...ommitted...>
+  date: <...omitted...>
   server: envoy
   
   RBAC: access denied
