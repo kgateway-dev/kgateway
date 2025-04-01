@@ -138,6 +138,11 @@ func (s *testingSuite) TestLocalRateLimitForGatewayAndRoute() {
 
 	// Also verify that the second route is rate limited
 	s.assertConsistentResponse("/path2", http.StatusTooManyRequests)
+
+	// Verify that the rate limit is removed after a token has been added to the bucket (10s)
+	// while GW rate limit is configured to add token every 300s. Therefore, the route
+	// rate limit configuration takes precedence.
+	s.assertEventualResponse("/path1", http.StatusOK)
 }
 
 // Test cases for local rate limit on a gateway and route (/path1) with disabled
@@ -215,4 +220,20 @@ func (s *testingSuite) assertConsistentResponse(path string, expectedStatus int)
 		&testmatchers.HttpResponse{
 			StatusCode: expectedStatus,
 		})
+}
+
+func (s *testingSuite) assertEventualResponse(path string, expectedStatus int) {
+	resp := s.testInstallation.Assertions.AssertEventualCurlReturnResponse(
+		s.ctx,
+		testdefaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithPath(path),
+			curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
+			curl.WithHostHeader("example.com"),
+			curl.WithPort(8080),
+		},
+		&testmatchers.HttpResponse{
+			StatusCode: expectedStatus,
+		})
+	defer resp.Body.Close()
 }
