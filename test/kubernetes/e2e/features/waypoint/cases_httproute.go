@@ -77,9 +77,11 @@ func (s *testingSuite) TestGatewayAttachedAuthorizationPolicy() {
 	s.setNamespaceWaypointOrFail(testNamespace)
 	s.applyOrFail("authz-l7.yaml", testNamespace)
 
-	// both get the route since we parent to the Gateway
-	s.assertCurlService(fromCurl, "svc-a", testNamespace, isOK)
-	s.assertCurlService(fromCurl, "svc-b", testNamespace, isOK)
+	// ensure waypoint attachment, and all requests fromCurl succeed
+	s.assertCurlService(fromCurl, "svc-a", testNamespace, hasEnvoy)
+	s.assertCurlService(fromCurl, "svc-b", testNamespace, hasEnvoy)
+
+	// ensure authz is only applied to svc-a
 	s.assertCurlService(fromNotCurl, "svc-a", testNamespace, isOK)
 	s.assertCurlService(fromNotCurl, "svc-b", testNamespace, isForbidden)
 }

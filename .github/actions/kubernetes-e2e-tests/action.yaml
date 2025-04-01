@@ -31,7 +31,7 @@ runs:
     if: ${{ inputs.cluster-name == 'cluster-ai' }}
   - name: Execute tests
     env:
-      GO_TEST_USER_ARGS: ${{ inputs.test-args }} -run "${{ inputs.run-regex }}"
+      GO_TEST_USER_ARGS: ${{ inputs.test-args }} -run "${{ inputs.run-regex }}" -v
       CLUSTER_NAME: ${{ inputs.cluster-name }}
       TEST_PKG: ./test/kubernetes/e2e/tests
       ISTIO_VERSION: ${{ inputs.istio-version }}
