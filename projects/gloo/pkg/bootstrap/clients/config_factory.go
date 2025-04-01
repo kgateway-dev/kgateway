@@ -59,7 +59,7 @@ func NewConfigFactoryParams(settings *v1.Settings,
 }
 
 // ConfigFactoryForSettings constructs a new ResourceClientFactory for Config
-// using Kubernetes, Directory, or Consul.
+// using Kubernetes, InputDir, or Consul.
 // params.memory.sharedCache, resourceCrd+params.kube.restCfg OR params.consul.consulClient must be non-nil
 func ConfigFactoryForSettings(params ConfigFactoryParams, resourceCrd crd.Crd) (factory.ResourceClientFactory, error) {
 	settings := params.settings

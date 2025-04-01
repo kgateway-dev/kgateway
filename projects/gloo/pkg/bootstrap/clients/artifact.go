@@ -17,7 +17,7 @@ import (
 )
 
 // ArtifactFactoryForSettings constructs a new ResourceClientFactory for Artifacts
-// using Kubernetes, Directory, or Consul.
+// using Kubernetes, InputDir, or Consul.
 // settings.ArtifactSource or sharedCache must be non-nil
 func ArtifactFactoryForSettings(ctx context.Context,
 	settings *v1.Settings,

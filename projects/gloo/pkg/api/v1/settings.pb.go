@@ -4562,7 +4562,7 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_goTypes = [
 	(*Settings_VaultTlsConfig)(nil),                       // 16: gloo.solo.io.Settings.VaultTlsConfig
 	(*Settings_ConsulKv)(nil),                             // 17: gloo.solo.io.Settings.ConsulKv
 	(*Settings_KubernetesConfigmaps)(nil),                 // 18: gloo.solo.io.Settings.KubernetesConfigmaps
-	(*Settings_Directory)(nil),                            // 19: gloo.solo.io.Settings.Directory
+	(*Settings_Directory)(nil),                            // 19: gloo.solo.io.Settings.InputDir
 	(*Settings_KnativeOptions)(nil),                       // 20: gloo.solo.io.Settings.KnativeOptions
 	(*Settings_DiscoveryOptions)(nil),                     // 21: gloo.solo.io.Settings.DiscoveryOptions
 	(*Settings_ConsulConfiguration)(nil),                  // 22: gloo.solo.io.Settings.ConsulConfiguration
@@ -4609,14 +4609,14 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_goTypes = [
 }
 var file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_depIdxs = []int32{
 	12,  // 0: gloo.solo.io.Settings.kubernetes_config_source:type_name -> gloo.solo.io.Settings.KubernetesCrds
-	19,  // 1: gloo.solo.io.Settings.directory_config_source:type_name -> gloo.solo.io.Settings.Directory
+	19,  // 1: gloo.solo.io.Settings.directory_config_source:type_name -> gloo.solo.io.Settings.InputDir
 	17,  // 2: gloo.solo.io.Settings.consul_kv_source:type_name -> gloo.solo.io.Settings.ConsulKv
 	13,  // 3: gloo.solo.io.Settings.kubernetes_secret_source:type_name -> gloo.solo.io.Settings.KubernetesSecrets
 	14,  // 4: gloo.solo.io.Settings.vault_secret_source:type_name -> gloo.solo.io.Settings.VaultSecrets
-	19,  // 5: gloo.solo.io.Settings.directory_secret_source:type_name -> gloo.solo.io.Settings.Directory
+	19,  // 5: gloo.solo.io.Settings.directory_secret_source:type_name -> gloo.solo.io.Settings.InputDir
 	11,  // 6: gloo.solo.io.Settings.secret_options:type_name -> gloo.solo.io.Settings.SecretOptions
 	18,  // 7: gloo.solo.io.Settings.kubernetes_artifact_source:type_name -> gloo.solo.io.Settings.KubernetesConfigmaps
-	19,  // 8: gloo.solo.io.Settings.directory_artifact_source:type_name -> gloo.solo.io.Settings.Directory
+	19,  // 8: gloo.solo.io.Settings.directory_artifact_source:type_name -> gloo.solo.io.Settings.InputDir
 	17,  // 9: gloo.solo.io.Settings.consul_kv_artifact_source:type_name -> gloo.solo.io.Settings.ConsulKv
 	44,  // 10: gloo.solo.io.Settings.refresh_rate:type_name -> google.protobuf.Duration
 	20,  // 11: gloo.solo.io.Settings.knative:type_name -> gloo.solo.io.Settings.KnativeOptions
@@ -4690,7 +4690,7 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_depIdxs = [
 	35,  // 79: gloo.solo.io.Settings.ObservabilityOptions.configStatusMetricLabels:type_name -> gloo.solo.io.Settings.ObservabilityOptions.ConfigStatusMetricLabelsEntry
 	13,  // 80: gloo.solo.io.Settings.SecretOptions.Source.kubernetes:type_name -> gloo.solo.io.Settings.KubernetesSecrets
 	14,  // 81: gloo.solo.io.Settings.SecretOptions.Source.vault:type_name -> gloo.solo.io.Settings.VaultSecrets
-	19,  // 82: gloo.solo.io.Settings.SecretOptions.Source.directory:type_name -> gloo.solo.io.Settings.Directory
+	19,  // 82: gloo.solo.io.Settings.SecretOptions.Source.directory:type_name -> gloo.solo.io.Settings.InputDir
 	56,  // 83: gloo.solo.io.Settings.DiscoveryOptions.UdsOptions.enabled:type_name -> google.protobuf.BoolValue
 	30,  // 84: gloo.solo.io.Settings.DiscoveryOptions.UdsOptions.watch_labels:type_name -> gloo.solo.io.Settings.DiscoveryOptions.UdsOptions.WatchLabelsEntry
 	56,  // 85: gloo.solo.io.Settings.DiscoveryOptions.FdsOptions.graphql_enabled:type_name -> google.protobuf.BoolValue

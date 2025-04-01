@@ -2065,7 +2065,7 @@ func (m *Settings_Directory) HashUnique(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
-	if _, err = hasher.Write([]byte("Directory")); err != nil {
+	if _, err = hasher.Write([]byte("InputDir")); err != nil {
 		return 0, err
 	}
 	if _, err = hasher.Write([]byte(m.GetDirectory())); err != nil {
@@ -2670,7 +2670,7 @@ func (m *Settings_SecretOptions_Source) HashUnique(hasher hash.Hash64) (uint64, 
 	case *Settings_SecretOptions_Source_Directory:
 
 		if h, ok := interface{}(m.GetDirectory()).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("Directory")); err != nil {
+			if _, err = hasher.Write([]byte("InputDir")); err != nil {
 				return 0, err
 			}
 			if _, err = h.Hash(hasher); err != nil {
@@ -2680,7 +2680,7 @@ func (m *Settings_SecretOptions_Source) HashUnique(hasher hash.Hash64) (uint64, 
 			if fieldValue, err := hashstructure.Hash(m.GetDirectory(), nil); err != nil {
 				return 0, err
 			} else {
-				if _, err = hasher.Write([]byte("Directory")); err != nil {
+				if _, err = hasher.Write([]byte("InputDir")); err != nil {
 					return 0, err
 				}
 				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {

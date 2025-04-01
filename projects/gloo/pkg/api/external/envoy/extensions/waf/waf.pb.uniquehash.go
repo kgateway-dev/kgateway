@@ -230,7 +230,7 @@ func (m *RuleSet) HashUnique(hasher hash.Hash64) (uint64, error) {
 
 	}
 
-	if _, err = hasher.Write([]byte("Directory")); err != nil {
+	if _, err = hasher.Write([]byte("InputDir")); err != nil {
 		return 0, err
 	}
 	if _, err = hasher.Write([]byte(m.GetDirectory())); err != nil {

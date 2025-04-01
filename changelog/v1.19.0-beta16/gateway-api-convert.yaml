@@ -1,0 +1,6 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/10738
+    resolvesIssue: true
+    description: >
+      This adds a cli command 'glooctl gateway-api convert' to convert Edge APIs to Gateway API.
