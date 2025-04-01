@@ -20,9 +20,13 @@ import (
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
+	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
 )
 
-func registerTypes() {
+// registertypes for common collections
+
+func registerTypes(ourCli versioned.Interface) {
+	// if it is a sig gateway api then it can pull directly from the kubeclientgetter
 	kubeclient.Register[*gwv1.HTTPRoute](
 		gvr.HTTPRoute_v1,
 		gvk.HTTPRoute_v1.Kubernetes(),
@@ -70,11 +74,13 @@ func InitCollections(
 	controllerName string,
 	plugins extensionsplug.Plugin,
 	istioClient kube.Client,
+	ourClient versioned.Interface,
 	refgrants *RefGrantIndex,
 	krtopts krtutil.KrtOptions,
 ) (*GatewayIndex, *RoutesIndex, *BackendIndex, krt.Collection[ir.EndpointsForBackend]) {
-	registerTypes()
+	registerTypes(ourClient)
 
+	// create the KRT clients, remember to also register any needed types in the type registration setup.
 	httpRoutes := krt.WrapClient(kclient.New[*gwv1.HTTPRoute](istioClient), krtopts.ToOptions("HTTPRoute")...)
 	tcproutes := krt.WrapClient(kclient.NewDelayedInformer[*gwv1a2.TCPRoute](istioClient, gvr.TCPRoute, kubetypes.StandardInformer, kclient.Filter{}), krtopts.ToOptions("TCPRoute")...)
 	tlsRoutes := krt.WrapClient(kclient.NewDelayedInformer[*gwv1a2.TLSRoute](istioClient, gvr.TLSRoute, kubetypes.StandardInformer, kclient.Filter{}), krtopts.ToOptions("TLSRoute")...)
@@ -89,27 +95,29 @@ func InitCollections(
 		}
 	}
 	backendIndex := NewBackendIndex(krtopts, backendRefPlugins, policies, refgrants)
-	endpointIRs := initBackends(plugins, backendIndex, krtopts)
-	kubeGateways := NewGatewayIndex(krtopts, controllerName, policies, kubeRawGateways, gatewayClasses)
+	initBackends(plugins, backendIndex)
+	endpointIRs := initEndpoints(plugins, krtopts)
+	gateways := NewGatewayIndex(krtopts, controllerName, policies, kubeRawGateways, gatewayClasses)
+
 	routes := NewRoutesIndex(krtopts, httpRoutes, tcproutes, tlsRoutes, policies, backendIndex, refgrants)
-	return kubeGateways, routes, backendIndex, endpointIRs
+	return gateways, routes, backendIndex, endpointIRs
 }
 
-func initBackends(
-	plugins extensionsplug.Plugin,
-	upstreamIndex *BackendIndex,
-	krtopts krtutil.KrtOptions,
-) krt.Collection[ir.EndpointsForBackend] {
-	allEndpoints := []krt.Collection[ir.EndpointsForBackend]{}
+func initBackends(plugins extensionsplug.Plugin, backendIndex *BackendIndex) {
 	for gk, plugin := range plugins.ContributesBackends {
 		if plugin.Backends != nil {
-			upstreamIndex.AddBackends(gk, plugin.Backends)
+			backendIndex.AddBackends(gk, plugin.Backends)
 		}
+	}
+}
+
+func initEndpoints(plugins extensionsplug.Plugin, krtopts krtutil.KrtOptions) krt.Collection[ir.EndpointsForBackend] {
+	allEndpoints := []krt.Collection[ir.EndpointsForBackend]{}
+	for _, plugin := range plugins.ContributesBackends {
 		if plugin.Endpoints != nil {
 			allEndpoints = append(allEndpoints, plugin.Endpoints)
 		}
 	}
-
 	// build Endpoint intermediate representation from kubernetes service and extensions
 	// TODO move kube service to be an extension
 	endpointIRs := krt.JoinCollection(allEndpoints, krtopts.ToOptions("EndpointIRs")...)

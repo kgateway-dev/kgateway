@@ -14,6 +14,7 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/gateway/testutils"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
 )
 
@@ -130,7 +131,7 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 						Namespace: "default",
 					},
 				}
-				routeStatus := reportsMap.BuildRouteStatus(context.TODO(), route, "")
+				routeStatus := reportsMap.BuildRouteStatus(context.TODO(), route, wellknown.GatewayControllerName)
 				Expect(routeStatus).NotTo(BeNil())
 				Expect(routeStatus.Parents).To(HaveLen(1))
 				resolvedRefs := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionResolvedRefs))
@@ -154,7 +155,7 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 						Namespace: "default",
 					},
 				}
-				routeStatus := reportsMap.BuildRouteStatus(context.TODO(), route, "")
+				routeStatus := reportsMap.BuildRouteStatus(context.TODO(), route, wellknown.GatewayControllerName)
 				Expect(routeStatus).NotTo(BeNil())
 				Expect(routeStatus.Parents).To(HaveLen(1))
 				resolvedRefs := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionResolvedRefs))
@@ -163,10 +164,10 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 			},
 		}),
 	XEntry(
-		"RouteOptions merging",
+		"TrafficPolicy merging",
 		translatorTestCase{
-			inputFile:  "route_options/merge.yaml",
-			outputFile: "route_options/merge.yaml",
+			inputFile:  "route_policy/merge.yaml",
+			outputFile: "route_policy/merge.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "gw",
@@ -188,7 +189,7 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 						Namespace: "default",
 					},
 				}
-				routeStatus := reportsMap.BuildRouteStatus(context.TODO(), route, "")
+				routeStatus := reportsMap.BuildRouteStatus(context.TODO(), route, wellknown.GatewayControllerName)
 				Expect(routeStatus).NotTo(BeNil())
 				Expect(routeStatus.Parents).To(HaveLen(1))
 				resolvedRefs := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionResolvedRefs))
@@ -213,7 +214,7 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 						Namespace: "default",
 					},
 				}
-				routeStatus := reportsMap.BuildRouteStatus(context.TODO(), route, "")
+				routeStatus := reportsMap.BuildRouteStatus(context.TODO(), route, wellknown.GatewayControllerName)
 				Expect(routeStatus).NotTo(BeNil())
 				Expect(routeStatus.Parents).To(HaveLen(1))
 				resolvedRefs := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionResolvedRefs))
@@ -238,7 +239,7 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 						Namespace: "default",
 					},
 				}
-				routeStatus := reportsMap.BuildRouteStatus(context.TODO(), route, "")
+				routeStatus := reportsMap.BuildRouteStatus(context.TODO(), route, wellknown.GatewayControllerName)
 				Expect(routeStatus).NotTo(BeNil())
 				Expect(routeStatus.Parents).To(HaveLen(1))
 				resolvedRefs := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionResolvedRefs))
@@ -273,7 +274,7 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 						Namespace: "default",
 					},
 				}
-				routeStatus := reportsMap.BuildRouteStatus(context.TODO(), route, "")
+				routeStatus := reportsMap.BuildRouteStatus(context.TODO(), route, wellknown.GatewayControllerName)
 				Expect(routeStatus).NotTo(BeNil())
 				Expect(routeStatus.Parents).To(HaveLen(1))
 				resolvedRefs := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionResolvedRefs))
@@ -298,7 +299,7 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 						Namespace: "default",
 					},
 				}
-				routeStatus := reportsMap.BuildRouteStatus(context.TODO(), route, "")
+				routeStatus := reportsMap.BuildRouteStatus(context.TODO(), route, wellknown.GatewayControllerName)
 				Expect(routeStatus).NotTo(BeNil())
 				Expect(routeStatus.Parents).To(HaveLen(1))
 				resolvedRefs := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionResolvedRefs))
@@ -323,7 +324,7 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 						Namespace: "default",
 					},
 				}
-				routeStatus := reportsMap.BuildRouteStatus(context.TODO(), route, "")
+				routeStatus := reportsMap.BuildRouteStatus(context.TODO(), route, wellknown.GatewayControllerName)
 				Expect(routeStatus).NotTo(BeNil())
 				Expect(routeStatus.Parents).To(HaveLen(1))
 				resolvedRefs := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionResolvedRefs))
@@ -374,7 +375,10 @@ var _ = DescribeTable("Route Delegation translator",
 		testutils.TestTranslation(
 			GinkgoT(),
 			context.TODO(),
-			[]string{filepath.Join(dir, "testutils/inputs/delegation", inputFile)},
+			[]string{
+				filepath.Join(dir, "testutils/inputs/delegation/common.yaml"),
+				filepath.Join(dir, "testutils/inputs/delegation", inputFile),
+			},
 			filepath.Join(dir, "testutils/outputs/delegation", inputFile),
 			types.NamespacedName{
 				Namespace: "infra",
@@ -402,12 +406,12 @@ var _ = DescribeTable("Route Delegation translator",
 	Entry("Child can be an invalid delegatee but valid standalone", "invalid_child_valid_standalone.yaml", "spec.hostnames must be unset on a delegatee route as they are inherited from the parent route"),
 	Entry("Relative paths", "relative_paths.yaml", ""),
 	Entry("Nested absolute and relative path inheritance", "nested_absolute_relative.yaml", ""),
-	XEntry("RouteOptions only on child", "route_options.yaml", ""),
-	XEntry("RouteOptions inheritance from parent", "route_options_inheritance.yaml", ""),
-	XEntry("RouteOptions ignore child override on conflict", "route_options_inheritance_child_override_ignore.yaml", ""),
-	XEntry("RouteOptions merge child override on no conflict", "route_options_inheritance_child_override_ok.yaml", ""),
-	XEntry("RouteOptions multi level inheritance with child override", "route_options_multi_level_inheritance_override_ok.yaml", ""),
-	XEntry("RouteOptions filter override merge", "route_options_filter_override_merge.yaml", ""),
-	Entry("Child route matcher does not match parent", "bug-6621.yaml", ""),
-	Entry("Multi-level multiple parents delegation", "bug-10379.yaml", ""),
+	Entry("TrafficPolicy only on child", "route_policy.yaml", ""),
+	Entry("TrafficPolicy inheritance from parent", "route_policy_inheritance.yaml", ""),
+	XEntry("TrafficPolicy ignore child override on conflict", "route_policy_inheritance_child_override_ignore.yaml", ""),
+	XEntry("TrafficPolicy merge child override on no conflict", "route_policy_inheritance_child_override_ok.yaml", ""),
+	XEntry("TrafficPolicy multi level inheritance with child override", "route_policy_multi_level_inheritance_override_ok.yaml", ""),
+	XEntry("TrafficPolicy filter override merge", "route_policy_filter_override_merge.yaml", ""),
+	Entry("Child route matcher does not match parent", "discard_invalid_child_matches.yaml", ""),
+	Entry("Multi-level multiple parents delegation", "multi_level_multiple_parents.yaml", ""),
 )

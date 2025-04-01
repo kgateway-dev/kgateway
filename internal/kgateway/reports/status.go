@@ -5,13 +5,17 @@ import (
 	"fmt"
 	"reflect"
 	"slices"
+	"strings"
 
 	"github.com/solo-io/go-utils/contextutils"
+	"istio.io/istio/pkg/ptr"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
+
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
 
 // TODO: refactor this struct + methods to better reflect the usage now in proxy_syncer
@@ -73,13 +77,17 @@ func (r *ReportMap) BuildGWStatus(ctx context.Context, gw gwv1.Gateway) *gwv1.Ga
 }
 
 // BuildRouteStatus returns a newly constructed and fully defined RouteStatus for the supplied route object
-// according to the state of the ReportMap. If the ReportMap does not have a RouteReport for the given route,
-// e.g. because it did not encounter the route during translation, or the object is an unsupported route kind,
-// nil is returned. Supported object types are:
-//
-// * HTTPRoute
-// * TCPRoute
-func (r *ReportMap) BuildRouteStatus(ctx context.Context, obj client.Object, cName string) *gwv1.RouteStatus {
+// according to the state of the ReportMap and the current status of the route.
+// The gwv1.RouteStatus returned will contain all non-gateway parents from the provided current route status
+// along with the newly built kgw status per ReportMap, sorted in deterministic fashion.
+// If the ReportMap does not have a RouteReport for the given route, e.g. because it did not encounter
+// the route during translation, or the object is an unsupported route kind, nil is returned.
+// Supported route types are: HTTPRoute, TCPRoute, TLSRoute
+func (r *ReportMap) BuildRouteStatus(
+	ctx context.Context,
+	obj client.Object,
+	cName string,
+) *gwv1.RouteStatus {
 	routeReport := r.route(obj)
 	if routeReport == nil {
 		contextutils.LoggerFrom(ctx).Infof("missing route report for %T %s/%s", obj, obj.GetName(), obj.GetNamespace())
@@ -90,11 +98,11 @@ func (r *ReportMap) BuildRouteStatus(ctx context.Context, obj client.Object, cNa
 		obj.GetObjectKind().GroupVersionKind().Kind, obj.GetNamespace(),
 		obj.GetName())
 
+	var existingStatus gwv1.RouteStatus
 	// Default to using spec.ParentRefs when building the parent statuses for a route.
 	// However, for delegatee (child) routes, the parentRefs field is optional and such routes
 	// may not specify it. In this case, we infer the parentRefs form the RouteReport
 	// corresponding to the delegatee (child) route as the route's report is associated to a parentRef.
-	var existingStatus gwv1.RouteStatus
 	var parentRefs []gwv1.ParentReference
 	switch route := obj.(type) {
 	case *gwv1.HTTPRoute:
@@ -120,10 +128,15 @@ func (r *ReportMap) BuildRouteStatus(ctx context.Context, obj client.Object, cNa
 		return nil
 	}
 
+	newStatus := gwv1.RouteStatus{}
 	// Process the parent references to build the RouteParentStatus
-	routeStatus := gwv1.RouteStatus{}
 	for _, parentRef := range parentRefs {
-		parentStatusReport := routeReport.parentRef(&parentRef)
+		parentStatusReport := routeReport.getParentRefOrNil(&parentRef)
+		if parentStatusReport == nil {
+			// report doesn't have an entry for this parentRef, meaning we didn't translate it
+			// probably because it's a parent that we don't control (e.g. Gateway from diff. controller)
+			continue
+		}
 		addMissingParentRefConditions(parentStatusReport)
 
 		// Get the status of the current parentRef conditions if they exist
@@ -158,10 +171,38 @@ func (r *ReportMap) BuildRouteStatus(ctx context.Context, obj client.Object, cNa
 			ControllerName: gwv1.GatewayController(cName),
 			Conditions:     finalConditions,
 		}
-		routeStatus.Parents = append(routeStatus.Parents, routeParentStatus)
+		newStatus.Parents = append(newStatus.Parents, routeParentStatus)
 	}
 
-	return &routeStatus
+	// now we have a status object reflecting the state of translation according to our reportMap
+	// let's add status from other controllers on the current object status
+	var kgwStatus *gwv1.RouteStatus = &newStatus
+	for _, rps := range existingStatus.Parents {
+		if rps.ControllerName != wellknown.GatewayControllerName {
+			kgwStatus.Parents = append(kgwStatus.Parents, rps)
+		}
+	}
+
+	// sort all parents for consistency with Equals and for Update
+	// match sorting semantics of istio/istio, see:
+	// https://github.com/istio/istio/blob/6dcaa0206bcaf20e3e3b4e45e9376f0f96365571/pilot/pkg/config/kube/gateway/conditions.go#L188-L193
+	slices.SortStableFunc(kgwStatus.Parents, func(a, b gwv1.RouteParentStatus) int {
+		return strings.Compare(parentString(a.ParentRef), parentString(b.ParentRef))
+	})
+
+	return &newStatus
+}
+
+// match istio/istio logic, see:
+// https://github.com/istio/istio/blob/6dcaa0206bcaf20e3e3b4e45e9376f0f96365571/pilot/pkg/config/kube/gateway/conversion.go#L2714-L2722
+func parentString(ref gwv1.ParentReference) string {
+	return fmt.Sprintf("%s/%s/%s/%s/%d.%s",
+		ptr.OrEmpty(ref.Group),
+		ptr.OrEmpty(ref.Kind),
+		ref.Name,
+		ptr.OrEmpty(ref.SectionName),
+		ptr.OrEmpty(ref.Port),
+		ptr.OrEmpty(ref.Namespace))
 }
 
 // Reports will initially only contain negative conditions found during translation,

@@ -14,9 +14,8 @@ import (
 var (
 	testAppPort = 8080
 
-	fromCurl = kubectl.PodExecOptions{Name: "curl", Namespace: testNamespace, Container: "curl"}
-	// TODO this will be used for testing AuthorizationPolicy
-	// fromNotCurl = kubectl.PodExecOptions{Name: "notcurl", Namespace: testNamespace, Container: "notcurl"}
+	fromCurl    = kubectl.PodExecOptions{Name: "curl", Namespace: testNamespace, Container: "curl"}
+	fromNotCurl = kubectl.PodExecOptions{Name: "notcurl", Namespace: testNamespace, Container: "notcurl"}
 )
 
 func (s *testingSuite) assertCurlService(
@@ -28,17 +27,17 @@ func (s *testingSuite) assertCurlService(
 }
 
 func fqdn(name, ns string) string {
+	// TODO: reevaluate knative dep, dedupe with pkg/utils/kubeutils/dns.go
 	return fmt.Sprintf("%s.%s.svc.%s", name, ns, network.GetClusterDomainName())
 }
 
-// TODO test ServiceEntry will use this
-// func (s *testingSuite) assertCurlHost(
-// 	from kubectl.PodExecOptions,
-// 	targetHost string,
-// 	matchers matchers.HttpResponse,
-// ) {
-// 	s.assertCurlInner(from, targetHost, matchers, "")
-// }
+func (s *testingSuite) assertCurlHost(
+	from kubectl.PodExecOptions,
+	targetHost string,
+	matchers matchers.HttpResponse,
+) {
+	s.assertCurlInner(from, targetHost, matchers, "")
+}
 
 func (s *testingSuite) assertCurlInner(
 	from kubectl.PodExecOptions,
@@ -54,8 +53,7 @@ func (s *testingSuite) assertCurlInner(
 		curlOpts = append(curlOpts, curl.WithHeader("Authorization", authHeader))
 	}
 
-	// even though the next assert contains an Eventually, we can't adjust the timeout
-	// for the initial successful request.20 seconds is going to cause flakes.
+	// wait for 1 good response
 	s.testInstallation.Assertions.AssertEventualCurlResponse(
 		s.ctx,
 		from,
@@ -64,7 +62,7 @@ func (s *testingSuite) assertCurlInner(
 		time.Minute,
 	)
 
-	// now make sure we didn't get lucky by using consistently
+	// then ensure it's consistently working
 	s.testInstallation.Assertions.AssertEventuallyConsistentCurlResponse(
 		s.ctx,
 		from,

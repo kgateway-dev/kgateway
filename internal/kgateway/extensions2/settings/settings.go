@@ -14,7 +14,11 @@ type Settings struct {
 	DnsLookupFamily string `split_words:"true" default:"V4_PREFERRED"`
 
 	EnableIstioIntegration bool `split_words:"true"`
-	EnableAutoMtls         bool `split_words:"true"`
+	EnableIstioAutoMtls    bool `split_words:"true"`
+
+	// IstioNamespace is the namespace where Istio control plane components are installed.
+	// Defaults to "istio-system".
+	IstioNamespace string `split_words:"true" default:"istio-system"`
 
 	// XdsServiceName is the name of the Kubernetes Service that serves xDS config.
 	// It it assumed to be in the kgateway install namespace.
@@ -28,6 +32,15 @@ type Settings struct {
 
 	// EnableInferExt defines whether to enable/disable support for Gateway API inference extension.
 	EnableInferExt bool `split_words:"true"`
+	// InferExtAutoProvision defines whether to enable/disable the Gateway API inference extension deployer.
+	InferExtAutoProvision bool `split_words:"true"`
+
+	// DefaultImageRegistry is the default image registry to use for the kgateway image.
+	DefaultImageRegistry string `split_words:"true" default:"cr.kgateway.dev"`
+	// DefaultImageTag is the default image tag to use for the kgateway image.
+	DefaultImageTag string `split_words:"true" default:""`
+	// DefaultImagePullPolicy is the default image pull policy to use for the kgateway image.
+	DefaultImagePullPolicy string `split_words:"true" default:"IfNotPresent"`
 }
 
 // BuildSettings returns a zero-valued Settings obj if error is encountered when parsing env

@@ -147,9 +147,9 @@ func NewPluginFromCollections(
 	}
 }
 
-// endpointPickerPass implements ir.ProxyTranslationPass. It collects any references to InferencePools.
+// endpointPickerPass implements ir.ProxyTranslationPass. It collects any references to IR inferencePools.
 type endpointPickerPass struct {
-	// Instead of a single pool, store multiple pools keyed by NamespacedName.
+	// usedPools defines a map of IR inferencePools keyed by NamespacedName.
 	usedPools map[types.NamespacedName]*inferencePool
 }
 
@@ -261,7 +261,7 @@ func (p *endpointPickerPass) ApplyForBackend(
 	}
 
 	// Attach per-route override to typed_per_filter_config.
-	pCtx.AddTypedConfig(wellknown.InfPoolTransformationFilterName, override)
+	pCtx.TypedFilterConfig.AddTypedConfig(wellknown.InfPoolTransformationFilterName, override)
 
 	return nil
 }
@@ -305,10 +305,11 @@ func (p *endpointPickerPass) HttpFilters(ctx context.Context, fc ir.FilterChainC
 			},
 			ProcessingMode: &extprocv3.ProcessingMode{
 				RequestHeaderMode:   extprocv3.ProcessingMode_SEND,
-				RequestBodyMode:     extprocv3.ProcessingMode_BUFFERED,
-				ResponseHeaderMode:  extprocv3.ProcessingMode_SKIP,
-				RequestTrailerMode:  extprocv3.ProcessingMode_SKIP,
-				ResponseTrailerMode: extprocv3.ProcessingMode_SKIP,
+				RequestBodyMode:     extprocv3.ProcessingMode_FULL_DUPLEX_STREAMED,
+				RequestTrailerMode:  extprocv3.ProcessingMode_SEND,
+				ResponseBodyMode:    extprocv3.ProcessingMode_FULL_DUPLEX_STREAMED,
+				ResponseHeaderMode:  extprocv3.ProcessingMode_SEND,
+				ResponseTrailerMode: extprocv3.ProcessingMode_SEND,
 			},
 			MessageTimeout:   durationpb.New(5 * time.Second),
 			FailureModeAllow: false,

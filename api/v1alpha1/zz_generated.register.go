@@ -49,14 +49,14 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&BackendList{},
 		&DirectResponse{},
 		&DirectResponseList{},
+		&GatewayExtension{},
+		&GatewayExtensionList{},
 		&GatewayParameters{},
 		&GatewayParametersList{},
 		&HTTPListenerPolicy{},
 		&HTTPListenerPolicyList{},
-		&ListenerPolicy{},
-		&ListenerPolicyList{},
-		&RoutePolicy{},
-		&RoutePolicyList{},
+		&TrafficPolicy{},
+		&TrafficPolicyList{},
 	)
 	// AddToGroupVersion allows the serialization of client types like ListOptions.
 	v1.AddToGroupVersion(scheme, SchemeGroupVersion)

@@ -27,7 +27,9 @@ type HttpRouteRuleMatchIR struct {
 	AttachedPolicies AttachedPolicies
 	Parent           *HttpRouteIR
 	// the rule that delegated to us
-	DelegateParent *HttpRouteRuleIR
+	DelegateParentRule *HttpRouteRuleIR
+	// the route that delegated to us
+	DelegateParent *HttpRouteIR
 	HasChildren    bool
 	// if there's an error, the gw-api listener to report it in.
 	ListenerParentRef gwv1.ParentReference
@@ -37,6 +39,7 @@ type HttpRouteRuleMatchIR struct {
 	Match      gwv1.HTTPRouteMatch
 	MatchIndex int
 	Name       string
+	Timeouts   *gwv1.HTTPRouteTimeouts
 }
 
 type ListenerIR struct {
@@ -60,8 +63,8 @@ type VirtualHost struct {
 
 type FilterChainMatch struct {
 	SniDomains      []string
-	PrefixRanges    []*v3.CidrRange         `protobuf:"bytes,4,rep,name=prefix_ranges,json=prefixRanges,proto3" json:"prefix_ranges,omitempty"`
-	DestinationPort *wrapperspb.UInt32Value `protobuf:"bytes,5,opt,name=destination_port,json=destinationPort,proto3" json:"destination_port,omitempty"`
+	PrefixRanges    []*v3.CidrRange
+	DestinationPort *wrapperspb.UInt32Value
 }
 
 type TlsBundle struct {
@@ -75,6 +78,7 @@ type FilterChainCommon struct {
 	Matcher              FilterChainMatch
 	FilterChainName      string
 	CustomNetworkFilters []CustomEnvoyFilter
+	NetworkFilters       []*anypb.Any
 	TLS                  *TlsBundle
 }
 
@@ -92,6 +96,7 @@ type HttpFilterChainIR struct {
 	Vhosts                  []*VirtualHost
 	AttachedPolicies        AttachedPolicies
 	AttachedNetworkPolicies AttachedPolicies
+	CustomHTTPFilters       []CustomEnvoyFilter
 }
 
 type TcpIR struct {

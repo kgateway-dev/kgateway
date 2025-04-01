@@ -64,6 +64,7 @@ clusters:
         '@type': type.googleapis.com/envoy.extensions.transport_sockets.raw_buffer.v3.RawBuffer
   type: EDS
 - connectTimeout: 5s
+  dnsLookupFamily: V4_PREFERRED
   loadAssignment:
     clusterName: backend_gwtest_azure_0
     endpoints:
@@ -131,7 +132,7 @@ clusters:
       commonHttpProtocolOptions:
         idleTimeout: 30s
       explicitHttpConfig:
-        http2ProtocolOptions: {}
+        httpProtocolOptions: {}
       httpFilters:
       - name: io.kgateway.wait
         typedConfig:
@@ -146,6 +147,7 @@ clusters:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.http.upstream_codec.v3.UpstreamCodec
 - connectTimeout: 5s
+  dnsLookupFamily: V4_PREFERRED
   loadAssignment:
     clusterName: backend_gwtest_openai_0
     endpoints:
@@ -211,7 +213,7 @@ clusters:
       commonHttpProtocolOptions:
         idleTimeout: 30s
       explicitHttpConfig:
-        http2ProtocolOptions: {}
+        httpProtocolOptions: {}
       httpFilters:
       - name: io.kgateway.wait
         typedConfig:
@@ -285,7 +287,7 @@ routes:
     routes:
     - match:
         path: /openai
-      name: http~test-route-0-httproute-route-to-upstream-gwtest-1-0-matcher-0
+      name: http~test-route-0-httproute-route-to-backend-gwtest-0-0-matcher-0
       route:
         autoHostRewrite: true
         cluster: backend_gwtest_openai_0
@@ -320,7 +322,7 @@ routes:
               value: '%REQ(X-REQUEST-ID)%'
     - match:
         path: /azure
-      name: http~test-route-1-httproute-route-to-upstream-gwtest-0-0-matcher-0
+      name: http~test-route-1-httproute-route-to-backend-gwtest-1-0-matcher-0
       route:
         autoHostRewrite: true
         cluster: backend_gwtest_azure_0

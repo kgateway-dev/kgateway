@@ -14,6 +14,12 @@ import (
 
 func TestKgatewayWaypoint(t *testing.T) {
 	ctx := context.Background()
+
+	// Set Istio version if not already set
+	if os.Getenv("ISTIO_VERSION") == "" {
+		os.Setenv("ISTIO_VERSION", "1.23.0") // Using minimum required version for ambient mode
+	}
+
 	installNs, nsEnvPredefined := envutils.LookupOrDefault(testutils.InstallNamespace, "kgateway-waypoint-test")
 	testInstallation := e2e.CreateTestInstallation(
 		t,
@@ -50,7 +56,12 @@ func TestKgatewayWaypoint(t *testing.T) {
 	}
 
 	// Install the ambient profile to enable zTunnel
-	err = testInstallation.InstallRevisionedIstio(ctx, "kgateway-waypoint-rev", "ambient")
+	err = testInstallation.InstallRevisionedIstio(
+		ctx, "kgateway-waypoint-rev", "ambient",
+		// required for ServiceEntry usage
+		// enabled by default in 1.25; we test as far back as 1.23
+		"--set", "values.cni.ambient.dnsCapture=true",
+	)
 	if err != nil {
 		t.Fatal(err)
 	}

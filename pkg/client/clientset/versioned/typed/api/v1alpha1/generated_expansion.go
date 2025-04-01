@@ -6,10 +6,10 @@ type BackendExpansion interface{}
 
 type DirectResponseExpansion interface{}
 
+type GatewayExtensionExpansion interface{}
+
 type GatewayParametersExpansion interface{}
 
 type HTTPListenerPolicyExpansion interface{}
 
-type ListenerPolicyExpansion interface{}
-
-type RoutePolicyExpansion interface{}
+type TrafficPolicyExpansion interface{}

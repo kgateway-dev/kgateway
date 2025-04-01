@@ -12,6 +12,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -33,16 +34,37 @@ const (
 	InferencePoolField = "inferencepool-index"
 )
 
+// ClassInfo describes the desired configuration for a GatewayClass.
+type ClassInfo struct {
+	// Description is a human-readable description of the GatewayClass.
+	Description string
+	// Labels are the labels to be added to the GatewayClass.
+	Labels map[string]string
+	// Annotations are the annotations to be added to the GatewayClass.
+	Annotations map[string]string
+	// ParametersRef is the reference to the GatewayParameters object.
+	ParametersRef *apiv1.ParametersReference
+}
+
 // TODO [danehans]: Refactor so controller config is organized into shared and Gateway/InferencePool-specific controllers.
 type GatewayConfig struct {
 	Mgr manager.Manager
-
-	Dev            bool
+	// Dev enables development mode for the controller.
+	Dev bool
+	// ControllerName is the name of the controller. Any GatewayClass objects
+	// managed by this controller must have this name as their ControllerName.
 	ControllerName string
-	AutoProvision  bool
-
-	ControlPlane            deployer.ControlPlaneInfo
-	IstioIntegrationEnabled bool
+	// AutoProvision enables auto-provisioning of GatewayClasses.
+	AutoProvision bool
+	// ControlPlane sets the default control plane information the deployer will use.
+	ControlPlane deployer.ControlPlaneInfo
+	// IstioAutoMtlsEnabled enables istio auto mtls mode for the controller,
+	// resulting in the deployer to enable istio and sds sidecars on the deployed proxies.
+	IstioAutoMtlsEnabled bool
+	// ImageInfo sets the default image information the deployer will use.
+	ImageInfo *deployer.ImageInfo
+	// ClassInfo sets the default configuration for GatewayClasses managed by this controller.
+	ClassInfo map[string]*ClassInfo
 }
 
 func NewBaseGatewayController(ctx context.Context, cfg GatewayConfig) error {
@@ -57,7 +79,8 @@ func NewBaseGatewayController(ctx context.Context, cfg GatewayConfig) error {
 		},
 	}
 
-	return run(ctx,
+	return run(
+		ctx,
 		controllerBuilder.watchGwClass,
 		controllerBuilder.watchGw,
 		controllerBuilder.addIndexes,
@@ -142,10 +165,11 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 
 	log.Info("creating gateway deployer", "ctrlname", c.cfg.ControllerName, "server", c.cfg.ControlPlane.XdsHost, "port", c.cfg.ControlPlane.XdsPort)
 	d, err := deployer.NewDeployer(c.cfg.Mgr.GetClient(), &deployer.Inputs{
-		ControllerName:          c.cfg.ControllerName,
-		Dev:                     c.cfg.Dev,
-		IstioIntegrationEnabled: c.cfg.IstioIntegrationEnabled,
-		ControlPlane:            c.cfg.ControlPlane,
+		ControllerName:       c.cfg.ControllerName,
+		Dev:                  c.cfg.Dev,
+		IstioAutoMtlsEnabled: c.cfg.IstioAutoMtlsEnabled,
+		ControlPlane:         c.cfg.ControlPlane,
+		ImageInfo:            c.cfg.ImageInfo,
 	})
 	if err != nil {
 		return err
@@ -188,7 +212,8 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 				})
 			}
 			return reqs
-		}))
+		}),
+	)
 	// watch for gatewayclasses managed by our controller and enqueue related gateways
 	buildr.Watches(
 		&apiv1.GatewayClass{},
@@ -283,15 +308,6 @@ func (c *controllerBuilder) watchInferencePool(ctx context.Context) error {
 		return fmt.Errorf("failed to register HTTPRoute index: %w", err)
 	}
 
-	// Create a deployer using the controllerBuilder as inputs.
-	d, err := deployer.NewDeployer(c.cfg.Mgr.GetClient(), &deployer.Inputs{
-		ControllerName:     c.cfg.ControllerName,
-		InferenceExtension: c.poolCfg.InferenceExt,
-	})
-	if err != nil {
-		return err
-	}
-
 	buildr := ctrl.NewControllerManagedBy(c.cfg.Mgr).
 		For(&infextv1a2.InferencePool{}, builder.WithPredicates(
 			predicate.Or(
@@ -338,35 +354,45 @@ func (c *controllerBuilder) watchInferencePool(ctx context.Context) error {
 			return reqs
 		}))
 
-	// Watch child objects, e.g. Deployments, created by the inference pool deployer.
-	gvks, err := d.GetGvksToWatch(ctx)
-	if err != nil {
-		return err
-	}
-	for _, gvk := range gvks {
-		obj, err := c.cfg.Mgr.GetScheme().New(gvk)
+	// If enabled, create a deployer using the controllerBuilder as inputs.
+	if c.poolCfg.InferenceExt != nil {
+		d, err := deployer.NewDeployer(c.cfg.Mgr.GetClient(), &deployer.Inputs{
+			ControllerName:     c.cfg.ControllerName,
+			ImageInfo:          c.cfg.ImageInfo,
+			InferenceExtension: c.poolCfg.InferenceExt,
+		})
 		if err != nil {
 			return err
 		}
-		clientObj, ok := obj.(client.Object)
-		if !ok {
-			return fmt.Errorf("object %T is not a client.Object", obj)
+		// Watch child objects, e.g. Deployments, created by the inference pool deployer.
+		gvks, err := d.GetGvksToWatch(ctx)
+		if err != nil {
+			return err
 		}
-		log.Info("watching gvk as inferencepool child", "gvk", gvk)
-		var opts []builder.OwnsOption
-		if shouldIgnoreStatusChild(gvk) {
-			opts = append(opts, builder.WithPredicates(predicate.GenerationChangedPredicate{}))
+		for _, gvk := range gvks {
+			obj, err := c.cfg.Mgr.GetScheme().New(gvk)
+			if err != nil {
+				return err
+			}
+			clientObj, ok := obj.(client.Object)
+			if !ok {
+				return fmt.Errorf("object %T is not a client.Object", obj)
+			}
+			log.Info("watching gvk as inferencepool child", "gvk", gvk)
+			var opts []builder.OwnsOption
+			if shouldIgnoreStatusChild(gvk) {
+				opts = append(opts, builder.WithPredicates(predicate.GenerationChangedPredicate{}))
+			}
+			buildr.Owns(clientObj, opts...)
 		}
-		buildr.Owns(clientObj, opts...)
-	}
-
-	r := &inferencePoolReconciler{
-		cli:      c.cfg.Mgr.GetClient(),
-		scheme:   c.cfg.Mgr.GetScheme(),
-		deployer: d,
-	}
-	if err := buildr.Complete(r); err != nil {
-		return err
+		r := &inferencePoolReconciler{
+			cli:      c.cfg.Mgr.GetClient(),
+			scheme:   c.cfg.Mgr.GetScheme(),
+			deployer: d,
+		}
+		if err := buildr.Complete(r); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -379,16 +405,19 @@ func shouldIgnoreStatusChild(gvk schema.GroupVersionKind) bool {
 
 func (c *controllerBuilder) watchGwClass(_ context.Context) error {
 	return ctrl.NewControllerManagedBy(c.cfg.Mgr).
+		For(&apiv1.GatewayClass{}, builder.WithPredicates(predicate.Funcs{
+			CreateFunc:  func(e event.CreateEvent) bool { return true },
+			DeleteFunc:  func(e event.DeleteEvent) bool { return false },
+			UpdateFunc:  func(e event.UpdateEvent) bool { return true },
+			GenericFunc: func(e event.GenericEvent) bool { return false },
+		})).
 		WithEventFilter(predicate.GenerationChangedPredicate{}).
 		WithEventFilter(predicate.NewPredicateFuncs(func(object client.Object) bool {
 			// we only care about GatewayClasses that use our controller name
-			if gwClass, ok := object.(*apiv1.GatewayClass); ok {
-				return gwClass.Spec.ControllerName == apiv1.GatewayController(c.cfg.ControllerName)
-			}
-			return false
+			gwClass, ok := object.(*apiv1.GatewayClass)
+			return ok && gwClass.Spec.ControllerName == apiv1.GatewayController(c.cfg.ControllerName)
 		})).
-		For(&apiv1.GatewayClass{}).
-		Complete(reconcile.Func(c.reconciler.ReconcileGatewayClasses))
+		Complete(c.reconciler)
 }
 
 type controllerReconciler struct {
@@ -396,7 +425,7 @@ type controllerReconciler struct {
 	scheme *runtime.Scheme
 }
 
-func (r *controllerReconciler) ReconcileGatewayClasses(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *controllerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := log.FromContext(ctx).WithValues("gwclass", req.NamespacedName)
 
 	gwclass := &apiv1.GatewayClass{}
@@ -410,24 +439,22 @@ func (r *controllerReconciler) ReconcileGatewayClasses(ctx context.Context, req 
 
 	log.Info("reconciling gateway class")
 
-	// mark it as accepted:
-	acceptedCondition := metav1.Condition{
+	meta.SetStatusCondition(&gwclass.Status.Conditions, metav1.Condition{
 		Type:               string(apiv1.GatewayClassConditionStatusAccepted),
 		Status:             metav1.ConditionTrue,
 		Reason:             string(apiv1.GatewayClassReasonAccepted),
 		ObservedGeneration: gwclass.Generation,
-		// no need to set LastTransitionTime, it will be set automatically by SetStatusCondition
-	}
-	meta.SetStatusCondition(&gwclass.Status.Conditions, acceptedCondition)
+		Message:            "GatewayClass accepted by kgateway controller",
+	})
 
 	// TODO: This should actually check the version of the CRDs in the cluster to be 100% sure
-	supportedVersionCondition := metav1.Condition{
+	meta.SetStatusCondition(&gwclass.Status.Conditions, metav1.Condition{
 		Type:               string(apiv1.GatewayClassConditionStatusSupportedVersion),
 		Status:             metav1.ConditionTrue,
 		ObservedGeneration: gwclass.Generation,
 		Reason:             string(apiv1.GatewayClassReasonSupportedVersion),
-	}
-	meta.SetStatusCondition(&gwclass.Status.Conditions, supportedVersionCondition)
+		Message:            "Gateway API version supported by kgateway controller",
+	})
 
 	if err := r.cli.Status().Update(ctx, gwclass); err != nil {
 		return ctrl.Result{}, err

@@ -7,6 +7,7 @@ import (
 
 	clusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	endpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoy_upstreams_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
@@ -49,6 +50,17 @@ func (t *BackendTranslator) TranslateBackend(
 		return nil, errors.New("no backend plugin found for " + gk.String())
 	}
 
+	if backend.Errors != nil {
+		// the backend has errors so we can't translate our real cluster
+		// so return a blackhole cluster instead. (in case a consumer attempts to use it)
+		// also return the errors to signify to callers it's not a dev error but a real error
+		// from backend object translation.
+		// this cluster will ultimately be dropped before it added to the xDS snapshot
+		// see: internal/kgateway/proxy_syncer/perclient.go
+		out := buildBlackholeCluster(&backend)
+		return out, errors.Join(backend.Errors...)
+	}
+
 	out := initializeCluster(backend)
 	process.InitBackend(context.TODO(), backend, out)
 	processDnsLookupFamily(out, t.CommonCols)
@@ -57,6 +69,53 @@ func (t *BackendTranslator) TranslateBackend(
 	t.runPolicies(kctx, context.TODO(), ucc, backend, out)
 	return out, nil
 }
+
+func (t *BackendTranslator) runPolicies(
+	kctx krt.HandlerContext,
+	ctx context.Context,
+	ucc ir.UniqlyConnectedClient,
+	backend ir.BackendObjectIR,
+	out *clusterv3.Cluster,
+) {
+	for gk, policyPlugin := range t.ContributedPolicies {
+		// TODO: in theory it would be nice to do `ProcessBackend` once, and only do
+		// the the per-client processing for each client.
+		// that would require refactoring and thinking about the proper IR, so we'll punt on that for
+		// now, until we have more backend plugin examples to properly understand what it should look
+		// like.
+		if policyPlugin.PerClientProcessBackend != nil {
+			policyPlugin.PerClientProcessBackend(kctx, ctx, ucc, backend, out)
+		}
+
+		if policyPlugin.ProcessBackend == nil {
+			continue
+		}
+		for _, polAttachment := range backend.AttachedPolicies.Policies[gk] {
+			policyPlugin.ProcessBackend(ctx, polAttachment.PolicyIr, backend, out)
+		}
+	}
+}
+
+var (
+	h2Options = func() *anypb.Any {
+		http2ProtocolOptions := &envoy_upstreams_v3.HttpProtocolOptions{
+			UpstreamProtocolOptions: &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig_{
+				ExplicitHttpConfig: &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig{
+					ProtocolConfig: &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig_Http2ProtocolOptions{
+						Http2ProtocolOptions: &envoy_config_core_v3.Http2ProtocolOptions{},
+					},
+				},
+			},
+		}
+
+		a, err := utils.MessageToAny(http2ProtocolOptions)
+		if err != nil {
+			// should never happen - all values are known ahead of time.
+			panic(err)
+		}
+		return a
+	}()
+)
 
 // processDnsLookupFamily modifies clusters that use DNS-based discovery in the following way:
 // 1. explicitly default to 'V4_PREFERRED' (as opposed to the envoy default of effectively V6_PREFERRED)
@@ -96,53 +155,6 @@ func processDnsLookupFamily(out *clusterv3.Cluster, cc *common.CommonCollections
 	}
 }
 
-func (t *BackendTranslator) runPolicies(
-	kctx krt.HandlerContext,
-	ctx context.Context,
-	ucc ir.UniqlyConnectedClient,
-	backend ir.BackendObjectIR,
-	out *clusterv3.Cluster,
-) {
-	for gk, policyPlugin := range t.ContributedPolicies {
-		// TODO: in theory it would be nice to do `ProcessBackend` once, and only do
-		// the the per-client processing for each client.
-		// that would require refactoring and thinking about the proper IR, so we'll punt on that for
-		// now, until we have more backend plugin examples to properly understand what it should look
-		// like.
-		if policyPlugin.PerClientProcessBackend != nil {
-			policyPlugin.PerClientProcessBackend(kctx, ctx, ucc, backend, out)
-		}
-
-		if policyPlugin.ProcessBackend == nil {
-			continue
-		}
-		for _, pol := range backend.AttachedPolicies.Policies[gk] {
-			policyPlugin.ProcessBackend(ctx, pol.PolicyIr, backend, out)
-		}
-	}
-}
-
-var (
-	h2Options = func() *anypb.Any {
-		http2ProtocolOptions := &envoy_upstreams_v3.HttpProtocolOptions{
-			UpstreamProtocolOptions: &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig_{
-				ExplicitHttpConfig: &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig{
-					ProtocolConfig: &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig_Http2ProtocolOptions{
-						Http2ProtocolOptions: &envoy_config_core_v3.Http2ProtocolOptions{},
-					},
-				},
-			},
-		}
-
-		a, err := utils.MessageToAny(http2ProtocolOptions)
-		if err != nil {
-			// should never happen - all values are known ahead of time.
-			panic(err)
-		}
-		return a
-	}()
-)
-
 func translateAppProtocol(appProtocol ir.AppProtocol) map[string]*anypb.Any {
 	typedExtensionProtocolOptions := map[string]*anypb.Any{}
 	switch appProtocol {
@@ -176,35 +188,6 @@ func initializeCluster(u ir.BackendObjectIR) *clusterv3.Cluster {
 		//	PreconnectPolicy:          preconnect,
 	}
 
-	//	if sslConfig := upstream.GetSslConfig(); sslConfig != nil {
-	//		applyDefaultsToUpstreamSslConfig(sslConfig, t.settings.GetUpstreamOptions())
-	//		cfg, err := utils.NewSslConfigTranslator().ResolveUpstreamSslConfig(*secrets, sslConfig)
-	//		if err != nil {
-	//			// if we are configured to warn on missing tls secret and we match that error, add a
-	//			// warning instead of error to the report.
-	//			if t.settings.GetGateway().GetValidation().GetWarnMissingTlsSecret().GetValue() &&
-	//				errors.Is(err, utils.SslSecretNotFoundError) {
-	//				errorList = append(errorList, &Warning{
-	//					Message: err.Error(),
-	//				})
-	//			} else {
-	//				errorList = append(errorList, err)
-	//			}
-	//		} else {
-	//			typedConfig, err := utils.MessageToAny(cfg)
-	//			if err != nil {
-	//				// TODO: Need to change the upstream to use a direct response action instead of leaving the upstream untouched
-	//				// Difficult because direct response is not on the upsrtream but on the virtual host
-	//				// The fallback listener would take much more piping as well
-	//				panic(err)
-	//			} else {
-	//				out.TransportSocket = &envoy_config_core_v3.TransportSocket{
-	//					Name:       wellknown.TransportSocketTls,
-	//					ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{TypedConfig: typedConfig},
-	//				}
-	//			}
-	//		}
-	//	}
 	// proxyprotocol may be wiped by some plugins that transform transport sockets
 	// see static and failover at time of writing.
 	//	if upstream.GetProxyProtocolVersion() != nil {
@@ -217,9 +200,20 @@ func initializeCluster(u ir.BackendObjectIR) *clusterv3.Cluster {
 	//		}
 	//	}
 	//
-	//	// set Type = EDS if we have endpoints for the upstream
-	//	if eds {
-	//		xds.SetEdsOnCluster(out, t.settings)
-	//	}
+	return out
+}
+
+func buildBlackholeCluster(u *ir.BackendObjectIR) *clusterv3.Cluster {
+	out := &clusterv3.Cluster{
+		Name:     u.ClusterName(),
+		Metadata: new(envoy_config_core_v3.Metadata),
+		ClusterDiscoveryType: &clusterv3.Cluster_Type{
+			Type: clusterv3.Cluster_STATIC,
+		},
+		LoadAssignment: &endpointv3.ClusterLoadAssignment{
+			ClusterName: u.ClusterName(),
+			Endpoints:   []*endpointv3.LocalityLbEndpoints{},
+		},
+	}
 	return out
 }

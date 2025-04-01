@@ -30,7 +30,7 @@ var (
 			Namespace: "default",
 		},
 	}
-	routePolicy = &v1alpha1.RoutePolicy{
+	trafficPolicy = &v1alpha1.TrafficPolicy{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "requestresponse-transformer",
 			Namespace: "default",

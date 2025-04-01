@@ -7,6 +7,7 @@ import (
 	"maps"
 	"time"
 
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 
@@ -28,7 +29,7 @@ import (
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
-	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
+	plug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator"
@@ -49,7 +50,7 @@ type ProxySyncer struct {
 	mgr        manager.Manager
 	commonCols *common.CommonCollections
 	translator *translator.CombinedTranslator
-	plugins    extensionsplug.Plugin
+	plugins    plug.Plugin
 
 	istioClient     kube.Client
 	proxyTranslator ProxyTranslator
@@ -57,6 +58,7 @@ type ProxySyncer struct {
 	uniqueClients krt.Collection[ir.UniqlyConnectedClient]
 
 	statusReport            krt.Singleton[report]
+	backendPolicyReport     krt.Singleton[GKPolicyReport]
 	mostXdsSnapshots        krt.Collection[GatewayXdsResources]
 	perclientSnapCollection krt.Collection[XdsSnapWrapper]
 
@@ -128,7 +130,7 @@ func NewProxySyncer(
 	mgr manager.Manager,
 	client kube.Client,
 	uniqueClients krt.Collection[ir.UniqlyConnectedClient],
-	mergedPlugins extensionsplug.Plugin,
+	mergedPlugins plug.Plugin,
 	commonCols *common.CommonCollections,
 	xdsCache envoycache.SnapshotCache,
 ) *ProxySyncer {
@@ -181,7 +183,8 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) erro
 	ctx = contextutils.WithLogger(ctx, "k8s-gw-proxy-syncer")
 	logger := contextutils.LoggerFrom(ctx)
 
-	finalBackends := krt.JoinCollection(s.commonCols.BackendIndex.Backends(), krtopts.ToOptions("FinalUpstreams")...)
+	// all backends with policies attached in a single collection
+	finalBackends := krt.JoinCollection(s.commonCols.BackendIndex.BackendsWithPolicy(), krtopts.ToOptions("FinalBackends")...)
 
 	s.translator.Init(ctx)
 
@@ -210,6 +213,7 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) erro
 		finalBackends,
 		s.uniqueClients,
 	)
+
 	s.perclientSnapCollection = snapshotPerClient(
 		logger.Desugar(),
 		krtopts,
@@ -218,6 +222,12 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) erro
 		epPerClient,
 		clustersPerClient,
 	)
+
+	s.backendPolicyReport = krt.NewSingleton(func(kctx krt.HandlerContext) *GKPolicyReport {
+		backends := krt.Fetch(kctx, finalBackends)
+		gkPolReport := generatePolicyReport(convertBackends(backends))
+		return gkPolReport
+	}, krtopts.ToOptions("BackendsPolicyReport")...)
 
 	// as proxies are created, they also contain a reportMap containing status for the Gateway and associated xRoutes (really parentRefs)
 	// here we will merge reports that are per-Proxy to a singleton Report used to persist to k8s on a timer
@@ -283,12 +293,9 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) erro
 func (s *ProxySyncer) Start(ctx context.Context) error {
 	logger := contextutils.LoggerFrom(ctx)
 	logger.Infof("starting %s Proxy Syncer", s.controllerName)
-	// latestReport will be constantly updated to contain the merged status report for Kube Gateway status
-	// when timer ticks, we will use the state of the mergedReports at that point in time to sync the status to k8s
-	latestReportQueue := utils.NewAsyncQueue[reports.ReportMap]()
-	logger.Infof("waiting for cache to sync")
 
 	// wait for krt collections to sync
+	logger.Infof("waiting for cache to sync")
 	s.istioClient.WaitForCacheSync(
 		"kube gw proxy syncer",
 		ctx.Done(),
@@ -299,10 +306,13 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 	if !s.mgr.GetCache().WaitForCacheSync(ctx) {
 		return errors.New("kube gateway sync loop waiting for all caches to sync failed")
 	}
-
 	logger.Infof("caches warm!")
 
 	// caches are warm, now we can do registrations
+
+	// latestReport will be constantly updated to contain the merged status report for Kube Gateway status
+	// when timer ticks, we will use the state of the mergedReports at that point in time to sync the status to k8s
+	latestReportQueue := utils.NewAsyncQueue[reports.ReportMap]()
 	s.statusReport.Register(func(o krt.Event[report]) {
 		if o.Event == controllers.EventDelete {
 			// TODO: handle garbage collection (see: https://github.com/solo-io/solo-projects/issues/7086)
@@ -310,38 +320,39 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 		}
 		latestReportQueue.Enqueue(o.Latest().reportMap)
 	})
-
 	go func() {
-		timer := time.NewTicker(time.Second * 1)
 		for {
-			select {
-			case <-ctx.Done():
-				logger.Debug("context done, stopping proxy syncer")
+			latestReport, err := latestReportQueue.Dequeue(ctx)
+			if err != nil {
 				return
-			case <-timer.C:
-				//				panic("TODO: implement status for plugins")
-				/*
-					snaps := s.mostXdsSnapshots.List()
-					for _, snapWrap := range snaps {
-						var proxiesWithReports []translatorutils.ProxyWithReports
-						proxiesWithReports = append(proxiesWithReports, snapWrap.Reports)
-
-						initStatusPlugins(ctx, proxiesWithReports, snapWrap.pluginRegistry)
-					}
-					for _, snapWrap := range snaps {
-						err := s.proxyTranslator.syncStatus(ctx, snapWrap.proxyKey, snapWrap.fullReports)
-						if err != nil {
-							logger.Errorf("error while syncing proxy '%s': %s", snapWrap.proxyKey, err.Error())
-						}
-
-						var proxiesWithReports []translatorutils.ProxyWithReports
-						proxiesWithReports = append(proxiesWithReports, snapWrap.proxyWithReport)
-						applyStatusPlugins(ctx, proxiesWithReports, snapWrap.pluginRegistry)
-					}
-				*/
 			}
+			s.syncGatewayStatus(ctx, latestReport)
+			s.syncRouteStatus(ctx, latestReport)
 		}
 	}()
+
+	latestBePolReportQueue := utils.NewAsyncQueue[GKPolicyReport]()
+	s.backendPolicyReport.Register(func(o krt.Event[GKPolicyReport]) {
+		if o.Event == controllers.EventDelete {
+			return
+		}
+		latestBePolReportQueue.Enqueue(o.Latest())
+	})
+	go func() {
+		for {
+			latestReport, err := latestBePolReportQueue.Dequeue(ctx)
+			if err != nil {
+				return
+			}
+			s.syncBackendPolicyStatus(ctx, latestReport)
+		}
+	}()
+
+	for _, regFunc := range s.plugins.ContributesRegistration {
+		if regFunc != nil {
+			regFunc()
+		}
+	}
 
 	s.perclientSnapCollection.RegisterBatch(func(o []krt.Event[XdsSnapWrapper], initialSync bool) {
 		for _, e := range o {
@@ -357,16 +368,6 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 		}
 	}, true)
 
-	go func() {
-		for {
-			latestReport, err := latestReportQueue.Dequeue(ctx)
-			if err != nil {
-				return
-			}
-			s.syncGatewayStatus(ctx, latestReport)
-			s.syncRouteStatus(ctx, latestReport)
-		}
-	}()
 	<-ctx.Done()
 	return nil
 }
@@ -379,21 +380,32 @@ func (s *ProxySyncer) syncRouteStatus(ctx context.Context, rm reports.ReportMap)
 	defer stopwatch.Stop(ctx)
 
 	// Helper function to sync route status with retry
-	syncStatusWithRetry := func(routeType string, routeKey client.ObjectKey, getRouteFunc func() client.Object, statusUpdater func(route client.Object) error) error {
-		return retry.Do(func() error {
-			route := getRouteFunc()
-			err := s.mgr.GetClient().Get(ctx, routeKey, route)
-			if err != nil {
-				logger.Errorw(fmt.Sprintf("%s get failed", routeType), "error", err, "route", routeKey)
-				return err
-			}
-			if err := statusUpdater(route); err != nil {
-				logger.Debugw(fmt.Sprintf("%s status update attempt failed", routeType), "error", err,
-					"route", fmt.Sprintf("%s.%s", routeKey.Namespace, routeKey.Name))
-				return err
-			}
-			return nil
-		},
+	syncStatusWithRetry := func(
+		routeType string,
+		routeKey client.ObjectKey,
+		getRouteFunc func() client.Object,
+		statusUpdater func(route client.Object) error,
+	) error {
+		return retry.Do(
+			func() error {
+				route := getRouteFunc()
+				err := s.mgr.GetClient().Get(ctx, routeKey, route)
+				if err != nil {
+					if apierrors.IsNotFound(err) {
+						// the route is not found, we can't report status on it
+						// if it's recreated, we'll retranslate it anyway
+						return nil
+					}
+					logger.Errorw(fmt.Sprintf("%s get failed", routeType), "error", err, "route", routeKey)
+					return err
+				}
+				if err := statusUpdater(route); err != nil {
+					logger.Debugw(fmt.Sprintf("%s status update attempt failed", routeType), "error", err,
+						"route", fmt.Sprintf("%s.%s", routeKey.Namespace, routeKey.Name))
+					return err
+				}
+				return nil
+			},
 			retry.Attempts(5),
 			retry.Delay(100*time.Millisecond),
 			retry.DelayType(retry.BackOffDelay),
@@ -403,7 +415,6 @@ func (s *ProxySyncer) syncRouteStatus(ctx context.Context, rm reports.ReportMap)
 	// Helper function to build route status and update if needed
 	buildAndUpdateStatus := func(route client.Object, routeType string) error {
 		var status *gwv1.RouteStatus
-
 		switch r := route.(type) {
 		case *gwv1.HTTPRoute:
 			status = rm.BuildRouteStatus(ctx, r, s.controllerName)
@@ -434,9 +445,16 @@ func (s *ProxySyncer) syncRouteStatus(ctx context.Context, rm reports.ReportMap)
 
 	// Sync HTTPRoute statuses
 	for rnn := range rm.HTTPRoutes {
-		err := syncStatusWithRetry(wellknown.HTTPRouteKind, rnn, func() client.Object { return new(gwv1.HTTPRoute) }, func(route client.Object) error {
-			return buildAndUpdateStatus(route, wellknown.HTTPRouteKind)
-		})
+		err := syncStatusWithRetry(
+			wellknown.HTTPRouteKind,
+			rnn,
+			func() client.Object {
+				return new(gwv1.HTTPRoute)
+			},
+			func(route client.Object) error {
+				return buildAndUpdateStatus(route, wellknown.HTTPRouteKind)
+			},
+		)
 		if err != nil {
 			logger.Errorw("all attempts failed at updating HTTPRoute status", "error", err, "route", rnn)
 		}
@@ -507,18 +525,19 @@ func (s *ProxySyncer) syncGatewayStatus(ctx context.Context, rm reports.ReportMa
 	logger.Debugf("synced gw status for %d gateways in %s", len(rm.Gateways), duration.String())
 }
 
-//func applyPostTranslationPlugins(ctx context.Context, pluginRegistry registry.PluginRegistry, translationContext *gwplugins.PostTranslationContext) {
-//	ctx = contextutils.WithLogger(ctx, "postTranslation")
-//	logger := contextutils.LoggerFrom(ctx)
-//
-//	for _, postTranslationPlugin := range pluginRegistry.GetPostTranslationPlugins() {
-//		err := postTranslationPlugin.ApplyPostTranslationPlugin(ctx, translationContext)
-//		if err != nil {
-//			logger.Errorf("Error applying post-translation plugin: %v", err)
-//			continue
-//		}
-//	}
-//}
+// syncGatewayStatus will build and update status for all Gateways in a reportMap
+func (s *ProxySyncer) syncBackendPolicyStatus(ctx context.Context, report GKPolicyReport) {
+	for gk, polReport := range report.SeenPolicies {
+		for k, v := range s.plugins.ContributesPolicies {
+			if gk != k.String() {
+				continue
+			}
+			if v.ProcessPolicyStatus != nil {
+				v.ProcessPolicyStatus(ctx, gk, polReport)
+			}
+		}
+	}
+}
 
 var opts = cmp.Options{
 	cmpopts.IgnoreFields(metav1.Condition{}, "LastTransitionTime"),

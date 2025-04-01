@@ -23,3 +23,13 @@ func AppendIfMissing(slice []string, value string) []string {
 	}
 	return append(slice, value)
 }
+
+// TruncateMaxLength returns a string truncated to the specified maximum length.
+// If the string is already shorter than or equal to maxLen, it returns the original string.
+// Otherwise, it returns the string truncated to maxLen characters.
+func TruncateMaxLength(s string, maxLen int) string {
+	if len(s) <= maxLen {
+		return s
+	}
+	return s[:maxLen]
+}

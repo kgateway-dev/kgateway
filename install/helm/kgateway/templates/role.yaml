@@ -73,10 +73,10 @@ rules:
   resources:
   - backends
   - directresponses
+  - gatewayextensions
   - gatewayparameters
   - httplistenerpolicies
-  - listenerpolicies
-  - routepolicies
+  - trafficpolicies
   verbs:
   - get
   - list
@@ -86,10 +86,10 @@ rules:
   resources:
   - backends/status
   - directresponses/status
+  - gatewayextensions/status
   - gatewayparameters/status
   - httplistenerpolicies/status
-  - listenerpolicies/status
-  - routepolicies/status
+  - trafficpolicies/status
   verbs:
   - get
   - patch
@@ -98,7 +98,6 @@ rules:
   - gateway.networking.k8s.io
   resources:
   - backendtlspolicies
-  - gatewayclasses
   - gateways
   - httproutes
   - referencegrants
@@ -121,9 +120,28 @@ rules:
   - patch
   - update
 - apiGroups:
+  - gateway.networking.k8s.io
+  resources:
+  - gatewayclasses
+  verbs:
+  - create
+  - get
+  - list
+  - watch
+- apiGroups:
   - networking.istio.io
   resources:
   - destinationrules
+  - serviceentries
+  - workloadentries
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - security.istio.io
+  resources:
+  - authorizationpolicies
   verbs:
   - get
   - list

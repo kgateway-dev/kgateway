@@ -49,6 +49,7 @@ func convertAccessLogConfig(
 	for idx, log := range configs {
 		if log.GrpcService != nil && log.GrpcService.BackendRef != nil {
 			backend, err := commoncol.BackendIndex.GetBackendFromRef(krtctx, parentSrc, log.GrpcService.BackendRef.BackendObjectReference)
+			// TODO: what is the correct behavior? maybe route to static blackhole?
 			if err != nil {
 				return nil, fmt.Errorf("failed to get backend from ref: %s", err.Error())
 			}
@@ -401,7 +402,7 @@ func copyGrpcSettings(cfg *envoygrpc.HttpGrpcAccessLogConfig, grpcService *v1alp
 	svc := &envoycore.GrpcService{
 		TargetSpecifier: &envoycore.GrpcService_EnvoyGrpc_{
 			EnvoyGrpc: &envoycore.GrpcService_EnvoyGrpc{
-				ClusterName: backend.GetName(),
+				ClusterName: backend.ClusterName(),
 			},
 		},
 	}

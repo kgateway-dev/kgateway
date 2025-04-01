@@ -27,7 +27,7 @@ spec:
           port: 8080
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
-kind: RoutePolicy
+kind: TrafficPolicy
 metadata:
   name: requestresponse-transformer
 spec:

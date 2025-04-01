@@ -27,12 +27,12 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.AiExtensionApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("AiExtensionStats"):
 		return &apiv1alpha1.AiExtensionStatsApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("AIPolicy"):
+		return &apiv1alpha1.AIPolicyApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("AIPromptEnrichment"):
 		return &apiv1alpha1.AIPromptEnrichmentApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("AIPromptGuard"):
 		return &apiv1alpha1.AIPromptGuardApplyConfiguration{}
-	case v1alpha1.SchemeGroupVersion.WithKind("AIRoutePolicy"):
-		return &apiv1alpha1.AIRoutePolicyApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("AnthropicConfig"):
 		return &apiv1alpha1.AnthropicConfigApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("AwsAuth"):
@@ -51,6 +51,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.BackendStatusApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("BodyTransformation"):
 		return &apiv1alpha1.BodyTransformationApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("BufferSettings"):
+		return &apiv1alpha1.BufferSettingsApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("CELFilter"):
 		return &apiv1alpha1.CELFilterApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("CustomLabel"):
@@ -67,12 +69,28 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.EnvoyBootstrapApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("EnvoyContainer"):
 		return &apiv1alpha1.EnvoyContainerApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("ExtAuthPolicy"):
+		return &apiv1alpha1.ExtAuthPolicyApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("ExtAuthProvider"):
+		return &apiv1alpha1.ExtAuthProviderApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("ExtGrpcService"):
+		return &apiv1alpha1.ExtGrpcServiceApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("ExtProcPolicy"):
+		return &apiv1alpha1.ExtProcPolicyApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("ExtProcProvider"):
+		return &apiv1alpha1.ExtProcProviderApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("FieldDefault"):
 		return &apiv1alpha1.FieldDefaultApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("FileSink"):
 		return &apiv1alpha1.FileSinkApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("FilterType"):
 		return &apiv1alpha1.FilterTypeApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("GatewayExtension"):
+		return &apiv1alpha1.GatewayExtensionApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("GatewayExtensionSpec"):
+		return &apiv1alpha1.GatewayExtensionSpecApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("GatewayExtensionStatus"):
+		return &apiv1alpha1.GatewayExtensionStatusApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("GatewayParameters"):
 		return &apiv1alpha1.GatewayParametersApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("GatewayParametersSpec"):
@@ -103,14 +121,12 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.IstioIntegrationApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("KubernetesProxyConfig"):
 		return &apiv1alpha1.KubernetesProxyConfigApplyConfiguration{}
-	case v1alpha1.SchemeGroupVersion.WithKind("ListenerPolicy"):
-		return &apiv1alpha1.ListenerPolicyApplyConfiguration{}
-	case v1alpha1.SchemeGroupVersion.WithKind("ListenerPolicySpec"):
-		return &apiv1alpha1.ListenerPolicySpecApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("LLMProvider"):
 		return &apiv1alpha1.LLMProviderApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("LocalPolicyTargetReference"):
 		return &apiv1alpha1.LocalPolicyTargetReferenceApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("LocalRateLimitPolicy"):
+		return &apiv1alpha1.LocalRateLimitPolicyApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("Message"):
 		return &apiv1alpha1.MessageApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("Moderation"):
@@ -121,28 +137,24 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.OpenAIConfigApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("Pod"):
 		return &apiv1alpha1.PodApplyConfiguration{}
-	case v1alpha1.SchemeGroupVersion.WithKind("PolicyAncestorStatus"):
-		return &apiv1alpha1.PolicyAncestorStatusApplyConfiguration{}
-	case v1alpha1.SchemeGroupVersion.WithKind("PolicyStatus"):
-		return &apiv1alpha1.PolicyStatusApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("Priority"):
 		return &apiv1alpha1.PriorityApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("ProcessingMode"):
+		return &apiv1alpha1.ProcessingModeApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("PromptguardRequest"):
 		return &apiv1alpha1.PromptguardRequestApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("PromptguardResponse"):
 		return &apiv1alpha1.PromptguardResponseApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("ProxyDeployment"):
 		return &apiv1alpha1.ProxyDeploymentApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("RateLimit"):
+		return &apiv1alpha1.RateLimitApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("Regex"):
 		return &apiv1alpha1.RegexApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("RegexMatch"):
 		return &apiv1alpha1.RegexMatchApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("ResponseFlagFilter"):
 		return &apiv1alpha1.ResponseFlagFilterApplyConfiguration{}
-	case v1alpha1.SchemeGroupVersion.WithKind("RoutePolicy"):
-		return &apiv1alpha1.RoutePolicyApplyConfiguration{}
-	case v1alpha1.SchemeGroupVersion.WithKind("RoutePolicySpec"):
-		return &apiv1alpha1.RoutePolicySpecApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("SdsBootstrap"):
 		return &apiv1alpha1.SdsBootstrapApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("SdsContainer"):
@@ -151,6 +163,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.ServiceApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("ServiceAccount"):
 		return &apiv1alpha1.ServiceAccountApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("SimpleStatus"):
+		return &apiv1alpha1.SimpleStatusApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("SingleAuthToken"):
 		return &apiv1alpha1.SingleAuthTokenApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("StaticBackend"):
@@ -161,6 +175,12 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.StatusCodeFilterApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("SupportedLLMProvider"):
 		return &apiv1alpha1.SupportedLLMProviderApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("TokenBucket"):
+		return &apiv1alpha1.TokenBucketApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("TrafficPolicy"):
+		return &apiv1alpha1.TrafficPolicyApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("TrafficPolicySpec"):
+		return &apiv1alpha1.TrafficPolicySpecApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("Transform"):
 		return &apiv1alpha1.TransformApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("TransformationPolicy"):

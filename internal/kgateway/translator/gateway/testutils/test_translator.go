@@ -204,6 +204,9 @@ func (tc TestCase) Run(t test.Failer, ctx context.Context) (map[types.Namespaced
 		gvr.Pod,
 		gvr.TCPRoute,
 		gvr.TLSRoute,
+		gvr.ServiceEntry,
+		gvr.WorkloadEntry,
+		gvr.AuthorizationPolicy,
 	} {
 		clienttest.MakeCRD(t, cli, crd)
 	}
@@ -238,6 +241,7 @@ func (tc TestCase) Run(t test.Failer, ctx context.Context) (map[types.Namespaced
 		krtOpts,
 		cli,
 		ourCli,
+		nil,
 		wellknown.GatewayControllerName,
 		logr.Discard(),
 		*st,
@@ -265,7 +269,6 @@ func (tc TestCase) Run(t test.Failer, ctx context.Context) (map[types.Namespaced
 	cli.RunAndWait(ctx.Done())
 	commoncol.GatewayIndex.Gateways.WaitUntilSynced(ctx.Done())
 
-	kubeclient.WaitForCacheSync("routes", ctx.Done(), commoncol.HasSynced)
 	kubeclient.WaitForCacheSync("routes", ctx.Done(), commoncol.Routes.HasSynced)
 	kubeclient.WaitForCacheSync("extensions", ctx.Done(), extensions.HasSynced)
 	kubeclient.WaitForCacheSync("commoncol", ctx.Done(), commoncol.HasSynced)

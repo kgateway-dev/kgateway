@@ -11,8 +11,8 @@ import (
 // AwsAuthApplyConfiguration represents a declarative configuration of the AwsAuth type for use
 // with apply.
 type AwsAuthApplyConfiguration struct {
-	Type   *apiv1alpha1.AwsAuthType `json:"type,omitempty"`
-	Secret *v1.LocalObjectReference `json:"secret,omitempty"`
+	Type      *apiv1alpha1.AwsAuthType `json:"type,omitempty"`
+	SecretRef *v1.LocalObjectReference `json:"secretRef,omitempty"`
 }
 
 // AwsAuthApplyConfiguration constructs a declarative configuration of the AwsAuth type for use with
@@ -29,10 +29,10 @@ func (b *AwsAuthApplyConfiguration) WithType(value apiv1alpha1.AwsAuthType) *Aws
 	return b
 }
 
-// WithSecret sets the Secret field in the declarative configuration to the given value
+// WithSecretRef sets the SecretRef field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the Secret field is set to the value of the last call.
-func (b *AwsAuthApplyConfiguration) WithSecret(value v1.LocalObjectReference) *AwsAuthApplyConfiguration {
-	b.Secret = &value
+// If called multiple times, the SecretRef field is set to the value of the last call.
+func (b *AwsAuthApplyConfiguration) WithSecretRef(value v1.LocalObjectReference) *AwsAuthApplyConfiguration {
+	b.SecretRef = &value
 	return b
 }

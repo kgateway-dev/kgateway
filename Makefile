@@ -296,7 +296,7 @@ clean-gen:
 	rm -rf api/applyconfiguration
 	rm -rf pkg/generated/openapi
 	rm -rf pkg/client
-	rm -rf install/helm/kgateway/crds
+	rm -rf install/helm/kgateway-crds/templates
 
 .PHONY: clean-tests
 clean-tests:
@@ -555,11 +555,12 @@ lint-kgateway-charts: ## Lint the kgateway charts
 
 GORELEASER ?= go tool github.com/goreleaser/goreleaser/v2
 GORELEASER_ARGS ?= --snapshot --clean
+GORELEASER_TIMEOUT ?= 60m
 GORELEASER_CURRENT_TAG ?= $(VERSION)
 
 .PHONY: release
 release: ## Create a release using goreleaser
-	GORELEASER_CURRENT_TAG=$(GORELEASER_CURRENT_TAG) $(GORELEASER) release $(GORELEASER_ARGS)
+	GORELEASER_CURRENT_TAG=$(GORELEASER_CURRENT_TAG) $(GORELEASER) release $(GORELEASER_ARGS) --timeout $(GORELEASER_TIMEOUT)
 
 #----------------------------------------------------------------------------------
 # Docker

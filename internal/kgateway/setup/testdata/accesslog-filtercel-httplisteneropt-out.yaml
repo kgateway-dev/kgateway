@@ -189,7 +189,7 @@ listeners:
             commonConfig:
               grpcService:
                 envoyGrpc:
-                  clusterName: log
+                  clusterName: backend_gwtest_log_0
               logName: test-accesslog-service
               transportApiVersion: V3
         httpFilters:
@@ -230,7 +230,7 @@ listeners:
             commonConfig:
               grpcService:
                 envoyGrpc:
-                  clusterName: log
+                  clusterName: backend_gwtest_log_0
               logName: test-accesslog-service
               transportApiVersion: V3
         httpFilters:

@@ -1,6 +1,7 @@
 package controller_test
 
 import (
+	"context"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -16,6 +17,27 @@ var _ = Describe("GwController", func() {
 		timeout  = time.Second * 10
 		interval = time.Millisecond * 250
 	)
+
+	var (
+		ctx    context.Context
+		cancel context.CancelFunc
+	)
+
+	BeforeEach(func() {
+		ctx, cancel = context.WithCancel(context.Background())
+
+		var err error
+		cancel, err = createManager(ctx, inferenceExt, nil)
+		Expect(err).NotTo(HaveOccurred())
+	})
+
+	AfterEach(func() {
+		if cancel != nil {
+			cancel()
+		}
+		// ensure goroutines cleanup
+		Eventually(func() bool { return true }).WithTimeout(3 * time.Second).Should(BeTrue())
+	})
 
 	DescribeTable(
 		"should add status to gateway",
@@ -67,7 +89,9 @@ var _ = Describe("GwController", func() {
 					IP: "127.0.0.1",
 				}},
 			}
-			Expect(k8sClient.Status().Update(ctx, &svc)).NotTo(HaveOccurred())
+			Eventually(func() error {
+				return k8sClient.Status().Update(ctx, &svc)
+			}, timeout, interval).Should(Succeed())
 
 			Eventually(func() bool {
 				err := k8sClient.Get(ctx, client.ObjectKey{Name: gwName, Namespace: "default"}, &gw)

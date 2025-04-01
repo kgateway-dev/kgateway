@@ -20,7 +20,7 @@ type HTTPListenerPolicy struct {
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	Spec   HTTPListenerPolicySpec `json:"spec,omitempty"`
-	Status PolicyStatus           `json:"status,omitempty"`
+	Status SimpleStatus           `json:"status,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -34,8 +34,6 @@ type HTTPListenerPolicySpec struct {
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=16
 	TargetRefs []LocalPolicyTargetReference `json:"targetRefs,omitempty"`
-
-	Compress bool `json:"compress,omitempty"`
 
 	// AccessLoggingConfig contains various settings for Envoy's access logging service.
 	// See here for more information: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto
@@ -75,7 +73,7 @@ type GrpcService struct {
 	// +kubebuilder:validation:Required
 	LogName string `json:"logName"`
 
-	// The backend gRPC service. Can be any type of supported backed (Kubernetes Service, kgateway Backend, etc..)
+	// The backend gRPC service. Can be any type of supported backend (Kubernetes Service, kgateway Backend, etc..)
 	// +kubebuilder:validation:Required
 	BackendRef *gwv1.BackendRef `json:"backendRef"`
 

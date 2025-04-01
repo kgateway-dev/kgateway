@@ -466,7 +466,7 @@ spec:
                     type: string
                   auth:
                     properties:
-                      secret:
+                      secretRef:
                         properties:
                           name:
                             default: ""
@@ -481,10 +481,10 @@ spec:
                     - type
                     type: object
                     x-kubernetes-validations:
-                    - message: secret must be nil if the type is not 'Secret'
-                      rule: '!(has(self.secret) && self.type != ''Secret'')'
-                    - message: secret must be specified when type is 'Secret'
-                      rule: '!(!has(self.secret) && self.type == ''Secret'')'
+                    - message: secretRef must be nil if the type is not 'Secret'
+                      rule: '!(has(self.secretRef) && self.type != ''Secret'')'
+                    - message: secretRef must be specified when type is 'Secret'
+                      rule: '!(!has(self.secretRef) && self.type == ''Secret'')'
                   lambda:
                     properties:
                       endpointURL:

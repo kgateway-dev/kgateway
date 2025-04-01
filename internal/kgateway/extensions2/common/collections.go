@@ -4,12 +4,16 @@ import (
 	"context"
 
 	"github.com/go-logr/logr"
+	"istio.io/istio/pkg/config/schema/gvr"
 	"istio.io/istio/pkg/kube"
 	istiokube "istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
+	"istio.io/istio/pkg/kube/kubetypes"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	gwv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
@@ -18,19 +22,25 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
+
+	networkingclient "istio.io/client-go/pkg/apis/networking/v1"
 )
 
 type CommonCollections struct {
-	OurClient    versioned.Interface
-	Client       kube.Client
-	KrtOpts      krtutil.KrtOptions
-	Secrets      *krtcollections.SecretIndex
-	BackendIndex *krtcollections.BackendIndex
-	Routes       *krtcollections.RoutesIndex
-	Namespaces   krt.Collection[krtcollections.NamespaceMetadata]
-	Endpoints    krt.Collection[ir.EndpointsForBackend]
-	GatewayIndex *krtcollections.GatewayIndex
-	Services     krt.Collection[*corev1.Service]
+	OurClient versioned.Interface
+	Client    kube.Client
+	// full CRUD client, only needed for status writing currently
+	CrudClient        client.Client
+	KrtOpts           krtutil.KrtOptions
+	Secrets           *krtcollections.SecretIndex
+	BackendIndex      *krtcollections.BackendIndex
+	Routes            *krtcollections.RoutesIndex
+	Namespaces        krt.Collection[krtcollections.NamespaceMetadata]
+	Endpoints         krt.Collection[ir.EndpointsForBackend]
+	GatewayIndex      *krtcollections.GatewayIndex
+	GatewayExtensions krt.Collection[ir.GatewayExtension]
+	Services          krt.Collection[*corev1.Service]
+	ServiceEntries    krt.Collection[*networkingclient.ServiceEntry]
 
 	Pods       krt.Collection[krtcollections.LocalityPod]
 	RefGrants  *krtcollections.RefGrantIndex
@@ -51,7 +61,10 @@ func (c *CommonCollections) HasSynced() bool {
 		c.Routes != nil && c.Routes.HasSynced() &&
 		c.Namespaces != nil && c.Namespaces.HasSynced() &&
 		c.Pods != nil && c.Pods.HasSynced() &&
-		c.RefGrants != nil && c.RefGrants.HasSynced()
+		c.RefGrants != nil && c.RefGrants.HasSynced() &&
+		c.ConfigMaps != nil && c.ConfigMaps.HasSynced() &&
+		c.GatewayExtensions != nil && c.GatewayExtensions.HasSynced()
+	// TODO: fill in?
 }
 
 // NewCommonCollections initializes the core krt collections.
@@ -62,6 +75,7 @@ func NewCommonCollections(
 	krtOptions krtutil.KrtOptions,
 	client istiokube.Client,
 	ourClient versioned.Interface,
+	cl client.Client,
 	controllerName string,
 	logger logr.Logger,
 	settings settings.Settings,
@@ -93,20 +107,31 @@ func NewCommonCollections(
 	serviceClient := kclient.New[*corev1.Service](client)
 	services := krt.WrapClient(serviceClient, krtOptions.ToOptions("Services")...)
 
+	seInformer := kclient.NewDelayedInformer[*networkingclient.ServiceEntry](
+		client, gvr.ServiceEntry,
+		kubetypes.StandardInformer, kclient.Filter{ObjectFilter: client.ObjectFilter()},
+	)
+	serviceEntries := krt.WrapClient(seInformer, krtOptions.ToOptions("ServiceEntries")...)
+
 	cmClient := kclient.New[*corev1.ConfigMap](client)
 	cfgmaps := krt.WrapClient(cmClient, krtOptions.ToOptions("ConfigMaps")...)
 
+	gwExts := krtcollections.NewGatewayExtensionsCollection(ctx, client, ourClient, krtOptions)
+
 	return &CommonCollections{
-		OurClient:  ourClient,
-		Client:     client,
-		KrtOpts:    krtOptions,
-		Secrets:    krtcollections.NewSecretIndex(secrets, refgrants),
-		Pods:       krtcollections.NewPodsCollection(client, krtOptions),
-		RefGrants:  refgrants,
-		Settings:   settings,
-		Namespaces: namespaces,
-		Services:   services,
-		ConfigMaps: cfgmaps,
+		OurClient:         ourClient,
+		Client:            client,
+		CrudClient:        cl,
+		KrtOpts:           krtOptions,
+		Secrets:           krtcollections.NewSecretIndex(secrets, refgrants),
+		Pods:              krtcollections.NewPodsCollection(client, krtOptions),
+		RefGrants:         refgrants,
+		Settings:          settings,
+		Namespaces:        namespaces,
+		Services:          services,
+		ServiceEntries:    serviceEntries,
+		ConfigMaps:        cfgmaps,
+		GatewayExtensions: gwExts,
 
 		controllerName: controllerName,
 	}
@@ -116,11 +141,12 @@ func NewCommonCollections(
 // This can't be part of NewCommonCollections because the setup
 // of plugins themselves rely on a reference to CommonCollections.
 func (c *CommonCollections) InitPlugins(ctx context.Context, mergedPlugins extensionsplug.Plugin) {
-	kubeGateways, routeIndex, backendIndex, endpointIRs := krtcollections.InitCollections(
+	gateways, routeIndex, backendIndex, endpointIRs := krtcollections.InitCollections(
 		ctx,
 		c.controllerName,
 		mergedPlugins,
 		c.Client,
+		c.OurClient,
 		c.RefGrants,
 		c.KrtOpts,
 	)
@@ -129,5 +155,5 @@ func (c *CommonCollections) InitPlugins(ctx context.Context, mergedPlugins exten
 	c.BackendIndex = backendIndex
 	c.Routes = routeIndex
 	c.Endpoints = endpointIRs
-	c.GatewayIndex = kubeGateways
+	c.GatewayIndex = gateways
 }

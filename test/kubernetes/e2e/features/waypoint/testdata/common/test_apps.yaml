@@ -64,7 +64,7 @@ spec:
 ---
 
 ##################################################################################################
-# simple HTTP test application
+# simple HTTP test application (svc-a)
 # NOTE: not captured by the waypoint by default
 ##################################################################################################
 ---
@@ -126,7 +126,7 @@ spec:
     app: svc-a
   type: ClusterIP
 ##################################################################################################
-# simple HTTP test application
+# simple HTTP test application (svc-b)
 # NOTE: not captured by the waypoint by default
 ##################################################################################################
 ---
@@ -187,3 +187,47 @@ spec:
   selector:
     app: svc-b
   type: ClusterIP
+---
+##################################################################################################
+# mirrors of the services above, but in ServiceEntry form (se-a.serviceentry.com and se-b.serviceentry.com)
+# NOTE: not captured by the waypoint by default
+##################################################################################################
+apiVersion: networking.istio.io/v1beta1
+kind: ServiceEntry
+metadata:
+  name: se-a
+spec:
+  addresses:
+  - 244.244.0.1
+  hosts:
+  - se-a.serviceentry.com
+  location: MESH_INTERNAL
+  ports:
+  - number: 8080
+    name: http
+    protocol: HTTP
+    targetPort: 5678
+  resolution: STATIC
+  workloadSelector:
+    labels:
+      app: svc-b
+---
+apiVersion: networking.istio.io/v1beta1
+kind: ServiceEntry
+metadata:
+  name: se-b
+spec:
+  addresses:
+  - 244.244.0.2
+  hosts:
+  - se-b.serviceentry.com
+  location: MESH_INTERNAL
+  ports:
+  - number: 8080
+    name: http
+    protocol: HTTP
+    targetPort: 5678
+  resolution: STATIC
+  workloadSelector:
+    labels:
+      app: svc-b

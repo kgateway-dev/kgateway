@@ -44,13 +44,13 @@ func NewPerClientEnvoyClusters(
 	ctx context.Context,
 	krtopts krtutil.KrtOptions,
 	translator *irtranslator.BackendTranslator,
-	backendObjs krt.Collection[ir.BackendObjectIR],
+	finalBackends krt.Collection[ir.BackendObjectIR],
 	uccs krt.Collection[ir.UniqlyConnectedClient],
 ) PerClientEnvoyClusters {
 	ctx = contextutils.WithLogger(ctx, "backend-translator")
 	logger := contextutils.LoggerFrom(ctx).Desugar()
 
-	clusters := krt.NewManyCollection(backendObjs, func(kctx krt.HandlerContext, backendObj ir.BackendObjectIR) []uccWithCluster {
+	clusters := krt.NewManyCollection(finalBackends, func(kctx krt.HandlerContext, backendObj ir.BackendObjectIR) []uccWithCluster {
 		logger := logger.With(zap.Stringer("backend", backendObj))
 		uccs := krt.Fetch(kctx, uccs)
 		uccWithClusterRet := make([]uccWithCluster, 0, len(uccs))
@@ -63,9 +63,10 @@ func NewPerClientEnvoyClusters(
 				continue
 			}
 			uccWithClusterRet = append(uccWithClusterRet, uccWithCluster{
-				Client:         ucc,
-				Cluster:        c,
-				Name:           c.GetName(),
+				Client:  ucc,
+				Cluster: c,
+				Name:    c.GetName(),
+				// pass along the error(s) indicating to consumers that this cluster is not usable
 				Error:          err,
 				ClusterVersion: utils.HashProto(c),
 			})

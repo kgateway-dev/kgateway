@@ -233,6 +233,17 @@ func getParentRefKey(parentRef *gwv1.ParentReference) ParentRefKey {
 	}
 }
 
+// getParentRefOrNil returns a ParentRefReport for the given parentRef if and only if
+// that parentRef exists in the report (i.e. the parentRef was encountered during translation)
+// If no report is found, nil is returned, signaling this parentRef is unknown to the report
+func (r *RouteReport) getParentRefOrNil(parentRef *gwv1.ParentReference) *ParentRefReport {
+	key := getParentRefKey(parentRef)
+	if r.Parents == nil {
+		r.Parents = make(map[ParentRefKey]*ParentRefReport)
+	}
+	return r.Parents[key]
+}
+
 func (r *RouteReport) parentRef(parentRef *gwv1.ParentReference) *ParentRefReport {
 	key := getParentRefKey(parentRef)
 	if r.Parents == nil {

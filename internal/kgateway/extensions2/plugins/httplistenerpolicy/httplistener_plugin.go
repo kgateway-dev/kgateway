@@ -32,8 +32,8 @@ import (
 
 type httpListenerPolicy struct {
 	ct        time.Time
-	compress  bool
 	accessLog []*envoyaccesslog.AccessLog
+	errors    []error
 }
 
 func (d *httpListenerPolicy) CreationTime() time.Time {
@@ -43,11 +43,6 @@ func (d *httpListenerPolicy) CreationTime() time.Time {
 func (d *httpListenerPolicy) Equals(in any) bool {
 	d2, ok := in.(*httpListenerPolicy)
 	if !ok {
-		return false
-	}
-
-	// Check the TargetRef and Compress fields
-	if d.compress != d2.compress {
 		return false
 	}
 
@@ -100,11 +95,11 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 			Name:      i.Name,
 		}
 
-		errors := []error{}
+		errs := []error{}
 		accessLog, err := convertAccessLogConfig(ctx, i, commoncol, krtctx, objSrc)
 		if err != nil {
 			contextutils.LoggerFrom(ctx).Error(err)
-			errors = append(errors, err)
+			errs = append(errs, err)
 		}
 
 		pol := &ir.PolicyWrapper{
@@ -112,11 +107,10 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 			Policy:       i,
 			PolicyIR: &httpListenerPolicy{
 				ct:        i.CreationTimestamp.Time,
-				compress:  i.Spec.Compress,
 				accessLog: accessLog,
+				errors:    errs,
 			},
 			TargetRefs: convert(i.Spec.TargetRefs),
-			Errors:     errors,
 		}
 
 		return pol
@@ -130,13 +124,16 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 				Policies:                  policyCol,
 			},
 		},
+		ContributesRegistration: map[schema.GroupKind]func(){
+			wellknown.HTTPListenerPolicyGVK.GroupKind(): buildRegisterCallback(ctx, commoncol.CrudClient, policyCol),
+		},
 	}
 }
 
-func convert(targetRefs []v1alpha1.LocalPolicyTargetReference) []ir.PolicyTargetRef {
-	refs := make([]ir.PolicyTargetRef, 0, len(targetRefs))
+func convert(targetRefs []v1alpha1.LocalPolicyTargetReference) []ir.PolicyRef {
+	refs := make([]ir.PolicyRef, 0, len(targetRefs))
 	for _, targetRef := range targetRefs {
-		refs = append(refs, ir.PolicyTargetRef{
+		refs = append(refs, ir.PolicyRef{
 			Kind:  string(targetRef.Kind),
 			Name:  string(targetRef.Name),
 			Group: string(targetRef.Group),

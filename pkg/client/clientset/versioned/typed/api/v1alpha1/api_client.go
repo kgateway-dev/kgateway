@@ -15,10 +15,10 @@ type GatewayV1alpha1Interface interface {
 	RESTClient() rest.Interface
 	BackendsGetter
 	DirectResponsesGetter
+	GatewayExtensionsGetter
 	GatewayParametersesGetter
 	HTTPListenerPoliciesGetter
-	ListenerPoliciesGetter
-	RoutePoliciesGetter
+	TrafficPoliciesGetter
 }
 
 // GatewayV1alpha1Client is used to interact with features provided by the gateway.kgateway.dev group.
@@ -34,6 +34,10 @@ func (c *GatewayV1alpha1Client) DirectResponses(namespace string) DirectResponse
 	return newDirectResponses(c, namespace)
 }
 
+func (c *GatewayV1alpha1Client) GatewayExtensions(namespace string) GatewayExtensionInterface {
+	return newGatewayExtensions(c, namespace)
+}
+
 func (c *GatewayV1alpha1Client) GatewayParameterses(namespace string) GatewayParametersInterface {
 	return newGatewayParameterses(c, namespace)
 }
@@ -42,12 +46,8 @@ func (c *GatewayV1alpha1Client) HTTPListenerPolicies(namespace string) HTTPListe
 	return newHTTPListenerPolicies(c, namespace)
 }
 
-func (c *GatewayV1alpha1Client) ListenerPolicies(namespace string) ListenerPolicyInterface {
-	return newListenerPolicies(c, namespace)
-}
-
-func (c *GatewayV1alpha1Client) RoutePolicies(namespace string) RoutePolicyInterface {
-	return newRoutePolicies(c, namespace)
+func (c *GatewayV1alpha1Client) TrafficPolicies(namespace string) TrafficPolicyInterface {
+	return newTrafficPolicies(c, namespace)
 }
 
 // NewForConfig creates a new GatewayV1alpha1Client for the given config.

@@ -6,6 +6,7 @@ package v1alpha1
 // Gateway API resources with status management
 // +kubebuilder:rbac:groups=gateway.networking.k8s.io,resources=gatewayclasses;gateways;httproutes;tcproutes;tlsroutes;referencegrants;backendtlspolicies,verbs=get;list;watch
 // +kubebuilder:rbac:groups=gateway.networking.k8s.io,resources=gatewayclasses/status;gateways/status;httproutes/status;tcproutes/status;tlsroutes/status;backendtlspolicies/status,verbs=patch;update
+// +kubebuilder:rbac:groups=gateway.networking.k8s.io,resources=gatewayclasses,verbs=create
 
 // Controller resources
 // +kubebuilder:rbac:groups="",resources=pods,verbs=get;list;watch
@@ -28,3 +29,6 @@ package v1alpha1
 
 // Istio resources for traffic management
 // +kubebuilder:rbac:groups=networking.istio.io,resources=destinationrules,verbs=get;list;watch
+// +kubebuilder:rbac:groups=networking.istio.io,resources=serviceentries,verbs=get;list;watch
+// +kubebuilder:rbac:groups=networking.istio.io,resources=workloadentries,verbs=get;list;watch
+// +kubebuilder:rbac:groups=security.istio.io,resources=authorizationpolicies,verbs=get;list;watch

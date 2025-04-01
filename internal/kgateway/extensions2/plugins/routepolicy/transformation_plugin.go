@@ -11,10 +11,9 @@ import (
 	exteniondynamicmodulev3 "github.com/envoyproxy/go-control-plane/envoy/extensions/dynamic_modules/v3"
 	dynamicmodulesv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/dynamic_modules/v3"
 	transformationpb "github.com/solo-io/envoy-gloo/go/config/filter/http/transformation/v2"
-	"google.golang.org/protobuf/types/known/anypb"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 )
 
 func toTraditionalTransform(t *v1alpha1.Transform) *transformationpb.Transformation_TransformationTemplate {
@@ -77,7 +76,7 @@ func toTraditionalTransform(t *v1alpha1.Transform) *transformationpb.Transformat
 	return tt
 }
 
-func toTransformFilterConfig(t *v1alpha1.TransformationPolicy) (*anypb.Any, error) {
+func toTransformFilterConfig(t *v1alpha1.TransformationPolicy) (*transformationpb.RouteTransformations, error) {
 	if t == nil || *t == (v1alpha1.TransformationPolicy{}) {
 		return nil, nil
 	}
@@ -114,7 +113,7 @@ func toTransformFilterConfig(t *v1alpha1.TransformationPolicy) (*anypb.Any, erro
 			},
 		},
 	}
-	return utils.MessageToAny(envoyT)
+	return envoyT, nil
 }
 
 func toRustFormationPerRouteConfig(t *v1alpha1.Transform) (map[string]interface{}, bool) {
@@ -157,11 +156,11 @@ func toRustFormationPerRouteConfig(t *v1alpha1.Transform) (map[string]interface{
 	return rustformationConfigMap, hasTransform
 }
 
-// torustformFilterConfig converts a TransformationPolicy to a RustFormation filter config.
-// The sheape of this function currently resembles that of the traditional API
+// toRustformFilterConfig converts a TransformationPolicy to a RustFormation filter config.
+// The shape of this function currently resembles that of the traditional API
 // Feel free to change the shape and flow of this function as needed provided there are sufficient unit tests on the configuration output.
 // The most dangerous updates here will be any switch over env variables that we are working on.s
-func torustformFilterConfig(t *v1alpha1.TransformationPolicy) (*anypb.Any, string, error) {
+func toRustformFilterConfig(t *v1alpha1.TransformationPolicy) (proto.Message, string, error) {
 	if t == nil || *t == (v1alpha1.TransformationPolicy{}) {
 		return nil, "", nil
 	}
@@ -190,14 +189,13 @@ func torustformFilterConfig(t *v1alpha1.TransformationPolicy) (*anypb.Any, strin
 	}
 
 	stringConf := string(rustformationJson)
-	rustCfg := dynamicmodulesv3.DynamicModuleFilter{
+	rustCfg := &dynamicmodulesv3.DynamicModuleFilter{
 		DynamicModuleConfig: &exteniondynamicmodulev3.DynamicModuleConfig{
 			Name: "rust_module",
 		},
 		FilterName:   "http_simple_mutations",
 		FilterConfig: stringConf,
 	}
-	rustCfgAny, _ := utils.MessageToAny(&rustCfg)
 
-	return rustCfgAny, stringConf, nil
+	return rustCfg, stringConf, nil
 }

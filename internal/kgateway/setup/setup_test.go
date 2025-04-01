@@ -10,14 +10,13 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
-
-	stdslice "slices"
 
 	envoycluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -40,7 +39,7 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 	istiokube "istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/krt"
-	"istio.io/istio/pkg/slices"
+	istioslices "istio.io/istio/pkg/slices"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
@@ -113,6 +112,15 @@ func init() {
 	grpclog.SetLoggerV2(grpclog.NewLoggerV2WithVerbosity(writer, writer, writer, 100))
 }
 
+func TestServiceEntry(t *testing.T) {
+	st, err := settings.BuildSettings()
+	if err != nil {
+		t.Fatalf("can't get settings %v", err)
+	}
+
+	runScenario(t, "testdata/serviceentry", st)
+}
+
 func TestWithStandardSettings(t *testing.T) {
 	st, err := settings.BuildSettings()
 	if err != nil {
@@ -137,8 +145,9 @@ func TestScenarios(t *testing.T) {
 		t.Fatalf("can't get settings %v", err)
 	}
 	st.EnableIstioIntegration = true
-	st.EnableAutoMtls = true
+	st.EnableIstioAutoMtls = true
 	st.EnableInferExt = true
+	st.InferExtAutoProvision = true
 
 	runScenario(t, "testdata", st)
 }
@@ -207,7 +216,7 @@ spec:
     allowedRoutes:
       namespaces:
         from: All`, `apiVersion: gateway.kgateway.dev/v1alpha1
-kind: RoutePolicy
+kind: TrafficPolicy
 metadata:
   name: transformation
   namespace: gwtest
@@ -236,13 +245,13 @@ spec:
       - type: ExtensionRef
         extensionRef:
           group: gateway.kgateway.dev
-          kind: RoutePolicy
+          kind: TrafficPolicy
           name: transformation`)
 
 		time.Sleep(time.Second / 2)
 
 		err = client.ApplyYAMLContents("gwtest", `apiVersion: gateway.kgateway.dev/v1alpha1
-kind: RoutePolicy
+kind: TrafficPolicy
 metadata:
   name: transformation
   namespace: gwtest
@@ -272,7 +281,7 @@ spec:
 		if len(pfc) != 1 {
 			t.Fatalf("expected 1 filter config, got %d", len(pfc))
 		}
-		if !bytes.Contains(stdslice.Collect(maps.Values(pfc))[0].Value, []byte("x-solo-request321")) {
+		if !bytes.Contains(slices.Collect(maps.Values(pfc))[0].Value, []byte("x-solo-request321")) {
 			t.Fatalf("expected filter config to contain x-solo-request321")
 		}
 
@@ -370,6 +379,10 @@ func setupEnvTestAndRun(t *testing.T, globalSettings *settings.Settings, run fun
 	if err != nil {
 		t.Fatalf("failed to apply yaml: %v", err)
 	}
+	err = applyPodStatusFromFile(ctx, client, "gwtest", "testdata/setupyaml/pods.yaml")
+	if err != nil {
+		t.Fatalf("failed to apply pod status: %v", err)
+	}
 
 	// setup xDS server:
 	uniqueClientCallbacks, builder := krtcollections.NewUniquelyConnectedClients()
@@ -421,6 +434,9 @@ func testScenario(
 	if os.IsNotExist(err) {
 		write = true
 		err = nil
+	}
+	if os.Getenv("REFRESH_GOLDEN") == "true" {
+		write = true
 	}
 	if err != nil {
 		t.Fatalf("failed to read file %s: %v", fout, err)
@@ -625,7 +641,7 @@ func (x xdsDumper) Dump(t *testing.T, ctx context.Context) xdsDump {
 	}
 	t.Logf("xds: found %d listeners and %d clusters", len(listeners), len(clusters))
 
-	clusterServiceNames := slices.MapFilter(clusters, func(c *envoycluster.Cluster) *string {
+	clusterServiceNames := istioslices.MapFilter(clusters, func(c *envoycluster.Cluster) *string {
 		if c.GetEdsClusterConfig() != nil {
 			if c.GetEdsClusterConfig().GetServiceName() != "" {
 				s := c.GetEdsClusterConfig().GetServiceName()
@@ -736,11 +752,20 @@ func (x *xdsDump) Compare(t *testing.T, other xdsDump) {
 			t.Errorf("cluster %v not found", otherc.Name)
 			continue
 		}
+		ourCla := ourc.LoadAssignment
+		otherCla := otherc.LoadAssignment
+		compareCla(t, ourCla, otherCla)
+
+		// don't proto.Equal the LoadAssignment
+		ourc.LoadAssignment = nil
+		otherc.LoadAssignment = nil
 		if !proto.Equal(otherc, ourc) {
 			t.Errorf("cluster %v not equal", otherc.Name)
 			t.Errorf("got: %s", ourc.String())
 			t.Errorf("expected: %s", otherc.String())
 		}
+		ourc.LoadAssignment = ourCla
+		otherc.LoadAssignment = otherCla
 	}
 	listenerset := map[string]*envoylistener.Listener{}
 	for _, c := range x.Listeners {
@@ -781,25 +806,32 @@ func (x *xdsDump) Compare(t *testing.T, other xdsDump) {
 	}
 	for _, c := range other.Endpoints {
 		otherc := epset[c.ClusterName]
-		if otherc == nil {
-			t.Errorf("ep %v not found", c.ClusterName)
-			continue
-		}
-		ep1 := flattenendpoints(c)
-		ep2 := flattenendpoints(otherc)
-		if !equalset(ep1, ep2) {
-			t.Errorf("ep list %v not equal: %v %v", c.ClusterName, ep1, ep2)
-		}
-		ce := c.Endpoints
-		ocd := otherc.Endpoints
-		c.Endpoints = nil
-		otherc.Endpoints = nil
-		if !proto.Equal(c, otherc) {
-			t.Errorf("ep %v not equal", c.ClusterName)
-		}
-		c.Endpoints = ce
-		otherc.Endpoints = ocd
+		compareCla(t, c, otherc)
 	}
+}
+
+func compareCla(t *testing.T, c, otherc *envoyendpoint.ClusterLoadAssignment) {
+	if (c == nil) != (otherc == nil) {
+		t.Errorf("ep %v not found", c.ClusterName)
+		return
+	}
+	if c == nil || otherc == nil {
+		return
+	}
+	ep1 := flattenendpoints(c)
+	ep2 := flattenendpoints(otherc)
+	if !equalset(ep1, ep2) {
+		t.Errorf("ep list %v not equal: %v %v", c.ClusterName, ep1, ep2)
+	}
+	ce := c.Endpoints
+	ocd := otherc.Endpoints
+	c.Endpoints = nil
+	otherc.Endpoints = nil
+	if !proto.Equal(c, otherc) {
+		t.Errorf("ep %v not equal", c.ClusterName)
+	}
+	c.Endpoints = ce
+	otherc.Endpoints = ocd
 }
 
 func equalset(a, b []*envoyendpoint.LocalityLbEndpoints) bool {
@@ -807,7 +839,7 @@ func equalset(a, b []*envoyendpoint.LocalityLbEndpoints) bool {
 		return false
 	}
 	for _, v := range a {
-		if slices.FindFunc(b, func(e *envoyendpoint.LocalityLbEndpoints) bool {
+		if istioslices.FindFunc(b, func(e *envoyendpoint.LocalityLbEndpoints) bool {
 			return proto.Equal(v, e)
 		}) == nil {
 			return false
@@ -1011,4 +1043,58 @@ func generateKubeConfiguration(t *testing.T, restconfig *rest.Config) string {
 	}
 
 	return tmpfile
+}
+
+// applyPodStatusFromFile reads a YAML file, looks for Pod resources with a Status set,
+// and patches their status into the cluster. Skips any Pods not found or lacking a status.
+// This is needed because the other places that apply yaml will only apply spec.
+// We now have tests (ServiceEntry) that rely on IPs from Pod status instead of EndpointSlice.
+func applyPodStatusFromFile(ctx context.Context, c istiokube.CLIClient, defaultNs, filePath string) error {
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return fmt.Errorf("reading YAML file %q: %w", filePath, err)
+	}
+
+	docs := bytes.Split(data, []byte("\n---\n"))
+
+	for _, doc := range docs {
+		doc = bytes.TrimSpace(doc)
+		if len(doc) == 0 {
+			continue
+		}
+
+		pod := &corev1.Pod{}
+		if err := yaml.Unmarshal(doc, pod); err != nil {
+			continue
+		}
+
+		// Skip if there's no status to patch
+		if pod.Status.PodIP == "" && len(pod.Status.PodIPs) == 0 && pod.Status.Phase == "" {
+			continue
+		}
+
+		ns := pod.Namespace
+		if ns == "" {
+			ns = defaultNs
+		}
+
+		podClient := c.Kube().CoreV1().Pods(ns)
+
+		// Retrieve the existing Pod
+		existingPod, err := podClient.Get(ctx, pod.Name, metav1.GetOptions{})
+		if err != nil {
+			return fmt.Errorf("failed to retrieve existing Pod %s/%s: %w", ns, pod.Name, err)
+		}
+
+		// Update the in-memory status
+		existingPod.Status = pod.Status
+
+		// Persist the new status
+		_, err = podClient.UpdateStatus(ctx, existingPod, metav1.UpdateOptions{})
+		if err != nil {
+			return fmt.Errorf("failed to update status for Pod %s/%s: %w", ns, pod.Name, err)
+		}
+	}
+
+	return nil
 }
