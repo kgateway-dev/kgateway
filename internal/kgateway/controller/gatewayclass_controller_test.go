@@ -6,6 +6,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -50,19 +51,35 @@ var _ = Describe("GatewayClass Status Controller", func() {
 		})
 
 		It("should set the Accepted=True condition type", func() {
-			Expect(gc.Status.Conditions).Should(HaveLen(2))
-			Expect(gc.Status.Conditions[0].Type).Should(Equal(string(apiv1.GatewayClassConditionStatusAccepted)))
-			Expect(gc.Status.Conditions[0].Status).Should(Equal(metav1.ConditionTrue))
-			Expect(gc.Status.Conditions[0].Reason).Should(Equal(string(apiv1.GatewayClassReasonAccepted)))
-			Expect(gc.Status.Conditions[0].Message).Should(ContainSubstring(`accepted by kgateway controller`))
+			Eventually(func() (*metav1.Condition, error) {
+				gc := &apiv1.GatewayClass{}
+				if err := k8sClient.Get(ctx, types.NamespacedName{Name: gatewayClassName}, gc); err != nil {
+					return nil, err
+				}
+				return meta.FindStatusCondition(gc.Status.Conditions, string(apiv1.GatewayClassConditionStatusAccepted)), nil
+			}, timeout, interval).Should(And(
+				Not(BeNil()),
+				WithTransform(func(c *metav1.Condition) string { return c.Type }, Equal(string(apiv1.GatewayClassConditionStatusAccepted))),
+				WithTransform(func(c *metav1.Condition) metav1.ConditionStatus { return c.Status }, Equal(metav1.ConditionTrue)),
+				WithTransform(func(c *metav1.Condition) string { return c.Reason }, Equal(string(apiv1.GatewayClassReasonAccepted))),
+				WithTransform(func(c *metav1.Condition) string { return c.Message }, ContainSubstring(`accepted by kgateway controller`)),
+			))
 		})
 
 		It("should set the SupportedVersion=True condition type", func() {
-			Expect(gc.Status.Conditions).Should(HaveLen(2))
-			Expect(gc.Status.Conditions[1].Type).Should(Equal(string(apiv1.GatewayClassConditionStatusSupportedVersion)))
-			Expect(gc.Status.Conditions[1].Status).Should(Equal(metav1.ConditionTrue))
-			Expect(gc.Status.Conditions[1].Reason).Should(Equal(string(apiv1.GatewayClassReasonSupportedVersion)))
-			Expect(gc.Status.Conditions[1].Message).Should(ContainSubstring(`supported by kgateway controller`))
+			Eventually(func() (*metav1.Condition, error) {
+				gc := &apiv1.GatewayClass{}
+				if err := k8sClient.Get(ctx, types.NamespacedName{Name: gatewayClassName}, gc); err != nil {
+					return nil, err
+				}
+				return meta.FindStatusCondition(gc.Status.Conditions, string(apiv1.GatewayClassConditionStatusSupportedVersion)), nil
+			}, timeout, interval).Should(And(
+				Not(BeNil()),
+				WithTransform(func(c *metav1.Condition) string { return c.Type }, Equal(string(apiv1.GatewayClassConditionStatusSupportedVersion))),
+				WithTransform(func(c *metav1.Condition) metav1.ConditionStatus { return c.Status }, Equal(metav1.ConditionTrue)),
+				WithTransform(func(c *metav1.Condition) string { return c.Reason }, Equal(string(apiv1.GatewayClassReasonSupportedVersion))),
+				WithTransform(func(c *metav1.Condition) string { return c.Message }, ContainSubstring(`supported by kgateway controller`)),
+			))
 		})
 	})
 })

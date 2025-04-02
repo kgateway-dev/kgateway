@@ -14,4 +14,4 @@ $(IMAGE_REGISTRY)/gloo-ee-envoy-wrapper:$(VERSION)-debug
 
 This new image should emit more information about the segmentation fault. 
 
-Please note that Envoy seg faults are considered a security risk, and therefore, you should follow the [steps to notify Solo.io of a security issue](/devel/contributing/issues.md#security-issues)
+Please note that Envoy seg faults are considered a security risk, and therefore, you should follow the [steps to notify the maintainers of a security issue](/devel/contributing/issues.md#security-issues)
