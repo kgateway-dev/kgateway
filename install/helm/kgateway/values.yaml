@@ -49,7 +49,7 @@ controller:
   image:
     registry: ""
     repository: kgateway
-    pullPolicy: IfNotPresent
+    pullPolicy: ""
     tag: ""
   service:
     type: ClusterIP

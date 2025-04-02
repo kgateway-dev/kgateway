@@ -7,6 +7,7 @@ import (
 	"maps"
 	"time"
 
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 
@@ -390,6 +391,11 @@ func (s *ProxySyncer) syncRouteStatus(ctx context.Context, rm reports.ReportMap)
 				route := getRouteFunc()
 				err := s.mgr.GetClient().Get(ctx, routeKey, route)
 				if err != nil {
+					if apierrors.IsNotFound(err) {
+						// the route is not found, we can't report status on it
+						// if it's recreated, we'll retranslate it anyway
+						return nil
+					}
 					logger.Errorw(fmt.Sprintf("%s get failed", routeType), "error", err, "route", routeKey)
 					return err
 				}
