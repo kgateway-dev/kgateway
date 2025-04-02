@@ -22,6 +22,8 @@ jobs:
 
       - name: Set up Git
         run: |
+          # See https://github.com/orgs/community/discussions/26560 for the correct email
+          # to use for the github-actions[bot] user.
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
