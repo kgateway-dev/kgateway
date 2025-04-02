@@ -22,7 +22,7 @@ kubectl apply -f examples/waypoint/httpbin-mesh.yaml
 
 This namespace has two important labels:
 
-```bash
+```yaml
 # ztunnel will capture traffic for all services in this namespace
 istio.io/dataplane-mode: ambient
 
@@ -67,7 +67,9 @@ this section it's demonstrated on how to apply and test a simple Authorization.
 
 1. Apply the follow authorization policy that denies GET requests to httpbin service:
 
+```bash
 kubectl apply -f examples/waypoint/httpbin-authz.yaml
+```
 
 2. Test the traffic follow:
 
@@ -89,8 +91,10 @@ CLIENT=$(kubectl get po -n httpbin -l app=curl -ojsonpath='{.items[0].metadata.n
   traversed-waypoint: httpbin-waypoint
   content-length: 19
   content-type: text/plain
-  date: Wed, 26 Mar 2025 21:51:03 GMT
+  date: <...omitted...>
   server: envoy
+  
+  RBAC: access denied
   ```
 
 - When trying `POST` it is allowed:
@@ -106,11 +110,11 @@ CLIENT=$(kubectl get po -n httpbin -l app=curl -ojsonpath='{.items[0].metadata.n
   access-control-allow-credentials: true
   access-control-allow-origin: *
   content-type: application/json; charset=utf-8
-  date: Wed, 26 Mar 2025 21:56:09 GMT
+  date: <...omitted...>
   content-length: 639
   x-envoy-upstream-service-time: 2
   traversed-waypoint: httpbin-waypoint
-  server: envoyCLIENT=$(kubectl get po -n httpbin -l app=curl -ojsonpath='{.items[0].metadata.name}')
+  server: envoy
   ```
 
 ## Deploy on your own
