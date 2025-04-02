@@ -19,6 +19,8 @@ on:
 jobs:
   run-conformance-tests:
     runs-on: ubuntu-22.04
+    env:
+      IMAGE_REGISTRY: cr.kgateway.dev/kgateway-dev
     strategy:
       matrix:
         # TODO(tim): Avoid hardcoding versions here. It's a bit tricky based on
