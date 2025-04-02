@@ -44,7 +44,7 @@ jobs:
         # March 28th, 2.5 minutes
         - cluster-name: 'cluster-four'
           go-test-args: '-v -timeout=25m'
-          go-test-run-regex: '^TestKgateway$$/^ExtProc$$|^TestKgateway$$/^ExtAuth$$'
+          go-test-run-regex: '^TestKgateway$$/^ExtProc$$|^TestKgateway$$/^ExtAuth$$|^TestKgateway$$/^AccessLog$$'
           localstack: 'false'
         # March 18, 2025: 6 minutes
         - cluster-name: 'cluster-ai'
