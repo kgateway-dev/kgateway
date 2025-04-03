@@ -72,6 +72,20 @@ func (s *testingSuite) SetupSuite() {
 	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, httpbinDeployment.ObjectMeta.GetNamespace(), metav1.ListOptions{
 		LabelSelector: "app=httpbin",
 	})
+	s.testInstallation.Assertions.EventuallyPodsReady(
+		s.ctx,
+		"kgateway-test",
+		metav1.ListOptions{
+			LabelSelector: "app.kubernetes.io/name=kgateway",
+		},
+	)
+	s.testInstallation.Assertions.EventuallyPodsReady(
+		s.ctx,
+		gatewayDeployment.ObjectMeta.GetNamespace(),
+		metav1.ListOptions{
+			LabelSelector: "gateway.networking.k8s.io/gateway-name=gw",
+		},
+	)
 	s.testInstallation.Assertions.EventuallyHTTPRouteCondition(s.ctx, "httpbin", "httpbin", gwv1.RouteConditionAccepted, metav1.ConditionTrue)
 }
 
@@ -168,6 +182,13 @@ func (s *testingSuite) TestAccessLogWithGrpcSink() {
 	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, grpcServiceManifest)
 	s.Require().NoError(err)
 
+	s.testInstallation.Assertions.EventuallyPodsReady(
+		s.ctx,
+		accessLoggerDeployment.ObjectMeta.GetNamespace(),
+		metav1.ListOptions{
+			LabelSelector: "kgateway=gateway-proxy-access-logger",
+		},
+	)
 	// check access log
 	pods, err := s.testInstallation.Actions.Kubectl().GetPodsInNsWithLabel(
 		s.ctx,

@@ -156,3 +156,30 @@ func (p *Provider) EventuallyPodContainerDoesNotContainEnvVar(
 		WithPolling(pollingInterval).
 		Should(gomega.Succeed(), fmt.Sprintf("Failed to match pod in namespace %s", podNamespace))
 }
+
+// EventuallyPodsReady asserts that all containers in all pods matching the given selector are reporting a ready status.
+func (p *Provider) EventuallyPodsReady(
+	ctx context.Context,
+	podNamespace string,
+	listOpt metav1.ListOptions,
+	timeout ...time.Duration,
+) {
+	currentTimeout, pollingInterval := helpers.GetTimeouts(timeout...)
+
+	p.Gomega.Eventually(func(g gomega.Gomega) {
+		pods, err := p.clusterContext.Clientset.CoreV1().Pods(podNamespace).List(ctx, listOpt)
+		g.Expect(err).NotTo(gomega.HaveOccurred(), "Failed to list pods")
+		g.Expect(pods.Items).NotTo(gomega.BeEmpty(), "No pods found matching selector")
+
+		for _, pod := range pods.Items {
+			for _, container := range pod.Status.ContainerStatuses {
+				g.Expect(container.Ready).To(gomega.BeTrue(),
+					fmt.Sprintf("Container %s in pod %s should be ready", container.Name, pod.Name))
+			}
+		}
+	}).
+		WithTimeout(currentTimeout).
+		WithPolling(pollingInterval).
+		Should(gomega.Succeed(), fmt.Sprintf("All pods matching selector %v in namespace %s should be ready",
+			listOpt, podNamespace))
+}
