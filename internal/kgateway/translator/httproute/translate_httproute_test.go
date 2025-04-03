@@ -282,7 +282,9 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 					Name:      "my-inferencepool",
 					Namespace: "bar",
 				},
-				Spec: infextv1a2.InferencePoolSpec{},
+				Spec: infextv1a2.InferencePoolSpec{
+					TargetPortNumber: int32(8000),
+				},
 			}
 		})
 
@@ -306,7 +308,6 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 										Namespace: ptr.To(gwv1.Namespace(backingPool.Namespace)),
 										Kind:      ptr.To(gwv1.Kind(wellknown.InferencePoolKind)),
 										Group:     ptr.To(gwv1.Group(infextv1a2.GroupVersion.Group)),
-										Port:      ptr.To(gwv1.PortNumber(9002)),
 									},
 								},
 							},
@@ -328,7 +329,7 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 											Kind:      wellknown.InferencePoolKind,
 											Group:     infextv1a2.GroupVersion.Group,
 										},
-										Port: 9002,
+										Port: 8000,
 										Obj:  backingPool,
 									},
 									ClusterName: "inferencepool_cluster",
