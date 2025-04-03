@@ -1,114 +1,89 @@
-# Configuration for make analyze
-#
-# For reference, consider:
-#
-# * https://github.com/golangci/golangci-lint/blob/master/.golangci.reference.yml
-# * https://golangci-lint.run/usage/configuration/
-#
+version: "2"
+run:
+  concurrency: 4
+  tests: true
+output:
+  formats:
+    text:
+      path: stdout
+      print-linter-name: true
+      print-issued-lines: true
 linters:
-  # Disable all linters.
-  disable-all: true
-  # Enable specific linters
-  # https://golangci-lint.run/usage/linters/#enabled-by-default
+  default: none
   enable:
-    # Given that we have not had linting enabled in this repository, it would be a large change to turn on all linters immediately.
-    # We are aiming to progressively enable linters.
-    # If you see a linter that can be added, please do so.
     - bodyclose
     - copyloopvar
     - forbidigo
     - ginkgolinter
-    - goimports
+    - importas
     - ineffassign
     - misspell
     - nakedret
     - predeclared
     - unused
     - usestdlibvars
-    - importas
     - whitespace
-
-# Settings dedicated to specific linters.
-linters-settings:
-  importas:
-    alias:
-      - pkg: k8s.io/api/apps/v1
-        alias: appsv1
-      - pkg: k8s.io/api/core/v1
-        alias: corev1
-      - pkg: k8s.io/apimachinery/pkg/apis/meta/v1
-        alias: metav1
-      - pkg: k8s.io/api/batch/v1
-        alias: batchv1
-  nakedret:
-    # The team consensus is that naked returns hinder the readability of the code.
-    # However, named return values can still be useful as documentation for certain scenarios.
-    # By setting this to 0 in lieu of the default 30, we will effectively allow named return
-    # values as long as they are included in the return statement(s) e.g.
-    # func foo() (a, b int) {
-    #     a = 1
-    #     b = 2
-    #     c := 3
-    #     d := 4
-    #     // These are allowed
-    #     return a, b
-    #     return c, d
-    #     return d, c
-    #     // This is NOT allowed
-    #     return
-    #     // This is allowed but really, really bad. DO NOT do this.
-    #     return b, a
-    max-func-lines: 0
-  misspell:
-    ignore-words:
-    - kgateway
-  forbidigo:
-    forbid:
-      - p: "anypb.New"
-        msg: "Do not use anypb.New; Use utils.MessageToAny instead."
-
+  settings:
+    forbidigo:
+      forbid:
+        - pattern: anypb.New
+          msg: Do not use anypb.New; Use utils.MessageToAny instead.
+    importas:
+      alias:
+        - pkg: k8s.io/api/apps/v1
+          alias: appsv1
+        - pkg: k8s.io/api/core/v1
+          alias: corev1
+        - pkg: k8s.io/apimachinery/pkg/apis/meta/v1
+          alias: metav1
+        - pkg: k8s.io/api/batch/v1
+          alias: batchv1
+    misspell:
+      ignore-rules:
+        - kgateway
+    nakedret:
+      # The team consensus is that naked returns hinder the readability of the code.
+      # However, named return values can still be useful as documentation for certain scenarios.
+      # By setting this to 0 in lieu of the default 30, we will effectively allow named return
+      # values as long as they are included in the return statement(s) e.g.
+      # func foo() (a, b int) {
+      #     a = 1
+      #     b = 2
+      #     c := 3
+      #     d := 4
+      #     // These are allowed
+      #     return a, b
+      #     return c, d
+      #     return d, c
+      #     // This is NOT allowed
+      #     return
+      #     // This is allowed but really, really bad. DO NOT do this.
+      #     return b, a
+      max-func-lines: 0
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    paths:
+      - test/rules
+      - gomock_reflect_\d*
+      - third_party$
+      - builtin$
+      - examples$
 issues:
-  # Maximum count of issues with the same text.
-  # Set to 0 to disable.
   max-same-issues: 0
-
-  # Make issues output unique by line.
   uniq-by-line: true
-
-  exclude-dirs:
-    # don't lint ruleguard files
-    - test/rules
-
-    # don't lint gomock intermediate files
-    - 'gomock_reflect_\d*'
-
-run:
-  # Number of CPUs to use when running golangci-lint.
-  # Default: the number of logical CPUs in the machine
-  # The GME team found performance to be better when using a subset of total CPUs, so we chose 4, like they did.
-  concurrency: 4
-
-  # Include test files or not.
-  # We have found that tests which break the linter are often symptomatic of a poorly written test.
-  # To avoid unintentionally introducing tests that don't do what we expect, we run the linter against them.
-  tests: true
-
-  # Timeout for analysis, e.g. 30s, 5m.
-  # We select 10 minutes somewhat arbitrarily.
-  # The idea is that we want a timeout that is long enough to allow the job to run.
-  # If we find that the job is timing out, we can explore ways to make this job run faster, or increase the timeout.
-  timeout: 10m
-
-# output configuration options
-output:
-  formats:
-    - format: colored-line-number
-
-  # Print lines of code with issue.
-  print-issued-lines: true
-
-  # Print linter name in the end of issue text.
-  print-linter-name: true
-
-  # Sort results by: filepath, line and column.
-  sort-results: true
+formatters:
+  enable:
+    - goimports
+  exclusions:
+    generated: lax
+    paths:
+      - test/rules
+      - gomock_reflect_\d*
+      - third_party$
+      - builtin$
+      - examples$

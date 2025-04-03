@@ -21,7 +21,7 @@ Name|Version|License
 [pkg/errors](https://github.com/pkg/errors)|v0.9.1|BSD 2-clause "Simplified" License
 [rotisserie/eris](https://github.com/rotisserie/eris)|v0.5.4|MIT License
 [spf13/afero](https://github.com/spf13/afero)|v1.12.0|Apache License 2.0
-[spf13/cobra](https://github.com/spf13/cobra)|v1.8.1|Apache License 2.0
+[spf13/cobra](https://github.com/spf13/cobra)|v1.9.1|Apache License 2.0
 [stretchr/testify](https://github.com/stretchr/testify)|v1.10.0|MIT License
 [go.opencensus.io](https://go.opencensus.io)|v0.24.0|Apache License 2.0
 [go.uber.org/zap](https://go.uber.org/zap)|v1.27.0|MIT License

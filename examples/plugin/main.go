@@ -29,7 +29,7 @@ An example plugin, that uses a ConfigMap as a policy. We use a targetRef annotat
 policy to an HTTPRouter. We will then add the key value pairs in the ConfigMap to the metadata of
 the envoy route route.
 
-Exmaple ConfigMap:
+Example ConfigMap:
 
 apiVersion: v1
 kind: ConfigMap
