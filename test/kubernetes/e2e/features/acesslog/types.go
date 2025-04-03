@@ -12,9 +12,9 @@ import (
 
 var (
 	// manifests
-	setupManifest    = filepath.Join(fsutils.MustGetThisDir(), "testdata", "setup.yaml")
-	fileSinkManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "filesink.yaml")
-
+	setupManifest       = filepath.Join(fsutils.MustGetThisDir(), "testdata", "setup.yaml")
+	fileSinkManifest    = filepath.Join(fsutils.MustGetThisDir(), "testdata", "filesink.yaml")
+	grpcServiceManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "grpc.yaml")
 	// Core infrastructure objects that we need to track
 	gatewayObjectMeta = metav1.ObjectMeta{
 		Name:      "gw",
@@ -22,6 +22,12 @@ var (
 	}
 	gatewayService    = &corev1.Service{ObjectMeta: gatewayObjectMeta}
 	gatewayDeployment = &appsv1.Deployment{ObjectMeta: gatewayObjectMeta}
+
+	accessLoggerObjectMeta = metav1.ObjectMeta{
+		Name:      "gateway-proxy-access-logger",
+		Namespace: "default",
+	}
+	accessLoggerDeployment = &appsv1.Deployment{ObjectMeta: accessLoggerObjectMeta}
 
 	httpbinObjectMeta = metav1.ObjectMeta{
 		Name:      "httpbin",
