@@ -29,7 +29,7 @@ func NewPlugin(
 				return nil
 			}
 
-			return NewTranslator(queries, waypointQueries)
+			return NewTranslator(queries, waypointQueries, commonCols.Settings)
 		},
 		ExtraHasSynced: func() bool {
 			return waypointQueries.HasSynced()

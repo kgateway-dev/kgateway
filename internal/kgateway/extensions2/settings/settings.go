@@ -41,6 +41,11 @@ type Settings struct {
 	DefaultImageTag string `split_words:"true" default:""`
 	// DefaultImagePullPolicy is the default image pull policy to use for the kgateway image.
 	DefaultImagePullPolicy string `split_words:"true" default:"IfNotPresent"`
+
+	// WaypointLocalBinding will make the waypoint bind to a loopback address,
+	// so that only the zTunnel can make connections to it. This requires the zTunnel
+	// shipped with Istio 1.26.0+.
+	WaypointLocalBinding bool `split_words:"true" default:"false"`
 }
 
 // BuildSettings returns a zero-valued Settings obj if error is encountered when parsing env
