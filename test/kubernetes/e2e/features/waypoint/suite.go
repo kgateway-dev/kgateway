@@ -81,6 +81,27 @@ func (s *testingSuite) SetupSuite() {
 			LabelSelector: app.lbl + "=" + app.val,
 		}
 		s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, testNamespace, listOpts, readyTimeout)
+		s.testInstallation.Assertions.EventuallyPodsReadyByLabel(s.ctx, testNamespace, listOpts, readyTimeout)
+	}
+
+	for _, app := range wantApps {
+		pods, err := s.testInstallation.ClusterContext.Clientset.CoreV1().Pods(testNamespace).List(
+			s.ctx,
+			metav1.ListOptions{LabelSelector: app.lbl + "=" + app.val},
+		)
+		if err != nil {
+			s.T().Logf("Error listing pods with label %s=%s: %v", app.lbl, app.val, err)
+			continue
+		}
+
+		s.T().Logf("Found %d pods with label %s=%s", len(pods.Items), app.lbl, app.val)
+		for _, pod := range pods.Items {
+			s.T().Logf("Pod %s status: %s", pod.Name, pod.Status.Phase)
+			for _, cond := range pod.Status.Conditions {
+				s.T().Logf("  - Condition: %s=%s (last transition: %s)",
+					cond.Type, cond.Status, cond.LastTransitionTime)
+			}
+		}
 	}
 }
 
