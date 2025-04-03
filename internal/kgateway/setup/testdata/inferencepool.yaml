@@ -28,7 +28,6 @@ spec:
         - name: gateway-pool
           kind: InferencePool
           group: inference.networking.x-k8s.io
-          port: 8080
           weight: 1
 ---
 # This service is auto created by the inference extension deployer but it's created
