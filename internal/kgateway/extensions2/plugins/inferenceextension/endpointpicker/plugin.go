@@ -106,7 +106,6 @@ func NewPluginFromCollections(
 				Name:      pool.Name,
 			},
 			Obj:               pool,
-			Port:              pool.Spec.TargetPortNumber,
 			GvPrefix:          "endpoint-picker",
 			CanonicalHostname: "",
 			ObjIr:             newInferencePool(pool),

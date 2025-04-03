@@ -157,29 +157,41 @@ func (p *Provider) EventuallyPodContainerDoesNotContainEnvVar(
 		Should(gomega.Succeed(), fmt.Sprintf("Failed to match pod in namespace %s", podNamespace))
 }
 
-// EventuallyPodsReady asserts that all containers in all pods matching the given selector are reporting a ready status.
-func (p *Provider) EventuallyPodsReady(
+func (p *Provider) EventuallyPodsReadyByLabel(
 	ctx context.Context,
 	podNamespace string,
-	listOpt metav1.ListOptions,
+	podListOpt metav1.ListOptions,
 	timeout ...time.Duration,
 ) {
-	currentTimeout, pollingInterval := helpers.GetTimeouts(timeout...)
+	fmt.Printf("Checking for ready pods in namespace %s with label %s", podNamespace, podListOpt)
 
-	p.Gomega.Eventually(func(g gomega.Gomega) {
-		pods, err := p.clusterContext.Clientset.CoreV1().Pods(podNamespace).List(ctx, listOpt)
-		g.Expect(err).NotTo(gomega.HaveOccurred(), "Failed to list pods")
-		g.Expect(pods.Items).NotTo(gomega.BeEmpty(), "No pods found matching selector")
+	p.EventuallyPodsMatches(
+		ctx,
+		podNamespace,
+		podListOpt,
+		podReadyConditionMatcher(p.Gomega),
+		timeout...,
+	)
+}
 
-		for _, pod := range pods.Items {
-			for _, container := range pod.Status.ContainerStatuses {
-				g.Expect(container.Ready).To(gomega.BeTrue(),
-					fmt.Sprintf("Container %s in pod %s should be ready", container.Name, pod.Name))
+func podReadyConditionMatcher(t gomega.Gomega) types.GomegaMatcher {
+	return gomega.WithTransform(func(pod corev1.Pod) bool {
+		fmt.Printf("Checking pod %s/%s readiness conditions:", pod.Namespace, pod.Name)
+
+		if len(pod.Status.Conditions) == 0 {
+			fmt.Printf("  - No conditions found for pod %s", pod.Name)
+			return false
+		}
+
+		for _, condition := range pod.Status.Conditions {
+			fmt.Printf("  - Condition: Type=%s, Status=%s", condition.Type, condition.Status)
+			if condition.Type == corev1.PodReady && condition.Status == corev1.ConditionTrue {
+				fmt.Printf("  - Pod %s is READY", pod.Name)
+				return true
 			}
 		}
-	}).
-		WithTimeout(currentTimeout).
-		WithPolling(pollingInterval).
-		Should(gomega.Succeed(), fmt.Sprintf("All pods matching selector %v in namespace %s should be ready",
-			listOpt, podNamespace))
+
+		fmt.Printf("  - Pod %s is NOT ready", pod.Name)
+		return false
+	}, gomega.BeTrue())
 }

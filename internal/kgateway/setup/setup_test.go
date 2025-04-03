@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"maps"
 	"net"
@@ -40,6 +41,7 @@ import (
 	istiokube "istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/krt"
 	istioslices "istio.io/istio/pkg/slices"
+	"istio.io/istio/pkg/test/util/retry"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
@@ -276,7 +278,10 @@ spec:
 			}
 		})
 
-		dump := dumper.Dump(t, ctx)
+		dump, err := dumper.Dump(t, ctx)
+		if err != nil {
+			t.Error(err)
+		}
 		pfc := dump.Routes[0].GetVirtualHosts()[0].GetRoutes()[0].GetTypedPerFilterConfig()
 		if len(pfc) != 1 {
 			t.Fatalf("expected 1 filter config, got %d", len(pfc))
@@ -475,11 +480,10 @@ func testScenario(
 		t.Fatalf("failed to apply yaml: %v", err)
 	}
 	t.Log("applied yamls", t.Name())
-	// make sure all yamls reached the control plane
-	time.Sleep(time.Second)
 
-	dumper := newXdsDumper(t, ctx, xdsPort, testgwname)
-	t.Cleanup(dumper.Close)
+	// wait at least a second before the first check
+	// to give the CP time to process
+	time.Sleep(time.Second)
 
 	t.Cleanup(func() {
 		if t.Failed() {
@@ -489,23 +493,28 @@ func testScenario(
 		}
 	})
 
-	dump := dumper.Dump(t, ctx)
-	if len(dump.Listeners) == 0 {
-		j, _ := kdbg.MarshalJSON()
-		t.Logf("timed out waiting - krt state for test: %s %s", t.Name(), string(j))
-		t.Fatalf("timed out waiting for listeners")
-	}
-	if write {
-		t.Logf("writing out file")
-		// serialize xdsDump to yaml
-		d, err := dump.ToYaml()
+	retry.UntilSuccessOrFail(t, func() error {
+		dumper := newXdsDumper(t, ctx, xdsPort, testgwname)
+		defer dumper.Close()
+		dump, err := dumper.Dump(t, ctx)
 		if err != nil {
-			t.Fatalf("failed to serialize xdsDump: %v", err)
+			return err
 		}
-		os.WriteFile(fout, d, 0o644)
-		t.Fatal("wrote out file - nothing to test")
-	}
-	dump.Compare(t, expectedXdsDump)
+		if len(dump.Listeners) == 0 {
+			return fmt.Errorf("timed out waiting for listeners")
+		}
+		if write {
+			t.Logf("writing out file")
+			// serialize xdsDump to yaml
+			d, err := dump.ToYaml()
+			if err != nil {
+				return fmt.Errorf("failed to serialize xdsDump: %v", err)
+			}
+			os.WriteFile(fout, d, 0o644)
+			return fmt.Errorf("wrote out file - nothing to test")
+		}
+		return dump.Compare(expectedXdsDump)
+	}, retry.Converge(2), retry.BackoffDelay(2*time.Second), retry.Timeout(10*time.Second))
 	t.Logf("%s finished", t.Name())
 }
 
@@ -570,7 +579,7 @@ func newXdsDumper(t *testing.T, ctx context.Context, xdsPort int, gwname string)
 	return d
 }
 
-func (x xdsDumper) Dump(t *testing.T, ctx context.Context) xdsDump {
+func (x xdsDumper) Dump(t *testing.T, ctx context.Context) (xdsDump, error) {
 	dr := proto.Clone(x.dr).(*discovery_v3.DiscoveryRequest)
 	dr.TypeUrl = "type.googleapis.com/envoy.config.cluster.v3.Cluster"
 	x.adsClient.Send(dr)
@@ -580,6 +589,7 @@ func (x xdsDumper) Dump(t *testing.T, ctx context.Context) xdsDump {
 
 	var clusters []*envoycluster.Cluster
 	var listeners []*envoylistener.Listener
+	var errs error
 
 	// run this in parallel with a 5s timeout
 	done := make(chan struct{})
@@ -589,14 +599,14 @@ func (x xdsDumper) Dump(t *testing.T, ctx context.Context) xdsDump {
 		for i := 0; i < sent; i++ {
 			dresp, err := x.adsClient.Recv()
 			if err != nil {
-				t.Errorf("failed to get response from xds server: %v", err)
+				errs = errors.Join(errs, fmt.Errorf("failed to get response from xds server: %v", err))
 			}
 			t.Logf("got response: %s len: %d", dresp.GetTypeUrl(), len(dresp.GetResources()))
 			if dresp.GetTypeUrl() == "type.googleapis.com/envoy.config.cluster.v3.Cluster" {
 				for _, anyCluster := range dresp.GetResources() {
 					var cluster envoycluster.Cluster
 					if err := anyCluster.UnmarshalTo(&cluster); err != nil {
-						t.Errorf("failed to unmarshal cluster: %v", err)
+						errs = errors.Join(errs, fmt.Errorf("failed to unmarshal cluster: %v", err))
 					}
 					clusters = append(clusters, &cluster)
 				}
@@ -605,7 +615,7 @@ func (x xdsDumper) Dump(t *testing.T, ctx context.Context) xdsDump {
 				for _, anyListener := range dresp.GetResources() {
 					var listener envoylistener.Listener
 					if err := anyListener.UnmarshalTo(&listener); err != nil {
-						t.Errorf("failed to unmarshal listener: %v", err)
+						errs = errors.Join(errs, fmt.Errorf("failed to unmarshal listener: %v", err))
 					}
 					listeners = append(listeners, &listener)
 					needMoreListerners = needMoreListerners || (len(getroutesnames(&listener)) == 0)
@@ -632,12 +642,12 @@ func (x xdsDumper) Dump(t *testing.T, ctx context.Context) xdsDump {
 	case <-done:
 	case <-time.After(5 * time.Second):
 		// don't fatal yet as we want to dump the state while still connected
-		t.Error("timed out waiting for listener/cluster xds dump")
-		return xdsDump{}
+		errs = errors.Join(errs, fmt.Errorf("timed out waiting for listener/cluster xds dump"))
+		return xdsDump{}, errs
 	}
 	if len(listeners) == 0 {
-		t.Error("no listeners found")
-		return xdsDump{}
+		errs = errors.Join(errs, fmt.Errorf("no listeners found"))
+		return xdsDump{}, errs
 	}
 	t.Logf("xds: found %d listeners and %d clusters", len(listeners), len(clusters))
 
@@ -678,14 +688,14 @@ func (x xdsDumper) Dump(t *testing.T, ctx context.Context) xdsDump {
 		for i := 0; i < 2; i++ {
 			dresp, err := x.adsClient.Recv()
 			if err != nil {
-				t.Errorf("failed to get response from xds server: %v", err)
+				errs = errors.Join(errs, fmt.Errorf("failed to get response from xds server: %v", err))
 			}
 			t.Logf("got response: %s len: %d", dresp.GetTypeUrl(), len(dresp.GetResources()))
 			if dresp.GetTypeUrl() == "type.googleapis.com/envoy.config.route.v3.RouteConfiguration" {
 				for _, anyRoute := range dresp.GetResources() {
 					var route envoy_config_route_v3.RouteConfiguration
 					if err := anyRoute.UnmarshalTo(&route); err != nil {
-						t.Errorf("failed to unmarshal route: %v", err)
+						errs = errors.Join(errs, fmt.Errorf("failed to unmarshal route: %v", err))
 					}
 					routes = append(routes, &route)
 				}
@@ -693,7 +703,7 @@ func (x xdsDumper) Dump(t *testing.T, ctx context.Context) xdsDump {
 				for _, anyCla := range dresp.GetResources() {
 					var cla envoyendpoint.ClusterLoadAssignment
 					if err := anyCla.UnmarshalTo(&cla); err != nil {
-						t.Errorf("failed to unmarshal cla: %v", err)
+						errs = errors.Join(errs, fmt.Errorf("failed to unmarshal cla: %v", err))
 					}
 					// remove kube endpoints, as with envtests we will get random ports, so we cant assert on them
 					if !strings.Contains(cla.ClusterName, "kubernetes") {
@@ -707,17 +717,18 @@ func (x xdsDumper) Dump(t *testing.T, ctx context.Context) xdsDump {
 	case <-done:
 	case <-time.After(5 * time.Second):
 		// don't fatal yet as we want to dump the state while still connected
-		t.Error("timed out waiting for routes/cla xds dump")
-		return xdsDump{}
+		errs = errors.Join(errs, fmt.Errorf("timed out waiting for routes/cla xds dump"))
+		return xdsDump{}, errs
 	}
 
 	t.Logf("found %d routes and %d endpoints", len(routes), len(endpoints))
-	return xdsDump{
+	xdsDump := xdsDump{
 		Clusters:  clusters,
 		Listeners: listeners,
 		Endpoints: endpoints,
 		Routes:    routes,
 	}
+	return xdsDump, errs
 }
 
 type xdsDump struct {
@@ -727,19 +738,21 @@ type xdsDump struct {
 	Routes    []*envoy_config_route_v3.RouteConfiguration
 }
 
-func (x *xdsDump) Compare(t *testing.T, other xdsDump) {
+func (x *xdsDump) Compare(other xdsDump) error {
+	var errs error
+
 	if len(x.Clusters) != len(other.Clusters) {
-		t.Errorf("expected %v clusters, got %v", len(other.Clusters), len(x.Clusters))
+		errs = errors.Join(errs, fmt.Errorf("expected %v clusters, got %v", len(other.Clusters), len(x.Clusters)))
 	}
 
 	if len(x.Listeners) != len(other.Listeners) {
-		t.Errorf("expected %v listeners, got %v", len(other.Listeners), len(x.Listeners))
+		errs = errors.Join(errs, fmt.Errorf("expected %v listeners, got %v", len(other.Listeners), len(x.Listeners)))
 	}
 	if len(x.Endpoints) != len(other.Endpoints) {
-		t.Errorf("expected %v endpoints, got %v", len(other.Endpoints), len(x.Endpoints))
+		errs = errors.Join(errs, fmt.Errorf("expected %v endpoints, got %v", len(other.Endpoints), len(x.Endpoints)))
 	}
 	if len(x.Routes) != len(other.Routes) {
-		t.Errorf("expected %v routes, got %v", len(other.Routes), len(x.Routes))
+		errs = errors.Join(errs, fmt.Errorf("expected %v routes, got %v", len(other.Routes), len(x.Routes)))
 	}
 
 	clusterset := map[string]*envoycluster.Cluster{}
@@ -749,20 +762,20 @@ func (x *xdsDump) Compare(t *testing.T, other xdsDump) {
 	for _, otherc := range other.Clusters {
 		ourc := clusterset[otherc.Name]
 		if ourc == nil {
-			t.Errorf("cluster %v not found", otherc.Name)
+			errs = errors.Join(errs, fmt.Errorf("cluster %v not found", otherc.Name))
 			continue
 		}
 		ourCla := ourc.LoadAssignment
 		otherCla := otherc.LoadAssignment
-		compareCla(t, ourCla, otherCla)
+		if err := compareCla(ourCla, otherCla); err != nil {
+			errs = errors.Join(errs, fmt.Errorf("cluster %v: %w", otherc.Name, err))
+		}
 
 		// don't proto.Equal the LoadAssignment
 		ourc.LoadAssignment = nil
 		otherc.LoadAssignment = nil
 		if !proto.Equal(otherc, ourc) {
-			t.Errorf("cluster %v not equal", otherc.Name)
-			t.Errorf("got: %s", ourc.String())
-			t.Errorf("expected: %s", otherc.String())
+			errs = errors.Join(errs, fmt.Errorf("cluster %v not equal: got: %s, expected: %s", otherc.Name, ourc.String(), otherc.String()))
 		}
 		ourc.LoadAssignment = ourCla
 		otherc.LoadAssignment = otherCla
@@ -774,11 +787,11 @@ func (x *xdsDump) Compare(t *testing.T, other xdsDump) {
 	for _, c := range other.Listeners {
 		otherc := listenerset[c.Name]
 		if otherc == nil {
-			t.Errorf("listener %v not found", c.Name)
+			errs = errors.Join(errs, fmt.Errorf("listener %v not found", c.Name))
 			continue
 		}
 		if !proto.Equal(c, otherc) {
-			t.Errorf("listener %v not equal", c.Name)
+			errs = errors.Join(errs, fmt.Errorf("listener %v not equal", c.Name))
 		}
 	}
 	routeset := map[string]*envoy_config_route_v3.RouteConfiguration{}
@@ -788,7 +801,7 @@ func (x *xdsDump) Compare(t *testing.T, other xdsDump) {
 	for _, c := range other.Routes {
 		otherc := routeset[c.Name]
 		if otherc == nil {
-			t.Errorf("route %v not found", c.Name)
+			errs = errors.Join(errs, fmt.Errorf("route %v not found", c.Name))
 			continue
 		}
 
@@ -796,7 +809,7 @@ func (x *xdsDump) Compare(t *testing.T, other xdsDump) {
 		vhostFn := func(x, y *envoy_config_route_v3.VirtualHost) bool { return x.Name < y.Name }
 		if diff := cmp.Diff(c, otherc, protocmp.Transform(),
 			protocmp.SortRepeated(vhostFn)); diff != "" {
-			t.Errorf("route %v not equal!\ndiff:\b%s\n", c.Name, diff)
+			errs = errors.Join(errs, fmt.Errorf("route %v not equal!\ndiff:\b%s\n", c.Name, diff))
 		}
 	}
 
@@ -806,32 +819,36 @@ func (x *xdsDump) Compare(t *testing.T, other xdsDump) {
 	}
 	for _, c := range other.Endpoints {
 		otherc := epset[c.ClusterName]
-		compareCla(t, c, otherc)
+		if err := compareCla(c, otherc); err != nil {
+			errs = errors.Join(errs, fmt.Errorf("endpoint %v: %w", c.ClusterName, err))
+		}
 	}
+
+	return errs
 }
 
-func compareCla(t *testing.T, c, otherc *envoyendpoint.ClusterLoadAssignment) {
+func compareCla(c, otherc *envoyendpoint.ClusterLoadAssignment) error {
 	if (c == nil) != (otherc == nil) {
-		t.Errorf("ep %v not found", c.ClusterName)
-		return
+		return fmt.Errorf("ep %v not found", c.ClusterName)
 	}
 	if c == nil || otherc == nil {
-		return
+		return nil
 	}
 	ep1 := flattenendpoints(c)
 	ep2 := flattenendpoints(otherc)
 	if !equalset(ep1, ep2) {
-		t.Errorf("ep list %v not equal: %v %v", c.ClusterName, ep1, ep2)
+		return fmt.Errorf("ep list %v not equal: %v %v", c.ClusterName, ep1, ep2)
 	}
 	ce := c.Endpoints
 	ocd := otherc.Endpoints
 	c.Endpoints = nil
 	otherc.Endpoints = nil
 	if !proto.Equal(c, otherc) {
-		t.Errorf("ep %v not equal", c.ClusterName)
+		return fmt.Errorf("ep %v not equal", c.ClusterName)
 	}
 	c.Endpoints = ce
 	otherc.Endpoints = ocd
+	return nil
 }
 
 func equalset(a, b []*envoyendpoint.LocalityLbEndpoints) bool {

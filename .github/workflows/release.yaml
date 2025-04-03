@@ -13,7 +13,7 @@ on:
   push:
     tags:
       - 'v*'
-      - '!v2.0.0-main'
+      - '!v2.1.0-main'
     branches:
       - main
   pull_request:
@@ -24,6 +24,7 @@ env:
   # this is uses the `github.repository_owner` to support releases from forks (useful for testing).
   IMAGE_REGISTRY: ghcr.io/${{ github.repository_owner }}
   VANITY_REGISTRY: cr.kgateway.dev/kgateway-dev
+  MAIN_VERSION: v2.1.0-main
 
 permissions:
   contents: write
@@ -59,7 +60,7 @@ jobs:
             VERSION="${GITHUB_REF#refs/tags/}"
             echo "goreleaser_args=--clean" >> $GITHUB_OUTPUT
           elif [[ $GITHUB_REF == refs/heads/main ]]; then
-            VERSION="v2.0.0-main"
+            VERSION="${MAIN_VERSION}"
             echo "goreleaser_args=--clean --skip=validate" >> $GITHUB_OUTPUT
           elif [[ $GITHUB_REF == refs/pull/* ]]; then
             GIT_TAG=$(git describe --tags --abbrev=0)
@@ -111,13 +112,13 @@ jobs:
       # We publish a rolling main release for every commit to main. Deleting the release
       # ensures that the tagged commit is not stale. Goreleaser will create a new tag
       # and release for the tagged commit.
-      - name: Delete v2.0.0-main release if it exists
+      - name: Delete ${MAIN_VERSION} release if it exists
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
         continue-on-error: true
         run: |
           set -x
-          echo "Deleting the v2.0.0-main release"
-          gh release delete v2.0.0-main --repo ${{ github.repository }} --yes --cleanup-tag
+          echo "Deleting the ${MAIN_VERSION} release"
+          gh release delete ${MAIN_VERSION} --repo ${{ github.repository }} --yes --cleanup-tag
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
