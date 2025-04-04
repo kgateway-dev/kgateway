@@ -122,8 +122,9 @@ type serviceEntryCollections struct {
 	WorkloadEntries krt.Collection[*networkingclient.WorkloadEntry]
 
 	// intermediate collections
-	SelectedWorkloads      krt.Collection[selectedWorkload]
-	selectedWorkloadsIndex krt.Index[string, selectedWorkload]
+	SelectingServiceEntries krt.Collection[seSelector]
+	SelectedWorkloads       krt.Collection[selectedWorkload]
+	selectedWorkloadsIndex  krt.Index[string, selectedWorkload]
 
 	// output collections
 	Backends            krt.Collection[ir.BackendObjectIR]
@@ -176,8 +177,9 @@ func initServiceEntryCollections(
 		ServiceEntries:  commonCols.ServiceEntries,
 		WorkloadEntries: WorkloadEntries,
 
-		SelectedWorkloads:      SelectedWorkloads,
-		selectedWorkloadsIndex: selectedWorkloadsIndex,
+		SelectingServiceEntries: SelectingServiceEntries,
+		SelectedWorkloads:       SelectedWorkloads,
+		selectedWorkloadsIndex:  selectedWorkloadsIndex,
 
 		Backends:            Backends,
 		Endpoints:           Endpoints,
@@ -193,6 +195,7 @@ func (s *serviceEntryCollections) HasSynced() bool {
 	return s.ServiceEntries.HasSynced() &&
 		s.WorkloadEntries.HasSynced() &&
 		s.SelectedWorkloads.HasSynced() &&
+		s.SelectingServiceEntries.HasSynced() &&
 		s.Backends.HasSynced() &&
 		s.Endpoints.HasSynced()
 }

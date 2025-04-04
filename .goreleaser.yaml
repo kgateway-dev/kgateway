@@ -177,8 +177,8 @@ release:
   mode: "replace"
   replace_existing_artifacts: true
   header: |
-    {{ if eq .Env.VERSION "v2.0.0-main" }}
-    🚀 Nightly build of kgateway!
+    {{ if eq .Env.VERSION "v2.1.0-main" }}
+    🚀 Rolling main build of kgateway!
     ---
     It includes the latest changes but may be unstable. Use it for testing and providing feedback.
     {{ else }}

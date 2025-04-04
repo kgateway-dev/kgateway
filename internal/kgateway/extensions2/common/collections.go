@@ -63,8 +63,10 @@ func (c *CommonCollections) HasSynced() bool {
 		c.Pods != nil && c.Pods.HasSynced() &&
 		c.RefGrants != nil && c.RefGrants.HasSynced() &&
 		c.ConfigMaps != nil && c.ConfigMaps.HasSynced() &&
-		c.GatewayExtensions != nil && c.GatewayExtensions.HasSynced()
-	// TODO: fill in?
+		c.GatewayExtensions != nil && c.GatewayExtensions.HasSynced() &&
+		c.Services != nil && c.Services.HasSynced() &&
+		c.ServiceEntries != nil && c.ServiceEntries.HasSynced() &&
+		c.GatewayIndex != nil && c.GatewayIndex.Gateways.HasSynced()
 }
 
 // NewCommonCollections initializes the core krt collections.
