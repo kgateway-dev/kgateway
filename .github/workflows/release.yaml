@@ -9,7 +9,10 @@ on:
       version:
         type: string
         required: false
-        description: "Override the default version (e.g. v0.0.0-manual-<git-sha>)"
+        description: |
+          Version override for the release (must start with 'v' followed by semantic version).
+          Examples: v1.2.3, v2.0.0-alpha.1, v1.0.0-beta.2
+          If not provided, defaults to v0.0.0-manual-<git-sha>
   push:
     tags:
       - 'v*'
@@ -48,13 +51,18 @@ jobs:
           GIT_SHA=$(git rev-parse --short HEAD)
           GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD | sed -e "s/\//-/g")
 
-          # Set version based on event type
-          if [[ ${{ github.event_name }} == 'workflow_dispatch' ]]; then
-            if [[ -n "${{ inputs.version }}" ]]; then
-              VERSION="${{ inputs.version }}"
-            else
-              VERSION="v0.0.0-manual-${GIT_SHA}"
+          # Validate version input for workflow_dispatch
+          if [[ ${{ github.event_name }} == 'workflow_dispatch' && -n "${{ inputs.version }}" ]]; then
+            VERSION="${{ inputs.version }}"
+            # Validate semver format. Modified version from the recommended semver format.
+            # See https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string.
+            if ! echo "$VERSION" | grep -E "^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(-((0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(\.(0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(\+([0-9a-zA-Z-]+(\.[0-9a-zA-Z-]+)*))?$" > /dev/null; then
+              echo "Error: Version '$VERSION' does not match required semver format (e.g., v1.2.3, v2.0.0-alpha.1)"
+              exit 1
             fi
+            echo "goreleaser_args=--clean --skip=validate" >> $GITHUB_OUTPUT
+          elif [[ ${{ github.event_name }} == 'workflow_dispatch' ]]; then
+            VERSION="v0.0.0-manual-${GIT_SHA}"
             echo "goreleaser_args=--clean --skip=validate" >> $GITHUB_OUTPUT
           elif [[ $GITHUB_REF == refs/tags/* ]]; then
             VERSION="${GITHUB_REF#refs/tags/}"
