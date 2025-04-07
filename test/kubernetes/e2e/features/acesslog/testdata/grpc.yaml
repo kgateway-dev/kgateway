@@ -77,16 +77,3 @@ spec:
           name: http
           protocol: TCP
 ---
-# apiVersion: gateway.networking.k8s.io/v1beta1
-# kind: ReferenceGrant
-# metadata:
-#   name: reference-grant
-#   namespace: gloo-system
-# spec:
-#   from:
-#     - group: gateway.kgateway.dev
-#       kind: HTTPListenerPolicy
-#       namespace: default
-#   to:
-#     - group: ""
-#       kind: Service
