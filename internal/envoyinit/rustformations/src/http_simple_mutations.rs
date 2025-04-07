@@ -179,20 +179,22 @@ impl<EHF: EnvoyHttpFilter> HttpFilter<EHF> for Filter {
         // use the sub route version if appropriate as we dont have valid perroute config today
         if self.route_specific.len() > 0 {
             // check filter state for info
-            let route_name_data = envoy_filter
-                .get_dynamic_metadata_string("kgateway", "route")
-                .unwrap();
-            let route_name = std::str::from_utf8(route_name_data.as_slice()).unwrap();
-            setters = self
-                .route_specific
-                .get(route_name)
-                .unwrap()
-                .request_headers_setter
-                .clone();
-
-            // TODO(nfuden)remove
-            // add a debug to the setters
-            setters.append(&mut vec![("x-debuggs".to_string(), route_name.to_string())]);
+            let route_name_data_option = envoy_filter
+                .get_dynamic_metadata_string("kgateway", "route");
+            if ! route_name_data_option.is_none() {
+                let route_name_data = route_name_data_option.unwrap();
+                // if its there then we should be able to pull the data name
+                let route_name = std::str::from_utf8(route_name_data.as_slice()).unwrap();
+                let route_config  = self
+                    .route_specific
+                    .get(route_name);
+                if !route_config.is_none() {
+                    setters = route_config
+                    .unwrap()
+                    .request_headers_setter
+                    .clone();
+                }
+            } 
         }
 
         // TODO(nfuden): find someone who knows rust to see if we really need this Hash map for serialization
@@ -252,19 +254,22 @@ impl<EHF: EnvoyHttpFilter> HttpFilter<EHF> for Filter {
         // use the sub route version if appropriate as we dont have valid perroute config today
         if self.route_specific.len() > 0 {
             // check filter state for info
-            let route_name_data = envoy_filter
-                .get_dynamic_metadata_string("kgateway", "route")
-                .unwrap();
-
-            // let route_name_slice =  .as_slice();
-            let route_name = std::str::from_utf8(route_name_data.as_slice()).unwrap();
-            setters = self
-                .route_specific
-                .get(route_name)
-                .unwrap()
-                .response_headers_setter
-                .clone();
-
+            let route_name_data_option = envoy_filter
+                .get_dynamic_metadata_string("kgateway", "route");
+            if ! route_name_data_option.is_none() {
+                let route_name_data = route_name_data_option.unwrap();
+                // if its there then we should be able to pull the data name
+                let route_name = std::str::from_utf8(route_name_data.as_slice()).unwrap();
+                let route_config  = self
+                    .route_specific
+                    .get(route_name);
+                if !route_config.is_none() {
+                    setters = route_config
+                    .unwrap()
+                    .response_headers_setter
+                    .clone();
+                }
+            } 
         }
 
         for (key, value) in &setters {

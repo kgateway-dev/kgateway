@@ -305,6 +305,9 @@ func runScenario(t *testing.T, scenarioDir string, globalSettings *settings.Sett
 			// run tests with the yaml files (but not -out.yaml files)/s
 			parentT := t
 			if strings.HasSuffix(f.Name(), ".yaml") && !strings.HasSuffix(f.Name(), "-out.yaml") {
+				if os.Getenv("TEST_PREFIX") != "" && !strings.HasPrefix(f.Name(), os.Getenv("TEST_PREFIX")) {
+					continue
+				}
 				fullpath := filepath.Join(scenarioDir, f.Name())
 				t.Run(strings.TrimSuffix(f.Name(), ".yaml"), func(t *testing.T) {
 					writer.set(t)

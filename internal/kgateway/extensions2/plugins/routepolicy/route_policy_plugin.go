@@ -164,6 +164,7 @@ type trafficPolicyPluginGwPass struct {
 	setTransformationInChain bool // TODO(nfuden): make this multi stage
 	// TODO(nfuden): dont abuse httplevel filter in favor of route level
 	rustformationStash map[string]string
+	listenerTransform  *transformationpb.RouteTransformations
 	ir.UnimplementedProxyTranslationPass
 	extprocFilter         *envoy_ext_proc_v3.ExternalProcessor
 	localRateLimitInChain *localratelimitv3.LocalRateLimit
@@ -263,6 +264,16 @@ func (p *trafficPolicyPluginGwPass) ApplyListenerPlugin(ctx context.Context, pCt
 		p.extAuthPerProvider[policy.spec.extAuth.providerName].fromListener = true
 	}
 	p.localRateLimitInChain = policy.spec.localRateLimit
+
+	if policy.spec.transform != nil {
+		p.setTransformationInChain = true
+		p.listenerTransform = policy.spec.transform
+		if p.rustformationStash == nil {
+			p.rustformationStash = make(map[string]string)
+		}
+		// routes cannot have an empty string id so we special case here
+		p.rustformationStash[""] = policy.spec.rustformationStringToStash
+	}
 }
 
 func (p *trafficPolicyPluginGwPass) ApplyVhostPlugin(ctx context.Context, pCtx *ir.VirtualHostContext, out *envoy_config_route_v3.VirtualHost) {
@@ -457,11 +468,15 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.Filt
 		filters = append(filters, extprocFilters...)
 	}
 
+	// register classic transforms
 	if p.setTransformationInChain && !useRustformations {
 		// TODO(nfuden): support stages such as early
-		// first register classic
+		transformationCfg := transformationpb.FilterTransformations{}
+		if p.listenerTransform != nil {
+			convertClassicRouteToListener(&transformationCfg, p.listenerTransform)
+		}
 		filters = append(filters, plugins.MustNewStagedFilter(transformationFilterNamePrefix,
-			&transformationpb.FilterTransformations{},
+			&transformationCfg,
 			plugins.BeforeStage(plugins.AcceptedStage)))
 	}
 	if p.setTransformationInChain && useRustformations {
@@ -471,7 +486,17 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.Filt
 		// TODO(nfuden/yuvalk): how to do route level correctly probably contribute to dynamic module upstream
 		// smash together configuration
 		filterRouteHashConfig := map[string]string{}
+		topLevel, ok := p.rustformationStash[""]
 
+		if topLevel == "" {
+			topLevel = "}"
+		} else {
+			// toplevel is already formatted and at this point its quicker to rip off the { than it is so unmarshal and all}
+			topLevel = "," + topLevel[1:]
+		}
+		if ok {
+			delete(p.rustformationStash, "")
+		}
 		for k, v := range p.rustformationStash {
 			filterRouteHashConfig[k] = v
 		}
@@ -482,8 +507,9 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.Filt
 			DynamicModuleConfig: &exteniondynamicmodulev3.DynamicModuleConfig{
 				Name: "rust_module",
 			},
-			FilterName:   "http_simple_mutations",
-			FilterConfig: fmt.Sprintf(`{"route_specific": %s}`, string(filterConfig)),
+			FilterName: "http_simple_mutations",
+
+			FilterConfig: fmt.Sprintf(`{"route_specific": %s%s`, string(filterConfig), topLevel),
 		}
 
 		filters = append(filters, plugins.MustNewStagedFilter(rustformationFilterNamePrefix,
@@ -592,7 +618,7 @@ func buildTranslateFunc(
 			}
 		}
 		// Apply transformation specific translation
-		transformationForSpec(policyCR.Spec, &outSpec)
+		transformationForSpec(ctx, policyCR.Spec, &outSpec)
 
 		if policyCR.Spec.ExtProc != nil {
 			extproc, err := toEnvoyExtProc(policyCR, krtctx, commoncol)
@@ -652,13 +678,13 @@ func aiSecretForSpec(
 }
 
 // transformationForSpec translates the transformation spec into and onto the IR policy
-func transformationForSpec(spec v1alpha1.TrafficPolicySpec, out *trafficPolicySpecIr) {
+func transformationForSpec(ctx context.Context, spec v1alpha1.TrafficPolicySpec, out *trafficPolicySpecIr) {
 	if spec.Transformation == nil {
 		return
 	}
 	var err error
 	if !useRustformations {
-		out.transform, err = toTransformFilterConfig(spec.Transformation)
+		out.transform, err = toTransformFilterConfig(ctx, spec.Transformation)
 		if err != nil {
 			out.errors = append(out.errors, err)
 		}
