@@ -72,14 +72,14 @@ func (s *testingSuite) SetupSuite() {
 	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, httpbinDeployment.ObjectMeta.GetNamespace(), metav1.ListOptions{
 		LabelSelector: "app=httpbin",
 	})
-	s.testInstallation.Assertions.EventuallyPodsReadyByLabel(
+	s.testInstallation.Assertions.EventuallyPodsRunning(
 		s.ctx,
 		"kgateway-test",
 		metav1.ListOptions{
 			LabelSelector: "app.kubernetes.io/name=kgateway",
 		},
 	)
-	s.testInstallation.Assertions.EventuallyPodsReadyByLabel(
+	s.testInstallation.Assertions.EventuallyPodsRunning(
 		s.ctx,
 		gatewayDeployment.ObjectMeta.GetNamespace(),
 		metav1.ListOptions{
@@ -182,7 +182,7 @@ func (s *testingSuite) TestAccessLogWithGrpcSink() {
 	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, grpcServiceManifest)
 	s.Require().NoError(err)
 
-	s.testInstallation.Assertions.EventuallyPodsReadyByLabel(
+	s.testInstallation.Assertions.EventuallyPodsRunning(
 		s.ctx,
 		accessLoggerDeployment.ObjectMeta.GetNamespace(),
 		metav1.ListOptions{
