@@ -19,9 +19,6 @@ import (
 	testdefaults "github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/defaults"
 )
 
-// TODO(tim): manifest mapping
-// TODO(tim): validate the GW pod is ready before running tests
-
 var _ e2e.NewSuiteFunc = NewTestingSuite
 
 // testingSuite is a suite of tests for external processing functionality
