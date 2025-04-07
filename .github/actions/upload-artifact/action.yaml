@@ -1,0 +1,34 @@
+name: Upload artifact
+
+inputs:
+  path:
+    description: "Path for files to include"
+    required: true
+  name:
+    description: "Base artifact name"
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    # Job ID is required to ensure the name of the artifact is unique, as any other component can collide
+    # It's not always possible to derive Job ID, however, so we fall back to timestamp which is highly likely to be unique
+    - name: Get Job ID from GH API
+      shell: bash
+      id: get-job-id
+      run: |
+        jobs=$(gh api repos/${{ github.repository }}/actions/runs/${{ github.run_id}}/attempts/${{ github.run_attempt }}/jobs)
+        job_len=$(echo $jobs | jq -r '[.jobs[] | select(.runner_name=="${{ runner.name }}")] | length')
+        if [[ $job_len -eq "1" ]]; then
+          job_id=$(echo $jobs | jq -r '.jobs[] | select(.runner_name=="${{ runner.name }}") | .id')
+          echo "job_id=$job_id" >> $GITHUB_OUTPUT
+        else
+          ts=$(date +'t%Y%m%d%H%M%S')
+          echo "job_id=$ts" >> $GITHUB_OUTPUT
+        fi
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ inputs.name }}-${{ github.run_id }}-${{ steps.get-job-id.outputs.job_id }}
+        path: ${{ inputs.path }}
+        if-no-files-found: warn
