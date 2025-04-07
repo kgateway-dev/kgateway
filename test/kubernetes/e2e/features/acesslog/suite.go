@@ -139,37 +139,11 @@ func (s *testingSuite) TestAccessLogWithFileSink() {
 	s.Require().NoError(err)
 	s.Require().Len(pods, 1)
 
-	s.testInstallation.Assertions.AssertEventualCurlResponse(
-		s.ctx,
-		testdefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(gatewayService.ObjectMeta)),
-			curl.VerboseOutput(),
-			curl.WithHostHeader("www.example.com"),
-			curl.WithPath("/status/200"),
-			curl.WithPort(8080),
-		},
-		&matchers.HttpResponse{
-			StatusCode: http.StatusOK,
-		},
-	)
+	s.sendTestRequest()
 
 	s.Require().EventuallyWithT(func(c *assert.CollectT) {
 		// curl httpbin
-		s.testInstallation.Assertions.AssertEventualCurlResponse(
-			s.ctx,
-			testdefaults.CurlPodExecOpt,
-			[]curl.Option{
-				curl.WithHost(kubeutils.ServiceFQDN(gatewayService.ObjectMeta)),
-				curl.VerboseOutput(),
-				curl.WithHostHeader("www.example.com"),
-				curl.WithPath("/status/200"),
-				curl.WithPort(8080),
-			},
-			&matchers.HttpResponse{
-				StatusCode: http.StatusOK,
-			},
-		)
+		s.sendTestRequest()
 		logs, err := s.testInstallation.Actions.Kubectl().GetContainerLogs(s.ctx, gatewayService.ObjectMeta.GetNamespace(), pods[0])
 		s.Require().NoError(err)
 
@@ -201,6 +175,21 @@ func (s *testingSuite) TestAccessLogWithGrpcSink() {
 	s.Require().NoError(err)
 	s.Require().Len(pods, 1)
 
+	s.sendTestRequest()
+
+	s.Require().EventuallyWithT(func(c *assert.CollectT) {
+		// curl httpbin
+		s.sendTestRequest()
+		logs, err := s.testInstallation.Actions.Kubectl().GetContainerLogs(s.ctx, accessLoggerDeployment.ObjectMeta.GetNamespace(), pods[0])
+		s.Require().NoError(err)
+
+		// Verify the log contains the expected JSON pattern
+		assert.Contains(c, logs, `"logger_name":"test-accesslog-service"`)
+		assert.Contains(c, logs, `"cluster":"kube_httpbin_httpbin_8000"`)
+	}, 5*time.Second, 100*time.Millisecond)
+}
+
+func (s *testingSuite) sendTestRequest() {
 	s.testInstallation.Assertions.AssertEventualCurlResponse(
 		s.ctx,
 		testdefaults.CurlPodExecOpt,
@@ -215,28 +204,4 @@ func (s *testingSuite) TestAccessLogWithGrpcSink() {
 			StatusCode: http.StatusOK,
 		},
 	)
-
-	s.Require().EventuallyWithT(func(c *assert.CollectT) {
-		// curl httpbin
-		s.testInstallation.Assertions.AssertEventualCurlResponse(
-			s.ctx,
-			testdefaults.CurlPodExecOpt,
-			[]curl.Option{
-				curl.WithHost(kubeutils.ServiceFQDN(gatewayService.ObjectMeta)),
-				curl.VerboseOutput(),
-				curl.WithHostHeader("www.example.com"),
-				curl.WithPath("/status/200"),
-				curl.WithPort(8080),
-			},
-			&matchers.HttpResponse{
-				StatusCode: http.StatusOK,
-			},
-		)
-		logs, err := s.testInstallation.Actions.Kubectl().GetContainerLogs(s.ctx, accessLoggerDeployment.ObjectMeta.GetNamespace(), pods[0])
-		s.Require().NoError(err)
-
-		// Verify the log contains the expected JSON pattern
-		assert.Contains(c, logs, `"logger_name":"test-accesslog-service"`)
-		assert.Contains(c, logs, `"cluster":"kube_httpbin_httpbin_8000"`)
-	}, 5*time.Second, 100*time.Millisecond)
 }
