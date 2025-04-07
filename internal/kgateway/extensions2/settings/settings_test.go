@@ -42,6 +42,7 @@ func TestSettings(t *testing.T) {
 				DefaultImageRegistry:   "cr.kgateway.dev",
 				DefaultImageTag:        "",
 				DefaultImagePullPolicy: "IfNotPresent",
+				WaypointLocalBinding:   false,
 			},
 		},
 		{
@@ -60,6 +61,7 @@ func TestSettings(t *testing.T) {
 				"KGW_DEFAULT_IMAGE_REGISTRY":    "my-registry",
 				"KGW_DEFAULT_IMAGE_TAG":         "my-tag",
 				"KGW_DEFAULT_IMAGE_PULL_POLICY": "Always",
+				"KGW_WAYPOINT_LOCAL_BINDING":    "true",
 			},
 			expectedSettings: &settings.Settings{
 				DnsLookupFamily:        "V4_ONLY",
@@ -74,6 +76,7 @@ func TestSettings(t *testing.T) {
 				DefaultImageRegistry:   "my-registry",
 				DefaultImageTag:        "my-tag",
 				DefaultImagePullPolicy: "Always",
+				WaypointLocalBinding:   true,
 			},
 		},
 		{
@@ -106,6 +109,7 @@ func TestSettings(t *testing.T) {
 				DefaultImageRegistry:   "cr.kgateway.dev",
 				DefaultImageTag:        "",
 				DefaultImagePullPolicy: "IfNotPresent",
+				WaypointLocalBinding:   false,
 			},
 		},
 	}
