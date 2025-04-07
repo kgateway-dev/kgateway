@@ -2,6 +2,7 @@ package acesslog
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -74,7 +75,7 @@ func (s *testingSuite) SetupSuite() {
 		s.ctx,
 		gatewayDeployment.ObjectMeta.GetNamespace(),
 		metav1.ListOptions{
-			LabelSelector: "gateway.networking.k8s.io/gateway-name=gw",
+			LabelSelector: fmt.Sprintf("app.kubernetes.io/name=%s", gatewayObjectMeta.GetName()),
 		},
 	)
 	s.testInstallation.Assertions.EventuallyHTTPRouteCondition(s.ctx, "httpbin", "httpbin", gwv1.RouteConditionAccepted, metav1.ConditionTrue)
