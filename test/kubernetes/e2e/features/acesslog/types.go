@@ -7,6 +7,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	v1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
 )
 
@@ -28,10 +29,19 @@ var (
 		Namespace: "default",
 	}
 	accessLoggerDeployment = &appsv1.Deployment{ObjectMeta: accessLoggerObjectMeta}
+	accessLoggerService    = &corev1.Service{ObjectMeta: accessLoggerObjectMeta}
 
 	httpbinObjectMeta = metav1.ObjectMeta{
 		Name:      "httpbin",
 		Namespace: "httpbin",
 	}
 	httpbinDeployment = &appsv1.Deployment{ObjectMeta: httpbinObjectMeta}
+
+	// HTTPListenerPolicy objects
+	fileSinkConfig = &v1alpha1.HTTPListenerPolicy{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "access-logs",
+			Namespace: "default",
+		},
+	}
 )

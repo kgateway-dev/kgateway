@@ -34,9 +34,14 @@ type testingSuite struct {
 	// against an installation of kgateway
 	testInstallation *e2e.TestInstallation
 
-	// Track active manifests and objects for cleanup
-	activeManifests []string
-	activeObjects   []client.Object
+	// maps test name to a list of manifests to apply before the test
+	manifests map[string][]string
+
+	// maps manifest name to a list of objects to verify
+	manifestObjects map[string][]client.Object
+
+	// Track core objects for cleanup
+	coreObjects []client.Object
 }
 
 func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
@@ -48,6 +53,18 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 
 // SetupSuite runs before all tests in the suite
 func (s *testingSuite) SetupSuite() {
+	// Initialize test manifest mappings
+	s.manifests = map[string][]string{
+		"TestAccessLogWithFileSink": {fileSinkManifest},
+		"TestAccessLogWithGrpcSink": {grpcServiceManifest},
+	}
+
+	// Initialize manifest to objects mapping
+	s.manifestObjects = map[string][]client.Object{
+		fileSinkManifest:    {fileSinkConfig},
+		grpcServiceManifest: {accessLoggerService, accessLoggerDeployment},
+	}
+
 	// Apply core infrastructure
 	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, setupManifest)
 	s.Require().NoError(err)
@@ -57,14 +74,14 @@ func (s *testingSuite) SetupSuite() {
 	s.Require().NoError(err)
 
 	// Track core objects
-	s.activeObjects = []client.Object{
+	s.coreObjects = []client.Object{
 		testdefaults.CurlPod,              // curl
 		httpbinDeployment,                 // httpbin
 		gatewayService, gatewayDeployment, // gateway service
 	}
 
 	// Wait for core infrastructure to be ready
-	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, s.activeObjects...)
+	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, s.coreObjects...)
 	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, testdefaults.CurlPod.GetNamespace(), metav1.ListOptions{
 		LabelSelector: testdefaults.CurlPodLabelSelector,
 	})
@@ -91,30 +108,31 @@ func (s *testingSuite) TearDownSuite() {
 	err = s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, testdefaults.CurlPodManifest)
 	s.Require().NoError(err)
 
-	s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, s.activeObjects...)
+	s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, s.coreObjects...)
 }
 
-// SetupTest runs before each test
-func (s *testingSuite) SetupTest() {
-	// Reset active manifests tracking
-	s.activeManifests = nil
+// BeforeTest runs before each test
+func (s *testingSuite) BeforeTest(suiteName, testName string) {
+	manifests := s.manifests[testName]
+	for _, manifest := range manifests {
+		err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, manifest)
+		s.Require().NoError(err)
+		s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, s.manifestObjects[manifest]...)
+	}
 }
 
-// TearDownTest runs after each test
-func (s *testingSuite) TearDownTest() {
-	// Clean up any test-specific manifests
-	for _, manifest := range s.activeManifests {
+// AfterTest runs after each test
+func (s *testingSuite) AfterTest(suiteName, testName string) {
+	manifests := s.manifests[testName]
+	for _, manifest := range manifests {
 		err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, manifest)
 		s.Require().NoError(err)
+		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, s.manifestObjects[manifest]...)
 	}
 }
 
 // TestAccessLogWithFileSink tests access log with file sink
 func (s *testingSuite) TestAccessLogWithFileSink() {
-	s.activeManifests = []string{fileSinkManifest}
-	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, fileSinkManifest)
-	s.Require().NoError(err)
-
 	// check access log
 	pods, err := s.testInstallation.Actions.Kubectl().GetPodsInNsWithLabel(
 		s.ctx,
@@ -170,10 +188,6 @@ func (s *testingSuite) TestAccessLogWithFileSink() {
 
 // TestAccessLogWithGrpcSink tests access log with grpc sink
 func (s *testingSuite) TestAccessLogWithGrpcSink() {
-	s.activeManifests = []string{grpcServiceManifest}
-	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, grpcServiceManifest)
-	s.Require().NoError(err)
-
 	s.testInstallation.Assertions.EventuallyPodsRunning(
 		s.ctx,
 		accessLoggerDeployment.ObjectMeta.GetNamespace(),
