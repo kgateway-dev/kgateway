@@ -38,14 +38,14 @@ func (p *Provider) EventuallyPodReady(
 		Should(gomega.Succeed(), fmt.Sprintf("Pod %s in namespace %s should be ready", podName, podNamespace))
 }
 
-// EventuallyPodsRunning asserts that eventually all pods matching the given ListOptions are in the PodRunning state
+// EventuallyPodsRunning asserts that eventually all pods matching the given ListOptions are running and ready.
 func (p *Provider) EventuallyPodsRunning(
 	ctx context.Context,
 	podNamespace string,
 	listOpt metav1.ListOptions,
 	timeout ...time.Duration,
 ) {
-	p.EventuallyPodsMatches(ctx, podNamespace, listOpt, matchers.PodMatches(matchers.ExpectedPod{Status: corev1.PodRunning}), timeout...)
+	p.EventuallyPodsMatches(ctx, podNamespace, listOpt, matchers.PodMatches(matchers.ExpectedPod{Status: corev1.PodRunning, Ready: true}), timeout...)
 }
 
 // EventuallyPodsMatches asserts that the pod(s) in the given namespace matches the provided matcher
