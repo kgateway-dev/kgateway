@@ -38,14 +38,14 @@ func (p *Provider) EventuallyPodReady(
 		Should(gomega.Succeed(), fmt.Sprintf("Pod %s in namespace %s should be ready", podName, podNamespace))
 }
 
-// EventuallyPodsRunning asserts that eventually all pods matching the given ListOptions are in the PodRunning state
+// EventuallyPodsRunning asserts that eventually all pods matching the given ListOptions are running and ready.
 func (p *Provider) EventuallyPodsRunning(
 	ctx context.Context,
 	podNamespace string,
 	listOpt metav1.ListOptions,
 	timeout ...time.Duration,
 ) {
-	p.EventuallyPodsMatches(ctx, podNamespace, listOpt, matchers.PodMatches(matchers.ExpectedPod{Status: corev1.PodRunning}), timeout...)
+	p.EventuallyPodsMatches(ctx, podNamespace, listOpt, matchers.PodMatches(matchers.ExpectedPod{Status: corev1.PodRunning, Ready: true}), timeout...)
 }
 
 // EventuallyPodsMatches asserts that the pod(s) in the given namespace matches the provided matcher
@@ -155,43 +155,4 @@ func (p *Provider) EventuallyPodContainerDoesNotContainEnvVar(
 		WithTimeout(currentTimeout).
 		WithPolling(pollingInterval).
 		Should(gomega.Succeed(), fmt.Sprintf("Failed to match pod in namespace %s", podNamespace))
-}
-
-func (p *Provider) EventuallyPodsReadyByLabel(
-	ctx context.Context,
-	podNamespace string,
-	podListOpt metav1.ListOptions,
-	timeout ...time.Duration,
-) {
-	fmt.Printf("Checking for ready pods in namespace %s with label %s", podNamespace, podListOpt)
-
-	p.EventuallyPodsMatches(
-		ctx,
-		podNamespace,
-		podListOpt,
-		podReadyConditionMatcher(p.Gomega),
-		timeout...,
-	)
-}
-
-func podReadyConditionMatcher(t gomega.Gomega) types.GomegaMatcher {
-	return gomega.WithTransform(func(pod corev1.Pod) bool {
-		fmt.Printf("Checking pod %s/%s readiness conditions:", pod.Namespace, pod.Name)
-
-		if len(pod.Status.Conditions) == 0 {
-			fmt.Printf("  - No conditions found for pod %s", pod.Name)
-			return false
-		}
-
-		for _, condition := range pod.Status.Conditions {
-			fmt.Printf("  - Condition: Type=%s, Status=%s", condition.Type, condition.Status)
-			if condition.Type == corev1.PodReady && condition.Status == corev1.ConditionTrue {
-				fmt.Printf("  - Pod %s is READY", pod.Name)
-				return true
-			}
-		}
-
-		fmt.Printf("  - Pod %s is NOT ready", pod.Name)
-		return false
-	}, gomega.BeTrue())
 }
