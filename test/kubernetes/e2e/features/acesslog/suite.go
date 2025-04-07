@@ -5,8 +5,6 @@ import (
 	"net/http"
 	"time"
 
-	// . "github.com/onsi/gomega"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -72,13 +70,6 @@ func (s *testingSuite) SetupSuite() {
 	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, httpbinDeployment.ObjectMeta.GetNamespace(), metav1.ListOptions{
 		LabelSelector: "app=httpbin",
 	})
-	s.testInstallation.Assertions.EventuallyPodsRunning(
-		s.ctx,
-		"kgateway-test",
-		metav1.ListOptions{
-			LabelSelector: "app.kubernetes.io/name=kgateway",
-		},
-	)
 	s.testInstallation.Assertions.EventuallyPodsRunning(
 		s.ctx,
 		gatewayDeployment.ObjectMeta.GetNamespace(),
