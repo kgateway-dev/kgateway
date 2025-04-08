@@ -80,7 +80,7 @@ runs:
       kubectl -n kgateway-system logs deploy/gloo
   - name: Upload reports
     if: ${{ failure() }}
-    uses: ./.github/workflows/composite-actions/upload-artifact
+    uses: ./.github/actions/upload-artifact
     with:
       # Name of the path to upload. The VERSION variable refers to the Makefile
       # VERSION variable.
