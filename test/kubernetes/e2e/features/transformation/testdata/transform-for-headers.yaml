@@ -1,26 +1,13 @@
-kind: Gateway
-apiVersion: gateway.networking.k8s.io/v1
-metadata:
-  name: gw
-spec:
-  gatewayClassName: kgateway
-  listeners:
-    - protocol: HTTP
-      port: 8080
-      name: http
-      allowedRoutes:
-        namespaces:
-          from: Same
----
+
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
-  name: example-route
+  name: example-route-for-headers
 spec:
   parentRefs:
     - name: gw
   hostnames:
-    - "example.com"
+    - "example-headers.com"
   rules:
     - backendRefs:
         - name: simple-svc
@@ -29,12 +16,12 @@ spec:
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: TrafficPolicy
 metadata:
-  name: requestresponse-transformer
+  name: example-traffic-policy-for-headers
 spec:
   targetRefs:
   - group: gateway.networking.k8s.io
     kind: HTTPRoute
-    name: example-route
+    name: example-route-for-headers
   transformation:
     request:
       set:

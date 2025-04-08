@@ -1,0 +1,101 @@
+name: Cherrypick Backport
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  cherrypick:
+    if: github.event.issue.pull_request != null && startsWith(github.event.comment.body, '/cherrypick ')
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Git
+        run: |
+          # See https://github.com/orgs/community/discussions/26560 for the correct email
+          # to use for the github-actions[bot] user.
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Extract PR and target branch info
+        id: vars
+        run: |
+          comment="${{ github.event.comment.body }}"
+          target_branch=$(echo "$comment" | awk '{print $2}')
+          pr_number=${{ github.event.issue.number }}
+
+          # Get PR details including merge status
+          pr_data=$(gh pr view --repo "${{ github.repository }}" $pr_number --json headRefName,title,mergeCommit,state,headRepository --jq '.')
+          pr_title=$(echo "$pr_data" | jq -r '.title')
+          pr_state=$(echo "$pr_data" | jq -r '.state')
+          head_ref_name=$(echo "$pr_data" | jq -r '.headRefName')
+
+          # For merged PRs, use the merge commit
+          # For open PRs, use the head ref
+          if [[ "$pr_state" == "MERGED" ]]; then
+            merge_sha=$(echo "$pr_data" | jq -r '.mergeCommit.oid')
+            echo "commit_ref=$merge_sha" >> $GITHUB_OUTPUT
+          else
+            # Fetch the PR branch
+            git fetch origin "pull/$pr_number/head:pr-$pr_number"
+            echo "commit_ref=pr-$pr_number" >> $GITHUB_OUTPUT
+          fi
+
+          # Generate a unique branch name using timestamp
+          timestamp=$(date +%s)
+          backport_branch="backport/pr-$pr_number-to-$target_branch-$timestamp"
+          echo "backport_branch=$backport_branch" >> $GITHUB_OUTPUT
+
+          echo "target_branch=$target_branch" >> $GITHUB_OUTPUT
+          echo "pr_number=$pr_number" >> $GITHUB_OUTPUT
+          echo "pr_title=$pr_title" >> $GITHUB_OUTPUT
+          echo "pr_state=$pr_state" >> $GITHUB_OUTPUT
+          echo "head_ref_name=$head_ref_name" >> $GITHUB_OUTPUT
+
+          # Validate target branch exists
+          if ! git ls-remote --exit-code origin "refs/heads/$target_branch" >/dev/null 2>&1; then
+            echo "::error::Target branch '$target_branch' does not exist"
+            exit 1
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create backport branch
+        run: |
+          git fetch origin ${{ steps.vars.outputs.target_branch }}
+          git checkout -b ${{ steps.vars.outputs.backport_branch }} origin/${{ steps.vars.outputs.target_branch }}
+
+          if ! git cherry-pick ${{ steps.vars.outputs.commit_ref }} --strategy-option=theirs; then
+            echo "::warning::Cherry-pick had conflicts and was auto-resolved using 'theirs' strategy"
+          fi
+
+          # Force push since this is a temporary backport branch
+          git push -f origin ${{ steps.vars.outputs.backport_branch }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create backport PR
+        run: |
+          # Create PR with consistent title format
+          gh pr create \
+            --repo "${{ github.repository }}" \
+            --title "[${{ steps.vars.outputs.target_branch }}] ${{ steps.vars.outputs.pr_title }}" \
+            --body "Automated backport of #${{ steps.vars.outputs.pr_number }} to \`${{ steps.vars.outputs.target_branch }}\`
+
+            This PR was created in response to a \`/cherrypick\` command.
+
+            Original PR Status: ${{ steps.vars.outputs.pr_state }}" \
+            --base ${{ steps.vars.outputs.target_branch }} \
+            --head ${{ steps.vars.outputs.backport_branch }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

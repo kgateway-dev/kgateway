@@ -132,7 +132,8 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(ctx context.Context,
 	}
 
 	// Set timeout from the HTTPRouteRule if specified
-	if in.Timeouts != nil && in.Timeouts.Request != nil {
+	// `out.GetAction() != nil` is a temp fix to avoid panic; can remove when timeout delegation is implemented https://github.com/kgateway-dev/kgateway/issues/11043
+	if in.Timeouts != nil && in.Timeouts.Request != nil && out.GetAction() != nil {
 		applyRouteTimeout(ctx, out, in.Timeouts.Request)
 	}
 

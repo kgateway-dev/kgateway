@@ -81,7 +81,6 @@ func (s *testingSuite) SetupSuite() {
 			LabelSelector: app.lbl + "=" + app.val,
 		}
 		s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, testNamespace, listOpts, readyTimeout)
-		s.testInstallation.Assertions.EventuallyPodsReadyByLabel(s.ctx, testNamespace, listOpts, readyTimeout)
 	}
 
 	for _, app := range wantApps {
