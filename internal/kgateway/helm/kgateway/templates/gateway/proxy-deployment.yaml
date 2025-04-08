@@ -389,6 +389,7 @@ spec:
     protocol: {{ $p.protocol }}
     targetPort: {{ $p.targetPort }}
     port: {{ $p.port }}
+    nodePort: {{ $p.nodePort }}
   {{- end }}
   selector:
     {{- include "kgateway.gateway.selectorLabels" . | nindent 4 }}

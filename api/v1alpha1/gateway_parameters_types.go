@@ -49,6 +49,20 @@ type GatewayParametersSpec struct {
 	SelfManaged *SelfManagedGateway `json:"selfManaged,omitempty"`
 }
 
+func (in *GatewayParametersSpec) GetKube() *KubernetesProxyConfig {
+	if in == nil {
+		return nil
+	}
+	return in.Kube
+}
+
+func (in *GatewayParametersSpec) GetSelfManaged() *SelfManagedGateway {
+	if in == nil {
+		return nil
+	}
+	return in.SelfManaged
+}
+
 // The current conditions of the GatewayParameters. This is not currently implemented.
 type GatewayParametersStatus struct {
 }

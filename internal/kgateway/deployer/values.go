@@ -73,6 +73,7 @@ type helmPort struct {
 	Protocol   *string `json:"protocol,omitempty"`
 	Name       *string `json:"name,omitempty"`
 	TargetPort *uint16 `json:"targetPort,omitempty"`
+	NodePort   *uint16 `json:"nodePort,omitempty"`
 }
 
 type helmImage struct {

@@ -2083,6 +2083,18 @@ spec:
                         additionalProperties:
                           type: string
                         type: object
+                      ports:
+                        items:
+                          properties:
+                            nodePort:
+                              type: integer
+                            port:
+                              type: integer
+                          required:
+                          - port
+                          type: object
+                        maxItems: 8
+                        type: array
                       type:
                         type: string
                     type: object
