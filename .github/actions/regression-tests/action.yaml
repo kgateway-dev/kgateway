@@ -27,7 +27,7 @@ runs:
         IMAGE_VARIANT: ${{ matrix.image-variant }}
       shell: bash
       run: make install-test-tools run-kube-e2e-tests
-    - uses: ./.github/workflows/composite-actions/upload-artifact
+    - uses: ./.github/actions/upload-artifact
       if: ${{ failure() }}
       with:
         name: ${{matrix.kube-e2e-test-type}}@k8s${{matrix.kube-version.kubectl}}-kube-dump

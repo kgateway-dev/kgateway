@@ -17,6 +17,7 @@ import (
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/sandwich"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/waypoint/waypointquery"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/query"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
@@ -33,6 +34,9 @@ import (
 const (
 	// IstioPROXYProtocol is the only protocol for a kgateway-waypoint's Listener
 	IstioPROXYProtocol = "istio.io/PROXY"
+
+	loopbackBindAddr = "::ffff:127.0.0.1"
+	wildcardBindAddr = "::"
 )
 
 var _ extensionsplug.KGwTranslator = &waypointTranslator{}
@@ -40,15 +44,20 @@ var _ extensionsplug.KGwTranslator = &waypointTranslator{}
 type waypointTranslator struct {
 	queries         query.GatewayQueries
 	waypointQueries waypointquery.WaypointQueries
+
+	localBind bool
 }
 
 func NewTranslator(
 	queries query.GatewayQueries,
 	waypointQueries waypointquery.WaypointQueries,
+	settings settings.Settings,
 ) extensionsplug.KGwTranslator {
 	return &waypointTranslator{
 		queries:         queries,
 		waypointQueries: waypointQueries,
+
+		localBind: settings.WaypointLocalBinding,
 	}
 }
 
@@ -62,7 +71,7 @@ func (w *waypointTranslator) Translate(
 	logger := contextutils.LoggerFrom(ctx)
 
 	gwReporter := reporter.Gateway(gateway.Obj)
-	proxyListener, gwListener := buildInboundListener(gateway, gwReporter)
+	proxyListener, gwListener := w.buildInboundListener(gateway, gwReporter)
 	if proxyListener == nil || gwListener == nil {
 		// reporting/logging in BuildInboundListener
 		return nil
@@ -137,7 +146,7 @@ var waypointSupportedKinds = []gwv1.RouteGroupKind{
 
 // TODO allow _not_ specifying any listeners and inferring the specific
 // structure we expect with reasonable defaults (15088)
-func buildInboundListener(gw *ir.Gateway, reporter reports.GatewayReporter) (*ir.ListenerIR, *ir.Listener) {
+func (w *waypointTranslator) buildInboundListener(gw *ir.Gateway, reporter reports.GatewayReporter) (*ir.ListenerIR, *ir.Listener) {
 	// find the single inbound listener
 	var gatewayListener *ir.Listener
 	for _, l := range gw.Listeners {
@@ -175,9 +184,14 @@ func buildInboundListener(gw *ir.Gateway, reporter reports.GatewayReporter) (*ir
 		return nil, nil
 	}
 
+	bindAddr := wildcardBindAddr
+	if w.localBind {
+		bindAddr = loopbackBindAddr
+	}
+
 	return &ir.ListenerIR{
 		Name:        "proxy_protocol_inbound",
-		BindAddress: "::",
+		BindAddress: bindAddr,
 		BindPort:    uint32(gatewayListener.Port),
 
 		AttachedPolicies: ir.AttachedPolicies{
