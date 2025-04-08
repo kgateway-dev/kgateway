@@ -134,7 +134,7 @@ func (s *testingSuite) TestAccessLogWithFileSink() {
 	pods, err := s.testInstallation.Actions.Kubectl().GetPodsInNsWithLabel(
 		s.ctx,
 		gatewayService.ObjectMeta.GetNamespace(),
-		"gateway.networking.k8s.io/gateway-name=gw",
+		fmt.Sprintf("app.kubernetes.io/name=%s", gatewayObjectMeta.GetName()),
 	)
 	s.Require().NoError(err)
 	s.Require().Len(pods, 1)
