@@ -137,7 +137,7 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(ctx context.Context,
 		applyRouteTimeout(ctx, out, in.Timeouts.Request)
 	}
 
-	if in.Retry != nil {
+	if in.Retry != nil && out.GetAction() != nil {
 		applyRouteRetry(out, in.Retry)
 	}
 
