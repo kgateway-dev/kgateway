@@ -759,14 +759,14 @@ func getRetry(r gwv1.HTTPRouteRule) *ir.RetryIR {
 	if r.Retry.Backoff != nil {
 		backoff, err := time.ParseDuration(string(*r.Retry.Backoff))
 		if err == nil {
-			retryIR.Backoff = backoff
+			retryIR.Backoff = &backoff
 		}
 	}
 
 	if r.Timeouts != nil && r.Timeouts.BackendRequest != nil {
 		timeout, err := time.ParseDuration(string(*r.Timeouts.BackendRequest))
 		if err == nil {
-			retryIR.Timeout = timeout
+			retryIR.Timeout = &timeout
 		}
 	}
 

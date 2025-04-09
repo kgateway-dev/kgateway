@@ -128,6 +128,6 @@ type HttpRouteRuleIR struct {
 type RetryIR struct {
 	Codes      []uint32
 	NumRetries *uint32
-	Backoff    time.Duration
-	Timeout    time.Duration
+	Backoff    *time.Duration
+	Timeout    *time.Duration
 }

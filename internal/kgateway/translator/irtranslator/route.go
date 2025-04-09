@@ -200,17 +200,30 @@ func applyRouteTimeout(ctx context.Context, route *envoy_config_route_v3.Route, 
 	}
 }
 
+// applyRouteRetry applies the retry policy to the route.
+// defaults??
 func applyRouteRetry(route *envoy_config_route_v3.Route, retry *ir.RetryIR) {
-	route.GetRoute().RetryPolicy = &envoy_config_route_v3.RetryPolicy{
-		RetriableStatusCodes: retry.Codes,
-		NumRetries:           &wrapperspb.UInt32Value{Value: *retry.NumRetries},
-		PerTryTimeout:        durationpb.New(retry.Timeout),
-		RetryBackOff: &envoy_config_route_v3.RetryPolicy_RetryBackOff{
-			BaseInterval: durationpb.New(retry.Backoff),
-		},
+	retryPolicy := &envoy_config_route_v3.RetryPolicy{
 		// RetryHostPredicate ?? ,
 		// RetryPriority ?? ,
 	}
+
+	if retry.NumRetries != nil {
+		retryPolicy.NumRetries = &wrapperspb.UInt32Value{Value: *retry.NumRetries}
+	}
+	if len(retry.Codes) > 0 {
+		retryPolicy.RetriableStatusCodes = retry.Codes
+	}
+	if retry.Backoff != nil {
+		retryPolicy.RetryBackOff = &envoy_config_route_v3.RetryPolicy_RetryBackOff{
+			BaseInterval: durationpb.New(*retry.Backoff),
+		}
+	}
+	if retry.Timeout != nil {
+		retryPolicy.PerTryTimeout = durationpb.New(*retry.Timeout)
+	}
+
+	route.GetRoute().RetryPolicy = retryPolicy
 }
 
 func (h *httpRouteConfigurationTranslator) runVhostPlugins(ctx context.Context, out *envoy_config_route_v3.VirtualHost) {
