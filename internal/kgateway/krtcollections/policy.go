@@ -295,6 +295,7 @@ func NewPolicyIndex(krtopts krtutil.KrtOptions, contributesPolicies extensionspl
 
 	return index
 }
+
 func (p *PolicyIndex) fetchByTargetRef(
 	kctx krt.HandlerContext,
 	targetRef targetRefIndexKey,
@@ -723,6 +724,8 @@ func (h *RoutesIndex) transformRules(
 		if r.Name != nil {
 			policies = toAttachedPolicies(h.policies.getTargetingPolicies(kctx, extensionsplug.RouteAttachmentPoint, src, string(*r.Name)))
 		}
+		rulePolicies := h.getBuiltInRulePolicies(r)
+		policies.Append(rulePolicies)
 
 		rules = append(rules, ir.HttpRouteRuleIR{
 			ExtensionRefs:    extensionRefs,
@@ -730,7 +733,6 @@ func (h *RoutesIndex) transformRules(
 			Backends:         h.getBackends(kctx, src, r.BackendRefs),
 			Matches:          r.Matches,
 			Name:             emptyIfNil(r.Name),
-			Timeouts:         r.Timeouts,
 		})
 	}
 	return rules
@@ -746,6 +748,22 @@ func (h *RoutesIndex) getExtensionRefs(kctx krt.HandlerContext, ns string, r []g
 		if policy != nil {
 			ret.Policies[gk] = append(ret.Policies[gk], ir.PolicyAtt{PolicyIr: policy /*direct attachment - no target ref*/})
 		}
+	}
+	return ret
+}
+
+func (h *RoutesIndex) getBuiltInRulePolicies(rule gwv1.HTTPRouteRule) ir.AttachedPolicies {
+	// Return AttachedPolicies with Policies unset
+	if rule.Timeouts == nil {
+		return ir.AttachedPolicies{}
+	}
+
+	ret := ir.AttachedPolicies{
+		Policies: map[schema.GroupKind][]ir.PolicyAtt{},
+	}
+	policy := NewBuiltInRuleIr(rule)
+	if policy != nil {
+		ret.Policies[VirtualBuiltInGK] = append(ret.Policies[VirtualBuiltInGK], ir.PolicyAtt{PolicyIr: policy /*direct attachment - no target ref*/})
 	}
 	return ret
 }

@@ -3,10 +3,13 @@ package krtcollections
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	"github.com/hashicorp/go-multierror"
+	"google.golang.org/protobuf/types/known/durationpb"
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/ptr"
@@ -23,16 +26,16 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
 )
 
-var (
-	VirtualBuiltInGK = schema.GroupKind{
-		Group: "builtin",
-		Kind:  "builtin",
-	}
-)
+var VirtualBuiltInGK = schema.GroupKind{
+	Group: "builtin",
+	Kind:  "builtin",
+}
 
 type builtinPlugin struct {
-	spec     gwv1.HTTPRouteFilter
-	mutation func(in ir.HttpRouteRuleMatchIR, outputRoute *envoy_config_route_v3.Route) error
+	spec           gwv1.HTTPRouteFilter
+	ruleSpec       gwv1.HTTPRouteRule
+	filterMutation func(in ir.HttpRouteRuleMatchIR, outputRoute *envoy_config_route_v3.Route) error
+	ruleMutation   func(in ir.HttpRouteRuleMatchIR, outputRoute *envoy_config_route_v3.Route) error
 }
 
 func (d *builtinPlugin) CreationTime() time.Time {
@@ -62,8 +65,15 @@ func (p *builtinPluginGwPass) ApplyHCM(ctx context.Context, pCtx *ir.HcmContext,
 
 func NewBuiltInIr(kctx krt.HandlerContext, f gwv1.HTTPRouteFilter, fromgk schema.GroupKind, fromns string, refgrants *RefGrantIndex, ups *BackendIndex) ir.PolicyIR {
 	return &builtinPlugin{
-		spec:     f,
-		mutation: convert(kctx, f, fromgk, fromns, refgrants, ups),
+		spec:           f,
+		filterMutation: convert(kctx, f, fromgk, fromns, refgrants, ups),
+	}
+}
+
+func NewBuiltInRuleIr(rule gwv1.HTTPRouteRule) ir.PolicyIR {
+	return &builtinPlugin{
+		ruleSpec:     rule,
+		ruleMutation: convertRule(rule),
 	}
 }
 
@@ -71,7 +81,7 @@ func NewBuiltinPlugin(ctx context.Context) extensionsplug.Plugin {
 	return extensionsplug.Plugin{
 		ContributesPolicies: map[schema.GroupKind]extensionsplug.PolicyPlugin{
 			VirtualBuiltInGK: {
-				//AttachmentPoints: []ir.AttachmentPoints{ir.HttpAttachmentPoint},
+				// AttachmentPoints: []ir.AttachmentPoints{ir.HttpAttachmentPoint},
 				NewGatewayTranslationPass: NewGatewayTranslationPass,
 			},
 		},
@@ -93,6 +103,27 @@ func convert(kctx krt.HandlerContext, f gwv1.HTTPRouteFilter, fromgk schema.Grou
 	}
 	return nil
 }
+
+func convertRule(rule gwv1.HTTPRouteRule) func(in ir.HttpRouteRuleMatchIR, outputRoute *envoy_config_route_v3.Route) error {
+	return func(ruleIR ir.HttpRouteRuleMatchIR, outputRoute *envoy_config_route_v3.Route) error {
+		// A parent route rule with adelegated backend will not have outputRoute.RouteAction set
+		// but the plugin will be invoked on the rule, so treat this as a no-op call
+		if outputRoute == nil || outputRoute.GetRoute() == nil {
+			return nil
+		}
+		if rule.Timeouts != nil {
+			if rule.Timeouts.Request != nil {
+				duration, err := time.ParseDuration(string(*rule.Timeouts.Request))
+				if err != nil {
+					return fmt.Errorf("invalid HTTPRoute timeout %s: %w", *rule.Timeouts.Request, err)
+				}
+				outputRoute.GetRoute().Timeout = durationpb.New(duration)
+			}
+		}
+		return nil
+	}
+}
+
 func convertURLRewrite(kctx krt.HandlerContext, config *gwv1.HTTPURLRewriteFilter) func(in ir.HttpRouteRuleMatchIR, outputRoute *envoy_config_route_v3.Route) error {
 	if config == nil {
 		return func(in ir.HttpRouteRuleMatchIR, outputRoute *envoy_config_route_v3.Route) error {
@@ -122,7 +153,7 @@ func convertURLRewrite(kctx krt.HandlerContext, config *gwv1.HTTPURLRewriteFilte
 
 	return func(in ir.HttpRouteRuleMatchIR, outputRoute *envoy_config_route_v3.Route) error {
 		if outputRoute.GetRoute() == nil {
-			if in.HasChildren {
+			if in.Delegates {
 				// if route has children, it's a delegate route, and we don't need to return an error
 				// as this might need to apply to children.
 				return nil
@@ -210,6 +241,7 @@ func translatePathRewrite(outputRoute *envoy_config_route_v3.RedirectAction, pat
 		}
 	}
 }
+
 func translateScheme(out *envoy_config_route_v3.RedirectAction, scheme *string) {
 	if scheme == nil {
 		return
@@ -235,6 +267,7 @@ func translateHostname(hostname *gwv1.PreciseHostname) string {
 	}
 	return string(*hostname)
 }
+
 func translateStatusCode(i *int) envoy_config_route_v3.RedirectAction_RedirectResponseCode {
 	if i == nil {
 		return envoy_config_route_v3.RedirectAction_FOUND
@@ -386,6 +419,7 @@ func toEnvoyPercentage(percentage float64) *envoytype.FractionalPercent {
 func NewGatewayTranslationPass(ctx context.Context, tctx ir.GwTranslationCtx) ir.ProxyTranslationPass {
 	return &builtinPluginGwPass{}
 }
+
 func (p *builtinPlugin) Name() string {
 	return "builtin"
 }
@@ -397,19 +431,27 @@ func (p *builtinPluginGwPass) ApplyListenerPlugin(ctx context.Context, pCtx *ir.
 func (p *builtinPluginGwPass) ApplyVhostPlugin(ctx context.Context, pCtx *ir.VirtualHostContext, out *envoy_config_route_v3.VirtualHost) {
 }
 
-// called 0 or more times
+// called one or more times per route rule
 func (p *builtinPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.RouteContext, outputRoute *envoy_config_route_v3.Route) error {
 	policy, ok := pCtx.Policy.(*builtinPlugin)
 	if !ok {
 		return nil
 	}
 
-	if policy.mutation == nil {
-		// TODO: report error
-		return nil
+	var errs *multierror.Error
+	if policy.filterMutation != nil {
+		if err := policy.filterMutation(pCtx.In, outputRoute); err != nil {
+			errs = multierror.Append(errs, err)
+		}
 	}
 
-	return policy.mutation(pCtx.In, outputRoute)
+	if policy.ruleMutation != nil {
+		if err := policy.ruleMutation(pCtx.In, outputRoute); err != nil {
+			errs = multierror.Append(errs, err)
+		}
+	}
+
+	return errs.ErrorOrNil()
 }
 
 func (p *builtinPluginGwPass) ApplyForRouteBackend(

@@ -59,7 +59,7 @@ func extAuthForSpecWithExtensionFunction(
 ) {
 	policySpec := &trafficpolicy.Spec
 
-	if policySpec == nil || policySpec.ExtAuth == nil {
+	if policySpec.ExtAuth == nil {
 		return
 	}
 	spec := policySpec.ExtAuth

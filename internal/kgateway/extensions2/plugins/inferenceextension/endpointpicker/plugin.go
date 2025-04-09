@@ -150,6 +150,7 @@ func NewPluginFromCollections(
 type endpointPickerPass struct {
 	// usedPools defines a map of IR inferencePools keyed by NamespacedName.
 	usedPools map[types.NamespacedName]*inferencePool
+	ir.UnimplementedProxyTranslationPass
 }
 
 func newEndpointPickerPass(ctx context.Context, tctx ir.GwTranslationCtx) ir.ProxyTranslationPass {

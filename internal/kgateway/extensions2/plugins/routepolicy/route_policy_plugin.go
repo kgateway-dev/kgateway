@@ -35,6 +35,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/policy"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
@@ -84,6 +85,15 @@ type trafficPolicySpecIr struct {
 	extAuth                    *extAuthIR
 	localRateLimit             *localratelimitv3.LocalRateLimit
 	errors                     []error
+}
+
+func (d *trafficPolicy) isSet() bool {
+	if d == nil {
+		return false
+	}
+
+	return d.spec.AI != nil || d.spec.ExtProc != nil || d.spec.transform != nil || d.spec.rustformation != nil ||
+		d.spec.extAuth != nil || d.spec.localRateLimit != nil
 }
 
 func (d *trafficPolicy) CreationTime() time.Time {
@@ -221,6 +231,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 				// AttachmentPoints: []ir.AttachmentPoints{ir.HttpAttachmentPoint},
 				NewGatewayTranslationPass: NewGatewayTranslationPass,
 				Policies:                  policyCol,
+				MergePolicies:             mergePolicies,
 			},
 		},
 		ContributesRegistration: map[schema.GroupKind]func(){
@@ -588,6 +599,86 @@ func (p *trafficPolicyPluginGwPass) NetworkFilters(ctx context.Context) ([]plugi
 // called 1 time (per envoy proxy). replaces GeneratedResources
 func (p *trafficPolicyPluginGwPass) ResourcesToAdd(ctx context.Context) ir.Resources {
 	return ir.Resources{}
+}
+
+func (p *trafficPolicyPluginGwPass) SupportsPolicyMerge() bool {
+	return true
+}
+
+// trafficPolicy objects are merged using an Augmented merge strategy, i.e., a lower priority policy
+// can only augment fields set by a higher priority policy and never override them.
+// TODO: when the policy override API is implemented, derive the merge strategy from the PolicyAtt
+func mergePolicies(policies []ir.PolicyAtt) ir.PolicyAtt {
+	var out ir.PolicyAtt
+	if len(policies) == 0 {
+		return out
+	}
+	_, ok := policies[0].PolicyIr.(*trafficPolicy)
+	// ignore unknown types
+	if !ok {
+		return out
+	}
+
+	// base policy to merge into has an empty PolicyIr so it can always be merged into
+	out = ir.PolicyAtt{
+		GroupKind:    policies[0].GroupKind,
+		PolicyRef:    policies[0].PolicyRef,
+		MergeOrigins: map[string]*ir.AttachedPolicyRef{},
+		PolicyIr:     &trafficPolicy{},
+	}
+	merged := out.PolicyIr.(*trafficPolicy)
+
+	opts := policy.MergeOptions{
+		Strategy: policy.AugmentedMerge,
+	}
+
+	for i := range policies {
+		mergeOpts := opts
+		if i == 0 {
+			mergeOpts.Strategy = policy.OverridableMerge
+		}
+
+		p2 := policies[i].PolicyIr.(*trafficPolicy)
+		p2Ref := policies[i].PolicyRef
+
+		if merged.Equals(p2) {
+			continue
+		}
+
+		if mergeOpts.Strategy == policy.AtomicMerge && merged.isSet() {
+			// During an atomic merge, a lower priority policy cannot merge into a higher priority policy
+			// that is already set
+			continue
+		}
+
+		if policy.IsMergeable(merged.spec.AI, p2.spec.AI, mergeOpts) {
+			merged.spec.AI = p2.spec.AI
+			out.MergeOrigins["ai"] = p2Ref
+		}
+		if policy.IsMergeable(merged.spec.ExtProc, p2.spec.ExtProc, mergeOpts) {
+			merged.spec.ExtProc = p2.spec.ExtProc
+			out.MergeOrigins["extProc"] = p2Ref
+		}
+		if policy.IsMergeable(merged.spec.transform, p2.spec.transform, mergeOpts) {
+			merged.spec.transform = p2.spec.transform
+			out.MergeOrigins["transformation"] = p2Ref
+		}
+		if policy.IsMergeable(merged.spec.rustformation, p2.spec.rustformation, mergeOpts) {
+			merged.spec.rustformation = p2.spec.rustformation
+			merged.spec.rustformationStringToStash = p2.spec.rustformationStringToStash
+			out.MergeOrigins["rustformation"] = p2Ref
+		}
+		if policy.IsMergeable(merged.spec.extAuth, p2.spec.extAuth, mergeOpts) {
+			merged.spec.extAuth = p2.spec.extAuth
+			out.MergeOrigins["extAuth"] = p2Ref
+		}
+		if policy.IsMergeable(merged.spec.localRateLimit, p2.spec.localRateLimit, mergeOpts) {
+			merged.spec.localRateLimit = p2.spec.localRateLimit
+			out.MergeOrigins["rateLimit"] = p2Ref
+		}
+	}
+
+	return out
 }
 
 func buildTranslateFunc(

@@ -30,6 +30,10 @@ type AttachedPolicyRef struct {
 	SectionName string
 }
 
+func (ref *AttachedPolicyRef) ID() string {
+	return ref.Group + "/" + ref.Kind + "/" + ref.Namespace + "/" + ref.Name
+}
+
 type PolicyAtt struct {
 	// GroupKind is the GK of the original policy object
 	GroupKind schema.GroupKind
@@ -38,8 +42,12 @@ type PolicyAtt struct {
 	PolicyIr PolicyIR
 
 	// PolicyRef is a ref to the original policy that is attached (can be used to report status correctly).
-	// nil if the attachment was done via extension ref
+	// nil if the attachment was done via extension ref or if PolicyAtt is the result of MergePolicies(...)
 	PolicyRef *AttachedPolicyRef
+
+	// MergeOrigins maps field names in the PolicyIr to their original source in the merged PolicyAtt.
+	// It can be used to determine which PolicyAtt a merged field came from.
+	MergeOrigins map[string]*AttachedPolicyRef
 
 	Errors []error
 }
@@ -88,6 +96,31 @@ func (a AttachedPolicies) Equals(b AttachedPolicies) bool {
 	return true
 }
 
+// Append appends the policies in l in the given order to the policies in a.
+func (a *AttachedPolicies) Append(l ...AttachedPolicies) {
+	for _, l := range l {
+		for k, v := range l.Policies {
+			if a.Policies == nil {
+				a.Policies = make(map[schema.GroupKind][]PolicyAtt)
+			}
+			a.Policies[k] = append(a.Policies[k], v...)
+		}
+	}
+}
+
+// Prepend prepends the policies in l in the given to the policies in a.
+func (a *AttachedPolicies) Prepend(l ...AttachedPolicies) {
+	// iterate in the reverse order so that the input order in l is preserved at the end
+	for i := len(l) - 1; i >= 0; i-- {
+		for k, v := range l[i].Policies {
+			if a.Policies == nil {
+				a.Policies = make(map[schema.GroupKind][]PolicyAtt)
+			}
+			a.Policies[k] = append(v, a.Policies[k]...)
+		}
+	}
+}
+
 func (l AttachedPolicies) MarshalJSON() ([]byte, error) {
 	m := map[string][]PolicyAtt{}
 	for k, v := range l.Policies {
@@ -120,5 +153,4 @@ type HttpRouteRuleIR struct {
 	Backends         []HttpBackendOrDelegate
 	Matches          []gwv1.HTTPRouteMatch
 	Name             string
-	Timeouts         *gwv1.HTTPRouteTimeouts
 }

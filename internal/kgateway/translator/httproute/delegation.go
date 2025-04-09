@@ -1,7 +1,6 @@
 package httproute
 
 import (
-	"container/list"
 	"context"
 	"errors"
 	"fmt"
@@ -21,10 +20,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
 
-type DelegationCtx struct {
-	Ref types.NamespacedName
-}
-
 // flattenDelegatedRoutes recursively translates a delegated route tree.
 //
 // It returns an error if it cannot determine the delegatee (child) routes.
@@ -34,7 +29,7 @@ type DelegationCtx struct {
 // - If there is a cycle in the delegation tree
 func flattenDelegatedRoutes(
 	ctx context.Context,
-	parent *query.RouteInfo,
+	parentInfo *query.RouteInfo,
 	backend ir.HttpBackendOrDelegate,
 	parentReporter reports.ParentRefReporter,
 	baseReporter reports.Reporter,
@@ -42,23 +37,17 @@ func flattenDelegatedRoutes(
 	parentMatch gwv1.HTTPRouteMatch,
 	outputs *[]ir.HttpRouteRuleMatchIR,
 	routesVisited sets.Set[types.NamespacedName],
-	delegationChain *list.List,
+	delegatingParent *ir.HttpRouteRuleMatchIR,
 ) error {
-	parentRoute, ok := parent.Object.(*ir.HttpRouteIR)
+	parentRoute, ok := parentInfo.Object.(*ir.HttpRouteIR)
 	if !ok {
-		return eris.Errorf("unsupported route type: %T", parent.Object)
+		return eris.Errorf("unsupported route type: %T", parentInfo.Object)
 	}
 	parentRef := types.NamespacedName{Namespace: parentRoute.Namespace, Name: parentRoute.Name}
 	routesVisited.Insert(parentRef)
 	defer routesVisited.Delete(parentRef)
 
-	delegationCtx := DelegationCtx{
-		Ref: parentRef,
-	}
-	lRef := delegationChain.PushFront(delegationCtx)
-	defer delegationChain.Remove(lRef)
-
-	rawChildren, err := parent.GetChildrenForRef(*backend.Delegate)
+	rawChildren, err := parentInfo.GetChildrenForRef(*backend.Delegate)
 	if len(rawChildren) == 0 || err != nil {
 		if err == nil {
 			err = eris.Errorf("unresolved reference %s", backend.Delegate.ResourceName())
@@ -114,7 +103,7 @@ func flattenDelegatedRoutes(
 		}
 
 		translateGatewayHTTPRouteRulesUtil(
-			ctx, gwListener, child, reporter, baseReporter, outputs, routesVisited, hostnames, delegationChain)
+			ctx, gwListener, child, reporter, baseReporter, outputs, routesVisited, delegatingParent)
 	}
 
 	return nil
