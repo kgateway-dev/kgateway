@@ -204,7 +204,7 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 	}
 
 	// wait for the ControllerBuilder to Start
-	// as well as its subcomponennts (mainly ProxySyncer) before marking ready
+	// as well as its subcomponents (mainly ProxySyncer) before marking ready
 	if err := mgr.AddReadyzCheck("ready-ping", func(_ *http.Request) error {
 		if !cb.HasSynced() {
 			return errors.New("not synced")
