@@ -898,7 +898,8 @@ func newQueries(initObjs ...client.Object) query.GatewayQueries {
 	httproutes := krttest.GetMockCollection[*gwv1.HTTPRoute](mock)
 	tcpproutes := krttest.GetMockCollection[*gwv1a2.TCPRoute](mock)
 	tlsroutes := krttest.GetMockCollection[*gwv1a2.TLSRoute](mock)
-	rtidx := krtcollections.NewRoutesIndex(krtutil.KrtOptions{}, httproutes, tcpproutes, tlsroutes, policies, upstreams, refgrants)
+	grpcroutes := krttest.GetMockCollection[*gwv1.GRPCRoute](mock)
+	rtidx := krtcollections.NewRoutesIndex(krtutil.KrtOptions{}, httproutes, grpcroutes, tcpproutes, tlsroutes, policies, upstreams, refgrants)
 	services.WaitUntilSynced(nil)
 
 	secretsCol := map[schema.GroupKind]krt.Collection[ir.Secret]{
