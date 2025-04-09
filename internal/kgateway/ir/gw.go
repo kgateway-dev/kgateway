@@ -3,6 +3,7 @@ package ir
 import (
 	"context"
 	"encoding/json"
+	"time"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -121,4 +122,12 @@ type HttpRouteRuleIR struct {
 	Matches          []gwv1.HTTPRouteMatch
 	Name             string
 	Timeouts         *gwv1.HTTPRouteTimeouts
+	Retry            *RetryIR
+}
+
+type RetryIR struct {
+	Codes      []uint32
+	NumRetries *uint32
+	Backoff    time.Duration
+	Timeout    time.Duration
 }

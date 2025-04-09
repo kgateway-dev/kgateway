@@ -4,11 +4,13 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"time"
 
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/ptr"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	kptr "k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
@@ -731,9 +733,44 @@ func (h *RoutesIndex) transformRules(
 			Matches:          r.Matches,
 			Name:             emptyIfNil(r.Name),
 			Timeouts:         r.Timeouts,
+			Retry:            getRetry(r),
 		})
 	}
 	return rules
+}
+
+func getRetry(r gwv1.HTTPRouteRule) *ir.RetryIR {
+	if r.Retry == nil {
+		return nil
+	}
+	retryIR := &ir.RetryIR{}
+
+	if r.Retry.Attempts != nil {
+		retryIR.NumRetries = kptr.To(uint32(*r.Retry.Attempts))
+	}
+
+	if len(r.Retry.Codes) > 0 {
+		retryIR.Codes = make([]uint32, len(r.Retry.Codes))
+		for i, c := range r.Retry.Codes {
+			retryIR.Codes[i] = uint32(c)
+		}
+	}
+
+	if r.Retry.Backoff != nil {
+		backoff, err := time.ParseDuration(string(*r.Retry.Backoff))
+		if err == nil {
+			retryIR.Backoff = backoff
+		}
+	}
+
+	if r.Timeouts != nil && r.Timeouts.BackendRequest != nil {
+		timeout, err := time.ParseDuration(string(*r.Timeouts.BackendRequest))
+		if err == nil {
+			retryIR.Timeout = timeout
+		}
+	}
+
+	return retryIR
 }
 
 func (h *RoutesIndex) getExtensionRefs(kctx krt.HandlerContext, ns string, r []gwv1.HTTPRouteFilter) ir.AttachedPolicies {

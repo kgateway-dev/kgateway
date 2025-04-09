@@ -137,6 +137,10 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(ctx context.Context,
 		applyRouteTimeout(ctx, out, in.Timeouts.Request)
 	}
 
+	if in.Retry != nil {
+		applyRouteRetry(out, in.Retry)
+	}
+
 	// run plugins here that may set action
 	err := h.runRoutePlugins(ctx, routeReport, in, out, typedPerFilterConfigRoute)
 	if err == nil {
@@ -193,6 +197,19 @@ func applyRouteTimeout(ctx context.Context, route *envoy_config_route_v3.Route, 
 		route.GetRoute().Timeout = durationpb.New(duration)
 	} else {
 		contextutils.LoggerFrom(ctx).Error("invalid HTTPRoute timeout", zap.Error(err))
+	}
+}
+
+func applyRouteRetry(route *envoy_config_route_v3.Route, retry *ir.RetryIR) {
+	route.GetRoute().RetryPolicy = &envoy_config_route_v3.RetryPolicy{
+		RetriableStatusCodes: retry.Codes,
+		NumRetries:           &wrapperspb.UInt32Value{Value: *retry.NumRetries},
+		PerTryTimeout:        durationpb.New(retry.Timeout),
+		RetryBackOff: &envoy_config_route_v3.RetryPolicy_RetryBackOff{
+			BaseInterval: durationpb.New(retry.Backoff),
+		},
+		// RetryHostPredicate ?? ,
+		// RetryPriority ?? ,
 	}
 }
 

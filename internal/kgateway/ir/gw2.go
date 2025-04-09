@@ -40,6 +40,7 @@ type HttpRouteRuleMatchIR struct {
 	MatchIndex int
 	Name       string
 	Timeouts   *gwv1.HTTPRouteTimeouts
+	Retry      *RetryIR
 }
 
 type ListenerIR struct {
