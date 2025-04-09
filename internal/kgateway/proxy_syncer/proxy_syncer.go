@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"sync/atomic"
 	"time"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -63,6 +64,7 @@ type ProxySyncer struct {
 	perclientSnapCollection krt.Collection[XdsSnapWrapper]
 
 	waitForSync []cache.InformerSynced
+	ready       atomic.Bool
 }
 
 type GatewayXdsResources struct {
@@ -179,7 +181,7 @@ func (r report) Equals(in report) bool {
 	return true
 }
 
-func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) error {
+func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 	ctx = contextutils.WithLogger(ctx, "k8s-gw-proxy-syncer")
 	logger := contextutils.LoggerFrom(ctx)
 
@@ -287,7 +289,6 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) erro
 		s.plugins.HasSynced,
 		s.translator.HasSynced,
 	}
-	return nil
 }
 
 func (s *ProxySyncer) Start(ctx context.Context) error {
@@ -368,8 +369,13 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 		}
 	}, true)
 
+	s.ready.Store(true)
 	<-ctx.Done()
 	return nil
+}
+
+func (s *ProxySyncer) HasSynced() bool {
+	return s.ready.Load()
 }
 
 func (s *ProxySyncer) syncRouteStatus(ctx context.Context, rm reports.ReportMap) {
