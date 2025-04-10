@@ -79,7 +79,6 @@ func filterDelegatedChildren(
 			// simply inherit the parent's matcher.
 			if inheritMatcher && len(rule.Matches) == 0 {
 				validMatches = append(validMatches, parentMatch)
-				continue
 			}
 
 			for _, match := range rule.Matches {
