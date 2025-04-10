@@ -245,21 +245,15 @@ func (h *httpRouteConfigurationTranslator) runRoutePlugins(
 		in.ExtensionRefs,
 	)
 
-	// policies from delegating parent routes
-	for _, delegateParent := range in.DelegateParents {
-		// add the policies that target the parent route via targetRef
-		attachedPoliciesSlice = append(attachedPoliciesSlice, delegateParent.AttachedPolicies)
-		// add the policies that target the parent route rules
-		if rules, ok := in.DelegateParentRules[delegateParent.ObjectSource.String()]; ok {
-			for _, rule := range rules {
-				attachedPoliciesSlice = append(attachedPoliciesSlice,
-					// attached to rule via targetRef
-					rule.AttachedPolicies,
-					// attached to rule via extensionRef
-					rule.ExtensionRefs,
-				)
-			}
-		}
+	// policies from delegating parent route
+	if in.DelegateParent != nil {
+		attachedPoliciesSlice = append(attachedPoliciesSlice, in.DelegateParent.AttachedPolicies)
+	}
+	if in.DelegateParentRule != nil {
+		attachedPoliciesSlice = append(attachedPoliciesSlice,
+			in.DelegateParentRule.AttachedPolicies,
+			in.DelegateParentRule.ExtensionRefs,
+		)
 	}
 
 	var errs []error
