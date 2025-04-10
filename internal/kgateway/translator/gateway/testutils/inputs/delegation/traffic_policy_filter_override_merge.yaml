@@ -1,0 +1,200 @@
+# This test consists of a parent and child route, and different traffic policies attached at different points
+# (to parent and to child, via targetRef and extensionRef).
+#
+# Input:
+# - Parent infra/parent:
+#   - Delegate /a to routes in "a" namespace
+#     - extensionRef points to TrafficPolicy parent-policy-filter
+#   - Everything else goes to infra/example-svc
+# - Child a/child:
+#   - /a/1 goes to a/svc-a
+#     - extensionRef points to TrafficPolicy child-policy-filter
+# - TrafficPolicy infra/parent-policy-filter:
+#   - transformation 1
+# - TrafficPolicy infra/parent-policy-targetref:
+#   - transformation 2
+#   - rate limit 1
+#   - targetRef points to infra/parent
+# - TrafficPolicy a/child-policy-filter:
+#   - rate limit 2
+#   - ext proc 1
+# - TrafficPolicy a/child-policy-targetref:
+#   - ext proc 2
+#   - targetRef points to a/child
+#
+# Expected output routes:
+# - /a/1 -> a/svc-a, has:
+#   - transformation 1 (specified by infra/parent-policy-filter)
+#   - rate limit 1 (specified by infra/parent-policy-targetref)
+#   - ext proc 1 (specified by a/child-policy-filter)
+# - /* -> infra/example-svc, has:
+#   - transformation 2 (specified by infra/parent-policy-targetref)
+#   - rate limit 1 (specified by infra/parent-policy-targetref)
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: parent
+  namespace: infra
+spec:
+  parentRefs:
+  - name: example-gateway
+  hostnames:
+  - "example.com"
+  rules:
+  - backendRefs:
+    - name: example-svc
+      port: 80
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /a
+    backendRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: "*"
+      namespace: a
+    filters:
+      - type: ExtensionRef
+        extensionRef:
+          group: gateway.kgateway.dev
+          kind: TrafficPolicy
+          name: parent-policy-filter
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: child
+  namespace: a
+spec:
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /a/1
+    backendRefs:
+    - name: svc-a
+      port: 8080
+    filters:
+      - type: ExtensionRef
+        extensionRef:
+          group: gateway.kgateway.dev
+          kind: TrafficPolicy
+          name: child-policy-filter
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: parent-policy-filter
+  namespace: infra
+spec:
+  transformation:
+    response:
+      add:
+      - name: abc
+        value: custom-value-abc
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: parent-policy-targetref
+  namespace: infra
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: parent
+  transformation:
+    response:
+      add:
+      - name: def
+        value: custom-value-def
+  rateLimit:
+    local:
+      tokenBucket:
+        maxTokens: 11
+        tokensPerFill: 2
+        fillInterval: 33s
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: child-policy-filter
+  namespace: a
+spec:
+  rateLimit:
+    local:
+      tokenBucket:
+        maxTokens: 44
+        tokensPerFill: 5
+        fillInterval: 66s
+  extProc:
+    extensionRef:
+      name: extproc-ext1
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: child-policy-targetref
+  namespace: a
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: child
+  extProc:
+    extensionRef:
+      name: extproc-ext2
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: extproc-ext1
+  namespace: a
+spec:
+  type: ExtProc
+  extProc:
+    grpcService:
+      backendRef:
+        name: extproc1
+        port: 9091
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: extproc1
+  namespace: a
+spec:
+  ports:
+  - port: 9091
+    protocol: TCP
+    appProtocol: kubernetes.io/h2c
+    targetPort: 9091
+  selector:
+    app: extproc1
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: extproc-ext2
+  namespace: a
+spec:
+  type: ExtProc
+  extProc:
+    grpcService:
+      backendRef:
+        name: extproc2
+        port: 9091
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: extproc2
+  namespace: a
+spec:
+  ports:
+  - port: 9091
+    protocol: TCP
+    appProtocol: kubernetes.io/h2c
+    targetPort: 9091
+  selector:
+    app: extproc2
