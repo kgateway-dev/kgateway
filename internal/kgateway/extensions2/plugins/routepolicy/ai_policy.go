@@ -162,17 +162,22 @@ func applyDefaults(
 			return err
 		}
 		var tmpl string
-		if field.Override != nil {
-			// Inja default function will use the default value if the field provided is falsey
-			tmpl = fmt.Sprintf("{{ default(%s, %s) }}", field.Value, string(marshalled))
-		} else {
+		if field.Override != nil && *field.Override {
 			tmpl = string(marshalled)
+		} else {
+			// Inja default function will use the default value if the field provided is falsey
+			tmpl = fmt.Sprintf("{{ default(%s, %s) }}", field.Field, string(marshalled))
 		}
 		if transformation.GetMergeJsonKeys().GetJsonKeys() == nil {
 			transformation.GetMergeJsonKeys().JsonKeys = make(map[string]*envoytransformation.MergeJsonKeys_OverridableTemplate)
 		}
-		transformation.GetMergeJsonKeys().GetJsonKeys()[field.Field] = &envoytransformation.MergeJsonKeys_OverridableTemplate{
-			Tmpl: &envoytransformation.InjaTemplate{Text: tmpl},
+		if bt, ok := transformation.GetBodyTransformation().(*envoytransformation.TransformationTemplate_MergeJsonKeys); ok {
+			if bt == nil {
+				transformation.BodyTransformation = emptyBodyTransformation()
+			}
+			transformation.GetMergeJsonKeys().GetJsonKeys()[field.Field] = &envoytransformation.MergeJsonKeys_OverridableTemplate{
+				Tmpl: &envoytransformation.InjaTemplate{Text: tmpl},
+			}
 		}
 	}
 	return nil
@@ -233,8 +238,13 @@ func applyPromptEnrichment(
 	builder.WriteString(bodyChunk3)
 	finalBody := builder.String()
 	// Overwrite the user messages body key with the templated version
-	transformation.GetMergeJsonKeys().GetJsonKeys()["messages"] = &envoytransformation.MergeJsonKeys_OverridableTemplate{
-		Tmpl: &envoytransformation.InjaTemplate{Text: finalBody},
+	if bt, ok := transformation.GetBodyTransformation().(*envoytransformation.TransformationTemplate_MergeJsonKeys); ok {
+		if bt == nil {
+			transformation.BodyTransformation = emptyBodyTransformation()
+		}
+		transformation.GetMergeJsonKeys().GetJsonKeys()["messages"] = &envoytransformation.MergeJsonKeys_OverridableTemplate{
+			Tmpl: &envoytransformation.InjaTemplate{Text: finalBody},
+		}
 	}
 	return nil
 }
@@ -340,4 +350,12 @@ func hashUnique(obj interface{}, hasher hash.Hash64) (uint64, error) {
 	}
 
 	return hasher.Sum64(), nil
+}
+
+func emptyBodyTransformation() *envoytransformation.TransformationTemplate_MergeJsonKeys {
+	return &envoytransformation.TransformationTemplate_MergeJsonKeys{
+		MergeJsonKeys: &envoytransformation.MergeJsonKeys{
+			JsonKeys: map[string]*envoytransformation.MergeJsonKeys_OverridableTemplate{},
+		},
+	}
 }
