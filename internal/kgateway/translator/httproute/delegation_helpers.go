@@ -45,9 +45,13 @@ func filterDelegatedChildren(
 	// Select the child routes that match the parent
 	var selected []*query.RouteInfo
 	for _, c := range children {
+		// Check if the child route is allowed to be delegated to by the parent
+		if !isAllowedParent(parentRef, c.Object.GetNamespace(), c.Object.GetParentRefs()) {
+			continue
+		}
+
 		// make a copy; multiple parents can delegate to the same child so we can't modify a shared reference
 		clone := c.Clone()
-
 		origChild, ok := clone.Object.(*ir.HttpRouteIR)
 		if !ok {
 			continue
@@ -57,11 +61,6 @@ func filterDelegatedChildren(
 		// make sure we don't overwite the original rules
 		child.Rules = make([]ir.HttpRouteRuleIR, len(origChild.Rules))
 		copy(child.Rules, origChild.Rules)
-
-		// Check if the child route is allowed to be delegated to by the parent
-		if !isAllowedParent(parentRef, child.Namespace, child.ParentRefs) {
-			continue
-		}
 
 		inheritMatcher := shouldInheritMatcher(child)
 
