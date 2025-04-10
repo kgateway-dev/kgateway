@@ -106,6 +106,12 @@ func (s *testingSuite) TearDownSuite() {
 	s.Require().NoError(err)
 
 	s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, s.coreObjects...)
+	s.testInstallation.Assertions.EventuallyPodsNotExist(s.ctx, gatewayObjectMeta.GetNamespace(), metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("app.kubernetes.io/name=%s", gatewayObjectMeta.GetName()),
+	})
+	s.testInstallation.Assertions.EventuallyPodsNotExist(s.ctx, httpbinObjectMeta.GetNamespace(), metav1.ListOptions{
+		LabelSelector: "app=httpbin",
+	})
 }
 
 // BeforeTest runs before each test
