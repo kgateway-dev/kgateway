@@ -204,8 +204,8 @@ func applyRouteTimeout(ctx context.Context, route *envoy_config_route_v3.Route, 
 // defaults??
 func applyRouteRetry(route *envoy_config_route_v3.Route, retry *ir.RetryIR) {
 	retryPolicy := &envoy_config_route_v3.RetryPolicy{
-		// RetryHostPredicate ?? ,
-		// RetryPriority ?? ,
+		NumRetries: &wrapperspb.UInt32Value{Value: 3}, // default
+		RetryOn:    "cancelled,connect-failure,refused-stream,retriable-status-codes,unavailable",
 	}
 
 	if retry.NumRetries != nil {
