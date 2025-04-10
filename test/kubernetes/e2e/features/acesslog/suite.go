@@ -142,8 +142,6 @@ func (s *testingSuite) TestAccessLogWithFileSink() {
 	s.sendTestRequest()
 
 	s.Require().EventuallyWithT(func(c *assert.CollectT) {
-		// curl httpbin
-		s.sendTestRequest()
 		logs, err := s.testInstallation.Actions.Kubectl().GetContainerLogs(s.ctx, gatewayService.ObjectMeta.GetNamespace(), pods[0])
 		s.Require().NoError(err)
 
@@ -178,8 +176,6 @@ func (s *testingSuite) TestAccessLogWithGrpcSink() {
 	s.sendTestRequest()
 
 	s.Require().EventuallyWithT(func(c *assert.CollectT) {
-		// curl httpbin
-		s.sendTestRequest()
 		logs, err := s.testInstallation.Actions.Kubectl().GetContainerLogs(s.ctx, accessLoggerDeployment.ObjectMeta.GetNamespace(), pods[0])
 		s.Require().NoError(err)
 
