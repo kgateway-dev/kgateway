@@ -1,5 +1,3 @@
-# NOTE: This test is currently disabled because it incorrectly uses the grandchild ratelimit
-# policy rather than the child ratelimit policy as expected.
 # This test consists of 3 routes (parent, child, grandchild) and 3 traffic policies
 # (transformation, rate limit, and rate limit + ext proc), each targeting a different
 # route.

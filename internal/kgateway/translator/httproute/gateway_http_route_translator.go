@@ -160,9 +160,26 @@ func translateGatewayHTTPRouteRule(
 
 		// If this parent route has delegatee routes, set the parent on it
 		// so that later when applying plugins we can access and apply policies from it
+		// - DelegateParents is a list of parent routes that delegate to the child
+		//   (these should be maintained in order from lowest to highest priority)
+		// - DelegateParentRules is a map of parent route to the rules from that parent
+		//   that delegate to the child
 		for i := range delegatedRoutes {
-			delegatedRoutes[i].DelegateParentRule = &rule
-			delegatedRoutes[i].DelegateParent = parent
+			// initialize the map if needed
+			if delegatedRoutes[i].DelegateParentRules == nil {
+				delegatedRoutes[i].DelegateParentRules = map[string][]ir.HttpRouteRuleIR{}
+			}
+
+			// update the child's delegate parent routes and route rules
+			parentKey := parent.ObjectSource.String()
+			if _, ok := delegatedRoutes[i].DelegateParentRules[parentKey]; !ok {
+				// we have not encountered this parent yet; add it to the parent routes list
+				delegatedRoutes[i].DelegateParents = append(
+					delegatedRoutes[i].DelegateParents, *parent)
+			}
+			// add the route rule under the parent key
+			delegatedRoutes[i].DelegateParentRules[parentKey] = append(
+				delegatedRoutes[i].DelegateParentRules[parentKey], rule)
 		}
 
 		// Add the delegatee output routes to the final output list

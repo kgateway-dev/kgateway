@@ -26,11 +26,18 @@ type HttpRouteRuleMatchIR struct {
 	ExtensionRefs    AttachedPolicies
 	AttachedPolicies AttachedPolicies
 	Parent           *HttpRouteIR
-	// the rule that delegated to us
-	DelegateParentRule *HttpRouteRuleIR
-	// the route that delegated to us
-	DelegateParent *HttpRouteIR
-	HasChildren    bool
+
+	// the routes that delegated to us
+	// these should be maintained in order from lowest to highest priority
+	// (where those with highest priority are at the top/root of the route tree)
+	DelegateParents []HttpRouteIR
+	// the rules from the DelegateParents that delegated to us
+	// - key = parent route identifier (HttpRouteIR.ObjectSource.String());
+	//   this parent should exist in DelegateParents
+	// - value = list of rules from the parent route that delegate to us
+	DelegateParentRules map[string][]HttpRouteRuleIR
+
+	HasChildren bool
 	// if there's an error, the gw-api listener to report it in.
 	ListenerParentRef gwv1.ParentReference
 	// the parent ref the led here (may be delegated httproute or listner)

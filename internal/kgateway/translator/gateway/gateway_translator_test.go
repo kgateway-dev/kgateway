@@ -413,6 +413,6 @@ var _ = DescribeTable("Route Delegation translator",
 	Entry("TrafficPolicy inheritance from parent", "traffic_policy_inheritance.yaml", ""),
 	Entry("TrafficPolicy ignore child override on conflict", "traffic_policy_inheritance_child_override_ignore.yaml", ""),
 	Entry("TrafficPolicy merge child override on no conflict", "traffic_policy_inheritance_child_override_ok.yaml", ""),
-	XEntry("TrafficPolicy multi level inheritance with child override", "traffic_policy_multi_level_inheritance_override_ok.yaml", ""),
+	Entry("TrafficPolicy multi level inheritance with child override", "traffic_policy_multi_level_inheritance_override_ok.yaml", ""),
 	XEntry("TrafficPolicy filter override merge", "traffic_policy_filter_override_merge.yaml", ""),
 )
