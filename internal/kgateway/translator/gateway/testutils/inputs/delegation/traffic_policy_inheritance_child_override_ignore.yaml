@@ -1,0 +1,94 @@
+# This test contains a parent route that delegates to a child route. A traffic policy with a transformation
+# targets the parent route, and a traffic policy with a different transformation targets the child route.
+# All the output routes should use the traffic policy from the parent route.
+#
+# Input:
+# - Parent infra/example-route:
+#   - Delegate /a to routes in "a" namespace
+#   - Everything else goes to infra/example-svc
+# - Child a/route-a:
+#   - /a/1 goes to a/svc-a
+# - TrafficPolicy infra/example-policy:
+#   - specifies response transformation
+#   - targetRef points to infra/example-route
+# - TrafficPolicy a/route-a-policy:
+#   - specifies request/response transformation
+#   - targetRef points to a/route-a
+#
+# Expected output routes:
+# - /a/1 -> a/svc-a, has transformation specified by infra/example-policy (it overwrites a/route-a-policy)
+# - /* -> infra/example-svc, has transformation specified by infra/example-policy
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: example-route
+  namespace: infra
+spec:
+  parentRefs:
+  - name: example-gateway
+  hostnames:
+  - "example.com"
+  rules:
+  - backendRefs:
+    - name: example-svc
+      port: 80
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /a
+    backendRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: "*"
+      namespace: a
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: route-a
+  namespace: a
+spec:
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /a/1
+    backendRefs:
+    - name: svc-a
+      port: 8080
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: example-policy
+  namespace: infra
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: example-route
+  transformation:
+    response:
+      add:
+      - name: abc
+        value: custom-value-abc
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: route-a-policy
+  namespace: a
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: route-a
+  transformation:
+    request:
+      set:
+        - name: x-foo-req
+          value: abc
+    response:
+      set:
+        - name: x-foo-resp
+          value: xyz

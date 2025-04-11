@@ -246,7 +246,6 @@ func (h *httpRouteConfigurationTranslator) runRoutePlugins(
 	)
 
 	// policies from delegating parent route
-	// TODO: handle multi-level inheritance for delegatee routes (routes with delegating parents)
 	if in.DelegateParent != nil {
 		attachedPoliciesSlice = append(attachedPoliciesSlice, in.DelegateParent.AttachedPolicies)
 	}
