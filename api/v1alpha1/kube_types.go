@@ -75,6 +75,7 @@ type Service struct {
 	// The Kubernetes Service type.
 	//
 	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Enum=ClusterIP;NodePort;LoadBalancer;ExternalName
 	Type *corev1.ServiceType `json:"type,omitempty"`
 
 	// The manually specified IP address of the service, if a randomly assigned
@@ -101,7 +102,6 @@ type Service struct {
 	// The actual port numbers are specified in the Gateway resource.
 	//
 	// +optional
-	// +kubebuilder:validation:MaxItems=8
 	Ports []*Port `json:"ports"`
 }
 

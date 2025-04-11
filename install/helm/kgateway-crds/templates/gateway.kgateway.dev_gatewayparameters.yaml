@@ -2093,9 +2093,13 @@ spec:
                           required:
                           - port
                           type: object
-                        maxItems: 8
                         type: array
                       type:
+                        enum:
+                        - ClusterIP
+                        - NodePort
+                        - LoadBalancer
+                        - ExternalName
                         type: string
                     type: object
                   serviceAccount:
