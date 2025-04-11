@@ -152,6 +152,7 @@ routes:
           - 500
           retryBackOff:
             baseInterval: 3s
+          retryOn: cancelled,connect-failure,refused-stream,retriable-status-codes,unavailable
       typedPerFilterConfig:
         ai.extproc.kgateway.io:
           '@type': type.googleapis.com/envoy.extensions.filters.http.ext_proc.v3.ExtProcPerRoute
