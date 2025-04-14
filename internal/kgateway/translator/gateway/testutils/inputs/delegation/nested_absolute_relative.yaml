@@ -1,3 +1,22 @@
+# This test contains multiple levels of delegation, with a mixture of inheriting and
+# not inheriting the parent matchers.
+#
+# Input:
+# - Parent infra/example-route:
+#   - Delegate /a (parent header/query params) to routes in "a" namespace
+# - Child a/route-a:
+#   - /a/1 (parent and route-a header/query params) goes to a/svc-a
+#   - /a/b (parent header/query params, GET) delegates to a-b/route-a-b
+# - Child a-b/route-a-b (with annotation inherit-parent-matcher=true):
+#   - /c (route-a-b header/query params) goes to a-b/svc-a-b
+#   - /d (route-a-b-2 header/query params) delegates to a-b-d/route-a-b-d
+# - Child a-b-d/route-a-b-d:
+#   - /a/b/d/1 (parent, route-a-b-2, and route-a-b-d header/query params) goes to a-b-d/svc-a-b-d
+#
+# Expected output routes:
+# - /a/1 (parent and route-a header/query params) -> a/svc-a
+# - /a/b/c (parent and route-a-b header/query params, GET) -> a-b/svc-a-b
+# - /a/b/d/1 (parent, route-a-b-2, and route-a-b-d header/query params, GET) -> a-b-d/svc-a-b-d
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:

@@ -4,22 +4,16 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
-
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
 
 func TestIsDelegatedRouteMatch(t *testing.T) {
 	testCases := []struct {
-		name       string
-		parent     gwv1.HTTPRouteMatch
-		parentRef  types.NamespacedName
-		child      gwv1.HTTPRouteMatch
-		childNs    string
-		parentRefs []gwv1.ParentReference
-		expected   bool
+		name     string
+		parent   gwv1.HTTPRouteMatch
+		child    gwv1.HTTPRouteMatch
+		expected bool
 	}{
 		{
 			name: "child route without parentRef matches parent",
@@ -447,16 +441,6 @@ func TestIsDelegatedRouteMatch(t *testing.T) {
 					},
 				},
 			},
-			parentRef: types.NamespacedName{Namespace: "default", Name: "parent"},
-			childNs:   "child",
-			parentRefs: []gwv1.ParentReference{
-				{
-					Group:     ptr.To[gwv1.Group](gwv1.Group(wellknown.GatewayGroup)),
-					Kind:      ptr.To[gwv1.Kind](gwv1.Kind(wellknown.HTTPRouteKind)),
-					Name:      "parent",
-					Namespace: ptr.To[gwv1.Namespace](gwv1.Namespace("default")),
-				},
-			},
 			expected: true,
 		},
 		{
@@ -531,15 +515,6 @@ func TestIsDelegatedRouteMatch(t *testing.T) {
 					},
 				},
 			},
-			parentRef: types.NamespacedName{Namespace: "default", Name: "parent"},
-			childNs:   "default",
-			parentRefs: []gwv1.ParentReference{
-				{
-					Group: ptr.To[gwv1.Group](gwv1.Group(wellknown.GatewayGroup)),
-					Kind:  ptr.To[gwv1.Kind](gwv1.Kind(wellknown.HTTPRouteKind)),
-					Name:  "parent",
-				},
-			},
 			expected: true,
 		},
 	}
@@ -547,7 +522,7 @@ func TestIsDelegatedRouteMatch(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			a := assert.New(t)
-			actual := isDelegatedRouteMatch(tc.parent, tc.parentRef, tc.child, tc.childNs, tc.parentRefs)
+			actual := isDelegatedRouteMatch(tc.parent, tc.child)
 
 			a.Equal(tc.expected, actual)
 		})

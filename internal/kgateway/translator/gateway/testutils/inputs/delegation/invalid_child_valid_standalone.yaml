@@ -1,3 +1,21 @@
+# This test contains a parent route that delegates to a child route, which is dropped
+# due to mismatched hostnames. However the child route is also a valid standalone route
+# since it has a Gateway as a parentRef.
+#
+# Input:
+# - Parent infra/example-route (hostname example.com):
+#   - Delegate /a to routes in "a" namespace
+#   - Everything else goes to infra/example-svc
+# - Child a/route-a (hostname foo.com):
+#   - parentRefs are infra/example-gateway and infra/example-route
+#   - /a/1 goes to a/svc-a
+#
+# Expected output routes:
+# - domain example.com:
+#   - /* -> infra/example-svc
+#   - there is no route for /a/1 because a/route-a's hostname doesn't match that of its parent
+# - domain foo.com:
+#   - /a/1 -> a/svc-a (because a/route-a is also a standalone attachment to a Gateway)
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
