@@ -230,14 +230,18 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 	}
 }
 
-func convert(targetRefs []v1alpha1.LocalPolicyTargetReference) []ir.PolicyRef {
+func convert(targetRefs []v1alpha1.LocalPolicyTargetReferenceWithSectionName) []ir.PolicyRef {
 	refs := make([]ir.PolicyRef, 0, len(targetRefs))
 	for _, targetRef := range targetRefs {
-		refs = append(refs, ir.PolicyRef{
+		ref := ir.PolicyRef{
 			Kind:  string(targetRef.Kind),
 			Name:  string(targetRef.Name),
 			Group: string(targetRef.Group),
-		})
+		}
+		if targetRef.SectionName != nil {
+			ref.SectionName = string(*targetRef.SectionName)
+		}
+		refs = append(refs, ref)
 	}
 	return refs
 }

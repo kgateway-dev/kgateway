@@ -183,14 +183,17 @@ func NewGatewayIndex(
 			Listeners: make([]ir.Listener, 0, len(i.Spec.Listeners)),
 		}
 
-		// TODO: http polic
-		//		panic("TODO: implement http policies not just listener")
-		out.AttachedListenerPolicies = toAttachedPolicies(h.policies.getTargetingPolicies(kctx, extensionsplug.GatewayAttachmentPoint, out.ObjectSource, ""))
+		// Use getTargetingPoliciesWithoutSection to exclude listener-specific policies from the Gateway level
+		out.AttachedListenerPolicies = toAttachedPolicies(h.policies.getTargetingPoliciesWithoutSection(kctx, extensionsplug.GatewayAttachmentPoint, out.ObjectSource))
 		out.AttachedHttpPolicies = out.AttachedListenerPolicies // see if i can find a better way to segment the listener level and http level policies
 		for _, l := range i.Spec.Listeners {
+			listenerName := string(l.Name)
+			// Get policies that specifically target this listener by its name
+			listenerPolicies := h.policies.getTargetingPolicies(kctx, extensionsplug.RouteAttachmentPoint, out.ObjectSource, listenerName)
+
 			out.Listeners = append(out.Listeners, ir.Listener{
 				Listener:         l,
-				AttachedPolicies: toAttachedPolicies(h.policies.getTargetingPolicies(kctx, extensionsplug.RouteAttachmentPoint, out.ObjectSource, string(l.Name))),
+				AttachedPolicies: toAttachedPolicies(listenerPolicies),
 			})
 		}
 
@@ -330,6 +333,68 @@ func (p *PolicyIndex) getTargetingPolicies(
 	sectionName string,
 ) []ir.PolicyAtt {
 	return p.getTargetingPoliciesMaybeForBackends(kctx, pnt, targetRef, sectionName, false)
+}
+
+// getTargetingPoliciesWithoutSection gets only policies that target the given object without any section name
+func (p *PolicyIndex) getTargetingPoliciesWithoutSection(
+	kctx krt.HandlerContext,
+	pnt extensionsplug.AttachmentPoints,
+	targetRef ir.ObjectSource,
+) []ir.PolicyAtt {
+	var ret []ir.PolicyAtt
+	for _, gp := range p.globalPolicies {
+		if gp.points.Has(pnt) {
+			if p := gp.ir(kctx, pnt); p != nil {
+				gpAtt := ir.PolicyAtt{
+					PolicyIr:  p,
+					GroupKind: gp.GroupKind,
+				}
+				ret = append(ret, gpAtt)
+			}
+		}
+	}
+
+	// no need for ref grants here as target refs are namespace local
+	targetRefIndexKey := targetRefIndexKey{
+		PolicyRef: ir.PolicyRef{
+			Group: targetRef.Group,
+			Kind:  targetRef.Kind,
+			Name:  targetRef.Name,
+		},
+		Namespace: targetRef.Namespace,
+	}
+	policies := p.fetchByTargetRef(kctx, targetRefIndexKey, false)
+
+	for _, p := range policies {
+		// Find the targetRef that matches our current target
+		var matchingRef *ir.PolicyRef
+		for _, ref := range p.TargetRefs {
+			if ref.Group == targetRef.Group && ref.Kind == targetRef.Kind && ref.Name == targetRef.Name {
+				matchingRef = &ref
+				break
+			}
+		}
+
+		// Only include the policy if the matching targetRef has no section name
+		if matchingRef != nil && matchingRef.SectionName == "" {
+			ret = append(ret, ir.PolicyAtt{
+				GroupKind: p.GetGroupKind(),
+				PolicyIr:  p.PolicyIR,
+				PolicyRef: &ir.AttachedPolicyRef{
+					Group:     p.Group,
+					Kind:      p.Kind,
+					Name:      p.Name,
+					Namespace: p.Namespace,
+				},
+				Errors: p.Errors,
+			})
+		}
+	}
+
+	slices.SortFunc(ret, func(a, b ir.PolicyAtt) int {
+		return a.PolicyIr.CreationTime().Compare(b.PolicyIr.CreationTime())
+	})
+	return ret
 }
 
 func (p *PolicyIndex) getTargetingPoliciesMaybeForBackends(
@@ -702,12 +767,13 @@ func (h *RoutesIndex) transformHttpRoute(kctx krt.HandlerContext, i *gwv1.HTTPRo
 	}
 
 	return &ir.HttpRouteIR{
-		ObjectSource:     src,
-		SourceObject:     i,
-		ParentRefs:       i.Spec.ParentRefs,
-		Hostnames:        tostr(i.Spec.Hostnames),
-		Rules:            h.transformRules(kctx, src, i.Spec.Rules),
-		AttachedPolicies: toAttachedPolicies(h.policies.getTargetingPolicies(kctx, extensionsplug.RouteAttachmentPoint, src, "")),
+		ObjectSource: src,
+		SourceObject: i,
+		ParentRefs:   i.Spec.ParentRefs,
+		Hostnames:    tostr(i.Spec.Hostnames),
+		Rules:        h.transformRules(kctx, src, i.Spec.Rules),
+		// Only include policies that target the route without a specific section name
+		AttachedPolicies: toAttachedPolicies(h.policies.getTargetingPoliciesWithoutSection(kctx, extensionsplug.RouteAttachmentPoint, src)),
 	}
 }
 
@@ -721,7 +787,11 @@ func (h *RoutesIndex) transformRules(
 		extensionRefs := h.getExtensionRefs(kctx, src.Namespace, r.Filters)
 		var policies ir.AttachedPolicies
 		if r.Name != nil {
-			policies = toAttachedPolicies(h.policies.getTargetingPolicies(kctx, extensionsplug.RouteAttachmentPoint, src, string(*r.Name)))
+			// For named rules, fetch policies that explicitly target this rule section
+			ruleName := string(*r.Name)
+			// First, fetch policies that target this specific rule by sectionName
+			specificPolicies := h.policies.getTargetingPoliciesMaybeForBackends(kctx, extensionsplug.RouteAttachmentPoint, src, ruleName, false)
+			policies = toAttachedPolicies(specificPolicies)
 		}
 
 		rules = append(rules, ir.HttpRouteRuleIR{
