@@ -315,6 +315,57 @@ func (s *testingSuite) TestExtProcWithBackendFilter() {
 		})
 }
 
+// TestExtProcWithHTTPRouteSectionName tests ExtProc with a specific section name
+func (s *testingSuite) TestExtProcWithHTTPRouteSectionName() {
+	s.activeManifests = []string{httprouteSectionNameManifest}
+	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, httprouteSectionNameManifest)
+	s.Require().NoError(err)
+
+	// Test route with ExtProc and matching section name - should have header modified
+	s.testInstallation.Assertions.AssertEventualCurlResponse(
+		s.ctx,
+		testdefaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(gatewayService.ObjectMeta)),
+			curl.VerboseOutput(),
+			curl.WithHostHeader("www.example.com"),
+			curl.WithPath("/myapp"),
+			curl.WithHeader("instructions", getInstructionsJson(instructions{
+				AddHeaders: map[string]string{"extproctest": "true"},
+			})),
+		},
+		&testmatchers.HttpResponse{
+			StatusCode: http.StatusOK,
+			Body: gomega.WithTransform(transforms.WithJsonBody(),
+				gomega.And(
+					gomega.HaveKeyWithValue("headers", gomega.HaveKey("Extproctest")),
+				),
+			),
+		})
+
+	// Test second rule - should not have header modified
+	s.testInstallation.Assertions.AssertEventualCurlResponse(
+		s.ctx,
+		testdefaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(gatewayService.ObjectMeta)),
+			curl.VerboseOutput(),
+			curl.WithHostHeader("www.example.com"),
+			curl.WithPort(8080),
+			curl.WithHeader("instructions", getInstructionsJson(instructions{
+				AddHeaders: map[string]string{"extproctest": "true"},
+			})),
+		},
+		&testmatchers.HttpResponse{
+			StatusCode: http.StatusOK,
+			Body: gomega.WithTransform(transforms.WithJsonBody(),
+				gomega.And(
+					gomega.HaveKeyWithValue("headers", gomega.Not(gomega.HaveKey("Extproctest"))),
+				),
+			),
+		})
+}
+
 // The instructions format that the example extproc service understands.
 // See the `basic-sink` example in https://github.com/solo-io/ext-proc-examples
 type instructions struct {
