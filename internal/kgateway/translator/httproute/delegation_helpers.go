@@ -88,7 +88,7 @@ func filterDelegatedChildren(
 					// the parent's matcher with the child's.
 					mergeParentChildRouteMatch(&parentMatch, &match)
 					validMatches = append(validMatches, match)
-				} else if ok := isDelegatedRouteMatch(parentMatch, parentRef, match, child.Namespace, child.ParentRefs); ok {
+				} else if ok := isDelegatedRouteMatch(parentMatch, match); ok {
 					// Non-inherited matcher delegation requires matching child matcher to parent matcher
 					// to delegate from the parent route to the child.
 					validMatches = append(validMatches, match)
@@ -157,10 +157,7 @@ func isAllowedParent(
 // - if the parent method matcher is set, the child's method matcher value must be equal to the parent method matcher value
 func isDelegatedRouteMatch(
 	parent gwv1.HTTPRouteMatch,
-	parentRef types.NamespacedName,
 	child gwv1.HTTPRouteMatch,
-	childNs string,
-	parentRefs []gwv1.ParentReference,
 ) bool {
 	// Validate path
 	if parent.Path == nil || parent.Path.Type == nil || *parent.Path.Type != gwv1.PathMatchPathPrefix {
