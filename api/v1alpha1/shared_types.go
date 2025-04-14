@@ -21,6 +21,34 @@ type LocalPolicyTargetReference struct {
 	Name gwv1.ObjectName `json:"name"`
 }
 
+// LocalPolicyTargetReferenceWithSectionName identifies an API object to apply a
+// direct policy to. This should be used as part of Policy resources that can
+// target single resources. For more information on how this policy attachment
+// mode works, and a sample Policy resource, refer to the policy attachment
+// documentation for Gateway API.
+//
+// Note: This should only be used for direct policy attachment when references
+// to SectionName are actually needed. In all other cases,
+// LocalPolicyTargetReference should be used.
+type LocalPolicyTargetReferenceWithSectionName struct {
+	LocalPolicyTargetReference `json:",inline"`
+
+	// SectionName is the name of a section within the target resource. When
+	// unspecified, this targetRef targets the entire resource. In the following
+	// resources, SectionName is interpreted as the following:
+	//
+	// * Gateway: Listener name
+	// * HTTPRoute: HTTPRouteRule name
+	// * Service: Port name
+	//
+	// If a SectionName is specified, but does not exist on the targeted object,
+	// the Policy must fail to attach, and the policy implementation should record
+	// a `ResolvedRefs` or similar Condition in the Policy's status.
+	//
+	// +optional
+	SectionName *gwv1.SectionName `json:"sectionName,omitempty"`
+}
+
 type PolicyStatus struct {
 	//
 	// +optional

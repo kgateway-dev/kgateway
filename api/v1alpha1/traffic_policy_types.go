@@ -32,7 +32,7 @@ type TrafficPolicyList struct {
 type TrafficPolicySpec struct {
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=16
-	TargetRefs []LocalPolicyTargetReference `json:"targetRefs,omitempty"`
+	TargetRefs []LocalPolicyTargetReferenceWithSectionName `json:"targetRefs,omitempty"`
 
 	// AI is used to configure AI-based policies for the policy.
 	// +optional
