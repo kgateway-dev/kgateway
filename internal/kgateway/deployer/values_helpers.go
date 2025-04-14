@@ -42,12 +42,16 @@ func getPortsValues(gw *api.Gateway, gwp *v1alpha1.GatewayParameters) []helmPort
 
 		// Search for static NodePort set from the GatewayParameters spec
 		// If not found the default value of `nil` will not render anything.
-		var nodePort *uint16 = nil
+		var nodePort *uint16
 		if gwp.Spec.Kube.Service.GetType() != nil && *(gwp.Spec.Kube.Service.GetType()) == corev1.ServiceTypeNodePort {
 			if idx := slices.IndexFunc(gwp.Spec.Kube.Service.GetPorts(), func(p *v1alpha1.Port) bool {
 				return p.GetPort() == uint16(listenerPort)
 			}); idx != -1 {
-				nodePort = ptr.To(uint16(*gwp.Spec.GetKube().GetService().GetPorts()[idx].GetNodePort()))
+				if port := gwp.Spec.GetKube().GetService().GetPorts()[idx]; port != nil {
+					if nodePortVal := port.GetNodePort(); nodePortVal != nil {
+						nodePort = ptr.To(uint16(*nodePortVal))
+					}
+				}
 			}
 		}
 		gwPorts = append(gwPorts, helmPort{
