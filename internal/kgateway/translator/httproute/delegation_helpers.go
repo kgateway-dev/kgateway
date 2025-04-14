@@ -10,15 +10,11 @@ import (
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	"github.com/kgateway-dev/kgateway/v2/api/annotations"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/query"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
-
-// inheritMatcherAnnotation is the annotation used on a child HTTPRoute that
-// participates in a delegation chain to indicate that child route should inherit
-// the route matcher from the parent route.
-const inheritMatcherAnnotation = "delegation.kgateway.dev/inherit-parent-matcher"
 
 // filterDelegatedChildren takes a parent route matcher and a list of children
 // referenced by the parent's backendRefs, and filters the children based on
@@ -211,7 +207,7 @@ func isDelegatedRouteMatch(
 // shouldInheritMatcher returns true if the route indicates that it should inherit
 // its parent's matcher.
 func shouldInheritMatcher(route *ir.HttpRouteIR) bool {
-	val, ok := route.SourceObject.GetAnnotations()[inheritMatcherAnnotation]
+	val, ok := route.SourceObject.GetAnnotations()[annotations.DelegationInheritMatcherAnnotation]
 	if !ok {
 		return false
 	}
