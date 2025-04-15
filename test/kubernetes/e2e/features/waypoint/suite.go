@@ -92,14 +92,9 @@ func (s *testingSuite) SetupSuite() {
 			s.T().Logf("Error listing pods with label %s=%s: %v", app.lbl, app.val, err)
 			continue
 		}
-
 		s.T().Logf("Found %d pods with label %s=%s", len(pods.Items), app.lbl, app.val)
 		for _, pod := range pods.Items {
 			s.T().Logf("Pod %s status: %s", pod.Name, pod.Status.Phase)
-			for _, cond := range pod.Status.Conditions {
-				s.T().Logf("  - Condition: %s=%s (last transition: %s)",
-					cond.Type, cond.Status, cond.LastTransitionTime)
-			}
 		}
 	}
 }

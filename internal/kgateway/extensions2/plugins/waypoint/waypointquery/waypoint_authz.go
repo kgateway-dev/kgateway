@@ -2,34 +2,86 @@ package waypointquery
 
 import (
 	"context"
+	"fmt"
 
-	istiosecurity "istio.io/client-go/pkg/apis/security/v1"
+	authcr "istio.io/client-go/pkg/apis/security/v1"
+	"istio.io/istio/pilot/pkg/serviceregistry/provider"
 	"istio.io/istio/pkg/kube/krt"
+	gwapi "sigs.k8s.io/gateway-api/apis/v1"
+
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
 
-func (w *waypointQueries) GetAuthorizationPolicies(kctx krt.HandlerContext, ctx context.Context, targetNamespace, rootNamespace string) []*istiosecurity.AuthorizationPolicy {
-	// Get all policies in the target namespace
-	policies := krt.Fetch(kctx, w.authzPolicies, krt.FilterIndex(w.byNamespace, targetNamespace))
+// targetRefKey identifies a service or gateway that policies target
+type targetRefKey struct {
+	Name      string
+	Namespace string
+	Group     string
+	Kind      string
+}
 
-	// Get all policies in the root namespace
-	if rootNamespace != "" && rootNamespace != targetNamespace {
-		rootPolicies := krt.Fetch(kctx, w.authzPolicies, krt.FilterIndex(w.byNamespace, rootNamespace))
-		policies = append(policies, rootPolicies...)
+// the key needs to be a string to be used as a map key
+func (k targetRefKey) String() string {
+	return fmt.Sprintf("%s/%s/%s/%s", k.Group, k.Kind, k.Namespace, k.Name)
+}
+
+// GetAuthorizationPoliciesForGateway returns policies targeting a specific gateway
+func (w *waypointQueries) GetAuthorizationPoliciesForGateway(
+	kctx krt.HandlerContext,
+	ctx context.Context,
+	gateway *gwapi.Gateway,
+	rootNamespace string) []*authcr.AuthorizationPolicy {
+
+	// Get policies targeting this gateway directly using the index
+	gwKey := targetRefKey{
+		Name:      gateway.GetName(),
+		Namespace: gateway.GetNamespace(),
+		Group:     "gateway.networking.k8s.io",
+		Kind:      "Gateway",
 	}
 
-	// Filter policies to only include those targeting services in the target namespace
-	filteredPolicies := make([]*istiosecurity.AuthorizationPolicy, 0, len(policies))
-	for _, policy := range policies {
-		for _, targetRef := range policy.Spec.GetTargetRefs() {
-			if targetRef.GetKind() == "Service" && targetRef.GetGroup() == "" {
-				// If the policy targets a service in the target namespace, include it
-				targetNamespaceMatches := targetRef.GetNamespace() == "" || targetRef.GetNamespace() == targetNamespace
-				if targetNamespaceMatches {
-					filteredPolicies = append(filteredPolicies, policy)
-					break
-				}
-			}
+	// Get all indexed policies targeting this gateway
+	allPolicies := krt.Fetch(kctx, w.authzPolicies, krt.FilterIndex(w.byTargetRefKey, gwKey))
+
+	//GatewayClass policies can be in rootNamespace or the gateway namespace
+	if rootNamespace != "" && rootNamespace != gateway.GetNamespace() {
+		gwClassKey := targetRefKey{
+			Name:      "kgateway-waypoint",
+			Namespace: rootNamespace,
+			Group:     "gateway.networking.k8s.io",
+			Kind:      "GatewayClass",
 		}
+		rootPolicies := krt.Fetch(kctx, w.authzPolicies, krt.FilterIndex(w.byTargetRefKey, gwClassKey))
+		allPolicies = append(allPolicies, rootPolicies...)
 	}
-	return filteredPolicies
+
+	for i, p := range allPolicies {
+		fmt.Printf("  Policy %d: %s/%s (deletion: %v)\n", i,
+			p.GetNamespace(), p.GetName(), p.GetDeletionTimestamp() != nil)
+	}
+	return allPolicies
+}
+
+// GetAuthorizationPoliciesForService returns policies targeting a specific service
+func (w *waypointQueries) GetAuthorizationPoliciesForService(
+	kctx krt.HandlerContext,
+	ctx context.Context,
+	svc *Service) []*authcr.AuthorizationPolicy {
+
+	providerID := svc.Provider()
+
+	gk := wellknown.ServiceGVK.GroupKind()
+	if providerID == provider.External {
+		gk = wellknown.ServiceEntryGVK.GroupKind()
+	}
+
+	svcKey := targetRefKey{
+		Name:      svc.GetName(),
+		Namespace: svc.GetNamespace(),
+		Group:     gk.Group,
+		Kind:      gk.Kind,
+	}
+
+	svcPolicies := krt.Fetch(kctx, w.authzPolicies, krt.FilterIndex(w.byTargetRefKey, svcKey))
+	return svcPolicies
 }

@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"istio.io/api/label"
-	istiosecurity "istio.io/client-go/pkg/apis/security/v1"
+	authcr "istio.io/client-go/pkg/apis/security/v1"
 	"istio.io/istio/pkg/config/schema/gvr"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
@@ -17,6 +17,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/query"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
@@ -33,6 +34,21 @@ const (
 	IstioUseWaypointNamespaceLabel = "istio.io/use-waypoint-namespace"
 )
 
+var (
+	// It is set during initialization via SetRootNamespace() which reads from settings.IstioNamespace.
+	// The default value is "istio-system" if not configured. Users might decide to use a different
+	// namespace as the single source of truth (e.g. kgateway-system) for the cluster-wide definitions.
+	RootNamespace = "istio-system"
+)
+
+// SetRootNamespace sets the RootNamespace from settings.
+// This should be called during initialization.
+func SetRootNamespace(s *settings.Settings) {
+	if s != nil {
+		RootNamespace = s.IstioNamespace
+	}
+}
+
 type WaypointQueries interface {
 	// GetWaypointServices returns all Services that are marked as using the Gateway
 	// via istio.io/use-waypoint (and possibly istio.io/use-waypoint-namespace).
@@ -41,8 +57,11 @@ type WaypointQueries interface {
 	// GetHTTPRoutesForService fetches HTTPRoutes that have the given Service in parentRefs.
 	GetHTTPRoutesForService(kctx krt.HandlerContext, ctx context.Context, svc *Service) []query.RouteInfo
 
-	// GetAuthorizationPolicies gets a filtered list of policies in the namespaces that also target services in the targetNamespace
-	GetAuthorizationPolicies(kctx krt.HandlerContext, ctx context.Context, targetNamespace, rootNamespace string) []*istiosecurity.AuthorizationPolicy
+	// GetAuthorizationPoliciesForGateway returns policies targeting a specific gateway
+	GetAuthorizationPoliciesForGateway(kctx krt.HandlerContext, ctx context.Context, gateway *gwv1.Gateway, rootNamespace string) []*authcr.AuthorizationPolicy
+
+	// GetAuthorizationPoliciesForService returns policies targeting a specific service
+	GetAuthorizationPoliciesForService(kctx krt.HandlerContext, ctx context.Context, svc *Service) []*authcr.AuthorizationPolicy
 
 	HasSynced() bool
 }
@@ -52,16 +71,22 @@ func NewQueries(
 	gwQueries query.GatewayQueries,
 ) WaypointQueries {
 	waypointedServices, servicesByWaypoint := waypointAttachmentIndex(commonCols)
-	authzInformer := kclient.NewDelayedInformer[*istiosecurity.AuthorizationPolicy](
+
+	// Watch authz policies changes in the cluster.
+	authzInformer := kclient.NewDelayedInformer[*authcr.AuthorizationPolicy](
 		commonCols.Client,
 		gvr.AuthorizationPolicy,
 		kubetypes.StandardInformer,
 		kclient.Filter{ObjectFilter: commonCols.Client.ObjectFilter()},
 	)
 	authzPolicies := krt.WrapClient(authzInformer, commonCols.KrtOpts.ToOptions("AuthorizationPolicies")...)
-	byNamespace := krt.NewIndex(authzPolicies, func(p *istiosecurity.AuthorizationPolicy) []string {
+	byNamespace := krt.NewIndex(authzPolicies, func(p *authcr.AuthorizationPolicy) []string {
 		return []string{p.GetNamespace()}
 	})
+
+	// Build Authz policies targetRefKey index
+	byTargetRefKey := buildAuthzTargetIndex(authzPolicies)
+
 	return &waypointQueries{
 		queries:            gwQueries,
 		commonCols:         commonCols,
@@ -69,7 +94,61 @@ func NewQueries(
 		servicesByWaypoint: servicesByWaypoint,
 		authzPolicies:      authzPolicies,
 		byNamespace:        byNamespace,
+		byTargetRefKey:     byTargetRefKey,
 	}
+}
+
+// This is based on the current Istio AuthorizationPolicy docs (TargetRef section)
+// https://istio.io/latest/docs/reference/config/security/authorization-policy/#TargetRef
+
+// Currently, the following resource attachment types are supported:
+// kind: Gateway with group: gateway.networking.k8s.io in the same namespace.
+// kind: GatewayClass with group: gateway.networking.k8s.io in the root namespace.
+// kind: Service with group: "" or group: "core" in the same namespace. This type is only supported for waypoints.
+// kind: ServiceEntry with group: networking.istio.io in the same namespace.
+
+func buildAuthzTargetIndex(policies krt.Collection[*authcr.AuthorizationPolicy]) krt.Index[targetRefKey, *authcr.AuthorizationPolicy] {
+	return krt.NewIndex(policies, func(p *authcr.AuthorizationPolicy) []targetRefKey {
+		var keys []targetRefKey
+		for _, targetRef := range p.Spec.GetTargetRefs() {
+			if (targetRef.GetKind() == "Service" && (targetRef.GetGroup() == "" || targetRef.GetGroup() == "core")) ||
+				(targetRef.GetKind() == "ServiceEntry" && targetRef.GetGroup() == "networking.istio.io") {
+				gk := wellknown.ServiceGVK
+				if targetRef.GetKind() == "ServiceEntry" {
+					gk = wellknown.ServiceEntryGVK
+				}
+				keys = append(keys, targetRefKey{
+					Name:      targetRef.GetName(),
+					Namespace: getEffectiveNamespace(targetRef.GetNamespace(), p.GetNamespace()),
+					Group:     gk.Group,
+					Kind:      gk.Kind,
+				})
+			} else if targetRef.GetKind() == "Gateway" && targetRef.GetGroup() == "gateway.networking.k8s.io" {
+				keys = append(keys, targetRefKey{
+					Name:      targetRef.GetName(),
+					Namespace: getEffectiveNamespace(targetRef.GetNamespace(), p.GetNamespace()),
+					Group:     targetRef.GetGroup(),
+					Kind:      targetRef.GetKind(),
+				})
+			} else if targetRef.GetKind() == "GatewayClass" && targetRef.GetGroup() == "gateway.networking.k8s.io" && p.GetNamespace() == RootNamespace {
+				keys = append(keys, targetRefKey{
+					Name:      targetRef.GetName(),
+					Namespace: getEffectiveNamespace(targetRef.GetNamespace(), p.GetNamespace()),
+					Group:     targetRef.GetGroup(),
+					Kind:      targetRef.GetKind(),
+				})
+			}
+		}
+		return keys
+	})
+}
+
+// Helper function for determining effective namespace
+func getEffectiveNamespace(targetNs, policyNs string) string {
+	if targetNs != "" {
+		return targetNs
+	}
+	return policyNs
 }
 
 type waypointQueries struct {
@@ -78,8 +157,9 @@ type waypointQueries struct {
 
 	waypointedServices krt.Collection[WaypointedService]
 	servicesByWaypoint krt.Index[types.NamespacedName, WaypointedService]
-	authzPolicies      krt.Collection[*istiosecurity.AuthorizationPolicy]
-	byNamespace        krt.Index[string, *istiosecurity.AuthorizationPolicy]
+	authzPolicies      krt.Collection[*authcr.AuthorizationPolicy]
+	byNamespace        krt.Index[string, *authcr.AuthorizationPolicy]
+	byTargetRefKey     krt.Index[targetRefKey, *authcr.AuthorizationPolicy]
 }
 
 func (w *waypointQueries) HasSynced() bool {
