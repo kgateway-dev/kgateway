@@ -43,7 +43,6 @@ tolerations: []
 affinity: {}
 
 controller:
-  # TODO(tim): configurable probes?
   replicaCount: 1
   logLevel: info
   image:
@@ -55,6 +54,7 @@ controller:
     type: ClusterIP
     ports:
       grpc: 9977
+      health: 9093
   extraEnv: {}
 
 image:

@@ -36,14 +36,15 @@ spec:
             - containerPort: {{ .Values.controller.service.ports.grpc }}
               name: grpc-xds
               protocol: TCP
+            - containerPort: {{ .Values.controller.service.ports.health }}
+              name: health
+              protocol: TCP
           readinessProbe:
-            failureThreshold: 3
+            httpGet:
+              path: /readyz
+              port: {{ .Values.controller.service.ports.health }}
             initialDelaySeconds: 3
             periodSeconds: 10
-            successThreshold: 1
-            tcpSocket:
-              port: {{ .Values.controller.service.ports.grpc }}
-            timeoutSeconds: 1
           env:
             - name: GOMEMLIMIT
               valueFrom:
