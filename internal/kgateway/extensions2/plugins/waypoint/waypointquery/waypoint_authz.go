@@ -31,7 +31,6 @@ func (w *waypointQueries) GetAuthorizationPoliciesForGateway(
 	ctx context.Context,
 	gateway *gwapi.Gateway,
 	rootNamespace string) []*authcr.AuthorizationPolicy {
-
 	// Get policies targeting this gateway directly using the index
 	gwKey := targetRefKey{
 		Name:      gateway.GetName(),
@@ -67,7 +66,6 @@ func (w *waypointQueries) GetAuthorizationPoliciesForService(
 	kctx krt.HandlerContext,
 	ctx context.Context,
 	svc *Service) []*authcr.AuthorizationPolicy {
-
 	providerID := svc.Provider()
 
 	gk := wellknown.ServiceGVK.GroupKind()

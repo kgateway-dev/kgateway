@@ -95,7 +95,6 @@ func (s *testingSuite) TestAuthzGatewayClassRef() {
 	// Verify that policy applies to all services for notcurl
 	s.assertCurlService(fromNotCurl, "svc-a", testNamespace, isForbidden)
 	s.assertCurlService(fromNotCurl, "svc-b", testNamespace, isForbidden)
-
 }
 
 func (s *testingSuite) TestAuthzGatewayRef() {
@@ -109,7 +108,6 @@ func (s *testingSuite) TestAuthzGatewayRef() {
 	// Verify that policy applies to all services for notcurl
 	s.assertCurlService(fromNotCurl, "svc-a", testNamespace, isForbidden)
 	s.assertCurlService(fromNotCurl, "svc-b", testNamespace, isForbidden)
-
 }
 
 func (s *testingSuite) TestAuthzMultiService() {
@@ -189,5 +187,4 @@ func (s *testingSuite) TestAuthzServiceEntry() {
 	s.assertCurlHostPost(fromCurl, "se-b.serviceentry.com", hasEnvoy)
 	s.assertCurlHostPost(fromNotCurl, "se-a.serviceentry.com", hasEnvoy)
 	s.assertCurlHostPost(fromNotCurl, "se-b.serviceentry.com", hasEnvoy)
-
 }
