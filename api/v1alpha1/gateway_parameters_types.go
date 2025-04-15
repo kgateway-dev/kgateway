@@ -35,7 +35,7 @@ type GatewayParametersList struct {
 // A GatewayParametersSpec describes the type of environment/platform in which
 // the proxy will be provisioned.
 //
-// +kubebuilder:validation:XValidation:message="only one of 'kube' or 'selfManaged' may be set",rule="(has(self.kube) && !has(self.selfManaged)) || (!has(self.kube) && has(self.selfManaged))"
+// +kubebuilder:validation:XValidation:message="exactly one of 'kube' or 'selfManaged' must be set",rule="has(self.kube) ? !has(self.selfManaged) : has(self.selfManaged)"
 type GatewayParametersSpec struct {
 	// The proxy will be deployed on Kubernetes.
 	//
