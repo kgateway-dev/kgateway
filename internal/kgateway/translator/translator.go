@@ -59,7 +59,7 @@ func NewCombinedTranslator(
 	}
 }
 
-func (s *CombinedTranslator) Init(ctx context.Context) error {
+func (s *CombinedTranslator) Init(ctx context.Context) {
 	queries := query.NewData(s.commonCols)
 
 	s.gwtranslator = gwtranslator.NewTranslator(queries)
@@ -79,7 +79,6 @@ func (s *CombinedTranslator) Init(ctx context.Context) error {
 		s.commonCols.HasSynced,
 		s.extensions.HasSynced,
 	)
-	return nil
 }
 
 func (s *CombinedTranslator) HasSynced() bool {

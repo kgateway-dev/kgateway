@@ -27,9 +27,11 @@ type DelegationCtx struct {
 
 // flattenDelegatedRoutes recursively translates a delegated route tree.
 //
-// It returns an error if it cannot determine the delegatee (child) routes or
-// if it detects a cycle in the delegation tree.
-// If the child route is invalid, it will be ignored and its Status will be updated accordingly.
+// It returns an error if it cannot determine the delegatee (child) routes.
+//
+// In the following cases, a child route will be ignored/dropped, and its Status updated with the reason:
+// - If the child route is invalid (right now we only validate that it doesn't specify hostnames)
+// - If there is a cycle in the delegation tree
 func flattenDelegatedRoutes(
 	ctx context.Context,
 	parent *query.RouteInfo,

@@ -246,6 +246,12 @@ routes:
                 transformationTemplate:
                   mergeJsonKeys:
                     jsonKeys:
+                      presence_penalty:
+                        tmpl:
+                          text: '{{ default(presence_penalty, "0.7") }}'
                       temperature:
                         tmpl:
-                          text: '{{ default(0.5, "0.5") }}'
+                          text: '"0.5"'
+                      top_p:
+                        tmpl:
+                          text: '{{ default(top_p, "0.1") }}'

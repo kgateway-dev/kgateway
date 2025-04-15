@@ -2114,9 +2114,8 @@ spec:
                 x-kubernetes-preserve-unknown-fields: true
             type: object
             x-kubernetes-validations:
-            - message: only one of 'kube' or 'selfManaged' may be set
-              rule: (has(self.kube) && !has(self.selfManaged)) || (!has(self.kube)
-                && has(self.selfManaged))
+            - message: exactly one of 'kube' or 'selfManaged' must be set
+              rule: 'has(self.kube) ? !has(self.selfManaged) : has(self.selfManaged)'
           status:
             type: object
         type: object
