@@ -49,6 +49,12 @@ spec:
     defaults:
     - field: "temperature"
       value: "0.5"
+      override: true
+    - field: "top_p"
+      value: "0.1"
+    - field: "presence_penalty"
+      value: "0.7"
+      override: false
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: Backend
