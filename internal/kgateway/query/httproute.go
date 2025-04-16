@@ -15,6 +15,7 @@ import (
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
+	delegationutils "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/delegation"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
 
@@ -78,7 +79,7 @@ func (r *RouteInfo) Hostnames() []string {
 
 // GetChildrenForRef fetches child routes for a given BackendObjectReference.
 func (r *RouteInfo) GetChildrenForRef(backendRef ir.ObjectSource) ([]*RouteInfo, error) {
-	return r.Children.get(backendRef, nil)
+	return r.Children.get(backendRef)
 }
 
 // Clone creates a deep copy of the RouteInfo object.
@@ -114,7 +115,7 @@ func (r *gatewayQueries) GetRouteChain(
 
 	switch typedRoute := route.(type) {
 	case *ir.HttpRouteIR:
-		children = r.getDelegatedChildren(kctx, ctx, parentRef, typedRoute, nil)
+		children = r.getDelegatedChildren(kctx, ctx, parentRef, typedRoute, sets.New[types.NamespacedName]())
 	case *ir.TcpRouteIR:
 		// TODO (danehans): Should TCPRoute delegation support be added in the future?
 	case *ir.TlsRouteIR:
@@ -195,10 +196,6 @@ func (r *gatewayQueries) getDelegatedChildren(
 	parent *ir.HttpRouteIR,
 	visited sets.Set[types.NamespacedName],
 ) BackendMap[[]*RouteInfo] {
-	// Initialize the set of visited routes if it hasn't been initialized yet
-	if visited == nil {
-		visited = sets.New[types.NamespacedName]()
-	}
 	parentRef := namespacedName(parent)
 	// `visited` is used to detect cyclic references to routes in the delegation chain.
 	// It is important to remove the route from the set once all its children have been evaluated
@@ -218,19 +215,26 @@ func (r *gatewayQueries) getDelegatedChildren(
 			}
 			ref := *backendRef.Delegate
 			// Fetch child routes based on the backend reference
-			referencedRoutes, err := r.fetchChildRoutes(kctx, backendRef)
+			referencedRoutes, err := r.fetchRoutesByRef(kctx, backendRef)
 			if err != nil {
 				children.AddError(ref, err)
 				continue
 			}
 			for _, childRoute := range referencedRoutes {
 				childRef := namespacedName(&childRoute)
+
+				// ignore routes that are not attached to the parent
+				if !delegationutils.ChildRouteCanAttachToParentRef(childRoute.Namespace, childRoute.ParentRefs, parentRef) {
+					continue
+				}
+
 				if visited.Has(childRef) {
 					err := fmt.Errorf("ignoring child route %s for parent %s: %w", childRef, parentRef, ErrCyclicReference)
 					children.AddError(ref, err)
 					// Don't resolve invalid child route
 					continue
 				}
+
 				// Recursively get the route chain for each child route
 				routeInfo := &RouteInfo{
 					Object: &childRoute,
@@ -252,7 +256,10 @@ func (r *gatewayQueries) getDelegatedChildren(
 	return children
 }
 
-func (r *gatewayQueries) fetchChildRoutes(
+// fetchRoutesByRef fetches the routes referenced by HTTPBackendOrDelegate
+// NOTE: it DOES NOT check if the route attaches to the parent if it delegates to
+// another HTTPRoute (checked in getDelegatedChildren)
+func (r *gatewayQueries) fetchRoutesByRef(
 	kctx krt.HandlerContext,
 	backend ir.HttpBackendOrDelegate,
 ) ([]ir.HttpRouteIR, error) {

@@ -37,6 +37,7 @@ var cases = []struct {
 	{"Authz Policies - GatewayClass Ref Non-Root NS", "authz-gatewayclass-ref-nonrootns", exampleGw, ""},
 	{"Authz Policies - ServiceEntry", "authz-serviceentry", exampleGw, ""},
 	{"Authz Policies - Multi-Service", "authz-multi-service", exampleGw, ""},
+	{"No listeners", "empty", exampleGw, ""},
 }
 
 func TestWaypointTranslator(t *testing.T) {

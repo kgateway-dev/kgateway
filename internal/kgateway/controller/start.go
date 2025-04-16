@@ -2,6 +2,9 @@ package controller
 
 import (
 	"context"
+	"errors"
+	"net/http"
+	"sync/atomic"
 
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"github.com/solo-io/go-utils/contextutils"
@@ -14,7 +17,6 @@ import (
 	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/config"
-	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	czap "sigs.k8s.io/controller-runtime/pkg/log/zap"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	infextv1a2 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
@@ -83,6 +85,8 @@ type ControllerBuilder struct {
 	proxySyncer *proxy_syncer.ProxySyncer
 	cfg         StartConfig
 	mgr         ctrl.Manager
+
+	ready atomic.Bool
 }
 
 func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuilder, error) {
@@ -126,9 +130,6 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 		setupLog.Error(err, "unable to start manager")
 		return nil, err
 	}
-
-	// TODO: replace this with something that checks that we have xds snapshot ready (or that we don't need one).
-	mgr.AddReadyzCheck("ready-ping", healthz.Ping)
 
 	setupLog.Info("initializing kgateway extensions")
 	// Extend the scheme and add the EPP plugin if the inference extension is enabled and the InferencePool CRD exists.
@@ -196,11 +197,24 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 	}
 
 	setupLog.Info("starting controller builder")
-	return &ControllerBuilder{
+	cb := &ControllerBuilder{
 		proxySyncer: proxySyncer,
 		cfg:         cfg,
 		mgr:         mgr,
-	}, nil
+	}
+
+	// wait for the ControllerBuilder to Start
+	// as well as its subcomponents (mainly ProxySyncer) before marking ready
+	if err := mgr.AddReadyzCheck("ready-ping", func(_ *http.Request) error {
+		if !cb.HasSynced() {
+			return errors.New("not synced")
+		}
+		return nil
+	}); err != nil {
+		setupLog.Error(err, "failed setting up healthz")
+	}
+
+	return cb, nil
 }
 
 func pluginFactoryWithBuiltin(extraPlugins func(ctx context.Context, commoncol *common.CommonCollections) []extensionsplug.Plugin) extensions2.K8sGatewayExtensionsFactory {
@@ -276,8 +290,16 @@ func (c *ControllerBuilder) Start(ctx context.Context) error {
 		}
 	}
 
+	// mgr WaitForCacheSync is part of proxySyncer's HasSynced
+	// so we can can mark ready here before we call mgr.Start
+	c.ready.Store(true)
+
 	setupLog.Info("starting manager")
 	return c.mgr.Start(ctx)
+}
+
+func (c *ControllerBuilder) HasSynced() bool {
+	return c.proxySyncer.HasSynced()
 }
 
 // GetDefaultClassInfo returns the default GatewayClass for the kgateway controller.
