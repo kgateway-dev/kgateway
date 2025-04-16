@@ -1,12 +1,80 @@
-package httproute
+package delegation
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
+
+func TestChildRouteCanAttachToParentRef(t *testing.T) {
+	testCases := []struct {
+		name            string
+		routeNamespace  string
+		routeParentRefs []gwv1.ParentReference
+		parentRef       types.NamespacedName
+		expected        bool
+	}{
+		{
+			name:           "no ParentRefs, should allow attachment",
+			routeNamespace: "default",
+			parentRef:      types.NamespacedName{Name: "parent", Namespace: "default"},
+			expected:       true,
+		},
+		{
+			name:           "ParentRefs match, should allow attachment",
+			routeNamespace: "default",
+			routeParentRefs: []gwv1.ParentReference{
+				{
+					Group:     ptr.To(gwv1.Group("gateway.networking.k8s.io")),
+					Kind:      ptr.To(gwv1.Kind("HTTPRoute")),
+					Name:      "parent",
+					Namespace: ptr.To(gwv1.Namespace("default")),
+				},
+			},
+			parentRef: types.NamespacedName{Name: "parent", Namespace: "default"},
+			expected:  true,
+		},
+		{
+			name:           "ParentRef doesn't match Name, should not allow attachment",
+			routeNamespace: "default",
+			routeParentRefs: []gwv1.ParentReference{
+				{
+					Group:     ptr.To(gwv1.Group("gateway.networking.k8s.io")),
+					Kind:      ptr.To(gwv1.Kind("HTTPRoute")),
+					Name:      "invalid",
+					Namespace: ptr.To(gwv1.Namespace("default")),
+				},
+			},
+			parentRef: types.NamespacedName{Name: "parent", Namespace: "default"},
+			expected:  false,
+		},
+		{
+			name:           "ParentRef doesn't match Namespace, should not allow attachment",
+			routeNamespace: "default",
+			routeParentRefs: []gwv1.ParentReference{
+				{
+					Group:     ptr.To(gwv1.Group("gateway.networking.k8s.io")),
+					Kind:      ptr.To(gwv1.Kind("HTTPRoute")),
+					Name:      "parent",
+					Namespace: ptr.To(gwv1.Namespace("invalid")),
+				},
+			},
+			parentRef: types.NamespacedName{Name: "parent", Namespace: "default"},
+			expected:  false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			a := assert.New(t)
+			result := ChildRouteCanAttachToParentRef(tc.routeNamespace, tc.routeParentRefs, tc.parentRef)
+			a.Equal(tc.expected, result)
+		})
+	}
+}
 
 func TestIsDelegatedRouteMatch(t *testing.T) {
 	testCases := []struct {
@@ -522,7 +590,7 @@ func TestIsDelegatedRouteMatch(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			a := assert.New(t)
-			actual := isDelegatedRouteMatch(tc.parent, tc.child)
+			actual := IsDelegatedRouteMatch(tc.parent, tc.child)
 
 			a.Equal(tc.expected, actual)
 		})

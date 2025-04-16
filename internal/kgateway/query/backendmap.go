@@ -41,13 +41,14 @@ func (bm BackendMap[T]) AddError(backendRef ir.ObjectSource, err error) {
 	bm.errors[key] = err
 }
 
-func (bm BackendMap[T]) get(backendRef ir.ObjectSource, def T) (T, error) {
+func (bm BackendMap[T]) get(backendRef ir.ObjectSource) (T, error) {
 	key := backendToRefKey(backendRef)
+	res, backendFound := bm.items[key]
 	if err, ok := bm.errors[key]; ok {
-		return def, err
+		return res, err
 	}
-	if res, ok := bm.items[key]; ok {
+	if backendFound {
 		return res, nil
 	}
-	return def, ErrUnresolvedReference
+	return res, ErrUnresolvedReference
 }

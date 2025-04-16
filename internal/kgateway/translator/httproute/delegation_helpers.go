@@ -2,7 +2,6 @@ package httproute
 
 import (
 	"path"
-	"reflect"
 	"slices"
 	"strings"
 
@@ -10,10 +9,9 @@ import (
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/api/annotations"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/query"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	delegationutils "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/delegation"
 )
 
 // filterDelegatedChildren takes a parent route matcher and a list of children
@@ -42,7 +40,7 @@ func filterDelegatedChildren(
 	var selected []*query.RouteInfo
 	for _, c := range children {
 		// Check if the child route is allowed to be delegated to by the parent
-		if !isAllowedParent(parentRef, c.Object.GetNamespace(), c.Object.GetParentRefs()) {
+		if !delegationutils.ChildRouteCanAttachToParentRef(c.Object.GetNamespace(), c.Object.GetParentRefs(), parentRef) {
 			continue
 		}
 
@@ -58,7 +56,7 @@ func filterDelegatedChildren(
 		child.Rules = make([]ir.HttpRouteRuleIR, len(origChild.Rules))
 		copy(child.Rules, origChild.Rules)
 
-		inheritMatcher := shouldInheritMatcher(child)
+		inheritMatcher := delegationutils.ShouldInheritParentMatcher(child.SourceObject.GetAnnotations())
 
 		// We use validRules to store the rules in the child route that are valid
 		// (matches in the rule match the parent route matcher). If a specific rule
@@ -84,7 +82,7 @@ func filterDelegatedChildren(
 					// the parent's matcher with the child's.
 					mergeParentChildRouteMatch(&parentMatch, &match)
 					validMatches = append(validMatches, match)
-				} else if ok := isDelegatedRouteMatch(parentMatch, match); ok {
+				} else if ok := delegationutils.IsDelegatedRouteMatch(parentMatch, match); ok {
 					// Non-inherited matcher delegation requires matching child matcher to parent matcher
 					// to delegate from the parent route to the child.
 					validMatches = append(validMatches, match)
@@ -107,117 +105,6 @@ func filterDelegatedChildren(
 	}
 
 	return selected
-}
-
-// isAllowedParent returns whether the parent specified by `parentRef` is allowed to delegate
-// to the child.
-//   - `childNs` is the namespace of the child route.
-//   - `childParentRefs` is the list of parent references on the child route. If this is empty, then
-//     there are no restrictions on which parents can delegate to this child. If it is not empty,
-//     then `parentRef` must be in this list in order for the parent to delegate to the child.
-func isAllowedParent(
-	parentRef types.NamespacedName,
-	childNs string,
-	childParentRefs []gwv1.ParentReference,
-) bool {
-	// no explicit parentRefs, so any parent is allowed
-	if len(childParentRefs) == 0 {
-		return true
-	}
-
-	// validate that the child's parentRefs contains the specified parentRef
-	for _, ref := range childParentRefs {
-		// default to the child's namespace if not specified
-		refNs := childNs
-		if ref.Namespace != nil {
-			refNs = string(*ref.Namespace)
-		}
-		// check if the ref matches the desired parentRef
-		if ref.Group != nil && *ref.Group == wellknown.GatewayGroup &&
-			ref.Kind != nil && *ref.Kind == wellknown.HTTPRouteKind &&
-			string(ref.Name) == parentRef.Name &&
-			refNs == parentRef.Namespace {
-			return true
-		}
-	}
-	return false
-}
-
-// isDelegatedRouteMatch is called only when inherit-parent-matcher is not set.
-// It returns true if the child is a valid delegatee of the parent. This will be true if
-// the following conditions are met:
-// - the parent path matcher must be of type PathPrefix
-// - the parent path matcher value must be a prefix of the child path matcher value
-// - the child header matchers must be a superset of the parent header matchers
-// - the child query param matchers must be a superset of the parent query param matchers
-// - if the parent method matcher is set, the child's method matcher value must be equal to the parent method matcher value
-func isDelegatedRouteMatch(
-	parent gwv1.HTTPRouteMatch,
-	child gwv1.HTTPRouteMatch,
-) bool {
-	// Validate path
-	if parent.Path == nil || parent.Path.Type == nil || *parent.Path.Type != gwv1.PathMatchPathPrefix {
-		return false
-	}
-	parentPath := *parent.Path.Value
-	if child.Path == nil || child.Path.Type == nil {
-		return false
-	}
-	childPath := *child.Path.Value
-	if !strings.HasPrefix(childPath, parentPath) {
-		return false
-	}
-
-	// Validate that the child headers are a superset of the parent headers
-	for _, parentHeader := range parent.Headers {
-		found := false
-		for _, childHeader := range child.Headers {
-			if reflect.DeepEqual(parentHeader, childHeader) {
-				found = true
-				break
-			}
-		}
-		if !found {
-			return false
-		}
-	}
-
-	// Validate that the child query parameters are a superset of the parent query parameters
-	for _, parentQuery := range parent.QueryParams {
-		found := false
-		for _, childQuery := range child.QueryParams {
-			if reflect.DeepEqual(parentQuery, childQuery) {
-				found = true
-				break
-			}
-		}
-		if !found {
-			return false
-		}
-	}
-
-	// Validate that the child method matches the parent method
-	if parent.Method != nil && (child.Method == nil || *parent.Method != *child.Method) {
-		return false
-	}
-
-	return true
-}
-
-// shouldInheritMatcher returns true if the route indicates that it should inherit
-// its parent's matcher.
-func shouldInheritMatcher(route *ir.HttpRouteIR) bool {
-	val, ok := route.SourceObject.GetAnnotations()[annotations.DelegationInheritMatcherAnnotation]
-	if !ok {
-		return false
-	}
-	switch strings.ToLower(val) {
-	case "true", "yes", "enabled":
-		return true
-
-	default:
-		return false
-	}
 }
 
 // mergeParentChildRouteMatch is called only when inherit-parent-matcher is set.
