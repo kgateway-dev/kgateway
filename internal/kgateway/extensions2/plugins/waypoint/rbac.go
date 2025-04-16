@@ -1,8 +1,10 @@
 package waypoint
 
 import (
+	"fmt"
+
+	"github.com/caarlos0/log"
 	"google.golang.org/protobuf/types/known/anypb"
-	"istio.io/api/label"
 	authpb "istio.io/api/security/v1"
 	authcr "istio.io/client-go/pkg/apis/security/v1"
 	"istio.io/istio/pilot/pkg/config/kube/crdclient"
@@ -13,7 +15,6 @@ import (
 	gwapi "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/waypoint/waypointquery"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/filters"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
@@ -25,26 +26,11 @@ const (
 	defaultTrustDomain = "cluster.local"
 )
 
-var (
-	// RootNamespace is the namespace where Istio control plane components are installed.
-	// It is set during initialization via SetRootNamespace() which reads from settings.IstioNamespace.
-	// The default value is "istio-system" if not configured.
-	RootNamespace = "istio-system"
-)
-
-// SetRootNamespace sets the RootNamespace from settings.
-// This should be called during initialization.
-func SetRootNamespace(s *settings.Settings) {
-	if s != nil {
-		RootNamespace = s.IstioNamespace
-	}
-}
-
-// BuildRBACForService gives three lists of filters:
+// BuildRBAC uses whatever policies received, assumes that the policy attachment is done outside
+// gives the following lists of filters:
 // tcpRBAC - only used in tcp chains (using this on an HTTP chain could cause improper DENY)
 // httpRBAC - only used in http chains
-// that passes id from metadata to filter state (see ProxyProtocolTLVAuthorityNetworkFilter)
-func BuildRBACForService(
+func BuildRBAC(
 	authzPolicies []*authcr.AuthorizationPolicy,
 	gw *gwapi.Gateway,
 	svc *waypointquery.Service,
@@ -52,83 +38,38 @@ func BuildRBACForService(
 	tcpRBAC []*ir.CustomEnvoyFilter,
 	httpRBAC []*ir.CustomEnvoyFilter,
 ) {
-	authzBuilder := getAuthzBuilder(authzPolicies, gw.Name, gw.Namespace, RootNamespace, svc)
-	if authzBuilder != nil {
-		const stage = filters.FilterStage_AuthZStage
-		const predicate = filters.FilterStage_After
+	// Deduplicate and separate policies by action
+	policyResult := separateAndDeduplicatePolicies(authzPolicies)
 
-		tcpFilters := authzBuilder.BuildTCP()
-		httpFilters := authzBuilder.BuildHTTP()
-
-		if len(tcpFilters) > 0 {
-			tcpRBAC = append(tcpRBAC, ir.CustomNetworkFilters(tcpFilters, stage, predicate)...)
-		}
-		if len(httpFilters) > 0 {
-			httpRBAC = ir.CustomHTTPFilters(httpFilters, stage, predicate)
-		}
-	}
-	return tcpRBAC, httpRBAC
-}
-
-// getAuthzBuilder constructs the istio builder.
-// It can be nil if it filters out all the policies.
-// This relies heavily on Istio code so that we can get similar behavior:
-// https://github.com/istio/istio/blob/master/pilot/pkg/model/policyattachment.go
-func getAuthzBuilder(
-	policies []*authcr.AuthorizationPolicy,
-	gatewayName, gatewayNamespace string,
-	rootNamespace string,
-	svc *waypointquery.Service,
-) *builder.Builder {
-	policiesMap := model.AuthorizationPolicies{
-		NamespaceToPolicies: map[string][]model.AuthorizationPolicy{},
-		RootNamespace:       rootNamespace,
-	}
-
-	for _, policy := range policies {
-		convertedSpec := crdclient.TranslateObject(policy, gvk.AuthorizationPolicy, "").Spec.(*authpb.AuthorizationPolicy)
-		convertedPolicy := model.AuthorizationPolicy{
-			Name:        policy.Name,
-			Namespace:   policy.Namespace,
-			Annotations: map[string]string{},
-			Spec:        convertedSpec,
-		}
-		policiesMap.NamespaceToPolicies[policy.Namespace] = append(policiesMap.NamespaceToPolicies[policy.Namespace], convertedPolicy)
-	}
-
-	matcher := model.WorkloadPolicyMatcher{
-		IsWaypoint: true,
-		Services: []model.ServiceInfoForPolicyMatcher{
-			{
-				Name:      svc.GetName(),
-				Namespace: svc.GetNamespace(),
-				Registry:  svc.Provider(),
-			},
-		},
-		WorkloadNamespace: gatewayNamespace,
-		WorkloadLabels: map[string]string{
-			label.IoK8sNetworkingGatewayGatewayName.Name: gatewayName,
-		},
-	}
-
-	// Call the function
-	policyResult := policiesMap.ListAuthorizationPolicies(matcher)
-
+	// If no policies are applicable, return early
 	if len(policyResult.Deny) == 0 && len(policyResult.Allow) == 0 &&
 		len(policyResult.Audit) == 0 && len(policyResult.Custom) == 0 {
-		return nil
+		return nil, nil
 	}
 
+	// Create the builder with our separated policies
 	trustBundle := trustdomain.NewBundle(defaultTrustDomain, nil)
-	builder := builder.New(trustBundle, nil, policyResult, builder.Option{
+	authzBuilder := builder.New(trustBundle, nil, policyResult, builder.Option{
 		IsCustomBuilder: false,
 		UseFilterState:  true,
 	})
 
-	return builder
+	const stage = filters.FilterStage_AuthZStage
+	const predicate = filters.FilterStage_After
+
+	tcpFilters := authzBuilder.BuildTCP()
+	httpFilters := authzBuilder.BuildHTTP()
+
+	if len(tcpFilters) > 0 {
+		tcpRBAC = append(tcpRBAC, ir.CustomNetworkFilters(tcpFilters, stage, predicate)...)
+	}
+	if len(httpFilters) > 0 {
+		httpRBAC = append(httpRBAC, ir.CustomHTTPFilters(httpFilters, stage, predicate)...)
+	}
+	return tcpRBAC, httpRBAC
 }
 
-func applyHTTPRBACFilters(httpChain *ir.HttpFilterChainIR, httpRBAC []*ir.CustomEnvoyFilter, svc waypointquery.Service) {
+func applyHTTPRBACFilters(httpChain *ir.HttpFilterChainIR, httpRBAC []*ir.CustomEnvoyFilter) {
 	// Apply RBAC filters regardless of the presence of proxy_protocol_authority
 	if len(httpRBAC) > 0 {
 		// Initialize CustomHTTPFilters if it's nil
@@ -155,4 +96,50 @@ func applyTCPRBACFilters(tcpChain *ir.TcpIR, tcpRBAC []*ir.CustomEnvoyFilter, sv
 			tcpChain.NetworkFilters = append(tcpChain.NetworkFilters, f.Config)
 		}
 	}
+}
+
+// separateAndDeduplicatePolicies takes a list of policies and returns them
+// separated by action type with duplicates removed
+func separateAndDeduplicatePolicies(policies []*authcr.AuthorizationPolicy) model.AuthorizationPoliciesResult {
+	// Use a map to track seen policies to avoid duplicates
+	seen := make(map[string]bool)
+	result := model.AuthorizationPoliciesResult{}
+
+	for _, policy := range policies {
+		// Create a unique key for this policy
+		key := fmt.Sprintf("%s/%s", policy.GetNamespace(), policy.GetName())
+
+		// Skip if we've already processed this policy
+		if seen[key] {
+			continue
+		}
+		seen[key] = true
+
+		// Convert to Istio model type
+		convertedSpec := crdclient.TranslateObject(policy, gvk.AuthorizationPolicy, "").Spec.(*authpb.AuthorizationPolicy)
+		convertedPolicy := model.AuthorizationPolicy{
+			Name:        policy.Name,
+			Namespace:   policy.Namespace,
+			Annotations: map[string]string{},
+			Spec:        convertedSpec,
+		}
+
+		// Add to the appropriate slice based on action
+		switch convertedSpec.GetAction() {
+		case authpb.AuthorizationPolicy_ALLOW:
+			result.Allow = append(result.Allow, convertedPolicy)
+		case authpb.AuthorizationPolicy_DENY:
+			result.Deny = append(result.Deny, convertedPolicy)
+		case authpb.AuthorizationPolicy_AUDIT:
+			result.Audit = append(result.Audit, convertedPolicy)
+		case authpb.AuthorizationPolicy_CUSTOM:
+			result.Custom = append(result.Custom, convertedPolicy)
+		default:
+			// Log error for unsupported action
+			log.Errorf("ignored authorization policy %s.%s with unsupported action: %s",
+				policy.GetNamespace(), policy.GetName(), convertedSpec.GetAction())
+		}
+	}
+
+	return result
 }

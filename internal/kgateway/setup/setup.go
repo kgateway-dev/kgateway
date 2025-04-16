@@ -23,7 +23,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/controller"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/waypoint"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
@@ -67,9 +66,6 @@ func StartKgateway(
 		logger.Error(err, "got err while parsing Settings from env")
 	}
 	logger.Info(fmt.Sprintf("got settings from env: %+v", *st))
-
-	// Set the Istio namespace from settings
-	waypoint.SetRootNamespace(st)
 
 	uniqueClientCallbacks, uccBuilder := krtcollections.NewUniquelyConnectedClients()
 	cache, err := startControlPlane(ctx, st.XdsServicePort, uniqueClientCallbacks)

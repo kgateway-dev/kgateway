@@ -17,7 +17,7 @@ func TestKgatewayWaypoint(t *testing.T) {
 
 	// Set Istio version if not already set
 	if os.Getenv("ISTIO_VERSION") == "" {
-		os.Setenv("ISTIO_VERSION", "1.23.0") // Using minimum required version for ambient mode
+		os.Setenv("ISTIO_VERSION", "1.25.1") // Using minimum required version that supports multiple TargetRef types for Istio Authz policies.
 	}
 
 	installNs, nsEnvPredefined := envutils.LookupOrDefault(testutils.InstallNamespace, "kgateway-waypoint-test")

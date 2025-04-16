@@ -6,6 +6,7 @@ import (
 
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/wrapperspb"
+	authcr "istio.io/client-go/pkg/apis/security/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
@@ -25,7 +26,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/stringutils"
 
-	istiosecurity "istio.io/client-go/pkg/apis/security/v1"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/slices"
 	"istio.io/istio/pkg/util/sets"
@@ -45,7 +45,8 @@ type waypointTranslator struct {
 	queries         query.GatewayQueries
 	waypointQueries waypointquery.WaypointQueries
 
-	localBind bool
+	localBind     bool
+	rootNamespace string
 }
 
 func NewTranslator(
@@ -56,8 +57,8 @@ func NewTranslator(
 	return &waypointTranslator{
 		queries:         queries,
 		waypointQueries: waypointQueries,
-
-		localBind: settings.WaypointLocalBinding,
+		localBind:       settings.WaypointLocalBinding,
+		rootNamespace:   settings.IstioNamespace,
 	}
 }
 
@@ -93,7 +94,6 @@ func (w *waypointTranslator) Translate(
 		attachedRoutes.Insert(namespacedName(hr))
 	}
 
-	authzPolicies := w.waypointQueries.GetAuthorizationPolicies(kctx, ctx, gateway.Namespace, RootNamespace)
 	waypointFor := waypointquery.GetWaypointFor(gateway.Obj)
 
 	if waypointFor.ForService() {
@@ -106,7 +106,7 @@ func (w *waypointTranslator) Translate(
 			routes,
 			gwListener,
 			attachedRoutes,
-			authzPolicies,
+			w.rootNamespace,
 		)
 		proxyListener.HttpFilterChain = append(proxyListener.HttpFilterChain, http...)
 		proxyListener.TcpFilterChain = append(proxyListener.TcpFilterChain, tcp...)
@@ -250,13 +250,21 @@ func (t *waypointTranslator) buildServiceChains(
 	gwRoutes []*query.RouteInfo,
 	gwListener *ir.Listener,
 	attachedRoutes sets.Set[types.NamespacedName],
-	authzPolicies []*istiosecurity.AuthorizationPolicy,
+	rootNamespace string,
 ) ([]ir.HttpFilterChainIR, []ir.TcpIR) {
 	var httpOut []ir.HttpFilterChainIR
 	var tcpOut []ir.TcpIR
 	// get attached services (istio.io/use-waypoint)
 	services := t.waypointQueries.GetWaypointServices(kctx, ctx, gw.Obj)
 	logger.Debugw("attaching waypoint services", "gateway", namespacedName(gw).String(), "services", len(services))
+
+	// Fetch Gateway (and GatewayClass) attached policies
+	gwAuthzPolicies := t.waypointQueries.GetAuthorizationPoliciesForGateway(
+		kctx,
+		ctx,
+		gw.Obj,
+		rootNamespace,
+	)
 
 	// for each service:
 	// * 1:1 Service port -> filter chain
@@ -267,8 +275,17 @@ func (t *waypointTranslator) buildServiceChains(
 	// For TCP:
 	// * Just forward traffic
 	// * TODO TCPRoute
+
 	for _, svc := range services {
-		tcpRBAC, httpRBAC := BuildRBACForService(authzPolicies, gw.Obj, &svc)
+		serviceSpecificPolicies := t.waypointQueries.GetAuthorizationPoliciesForService(kctx, ctx, &svc)
+
+		// Combine with gateway policies (which serve as namespace-wide policies)
+		combinedPolicies := make([]*authcr.AuthorizationPolicy, 0, len(gwAuthzPolicies)+len(serviceSpecificPolicies))
+
+		combinedPolicies = append(combinedPolicies, gwAuthzPolicies...)
+		combinedPolicies = append(combinedPolicies, serviceSpecificPolicies...)
+
+		tcpRBAC, httpRBAC := BuildRBAC(combinedPolicies, gw.Obj, &svc)
 
 		// get Service-specific routes
 		httpRoutes := gwRoutes
@@ -313,7 +330,7 @@ func (t *waypointTranslator) buildServiceChains(
 				}
 
 				// Apply HTTP RBAC filters to this HTTP filter chain
-				applyHTTPRBACFilters(&httpChain, httpRBAC, svc)
+				applyHTTPRBACFilters(&httpChain, httpRBAC)
 				httpOut = append(httpOut, httpChain)
 			} else {
 				tcpChain := ir.TcpIR{
@@ -323,7 +340,6 @@ func (t *waypointTranslator) buildServiceChains(
 
 				// Apply TCP RBAC filters to this TCP filter chain
 				applyTCPRBACFilters(&tcpChain, tcpRBAC, svc)
-
 				tcpOut = append(tcpOut, tcpChain)
 			}
 		}
