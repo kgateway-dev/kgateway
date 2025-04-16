@@ -25,6 +25,18 @@ func (k targetRefKey) String() string {
 	return fmt.Sprintf("%s/%s/%s/%s", k.Group, k.Kind, k.Namespace, k.Name)
 }
 
+// getRootNamespace sets the RootNamespace from settings.
+// This should be called during initialization.
+// Instead of a package-level variable, create a function that gets the namespace
+// This can be placed in the same package where you currently have the RootNamespace variable
+func getRootNamespace(settingRootNamespace string) string {
+	defaultRootNamespace := "istio-system"
+	if settingRootNamespace != "" {
+		return settingRootNamespace
+	}
+	return defaultRootNamespace
+}
+
 // This is based on the current Istio AuthorizationPolicy docs (TargetRef section)
 // https://istio.io/latest/docs/reference/config/security/authorization-policy/#TargetRef
 
@@ -34,7 +46,7 @@ func (k targetRefKey) String() string {
 // kind: Service with group: "" or group: "core" in the same namespace. This type is only supported for waypoints.
 // kind: ServiceEntry with group: networking.istio.io in the same namespace.
 
-func buildAuthzTargetIndex(policies krt.Collection[*authcr.AuthorizationPolicy]) krt.Index[targetRefKey, *authcr.AuthorizationPolicy] {
+func buildAuthzTargetIndex(policies krt.Collection[*authcr.AuthorizationPolicy], rootNamespace string) krt.Index[targetRefKey, *authcr.AuthorizationPolicy] {
 	return krt.NewIndex(policies, func(p *authcr.AuthorizationPolicy) []targetRefKey {
 		var keys []targetRefKey
 		for _, targetRef := range p.Spec.GetTargetRefs() {
@@ -57,7 +69,7 @@ func buildAuthzTargetIndex(policies krt.Collection[*authcr.AuthorizationPolicy])
 					Group:     targetRef.GetGroup(),
 					Kind:      targetRef.GetKind(),
 				})
-			} else if targetRef.GetKind() == "GatewayClass" && targetRef.GetGroup() == "gateway.networking.k8s.io" && p.GetNamespace() == RootNamespace {
+			} else if targetRef.GetKind() == "GatewayClass" && targetRef.GetGroup() == "gateway.networking.k8s.io" && p.GetNamespace() == getRootNamespace(rootNamespace) {
 				keys = append(keys, targetRefKey{
 					Name:      targetRef.GetName(),
 					Namespace: getEffectiveNamespace(targetRef.GetNamespace(), p.GetNamespace()),
@@ -75,7 +87,8 @@ func (w *waypointQueries) GetAuthorizationPoliciesForGateway(
 	kctx krt.HandlerContext,
 	ctx context.Context,
 	gateway *gwapi.Gateway,
-	rootNamespace string) []*authcr.AuthorizationPolicy {
+	settingRootNamespace string) []*authcr.AuthorizationPolicy {
+	rootNamespace := getRootNamespace(settingRootNamespace)
 	// Get policies targeting this gateway directly using the index
 	gwKey := targetRefKey{
 		Name:      gateway.GetName(),

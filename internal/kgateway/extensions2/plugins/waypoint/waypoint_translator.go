@@ -45,7 +45,8 @@ type waypointTranslator struct {
 	queries         query.GatewayQueries
 	waypointQueries waypointquery.WaypointQueries
 
-	localBind bool
+	localBind     bool
+	rootNamespace string
 }
 
 func NewTranslator(
@@ -57,6 +58,7 @@ func NewTranslator(
 		queries:         queries,
 		waypointQueries: waypointQueries,
 		localBind:       settings.WaypointLocalBinding,
+		rootNamespace:   settings.IstioNamespace,
 	}
 }
 
@@ -104,6 +106,7 @@ func (w *waypointTranslator) Translate(
 			routes,
 			gwListener,
 			attachedRoutes,
+			w.rootNamespace,
 		)
 		proxyListener.HttpFilterChain = append(proxyListener.HttpFilterChain, http...)
 		proxyListener.TcpFilterChain = append(proxyListener.TcpFilterChain, tcp...)
@@ -250,6 +253,7 @@ func (t *waypointTranslator) buildServiceChains(
 	gwRoutes []*query.RouteInfo,
 	gwListener *ir.Listener,
 	attachedRoutes sets.Set[types.NamespacedName],
+	rootNamespace string,
 ) ([]ir.HttpFilterChainIR, []ir.TcpIR) {
 	var httpOut []ir.HttpFilterChainIR
 	var tcpOut []ir.TcpIR
@@ -262,7 +266,7 @@ func (t *waypointTranslator) buildServiceChains(
 		kctx,
 		ctx,
 		gw.Obj,
-		waypointquery.RootNamespace,
+		rootNamespace,
 	)
 
 	// for each service:

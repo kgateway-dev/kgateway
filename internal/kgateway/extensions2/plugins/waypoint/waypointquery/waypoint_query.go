@@ -17,7 +17,6 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/query"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
@@ -33,21 +32,6 @@ const (
 	// This allows cross-namespace waypoint references. If unset, the same namespace is assumed.
 	IstioUseWaypointNamespaceLabel = "istio.io/use-waypoint-namespace"
 )
-
-var (
-	// It is set during initialization via SetRootNamespace() which reads from settings.IstioNamespace.
-	// The default value is "istio-system" if not configured. Users might decide to use a different
-	// namespace as the single source of truth (e.g. kgateway-system) for the cluster-wide definitions.
-	RootNamespace = "istio-system"
-)
-
-// SetRootNamespace sets the RootNamespace from settings.
-// This should be called during initialization.
-func SetRootNamespace(s *settings.Settings) {
-	if s != nil {
-		RootNamespace = s.IstioNamespace
-	}
-}
 
 type WaypointQueries interface {
 	// GetWaypointServices returns all Services that are marked as using the Gateway
@@ -83,9 +67,8 @@ func NewQueries(
 	byNamespace := krt.NewIndex(authzPolicies, func(p *authcr.AuthorizationPolicy) []string {
 		return []string{p.GetNamespace()}
 	})
-
 	// Build Authz policies targetRefKey index
-	byTargetRefKey := buildAuthzTargetIndex(authzPolicies)
+	byTargetRefKey := buildAuthzTargetIndex(authzPolicies, commonCols.Settings.IstioNamespace)
 
 	return &waypointQueries{
 		queries:            gwQueries,
