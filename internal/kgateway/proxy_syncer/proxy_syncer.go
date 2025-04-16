@@ -452,6 +452,12 @@ func (s *ProxySyncer) syncRouteStatus(ctx context.Context, rm reports.ReportMap)
 				return nil
 			}
 			r.Status.RouteStatus = *status
+		case *gwv1.GRPCRoute:
+			status = rm.BuildRouteStatus(ctx, r, s.controllerName)
+			if status == nil || isRouteStatusEqual(&r.Status.RouteStatus, status) {
+				return nil
+			}
+			r.Status.RouteStatus = *status
 		default:
 			logger.Warnw(fmt.Sprintf("unsupported route type for %s", routeType), "route", route)
 			return nil

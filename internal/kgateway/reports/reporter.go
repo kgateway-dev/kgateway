@@ -89,6 +89,7 @@ func (r *ReportMap) newGatewayReport(gateway *gwv1.Gateway) *GatewayReport {
 // * HTTPRoute
 // * TCPRoute
 // * TLSRoute
+// * GRPCRoute
 func (r *ReportMap) route(obj metav1.Object) *RouteReport {
 	key := key(obj)
 
