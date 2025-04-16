@@ -8,6 +8,7 @@ import (
 	. "github.com/onsi/gomega"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/kube/krt/krttest"
+	"istio.io/istio/pkg/test"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -34,7 +35,7 @@ var _ = Describe("Query", func() {
 	Describe("GetSecretRef", func() {
 		It("should get secret from different ns if we have a ref grant", func() {
 			rg := refGrantSecret()
-			gq := newQueries(secret("default2"), rg)
+			gq := newQueries(GinkgoT(), secret("default2"), rg)
 			ref := apiv1.SecretObjectReference{
 				Name:      "foo",
 				Namespace: nsptr("default2"),
@@ -67,7 +68,7 @@ var _ = Describe("Query", func() {
 				},
 			}
 
-			gq := newQueries(hr)
+			gq := newQueries(GinkgoT(), hr)
 			routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), gwWithListener)
 
 			Expect(err).NotTo(HaveOccurred())
@@ -99,7 +100,7 @@ var _ = Describe("Query", func() {
 				},
 			}
 
-			gq := newQueries(hr)
+			gq := newQueries(GinkgoT(), hr)
 
 			routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), gwWithListener)
 
@@ -126,7 +127,7 @@ var _ = Describe("Query", func() {
 				},
 			}
 
-			gq := newQueries(hr)
+			gq := newQueries(GinkgoT(), hr)
 			routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), gwWithListener)
 
 			Expect(err).NotTo(HaveOccurred())
@@ -153,7 +154,7 @@ var _ = Describe("Query", func() {
 				Name: apiv1.ObjectName(gwWithListener.Name),
 			})
 
-			gq := newQueries(hr)
+			gq := newQueries(GinkgoT(), hr)
 			routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), gwWithListener)
 
 			Expect(err).NotTo(HaveOccurred())
@@ -183,7 +184,7 @@ var _ = Describe("Query", func() {
 				Name: apiv1.ObjectName(gwWithListener.Name),
 			})
 
-			gq := newQueries(hr)
+			gq := newQueries(GinkgoT(), hr)
 			routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), gwWithListener)
 
 			Expect(err).NotTo(HaveOccurred())
@@ -212,7 +213,7 @@ var _ = Describe("Query", func() {
 				Name: apiv1.ObjectName(gwWithListener.Name),
 			})
 
-			gq := newQueries(hr)
+			gq := newQueries(GinkgoT(), hr)
 			routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), gwWithListener)
 
 			Expect(err).NotTo(HaveOccurred())
@@ -244,7 +245,7 @@ var _ = Describe("Query", func() {
 				Port: &port,
 			})
 
-			gq := newQueries(hr)
+			gq := newQueries(GinkgoT(), hr)
 			routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), gwWithListener)
 
 			Expect(err).NotTo(HaveOccurred())
@@ -274,7 +275,7 @@ var _ = Describe("Query", func() {
 				Port: &port,
 			})
 
-			gq := newQueries(hr)
+			gq := newQueries(GinkgoT(), hr)
 			routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), gwWithListener)
 
 			Expect(err).NotTo(HaveOccurred())
@@ -307,7 +308,7 @@ var _ = Describe("Query", func() {
 				Name: apiv1.ObjectName(gwWithListener.Name),
 			})
 
-			gq := newQueries(hr)
+			gq := newQueries(GinkgoT(), hr)
 			routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), gwWithListener)
 
 			Expect(err).NotTo(HaveOccurred())
@@ -340,7 +341,7 @@ var _ = Describe("Query", func() {
 				Name: apiv1.ObjectName(gwWithListener.Name),
 			})
 
-			gq := newQueries(hr)
+			gq := newQueries(GinkgoT(), hr)
 			routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), gwWithListener)
 
 			Expect(err).NotTo(HaveOccurred())
@@ -369,7 +370,7 @@ var _ = Describe("Query", func() {
 				Name: apiv1.ObjectName(gwWithListener.Name),
 			})
 
-			gq := newQueries(hr)
+			gq := newQueries(GinkgoT(), hr)
 			routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), gwWithListener)
 
 			Expect(err).NotTo(HaveOccurred())
@@ -406,7 +407,7 @@ var _ = Describe("Query", func() {
 					Name: apiv1.ObjectName(gwWithListener.Name),
 				})
 
-				gq := newQueries(hr)
+				gq := newQueries(GinkgoT(), hr)
 				routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), gwWithListener)
 
 				Expect(err).NotTo(HaveOccurred())
@@ -459,7 +460,7 @@ var _ = Describe("Query", func() {
 				},
 			}
 
-			gq := newQueries(tcpRoute)
+			gq := newQueries(GinkgoT(), tcpRoute)
 			routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), gw)
 
 			Expect(err).NotTo(HaveOccurred())
@@ -493,7 +494,7 @@ var _ = Describe("Query", func() {
 				},
 			}
 
-			gq := newQueries(tcpRoute)
+			gq := newQueries(GinkgoT(), tcpRoute)
 
 			routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), gw)
 
@@ -530,7 +531,7 @@ var _ = Describe("Query", func() {
 				},
 			}
 
-			gq := newQueries(tcpRoute)
+			gq := newQueries(GinkgoT(), tcpRoute)
 			routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), gw)
 
 			Expect(err).NotTo(HaveOccurred())
@@ -563,7 +564,7 @@ var _ = Describe("Query", func() {
 				},
 			}
 
-			gq := newQueries(tcpRoute)
+			gq := newQueries(GinkgoT(), tcpRoute)
 
 			routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), gw)
 			Expect(err).NotTo(HaveOccurred())
@@ -601,7 +602,7 @@ var _ = Describe("Query", func() {
 				},
 			}
 
-			gq := newQueries(tcpRoute)
+			gq := newQueries(GinkgoT(), tcpRoute)
 
 			routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), gw)
 			Expect(err).NotTo(HaveOccurred())
@@ -640,7 +641,7 @@ var _ = Describe("Query", func() {
 			},
 		}
 
-		gq := newQueries(tlsRoute)
+		gq := newQueries(GinkgoT(), tlsRoute)
 		routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), gw)
 
 		Expect(err).NotTo(HaveOccurred())
@@ -674,7 +675,7 @@ var _ = Describe("Query", func() {
 			},
 		}
 
-		gq := newQueries(tlsRoute)
+		gq := newQueries(GinkgoT(), tlsRoute)
 		routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), gw)
 
 		Expect(err).NotTo(HaveOccurred())
@@ -710,7 +711,7 @@ var _ = Describe("Query", func() {
 			},
 		}
 
-		gq := newQueries(tlsRoute)
+		gq := newQueries(GinkgoT(), tlsRoute)
 		routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), gw)
 
 		Expect(err).NotTo(HaveOccurred())
@@ -743,7 +744,7 @@ var _ = Describe("Query", func() {
 			},
 		}
 
-		gq := newQueries(tlsRoute)
+		gq := newQueries(GinkgoT(), tlsRoute)
 		routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), gw)
 
 		Expect(err).NotTo(HaveOccurred())
@@ -781,7 +782,7 @@ var _ = Describe("Query", func() {
 			},
 		}
 
-		gq := newQueries(tlsRoute)
+		gq := newQueries(GinkgoT(), tlsRoute)
 		routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), gw)
 
 		Expect(err).NotTo(HaveOccurred())
@@ -882,12 +883,12 @@ var SvcGk = schema.GroupKind{
 	Kind:  "Service",
 }
 
-func newQueries(initObjs ...client.Object) query.GatewayQueries {
+func newQueries(t test.Failer, initObjs ...client.Object) query.GatewayQueries {
 	var anys []any
 	for _, obj := range initObjs {
 		anys = append(anys, obj)
 	}
-	mock := krttest.NewMock(GinkgoT(), anys)
+	mock := krttest.NewMock(t, anys)
 	services := krttest.GetMockCollection[*corev1.Service](mock)
 	refgrants := krtcollections.NewRefGrantIndex(krttest.GetMockCollection[*apiv1beta1.ReferenceGrant](mock))
 
