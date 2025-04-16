@@ -560,7 +560,7 @@ func NewRoutesIndex(
 	refgrants *RefGrantIndex,
 ) *RoutesIndex {
 	h := &RoutesIndex{policies: policies, refgrants: refgrants, backends: backends}
-	h.hasSyncedFuncs = append(h.hasSyncedFuncs, httproutes.HasSynced, tcproutes.HasSynced, tlsroutes.HasSynced)
+	h.hasSyncedFuncs = append(h.hasSyncedFuncs, httproutes.HasSynced, grpcroutes.HasSynced, tcproutes.HasSynced, tlsroutes.HasSynced)
 	h.httpRoutes = krt.NewCollection(httproutes, h.transformHttpRoute, krtopts.ToOptions("http-routes-with-policy")...)
 	httpRouteCollection := krt.NewCollection(h.httpRoutes, func(kctx krt.HandlerContext, i ir.HttpRouteIR) *RouteWrapper {
 		return &RouteWrapper{Route: &i}
@@ -703,7 +703,7 @@ func (h *RoutesIndex) transformTlsRoute(kctx krt.HandlerContext, i *gwv1a2.TLSRo
 	}
 }
 
-func (h *RoutesIndex) transformGRPCRoute(kctx krt.HandlerContext, i *gwv1.GRPCRoute) *ir.GRPCRouteIR {
+func (h *RoutesIndex) transformGRPCRoute(kctx krt.HandlerContext, i *gwv1.GRPCRoute) *ir.HttpRouteIR {
 	src := ir.ObjectSource{
 		Group:     gwv1.SchemeGroupVersion.Group,
 		Kind:      "GRPCRoute",
@@ -711,26 +711,85 @@ func (h *RoutesIndex) transformGRPCRoute(kctx krt.HandlerContext, i *gwv1.GRPCRo
 		Name:      i.Name,
 	}
 
-	return &ir.GRPCRouteIR{
+	return &ir.HttpRouteIR{
 		ObjectSource:     src,
 		SourceObject:     i,
 		ParentRefs:       i.Spec.ParentRefs,
 		Hostnames:        tostr(i.Spec.Hostnames),
-		Rules:            h.transformGRPCRules(kctx, src, i.Spec.Rules),
+		Rules:            h.transformGRPCRulesToHttp(kctx, src, i.Spec.Rules),
 		AttachedPolicies: toAttachedPolicies(h.policies.getTargetingPolicies(kctx, extensionsplug.RouteAttachmentPoint, src, "")),
+		// IsHTTP2: true
 	}
 }
 
-func (h *RoutesIndex) transformGRPCRules(kctx krt.HandlerContext, src ir.ObjectSource, i []gwv1.GRPCRouteRule) []ir.GRPCRouteRuleIR {
-	rules := make([]ir.GRPCRouteRuleIR, 0, len(i))
-	for _, r := range i {
-		rules = append(rules, ir.GRPCRouteRuleIR{
-			Backends: h.getGRPCBackends(kctx, src, r.BackendRefs),
-			Matches:  r.Matches,
+func (h *RoutesIndex) transformGRPCRulesToHttp(kctx krt.HandlerContext, src ir.ObjectSource, rules []gwv1.GRPCRouteRule) []ir.HttpRouteRuleIR {
+	httpRules := make([]ir.HttpRouteRuleIR, 0, len(rules))
+	for _, r := range rules {
+		// Convert GRPC matches to HTTP matches
+		httpMatches := make([]gwv1.HTTPRouteMatch, 0, len(r.Matches))
+		for _, match := range r.Matches {
+			// Construct path from GRPC method match
+			var path string
+			if match.Method != nil {
+				if *match.Method.Type == gwv1.GRPCMethodMatchExact {
+					path = fmt.Sprintf("/%s/%s", string(*match.Method.Service), string(*match.Method.Method))
+				} else {
+					// For regex/prefix matches, we'll use a prefix match with just the service
+					path = fmt.Sprintf("/%s/", string(*match.Method.Service))
+				}
+			} else {
+				// If no method match, match all paths
+				path = "/"
+			}
+
+			// Convert GRPC headers to HTTP headers
+			httpHeaders := make([]gwv1.HTTPHeaderMatch, 0, len(match.Headers))
+			for _, h := range match.Headers {
+				httpHeaders = append(httpHeaders, gwv1.HTTPHeaderMatch{
+					Name:  gwv1.HTTPHeaderName(h.Name),
+					Value: h.Value,
+					Type:  (*gwv1.HeaderMatchType)(h.Type),
+				})
+			}
+
+			pathType := gwv1.PathMatchPathPrefix
+			httpMatch := gwv1.HTTPRouteMatch{
+				Path: &gwv1.HTTPPathMatch{
+					Type:  &pathType,
+					Value: &path,
+				},
+				Headers: httpHeaders,
+			}
+			httpMatches = append(httpMatches, httpMatch)
+		}
+
+		// Convert GRPC backends to HTTP backends
+		httpBackends := make([]ir.HttpBackendOrDelegate, 0, len(r.BackendRefs))
+		for _, ref := range r.BackendRefs {
+			backend, err := h.backends.GetBackendFromRef(kctx, src, ref.BackendObjectReference)
+			clusterName := "blackhole-cluster"
+			if backend != nil {
+				clusterName = backend.ClusterName()
+			} else if err == nil {
+				err = &NotFoundError{NotFoundObj: toFromBackendRef(src.Namespace, ref.BackendObjectReference)}
+			}
+			httpBackends = append(httpBackends, ir.HttpBackendOrDelegate{
+				Backend: &ir.BackendRefIR{
+					BackendObject: backend,
+					ClusterName:   clusterName,
+					Weight:        weight(ref.Weight),
+					Err:           err,
+				},
+			})
+		}
+
+		httpRules = append(httpRules, ir.HttpRouteRuleIR{
+			Backends: httpBackends,
+			Matches:  httpMatches,
 			Name:     emptyIfNil(r.Name),
 		})
 	}
-	return rules
+	return httpRules
 }
 
 func (h *RoutesIndex) transformHttpRoute(kctx krt.HandlerContext, i *gwv1.HTTPRoute) *ir.HttpRouteIR {
