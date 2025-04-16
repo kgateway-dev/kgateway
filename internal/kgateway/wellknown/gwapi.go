@@ -53,6 +53,11 @@ var (
 		Version: apiv1.GroupVersion.Version,
 		Kind:    HTTPRouteKind,
 	}
+	GRPCRouteGVK = schema.GroupVersionKind{
+		Group:   GatewayGroup,
+		Version: apiv1.GroupVersion.Version,
+		Kind:    GRPCRouteKind,
+	}
 	ReferenceGrantGVK = schema.GroupVersionKind{
 		Group:   GatewayGroup,
 		Version: apiv1beta1.GroupVersion.Version,
