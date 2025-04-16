@@ -112,12 +112,6 @@ func (w *waypointTranslator) Translate(
 		proxyListener.TcpFilterChain = append(proxyListener.TcpFilterChain, tcp...)
 	}
 
-	if proxyListener == nil {
-		// shouldn't be possible
-		contextutils.LoggerFrom(ctx).DPanic("PROXY listener was nil")
-		return nil
-	}
-
 	// ensure consistent ordering in outputs
 	proxyListener.HttpFilterChain = slices.SortBy(proxyListener.HttpFilterChain, func(fc ir.HttpFilterChainIR) string {
 		return fc.FilterChainName
@@ -126,11 +120,14 @@ func (w *waypointTranslator) Translate(
 		return fc.FilterChainName
 	})
 
+	// don't include the listener unless we have filter chains
+	outListeners := []ir.ListenerIR{}
+	if len(proxyListener.HttpFilterChain)+len(proxyListener.TcpFilterChain) > 0 {
+		outListeners = append(outListeners, *proxyListener)
+	}
+
 	return &ir.GatewayIR{
-		// single listener
-		Listeners: []ir.ListenerIR{
-			*proxyListener,
-		},
+		Listeners:            outListeners,
 		SourceObject:         gateway.Obj,
 		AttachedPolicies:     gateway.AttachedListenerPolicies,
 		AttachedHttpPolicies: gateway.AttachedHttpPolicies,

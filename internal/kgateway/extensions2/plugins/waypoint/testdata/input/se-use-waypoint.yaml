@@ -1,4 +1,12 @@
-
+---
+# The Namespace capture should apply to all the Services in the namespace
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: infra
+  labels:
+    istio.io/use-waypoint: example-waypoint
+---
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:
