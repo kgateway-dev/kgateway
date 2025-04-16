@@ -172,11 +172,11 @@ type GRPCRouteIR struct {
 
 // Use HTTPRouteIR for GRPCRoute?
 type GRPCRouteRuleIR struct {
-	// ExtensionRefs    AttachedPolicies
-	// AttachedPolicies AttachedPolicies
-	Backends []BackendRefIR
-	Matches  []gwv1.GRPCRouteMatch
-	Name     string
+	ExtensionRefs    AttachedPolicies
+	AttachedPolicies AttachedPolicies
+	Backends         []BackendRefIR
+	Matches          []gwv1.GRPCRouteMatch
+	Name             string
 }
 
 func (c *GRPCRouteIR) GetParentRefs() []gwv1.ParentReference {
