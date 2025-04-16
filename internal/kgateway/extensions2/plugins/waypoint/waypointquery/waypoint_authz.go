@@ -25,6 +25,51 @@ func (k targetRefKey) String() string {
 	return fmt.Sprintf("%s/%s/%s/%s", k.Group, k.Kind, k.Namespace, k.Name)
 }
 
+// This is based on the current Istio AuthorizationPolicy docs (TargetRef section)
+// https://istio.io/latest/docs/reference/config/security/authorization-policy/#TargetRef
+
+// Currently, the following resource attachment types are supported:
+// kind: Gateway with group: gateway.networking.k8s.io in the same namespace.
+// kind: GatewayClass with group: gateway.networking.k8s.io in the root namespace.
+// kind: Service with group: "" or group: "core" in the same namespace. This type is only supported for waypoints.
+// kind: ServiceEntry with group: networking.istio.io in the same namespace.
+
+func buildAuthzTargetIndex(policies krt.Collection[*authcr.AuthorizationPolicy]) krt.Index[targetRefKey, *authcr.AuthorizationPolicy] {
+	return krt.NewIndex(policies, func(p *authcr.AuthorizationPolicy) []targetRefKey {
+		var keys []targetRefKey
+		for _, targetRef := range p.Spec.GetTargetRefs() {
+			if (targetRef.GetKind() == "Service" && (targetRef.GetGroup() == "" || targetRef.GetGroup() == "core")) ||
+				(targetRef.GetKind() == "ServiceEntry" && targetRef.GetGroup() == "networking.istio.io") {
+				gk := wellknown.ServiceGVK
+				if targetRef.GetKind() == "ServiceEntry" {
+					gk = wellknown.ServiceEntryGVK
+				}
+				keys = append(keys, targetRefKey{
+					Name:      targetRef.GetName(),
+					Namespace: getEffectiveNamespace(targetRef.GetNamespace(), p.GetNamespace()),
+					Group:     gk.Group,
+					Kind:      gk.Kind,
+				})
+			} else if targetRef.GetKind() == "Gateway" && targetRef.GetGroup() == "gateway.networking.k8s.io" {
+				keys = append(keys, targetRefKey{
+					Name:      targetRef.GetName(),
+					Namespace: getEffectiveNamespace(targetRef.GetNamespace(), p.GetNamespace()),
+					Group:     targetRef.GetGroup(),
+					Kind:      targetRef.GetKind(),
+				})
+			} else if targetRef.GetKind() == "GatewayClass" && targetRef.GetGroup() == "gateway.networking.k8s.io" && p.GetNamespace() == RootNamespace {
+				keys = append(keys, targetRefKey{
+					Name:      targetRef.GetName(),
+					Namespace: getEffectiveNamespace(targetRef.GetNamespace(), p.GetNamespace()),
+					Group:     targetRef.GetGroup(),
+					Kind:      targetRef.GetKind(),
+				})
+			}
+		}
+		return keys
+	})
+}
+
 // GetAuthorizationPoliciesForGateway returns policies targeting a specific gateway
 func (w *waypointQueries) GetAuthorizationPoliciesForGateway(
 	kctx krt.HandlerContext,
@@ -52,11 +97,6 @@ func (w *waypointQueries) GetAuthorizationPoliciesForGateway(
 		}
 		rootPolicies := krt.Fetch(kctx, w.authzPolicies, krt.FilterIndex(w.byTargetRefKey, gwClassKey))
 		allPolicies = append(allPolicies, rootPolicies...)
-	}
-
-	for i, p := range allPolicies {
-		fmt.Printf("  Policy %d: %s/%s (deletion: %v)\n", i,
-			p.GetNamespace(), p.GetName(), p.GetDeletionTimestamp() != nil)
 	}
 	return allPolicies
 }

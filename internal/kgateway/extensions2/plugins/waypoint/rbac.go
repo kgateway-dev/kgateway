@@ -26,10 +26,11 @@ const (
 	defaultTrustDomain = "cluster.local"
 )
 
-// BuildRBACForService gives the following lists of filters:
+// BuildRBAC uses whatever policies received, assumes that the policy attachment is done outside
+// gives the following lists of filters:
 // tcpRBAC - only used in tcp chains (using this on an HTTP chain could cause improper DENY)
 // httpRBAC - only used in http chains
-func BuildRBACForService(
+func BuildRBAC(
 	authzPolicies []*authcr.AuthorizationPolicy,
 	gw *gwapi.Gateway,
 	svc *waypointquery.Service,
@@ -63,7 +64,7 @@ func BuildRBACForService(
 		tcpRBAC = append(tcpRBAC, ir.CustomNetworkFilters(tcpFilters, stage, predicate)...)
 	}
 	if len(httpFilters) > 0 {
-		httpRBAC = ir.CustomHTTPFilters(httpFilters, stage, predicate)
+		httpRBAC = append(httpRBAC, ir.CustomHTTPFilters(httpFilters, stage, predicate)...)
 	}
 	return tcpRBAC, httpRBAC
 }
