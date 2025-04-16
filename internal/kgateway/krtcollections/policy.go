@@ -730,16 +730,41 @@ func (h *RoutesIndex) transformGRPCRulesToHttp(kctx krt.HandlerContext, src ir.O
 		for _, match := range r.Matches {
 			// Construct path from GRPC method match
 			var path string
+			var pathType gwv1.PathMatchType
+
 			if match.Method != nil {
-				if *match.Method.Type == gwv1.GRPCMethodMatchExact {
-					path = fmt.Sprintf("/%s/%s", string(*match.Method.Service), string(*match.Method.Method))
-				} else {
-					// For regex/prefix matches, we'll use a prefix match with just the service
-					path = fmt.Sprintf("/%s/", string(*match.Method.Service))
+				switch *match.Method.Type {
+				case gwv1.GRPCMethodMatchRegularExpression:
+					pathType = gwv1.PathMatchRegularExpression // Set type for all regex cases
+					switch {
+					case match.Method.Service != nil && match.Method.Method != nil:
+						path = fmt.Sprintf("/%s/%s", string(*match.Method.Service), string(*match.Method.Method))
+					case match.Method.Service != nil:
+						// Match any valid method name within the service
+						path = fmt.Sprintf("/%s/.+", string(*match.Method.Service))
+					case match.Method.Method != nil:
+						// Match any valid service name before the method
+						path = fmt.Sprintf("/.+/%s", string(*match.Method.Method))
+					}
+				default: // gwv1.GRPCMethodMatchExact
+					switch {
+					case match.Method.Service != nil && match.Method.Method != nil:
+						path = fmt.Sprintf("/%s/%s", string(*match.Method.Service), string(*match.Method.Method))
+						pathType = gwv1.PathMatchExact
+					case match.Method.Service != nil:
+						// Exact service match maps to prefix /service
+						path = fmt.Sprintf("/%s", string(*match.Method.Service))
+						pathType = gwv1.PathMatchPathPrefix
+					case match.Method.Method != nil:
+						// Exact method without service isn't directly mappable, use regex
+						path = fmt.Sprintf("/.+/%s", string(*match.Method.Method))
+						pathType = gwv1.PathMatchRegularExpression
+					}
 				}
 			} else {
 				// If no method match, match all paths
 				path = "/"
+				pathType = gwv1.PathMatchPathPrefix
 			}
 
 			// Convert GRPC headers to HTTP headers
@@ -752,7 +777,6 @@ func (h *RoutesIndex) transformGRPCRulesToHttp(kctx krt.HandlerContext, src ir.O
 				})
 			}
 
-			pathType := gwv1.PathMatchPathPrefix
 			httpMatch := gwv1.HTTPRouteMatch{
 				Path: &gwv1.HTTPPathMatch{
 					Type:  &pathType,
