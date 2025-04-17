@@ -213,6 +213,7 @@ func (tc TestCase) Run(t test.Failer, ctx context.Context) (map[types.Namespaced
 		gvr.KubernetesGateway_v1,
 		gvr.GatewayClass,
 		gvr.HTTPRoute_v1,
+		gvr.GRPCRoute,
 		gvr.Service,
 		gvr.Pod,
 		gvr.TCPRoute,
