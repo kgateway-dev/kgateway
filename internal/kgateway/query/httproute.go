@@ -118,7 +118,6 @@ func (r *gatewayQueries) GetRouteChain(
 	case *ir.TcpRouteIR:
 		// TODO (danehans): Should TCPRoute delegation support be added in the future?
 	case *ir.TlsRouteIR:
-	case *ir.GRPCRouteIR:
 	default:
 		return nil
 	}
@@ -390,7 +389,7 @@ func (r *gatewayQueries) processRoute(
 				ParentRef: ref,
 				Error:     Error{E: ErrNoMatchingParent, Reason: gwv1.RouteReasonNoMatchingParent},
 			})
-		} else if routeKind == wellknown.HTTPRouteKind && !anyHostsMatch {
+		} else if (routeKind == wellknown.HTTPRouteKind || routeKind == wellknown.TLSRouteKind || routeKind == wellknown.GRPCRouteKind) && !anyHostsMatch {
 			ret.RouteErrors = append(ret.RouteErrors, &RouteError{
 				Route:     route,
 				ParentRef: ref,
