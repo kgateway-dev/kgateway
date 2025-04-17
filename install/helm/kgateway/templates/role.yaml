@@ -99,6 +99,7 @@ rules:
   resources:
   - backendtlspolicies
   - gateways
+  - grpcroutes
   - httproutes
   - referencegrants
   - tcproutes
@@ -113,6 +114,7 @@ rules:
   - backendtlspolicies/status
   - gatewayclasses/status
   - gateways/status
+  - grpcroutes/status
   - httproutes/status
   - tcproutes/status
   - tlsroutes/status
