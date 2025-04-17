@@ -719,104 +719,8 @@ func (h *RoutesIndex) transformGRPCRoute(kctx krt.HandlerContext, i *gwv1.GRPCRo
 func (h *RoutesIndex) transformGRPCRulesToHttp(kctx krt.HandlerContext, src ir.ObjectSource, rules []gwv1.GRPCRouteRule) []ir.HttpRouteRuleIR {
 	httpRules := make([]ir.HttpRouteRuleIR, 0, len(rules))
 	for _, r := range rules {
-		// Convert GRPC matches to HTTP matches
-		httpMatches := make([]gwv1.HTTPRouteMatch, 0, len(r.Matches))
-		for _, match := range r.Matches {
-			// Construct path from GRPC method match
-			var path string
-			var pathType gwv1.PathMatchType
-
-			if match.Method != nil {
-				methodType := gwv1.GRPCMethodMatchExact // Default to exact match if type is not specified
-				if match.Method.Type != nil {
-					methodType = *match.Method.Type
-				}
-				switch methodType {
-				case gwv1.GRPCMethodMatchRegularExpression:
-					pathType = gwv1.PathMatchRegularExpression // Set type for all regex cases
-					switch {
-					case match.Method.Service != nil && match.Method.Method != nil:
-						path = fmt.Sprintf("/%s/%s", string(*match.Method.Service), string(*match.Method.Method))
-					case match.Method.Service != nil:
-						// Match any valid method name within the service
-						path = fmt.Sprintf("/%s/.+", string(*match.Method.Service))
-					case match.Method.Method != nil:
-						// Match any valid service name before the method
-						path = fmt.Sprintf("/.+/%s", string(*match.Method.Method))
-					}
-				default: // gwv1.GRPCMethodMatchExact
-					switch {
-					case match.Method.Service != nil && match.Method.Method != nil:
-						path = fmt.Sprintf("/%s/%s", string(*match.Method.Service), string(*match.Method.Method))
-						pathType = gwv1.PathMatchExact
-					case match.Method.Service != nil:
-						// Exact service match maps to prefix /service
-						path = fmt.Sprintf("/%s", string(*match.Method.Service))
-						pathType = gwv1.PathMatchPathPrefix
-					case match.Method.Method != nil:
-						// Exact method without service isn't directly mappable, use regex
-						path = fmt.Sprintf("/.+/%s", string(*match.Method.Method))
-						pathType = gwv1.PathMatchRegularExpression
-					}
-				}
-			} else {
-				// If no method match, match all paths
-				path = "/"
-				pathType = gwv1.PathMatchPathPrefix
-			}
-
-			// Convert GRPC headers to HTTP headers
-			httpHeaders := make([]gwv1.HTTPHeaderMatch, 0, len(match.Headers))
-			for _, h := range match.Headers {
-				headerType := gwv1.GRPCHeaderMatchExact // Default to exact match if type is not specified
-				if h.Type != nil {
-					headerType = *h.Type
-				}
-				switch headerType {
-				case gwv1.GRPCHeaderMatchExact:
-					httpHeaders = append(httpHeaders, gwv1.HTTPHeaderMatch{
-						Name:  gwv1.HTTPHeaderName(h.Name),
-						Value: h.Value,
-						Type:  (*gwv1.HeaderMatchType)(h.Type),
-					})
-				case gwv1.GRPCHeaderMatchRegularExpression:
-					httpHeaders = append(httpHeaders, gwv1.HTTPHeaderMatch{
-						Name:  gwv1.HTTPHeaderName(h.Name),
-						Value: h.Value,
-						Type:  (*gwv1.HeaderMatchType)(h.Type),
-					})
-				}
-			}
-
-			httpMatch := gwv1.HTTPRouteMatch{
-				Path: &gwv1.HTTPPathMatch{
-					Type:  &pathType,
-					Value: &path,
-				},
-				Headers: httpHeaders,
-			}
-			httpMatches = append(httpMatches, httpMatch)
-		}
-
-		// Convert GRPC backends to HTTP backends
-		httpBackends := make([]ir.HttpBackendOrDelegate, 0, len(r.BackendRefs))
-		for _, ref := range r.BackendRefs {
-			backend, err := h.backends.GetBackendFromRef(kctx, src, ref.BackendObjectReference)
-			clusterName := "blackhole-cluster"
-			if backend != nil {
-				clusterName = backend.ClusterName()
-			} else if err == nil {
-				err = &NotFoundError{NotFoundObj: toFromBackendRef(src.Namespace, ref.BackendObjectReference)}
-			}
-			httpBackends = append(httpBackends, ir.HttpBackendOrDelegate{
-				Backend: &ir.BackendRefIR{
-					BackendObject: backend,
-					ClusterName:   clusterName,
-					Weight:        weight(ref.Weight),
-					Err:           err,
-				},
-			})
-		}
+		httpMatches := h.convertGRPCMatchesToHTTP(r.Matches)
+		httpBackends := h.convertGRPCBackendsToHTTP(kctx, src, r.BackendRefs)
 
 		httpRules = append(httpRules, ir.HttpRouteRuleIR{
 			Backends: httpBackends,
@@ -825,6 +729,105 @@ func (h *RoutesIndex) transformGRPCRulesToHttp(kctx krt.HandlerContext, src ir.O
 		})
 	}
 	return httpRules
+}
+
+func (h *RoutesIndex) convertGRPCMatchesToHTTP(matches []gwv1.GRPCRouteMatch) []gwv1.HTTPRouteMatch {
+	httpMatches := make([]gwv1.HTTPRouteMatch, 0, len(matches))
+	for _, match := range matches {
+		path, pathType := h.buildGRPCPathMatch(match.Method)
+		httpHeaders := h.convertGRPCHeadersToHTTP(match.Headers)
+
+		httpMatch := gwv1.HTTPRouteMatch{
+			Path: &gwv1.HTTPPathMatch{
+				Type:  &pathType,
+				Value: &path,
+			},
+			Headers: httpHeaders,
+		}
+		httpMatches = append(httpMatches, httpMatch)
+	}
+	return httpMatches
+}
+
+func (h *RoutesIndex) buildGRPCPathMatch(method *gwv1.GRPCMethodMatch) (string, gwv1.PathMatchType) {
+	var path string
+	var pathType gwv1.PathMatchType
+
+	if method == nil {
+		// If no method match, match all paths
+		return "/", gwv1.PathMatchPathPrefix
+	}
+
+	methodType := gwv1.GRPCMethodMatchExact // Default to exact match if type is not specified
+	if method.Type != nil {
+		methodType = *method.Type
+	}
+
+	switch methodType {
+	case gwv1.GRPCMethodMatchRegularExpression:
+		pathType = gwv1.PathMatchRegularExpression // Set type for all regex cases
+		switch {
+		case method.Service != nil && method.Method != nil:
+			path = fmt.Sprintf("/%s/%s", string(*method.Service), string(*method.Method))
+		case method.Service != nil:
+			// Match any valid method name within the service
+			path = fmt.Sprintf("/%s/.+", string(*method.Service))
+		case method.Method != nil:
+			// Match any valid service name before the method
+			path = fmt.Sprintf("/.+/%s", string(*method.Method))
+		}
+	default: // gwv1.GRPCMethodMatchExact
+		switch {
+		case method.Service != nil && method.Method != nil:
+			path = fmt.Sprintf("/%s/%s", string(*method.Service), string(*method.Method))
+			pathType = gwv1.PathMatchExact
+		case method.Service != nil:
+			// Exact service match maps to prefix /service
+			path = fmt.Sprintf("/%s", string(*method.Service))
+			pathType = gwv1.PathMatchPathPrefix
+		case method.Method != nil:
+			// Exact method without service isn't directly mappable, use regex
+			path = fmt.Sprintf("/.+/%s", string(*method.Method))
+			pathType = gwv1.PathMatchRegularExpression
+		}
+	}
+
+	return path, pathType
+}
+
+func (h *RoutesIndex) convertGRPCHeadersToHTTP(headers []gwv1.GRPCHeaderMatch) []gwv1.HTTPHeaderMatch {
+	httpHeaders := make([]gwv1.HTTPHeaderMatch, 0, len(headers))
+	for _, h := range headers {
+		// Type is passed directly to the HTTPHeaderMatch
+		httpHeaders = append(httpHeaders, gwv1.HTTPHeaderMatch{
+			Name:  gwv1.HTTPHeaderName(h.Name),
+			Value: h.Value,
+			Type:  (*gwv1.HeaderMatchType)(h.Type),
+		})
+	}
+	return httpHeaders
+}
+
+func (h *RoutesIndex) convertGRPCBackendsToHTTP(kctx krt.HandlerContext, src ir.ObjectSource, backendRefs []gwv1.GRPCBackendRef) []ir.HttpBackendOrDelegate {
+	httpBackends := make([]ir.HttpBackendOrDelegate, 0, len(backendRefs))
+	for _, ref := range backendRefs {
+		backend, err := h.backends.GetBackendFromRef(kctx, src, ref.BackendObjectReference)
+		clusterName := "blackhole-cluster"
+		if backend != nil {
+			clusterName = backend.ClusterName()
+		} else if err == nil {
+			err = &NotFoundError{NotFoundObj: toFromBackendRef(src.Namespace, ref.BackendObjectReference)}
+		}
+		httpBackends = append(httpBackends, ir.HttpBackendOrDelegate{
+			Backend: &ir.BackendRefIR{
+				BackendObject: backend,
+				ClusterName:   clusterName,
+				Weight:        weight(ref.Weight),
+				Err:           err,
+			},
+		})
+	}
+	return httpBackends
 }
 
 func (h *RoutesIndex) transformHttpRoute(kctx krt.HandlerContext, i *gwv1.HTTPRoute) *ir.HttpRouteIR {
@@ -962,26 +965,6 @@ func (h *RoutesIndex) getBackends(kctx krt.HandlerContext, src ir.ObjectSource, 
 				Err:           err,
 			},
 			AttachedPolicies: extensionRefs,
-		})
-	}
-	return backends
-}
-
-func (h *RoutesIndex) getGRPCBackends(kctx krt.HandlerContext, src ir.ObjectSource, i []gwv1.GRPCBackendRef) []ir.BackendRefIR {
-	backends := make([]ir.BackendRefIR, 0, len(i))
-	for _, ref := range i {
-		backend, err := h.backends.GetBackendFromRef(kctx, src, ref.BackendObjectReference)
-		clusterName := "blackhole-cluster"
-		if backend != nil {
-			clusterName = backend.ClusterName()
-		} else if err == nil {
-			err = &NotFoundError{NotFoundObj: toFromBackendRef(src.Namespace, ref.BackendObjectReference)}
-		}
-		backends = append(backends, ir.BackendRefIR{
-			BackendObject: backend,
-			ClusterName:   clusterName,
-			Weight:        weight(ref.Weight),
-			Err:           err,
 		})
 	}
 	return backends
