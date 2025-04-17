@@ -503,12 +503,6 @@ func (c RouteWrapper) Equals(in RouteWrapper) bool {
 		} else {
 			return a.Equals(*bhttp)
 		}
-	case *ir.GRPCRouteIR:
-		if bhttp, ok := in.Route.(*ir.GRPCRouteIR); !ok {
-			return false
-		} else {
-			return a.Equals(*bhttp)
-		}
 	case *ir.TcpRouteIR:
 		if bhttp, ok := in.Route.(*ir.TcpRouteIR); !ok {
 			return false
@@ -733,7 +727,11 @@ func (h *RoutesIndex) transformGRPCRulesToHttp(kctx krt.HandlerContext, src ir.O
 			var pathType gwv1.PathMatchType
 
 			if match.Method != nil {
-				switch *match.Method.Type {
+				methodType := gwv1.GRPCMethodMatchExact // Default to exact match if type is not specified
+				if match.Method.Type != nil {
+					methodType = *match.Method.Type
+				}
+				switch methodType {
 				case gwv1.GRPCMethodMatchRegularExpression:
 					pathType = gwv1.PathMatchRegularExpression // Set type for all regex cases
 					switch {
@@ -770,11 +768,24 @@ func (h *RoutesIndex) transformGRPCRulesToHttp(kctx krt.HandlerContext, src ir.O
 			// Convert GRPC headers to HTTP headers
 			httpHeaders := make([]gwv1.HTTPHeaderMatch, 0, len(match.Headers))
 			for _, h := range match.Headers {
-				httpHeaders = append(httpHeaders, gwv1.HTTPHeaderMatch{
-					Name:  gwv1.HTTPHeaderName(h.Name),
-					Value: h.Value,
-					Type:  (*gwv1.HeaderMatchType)(h.Type),
-				})
+				headerType := gwv1.GRPCHeaderMatchExact // Default to exact match if type is not specified
+				if h.Type != nil {
+					headerType = *h.Type
+				}
+				switch headerType {
+				case gwv1.GRPCHeaderMatchExact:
+					httpHeaders = append(httpHeaders, gwv1.HTTPHeaderMatch{
+						Name:  gwv1.HTTPHeaderName(h.Name),
+						Value: h.Value,
+						Type:  (*gwv1.HeaderMatchType)(h.Type),
+					})
+				case gwv1.GRPCHeaderMatchRegularExpression:
+					httpHeaders = append(httpHeaders, gwv1.HTTPHeaderMatch{
+						Name:  gwv1.HTTPHeaderName(h.Name),
+						Value: h.Value,
+						Type:  (*gwv1.HeaderMatchType)(h.Type),
+					})
+				}
 			}
 
 			httpMatch := gwv1.HTTPRouteMatch{
