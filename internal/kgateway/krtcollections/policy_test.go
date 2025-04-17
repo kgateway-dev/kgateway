@@ -552,7 +552,8 @@ func preRouteIndex(t *testing.T, inputs []any) *RoutesIndex {
 	httproutes := krttest.GetMockCollection[*gwv1.HTTPRoute](mock)
 	tcpproutes := krttest.GetMockCollection[*gwv1a2.TCPRoute](mock)
 	tlsroutes := krttest.GetMockCollection[*gwv1a2.TLSRoute](mock)
-	rtidx := NewRoutesIndex(krtutil.KrtOptions{}, httproutes, tcpproutes, tlsroutes, policies, upstreams, refgrants)
+	grpcroutes := krttest.GetMockCollection[*gwv1.GRPCRoute](mock)
+	rtidx := NewRoutesIndex(krtutil.KrtOptions{}, httproutes, grpcroutes, tcpproutes, tlsroutes, policies, upstreams, refgrants)
 	services.WaitUntilSynced(nil)
 	for !rtidx.HasSynced() || !refgrants.HasSynced() {
 		time.Sleep(time.Second / 10)
