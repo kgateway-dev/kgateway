@@ -371,6 +371,16 @@ func (r *gatewayQueries) processRoute(
 					anyHostsMatch = true
 				}
 			}
+			if routeKind == wellknown.GRPCRouteKind {
+				if gr, ok := route.(*ir.HttpRouteIR); ok {
+					var ok bool
+					ok, hostnames = hostnameIntersect(&l, gr.GetHostnames())
+					if !ok {
+						continue
+					}
+					anyHostsMatch = true
+				}
+			}
 
 			// If all checks pass, add the route to the listener result
 			lr.Routes = append(lr.Routes, r.GetRouteChain(kctx, ctx, route, hostnames, ref))
