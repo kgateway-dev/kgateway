@@ -277,6 +277,18 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 				// obsGen will stay as-is...
 				maps.Copy(p.reports.TLSRoutes[rnn].Parents, rr.Parents)
 			}
+
+			for rnn, rr := range p.reports.GRPCRoutes {
+				// if we haven't encountered this route, just copy it over completely
+				old := merged.GRPCRoutes[rnn]
+				if old == nil {
+					merged.GRPCRoutes[rnn] = rr
+					continue
+				}
+				// else, let's merge our parentRefs into the existing map
+				// obsGen will stay as-is...
+				maps.Copy(p.reports.GRPCRoutes[rnn].Parents, rr.Parents)
+			}
 		}
 		return &report{merged}
 	})
@@ -440,6 +452,12 @@ func (s *ProxySyncer) syncRouteStatus(ctx context.Context, rm reports.ReportMap)
 				return nil
 			}
 			r.Status.RouteStatus = *status
+		case *gwv1.GRPCRoute:
+			status = rm.BuildRouteStatus(ctx, r, s.controllerName)
+			if status == nil || isRouteStatusEqual(&r.Status.RouteStatus, status) {
+				return nil
+			}
+			r.Status.RouteStatus = *status
 		default:
 			logger.Warnw(fmt.Sprintf("unsupported route type for %s", routeType), "route", route)
 			return nil
@@ -483,6 +501,16 @@ func (s *ProxySyncer) syncRouteStatus(ctx context.Context, rm reports.ReportMap)
 		})
 		if err != nil {
 			logger.Errorw("all attempts failed at updating TLSRoute status", "error", err, "route", rnn)
+		}
+	}
+
+	// Sync GRPCRoute statuses
+	for rnn := range rm.GRPCRoutes {
+		err := syncStatusWithRetry(wellknown.GRPCRouteKind, rnn, func() client.Object { return new(gwv1.GRPCRoute) }, func(route client.Object) error {
+			return buildAndUpdateStatus(route, wellknown.GRPCRouteKind)
+		})
+		if err != nil {
+			logger.Errorw("all attempts failed at updating GRPCRoute status", "error", err, "route", rnn)
 		}
 	}
 }

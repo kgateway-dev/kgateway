@@ -28,6 +28,7 @@ var (
 		wellknown.GatewayClassGVK,
 		wellknown.GatewayGVK,
 		wellknown.HTTPRouteGVK,
+		wellknown.GRPCRouteGVK,
 		wellknown.ReferenceGrantGVK,
 	}
 

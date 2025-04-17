@@ -18,6 +18,7 @@ const (
 	HTTPRouteKind        = "HTTPRoute"
 	TCPRouteKind         = "TCPRoute"
 	TLSRouteKind         = "TLSRoute"
+	GRPCRouteKind        = "GRPCRoute"
 	GatewayKind          = "Gateway"
 	GatewayClassKind     = "GatewayClass"
 	ReferenceGrantKind   = "ReferenceGrant"
@@ -51,6 +52,11 @@ var (
 		Group:   GatewayGroup,
 		Version: apiv1.GroupVersion.Version,
 		Kind:    HTTPRouteKind,
+	}
+	GRPCRouteGVK = schema.GroupVersionKind{
+		Group:   GatewayGroup,
+		Version: apiv1.GroupVersion.Version,
+		Kind:    GRPCRouteKind,
 	}
 	ReferenceGrantGVK = schema.GroupVersionKind{
 		Group:   GatewayGroup,

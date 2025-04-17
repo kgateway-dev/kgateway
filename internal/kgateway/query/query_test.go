@@ -790,6 +790,177 @@ var _ = Describe("Query", func() {
 		Expect(routes.ListenerResults["foo-tls"].Routes).To(HaveLen(1))
 		Expect(routes.ListenerResults["bar"].Routes).To(BeEmpty())
 	})
+
+	// GRPCRoute Tests
+	// It("should match GRPCRoutes for Listener", func() {
+	// 	gw := gw()
+	// 	gw.Spec.Listeners = []apiv1.Listener{
+	// 		{
+	// 			Name:     "foo-grpc",
+	// 			Protocol: apiv1.HTTPProtocolType, // GRPCRoute attaches to HTTP/HTTPS listeners
+	// 		},
+	// 	}
+
+	// 	gr := grpcRoute("test-grpc-route", gw.Namespace)
+	// 	gr.Spec = apiv1.GRPCRouteSpec{
+	// 		CommonRouteSpec: apiv1.CommonRouteSpec{
+	// 			ParentRefs: []apiv1.ParentReference{
+	// 				{
+	// 					Name: apiv1.ObjectName(gw.Name),
+	// 				},
+	// 			},
+	// 		},
+	// 	}
+
+	// 	gq := newQueries(gr)
+	// 	routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), gw)
+
+	// 	Expect(err).NotTo(HaveOccurred())
+	// 	Expect(routes.ListenerResults[string(gw.Spec.Listeners[0].Name)].Routes).To(HaveLen(1))
+	// 	Expect(routes.ListenerResults[string(gw.Spec.Listeners[0].Name)].Error).NotTo(HaveOccurred())
+	// })
+
+	// It("should get GRPCRoutes in other namespace for listener", func() {
+	// 	gw := gw()
+	// 	gw.Spec.Listeners = []apiv1.Listener{
+	// 		{
+	// 			Name:     "foo-grpc",
+	// 			Protocol: apiv1.HTTPProtocolType,
+	// 			AllowedRoutes: &apiv1.AllowedRoutes{
+	// 				Namespaces: &apiv1.RouteNamespaces{
+	// 					From: ptr.To(apiv1.NamespacesFromAll),
+	// 				},
+	// 			},
+	// 		},
+	// 	}
+
+	// 	gr := grpcRoute("test-grpc-route", "other-ns")
+	// 	gr.Spec = apiv1.GRPCRouteSpec{
+	// 		CommonRouteSpec: apiv1.CommonRouteSpec{
+	// 			ParentRefs: []apiv1.ParentReference{
+	// 				{
+	// 					Name:      apiv1.ObjectName(gw.Name),
+	// 					Namespace: ptr.To(apiv1.Namespace(gw.Namespace)),
+	// 				},
+	// 			},
+	// 		},
+	// 	}
+
+	// 	gq := newQueries(gr)
+	// 	routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), gw)
+
+	// 	Expect(err).NotTo(HaveOccurred())
+	// 	Expect(routes.ListenerResults["foo-grpc"].Error).NotTo(HaveOccurred())
+	// 	Expect(routes.ListenerResults["foo-grpc"].Routes).To(HaveLen(1))
+	// })
+
+	// It("should error when listeners don't match GRPCRoute", func() {
+	// 	gw := gw()
+	// 	gw.Spec.Listeners = []apiv1.Listener{
+	// 		{
+	// 			Name:     "foo-grpc",
+	// 			Protocol: apiv1.HTTPProtocolType,
+	// 			Port:     8080,
+	// 		},
+	// 		{
+	// 			Name:     "bar-grpc",
+	// 			Protocol: apiv1.HTTPProtocolType,
+	// 			Port:     8081,
+	// 		},
+	// 	}
+
+	// 	gr := grpcRoute("test-grpc-route", gw.Namespace)
+	// 	var badPort apiv1.PortNumber = 9999
+	// 	gr.Spec = apiv1.GRPCRouteSpec{
+	// 		CommonRouteSpec: apiv1.CommonRouteSpec{
+	// 			ParentRefs: []apiv1.ParentReference{
+	// 				{
+	// 					Name: apiv1.ObjectName(gw.Name),
+	// 					Port: &badPort,
+	// 				},
+	// 			},
+	// 		},
+	// 	}
+
+	// 	gq := newQueries(gr)
+	// 	routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), gw)
+
+	// 	Expect(err).NotTo(HaveOccurred())
+	// 	Expect(routes.RouteErrors).To(HaveLen(1))
+	// 	Expect(routes.RouteErrors[0].Error.E).To(MatchError(query.ErrNoMatchingParent))
+	// 	Expect(routes.RouteErrors[0].Error.Reason).To(Equal(apiv1.RouteReasonNoMatchingParent))
+	// 	Expect(routes.RouteErrors[0].ParentRef).To(Equal(gr.Spec.ParentRefs[0]))
+	// })
+
+	// It("should error when listener does not allow GRPCRoute kind", func() {
+	// 	gw := gw()
+	// 	gw.Spec.Listeners = []apiv1.Listener{
+	// 		{
+	// 			Name:     "foo-grpc",
+	// 			Protocol: apiv1.HTTPProtocolType,
+	// 			AllowedRoutes: &apiv1.AllowedRoutes{
+	// 				Kinds: []apiv1.RouteGroupKind{{Kind: "FakeKind"}},
+	// 			},
+	// 		},
+	// 	}
+
+	// 	gr := grpcRoute("test-grpc-route", gw.Namespace)
+	// 	gr.Spec = apiv1.GRPCRouteSpec{
+	// 		CommonRouteSpec: apiv1.CommonRouteSpec{
+	// 			ParentRefs: []apiv1.ParentReference{
+	// 				{
+	// 					Name: apiv1.ObjectName(gw.Name),
+	// 				},
+	// 			},
+	// 		},
+	// 	}
+
+	// 	gq := newQueries(gr)
+	// 	routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), gw)
+
+	// 	Expect(err).NotTo(HaveOccurred())
+	// 	Expect(routes.RouteErrors).To(HaveLen(1))
+	// 	Expect(routes.RouteErrors[0].Error.E).To(MatchError(query.ErrNotAllowedByListeners))
+	// })
+
+	// It("should allow GRPCRoute for one listener", func() {
+	// 	gw := gw()
+	// 	gw.Spec.Listeners = []apiv1.Listener{
+	// 		{
+	// 			Name:     "foo-grpc",
+	// 			Protocol: apiv1.HTTPProtocolType,
+	// 			AllowedRoutes: &apiv1.AllowedRoutes{
+	// 				Kinds: []apiv1.RouteGroupKind{{Kind: wellknown.GRPCRouteKind}},
+	// 			},
+	// 		},
+	// 		{
+	// 			Name:     "bar",
+	// 			Protocol: apiv1.HTTPProtocolType,
+	// 			AllowedRoutes: &apiv1.AllowedRoutes{
+	// 				Kinds: []apiv1.RouteGroupKind{{Kind: "FakeKind"}},
+	// 			},
+	// 		},
+	// 	}
+
+	// 	gr := grpcRoute("test-grpc-route", gw.Namespace)
+	// 	gr.Spec = apiv1.GRPCRouteSpec{
+	// 		CommonRouteSpec: apiv1.CommonRouteSpec{
+	// 			ParentRefs: []apiv1.ParentReference{
+	// 				{
+	// 					Name: apiv1.ObjectName(gw.Name),
+	// 				},
+	// 			},
+	// 		},
+	// 	}
+
+	// 	gq := newQueries(gr)
+	// 	routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), gw)
+
+	// 	Expect(err).NotTo(HaveOccurred())
+	// 	Expect(routes.RouteErrors).To(BeEmpty())
+	// 	Expect(routes.ListenerResults["foo-grpc"].Routes).To(HaveLen(1))
+	// 	Expect(routes.ListenerResults["bar"].Routes).To(BeEmpty())
+	// })
 })
 
 func refGrantSecret() *apiv1beta1.ReferenceGrant {
@@ -873,6 +1044,19 @@ func tlsRoute(name, ns string) *apiv1a2.TLSRoute {
 	}
 }
 
+func grpcRoute(name, ns string) *apiv1.GRPCRoute {
+	return &apiv1.GRPCRoute{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       wellknown.GRPCRouteKind,
+			APIVersion: apiv1.GroupVersion.String(),
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: ns,
+		},
+	}
+}
+
 func nsptr(s string) *apiv1.Namespace {
 	var ns apiv1.Namespace = apiv1.Namespace(s)
 	return &ns
@@ -899,7 +1083,8 @@ func newQueries(t test.Failer, initObjs ...client.Object) query.GatewayQueries {
 	httproutes := krttest.GetMockCollection[*gwv1.HTTPRoute](mock)
 	tcpproutes := krttest.GetMockCollection[*gwv1a2.TCPRoute](mock)
 	tlsroutes := krttest.GetMockCollection[*gwv1a2.TLSRoute](mock)
-	rtidx := krtcollections.NewRoutesIndex(krtutil.KrtOptions{}, httproutes, tcpproutes, tlsroutes, policies, upstreams, refgrants)
+	grpcroutes := krttest.GetMockCollection[*gwv1.GRPCRoute](mock)
+	rtidx := krtcollections.NewRoutesIndex(krtutil.KrtOptions{}, httproutes, grpcroutes, tcpproutes, tlsroutes, policies, upstreams, refgrants)
 	services.WaitUntilSynced(nil)
 
 	secretsCol := map[schema.GroupKind]krt.Collection[ir.Secret]{

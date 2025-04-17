@@ -168,6 +168,7 @@ func parentRefMatchListener(ref *apiv1.ParentReference, l *apiv1.Listener) bool 
 //   - HTTPRoute
 //   - TCPRoute
 //   - TLSRoute
+//   - GRPCRoute
 func getParentRefsForGw(gw *apiv1.Gateway, obj ir.Route) []apiv1.ParentReference {
 	var ret []apiv1.ParentReference
 

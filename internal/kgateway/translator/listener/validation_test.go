@@ -49,6 +49,10 @@ func TestValidate(t *testing.T) {
 					Group: GroupNameHelper(),
 					Kind:  "HTTPRoute",
 				},
+				{
+					Group: GroupNameHelper(),
+					Kind:  "GRPCRoute",
+				},
 			},
 		},
 	}
@@ -73,6 +77,10 @@ func TestSimpleGWNoHostname(t *testing.T) {
 				{
 					Group: GroupNameHelper(),
 					Kind:  "HTTPRoute",
+				},
+				{
+					Group: GroupNameHelper(),
+					Kind:  "GRPCRoute",
 				},
 			},
 		},
@@ -99,6 +107,10 @@ func TestSimpleGWDuplicateNoHostname(t *testing.T) {
 					Group: GroupNameHelper(),
 					Kind:  "HTTPRoute",
 				},
+				{
+					Group: GroupNameHelper(),
+					Kind:  "GRPCRoute",
+				},
 			},
 			Conditions: []metav1.Condition{
 				{
@@ -114,6 +126,10 @@ func TestSimpleGWDuplicateNoHostname(t *testing.T) {
 				{
 					Group: GroupNameHelper(),
 					Kind:  "HTTPRoute",
+				},
+				{
+					Group: GroupNameHelper(),
+					Kind:  "GRPCRoute",
 				},
 			},
 			Conditions: []metav1.Condition{
@@ -199,6 +215,10 @@ func TestMultiListener(t *testing.T) {
 					Group: GroupNameHelper(),
 					Kind:  "HTTPRoute",
 				},
+				{
+					Group: GroupNameHelper(),
+					Kind:  "GRPCRoute",
+				},
 			},
 		},
 		"http2": {
@@ -207,6 +227,10 @@ func TestMultiListener(t *testing.T) {
 				{
 					Group: GroupNameHelper(),
 					Kind:  "HTTPRoute",
+				},
+				{
+					Group: GroupNameHelper(),
+					Kind:  "GRPCRoute",
 				},
 			},
 		},
@@ -241,6 +265,10 @@ func TestMultiListenerExplicitRoutes(t *testing.T) {
 				{
 					Group: GroupNameHelper(),
 					Kind:  "HTTPRoute",
+				},
+				{
+					Group: GroupNameHelper(),
+					Kind:  "GRPCRoute",
 				},
 			},
 		},
@@ -302,6 +330,10 @@ func TestProtocolConflict(t *testing.T) {
 				{
 					Group: GroupNameHelper(),
 					Kind:  "HTTPRoute",
+				},
+				{
+					Group: GroupNameHelper(),
+					Kind:  "GRPCRoute",
 				},
 			},
 			Conditions: []metav1.Condition{
@@ -446,6 +478,10 @@ func TestHostnameConflict(t *testing.T) {
 					Group: GroupNameHelper(),
 					Kind:  "HTTPRoute",
 				},
+				{
+					Group: GroupNameHelper(),
+					Kind:  "GRPCRoute",
+				},
 			},
 			Conditions: []metav1.Condition{
 				{
@@ -461,6 +497,10 @@ func TestHostnameConflict(t *testing.T) {
 				{
 					Group: GroupNameHelper(),
 					Kind:  "HTTPRoute",
+				},
+				{
+					Group: GroupNameHelper(),
+					Kind:  "GRPCRoute",
 				},
 			},
 			Conditions: []metav1.Condition{
@@ -504,6 +544,10 @@ func TestHostnameConflictWithInvalidRoute(t *testing.T) {
 				{
 					Group: GroupNameHelper(),
 					Kind:  "HTTPRoute",
+				},
+				{
+					Group: GroupNameHelper(),
+					Kind:  "GRPCRoute",
 				},
 			},
 		},
@@ -557,6 +601,10 @@ func TestActualHostnameConflictWithInvalidRoute(t *testing.T) {
 					Group: GroupNameHelper(),
 					Kind:  "HTTPRoute",
 				},
+				{
+					Group: GroupNameHelper(),
+					Kind:  "GRPCRoute",
+				},
 			},
 			Conditions: []metav1.Condition{
 				{
@@ -589,6 +637,10 @@ func TestHostnameConflictWithExtraGoodListener(t *testing.T) {
 					Group: GroupNameHelper(),
 					Kind:  "HTTPRoute",
 				},
+				{
+					Group: GroupNameHelper(),
+					Kind:  "GRPCRoute",
+				},
 			},
 			Conditions: []metav1.Condition{
 				{
@@ -605,6 +657,10 @@ func TestHostnameConflictWithExtraGoodListener(t *testing.T) {
 					Group: GroupNameHelper(),
 					Kind:  "HTTPRoute",
 				},
+				{
+					Group: GroupNameHelper(),
+					Kind:  "GRPCRoute",
+				},
 			},
 			Conditions: []metav1.Condition{
 				{
@@ -620,6 +676,10 @@ func TestHostnameConflictWithExtraGoodListener(t *testing.T) {
 				{
 					Group: GroupNameHelper(),
 					Kind:  "HTTPRoute",
+				},
+				{
+					Group: GroupNameHelper(),
+					Kind:  "GRPCRoute",
 				},
 			},
 		},
@@ -713,6 +773,10 @@ func TestTCPProtocolConflict(t *testing.T) {
 				{
 					Group: GroupNameHelper(),
 					Kind:  "HTTPRoute",
+				},
+				{
+					Group: GroupNameHelper(),
+					Kind:  "GRPCRoute",
 				},
 			},
 			Conditions: []metav1.Condition{
