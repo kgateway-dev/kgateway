@@ -71,7 +71,7 @@ func translateGatewayHTTPRouteRulesUtil(
 	}
 
 	for ruleIdx, rule := range route.Rules {
-		if rule.Matches == nil { // TODO: should this check len() == 0?
+		if len(rule.Matches) == 0 {
 			// from the spec:
 			// If no matches are specified, the default is a prefix path match on “/”, which has the effect of matching every HTTP request.
 			rule.Matches = []gwv1.HTTPRouteMatch{{}}
