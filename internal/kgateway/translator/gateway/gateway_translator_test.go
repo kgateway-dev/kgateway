@@ -343,7 +343,7 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 				Name:      "example-gateway",
 			},
 		}),
-	FEntry(
+	Entry(
 		"grpc gateway with basic routing",
 		translatorTestCase{
 			inputFile:  "grpc-routing/basic.yaml",
