@@ -137,6 +137,19 @@ func AreReportsSuccess(gwNN types.NamespacedName, reportsMap reports.ReportMap) 
 		}
 	}
 
+	for nns, routeReport := range reportsMap.GRPCRoutes {
+		for ref, parentRefReport := range routeReport.Parents {
+			for _, c := range parentRefReport.Conditions {
+				// most route conditions true is good, except RouteConditionPartiallyInvalid
+				if c.Type == string(gwv1.RouteConditionPartiallyInvalid) && c.Status != metav1.ConditionFalse {
+					return fmt.Errorf("condition error for grpcroute: %v ref: %v condition: %v", nns, ref, c)
+				} else if c.Status != metav1.ConditionTrue {
+					return fmt.Errorf("condition error for grpcroute: %v ref: %v condition: %v", nns, ref, c)
+				}
+			}
+		}
+	}
+
 	for nns, gwReport := range reportsMap.Gateways {
 		for _, c := range gwReport.GetConditions() {
 			if c.Status != metav1.ConditionTrue {
@@ -200,6 +213,7 @@ func (tc TestCase) Run(t test.Failer, ctx context.Context) (map[types.Namespaced
 		gvr.KubernetesGateway_v1,
 		gvr.GatewayClass,
 		gvr.HTTPRoute_v1,
+		gvr.GRPCRoute,
 		gvr.Service,
 		gvr.Pod,
 		gvr.TCPRoute,
