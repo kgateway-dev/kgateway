@@ -82,7 +82,7 @@ func (r *ReportMap) BuildGWStatus(ctx context.Context, gw gwv1.Gateway) *gwv1.Ga
 // along with the newly built kgw status per ReportMap, sorted in deterministic fashion.
 // If the ReportMap does not have a RouteReport for the given route, e.g. because it did not encounter
 // the route during translation, or the object is an unsupported route kind, nil is returned.
-// Supported route types are: HTTPRoute, TCPRoute, TLSRoute
+// Supported route types are: HTTPRoute, TCPRoute, TLSRoute, GRPCRoute
 func (r *ReportMap) BuildRouteStatus(
 	ctx context.Context,
 	obj client.Object,
