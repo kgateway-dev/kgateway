@@ -1044,18 +1044,18 @@ func tlsRoute(name, ns string) *apiv1a2.TLSRoute {
 	}
 }
 
-func grpcRoute(name, ns string) *apiv1.GRPCRoute {
-	return &apiv1.GRPCRoute{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       wellknown.GRPCRouteKind,
-			APIVersion: apiv1.GroupVersion.String(),
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: ns,
-		},
-	}
-}
+// func grpcRoute(name, ns string) *apiv1.GRPCRoute {
+// 	return &apiv1.GRPCRoute{
+// 		TypeMeta: metav1.TypeMeta{
+// 			Kind:       wellknown.GRPCRouteKind,
+// 			APIVersion: apiv1.GroupVersion.String(),
+// 		},
+// 		ObjectMeta: metav1.ObjectMeta{
+// 			Name:      name,
+// 			Namespace: ns,
+// 		},
+// 	}
+// }
 
 func nsptr(s string) *apiv1.Namespace {
 	var ns apiv1.Namespace = apiv1.Namespace(s)
