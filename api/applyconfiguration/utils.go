@@ -137,6 +137,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.OpenAIConfigApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("Pod"):
 		return &apiv1alpha1.PodApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("Port"):
+		return &apiv1alpha1.PortApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("Priority"):
 		return &apiv1alpha1.PriorityApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("ProcessingMode"):

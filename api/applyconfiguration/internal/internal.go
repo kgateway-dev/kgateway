@@ -951,6 +951,16 @@ var schemaYAML = typed.YAMLObject(`types:
           elementType:
             namedType: io.k8s.api.core.v1.Toleration
           elementRelationship: atomic
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Port
+  map:
+    fields:
+    - name: nodePort
+      type:
+        scalar: numeric
+    - name: port
+      type:
+        scalar: numeric
+      default: 0
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Priority
   map:
     fields:
@@ -1102,6 +1112,12 @@ var schemaYAML = typed.YAMLObject(`types:
         map:
           elementType:
             scalar: string
+    - name: ports
+      type:
+        list:
+          elementType:
+            namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Port
+          elementRelationship: atomic
     - name: type
       type:
         scalar: string

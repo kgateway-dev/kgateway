@@ -86,6 +86,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Pod":                        schema_kgateway_v2_api_v1alpha1_Pod(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.PolicyAncestorStatus":       schema_kgateway_v2_api_v1alpha1_PolicyAncestorStatus(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.PolicyStatus":               schema_kgateway_v2_api_v1alpha1_PolicyStatus(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Port":                       schema_kgateway_v2_api_v1alpha1_Port(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Priority":                   schema_kgateway_v2_api_v1alpha1_Priority(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ProcessingMode":             schema_kgateway_v2_api_v1alpha1_ProcessingMode(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.PromptguardRequest":         schema_kgateway_v2_api_v1alpha1_PromptguardRequest(ref),
@@ -3267,6 +3268,34 @@ func schema_kgateway_v2_api_v1alpha1_PolicyStatus(ref common.ReferenceCallback) 
 	}
 }
 
+func schema_kgateway_v2_api_v1alpha1_Port(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"port": {
+						SchemaProps: spec.SchemaProps{
+							Description: "The port number to match on the Gateway",
+							Default:     0,
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
+					"nodePort": {
+						SchemaProps: spec.SchemaProps{
+							Description: "The NodePort to be used for the service. If not specified, a random port will be assigned by the Kubernetes API server.",
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
+				},
+				Required: []string{"port"},
+			},
+		},
+	}
+}
+
 func schema_kgateway_v2_api_v1alpha1_Priority(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -3688,9 +3717,24 @@ func schema_kgateway_v2_api_v1alpha1_Service(ref common.ReferenceCallback) commo
 							},
 						},
 					},
+					"ports": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Additional configuration for the service ports. The actual port numbers are specified in the Gateway resource.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Ref: ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Port"),
+									},
+								},
+							},
+						},
+					},
 				},
 			},
 		},
+		Dependencies: []string{
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Port"},
 	}
 }
 
