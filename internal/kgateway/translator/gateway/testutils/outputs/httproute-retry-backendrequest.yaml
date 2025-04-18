@@ -46,3 +46,4 @@ Routes:
           retryBackOff:
             baseInterval: 3s
           retryOn: cancelled,connect-failure,refused-stream,retriable-status-codes,unavailable
+        timeout: 9s
