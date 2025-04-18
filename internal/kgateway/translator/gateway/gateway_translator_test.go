@@ -375,6 +375,14 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 			Name:      "example-gateway",
 		},
 	}),
+	Entry("HTTPRoute with backend request timeout", translatorTestCase{
+		inputFile:  "httproute-timeout/backend-request.yaml",
+		outputFile: "httproute-timeout-backendrequest.yaml",
+		gwNN: types.NamespacedName{
+			Namespace: "default",
+			Name:      "example-gateway",
+		},
+	}),
 	Entry("HTTPRoute with retry policy", translatorTestCase{
 		inputFile:  "httproute-retry/manifest.yaml",
 		outputFile: "httproute-retry-proxy.yaml",
