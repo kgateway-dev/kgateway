@@ -131,12 +131,15 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(ctx context.Context,
 		out.Action = h.translateRouteAction(ctx, in, out, nil)
 	}
 
-	// Set timeout from the HTTPRouteRule if specified
-	// `out.GetAction() != nil` is a temp fix to avoid panic; can remove when timeout delegation is implemented https://github.com/kgateway-dev/kgateway/issues/11043
-	if in.Timeouts != nil && in.Timeouts.Request != nil && out.GetAction() != nil {
-		applyRouteTimeout(ctx, out, in.Timeouts.Request)
+	// Apply timeout from the HTTPRouteRule if specified
+	if in.Timeouts != nil && out.GetAction() != nil {
+		err := applyRouteTimeout(out, in.Timeouts, in.Retry != nil)
+		if err != nil {
+			contextutils.LoggerFrom(ctx).Error("invalid HTTPRoute timeout", zap.Error(err))
+		}
 	}
 
+	// Apply retry policy from the HTTPRouteRule if specified
 	if in.Retry != nil && out.GetAction() != nil {
 		applyRouteRetry(out, in.Retry)
 	}
@@ -191,13 +194,40 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(ctx context.Context,
 	return out
 }
 
-func applyRouteTimeout(ctx context.Context, route *envoy_config_route_v3.Route, timeout *gwv1.Duration) {
-	duration, err := time.ParseDuration(string(*timeout))
-	if err == nil {
-		route.GetRoute().Timeout = durationpb.New(duration)
-	} else {
-		contextutils.LoggerFrom(ctx).Error("invalid HTTPRoute timeout", zap.Error(err))
+// Apply timeout based on the specified requirements
+func applyRouteTimeout(route *envoy_config_route_v3.Route, timeout *gwv1.HTTPRouteTimeouts, hasRetry bool) error {
+	var timeoutStr string
+
+	// Apply the required timeout selection logic
+	switch {
+	case timeout.BackendRequest != nil && timeout.Request != nil:
+		// if both are set, prefer BackendRequest unless retry is not nil
+		// this is because backend request timeout is more specific
+		// but if retry is set, backendRequest will be used as the per try timeout,
+		// so we need to use request timeout as the overall route timeout
+		if hasRetry {
+			timeoutStr = string(*timeout.Request)
+		} else {
+			timeoutStr = string(*timeout.BackendRequest)
+		}
+	case timeout.BackendRequest != nil:
+		// Only BackendRequest is set
+		timeoutStr = string(*timeout.BackendRequest)
+	case timeout.Request != nil:
+		// Only Request is set
+		timeoutStr = string(*timeout.Request)
 	}
+
+	if timeoutStr == "" {
+		return nil
+	}
+
+	duration, err := time.ParseDuration(timeoutStr)
+	if err != nil {
+		return err
+	}
+	route.GetRoute().Timeout = durationpb.New(duration)
+	return nil
 }
 
 // applyRouteRetry applies the retry policy to the route.
