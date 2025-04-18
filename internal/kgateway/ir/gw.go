@@ -49,7 +49,22 @@ type PolicyAtt struct {
 	// It can be used to determine which PolicyAtt a merged field came from.
 	MergeOrigins map[string]*AttachedPolicyRef
 
+	EnablePolicyOverrideByDelegatee bool
+
+	// HierarchicalPriority is the priority of the policy in an inheritance hierarchy.
+	// A higher value means higher priority. It is used to accurately merge policies
+	// that are at different levels in the config tree hierarchy.
+	HierarchicalPriority int
+
 	Errors []error
+}
+
+type PolicyAttachmentOpts func(*PolicyAtt)
+
+func WithPolicyOverrideByDelegatee(enable bool) PolicyAttachmentOpts {
+	return func(p *PolicyAtt) {
+		p.EnablePolicyOverrideByDelegatee = enable
+	}
 }
 
 func (c PolicyAtt) Obj() PolicyIR {
@@ -109,12 +124,15 @@ func (a *AttachedPolicies) Append(l ...AttachedPolicies) {
 }
 
 // Prepend prepends the policies in l in the given to the policies in a.
-func (a *AttachedPolicies) Prepend(l ...AttachedPolicies) {
+func (a *AttachedPolicies) Prepend(hierarchicalPriority int, l ...AttachedPolicies) {
 	// iterate in the reverse order so that the input order in l is preserved at the end
 	for i := len(l) - 1; i >= 0; i-- {
 		for k, v := range l[i].Policies {
 			if a.Policies == nil {
 				a.Policies = make(map[schema.GroupKind][]PolicyAtt)
+			}
+			for j := range v {
+				v[j].HierarchicalPriority = hierarchicalPriority
 			}
 			a.Policies[k] = append(v, a.Policies[k]...)
 		}

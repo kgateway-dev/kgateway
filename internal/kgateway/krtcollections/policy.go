@@ -13,6 +13,7 @@ import (
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
+	apiannotations "github.com/kgateway-dev/kgateway/v2/api/annotations"
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/backendref"
@@ -702,13 +703,19 @@ func (h *RoutesIndex) transformHttpRoute(kctx krt.HandlerContext, i *gwv1.HTTPRo
 		Name:      i.Name,
 	}
 
+	enablePolicyOverrideByDelegatee := i.Annotations[apiannotations.DelegationEnablePolicyOverride] == apiannotations.DelegationEnablePolicyOverrideValueAllFields
+
 	return &ir.HttpRouteIR{
-		ObjectSource:     src,
-		SourceObject:     i,
-		ParentRefs:       i.Spec.ParentRefs,
-		Hostnames:        tostr(i.Spec.Hostnames),
-		Rules:            h.transformRules(kctx, src, i.Spec.Rules),
-		AttachedPolicies: toAttachedPolicies(h.policies.getTargetingPolicies(kctx, extensionsplug.RouteAttachmentPoint, src, "")),
+		ObjectSource: src,
+		SourceObject: i,
+		ParentRefs:   i.Spec.ParentRefs,
+		Hostnames:    tostr(i.Spec.Hostnames),
+		Rules: h.transformRules(
+			kctx, src, i.Spec.Rules, ir.WithPolicyOverrideByDelegatee(enablePolicyOverrideByDelegatee)),
+		AttachedPolicies: toAttachedPolicies(
+			h.policies.getTargetingPolicies(kctx, extensionsplug.RouteAttachmentPoint, src, ""),
+			ir.WithPolicyOverrideByDelegatee(enablePolicyOverrideByDelegatee),
+		),
 	}
 }
 
@@ -716,13 +723,14 @@ func (h *RoutesIndex) transformRules(
 	kctx krt.HandlerContext,
 	src ir.ObjectSource,
 	i []gwv1.HTTPRouteRule,
+	opts ...ir.PolicyAttachmentOpts,
 ) []ir.HttpRouteRuleIR {
 	rules := make([]ir.HttpRouteRuleIR, 0, len(i))
 	for _, r := range i {
 		extensionRefs := h.getExtensionRefs(kctx, src.Namespace, r.Filters)
 		var policies ir.AttachedPolicies
 		if r.Name != nil {
-			policies = toAttachedPolicies(h.policies.getTargetingPolicies(kctx, extensionsplug.RouteAttachmentPoint, src, string(*r.Name)))
+			policies = toAttachedPolicies(h.policies.getTargetingPolicies(kctx, extensionsplug.RouteAttachmentPoint, src, string(*r.Name)), opts...)
 		}
 		rulePolicies := h.getBuiltInRulePolicies(r)
 		policies.Append(rulePolicies)
@@ -885,7 +893,7 @@ func weight(w *int32) uint32 {
 	return uint32(*w)
 }
 
-func toAttachedPolicies(policies []ir.PolicyAtt) ir.AttachedPolicies {
+func toAttachedPolicies(policies []ir.PolicyAtt, opts ...ir.PolicyAttachmentOpts) ir.AttachedPolicies {
 	ret := ir.AttachedPolicies{
 		Policies: map[schema.GroupKind][]ir.PolicyAtt{},
 	}
@@ -894,12 +902,16 @@ func toAttachedPolicies(policies []ir.PolicyAtt) ir.AttachedPolicies {
 			Group: p.GroupKind.Group,
 			Kind:  p.GroupKind.Kind,
 		}
-		// TODO: do not create a new PolicyAtt, just use existing `p`
+		// Create a new PolicyAtt instead of using `p` because the PolicyAttchmentOpts are per-route
+		// and not encoded in `p`
 		polAtt := ir.PolicyAtt{
 			PolicyIr:  p.PolicyIr,
 			PolicyRef: p.PolicyRef,
 			GroupKind: gk,
 			Errors:    p.Errors,
+		}
+		for _, o := range opts {
+			o(&polAtt)
 		}
 		ret.Policies[gk] = append(ret.Policies[gk], polAtt)
 	}

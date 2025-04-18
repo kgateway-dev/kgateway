@@ -219,8 +219,10 @@ func (h *httpRouteConfigurationTranslator) runRoutePlugins(
 		Policies: map[schema.GroupKind][]ir.PolicyAtt{},
 	}
 	delegatingParent := in.DelegatingParent
+	var hierarchicalPriority int
 	for delegatingParent != nil {
-		attachedPolicies.Prepend(
+		hierarchicalPriority++
+		attachedPolicies.Prepend(hierarchicalPriority,
 			delegatingParent.ExtensionRefs, delegatingParent.AttachedPolicies, delegatingParent.Parent.AttachedPolicies)
 		delegatingParent = delegatingParent.DelegatingParent
 	}

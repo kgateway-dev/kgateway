@@ -87,15 +87,6 @@ type trafficPolicySpecIr struct {
 	errors                     []error
 }
 
-func (d *trafficPolicy) isSet() bool {
-	if d == nil {
-		return false
-	}
-
-	return d.spec.AI != nil || d.spec.ExtProc != nil || d.spec.transform != nil || d.spec.rustformation != nil ||
-		d.spec.extAuth != nil || d.spec.localRateLimit != nil
-}
-
 func (d *trafficPolicy) CreationTime() time.Time {
 	return d.ct
 }
@@ -605,9 +596,18 @@ func (p *trafficPolicyPluginGwPass) SupportsPolicyMerge() bool {
 	return true
 }
 
-// trafficPolicy objects are merged using an Augmented merge strategy, i.e., a lower priority policy
-// can only augment fields set by a higher priority policy and never override them.
-// TODO: when the policy override API is implemented, derive the merge strategy from the PolicyAtt
+// trafficPolicy merges the given policy ordered from high to low priority (both hierarchically
+// and within the same hierarchy) based on the constraints defined per PolicyAtt.
+//
+// It iterates policies in reverse order (low to high) to ensure higher priority policies can
+// always use an OverridableMerge strategy to override lower priority ones. Iterating policies
+// in the given priority order (high to low) requires more complex merging for delegated chains
+// because policies anywhere in the chain may enable policy overrides for their children but we
+// still need to ensure these children cannot override any policies set by their ancestors that
+// are not marked as overridable, i.e., (r1,p1)-delegate->(r2,p2)-delegate->(r3,p3) where
+// r=route p=policy needs to ensure p3 does not override p1 (assuming p1 does not enable overrides)
+// even if p2 allows overrides. This is easier to guarantee by using an OverridableMerge strategy
+// by merging in higher priority policies with different HierarchicalPriority.
 func mergePolicies(policies []ir.PolicyAtt) ir.PolicyAtt {
 	var out ir.PolicyAtt
 	if len(policies) == 0 {
@@ -628,28 +628,23 @@ func mergePolicies(policies []ir.PolicyAtt) ir.PolicyAtt {
 	}
 	merged := out.PolicyIr.(*trafficPolicy)
 
-	opts := policy.MergeOptions{
-		Strategy: policy.AugmentedMerge,
-	}
-
-	for i := range policies {
-		mergeOpts := opts
-		if i == 0 {
-			mergeOpts.Strategy = policy.OverridableMerge
+	for i := len(policies) - 1; i >= 0; i-- {
+		mergeOpts := policy.MergeOptions{
+			Strategy: policy.OverridableMerge,
+		}
+		// If merging a policy lower in the hierarchy with a policy higher in the hierarchy AND
+		// the policy higher in the hierarchy enables policy overrides, use an AugmentedMerge strategy
+		// to preserve existing fields set by lower levels.
+		// NOTE: the HierarchicalPriority check is necessary to prevent enabling override behavior among
+		// policies in the same hierarchy, e.g., ExtensionRef vs TargetRef policy attached to the same route, as
+		// EnablePolicyOverrideByDelegatee strictly applies to parent->child policy inheritance and is not applicable
+		// outside delegated policy inheritance.
+		if out.HierarchicalPriority < policies[i].HierarchicalPriority && policies[i].EnablePolicyOverrideByDelegatee {
+			mergeOpts.Strategy = policy.AugmentedMerge
 		}
 
 		p2 := policies[i].PolicyIr.(*trafficPolicy)
 		p2Ref := policies[i].PolicyRef
-
-		if merged.Equals(p2) {
-			continue
-		}
-
-		if mergeOpts.Strategy == policy.AtomicMerge && merged.isSet() {
-			// During an atomic merge, a lower priority policy cannot merge into a higher priority policy
-			// that is already set
-			continue
-		}
 
 		if policy.IsMergeable(merged.spec.AI, p2.spec.AI, mergeOpts) {
 			merged.spec.AI = p2.spec.AI
@@ -676,6 +671,8 @@ func mergePolicies(policies []ir.PolicyAtt) ir.PolicyAtt {
 			merged.spec.localRateLimit = p2.spec.localRateLimit
 			out.MergeOrigins["rateLimit"] = p2Ref
 		}
+
+		out.HierarchicalPriority = policies[i].HierarchicalPriority
 	}
 
 	return out
