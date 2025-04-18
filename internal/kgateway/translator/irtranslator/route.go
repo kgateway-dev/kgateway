@@ -201,10 +201,10 @@ func applyRouteTimeout(route *envoy_config_route_v3.Route, timeout *gwv1.HTTPRou
 	// Apply the required timeout selection logic
 	switch {
 	case timeout.BackendRequest != nil && timeout.Request != nil:
-		// if both are set, prefer BackendRequest unless retry is not nil
-		// this is because backend request timeout is more specific
-		// but if retry is set, backendRequest will be used as the per try timeout,
-		// so we need to use request timeout as the overall route timeout
+		// When both timeouts are set:
+		// - Without retry: Use BackendRequest, since it's more specific (shorter)
+		// - With retry: Use Request as the overall route timeout since
+		//   BackendRequest will be applied to each retry attempt
 		if hasRetry {
 			timeoutStr = string(*timeout.Request)
 		} else {
