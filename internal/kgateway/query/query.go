@@ -11,7 +11,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	apiv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
@@ -31,7 +30,7 @@ var (
 )
 
 type Error struct {
-	Reason apiv1.RouteConditionReason
+	Reason gwv1.RouteConditionReason
 	E      error
 }
 
@@ -99,7 +98,7 @@ func (f FromObject) Namespace() string {
 }
 
 type GatewayQueries interface {
-	GetSecretForRef(kctx krt.HandlerContext, ctx context.Context, fromGk schema.GroupKind, fromns string, secretRef apiv1.SecretObjectReference) (*ir.Secret, error)
+	GetSecretForRef(kctx krt.HandlerContext, ctx context.Context, fromGk schema.GroupKind, fromns string, secretRef gwv1.SecretObjectReference) (*ir.Secret, error)
 
 	// GetRoutesForGateway finds the top level xRoutes attached to the provided Gateway
 	GetRoutesForGateway(kctx krt.HandlerContext, ctx context.Context, gw *gwv1.Gateway) (*RoutesForGwResult, error)
@@ -125,7 +124,7 @@ type ListenerResult struct {
 
 type RouteError struct {
 	Route     ir.Route
-	ParentRef apiv1.ParentReference
+	ParentRef gwv1.ParentReference
 	Error     Error
 }
 
@@ -152,7 +151,7 @@ type gatewayQueries struct {
 	collections *common.CommonCollections
 }
 
-func parentRefMatchListener(ref *apiv1.ParentReference, l *apiv1.Listener) bool {
+func parentRefMatchListener(ref *gwv1.ParentReference, l *gwv1.Listener) bool {
 	if ref != nil && ref.Port != nil && *ref.Port != l.Port {
 		return false
 	}
@@ -168,8 +167,8 @@ func parentRefMatchListener(ref *apiv1.ParentReference, l *apiv1.Listener) bool 
 //   - HTTPRoute
 //   - TCPRoute
 //   - TLSRoute
-func getParentRefsForGw(gw *apiv1.Gateway, obj ir.Route) []apiv1.ParentReference {
-	var ret []apiv1.ParentReference
+func getParentRefsForGw(gw *gwv1.Gateway, obj ir.Route) []gwv1.ParentReference {
+	var ret []gwv1.ParentReference
 
 	for _, pRef := range obj.GetParentRefs() {
 		if isParentRefForGw(&pRef, gw, obj.GetNamespace()) {
@@ -181,12 +180,12 @@ func getParentRefsForGw(gw *apiv1.Gateway, obj ir.Route) []apiv1.ParentReference
 }
 
 // isParentRefForGw checks if a ParentReference is associated with the provided Gateway.
-func isParentRefForGw(pRef *apiv1.ParentReference, gw *apiv1.Gateway, defaultNs string) bool {
+func isParentRefForGw(pRef *gwv1.ParentReference, gw *gwv1.Gateway, defaultNs string) bool {
 	if gw == nil || pRef == nil {
 		return false
 	}
 
-	if pRef.Group != nil && *pRef.Group != apiv1.GroupName {
+	if pRef.Group != nil && *pRef.Group != gwv1.GroupName {
 		return false
 	}
 	if pRef.Kind != nil && *pRef.Kind != wellknown.GatewayKind {
@@ -201,7 +200,7 @@ func isParentRefForGw(pRef *apiv1.ParentReference, gw *apiv1.Gateway, defaultNs 
 	return ns == gw.Namespace && string(pRef.Name) == gw.Name
 }
 
-func hostnameIntersect(l *apiv1.Listener, routeHostnames []string) (bool, []string) {
+func hostnameIntersect(l *gwv1.Listener, routeHostnames []string) (bool, []string) {
 	var hostnames []string
 	if l == nil {
 		return false, hostnames
@@ -247,7 +246,7 @@ func hostnameIntersect(l *apiv1.Listener, routeHostnames []string) (bool, []stri
 	return false, nil
 }
 
-func (r *gatewayQueries) GetSecretForRef(kctx krt.HandlerContext, ctx context.Context, fromGk schema.GroupKind, fromns string, secretRef apiv1.SecretObjectReference) (*ir.Secret, error) {
+func (r *gatewayQueries) GetSecretForRef(kctx krt.HandlerContext, ctx context.Context, fromGk schema.GroupKind, fromns string, secretRef gwv1.SecretObjectReference) (*ir.Secret, error) {
 	f := krtcollections.From{
 		GroupKind: fromGk,
 		Namespace: fromns,

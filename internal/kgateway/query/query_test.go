@@ -14,9 +14,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
-	apiv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	apiv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
@@ -36,12 +34,12 @@ var _ = Describe("Query", func() {
 		It("should get secret from different ns if we have a ref grant", func() {
 			rg := refGrantSecret()
 			gq := newQueries(GinkgoT(), secret("default2"), rg)
-			ref := apiv1.SecretObjectReference{
+			ref := gwv1.SecretObjectReference{
 				Name:      "foo",
 				Namespace: nsptr("default2"),
 			}
 			fromGk := schema.GroupKind{
-				Group: apiv1.GroupName,
+				Group: gwv1.GroupName,
 				Kind:  "Gateway",
 			}
 			backend, err := gq.GetSecretForRef(krt.TestingDummyContext{}, context.Background(), fromGk, "default", ref)
@@ -55,14 +53,14 @@ var _ = Describe("Query", func() {
 	Describe("Get Routes", func() {
 		It("should get http routes for listener", func() {
 			gwWithListener := gw()
-			gwWithListener.Spec.Listeners = []apiv1.Listener{
+			gwWithListener.Spec.Listeners = []gwv1.Listener{
 				{
 					Name:     "foo",
-					Protocol: apiv1.HTTPProtocolType,
+					Protocol: gwv1.HTTPProtocolType,
 				},
 			}
 			hr := httpRoute()
-			hr.Spec.ParentRefs = []apiv1.ParentReference{
+			hr.Spec.ParentRefs = []gwv1.ParentReference{
 				{
 					Name: "test",
 				},
@@ -79,13 +77,13 @@ var _ = Describe("Query", func() {
 
 		It("should get http routes in other ns for listener", func() {
 			gwWithListener := gw()
-			all := apiv1.NamespacesFromAll
-			gwWithListener.Spec.Listeners = []apiv1.Listener{
+			all := gwv1.NamespacesFromAll
+			gwWithListener.Spec.Listeners = []gwv1.Listener{
 				{
 					Name:     "foo",
-					Protocol: apiv1.HTTPProtocolType,
-					AllowedRoutes: &apiv1.AllowedRoutes{
-						Namespaces: &apiv1.RouteNamespaces{
+					Protocol: gwv1.HTTPProtocolType,
+					AllowedRoutes: &gwv1.AllowedRoutes{
+						Namespaces: &gwv1.RouteNamespaces{
 							From: &all,
 						},
 					},
@@ -93,7 +91,7 @@ var _ = Describe("Query", func() {
 			}
 			hr := httpRoute()
 			hr.Namespace = "default2"
-			hr.Spec.ParentRefs = []apiv1.ParentReference{
+			hr.Spec.ParentRefs = []gwv1.ParentReference{
 				{
 					Name:      "test",
 					Namespace: nsptr("default"),
@@ -112,14 +110,14 @@ var _ = Describe("Query", func() {
 
 		It("should ignore http routes for wrong kind", func() {
 			gwWithListener := gw()
-			gwWithListener.Spec.Listeners = []apiv1.Listener{
+			gwWithListener.Spec.Listeners = []gwv1.Listener{
 				{
 					Name:     "foo",
-					Protocol: apiv1.HTTPProtocolType,
+					Protocol: gwv1.HTTPProtocolType,
 				},
 			}
 			hr := httpRoute()
-			hr.Spec.ParentRefs = []apiv1.ParentReference{
+			hr.Spec.ParentRefs = []gwv1.ParentReference{
 				{
 					Name:  "test",
 					Group: ptr.To(gwv1.Group("")),
@@ -136,13 +134,13 @@ var _ = Describe("Query", func() {
 
 		It("should error with invalid label selector", func() {
 			gwWithListener := gw()
-			selector := apiv1.NamespacesFromSelector
-			gwWithListener.Spec.Listeners = []apiv1.Listener{
+			selector := gwv1.NamespacesFromSelector
+			gwWithListener.Spec.Listeners = []gwv1.Listener{
 				{
 					Name:     "foo",
-					Protocol: apiv1.HTTPProtocolType,
-					AllowedRoutes: &apiv1.AllowedRoutes{
-						Namespaces: &apiv1.RouteNamespaces{
+					Protocol: gwv1.HTTPProtocolType,
+					AllowedRoutes: &gwv1.AllowedRoutes{
+						Namespaces: &gwv1.RouteNamespaces{
 							From:     &selector,
 							Selector: nil,
 						},
@@ -150,8 +148,8 @@ var _ = Describe("Query", func() {
 				},
 			}
 			hr := httpRoute()
-			hr.Spec.ParentRefs = append(hr.Spec.ParentRefs, apiv1.ParentReference{
-				Name: apiv1.ObjectName(gwWithListener.Name),
+			hr.Spec.ParentRefs = append(hr.Spec.ParentRefs, gwv1.ParentReference{
+				Name: gwv1.ObjectName(gwWithListener.Name),
 			})
 
 			gq := newQueries(GinkgoT(), hr)
@@ -163,25 +161,25 @@ var _ = Describe("Query", func() {
 
 		It("should error when listeners do not allow route", func() {
 			gwWithListener := gw()
-			gwWithListener.Spec.Listeners = []apiv1.Listener{
+			gwWithListener.Spec.Listeners = []gwv1.Listener{
 				{
 					Name:     "foo",
-					Protocol: apiv1.HTTPProtocolType,
-					AllowedRoutes: &apiv1.AllowedRoutes{
-						Kinds: []apiv1.RouteGroupKind{{Kind: "FakeKind"}},
+					Protocol: gwv1.HTTPProtocolType,
+					AllowedRoutes: &gwv1.AllowedRoutes{
+						Kinds: []gwv1.RouteGroupKind{{Kind: "FakeKind"}},
 					},
 				},
 				{
 					Name:     "foo2",
-					Protocol: apiv1.HTTPProtocolType,
-					AllowedRoutes: &apiv1.AllowedRoutes{
-						Kinds: []apiv1.RouteGroupKind{{Kind: "FakeKind2"}},
+					Protocol: gwv1.HTTPProtocolType,
+					AllowedRoutes: &gwv1.AllowedRoutes{
+						Kinds: []gwv1.RouteGroupKind{{Kind: "FakeKind2"}},
 					},
 				},
 			}
 			hr := httpRoute()
-			hr.Spec.ParentRefs = append(hr.Spec.ParentRefs, apiv1.ParentReference{
-				Name: apiv1.ObjectName(gwWithListener.Name),
+			hr.Spec.ParentRefs = append(hr.Spec.ParentRefs, gwv1.ParentReference{
+				Name: gwv1.ObjectName(gwWithListener.Name),
 			})
 
 			gq := newQueries(GinkgoT(), hr)
@@ -189,28 +187,28 @@ var _ = Describe("Query", func() {
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(routes.RouteErrors[0].Error.E).To(MatchError(query.ErrNotAllowedByListeners))
-			Expect(routes.RouteErrors[0].Error.Reason).To(Equal(apiv1.RouteReasonNotAllowedByListeners))
+			Expect(routes.RouteErrors[0].Error.Reason).To(Equal(gwv1.RouteReasonNotAllowedByListeners))
 			Expect(routes.RouteErrors[0].ParentRef).To(Equal(hr.Spec.ParentRefs[0]))
 		})
 
 		It("should NOT error when one listener allows route", func() {
 			gwWithListener := gw()
-			gwWithListener.Spec.Listeners = []apiv1.Listener{
+			gwWithListener.Spec.Listeners = []gwv1.Listener{
 				{
 					Name:     "foo",
-					Protocol: apiv1.HTTPProtocolType,
-					AllowedRoutes: &apiv1.AllowedRoutes{
-						Kinds: []apiv1.RouteGroupKind{{Kind: "FakeKind"}},
+					Protocol: gwv1.HTTPProtocolType,
+					AllowedRoutes: &gwv1.AllowedRoutes{
+						Kinds: []gwv1.RouteGroupKind{{Kind: "FakeKind"}},
 					},
 				},
 				{
 					Name:     "foo2",
-					Protocol: apiv1.HTTPProtocolType,
+					Protocol: gwv1.HTTPProtocolType,
 				},
 			}
 			hr := httpRoute()
-			hr.Spec.ParentRefs = append(hr.Spec.ParentRefs, apiv1.ParentReference{
-				Name: apiv1.ObjectName(gwWithListener.Name),
+			hr.Spec.ParentRefs = append(hr.Spec.ParentRefs, gwv1.ParentReference{
+				Name: gwv1.ObjectName(gwWithListener.Name),
 			})
 
 			gq := newQueries(GinkgoT(), hr)
@@ -226,22 +224,22 @@ var _ = Describe("Query", func() {
 
 		It("should error when listeners don't match route", func() {
 			gwWithListener := gw()
-			gwWithListener.Spec.Listeners = []apiv1.Listener{
+			gwWithListener.Spec.Listeners = []gwv1.Listener{
 				{
 					Name:     "foo",
-					Protocol: apiv1.HTTPProtocolType,
+					Protocol: gwv1.HTTPProtocolType,
 					Port:     80,
 				},
 				{
 					Name:     "bar",
-					Protocol: apiv1.HTTPProtocolType,
+					Protocol: gwv1.HTTPProtocolType,
 					Port:     81,
 				},
 			}
 			hr := httpRoute()
-			var port apiv1.PortNumber = 1234
-			hr.Spec.ParentRefs = append(hr.Spec.ParentRefs, apiv1.ParentReference{
-				Name: apiv1.ObjectName(gwWithListener.Name),
+			var port gwv1.PortNumber = 1234
+			hr.Spec.ParentRefs = append(hr.Spec.ParentRefs, gwv1.ParentReference{
+				Name: gwv1.ObjectName(gwWithListener.Name),
 				Port: &port,
 			})
 
@@ -250,28 +248,28 @@ var _ = Describe("Query", func() {
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(routes.RouteErrors[0].Error.E).To(MatchError(query.ErrNoMatchingParent))
-			Expect(routes.RouteErrors[0].Error.Reason).To(Equal(apiv1.RouteReasonNoMatchingParent))
+			Expect(routes.RouteErrors[0].Error.Reason).To(Equal(gwv1.RouteReasonNoMatchingParent))
 			Expect(routes.RouteErrors[0].ParentRef).To(Equal(hr.Spec.ParentRefs[0]))
 		})
 
 		It("should NOT error when one listener match route", func() {
 			gwWithListener := gw()
-			gwWithListener.Spec.Listeners = []apiv1.Listener{
+			gwWithListener.Spec.Listeners = []gwv1.Listener{
 				{
 					Name:     "foo",
-					Protocol: apiv1.HTTPProtocolType,
+					Protocol: gwv1.HTTPProtocolType,
 					Port:     80,
 				},
 				{
 					Name:     "foo2",
-					Protocol: apiv1.HTTPProtocolType,
+					Protocol: gwv1.HTTPProtocolType,
 					Port:     81,
 				},
 			}
 			hr := httpRoute()
-			var port apiv1.PortNumber = 81
-			hr.Spec.ParentRefs = append(hr.Spec.ParentRefs, apiv1.ParentReference{
-				Name: apiv1.ObjectName(gwWithListener.Name),
+			var port gwv1.PortNumber = 81
+			hr.Spec.ParentRefs = append(hr.Spec.ParentRefs, gwv1.ParentReference{
+				Name: gwv1.ObjectName(gwWithListener.Name),
 				Port: &port,
 			})
 
@@ -286,26 +284,26 @@ var _ = Describe("Query", func() {
 
 		It("should error when listeners hostnames don't intersect", func() {
 			gwWithListener := gw()
-			var hostname apiv1.Hostname = "foo.com"
-			var hostname2 apiv1.Hostname = "foo2.com"
-			gwWithListener.Spec.Listeners = []apiv1.Listener{
+			var hostname gwv1.Hostname = "foo.com"
+			var hostname2 gwv1.Hostname = "foo2.com"
+			gwWithListener.Spec.Listeners = []gwv1.Listener{
 				{
 					Name:     "foo",
-					Protocol: apiv1.HTTPProtocolType,
+					Protocol: gwv1.HTTPProtocolType,
 					Port:     80,
 					Hostname: &hostname,
 				},
 				{
 					Name:     "foo2",
-					Protocol: apiv1.HTTPProtocolType,
+					Protocol: gwv1.HTTPProtocolType,
 					Port:     80,
 					Hostname: &hostname2,
 				},
 			}
 			hr := httpRoute()
 			hr.Spec.Hostnames = append(hr.Spec.Hostnames, "bar.com")
-			hr.Spec.ParentRefs = append(hr.Spec.ParentRefs, apiv1.ParentReference{
-				Name: apiv1.ObjectName(gwWithListener.Name),
+			hr.Spec.ParentRefs = append(hr.Spec.ParentRefs, gwv1.ParentReference{
+				Name: gwv1.ObjectName(gwWithListener.Name),
 			})
 
 			gq := newQueries(GinkgoT(), hr)
@@ -313,32 +311,32 @@ var _ = Describe("Query", func() {
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(routes.RouteErrors[0].Error.E).To(MatchError(query.ErrNoMatchingListenerHostname))
-			Expect(routes.RouteErrors[0].Error.Reason).To(Equal(apiv1.RouteReasonNoMatchingListenerHostname))
+			Expect(routes.RouteErrors[0].Error.Reason).To(Equal(gwv1.RouteReasonNoMatchingListenerHostname))
 			Expect(routes.RouteErrors[0].ParentRef).To(Equal(hr.Spec.ParentRefs[0]))
 		})
 
 		It("should NOT error when one listener hostname do intersect", func() {
 			gwWithListener := gw()
-			var hostname apiv1.Hostname = "foo.com"
-			var hostname2 apiv1.Hostname = "bar.com"
-			gwWithListener.Spec.Listeners = []apiv1.Listener{
+			var hostname gwv1.Hostname = "foo.com"
+			var hostname2 gwv1.Hostname = "bar.com"
+			gwWithListener.Spec.Listeners = []gwv1.Listener{
 				{
 					Name:     "foo",
-					Protocol: apiv1.HTTPProtocolType,
+					Protocol: gwv1.HTTPProtocolType,
 					Port:     80,
 					Hostname: &hostname,
 				},
 				{
 					Name:     "foo2",
-					Protocol: apiv1.HTTPProtocolType,
+					Protocol: gwv1.HTTPProtocolType,
 					Port:     80,
 					Hostname: &hostname2,
 				},
 			}
 			hr := httpRoute()
 			hr.Spec.Hostnames = append(hr.Spec.Hostnames, "bar.com")
-			hr.Spec.ParentRefs = append(hr.Spec.ParentRefs, apiv1.ParentReference{
-				Name: apiv1.ObjectName(gwWithListener.Name),
+			hr.Spec.ParentRefs = append(hr.Spec.ParentRefs, gwv1.ParentReference{
+				Name: gwv1.ObjectName(gwWithListener.Name),
 			})
 
 			gq := newQueries(GinkgoT(), hr)
@@ -352,22 +350,22 @@ var _ = Describe("Query", func() {
 
 		It("should error for one parent ref but not the other", func() {
 			gwWithListener := gw()
-			var hostname apiv1.Hostname = "foo.com"
-			gwWithListener.Spec.Listeners = []apiv1.Listener{
+			var hostname gwv1.Hostname = "foo.com"
+			gwWithListener.Spec.Listeners = []gwv1.Listener{
 				{
 					Name:     "foo",
-					Protocol: apiv1.HTTPProtocolType,
+					Protocol: gwv1.HTTPProtocolType,
 					Port:     80,
 					Hostname: &hostname,
 				},
 			}
 			hr := httpRoute()
-			var badPort apiv1.PortNumber = 81
-			hr.Spec.ParentRefs = append(hr.Spec.ParentRefs, apiv1.ParentReference{
-				Name: apiv1.ObjectName(gwWithListener.Name),
+			var badPort gwv1.PortNumber = 81
+			hr.Spec.ParentRefs = append(hr.Spec.ParentRefs, gwv1.ParentReference{
+				Name: gwv1.ObjectName(gwWithListener.Name),
 				Port: &badPort,
-			}, apiv1.ParentReference{
-				Name: apiv1.ObjectName(gwWithListener.Name),
+			}, gwv1.ParentReference{
+				Name: gwv1.ObjectName(gwWithListener.Name),
 			})
 
 			gq := newQueries(GinkgoT(), hr)
@@ -376,35 +374,35 @@ var _ = Describe("Query", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(routes.RouteErrors).To(HaveLen(1))
 			Expect(routes.ListenerResults["foo"].Routes).To(HaveLen(1))
-			Expect(routes.ListenerResults["foo"].Routes[0].ParentRef).To(Equal(apiv1.ParentReference{
+			Expect(routes.ListenerResults["foo"].Routes[0].ParentRef).To(Equal(gwv1.ParentReference{
 				Name: hr.Spec.ParentRefs[1].Name,
 			}))
 			Expect(routes.RouteErrors[0].Error.E).To(MatchError(query.ErrNoMatchingParent))
-			Expect(routes.RouteErrors[0].Error.Reason).To(Equal(apiv1.RouteReasonNoMatchingParent))
+			Expect(routes.RouteErrors[0].Error.Reason).To(Equal(gwv1.RouteReasonNoMatchingParent))
 			Expect(routes.RouteErrors[0].ParentRef).To(Equal(hr.Spec.ParentRefs[0]))
 		})
 
 		Context("test host intersection", func() {
 			expectHostnamesToMatch := func(lh string, rh []string, expectedHostnames ...string) {
 				gwWithListener := gw()
-				gwWithListener.Spec.Listeners = []apiv1.Listener{
+				gwWithListener.Spec.Listeners = []gwv1.Listener{
 					{
 						Name:     "foo",
-						Protocol: apiv1.HTTPProtocolType,
+						Protocol: gwv1.HTTPProtocolType,
 					},
 				}
 				if lh != "" {
-					h := apiv1.Hostname(lh)
+					h := gwv1.Hostname(lh)
 					gwWithListener.Spec.Listeners[0].Hostname = &h
 
 				}
 
 				hr := httpRoute()
 				for _, h := range rh {
-					hr.Spec.Hostnames = append(hr.Spec.Hostnames, apiv1.Hostname(h))
+					hr.Spec.Hostnames = append(hr.Spec.Hostnames, gwv1.Hostname(h))
 				}
-				hr.Spec.ParentRefs = append(hr.Spec.ParentRefs, apiv1.ParentReference{
-					Name: apiv1.ObjectName(gwWithListener.Name),
+				hr.Spec.ParentRefs = append(hr.Spec.ParentRefs, gwv1.ParentReference{
+					Name: gwv1.ObjectName(gwWithListener.Name),
 				})
 
 				gq := newQueries(GinkgoT(), hr)
@@ -442,19 +440,19 @@ var _ = Describe("Query", func() {
 
 		It("should match TCPRoutes for Listener", func() {
 			gw := gw()
-			gw.Spec.Listeners = []apiv1.Listener{
+			gw.Spec.Listeners = []gwv1.Listener{
 				{
 					Name:     "foo-tcp",
-					Protocol: apiv1.TCPProtocolType,
+					Protocol: gwv1.TCPProtocolType,
 				},
 			}
 
 			tcpRoute := tcpRoute("test-tcp-route", gw.Namespace)
-			tcpRoute.Spec = apiv1a2.TCPRouteSpec{
-				CommonRouteSpec: apiv1.CommonRouteSpec{
-					ParentRefs: []apiv1.ParentReference{
+			tcpRoute.Spec = gwv1a2.TCPRouteSpec{
+				CommonRouteSpec: gwv1.CommonRouteSpec{
+					ParentRefs: []gwv1.ParentReference{
 						{
-							Name: apiv1.ObjectName(gw.Name),
+							Name: gwv1.ObjectName(gw.Name),
 						},
 					},
 				},
@@ -470,25 +468,25 @@ var _ = Describe("Query", func() {
 
 		It("should get TCPRoutes in other namespace for listener", func() {
 			gw := gw()
-			gw.Spec.Listeners = []apiv1.Listener{
+			gw.Spec.Listeners = []gwv1.Listener{
 				{
 					Name:     "foo-tcp",
-					Protocol: apiv1.TCPProtocolType,
-					AllowedRoutes: &apiv1.AllowedRoutes{
-						Namespaces: &apiv1.RouteNamespaces{
-							From: ptr.To(apiv1.NamespacesFromAll),
+					Protocol: gwv1.TCPProtocolType,
+					AllowedRoutes: &gwv1.AllowedRoutes{
+						Namespaces: &gwv1.RouteNamespaces{
+							From: ptr.To(gwv1.NamespacesFromAll),
 						},
 					},
 				},
 			}
 
 			tcpRoute := tcpRoute("test-tcp-route", "other-ns")
-			tcpRoute.Spec = apiv1a2.TCPRouteSpec{
-				CommonRouteSpec: apiv1.CommonRouteSpec{
-					ParentRefs: []apiv1.ParentReference{
+			tcpRoute.Spec = gwv1a2.TCPRouteSpec{
+				CommonRouteSpec: gwv1.CommonRouteSpec{
+					ParentRefs: []gwv1.ParentReference{
 						{
-							Name:      apiv1.ObjectName(gw.Name),
-							Namespace: ptr.To(apiv1.Namespace(gw.Namespace)),
+							Name:      gwv1.ObjectName(gw.Name),
+							Namespace: ptr.To(gwv1.Namespace(gw.Namespace)),
 						},
 					},
 				},
@@ -505,26 +503,26 @@ var _ = Describe("Query", func() {
 
 		It("should error when listeners don't match TCPRoute", func() {
 			gw := gw()
-			gw.Spec.Listeners = []apiv1.Listener{
+			gw.Spec.Listeners = []gwv1.Listener{
 				{
 					Name:     "foo-tcp",
-					Protocol: apiv1.TCPProtocolType,
+					Protocol: gwv1.TCPProtocolType,
 					Port:     8080,
 				},
 				{
 					Name:     "bar-tcp",
-					Protocol: apiv1.TCPProtocolType,
+					Protocol: gwv1.TCPProtocolType,
 					Port:     8081,
 				},
 			}
 
 			tcpRoute := tcpRoute("test-tcp-route", gw.Namespace)
-			var badPort apiv1.PortNumber = 9999
-			tcpRoute.Spec = apiv1a2.TCPRouteSpec{
-				CommonRouteSpec: apiv1.CommonRouteSpec{
-					ParentRefs: []apiv1.ParentReference{
+			var badPort gwv1.PortNumber = 9999
+			tcpRoute.Spec = gwv1a2.TCPRouteSpec{
+				CommonRouteSpec: gwv1.CommonRouteSpec{
+					ParentRefs: []gwv1.ParentReference{
 						{
-							Name: apiv1.ObjectName(gw.Name),
+							Name: gwv1.ObjectName(gw.Name),
 							Port: &badPort,
 						},
 					},
@@ -537,28 +535,28 @@ var _ = Describe("Query", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(routes.RouteErrors).To(HaveLen(1))
 			Expect(routes.RouteErrors[0].Error.E).To(MatchError(query.ErrNoMatchingParent))
-			Expect(routes.RouteErrors[0].Error.Reason).To(Equal(apiv1.RouteReasonNoMatchingParent))
+			Expect(routes.RouteErrors[0].Error.Reason).To(Equal(gwv1.RouteReasonNoMatchingParent))
 			Expect(routes.RouteErrors[0].ParentRef).To(Equal(tcpRoute.Spec.ParentRefs[0]))
 		})
 
 		It("should error when listener does not allow TCPRoute kind", func() {
 			gw := gw()
-			gw.Spec.Listeners = []apiv1.Listener{
+			gw.Spec.Listeners = []gwv1.Listener{
 				{
 					Name:     "foo-tcp",
-					Protocol: apiv1.TCPProtocolType,
-					AllowedRoutes: &apiv1.AllowedRoutes{
-						Kinds: []apiv1.RouteGroupKind{{Kind: "FakeKind"}},
+					Protocol: gwv1.TCPProtocolType,
+					AllowedRoutes: &gwv1.AllowedRoutes{
+						Kinds: []gwv1.RouteGroupKind{{Kind: "FakeKind"}},
 					},
 				},
 			}
 
 			tcpRoute := tcpRoute("test-tcp-route", gw.Namespace)
-			tcpRoute.Spec = apiv1a2.TCPRouteSpec{
-				CommonRouteSpec: apiv1.CommonRouteSpec{
-					ParentRefs: []apiv1.ParentReference{
+			tcpRoute.Spec = gwv1a2.TCPRouteSpec{
+				CommonRouteSpec: gwv1.CommonRouteSpec{
+					ParentRefs: []gwv1.ParentReference{
 						{
-							Name: apiv1.ObjectName(gw.Name),
+							Name: gwv1.ObjectName(gw.Name),
 						},
 					},
 				},
@@ -574,29 +572,29 @@ var _ = Describe("Query", func() {
 
 		It("should allow TCPRoute for one listener", func() {
 			gw := gw()
-			gw.Spec.Listeners = []apiv1.Listener{
+			gw.Spec.Listeners = []gwv1.Listener{
 				{
 					Name:     "foo-tcp",
-					Protocol: apiv1.TCPProtocolType,
-					AllowedRoutes: &apiv1.AllowedRoutes{
-						Kinds: []apiv1.RouteGroupKind{{Kind: wellknown.TCPRouteKind}},
+					Protocol: gwv1.TCPProtocolType,
+					AllowedRoutes: &gwv1.AllowedRoutes{
+						Kinds: []gwv1.RouteGroupKind{{Kind: wellknown.TCPRouteKind}},
 					},
 				},
 				{
 					Name:     "bar",
-					Protocol: apiv1.TCPProtocolType,
-					AllowedRoutes: &apiv1.AllowedRoutes{
-						Kinds: []apiv1.RouteGroupKind{{Kind: "FakeKind"}},
+					Protocol: gwv1.TCPProtocolType,
+					AllowedRoutes: &gwv1.AllowedRoutes{
+						Kinds: []gwv1.RouteGroupKind{{Kind: "FakeKind"}},
 					},
 				},
 			}
 
 			tcpRoute := tcpRoute("test-tcp-route", gw.Namespace)
-			tcpRoute.Spec = apiv1a2.TCPRouteSpec{
-				CommonRouteSpec: apiv1.CommonRouteSpec{
-					ParentRefs: []apiv1.ParentReference{
+			tcpRoute.Spec = gwv1a2.TCPRouteSpec{
+				CommonRouteSpec: gwv1.CommonRouteSpec{
+					ParentRefs: []gwv1.ParentReference{
 						{
-							Name: apiv1.ObjectName(gw.Name),
+							Name: gwv1.ObjectName(gw.Name),
 						},
 					},
 				},
@@ -614,27 +612,27 @@ var _ = Describe("Query", func() {
 
 	It("should match TLSRoutes for Listener", func() {
 		gw := gw()
-		gw.Spec.Listeners = []apiv1.Listener{
+		gw.Spec.Listeners = []gwv1.Listener{
 			{
 				Name:     "foo-tls",
-				Protocol: apiv1.TLSProtocolType,
+				Protocol: gwv1.TLSProtocolType,
 			},
 		}
 
-		tlsRoute := &apiv1a2.TLSRoute{
+		tlsRoute := &gwv1a2.TLSRoute{
 			TypeMeta: metav1.TypeMeta{
 				Kind:       wellknown.TLSRouteKind,
-				APIVersion: apiv1a2.GroupVersion.String(),
+				APIVersion: gwv1a2.GroupVersion.String(),
 			},
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "test-tls-route",
 				Namespace: gw.Namespace,
 			},
-			Spec: apiv1a2.TLSRouteSpec{
-				CommonRouteSpec: apiv1.CommonRouteSpec{
-					ParentRefs: []apiv1.ParentReference{
+			Spec: gwv1a2.TLSRouteSpec{
+				CommonRouteSpec: gwv1.CommonRouteSpec{
+					ParentRefs: []gwv1.ParentReference{
 						{
-							Name: apiv1.ObjectName(gw.Name),
+							Name: gwv1.ObjectName(gw.Name),
 						},
 					},
 				},
@@ -651,25 +649,25 @@ var _ = Describe("Query", func() {
 
 	It("should get TLSRoutes in other namespace for listener", func() {
 		gw := gw()
-		gw.Spec.Listeners = []apiv1.Listener{
+		gw.Spec.Listeners = []gwv1.Listener{
 			{
 				Name:     "foo-tls",
-				Protocol: apiv1.TLSProtocolType,
-				AllowedRoutes: &apiv1.AllowedRoutes{
-					Namespaces: &apiv1.RouteNamespaces{
-						From: ptr.To(apiv1.NamespacesFromAll),
+				Protocol: gwv1.TLSProtocolType,
+				AllowedRoutes: &gwv1.AllowedRoutes{
+					Namespaces: &gwv1.RouteNamespaces{
+						From: ptr.To(gwv1.NamespacesFromAll),
 					},
 				},
 			},
 		}
 
 		tlsRoute := tlsRoute("test-tls-route", "other-ns")
-		tlsRoute.Spec = apiv1a2.TLSRouteSpec{
-			CommonRouteSpec: apiv1.CommonRouteSpec{
-				ParentRefs: []apiv1.ParentReference{
+		tlsRoute.Spec = gwv1a2.TLSRouteSpec{
+			CommonRouteSpec: gwv1.CommonRouteSpec{
+				ParentRefs: []gwv1.ParentReference{
 					{
-						Name:      apiv1.ObjectName(gw.Name),
-						Namespace: ptr.To(apiv1.Namespace(gw.Namespace)),
+						Name:      gwv1.ObjectName(gw.Name),
+						Namespace: ptr.To(gwv1.Namespace(gw.Namespace)),
 					},
 				},
 			},
@@ -685,26 +683,26 @@ var _ = Describe("Query", func() {
 
 	It("should error when listeners don't match TLSRoute", func() {
 		gw := gw()
-		gw.Spec.Listeners = []apiv1.Listener{
+		gw.Spec.Listeners = []gwv1.Listener{
 			{
 				Name:     "foo-tls",
-				Protocol: apiv1.TLSProtocolType,
+				Protocol: gwv1.TLSProtocolType,
 				Port:     8080,
 			},
 			{
 				Name:     "bar-tls",
-				Protocol: apiv1.TLSProtocolType,
+				Protocol: gwv1.TLSProtocolType,
 				Port:     8081,
 			},
 		}
 
 		tlsRoute := tlsRoute("test-tls-route", gw.Namespace)
-		var badPort apiv1.PortNumber = 9999
-		tlsRoute.Spec = apiv1a2.TLSRouteSpec{
-			CommonRouteSpec: apiv1.CommonRouteSpec{
-				ParentRefs: []apiv1.ParentReference{
+		var badPort gwv1.PortNumber = 9999
+		tlsRoute.Spec = gwv1a2.TLSRouteSpec{
+			CommonRouteSpec: gwv1.CommonRouteSpec{
+				ParentRefs: []gwv1.ParentReference{
 					{
-						Name: apiv1.ObjectName(gw.Name),
+						Name: gwv1.ObjectName(gw.Name),
 						Port: &badPort,
 					},
 				},
@@ -717,28 +715,28 @@ var _ = Describe("Query", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(routes.RouteErrors).To(HaveLen(1))
 		Expect(routes.RouteErrors[0].Error.E).To(MatchError(query.ErrNoMatchingParent))
-		Expect(routes.RouteErrors[0].Error.Reason).To(Equal(apiv1.RouteReasonNoMatchingParent))
+		Expect(routes.RouteErrors[0].Error.Reason).To(Equal(gwv1.RouteReasonNoMatchingParent))
 		Expect(routes.RouteErrors[0].ParentRef).To(Equal(tlsRoute.Spec.ParentRefs[0]))
 	})
 
 	It("should error when listener does not allow TLSRoute kind", func() {
 		gw := gw()
-		gw.Spec.Listeners = []apiv1.Listener{
+		gw.Spec.Listeners = []gwv1.Listener{
 			{
 				Name:     "foo-tls",
-				Protocol: apiv1.TLSProtocolType,
-				AllowedRoutes: &apiv1.AllowedRoutes{
-					Kinds: []apiv1.RouteGroupKind{{Kind: "FakeKind"}},
+				Protocol: gwv1.TLSProtocolType,
+				AllowedRoutes: &gwv1.AllowedRoutes{
+					Kinds: []gwv1.RouteGroupKind{{Kind: "FakeKind"}},
 				},
 			},
 		}
 
 		tlsRoute := tlsRoute("test-tls-route", gw.Namespace)
-		tlsRoute.Spec = apiv1a2.TLSRouteSpec{
-			CommonRouteSpec: apiv1.CommonRouteSpec{
-				ParentRefs: []apiv1.ParentReference{
+		tlsRoute.Spec = gwv1a2.TLSRouteSpec{
+			CommonRouteSpec: gwv1.CommonRouteSpec{
+				ParentRefs: []gwv1.ParentReference{
 					{
-						Name: apiv1.ObjectName(gw.Name),
+						Name: gwv1.ObjectName(gw.Name),
 					},
 				},
 			},
@@ -754,29 +752,29 @@ var _ = Describe("Query", func() {
 
 	It("should allow TLSRoute for one listener", func() {
 		gw := gw()
-		gw.Spec.Listeners = []apiv1.Listener{
+		gw.Spec.Listeners = []gwv1.Listener{
 			{
 				Name:     "foo-tls",
-				Protocol: apiv1.TLSProtocolType,
-				AllowedRoutes: &apiv1.AllowedRoutes{
-					Kinds: []apiv1.RouteGroupKind{{Kind: wellknown.TLSRouteKind}},
+				Protocol: gwv1.TLSProtocolType,
+				AllowedRoutes: &gwv1.AllowedRoutes{
+					Kinds: []gwv1.RouteGroupKind{{Kind: wellknown.TLSRouteKind}},
 				},
 			},
 			{
 				Name:     "bar",
-				Protocol: apiv1.TLSProtocolType,
-				AllowedRoutes: &apiv1.AllowedRoutes{
-					Kinds: []apiv1.RouteGroupKind{{Kind: "FakeKind"}},
+				Protocol: gwv1.TLSProtocolType,
+				AllowedRoutes: &gwv1.AllowedRoutes{
+					Kinds: []gwv1.RouteGroupKind{{Kind: "FakeKind"}},
 				},
 			},
 		}
 
 		tlsRoute := tlsRoute("test-tls-route", gw.Namespace)
-		tlsRoute.Spec = apiv1a2.TLSRouteSpec{
-			CommonRouteSpec: apiv1.CommonRouteSpec{
-				ParentRefs: []apiv1.ParentReference{
+		tlsRoute.Spec = gwv1a2.TLSRouteSpec{
+			CommonRouteSpec: gwv1.CommonRouteSpec{
+				ParentRefs: []gwv1.ParentReference{
 					{
-						Name: apiv1.ObjectName(gw.Name),
+						Name: gwv1.ObjectName(gw.Name),
 					},
 				},
 			},
@@ -801,26 +799,26 @@ func refGrantSecret() *apiv1beta1.ReferenceGrant {
 		Spec: apiv1beta1.ReferenceGrantSpec{
 			From: []apiv1beta1.ReferenceGrantFrom{
 				{
-					Group:     apiv1.Group("gateway.networking.k8s.io"),
-					Kind:      apiv1.Kind("Gateway"),
-					Namespace: apiv1.Namespace("default"),
+					Group:     gwv1.Group("gateway.networking.k8s.io"),
+					Kind:      gwv1.Kind("Gateway"),
+					Namespace: gwv1.Namespace("default"),
 				},
 			},
 			To: []apiv1beta1.ReferenceGrantTo{
 				{
-					Group: apiv1.Group("core"),
-					Kind:  apiv1.Kind("Secret"),
+					Group: gwv1.Group("core"),
+					Kind:  gwv1.Kind("Secret"),
 				},
 			},
 		},
 	}
 }
 
-func httpRoute() *apiv1.HTTPRoute {
-	return &apiv1.HTTPRoute{
+func httpRoute() *gwv1.HTTPRoute {
+	return &gwv1.HTTPRoute{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       wellknown.HTTPRouteKind,
-			APIVersion: apiv1.GroupVersion.String(),
+			APIVersion: gwv1.GroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "default",
@@ -829,8 +827,8 @@ func httpRoute() *apiv1.HTTPRoute {
 	}
 }
 
-func gw() *apiv1.Gateway {
-	return &apiv1.Gateway{
+func gw() *gwv1.Gateway {
+	return &gwv1.Gateway{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "default",
 			Name:      "test",
@@ -847,11 +845,11 @@ func secret(ns string) *corev1.Secret {
 	}
 }
 
-func tcpRoute(name, ns string) *apiv1a2.TCPRoute {
-	return &apiv1a2.TCPRoute{
+func tcpRoute(name, ns string) *gwv1a2.TCPRoute {
+	return &gwv1a2.TCPRoute{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       wellknown.TCPRouteKind,
-			APIVersion: apiv1a2.GroupVersion.String(),
+			APIVersion: gwv1a2.GroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
@@ -860,11 +858,11 @@ func tcpRoute(name, ns string) *apiv1a2.TCPRoute {
 	}
 }
 
-func tlsRoute(name, ns string) *apiv1a2.TLSRoute {
-	return &apiv1a2.TLSRoute{
+func tlsRoute(name, ns string) *gwv1a2.TLSRoute {
+	return &gwv1a2.TLSRoute{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       wellknown.TLSRouteKind,
-			APIVersion: apiv1a2.GroupVersion.String(),
+			APIVersion: gwv1a2.GroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
@@ -873,8 +871,8 @@ func tlsRoute(name, ns string) *apiv1a2.TLSRoute {
 	}
 }
 
-func nsptr(s string) *apiv1.Namespace {
-	var ns apiv1.Namespace = apiv1.Namespace(s)
+func nsptr(s string) *gwv1.Namespace {
+	var ns gwv1.Namespace = gwv1.Namespace(s)
 	return &ns
 }
 

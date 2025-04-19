@@ -18,7 +18,6 @@ import (
 	envoytype "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	extensionplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
@@ -68,8 +67,8 @@ func NewBuiltInIr(kctx krt.HandlerContext, f gwv1.HTTPRouteFilter, fromgk schema
 	}
 }
 
-func NewBuiltinPlugin(ctx context.Context) extensionplug.Plugin {
-	return extensionplug.Plugin{
+func NewBuiltinPlugin(ctx context.Context) extensionsplug.Plugin {
+	return extensionsplug.Plugin{
 		ContributesPolicies: map[schema.GroupKind]extensionsplug.PolicyPlugin{
 			VirtualBuiltInGK: {
 				//AttachmentPoints: []ir.AttachmentPoints{ir.HttpAttachmentPoint},

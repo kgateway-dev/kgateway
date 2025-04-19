@@ -24,7 +24,6 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
-	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	routev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_ext_authz_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_authz/v3"
 	envoy_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
@@ -276,11 +275,11 @@ func (p *trafficPolicyPluginGwPass) ApplyListenerPlugin(ctx context.Context, pCt
 	}
 }
 
-func (p *trafficPolicyPluginGwPass) ApplyVhostPlugin(ctx context.Context, pCtx *ir.VirtualHostContext, out *envoy_config_route_v3.VirtualHost) {
+func (p *trafficPolicyPluginGwPass) ApplyVhostPlugin(ctx context.Context, pCtx *ir.VirtualHostContext, out *routev3.VirtualHost) {
 }
 
 // called 0 or more times
-func (p *trafficPolicyPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.RouteContext, outputRoute *envoy_config_route_v3.Route) error {
+func (p *trafficPolicyPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.RouteContext, outputRoute *routev3.Route) error {
 	policy, ok := pCtx.Policy.(*trafficPolicy)
 	if !ok {
 		return nil
@@ -423,7 +422,7 @@ func (p *trafficPolicyPluginGwPass) ApplyForBackend(
 	ctx context.Context,
 	pCtx *ir.RouteBackendContext,
 	in ir.HttpBackend,
-	out *envoy_config_route_v3.Route,
+	out *routev3.Route,
 ) error {
 	return nil
 }

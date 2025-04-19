@@ -4,7 +4,6 @@ import (
 	envoy_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_ext_authz_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_authz/v3"
 	envoytransformation "github.com/solo-io/envoy-gloo/go/config/filter/http/transformation/v2"
-	transformationpb "github.com/solo-io/envoy-gloo/go/config/filter/http/transformation/v2"
 	"google.golang.org/protobuf/proto"
 	"istio.io/istio/pkg/kube/krt"
 
@@ -131,7 +130,7 @@ func extAuthForSpecWithExtensionFunction(
 // extAuthEnablementPerRoute returns a transformation that sets the ext auth filter key to false
 // this then fires on the metadata match that all top level configuration shall have.
 func extAuthEnablementPerRoute() proto.Message {
-	return &transformationpb.RouteTransformations{
+	return &envoytransformation.RouteTransformations{
 		RequestTransformation: &envoytransformation.Transformation{
 			TransformationType: &envoytransformation.Transformation_TransformationTemplate{
 				TransformationTemplate: &envoytransformation.TransformationTemplate{

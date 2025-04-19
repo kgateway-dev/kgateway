@@ -7,7 +7,6 @@ import (
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	endpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	"github.com/fgrosse/zaptest"
-	"github.com/onsi/gomega"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/go-utils/contextutils"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -25,7 +24,7 @@ import (
 )
 
 func TestEndpointsForUpstreamOrderDoesntMatter(t *testing.T) {
-	g := gomega.NewWithT(t)
+	g := NewWithT(t)
 
 	us := ir.BackendObjectIR{
 		ObjectSource: ir.ObjectSource{
@@ -148,7 +147,7 @@ func TestEndpointsForUpstreamOrderDoesntMatter(t *testing.T) {
 }
 
 func TestEndpointsForUpstreamWithDifferentNameButSameEndpoints(t *testing.T) {
-	g := gomega.NewWithT(t)
+	g := NewWithT(t)
 
 	us := ir.BackendObjectIR{
 		ObjectSource: ir.ObjectSource{
@@ -1082,7 +1081,7 @@ func TestEndpoints(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			g := gomega.NewWithT(t)
+			g := NewWithT(t)
 			mock := krttest.NewMock(t, tc.inputs)
 			nodes := NewNodeMetadataCollection(krttest.GetMockCollection[*corev1.Node](mock))
 			pods := NewLocalityPodsCollection(nodes, krttest.GetMockCollection[*corev1.Pod](mock), krtutil.KrtOptions{})
