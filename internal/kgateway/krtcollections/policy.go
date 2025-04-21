@@ -761,11 +761,6 @@ func (h *RoutesIndex) getExtensionRefs(kctx krt.HandlerContext, ns string, r []g
 }
 
 func (h *RoutesIndex) getBuiltInRulePolicies(rule gwv1.HTTPRouteRule) ir.AttachedPolicies {
-	// Return AttachedPolicies with Policies unset
-	if rule.Timeouts == nil {
-		return ir.AttachedPolicies{}
-	}
-
 	ret := ir.AttachedPolicies{
 		Policies: map[schema.GroupKind][]ir.PolicyAtt{},
 	}

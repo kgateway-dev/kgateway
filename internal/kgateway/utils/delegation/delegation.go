@@ -68,7 +68,7 @@ func ShouldInheritParentMatcher(annotations map[string]string) bool {
 // - the child query param matchers must be a superset of the parent query param matchers
 // - if the parent method matcher is set, the child's method matcher value must be equal to the parent method matcher value
 //
-// Note: It is note called when DelegationInheritMatcher is set
+// Note: It is NOT called when DelegationInheritMatcher is set
 func IsDelegatedRouteMatch(
 	parent gwv1.HTTPRouteMatch,
 	child gwv1.HTTPRouteMatch,

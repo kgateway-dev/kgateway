@@ -597,7 +597,7 @@ func (p *trafficPolicyPluginGwPass) SupportsPolicyMerge() bool {
 	return true
 }
 
-// trafficPolicy merges the given policy ordered from high to low priority (both hierarchically
+// mergePolicies merges the given policy ordered from high to low priority (both hierarchically
 // and within the same hierarchy) based on the constraints defined per PolicyAtt.
 //
 // It iterates policies in reverse order (low to high) to ensure higher priority policies can

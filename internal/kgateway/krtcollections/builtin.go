@@ -71,6 +71,10 @@ func NewBuiltInIr(kctx krt.HandlerContext, f gwv1.HTTPRouteFilter, fromgk schema
 }
 
 func NewBuiltInRuleIr(rule gwv1.HTTPRouteRule) ir.PolicyIR {
+	// If no rule policies are set, return nil so that we don't have a no-op policy
+	if rule.Timeouts == nil {
+		return nil
+	}
 	return &builtinPlugin{
 		ruleSpec:     rule,
 		ruleMutation: convertRule(rule),
@@ -106,7 +110,7 @@ func convert(kctx krt.HandlerContext, f gwv1.HTTPRouteFilter, fromgk schema.Grou
 
 func convertRule(rule gwv1.HTTPRouteRule) func(in ir.HttpRouteRuleMatchIR, outputRoute *envoy_config_route_v3.Route) error {
 	return func(ruleIR ir.HttpRouteRuleMatchIR, outputRoute *envoy_config_route_v3.Route) error {
-		// A parent route rule with adelegated backend will not have outputRoute.RouteAction set
+		// A parent route rule with a delegated backend will not have outputRoute.RouteAction set
 		// but the plugin will be invoked on the rule, so treat this as a no-op call
 		if outputRoute == nil || outputRoute.GetRoute() == nil {
 			return nil

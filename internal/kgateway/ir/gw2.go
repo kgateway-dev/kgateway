@@ -28,7 +28,7 @@ type HttpRouteRuleMatchIR struct {
 	Parent           *HttpRouteIR
 	// DelegatingParent is a pointer to the parent HttpRouteRuleMatchIR that delegated to this one
 	DelegatingParent *HttpRouteRuleMatchIR
-	// Delegates is a boolean indicating if this HttpRouteRuleMatchIR is delegates to other routes
+	// Delegates is a boolean indicating if this HttpRouteRuleMatchIR delegates to other routes
 	Delegates bool
 
 	// if there's an error, the gw-api listener to report it in.
