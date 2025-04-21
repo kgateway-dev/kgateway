@@ -703,7 +703,7 @@ func (h *RoutesIndex) transformHttpRoute(kctx krt.HandlerContext, i *gwv1.HTTPRo
 		Name:      i.Name,
 	}
 
-	enablePolicyOverrideByDelegatee := i.Annotations[apiannotations.DelegationEnablePolicyOverride] == apiannotations.DelegationEnablePolicyOverrideValueAllFields
+	delegationInheritedPolicyPriority := apiannotations.DelegationInheritedPolicyPriorityValue(i.Annotations[apiannotations.DelegationInheritedPolicyPriority])
 
 	return &ir.HttpRouteIR{
 		ObjectSource: src,
@@ -711,10 +711,10 @@ func (h *RoutesIndex) transformHttpRoute(kctx krt.HandlerContext, i *gwv1.HTTPRo
 		ParentRefs:   i.Spec.ParentRefs,
 		Hostnames:    tostr(i.Spec.Hostnames),
 		Rules: h.transformRules(
-			kctx, src, i.Spec.Rules, ir.WithPolicyOverrideByDelegatee(enablePolicyOverrideByDelegatee)),
+			kctx, src, i.Spec.Rules, ir.WithDelegationInheritedPolicyPriority(delegationInheritedPolicyPriority)),
 		AttachedPolicies: toAttachedPolicies(
 			h.policies.getTargetingPolicies(kctx, extensionsplug.RouteAttachmentPoint, src, ""),
-			ir.WithPolicyOverrideByDelegatee(enablePolicyOverrideByDelegatee),
+			ir.WithDelegationInheritedPolicyPriority(delegationInheritedPolicyPriority),
 		),
 	}
 }

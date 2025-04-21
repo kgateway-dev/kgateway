@@ -6,11 +6,22 @@ const (
 	// the route matcher from the parent route.
 	DelegationInheritMatcher = "delegation.kgateway.dev/inherit-parent-matcher"
 
-	// DelegationInheritBackend is the annotation used on a parent route to enable
-	// child routes to override policies applied to the parent route.
-	DelegationEnablePolicyOverride = "delegation.kgateway.dev/enable-policy-override"
+	// DelegationInheritedPolicyPriority is the annotation used on an HTTPRoute to specify
+	// the priority of policies attached to the route that are inherited by delegatee(child) routes.
+	DelegationInheritedPolicyPriority = "delegation.kgateway.dev/inherited-policy-priority"
+)
 
-	// DelegationEnablePolicyOverrideValueAllFields is the value for the DelegationEnablePolicyOverride
-	// to indicate all fields of the parent route can be overridden by child routes.
-	DelegationEnablePolicyOverrideValueAllFields = "*"
+// DelegationInheritedPolicyPriorityValue is the value for the DelegationInheritedPolicyPriority annotation
+type DelegationInheritedPolicyPriorityValue string
+
+const (
+	// DelegationInheritedPolicyPriorityPreferParent is the value for the DelegationInheritedPolicyPriority
+	// annotation to indicate that the delegatee(child) route should prefer policies attached to the parent route
+	// such that parent policies are prioritized over policies directly attached to child routes in case of conflicts.
+	DelegationInheritedPolicyPriorityPreferParent DelegationInheritedPolicyPriorityValue = "PreferParent"
+
+	// DelegationInheritedPolicyPriorityPreferChild is the value for the DelegationInheritedPolicyPriority
+	// annotation to indicate that the delegatee(child) route should prefer policies attached to the child route
+	// such that child policies are prioritized over policies attached to parent routes in case of conflicts.
+	DelegationInheritedPolicyPriorityPreferChild DelegationInheritedPolicyPriorityValue = "PreferChild"
 )

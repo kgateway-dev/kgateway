@@ -32,7 +32,7 @@ metadata:
   name: example-route
   namespace: infra
   annotations:
-    delegation.kgateway.dev/enable-policy-override: "*"
+    delegation.kgateway.dev/inherited-policy-priority: PreferChild
 spec:
   parentRefs:
   - name: example-gateway
@@ -58,7 +58,7 @@ metadata:
   name: mid-a
   namespace: mid
   annotations:
-    delegation.kgateway.dev/enable-policy-override: "*"
+    delegation.kgateway.dev/inherited-policy-priority: PreferChild
 spec:
   rules:
   - matches:

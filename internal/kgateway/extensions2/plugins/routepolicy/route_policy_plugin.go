@@ -28,6 +28,7 @@ import (
 	envoy_ext_authz_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_authz/v3"
 	envoy_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 
+	apiannotations "github.com/kgateway-dev/kgateway/v2/api/annotations"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
@@ -637,9 +638,9 @@ func mergePolicies(policies []ir.PolicyAtt) ir.PolicyAtt {
 		// to preserve existing fields set by lower levels.
 		// NOTE: the HierarchicalPriority check is necessary to prevent enabling override behavior among
 		// policies in the same hierarchy, e.g., ExtensionRef vs TargetRef policy attached to the same route, as
-		// EnablePolicyOverrideByDelegatee strictly applies to parent->child policy inheritance and is not applicable
+		// DelegationInheritedPolicyPriorityPreferChild strictly applies to parent->child policy inheritance and is not applicable
 		// outside delegated policy inheritance.
-		if out.HierarchicalPriority < policies[i].HierarchicalPriority && policies[i].EnablePolicyOverrideByDelegatee {
+		if out.HierarchicalPriority < policies[i].HierarchicalPriority && policies[i].DelegationInheritedPolicyPriority == apiannotations.DelegationInheritedPolicyPriorityPreferChild {
 			mergeOpts.Strategy = policy.AugmentedMerge
 		}
 

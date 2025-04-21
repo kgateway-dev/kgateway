@@ -7,6 +7,8 @@ import (
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+
+	apiannotations "github.com/kgateway-dev/kgateway/v2/api/annotations"
 )
 
 type BackendInit struct {
@@ -49,7 +51,7 @@ type PolicyAtt struct {
 	// It can be used to determine which PolicyAtt a merged field came from.
 	MergeOrigins map[string]*AttachedPolicyRef
 
-	EnablePolicyOverrideByDelegatee bool
+	DelegationInheritedPolicyPriority apiannotations.DelegationInheritedPolicyPriorityValue
 
 	// HierarchicalPriority is the priority of the policy in an inheritance hierarchy.
 	// A higher value means higher priority. It is used to accurately merge policies
@@ -61,9 +63,9 @@ type PolicyAtt struct {
 
 type PolicyAttachmentOpts func(*PolicyAtt)
 
-func WithPolicyOverrideByDelegatee(enable bool) PolicyAttachmentOpts {
+func WithDelegationInheritedPolicyPriority(priority apiannotations.DelegationInheritedPolicyPriorityValue) PolicyAttachmentOpts {
 	return func(p *PolicyAtt) {
-		p.EnablePolicyOverrideByDelegatee = enable
+		p.DelegationInheritedPolicyPriority = priority
 	}
 }
 
