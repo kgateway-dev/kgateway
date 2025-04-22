@@ -109,6 +109,13 @@ func convert(kctx krt.HandlerContext, f gwv1.HTTPRouteFilter, fromgk schema.Grou
 	return nil
 }
 
+func formatRuleError(action string, ruleIR ir.HttpRouteRuleMatchIR, err error) error {
+	if ruleIR.Name != "" {
+		return fmt.Errorf("failed to apply HTTPRoute %s for route %s/%s (rule: %s): %w", action, string(*ruleIR.ParentRef.Namespace), ruleIR.ParentRef.Name, ruleIR.Name, err)
+	}
+	return fmt.Errorf("failed to apply HTTPRoute %s for route %s/%s: %w", action, string(*ruleIR.ParentRef.Namespace), ruleIR.ParentRef.Name, err)
+}
+
 func convertRule(rule gwv1.HTTPRouteRule) func(in ir.HttpRouteRuleMatchIR, outputRoute *envoy_config_route_v3.Route) error {
 	return func(ruleIR ir.HttpRouteRuleMatchIR, outputRoute *envoy_config_route_v3.Route) error {
 		// A parent route rule with a delegated backend will not have outputRoute.RouteAction set
@@ -119,12 +126,12 @@ func convertRule(rule gwv1.HTTPRouteRule) func(in ir.HttpRouteRuleMatchIR, outpu
 
 		err := applyTimeout(outputRoute, rule.Timeouts, rule.Retry != nil)
 		if err != nil {
-			return fmt.Errorf("failed to apply HTTPRoute timeout: %w", err)
+			return formatRuleError("timeout", ruleIR, err)
 		}
 
 		err = applyRetry(outputRoute, rule.Retry, rule.Timeouts)
 		if err != nil {
-			return fmt.Errorf("failed to apply HTTPRoute retry: %w", err)
+			return formatRuleError("retry", ruleIR, err)
 		}
 		return nil
 	}
@@ -154,9 +161,7 @@ func applyTimeout(route *envoy_config_route_v3.Route, timeout *gwv1.HTTPRouteTim
 	case timeout.Request != nil:
 		// Only Request is set
 		timeoutStr = string(*timeout.Request)
-	}
-
-	if timeoutStr == "" {
+	default:
 		return nil
 	}
 
@@ -199,7 +204,8 @@ func applyRetry(route *envoy_config_route_v3.Route, retry *gwv1.HTTPRouteRetry, 
 		}
 	}
 
-	// If a backend request timeout is set, use it as the per-try timeout
+	// If a backend request timeout is set, use it as the per-try timeout.
+	// Otherwise, Envoy will by default use the global route timeout
 	// Refer to https://gateway-api.sigs.k8s.io/geps/gep-1742/
 	if timeout != nil && timeout.BackendRequest != nil {
 		timeoutDuration, err := time.ParseDuration(string(*timeout.BackendRequest))
