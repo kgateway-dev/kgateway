@@ -367,7 +367,7 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 			Name:      "example-gateway",
 		},
 	}),
-	FEntry("HTTPRoutes with timeout and retry", translatorTestCase{
+	Entry("HTTPRoutes with timeout and retry", translatorTestCase{
 		inputFile:  "httproute-timeout-retry/manifest.yaml",
 		outputFile: "httproute-timeout-retry-proxy.yaml",
 		gwNN: types.NamespacedName{
