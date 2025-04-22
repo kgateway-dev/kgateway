@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"istio.io/istio/pkg/kube/krt"
+	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
@@ -72,14 +73,9 @@ func (h *RoutesIndex) buildGRPCPathMatch(method *gwv1.GRPCMethodMatch) (string, 
 		return "/", gwv1.PathMatchPathPrefix
 	}
 
-	methodType := gwv1.GRPCMethodMatchExact // Default to exact match if type is not specified
-	if method.Type != nil {
-		methodType = *method.Type
-	}
-
-	switch methodType {
+	switch ptr.Deref(method.Type, gwv1.GRPCMethodMatchExact) {
 	case gwv1.GRPCMethodMatchRegularExpression:
-		pathType = gwv1.PathMatchRegularExpression // Set type for all regex cases
+		pathType = gwv1.PathMatchRegularExpression
 		switch {
 		case method.Service != nil && method.Method != nil:
 			path = fmt.Sprintf("/%s/%s", string(*method.Service), string(*method.Method))
