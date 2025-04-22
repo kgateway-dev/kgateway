@@ -274,7 +274,7 @@ func (r *gatewayQueries) fetchRoutesByRef(
 	var refChildren []ir.HttpRouteIR
 	// If the ref is a label selector, fetch routes by label selector
 	if isDelegationLabelSelectorRef(backendRef) {
-		selector := krtcollections.DelegationLabelSelector{
+		selector := krtcollections.HTTPRouteSelector{
 			LabelValue: backendRef.Name,
 		}
 		// If a wildcard namespace is not specified, restrict the Fetch to the delegatedNs namespace,
@@ -282,12 +282,14 @@ func (r *gatewayQueries) fetchRoutesByRef(
 		if delegatedNs != apilabels.DelegationLabelSelectorWildcardNamespace {
 			selector.Namespace = delegatedNs
 		}
-		routes := r.collections.Routes.FetchHttpByDelegationLabelSelector(kctx, selector)
+		routes := r.collections.Routes.FetchHTTPRoutesBySelector(kctx, selector)
 		refChildren = append(refChildren, routes...)
 	} else {
 		if string(backendRef.Name) == "" || string(backendRef.Name) == "*" {
 			// Handle wildcard references by listing all HTTPRoutes in the specified namespace
-			routes := r.collections.Routes.FetchHttpNamespace(kctx, delegatedNs)
+			routes := r.collections.Routes.FetchHTTPRoutesBySelector(kctx, krtcollections.HTTPRouteSelector{
+				Namespace: delegatedNs,
+			})
 			refChildren = append(refChildren, routes...)
 		} else {
 			// Lookup a specific child route by its name
