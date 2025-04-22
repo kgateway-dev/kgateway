@@ -49,22 +49,25 @@ func (h *RoutesIndex) transformGRPCRulesToHttp(kctx krt.HandlerContext, src ir.O
 func (h *RoutesIndex) convertGRPCMatchesToHTTP(matches []gwv1.GRPCRouteMatch) []gwv1.HTTPRouteMatch {
 	httpMatches := make([]gwv1.HTTPRouteMatch, 0, len(matches))
 	for _, match := range matches {
-		path, pathType := h.buildGRPCPathMatch(match.Method)
-		httpHeaders := h.convertGRPCHeadersToHTTP(match.Headers)
-
-		httpMatch := gwv1.HTTPRouteMatch{
-			Path: &gwv1.HTTPPathMatch{
-				Type:  &pathType,
-				Value: &path,
-			},
-			Headers: httpHeaders,
-		}
-		httpMatches = append(httpMatches, httpMatch)
+		httpMatches = append(httpMatches, grpcToHTTPRouteMatch(match))
 	}
 	return httpMatches
 }
 
-func (h *RoutesIndex) buildGRPCPathMatch(method *gwv1.GRPCMethodMatch) (string, gwv1.PathMatchType) {
+func grpcToHTTPRouteMatch(match gwv1.GRPCRouteMatch) gwv1.HTTPRouteMatch {
+	path, pathType := buildGRPCPathMatch(match.Method)
+	httpHeaders := convertGRPCHeadersToHTTP(match.Headers)
+
+	return gwv1.HTTPRouteMatch{
+		Path: &gwv1.HTTPPathMatch{
+			Type:  &pathType,
+			Value: &path,
+		},
+		Headers: httpHeaders,
+	}
+}
+
+func buildGRPCPathMatch(method *gwv1.GRPCMethodMatch) (string, gwv1.PathMatchType) {
 	var path string
 	var pathType gwv1.PathMatchType
 
@@ -105,7 +108,7 @@ func (h *RoutesIndex) buildGRPCPathMatch(method *gwv1.GRPCMethodMatch) (string, 
 	return path, pathType
 }
 
-func (h *RoutesIndex) convertGRPCHeadersToHTTP(headers []gwv1.GRPCHeaderMatch) []gwv1.HTTPHeaderMatch {
+func convertGRPCHeadersToHTTP(headers []gwv1.GRPCHeaderMatch) []gwv1.HTTPHeaderMatch {
 	httpHeaders := make([]gwv1.HTTPHeaderMatch, 0, len(headers))
 	for _, h := range headers {
 		// Type is passed directly to the HTTPHeaderMatch
