@@ -8,6 +8,7 @@ import (
 
 	"github.com/rotisserie/eris"
 	"golang.org/x/exp/slices"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/utils/ptr"
 	api "sigs.k8s.io/gateway-api/apis/v1"
 
@@ -25,7 +26,7 @@ var ComponentLogLevelEmptyError = func(key string, value string) error {
 // Extract the listener ports from a Gateway. These will be used to populate:
 // 1. the ports exposed on the envoy container
 // 2. the ports exposed on the proxy service
-func getPortsValues(gw *api.Gateway) []helmPort {
+func getPortsValues(gw *api.Gateway, gwp *v1alpha1.GatewayParameters) []helmPort {
 	gwPorts := []helmPort{}
 	for _, l := range gw.Spec.Listeners {
 		listenerPort := uint16(l.Port)
@@ -39,11 +40,26 @@ func getPortsValues(gw *api.Gateway) []helmPort {
 		portName := string(l.Name)
 		protocol := "TCP"
 
+		// Search for static NodePort set from the GatewayParameters spec
+		// If not found the default value of `nil` will not render anything.
+		var nodePort *uint16
+		if gwp.Spec.GetKube().GetService().GetType() != nil && *(gwp.Spec.GetKube().GetService().GetType()) == corev1.ServiceTypeNodePort {
+			if idx := slices.IndexFunc(gwp.Spec.GetKube().GetService().GetPorts(), func(p *v1alpha1.Port) bool {
+				return p.GetPort() == uint16(listenerPort)
+			}); idx != -1 {
+				if port := gwp.Spec.GetKube().GetService().GetPorts()[idx]; port != nil {
+					if nodePortVal := port.GetNodePort(); nodePortVal != nil {
+						nodePort = ptr.To(uint16(*nodePortVal))
+					}
+				}
+			}
+		}
 		gwPorts = append(gwPorts, helmPort{
 			Port:       &listenerPort,
 			TargetPort: &targetPort,
 			Name:       &portName,
 			Protocol:   &protocol,
+			NodePort:   nodePort,
 		})
 	}
 	return gwPorts

@@ -24,11 +24,11 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
-	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	routev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_ext_authz_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_authz/v3"
 	envoy_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 
+	apiannotations "github.com/kgateway-dev/kgateway/v2/api/annotations"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
@@ -36,6 +36,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/policy"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
@@ -222,6 +223,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 				// AttachmentPoints: []ir.AttachmentPoints{ir.HttpAttachmentPoint},
 				NewGatewayTranslationPass: NewGatewayTranslationPass,
 				Policies:                  policyCol,
+				MergePolicies:             mergePolicies,
 			},
 		},
 		ContributesRegistration: map[schema.GroupKind]func(){
@@ -276,11 +278,11 @@ func (p *trafficPolicyPluginGwPass) ApplyListenerPlugin(ctx context.Context, pCt
 	}
 }
 
-func (p *trafficPolicyPluginGwPass) ApplyVhostPlugin(ctx context.Context, pCtx *ir.VirtualHostContext, out *envoy_config_route_v3.VirtualHost) {
+func (p *trafficPolicyPluginGwPass) ApplyVhostPlugin(ctx context.Context, pCtx *ir.VirtualHostContext, out *routev3.VirtualHost) {
 }
 
 // called 0 or more times
-func (p *trafficPolicyPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.RouteContext, outputRoute *envoy_config_route_v3.Route) error {
+func (p *trafficPolicyPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.RouteContext, outputRoute *routev3.Route) error {
 	policy, ok := pCtx.Policy.(*trafficPolicy)
 	if !ok {
 		return nil
@@ -423,7 +425,7 @@ func (p *trafficPolicyPluginGwPass) ApplyForBackend(
 	ctx context.Context,
 	pCtx *ir.RouteBackendContext,
 	in ir.HttpBackend,
-	out *envoy_config_route_v3.Route,
+	out *routev3.Route,
 ) error {
 	return nil
 }
@@ -589,6 +591,92 @@ func (p *trafficPolicyPluginGwPass) NetworkFilters(ctx context.Context) ([]plugi
 // called 1 time (per envoy proxy). replaces GeneratedResources
 func (p *trafficPolicyPluginGwPass) ResourcesToAdd(ctx context.Context) ir.Resources {
 	return ir.Resources{}
+}
+
+func (p *trafficPolicyPluginGwPass) SupportsPolicyMerge() bool {
+	return true
+}
+
+// mergePolicies merges the given policy ordered from high to low priority (both hierarchically
+// and within the same hierarchy) based on the constraints defined per PolicyAtt.
+//
+// It iterates policies in reverse order (low to high) to ensure higher priority policies can
+// always use an OverridableMerge strategy to override lower priority ones. Iterating policies
+// in the given priority order (high to low) requires more complex merging for delegated chains
+// because policies anywhere in the chain may enable policy overrides for their children but we
+// still need to ensure these children cannot override any policies set by their ancestors that
+// are not marked as overridable, i.e., (r1,p1)-delegate->(r2,p2)-delegate->(r3,p3) where
+// r=route p=policy needs to ensure p3 does not override p1 (assuming p1 does not enable overrides)
+// even if p2 allows overrides. This is easier to guarantee by using an OverridableMerge strategy
+// by merging in higher priority policies with different HierarchicalPriority.
+func mergePolicies(policies []ir.PolicyAtt) ir.PolicyAtt {
+	var out ir.PolicyAtt
+	if len(policies) == 0 {
+		return out
+	}
+	_, ok := policies[0].PolicyIr.(*trafficPolicy)
+	// ignore unknown types
+	if !ok {
+		return out
+	}
+
+	// base policy to merge into has an empty PolicyIr so it can always be merged into
+	out = ir.PolicyAtt{
+		GroupKind:    policies[0].GroupKind,
+		PolicyRef:    policies[0].PolicyRef,
+		MergeOrigins: map[string]*ir.AttachedPolicyRef{},
+		PolicyIr:     &trafficPolicy{},
+	}
+	merged := out.PolicyIr.(*trafficPolicy)
+
+	for i := len(policies) - 1; i >= 0; i-- {
+		mergeOpts := policy.MergeOptions{
+			Strategy: policy.OverridableMerge,
+		}
+		// If merging a policy lower in the hierarchy with a policy higher in the hierarchy AND
+		// the policy higher in the hierarchy enables policy overrides, use an AugmentedMerge strategy
+		// to preserve existing fields set by lower levels.
+		// NOTE: the HierarchicalPriority check is necessary to prevent enabling override behavior among
+		// policies in the same hierarchy, e.g., ExtensionRef vs TargetRef policy attached to the same route, as
+		// DelegationInheritedPolicyPriorityPreferChild strictly applies to parent->child policy inheritance and is not applicable
+		// outside delegated policy inheritance.
+		if out.HierarchicalPriority < policies[i].HierarchicalPriority && policies[i].DelegationInheritedPolicyPriority == apiannotations.DelegationInheritedPolicyPriorityPreferChild {
+			mergeOpts.Strategy = policy.AugmentedMerge
+		}
+
+		p2 := policies[i].PolicyIr.(*trafficPolicy)
+		p2Ref := policies[i].PolicyRef
+
+		if policy.IsMergeable(merged.spec.AI, p2.spec.AI, mergeOpts) {
+			merged.spec.AI = p2.spec.AI
+			out.MergeOrigins["ai"] = p2Ref
+		}
+		if policy.IsMergeable(merged.spec.ExtProc, p2.spec.ExtProc, mergeOpts) {
+			merged.spec.ExtProc = p2.spec.ExtProc
+			out.MergeOrigins["extProc"] = p2Ref
+		}
+		if policy.IsMergeable(merged.spec.transform, p2.spec.transform, mergeOpts) {
+			merged.spec.transform = p2.spec.transform
+			out.MergeOrigins["transformation"] = p2Ref
+		}
+		if policy.IsMergeable(merged.spec.rustformation, p2.spec.rustformation, mergeOpts) {
+			merged.spec.rustformation = p2.spec.rustformation
+			merged.spec.rustformationStringToStash = p2.spec.rustformationStringToStash
+			out.MergeOrigins["rustformation"] = p2Ref
+		}
+		if policy.IsMergeable(merged.spec.extAuth, p2.spec.extAuth, mergeOpts) {
+			merged.spec.extAuth = p2.spec.extAuth
+			out.MergeOrigins["extAuth"] = p2Ref
+		}
+		if policy.IsMergeable(merged.spec.localRateLimit, p2.spec.localRateLimit, mergeOpts) {
+			merged.spec.localRateLimit = p2.spec.localRateLimit
+			out.MergeOrigins["rateLimit"] = p2Ref
+		}
+
+		out.HierarchicalPriority = policies[i].HierarchicalPriority
+	}
+
+	return out
 }
 
 func buildTranslateFunc(

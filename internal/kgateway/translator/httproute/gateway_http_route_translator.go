@@ -1,7 +1,6 @@
 package httproute
 
 import (
-	"container/list"
 	"context"
 
 	"github.com/solo-io/go-utils/contextutils"
@@ -34,20 +33,13 @@ func TranslateGatewayHTTPRouteRules(
 	routesVisited := sets.New[types.NamespacedName]()
 
 	// Only HTTPRoute types should be translated.
-	route, ok := routeInfo.Object.(*ir.HttpRouteIR)
+	_, ok := routeInfo.Object.(*ir.HttpRouteIR)
 	if !ok {
 		return finalRoutes
 	}
 
-	// Hostnames need to be explicitly passed to the plugins since they
-	// are required by delegatee (child) routes of delegated routes that
-	// won't have spec.Hostnames set.
-	hostnames := route.Hostnames
-
-	delegationChain := list.New()
-
 	translateGatewayHTTPRouteRulesUtil(
-		ctx, gwListener, routeInfo, reporter, baseReporter, &finalRoutes, routesVisited, hostnames, delegationChain)
+		ctx, gwListener, routeInfo, reporter, baseReporter, &finalRoutes, routesVisited, nil)
 	return finalRoutes
 }
 
@@ -61,8 +53,7 @@ func translateGatewayHTTPRouteRulesUtil(
 	baseReporter reports.Reporter,
 	outputs *[]ir.HttpRouteRuleMatchIR,
 	routesVisited sets.Set[types.NamespacedName],
-	hostnames []string,
-	delegationChain *list.List,
+	delegatingParent *ir.HttpRouteRuleMatchIR,
 ) {
 	// Only HTTPRoute types should be translated.
 	route, ok := routeInfo.Object.(*ir.HttpRouteIR)
@@ -88,8 +79,7 @@ func translateGatewayHTTPRouteRulesUtil(
 			baseReporter,
 			outputs,
 			routesVisited,
-			hostnames,
-			delegationChain,
+			delegatingParent,
 		)
 		for _, outputRoute := range outputRoutes {
 			// The above function will return a nil route if a matcher fails to apply plugins
@@ -115,8 +105,7 @@ func translateGatewayHTTPRouteRule(
 	baseReporter reports.Reporter,
 	outputs *[]ir.HttpRouteRuleMatchIR,
 	routesVisited sets.Set[types.NamespacedName],
-	hostnames []string,
-	delegationChain *list.List,
+	delegatingParent *ir.HttpRouteRuleMatchIR,
 ) []ir.HttpRouteRuleMatchIR {
 	routes := make([]ir.HttpRouteRuleMatchIR, 0, len(rule.Matches))
 
@@ -137,13 +126,11 @@ func translateGatewayHTTPRouteRule(
 			Backends:          nil,
 			MatchIndex:        idx,
 			Match:             match,
-			Timeouts:          rule.Timeouts,
+			DelegatingParent:  delegatingParent,
 		}
 
-		var delegatedRoutes []ir.HttpRouteRuleMatchIR
-		var delegates bool
 		if len(rule.Backends) > 0 {
-			delegates = setRouteAction(
+			setRouteAction(
 				ctx,
 				gwroute,
 				rule,
@@ -152,21 +139,10 @@ func translateGatewayHTTPRouteRule(
 				baseReporter,
 				gwListener,
 				match,
-				&delegatedRoutes,
+				outputs,
 				routesVisited,
-				delegationChain,
 			)
 		}
-
-		// If this parent route has delegatee routes, set the parent on it
-		// so that later when applying plugins we can access and apply policies from it
-		for i := range delegatedRoutes {
-			delegatedRoutes[i].DelegateParentRule = &rule
-			delegatedRoutes[i].DelegateParent = parent
-		}
-
-		// Add the delegatee output routes to the final output list
-		*outputs = append(*outputs, delegatedRoutes...)
 
 		// TODO: this is not true; plugins can add actions later.
 		// It is possible for a parent route to not produce an output route action
@@ -175,10 +151,6 @@ func translateGatewayHTTPRouteRule(
 		// for a parent rule and when there are no delegated routes because this would
 		// otherwise result in a top level matcher with a direct response action for the
 		// path that the parent is delegating for.
-
-		if delegates {
-			outputRoute.HasChildren = true
-		}
 
 		// A parent route that delegates to a child route should not have an output route
 		// action (outputRoute.Action) as the routes are derived from the child route.
@@ -205,17 +177,15 @@ func setRouteAction(
 	match gwv1.HTTPRouteMatch,
 	outputs *[]ir.HttpRouteRuleMatchIR,
 	routesVisited sets.Set[types.NamespacedName],
-	delegationChain *list.List,
-) bool {
+) {
 	backends := rule.Backends
-	delegates := false
 	logger := contextutils.LoggerFrom(ctx).Desugar()
 
 	for _, backend := range backends {
 		// If the backend is an HTTPRoute, it implies route delegation
 		// for which delegated routes are recursively flattened and translated
 		if backend.Delegate != nil {
-			delegates = true
+			outputRoute.Delegates = true
 			// Flatten delegated HTTPRoute references
 			err := flattenDelegatedRoutes(
 				ctx,
@@ -227,7 +197,7 @@ func setRouteAction(
 				match,
 				outputs,
 				routesVisited,
-				delegationChain,
+				outputRoute,
 			)
 			if err != nil {
 				query.ProcessBackendError(err, reporter)
@@ -246,8 +216,6 @@ func setRouteAction(
 		}
 		outputRoute.Backends = append(outputRoute.Backends, httpBackend)
 	}
-
-	return delegates
 }
 
 /* TODO: demonstrate that we can replace this with 'virtual' GKs

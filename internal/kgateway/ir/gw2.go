@@ -26,11 +26,11 @@ type HttpRouteRuleMatchIR struct {
 	ExtensionRefs    AttachedPolicies
 	AttachedPolicies AttachedPolicies
 	Parent           *HttpRouteIR
-	// the rule that delegated to us
-	DelegateParentRule *HttpRouteRuleIR
-	// the route that delegated to us
-	DelegateParent *HttpRouteIR
-	HasChildren    bool
+	// DelegatingParent is a pointer to the parent HttpRouteRuleMatchIR that delegated to this one
+	DelegatingParent *HttpRouteRuleMatchIR
+	// Delegates is a boolean indicating if this HttpRouteRuleMatchIR delegates to other routes
+	Delegates bool
+
 	// if there's an error, the gw-api listener to report it in.
 	ListenerParentRef gwv1.ParentReference
 	// the parent ref the led here (may be delegated httproute or listner)
@@ -39,7 +39,6 @@ type HttpRouteRuleMatchIR struct {
 	Match      gwv1.HTTPRouteMatch
 	MatchIndex int
 	Name       string
-	Timeouts   *gwv1.HTTPRouteTimeouts
 }
 
 type ListenerIR struct {

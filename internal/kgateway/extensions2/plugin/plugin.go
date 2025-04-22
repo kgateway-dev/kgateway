@@ -27,14 +27,16 @@ func (a AttachmentPoints) Has(p AttachmentPoints) bool {
 	return a&p != 0
 }
 
-type GetBackendForRefPlugin func(kctx krt.HandlerContext, key ir.ObjectSource, port int32) *ir.BackendObjectIR
-type ProcessBackend func(ctx context.Context, pol ir.PolicyIR, in ir.BackendObjectIR, out *envoy_config_cluster_v3.Cluster)
-type EndpointPlugin func(
-	kctx krt.HandlerContext,
-	ctx context.Context,
-	ucc ir.UniqlyConnectedClient,
-	in ir.EndpointsForBackend,
-) (*envoy_config_endpoint_v3.ClusterLoadAssignment, uint64)
+type (
+	GetBackendForRefPlugin func(kctx krt.HandlerContext, key ir.ObjectSource, port int32) *ir.BackendObjectIR
+	ProcessBackend         func(ctx context.Context, pol ir.PolicyIR, in ir.BackendObjectIR, out *envoy_config_cluster_v3.Cluster)
+	EndpointPlugin         func(
+		kctx krt.HandlerContext,
+		ctx context.Context,
+		ucc ir.UniqlyConnectedClient,
+		in ir.EndpointsForBackend,
+	) (*envoy_config_endpoint_v3.ClusterLoadAssignment, uint64)
+)
 
 // TODO: consider changing PerClientProcessBackend to look like this:
 // PerClientProcessBackend  func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniqlyConnectedClient, in ir.BackendObjectIR)
@@ -63,6 +65,7 @@ type PolicyPlugin struct {
 	// PoliciesFetch can optionally be set if the plugin needs a custom mechanism for fetching the policy IR,
 	// rather than the default behavior of fetching by name from the aggregated policy KRT collection
 	PoliciesFetch func(n, ns string) ir.PolicyIR
+	MergePolicies func(pols []ir.PolicyAtt) ir.PolicyAtt
 }
 
 type BackendPlugin struct {
@@ -80,8 +83,10 @@ type KGwTranslator interface {
 		gateway *ir.Gateway,
 		reporter reports.Reporter) *ir.GatewayIR
 }
-type GwTranslatorFactory func(gw *gwv1.Gateway) KGwTranslator
-type ContributesPolicies map[schema.GroupKind]PolicyPlugin
+type (
+	GwTranslatorFactory func(gw *gwv1.Gateway) KGwTranslator
+	ContributesPolicies map[schema.GroupKind]PolicyPlugin
+)
 
 type Plugin struct {
 	ContributesPolicies     ContributesPolicies
@@ -94,9 +99,11 @@ type Plugin struct {
 	ExtraHasSynced func() bool
 }
 
-type AncestorReports map[ir.ObjectSource][]error
-type PolicyReport map[ir.AttachedPolicyRef]AncestorReports
-type ProcessPolicyStatus func(ctx context.Context, gkString string, polReport PolicyReport)
+type (
+	AncestorReports     map[ir.ObjectSource][]error
+	PolicyReport        map[ir.AttachedPolicyRef]AncestorReports
+	ProcessPolicyStatus func(ctx context.Context, gkString string, polReport PolicyReport)
+)
 
 func (p PolicyPlugin) AttachmentPoints() AttachmentPoints {
 	var ret AttachmentPoints

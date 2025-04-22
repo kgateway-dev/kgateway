@@ -15,6 +15,7 @@
 #   - targetRef points to infra/example-route
 # - TrafficPolicy a-root/route-a-root-policy:
 #   - specifies local rate limit
+#   - specifies response transformation that cannot override example-policy attached to patent route
 #   - targetRef points to a-root/route-a-root
 # - TrafficPolicy a/route-a-policy:
 #   - specifies local rate limit and ext proc
@@ -108,6 +109,11 @@ spec:
   - group: gateway.networking.k8s.io
     kind: HTTPRoute
     name: route-a-root
+  transformation:
+    response:
+      add:
+      - name: should-be-ignored
+        value: should-be-ignored
   rateLimit:
     local:
       tokenBucket:
@@ -125,6 +131,11 @@ spec:
   - group: gateway.networking.k8s.io
     kind: HTTPRoute
     name: route-a
+  transformation:
+    response:
+      add:
+      - name: should-be-ignored
+        value: should-be-ignored
   rateLimit:
     local:
       tokenBucket:
