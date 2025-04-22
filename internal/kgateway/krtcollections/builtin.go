@@ -73,7 +73,7 @@ func NewBuiltInIr(kctx krt.HandlerContext, f gwv1.HTTPRouteFilter, fromgk schema
 
 func NewBuiltInRuleIr(rule gwv1.HTTPRouteRule) ir.PolicyIR {
 	// If no rule policies are set, return nil so that we don't have a no-op policy
-	if rule.Timeouts == nil {
+	if rule.Timeouts == nil && rule.Retry == nil {
 		return nil
 	}
 	return &builtinPlugin{
