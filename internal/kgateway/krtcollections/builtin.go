@@ -180,7 +180,7 @@ func applyRetry(route *envoy_config_route_v3.Route, retry *gwv1.HTTPRouteRetry, 
 
 	retryPolicy := &envoy_config_route_v3.RetryPolicy{
 		NumRetries: &wrapperspb.UInt32Value{Value: 1},
-		RetryOn:    "cancelled,connect-failure,refused-stream,retriable-status-codes,unavailable",
+		RetryOn:    "cancelled,connect-failure,refused-stream,retriable-headers,retriable-status-codes,unavailable",
 	}
 
 	if retry.Attempts != nil {

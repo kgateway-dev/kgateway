@@ -68,7 +68,7 @@ Routes:
           - 503
           retryBackOff:
             baseInterval: 1s
-          retryOn: cancelled,connect-failure,refused-stream,retriable-status-codes,unavailable
+          retryOn: cancelled,connect-failure,refused-stream,retriable-headers,retriable-status-codes,unavailable
         timeout: 9s
   - domains:
     - example-retry-both-timeouts.com
@@ -83,7 +83,7 @@ Routes:
         retryPolicy:
           numRetries: 3
           perTryTimeout: 5s
-          retryOn: cancelled,connect-failure,refused-stream,retriable-status-codes,unavailable
+          retryOn: cancelled,connect-failure,refused-stream,retriable-headers,retriable-status-codes,unavailable
         timeout: 10s
   - domains:
     - example-retry.com
@@ -101,7 +101,7 @@ Routes:
           - 503
           retryBackOff:
             baseInterval: 1s
-          retryOn: cancelled,connect-failure,refused-stream,retriable-status-codes,unavailable
+          retryOn: cancelled,connect-failure,refused-stream,retriable-headers,retriable-status-codes,unavailable
   - domains:
     - example.com
     name: http~example_com
