@@ -44,7 +44,7 @@ func (s *serviceEntryCollections) resolveServiceEntryBackendRef(
 	// To avoid this we would need to make BackendObjectIR support multiple CanonicalHostnames.
 	// In the meantime, to make sure this function returns a consistent result, return the BackendObjectIR
 	// with the first hostname, lexicographically/alphabetically.
-	results := krt.Fetch(kctx, s.Backends, krt.FilterIndex(s.backendsBySourceObj, serviceEntryKey(key)))
+	results := krt.Fetch(kctx, s.Backends, krt.FilterIndex(s.backendsIndex, makeSrcObjKey(key)))
 	for _, res := range results {
 		if out == nil || res.CanonicalHostname < out.CanonicalHostname {
 			out = &res
@@ -65,7 +65,7 @@ func (s *serviceEntryCollections) resolveHostnameBackendRef(
 	// The istio-style behavior is to use the oldest one to prevent a newer ServiceEntry from
 	// hijacking traffic to that hostname.
 	// TODO consider preferring namespace-local as the first criterion.
-	results := krt.Fetch(kctx, s.Backends, krt.FilterIndex(s.backendsByHostPort, makeHostPortKey(hostname, int(port))))
+	results := krt.Fetch(kctx, s.Backends, krt.FilterIndex(s.backendsIndex, makeHostPortKey(hostname, port)))
 	for _, res := range results {
 		if out == nil || res.Obj.GetCreationTimestamp().Time.Before(out.Obj.GetCreationTimestamp().Time) {
 			out = &res
