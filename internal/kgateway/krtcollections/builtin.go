@@ -185,7 +185,7 @@ func applyRetry(route *envoy_config_route_v3.Route, retry *gwv1.HTTPRouteRetry, 
 	if len(retry.Codes) > 0 {
 		retryPolicy.RetriableStatusCodes = make([]uint32, len(retry.Codes))
 		for i, c := range retry.Codes {
-			retryPolicy.RetriableStatusCodes[i] = uint32(c)
+			retryPolicy.GetRetriableStatusCodes()[i] = uint32(c)
 		}
 	}
 
