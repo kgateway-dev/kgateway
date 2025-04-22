@@ -15,32 +15,23 @@ clusters:
       explicitHttpConfig:
         http2ProtocolOptions: {}
 - connectTimeout: 5s
-  edsClusterConfig:
-    edsConfig:
-      ads: {}
-      resourceApiVersion: V3
-  metadata: {}
-  name: kube_default_kubernetes_443
-  type: EDS
-- connectTimeout: 5s
   dnsLookupFamily: V4_PREFERRED
   loadAssignment:
-    clusterName: backend_gwtest_openai_0
+    clusterName: backend_gwtest_deepseek_0
     endpoints:
     - lbEndpoints:
       - endpoint:
           address:
             socketAddress:
-              address: model-failover.default.svc.cluster.local
-              portValue: 80
-          hostname: model-failover.default.svc.cluster.local
+              address: ollama-deepseek-r1.ollama.svc.cluster.local
+              portValue: 11434
+          hostname: ollama-deepseek-r1.ollama.svc.cluster.local
         metadata:
           filterMetadata:
             io.solo.transformation:
               auth_token: mysecretkey
-              model: gpt-4o
   metadata: {}
-  name: backend_gwtest_openai_0
+  name: backend_gwtest_deepseek_0
   transportSocketMatches:
   - match:
       tls: default
@@ -91,6 +82,14 @@ clusters:
       - name: envoy.filters.http.upstream_codec
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.http.upstream_codec.v3.UpstreamCodec
+- connectTimeout: 5s
+  edsClusterConfig:
+    edsConfig:
+      ads: {}
+      resourceApiVersion: V3
+  metadata: {}
+  name: kube_default_kubernetes_443
+  type: EDS
 listeners:
 - address:
     socketAddress:
@@ -150,11 +149,11 @@ routes:
     name: http~test
     routes:
     - match:
-        pathSeparatedPrefix: /openai
+        path: /v1/chat/completions
       name: http~test-route-0-httproute-route-to-backend-gwtest-0-0-matcher-0
       route:
         autoHostRewrite: true
-        cluster: backend_gwtest_openai_0
+        cluster: backend_gwtest_deepseek_0
       typedPerFilterConfig:
         ai.backend.transformation.kgateway.io:
           '@type': type.googleapis.com/envoy.api.v2.filter.http.RouteTransformations
@@ -182,7 +181,29 @@ routes:
             grpcInitialMetadata:
             - key: x-llm-provider
               value: openai
-            - key: x-llm-model
-              value: gpt-4o
             - key: x-request-id
               value: '%REQ(X-REQUEST-ID)%'
+            - key: x-req-guardrails-config
+              value: '{"customResponse":{"message":"Rejected due to inappropriate
+                content","statusCode":400},"regex":{"matches":[{"pattern":"credit
+                card"}],"action":"MASK"}}'
+            - key: x-req-guardrails-config-hash
+              value: "9203588354611212263"
+            - key: x-resp-guardrails-config
+              value: '{"regex":{"builtins":["PHONE_NUMBER","EMAIL","SSN","CREDIT_CARD"],"action":"MASK"}}'
+            - key: x-resp-guardrails-config-hash
+              value: "16437043364061366160"
+        ai.policy.transformation.kgateway.io:
+          '@type': type.googleapis.com/envoy.api.v2.filter.http.RouteTransformations
+          transformations:
+          - requestMatch:
+              requestTransformation:
+                logRequestResponseInfo: false
+                transformationTemplate:
+                  mergeJsonKeys:
+                    jsonKeys:
+                      messages:
+                        tmpl:
+                          text: '[{"content":"respond to all questions in French","role":"system"},{"content":"Say
+                            hello before each response","role":"system"},{{ join(messages,
+                            ", ") }}]'

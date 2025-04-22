@@ -15,32 +15,25 @@ clusters:
       explicitHttpConfig:
         http2ProtocolOptions: {}
 - connectTimeout: 5s
-  edsClusterConfig:
-    edsConfig:
-      ads: {}
-      resourceApiVersion: V3
-  metadata: {}
-  name: kube_default_kubernetes_443
-  type: EDS
-- connectTimeout: 5s
   dnsLookupFamily: V4_PREFERRED
   loadAssignment:
-    clusterName: backend_gwtest_openai_0
+    clusterName: backend_gwtest_anthropic_0
     endpoints:
     - lbEndpoints:
       - endpoint:
           address:
             socketAddress:
-              address: model-failover.default.svc.cluster.local
-              portValue: 80
-          hostname: model-failover.default.svc.cluster.local
+              address: api.anthropic.com
+              portValue: 443
+          hostname: api.anthropic.com
         metadata:
           filterMetadata:
+            envoy.transport_socket_match:
+              tls: default
             io.solo.transformation:
-              auth_token: mysecretkey
-              model: gpt-4o
+              auth_token: ""
   metadata: {}
-  name: backend_gwtest_openai_0
+  name: backend_gwtest_anthropic_0
   transportSocketMatches:
   - match:
       tls: default
@@ -91,6 +84,14 @@ clusters:
       - name: envoy.filters.http.upstream_codec
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.http.upstream_codec.v3.UpstreamCodec
+- connectTimeout: 5s
+  edsClusterConfig:
+    edsConfig:
+      ads: {}
+      resourceApiVersion: V3
+  metadata: {}
+  name: kube_default_kubernetes_443
+  type: EDS
 listeners:
 - address:
     socketAddress:
@@ -150,11 +151,11 @@ routes:
     name: http~test
     routes:
     - match:
-        pathSeparatedPrefix: /openai
+        path: /anthropic
       name: http~test-route-0-httproute-route-to-backend-gwtest-0-0-matcher-0
       route:
         autoHostRewrite: true
-        cluster: backend_gwtest_openai_0
+        cluster: backend_gwtest_anthropic_0
       typedPerFilterConfig:
         ai.backend.transformation.kgateway.io:
           '@type': type.googleapis.com/envoy.api.v2.filter.http.RouteTransformations
@@ -165,11 +166,11 @@ routes:
                 transformationTemplate:
                   headers:
                     :path:
-                      text: /v1/chat/completions
-                    Authorization:
-                      text: Bearer {% if host_metadata("auth_token") != "" %}{{host_metadata("auth_token")}}{%
+                      text: /v1/messages
+                    x-api-key:
+                      text: '{% if host_metadata("auth_token") != "" %}{{host_metadata("auth_token")}}{%
                         else %}{{dynamic_metadata("auth_token","ai.kgateway.io")}}{%
-                        endif %}
+                        endif %}'
                   mergeJsonKeys:
                     jsonKeys:
                       model:
@@ -181,8 +182,18 @@ routes:
           overrides:
             grpcInitialMetadata:
             - key: x-llm-provider
-              value: openai
-            - key: x-llm-model
-              value: gpt-4o
+              value: anthropic
             - key: x-request-id
               value: '%REQ(X-REQUEST-ID)%'
+        ai.policy.transformation.kgateway.io:
+          '@type': type.googleapis.com/envoy.api.v2.filter.http.RouteTransformations
+          transformations:
+          - requestMatch:
+              requestTransformation:
+                logRequestResponseInfo: false
+                transformationTemplate:
+                  mergeJsonKeys:
+                    jsonKeys:
+                      temperature:
+                        tmpl:
+                          text: '{{ default(0.5, "0.5") }}'

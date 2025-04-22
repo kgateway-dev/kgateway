@@ -26,3 +26,12 @@ Then run the tests in the setup directory:
 ```yaml
 go test -v ./setup/
 ```
+
+Test setups:
+
+- `standard`: `setup/standard` uses the standard kgateway setup
+- `istio_mtls`: `setup/istio_mtls` uses the standard kgateway setup with Istio auto mTLS enabled
+- `autodns`: `setup/autodns` uses the standard kgateway setup with auto DNS enabled
+- `serviceentry`: `setup/serviceentry` uses the standard kgateway setup with Istio service entry integration enabled
+- `istio_destinationrule`: `setup/istio_destinationrule` uses the standard kgateway setup with Istio destination rule integration enabled
+- `inference_api`: `setup/inference_api` uses the standard kgateway setup with Inference API enabled

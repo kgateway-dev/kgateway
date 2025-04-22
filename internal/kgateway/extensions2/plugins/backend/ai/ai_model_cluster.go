@@ -15,6 +15,8 @@ import (
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/structpb"
 
+	eiutils "github.com/kgateway-dev/kgateway/v2/internal/envoyinit/pkg/utils"
+
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	aiutils "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
@@ -23,12 +25,17 @@ import (
 
 const (
 	tlsPort = 443
+
+	// well-known provider default hosts
+	OpenAIHost    = "api.openai.com"
+	GeminiHost    = "generativelanguage.googleapis.com"
+	AnthropicHost = "api.anthropic.com"
 )
 
-func tlsMatch() *structpb.Struct {
+func tlsMatch(matchStr string) *structpb.Struct {
 	return &structpb.Struct{
 		Fields: map[string]*structpb.Value{
-			"tls": structpb.NewStringValue("true"),
+			"tls": structpb.NewStringValue(matchStr),
 		},
 	}
 }
@@ -127,26 +134,68 @@ func buildModelCluster(ctx context.Context, aiUs *v1alpha1.AIBackend, aiSecret *
 			return err
 		}
 	}
-	// attempt to match tls, the default match is always plaintext
-	tlsCtx := &envoy_tls_v3.UpstreamTlsContext{
-		CommonTlsContext: &envoy_tls_v3.CommonTlsContext{},
-		AutoHostSni:      true,
+
+	// Add proper certificate validation
+	validationContext := &envoy_tls_v3.CertificateValidationContext{}
+	sdsValidationCtx := &envoy_tls_v3.SdsSecretConfig{
+		Name: eiutils.SystemCaSecretName,
 	}
-	tlsCtxAny, err := utils.MessageToAny(tlsCtx)
+
+	tlsContextDefault := &envoy_tls_v3.UpstreamTlsContext{
+		CommonTlsContext: &envoy_tls_v3.CommonTlsContext{
+			ValidationContextType: &envoy_tls_v3.CommonTlsContext_CombinedValidationContext{
+				CombinedValidationContext: &envoy_tls_v3.CommonTlsContext_CombinedCertificateValidationContext{
+					DefaultValidationContext:         validationContext,
+					ValidationContextSdsSecretConfig: sdsValidationCtx,
+				},
+			},
+		},
+		AutoHostSni: true,
+	}
+	tlsCtxDefaultAny, err := utils.MessageToAny(tlsContextDefault)
 	if err != nil {
 		return err
 	}
-	out.TransportSocketMatches = append(out.GetTransportSocketMatches(), []*envoy_config_cluster_v3.Cluster_TransportSocketMatch{
-		{
-			Name: "tls",
-			TransportSocket: &envoy_config_core_v3.TransportSocket{
-				Name: wellknown.TransportSocketTls,
-				ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{
-					TypedConfig: tlsCtxAny,
-				},
+	tlsMatchDefault := &envoy_config_cluster_v3.Cluster_TransportSocketMatch{
+		Name: "tls",
+		TransportSocket: &envoy_config_core_v3.TransportSocket{
+			Name: wellknown.TransportSocketTls,
+			ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{
+				TypedConfig: tlsCtxDefaultAny,
 			},
-			Match: tlsMatch(),
 		},
+		Match: tlsMatch("default"),
+	}
+
+	// Skip verification if explicitly requested
+	// Note: We don't set ValidationContextType at all, which effectively disables verification
+	tlsContextSkipValidation := &envoy_tls_v3.UpstreamTlsContext{
+		CommonTlsContext: &envoy_tls_v3.CommonTlsContext{},
+		AutoHostSni:      true,
+	}
+	tlsCtxSkipValidationAny, err := utils.MessageToAny(tlsContextSkipValidation)
+	if err != nil {
+		return err
+	}
+	tsMatchSkipValidation := &envoy_config_cluster_v3.Cluster_TransportSocketMatch{
+		Name: "tls",
+		TransportSocket: &envoy_config_core_v3.TransportSocket{
+			Name: wellknown.TransportSocketTls,
+			ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{
+				TypedConfig: tlsCtxSkipValidationAny,
+			},
+		},
+		Match: tlsMatch("skipverification"),
+	}
+
+	// First attempt to match tls or if skip verification is enabled. The default match is always plaintext
+	// append all transport socket matches
+	out.TransportSocketMatches = append(out.GetTransportSocketMatches(), []*envoy_config_cluster_v3.Cluster_TransportSocketMatch{
+		// attempt to match tls default if match is set
+		tlsMatchDefault,
+		// attempt to match tls skip validation if match is set and skip verification is true
+		tsMatchSkipValidation,
+		// add the plaintext default match
 		{
 			Name: "plaintext",
 			TransportSocket: &envoy_config_core_v3.TransportSocket{
@@ -224,13 +273,12 @@ func buildOpenAIEndpoint(data *v1alpha1.OpenAIConfig, hostOverride *v1alpha1.Hos
 	if data.Model != nil {
 		model = *data.Model
 	}
-	ep := buildLocalityLbEndpoint(
-		"api.openai.com",
+	return buildLocalityLbEndpoint(
+		OpenAIHost,
 		tlsPort,
 		hostOverride,
 		buildEndpointMeta(token, model, nil),
-	)
-	return ep, nil
+	), nil
 }
 func buildAnthropicEndpoint(data *v1alpha1.AnthropicConfig, hostOverride *v1alpha1.Host, aiSecrets *ir.Secret) (*envoy_config_endpoint_v3.LbEndpoint, error) {
 	token, err := aiutils.GetAuthToken(data.AuthToken, aiSecrets)
@@ -241,39 +289,36 @@ func buildAnthropicEndpoint(data *v1alpha1.AnthropicConfig, hostOverride *v1alph
 	if data.Model != nil {
 		model = *data.Model
 	}
-	ep := buildLocalityLbEndpoint(
-		"api.anthropic.com",
+	return buildLocalityLbEndpoint(
+		AnthropicHost,
 		tlsPort,
 		hostOverride,
 		buildEndpointMeta(token, model, nil),
-	)
-	return ep, nil
+	), nil
 }
 func buildAzureOpenAIEndpoint(data *v1alpha1.AzureOpenAIConfig, hostOverride *v1alpha1.Host, aiSecrets *ir.Secret) (*envoy_config_endpoint_v3.LbEndpoint, error) {
 	token, err := aiutils.GetAuthToken(data.AuthToken, aiSecrets)
 	if err != nil {
 		return nil, err
 	}
-	ep := buildLocalityLbEndpoint(
+	return buildLocalityLbEndpoint(
 		data.Endpoint,
 		tlsPort,
 		hostOverride,
 		buildEndpointMeta(token, data.DeploymentName, map[string]string{"api_version": data.ApiVersion}),
-	)
-	return ep, nil
+	), nil
 }
 func buildGeminiEndpoint(data *v1alpha1.GeminiConfig, hostOverride *v1alpha1.Host, aiSecrets *ir.Secret) (*envoy_config_endpoint_v3.LbEndpoint, error) {
 	token, err := aiutils.GetAuthToken(data.AuthToken, aiSecrets)
 	if err != nil {
 		return nil, err
 	}
-	ep := buildLocalityLbEndpoint(
-		"generativelanguage.googleapis.com",
+	return buildLocalityLbEndpoint(
+		GeminiHost,
 		tlsPort,
 		hostOverride,
 		buildEndpointMeta(token, data.Model, map[string]string{"api_version": data.ApiVersion}),
-	)
-	return ep, nil
+	), nil
 }
 func buildVertexAIEndpoint(ctx context.Context, data *v1alpha1.VertexAIConfig, hostOverride *v1alpha1.Host, aiSecrets *ir.Secret) (*envoy_config_endpoint_v3.LbEndpoint, error) {
 	token, err := aiutils.GetAuthToken(data.AuthToken, aiSecrets)
@@ -289,22 +334,21 @@ func buildVertexAIEndpoint(ctx context.Context, data *v1alpha1.VertexAIConfig, h
 		contextutils.LoggerFrom(ctx).Warnf("unsupported Vertex AI publisher: %v. Defaulting to Google.", data.Publisher)
 		publisher = "google"
 	}
-	ep := buildLocalityLbEndpoint(
+	return buildLocalityLbEndpoint(
 		fmt.Sprintf("%s-aiplatform.googleapis.com", data.Location),
 		tlsPort,
 		hostOverride,
 		buildEndpointMeta(token, data.Model, map[string]string{"api_version": data.ApiVersion, "location": data.Location, "project": data.ProjectId, "publisher": publisher}),
-	)
-	return ep, nil
+	), nil
 }
 
-// TODO: Add ssl verification with endpoints (https://github.com/kgateway-dev/kgateway/issues/10719)
 func buildLocalityLbEndpoint(
 	host string,
 	port int32,
 	hostOverride *v1alpha1.Host,
 	metadata *envoy_config_core_v3.Metadata,
 ) *envoy_config_endpoint_v3.LbEndpoint {
+	var insecureSkipVerify bool
 	if hostOverride != nil {
 		if hostOverride.Host != "" {
 			host = hostOverride.Host
@@ -312,11 +356,27 @@ func buildLocalityLbEndpoint(
 		if hostOverride.Port != 0 {
 			port = int32(hostOverride.Port)
 		}
+		// Skip verification for custom hosts until API supports setting insecureSkipVerify
+		insecureSkipVerify = true
 	}
 	if port == tlsPort {
-		// Used for transport socket matching
-		metadata.GetFilterMetadata()["envoy.transport_socket_match"] = tlsMatch()
+		if !insecureSkipVerify {
+			// Used for transport socket matching with validation
+			metadata.GetFilterMetadata()["envoy.transport_socket_match"] = &structpb.Struct{
+				Fields: map[string]*structpb.Value{
+					"tls": structpb.NewStringValue("default"),
+				},
+			}
+		} else {
+			// Used for transport socket matching with skipverification
+			metadata.GetFilterMetadata()["envoy.transport_socket_match"] = &structpb.Struct{
+				Fields: map[string]*structpb.Value{
+					"tls": structpb.NewStringValue("skipverification"),
+				},
+			}
+		}
 	}
+
 	return &envoy_config_endpoint_v3.LbEndpoint{
 		Metadata: metadata,
 		HostIdentifier: &envoy_config_endpoint_v3.LbEndpoint_Endpoint{

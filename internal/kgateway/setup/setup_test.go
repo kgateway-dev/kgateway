@@ -123,12 +123,31 @@ func TestServiceEntry(t *testing.T) {
 	runScenario(t, "testdata/serviceentry", st)
 }
 
+func TestDestinationRule(t *testing.T) {
+	st, err := settings.BuildSettings()
+	st.EnableIstioIntegration = true
+	if err != nil {
+		t.Fatalf("can't get settings %v", err)
+	}
+	runScenario(t, "testdata/istio_destinationrule", st)
+}
+
 func TestWithStandardSettings(t *testing.T) {
 	st, err := settings.BuildSettings()
 	if err != nil {
 		t.Fatalf("can't get settings %v", err)
 	}
 	runScenario(t, "testdata/standard", st)
+}
+
+func TestWithIstioAutomtlsSettings(t *testing.T) {
+	st, err := settings.BuildSettings()
+	st.EnableIstioIntegration = true
+	st.EnableIstioAutoMtls = true
+	if err != nil {
+		t.Fatalf("can't get settings %v", err)
+	}
+	runScenario(t, "testdata/istio_mtls", st)
 }
 
 func TestWithAutoDns(t *testing.T) {
@@ -141,17 +160,15 @@ func TestWithAutoDns(t *testing.T) {
 	runScenario(t, "testdata/autodns", st)
 }
 
-func TestScenarios(t *testing.T) {
+func TestWithInferenceAPI(t *testing.T) {
 	st, err := settings.BuildSettings()
 	if err != nil {
 		t.Fatalf("can't get settings %v", err)
 	}
-	st.EnableIstioIntegration = true
-	st.EnableIstioAutoMtls = true
 	st.EnableInferExt = true
 	st.InferExtAutoProvision = true
 
-	runScenario(t, "testdata", st)
+	runScenario(t, "testdata/inference_api", st)
 }
 
 func policyFile() string {

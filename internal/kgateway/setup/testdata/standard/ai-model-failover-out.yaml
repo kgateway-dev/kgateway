@@ -15,14 +15,6 @@ clusters:
       explicitHttpConfig:
         http2ProtocolOptions: {}
 - connectTimeout: 5s
-  edsClusterConfig:
-    edsConfig:
-      ads: {}
-      resourceApiVersion: V3
-  metadata: {}
-  name: kube_default_kubernetes_443
-  type: EDS
-- connectTimeout: 5s
   dnsLookupFamily: V4_PREFERRED
   loadAssignment:
     clusterName: backend_gwtest_openai_0
@@ -31,14 +23,46 @@ clusters:
       - endpoint:
           address:
             socketAddress:
-              address: model-failover.default.svc.cluster.local
-              portValue: 80
-          hostname: model-failover.default.svc.cluster.local
+              address: api.openai.com
+              portValue: 443
+          hostname: api.openai.com
         metadata:
           filterMetadata:
+            envoy.transport_socket_match:
+              tls: default
             io.solo.transformation:
               auth_token: mysecretkey
               model: gpt-4o
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: api.openai.com
+              portValue: 443
+          hostname: api.openai.com
+        metadata:
+          filterMetadata:
+            envoy.transport_socket_match:
+              tls: default
+            io.solo.transformation:
+              auth_token: mysecretkeytwo
+              model: gpt-4.0-turbo
+      priority: 1
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: api.openai.com
+              portValue: 443
+          hostname: api.openai.com
+        metadata:
+          filterMetadata:
+            envoy.transport_socket_match:
+              tls: default
+            io.solo.transformation:
+              auth_token: mysecretkeythree
+              model: gpt-3.5-turbo
+      priority: 2
   metadata: {}
   name: backend_gwtest_openai_0
   transportSocketMatches:
@@ -91,6 +115,14 @@ clusters:
       - name: envoy.filters.http.upstream_codec
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.http.upstream_codec.v3.UpstreamCodec
+- connectTimeout: 5s
+  edsClusterConfig:
+    edsConfig:
+      ads: {}
+      resourceApiVersion: V3
+  metadata: {}
+  name: kube_default_kubernetes_443
+  type: EDS
 listeners:
 - address:
     socketAddress:
@@ -183,6 +215,6 @@ routes:
             - key: x-llm-provider
               value: openai
             - key: x-llm-model
-              value: gpt-4o
+              value: gpt-3.5-turbo
             - key: x-request-id
               value: '%REQ(X-REQUEST-ID)%'
