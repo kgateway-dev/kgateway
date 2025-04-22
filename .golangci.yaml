@@ -23,6 +23,7 @@ linters:
     - unused
     - usestdlibvars
     - whitespace
+    - staticcheck
   settings:
     forbidigo:
       forbid:
@@ -60,6 +61,9 @@ linters:
       #     // This is allowed but really, really bad. DO NOT do this.
       #     return b, a
       max-func-lines: 0
+    staticcheck:
+      checks:
+        - ST1019 # duplicate imports
   exclusions:
     generated: lax
     presets:

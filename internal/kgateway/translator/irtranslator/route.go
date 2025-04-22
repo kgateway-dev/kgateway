@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
-	"time"
 
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
@@ -13,9 +12,9 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
-	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
@@ -131,19 +130,6 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(ctx context.Context,
 		out.Action = h.translateRouteAction(ctx, in, out, nil)
 	}
 
-	// Apply timeout from the HTTPRouteRule if specified
-	if in.Timeouts != nil && out.GetAction() != nil {
-		err := applyRouteTimeout(out, in.Timeouts, in.Retry != nil)
-		if err != nil {
-			contextutils.LoggerFrom(ctx).Error("invalid HTTPRoute timeout", zap.Error(err))
-		}
-	}
-
-	// Apply retry policy from the HTTPRouteRule if specified
-	if in.Retry != nil && out.GetAction() != nil {
-		applyRouteRetry(out, in.Retry)
-	}
-
 	// run plugins here that may set action
 	err := h.runRoutePlugins(ctx, routeReport, in, out, typedPerFilterConfigRoute)
 	if err == nil {
@@ -164,7 +150,7 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(ctx context.Context,
 	out.TypedPerFilterConfig = typedPerFilterConfigAny
 
 	if err == nil && out.GetAction() == nil {
-		if in.HasChildren {
+		if in.Delegates {
 			return nil
 		} else {
 			err = errors.New("no action specified")
@@ -192,67 +178,6 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(ctx context.Context,
 	}
 
 	return out
-}
-
-// Apply timeout based on the specified requirements
-func applyRouteTimeout(route *envoy_config_route_v3.Route, timeout *gwv1.HTTPRouteTimeouts, hasRetry bool) error {
-	var timeoutStr string
-
-	// Apply the required timeout selection logic
-	switch {
-	case timeout.BackendRequest != nil && timeout.Request != nil:
-		// When both timeouts are set:
-		// - Without retry: Use BackendRequest, since it's more specific (shorter)
-		// - With retry: Use Request as the overall route timeout since
-		//   BackendRequest will be applied to each retry attempt
-		if hasRetry {
-			timeoutStr = string(*timeout.Request)
-		} else {
-			timeoutStr = string(*timeout.BackendRequest)
-		}
-	case timeout.BackendRequest != nil:
-		// Only BackendRequest is set
-		timeoutStr = string(*timeout.BackendRequest)
-	case timeout.Request != nil:
-		// Only Request is set
-		timeoutStr = string(*timeout.Request)
-	}
-
-	if timeoutStr == "" {
-		return nil
-	}
-
-	duration, err := time.ParseDuration(timeoutStr)
-	if err != nil {
-		return err
-	}
-	route.GetRoute().Timeout = durationpb.New(duration)
-	return nil
-}
-
-// applyRouteRetry applies the retry policy to the route.
-func applyRouteRetry(route *envoy_config_route_v3.Route, retry *ir.RetryIR) {
-	retryPolicy := &envoy_config_route_v3.RetryPolicy{
-		NumRetries: &wrapperspb.UInt32Value{Value: 1},
-		RetryOn:    "cancelled,connect-failure,refused-stream,retriable-status-codes,unavailable",
-	}
-
-	if retry.NumRetries != nil {
-		retryPolicy.NumRetries = &wrapperspb.UInt32Value{Value: *retry.NumRetries}
-	}
-	if len(retry.Codes) > 0 {
-		retryPolicy.RetriableStatusCodes = retry.Codes
-	}
-	if retry.Backoff != nil {
-		retryPolicy.RetryBackOff = &envoy_config_route_v3.RetryPolicy_RetryBackOff{
-			BaseInterval: durationpb.New(*retry.Backoff),
-		}
-	}
-	if retry.Timeout != nil {
-		retryPolicy.PerTryTimeout = durationpb.New(*retry.Timeout)
-	}
-
-	route.GetRoute().RetryPolicy = retryPolicy
 }
 
 func (h *httpRouteConfigurationTranslator) runVhostPlugins(ctx context.Context, out *envoy_config_route_v3.VirtualHost) {
@@ -287,59 +212,62 @@ func (h *httpRouteConfigurationTranslator) runRoutePlugins(
 ) error {
 	// all policies up to listener have been applied as vhost polices; we need to apply the httproute policies and below
 	//
-	// NOTE: AttachedPolicies must have policies in the order of lowest priority to highest priority,
-	// i.e., route-level policy -> rule-level policy -> delegate parent route-level policy -> delegate parent rule-level policy.
-	// For a given route, ExtensionRefs is higher priority than policies attached using TargetRefs.
+	// NOTE: AttachedPolicies must have policies in the ordered by hierarchy from root to leaf in the delegation chain where
+	// each level has policies ordered by rule level policies before entire route level policies.
 
-	var attachedPoliciesSlice []ir.AttachedPolicies
+	attachedPolicies := ir.AttachedPolicies{
+		Policies: map[schema.GroupKind][]ir.PolicyAtt{},
+	}
+	delegatingParent := in.DelegatingParent
+	var hierarchicalPriority int
+	for delegatingParent != nil {
+		hierarchicalPriority++
+		attachedPolicies.Prepend(hierarchicalPriority,
+			delegatingParent.ExtensionRefs, delegatingParent.AttachedPolicies, delegatingParent.Parent.AttachedPolicies)
+		delegatingParent = delegatingParent.DelegatingParent
+	}
+
+	// rule-level policies in priority order (high to low)
+	attachedPolicies.Append(in.ExtensionRefs, in.AttachedPolicies)
+
 	// route-level policy
 	if in.Parent != nil {
-		attachedPoliciesSlice = append(attachedPoliciesSlice,
-			in.Parent.AttachedPolicies,
-		)
-	}
-	// rule-level policies in priority order (lowest to highest)
-	attachedPoliciesSlice = append(attachedPoliciesSlice,
-		in.AttachedPolicies,
-		in.ExtensionRefs,
-	)
-
-	// policies from delegating parent route
-	// TODO: handle multi-level inheritance for delegatee routes (routes with delegating parents)
-	if in.DelegateParent != nil {
-		attachedPoliciesSlice = append(attachedPoliciesSlice, in.DelegateParent.AttachedPolicies)
-	}
-	if in.DelegateParentRule != nil {
-		attachedPoliciesSlice = append(attachedPoliciesSlice,
-			in.DelegateParentRule.AttachedPolicies,
-			in.DelegateParentRule.ExtensionRefs,
-		)
+		attachedPolicies.Append(in.Parent.AttachedPolicies)
 	}
 
 	var errs []error
 
-	for _, attachedPolicies := range attachedPoliciesSlice {
-		for gk, pols := range attachedPolicies.Policies {
-			pass := h.PluginPass[gk]
-			if pass == nil {
-				// TODO: should never happen, log error and report condition
-				continue
-			}
-			for _, pol := range pols {
-				pctx := &ir.RouteContext{
-					FilterChainName:   h.fc.FilterChainName,
-					Policy:            pol.PolicyIr,
-					In:                in,
-					TypedFilterConfig: typedPerFilterConfig,
-				}
-				err := pass.ApplyForRoute(ctx, pctx, out)
-				if err != nil {
-					errs = append(errs, err)
-				}
-				// TODO: check return value, if error returned, log error and report condition
-			}
+	applyForPolicy := func(ctx context.Context, pass *TranslationPass, pctx *ir.RouteContext, out *envoy_config_route_v3.Route) {
+		err := pass.ApplyForRoute(ctx, pctx, out)
+		if err != nil {
+			errs = append(errs, err)
 		}
 	}
+
+	for gk, pols := range attachedPolicies.Policies {
+		pass := h.PluginPass[gk]
+		if pass == nil {
+			// TODO: should never happen, log error and report condition
+			continue
+		}
+		pctx := &ir.RouteContext{
+			FilterChainName:   h.fc.FilterChainName,
+			In:                in,
+			TypedFilterConfig: typedPerFilterConfig,
+		}
+		if pass.MergePolicies != nil {
+			mergedPolicy := pass.MergePolicies(pols)
+			pctx.Policy = mergedPolicy.PolicyIr
+			applyForPolicy(ctx, pass, pctx, out)
+		} else {
+			for _, pol := range pols {
+				pctx.Policy = pol.PolicyIr
+				applyForPolicy(ctx, pass, pctx, out)
+			}
+		}
+		// TODO: check return value, if error returned, log error and report condition
+	}
+
 	err := errors.Join(errs...)
 	if err != nil {
 		routeReport.SetCondition(reports.RouteCondition{

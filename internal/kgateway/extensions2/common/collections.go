@@ -6,7 +6,6 @@ import (
 	"github.com/go-logr/logr"
 	"istio.io/istio/pkg/config/schema/gvr"
 	"istio.io/istio/pkg/kube"
-	istiokube "istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/kube/kubetypes"
@@ -75,7 +74,7 @@ func (c *CommonCollections) HasSynced() bool {
 func NewCommonCollections(
 	ctx context.Context,
 	krtOptions krtutil.KrtOptions,
-	client istiokube.Client,
+	client kube.Client,
 	ourClient versioned.Interface,
 	cl client.Client,
 	controllerName string,

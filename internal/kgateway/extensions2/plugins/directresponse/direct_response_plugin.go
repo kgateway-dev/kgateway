@@ -80,7 +80,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 
 	gk := wellknown.DirectResponseGVK.GroupKind()
 	policyCol := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *v1alpha1.DirectResponse) *ir.PolicyWrapper {
-		var pol = &ir.PolicyWrapper{
+		pol := &ir.PolicyWrapper{
 			ObjectSource: ir.ObjectSource{
 				Group:     gk.Group,
 				Kind:      gk.Kind,
@@ -118,7 +118,7 @@ func (p *directResponsePluginGwPass) ApplyListenerPlugin(ctx context.Context, pC
 func (p *directResponsePluginGwPass) ApplyVhostPlugin(ctx context.Context, pCtx *ir.VirtualHostContext, out *envoy_config_route_v3.VirtualHost) {
 }
 
-// called 0 or more times
+// called one or more times per route rule
 func (p *directResponsePluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.RouteContext, outputRoute *envoy_config_route_v3.Route) error {
 	dr, ok := pCtx.Policy.(*directResponse)
 	if !ok {

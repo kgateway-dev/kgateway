@@ -124,12 +124,32 @@ func routeWrapperLessFunc(wrapperA, wrapperB *SortableRoute) bool {
 		return len(matchA.QueryParams) < len(matchB.QueryParams)
 	}
 
-	if !wrapperA.RouteObject.GetCreationTimestamp().Time.Equal(wrapperB.RouteObject.GetCreationTimestamp().Time) {
-		return wrapperA.RouteObject.GetCreationTimestamp().After(wrapperB.RouteObject.GetCreationTimestamp().Time)
+	wrapperASource := wrapperA.RouteObject
+	wrapperBSource := wrapperB.RouteObject
+
+	// Compare the 2 objects
+	if !wrapperASource.GetCreationTimestamp().Time.Equal(wrapperBSource.GetCreationTimestamp().Time) {
+		return wrapperASource.GetCreationTimestamp().After(wrapperBSource.GetCreationTimestamp().Time)
 	}
-	if wrapperA.RouteObject.GetName() != wrapperB.RouteObject.GetName() || wrapperA.RouteObject.GetNamespace() != wrapperB.RouteObject.GetNamespace() {
-		return types.NamespacedName{Namespace: wrapperA.RouteObject.GetNamespace(), Name: wrapperA.RouteObject.GetName()}.String() >
-			types.NamespacedName{Namespace: wrapperB.RouteObject.GetNamespace(), Name: wrapperB.RouteObject.GetName()}.String()
+	if wrapperASource.GetName() != wrapperBSource.GetName() || wrapperASource.GetNamespace() != wrapperBSource.GetNamespace() {
+		return types.NamespacedName{Namespace: wrapperASource.GetNamespace(), Name: wrapperASource.GetName()}.String() >
+			types.NamespacedName{Namespace: wrapperBSource.GetNamespace(), Name: wrapperBSource.GetName()}.String()
+	}
+
+	// If these are delegated routes, compare their sources
+	if wrapperA.Route.DelegatingParent != nil {
+		wrapperASource = wrapperA.Route.Parent.SourceObject
+	}
+	if wrapperB.Route.DelegatingParent != nil {
+		wrapperBSource = wrapperB.Route.Parent.SourceObject
+	}
+	// Repeat the object comparison but with original sources
+	if !wrapperASource.GetCreationTimestamp().Time.Equal(wrapperBSource.GetCreationTimestamp().Time) {
+		return wrapperASource.GetCreationTimestamp().After(wrapperBSource.GetCreationTimestamp().Time)
+	}
+	if wrapperASource.GetName() != wrapperBSource.GetName() || wrapperASource.GetNamespace() != wrapperBSource.GetNamespace() {
+		return types.NamespacedName{Namespace: wrapperASource.GetNamespace(), Name: wrapperASource.GetName()}.String() >
+			types.NamespacedName{Namespace: wrapperBSource.GetNamespace(), Name: wrapperBSource.GetName()}.String()
 	}
 
 	return wrapperA.Idx > wrapperB.Idx

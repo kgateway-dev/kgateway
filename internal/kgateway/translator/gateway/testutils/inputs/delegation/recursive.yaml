@@ -1,3 +1,19 @@
+# This test contains 3 levels of delegation (parent -> child -> grandchild).
+#
+# Input:
+# - Parent infra/example-route:
+#   - Delegate /a to routes in "a" namespace
+#   - Everything else goes to infra/example-svc
+# - Child a/route-a:
+#   - /a/1 goes to a/svc-a
+#   - Delegate /a/b to route a-b/route-a-b
+# - Child a-b/route-a-b:
+#   - /a/b/1 goes to a-b/svc-a-b
+#
+# Expected output routes:
+# - /a/b/1 -> a-b/svc-a-b
+# - /a/1 -> a/svc-a
+# - /* -> infra/example-svc
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:

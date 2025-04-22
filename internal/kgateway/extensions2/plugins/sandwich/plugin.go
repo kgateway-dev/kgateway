@@ -33,7 +33,6 @@ import (
 	"time"
 
 	core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	listenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	sfsvalue "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/common/set_filter_state/v3"
 	proxy_protocol "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/listener/proxy_protocol/v3"
@@ -100,7 +99,7 @@ var _ ir.ProxyTranslationPass = &sandwichedTranslationPass{}
 // ApplyListenerPlugin adds a ProxyProtocol ListenerFilter that
 // 1. Overrides source and destination addresses to be what the zTunnel saw.
 // 2. Grabs the ProxyProtocolPeerTLV (0xD0) used to propagate the client identity validated by zTunnel.
-func (s *sandwichedTranslationPass) ApplyListenerPlugin(ctx context.Context, pCtx *ir.ListenerContext, out *envoy_config_listener_v3.Listener) {
+func (s *sandwichedTranslationPass) ApplyListenerPlugin(ctx context.Context, pCtx *ir.ListenerContext, out *listenerv3.Listener) {
 	_, ok := pCtx.Policy.(SandwichedInboundPolicy)
 	if !ok {
 		return

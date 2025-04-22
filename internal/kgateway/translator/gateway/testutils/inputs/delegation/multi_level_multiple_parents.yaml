@@ -1,3 +1,22 @@
+# This test contains a parent route that delegates to two child routes, and both
+# of the child routes delegate to a common grandchild route. The two children
+# and one grandchild routes all have the inherit-parent-matcher annotation set to
+# true.
+#
+# Input:
+# - Parent infra/api-example-com:
+#   - Delegate /api1 to default/apiproduct-1
+#   - Delegate /api2 to default/apiproduct-2
+# - Child default/apiproduct-1 (with annotation inherit-parent-matcher=true):
+#   - / delegates to default/httpbin
+# - Child default/apiproduct-2 (with annotation inherit-parent-matcher=true):
+#   - / delegates to default/httpbin
+# - Grandchild default/httpbin (with annotation inherit-parent-matcher=true):
+#   - / goes to svc default/httpbin
+#
+# Expected output routes:
+# - /api1 -> default/httpbin
+# - /api2 -> default/httpbin
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:

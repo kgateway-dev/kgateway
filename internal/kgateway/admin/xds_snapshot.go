@@ -5,13 +5,12 @@ import (
 	"net/http"
 
 	"github.com/envoyproxy/go-control-plane/pkg/cache/v3"
-	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"github.com/rotisserie/eris"
 )
 
 // The xDS Snapshot is intended to return the full in-memory xDS cache that the Control Plane manages
 // and serves up to running proxies.
-func addXdsSnapshotHandler(path string, mux *http.ServeMux, profiles map[string]dynamicProfileDescription, cache envoycache.SnapshotCache) {
+func addXdsSnapshotHandler(path string, mux *http.ServeMux, profiles map[string]dynamicProfileDescription, cache cache.SnapshotCache) {
 	mux.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
 		response := getXdsSnapshotDataFromCache(cache)
 		writeJSON(w, response, r)
