@@ -117,11 +117,6 @@ spec:
         name: http-web-svc
       - containerPort: 443
         name: https-web-svc
-    resources:
-      requests:
-        cpu: "100m"
-      limits:
-        cpu: "200m"
     volumeMounts:
     - name: nginx-conf
       mountPath: /etc/nginx/
