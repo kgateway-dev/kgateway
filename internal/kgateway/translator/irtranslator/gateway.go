@@ -154,6 +154,7 @@ func (t *Translator) newPass() TranslationPassPlugins {
 			ret[k] = &TranslationPass{
 				ProxyTranslationPass: tp,
 				Name:                 v.Name,
+				MergePolicies:        v.MergePolicies,
 			}
 		}
 	}
@@ -163,4 +164,8 @@ func (t *Translator) newPass() TranslationPassPlugins {
 type TranslationPass struct {
 	ir.ProxyTranslationPass
 	Name string
+	// If the plugin supports policy merging, it must implement MergePolicies
+	// such that policies ordered from high to low priority, both hierarchically
+	// and within the same hierarchy, are Merged into a single Policy
+	MergePolicies func(policies []ir.PolicyAtt) ir.PolicyAtt
 }

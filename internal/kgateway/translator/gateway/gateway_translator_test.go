@@ -163,14 +163,14 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 				Expect(resolvedRefs.Message).To(Equal("unknown backend kind"))
 			},
 		}),
-	XEntry(
+	Entry(
 		"TrafficPolicy merging",
 		translatorTestCase{
-			inputFile:  "route_policy/merge.yaml",
-			outputFile: "route_policy/merge.yaml",
+			inputFile:  "traffic-policy/merge.yaml",
+			outputFile: "traffic-policy/merge.yaml",
 			gwNN: types.NamespacedName{
-				Namespace: "default",
-				Name:      "gw",
+				Namespace: "infra",
+				Name:      "example-gateway",
 			},
 		}),
 	Entry(
@@ -493,11 +493,13 @@ var _ = DescribeTable("Route Delegation translator",
 	Entry("Relative paths", "relative_paths.yaml", ""),
 	Entry("Nested absolute and relative path inheritance", "nested_absolute_relative.yaml", ""),
 	Entry("Child route matcher does not match parent", "discard_invalid_child_matches.yaml", ""),
-	XEntry("Multi-level multiple parents delegation", "multi_level_multiple_parents.yaml", ""),
+	Entry("Multi-level multiple parents delegation", "multi_level_multiple_parents.yaml", ""),
 	Entry("TrafficPolicy only on child", "traffic_policy.yaml", ""),
 	Entry("TrafficPolicy inheritance from parent", "traffic_policy_inheritance.yaml", ""),
 	Entry("TrafficPolicy ignore child override on conflict", "traffic_policy_inheritance_child_override_ignore.yaml", ""),
 	Entry("TrafficPolicy merge child override on no conflict", "traffic_policy_inheritance_child_override_ok.yaml", ""),
-	XEntry("TrafficPolicy multi level inheritance with child override", "traffic_policy_multi_level_inheritance_override_ok.yaml", ""),
+	Entry("TrafficPolicy multi level inheritance with child override disabled", "traffic_policy_multi_level_inheritance_override_disabled.yaml", ""),
+	Entry("TrafficPolicy multi level inheritance with child override enabled", "traffic_policy_multi_level_inheritance_override_enabled.yaml", ""),
 	Entry("TrafficPolicy filter override merge", "traffic_policy_filter_override_merge.yaml", ""),
+	Entry("Built-in rule inheritance", "builtin_rule_inheritance.yaml", ""),
 )

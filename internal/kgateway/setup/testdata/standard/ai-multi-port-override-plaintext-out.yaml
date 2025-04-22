@@ -43,7 +43,20 @@ clusters:
   name: backend_gwtest_openai_0
   transportSocketMatches:
   - match:
-      tls: "true"
+      tls: default
+    name: tls
+    transportSocket:
+      name: envoy.transport_sockets.tls
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+        autoHostSni: true
+        commonTlsContext:
+          combinedValidationContext:
+            defaultValidationContext: {}
+            validationContextSdsSecretConfig:
+              name: SYSTEM_CA_CERT
+  - match:
+      tls: skipverification
     name: tls
     transportSocket:
       name: envoy.transport_sockets.tls

@@ -3,13 +3,20 @@ package runner
 import (
 	"bytes"
 	"context"
+	"errors"
 	"log"
 	"os"
 	"syscall"
 	"time"
 
+	envoy_config_bootstrap "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
+	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	tlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/contextutils"
+
+	"github.com/kgateway-dev/kgateway/v2/internal/envoyinit/pkg/utils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/protoutils"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/envoyinit/pkg/downward"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/cmdutils"
@@ -60,6 +67,38 @@ func RunEnvoy(envoyExecutable, inputPath, outputPath string) {
 	bootstrapConfig, err := getAndTransformConfig(inputPath)
 	if err != nil {
 		log.Fatalf("initializer failed: %v", err)
+	}
+
+	caPath, err := GetOSRootFilePath()
+	if err != nil {
+		log.Printf("Failed to get a supported OS CA certificate path: %v", err)
+	}
+	if caPath != "" {
+		log.Printf("Using OS CA certificate for proxy: %s", caPath)
+		//If the CA cert path is set, we need to set the CA cert path in the bootstrap config
+		var bootstrap envoy_config_bootstrap.Bootstrap
+		err := protoutils.UnmarshalYaml([]byte(bootstrapConfig), &bootstrap)
+		if err != nil {
+			log.Fatalf("failed to unmarshal bootstrap config: %v", err)
+		}
+		bootstrap.StaticResources.Secrets = append(bootstrap.StaticResources.Secrets, &tlsv3.Secret{
+			Name: utils.SystemCaSecretName,
+			Type: &tlsv3.Secret_ValidationContext{
+				ValidationContext: &tlsv3.CertificateValidationContext{
+					TrustedCa: &corev3.DataSource{
+						Specifier: &corev3.DataSource_Filename{
+							Filename: caPath,
+						},
+					},
+				},
+			},
+		})
+
+		newBootstrapConfig, err := protoutils.MarshalBytes(&bootstrap)
+		if err != nil {
+			log.Fatalf("failed to marshal bootstrap config: %v", err)
+		}
+		bootstrapConfig = string(newBootstrapConfig)
 	}
 
 	// 2. Write to a file for debug purposes
@@ -119,4 +158,30 @@ func getAndTransformConfig(inputFile string) (string, error) {
 		return "", err
 	}
 	return buffer.String(), nil
+}
+
+// GetOSRootFilePath returns the first file path detected from a list of known CA certificate file paths.
+// If none of the known CA certificate files are found, a warning in printed and an empty string is returned.
+// Based on https://github.com/istio/istio/blob/d43c77c71df0150fa904d74bf6520d9e37180a1c/pkg/security/security.go#L463
+func GetOSRootFilePath() (string, error) {
+	// Get and store the OS CA certificate path for Linux systems
+	// Source of CA File Paths: https://golang.org/src/crypto/x509/root_linux.go
+	certFiles := []string{
+		"/etc/ssl/certs/ca-certificates.crt",                // Debian/Ubuntu/Gentoo etc.
+		"/etc/pki/tls/certs/ca-bundle.crt",                  // Fedora/RHEL 6
+		"/etc/ssl/ca-bundle.pem",                            // OpenSUSE
+		"/etc/pki/tls/cacert.pem",                           // OpenELEC
+		"/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem", // CentOS/RHEL 7
+		"/etc/ssl/cert.pem",                                 // Alpine Linux
+		"/usr/local/etc/ssl/cert.pem",                       // FreeBSD
+		"/etc/ssl/certs/ca-certificates",                    // Talos Linux
+	}
+
+	for _, cert := range certFiles {
+		// Use the first file found
+		if _, err := os.Stat(cert); err == nil {
+			return cert, nil
+		}
+	}
+	return "", errors.New("OS CA Cert could not be found for agent")
 }

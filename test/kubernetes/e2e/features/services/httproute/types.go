@@ -22,15 +22,20 @@ var (
 	tcpRouteCrdManifest      = filepath.Join(crds.AbsPathToCrd("tcproute-crd.yaml"))
 
 	// Proxy resource to be translated
-	glooProxyObjectMeta = metav1.ObjectMeta{
+	proxyObjectMeta = metav1.ObjectMeta{
 		Name:      "gw",
 		Namespace: "default",
 	}
-	proxyDeployment = &appsv1.Deployment{ObjectMeta: glooProxyObjectMeta}
-	proxyService    = &corev1.Service{ObjectMeta: glooProxyObjectMeta}
+	proxyDeployment = &appsv1.Deployment{ObjectMeta: proxyObjectMeta}
+	proxyService    = &corev1.Service{ObjectMeta: proxyObjectMeta}
 
 	expectedSvcResp = &testmatchers.HttpResponse{
 		StatusCode: http.StatusOK,
 		Body:       gstruct.Ignore(),
+	}
+
+	nginxMeta = metav1.ObjectMeta{
+		Name:      "nginx",
+		Namespace: "default",
 	}
 )

@@ -116,7 +116,8 @@ func (p istioPlugin) processBackend(ctx context.Context, ir ir.PolicyIR, in ir.B
 			// plaintext match. Note: this needs to come after the tlsMode-istio match
 			createDefaultIstioMatch(),
 		}
-		out.TransportSocketMatches = socketmatches
+		// append the transport socket matches for the Istio integration the cluster
+		out.TransportSocketMatches = append(out.GetTransportSocketMatches(), socketmatches...)
 	}
 }
 

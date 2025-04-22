@@ -2083,7 +2083,23 @@ spec:
                         additionalProperties:
                           type: string
                         type: object
+                      ports:
+                        items:
+                          properties:
+                            nodePort:
+                              type: integer
+                            port:
+                              type: integer
+                          required:
+                          - port
+                          type: object
+                        type: array
                       type:
+                        enum:
+                        - ClusterIP
+                        - NodePort
+                        - LoadBalancer
+                        - ExternalName
                         type: string
                     type: object
                   serviceAccount:

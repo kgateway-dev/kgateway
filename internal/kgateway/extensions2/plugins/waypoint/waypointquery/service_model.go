@@ -14,7 +14,6 @@ import (
 	v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 
 	networkingv1beta1 "istio.io/api/networking/v1beta1"
-	istionetworking "istio.io/client-go/pkg/apis/networking/v1"
 	networkingclient "istio.io/client-go/pkg/apis/networking/v1"
 	istioutil "istio.io/istio/pilot/pkg/networking/util"
 	"istio.io/istio/pilot/pkg/serviceregistry/provider"
@@ -44,7 +43,7 @@ func (s Service) IsHeadless() bool {
 	switch o := s.Object.(type) {
 	case *corev1.Service:
 		return o.Spec.ClusterIP == corev1.ClusterIPNone
-	case *istionetworking.ServiceEntry:
+	case *networkingclient.ServiceEntry:
 		return o.Spec.GetResolution() == networkingv1beta1.ServiceEntry_NONE
 	default:
 		return false
@@ -239,7 +238,7 @@ func FromService(svc *corev1.Service) Service {
 	}
 }
 
-func FromServiceEntry(se *istionetworking.ServiceEntry) Service {
+func FromServiceEntry(se *networkingclient.ServiceEntry) Service {
 	addrs := append(se.Spec.GetAddresses(), slices.Map(se.Status.GetAddresses(), func(a *networkingv1beta1.ServiceEntryAddress) string {
 		return a.Value
 	})...)
@@ -296,7 +295,7 @@ func FromPod(pod corev1.Pod) Workload {
 	}
 }
 
-func FromWorkloadEntry(we *istionetworking.WorkloadEntry) Workload {
+func FromWorkloadEntry(we *networkingclient.WorkloadEntry) Workload {
 	var addrs []string
 	if len(we.Spec.GetAddress()) > 0 {
 		addrs = []string{we.Spec.GetAddress()}

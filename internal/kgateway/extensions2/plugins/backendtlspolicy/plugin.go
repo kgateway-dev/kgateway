@@ -85,7 +85,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) plug.Pl
 	translate := buildTranslateFunc(ctx, commoncol.ConfigMaps)
 	tlsPolicyCol := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *gwv1a3.BackendTLSPolicy) *ir.PolicyWrapper {
 		tlsPolicyIR, err := translate(krtctx, i)
-		var pol = &ir.PolicyWrapper{
+		pol := &ir.PolicyWrapper{
 			ObjectSource: ir.ObjectSource{
 				Group:     backendTlsPolicyGroupKind.Group,
 				Kind:      backendTlsPolicyGroupKind.Kind,

@@ -1,0 +1,272 @@
+# This test consists of 3 routes (parent, child, grandchild) and 4 traffic policies
+# (transformation, rate limit, and rate limit + ext proc), each targeting a different route.
+#
+# Input:
+# - Parent infra/example-route:
+#   - Delegate /mid to routes in mid namespace
+#   - Enables policy override
+# - Child mid/mid-a:
+#   - Delegate /mid/a to routes in "a" namespace
+#   - Enables policy override
+# - Child mid/mid-b:
+#   - Delegate /mid/b to routes in "b" namespace
+#   - No policy override
+# - Child a/a1:
+#   - /mid/a/1 goes to a/svc-a
+# - Child b/b1:
+#   - /mid/b/1 goes to b/svc-b
+# - TrafficPolicy infra/example-policy:
+#   - specifies response transformation and rateLimit
+# - TrafficPolicy mid/mid:
+#   - specifies response transformation and rateLimit
+# - TrafficPolicy a/a1 and b/b1:
+#   - specifies response transformation, rateLimit, extProc
+#
+# Expected output routes:
+# - Both mid/mid-a and mid/mid-b should be able to override the policy attached to parent infra/example-route
+# - a/a1 should be able to override policy attached to mid/mid-a
+# - b/b1 should not be able to override policy attached to mid/mid-b
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: example-route
+  namespace: infra
+  annotations:
+    delegation.kgateway.dev/inherited-policy-priority: PreferChild
+spec:
+  parentRefs:
+  - name: example-gateway
+  hostnames:
+  - "example.com"
+  rules:
+  - backendRefs:
+    - name: example-svc
+      port: 80
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /mid
+    backendRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: "*"
+      namespace: mid
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: mid-a
+  namespace: mid
+  annotations:
+    delegation.kgateway.dev/inherited-policy-priority: PreferChild
+spec:
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /mid/a
+    backendRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: "*"
+      namespace: a
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: mid-b
+  namespace: mid
+spec:
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /mid/b
+    backendRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: "*"
+      namespace: b
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: a1
+  namespace: a
+spec:
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /mid/a/1
+    backendRefs:
+    - name: svc-a
+      port: 8080
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: b1
+  namespace: b
+spec:
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /mid/b/1
+    backendRefs:
+    - name: svc-b
+      port: 8080
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: example-policy
+  namespace: infra
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: example-route
+  # below policies should be overridable by all children of example-route
+  transformation:
+    response:
+      add:
+      - name: example
+        value: example
+  rateLimit:
+    local:
+      tokenBucket:
+        maxTokens: 1
+        tokensPerFill: 1
+        fillInterval: 1s
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: mid
+  namespace: mid
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: mid-a
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: mid-b
+  # below policies should be overridable by all children of mid-a but not mid-b
+  transformation:
+    response:
+      add:
+      - name: mid
+        value: mid
+  rateLimit:
+    local:
+      tokenBucket:
+        maxTokens: 2
+        tokensPerFill: 2
+        fillInterval: 2s
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: a1
+  namespace: a
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: a1
+  transformation:
+    response:
+      add:
+      - name: a1
+        value: a1
+  rateLimit:
+    local:
+      tokenBucket:
+        maxTokens: 3
+        tokensPerFill: 3
+        fillInterval: 3s
+  extProc:
+    extensionRef:
+      name: extproc-ext
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: b1
+  namespace: b
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: b1
+  transformation:
+    response:
+      add:
+      - name: b1
+        value: b1
+  rateLimit:
+    local:
+      tokenBucket:
+        maxTokens: 4
+        tokensPerFill: 4
+        fillInterval: 4s
+  extProc:
+    extensionRef:
+      name: extproc-ext
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: extproc-ext
+  namespace: a
+spec:
+  type: ExtProc
+  extProc:
+    grpcService:
+      backendRef:
+        name: extproc
+        port: 9091
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: extproc
+  namespace: a
+spec:
+  ports:
+  - port: 9091
+    protocol: TCP
+    appProtocol: kubernetes.io/h2c
+    targetPort: 9091
+  selector:
+    app: extproc
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: extproc-ext
+  namespace: b
+spec:
+  type: ExtProc
+  extProc:
+    grpcService:
+      backendRef:
+        name: extproc
+        port: 9091
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: extproc
+  namespace: b
+spec:
+  ports:
+  - port: 9091
+    protocol: TCP
+    appProtocol: kubernetes.io/h2c
+    targetPort: 9091
+  selector:
+    app: extproc

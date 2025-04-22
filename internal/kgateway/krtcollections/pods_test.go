@@ -4,7 +4,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/onsi/gomega"
 	. "github.com/onsi/gomega"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/kube/krt/krttest"
@@ -13,7 +12,6 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
-	. "github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 )
 
@@ -21,7 +19,7 @@ func TestPods(t *testing.T) {
 	testCases := []struct {
 		name   string
 		inputs []any
-		result LocalityPod
+		result krtcollections.LocalityPod
 	}{
 		{
 			name: "basic",
@@ -50,7 +48,7 @@ func TestPods(t *testing.T) {
 					},
 				},
 			},
-			result: LocalityPod{
+			result: krtcollections.LocalityPod{
 				Named: krt.Named{
 					Name:      "name",
 					Namespace: "ns",
@@ -99,7 +97,7 @@ func TestPods(t *testing.T) {
 					},
 				},
 			},
-			result: LocalityPod{
+			result: krtcollections.LocalityPod{
 				Named: krt.Named{
 					Name:      "name",
 					Namespace: "ns",
@@ -141,7 +139,7 @@ func TestPods(t *testing.T) {
 					},
 				},
 			},
-			result: LocalityPod{
+			result: krtcollections.LocalityPod{
 				Named: krt.Named{
 					Name:      "name",
 					Namespace: "ns",
@@ -162,7 +160,7 @@ func TestPods(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			g := gomega.NewWithT(t)
+			g := NewWithT(t)
 			mock := krttest.NewMock(t, tc.inputs)
 			nodes := krtcollections.NewNodeMetadataCollection(krttest.GetMockCollection[*corev1.Node](mock))
 			pods := krtcollections.NewLocalityPodsCollection(nodes, krttest.GetMockCollection[*corev1.Pod](mock), krtutil.KrtOptions{})

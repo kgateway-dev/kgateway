@@ -23,7 +23,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/helpers"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/defaults"
-	testdefaults "github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/defaults"
 )
 
 var _ e2e.NewSuiteFunc = NewTestingSuite
@@ -53,7 +52,7 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 
 func (s *testingSuite) SetupSuite() {
 	s.commonManifests = []string{
-		testdefaults.CurlPodManifest,
+		defaults.CurlPodManifest,
 		simpleServiceManifest,
 		gatewayManifest,
 		transformForHeadersManifest,
@@ -63,7 +62,7 @@ func (s *testingSuite) SetupSuite() {
 	}
 	s.commonResources = []client.Object{
 		// resources from curl manifest
-		testdefaults.CurlPod,
+		defaults.CurlPod,
 		// resources from service manifest
 		simpleSvc, simpleDeployment,
 		// resources from gateway manifest
@@ -211,7 +210,7 @@ func (s *testingSuite) TestGatewayWithTransformedRoute() {
 	for _, tc := range testCases {
 		s.testInstallation.Assertions.AssertEventualCurlResponse(
 			s.ctx,
-			testdefaults.CurlPodExecOpt,
+			defaults.CurlPodExecOpt,
 			append(tc.opts,
 				curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
 				curl.WithHostHeader(fmt.Sprintf("example-%s.com", tc.routeName)),
@@ -342,7 +341,7 @@ func (s *testingSuite) TestGatewayRustformationsWithTransformedRoute() {
 	for _, tc := range testCases {
 		s.testInstallation.Assertions.AssertEventualCurlResponse(
 			s.ctx,
-			testdefaults.CurlPodExecOpt,
+			defaults.CurlPodExecOpt,
 			append(tc.opts,
 				curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
 				curl.WithHostHeader(fmt.Sprintf("example-%s.com", tc.routeName)),

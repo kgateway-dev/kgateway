@@ -75,6 +75,7 @@ type Service struct {
 	// The Kubernetes Service type.
 	//
 	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Enum=ClusterIP;NodePort;LoadBalancer;ExternalName
 	Type *corev1.ServiceType `json:"type,omitempty"`
 
 	// The manually specified IP address of the service, if a randomly assigned
@@ -96,6 +97,46 @@ type Service struct {
 	//
 	// +kubebuilder:validation:Optional
 	ExtraAnnotations map[string]string `json:"extraAnnotations,omitempty"`
+
+	// Additional configuration for the service ports.
+	// The actual port numbers are specified in the Gateway resource.
+	//
+	// +optional
+	Ports []*Port `json:"ports"`
+}
+
+func (in *Service) GetPorts() []*Port {
+	if in == nil {
+		return nil
+	}
+	return in.Ports
+}
+
+type Port struct {
+	// The port number to match on the Gateway
+	//
+	// +kubebuilder:validation:Required
+	Port uint16 `json:"port"`
+
+	// The NodePort to be used for the service. If not specified, a random port
+	// will be assigned by the Kubernetes API server.
+	//
+	// +kubebuilder:validation:Optional
+	NodePort *uint16 `json:"nodePort,omitempty"`
+}
+
+func (in *Port) GetPort() uint16 {
+	if in == nil {
+		return 0
+	}
+	return in.Port
+}
+
+func (in *Port) GetNodePort() *uint16 {
+	if in == nil {
+		return nil
+	}
+	return in.NodePort
 }
 
 func (in *Service) GetType() *corev1.ServiceType {

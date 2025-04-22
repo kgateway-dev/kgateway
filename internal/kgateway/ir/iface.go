@@ -113,7 +113,8 @@ type ProxyTranslationPass interface {
 		policy PolicyIR,
 		pCtx *RouteBackendContext,
 	) error
-	// called 0 or more times (one for each route)
+	// called once per route rule if SupportsPolicyMerge returns false, otherwise this is called only
+	// once on the value returned by MergePolicies.
 	// Applies policy for an HTTPRoute that has a policy attached via a targetRef.
 	// The output configures the envoy_config_route_v3.Route
 	// Note: TypedFilterConfig should be applied in the pCtx and is shared between ApplyForRoute, ApplyForBackend
@@ -139,29 +140,37 @@ var _ ProxyTranslationPass = UnimplementedProxyTranslationPass{}
 
 func (s UnimplementedProxyTranslationPass) ApplyListenerPlugin(ctx context.Context, pCtx *ListenerContext, out *envoy_config_listener_v3.Listener) {
 }
+
 func (s UnimplementedProxyTranslationPass) ApplyHCM(ctx context.Context, pCtx *HcmContext, out *envoy_hcm.HttpConnectionManager) error {
 	return nil
 }
+
 func (s UnimplementedProxyTranslationPass) ApplyForBackend(ctx context.Context, pCtx *RouteBackendContext, in HttpBackend, out *envoy_config_route_v3.Route) error {
 	return nil
 }
+
 func (s UnimplementedProxyTranslationPass) ApplyRouteConfigPlugin(ctx context.Context, pCtx *RouteConfigContext, out *envoy_config_route_v3.RouteConfiguration) {
 }
 
 func (s UnimplementedProxyTranslationPass) ApplyVhostPlugin(ctx context.Context, pCtx *VirtualHostContext, out *envoy_config_route_v3.VirtualHost) {
 }
+
 func (s UnimplementedProxyTranslationPass) ApplyForRoute(ctx context.Context, pCtx *RouteContext, out *envoy_config_route_v3.Route) error {
 	return nil
 }
+
 func (s UnimplementedProxyTranslationPass) ApplyForRouteBackend(ctx context.Context, policy PolicyIR, pCtx *RouteBackendContext) error {
 	return nil
 }
+
 func (s UnimplementedProxyTranslationPass) HttpFilters(ctx context.Context, fc FilterChainCommon) ([]plugins.StagedHttpFilter, error) {
 	return nil, nil
 }
+
 func (s UnimplementedProxyTranslationPass) NetworkFilters(ctx context.Context) ([]plugins.StagedNetworkFilter, error) {
 	return nil, nil
 }
+
 func (s UnimplementedProxyTranslationPass) ResourcesToAdd(ctx context.Context) Resources {
 	return Resources{}
 }
@@ -170,8 +179,7 @@ type Resources struct {
 	Clusters []*envoy_config_cluster_v3.Cluster
 }
 
-type GwTranslationCtx struct {
-}
+type GwTranslationCtx struct{}
 
 type PolicyIR interface {
 	// in case multiple policies attached to the same resource, we sort by policy creation time.
@@ -220,9 +228,7 @@ func (c PolicyWrapper) Equals(in PolicyWrapper) bool {
 	return versionEquals(c.Policy, in.Policy) && c.PolicyIR.Equals(in.PolicyIR)
 }
 
-var (
-	ErrNotAttachable = fmt.Errorf("policy is not attachable to this object")
-)
+var ErrNotAttachable = fmt.Errorf("policy is not attachable to this object")
 
 type PolicyRun interface {
 	// Allocate state for single listener+rotue translation pass.
