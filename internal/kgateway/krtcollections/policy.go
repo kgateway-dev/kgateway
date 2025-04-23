@@ -14,6 +14,7 @@ import (
 	gwv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	apiannotations "github.com/kgateway-dev/kgateway/v2/api/annotations"
+	apilabels "github.com/kgateway-dev/kgateway/v2/api/labels"
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/backendref"
@@ -207,6 +208,23 @@ type targetRefIndexKey struct {
 
 func (k targetRefIndexKey) String() string {
 	return fmt.Sprintf("%s/%s/%s/%s", k.Group, k.Kind, k.Name, k.Namespace)
+}
+
+// HTTPRouteSelector is used to lookup HttpRouteIR using one of the following ways:
+// - Only LabelValue
+// - Only Namespace
+// - LabelValue + Namespace
+type HTTPRouteSelector struct {
+	// LabelValue is the value of the HTTPRouteSelector label.
+	// +optional
+	LabelValue string
+	// Namespace is to fetch routes from.
+	// +optional
+	Namespace string
+}
+
+func (k HTTPRouteSelector) String() string {
+	return fmt.Sprintf("%s/%s", k.LabelValue, k.Namespace)
 }
 
 type globalPolicy struct {
@@ -524,10 +542,10 @@ func (c RouteWrapper) Equals(in RouteWrapper) bool {
 // MARK: RoutesIndex
 
 type RoutesIndex struct {
-	routes          krt.Collection[RouteWrapper]
-	httpRoutes      krt.Collection[ir.HttpRouteIR]
-	httpByNamespace krt.Index[string, ir.HttpRouteIR]
-	byParentRef     krt.Index[targetRefIndexKey, RouteWrapper]
+	routes         krt.Collection[RouteWrapper]
+	httpRoutes     krt.Collection[ir.HttpRouteIR]
+	httpBySelector krt.Index[HTTPRouteSelector, ir.HttpRouteIR]
+	byParentRef    krt.Index[targetRefIndexKey, RouteWrapper]
 
 	policies  *PolicyIndex
 	refgrants *RefGrantIndex
@@ -571,9 +589,25 @@ func NewRoutesIndex(
 
 	h.routes = krt.JoinCollection([]krt.Collection[RouteWrapper]{httpRouteCollection, tcpRoutesCollection, tlsRoutesCollection}, krtopts.ToOptions("all-routes-with-policy")...)
 
-	httpByNamespace := krt.NewIndex(h.httpRoutes, func(i ir.HttpRouteIR) []string {
-		return []string{i.GetNamespace()}
+	httpBySelector := krt.NewIndex(h.httpRoutes, func(i ir.HttpRouteIR) []HTTPRouteSelector {
+		value, ok := i.SourceObject.GetLabels()[apilabels.DelegationLabelSelector]
+		if !ok {
+			return []HTTPRouteSelector{
+				// Key for wildcard namespace Fetch
+				{Namespace: i.GetNamespace()},
+			}
+		}
+		return []HTTPRouteSelector{
+			// Key for namespace only Fetch
+			{Namespace: i.GetNamespace()},
+			// Key for label+namespace Fetch
+			{LabelValue: value, Namespace: i.GetNamespace()},
+			// Key for label only Fetch
+			{LabelValue: value},
+		}
 	})
+	h.httpBySelector = httpBySelector
+
 	byParentRef := krt.NewIndex(h.routes, func(in RouteWrapper) []targetRefIndexKey {
 		parentRefs := in.Route.GetParentRefs()
 		ret := make([]targetRefIndexKey, len(parentRefs))
@@ -604,13 +638,13 @@ func NewRoutesIndex(
 		}
 		return ret
 	})
-	h.httpByNamespace = httpByNamespace
 	h.byParentRef = byParentRef
+
 	return h
 }
 
-func (h *RoutesIndex) FetchHttpNamespace(kctx krt.HandlerContext, ns string) []ir.HttpRouteIR {
-	return krt.Fetch(kctx, h.httpRoutes, krt.FilterIndex(h.httpByNamespace, ns))
+func (h *RoutesIndex) FetchHTTPRoutesBySelector(kctx krt.HandlerContext, selector HTTPRouteSelector) []ir.HttpRouteIR {
+	return krt.Fetch(kctx, h.httpRoutes, krt.FilterIndex(h.httpBySelector, selector))
 }
 
 func (h *RoutesIndex) RoutesForGateway(kctx krt.HandlerContext, nns types.NamespacedName) []ir.Route {
@@ -821,7 +855,7 @@ func (h *RoutesIndex) getBackends(kctx krt.HandlerContext, src ir.ObjectSource, 
 		fromns := src.Namespace
 
 		to := toFromBackendRef(fromns, ref.BackendObjectReference)
-		if backendref.RefIsHTTPRoute(ref.BackendRef.BackendObjectReference) {
+		if backendref.IsDelegatedHTTPRoute(ref.BackendRef.BackendObjectReference) {
 			backends = append(backends, ir.HttpBackendOrDelegate{
 				Delegate:         &to,
 				AttachedPolicies: extensionRefs,

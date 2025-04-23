@@ -141,6 +141,7 @@ type Regex struct {
 // Webhook configures a webhook to forward requests or responses to for prompt guarding.
 type Webhook struct {
 	// Host to send the traffic to.
+	// Note: TLS is not currently supported for webhook.
 	// +kubebuilder:validation:Required
 	Host Host `json:"host"`
 

@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/stretchr/testify/suite"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
@@ -40,13 +41,20 @@ func (s *testingSuite) TestConfigureHTTPRouteBackingDestinationsWithService() {
 	})
 
 	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, routeWithServiceManifest)
-	s.Assert().NoError(err, "can apply gloo.solo.io Route manifest")
+	s.Assert().NoError(err, "can apply manifest")
 
 	// apply the service manifest separately, after the route table is applied, to ensure it can be applied after the route table
 	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, serviceManifest)
-	s.Assert().NoError(err, "can apply gloo.solo.io Service manifest")
+	s.Assert().NoError(err, "can apply manifest")
 
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
+	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, nginxMeta.GetNamespace(), metav1.ListOptions{
+		LabelSelector: "app.kubernetes.io/name=nginx",
+	})
+	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, proxyObjectMeta.GetNamespace(), metav1.ListOptions{
+		LabelSelector: "app.kubernetes.io/name=gw",
+	})
+
 	s.testInstallation.Assertions.AssertEventualCurlResponse(
 		s.ctx,
 		defaults.CurlPodExecOpt,
@@ -74,13 +82,20 @@ func (s *testingSuite) TestConfigureHTTPRouteBackingDestinationsWithServiceAndWi
 	s.NoError(err, "can delete manifest")
 
 	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, routeWithServiceManifest)
-	s.Assert().NoError(err, "can apply gloo.solo.io Route manifest")
+	s.Assert().NoError(err, "can apply manifest")
 
 	// apply the service manifest separately, after the route table is applied, to ensure it can be applied after the route table
 	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, serviceManifest)
-	s.Assert().NoError(err, "can apply gloo.solo.io Service manifest")
+	s.Assert().NoError(err, "can apply manifest")
 
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
+	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, nginxMeta.GetNamespace(), metav1.ListOptions{
+		LabelSelector: "app.kubernetes.io/name=nginx",
+	})
+	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, proxyObjectMeta.GetNamespace(), metav1.ListOptions{
+		LabelSelector: "app.kubernetes.io/name=gw",
+	})
+
 	s.testInstallation.Assertions.AssertEventualCurlResponse(
 		s.ctx,
 		defaults.CurlPodExecOpt,

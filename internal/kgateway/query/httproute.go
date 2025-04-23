@@ -14,7 +14,9 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
+	apilabels "github.com/kgateway-dev/kgateway/v2/api/labels"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	delegationutils "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/delegation"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
@@ -270,18 +272,35 @@ func (r *gatewayQueries) fetchRoutesByRef(
 	delegatedNs := backendRef.Namespace
 
 	var refChildren []ir.HttpRouteIR
-	if string(backendRef.Name) == "" || string(backendRef.Name) == "*" {
-		// Handle wildcard references by listing all HTTPRoutes in the specified namespace
-		routes := r.collections.Routes.FetchHttpNamespace(kctx, delegatedNs)
+	// If the ref is a label selector, fetch routes by label selector
+	if isDelegationLabelSelectorRef(backendRef) {
+		selector := krtcollections.HTTPRouteSelector{
+			LabelValue: backendRef.Name,
+		}
+		// If a wildcard namespace is not specified, restrict the Fetch to the delegatedNs namespace,
+		// otherwise Fetch routes using the label selector in all namespaces
+		if delegatedNs != apilabels.DelegationLabelSelectorWildcardNamespace {
+			selector.Namespace = delegatedNs
+		}
+		routes := r.collections.Routes.FetchHTTPRoutesBySelector(kctx, selector)
 		refChildren = append(refChildren, routes...)
 	} else {
-		// Lookup a specific child route by its name
-		route := r.collections.Routes.FetchHttp(kctx, delegatedNs, string(backendRef.Name))
-		if route == nil {
-			return nil, errors.New("not found")
+		if string(backendRef.Name) == "" || string(backendRef.Name) == "*" {
+			// Handle wildcard references by listing all HTTPRoutes in the specified namespace
+			routes := r.collections.Routes.FetchHTTPRoutesBySelector(kctx, krtcollections.HTTPRouteSelector{
+				Namespace: delegatedNs,
+			})
+			refChildren = append(refChildren, routes...)
+		} else {
+			// Lookup a specific child route by its name
+			route := r.collections.Routes.FetchHttp(kctx, delegatedNs, string(backendRef.Name))
+			if route == nil {
+				return nil, errors.New("not found")
+			}
+			refChildren = append(refChildren, *route)
 		}
-		refChildren = append(refChildren, *route)
 	}
+
 	// Check if no child routes were resolved and log an error if needed
 	if len(refChildren) == 0 {
 		return nil, ErrUnresolvedReference
@@ -422,4 +441,9 @@ type Namespaced interface {
 
 func namespacedName(o Namespaced) types.NamespacedName {
 	return types.NamespacedName{Name: o.GetName(), Namespace: o.GetNamespace()}
+}
+
+// isDelegationLabelSelectorRef checks if ObjectSource is an HTTPRoute delegation label selector
+func isDelegationLabelSelectorRef(ref ir.ObjectSource) bool {
+	return ref.Group+"/"+ref.Kind == apilabels.DelegationLabelSelector
 }

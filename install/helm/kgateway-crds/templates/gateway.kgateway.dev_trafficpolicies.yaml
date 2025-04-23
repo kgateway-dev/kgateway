@@ -179,6 +179,8 @@ spec:
                                   host:
                                     minLength: 1
                                     type: string
+                                  insecureSkipVerify:
+                                    type: boolean
                                   port:
                                     format: int32
                                     maximum: 65535
@@ -248,6 +250,8 @@ spec:
                                   host:
                                     minLength: 1
                                     type: string
+                                  insecureSkipVerify:
+                                    type: boolean
                                   port:
                                     format: int32
                                     maximum: 65535
