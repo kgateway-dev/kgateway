@@ -152,6 +152,7 @@ func (x *callbacksCollection) add(sid int64, r *envoy_service_discovery_v3.Disco
 		var locality ir.PodLocality
 		var ns string
 		var labels map[string]string
+		var annotations map[string]string
 		if usePod {
 			if pod == nil {
 				// we need to use the pod locality info, so it's an error if we can't get the pod
@@ -160,12 +161,13 @@ func (x *callbacksCollection) add(sid int64, r *envoy_service_discovery_v3.Disco
 				locality = pod.Locality
 				ns = pod.Namespace
 				labels = pod.AugmentedLabels
+				annotations = pod.Annotations
 			}
 		}
 		role := roleFromRequest(r)
 		x.logger.Debug("adding xds client", zap.Any("locality", locality), zap.String("ns", ns), zap.Any("labels", labels), zap.String("role", role))
 		// TODO: modify request to include the label that are relevant for the client?
-		ucc := ir.NewUniqlyConnectedClient(role, ns, labels, pod.Annotations, locality)
+		ucc := ir.NewUniqlyConnectedClient(role, ns, labels, annotations, locality)
 		c = newConnectedClient(ucc.ResourceName())
 		x.clients[sid] = c
 		currentUnique := x.uniqClientsCount[ucc.ResourceName()]
