@@ -3,7 +3,6 @@ package routepolicy
 import (
 	"fmt"
 
-	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_ext_proc_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_proc/v3"
 	"google.golang.org/protobuf/proto"
 	"istio.io/istio/pkg/kube/krt"
@@ -12,7 +11,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/pluginutils"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 )
 
 // toEnvoyExtProc converts an ExtProcPolicy to an ExternalProcessor
@@ -29,22 +27,18 @@ func toEnvoyExtProc(
 	gatewayExtension := krt.FetchOne(krtctx, gatewayExtensions, krt.FilterObjectName(gwExtName))
 	if gatewayExtension == nil {
 		return nil, fmt.Errorf("extauth extension not found")
-
 	}
 	if gatewayExtension.err != nil {
 		return nil, gatewayExtension.err
-
 	}
 	if gatewayExtension.extProc == nil {
 		return nil, pluginutils.ErrInvalidExtensionType(v1alpha1.GatewayExtensionTypeExtAuth, gatewayExtension.extType)
-
 	}
 
 	return &ExtprocIR{
 		provider:        gatewayExtension,
 		ExtProcPerRoute: translateExtProcPerFilterConfig(spec),
 	}, nil
-
 }
 
 func translateExtProcPerFilterConfig(extProc *v1alpha1.ExtProcPolicy) *envoy_ext_proc_v3.ExtProcPerRoute {
@@ -60,32 +54,6 @@ func translateExtProcPerFilterConfig(extProc *v1alpha1.ExtProcPolicy) *envoy_ext
 		}
 	}
 	return cfg
-}
-
-func buildEnvoyExtProc2(clusterName string, gExt *ir.GatewayExtension, extprocConfig *v1alpha1.ExtProcPolicy) (*envoy_ext_proc_v3.ExternalProcessor, error) {
-	envoyGrpcService := &envoy_config_core_v3.GrpcService{
-		TargetSpecifier: &envoy_config_core_v3.GrpcService_EnvoyGrpc_{
-			EnvoyGrpc: &envoy_config_core_v3.GrpcService_EnvoyGrpc{
-				ClusterName: clusterName,
-			},
-		},
-	}
-	if gExt.ExtProc.GrpcService.Authority != nil {
-		envoyGrpcService.GetEnvoyGrpc().Authority = *gExt.ExtProc.GrpcService.Authority
-	}
-
-	envoyExtProc := &envoy_ext_proc_v3.ExternalProcessor{
-		GrpcService: envoyGrpcService,
-	}
-
-	if extprocConfig.ProcessingMode != nil {
-		envoyExtProc.ProcessingMode = toEnvoyProcessingMode(extprocConfig.ProcessingMode)
-	}
-
-	if err := envoyExtProc.ValidateAll(); err != nil {
-		return nil, fmt.Errorf("failed to validate envoyExtProc: %v", err)
-	}
-	return envoyExtProc, nil
 }
 
 // headerSendModeFromString converts a string to envoy HeaderSendMode

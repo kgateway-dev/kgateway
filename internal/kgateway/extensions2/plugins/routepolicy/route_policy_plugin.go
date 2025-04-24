@@ -187,7 +187,6 @@ func (e trafficPolicyGatewayExtensionIR) ResourceName() string {
 }
 
 func (e trafficPolicyGatewayExtensionIR) Equals(other trafficPolicyGatewayExtensionIR) bool {
-
 	if e.extType != other.extType {
 		return false
 	}
@@ -207,7 +206,7 @@ func (e trafficPolicyGatewayExtensionIR) Equals(other trafficPolicyGatewayExtens
 		return false
 	}
 
-	return e.err.Error() != other.err.Error()
+	return e.err.Error() == other.err.Error()
 }
 
 type providerWithFromListener struct {
@@ -550,59 +549,8 @@ func (p *trafficPolicyPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.
 	// Apply ExtAuthz configuration if present
 	// ExtAuth does not allow for most information such as destination
 	// to be set at the route level so we need to smuggle info upwards.
-	if policy.spec.extAuth != nil {
-		// Handle the enablement state
-		if policy.spec.extAuth.enablement == v1alpha1.ExtAuthDisableAll {
-			// Disable the filter under all providers via the metadata match
-			// we have to use the metadata as we dont know what other configurations may have extauth
-			pCtx.TypedFilterConfig.AddTypedConfig(extAuthGlobalDisableFilterName, extAuthEnablementPerRoute())
-		} else {
-			providerName := policy.spec.extAuth.provider.ResourceName()
-			if policy.spec.extAuth.extauthPerRoute != nil {
-				pCtx.TypedFilterConfig.AddTypedConfig(extAuthFilterName(providerName),
-					policy.spec.extAuth.extauthPerRoute,
-				)
-			} else if !p.extAuthPerProvider[providerName].fromListener {
-				// if you are on a route and not trying to disable it then we need to override the top level disable on the filter chain
-				pCtx.TypedFilterConfig.AddTypedConfig(extAuthFilterName(providerName),
-					&envoy_ext_authz_v3.ExtAuthzPerRoute{},
-				)
-			}
-			if p.extAuthPerProvider == nil {
-				p.extAuthPerProvider = make(map[string]providerWithFromListener)
-			}
-			if _, ok := p.extAuthPerProvider[providerName]; !ok {
-				p.extAuthPerProvider[providerName] = providerWithFromListener{
-					provider: policy.spec.extAuth.provider,
-				}
-			}
-		}
-	}
-
-	if extProc := policy.spec.ExtProc; extProc != nil {
-		providerName := extProc.provider.ResourceName()
-		// Handle the enablement state
-
-		if extProc.ExtProcPerRoute != nil {
-			pCtx.TypedFilterConfig.AddTypedConfig(extProcFilterName(providerName),
-				extProc.ExtProcPerRoute,
-			)
-		} else if !p.extAuthPerProvider[providerName].fromListener {
-			// if you are on a route and not trying to disable it then we need to override the top level disable on the filter chain
-			pCtx.TypedFilterConfig.AddTypedConfig(extProcFilterName(providerName),
-				&envoy_ext_proc_v3.ExtProcPerRoute{},
-			)
-		}
-
-		if p.extProcPerProvider == nil {
-			p.extProcPerProvider = make(map[string]providerWithFromListener)
-		}
-		if _, ok := p.extProcPerProvider[providerName]; !ok {
-			p.extProcPerProvider[providerName] = providerWithFromListener{
-				provider: extProc.provider,
-			}
-		}
-	}
+	p.handleExtAuth(pCtx.TypedFilterConfig, policy.spec.extAuth)
+	p.handleExtProc(pCtx.TypedFilterConfig, policy.spec.ExtProc)
 
 	return errors.Join(errs...)
 }
@@ -626,9 +574,9 @@ func (p *trafficPolicyPluginGwPass) ApplyForRouteBackend(
 	if !ok {
 		return nil
 	}
-	if rtPolicy.spec.ExtProc != nil {
-		pCtx.TypedFilterConfig.AddTypedConfig(wellknown.ExtprocFilterName, rtPolicy.spec.ExtProc.ExtProcPerRoute)
-	}
+
+	p.handleExtAuth(pCtx.TypedFilterConfig, rtPolicy.spec.extAuth)
+	p.handleExtProc(pCtx.TypedFilterConfig, rtPolicy.spec.ExtProc)
 
 	if rtPolicy.spec.AI != nil && (rtPolicy.spec.AI.Transformation != nil || rtPolicy.spec.AI.Extproc != nil) {
 		err := p.processAITrafficPolicy(pCtx.TypedFilterConfig, rtPolicy.spec.AI)
@@ -640,6 +588,67 @@ func (p *trafficPolicyPluginGwPass) ApplyForRouteBackend(
 	}
 
 	return nil
+}
+
+func (p *trafficPolicyPluginGwPass) handleExtAuth(pCtxTypedFilterConfig ir.TypedFilterConfigMap, extAuth *extAuthIR) {
+	if extAuth == nil {
+		return
+	}
+
+	// Handle the enablement state
+	if extAuth.enablement == v1alpha1.ExtAuthDisableAll {
+		// Disable the filter under all providers via the metadata match
+		// we have to use the metadata as we dont know what other configurations may have extauth
+		pCtxTypedFilterConfig.AddTypedConfig(extAuthGlobalDisableFilterName, extAuthEnablementPerRoute())
+	} else {
+		providerName := extAuth.provider.ResourceName()
+		if extAuth.extauthPerRoute != nil {
+			pCtxTypedFilterConfig.AddTypedConfig(extAuthFilterName(providerName),
+				extAuth.extauthPerRoute,
+			)
+		} else if !p.extAuthPerProvider[providerName].fromListener {
+			// if you are on a route and not trying to disable it then we need to override the top level disable on the filter chain
+			pCtxTypedFilterConfig.AddTypedConfig(extAuthFilterName(providerName),
+				&envoy_ext_authz_v3.ExtAuthzPerRoute{},
+			)
+		}
+		if p.extAuthPerProvider == nil {
+			p.extAuthPerProvider = make(map[string]providerWithFromListener)
+		}
+		if _, ok := p.extAuthPerProvider[providerName]; !ok {
+			p.extAuthPerProvider[providerName] = providerWithFromListener{
+				provider: extAuth.provider,
+			}
+		}
+	}
+}
+
+func (p *trafficPolicyPluginGwPass) handleExtProc(pCtxTypedFilterConfig ir.TypedFilterConfigMap, extProc *ExtprocIR) {
+	if extProc == nil || extProc.provider == nil {
+		return
+	}
+	providerName := extProc.provider.ResourceName()
+	// Handle the enablement state
+
+	if extProc.ExtProcPerRoute != nil {
+		pCtxTypedFilterConfig.AddTypedConfig(extProcFilterName(providerName),
+			extProc.ExtProcPerRoute,
+		)
+	} else if !p.extAuthPerProvider[providerName].fromListener {
+		// if you are on a route and not trying to disable it then we need to override the top level disable on the filter chain
+		pCtxTypedFilterConfig.AddTypedConfig(extProcFilterName(providerName),
+			&envoy_ext_proc_v3.ExtProcPerRoute{},
+		)
+	}
+
+	if p.extProcPerProvider == nil {
+		p.extProcPerProvider = make(map[string]providerWithFromListener)
+	}
+	if _, ok := p.extProcPerProvider[providerName]; !ok {
+		p.extProcPerProvider[providerName] = providerWithFromListener{
+			provider: extProc.provider,
+		}
+	}
 }
 
 // called 1 time per listener

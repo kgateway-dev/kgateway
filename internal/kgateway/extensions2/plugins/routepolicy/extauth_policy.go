@@ -91,7 +91,6 @@ func extAuthForSpec(
 }
 
 func translatePerFilterConfig(spec *v1alpha1.ExtAuthPolicy) *envoy_ext_authz_v3.ExtAuthzPerRoute {
-
 	checkSettings := &envoy_ext_authz_v3.CheckSettings{}
 
 	// Create the ExtAuthz configuration

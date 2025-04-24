@@ -19,7 +19,6 @@ import (
 )
 
 func TestExtAuthForSpec(t *testing.T) {
-
 	t.Run("configures request body settings", func(t *testing.T) {
 		truthy := true
 		// Setup
@@ -46,7 +45,6 @@ func TestExtAuthForSpec(t *testing.T) {
 		assert.True(t, extauthPerRoute.GetCheckSettings().WithRequestBody.AllowPartialMessage)
 		assert.True(t, extauthPerRoute.GetCheckSettings().WithRequestBody.PackAsBytes)
 	})
-
 }
 
 func TestApplyForRoute(t *testing.T) {
