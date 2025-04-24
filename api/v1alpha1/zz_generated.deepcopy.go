@@ -777,40 +777,17 @@ func (in *ExtAuthPolicy) DeepCopyInto(out *ExtAuthPolicy) {
 		*out = new(v1.LocalObjectReference)
 		**out = **in
 	}
-	if in.FailureModeAllow != nil {
-		in, out := &in.FailureModeAllow, &out.FailureModeAllow
-		*out = new(bool)
-		**out = **in
-	}
 	if in.WithRequestBody != nil {
 		in, out := &in.WithRequestBody, &out.WithRequestBody
 		*out = new(BufferSettings)
 		(*in).DeepCopyInto(*out)
 	}
-	if in.ClearRouteCache != nil {
-		in, out := &in.ClearRouteCache, &out.ClearRouteCache
-		*out = new(bool)
-		**out = **in
-	}
-	if in.MetadataContextNamespaces != nil {
-		in, out := &in.MetadataContextNamespaces, &out.MetadataContextNamespaces
-		*out = make([]string, len(*in))
-		copy(*out, *in)
-	}
-	if in.IncludePeerCertificate != nil {
-		in, out := &in.IncludePeerCertificate, &out.IncludePeerCertificate
-		*out = new(bool)
-		**out = **in
-	}
-	if in.IncludeTLSSession != nil {
-		in, out := &in.IncludeTLSSession, &out.IncludeTLSSession
-		*out = new(bool)
-		**out = **in
-	}
-	if in.EmitFilterStateStats != nil {
-		in, out := &in.EmitFilterStateStats, &out.EmitFilterStateStats
-		*out = new(bool)
-		**out = **in
+	if in.ContextExtensions != nil {
+		in, out := &in.ContextExtensions, &out.ContextExtensions
+		*out = make(map[string]string, len(*in))
+		for key, val := range *in {
+			(*out)[key] = val
+		}
 	}
 }
 
@@ -881,11 +858,6 @@ func (in *ExtProcPolicy) DeepCopyInto(out *ExtProcPolicy) {
 		in, out := &in.ProcessingMode, &out.ProcessingMode
 		*out = new(ProcessingMode)
 		(*in).DeepCopyInto(*out)
-	}
-	if in.FailureModeAllow != nil {
-		in, out := &in.FailureModeAllow, &out.FailureModeAllow
-		*out = new(bool)
-		**out = **in
 	}
 }
 
