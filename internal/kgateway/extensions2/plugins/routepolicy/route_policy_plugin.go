@@ -540,7 +540,7 @@ func (p *trafficPolicyPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.
 		}
 		if len(aiBackends) > 0 {
 			// Apply the AI policy to the all AI backends
-			err := p.processAITrafficPolicy(pCtx.TypedFilterConfig, policy.spec.AI)
+			err := p.processAITrafficPolicy(&pCtx.TypedFilterConfig, policy.spec.AI)
 			if err != nil {
 				errs = append(errs, err)
 			}
@@ -549,8 +549,8 @@ func (p *trafficPolicyPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.
 	// Apply ExtAuthz configuration if present
 	// ExtAuth does not allow for most information such as destination
 	// to be set at the route level so we need to smuggle info upwards.
-	p.handleExtAuth(pCtx.TypedFilterConfig, policy.spec.extAuth)
-	p.handleExtProc(pCtx.TypedFilterConfig, policy.spec.ExtProc)
+	p.handleExtAuth(&pCtx.TypedFilterConfig, policy.spec.extAuth)
+	p.handleExtProc(&pCtx.TypedFilterConfig, policy.spec.ExtProc)
 
 	return errors.Join(errs...)
 }
@@ -575,11 +575,11 @@ func (p *trafficPolicyPluginGwPass) ApplyForRouteBackend(
 		return nil
 	}
 
-	p.handleExtAuth(pCtx.TypedFilterConfig, rtPolicy.spec.extAuth)
-	p.handleExtProc(pCtx.TypedFilterConfig, rtPolicy.spec.ExtProc)
+	p.handleExtAuth(&pCtx.TypedFilterConfig, rtPolicy.spec.extAuth)
+	p.handleExtProc(&pCtx.TypedFilterConfig, rtPolicy.spec.ExtProc)
 
 	if rtPolicy.spec.AI != nil && (rtPolicy.spec.AI.Transformation != nil || rtPolicy.spec.AI.Extproc != nil) {
-		err := p.processAITrafficPolicy(pCtx.TypedFilterConfig, rtPolicy.spec.AI)
+		err := p.processAITrafficPolicy(&pCtx.TypedFilterConfig, rtPolicy.spec.AI)
 		if err != nil {
 			// TODO: report error on status
 			contextutils.LoggerFrom(ctx).Errorf("error while processing AI TrafficPolicy: %v", err)
@@ -590,7 +590,7 @@ func (p *trafficPolicyPluginGwPass) ApplyForRouteBackend(
 	return nil
 }
 
-func (p *trafficPolicyPluginGwPass) handleExtAuth(pCtxTypedFilterConfig ir.TypedFilterConfigMap, extAuth *extAuthIR) {
+func (p *trafficPolicyPluginGwPass) handleExtAuth(pCtxTypedFilterConfig *ir.TypedFilterConfigMap, extAuth *extAuthIR) {
 	if extAuth == nil {
 		return
 	}
@@ -623,7 +623,7 @@ func (p *trafficPolicyPluginGwPass) handleExtAuth(pCtxTypedFilterConfig ir.Typed
 	}
 }
 
-func (p *trafficPolicyPluginGwPass) handleExtProc(pCtxTypedFilterConfig ir.TypedFilterConfigMap, extProc *ExtprocIR) {
+func (p *trafficPolicyPluginGwPass) handleExtProc(pCtxTypedFilterConfig *ir.TypedFilterConfigMap, extProc *ExtprocIR) {
 	if extProc == nil || extProc.provider == nil {
 		return
 	}
