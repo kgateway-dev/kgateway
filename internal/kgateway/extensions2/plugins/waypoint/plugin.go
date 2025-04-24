@@ -3,6 +3,7 @@ package waypoint
 import (
 	"context"
 
+	istioannot "istio.io/api/annotation"
 	networkingv1beta1 "istio.io/api/networking/v1beta1"
 	istionetworking "istio.io/client-go/pkg/apis/networking/v1"
 	"istio.io/istio/pkg/kube/krt"
@@ -22,6 +23,11 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/query"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
+
+var VirtualWaypointGK = schema.GroupKind{
+	Group: "waypoint",
+	Kind:  "waypoint",
+}
 
 func NewPlugin(
 	ctx context.Context,
@@ -53,19 +59,15 @@ func NewPlugin(
 	// backend addresses (VIPs) as the endpoints. This will cause the traffic from the ingress to be
 	// redirected to the waypoint by the ztunnel.
 	pcp := &PerClientProcessor{
-		commonCols: commonCols,
+		waypointQueries: waypointQueries,
+		commonCols:      commonCols,
 	}
 	if commonCols.Settings.IngressUseWaypoints {
 		plugin.ContributesPolicies = map[schema.GroupKind]extensionsplug.PolicyPlugin{
 			// TODO: Currently endpoints are still being added to an EDS CLA out of this plugin.
 			// Contributing a PerClientProcessEndpoints function can return an empty CLA but
 			// it is still redundant.
-			wellknown.ServiceGVK.GroupKind(): {
-				Name:                    "waypoint",
-				PerClientProcessBackend: pcp.processBackend,
-			},
-			wellknown.ServiceEntryGVK.GroupKind(): {
-				Name:                    "waypoint",
+			VirtualWaypointGK: {
 				PerClientProcessBackend: pcp.processBackend,
 			},
 		}
@@ -75,45 +77,59 @@ func NewPlugin(
 }
 
 type PerClientProcessor struct {
-	commonCols *common.CommonCollections
+	waypointQueries waypointquery.WaypointQueries
+	commonCols      *common.CommonCollections
 }
 
 func (t *PerClientProcessor) processBackend(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniqlyConnectedClient, in ir.BackendObjectIR, out *envoy_config_cluster_v3.Cluster) {
 	// If the ucc has a waypoint gateway class we will let it have an EDS cluster
-	ns := ucc.Namespace
-	name := ucc.Labels[wellknown.GatewayNameLabel]
-	var gw *gwv1.Gateway
-	for _, g := range t.commonCols.GatewayIndex.Gateways.List() {
-		if g.GetName() == name && g.GetNamespace() == ns {
-			gw = g.Obj
-			break
-		}
+	gwKey := ir.ObjectSource{
+		Group:     wellknown.GatewayGVK.GroupKind().Group,
+		Kind:      wellknown.GatewayGVK.GroupKind().Kind,
+		Name:      ucc.Labels[wellknown.GatewayNameLabel],
+		Namespace: ucc.Namespace,
 	}
-	if gw == nil || gw.Spec.GatewayClassName == wellknown.WaypointClassName {
+	gwir := krt.FetchOne(kctx, t.commonCols.GatewayIndex.Gateways, krt.FilterKey(gwKey.ResourceName()))
+	if gwir == nil || gwir.Obj == nil || gwir.Obj.Spec.GatewayClassName == wellknown.WaypointClassName {
 		// no op
 		return
 	}
 
 	// If the ucc doesn't have the ambient.istio.io/redirection=enabled annotation, we don't need to do anything
-	if val, ok := ucc.Annotations[wellknown.AmbientRedirectionAnnotation]; !ok || val != "enabled" {
+	if val, ok := ucc.Annotations[istioannot.AmbientRedirection.Name]; !ok || val != "enabled" {
 		// no op
 		return
 	}
 
 	// Only handle backends with the istio.io/ingress-use-waypoint label
 	if val, ok := in.Obj.GetLabels()[wellknown.IngressUseWaypointLabel]; !ok || val != "true" {
+		// Also check the service'snamespace for the label
+		nsMeta := krt.FetchOne(kctx, t.commonCols.Namespaces, krt.FilterKey(in.Obj.GetNamespace()))
+		if nsMeta == nil {
+			return
+		}
+		if val, ok := nsMeta.Labels[wellknown.IngressUseWaypointLabel]; !ok || val != "true" {
+			// Both the service and the namespace do not have the label, no op
+			return
+		}
+	}
+
+	// Verify that the service is indeed attached to a waypoint by querying the reverse
+	// service index.
+	waypointForService := t.waypointQueries.GetServiceWaypoint(kctx, ctx, in.Obj)
+	if waypointForService == nil {
 		// no op
 		return
 	}
 
-	// gw := &gwv1.Gateway{
-	//  ObjectMeta: metav1.ObjectMeta{
-	//      Namespace: ucc.Namespace,
-	//      Name:      ucc.Labels["gateway.networking.k8s.io/gateway-name"],
-	//  },
-	// }
-	// waypointServices := t.waypointQueries.GetWaypointServices(kctx, ctx, gw)
+	// All preliminary checks passed, process the ingress use waypoint
+	processIngressUseWaypoint(in, out)
+}
 
+// processIngressUseWaypoint configures the cluster of the connected gateway to have a static
+// inlined addresses of the destination service. This will cause the traffic from the kgateway
+// to be redirected to the waypoint by the ztunnel.
+func processIngressUseWaypoint(in ir.BackendObjectIR, out *envoy_config_cluster_v3.Cluster) {
 	var addresses []string
 	switch in.Obj.(type) {
 	case *corev1.Service:
@@ -138,6 +154,9 @@ func (t *PerClientProcessor) processBackend(kctx krt.HandlerContext, ctx context
 	}
 }
 
+// serviceAddresses returns the addresses of the service. ClusterIPs are optional in a Service
+// and if exists will include the address of ClusterIP.
+// Value can also be "None" (headless service) in both ClusterIPs and ClusterIP.
 func serviceAddresses(svc *corev1.Service) []string {
 	var addrs []string
 	if len(svc.Spec.ClusterIPs) > 0 {

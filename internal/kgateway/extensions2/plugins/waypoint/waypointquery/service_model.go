@@ -7,6 +7,7 @@ import (
 
 	"github.com/rotisserie/eris"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"knative.dev/pkg/network"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -55,7 +56,7 @@ func (s Service) Kind() string {
 }
 
 func (s Service) String() string {
-	return fmt.Sprintf("%s(%s/%s)", s.Kind(), s.GetNamespace(), s.GetName())
+	return serviceKey(s.Kind(), s.GetNamespace(), s.GetName())
 }
 
 func (s Service) DefaultVHostName(port ServicePort) string {
@@ -257,6 +258,23 @@ func FromServiceEntry(se *networkingclient.ServiceEntry) Service {
 			}
 		}),
 	}
+}
+
+func serviceKey(kind, namespace, name string) string {
+	return fmt.Sprintf("%s(%s/%s)", kind, namespace, name)
+}
+
+func ServiceKeyFromObject(obj metav1.Object) string {
+	var kind string
+	switch obj.(type) {
+	case *corev1.Service:
+		kind = wellknown.ServiceGVK.GroupKind().Kind
+	case *networkingclient.ServiceEntry:
+		kind = wellknown.ServiceEntryGVK.GroupKind().Kind
+	default:
+		return ""
+	}
+	return serviceKey(kind, obj.GetNamespace(), obj.GetName())
 }
 
 // Workload is a common type to use between Pod and WorkloadEntry
