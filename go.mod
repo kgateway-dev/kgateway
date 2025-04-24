@@ -7,9 +7,9 @@ require (
 	github.com/avast/retry-go/v4 v4.3.3
 	github.com/caarlos0/log v0.4.6
 	github.com/cncf/xds/go v0.0.0-20250121191232-2f005788dc42
-	github.com/envoyproxy/go-control-plane v0.13.5-0.20250123154839-2a6715911fec
-	github.com/envoyproxy/go-control-plane/contrib v1.32.5-0.20250207140015-90270e3c85fd
-	github.com/envoyproxy/go-control-plane/envoy v1.32.5-0.20250211152746-ef139ef8ea6b
+	github.com/envoyproxy/go-control-plane v0.13.5-0.20250416141339-b5bc3390bc94
+	github.com/envoyproxy/go-control-plane/contrib v1.32.5-0.20250416141339-b5bc3390bc94
+	github.com/envoyproxy/go-control-plane/envoy v1.32.5-0.20250416141339-b5bc3390bc94
 	github.com/envoyproxy/go-control-plane/ratelimit v0.1.0
 	github.com/fgrosse/zaptest v1.1.0
 	github.com/fsnotify/fsnotify v1.8.0
@@ -36,8 +36,8 @@ require (
 	go.uber.org/zap v1.27.0
 	golang.org/x/exp v0.0.0-20241215155358-4a5509556b9e
 	golang.org/x/net v0.37.0
-	google.golang.org/grpc v1.71.0
-	google.golang.org/protobuf v1.36.5
+	google.golang.org/grpc v1.71.1
+	google.golang.org/protobuf v1.36.6
 	helm.sh/helm/v3 v3.17.0
 	istio.io/api v1.25.0-alpha.0.0.20250210220544-0b64afd2de85
 	istio.io/client-go v1.25.0-alpha.0.0.20250210220843-5a4065fded65
@@ -447,7 +447,7 @@ require (
 	github.com/polydawn/refmt v0.89.1-0.20221221234430-40501e09de1f // indirect
 	github.com/polyfloyd/go-errorlint v1.7.1 // indirect
 	github.com/prometheus/client_golang v1.21.1 // indirect
-	github.com/prometheus/client_model v0.6.1 // indirect
+	github.com/prometheus/client_model v0.6.2 // indirect
 	github.com/prometheus/common v0.62.0 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
 	github.com/prometheus/statsd_exporter v0.25.0 // indirect

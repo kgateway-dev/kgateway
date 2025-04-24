@@ -15,6 +15,7 @@ import (
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 	skubeclient "istio.io/istio/pkg/config/schema/kubeclient"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
@@ -505,13 +506,17 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.Filt
 
 		filterConfig, _ := json.Marshal(filterRouteHashConfig)
 
+		msg, _ := utils.MessageToAny(&wrapperspb.StringValue{
+			Value: fmt.Sprintf(`{"route_specific": %s%s`, string(filterConfig), topLevel),
+		})
+
 		rustCfg := dynamicmodulesv3.DynamicModuleFilter{
 			DynamicModuleConfig: &exteniondynamicmodulev3.DynamicModuleConfig{
 				Name: "rust_module",
 			},
 			FilterName: "http_simple_mutations",
-
-			FilterConfig: fmt.Sprintf(`{"route_specific": %s%s`, string(filterConfig), topLevel),
+			// currently we use stringvalue but we should look at using the json variant as supported in upstream
+			FilterConfig: msg,
 		}
 
 		filters = append(filters, plugins.MustNewStagedFilter(rustformationFilterNamePrefix,
