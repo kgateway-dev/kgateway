@@ -338,6 +338,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 		ContributesRegistration: map[schema.GroupKind]func(){
 			wellknown.TrafficPolicyGVK.GroupKind(): buildRegisterCallback(ctx, commoncol.CrudClient, policyCol),
 		},
+		ExtraHasSynced: gatewayExtensions.HasSynced,
 	}
 }
 
