@@ -111,6 +111,7 @@ routes:
             typedPerFilterConfig:
               ext_proc/gwtest/extproc-ext:
                 '@type': type.googleapis.com/envoy.extensions.filters.http.ext_proc.v3.ExtProcPerRoute
+                overrides: {}
             weight: 1
           - name: kube_gwtest_ratings_8080
             weight: 1

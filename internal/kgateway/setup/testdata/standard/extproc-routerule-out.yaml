@@ -114,3 +114,4 @@ routes:
       typedPerFilterConfig:
         ext_proc/gwtest/extproc-ext:
           '@type': type.googleapis.com/envoy.extensions.filters.http.ext_proc.v3.ExtProcPerRoute
+          overrides: {}
