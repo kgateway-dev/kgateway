@@ -271,10 +271,10 @@ spec:
                 type: object
               extAuth:
                 properties:
-                  clearRouteCache:
-                    type: boolean
-                  emitFilterStateStats:
-                    type: boolean
+                  contextExtensions:
+                    additionalProperties:
+                      type: string
+                    type: object
                   enablement:
                     enum:
                     - DisableAll
@@ -286,19 +286,6 @@ spec:
                         type: string
                     type: object
                     x-kubernetes-map-type: atomic
-                  failureModeAllow:
-                    type: boolean
-                  includePeerCertificate:
-                    type: boolean
-                  includeTLSSession:
-                    type: boolean
-                  metadataContextNamespaces:
-                    default:
-                    - jwt
-                    items:
-                      type: string
-                    type: array
-                    x-kubernetes-list-type: set
                   withRequestBody:
                     properties:
                       allowPartialMessage:
@@ -326,8 +313,6 @@ spec:
                         type: string
                     type: object
                     x-kubernetes-map-type: atomic
-                  failureModeAllow:
-                    type: boolean
                   processingMode:
                     properties:
                       requestBodyMode:

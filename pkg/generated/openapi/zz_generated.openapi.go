@@ -1669,36 +1669,18 @@ func schema_kgateway_v2_api_v1alpha1_ExtAuthPolicy(ref common.ReferenceCallback)
 							Format:      "",
 						},
 					},
-					"failureModeAllow": {
-						SchemaProps: spec.SchemaProps{
-							Description: "FailureModeAllow determines the behavior on authorization service errors. When true, requests will be allowed even if the authorization service fails or returns HTTP 5xx errors. When unset, the default behavior is false.",
-							Type:        []string{"boolean"},
-							Format:      "",
-						},
-					},
 					"withRequestBody": {
 						SchemaProps: spec.SchemaProps{
 							Description: "WithRequestBody allows the request body to be buffered and sent to the authorization service. Warning buffering has implications for streaming and therefore performance.",
 							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.BufferSettings"),
 						},
 					},
-					"clearRouteCache": {
+					"contextExtensions": {
 						SchemaProps: spec.SchemaProps{
-							Description: "ClearRouteCache allows the authorization service to affect routing decisions. When unset, the default behavior is false.",
-							Type:        []string{"boolean"},
-							Format:      "",
-						},
-					},
-					"metadataContextNamespaces": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-list-type": "set",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Description: "MetadataContextNamespaces specifies metadata namespaces to pass to the authorization service. Default to allowing jwt info if processing for jwt is configured.",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
+							Description: "Additional context for the authorization service.",
+							Type:        []string{"object"},
+							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: "",
@@ -1707,27 +1689,6 @@ func schema_kgateway_v2_api_v1alpha1_ExtAuthPolicy(ref common.ReferenceCallback)
 									},
 								},
 							},
-						},
-					},
-					"includePeerCertificate": {
-						SchemaProps: spec.SchemaProps{
-							Description: "IncludePeerCertificate determines if the client's X.509 certificate should be sent to the authorization service. When true, the certificate will be included if available. When unset, the default behavior is false.",
-							Type:        []string{"boolean"},
-							Format:      "",
-						},
-					},
-					"includeTLSSession": {
-						SchemaProps: spec.SchemaProps{
-							Description: "IncludeTLSSession determines if TLS session details should be sent to the authorization service. When true, the SNI name from TLSClientHello will be included if available. When unset, the default behavior is false.",
-							Type:        []string{"boolean"},
-							Format:      "",
-						},
-					},
-					"emitFilterStateStats": {
-						SchemaProps: spec.SchemaProps{
-							Description: "EmitFilterStateStats determines if per-stream stats should be emitted for access logging. When true and using Envoy gRPC, emits latency, bytes sent/received, and upstream info. When true and not using Envoy gRPC, emits only latency. Stats are only added if a check request is made to the ext_authz service. When unset, the default behavior is false.",
-							Type:        []string{"boolean"},
-							Format:      "",
 						},
 					},
 				},
@@ -1806,13 +1767,6 @@ func schema_kgateway_v2_api_v1alpha1_ExtProcPolicy(ref common.ReferenceCallback)
 						SchemaProps: spec.SchemaProps{
 							Description: "ProcessingMode defines how the filter should interact with the request/response streams",
 							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ProcessingMode"),
-						},
-					},
-					"failureModeAllow": {
-						SchemaProps: spec.SchemaProps{
-							Description: "FailureModeAllow defines the behavior of the filter when the external processing fails. Defaults to false.",
-							Type:        []string{"boolean"},
-							Format:      "",
 						},
 					},
 				},

@@ -177,7 +177,7 @@ listeners:
           typedConfig:
             '@type': type.googleapis.com/envoy.api.v2.filter.http.FilterTransformations
         - disabled: true
-          name: ext_auth/basic-extauth
+          name: ext_auth/gwtest/basic-extauth
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthz
             filterEnabledMetadata:
@@ -191,8 +191,6 @@ listeners:
             grpcService:
               envoyGrpc:
                 clusterName: kube_gwtest_ext-authz_9000
-            metadataContextNamespaces:
-            - jwt
         - name: envoy.filters.http.router
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -222,6 +220,6 @@ routes:
         cluster: kube_gwtest_reviews_8080
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
       typedPerFilterConfig:
-        ext_auth/basic-extauth:
-          '@type': type.googleapis.com/envoy.config.route.v3.FilterConfig
-          config: {}
+        ext_auth/gwtest/basic-extauth:
+          '@type': type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthzPerRoute
+          checkSettings: {}

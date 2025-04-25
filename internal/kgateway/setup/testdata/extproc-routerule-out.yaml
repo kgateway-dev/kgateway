@@ -236,7 +236,7 @@ listeners:
         '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
         httpFilters:
         - disabled: true
-          name: envoy.filters.http.ext_proc
+          name: ext_proc/gwtest/extproc-ext
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.ext_proc.v3.ExternalProcessor
             grpcService:
@@ -276,6 +276,6 @@ routes:
           - name: kube_gwtest_ratings_8080
             weight: 1
       typedPerFilterConfig:
-        envoy.filters.http.ext_proc:
-          '@type': type.googleapis.com/envoy.config.route.v3.FilterConfig
-          config: {}
+        ext_proc/gwtest/extproc-ext:
+          '@type': type.googleapis.com/envoy.extensions.filters.http.ext_proc.v3.ExtProcPerRoute
+          overrides: {}

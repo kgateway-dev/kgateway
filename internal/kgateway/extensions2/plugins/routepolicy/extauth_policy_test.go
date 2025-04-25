@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	corev1 "k8s.io/api/core/v1"
-	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
@@ -20,63 +19,6 @@ import (
 )
 
 func TestExtAuthForSpec(t *testing.T) {
-	truth := true
-	truthy := &truth
-
-	gExtGetter := func(name, namespace string) (*ir.GatewayExtension, *ir.BackendObjectIR, error) {
-		backend := gwv1.BackendObjectReference{Name: "test-extauth"}
-
-		return &ir.GatewayExtension{
-			Type: v1alpha1.GatewayExtensionTypeExtAuth,
-			ExtAuth: &v1alpha1.ExtAuthProvider{
-				GrpcService: &v1alpha1.ExtGrpcService{
-					BackendRef: &gwv1.BackendRef{
-						BackendObjectReference: backend,
-					},
-				},
-			},
-		}, &ir.BackendObjectIR{ObjectSource: ir.ObjectSource{Name: "test-extauth"}}, nil
-	}
-
-	t.Run("creates basic ext auth configuration in one pass", func(t *testing.T) {
-		// Setup
-		spec := &v1alpha1.TrafficPolicy{Spec: v1alpha1.TrafficPolicySpec{ExtAuth: &v1alpha1.ExtAuthPolicy{
-			ExtensionRef: &corev1.LocalObjectReference{
-				Name: "test-extension",
-			},
-			EmitFilterStateStats: truthy,
-		},
-		}}
-		out := &trafficPolicySpecIr{}
-
-		// Execute
-		extAuthForSpecWithExtensionFunction(gExtGetter, spec, out)
-
-		// Verify
-		require.NotNil(t, out.extAuth)
-		assert.Equal(t, "test-extension", out.extAuth.providerName)
-		assert.NotNil(t, out.extAuth.filter)
-	})
-	t.Run("configures failure mode allow", func(t *testing.T) {
-		// Setup
-		truthy := true
-		spec := &v1alpha1.TrafficPolicy{Spec: v1alpha1.TrafficPolicySpec{ExtAuth: &v1alpha1.ExtAuthPolicy{
-			ExtensionRef: &corev1.LocalObjectReference{
-				Name: "test-extension",
-			},
-			FailureModeAllow: &truthy,
-		},
-		}}
-		out := &trafficPolicySpecIr{}
-
-		// Execute
-		extAuthForSpecWithExtensionFunction(gExtGetter, spec, out)
-
-		// Verify
-		require.NotNil(t, out.extAuth)
-		assert.True(t, out.extAuth.filter.FailureModeAllow)
-	})
-
 	t.Run("configures request body settings", func(t *testing.T) {
 		truthy := true
 		// Setup
@@ -91,58 +33,16 @@ func TestExtAuthForSpec(t *testing.T) {
 			},
 		},
 		}}
-		out := &trafficPolicySpecIr{}
 
 		// Execute
-		extAuthForSpecWithExtensionFunction(gExtGetter, spec, out)
+		extauthPerRoute := translatePerFilterConfig(spec.Spec.ExtAuth)
 
 		// Verify
-		require.NotNil(t, out.extAuth)
-		require.NotNil(t, out.extAuth.filter.WithRequestBody)
-		assert.Equal(t, uint32(1024), out.extAuth.filter.WithRequestBody.MaxRequestBytes)
-		assert.True(t, out.extAuth.filter.WithRequestBody.AllowPartialMessage)
-		assert.True(t, out.extAuth.filter.WithRequestBody.PackAsBytes)
-	})
-
-	t.Run("configures metadata context namespaces", func(t *testing.T) {
-		// Setup
-		spec := &v1alpha1.TrafficPolicy{Spec: v1alpha1.TrafficPolicySpec{ExtAuth: &v1alpha1.ExtAuthPolicy{
-			ExtensionRef: &corev1.LocalObjectReference{
-				Name: "test-extension",
-			},
-			MetadataContextNamespaces: []string{"jwt", "custom"},
-		},
-		}}
-		out := &trafficPolicySpecIr{}
-
-		// Execute
-		extAuthForSpecWithExtensionFunction(gExtGetter, spec, out)
-
-		// Verify
-		require.NotNil(t, out.extAuth)
-		assert.Equal(t, []string{"jwt", "custom"}, out.extAuth.filter.MetadataContextNamespaces)
-	})
-
-	t.Run("configures TLS settings", func(t *testing.T) {
-		// Setup
-		truthy := true
-		spec := &v1alpha1.TrafficPolicy{Spec: v1alpha1.TrafficPolicySpec{ExtAuth: &v1alpha1.ExtAuthPolicy{
-			ExtensionRef: &corev1.LocalObjectReference{
-				Name: "test-extension",
-			},
-			IncludePeerCertificate: &truthy,
-			IncludeTLSSession:      &truthy,
-		},
-		}}
-		out := &trafficPolicySpecIr{}
-
-		// Execute
-		extAuthForSpecWithExtensionFunction(gExtGetter, spec, out)
-
-		// Verify
-		require.NotNil(t, out.extAuth)
-		assert.True(t, out.extAuth.filter.IncludePeerCertificate)
-		assert.True(t, out.extAuth.filter.IncludeTlsSession)
+		require.NotNil(t, extauthPerRoute)
+		require.NotNil(t, extauthPerRoute.GetCheckSettings().WithRequestBody)
+		assert.Equal(t, uint32(1024), extauthPerRoute.GetCheckSettings().WithRequestBody.MaxRequestBytes)
+		assert.True(t, extauthPerRoute.GetCheckSettings().WithRequestBody.AllowPartialMessage)
+		assert.True(t, extauthPerRoute.GetCheckSettings().WithRequestBody.PackAsBytes)
 	})
 }
 
@@ -154,10 +54,13 @@ func TestApplyForRoute(t *testing.T) {
 		policy := &trafficPolicy{
 			spec: trafficPolicySpecIr{
 				extAuth: &extAuthIR{
-					filter: &envoy_ext_authz_v3.ExtAuthz{
-						FailureModeAllow: true,
+					provider: &trafficPolicyGatewayExtensionIR{
+						name:    "test-extension",
+						extType: v1alpha1.GatewayExtensionTypeExtAuth,
+						extAuth: &envoy_ext_authz_v3.ExtAuthz{
+							FailureModeAllow: true,
+						},
 					},
-					providerName: "test-extension",
 				},
 			},
 		}
@@ -208,10 +111,13 @@ func TestApplyListenerPlugin(t *testing.T) {
 		policy := &trafficPolicy{
 			spec: trafficPolicySpecIr{
 				extAuth: &extAuthIR{
-					filter: &envoy_ext_authz_v3.ExtAuthz{
-						FailureModeAllow: true,
+					provider: &trafficPolicyGatewayExtensionIR{
+						name:    "test-extension",
+						extType: v1alpha1.GatewayExtensionTypeExtAuth,
+						extAuth: &envoy_ext_authz_v3.ExtAuthz{
+							FailureModeAllow: true,
+						},
 					},
-					providerName: "test-extension",
 				},
 			},
 		}
@@ -249,12 +155,15 @@ func TestHttpFilters(t *testing.T) {
 	t.Run("adds ext auth filter to filter chain", func(t *testing.T) {
 		// Setup
 		plugin := &trafficPolicyPluginGwPass{
-			extAuthPerProvider: map[string]*extAuthIR{
-				"test-extension": &extAuthIR{
-					filter: &envoy_ext_authz_v3.ExtAuthz{
-						FailureModeAllow: true,
+			extAuthPerProvider: map[string]providerWithFromListener{
+				"test-extension": {
+					provider: &trafficPolicyGatewayExtensionIR{
+						name:    "test-extension",
+						extType: v1alpha1.GatewayExtensionTypeExtAuth,
+						extAuth: &envoy_ext_authz_v3.ExtAuthz{
+							FailureModeAllow: true,
+						},
 					},
-					providerName: "test-extension",
 				},
 			},
 		}
@@ -280,13 +189,16 @@ func TestExtAuthPolicyPlugin(t *testing.T) {
 		policy := &trafficPolicy{
 			spec: trafficPolicySpecIr{
 				extAuth: &extAuthIR{
-					filter: &envoy_ext_authz_v3.ExtAuthz{
-						FailureModeAllow: true,
-						WithRequestBody: &envoy_ext_authz_v3.BufferSettings{
-							MaxRequestBytes: 1024,
+					provider: &trafficPolicyGatewayExtensionIR{
+						name:    "test-auth-extension",
+						extType: v1alpha1.GatewayExtensionTypeExtAuth,
+						extAuth: &envoy_ext_authz_v3.ExtAuthz{
+							FailureModeAllow: true,
+							WithRequestBody: &envoy_ext_authz_v3.BufferSettings{
+								MaxRequestBytes: 1024,
+							},
 						},
 					},
-					providerName: "test-auth-extension",
 				},
 			},
 		}

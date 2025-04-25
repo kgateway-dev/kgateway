@@ -30,6 +30,10 @@ type AttachedPolicyRef struct {
 	SectionName string
 }
 
+func (ref *AttachedPolicyRef) ID() string {
+	return ref.Group + "/" + ref.Kind + "/" + ref.Namespace + "/" + ref.Name
+}
+
 type PolicyAtt struct {
 	// GroupKind is the GK of the original policy object
 	GroupKind schema.GroupKind

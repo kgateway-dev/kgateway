@@ -176,21 +176,7 @@ listeners:
         - name: global_disable/ext_auth
           typedConfig:
             '@type': type.googleapis.com/envoy.api.v2.filter.http.FilterTransformations
-        - disabled: true
-          name: ext_auth
-          typedConfig:
-            '@type': type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthz
-            filterEnabledMetadata:
-              filter: io.solo.transformation
-              invert: true
-              path:
-              - key: global_disable/ext_auth
-              value:
-                stringMatch:
-                  exact: "false"
-            metadataContextNamespaces:
-            - jwt
-        - name: ext_auth/basic-extauth
+        - name: ext_auth/gwtest/basic-extauth
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthz
             filterEnabledMetadata:
@@ -204,8 +190,6 @@ listeners:
             grpcService:
               envoyGrpc:
                 clusterName: kube_gwtest_ext-authz_9000
-            metadataContextNamespaces:
-            - jwt
         - name: envoy.filters.http.router
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router

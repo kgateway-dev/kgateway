@@ -2,6 +2,7 @@ package extensionsplug
 
 import (
 	"context"
+	"encoding/json"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
@@ -97,6 +98,19 @@ type Plugin struct {
 type AncestorReports map[ir.ObjectSource][]error
 type PolicyReport map[ir.AttachedPolicyRef]AncestorReports
 type ProcessPolicyStatus func(ctx context.Context, gkString string, polReport PolicyReport)
+
+// marshal json for krt debugging
+func (p PolicyReport) MarshalJSON() ([]byte, error) {
+	m := map[string]map[string][]error{}
+	for key, pol := range p {
+		objErrMap := map[string][]error{}
+		for objKey, errs := range pol {
+			objErrMap[objKey.ResourceName()] = errs
+		}
+		m[key.ID()] = objErrMap
+	}
+	return json.Marshal(m)
+}
 
 func (p PolicyPlugin) AttachmentPoints() AttachmentPoints {
 	var ret AttachmentPoints

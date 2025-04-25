@@ -13,11 +13,6 @@ type ExtProcPolicy struct {
 	// ProcessingMode defines how the filter should interact with the request/response streams
 	// +optional
 	ProcessingMode *ProcessingMode `json:"processingMode,omitempty"`
-
-	// FailureModeAllow defines the behavior of the filter when the external processing fails.
-	// Defaults to false.
-	// +optional
-	FailureModeAllow *bool `json:"failureModeAllow,omitempty"`
 }
 
 // ProcessingMode defines how the filter should interact with the request/response streams

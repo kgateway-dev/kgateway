@@ -184,48 +184,14 @@ type ExtAuthPolicy struct {
 	// +optional
 	Enablement ExtAuthEnabled `json:"enablement,omitempty"`
 
-	// FailureModeAllow determines the behavior on authorization service errors.
-	// When true, requests will be allowed even if the authorization service fails or returns HTTP 5xx errors.
-	// When unset, the default behavior is false.
-	// +optional
-	FailureModeAllow *bool `json:"failureModeAllow,omitempty"`
-
 	// WithRequestBody allows the request body to be buffered and sent to the authorization service.
 	// Warning buffering has implications for streaming and therefore performance.
 	// +optional
 	WithRequestBody *BufferSettings `json:"withRequestBody,omitempty"`
 
-	// ClearRouteCache allows the authorization service to affect routing decisions.
-	// When unset, the default behavior is false.
+	// Additional context for the authorization service.
 	// +optional
-	ClearRouteCache *bool `json:"clearRouteCache,omitempty"`
-
-	// MetadataContextNamespaces specifies metadata namespaces to pass to the authorization service.
-	// Default to allowing jwt info if processing for jwt is configured.
-	// +optional
-	// +listType=set
-	// +kubebuilder:default={"jwt"}
-	MetadataContextNamespaces []string `json:"metadataContextNamespaces,omitempty"`
-
-	// IncludePeerCertificate determines if the client's X.509 certificate should be sent to the authorization service.
-	// When true, the certificate will be included if available.
-	// When unset, the default behavior is false.
-	// +optional
-	IncludePeerCertificate *bool `json:"includePeerCertificate,omitempty"`
-
-	// IncludeTLSSession determines if TLS session details should be sent to the authorization service.
-	// When true, the SNI name from TLSClientHello will be included if available.
-	// When unset, the default behavior is false.
-	// +optional
-	IncludeTLSSession *bool `json:"includeTLSSession,omitempty"`
-
-	// EmitFilterStateStats determines if per-stream stats should be emitted for access logging.
-	// When true and using Envoy gRPC, emits latency, bytes sent/received, and upstream info.
-	// When true and not using Envoy gRPC, emits only latency.
-	// Stats are only added if a check request is made to the ext_authz service.
-	// When unset, the default behavior is false.
-	// +optional
-	EmitFilterStateStats *bool `json:"emitFilterStateStats,omitempty"`
+	ContextExtensions map[string]string `json:"contextExtensions,omitempty"`
 }
 
 // BufferSettings configures how the request body should be buffered.

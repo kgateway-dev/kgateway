@@ -1,24 +1,53 @@
 package routepolicy
 
 import (
-	envoy_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	"fmt"
+
 	envoy_ext_authz_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_authz/v3"
 	envoytransformation "github.com/solo-io/envoy-gloo/go/config/filter/http/transformation/v2"
 	transformationpb "github.com/solo-io/envoy-gloo/go/config/filter/http/transformation/v2"
 	"google.golang.org/protobuf/proto"
 	"istio.io/istio/pkg/kube/krt"
+	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/pluginutils"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 )
 
 type extAuthIR struct {
-	filter       *envoy_ext_authz_v3.ExtAuthz
-	providerName string
-	enablement   v1alpha1.ExtAuthEnabled
-	fromListener bool
+	provider        *trafficPolicyGatewayExtensionIR
+	enablement      v1alpha1.ExtAuthEnabled
+	extauthPerRoute *envoy_ext_authz_v3.ExtAuthzPerRoute
+}
+
+// Equals compares two extAuthIR instances for equality
+func (e *extAuthIR) Equals(other *extAuthIR) bool {
+	if e == nil && other == nil {
+		return true
+	}
+	if e == nil || other == nil {
+		return false
+	}
+
+	// Compare enablement
+	if e.enablement != other.enablement {
+		return false
+	}
+
+	if !proto.Equal(e.extauthPerRoute, other.extauthPerRoute) {
+		return false
+	}
+
+	// Compare providers
+	if e.provider == nil && other.provider == nil {
+		return true
+	}
+	if e.provider == nil || other.provider == nil {
+		return false
+	}
+
+	return e.provider.Equals(*other.provider)
 }
 
 // extAuthForSpec translates the ExtAuthz spec into the Envoy configuration
@@ -26,36 +55,7 @@ func extAuthForSpec(
 	commoncol *common.CommonCollections,
 	krtctx krt.HandlerContext,
 	trafficpolicy *v1alpha1.TrafficPolicy,
-	out *trafficPolicySpecIr,
-) {
-	getter := (func(name, namespace string) (*ir.GatewayExtension, *ir.BackendObjectIR, error) {
-		gExt, err := pluginutils.GetGatewayExtension(commoncol.GatewayExtensions, krtctx, name, namespace)
-		if err != nil {
-			return nil, nil, err
-		}
-		if gExt.Type != v1alpha1.GatewayExtensionTypeExtAuth {
-			return nil, nil, pluginutils.ErrInvalidExtensionType(v1alpha1.GatewayExtensionTypeExtAuth, gExt.Type)
-		}
-		var backend *ir.BackendObjectIR
-		if gExt.ExtAuth.GrpcService != nil {
-			if gExt.ExtAuth.GrpcService.BackendRef == nil {
-				return nil, nil, nil
-			}
-			backendRef := gExt.ExtAuth.GrpcService.BackendRef.BackendObjectReference
-			backend, err = commoncol.BackendIndex.GetBackendFromRef(krtctx, gExt.ObjectSource, backendRef)
-			if err != nil {
-				return nil, nil, err
-			}
-		}
-		return gExt, backend, nil
-	})
-
-	extAuthForSpecWithExtensionFunction(getter, trafficpolicy, out)
-}
-
-func extAuthForSpecWithExtensionFunction(
-	gExtensionGetter func(name, namespace string) (*ir.GatewayExtension, *ir.BackendObjectIR, error),
-	trafficpolicy *v1alpha1.TrafficPolicy,
+	gatewayExtensions krt.Collection[trafficPolicyGatewayExtensionIR],
 	out *trafficPolicySpecIr,
 ) {
 	policySpec := &trafficpolicy.Spec
@@ -64,68 +64,59 @@ func extAuthForSpecWithExtensionFunction(
 		return
 	}
 	spec := policySpec.ExtAuth
-	// Create the ExtAuthz configuration
-	extAuth := &envoy_ext_authz_v3.ExtAuthz{}
-	if spec.FailureModeAllow != nil {
-		extAuth.FailureModeAllow = *spec.FailureModeAllow
-	}
-	if spec.ClearRouteCache != nil {
-		extAuth.ClearRouteCache = *spec.ClearRouteCache
-	}
-	if spec.IncludePeerCertificate != nil {
-		extAuth.IncludePeerCertificate = *spec.IncludePeerCertificate
-	}
-	if spec.IncludeTLSSession != nil {
-		extAuth.IncludeTlsSession = *spec.IncludeTLSSession
-	}
-
-	// Configure metadata context namespaces if specified
-	if len(spec.MetadataContextNamespaces) > 0 {
-		extAuth.MetadataContextNamespaces = spec.MetadataContextNamespaces
-	}
-
-	// Configure request body buffering if specified
-	if spec.WithRequestBody != nil {
-		extAuth.WithRequestBody = &envoy_ext_authz_v3.BufferSettings{
-			MaxRequestBytes: spec.WithRequestBody.MaxRequestBytes,
-		}
-		if spec.WithRequestBody.AllowPartialMessage != nil {
-			extAuth.GetWithRequestBody().AllowPartialMessage = *spec.WithRequestBody.AllowPartialMessage
-		}
-		if spec.WithRequestBody.PackAsBytes != nil {
-			extAuth.GetWithRequestBody().PackAsBytes = *spec.WithRequestBody.PackAsBytes
-		}
-	}
+	var provider *trafficPolicyGatewayExtensionIR
 
 	if spec.ExtensionRef != nil {
-		_, backend, err := gExtensionGetter(spec.ExtensionRef.Name, trafficpolicy.GetNamespace())
-		if err != nil {
-			out.errors = append(out.errors, err)
+		gwExtName := types.NamespacedName{Name: spec.ExtensionRef.Name, Namespace: trafficpolicy.GetNamespace()}
+		gatewayExtension := krt.FetchOne(krtctx, gatewayExtensions, krt.FilterObjectName(gwExtName))
+		if gatewayExtension == nil {
+			out.errors = append(out.errors, fmt.Errorf("extauth extension not found"))
 			return
 		}
-		if backend != nil {
-			extAuth.Services = &envoy_ext_authz_v3.ExtAuthz_GrpcService{
-				GrpcService: &envoy_core_v3.GrpcService{
-					TargetSpecifier: &envoy_core_v3.GrpcService_EnvoyGrpc_{
-						EnvoyGrpc: &envoy_core_v3.GrpcService_EnvoyGrpc{
-							ClusterName: backend.ClusterName(),
-						},
-					},
-				},
-			}
+		if gatewayExtension.err != nil {
+			out.errors = append(out.errors, gatewayExtension.err)
+			return
 		}
-	}
-
-	nameOrPlaceholder := ""
-	if spec.ExtensionRef != nil {
-		nameOrPlaceholder = string(spec.ExtensionRef.Name)
+		if gatewayExtension.extAuth == nil {
+			out.errors = append(out.errors, pluginutils.ErrInvalidExtensionType(v1alpha1.GatewayExtensionTypeExtAuth, gatewayExtension.extType))
+			return
+		}
+		provider = gatewayExtension
 	}
 
 	out.extAuth = &extAuthIR{
-		filter:       extAuth,
-		providerName: nameOrPlaceholder,
-		enablement:   spec.Enablement,
+		provider:        provider,
+		enablement:      spec.Enablement,
+		extauthPerRoute: translatePerFilterConfig(spec),
 	}
+}
+
+func translatePerFilterConfig(spec *v1alpha1.ExtAuthPolicy) *envoy_ext_authz_v3.ExtAuthzPerRoute {
+	checkSettings := &envoy_ext_authz_v3.CheckSettings{}
+
+	// Create the ExtAuthz configuration
+	// Configure request body buffering if specified
+	if spec.WithRequestBody != nil {
+		checkSettings.WithRequestBody = &envoy_ext_authz_v3.BufferSettings{
+			MaxRequestBytes: spec.WithRequestBody.MaxRequestBytes,
+		}
+		if spec.WithRequestBody.AllowPartialMessage != nil {
+			checkSettings.GetWithRequestBody().AllowPartialMessage = *spec.WithRequestBody.AllowPartialMessage
+		}
+		if spec.WithRequestBody.PackAsBytes != nil {
+			checkSettings.GetWithRequestBody().PackAsBytes = *spec.WithRequestBody.PackAsBytes
+		}
+	}
+	checkSettings.ContextExtensions = spec.ContextExtensions
+
+	if proto.Size(checkSettings) > 0 {
+		return &envoy_ext_authz_v3.ExtAuthzPerRoute{
+			Override: &envoy_ext_authz_v3.ExtAuthzPerRoute_CheckSettings{
+				CheckSettings: checkSettings,
+			},
+		}
+	}
+	return nil
 }
 
 // extAuthEnablementPerRoute returns a transformation that sets the ext auth filter key to false

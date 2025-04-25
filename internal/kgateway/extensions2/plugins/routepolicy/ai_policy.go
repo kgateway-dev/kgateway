@@ -38,7 +38,7 @@ type AIPolicyIR struct {
 }
 
 func (p *trafficPolicyPluginGwPass) processAITrafficPolicy(
-	configMap ir.TypedFilterConfigMap,
+	configMap *ir.TypedFilterConfigMap,
 	inIr *AIPolicyIR,
 ) error {
 	if inIr.Transformation != nil {
