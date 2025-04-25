@@ -120,7 +120,7 @@ func TestServiceEntry(t *testing.T) {
 		t.Fatalf("can't get settings %v", err)
 	}
 
-	runScenario(t, "testdata/serviceentry", st)
+	runScenario(t, "testdata/istio_service_entry", st)
 }
 
 func TestDestinationRule(t *testing.T) {
@@ -129,7 +129,7 @@ func TestDestinationRule(t *testing.T) {
 	if err != nil {
 		t.Fatalf("can't get settings %v", err)
 	}
-	runScenario(t, "testdata/istio_destinationrule", st)
+	runScenario(t, "testdata/istio_destination_rule", st)
 }
 
 func TestWithStandardSettings(t *testing.T) {
@@ -356,7 +356,7 @@ func setupEnvTestAndRun(t *testing.T, globalSettings *settings.Settings, run fun
 		CRDDirectoryPaths: []string{
 			filepath.Join("..", "crds"),
 			filepath.Join("..", "..", "..", "install", "helm", "kgateway-crds", "templates"),
-			filepath.Join("testdata", "istiocrds"),
+			filepath.Join("testdata", "istio_crds_setup"),
 		},
 		ErrorIfCRDPathMissing: true,
 		// set assets dir so we can run without the makefile
@@ -389,7 +389,7 @@ func setupEnvTestAndRun(t *testing.T, globalSettings *settings.Settings, run fun
 	}
 
 	// apply settings/gwclass to the cluster
-	err = client.ApplyYAMLFiles("default", "testdata/setupyaml/setup.yaml")
+	err = client.ApplyYAMLFiles("default", "testdata/setup_yaml/setup.yaml")
 	if err != nil {
 		t.Fatalf("failed to apply yaml: %v", err)
 	}
@@ -400,11 +400,11 @@ func setupEnvTestAndRun(t *testing.T, globalSettings *settings.Settings, run fun
 		t.Fatalf("failed to create namespace: %v", err)
 	}
 
-	err = client.ApplyYAMLFiles("gwtest", "testdata/setupyaml/pods.yaml")
+	err = client.ApplyYAMLFiles("gwtest", "testdata/setup_yaml/pods.yaml")
 	if err != nil {
 		t.Fatalf("failed to apply yaml: %v", err)
 	}
-	err = applyPodStatusFromFile(ctx, client, "gwtest", "testdata/setupyaml/pods.yaml")
+	err = applyPodStatusFromFile(ctx, client, "gwtest", "testdata/setup_yaml/pods.yaml")
 	if err != nil {
 		t.Fatalf("failed to apply pod status: %v", err)
 	}
