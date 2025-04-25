@@ -99,3 +99,4 @@ routes:
       typedPerFilterConfig:
         ext_auth/gwtest/basic-extauth:
           '@type': type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthzPerRoute
+          checkSettings: {}

@@ -121,3 +121,4 @@ routes:
       typedPerFilterConfig:
         ext_auth/gwtest/app-team-extauth:
           '@type': type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthzPerRoute
+          checkSettings: {}
