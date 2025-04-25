@@ -609,7 +609,11 @@ func (p *trafficPolicyPluginGwPass) handleExtAuth(pCtxTypedFilterConfig *ir.Type
 		} else if !p.extAuthPerProvider[providerName].fromListener {
 			// if you are on a route and not trying to disable it then we need to override the top level disable on the filter chain
 			pCtxTypedFilterConfig.AddTypedConfig(extAuthFilterName(providerName),
-				&envoy_ext_authz_v3.ExtAuthzPerRoute{},
+				&envoy_ext_authz_v3.ExtAuthzPerRoute{
+					Override: &envoy_ext_authz_v3.ExtAuthzPerRoute_CheckSettings{
+						CheckSettings: &envoy_ext_authz_v3.CheckSettings{},
+					},
+				},
 			)
 		}
 		if p.extAuthPerProvider == nil {
@@ -634,10 +638,10 @@ func (p *trafficPolicyPluginGwPass) handleExtProc(pCtxTypedFilterConfig *ir.Type
 		pCtxTypedFilterConfig.AddTypedConfig(extProcFilterName(providerName),
 			extProc.ExtProcPerRoute,
 		)
-	} else if !p.extAuthPerProvider[providerName].fromListener {
+	} else if !p.extProcPerProvider[providerName].fromListener {
 		// if you are on a route and not trying to disable it then we need to override the top level disable on the filter chain
 		pCtxTypedFilterConfig.AddTypedConfig(extProcFilterName(providerName),
-			&envoy_ext_proc_v3.ExtProcPerRoute{},
+			&envoy_ext_proc_v3.ExtProcPerRoute{Override: &envoy_ext_proc_v3.ExtProcPerRoute_Overrides{Overrides: &envoy_ext_proc_v3.ExtProcOverrides{}}},
 		)
 	}
 

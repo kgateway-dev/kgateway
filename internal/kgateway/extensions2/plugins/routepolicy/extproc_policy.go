@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	envoy_ext_proc_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_proc/v3"
-	"google.golang.org/protobuf/proto"
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/types"
 
@@ -43,17 +42,15 @@ func toEnvoyExtProc(
 
 func translateExtProcPerFilterConfig(extProc *v1alpha1.ExtProcPolicy) *envoy_ext_proc_v3.ExtProcPerRoute {
 	overrides := &envoy_ext_proc_v3.ExtProcOverrides{}
-	cfg := &envoy_ext_proc_v3.ExtProcPerRoute{}
 	if extProc.ProcessingMode != nil {
 		overrides.ProcessingMode = toEnvoyProcessingMode(extProc.ProcessingMode)
 	}
 
-	if proto.Size(overrides) > 0 {
-		cfg.Override = &envoy_ext_proc_v3.ExtProcPerRoute_Overrides{
+	return &envoy_ext_proc_v3.ExtProcPerRoute{
+		Override: &envoy_ext_proc_v3.ExtProcPerRoute_Overrides{
 			Overrides: overrides,
-		}
+		},
 	}
-	return cfg
 }
 
 // headerSendModeFromString converts a string to envoy HeaderSendMode
