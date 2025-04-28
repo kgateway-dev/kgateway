@@ -2,16 +2,23 @@ package waypoint
 
 import (
 	"context"
+	"fmt"
+	"os"
 	"path/filepath"
 	"time"
 
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	client "sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/stretchr/testify/suite"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
+	"github.com/kgateway-dev/kgateway/v2/test/helpers"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
+	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
 var _ e2e.NewSuiteFunc = NewTestingSuite
@@ -31,12 +38,22 @@ type testingSuite struct {
 	suite.Suite
 	ctx              context.Context
 	testInstallation *e2e.TestInstallation
+	ingressTesting   bool
 }
 
 func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
 	return &testingSuite{
 		ctx:              ctx,
 		testInstallation: testInst,
+		ingressTesting:   false,
+	}
+}
+
+func NewIngressTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
+	return &testingSuite{
+		ctx:              ctx,
+		testInstallation: testInst,
+		ingressTesting:   true,
 	}
 }
 
@@ -97,6 +114,11 @@ func (s *testingSuite) SetupSuite() {
 			s.T().Logf("Pod %s status: %s", pod.Name, pod.Status.Phase)
 		}
 	}
+
+	// If it's a suite for ingress testing, we set the KGW_INGRESS_USE_WAYPOINTS env var in the controller deployment
+	if s.ingressTesting {
+		s.setDeploymentEnvVariable()
+	}
 }
 
 func (s *testingSuite) TearDownSuite() {
@@ -104,6 +126,71 @@ func (s *testingSuite) TearDownSuite() {
 	if err != nil {
 		s.Error(err)
 	}
+}
+
+func (s *testingSuite) setDeploymentEnvVariable() {
+	controllerNamespace, ok := os.LookupEnv(testutils.InstallNamespace)
+	if !ok {
+		s.FailNow(fmt.Sprintf("%s environment variable not set", testutils.InstallNamespace))
+	}
+
+	// make a copy of the original controller deployment
+	controllerDeploymentOriginal := &appsv1.Deployment{}
+	err := s.testInstallation.ClusterContext.Client.Get(s.ctx, client.ObjectKey{
+		Namespace: controllerNamespace,
+		Name:      helpers.DefaultKgatewayDeploymentName,
+	}, controllerDeploymentOriginal)
+	s.Assert().NoError(err, "has controller deployment")
+
+	// add the environment variable KGW_INGRESS_USE_WAYPOINTS to the modified controller deployment
+	envVarToAdd := corev1.EnvVar{
+		Name:  "KGW_INGRESS_USE_WAYPOINTS",
+		Value: "true",
+	}
+	controllerDeployModified := controllerDeploymentOriginal.DeepCopy()
+	controllerDeployModified.Spec.Template.Spec.Containers[0].Env = append(
+		controllerDeployModified.Spec.Template.Spec.Containers[0].Env,
+		envVarToAdd,
+	)
+
+	// patch the deployment
+	controllerDeployModified.ResourceVersion = ""
+	err = s.testInstallation.ClusterContext.Client.Patch(s.ctx, controllerDeployModified, client.MergeFrom(controllerDeploymentOriginal))
+	s.Assert().NoError(err, "patching controller deployment")
+
+	// wait for the changes to be reflected in pod
+	s.testInstallation.Assertions.EventuallyPodContainerContainsEnvVar(
+		s.ctx,
+		controllerNamespace,
+		metav1.ListOptions{
+			LabelSelector: "app.kubernetes.io/name=kgateway",
+		},
+		helpers.KgatewayContainerName,
+		envVarToAdd,
+	)
+
+	s.T().Cleanup(func() {
+		// revert to original version of deployment
+		controllerDeploymentOriginal.ResourceVersion = ""
+		err = s.testInstallation.ClusterContext.Client.Patch(s.ctx, controllerDeploymentOriginal, client.MergeFrom(controllerDeployModified))
+		s.Require().NoError(err)
+
+		// make sure the env var is removed
+		s.testInstallation.Assertions.EventuallyPodContainerDoesNotContainEnvVar(
+			s.ctx,
+			controllerNamespace,
+			metav1.ListOptions{
+				LabelSelector: "app.kubernetes.io/name=kgateway",
+			},
+			helpers.KgatewayContainerName,
+			envVarToAdd.Name,
+		)
+	})
+
+	// wait for pods to be running again, since controller deployment was patched
+	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, controllerNamespace, metav1.ListOptions{
+		LabelSelector: "app.kubernetes.io/name=kgateway",
+	})
 }
 
 func (s *testingSuite) applyOrFail(fileName string, namespace string) {
