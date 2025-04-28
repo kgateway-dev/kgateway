@@ -264,9 +264,9 @@ func mergeProxyReports(
 				merged.HTTPRoutes[rnn] = rr
 				continue
 			}
-			// else, let's merge our parentRefs into the existing map
-			// obsGen will stay as-is...
-			maps.Copy(p.reports.HTTPRoutes[rnn].Parents, rr.Parents)
+			// else, this route has already been seen for a proxy, merge this proxy's parents
+			// into the merged report
+			maps.Copy(merged.HTTPRoutes[rnn].Parents, rr.Parents)
 		}
 
 		// 3. merge tcproute parentRefs into RouteReports
@@ -277,9 +277,9 @@ func mergeProxyReports(
 				merged.TCPRoutes[rnn] = rr
 				continue
 			}
-			// else, let's merge our parentRefs into the existing map
-			// obsGen will stay as-is...
-			maps.Copy(p.reports.TCPRoutes[rnn].Parents, rr.Parents)
+			// else, this route has already been seen for a proxy, merge this proxy's parents
+			// into the merged report
+			maps.Copy(merged.TCPRoutes[rnn].Parents, rr.Parents)
 		}
 
 		for rnn, rr := range p.reports.TLSRoutes {
@@ -289,9 +289,9 @@ func mergeProxyReports(
 				merged.TLSRoutes[rnn] = rr
 				continue
 			}
-			// else, let's merge our parentRefs into the existing map
-			// obsGen will stay as-is...
-			maps.Copy(p.reports.TLSRoutes[rnn].Parents, rr.Parents)
+			// else, this route has already been seen for a proxy, merge this proxy's parents
+			// into the merged report
+			maps.Copy(merged.TLSRoutes[rnn].Parents, rr.Parents)
 		}
 	}
 
