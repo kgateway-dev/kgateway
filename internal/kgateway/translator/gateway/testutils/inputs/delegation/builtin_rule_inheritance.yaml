@@ -11,8 +11,8 @@
 #   - overrides timeouts of parent
 #
 # Expected output routes:
-# - /a/1 -> parent's timeout
-# - /a/2 -> route-a2's timeout
+# - /a/1 -> parent's timeout and retry
+# - /a/2 -> route-a2's timeout and retry
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
@@ -38,6 +38,8 @@ spec:
       namespace: a
     timeouts:
       request: 5s
+    retry:
+      attempts: 3
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
@@ -70,3 +72,8 @@ spec:
       port: 8080
     timeouts:
       request: 10s
+    retry:
+      attempts: 5
+      codes:
+        - 503
+      backoff: 1s

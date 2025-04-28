@@ -44,17 +44,26 @@ func serviceEntryKey(obj ir.Namespaced) string {
 	return obj.GetNamespace() + "/" + obj.GetName()
 }
 
-// hostPortKey attempts to ensure usage of makeHostPortKey for querying
-// indexes of backend by host and port.
-type hostPortKey string
+// backendKey uniquely identifies a Backend resource.
+// It can be identified either by host/port combination OR by source object reference.
+// When used for indexing, both identifiers will be added to the index.
+type backendKey struct {
+	host string
+	port int32
 
-func (h hostPortKey) String() string {
-	return string(h)
+	srcObj string
 }
 
-// makeHostPortKey keys backends on the host and port.
-func makeHostPortKey(host string, port int) hostPortKey {
-	return hostPortKey(host + "/" + strconv.Itoa(port))
+func makeHostPortKey(host string, port int32) backendKey {
+	return backendKey{host: host, port: port}
+}
+
+func makeSrcObjKey(obj ir.ObjectSource) backendKey {
+	return backendKey{srcObj: serviceEntryKey(obj)}
+}
+
+func (h backendKey) String() string {
+	return h.host + ":" + strconv.Itoa(int(h.port)) + "~" + h.srcObj
 }
 
 func (s seSelector) ResourceName() string {
@@ -127,10 +136,9 @@ type serviceEntryCollections struct {
 	selectedWorkloadsIndex  krt.Index[string, selectedWorkload]
 
 	// output collections
-	Backends            krt.Collection[ir.BackendObjectIR]
-	Endpoints           krt.Collection[ir.EndpointsForBackend]
-	backendsByHostPort  krt.Index[hostPortKey, ir.BackendObjectIR]
-	backendsBySourceObj krt.Index[string, ir.BackendObjectIR]
+	Backends      krt.Collection[ir.BackendObjectIR]
+	Endpoints     krt.Collection[ir.EndpointsForBackend]
+	backendsIndex krt.Index[backendKey, ir.BackendObjectIR]
 }
 
 func initServiceEntryCollections(
@@ -163,12 +171,11 @@ func initServiceEntryCollections(
 	// init the outputs
 	Backends := backendsCollections(logger, commonCols.ServiceEntries, commonCols.KrtOpts)
 	Endpoints := endpointsCollection(Backends, SelectedWorkloads, selectedWorkloadsIndex, commonCols.KrtOpts)
-	backendsByHostPort := krt.NewIndex(Backends, func(be ir.BackendObjectIR) []hostPortKey {
-		return []hostPortKey{makeHostPortKey(be.CanonicalHostname, int(be.Port))}
-	})
-	// TODO this is part of the hackaround for SE backends being se*hosts*ports.
-	backendsBySourceObj := krt.NewIndex(Backends, func(be ir.BackendObjectIR) []string {
-		return []string{serviceEntryKey(be.ObjectSource)}
+	backendsIndex := krt.NewIndex(Backends, func(be ir.BackendObjectIR) []backendKey {
+		return []backendKey{
+			makeHostPortKey(be.CanonicalHostname, be.Port),
+			makeSrcObjKey(be.ObjectSource),
+		}
 	})
 
 	return serviceEntryCollections{
@@ -181,10 +188,9 @@ func initServiceEntryCollections(
 		SelectedWorkloads:       SelectedWorkloads,
 		selectedWorkloadsIndex:  selectedWorkloadsIndex,
 
-		Backends:            Backends,
-		Endpoints:           Endpoints,
-		backendsByHostPort:  backendsByHostPort,
-		backendsBySourceObj: backendsBySourceObj,
+		Backends:      Backends,
+		Endpoints:     Endpoints,
+		backendsIndex: backendsIndex,
 	}
 }
 

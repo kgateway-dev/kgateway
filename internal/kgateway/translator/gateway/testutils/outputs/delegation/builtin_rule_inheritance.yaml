@@ -38,6 +38,9 @@ Routes:
       route:
         cluster: kube_a_svc-a_8080
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+        retryPolicy:
+          numRetries: 3
+          retryOn: cancelled,connect-failure,refused-stream,retriable-headers,retriable-status-codes,unavailable
         timeout: 5s
     - match:
         pathSeparatedPrefix: /a/2
@@ -45,6 +48,13 @@ Routes:
       route:
         cluster: kube_a_svc-a_8080
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+        retryPolicy:
+          numRetries: 5
+          retriableStatusCodes:
+          - 503
+          retryBackOff:
+            baseInterval: 1s
+          retryOn: cancelled,connect-failure,refused-stream,retriable-headers,retriable-status-codes,unavailable
         timeout: 10s
     - match:
         prefix: /
