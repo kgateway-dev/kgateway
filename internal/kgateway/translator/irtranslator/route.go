@@ -193,6 +193,7 @@ func (h *httpRouteConfigurationTranslator) runVhostPlugins(ctx context.Context, 
 				continue
 			}
 			for _, pol := range pols {
+				reportPolicyAcceptanceStatus(h.reporter, h.listener.PolicyAncestorRef, pols...)
 				pctx := &ir.VirtualHostContext{
 					Policy: pol.PolicyIr,
 				}
@@ -250,6 +251,7 @@ func (h *httpRouteConfigurationTranslator) runRoutePlugins(
 			// TODO: should never happen, log error and report condition
 			continue
 		}
+		reportPolicyAcceptanceStatus(h.reporter, h.listener.PolicyAncestorRef, pols...)
 		pctx := &ir.RouteContext{
 			FilterChainName:   h.fc.FilterChainName,
 			In:                in,
@@ -290,6 +292,7 @@ func (h *httpRouteConfigurationTranslator) runBackendPolicies(ctx context.Contex
 			continue
 		}
 		for _, pol := range pols {
+			reportPolicyAcceptanceStatus(h.reporter, h.listener.PolicyAncestorRef, pol)
 			// Policy on extension ref
 			err := pass.ApplyForRouteBackend(ctx, pol.PolicyIr, pCtx)
 			if err != nil {

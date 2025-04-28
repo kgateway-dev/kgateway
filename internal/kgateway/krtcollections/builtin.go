@@ -25,6 +25,7 @@ import (
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
 )
 
 var VirtualBuiltInGK = schema.GroupKind{
@@ -52,6 +53,7 @@ func (d *builtinPlugin) Equals(in any) bool {
 
 type builtinPluginGwPass struct {
 	ir.UnimplementedProxyTranslationPass
+	reporter reports.Reporter
 }
 
 func (p *builtinPluginGwPass) ApplyForBackend(ctx context.Context, pCtx *ir.RouteBackendContext, in ir.HttpBackend, out *envoy_config_route_v3.Route) error {
@@ -511,8 +513,10 @@ func toEnvoyPercentage(percentage float64) *envoytype.FractionalPercent {
 	}
 }
 
-func NewGatewayTranslationPass(ctx context.Context, tctx ir.GwTranslationCtx) ir.ProxyTranslationPass {
-	return &builtinPluginGwPass{}
+func NewGatewayTranslationPass(ctx context.Context, tctx ir.GwTranslationCtx, reporter reports.Reporter) ir.ProxyTranslationPass {
+	return &builtinPluginGwPass{
+		reporter: reporter,
+	}
 }
 
 func (p *builtinPlugin) Name() string {

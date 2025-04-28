@@ -401,7 +401,6 @@ func (t *waypointTranslator) buildHTTPVirtualHost(
 		parentRefReporter := baseReporter.Route(httpRoute.Object.GetSourceObject()).ParentRef(&httpRoute.ParentRef)
 		translatedRoutes = append(translatedRoutes, httproute.TranslateGatewayHTTPRouteRules(
 			ctx,
-			gwListener.Listener,
 			httpRoute,
 			parentRefReporter,
 			baseReporter,

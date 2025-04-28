@@ -5,14 +5,14 @@ import (
 	"encoding/json"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	"istio.io/istio/pkg/kube/krt"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/endpoints"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
-
-	"istio.io/istio/pkg/kube/krt"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
 )
 
@@ -53,7 +53,7 @@ type PerClientProcessBackend func(
 
 type PolicyPlugin struct {
 	Name                      string
-	NewGatewayTranslationPass func(ctx context.Context, tctx ir.GwTranslationCtx) ir.ProxyTranslationPass
+	NewGatewayTranslationPass func(ctx context.Context, tctx ir.GwTranslationCtx, reporter reports.Reporter) ir.ProxyTranslationPass
 
 	GetBackendForRef          GetBackendForRefPlugin
 	ProcessBackend            ProcessBackend
@@ -87,6 +87,9 @@ type KGwTranslator interface {
 type (
 	GwTranslatorFactory func(gw *gwv1.Gateway) KGwTranslator
 	ContributesPolicies map[schema.GroupKind]PolicyPlugin
+
+	GetPolicyStatus   func(context.Context, types.NamespacedName) (gwv1alpha2.PolicyStatus, error)
+	PatchPolicyStatus func(context.Context, types.NamespacedName, gwv1alpha2.PolicyStatus) error
 )
 
 type Plugin struct {
@@ -95,7 +98,9 @@ type Plugin struct {
 	ContributesGwTranslator GwTranslatorFactory
 	// ContributesRegistration is a lifecycle hook called after all collections are synced
 	// allowing Plugins to register handlers against collections, e.g. for status reporting
-	ContributesRegistration map[schema.GroupKind]func()
+	ContributesRegistration  map[schema.GroupKind]func()
+	GetPolicyStatusHandler   map[schema.GroupKind]GetPolicyStatus
+	PatchPolicyStatusHandler map[schema.GroupKind]PatchPolicyStatus
 	// extra has sync beyong primary resources in the collections above
 	ExtraHasSynced func() bool
 }

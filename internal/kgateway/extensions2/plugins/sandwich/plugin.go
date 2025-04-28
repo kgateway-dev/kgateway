@@ -43,6 +43,7 @@ import (
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
 
 	"istio.io/istio/pilot/pkg/util/protoconv"
 )
@@ -52,10 +53,12 @@ func NewPlugin() extensionsplug.Plugin {
 		ContributesPolicies: extensionsplug.ContributesPolicies{
 			SandwichedInboundGK: extensionsplug.PolicyPlugin{
 				Name: "sandwich",
-				NewGatewayTranslationPass: func(ctx context.Context, tctx ir.GwTranslationCtx) ir.ProxyTranslationPass {
+				NewGatewayTranslationPass: func(ctx context.Context, tctx ir.GwTranslationCtx, reporter reports.Reporter) ir.ProxyTranslationPass {
 					// TODO we could read the waypoint-inbound-binding annotation here and set isSandwiched = true
 					// instead of using a policy set by translator?
-					return &sandwichedTranslationPass{}
+					return &sandwichedTranslationPass{
+						reporter: reporter,
+					}
 				},
 			},
 		},
@@ -88,7 +91,7 @@ func (w SandwichedInboundPolicy) Equals(in any) bool {
 
 type sandwichedTranslationPass struct {
 	ir.UnimplementedProxyTranslationPass
-
+	reporter reports.Reporter
 	// isSandwiched is marked true when we process the listener
 	// so that we add the FilterChain level network filters
 	isSandwiched bool

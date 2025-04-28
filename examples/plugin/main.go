@@ -20,6 +20,7 @@ import (
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/setup"
 )
 
@@ -219,7 +220,7 @@ func pluginFactory(ctx context.Context, commoncol *common.CommonCollections) []e
 			ContributesPolicies: extensionsplug.ContributesPolicies{
 				configMapGK: extensionsplug.PolicyPlugin{
 					Name: "metadataPolicy",
-					NewGatewayTranslationPass: func(ctx context.Context, tctx ir.GwTranslationCtx) ir.ProxyTranslationPass {
+					NewGatewayTranslationPass: func(ctx context.Context, tctx ir.GwTranslationCtx, reporter reports.Reporter) ir.ProxyTranslationPass {
 						// Return a fresh new translation pass
 						return &ourPolicyPass{}
 					},

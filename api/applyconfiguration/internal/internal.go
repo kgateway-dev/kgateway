@@ -705,7 +705,7 @@ var schemaYAML = typed.YAMLObject(`types:
       default: {}
     - name: status
       type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SimpleStatus
+        namedType: io.k8s.sigs.gateway-api.apis.v1alpha2.PolicyStatus
       default: {}
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.HTTPListenerPolicySpec
   map:
@@ -1137,17 +1137,6 @@ var schemaYAML = typed.YAMLObject(`types:
         map:
           elementType:
             scalar: string
-- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SimpleStatus
-  map:
-    fields:
-    - name: conditions
-      type:
-        list:
-          elementType:
-            namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Condition
-          elementRelationship: associative
-          keys:
-          - type
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SingleAuthToken
   map:
     fields:
@@ -1245,7 +1234,7 @@ var schemaYAML = typed.YAMLObject(`types:
       default: {}
     - name: status
       type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SimpleStatus
+        namedType: io.k8s.sigs.gateway-api.apis.v1alpha2.PolicyStatus
       default: {}
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.TrafficPolicySpec
   map:
@@ -2385,6 +2374,56 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         scalar: string
       default: ""
+- name: io.k8s.sigs.gateway-api.apis.v1.ParentReference
+  map:
+    fields:
+    - name: group
+      type:
+        scalar: string
+    - name: kind
+      type:
+        scalar: string
+    - name: name
+      type:
+        scalar: string
+      default: ""
+    - name: namespace
+      type:
+        scalar: string
+    - name: port
+      type:
+        scalar: numeric
+    - name: sectionName
+      type:
+        scalar: string
+- name: io.k8s.sigs.gateway-api.apis.v1alpha2.PolicyAncestorStatus
+  map:
+    fields:
+    - name: ancestorRef
+      type:
+        namedType: io.k8s.sigs.gateway-api.apis.v1.ParentReference
+      default: {}
+    - name: conditions
+      type:
+        list:
+          elementType:
+            namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Condition
+          elementRelationship: associative
+          keys:
+          - type
+    - name: controllerName
+      type:
+        scalar: string
+      default: ""
+- name: io.k8s.sigs.gateway-api.apis.v1alpha2.PolicyStatus
+  map:
+    fields:
+    - name: ancestors
+      type:
+        list:
+          elementType:
+            namedType: io.k8s.sigs.gateway-api.apis.v1alpha2.PolicyAncestorStatus
+          elementRelationship: atomic
 - name: __untyped_atomic_
   scalar: untyped
   list:

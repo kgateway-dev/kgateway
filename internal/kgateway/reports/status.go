@@ -14,8 +14,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
-
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
 
 // TODO: refactor this struct + methods to better reflect the usage now in proxy_syncer
@@ -86,7 +84,7 @@ func (r *ReportMap) BuildGWStatus(ctx context.Context, gw gwv1.Gateway) *gwv1.Ga
 func (r *ReportMap) BuildRouteStatus(
 	ctx context.Context,
 	obj client.Object,
-	cName string,
+	controller string,
 ) *gwv1.RouteStatus {
 	routeReport := r.route(obj)
 	if routeReport == nil {
@@ -168,7 +166,7 @@ func (r *ReportMap) BuildRouteStatus(
 
 		routeParentStatus := gwv1.RouteParentStatus{
 			ParentRef:      parentRef,
-			ControllerName: gwv1.GatewayController(cName),
+			ControllerName: gwv1.GatewayController(controller),
 			Conditions:     finalConditions,
 		}
 		newStatus.Parents = append(newStatus.Parents, routeParentStatus)
@@ -178,7 +176,7 @@ func (r *ReportMap) BuildRouteStatus(
 	// let's add status from other controllers on the current object status
 	var kgwStatus *gwv1.RouteStatus = &newStatus
 	for _, rps := range existingStatus.Parents {
-		if rps.ControllerName != wellknown.GatewayControllerName {
+		if rps.ControllerName != gwv1.GatewayController(controller) {
 			kgwStatus.Parents = append(kgwStatus.Parents, rps)
 		}
 	}

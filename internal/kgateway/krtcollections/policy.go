@@ -9,6 +9,7 @@ import (
 	"istio.io/istio/pkg/ptr"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	k8sptr "k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
@@ -193,6 +194,12 @@ func NewGatewayIndex(
 			out.Listeners = append(out.Listeners, ir.Listener{
 				Listener:         l,
 				AttachedPolicies: toAttachedPolicies(h.policies.getTargetingPolicies(kctx, extensionsplug.RouteAttachmentPoint, out.ObjectSource, string(l.Name))),
+				PolicyAncestorRef: gwv1.ParentReference{
+					Group:     k8sptr.To(gwv1.Group(wellknown.GatewayGVK.Group)),
+					Kind:      k8sptr.To(gwv1.Kind(wellknown.GatewayGVK.Kind)),
+					Name:      gwv1.ObjectName(i.Name),
+					Namespace: k8sptr.To(gwv1.Namespace(i.Namespace)),
+				},
 			})
 		}
 
@@ -390,8 +397,9 @@ func (p *PolicyIndex) getTargetingPoliciesMaybeForBackends(
 
 	for _, p := range policies {
 		ret = append(ret, ir.PolicyAtt{
-			GroupKind: p.GetGroupKind(),
-			PolicyIr:  p.PolicyIR,
+			Generation: p.Policy.GetGeneration(),
+			GroupKind:  p.GetGroupKind(),
+			PolicyIr:   p.PolicyIR,
 			PolicyRef: &ir.AttachedPolicyRef{
 				Group:     p.Group,
 				Kind:      p.Kind,

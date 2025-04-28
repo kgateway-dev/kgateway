@@ -49,6 +49,8 @@ type ListenerIR struct {
 
 	HttpFilterChain []HttpFilterChainIR
 	TcpFilterChain  []TcpIR
+
+	PolicyAncestorRef gwv1.ParentReference
 }
 
 type VirtualHost struct {

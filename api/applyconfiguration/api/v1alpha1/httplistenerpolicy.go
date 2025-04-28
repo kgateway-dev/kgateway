@@ -7,6 +7,7 @@ import (
 	types "k8s.io/apimachinery/pkg/types"
 	managedfields "k8s.io/apimachinery/pkg/util/managedfields"
 	v1 "k8s.io/client-go/applyconfigurations/meta/v1"
+	v1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
 	internal "github.com/kgateway-dev/kgateway/v2/api/applyconfiguration/internal"
 	apiv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
@@ -18,7 +19,7 @@ type HTTPListenerPolicyApplyConfiguration struct {
 	v1.TypeMetaApplyConfiguration    `json:",inline"`
 	*v1.ObjectMetaApplyConfiguration `json:"metadata,omitempty"`
 	Spec                             *HTTPListenerPolicySpecApplyConfiguration `json:"spec,omitempty"`
-	Status                           *SimpleStatusApplyConfiguration           `json:"status,omitempty"`
+	Status                           *v1alpha2.PolicyStatus                    `json:"status,omitempty"`
 }
 
 // HTTPListenerPolicy constructs a declarative configuration of the HTTPListenerPolicy type for use with
@@ -237,8 +238,8 @@ func (b *HTTPListenerPolicyApplyConfiguration) WithSpec(value *HTTPListenerPolic
 // WithStatus sets the Status field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Status field is set to the value of the last call.
-func (b *HTTPListenerPolicyApplyConfiguration) WithStatus(value *SimpleStatusApplyConfiguration) *HTTPListenerPolicyApplyConfiguration {
-	b.Status = value
+func (b *HTTPListenerPolicyApplyConfiguration) WithStatus(value v1alpha2.PolicyStatus) *HTTPListenerPolicyApplyConfiguration {
+	b.Status = &value
 	return b
 }
 

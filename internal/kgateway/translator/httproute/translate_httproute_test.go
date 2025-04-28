@@ -23,9 +23,8 @@ import (
 
 var _ = Describe("GatewayHttpRouteTranslator", func() {
 	var (
-		ctrl       *gomock.Controller
-		ctx        context.Context
-		gwListener gwv1.Listener
+		ctrl *gomock.Controller
+		ctx  context.Context
 
 		// Shared variables for all tests
 		up                *ir.BackendObjectIR
@@ -46,7 +45,6 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 	BeforeEach(func() {
 		ctrl = gomock.NewController(GinkgoT())
 		ctx = context.Background()
-		gwListener = gwv1.Listener{}
 
 		// Common setup for both happy path and negative test cases
 		parentRef = &gwv1.ParentReference{
@@ -166,7 +164,7 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 			})
 
 			It("translates the route correctly", func() {
-				routes := httproute.TranslateGatewayHTTPRouteRules(ctx, gwListener, routeInfo, parentRefReporter, baseReporter)
+				routes := httproute.TranslateGatewayHTTPRouteRules(ctx, routeInfo, parentRefReporter, baseReporter)
 
 				Expect(routes).To(HaveLen(1))
 				Expect(routes[0].Name).To(Equal("httproute-foo-httproute-bar-0-0"))
@@ -246,7 +244,7 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 			})
 
 			It("falls back to a blackhole cluster", func() {
-				routes := httproute.TranslateGatewayHTTPRouteRules(ctx, gwListener, routeInfo, parentRefReporter, baseReporter)
+				routes := httproute.TranslateGatewayHTTPRouteRules(ctx, routeInfo, parentRefReporter, baseReporter)
 
 				Expect(routes).To(HaveLen(1))
 				Expect(routes[0].Name).To(Equal("httproute-foo-httproute-bar-0-0"))
@@ -346,7 +344,7 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 
 			It("translates the route correctly", func() {
 				routes := httproute.TranslateGatewayHTTPRouteRules(
-					ctx, gwListener, routeInfo, parentRefReporter, baseReporter)
+					ctx, routeInfo, parentRefReporter, baseReporter)
 
 				Expect(routes).To(HaveLen(1))
 				Expect(routes[0].Name).To(Equal("httproute-foo-httproute-bar-0-0"))
@@ -424,7 +422,7 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 
 			It("falls back to a blackhole cluster", func() {
 				routes := httproute.TranslateGatewayHTTPRouteRules(
-					ctx, gwListener, routeInfo, parentRefReporter, baseReporter)
+					ctx, routeInfo, parentRefReporter, baseReporter)
 
 				Expect(routes).To(HaveLen(1))
 				Expect(routes[0].Backends[0].Backend.ClusterName).To(Equal("blackhole_cluster"))
@@ -719,5 +717,4 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 		})
 		*/
 	})
-
 })

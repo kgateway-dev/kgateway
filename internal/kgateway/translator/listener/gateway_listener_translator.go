@@ -428,12 +428,13 @@ func (ml *MergedListener) TranslateListener(
 	// Create and return the listener with all filter chains and TCP listeners
 	//	panic("TODO: handle listener policy attachment")
 	return ir.ListenerIR{
-		Name:             ml.name,
-		BindAddress:      "::",
-		BindPort:         uint32(ml.port),
-		AttachedPolicies: ir.AttachedPolicies{}, // TODO: find policies attached to listener and attach them <- this might not be possilbe due to listener merging. also a gw listener ~= envoy filter chain; and i don't believe we need policies there
-		HttpFilterChain:  httpFilterChains,
-		TcpFilterChain:   matchedTcpListeners,
+		Name:              ml.name,
+		BindAddress:       "::",
+		BindPort:          uint32(ml.port),
+		AttachedPolicies:  ir.AttachedPolicies{}, // TODO: find policies attached to listener and attach them <- this might not be possilbe due to listener merging. also a gw listener ~= envoy filter chain; and i don't believe we need policies there
+		HttpFilterChain:   httpFilterChains,
+		TcpFilterChain:    matchedTcpListeners,
+		PolicyAncestorRef: ml.listener.PolicyAncestorRef,
 	}
 }
 
@@ -790,12 +791,11 @@ func buildRoutesPerHost(
 	gwListener ir.Listener,
 	reporter reports.Reporter,
 ) {
-	//func() { panic("TODO: handle policy attachment") }()
+	// func() { panic("TODO: handle policy attachment") }()
 	for _, routeWithHosts := range routes {
 		parentRefReporter := reporter.Route(routeWithHosts.Object.GetSourceObject()).ParentRef(&routeWithHosts.ParentRef)
 		routes := route.TranslateGatewayHTTPRouteRules(
 			ctx,
-			gwListener.Listener,
 			routeWithHosts,
 			parentRefReporter,
 			reporter,

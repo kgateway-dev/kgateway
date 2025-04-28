@@ -47,9 +47,11 @@ func mergeSynced(funcs []func() bool) func() bool {
 
 func MergePlugins(plug ...extensionsplug.Plugin) extensionsplug.Plugin {
 	ret := extensionsplug.Plugin{
-		ContributesPolicies:     make(map[schema.GroupKind]extensionsplug.PolicyPlugin),
-		ContributesBackends:     make(map[schema.GroupKind]extensionsplug.BackendPlugin),
-		ContributesRegistration: make(map[schema.GroupKind]func()),
+		ContributesPolicies:      make(map[schema.GroupKind]extensionsplug.PolicyPlugin),
+		ContributesBackends:      make(map[schema.GroupKind]extensionsplug.BackendPlugin),
+		ContributesRegistration:  make(map[schema.GroupKind]func()),
+		GetPolicyStatusHandler:   make(map[schema.GroupKind]extensionsplug.GetPolicyStatus),
+		PatchPolicyStatusHandler: make(map[schema.GroupKind]extensionsplug.PatchPolicyStatus),
 	}
 	var funcs []extensionsplug.GwTranslatorFactory
 	var hasSynced []func() bool
@@ -57,6 +59,8 @@ func MergePlugins(plug ...extensionsplug.Plugin) extensionsplug.Plugin {
 		maps.Copy(ret.ContributesPolicies, p.ContributesPolicies)
 		maps.Copy(ret.ContributesBackends, p.ContributesBackends)
 		maps.Copy(ret.ContributesRegistration, p.ContributesRegistration)
+		maps.Copy(ret.GetPolicyStatusHandler, p.GetPolicyStatusHandler)
+		maps.Copy(ret.PatchPolicyStatusHandler, p.PatchPolicyStatusHandler)
 		if p.ContributesGwTranslator != nil {
 			funcs = append(funcs, p.ContributesGwTranslator)
 		}

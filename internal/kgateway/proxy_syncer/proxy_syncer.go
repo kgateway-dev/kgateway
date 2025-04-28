@@ -9,6 +9,7 @@ import (
 	"time"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 
@@ -178,6 +179,12 @@ func (r report) Equals(in report) bool {
 	if !maps.Equal(r.reportMap.TCPRoutes, in.reportMap.TCPRoutes) {
 		return false
 	}
+	if !maps.Equal(r.reportMap.TLSRoutes, in.reportMap.TLSRoutes) {
+		return false
+	}
+	if !maps.Equal(r.reportMap.Policies, in.reportMap.Policies) {
+		return false
+	}
 	return true
 }
 
@@ -294,6 +301,18 @@ func mergeProxyReports(
 			// into the merged report
 			maps.Copy(merged.TLSRoutes[rnn].Parents, rr.Parents)
 		}
+
+		for key, report := range p.reports.Policies {
+			// if we haven't encountered this route, just copy it over completely
+			old := merged.Policies[key]
+			if old == nil {
+				merged.Policies[key] = report
+				continue
+			}
+			// else, let's merge our parentRefs into the existing map
+			// obsGen will stay as-is...
+			maps.Copy(merged.Policies[key].Ancestors, report.Ancestors)
+		}
 	}
 
 	return merged
@@ -337,6 +356,7 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 			}
 			s.syncGatewayStatus(ctx, latestReport)
 			s.syncRouteStatus(ctx, latestReport)
+			s.syncPolicyStatus(ctx, latestReport)
 		}
 	}()
 
@@ -537,6 +557,51 @@ func (s *ProxySyncer) syncGatewayStatus(ctx context.Context, rm reports.ReportMa
 	}
 	duration := stopwatch.Stop(ctx)
 	logger.Debugf("synced gw status for %d gateways in %s", len(rm.Gateways), duration.String())
+}
+
+func (s *ProxySyncer) syncPolicyStatus(ctx context.Context, rm reports.ReportMap) {
+	ctx = contextutils.WithLogger(ctx, "routeStatusSyncer")
+	logger := contextutils.LoggerFrom(ctx)
+	stopwatch := utils.NewTranslatorStopWatch("RouteStatusSyncer")
+	stopwatch.Start()
+	defer stopwatch.Stop(ctx)
+
+	// Sync Policy statuses
+	for key := range rm.Policies {
+		gk := schema.GroupKind{Group: key.Group, Kind: key.Kind}
+		nsName := types.NamespacedName{Namespace: key.Namespace, Name: key.Name}
+
+		getPolicyStatusFn, ok := s.plugins.GetPolicyStatusHandler[gk]
+		if !ok {
+			logger.Errorw("GetPolicyStatus handler not registered for policy", "groupKind", gk, "resource", nsName)
+			continue
+		}
+		patchPolicyStatusFn, ok := s.plugins.PatchPolicyStatusHandler[gk]
+		if !ok {
+			logger.Errorw("PatchPolicyStatus handler not registered for policy", "groupKind", gk, "resource", nsName)
+			continue
+		}
+		currentStatus, err := getPolicyStatusFn(ctx, nsName)
+		if err != nil {
+			logger.Errorw("error getting policy status", "error", err, "policy", nsName)
+			continue
+		}
+		status := rm.BuildPolicyStatus(ctx, key, s.controllerName, currentStatus)
+		if status == nil {
+			continue
+		}
+		err = retry.Do(
+			func() error {
+				return patchPolicyStatusFn(ctx, nsName, *status)
+			},
+			retry.Attempts(5),
+			retry.Delay(100*time.Millisecond),
+			retry.DelayType(retry.BackOffDelay),
+		)
+		if err != nil {
+			logger.Errorw("error updating policy status", "error", err, "groupKind", gk, "policy", nsName)
+		}
+	}
 }
 
 // syncGatewayStatus will build and update status for all Gateways in a reportMap

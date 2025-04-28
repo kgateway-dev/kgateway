@@ -6,10 +6,13 @@ import (
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"golang.org/x/net/context"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/utils/ptr"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
 
 type Translator struct {
@@ -26,7 +29,7 @@ type TranslationResult struct {
 
 // Translate IR to gateway. IR is self contained, so no need for krt context
 func (t *Translator) Translate(gw ir.GatewayIR, reporter reports.Reporter) TranslationResult {
-	pass := t.newPass()
+	pass := t.newPass(reporter)
 	var res TranslationResult
 
 	for _, l := range gw.Listeners {
@@ -135,6 +138,12 @@ func (t *Translator) runListenerPlugins(ctx context.Context, pass TranslationPas
 			for _, pol := range pols {
 				pctx := &ir.ListenerContext{
 					Policy: pol.PolicyIr,
+					PolicyAncestorRef: gwv1.ParentReference{
+						Group:     ptr.To(gwv1.Group(wellknown.GatewayGVK.Group)),
+						Kind:      ptr.To(gwv1.Kind(wellknown.GatewayGVK.Kind)),
+						Namespace: ptr.To(gwv1.Namespace(gw.SourceObject.GetNamespace())),
+						Name:      gwv1.ObjectName(gw.SourceObject.GetName()),
+					},
 				}
 				pass.ApplyListenerPlugin(ctx, pctx, out)
 				// TODO: check return value, if error returned, log error and report condition
@@ -143,13 +152,13 @@ func (t *Translator) runListenerPlugins(ctx context.Context, pass TranslationPas
 	}
 }
 
-func (t *Translator) newPass() TranslationPassPlugins {
+func (t *Translator) newPass(reporter reports.Reporter) TranslationPassPlugins {
 	ret := TranslationPassPlugins{}
 	for k, v := range t.ContributedPolicies {
 		if v.NewGatewayTranslationPass == nil {
 			continue
 		}
-		tp := v.NewGatewayTranslationPass(context.TODO(), ir.GwTranslationCtx{})
+		tp := v.NewGatewayTranslationPass(context.TODO(), ir.GwTranslationCtx{}, reporter)
 		if tp != nil {
 			ret[k] = &TranslationPass{
 				ProxyTranslationPass: tp,

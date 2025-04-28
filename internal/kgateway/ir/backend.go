@@ -196,7 +196,8 @@ func (l Secret) MarshalJSON() ([]byte, error) {
 
 type Listener struct {
 	gwv1.Listener
-	AttachedPolicies AttachedPolicies
+	AttachedPolicies  AttachedPolicies
+	PolicyAncestorRef gwv1.ParentReference
 }
 
 type Gateway struct {

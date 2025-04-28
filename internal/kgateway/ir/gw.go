@@ -42,6 +42,9 @@ func (ref *AttachedPolicyRef) ID() string {
 }
 
 type PolicyAtt struct {
+	// Generation of the Policy CR contributing to this attachment
+	Generation int64
+
 	// GroupKind is the GK of the original policy object
 	GroupKind schema.GroupKind
 	// original object. ideally with structural errors removed.
