@@ -1,11 +1,12 @@
 use envoy_proxy_dynamic_modules_rust_sdk::*;
 use minijinja::value::Rest;
 use minijinja::{context, Environment, State};
+
+#[cfg(test)]
 use mockall::*;
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::hash::Hash;
 
 /// This implements the [`envoy_proxy_dynamic_modules_rust_sdk::HttpFilterConfig`] trait.
 ///
@@ -107,7 +108,7 @@ impl<EC: EnvoyHttpFilterConfig, EHF: EnvoyHttpFilter> HttpFilterConfig<EC, EHF> 
             response_headers_setter: self.response_headers_setter.clone(),
             // clone the hashmap
             route_specific: specific,
-            env: env,
+            env,
         })
     }
 }
@@ -117,7 +118,7 @@ impl<EC: EnvoyHttpFilterConfig, EHF: EnvoyHttpFilter> HttpFilterConfig<EC, EHF> 
 // of the substring, and the optional third argument is the length of the substring.
 // If the third argument is not provided, the substring will extend to the end of the string.
 fn substring(input: &str, args: Rest<String>) -> String {
-    if args.len() == 0 || args.len() > 2 {
+    if args.is_empty() || args.len() > 2 {
         return input.to_string();
     }
     let start: usize = args[0].parse::<usize>().unwrap_or(0);
@@ -154,7 +155,6 @@ fn request_header(state: &State, key: &str) -> String {
     header_map.get(key).cloned().unwrap_or_default()
 }
 
-
 /// This sets the request and response headers to the values specified in the filter config.
 pub struct Filter {
     request_headers_setter: Vec<(String, String)>,
@@ -177,24 +177,19 @@ impl<EHF: EnvoyHttpFilter> HttpFilter<EHF> for Filter {
 
         let mut setters = self.request_headers_setter.clone();
         // use the sub route version if appropriate as we dont have valid perroute config today
-        if self.route_specific.len() > 0 {
+        if !self.route_specific.is_empty() {
             // check filter state for info
-            let route_name_data_option = envoy_filter
-                .get_dynamic_metadata_string("kgateway", "route");
-            if ! route_name_data_option.is_none() {
+            let route_name_data_option =
+                envoy_filter.get_dynamic_metadata_string("kgateway", "route");
+            if route_name_data_option.is_some() {
                 let route_name_data = route_name_data_option.unwrap();
                 // if its there then we should be able to pull the data name
                 let route_name = std::str::from_utf8(route_name_data.as_slice()).unwrap();
-                let route_config  = self
-                    .route_specific
-                    .get(route_name);
-                if !route_config.is_none() {
-                    setters = route_config
-                    .unwrap()
-                    .request_headers_setter
-                    .clone();
+                let route_config = self.route_specific.get(route_name);
+                if route_config.is_some() {
+                    setters = route_config.unwrap().request_headers_setter.clone();
                 }
-            } 
+            }
         }
 
         // TODO(nfuden): find someone who knows rust to see if we really need this Hash map for serialization
@@ -252,31 +247,27 @@ impl<EHF: EnvoyHttpFilter> HttpFilter<EHF> for Filter {
 
         let mut setters = self.response_headers_setter.clone();
         // use the sub route version if appropriate as we dont have valid perroute config today
-        if self.route_specific.len() > 0 {
+        if !self.route_specific.is_empty() {
             // check filter state for info
-            let route_name_data_option = envoy_filter
-                .get_dynamic_metadata_string("kgateway", "route");
-            if ! route_name_data_option.is_none() {
+            let route_name_data_option =
+                envoy_filter.get_dynamic_metadata_string("kgateway", "route");
+            if route_name_data_option.is_some() {
                 let route_name_data = route_name_data_option.unwrap();
                 // if its there then we should be able to pull the data name
                 let route_name = std::str::from_utf8(route_name_data.as_slice()).unwrap();
-                let route_config  = self
-                    .route_specific
-                    .get(route_name);
-                if !route_config.is_none() {
-                    setters = route_config
-                    .unwrap()
-                    .response_headers_setter
-                    .clone();
+                let route_config = self.route_specific.get(route_name);
+                if route_config.is_some() {
+                    setters = route_config.unwrap().response_headers_setter.clone();
                 }
-            } 
+            }
         }
 
         for (key, value) in &setters {
             let mut env = self.env.clone();
             env.add_template("temp", value).unwrap();
             let tmpl = env.get_template("temp").unwrap();
-            let rendered = tmpl.render(context!(headers => headers, request_headers => request_headers));
+            let rendered =
+                tmpl.render(context!(headers => headers, request_headers => request_headers));
             let mut rendered_str = "".to_string();
             if rendered.is_ok() {
                 rendered_str = rendered.unwrap();
@@ -357,7 +348,7 @@ mod tests {
             .returning(|key, value: &[u8]| {
                 assert_eq!(key, "X-substring");
                 assert_eq!(std::str::from_utf8(value).unwrap(), "PROXY");
-                return true;
+                true
             });
 
         envoy_filter
@@ -367,7 +358,7 @@ mod tests {
             .returning(|key, value: &[u8]| {
                 assert_eq!(key, "X-substring-no-3rd");
                 assert_eq!(std::str::from_utf8(value).unwrap(), "PROXY something");
-                return true;
+                true
             });
 
         envoy_filter
@@ -377,7 +368,7 @@ mod tests {
             .returning(|key, value: &[u8]| {
                 assert_eq!(key, "X-donor-header-contents");
                 assert_eq!(std::str::from_utf8(value).unwrap(), "thedonorvalue");
-                return true;
+                true
             });
 
         envoy_filter
@@ -387,7 +378,7 @@ mod tests {
             .returning(|key, value: &[u8]| {
                 assert_eq!(key, "X-donor-header-substringed");
                 assert_eq!(std::str::from_utf8(value).unwrap(), "thedono");
-                return true;
+                true
             });
 
         envoy_filter
@@ -395,7 +386,7 @@ mod tests {
             .returning(|key, value| {
                 assert_eq!(key, "X-Bar");
                 assert_eq!(value, b"foo");
-                return true;
+                true
             });
 
         assert_eq!(
@@ -458,14 +449,14 @@ mod tests {
             .returning(|key, value: &[u8]| {
                 assert_eq!(key, "X-if-truth");
                 assert_eq!(std::str::from_utf8(value).unwrap(), "supersuper");
-                return true;
+                true
             });
         envoy_filter
             .expect_set_response_header()
             .returning(|key, value| {
                 assert_eq!(key, "X-Bar");
                 assert_eq!(value, b"foo");
-                return true;
+                true
             });
         assert_eq!(
             filter.on_request_headers(&mut envoy_filter, false),
