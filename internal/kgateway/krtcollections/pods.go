@@ -3,6 +3,7 @@ package krtcollections
 import (
 	"maps"
 
+	istioannot "istio.io/api/annotation"
 	"istio.io/api/label"
 	"istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/kclient"
@@ -37,7 +38,6 @@ type LocalityPod struct {
 	krt.Named
 	Locality        ir.PodLocality
 	AugmentedLabels map[string]string
-	Annotations     map[string]string
 	Addresses       []string
 }
 
@@ -53,7 +53,6 @@ func (c LocalityPod) Equals(in LocalityPod) bool {
 	return c.Named == in.Named &&
 		c.Locality == in.Locality &&
 		maps.Equal(c.AugmentedLabels, in.AugmentedLabels) &&
-		maps.Equal(c.Annotations, in.Annotations) &&
 		slices.Equal(c.Addresses, in.Addresses)
 }
 
@@ -91,10 +90,6 @@ func augmentPodLabels(nodes krt.Collection[NodeMetadata]) func(kctx krt.HandlerC
 		if labels == nil {
 			labels = make(map[string]string)
 		}
-		annotations := maps.Clone(pod.Annotations)
-		if annotations == nil {
-			annotations = make(map[string]string)
-		}
 		nodeName := pod.Spec.NodeName
 		var l ir.PodLocality
 		if nodeName != "" {
@@ -113,10 +108,12 @@ func augmentPodLabels(nodes krt.Collection[NodeMetadata]) func(kctx krt.HandlerC
 			}
 		}
 
+		// Augment the labels with the ambient redirection annotation
+		labels[istioannot.AmbientRedirection.Name] = pod.Annotations[istioannot.AmbientRedirection.Name]
+
 		return &LocalityPod{
 			Named:           krt.NewNamed(pod),
 			AugmentedLabels: labels,
-			Annotations:     annotations,
 			Locality:        l,
 			Addresses:       extractPodIPs(pod),
 		}

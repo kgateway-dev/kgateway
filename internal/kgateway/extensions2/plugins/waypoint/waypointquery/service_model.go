@@ -210,12 +210,7 @@ func fqdn(name, ns string) string {
 }
 
 func FromService(svc *corev1.Service) Service {
-	var addrs []string
-	if len(svc.Spec.ClusterIPs) > 0 {
-		addrs = svc.Spec.ClusterIPs
-	} else if len(svc.Spec.ClusterIP) > 0 && svc.Spec.ClusterIP != "None" {
-		addrs = []string{svc.Spec.ClusterIP}
-	}
+	addrs := serviceAddresses(svc)
 
 	return Service{
 		Object:    svc,
@@ -240,9 +235,7 @@ func FromService(svc *corev1.Service) Service {
 }
 
 func FromServiceEntry(se *networkingclient.ServiceEntry) Service {
-	addrs := append(se.Spec.GetAddresses(), slices.Map(se.Status.GetAddresses(), func(a *networkingv1beta1.ServiceEntryAddress) string {
-		return a.Value
-	})...)
+	addrs := serviceEntryAddresses(se)
 
 	return Service{
 		Object:    se,
@@ -258,6 +251,42 @@ func FromServiceEntry(se *networkingclient.ServiceEntry) Service {
 			}
 		}),
 	}
+}
+
+func BackendAddresses(ir ir.BackendObjectIR) []string {
+	var addresses []string
+	switch ir.Obj.(type) {
+	case *corev1.Service:
+		addresses = serviceAddresses(ir.Obj.(*corev1.Service))
+	case *networkingclient.ServiceEntry:
+		addresses = serviceEntryAddresses(ir.Obj.(*networkingclient.ServiceEntry))
+	}
+	return addresses
+}
+
+// serviceAddresses returns the addresses of the service. ClusterIPs are optional in a Service
+// and if exists will include the address of ClusterIP.
+// Value can also be "None" (headless service) in both ClusterIPs and ClusterIP.
+func serviceAddresses(svc *corev1.Service) []string {
+	var addrs []string
+	if len(svc.Spec.ClusterIPs) > 0 {
+		for _, ip := range svc.Spec.ClusterIPs {
+			if ip != "" && ip != "None" {
+				addrs = append(addrs, ip)
+			}
+		}
+	}
+	if len(addrs) == 0 && len(svc.Spec.ClusterIP) > 0 && svc.Spec.ClusterIP != "None" {
+		addrs = []string{svc.Spec.ClusterIP}
+	}
+	return addrs
+}
+
+func serviceEntryAddresses(se *networkingclient.ServiceEntry) []string {
+	addrs := append(se.Spec.GetAddresses(), slices.Map(se.Status.GetAddresses(), func(a *networkingv1beta1.ServiceEntryAddress) string {
+		return a.Value
+	})...)
+	return addrs
 }
 
 func serviceKey(kind, namespace, name string) string {

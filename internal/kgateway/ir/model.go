@@ -26,11 +26,10 @@ func (c PodLocality) String() string {
 }
 
 type UniqlyConnectedClient struct {
-	Role        string
-	Labels      map[string]string
-	Annotations map[string]string
-	Locality    PodLocality
-	Namespace   string
+	Role      string
+	Labels    map[string]string
+	Locality  PodLocality
+	Namespace string
 
 	// modified role that includes the namespace and the hash of the labels.
 	// we set the client's role to this value in the node metadata. so the snapshot key in the cache
@@ -45,11 +44,11 @@ func (c UniqlyConnectedClient) ResourceName() string {
 var _ krt.Equaler[UniqlyConnectedClient] = new(UniqlyConnectedClient)
 
 func (c UniqlyConnectedClient) Equals(k UniqlyConnectedClient) bool {
-	return c.Role == k.Role && c.Namespace == k.Namespace && c.Locality == k.Locality && maps.Equal(c.Labels, k.Labels) && maps.Equal(c.Annotations, k.Annotations)
+	return c.Role == k.Role && c.Namespace == k.Namespace && c.Locality == k.Locality && maps.Equal(c.Labels, k.Labels)
 }
 
 // note: if "ns" is empty, we assume the user doesn't want to use pod locality info, so we won't modify the role.
-func NewUniqlyConnectedClient(roleFromEnvoy string, ns string, labels map[string]string, annotations map[string]string, locality PodLocality) UniqlyConnectedClient {
+func NewUniqlyConnectedClient(roleFromEnvoy string, ns string, labels map[string]string, locality PodLocality) UniqlyConnectedClient {
 	resourceName := roleFromEnvoy
 	if ns != "" {
 		snapshotKey := labeledRole(resourceName, labels)
@@ -60,7 +59,6 @@ func NewUniqlyConnectedClient(roleFromEnvoy string, ns string, labels map[string
 		Namespace:    ns,
 		Locality:     locality,
 		Labels:       labels,
-		Annotations:  annotations,
 		resourceName: resourceName,
 	}
 }

@@ -13,6 +13,7 @@ var (
 func (s *testingSuite) TestIngressHTTPRouteWithoutLabel() {
 	s.setNamespaceWaypointOrFail(testNamespace)
 	s.applyOrFail("httproute-ingress.yaml", testNamespace)
+	s.applyOrFail("httproute-svc.yaml", testNamespace)
 
 	// verifying first the in-mesh traffic
 	// svc-a has the parent ref, so only have the route there
@@ -31,6 +32,7 @@ func (s *testingSuite) TestIngressHTTPRouteServiceLabel() {
 	s.setNamespaceWaypointOrFail(testNamespace)
 	s.setIngressUseWaypointLabel("svc", "svc-a", testNamespace)
 	s.applyOrFail("httproute-ingress.yaml", testNamespace)
+	s.applyOrFail("httproute-svc.yaml", testNamespace)
 
 	// verifying first the in-mesh traffic
 	// svc-a has the parent ref, so only have the route there
@@ -54,6 +56,7 @@ func (s *testingSuite) TestIngressHTTPRouteNamespaceLabel() {
 	s.setNamespaceWaypointOrFail(testNamespace)
 	s.setIngressUseWaypointLabel("ns", testNamespace, "")
 	s.applyOrFail("httproute-ingress.yaml", testNamespace)
+	s.applyOrFail("httproute-svc.yaml", testNamespace)
 
 	// verifying first the in-mesh traffic
 	// svc-a has the parent ref, so only have the route there
