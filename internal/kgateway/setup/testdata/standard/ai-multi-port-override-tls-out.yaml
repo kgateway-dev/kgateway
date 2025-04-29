@@ -37,7 +37,7 @@ clusters:
         metadata:
           filterMetadata:
             envoy.transport_socket_match:
-              tls: default
+              tls: skipverification
             io.solo.transformation:
               auth_token: mysecretkey
               model: gpt-4o
