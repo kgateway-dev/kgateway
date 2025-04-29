@@ -21,6 +21,7 @@ var (
 	// from envoy code:
 	// If the field `config` is configured but is empty, we treat the filter is enabled
 	// explicitly.
+	// see: https://github.com/envoyproxy/envoy/blob/8ed93ef372f788456b708fc93a7e54e17a013aa7/source/common/router/config_impl.cc#L2552
 	enableFilterPerRoute = &routev3.FilterConfig{Config: &anypb.Any{}}
 	setMetadataConfig    = &set_metadata.Config{
 		Metadata: []*set_metadata.Metadata{
