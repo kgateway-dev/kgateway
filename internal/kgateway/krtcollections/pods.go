@@ -109,7 +109,9 @@ func augmentPodLabels(nodes krt.Collection[NodeMetadata]) func(kctx krt.HandlerC
 		}
 
 		// Augment the labels with the ambient redirection annotation
-		labels[istioannot.AmbientRedirection.Name] = pod.Annotations[istioannot.AmbientRedirection.Name]
+		if redirectionValue, exists := pod.Annotations[istioannot.AmbientRedirection.Name]; exists {
+			labels[istioannot.AmbientRedirection.Name] = redirectionValue
+		}
 
 		return &LocalityPod{
 			Named:           krt.NewNamed(pod),
