@@ -21,7 +21,7 @@ Listeners:
             resourceApiVersion: V3
           routeConfigName: http
         statPrefix: http
-        use_remote_address: true
+        useRemoteAddress: true
     name: http
   name: http
 Routes:

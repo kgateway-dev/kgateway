@@ -5,6 +5,7 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
+	"k8s.io/utils/ptr"
 )
 
 func TargetRefsToPolicyRefs(
@@ -14,9 +15,10 @@ func TargetRefsToPolicyRefs(
 	refs := make([]ir.PolicyRef, 0, len(targetRefs)+len(targetSelectors))
 	for _, targetRef := range targetRefs {
 		refs = append(refs, ir.PolicyRef{
-			Group: string(targetRef.Group),
-			Kind:  string(targetRef.Kind),
-			Name:  string(targetRef.Name),
+			Group:       string(targetRef.Group),
+			Kind:        string(targetRef.Kind),
+			Name:        string(targetRef.Name),
+			SectionName: string(ptr.Deref(targetRef.SectionName, "")),
 		})
 	}
 	for _, targetSelector := range targetSelectors {

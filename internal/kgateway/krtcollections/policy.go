@@ -305,12 +305,12 @@ type targetRefIndexKey struct {
 	Group       string
 	Kind        string
 	Name        string
-	SectionName string
 	Namespace   string
+	SectionName string
 }
 
 func (k targetRefIndexKey) String() string {
-	return fmt.Sprintf("%s/%s/%s/%s", k.Group, k.Kind, k.Name, k.Namespace)
+	return fmt.Sprintf("%s/%s/%s/%s/%s", k.Group, k.Kind, k.Name, k.Namespace, k.SectionName)
 }
 
 // HTTPRouteSelector is used to lookup HttpRouteIR using one of the following ways:
@@ -529,32 +529,24 @@ func (p *PolicyIndex) getTargetingPoliciesMaybeForBackends(
 
 	// no need for ref grants here as target refs are namespace local
 	refIndexKey := targetRefIndexKey{
-		Group:     targetRef.Group,
-		Kind:      targetRef.Kind,
-		Name:      targetRef.Name,
-		Namespace: targetRef.Namespace,
+		Group:       targetRef.Group,
+		Kind:        targetRef.Kind,
+		Name:        targetRef.Name,
+		Namespace:   targetRef.Namespace,
+		SectionName: sectionName,
 	}
+
 	policies := p.fetchByTargetRef(kctx, refIndexKey, onlyBackends)
-	var sectionNamePolicies []ir.PolicyWrapper
-	if sectionName != "" {
-		refIndexKey.SectionName = sectionName
-		sectionNamePolicies = p.fetchByTargetRef(kctx, refIndexKey, onlyBackends)
-	}
 	// Lookup policies that select targetLabels
 	if len(targetLabels) > 0 {
 		refIndexKeyByNamespace := targetRefIndexKey{
-			Group:     targetRef.Group,
-			Kind:      targetRef.Kind,
-			Namespace: targetRef.Namespace,
+			Group:       targetRef.Group,
+			Kind:        targetRef.Kind,
+			Namespace:   targetRef.Namespace,
+			SectionName: sectionName,
 		}
 		policiesByLabel := p.fetchByTargetRefLabels(kctx, refIndexKeyByNamespace, onlyBackends, targetLabels)
 		policies = append(policies, policiesByLabel...)
-		var sectionNamePoliciesByLabel []ir.PolicyWrapper
-		if sectionName != "" {
-			refIndexKeyByNamespace.SectionName = sectionName
-			sectionNamePoliciesByLabel = p.fetchByTargetRefLabels(kctx, refIndexKeyByNamespace, onlyBackends, targetLabels)
-		}
-		sectionNamePolicies = append(sectionNamePolicies, sectionNamePoliciesByLabel...)
 	}
 
 	for _, p := range policies {
@@ -562,19 +554,6 @@ func (p *PolicyIndex) getTargetingPoliciesMaybeForBackends(
 			Generation: p.Policy.GetGeneration(),
 			GroupKind:  p.GetGroupKind(),
 			PolicyIr:   p.PolicyIR,
-			PolicyRef: &ir.AttachedPolicyRef{
-				Group:     p.Group,
-				Kind:      p.Kind,
-				Name:      p.Name,
-				Namespace: p.Namespace,
-			},
-			Errors: p.Errors,
-		})
-	}
-	for _, p := range sectionNamePolicies {
-		ret = append(ret, ir.PolicyAtt{
-			GroupKind: p.GetGroupKind(),
-			PolicyIr:  p.PolicyIR,
 			PolicyRef: &ir.AttachedPolicyRef{
 				Group:       p.Group,
 				Kind:        p.Kind,
@@ -585,6 +564,7 @@ func (p *PolicyIndex) getTargetingPoliciesMaybeForBackends(
 			Errors: p.Errors,
 		})
 	}
+
 	slices.SortFunc(ret, func(a, b ir.PolicyAtt) int {
 		return a.PolicyIr.CreationTime().Compare(b.PolicyIr.CreationTime())
 	})

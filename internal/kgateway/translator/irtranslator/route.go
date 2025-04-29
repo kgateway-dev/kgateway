@@ -25,9 +25,10 @@ import (
 )
 
 type httpRouteConfigurationTranslator struct {
-	gw       ir.GatewayIR
-	listener ir.ListenerIR
-	fc       ir.FilterChainCommon
+	gw               ir.GatewayIR
+	listener         ir.ListenerIR
+	fc               ir.FilterChainCommon
+	attachedPolicies ir.AttachedPolicies
 
 	routeConfigName          string
 	reporter                 reportssdk.Reporter
@@ -37,17 +38,36 @@ type httpRouteConfigurationTranslator struct {
 }
 
 func (h *httpRouteConfigurationTranslator) ComputeRouteConfiguration(ctx context.Context, vhosts []*ir.VirtualHost) *envoy_config_route_v3.RouteConfiguration {
+	attachedPoliciesSlice := []ir.AttachedPolicies{
+		h.gw.AttachedHttpPolicies,
+		h.attachedPolicies,
+	}
 	cfg := &envoy_config_route_v3.RouteConfiguration{
 		Name: h.routeConfigName,
-		//		MaxDirectResponseBodySizeBytes: h.parentListener.GetRouteOptions().GetMaxDirectResponseBodySizeBytes(),
 	}
-	for _, pass := range h.PluginPass {
-		if pass == nil {
-			continue
+	typedPerFilterConfigRoute := ir.TypedFilterConfigMap(map[string]proto.Message{})
+
+	for _, attachedPolicies := range attachedPoliciesSlice {
+		for gk, pols := range attachedPolicies.Policies {
+			pass := h.PluginPass[gk]
+			if pass == nil {
+				// TODO: user error - they attached a non http policy
+				continue
+			}
+			for _, pol := range pols {
+				reportPolicyAcceptanceStatus(h.reporter, h.listener.PolicyAncestorRef, pols...)
+				pass.ApplyRouteConfigPlugin(ctx, &ir.RouteConfigContext{
+					FilterChainName:   h.fc.FilterChainName,
+					TypedFilterConfig: typedPerFilterConfigRoute,
+					Policy:            pol.PolicyIr,
+				}, cfg)
+			}
+
 		}
-		pass.ApplyRouteConfigPlugin(ctx, &ir.RouteConfigContext{}, cfg)
 	}
+
 	cfg.VirtualHosts = h.computeVirtualHosts(ctx, vhosts)
+	cfg.TypedPerFilterConfig = toPerFilterConfigMap(typedPerFilterConfigRoute)
 
 	// Gateway API spec requires that port values in HTTP Host headers be ignored when performing a match
 	// See https://gateway-api.sigs.k8s.io/reference/spec/#gateway.networking.k8s.io/v1.HTTPRouteSpec - hostnames field
@@ -109,7 +129,7 @@ func (h *httpRouteConfigurationTranslator) computeVirtualHost(
 
 	typedPerFilterConfigRoute := ir.TypedFilterConfigMap(map[string]proto.Message{})
 	// run the http plugins that are attached to the listener or gateway on the virtual host
-	h.runVhostPlugins(ctx, out, typedPerFilterConfigRoute)
+	h.runVhostPlugins(ctx, virtualHost, out, typedPerFilterConfigRoute)
 	out.TypedPerFilterConfig = toPerFilterConfigMap(typedPerFilterConfigRoute)
 
 	return out
@@ -186,11 +206,10 @@ func toPerFilterConfigMap(typedPerFilterConfig ir.TypedFilterConfigMap) map[stri
 	return typedPerFilterConfigAny
 }
 
-func (h *httpRouteConfigurationTranslator) runVhostPlugins(ctx context.Context, out *envoy_config_route_v3.VirtualHost,
+func (h *httpRouteConfigurationTranslator) runVhostPlugins(ctx context.Context, virtualHost *ir.VirtualHost, out *envoy_config_route_v3.VirtualHost,
 	typedPerFilterConfig ir.TypedFilterConfigMap) {
 	attachedPoliciesSlice := []ir.AttachedPolicies{
-		h.gw.AttachedHttpPolicies,
-		h.listener.AttachedPolicies,
+		virtualHost.AttachedPolicies,
 	}
 	for _, attachedPolicies := range attachedPoliciesSlice {
 		for gk, pols := range attachedPolicies.Policies {
@@ -204,6 +223,7 @@ func (h *httpRouteConfigurationTranslator) runVhostPlugins(ctx context.Context, 
 				pctx := &ir.VirtualHostContext{
 					Policy:            pol.PolicyIr,
 					TypedFilterConfig: typedPerFilterConfig,
+					FilterChainName:   h.fc.FilterChainName,
 				}
 				pass.ApplyVhostPlugin(ctx, pctx, out)
 				// TODO: check return value, if error returned, log error and report condition

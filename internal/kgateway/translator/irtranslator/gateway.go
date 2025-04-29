@@ -82,6 +82,7 @@ func (t *Translator) ComputeListener(
 			listener:                 lis,
 			routeConfigName:          hfc.FilterChainName,
 			fc:                       hfc.FilterChainCommon,
+			attachedPolicies:         hfc.AttachedPolicies,
 			reporter:                 reporter,
 			requireTlsOnVirtualHosts: hfc.FilterChainCommon.TLS != nil,
 			PluginPass:               pass,
