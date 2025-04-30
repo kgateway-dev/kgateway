@@ -54,7 +54,7 @@ func ResolveCommonSslConfig(cm *corev1.ConfigMap, mustHaveCert bool) (*envoyauth
 	// 	validationCtx.ValidationContext.MatchSubjectAltNames = sanList
 	// }
 	tlsContext.ValidationContextType = validationCtx
-	return tlsContext, err
+	return tlsContext, nil
 }
 
 func getSslSecrets(cm *corev1.ConfigMap) (string, error) {

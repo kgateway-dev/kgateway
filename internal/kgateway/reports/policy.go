@@ -16,6 +16,8 @@ import (
 
 const (
 	PolicyAcceptedMsg = "Policy accepted"
+
+	PolicyAcceptedAndAttachedMsg = "Policy accepted and attached"
 )
 
 type PolicyCondition struct {

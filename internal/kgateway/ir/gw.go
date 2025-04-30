@@ -3,6 +3,7 @@ package ir
 import (
 	"context"
 	"encoding/json"
+	"strings"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -66,7 +67,17 @@ type PolicyAtt struct {
 	// that are at different levels in the config tree hierarchy.
 	HierarchicalPriority int
 
+	// Errors should be formatted for users, so do not include internal lib errors.
+	// Instead use a well defined error such as ErrInvalidConfig
 	Errors []error
+}
+
+func (c PolicyAtt) FormatErrors() string {
+	errs := make([]string, len(c.Errors))
+	for i, err := range c.Errors {
+		errs[i] = err.Error()
+	}
+	return strings.Join(errs, "; ")
 }
 
 type PolicyAttachmentOpts func(*PolicyAtt)

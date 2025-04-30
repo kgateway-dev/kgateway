@@ -60,7 +60,7 @@ type ProxySyncer struct {
 	uniqueClients krt.Collection[ir.UniqlyConnectedClient]
 
 	statusReport            krt.Singleton[report]
-	backendPolicyReport     krt.Singleton[GKPolicyReport]
+	backendPolicyReport     krt.Singleton[report]
 	mostXdsSnapshots        krt.Collection[GatewayXdsResources]
 	perclientSnapCollection krt.Collection[XdsSnapWrapper]
 
@@ -232,10 +232,10 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 		clustersPerClient,
 	)
 
-	s.backendPolicyReport = krt.NewSingleton(func(kctx krt.HandlerContext) *GKPolicyReport {
+	s.backendPolicyReport = krt.NewSingleton(func(kctx krt.HandlerContext) *report {
 		backends := krt.Fetch(kctx, finalBackends)
-		gkPolReport := generatePolicyReport(convertBackends(backends))
-		return gkPolReport
+		merged := generatePolicyReport(convertBackends(backends))
+		return &report{merged}
 	}, krtopts.ToOptions("BackendsPolicyReport")...)
 
 	// as proxies are created, they also contain a reportMap containing status for the Gateway and associated xRoutes (really parentRefs)
@@ -359,21 +359,20 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 			s.syncPolicyStatus(ctx, latestReport)
 		}
 	}()
-
-	latestBePolReportQueue := utils.NewAsyncQueue[GKPolicyReport]()
-	s.backendPolicyReport.Register(func(o krt.Event[GKPolicyReport]) {
+	latestBackendPolicyReportQueue := utils.NewAsyncQueue[reports.ReportMap]()
+	s.backendPolicyReport.Register(func(o krt.Event[report]) {
 		if o.Event == controllers.EventDelete {
 			return
 		}
-		latestBePolReportQueue.Enqueue(o.Latest())
+		latestBackendPolicyReportQueue.Enqueue(o.Latest().reportMap)
 	})
 	go func() {
 		for {
-			latestReport, err := latestBePolReportQueue.Dequeue(ctx)
+			latestReport, err := latestBackendPolicyReportQueue.Dequeue(ctx)
 			if err != nil {
 				return
 			}
-			s.syncBackendPolicyStatus(ctx, latestReport)
+			s.syncPolicyStatus(ctx, latestReport)
 		}
 	}()
 
@@ -600,20 +599,6 @@ func (s *ProxySyncer) syncPolicyStatus(ctx context.Context, rm reports.ReportMap
 		)
 		if err != nil {
 			logger.Errorw("error updating policy status", "error", err, "groupKind", gk, "policy", nsName)
-		}
-	}
-}
-
-// syncGatewayStatus will build and update status for all Gateways in a reportMap
-func (s *ProxySyncer) syncBackendPolicyStatus(ctx context.Context, report GKPolicyReport) {
-	for gk, polReport := range report.SeenPolicies {
-		for k, v := range s.plugins.ContributesPolicies {
-			if gk != k.String() {
-				continue
-			}
-			if v.ProcessPolicyStatus != nil {
-				v.ProcessPolicyStatus(ctx, gk, polReport)
-			}
 		}
 	}
 }

@@ -59,7 +59,6 @@ type PolicyPlugin struct {
 	ProcessBackend            ProcessBackend
 	PerClientProcessBackend   PerClientProcessBackend
 	PerClientProcessEndpoints EndpointPlugin
-	ProcessPolicyStatus       ProcessPolicyStatus
 
 	Policies       krt.Collection[ir.PolicyWrapper]
 	GlobalPolicies func(krt.HandlerContext, AttachmentPoints) ir.PolicyIR
@@ -106,9 +105,8 @@ type Plugin struct {
 }
 
 type (
-	AncestorReports     map[ir.ObjectSource][]error
-	PolicyReport        map[ir.AttachedPolicyRef]AncestorReports
-	ProcessPolicyStatus func(ctx context.Context, gkString string, polReport PolicyReport)
+	AncestorReports map[ir.ObjectSource][]error
+	PolicyReport    map[ir.AttachedPolicyRef]AncestorReports
 )
 
 // marshal json for krt debugging

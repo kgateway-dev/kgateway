@@ -198,7 +198,8 @@ type PolicyWrapper struct {
 
 	// Errors processing it for status.
 	// note: these errors are based on policy itself, regardless of whether it's attached to a resource.
-	// TODO: change for conditions
+	// Errors should be formatted for users, so do not include internal lib errors.
+	// Instead use a well defined error such as ErrInvalidConfig
 	Errors []error
 
 	// The IR of the policy objects. ideally with structural errors removed.
