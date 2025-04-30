@@ -79,12 +79,16 @@ func (t *BackendTranslator) runPolicies(
 	inlineEps *ir.EndpointsForBackend,
 	out *clusterv3.Cluster,
 ) {
-	for gk, policyPlugin := range t.ContributedPolicies {
-		if inlineEps != nil && policyPlugin.PerClientProcessEndpoints != nil {
-			if cla, _ := policyPlugin.PerClientProcessEndpoints(kctx, ctx, ucc, *inlineEps); cla != nil {
-				out.LoadAssignment = cla
-			}
+	// if the backend was initialized with inlineEps then we
+	// need an EndpointsInputs to run plugins against
+	var endpointInputs *endpoints.EndpointsInputs
+	if inlineEps != nil {
+		endpointInputs = &endpoints.EndpointsInputs{
+			EndpointsForBackend: *inlineEps,
 		}
+	}
+
+	for gk, policyPlugin := range t.ContributedPolicies {
 		// TODO: in theory it would be nice to do `ProcessBackend` once, and only do
 		// the the per-client processing for each client.
 		// that would require refactoring and thinking about the proper IR, so we'll punt on that for
@@ -92,6 +96,11 @@ func (t *BackendTranslator) runPolicies(
 		// like.
 		if policyPlugin.PerClientProcessBackend != nil {
 			policyPlugin.PerClientProcessBackend(kctx, ctx, ucc, backend, out)
+		}
+
+		// run endpoint plugins if we have endpoints to process
+		if endpointInputs != nil && policyPlugin.PerClientProcessEndpoints != nil {
+			policyPlugin.PerClientProcessEndpoints(kctx, ctx, ucc, endpointInputs)
 		}
 
 		if policyPlugin.ProcessBackend == nil {
@@ -102,13 +111,13 @@ func (t *BackendTranslator) runPolicies(
 		}
 	}
 
-	// if no plugin initialized the inline CLA, and the cluster type needs one, do it now
-	if out.GetLoadAssignment() == nil && inlineEps != nil && clusterSupportsInlineCLA(out) {
+	// for clusters that want a CLA _and_ initialized with inlineEps, build the CLA.
+	// never overwrite the CLA that was already initialized (potentially within a plugin).
+	if out.GetLoadAssignment() == nil && endpointInputs != nil && clusterSupportsInlineCLA(out) {
 		out.LoadAssignment = endpoints.PrioritizeEndpoints(
-			contextutils.LoggerFrom(ctx).Desugar(), // TODO BackendTranslator's logger
-			nil,
-			*inlineEps,
+			contextutils.LoggerFrom(ctx).Desugar(),
 			ucc,
+			*endpointInputs,
 		)
 	}
 }

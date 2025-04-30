@@ -9,9 +9,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
-	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoy_type_v3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
-	"github.com/solo-io/go-utils/contextutils"
 	"istio.io/api/networking/v1alpha3"
 	"istio.io/istio/pkg/config/schema/gvr"
 	"istio.io/istio/pkg/kube/krt"
@@ -55,25 +53,30 @@ type destrulePlugin struct {
 	destinationRulesIndex DestinationRuleIndex
 }
 
-func (d *destrulePlugin) processEndpoints(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniqlyConnectedClient, in ir.EndpointsForBackend) (*envoy_config_endpoint_v3.ClusterLoadAssignment, uint64) {
-	destrule := d.destinationRulesIndex.FetchDestRulesFor(kctx, ucc.Namespace, in.Hostname, ucc.Labels)
+// processEndpoints tries to find a destination rule
+// for the backend and if it does, it updates the PriorityInfo on `out`.
+func (d *destrulePlugin) processEndpoints(
+	kctx krt.HandlerContext,
+	ctx context.Context,
+	ucc ir.UniqlyConnectedClient,
+	out *endpoints.EndpointsInputs,
+) uint64 {
+	destrule := d.destinationRulesIndex.FetchDestRulesFor(kctx, ucc.Namespace, out.EndpointsForBackend.Hostname, ucc.Labels)
 	if destrule == nil {
-		return nil, 0
+		return 0
 	}
 
-	logger := contextutils.LoggerFrom(ctx).Desugar()
-	trafficPolicy := getTrafficPolicy(destrule, in.Port)
+	trafficPolicy := getTrafficPolicy(destrule, out.EndpointsForBackend.Port)
 	localityLb := getLocalityLbSetting(trafficPolicy)
-	var priorityInfo *endpoints.PriorityInfo
-	var additionalHash uint64
-	if localityLb != nil {
-		priorityInfo = getPriorityInfoFromDestrule(localityLb)
-		hasher := fnv.New64()
-		hasher.Write([]byte(destrule.UID))
-		hasher.Write([]byte(fmt.Sprintf("%v", destrule.Generation)))
-		additionalHash = hasher.Sum64()
+	if localityLb == nil {
+		return 0
 	}
-	return endpoints.PrioritizeEndpoints(logger, priorityInfo, in, ucc), additionalHash
+
+	out.PriorityInfo = getPriorityInfoFromDestrule(localityLb)
+	hasher := fnv.New64()
+	hasher.Write([]byte(destrule.UID))
+	hasher.Write([]byte(fmt.Sprintf("%v", destrule.Generation)))
+	return hasher.Sum64()
 }
 
 func (d *destrulePlugin) processBackend(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniqlyConnectedClient, in ir.BackendObjectIR, outCluster *envoy_config_cluster_v3.Cluster) {
