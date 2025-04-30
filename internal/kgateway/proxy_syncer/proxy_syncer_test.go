@@ -3,9 +3,12 @@ package proxy_syncer
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
 
@@ -136,6 +139,143 @@ func TestIsRouteStatusEqual(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := isRouteStatusEqual(tt.objA, tt.objB); got != tt.want {
 				t.Errorf("isRouteStatusEqual() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestMergeProxyReports(t *testing.T) {
+	tests := []struct {
+		name     string
+		proxies  []GatewayXdsResources
+		expected reports.ReportMap
+	}{
+		{
+			name: "Merge HTTPRoute reports for different parents",
+			proxies: []GatewayXdsResources{
+				{
+					reports: reports.ReportMap{
+						HTTPRoutes: map[types.NamespacedName]*reports.RouteReport{
+							{Name: "route1", Namespace: "default"}: {
+								Parents: map[reports.ParentRefKey]*reports.ParentRefReport{
+									{NamespacedName: types.NamespacedName{Name: "gw-1", Namespace: "default"}}: {},
+								},
+							},
+						},
+					},
+				},
+				{
+					reports: reports.ReportMap{
+						HTTPRoutes: map[types.NamespacedName]*reports.RouteReport{
+							{Name: "route1", Namespace: "default"}: {
+								Parents: map[reports.ParentRefKey]*reports.ParentRefReport{
+									{NamespacedName: types.NamespacedName{Name: "gw-2", Namespace: "default"}}: {},
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: reports.ReportMap{
+				HTTPRoutes: map[types.NamespacedName]*reports.RouteReport{
+					{Name: "route1", Namespace: "default"}: {
+						Parents: map[reports.ParentRefKey]*reports.ParentRefReport{
+							{NamespacedName: types.NamespacedName{Name: "gw-1", Namespace: "default"}}: {},
+							{NamespacedName: types.NamespacedName{Name: "gw-2", Namespace: "default"}}: {},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Merge TCPRoute reports for different parents",
+			proxies: []GatewayXdsResources{
+				{
+					reports: reports.ReportMap{
+						TCPRoutes: map[types.NamespacedName]*reports.RouteReport{
+							{Name: "route1", Namespace: "default"}: {
+								Parents: map[reports.ParentRefKey]*reports.ParentRefReport{
+									{NamespacedName: types.NamespacedName{Name: "gw-1", Namespace: "default"}}: {},
+								},
+							},
+						},
+					},
+				},
+				{
+					reports: reports.ReportMap{
+						TCPRoutes: map[types.NamespacedName]*reports.RouteReport{
+							{Name: "route1", Namespace: "default"}: {
+								Parents: map[reports.ParentRefKey]*reports.ParentRefReport{
+									{NamespacedName: types.NamespacedName{Name: "gw-2", Namespace: "default"}}: {},
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: reports.ReportMap{
+				TCPRoutes: map[types.NamespacedName]*reports.RouteReport{
+					{Name: "route1", Namespace: "default"}: {
+						Parents: map[reports.ParentRefKey]*reports.ParentRefReport{
+							{NamespacedName: types.NamespacedName{Name: "gw-1", Namespace: "default"}}: {},
+							{NamespacedName: types.NamespacedName{Name: "gw-2", Namespace: "default"}}: {},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Merge TLSRoute reports for different parents",
+			proxies: []GatewayXdsResources{
+				{
+					reports: reports.ReportMap{
+						TLSRoutes: map[types.NamespacedName]*reports.RouteReport{
+							{Name: "route1", Namespace: "default"}: {
+								Parents: map[reports.ParentRefKey]*reports.ParentRefReport{
+									{NamespacedName: types.NamespacedName{Name: "gw-1", Namespace: "default"}}: {},
+								},
+							},
+						},
+					},
+				},
+				{
+					reports: reports.ReportMap{
+						TLSRoutes: map[types.NamespacedName]*reports.RouteReport{
+							{Name: "route1", Namespace: "default"}: {
+								Parents: map[reports.ParentRefKey]*reports.ParentRefReport{
+									{NamespacedName: types.NamespacedName{Name: "gw-2", Namespace: "default"}}: {},
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: reports.ReportMap{
+				TLSRoutes: map[types.NamespacedName]*reports.RouteReport{
+					{Name: "route1", Namespace: "default"}: {
+						Parents: map[reports.ParentRefKey]*reports.ParentRefReport{
+							{NamespacedName: types.NamespacedName{Name: "gw-1", Namespace: "default"}}: {},
+							{NamespacedName: types.NamespacedName{Name: "gw-2", Namespace: "default"}}: {},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			a := assert.New(t)
+
+			actual := mergeProxyReports(tt.proxies)
+			if tt.expected.HTTPRoutes != nil {
+				a.Equal(tt.expected.HTTPRoutes, actual.HTTPRoutes)
+			}
+			if tt.expected.TCPRoutes != nil {
+				a.Equal(tt.expected.TCPRoutes, actual.TCPRoutes)
+			}
+			if tt.expected.TLSRoutes != nil {
+				a.Equal(tt.expected.TLSRoutes, actual.TLSRoutes)
 			}
 		})
 	}

@@ -13,7 +13,7 @@ clusters:
       ads: {}
       resourceApiVersion: V3
   metadata: {}
-  name: kube_gwtest_reviews_8080
+  name: kube_gwtest_ext-authz_9000
   type: EDS
 - connectTimeout: 5s
   edsClusterConfig:
@@ -21,7 +21,7 @@ clusters:
       ads: {}
       resourceApiVersion: V3
   metadata: {}
-  name: kube_gwtest_ext-authz_9000
+  name: kube_gwtest_reviews_8080
   type: EDS
 endpoints:
 - clusterName: kube_gwtest_reviews_8080
@@ -50,26 +50,28 @@ listeners:
       typedConfig:
         '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
         httpFilters:
-        - name: global_disable/ext_auth
-          typedConfig:
-            '@type': type.googleapis.com/envoy.api.v2.filter.http.FilterTransformations
         - disabled: true
-          name: ext_auth/basic-extauth
+          name: global_disable/ext_auth
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.set_metadata.v3.Config
+            metadata:
+            - metadataNamespace: dev.kgateway.disable_ext_auth
+              value:
+                extauth_disable: true
+        - disabled: true
+          name: ext_auth/gwtest/basic-extauth
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthz
             filterEnabledMetadata:
-              filter: io.solo.transformation
+              filter: dev.kgateway.disable_ext_auth
               invert: true
               path:
-              - key: global_disable/ext_auth
+              - key: extauth_disable
               value:
-                stringMatch:
-                  exact: "false"
+                boolMatch: true
             grpcService:
               envoyGrpc:
                 clusterName: kube_gwtest_ext-authz_9000
-            metadataContextNamespaces:
-            - jwt
         - name: envoy.filters.http.router
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -99,6 +101,6 @@ routes:
         cluster: kube_gwtest_reviews_8080
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
       typedPerFilterConfig:
-        ext_auth/basic-extauth:
-          '@type': type.googleapis.com/envoy.config.route.v3.FilterConfig
-          config: {}
+        ext_auth/gwtest/basic-extauth:
+          '@type': type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthzPerRoute
+          checkSettings: {}

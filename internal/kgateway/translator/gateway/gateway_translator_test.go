@@ -452,6 +452,14 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 			Name:      "example-gateway",
 		},
 	}),
+	Entry("HTTPRoutes with timeout and retry", translatorTestCase{
+		inputFile:  "httproute-timeout-retry/manifest.yaml",
+		outputFile: "httproute-timeout-retry-proxy.yaml",
+		gwNN: types.NamespacedName{
+			Namespace: "default",
+			Name:      "example-gateway",
+		},
+	}),
 )
 
 var _ = DescribeTable("Route Delegation translator",
@@ -502,4 +510,5 @@ var _ = DescribeTable("Route Delegation translator",
 	Entry("TrafficPolicy multi level inheritance with child override enabled", "traffic_policy_multi_level_inheritance_override_enabled.yaml", ""),
 	Entry("TrafficPolicy filter override merge", "traffic_policy_filter_override_merge.yaml", ""),
 	Entry("Built-in rule inheritance", "builtin_rule_inheritance.yaml", ""),
+	Entry("Label based delegation", "label_based.yaml", ""),
 )

@@ -46,7 +46,7 @@ func TestProcessAITrafficPolicy(t *testing.T) {
 		// Execute
 		err := preProcessAITrafficPolicy(aiConfig, aiIR)
 		require.NoError(t, err)
-		err = plugin.processAITrafficPolicy(typedFilterConfig, aiIR)
+		err = plugin.processAITrafficPolicy(&typedFilterConfig, aiIR)
 		require.NoError(t, err)
 
 		// Verify streaming header was added
@@ -85,7 +85,7 @@ func TestProcessAITrafficPolicy(t *testing.T) {
 		err := preProcessAITrafficPolicy(aiConfig, aiIR)
 		require.NoError(t, err)
 
-		err = plugin.processAITrafficPolicy(typedFilterConfig, aiIR)
+		err = plugin.processAITrafficPolicy(&typedFilterConfig, aiIR)
 		require.NoError(t, err)
 
 		// Verify
@@ -124,7 +124,7 @@ func TestProcessAITrafficPolicy(t *testing.T) {
 		err := preProcessAITrafficPolicy(aiConfig, aiIR)
 		require.NoError(t, err)
 
-		err = plugin.processAITrafficPolicy(typedFilterConfig, aiIR)
+		err = plugin.processAITrafficPolicy(&typedFilterConfig, aiIR)
 		require.NoError(t, err)
 
 		// Verify
@@ -177,7 +177,7 @@ func TestProcessAITrafficPolicy(t *testing.T) {
 		err := preProcessAITrafficPolicy(aiConfig, aiIR)
 		require.NoError(t, err)
 
-		err = plugin.processAITrafficPolicy(typedFilterConfig, aiIR)
+		err = plugin.processAITrafficPolicy(&typedFilterConfig, aiIR)
 		require.NoError(t, err)
 
 		// Verify
