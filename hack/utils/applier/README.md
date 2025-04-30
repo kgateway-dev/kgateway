@@ -1,5 +1,4 @@
 # How to use this?
-see example in yamls.yaml
 
 Run like so
 
