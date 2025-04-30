@@ -47,15 +47,15 @@ import (
 )
 
 const (
-	transformationFilterNamePrefix        = "transformation"
-	extAuthGlobalDisableFilterName        = "global_disable/ext_auth"
-	extAuthGlobalDisableFilterKey         = "global_disable/ext_auth"
-	rustformationFilterNamePrefix         = "dynamic_modules/simple_mutations"
-	metadataRouteTransformation           = "transformation/helper"
-	extauthFilterNamePrefix               = "ext_auth"
-	localRateLimitFilterNamePrefix        = "ratelimit/local"
-	localRateLimitStatPrefix              = "http_local_rate_limiter"
-	transformationFilterMetadataNamespace = "io.solo.transformation" // TODO: remove this as we move onto rustformations and off envoy-gloo
+	transformationFilterNamePrefix              = "transformation"
+	extAuthGlobalDisableFilterName              = "global_disable/ext_auth"
+	extAuthGlobalDisableFilterMetadataNamespace = "dev.kgateway.disable_ext_auth"
+	extAuthGlobalDisableKey                     = "extauth_disable"
+	rustformationFilterNamePrefix               = "dynamic_modules/simple_mutations"
+	metadataRouteTransformation                 = "transformation/helper"
+	extauthFilterNamePrefix                     = "ext_auth"
+	localRateLimitFilterNamePrefix              = "ratelimit/local"
+	localRateLimitStatPrefix                    = "http_local_rate_limiter"
 )
 
 func extAuthFilterName(name string) string {
@@ -272,22 +272,18 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 					GrpcService: envoyGrpcService,
 				},
 				FilterEnabledMetadata: &envoy_matcher_v3.MetadataMatcher{
-					Filter: transformationFilterMetadataNamespace, // the transformation filter instance's name
+					Filter: extAuthGlobalDisableFilterMetadataNamespace,
 					Invert: true,
 					Path: []*envoy_matcher_v3.MetadataMatcher_PathSegment{
 						{
 							Segment: &envoy_matcher_v3.MetadataMatcher_PathSegment_Key{
-								Key: extAuthGlobalDisableFilterKey, // probably something like "ext-auth-enabled"
+								Key: extAuthGlobalDisableKey,
 							},
 						},
 					},
 					Value: &envoy_matcher_v3.ValueMatcher{
-						MatchPattern: &envoy_matcher_v3.ValueMatcher_StringMatch{
-							StringMatch: &envoy_matcher_v3.StringMatcher{
-								MatchPattern: &envoy_matcher_v3.StringMatcher_Exact{
-									Exact: "false",
-								},
-							},
+						MatchPattern: &envoy_matcher_v3.ValueMatcher_BoolMatch{
+							BoolMatch: true,
 						},
 					},
 				},
@@ -600,7 +596,7 @@ func (p *trafficPolicyPluginGwPass) handleExtAuth(pCtxTypedFilterConfig *ir.Type
 	if extAuth.enablement == v1alpha1.ExtAuthDisableAll {
 		// Disable the filter under all providers via the metadata match
 		// we have to use the metadata as we dont know what other configurations may have extauth
-		pCtxTypedFilterConfig.AddTypedConfig(extAuthGlobalDisableFilterName, extAuthEnablementPerRoute())
+		pCtxTypedFilterConfig.AddTypedConfig(extAuthGlobalDisableFilterName, enableFilterPerRoute)
 	} else {
 		providerName := extAuth.provider.ResourceName()
 		if extAuth.extauthPerRoute != nil {
@@ -742,9 +738,11 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.Filt
 	// register the transformation work once
 	if len(p.extAuthPerProvider) != 0 {
 		// register the filter that sets metadata so that it can have overrides on the route level
-		filters = append(filters, plugins.MustNewStagedFilter(extAuthGlobalDisableFilterKey,
-			&transformationpb.FilterTransformations{},
-			plugins.BeforeStage(plugins.FaultStage)))
+		f := plugins.MustNewStagedFilter(extAuthGlobalDisableFilterName,
+			setMetadataConfig,
+			plugins.BeforeStage(plugins.FaultStage))
+		f.Filter.Disabled = true
+		filters = append(filters, f)
 	}
 	// Add Ext_authz filter for listener
 	for providerName, providerExtauth := range p.extAuthPerProvider {

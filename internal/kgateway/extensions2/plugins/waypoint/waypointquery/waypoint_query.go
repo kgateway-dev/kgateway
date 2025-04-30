@@ -12,6 +12,7 @@ import (
 	"istio.io/istio/pkg/kube/kubetypes"
 	"istio.io/istio/pkg/slices"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -38,6 +39,10 @@ type WaypointQueries interface {
 	// via istio.io/use-waypoint (and possibly istio.io/use-waypoint-namespace).
 	GetWaypointServices(kctx krt.HandlerContext, ctx context.Context, gw *gwv1.Gateway) []Service
 
+	// GetServiceWaypoint returns the waypoint for the given object (Service or ServiceEntry).
+	// Returns nil if no waypoint is found.
+	GetServiceWaypoint(kctx krt.HandlerContext, ctx context.Context, obj metav1.Object) *types.NamespacedName
+
 	// GetHTTPRoutesForService fetches HTTPRoutes that have the given Service in parentRefs.
 	GetHTTPRoutesForService(kctx krt.HandlerContext, ctx context.Context, svc *Service) []query.RouteInfo
 
@@ -54,7 +59,7 @@ func NewQueries(
 	commonCols *common.CommonCollections,
 	gwQueries query.GatewayQueries,
 ) WaypointQueries {
-	waypointedServices, servicesByWaypoint := waypointAttachmentIndex(commonCols)
+	waypointedServices, servicesByWaypoint, waypointByService := waypointAttachmentIndex(commonCols)
 
 	// Watch authz policies changes in the cluster.
 	authzInformer := kclient.NewDelayedInformer[*authcr.AuthorizationPolicy](
@@ -75,6 +80,7 @@ func NewQueries(
 		commonCols:         commonCols,
 		waypointedServices: waypointedServices,
 		servicesByWaypoint: servicesByWaypoint,
+		waypointByService:  waypointByService,
 		authzPolicies:      authzPolicies,
 		byNamespace:        byNamespace,
 		byTargetRefKey:     byTargetRefKey,
@@ -95,6 +101,7 @@ type waypointQueries struct {
 
 	waypointedServices krt.Collection[WaypointedService]
 	servicesByWaypoint krt.Index[types.NamespacedName, WaypointedService]
+	waypointByService  krt.Index[string, WaypointedService]
 	authzPolicies      krt.Collection[*authcr.AuthorizationPolicy]
 	byNamespace        krt.Index[string, *authcr.AuthorizationPolicy]
 	byTargetRefKey     krt.Index[targetRefKey, *authcr.AuthorizationPolicy]
@@ -218,6 +225,18 @@ func (w *waypointQueries) GetWaypointServices(kctx krt.HandlerContext, ctx conte
 	})
 }
 
+func (w *waypointQueries) GetServiceWaypoint(kctx krt.HandlerContext, ctx context.Context, obj metav1.Object) *types.NamespacedName {
+	key := ServiceKeyFromObject(obj)
+	if key == "" {
+		return nil
+	}
+	attached := krt.FetchOne(kctx, w.waypointedServices, krt.FilterIndex(w.waypointByService, key))
+	if attached == nil {
+		return nil
+	}
+	return &attached.Waypoint
+}
+
 type WaypointedService struct {
 	Waypoint types.NamespacedName
 	Service  Service
@@ -277,6 +296,7 @@ func waypointAttachmentIndex(
 ) (
 	krt.Collection[WaypointedService],
 	krt.Index[types.NamespacedName, WaypointedService],
+	krt.Index[string, WaypointedService],
 ) {
 	// TODO we may want to expand the "logical Service" concept outside of this
 	// package so it can be used for all policy attachment, peering, routing, etc.
@@ -299,7 +319,11 @@ func waypointAttachmentIndex(
 		return []types.NamespacedName{o.Waypoint}
 	})
 
-	return waypointServiceAttachments, byWaypointGateway
+	waypointAttachmentsByService := krt.NewIndex(waypointServiceAttachments, func(o WaypointedService) []string {
+		return []string{o.Service.String()}
+	})
+
+	return waypointServiceAttachments, byWaypointGateway, waypointAttachmentsByService
 }
 
 // getUseWaypoint returns the NamespacedName of the waypoint the given object uses.

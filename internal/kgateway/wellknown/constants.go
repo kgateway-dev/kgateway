@@ -16,6 +16,10 @@ const (
 
 	// TLSModeLabelShortname name used for determining endpoint level tls transport socket configuration
 	TLSModeLabelShortname = "tlsMode"
+
+	// IngressUseWaypointLabel is a Service/ServiceEntry label to ask the ingress to use
+	// a waypoint for ingress traffic.
+	IngressUseWaypointLabel = "istio.io/ingress-use-waypoint"
 )
 
 const (

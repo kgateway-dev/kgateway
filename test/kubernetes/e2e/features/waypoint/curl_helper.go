@@ -24,7 +24,7 @@ func (s *testingSuite) assertCurlService(
 	matchers matchers.HttpResponse,
 	path ...string,
 ) {
-	s.assertCurlInner(from, fqdn(svcName, svcNs), matchers, "", "GET", path...)
+	s.assertCurlInner(from, fqdn(svcName, svcNs), "", matchers, "", "GET", path...)
 }
 
 // assertCurlServicePost is a helper function to assert a POST request to a service
@@ -34,7 +34,7 @@ func (s *testingSuite) assertCurlServicePost(
 	matchers matchers.HttpResponse,
 	path ...string,
 ) {
-	s.assertCurlInner(from, fqdn(svcName, svcNs), matchers, "", "POST", path...)
+	s.assertCurlInner(from, fqdn(svcName, svcNs), "", matchers, "", "POST", path...)
 }
 
 func fqdn(name, ns string) string {
@@ -48,7 +48,7 @@ func (s *testingSuite) assertCurlHost(
 	matchers matchers.HttpResponse,
 	path ...string,
 ) {
-	s.assertCurlInner(from, targetHost, matchers, "", "GET", path...)
+	s.assertCurlInner(from, targetHost, "", matchers, "", "GET", path...)
 }
 
 // assertCurlHostPost is a helper function to assert a POST request to a host
@@ -58,12 +58,13 @@ func (s *testingSuite) assertCurlHostPost(
 	matchers matchers.HttpResponse,
 	path ...string,
 ) {
-	s.assertCurlInner(from, targetHost, matchers, "", "POST", path...)
+	s.assertCurlInner(from, targetHost, "", matchers, "", "POST", path...)
 }
 
 func (s *testingSuite) assertCurlInner(
 	from kubectl.PodExecOptions,
 	targetHost string,
+	hostHeader string,
 	matchers matchers.HttpResponse,
 	authHeader string,
 	method string,
@@ -75,6 +76,9 @@ func (s *testingSuite) assertCurlInner(
 	}
 	if authHeader != "" {
 		curlOpts = append(curlOpts, curl.WithHeader("Authorization", authHeader))
+	}
+	if hostHeader != "" {
+		curlOpts = append(curlOpts, curl.WithHostHeader(hostHeader))
 	}
 
 	// keeping for the backward compatibility when method is not set in the test
@@ -111,5 +115,5 @@ func (s *testingSuite) assertCurlGeneric(
 	svc, method, path string,
 	expected matchers.HttpResponse,
 ) {
-	s.assertCurlInner(from, fqdn(svc, testNamespace), expected, "", method, path)
+	s.assertCurlInner(from, fqdn(svc, testNamespace), "", expected, "", method, path)
 }

@@ -3,6 +3,7 @@ package krtcollections
 import (
 	"maps"
 
+	istioannot "istio.io/api/annotation"
 	"istio.io/api/label"
 	"istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/kclient"
@@ -105,6 +106,11 @@ func augmentPodLabels(nodes krt.Collection[NodeMetadata]) func(kctx krt.HandlerC
 				//	labels[LabelHostname] = k8sNode
 				//	labels[label.TopologyNetwork.Name] = networkID.String()
 			}
+		}
+
+		// Augment the labels with the ambient redirection annotation
+		if redirectionValue, exists := pod.Annotations[istioannot.AmbientRedirection.Name]; exists {
+			labels[istioannot.AmbientRedirection.Name] = redirectionValue
 		}
 
 		return &LocalityPod{
