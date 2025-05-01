@@ -97,7 +97,7 @@ func TestPolicyStatus(t *testing.T) {
 	backends := []ir.BackendObjectIR{backend1, backend2}
 
 	a := assert.New(t)
-	rm := generatePolicyReport(convertBackends(backends))
+	rm := generatePolicyReport(backends)
 
 	// assert 3 unique policies: conn-policy-1, conn-policy-2, tls-policy
 	a.Len(rm.Policies, 3)

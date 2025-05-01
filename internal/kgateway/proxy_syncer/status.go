@@ -15,17 +15,9 @@ type ObjWithAttachedPolicies interface {
 	GetObjectSource() ir.ObjectSource
 }
 
-func convertBackends(backends []ir.BackendObjectIR) []ObjWithAttachedPolicies {
-	objs := make([]ObjWithAttachedPolicies, 0, len(backends))
-	for _, backend := range backends {
-		objs = append(objs, backend)
-	}
-	return objs
-}
-
 var _ ObjWithAttachedPolicies = ir.BackendObjectIR{}
 
-func generatePolicyReport(in []ObjWithAttachedPolicies) reports.ReportMap {
+func generatePolicyReport[T ObjWithAttachedPolicies](in []T) reports.ReportMap {
 	merged := reports.NewReportMap()
 	reporter := reports.NewReporter(&merged)
 

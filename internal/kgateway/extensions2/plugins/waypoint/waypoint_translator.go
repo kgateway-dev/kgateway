@@ -187,9 +187,10 @@ func (w *waypointTranslator) buildInboundListener(gw *ir.Gateway, reporter repor
 	}
 
 	return &ir.ListenerIR{
-		Name:        "proxy_protocol_inbound",
-		BindAddress: bindAddr,
-		BindPort:    uint32(gatewayListener.Port),
+		Name:              "proxy_protocol_inbound",
+		BindAddress:       bindAddr,
+		BindPort:          uint32(gatewayListener.Port),
+		PolicyAncestorRef: gatewayListener.PolicyAncestorRef,
 
 		AttachedPolicies: ir.AttachedPolicies{
 			Policies: map[schema.GroupKind][]ir.PolicyAtt{
