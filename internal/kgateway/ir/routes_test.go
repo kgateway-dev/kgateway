@@ -1,6 +1,7 @@
 package ir
 
 import (
+	"errors"
 	"testing"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -34,7 +35,7 @@ func TestTcpRouteIREquals(t *testing.T) {
 	emptyPolicies := AttachedPolicies{}
 	nonEmptyPolicies := AttachedPolicies{
 		Policies: map[schema.GroupKind][]PolicyAtt{
-			schema.GroupKind{Group: "g", Kind: "k"}: {{GroupKind: schema.GroupKind{Group: "g", Kind: "k"}}},
+			{Group: "g", Kind: "k"}: {{GroupKind: schema.GroupKind{Group: "g", Kind: "k"}}},
 		},
 	}
 
@@ -42,6 +43,7 @@ func TestTcpRouteIREquals(t *testing.T) {
 	backendA := []BackendRefIR{makeBackendRef("clusterA", 5)}
 	backendB := []BackendRefIR{makeBackendRef("clusterB", 5)}
 	backendWeightDiff := []BackendRefIR{makeBackendRef("clusterA", 10)}
+	backendErr := []BackendRefIR{{ClusterName: "clusterA", Weight: 5, BackendObject: nil, Err: errors.New("some error")}}
 
 	tests := []struct {
 		name string
@@ -159,6 +161,22 @@ func TestTcpRouteIREquals(t *testing.T) {
 				Backends:         backendA,
 			},
 			want: true,
+		},
+		{
+			name: "diff_backend_error",
+			a: TcpRouteIR{
+				ObjectSource:     ObjectSource{Namespace: "test-ns", Name: "route1"},
+				SourceObject:     base,
+				AttachedPolicies: emptyPolicies,
+				Backends:         backendA,
+			},
+			b: TcpRouteIR{
+				ObjectSource:     ObjectSource{Namespace: "test-ns", Name: "route1"},
+				SourceObject:     same,
+				AttachedPolicies: emptyPolicies,
+				Backends:         backendErr,
+			},
+			want: false,
 		},
 	}
 
