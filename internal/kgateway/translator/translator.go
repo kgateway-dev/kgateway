@@ -141,20 +141,13 @@ func (s *CombinedTranslator) TranslateGateway(kctx krt.HandlerContext, ctx conte
 }
 
 func (s *CombinedTranslator) TranslateEndpoints(kctx krt.HandlerContext, ucc ir.UniqlyConnectedClient, ep ir.EndpointsForBackend) (*envoy_config_endpoint_v3.ClusterLoadAssignment, uint64) {
-	// check if we have a plugin to do it
-	cla, additionalHash := proccessWithPlugins(s.endpointPlugins, kctx, context.TODO(), ucc, ep)
-	if cla != nil {
-		return cla, additionalHash
+	epInputs := endpoints.EndpointsInputs{
+		EndpointsForBackend: ep,
 	}
-	return endpoints.PrioritizeEndpoints(s.logger, nil, ep, ucc), 0
-}
-
-func proccessWithPlugins(plugins []extensionsplug.EndpointPlugin, kctx krt.HandlerContext, ctx context.Context, ucc ir.UniqlyConnectedClient, in ir.EndpointsForBackend) (*envoy_config_endpoint_v3.ClusterLoadAssignment, uint64) {
-	for _, processEnddpoints := range plugins {
-		cla, additionalHash := processEnddpoints(kctx, context.TODO(), ucc, in)
-		if cla != nil {
-			return cla, additionalHash
-		}
+	var hash uint64
+	for _, processEndpoints := range s.endpointPlugins {
+		additionalHash := processEndpoints(kctx, context.TODO(), ucc, &epInputs)
+		hash ^= additionalHash
 	}
-	return nil, 0
+	return endpoints.PrioritizeEndpoints(s.logger, ucc, epInputs), hash
 }

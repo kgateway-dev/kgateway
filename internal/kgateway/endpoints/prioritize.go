@@ -14,14 +14,26 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
-func PrioritizeEndpoints(logger *zap.Logger, priorityInfo *PriorityInfo, ep ir.EndpointsForBackend, ucc ir.UniqlyConnectedClient) *envoy_config_endpoint_v3.ClusterLoadAssignment {
+// EndpointsInputs is the collective IR that can be modified
+// by endpoint plugins to influence the ClusterLoadAssignment.
+type EndpointsInputs struct {
+	EndpointsForBackend ir.EndpointsForBackend
+	PriorityInfo        *PriorityInfo
+}
+
+// PrioritizeEndpoints converts EndpointsInputs into a ClusterLoadAssignment.
+func PrioritizeEndpoints(
+	logger *zap.Logger,
+	ucc ir.UniqlyConnectedClient,
+	inputs EndpointsInputs,
+) *envoy_config_endpoint_v3.ClusterLoadAssignment {
 	lbInfo := LoadBalancingInfo{
 		PodLabels:    ucc.Labels,
 		PodLocality:  ucc.Locality,
-		PriorityInfo: priorityInfo,
+		PriorityInfo: inputs.PriorityInfo,
 	}
 
-	return prioritizeWithLbInfo(logger, ep, lbInfo)
+	return prioritizeWithLbInfo(logger, inputs.EndpointsForBackend, lbInfo)
 }
 
 type LoadBalancingInfo struct {

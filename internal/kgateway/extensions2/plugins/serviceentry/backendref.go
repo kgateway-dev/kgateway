@@ -16,7 +16,7 @@ import (
 //     Namespace on the ref is ignored.
 //
 // Both of these use the `networking.istio.io` group.
-func (s *serviceEntryCollections) getBackendForRef(
+func (s *serviceEntryPlugin) getBackendForRef(
 	kctx krt.HandlerContext,
 	key ir.ObjectSource,
 	port int32,
@@ -33,7 +33,7 @@ func (s *serviceEntryCollections) getBackendForRef(
 	return nil
 }
 
-func (s *serviceEntryCollections) resolveServiceEntryBackendRef(
+func (s *serviceEntryPlugin) resolveServiceEntryBackendRef(
 	kctx krt.HandlerContext,
 	key ir.ObjectSource,
 	port int32,
@@ -54,7 +54,7 @@ func (s *serviceEntryCollections) resolveServiceEntryBackendRef(
 	return out
 }
 
-func (s *serviceEntryCollections) resolveHostnameBackendRef(
+func (s *serviceEntryPlugin) resolveHostnameBackendRef(
 	kctx krt.HandlerContext,
 	hostname string,
 	port int32,

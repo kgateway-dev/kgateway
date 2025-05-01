@@ -15,7 +15,8 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/irtranslator"
 )
 
-func testBInitBackend(ctx context.Context, in ir.BackendObjectIR, out *envoy_config_cluster_v3.Cluster) {
+func testInitBackend(ctx context.Context, in ir.BackendObjectIR, out *envoy_config_cluster_v3.Cluster) *ir.EndpointsForBackend {
+	return nil
 }
 
 func TestBackendTranslatorTranslatesAppProtocol(t *testing.T) {
@@ -34,7 +35,7 @@ func TestBackendTranslatorTranslatesAppProtocol(t *testing.T) {
 	}
 	bt.ContributedBackends = map[schema.GroupKind]ir.BackendInit{
 		{Group: "group", Kind: "kind"}: {
-			InitBackend: testBInitBackend,
+			InitBackend: testInitBackend,
 		},
 	}
 

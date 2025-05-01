@@ -24,6 +24,7 @@ import (
 	networkingclient "istio.io/client-go/pkg/apis/networking/v1"
 	"istio.io/istio/pkg/maps"
 
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -123,7 +124,7 @@ func (sw selectedWorkload) Equals(o selectedWorkload) bool {
 		maps.Equal(sw.portMapping, o.portMapping)
 }
 
-type serviceEntryCollections struct {
+type serviceEntryPlugin struct {
 	logger *zap.SugaredLogger
 
 	// core inputs
@@ -144,7 +145,7 @@ type serviceEntryCollections struct {
 func initServiceEntryCollections(
 	ctx context.Context,
 	commonCols *common.CommonCollections,
-) serviceEntryCollections {
+) serviceEntryPlugin {
 	logger := contextutils.LoggerFrom(ctx).Named("serviceentry")
 
 	// setup input collections
@@ -178,7 +179,7 @@ func initServiceEntryCollections(
 		}
 	})
 
-	return serviceEntryCollections{
+	return serviceEntryPlugin{
 		logger: contextutils.LoggerFrom(ctx),
 
 		ServiceEntries:  commonCols.ServiceEntries,
@@ -194,7 +195,7 @@ func initServiceEntryCollections(
 	}
 }
 
-func (s *serviceEntryCollections) HasSynced() bool {
+func (s *serviceEntryPlugin) HasSynced() bool {
 	if s == nil {
 		return false
 	}
@@ -285,7 +286,10 @@ func selectedWorkloadFromEntry(
 	weSpec *networking.WorkloadEntry,
 	selectedBy []seSelector,
 ) selectedWorkload {
-	labels := weSpec.GetLabels()
+	labels := maps.Clone(weSpec.GetLabels())
+	if labels == nil {
+		labels = map[string]string{}
+	}
 	if metadataLabels != nil {
 		// WorkloadEntry has two places to specify labels.
 		// Merge the spec labels on top of the metadata ones
@@ -298,6 +302,20 @@ func selectedWorkloadFromEntry(
 		network = labels[label.TopologyNetwork.Name]
 	}
 
+	// TODO inline endpoints don't get correct priority unless we copy
+	// the locality into labels; investigate prioritize logic to ensure
+	// we rely directly on PodLocality struct
+	locality := getLocality(weSpec.GetLocality(), labels)
+	if locality.Region != "" {
+		labels[corev1.LabelTopologyRegion] = locality.Region
+	}
+	if locality.Zone != "" {
+		labels[corev1.LabelTopologyZone] = locality.Zone
+	}
+	if locality.Subzone != "" {
+		labels[label.TopologySubzone.Name] = locality.Subzone
+	}
+
 	return selectedWorkload{
 		selectedBy: slices.Map(selectedBy, func(se seSelector) krt.Named {
 			return krt.NewNamed(se)
@@ -307,7 +325,7 @@ func selectedWorkloadFromEntry(
 				Name:      name,
 				Namespace: namespace,
 			},
-			Locality:        getLocality(weSpec.GetLocality(), labels),
+			Locality:        locality,
 			AugmentedLabels: labels,
 			Addresses:       []string{weSpec.GetAddress()},
 		},

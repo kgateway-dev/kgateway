@@ -11,22 +11,14 @@ import (
 	networkingclient "istio.io/client-go/pkg/apis/networking/v1"
 	"istio.io/istio/pkg/kube/krt"
 
-	endpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
-	"github.com/solo-io/go-utils/contextutils"
-
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/endpoints"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 )
 
-// buildInlineCLA creates a CLA for non-EDS ServiceEntry.
-// TODO it would be nice to re-use the EndpointsForBackend collection to handle this.
-// rather than doing it as part of `initBackend` which doesn't have a way to apply
-// DestinationRule (or any per-client policy) properly.
-func buildInlineCLA(ctx context.Context, be ir.BackendObjectIR, se *networkingclient.ServiceEntry) *endpointv3.ClusterLoadAssignment {
-	logger := contextutils.LoggerFrom(ctx)
-
+// buildInlineEndpoints creates a static EndpointsForBackend for non-EDS a ServiceEntry using
+// the inline endpoints (or hosts field for DNS resolution without endpoints).
+func (s *serviceEntryPlugin) buildInlineEndpoints(ctx context.Context, be ir.BackendObjectIR, se *networkingclient.ServiceEntry) *ir.EndpointsForBackend {
 	var inlineWorkloads []selectedWorkload
 	for i, e := range se.Spec.GetEndpoints() {
 		converted := selectedWorkloadFromEntry(
@@ -58,16 +50,11 @@ func buildInlineCLA(ctx context.Context, be ir.BackendObjectIR, se *networkingcl
 	if endpointsForBackend == nil {
 		// this is pretty much impossible, but `ir.NewEndpointsForBackend(be)`
 		// returns a pointer, so this is for safety
-		logger.DPanicw("buildInlineCLA for ServiceEntry had nil endpointsForBackend", "ServiceEntry", krt.NewNamed(se).ResourceName())
+		s.logger.DPanicw("buildInlineEndpoints for ServiceEntry had nil endpointsForBackend", "ServiceEntry", krt.NewNamed(se).ResourceName())
 		return nil
 	}
 
-	return endpoints.PrioritizeEndpoints(
-		logger.Desugar(),
-		nil,
-		*endpointsForBackend,
-		ir.UniqlyConnectedClient{},
-	)
+	return endpointsForBackend
 }
 
 func endpointsCollection(

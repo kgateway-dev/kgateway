@@ -29,7 +29,7 @@ func NewPlugin(
 		ContributesBackends: map[schema.GroupKind]extensionsplug.BackendPlugin{
 			wellknown.ServiceEntryGVK.GroupKind(): {
 				BackendInit: ir.BackendInit{
-					InitBackend: initServiceEntryBackend,
+					InitBackend: seCollections.initServiceEntryBackend,
 				},
 				Backends:  seCollections.Backends,
 				Endpoints: seCollections.Endpoints,

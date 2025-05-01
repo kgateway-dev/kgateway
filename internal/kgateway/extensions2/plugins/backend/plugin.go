@@ -244,17 +244,17 @@ func getAISecretRef(llm v1alpha1.SupportedLLMProvider) *corev1.LocalObjectRefere
 	return secretRef
 }
 
-func processBackend(ctx context.Context, in ir.BackendObjectIR, out *envoy_config_cluster_v3.Cluster) {
+func processBackend(ctx context.Context, in ir.BackendObjectIR, out *envoy_config_cluster_v3.Cluster) *ir.EndpointsForBackend {
 	log := contextutils.LoggerFrom(ctx)
 	up, ok := in.Obj.(*v1alpha1.Backend)
 	if !ok {
 		log.DPanic("failed to cast backend object")
-		return
+		return nil
 	}
 	ir, ok := in.ObjIr.(*BackendIr)
 	if !ok {
 		log.DPanic("failed to cast backend ir")
-		return
+		return nil
 	}
 
 	// TODO(tim): Bubble up error to Backend status once https://github.com/kgateway-dev/kgateway/issues/10555
@@ -279,6 +279,7 @@ func processBackend(ctx context.Context, in ir.BackendObjectIR, out *envoy_confi
 			log.Error(err)
 		}
 	}
+	return nil
 }
 
 // hostname returns the hostname for the backend. Only static backends are supported.

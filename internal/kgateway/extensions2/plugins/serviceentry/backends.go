@@ -19,10 +19,10 @@ import (
 	"k8s.io/utils/ptr"
 )
 
-func initServiceEntryBackend(ctx context.Context, in ir.BackendObjectIR, out *clusterv3.Cluster) {
+func (s *serviceEntryPlugin) initServiceEntryBackend(ctx context.Context, in ir.BackendObjectIR, out *clusterv3.Cluster) *ir.EndpointsForBackend {
 	se, ok := in.Obj.(*networkingclient.ServiceEntry)
 	if !ok {
-		return
+		return nil
 	}
 
 	// Only ServiceEntry that uses STATIC resolution with a workloadSelector
@@ -45,6 +45,7 @@ func initServiceEntryBackend(ctx context.Context, in ir.BackendObjectIR, out *cl
 		}
 	}
 
+	var staticEps *ir.EndpointsForBackend
 	if isEDSServiceEntry(se) {
 		out.ClusterDiscoveryType = &clusterv3.Cluster_Type{
 			Type: clusterv3.Cluster_EDS,
@@ -59,8 +60,11 @@ func initServiceEntryBackend(ctx context.Context, in ir.BackendObjectIR, out *cl
 		}
 	} else {
 		// STATIC with inline endpoints, or either kind of DNS require an inline load assignment
-		out.LoadAssignment = buildInlineCLA(ctx, in, se)
+
+		// compute endpoints from ServiceEntry
+		staticEps = s.buildInlineEndpoints(ctx, in, se)
 	}
+	return staticEps
 }
 
 // backendsCollections produces a one-to-many collection from ServiceEntry into BackendObjectIR.

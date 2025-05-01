@@ -12,7 +12,12 @@ import (
 )
 
 type BackendInit struct {
-	InitBackend func(ctx context.Context, in BackendObjectIR, out *envoy_config_cluster_v3.Cluster)
+	// InitBackend optionally returns an `*ir.EndpointsForBackend` that can be used
+	// to initialize a ClusterLoadAssignment inline on the Cluster, with proper locality
+	// based prioritization applied, as well as endpoint plugins applied.
+	// This will never override a ClusterLoadAssignment that is set inside of an InitBackend implementation.
+	// The CLA is only added if the Cluster has a compatible type (EDS, LOGICAL_DNS, STRICT_DNS).
+	InitBackend func(ctx context.Context, in BackendObjectIR, out *envoy_config_cluster_v3.Cluster) *EndpointsForBackend
 }
 
 type PolicyRef struct {

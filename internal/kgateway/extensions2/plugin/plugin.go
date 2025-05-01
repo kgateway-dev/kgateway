@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
-	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/endpoints"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 
 	"istio.io/istio/pkg/kube/krt"
@@ -35,8 +35,8 @@ type (
 		kctx krt.HandlerContext,
 		ctx context.Context,
 		ucc ir.UniqlyConnectedClient,
-		in ir.EndpointsForBackend,
-	) (*envoy_config_endpoint_v3.ClusterLoadAssignment, uint64)
+		out *endpoints.EndpointsInputs,
+	) uint64
 )
 
 // TODO: consider changing PerClientProcessBackend to look like this:

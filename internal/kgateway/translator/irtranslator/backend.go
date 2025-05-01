@@ -9,22 +9,23 @@ import (
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	endpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoy_upstreams_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
+	"github.com/solo-io/go-utils/contextutils"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"istio.io/istio/pkg/kube/krt"
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/sets"
 
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/endpoints"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 )
 
-var (
-	ClusterConnectionTimeout = time.Second * 5
-)
+var ClusterConnectionTimeout = time.Second * 5
 
 type BackendTranslator struct {
 	ContributedBackends map[schema.GroupKind]ir.BackendInit
@@ -62,11 +63,11 @@ func (t *BackendTranslator) TranslateBackend(
 	}
 
 	out := initializeCluster(backend)
-	process.InitBackend(context.TODO(), backend, out)
+	inlineEps := process.InitBackend(context.TODO(), backend, out)
 	processDnsLookupFamily(out, t.CommonCols)
 
 	// now process backend policies
-	t.runPolicies(kctx, context.TODO(), ucc, backend, out)
+	t.runPolicies(kctx, context.TODO(), ucc, backend, inlineEps, out)
 	return out, nil
 }
 
@@ -75,8 +76,18 @@ func (t *BackendTranslator) runPolicies(
 	ctx context.Context,
 	ucc ir.UniqlyConnectedClient,
 	backend ir.BackendObjectIR,
+	inlineEps *ir.EndpointsForBackend,
 	out *clusterv3.Cluster,
 ) {
+	// if the backend was initialized with inlineEps then we
+	// need an EndpointsInputs to run plugins against
+	var endpointInputs *endpoints.EndpointsInputs
+	if inlineEps != nil {
+		endpointInputs = &endpoints.EndpointsInputs{
+			EndpointsForBackend: *inlineEps,
+		}
+	}
+
 	for gk, policyPlugin := range t.ContributedPolicies {
 		// TODO: in theory it would be nice to do `ProcessBackend` once, and only do
 		// the the per-client processing for each client.
@@ -87,6 +98,11 @@ func (t *BackendTranslator) runPolicies(
 			policyPlugin.PerClientProcessBackend(kctx, ctx, ucc, backend, out)
 		}
 
+		// run endpoint plugins if we have endpoints to process
+		if endpointInputs != nil && policyPlugin.PerClientProcessEndpoints != nil {
+			policyPlugin.PerClientProcessEndpoints(kctx, ctx, ucc, endpointInputs)
+		}
+
 		if policyPlugin.ProcessBackend == nil {
 			continue
 		}
@@ -94,28 +110,46 @@ func (t *BackendTranslator) runPolicies(
 			policyPlugin.ProcessBackend(ctx, polAttachment.PolicyIr, backend, out)
 		}
 	}
+
+	// for clusters that want a CLA _and_ initialized with inlineEps, build the CLA.
+	// never overwrite the CLA that was already initialized (potentially within a plugin).
+	if out.GetLoadAssignment() == nil && endpointInputs != nil && clusterSupportsInlineCLA(out) {
+		out.LoadAssignment = endpoints.PrioritizeEndpoints(
+			contextutils.LoggerFrom(ctx).Desugar(),
+			ucc,
+			*endpointInputs,
+		)
+	}
 }
 
-var (
-	h2Options = func() *anypb.Any {
-		http2ProtocolOptions := &envoy_upstreams_v3.HttpProtocolOptions{
-			UpstreamProtocolOptions: &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig_{
-				ExplicitHttpConfig: &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig{
-					ProtocolConfig: &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig_Http2ProtocolOptions{
-						Http2ProtocolOptions: &envoy_config_core_v3.Http2ProtocolOptions{},
-					},
+var inlineCLAClusterTypes = sets.New(
+	clusterv3.Cluster_STATIC,
+	clusterv3.Cluster_STRICT_DNS,
+	clusterv3.Cluster_LOGICAL_DNS,
+)
+
+func clusterSupportsInlineCLA(cluster *clusterv3.Cluster) bool {
+	return inlineCLAClusterTypes.Has(cluster.GetType())
+}
+
+var h2Options = func() *anypb.Any {
+	http2ProtocolOptions := &envoy_upstreams_v3.HttpProtocolOptions{
+		UpstreamProtocolOptions: &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig_{
+			ExplicitHttpConfig: &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig{
+				ProtocolConfig: &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig_Http2ProtocolOptions{
+					Http2ProtocolOptions: &envoy_config_core_v3.Http2ProtocolOptions{},
 				},
 			},
-		}
+		},
+	}
 
-		a, err := utils.MessageToAny(http2ProtocolOptions)
-		if err != nil {
-			// should never happen - all values are known ahead of time.
-			panic(err)
-		}
-		return a
-	}()
-)
+	a, err := utils.MessageToAny(http2ProtocolOptions)
+	if err != nil {
+		// should never happen - all values are known ahead of time.
+		panic(err)
+	}
+	return a
+}()
 
 // processDnsLookupFamily modifies clusters that use DNS-based discovery in the following way:
 // 1. explicitly default to 'V4_PREFERRED' (as opposed to the envoy default of effectively V6_PREFERRED)
