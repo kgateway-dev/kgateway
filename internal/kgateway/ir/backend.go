@@ -226,15 +226,20 @@ func (a BackendRefIR) Equals(b BackendRefIR) bool {
 	objA := a.BackendObject
 	objB := b.BackendObject
 
-	// Check if nil-ness differs (one is nil, the other is not)
 	if (objA == nil) != (objB == nil) {
 		return false
 	}
-	// If both are non-nil, compare their contents using the Equals method
 	if objA != nil && !objA.Equals(*objB) {
 		return false
 	}
-	// If both are nil, they are equal
+
+	// Compare error fields: either both nil or both have same error message
+	if (a.Err == nil) != (b.Err == nil) {
+		return false
+	}
+	if a.Err != nil && b.Err != nil && a.Err.Error() != b.Err.Error() {
+		return false
+	}
 
 	return true
 }
