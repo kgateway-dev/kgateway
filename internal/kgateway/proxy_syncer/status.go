@@ -61,7 +61,6 @@ func generatePolicyReport[T ObjWithAttachedPolicies](in []T) reports.ReportMap {
 						Status:  metav1.ConditionTrue,
 						Reason:  gwv1alpha2.PolicyReasonAccepted,
 						Message: reports.PolicyAcceptedAndAttachedMsg,
-						// TODO: add Message when errors are formatted for the user
 					})
 				}
 			}

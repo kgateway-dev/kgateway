@@ -303,7 +303,7 @@ func mergeProxyReports(
 		}
 
 		for key, report := range p.reports.Policies {
-			// if we haven't encountered this route, just copy it over completely
+			// if we haven't encountered this policy, just copy it over completely
 			old := merged.Policies[key]
 			if old == nil {
 				merged.Policies[key] = report

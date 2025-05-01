@@ -52,7 +52,9 @@ type PerClientProcessBackend func(
 )
 
 type (
-	GetPolicyStatusFn   func(context.Context, types.NamespacedName) (gwv1alpha2.PolicyStatus, error)
+	// GetPolicyStatusFn is a type that plugins can implement to get the PolicyStatus for the given policy
+	GetPolicyStatusFn func(context.Context, types.NamespacedName) (gwv1alpha2.PolicyStatus, error)
+	// PatchPolicyStatusFn is a type that plugins can implement to patch the PolicyStatus for the given policy
 	PatchPolicyStatusFn func(context.Context, types.NamespacedName, gwv1alpha2.PolicyStatus) error
 )
 
