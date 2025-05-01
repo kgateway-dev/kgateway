@@ -53,7 +53,7 @@ func convertAccessLogConfig(
 			backend, err := commoncol.BackendIndex.GetBackendFromRef(krtctx, parentSrc, log.GrpcService.BackendRef.BackendObjectReference)
 			// TODO: what is the correct behavior? maybe route to static blackhole?
 			if err != nil {
-				return nil, fmt.Errorf("%v: %v", ErrUnresolvedBackendRef, err.Error())
+				return nil, fmt.Errorf("%w: %v", ErrUnresolvedBackendRef, err)
 			}
 			grpcBackends[getLogId(log.GrpcService.LogName, idx)] = backend
 		}

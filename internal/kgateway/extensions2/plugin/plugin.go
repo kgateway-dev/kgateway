@@ -51,6 +51,11 @@ type PerClientProcessBackend func(
 	out *envoy_config_cluster_v3.Cluster,
 )
 
+type (
+	GetPolicyStatusFn   func(context.Context, types.NamespacedName) (gwv1alpha2.PolicyStatus, error)
+	PatchPolicyStatusFn func(context.Context, types.NamespacedName, gwv1alpha2.PolicyStatus) error
+)
+
 type PolicyPlugin struct {
 	Name                      string
 	NewGatewayTranslationPass func(ctx context.Context, tctx ir.GwTranslationCtx, reporter reports.Reporter) ir.ProxyTranslationPass
@@ -66,6 +71,9 @@ type PolicyPlugin struct {
 	// rather than the default behavior of fetching by name from the aggregated policy KRT collection
 	PoliciesFetch func(n, ns string) ir.PolicyIR
 	MergePolicies func(pols []ir.PolicyAtt) ir.PolicyAtt
+
+	GetPolicyStatus   GetPolicyStatusFn
+	PatchPolicyStatus PatchPolicyStatusFn
 }
 
 type BackendPlugin struct {
@@ -86,9 +94,6 @@ type KGwTranslator interface {
 type (
 	GwTranslatorFactory func(gw *gwv1.Gateway) KGwTranslator
 	ContributesPolicies map[schema.GroupKind]PolicyPlugin
-
-	GetPolicyStatus   func(context.Context, types.NamespacedName) (gwv1alpha2.PolicyStatus, error)
-	PatchPolicyStatus func(context.Context, types.NamespacedName, gwv1alpha2.PolicyStatus) error
 )
 
 type Plugin struct {
@@ -97,9 +102,7 @@ type Plugin struct {
 	ContributesGwTranslator GwTranslatorFactory
 	// ContributesRegistration is a lifecycle hook called after all collections are synced
 	// allowing Plugins to register handlers against collections, e.g. for status reporting
-	ContributesRegistration  map[schema.GroupKind]func()
-	GetPolicyStatusHandler   map[schema.GroupKind]GetPolicyStatus
-	PatchPolicyStatusHandler map[schema.GroupKind]PatchPolicyStatus
+	ContributesRegistration map[schema.GroupKind]func()
 	// extra has sync beyong primary resources in the collections above
 	ExtraHasSynced func() bool
 }

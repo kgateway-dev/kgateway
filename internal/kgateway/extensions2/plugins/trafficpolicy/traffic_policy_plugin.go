@@ -333,13 +333,9 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 				NewGatewayTranslationPass: NewGatewayTranslationPass,
 				Policies:                  policyCol,
 				MergePolicies:             mergePolicies,
+				GetPolicyStatus:           getPolicyStatusFn(commoncol.CrudClient),
+				PatchPolicyStatus:         patchPolicyStatusFn(commoncol.CrudClient),
 			},
-		},
-		GetPolicyStatusHandler: map[schema.GroupKind]extensionsplug.GetPolicyStatus{
-			wellknown.TrafficPolicyGVK.GroupKind(): getPolicyStatusFn(commoncol.CrudClient),
-		},
-		PatchPolicyStatusHandler: map[schema.GroupKind]extensionsplug.PatchPolicyStatus{
-			wellknown.TrafficPolicyGVK.GroupKind(): patchPolicyStatusFn(commoncol.CrudClient),
 		},
 		ExtraHasSynced: gatewayExtensions.HasSynced,
 	}

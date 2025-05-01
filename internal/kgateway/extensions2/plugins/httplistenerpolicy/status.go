@@ -14,7 +14,7 @@ import (
 
 func getPolicyStatusFn(
 	cl client.Client,
-) extensionsplug.GetPolicyStatus {
+) extensionsplug.GetPolicyStatusFn {
 	return func(ctx context.Context, nn types.NamespacedName) (gwv1alpha2.PolicyStatus, error) {
 		res := v1alpha1.HTTPListenerPolicy{}
 		err := cl.Get(ctx, nn, &res)
@@ -27,7 +27,7 @@ func getPolicyStatusFn(
 
 func patchPolicyStatusFn(
 	cl client.Client,
-) extensionsplug.PatchPolicyStatus {
+) extensionsplug.PatchPolicyStatusFn {
 	return func(ctx context.Context, nn types.NamespacedName, policyStatus gwv1alpha2.PolicyStatus) error {
 		res := v1alpha1.HTTPListenerPolicy{}
 		err := cl.Get(ctx, nn, &res)

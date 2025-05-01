@@ -122,13 +122,9 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 				// AttachmentPoints: []ir.AttachmentPoints{ir.HttpAttachmentPoint},
 				NewGatewayTranslationPass: NewGatewayTranslationPass,
 				Policies:                  policyCol,
+				GetPolicyStatus:           getPolicyStatusFn(commoncol.CrudClient),
+				PatchPolicyStatus:         patchPolicyStatusFn(commoncol.CrudClient),
 			},
-		},
-		GetPolicyStatusHandler: map[schema.GroupKind]extensionsplug.GetPolicyStatus{
-			wellknown.HTTPListenerPolicyGVK.GroupKind(): getPolicyStatusFn(commoncol.CrudClient),
-		},
-		PatchPolicyStatusHandler: map[schema.GroupKind]extensionsplug.PatchPolicyStatus{
-			wellknown.HTTPListenerPolicyGVK.GroupKind(): patchPolicyStatusFn(commoncol.CrudClient),
 		},
 	}
 }

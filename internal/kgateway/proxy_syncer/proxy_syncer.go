@@ -570,17 +570,20 @@ func (s *ProxySyncer) syncPolicyStatus(ctx context.Context, rm reports.ReportMap
 		gk := schema.GroupKind{Group: key.Group, Kind: key.Kind}
 		nsName := types.NamespacedName{Namespace: key.Namespace, Name: key.Name}
 
-		getPolicyStatusFn, ok := s.plugins.GetPolicyStatusHandler[gk]
+		plugin, ok := s.plugins.ContributesPolicies[gk]
 		if !ok {
+			logger.Errorw("Policy plugin not registered for policy", "groupKind", gk, "resource", nsName)
+			continue
+		}
+		if plugin.GetPolicyStatus == nil {
 			logger.Errorw("GetPolicyStatus handler not registered for policy", "groupKind", gk, "resource", nsName)
 			continue
 		}
-		patchPolicyStatusFn, ok := s.plugins.PatchPolicyStatusHandler[gk]
-		if !ok {
+		if plugin.PatchPolicyStatus == nil {
 			logger.Errorw("PatchPolicyStatus handler not registered for policy", "groupKind", gk, "resource", nsName)
 			continue
 		}
-		currentStatus, err := getPolicyStatusFn(ctx, nsName)
+		currentStatus, err := plugin.GetPolicyStatus(ctx, nsName)
 		if err != nil {
 			logger.Errorw("error getting policy status", "error", err, "policy", nsName)
 			continue
@@ -591,7 +594,7 @@ func (s *ProxySyncer) syncPolicyStatus(ctx context.Context, rm reports.ReportMap
 		}
 		err = retry.Do(
 			func() error {
-				return patchPolicyStatusFn(ctx, nsName, *status)
+				return plugin.PatchPolicyStatus(ctx, nsName, *status)
 			},
 			retry.Attempts(5),
 			retry.Delay(100*time.Millisecond),

@@ -37,6 +37,8 @@ var (
 	ErrConfigMapNotFound = errors.New("ConfigMap not found")
 
 	ErrCreatingTLSConfig = errors.New("TLS config error")
+
+	ErrParsingTLSConfig = errors.New("TLS config parse error")
 )
 
 var (
@@ -104,16 +106,12 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 	return extensionsplug.Plugin{
 		ContributesPolicies: map[schema.GroupKind]extensionsplug.PolicyPlugin{
 			backendTlsPolicyGroupKind.GroupKind(): {
-				Name:           "BackendTLSPolicy",
-				Policies:       tlsPolicyCol,
-				ProcessBackend: processBackend,
+				Name:              "BackendTLSPolicy",
+				Policies:          tlsPolicyCol,
+				ProcessBackend:    processBackend,
+				GetPolicyStatus:   getPolicyStatusFn(commoncol.CrudClient),
+				PatchPolicyStatus: patchPolicyStatusFn(commoncol.CrudClient),
 			},
-		},
-		GetPolicyStatusHandler: map[schema.GroupKind]extensionsplug.GetPolicyStatus{
-			backendTlsPolicyGroupKind.GroupKind(): getPolicyStatusFn(commoncol.CrudClient),
-		},
-		PatchPolicyStatusHandler: map[schema.GroupKind]extensionsplug.PatchPolicyStatus{
-			backendTlsPolicyGroupKind.GroupKind(): patchPolicyStatusFn(commoncol.CrudClient),
 		},
 	}
 }
@@ -164,7 +162,7 @@ func buildTranslateFunc(
 		typedConfig, err := utils.MessageToAny(tlsCfg)
 		if err != nil {
 			contextutils.LoggerFrom(ctx).Error("error converting TLS config to proto: %v", err)
-			return &policyIr, ErrCreatingTLSConfig
+			return &policyIr, ErrParsingTLSConfig
 		}
 
 		policyIr.transportSocket = &envoy_config_core_v3.TransportSocket{
