@@ -222,24 +222,27 @@ func (a BackendRefIR) Equals(b BackendRefIR) bool {
 		return false
 	}
 
-	// compare backend objects
-	objA := a.BackendObject
-	objB := b.BackendObject
-
-	if (objA == nil) != (objB == nil) {
-		return false
-	}
-	if objA != nil && !objA.Equals(*objB) {
+	if !backendObjectEqual(a.BackendObject, b.BackendObject) {
 		return false
 	}
 
-	// Compare error fields: either both nil or both have same error message
-	if (a.Err == nil) != (b.Err == nil) {
-		return false
-	}
-	if a.Err != nil && b.Err != nil && a.Err.Error() != b.Err.Error() {
+	if !errorsEqual(a.Err, b.Err) {
 		return false
 	}
 
 	return true
+}
+
+func backendObjectEqual(a, b *BackendObjectIR) bool {
+	if a == nil || b == nil {
+		return a == b
+	}
+	return a.Equals(*b)
+}
+
+func errorsEqual(a, b error) bool {
+	if a == nil || b == nil {
+		return a == b
+	}
+	return a.Error() == b.Error()
 }
