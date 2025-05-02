@@ -3,13 +3,13 @@ package irtranslator
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"time"
 
 	clusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	endpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoy_upstreams_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
-	"github.com/solo-io/go-utils/contextutils"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/durationpb"
@@ -105,7 +105,7 @@ func (t *BackendTranslator) runPolicies(
 	// if no plugin initialized the inline CLA, and the cluster type needs one, do it now
 	if out.GetLoadAssignment() == nil && inlineEps != nil && clusterSupportsInlineCLA(out) {
 		out.LoadAssignment = endpoints.PrioritizeEndpoints(
-			contextutils.LoggerFrom(ctx).Desugar(), // TODO BackendTranslator's logger
+			slog.Default(), // TODO BackendTranslator's logger
 			nil,
 			*inlineEps,
 			ucc,

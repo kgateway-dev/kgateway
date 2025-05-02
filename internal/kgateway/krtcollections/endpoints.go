@@ -2,8 +2,8 @@ package krtcollections
 
 import (
 	"context"
+	"log/slog"
 
-	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
@@ -14,8 +14,6 @@ import (
 
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
-
-	"github.com/solo-io/go-utils/contextutils"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
@@ -89,21 +87,21 @@ func NewK8sEndpoints(ctx context.Context, inputs EndpointsInputs) krt.Collection
 }
 
 func transformK8sEndpoints(ctx context.Context, inputs EndpointsInputs) func(kctx krt.HandlerContext, backend ir.BackendObjectIR) *ir.EndpointsForBackend {
-	logger := contextutils.LoggerFrom(ctx).Desugar()
+	baseLogger := slog.Default()
 	augmentedPods := inputs.Pods
 
 	return func(kctx krt.HandlerContext, backend ir.BackendObjectIR) *ir.EndpointsForBackend {
 		var warnsToLog []string
 		defer func() {
 			for _, warn := range warnsToLog {
-				logger.Warn(warn)
+				baseLogger.Warn(warn)
 			}
 		}()
 		key := types.NamespacedName{
 			Namespace: backend.Namespace,
 			Name:      backend.Name,
 		}
-		logger := logger.With(zap.Stringer("kubesvc", key))
+		logger := baseLogger.With(slog.Any("kubesvc", key))
 
 		kubeBackend, ok := backend.Obj.(*corev1.Service)
 		// only care about kube backend
@@ -116,14 +114,14 @@ func transformK8sEndpoints(ctx context.Context, inputs EndpointsInputs) func(kct
 
 		kubeSvcPort, singlePortSvc := findPortForService(kubeBackend, uint32(backend.Port))
 		if kubeSvcPort == nil {
-			logger.Debug("port not found for service", zap.Uint32("port", uint32(backend.Port)))
+			logger.Debug("port not found for service", slog.Uint64("port", uint64(backend.Port)))
 			return nil
 		}
 
 		// Fetch all EndpointSlices for the backend service
 		endpointSlices := krt.Fetch(kctx, inputs.EndpointSlices, krt.FilterIndex(inputs.EndpointSlicesByService, key))
 		if len(endpointSlices) == 0 {
-			logger.Debug("no endpointslices found for service", zap.String("name", key.Name), zap.String("namespace", key.Namespace))
+			logger.Debug("no endpointslices found for service", slog.String("name", key.Name), slog.String("namespace", key.Namespace))
 			return nil
 		}
 
@@ -136,7 +134,7 @@ func transformK8sEndpoints(ctx context.Context, inputs EndpointsInputs) func(kct
 			}
 		}
 		if !found {
-			logger.Debug("no ports found in endpointslices for service", zap.String("name", key.Name), zap.String("namespace", key.Namespace))
+			logger.Debug("no ports found in endpointslices for service", slog.String("name", key.Name), slog.String("namespace", key.Namespace))
 			return nil
 		}
 
@@ -152,8 +150,8 @@ func transformK8sEndpoints(ctx context.Context, inputs EndpointsInputs) func(kct
 			port := findPortInEndpointSlice(endpointSlice, singlePortSvc, kubeSvcPort)
 			if port == 0 {
 				logger.Debug("no port found in endpointslice; will try next endpointslice if one exists",
-					zap.String("name", endpointSlice.Name),
-					zap.String("namespace", endpointSlice.Namespace))
+					slog.String("name", endpointSlice.Name),
+					slog.String("namespace", endpointSlice.Namespace))
 				continue
 			}
 
@@ -205,7 +203,7 @@ func transformK8sEndpoints(ctx context.Context, inputs EndpointsInputs) func(kct
 				}
 			}
 		}
-		logger.Debug("created endpoint", zap.Int("numAddresses", len(ret.LbEps)))
+		logger.Debug("created endpoint", slog.Int("numAddresses", len(ret.LbEps)))
 		return ret
 	}
 }

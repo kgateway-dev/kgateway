@@ -2,7 +2,6 @@ package setup
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"net"
 	"os"
@@ -55,14 +54,14 @@ func StartKgateway(
 	ctx context.Context,
 	extraPlugins func(ctx context.Context, commoncol *common.CommonCollections) []extensionsplug.Plugin,
 ) error {
-	slog.Info(fmt.Sprintf("starting %s", componentName))
+	slog.Info("starting component", "component", componentName)
 
 	// load global settings
 	st, err := settings.BuildSettings()
 	if err != nil {
 		slog.Error("got err while parsing Settings from env", slog.Any("error", err))
 	}
-	slog.Info(fmt.Sprintf("got settings from env: %+v", *st))
+	slog.Info("global settings", "value", *st)
 
 	uniqueClientCallbacks, uccBuilder := krtcollections.NewUniquelyConnectedClients()
 	cache, err := startControlPlane(ctx, st.XdsServicePort, uniqueClientCallbacks)
@@ -99,7 +98,7 @@ func StartKgatewayWithConfig(
 	extraPlugins func(ctx context.Context, commoncol *common.CommonCollections) []extensionsplug.Plugin,
 ) error {
 	k8sLogger := slog.With(slog.String("component", "k8s"))
-	k8sLogger.Info(fmt.Sprintf("starting %s", componentName))
+	k8sLogger.Info("starting component", "component", componentName)
 
 	kubeClient, err := createKubeClient(restConfig)
 	if err != nil {

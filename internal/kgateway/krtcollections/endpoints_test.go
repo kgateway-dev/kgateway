@@ -6,9 +6,7 @@ import (
 
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	endpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
-	"github.com/fgrosse/zaptest"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/go-utils/contextutils"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/kube/krt/krttest"
@@ -276,9 +274,6 @@ func TestEndpointsForUpstreamWithDifferentNameButSameEndpoints(t *testing.T) {
 }
 
 func TestEndpoints(t *testing.T) {
-	logger := zaptest.Logger(t)
-	contextutils.SetFallbackLogger(logger.Sugar())
-
 	testCases := []struct {
 		name     string
 		inputs   []any

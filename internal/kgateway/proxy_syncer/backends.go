@@ -3,10 +3,9 @@ package proxy_syncer
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
-	"github.com/solo-io/go-utils/contextutils"
-	"go.uber.org/zap"
 	"istio.io/istio/pkg/kube/krt"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
@@ -47,16 +46,15 @@ func NewPerClientEnvoyClusters(
 	finalBackends krt.Collection[ir.BackendObjectIR],
 	uccs krt.Collection[ir.UniqlyConnectedClient],
 ) PerClientEnvoyClusters {
-	ctx = contextutils.WithLogger(ctx, "backend-translator")
-	logger := contextutils.LoggerFrom(ctx).Desugar()
+	logger := slog.With(slog.String("component", "backend-translator"))
 
 	clusters := krt.NewManyCollection(finalBackends, func(kctx krt.HandlerContext, backendObj ir.BackendObjectIR) []uccWithCluster {
-		logger := logger.With(zap.Stringer("backend", backendObj))
+		backendLogger := logger.With(slog.Any("backend", backendObj))
 		uccs := krt.Fetch(kctx, uccs)
 		uccWithClusterRet := make([]uccWithCluster, 0, len(uccs))
 
 		for _, ucc := range uccs {
-			logger.Debug("applying destination rules for backend", zap.String("ucc", ucc.ResourceName()))
+			backendLogger.Debug("applying destination rules for backend", slog.String("ucc", ucc.ResourceName()))
 
 			c, err := translator.TranslateBackend(kctx, ucc, backendObj)
 			if c == nil {

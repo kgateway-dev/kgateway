@@ -2,8 +2,8 @@ package backendtlspolicy
 
 import (
 	"context"
-	"errors"
 	"fmt"
+	"log/slog"
 	"reflect"
 	"strings"
 	"time"
@@ -21,7 +21,6 @@ import (
 	clusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
-	"github.com/solo-io/go-utils/contextutils"
 	"istio.io/istio/pkg/config/schema/kubeclient"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
@@ -146,21 +145,21 @@ func buildTranslateFunc(
 		}
 		cfgmap := krt.FetchOne(krtctx, cfgmaps, krt.FilterObjectName(nn))
 		if cfgmap == nil {
-			polErr := errors.New(fmt.Sprintf("configmap %s not found", nn))
-			contextutils.LoggerFrom(ctx).Error(polErr)
+			polErr := fmt.Errorf("configmap %s not found", nn)
+			slog.Error("configmap not found", slog.String("configmap", nn.String()), slog.String("error", polErr.Error()))
 			return &policyIr, polErr
 		}
 
 		tlsCfg, err := ResolveUpstreamSslConfig(*cfgmap, string(spec.Validation.Hostname))
 		if err != nil {
-			polErr := errors.New(fmt.Sprintf("could not create TLS config, err: %s", err))
-			contextutils.LoggerFrom(ctx).Error(polErr)
+			polErr := fmt.Errorf("could not create TLS config, err: %s", err)
+			slog.Error("could not create TLS config", slog.String("error", polErr.Error()))
 			return &policyIr, polErr
 		}
 		typedConfig, err := utils.MessageToAny(tlsCfg)
 		if err != nil {
-			polErr := errors.New(fmt.Sprintf("could not convert TLS config to proto, err: %s", err))
-			contextutils.LoggerFrom(ctx).Error(polErr)
+			polErr := fmt.Errorf("could not convert TLS config to proto, err: %s", err)
+			slog.Error("could not convert TLS config to proto", slog.String("error", polErr.Error()))
 			return &policyIr, polErr
 		}
 
@@ -179,8 +178,7 @@ func buildProcessStatus(cl client.Client) func(ctx context.Context, gkStr string
 		if gkStr != backendTlsPolicyGroupKind.GroupKind().String() {
 			return
 		}
-		ctx = contextutils.WithLogger(ctx, "backendTlsPolicyStatus")
-		logger := contextutils.LoggerFrom(ctx)
+		logger := slog.With(slog.String("component", "backendTlsPolicyStatus"))
 		for ref, rpt := range polReport {
 			// get existing policy
 			res := gwv1a3.BackendTLSPolicy{}
@@ -235,7 +233,7 @@ func buildProcessStatus(cl client.Client) func(ctx context.Context, gkStr string
 			err = retry.Do(
 				func() error {
 					if err := cl.Status().Patch(ctx, &res, client.Merge); err != nil {
-						logger.Error(err)
+						logger.Error("error updating backendtlspolicy status", slog.String("error", err.Error()))
 						return err
 					}
 					return nil
@@ -245,12 +243,10 @@ func buildProcessStatus(cl client.Client) func(ctx context.Context, gkStr string
 				retry.DelayType(retry.BackOffDelay),
 			)
 			if err != nil {
-				logger.Errorw(
+				logger.Error(
 					"all attempts failed updating backendtlspolicy status",
-					"BackendTLSPolicy",
-					resNN.String(),
-					"error",
-					err,
+					slog.String("backendtlspolicy", resNN.String()),
+					slog.Any("error", err),
 				)
 			}
 		}

@@ -2,19 +2,14 @@ package proxy_syncer
 
 import (
 	"context"
-
-	"github.com/solo-io/go-utils/contextutils"
-
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
+	"log/slog"
 )
 
 func (s *ProxyTranslator) syncXds(
 	ctx context.Context,
 	snapWrap XdsSnapWrapper,
 ) {
-	ctx = contextutils.WithLogger(ctx, "kube-gateway-xds-syncer")
-	logger := contextutils.LoggerFrom(ctx).Desugar()
+	logger := slog.With(slog.String("component", "kube-gateway-xds-syncer"))
 
 	snap := snapWrap.snap
 	proxyKey := snapWrap.proxyKey
@@ -23,9 +18,11 @@ func (s *ProxyTranslator) syncXds(
 
 	// stringifying the snapshot may be an expensive operation, so we'd like to avoid building the large
 	// string if we're not even going to log it anyway
-	logger.Debug("syncing xds snapshot", zap.String("proxyKey", proxyKey))
-	if contextutils.GetLogLevel() == zapcore.DebugLevel {
-		//	logger.Debugw(syncutil.StringifySnapshot(snap), "proxyKey", proxyKey) // TODO: also spammy
+	logger.Debug("syncing xds snapshot", slog.String("proxyKey", proxyKey))
+
+	// Check if the default logger is enabled for Debug level
+	if slog.Default().Enabled(context.Background(), slog.LevelDebug) {
+		//	logger.Debug(syncutil.StringifySnapshot(snap), slog.String("proxyKey", proxyKey)) // TODO: also spammy
 	}
 
 	// if the snapshot is not consistent, make it so

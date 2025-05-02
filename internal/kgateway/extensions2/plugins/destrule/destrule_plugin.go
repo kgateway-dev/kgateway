@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"hash/fnv"
+	"log/slog"
 
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -11,7 +12,6 @@ import (
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoy_type_v3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
-	"github.com/solo-io/go-utils/contextutils"
 	"istio.io/api/networking/v1alpha3"
 	"istio.io/istio/pkg/config/schema/gvr"
 	"istio.io/istio/pkg/kube/krt"
@@ -61,7 +61,6 @@ func (d *destrulePlugin) processEndpoints(kctx krt.HandlerContext, ctx context.C
 		return nil, 0
 	}
 
-	logger := contextutils.LoggerFrom(ctx).Desugar()
 	trafficPolicy := getTrafficPolicy(destrule, in.Port)
 	localityLb := getLocalityLbSetting(trafficPolicy)
 	var priorityInfo *endpoints.PriorityInfo
@@ -73,7 +72,7 @@ func (d *destrulePlugin) processEndpoints(kctx krt.HandlerContext, ctx context.C
 		hasher.Write([]byte(fmt.Sprintf("%v", destrule.Generation)))
 		additionalHash = hasher.Sum64()
 	}
-	return endpoints.PrioritizeEndpoints(logger, priorityInfo, in, ucc), additionalHash
+	return endpoints.PrioritizeEndpoints(slog.Default(), priorityInfo, in, ucc), additionalHash
 }
 
 func (d *destrulePlugin) processBackend(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniqlyConnectedClient, in ir.BackendObjectIR, outCluster *envoy_config_cluster_v3.Cluster) {

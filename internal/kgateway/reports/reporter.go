@@ -1,9 +1,8 @@
 package reports
 
 import (
-	"context"
+	"log/slog"
 
-	"github.com/solo-io/go-utils/contextutils"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
@@ -97,7 +96,7 @@ func (r *ReportMap) route(obj metav1.Object) *RouteReport {
 	case *gwv1alpha2.TLSRoute:
 		return r.TLSRoutes[key]
 	default:
-		contextutils.LoggerFrom(context.TODO()).Warnf("Unsupported route type: %T", obj)
+		slog.Warn("Unsupported route type", slog.Any("type", obj))
 		return nil
 	}
 }
@@ -117,7 +116,7 @@ func (r *ReportMap) newRouteReport(obj metav1.Object) *RouteReport {
 	case *gwv1alpha2.TLSRoute:
 		r.TLSRoutes[key] = rr
 	default:
-		contextutils.LoggerFrom(context.TODO()).Warnf("Unsupported route type: %T", obj)
+		slog.Warn("Unsupported route type", slog.Any("type", obj))
 		return nil
 	}
 
