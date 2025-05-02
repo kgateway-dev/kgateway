@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
-	"go.uber.org/zap"
 	"istio.io/istio/pkg/kube/krt"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
@@ -36,7 +35,6 @@ func (ie *PerClientEnvoyEndpoints) FetchEndpointsForClient(kctx krt.HandlerConte
 }
 
 func NewPerClientEnvoyEndpoints(
-	logger *zap.Logger,
 	krtopts krtutil.KrtOptions,
 	uccs krt.Collection[ir.UniqlyConnectedClient],
 	glooEndpoints krt.Collection[ir.EndpointsForBackend],
