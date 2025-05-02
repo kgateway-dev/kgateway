@@ -3,6 +3,7 @@ package irtranslator
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"sort"
 
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -12,11 +13,9 @@ import (
 	envoytcp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/tcp_proxy/v3"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
-	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	envoy_tls_inspector "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/listener/tls_inspector/v3"
-	"github.com/solo-io/go-utils/contextutils"
 	"google.golang.org/protobuf/proto"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -96,12 +95,10 @@ func (h *filterChainTranslator) initFilterChain(ctx context.Context, fcc ir.Filt
 }
 
 func (h *filterChainTranslator) computeHttpFilters(ctx context.Context, l ir.HttpFilterChainIR, reporter reports.ListenerReporter) []*envoy_config_listener_v3.Filter {
-	log := contextutils.LoggerFrom(ctx).Desugar()
-
 	// 1. Generate all the network filters (including the HttpConnectionManager)
 	networkFilters, err := h.computeNetworkFiltersForHttp(ctx, l, reporter)
 	if err != nil {
-		log.DPanic("error computing network filters", zap.Error(err))
+		hcmLogger.Error("error computing network filters", slog.Any("error", err))
 		// TODO: report? return error?
 		return nil
 	}
@@ -194,9 +191,9 @@ type hcmNetworkFilterTranslator struct {
 	gateway         ir.GatewayIR         // policies attached to gateway
 }
 
-func (h *hcmNetworkFilterTranslator) computeNetworkFilters(ctx context.Context, l ir.HttpFilterChainIR) (*envoy_config_listener_v3.Filter, error) {
-	ctx = contextutils.WithLogger(ctx, "compute_http_connection_manager")
+var hcmLogger = slog.With(slog.String("operation", "compute_http_connection_manager"))
 
+func (h *hcmNetworkFilterTranslator) computeNetworkFilters(ctx context.Context, l ir.HttpFilterChainIR) (*envoy_config_listener_v3.Filter, error) {
 	// 1. Initialize the HttpConnectionManager (HCM)
 	httpConnectionManager := h.initializeHCM()
 
@@ -238,7 +235,7 @@ func (h *hcmNetworkFilterTranslator) computeNetworkFilters(ctx context.Context, 
 	// 4. Generate the typedConfig for the HCM
 	hcmFilter, err := NewFilterWithTypedConfig(wellknown.HTTPConnectionManager, httpConnectionManager)
 	if err != nil {
-		contextutils.LoggerFrom(ctx).DPanic("failed to convert proto message to struct")
+		hcmLogger.Error("failed to convert proto message to any", slog.Any("error", err))
 		return nil, fmt.Errorf("failed to convert proto message to any: %w", err)
 	}
 
@@ -274,8 +271,6 @@ func (h *hcmNetworkFilterTranslator) initializeHCM() *envoyhttp.HttpConnectionMa
 func (h *hcmNetworkFilterTranslator) computeHttpFilters(ctx context.Context, l ir.HttpFilterChainIR) []*envoyhttp.HttpFilter {
 	var httpFilters plugins.StagedHttpFilterList
 
-	log := contextutils.LoggerFrom(ctx).Desugar()
-
 	// run the HttpFilter Plugins
 	for _, plug := range h.PluginPass {
 		stagedFilters, err := plug.HttpFilters(ctx, l.FilterChainCommon)
@@ -291,7 +286,7 @@ func (h *hcmNetworkFilterTranslator) computeHttpFilters(ctx context.Context, l i
 
 		for _, httpFilter := range stagedFilters {
 			if httpFilter.Filter == nil {
-				log.Warn("HttpFilters() returned nil", zap.String("name", plug.Name))
+				hcmLogger.Warn("HttpFilters() returned nil", slog.String("name", plug.Name))
 				continue
 			}
 			httpFilters = append(httpFilters, httpFilter)

@@ -2,8 +2,8 @@ package gateway
 
 import (
 	"context"
+	"log/slog"
 
-	"github.com/solo-io/go-utils/contextutils"
 	"istio.io/istio/pkg/kube/krt"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -37,11 +37,10 @@ func (t *translator) Translate(
 	stopwatch.Start()
 	defer stopwatch.Stop(ctx)
 
-	ctx = contextutils.WithLogger(ctx, "k8s-gateway-translator")
-	logger := contextutils.LoggerFrom(ctx)
+	logger := slog.With(slog.String("component", "k8s-gateway-translator"))
 	routesForGw, err := t.queries.GetRoutesForGateway(kctx, ctx, gateway.Obj)
 	if err != nil {
-		logger.Errorf("failed to get routes for gateway %.%ss: %v", gateway.Namespace, gateway.Name, err)
+		logger.Error("failed to get routes for gateway", slog.String("namespace", gateway.Namespace), slog.String("name", gateway.Name), slog.Any("error", err))
 		// TODO: decide how/if to report this error on Gateway
 		// reporter.Gateway(gateway).Err(err.Error())
 		return nil

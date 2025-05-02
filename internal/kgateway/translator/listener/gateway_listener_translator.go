@@ -4,12 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"slices"
 	"sort"
 	"strings"
 
 	"github.com/rotisserie/eris"
-	"github.com/solo-io/go-utils/contextutils"
 	"istio.io/istio/pkg/kube/krt"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -200,9 +200,7 @@ func (ml *MergedListeners) AppendTcpListener(
 		}
 
 		if len(tRoute.ParentRefs) == 0 {
-			contextutils.LoggerFrom(context.Background()).Warnf(
-				"No parent references found for TCPRoute %s", tRoute.Name,
-			)
+			slog.Warn("No parent references found for TCPRoute", slog.String("TCPRoute", tRoute.Name))
 			continue
 		}
 
@@ -211,9 +209,9 @@ func (ml *MergedListeners) AppendTcpListener(
 
 	// If no valid routes are found, do not create a listener
 	if len(validRouteInfos) == 0 {
-		contextutils.LoggerFrom(context.Background()).Errorf(
+		slog.Error(fmt.Sprintf(
 			"No valid routes found for listener %s", listener.Name,
-		)
+		))
 		return
 	}
 
@@ -262,9 +260,7 @@ func (ml *MergedListeners) AppendTlsListener(
 		}
 
 		if len(tRoute.ParentRefs) == 0 {
-			contextutils.LoggerFrom(context.Background()).Warnf(
-				"No parent references found for TLSRoute %s", tRoute.Name,
-			)
+			slog.Warn("No parent references found for TLSRoute", slog.String("TLSRoute", tRoute.Name))
 			continue
 		}
 
@@ -273,9 +269,7 @@ func (ml *MergedListeners) AppendTlsListener(
 
 	// If no valid routes are found, do not create a listener
 	if len(validRouteInfos) == 0 {
-		contextutils.LoggerFrom(context.Background()).Errorf(
-			"No valid routes found for listener %s", listener.Name,
-		)
+		slog.Error("No valid routes found for listener", slog.String("listener", string(listener.Name)))
 		return
 	}
 
@@ -401,7 +395,7 @@ func (ml *MergedListener) TranslateListener(
 		)
 		if httpsFilterChain == nil {
 			// Log and skip invalid HTTPS filter chains
-			contextutils.LoggerFrom(ctx).Errorf("Failed to translate HTTPS filter chain for listener: %s", ml.name)
+			slog.Error("Failed to translate HTTPS filter chain for listener", slog.String("listener", ml.name))
 			continue
 		}
 
@@ -410,7 +404,7 @@ func (ml *MergedListener) TranslateListener(
 
 		for vhostRef, vhost := range vhostsForFilterchain {
 			if _, ok := mergedVhosts[vhostRef]; ok {
-				contextutils.LoggerFrom(ctx).Errorf("Duplicate virtual host found: %s", vhostRef)
+				slog.Error("Duplicate virtual host found", slog.String("vhostRef", vhostRef))
 				continue
 			}
 			mergedVhosts[vhostRef] = vhost
