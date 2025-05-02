@@ -6,7 +6,6 @@ import (
 	"log/slog"
 	"net"
 	"os"
-	"strings"
 
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	xdsserver "github.com/envoyproxy/go-control-plane/pkg/server/v3"
@@ -22,6 +21,7 @@ import (
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/logging"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
@@ -146,23 +146,14 @@ func StartKgatewayWithConfig(
 }
 
 // SetupLogging configures the global slog logger
-func SetupLogging(loggerName string) {
-	// pick level from env or default to INFO
-	var levelVar slog.LevelVar
-	levelVar.Set(slog.LevelInfo)
-
-	if l := os.Getenv("LOG_LEVEL"); l != "" {
-		var level slog.Level
-		if err := level.UnmarshalText([]byte(strings.ToLower(l))); err != nil {
-			fmt.Fprintf(os.Stderr, "unknown LOG_LEVEL %q, defaulting to INFO: %v\n", l, err)
-			level = slog.LevelInfo
-		}
-		levelVar.Set(level)
+func SetupLogging(controllerruntimeLoggerName string) {
+	if level := os.Getenv("LOG_LEVEL"); level != "" {
+		logging.SetLogLevel(level)
 	}
 
 	handlerOpts := &slog.HandlerOptions{
 		AddSource: false,
-		Level:     &levelVar,
+		Level:     logging.GlobalLevel,
 	}
 
 	handler := slog.NewJSONHandler(os.Stdout, handlerOpts)
@@ -171,7 +162,7 @@ func SetupLogging(loggerName string) {
 	slog.SetDefault(baseLogger)
 
 	// set controller-runtime logger
-	controllerLogger := baseLogger.With(slog.String("component", loggerName))
+	controllerLogger := baseLogger.With(slog.String("component", controllerruntimeLoggerName))
 	logrSink := logr.FromSlogHandler(controllerLogger.Handler())
 	controllerlog.SetLogger(logrSink)
 }

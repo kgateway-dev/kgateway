@@ -4,23 +4,18 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/solo-io/go-utils/contextutils"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/logging"
 )
 
-// The logging handler is an AtomicLevel that supports dynamically changing the log level at runtime.
+// The logging handler allows dynamically changing the log level at runtime.
 func addLoggingHandler(path string, mux *http.ServeMux, profiles map[string]dynamicProfileDescription) {
-	mux.Handle(path, contextutils.GetLogHandler())
+	mux.HandleFunc(path, logging.SetLogLevelHandler)
 	profiles[path] = getLoggingDescription
-}
-
-// Gets a string representation of the current log level.
-func getLogLevel() string {
-	return contextutils.GetLogLevel().String()
 }
 
 // Gets the html/js to display in the UI for the logging endpoint.
 func getLoggingDescription() string {
-	currentLogLevel := getLogLevel()
+	currentLogLevel := logging.GlobalLevel.Level().String()
 
 	// build the options selector, with the current log level selected by default
 	selectorText := `<select id="loglevelselector">`
