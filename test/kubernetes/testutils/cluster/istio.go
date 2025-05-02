@@ -3,6 +3,7 @@ package cluster
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/exec"
@@ -10,7 +11,6 @@ import (
 	"runtime"
 
 	"github.com/rotisserie/eris"
-	"github.com/solo-io/go-utils/contextutils"
 
 	glooruntime "github.com/kgateway-dev/kgateway/v2/test/kubernetes/testutils/runtime"
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
@@ -27,7 +27,7 @@ func GetIstioctl(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to download istio: %w", err)
 	}
-	contextutils.LoggerFrom(ctx).Infof("Using Istio binary '%s'", istioctlBinary)
+	slog.Info("Using Istio binary", slog.String("istioctlBinary", istioctlBinary))
 
 	return istioctlBinary, nil
 }
@@ -118,13 +118,13 @@ func getIstioVersion() string {
 // Download istioctl binary from istio.io/downloadIstio and returns the path to the binary
 func downloadIstio(ctx context.Context, version string) (string, error) {
 	if version == "" {
-		contextutils.LoggerFrom(ctx).Infof("ISTIO_VERSION not specified, using istioctl from PATH")
+		slog.Info("ISTIO_VERSION not specified, using istioctl from PATH")
 		binaryPath, err := exec.LookPath("istioctl")
 		if err != nil {
 			return "", eris.New("ISTIO_VERSION environment variable must be specified or istioctl must be installed")
 		}
 
-		contextutils.LoggerFrom(ctx).Infof("using istioctl path: %s", binaryPath)
+		slog.Info("using istioctl path", slog.String("binaryPath", binaryPath))
 
 		return binaryPath, nil
 	}
@@ -209,7 +209,8 @@ func UninstallIstio(istioctlBinary, kubeContext string) error {
 func CreateIstioBugReport(ctx context.Context, istioctlBinary, kubeContext, artifactOutputDir string) {
 	// Generate istioctl bug report
 	if istioctlBinary == "" {
-		contextutils.LoggerFrom(ctx).Panic("istioctl binary not set. Cannot generate istioctl bug report.")
+		slog.Error("istioctl binary not set. Cannot generate istioctl bug report.")
+		os.Exit(1)
 	}
 
 	bugReportCmd := exec.Command(istioctlBinary, "bug-report", "--full-secrets", "--context", kubeContext)
