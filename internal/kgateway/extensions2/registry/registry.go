@@ -8,7 +8,6 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
-	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/backend"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/backendtlspolicy"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/destrule"
@@ -20,10 +19,11 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/serviceentry"
 	trafficpolicy "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/trafficpolicy"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/waypoint"
+	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 )
 
-func mergedGw(funcs []extensionsplug.GwTranslatorFactory) extensionsplug.GwTranslatorFactory {
-	return func(gw *gwv1.Gateway) extensionsplug.KGwTranslator {
+func mergedGw(funcs []sdk.GwTranslatorFactory) sdk.GwTranslatorFactory {
+	return func(gw *gwv1.Gateway) sdk.KGwTranslator {
 		for _, f := range funcs {
 			ret := f(gw)
 			if ret != nil {
@@ -45,13 +45,13 @@ func mergeSynced(funcs []func() bool) func() bool {
 	}
 }
 
-func MergePlugins(plug ...extensionsplug.Plugin) extensionsplug.Plugin {
-	ret := extensionsplug.Plugin{
-		ContributesPolicies:     make(map[schema.GroupKind]extensionsplug.PolicyPlugin),
-		ContributesBackends:     make(map[schema.GroupKind]extensionsplug.BackendPlugin),
+func MergePlugins(plug ...sdk.Plugin) sdk.Plugin {
+	ret := sdk.Plugin{
+		ContributesPolicies:     make(map[schema.GroupKind]sdk.PolicyPlugin),
+		ContributesBackends:     make(map[schema.GroupKind]sdk.BackendPlugin),
 		ContributesRegistration: make(map[schema.GroupKind]func()),
 	}
-	var funcs []extensionsplug.GwTranslatorFactory
+	var funcs []sdk.GwTranslatorFactory
 	var hasSynced []func() bool
 	for _, p := range plug {
 		maps.Copy(ret.ContributesPolicies, p.ContributesPolicies)
@@ -69,8 +69,8 @@ func MergePlugins(plug ...extensionsplug.Plugin) extensionsplug.Plugin {
 	return ret
 }
 
-func Plugins(ctx context.Context, commoncol *common.CommonCollections) []extensionsplug.Plugin {
-	return []extensionsplug.Plugin{
+func Plugins(ctx context.Context, commoncol *common.CommonCollections) []sdk.Plugin {
+	return []sdk.Plugin{
 		// Add plugins here
 		backend.NewPlugin(ctx, commoncol),
 		trafficpolicy.NewPlugin(ctx, commoncol),

@@ -64,7 +64,7 @@ func customFiltersHelper(
 	config *anypb.Any,
 ) *CustomEnvoyFilter {
 	return &CustomEnvoyFilter{
-		FilterStage: plugins.FilterStage[plugins.WellKnownFilterStage]{
+		FilterStage: plugins.HTTPOrNetworkFilterStage{
 			RelativeTo: plugins.WellKnownFilterStage(int(stage)),
 			Weight:     int(predicate),
 		},

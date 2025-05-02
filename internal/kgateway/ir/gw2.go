@@ -85,7 +85,7 @@ type FilterChainCommon struct {
 
 type CustomEnvoyFilter struct {
 	// Determines filter ordering.
-	FilterStage plugins.FilterStage[plugins.WellKnownFilterStage]
+	FilterStage plugins.HTTPOrNetworkFilterStage
 	// The name of the filter configuration.
 	Name string
 	// Filter specific configuration.

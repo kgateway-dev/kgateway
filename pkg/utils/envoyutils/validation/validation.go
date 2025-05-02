@@ -7,8 +7,8 @@ import (
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/contextutils"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/envoyinit/pkg/runner"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/xds"
+	"github.com/kgateway-dev/kgateway/v2/pkg/envoyinit"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envoyutils/bootstrap"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
 )
@@ -27,7 +27,7 @@ const (
 )
 
 func ValidateBootstrap(ctx context.Context, bootstrap string) error {
-	return runner.RunEnvoyValidate(ctx, envutils.GetOrDefault(EnvoyBinaryEnv, defaultEnvoyPath, false), bootstrap)
+	return envoyinit.RunEnvoyValidate(ctx, envutils.GetOrDefault(EnvoyBinaryEnv, defaultEnvoyPath, false), bootstrap)
 }
 
 // ValidateSnapshot accepts an xDS snapshot, clones it, and does the necessary
