@@ -3,6 +3,7 @@ package reports
 import (
 	"context"
 
+	pluginsdkreporter "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/solo-io/go-utils/contextutils"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -12,12 +13,7 @@ import (
 	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 )
 
-type PolicyKey struct {
-	Group     string
-	Kind      string
-	Namespace string
-	Name      string
-}
+type PolicyKey = pluginsdkreporter.PolicyKey
 
 type ReportMap struct {
 	Gateways   map[types.NamespacedName]*GatewayReport
@@ -130,11 +126,11 @@ func (r *ReportMap) newRouteReport(obj metav1.Object) *RouteReport {
 	return rr
 }
 
-func (g *GatewayReport) Listener(listener *gwv1.Listener) ListenerReporter {
+func (g *GatewayReport) Listener(listener *gwv1.Listener) pluginsdkreporter.ListenerReporter {
 	return g.listener(string(listener.Name))
 }
 
-func (g *GatewayReport) ListenerName(listenerName string) ListenerReporter {
+func (g *GatewayReport) ListenerName(listenerName string) pluginsdkreporter.ListenerReporter {
 	return g.listener(listenerName)
 }
 
@@ -161,7 +157,7 @@ func (g *GatewayReport) GetConditions() []metav1.Condition {
 	return g.conditions
 }
 
-func (g *GatewayReport) SetCondition(gc GatewayCondition) {
+func (g *GatewayReport) SetCondition(gc pluginsdkreporter.GatewayCondition) {
 	condition := metav1.Condition{
 		Type:    string(gc.Type),
 		Status:  gc.Status,
@@ -177,7 +173,7 @@ func NewListenerReport(name string) *ListenerReport {
 	return &lr
 }
 
-func (l *ListenerReport) SetCondition(lc ListenerCondition) {
+func (l *ListenerReport) SetCondition(lc pluginsdkreporter.ListenerCondition) {
 	condition := metav1.Condition{
 		Type:    string(lc.Type),
 		Status:  lc.Status,
@@ -199,7 +195,7 @@ type reporter struct {
 	report *ReportMap
 }
 
-func (r *reporter) Gateway(gateway *gwv1.Gateway) GatewayReporter {
+func (r *reporter) Gateway(gateway *gwv1.Gateway) pluginsdkreporter.GatewayReporter {
 	gr := r.report.Gateway(gateway)
 	if gr == nil {
 		gr = r.report.newGatewayReport(gateway)
@@ -207,7 +203,7 @@ func (r *reporter) Gateway(gateway *gwv1.Gateway) GatewayReporter {
 	return gr
 }
 
-func (r *reporter) Route(obj metav1.Object) RouteReporter {
+func (r *reporter) Route(obj metav1.Object) pluginsdkreporter.RouteReporter {
 	rr := r.report.route(obj)
 	if rr == nil {
 		rr = r.report.newRouteReport(obj)
@@ -285,11 +281,11 @@ func (r *RouteReport) parentRefs() []gwv1.ParentReference {
 	return refs
 }
 
-func (r *RouteReport) ParentRef(parentRef *gwv1.ParentReference) ParentRefReporter {
+func (r *RouteReport) ParentRef(parentRef *gwv1.ParentReference) pluginsdkreporter.ParentRefReporter {
 	return r.parentRef(parentRef)
 }
 
-func (prr *ParentRefReport) SetCondition(rc RouteCondition) {
+func (prr *ParentRefReport) SetCondition(rc pluginsdkreporter.RouteCondition) {
 	condition := metav1.Condition{
 		Type:    string(rc.Type),
 		Status:  rc.Status,
@@ -299,55 +295,10 @@ func (prr *ParentRefReport) SetCondition(rc RouteCondition) {
 	meta.SetStatusCondition(&prr.Conditions, condition)
 }
 
-func NewReporter(reportMap *ReportMap) Reporter {
+func NewReporter(reportMap *ReportMap) pluginsdkreporter.Reporter {
 	return &reporter{
 		report: reportMap,
 	}
 }
 
-type Reporter interface {
-	Gateway(gateway *gwv1.Gateway) GatewayReporter
-	Route(obj metav1.Object) RouteReporter
-	Policy(ref PolicyKey, observedGeneration int64) PolicyReporter
-}
-
-type GatewayReporter interface {
-	Listener(listener *gwv1.Listener) ListenerReporter
-	ListenerName(listenerName string) ListenerReporter
-	SetCondition(condition GatewayCondition)
-}
-
-type ListenerReporter interface {
-	SetCondition(ListenerCondition)
-	SetSupportedKinds([]gwv1.RouteGroupKind)
-	SetAttachedRoutes(n uint)
-}
-
-type RouteReporter interface {
-	ParentRef(parentRef *gwv1.ParentReference) ParentRefReporter
-}
-
-type ParentRefReporter interface {
-	SetCondition(condition RouteCondition)
-}
-
-type GatewayCondition struct {
-	Type    gwv1.GatewayConditionType
-	Status  metav1.ConditionStatus
-	Reason  gwv1.GatewayConditionReason
-	Message string
-}
-
-type ListenerCondition struct {
-	Type    gwv1.ListenerConditionType
-	Status  metav1.ConditionStatus
-	Reason  gwv1.ListenerConditionReason
-	Message string
-}
-
-type RouteCondition struct {
-	Type    gwv1.RouteConditionType
-	Status  metav1.ConditionStatus
-	Reason  gwv1.RouteConditionReason
-	Message string
-}
+type Reporter = pluginsdkreporter.Reporter

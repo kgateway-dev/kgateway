@@ -16,3 +16,10 @@ metadata:
   name: kgateway
 spec:
   selfManaged: {}
+---
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: gwtest
+---
+

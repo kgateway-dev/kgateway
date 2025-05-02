@@ -23,8 +23,8 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
+	reports "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
 
 const (

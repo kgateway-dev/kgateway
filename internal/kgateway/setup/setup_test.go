@@ -7,14 +7,12 @@ import (
 	"errors"
 	"fmt"
 	"maps"
-	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"slices"
 	"sort"
 	"strings"
-	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -28,7 +26,6 @@ import (
 	discovery_v3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	"github.com/go-logr/zapr"
 	"github.com/google/go-cmp/cmp"
-	"github.com/solo-io/go-utils/contextutils"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"google.golang.org/grpc"
@@ -44,18 +41,13 @@ import (
 	"istio.io/istio/pkg/test/util/retry"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
-	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/yaml"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/controller"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/settings"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/proxy_syncer"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/setup"
+	"github.com/kgateway-dev/kgateway/v2/test/envtestutil"
 )
 
 func getAssetsDir(t *testing.T) string {
@@ -185,48 +177,6 @@ func TestWithInferenceAPI(t *testing.T) {
 	st.InferExtAutoProvision = true
 
 	runScenario(t, "testdata/inference_api", st)
-}
-
-func policyFile() string {
-	p := `apiVersion: audit.k8s.io/v1
-kind: Policy
-rules:
-- level: Metadata
-`
-	// write to temp file:
-	f, err := os.CreateTemp("", "policy.yaml")
-	if err != nil {
-		panic(err)
-	}
-	defer f.Close()
-	_, err = f.WriteString(p)
-	if err != nil {
-		panic(err)
-	}
-	return f.Name()
-}
-
-func addApiServerLogs(t *testing.T, testEnv *envtest.Environment) {
-	apiserverOut := new(bytes.Buffer)
-	apiserverErr := new(bytes.Buffer)
-
-	testEnv.ControlPlane = envtest.ControlPlane{
-		APIServer: &envtest.APIServer{
-			Out: apiserverOut,
-			Err: apiserverErr,
-		},
-	}
-	policy := policyFile()
-	t.Cleanup(func() {
-		os.Remove(policy)
-	})
-	args := testEnv.ControlPlane.APIServer.Configure()
-	args.Append("audit-log-path", "-")
-	args.Append("audit-policy-file", policy)
-	t.Cleanup(func() {
-		t.Log("apiserver out:", apiserverOut.String())
-		t.Log("apiserver err:", apiserverErr.String())
-	})
 }
 
 func TestPolicyUpdate(t *testing.T) {
@@ -379,80 +329,12 @@ func setupEnvTestAndRun(t *testing.T, globalSettings *settings.Settings, run fun
 		BinaryAssetsDirectory: getAssetsDir(t),
 		// web hook to add cluster ips to services
 	}
-	// Enable this if you want api server logs and audit logs.
-	if os.Getenv("DEBUG_APISERVER") == "true" {
-		addApiServerLogs(t, testEnv)
-	}
-	var wg sync.WaitGroup
-	t.Cleanup(wg.Wait)
-
-	ctx, cancel := context.WithCancel(context.Background())
-	t.Cleanup(cancel)
-	ctx = contextutils.WithExistingLogger(ctx, logger.Sugar())
-
-	cfg, err := testEnv.Start()
-	if err != nil {
-		t.Fatalf("failed to get assets dir: %v", err)
-	}
-	t.Cleanup(func() { testEnv.Stop() })
-
-	kubeconfig := generateKubeConfiguration(t, cfg)
-	t.Log("kubeconfig:", kubeconfig)
-
-	client, err := istiokube.NewCLIClient(istiokube.NewClientConfigForRestConfig(cfg))
-	if err != nil {
-		t.Fatalf("failed to get init kube client: %v", err)
-	}
-
-	// apply settings/gwclass to the cluster
-	err = client.ApplyYAMLFiles("default", "testdata/setup_yaml/setup.yaml")
-	if err != nil {
-		t.Fatalf("failed to apply yaml: %v", err)
-	}
-
-	// create the test ns
-	_, err = client.Kube().CoreV1().Namespaces().Create(ctx, &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "gwtest"}}, metav1.CreateOptions{})
-	if err != nil {
-		t.Fatalf("failed to create namespace: %v", err)
-	}
-
-	err = client.ApplyYAMLFiles("gwtest", "testdata/setup_yaml/pods.yaml")
-	if err != nil {
-		t.Fatalf("failed to apply yaml: %v", err)
-	}
-	err = applyPodStatusFromFile(ctx, client, "gwtest", "testdata/setup_yaml/pods.yaml")
-	if err != nil {
-		t.Fatalf("failed to apply pod status: %v", err)
-	}
-
-	// setup xDS server:
-	uniqueClientCallbacks, builder := krtcollections.NewUniquelyConnectedClients()
-
-	lis, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatalf("can't listen %v", err)
-	}
-	xdsPort := lis.Addr().(*net.TCPAddr).Port
-	snapCache, grpcServer := setup.NewControlPlaneWithListener(ctx, lis, uniqueClientCallbacks)
-	t.Cleanup(func() { grpcServer.Stop() })
-
-	setupOpts := &controller.SetupOpts{
-		Cache:          snapCache,
-		KrtDebugger:    new(krt.DebugHandler),
-		GlobalSettings: globalSettings,
-	}
-
-	// start kgateway
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		setup.StartKgatewayWithConfig(ctx, setupOpts, cfg, builder, nil)
-	}()
-	// give kgateway time to initialize so we don't get
-	// "kgateway not initialized" error
-	// this means that it attaches the pod collection to the unique client set collection.
-	time.Sleep(time.Second)
-	run(t, ctx, setupOpts.KrtDebugger, client, xdsPort)
+	envtestutil.RunController(t, logger, globalSettings, testEnv,
+		[]string{
+			"testdata/setup_yaml/setup.yaml",
+			"testdata/setup_yaml/pods.yaml",
+		},
+		run)
 }
 
 func testScenario(
@@ -1060,97 +942,4 @@ func getroutesnames(l *envoylistener.Listener) []string {
 		}
 	}
 	return routes
-}
-
-func generateKubeConfiguration(t *testing.T, restconfig *rest.Config) string {
-	clusters := make(map[string]*clientcmdapi.Cluster)
-	authinfos := make(map[string]*clientcmdapi.AuthInfo)
-	contexts := make(map[string]*clientcmdapi.Context)
-
-	clusterName := "cluster"
-	clusters[clusterName] = &clientcmdapi.Cluster{
-		Server:                   restconfig.Host,
-		CertificateAuthorityData: restconfig.CAData,
-	}
-	authinfos[clusterName] = &clientcmdapi.AuthInfo{
-		ClientKeyData:         restconfig.KeyData,
-		ClientCertificateData: restconfig.CertData,
-	}
-	contexts[clusterName] = &clientcmdapi.Context{
-		Cluster:   clusterName,
-		Namespace: "default",
-		AuthInfo:  clusterName,
-	}
-
-	clientConfig := clientcmdapi.Config{
-		Kind:       "Config",
-		APIVersion: "v1",
-		Clusters:   clusters,
-		Contexts:   contexts,
-		// current context must be mgmt cluster for now, as the api server doesn't have context configurable.
-		CurrentContext: "cluster",
-		AuthInfos:      authinfos,
-	}
-	// create temp file
-	tmpfile := filepath.Join(t.TempDir(), "kubeconfig")
-	err := clientcmd.WriteToFile(clientConfig, tmpfile)
-	if err != nil {
-		t.Fatalf("failed to write kubeconfig: %v", err)
-	}
-
-	return tmpfile
-}
-
-// applyPodStatusFromFile reads a YAML file, looks for Pod resources with a Status set,
-// and patches their status into the cluster. Skips any Pods not found or lacking a status.
-// This is needed because the other places that apply yaml will only apply spec.
-// We now have tests (ServiceEntry) that rely on IPs from Pod status instead of EndpointSlice.
-func applyPodStatusFromFile(ctx context.Context, c istiokube.CLIClient, defaultNs, filePath string) error {
-	data, err := os.ReadFile(filePath)
-	if err != nil {
-		return fmt.Errorf("reading YAML file %q: %w", filePath, err)
-	}
-
-	docs := bytes.Split(data, []byte("\n---\n"))
-
-	for _, doc := range docs {
-		doc = bytes.TrimSpace(doc)
-		if len(doc) == 0 {
-			continue
-		}
-
-		pod := &corev1.Pod{}
-		if err := yaml.Unmarshal(doc, pod); err != nil {
-			continue
-		}
-
-		// Skip if there's no status to patch
-		if pod.Status.PodIP == "" && len(pod.Status.PodIPs) == 0 && pod.Status.Phase == "" {
-			continue
-		}
-
-		ns := pod.Namespace
-		if ns == "" {
-			ns = defaultNs
-		}
-
-		podClient := c.Kube().CoreV1().Pods(ns)
-
-		// Retrieve the existing Pod
-		existingPod, err := podClient.Get(ctx, pod.Name, metav1.GetOptions{})
-		if err != nil {
-			return fmt.Errorf("failed to retrieve existing Pod %s/%s: %w", ns, pod.Name, err)
-		}
-
-		// Update the in-memory status
-		existingPod.Status = pod.Status
-
-		// Persist the new status
-		_, err = podClient.UpdateStatus(ctx, existingPod, metav1.UpdateOptions{})
-		if err != nil {
-			return fmt.Errorf("failed to update status for Pod %s/%s: %w", ns, pod.Name, err)
-		}
-	}
-
-	return nil
 }

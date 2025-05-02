@@ -21,6 +21,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/routeutils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
+	reportssdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/regexutils"
 )
 
@@ -30,7 +31,7 @@ type httpRouteConfigurationTranslator struct {
 	fc       ir.FilterChainCommon
 
 	routeConfigName          string
-	reporter                 reports.Reporter
+	reporter                 reportssdk.Reporter
 	requireTlsOnVirtualHosts bool
 	PluginPass               TranslationPassPlugins
 }
@@ -77,7 +78,7 @@ func (h *httpRouteConfigurationTranslator) computeVirtualHost(
 	var envoyRoutes []*envoy_config_route_v3.Route
 	for i, route := range virtualHost.Rules {
 		// TODO: not sure if we need listener parent ref here or the http parent ref
-		var routeReport reports.ParentRefReporter = &reports.ParentRefReport{}
+		var routeReport reportssdk.ParentRefReporter = &reports.ParentRefReport{}
 		if route.Parent != nil {
 			// route may be a fake one that we don't really report,
 			// such as in the waypoint translator where we produce
@@ -114,7 +115,7 @@ func (h *httpRouteConfigurationTranslator) computeVirtualHost(
 }
 
 func (h *httpRouteConfigurationTranslator) envoyRoutes(ctx context.Context,
-	routeReport reports.ParentRefReporter,
+	routeReport reportssdk.ParentRefReporter,
 	in ir.HttpRouteRuleMatchIR,
 	generatedName string,
 ) *envoy_config_route_v3.Route {
@@ -159,7 +160,7 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(ctx context.Context,
 	if err != nil {
 		contextutils.LoggerFrom(ctx).Desugar().Debug("invalid route", zap.Error(err))
 		// TODO: we may want to aggregate all these errors per http route object and report one message?
-		routeReport.SetCondition(reports.RouteCondition{
+		routeReport.SetCondition(reportssdk.RouteCondition{
 			Type:   gwv1.RouteConditionPartiallyInvalid,
 			Status: metav1.ConditionTrue,
 			Reason: gwv1.RouteConditionReason(err.Error()),
@@ -206,7 +207,7 @@ func (h *httpRouteConfigurationTranslator) runVhostPlugins(ctx context.Context, 
 
 func (h *httpRouteConfigurationTranslator) runRoutePlugins(
 	ctx context.Context,
-	routeReport reports.ParentRefReporter,
+	routeReport reportssdk.ParentRefReporter,
 	in ir.HttpRouteRuleMatchIR,
 	out *envoy_config_route_v3.Route,
 	typedPerFilterConfig ir.TypedFilterConfigMap,
@@ -272,7 +273,7 @@ func (h *httpRouteConfigurationTranslator) runRoutePlugins(
 
 	err := errors.Join(errs...)
 	if err != nil {
-		routeReport.SetCondition(reports.RouteCondition{
+		routeReport.SetCondition(reportssdk.RouteCondition{
 			Type:    gwv1.RouteConditionAccepted,
 			Status:  metav1.ConditionFalse,
 			Reason:  gwv1.RouteReasonIncompatibleFilters,

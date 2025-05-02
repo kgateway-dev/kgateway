@@ -19,7 +19,7 @@ import (
 	gwv1a3 "sigs.k8s.io/gateway-api/apis/v1alpha3"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/backendtlspolicy"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
+	reports "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 	"github.com/kgateway-dev/kgateway/v2/test/helpers"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/defaults"

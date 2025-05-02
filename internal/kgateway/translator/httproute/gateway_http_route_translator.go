@@ -12,7 +12,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/query"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
+	reports "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
 
 // TODO: Uncomment when the gateway_http_route_translator_test.go is uncommented.
