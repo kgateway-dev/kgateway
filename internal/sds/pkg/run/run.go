@@ -2,15 +2,13 @@ package run
 
 import (
 	"context"
+	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
 	"github.com/fsnotify/fsnotify"
-	"go.uber.org/zap"
-
-	"github.com/solo-io/go-utils/contextutils"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/sds/pkg/server"
 )
@@ -51,18 +49,18 @@ func Run(ctx context.Context, secrets []server.Secret, sdsClient, sdsServerAddre
 			select {
 			// watch for events
 			case event := <-watcher.Events:
-				contextutils.LoggerFrom(ctx).Infow("received event", zap.Any("event", event))
+				slog.Info("received event", slog.Any("event", event))
 				sdsServer.UpdateSDSConfig(ctx)
-				watchFiles(ctx, watcher, secrets)
+				watchFiles(watcher, secrets)
 			// watch for errors
 			case err := <-watcher.Errors:
-				contextutils.LoggerFrom(ctx).Warnw("Received error from file watcher", zap.Error(err))
+				slog.Warn("Received error from file watcher", slog.Any("error", err))
 			case <-ctx.Done():
 				return
 			}
 		}
 	}()
-	watchFiles(ctx, watcher, secrets)
+	watchFiles(watcher, secrets)
 
 	<-sigs
 	cancel()
@@ -74,17 +72,17 @@ func Run(ctx context.Context, secrets []server.Secret, sdsClient, sdsServerAddre
 	}
 }
 
-func watchFiles(ctx context.Context, watcher *fsnotify.Watcher, secrets []server.Secret) {
+func watchFiles(watcher *fsnotify.Watcher, secrets []server.Secret) {
 	for _, s := range secrets {
-		contextutils.LoggerFrom(ctx).Infow("watcher started", zap.String("sslKeyFile", s.SslKeyFile), zap.String("sshCertFile", s.SslCertFile), zap.String("sslCaFile", s.SslCaFile))
+		slog.Info("watcher started", slog.String("sslKeyFile", s.SslKeyFile), slog.String("sshCertFile", s.SslCertFile), slog.String("sslCaFile", s.SslCaFile))
 		if err := watcher.Add(s.SslKeyFile); err != nil {
-			contextutils.LoggerFrom(ctx).Warn(zap.Error(err))
+			slog.Warn("failed to add watch for key file", slog.Any("error", err), slog.String("file", s.SslKeyFile))
 		}
 		if err := watcher.Add(s.SslCertFile); err != nil {
-			contextutils.LoggerFrom(ctx).Warn(zap.Error(err))
+			slog.Warn("failed to add watch for cert file", slog.Any("error", err), slog.String("file", s.SslCertFile))
 		}
 		if err := watcher.Add(s.SslCaFile); err != nil {
-			contextutils.LoggerFrom(ctx).Warn(zap.Error(err))
+			slog.Warn("failed to add watch for ca file", slog.Any("error", err), slog.String("file", s.SslCaFile))
 		}
 	}
 }
