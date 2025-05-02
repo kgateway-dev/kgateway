@@ -43,7 +43,9 @@ func RunEnvoyValidate(ctx context.Context, envoyExecutable, bootstrapConfig stri
 
 	start := time.Now()
 	err := validateCmd.Run()
-	slog.Debug("envoy validation of %d size completed in %s", len(bootstrapConfig), time.Since(start))
+	slog.Debug("envoy validation completed",
+		slog.Int("size_bytes", len(bootstrapConfig)),
+		slog.Duration("duration", time.Since(start)))
 
 	if err != nil {
 		if os.IsNotExist(err) {
