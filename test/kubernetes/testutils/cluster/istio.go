@@ -3,6 +3,7 @@ package cluster
 import (
 	"context"
 	"fmt"
+	"log"
 	"log/slog"
 	"net/http"
 	"os"
@@ -209,8 +210,7 @@ func UninstallIstio(istioctlBinary, kubeContext string) error {
 func CreateIstioBugReport(ctx context.Context, istioctlBinary, kubeContext, artifactOutputDir string) {
 	// Generate istioctl bug report
 	if istioctlBinary == "" {
-		slog.Error("istioctl binary not set. Cannot generate istioctl bug report.")
-		os.Exit(1)
+		log.Fatal("istioctl binary not set. Cannot generate istioctl bug report.")
 	}
 
 	bugReportCmd := exec.Command(istioctlBinary, "bug-report", "--full-secrets", "--context", kubeContext)
