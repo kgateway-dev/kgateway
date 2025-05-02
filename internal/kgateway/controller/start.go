@@ -3,12 +3,11 @@ package controller
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"net/http"
 	"sync/atomic"
 
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
-	"github.com/solo-io/go-utils/contextutils"
-	uzap "go.uber.org/zap"
 	istiokube "istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/krt"
 	istiolog "istio.io/istio/pkg/log"
@@ -229,8 +228,7 @@ func pluginFactoryWithBuiltin(extraPlugins func(ctx context.Context, commoncol *
 }
 
 func (c *ControllerBuilder) Start(ctx context.Context) error {
-	logger := contextutils.LoggerFrom(ctx).Desugar()
-	logger.Info("starting gateway controller")
+	slog.Info("starting gateway controller")
 
 	globalSettings := c.cfg.SetupOpts.GlobalSettings
 
@@ -239,7 +237,7 @@ func (c *ControllerBuilder) Start(ctx context.Context) error {
 		Namespace: namespaces.GetPodNamespace(),
 	})
 	xdsPort := globalSettings.XdsServicePort
-	logger.Info("got xds address for deployer", uzap.String("xds_host", xdsHost), uzap.Uint32("xds_port", xdsPort))
+	slog.Info("got xds address for deployer", slog.String("xds_host", xdsHost), slog.Int("xds_port", int(xdsPort)))
 
 	istioAutoMtlsEnabled := globalSettings.EnableIstioAutoMtls
 
