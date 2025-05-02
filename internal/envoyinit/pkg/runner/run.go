@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"log"
+	"log/slog"
 	"os"
 	"syscall"
 	"time"
@@ -13,7 +15,6 @@ import (
 	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	tlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/rotisserie/eris"
-	"github.com/solo-io/go-utils/contextutils"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/envoyinit/pkg/downward"
 	"github.com/kgateway-dev/kgateway/v2/internal/envoyinit/pkg/utils"
@@ -36,22 +37,20 @@ const (
 )
 
 func RunEnvoyValidate(ctx context.Context, envoyExecutable, bootstrapConfig string) error {
-	logger := contextutils.LoggerFrom(ctx)
-
 	validateCmd := cmdutils.Command(ctx, envoyExecutable, "--mode", "validate", "--config-path", "/dev/fd/0",
 		"-l", "critical", "--log-format", "%v")
 	validateCmd = validateCmd.WithStdin(bytes.NewBufferString(bootstrapConfig))
 
 	start := time.Now()
 	err := validateCmd.Run()
-	logger.Debugf("envoy validation of %d size completed in %s", len(bootstrapConfig), time.Since(start))
+	slog.Debug("envoy validation of %d size completed in %s", len(bootstrapConfig), time.Since(start))
 
 	if err != nil {
 		if os.IsNotExist(err) {
 			// log a warning and return nil; will allow users to continue to run Gloo locally without
 			// relying on the Gloo container with Envoy already published to the expected directory
-			logger.Warnf("Unable to validate envoy configuration using envoy at %v; "+
-				"skipping additional validation of Gloo config.", envoyExecutable)
+			slog.Warn(fmt.Sprintf("Unable to validate envoy configuration using envoy at %s; "+
+				"skipping additional validation of Gloo config.", envoyExecutable))
 			return nil
 		}
 		return eris.Errorf("envoy validation mode output: %v, error: %v", err.OutputString(), err.Error())
