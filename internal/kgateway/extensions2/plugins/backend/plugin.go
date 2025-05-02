@@ -271,20 +271,20 @@ func processBackend(ctx context.Context, in ir.BackendObjectIR, out *envoy_confi
 	switch {
 	case spec.Type == v1alpha1.BackendTypeStatic:
 		if err := processStatic(ctx, spec.Static, out); err != nil {
-			slog.Error("failed to process static backend", slog.String("error", err.Error()))
+			slog.Error("failed to process static backend", slog.Any("error", err))
 		}
 	case spec.Type == v1alpha1.BackendTypeAWS:
 		if err := processAws(ctx, spec.Aws, ir.AwsIr, out); err != nil {
-			slog.Error("failed to process aws backend", slog.String("error", err.Error()))
+			slog.Error("failed to process aws backend", slog.Any("error", err))
 		}
 	case spec.Type == v1alpha1.BackendTypeAI:
 		err := ai.ProcessAIBackend(ctx, spec.AI, ir.AIIr.AISecret, ir.AIIr.AIMultiSecret, out)
 		if err != nil {
-			slog.Error(err.Error())
+			slog.Error("failed to process ai backend", slog.Any("error", err))
 		}
 		err = ai.AddUpstreamClusterHttpFilters(out)
 		if err != nil {
-			slog.Error(err.Error())
+			slog.Error("failed to add upstream cluster http filters", slog.Any("error", err))
 		}
 	}
 	return nil
