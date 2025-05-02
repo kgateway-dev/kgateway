@@ -3,6 +3,7 @@ package backend
 import (
 	"context"
 	"errors"
+	"log/slog"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -12,7 +13,6 @@ import (
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoywellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
-	"github.com/solo-io/go-utils/contextutils"
 	"istio.io/istio/pkg/config/schema/kubeclient"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
@@ -86,7 +86,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 	bcol := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *v1alpha1.Backend) *ir.BackendObjectIR {
 		backendIR := translateFn(krtctx, i)
 		if len(backendIR.Errors) > 0 {
-			contextutils.LoggerFrom(ctx).Error("failed to translate backend", "backend", i.GetName(), "error", errors.Join(backendIR.Errors...))
+			slog.Error("failed to translate backend", slog.String("backend", i.GetName()), slog.Any("error", errors.Join(backendIR.Errors...)))
 		}
 		return &ir.BackendObjectIR{
 			ObjectSource: ir.ObjectSource{
@@ -244,16 +244,24 @@ func getAISecretRef(llm v1alpha1.SupportedLLMProvider) *corev1.LocalObjectRefere
 	return secretRef
 }
 
+// DPanic logs an error message using slog and panics if log level is debug.
+func DPanic(msg string, args ...any) {
+	slog.Error(msg, args...)
+	// Check if the default logger is enabled for Debug level
+	if slog.Default().Enabled(context.Background(), slog.LevelDebug) {
+		panic(msg)
+	}
+}
+
 func processBackend(ctx context.Context, in ir.BackendObjectIR, out *envoy_config_cluster_v3.Cluster) *ir.EndpointsForBackend {
-	log := contextutils.LoggerFrom(ctx)
 	up, ok := in.Obj.(*v1alpha1.Backend)
 	if !ok {
-		log.DPanic("failed to cast backend object")
+		DPanic("failed to cast backend object")
 		return nil
 	}
 	ir, ok := in.ObjIr.(*BackendIr)
 	if !ok {
-		log.DPanic("failed to cast backend ir")
+		DPanic("failed to cast backend ir")
 		return nil
 	}
 
@@ -263,20 +271,20 @@ func processBackend(ctx context.Context, in ir.BackendObjectIR, out *envoy_confi
 	switch {
 	case spec.Type == v1alpha1.BackendTypeStatic:
 		if err := processStatic(ctx, spec.Static, out); err != nil {
-			log.Error("failed to process static backend", "error", err)
+			slog.Error("failed to process static backend", slog.String("error", err.Error()))
 		}
 	case spec.Type == v1alpha1.BackendTypeAWS:
 		if err := processAws(ctx, spec.Aws, ir.AwsIr, out); err != nil {
-			log.Error("failed to process aws backend", "error", err)
+			slog.Error("failed to process aws backend", slog.String("error", err.Error()))
 		}
 	case spec.Type == v1alpha1.BackendTypeAI:
 		err := ai.ProcessAIBackend(ctx, spec.AI, ir.AIIr.AISecret, ir.AIIr.AIMultiSecret, out)
 		if err != nil {
-			log.Error(err)
+			slog.Error(err.Error())
 		}
 		err = ai.AddUpstreamClusterHttpFilters(out)
 		if err != nil {
-			log.Error(err)
+			slog.Error(err.Error())
 		}
 	}
 	return nil
