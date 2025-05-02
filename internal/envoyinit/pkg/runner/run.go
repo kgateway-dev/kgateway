@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"fmt"
 	"log"
 	"log/slog"
 	"os"
@@ -51,8 +50,7 @@ func RunEnvoyValidate(ctx context.Context, envoyExecutable, bootstrapConfig stri
 		if os.IsNotExist(err) {
 			// log a warning and return nil; will allow users to continue to run Gloo locally without
 			// relying on the Gloo container with Envoy already published to the expected directory
-			slog.Warn(fmt.Sprintf("Unable to validate envoy configuration using envoy at %s; "+
-				"skipping additional validation of Gloo config.", envoyExecutable))
+			slog.Warn("unable to validate envoy configuration", "executable", envoyExecutable)
 			return nil
 		}
 		return eris.Errorf("envoy validation mode output: %v, error: %v", err.OutputString(), err.Error())
