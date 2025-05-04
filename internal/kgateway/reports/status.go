@@ -7,7 +7,6 @@ import (
 	"slices"
 	"strings"
 
-	pluginsdkreporter "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/solo-io/go-utils/contextutils"
 	"istio.io/istio/pkg/ptr"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -15,6 +14,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
+
+	pluginsdkreporter "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
 
 // TODO: refactor this struct + methods to better reflect the usage now in proxy_syncer

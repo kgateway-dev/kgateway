@@ -16,6 +16,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	pluginsdkreporter "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
 
 func TestPolicyStatus(t *testing.T) {
@@ -123,7 +124,7 @@ func TestPolicyStatus(t *testing.T) {
 				Type:    string(gwv1alpha2.PolicyConditionAccepted),
 				Status:  metav1.ConditionTrue,
 				Reason:  string(gwv1alpha2.PolicyReasonAccepted),
-				Message: reports.PolicyAcceptedAndAttachedMsg,
+				Message: pluginsdkreporter.PolicyAcceptedAndAttachedMsg,
 			},
 		},
 		cmpopts.IgnoreFields(metav1.Condition{}, "LastTransitionTime"),
@@ -131,7 +132,7 @@ func TestPolicyStatus(t *testing.T) {
 	a.Empty(diff)
 
 	// assert conn-policy-2 report
-	connpolicy2report := rm.Policies[reports.PolicyKey{
+	connpolicy2report := rm.Policies[pluginsdkreporter.PolicyKey{
 		Group:     connPolicy2Att.PolicyRef.Group,
 		Kind:      connPolicy2Att.PolicyRef.Kind,
 		Namespace: connPolicy2Att.PolicyRef.Namespace,

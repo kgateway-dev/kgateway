@@ -15,6 +15,7 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	pluginsdkreporter "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
 
 const fake_condition = "kgateway.dev/SomeCondition"
@@ -66,7 +67,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 			gw := gw()
 			rm := reports.NewReportMap()
 			reporter := reports.NewReporter(&rm)
-			reporter.Gateway(gw).SetCondition(reports.GatewayCondition{
+			reporter.Gateway(gw).SetCondition(pluginsdkreporter.GatewayCondition{
 				Type:   gwv1.GatewayConditionProgrammed,
 				Status: metav1.ConditionFalse,
 				Reason: gwv1.GatewayReasonAddressNotUsable,
@@ -86,7 +87,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 			gw := gw()
 			rm := reports.NewReportMap()
 			reporter := reports.NewReporter(&rm)
-			reporter.Gateway(gw).Listener(listener()).SetCondition(reports.ListenerCondition{
+			reporter.Gateway(gw).Listener(listener()).SetCondition(pluginsdkreporter.ListenerCondition{
 				Type:   gwv1.ListenerConditionResolvedRefs,
 				Status: metav1.ConditionFalse,
 				Reason: gwv1.ListenerReasonInvalidRouteKinds,
@@ -277,7 +278,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 			func(obj client.Object, parentRef *gwv1.ParentReference) {
 				rm := reports.NewReportMap()
 				reporter := reports.NewReporter(&rm)
-				reporter.Route(obj).ParentRef(parentRef).SetCondition(reports.RouteCondition{
+				reporter.Route(obj).ParentRef(parentRef).SetCondition(pluginsdkreporter.RouteCondition{
 					Type:   gwv1.RouteConditionResolvedRefs,
 					Status: metav1.ConditionFalse,
 					Reason: gwv1.RouteReasonBackendNotFound,
@@ -302,12 +303,12 @@ var _ = Describe("Reporting Infrastructure", func() {
 			func(obj client.Object, parentRef *gwv1.ParentReference) {
 				rm := reports.NewReportMap()
 				reporter := reports.NewReporter(&rm)
-				reporter.Route(obj).ParentRef(parentRef).SetCondition(reports.RouteCondition{
+				reporter.Route(obj).ParentRef(parentRef).SetCondition(pluginsdkreporter.RouteCondition{
 					Type:   gwv1.RouteConditionResolvedRefs,
 					Status: metav1.ConditionFalse,
 					Reason: gwv1.RouteReasonBackendNotFound,
 				})
-				reporter.Route(obj).ParentRef(parentRef).SetCondition(reports.RouteCondition{
+				reporter.Route(obj).ParentRef(parentRef).SetCondition(pluginsdkreporter.RouteCondition{
 					Type:   gwv1.RouteConditionResolvedRefs,
 					Status: metav1.ConditionFalse,
 					Reason: gwv1.RouteReasonBackendNotFound,

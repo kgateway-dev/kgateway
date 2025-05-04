@@ -19,13 +19,14 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/listener"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	pluginsdkreporter "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
 
 var (
 	ctx              context.Context
 	gwListener       gwv1.Listener
 	gateway          *gwv1.Gateway
-	listenerReporter reports.ListenerReporter
+	listenerReporter pluginsdkreporter.ListenerReporter
 	reporter         reports.Reporter
 	ml               *listener.MergedListeners
 	ctrl             *gomock.Controller
