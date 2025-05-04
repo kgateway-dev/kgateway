@@ -30,7 +30,7 @@ import (
 )
 
 func RunController(t *testing.T, logger *zap.Logger, globalSettings *settings.Settings, testEnv *envtest.Environment,
-	yamlFilesToApply []string,
+	yamlFilesToApply [][]string,
 	run func(t *testing.T,
 		ctx context.Context,
 		kdbg *krt.DebugHandler,
@@ -70,12 +70,14 @@ func RunController(t *testing.T, logger *zap.Logger, globalSettings *settings.Se
 		t.Fatalf("failed to get init kube client: %v", err)
 	}
 
-	for _, yamlFile := range yamlFilesToApply {
-		err = client.ApplyYAMLFiles("default", yamlFile)
+	for _, yamlFileWithNs := range yamlFilesToApply {
+		ns := yamlFileWithNs[0]
+		yamlFile := yamlFileWithNs[1]
+		err = client.ApplyYAMLFiles(ns, yamlFile)
 		if err != nil {
 			t.Fatalf("failed to apply yaml: %v", err)
 		}
-		err = applyPodStatusFromFile(ctx, client, "gwtest", "testdata/setup_yaml/pods.yaml")
+		err = applyPodStatusFromFile(ctx, client, ns, yamlFile)
 		if err != nil {
 			t.Fatalf("failed to apply pod status: %v", err)
 		}
