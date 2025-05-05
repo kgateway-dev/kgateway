@@ -4,7 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"net"
-	"os"
+	"strings"
 
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	xdsserver "github.com/envoyproxy/go-control-plane/pkg/server/v3"
@@ -20,24 +20,16 @@ import (
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/logging"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
+	slogleveler "github.com/shashankram/slog-leveler/pkg/logger"
 	controllerlog "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
-const (
-	componentName = "kgateway"
-)
-
 func Main(customCtx context.Context) error {
-	SetupLogging(componentName)
-	return startSetupLoop(customCtx)
-}
-
-func startSetupLoop(ctx context.Context) error {
-	return StartKgateway(ctx, nil)
+	// Logging will be set up inside StartKgateway after settings are loaded.
+	return StartKgateway(customCtx, nil)
 }
 
 func createKubeClient(restConfig *rest.Config) (istiokube.Client, error) {
@@ -54,14 +46,14 @@ func StartKgateway(
 	ctx context.Context,
 	extraPlugins func(ctx context.Context, commoncol *common.CommonCollections) []extensionsplug.Plugin,
 ) error {
-	slog.Info("starting component", "component", componentName)
-
 	// load global settings
 	st, err := settings.BuildSettings()
 	if err != nil {
-		slog.Error("got err while parsing Settings from env", slog.Any("error", err))
+		slog.Error("error loading settings from env", slog.Any("error", err))
 	}
-	slog.Info("global settings", "value", *st)
+
+	SetupLogging(st.LogLevel)
+	slog.Info("global settings loaded", "settings", *st)
 
 	uniqueClientCallbacks, uccBuilder := krtcollections.NewUniquelyConnectedClients()
 	cache, err := startControlPlane(ctx, st.XdsServicePort, uniqueClientCallbacks)
@@ -97,15 +89,14 @@ func StartKgatewayWithConfig(
 	uccBuilder krtcollections.UniquelyConnectedClientsBulider,
 	extraPlugins func(ctx context.Context, commoncol *common.CommonCollections) []extensionsplug.Plugin,
 ) error {
-	k8sLogger := slog.With(slog.String("component", "k8s"))
-	k8sLogger.Info("starting component", "component", componentName)
+	slog.Info("starting kgateway")
 
 	kubeClient, err := createKubeClient(restConfig)
 	if err != nil {
 		return err
 	}
 
-	k8sLogger.Info("creating krt collections")
+	slog.Info("creating krt collections")
 	krtOpts := krtutil.NewKrtOptions(ctx.Done(), setupOpts.KrtDebugger)
 
 	augmentedPods := krtcollections.NewPodsCollection(kubeClient, krtOpts)
@@ -116,7 +107,7 @@ func StartKgatewayWithConfig(
 
 	ucc := uccBuilder(ctx, krtOpts, augmentedPodsForUcc)
 
-	k8sLogger.Info("initializing controller")
+	slog.Info("initializing controller")
 	c, err := controller.NewControllerBuilder(ctx, controller.StartConfig{
 		// TODO: why do we plumb this through if it's wellknown?
 		ControllerName: wellknown.GatewayControllerName,
@@ -126,7 +117,7 @@ func StartKgatewayWithConfig(
 		Client:         kubeClient,
 		AugmentedPods:  augmentedPods,
 		UniqueClients:  ucc,
-		Dev:            os.Getenv("LOG_LEVEL") == "debug",
+		Dev:            setupOpts.GlobalSettings.LogLevel == "debug",
 		KrtOptions:     krtOpts,
 	})
 	if err != nil {
@@ -145,23 +136,35 @@ func StartKgatewayWithConfig(
 }
 
 // SetupLogging configures the global slog logger
-func SetupLogging(controllerruntimeLoggerName string) {
-	if level := os.Getenv("LOG_LEVEL"); level != "" {
-		logging.SetLogLevel(level)
+func SetupLogging(level string) {
+	baseLogger := slogleveler.NewWithOptions("", slogleveler.Options{
+		Format: slogleveler.JSONFormat,
+	})
+	if level != "" {
+		slogleveler.SetLevel("", parseLevel(level))
 	}
-
-	handlerOpts := &slog.HandlerOptions{
-		AddSource: false,
-		Level:     logging.GlobalLevel,
-	}
-
-	handler := slog.NewJSONHandler(os.Stdout, handlerOpts)
-
-	baseLogger := slog.New(handler)
 	slog.SetDefault(baseLogger)
 
 	// set controller-runtime logger
-	controllerLogger := baseLogger.With(slog.String("component", controllerruntimeLoggerName))
+	controllerLogger := slogleveler.NewWithOptions("controllerruntime", slogleveler.Options{
+		Format: slogleveler.JSONFormat,
+	})
 	logrSink := logr.FromSlogHandler(controllerLogger.Handler())
 	controllerlog.SetLogger(logrSink)
+}
+
+// to do: expose in slogleveler
+func parseLevel(level string) slog.Level {
+	switch strings.ToLower(level) {
+	case "debug":
+		return slog.LevelDebug
+	case "info":
+		return slog.LevelInfo
+	case "warn":
+		return slog.LevelWarn
+	case "error":
+		return slog.LevelError
+	default:
+		return slog.LevelInfo
+	}
 }
