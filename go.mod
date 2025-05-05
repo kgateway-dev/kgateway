@@ -25,7 +25,6 @@ require (
 	github.com/onsi/gomega v1.36.3
 	github.com/pkg/errors v0.9.1
 	github.com/rotisserie/eris v0.5.4
-	github.com/shashankram/slog-leveler v0.1.0
 	github.com/solo-io/envoy-gloo/go v0.0.0-20250102165327-33a74fcf9966
 	github.com/solo-io/go-list-licenses v0.1.4
 	github.com/solo-io/go-utils v0.27.3
