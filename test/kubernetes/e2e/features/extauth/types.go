@@ -97,6 +97,36 @@ var (
 			Namespace: "kgateway-test",
 		},
 	}
+	insecureTrafficPolicy2 = &v1alpha1.TrafficPolicy{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "insecure-route-policy2",
+			Namespace: "kgateway-test",
+		},
+	}
+	secureRoute = &gwv1.HTTPRoute{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "route-example-secure",
+			Namespace: "kgateway-test",
+		},
+	}
+	secureTrafficPolicy = &v1alpha1.TrafficPolicy{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "secure-route-policy",
+			Namespace: "kgateway-test",
+		},
+	}
+	secureTrafficPolicy2 = &v1alpha1.TrafficPolicy{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "secure-route-policy2",
+			Namespace: "kgateway-test",
+		},
+	}
+	disableAllRoute = &gwv1.HTTPRoute{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "route-example-disableall",
+			Namespace: "kgateway-test",
+		},
+	}
 
 	// Manifest files
 	gatewayWithRouteManifest     = getTestFile("common.yaml")

@@ -196,7 +196,8 @@ func (s *testingSuite) TestRouteTargetedExtAuthPolicy() {
 	}
 
 	resources := []client.Object{
-		basicSecureRoute,
+		secureRoute, secureTrafficPolicy,
+		disableAllRoute, insecureTrafficPolicy2, secureTrafficPolicy2,
 		insecureRoute, insecureTrafficPolicy,
 	}
 	s.T().Cleanup(func() {
