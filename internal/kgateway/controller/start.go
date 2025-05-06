@@ -8,6 +8,7 @@ import (
 	"sync/atomic"
 
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
+	"github.com/go-logr/logr"
 	istiokube "istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/krt"
 	istiolog "istio.io/istio/pkg/log"
@@ -29,6 +30,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/logging"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/proxy_syncer"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
@@ -41,7 +43,8 @@ import (
 const (
 	// AutoProvision controls whether the controller will be responsible for provisioning dynamic
 	// infrastructure for the Gateway API.
-	AutoProvision = true
+	AutoProvision           = true
+	ControllerRuntimeLogger = "controllerruntime"
 )
 
 type SetupOpts struct {
@@ -92,12 +95,17 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 	var opts []czap.Opts
 	loggingOptions := istiolog.DefaultOptions()
 
+	controllerLogger := logging.NewWithOptions(ControllerRuntimeLogger, logging.Options{
+		Format: logging.JSONFormat,
+	})
+	logrSink := logr.FromSlogHandler(controllerLogger.Handler())
 	if cfg.Dev {
 		setupLog.Info("starting log in dev mode")
 		opts = append(opts, czap.UseDevMode(true))
 		loggingOptions.SetDefaultOutputLevel(istiolog.OverrideScopeName, istiolog.DebugLevel)
+		logging.MustSetLevel(ControllerRuntimeLogger, slog.LevelDebug)
 	}
-	ctrl.SetLogger(czap.New(opts...))
+	ctrl.SetLogger(logrSink)
 	istiolog.Configure(loggingOptions)
 
 	scheme := DefaultScheme()
