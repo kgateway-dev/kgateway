@@ -142,7 +142,7 @@ func SetupLogging(levelStr string) {
 		if err != nil {
 			slog.Error("failed to parse log level, defaulting to info", slog.Any("error", err))
 		}
-		logging.SetLevel("", level)
+		logging.MustSetLevel("", level)
 	}
 	slog.SetDefault(baseLogger)
 }
