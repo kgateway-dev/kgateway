@@ -3,6 +3,7 @@ package backend
 import (
 	"context"
 	"errors"
+	"log"
 	"log/slog"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
@@ -245,24 +246,15 @@ func getAISecretRef(llm v1alpha1.SupportedLLMProvider) *corev1.LocalObjectRefere
 	return secretRef
 }
 
-// DPanic logs an error message using slog and panics if log level is debug.
-func DPanic(msg string, args ...any) {
-	slog.Error(msg, args...)
-	// Check if the default logger is enabled for Debug level
-	if slog.Default().Enabled(context.Background(), slog.LevelDebug) {
-		panic(msg)
-	}
-}
-
 func processBackend(ctx context.Context, in ir.BackendObjectIR, out *envoy_config_cluster_v3.Cluster) *ir.EndpointsForBackend {
 	up, ok := in.Obj.(*v1alpha1.Backend)
 	if !ok {
-		DPanic("failed to cast backend object")
+		log.Fatal("failed to cast backend object")
 		return nil
 	}
 	ir, ok := in.ObjIr.(*BackendIr)
 	if !ok {
-		DPanic("failed to cast backend ir")
+		log.Fatal("failed to cast backend ir")
 		return nil
 	}
 
