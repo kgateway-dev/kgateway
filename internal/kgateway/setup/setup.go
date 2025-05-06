@@ -4,7 +4,6 @@ import (
 	"context"
 	"log/slog"
 	"net"
-	"strings"
 
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	xdsserver "github.com/envoyproxy/go-control-plane/pkg/server/v3"
@@ -20,10 +19,10 @@ import (
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/logging"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
-	slogleveler "github.com/shashankram/slog-leveler/pkg/logger"
 	controllerlog "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
@@ -136,35 +135,23 @@ func StartKgatewayWithConfig(
 }
 
 // SetupLogging configures the global slog logger
-func SetupLogging(level string) {
-	baseLogger := slogleveler.NewWithOptions("", slogleveler.Options{
-		Format: slogleveler.JSONFormat,
+func SetupLogging(levelStr string) {
+	baseLogger := logging.NewWithOptions("", logging.Options{
+		Format: logging.JSONFormat,
 	})
-	if level != "" {
-		slogleveler.SetLevel("", parseLevel(level))
+	if levelStr != "" {
+		level, err := logging.ParseLevel(levelStr)
+		if err != nil {
+			slog.Error("failed to parse log level, defaulting to info", slog.Any("error", err))
+		}
+		logging.SetLevel("", level)
 	}
 	slog.SetDefault(baseLogger)
 
 	// set controller-runtime logger
-	controllerLogger := slogleveler.NewWithOptions("controllerruntime", slogleveler.Options{
-		Format: slogleveler.JSONFormat,
+	controllerLogger := logging.NewWithOptions("controllerruntime", logging.Options{
+		Format: logging.JSONFormat,
 	})
 	logrSink := logr.FromSlogHandler(controllerLogger.Handler())
 	controllerlog.SetLogger(logrSink)
-}
-
-// to do: expose in slogleveler
-func parseLevel(level string) slog.Level {
-	switch strings.ToLower(level) {
-	case "debug":
-		return slog.LevelDebug
-	case "info":
-		return slog.LevelInfo
-	case "warn":
-		return slog.LevelWarn
-	case "error":
-		return slog.LevelError
-	default:
-		return slog.LevelInfo
-	}
 }
