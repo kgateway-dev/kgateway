@@ -114,7 +114,7 @@ func StartKgatewayWithConfig(
 		Client:         kubeClient,
 		AugmentedPods:  augmentedPods,
 		UniqueClients:  ucc,
-		Dev:            setupOpts.GlobalSettings.LogLevel == "debug",
+		Dev:            logging.MustGetLevel(logging.DefaultComponent) <= logging.LevelTrace,
 		KrtOptions:     krtOpts,
 	})
 	if err != nil {
