@@ -7,7 +7,6 @@ import (
 
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	xdsserver "github.com/envoyproxy/go-control-plane/pkg/server/v3"
-	"github.com/go-logr/logr"
 	istiokube "istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/client-go/rest"
@@ -23,7 +22,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
-	controllerlog "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 func Main(customCtx context.Context) error {
@@ -147,11 +145,4 @@ func SetupLogging(levelStr string) {
 		logging.SetLevel("", level)
 	}
 	slog.SetDefault(baseLogger)
-
-	// set controller-runtime logger
-	controllerLogger := logging.NewWithOptions("controllerruntime", logging.Options{
-		Format: logging.JSONFormat,
-	})
-	logrSink := logr.FromSlogHandler(controllerLogger.Handler())
-	controllerlog.SetLogger(logrSink)
 }
