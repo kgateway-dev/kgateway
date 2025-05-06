@@ -17,7 +17,6 @@ import (
 	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/config"
-	czap "sigs.k8s.io/controller-runtime/pkg/log/zap"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	infextv1a2 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
 
@@ -92,7 +91,6 @@ type ControllerBuilder struct {
 }
 
 func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuilder, error) {
-	var opts []czap.Opts
 	loggingOptions := istiolog.DefaultOptions()
 
 	controllerLogger := logging.NewWithOptions(ControllerRuntimeLogger, logging.Options{
@@ -101,7 +99,6 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 	logrSink := logr.FromSlogHandler(controllerLogger.Handler())
 	if cfg.Dev {
 		setupLog.Info("starting log in dev mode")
-		opts = append(opts, czap.UseDevMode(true))
 		loggingOptions.SetDefaultOutputLevel(istiolog.OverrideScopeName, istiolog.DebugLevel)
 		logging.MustSetLevel(ControllerRuntimeLogger, slog.LevelDebug)
 	}

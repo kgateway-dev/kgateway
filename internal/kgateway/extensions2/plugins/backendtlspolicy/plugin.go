@@ -149,14 +149,14 @@ func buildTranslateFunc(
 		cfgmap := krt.FetchOne(krtctx, cfgmaps, krt.FilterObjectName(nn))
 		if cfgmap == nil {
 			err := fmt.Errorf("%w: %v", ErrConfigMapNotFound, nn)
-			slog.Error("error", err, "policy", policyCR.Name)
+			slog.Error(err.Error(), "policy_name", policyCR.Name)
 			return &policyIr, err
 		}
 
 		tlsCfg, err := ResolveUpstreamSslConfig(*cfgmap, string(spec.Validation.Hostname))
 		if err != nil {
 			perr := fmt.Errorf("%w: %v", ErrCreatingTLSConfig, err)
-			slog.Error("error", perr, "policy", policyCR.Name)
+			slog.Error(perr.Error(), "policy_name", policyCR.Name)
 			return &policyIr, perr
 		}
 		typedConfig, err := utils.MessageToAny(tlsCfg)
