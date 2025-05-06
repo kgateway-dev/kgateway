@@ -194,14 +194,13 @@ var logger = logging.NewWithOptions("k8s-gw-proxy-syncer", logging.Options{
 })
 
 func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
-
 	// all backends with policies attached in a single collection
 	finalBackends := krt.JoinCollection(s.commonCols.BackendIndex.BackendsWithPolicy(), krtopts.ToOptions("FinalBackends")...)
 
 	s.translator.Init(ctx)
 
 	s.mostXdsSnapshots = krt.NewCollection(s.commonCols.GatewayIndex.Gateways, func(kctx krt.HandlerContext, gw ir.Gateway) *GatewayXdsResources {
-		logger.Debug(fmt.Sprintf("building proxy for kube gw %s version %s", client.ObjectKeyFromObject(gw.Obj), gw.Obj.GetResourceVersion()))
+		logger.Debug("building proxy for kube gw", "name", client.ObjectKeyFromObject(gw.Obj), "version", gw.Obj.GetResourceVersion())
 
 		xdsSnap, rm := s.translator.TranslateGateway(kctx, ctx, gw)
 		if xdsSnap == nil {
