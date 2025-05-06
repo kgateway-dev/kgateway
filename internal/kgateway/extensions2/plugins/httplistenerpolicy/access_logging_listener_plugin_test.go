@@ -2,6 +2,7 @@ package httplistenerpolicy
 
 import (
 	"context"
+	"log/slog"
 	"testing"
 
 	v33 "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
@@ -13,7 +14,6 @@ import (
 	envoy_metadata_formatter "github.com/envoyproxy/go-control-plane/envoy/extensions/formatter/metadata/v3"
 	envoy_req_without_query "github.com/envoyproxy/go-control-plane/envoy/extensions/formatter/req_without_query/v3"
 	envoymatcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
-	"github.com/solo-io/go-utils/contextutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
@@ -25,6 +25,7 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/logging"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
@@ -626,12 +627,13 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 			},
 		}
 		for _, tc := range testCases {
-			ctx, cancel := context.WithCancel(context.Background())
+			_, cancel := context.WithCancel(context.Background())
 			t.Cleanup(cancel)
-			logger := contextutils.LoggerFrom(ctx).Desugar()
 
 			t.Run(tc.name, func(t *testing.T) {
-				result, err := translateAccessLogs(logger, tc.config,
+				result, err := translateAccessLogs(logging.NewWithOptions("access_logging_listener_plugin_test", logging.Options{
+					Level: slog.LevelDebug,
+				}), tc.config,
 					// Example grpcBackends map for upstreams
 					map[string]*ir.BackendObjectIR{
 						"grpc-log-0": {
