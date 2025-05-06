@@ -52,7 +52,9 @@ func NewWithOptions(component string, opts Options) *slog.Logger {
 		slogHandler = slog.NewTextHandler(opts.Writer, handlerOpts)
 	}
 
-	return slog.New(slogHandler)
+	logger := slog.New(slogHandler)
+
+	return logger.With("component", component)
 }
 
 // need a function to get map of component names to level
