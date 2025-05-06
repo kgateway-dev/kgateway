@@ -3,6 +3,7 @@ package v1alpha1
 import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 )
 
 // +kubebuilder:rbac:groups=gateway.kgateway.dev,resources=trafficpolicies,verbs=get;list;watch
@@ -18,8 +19,11 @@ type TrafficPolicy struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   TrafficPolicySpec `json:"spec,omitempty"`
-	Status SimpleStatus      `json:"status,omitempty"`
+	Spec TrafficPolicySpec `json:"spec,omitempty"`
+
+	Status gwv1alpha2.PolicyStatus `json:"status,omitempty"`
+	// TODO: embed this into a typed Status field when
+	// https://github.com/kubernetes/kubernetes/issues/131533 is resolved
 }
 
 // +kubebuilder:object:root=true
@@ -143,16 +147,6 @@ type BodyTransformation struct {
 	// Value is the template to apply to generate the output value for the body.
 	// +optional
 	Value *InjaTemplate `json:"value,omitempty"`
-}
-
-// SimpleStatus defines the observed state of the policy.
-type SimpleStatus struct {
-	// Conditions is the list of conditions for the policy.
-	// +optional
-	// +listType=map
-	// +listMapKey=type
-	// +kubebuilder:validation:MaxItems=8
-	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
 
 // ExtAuthEnabled determines the enabled state of the ExtAuth filter.

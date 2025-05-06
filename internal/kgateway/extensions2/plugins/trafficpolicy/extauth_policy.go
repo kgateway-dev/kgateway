@@ -1,4 +1,4 @@
-package routepolicy
+package trafficpolicy
 
 import (
 	"fmt"
@@ -77,29 +77,25 @@ func extAuthForSpec(
 	trafficpolicy *v1alpha1.TrafficPolicy,
 	gatewayExtensions krt.Collection[trafficPolicyGatewayExtensionIR],
 	out *trafficPolicySpecIr,
-) {
+) error {
 	policySpec := &trafficpolicy.Spec
 
 	if policySpec.ExtAuth == nil {
-		return
+		return nil
 	}
 	spec := policySpec.ExtAuth
 	var provider *trafficPolicyGatewayExtensionIR
-
 	if spec.ExtensionRef != nil {
 		gwExtName := types.NamespacedName{Name: spec.ExtensionRef.Name, Namespace: trafficpolicy.GetNamespace()}
 		gatewayExtension := krt.FetchOne(krtctx, gatewayExtensions, krt.FilterObjectName(gwExtName))
 		if gatewayExtension == nil {
-			out.errors = append(out.errors, fmt.Errorf("extauth extension not found"))
-			return
+			return fmt.Errorf("gateway extension %s not found", gwExtName)
 		}
 		if gatewayExtension.err != nil {
-			out.errors = append(out.errors, gatewayExtension.err)
-			return
+			return gatewayExtension.err
 		}
 		if gatewayExtension.extAuth == nil {
-			out.errors = append(out.errors, pluginutils.ErrInvalidExtensionType(v1alpha1.GatewayExtensionTypeExtAuth, gatewayExtension.extType))
-			return
+			return pluginutils.ErrInvalidExtensionType(v1alpha1.GatewayExtensionTypeExtAuth, gatewayExtension.extType)
 		}
 		provider = gatewayExtension
 	}
@@ -109,6 +105,7 @@ func extAuthForSpec(
 		enablement:      spec.Enablement,
 		extauthPerRoute: translatePerFilterConfig(spec),
 	}
+	return nil
 }
 
 func translatePerFilterConfig(spec *v1alpha1.ExtAuthPolicy) *envoy_ext_authz_v3.ExtAuthzPerRoute {

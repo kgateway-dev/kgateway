@@ -33,6 +33,7 @@ import (
 	extplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
@@ -151,11 +152,14 @@ type endpointPickerPass struct {
 	// usedPools defines a map of IR inferencePools keyed by NamespacedName.
 	usedPools map[types.NamespacedName]*inferencePool
 	ir.UnimplementedProxyTranslationPass
+
+	reporter reports.Reporter
 }
 
-func newEndpointPickerPass(ctx context.Context, tctx ir.GwTranslationCtx) ir.ProxyTranslationPass {
+func newEndpointPickerPass(ctx context.Context, tctx ir.GwTranslationCtx, reporter reports.Reporter) ir.ProxyTranslationPass {
 	return &endpointPickerPass{
 		usedPools: make(map[types.NamespacedName]*inferencePool),
+		reporter:  reporter,
 	}
 }
 

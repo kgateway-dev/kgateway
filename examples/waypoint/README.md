@@ -5,12 +5,10 @@ east-west traffic is performed by an independent proxy called a
 [waypoint](https://istio.io/latest/docs/ambient/usage/waypoint/). Istio ships with its
 own waypoint proxy implementation, and kgateway provides a drop-in replacement.
 
-
 ## Pre-requisites
 
-1. Istio 1.23 or newer with ambient mode
+1. Istio 1.24 or newer with ambient mode
 2. kgateway installation
-
 
 ## Install this demo
 
@@ -74,6 +72,7 @@ kubectl apply -f examples/waypoint/httpbin-authz.yaml
 2. Test the traffic follow:
 
 Retrieve the client pod name as above:
+
 ```bash
 CLIENT=$(kubectl get po -n httpbin -l app=curl -ojsonpath='{.items[0].metadata.name}')
 ```
@@ -103,7 +102,7 @@ CLIENT=$(kubectl get po -n httpbin -l app=curl -ojsonpath='{.items[0].metadata.n
   kubectl -n httpbin exec $CLIENT -- curl -sI -XPOST httpbin:8000/post
   ```
 
-  Output shows the succesful transaction:
+  Output shows the successful transaction:
 
   ```output
   HTTP/1.1 200 OK
@@ -122,6 +121,6 @@ CLIENT=$(kubectl get po -n httpbin -l app=curl -ojsonpath='{.items[0].metadata.n
 1. Enable ambient traffic capture in the namespace of the Services
    you wish to have routed through the waypoint proxy
 
-```
+```bash
 kubectl label namespace httpbin istio.io/dataplane-mode: ambient
 ```

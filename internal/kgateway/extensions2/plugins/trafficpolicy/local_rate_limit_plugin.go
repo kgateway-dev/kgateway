@@ -1,4 +1,4 @@
-package routepolicy
+package trafficpolicy
 
 import (
 	"time"

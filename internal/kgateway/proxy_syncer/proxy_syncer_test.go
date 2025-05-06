@@ -261,6 +261,43 @@ func TestMergeProxyReports(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "Merge Policy reports for different parents",
+			proxies: []GatewayXdsResources{
+				{
+					reports: reports.ReportMap{
+						Policies: map[reports.PolicyKey]*reports.PolicyReport{
+							{Name: "policy1", Namespace: "default"}: {
+								Ancestors: map[reports.ParentRefKey]*reports.AncestorRefReport{
+									{NamespacedName: types.NamespacedName{Name: "gw-1", Namespace: "default"}}: {},
+								},
+							},
+						},
+					},
+				},
+				{
+					reports: reports.ReportMap{
+						Policies: map[reports.PolicyKey]*reports.PolicyReport{
+							{Name: "policy1", Namespace: "default"}: {
+								Ancestors: map[reports.ParentRefKey]*reports.AncestorRefReport{
+									{NamespacedName: types.NamespacedName{Name: "gw-2", Namespace: "default"}}: {},
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: reports.ReportMap{
+				Policies: map[reports.PolicyKey]*reports.PolicyReport{
+					{Name: "policy1", Namespace: "default"}: {
+						Ancestors: map[reports.ParentRefKey]*reports.AncestorRefReport{
+							{NamespacedName: types.NamespacedName{Name: "gw-1", Namespace: "default"}}: {},
+							{NamespacedName: types.NamespacedName{Name: "gw-2", Namespace: "default"}}: {},
+						},
+					},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -276,6 +313,9 @@ func TestMergeProxyReports(t *testing.T) {
 			}
 			if tt.expected.TLSRoutes != nil {
 				a.Equal(tt.expected.TLSRoutes, actual.TLSRoutes)
+			}
+			if tt.expected.Policies != nil {
+				a.Equal(tt.expected.Policies, actual.Policies)
 			}
 		})
 	}

@@ -51,6 +51,7 @@ go tool openapi-gen \
   --output-pkg "github.com/kgateway-dev/kgateway/v2/pkg/generated/openapi" \
   $API_INPUT_DIRS_SPACE \
   sigs.k8s.io/gateway-api/apis/v1 \
+  sigs.k8s.io/gateway-api/apis/v1alpha2 \
   k8s.io/apimachinery/pkg/apis/meta/v1 \
   k8s.io/api/core/v1 \
   k8s.io/apimachinery/pkg/runtime \

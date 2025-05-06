@@ -29,6 +29,8 @@ The project was previously known as Gloo, and has been [production-ready since 2
 - [Learn more about the community](https://github.com/kgateway-dev/community)
 
 ## Contributing to kgateway
+Please refer to the [contributing guide](https://github.com/kgateway-dev/community/blob/main/CONTRIBUTING.md) in the community repo.
+
 The [devel](devel) folder should be the starting point for understanding the code, and contributing to the product.
 
 ## Thanks

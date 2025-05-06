@@ -10,6 +10,7 @@ import (
 	"time"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 
@@ -60,7 +61,7 @@ type ProxySyncer struct {
 	uniqueClients krt.Collection[ir.UniqlyConnectedClient]
 
 	statusReport            krt.Singleton[report]
-	backendPolicyReport     krt.Singleton[GKPolicyReport]
+	backendPolicyReport     krt.Singleton[report]
 	mostXdsSnapshots        krt.Collection[GatewayXdsResources]
 	perclientSnapCollection krt.Collection[XdsSnapWrapper]
 
@@ -179,6 +180,12 @@ func (r report) Equals(in report) bool {
 	if !maps.Equal(r.reportMap.TCPRoutes, in.reportMap.TCPRoutes) {
 		return false
 	}
+	if !maps.Equal(r.reportMap.TLSRoutes, in.reportMap.TLSRoutes) {
+		return false
+	}
+	if !maps.Equal(r.reportMap.Policies, in.reportMap.Policies) {
+		return false
+	}
 	return true
 }
 
@@ -226,10 +233,10 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 		clustersPerClient,
 	)
 
-	s.backendPolicyReport = krt.NewSingleton(func(kctx krt.HandlerContext) *GKPolicyReport {
+	s.backendPolicyReport = krt.NewSingleton(func(kctx krt.HandlerContext) *report {
 		backends := krt.Fetch(kctx, finalBackends)
-		gkPolReport := generatePolicyReport(convertBackends(backends))
-		return gkPolReport
+		merged := generatePolicyReport(backends)
+		return &report{merged}
 	}, krtopts.ToOptions("BackendsPolicyReport")...)
 
 	// as proxies are created, they also contain a reportMap containing status for the Gateway and associated xRoutes (really parentRefs)
@@ -295,6 +302,18 @@ func mergeProxyReports(
 			// into the merged report
 			maps.Copy(merged.TLSRoutes[rnn].Parents, rr.Parents)
 		}
+
+		for key, report := range p.reports.Policies {
+			// if we haven't encountered this policy, just copy it over completely
+			old := merged.Policies[key]
+			if old == nil {
+				merged.Policies[key] = report
+				continue
+			}
+			// else, let's merge our parentRefs into the existing map
+			// obsGen will stay as-is...
+			maps.Copy(merged.Policies[key].Ancestors, report.Ancestors)
+		}
 	}
 
 	return merged
@@ -330,33 +349,33 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 		latestReportQueue.Enqueue(o.Latest().reportMap)
 	})
 
-	// Create logger for Route Status syncing
 	routeStatusLogger := logger.With(slog.String("subcomponent", "routeStatusSyncer"))
+	gatewayStatusLogger := logger.With(slog.String("subcomponent", "gatewayStatusSyncer"))
 	go func() {
 		for {
 			latestReport, err := latestReportQueue.Dequeue(ctx)
 			if err != nil {
 				return
 			}
+			s.syncGatewayStatus(ctx, gatewayStatusLogger, latestReport)
 			s.syncRouteStatus(ctx, routeStatusLogger, latestReport)
-			s.syncGatewayStatus(ctx, logger, latestReport)
+			s.syncPolicyStatus(ctx, latestReport)
 		}
 	}()
-
-	latestBePolReportQueue := utils.NewAsyncQueue[GKPolicyReport]()
-	s.backendPolicyReport.Register(func(o krt.Event[GKPolicyReport]) {
+	latestBackendPolicyReportQueue := utils.NewAsyncQueue[reports.ReportMap]()
+	s.backendPolicyReport.Register(func(o krt.Event[report]) {
 		if o.Event == controllers.EventDelete {
 			return
 		}
-		latestBePolReportQueue.Enqueue(o.Latest())
+		latestBackendPolicyReportQueue.Enqueue(o.Latest().reportMap)
 	})
 	go func() {
 		for {
-			latestReport, err := latestBePolReportQueue.Dequeue(ctx)
+			latestReport, err := latestBackendPolicyReportQueue.Dequeue(ctx)
 			if err != nil {
 				return
 			}
-			s.syncBackendPolicyStatus(ctx, latestReport)
+			s.syncPolicyStatus(ctx, latestReport)
 		}
 	}()
 
@@ -538,16 +557,49 @@ func (s *ProxySyncer) syncGatewayStatus(ctx context.Context, logger *slog.Logger
 	logger.Debug(fmt.Sprintf("synced gw status for %d gateways", len(rm.Gateways)), slog.Duration("duration", duration))
 }
 
-// syncBackendPolicyStatus will build and update status for all Gateways in a reportMap
-func (s *ProxySyncer) syncBackendPolicyStatus(ctx context.Context, report GKPolicyReport) {
-	for gk, polReport := range report.SeenPolicies {
-		for k, v := range s.plugins.ContributesPolicies {
-			if gk != k.String() {
-				continue
-			}
-			if v.ProcessPolicyStatus != nil {
-				v.ProcessPolicyStatus(ctx, gk, polReport)
-			}
+func (s *ProxySyncer) syncPolicyStatus(ctx context.Context, rm reports.ReportMap) {
+	logger := logging.New("routeStatusSyncer")
+	stopwatch := utils.NewTranslatorStopWatch("RouteStatusSyncer")
+	stopwatch.Start()
+	defer stopwatch.Stop(ctx)
+
+	// Sync Policy statuses
+	for key := range rm.Policies {
+		gk := schema.GroupKind{Group: key.Group, Kind: key.Kind}
+		nsName := types.NamespacedName{Namespace: key.Namespace, Name: key.Name}
+
+		plugin, ok := s.plugins.ContributesPolicies[gk]
+		if !ok {
+			logger.Error("Policy plugin not registered for policy", "groupKind", gk, "resource", nsName)
+			continue
+		}
+		if plugin.GetPolicyStatus == nil {
+			logger.Error("GetPolicyStatus handler not registered for policy", "groupKind", gk, "resource", nsName)
+			continue
+		}
+		if plugin.PatchPolicyStatus == nil {
+			logger.Error("PatchPolicyStatus handler not registered for policy", "groupKind", gk, "resource", nsName)
+			continue
+		}
+		currentStatus, err := plugin.GetPolicyStatus(ctx, nsName)
+		if err != nil {
+			logger.Error("error getting policy status", "error", err, "policy", nsName)
+			continue
+		}
+		status := rm.BuildPolicyStatus(ctx, key, s.controllerName, currentStatus)
+		if status == nil {
+			continue
+		}
+		err = retry.Do(
+			func() error {
+				return plugin.PatchPolicyStatus(ctx, nsName, *status)
+			},
+			retry.Attempts(5),
+			retry.Delay(100*time.Millisecond),
+			retry.DelayType(retry.BackOffDelay),
+		)
+		if err != nil {
+			logger.Error("error updating policy status", "error", err, "groupKind", gk, "policy", nsName)
 		}
 	}
 }

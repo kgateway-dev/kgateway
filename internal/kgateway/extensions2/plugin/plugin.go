@@ -5,14 +5,14 @@ import (
 	"encoding/json"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
-	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
-	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
-
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
-
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/endpoints"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
 )
 
@@ -35,8 +35,8 @@ type (
 		kctx krt.HandlerContext,
 		ctx context.Context,
 		ucc ir.UniqlyConnectedClient,
-		in ir.EndpointsForBackend,
-	) (*envoy_config_endpoint_v3.ClusterLoadAssignment, uint64)
+		out *endpoints.EndpointsInputs,
+	) uint64
 )
 
 // TODO: consider changing PerClientProcessBackend to look like this:
@@ -51,15 +51,21 @@ type PerClientProcessBackend func(
 	out *envoy_config_cluster_v3.Cluster,
 )
 
+type (
+	// GetPolicyStatusFn is a type that plugins can implement to get the PolicyStatus for the given policy
+	GetPolicyStatusFn func(context.Context, types.NamespacedName) (gwv1alpha2.PolicyStatus, error)
+	// PatchPolicyStatusFn is a type that plugins can implement to patch the PolicyStatus for the given policy
+	PatchPolicyStatusFn func(context.Context, types.NamespacedName, gwv1alpha2.PolicyStatus) error
+)
+
 type PolicyPlugin struct {
 	Name                      string
-	NewGatewayTranslationPass func(ctx context.Context, tctx ir.GwTranslationCtx) ir.ProxyTranslationPass
+	NewGatewayTranslationPass func(ctx context.Context, tctx ir.GwTranslationCtx, reporter reports.Reporter) ir.ProxyTranslationPass
 
 	GetBackendForRef          GetBackendForRefPlugin
 	ProcessBackend            ProcessBackend
 	PerClientProcessBackend   PerClientProcessBackend
 	PerClientProcessEndpoints EndpointPlugin
-	ProcessPolicyStatus       ProcessPolicyStatus
 
 	Policies       krt.Collection[ir.PolicyWrapper]
 	GlobalPolicies func(krt.HandlerContext, AttachmentPoints) ir.PolicyIR
@@ -67,6 +73,9 @@ type PolicyPlugin struct {
 	// rather than the default behavior of fetching by name from the aggregated policy KRT collection
 	PoliciesFetch func(n, ns string) ir.PolicyIR
 	MergePolicies func(pols []ir.PolicyAtt) ir.PolicyAtt
+
+	GetPolicyStatus   GetPolicyStatusFn
+	PatchPolicyStatus PatchPolicyStatusFn
 }
 
 type BackendPlugin struct {
@@ -101,9 +110,8 @@ type Plugin struct {
 }
 
 type (
-	AncestorReports     map[ir.ObjectSource][]error
-	PolicyReport        map[ir.AttachedPolicyRef]AncestorReports
-	ProcessPolicyStatus func(ctx context.Context, gkString string, polReport PolicyReport)
+	AncestorReports map[ir.ObjectSource][]error
+	PolicyReport    map[ir.AttachedPolicyRef]AncestorReports
 )
 
 // marshal json for krt debugging

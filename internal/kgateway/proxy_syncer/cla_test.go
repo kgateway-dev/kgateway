@@ -61,7 +61,11 @@ func TestTranslatesDestrulesFailoverPriority(t *testing.T) {
 		}),
 	}
 
-	cla := endpoints.PrioritizeEndpoints(nil, priorityInfo, *efu, ucc)
+	epInputs := endpoints.EndpointsInputs{
+		EndpointsForBackend: *efu,
+		PriorityInfo:        priorityInfo,
+	}
+	cla := endpoints.PrioritizeEndpoints(nil, ucc, epInputs)
 	g.Expect(cla.Endpoints).To(gomega.HaveLen(2))
 
 	remoteLocality := cla.Endpoints[0]
@@ -123,7 +127,11 @@ func TestTranslatesDestrulesFailover(t *testing.T) {
 
 	priorityInfo := &endpoints.PriorityInfo{}
 
-	cla := endpoints.PrioritizeEndpoints(nil, priorityInfo, *efu, ucc)
+	epInputs := endpoints.EndpointsInputs{
+		EndpointsForBackend: *efu,
+		PriorityInfo:        priorityInfo,
+	}
+	cla := endpoints.PrioritizeEndpoints(nil, ucc, epInputs)
 	g.Expect(cla.Endpoints).To(gomega.HaveLen(2))
 
 	remoteLocality := cla.Endpoints[0]

@@ -4,6 +4,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 )
 
 // +kubebuilder:rbac:groups=gateway.kgateway.dev,resources=httplistenerpolicies,verbs=get;list;watch
@@ -19,8 +20,11 @@ type HTTPListenerPolicy struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   HTTPListenerPolicySpec `json:"spec,omitempty"`
-	Status SimpleStatus           `json:"status,omitempty"`
+	Spec HTTPListenerPolicySpec `json:"spec,omitempty"`
+
+	Status gwv1alpha2.PolicyStatus `json:"status,omitempty"`
+	// TODO: embed this into a typed Status field when
+	// https://github.com/kubernetes/kubernetes/issues/131533 is resolved
 }
 
 // +kubebuilder:object:root=true

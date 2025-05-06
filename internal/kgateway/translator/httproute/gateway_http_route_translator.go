@@ -23,7 +23,6 @@ import (
 
 func TranslateGatewayHTTPRouteRules(
 	ctx context.Context,
-	gwListener gwv1.Listener,
 	routeInfo *query.RouteInfo,
 	reporter reports.ParentRefReporter,
 	baseReporter reports.Reporter,
@@ -38,7 +37,7 @@ func TranslateGatewayHTTPRouteRules(
 	}
 
 	translateGatewayHTTPRouteRulesUtil(
-		ctx, gwListener, routeInfo, reporter, baseReporter, &finalRoutes, routesVisited, nil)
+		ctx, routeInfo, reporter, baseReporter, &finalRoutes, routesVisited, nil)
 	return finalRoutes
 }
 
@@ -46,7 +45,6 @@ func TranslateGatewayHTTPRouteRules(
 // In case of route delegation, this function is recursively invoked to flatten the delegated route tree.
 func translateGatewayHTTPRouteRulesUtil(
 	ctx context.Context,
-	gwListener gwv1.Listener,
 	routeInfo *query.RouteInfo,
 	reporter reports.ParentRefReporter,
 	baseReporter reports.Reporter,
@@ -69,7 +67,6 @@ func translateGatewayHTTPRouteRulesUtil(
 
 		outputRoutes := translateGatewayHTTPRouteRule(
 			ctx,
-			gwListener,
 			routeInfo,
 			route,
 			rule,
@@ -95,7 +92,6 @@ func translateGatewayHTTPRouteRulesUtil(
 // MARK: translate rules
 func translateGatewayHTTPRouteRule(
 	ctx context.Context,
-	gwListener gwv1.Listener,
 	gwroute *query.RouteInfo,
 	parent *ir.HttpRouteIR,
 	rule ir.HttpRouteRuleIR,
@@ -136,7 +132,6 @@ func translateGatewayHTTPRouteRule(
 				&outputRoute,
 				reporter,
 				baseReporter,
-				gwListener,
 				match,
 				outputs,
 				routesVisited,
@@ -172,7 +167,6 @@ func setRouteAction(
 	outputRoute *ir.HttpRouteRuleMatchIR,
 	reporter reports.ParentRefReporter,
 	baseReporter reports.Reporter,
-	gwListener gwv1.Listener,
 	match gwv1.HTTPRouteMatch,
 	outputs *[]ir.HttpRouteRuleMatchIR,
 	routesVisited sets.Set[types.NamespacedName],
@@ -194,7 +188,6 @@ func setRouteAction(
 				backend,
 				reporter,
 				baseReporter,
-				gwListener,
 				match,
 				outputs,
 				routesVisited,

@@ -8,7 +8,6 @@ import (
 	"time"
 
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
-	"github.com/hashicorp/go-multierror"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/kube/krt"
@@ -25,6 +24,7 @@ import (
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
 )
 
 var VirtualBuiltInGK = schema.GroupKind{
@@ -52,6 +52,7 @@ func (d *builtinPlugin) Equals(in any) bool {
 
 type builtinPluginGwPass struct {
 	ir.UnimplementedProxyTranslationPass
+	reporter reports.Reporter
 }
 
 func (p *builtinPluginGwPass) ApplyForBackend(ctx context.Context, pCtx *ir.RouteBackendContext, in ir.HttpBackend, out *envoy_config_route_v3.Route) error {
@@ -511,8 +512,10 @@ func toEnvoyPercentage(percentage float64) *envoytype.FractionalPercent {
 	}
 }
 
-func NewGatewayTranslationPass(ctx context.Context, tctx ir.GwTranslationCtx) ir.ProxyTranslationPass {
-	return &builtinPluginGwPass{}
+func NewGatewayTranslationPass(ctx context.Context, tctx ir.GwTranslationCtx, reporter reports.Reporter) ir.ProxyTranslationPass {
+	return &builtinPluginGwPass{
+		reporter: reporter,
+	}
 }
 
 func (p *builtinPlugin) Name() string {
@@ -533,20 +536,20 @@ func (p *builtinPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.RouteC
 		return nil
 	}
 
-	var errs *multierror.Error
+	var errs error
 	if policy.filterMutation != nil {
 		if err := policy.filterMutation(pCtx.In, outputRoute); err != nil {
-			errs = multierror.Append(errs, err)
+			errs = errors.Join(errs, err)
 		}
 	}
 
 	if policy.ruleMutation != nil {
 		if err := policy.ruleMutation(pCtx.In, outputRoute); err != nil {
-			errs = multierror.Append(errs, err)
+			errs = errors.Join(errs, err)
 		}
 	}
 
-	return errs.ErrorOrNil()
+	return errs
 }
 
 func (p *builtinPluginGwPass) ApplyForRouteBackend(

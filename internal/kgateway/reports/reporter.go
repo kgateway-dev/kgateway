@@ -3,6 +3,7 @@ package reports
 import (
 	"log/slog"
 
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
@@ -10,11 +11,19 @@ import (
 	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 )
 
+type PolicyKey struct {
+	Group     string
+	Kind      string
+	Namespace string
+	Name      string
+}
+
 type ReportMap struct {
 	Gateways   map[types.NamespacedName]*GatewayReport
 	HTTPRoutes map[types.NamespacedName]*RouteReport
 	TCPRoutes  map[types.NamespacedName]*RouteReport
 	TLSRoutes  map[types.NamespacedName]*RouteReport
+	Policies   map[PolicyKey]*PolicyReport
 }
 
 type GatewayReport struct {
@@ -44,15 +53,12 @@ type ParentRefKey struct {
 }
 
 func NewReportMap() ReportMap {
-	gr := make(map[types.NamespacedName]*GatewayReport)
-	httpRoutes := make(map[types.NamespacedName]*RouteReport)
-	tcpRoutes := make(map[types.NamespacedName]*RouteReport)
-	tlsReports := make(map[types.NamespacedName]*RouteReport)
 	return ReportMap{
-		Gateways:   gr,
-		HTTPRoutes: httpRoutes,
-		TCPRoutes:  tcpRoutes,
-		TLSRoutes:  tlsReports,
+		Gateways:   make(map[types.NamespacedName]*GatewayReport),
+		HTTPRoutes: make(map[types.NamespacedName]*RouteReport),
+		TCPRoutes:  make(map[types.NamespacedName]*RouteReport),
+		TLSRoutes:  make(map[types.NamespacedName]*RouteReport),
+		Policies:   make(map[PolicyKey]*PolicyReport),
 	}
 }
 
@@ -161,7 +167,7 @@ func (g *GatewayReport) SetCondition(gc GatewayCondition) {
 		Reason:  string(gc.Reason),
 		Message: gc.Message,
 	}
-	g.conditions = append(g.conditions, condition)
+	meta.SetStatusCondition(&g.conditions, condition)
 }
 
 func NewListenerReport(name string) *ListenerReport {
@@ -177,7 +183,7 @@ func (l *ListenerReport) SetCondition(lc ListenerCondition) {
 		Reason:  string(lc.Reason),
 		Message: lc.Message,
 	}
-	l.Status.Conditions = append(l.Status.Conditions, condition)
+	meta.SetStatusCondition(&l.Status.Conditions, condition)
 }
 
 func (l *ListenerReport) SetSupportedKinds(rgks []gwv1.RouteGroupKind) {
@@ -289,16 +295,19 @@ func (prr *ParentRefReport) SetCondition(rc RouteCondition) {
 		Reason:  string(rc.Reason),
 		Message: rc.Message,
 	}
-	prr.Conditions = append(prr.Conditions, condition)
+	meta.SetStatusCondition(&prr.Conditions, condition)
 }
 
 func NewReporter(reportMap *ReportMap) Reporter {
-	return &reporter{report: reportMap}
+	return &reporter{
+		report: reportMap,
+	}
 }
 
 type Reporter interface {
 	Gateway(gateway *gwv1.Gateway) GatewayReporter
 	Route(obj metav1.Object) RouteReporter
+	Policy(ref PolicyKey, observedGeneration int64) PolicyReporter
 }
 
 type GatewayReporter interface {

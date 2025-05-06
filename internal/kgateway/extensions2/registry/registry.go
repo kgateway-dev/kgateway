@@ -16,9 +16,9 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/httplistenerpolicy"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/istio"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/kubernetes"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/routepolicy"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/sandwich"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/serviceentry"
+	trafficpolicy "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/trafficpolicy"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/waypoint"
 )
 
@@ -73,7 +73,7 @@ func Plugins(ctx context.Context, commoncol *common.CommonCollections) []extensi
 	return []extensionsplug.Plugin{
 		// Add plugins here
 		backend.NewPlugin(ctx, commoncol),
-		routepolicy.NewPlugin(ctx, commoncol),
+		trafficpolicy.NewPlugin(ctx, commoncol),
 		directresponse.NewPlugin(ctx, commoncol),
 		kubernetes.NewPlugin(ctx, commoncol),
 		istio.NewPlugin(ctx, commoncol),
