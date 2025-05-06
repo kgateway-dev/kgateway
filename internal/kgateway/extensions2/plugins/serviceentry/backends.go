@@ -2,8 +2,7 @@ package serviceentry
 
 import (
 	"context"
-
-	"go.uber.org/zap"
+	"log/slog"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
@@ -70,18 +69,18 @@ func (s *serviceEntryPlugin) initServiceEntryBackend(ctx context.Context, in ir.
 // backendsCollections produces a one-to-many collection from ServiceEntry into BackendObjectIR.
 // For each ServiceEntry, we create hosts*ports BackendObjectIRs.
 func backendsCollections(
-	logger *zap.SugaredLogger,
+	logger *slog.Logger,
 	ServiceEntries krt.Collection[*networkingclient.ServiceEntry],
 	krtOpts krtutil.KrtOptions,
 ) krt.Collection[ir.BackendObjectIR] {
 	return krt.NewManyCollection(ServiceEntries, func(ctx krt.HandlerContext, se *networkingclient.ServiceEntry) []ir.BackendObjectIR {
 		// passthrough not supported here
 		if se.Spec.GetResolution() == networking.ServiceEntry_NONE {
-			logger.Debugw("skipping ServiceEntry with resolution: NONE", "name", se.GetName(), "namespace", se.GetNamespace())
+			logger.Debug("skipping ServiceEntry with resolution: NONE", "name", se.GetName(), "namespace", se.GetNamespace())
 			return nil
 		}
 
-		logger.Debugw("converting ServiceEntry to Upstream", "name", se.GetName(), "namespace", se.GetNamespace())
+		logger.Debug("converting ServiceEntry to Upstream", "name", se.GetName(), "namespace", se.GetNamespace())
 		var out []ir.BackendObjectIR
 
 		for _, hostname := range se.Spec.GetHosts() {

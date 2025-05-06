@@ -16,10 +16,10 @@ const (
 )
 
 func NewPlugin(
-	ctx context.Context,
+	_ context.Context,
 	commonCols *common.CommonCollections,
 ) extensionsplug.Plugin {
-	seCollections := initServiceEntryCollections(ctx, commonCols)
+	seCollections := initServiceEntryCollections(commonCols)
 	return extensionsplug.Plugin{
 		ContributesPolicies: extensionsplug.ContributesPolicies{
 			wellknown.ServiceEntryGVK.GroupKind(): extensionsplug.PolicyPlugin{
