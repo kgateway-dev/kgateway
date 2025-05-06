@@ -12,11 +12,10 @@ const (
 // componentLeveler maps component names to their respective slog.LevelVar instance
 var componentLeveler sync.Map
 
-// default initilized in setup.go
-// func init() {
-// 	defaultLogger := New(DefaultComponent)
-// 	slog.SetDefault(defaultLogger)
-// }
+func init() {
+	defaultLogger := New(DefaultComponent)
+	slog.SetDefault(defaultLogger)
+}
 
 // New returns a new slog.Logger instance for the given component with default Options.
 // If the component is empty, it returns the default logger.
@@ -55,6 +54,9 @@ func NewWithOptions(component string, opts Options) *slog.Logger {
 
 	logger := slog.New(slogHandler)
 
+	if component == DefaultComponent {
+		return logger
+	}
 	return logger.With("component", component)
 }
 

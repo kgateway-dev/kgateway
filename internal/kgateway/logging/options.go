@@ -36,7 +36,7 @@ const (
 func (o *Options) Default() {
 	// Level implicitly defaults to INFO
 	if o.Format == "" {
-		o.Format = TextFormat
+		o.Format = JSONFormat
 	}
 	if o.Writer == nil {
 		o.Writer = os.Stderr
