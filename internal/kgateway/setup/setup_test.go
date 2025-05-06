@@ -28,7 +28,6 @@ import (
 	discovery_v3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	"github.com/go-logr/zapr"
 	"github.com/google/go-cmp/cmp"
-	"github.com/solo-io/go-utils/contextutils"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"google.golang.org/grpc"
@@ -388,7 +387,6 @@ func setupEnvTestAndRun(t *testing.T, globalSettings *settings.Settings, run fun
 
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
-	ctx = contextutils.WithExistingLogger(ctx, logger.Sugar())
 
 	cfg, err := testEnv.Start()
 	if err != nil {
