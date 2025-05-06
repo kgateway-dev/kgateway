@@ -32,6 +32,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	plug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/logging"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/irtranslator"
@@ -181,7 +182,9 @@ func (r report) Equals(in report) bool {
 	return true
 }
 
-var logger = slog.With(slog.String("component", "k8s-gw-proxy-syncer"))
+var logger = logging.NewWithOptions("k8s-gw-proxy-syncer", logging.Options{
+	Format: logging.JSONFormat,
+})
 
 func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 

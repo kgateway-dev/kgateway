@@ -15,6 +15,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/logging"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/query"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
 	gwtranslator "github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/gateway"
@@ -52,8 +53,10 @@ func NewCombinedTranslator(
 		commonCols:      commonCols,
 		extensions:      extensions,
 		endpointPlugins: endpointPlugins,
-		logger:          slog.With(slog.String("component", "translator_syncer")),
-		waitForSync:     []cache.InformerSynced{extensions.HasSynced},
+		logger: logging.NewWithOptions("translator_syncer", logging.Options{
+			Format: logging.JSONFormat,
+		}),
+		waitForSync: []cache.InformerSynced{extensions.HasSynced},
 	}
 }
 

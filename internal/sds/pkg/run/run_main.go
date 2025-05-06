@@ -13,8 +13,8 @@ import (
 
 	"github.com/solo-io/go-utils/stats"
 
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/logging"
 	"github.com/kgateway-dev/kgateway/v2/internal/sds/pkg/server"
-	"github.com/kgateway-dev/kgateway/v2/internal/version"
 )
 
 var (
@@ -44,7 +44,9 @@ type Config struct {
 func RunMain() {
 	// Initialize stats server to dynamically change log level. This will also use LOG_LEVEL if set.
 	stats.ConditionallyStartStatsServer()
-	logger := slog.With(slog.String("component", sdsComponentName), slog.String("version", version.Version))
+	logger := logging.NewWithOptions(sdsComponentName, logging.Options{
+		Format: logging.JSONFormat,
+	})
 	logger.Info("initializing config")
 
 	var c = setup()

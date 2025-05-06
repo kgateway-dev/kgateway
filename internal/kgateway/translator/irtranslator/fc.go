@@ -21,6 +21,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/logging"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
@@ -191,7 +192,9 @@ type hcmNetworkFilterTranslator struct {
 	gateway         ir.GatewayIR         // policies attached to gateway
 }
 
-var hcmLogger = slog.With(slog.String("operation", "compute_http_connection_manager"))
+var hcmLogger = logging.NewWithOptions("hcm_network_filter_translator", logging.Options{
+	Format: logging.JSONFormat,
+})
 
 func (h *hcmNetworkFilterTranslator) computeNetworkFilters(ctx context.Context, l ir.HttpFilterChainIR) (*envoy_config_listener_v3.Filter, error) {
 	// 1. Initialize the HttpConnectionManager (HCM)

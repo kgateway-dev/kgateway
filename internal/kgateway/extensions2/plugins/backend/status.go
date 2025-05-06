@@ -17,6 +17,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/logging"
 )
 
 func buildRegisterCallback(
@@ -25,7 +26,9 @@ func buildRegisterCallback(
 	bcol krt.Collection[ir.BackendObjectIR],
 ) func() {
 	return func() {
-		logger := slog.With(slog.String("component", "backendStatus"))
+		logger := logging.NewWithOptions("backendStatus", logging.Options{
+			Format: logging.JSONFormat,
+		})
 		bcol.Register(func(o krt.Event[ir.BackendObjectIR]) {
 			if o.Event == controllers.EventDelete {
 				return

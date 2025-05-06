@@ -3,13 +3,17 @@ package proxy_syncer
 import (
 	"context"
 	"log/slog"
+
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/logging"
 )
 
 func (s *ProxyTranslator) syncXds(
 	ctx context.Context,
 	snapWrap XdsSnapWrapper,
 ) {
-	logger := slog.With(slog.String("component", "kube-gateway-xds-syncer"))
+	logger := logging.NewWithOptions("kube-gateway-xds-syncer", logging.Options{
+		Format: logging.JSONFormat,
+	})
 
 	snap := snapWrap.snap
 	proxyKey := snapWrap.proxyKey

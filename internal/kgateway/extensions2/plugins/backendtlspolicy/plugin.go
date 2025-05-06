@@ -35,6 +35,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	plug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/logging"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	kgwellknown "github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
@@ -178,7 +179,9 @@ func buildProcessStatus(cl client.Client) func(ctx context.Context, gkStr string
 		if gkStr != backendTlsPolicyGroupKind.GroupKind().String() {
 			return
 		}
-		logger := slog.With(slog.String("component", "backendTlsPolicyStatus"))
+		logger := logging.NewWithOptions("backendTlsPolicyStatus", logging.Options{
+			Format: logging.JSONFormat,
+		})
 		for ref, rpt := range polReport {
 			// get existing policy
 			res := gwv1a3.BackendTLSPolicy{}

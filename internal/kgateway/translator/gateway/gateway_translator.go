@@ -11,6 +11,7 @@ import (
 
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/logging"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/query"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/listener"
@@ -37,7 +38,9 @@ func (t *translator) Translate(
 	stopwatch.Start()
 	defer stopwatch.Stop(ctx)
 
-	logger := slog.With(slog.String("component", "k8s-gateway-translator"))
+	logger := logging.NewWithOptions("k8s-gateway-translator", logging.Options{
+		Format: logging.JSONFormat,
+	})
 	routesForGw, err := t.queries.GetRoutesForGateway(kctx, ctx, gateway.Obj)
 	if err != nil {
 		logger.Error("failed to get routes for gateway", slog.String("namespace", gateway.Namespace), slog.String("name", gateway.Name), slog.Any("error", err))

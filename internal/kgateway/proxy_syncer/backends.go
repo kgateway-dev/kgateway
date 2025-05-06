@@ -9,6 +9,7 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/logging"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/irtranslator"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
@@ -46,7 +47,9 @@ func NewPerClientEnvoyClusters(
 	finalBackends krt.Collection[ir.BackendObjectIR],
 	uccs krt.Collection[ir.UniqlyConnectedClient],
 ) PerClientEnvoyClusters {
-	logger := slog.With(slog.String("component", "backend-translator"))
+	logger := logging.NewWithOptions("backend-translator", logging.Options{
+		Format: logging.JSONFormat,
+	})
 
 	clusters := krt.NewManyCollection(finalBackends, func(kctx krt.HandlerContext, backendObj ir.BackendObjectIR) []uccWithCluster {
 		backendLogger := logger.With(slog.Any("backend", backendObj))
