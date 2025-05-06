@@ -57,7 +57,7 @@ func (s *testingSuite) SetupSuite() {
 		// resources from curl manifest
 		testdefaults.CurlPod,
 		// resources from service manifest
-		simpleSvc, simpleDeployment,
+		basicSecureRoute, simpleSvc, simpleDeployment,
 		// deployer-generated resources
 		proxyDeployment, proxyService,
 		// extauth resources
