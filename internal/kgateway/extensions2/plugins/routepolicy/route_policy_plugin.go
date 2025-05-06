@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"strconv"
 	"time"
 
@@ -43,7 +44,6 @@ import (
 
 	// TODO(nfuden): remove once rustformations are able to be used in a production environment
 	transformationpb "github.com/solo-io/envoy-gloo/go/config/filter/http/transformation/v2"
-	"github.com/solo-io/go-utils/contextutils"
 )
 
 const (
@@ -524,13 +524,13 @@ func (p *trafficPolicyPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.
 			if !ok {
 				// AI policy cannot apply to kubernetes services
 				// TODO(npolshak): Report this as a warning on status
-				contextutils.LoggerFrom(ctx).Warnf("targetRef cannot apply to %s backend. AI TrafficPolicy must apply only to AI backend", backend.Backend.BackendObject.GetName())
+				slog.Warn("AI Policy cannot apply to kubernetes services", slog.String("backend_name", backend.Backend.BackendObject.GetName()))
 				continue
 			}
 			if b.Spec.Type != v1alpha1.BackendTypeAI {
 				// AI policy cannot apply to non-AI backends
 				// TODO(npolshak): Report this as a warning on status
-				contextutils.LoggerFrom(ctx).Warnf("backend %s is of type %s. AI TrafficPolicy must apply only to AI backend", backend.Backend.BackendObject.GetName(), b.Spec.Type)
+				slog.Warn("AI Policy cannot apply to non-AI backend", slog.String("backend_name", backend.Backend.BackendObject.GetName()), slog.String("backend_type", string(b.Spec.Type)))
 				continue
 			}
 			aiBackends = append(aiBackends, b)
@@ -579,7 +579,7 @@ func (p *trafficPolicyPluginGwPass) ApplyForRouteBackend(
 		err := p.processAITrafficPolicy(&pCtx.TypedFilterConfig, rtPolicy.spec.AI)
 		if err != nil {
 			// TODO: report error on status
-			contextutils.LoggerFrom(ctx).Errorf("error while processing AI TrafficPolicy: %v", err)
+			slog.Error("error while processing AI TrafficPolicy", slog.Any("error", err))
 			return err
 		}
 	}
@@ -917,7 +917,7 @@ func buildTranslateFunc(
 		localRateLimitForSpec(policyCR.Spec, &outSpec)
 
 		for _, err := range outSpec.errors {
-			contextutils.LoggerFrom(ctx).Error(policyCR.GetNamespace(), policyCR.GetName(), err)
+			slog.Error("error translating policy", slog.String("namespace", policyCR.GetNamespace()), slog.String("name", policyCR.GetName()), slog.Any("error", err))
 		}
 		policyIr.spec = outSpec
 
@@ -949,7 +949,7 @@ func aiSecretForSpec(
 	// Retrieve and assign the secret
 	secret, err := pluginutils.GetSecretIr(secrets, krtctx, secretRef.Name, policyCR.GetNamespace())
 	if err != nil {
-		contextutils.LoggerFrom(ctx).Error(err)
+		slog.Error("failed to get secret for AI policy", slog.String("secret_name", secretRef.Name), slog.String("namespace", policyCR.GetNamespace()), slog.Any("error", err))
 		return nil, err
 	}
 	return secret, nil
@@ -988,6 +988,7 @@ func localRateLimitForSpec(spec v1alpha1.TrafficPolicySpec, out *trafficPolicySp
 		if err != nil {
 			// In case of an error with translating the local rate limit configuration,
 			// the route will be dropped
+			slog.Error("error translating local rate limit", slog.Any("error", err))
 			out.errors = append(out.errors, err)
 		}
 	}
