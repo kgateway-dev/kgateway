@@ -2,6 +2,9 @@ package ir
 
 import "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 
+// This file exists to avoid changing all the code import paths in one mega PR.
+// this file will be removed over time, new code should not use this file.
+
 type (
 	TypedFilterConfigMap  = ir.TypedFilterConfigMap
 	BackendInit           = ir.BackendInit
