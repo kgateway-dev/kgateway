@@ -8,7 +8,6 @@ Name|Version|License
 [go-control-plane/contrib](https://github.com/envoyproxy/go-control-plane)|v1.32.5-0.20250207140015-90270e3c85fd|Apache License 2.0
 [go-control-plane/envoy](https://github.com/envoyproxy/go-control-plane)|v1.32.5-0.20250211152746-ef139ef8ea6b|Apache License 2.0
 [go-control-plane/ratelimit](https://github.com/envoyproxy/go-control-plane)|v0.1.0|Apache License 2.0
-[fgrosse/zaptest](https://github.com/fgrosse/zaptest)|v1.1.0|MIT License
 [fsnotify/fsnotify](https://github.com/fsnotify/fsnotify)|v1.8.0|BSD 3-clause "New" or "Revised" License
 [ghodss/yaml](https://github.com/ghodss/yaml)|v1.0.1-0.20190212211648-25d852aebe32|MIT License
 [go-logr/logr](https://github.com/go-logr/logr)|v1.4.2|Apache License 2.0
