@@ -14,8 +14,10 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
 	envoyadmincli "github.com/kgateway-dev/kgateway/v2/pkg/utils/envoyutils/admincli"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
@@ -92,10 +94,10 @@ func (s *testingSuite) SetupSuite() {
 	})
 
 	s.assertStatus(metav1.Condition{
-		Type:    "Accepted",
+		Type:    string(gwv1alpha2.PolicyConditionAccepted),
 		Status:  metav1.ConditionTrue,
-		Reason:  "Accepted",
-		Message: "Policy accepted",
+		Reason:  string(gwv1alpha2.PolicyReasonAccepted),
+		Message: reports.PolicyAcceptedMsg,
 	})
 }
 
@@ -369,9 +371,10 @@ func (s *testingSuite) assertStatus(expected metav1.Condition) {
 		err = s.testInstallation.ClusterContext.Client.Get(s.ctx, objKey, be)
 		g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get route policy %s", objKey)
 
-		actual := be.Status.Conditions
-		g.Expect(actual).To(gomega.HaveLen(1), "condition should have length of 1")
-		cond := meta.FindStatusCondition(actual, expected.Type)
+		actual := be.Status
+		g.Expect(actual.Ancestors).To(gomega.HaveLen(1), "should have one ancestor")
+		ancestorStatus := actual.Ancestors[0]
+		cond := meta.FindStatusCondition(ancestorStatus.Conditions, expected.Type)
 		g.Expect(cond).NotTo(gomega.BeNil())
 		g.Expect(cond.Status).To(gomega.Equal(expected.Status))
 		g.Expect(cond.Reason).To(gomega.Equal(expected.Reason))

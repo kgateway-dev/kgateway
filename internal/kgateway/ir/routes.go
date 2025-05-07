@@ -122,7 +122,23 @@ func (c TcpRouteIR) ResourceName() string {
 }
 
 func (c TcpRouteIR) Equals(in TcpRouteIR) bool {
-	return c.ObjectSource == in.ObjectSource && versionEquals(c.SourceObject, in.SourceObject) && c.AttachedPolicies.Equals(in.AttachedPolicies)
+	return c.ObjectSource == in.ObjectSource &&
+		versionEquals(c.SourceObject, in.SourceObject) &&
+		c.AttachedPolicies.Equals(in.AttachedPolicies) &&
+		backendsEqual(c.Backends, in.Backends)
+}
+
+// backendsEqual compares two slices of BackendRefIR using the Equals method for readability.
+func backendsEqual(a, b []BackendRefIR) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if !a[i].Equals(b[i]) {
+			return false
+		}
+	}
+	return true
 }
 
 var _ Route = &TcpRouteIR{}
@@ -148,7 +164,10 @@ func (c TlsRouteIR) ResourceName() string {
 }
 
 func (c TlsRouteIR) Equals(in TlsRouteIR) bool {
-	return c.ObjectSource == in.ObjectSource && versionEquals(c.SourceObject, in.SourceObject) && c.AttachedPolicies.Equals(in.AttachedPolicies)
+	return c.ObjectSource == in.ObjectSource &&
+		versionEquals(c.SourceObject, in.SourceObject) &&
+		c.AttachedPolicies.Equals(in.AttachedPolicies) &&
+		backendsEqual(c.Backends, in.Backends)
 }
 
 func (c *TlsRouteIR) GetHostnames() []string {

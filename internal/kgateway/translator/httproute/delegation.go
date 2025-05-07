@@ -33,7 +33,6 @@ func flattenDelegatedRoutes(
 	backend ir.HttpBackendOrDelegate,
 	parentReporter reports.ParentRefReporter,
 	baseReporter reports.Reporter,
-	gwListener gwv1.Listener,
 	parentMatch gwv1.HTTPRouteMatch,
 	outputs *[]ir.HttpRouteRuleMatchIR,
 	routesVisited sets.Set[types.NamespacedName],
@@ -103,7 +102,7 @@ func flattenDelegatedRoutes(
 		}
 
 		translateGatewayHTTPRouteRulesUtil(
-			ctx, gwListener, child, reporter, baseReporter, outputs, routesVisited, delegatingParent)
+			ctx, child, reporter, baseReporter, outputs, routesVisited, delegatingParent)
 	}
 
 	return nil

@@ -31,6 +31,8 @@ import (
 	kwellknown "github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
 
+var ErrUnresolvedBackendRef = errors.New("unresolved backend reference")
+
 // convertAccessLogConfig transforms a list of AccessLog configurations into Envoy AccessLog configurations
 func convertAccessLogConfig(
 	ctx context.Context,
@@ -51,7 +53,7 @@ func convertAccessLogConfig(
 			backend, err := commoncol.BackendIndex.GetBackendFromRef(krtctx, parentSrc, log.GrpcService.BackendRef.BackendObjectReference)
 			// TODO: what is the correct behavior? maybe route to static blackhole?
 			if err != nil {
-				return nil, fmt.Errorf("failed to get backend from ref: %s", err.Error())
+				return nil, fmt.Errorf("%w: %v", ErrUnresolvedBackendRef, err)
 			}
 			grpcBackends[getLogId(log.GrpcService.LogName, idx)] = backend
 		}

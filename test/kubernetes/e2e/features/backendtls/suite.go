@@ -2,6 +2,7 @@ package backendtls
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"path/filepath"
 
@@ -11,11 +12,14 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwv1a3 "sigs.k8s.io/gateway-api/apis/v1alpha3"
 
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/backendtlspolicy"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
 	"github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 	"github.com/kgateway-dev/kgateway/v2/test/helpers"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/defaults"
@@ -120,7 +124,7 @@ func (s *clientTlsTestingSuite) TestBackendTLSPolicyAndStatus() {
 		Type:    string(gwv1a2.PolicyConditionAccepted),
 		Status:  metav1.ConditionTrue,
 		Reason:  string(gwv1a2.PolicyReasonAccepted),
-		Message: "Policy accepted and attached",
+		Message: reports.PolicyAcceptedAndAttachedMsg,
 	})
 
 	// delete configmap so we can assert status updates correctly
@@ -131,7 +135,7 @@ func (s *clientTlsTestingSuite) TestBackendTLSPolicyAndStatus() {
 		Type:    string(gwv1a2.PolicyConditionAccepted),
 		Status:  metav1.ConditionFalse,
 		Reason:  string(gwv1a2.PolicyReasonInvalid),
-		Message: `Policy error: "configmap default/ca not found"`,
+		Message: fmt.Sprintf("%s: default/ca", backendtlspolicy.ErrConfigMapNotFound),
 	})
 }
 
@@ -148,9 +152,10 @@ func (s *clientTlsTestingSuite) assertPolicyStatus(inCondition metav1.Condition)
 		ancestor := tlsPol.Status.Ancestors[0]
 
 		expectedAncestorRef := gwv1a2.ParentReference{
-			Group: (*gwv1.Group)(&svcGroup),
-			Kind:  (*gwv1.Kind)(&svcKind),
-			Name:  "nginx",
+			Group:     (*gwv1.Group)(&svcGroup),
+			Kind:      (*gwv1.Kind)(&svcKind),
+			Namespace: ptr.To(gwv1.Namespace(nginxMeta.Namespace)),
+			Name:      gwv1.ObjectName(nginxMeta.Name),
 		}
 		g.Expect(ancestor.AncestorRef).To(gomega.BeEquivalentTo(expectedAncestorRef))
 

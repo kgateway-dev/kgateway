@@ -10,7 +10,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
-	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
+	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/gateway/testutils"
@@ -172,6 +172,24 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 				Namespace: "infra",
 				Name:      "example-gateway",
 			},
+			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
+				var currentStatus gwv1alpha2.PolicyStatus
+
+				expectedPolicies := []reports.PolicyKey{
+					{Group: "gateway.kgateway.dev", Kind: "TrafficPolicy", Namespace: "infra", Name: "transform"},
+					{Group: "gateway.kgateway.dev", Kind: "TrafficPolicy", Namespace: "infra", Name: "rate-limit"},
+				}
+
+				for _, policy := range expectedPolicies {
+					// Validate the 2 policies attached to the route
+					status := reportsMap.BuildPolicyStatus(context.TODO(), policy, wellknown.GatewayControllerName, currentStatus)
+					Expect(status).NotTo(BeNil())
+					Expect(status.Ancestors).To(HaveLen(1)) // 1 Gateway(ancestor)
+					acceptedCondition := meta.FindStatusCondition(status.Ancestors[0].Conditions, string(gwv1alpha2.PolicyConditionAccepted))
+					Expect(acceptedCondition).NotTo(BeNil())
+					Expect(acceptedCondition.Status).To(Equal(metav1.ConditionTrue))
+				}
+			},
 		}),
 	Entry(
 		"tcp gateway with basic routing",
@@ -183,7 +201,7 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 				Name:      "example-gateway",
 			},
 			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
-				route := &gwv1a2.TCPRoute{
+				route := &gwv1alpha2.TCPRoute{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "example-tcp-route",
 						Namespace: "default",
@@ -208,7 +226,7 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 				Name:      "example-gateway",
 			},
 			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
-				route := &gwv1a2.TCPRoute{
+				route := &gwv1alpha2.TCPRoute{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "example-tcp-route",
 						Namespace: "default",
@@ -233,7 +251,7 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 				Name:      "example-gateway",
 			},
 			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
-				route := &gwv1a2.TCPRoute{
+				route := &gwv1alpha2.TCPRoute{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "example-tcp-route",
 						Namespace: "default",
@@ -268,7 +286,7 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 				Name:      "example-gateway",
 			},
 			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
-				route := &gwv1a2.TLSRoute{
+				route := &gwv1alpha2.TLSRoute{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "example-tls-route",
 						Namespace: "default",
@@ -293,7 +311,7 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 				Name:      "example-gateway",
 			},
 			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
-				route := &gwv1a2.TLSRoute{
+				route := &gwv1alpha2.TLSRoute{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "example-tls-route",
 						Namespace: "default",
@@ -318,7 +336,7 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 				Name:      "example-gateway",
 			},
 			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
-				route := &gwv1a2.TLSRoute{
+				route := &gwv1alpha2.TLSRoute{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "example-tls-route",
 						Namespace: "default",

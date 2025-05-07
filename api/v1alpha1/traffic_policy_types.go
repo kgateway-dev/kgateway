@@ -3,6 +3,7 @@ package v1alpha1
 import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 )
 
 // +kubebuilder:rbac:groups=gateway.kgateway.dev,resources=trafficpolicies,verbs=get;list;watch
@@ -18,8 +19,11 @@ type TrafficPolicy struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   TrafficPolicySpec `json:"spec,omitempty"`
-	Status SimpleStatus      `json:"status,omitempty"`
+	Spec TrafficPolicySpec `json:"spec,omitempty"`
+
+	Status gwv1alpha2.PolicyStatus `json:"status,omitempty"`
+	// TODO: embed this into a typed Status field when
+	// https://github.com/kubernetes/kubernetes/issues/131533 is resolved
 }
 
 // +kubebuilder:object:root=true
@@ -145,16 +149,6 @@ type BodyTransformation struct {
 	Value *InjaTemplate `json:"value,omitempty"`
 }
 
-// SimpleStatus defines the observed state of the policy.
-type SimpleStatus struct {
-	// Conditions is the list of conditions for the policy.
-	// +optional
-	// +listType=map
-	// +listMapKey=type
-	// +kubebuilder:validation:MaxItems=8
-	Conditions []metav1.Condition `json:"conditions,omitempty"`
-}
-
 // ExtAuthEnabled determines the enabled state of the ExtAuth filter.
 // +kubebuilder:validation:Enum=DisableAll
 type ExtAuthEnabled string
@@ -219,8 +213,12 @@ type BufferSettings struct {
 // RateLimit defines a rate limiting policy.
 type RateLimit struct {
 	// Local defines a local rate limiting policy.
-	// +required
-	Local *LocalRateLimitPolicy `json:"local"`
+	// +optional
+	Local *LocalRateLimitPolicy `json:"local,omitempty"`
+
+	// Global defines a global rate limiting policy using an external service.
+	// +optional
+	Global *RateLimitPolicy `json:"global,omitempty"`
 }
 
 // LocalRateLimitPolicy represents a policy for local rate limiting.
@@ -255,4 +253,76 @@ type TokenBucket struct {
 	// +required
 	// +kubebuilder:validation:Format=duration
 	FillInterval string `json:"fillInterval"`
+}
+
+// RateLimitPolicy defines a global rate limiting policy using an external service.
+type RateLimitPolicy struct {
+	// Descriptors define the dimensions for rate limiting.
+	// These values are passed to the rate limit service which applies configured limits based on them.
+	// Each descriptor represents a single rate limit rule with one or more entries.
+	// +required
+	// +kubebuilder:validation:MinItems=1
+	Descriptors []RateLimitDescriptor `json:"descriptors"`
+
+	// ExtensionRef references a GatewayExtension that provides the global rate limit service.
+	// +required
+	ExtensionRef *corev1.LocalObjectReference `json:"extensionRef"`
+}
+
+// RateLimitDescriptor defines a descriptor for rate limiting.
+// A descriptor is a group of entries that form a single rate limit rule.
+type RateLimitDescriptor struct {
+	// Entries are the individual components that make up this descriptor.
+	// When translated to Envoy, these entries combine to form a single descriptor.
+	// +required
+	// +kubebuilder:validation:MinItems=1
+	Entries []RateLimitDescriptorEntry `json:"entries"`
+}
+
+// RateLimitDescriptorEntryType defines the type of a rate limit descriptor entry.
+// +kubebuilder:validation:Enum=Generic;Header;RemoteAddress;Path
+type RateLimitDescriptorEntryType string
+
+const (
+	// RateLimitDescriptorEntryTypeGeneric represents a generic key-value descriptor entry.
+	RateLimitDescriptorEntryTypeGeneric RateLimitDescriptorEntryType = "Generic"
+
+	// RateLimitDescriptorEntryTypeHeader represents a descriptor entry that extracts its value from a request header.
+	RateLimitDescriptorEntryTypeHeader RateLimitDescriptorEntryType = "Header"
+
+	// RateLimitDescriptorEntryTypeRemoteAddress represents a descriptor entry that uses the client's IP address as its value.
+	RateLimitDescriptorEntryTypeRemoteAddress RateLimitDescriptorEntryType = "RemoteAddress"
+
+	// RateLimitDescriptorEntryTypePath represents a descriptor entry that uses the request path as its value.
+	RateLimitDescriptorEntryTypePath RateLimitDescriptorEntryType = "Path"
+)
+
+// RateLimitDescriptorEntry defines a single entry in a rate limit descriptor.
+// Only one entry type may be specified.
+// +kubebuilder:validation:XValidation:message="exactly one entry type must be specified",rule="(has(self.type) && (self.type == 'Generic' && has(self.generic) && !has(self.header)) || (self.type == 'Header' && has(self.header) && !has(self.generic)) || (self.type == 'RemoteAddress' && !has(self.generic) && !has(self.header)) || (self.type == 'Path' && !has(self.generic) && !has(self.header)))"
+type RateLimitDescriptorEntry struct {
+	// Type specifies what kind of rate limit descriptor entry this is.
+	// +required
+	Type RateLimitDescriptorEntryType `json:"type"`
+
+	// Generic contains the configuration for a generic key-value descriptor entry.
+	// This field must be specified when Type is Generic.
+	// +optional
+	Generic *RateLimitDescriptorEntryGeneric `json:"generic,omitempty"`
+
+	// Header specifies a request header to extract the descriptor value from.
+	// This field must be specified when Type is Header.
+	// +optional
+	Header string `json:"header,omitempty"`
+}
+
+// RateLimitDescriptorEntryGeneric defines a generic key-value descriptor entry.
+type RateLimitDescriptorEntryGeneric struct {
+	// Key is the name of this descriptor entry.
+	// +required
+	Key string `json:"key"`
+
+	// Value is the static value for this descriptor entry.
+	// +required
+	Value string `json:"value"`
 }

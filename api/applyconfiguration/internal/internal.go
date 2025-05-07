@@ -565,6 +565,9 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: extProc
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtProcProvider
+    - name: rateLimit
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.RateLimitProvider
     - name: type
       type:
         scalar: string
@@ -705,7 +708,7 @@ var schemaYAML = typed.YAMLObject(`types:
       default: {}
     - name: status
       type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SimpleStatus
+        namedType: io.k8s.sigs.gateway-api.apis.v1alpha2.PolicyStatus
       default: {}
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.HTTPListenerPolicySpec
   map:
@@ -1027,9 +1030,73 @@ var schemaYAML = typed.YAMLObject(`types:
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.RateLimit
   map:
     fields:
+    - name: global
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.RateLimitPolicy
     - name: local
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LocalRateLimitPolicy
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.RateLimitDescriptor
+  map:
+    fields:
+    - name: entries
+      type:
+        list:
+          elementType:
+            namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.RateLimitDescriptorEntry
+          elementRelationship: atomic
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.RateLimitDescriptorEntry
+  map:
+    fields:
+    - name: generic
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.RateLimitDescriptorEntryGeneric
+    - name: header
+      type:
+        scalar: string
+    - name: type
+      type:
+        scalar: string
+      default: ""
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.RateLimitDescriptorEntryGeneric
+  map:
+    fields:
+    - name: key
+      type:
+        scalar: string
+      default: ""
+    - name: value
+      type:
+        scalar: string
+      default: ""
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.RateLimitPolicy
+  map:
+    fields:
+    - name: descriptors
+      type:
+        list:
+          elementType:
+            namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.RateLimitDescriptor
+          elementRelationship: atomic
+    - name: extensionRef
+      type:
+        namedType: io.k8s.api.core.v1.LocalObjectReference
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.RateLimitProvider
+  map:
+    fields:
+    - name: domain
+      type:
+        scalar: string
+      default: ""
+    - name: failOpen
+      type:
+        scalar: boolean
+    - name: grpcService
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtGrpcService
+    - name: timeout
+      type:
+        scalar: string
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Regex
   map:
     fields:
@@ -1137,17 +1204,6 @@ var schemaYAML = typed.YAMLObject(`types:
         map:
           elementType:
             scalar: string
-- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SimpleStatus
-  map:
-    fields:
-    - name: conditions
-      type:
-        list:
-          elementType:
-            namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Condition
-          elementRelationship: associative
-          keys:
-          - type
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SingleAuthToken
   map:
     fields:
@@ -1245,7 +1301,7 @@ var schemaYAML = typed.YAMLObject(`types:
       default: {}
     - name: status
       type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SimpleStatus
+        namedType: io.k8s.sigs.gateway-api.apis.v1alpha2.PolicyStatus
       default: {}
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.TrafficPolicySpec
   map:
@@ -2385,6 +2441,56 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         scalar: string
       default: ""
+- name: io.k8s.sigs.gateway-api.apis.v1.ParentReference
+  map:
+    fields:
+    - name: group
+      type:
+        scalar: string
+    - name: kind
+      type:
+        scalar: string
+    - name: name
+      type:
+        scalar: string
+      default: ""
+    - name: namespace
+      type:
+        scalar: string
+    - name: port
+      type:
+        scalar: numeric
+    - name: sectionName
+      type:
+        scalar: string
+- name: io.k8s.sigs.gateway-api.apis.v1alpha2.PolicyAncestorStatus
+  map:
+    fields:
+    - name: ancestorRef
+      type:
+        namedType: io.k8s.sigs.gateway-api.apis.v1.ParentReference
+      default: {}
+    - name: conditions
+      type:
+        list:
+          elementType:
+            namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Condition
+          elementRelationship: associative
+          keys:
+          - type
+    - name: controllerName
+      type:
+        scalar: string
+      default: ""
+- name: io.k8s.sigs.gateway-api.apis.v1alpha2.PolicyStatus
+  map:
+    fields:
+    - name: ancestors
+      type:
+        list:
+          elementType:
+            namedType: io.k8s.sigs.gateway-api.apis.v1alpha2.PolicyAncestorStatus
+          elementRelationship: atomic
 - name: __untyped_atomic_
   scalar: untyped
   list:

@@ -25,6 +25,7 @@ import (
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
 )
@@ -32,7 +33,6 @@ import (
 type httpListenerPolicy struct {
 	ct        time.Time
 	accessLog []*envoyaccesslog.AccessLog
-	errors    []error
 }
 
 func (d *httpListenerPolicy) CreationTime() time.Time {
@@ -57,6 +57,7 @@ func (d *httpListenerPolicy) Equals(in any) bool {
 
 type httpListenerPolicyPluginGwPass struct {
 	ir.UnimplementedProxyTranslationPass
+	reporter reports.Reporter
 }
 
 func (p *httpListenerPolicyPluginGwPass) ApplyForBackend(ctx context.Context, pCtx *ir.RouteBackendContext, in ir.HttpBackend, out *envoy_config_route_v3.Route) error {
@@ -107,9 +108,9 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 			PolicyIR: &httpListenerPolicy{
 				ct:        i.CreationTimestamp.Time,
 				accessLog: accessLog,
-				errors:    errs,
 			},
 			TargetRefs: convert(i.Spec.TargetRefs),
+			Errors:     errs,
 		}
 
 		return pol
@@ -121,10 +122,9 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 				// AttachmentPoints: []ir.AttachmentPoints{ir.HttpAttachmentPoint},
 				NewGatewayTranslationPass: NewGatewayTranslationPass,
 				Policies:                  policyCol,
+				GetPolicyStatus:           getPolicyStatusFn(commoncol.CrudClient),
+				PatchPolicyStatus:         patchPolicyStatusFn(commoncol.CrudClient),
 			},
-		},
-		ContributesRegistration: map[schema.GroupKind]func(){
-			wellknown.HTTPListenerPolicyGVK.GroupKind(): buildRegisterCallback(ctx, commoncol.CrudClient, policyCol),
 		},
 	}
 }
@@ -141,8 +141,10 @@ func convert(targetRefs []v1alpha1.LocalPolicyTargetReference) []ir.PolicyRef {
 	return refs
 }
 
-func NewGatewayTranslationPass(ctx context.Context, tctx ir.GwTranslationCtx) ir.ProxyTranslationPass {
-	return &httpListenerPolicyPluginGwPass{}
+func NewGatewayTranslationPass(ctx context.Context, tctx ir.GwTranslationCtx, reporter reports.Reporter) ir.ProxyTranslationPass {
+	return &httpListenerPolicyPluginGwPass{
+		reporter: reporter,
+	}
 }
 
 func (p *httpListenerPolicyPluginGwPass) Name() string {

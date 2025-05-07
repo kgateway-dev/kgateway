@@ -11,12 +11,15 @@ import (
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"google.golang.org/protobuf/proto"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
 )
 
 type ListenerContext struct {
-	Policy PolicyIR
+	Policy            PolicyIR
+	PolicyAncestorRef gwv1.ParentReference
 }
 
 type RouteConfigContext struct {
@@ -195,7 +198,8 @@ type PolicyWrapper struct {
 
 	// Errors processing it for status.
 	// note: these errors are based on policy itself, regardless of whether it's attached to a resource.
-	// TODO: change for conditions
+	// Errors should be formatted for users, so do not include internal lib errors.
+	// Instead use a well defined error such as ErrInvalidConfig
 	Errors []error
 
 	// The IR of the policy objects. ideally with structural errors removed.
@@ -232,7 +236,7 @@ var ErrNotAttachable = fmt.Errorf("policy is not attachable to this object")
 
 type PolicyRun interface {
 	// Allocate state for single listener+rotue translation pass.
-	NewGatewayTranslationPass(ctx context.Context, tctx GwTranslationCtx) ProxyTranslationPass
+	NewGatewayTranslationPass(ctx context.Context, tctx GwTranslationCtx, reporter reports.Reporter) ProxyTranslationPass
 	// Process cluster for a backend
 	ProcessBackend(ctx context.Context, in BackendObjectIR, out *envoy_config_cluster_v3.Cluster) error
 }
