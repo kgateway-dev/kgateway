@@ -36,7 +36,7 @@ var (
 )
 
 type extAuthIR struct {
-	provider        *trafficPolicyGatewayExtensionIR
+	provider        *TrafficPolicyGatewayExtensionIR
 	enablement      v1alpha1.ExtAuthEnabled
 	extauthPerRoute *envoy_ext_authz_v3.ExtAuthzPerRoute
 }
@@ -75,7 +75,7 @@ func extAuthForSpec(
 	commoncol *common.CommonCollections,
 	krtctx krt.HandlerContext,
 	trafficpolicy *v1alpha1.TrafficPolicy,
-	gatewayExtensions krt.Collection[trafficPolicyGatewayExtensionIR],
+	gatewayExtensions krt.Collection[TrafficPolicyGatewayExtensionIR],
 	out *trafficPolicySpecIr,
 ) error {
 	policySpec := &trafficpolicy.Spec
@@ -84,7 +84,7 @@ func extAuthForSpec(
 		return nil
 	}
 	spec := policySpec.ExtAuth
-	var provider *trafficPolicyGatewayExtensionIR
+	var provider *TrafficPolicyGatewayExtensionIR
 	if spec.ExtensionRef != nil {
 		gwExtName := types.NamespacedName{Name: spec.ExtensionRef.Name, Namespace: trafficpolicy.GetNamespace()}
 		gatewayExtension := krt.FetchOne(krtctx, gatewayExtensions, krt.FilterObjectName(gwExtName))

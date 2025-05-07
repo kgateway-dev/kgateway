@@ -84,13 +84,13 @@ func getRateLimitFilterName(name string) string {
 	return fmt.Sprintf("%s/%s", rateLimitFilterNamePrefix, name)
 }
 
-type trafficPolicy struct {
+type TrafficPolicy struct {
 	ct   time.Time
 	spec trafficPolicySpecIr
 }
 
 type ExtprocIR struct {
-	provider        *trafficPolicyGatewayExtensionIR
+	provider        *TrafficPolicyGatewayExtensionIR
 	ExtProcPerRoute *envoy_ext_proc_v3.ExtProcPerRoute
 }
 
@@ -131,12 +131,12 @@ type trafficPolicySpecIr struct {
 	errors                     []error
 }
 
-func (d *trafficPolicy) CreationTime() time.Time {
+func (d *TrafficPolicy) CreationTime() time.Time {
 	return d.ct
 }
 
-func (d *trafficPolicy) Equals(in any) bool {
-	d2, ok := in.(*trafficPolicy)
+func (d *TrafficPolicy) Equals(in any) bool {
+	d2, ok := in.(*TrafficPolicy)
 	if !ok {
 		return false
 	}
@@ -218,7 +218,7 @@ func (r *RateLimitIR) Equals(other *RateLimitIR) bool {
 	return true
 }
 
-type trafficPolicyGatewayExtensionIR struct {
+type TrafficPolicyGatewayExtensionIR struct {
 	name      string
 	extType   v1alpha1.GatewayExtensionType
 	extAuth   *envoy_ext_authz_v3.ExtAuthz
@@ -228,11 +228,11 @@ type trafficPolicyGatewayExtensionIR struct {
 }
 
 // ResourceName returns the unique name for this extension.
-func (e trafficPolicyGatewayExtensionIR) ResourceName() string {
+func (e TrafficPolicyGatewayExtensionIR) ResourceName() string {
 	return e.name
 }
 
-func (e trafficPolicyGatewayExtensionIR) Equals(other trafficPolicyGatewayExtensionIR) bool {
+func (e TrafficPolicyGatewayExtensionIR) Equals(other TrafficPolicyGatewayExtensionIR) bool {
 	if e.extType != other.extType {
 		return false
 	}
@@ -259,7 +259,7 @@ func (e trafficPolicyGatewayExtensionIR) Equals(other trafficPolicyGatewayExtens
 }
 
 type providerWithFromListener struct {
-	provider     *trafficPolicyGatewayExtensionIR
+	provider     *TrafficPolicyGatewayExtensionIR
 	fromListener bool
 }
 
@@ -295,17 +295,10 @@ func registerTypes(ourCli versioned.Interface) {
 		},
 	)
 }
+func TranslateGatewayExtensionBuilder(commoncol *common.CommonCollections) func(krtctx krt.HandlerContext, gExt ir.GatewayExtension) *TrafficPolicyGatewayExtensionIR {
+	return func(krtctx krt.HandlerContext, gExt ir.GatewayExtension) *TrafficPolicyGatewayExtensionIR {
 
-func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensionsplug.Plugin {
-	registerTypes(commoncol.OurClient)
-
-	useRustformations = commoncol.Settings.UseRustFormations // stash the state of the env setup for rustformation usage
-
-	col := krt.WrapClient(kclient.New[*v1alpha1.TrafficPolicy](commoncol.Client), commoncol.KrtOpts.ToOptions("TrafficPolicy")...)
-	gk := wellknown.TrafficPolicyGVK.GroupKind()
-
-	gatewayExtensions := krt.NewCollection(commoncol.GatewayExtensions, func(krtctx krt.HandlerContext, gExt ir.GatewayExtension) *trafficPolicyGatewayExtensionIR {
-		p := &trafficPolicyGatewayExtensionIR{
+		p := &TrafficPolicyGatewayExtensionIR{
 			name:    krt.Named{Name: gExt.Name, Namespace: gExt.Namespace}.ResourceName(),
 			extType: gExt.Type,
 		}
@@ -368,9 +361,20 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 			p.rateLimit = rateLimitConfig
 		}
 		return p
-	})
+	}
+}
 
-	translateFn := buildTranslateFunc(ctx, commoncol, gatewayExtensions)
+func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensionsplug.Plugin {
+	registerTypes(commoncol.OurClient)
+
+	useRustformations = commoncol.Settings.UseRustFormations // stash the state of the env setup for rustformation usage
+
+	col := krt.WrapClient(kclient.New[*v1alpha1.TrafficPolicy](commoncol.Client), commoncol.KrtOpts.ToOptions("TrafficPolicy")...)
+	gk := wellknown.TrafficPolicyGVK.GroupKind()
+
+	gatewayExtensions := krt.NewCollection(commoncol.GatewayExtensions, TranslateGatewayExtensionBuilder(commoncol))
+
+	translateFn := TrafficPolicyBuilder(ctx, commoncol, gatewayExtensions)
 
 	// TrafficPolicy IR will have TypedConfig -> implement backendroute method to add prompt guard, etc.
 	policyCol := krt.NewCollection(col, func(krtctx krt.HandlerContext, policyCR *v1alpha1.TrafficPolicy) *ir.PolicyWrapper {
@@ -520,13 +524,13 @@ func NewGatewayTranslationPass(ctx context.Context, tctx ir.GwTranslationCtx, re
 	}
 }
 
-func (p *trafficPolicy) Name() string {
+func (p *TrafficPolicy) Name() string {
 	return "routepolicies" // TODO: rename to trafficpolicies
 }
 
 // called 1 time for each listener
 func (p *trafficPolicyPluginGwPass) ApplyListenerPlugin(ctx context.Context, pCtx *ir.ListenerContext, out *envoy_config_listener_v3.Listener) {
-	policy, ok := pCtx.Policy.(*trafficPolicy)
+	policy, ok := pCtx.Policy.(*TrafficPolicy)
 	if !ok {
 		return
 	}
@@ -589,7 +593,7 @@ func (p *trafficPolicyPluginGwPass) ApplyVhostPlugin(ctx context.Context, pCtx *
 
 // called 0 or more times
 func (p *trafficPolicyPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.RouteContext, outputRoute *routev3.Route) error {
-	policy, ok := pCtx.Policy.(*trafficPolicy)
+	policy, ok := pCtx.Policy.(*TrafficPolicy)
 	if !ok {
 		return nil
 	}
@@ -763,7 +767,7 @@ func (p *trafficPolicyPluginGwPass) ApplyForRouteBackend(
 	policy ir.PolicyIR,
 	pCtx *ir.RouteBackendContext,
 ) error {
-	rtPolicy, ok := policy.(*trafficPolicy)
+	rtPolicy, ok := policy.(*TrafficPolicy)
 	if !ok {
 		return nil
 	}
@@ -1027,7 +1031,7 @@ func mergePolicies(policies []ir.PolicyAtt) ir.PolicyAtt {
 	if len(policies) == 0 {
 		return out
 	}
-	_, ok := policies[0].PolicyIr.(*trafficPolicy)
+	_, ok := policies[0].PolicyIr.(*TrafficPolicy)
 	// ignore unknown types
 	if !ok {
 		return out
@@ -1038,9 +1042,9 @@ func mergePolicies(policies []ir.PolicyAtt) ir.PolicyAtt {
 		GroupKind:    policies[0].GroupKind,
 		PolicyRef:    policies[0].PolicyRef,
 		MergeOrigins: map[string]*ir.AttachedPolicyRef{},
-		PolicyIr:     &trafficPolicy{},
+		PolicyIr:     &TrafficPolicy{},
 	}
-	merged := out.PolicyIr.(*trafficPolicy)
+	merged := out.PolicyIr.(*TrafficPolicy)
 
 	for i := len(policies) - 1; i >= 0; i-- {
 		mergeOpts := policy.MergeOptions{
@@ -1057,7 +1061,7 @@ func mergePolicies(policies []ir.PolicyAtt) ir.PolicyAtt {
 			mergeOpts.Strategy = policy.AugmentedMerge
 		}
 
-		p2 := policies[i].PolicyIr.(*trafficPolicy)
+		p2 := policies[i].PolicyIr.(*TrafficPolicy)
 		p2Ref := policies[i].PolicyRef
 
 		if policy.IsMergeable(merged.spec.AI, p2.spec.AI, mergeOpts) {
@@ -1097,12 +1101,12 @@ func mergePolicies(policies []ir.PolicyAtt) ir.PolicyAtt {
 	return out
 }
 
-func buildTranslateFunc(
+func TrafficPolicyBuilder(
 	ctx context.Context,
-	commoncol *common.CommonCollections, gatewayExtensions krt.Collection[trafficPolicyGatewayExtensionIR],
-) func(krtctx krt.HandlerContext, i *v1alpha1.TrafficPolicy) (*trafficPolicy, []error) {
-	return func(krtctx krt.HandlerContext, policyCR *v1alpha1.TrafficPolicy) (*trafficPolicy, []error) {
-		policyIr := trafficPolicy{
+	commoncol *common.CommonCollections, gatewayExtensions krt.Collection[TrafficPolicyGatewayExtensionIR],
+) func(krtctx krt.HandlerContext, i *v1alpha1.TrafficPolicy) (*TrafficPolicy, []error) {
+	return func(krtctx krt.HandlerContext, policyCR *v1alpha1.TrafficPolicy) (*TrafficPolicy, []error) {
+		policyIr := TrafficPolicy{
 			ct: policyCR.CreationTimestamp.Time,
 		}
 		outSpec := trafficPolicySpecIr{}
