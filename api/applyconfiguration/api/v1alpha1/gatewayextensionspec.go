@@ -9,9 +9,10 @@ import (
 // GatewayExtensionSpecApplyConfiguration represents a declarative configuration of the GatewayExtensionSpec type for use
 // with apply.
 type GatewayExtensionSpecApplyConfiguration struct {
-	Type    *apiv1alpha1.GatewayExtensionType  `json:"type,omitempty"`
-	ExtAuth *ExtAuthProviderApplyConfiguration `json:"extAuth,omitempty"`
-	ExtProc *ExtProcProviderApplyConfiguration `json:"extProc,omitempty"`
+	Type      *apiv1alpha1.GatewayExtensionType    `json:"type,omitempty"`
+	ExtAuth   *ExtAuthProviderApplyConfiguration   `json:"extAuth,omitempty"`
+	ExtProc   *ExtProcProviderApplyConfiguration   `json:"extProc,omitempty"`
+	RateLimit *RateLimitProviderApplyConfiguration `json:"rateLimit,omitempty"`
 }
 
 // GatewayExtensionSpecApplyConfiguration constructs a declarative configuration of the GatewayExtensionSpec type for use with
@@ -41,5 +42,13 @@ func (b *GatewayExtensionSpecApplyConfiguration) WithExtAuth(value *ExtAuthProvi
 // If called multiple times, the ExtProc field is set to the value of the last call.
 func (b *GatewayExtensionSpecApplyConfiguration) WithExtProc(value *ExtProcProviderApplyConfiguration) *GatewayExtensionSpecApplyConfiguration {
 	b.ExtProc = value
+	return b
+}
+
+// WithRateLimit sets the RateLimit field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the RateLimit field is set to the value of the last call.
+func (b *GatewayExtensionSpecApplyConfiguration) WithRateLimit(value *RateLimitProviderApplyConfiguration) *GatewayExtensionSpecApplyConfiguration {
+	b.RateLimit = value
 	return b
 }
