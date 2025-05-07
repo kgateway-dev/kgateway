@@ -8,7 +8,6 @@ import (
 	"time"
 
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
-	"github.com/hashicorp/go-multierror"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/kube/krt"
@@ -537,20 +536,20 @@ func (p *builtinPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.RouteC
 		return nil
 	}
 
-	var errs *multierror.Error
+	var errs error
 	if policy.filterMutation != nil {
 		if err := policy.filterMutation(pCtx.In, outputRoute); err != nil {
-			errs = multierror.Append(errs, err)
+			errs = errors.Join(errs, err)
 		}
 	}
 
 	if policy.ruleMutation != nil {
 		if err := policy.ruleMutation(pCtx.In, outputRoute); err != nil {
-			errs = multierror.Append(errs, err)
+			errs = errors.Join(errs, err)
 		}
 	}
 
-	return errs.ErrorOrNil()
+	return errs
 }
 
 func (p *builtinPluginGwPass) ApplyForRouteBackend(

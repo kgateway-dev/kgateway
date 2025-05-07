@@ -20,8 +20,13 @@ type Settings struct {
 	// Defaults to "istio-system".
 	IstioNamespace string `split_words:"true" default:"istio-system"`
 
+	// XdsServiceHost is the host that serves xDS config.
+	// It overrides xdsServiceName if set.
+	XdsServiceHost string `split_words:"true"`
+
 	// XdsServiceName is the name of the Kubernetes Service that serves xDS config.
 	// It it assumed to be in the kgateway install namespace.
+	// Ignored if XdsServiceHost is set.
 	XdsServiceName string `split_words:"true" default:"kgateway"`
 
 	// XdsServicePort is the port of the Kubernetes Service that serves xDS config.

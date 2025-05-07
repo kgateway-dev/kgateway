@@ -371,6 +371,63 @@ spec:
                 type: object
               rateLimit:
                 properties:
+                  global:
+                    properties:
+                      descriptors:
+                        items:
+                          properties:
+                            entries:
+                              items:
+                                properties:
+                                  generic:
+                                    properties:
+                                      key:
+                                        type: string
+                                      value:
+                                        type: string
+                                    required:
+                                    - key
+                                    - value
+                                    type: object
+                                  header:
+                                    type: string
+                                  type:
+                                    enum:
+                                    - Generic
+                                    - Header
+                                    - RemoteAddress
+                                    - Path
+                                    type: string
+                                required:
+                                - type
+                                type: object
+                                x-kubernetes-validations:
+                                - message: exactly one entry type must be specified
+                                  rule: (has(self.type) && (self.type == 'Generic'
+                                    && has(self.generic) && !has(self.header)) ||
+                                    (self.type == 'Header' && has(self.header) &&
+                                    !has(self.generic)) || (self.type == 'RemoteAddress'
+                                    && !has(self.generic) && !has(self.header)) ||
+                                    (self.type == 'Path' && !has(self.generic) &&
+                                    !has(self.header)))
+                              minItems: 1
+                              type: array
+                          required:
+                          - entries
+                          type: object
+                        minItems: 1
+                        type: array
+                      extensionRef:
+                        properties:
+                          name:
+                            default: ""
+                            type: string
+                        type: object
+                        x-kubernetes-map-type: atomic
+                    required:
+                    - descriptors
+                    - extensionRef
+                    type: object
                   local:
                     properties:
                       tokenBucket:
@@ -391,8 +448,6 @@ spec:
                         - maxTokens
                         type: object
                     type: object
-                required:
-                - local
                 type: object
               targetRefs:
                 items:

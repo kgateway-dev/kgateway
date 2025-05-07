@@ -8,7 +8,6 @@ import (
 	"os"
 	"runtime"
 
-	"github.com/hashicorp/go-multierror"
 	"github.com/onsi/ginkgo/v2"
 
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -76,7 +75,6 @@ type RequiredConfiguration struct {
 
 // Validate returns an error is the RequiredConfiguration is not met
 func (r RequiredConfiguration) Validate() error {
-
 	err := errors.Join(
 		r.validateOS(),
 		r.validateArch(),
@@ -90,9 +88,7 @@ func (r RequiredConfiguration) Validate() error {
 
 	// If there are reasons defined, include them in the error message
 	if len(r.reasons) > 0 {
-		err = multierror.Append(
-			err,
-			fmt.Errorf("user defined reasons: %+v", r.reasons))
+		err = errors.Join(err, fmt.Errorf("user defined reasons: %+v", r.reasons))
 	}
 
 	return err

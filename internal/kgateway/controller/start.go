@@ -234,10 +234,14 @@ func (c *ControllerBuilder) Start(ctx context.Context) error {
 
 	globalSettings := c.cfg.SetupOpts.GlobalSettings
 
-	xdsHost := kubeutils.ServiceFQDN(metav1.ObjectMeta{
-		Name:      globalSettings.XdsServiceName,
-		Namespace: namespaces.GetPodNamespace(),
-	})
+	xdsHost := globalSettings.XdsServiceHost
+	if xdsHost == "" {
+		xdsHost = kubeutils.ServiceFQDN(metav1.ObjectMeta{
+			Name:      globalSettings.XdsServiceName,
+			Namespace: namespaces.GetPodNamespace(),
+		})
+	}
+
 	xdsPort := globalSettings.XdsServicePort
 	logger.Info("got xds address for deployer", uzap.String("xds_host", xdsHost), uzap.Uint32("xds_port", xdsPort))
 

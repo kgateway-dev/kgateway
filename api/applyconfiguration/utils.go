@@ -151,6 +151,16 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.ProxyDeploymentApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("RateLimit"):
 		return &apiv1alpha1.RateLimitApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("RateLimitDescriptor"):
+		return &apiv1alpha1.RateLimitDescriptorApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("RateLimitDescriptorEntry"):
+		return &apiv1alpha1.RateLimitDescriptorEntryApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("RateLimitDescriptorEntryGeneric"):
+		return &apiv1alpha1.RateLimitDescriptorEntryGenericApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("RateLimitPolicy"):
+		return &apiv1alpha1.RateLimitPolicyApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("RateLimitProvider"):
+		return &apiv1alpha1.RateLimitProviderApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("Regex"):
 		return &apiv1alpha1.RegexApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("RegexMatch"):

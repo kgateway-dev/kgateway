@@ -11,6 +11,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/extproc"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/lambda"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/local_rate_limit"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/rate_limit"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/route_delegation"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/services/httproute"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/services/tcproute"
@@ -44,6 +45,7 @@ func KubeGatewaySuiteRunner() e2e.SuiteRunner {
 	kubeGatewaySuiteRunner.Register("Transforms", transformation.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("ExtProc", extproc.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("LocalRateLimit", local_rate_limit.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("GlobalRateLimit", rate_limit.NewTestingSuite)
 
 	// kubeGatewaySuiteRunner.Register("HttpListenerOptions", http_listener_options.NewTestingSuite)
 	// kubeGatewaySuiteRunner.Register("ListenerOptions", listener_options.NewTestingSuite)
