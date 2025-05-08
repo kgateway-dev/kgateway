@@ -297,7 +297,6 @@ func registerTypes(ourCli versioned.Interface) {
 }
 func TranslateGatewayExtensionBuilder(commoncol *common.CommonCollections) func(krtctx krt.HandlerContext, gExt ir.GatewayExtension) *TrafficPolicyGatewayExtensionIR {
 	return func(krtctx krt.HandlerContext, gExt ir.GatewayExtension) *TrafficPolicyGatewayExtensionIR {
-
 		p := &TrafficPolicyGatewayExtensionIR{
 			name:    krt.Named{Name: gExt.Name, Namespace: gExt.Namespace}.ResourceName(),
 			extType: gExt.Type,
