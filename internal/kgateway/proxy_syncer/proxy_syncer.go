@@ -537,7 +537,7 @@ func (s *ProxySyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger, 
 			return buildAndUpdateStatus(route, wellknown.GRPCRouteKind)
 		})
 		if err != nil {
-			logger.Errorw("all attempts failed at updating GRPCRoute status", "error", err, "route", rnn)
+			logger.Error("all attempts failed at updating GRPCRoute status", "error", err, "route", rnn)
 		}
 	}
 }
