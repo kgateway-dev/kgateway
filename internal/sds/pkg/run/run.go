@@ -2,7 +2,6 @@ package run
 
 import (
 	"context"
-	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
@@ -49,12 +48,12 @@ func Run(ctx context.Context, secrets []server.Secret, sdsClient, sdsServerAddre
 			select {
 			// watch for events
 			case event := <-watcher.Events:
-				slog.Info("received event", slog.Any("event", event))
+				logger.Info("received event", "event", event)
 				sdsServer.UpdateSDSConfig(ctx)
 				watchFiles(watcher, secrets)
 			// watch for errors
 			case err := <-watcher.Errors:
-				slog.Warn("Received error from file watcher", slog.Any("error", err))
+				logger.Warn("Received error from file watcher", "error", err)
 			case <-ctx.Done():
 				return
 			}
@@ -74,15 +73,15 @@ func Run(ctx context.Context, secrets []server.Secret, sdsClient, sdsServerAddre
 
 func watchFiles(watcher *fsnotify.Watcher, secrets []server.Secret) {
 	for _, s := range secrets {
-		slog.Info("watcher started", slog.String("sslKeyFile", s.SslKeyFile), slog.String("sshCertFile", s.SslCertFile), slog.String("sslCaFile", s.SslCaFile))
+		logger.Info("watcher started", "sslKeyFile", s.SslKeyFile, "sslCertFile", s.SslCertFile, "sslCaFile", s.SslCaFile)
 		if err := watcher.Add(s.SslKeyFile); err != nil {
-			slog.Warn("failed to add watch for key file", slog.Any("error", err), slog.String("file", s.SslKeyFile))
+			logger.Warn("failed to add watch for key file", "error", err, "file", s.SslKeyFile)
 		}
 		if err := watcher.Add(s.SslCertFile); err != nil {
-			slog.Warn("failed to add watch for cert file", slog.Any("error", err), slog.String("file", s.SslCertFile))
+			logger.Warn("failed to add watch for cert file", "error", err, "file", s.SslCertFile)
 		}
 		if err := watcher.Add(s.SslCaFile); err != nil {
-			slog.Warn("failed to add watch for ca file", slog.Any("error", err), slog.String("file", s.SslCaFile))
+			logger.Warn("failed to add watch for ca file", "error", err, "file", s.SslCaFile)
 		}
 	}
 }

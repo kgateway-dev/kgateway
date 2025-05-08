@@ -21,6 +21,7 @@ var (
 	// The NodeID of the envoy server reading from this SDS
 	sdsClientDefault = "sds_client"
 	sdsComponentName = "sds_server"
+	logger           = logging.New(sdsComponentName)
 )
 
 type Config struct {
@@ -44,9 +45,6 @@ type Config struct {
 func RunMain() {
 	// Initialize stats server to dynamically change log level. This will also use LOG_LEVEL if set.
 	stats.ConditionallyStartStatsServer()
-	logger := logging.NewWithOptions(sdsComponentName, logging.Options{
-		Format: logging.JSONFormat,
-	})
 	logger.Info("initializing config")
 
 	var c = setup()
