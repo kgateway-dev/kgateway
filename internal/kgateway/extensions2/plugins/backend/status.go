@@ -2,7 +2,6 @@ package backend
 
 import (
 	"context"
-	"log/slog"
 	"time"
 
 	"github.com/avast/retry-go"
@@ -17,7 +16,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/logging"
 )
 
 func buildRegisterCallback(
@@ -26,9 +24,6 @@ func buildRegisterCallback(
 	bcol krt.Collection[ir.BackendObjectIR],
 ) func() {
 	return func() {
-		logger := logging.NewWithOptions("backendStatus", logging.Options{
-			Format: logging.JSONFormat,
-		})
 		bcol.Register(func(o krt.Event[ir.BackendObjectIR]) {
 			if o.Event == controllers.EventDelete {
 				return
@@ -49,7 +44,7 @@ func buildRegisterCallback(
 				func() error {
 					err := cl.Get(ctx, resNN, &res)
 					if err != nil {
-						logger.Error("error getting backend", slog.Any("error", err))
+						logger.Error("error getting backend", "error", err)
 						return err
 					}
 
@@ -71,7 +66,7 @@ func buildRegisterCallback(
 					meta.SetStatusCondition(&conditions, newCondition)
 					res.Status.Conditions = conditions
 					if err := cl.Status().Patch(ctx, &res, client.Merge); err != nil {
-						logger.Error("error updating backend status", slog.Any("error", err))
+						logger.Error("error updating backend status", "error", err)
 						return err
 					}
 					return nil
@@ -83,8 +78,8 @@ func buildRegisterCallback(
 			if err != nil {
 				logger.Error(
 					"all attempts failed updating backend status",
-					slog.String("backend", resNN.String()),
-					slog.Any("error", err),
+					"backend", resNN.String(),
+					"error", err,
 				)
 			}
 		})

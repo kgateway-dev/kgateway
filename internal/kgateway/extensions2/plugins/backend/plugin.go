@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"log"
-	"log/slog"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -30,12 +29,15 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/logging"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
 )
+
+var logger = logging.New("backend_plugin")
 
 const (
 	ExtensionName = "backend"
@@ -88,7 +90,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 	bcol := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *v1alpha1.Backend) *ir.BackendObjectIR {
 		backendIR := translateFn(krtctx, i)
 		if len(backendIR.Errors) > 0 {
-			slog.Error("failed to translate backend", slog.String("backend", i.GetName()), slog.Any("error", errors.Join(backendIR.Errors...)))
+			logger.Error("failed to translate backend", "backend", i.GetName(), "error", errors.Join(backendIR.Errors...))
 		}
 		return &ir.BackendObjectIR{
 			ObjectSource: ir.ObjectSource{
@@ -264,20 +266,20 @@ func processBackend(ctx context.Context, in ir.BackendObjectIR, out *envoy_confi
 	switch {
 	case spec.Type == v1alpha1.BackendTypeStatic:
 		if err := processStatic(ctx, spec.Static, out); err != nil {
-			slog.Error("failed to process static backend", slog.Any("error", err))
+			logger.Error("failed to process static backend", "error", err)
 		}
 	case spec.Type == v1alpha1.BackendTypeAWS:
 		if err := processAws(ctx, spec.Aws, ir.AwsIr, out); err != nil {
-			slog.Error("failed to process aws backend", slog.Any("error", err))
+			logger.Error("failed to process aws backend", "error", err)
 		}
 	case spec.Type == v1alpha1.BackendTypeAI:
 		err := ai.ProcessAIBackend(ctx, spec.AI, ir.AIIr.AISecret, ir.AIIr.AIMultiSecret, out)
 		if err != nil {
-			slog.Error("failed to process ai backend", slog.Any("error", err))
+			logger.Error("failed to process ai backend", "error", err)
 		}
 		err = ai.AddUpstreamClusterHttpFilters(out)
 		if err != nil {
-			slog.Error("failed to add upstream cluster http filters", slog.Any("error", err))
+			logger.Error("failed to add upstream cluster http filters", "error", err)
 		}
 	}
 	return nil
