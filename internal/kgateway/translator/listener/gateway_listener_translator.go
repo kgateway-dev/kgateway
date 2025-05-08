@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log/slog"
 	"slices"
 	"sort"
 	"strings"
@@ -19,6 +18,7 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/logging"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ports"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/query"
 	route "github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/httproute"
@@ -27,6 +27,8 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	reports "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
+
+var logger = logging.New("gateway_listener_translator")
 
 // TranslateListeners translates the set of gloo listeners required to produce a full output proxy (either form one Gateway or multiple merged Gateways)
 func TranslateListeners(
@@ -200,7 +202,7 @@ func (ml *MergedListeners) AppendTcpListener(
 		}
 
 		if len(tRoute.ParentRefs) == 0 {
-			slog.Warn("No parent references found for TCPRoute", slog.String("TCPRoute", tRoute.Name))
+			logger.Warn("No parent references found for TCPRoute", "TCPRoute", tRoute.Name)
 			continue
 		}
 
@@ -209,9 +211,7 @@ func (ml *MergedListeners) AppendTcpListener(
 
 	// If no valid routes are found, do not create a listener
 	if len(validRouteInfos) == 0 {
-		slog.Error(fmt.Sprintf(
-			"No valid routes found for listener %s", listener.Name,
-		))
+		logger.Error("No valid routes found for listener", "listener", listener.Name)
 		return
 	}
 
@@ -260,7 +260,7 @@ func (ml *MergedListeners) AppendTlsListener(
 		}
 
 		if len(tRoute.ParentRefs) == 0 {
-			slog.Warn("No parent references found for TLSRoute", slog.String("TLSRoute", tRoute.Name))
+			logger.Warn("No parent references found for TLSRoute", "TLSRoute", tRoute.Name)
 			continue
 		}
 
@@ -269,7 +269,7 @@ func (ml *MergedListeners) AppendTlsListener(
 
 	// If no valid routes are found, do not create a listener
 	if len(validRouteInfos) == 0 {
-		slog.Error("No valid routes found for listener", slog.String("listener", string(listener.Name)))
+		logger.Error("No valid routes found for listener", "listener", string(listener.Name))
 		return
 	}
 
@@ -395,7 +395,7 @@ func (ml *MergedListener) TranslateListener(
 		)
 		if httpsFilterChain == nil {
 			// Log and skip invalid HTTPS filter chains
-			slog.Error("Failed to translate HTTPS filter chain for listener", slog.String("listener", ml.name))
+			logger.Error("Failed to translate HTTPS filter chain for listener", "listener", ml.name)
 			continue
 		}
 
@@ -404,7 +404,7 @@ func (ml *MergedListener) TranslateListener(
 
 		for vhostRef, vhost := range vhostsForFilterchain {
 			if _, ok := mergedVhosts[vhostRef]; ok {
-				slog.Error("Duplicate virtual host found", slog.String("vhostRef", vhostRef))
+				logger.Error("Duplicate virtual host found", "vhostRef", vhostRef)
 				continue
 			}
 			mergedVhosts[vhostRef] = vhost
