@@ -55,7 +55,6 @@ func toTraditionalTransform(ctx context.Context, t *v1alpha1.Transform) *transfo
 		hasTransform = true
 	}
 
-	//BODY
 	if t.Body == nil {
 		tt.TransformationTemplate.BodyTransformation = &transformationpb.TransformationTemplate_Passthrough{
 			Passthrough: &transformationpb.Passthrough{},
