@@ -28,6 +28,7 @@ SOFTWARE.
 package logging
 
 import (
+	"fmt"
 	"log/slog"
 	"sync"
 )
@@ -68,26 +69,32 @@ func NewWithOptions(component string, opts Options) *slog.Logger {
 		ReplaceAttr: slogLevelReplacer,
 	}
 
+	attrs := []slog.Attr{{Key: "component", Value: slog.StringValue(component)}}
+
 	componentLeveler.Store(component, level)
 	var slogHandler slog.Handler
 	switch opts.Format {
 	case TextFormat:
-		slogHandler = slog.NewTextHandler(opts.Writer, handlerOpts)
+		slogHandler = slog.NewTextHandler(opts.Writer, handlerOpts).WithAttrs(attrs)
 	case JSONFormat:
-		slogHandler = slog.NewJSONHandler(opts.Writer, handlerOpts)
+		slogHandler = slog.NewJSONHandler(opts.Writer, handlerOpts).WithAttrs(attrs)
 	default:
-		slogHandler = slog.NewTextHandler(opts.Writer, handlerOpts)
+		slogHandler = slog.NewTextHandler(opts.Writer, handlerOpts).WithAttrs(attrs)
 	}
 
-	logger := slog.New(slogHandler)
-
-	if component == DefaultComponent {
-		return logger
-	}
-	return logger.With("component", component)
+	return slog.New(slogHandler)
 }
 
-// need a function to get map of component names to level
+// DeleteLeveler deletes the leveler instance for the given component
+func DeleteLeveler(component string) error {
+	if component == "" {
+		return fmt.Errorf("component unspecified")
+	}
+	componentLeveler.Delete(component)
+	return nil
+}
+
+// GetComponentLevels returns a map of component names to their respective slog.Level
 func GetComponentLevels() map[string]slog.Level {
 	levels := make(map[string]slog.Level)
 	componentLeveler.Range(func(key any, value any) bool {
