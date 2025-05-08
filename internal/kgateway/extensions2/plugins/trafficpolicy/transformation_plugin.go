@@ -15,8 +15,10 @@ import (
 	transformationpb "github.com/solo-io/envoy-gloo/go/config/filter/http/transformation/v2"
 	"github.com/solo-io/go-utils/contextutils"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 )
 
 func toTraditionalTransform(ctx context.Context, t *v1alpha1.Transform) *transformationpb.Transformation_TransformationTemplate {
@@ -204,12 +206,15 @@ func toRustformFilterConfig(t *v1alpha1.TransformationPolicy) (proto.Message, st
 	}
 
 	stringConf := string(rustformationJson)
+	filterCfg, _ := utils.MessageToAny(&wrapperspb.StringValue{
+		Value: stringConf,
+	})
 	rustCfg := &dynamicmodulesv3.DynamicModuleFilter{
 		DynamicModuleConfig: &exteniondynamicmodulev3.DynamicModuleConfig{
 			Name: "rust_module",
 		},
 		FilterName:   "http_simple_mutations",
-		FilterConfig: stringConf,
+		FilterConfig: filterCfg,
 	}
 
 	return rustCfg, stringConf, nil
