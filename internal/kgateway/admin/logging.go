@@ -35,7 +35,7 @@ func getLoggingDescription() string {
 		if comp == logging.DefaultComponent {
 			displayName = "Default"
 		}
-		componentSelector += fmt.Sprintf(`<option value="%s">%s (Current: %s)</option>`, comp, displayName, componentLevels[comp])
+		componentSelector += fmt.Sprintf(`<option value="%s">%s (Current: %s)</option>`, comp, displayName, logging.LevelToString(componentLevels[comp]))
 	}
 	componentSelector += `</select>`
 
@@ -50,7 +50,7 @@ func getLoggingDescription() string {
 	// Display current levels
 	currentLevelsDisplay := "<h4>Current Levels:</h4><ul>"
 	for _, comp := range components {
-		currentLevelsDisplay += fmt.Sprintf("<li>%s: %s</li>", comp, componentLevels[comp])
+		currentLevelsDisplay += fmt.Sprintf("<li>%s: %s</li>", comp, logging.LevelToString(componentLevels[comp]))
 	}
 	currentLevelsDisplay += "</ul><hr/>"
 
