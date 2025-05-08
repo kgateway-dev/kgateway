@@ -11,9 +11,7 @@ func (s *ProxyTranslator) syncXds(
 	ctx context.Context,
 	snapWrap XdsSnapWrapper,
 ) {
-	logger := logging.NewWithOptions("kube-gateway-xds-syncer", logging.Options{
-		Format: logging.JSONFormat,
-	})
+	logger := logging.New("xds-syncer")
 
 	snap := snapWrap.snap
 	proxyKey := snapWrap.proxyKey

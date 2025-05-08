@@ -47,12 +47,10 @@ func NewPerClientEnvoyClusters(
 	finalBackends krt.Collection[ir.BackendObjectIR],
 	uccs krt.Collection[ir.UniqlyConnectedClient],
 ) PerClientEnvoyClusters {
-	logger := logging.NewWithOptions("backend-translator", logging.Options{
-		Format: logging.JSONFormat,
-	})
+	logger := logging.New("backend-translator")
 
 	clusters := krt.NewManyCollection(finalBackends, func(kctx krt.HandlerContext, backendObj ir.BackendObjectIR) []uccWithCluster {
-		backendLogger := logger.With(slog.Any("backend", backendObj))
+		backendLogger := logger.With(slog.Any("backend", backendObj)) // is this really needed?
 		uccs := krt.Fetch(kctx, uccs)
 		uccWithClusterRet := make([]uccWithCluster, 0, len(uccs))
 

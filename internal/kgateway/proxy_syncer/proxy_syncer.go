@@ -189,9 +189,7 @@ func (r report) Equals(in report) bool {
 	return true
 }
 
-var logger = logging.NewWithOptions("k8s-gw-proxy-syncer", logging.Options{
-	Format: logging.JSONFormat,
-})
+var logger = logging.New("proxy-syncer")
 
 func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 	// all backends with policies attached in a single collection
@@ -553,7 +551,7 @@ func (s *ProxySyncer) syncGatewayStatus(ctx context.Context, logger *slog.Logger
 			gw := gwv1.Gateway{}
 			err := s.mgr.GetClient().Get(ctx, gwnn, &gw)
 			if err != nil {
-				logger.Info("error getting gw", slog.Any("error", err), slog.String("gateway", gwnn.String()))
+				logger.Info("error getting gw", "error", err, "gateway", gwnn.String())
 				return err
 			}
 			gwStatusWithoutAddress := gw.Status
@@ -562,12 +560,12 @@ func (s *ProxySyncer) syncGatewayStatus(ctx context.Context, logger *slog.Logger
 				if !isGatewayStatusEqual(&gwStatusWithoutAddress, status) {
 					gw.Status = *status
 					if err := s.mgr.GetClient().Status().Patch(ctx, &gw, client.Merge); err != nil {
-						logger.Error("error patching gateway status", slog.Any("error", err), slog.String("gateway", gwnn.String()))
+						logger.Error("error patching gateway status", "error", err, "gateway", gwnn.String())
 						return err
 					}
-					logger.Info("patched gw status", slog.String("gateway", gwnn.String()))
+					logger.Info("patched gw status", "gateway", gwnn.String())
 				} else {
-					logger.Info("skipping k8s gateway status update, status equal", slog.String("gateway", gwnn.String()))
+					logger.Info("skipping k8s gateway status update, status equal", "gateway", gwnn.String())
 				}
 			}
 		}
