@@ -3,7 +3,6 @@ package httplistenerpolicy
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"slices"
 	"time"
 
@@ -24,11 +23,14 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/logging"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
 )
+
+var logger = logging.New("httplistenerpolicy")
 
 type httpListenerPolicy struct {
 	ct        time.Time
@@ -98,7 +100,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 		errs := []error{}
 		accessLog, err := convertAccessLogConfig(ctx, i, commoncol, krtctx, objSrc)
 		if err != nil {
-			slog.Error("error translating access log", slog.Any("error", err))
+			logger.Error("error translating access log", "error", err)
 			errs = append(errs, err)
 		}
 

@@ -58,19 +58,18 @@ func convertAccessLogConfig(
 		}
 	}
 
-	logger := slog.Default().With("policy", policy.Name)
-	return translateAccessLogs(logger, configs, grpcBackends)
+	return translateAccessLogs(configs, grpcBackends)
 }
 
 func getLogId(logName string, idx int) string {
 	return fmt.Sprintf("%s-%d", logName, idx)
 }
 
-func translateAccessLogs(logger *slog.Logger, configs []v1alpha1.AccessLog, grpcBackends map[string]*ir.BackendObjectIR) ([]*envoyaccesslog.AccessLog, error) {
+func translateAccessLogs(configs []v1alpha1.AccessLog, grpcBackends map[string]*ir.BackendObjectIR) ([]*envoyaccesslog.AccessLog, error) {
 	var results []*envoyaccesslog.AccessLog
 
 	for idx, logConfig := range configs {
-		accessLogCfg, err := translateAccessLog(logger, logConfig, grpcBackends, idx)
+		accessLogCfg, err := translateAccessLog(logConfig, grpcBackends, idx)
 		if err != nil {
 			return nil, err
 		}
@@ -81,7 +80,7 @@ func translateAccessLogs(logger *slog.Logger, configs []v1alpha1.AccessLog, grpc
 }
 
 // translateAccessLog creates an Envoy AccessLog configuration for a single log config
-func translateAccessLog(logger *slog.Logger, logConfig v1alpha1.AccessLog, grpcBackends map[string]*ir.BackendObjectIR, accessLogId int) (*envoyaccesslog.AccessLog, error) {
+func translateAccessLog(logConfig v1alpha1.AccessLog, grpcBackends map[string]*ir.BackendObjectIR, accessLogId int) (*envoyaccesslog.AccessLog, error) {
 	// Validate mutual exclusivity of sink types
 	if logConfig.FileSink != nil && logConfig.GrpcService != nil {
 		return nil, errors.New("access log config cannot have both file sink and grpc service")
@@ -107,7 +106,7 @@ func translateAccessLog(logger *slog.Logger, logConfig v1alpha1.AccessLog, grpcB
 
 	// Add filter if specified
 	if logConfig.Filter != nil {
-		if err := addAccessLogFilter(logger, accessLogCfg, logConfig.Filter); err != nil {
+		if err := addAccessLogFilter(accessLogCfg, logConfig.Filter); err != nil {
 			return nil, err
 		}
 	}
@@ -170,7 +169,7 @@ func createGrpcAccessLog(grpcService *v1alpha1.GrpcService, grpcBackends map[str
 }
 
 // addAccessLogFilter adds filtering logic to an access log configuration
-func addAccessLogFilter(logger *slog.Logger, accessLogCfg *envoyaccesslog.AccessLog, filter *v1alpha1.AccessLogFilter) error {
+func addAccessLogFilter(accessLogCfg *envoyaccesslog.AccessLog, filter *v1alpha1.AccessLogFilter) error {
 	var (
 		filters []*envoyaccesslog.AccessLogFilter
 		err     error
@@ -178,7 +177,7 @@ func addAccessLogFilter(logger *slog.Logger, accessLogCfg *envoyaccesslog.Access
 
 	switch {
 	case filter.OrFilter != nil:
-		filters, err = translateOrFilters(logger, filter.OrFilter)
+		filters, err = translateOrFilters(filter.OrFilter)
 		if err != nil {
 			return err
 		}
@@ -186,7 +185,7 @@ func addAccessLogFilter(logger *slog.Logger, accessLogCfg *envoyaccesslog.Access
 			OrFilter: &envoyaccesslog.OrFilter{Filters: filters},
 		}
 	case filter.AndFilter != nil:
-		filters, err = translateOrFilters(logger, filter.AndFilter)
+		filters, err = translateOrFilters(filter.AndFilter)
 		if err != nil {
 			return err
 		}
@@ -194,7 +193,7 @@ func addAccessLogFilter(logger *slog.Logger, accessLogCfg *envoyaccesslog.Access
 			AndFilter: &envoyaccesslog.AndFilter{Filters: filters},
 		}
 	case filter.FilterType != nil:
-		accessLogCfg.Filter, err = translateFilter(logger, filter.FilterType)
+		accessLogCfg.Filter, err = translateFilter(filter.FilterType)
 		if err != nil {
 			return err
 		}
@@ -204,10 +203,10 @@ func addAccessLogFilter(logger *slog.Logger, accessLogCfg *envoyaccesslog.Access
 }
 
 // translateOrFilters translates a slice of filter types
-func translateOrFilters(logger *slog.Logger, filters []v1alpha1.FilterType) ([]*envoyaccesslog.AccessLogFilter, error) {
+func translateOrFilters(filters []v1alpha1.FilterType) ([]*envoyaccesslog.AccessLogFilter, error) {
 	result := make([]*envoyaccesslog.AccessLogFilter, 0, len(filters))
 	for _, filter := range filters {
-		cfg, err := translateFilter(logger, &filter)
+		cfg, err := translateFilter(&filter)
 		if err != nil {
 			return nil, err
 		}
@@ -216,7 +215,7 @@ func translateOrFilters(logger *slog.Logger, filters []v1alpha1.FilterType) ([]*
 	return result, nil
 }
 
-func translateFilter(logger *slog.Logger, filter *v1alpha1.FilterType) (*envoyaccesslog.AccessLogFilter, error) {
+func translateFilter(filter *v1alpha1.FilterType) (*envoyaccesslog.AccessLogFilter, error) {
 	var alCfg *envoyaccesslog.AccessLogFilter
 	switch {
 	case filter.StatusCodeFilter != nil:
@@ -277,7 +276,7 @@ func translateFilter(logger *slog.Logger, filter *v1alpha1.FilterType) (*envoyac
 				HeaderFilter: &envoyaccesslog.HeaderFilter{
 					Header: &envoyroute.HeaderMatcher{
 						Name:                 string(filter.HeaderFilter.Header.Name),
-						HeaderMatchSpecifier: createHeaderMatchSpecifier(logger, filter.HeaderFilter.Header),
+						HeaderMatchSpecifier: createHeaderMatchSpecifier(filter.HeaderFilter.Header),
 					},
 				},
 			},
@@ -340,7 +339,7 @@ func translateFilter(logger *slog.Logger, filter *v1alpha1.FilterType) (*envoyac
 }
 
 // Helper function to create header match specifier
-func createHeaderMatchSpecifier(logger *slog.Logger, header gwv1.HTTPHeaderMatch) *envoyroute.HeaderMatcher_StringMatch {
+func createHeaderMatchSpecifier(header gwv1.HTTPHeaderMatch) *envoyroute.HeaderMatcher_StringMatch {
 	switch *header.Type {
 	case gwv1.HeaderMatchExact:
 		return &envoyroute.HeaderMatcher_StringMatch{

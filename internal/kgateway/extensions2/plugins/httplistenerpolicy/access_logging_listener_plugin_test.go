@@ -2,7 +2,6 @@ package httplistenerpolicy
 
 import (
 	"context"
-	"log/slog"
 	"testing"
 
 	v33 "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
@@ -25,7 +24,6 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/logging"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
@@ -631,9 +629,8 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 			t.Cleanup(cancel)
 
 			t.Run(tc.name, func(t *testing.T) {
-				result, err := translateAccessLogs(logging.NewWithOptions("access_logging_listener_plugin_test", logging.Options{
-					Level: slog.LevelDebug,
-				}), tc.config,
+				result, err := translateAccessLogs(
+					tc.config,
 					// Example grpcBackends map for upstreams
 					map[string]*ir.BackendObjectIR{
 						"grpc-log-0": {
