@@ -26,10 +26,10 @@ jobs:
         # Above each test below, we document the latest date/time for the GitHub action step to run
         # NOTE: We use the GitHub action step time (as opposed to the `go test` time), because it is easier to capture
         test:
-        # April 4, 2025: 7 minutes
+        # April 4, 2025: 8 minutes
         - cluster-name: 'cluster-one'
           go-test-args: '-v -timeout=25m'
-          go-test-run-regex: '^TestKgateway$$/^BasicRouting$$|^TestKgateway$$/^HTTPRouteServices$$|^TestKgateway$$/^TLSRouteServices$$'
+          go-test-run-regex: '^TestKgateway$$/^BasicRouting$$|^TestKgateway$$/^HTTPRouteServices$$|^TestKgateway$$/^TLSRouteServices$$|^TestKgateway$$/^GRPCRouteServices$$'
           localstack: 'false'
         # April 4, 2025: 5.5 minutes
         - cluster-name: 'cluster-two'

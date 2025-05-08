@@ -15,33 +15,50 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/admin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/controller"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
-	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/logging"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
 )
 
-func Main(customCtx context.Context) error {
-	// Logging will be set up inside StartKgateway after settings are loaded.
-	return StartKgateway(customCtx, nil)
+const (
+	componentName = "kgateway"
+)
+
+type Server interface {
+	Start(ctx context.Context) error
 }
 
-func createKubeClient(restConfig *rest.Config) (istiokube.Client, error) {
-	restCfg := istiokube.NewClientConfigForRestConfig(restConfig)
-	client, err := istiokube.NewClient(restCfg, "")
-	if err != nil {
-		return nil, err
+func WithExtraPlugins(extraPlugins func(ctx context.Context, commoncol *common.CommonCollections) []sdk.Plugin) func(*setup) {
+	return func(s *setup) {
+		s.extraPlugins = extraPlugins
 	}
-	istiokube.EnableCrdWatcher(client)
-	return client, nil
+}
+
+type setup struct {
+	extraPlugins func(ctx context.Context, commoncol *common.CommonCollections) []sdk.Plugin
+}
+
+var _ Server = &setup{}
+
+func New(opts ...func(*setup)) *setup {
+	s := &setup{}
+	for _, opt := range opts {
+		opt(s)
+	}
+	return s
+}
+
+func (s *setup) Start(ctx context.Context) error {
+	return StartKgateway(ctx, s.extraPlugins)
 }
 
 func StartKgateway(
 	ctx context.Context,
-	extraPlugins func(ctx context.Context, commoncol *common.CommonCollections) []extensionsplug.Plugin,
+	extraPlugins func(ctx context.Context, commoncol *common.CommonCollections) []sdk.Plugin,
 ) error {
 	// load global settings
 	st, err := settings.BuildSettings()
@@ -49,7 +66,7 @@ func StartKgateway(
 		slog.Error("error loading settings from env", slog.Any("error", err))
 	}
 
-	SetupLogging(st.LogLevel)
+	setupLogging(st.LogLevel)
 	slog.Info("global settings loaded", "settings", *st)
 
 	uniqueClientCallbacks, uccBuilder := krtcollections.NewUniquelyConnectedClients()
@@ -84,7 +101,7 @@ func StartKgatewayWithConfig(
 	setupOpts *controller.SetupOpts,
 	restConfig *rest.Config,
 	uccBuilder krtcollections.UniquelyConnectedClientsBulider,
-	extraPlugins func(ctx context.Context, commoncol *common.CommonCollections) []extensionsplug.Plugin,
+	extraPlugins func(ctx context.Context, commoncol *common.CommonCollections) []sdk.Plugin,
 ) error {
 	slog.Info("starting kgateway")
 
@@ -132,8 +149,8 @@ func StartKgatewayWithConfig(
 	return c.Start(ctx)
 }
 
-// SetupLogging configures the global slog logger
-func SetupLogging(levelStr string) {
+// setupLogging configures the global slog logger
+func setupLogging(levelStr string) {
 	if levelStr == "" {
 		return
 	}
@@ -143,4 +160,14 @@ func SetupLogging(levelStr string) {
 		return
 	}
 	logging.MustSetLevel(logging.DefaultComponent, level)
+}
+
+func createKubeClient(restConfig *rest.Config) (istiokube.Client, error) {
+	restCfg := istiokube.NewClientConfigForRestConfig(restConfig)
+	client, err := istiokube.NewClient(restCfg, "")
+	if err != nil {
+		return nil, err
+	}
+	istiokube.EnableCrdWatcher(client)
+	return client, nil
 }

@@ -61,10 +61,10 @@ func BuildRBAC(
 	httpFilters := authzBuilder.BuildHTTP()
 
 	if len(tcpFilters) > 0 {
-		tcpRBAC = append(tcpRBAC, ir.CustomNetworkFilters(tcpFilters, stage, predicate)...)
+		tcpRBAC = append(tcpRBAC, CustomNetworkFilters(tcpFilters, stage, predicate)...)
 	}
 	if len(httpFilters) > 0 {
-		httpRBAC = append(httpRBAC, ir.CustomHTTPFilters(httpFilters, stage, predicate)...)
+		httpRBAC = append(httpRBAC, CustomHTTPFilters(httpFilters, stage, predicate)...)
 	}
 	return tcpRBAC, httpRBAC
 }

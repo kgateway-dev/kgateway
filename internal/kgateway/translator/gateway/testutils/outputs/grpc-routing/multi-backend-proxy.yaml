@@ -1,0 +1,45 @@
+Listeners:
+- address:
+    socketAddress:
+      address: '::'
+      ipv4Compat: true
+      portValue: 8090
+  filterChains:
+  - filters:
+    - name: envoy.filters.network.http_connection_manager
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+        httpFilters:
+        - name: envoy.filters.http.router
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+        mergeSlashes: true
+        normalizePath: true
+        rds:
+          configSource:
+            ads: {}
+            resourceApiVersion: V3
+          routeConfigName: grpc
+        statPrefix: http
+        useRemoteAddress: true
+    name: grpc
+  name: grpc
+Routes:
+- ignorePortInHostMatching: true
+  name: grpc
+  virtualHosts:
+  - domains:
+    - '*'
+    name: grpc~*
+    routes:
+    - match:
+        path: /example.multi.Service/MultiMethod
+      name: grpc~*-route-0-grpcroute-example-grpc-multi-backend-route-default-0-0-matcher-0
+      route:
+        clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+        weightedClusters:
+          clusters:
+          - name: kube_default_grpc-svc-1_9001
+            weight: 50
+          - name: kube_default_grpc-svc-2_9002
+            weight: 50

@@ -7,8 +7,8 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	reports "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
 
 const NormalizedHTTPSTLSType = "HTTPS/TLS"
@@ -31,6 +31,7 @@ func getSupportedProtocolsRoutes() map[protocol]map[groupName][]routeKind {
 		string(gwv1.HTTPProtocolType): {
 			gwv1.GroupName: []string{
 				wellknown.HTTPRouteKind,
+				wellknown.GRPCRouteKind,
 			},
 		},
 		string(gwv1.HTTPSProtocolType): {

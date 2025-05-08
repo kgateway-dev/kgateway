@@ -142,7 +142,10 @@ func (r *gatewayQueries) allowedRoutes(gw *gwv1.Gateway, l *gwv1.Listener) (func
 	case gwv1.HTTPSProtocolType:
 		fallthrough
 	case gwv1.HTTPProtocolType:
-		allowedKinds = []metav1.GroupKind{{Kind: wellknown.HTTPRouteKind, Group: gwv1.GroupName}}
+		allowedKinds = []metav1.GroupKind{
+			{Kind: wellknown.HTTPRouteKind, Group: gwv1.GroupName},
+			{Kind: wellknown.GRPCRouteKind, Group: gwv1.GroupName},
+		}
 	case gwv1.TLSProtocolType:
 		allowedKinds = []metav1.GroupKind{{Kind: wellknown.TLSRouteKind, Group: gwv1.GroupName}}
 	case gwv1.TCPProtocolType:
@@ -394,6 +397,16 @@ func (r *gatewayQueries) processRoute(
 					anyHostsMatch = true
 				}
 			}
+			if routeKind == wellknown.GRPCRouteKind {
+				if gr, ok := route.(*ir.HttpRouteIR); ok {
+					var ok bool
+					ok, hostnames = hostnameIntersect(&l, gr.GetHostnames())
+					if !ok {
+						continue
+					}
+					anyHostsMatch = true
+				}
+			}
 
 			// If all checks pass, add the route to the listener result
 			lr.Routes = append(lr.Routes, r.GetRouteChain(kctx, ctx, route, hostnames, ref))
@@ -412,7 +425,7 @@ func (r *gatewayQueries) processRoute(
 				ParentRef: ref,
 				Error:     Error{E: ErrNoMatchingParent, Reason: gwv1.RouteReasonNoMatchingParent},
 			})
-		} else if routeKind == wellknown.HTTPRouteKind && !anyHostsMatch {
+		} else if (routeKind == wellknown.HTTPRouteKind || routeKind == wellknown.TLSRouteKind || routeKind == wellknown.GRPCRouteKind) && !anyHostsMatch {
 			ret.RouteErrors = append(ret.RouteErrors, &RouteError{
 				Route:     route,
 				ParentRef: ref,

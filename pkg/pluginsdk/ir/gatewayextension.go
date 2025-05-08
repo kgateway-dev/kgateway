@@ -21,6 +21,10 @@ type GatewayExtension struct {
 
 	// ExtProc configuration for ExtProc extension type.
 	ExtProc *v1alpha1.ExtProcProvider
+
+	// RateLimit configuration for RateLimit extension type.
+	// This is specifically for global rate limiting that communicates with an external rate limit service.
+	RateLimit *v1alpha1.RateLimitProvider
 }
 
 var (
@@ -38,6 +42,12 @@ func (e GatewayExtension) Equals(other GatewayExtension) bool {
 		return false
 	}
 	if !reflect.DeepEqual(e.ExtAuth, other.ExtAuth) {
+		return false
+	}
+	if !reflect.DeepEqual(e.ExtProc, other.ExtProc) {
+		return false
+	}
+	if !reflect.DeepEqual(e.RateLimit, other.RateLimit) {
 		return false
 	}
 	return true

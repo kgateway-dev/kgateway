@@ -8,6 +8,7 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
+	reportssdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
 
 type ObjWithAttachedPolicies interface {
@@ -49,18 +50,18 @@ func generatePolicyReport[T ObjWithAttachedPolicies](in []T) reports.ReportMap {
 				r := reporter.Policy(key, polAtt.Generation).AncestorRef(ancestorRef)
 
 				if len(polAtt.Errors) > 0 {
-					r.SetCondition(reports.PolicyCondition{
+					r.SetCondition(reportssdk.PolicyCondition{
 						Type:    gwv1alpha2.PolicyConditionAccepted,
 						Status:  metav1.ConditionFalse,
 						Reason:  gwv1alpha2.PolicyReasonInvalid,
 						Message: polAtt.FormatErrors(),
 					})
 				} else {
-					r.SetCondition(reports.PolicyCondition{
+					r.SetCondition(reportssdk.PolicyCondition{
 						Type:    gwv1alpha2.PolicyConditionAccepted,
 						Status:  metav1.ConditionTrue,
 						Reason:  gwv1alpha2.PolicyReasonAccepted,
-						Message: reports.PolicyAcceptedAndAttachedMsg,
+						Message: reportssdk.PolicyAcceptedAndAttachedMsg,
 					})
 				}
 			}

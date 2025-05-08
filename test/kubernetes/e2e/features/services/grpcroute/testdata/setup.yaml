@@ -1,0 +1,90 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: gw
+spec:
+  gatewayClassName: kgateway
+  listeners:
+    - name: http
+      protocol: HTTP
+      port: 8080
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: GRPCRoute
+metadata:
+  name: grpc-route
+spec:
+  parentRefs:
+    - name: gw
+  hostnames:
+    - "example.com"
+  rules:
+    - matches:
+      - method:
+          method: ServerReflectionInfo
+          service: grpc.reflection.v1alpha.ServerReflection
+      - method:
+          method: Ping
+      backendRefs:
+        - name: grpc-echo-svc
+          port: 3000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grpc-echo
+spec:
+  selector:
+    matchLabels:
+      app: grpc-echo
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: grpc-echo
+    spec:
+      containers:
+        - name: grpc-echo
+          image: ghcr.io/projectcontour/yages:v0.1.0
+          ports:
+            - containerPort: 9000
+              protocol: TCP
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: GRPC_ECHO_SERVER
+              value: "true"
+            - name: SERVICE_NAME
+              value: grpc-echo
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grpc-echo-svc
+spec:
+  type: ClusterIP
+  ports:
+    - port: 3000
+      protocol: TCP
+      targetPort: 9000
+      appProtocol: kubernetes.io/h2c
+  selector:
+    app: grpc-echo
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: grpcurl-client
+spec:
+  containers:
+    - name: grpcurl
+      image: docker.io/fullstorydev/grpcurl:v1.8.7-alpine
+      command:
+        - sleep
+        - "infinity"

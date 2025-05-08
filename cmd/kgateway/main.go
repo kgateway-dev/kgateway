@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"log"
 
@@ -22,11 +21,12 @@ func main() {
 				fmt.Println(version.String())
 				return nil
 			}
-			ctx := context.Background()
-			probes.StartLivenessProbeServer(ctx)
-			if err := setup.Main(ctx); err != nil {
+			probes.StartLivenessProbeServer(cmd.Context())
+			s := setup.New()
+			if err := s.Start(cmd.Context()); err != nil {
 				return fmt.Errorf("err in main: %w", err)
 			}
+
 			return nil
 		},
 	}

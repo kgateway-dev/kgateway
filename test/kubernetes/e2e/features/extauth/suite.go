@@ -57,7 +57,7 @@ func (s *testingSuite) SetupSuite() {
 		// resources from curl manifest
 		testdefaults.CurlPod,
 		// resources from service manifest
-		simpleSvc, simpleDeployment,
+		basicSecureRoute, simpleSvc, simpleDeployment,
 		// deployer-generated resources
 		proxyDeployment, proxyService,
 		// extauth resources
@@ -187,8 +187,8 @@ func (s *testingSuite) TestExtAuthPolicy() {
 	}
 }
 
-// TextRouteTargetedExtAuthPolicy tests route level only extauth
-func (s *testingSuite) TextRouteTargetedExtAuthPolicy() {
+// TestRouteTargetedExtAuthPolicy tests route level only extauth
+func (s *testingSuite) TestRouteTargetedExtAuthPolicy() {
 	manifests := []string{
 		securedRouteManifest,
 		secureAndDisableAllManifest,
@@ -196,7 +196,8 @@ func (s *testingSuite) TextRouteTargetedExtAuthPolicy() {
 	}
 
 	resources := []client.Object{
-		basicSecureRoute,
+		secureRoute, secureTrafficPolicy,
+		disableAllRoute, insecureTrafficPolicy2, secureTrafficPolicy2,
 		insecureRoute, insecureTrafficPolicy,
 	}
 	s.T().Cleanup(func() {
@@ -244,13 +245,13 @@ func (s *testingSuite) TextRouteTargetedExtAuthPolicy() {
 			headers: map[string]string{
 				"x-ext-authz": "allow",
 			},
-			hostname:                     "securedroute.com",
+			hostname:                     "secureroute.com",
 			expectedStatus:               http.StatusOK,
 			expectedUpstreamBodyContents: "X-Ext-Authz-Check-Result",
 		},
 		{
 			name:           "request denied without header on secured route",
-			hostname:       "securedroute.com",
+			hostname:       "secureroute.com",
 			headers:        map[string]string{},
 			expectedStatus: http.StatusForbidden,
 		},

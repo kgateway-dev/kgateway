@@ -14,6 +14,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
+
+	pluginsdkreporter "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
 
 // TODO: refactor this struct + methods to better reflect the usage now in proxy_syncer
@@ -80,7 +82,7 @@ func (r *ReportMap) BuildGWStatus(ctx context.Context, gw gwv1.Gateway) *gwv1.Ga
 // along with the newly built kgw status per ReportMap, sorted in deterministic fashion.
 // If the ReportMap does not have a RouteReport for the given route, e.g. because it did not encounter
 // the route during translation, or the object is an unsupported route kind, nil is returned.
-// Supported route types are: HTTPRoute, TCPRoute, TLSRoute
+// Supported route types are: HTTPRoute, TCPRoute, TLSRoute, GRPCRoute
 func (r *ReportMap) BuildRouteStatus(
 	ctx context.Context,
 	obj client.Object,
@@ -114,6 +116,12 @@ func (r *ReportMap) BuildRouteStatus(
 			parentRefs = append(parentRefs, routeReport.parentRefs()...)
 		}
 	case *gwv1a2.TLSRoute:
+		existingStatus = route.Status.RouteStatus
+		parentRefs = append(parentRefs, route.Spec.ParentRefs...)
+		if len(parentRefs) == 0 {
+			parentRefs = append(parentRefs, routeReport.parentRefs()...)
+		}
+	case *gwv1.GRPCRoute:
 		existingStatus = route.Status.RouteStatus
 		parentRefs = append(parentRefs, route.Spec.ParentRefs...)
 		if len(parentRefs) == 0 {
@@ -206,14 +214,14 @@ func parentString(ref gwv1.ParentReference) string {
 // to a given report, i.e. set healthy conditions
 func addMissingGatewayConditions(gwReport *GatewayReport) {
 	if cond := meta.FindStatusCondition(gwReport.GetConditions(), string(gwv1.GatewayConditionAccepted)); cond == nil {
-		gwReport.SetCondition(GatewayCondition{
+		gwReport.SetCondition(pluginsdkreporter.GatewayCondition{
 			Type:   gwv1.GatewayConditionAccepted,
 			Status: metav1.ConditionTrue,
 			Reason: gwv1.GatewayReasonAccepted,
 		})
 	}
 	if cond := meta.FindStatusCondition(gwReport.GetConditions(), string(gwv1.GatewayConditionProgrammed)); cond == nil {
-		gwReport.SetCondition(GatewayCondition{
+		gwReport.SetCondition(pluginsdkreporter.GatewayCondition{
 			Type:   gwv1.GatewayConditionProgrammed,
 			Status: metav1.ConditionTrue,
 			Reason: gwv1.GatewayReasonProgrammed,
@@ -227,28 +235,28 @@ func addMissingGatewayConditions(gwReport *GatewayReport) {
 func addMissingListenerConditions(lisReport *ListenerReport) {
 	// set healthy conditions for Condition Types not set yet (i.e. no negative status yet, we can assume positive)
 	if cond := meta.FindStatusCondition(lisReport.Status.Conditions, string(gwv1.ListenerConditionAccepted)); cond == nil {
-		lisReport.SetCondition(ListenerCondition{
+		lisReport.SetCondition(pluginsdkreporter.ListenerCondition{
 			Type:   gwv1.ListenerConditionAccepted,
 			Status: metav1.ConditionTrue,
 			Reason: gwv1.ListenerReasonAccepted,
 		})
 	}
 	if cond := meta.FindStatusCondition(lisReport.Status.Conditions, string(gwv1.ListenerConditionConflicted)); cond == nil {
-		lisReport.SetCondition(ListenerCondition{
+		lisReport.SetCondition(pluginsdkreporter.ListenerCondition{
 			Type:   gwv1.ListenerConditionConflicted,
 			Status: metav1.ConditionFalse,
 			Reason: gwv1.ListenerReasonNoConflicts,
 		})
 	}
 	if cond := meta.FindStatusCondition(lisReport.Status.Conditions, string(gwv1.ListenerConditionResolvedRefs)); cond == nil {
-		lisReport.SetCondition(ListenerCondition{
+		lisReport.SetCondition(pluginsdkreporter.ListenerCondition{
 			Type:   gwv1.ListenerConditionResolvedRefs,
 			Status: metav1.ConditionTrue,
 			Reason: gwv1.ListenerReasonResolvedRefs,
 		})
 	}
 	if cond := meta.FindStatusCondition(lisReport.Status.Conditions, string(gwv1.ListenerConditionProgrammed)); cond == nil {
-		lisReport.SetCondition(ListenerCondition{
+		lisReport.SetCondition(pluginsdkreporter.ListenerCondition{
 			Type:   gwv1.ListenerConditionProgrammed,
 			Status: metav1.ConditionTrue,
 			Reason: gwv1.ListenerReasonProgrammed,
@@ -261,14 +269,14 @@ func addMissingListenerConditions(lisReport *ListenerReport) {
 // to a given report, i.e. set healthy conditions
 func addMissingParentRefConditions(report *ParentRefReport) {
 	if cond := meta.FindStatusCondition(report.Conditions, string(gwv1.RouteConditionAccepted)); cond == nil {
-		report.SetCondition(RouteCondition{
+		report.SetCondition(pluginsdkreporter.RouteCondition{
 			Type:   gwv1.RouteConditionAccepted,
 			Status: metav1.ConditionTrue,
 			Reason: gwv1.RouteReasonAccepted,
 		})
 	}
 	if cond := meta.FindStatusCondition(report.Conditions, string(gwv1.RouteConditionResolvedRefs)); cond == nil {
-		report.SetCondition(RouteCondition{
+		report.SetCondition(pluginsdkreporter.RouteCondition{
 			Type:   gwv1.RouteConditionResolvedRefs,
 			Status: metav1.ConditionTrue,
 			Reason: gwv1.RouteReasonResolvedRefs,

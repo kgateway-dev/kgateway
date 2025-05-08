@@ -47,7 +47,7 @@ import (
 	// the translator import. What we really need is to register all proto types, which is
 	// "correctly" available to use via `envoyinit`; note that the autogeneration of these types
 	// is currently broken. see: https://github.com/kgateway-dev/kgateway/issues/10491
-	_ "github.com/kgateway-dev/kgateway/v2/internal/envoyinit/hack/filter_types"
+	_ "github.com/kgateway-dev/kgateway/v2/pkg/utils/filter_types"
 )
 
 func unmarshalYaml(data []byte, into proto.Message) error {

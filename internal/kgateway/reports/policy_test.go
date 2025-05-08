@@ -10,6 +10,8 @@ import (
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
+
+	pluginsdkreporter "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
 
 func TestPolicyStatusReport(t *testing.T) {
@@ -108,7 +110,7 @@ func TestPolicyStatusReport(t *testing.T) {
 					Kind:      ptr.To(gwv1.Kind("Gateway")),
 					Namespace: ptr.To(gwv1.Namespace("default")),
 					Name:      gwv1.ObjectName("gw-1"),
-				}).SetCondition(PolicyCondition{
+				}).SetCondition(pluginsdkreporter.PolicyCondition{
 					Type:   gwv1alpha2.PolicyConditionAccepted,
 					Status: metav1.ConditionTrue,
 					Reason: gwv1alpha2.PolicyReasonAccepted,
@@ -119,7 +121,7 @@ func TestPolicyStatusReport(t *testing.T) {
 					Kind:      ptr.To(gwv1.Kind("Gateway")),
 					Namespace: ptr.To(gwv1.Namespace("default")),
 					Name:      gwv1.ObjectName("gw-2"),
-				}).SetCondition(PolicyCondition{
+				}).SetCondition(pluginsdkreporter.PolicyCondition{
 					Type:   gwv1alpha2.PolicyConditionAccepted,
 					Status: metav1.ConditionFalse,
 					Reason: gwv1alpha2.PolicyReasonInvalid,
@@ -225,7 +227,7 @@ func TestPolicyStatusReport(t *testing.T) {
 					Kind:      ptr.To(gwv1.Kind("Gateway")),
 					Namespace: ptr.To(gwv1.Namespace("default")),
 					Name:      gwv1.ObjectName("gw-1"),
-				}).SetCondition(PolicyCondition{
+				}).SetCondition(pluginsdkreporter.PolicyCondition{
 					Type:   gwv1alpha2.PolicyConditionAccepted,
 					Status: metav1.ConditionTrue,
 					Reason: gwv1alpha2.PolicyReasonAccepted,
@@ -236,7 +238,7 @@ func TestPolicyStatusReport(t *testing.T) {
 					Kind:      ptr.To(gwv1.Kind("Gateway")),
 					Namespace: ptr.To(gwv1.Namespace("default")),
 					Name:      gwv1.ObjectName("gw-2"),
-				}).SetCondition(PolicyCondition{
+				}).SetCondition(pluginsdkreporter.PolicyCondition{
 					Type:   gwv1alpha2.PolicyConditionAccepted,
 					Status: metav1.ConditionFalse,
 					Reason: gwv1alpha2.PolicyReasonInvalid,

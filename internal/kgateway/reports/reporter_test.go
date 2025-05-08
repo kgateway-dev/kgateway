@@ -15,6 +15,7 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	pluginsdkreporter "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
 
 const fake_condition = "kgateway.dev/SomeCondition"
@@ -66,7 +67,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 			gw := gw()
 			rm := reports.NewReportMap()
 			reporter := reports.NewReporter(&rm)
-			reporter.Gateway(gw).SetCondition(reports.GatewayCondition{
+			reporter.Gateway(gw).SetCondition(pluginsdkreporter.GatewayCondition{
 				Type:   gwv1.GatewayConditionProgrammed,
 				Status: metav1.ConditionFalse,
 				Reason: gwv1.GatewayReasonAddressNotUsable,
@@ -86,7 +87,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 			gw := gw()
 			rm := reports.NewReportMap()
 			reporter := reports.NewReporter(&rm)
-			reporter.Gateway(gw).Listener(listener()).SetCondition(reports.ListenerCondition{
+			reporter.Gateway(gw).Listener(listener()).SetCondition(pluginsdkreporter.ListenerCondition{
 				Type:   gwv1.ListenerConditionResolvedRefs,
 				Status: metav1.ConditionFalse,
 				Reason: gwv1.ListenerReasonInvalidRouteKinds,
@@ -153,6 +154,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 			Entry("regular httproute", httpRoute()),
 			Entry("regular tcproute", tcpRoute()),
 			Entry("regular tlsroute", tlsRoute()),
+			Entry("regular grpcroute", grpcRoute()),
 			Entry("delegatee route", delegateeRoute()),
 		)
 
@@ -179,6 +181,11 @@ var _ = Describe("Reporting Infrastructure", func() {
 				},
 			)),
 			Entry("regular tlsroute", tlsRoute(
+				metav1.Condition{
+					Type: fake_condition,
+				},
+			)),
+			Entry("regular grpcroute", grpcRoute(
 				metav1.Condition{
 					Type: fake_condition,
 				},
@@ -277,7 +284,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 			func(obj client.Object, parentRef *gwv1.ParentReference) {
 				rm := reports.NewReportMap()
 				reporter := reports.NewReporter(&rm)
-				reporter.Route(obj).ParentRef(parentRef).SetCondition(reports.RouteCondition{
+				reporter.Route(obj).ParentRef(parentRef).SetCondition(pluginsdkreporter.RouteCondition{
 					Type:   gwv1.RouteConditionResolvedRefs,
 					Status: metav1.ConditionFalse,
 					Reason: gwv1.RouteReasonBackendNotFound,
@@ -295,6 +302,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 			Entry("regular httproute", httpRoute(), parentRef()),
 			Entry("regular tcproute", tcpRoute(), parentRef()),
 			Entry("regular tlsroute", tlsRoute(), parentRef()),
+			Entry("regular grpcroute", grpcRoute(), parentRef()),
 			Entry("delegatee route", delegateeRoute(), parentRouteRef()),
 		)
 
@@ -302,12 +310,12 @@ var _ = Describe("Reporting Infrastructure", func() {
 			func(obj client.Object, parentRef *gwv1.ParentReference) {
 				rm := reports.NewReportMap()
 				reporter := reports.NewReporter(&rm)
-				reporter.Route(obj).ParentRef(parentRef).SetCondition(reports.RouteCondition{
+				reporter.Route(obj).ParentRef(parentRef).SetCondition(pluginsdkreporter.RouteCondition{
 					Type:   gwv1.RouteConditionResolvedRefs,
 					Status: metav1.ConditionFalse,
 					Reason: gwv1.RouteReasonBackendNotFound,
 				})
-				reporter.Route(obj).ParentRef(parentRef).SetCondition(reports.RouteCondition{
+				reporter.Route(obj).ParentRef(parentRef).SetCondition(pluginsdkreporter.RouteCondition{
 					Type:   gwv1.RouteConditionResolvedRefs,
 					Status: metav1.ConditionFalse,
 					Reason: gwv1.RouteReasonBackendNotFound,
@@ -325,6 +333,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 			Entry("regular httproute", httpRoute(), parentRef()),
 			Entry("regular tcproute", tcpRoute(), parentRef()),
 			Entry("regular tlsroute", tlsRoute(), parentRef()),
+			Entry("regular grpcroute", grpcRoute(), parentRef()),
 			Entry("delegatee route", delegateeRoute(), parentRouteRef()),
 		)
 
@@ -351,6 +360,8 @@ var _ = Describe("Reporting Infrastructure", func() {
 					route.Status.RouteStatus = *status
 				case *gwv1a2.TLSRoute:
 					route.Status.RouteStatus = *status
+				case *gwv1.GRPCRoute:
+					route.Status.RouteStatus = *status
 				default:
 					Fail(fmt.Sprintf("unsupported route type: %T", obj))
 				}
@@ -366,9 +377,10 @@ var _ = Describe("Reporting Infrastructure", func() {
 				Expect(newTransitionTime).To(Equal(oldTransitionTime))
 			},
 			Entry("regular httproute", httpRoute()),
-			Entry("delegatee route", delegateeRoute()),
 			Entry("regular tcproute", tcpRoute()),
 			Entry("regular tlsroute", tlsRoute()),
+			Entry("regular grpcroute", grpcRoute()),
+			Entry("delegatee route", delegateeRoute()),
 		)
 
 		DescribeTable("should correctly handle multiple ParentRefs on a route",
@@ -384,6 +396,10 @@ var _ = Describe("Reporting Infrastructure", func() {
 						Name: "additional-gateway",
 					})
 				case *gwv1a2.TLSRoute:
+					route.Spec.ParentRefs = append(route.Spec.ParentRefs, gwv1.ParentReference{
+						Name: "additional-gateway",
+					})
+				case *gwv1.GRPCRoute:
 					route.Spec.ParentRefs = append(route.Spec.ParentRefs, gwv1.ParentReference{
 						Name: "additional-gateway",
 					})
@@ -409,6 +425,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 			Entry("regular HTTPRoute", httpRoute()),
 			Entry("regular TCPRoute", tcpRoute()),
 			Entry("regular tlsroute", tlsRoute()),
+			Entry("regular grpcroute", grpcRoute()),
 		)
 
 		DescribeTable("should correctly associate multiple routes with shared and separate listeners",
@@ -424,6 +441,8 @@ var _ = Describe("Reporting Infrastructure", func() {
 					r1.Spec.ParentRefs[0].SectionName = ptr.To(gwv1.SectionName(listener1.Name))
 				case *gwv1a2.TLSRoute:
 					r1.Spec.ParentRefs[0].SectionName = ptr.To(gwv1.SectionName(listener1.Name))
+				case *gwv1.GRPCRoute:
+					r1.Spec.ParentRefs[0].SectionName = ptr.To(gwv1.SectionName(listener1.Name))
 				}
 
 				// Assign the second listener to the second route's parent ref
@@ -433,6 +452,8 @@ var _ = Describe("Reporting Infrastructure", func() {
 				case *gwv1a2.TCPRoute:
 					r2.Spec.ParentRefs[0].SectionName = ptr.To(gwv1.SectionName(listener2.Name))
 				case *gwv1a2.TLSRoute:
+					r2.Spec.ParentRefs[0].SectionName = ptr.To(gwv1.SectionName(listener2.Name))
+				case *gwv1.GRPCRoute:
 					r2.Spec.ParentRefs[0].SectionName = ptr.To(gwv1.SectionName(listener2.Name))
 				}
 
@@ -466,6 +487,11 @@ var _ = Describe("Reporting Infrastructure", func() {
 				gwv1.Listener{Name: "foo-tls", Protocol: gwv1.TLSProtocolType},
 				gwv1.Listener{Name: "bar-tls", Protocol: gwv1.TLSProtocolType},
 			),
+			Entry("GRPCRoutes with shared and separate listeners",
+				grpcRoute(), grpcRoute(),
+				gwv1.Listener{Name: "foo-grpc", Protocol: gwv1.HTTPProtocolType},
+				gwv1.Listener{Name: "bar-grpc", Protocol: gwv1.HTTPProtocolType},
+			),
 		)
 	})
 
@@ -478,6 +504,8 @@ var _ = Describe("Reporting Infrastructure", func() {
 			case *gwv1a2.TCPRoute:
 				r.Spec.ParentRefs = nil
 			case *gwv1a2.TLSRoute:
+				r.Spec.ParentRefs = nil
+			case *gwv1.GRPCRoute:
 				r.Spec.ParentRefs = nil
 			}
 
@@ -493,6 +521,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 		Entry("HTTPRoute with missing parent reference", httpRoute()),
 		Entry("TCPRoute with missing parent reference", tcpRoute()),
 		Entry("TLSRoute with missing parent reference", tlsRoute()),
+		Entry("GRPCRoute with missing parent reference", grpcRoute()),
 	)
 })
 
@@ -513,6 +542,11 @@ func fakeTranslate(reporter reports.Reporter, obj client.Object) {
 			routeReporter.ParentRef(&pr)
 		}
 	case *gwv1a2.TLSRoute:
+		routeReporter := reporter.Route(route)
+		for _, pr := range route.Spec.ParentRefs {
+			routeReporter.ParentRef(&pr)
+		}
+	case *gwv1.GRPCRoute:
 		routeReporter := reporter.Route(route)
 		for _, pr := range route.Spec.ParentRefs {
 			routeReporter.ParentRef(&pr)
@@ -558,6 +592,24 @@ func tcpRoute(conditions ...metav1.Condition) client.Object {
 
 func tlsRoute(conditions ...metav1.Condition) client.Object {
 	route := &gwv1a2.TLSRoute{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "route",
+			Namespace: "default",
+		},
+	}
+	route.Spec.CommonRouteSpec.ParentRefs = append(route.Spec.CommonRouteSpec.ParentRefs, *parentRef())
+	if len(conditions) > 0 {
+		route.Status.Parents = append(route.Status.Parents, gwv1.RouteParentStatus{
+			ParentRef:      *parentRef(),
+			Conditions:     conditions,
+			ControllerName: wellknown.GatewayControllerName,
+		})
+	}
+	return route
+}
+
+func grpcRoute(conditions ...metav1.Condition) client.Object {
+	route := &gwv1.GRPCRoute{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "route",
 			Namespace: "default",

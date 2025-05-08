@@ -12,28 +12,9 @@ import (
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
+
+	pluginsdkreporter "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
-
-const (
-	PolicyAcceptedMsg = "Policy accepted"
-
-	PolicyAcceptedAndAttachedMsg = "Policy accepted and attached"
-)
-
-type PolicyCondition struct {
-	Type    gwv1alpha2.PolicyConditionType
-	Status  metav1.ConditionStatus
-	Reason  gwv1alpha2.PolicyConditionReason
-	Message string
-}
-
-type AncestorRefReporter interface {
-	SetCondition(condition PolicyCondition)
-}
-
-type PolicyReporter interface {
-	AncestorRef(parentRef gwv1.ParentReference) AncestorRefReporter
-}
 
 type AncestorRefReport struct {
 	Conditions []metav1.Condition
@@ -44,11 +25,11 @@ type PolicyReport struct {
 	observedGeneration int64
 }
 
-func (r *PolicyReport) AncestorRef(ref gwv1.ParentReference) AncestorRefReporter {
+func (r *PolicyReport) AncestorRef(ref gwv1.ParentReference) pluginsdkreporter.AncestorRefReporter {
 	return r.ancestorRef(ref)
 }
 
-func (prr *AncestorRefReport) SetCondition(c PolicyCondition) {
+func (prr *AncestorRefReport) SetCondition(c pluginsdkreporter.PolicyCondition) {
 	condition := metav1.Condition{
 		Type:    string(c.Type),
 		Status:  c.Status,
@@ -58,7 +39,7 @@ func (prr *AncestorRefReport) SetCondition(c PolicyCondition) {
 	meta.SetStatusCondition(&prr.Conditions, condition)
 }
 
-func (r *reporter) Policy(key PolicyKey, observedGeneration int64) PolicyReporter {
+func (r *reporter) Policy(key PolicyKey, observedGeneration int64) pluginsdkreporter.PolicyReporter {
 	pr := r.report.policy(key)
 	if pr == nil {
 		pr = r.report.newPolicyReport(key, observedGeneration)
