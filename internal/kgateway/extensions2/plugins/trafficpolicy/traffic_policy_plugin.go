@@ -580,7 +580,7 @@ func (p *trafficPolicyPluginGwPass) ApplyListenerPlugin(ctx context.Context, pCt
 }
 
 func (p *trafficPolicyPluginGwPass) ApplyVhostPlugin(ctx context.Context, pCtx *ir.VirtualHostContext, out *routev3.VirtualHost) {
-	policy, ok := pCtx.Policy.(*trafficPolicy)
+	policy, ok := pCtx.Policy.(*TrafficPolicy)
 	if !ok {
 		return
 	}
@@ -1243,14 +1243,14 @@ func rateLimitForSpec(
 	krtctx krt.HandlerContext,
 	policy *v1alpha1.TrafficPolicy,
 	out *trafficPolicySpecIr,
-	gatewayExtensions krt.Collection[trafficPolicyGatewayExtensionIR],
+	gatewayExtensions krt.Collection[TrafficPolicyGatewayExtensionIR],
 ) {
 	if policy.Spec.RateLimit == nil || policy.Spec.RateLimit.Global == nil {
 		return
 	}
 
 	globalPolicy := policy.Spec.RateLimit.Global
-	var provider *trafficPolicyGatewayExtensionIR
+	var provider *TrafficPolicyGatewayExtensionIR
 
 	// Look up the GatewayExtension reference if specified
 	if globalPolicy.ExtensionRef != nil {
