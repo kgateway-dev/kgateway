@@ -78,7 +78,7 @@ func GetAIAdditionalResources(ctx context.Context) []*envoy_config_cluster_v3.Cl
 	}
 	http2ProtocolOptionsAny, err := utils.MessageToAny(http2ProtocolOptions)
 	if err != nil {
-		slog.Error("error converting http2 protocol options to any", slog.Any("error", err))
+		slog.Error("error converting http2 protocol options to any", "error", err)
 		return nil
 	}
 	udsCluster := &envoy_config_cluster_v3.Cluster{

@@ -246,7 +246,7 @@ func (c *ControllerBuilder) Start(ctx context.Context) error {
 	}
 
 	xdsPort := globalSettings.XdsServicePort
-	slog.Info("got xds address for deployer", slog.String("xds_host", xdsHost), slog.Int("xds_port", int(xdsPort)))
+	slog.Info("got xds address for deployer", "xds_host", xdsHost, "xds_port", xdsPort)
 
 	istioAutoMtlsEnabled := globalSettings.EnableIstioAutoMtls
 
