@@ -3,7 +3,6 @@ package irtranslator
 import (
 	"context"
 	"errors"
-	"log/slog"
 	"time"
 
 	clusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
@@ -115,7 +114,7 @@ func (t *BackendTranslator) runPolicies(
 	// never overwrite the CLA that was already initialized (potentially within a plugin).
 	if out.GetLoadAssignment() == nil && endpointInputs != nil && clusterSupportsInlineCLA(out) {
 		out.LoadAssignment = endpoints.PrioritizeEndpoints(
-			slog.Default(),
+			logger,
 			ucc,
 			*endpointInputs,
 		)

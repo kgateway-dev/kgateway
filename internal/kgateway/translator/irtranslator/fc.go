@@ -3,7 +3,6 @@ package irtranslator
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"sort"
 
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -21,7 +20,6 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/logging"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	reports "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
@@ -99,7 +97,7 @@ func (h *filterChainTranslator) computeHttpFilters(ctx context.Context, l ir.Htt
 	// 1. Generate all the network filters (including the HttpConnectionManager)
 	networkFilters, err := h.computeNetworkFiltersForHttp(ctx, l, reporter)
 	if err != nil {
-		hcmLogger.Error("error computing network filters", slog.Any("error", err))
+		logger.Error("error computing network filters", "error", err)
 		// TODO: report? return error?
 		return nil
 	}
@@ -192,10 +190,6 @@ type hcmNetworkFilterTranslator struct {
 	gateway         ir.GatewayIR         // policies attached to gateway
 }
 
-var hcmLogger = logging.NewWithOptions("hcm_network_filter_translator", logging.Options{
-	Format: logging.JSONFormat,
-})
-
 func (h *hcmNetworkFilterTranslator) computeNetworkFilters(ctx context.Context, l ir.HttpFilterChainIR) (*envoy_config_listener_v3.Filter, error) {
 	// 1. Initialize the HttpConnectionManager (HCM)
 	httpConnectionManager := h.initializeHCM()
@@ -238,7 +232,7 @@ func (h *hcmNetworkFilterTranslator) computeNetworkFilters(ctx context.Context, 
 	// 4. Generate the typedConfig for the HCM
 	hcmFilter, err := NewFilterWithTypedConfig(wellknown.HTTPConnectionManager, httpConnectionManager)
 	if err != nil {
-		hcmLogger.Error("failed to convert proto message to any", slog.Any("error", err))
+		logger.Error("failed to convert proto message to any", "error", err)
 		return nil, fmt.Errorf("failed to convert proto message to any: %w", err)
 	}
 
@@ -289,7 +283,7 @@ func (h *hcmNetworkFilterTranslator) computeHttpFilters(ctx context.Context, l i
 
 		for _, httpFilter := range stagedFilters {
 			if httpFilter.Filter == nil {
-				hcmLogger.Warn("HttpFilters() returned nil", slog.String("name", plug.Name))
+				logger.Warn("HttpFilters() returned nil", "name", plug.Name)
 				continue
 			}
 			httpFilters = append(httpFilters, httpFilter)
