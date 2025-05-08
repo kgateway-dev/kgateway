@@ -23,6 +23,8 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 )
 
+var logger = logging.New("translator")
+
 // Combines all the translators needed for xDS translation.
 type CombinedTranslator struct {
 	extensions extensionsplug.Plugin
@@ -53,10 +55,8 @@ func NewCombinedTranslator(
 		commonCols:      commonCols,
 		extensions:      extensions,
 		endpointPlugins: endpointPlugins,
-		logger: logging.NewWithOptions("translator_syncer", logging.Options{
-			Format: logging.JSONFormat,
-		}),
-		waitForSync: []cache.InformerSynced{extensions.HasSynced},
+		logger:          logger,
+		waitForSync:     []cache.InformerSynced{extensions.HasSynced},
 	}
 }
 
@@ -108,7 +108,7 @@ func (s *CombinedTranslator) buildProxy(kctx krt.HandlerContext, ctx context.Con
 	}
 
 	duration := stopwatch.Stop(ctx)
-	slog.Debug("translated proxy", slog.String("namespace", gw.Namespace), slog.String("name", gw.Name), slog.String("duration", duration.String()))
+	logger.Debug("translated proxy", "namespace", gw.Namespace, "name", gw.Name, "duration", duration.String())
 
 	// TODO: these are likely unnecessary and should be removed!
 	//	applyPostTranslationPlugins(ctx, pluginRegistry, &gwplugins.PostTranslationContext{
@@ -124,11 +124,9 @@ func (s *CombinedTranslator) GetUpstreamTranslator() *irtranslator.BackendTransl
 
 // ctx needed for logging; remove once we refactor logging.
 func (s *CombinedTranslator) TranslateGateway(kctx krt.HandlerContext, ctx context.Context, gw ir.Gateway) (*irtranslator.TranslationResult, reports.ReportMap) {
-	logger := slog.Default()
-
 	rm := reports.NewReportMap()
 	r := reports.NewReporter(&rm)
-	logger.Debug("building proxy", slog.String("namespace", gw.Namespace), slog.String("name", gw.Name), slog.String("resourceVersion", gw.Obj.GetResourceVersion()))
+	logger.Debug("building proxy", "namespace", gw.Namespace, "name", gw.Name, "resourceVersion", gw.Obj.GetResourceVersion())
 	gwir := s.buildProxy(kctx, ctx, gw, r)
 
 	if gwir == nil {
