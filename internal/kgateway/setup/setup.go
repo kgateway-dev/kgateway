@@ -24,10 +24,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
 )
 
-const (
-	componentName = "kgateway"
-)
-
 type Server interface {
 	Start(ctx context.Context) error
 }

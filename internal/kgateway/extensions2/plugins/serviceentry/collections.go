@@ -143,7 +143,6 @@ type serviceEntryPlugin struct {
 func initServiceEntryCollections(
 	commonCols *common.CommonCollections,
 ) serviceEntryPlugin {
-
 	// setup input collections
 	defaultFilter := kclient.Filter{ObjectFilter: commonCols.Client.ObjectFilter()}
 
