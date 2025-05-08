@@ -64,7 +64,7 @@ func NewWithOptions(component string, opts Options) *slog.Logger {
 	level.Set(opts.Level)
 
 	handlerOpts := &slog.HandlerOptions{
-		AddSource:   opts.AddSource,
+		AddSource:   opts.AddSource || level.Level() <= slog.LevelDebug,
 		Level:       level,
 		ReplaceAttr: slogLevelReplacer,
 	}
