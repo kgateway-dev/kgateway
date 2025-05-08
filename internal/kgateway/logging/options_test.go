@@ -46,7 +46,7 @@ func TestOptions(t *testing.T) {
 			opts: Options{},
 			want: Options{
 				Level:  slog.LevelInfo,
-				Format: TextFormat,
+				Format: JSONFormat,
 				Writer: os.Stderr,
 			},
 		},
@@ -54,13 +54,13 @@ func TestOptions(t *testing.T) {
 			name: "custom options",
 			opts: Options{
 				Level:     slog.LevelDebug,
-				Format:    JSONFormat,
+				Format:    TextFormat,
 				Writer:    nil,
 				AddSource: true,
 			},
 			want: Options{
 				Level:     slog.LevelDebug,
-				Format:    JSONFormat,
+				Format:    TextFormat,
 				Writer:    os.Stderr,
 				AddSource: true,
 			},
