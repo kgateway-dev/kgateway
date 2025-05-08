@@ -26,7 +26,7 @@ func (s *serviceEntryPlugin) getBackendForRef(
 	}
 	switch key.Kind {
 	case wellknown.ServiceEntryGVK.Kind:
-		return s.resolveServiceEntryBackendRef(kctx, key, port)
+		return s.resolveServiceEntryBackendRef(kctx, key)
 	case wellknown.HostnameGVK.Kind:
 		return s.resolveHostnameBackendRef(kctx, key.GetName(), port)
 	}
@@ -36,7 +36,6 @@ func (s *serviceEntryPlugin) getBackendForRef(
 func (s *serviceEntryPlugin) resolveServiceEntryBackendRef(
 	kctx krt.HandlerContext,
 	key ir.ObjectSource,
-	port int32,
 ) *ir.BackendObjectIR {
 	var out *ir.BackendObjectIR
 

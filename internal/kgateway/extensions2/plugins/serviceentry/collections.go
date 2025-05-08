@@ -17,7 +17,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/logging"
 
 	networking "istio.io/api/networking/v1alpha3"
 	networkingclient "istio.io/client-go/pkg/apis/networking/v1"
@@ -144,7 +143,6 @@ type serviceEntryPlugin struct {
 func initServiceEntryCollections(
 	commonCols *common.CommonCollections,
 ) serviceEntryPlugin {
-	logger := logging.New("serviceentry")
 
 	// setup input collections
 	defaultFilter := kclient.Filter{ObjectFilter: commonCols.Client.ObjectFilter()}

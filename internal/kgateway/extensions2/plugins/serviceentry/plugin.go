@@ -6,6 +6,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/logging"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -14,6 +15,8 @@ import (
 const (
 	BackendClusterPrefix = "istio-se"
 )
+
+var logger = logging.New("serviceentry")
 
 func NewPlugin(
 	_ context.Context,
