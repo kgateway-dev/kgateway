@@ -6,7 +6,7 @@ metadata:
   labels:
     {{- include "kgateway.labels" . | nindent 4 }}
 spec:
-  replicas: {{ .Values.replicaCount }}
+  replicas: {{ .Values.controller.replicaCount }}
   selector:
     matchLabels:
       {{- include "kgateway.selectorLabels" . | nindent 6 }}
