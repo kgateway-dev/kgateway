@@ -7,6 +7,7 @@ import (
 
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	xdsserver "github.com/envoyproxy/go-control-plane/pkg/server/v3"
+	"github.com/go-logr/logr"
 	istiokube "istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/client-go/rest"
@@ -156,6 +157,10 @@ func setupLogging(levelStr string) {
 		return
 	}
 	logging.MustSetLevel(logging.DefaultComponent, level)
+	controllerLogger := logging.New("controllerruntime")
+	logrSink := logr.FromSlogHandler(controllerLogger.Handler())
+	ctrl.SetLogger(logrSink)
+	logging.Reset(level)
 }
 
 func createKubeClient(restConfig *rest.Config) (istiokube.Client, error) {

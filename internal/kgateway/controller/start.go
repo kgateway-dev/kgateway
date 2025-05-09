@@ -8,7 +8,6 @@ import (
 	"sync/atomic"
 
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
-	"github.com/go-logr/logr"
 	istiokube "istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/krt"
 	istiolog "istio.io/istio/pkg/log"
@@ -92,17 +91,11 @@ type ControllerBuilder struct {
 
 func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuilder, error) {
 	loggingOptions := istiolog.DefaultOptions()
-
-	controllerLogger := logging.NewWithOptions(ControllerRuntimeLogger, logging.Options{
-		Format: logging.JSONFormat,
-	})
-	logrSink := logr.FromSlogHandler(controllerLogger.Handler())
 	if cfg.Dev {
 		setupLog.Info("starting log in dev mode")
 		loggingOptions.SetDefaultOutputLevel(istiolog.OverrideScopeName, istiolog.DebugLevel)
 		logging.MustSetLevel(ControllerRuntimeLogger, slog.LevelDebug)
 	}
-	ctrl.SetLogger(logrSink)
 	istiolog.Configure(loggingOptions)
 
 	scheme := DefaultScheme()
