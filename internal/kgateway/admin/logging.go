@@ -30,12 +30,7 @@ func getLoggingDescription() string {
 	sort.Strings(components) // Sort alphabetically
 
 	for _, comp := range components {
-		// Use slogleveler.DefaultComponent for the global/default logger
-		displayName := comp
-		if comp == logging.DefaultComponent {
-			displayName = "Default"
-		}
-		componentSelector += fmt.Sprintf(`<option value="%s">%s (Current: %s)</option>`, comp, displayName, logging.LevelToString(componentLevels[comp]))
+		componentSelector += fmt.Sprintf(`<option value="%s">%s (Current: %s)</option>`, comp, comp, logging.LevelToString(componentLevels[comp]))
 	}
 	componentSelector += `</select>`
 
