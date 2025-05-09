@@ -583,7 +583,6 @@ func (s *ProxySyncer) syncGatewayStatus(ctx context.Context, logger *slog.Logger
 }
 
 func (s *ProxySyncer) syncPolicyStatus(ctx context.Context, rm reports.ReportMap) {
-	logger := logging.New("routeStatusSyncer")
 	stopwatch := utils.NewTranslatorStopWatch("RouteStatusSyncer")
 	stopwatch.Start()
 	defer stopwatch.Stop(ctx)
