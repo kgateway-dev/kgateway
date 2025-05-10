@@ -19,14 +19,20 @@ import (
 
 var logger = logging.New("translator/gateway")
 
-func NewTranslator(queries query.GatewayQueries) extensionsplug.KGwTranslator {
+type TranslatorConfig struct {
+	ListenerTranslatorConfig listener.ListenerTranslatorConfig
+}
+
+func NewTranslator(queries query.GatewayQueries, settings TranslatorConfig) extensionsplug.KGwTranslator {
 	return &translator{
-		queries: queries,
+		queries:  queries,
+		settings: settings,
 	}
 }
 
 type translator struct {
-	queries query.GatewayQueries
+	queries  query.GatewayQueries
+	settings TranslatorConfig
 }
 
 func (t *translator) Translate(
@@ -72,6 +78,7 @@ func (t *translator) Translate(
 		gateway,
 		routesForGw,
 		reporter,
+		t.settings.ListenerTranslatorConfig,
 	)
 
 	return &ir.GatewayIR{
