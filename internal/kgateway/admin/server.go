@@ -20,9 +20,6 @@ func RunAdminServer(ctx context.Context, setupOpts *controller.SetupOpts) error 
 	// serverHandlers defines the custom handlers that the Admin Server will support
 	serverHandlers := getServerHandlers(ctx, setupOpts.KrtDebugger, setupOpts.Cache)
 
-	// initialize the atomic log level
-	// The level is now initialized in setup.SetupLogging and managed via the handler
-
 	startHandlers(ctx, serverHandlers)
 
 	return nil
@@ -86,16 +83,13 @@ func startHandlers(ctx context.Context, addHandlers ...func(mux *http.ServeMux, 
 		Addr:    fmt.Sprintf("localhost:%d", wellknown.KgatewayAdminPort),
 		Handler: mux,
 	}
-	// Use global slog
-	slog.Info(fmt.Sprintf("Admin server starting at %s", server.Addr))
+	slog.Info("Admin server starting", "address", server.Addr)
 	go func() {
 		err := server.ListenAndServe()
 		if err == http.ErrServerClosed {
-			// Use global slog
 			slog.Info("Admin server closed")
 		} else {
-			// Use global slog
-			slog.Warn(fmt.Sprintf("Admin server closed with unexpected error: %v", err))
+			slog.Warn("Admin server closed with unexpected error", "error", err)
 		}
 	}()
 	go func() {
@@ -103,8 +97,7 @@ func startHandlers(ctx context.Context, addHandlers ...func(mux *http.ServeMux, 
 		if server != nil {
 			err := server.Close()
 			if err != nil {
-				// Use global slog
-				slog.Warn(fmt.Sprintf("Admin server shutdown returned error: %v", err))
+				slog.Warn("Admin server shutdown returned error", "error", err)
 			}
 		}
 	}()
