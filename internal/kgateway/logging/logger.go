@@ -60,9 +60,15 @@ func NewWithOptions(component string, opts Options) *slog.Logger {
 
 	opts.Default()
 
-	level := &slog.LevelVar{} // default is INFO
-	level.Set(opts.Level)
-
+	level := &slog.LevelVar{}
+	if opts.Level != nil {
+		level.Set(*opts.Level)
+	} else {
+		defaultLvl, ok := componentLeveler.Load(DefaultComponent)
+		if ok {
+			level.Set(defaultLvl.(*slog.LevelVar).Level())
+		}
+	}
 	handlerOpts := &slog.HandlerOptions{
 		AddSource:   opts.AddSource || level.Level() <= slog.LevelDebug,
 		Level:       level,

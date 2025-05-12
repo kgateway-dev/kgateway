@@ -36,6 +36,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"k8s.io/utils/ptr"
 )
 
 func TestLogging(t *testing.T) {
@@ -173,4 +175,15 @@ func TestLogging(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGetComponentLevels(t *testing.T) {
+	a := assert.New(t)
+
+	_ = NewWithOptions("TestGetComponentLevels1", Options{Level: ptr.To(slog.LevelDebug)})
+	_ = NewWithOptions("TestGetComponentLevels2", Options{Level: ptr.To(slog.LevelError)})
+
+	got := GetComponentLevels()
+	a.Equal(slog.LevelDebug, got["TestGetComponentLevels1"], "TestGetComponentLevels1")
+	a.Equal(slog.LevelError, got["TestGetComponentLevels2"], "TestGetComponentLevels2")
 }

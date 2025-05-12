@@ -33,6 +33,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"k8s.io/utils/ptr"
 )
 
 func TestOptions(t *testing.T) {
@@ -45,22 +46,21 @@ func TestOptions(t *testing.T) {
 			name: "default options",
 			opts: Options{},
 			want: Options{
-				Level:  slog.LevelInfo,
-				Format: JSONFormat,
+				Format: TextFormat,
 				Writer: os.Stderr,
 			},
 		},
 		{
 			name: "custom options",
 			opts: Options{
-				Level:     slog.LevelDebug,
-				Format:    TextFormat,
+				Level:     ptr.To(slog.LevelDebug),
+				Format:    JSONFormat,
 				Writer:    nil,
 				AddSource: true,
 			},
 			want: Options{
-				Level:     slog.LevelDebug,
-				Format:    TextFormat,
+				Level:     ptr.To(slog.LevelDebug),
+				Format:    JSONFormat,
 				Writer:    os.Stderr,
 				AddSource: true,
 			},
