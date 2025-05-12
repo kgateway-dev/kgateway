@@ -160,6 +160,7 @@ func setupLogging(levelStr string) {
 	controllerLogger := logging.New("controllerruntime")
 	logrSink := logr.FromSlogHandler(controllerLogger.Handler())
 	ctrl.SetLogger(logrSink)
+	// set all loggers to the specified level
 	logging.Reset(level)
 }
 
