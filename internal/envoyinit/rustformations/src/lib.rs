@@ -28,8 +28,15 @@ fn init() -> bool {
 fn new_http_filter_config_fn<EC: EnvoyHttpFilterConfig, EHF: EnvoyHttpFilter>(
     _envoy_filter_config: &mut EC,
     filter_name: &str,
-    filter_config: &str,
+    filter_config: &[u8],
 ) -> Option<Box<dyn HttpFilterConfig<EC, EHF>>> {
+    let filter_config = match std::str::from_utf8(filter_config) {
+        Ok(config) => config,
+        Err(_) => {
+            eprintln!("Invalid UTF-8 in filter configuration");
+            return None;
+        }
+    };
     match filter_name {
         "http_simple_mutations" => http_simple_mutations::FilterConfig::new(filter_config)
             .map(|config| Box::new(config) as Box<dyn HttpFilterConfig<EC, EHF>>),
