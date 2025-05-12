@@ -2,7 +2,6 @@ package gateway
 
 import (
 	"context"
-	"log/slog"
 
 	"istio.io/istio/pkg/kube/krt"
 
@@ -43,7 +42,7 @@ func (t *translator) Translate(
 	})
 	routesForGw, err := t.queries.GetRoutesForGateway(kctx, ctx, gateway.Obj)
 	if err != nil {
-		logger.Error("failed to get routes for gateway", slog.String("namespace", gateway.Namespace), slog.String("name", gateway.Name), slog.Any("error", err))
+		logger.Error("failed to get routes for gateway", "namespace", gateway.Namespace, "name", gateway.Name, "error", err)
 		// TODO: decide how/if to report this error on Gateway
 		// reporter.Gateway(gateway).Err(err.Error())
 		return nil

@@ -20,7 +20,7 @@ func (s *ProxyTranslator) syncXds(
 
 	// stringifying the snapshot may be an expensive operation, so we'd like to avoid building the large
 	// string if we're not even going to log it anyway
-	logger.Debug("syncing xds snapshot", slog.String("proxyKey", proxyKey))
+	logger.Debug("syncing xds snapshot", "proxyKey", proxyKey)
 
 	// Check if the default logger is enabled for Debug level
 	if slog.Default().Enabled(context.Background(), slog.LevelDebug) {

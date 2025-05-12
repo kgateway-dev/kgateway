@@ -78,7 +78,7 @@ type metadataCheckingRateLimitServer struct {
 }
 
 func (s *metadataCheckingRateLimitServer) ShouldRateLimit(ctx context.Context, req *pb.RateLimitRequest) (*pb.RateLimitResponse, error) {
-	slog.Info("rate limit request", slog.Any("req", req))
+	slog.Info("rate limit request", "req", req)
 
 	Expect(req.Descriptors).To(HaveLen(1))
 	Expect(req.Descriptors[0].Entries).To(HaveLen(1))

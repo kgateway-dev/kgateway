@@ -60,7 +60,7 @@ func StartKgateway(
 	// load global settings
 	st, err := settings.BuildSettings()
 	if err != nil {
-		slog.Error("error loading settings from env", slog.Any("error", err))
+		slog.Error("error loading settings from env", "error", err)
 	}
 
 	setupLogging(st.LogLevel)
@@ -132,7 +132,7 @@ func StartKgatewayWithConfig(
 		KrtOptions:     krtOpts,
 	})
 	if err != nil {
-		slog.Error("failed initializing controller: ", slog.Any("error", err))
+		slog.Error("failed initializing controller: ", "error", err)
 		return err
 	}
 
@@ -153,7 +153,7 @@ func setupLogging(levelStr string) {
 	}
 	level, err := logging.ParseLevel(levelStr)
 	if err != nil {
-		slog.Error("failed to parse log level, defaulting to info", slog.Any("error", err))
+		slog.Error("failed to parse log level, defaulting to info", "error", err)
 		return
 	}
 	logging.MustSetLevel(logging.DefaultComponent, level)

@@ -57,7 +57,7 @@ func LoadFromFiles(ctx context.Context, filename string) ([]client.Object, error
 		return nil, NoFilesFound
 	}
 
-	slog.Info("user configuration YAML files found", slog.Any("files", yamlFiles))
+	slog.Info("user configuration YAML files found", "files", yamlFiles)
 
 	var resources []client.Object
 	for _, file := range yamlFiles {
@@ -113,8 +113,8 @@ func parseFile(ctx context.Context, filename string) ([]runtime.Object, error) {
 		var meta metaOnly
 		if err := yaml.Unmarshal(objYaml, &meta); err != nil {
 			slog.Warn("failed to parse resource metadata, skipping YAML document",
-				slog.String("filename", filename),
-				slog.String("truncatedYamlDoc", truncateString(string(objYaml), 100)),
+				"filename", filename,
+				"truncatedYamlDoc", truncateString(string(objYaml), 100),
 			)
 			continue
 		}
@@ -123,19 +123,19 @@ func parseFile(ctx context.Context, filename string) ([]runtime.Object, error) {
 		obj, err := scheme.New(gvk)
 		if err != nil {
 			slog.Warn("unknown resource kind",
-				slog.String("filename", filename),
-				slog.String("resourceKind", gvk.String()),
-				slog.String("truncatedYamlDoc", truncateString(string(objYaml), 100)),
+				"filename", filename,
+				"resourceKind", gvk.String(),
+				"truncatedYamlDoc", truncateString(string(objYaml), 100),
 			)
 			continue
 		}
 		if err := yaml.Unmarshal(objYaml, obj); err != nil {
 			slog.Warn("failed to parse resource YAML",
-				slog.Any("error", err),
-				slog.String("filename", filename),
-				slog.String("resourceKind", gvk.String()),
-				slog.String("resourceId", obj.(client.Object).GetName()+"."+obj.(client.Object).GetNamespace()),
-				slog.String("truncatedYamlDoc", truncateString(string(objYaml), 100)),
+				"error", err,
+				"filename", filename,
+				"resourceKind", gvk.String(),
+				"resourceId", obj.(client.Object).GetName()+"."+obj.(client.Object).GetNamespace(),
+				"truncatedYamlDoc", truncateString(string(objYaml), 100),
 			)
 			continue
 		}

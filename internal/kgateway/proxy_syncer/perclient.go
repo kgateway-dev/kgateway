@@ -2,7 +2,6 @@ package proxy_syncer
 
 import (
 	"fmt"
-	"log/slog"
 
 	envoycachetypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
@@ -22,12 +21,12 @@ func snapshotPerClient(
 	xdsSnapshotsForUcc := krt.NewCollection(uccCol, func(kctx krt.HandlerContext, ucc ir.UniqlyConnectedClient) *XdsSnapWrapper {
 		maybeMostlySnap := krt.FetchOne(kctx, mostXdsSnapshots, krt.FilterKey(ucc.Role))
 		if maybeMostlySnap == nil {
-			logger.Debug("snapshotPerClient - snapshot missing", slog.String("proxyKey", ucc.Role))
+			logger.Debug("snapshotPerClient - snapshot missing", "proxyKey", ucc.Role)
 			return nil
 		}
 		clustersForUcc := clusters.FetchClustersForClient(kctx, ucc)
 
-		logger.Debug("found perclient clusters", slog.String("client", ucc.ResourceName()), slog.Int("clusters", len(clustersForUcc)))
+		logger.Debug("found perclient clusters", "client", ucc.ResourceName(), "clusters", len(clustersForUcc))
 
 		// HACK
 		// https://github.com/solo-io/gloo/pull/10611/files#diff-060acb7cdd3a287a3aef1dd864aae3e0193da17b6230c382b649ce9dc0eca80b
@@ -42,7 +41,7 @@ func snapshotPerClient(
 		// While we're looking for a way to make this ordering predictable
 		// to avoid hacks like this, it will do for now.
 		if len(clustersForUcc) == 0 {
-			logger.Info("no perclient clusters; defer building snapshot", slog.String("client", ucc.ResourceName()))
+			logger.Info("no perclient clusters; defer building snapshot", "client", ucc.ResourceName())
 			return nil
 		}
 
@@ -82,11 +81,11 @@ func snapshotPerClient(
 		snapshot.Resources[envoycachetypes.Listener] = maybeMostlySnap.Listeners
 		//envoycache.NewResources(version, resource)
 		snap.snap = snapshot
-		logger.Debug("snapshotPerClient", slog.String("proxyKey", snap.proxyKey),
-			slog.String("Listeners", resourcesStringer(maybeMostlySnap.Listeners).String()),
-			slog.String("Clusters", resourcesStringer(clusterResources).String()),
-			slog.String("Routes", resourcesStringer(maybeMostlySnap.Routes).String()),
-			slog.String("Endpoints", resourcesStringer(endpointResources).String()),
+		logger.Debug("snapshotPerClient", "proxyKey", snap.proxyKey,
+			"Listeners", resourcesStringer(maybeMostlySnap.Listeners).String(),
+			"Clusters", resourcesStringer(clusterResources).String(),
+			"Routes", resourcesStringer(maybeMostlySnap.Routes).String(),
+			"Endpoints", resourcesStringer(endpointResources).String(),
 		)
 
 		return &snap

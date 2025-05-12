@@ -124,10 +124,10 @@ func (s *Server) UpdateSDSConfig(ctx context.Context) error {
 
 	snapshotVersion, err := GetSnapshotVersion(certs)
 	if err != nil {
-		slog.Error("error getting snapshot version", slog.Any("error", err))
+		slog.Error("error getting snapshot version", "error", err)
 		return err
 	}
-	slog.Info("Updating SDS config", slog.String("sdsClient", s.sdsClient), slog.String("snapshotVersion", snapshotVersion))
+	slog.Info("Updating SDS config", "sdsClient", s.sdsClient, "snapshotVersion", snapshotVersion)
 
 	secretSnapshot := &cache.Snapshot{}
 	secretSnapshot.Resources[cache_types.Secret] = cache.NewResources(snapshotVersion, items)

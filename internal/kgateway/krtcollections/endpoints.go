@@ -2,7 +2,6 @@ package krtcollections
 
 import (
 	"context"
-	"log/slog"
 
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -102,7 +101,7 @@ func transformK8sEndpoints(ctx context.Context, inputs EndpointsInputs) func(kct
 			Namespace: backend.Namespace,
 			Name:      backend.Name,
 		}
-		kubeSvcLogger := logger.With(slog.Any("kubesvc", key))
+		kubeSvcLogger := logger.With("kubesvc", key)
 
 		kubeBackend, ok := backend.Obj.(*corev1.Service)
 		// only care about kube backend

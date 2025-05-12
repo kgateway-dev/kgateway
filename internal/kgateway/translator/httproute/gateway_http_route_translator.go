@@ -201,7 +201,7 @@ func setRouteAction(
 
 		if err := backend.Backend.Err; err != nil {
 			query.ProcessBackendError(err, reporter)
-			logger.Debug("error on backend upstream", slog.Any("error", err))
+			logger.Debug("error on backend upstream", "error", err)
 		}
 
 		httpBackend := ir.HttpBackend{

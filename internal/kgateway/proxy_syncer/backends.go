@@ -3,7 +3,6 @@ package proxy_syncer
 import (
 	"context"
 	"fmt"
-	"log/slog"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	"istio.io/istio/pkg/kube/krt"
@@ -47,12 +46,12 @@ func NewPerClientEnvoyClusters(
 	uccs krt.Collection[ir.UniqlyConnectedClient],
 ) PerClientEnvoyClusters {
 	clusters := krt.NewManyCollection(finalBackends, func(kctx krt.HandlerContext, backendObj ir.BackendObjectIR) []uccWithCluster {
-		backendLogger := logger.With(slog.Any("backend", backendObj)) // is this really needed?
+		backendLogger := logger.With("backend", backendObj)
 		uccs := krt.Fetch(kctx, uccs)
 		uccWithClusterRet := make([]uccWithCluster, 0, len(uccs))
 
 		for _, ucc := range uccs {
-			backendLogger.Debug("applying destination rules for backend", slog.String("ucc", ucc.ResourceName()))
+			backendLogger.Debug("applying destination rules for backend", "ucc", ucc.ResourceName())
 
 			c, err := translator.TranslateBackend(kctx, ucc, backendObj)
 			if c == nil {

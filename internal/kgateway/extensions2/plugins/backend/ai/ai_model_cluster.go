@@ -331,7 +331,7 @@ func buildVertexAIEndpoint(ctx context.Context, data *v1alpha1.VertexAIConfig, h
 		publisher = "google"
 	default:
 		// TODO(npolshak): add support for other publishers
-		slog.Warn("unsupported Vertex AI publisher, defaulting to Google", slog.String("publisher", string(data.Publisher)))
+		slog.Warn("unsupported Vertex AI publisher, defaulting to Google", "publisher", string(data.Publisher))
 		publisher = "google"
 	}
 	return buildLocalityLbEndpoint(
@@ -475,7 +475,7 @@ func getTransformation(ctx context.Context, llm *v1alpha1.LLMProvider) (string, 
 				modelPath = getVertexAIGeminiModelPath()
 			default:
 				// TODO(npolshak): add support for other publishers
-				slog.Warn("unsupported Vertex AI publisher, defaulting to Google", slog.String("publisher", string(provider.VertexAI.Publisher)))
+				slog.Warn("unsupported Vertex AI publisher, defaulting to Google", "publisher", string(provider.VertexAI.Publisher))
 				modelPath = getVertexAIGeminiModelPath()
 			}
 		} else {

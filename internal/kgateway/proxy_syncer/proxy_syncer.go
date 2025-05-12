@@ -358,8 +358,8 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 		latestReportQueue.Enqueue(o.Latest().reportMap)
 	})
 
-	routeStatusLogger := logger.With(slog.String("subcomponent", "routeStatusSyncer"))
-	gatewayStatusLogger := logger.With(slog.String("subcomponent", "gatewayStatusSyncer"))
+	routeStatusLogger := logger.With("subcomponent", "routeStatusSyncer")
+	gatewayStatusLogger := logger.With("subcomponent", "gatewayStatusSyncer")
 	go func() {
 		for {
 			latestReport, err := latestReportQueue.Dequeue(ctx)
@@ -579,7 +579,7 @@ func (s *ProxySyncer) syncGatewayStatus(ctx context.Context, logger *slog.Logger
 		logger.Error("all attempts failed at updating gateway statuses", "error", err)
 	}
 	duration := stopwatch.Stop(ctx)
-	logger.Debug(fmt.Sprintf("synced gw status for %d gateways", len(rm.Gateways)), slog.Duration("duration", duration))
+	logger.Debug("synced gw status for gateways", "count", len(rm.Gateways), "duration", duration)
 }
 
 func (s *ProxySyncer) syncPolicyStatus(ctx context.Context, rm reports.ReportMap) {

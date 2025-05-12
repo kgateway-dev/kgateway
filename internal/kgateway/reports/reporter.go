@@ -104,7 +104,7 @@ func (r *ReportMap) route(obj metav1.Object) *RouteReport {
 	case *gwv1.GRPCRoute:
 		return r.GRPCRoutes[key]
 	default:
-		slog.Warn("Unsupported route type", slog.Any("type", obj))
+		slog.Warn("Unsupported route type", "type", obj)
 		return nil
 	}
 }
@@ -126,7 +126,7 @@ func (r *ReportMap) newRouteReport(obj metav1.Object) *RouteReport {
 	case *gwv1.GRPCRoute:
 		r.GRPCRoutes[key] = rr
 	default:
-		slog.Warn("Unsupported route type", slog.Any("type", obj))
+		slog.Warn("Unsupported route type", "type", obj)
 		return nil
 	}
 

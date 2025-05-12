@@ -53,12 +53,12 @@ func StartServer(ctx context.Context, params ServerParams) {
 			Addr:    fmt.Sprintf(":%d", params.Port),
 			Handler: mux,
 		}
-		slog.Info("probe server starting", slog.String("addr", server.Addr), slog.String("path", params.Path))
+		slog.Info("probe server starting", "addr", server.Addr, "path", params.Path)
 		err := server.ListenAndServe()
 		if err == http.ErrServerClosed {
 			slog.Info("probe server closed")
 		} else {
-			slog.Warn("probe server closed with unexpected error", slog.Any("error", err))
+			slog.Warn("probe server closed with unexpected error", "error", err)
 		}
 	}()
 
@@ -69,7 +69,7 @@ func StartServer(ctx context.Context, params ServerParams) {
 			shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 2*time.Second)
 			defer shutdownCancel()
 			if err := server.Shutdown(shutdownCtx); err != nil {
-				slog.Warn("probe server shutdown returned error", slog.Any("error", err))
+				slog.Warn("probe server shutdown returned error", "error", err)
 			}
 		}
 	}()

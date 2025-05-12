@@ -157,7 +157,7 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(ctx context.Context,
 		}
 	}
 	if err != nil {
-		h.logger.Debug("invalid route", slog.Any("error", err))
+		h.logger.Debug("invalid route", "error", err)
 		// TODO: we may want to aggregate all these errors per http route object and report one message?
 		routeReport.SetCondition(reportssdk.RouteCondition{
 			Type:   gwv1.RouteConditionPartiallyInvalid,
