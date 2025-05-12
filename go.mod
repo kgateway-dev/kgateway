@@ -600,6 +600,10 @@ require (
 
 replace github.com/imdario/mergo => github.com/imdario/mergo v0.3.16
 
+// Use a patched version of gengo to produce consistent zz_generated.openapi.go
+// Ref: https://github.com/kubernetes/gengo/issues/292
+replace k8s.io/gengo/v2 => github.com/kgateway-dev/gengo/v2 v2.0.0-20250512195215-4fa0a9df2978
+
 tool (
 	github.com/golang/mock/mockgen
 	github.com/golangci/golangci-lint/v2/cmd/golangci-lint
