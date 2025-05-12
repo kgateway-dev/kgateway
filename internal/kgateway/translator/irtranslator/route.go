@@ -477,8 +477,12 @@ func translateGlooMatcher(matcher gwv1.HTTPRouteMatch) *envoy_config_route_v3.Ro
 	if matcher.Method != nil {
 		match.Headers = append(match.GetHeaders(), &envoy_config_route_v3.HeaderMatcher{
 			Name: ":method",
-			HeaderMatchSpecifier: &envoy_config_route_v3.HeaderMatcher_ExactMatch{
-				ExactMatch: string(*matcher.Method),
+			HeaderMatchSpecifier: &envoy_config_route_v3.HeaderMatcher_StringMatch{
+				StringMatch: &envoy_type_matcher_v3.StringMatcher{
+					MatchPattern: &envoy_type_matcher_v3.StringMatcher_Exact{
+						Exact: string(*matcher.Method),
+					},
+				},
 			},
 		})
 	}
@@ -537,12 +541,20 @@ func envoyHeaderMatcher(in []gwv1.HTTPHeaderMatch) []*envoy_config_route_v3.Head
 			}
 		} else {
 			if regex {
-				envoyMatch.HeaderMatchSpecifier = &envoy_config_route_v3.HeaderMatcher_SafeRegexMatch{
-					SafeRegexMatch: regexutils.NewRegexWithProgramSize(matcher.Value, nil),
+				envoyMatch.HeaderMatchSpecifier = &envoy_config_route_v3.HeaderMatcher_StringMatch{
+					StringMatch: &envoy_type_matcher_v3.StringMatcher{
+						MatchPattern: &envoy_type_matcher_v3.StringMatcher_SafeRegex{
+							SafeRegex: regexutils.NewRegexWithProgramSize(matcher.Value, nil),
+						},
+					},
 				}
 			} else {
-				envoyMatch.HeaderMatchSpecifier = &envoy_config_route_v3.HeaderMatcher_ExactMatch{
-					ExactMatch: matcher.Value,
+				envoyMatch.HeaderMatchSpecifier = &envoy_config_route_v3.HeaderMatcher_StringMatch{
+					StringMatch: &envoy_type_matcher_v3.StringMatcher{
+						MatchPattern: &envoy_type_matcher_v3.StringMatcher_Exact{
+							Exact: matcher.Value,
+						},
+					},
 				}
 			}
 		}
