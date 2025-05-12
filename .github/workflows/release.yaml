@@ -55,12 +55,6 @@ jobs:
               VERSION="v0.0.0-manual-${GIT_SHA}"
             fi
             echo "goreleaser_args=--clean --skip=validate" >> $GITHUB_OUTPUT
-          elif [[ $GITHUB_REF == refs/tags/* ]]; then
-            VERSION="${GITHUB_REF#refs/tags/}"
-            echo "goreleaser_args=--clean" >> $GITHUB_OUTPUT
-          elif [[ $GITHUB_REF == refs/heads/main ]]; then
-            VERSION="v2.0.0-main"
-            echo "goreleaser_args=--clean --skip=validate" >> $GITHUB_OUTPUT
           elif [[ $GITHUB_REF == refs/pull/* ]]; then
             GIT_TAG=$(git describe --tags --abbrev=0)
             PR_NUM=$(echo "${GITHUB_REF}" | sed -E 's|refs/pull/([^/]+)/?.*|\1|')
@@ -107,19 +101,6 @@ jobs:
           fetch-depth: 0
       - name: Prep Go Runner
         uses: ./.github/actions/prep-go-runner
-
-      # We publish a rolling main release for every commit to main. Deleting the release
-      # ensures that the tagged commit is not stale. Goreleaser will create a new tag
-      # and release for the tagged commit.
-      - name: Delete v2.0.0-main release if it exists
-        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-        continue-on-error: true
-        run: |
-          set -x
-          echo "Deleting the v2.0.0-main release"
-          gh release delete v2.0.0-main --repo ${{ github.repository }} --yes --cleanup-tag
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Log into ghcr.io
         if: ${{ github.event_name != 'pull_request' }}

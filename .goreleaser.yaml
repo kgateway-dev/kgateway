@@ -176,6 +176,7 @@ release:
   prerelease: "auto"
   mode: "replace"
   replace_existing_artifacts: true
+  target_commitish: "{{ .FullCommit }}"
   header: |
     {{ if eq .Env.VERSION "v2.0.0-main" }}
     🚀 Nightly build of kgateway!
