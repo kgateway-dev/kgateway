@@ -74,7 +74,7 @@ func buildCollection(callbacks *callbacks) UniquelyConnectedClientsBulider {
 	return func(ctx context.Context, krtOpts krtutil.KrtOptions, augmentedPods krt.Collection[LocalityPod]) krt.Collection[ir.UniqlyConnectedClient] {
 		trigger := krt.NewRecomputeTrigger(true)
 		col := &callbacksCollection{
-			logger:           slog.Default(),
+			logger:           logger,
 			augmentedPods:    augmentedPods,
 			clients:          make(map[int64]ConnectedClient),
 			uniqClientsCount: make(map[string]uint64),
@@ -162,7 +162,7 @@ func (x *callbacksCollection) add(sid int64, r *envoy_service_discovery_v3.Disco
 			}
 		}
 		role := roleFromRequest(r)
-		x.logger.Debug("adding xds client", slog.Any("locality", locality), slog.String("ns", ns), slog.Any("labels", labels), slog.String("role", role))
+		x.logger.Debug("adding xds client", "locality", locality, "ns", ns, "labels", labels, "role", role)
 		// TODO: modify request to include the label that are relevant for the client?
 		ucc := ir.NewUniqlyConnectedClient(role, ns, labels, locality)
 		c = newConnectedClient(ucc.ResourceName())
@@ -196,7 +196,7 @@ func (x *callbacks) OnStreamRequest(sid int64, r *envoy_service_discovery_v3.Dis
 func (x *callbacksCollection) newStream(sid int64, r *envoy_service_discovery_v3.DiscoveryRequest) error {
 	ucc, isNew, err := x.add(sid, r)
 	if err != nil {
-		x.logger.Debug("error processing xds client", slog.Any("error", err))
+		x.logger.Debug("error processing xds client", "error", err)
 		return err
 	}
 	if ucc != "" {
@@ -208,7 +208,7 @@ func (x *callbacksCollection) newStream(sid int64, r *envoy_service_discovery_v3
 			nodeMd.Fields = map[string]*structpb.Value{}
 		}
 
-		x.logger.Debug("augmenting role in node metadata", slog.String("resourceName", ucc))
+		x.logger.Debug("augmenting role in node metadata", "resourceName", ucc)
 		// NOTE: this changes the role to include the unique client. This is coupled
 		// with how the snapshot is inserted to the cache for the proxy - it needs to be done with
 		// the unique client resource name as well.
@@ -267,7 +267,7 @@ func (x *callbacksCollection) fetchRequest(_ context.Context, r *envoy_service_d
 		nodeMd.Fields = map[string]*structpb.Value{}
 	}
 
-	x.logger.Debug("augmenting role in node metadata", slog.String("resourceName", ucc.ResourceName()))
+	x.logger.Debug("augmenting role in node metadata", "resourceName", ucc.ResourceName())
 	// NOTE: this changes the role to include the unique client. This is coupled
 	// with how the snapshot is inserted to the cache for the proxy - it needs to be done with
 	// the unique client resource name as well.
