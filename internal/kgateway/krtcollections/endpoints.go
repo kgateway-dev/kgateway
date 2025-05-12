@@ -114,14 +114,14 @@ func transformK8sEndpoints(ctx context.Context, inputs EndpointsInputs) func(kct
 
 		kubeSvcPort, singlePortSvc := findPortForService(kubeBackend, uint32(backend.Port))
 		if kubeSvcPort == nil {
-			logger.Debug("port not found for service", slog.Uint64("port", uint64(backend.Port)))
+			logger.Debug("port not found for service", "port", backend.Port)
 			return nil
 		}
 
 		// Fetch all EndpointSlices for the backend service
 		endpointSlices := krt.Fetch(kctx, inputs.EndpointSlices, krt.FilterIndex(inputs.EndpointSlicesByService, key))
 		if len(endpointSlices) == 0 {
-			logger.Debug("no endpointslices found for service", slog.String("name", key.Name), slog.String("namespace", key.Namespace))
+			logger.Debug("no endpointslices found for service", "name", key.Name, "namespace", key.Namespace)
 			return nil
 		}
 
@@ -134,7 +134,7 @@ func transformK8sEndpoints(ctx context.Context, inputs EndpointsInputs) func(kct
 			}
 		}
 		if !found {
-			logger.Debug("no ports found in endpointslices for service", slog.String("name", key.Name), slog.String("namespace", key.Namespace))
+			logger.Debug("no ports found in endpointslices for service", "name", key.Name, "namespace", key.Namespace)
 			return nil
 		}
 
@@ -150,8 +150,8 @@ func transformK8sEndpoints(ctx context.Context, inputs EndpointsInputs) func(kct
 			port := findPortInEndpointSlice(endpointSlice, singlePortSvc, kubeSvcPort)
 			if port == 0 {
 				logger.Debug("no port found in endpointslice; will try next endpointslice if one exists",
-					slog.String("name", endpointSlice.Name),
-					slog.String("namespace", endpointSlice.Namespace))
+					"name", endpointSlice.Name,
+					"namespace", endpointSlice.Namespace)
 				continue
 			}
 
@@ -203,7 +203,7 @@ func transformK8sEndpoints(ctx context.Context, inputs EndpointsInputs) func(kct
 				}
 			}
 		}
-		logger.Debug("created endpoint", slog.Int("numAddresses", len(ret.LbEps)))
+		logger.Debug("created endpoint", "numAddresses", len(ret.LbEps))
 		return ret
 	}
 }
