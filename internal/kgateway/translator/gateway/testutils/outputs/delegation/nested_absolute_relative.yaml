@@ -21,7 +21,7 @@ Listeners:
             resourceApiVersion: V3
           routeConfigName: http
         statPrefix: http
-        use_remote_address: true
+        useRemoteAddress: true
     name: http
   name: http
 Routes:
@@ -34,14 +34,18 @@ Routes:
     routes:
     - match:
         headers:
-        - exactMatch: parent-header-val
-          name: parent-header
-        - exactMatch: route-a-b-header-val-2
-          name: route-a-b-header-2
-        - exactMatch: route-a-b-d-header-val
-          name: route-a-b-d-header
-        - exactMatch: GET
-          name: :method
+        - name: parent-header
+          stringMatch:
+            exact: parent-header-val
+        - name: route-a-b-header-2
+          stringMatch:
+            exact: route-a-b-header-val-2
+        - name: route-a-b-d-header
+          stringMatch:
+            exact: route-a-b-d-header-val
+        - name: :method
+          stringMatch:
+            exact: GET
         pathSeparatedPrefix: /a/b/d/1
         queryParameters:
         - name: parent-query
@@ -59,12 +63,15 @@ Routes:
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
     - match:
         headers:
-        - exactMatch: parent-header-val
-          name: parent-header
-        - exactMatch: route-a-b-header-val
-          name: route-a-b-header
-        - exactMatch: GET
-          name: :method
+        - name: parent-header
+          stringMatch:
+            exact: parent-header-val
+        - name: route-a-b-header
+          stringMatch:
+            exact: route-a-b-header-val
+        - name: :method
+          stringMatch:
+            exact: GET
         pathSeparatedPrefix: /a/b/c
         queryParameters:
         - name: parent-query
@@ -79,10 +86,12 @@ Routes:
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
     - match:
         headers:
-        - exactMatch: parent-header-val
-          name: parent-header
-        - exactMatch: route-a-header-val
-          name: route-a-header
+        - name: parent-header
+          stringMatch:
+            exact: parent-header-val
+        - name: route-a-header
+          stringMatch:
+            exact: route-a-header-val
         pathSeparatedPrefix: /a/1
         queryParameters:
         - name: parent-query

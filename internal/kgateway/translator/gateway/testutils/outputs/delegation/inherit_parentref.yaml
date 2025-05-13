@@ -34,10 +34,12 @@ Routes:
     routes:
     - match:
         headers:
-        - exactMatch: val1
-          name: header1
-        - exactMatch: POST
-          name: :method
+        - name: header1
+          stringMatch:
+            exact: val1
+        - name: :method
+          stringMatch:
+            exact: POST
         path: /a/bar
         queryParameters:
         - name: query1
