@@ -24,12 +24,15 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/controller"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/setup"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 )
 
 func RunController(t *testing.T, logger *zap.Logger, globalSettings *settings.Settings, testEnv *envtest.Environment,
+	postStart func(t *testing.T, ctx context.Context, client istiokube.CLIClient) func(ctx context.Context, commoncol *common.CommonCollections) []pluginsdk.Plugin,
 	yamlFilesToApply [][]string,
 	run func(t *testing.T,
 		ctx context.Context,
@@ -62,12 +65,16 @@ func RunController(t *testing.T, logger *zap.Logger, globalSettings *settings.Se
 	}
 	t.Cleanup(func() { testEnv.Stop() })
 
-	kubeconfig := generateKubeConfiguration(t, cfg)
+	kubeconfig := GenerateKubeConfiguration(t, cfg)
 	t.Log("kubeconfig:", kubeconfig)
 
 	client, err := istiokube.NewCLIClient(istiokube.NewClientConfigForRestConfig(cfg))
 	if err != nil {
 		t.Fatalf("failed to get init kube client: %v", err)
+	}
+	var extraPlugins func(ctx context.Context, commoncol *common.CommonCollections) []pluginsdk.Plugin
+	if postStart != nil {
+		extraPlugins = postStart(t, ctx, client)
 	}
 
 	for _, yamlFileWithNs := range yamlFilesToApply {
@@ -104,7 +111,7 @@ func RunController(t *testing.T, logger *zap.Logger, globalSettings *settings.Se
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		setup.StartKgatewayWithConfig(ctx, setupOpts, cfg, builder, nil)
+		setup.StartKgatewayWithConfig(ctx, setupOpts, cfg, builder, extraPlugins)
 	}()
 	// give kgateway time to initialize so we don't get
 	// "kgateway not initialized" error
@@ -113,7 +120,7 @@ func RunController(t *testing.T, logger *zap.Logger, globalSettings *settings.Se
 	run(t, ctx, setupOpts.KrtDebugger, client, xdsPort)
 }
 
-func generateKubeConfiguration(t *testing.T, restconfig *rest.Config) string {
+func GenerateKubeConfiguration(t *testing.T, restconfig *rest.Config) string {
 	clusters := make(map[string]*clientcmdapi.Cluster)
 	authinfos := make(map[string]*clientcmdapi.AuthInfo)
 	contexts := make(map[string]*clientcmdapi.Context)

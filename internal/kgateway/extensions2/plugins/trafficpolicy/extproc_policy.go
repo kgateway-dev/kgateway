@@ -14,7 +14,7 @@ import (
 
 // toEnvoyExtProc converts an ExtProcPolicy to an ExternalProcessor
 func toEnvoyExtProc(
-	trafficPolicy *v1alpha1.TrafficPolicy, gatewayExtensions krt.Collection[trafficPolicyGatewayExtensionIR],
+	trafficPolicy *v1alpha1.TrafficPolicy, gatewayExtensions krt.Collection[TrafficPolicyGatewayExtensionIR],
 	krtctx krt.HandlerContext,
 	commoncol *common.CommonCollections,
 ) (*ExtprocIR, error) {
