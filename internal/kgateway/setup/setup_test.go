@@ -330,6 +330,7 @@ func setupEnvTestAndRun(t *testing.T, globalSettings *settings.Settings, run fun
 		// web hook to add cluster ips to services
 	}
 	envtestutil.RunController(t, logger, globalSettings, testEnv,
+		nil,
 		[][]string{
 			[]string{"default", "testdata/setup_yaml/setup.yaml"},
 			[]string{"gwtest", "testdata/setup_yaml/pods.yaml"},
