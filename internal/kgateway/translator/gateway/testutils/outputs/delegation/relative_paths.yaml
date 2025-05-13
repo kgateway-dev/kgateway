@@ -21,7 +21,7 @@ Listeners:
             resourceApiVersion: V3
           routeConfigName: http
         statPrefix: http
-        use_remote_address: true
+        useRemoteAddress: true
     name: http
   name: http
 Routes:
@@ -34,8 +34,9 @@ Routes:
     routes:
     - match:
         headers:
-        - exactMatch: PUT
-          name: :method
+        - name: :method
+          stringMatch:
+            exact: PUT
         path: /a/a/1
       name: http~example_com-route-0-httproute-route-a-a-0-0-matcher-0
       route:
@@ -51,8 +52,9 @@ Routes:
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
     - match:
         headers:
-        - exactMatch: valA
-          name: headerA
+        - name: headerA
+          stringMatch:
+            exact: valA
         pathSeparatedPrefix: /a/a/3
         queryParameters:
         - name: queryA
@@ -80,10 +82,12 @@ Routes:
     routes:
     - match:
         headers:
-        - exactMatch: val1
-          name: header1
-        - exactMatch: GET
-          name: :method
+        - name: header1
+          stringMatch:
+            exact: val1
+        - name: :method
+          stringMatch:
+            exact: GET
         path: /x/a/1
         queryParameters:
         - name: query1
@@ -95,10 +99,12 @@ Routes:
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
     - match:
         headers:
-        - exactMatch: val1
-          name: header1
-        - exactMatch: GET
-          name: :method
+        - name: header1
+          stringMatch:
+            exact: val1
+        - name: :method
+          stringMatch:
+            exact: GET
         queryParameters:
         - name: query1
           stringMatch:
@@ -112,12 +118,15 @@ Routes:
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
     - match:
         headers:
-        - exactMatch: val1
-          name: header1
-        - exactMatch: valA
-          name: headerA
-        - exactMatch: GET
-          name: :method
+        - name: header1
+          stringMatch:
+            exact: val1
+        - name: headerA
+          stringMatch:
+            exact: valA
+        - name: :method
+          stringMatch:
+            exact: GET
         pathSeparatedPrefix: /x/a/3
         queryParameters:
         - name: query1
@@ -132,10 +141,12 @@ Routes:
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
     - match:
         headers:
-        - exactMatch: val1
-          name: header1
-        - exactMatch: GET
-          name: :method
+        - name: header1
+          stringMatch:
+            exact: val1
+        - name: :method
+          stringMatch:
+            exact: GET
         pathSeparatedPrefix: /x
         queryParameters:
         - name: query1
