@@ -51,7 +51,7 @@ runs:
         # AI Tests rely on metal LB
         CONFORMANCE: true
       run: |
-        # Agent Gateway tests require another image to be built and loaded for testing a2a agent
+        # agentgateway tests require another image to be built and loaded for testing a2a agent
         if [[ "${CLUSTER_NAME}" == "agent-gateway-cluster" ]]; then
           export AGENTGATEWAY="true"
         fi

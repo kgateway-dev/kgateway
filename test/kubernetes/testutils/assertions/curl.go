@@ -52,7 +52,7 @@ func (p *Provider) AssertEventualCurlReturnResponse(
 			if errors.As(err, &exitErr) && exitErr.ExitCode() == expectedResponse.IgnoreExitCode {
 				fmt.Printf("Ignoring curl exit code %d: %v\n", expectedResponse.IgnoreExitCode, err)
 			} else {
-				Expect(err).NotTo(HaveOccurred())
+				g.Expect(err).NotTo(HaveOccurred())
 			}
 		}
 
@@ -153,7 +153,7 @@ func (p *Provider) AssertEventuallyConsistentCurlResponse(
 			if errors.As(err, &exitErr) && exitErr.ExitCode() == expectedResponse.IgnoreExitCode {
 				fmt.Printf("Ignoring curl exit code %d: %v\n", expectedResponse.IgnoreExitCode, err)
 			} else {
-				Expect(err).NotTo(HaveOccurred())
+				g.Expect(err).NotTo(HaveOccurred())
 			}
 		}
 

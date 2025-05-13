@@ -155,9 +155,9 @@ func (r report) Equals(in report) bool {
 
 func (s *AgentGwSyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 	logger := contextutils.LoggerFrom(ctx)
-	logger.Debugf("Init %s Agent Gateway Syncer", s.controllerName)
+	logger.Debugf("Init %s agentgateway Syncer", s.controllerName)
 
-	// TODO: convert auth to rbac json config for agent gateways
+	// TODO: convert auth to rbac json config for agentgateways
 
 	gatewaysCol := krt.NewCollection(s.commonCols.GatewayIndex.Gateways, func(kctx krt.HandlerContext, gw ir.Gateway) *ir.Gateway {
 		if gw.Obj.Spec.GatewayClassName != wellknown.AgentGatewayClassName {
@@ -175,7 +175,7 @@ func (s *AgentGwSyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 				if listener.Protocol != A2AProtocol && listener.Protocol != MCPProtocol {
 					continue
 				}
-				logger.Debugf("Found agent gateway service %s/%s", s.Namespace, s.Name)
+				logger.Debugf("Found agentgateway service %s/%s", s.Namespace, s.Name)
 				if listener.AllowedRoutes == nil {
 					// only allow agent services in same namespace
 					if s.Namespace == gw.Obj.Namespace {
@@ -204,7 +204,7 @@ func (s *AgentGwSyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 						}
 					case gwv1.NamespacesFromSelector:
 						// TODO: implement namespace selectors with gateway index
-						contextutils.LoggerFrom(ctx).Errorf("namespace selectors not supported for agent gateways")
+						contextutils.LoggerFrom(ctx).Errorf("namespace selectors not supported for agentgateways")
 						continue
 					}
 				}
@@ -248,7 +248,7 @@ func (s *AgentGwSyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 
 	// translate gateways to xds
 	s.xDS = krt.NewCollection(gatewaysCol, func(kctx krt.HandlerContext, gw ir.Gateway) *agentGwXdsResources {
-		// listeners for the agent gateway
+		// listeners for the agentgateway
 		agwListeners := make([]envoytypes.Resource, 0, len(gw.Listeners))
 		var listenerVersion uint64
 		var listener *Listener
@@ -278,7 +278,7 @@ func (s *AgentGwSyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 					},
 				}
 			} else {
-				// Not a valid protocol for Agent Gateway
+				// Not a valid protocol for agentgateway
 				continue
 			}
 			// Update listenerVersion to be the result
@@ -328,9 +328,9 @@ func (s *AgentGwSyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 
 func (s *AgentGwSyncer) Start(ctx context.Context) error {
 	logger := contextutils.LoggerFrom(ctx)
-	logger.Infof("starting %s Agent Gateway Syncer", s.controllerName)
-	logger.Infof("waiting for Agent Gateway cache to sync")
-	kube.WaitForCacheSync("Agent Gateway syncer", ctx.Done(), s.waitForSync...)
+	logger.Infof("starting %s agentgateway Syncer", s.controllerName)
+	logger.Infof("waiting for agentgateway cache to sync")
+	kube.WaitForCacheSync("agentgateway syncer", ctx.Done(), s.waitForSync...)
 
 	s.xDS.RegisterBatch(func(events []krt.Event[agentGwXdsResources], _ bool) {
 		for _, e := range events {

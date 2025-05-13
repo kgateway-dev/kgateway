@@ -773,7 +773,7 @@ kind-prune-images: ## Remove images in the kind cluster named {CLUSTER_NAME}
 	docker exec -ti $(CLUSTER_NAME)-control-plane crictl rmi --prune
 
 #----------------------------------------------------------------------------------
-# A2A Test Server (for Agent Gateway a2a integration in e2e tests)
+# A2A Test Server (for agentgateway a2a integration in e2e tests)
 #----------------------------------------------------------------------------------
 
 TEST_A2A_AGENT_SERVER_DIR := $(ROOTDIR)/test/kubernetes/e2e/features/agentgateway/a2a-example

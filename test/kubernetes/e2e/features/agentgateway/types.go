@@ -12,7 +12,7 @@ const (
 )
 
 var (
-	// Agent Gateway deployment
+	// Manual agentgateway deployment
 	agentgatewayManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "agentgateway.yaml")
 
 	// Test A2A Agent
@@ -21,9 +21,9 @@ var (
 	// Test MCP Server
 	mcpManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "mcp.yaml")
 
-	// Self-managed Gateway to configure the Agent Gateway
+	// Self-managed Gateway to configure the agentgateway
 	selfManagedGatewayManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "gateway-self-managed.yaml")
 
-	// Self-managed Gateway to configure the Agent Gateway
+	// kgateway managed deployment for the agentgateway
 	deployAgentGatewayManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "agentgateway-deploy.yaml")
 )

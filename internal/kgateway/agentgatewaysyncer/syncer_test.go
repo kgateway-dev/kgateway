@@ -14,7 +14,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer/mcp"
 )
 
-// dumpXDSCacheState is a helper function that dump the current state of the XDS cache for the agent gateway cache
+// dumpXDSCacheState is a helper function that dump the current state of the XDS cache for the agentgateway cache
 func dumpXDSCacheState(ctx context.Context, cache envoycache.SnapshotCache) {
 	logger := contextutils.LoggerFrom(ctx)
 	logger.Infof("Current XDS cache state:")

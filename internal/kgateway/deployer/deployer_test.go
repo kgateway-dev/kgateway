@@ -363,7 +363,7 @@ var _ = Describe("Deployer", func() {
 		})
 	})
 
-	Context("agent gateway", func() {
+	Context("agentgateway", func() {
 		var (
 			d   *deployer.Deployer
 			gwp *gw2_v1alpha1.GatewayParameters
@@ -400,7 +400,7 @@ var _ = Describe("Deployer", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		It("deploys agent gateway", func() {
+		It("deploys agentgateway", func() {
 			gw := &api.Gateway{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "agent-gateway",
@@ -424,11 +424,11 @@ var _ = Describe("Deployer", func() {
 			var objs clientObjects
 			objs, err := d.GetObjsToDeploy(context.Background(), gw)
 			Expect(err).ToNot(HaveOccurred())
-			// check the image is using the agent gateway image
+			// check the image is using the agentgateway image
 			deployment := objs.findDeployment(defaultNamespace, "agent-gateway")
 			Expect(deployment).ToNot(BeNil())
 			Expect(deployment.Spec.Template.Spec.Containers[0].Image).To(ContainSubstring("agentgateway"))
-			// check the service is using the agent gateway port
+			// check the service is using the agentgateway port
 			svc := objs.findService(defaultNamespace, "agent-gateway")
 			Expect(svc).ToNot(BeNil())
 			Expect(svc.Spec.Ports[0].Port).To(Equal(int32(80)))

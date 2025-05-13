@@ -83,7 +83,6 @@ func (s *testingSuite) BeforeTest(suiteName, testName string) {
 		err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, manifest)
 		s.Require().NoError(err)
 	}
-
 }
 
 func (s *testingSuite) AfterTest(suiteName, testName string) {
@@ -137,7 +136,7 @@ func (s *testingSuite) testA2ARouting() {
 		LabelSelector: "app=a2a-agent",
 	}, time.Minute*2)
 
-	// Check A2A Agent endpoint is reachable through the Agent Gateway
+	// Check A2A Agent endpoint is reachable through the agentgateway
 	/*
 		curl -X POST http://localhost:9090/default-a2a-agent \
 		  -H "Content-Type: application/json" \
@@ -182,7 +181,7 @@ func (s *testingSuite) testMCPRouting() {
 		LabelSelector: "app=mcp-tool",
 	}, time.Minute*2)
 
-	// Check MCP SSE endpoint is reachable through the Agent Gateway
+	// Check MCP SSE endpoint is reachable through the agentgateway
 	// curl -v http://localhost:8080/sse
 	s.testInstallation.Assertions.AssertEventualCurlResponse(
 		s.ctx,

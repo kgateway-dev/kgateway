@@ -766,7 +766,7 @@ type AgentGateway struct {
 	// +kubebuilder:validation:Optional
 	Enabled *bool `json:"enabled,omitempty"`
 
-	// Log level for the agent gateway. Defaults to info.
+	// Log level for the agentgateway. Defaults to info.
 	// Levels include "trace", "debug", "info", "error", "warn". See: https://docs.rs/tracing/latest/tracing/struct.Level.html
 	//
 	// +kubebuilder:validation:Optional

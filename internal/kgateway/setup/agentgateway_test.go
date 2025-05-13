@@ -295,7 +295,6 @@ spec:
 					t.Fatalf("expected mcp target to not have listeners, got %v", mcpTarget.Listeners)
 				}
 			}
-
 		}
 		if len(dump.A2ATargets) != 2 {
 			t.Fatalf("expected 2 a2a target config, got %d", len(dump.A2ATargets))
@@ -314,7 +313,6 @@ spec:
 					t.Fatalf("expected a2a target to not have listeners, got %v", a2aTarget.Listeners)
 				}
 			}
-
 		}
 		if len(dump.Listeners) != 2 {
 			t.Fatalf("expected 2 listener config, got %d", len(dump.Listeners))

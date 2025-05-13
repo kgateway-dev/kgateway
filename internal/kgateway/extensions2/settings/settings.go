@@ -57,7 +57,7 @@ type Settings struct {
 	// will be redirected through a waypoint proxy.
 	IngressUseWaypoints bool `split_words:"true" default:"false"`
 
-	// EnableAgentGateway enables kgateway to send config to the Agent Gateway
+	// EnableAgentGateway enables kgateway to send config to the agentgateway
 	EnableAgentGateway bool `split_words:"true" default:"false"`
 }
 
