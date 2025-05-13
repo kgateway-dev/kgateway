@@ -6,3 +6,7 @@ controller:
   logLevel: debug
   extraEnv:
     KGW_ENABLE_AGENT_GATEWAY: "true"
+
+gateway:
+  agentGateway:
+    enabled: true

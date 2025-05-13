@@ -5,8 +5,6 @@ const (
 	TargetTypeMcpUrl      = "type.googleapis.com/agentgateway.dev.mcp.target.Target"
 	TargetTypeListenerUrl = "type.googleapis.com/agentgateway.dev.listener.Listener"
 
-	GatewayClassName = "agentgateway"
-
 	MCPProtocol = "kgateway.dev/mcp"
 	A2AProtocol = "kgateway.dev/a2a"
 

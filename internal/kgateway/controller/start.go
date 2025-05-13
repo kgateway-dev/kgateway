@@ -333,6 +333,11 @@ func GetDefaultClassInfo() map[string]*ClassInfo {
 			Labels:      map[string]string{},
 			Annotations: map[string]string{},
 		},
+		wellknown.AgentGatewayClassName: {
+			Description: "Specialized class for managing agentgateway proxies.",
+			Labels:      map[string]string{},
+			Annotations: map[string]string{},
+		},
 		wellknown.WaypointClassName: {
 			Description: "Specialized class for Istio ambient mesh waypoint proxies.",
 			Labels:      map[string]string{},

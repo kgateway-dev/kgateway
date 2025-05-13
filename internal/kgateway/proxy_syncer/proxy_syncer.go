@@ -200,6 +200,12 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 	s.translator.Init(ctx)
 
 	s.mostXdsSnapshots = krt.NewCollection(s.commonCols.GatewayIndex.Gateways, func(kctx krt.HandlerContext, gw ir.Gateway) *GatewayXdsResources {
+		// skip agentgateway proxies as they are not envoy-based gateways
+		if gw.Obj.Spec.GatewayClassName == wellknown.AgentGatewayClassName {
+			logger.Debugf("skipping envoy proxy sync for agentgateway %s.%s", gw.Obj.Name, gw.Obj.Namespace)
+			return nil
+		}
+
 		logger.Debugf("building proxy for kube gw %s version %s", client.ObjectKeyFromObject(gw.Obj), gw.Obj.GetResourceVersion())
 
 		xdsSnap, rm := s.translator.TranslateGateway(kctx, ctx, gw)

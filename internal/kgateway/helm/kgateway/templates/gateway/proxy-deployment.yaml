@@ -1,4 +1,5 @@
 {{- $gateway := .Values.gateway }}
+{{- if not $gateway.agentGateway.enabled }}
 {{- $statsConfig := $gateway.stats }}
 apiVersion: apps/v1
 kind: Deployment
@@ -586,4 +587,5 @@ data:
       lds_config:
         resource_api_version: V3
         ads: {}
+{{- end }} {{/* if not $gateway.agentGateway.enabled */}}
 ---

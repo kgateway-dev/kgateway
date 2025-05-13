@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"maps"
 	"regexp"
+	"slices"
 	"strings"
 
 	envoytypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
@@ -18,6 +19,9 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer/a2a"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer/mcp"
@@ -118,13 +122,16 @@ var _ envoytypes.ResourceWithName = envoyResourceWithCustomName{}
 
 type agentGwService struct {
 	krt.Named
-	ip   string
-	port int
-	path string
+	ip       string
+	port     int
+	path     string
+	protocol string // currently only A2A and MCP
+	// The listeners which are allowed to connect to the target.
+	allowedListeners []string
 }
 
 func (r agentGwService) Equals(in agentGwService) bool {
-	return r.ip == in.ip && r.port == in.port && r.path == in.path
+	return r.ip == in.ip && r.port == in.port && r.path == in.path && r.protocol == in.protocol && slices.Equal(r.allowedListeners, in.allowedListeners)
 }
 
 type agentGwTranslator struct {
@@ -152,117 +159,99 @@ func (s *AgentGwSyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 
 	// TODO: convert auth to rbac json config for agent gateways
 
-	gateways := krt.NewCollection(s.commonCols.GatewayIndex.Gateways, func(kctx krt.HandlerContext, gw ir.Gateway) *ir.Gateway {
-		// TODO: support dynamic config, don't hard code the GatewayClassName
-		if gw.Obj.Spec.GatewayClassName != GatewayClassName {
+	gatewaysCol := krt.NewCollection(s.commonCols.GatewayIndex.Gateways, func(kctx krt.HandlerContext, gw ir.Gateway) *ir.Gateway {
+		if gw.Obj.Spec.GatewayClassName != wellknown.AgentGatewayClassName {
 			return nil
 		}
 		return &gw
 	}, krtopts.ToOptions("agentgateway")...)
 
-	a2aServices := krt.NewManyCollection(s.commonCols.Services, func(kctx krt.HandlerContext, s *corev1.Service) []agentGwService {
-		var result []agentGwService
-		for _, port := range s.Spec.Ports {
-			if port.AppProtocol == nil {
-				continue
-			}
-			appProtocol := *port.AppProtocol
-			if appProtocol != "kgateway.dev/a2a" {
-				continue
-			}
-			if s.Spec.ClusterIP == "" && s.Spec.ExternalName == "" {
-				continue
-			}
-			addr := s.Spec.ClusterIP
-			if addr == "" {
-				addr = s.Spec.ExternalName
-			}
-			path := ""
-			if appProtocol == A2AProtocol {
-				path = s.Annotations[A2APathAnnotation]
-			}
-			logger.Debugf("Found a2a agent gateway service %s/%s", s.Namespace, s.Name)
-			result = append(result, agentGwService{
-				Named: krt.Named{
-					Name:      s.Name,
-					Namespace: s.Namespace,
-				},
-				ip:   addr,
-				port: int(port.Port),
-				path: path,
-			})
-		}
-		return result
-	}, krtopts.ToOptions("agentGwA2AService")...)
+	agentGwServices := krt.NewManyCollection(s.commonCols.Services, func(kctx krt.HandlerContext, s *corev1.Service) []agentGwService {
+		var allowedA2AListeners, allowedMCPListeners []string
 
-	mcpServices := krt.NewManyCollection(s.commonCols.Services, func(kctx krt.HandlerContext, s *corev1.Service) []agentGwService {
-		var result []agentGwService
-		for _, port := range s.Spec.Ports {
-			if port.AppProtocol == nil {
-				continue
+		gws := krt.Fetch(kctx, gatewaysCol)
+		for _, gw := range gws {
+			for _, listener := range gw.Listeners {
+				if listener.Protocol != A2AProtocol && listener.Protocol != MCPProtocol {
+					continue
+				}
+				logger.Debugf("Found agent gateway service %s/%s", s.Namespace, s.Name)
+				if listener.AllowedRoutes == nil {
+					// only allow agent services in same namespace
+					if s.Namespace == gw.Obj.Namespace {
+						if listener.Protocol == A2AProtocol {
+							allowedA2AListeners = append(allowedA2AListeners, string(listener.Name))
+						} else {
+							allowedMCPListeners = append(allowedMCPListeners, string(listener.Name))
+						}
+					}
+				} else if listener.AllowedRoutes.Namespaces.From != nil {
+					switch *listener.AllowedRoutes.Namespaces.From {
+					case gwv1.NamespacesFromAll:
+						if listener.Protocol == A2AProtocol {
+							allowedA2AListeners = append(allowedA2AListeners, string(listener.Name))
+						} else {
+							allowedMCPListeners = append(allowedMCPListeners, string(listener.Name))
+						}
+					case gwv1.NamespacesFromSame:
+						// only allow agent services in same namespace
+						if s.Namespace == gw.Obj.Namespace {
+							if listener.Protocol == A2AProtocol {
+								allowedA2AListeners = append(allowedA2AListeners, string(listener.Name))
+							} else {
+								allowedMCPListeners = append(allowedMCPListeners, string(listener.Name))
+							}
+						}
+					case gwv1.NamespacesFromSelector:
+						// TODO: implement namespace selectors with gateway index
+						contextutils.LoggerFrom(ctx).Errorf("namespace selectors not supported for agent gateways")
+						continue
+					}
+				}
 			}
-			appProtocol := *port.AppProtocol
-			if appProtocol != "kgateway.dev/mcp" {
-				continue
-			}
-			if s.Spec.ClusterIP == "" && s.Spec.ExternalName == "" {
-				continue
-			}
-			addr := s.Spec.ClusterIP
-			if addr == "" {
-				addr = s.Spec.ExternalName
-			}
-			path := ""
-			if appProtocol == MCPProtocol {
-				path = s.Annotations[MCPPathAnnotation]
-			}
-			logger.Debugf("Found mcp agent gateway service %s/%s", s.Namespace, s.Name)
-			result = append(result, agentGwService{
-				Named: krt.Named{
-					Name:      s.Name,
-					Namespace: s.Namespace,
-				},
-				ip:   addr,
-				port: int(port.Port),
-				path: path,
-			})
 		}
-		return result
-	}, krtopts.ToOptions("agentGwMcpService")...)
-
-	xdsA2AServices := krt.NewCollection(a2aServices, func(kctx krt.HandlerContext, s agentGwService) *envoyResourceWithName {
-		t := &a2a.Target{
-			Name: getTargetName(s.ResourceName()),
-			Host: s.ip,
-			Port: uint32(s.port),
-			Path: s.path,
+		return translateAgentService(s, allowedA2AListeners, allowedMCPListeners)
+	})
+	xdsA2AServices := krt.NewCollection(agentGwServices, func(kctx krt.HandlerContext, s agentGwService) *envoyResourceWithName {
+		if s.protocol == A2AProtocol {
+			t := &a2a.Target{
+				Name:      getTargetName(s.ResourceName()),
+				Host:      s.ip,
+				Port:      uint32(s.port),
+				Path:      s.path,
+				Listeners: s.allowedListeners,
+			}
+			return &envoyResourceWithName{inner: t, version: utils.HashProto(t)}
+		} else {
+			return nil
 		}
-		return &envoyResourceWithName{inner: t, version: utils.HashProto(t)}
 	}, krtopts.ToOptions("a2a-target-xds")...)
-
-	xdsMcpServices := krt.NewCollection(mcpServices, func(kctx krt.HandlerContext, s agentGwService) *envoyResourceWithName {
-		t := &mcp.Target{
-			// Note: No slashes allowed here (must match ^[a-zA-Z0-9-]+$)
-			Name: getTargetName(s.ResourceName()),
-			Target: &mcp.Target_Sse{
-				Sse: &mcp.Target_SseTarget{
-					Host: s.ip,
-					Port: uint32(s.port),
-					Path: s.path,
+	xdsMcpServices := krt.NewCollection(agentGwServices, func(kctx krt.HandlerContext, s agentGwService) *envoyResourceWithName {
+		if s.protocol == MCPProtocol {
+			t := &mcp.Target{
+				// Note: No slashes allowed here (must match ^[a-zA-Z0-9-]+$)
+				Name: getTargetName(s.ResourceName()),
+				Target: &mcp.Target_Sse{
+					Sse: &mcp.Target_SseTarget{
+						Host: s.ip,
+						Port: uint32(s.port),
+						Path: s.path,
+					},
 				},
-			},
+				Listeners: s.allowedListeners,
+			}
+			return &envoyResourceWithName{inner: t, version: utils.HashProto(t)}
+		} else {
+			return nil
 		}
-		return &envoyResourceWithName{inner: t, version: utils.HashProto(t)}
 	}, krtopts.ToOptions("mcp-target-xds")...)
 
 	// translate gateways to xds
-	s.xDS = krt.NewCollection(gateways, func(kctx krt.HandlerContext, gw ir.Gateway) *agentGwXdsResources {
+	s.xDS = krt.NewCollection(gatewaysCol, func(kctx krt.HandlerContext, gw ir.Gateway) *agentGwXdsResources {
 		// listeners for the agent gateway
 		agwListeners := make([]envoytypes.Resource, 0, len(gw.Listeners))
 		var listenerVersion uint64
 		var listener *Listener
-		// TODO: Use AllowedRoute to filter namespace -> listener names
-		var a2aListeners, mcpListeners []string
 		for _, gwListener := range gw.Listeners {
 			if string(gwListener.Protocol) == A2AProtocol {
 				listener = &Listener{
@@ -276,8 +265,6 @@ func (s *AgentGwSyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 						},
 					},
 				}
-
-				a2aListeners = append(a2aListeners, string(gwListener.Name))
 			} else if string(gwListener.Protocol) == MCPProtocol {
 				listener = &Listener{
 					Name:     string(gwListener.Name),
@@ -290,7 +277,6 @@ func (s *AgentGwSyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 						},
 					},
 				}
-				mcpListeners = append(mcpListeners, string(gwListener.Name))
 			} else {
 				// Not a valid protocol for Agent Gateway
 				continue
@@ -308,7 +294,6 @@ func (s *AgentGwSyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 		for i, res := range a2aServiceResources {
 			a2aVersion ^= res.version
 			target := res.inner.(*a2a.Target)
-			target.Listeners = a2aListeners
 			a2aResources[i] = target
 		}
 		// mcp services
@@ -319,7 +304,6 @@ func (s *AgentGwSyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 		for i, res := range mcpServiceResources {
 			mcpVersion ^= res.version
 			target := res.inner.(*mcp.Target)
-			target.Listeners = mcpListeners
 			mcpResources[i] = target
 		}
 		result := &agentGwXdsResources{
@@ -336,9 +320,8 @@ func (s *AgentGwSyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 		s.commonCols.HasSynced,
 		xdsA2AServices.HasSynced,
 		xdsMcpServices.HasSynced,
-		gateways.HasSynced,
-		a2aServices.HasSynced,
-		mcpServices.HasSynced,
+		gatewaysCol.HasSynced,
+		agentGwServices.HasSynced,
 		s.xDS.HasSynced,
 	}
 }
@@ -478,4 +461,43 @@ func getTargetName(resourceName string) string {
 	sanitized = consecutiveDashesRegex.ReplaceAllString(sanitized, "-")
 
 	return sanitized
+}
+
+func translateAgentService(svc *corev1.Service, allowedA2AListeners, allowedMCPListeners []string) []agentGwService {
+	var svcs []agentGwService
+	var allowedListeners []string
+	for _, port := range svc.Spec.Ports {
+		if port.AppProtocol == nil {
+			continue
+		}
+		appProtocol := *port.AppProtocol
+		if svc.Spec.ClusterIP == "" && svc.Spec.ExternalName == "" {
+			continue
+		}
+		addr := svc.Spec.ClusterIP
+		if addr == "" {
+			addr = svc.Spec.ExternalName
+		}
+		path := ""
+		if appProtocol == A2AProtocol {
+			path = svc.Annotations[A2APathAnnotation]
+			allowedListeners = allowedA2AListeners
+		} else if appProtocol == MCPProtocol {
+			path = svc.Annotations[MCPPathAnnotation]
+			allowedListeners = allowedMCPListeners
+		}
+
+		svcs = append(svcs, agentGwService{
+			Named: krt.Named{
+				Name:      svc.Name,
+				Namespace: svc.Namespace,
+			},
+			ip:               addr,
+			port:             int(port.Port),
+			path:             path,
+			protocol:         appProtocol,
+			allowedListeners: allowedListeners,
+		})
+	}
+	return svcs
 }

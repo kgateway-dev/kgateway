@@ -241,3 +241,19 @@ func getAIExtensionValues(config *v1alpha1.AiExtension) (*helmAIExtension, error
 		Stats:           byt,
 	}, nil
 }
+
+func getAgentGatewayValues(config *v1alpha1.AgentGateway) (*helmAgentGateway, error) {
+	if config == nil {
+		return nil, nil
+	}
+
+	var logLevel string
+	if config.GetLogLevel() != nil {
+		logLevel = *config.GetLogLevel()
+	}
+
+	return &helmAgentGateway{
+		Enabled:  *config.GetEnabled(),
+		LogLevel: logLevel,
+	}, nil
+}
