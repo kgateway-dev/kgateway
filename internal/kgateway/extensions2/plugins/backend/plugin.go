@@ -3,7 +3,6 @@ package backend
 import (
 	"context"
 	"errors"
-	"log"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -251,12 +250,12 @@ func getAISecretRef(llm v1alpha1.SupportedLLMProvider) *corev1.LocalObjectRefere
 func processBackend(ctx context.Context, in ir.BackendObjectIR, out *envoy_config_cluster_v3.Cluster) *ir.EndpointsForBackend {
 	up, ok := in.Obj.(*v1alpha1.Backend)
 	if !ok {
-		log.Fatal("failed to cast backend object")
+		logger.Error("failed to cast backend object")
 		return nil
 	}
 	ir, ok := in.ObjIr.(*BackendIr)
 	if !ok {
-		log.Fatal("failed to cast backend ir")
+		logger.Error("failed to cast backend ir")
 		return nil
 	}
 

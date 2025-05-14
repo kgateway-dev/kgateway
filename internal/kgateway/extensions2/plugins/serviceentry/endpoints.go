@@ -50,7 +50,6 @@ func (s *serviceEntryPlugin) buildInlineEndpoints(ctx context.Context, be ir.Bac
 	if endpointsForBackend == nil {
 		// this is pretty much impossible, but `ir.NewEndpointsForBackend(be)`
 		// returns a pointer, so this is for safety
-		// TODO: figure out DPanic
 		s.logger.Error("buildInlineEndpoints for ServiceEntry had nil endpointsForBackend", "ServiceEntry", krt.NewNamed(se).ResourceName())
 		return nil
 	}
