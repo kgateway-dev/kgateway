@@ -3,7 +3,7 @@ package proxy_syncer
 import (
 	"context"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/logging"
+	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 )
 
 func (s *ProxyTranslator) syncXds(
