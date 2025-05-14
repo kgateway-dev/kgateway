@@ -30,6 +30,10 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AwsLambda":                       schema_kgateway_v2_api_v1alpha1_AwsLambda(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AzureOpenAIConfig":               schema_kgateway_v2_api_v1alpha1_AzureOpenAIConfig(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Backend":                         schema_kgateway_v2_api_v1alpha1_Backend(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.BackendConfigPolicy":             schema_kgateway_v2_api_v1alpha1_BackendConfigPolicy(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.BackendConfigPolicyList":         schema_kgateway_v2_api_v1alpha1_BackendConfigPolicyList(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.BackendConfigPolicySpec":         schema_kgateway_v2_api_v1alpha1_BackendConfigPolicySpec(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.BackendConfigPolicyStatus":       schema_kgateway_v2_api_v1alpha1_BackendConfigPolicyStatus(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.BackendList":                     schema_kgateway_v2_api_v1alpha1_BackendList(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.BackendSpec":                     schema_kgateway_v2_api_v1alpha1_BackendSpec(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.BackendStatus":                   schema_kgateway_v2_api_v1alpha1_BackendStatus(ref),
@@ -1118,6 +1122,160 @@ func schema_kgateway_v2_api_v1alpha1_Backend(ref common.ReferenceCallback) commo
 		},
 		Dependencies: []string{
 			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.BackendSpec", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.BackendStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+	}
+}
+
+func schema_kgateway_v2_api_v1alpha1_BackendConfigPolicy(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"kind": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"apiVersion": {
+						SchemaProps: spec.SchemaProps{
+							Description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"metadata": {
+						SchemaProps: spec.SchemaProps{
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
+						},
+					},
+					"spec": {
+						SchemaProps: spec.SchemaProps{
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.BackendConfigPolicySpec"),
+						},
+					},
+					"status": {
+						SchemaProps: spec.SchemaProps{
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.BackendConfigPolicyStatus"),
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.BackendConfigPolicySpec", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.BackendConfigPolicyStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+	}
+}
+
+func schema_kgateway_v2_api_v1alpha1_BackendConfigPolicyList(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"kind": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"apiVersion": {
+						SchemaProps: spec.SchemaProps{
+							Description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"metadata": {
+						SchemaProps: spec.SchemaProps{
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"),
+						},
+					},
+					"items": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.BackendConfigPolicy"),
+									},
+								},
+							},
+						},
+					},
+				},
+				Required: []string{"items"},
+			},
+		},
+		Dependencies: []string{
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.BackendConfigPolicy", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
+	}
+}
+
+func schema_kgateway_v2_api_v1alpha1_BackendConfigPolicySpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"targetRefs": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LocalPolicyTargetReference"),
+									},
+								},
+							},
+						},
+					},
+					"maxRequestsPerConnection": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"integer"},
+							Format: "int32",
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LocalPolicyTargetReference"},
+	}
+}
+
+func schema_kgateway_v2_api_v1alpha1_BackendConfigPolicyStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"conditions": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.Condition"),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"k8s.io/apimachinery/pkg/apis/meta/v1.Condition"},
 	}
 }
 

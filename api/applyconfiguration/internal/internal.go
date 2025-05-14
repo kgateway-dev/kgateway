@@ -264,6 +264,48 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.BackendStatus
       default: {}
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.BackendConfigPolicy
+  map:
+    fields:
+    - name: apiVersion
+      type:
+        scalar: string
+    - name: kind
+      type:
+        scalar: string
+    - name: metadata
+      type:
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta
+      default: {}
+    - name: spec
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.BackendConfigPolicySpec
+      default: {}
+    - name: status
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.BackendConfigPolicyStatus
+      default: {}
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.BackendConfigPolicySpec
+  map:
+    fields:
+    - name: maxRequestsPerConnection
+      type:
+        scalar: numeric
+    - name: targetRefs
+      type:
+        list:
+          elementType:
+            namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LocalPolicyTargetReference
+          elementRelationship: atomic
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.BackendConfigPolicyStatus
+  map:
+    fields:
+    - name: conditions
+      type:
+        list:
+          elementType:
+            namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Condition
+          elementRelationship: atomic
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.BackendSpec
   map:
     fields:
