@@ -189,7 +189,7 @@ func (r report) Equals(in report) bool {
 	return true
 }
 
-var logger = logging.New("proxy-syncer")
+var logger = logging.New("proxy_syncer")
 
 func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 	// all backends with policies attached in a single collection
