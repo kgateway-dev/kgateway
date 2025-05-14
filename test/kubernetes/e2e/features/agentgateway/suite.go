@@ -7,7 +7,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/onsi/gomega"
 	"github.com/stretchr/testify/suite"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -57,17 +56,9 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 
 func (s *testingSuite) SetupSuite() {
 	s.manifests = map[string][]string{
-		"TestSelfManaged": {
-			selfManagedGatewayManifest,
-			agentgatewayManifest,
-			a2aAgentManifest,
-			mcpManifest,
-			defaults.CurlPodManifest,
-		},
 		"TestAgentGatewayDeployment": {
 			deployAgentGatewayManifest,
 			a2aAgentManifest,
-			mcpManifest,
 			defaults.CurlPodManifest,
 		},
 	}
@@ -97,23 +88,6 @@ func (s *testingSuite) AfterTest(suiteName, testName string) {
 	}
 }
 
-func (s *testingSuite) TestSelfManaged() {
-	// assert the expected resources are created and running before attempting to send traffic
-	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
-	// check curl pod is running
-	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, defaults.CurlPod.GetNamespace(), metav1.ListOptions{
-		LabelSelector: "app.kubernetes.io/name=curl",
-	}, time.Minute*2)
-	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, proxyObjMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: "app=agent-gateway",
-	}, time.Minute*2)
-
-	time.Sleep(time.Minute * 1)
-
-	s.testMCPRouting()
-	s.testA2ARouting()
-}
-
 func (s *testingSuite) TestAgentGatewayDeployment() {
 	// assert the expected resources are created and running before attempting to send traffic
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
@@ -126,7 +100,6 @@ func (s *testingSuite) TestAgentGatewayDeployment() {
 		LabelSelector: "app.kubernetes.io/name=agent-gateway",
 	}, time.Minute*2)
 
-	s.testMCPRouting()
 	s.testA2ARouting()
 }
 
@@ -173,28 +146,5 @@ func (s *testingSuite) testA2ARouting() {
 		},
 		&matchers.HttpResponse{
 			StatusCode: http.StatusOK,
-		}, time.Minute*2)
-}
-
-func (s *testingSuite) testMCPRouting() {
-	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, "default", metav1.ListOptions{
-		LabelSelector: "app=mcp-tool",
-	}, time.Minute*2)
-
-	// Check MCP SSE endpoint is reachable through the agentgateway
-	// curl -v http://localhost:8080/sse
-	s.testInstallation.Assertions.AssertEventualCurlResponse(
-		s.ctx,
-		defaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
-			curl.WithPort(mcpPort),
-			curl.WithPath("/sse"),
-			curl.WithConnectionTimeout(2), // allow the connection to terminate stream
-		},
-		&matchers.HttpResponse{
-			StatusCode:     http.StatusOK,
-			Body:           gomega.Not(gomega.BeEmpty()), // returns the session id
-			IgnoreExitCode: 28,                           // curl exits with 28 when the connection is closed
 		}, time.Minute*2)
 }

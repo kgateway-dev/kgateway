@@ -4,8 +4,6 @@ image:
 # Configuration for the kgateway controller pod
 controller:
   logLevel: debug
-  extraEnv:
-    KGW_ENABLE_AGENT_GATEWAY: "true"
 
 gateway:
   agentGateway:

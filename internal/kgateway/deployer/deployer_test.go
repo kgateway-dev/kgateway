@@ -363,6 +363,70 @@ var _ = Describe("Deployer", func() {
 		})
 	})
 
+	Context("self managed gateway", func() {
+		var (
+			d   *deployer.Deployer
+			gwp *gw2_v1alpha1.GatewayParameters
+		)
+		BeforeEach(func() {
+			gwp = selfManagedGatewayParam("self-managed-gateway-params")
+			gwc := &api.GatewayClass{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: wellknown.GatewayClassName,
+				},
+				Spec: api.GatewayClassSpec{
+					ControllerName: wellknown.GatewayControllerName,
+					ParametersRef: &api.ParametersReference{
+						Group:     gw2_v1alpha1.GroupName,
+						Kind:      api.Kind(wellknown.GatewayParametersGVK.Kind),
+						Name:      gwp.GetName(),
+						Namespace: ptr.To(api.Namespace(defaultNamespace)),
+					},
+				},
+			}
+			var err error
+			d, err = deployer.NewDeployer(newFakeClientWithObjs(gwc, gwp), &deployer.Inputs{
+				ControllerName: wellknown.GatewayControllerName,
+				Dev:            false,
+				ControlPlane: deployer.ControlPlaneInfo{
+					XdsHost: "something.cluster.local",
+					XdsPort: 1234,
+				},
+				ImageInfo: &deployer.ImageInfo{
+					Registry: "foo",
+					Tag:      "bar",
+				},
+			})
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("deploys nothing", func() {
+			gw := &api.Gateway{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "foo",
+					Namespace: defaultNamespace,
+				},
+				Spec: api.GatewaySpec{
+					GatewayClassName: wellknown.GatewayClassName,
+					Infrastructure: &api.GatewayInfrastructure{
+						ParametersRef: &api.LocalParametersReference{
+							Group: gw2_v1alpha1.GroupName,
+							Kind:  api.Kind(wellknown.GatewayParametersGVK.Kind),
+							Name:  gwp.GetName(),
+						},
+					},
+					Listeners: []api.Listener{{
+						Name: "listener-1",
+						Port: 80,
+					}},
+				},
+			}
+			objs, err := d.GetObjsToDeploy(context.Background(), gw)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(objs).To(BeEmpty())
+		})
+	})
+
 	Context("agentgateway", func() {
 		var (
 			d   *deployer.Deployer
@@ -438,6 +502,132 @@ var _ = Describe("Deployer", func() {
 			Expect(cm.Data["config.json"]).To(ContainSubstring(`"xds_address": "http://something.cluster.local:1234"`))
 			Expect(cm.Data["config.json"]).To(ContainSubstring(`"alt_xds_hostname": "agent-gateway.default.svc.cluster.local"`))
 
+		})
+	})
+
+	Context("watches", func() {
+		var (
+			d *deployer.Deployer
+		)
+		BeforeEach(func() {
+			var err error
+			d, err = deployer.NewDeployer(newFakeClientWithObjs(defaultGatewayClass(), defaultGatewayParams()), &deployer.Inputs{
+				ControllerName: wellknown.GatewayControllerName,
+				Dev:            false,
+				ControlPlane: deployer.ControlPlaneInfo{
+					XdsHost: "something.cluster.local",
+					XdsPort: 1234,
+				},
+				ImageInfo: &deployer.ImageInfo{
+					Registry: "foo",
+					Tag:      "bar",
+				},
+			})
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("should get gvks", func() {
+			gvks, err := d.GetGvksToWatch(context.Background())
+			Expect(err).NotTo(HaveOccurred())
+			Expect(gvks).To(HaveLen(4))
+			Expect(gvks).To(ConsistOf(
+				wellknown.DeploymentGVK,
+				wellknown.ServiceGVK,
+				wellknown.ServiceAccountGVK,
+				wellknown.ConfigMapGVK,
+			))
+		})
+	})
+
+	Context("special cases", func() {
+		var (
+			gwc *api.GatewayClass
+		)
+		BeforeEach(func() {
+			gwc = defaultGatewayClass()
+		})
+
+		It("deploys multiple GWs with the same GWP", func() {
+			d1, err := deployer.NewDeployer(newFakeClientWithObjs(gwc, defaultGatewayParams()), &deployer.Inputs{
+				ControllerName: wellknown.GatewayControllerName,
+				Dev:            false,
+				ControlPlane: deployer.ControlPlaneInfo{
+					XdsHost: "something.cluster.local",
+					XdsPort: 1234,
+				},
+				ImageInfo: &deployer.ImageInfo{
+					Registry: "foo",
+					Tag:      "bar",
+				},
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+			d2, err := deployer.NewDeployer(newFakeClientWithObjs(gwc, defaultGatewayParams()), &deployer.Inputs{
+				ControllerName: wellknown.GatewayControllerName,
+				Dev:            false,
+				ControlPlane: deployer.ControlPlaneInfo{
+					XdsHost: "something.cluster.local",
+					XdsPort: 1234,
+				},
+				ImageInfo: &deployer.ImageInfo{
+					Registry: "foo",
+					Tag:      "bar",
+				},
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+			gw1 := &api.Gateway{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "foo",
+					Namespace: defaultNamespace,
+					UID:       "1235",
+				},
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "Gateway",
+					APIVersion: "gateway.solo.io/v1beta1",
+				},
+				Spec: api.GatewaySpec{
+					GatewayClassName: wellknown.GatewayClassName,
+				},
+			}
+
+			gw2 := &api.Gateway{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "bar",
+					Namespace: defaultNamespace,
+					UID:       "1235",
+				},
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "Gateway",
+					APIVersion: "gateway.solo.io/v1beta1",
+				},
+				Spec: api.GatewaySpec{
+					GatewayClassName: wellknown.GatewayClassName,
+				},
+			}
+
+			var objs1, objs2 clientObjects
+			objs1, err = d1.GetObjsToDeploy(context.Background(), gw1)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(objs1).NotTo(BeEmpty())
+			Expect(objs1.findDeployment(defaultNamespace, gw1.Name)).ToNot(BeNil())
+			Expect(objs1.findService(defaultNamespace, gw1.Name)).ToNot(BeNil())
+			Expect(objs1.findConfigMap(defaultNamespace, gw1.Name)).ToNot(BeNil())
+			Expect(objs1.findServiceAccount(defaultNamespace, gw1.Name)).ToNot(BeNil())
+			objs2, err = d2.GetObjsToDeploy(context.Background(), gw2)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(objs2).NotTo(BeEmpty())
+			Expect(objs2.findDeployment(defaultNamespace, gw2.Name)).ToNot(BeNil())
+			Expect(objs2.findService(defaultNamespace, gw2.Name)).ToNot(BeNil())
+			Expect(objs2.findConfigMap(defaultNamespace, gw2.Name)).ToNot(BeNil())
+			Expect(objs2.findServiceAccount(defaultNamespace, gw2.Name)).ToNot(BeNil())
+
+			for _, obj := range objs1 {
+				Expect(obj.GetName()).To(Equal(gw1.Name))
+			}
+			for _, obj := range objs2 {
+				Expect(obj.GetName()).To(Equal(gw2.Name))
+			}
 		})
 	})
 
