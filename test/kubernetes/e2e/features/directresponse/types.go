@@ -10,7 +10,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/pkg/utils/fsutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
 )
 
 var (
@@ -25,7 +25,7 @@ var (
 	invalidBackendRefFilterManifests             = filepath.Join(fsutils.MustGetThisDir(), "testdata", "invalid-backendRef-filter.yaml")
 
 	glooProxyObjectMeta = metav1.ObjectMeta{
-		Name:      "gloo-proxy-gw",
+		Name:      "gw",
 		Namespace: "default",
 	}
 	gwRouteMeta = metav1.ObjectMeta{

@@ -1,13 +1,11 @@
-//go:build ignore
-
 package testutils
 
 import (
-	"github.com/kgateway-dev/kgateway/pkg/utils/envutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
 )
 
 const (
-	// TearDown is used to TearDown assets after a test completes. This is used in kube2e tests to uninstall
+	// TearDown is used to TearDown assets after a test completes. This is used in kubernetes e2e tests to uninstall
 	// Gloo after a test suite completes
 	TearDown = "TEAR_DOWN"
 
@@ -22,9 +20,6 @@ const (
 	// This is used to test against an existing installation of Istio so that the
 	// test framework does not need to install/uninstall Istio.
 	SkipIstioInstall = "SKIP_ISTIO_INSTALL"
-
-	// KubeTestType is used to indicate which kube2e suite should be run while executing regression tests
-	KubeTestType = "KUBE2E_TESTS"
 
 	// InvalidTestReqsEnvVar is used to define the behavior for running tests locally when the provided requirements
 	// are not met. See ValidateRequirementsAndNotifyGinkgo for a detail of available behaviors
@@ -71,10 +66,10 @@ const (
 	// This is set when running tests in Cloudbuild
 	GcloudBuildId = "GCLOUD_BUILD_ID"
 
-	// ReleasedVersion can be used when running KubeE2E tests to have the test suite use a previously released version of Gloo Edge
+	// ReleasedVersion can be used when running KubeE2E tests to have the test suite use a previously released version of kgateway
 	// If set to 'LATEST', the most recently released version will be used
 	// If set to another value, the test suite will use that version (ie '1.15.0-beta1')
-	// This is an optional value, so if it is not set, the test suite will use the locally built version of Gloo Edge
+	// This is an optional value, so if it is not set, the test suite will use the locally built version of kgateway
 	ReleasedVersion = "RELEASED_VERSION"
 
 	// Istio auto mtls
@@ -85,6 +80,10 @@ const (
 
 	// ClusterName is the name of the cluster used for e2e tests
 	ClusterName = "CLUSTER_NAME"
+
+	// This can be used to override the default KubeCtx created.
+	// The default KubeCtx used is "kind-<ClusterName>"
+	KubeCtx = "KUBE_CTX"
 )
 
 // ShouldTearDown returns true if any assets that were created before a test (for example Gloo being installed)
@@ -95,14 +94,14 @@ func ShouldTearDown() bool {
 
 // ShouldSkipInstall returns true if any assets that need to be created before a test (for example Gloo being installed)
 // should be skipped. This is typically used in tandem with ShouldTearDown when running consecutive tests and skipping
-// both the tear down and install of Gloo Edge.
+// both the tear down and install of kgateway.
 func ShouldSkipInstall() bool {
 	return IsEnvTruthy(SkipInstall)
 }
 
 // ShouldSkipIstioInstall returns true if any assets that need to be created before a test (for example Gloo being installed)
 // should be skipped. This is typically used in tandem with ShouldTearDown when running consecutive tests and skipping
-// both the tear down and install of Gloo Edge.
+// both the tear down and install of kgateway.
 func ShouldSkipIstioInstall() bool {
 	return IsEnvTruthy(SkipIstioInstall)
 }

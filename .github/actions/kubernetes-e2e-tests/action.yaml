@@ -25,31 +25,21 @@ inputs:
 runs:
   using: "composite"
   steps:
-  - name: Install test tools
-    shell: bash
-    run: make install-test-tools
+  - name: Prepare Python Runner
+    uses: ./.github/actions/prep-python-runner
+    # cluster-ai is the only one that needs the python runner (running the ai extension tests)
+    if: ${{ inputs.cluster-name == 'cluster-ai' }}
   - name: Execute tests
     env:
-      GO_TEST_USER_ARGS: ${{ inputs.test-args }} -run "${{ inputs.run-regex }}"
+      GO_TEST_USER_ARGS: ${{ inputs.test-args }} -run "${{ inputs.run-regex }}" -v
       CLUSTER_NAME: ${{ inputs.cluster-name }}
       TEST_PKG: ./test/kubernetes/e2e/tests
       ISTIO_VERSION: ${{ inputs.istio-version }}
     shell: bash
     run: make go-test
-  - name: Summarize tests
-    # Print out a summary of ALL tests run under this action. In the future we can use this tool
-    # with the --json flag to export the results for centralized processing.
-    shell: bash
-    run: go run ./ci/github-actions/go-test-summary
   - name: Archive bug report directory on failure
     if: ${{ failure() }}
-    uses: actions/upload-artifact@v4
+    uses: ./.github/actions/upload-artifact
     with:
-      name: bug-report-${{ inputs.cluster-name }}-${{ inputs.matrix-label }}-attempt-${{ github.run_attempt }}
+      name: bug-report-${{ inputs.cluster-name }}-${{ inputs.matrix-label }}
       path: ./_test/bug_report/${{ inputs.cluster-name }}
-  - name: Archive test results
-    if: ${{ always() }}
-    uses: actions/upload-artifact@v4
-    with:
-      name: go-test-summary-${{ inputs.cluster-name }}-${{ inputs.matrix-label }}-attempt-${{ github.run_attempt }}
-      path: ./_test/test_log/go-test-summary

@@ -14,10 +14,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	"github.com/kgateway-dev/kgateway/pkg/utils/glooadminutils/admincli"
-	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils/portforward"
-	"github.com/kgateway-dev/kgateway/pkg/utils/requestutils/curl"
-	"github.com/kgateway-dev/kgateway/projects/gateway2/admin"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/controllerutils/admincli"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils/portforward"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 )
 
 func (p *Provider) AssertGlooAdminApi(
@@ -26,11 +26,11 @@ func (p *Provider) AssertGlooAdminApi(
 	adminAssertions ...func(ctx context.Context, adminClient *admincli.Client),
 ) {
 	// Before opening a port-forward, we assert that there is at least one Pod that is ready
-	p.EventuallyRunningReplicas(ctx, glooDeployment, BeNumerically(">=", 1))
+	p.EventuallyReadyReplicas(ctx, glooDeployment, BeNumerically(">=", 1))
 
 	portForwarder, err := p.clusterContext.Cli.StartPortForward(ctx,
 		portforward.WithDeployment(glooDeployment.GetName(), glooDeployment.GetNamespace()),
-		portforward.WithPorts(int(admin.AdminPort), int(admin.AdminPort)),
+		portforward.WithPorts(int(wellknown.KgatewayAdminPort), int(wellknown.KgatewayAdminPort)),
 	)
 	p.Require.NoError(err, "can open port-forward")
 	defer func() {
@@ -53,7 +53,7 @@ func (p *Provider) AssertGlooAdminApi(
 		WithReceiver(io.Discard). // adminAssertion can overwrite this
 		WithCurlOptions(
 			curl.WithRetries(3, 0, 10),
-			curl.WithPort(int(admin.AdminPort)),
+			curl.WithPort(int(wellknown.KgatewayAdminPort)),
 		)
 
 	for _, adminAssertion := range adminAssertions {

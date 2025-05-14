@@ -1,0 +1,683 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.17.3
+  labels:
+    app: kgateway
+    app.kubernetes.io/name: kgateway
+    gateway.networking.k8s.io/policy: Direct
+  name: trafficpolicies.gateway.kgateway.dev
+spec:
+  group: gateway.kgateway.dev
+  names:
+    categories:
+    - kgateway
+    kind: TrafficPolicy
+    listKind: TrafficPolicyList
+    plural: trafficpolicies
+    singular: trafficpolicy
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        properties:
+          apiVersion:
+            type: string
+          kind:
+            type: string
+          metadata:
+            type: object
+          spec:
+            properties:
+              ai:
+                properties:
+                  defaults:
+                    items:
+                      properties:
+                        field:
+                          minLength: 1
+                          type: string
+                        override:
+                          default: false
+                          type: boolean
+                        value:
+                          minLength: 1
+                          type: string
+                      required:
+                      - field
+                      - value
+                      type: object
+                    type: array
+                  promptEnrichment:
+                    properties:
+                      append:
+                        items:
+                          properties:
+                            content:
+                              type: string
+                            role:
+                              type: string
+                          required:
+                          - content
+                          - role
+                          type: object
+                        type: array
+                      prepend:
+                        items:
+                          properties:
+                            content:
+                              type: string
+                            role:
+                              type: string
+                          required:
+                          - content
+                          - role
+                          type: object
+                        type: array
+                    type: object
+                  promptGuard:
+                    properties:
+                      request:
+                        properties:
+                          customResponse:
+                            properties:
+                              message:
+                                default: The request was rejected due to inappropriate
+                                  content
+                                type: string
+                              statusCode:
+                                default: 403
+                                format: int32
+                                maximum: 599
+                                minimum: 200
+                                type: integer
+                            type: object
+                          moderation:
+                            properties:
+                              openAIModeration:
+                                properties:
+                                  authToken:
+                                    properties:
+                                      inline:
+                                        type: string
+                                      kind:
+                                        enum:
+                                        - Inline
+                                        - SecretRef
+                                        - Passthrough
+                                        type: string
+                                      secretRef:
+                                        properties:
+                                          name:
+                                            default: ""
+                                            type: string
+                                        type: object
+                                        x-kubernetes-map-type: atomic
+                                    required:
+                                    - kind
+                                    type: object
+                                  model:
+                                    type: string
+                                required:
+                                - authToken
+                                type: object
+                            type: object
+                          regex:
+                            properties:
+                              action:
+                                default: MASK
+                                type: string
+                              builtins:
+                                items:
+                                  enum:
+                                  - SSN
+                                  - CREDIT_CARD
+                                  - PHONE_NUMBER
+                                  - EMAIL
+                                  type: string
+                                type: array
+                              matches:
+                                items:
+                                  properties:
+                                    name:
+                                      type: string
+                                    pattern:
+                                      type: string
+                                  type: object
+                                type: array
+                            type: object
+                          webhook:
+                            properties:
+                              forwardHeaders:
+                                items:
+                                  properties:
+                                    name:
+                                      maxLength: 256
+                                      minLength: 1
+                                      pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
+                                      type: string
+                                    type:
+                                      default: Exact
+                                      enum:
+                                      - Exact
+                                      - RegularExpression
+                                      type: string
+                                    value:
+                                      maxLength: 4096
+                                      minLength: 1
+                                      type: string
+                                  required:
+                                  - name
+                                  - value
+                                  type: object
+                                type: array
+                              host:
+                                properties:
+                                  host:
+                                    minLength: 1
+                                    type: string
+                                  insecureSkipVerify:
+                                    type: boolean
+                                  port:
+                                    format: int32
+                                    maximum: 65535
+                                    minimum: 1
+                                    type: integer
+                                required:
+                                - host
+                                - port
+                                type: object
+                            required:
+                            - host
+                            type: object
+                        type: object
+                      response:
+                        properties:
+                          regex:
+                            properties:
+                              action:
+                                default: MASK
+                                type: string
+                              builtins:
+                                items:
+                                  enum:
+                                  - SSN
+                                  - CREDIT_CARD
+                                  - PHONE_NUMBER
+                                  - EMAIL
+                                  type: string
+                                type: array
+                              matches:
+                                items:
+                                  properties:
+                                    name:
+                                      type: string
+                                    pattern:
+                                      type: string
+                                  type: object
+                                type: array
+                            type: object
+                          webhook:
+                            properties:
+                              forwardHeaders:
+                                items:
+                                  properties:
+                                    name:
+                                      maxLength: 256
+                                      minLength: 1
+                                      pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
+                                      type: string
+                                    type:
+                                      default: Exact
+                                      enum:
+                                      - Exact
+                                      - RegularExpression
+                                      type: string
+                                    value:
+                                      maxLength: 4096
+                                      minLength: 1
+                                      type: string
+                                  required:
+                                  - name
+                                  - value
+                                  type: object
+                                type: array
+                              host:
+                                properties:
+                                  host:
+                                    minLength: 1
+                                    type: string
+                                  insecureSkipVerify:
+                                    type: boolean
+                                  port:
+                                    format: int32
+                                    maximum: 65535
+                                    minimum: 1
+                                    type: integer
+                                required:
+                                - host
+                                - port
+                                type: object
+                            required:
+                            - host
+                            type: object
+                        type: object
+                    type: object
+                  routeType:
+                    default: CHAT
+                    enum:
+                    - CHAT
+                    - CHAT_STREAMING
+                    type: string
+                type: object
+              extAuth:
+                properties:
+                  contextExtensions:
+                    additionalProperties:
+                      type: string
+                    type: object
+                  enablement:
+                    enum:
+                    - DisableAll
+                    type: string
+                  extensionRef:
+                    properties:
+                      name:
+                        default: ""
+                        type: string
+                    type: object
+                    x-kubernetes-map-type: atomic
+                  withRequestBody:
+                    properties:
+                      allowPartialMessage:
+                        type: boolean
+                      maxRequestBytes:
+                        format: int32
+                        minimum: 1
+                        type: integer
+                      packAsBytes:
+                        type: boolean
+                    required:
+                    - maxRequestBytes
+                    type: object
+                type: object
+                x-kubernetes-validations:
+                - message: only one of 'extensionRef' or 'enablement' may be set
+                  rule: (has(self.extensionRef) && !has(self.enablement)) || (!has(self.extensionRef)
+                    && has(self.enablement))
+              extProc:
+                properties:
+                  extensionRef:
+                    properties:
+                      name:
+                        default: ""
+                        type: string
+                    type: object
+                    x-kubernetes-map-type: atomic
+                  processingMode:
+                    properties:
+                      requestBodyMode:
+                        default: NONE
+                        enum:
+                        - NONE
+                        - STREAMED
+                        - BUFFERED
+                        - BUFFERED_PARTIAL
+                        - FULL_DUPLEX_STREAMED
+                        type: string
+                      requestHeaderMode:
+                        default: SEND
+                        enum:
+                        - DEFAULT
+                        - SEND
+                        - SKIP
+                        type: string
+                      requestTrailerMode:
+                        default: SKIP
+                        enum:
+                        - DEFAULT
+                        - SEND
+                        - SKIP
+                        type: string
+                      responseBodyMode:
+                        default: NONE
+                        enum:
+                        - NONE
+                        - STREAMED
+                        - BUFFERED
+                        - BUFFERED_PARTIAL
+                        - FULL_DUPLEX_STREAMED
+                        type: string
+                      responseHeaderMode:
+                        default: SEND
+                        enum:
+                        - DEFAULT
+                        - SEND
+                        - SKIP
+                        type: string
+                      responseTrailerMode:
+                        default: SKIP
+                        enum:
+                        - DEFAULT
+                        - SEND
+                        - SKIP
+                        type: string
+                    type: object
+                required:
+                - extensionRef
+                type: object
+              rateLimit:
+                properties:
+                  global:
+                    properties:
+                      descriptors:
+                        items:
+                          properties:
+                            entries:
+                              items:
+                                properties:
+                                  generic:
+                                    properties:
+                                      key:
+                                        type: string
+                                      value:
+                                        type: string
+                                    required:
+                                    - key
+                                    - value
+                                    type: object
+                                  header:
+                                    type: string
+                                  type:
+                                    enum:
+                                    - Generic
+                                    - Header
+                                    - RemoteAddress
+                                    - Path
+                                    type: string
+                                required:
+                                - type
+                                type: object
+                                x-kubernetes-validations:
+                                - message: exactly one entry type must be specified
+                                  rule: (has(self.type) && (self.type == 'Generic'
+                                    && has(self.generic) && !has(self.header)) ||
+                                    (self.type == 'Header' && has(self.header) &&
+                                    !has(self.generic)) || (self.type == 'RemoteAddress'
+                                    && !has(self.generic) && !has(self.header)) ||
+                                    (self.type == 'Path' && !has(self.generic) &&
+                                    !has(self.header)))
+                              minItems: 1
+                              type: array
+                          required:
+                          - entries
+                          type: object
+                        minItems: 1
+                        type: array
+                      extensionRef:
+                        properties:
+                          name:
+                            default: ""
+                            type: string
+                        type: object
+                        x-kubernetes-map-type: atomic
+                    required:
+                    - descriptors
+                    - extensionRef
+                    type: object
+                  local:
+                    properties:
+                      tokenBucket:
+                        properties:
+                          fillInterval:
+                            format: duration
+                            type: string
+                          maxTokens:
+                            format: int32
+                            minimum: 1
+                            type: integer
+                          tokensPerFill:
+                            default: 1
+                            format: int32
+                            type: integer
+                        required:
+                        - fillInterval
+                        - maxTokens
+                        type: object
+                    type: object
+                type: object
+              targetRefs:
+                items:
+                  properties:
+                    group:
+                      maxLength: 253
+                      pattern: ^$|^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                      type: string
+                    kind:
+                      maxLength: 63
+                      minLength: 1
+                      pattern: ^[a-zA-Z]([-a-zA-Z0-9]*[a-zA-Z0-9])?$
+                      type: string
+                    name:
+                      maxLength: 253
+                      minLength: 1
+                      type: string
+                  required:
+                  - group
+                  - kind
+                  - name
+                  type: object
+                maxItems: 16
+                minItems: 1
+                type: array
+              transformation:
+                properties:
+                  request:
+                    properties:
+                      add:
+                        items:
+                          properties:
+                            name:
+                              type: string
+                            value:
+                              type: string
+                          required:
+                          - name
+                          type: object
+                        maxItems: 16
+                        type: array
+                        x-kubernetes-list-map-keys:
+                        - name
+                        x-kubernetes-list-type: map
+                      body:
+                        properties:
+                          parseAs:
+                            default: AsString
+                            enum:
+                            - AsString
+                            - AsJson
+                            type: string
+                          value:
+                            type: string
+                        required:
+                        - parseAs
+                        type: object
+                      remove:
+                        items:
+                          type: string
+                        maxItems: 16
+                        type: array
+                        x-kubernetes-list-type: set
+                      set:
+                        items:
+                          properties:
+                            name:
+                              type: string
+                            value:
+                              type: string
+                          required:
+                          - name
+                          type: object
+                        maxItems: 16
+                        type: array
+                        x-kubernetes-list-map-keys:
+                        - name
+                        x-kubernetes-list-type: map
+                    type: object
+                  response:
+                    properties:
+                      add:
+                        items:
+                          properties:
+                            name:
+                              type: string
+                            value:
+                              type: string
+                          required:
+                          - name
+                          type: object
+                        maxItems: 16
+                        type: array
+                        x-kubernetes-list-map-keys:
+                        - name
+                        x-kubernetes-list-type: map
+                      body:
+                        properties:
+                          parseAs:
+                            default: AsString
+                            enum:
+                            - AsString
+                            - AsJson
+                            type: string
+                          value:
+                            type: string
+                        required:
+                        - parseAs
+                        type: object
+                      remove:
+                        items:
+                          type: string
+                        maxItems: 16
+                        type: array
+                        x-kubernetes-list-type: set
+                      set:
+                        items:
+                          properties:
+                            name:
+                              type: string
+                            value:
+                              type: string
+                          required:
+                          - name
+                          type: object
+                        maxItems: 16
+                        type: array
+                        x-kubernetes-list-map-keys:
+                        - name
+                        x-kubernetes-list-type: map
+                    type: object
+                type: object
+            type: object
+          status:
+            properties:
+              ancestors:
+                items:
+                  properties:
+                    ancestorRef:
+                      properties:
+                        group:
+                          default: gateway.networking.k8s.io
+                          maxLength: 253
+                          pattern: ^$|^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                          type: string
+                        kind:
+                          default: Gateway
+                          maxLength: 63
+                          minLength: 1
+                          pattern: ^[a-zA-Z]([-a-zA-Z0-9]*[a-zA-Z0-9])?$
+                          type: string
+                        name:
+                          maxLength: 253
+                          minLength: 1
+                          type: string
+                        namespace:
+                          maxLength: 63
+                          minLength: 1
+                          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                          type: string
+                        port:
+                          format: int32
+                          maximum: 65535
+                          minimum: 1
+                          type: integer
+                        sectionName:
+                          maxLength: 253
+                          minLength: 1
+                          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                          type: string
+                      required:
+                      - name
+                      type: object
+                    conditions:
+                      items:
+                        properties:
+                          lastTransitionTime:
+                            format: date-time
+                            type: string
+                          message:
+                            maxLength: 32768
+                            type: string
+                          observedGeneration:
+                            format: int64
+                            minimum: 0
+                            type: integer
+                          reason:
+                            maxLength: 1024
+                            minLength: 1
+                            pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
+                            type: string
+                          status:
+                            enum:
+                            - "True"
+                            - "False"
+                            - Unknown
+                            type: string
+                          type:
+                            maxLength: 316
+                            pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                            type: string
+                        required:
+                        - lastTransitionTime
+                        - message
+                        - reason
+                        - status
+                        - type
+                        type: object
+                      maxItems: 8
+                      minItems: 1
+                      type: array
+                      x-kubernetes-list-map-keys:
+                      - type
+                      x-kubernetes-list-type: map
+                    controllerName:
+                      maxLength: 253
+                      minLength: 1
+                      pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*\/[A-Za-z0-9\/\-._~%!$&'()*+,;=:]+$
+                      type: string
+                  required:
+                  - ancestorRef
+                  - controllerName
+                  type: object
+                maxItems: 16
+                type: array
+            required:
+            - ancestors
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}

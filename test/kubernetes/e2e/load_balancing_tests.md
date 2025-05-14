@@ -7,12 +7,7 @@ Each end-to-end test is executed on a running Kubernetes Cluster. If we use a si
 Our goal is to make the most efficient use of our hardware for executing tests in our CI pipeline.
 
 ### What was our previous strategy?
-Our previous strategy was to group tests by domain:
-- [gloo](https://github.com/solo-io/gloo/tree/v1.16.x/test/kube2e/gloo)
-- [gateway](https://github.com/solo-io/gloo/tree/v1.16.x/test/kube2e/gateway)
-- ...etc
-
-This did not scale well because different domains had a different amount of tests. Therefore, we noticed that it would take some test clusters twice as long to complete the tests as others.
+Our previous strategy was to group tests by domain. This did not scale well because different domains had a different amount of tests. Therefore, we noticed that it would take some test clusters twice as long to complete the tests as others.
 
 ### What is our current strategy?
 Our current strategy is to group tests by runtime. This allows us to easily move tests between clusters as necessary, following the Kubernetes mantra "cattle, not pets".

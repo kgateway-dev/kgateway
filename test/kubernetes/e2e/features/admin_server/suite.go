@@ -5,16 +5,14 @@ package admin_server
 import (
 	"context"
 
-	"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1"
-	v1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
-
-	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/defaults"
-
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils"
-	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	v1 "github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/v1"
+	"github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/defaults"
+	"github.com/kgateway-dev/kgateway/v2/test/helpers"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
 )
 
 var _ e2e.NewSuiteFunc = NewTestingSuite
@@ -44,7 +42,7 @@ func (s *testingSuite) TestGetInputSnapshotIncludesSettings() {
 	s.testInstallation.Assertions.AssertGlooAdminApi(
 		s.ctx,
 		metav1.ObjectMeta{
-			Name:      kubeutils.GlooDeploymentName,
+			Name:      helpers.DefaultKgatewayDeploymentName,
 			Namespace: s.testInstallation.Metadata.InstallNamespace,
 		},
 		s.testInstallation.Assertions.InputSnapshotContainsElement(v1.SettingsGVK, metav1.ObjectMeta{
@@ -68,7 +66,7 @@ func (s *testingSuite) TestGetInputSnapshotIncludesEdgeApiResources() {
 	s.testInstallation.Assertions.AssertGlooAdminApi(
 		s.ctx,
 		metav1.ObjectMeta{
-			Name:      kubeutils.GlooDeploymentName,
+			Name:      helpers.DefaultKgatewayDeploymentName,
 			Namespace: s.testInstallation.Metadata.InstallNamespace,
 		},
 		s.testInstallation.Assertions.InputSnapshotContainsElement(v1.UpstreamGVK, upstreamMeta),
@@ -78,10 +76,6 @@ func (s *testingSuite) TestGetInputSnapshotIncludesEdgeApiResources() {
 // TestGetInputSnapshotIncludesK8sGatewayApiResources verifies that we can query the /snapshots/input API and have it return K8s Gateway API
 // resources without an error
 func (s *testingSuite) TestGetInputSnapshotIncludesK8sGatewayApiResources() {
-	if !s.testInstallation.Metadata.K8sGatewayEnabled {
-		s.T().Skip("Installation of Gloo Gateway does not have K8s Gateway enabled, skipping test as there is nothing to test")
-	}
-
 	s.T().Cleanup(func() {
 		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, gatewayParametersManifest)
 		s.NoError(err, "can delete manifest")
@@ -93,7 +87,7 @@ func (s *testingSuite) TestGetInputSnapshotIncludesK8sGatewayApiResources() {
 	s.testInstallation.Assertions.AssertGlooAdminApi(
 		s.ctx,
 		metav1.ObjectMeta{
-			Name:      kubeutils.GlooDeploymentName,
+			Name:      helpers.DefaultKgatewayDeploymentName,
 			Namespace: s.testInstallation.Metadata.InstallNamespace,
 		},
 		s.testInstallation.Assertions.InputSnapshotContainsElement(v1alpha1.GatewayParametersGVK, gatewayParametersMeta),

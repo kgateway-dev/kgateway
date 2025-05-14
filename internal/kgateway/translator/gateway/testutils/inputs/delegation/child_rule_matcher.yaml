@@ -1,0 +1,130 @@
+# This test contains a parent with header and query param matchers, that delegates
+# to two child routes. The child route that does not contain a superset of its parent's
+# headers and query params is dropped.
+#
+# Input:
+# - Parent infra/example-route:
+#   - Delegate /a (with headers and query params) to routes in "a" namespace
+#   - Delegate /b (with headers and query params) to routes in "b" namespace
+#   - Everything else goes to infra/example-svc
+# - Child a/route-a:
+#   - /a/1 (with superset of /a headers and query params) goes to a/svc-a
+# - Child b/route-b:
+#   - /b/1 (with non-superset of /b headers and query params) goes to b/svc-b
+#
+# Expected output routes:
+# - /a/1 with headers and query params -> a/svc-a
+# - /* -> infra/example-svc
+# - there is no route for /b/1 because its headers/query params are not a superset of those of its parent
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: example-route
+  namespace: infra
+spec:
+  parentRefs:
+  - name: example-gateway
+  hostnames:
+  - "example.com"
+  rules:
+  - backendRefs:
+    - name: example-svc
+      port: 80
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /a
+      headers:
+      - type: Exact
+        name: header1
+        value: val1
+      queryParams:
+      - type: Exact
+        name: query1
+        value: val1
+    backendRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: "*"
+      namespace: a
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /b
+      headers:
+      - type: Exact
+        name: header2
+        value: val2
+      - type: Exact
+        name: header3
+        value: val3
+      queryParams:
+      - type: Exact
+        name: query2
+        value: val2
+      - type: Exact
+        name: query3
+        value: val3
+    backendRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: "*"
+      namespace: b
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: route-a
+  namespace: a
+spec:
+  rules:
+  - matches:
+    - path:
+        type: Exact
+        value: /a/1
+      headers:
+      - type: Exact
+        name: header1
+        value: val1
+      - type: Exact
+        name: headerX
+        value: valX
+      queryParams:
+      - type: Exact
+        name: query1
+        value: val1
+      - type: Exact
+        name: queryX
+        value: valX
+    backendRefs:
+    - name: svc-a
+      port: 8080
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: route-b
+  namespace: b
+spec:
+  rules:
+  - matches:
+    - path:
+        type: RegularExpression
+        value: /b/.*
+      headers:
+      - type: Exact
+        name: header2
+        value: val2
+      - type: Exact
+        name: headerX
+        value: valX
+      queryParams:
+      - type: Exact
+        name: query2
+        value: val2
+      - type: Exact
+        name: queryX
+        value: valX
+    backendRefs:
+    - name: svc-b
+      port: 8080

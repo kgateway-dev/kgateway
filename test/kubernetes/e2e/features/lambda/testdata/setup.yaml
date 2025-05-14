@@ -1,0 +1,48 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: lambda-test
+  labels:
+    kgateway-e2e-test: "true"
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayParameters
+metadata:
+  name: lambda-gateway
+  namespace: lambda-test
+spec:
+  kube:
+    envoyContainer:
+      bootstrap:
+        logLevel: debug
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: lambda-gateway
+  namespace: lambda-test
+spec:
+  gatewayClassName: kgateway
+  infrastructure:
+    parametersRef:
+      name: lambda-gateway
+      group: gateway.kgateway.dev
+      kind: GatewayParameters
+  listeners:
+  - protocol: HTTP
+    port: 8080
+    name: http
+    allowedRoutes:
+      namespaces:
+        from: All
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: aws-creds
+  namespace: lambda-test
+type: Opaque
+data:
+  accessKey: QUtJQUlPU0ZPRE5ON0VYQU1QTEU= # Base64 encoded "AKIAIOSFODNN7EXAMPLE"
+  secretKey: d0phbHJYVXRuRkVNSS9LN01ERU5HL2JQeFJmaUNZRVhBTVBMRUtFWQ== # Base64 encoded "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"

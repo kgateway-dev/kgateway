@@ -1,25 +1,21 @@
-//go:build ignore
-
 package deployer
 
 import (
 	"context"
 
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	testdefaults "github.com/kgateway-dev/kgateway/test/kubernetes/e2e/defaults"
-
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
+	testdefaults "github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/defaults"
 )
 
 var _ e2e.NewSuiteFunc = NewMinimalDefaultGatewayParametersTestingSuite
 
 // minimalDefaultGatewayParametersDeployerSuite tests the "deployer" feature in situations where users have applied `null` values
-// to as many of the helm values controlling the default GatewayParameters for the gloo-gateway GatewayClass as possible.
-// The "deployer" code can be found here: /projects/gateway2/deployer
+// to as many of the helm values controlling the default GatewayParameters for the kgateway GatewayClass as possible.
+// The "deployer" code can be found here: /internal/kgateway/deployer
 type minimalDefaultGatewayParametersDeployerSuite struct {
 	suite.Suite
 

@@ -1,0 +1,26 @@
+name: Prep Python Runner
+
+description: Common setup steps for Python runners
+
+runs:
+  using: "composite"
+  steps:
+    - name: Cancel Previous Actions
+      uses: styfle/cancel-workflow-action@0.12.1
+
+    - uses: actions/setup-python@v5
+      id: setup_python
+      with:
+        python-version: '3.12'
+
+    - name: Install dependencies for amd64 runner
+      shell: bash
+      run: |
+        python3 -m venv .venv
+        source .venv/bin/activate
+        python3 -m pip install -r python/requirements-dev.txt --no-cache-dir
+        python3 -m pip install -r python/requirements.txt --no-cache-dir
+        python3 -m pip install -r test/kubernetes/e2e/features/aiextension/tests/requirements.txt --no-cache-dir
+        echo "$VIRTUAL_ENV/bin" >> $GITHUB_PATH
+        echo "VIRTUAL_ENV=$VIRTUAL_ENV" >> $GITHUB_ENV
+        echo "PYTHON=$(which python)" >> $GITHUB_ENV

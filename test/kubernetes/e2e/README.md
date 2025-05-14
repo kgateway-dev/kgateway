@@ -43,7 +43,8 @@ e.g. In order to add a feature suite to be run with the test installation define
 
 ## Adding Tests to CI
 
-When writing new tests, they should be added to the the [`Kubernetes Tests` that run on all PRs](https://github.com/solo-io/gloo/blob/47de5cd472a743eebc9355613f5299b3617cd07a/.github/workflows/pr-kubernetes-tests.yaml#L57-L81) if they are not already covered by an existing regex. This way we ensure parity between PR runs and nightlies. Additionally they should be added to the [OSS Tests](https://github.com/solo-io/solo-projects/blob/38bc0ac4b01ff12abaa1ab37aa8d64b6548227e5/test/kubernetes/e2e/tests/oss_test.go#L44-L135) which run in Enterprise that verify that the feature works in Enterprise as well.
+When writing new tests, they should be added to the the [`Kubernetes Tests` that run on all PRs](/.github/workflows/pr-kubernetes-tests.yaml_noop) if they are not already covered by an existing regex. This way we ensure parity between PR runs and nightlies.
+
 When adding it to the list, ensure that the tests are load balanced to allow quick iteration on PRs and update the date and the duration of corresponding test.
 The only exception to this is the Upgrade tests that are not run on the main branch but all LTS branches.
 
@@ -52,6 +53,16 @@ The only exception to this is the Upgrade tests that are not run on the main bra
 Some tests may require environment variables to be set. Some required env vars are:
 
 - Istio features: Require `ISTIO_VERSION` to be set. The tests running in CI use `ISTIO_VERSION="${ISTIO_VERSION:-1.19.9}"` to default to a specific version of Istio.
+
+## Resource example generation tool
+
+This tool generates the input resources defined in code as an output yaml file. You can find an example under `test/kubernetes/e2e/features/headless_svc/generate/generate_examples.go`.
+
+These examples are run as part of the codegen, but can also be manually run using the following command:
+
+```bash
+go generate <path to the generate.go file>
+```
 
 ## Debugging
 
@@ -63,7 +74,6 @@ Refer to the [Debugging guide](./debugging.md) for more information on how to de
 
 This framework was inspired by the following projects:
 - [Kubernetes Gateway API](https://github.com/kubernetes-sigs/gateway-api/tree/main/conformance)
-- [Gloo Platform](https://github.com/solo-io/gloo-mesh-enterprise/tree/main/test/e2e)
 
 ### Areas of Improvement
 > **Help Wanted:**
@@ -72,7 +82,6 @@ This framework was inspired by the following projects:
 Below are a set of known areas of improvement. The goal is to provide a starting point for developers looking to contribute. There are likely other improvements that are not currently captured, so please add/remove entries to this list as you see fit:
 - **Debug Improvements**: On test failure, we should emit a report about the entire state of the cluster. This should be a CLI utility as well.
 - **Curl assertion**: We need a re-usable way to execute Curl requests against a Pod, and assert properties of the response.
-- **Improved install action(s)**: We rely on the [SoloTestHelper](/test/kube2e/helper/install.go) currently, and it would be nice if we relied directly on Helm or Glooctl.
-- **Cluster provisioning**: We rely on the [setup-kind](/ci/kind/setup-kind.sh) script to provision a cluster. We should make this more flexible by providing a configurable, declarative way to do this.
+- **Cluster provisioning**: We rely on the [setup-kind](/hack/kind/setup-kind.sh) script to provision a cluster. We should make this more flexible by providing a configurable, declarative way to do this.
 - **Istio action**: We need a way to perform Istio actions against a cluster.
 - **Argo action**: We need an easy utility to perform ArgoCD commands against a cluster.

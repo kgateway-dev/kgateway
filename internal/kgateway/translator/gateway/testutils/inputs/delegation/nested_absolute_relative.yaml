@@ -1,0 +1,192 @@
+# This test contains multiple levels of delegation, with a mixture of inheriting and
+# not inheriting the parent matchers.
+#
+# Input:
+# - Parent infra/example-route:
+#   - Delegate /a (parent header/query params) to routes in "a" namespace
+# - Child a/route-a:
+#   - /a/1 (parent and route-a header/query params) goes to a/svc-a
+#   - /a/b (parent header/query params, GET) delegates to a-b/route-a-b
+# - Child a-b/route-a-b (with annotation inherit-parent-matcher=true):
+#   - /c (route-a-b header/query params) goes to a-b/svc-a-b
+#   - /d (route-a-b-2 header/query params) delegates to a-b-d/route-a-b-d
+# - Child a-b-d/route-a-b-d:
+#   - /a/b/d/1 (parent, route-a-b-2, and route-a-b-d header/query params) goes to a-b-d/svc-a-b-d
+#
+# Expected output routes:
+# - /a/1 (parent and route-a header/query params) -> a/svc-a
+# - /a/b/c (parent and route-a-b header/query params, GET) -> a-b/svc-a-b
+# - /a/b/d/1 (parent, route-a-b-2, and route-a-b-d header/query params, GET) -> a-b-d/svc-a-b-d
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: example-route
+  namespace: infra
+spec:
+  parentRefs:
+  - name: example-gateway
+  hostnames:
+  - "example.com"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /a
+      headers:
+      - type: Exact
+        name: parent-header
+        value: parent-header-val
+      queryParams:
+      - type: Exact
+        name: parent-query
+        value: parent-query-val
+    backendRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: "*"
+      namespace: a
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: route-a
+  namespace: a
+spec:
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /a/1
+      headers:
+      - type: Exact
+        name: parent-header
+        value: parent-header-val
+      - type: Exact
+        name: route-a-header
+        value: route-a-header-val
+      queryParams:
+      - type: Exact
+        name: parent-query
+        value: parent-query-val
+      - type: Exact
+        name: route-a-query
+        value: route-a-query-val
+    backendRefs:
+    - name: svc-a
+      port: 8080
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /a/b
+      headers:
+      - type: Exact
+        name: parent-header
+        value: parent-header-val
+      queryParams:
+      - type: Exact
+        name: parent-query
+        value: parent-query-val
+      method: GET
+    backendRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: "route-a-b"
+      namespace: a-b
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: route-a-b
+  namespace: a-b
+  annotations:
+    delegation.kgateway.dev/inherit-parent-matcher: "true"
+spec:
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /c
+      headers:
+      - type: Exact
+        name: route-a-b-header
+        value: route-a-b-header-val
+      queryParams:
+      - type: Exact
+        name: route-a-b-query
+        value: route-a-b-query-val
+    backendRefs:
+    - name: svc-a-b
+      port: 8080
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /d
+      headers:
+      - type: Exact
+        name: route-a-b-header-2
+        value: route-a-b-header-val-2
+      queryParams:
+      - type: Exact
+        name: route-a-b-query-2
+        value: route-a-b-query-val-2
+    backendRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: "route-a-b-d"
+      namespace: a-b-d
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: route-a-b-d
+  namespace: a-b-d
+spec:
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /a/b/d/1
+      headers:
+      - type: Exact
+        name: parent-header
+        value: parent-header-val
+      - type: Exact
+        name: route-a-b-header-2
+        value: route-a-b-header-val-2
+      - type: Exact
+        name: route-a-b-d-header
+        value: route-a-b-d-header-val
+      queryParams:
+      - type: Exact
+        name: parent-query
+        value: parent-query-val
+      - type: Exact
+        name: route-a-b-query-2
+        value: route-a-b-query-val-2
+      - type: Exact
+        name: route-a-b-d-query
+        value: route-a-b-d-query-val
+      method: GET
+    backendRefs:
+    - name: svc-a-b-d
+      port: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: svc-a-b
+  namespace: a-b
+spec:
+  ports:
+    - protocol: TCP
+      port: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: svc-a-b-d
+  namespace: a-b-d
+spec:
+  ports:
+    - protocol: TCP
+      port: 8080

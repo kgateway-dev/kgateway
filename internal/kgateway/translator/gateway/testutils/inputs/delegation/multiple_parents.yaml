@@ -1,0 +1,122 @@
+# This test contains two parent routes that delegate to overlapping child routes.
+# One of the child routes is dropped due to a non-matching parentRef.
+#
+# Input:
+# - Parent infra/example-route (hostname example.com):
+#   - Delegate /a to routes in "a" namespace
+#   - Delegate /b to routes in "b" namespace
+#   - Everything else goes to infra/example-svc
+# - Parent infra/foo-route (hostname foo.com):
+#   - Delegate /a to routes in "a" namespace
+#   - Delegate /b to routes in "b" namespace
+# - Child a/route-a:
+#   - /a/1 goes to a/svc-a
+# - Child b/route-b:
+#   - /b/.* goes to b/svc-b
+#   - parentRef is infra/example-route
+#
+# Expected output routes:
+# - domain example.com:
+#   - /a/1 -> a/svc-a
+#   - /b/.* -> b/svc-b
+#   - /* -> infra/example-svc
+# - domain foo.com:
+#   - /a/1 -> a/svc-a
+#   - no route for /b/.* because b/route-b specifies parentRefs that don't include infra/foo-route
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: example-route
+  namespace: infra
+spec:
+  parentRefs:
+  - name: example-gateway
+  hostnames:
+  - "example.com"
+  rules:
+  - backendRefs:
+    - name: example-svc
+      port: 80
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /a
+    backendRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: "*"
+      namespace: a
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /b
+    backendRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: "*"
+      namespace: b
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: foo-route
+  namespace: infra
+spec:
+  parentRefs:
+  - name: example-gateway
+  hostnames:
+  - "foo.com"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /a
+    backendRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: "*"
+      namespace: a
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /b
+    backendRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: "*"
+      namespace: b
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: route-a
+  namespace: a
+spec:
+  rules:
+  - matches:
+    - path:
+        type: Exact
+        value: /a/1
+    backendRefs:
+    - name: svc-a
+      port: 8080
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: route-b
+  namespace: b
+spec:
+  parentRefs:
+  - name: example-route
+    namespace: infra
+    group: gateway.networking.k8s.io
+    kind: HTTPRoute
+  rules:
+  - matches:
+    - path:
+        type: RegularExpression
+        value: /b/.*
+    backendRefs:
+    - name: svc-b
+      port: 8080

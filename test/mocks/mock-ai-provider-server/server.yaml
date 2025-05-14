@@ -1,0 +1,42 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-ai-provider
+  labels:
+    app: test-ai-provider
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: test-ai-provider
+  template:
+    metadata:
+      labels:
+        app: test-ai-provider
+    spec:
+      containers:
+        - name: test-ai-provider
+          image: ghcr.io/kgateway-dev/test-ai-provider:1.0.0-ci1
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 443
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: test-ai-provider
+spec:
+  selector:
+    app: test-ai-provider
+  ports:
+    - port: 443
+      targetPort: 443
+  type: ClusterIP

@@ -1,0 +1,51 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.17.3
+  labels:
+    app: kgateway
+    app.kubernetes.io/name: kgateway
+  name: directresponses.gateway.kgateway.dev
+spec:
+  group: gateway.kgateway.dev
+  names:
+    categories:
+    - kgateway
+    kind: DirectResponse
+    listKind: DirectResponseList
+    plural: directresponses
+    singular: directresponse
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        properties:
+          apiVersion:
+            type: string
+          kind:
+            type: string
+          metadata:
+            type: object
+          spec:
+            properties:
+              body:
+                maxLength: 4096
+                type: string
+              status:
+                format: int32
+                maximum: 599
+                minimum: 200
+                type: integer
+            required:
+            - status
+            type: object
+          status:
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}

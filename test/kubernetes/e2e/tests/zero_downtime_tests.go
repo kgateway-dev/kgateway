@@ -3,8 +3,8 @@
 package tests
 
 import (
-	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e"
-	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e/features/zero_downtime_rollout"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/zero_downtime_rollout"
 )
 
 func ZeroDowntimeRolloutSuiteRunner() e2e.SuiteRunner {

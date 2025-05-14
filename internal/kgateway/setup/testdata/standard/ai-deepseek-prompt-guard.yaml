@@ -1,0 +1,101 @@
+kind: Gateway
+apiVersion: gateway.networking.k8s.io/v1
+metadata:
+  name: http-gw-for-test
+  namespace: gwtest
+spec:
+  gatewayClassName: kgateway
+  listeners:
+    - protocol: HTTP
+      port: 8080
+      name: http
+      allowedRoutes:
+        namespaces:
+          from: All
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  labels:
+    app: kgateway
+  name: deepseek
+  namespace: gwtest
+spec:
+  type: AI
+  ai:
+    llm:
+      hostOverride:
+        host: ollama-deepseek-r1.ollama.svc.cluster.local
+        port: 11434
+        insecureSkipVerify: true
+      provider:
+        openai:
+          authToken:
+            kind: "SecretRef"
+            secretRef:
+              name: deepseek-secret
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: deepseek-secret
+  namespace: gwtest
+type: Opaque
+data:
+  Authorization: bXlzZWNyZXRrZXk=
+---
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: HTTPRoute
+metadata:
+  name: route-to-backend
+  namespace: gwtest
+spec:
+  parentRefs:
+    - name: http-gw-for-test
+  hostnames:
+    - "test"
+  rules:
+    - matches:
+        - path:
+            type: Exact
+            value: /v1/chat/completions
+      backendRefs:
+        - name: deepseek
+          kind: Backend
+          group: gateway.kgateway.dev
+          filters:
+            - type: ExtensionRef
+              extensionRef:
+                group: gateway.kgateway.dev
+                kind: TrafficPolicy
+                name: route-test
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: route-test
+  namespace: gwtest
+spec:
+  ai:
+    promptEnrichment:
+      prepend:
+        - role: SYSTEM
+          content: "respond to all questions in French"
+        - role: SYSTEM
+          content: "Say hello before each response"
+    promptGuard:
+      request:
+        customResponse:
+          message: "Rejected due to inappropriate content"
+          statusCode: 400
+        regex:
+          matches:
+          - pattern: "credit card"
+      response:
+        regex:
+          builtins:
+            - PHONE_NUMBER
+            - EMAIL
+            - SSN
+            - CREDIT_CARD
+---

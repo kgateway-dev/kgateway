@@ -1,5 +1,3 @@
-//go:build ignore
-
 package route_delegation
 
 import (
@@ -11,32 +9,37 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/pkg/utils/fsutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
 )
 
 const (
-	// ref: test/kubernetes/e2e/features/delegation/testdata/common.yaml
 	gatewayPort = 8080
 )
 
-// ref: test/kubernetes/e2e/features/delegation/testdata/common.yaml
+// ref: common.yaml
 var (
 	commonManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "common.yaml")
-	proxyMeta      = metav1.ObjectMeta{
-		Name:      "gloo-proxy-http-gateway",
-		Namespace: "infra",
-	}
-	proxyDeployment = &appsv1.Deployment{ObjectMeta: proxyMeta}
-	proxyService    = &corev1.Service{ObjectMeta: proxyMeta}
-	proxyHostPort   = fmt.Sprintf("%s.%s.svc:%d", proxyService.Name, proxyService.Namespace, gatewayPort)
 
-	httpbinTeam1 = &appsv1.Deployment{
+	// resources from common manifest
+	httpbinTeam1Service = &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "svc1",
+			Namespace: "team1",
+		},
+	}
+	httpbinTeam1Deployment = &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "httpbin",
 			Namespace: "team1",
 		},
 	}
-	httpbinTeam2 = &appsv1.Deployment{
+	httpbinTeam2Service = &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "svc2",
+			Namespace: "team2",
+		},
+	}
+	httpbinTeam2Deployment = &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "httpbin",
 			Namespace: "team2",
@@ -48,9 +51,18 @@ var (
 			Namespace: "infra",
 		},
 	}
+
+	// resources produced by deployer when Gateway is applied
+	proxyMeta = metav1.ObjectMeta{
+		Name:      "http-gateway",
+		Namespace: "infra",
+	}
+	proxyDeployment = &appsv1.Deployment{ObjectMeta: proxyMeta}
+	proxyService    = &corev1.Service{ObjectMeta: proxyMeta}
+	proxyHostPort   = fmt.Sprintf("%s.%s.svc:%d", proxyService.Name, proxyService.Namespace, gatewayPort)
 )
 
-// ref: test/kubernetes/e2e/features/delegation/testdata/basic.yaml
+// ref: basic.yaml
 var (
 	routeRoot = &gwv1.HTTPRoute{
 		ObjectMeta: metav1.ObjectMeta{
@@ -88,12 +100,12 @@ var (
 	pathTeam2 = "anything/team2/foo"
 )
 
-// ref: test/kubernetes/e2e/features/route_delegation/inputs/invalid_child_valid_standalone.yaml
+// ref: invalid_child_valid_standalone.yaml
 var (
 	gatewayTestPort = 8090
 
 	proxyTestMeta = metav1.ObjectMeta{
-		Name:      "gloo-proxy-http-gateway-test",
+		Name:      "http-gateway-test",
 		Namespace: "infra",
 	}
 	proxyTestDeployment = &appsv1.Deployment{ObjectMeta: proxyTestMeta}
@@ -114,6 +126,5 @@ var (
 	multipleParentsManifest             = filepath.Join(fsutils.MustGetThisDir(), "testdata", "multiple_parents.yaml")
 	invalidChildValidStandaloneManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "invalid_child_valid_standalone.yaml")
 	unresolvedChildManifest             = filepath.Join(fsutils.MustGetThisDir(), "testdata", "unresolved_child.yaml")
-	routeOptionsManifest                = filepath.Join(fsutils.MustGetThisDir(), "testdata", "route_options.yaml")
 	matcherInheritanceManifest          = filepath.Join(fsutils.MustGetThisDir(), "testdata", "matcher_inheritance.yaml")
 )

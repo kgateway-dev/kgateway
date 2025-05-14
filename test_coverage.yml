@@ -28,10 +28,10 @@ threshold:
 override:
   # Calls to external library, which is tested
   - threshold: 0
-    path: ^projects/gateway2/generate.go
-  # The only code at the top-level of the `projects/gateway2` package is code generation
+    path: ^hack/generate.go
+  # The only code at the top-level of the `internal/kgateway` package is code generation
   - threshold: 0
-    path: ^projects/gateway2$
+    path: ^internal/kgateway$
 
 # Holds regexp rules which will exclude matched files or packages
 # from coverage statistics

@@ -1,0 +1,94 @@
+# This test contains a parent route and two child routes that inherit the parent matchers.
+# One child route has parentRefs that include the parent route, and one has parentRefs that
+# do not include the parent route (so is discarded).
+#
+# Input:
+# - Parent infra/example-route:
+#   - Delegate /a (header1=val1, query1=val1) to routes in "a" namespace
+#   - Everything else goes to infra/example-svc
+# - Child a/route-a (with annotation inherit-parent-matcher=true, invalid parentRefs):
+#   - /foo (PUT) goes to a/svc-a
+# - Child a/route-b (with annotation inherit-parent-matcher=true, valid parentRefs):
+#   - /bar (POST) goes to a/svc-a
+#
+# Expected output routes:
+# - /a/bar (header1=val1, query1=val1, POST) -> a/svc-a
+# - /* -> infra/example-svc
+# - there is no /a/foo route because a/route-a specifies parentRefs that don't include infra/example-route
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: example-route
+  namespace: infra
+spec:
+  parentRefs:
+  - name: example-gateway
+  hostnames:
+  - "example.com"
+  rules:
+  - backendRefs:
+    - name: example-svc
+      port: 80
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /a
+      headers:
+      - type: Exact
+        name: header1
+        value: val1
+      queryParams:
+      - type: Exact
+        name: query1
+        value: val1
+    backendRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: "*"
+      namespace: a
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: route-a
+  namespace: a
+  annotations:
+    delegation.kgateway.dev/inherit-parent-matcher: "true"
+spec:
+  parentRefs:
+  - name: invalid
+    namespace: infra
+    group: gateway.networking.k8s.io
+    kind: HTTPRoute
+  rules:
+  - matches:
+    - path:
+        type: Exact
+        value: /foo
+      method: PUT
+    backendRefs:
+    - name: svc-a
+      port: 8080
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: route-b
+  namespace: a
+  annotations:
+    delegation.kgateway.dev/inherit-parent-matcher: "true"
+spec:
+  parentRefs:
+  - name: example-route
+    namespace: infra
+    group: gateway.networking.k8s.io
+    kind: HTTPRoute
+  rules:
+  - matches:
+    - path:
+        type: Exact
+        value: /bar
+      method: POST
+    backendRefs:
+    - name: svc-a
+      port: 8080

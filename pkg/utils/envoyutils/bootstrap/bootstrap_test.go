@@ -5,7 +5,7 @@ import (
 
 	envoytransformation "github.com/solo-io/envoy-gloo/go/config/filter/http/transformation/v2"
 
-	"github.com/kgateway-dev/kgateway/projects/gateway2/utils"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 
 	"github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
@@ -476,7 +476,6 @@ func (f *fakeSnapshot) GetResources(typ string) map[string]types.Resource {
 		return withoutTTL
 	}
 	panic("unknown resources type" + typ)
-
 }
 
 func (f *fakeSnapshot) GetResourcesAndTTL(typ string) map[string]types.ResourceWithTTL {

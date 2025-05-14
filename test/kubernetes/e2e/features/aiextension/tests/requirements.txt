@@ -1,0 +1,19 @@
+openai
+google.generativeai
+vertexai
+pytest
+langchain-openai
+langchain-community
+langchainhub
+langchain_postgres
+fastapi[standard]
+uvicorn[standard]
+# There is an issue: https://github.com/explosion/cython-blis/issues/117 that causes mac and arm linux
+# build to fail. Temp workaround is to limit spacy to < 3.8.0. Switch over to pyproject.toml and use
+# platform specific deps if needed
+spacy<3.8.0
+numpy==1.26.4
+presidio_analyzer[transformers]
+presidio_anonymizer
+transformers
+shapely>=2

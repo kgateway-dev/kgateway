@@ -4,7 +4,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kgateway-dev/kgateway/pkg/utils/namespaces"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/namespaces"
 )
 
 var _ = Describe("Namespaces", func() {

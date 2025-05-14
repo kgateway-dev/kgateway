@@ -18,7 +18,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 
-	"github.com/kgateway-dev/kgateway/projects/gateway2/utils"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 )
 
 var (
@@ -53,8 +53,7 @@ func FromEnvoyResources(resources *EnvoyResources) (string, error) {
 // per-filter config matching the arguments, marshals it to json, and returns
 // the stringified json or any error if it occurred.
 func FromFilter(filterName string, msg proto.Message) (string, error) {
-
-	typedFilter, err := anypb.New(msg)
+	typedFilter, err := utils.MessageToAny(msg)
 	if err != nil {
 		return "", err
 	}
@@ -84,7 +83,7 @@ func FromFilter(filterName string, msg proto.Message) (string, error) {
 		},
 	}
 
-	hcmAny, err := anypb.New(hcm)
+	hcmAny, err := utils.MessageToAny(hcm)
 	if err != nil {
 		return "", err
 	}
@@ -119,7 +118,6 @@ func FromSnapshot(
 	ctx context.Context,
 	snap envoycache.ResourceSnapshot,
 ) (string, error) {
-
 	// Get the resources we're going to need as concrete types.
 	resources, err := resourcesFromSnapshot(snap)
 	if err != nil {
@@ -326,7 +324,7 @@ func setStaticRouteConfig(
 		RouteConfig: r,
 	}
 
-	hcmAny, err := anypb.New(hcm)
+	hcmAny, err := utils.MessageToAny(hcm)
 	if err != nil {
 		return err
 	}

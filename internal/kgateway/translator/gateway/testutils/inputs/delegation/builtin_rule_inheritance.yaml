@@ -1,0 +1,79 @@
+# This test contains a parent route that delegates to a child route. A traffic policy targets
+# the parent route.
+#
+# Input:
+# - Parent infra/example-route:
+#   - Delegate /a to routes in "a" namespace
+#   - Everything else goes to infra/example-svc
+# - Child a/route-a1:
+#   - inherits timeouts from parent
+# - Child a/route-a2:
+#   - overrides timeouts of parent
+#
+# Expected output routes:
+# - /a/1 -> parent's timeout and retry
+# - /a/2 -> route-a2's timeout and retry
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: example-route
+  namespace: infra
+spec:
+  parentRefs:
+  - name: example-gateway
+  hostnames:
+  - "example.com"
+  rules:
+  - backendRefs:
+    - name: example-svc
+      port: 80
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /a
+    backendRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: "*"
+      namespace: a
+    timeouts:
+      request: 5s
+    retry:
+      attempts: 3
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: route-a1
+  namespace: a
+spec:
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /a/1
+    backendRefs:
+    - name: svc-a
+      port: 8080
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: route-a2
+  namespace: a
+spec:
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /a/2
+    backendRefs:
+    - name: svc-a
+      port: 8080
+    timeouts:
+      request: 10s
+    retry:
+      attempts: 5
+      codes:
+        - 503
+      backoff: 1s

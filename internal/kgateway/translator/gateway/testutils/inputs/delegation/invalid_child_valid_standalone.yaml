@@ -1,0 +1,67 @@
+# This test contains a parent route that delegates to a child route, which is dropped
+# due to mismatched hostnames. However the child route is also a valid standalone route
+# since it has a Gateway as a parentRef.
+#
+# Input:
+# - Parent infra/example-route (hostname example.com):
+#   - Delegate /a to routes in "a" namespace
+#   - Everything else goes to infra/example-svc
+# - Child a/route-a (hostname foo.com):
+#   - parentRefs are infra/example-gateway and infra/example-route
+#   - /a/1 goes to a/svc-a
+#
+# Expected output routes:
+# - domain example.com:
+#   - /* -> infra/example-svc
+#   - there is no route for /a/1 because a/route-a's hostname doesn't match that of its parent
+# - domain foo.com:
+#   - /a/1 -> a/svc-a (because a/route-a is also a standalone attachment to a Gateway)
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: example-route
+  namespace: infra
+spec:
+  parentRefs:
+  - name: example-gateway
+  hostnames:
+  - "example.com"
+  rules:
+  - backendRefs:
+    - name: example-svc
+      port: 80
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /a
+    backendRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: "*"
+      namespace: a
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: route-a
+  namespace: a
+spec:
+  hostnames:
+  - "foo.com" # hostname must not be set on delegatee but it can be set for a standalone attachment to a Gateway
+  parentRefs:
+  - name: example-gateway
+    namespace: infra
+    group: gateway.networking.k8s.io
+    kind: Gateway
+  - name: example-route
+    namespace: infra
+    group: gateway.networking.k8s.io
+    kind: HTTPRoute
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /a/1
+    backendRefs:
+    - name: svc-a
+      port: 8080

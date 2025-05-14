@@ -6,11 +6,11 @@ import (
 	"context"
 	"fmt"
 
-	v1alpha1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/external/solo/ratelimit"
-	extauthv1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
-	graphqlv1beta1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1beta1"
-	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/bootstrap/clients/vault"
-	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/xds"
+	v1alpha1 "github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/external/solo/ratelimit"
+	extauthv1 "github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/v1/enterprise/options/extauth/v1"
+	graphqlv1beta1 "github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/v1/enterprise/options/graphql/v1beta1"
+	"github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/bootstrap/clients/vault"
+	"github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/xds"
 
 	"net"
 	"net/http"
@@ -19,7 +19,7 @@ import (
 
 	"github.com/hashicorp/consul/api"
 
-	"github.com/kgateway-dev/kgateway/test/ginkgo/parallel"
+	"github.com/kgateway-dev/kgateway/v2/test/ginkgo/parallel"
 
 	"github.com/golang/protobuf/proto"
 
@@ -30,19 +30,19 @@ import (
 
 	"github.com/golang/protobuf/ptypes/wrappers"
 
-	"github.com/kgateway-dev/kgateway/pkg/bootstrap/leaderelector/singlereplica"
+	"github.com/kgateway-dev/kgateway/v2/pkg/bootstrap/leaderelector/singlereplica"
 
-	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/gloosnapshot"
+	"github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/v1/gloosnapshot"
 
-	"github.com/kgateway-dev/kgateway/pkg/utils/settingsutil"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/settingsutil"
 
-	"github.com/kgateway-dev/kgateway/pkg/utils/statusutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/statusutils"
 
-	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/syncer/setup"
+	"github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/syncer/setup"
 
-	"github.com/kgateway-dev/kgateway/projects/gateway/pkg/translator"
+	"github.com/kgateway-dev/kgateway/v2/internal/gateway/pkg/translator"
 
-	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/upstreams/consul"
+	"github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/upstreams/consul"
 
 	"github.com/solo-io/solo-kit/pkg/api/external/kubernetes/service"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
@@ -58,9 +58,9 @@ import (
 
 	"google.golang.org/grpc"
 
-	gatewayv1 "github.com/kgateway-dev/kgateway/projects/gateway/pkg/api/v1"
-	gloov1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
-	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/bootstrap"
+	gatewayv1 "github.com/kgateway-dev/kgateway/v2/internal/gateway/pkg/api/v1"
+	gloov1 "github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/v1"
+	"github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/bootstrap"
 
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	"go.uber.org/zap"
@@ -72,9 +72,9 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/client-go/kubernetes"
 
-	fds_syncer "github.com/kgateway-dev/kgateway/projects/discovery/pkg/fds/syncer"
-	uds_syncer "github.com/kgateway-dev/kgateway/projects/discovery/pkg/uds/syncer"
-	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/defaults"
+	fds_syncer "github.com/kgateway-dev/kgateway/v2/internal/discovery/pkg/fds/syncer"
+	uds_syncer "github.com/kgateway-dev/kgateway/v2/internal/discovery/pkg/uds/syncer"
+	"github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/defaults"
 )
 
 var glooPortBase = uint32(30400)
@@ -126,7 +126,7 @@ type ExtensionsBuilders struct {
 	Fds  func(ctx context.Context, opts bootstrap.Opts) fds_syncer.Extensions
 }
 
-// RunGlooGatewayUdsFds runs the Gloo Edge control plane components in goroutines and stores
+// RunGlooGatewayUdsFds runs the kgateway control plane components in goroutines and stores
 // configuration in-memory. This is used by the e2e tests in `test/e2e` package.
 func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClients {
 	runOptions.ports = Ports{
@@ -138,7 +138,7 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 	settings := constructTestSettings(runOptions)
 	ctx = settingsutil.WithSettings(ctx, settings)
 
-	// All Gloo Edge components run using a Bootstrap.Opts object
+	// All kgateway components run using a Bootstrap.Opts object
 	// These values are extracted from the Settings object and as part of our SetupSyncer
 	// we pull values off the Settings object to build the Bootstrap.Opts. It would be ideal if we
 	// could use the same setup code, but in the meantime, we use constructTestOpts to mirror the functionality

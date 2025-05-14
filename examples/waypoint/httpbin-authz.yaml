@@ -1,0 +1,16 @@
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: httpbin-authz-svc
+  namespace: httpbin
+spec:
+  action: DENY
+  rules:
+  - to:
+    - operation:
+        methods: ["GET"]
+        ports: ["8000"]
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: httpbin

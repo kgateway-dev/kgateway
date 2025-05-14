@@ -4,5 +4,5 @@ contact_links:
     url: https://slack.cncf.io/
     about: "We are in the #kgateway channel!"
   - name: kgateway Documentation
-    url: https://kgateway.io/docs/
+    url: https://kgateway.dev/docs/
     about: Check out the kgateway docs for helpful information.

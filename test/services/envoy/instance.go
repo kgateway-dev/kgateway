@@ -12,10 +12,10 @@ import (
 
 	"github.com/solo-io/go-utils/threadsafe"
 
-	"github.com/kgateway-dev/kgateway/pkg/utils/envoyutils/admincli"
-	"github.com/kgateway-dev/kgateway/pkg/utils/requestutils/curl"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envoyutils/admincli"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 
-	"github.com/kgateway-dev/kgateway/test/services"
+	"github.com/kgateway-dev/kgateway/v2/test/services"
 
 	"sync"
 	"text/template"

@@ -1,5 +1,3 @@
-# See kubernetes/e2e/tests/manifests/profiles for an explanation of test profiles
-
 global:
   image:
     pullPolicy: IfNotPresent

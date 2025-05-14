@@ -71,12 +71,12 @@ rules:
 - apiGroups:
   - gateway.kgateway.dev
   resources:
+  - backends
   - directresponses
+  - gatewayextensions
   - gatewayparameters
   - httplistenerpolicies
-  - listenerpolicies
-  - routepolicies
-  - upstreams
+  - trafficpolicies
   verbs:
   - get
   - list
@@ -84,12 +84,12 @@ rules:
 - apiGroups:
   - gateway.kgateway.dev
   resources:
+  - backends/status
   - directresponses/status
+  - gatewayextensions/status
   - gatewayparameters/status
   - httplistenerpolicies/status
-  - listenerpolicies/status
-  - routepolicies/status
-  - upstreams/status
+  - trafficpolicies/status
   verbs:
   - get
   - patch
@@ -97,11 +97,13 @@ rules:
 - apiGroups:
   - gateway.networking.k8s.io
   resources:
-  - gatewayclasses
+  - backendtlspolicies
   - gateways
+  - grpcroutes
   - httproutes
   - referencegrants
   - tcproutes
+  - tlsroutes
   verbs:
   - get
   - list
@@ -109,17 +111,39 @@ rules:
 - apiGroups:
   - gateway.networking.k8s.io
   resources:
+  - backendtlspolicies/status
   - gatewayclasses/status
   - gateways/status
+  - grpcroutes/status
   - httproutes/status
   - tcproutes/status
+  - tlsroutes/status
   verbs:
   - patch
   - update
 - apiGroups:
+  - gateway.networking.k8s.io
+  resources:
+  - gatewayclasses
+  verbs:
+  - create
+  - get
+  - list
+  - watch
+- apiGroups:
   - networking.istio.io
   resources:
   - destinationrules
+  - serviceentries
+  - workloadentries
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - security.istio.io
+  resources:
+  - authorizationpolicies
   verbs:
   - get
   - list

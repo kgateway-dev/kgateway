@@ -1,0 +1,31 @@
+apiVersion: gateway.networking.k8s.io/v1alpha2
+kind: TLSRoute
+metadata:
+  name: tls-route-1
+spec:
+  parentRefs:
+  - name: multi-tls-gateway
+    sectionName: listener-6443
+  hostnames:
+  - "example.com"
+  rules:
+  - backendRefs:
+    - name: multi-svc-1
+      port: 3001
+      weight: 60
+---
+apiVersion: gateway.networking.k8s.io/v1alpha2
+kind: TLSRoute
+metadata:
+  name: tls-route-2
+spec:
+  parentRefs:
+  - name: multi-tls-gateway
+    sectionName: listener-8443
+  hostnames:
+  - "example.com"
+  rules:
+  - backendRefs:
+    - name: multi-svc-2
+      port: 3002
+      weight: 40

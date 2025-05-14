@@ -1,0 +1,153 @@
+package translator
+
+import (
+	"context"
+
+	"go.uber.org/zap"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/tools/cache"
+
+	"istio.io/istio/pkg/kube/krt"
+
+	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
+	"github.com/solo-io/go-utils/contextutils"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/endpoints"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
+	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/query"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
+	gwtranslator "github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/gateway"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/irtranslator"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
+)
+
+// Combines all the translators needed for xDS translation.
+type CombinedTranslator struct {
+	extensions extensionsplug.Plugin
+	commonCols *common.CommonCollections
+
+	waitForSync []cache.InformerSynced
+
+	gwtranslator      extensionsplug.KGwTranslator
+	irtranslator      *irtranslator.Translator
+	backendTranslator *irtranslator.BackendTranslator
+	endpointPlugins   []extensionsplug.EndpointPlugin
+
+	logger *zap.Logger
+}
+
+func NewCombinedTranslator(
+	ctx context.Context,
+	extensions extensionsplug.Plugin,
+	commonCols *common.CommonCollections,
+) *CombinedTranslator {
+	var endpointPlugins []extensionsplug.EndpointPlugin
+	for _, ext := range extensions.ContributesPolicies {
+		if ext.PerClientProcessEndpoints != nil {
+			endpointPlugins = append(endpointPlugins, ext.PerClientProcessEndpoints)
+		}
+	}
+	return &CombinedTranslator{
+		commonCols:      commonCols,
+		extensions:      extensions,
+		endpointPlugins: endpointPlugins,
+		logger:          contextutils.LoggerFrom(ctx).Desugar().With(zap.String("component", "translator_syncer")),
+		waitForSync:     []cache.InformerSynced{extensions.HasSynced},
+	}
+}
+
+func (s *CombinedTranslator) Init(ctx context.Context) {
+	queries := query.NewData(s.commonCols)
+
+	s.gwtranslator = gwtranslator.NewTranslator(queries)
+	s.irtranslator = &irtranslator.Translator{
+		ContributedPolicies: s.extensions.ContributesPolicies,
+	}
+	s.backendTranslator = &irtranslator.BackendTranslator{
+		ContributedBackends: make(map[schema.GroupKind]ir.BackendInit),
+		ContributedPolicies: s.extensions.ContributesPolicies,
+		CommonCols:          s.commonCols,
+	}
+	for k, up := range s.extensions.ContributesBackends {
+		s.backendTranslator.ContributedBackends[k] = up.BackendInit
+	}
+
+	s.waitForSync = append(s.waitForSync,
+		s.commonCols.HasSynced,
+		s.extensions.HasSynced,
+	)
+}
+
+func (s *CombinedTranslator) HasSynced() bool {
+	for _, sync := range s.waitForSync {
+		if !sync() {
+			return false
+		}
+	}
+	return true
+}
+
+// buildProxy performs translation of a kube Gateway -> gloov1.Proxy (really a wrapper type)
+func (s *CombinedTranslator) buildProxy(kctx krt.HandlerContext, ctx context.Context, gw ir.Gateway, r reports.Reporter) *ir.GatewayIR {
+	stopwatch := utils.NewTranslatorStopWatch("CombinedTranslator")
+	stopwatch.Start()
+	var gatewayTranslator extensionsplug.KGwTranslator = s.gwtranslator
+	if s.extensions.ContributesGwTranslator != nil {
+		maybeGatewayTranslator := s.extensions.ContributesGwTranslator(gw.Obj)
+		if maybeGatewayTranslator != nil {
+			gatewayTranslator = maybeGatewayTranslator
+		}
+	}
+	proxy := gatewayTranslator.Translate(kctx, ctx, &gw, r)
+	if proxy == nil {
+		return nil
+	}
+
+	duration := stopwatch.Stop(ctx)
+	contextutils.LoggerFrom(ctx).Debugf("translated proxy %s/%s in %s", gw.Namespace, gw.Name, duration.String())
+
+	// TODO: these are likely unnecessary and should be removed!
+	//	applyPostTranslationPlugins(ctx, pluginRegistry, &gwplugins.PostTranslationContext{
+	//		TranslatedGateways: translatedGateways,
+	//	})
+
+	return proxy
+}
+
+func (s *CombinedTranslator) GetUpstreamTranslator() *irtranslator.BackendTranslator {
+	return s.backendTranslator
+}
+
+// ctx needed for logging; remove once we refactor logging.
+func (s *CombinedTranslator) TranslateGateway(kctx krt.HandlerContext, ctx context.Context, gw ir.Gateway) (*irtranslator.TranslationResult, reports.ReportMap) {
+	logger := contextutils.LoggerFrom(ctx)
+
+	rm := reports.NewReportMap()
+	r := reports.NewReporter(&rm)
+	logger.Debugf("building proxy for kube gw %s version %s", client.ObjectKeyFromObject(gw.Obj), gw.Obj.GetResourceVersion())
+	gwir := s.buildProxy(kctx, ctx, gw, r)
+
+	if gwir == nil {
+		return nil, reports.ReportMap{}
+	}
+
+	// we are recomputing xds snapshots as proxies have changed, signal that we need to sync xds with these new snapshots
+	xdsSnap := s.irtranslator.Translate(*gwir, r)
+
+	return &xdsSnap, rm
+}
+
+func (s *CombinedTranslator) TranslateEndpoints(kctx krt.HandlerContext, ucc ir.UniqlyConnectedClient, ep ir.EndpointsForBackend) (*envoy_config_endpoint_v3.ClusterLoadAssignment, uint64) {
+	epInputs := endpoints.EndpointsInputs{
+		EndpointsForBackend: ep,
+	}
+	var hash uint64
+	for _, processEndpoints := range s.endpointPlugins {
+		additionalHash := processEndpoints(kctx, context.TODO(), ucc, &epInputs)
+		hash ^= additionalHash
+	}
+	return endpoints.PrioritizeEndpoints(s.logger, ucc, epInputs), hash
+}

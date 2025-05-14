@@ -1,5 +1,3 @@
-//go:build ignore
-
 package assertions
 
 import (
@@ -13,13 +11,13 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils"
-	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils/kubectl"
-	"github.com/kgateway-dev/kgateway/pkg/utils/requestutils/curl"
-	"github.com/kgateway-dev/kgateway/test/gomega/matchers"
-	"github.com/kgateway-dev/kgateway/test/gomega/transforms"
-	"github.com/kgateway-dev/kgateway/test/kube2e/helper"
-	e2edefaults "github.com/kgateway-dev/kgateway/test/kubernetes/e2e/defaults"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils/kubectl"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
+	"github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
+	"github.com/kgateway-dev/kgateway/v2/test/gomega/transforms"
+	"github.com/kgateway-dev/kgateway/v2/test/helpers"
+	e2edefaults "github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/defaults"
 )
 
 const (
@@ -40,7 +38,7 @@ func (p *Provider) AssertEventualCurlReturnResponse(
 		},
 	})
 
-	currentTimeout, pollingInterval := helper.GetTimeouts(timeout...)
+	currentTimeout, pollingInterval := helpers.GetTimeouts(timeout...)
 
 	var curlHttpResponse *http.Response
 	p.Gomega.Eventually(func(g Gomega) {
@@ -124,7 +122,7 @@ func (p *Provider) AssertEventuallyConsistentCurlResponse(
 	pollTimeout := 3 * time.Second
 	pollInterval := 1 * time.Second
 	if len(timeout) > 0 {
-		pollTimeout, pollInterval = helper.GetTimeouts(timeout...)
+		pollTimeout, pollInterval = helpers.GetTimeouts(timeout...)
 	}
 
 	p.Gomega.Consistently(func(g Gomega) {
@@ -162,7 +160,7 @@ func (p *Provider) AssertEventualCurlError(
 	pollTimeout := 5 * time.Second
 	pollInterval := 500 * time.Millisecond
 	if len(timeout) > 0 {
-		pollTimeout, pollInterval = helper.GetTimeouts(timeout...)
+		pollTimeout, pollInterval = helpers.GetTimeouts(timeout...)
 	}
 
 	testMessage := fmt.Sprintf("Expected curl error %d", expectedErrorCode)
@@ -191,7 +189,6 @@ func (p *Provider) AssertEventualCurlError(
 		} else {
 			fmt.Printf("wanted any curl error, got error: %s\n", err.Error())
 		}
-
 	}).
 		WithTimeout(pollTimeout).
 		WithPolling(pollInterval).
@@ -201,7 +198,7 @@ func (p *Provider) AssertEventualCurlError(
 
 func (p *Provider) generateCurlOpts(host string) []curl.Option {
 	var curlOpts = []curl.Option{
-		curl.WithHost(kubeutils.ServiceFQDN(metav1.ObjectMeta{Name: GatewayProxyName, Namespace: p.glooGatewayContext.InstallNamespace})),
+		curl.WithHost(kubeutils.ServiceFQDN(metav1.ObjectMeta{Name: GatewayProxyName, Namespace: p.installContext.InstallNamespace})),
 		curl.WithPort(80),
 		curl.Silent(),
 	}

@@ -5,7 +5,7 @@ package test
 import (
 	. "github.com/onsi/ginkgo/v2"
 
-	glootestutils "github.com/kgateway-dev/kgateway/test/testutils"
+	glootestutils "github.com/kgateway-dev/kgateway/v2/test/testutils"
 
 	. "github.com/onsi/gomega"
 	. "github.com/solo-io/k8s-utils/manifesttestutils"

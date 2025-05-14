@@ -1,8 +1,0 @@
-This guide assumes that you have deployed Gloo to the `gloo-system` namespace and that the `glooctl` command line utility
-is installed on your machine. `glooctl` provides several convenient functions to view, manipulate, and debug Gloo resources;
-in particular, it is worth mentioning the following command, which we will use each time we need to retrieve the URL of
-the Gloo Gateway that is running inside your cluster:
-
-```shell
-glooctl proxy url
-```

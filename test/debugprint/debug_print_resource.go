@@ -13,7 +13,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"sigs.k8s.io/yaml"
 
-	"github.com/kgateway-dev/kgateway/pkg/utils/protoutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/protoutils"
 )
 
 func PrintYaml(ress ...proto.Message) {

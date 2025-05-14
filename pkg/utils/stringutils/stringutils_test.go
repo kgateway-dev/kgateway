@@ -4,7 +4,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	. "github.com/kgateway-dev/kgateway/pkg/utils/stringutils"
+	. "github.com/kgateway-dev/kgateway/v2/pkg/utils/stringutils"
 )
 
 var _ = Describe("StringUtils", func() {
@@ -21,4 +21,11 @@ var _ = Describe("StringUtils", func() {
 		Entry("Not Found", []string{"one", "two", "three"}, "four", []string{"one", "two", "three"}),
 	)
 
+	DescribeTable("TruncateMaxLength", func(val string, maxLen int, want string) {
+		Expect(TruncateMaxLength(val, maxLen)).To(Equal(want))
+	},
+		Entry("Smaller", "abc", 10, "abc"),
+		Entry("Same", "abc", 3, "abc"),
+		Entry("Longer", "abcdefgh", 3, "abc"),
+	)
 })

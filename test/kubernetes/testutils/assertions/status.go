@@ -1,5 +1,3 @@
-//go:build ignore
-
 package assertions
 
 import (
@@ -10,104 +8,104 @@ import (
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
 	"github.com/onsi/gomega/gstruct"
-	errors "github.com/rotisserie/eris"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+
+	// errors "github.com/rotisserie/eris"
+	// "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
-	"github.com/kgateway-dev/kgateway/test/gomega/matchers"
-	"github.com/kgateway-dev/kgateway/test/helpers"
-	"github.com/kgateway-dev/kgateway/test/kube2e/helper"
+	"github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
+	"github.com/kgateway-dev/kgateway/v2/test/helpers"
 )
 
-// Checks GetNamespacedStatuses status for gloo installation namespace
-func (p *Provider) EventuallyResourceStatusMatchesWarningReasons(getter helpers.InputResourceGetter, desiredStatusReasons []string, desiredReporter string, timeout ...time.Duration) {
-	ginkgo.GinkgoHelper()
+// // Checks GetNamespacedStatuses status for gloo installation namespace
+// func (p *Provider) EventuallyResourceStatusMatchesWarningReasons(getter helpers.InputResourceGetter, desiredStatusReasons []string, desiredReporter string, timeout ...time.Duration) {
+// 	ginkgo.GinkgoHelper()
 
-	currentTimeout, pollingInterval := helper.GetTimeouts(timeout...)
-	gomega.Eventually(func(g gomega.Gomega) {
-		statusWarningsMatcher := matchers.MatchStatusInNamespace(
-			p.glooGatewayContext.InstallNamespace,
-			gomega.And(matchers.HaveWarningStateWithReasonSubstrings(desiredStatusReasons...), matchers.HaveReportedBy(desiredReporter)),
-		)
+// 	currentTimeout, pollingInterval := helpers.GetTimeouts(timeout...)
+// 	gomega.Eventually(func(g gomega.Gomega) {
+// 		statusWarningsMatcher := matchers.MatchStatusInNamespace(
+// 			p.installContext.InstallNamespace,
+// 			gomega.And(matchers.HaveWarningStateWithReasonSubstrings(desiredStatusReasons...), matchers.HaveReportedBy(desiredReporter)),
+// 		)
 
-		status, err := getResourceNamespacedStatus(getter)
-		g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get resource namespaced status")
-		g.Expect(status).ToNot(gomega.BeNil())
-		g.Expect(status).To(gomega.HaveValue(statusWarningsMatcher))
-	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
-}
+// 		status, err := getResourceNamespacedStatus(getter)
+// 		g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get resource namespaced status")
+// 		g.Expect(status).ToNot(gomega.BeNil())
+// 		g.Expect(status).To(gomega.HaveValue(statusWarningsMatcher))
+// 	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
+// }
 
-func (p *Provider) EventuallyResourceStatusMatchesRejectedReasons(getter helpers.InputResourceGetter, desiredStatusReasons []string, desiredReporter string, timeout ...time.Duration) {
-	ginkgo.GinkgoHelper()
+// func (p *Provider) EventuallyResourceStatusMatchesRejectedReasons(getter helpers.InputResourceGetter, desiredStatusReasons []string, desiredReporter string, timeout ...time.Duration) {
+// 	ginkgo.GinkgoHelper()
 
-	currentTimeout, pollingInterval := helper.GetTimeouts(timeout...)
-	gomega.Eventually(func(g gomega.Gomega) {
-		statusRejectionsMatcher := matchers.MatchStatusInNamespace(
-			p.glooGatewayContext.InstallNamespace,
-			gomega.And(matchers.HaveRejectedStateWithReasonSubstrings(desiredStatusReasons...), matchers.HaveReportedBy(desiredReporter)),
-		)
+// 	currentTimeout, pollingInterval := helpers.GetTimeouts(timeout...)
+// 	gomega.Eventually(func(g gomega.Gomega) {
+// 		statusRejectionsMatcher := matchers.MatchStatusInNamespace(
+// 			p.installContext.InstallNamespace,
+// 			gomega.And(matchers.HaveRejectedStateWithReasonSubstrings(desiredStatusReasons...), matchers.HaveReportedBy(desiredReporter)),
+// 		)
 
-		status, err := getResourceNamespacedStatus(getter)
-		g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get resource namespaced status")
-		g.Expect(status).ToNot(gomega.BeNil())
-		g.Expect(status).To(gomega.HaveValue(statusRejectionsMatcher))
-	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
-}
+// 		status, err := getResourceNamespacedStatus(getter)
+// 		g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get resource namespaced status")
+// 		g.Expect(status).ToNot(gomega.BeNil())
+// 		g.Expect(status).To(gomega.HaveValue(statusRejectionsMatcher))
+// 	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
+// }
 
-func (p *Provider) EventuallyResourceStatusMatchesState(
-	getter helpers.InputResourceGetter,
-	desiredState core.Status_State,
-	desiredReporter string,
-	timeout ...time.Duration,
-) {
-	currentTimeout, pollingInterval := helper.GetTimeouts(timeout...)
-	p.Gomega.Eventually(func(g gomega.Gomega) {
-		statusStateMatcher := matchers.MatchStatusInNamespace(
-			p.glooGatewayContext.InstallNamespace,
-			gomega.And(matchers.HaveState(desiredState), matchers.HaveReportedBy(desiredReporter)),
-		)
-		status, err := getResourceNamespacedStatus(getter)
-		g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get resource namespaced status")
-		g.Expect(status).ToNot(gomega.BeNil())
-		g.Expect(status).To(gomega.HaveValue(statusStateMatcher))
-	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
-}
+// func (p *Provider) EventuallyResourceStatusMatchesState(
+// 	getter helpers.InputResourceGetter,
+// 	desiredState core.Status_State,
+// 	desiredReporter string,
+// 	timeout ...time.Duration,
+// ) {
+// 	currentTimeout, pollingInterval := helpers.GetTimeouts(timeout...)
+// 	p.Gomega.Eventually(func(g gomega.Gomega) {
+// 		statusStateMatcher := matchers.MatchStatusInNamespace(
+// 			p.installContext.InstallNamespace,
+// 			gomega.And(matchers.HaveState(desiredState), matchers.HaveReportedBy(desiredReporter)),
+// 		)
+// 		status, err := getResourceNamespacedStatus(getter)
+// 		g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get resource namespaced status")
+// 		g.Expect(status).ToNot(gomega.BeNil())
+// 		g.Expect(status).To(gomega.HaveValue(statusStateMatcher))
+// 	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
+// }
 
-func (p *Provider) EventuallyResourceStatusMatchesSubResource(
-	getter helpers.InputResourceGetter,
-	desiredSubresourceName string,
-	desiredSubresource matchers.SoloKitSubresourceStatus,
-	timeout ...time.Duration,
-) {
-	currentTimeout, pollingInterval := helper.GetTimeouts(timeout...)
-	p.Gomega.Eventually(func(g gomega.Gomega) {
-		subResourceStatusMatcher := matchers.HaveSubResourceStatusState(desiredSubresourceName, desiredSubresource)
-		status, err := getResourceNamespacedStatus(getter)
-		g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get resource namespaced status")
-		g.Expect(status).ToNot(gomega.BeNil())
-		g.Expect(status).To(gomega.HaveValue(subResourceStatusMatcher))
-	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
-}
+// func (p *Provider) EventuallyResourceStatusMatchesSubResource(
+// 	getter helpers.InputResourceGetter,
+// 	desiredSubresourceName string,
+// 	desiredSubresource matchers.SoloKitSubresourceStatus,
+// 	timeout ...time.Duration,
+// ) {
+// 	currentTimeout, pollingInterval := helpers.GetTimeouts(timeout...)
+// 	p.Gomega.Eventually(func(g gomega.Gomega) {
+// 		subResourceStatusMatcher := matchers.HaveSubResourceStatusState(desiredSubresourceName, desiredSubresource)
+// 		status, err := getResourceNamespacedStatus(getter)
+// 		g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get resource namespaced status")
+// 		g.Expect(status).ToNot(gomega.BeNil())
+// 		g.Expect(status).To(gomega.HaveValue(subResourceStatusMatcher))
+// 	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
+// }
 
-func getResourceNamespacedStatus(getter helpers.InputResourceGetter) (*core.NamespacedStatuses, error) {
-	resource, err := getter()
-	if err != nil {
-		return &core.NamespacedStatuses{}, errors.Wrapf(err, "failed to get resource")
-	}
+// func getResourceNamespacedStatus(getter helpers.InputResourceGetter) (*core.NamespacedStatuses, error) {
+// 	resource, err := getter()
+// 	if err != nil {
+// 		return &core.NamespacedStatuses{}, errors.Wrapf(err, "failed to get resource")
+// 	}
 
-	namespacedStatuses := resource.GetNamespacedStatuses()
+// 	namespacedStatuses := resource.GetNamespacedStatuses()
 
-	// In newer versions of Gloo Edge we provide a default "empty" status, which allows us to patch it to perform updates
-	// As a result, a nil check isn't enough to determine that that status hasn't been reported
-	if namespacedStatuses == nil || namespacedStatuses.GetStatuses() == nil {
-		return &core.NamespacedStatuses{}, errors.Wrapf(err, "waiting for %v status to be non-empty", resource.GetMetadata().GetName())
-	}
+// 	// In newer versions of kgateway we provide a default "empty" status, which allows us to patch it to perform updates
+// 	// As a result, a nil check isn't enough to determine that that status hasn't been reported
+// 	if namespacedStatuses == nil || namespacedStatuses.GetStatuses() == nil {
+// 		return &core.NamespacedStatuses{}, errors.Wrapf(err, "waiting for %v status to be non-empty", resource.GetMetadata().GetName())
+// 	}
 
-	return namespacedStatuses, nil
-}
+// 	return namespacedStatuses, nil
+// }
 
 // EventuallyHTTPRouteStatusContainsMessage asserts that eventually at least one of the HTTPRoute's route parent statuses contains
 // the given message substring.
@@ -117,7 +115,7 @@ func (p *Provider) EventuallyHTTPRouteStatusContainsMessage(
 	routeNamespace string,
 	message string,
 	timeout ...time.Duration) {
-	currentTimeout, pollingInterval := helper.GetTimeouts(timeout...)
+	currentTimeout, pollingInterval := helpers.GetTimeouts(timeout...)
 	p.Gomega.Eventually(func(g gomega.Gomega) {
 		matcher := matchers.HaveKubeGatewayRouteStatus(&matchers.KubeGatewayRouteStatus{
 			Custom: gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
@@ -143,8 +141,9 @@ func (p *Provider) EventuallyHTTPRouteStatusContainsReason(
 	routeName string,
 	routeNamespace string,
 	reason string,
-	timeout ...time.Duration) {
-	currentTimeout, pollingInterval := helper.GetTimeouts(timeout...)
+	timeout ...time.Duration,
+) {
+	currentTimeout, pollingInterval := helpers.GetTimeouts(timeout...)
 	p.Gomega.Eventually(func(g gomega.Gomega) {
 		matcher := matchers.HaveKubeGatewayRouteStatus(&matchers.KubeGatewayRouteStatus{
 			Custom: gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
@@ -178,7 +177,7 @@ func (p *Provider) EventuallyGatewayCondition(
 	timeout ...time.Duration,
 ) {
 	ginkgo.GinkgoHelper()
-	currentTimeout, pollingInterval := helper.GetTimeouts(timeout...)
+	currentTimeout, pollingInterval := helpers.GetTimeouts(timeout...)
 	p.Gomega.Eventually(func(g gomega.Gomega) {
 		gateway := &gwv1.Gateway{}
 		err := p.clusterContext.Client.Get(ctx, types.NamespacedName{Name: gatewayName, Namespace: gatewayNamespace}, gateway)
@@ -201,7 +200,7 @@ func (p *Provider) EventuallyGatewayListenerAttachedRoutes(
 	timeout ...time.Duration,
 ) {
 	ginkgo.GinkgoHelper()
-	currentTimeout, pollingInterval := helper.GetTimeouts(timeout...)
+	currentTimeout, pollingInterval := helpers.GetTimeouts(timeout...)
 	p.Gomega.Eventually(func(g gomega.Gomega) {
 		gateway := &gwv1.Gateway{}
 		err := p.clusterContext.Client.Get(ctx, types.NamespacedName{Name: gatewayName, Namespace: gatewayNamespace}, gateway)
@@ -219,6 +218,35 @@ func (p *Provider) EventuallyGatewayListenerAttachedRoutes(
 	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 }
 
+// EventuallyHTTPRouteCondition checks that provided HTTPRoute condition is set to expect.
+func (p *Provider) EventuallyHTTPRouteCondition(
+	ctx context.Context,
+	routeName string,
+	routeNamespace string,
+	cond gwv1.RouteConditionType,
+	expect metav1.ConditionStatus,
+	timeout ...time.Duration,
+) {
+	ginkgo.GinkgoHelper()
+	currentTimeout, pollingInterval := helpers.GetTimeouts(timeout...)
+	p.Gomega.Eventually(func(g gomega.Gomega) {
+		route := &gwv1.HTTPRoute{}
+		err := p.clusterContext.Client.Get(ctx, types.NamespacedName{Name: routeName, Namespace: routeNamespace}, route)
+		g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get HTTPRoute %s/%s", routeNamespace, routeName)
+
+		var conditionFound bool
+		for _, parentStatus := range route.Status.Parents {
+			condition := getConditionByType(parentStatus.Conditions, string(cond))
+			if condition != nil && condition.Status == expect {
+				conditionFound = true
+				break
+			}
+		}
+		g.Expect(conditionFound).To(gomega.BeTrue(), fmt.Sprintf("%v condition is not %v for any parent of TLSRoute %s/%s",
+			cond, expect, routeNamespace, routeName))
+	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
+}
+
 // EventuallyTCPRouteCondition checks that provided TCPRoute condition is set to expect.
 func (p *Provider) EventuallyTCPRouteCondition(
 	ctx context.Context,
@@ -229,7 +257,7 @@ func (p *Provider) EventuallyTCPRouteCondition(
 	timeout ...time.Duration,
 ) {
 	ginkgo.GinkgoHelper()
-	currentTimeout, pollingInterval := helper.GetTimeouts(timeout...)
+	currentTimeout, pollingInterval := helpers.GetTimeouts(timeout...)
 	p.Gomega.Eventually(func(g gomega.Gomega) {
 		route := &gwv1a2.TCPRoute{}
 		err := p.clusterContext.Client.Get(ctx, types.NamespacedName{Name: routeName, Namespace: routeNamespace}, route)
@@ -244,6 +272,64 @@ func (p *Provider) EventuallyTCPRouteCondition(
 			}
 		}
 		g.Expect(conditionFound).To(gomega.BeTrue(), fmt.Sprintf("%v condition is not %v for any parent of TCPRoute %s/%s",
+			cond, expect, routeNamespace, routeName))
+	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
+}
+
+// EventuallyTLSRouteCondition checks that provided TLSRoute condition is set to expect.
+func (p *Provider) EventuallyTLSRouteCondition(
+	ctx context.Context,
+	routeName string,
+	routeNamespace string,
+	cond gwv1.RouteConditionType,
+	expect metav1.ConditionStatus,
+	timeout ...time.Duration,
+) {
+	ginkgo.GinkgoHelper()
+	currentTimeout, pollingInterval := helpers.GetTimeouts(timeout...)
+	p.Gomega.Eventually(func(g gomega.Gomega) {
+		route := &gwv1a2.TLSRoute{}
+		err := p.clusterContext.Client.Get(ctx, types.NamespacedName{Name: routeName, Namespace: routeNamespace}, route)
+		g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get TLSRoute %s/%s", routeNamespace, routeName)
+
+		var conditionFound bool
+		for _, parentStatus := range route.Status.Parents {
+			condition := getConditionByType(parentStatus.Conditions, string(cond))
+			if condition != nil && condition.Status == expect {
+				conditionFound = true
+				break
+			}
+		}
+		g.Expect(conditionFound).To(gomega.BeTrue(), fmt.Sprintf("%v condition is not %v for any parent of TLSRoute %s/%s",
+			cond, expect, routeNamespace, routeName))
+	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
+}
+
+// EventuallyGRPCRouteCondition checks that provided GRPCRoute condition is set to expect.
+func (p *Provider) EventuallyGRPCRouteCondition(
+	ctx context.Context,
+	routeName string,
+	routeNamespace string,
+	cond gwv1.RouteConditionType,
+	expect metav1.ConditionStatus,
+	timeout ...time.Duration,
+) {
+	ginkgo.GinkgoHelper()
+	currentTimeout, pollingInterval := helpers.GetTimeouts(timeout...)
+	p.Gomega.Eventually(func(g gomega.Gomega) {
+		route := &gwv1.GRPCRoute{}
+		err := p.clusterContext.Client.Get(ctx, types.NamespacedName{Name: routeName, Namespace: routeNamespace}, route)
+		g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get GRPCRoute %s/%s", routeNamespace, routeName)
+
+		var conditionFound bool
+		for _, parentStatus := range route.Status.Parents {
+			condition := getConditionByType(parentStatus.Conditions, string(cond))
+			if condition != nil && condition.Status == expect {
+				conditionFound = true
+				break
+			}
+		}
+		g.Expect(conditionFound).To(gomega.BeTrue(), fmt.Sprintf("%v condition is not %v for any parent of GRPCRoute %s/%s",
 			cond, expect, routeNamespace, routeName))
 	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 }

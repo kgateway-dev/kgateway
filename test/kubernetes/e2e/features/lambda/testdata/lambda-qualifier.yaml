@@ -1,0 +1,89 @@
+---
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: HTTPRoute
+metadata:
+  name: lambda-route
+  namespace: lambda-test
+spec:
+  parentRefs:
+    - name: lambda-gateway
+  hostnames:
+    - "www.example.com"
+  rules:
+    - matches:
+      - path:
+          type: Exact
+          value: /lambda/prod
+      backendRefs:
+        - name: lambda-prod
+          kind: Backend
+          group: gateway.kgateway.dev
+    - matches:
+      - path:
+          type: Exact
+          value: /lambda/dev
+      backendRefs:
+        - name: lambda-dev
+          kind: Backend
+          group: gateway.kgateway.dev
+    - matches:
+      - path:
+          type: Exact
+          value: /lambda/latest
+      backendRefs:
+        - name: lambda-latest
+          kind: Backend
+          group: gateway.kgateway.dev
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: lambda-prod
+  namespace: lambda-test
+spec:
+  type: AWS
+  aws:
+    accountId: "000000000000"
+    auth:
+      type: Secret
+      secretRef:
+        name: aws-creds
+    lambda:
+      functionName: hello-function
+      endpointURL: "http://172.18.0.2:31566"
+      qualifier: prod
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: lambda-dev
+  namespace: lambda-test
+spec:
+  type: AWS
+  aws:
+    accountId: "000000000000"
+    auth:
+      type: Secret
+      secretRef:
+        name: aws-creds
+    lambda:
+      functionName: hello-function
+      endpointURL: "http://172.18.0.2:31566"
+      qualifier: dev
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: lambda-latest
+  namespace: lambda-test
+spec:
+  type: AWS
+  aws:
+    accountId: "000000000000"
+    auth:
+      type: Secret
+      secretRef:
+        name: aws-creds
+    lambda:
+      functionName: hello-function
+      endpointURL: "http://172.18.0.2:31566"

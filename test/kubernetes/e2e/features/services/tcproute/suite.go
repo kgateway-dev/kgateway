@@ -1,5 +1,3 @@
-//go:build ignore
-
 package tcproute
 
 import (
@@ -13,12 +11,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils"
-	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils/kubectl"
-	"github.com/kgateway-dev/kgateway/pkg/utils/requestutils/curl"
-	"github.com/kgateway-dev/kgateway/test/gomega/matchers"
-	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e"
-	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e/defaults"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils/kubectl"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
+	"github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/defaults"
 )
 
 // testingSuite is the entire suite of tests for testing K8s Service-specific features/fixes
@@ -151,7 +149,7 @@ func (s *testingSuite) TestConfigureTCPRouteBackingDestinations() {
 			tcpRouteManifest:  crossNsNoRefGrantTCPRouteManifest,
 			proxyService:      crossNsNoRefGrantProxyService,
 			proxyDeployment:   crossNsNoRefGrantProxyDeployment,
-			expectedErrorCode: 7,
+			expectedErrorCode: 56,
 			ports:             []int{8080},
 			listenerNames: []v1.SectionName{
 				v1.SectionName(crossNsNoRefGrantListenerName),
@@ -162,7 +160,6 @@ func (s *testingSuite) TestConfigureTCPRouteBackingDestinations() {
 	}
 
 	for _, tc := range testCases {
-		tc := tc // capture range variable
 		s.Run(tc.name, func() {
 			// Cleanup function
 			s.T().Cleanup(func() {

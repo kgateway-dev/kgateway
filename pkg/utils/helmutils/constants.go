@@ -1,16 +1,9 @@
 package helmutils
 
-import "fmt"
-
 const (
-	ChartName = "gloo"
+	ChartName    = "kgateway"
+	CRDChartName = "kgateway-crds"
 
-	ChartRepositoryUrl     = "https://storage.googleapis.com/solo-public-helm"
-	PrChartRepositoryUrl   = "https://storage.googleapis.com/solo-public-tagged-helm"
-	RemoteChartUriTemplate = "https://storage.googleapis.com/solo-public-helm/charts/gloo-%s.tgz"
-	RemoteChartName        = "gloo/gloo"
+	DefaultChartUri    = "oci://ghcr.io/kgateway-dev/charts/kgateway"
+	DefaultCRDChartUri = "oci://ghcr.io/kgateway-dev/charts/kgateway-crds"
 )
-
-func GetRemoteChartUri(version string) string {
-	return fmt.Sprintf(RemoteChartUriTemplate, version)
-}

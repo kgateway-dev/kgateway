@@ -1,5 +1,3 @@
-//go:build ignore
-
 package cluster
 
 import (
@@ -14,8 +12,8 @@ import (
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/contextutils"
 
-	glooruntime "github.com/kgateway-dev/kgateway/test/kubernetes/testutils/runtime"
-	"github.com/kgateway-dev/kgateway/test/testutils"
+	glooruntime "github.com/kgateway-dev/kgateway/v2/test/kubernetes/testutils/runtime"
+	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
 const (
@@ -41,7 +39,7 @@ func InstallMinimalIstio(
 	operatorFileContent := generateIstioOperatorFileContent("", minimalProfile)
 	operatorFile := filepath.Join(os.TempDir(), "istio-operator.yaml")
 
-	err := os.WriteFile(operatorFile, []byte(operatorFileContent), 0644)
+	err := os.WriteFile(operatorFile, []byte(operatorFileContent), 0o644)
 	if err != nil {
 		return fmt.Errorf("failed to write operator file: %w", err)
 	}
@@ -52,16 +50,17 @@ func InstallMinimalIstio(
 func InstallRevisionedIstio(
 	ctx context.Context,
 	istioctlBinary, kubeContext, revision, profile string,
+	extraArgs ...string,
 ) error {
 	operatorFileContent := generateIstioOperatorFileContent(revision, profile)
 	operatorFile := filepath.Join(os.TempDir(), "istio-operator.yaml")
 
-	err := os.WriteFile(operatorFile, []byte(operatorFileContent), 0644)
+	err := os.WriteFile(operatorFile, []byte(operatorFileContent), 0o644)
 	if err != nil {
 		return fmt.Errorf("failed to write operator file: %w", err)
 	}
 
-	return installIstioOperator(ctx, istioctlBinary, kubeContext, operatorFile)
+	return installIstioOperator(ctx, istioctlBinary, kubeContext, operatorFile, extraArgs...)
 }
 
 // TODO(npolshak): Add Istio dependency to define operator in code instead of writing file
@@ -87,16 +86,21 @@ spec:
 
 func installIstioOperator(
 	ctx context.Context,
-	istioctlBinary, kubeContext, operatorFile string) error {
+	istioctlBinary, kubeContext, operatorFile string,
+	extraArgs ...string,
+) error {
 	if testutils.ShouldSkipIstioInstall() {
 		return nil
 	}
 
 	//  istioctl install -y --context <kube-context> -f <operator-file>
-	cmd := exec.Command(istioctlBinary, "install", "-y", "--context", kubeContext, "-f", operatorFile)
+	args := append([]string{
+		"install", "-y", "--context", kubeContext, "-f", operatorFile,
+	}, extraArgs...)
+	cmd := exec.Command(istioctlBinary, args...)
 
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("istioctl install failed: %w", err)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("istioctl install failed: %w\noutput:\n%s", err, string(out))
 	}
 
 	return ctx.Err()
@@ -132,7 +136,7 @@ func downloadIstio(ctx context.Context, version string) (string, error) {
 	if fileInfo != nil {
 		return binaryLocation, nil
 	}
-	if err := os.MkdirAll(binaryDir, 0755); err != nil {
+	if err := os.MkdirAll(binaryDir, 0o755); err != nil {
 		return "", eris.Wrap(err, "create directory")
 	}
 
@@ -157,7 +161,7 @@ func downloadIstio(ctx context.Context, version string) (string, error) {
 			return "", eris.Wrapf(err, "download and extract istioctl, cmd: %s", cmd.Args)
 		}
 		// Change permissions
-		if err := os.Chmod(binaryLocation, 0755); err != nil {
+		if err := os.Chmod(binaryLocation, 0o755); err != nil {
 			return "", eris.Wrap(err, "change permissions")
 		}
 		return binaryLocation, nil

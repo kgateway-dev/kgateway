@@ -18,16 +18,16 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"go.uber.org/zap/zapcore"
 
-	"github.com/kgateway-dev/kgateway/pkg/utils/fsutils"
-	"github.com/kgateway-dev/kgateway/projects/gloo/cli/pkg/cmd/check"
-	"github.com/kgateway-dev/kgateway/projects/gloo/cli/pkg/cmd/options"
-	clienthelpers "github.com/kgateway-dev/kgateway/projects/gloo/cli/pkg/helpers"
-	"github.com/kgateway-dev/kgateway/projects/gloo/cli/pkg/printers"
-	v1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
-	"github.com/kgateway-dev/kgateway/test/gomega/assertions"
-	"github.com/kgateway-dev/kgateway/test/kube2e/helper"
-	newhelper "github.com/kgateway-dev/kgateway/test/kubernetes/testutils/helper"
-	"github.com/kgateway-dev/kgateway/test/testutils"
+	"github.com/kgateway-dev/kgateway/v2/internal/gloo/cli/pkg/cmd/check"
+	"github.com/kgateway-dev/kgateway/v2/internal/gloo/cli/pkg/cmd/options"
+	clienthelpers "github.com/kgateway-dev/kgateway/v2/internal/gloo/cli/pkg/helpers"
+	"github.com/kgateway-dev/kgateway/v2/internal/gloo/cli/pkg/printers"
+	v1 "github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/v1"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
+	"github.com/kgateway-dev/kgateway/v2/test/gomega/assertions"
+	"github.com/kgateway-dev/kgateway/v2/test/kube2e/helper"
+	newhelper "github.com/kgateway-dev/kgateway/v2/test/kubernetes/testutils/helper"
+	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
 const (
@@ -193,7 +193,7 @@ func GetTestReleasedVersion(ctx context.Context, repoName string) string {
 		return current.String()
 	}
 
-	// Assume that releasedVersion is a valid version, for a previously released version of Gloo Edge
+	// Assume that releasedVersion is a valid version, for a previously released version of kgateway
 	return releasedVersion
 }
 func GetTestHelper(ctx context.Context, namespace string) (*helper.SoloTestHelper, error) {

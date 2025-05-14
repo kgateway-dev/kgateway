@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 
 	"github.com/pkg/errors"
 	"github.com/solo-io/go-utils/log"

@@ -14,19 +14,19 @@ import (
 
 	"k8s.io/utils/pointer"
 
-	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/defaults"
-	"github.com/kgateway-dev/kgateway/test/gomega/matchers"
-	"github.com/kgateway-dev/kgateway/test/gomega/transforms"
+	"github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/defaults"
+	"github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
+	"github.com/kgateway-dev/kgateway/v2/test/gomega/transforms"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"
 	"github.com/solo-io/go-utils/stats"
 
-	"github.com/kgateway-dev/kgateway/pkg/cliutil"
+	"github.com/kgateway-dev/kgateway/v2/pkg/cliutil"
 )
 
-// Gloo Edge exports statistics to provide details about how the system is behaving
+// Kgateway exports statistics to provide details about how the system is behaving
 // Most stats utilities are defined in: https://github.com/solo-io/go-utils/tree/main/stats
 // This file contains a set of assertions that can be performed by tests to ensure that recorded stats
 // match what we would expect

@@ -31,7 +31,6 @@ func CheckRegexString(candidateRegex string) error {
 // This means its tightly coupled to envoy's implementation of regex.
 // NOTE: Call this after having checked regex with CheckRegexString.
 func NewRegexWithProgramSize(candidateRegex string, programsize *uint32) *envoy_type_matcher_v3.RegexMatcher {
-
 	var maxProgramSize *wrappers.UInt32Value
 	if programsize != nil {
 		maxProgramSize = &wrappers.UInt32Value{

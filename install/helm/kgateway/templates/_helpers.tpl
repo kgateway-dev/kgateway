@@ -46,6 +46,7 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 Selector labels
 */}}
 {{- define "kgateway.selectorLabels" -}}
+kgateway: kgateway
 app.kubernetes.io/name: {{ include "kgateway.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}

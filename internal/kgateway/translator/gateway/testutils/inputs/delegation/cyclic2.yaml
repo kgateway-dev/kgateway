@@ -1,0 +1,81 @@
+# This test contains a child route that delegates to a namespace that it also delegated from,
+# causing a cyclic reference (so the route is dropped).
+#
+# Input:
+# - Parent infra/example-route:
+#   - Delegate /a to routes in "a" namespace
+#   - Everything else goes to infra/example-svc
+# - Child a/route-a:
+#   - /a/1 goes to a/svc-a
+#   - Delegate /a/b to route a-b/route-a-b
+# - Child a-b/route-a-b:
+#   - Delegate /a/b/1 to routes in "a" namespace
+#
+# Expected output routes:
+# - /a/1 -> a/svc-a
+# - /* -> infra/example-svc
+# - no route for /a/b/1 because of cyclic reference
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: example-route
+  namespace: infra
+spec:
+  parentRefs:
+  - name: example-gateway
+  hostnames:
+  - "example.com"
+  rules:
+  - backendRefs:
+    - name: example-svc
+      port: 80
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /a
+    backendRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: "*"
+      namespace: a
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: route-a
+  namespace: a
+spec:
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /a/1
+    backendRefs:
+    - name: svc-a
+      port: 8080
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /a/b
+    backendRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: "route-a-b"
+      namespace: a-b
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: route-a-b
+  namespace: a-b
+spec:
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /a/b/1
+    backendRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: "*"
+      namespace: a

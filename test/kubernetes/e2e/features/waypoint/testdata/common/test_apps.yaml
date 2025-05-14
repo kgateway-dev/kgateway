@@ -1,0 +1,233 @@
+##################################################################################################
+# Curl pod - used as a client with a specific ServiceAccount
+##################################################################################################
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: curl
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: curl
+  labels:
+    app: curl
+    version: v1
+spec:
+  terminationGracePeriodSeconds: 0
+  serviceAccountName: curl
+  containers:
+    - name: curl
+      image: curlimages/curl:7.83.1
+      imagePullPolicy: IfNotPresent
+      command:
+        - "tail"
+        - "-f"
+        - "/dev/null"
+      resources:
+        requests:
+          cpu: "100m"
+        limits:
+          cpu: "200m"
+---
+##################################################################################################
+# Notcurl pod - based on the curl pod but with another identity
+##################################################################################################
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: notcurl
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: notcurl
+  labels:
+    app: notcurl
+    version: v1
+spec:
+  terminationGracePeriodSeconds: 0
+  serviceAccountName: notcurl
+  containers:
+    - name: notcurl
+      image: curlimages/curl:7.83.1
+      imagePullPolicy: IfNotPresent
+      command:
+        - "tail"
+        - "-f"
+        - "/dev/null"
+      resources:
+        requests:
+          cpu: "100m"
+        limits:
+          cpu: "200m"
+---
+
+##################################################################################################
+# simple HTTP test application (svc-a)
+# NOTE: not captured by the waypoint by default
+##################################################################################################
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: svc-a
+  name: svc-a
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: svc-a
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: svc-a
+    spec:
+      containers:
+      - args:
+        - -text=Hello from svc-a!
+        image: gcr.io/solo-test-236622/http-echo:0.2.4
+        imagePullPolicy: Always
+        name: http-echo
+        ports:
+        - containerPort: 5678
+          name: http
+          protocol: TCP
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 0
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: svc-a
+  name: svc-a
+spec:
+  ports:
+  - name: http
+    port: 8080
+    protocol: TCP
+    targetPort: 5678
+  selector:
+    app: svc-a
+  type: ClusterIP
+##################################################################################################
+# simple HTTP test application (svc-b)
+# NOTE: not captured by the waypoint by default
+##################################################################################################
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: svc-b
+  name: svc-b
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: svc-b
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: svc-b
+    spec:
+      containers:
+      - args:
+        - -text=Hello from svc-b!
+        image: gcr.io/solo-test-236622/http-echo:0.2.4
+        imagePullPolicy: Always
+        name: http-echo
+        ports:
+        - containerPort: 5678
+          name: http
+          protocol: TCP
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 0
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: svc-b
+  name: svc-b
+spec:
+  ports:
+  - name: http
+    port: 8080
+    protocol: TCP
+    targetPort: 5678
+  selector:
+    app: svc-b
+  type: ClusterIP
+---
+##################################################################################################
+# mirrors of the services above, but in ServiceEntry form (se-a.serviceentry.com and se-b.serviceentry.com)
+# NOTE: not captured by the waypoint by default
+##################################################################################################
+apiVersion: networking.istio.io/v1beta1
+kind: ServiceEntry
+metadata:
+  name: se-a
+spec:
+  addresses:
+  - 244.244.0.1
+  hosts:
+  - se-a.serviceentry.com
+  location: MESH_INTERNAL
+  ports:
+  - number: 8080
+    name: http
+    protocol: HTTP
+    targetPort: 5678
+  resolution: STATIC
+  workloadSelector:
+    labels:
+      app: svc-b
+---
+apiVersion: networking.istio.io/v1beta1
+kind: ServiceEntry
+metadata:
+  name: se-b
+spec:
+  addresses:
+  - 244.244.0.2
+  hosts:
+  - se-b.serviceentry.com
+  location: MESH_INTERNAL
+  ports:
+  - number: 8080
+    name: http
+    protocol: HTTP
+    targetPort: 5678
+  resolution: STATIC
+  workloadSelector:
+    labels:
+      app: svc-b

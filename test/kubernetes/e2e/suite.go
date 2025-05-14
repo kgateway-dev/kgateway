@@ -1,5 +1,3 @@
-//go:build ignore
-
 package e2e
 
 import (
@@ -68,7 +66,6 @@ func (o *orderedSuites) Register(name string, newSuite NewSuiteFunc) {
 		name:     name,
 		newSuite: newSuite,
 	})
-
 }
 
 func (u *suites) Run(ctx context.Context, t *testing.T, testInstallation *TestInstallation) {

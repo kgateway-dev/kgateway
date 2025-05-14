@@ -1,54 +1,26 @@
 
-helm_installation_name: gloo-oss
+helm_installation_name: kgateway
 helm_values_files:
 - ./test/kubernetes/e2e/tests/manifests/common-recommendations.yaml
-# - ./test/kubernetes/e2e/tests/manifests/profiles/kubernetes-gateway.yaml
-helm_installation_namespace: gloo-system
+helm_installation_namespace: kgateway-system
 
 enabled_providers:
-  - gloo
-  - gateway-proxy
+  - kgateway
 
 metal_lb: false
 
 providers:
-  gloo:
-    context: _output/projects/gloo
-    image: quay.io/solo-io/gloo
+  kgateway:
+    context: _output/internal/kgateway
+    image: ghcr.io/kgateway-dev/kgateway
     live_reload_deps:
-      - projects/gloo
-    label: gloo
-    build_binary: GCFLAGS='all="-N -l"' make -B gloo
-    binary_name: gloo-linux-$ARCH
+      - pkg
+      - internal
+    label: kgateway
+#    build_binary: GCFLAGS='all="-N -l"' make -B kgateway
+    build_binary:  make -B kgateway
+    binary_name: kgateway-linux-$ARCH
     # debug_port: 50100
     port_forwards:
       - 9091
     #  - 50100
-  gateway-proxy:
-    context: _output/gateway-proxy
-    image: quay.io/solo-io/gloo-envoy-wrapper
-    # Ensure your binary exists. If not and would still like the logs and port forwarding in Tilt, keep this commented
-    # live_reload_deps:
-    # - _output/gateway-proxy
-    label: gateway-proxy
-    binary_name: envoy
-    binary_path: "/app/envoy"
-    port_forwards:
-      - 19000
-      - 8080
-    links:
-      - http://localhost:19000/config_dump
-    dockerfile_contents: |
-      FROM quay.io/solo-io/gloo-envoy-wrapper:1.15.1 as tilt
-      WORKDIR /app
-      COPY --from=tilt-helper /process.txt .
-      COPY --from=tilt-helper /start.sh .
-      COPY --from=tilt-helper /restart.sh .
-      COPY --from=tilt-helper /go/bin/dlv .
-      USER root
-      COPY $binary_name /app/envoy
-      RUN rm -rf /usr/local/bin/envoy
-      RUN chmod -R 777 /app
-      RUN ln -s /app/envoy /usr/local/bin/envoy
-      USER 10101
-      ENTRYPOINT /app/start.sh /docker-entrypoint.sh

@@ -1,0 +1,30 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  namespace: kgateway-test
+  name: route-example-secure
+spec:
+  parentRefs:
+    - name: super-gateway
+      namespace: kgateway-test
+  hostnames:
+    - "secureroute.com"
+  rules:
+    - backendRefs:
+        - name: simple-svc
+          port: 8080
+---
+## On a route that is not part of the gw gateway opt in
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  namespace: kgateway-test
+  name: secure-route-policy
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: route-example-secure
+  extAuth:
+    extensionRef: 
+      name: basic-extauth2

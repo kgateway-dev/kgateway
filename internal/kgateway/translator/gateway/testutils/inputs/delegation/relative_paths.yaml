@@ -1,0 +1,144 @@
+# This test contains child routes that inherit the parent matchers.
+#
+# Input:
+# - Parent infra/example-route (hostname example.com):
+#   - Delegate /a to routes in "a" namespace
+#   - Everything else goes to infra/example-svc
+# - Parent infra/foo-route (hostname foo.com):
+#   - Delegate /x (header1=val1, query1=val1, GET) to routes in "a" namespace
+# - Child a/route-a (with annotation inherit-parent-matcher=true):
+#   - /a/1 (PUT) goes to a/svc-a
+#   - /a/2/.* goes to a/svc-a
+#   - /a/3 (headerA=valA, queryA=valA) goes to a/svc-a
+# - Child a/route-b (withannotation inherit-parent-matcher=true):
+#   - everything goes to a/svc-b
+#
+# Expected output routes (all paths are appended to parent path, headers/query params
+# are merged, method comes from parent if set, else from child):
+# - domain example.com:
+#   - /a/a/1 (PUT)-> a/svc-a
+#   - /a/a/2/.* -> a/svc-a
+#   - /a/a/3 (headerA=valA, queryA=valA) -> a/svc-a
+#   - /a -> a/svc-b
+#   - /* -> infra/example-svc
+# - domain foo.com:
+#   - /x/a/1 (header1=val1, query1=val1, GET) -> a/svc-a
+#   - /x/a/2/.* (header1=val1, query1=val1, GET) -> a/svc-a
+#   - /x/a/3 (header1=val1, headerA=valA, query1=val1, queryA=valA, GET) -> a/svc-a
+#   - /x (header1=val1, query1=val1, GET) -> a/svc-b
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: example-route
+  namespace: infra
+spec:
+  parentRefs:
+  - name: example-gateway
+  hostnames:
+  - "example.com"
+  rules:
+  - backendRefs:
+    - name: example-svc
+      port: 80
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /a
+    backendRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: "*"
+      namespace: a
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: foo-route
+  namespace: infra
+spec:
+  parentRefs:
+  - name: example-gateway
+  hostnames:
+  - "foo.com"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /x
+      headers:
+      - type: Exact
+        name: header1
+        value: val1
+      queryParams:
+      - type: Exact
+        name: query1
+        value: val1
+      method: GET
+    backendRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: "*"
+      namespace: a
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: route-a
+  namespace: a
+  annotations:
+    delegation.kgateway.dev/inherit-parent-matcher: "true"
+spec:
+  rules:
+  - matches:
+    - path:
+        type: Exact
+        value: /a/1
+      method: PUT # should translate as PUT for parent example-route and GET for parent foo-route
+    backendRefs:
+    - name: svc-a
+      port: 8080
+  - matches:
+    - path:
+        type: RegularExpression
+        value: /a/2/.*
+    backendRefs:
+    - name: svc-a
+      port: 8080
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /a/3
+      headers:
+      - type: Exact
+        name: headerA
+        value: valA
+      queryParams:
+      - type: Exact
+        name: queryA
+        value: valA
+    backendRefs:
+    - name: svc-a
+      port: 8080
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: route-b
+  namespace: a
+  annotations:
+    delegation.kgateway.dev/inherit-parent-matcher: "true"
+spec:
+  rules:
+  - backendRefs:
+    - name: svc-b
+      port: 8090
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: svc-b
+  namespace: a
+spec:
+  ports:
+    - protocol: TCP
+      port: 8090

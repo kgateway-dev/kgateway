@@ -5,7 +5,7 @@ package matchers
 import (
 	"time"
 
-	"github.com/kgateway-dev/kgateway/test/gomega/transforms"
+	"github.com/kgateway-dev/kgateway/v2/test/gomega/transforms"
 
 	"github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"

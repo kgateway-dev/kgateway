@@ -1,0 +1,25 @@
+# public cert of self-signed cert loaded into nginx, see nginx.yaml
+# separate file so it can be deleted independently
+apiVersion: v1
+data:
+  ca.crt: |
+    -----BEGIN CERTIFICATE-----
+    MIICszCCAZsCFD9dhyrM7bqtwYLORIn7QTULAmRaMA0GCSqGSIb3DQEBCwUAMBYx
+    FDASBgNVBAMMC2V4YW1wbGUuY29tMB4XDTI1MDQxMDIyMjYxNVoXDTI2MDQxMDIy
+    MjYxNVowFjEUMBIGA1UEAwwLZXhhbXBsZS5jb20wggEiMA0GCSqGSIb3DQEBAQUA
+    A4IBDwAwggEKAoIBAQC46DSkpngZavNVgByw/h7rbKyvgzp2wGDW/fPGL0/rkLcK
+    IsIiNgHH6vA0UPTSI3YsHeu+CnQCEhZWk9KhQ2q8etSynUoizIrj2iuxKTEsL3SJ
+    7cI03cpHiQoMuUqp4L4lA6/YXsLkXjHWtnTLKjsvsrjBFiu96ueoje6B2sfcSlYR
+    FI1WgMgZQP+LALy9tVtMManIqKVr63BG0884AghF3sPo5ryOEP/1Oc9F6Ivf67Jf
+    NjMhuBHahT500hYyuxzjgUPoMWyX1FQ7NL/OWUJ5EXuSnxpDb7edVDVCz+z199S7
+    6wpAKEe0hoJG5Ahw1vWNRRBO8gnsSjLAHEw0nXpvAgMBAAEwDQYJKoZIhvcNAQEL
+    BQADggEBAGtLZTITtlEMJc8u7qrN8psA2Eiycgv6Cqi48NeF6lldfg7hVfm9CLB1
+    xKBHZnbLoBl6WbfRarFT/FtT8bzLrwQLl3SnmHuRvQgHSBBIBP3gUggog7GUdo2e
+    /h3p7bot/53gyFUfEfCZ+hw1n20VpAJzkJ+6VAQg8yvMzqC6wSVPNGTniS7KIRtH
+    ON2ulncyLxR65lOiqLrGOw6oXUF1RpTqiJnOGDqJV5RV4+uBHIQZG4BwNXbUNira
+    V2wU4MHa1JLXAaOVJsyY5GcXlTXfus4cGOFyFHPvBAXu42OF7wbAx3bPJzOlBx2Y
+    l339oYIY57gPn8irKcZGJ0idvMc8b7Y=
+    -----END CERTIFICATE-----
+kind: ConfigMap
+metadata:
+  name: ca

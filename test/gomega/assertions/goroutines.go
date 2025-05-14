@@ -9,7 +9,7 @@ import (
 	"github.com/onsi/gomega/gleak"
 	"github.com/onsi/gomega/types"
 
-	"github.com/kgateway-dev/kgateway/test/helpers"
+	"github.com/kgateway-dev/kgateway/v2/test/helpers"
 )
 
 // GoRoutineMonitor is a helper for monitoring goroutine leaks in tests

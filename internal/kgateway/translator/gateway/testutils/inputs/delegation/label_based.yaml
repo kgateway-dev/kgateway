@@ -1,0 +1,106 @@
+# This test contains a parent route delegating to a child route, based on path prefix.
+#
+# Input:
+# - Parent infra/example-route:
+#   - Delegate /infra to routes with the label delegation.kgateway.dev/label=infra-routes in the infra namespace
+#   - Delegate /a to routes with the label delegation.kgateway.dev/label=a-routes in the 'a' namespace
+#   - Delegate /all to routes with the label delegation.kgateway.dev/label=all-routes in the any(wildcard) namespace
+#   - Everything else goes to infra/example-svc
+#
+# Expected output routes:
+# - /infra/1 -> infra/example-svc
+# - /a/1 -> a/svc-a
+# - /all/b -> b/svc-b
+# - /* -> infra/example-svc
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: example-route
+  namespace: infra
+spec:
+  parentRefs:
+  - name: example-gateway
+  hostnames:
+  - "example.com"
+  rules:
+  - backendRefs:
+    - name: example-svc
+      port: 80
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /infra
+    backendRefs:
+    - group: delegation.kgateway.dev
+      kind: label
+      name: infra-routes
+      # no namespace; defaults to route's namespace (infra)
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /a
+    backendRefs:
+    - group: delegation.kgateway.dev
+      kind: label
+      name: a-routes
+      namespace: a
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /all
+    backendRefs:
+    - group: delegation.kgateway.dev
+      kind: label
+      name: all-routes
+      namespace: all # DelegationLabelSelectorWildcardNamespace
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: infra-child
+  namespace: infra
+  labels:
+    delegation.kgateway.dev/label: infra-routes
+spec:
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /infra/1
+    backendRefs:
+    - name: example-svc
+      port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: route-a
+  namespace: a
+  labels:
+    delegation.kgateway.dev/label: a-routes
+spec:
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /a/1
+    backendRefs:
+    - name: svc-a
+      port: 8080
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: route-b
+  namespace: b
+  labels:
+    delegation.kgateway.dev/label: all-routes
+spec:
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /all/b
+    backendRefs:
+    - name: svc-b
+      port: 8080

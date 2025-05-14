@@ -7,18 +7,17 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	. "github.com/solo-io/k8s-utils/manifesttestutils"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/pointer"
 
-	"github.com/kgateway-dev/kgateway/install/utils/kuberesource"
-	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils"
-	"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/projects/gateway2/wellknown"
-	"github.com/kgateway-dev/kgateway/test/gomega/matchers"
-	glootestutils "github.com/kgateway-dev/kgateway/test/testutils"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/install/utils/kuberesource"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
+	"github.com/kgateway-dev/kgateway/v2/test/helpers"
+	glootestutils "github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
 var _ = Describe("Kubernetes Gateway API integration", func() {
@@ -46,11 +45,11 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 			})
 
 			It("relevant resources are rendered", func() {
-				deployment := getDeployment(testManifest, namespace, kubeutils.GlooDeploymentName)
+				deployment := getDeployment(testManifest, namespace, helpers.DefaultKgatewayDeploymentName)
 				Expect(deployment.Spec.Template.Spec.Containers).To(HaveLen(1), "should have exactly 1 container")
 
 				// make sure the GatewayClass and RBAC resources exist (note, since they are all cluster-scoped, they do not have a namespace)
-				testManifest.ExpectUnstructured("GatewayClass", "", "gloo-gateway").NotTo(BeNil())
+				testManifest.ExpectUnstructured("GatewayClass", "", wellknown.GatewayClassName).NotTo(BeNil())
 
 				testManifest.ExpectUnstructured("GatewayParameters", namespace, wellknown.DefaultGatewayParametersName).NotTo(BeNil())
 
@@ -113,8 +112,8 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 
 				Expect(*gwpKube.GetAiExtension().GetEnabled()).To(BeFalse())
 				Expect(*gwpKube.GetAiExtension().GetImage().GetPullPolicy()).To(Equal(corev1.PullIfNotPresent))
-				Expect(*gwpKube.GetAiExtension().GetImage().GetRegistry()).To(Equal("quay.io/solo-io"))
-				Expect(*gwpKube.GetAiExtension().GetImage().GetRepository()).To(Equal("gloo-ai-extension"))
+				Expect(*gwpKube.GetAiExtension().GetImage().GetRegistry()).To(Equal("ghcr.io/kgateway-dev"))
+				Expect(*gwpKube.GetAiExtension().GetImage().GetRepository()).To(Equal("kgateway-ai-extension"))
 				Expect(*gwpKube.GetAiExtension().GetImage().GetTag()).To(Equal(version))
 				Expect(gwpKube.GetAiExtension().GetSecurityContext()).To(BeNil())
 				Expect(gwpKube.GetAiExtension().GetResources()).To(BeNil())
@@ -487,11 +486,11 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 			})
 
 			It("relevant resources are not rendered", func() {
-				deployment := getDeployment(testManifest, namespace, kubeutils.GlooDeploymentName)
+				deployment := getDeployment(testManifest, namespace, helpers.DefaultKgatewayDeploymentName)
 				Expect(deployment.Spec.Template.Spec.Containers).To(HaveLen(1), "should have exactly 1 container")
 
 				// the RBAC resources should not be rendered
-				testManifest.ExpectUnstructured("GatewayClass", "", "gloo-gateway").To(BeNil())
+				testManifest.ExpectUnstructured("GatewayClass", "", wellknown.GatewayClassName).To(BeNil())
 
 				testManifest.ExpectUnstructured("GatewayParameters", namespace, wellknown.DefaultGatewayParametersName).To(BeNil())
 

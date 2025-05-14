@@ -10,12 +10,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kgateway-dev/kgateway/pkg/utils/cmdutils"
-	"github.com/kgateway-dev/kgateway/pkg/utils/requestutils/curl"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/cmdutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 
 	"github.com/avast/retry-go/v4"
 
-	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils/portforward"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils/portforward"
 )
 
 // Cli is a utility for executing `kubectl` commands
@@ -80,6 +80,13 @@ func (c *Cli) Command(ctx context.Context, args ...string) cmdutils.Cmd {
 // RunCommand creates a Cmd and then runs it
 func (c *Cli) RunCommand(ctx context.Context, args ...string) error {
 	return c.Command(ctx, args...).Run().Cause()
+}
+
+// RunCommandWithOutput creates a Cmd and then runs it.
+// If an error occurred, it will be returned along with the output of the command
+func (c *Cli) RunCommandWithOutput(ctx context.Context, args ...string) (string, error) {
+	runErr := c.Command(ctx, args...).Run()
+	return runErr.OutputString(), runErr.Cause()
 }
 
 // Namespaces returns a sorted list of namespaces or an error if one occurred
@@ -156,6 +163,24 @@ func (c *Cli) DeleteFile(ctx context.Context, fileName string, extraArgs ...stri
 	return err
 }
 
+// DeleteFilePath deletes the resources defined at the file path, and returns an error if one occurred.
+// If filePath is a directory, this will delete all of the files in the directory.
+func (c *Cli) DeleteFilePath(ctx context.Context, filePath string, extraArgs ...string) error {
+	stat, err := os.Stat(filePath)
+	if err != nil {
+		return err
+	}
+	if !stat.IsDir() {
+		_, err := c.DeleteFileWithOutput(ctx, filePath, extraArgs...)
+		return err
+	}
+
+	args := append([]string{"delete", "-f", filePath}, extraArgs...)
+	return c.Command(ctx, args...).
+		Run().
+		Cause()
+}
+
 // DeleteFileWithOutput deletes the resources defined in a file,
 // if an error occurred, it will be returned along with the output of the command
 func (c *Cli) DeleteFileWithOutput(ctx context.Context, fileName string, extraArgs ...string) (string, error) {
@@ -187,6 +212,42 @@ func (c *Cli) Copy(ctx context.Context, from, to string) error {
 	return c.RunCommand(ctx, "cp", from, to)
 }
 
+// SetLabel sets a label on a given resource.
+func (c *Cli) SetLabel(
+	ctx context.Context,
+	kind, name, namespace string,
+	label, value string,
+) error {
+	// ex: k -n ns label svc svc-a foo=val --overwrite
+	return c.labelInner(ctx, kind, name, namespace, label, "=", value)
+}
+
+// UnsetLabel unsets a label on a given resource.
+func (c *Cli) UnsetLabel(
+	ctx context.Context,
+	kind, name, namespace string,
+	label string,
+) error {
+	// ex: k -n ns label svc svc-a foo- --overwrite
+	return c.labelInner(ctx, kind, name, namespace, label, "-", "")
+}
+
+func (c *Cli) labelInner(
+	ctx context.Context,
+	kind, name, namespace string,
+	label, op, value string,
+) error {
+	// ex: k -n ns label svc svc-a foo=val --overwrite
+	args := []string{"label", kind, name, label + op + value, "--overwrite"}
+	if namespace != "" {
+		args = append(
+			[]string{"-n", namespace},
+			args...,
+		)
+	}
+	return c.RunCommand(ctx, args...)
+}
+
 // DeploymentRolloutStatus waits for the deployment to complete rolling out
 func (c *Cli) DeploymentRolloutStatus(ctx context.Context, deployment string, extraArgs ...string) error {
 	rolloutArgs := append([]string{
@@ -211,9 +272,9 @@ func (c *Cli) StartPortForward(ctx context.Context, options ...portforward.Optio
 	err := portForwarder.Start(
 		ctx,
 		retry.LastErrorOnly(true),
-		retry.Delay(100*time.Millisecond),
-		retry.DelayType(retry.BackOffDelay),
-		retry.Attempts(5),
+		retry.Delay(250*time.Millisecond),
+		retry.DelayType(retry.FixedDelay),
+		retry.Attempts(60),
 	)
 	return portForwarder, err
 }

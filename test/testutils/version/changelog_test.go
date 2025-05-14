@@ -9,7 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
-	"github.com/kgateway-dev/kgateway/test/testutils/version"
+	"github.com/kgateway-dev/kgateway/v2/test/testutils/version"
 )
 
 type mockDirEntry struct {

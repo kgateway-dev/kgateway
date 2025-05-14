@@ -4,7 +4,7 @@ metadata:
   name: gw
   namespace: default
 spec:
-  gatewayClassName: gloo-gateway
+  gatewayClassName: kgateway
   listeners:
   - allowedRoutes:
       namespaces:

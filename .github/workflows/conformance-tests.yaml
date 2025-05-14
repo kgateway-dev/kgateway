@@ -19,16 +19,18 @@ on:
 jobs:
   run-conformance-tests:
     runs-on: ubuntu-22.04
+    env:
+      IMAGE_REGISTRY: cr.kgateway.dev/kgateway-dev
     strategy:
       matrix:
         # TODO(tim): Avoid hardcoding versions here. It's a bit tricky based on
         # how this was setup and there's a limited # of dispatch inputs that GH
         # supports. We can revisit this later.
         kube-version:
-        - node: 'v1.31.0@sha256:53df588e04085fd41ae12de0c3fe4c72f7013bba32a20e7325357a1ac94ba865'
-          kubectl: 'v1.31.0'
-          kind: 'v0.24.0'
-          helm: 'v3.14.4'
+        - node: 'v1.32.2@sha256:f226345927d7e348497136874b6d207e0b32cc52154ad8323129352923a3142f'
+          kubectl: 'v1.32.2'
+          kind: 'v0.27.0'
+          helm: 'v3.17.1'
         image-variant:
           - ${{ inputs.image-variant }}
         version:
