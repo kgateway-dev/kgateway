@@ -17,6 +17,8 @@ import (
 	reports "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
 
+var logger = logging.New("gateway-translator")
+
 func NewTranslator(queries query.GatewayQueries) extensionsplug.KGwTranslator {
 	return &translator{
 		queries: queries,
@@ -37,9 +39,6 @@ func (t *translator) Translate(
 	stopwatch.Start()
 	defer stopwatch.Stop(ctx)
 
-	logger := logging.NewWithOptions("k8s-gateway-translator", logging.Options{
-		Format: logging.JSONFormat,
-	})
 	routesForGw, err := t.queries.GetRoutesForGateway(kctx, ctx, gateway.Obj)
 	if err != nil {
 		logger.Error("failed to get routes for gateway", "namespace", gateway.Namespace, "name", gateway.Name, "error", err)
