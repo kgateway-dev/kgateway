@@ -11,8 +11,6 @@ func (s *ProxyTranslator) syncXds(
 	ctx context.Context,
 	snapWrap XdsSnapWrapper,
 ) {
-	logger := logging.New("xds-syncer")
-
 	snap := snapWrap.snap
 	proxyKey := snapWrap.proxyKey
 
