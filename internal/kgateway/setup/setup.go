@@ -156,12 +156,11 @@ func setupLogging(levelStr string) {
 		slog.Error("failed to parse log level, defaulting to info", "error", err)
 		return
 	}
-	logging.MustSetLevel(logging.DefaultComponent, level)
+	// set all loggers to the specified level
+	logging.Reset(level)
 	controllerLogger := logging.New("controllerruntime")
 	logrSink := logr.FromSlogHandler(controllerLogger.Handler())
 	ctrl.SetLogger(logrSink)
-	// set all loggers to the specified level
-	logging.Reset(level)
 }
 
 func createKubeClient(restConfig *rest.Config) (istiokube.Client, error) {
