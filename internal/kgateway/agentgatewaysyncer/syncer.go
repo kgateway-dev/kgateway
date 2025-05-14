@@ -21,11 +21,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
-
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer/a2a"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer/mcp"
-
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
@@ -34,9 +31,12 @@ import (
 	gwtranslator "github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/gateway"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/xds"
 )
 
+// AgentGwSyncer synchronizes Kubernetes Gateway API resources with xDS for agentgateway proxies.
+// It watches Gateway resources with the agentgateway class and translates them to agentgateway configuration.
 type AgentGwSyncer struct {
 	commonCols     *common.CommonCollections
 	translator     *agentGwTranslator
@@ -257,7 +257,7 @@ func (s *AgentGwSyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 				listener = &Listener{
 					Name:     string(gwListener.Name),
 					Protocol: Listener_A2A,
-					// TODO: Add suppose for stdio listener
+					// TODO: Add support for stdio listener
 					Listener: &Listener_Sse{
 						Sse: &SseListener{
 							Address: "[::]",
@@ -269,7 +269,7 @@ func (s *AgentGwSyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 				listener = &Listener{
 					Name:     string(gwListener.Name),
 					Protocol: Listener_MCP,
-					// TODO: Add suppose for stdio listener
+					// TODO: Add support for stdio listener
 					Listener: &Listener_Sse{
 						Sse: &SseListener{
 							Address: "[::]",
@@ -330,15 +330,19 @@ func (s *AgentGwSyncer) Start(ctx context.Context) error {
 	logger := contextutils.LoggerFrom(ctx)
 	logger.Infof("starting %s agentgateway Syncer", s.controllerName)
 	logger.Infof("waiting for agentgateway cache to sync")
-	kube.WaitForCacheSync("agentgateway syncer", ctx.Done(), s.waitForSync...)
+
+	// Wait for cache to sync
+	if !kube.WaitForCacheSync("agentgateway syncer", ctx.Done(), s.waitForSync...) {
+		return fmt.Errorf("agentgateway syncer waiting for cache to sync failed")
+	}
 
 	s.xDS.RegisterBatch(func(events []krt.Event[agentGwXdsResources], _ bool) {
 		for _, e := range events {
+			r := e.Latest()
 			if e.Event == controllers.EventDelete {
-				// TODO: do we need to handle deletes?
+				s.xdsCache.ClearSnapshot(r.ResourceName())
 				continue
 			}
-			r := e.Latest()
 			snapshot := &agentGwSnapshot{
 				AgentGwA2AServices: r.AgentGwA2AServices,
 				AgentGwMcpServices: r.AgentGwMcpServices,
@@ -465,26 +469,35 @@ func getTargetName(resourceName string) string {
 
 func translateAgentService(svc *corev1.Service, allowedA2AListeners, allowedMCPListeners []string) []agentGwService {
 	var svcs []agentGwService
-	var allowedListeners []string
+
+	if svc.Spec.ClusterIP == "" && svc.Spec.ExternalName == "" {
+		// Return early if there's no valid IP or external name set on the service
+		return svcs
+	}
+
+	addr := svc.Spec.ClusterIP
+	if addr == "" {
+		addr = svc.Spec.ExternalName
+	}
+
 	for _, port := range svc.Spec.Ports {
 		if port.AppProtocol == nil {
 			continue
 		}
 		appProtocol := *port.AppProtocol
-		if svc.Spec.ClusterIP == "" && svc.Spec.ExternalName == "" {
-			continue
-		}
-		addr := svc.Spec.ClusterIP
-		if addr == "" {
-			addr = svc.Spec.ExternalName
-		}
-		path := ""
-		if appProtocol == A2AProtocol {
+		var path string
+		var allowedListeners []string
+
+		switch appProtocol {
+		case A2AProtocol:
 			path = svc.Annotations[A2APathAnnotation]
 			allowedListeners = allowedA2AListeners
-		} else if appProtocol == MCPProtocol {
+		case MCPProtocol:
 			path = svc.Annotations[MCPPathAnnotation]
 			allowedListeners = allowedMCPListeners
+		default:
+			// Skip unsupported protocols
+			continue
 		}
 
 		svcs = append(svcs, agentGwService{
