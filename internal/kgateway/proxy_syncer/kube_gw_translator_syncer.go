@@ -2,7 +2,6 @@ package proxy_syncer
 
 import (
 	"context"
-	"log/slog"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/logging"
 )
@@ -20,10 +19,7 @@ func (s *ProxyTranslator) syncXds(
 	// string if we're not even going to log it anyway
 	logger.Debug("syncing xds snapshot", "proxyKey", proxyKey)
 
-	// Check if the default logger is enabled for Debug level
-	if slog.Default().Enabled(context.Background(), slog.LevelDebug) {
-		//	logger.Debug(syncutil.StringifySnapshot(snap), slog.String("proxyKey", proxyKey)) // TODO: also spammy
-	}
+	logger.Log(ctx, logging.LevelTrace, "syncing xds snapshot", "proxyKey", proxyKey)
 
 	// if the snapshot is not consistent, make it so
 	// TODO: me may need to copy this to not change krt cache.
