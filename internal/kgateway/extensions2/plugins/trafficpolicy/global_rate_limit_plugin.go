@@ -18,7 +18,7 @@ const (
 
 // RateLimitIR represents the intermediate representation of a rate limit policy
 type RateLimitIR struct {
-	provider         *trafficPolicyGatewayExtensionIR
+	provider         *TrafficPolicyGatewayExtensionIR
 	rateLimitActions []*routeconfv3.RateLimit
 }
 

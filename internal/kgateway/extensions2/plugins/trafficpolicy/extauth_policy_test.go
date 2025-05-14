@@ -52,10 +52,10 @@ func TestApplyForRoute(t *testing.T) {
 		// Setup
 		plugin := &trafficPolicyPluginGwPass{}
 		ctx := context.Background()
-		policy := &trafficPolicy{
+		policy := &TrafficPolicy{
 			spec: trafficPolicySpecIr{
 				extAuth: &extAuthIR{
-					provider: &trafficPolicyGatewayExtensionIR{
+					provider: &TrafficPolicyGatewayExtensionIR{
 						name:    "test-extension",
 						extType: v1alpha1.GatewayExtensionTypeExtAuth,
 						extAuth: &envoy_ext_authz_v3.ExtAuthz{
@@ -85,7 +85,7 @@ func TestApplyForRoute(t *testing.T) {
 		// Setup
 		plugin := &trafficPolicyPluginGwPass{}
 		ctx := context.Background()
-		policy := &trafficPolicy{
+		policy := &TrafficPolicy{
 			spec: trafficPolicySpecIr{
 				extAuth: nil,
 			},
@@ -109,10 +109,10 @@ func TestApplyListenerPlugin(t *testing.T) {
 		// Setup
 		plugin := &trafficPolicyPluginGwPass{}
 		ctx := context.Background()
-		policy := &trafficPolicy{
+		policy := &TrafficPolicy{
 			spec: trafficPolicySpecIr{
 				extAuth: &extAuthIR{
-					provider: &trafficPolicyGatewayExtensionIR{
+					provider: &TrafficPolicyGatewayExtensionIR{
 						name:    "test-extension",
 						extType: v1alpha1.GatewayExtensionTypeExtAuth,
 						extAuth: &envoy_ext_authz_v3.ExtAuthz{
@@ -158,7 +158,7 @@ func TestHttpFilters(t *testing.T) {
 		plugin := &trafficPolicyPluginGwPass{
 			extAuthPerProvider: map[string]providerWithFromListener{
 				"test-extension": {
-					provider: &trafficPolicyGatewayExtensionIR{
+					provider: &TrafficPolicyGatewayExtensionIR{
 						name:    "test-extension",
 						extType: v1alpha1.GatewayExtensionTypeExtAuth,
 						extAuth: &envoy_ext_authz_v3.ExtAuthz{
@@ -187,10 +187,10 @@ func TestExtAuthPolicyPlugin(t *testing.T) {
 		// Setup
 		plugin := &trafficPolicyPluginGwPass{}
 		ctx := context.Background()
-		policy := &trafficPolicy{
+		policy := &TrafficPolicy{
 			spec: trafficPolicySpecIr{
 				extAuth: &extAuthIR{
-					provider: &trafficPolicyGatewayExtensionIR{
+					provider: &TrafficPolicyGatewayExtensionIR{
 						name:    "test-auth-extension",
 						extType: v1alpha1.GatewayExtensionTypeExtAuth,
 						extAuth: &envoy_ext_authz_v3.ExtAuthz{
@@ -224,7 +224,7 @@ func TestExtAuthPolicyPlugin(t *testing.T) {
 		// Setup
 		plugin := &trafficPolicyPluginGwPass{}
 		ctx := context.Background()
-		policy := &trafficPolicy{
+		policy := &TrafficPolicy{
 			spec: trafficPolicySpecIr{
 				extAuth: &extAuthIR{
 					enablement: v1alpha1.ExtAuthDisableAll,

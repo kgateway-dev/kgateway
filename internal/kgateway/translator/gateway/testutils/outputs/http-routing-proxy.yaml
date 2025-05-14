@@ -21,7 +21,7 @@ Listeners:
             resourceApiVersion: V3
           routeConfigName: http
         statPrefix: http
-        use_remote_address: true
+        useRemoteAddress: true
     name: http
   name: http
 Routes:
@@ -34,8 +34,9 @@ Routes:
     routes:
     - match:
         headers:
-        - exactMatch: canary
-          name: env
+        - name: env
+          stringMatch:
+            exact: canary
         prefix: /
       name: http~bar_example_com-route-0-httproute-bar-route-default-0-0-matcher-0
       route:

@@ -77,7 +77,7 @@ runs:
       echo
       kubectl -n gateway-conformance-web-backend get events --sort-by='{.lastTimestamp}'
       echo
-      kubectl -n kgateway-system logs deploy/gloo
+      kubectl -n kgateway-system logs deploy/kgateway
   - name: Upload reports
     if: ${{ failure() }}
     uses: ./.github/actions/upload-artifact
