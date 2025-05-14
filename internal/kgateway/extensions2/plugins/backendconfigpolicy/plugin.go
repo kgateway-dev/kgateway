@@ -70,8 +70,9 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 			ObjectSource: objSrc,
 			Policy:       b,
 			PolicyIR:     policyIR,
+			TargetRefs:   convertTargetRefs(b.Spec.TargetRefs),
 		}
-	})
+	}, commoncol.KrtOpts.ToOptions("BackendConfigPolicyIRs")...)
 	return extensionsplug.Plugin{
 		ContributesPolicies: map[schema.GroupKind]extensionsplug.PolicyPlugin{
 			wellknown.BackendConfigPolicyGVK.GroupKind(): {
@@ -94,4 +95,17 @@ func translate(pol *v1alpha1.BackendConfigPolicy) *BackendConfigPolicy {
 	return &BackendConfigPolicy{
 		maxRequestsPerConnection: pol.Spec.MaxRequestsPerConnection,
 	}
+}
+
+// convertTargetRefs converts []v1alpha1.LocalPolicyTargetReference to []ir.PolicyRef
+func convertTargetRefs(targetRefs []v1alpha1.LocalPolicyTargetReference) []ir.PolicyRef {
+	refs := make([]ir.PolicyRef, 0, len(targetRefs))
+	for _, targetRef := range targetRefs {
+		refs = append(refs, ir.PolicyRef{
+			Kind:  string(targetRef.Kind),
+			Name:  string(targetRef.Name),
+			Group: string(targetRef.Group),
+		})
+	}
+	return refs
 }
