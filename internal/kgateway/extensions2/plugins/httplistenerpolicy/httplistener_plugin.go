@@ -30,7 +30,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 )
 
-var logger = logging.New("httplistenerpolicy")
+var logger = logging.New("plugin_httplistenerpolicy")
 
 type httpListenerPolicy struct {
 	ct        time.Time

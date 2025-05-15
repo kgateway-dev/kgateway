@@ -61,7 +61,7 @@ func NewTranslator(
 	}
 }
 
-var logger = logging.New("waypoint_translator")
+var logger = logging.New("plugin_waypoint")
 
 // Translate implements extensionsplug.KGwTranslator.
 func (w *waypointTranslator) Translate(

@@ -16,7 +16,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 )
 
-var logger = logging.New("ir_translator")
+var logger = logging.New("irtranslator")
 
 type Translator struct {
 	ContributedPolicies map[schema.GroupKind]extensionsplug.PolicyPlugin

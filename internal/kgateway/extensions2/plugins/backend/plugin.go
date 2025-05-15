@@ -36,7 +36,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 )
 
-var logger = logging.New("backend_plugin")
+var logger = logging.New("plugin_backend")
 
 const (
 	ExtensionName = "backend"
