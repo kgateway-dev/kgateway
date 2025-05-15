@@ -346,10 +346,10 @@ func (p *PolicyIndex) fetchByTargetRef(
 ) []ir.PolicyWrapper {
 	var ret []ir.PolicyWrapper
 	for _, policyCol := range p.availablePolicies {
-		policies := krt.Fetch(kctx, policyCol.policiesByTargetRef, krt.FilterIndex(policyCol.index, targetRef))
 		if onlyBackends && !policyCol.forBackends {
 			continue
 		}
+		policies := krt.Fetch(kctx, policyCol.policiesByTargetRef, krt.FilterIndex(policyCol.index, targetRef))
 		ret = append(ret, policies...)
 	}
 	return ret
@@ -363,6 +363,9 @@ func (p *PolicyIndex) fetchByTargetRefLabels(
 ) []ir.PolicyWrapper {
 	var ret []ir.PolicyWrapper
 	for _, policyCol := range p.availablePolicies {
+		if onlyBackends && !policyCol.forBackends {
+			continue
+		}
 		policies := krt.Fetch(kctx, policyCol.policiesByTargetRef, krt.FilterIndex(policyCol.index, targetRef),
 			krt.FilterGeneric(func(a any) bool {
 				p := a.(ir.PolicyWrapper)
@@ -380,9 +383,6 @@ func (p *PolicyIndex) fetchByTargetRefLabels(
 				return false
 			}),
 		)
-		if onlyBackends && !policyCol.forBackends {
-			continue
-		}
 		ret = append(ret, policies...)
 	}
 	return ret
