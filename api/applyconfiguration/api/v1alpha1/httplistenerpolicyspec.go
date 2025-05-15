@@ -5,8 +5,9 @@ package v1alpha1
 // HTTPListenerPolicySpecApplyConfiguration represents a declarative configuration of the HTTPListenerPolicySpec type for use
 // with apply.
 type HTTPListenerPolicySpecApplyConfiguration struct {
-	TargetRefs []LocalPolicyTargetReferenceApplyConfiguration `json:"targetRefs,omitempty"`
-	AccessLog  []AccessLogApplyConfiguration                  `json:"accessLog,omitempty"`
+	TargetRefs      []LocalPolicyTargetReferenceApplyConfiguration `json:"targetRefs,omitempty"`
+	TargetSelectors []LocalPolicyTargetSelectorApplyConfiguration  `json:"targetSelectors,omitempty"`
+	AccessLog       []AccessLogApplyConfiguration                  `json:"accessLog,omitempty"`
 }
 
 // HTTPListenerPolicySpecApplyConfiguration constructs a declarative configuration of the HTTPListenerPolicySpec type for use with
@@ -24,6 +25,19 @@ func (b *HTTPListenerPolicySpecApplyConfiguration) WithTargetRefs(values ...*Loc
 			panic("nil value passed to WithTargetRefs")
 		}
 		b.TargetRefs = append(b.TargetRefs, *values[i])
+	}
+	return b
+}
+
+// WithTargetSelectors adds the given value to the TargetSelectors field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the TargetSelectors field.
+func (b *HTTPListenerPolicySpecApplyConfiguration) WithTargetSelectors(values ...*LocalPolicyTargetSelectorApplyConfiguration) *HTTPListenerPolicySpecApplyConfiguration {
+	for i := range values {
+		if values[i] == nil {
+			panic("nil value passed to WithTargetSelectors")
+		}
+		b.TargetSelectors = append(b.TargetSelectors, *values[i])
 	}
 	return b
 }

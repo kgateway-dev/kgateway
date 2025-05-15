@@ -23,6 +23,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
@@ -109,7 +110,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 				ct:        i.CreationTimestamp.Time,
 				accessLog: accessLog,
 			},
-			TargetRefs: convert(i.Spec.TargetRefs),
+			TargetRefs: pluginutils.TargetRefsToPolicyRefs(i.Spec.TargetRefs, i.Spec.TargetSelectors),
 			Errors:     errs,
 		}
 
@@ -127,18 +128,6 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 			},
 		},
 	}
-}
-
-func convert(targetRefs []v1alpha1.LocalPolicyTargetReference) []ir.PolicyRef {
-	refs := make([]ir.PolicyRef, 0, len(targetRefs))
-	for _, targetRef := range targetRefs {
-		refs = append(refs, ir.PolicyRef{
-			Kind:  string(targetRef.Kind),
-			Name:  string(targetRef.Name),
-			Group: string(targetRef.Group),
-		})
-	}
-	return refs
 }
 
 func NewGatewayTranslationPass(ctx context.Context, tctx ir.GwTranslationCtx, reporter reports.Reporter) ir.ProxyTranslationPass {

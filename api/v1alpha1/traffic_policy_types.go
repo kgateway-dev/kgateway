@@ -34,9 +34,16 @@ type TrafficPolicyList struct {
 }
 
 type TrafficPolicySpec struct {
+	// TargetRefs specifies the target resources by reference to attach the policy to.
+	// +optional
+	//
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=16
 	TargetRefs []LocalPolicyTargetReference `json:"targetRefs,omitempty"`
+
+	// TargetSelectors specifies the target selectors to select resources to attach the policy to.
+	// +optional
+	TargetSelectors []LocalPolicyTargetSelector `json:"targetSelectors,omitempty"`
 
 	// AI is used to configure AI-based policies for the policy.
 	// +optional

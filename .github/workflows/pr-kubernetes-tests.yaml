@@ -26,27 +26,27 @@ jobs:
         # Above each test below, we document the latest date/time for the GitHub action step to run
         # NOTE: We use the GitHub action step time (as opposed to the `go test` time), because it is easier to capture
         test:
-        # April 4, 2025: 8 minutes
+        # May 5, 2025: ~19 minutes
         - cluster-name: 'cluster-one'
           go-test-args: '-v -timeout=25m'
           go-test-run-regex: '^TestKgateway$$/^BasicRouting$$|^TestKgateway$$/^HTTPRouteServices$$|^TestKgateway$$/^TLSRouteServices$$|^TestKgateway$$/^GRPCRouteServices$$'
           localstack: 'false'
-        # April 4, 2025: 5.5 minutes
+        # May 5, 2025: ~23 minutes
         - cluster-name: 'cluster-two'
           go-test-args: '-v -timeout=25m'
           go-test-run-regex: '^TestKgateway$$/^Backends$$|^TestKgateway$$/^Transforms$$|^TestKgateway$$/^BackendTLSPolicies$$|^TestKgatewayWaypoint$$'
           localstack: 'false'
-        # April 7, 2025: 6 minutes
+        # May 5, 2025: ~18 minutes
         - cluster-name: 'cluster-three'
           go-test-args: '-v -timeout=25m'
           go-test-run-regex: '^TestKgateway$$/^Deployer$$|^TestKgateway$$/^RouteDelegation$$|^TestKgateway$$/^Lambda$$|^TestKgateway$$/^AccessLog$$'
           localstack: 'true'
-        # April 4, 2025: 5.5 minutes
+        # May 5, 2025: ~17 minutes
         - cluster-name: 'cluster-four'
           go-test-args: '-v -timeout=25m'
-          go-test-run-regex: '^TestKgateway$$/^ExtProc$$|^TestKgateway$$/^ExtAuth$$|^TestKgateway$$/^TCPRouteServices$$'
+          go-test-run-regex: '^TestKgateway$$/^ExtProc$$|^TestKgateway$$/^ExtAuth$$|^TestKgateway$$/^TCPRouteServices$$|^TestKgateway$$/^PolicySelector$$'
           localstack: 'false'
-        # April 4, 2025: 6 minutes
+        # May 5, 2025: ~16 minutes
         - cluster-name: 'cluster-ai'
           go-test-args: '-v -timeout=25m'
           go-test-run-regex: '^TestAIExtension'

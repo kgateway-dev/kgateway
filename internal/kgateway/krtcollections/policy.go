@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"slices"
 
+	"istio.io/istio/pkg/config/labels"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/ptr"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -91,7 +92,7 @@ func (i *BackendIndex) BackendsWithPolicy() []krt.Collection[ir.BackendObjectIR]
 // policies attached.
 func (i *BackendIndex) AddBackends(gk schema.GroupKind, col krt.Collection[ir.BackendObjectIR]) {
 	backendsWithPoliciesCol := krt.NewCollection(col, func(kctx krt.HandlerContext, backendObj ir.BackendObjectIR) *ir.BackendObjectIR {
-		policies := i.policies.getTargetingPoliciesForBackends(kctx, extensionsplug.BackendAttachmentPoint, backendObj.ObjectSource, "")
+		policies := i.policies.getTargetingPoliciesForBackends(kctx, extensionsplug.BackendAttachmentPoint, backendObj.ObjectSource, "", nil)
 		backendObj.AttachedPolicies = toAttachedPolicies(policies)
 		return &backendObj
 	}, i.krtopts.ToOptions("")...)
@@ -188,12 +189,13 @@ func NewGatewayIndex(
 
 		// TODO: http polic
 		//		panic("TODO: implement http policies not just listener")
-		out.AttachedListenerPolicies = toAttachedPolicies(h.policies.getTargetingPolicies(kctx, extensionsplug.GatewayAttachmentPoint, out.ObjectSource, ""))
+		out.AttachedListenerPolicies = toAttachedPolicies(
+			h.policies.getTargetingPolicies(kctx, extensionsplug.GatewayAttachmentPoint, out.ObjectSource, "", i.GetLabels()))
 		out.AttachedHttpPolicies = out.AttachedListenerPolicies // see if i can find a better way to segment the listener level and http level policies
 		for _, l := range i.Spec.Listeners {
 			out.Listeners = append(out.Listeners, ir.Listener{
 				Listener:         l,
-				AttachedPolicies: toAttachedPolicies(h.policies.getTargetingPolicies(kctx, extensionsplug.RouteAttachmentPoint, out.ObjectSource, string(l.Name))),
+				AttachedPolicies: toAttachedPolicies(h.policies.getTargetingPolicies(kctx, extensionsplug.RouteAttachmentPoint, out.ObjectSource, string(l.Name), i.GetLabels())),
 				PolicyAncestorRef: gwv1.ParentReference{
 					Group:     k8sptr.To(gwv1.Group(wellknown.GatewayGVK.Group)),
 					Kind:      k8sptr.To(gwv1.Kind(wellknown.GatewayGVK.Kind)),
@@ -209,8 +211,11 @@ func NewGatewayIndex(
 }
 
 type targetRefIndexKey struct {
-	ir.PolicyRef
-	Namespace string
+	Group       string
+	Kind        string
+	Name        string
+	SectionName string
+	Namespace   string
 }
 
 func (k targetRefIndexKey) String() string {
@@ -289,11 +294,23 @@ func NewPolicyIndex(krtopts krtutil.KrtOptions, contributesPolicies extensionspl
 			}, krtopts.ToOptions(fmt.Sprintf("%s-policiesByTargetRef", gk.String()))...)
 
 			targetRefIndex := krt.NewIndex(policiesByTargetRef, func(p ir.PolicyWrapper) []targetRefIndexKey {
-				ret := make([]targetRefIndexKey, len(p.TargetRefs))
+				// Every policy is indexed by PolicyRef and PolicyRef without Name (by Group+Kind+Namespace)
+				ret := make([]targetRefIndexKey, len(p.TargetRefs)*2)
 				for i, tr := range p.TargetRefs {
+					// Index using standard PolicyRef
 					ret[i] = targetRefIndexKey{
-						PolicyRef: tr,
-						Namespace: p.Namespace,
+						Group:       tr.Group,
+						Kind:        tr.Kind,
+						Name:        tr.Name,
+						SectionName: tr.SectionName,
+						Namespace:   p.Namespace,
+					}
+					// Also index by Namespace without Name
+					ret[i+len(p.TargetRefs)] = targetRefIndexKey{
+						Group:       tr.Group,
+						Kind:        tr.Kind,
+						SectionName: tr.SectionName,
+						Namespace:   p.Namespace,
 					}
 				}
 				return ret
@@ -338,6 +355,39 @@ func (p *PolicyIndex) fetchByTargetRef(
 	return ret
 }
 
+func (p *PolicyIndex) fetchByTargetRefLabels(
+	kctx krt.HandlerContext,
+	targetRef targetRefIndexKey,
+	onlyBackends bool,
+	targetLabels map[string]string,
+) []ir.PolicyWrapper {
+	var ret []ir.PolicyWrapper
+	for _, policyCol := range p.availablePolicies {
+		policies := krt.Fetch(kctx, policyCol.policiesByTargetRef, krt.FilterIndex(policyCol.index, targetRef),
+			krt.FilterGeneric(func(a any) bool {
+				p := a.(ir.PolicyWrapper)
+				for _, ref := range p.TargetRefs {
+					targetRefKey := targetRefIndexKey{
+						Group:       ref.Group,
+						Kind:        ref.Kind,
+						SectionName: ref.SectionName,
+						Namespace:   p.Namespace,
+					}
+					if targetRef == targetRefKey && labels.Instance(ref.MatchLabels).Match(targetLabels) {
+						return true
+					}
+				}
+				return false
+			}),
+		)
+		if onlyBackends && !policyCol.forBackends {
+			continue
+		}
+		ret = append(ret, policies...)
+	}
+	return ret
+}
+
 // Attachment happens during collection creation (i.e. this file), and not translation. so these methods don't need to be public!
 // note: we may want to change that for global policies maybe.
 
@@ -346,8 +396,9 @@ func (p *PolicyIndex) getTargetingPoliciesForBackends(
 	pnt extensionsplug.AttachmentPoints,
 	targetRef ir.ObjectSource,
 	sectionName string,
+	targetLabels map[string]string,
 ) []ir.PolicyAtt {
-	return p.getTargetingPoliciesMaybeForBackends(kctx, pnt, targetRef, sectionName, true)
+	return p.getTargetingPoliciesMaybeForBackends(kctx, pnt, targetRef, sectionName, true, targetLabels)
 }
 
 func (p *PolicyIndex) getTargetingPolicies(
@@ -355,8 +406,9 @@ func (p *PolicyIndex) getTargetingPolicies(
 	pnt extensionsplug.AttachmentPoints,
 	targetRef ir.ObjectSource,
 	sectionName string,
+	targetLabels map[string]string,
 ) []ir.PolicyAtt {
-	return p.getTargetingPoliciesMaybeForBackends(kctx, pnt, targetRef, sectionName, false)
+	return p.getTargetingPoliciesMaybeForBackends(kctx, pnt, targetRef, sectionName, false, targetLabels)
 }
 
 func (p *PolicyIndex) getTargetingPoliciesMaybeForBackends(
@@ -365,6 +417,7 @@ func (p *PolicyIndex) getTargetingPoliciesMaybeForBackends(
 	targetRef ir.ObjectSource,
 	sectionName string,
 	onlyBackends bool,
+	targetLabels map[string]string,
 ) []ir.PolicyAtt {
 	var ret []ir.PolicyAtt
 	for _, gp := range p.globalPolicies {
@@ -380,19 +433,33 @@ func (p *PolicyIndex) getTargetingPoliciesMaybeForBackends(
 	}
 
 	// no need for ref grants here as target refs are namespace local
-	targetRefIndexKey := targetRefIndexKey{
-		PolicyRef: ir.PolicyRef{
-			Group: targetRef.Group,
-			Kind:  targetRef.Kind,
-			Name:  targetRef.Name,
-		},
+	refIndexKey := targetRefIndexKey{
+		Group:     targetRef.Group,
+		Kind:      targetRef.Kind,
+		Name:      targetRef.Name,
 		Namespace: targetRef.Namespace,
 	}
-	policies := p.fetchByTargetRef(kctx, targetRefIndexKey, onlyBackends)
+	policies := p.fetchByTargetRef(kctx, refIndexKey, onlyBackends)
 	var sectionNamePolicies []ir.PolicyWrapper
 	if sectionName != "" {
-		targetRefIndexKey.SectionName = sectionName
-		sectionNamePolicies = p.fetchByTargetRef(kctx, targetRefIndexKey, onlyBackends)
+		refIndexKey.SectionName = sectionName
+		sectionNamePolicies = p.fetchByTargetRef(kctx, refIndexKey, onlyBackends)
+	}
+	// Lookup policies that select targetLabels
+	if len(targetLabels) > 0 {
+		refIndexKeyByNamespace := targetRefIndexKey{
+			Group:     targetRef.Group,
+			Kind:      targetRef.Kind,
+			Namespace: targetRef.Namespace,
+		}
+		policiesByLabel := p.fetchByTargetRefLabels(kctx, refIndexKeyByNamespace, onlyBackends, targetLabels)
+		policies = append(policies, policiesByLabel...)
+		var sectionNamePoliciesByLabel []ir.PolicyWrapper
+		if sectionName != "" {
+			refIndexKeyByNamespace.SectionName = sectionName
+			sectionNamePoliciesByLabel = p.fetchByTargetRefLabels(kctx, refIndexKeyByNamespace, onlyBackends, targetLabels)
+		}
+		sectionNamePolicies = append(sectionNamePolicies, sectionNamePoliciesByLabel...)
 	}
 
 	for _, p := range policies {
@@ -640,12 +707,10 @@ func NewRoutesIndex(
 			// lookup by the root object
 			ret[i] = targetRefIndexKey{
 				Namespace: ns,
-				PolicyRef: ir.PolicyRef{
-					Group: group,
-					Kind:  kind,
-					Name:  string(pRef.Name),
-					// this index intentionally doesn't include sectionName or port
-				},
+				Group:     group,
+				Kind:      kind,
+				Name:      string(pRef.Name),
+				// this index intentionally doesn't include sectionName or port
 			}
 		}
 		return ret
@@ -665,11 +730,9 @@ func (h *RoutesIndex) RoutesForGateway(kctx krt.HandlerContext, nns types.Namesp
 
 func (h *RoutesIndex) RoutesFor(kctx krt.HandlerContext, nns types.NamespacedName, group, kind string) []ir.Route {
 	rts := krt.Fetch(kctx, h.routes, krt.FilterIndex(h.byParentRef, targetRefIndexKey{
-		PolicyRef: ir.PolicyRef{
-			Name:  nns.Name,
-			Group: group,
-			Kind:  kind,
-		},
+		Name:      nns.Name,
+		Group:     group,
+		Kind:      kind,
 		Namespace: nns.Namespace,
 	}))
 	ret := make([]ir.Route, len(rts))
@@ -716,7 +779,7 @@ func (h *RoutesIndex) transformTcpRoute(kctx krt.HandlerContext, i *gwv1a2.TCPRo
 		SourceObject:     i,
 		ParentRefs:       i.Spec.ParentRefs,
 		Backends:         h.getTcpBackends(kctx, src, backends),
-		AttachedPolicies: toAttachedPolicies(h.policies.getTargetingPolicies(kctx, extensionsplug.RouteAttachmentPoint, src, "")),
+		AttachedPolicies: toAttachedPolicies(h.policies.getTargetingPolicies(kctx, extensionsplug.RouteAttachmentPoint, src, "", i.GetLabels())),
 	}
 }
 
@@ -737,7 +800,7 @@ func (h *RoutesIndex) transformTlsRoute(kctx krt.HandlerContext, i *gwv1a2.TLSRo
 		ParentRefs:       i.Spec.ParentRefs,
 		Backends:         h.getTcpBackends(kctx, src, backends),
 		Hostnames:        tostr(i.Spec.Hostnames),
-		AttachedPolicies: toAttachedPolicies(h.policies.getTargetingPolicies(kctx, extensionsplug.RouteAttachmentPoint, src, "")),
+		AttachedPolicies: toAttachedPolicies(h.policies.getTargetingPolicies(kctx, extensionsplug.RouteAttachmentPoint, src, "", i.GetLabels())),
 	}
 }
 
@@ -757,9 +820,9 @@ func (h *RoutesIndex) transformHttpRoute(kctx krt.HandlerContext, i *gwv1.HTTPRo
 		ParentRefs:   i.Spec.ParentRefs,
 		Hostnames:    tostr(i.Spec.Hostnames),
 		Rules: h.transformRules(
-			kctx, src, i.Spec.Rules, ir.WithDelegationInheritedPolicyPriority(delegationInheritedPolicyPriority)),
+			kctx, src, i.Spec.Rules, i.GetLabels(), ir.WithDelegationInheritedPolicyPriority(delegationInheritedPolicyPriority)),
 		AttachedPolicies: toAttachedPolicies(
-			h.policies.getTargetingPolicies(kctx, extensionsplug.RouteAttachmentPoint, src, ""),
+			h.policies.getTargetingPolicies(kctx, extensionsplug.RouteAttachmentPoint, src, "", i.GetLabels()),
 			ir.WithDelegationInheritedPolicyPriority(delegationInheritedPolicyPriority),
 		),
 	}
@@ -769,6 +832,7 @@ func (h *RoutesIndex) transformRules(
 	kctx krt.HandlerContext,
 	src ir.ObjectSource,
 	i []gwv1.HTTPRouteRule,
+	srcLabels map[string]string,
 	opts ...ir.PolicyAttachmentOpts,
 ) []ir.HttpRouteRuleIR {
 	rules := make([]ir.HttpRouteRuleIR, 0, len(i))
@@ -776,7 +840,7 @@ func (h *RoutesIndex) transformRules(
 		extensionRefs := h.getExtensionRefs(kctx, src.Namespace, r.Filters)
 		var policies ir.AttachedPolicies
 		if r.Name != nil {
-			policies = toAttachedPolicies(h.policies.getTargetingPolicies(kctx, extensionsplug.RouteAttachmentPoint, src, string(*r.Name)), opts...)
+			policies = toAttachedPolicies(h.policies.getTargetingPolicies(kctx, extensionsplug.RouteAttachmentPoint, src, string(*r.Name), srcLabels), opts...)
 		}
 		rulePolicies := h.getBuiltInRulePolicies(r)
 		policies.Append(rulePolicies)
