@@ -64,7 +64,7 @@ const (
 	rateLimitFilterNamePrefix                   = "ratelimit"
 )
 
-var logger = logging.New("plugin_trafficpolicy")
+var logger = logging.New("plugin/trafficpolicy")
 
 func extAuthFilterName(name string) string {
 	if name == "" {

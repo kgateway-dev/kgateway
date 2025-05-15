@@ -16,7 +16,7 @@ const (
 	BackendClusterPrefix = "istio-se"
 )
 
-var logger = logging.New("plugin_serviceentry")
+var logger = logging.New("plugin/serviceentry")
 
 func NewPlugin(
 	_ context.Context,
