@@ -161,7 +161,7 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 	if err != nil {
 		return nil, err
 	}
-	commoncol := common.NewCommonCollections(
+	commoncol, err := common.NewCommonCollections(
 		ctx,
 		cfg.KrtOptions,
 		cfg.Client,
@@ -171,6 +171,9 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 		setupLog,
 		*cfg.SetupOpts.GlobalSettings,
 	)
+	if err != nil {
+		return nil, err
+	}
 	mergedPlugins := pluginFactoryWithBuiltin(cfg.ExtraPlugins)(ctx, commoncol)
 	commoncol.InitPlugins(ctx, mergedPlugins)
 
@@ -257,6 +260,7 @@ func (c *ControllerBuilder) Start(ctx context.Context) error {
 			Tag:        globalSettings.DefaultImageTag,
 			PullPolicy: globalSettings.DefaultImagePullPolicy,
 		},
+		DiscoveryNamespaceFilter: c.cfg.Client.ObjectFilter(),
 	}
 
 	setupLog.Info("creating gateway class provisioner")

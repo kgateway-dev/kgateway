@@ -57,7 +57,10 @@ func (c DestinationRuleWrapper) Equals(k DestinationRuleWrapper) bool {
 }
 
 func NewDestRuleIndex(istioClient kube.Client, krtopts *krtutil.KrtOptions) DestinationRuleIndex {
-	destRuleClient := kclient.NewDelayedInformer[*networkingclient.DestinationRule](istioClient, gvr.DestinationRule, kubetypes.StandardInformer, kclient.Filter{})
+	destRuleClient := kclient.NewDelayedInformer[*networkingclient.DestinationRule](
+		istioClient, gvr.DestinationRule, kubetypes.StandardInformer,
+		kclient.Filter{ObjectFilter: istioClient.ObjectFilter()},
+	)
 	rawDestrules := krt.WrapClient(destRuleClient, krtopts.ToOptions("DestinationRules")...)
 	destrules := krt.NewCollection(rawDestrules, func(kctx krt.HandlerContext, dr *networkingclient.DestinationRule) *DestinationRuleWrapper {
 		return &DestinationRuleWrapper{dr}

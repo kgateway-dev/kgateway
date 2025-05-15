@@ -57,7 +57,10 @@ func (c LocalityPod) Equals(in LocalityPod) bool {
 }
 
 func newNodeCollection(istioClient kube.Client, krtOptions krtutil.KrtOptions) krt.Collection[NodeMetadata] {
-	nodeClient := kclient.New[*corev1.Node](istioClient)
+	nodeClient := kclient.NewFiltered[*corev1.Node](
+		istioClient,
+		kclient.Filter{ObjectFilter: istioClient.ObjectFilter()},
+	)
 	nodes := krt.WrapClient(nodeClient, krtOptions.ToOptions("Nodes")...)
 	return NewNodeMetadataCollection(nodes)
 }
@@ -74,6 +77,7 @@ func NewNodeMetadataCollection(nodes krt.Collection[*corev1.Node]) krt.Collectio
 func NewPodsCollection(istioClient kube.Client, krtOptions krtutil.KrtOptions) krt.Collection[LocalityPod] {
 	podClient := kclient.NewFiltered[*corev1.Pod](istioClient, kclient.Filter{
 		ObjectTransform: kube.StripPodUnusedFields,
+		ObjectFilter:    istioClient.ObjectFilter(),
 	})
 	pods := krt.WrapClient(podClient, krtOptions.ToOptions("Pods")...)
 	nodes := newNodeCollection(istioClient, krtOptions)

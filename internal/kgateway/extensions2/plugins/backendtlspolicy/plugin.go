@@ -80,7 +80,10 @@ func registerTypes() {
 
 func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensionsplug.Plugin {
 	registerTypes()
-	inf := kclient.NewDelayedInformer[*gwv1a3.BackendTLSPolicy](commoncol.Client, backendTlsPolicyGvr, kubetypes.StandardInformer, kclient.Filter{})
+	inf := kclient.NewDelayedInformer[*gwv1a3.BackendTLSPolicy](
+		commoncol.Client, backendTlsPolicyGvr, kubetypes.StandardInformer,
+		kclient.Filter{ObjectFilter: commoncol.Client.ObjectFilter()},
+	)
 	col := krt.WrapClient(inf, commoncol.KrtOpts.ToOptions("BackendTLSPolicy")...)
 
 	translate := buildTranslateFunc(ctx, commoncol.ConfigMaps)

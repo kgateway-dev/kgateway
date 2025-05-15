@@ -11,6 +11,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	istiosets "istio.io/istio/pkg/util/sets"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -149,6 +150,16 @@ func generateKubeConfiguration(restconfig *rest.Config) string {
 	return tmpfile.Name()
 }
 
+type fakeDiscoveryNamespaceFilter struct{}
+
+func (f fakeDiscoveryNamespaceFilter) Filter(obj any) bool {
+	// this is a fake filter, so we just return true
+	return true
+}
+
+func (f fakeDiscoveryNamespaceFilter) AddHandler(func(selected, deselected istiosets.String)) {
+}
+
 func createManager(
 	parentCtx context.Context,
 	inferenceExt *deployer.InferenceExtInfo,
@@ -184,6 +195,7 @@ func createManager(
 			Registry: "ghcr.io/kgateway-dev",
 			Tag:      "latest",
 		},
+		DiscoveryNamespaceFilter: fakeDiscoveryNamespaceFilter{},
 	}
 	if err := controller.NewBaseGatewayController(parentCtx, gwCfg); err != nil {
 		return nil, err

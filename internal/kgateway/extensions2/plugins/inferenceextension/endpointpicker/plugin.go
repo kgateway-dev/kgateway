@@ -79,7 +79,10 @@ func NewPlugin(ctx context.Context, commonCol *common.CommonCollections) *extplu
 	registerTypes(cli)
 
 	// Create an InferencePool krt collection.
-	poolCol := krt.WrapClient(kclient.New[*infextv1a2.InferencePool](commonCol.Client), commonCol.KrtOpts.ToOptions("InferencePool")...)
+	poolCol := krt.WrapClient(kclient.NewFiltered[*infextv1a2.InferencePool](
+		commonCol.Client,
+		kclient.Filter{ObjectFilter: commonCol.Client.ObjectFilter()},
+	), commonCol.KrtOpts.ToOptions("InferencePool")...)
 
 	return NewPluginFromCollections(ctx, commonCol, poolCol)
 }
