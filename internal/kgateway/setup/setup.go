@@ -11,6 +11,7 @@ import (
 	istiokube "istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/client-go/rest"
+	"k8s.io/klog/v2"
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/admin"
@@ -158,9 +159,12 @@ func setupLogging(levelStr string) {
 	}
 	// set all loggers to the specified level
 	logging.Reset(level)
-	controllerLogger := logging.New("controllerruntime")
-	logrSink := logr.FromSlogHandler(controllerLogger.Handler())
-	ctrl.SetLogger(logrSink)
+	// set controller-runtime logger
+	controllerLogger := logr.FromSlogHandler(logging.New("controllerruntime").Handler())
+	ctrl.SetLogger(controllerLogger)
+	// set klog logger
+	klogLogger := logr.FromSlogHandler(logging.New("klog").Handler())
+	klog.SetLogger(klogLogger)
 }
 
 func createKubeClient(restConfig *rest.Config) (istiokube.Client, error) {
