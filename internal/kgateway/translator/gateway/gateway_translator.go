@@ -17,7 +17,7 @@ import (
 	reports "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
 
-var logger = logging.New("gateway")
+var logger = logging.New("translator/gateway")
 
 func NewTranslator(queries query.GatewayQueries) extensionsplug.KGwTranslator {
 	return &translator{
