@@ -59,7 +59,7 @@ type Settings struct {
 
 	// LogLevel specifies the logging level (e.g., "debug", "info", "warn", "error").
 	// Defaults to "info" if not set via LOG_LEVEL environment variable.
-	LogLevel string `envconfig:"LOG_LEVEL" default:"info"`
+	LogLevel string `split_words:"true" default:"info"`
 }
 
 // BuildSettings returns a zero-valued Settings obj if error is encountered when parsing env
