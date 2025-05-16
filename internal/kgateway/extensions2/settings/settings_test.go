@@ -66,7 +66,7 @@ func TestSettings(t *testing.T) {
 				"KGW_DEFAULT_IMAGE_PULL_POLICY": "Always",
 				"KGW_WAYPOINT_LOCAL_BINDING":    "true",
 				"KGW_INGRESS_USE_WAYPOINTS":     "true",
-				"LOG_LEVEL":                     "debug",
+				"KGW_LOG_LEVEL":                 "debug",
 			},
 			expectedSettings: &settings.Settings{
 				DnsLookupFamily:        "V4_ONLY",

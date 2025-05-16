@@ -56,7 +56,7 @@ spec:
                 resourceFieldRef:
                   divisor: "1"
                   resource: limits.cpu
-            - name: LOG_LEVEL
+            - name: KGW_LOG_LEVEL
               value: {{ .Values.controller.logLevel | quote }}
             - name: KGW_XDS_SERVICE_NAME
               value: {{ include "kgateway.fullname" . }}
