@@ -58,8 +58,8 @@ type Settings struct {
 	IngressUseWaypoints bool `split_words:"true" default:"false"`
 
 	// LogLevel specifies the logging level (e.g., "debug", "info", "warn", "error").
-	// Defaults to "info" if not set via KGW_LOG_LEVEL environment variable.
-	LogLevel string `envconfig:"KGW_LOG_LEVEL" default:"info"`
+	// Defaults to "info" if not set via LOG_LEVEL environment variable.
+	LogLevel string `envconfig:"LOG_LEVEL" default:"info"`
 }
 
 // BuildSettings returns a zero-valued Settings obj if error is encountered when parsing env
