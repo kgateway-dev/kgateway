@@ -13,18 +13,15 @@ import (
 )
 
 type TrafficPolicy = trafficpolicy.TrafficPolicy
-type TrafficPolicyGatewayExtensionIR = trafficpolicy.TrafficPolicyGatewayExtensionIR
 
-func TrafficPolicyBuilder(
+func NewTrafficPolicyBuilder(
 	ctx context.Context,
-	commoncol *common.CommonCollections, gatewayExtensions krt.Collection[TrafficPolicyGatewayExtensionIR],
-) func(krtctx krt.HandlerContext, i *v1alpha1.TrafficPolicy) (*TrafficPolicy, []error) {
-	return trafficpolicy.TrafficPolicyBuilder(ctx, commoncol, gatewayExtensions)
+	commoncol *common.CommonCollections,
+	fetch func(krtctx krt.HandlerContext, extType v1alpha1.GatewayExtensionType) *ir.GatewayExtension,
+) *trafficpolicy.TrafficPolicyBuilder {
+	return trafficpolicy.NewTrafficPolicyBuilder(ctx, commoncol, fetch)
 }
 
-func TranslateGatewayExtensionBuilder(commoncol *common.CommonCollections) func(krtctx krt.HandlerContext, gExt ir.GatewayExtension) *TrafficPolicyGatewayExtensionIR {
-	return trafficpolicy.TranslateGatewayExtensionBuilder(commoncol)
-}
 func NewGatewayTranslationPass(ctx context.Context, tctx ir.GwTranslationCtx, reporter reports.Reporter) ir.ProxyTranslationPass {
 	return trafficpolicy.NewGatewayTranslationPass(ctx, tctx, reporter)
 }
