@@ -28,7 +28,7 @@ import (
 	reports "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
 
-var logger = logging.New("listener")
+var logger = logging.New("translator/listener")
 
 // TranslateListeners translates the set of gloo listeners required to produce a full output proxy (either form one Gateway or multiple merged Gateways)
 func TranslateListeners(
