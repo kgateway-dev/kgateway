@@ -21,17 +21,20 @@ func NewPlugin(
 ) extensionsplug.Plugin {
 	seCollections := initServiceEntryCollections(ctx, commonCols)
 	return extensionsplug.Plugin{
-		ContributesPolicies: extensionsplug.ContributesPolicies{
-			wellknown.ServiceEntryGVK.GroupKind(): extensionsplug.PolicyPlugin{
-				GetBackendForRef: seCollections.getBackendForRef,
-			},
-		},
 		ContributesBackends: map[schema.GroupKind]extensionsplug.BackendPlugin{
 			wellknown.ServiceEntryGVK.GroupKind(): {
 				BackendInit: ir.BackendInit{
 					InitBackend: seCollections.initServiceEntryBackend,
 				},
-				Backends:  seCollections.Backends,
+				Backends: seCollections.Backends,
+
+				AliasKinds: []schema.GroupKind{
+					// allow backendRef with networking.istio.io/Hostname
+					wellknown.HostnameGVK.GroupKind(),
+					// alias to ourself because one SE -> multiple Backends
+					wellknown.ServiceEntryGVK.GroupKind(),
+				},
+
 				Endpoints: seCollections.Endpoints,
 			},
 		},

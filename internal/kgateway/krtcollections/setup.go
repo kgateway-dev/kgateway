@@ -99,13 +99,7 @@ func InitCollections(
 	gatewayClasses := krt.WrapClient(kclient.New[*gwv1.GatewayClass](istioClient), krtopts.ToOptions("KubeGatewayClasses")...)
 
 	policies := NewPolicyIndex(krtopts, plugins.ContributesPolicies)
-	var backendRefPlugins []extensionsplug.GetBackendForRefPlugin
-	for _, ext := range plugins.ContributesPolicies {
-		if ext.GetBackendForRef != nil {
-			backendRefPlugins = append(backendRefPlugins, ext.GetBackendForRef)
-		}
-	}
-	backendIndex := NewBackendIndex(krtopts, backendRefPlugins, policies, refgrants)
+	backendIndex := NewBackendIndex(krtopts, policies, refgrants)
 	initBackends(plugins, backendIndex)
 	endpointIRs := initEndpoints(plugins, krtopts)
 	gateways := NewGatewayIndex(krtopts, controllerName, policies, kubeRawGateways, gatewayClasses)
@@ -117,7 +111,7 @@ func InitCollections(
 func initBackends(plugins extensionsplug.Plugin, backendIndex *BackendIndex) {
 	for gk, plugin := range plugins.ContributesBackends {
 		if plugin.Backends != nil {
-			backendIndex.AddBackends(gk, plugin.Backends)
+			backendIndex.AddBackends(gk, plugin.Backends, plugin.AliasKinds...)
 		}
 	}
 }
