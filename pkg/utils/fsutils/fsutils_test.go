@@ -1,64 +1,74 @@
-package fsutils
+package fsutils_test
 
 import (
-	"github.com/stretchr/testify/assert"
 	"os"
 	"path/filepath"
-	"testing"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+
+	. "github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
 )
 
-// test that content can be written to a temporary file and read back correctly
-func TestToTempFile(t *testing.T) {
-	content := "test content"
-	filename, err := ToTempFile(content)
-	assert.NoError(t, err)
-	defer os.Remove(filename)
+var _ = Describe("FSUtils", func() {
+	Describe("ToTempFile", func() {
+		It("can write content to a temporary file and read it back correctly", func() {
+			content := "test content"
+			filename, err := ToTempFile(content)
+			Expect(err).NotTo(HaveOccurred())
+			defer os.Remove(filename)
 
-	data, err := os.ReadFile(filename)
-	assert.NoError(t, err)
-	assert.Equal(t, content, string(data))
-}
+			data, err := os.ReadFile(filename)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(string(data)).To(Equal(content))
+		})
+	})
 
-// test directory detection for temporary dirs, non-existent dirs, and regular files
-func TestIsDirectory(t *testing.T) {
-	// Test with a Temporary Directory
-	tempDir, err := os.MkdirTemp("", "test")
-	assert.NoError(t, err)
-	defer os.RemoveAll(tempDir)
+	Describe("IsDirectory", func() {
+		It("correctly detects directories and files", func() {
+			// Test with a Temporary Directory
+			tempDir, err := os.MkdirTemp("", "test")
+			Expect(err).NotTo(HaveOccurred())
+			defer os.RemoveAll(tempDir)
 
-	assert.True(t, IsDirectory(tempDir))
+			Expect(IsDirectory(tempDir)).To(BeTrue())
 
-	// Test with a non existant directory
-	assert.False(t, IsDirectory("/testDir"))
+			// Test with a non existent directory
+			Expect(IsDirectory("/testDir")).To(BeFalse())
 
-	// Test with file instead of directory
-	f, err := os.CreateTemp("", "test")
-	assert.NoError(t, err)
-	defer os.Remove(f.Name())
-	assert.False(t, IsDirectory(f.Name()))
-}
+			// Test with file instead of directory
+			f, err := os.CreateTemp("", "test")
+			Expect(err).NotTo(HaveOccurred())
+			defer os.Remove(f.Name())
+			Expect(IsDirectory(f.Name())).To(BeFalse())
+		})
+	})
 
-// test that the current directory path can be retrieved and is valid
-func TestMustGetThisDir(t *testing.T) {
-	dir := MustGetThisDir()
-	assert.NotEmpty(t, dir)
-	assert.True(t, IsDirectory(dir))
-}
+	Describe("MustGetThisDir", func() {
+		It("returns a valid directory path", func() {
+			dir := MustGetThisDir()
+			Expect(dir).NotTo(BeEmpty())
+			Expect(IsDirectory(dir)).To(BeTrue())
+		})
+	})
 
-// test that the go.mod file path can be retrieved and points to a valid go.mod file
-func TestGoModPath(t *testing.T) {
-	path := GoModPath()
-	assert.NotEmpty(t, path)
-	assert.Equal(t, "go.mod", filepath.Base(path))
-}
+	Describe("GoModPath", func() {
+		It("returns a valid go.mod file path", func() {
+			path := GoModPath()
+			Expect(path).NotTo(BeEmpty())
+			Expect(filepath.Base(path)).To(Equal("go.mod"))
+		})
+	})
 
-// test that the module root directory can be found and contains a go.mod file
-func TestGetModuleRoot(t *testing.T) {
-	root := GetModuleRoot()
-	assert.NotEmpty(t, root)
-	assert.True(t, IsDirectory(root))
+	Describe("GetModuleRoot", func() {
+		It("returns a valid module root containing go.mod", func() {
+			root := GetModuleRoot()
+			Expect(root).NotTo(BeEmpty())
+			Expect(IsDirectory(root)).To(BeTrue())
 
-	// Verify go.mod exists in root
-	_, err := os.Stat(filepath.Join(root, "go.mod"))
-	assert.NoError(t, err)
-}
+			// Verify go.mod exists in root
+			_, err := os.Stat(filepath.Join(root, "go.mod"))
+			Expect(err).NotTo(HaveOccurred())
+		})
+	})
+})
