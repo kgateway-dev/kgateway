@@ -2,11 +2,19 @@
 
 package v1alpha1
 
+import (
+	v1 "sigs.k8s.io/gateway-api/apis/v1"
+)
+
 // BackendConfigPolicySpecApplyConfiguration represents a declarative configuration of the BackendConfigPolicySpec type for use
 // with apply.
 type BackendConfigPolicySpecApplyConfiguration struct {
-	TargetRefs               []LocalPolicyTargetReferenceApplyConfiguration `json:"targetRefs,omitempty"`
-	MaxRequestsPerConnection *int                                           `json:"maxRequestsPerConnection,omitempty"`
+	TargetRefs                    []LocalPolicyTargetReferenceApplyConfiguration `json:"targetRefs,omitempty"`
+	MaxRequestsPerConnection      *int                                           `json:"maxRequestsPerConnection,omitempty"`
+	ConnectTimeout                *v1.Duration                                   `json:"connectTimeout,omitempty"`
+	PerConnectionBufferLimitBytes *int                                           `json:"perConnectionBufferLimitBytes,omitempty"`
+	TCPKeepalive                  *TCPKeepaliveApplyConfiguration                `json:"tcpKeepalive,omitempty"`
+	CommonHttpProtocolOptions     *CommonHttpProtocolOptionsApplyConfiguration   `json:"commonHttpProtocolOptions,omitempty"`
 }
 
 // BackendConfigPolicySpecApplyConfiguration constructs a declarative configuration of the BackendConfigPolicySpec type for use with
@@ -33,5 +41,37 @@ func (b *BackendConfigPolicySpecApplyConfiguration) WithTargetRefs(values ...*Lo
 // If called multiple times, the MaxRequestsPerConnection field is set to the value of the last call.
 func (b *BackendConfigPolicySpecApplyConfiguration) WithMaxRequestsPerConnection(value int) *BackendConfigPolicySpecApplyConfiguration {
 	b.MaxRequestsPerConnection = &value
+	return b
+}
+
+// WithConnectTimeout sets the ConnectTimeout field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the ConnectTimeout field is set to the value of the last call.
+func (b *BackendConfigPolicySpecApplyConfiguration) WithConnectTimeout(value v1.Duration) *BackendConfigPolicySpecApplyConfiguration {
+	b.ConnectTimeout = &value
+	return b
+}
+
+// WithPerConnectionBufferLimitBytes sets the PerConnectionBufferLimitBytes field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the PerConnectionBufferLimitBytes field is set to the value of the last call.
+func (b *BackendConfigPolicySpecApplyConfiguration) WithPerConnectionBufferLimitBytes(value int) *BackendConfigPolicySpecApplyConfiguration {
+	b.PerConnectionBufferLimitBytes = &value
+	return b
+}
+
+// WithTCPKeepalive sets the TCPKeepalive field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the TCPKeepalive field is set to the value of the last call.
+func (b *BackendConfigPolicySpecApplyConfiguration) WithTCPKeepalive(value *TCPKeepaliveApplyConfiguration) *BackendConfigPolicySpecApplyConfiguration {
+	b.TCPKeepalive = value
+	return b
+}
+
+// WithCommonHttpProtocolOptions sets the CommonHttpProtocolOptions field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the CommonHttpProtocolOptions field is set to the value of the last call.
+func (b *BackendConfigPolicySpecApplyConfiguration) WithCommonHttpProtocolOptions(value *CommonHttpProtocolOptionsApplyConfiguration) *BackendConfigPolicySpecApplyConfiguration {
+	b.CommonHttpProtocolOptions = value
 	return b
 }

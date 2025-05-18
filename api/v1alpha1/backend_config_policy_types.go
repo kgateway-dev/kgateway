@@ -1,6 +1,9 @@
 package v1alpha1
 
-import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+import (
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+)
 
 // +kubebuilder:rbac:groups=gateway.kgateway.dev,resources=backendconfigpolicies,verbs=get;list;watch
 // +kubebuilder:rbac:groups=gateway.kgateway.dev,resources=backendconfigpolicies/status,verbs=get;update;patch
@@ -31,6 +34,43 @@ type BackendConfigPolicySpec struct {
 
 	// +optional
 	MaxRequestsPerConnection *int `json:"maxRequestsPerConnection,omitempty"`
+
+	// +optional
+	ConnectTimeout *gwv1.Duration `json:"connectTimeout,omitempty"` // TODO check type
+	// *durationpb.Duration
+
+	// +optional
+	PerConnectionBufferLimitBytes *int `json:"perConnectionBufferLimitBytes,omitempty"`
+
+	// +optional
+	TCPKeepalive *TCPKeepalive `json:"tcpKeepalive,omitempty"`
+
+	// +optional
+	CommonHttpProtocolOptions *CommonHttpProtocolOptions `json:"commonHttpProtocolOptions,omitempty"`
+}
+
+type CommonHttpProtocolOptions struct {
+	// +optional
+	IdleTimeout *gwv1.Duration `json:"idleTimeout,omitempty"`
+
+	// +optional
+	MaxHeadersCount *int `json:"maxHeadersCount,omitempty"`
+
+	// +optional
+	MaxStreamDuration *gwv1.Duration `json:"maxStreamDuration,omitempty"`
+
+	// HeadersWithUnderscoresAction
+}
+
+type TCPKeepalive struct {
+	// +optional
+	KeepAliveProbes *int `json:"keepAliveProbes,omitempty"`
+
+	// +optional
+	KeepAliveTime *gwv1.Duration `json:"keepAliveTime,omitempty"`
+
+	// +optional
+	KeepAliveInterval *gwv1.Duration `json:"keepAliveInterval,omitempty"`
 }
 
 type BackendConfigPolicyStatus struct {

@@ -288,7 +288,16 @@ var schemaYAML = typed.YAMLObject(`types:
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.BackendConfigPolicySpec
   map:
     fields:
+    - name: commonHttpProtocolOptions
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.CommonHttpProtocolOptions
+    - name: connectTimeout
+      type:
+        scalar: string
     - name: maxRequestsPerConnection
+      type:
+        scalar: numeric
+    - name: perConnectionBufferLimitBytes
       type:
         scalar: numeric
     - name: targetRefs
@@ -297,6 +306,9 @@ var schemaYAML = typed.YAMLObject(`types:
           elementType:
             namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LocalPolicyTargetReference
           elementRelationship: atomic
+    - name: tcpKeepalive
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.TCPKeepalive
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.BackendConfigPolicyStatus
   map:
     fields:
@@ -372,6 +384,18 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         scalar: string
       default: ""
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.CommonHttpProtocolOptions
+  map:
+    fields:
+    - name: idleTimeout
+      type:
+        scalar: string
+    - name: maxHeadersCount
+      type:
+        scalar: numeric
+    - name: maxStreamDuration
+      type:
+        scalar: string
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.CustomLabel
   map:
     fields:
@@ -1310,6 +1334,18 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: vertexai
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.VertexAIConfig
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.TCPKeepalive
+  map:
+    fields:
+    - name: keepAliveInterval
+      type:
+        scalar: string
+    - name: keepAliveProbes
+      type:
+        scalar: numeric
+    - name: keepAliveTime
+      type:
+        scalar: string
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.TokenBucket
   map:
     fields:

@@ -40,6 +40,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.BodyTransformation":              schema_kgateway_v2_api_v1alpha1_BodyTransformation(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.BufferSettings":                  schema_kgateway_v2_api_v1alpha1_BufferSettings(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CELFilter":                       schema_kgateway_v2_api_v1alpha1_CELFilter(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CommonHttpProtocolOptions":       schema_kgateway_v2_api_v1alpha1_CommonHttpProtocolOptions(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ComparisonFilter":                schema_kgateway_v2_api_v1alpha1_ComparisonFilter(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CustomLabel":                     schema_kgateway_v2_api_v1alpha1_CustomLabel(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CustomResponse":                  schema_kgateway_v2_api_v1alpha1_CustomResponse(ref),
@@ -115,6 +116,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.StatsConfig":                     schema_kgateway_v2_api_v1alpha1_StatsConfig(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.StatusCodeFilter":                schema_kgateway_v2_api_v1alpha1_StatusCodeFilter(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.SupportedLLMProvider":            schema_kgateway_v2_api_v1alpha1_SupportedLLMProvider(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.TCPKeepalive":                    schema_kgateway_v2_api_v1alpha1_TCPKeepalive(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.TokenBucket":                     schema_kgateway_v2_api_v1alpha1_TokenBucket(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.TrafficPolicy":                   schema_kgateway_v2_api_v1alpha1_TrafficPolicy(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.TrafficPolicyList":               schema_kgateway_v2_api_v1alpha1_TrafficPolicyList(ref),
@@ -1244,11 +1246,33 @@ func schema_kgateway_v2_api_v1alpha1_BackendConfigPolicySpec(ref common.Referenc
 							Format: "int32",
 						},
 					},
+					"connectTimeout": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"perConnectionBufferLimitBytes": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"integer"},
+							Format: "int32",
+						},
+					},
+					"tcpKeepalive": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.TCPKeepalive"),
+						},
+					},
+					"commonHttpProtocolOptions": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CommonHttpProtocolOptions"),
+						},
+					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LocalPolicyTargetReference"},
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CommonHttpProtocolOptions", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LocalPolicyTargetReference", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.TCPKeepalive"},
 	}
 }
 
@@ -1502,6 +1526,36 @@ func schema_kgateway_v2_api_v1alpha1_CELFilter(ref common.ReferenceCallback) com
 					},
 				},
 				Required: []string{"match"},
+			},
+		},
+	}
+}
+
+func schema_kgateway_v2_api_v1alpha1_CommonHttpProtocolOptions(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"idleTimeout": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"maxHeadersCount": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"integer"},
+							Format: "int32",
+						},
+					},
+					"maxStreamDuration": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+				},
 			},
 		},
 	}
@@ -4336,6 +4390,36 @@ func schema_kgateway_v2_api_v1alpha1_SupportedLLMProvider(ref common.ReferenceCa
 		},
 		Dependencies: []string{
 			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AnthropicConfig", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AzureOpenAIConfig", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.GeminiConfig", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.OpenAIConfig", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.VertexAIConfig"},
+	}
+}
+
+func schema_kgateway_v2_api_v1alpha1_TCPKeepalive(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"keepAliveProbes": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"integer"},
+							Format: "int32",
+						},
+					},
+					"keepAliveTime": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"keepAliveInterval": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+				},
+			},
+		},
 	}
 }
 

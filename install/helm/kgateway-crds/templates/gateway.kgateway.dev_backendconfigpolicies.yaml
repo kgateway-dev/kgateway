@@ -31,7 +31,23 @@ spec:
             type: object
           spec:
             properties:
+              commonHttpProtocolOptions:
+                properties:
+                  idleTimeout:
+                    pattern: ^([0-9]{1,5}(h|m|s|ms)){1,4}$
+                    type: string
+                  maxHeadersCount:
+                    type: integer
+                  maxStreamDuration:
+                    pattern: ^([0-9]{1,5}(h|m|s|ms)){1,4}$
+                    type: string
+                type: object
+              connectTimeout:
+                pattern: ^([0-9]{1,5}(h|m|s|ms)){1,4}$
+                type: string
               maxRequestsPerConnection:
+                type: integer
+              perConnectionBufferLimitBytes:
                 type: integer
               targetRefs:
                 items:
@@ -57,6 +73,17 @@ spec:
                 maxItems: 16
                 minItems: 1
                 type: array
+              tcpKeepalive:
+                properties:
+                  keepAliveInterval:
+                    pattern: ^([0-9]{1,5}(h|m|s|ms)){1,4}$
+                    type: string
+                  keepAliveProbes:
+                    type: integer
+                  keepAliveTime:
+                    pattern: ^([0-9]{1,5}(h|m|s|ms)){1,4}$
+                    type: string
+                type: object
             type: object
           status:
             properties:
