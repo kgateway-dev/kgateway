@@ -1,10 +1,10 @@
 package fsutils
 
 import (
+	"github.com/stretchr/testify/assert"
 	"os"
 	"path/filepath"
 	"testing"
-	"github.com/stretchr/testify/assert"
 )
 
 // test that content can be written to a temporary file and read back correctly
@@ -57,7 +57,7 @@ func TestGetModuleRoot(t *testing.T) {
 	root := GetModuleRoot()
 	assert.NotEmpty(t, root)
 	assert.True(t, IsDirectory(root))
-	
+
 	// Verify go.mod exists in root
 	_, err := os.Stat(filepath.Join(root, "go.mod"))
 	assert.NoError(t, err)
