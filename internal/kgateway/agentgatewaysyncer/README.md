@@ -2,10 +2,10 @@
 
 This syncer configures xds updates for the [agentgateway](https://agentgateway.dev/) data plane. 
 
-### Codegen
+### APIs
 
-To build the a2a targets, mcp targets and listeners for agentgateway, run:
+The syncer uses the following APIs:
 
-```shell
- make generate-agentgateway
-```
+- [a2a](https://github.com/agentgateway/agentgateway/tree/main/go/api/a2a/a2a)
+- [mcp](https://github.com/agentgateway/agentgateway/tree/main/go/api/mcp/mcp)
+- [listener](https://github.com/agentgateway/agentgateway/tree/main/go/api/listener)

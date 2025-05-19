@@ -11,7 +11,6 @@ const (
 	MCPPathAnnotation = "kgateway.dev/mcp-path"
 	A2APathAnnotation = "kgateway.dev/a2a-path"
 
-	// TODO: agentgateway currently uses this node ID. Should change it to be configurable.
-	// https://github.com/agentgateway/agentgateway/blob/a553ae20c786787371621fe7c6e8964e65f3f2c8/crates/agentgateway/src/xds/client.rs#L294
-	OwnerNodeId = "mcp-kgateway-kube-gateway-api"
+	// Needs to match agentgateway role configured here: https://github.com/agentgateway/agentgateway/blob/main/crates/agentgateway/src/xds/client.rs#L293
+	OwnerNodeId = "agentgateway-api"
 )

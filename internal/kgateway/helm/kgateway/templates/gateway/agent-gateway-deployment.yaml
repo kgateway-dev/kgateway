@@ -29,7 +29,7 @@ spec:
     spec:
       containers:
         - name: agent-gateway
-          image: ghcr.io/agentgateway/agentgateway:0.4.26
+          image: ghcr.io/agentgateway/agentgateway:v0.4.29
           args:
             - --file=/config/config.json
           env:

@@ -112,6 +112,8 @@ require (
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/OpenPeeDeeP/depguard/v2 v2.2.1 // indirect
 	github.com/ProtonMail/go-crypto v1.0.0 // indirect
+	// TODO: pin to release version. Needed https://github.com/agentgateway/agentgateway/pull/115 for go mod fix
+	github.com/agentgateway/agentgateway v0.4.31-0.20250519135723-61536c2b3fa0
 	github.com/alecthomas/go-check-sumtype v0.3.1 // indirect
 	github.com/alexkohler/nakedret/v2 v2.0.5 // indirect
 	github.com/alexkohler/prealloc v1.0.0 // indirect

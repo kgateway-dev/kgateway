@@ -282,7 +282,7 @@ func (c *ControllerBuilder) Start(ctx context.Context) error {
 	}
 
 	setupLog.Info("creating gateway class provisioner")
-	if err := NewGatewayClassProvisioner(c.mgr, c.cfg.ControllerName, GetDefaultClassInfo()); err != nil {
+	if err := NewGatewayClassProvisioner(c.mgr, c.cfg.ControllerName, GetDefaultClassInfo(globalSettings)); err != nil {
 		setupLog.Error(err, "unable to create gateway class provisioner")
 		return err
 	}
@@ -326,15 +326,10 @@ func (c *ControllerBuilder) HasSynced() bool {
 
 // GetDefaultClassInfo returns the default GatewayClass for the kgateway controller.
 // Exported for testing.
-func GetDefaultClassInfo() map[string]*ClassInfo {
-	return map[string]*ClassInfo{
+func GetDefaultClassInfo(globalSettings *settings.Settings) map[string]*ClassInfo {
+	classInfos := map[string]*ClassInfo{
 		wellknown.GatewayClassName: {
 			Description: "Standard class for managing Gateway API ingress traffic.",
-			Labels:      map[string]string{},
-			Annotations: map[string]string{},
-		},
-		wellknown.AgentGatewayClassName: {
-			Description: "Specialized class for managing agentgateway proxies.",
 			Labels:      map[string]string{},
 			Annotations: map[string]string{},
 		},
@@ -346,4 +341,13 @@ func GetDefaultClassInfo() map[string]*ClassInfo {
 			},
 		},
 	}
+	// Only enable agentgateway gateway class if it's enabled in the settings
+	if globalSettings.EnableAgentGateway {
+		classInfos[wellknown.AgentGatewayClassName] = &ClassInfo{
+			Description: "Specialized class for agentgateway.",
+			Labels:      map[string]string{},
+			Annotations: map[string]string{},
+		}
+	}
+	return classInfos
 }

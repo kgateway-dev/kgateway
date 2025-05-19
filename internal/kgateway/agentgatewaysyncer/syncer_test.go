@@ -4,14 +4,14 @@ import (
 	"context"
 	"testing"
 
+	agentgateway "github.com/agentgateway/agentgateway/go/api"
+	"github.com/agentgateway/agentgateway/go/api/a2a"
+	"github.com/agentgateway/agentgateway/go/api/mcp"
 	envoytypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer/a2a"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer/mcp"
 )
 
 // dumpXDSCacheState is a helper function that dump the current state of the XDS cache for the agentgateway cache
@@ -68,11 +68,11 @@ func TestXDSCacheState(t *testing.T) {
 		},
 		Listeners: []string{"mcp-listener"},
 	}
-	listener := &Listener{
+	listener := &agentgateway.Listener{
 		Name:     "test-listener",
-		Protocol: Listener_A2A,
-		Listener: &Listener_Sse{
-			Sse: &SseListener{
+		Protocol: agentgateway.Listener_A2A,
+		Listener: &agentgateway.Listener_Sse{
+			Sse: &agentgateway.SseListener{
 				Address: "[::]",
 				Port:    8080,
 			},
@@ -124,8 +124,8 @@ func TestXDSCacheState(t *testing.T) {
 	listenerResources := retrievedSnapshot.GetResources(TargetTypeListenerUrl)
 	assert.NotNil(t, listenerResources)
 	assert.Contains(t, listenerResources, "test-listener")
-	retrievedListener := listenerResources["test-listener"].(*Listener)
-	assert.Equal(t, Listener_A2A, retrievedListener.Protocol)
+	retrievedListener := listenerResources["test-listener"].(*agentgateway.Listener)
+	assert.Equal(t, agentgateway.Listener_A2A, retrievedListener.Protocol)
 	assert.Equal(t, uint32(8080), retrievedListener.GetSse().Port)
 }
 
@@ -191,11 +191,11 @@ func TestAgentGwSnapshot(t *testing.T) {
 		},
 		Listeners: []string{"mcp-listener"},
 	}
-	listener := &Listener{
+	listener := &agentgateway.Listener{
 		Name:     "test-listener",
-		Protocol: Listener_A2A,
-		Listener: &Listener_Sse{
-			Sse: &SseListener{
+		Protocol: agentgateway.Listener_A2A,
+		Listener: &agentgateway.Listener_Sse{
+			Sse: &agentgateway.SseListener{
 				Address: "[::]",
 				Port:    8080,
 			},

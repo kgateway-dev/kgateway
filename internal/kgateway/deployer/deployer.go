@@ -390,6 +390,7 @@ func (d *Deployer) getValues(gw *api.Gateway, gwParam *v1alpha1.GatewayParameter
 		return nil, err
 	}
 
+	// TODO(npolshak): Currently we are using the same chart for both data planes. Should revisit having a separate chart for agentgateway
 	// agentgateway integration values
 	gateway.AgentGateway, err = getAgentGatewayValues(agentGatewayConfig)
 	if err != nil {

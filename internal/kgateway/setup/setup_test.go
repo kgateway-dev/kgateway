@@ -17,6 +17,9 @@ import (
 	"testing"
 	"time"
 
+	agentgateway "github.com/agentgateway/agentgateway/go/api"
+	"github.com/agentgateway/agentgateway/go/api/a2a"
+	"github.com/agentgateway/agentgateway/go/api/mcp"
 	envoycluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyendpoint "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
@@ -46,8 +49,6 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer/a2a"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer/mcp"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/proxy_syncer"
 	"github.com/kgateway-dev/kgateway/v2/test/envtestutil"
@@ -543,7 +544,7 @@ func newAgentGatewayXdsDumper(t *testing.T, ctx context.Context, xdsPort int, gw
 type agentGwDump struct {
 	A2ATargets []*a2a.Target
 	McpTargets []*mcp.Target
-	Listeners  []*agentgatewaysyncer.Listener
+	Listeners  []*agentgateway.Listener
 }
 
 func (x xdsDumper) DumpAgentGateway(t *testing.T, ctx context.Context) agentGwDump {
@@ -645,11 +646,11 @@ func (x xdsDumper) GetMcpTargets(t *testing.T, ctx context.Context) []*mcp.Targe
 	return mcpTargets
 }
 
-func (x xdsDumper) GetListeners(t *testing.T, ctx context.Context) []*agentgatewaysyncer.Listener {
+func (x xdsDumper) GetListeners(t *testing.T, ctx context.Context) []*agentgateway.Listener {
 	dr := proto.Clone(x.dr).(*discovery_v3.DiscoveryRequest)
 	dr.TypeUrl = agentgatewaysyncer.TargetTypeListenerUrl
 	x.adsClient.Send(dr)
-	var listeners []*agentgatewaysyncer.Listener
+	var listeners []*agentgateway.Listener
 	// run this in parallel with a 5s timeout
 	done := make(chan struct{})
 	go func() {
@@ -663,7 +664,7 @@ func (x xdsDumper) GetListeners(t *testing.T, ctx context.Context) []*agentgatew
 			t.Logf("got response: %s len: %d", dresp.GetTypeUrl(), len(dresp.GetResources()))
 			if dresp.GetTypeUrl() == agentgatewaysyncer.TargetTypeListenerUrl {
 				for _, anyResource := range dresp.GetResources() {
-					var listener agentgatewaysyncer.Listener
+					var listener agentgateway.Listener
 					if err := anyResource.UnmarshalTo(&listener); err != nil {
 						t.Errorf("failed to unmarshal target: %v", err)
 					}
