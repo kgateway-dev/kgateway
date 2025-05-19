@@ -19,6 +19,9 @@ A scheduled job which scans images released from both the Open Source and Enterp
 
 To run the vulnerability locally, check out [the security scanner README](https://github.com/solo-io/gloo/tree/main/docs/cmd/securityscanutils)
 
+## [Lint Helm Charts](./lint-helm.yaml)
+Perform linting on project [Helm Charts](../../install/helm/README.md).
+
 ## Future Work
 It would be great to add support for issue comment directives. This would mean that commenting `/sig-ci` would signal CI to run, or `/skip-ci` would auto-succeed CI.
 
