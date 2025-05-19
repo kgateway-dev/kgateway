@@ -3,7 +3,6 @@ package agentgatewaysyncer
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"maps"
 	"regexp"
 	"slices"
@@ -14,7 +13,6 @@ import (
 	"github.com/agentgateway/agentgateway/go/api/mcp"
 	envoytypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
-	"github.com/solo-io/go-utils/contextutils"
 	"google.golang.org/protobuf/proto"
 	"istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/controllers"
@@ -35,7 +33,10 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/xds"
+	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 )
+
+var logger = logging.New("agentgateway/syncer")
 
 // AgentGwSyncer synchronizes Kubernetes Gateway API resources with xDS for agentgateway proxies.
 // It watches Gateway resources with the agentgateway class and translates them to agentgateway configuration.
@@ -156,7 +157,7 @@ func (r report) Equals(in report) bool {
 }
 
 func (s *AgentGwSyncer) Init(krtopts krtutil.KrtOptions) {
-	slog.Debug("Init %s agentgateway Syncer", s.controllerName)
+	logger.Debug("Init agentgateway Syncer", "controllername", s.controllerName)
 
 	// TODO: convert auth to rbac json config for agentgateways
 
@@ -177,7 +178,7 @@ func (s *AgentGwSyncer) Init(krtopts krtutil.KrtOptions) {
 				if listener.Protocol != A2AProtocol && listener.Protocol != MCPProtocol {
 					continue
 				}
-				logger.Debugf("Found agentgateway service %s/%s", s.Namespace, s.Name)
+				logger.Debug("found agentgateway service", "namespace", s.Namespace, "name", s.Name)
 				if listener.AllowedRoutes == nil {
 					// only allow agent services in same namespace
 					if s.Namespace == gw.Obj.Namespace {
@@ -206,7 +207,7 @@ func (s *AgentGwSyncer) Init(krtopts krtutil.KrtOptions) {
 						}
 					case gwv1.NamespacesFromSelector:
 						// TODO: implement namespace selectors with gateway index
-						slog.Error("namespace selectors not supported for agentgateways")
+						logger.Error("namespace selectors not supported for agentgateways")
 						continue
 					}
 				}
@@ -283,7 +284,7 @@ func (s *AgentGwSyncer) Init(krtopts krtutil.KrtOptions) {
 
 		// a2a services
 		a2aServiceResources := krt.Fetch(kctx, xdsA2AServices)
-		logger.Debugf("Found %d A2A resources for gateway %s/%s", len(a2aServiceResources), gw.Namespace, gw.Name)
+		logger.Debug("found A2A resources for gateway", "LenA2AServices", len(a2aServiceResources), "gwnamespace", gw.Namespace, "gwname", gw.Name)
 		a2aResources := make([]envoytypes.Resource, len(a2aServiceResources))
 		var a2aVersion uint64
 		for i, res := range a2aServiceResources {
@@ -293,7 +294,7 @@ func (s *AgentGwSyncer) Init(krtopts krtutil.KrtOptions) {
 		}
 		// mcp services
 		mcpServiceResources := krt.Fetch(kctx, xdsMcpServices)
-		logger.Debugf("Found %d MCP resources for gateway %s/%s", len(mcpServiceResources), gw.Namespace, gw.Name)
+		logger.Debug("found MCP resources for gateway", "LenMCPServices", len(mcpServiceResources), "gwnamespace", gw.Namespace, "gwname", gw.Name)
 		mcpResources := make([]envoytypes.Resource, len(mcpServiceResources))
 		var mcpVersion uint64
 		for i, res := range mcpServiceResources {
@@ -307,7 +308,7 @@ func (s *AgentGwSyncer) Init(krtopts krtutil.KrtOptions) {
 			AgentGwMcpServices: envoycache.NewResources(fmt.Sprintf("%d", mcpVersion), mcpResources),
 			Listeners:          envoycache.NewResources(fmt.Sprintf("%d", listenerVersion), agwListeners),
 		}
-		logger.Debugf("Created XDS resources for %s with ID %s", gw.Name, result.ResourceName())
+		logger.Debug("created XDS resources for with ID", "gwname", gw.Name, "resourceid", result.ResourceName())
 		return result
 	}, krtopts.ToOptions("agentgateway-xds")...)
 
@@ -322,8 +323,8 @@ func (s *AgentGwSyncer) Init(krtopts krtutil.KrtOptions) {
 }
 
 func (s *AgentGwSyncer) Start(ctx context.Context) error {
-	slog.Infof("starting %s agentgateway Syncer", s.controllerName)
-	slog.Infof("waiting for agentgateway cache to sync")
+	logger.Info("starting agentgateway Syncer", "controllername", s.controllerName)
+	logger.Info("waiting for agentgateway cache to sync")
 
 	// Wait for cache to sync
 	if !kube.WaitForCacheSync("agentgateway syncer", ctx.Done(), s.waitForSync...) {
@@ -342,10 +343,10 @@ func (s *AgentGwSyncer) Start(ctx context.Context) error {
 				AgentGwMcpServices: r.AgentGwMcpServices,
 				Listeners:          r.Listeners,
 			}
-			logger.Debugf("setting xds snapshot for %s", r.ResourceName())
+			logger.Debug("setting xds snapshot", "resourcename", r.ResourceName())
 			err := s.xdsCache.SetSnapshot(ctx, r.ResourceName(), snapshot)
 			if err != nil {
-				logger.Errorf("failed to set xds snapshot for %s: %v", r.ResourceName(), err)
+				logger.Error("failed to set xds snapshot", "resourcename", r.ResourceName(), "error", err.Error())
 				continue
 			}
 		}
