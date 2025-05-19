@@ -239,7 +239,7 @@ func TestAgentGwSnapshot(t *testing.T) {
 	listenerResources := snapshot.GetResources(TargetTypeListenerUrl)
 	assert.NotNil(t, listenerResources)
 	assert.Len(t, listenerResources, 1)
-	listenerVersionMap := snapshot.GetVersionMap(TargetTypeMcpUrl)
+	listenerVersionMap := snapshot.GetVersionMap(TargetTypeListenerUrl)
 	assert.NotNil(t, listenerVersionMap)
 
 	err = snapshot.ConstructVersionMap()
