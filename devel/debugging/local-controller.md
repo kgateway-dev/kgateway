@@ -3,7 +3,7 @@
 To run the controller locally on your host outside Kubernetes, set the following environment variables:
 
 - `KUBECONFIG`: Path to your kubeconfig file.
-- `LOG_LEVEL`: Log level for the controller
+- `KGW_LOG_LEVEL`: Log level for the controller
 - `KGW_XDS_SERVICE_HOST`: Host for the xDS service the Gateway will connect to.
 - `KGW_DEFAULT_IMAGE_REGISTRY`: Default image registry for the Gateway.
 - `KGW_DEFAULT_IMAGE_TAG`: Default image tag for the Gateway.
@@ -11,7 +11,7 @@ To run the controller locally on your host outside Kubernetes, set the following
 
 ```bash
 export KUBECONFIG=/home/user/.kube/config
-export LOG_LEVEL=info
+export KGW_LOG_LEVEL=info
 export KGW_XDS_SERVICE_HOST=172.17.0.1
 export KGW_DEFAULT_IMAGE_REGISTRY=ghcr.io/kgateway-dev
 export KGW_DEFAULT_IMAGE_TAG=2.0.0-dev
@@ -34,7 +34,7 @@ Use the following `launch.json` configuration to run the controller in the debug
   "program": "${workspaceFolder}/cmd/kgateway/main.go",
   "env": {
     "KUBECONFIG": "/home/user/.kube/config",
-    "LOG_LEVEL": "info",
+    "KGW_LOG_LEVEL": "info",
     "KGW_XDS_SERVICE_HOST": "172.17.0.1",
     "KGW_DEFAULT_IMAGE_REGISTRY": "ghcr.io/kgateway-dev",
     "KGW_DEFAULT_IMAGE_TAG": "2.0.0-dev",

@@ -57,6 +57,10 @@ type Settings struct {
 	// will be redirected through a waypoint proxy.
 	IngressUseWaypoints bool `split_words:"true" default:"false"`
 
+	// LogLevel specifies the logging level (e.g., "trace", "debug", "info", "warn", "error").
+	// Defaults to "info" if not set.
+	LogLevel string `split_words:"true" default:"info"`
+
 	// EnableAgentGateway enables kgateway to send config to the agentgateway
 	EnableAgentGateway bool `split_words:"true" default:"false"`
 }

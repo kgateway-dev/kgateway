@@ -3,6 +3,7 @@ package agentgatewaysyncer
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"maps"
 	"regexp"
 	"slices"
@@ -154,9 +155,8 @@ func (r report) Equals(in report) bool {
 		maps.Equal(r.reportMap.TCPRoutes, in.reportMap.TCPRoutes)
 }
 
-func (s *AgentGwSyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
-	logger := contextutils.LoggerFrom(ctx)
-	logger.Debugf("Init %s agentgateway Syncer", s.controllerName)
+func (s *AgentGwSyncer) Init(krtopts krtutil.KrtOptions) {
+	slog.Debug("Init %s agentgateway Syncer", s.controllerName)
 
 	// TODO: convert auth to rbac json config for agentgateways
 
@@ -206,7 +206,7 @@ func (s *AgentGwSyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 						}
 					case gwv1.NamespacesFromSelector:
 						// TODO: implement namespace selectors with gateway index
-						contextutils.LoggerFrom(ctx).Errorf("namespace selectors not supported for agentgateways")
+						slog.Error("namespace selectors not supported for agentgateways")
 						continue
 					}
 				}
@@ -322,9 +322,8 @@ func (s *AgentGwSyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 }
 
 func (s *AgentGwSyncer) Start(ctx context.Context) error {
-	logger := contextutils.LoggerFrom(ctx)
-	logger.Infof("starting %s agentgateway Syncer", s.controllerName)
-	logger.Infof("waiting for agentgateway cache to sync")
+	slog.Infof("starting %s agentgateway Syncer", s.controllerName)
+	slog.Infof("waiting for agentgateway cache to sync")
 
 	// Wait for cache to sync
 	if !kube.WaitForCacheSync("agentgateway syncer", ctx.Done(), s.waitForSync...) {

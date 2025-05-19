@@ -3,12 +3,11 @@ package controller
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"net/http"
 	"sync/atomic"
 
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
-	"github.com/solo-io/go-utils/contextutils"
-	uzap "go.uber.org/zap"
 	istiokube "istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/krt"
 	istiolog "istio.io/istio/pkg/log"
@@ -17,7 +16,6 @@ import (
 	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/config"
-	czap "sigs.k8s.io/controller-runtime/pkg/log/zap"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	infextv1a2 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
 
@@ -33,6 +31,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
+	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	common "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	kgtwschemes "github.com/kgateway-dev/kgateway/v2/pkg/schemes"
@@ -43,7 +42,8 @@ import (
 const (
 	// AutoProvision controls whether the controller will be responsible for provisioning dynamic
 	// infrastructure for the Gateway API.
-	AutoProvision = true
+	AutoProvision           = true
+	ControllerRuntimeLogger = "controllerruntime"
 )
 
 type SetupOpts struct {
@@ -91,15 +91,12 @@ type ControllerBuilder struct {
 }
 
 func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuilder, error) {
-	var opts []czap.Opts
 	loggingOptions := istiolog.DefaultOptions()
-
 	if cfg.Dev {
 		setupLog.Info("starting log in dev mode")
-		opts = append(opts, czap.UseDevMode(true))
 		loggingOptions.SetDefaultOutputLevel(istiolog.OverrideScopeName, istiolog.DebugLevel)
+		logging.MustSetLevel(ControllerRuntimeLogger, slog.LevelDebug)
 	}
-	ctrl.SetLogger(czap.New(opts...))
 	istiolog.Configure(loggingOptions)
 
 	scheme := DefaultScheme()
@@ -201,7 +198,7 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 			commoncol,
 			cfg.SetupOpts.Cache,
 		)
-		agentGatewaySyncer.Init(ctx, cfg.KrtOptions)
+		agentGatewaySyncer.Init(cfg.KrtOptions)
 
 		if err := mgr.Add(agentGatewaySyncer); err != nil {
 			setupLog.Error(err, "unable to add agentGatewaySyncer runnable")
@@ -247,8 +244,7 @@ func pluginFactoryWithBuiltin(extraPlugins func(ctx context.Context, commoncol *
 }
 
 func (c *ControllerBuilder) Start(ctx context.Context) error {
-	logger := contextutils.LoggerFrom(ctx).Desugar()
-	logger.Info("starting gateway controller")
+	slog.Info("starting gateway controller")
 
 	globalSettings := c.cfg.SetupOpts.GlobalSettings
 
@@ -261,7 +257,7 @@ func (c *ControllerBuilder) Start(ctx context.Context) error {
 	}
 
 	xdsPort := globalSettings.XdsServicePort
-	logger.Info("got xds address for deployer", uzap.String("xds_host", xdsHost), uzap.Uint32("xds_port", xdsPort))
+	slog.Info("got xds address for deployer", "xds_host", xdsHost, "xds_port", xdsPort)
 
 	istioAutoMtlsEnabled := globalSettings.EnableIstioAutoMtls
 

@@ -4,12 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"regexp"
 
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
-	"github.com/solo-io/go-utils/contextutils"
-	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -34,10 +33,10 @@ type httpRouteConfigurationTranslator struct {
 	reporter                 reportssdk.Reporter
 	requireTlsOnVirtualHosts bool
 	PluginPass               TranslationPassPlugins
+	logger                   *slog.Logger
 }
 
 func (h *httpRouteConfigurationTranslator) ComputeRouteConfiguration(ctx context.Context, vhosts []*ir.VirtualHost) *envoy_config_route_v3.RouteConfiguration {
-	ctx = contextutils.WithLogger(ctx, "compute_route_config."+h.routeConfigName)
 	cfg := &envoy_config_route_v3.RouteConfiguration{
 		Name: h.routeConfigName,
 		//		MaxDirectResponseBodySizeBytes: h.parentListener.GetRouteOptions().GetMaxDirectResponseBodySizeBytes(),
@@ -143,7 +142,7 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(ctx context.Context,
 		config, err := utils.MessageToAny(v)
 		if err != nil {
 			// TODO: error on status
-			contextutils.LoggerFrom(ctx).Error(err)
+			h.logger.Error(err.Error())
 			continue
 		}
 		typedPerFilterConfigAny[k] = config
@@ -158,7 +157,7 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(ctx context.Context,
 		}
 	}
 	if err != nil {
-		contextutils.LoggerFrom(ctx).Desugar().Debug("invalid route", zap.Error(err))
+		h.logger.Debug("invalid route", "error", err)
 		// TODO: we may want to aggregate all these errors per http route object and report one message?
 		routeReport.SetCondition(reportssdk.RouteCondition{
 			Type:   gwv1.RouteConditionPartiallyInvalid,
@@ -358,7 +357,7 @@ func (h *httpRouteConfigurationTranslator) translateRouteAction(
 		)
 		if err != nil {
 			// TODO: error on status
-			contextutils.LoggerFrom(ctx).Error(err)
+			h.logger.Error(err.Error())
 		}
 
 		err = h.runBackendPolicies(
@@ -368,7 +367,7 @@ func (h *httpRouteConfigurationTranslator) translateRouteAction(
 		)
 		if err != nil {
 			// TODO: error on status
-			contextutils.LoggerFrom(ctx).Error(err)
+			h.logger.Error(err.Error())
 		}
 
 		// Translating weighted clusters needs the typed per filter config on each cluster
@@ -377,7 +376,7 @@ func (h *httpRouteConfigurationTranslator) translateRouteAction(
 			config, err := utils.MessageToAny(v)
 			if err != nil {
 				// TODO: error on status
-				contextutils.LoggerFrom(ctx).Error(err)
+				h.logger.Error(err.Error())
 				continue
 			}
 			typedPerFilterConfigAny[k] = config

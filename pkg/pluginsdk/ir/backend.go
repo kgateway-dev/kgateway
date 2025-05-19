@@ -91,6 +91,9 @@ type BackendObjectIR struct {
 	// i think so, assuming obj -> objir is a 1:1 mapping.
 	ObjIr interface{ Equals(any) bool }
 
+	// Aliases that we can key by when referencing this backend from policy or routes.
+	Aliases []ObjectSource
+
 	// ExtraKey allows ensuring uniqueness in the KRT key
 	// when there is more than one backend per ObjectSource+port.
 	// TODO this is a hack for ServiceEntry to workaround only having one

@@ -2,6 +2,7 @@ package agentgatewaysyncer
 
 import (
 	"context"
+	"log/slog"
 	"testing"
 
 	agentgateway "github.com/agentgateway/agentgateway/go/api"
@@ -9,38 +10,36 @@ import (
 	"github.com/agentgateway/agentgateway/go/api/mcp"
 	envoytypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
-	"github.com/solo-io/go-utils/contextutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 // dumpXDSCacheState is a helper function that dump the current state of the XDS cache for the agentgateway cache
 func dumpXDSCacheState(ctx context.Context, cache envoycache.SnapshotCache) {
-	logger := contextutils.LoggerFrom(ctx)
-	logger.Infof("Current XDS cache state:")
+	slog.Info("Current XDS cache state:")
 
 	// Get all snapshot IDs from cache
 	for _, nodeID := range cache.GetStatusKeys() {
-		logger.Infof("Node ID: %s", nodeID)
+		slog.Info("Node ID: %s", nodeID)
 
 		snapshot, err := cache.GetSnapshot(nodeID)
 		if err != nil {
-			logger.Infof("  Error getting snapshot: %v", err)
+			slog.Info("  Error getting snapshot: %v", err)
 			continue
 		}
 
 		// Check for A2A targets
-		logger.Infof("  A2A Targets (version %s):", snapshot.GetVersion(TargetTypeA2AUrl))
+		slog.Info("  A2A Targets (version %s):", snapshot.GetVersion(TargetTypeA2AUrl))
 		resources := snapshot.GetResources(TargetTypeA2AUrl)
 		for name := range resources {
-			logger.Infof("    - %s", name)
+			slog.Info("    - %s", name)
 		}
 
 		// Check for MCP targets
-		logger.Infof("  MCP Targets (version %s):", snapshot.GetVersion(TargetTypeMcpUrl))
+		slog.Info("  MCP Targets (version %s):", snapshot.GetVersion(TargetTypeMcpUrl))
 		resources = snapshot.GetResources(TargetTypeMcpUrl)
 		for name := range resources {
-			logger.Infof("    - %s", name)
+			slog.Info("    - %s", name)
 		}
 	}
 }

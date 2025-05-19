@@ -4,16 +4,10 @@ import (
 	"context"
 	"encoding/json"
 
-	// cncfcorev3 "github.com/cncf/xds/go/xds/core/v3"
-	// cncftypev3 "github.com/cncf/xds/go/xds/type/matcher/v3"
-	// v31 "github.com/cncf/xds/go/xds/type/matcher/v3"
-	// corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	// extensionmatcherv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/common/matching/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	exteniondynamicmodulev3 "github.com/envoyproxy/go-control-plane/envoy/extensions/dynamic_modules/v3"
 	dynamicmodulesv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/dynamic_modules/v3"
 	transformationpb "github.com/solo-io/envoy-gloo/go/config/filter/http/transformation/v2"
-	"github.com/solo-io/go-utils/contextutils"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
@@ -57,7 +51,6 @@ func toTraditionalTransform(ctx context.Context, t *v1alpha1.Transform) *transfo
 		hasTransform = true
 	}
 
-	//BODY
 	if t.Body == nil {
 		tt.TransformationTemplate.BodyTransformation = &transformationpb.TransformationTemplate_Passthrough{
 			Passthrough: &transformationpb.Passthrough{},
@@ -72,7 +65,7 @@ func toTraditionalTransform(ctx context.Context, t *v1alpha1.Transform) *transfo
 				// in traditional if unset this would be the default but we are changing the default in kgateway ordering
 				traditionalParsing = transformationpb.TransformationTemplate_ParseAsJson
 			default:
-				contextutils.LoggerFrom(ctx).DPanic(t.Body.ParseAs, "unrecognized body parse behavior")
+				logger.Error("unrecognized body parse behavior", "behavior", t.Body.ParseAs)
 			}
 		}
 		tt.TransformationTemplate.ParseBodyBehavior = traditionalParsing
