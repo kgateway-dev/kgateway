@@ -49,10 +49,11 @@ func TestTranslation(
 	outputFile string,
 	gwNN types.NamespacedName,
 	assertReports AssertReports,
+	settingsOpts ...SettingsOpts,
 ) {
 	results, err := TestCase{
 		InputFiles: inputFiles,
-	}.Run(t, ctx)
+	}.Run(t, ctx, settingsOpts...)
 	Expect(err).NotTo(HaveOccurred())
 	// TODO allow expecting multiple gateways in the output (map nns -> outputFile?)
 	Expect(results).To(HaveLen(1))
@@ -161,7 +162,15 @@ func AreReportsSuccess(gwNN types.NamespacedName, reportsMap reports.ReportMap) 
 	return nil
 }
 
-func (tc TestCase) Run(t test.Failer, ctx context.Context) (map[types.NamespacedName]ActualTestResult, error) {
+type SettingsOpts func(*settings.Settings)
+
+func SettingsWithDiscoveryNamespaceSelectors(cfgJson string) SettingsOpts {
+	return func(s *settings.Settings) {
+		s.DiscoveryNamespaceSelectors = cfgJson
+	}
+}
+
+func (tc TestCase) Run(t test.Failer, ctx context.Context, settingsOpts ...SettingsOpts) (map[types.NamespacedName]ActualTestResult, error) {
 	var (
 		anyObjs []runtime.Object
 		ourObjs []runtime.Object
@@ -230,7 +239,11 @@ func (tc TestCase) Run(t test.Failer, ctx context.Context) (map[types.Namespaced
 	if err != nil {
 		return nil, err
 	}
-	commoncol := common.NewCommonCollections(
+	for _, opt := range settingsOpts {
+		opt(st)
+	}
+
+	commoncol, err := common.NewCommonCollections(
 		ctx,
 		krtOpts,
 		cli,
@@ -240,6 +253,9 @@ func (tc TestCase) Run(t test.Failer, ctx context.Context) (map[types.Namespaced
 		logr.Discard(),
 		*st,
 	)
+	if err != nil {
+		return nil, err
+	}
 
 	plugins := registry.Plugins(ctx, commoncol)
 	// TODO: consider moving the common code to a util that both proxy syncer and this test call

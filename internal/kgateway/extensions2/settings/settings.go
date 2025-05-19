@@ -61,6 +61,11 @@ type Settings struct {
 	// Defaults to "info" if not set.
 	LogLevel string `split_words:"true" default:"info"`
 
+	// JSON representation of list of metav1.LabelSelector to select namespaces considered for resource discovery.
+	// Defaults to an empty list which selects all namespaces.
+	// E.g., [{"matchExpressions":[{"key":"kubernetes.io/metadata.name","operator":"In","values":["infra"]}]},{"matchLabels":{"app":"a"}}]
+	DiscoveryNamespaceSelectors string `split_words:"true" default:"[]"`
+
 	// EnableAgentGateway enables kgateway to send config to the agentgateway
 	EnableAgentGateway bool `split_words:"true" default:"false"`
 }

@@ -76,6 +76,8 @@ spec:
               value: {{ .Values.image.tag | default .Chart.Version }}
             - name: KGW_DEFAULT_IMAGE_PULL_POLICY
               value: {{ .Values.image.pullPolicy | default "IfNotPresent" }}
+            - name: KGW_DISCOVERY_NAMESPACE_SELECTORS
+              value: {{ .Values.discoveryNamespaceSelectors | toJson | quote }}
             {{- if .Values.controller.extraEnv }}
             {{- range $key, $value := .Values.controller.extraEnv }}
             - name: {{ $key }}

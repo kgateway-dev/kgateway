@@ -372,7 +372,10 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 
 	useRustformations = commoncol.Settings.UseRustFormations // stash the state of the env setup for rustformation usage
 
-	col := krt.WrapClient(kclient.New[*v1alpha1.TrafficPolicy](commoncol.Client), commoncol.KrtOpts.ToOptions("TrafficPolicy")...)
+	col := krt.WrapClient(kclient.NewFiltered[*v1alpha1.TrafficPolicy](
+		commoncol.Client,
+		kclient.Filter{ObjectFilter: commoncol.Client.ObjectFilter()},
+	), commoncol.KrtOpts.ToOptions("TrafficPolicy")...)
 	gk := wellknown.TrafficPolicyGVK.GroupKind()
 
 	gatewayExtensions := krt.NewCollection(commoncol.GatewayExtensions, TranslateGatewayExtensionBuilder(commoncol))

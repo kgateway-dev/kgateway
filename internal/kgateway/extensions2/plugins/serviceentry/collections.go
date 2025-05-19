@@ -120,13 +120,11 @@ func initServiceEntryCollections(
 	commonCols *common.CommonCollections,
 ) serviceEntryPlugin {
 	// setup input collections
-	defaultFilter := kclient.Filter{ObjectFilter: commonCols.Client.ObjectFilter()}
-
 	weInformer := kclient.NewDelayedInformer[*networkingclient.WorkloadEntry](
 		commonCols.Client,
 		gvr.WorkloadEntry,
 		kubetypes.StandardInformer,
-		defaultFilter,
+		kclient.Filter{ObjectFilter: commonCols.Client.ObjectFilter()},
 	)
 	WorkloadEntries := krt.WrapClient(weInformer, commonCols.KrtOpts.ToOptions("WorkloadEntries")...)
 

@@ -2,7 +2,7 @@
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: kgateway-inference-extension
+  name: kgateway-inference-extension-{{ .Release.Namespace }}
 rules:
 - apiGroups: ["inference.networking.x-k8s.io"]
   resources: ["inferencemodels"]
@@ -45,13 +45,13 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: {{ include "kgateway.name" . }}-inference-extension-role
+  name: {{ include "kgateway.name" . }}-inference-extension-role-{{ .Release.Namespace }}
 subjects:
 - kind: ServiceAccount
   name: {{ include "kgateway.serviceAccountName" . }}
   namespace: {{ .Release.Namespace }}
 roleRef:
   kind: ClusterRole
-  name: {{ include "kgateway.name" . }}-inference-extension
+  name: {{ include "kgateway.name" . }}-inference-extension-{{ .Release.Namespace }}
   apiGroup: rbac.authorization.k8s.io
 {{- end }}
