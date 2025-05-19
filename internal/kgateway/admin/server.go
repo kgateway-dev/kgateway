@@ -83,13 +83,13 @@ func startHandlers(ctx context.Context, addHandlers ...func(mux *http.ServeMux, 
 		Addr:    fmt.Sprintf("localhost:%d", wellknown.KgatewayAdminPort),
 		Handler: mux,
 	}
-	slog.Info("Admin server starting", "address", server.Addr)
+	slog.Info("admin server starting", "address", server.Addr)
 	go func() {
 		err := server.ListenAndServe()
 		if err == http.ErrServerClosed {
-			slog.Info("Admin server closed")
+			slog.Info("admin server closed")
 		} else {
-			slog.Warn("Admin server closed with unexpected error", "error", err)
+			slog.Warn("admin server closed with unexpected error", "error", err)
 		}
 	}()
 	go func() {
@@ -97,7 +97,7 @@ func startHandlers(ctx context.Context, addHandlers ...func(mux *http.ServeMux, 
 		if server != nil {
 			err := server.Close()
 			if err != nil {
-				slog.Warn("Admin server shutdown returned error", "error", err)
+				slog.Warn("admin server shutdown returned error", "error", err)
 			}
 		}
 	}()

@@ -53,7 +53,7 @@ func Run(ctx context.Context, secrets []server.Secret, sdsClient, sdsServerAddre
 				watchFiles(watcher, secrets)
 			// watch for errors
 			case err := <-watcher.Errors:
-				logger.Warn("Received error from file watcher", "error", err)
+				logger.Warn("received error from file watcher", "error", err)
 			case <-ctx.Done():
 				return
 			}

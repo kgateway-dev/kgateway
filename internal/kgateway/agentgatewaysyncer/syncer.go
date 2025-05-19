@@ -157,7 +157,7 @@ func (r report) Equals(in report) bool {
 }
 
 func (s *AgentGwSyncer) Init(krtopts krtutil.KrtOptions) {
-	logger.Debug("Init agentgateway Syncer", "controllername", s.controllerName)
+	logger.Debug("init agentgateway Syncer", "controllername", s.controllerName)
 
 	// TODO: convert auth to rbac json config for agentgateways
 

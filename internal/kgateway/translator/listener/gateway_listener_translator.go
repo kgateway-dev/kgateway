@@ -395,7 +395,7 @@ func (ml *MergedListener) TranslateListener(
 		)
 		if httpsFilterChain == nil {
 			// Log and skip invalid HTTPS filter chains
-			logger.Error("Failed to translate HTTPS filter chain for listener", "listener", ml.name)
+			logger.Error("failed to translate HTTPS filter chain for listener", "listener", ml.name)
 			continue
 		}
 

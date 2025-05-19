@@ -28,7 +28,7 @@ func dumpXDSCacheState(ctx context.Context, cache envoycache.SnapshotCache) {
 		}
 
 		// Check for A2A targets
-		logger.Info("A2A targets version", "snapshot", snapshot.GetVersion(TargetTypeA2AUrl))
+		logger.Info("A2A targets version", "snapshot", snapshot.GetVersion(TargetTypeA2AUrl)) //nolint:sloglint // ignore msg-type
 		resources := snapshot.GetResources(TargetTypeA2AUrl)
 		for name := range resources {
 			logger.Info("snapshot has resources", "name", name)
