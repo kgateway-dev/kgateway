@@ -478,6 +478,14 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 			Name:      "example-gateway",
 		},
 	}),
+	FEntry("BackendConfigPolicy", translatorTestCase{
+		inputFile:  "backendconfigpolicy/test.yaml",
+		outputFile: "backendconfigpolicy-proxy.yaml",
+		gwNN: types.NamespacedName{
+			Namespace: "default",
+			Name:      "example-gateway",
+		},
+	}),
 )
 
 var _ = DescribeTable("Route Delegation translator",
