@@ -19,7 +19,7 @@ func dumpXDSCacheState(ctx context.Context, cache envoycache.SnapshotCache) {
 
 	// Get all snapshot IDs from cache
 	for _, nodeID := range cache.GetStatusKeys() {
-		logger.Info("snapshot has node", "nodeID", nodeID)
+		logger.Info("snapshot has node", "node_id", nodeID)
 
 		snapshot, err := cache.GetSnapshot(nodeID)
 		if err != nil {

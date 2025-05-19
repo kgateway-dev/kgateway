@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"io/fs"
 	"log/slog"
 	"os"
@@ -39,7 +38,7 @@ func LoadFromFiles(ctx context.Context, filename string) ([]client.Object, error
 
 	var yamlFiles []string
 	if fileOrDir.IsDir() {
-		slog.Info(fmt.Sprintf("looking for YAML files in directory tree rooted at: %s", fileOrDir.Name()))
+		slog.Info("looking for YAML files", "path", fileOrDir.Name())
 		err := filepath.WalkDir(filename, func(path string, d fs.DirEntry, _ error) error {
 			if strings.HasSuffix(path, ".yml") || strings.HasSuffix(path, ".yaml") {
 				yamlFiles = append(yamlFiles, path)
@@ -114,7 +113,7 @@ func parseFile(ctx context.Context, filename string) ([]runtime.Object, error) {
 		if err := yaml.Unmarshal(objYaml, &meta); err != nil {
 			slog.Warn("failed to parse resource metadata, skipping YAML document",
 				"filename", filename,
-				"truncatedYamlDoc", truncateString(string(objYaml), 100),
+				"data", truncateString(string(objYaml), 100),
 			)
 			continue
 		}
@@ -124,8 +123,8 @@ func parseFile(ctx context.Context, filename string) ([]runtime.Object, error) {
 		if err != nil {
 			slog.Warn("unknown resource kind",
 				"filename", filename,
-				"resourceKind", gvk.String(),
-				"truncatedYamlDoc", truncateString(string(objYaml), 100),
+				"gvk", gvk.String(),
+				"data", truncateString(string(objYaml), 100),
 			)
 			continue
 		}
@@ -133,9 +132,9 @@ func parseFile(ctx context.Context, filename string) ([]runtime.Object, error) {
 			slog.Warn("failed to parse resource YAML",
 				"error", err,
 				"filename", filename,
-				"resourceKind", gvk.String(),
-				"resourceId", obj.(client.Object).GetName()+"."+obj.(client.Object).GetNamespace(),
-				"truncatedYamlDoc", truncateString(string(objYaml), 100),
+				"gvk", gvk.String(),
+				"resource_id", obj.(client.Object).GetName()+"."+obj.(client.Object).GetNamespace(),
+				"data", truncateString(string(objYaml), 100),
 			)
 			continue
 		}

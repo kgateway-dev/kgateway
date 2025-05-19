@@ -33,32 +33,33 @@ var _ envoylog.Logger = (*slogAdapterForEnvoy)(nil)
 
 func (s *slogAdapterForEnvoy) Debugf(format string, args ...interface{}) {
 	if s.logger.Enabled(context.Background(), slog.LevelDebug) {
-		s.logger.Debug(fmt.Sprintf(format, args...))
+		s.logger.Debug(fmt.Sprintf(format, args...)) //nolint:sloglint // ignore formatting
 	}
 }
 
 func (s *slogAdapterForEnvoy) Infof(format string, args ...interface{}) {
 	if s.logger.Enabled(context.Background(), slog.LevelInfo) {
-		s.logger.Info(fmt.Sprintf(format, args...))
+		s.logger.Info(fmt.Sprintf(format, args...)) //nolint:sloglint // ignore formatting
 	}
 }
 
 func (s *slogAdapterForEnvoy) Warnf(format string, args ...interface{}) {
 	if s.logger.Enabled(context.Background(), slog.LevelWarn) {
-		s.logger.Warn(fmt.Sprintf(format, args...))
+		s.logger.Warn(fmt.Sprintf(format, args...)) //nolint:sloglint // ignore formatting
 	}
 }
 
 func (s *slogAdapterForEnvoy) Errorf(format string, args ...interface{}) {
 	if s.logger.Enabled(context.Background(), slog.LevelError) {
-		s.logger.Error(fmt.Sprintf(format, args...))
+		s.logger.Error(fmt.Sprintf(format, args...)) //nolint:sloglint // ignore formatting
 	}
 }
 
 func NewControlPlane(
 	ctx context.Context,
 	bindAddr net.Addr,
-	callbacks xdsserver.Callbacks) (envoycache.SnapshotCache, error) {
+	callbacks xdsserver.Callbacks,
+) (envoycache.SnapshotCache, error) {
 	lis, err := net.Listen(bindAddr.Network(), bindAddr.String())
 	if err != nil {
 		return nil, err
@@ -73,7 +74,8 @@ func NewControlPlane(
 
 func NewControlPlaneWithListener(ctx context.Context,
 	lis net.Listener,
-	callbacks xdsserver.Callbacks) (envoycache.SnapshotCache, *grpc.Server) {
+	callbacks xdsserver.Callbacks,
+) (envoycache.SnapshotCache, *grpc.Server) {
 	baseLogger := slog.Default().With("component", "envoy-controlplane")
 	envoyLoggerAdapter := &slogAdapterForEnvoy{logger: baseLogger}
 

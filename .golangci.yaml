@@ -24,6 +24,7 @@ linters:
     - usestdlibvars
     - whitespace
     - staticcheck
+    - sloglint
   settings:
     forbidigo:
       forbid:
@@ -64,6 +65,16 @@ linters:
     staticcheck:
       checks:
         - ST1019 # duplicate imports
+    sloglint:
+      static-msg: true
+      msg-style: lowercased
+      key-naming-case: snake
+      # ignore built-in keys
+      forbidden-keys:
+        - time
+        - level
+        - msg
+        - source     
   exclusions:
     generated: lax
     presets:
