@@ -407,8 +407,9 @@ func (m *agentGwSnapshot) ConstructVersionMap() error {
 
 	m.VersionMap = make(map[string]map[string]string)
 	resources := map[string]map[string]envoytypes.ResourceWithTTL{
-		TargetTypeA2AUrl: m.AgentGwA2AServices.Items,
-		TargetTypeMcpUrl: m.AgentGwMcpServices.Items,
+		TargetTypeA2AUrl:      m.AgentGwA2AServices.Items,
+		TargetTypeMcpUrl:      m.AgentGwMcpServices.Items,
+		TargetTypeListenerUrl: m.Listeners.Items,
 	}
 
 	for typeUrl, items := range resources {
