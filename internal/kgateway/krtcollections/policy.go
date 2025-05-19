@@ -41,28 +41,42 @@ func (n *NotFoundError) Error() string {
 // MARK: BackendIndex
 
 type BackendIndex struct {
-	// availableBackends maps from the GroupKind of the backend providing plugin that
-	// supplied these backendObjs to a collection of BackendObjIRs that have all attached policies pre-computed
-	availableBackends           map[schema.GroupKind]krt.Collection[ir.BackendObjectIR]
+
+	// availableBackends are the backends as supplied by backend-contributed plugins.
+	// Any policies here are attached directly at Backend generation and not attached via
+	// policy index. Use availableBackendsWithPolicy when you need policy.
+	availableBackends map[schema.GroupKind]krt.Collection[ir.BackendObjectIR]
+	// aliasIndex indexes the availableBackends for a given GK by the BackendObjectIR's Alias
+	aliasIndex map[schema.GroupKind]krt.Index[backendKey, ir.BackendObjectIR]
+
+	// availableBackendsWithPolicy is built from availableBackends, attaching policy to the given backends.
+	// BackendsWithPolicy is the public interface to access this.
 	availableBackendsWithPolicy []krt.Collection[ir.BackendObjectIR]
-	backendRefExtension         []extensionsplug.GetBackendForRefPlugin
-	policies                    *PolicyIndex
-	refgrants                   *RefGrantIndex
-	krtopts                     krtutil.KrtOptions
+
+	gkAliases map[schema.GroupKind][]schema.GroupKind
+
+	policies  *PolicyIndex
+	refgrants *RefGrantIndex
+	krtopts   krtutil.KrtOptions
+}
+
+type backendKey struct {
+	ir.ObjectSource
+	port int32
 }
 
 func NewBackendIndex(
 	krtopts krtutil.KrtOptions,
-	backendRefExtension []extensionsplug.GetBackendForRefPlugin,
 	policies *PolicyIndex,
 	refgrants *RefGrantIndex,
 ) *BackendIndex {
 	return &BackendIndex{
-		policies:            policies,
-		refgrants:           refgrants,
-		availableBackends:   map[schema.GroupKind]krt.Collection[ir.BackendObjectIR]{},
-		krtopts:             krtopts,
-		backendRefExtension: backendRefExtension,
+		policies:          policies,
+		refgrants:         refgrants,
+		availableBackends: map[schema.GroupKind]krt.Collection[ir.BackendObjectIR]{},
+		aliasIndex:        map[schema.GroupKind]krt.Index[backendKey, ir.BackendObjectIR]{},
+		gkAliases:         map[schema.GroupKind][]schema.GroupKind{},
+		krtopts:           krtopts,
 	}
 }
 
@@ -90,14 +104,36 @@ func (i *BackendIndex) BackendsWithPolicy() []krt.Collection[ir.BackendObjectIR]
 // The BackendIndex will then store this collection of backendWithPolicies in its internal map, keyed by the
 // provied gk. I.e. for the provided gk, it will carry the collection of backends derived from it, with all
 // policies attached.
-func (i *BackendIndex) AddBackends(gk schema.GroupKind, col krt.Collection[ir.BackendObjectIR]) {
+func (i *BackendIndex) AddBackends(gk schema.GroupKind, col krt.Collection[ir.BackendObjectIR], aliasKinds ...schema.GroupKind) {
 	backendsWithPoliciesCol := krt.NewCollection(col, func(kctx krt.HandlerContext, backendObj ir.BackendObjectIR) *ir.BackendObjectIR {
-		policies := i.policies.getTargetingPoliciesForBackends(kctx, extensionsplug.BackendAttachmentPoint, backendObj.ObjectSource, "", nil)
+		policies := i.policies.getTargetingPoliciesForBackends(kctx, extensionsplug.BackendAttachmentPoint, backendObj.ObjectSource, "", nil, false)
+		for _, aliasObjSrc := range backendObj.Aliases {
+			if aliasObjSrc.Namespace == "" {
+				// targeting policies must be namespace local
+				// some aliases might be "global" but for policy purposes, give them the src namespace
+				aliasObjSrc.Namespace = backendObj.GetNamespace()
+			}
+			aliasPolicies := i.policies.getTargetingPoliciesForBackends(kctx, extensionsplug.BackendAttachmentPoint, aliasObjSrc, "", nil, true)
+			policies = append(policies, aliasPolicies...)
+		}
 		backendObj.AttachedPolicies = toAttachedPolicies(policies)
 		return &backendObj
 	}, i.krtopts.ToOptions("")...)
+
+	idx := krt.NewIndex(col, func(backendObj ir.BackendObjectIR) (aliasKeys []backendKey) {
+		for _, alias := range backendObj.Aliases {
+			aliasKeys = append(aliasKeys, backendKey{ObjectSource: alias, port: backendObj.Port})
+		}
+		return aliasKeys
+	})
 	i.availableBackends[gk] = col
+	i.aliasIndex[gk] = idx
 	i.availableBackendsWithPolicy = append(i.availableBackendsWithPolicy, backendsWithPoliciesCol)
+
+	// when we query by the alias, also check our "actual" gk
+	for _, aliasGK := range aliasKinds {
+		i.gkAliases[aliasGK] = append(i.gkAliases[aliasGK], gk)
+	}
 }
 
 // if we want to make this function public, make it do ref grants
@@ -114,22 +150,72 @@ func (i *BackendIndex) getBackend(kctx krt.HandlerContext, gk schema.GroupKind, 
 		port = int32(*gwport)
 	}
 
-	for _, getBackendRcol := range i.backendRefExtension {
-		if up := getBackendRcol(kctx, key, port); up != nil {
-			return up, nil
-		}
-	}
-
 	col := i.availableBackends[gk]
 	if col == nil {
-		return nil, ErrUnknownBackendKind
+		return i.getBackendFromAlias(kctx, gk, n, port)
 	}
 
 	up := krt.FetchOne(kctx, col, krt.FilterKey(ir.BackendResourceName(key, port, "")))
 	if up == nil {
-		return nil, &NotFoundError{NotFoundObj: key}
+		var err error
+		if up, err = i.getBackendFromAlias(kctx, gk, n, port); err != nil {
+			// getBackendFromAlias returns ErrUnknownBackendKind when there are no aliases
+			// so return our own NotFoundError here
+			return nil, &NotFoundError{NotFoundObj: key}
+		}
 	}
+
 	return up, nil
+}
+
+func (i *BackendIndex) getBackendFromAlias(kctx krt.HandlerContext, gk schema.GroupKind, n types.NamespacedName, port int32) (*ir.BackendObjectIR, error) {
+	actualGks := i.gkAliases[gk]
+
+	key := backendKey{
+		port: port,
+		ObjectSource: ir.ObjectSource{
+			Group:     gk.Group,
+			Kind:      gk.Kind,
+			Namespace: n.Namespace,
+			Name:      n.Name},
+	}
+
+	var didFetch bool
+	var results []ir.BackendObjectIR
+	for _, actualGk := range actualGks {
+		col, ok := i.availableBackends[actualGk]
+		if !ok {
+			continue
+		}
+
+		results = append(results, krt.Fetch(kctx, col, krt.FilterIndex(i.aliasIndex[actualGk], key))...)
+
+		didFetch = true
+	}
+
+	if !didFetch {
+		return nil, ErrUnknownBackendKind
+	}
+
+	var out *ir.BackendObjectIR
+
+	// must return only one
+	for _, res := range results {
+		if out == nil {
+			out = &res // first result
+		} else if res.Obj.GetCreationTimestamp().Time.Before(out.Obj.GetCreationTimestamp().Time) {
+			out = &res // newer
+		} else if res.Obj.GetCreationTimestamp().Time.Equal(out.Obj.GetCreationTimestamp().Time) &&
+			res.ResourceName() < out.ResourceName() {
+			out = &res // use name for tiebreaker
+		}
+	}
+
+	if out == nil {
+		return nil, &NotFoundError{NotFoundObj: key.ObjectSource}
+	}
+
+	return out, nil
 }
 
 func (i *BackendIndex) getBackendFromRef(kctx krt.HandlerContext, localns string, ref gwv1.BackendObjectReference) (*ir.BackendObjectIR, error) {
@@ -397,8 +483,9 @@ func (p *PolicyIndex) getTargetingPoliciesForBackends(
 	targetRef ir.ObjectSource,
 	sectionName string,
 	targetLabels map[string]string,
+	excludeGlobal bool,
 ) []ir.PolicyAtt {
-	return p.getTargetingPoliciesMaybeForBackends(kctx, pnt, targetRef, sectionName, true, targetLabels)
+	return p.getTargetingPoliciesMaybeForBackends(kctx, pnt, targetRef, sectionName, true, excludeGlobal, targetLabels)
 }
 
 func (p *PolicyIndex) getTargetingPolicies(
@@ -408,7 +495,7 @@ func (p *PolicyIndex) getTargetingPolicies(
 	sectionName string,
 	targetLabels map[string]string,
 ) []ir.PolicyAtt {
-	return p.getTargetingPoliciesMaybeForBackends(kctx, pnt, targetRef, sectionName, false, targetLabels)
+	return p.getTargetingPoliciesMaybeForBackends(kctx, pnt, targetRef, sectionName, false, false, targetLabels)
 }
 
 func (p *PolicyIndex) getTargetingPoliciesMaybeForBackends(
@@ -417,17 +504,20 @@ func (p *PolicyIndex) getTargetingPoliciesMaybeForBackends(
 	targetRef ir.ObjectSource,
 	sectionName string,
 	onlyBackends bool,
+	excludeGlobal bool,
 	targetLabels map[string]string,
 ) []ir.PolicyAtt {
 	var ret []ir.PolicyAtt
-	for _, gp := range p.globalPolicies {
-		if gp.points.Has(pnt) {
-			if p := gp.ir(kctx, pnt); p != nil {
-				gpAtt := ir.PolicyAtt{
-					PolicyIr:  p,
-					GroupKind: gp.GroupKind,
+	if !excludeGlobal {
+		for _, gp := range p.globalPolicies {
+			if gp.points.Has(pnt) {
+				if p := gp.ir(kctx, pnt); p != nil {
+					gpAtt := ir.PolicyAtt{
+						PolicyIr:  p,
+						GroupKind: gp.GroupKind,
+					}
+					ret = append(ret, gpAtt)
 				}
-				ret = append(ret, gpAtt)
 			}
 		}
 	}
@@ -557,6 +647,11 @@ func (r *RefGrantIndex) ReferenceAllowed(kctx krt.HandlerContext, fromgk schema.
 	}
 	to.Group = emptyIfCore(to.Group)
 	fromgk.Group = emptyIfCore(fromgk.Group)
+
+	// no good way to to refGrant here unless we do it _after_ resolving the ref
+	if to.Namespace == "" && wellknown.GlobalRefGKs.Has(to.GetGroupKind()) {
+		return true
+	}
 
 	key := refGrantIndexKey{
 		RefGrantNs: to.Namespace,
@@ -916,10 +1011,18 @@ func (h *RoutesIndex) resolveExtension(kctx krt.HandlerContext, ns string, ext g
 }
 
 func toFromBackendRef(fromns string, ref gwv1.BackendObjectReference) ir.ObjectSource {
+	defNs := fromns
+	gk := schema.GroupKind{
+		Group: strOr(ref.Group, ""),
+		Kind:  strOr(ref.Kind, "Service"),
+	}
+	if wellknown.GlobalRefGKs.Has(gk) {
+		defNs = ""
+	}
 	return ir.ObjectSource{
-		Group:     strOr(ref.Group, ""),
-		Kind:      strOr(ref.Kind, "Service"),
-		Namespace: strOr(ref.Namespace, fromns),
+		Group:     gk.Group,
+		Kind:      gk.Kind,
+		Namespace: strOr(ref.Namespace, defNs),
 		Name:      string(ref.Name),
 	}
 }

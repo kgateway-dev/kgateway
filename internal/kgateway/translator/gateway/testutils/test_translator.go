@@ -161,26 +161,6 @@ func AreReportsSuccess(gwNN types.NamespacedName, reportsMap reports.ReportMap) 
 	return nil
 }
 
-var _ extensionsplug.GetBackendForRefPlugin = testBackendPlugin{}.GetBackendForRefPlugin
-
-type testBackendPlugin struct{}
-
-// GetBackendForRef implements query.BackendRefResolver.
-func (tp testBackendPlugin) GetBackendForRefPlugin(kctx krt.HandlerContext, key ir.ObjectSource, port int32) *ir.BackendObjectIR {
-	if key.Kind != "test-backend-plugin" {
-		return nil
-	}
-	// doesn't matter as long as its not nil
-	return &ir.BackendObjectIR{
-		ObjectSource: ir.ObjectSource{
-			Group:     "test",
-			Kind:      "test-backend-plugin",
-			Namespace: "test-backend-plugin-ns",
-			Name:      "test-backend-plugin-us",
-		},
-	}
-}
-
 func (tc TestCase) Run(t test.Failer, ctx context.Context) (map[types.NamespacedName]ActualTestResult, error) {
 	var (
 		anyObjs []runtime.Object
@@ -271,8 +251,19 @@ func (tc TestCase) Run(t test.Failer, ctx context.Context) (map[types.Namespaced
 		Kind:  "test-backend-plugin",
 	}
 	extensions.ContributesPolicies[gk] = extensionsplug.PolicyPlugin{
-		Name:             "test-backend-plugin",
-		GetBackendForRef: testBackendPlugin{}.GetBackendForRefPlugin,
+		Name: "test-backend-plugin",
+	}
+	extensions.ContributesBackends[gk] = extensionsplug.BackendPlugin{
+		Backends: krt.NewStaticCollection([]ir.BackendObjectIR{
+			{
+				Port: 80,
+				ObjectSource: ir.ObjectSource{
+					Kind:      "test-backend-plugin",
+					Namespace: "default",
+					Name:      "example-svc",
+				},
+			},
+		}),
 	}
 
 	commoncol.InitPlugins(ctx, extensions)
