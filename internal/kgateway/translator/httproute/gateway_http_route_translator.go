@@ -2,9 +2,8 @@ package httproute
 
 import (
 	"context"
+	"log/slog"
 
-	"github.com/solo-io/go-utils/contextutils"
-	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -173,7 +172,9 @@ func setRouteAction(
 	routesVisited sets.Set[types.NamespacedName],
 ) {
 	backends := rule.Backends
-	logger := contextutils.LoggerFrom(ctx).Desugar()
+	// this was coming from internal/kgateway/translator/gateway/gateway_translator.go
+	// TODO: scope this to httproute?
+	logger := slog.Default()
 
 	for _, backend := range backends {
 		// If the backend is an HTTPRoute, it implies route delegation
@@ -200,7 +201,7 @@ func setRouteAction(
 
 		if err := backend.Backend.Err; err != nil {
 			query.ProcessBackendError(err, reporter)
-			logger.Debug("error on backend upstream", zap.Error(err))
+			logger.Debug("error on backend upstream", "error", err)
 		}
 
 		httpBackend := ir.HttpBackend{

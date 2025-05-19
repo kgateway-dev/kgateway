@@ -10,7 +10,6 @@ import (
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
-	"github.com/solo-io/go-utils/contextutils"
 	"google.golang.org/protobuf/proto"
 	skubeclient "istio.io/istio/pkg/config/schema/kubeclient"
 	"istio.io/istio/pkg/kube/kclient"
@@ -23,12 +22,16 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
+	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 )
+
+var logger = logging.New("plugin/httplistenerpolicy")
 
 type httpListenerPolicy struct {
 	ct        time.Time
@@ -98,7 +101,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 		errs := []error{}
 		accessLog, err := convertAccessLogConfig(ctx, i, commoncol, krtctx, objSrc)
 		if err != nil {
-			contextutils.LoggerFrom(ctx).Error(err)
+			logger.Error("error translating access log", "error", err)
 			errs = append(errs, err)
 		}
 
@@ -109,7 +112,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 				ct:        i.CreationTimestamp.Time,
 				accessLog: accessLog,
 			},
-			TargetRefs: convert(i.Spec.TargetRefs),
+			TargetRefs: pluginutils.TargetRefsToPolicyRefs(i.Spec.TargetRefs, i.Spec.TargetSelectors),
 			Errors:     errs,
 		}
 
@@ -127,18 +130,6 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 			},
 		},
 	}
-}
-
-func convert(targetRefs []v1alpha1.LocalPolicyTargetReference) []ir.PolicyRef {
-	refs := make([]ir.PolicyRef, 0, len(targetRefs))
-	for _, targetRef := range targetRefs {
-		refs = append(refs, ir.PolicyRef{
-			Kind:  string(targetRef.Kind),
-			Name:  string(targetRef.Name),
-			Group: string(targetRef.Group),
-		})
-	}
-	return refs
 }
 
 func NewGatewayTranslationPass(ctx context.Context, tctx ir.GwTranslationCtx, reporter reports.Reporter) ir.ProxyTranslationPass {

@@ -3,6 +3,7 @@ package ai
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -11,7 +12,6 @@ import (
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/rotisserie/eris"
 	envoytransformation "github.com/solo-io/envoy-gloo/go/config/filter/http/transformation/v2"
-	"github.com/solo-io/go-utils/contextutils"
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/structpb"
 
@@ -331,7 +331,7 @@ func buildVertexAIEndpoint(ctx context.Context, data *v1alpha1.VertexAIConfig, h
 		publisher = "google"
 	default:
 		// TODO(npolshak): add support for other publishers
-		contextutils.LoggerFrom(ctx).Warnf("unsupported Vertex AI publisher: %v. Defaulting to Google.", data.Publisher)
+		slog.Warn("unsupported Vertex AI publisher, defaulting to Google", "publisher", string(data.Publisher))
 		publisher = "google"
 	}
 	return buildLocalityLbEndpoint(
@@ -475,7 +475,7 @@ func getTransformation(ctx context.Context, llm *v1alpha1.LLMProvider) (string, 
 				modelPath = getVertexAIGeminiModelPath()
 			default:
 				// TODO(npolshak): add support for other publishers
-				contextutils.LoggerFrom(ctx).Warnf("Unsupported Vertex AI publisher: %v. Defaulting to Google", provider.VertexAI.Publisher)
+				slog.Warn("unsupported Vertex AI publisher, defaulting to Google", "publisher", string(provider.VertexAI.Publisher))
 				modelPath = getVertexAIGeminiModelPath()
 			}
 		} else {

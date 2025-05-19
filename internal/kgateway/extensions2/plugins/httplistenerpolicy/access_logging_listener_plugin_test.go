@@ -13,7 +13,6 @@ import (
 	envoy_metadata_formatter "github.com/envoyproxy/go-control-plane/envoy/extensions/formatter/metadata/v3"
 	envoy_req_without_query "github.com/envoyproxy/go-control-plane/envoy/extensions/formatter/req_without_query/v3"
 	envoymatcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
-	"github.com/solo-io/go-utils/contextutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
@@ -626,12 +625,12 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 			},
 		}
 		for _, tc := range testCases {
-			ctx, cancel := context.WithCancel(context.Background())
+			_, cancel := context.WithCancel(context.Background())
 			t.Cleanup(cancel)
-			logger := contextutils.LoggerFrom(ctx).Desugar()
 
 			t.Run(tc.name, func(t *testing.T) {
-				result, err := translateAccessLogs(logger, tc.config,
+				result, err := translateAccessLogs(
+					tc.config,
 					// Example grpcBackends map for upstreams
 					map[string]*ir.BackendObjectIR{
 						"grpc-log-0": {

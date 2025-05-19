@@ -83,10 +83,11 @@ func (s Service) BackendRef(port ServicePort) ir.BackendRefIR {
 func (s Service) BackendObject(port uint32) ir.BackendObjectIR {
 	var hostname string
 	if len(s.Hostnames) > 0 {
-		// TODO  handling hostnames for this default route is weird.
-		// 1) If it's HTTP, we could maybe build a default per-host matcher that routes to an Upstream for that specific host.
-		// 2) For TCP we'd need to allow multiple CanonicalHostnames.
-		// If we do (2) that means attaching DR to foo.com, but sending traffic to bar.com (both the same SE) will still apply the DR.
+		// a single ServiceEntry has a Backend/Cluster for every Hostname listed
+		// the "default" vhost/route for a ServiceEntry has to pick a single backend to route to
+		// so we pick the first hostname.
+		// If you DR to s.Hostnames[1] and don't have an HTTPRoute with a Hostname backendRef,
+		// you get the backend for Hostnames[0] and the DR doesn't apply (DR sucks in GatewayAPI).
 		hostname = s.Hostnames[0]
 	} else {
 		hostname = fqdn(s.GetName(), s.GetNamespace())

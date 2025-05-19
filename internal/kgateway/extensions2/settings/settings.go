@@ -56,6 +56,10 @@ type Settings struct {
 	// When enabled, backends with the ambient.istio.io/redirection=enabled annotation
 	// will be redirected through a waypoint proxy.
 	IngressUseWaypoints bool `split_words:"true" default:"false"`
+
+	// LogLevel specifies the logging level (e.g., "trace", "debug", "info", "warn", "error").
+	// Defaults to "info" if not set.
+	LogLevel string `split_words:"true" default:"info"`
 }
 
 // BuildSettings returns a zero-valued Settings obj if error is encountered when parsing env

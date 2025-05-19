@@ -5,6 +5,7 @@ package e2e_test
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net"
 	"net/http"
 	"strings"
@@ -20,11 +21,9 @@ import (
 	pb "github.com/envoyproxy/go-control-plane/envoy/service/ratelimit/v3"
 	structpb "github.com/golang/protobuf/ptypes/struct"
 	"github.com/golang/protobuf/ptypes/wrappers"
-	"github.com/solo-io/go-utils/contextutils"
 	rltypes "github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 
@@ -79,7 +78,7 @@ type metadataCheckingRateLimitServer struct {
 }
 
 func (s *metadataCheckingRateLimitServer) ShouldRateLimit(ctx context.Context, req *pb.RateLimitRequest) (*pb.RateLimitResponse, error) {
-	contextutils.LoggerFrom(ctx).Infow("rate limit request", zap.Any("req", req))
+	slog.Info("rate limit request", "req", req)
 
 	Expect(req.Descriptors).To(HaveLen(1))
 	Expect(req.Descriptors[0].Entries).To(HaveLen(1))

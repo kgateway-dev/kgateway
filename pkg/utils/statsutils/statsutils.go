@@ -2,8 +2,8 @@ package statsutils
 
 import (
 	"context"
+	"log/slog"
 
-	"github.com/solo-io/go-utils/contextutils"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
@@ -51,7 +51,7 @@ func Measure(ctx context.Context, counter *stats.Int64Measure, val int64, tags .
 		tags,
 		counter.M(val),
 	); err != nil {
-		contextutils.LoggerFrom(ctx).Errorf("setting counter %v: %v", counter.Name(), err)
+		slog.Error("error setting counter", "error", err, "counter", counter.Name())
 	}
 }
 

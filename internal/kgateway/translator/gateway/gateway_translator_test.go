@@ -192,6 +192,34 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 			},
 		}),
 	Entry(
+		"TrafficPolicy with with targetSelectors",
+		translatorTestCase{
+			inputFile:  "traffic-policy/label_based.yaml",
+			outputFile: "traffic-policy/label_based.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "infra",
+				Name:      "example-gateway",
+			},
+			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
+				var currentStatus gwv1alpha2.PolicyStatus
+
+				expectedPolicies := []reports.PolicyKey{
+					{Group: "gateway.kgateway.dev", Kind: "TrafficPolicy", Namespace: "infra", Name: "transform"},
+					{Group: "gateway.kgateway.dev", Kind: "TrafficPolicy", Namespace: "infra", Name: "rate-limit"},
+				}
+
+				for _, policy := range expectedPolicies {
+					// Validate the 2 policies attached to the route
+					status := reportsMap.BuildPolicyStatus(context.TODO(), policy, wellknown.GatewayControllerName, currentStatus)
+					Expect(status).NotTo(BeNil())
+					Expect(status.Ancestors).To(HaveLen(1)) // 1 Gateway(ancestor)
+					acceptedCondition := meta.FindStatusCondition(status.Ancestors[0].Conditions, string(gwv1alpha2.PolicyConditionAccepted))
+					Expect(acceptedCondition).NotTo(BeNil())
+					Expect(acceptedCondition.Status).To(Equal(metav1.ConditionTrue))
+				}
+			},
+		}),
+	Entry(
 		"tcp gateway with basic routing",
 		translatorTestCase{
 			inputFile:  "tcp-routing/basic.yaml",

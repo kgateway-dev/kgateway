@@ -11,7 +11,6 @@ require (
 	github.com/envoyproxy/go-control-plane/contrib v1.32.5-0.20250507123352-93990c5ec02f
 	github.com/envoyproxy/go-control-plane/envoy v1.32.5-0.20250507123352-93990c5ec02f
 	github.com/envoyproxy/go-control-plane/ratelimit v0.1.1-0.20250507123352-93990c5ec02f
-	github.com/fgrosse/zaptest v1.1.0
 	github.com/fsnotify/fsnotify v1.8.0
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 	github.com/go-logr/logr v1.4.2
@@ -45,6 +44,7 @@ require (
 	k8s.io/apiextensions-apiserver v0.32.3
 	k8s.io/apimachinery v0.32.3
 	k8s.io/client-go v0.32.3
+	k8s.io/klog/v2 v2.130.1
 	k8s.io/kube-openapi v0.0.0-20250318190949-c8a335a9a2ff
 	k8s.io/utils v0.0.0-20241210054802-24370beab758
 	knative.dev/pkg v0.0.0-20211206113427-18589ac7627e
@@ -231,6 +231,7 @@ require (
 	github.com/fatih/color v1.18.0 // indirect
 	github.com/fatih/structtag v1.2.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
+	github.com/fgrosse/zaptest v1.1.0 // indirect
 	github.com/firefart/nonamedreturns v1.0.5 // indirect
 	github.com/fxamacker/cbor/v2 v2.7.0 // indirect
 	github.com/fzipp/gocyclo v0.6.0 // indirect
@@ -581,7 +582,6 @@ require (
 	k8s.io/code-generator v0.32.3 // indirect
 	k8s.io/component-base v0.32.3 // indirect
 	k8s.io/gengo/v2 v2.0.0-20240911193312-2b36238f13e9 // indirect
-	k8s.io/klog/v2 v2.130.1 // indirect
 	k8s.io/kubectl v0.32.3 // indirect
 	lukechampine.com/blake3 v1.2.1 // indirect
 	mvdan.cc/gofumpt v0.7.0 // indirect

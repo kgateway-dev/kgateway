@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/avast/retry-go"
-	"github.com/solo-io/go-utils/contextutils"
 	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -25,8 +24,6 @@ func buildRegisterCallback(
 	bcol krt.Collection[ir.BackendObjectIR],
 ) func() {
 	return func() {
-		ctx = contextutils.WithLogger(ctx, "backendStatus")
-		logger := contextutils.LoggerFrom(ctx)
 		bcol.Register(func(o krt.Event[ir.BackendObjectIR]) {
 			if o.Event == controllers.EventDelete {
 				return
@@ -47,7 +44,7 @@ func buildRegisterCallback(
 				func() error {
 					err := cl.Get(ctx, resNN, &res)
 					if err != nil {
-						logger.Error("error getting backend: ", err.Error())
+						logger.Error("error getting backend", "error", err)
 						return err
 					}
 
@@ -69,7 +66,7 @@ func buildRegisterCallback(
 					meta.SetStatusCondition(&conditions, newCondition)
 					res.Status.Conditions = conditions
 					if err := cl.Status().Patch(ctx, &res, client.Merge); err != nil {
-						logger.Error(err)
+						logger.Error("error updating backend status", "error", err)
 						return err
 					}
 					return nil
@@ -79,12 +76,10 @@ func buildRegisterCallback(
 				retry.DelayType(retry.BackOffDelay),
 			)
 			if err != nil {
-				logger.Errorw(
+				logger.Error(
 					"all attempts failed updating backend status",
-					"Backend",
-					resNN.String(),
-					"error",
-					err,
+					"backend", resNN.String(),
+					"error", err,
 				)
 			}
 		})

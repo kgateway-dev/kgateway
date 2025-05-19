@@ -26,6 +26,7 @@ type PolicyRef struct {
 	Kind        string
 	Name        string
 	SectionName string
+	MatchLabels map[string]string
 }
 
 type AttachedPolicyRef struct {

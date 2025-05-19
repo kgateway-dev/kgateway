@@ -44,6 +44,7 @@ func TestSettings(t *testing.T) {
 				DefaultImagePullPolicy: "IfNotPresent",
 				WaypointLocalBinding:   false,
 				IngressUseWaypoints:    false,
+				LogLevel:               "info",
 			},
 		},
 		{
@@ -65,6 +66,7 @@ func TestSettings(t *testing.T) {
 				"KGW_DEFAULT_IMAGE_PULL_POLICY": "Always",
 				"KGW_WAYPOINT_LOCAL_BINDING":    "true",
 				"KGW_INGRESS_USE_WAYPOINTS":     "true",
+				"KGW_LOG_LEVEL":                 "debug",
 			},
 			expectedSettings: &settings.Settings{
 				DnsLookupFamily:        "V4_ONLY",
@@ -82,6 +84,7 @@ func TestSettings(t *testing.T) {
 				DefaultImagePullPolicy: "Always",
 				WaypointLocalBinding:   true,
 				IngressUseWaypoints:    true,
+				LogLevel:               "debug",
 			},
 		},
 		{
@@ -115,6 +118,7 @@ func TestSettings(t *testing.T) {
 				DefaultImageTag:        "",
 				DefaultImagePullPolicy: "IfNotPresent",
 				WaypointLocalBinding:   false,
+				LogLevel:               "info",
 			},
 		},
 	}

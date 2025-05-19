@@ -1,0 +1,21 @@
+name: labeler
+on:
+  pull_request_target:
+    types: [opened, edited, reopened]
+
+permissions:
+  issues: write
+  pull-requests: write
+  contents: read
+
+jobs:
+  labeler:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Sync /kind labels & enforce changelog fields
+        uses: kgateway-dev/pr-kind-labeler@main
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}

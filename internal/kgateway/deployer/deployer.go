@@ -16,6 +16,8 @@ import (
 	"helm.sh/helm/v3/pkg/chart/loader"
 	"helm.sh/helm/v3/pkg/storage"
 	"helm.sh/helm/v3/pkg/storage/driver"
+	"istio.io/api/annotation"
+	"istio.io/api/label"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -729,7 +731,15 @@ func defaultWaypointGatewayParameters(imageInfo *ImageInfo) *v1alpha1.GatewayPar
 	if gwp.Spec.Kube.PodTemplate.ExtraLabels == nil {
 		gwp.Spec.Kube.PodTemplate.ExtraLabels = make(map[string]string)
 	}
-	gwp.Spec.Kube.PodTemplate.ExtraLabels["istio.io/dataplane-mode"] = "ambient"
+	gwp.Spec.Kube.PodTemplate.ExtraLabels[label.IoIstioDataplaneMode.Name] = "ambient"
+
+	// do not have zTunnel resolve DNS for us - this can cause traffic loops when we're doing
+	// outbound based on DNS service entries
+	// TODO do we want this on the north-south gateway class as well?
+	if gwp.Spec.Kube.PodTemplate.ExtraAnnotations == nil {
+		gwp.Spec.Kube.PodTemplate.ExtraAnnotations = make(map[string]string)
+	}
+	gwp.Spec.Kube.PodTemplate.ExtraAnnotations[annotation.AmbientDnsCapture.Name] = "false"
 
 	return gwp
 }

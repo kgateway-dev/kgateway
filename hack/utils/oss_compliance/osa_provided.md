@@ -8,7 +8,6 @@ Name|Version|License
 [go-control-plane/contrib](https://github.com/envoyproxy/go-control-plane)|v1.32.5-0.20250507123352-93990c5ec02f|Apache License 2.0
 [go-control-plane/envoy](https://github.com/envoyproxy/go-control-plane)|v1.32.5-0.20250507123352-93990c5ec02f|Apache License 2.0
 [go-control-plane/ratelimit](https://github.com/envoyproxy/go-control-plane)|v0.1.1-0.20250507123352-93990c5ec02f|Apache License 2.0
-[fgrosse/zaptest](https://github.com/fgrosse/zaptest)|v1.1.0|MIT License
 [fsnotify/fsnotify](https://github.com/fsnotify/fsnotify)|v1.8.0|BSD 3-clause "New" or "Revised" License
 [ghodss/yaml](https://github.com/ghodss/yaml)|v1.0.1-0.20190212211648-25d852aebe32|MIT License
 [go-logr/logr](https://github.com/go-logr/logr)|v1.4.2|Apache License 2.0
@@ -38,6 +37,7 @@ Name|Version|License
 [k8s.io/apiextensions-apiserver](https://k8s.io/apiextensions-apiserver)|v0.32.3|Apache License 2.0
 [k8s.io/apimachinery](https://k8s.io/apimachinery)|v0.32.3|Apache License 2.0
 [k8s.io/client-go](https://k8s.io/client-go)|v0.32.3|Apache License 2.0
+[klog/v2](https://k8s.io/klog/v2)|v2.130.1|Apache License 2.0
 [k8s.io/kube-openapi](https://k8s.io/kube-openapi)|v0.0.0-20250318190949-c8a335a9a2ff|Apache License 2.0
 [k8s.io/utils](https://k8s.io/utils)|v0.0.0-20241210054802-24370beab758|Apache License 2.0
 [knative.dev/pkg](https://knative.dev/pkg)|v0.0.0-20211206113427-18589ac7627e|Apache License 2.0
