@@ -29,6 +29,10 @@ inputs:
     required: false
     default: "false"
     description: Whether to install localstack
+  agentgateway:
+    required: false
+    default: "false"
+    description: Enable the agentgateway integration with kgateway
 
 runs:
   using: "composite"
@@ -48,11 +52,8 @@ runs:
         ISTIO_VERSION: ${{ inputs.istio-version }}
         CONFORMANCE_VERSION: ${{ inputs.kgateway-api-version }}
         LOCALSTACK: ${{ inputs.localstack }}
+        AGENTGATEWAY: $${{ inputs.agentgateway }}
         # AI Tests rely on metal LB
         CONFORMANCE: true
       run: |
-        # agentgateway tests require another image to be built and loaded for testing a2a agent
-        if [[ "${CLUSTER_NAME}" == "agent-gateway-cluster" ]]; then
-          export AGENTGATEWAY="true"
-        fi
         ./hack/kind/setup-kind.sh

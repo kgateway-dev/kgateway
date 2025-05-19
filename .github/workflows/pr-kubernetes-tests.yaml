@@ -55,7 +55,7 @@ jobs:
         - cluster-name: 'agent-gateway-cluster'
           go-test-args: '-v -timeout=25m'
           go-test-run-regex: '^TestAgentGatewayIntegration'
-          localstack: 'false'
+          agentgateway: 'true'
 
 #         # Dec 4, 2024: 23 minutes
 #         - cluster-name: 'cluster-two'

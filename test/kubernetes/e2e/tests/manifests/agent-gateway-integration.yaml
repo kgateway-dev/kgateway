@@ -5,6 +5,5 @@ image:
 controller:
   logLevel: debug
 
-gateway:
-  agentGateway:
-    enabled: true
+agentGateway:
+  enabled: true

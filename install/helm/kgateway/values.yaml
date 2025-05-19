@@ -66,6 +66,5 @@ inferenceExtension:
   enabled: false
   autoProvision: false
 
-gateway:
-  agentGateway:
-    enabled: false
+agentGateway:
+  enabled: false
