@@ -24,6 +24,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
+	"google.golang.org/protobuf/proto"
 )
 
 const PreserveCasePlugin = "envoy.http.stateful_header_formatters.preserve_case"
@@ -33,7 +34,7 @@ type BackendConfigPolicyIR struct {
 	maxRequestsPerConnection      *int
 	connectTimeout                *durationpb.Duration
 	perConnectionBufferLimitBytes *int
-	TCPKeepalive                  *corev3.TcpKeepalive
+	tcpKeepalive                  *corev3.TcpKeepalive
 	commonHttpProtocolOptions     *corev3.HttpProtocolOptions
 	http1ProtocolOptions          *corev3.Http1ProtocolOptions
 }
@@ -49,7 +50,62 @@ func (d *BackendConfigPolicyIR) Equals(other any) bool {
 	if !ok {
 		return false
 	}
-	return d.maxRequestsPerConnection == d2.maxRequestsPerConnection
+
+	if d.maxRequestsPerConnection != d2.maxRequestsPerConnection {
+		return false
+	}
+
+	// Compare connect timeout
+	if (d.connectTimeout == nil) != (d2.connectTimeout == nil) {
+		return false
+	}
+	if d.connectTimeout != nil && d2.connectTimeout != nil {
+		if !proto.Equal(d.connectTimeout, d2.connectTimeout) {
+			return false
+		}
+	}
+
+	// Compare buffer limit
+	if (d.perConnectionBufferLimitBytes == nil) != (d2.perConnectionBufferLimitBytes == nil) {
+		return false
+	}
+	if d.perConnectionBufferLimitBytes != nil && d2.perConnectionBufferLimitBytes != nil {
+		if *d.perConnectionBufferLimitBytes != *d2.perConnectionBufferLimitBytes {
+			return false
+		}
+	}
+
+	// Compare TCP keepalive
+	if (d.tcpKeepalive == nil) != (d2.tcpKeepalive == nil) {
+		return false
+	}
+	if d.tcpKeepalive != nil && d2.tcpKeepalive != nil {
+		if !proto.Equal(d.tcpKeepalive, d2.tcpKeepalive) {
+			return false
+		}
+	}
+
+	// Compare common HTTP protocol options
+	if (d.commonHttpProtocolOptions == nil) != (d2.commonHttpProtocolOptions == nil) {
+		return false
+	}
+	if d.commonHttpProtocolOptions != nil && d2.commonHttpProtocolOptions != nil {
+		if !proto.Equal(d.commonHttpProtocolOptions, d2.commonHttpProtocolOptions) {
+			return false
+		}
+	}
+
+	// Compare HTTP1 protocol options
+	if (d.http1ProtocolOptions == nil) != (d2.http1ProtocolOptions == nil) {
+		return false
+	}
+	if d.http1ProtocolOptions != nil && d2.http1ProtocolOptions != nil {
+		if !proto.Equal(d.http1ProtocolOptions, d2.http1ProtocolOptions) {
+			return false
+		}
+	}
+
+	return true
 }
 
 func registerTypes(ourCli versioned.Interface) {
@@ -116,9 +172,9 @@ func processBackend(_ context.Context, polir ir.PolicyIR, _ ir.BackendObjectIR, 
 		out.PerConnectionBufferLimitBytes = &wrapperspb.UInt32Value{Value: uint32(*pol.perConnectionBufferLimitBytes)}
 	}
 
-	if pol.TCPKeepalive != nil {
+	if pol.tcpKeepalive != nil {
 		out.UpstreamConnectionOptions = &clusterv3.UpstreamConnectionOptions{
-			TcpKeepalive: pol.TCPKeepalive,
+			TcpKeepalive: pol.tcpKeepalive,
 		}
 	}
 
@@ -132,7 +188,9 @@ func processBackend(_ context.Context, polir ir.PolicyIR, _ ir.BackendObjectIR, 
 }
 
 func translate(pol *v1alpha1.BackendConfigPolicy) (*BackendConfigPolicyIR, error) {
-	ir := &BackendConfigPolicyIR{}
+	ir := &BackendConfigPolicyIR{
+		ct: pol.CreationTimestamp.Time,
+	}
 	if pol.Spec.MaxRequestsPerConnection != nil {
 		ir.maxRequestsPerConnection = pol.Spec.MaxRequestsPerConnection
 	}
@@ -152,7 +210,7 @@ func translate(pol *v1alpha1.BackendConfigPolicy) (*BackendConfigPolicyIR, error
 		if err != nil {
 			return nil, err
 		}
-		ir.TCPKeepalive = tcpKeepalive
+		ir.tcpKeepalive = tcpKeepalive
 	}
 
 	if pol.Spec.CommonHttpProtocolOptions != nil {
