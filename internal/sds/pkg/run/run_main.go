@@ -25,7 +25,7 @@ var (
 )
 
 type Config struct {
-	SdsServerAddress string `split_words:"true" default:"0.0.0.0:8234"` //sds_config target_uri in the envoy instance that it provides secrets to
+	SdsServerAddress string `split_words:"true" default:"0.0.0.0:8234"` // sds_config target_uri in the envoy instance that it provides secrets to
 	SdsClient        string `split_words:"true"`
 
 	PodName      string `split_words:"true"`
@@ -47,8 +47,9 @@ func RunMain() {
 	stats.ConditionallyStartStatsServer()
 	logger.Info("initializing config")
 
-	var c = setup()
+	c := setup()
 
+	//nolint:sloglint // ignore key case
 	logger.Info(
 		"config loaded",
 		slog.Bool("glooMtlsSdsEnabled", c.GlooMtlsSdsEnabled),

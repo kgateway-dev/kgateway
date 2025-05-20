@@ -59,6 +59,11 @@ func (c *Client) Install(ctx context.Context, opts InstallOpts) error {
 	return c.RunCommand(ctx, args...)
 }
 
+func (c *Client) Upgrade(ctx context.Context, opts InstallOpts) error {
+	args := append([]string{"upgrade", "--install"}, opts.all()...)
+	return c.RunCommand(ctx, args...)
+}
+
 func (c *Client) Uninstall(ctx context.Context, opts UninstallOpts) error {
 	args := append([]string{"uninstall"}, opts.all()...)
 	return c.RunCommand(ctx, args...)

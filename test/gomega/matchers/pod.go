@@ -6,6 +6,7 @@ import (
 
 	"github.com/onsi/gomega/types"
 	corev1 "k8s.io/api/core/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // ExpectedPod is a struct that represents the expected pod.
@@ -44,14 +45,14 @@ func (pm *podMatcher) Match(actual interface{}) (bool, error) {
 			}
 		}
 		if !foundContainer {
-			log.Printf("expected pod %s to have container '%s', but it was not found", pod.Name, pm.expectedPod.ContainerName)
+			log.Printf("expected pod %s to have container '%s', but it was not found", client.ObjectKeyFromObject(&pod), pm.expectedPod.ContainerName)
 			return false, nil
 		}
 	}
 
 	if pm.expectedPod.Status != "" {
 		if pod.Status.Phase != pm.expectedPod.Status {
-			log.Printf("expected pod %s to have status %s, but it was %s", pod.Name, pm.expectedPod.Status, pod.Status.Phase)
+			log.Printf("expected pod %s to have status %s, but it was %s", client.ObjectKeyFromObject(&pod), pm.expectedPod.Status, pod.Status.Phase)
 			return false, nil
 		}
 	}
@@ -61,12 +62,12 @@ func (pm *podMatcher) Match(actual interface{}) (bool, error) {
 			if condition.Type == corev1.PodReady {
 				ready := condition.Status == corev1.ConditionTrue
 				if !ready {
-					log.Printf("expected pod %s to have condition ready, but it was not ready", pod.Name)
+					log.Printf("expected pod %s to have condition ready, but it was not ready", client.ObjectKeyFromObject(&pod))
 				}
 				return ready, nil
 			}
 		}
-		log.Printf("expected pod %s to have condition ready, but it was not found", pod.Name)
+		log.Printf("expected pod %s to have condition ready, but it was not found", client.ObjectKeyFromObject(&pod))
 		return false, nil
 	}
 
@@ -81,10 +82,10 @@ func (pm *podMatcher) FailureMessage(actual interface{}) string {
 	}
 
 	if pm.expectedPod.ContainerName != "" {
-		errorMsg += fmt.Sprintf("Expected pod %s to have container '%s', but it was not found", pod.Name, pm.expectedPod.ContainerName)
+		errorMsg += fmt.Sprintf("Expected pod %s to have container '%s', but it was not found", client.ObjectKeyFromObject(&pod), pm.expectedPod.ContainerName)
 	}
 	if pm.expectedPod.Status != "" {
-		errorMsg += fmt.Sprintf("Expected pod %s to have status '%s', but it was not found", pod.Name, pm.expectedPod.Status)
+		errorMsg += fmt.Sprintf("Expected pod %s to have status '%s', but it was not found", client.ObjectKeyFromObject(&pod), pm.expectedPod.Status)
 	}
 	return errorMsg
 }
@@ -98,10 +99,10 @@ func (pm *podMatcher) NegatedFailureMessage(actual interface{}) string {
 		for _, container := range pod.Spec.Containers {
 			containers += container.Name + ", "
 		}
-		errorMsg += fmt.Sprintf("Expected pod %s to have container '%s', but it found %s", pod.Name, pm.expectedPod.ContainerName, containers)
+		errorMsg += fmt.Sprintf("Expected pod %s to have container '%s', but it found %s", client.ObjectKeyFromObject(&pod), pm.expectedPod.ContainerName, containers)
 	}
 	if pm.expectedPod.Status != "" {
-		errorMsg += fmt.Sprintf("Expected pod %s to have status '%s', but it found %s", pod.Name, pm.expectedPod.Status, pod.Status.Phase)
+		errorMsg += fmt.Sprintf("Expected pod %s to have status '%s', but it found %s", client.ObjectKeyFromObject(&pod), pm.expectedPod.Status, pod.Status.Phase)
 	}
 	return errorMsg
 }

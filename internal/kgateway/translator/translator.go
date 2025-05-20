@@ -126,7 +126,7 @@ func (s *CombinedTranslator) GetUpstreamTranslator() *irtranslator.BackendTransl
 func (s *CombinedTranslator) TranslateGateway(kctx krt.HandlerContext, ctx context.Context, gw ir.Gateway) (*irtranslator.TranslationResult, reports.ReportMap) {
 	rm := reports.NewReportMap()
 	r := reports.NewReporter(&rm)
-	logger.Debug("building proxy", "namespace", gw.Namespace, "name", gw.Name, "resourceVersion", gw.Obj.GetResourceVersion())
+	logger.Debug("translating Gateway", "resource_ref", gw.ResourceName(), "resource_version", gw.Obj.GetResourceVersion())
 	gwir := s.buildProxy(kctx, ctx, gw, r)
 
 	if gwir == nil {

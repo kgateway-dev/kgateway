@@ -208,7 +208,7 @@ func (x *callbacksCollection) newStream(sid int64, r *envoy_service_discovery_v3
 			nodeMd.Fields = map[string]*structpb.Value{}
 		}
 
-		x.logger.Debug("augmenting role in node metadata", "resourceName", ucc)
+		x.logger.Debug("augmenting role in node metadata", "resource_name", ucc)
 		// NOTE: this changes the role to include the unique client. This is coupled
 		// with how the snapshot is inserted to the cache for the proxy - it needs to be done with
 		// the unique client resource name as well.
@@ -267,7 +267,7 @@ func (x *callbacksCollection) fetchRequest(_ context.Context, r *envoy_service_d
 		nodeMd.Fields = map[string]*structpb.Value{}
 	}
 
-	x.logger.Debug("augmenting role in node metadata", "resourceName", ucc.ResourceName())
+	x.logger.Debug("augmenting role in node metadata", "resource_name", ucc.ResourceName())
 	// NOTE: this changes the role to include the unique client. This is coupled
 	// with how the snapshot is inserted to the cache for the proxy - it needs to be done with
 	// the unique client resource name as well.

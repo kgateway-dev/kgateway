@@ -1,0 +1,9 @@
+image:
+  registry: ghcr.io/kgateway-dev
+
+# Configuration for the kgateway controller pod
+controller:
+  logLevel: debug
+
+agentGateway:
+  enabled: true

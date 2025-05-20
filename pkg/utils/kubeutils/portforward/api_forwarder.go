@@ -4,18 +4,17 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"net"
+	"net/http"
+	"net/url"
+	"strconv"
+	"strings"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 
 	"k8s.io/client-go/rest"
 
 	"github.com/avast/retry-go/v4"
-
-	"net"
-	"net/http"
-	"net/url"
-	"strconv"
-	"strings"
 
 	"github.com/rotisserie/eris"
 	"k8s.io/client-go/tools/clientcmd"
@@ -118,7 +117,7 @@ func (f *apiPortForwarder) startOnce(ctx context.Context) error {
 		}
 		// Set local port now, as it may have been 0 as input
 		f.properties.localPort = int(p[0].Local)
-		slog.Debug("Port forward established", "address", f.Address(), "pod", podName, "remotePort", f.properties.remotePort)
+		slog.Debug("port forward established", "address", f.Address(), "pod", podName, "remote_port", f.properties.remotePort)
 		// The apiPortForwarder is now ready.
 		return nil
 	}

@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log/slog"
 
 	envoyaccesslog "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -160,9 +159,7 @@ func createFileAccessLog(fileSink *v1alpha1.FileSink) (*envoyaccesslog.AccessLog
 func createGrpcAccessLog(grpcService *v1alpha1.GrpcService, grpcBackends map[string]*ir.BackendObjectIR, accessLogId int) (*envoyaccesslog.AccessLog, error) {
 	var cfg envoygrpc.HttpGrpcAccessLogConfig
 	if err := copyGrpcSettings(&cfg, grpcService, grpcBackends, accessLogId); err != nil {
-		wrappedErr := fmt.Errorf("error converting grpc access log config: %s", err.Error())
-		slog.Error(wrappedErr.Error())
-		return nil, wrappedErr
+		return nil, fmt.Errorf("error converting grpc access log config: %w", err)
 	}
 
 	return newAccessLogWithConfig(wellknown.HTTPGRPCAccessLog, &cfg)

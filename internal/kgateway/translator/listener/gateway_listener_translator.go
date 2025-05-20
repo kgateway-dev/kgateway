@@ -202,7 +202,7 @@ func (ml *MergedListeners) AppendTcpListener(
 		}
 
 		if len(tRoute.ParentRefs) == 0 {
-			logger.Warn("No parent references found for TCPRoute", "TCPRoute", tRoute.Name)
+			logger.Warn("no parent references found for TCPRoute", "resource_ref", tRoute.ResourceName())
 			continue
 		}
 
@@ -211,7 +211,7 @@ func (ml *MergedListeners) AppendTcpListener(
 
 	// If no valid routes are found, do not create a listener
 	if len(validRouteInfos) == 0 {
-		logger.Error("No valid routes found for listener", "listener", listener.Name)
+		logger.Error("no valid routes found for listener", "listener", listener.Name)
 		return
 	}
 
@@ -260,7 +260,7 @@ func (ml *MergedListeners) AppendTlsListener(
 		}
 
 		if len(tRoute.ParentRefs) == 0 {
-			logger.Warn("No parent references found for TLSRoute", "TLSRoute", tRoute.Name)
+			logger.Warn("no parent references found for TLSRoute", "resource_ref", tRoute.ResourceName())
 			continue
 		}
 
@@ -269,7 +269,7 @@ func (ml *MergedListeners) AppendTlsListener(
 
 	// If no valid routes are found, do not create a listener
 	if len(validRouteInfos) == 0 {
-		logger.Error("No valid routes found for listener", "listener", string(listener.Name))
+		logger.Error("no valid routes found for listener", "listener", listener.Name)
 		return
 	}
 
@@ -395,7 +395,7 @@ func (ml *MergedListener) TranslateListener(
 		)
 		if httpsFilterChain == nil {
 			// Log and skip invalid HTTPS filter chains
-			logger.Error("Failed to translate HTTPS filter chain for listener", "listener", ml.name)
+			logger.Error("failed to translate HTTPS filter chain for listener", "listener", ml.name)
 			continue
 		}
 

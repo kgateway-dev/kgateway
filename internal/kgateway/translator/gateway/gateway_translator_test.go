@@ -558,3 +558,93 @@ var _ = DescribeTable("Route Delegation translator",
 	Entry("Built-in rule inheritance", "builtin_rule_inheritance.yaml", ""),
 	Entry("Label based delegation", "label_based.yaml", ""),
 )
+
+var _ = DescribeTable("Discovery Namespace Selector",
+	func(cfgJSON string, inputFile string, outputFile string, errdesc string) {
+		dir := fsutils.MustGetThisDir()
+		testutils.TestTranslation(
+			GinkgoT(),
+			context.TODO(),
+			[]string{
+				filepath.Join(dir, "testutils/inputs/discovery-namespace-selector", inputFile),
+			},
+			filepath.Join(dir, "testutils/outputs/discovery-namespace-selector", outputFile),
+			types.NamespacedName{
+				Namespace: "infra",
+				Name:      "example-gateway",
+			},
+			func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
+				if errdesc == "" {
+					Expect(testutils.AreReportsSuccess(gwNN, reportsMap)).NotTo(HaveOccurred())
+				} else {
+					Expect(testutils.AreReportsSuccess(gwNN, reportsMap)).To(MatchError(ContainSubstring(errdesc)))
+				}
+			},
+			testutils.SettingsWithDiscoveryNamespaceSelectors(cfgJSON),
+		)
+	},
+	Entry("Select all resources",
+		`[
+  {
+    "matchExpressions": [
+      {
+        "key": "kubernetes.io/metadata.name",
+        "operator": "In",
+        "values": [
+          "infra"
+        ]
+      }
+    ]
+  },
+	{
+		"matchLabels": {
+			"app": "a"
+		}
+	}
+]`,
+		"base.yaml", "base_select_all.yaml", ""),
+	Entry("Select all resources; AND matchExpressions and matchLabels",
+		`[
+  {
+    "matchExpressions": [
+      {
+        "key": "kubernetes.io/metadata.name",
+        "operator": "In",
+        "values": [
+          "infra"
+        ]
+      }
+    ]
+  },
+	{
+    "matchExpressions": [
+      {
+        "key": "kubernetes.io/metadata.name",
+        "operator": "In",
+        "values": [
+          "a"
+        ]
+      }
+    ],
+		"matchLabels": {
+			"app": "a"
+		}
+	}
+]`,
+		"base.yaml", "base_select_all.yaml", ""),
+	Entry("Select only namespace infra",
+		`[
+  {
+    "matchExpressions": [
+      {
+        "key": "kubernetes.io/metadata.name",
+        "operator": "In",
+        "values": [
+          "infra"
+        ]
+      }
+    ]
+  }
+]`,
+		"base.yaml", "base_select_infra.yaml", "condition error for httproute: infra/example-route"),
+)

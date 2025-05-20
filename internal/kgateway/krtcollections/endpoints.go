@@ -94,7 +94,7 @@ func transformK8sEndpoints(ctx context.Context, inputs EndpointsInputs) func(kct
 		var warnsToLog []string
 		defer func() {
 			for _, warn := range warnsToLog {
-				logger.Warn(warn)
+				logger.Warn(warn) //nolint:sloglint // ignore formatting
 			}
 		}()
 		key := types.NamespacedName{
@@ -203,7 +203,7 @@ func transformK8sEndpoints(ctx context.Context, inputs EndpointsInputs) func(kct
 				}
 			}
 		}
-		kubeSvcLogger.Debug("created endpoint", "numAddresses", len(ret.LbEps))
+		kubeSvcLogger.Debug("created endpoint", "total_endpoints", len(ret.LbEps))
 		return ret
 	}
 }

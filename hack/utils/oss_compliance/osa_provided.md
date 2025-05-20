@@ -1,5 +1,6 @@
 Name|Version|License
 ---|---|---
+[agentgateway/agentgateway](https://github.com/agentgateway/agentgateway)|v0.4.31-0.20250519135723-61536c2b3fa0|Apache License 2.0
 [avast/retry-go](https://github.com/avast/retry-go)|v2.4.3+incompatible|MIT License
 [retry-go/v4](https://github.com/avast/retry-go)|v4.3.3|MIT License
 [caarlos0/log](https://github.com/caarlos0/log)|v0.4.6|MIT License
@@ -16,11 +17,11 @@ Name|Version|License
 [grpc-ecosystem/go-grpc-middleware](https://github.com/grpc-ecosystem/go-grpc-middleware)|v1.4.0|Apache License 2.0
 [kelseyhightower/envconfig](https://github.com/kelseyhightower/envconfig)|v1.4.0|MIT License
 [mitchellh/hashstructure](https://github.com/mitchellh/hashstructure)|v1.0.0|MIT License
-[ginkgo/v2](https://github.com/onsi/ginkgo)|v2.23.0|MIT License
-[onsi/gomega](https://github.com/onsi/gomega)|v1.36.2|MIT License
+[ginkgo/v2](https://github.com/onsi/ginkgo)|v2.23.3|MIT License
+[onsi/gomega](https://github.com/onsi/gomega)|v1.36.3|MIT License
 [pkg/errors](https://github.com/pkg/errors)|v0.9.1|BSD 2-clause "Simplified" License
 [rotisserie/eris](https://github.com/rotisserie/eris)|v0.5.4|MIT License
-[spf13/afero](https://github.com/spf13/afero)|v1.12.0|Apache License 2.0
+[spf13/afero](https://github.com/spf13/afero)|v1.14.0|Apache License 2.0
 [spf13/cobra](https://github.com/spf13/cobra)|v1.9.1|Apache License 2.0
 [stretchr/testify](https://github.com/stretchr/testify)|v1.10.0|MIT License
 [go.opencensus.io](https://go.opencensus.io)|v0.24.0|Apache License 2.0

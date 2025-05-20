@@ -127,8 +127,11 @@ func ourPolicies(commoncol *common.CommonCollections) krt.Collection[ir.PolicyWr
 	// collection with common options and a name. It's important so that the collection appears in
 	// the krt debug page.
 
+	// Use the default discovery namespace filter to filter configmaps not in the list of discovery namespaces
+	filter := kclient.Filter{ObjectFilter: commoncol.Client.ObjectFilter()}
+
 	// get a configmap client going
-	configMapCol := krt.WrapClient(kclient.New[*corev1.ConfigMap](commoncol.Client), commoncol.KrtOpts.ToOptions("ConfigMaps")...)
+	configMapCol := krt.WrapClient(kclient.NewFiltered[*corev1.ConfigMap](commoncol.Client, filter), commoncol.KrtOpts.ToOptions("ConfigMaps")...)
 
 	// convertIt to policy IR
 	return krt.NewCollection(configMapCol, func(krtctx krt.HandlerContext, i *corev1.ConfigMap) *ir.PolicyWrapper {

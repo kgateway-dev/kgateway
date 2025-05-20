@@ -73,6 +73,10 @@ else
   if [[ $CONFORMANCE == "true" ]]; then
     VERSION=$VERSION make kind-build-and-load-test-ai-provider
   fi
+
+  if [[ $AGENTGATEWAY == "true" ]]; then
+    VERSION=$VERSION make kind-build-and-load-test-a2a-agent
+  fi
 fi
 
 # 5. Build the gloo command line tool, ensuring we have one in the `_output` folder

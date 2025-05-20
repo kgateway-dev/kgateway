@@ -21,7 +21,7 @@ func snapshotPerClient(
 	xdsSnapshotsForUcc := krt.NewCollection(uccCol, func(kctx krt.HandlerContext, ucc ir.UniqlyConnectedClient) *XdsSnapWrapper {
 		maybeMostlySnap := krt.FetchOne(kctx, mostXdsSnapshots, krt.FilterKey(ucc.Role))
 		if maybeMostlySnap == nil {
-			logger.Debug("snapshotPerClient - snapshot missing", "proxyKey", ucc.Role)
+			logger.Debug("snapshot missing", "proxy_key", ucc.Role)
 			return nil
 		}
 		clustersForUcc := clusters.FetchClustersForClient(kctx, ucc)
@@ -75,17 +75,17 @@ func snapshotPerClient(
 		snap.erroredClusters = erroredClusters
 		snap.proxyKey = ucc.ResourceName()
 		snapshot := &envoycache.Snapshot{}
-		snapshot.Resources[envoycachetypes.Cluster] = clusterResources //envoycache.NewResources(version, resource)
+		snapshot.Resources[envoycachetypes.Cluster] = clusterResources // envoycache.NewResources(version, resource)
 		snapshot.Resources[envoycachetypes.Endpoint] = endpointResources
 		snapshot.Resources[envoycachetypes.Route] = maybeMostlySnap.Routes
 		snapshot.Resources[envoycachetypes.Listener] = maybeMostlySnap.Listeners
-		//envoycache.NewResources(version, resource)
+		// envoycache.NewResources(version, resource)
 		snap.snap = snapshot
-		logger.Debug("snapshotPerClient", "proxyKey", snap.proxyKey,
-			"Listeners", resourcesStringer(maybeMostlySnap.Listeners).String(),
-			"Clusters", resourcesStringer(clusterResources).String(),
-			"Routes", resourcesStringer(maybeMostlySnap.Routes).String(),
-			"Endpoints", resourcesStringer(endpointResources).String(),
+		logger.Debug("snapshots", "proxy_key", snap.proxyKey,
+			"listeners", resourcesStringer(maybeMostlySnap.Listeners).String(),
+			"clusters", resourcesStringer(clusterResources).String(),
+			"routes", resourcesStringer(maybeMostlySnap.Routes).String(),
+			"endpoints", resourcesStringer(endpointResources).String(),
 		)
 
 		return &snap

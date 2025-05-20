@@ -21,9 +21,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-var (
-	grpcOptions = []grpc.ServerOption{grpc.MaxConcurrentStreams(10000)}
-)
+var grpcOptions = []grpc.ServerOption{grpc.MaxConcurrentStreams(10000)}
 
 // Secret represents an envoy auth secret
 type Secret struct {
@@ -127,7 +125,7 @@ func (s *Server) UpdateSDSConfig(ctx context.Context) error {
 		slog.Error("error getting snapshot version", "error", err)
 		return err
 	}
-	slog.Info("Updating SDS config", "sdsClient", s.sdsClient, "snapshotVersion", snapshotVersion)
+	slog.Info("updating SDS config", "client", s.sdsClient, "snapshot_version", snapshotVersion)
 
 	secretSnapshot := &cache.Snapshot{}
 	secretSnapshot.Resources[cache_types.Secret] = cache.NewResources(snapshotVersion, items)

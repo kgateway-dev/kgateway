@@ -143,6 +143,11 @@ func (i *TestInstallation) CreateIstioBugReport(ctx context.Context) {
 }
 
 func (i *TestInstallation) InstallKgatewayFromLocalChart(ctx context.Context) {
+	i.InstallKgatewayCRDsFromLocalChart(ctx)
+	i.InstallKgatewayCoreFromLocalChart(ctx)
+}
+
+func (i *TestInstallation) InstallKgatewayCRDsFromLocalChart(ctx context.Context) {
 	if testutils.ShouldSkipInstall() {
 		return
 	}
@@ -150,7 +155,7 @@ func (i *TestInstallation) InstallKgatewayFromLocalChart(ctx context.Context) {
 	// install the CRD chart first
 	crdChartURI, err := helper.GetLocalChartPath(helmutils.CRDChartName)
 	i.Assertions.Require.NoError(err)
-	err = i.Actions.Helm().WithReceiver(os.Stdout).Install(
+	err = i.Actions.Helm().WithReceiver(os.Stdout).Upgrade(
 		ctx,
 		helmutils.InstallOpts{
 			CreateNamespace: true,
@@ -159,11 +164,17 @@ func (i *TestInstallation) InstallKgatewayFromLocalChart(ctx context.Context) {
 			ChartUri:        crdChartURI,
 		})
 	i.Assertions.Require.NoError(err)
+}
+
+func (i *TestInstallation) InstallKgatewayCoreFromLocalChart(ctx context.Context) {
+	if testutils.ShouldSkipInstall() {
+		return
+	}
 
 	// and then install the main chart
 	chartUri, err := helper.GetLocalChartPath(helmutils.ChartName)
 	i.Assertions.Require.NoError(err)
-	err = i.Actions.Helm().WithReceiver(os.Stdout).Install(
+	err = i.Actions.Helm().WithReceiver(os.Stdout).Upgrade(
 		ctx,
 		helmutils.InstallOpts{
 			Namespace:       i.Metadata.InstallNamespace,
@@ -184,6 +195,11 @@ func (i *TestInstallation) InstallKgatewayFromLocalChart(ctx context.Context) {
 // }
 
 func (i *TestInstallation) UninstallKgateway(ctx context.Context) {
+	i.UninstallKgatewayCore(ctx)
+	i.UninstallKgatewayCRDs(ctx)
+}
+
+func (i *TestInstallation) UninstallKgatewayCore(ctx context.Context) {
 	if testutils.ShouldSkipInstall() {
 		return
 	}
@@ -198,9 +214,15 @@ func (i *TestInstallation) UninstallKgateway(ctx context.Context) {
 	)
 	i.Assertions.Require.NoError(err, "failed to uninstall main chart")
 	i.Assertions.EventuallyKgatewayUninstallSucceeded(ctx)
+}
+
+func (i *TestInstallation) UninstallKgatewayCRDs(ctx context.Context) {
+	if testutils.ShouldSkipInstall() {
+		return
+	}
 
 	// uninstall the CRD chart
-	err = i.Actions.Helm().Uninstall(
+	err := i.Actions.Helm().Uninstall(
 		ctx,
 		helmutils.UninstallOpts{
 			Namespace:   i.Metadata.InstallNamespace,
@@ -208,8 +230,6 @@ func (i *TestInstallation) UninstallKgateway(ctx context.Context) {
 		},
 	)
 	i.Assertions.Require.NoError(err, "failed to uninstall CRD chart")
-
-	// TODO: Remove the namespace.
 }
 
 // PreFailHandler is the function that is invoked if a test in the given TestInstallation fails

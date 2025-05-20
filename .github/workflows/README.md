@@ -7,17 +7,15 @@ Conformance tests a pinned version of the [Kubernetes Gateway API Conformance su
 This Github Action will not run by default on a Draft Pull Request. After a Pull Request is marked as `Ready for Review`
 it will trigger the action to run.
 
-## [Regression Tests](./regression-tests.yaml)
-Regression tests run the suite of [Kubernetes End-To-End Tests](https://github.com/solo-io/gloo/tree/main/test).
+## [Kubernetes End-to-End Tests](./pr-kubernetes-tests.yaml)
+Regression tests run the suite of [Kubernetes End-To-End Tests](https://github.com/kgateway-dev/kgateway/tree/main/test/kubernetes/e2e).
 
 ### Draft Pull Requests
 This Github Action will not run by default on a Draft Pull Request. After a Pull Request is marked as `Ready for Review`
 it will trigger the action to run.
 
-## [Trivy Vulnerability Scanning](./trivy-analysis-scheduled.yaml)
-A scheduled job which scans images released from both the Open Source and Enterprise repositories.
-
-To run the vulnerability locally, check out [the security scanner README](https://github.com/solo-io/gloo/tree/main/docs/cmd/securityscanutils)
+## [Lint Helm Charts](./lint-helm.yaml)
+Perform linting on project [Helm Charts](../../install/helm/README.md).
 
 ## Future Work
 It would be great to add support for issue comment directives. This would mean that commenting `/sig-ci` would signal CI to run, or `/skip-ci` would auto-succeed CI.

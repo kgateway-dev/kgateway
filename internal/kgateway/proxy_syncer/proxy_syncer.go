@@ -198,6 +198,12 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 	s.translator.Init(ctx)
 
 	s.mostXdsSnapshots = krt.NewCollection(s.commonCols.GatewayIndex.Gateways, func(kctx krt.HandlerContext, gw ir.Gateway) *GatewayXdsResources {
+		// skip agentgateway proxies as they are not envoy-based gateways
+		if gw.Obj.Spec.GatewayClassName == wellknown.AgentGatewayClassName {
+			logger.Debug("skipping envoy proxy sync for agentgateway %s.%s", gw.Obj.Name, gw.Obj.Namespace)
+			return nil
+		}
+
 		logger.Debug("building proxy for kube gw", "name", client.ObjectKeyFromObject(gw.Obj), "version", gw.Obj.GetResourceVersion())
 
 		xdsSnap, rm := s.translator.TranslateGateway(kctx, ctx, gw)
@@ -329,7 +335,7 @@ func mergeProxyReports(
 }
 
 func (s *ProxySyncer) Start(ctx context.Context) error {
-	logger.Info(fmt.Sprintf("starting %s Proxy Syncer", s.controllerName))
+	logger.Info("starting Proxy Syncer", "controller", s.controllerName)
 
 	// wait for krt collections to sync
 	logger.Info("waiting for cache to sync")
@@ -439,12 +445,11 @@ func (s *ProxySyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger, 
 						// if it's recreated, we'll retranslate it anyway
 						return nil
 					}
-					logger.Error(fmt.Sprintf("%s get failed", routeType), "error", err, "route", routeKey)
+					logger.Error("error getting route", "error", err, "resource_ref", routeKey, "route_type", routeType)
 					return err
 				}
 				if err := statusUpdater(route); err != nil {
-					logger.Debug(fmt.Sprintf("%s status update attempt failed", routeType), "error", err,
-						"route", fmt.Sprintf("%s.%s", routeKey.Namespace, routeKey.Name))
+					logger.Debug("error updating status for route", "error", err, "resource_ref", routeKey, "route_type", routeType)
 					return err
 				}
 				return nil
@@ -484,7 +489,7 @@ func (s *ProxySyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger, 
 			}
 			r.Status.RouteStatus = *status
 		default:
-			logger.Warn(fmt.Sprintf("unsupported route type for %s", routeType), "route", route)
+			logger.Warn("unsupported route type", "route_type", routeType, "resource_ref", client.ObjectKeyFromObject(route))
 			return nil
 		}
 
@@ -545,7 +550,7 @@ func (s *ProxySyncer) syncGatewayStatus(ctx context.Context, logger *slog.Logger
 	stopwatch := utils.NewTranslatorStopWatch("GatewayStatusSyncer")
 	stopwatch.Start()
 
-	// TODO: retry within loop per GW rathen that as a full block
+	// TODO: retry within loop per GW rather that as a full block
 	err := retry.Do(func() error {
 		for gwnn := range rm.Gateways {
 			gw := gwv1.Gateway{}
@@ -594,20 +599,20 @@ func (s *ProxySyncer) syncPolicyStatus(ctx context.Context, rm reports.ReportMap
 
 		plugin, ok := s.plugins.ContributesPolicies[gk]
 		if !ok {
-			logger.Error("Policy plugin not registered for policy", "groupKind", gk, "resource", nsName)
+			logger.Error("policy plugin not registered for policy", "group_kind", gk, "resource", nsName)
 			continue
 		}
 		if plugin.GetPolicyStatus == nil {
-			logger.Error("GetPolicyStatus handler not registered for policy", "groupKind", gk, "resource", nsName)
+			logger.Error("GetPolicyStatus handler not registered for policy", "group_kind", gk, "resource", nsName) //nolint:sloglint // ignore PascalCase at start
 			continue
 		}
 		if plugin.PatchPolicyStatus == nil {
-			logger.Error("PatchPolicyStatus handler not registered for policy", "groupKind", gk, "resource", nsName)
+			logger.Error("PatchPolicyStatus handler not registered for policy", "group_kind", gk, "resource", nsName) //nolint:sloglint // ignore PascalCase at start
 			continue
 		}
 		currentStatus, err := plugin.GetPolicyStatus(ctx, nsName)
 		if err != nil {
-			logger.Error("error getting policy status", "error", err, "policy", nsName)
+			logger.Error("error getting policy status", "error", err, "resource_ref", nsName)
 			continue
 		}
 		status := rm.BuildPolicyStatus(ctx, key, s.controllerName, currentStatus)
@@ -623,7 +628,7 @@ func (s *ProxySyncer) syncPolicyStatus(ctx context.Context, rm reports.ReportMap
 			retry.DelayType(retry.BackOffDelay),
 		)
 		if err != nil {
-			logger.Error("error updating policy status", "error", err, "groupKind", gk, "policy", nsName)
+			logger.Error("error updating policy status", "error", err, "group_kind", gk, "resource_ref", nsName)
 		}
 	}
 }
