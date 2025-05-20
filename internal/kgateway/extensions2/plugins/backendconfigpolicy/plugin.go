@@ -66,7 +66,10 @@ func registerTypes(ourCli versioned.Interface) {
 }
 func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensionsplug.Plugin {
 	registerTypes(commoncol.OurClient)
-	col := krt.WrapClient(kclient.New[*v1alpha1.BackendConfigPolicy](commoncol.Client), commoncol.KrtOpts.ToOptions("BackendConfigPolicy")...)
+	col := krt.WrapClient(kclient.NewFiltered[*v1alpha1.BackendConfigPolicy](
+		commoncol.Client,
+		kclient.Filter{ObjectFilter: commoncol.Client.ObjectFilter()},
+	), commoncol.KrtOpts.ToOptions("BackendConfigPolicy")...)
 	backendConfigPolicyCol := krt.NewCollection(col, func(krtctx krt.HandlerContext, b *v1alpha1.BackendConfigPolicy) *ir.PolicyWrapper {
 		objSrc := ir.ObjectSource{
 			Group:     wellknown.BackendConfigPolicyGVK.Group,
