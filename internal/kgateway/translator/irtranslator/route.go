@@ -266,15 +266,15 @@ func (h *httpRouteConfigurationTranslator) runRoutePlugins(
 			TypedFilterConfig: typedPerFilterConfig,
 		}
 		if pass.MergePolicies != nil {
-			mergedPolicy := pass.MergePolicies(pols)
-			pctx.Policy = mergedPolicy.PolicyIr
-			applyForPolicy(ctx, pass, pctx, out)
-		} else {
-			for _, pol := range pols {
-				pctx.Policy = pol.PolicyIr
-				applyForPolicy(ctx, pass, pctx, out)
-			}
+			pols = []ir.PolicyAtt{pass.MergePolicies(pols)}
 		}
+		for _, pol := range pols {
+			// TODO: should we append pol.Error to errs?
+			// i.e. errs = append(errs, pol.Error)
+			pctx.Policy = pol.PolicyIr
+			applyForPolicy(ctx, pass, pctx, out)
+		}
+
 		// TODO: check return value, if error returned, log error and report condition
 	}
 

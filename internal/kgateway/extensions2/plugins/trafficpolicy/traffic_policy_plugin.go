@@ -551,7 +551,7 @@ func (p *trafficPolicyPluginGwPass) ApplyVhostPlugin(ctx context.Context, pCtx *
 	//	return
 	//}
 
-	// TODO: disable for now as we figure out the interaction of listener/routconfiguration/vhost policies.
+	// TODO: this is disabled for now as we figure out the interaction of listener/routconfiguration/vhost policies.
 	//	p.handlePolicies(&pCtx.TypedFilterConfig, policy.spec)
 }
 
@@ -707,15 +707,6 @@ func (p *trafficPolicyPluginGwPass) handleRateLimit(typedFilterConfig *ir.TypedF
 		RateLimits: rateLimit.rateLimitActions,
 	}
 	typedFilterConfig.AddTypedConfig(getRateLimitFilterName(providerName), rateLimitPerRoute)
-}
-
-func (p *trafficPolicyPluginGwPass) ApplyForBackend(
-	ctx context.Context,
-	pCtx *ir.RouteBackendContext,
-	in ir.HttpBackend,
-	out *routev3.Route,
-) error {
-	return nil
 }
 
 func (p *trafficPolicyPluginGwPass) ApplyForRouteBackend(
