@@ -1,4 +1,33 @@
-Listeners:
+clusters:
+- connectTimeout: 5s
+  edsClusterConfig:
+    edsConfig:
+      ads: {}
+      resourceApiVersion: V3
+  metadata: {}
+  name: kube_default_kubernetes_443
+  type: EDS
+- connectTimeout: 5s
+  edsClusterConfig:
+    edsConfig:
+      ads: {}
+      resourceApiVersion: V3
+  maxRequestsPerConnection: 100
+  metadata: {}
+  name: kube_gwtest_httpbin_8080
+  type: EDS
+endpoints:
+- clusterName: kube_gwtest_httpbin_8080
+  endpoints:
+  - lbEndpoints:
+    - endpoint:
+        address:
+          socketAddress:
+            address: 10.244.1.11
+            portValue: 8080
+      loadBalancingWeight: 1
+    loadBalancingWeight: 1
+listeners:
 - address:
     socketAddress:
       address: '::'
@@ -24,6 +53,6 @@ Listeners:
         useRemoteAddress: true
     name: http
   name: http
-Routes:
+routes:
 - ignorePortInHostMatching: true
   name: http
