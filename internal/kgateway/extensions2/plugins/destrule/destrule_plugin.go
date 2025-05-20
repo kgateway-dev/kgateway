@@ -131,20 +131,20 @@ func (d *destrulePlugin) processBackend(kctx krt.HandlerContext, ctx context.Con
 			// Translate TCP keepalive settings
 			if tcpSettings := trafficPolicy.GetConnectionPool().GetTcp(); tcpSettings != nil {
 				if tcpKeepalive := tcpSettings.GetTcpKeepalive(); tcpKeepalive != nil {
-					if outCluster.UpstreamConnectionOptions == nil {
+					if outCluster.GetUpstreamConnectionOptions() == nil {
 						outCluster.UpstreamConnectionOptions = &envoy_config_cluster_v3.UpstreamConnectionOptions{}
 					}
-					if outCluster.UpstreamConnectionOptions.TcpKeepalive == nil {
-						outCluster.UpstreamConnectionOptions.TcpKeepalive = &envoy_config_core_v3.TcpKeepalive{}
+					if outCluster.GetUpstreamConnectionOptions().GetTcpKeepalive() == nil {
+						outCluster.GetUpstreamConnectionOptions().TcpKeepalive = &envoy_config_core_v3.TcpKeepalive{}
 					}
 					if tcpKeepalive.GetTime() != nil {
-						outCluster.UpstreamConnectionOptions.TcpKeepalive.KeepaliveTime = &wrapperspb.UInt32Value{Value: uint32(tcpKeepalive.GetTime().GetSeconds())}
+						outCluster.GetUpstreamConnectionOptions().GetTcpKeepalive().KeepaliveTime = &wrapperspb.UInt32Value{Value: uint32(tcpKeepalive.GetTime().GetSeconds())}
 					}
 					if tcpKeepalive.GetInterval() != nil {
-						outCluster.UpstreamConnectionOptions.TcpKeepalive.KeepaliveInterval = &wrapperspb.UInt32Value{Value: uint32(tcpKeepalive.GetInterval().GetSeconds())}
+						outCluster.GetUpstreamConnectionOptions().GetTcpKeepalive().KeepaliveInterval = &wrapperspb.UInt32Value{Value: uint32(tcpKeepalive.GetInterval().GetSeconds())}
 					}
 					if tcpKeepalive.GetProbes() > 0 {
-						outCluster.UpstreamConnectionOptions.TcpKeepalive.KeepaliveProbes = &wrapperspb.UInt32Value{Value: uint32(tcpKeepalive.GetProbes())}
+						outCluster.GetUpstreamConnectionOptions().GetTcpKeepalive().KeepaliveProbes = &wrapperspb.UInt32Value{Value: uint32(tcpKeepalive.GetProbes())}
 					}
 				}
 			}
