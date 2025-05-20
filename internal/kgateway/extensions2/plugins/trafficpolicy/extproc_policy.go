@@ -20,8 +20,8 @@ func (b *TrafficPolicyBuilder) toEnvoyExtProc(
 	if err != nil {
 		return nil, fmt.Errorf("extproc: %w", err)
 	}
-	if gatewayExtension.extType != v1alpha1.GatewayExtensionTypeExtProc || gatewayExtension.extProc == nil {
-		return nil, pluginutils.ErrInvalidExtensionType(v1alpha1.GatewayExtensionTypeExtAuth, gatewayExtension.extType)
+	if gatewayExtension.ExtType != v1alpha1.GatewayExtensionTypeExtProc || gatewayExtension.ExtProc == nil {
+		return nil, pluginutils.ErrInvalidExtensionType(v1alpha1.GatewayExtensionTypeExtAuth, gatewayExtension.ExtType)
 	}
 
 	return &ExtprocIR{

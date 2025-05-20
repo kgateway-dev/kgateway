@@ -217,11 +217,11 @@ func (r *RateLimitIR) Equals(other *RateLimitIR) bool {
 
 type TrafficPolicyGatewayExtensionIR struct {
 	name      string
-	extType   v1alpha1.GatewayExtensionType
-	extAuth   *envoy_ext_authz_v3.ExtAuthz
-	extProc   *envoy_ext_proc_v3.ExternalProcessor
-	rateLimit *ratev3.RateLimit
-	err       error
+	ExtType   v1alpha1.GatewayExtensionType
+	ExtAuth   *envoy_ext_authz_v3.ExtAuthz
+	ExtProc   *envoy_ext_proc_v3.ExternalProcessor
+	RateLimit *ratev3.RateLimit
+	Err       error
 }
 
 // ResourceName returns the unique name for this extension.
@@ -230,29 +230,29 @@ func (e TrafficPolicyGatewayExtensionIR) ResourceName() string {
 }
 
 func (e TrafficPolicyGatewayExtensionIR) Equals(other TrafficPolicyGatewayExtensionIR) bool {
-	if e.extType != other.extType {
+	if e.ExtType != other.ExtType {
 		return false
 	}
 
-	if !proto.Equal(e.extAuth, other.extAuth) {
+	if !proto.Equal(e.ExtAuth, other.ExtAuth) {
 		return false
 	}
-	if !proto.Equal(e.extProc, other.extProc) {
+	if !proto.Equal(e.ExtProc, other.ExtProc) {
 		return false
 	}
-	if !proto.Equal(e.rateLimit, other.rateLimit) {
+	if !proto.Equal(e.RateLimit, other.RateLimit) {
 		return false
 	}
 
 	// Compare providers
-	if e.err == nil && other.err == nil {
+	if e.Err == nil && other.Err == nil {
 		return true
 	}
-	if e.err == nil || other.err == nil {
+	if e.Err == nil || other.Err == nil {
 		return false
 	}
 
-	return e.err.Error() == other.err.Error()
+	return e.Err.Error() == other.Err.Error()
 }
 
 type providerWithFromListener struct {
@@ -297,7 +297,7 @@ func TranslateGatewayExtensionBuilder(commoncol *common.CommonCollections) func(
 	return func(krtctx krt.HandlerContext, gExt ir.GatewayExtension) *TrafficPolicyGatewayExtensionIR {
 		p := &TrafficPolicyGatewayExtensionIR{
 			name:    krt.Named{Name: gExt.Name, Namespace: gExt.Namespace}.ResourceName(),
-			extType: gExt.Type,
+			ExtType: gExt.Type,
 		}
 
 		switch gExt.Type {
@@ -305,11 +305,11 @@ func TranslateGatewayExtensionBuilder(commoncol *common.CommonCollections) func(
 			envoyGrpcService, err := ResolveExtGrpcService(krtctx, commoncol.BackendIndex, false, gExt.ObjectSource, gExt.ExtAuth.GrpcService)
 			if err != nil {
 				// TODO: should this be a warning, and set cluster to blackhole?
-				p.err = fmt.Errorf("failed to resolve ExtAuth backend: %w", err)
+				p.Err = fmt.Errorf("failed to resolve ExtAuth backend: %w", err)
 				return p
 			}
 
-			p.extAuth = &envoy_ext_authz_v3.ExtAuthz{
+			p.ExtAuth = &envoy_ext_authz_v3.ExtAuthz{
 				Services: &envoy_ext_authz_v3.ExtAuthz_GrpcService{
 					GrpcService: envoyGrpcService,
 				},
@@ -334,34 +334,34 @@ func TranslateGatewayExtensionBuilder(commoncol *common.CommonCollections) func(
 		case v1alpha1.GatewayExtensionTypeExtProc:
 			envoyGrpcService, err := ResolveExtGrpcService(krtctx, commoncol.BackendIndex, false, gExt.ObjectSource, gExt.ExtProc.GrpcService)
 			if err != nil {
-				p.err = fmt.Errorf("failed to resolve ExtProc backend: %w", err)
+				p.Err = fmt.Errorf("failed to resolve ExtProc backend: %w", err)
 				return p
 			}
 
-			p.extProc = &envoy_ext_proc_v3.ExternalProcessor{
+			p.ExtProc = &envoy_ext_proc_v3.ExternalProcessor{
 				GrpcService: envoyGrpcService,
 			}
 
 		case v1alpha1.GatewayExtensionTypeRateLimit:
 			if gExt.RateLimit == nil {
-				p.err = fmt.Errorf("rate limit extension missing configuration")
+				p.Err = fmt.Errorf("rate limit extension missing configuration")
 				return p
 			}
 
 			grpcService, err := ResolveExtGrpcService(krtctx, commoncol.BackendIndex, false, gExt.ObjectSource, gExt.RateLimit.GrpcService)
 			if err != nil {
-				p.err = fmt.Errorf("ratelimit: %w", err)
+				p.Err = fmt.Errorf("ratelimit: %w", err)
 				return p
 			}
 
 			// Use the specialized function for rate limit service resolution
 			rateLimitConfig, err := resolveRateLimitService(grpcService, gExt.RateLimit)
 			if err != nil {
-				p.err = fmt.Errorf("failed to resolve RateLimit backend: %w", err)
+				p.Err = fmt.Errorf("failed to resolve RateLimit backend: %w", err)
 				return p
 			}
 
-			p.rateLimit = rateLimitConfig
+			p.RateLimit = rateLimitConfig
 		}
 		return p
 	}
@@ -801,7 +801,7 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.Filt
 
 	// Add Ext_proc filters for listener
 	for providerName, providerExtProc := range p.extProcPerProvider {
-		extProcFilter := providerExtProc.provider.extProc
+		extProcFilter := providerExtProc.provider.ExtProc
 		if extProcFilter == nil {
 			continue
 		}
@@ -891,7 +891,7 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.Filt
 
 	// Add Ext_authz filter for listener
 	for providerName, providerExtauth := range p.extAuthPerProvider {
-		extAuthFilter := providerExtauth.provider.extAuth
+		extAuthFilter := providerExtauth.provider.ExtAuth
 		if extAuthFilter == nil {
 			continue
 		}
@@ -919,7 +919,7 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.Filt
 
 	// Add global rate limit filters from providers
 	for providerName, providerRateLimit := range p.rateLimitPerProvider {
-		rateLimitFilter := providerRateLimit.provider.rateLimit
+		rateLimitFilter := providerRateLimit.provider.RateLimit
 		if rateLimitFilter == nil {
 			continue
 		}
@@ -1125,8 +1125,8 @@ func (b *TrafficPolicyBuilder) FetchGatewayExtension(krtctx krt.HandlerContext, 
 	if gatewayExtension == nil {
 		return nil, fmt.Errorf("extension not found")
 	}
-	if gatewayExtension.err != nil {
-		return gatewayExtension, gatewayExtension.err
+	if gatewayExtension.Err != nil {
+		return gatewayExtension, gatewayExtension.Err
 	}
 	return gatewayExtension, nil
 }
@@ -1239,8 +1239,8 @@ func (b *TrafficPolicyBuilder) rateLimitForSpec(
 		errors = append(errors, fmt.Errorf("ratelimit: %w", err))
 		return errors
 	}
-	if gwExtIR.extType != v1alpha1.GatewayExtensionTypeRateLimit || gwExtIR.rateLimit == nil {
-		errors = append(errors, pluginutils.ErrInvalidExtensionType(v1alpha1.GatewayExtensionTypeExtAuth, gwExtIR.extType))
+	if gwExtIR.ExtType != v1alpha1.GatewayExtensionTypeRateLimit || gwExtIR.RateLimit == nil {
+		errors = append(errors, pluginutils.ErrInvalidExtensionType(v1alpha1.GatewayExtensionTypeExtAuth, gwExtIR.ExtType))
 	}
 
 	if len(errors) > 0 {

@@ -94,8 +94,8 @@ func (b *TrafficPolicyBuilder) extAuthForSpec(
 	if err != nil {
 		return fmt.Errorf("extauthz: %w", err)
 	}
-	if provider.extType != v1alpha1.GatewayExtensionTypeExtAuth || provider.extAuth == nil {
-		return pluginutils.ErrInvalidExtensionType(v1alpha1.GatewayExtensionTypeExtAuth, provider.extType)
+	if provider.ExtType != v1alpha1.GatewayExtensionTypeExtAuth || provider.ExtAuth == nil {
+		return pluginutils.ErrInvalidExtensionType(v1alpha1.GatewayExtensionTypeExtAuth, provider.ExtType)
 	}
 
 	out.extAuth = &extAuthIR{
