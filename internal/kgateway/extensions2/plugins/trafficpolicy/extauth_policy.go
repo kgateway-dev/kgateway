@@ -90,7 +90,7 @@ func (b *TrafficPolicyBuilder) extAuthForSpec(
 		return nil
 	}
 
-	provider, err := b.fetchGatewayExtension(krtctx, spec.ExtensionRef, trafficPolicy.GetNamespace())
+	provider, err := b.FetchGatewayExtension(krtctx, spec.ExtensionRef, trafficPolicy.GetNamespace())
 	if err != nil {
 		return fmt.Errorf("extauthz: %w", err)
 	}

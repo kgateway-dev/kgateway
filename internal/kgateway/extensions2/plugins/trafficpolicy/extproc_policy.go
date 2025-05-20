@@ -16,7 +16,7 @@ func (b *TrafficPolicyBuilder) toEnvoyExtProc(
 	trafficPolicy *v1alpha1.TrafficPolicy,
 ) (*ExtprocIR, error) {
 	spec := trafficPolicy.Spec.ExtProc
-	gatewayExtension, err := b.fetchGatewayExtension(krtctx, spec.ExtensionRef, trafficPolicy.GetNamespace())
+	gatewayExtension, err := b.FetchGatewayExtension(krtctx, spec.ExtensionRef, trafficPolicy.GetNamespace())
 	if err != nil {
 		return nil, fmt.Errorf("extproc: %w", err)
 	}

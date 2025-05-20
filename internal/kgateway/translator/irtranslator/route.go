@@ -107,8 +107,10 @@ func (h *httpRouteConfigurationTranslator) computeVirtualHost(
 		RequireTls: envoyRequireTls,
 	}
 
+	typedPerFilterConfigRoute := ir.TypedFilterConfigMap(map[string]proto.Message{})
 	// run the http plugins that are attached to the listener or gateway on the virtual host
-	h.runVhostPlugins(ctx, out)
+	h.runVhostPlugins(ctx, out, typedPerFilterConfigRoute)
+	out.TypedPerFilterConfig = toPerFilterConfigMap(typedPerFilterConfigRoute)
 
 	return out
 }
@@ -137,17 +139,7 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(ctx context.Context,
 	}
 
 	// apply typed per filter config from translating route action and route plugins
-	typedPerFilterConfigAny := map[string]*anypb.Any{}
-	for k, v := range typedPerFilterConfigRoute {
-		config, err := utils.MessageToAny(v)
-		if err != nil {
-			// TODO: error on status
-			h.logger.Error("unexpected marshalling error", "error", err)
-			continue
-		}
-		typedPerFilterConfigAny[k] = config
-	}
-	out.TypedPerFilterConfig = typedPerFilterConfigAny
+	out.TypedPerFilterConfig = toPerFilterConfigMap(typedPerFilterConfigRoute)
 
 	if err == nil && out.GetAction() == nil {
 		if in.Delegates {
@@ -180,7 +172,22 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(ctx context.Context,
 	return out
 }
 
-func (h *httpRouteConfigurationTranslator) runVhostPlugins(ctx context.Context, out *envoy_config_route_v3.VirtualHost) {
+func toPerFilterConfigMap(typedPerFilterConfig ir.TypedFilterConfigMap) map[string]*anypb.Any {
+	typedPerFilterConfigAny := map[string]*anypb.Any{}
+	for k, v := range typedPerFilterConfig {
+		config, err := utils.MessageToAny(v)
+		if err != nil {
+			// TODO: error on status? this should never happen..
+			logger.Error("unexpected marshalling error", "error", err)
+			continue
+		}
+		typedPerFilterConfigAny[k] = config
+	}
+	return typedPerFilterConfigAny
+}
+
+func (h *httpRouteConfigurationTranslator) runVhostPlugins(ctx context.Context, out *envoy_config_route_v3.VirtualHost,
+	typedPerFilterConfig ir.TypedFilterConfigMap) {
 	attachedPoliciesSlice := []ir.AttachedPolicies{
 		h.gw.AttachedHttpPolicies,
 		h.listener.AttachedPolicies,
@@ -195,7 +202,8 @@ func (h *httpRouteConfigurationTranslator) runVhostPlugins(ctx context.Context, 
 			for _, pol := range pols {
 				reportPolicyAcceptanceStatus(h.reporter, h.listener.PolicyAncestorRef, pols...)
 				pctx := &ir.VirtualHostContext{
-					Policy: pol.PolicyIr,
+					Policy:            pol.PolicyIr,
+					TypedFilterConfig: typedPerFilterConfig,
 				}
 				pass.ApplyVhostPlugin(ctx, pctx, out)
 				// TODO: check return value, if error returned, log error and report condition

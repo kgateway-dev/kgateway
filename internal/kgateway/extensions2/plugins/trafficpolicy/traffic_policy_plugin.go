@@ -293,8 +293,8 @@ func registerTypes(ourCli versioned.Interface) {
 	)
 }
 
-func TranslateGatewayExtensionBuilder(commoncol *common.CommonCollections) func(krtctx krt.HandlerContext, gExt ir.GatewayExtension, disableExtensionRefValidation bool) *TrafficPolicyGatewayExtensionIR {
-	return func(krtctx krt.HandlerContext, gExt ir.GatewayExtension, disableExtensionRefValidation bool) *TrafficPolicyGatewayExtensionIR {
+func TranslateGatewayExtensionBuilder(commoncol *common.CommonCollections) func(krtctx krt.HandlerContext, gExt ir.GatewayExtension) *TrafficPolicyGatewayExtensionIR {
+	return func(krtctx krt.HandlerContext, gExt ir.GatewayExtension) *TrafficPolicyGatewayExtensionIR {
 		p := &TrafficPolicyGatewayExtensionIR{
 			name:    krt.Named{Name: gExt.Name, Namespace: gExt.Namespace}.ResourceName(),
 			extType: gExt.Type,
@@ -302,7 +302,7 @@ func TranslateGatewayExtensionBuilder(commoncol *common.CommonCollections) func(
 
 		switch gExt.Type {
 		case v1alpha1.GatewayExtensionTypeExtAuth:
-			envoyGrpcService, err := resolveExtGrpcService(krtctx, commoncol, disableExtensionRefValidation, gExt.ObjectSource, gExt.ExtAuth.GrpcService)
+			envoyGrpcService, err := ResolveExtGrpcService(krtctx, commoncol, false, gExt.ObjectSource, gExt.ExtAuth.GrpcService)
 			if err != nil {
 				// TODO: should this be a warning, and set cluster to blackhole?
 				p.err = fmt.Errorf("failed to resolve ExtAuth backend: %w", err)
@@ -332,7 +332,7 @@ func TranslateGatewayExtensionBuilder(commoncol *common.CommonCollections) func(
 			}
 
 		case v1alpha1.GatewayExtensionTypeExtProc:
-			envoyGrpcService, err := resolveExtGrpcService(krtctx, commoncol, disableExtensionRefValidation, gExt.ObjectSource, gExt.ExtProc.GrpcService)
+			envoyGrpcService, err := ResolveExtGrpcService(krtctx, commoncol, false, gExt.ObjectSource, gExt.ExtProc.GrpcService)
 			if err != nil {
 				p.err = fmt.Errorf("failed to resolve ExtProc backend: %w", err)
 				return p
@@ -348,7 +348,7 @@ func TranslateGatewayExtensionBuilder(commoncol *common.CommonCollections) func(
 				return p
 			}
 
-			grpcService, err := resolveExtGrpcService(krtctx, commoncol, disableExtensionRefValidation, gExt.ObjectSource, gExt.RateLimit.GrpcService)
+			grpcService, err := ResolveExtGrpcService(krtctx, commoncol, false, gExt.ObjectSource, gExt.RateLimit.GrpcService)
 			if err != nil {
 				p.err = fmt.Errorf("ratelimit: %w", err)
 				return p
@@ -378,7 +378,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 	), commoncol.KrtOpts.ToOptions("TrafficPolicy")...)
 	gk := wellknown.TrafficPolicyGVK.GroupKind()
 
-	translator := NewTrafficPolicyBuilder(ctx, commoncol, nil)
+	translator := NewTrafficPolicyBuilder(ctx, commoncol)
 
 	// TrafficPolicy IR will have TypedConfig -> implement backendroute method to add prompt guard, etc.
 	policyCol := krt.NewCollection(col, func(krtctx krt.HandlerContext, policyCR *v1alpha1.TrafficPolicy) *ir.PolicyWrapper {
@@ -415,7 +415,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 	}
 }
 
-func resolveExtGrpcService(krtctx krt.HandlerContext, commoncol *common.CommonCollections, disableExtensionRefValidation bool, objectSource ir.ObjectSource, grpcService *v1alpha1.ExtGrpcService) (*envoy_core_v3.GrpcService, error) {
+func ResolveExtGrpcService(krtctx krt.HandlerContext, commoncol *common.CommonCollections, disableExtensionRefValidation bool, objectSource ir.ObjectSource, grpcService *v1alpha1.ExtGrpcService) (*envoy_core_v3.GrpcService, error) {
 	var clusterName string
 	var authority string
 	if grpcService != nil {
@@ -551,10 +551,7 @@ func (p *trafficPolicyPluginGwPass) ApplyVhostPlugin(ctx context.Context, pCtx *
 		return
 	}
 
-	// Apply global rate limit actions to the virtual host if they exist
-	if policy.spec.rateLimit != nil && policy.spec.rateLimit.rateLimitActions != nil {
-		out.RateLimits = append(out.GetRateLimits(), policy.spec.rateLimit.rateLimitActions...)
-	}
+	p.handlePolicies(&pCtx.TypedFilterConfig, policy.spec)
 }
 
 // called 0 or more times
@@ -562,15 +559,6 @@ func (p *trafficPolicyPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.
 	policy, ok := pCtx.Policy.(*TrafficPolicy)
 	if !ok {
 		return nil
-	}
-
-	var errs []error
-
-	if policy.spec.transform != nil {
-		if policy.spec.transform != nil {
-			pCtx.TypedFilterConfig.AddTypedConfig(transformationFilterNamePrefix, policy.spec.transform)
-		}
-		p.setTransformationInChain = true
 	}
 
 	if policy.spec.rustformation != nil {
@@ -623,29 +611,6 @@ func (p *trafficPolicyPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.
 		p.setTransformationInChain = true
 	}
 
-	if policy.spec.localRateLimit != nil {
-		pCtx.TypedFilterConfig.AddTypedConfig(localRateLimitFilterNamePrefix, policy.spec.localRateLimit)
-
-		// Add a filter to the chain. When having a rate limit for a route we need to also have a
-		// globally disabled rate limit filter in the chain otherwise it will be ignored.
-		// If there is also rate limit for the listener, it will not override this one.
-		if p.localRateLimitInChain == nil {
-			p.localRateLimitInChain = &localratelimitv3.LocalRateLimit{
-				StatPrefix: localRateLimitStatPrefix,
-			}
-		}
-	}
-
-	if policy.spec.rateLimit != nil && policy.spec.rateLimit.rateLimitActions != nil {
-		// Apply global rate limit actions to the route
-		route := outputRoute.GetRoute()
-		if route != nil {
-			route.RateLimits = append(route.GetRateLimits(), policy.spec.rateLimit.rateLimitActions...)
-			// Also call handleRateLimit here to ensure proper setup in rateLimitPerProvider
-			p.handleRateLimit(&pCtx.TypedFilterConfig, policy.spec.rateLimit)
-		}
-	}
-
 	if policy.spec.AI != nil {
 		var aiBackends []*v1alpha1.Backend
 		// check if the backends selected by targetRef are all AI backends before applying the policy
@@ -671,26 +636,52 @@ func (p *trafficPolicyPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.
 		}
 		if len(aiBackends) > 0 {
 			// Apply the AI policy to the all AI backends
-			err := p.processAITrafficPolicy(&pCtx.TypedFilterConfig, policy.spec.AI)
-			if err != nil {
-				errs = append(errs, err)
-			}
+			p.processAITrafficPolicy(&pCtx.TypedFilterConfig, policy.spec.AI)
 		}
 	}
+	p.handlePolicies(&pCtx.TypedFilterConfig, policy.spec)
+
+	return nil
+}
+
+func (p *trafficPolicyPluginGwPass) handleTransformation(typedFilterConfig *ir.TypedFilterConfigMap, transform *transformationpb.RouteTransformations) {
+	if transform == nil {
+		return
+	}
+	typedFilterConfig.AddTypedConfig(transformationFilterNamePrefix, transform)
+	p.setTransformationInChain = true
+}
+
+func (p *trafficPolicyPluginGwPass) handleLocalRateLimit(typedFilterConfig *ir.TypedFilterConfigMap, localRateLimit *localratelimitv3.LocalRateLimit) {
+	if localRateLimit == nil {
+		return
+	}
+	typedFilterConfig.AddTypedConfig(localRateLimitFilterNamePrefix, localRateLimit)
+
+	// Add a filter to the chain. When having a rate limit for a route we need to also have a
+	// globally disabled rate limit filter in the chain otherwise it will be ignored.
+	// If there is also rate limit for the listener, it will not override this one.
+	if p.localRateLimitInChain == nil {
+		p.localRateLimitInChain = &localratelimitv3.LocalRateLimit{
+			StatPrefix: localRateLimitStatPrefix,
+		}
+	}
+}
+
+func (p *trafficPolicyPluginGwPass) handlePolicies(typedFilterConfig *ir.TypedFilterConfigMap, spec trafficPolicySpecIr) {
+	p.handleTransformation(typedFilterConfig, spec.transform)
 	// Apply ExtAuthz configuration if present
 	// ExtAuth does not allow for most information such as destination
 	// to be set at the route level so we need to smuggle info upwards.
-	p.handleExtAuth(&pCtx.TypedFilterConfig, policy.spec.extAuth)
-	p.handleExtProc(&pCtx.TypedFilterConfig, policy.spec.ExtProc)
-
+	p.handleExtAuth(typedFilterConfig, spec.extAuth)
+	p.handleExtProc(typedFilterConfig, spec.ExtProc)
 	// Apply rate limit configuration if present
-	p.handleRateLimit(&pCtx.TypedFilterConfig, policy.spec.rateLimit)
-
-	return errors.Join(errs...)
+	p.handleRateLimit(typedFilterConfig, spec.rateLimit)
+	p.handleLocalRateLimit(typedFilterConfig, spec.localRateLimit)
 }
 
 // handleRateLimit adds rate limit configurations to routes
-func (p *trafficPolicyPluginGwPass) handleRateLimit(pCtxTypedFilterConfig *ir.TypedFilterConfigMap, rateLimit *RateLimitIR) {
+func (p *trafficPolicyPluginGwPass) handleRateLimit(typedFilterConfig *ir.TypedFilterConfigMap, rateLimit *RateLimitIR) {
 	if rateLimit == nil {
 		return
 	}
@@ -712,11 +703,9 @@ func (p *trafficPolicyPluginGwPass) handleRateLimit(pCtxTypedFilterConfig *ir.Ty
 
 	// Configure rate limit per route - enabling it for this specific route
 	rateLimitPerRoute := &ratev3.RateLimitPerRoute{
-		// Use the correct enum value instead of a boolean
-		VhRateLimits: ratev3.RateLimitPerRoute_INCLUDE,
-		RateLimits:   rateLimit.rateLimitActions,
+		RateLimits: rateLimit.rateLimitActions,
 	}
-	pCtxTypedFilterConfig.AddTypedConfig(getRateLimitFilterName(providerName), rateLimitPerRoute)
+	typedFilterConfig.AddTypedConfig(getRateLimitFilterName(providerName), rateLimitPerRoute)
 }
 
 func (p *trafficPolicyPluginGwPass) ApplyForBackend(
@@ -738,16 +727,10 @@ func (p *trafficPolicyPluginGwPass) ApplyForRouteBackend(
 		return nil
 	}
 
-	p.handleExtAuth(&pCtx.TypedFilterConfig, rtPolicy.spec.extAuth)
-	p.handleExtProc(&pCtx.TypedFilterConfig, rtPolicy.spec.ExtProc)
+	p.handlePolicies(&pCtx.TypedFilterConfig, rtPolicy.spec)
 
 	if rtPolicy.spec.AI != nil && (rtPolicy.spec.AI.Transformation != nil || rtPolicy.spec.AI.Extproc != nil) {
-		err := p.processAITrafficPolicy(&pCtx.TypedFilterConfig, rtPolicy.spec.AI)
-		if err != nil {
-			// TODO: report error on status
-			logger.Error("error while processing AI TrafficPolicy", "error", err)
-			return err
-		}
+		p.processAITrafficPolicy(&pCtx.TypedFilterConfig, rtPolicy.spec.AI)
 	}
 
 	return nil
@@ -1073,8 +1056,7 @@ func mergePolicies(policies []ir.PolicyAtt) ir.PolicyAtt {
 type TrafficPolicyBuilder struct {
 	commoncol         *common.CommonCollections
 	gatewayExtensions krt.Collection[TrafficPolicyGatewayExtensionIR]
-	extBuilder        func(krtctx krt.HandlerContext, gExt ir.GatewayExtension, disableExtensionRefValidation bool) *TrafficPolicyGatewayExtensionIR
-	fetch             func(krtctx krt.HandlerContext, extType v1alpha1.GatewayExtensionType) *ir.GatewayExtension
+	extBuilder        func(krtctx krt.HandlerContext, gExt ir.GatewayExtension) *TrafficPolicyGatewayExtensionIR
 }
 
 func (b *TrafficPolicyBuilder) Translate(
@@ -1142,18 +1124,9 @@ func (b *TrafficPolicyBuilder) Translate(
 	return &policyIr, errors
 }
 
-func (b *TrafficPolicyBuilder) fetchGatewayExtension(krtctx krt.HandlerContext, extensionRef *corev1.LocalObjectReference, ns string) (*TrafficPolicyGatewayExtensionIR, error) {
+func (b *TrafficPolicyBuilder) FetchGatewayExtension(krtctx krt.HandlerContext, extensionRef *corev1.LocalObjectReference, ns string) (*TrafficPolicyGatewayExtensionIR, error) {
 	var gatewayExtension *TrafficPolicyGatewayExtensionIR
-	if extensionRef == nil {
-		if b.fetch != nil {
-			gatewayExtensionIr := b.fetch(krtctx, v1alpha1.GatewayExtensionTypeRateLimit)
-			if gatewayExtensionIr == nil {
-				return nil, fmt.Errorf("extensionRef is not present")
-			}
-			// todo: don't use extension ref here!
-			gatewayExtension = b.extBuilder(krtctx, *gatewayExtensionIr, true)
-		}
-	} else {
+	if extensionRef != nil {
 		gwExtName := types.NamespacedName{Name: extensionRef.Name, Namespace: ns}
 		gatewayExtension = krt.FetchOne(krtctx, b.gatewayExtensions, krt.FilterObjectName(gwExtName))
 	}
@@ -1169,18 +1142,16 @@ func (b *TrafficPolicyBuilder) fetchGatewayExtension(krtctx krt.HandlerContext, 
 func NewTrafficPolicyBuilder(
 	ctx context.Context,
 	commoncol *common.CommonCollections,
-	fetch func(krtctx krt.HandlerContext, extType v1alpha1.GatewayExtensionType) *ir.GatewayExtension,
 ) *TrafficPolicyBuilder {
 	extBuilder := TranslateGatewayExtensionBuilder(commoncol)
 	defaultExtBuilder := func(krtctx krt.HandlerContext, gExt ir.GatewayExtension) *TrafficPolicyGatewayExtensionIR {
-		return extBuilder(krtctx, gExt, false)
+		return extBuilder(krtctx, gExt)
 	}
 	gatewayExtensions := krt.NewCollection(commoncol.GatewayExtensions, defaultExtBuilder)
 	return &TrafficPolicyBuilder{
 		commoncol:         commoncol,
 		gatewayExtensions: gatewayExtensions,
 		extBuilder:        extBuilder,
-		fetch:             fetch,
 	}
 }
 
@@ -1271,7 +1242,7 @@ func (b *TrafficPolicyBuilder) rateLimitForSpec(
 		errors = append(errors, fmt.Errorf("failed to create rate limit actions: %w", err))
 	}
 
-	gwExtIR, err := b.fetchGatewayExtension(krtctx, globalPolicy.ExtensionRef, policy.GetNamespace())
+	gwExtIR, err := b.FetchGatewayExtension(krtctx, globalPolicy.ExtensionRef, policy.GetNamespace())
 	if err != nil {
 		errors = append(errors, fmt.Errorf("ratelimit: %w", err))
 		return errors
