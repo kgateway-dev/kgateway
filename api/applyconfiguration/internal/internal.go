@@ -294,6 +294,9 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: connectTimeout
       type:
         scalar: string
+    - name: http1ProtocolOptions
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Http1ProtocolOptions
     - name: maxRequestsPerConnection
       type:
         scalar: numeric
@@ -387,6 +390,9 @@ var schemaYAML = typed.YAMLObject(`types:
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.CommonHttpProtocolOptions
   map:
     fields:
+    - name: headersWithUnderscoresAction
+      type:
+        scalar: string
     - name: idleTimeout
       type:
         scalar: string
@@ -827,6 +833,18 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         scalar: numeric
       default: 0
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Http1ProtocolOptions
+  map:
+    fields:
+    - name: enableTrailers
+      type:
+        scalar: boolean
+    - name: headerFormat
+      type:
+        scalar: string
+    - name: overrideStreamErrorOnInvalidHttpMessage
+      type:
+        scalar: boolean
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Image
   map:
     fields:

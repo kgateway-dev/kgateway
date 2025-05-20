@@ -77,6 +77,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.HeaderFilter":                    schema_kgateway_v2_api_v1alpha1_HeaderFilter(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.HeaderTransformation":            schema_kgateway_v2_api_v1alpha1_HeaderTransformation(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Host":                            schema_kgateway_v2_api_v1alpha1_Host(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Http1ProtocolOptions":            schema_kgateway_v2_api_v1alpha1_Http1ProtocolOptions(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Image":                           schema_kgateway_v2_api_v1alpha1_Image(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.IstioContainer":                  schema_kgateway_v2_api_v1alpha1_IstioContainer(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.IstioIntegration":                schema_kgateway_v2_api_v1alpha1_IstioIntegration(ref),
@@ -1243,37 +1244,48 @@ func schema_kgateway_v2_api_v1alpha1_BackendConfigPolicySpec(ref common.Referenc
 					},
 					"maxRequestsPerConnection": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"integer"},
-							Format: "int32",
+							Description: "Maximum requests for a single upstream connection. If set to 0 or unspecified, defaults to unlimited.",
+							Type:        []string{"integer"},
+							Format:      "int32",
 						},
 					},
 					"connectTimeout": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Description: "The timeout for new network connections to hosts in the cluster.",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 					"perConnectionBufferLimitBytes": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"integer"},
-							Format: "int32",
+							Description: "Soft limit on size of the cluster’s connections read and write buffers. If unspecified, an implementation defined default is applied (1MiB).",
+							Type:        []string{"integer"},
+							Format:      "int32",
 						},
 					},
 					"tcpKeepalive": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.TCPKeepalive"),
+							Description: "Configure OS-level TCP keepalive checks.",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.TCPKeepalive"),
 						},
 					},
 					"commonHttpProtocolOptions": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CommonHttpProtocolOptions"),
+							Description: "Additional options when handling HTTP requests upstream, applicable to both HTTP1 and HTTP2 requests.",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CommonHttpProtocolOptions"),
+						},
+					},
+					"http1ProtocolOptions": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Additional options when handling HTTP1 requests upstream.",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Http1ProtocolOptions"),
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CommonHttpProtocolOptions", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LocalPolicyTargetReference", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.TCPKeepalive"},
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CommonHttpProtocolOptions", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Http1ProtocolOptions", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LocalPolicyTargetReference", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.TCPKeepalive"},
 	}
 }
 
@@ -1540,20 +1552,30 @@ func schema_kgateway_v2_api_v1alpha1_CommonHttpProtocolOptions(ref common.Refere
 				Properties: map[string]spec.Schema{
 					"idleTimeout": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Description: "The idle timeout for connections. The idle timeout is defined as the period in which there are no active requests. When the idle timeout is reached the connection will be closed. If the connection is an HTTP/2 downstream connection a drain sequence will occur prior to closing the connection. Note that request based timeouts mean that HTTP/2 PINGs will not keep the connection alive. If not specified, this defaults to 1 hour. To disable idle timeouts explicitly set this to 0.\n\tDisabling this timeout has a highly likelihood of yielding connection leaks due to lost TCP\n\tFIN packets, etc.",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 					"maxHeadersCount": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"integer"},
-							Format: "int32",
+							Description: "The maximum number of headers. If unconfigured, the default maximum number of request headers allowed is 100. Requests that exceed this limit will receive a 431 response for HTTP/1.x and cause a stream reset for HTTP/2.",
+							Type:        []string{"integer"},
+							Format:      "int32",
 						},
 					},
 					"maxStreamDuration": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Description: "Total duration to keep alive an HTTP request/response stream. If the time limit is reached the stream will be reset independent of any other timeouts. If not specified, this value is not set.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"headersWithUnderscoresAction": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Action to take when a client request with a header name containing underscore characters is received. If this setting is not specified, the value defaults to ALLOW. Note: upstream responses are not affected by this setting.",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 				},
@@ -2888,6 +2910,39 @@ func schema_kgateway_v2_api_v1alpha1_Host(ref common.ReferenceCallback) common.O
 					},
 				},
 				Required: []string{"host", "port"},
+			},
+		},
+	}
+}
+
+func schema_kgateway_v2_api_v1alpha1_Http1ProtocolOptions(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"enableTrailers": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Enables trailers for HTTP/1. By default the HTTP/1 codec drops proxied trailers. Note: Trailers must also be enabled at the gateway level in order for this option to take effect",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
+					"headerFormat": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Enables trailers for HTTP/1. By default the HTTP/1 codec drops proxied trailers. Note: Trailers must also be enabled at the gateway level in order for this option to take effect. Types that are valid to be assigned to HeaderFormat",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"overrideStreamErrorOnInvalidHttpMessage": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Allows invalid HTTP messaging. When this option is false, then Envoy will terminate HTTP/1.1 connections upon receiving an invalid HTTP message. However, when this option is true, then Envoy will leave the HTTP/1.1 connection open where possible.",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
+				},
 			},
 		},
 	}

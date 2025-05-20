@@ -4,14 +4,17 @@ package v1alpha1
 
 import (
 	v1 "sigs.k8s.io/gateway-api/apis/v1"
+
+	apiv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 )
 
 // CommonHttpProtocolOptionsApplyConfiguration represents a declarative configuration of the CommonHttpProtocolOptions type for use
 // with apply.
 type CommonHttpProtocolOptionsApplyConfiguration struct {
-	IdleTimeout       *v1.Duration `json:"idleTimeout,omitempty"`
-	MaxHeadersCount   *int         `json:"maxHeadersCount,omitempty"`
-	MaxStreamDuration *v1.Duration `json:"maxStreamDuration,omitempty"`
+	IdleTimeout                  *v1.Duration                              `json:"idleTimeout,omitempty"`
+	MaxHeadersCount              *int                                      `json:"maxHeadersCount,omitempty"`
+	MaxStreamDuration            *v1.Duration                              `json:"maxStreamDuration,omitempty"`
+	HeadersWithUnderscoresAction *apiv1alpha1.HeadersWithUnderscoresAction `json:"headersWithUnderscoresAction,omitempty"`
 }
 
 // CommonHttpProtocolOptionsApplyConfiguration constructs a declarative configuration of the CommonHttpProtocolOptions type for use with
@@ -41,5 +44,13 @@ func (b *CommonHttpProtocolOptionsApplyConfiguration) WithMaxHeadersCount(value 
 // If called multiple times, the MaxStreamDuration field is set to the value of the last call.
 func (b *CommonHttpProtocolOptionsApplyConfiguration) WithMaxStreamDuration(value v1.Duration) *CommonHttpProtocolOptionsApplyConfiguration {
 	b.MaxStreamDuration = &value
+	return b
+}
+
+// WithHeadersWithUnderscoresAction sets the HeadersWithUnderscoresAction field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the HeadersWithUnderscoresAction field is set to the value of the last call.
+func (b *CommonHttpProtocolOptionsApplyConfiguration) WithHeadersWithUnderscoresAction(value apiv1alpha1.HeadersWithUnderscoresAction) *CommonHttpProtocolOptionsApplyConfiguration {
+	b.HeadersWithUnderscoresAction = &value
 	return b
 }

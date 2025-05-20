@@ -6,6 +6,7 @@ import (
 
 	clusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	preserve_case_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/http/header_formatters/preserve_case/v3"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	skubeclient "istio.io/istio/pkg/config/schema/kubeclient"
@@ -20,9 +21,12 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
 )
+
+const PreserveCasePlugin = "envoy.http.stateful_header_formatters.preserve_case"
 
 type BackendConfigPolicyIR struct {
 	ct                            time.Time
@@ -30,6 +34,8 @@ type BackendConfigPolicyIR struct {
 	connectTimeout                *durationpb.Duration
 	perConnectionBufferLimitBytes *int
 	TCPKeepalive                  *corev3.TcpKeepalive
+	commonHttpProtocolOptions     *corev3.HttpProtocolOptions
+	http1ProtocolOptions          *corev3.Http1ProtocolOptions
 
 	// idleTimeout       *durationpb.Duration
 	// maxHeadersCount   *int
@@ -73,14 +79,13 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 			Name:      b.Name,
 		}
 
-		policyIR, errors := translate(b)
-
+		policyIR, err := translate(b)
 		return &ir.PolicyWrapper{
 			ObjectSource: objSrc,
 			Policy:       b,
 			PolicyIR:     policyIR,
 			TargetRefs:   convertTargetRefs(b.Spec.TargetRefs),
-			Errors:       errors,
+			Errors:       []error{err},
 		}
 	}, commoncol.KrtOpts.ToOptions("BackendConfigPolicyIRs")...)
 	return extensionsplug.Plugin{
@@ -115,16 +120,15 @@ func processBackend(ctx context.Context, polir ir.PolicyIR, in ir.BackendObjectI
 	}
 }
 
-func translate(pol *v1alpha1.BackendConfigPolicy) (*BackendConfigPolicyIR, []error) {
+func translate(pol *v1alpha1.BackendConfigPolicy) (*BackendConfigPolicyIR, error) {
 	ir := &BackendConfigPolicyIR{}
-	errors := []error{}
 	if pol.Spec.MaxRequestsPerConnection != nil {
 		ir.maxRequestsPerConnection = pol.Spec.MaxRequestsPerConnection
 	}
 	if pol.Spec.ConnectTimeout != nil {
 		timeout, err := time.ParseDuration(string(*pol.Spec.ConnectTimeout))
 		if err != nil {
-			errors = append(errors, err)
+			return nil, err
 		}
 		ir.connectTimeout = durationpb.New(timeout)
 	}
@@ -132,29 +136,120 @@ func translate(pol *v1alpha1.BackendConfigPolicy) (*BackendConfigPolicyIR, []err
 		ir.perConnectionBufferLimitBytes = pol.Spec.PerConnectionBufferLimitBytes
 	}
 
-	tcpKeepalive := pol.Spec.TCPKeepalive
-	if tcpKeepalive != nil {
-		ir.TCPKeepalive = &corev3.TcpKeepalive{}
-		if tcpKeepalive.KeepAliveProbes != nil {
-			ir.TCPKeepalive.KeepaliveProbes = &wrapperspb.UInt32Value{Value: uint32(*tcpKeepalive.KeepAliveProbes)}
+	if pol.Spec.TCPKeepalive != nil {
+		tcpKeepalive, err := translateTCPKeepalive(pol.Spec.TCPKeepalive)
+		if err != nil {
+			return nil, err
 		}
-		if tcpKeepalive.KeepAliveTime != nil {
-			keepAliveTime, err := time.ParseDuration(string(*tcpKeepalive.KeepAliveTime))
-			if err != nil {
-				errors = append(errors, err)
-			}
-			ir.TCPKeepalive.KeepaliveTime = &wrapperspb.UInt32Value{Value: uint32(keepAliveTime.Seconds())}
-		}
-		if tcpKeepalive.KeepAliveInterval != nil {
-			keepAliveInterval, err := time.ParseDuration(string(*tcpKeepalive.KeepAliveInterval))
-			if err != nil {
-				errors = append(errors, err)
-			}
-			ir.TCPKeepalive.KeepaliveInterval = &wrapperspb.UInt32Value{Value: uint32(keepAliveInterval.Seconds())}
-		}
+		ir.TCPKeepalive = tcpKeepalive
 	}
 
-	return ir, errors
+	if pol.Spec.CommonHttpProtocolOptions != nil {
+		commonHttpProtocolOptions, err := translateCommonHttpProtocolOptions(pol.Spec.CommonHttpProtocolOptions)
+		if err != nil {
+			return nil, err
+		}
+		ir.commonHttpProtocolOptions = commonHttpProtocolOptions
+	}
+
+	if pol.Spec.Http1ProtocolOptions != nil {
+		http1ProtocolOptions, err := translateHttp1ProtocolOptions(pol.Spec.Http1ProtocolOptions)
+		if err != nil {
+			return nil, err
+		}
+		ir.http1ProtocolOptions = http1ProtocolOptions
+	}
+
+	return ir, nil
+}
+
+func translateTCPKeepalive(tcpKeepalive *v1alpha1.TCPKeepalive) (*corev3.TcpKeepalive, error) {
+	out := &corev3.TcpKeepalive{}
+	if tcpKeepalive.KeepAliveProbes != nil {
+		out.KeepaliveProbes = &wrapperspb.UInt32Value{Value: uint32(*tcpKeepalive.KeepAliveProbes)}
+	}
+	if tcpKeepalive.KeepAliveTime != nil {
+		keepAliveTime, err := time.ParseDuration(string(*tcpKeepalive.KeepAliveTime))
+		if err != nil {
+			return nil, err
+		}
+		out.KeepaliveTime = &wrapperspb.UInt32Value{Value: uint32(keepAliveTime.Seconds())}
+	}
+	if tcpKeepalive.KeepAliveInterval != nil {
+		keepAliveInterval, err := time.ParseDuration(string(*tcpKeepalive.KeepAliveInterval))
+		if err != nil {
+			return nil, err
+		}
+		out.KeepaliveInterval = &wrapperspb.UInt32Value{Value: uint32(keepAliveInterval.Seconds())}
+	}
+	return out, nil
+}
+
+func translateCommonHttpProtocolOptions(commonHttpProtocolOptions *v1alpha1.CommonHttpProtocolOptions) (*corev3.HttpProtocolOptions, error) {
+	out := &corev3.HttpProtocolOptions{}
+	if commonHttpProtocolOptions.IdleTimeout != nil {
+		idleTimeout, err := time.ParseDuration(string(*commonHttpProtocolOptions.IdleTimeout))
+		if err != nil {
+			return nil, err
+		}
+		out.IdleTimeout = durationpb.New(idleTimeout)
+	}
+
+	if commonHttpProtocolOptions.MaxHeadersCount != nil {
+		out.MaxHeadersCount = &wrapperspb.UInt32Value{Value: uint32(*commonHttpProtocolOptions.MaxHeadersCount)}
+	}
+
+	if commonHttpProtocolOptions.MaxStreamDuration != nil {
+		maxStreamDuration, err := time.ParseDuration(string(*commonHttpProtocolOptions.MaxStreamDuration))
+		if err != nil {
+			return nil, err
+		}
+		out.MaxStreamDuration = durationpb.New(maxStreamDuration)
+	}
+
+	if commonHttpProtocolOptions.HeadersWithUnderscoresAction != nil {
+		switch *commonHttpProtocolOptions.HeadersWithUnderscoresAction {
+		case v1alpha1.AllowHeadersWithUnderscores:
+			out.HeadersWithUnderscoresAction = corev3.HttpProtocolOptions_ALLOW
+		case v1alpha1.RejectRequestsHeadersWithUnderscores:
+			out.HeadersWithUnderscoresAction = corev3.HttpProtocolOptions_REJECT_REQUEST
+		case v1alpha1.DropHeadersWithUnderscores:
+			out.HeadersWithUnderscoresAction = corev3.HttpProtocolOptions_DROP_HEADER
+		}
+	}
+	return out, nil
+}
+
+func translateHttp1ProtocolOptions(http1ProtocolOptions *v1alpha1.Http1ProtocolOptions) (*corev3.Http1ProtocolOptions, error) {
+	out := &corev3.Http1ProtocolOptions{}
+	if http1ProtocolOptions.EnableTrailers != nil {
+		out.EnableTrailers = *http1ProtocolOptions.EnableTrailers
+	}
+
+	if http1ProtocolOptions.HeaderFormat != nil {
+		switch *http1ProtocolOptions.HeaderFormat {
+		case v1alpha1.ProperCaseHeaderKeyFormat:
+			out.HeaderKeyFormat = &corev3.Http1ProtocolOptions_HeaderKeyFormat{
+				HeaderFormat: &corev3.Http1ProtocolOptions_HeaderKeyFormat_ProperCaseWords_{
+					ProperCaseWords: &corev3.Http1ProtocolOptions_HeaderKeyFormat_ProperCaseWords{},
+				},
+			}
+		case v1alpha1.PreserveCaseHeaderKeyFormat:
+			typedConfig, err := utils.MessageToAny(&preserve_case_v3.PreserveCaseFormatterConfig{})
+			if err != nil {
+				return nil, err
+			}
+			out.HeaderKeyFormat = &corev3.Http1ProtocolOptions_HeaderKeyFormat{
+				HeaderFormat: &corev3.Http1ProtocolOptions_HeaderKeyFormat_StatefulFormatter{
+					StatefulFormatter: &corev3.TypedExtensionConfig{
+						Name:        PreserveCasePlugin,
+						TypedConfig: typedConfig,
+					},
+				},
+			}
+		}
+	}
+	return out, nil
 }
 
 // convertTargetRefs converts []v1alpha1.LocalPolicyTargetReference to []ir.PolicyRef

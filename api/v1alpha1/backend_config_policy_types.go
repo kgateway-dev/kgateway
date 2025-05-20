@@ -32,35 +32,108 @@ type BackendConfigPolicySpec struct {
 	// +kubebuilder:validation:MaxItems=16
 	TargetRefs []LocalPolicyTargetReference `json:"targetRefs,omitempty"`
 
+	// Maximum requests for a single upstream connection.
+	// If set to 0 or unspecified, defaults to unlimited.
 	// +optional
 	MaxRequestsPerConnection *int `json:"maxRequestsPerConnection,omitempty"`
 
+	// The timeout for new network connections to hosts in the cluster.
 	// +optional
 	ConnectTimeout *gwv1.Duration `json:"connectTimeout,omitempty"` // TODO check type
 	// *durationpb.Duration
 
+	// Soft limit on size of the cluster’s connections read and write buffers.
+	// If unspecified, an implementation defined default is applied (1MiB).
 	// +optional
 	PerConnectionBufferLimitBytes *int `json:"perConnectionBufferLimitBytes,omitempty"`
 
+	// Configure OS-level TCP keepalive checks.
 	// +optional
 	TCPKeepalive *TCPKeepalive `json:"tcpKeepalive,omitempty"`
 
+	// Additional options when handling HTTP requests upstream, applicable to
+	// both HTTP1 and HTTP2 requests.
 	// +optional
 	CommonHttpProtocolOptions *CommonHttpProtocolOptions `json:"commonHttpProtocolOptions,omitempty"`
+
+	// Additional options when handling HTTP1 requests upstream.
+	// +optional
+	Http1ProtocolOptions *Http1ProtocolOptions `json:"http1ProtocolOptions,omitempty"`
 }
 
+type Http1ProtocolOptions struct {
+	// Enables trailers for HTTP/1. By default the HTTP/1 codec drops proxied trailers.
+	// Note: Trailers must also be enabled at the gateway level in order for this option to take effect
+	// +optional
+	EnableTrailers *bool `json:"enableTrailers,omitempty"`
+
+	// Enables trailers for HTTP/1. By default the HTTP/1 codec drops proxied trailers.
+	// Note: Trailers must also be enabled at the gateway level in order for this option to take effect.
+	// Types that are valid to be assigned to HeaderFormat
+	// +optional
+	// +kubebuilder:validation:Enum=ProperCaseHeaderKeyFormat;PreserveCaseHeaderKeyFormat
+	HeaderFormat *HeaderFormat `json:"headerFormat,omitempty"`
+
+	// Allows invalid HTTP messaging. When this option is false, then Envoy will terminate
+	// HTTP/1.1 connections upon receiving an invalid HTTP message. However,
+	// when this option is true, then Envoy will leave the HTTP/1.1 connection
+	// open where possible.
+	// +optional
+	OverrideStreamErrorOnInvalidHttpMessage *bool `json:"overrideStreamErrorOnInvalidHttpMessage,omitempty"`
+}
+
+const (
+	ProperCaseHeaderKeyFormat   HeaderFormat = "ProperCaseHeaderKeyFormat"
+	PreserveCaseHeaderKeyFormat HeaderFormat = "PreserveCaseHeaderKeyFormat"
+)
+
+type HeaderFormat string
+
 type CommonHttpProtocolOptions struct {
+	// The idle timeout for connections. The idle timeout is defined as the
+	// period in which there are no active requests. When the
+	// idle timeout is reached the connection will be closed. If the connection is an HTTP/2
+	// downstream connection a drain sequence will occur prior to closing the connection.
+	// Note that request based timeouts mean that HTTP/2 PINGs will not keep the connection alive.
+	// If not specified, this defaults to 1 hour. To disable idle timeouts explicitly set this to 0.
+	//	Disabling this timeout has a highly likelihood of yielding connection leaks due to lost TCP
+	//	FIN packets, etc.
 	// +optional
 	IdleTimeout *gwv1.Duration `json:"idleTimeout,omitempty"`
 
+	// The maximum number of headers. If unconfigured, the default
+	// maximum number of request headers allowed is 100. Requests that exceed this limit will receive
+	// a 431 response for HTTP/1.x and cause a stream reset for HTTP/2.
 	// +optional
 	MaxHeadersCount *int `json:"maxHeadersCount,omitempty"`
 
+	// Total duration to keep alive an HTTP request/response stream. If the time limit is reached the stream will be
+	// reset independent of any other timeouts. If not specified, this value is not set.
 	// +optional
 	MaxStreamDuration *gwv1.Duration `json:"maxStreamDuration,omitempty"`
 
-	// HeadersWithUnderscoresAction
+	// Action to take when a client request with a header name containing underscore characters is received.
+	// If this setting is not specified, the value defaults to ALLOW.
+	// Note: upstream responses are not affected by this setting.
+	// +optional
+	HeadersWithUnderscoresAction *HeadersWithUnderscoresAction `json:"headersWithUnderscoresAction,omitempty"`
 }
+
+// +kubebuilder:validation:Enum=AllowHeadersWithUnderscores;RejectRequestsHeadersWithUnderscores;DropHeadersWithUnderscores
+type HeadersWithUnderscoresAction string
+
+const (
+	// Allow headers with underscores. This is the default behavior.
+	AllowHeadersWithUnderscores HeadersWithUnderscoresAction = "AllowHeadersWithUnderscores"
+	// Reject client request. HTTP/1 requests are rejected with the 400 status. HTTP/2 requests
+	// end with the stream reset. The "httpN.requests_rejected_with_underscores_in_headers" counter
+	// is incremented for each rejected request.
+	RejectRequestsHeadersWithUnderscores HeadersWithUnderscoresAction = "RejectRequestsHeadersWithUnderscores"
+	// Drop the header with name containing underscores. The header is dropped before the filter chain is
+	// invoked and as such filters will not see dropped headers. The
+	// "httpN.dropped_headers_with_underscores" is incremented for each dropped header.
+	DropHeadersWithUnderscores HeadersWithUnderscoresAction = "DropHeadersWithUnderscores"
+)
 
 type TCPKeepalive struct {
 	// +optional

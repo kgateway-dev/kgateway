@@ -33,6 +33,12 @@ spec:
             properties:
               commonHttpProtocolOptions:
                 properties:
+                  headersWithUnderscoresAction:
+                    enum:
+                    - AllowHeadersWithUnderscores
+                    - RejectRequestsHeadersWithUnderscores
+                    - DropHeadersWithUnderscores
+                    type: string
                   idleTimeout:
                     pattern: ^([0-9]{1,5}(h|m|s|ms)){1,4}$
                     type: string
@@ -45,6 +51,18 @@ spec:
               connectTimeout:
                 pattern: ^([0-9]{1,5}(h|m|s|ms)){1,4}$
                 type: string
+              http1ProtocolOptions:
+                properties:
+                  enableTrailers:
+                    type: boolean
+                  headerFormat:
+                    enum:
+                    - ProperCaseHeaderKeyFormat
+                    - PreserveCaseHeaderKeyFormat
+                    type: string
+                  overrideStreamErrorOnInvalidHttpMessage:
+                    type: boolean
+                type: object
               maxRequestsPerConnection:
                 type: integer
               perConnectionBufferLimitBytes:
