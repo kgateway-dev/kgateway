@@ -80,6 +80,16 @@ func (b *TrafficPolicyBuilder) extAuthForSpec(
 		return nil
 	}
 	spec := policySpec.ExtAuth
+
+	if spec.Enablement == v1alpha1.ExtAuthDisableAll {
+		out.extAuth = &extAuthIR{
+			provider:        nil,
+			enablement:      v1alpha1.ExtAuthDisableAll,
+			extauthPerRoute: translatePerFilterConfig(spec),
+		}
+		return nil
+	}
+
 	provider, err := b.fetchGatewayExtension(krtctx, spec.ExtensionRef, trafficPolicy.GetNamespace())
 	if err != nil {
 		return fmt.Errorf("extauthz: %w", err)
