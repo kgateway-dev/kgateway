@@ -79,12 +79,16 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 		}
 
 		policyIR, err := translate(b)
+		errs := []error{}
+		if err != nil {
+			errs = append(errs, err)
+		}
 		return &ir.PolicyWrapper{
 			ObjectSource: objSrc,
 			Policy:       b,
 			PolicyIR:     policyIR,
 			TargetRefs:   convertTargetRefs(b.Spec.TargetRefs),
-			Errors:       []error{err},
+			Errors:       errs,
 		}
 	}, commoncol.KrtOpts.ToOptions("BackendConfigPolicyIRs")...)
 	return extensionsplug.Plugin{
