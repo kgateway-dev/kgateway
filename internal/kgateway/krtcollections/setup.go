@@ -98,6 +98,7 @@ func InitCollections(
 	tlsRoutes := krt.WrapClient(kclient.NewDelayedInformer[*gwv1a2.TLSRoute](istioClient, gvr.TLSRoute, kubetypes.StandardInformer, filter), krtopts.ToOptions("TLSRoute")...)
 	grpcRoutes := krt.WrapClient(kclient.NewFiltered[*gwv1.GRPCRoute](istioClient, filter), krtopts.ToOptions("GRPCRoute")...)
 	kubeRawGateways := krt.WrapClient(kclient.NewFiltered[*gwv1.Gateway](istioClient, filter), krtopts.ToOptions("KubeGateways")...)
+	//nolint:forbidigo // ObjectFilter is not needed for this client as it is cluster scoped
 	gatewayClasses := krt.WrapClient(kclient.New[*gwv1.GatewayClass](istioClient), krtopts.ToOptions("KubeGatewayClasses")...)
 
 	policies := NewPolicyIndex(krtopts, plugins.ContributesPolicies)
