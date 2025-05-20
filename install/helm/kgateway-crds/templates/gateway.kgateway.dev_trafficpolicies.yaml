@@ -273,6 +273,29 @@ spec:
                     - CHAT_STREAMING
                     type: string
                 type: object
+              cors:
+                properties:
+                  allowCredentials:
+                    type: boolean
+                  allowHeaders:
+                    items:
+                      type: string
+                    type: array
+                  allowMethods:
+                    items:
+                      type: string
+                    type: array
+                  allowOrigins:
+                    items:
+                      type: string
+                    type: array
+                  exposeHeaders:
+                    items:
+                      type: string
+                    type: array
+                  maxAge:
+                    type: string
+                type: object
               extAuth:
                 properties:
                   contextExtensions:

@@ -13,6 +13,7 @@ import (
 	ratelimitv3 "github.com/envoyproxy/go-control-plane/envoy/config/ratelimit/v3"
 	routev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	exteniondynamicmodulev3 "github.com/envoyproxy/go-control-plane/envoy/extensions/dynamic_modules/v3"
+	corsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/cors/v3"
 	dynamicmodulesv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/dynamic_modules/v3"
 	envoy_ext_authz_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_authz/v3"
 	envoy_ext_proc_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_proc/v3"
@@ -21,6 +22,7 @@ import (
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoy_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	skubeclient "istio.io/istio/pkg/config/schema/kubeclient"
@@ -131,6 +133,7 @@ type trafficPolicySpecIr struct {
 	extAuth                    *extAuthIR
 	localRateLimit             *localratelimitv3.LocalRateLimit
 	rateLimit                  *RateLimitIR
+	cors                       *CorsIR
 	errors                     []error
 }
 
@@ -186,6 +189,10 @@ func (d *TrafficPolicy) Equals(in any) bool {
 	}
 
 	if !d.spec.rateLimit.Equals(d2.spec.rateLimit) {
+		return false
+	}
+
+	if !d.spec.cors.Equals(d2.spec.cors) {
 		return false
 	}
 
@@ -278,6 +285,7 @@ type trafficPolicyPluginGwPass struct {
 	extAuthPerProvider    map[string]providerWithFromListener
 	extProcPerProvider    map[string]providerWithFromListener
 	rateLimitPerProvider  map[string]providerWithFromListener
+	corsInChain           bool
 }
 
 func (p *trafficPolicyPluginGwPass) ApplyHCM(ctx context.Context, pCtx *ir.HcmContext, out *envoyhttp.HttpConnectionManager) error {
@@ -583,6 +591,19 @@ func (p *trafficPolicyPluginGwPass) ApplyVhostPlugin(ctx context.Context, pCtx *
 	if policy.spec.rateLimit != nil && policy.spec.rateLimit.rateLimitActions != nil {
 		out.RateLimits = append(out.GetRateLimits(), policy.spec.rateLimit.rateLimitActions...)
 	}
+
+	// Add cors policy to the virtual host if policy has it at the gateway level
+	if policy.spec.cors != nil {
+		corsAny, err := anypb.New(policy.spec.cors.corsConfig)
+		if err != nil {
+			return
+		}
+		if out.GetTypedPerFilterConfig() == nil {
+			out.TypedPerFilterConfig = make(map[string]*anypb.Any, 1)
+		}
+		out.GetTypedPerFilterConfig()["envoy.filters.http.cors"] = corsAny
+		p.corsInChain = true
+	}
 }
 
 // called 0 or more times
@@ -714,6 +735,9 @@ func (p *trafficPolicyPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.
 	// Apply rate limit configuration if present
 	p.handleRateLimit(&pCtx.TypedFilterConfig, policy.spec.rateLimit)
 
+	// Apply CORS configuration if present
+	p.handleCors(&pCtx.TypedFilterConfig, policy.spec.cors)
+
 	return errors.Join(errs...)
 }
 
@@ -844,6 +868,17 @@ func (p *trafficPolicyPluginGwPass) handleExtProc(pCtxTypedFilterConfig *ir.Type
 			provider: extProc.provider,
 		}
 	}
+}
+
+func (p *trafficPolicyPluginGwPass) handleCors(pCtxTypedFilterConfig *ir.TypedFilterConfigMap, cors *CorsIR) {
+	if cors == nil || cors.corsConfig == nil {
+		return
+	}
+
+	// Adds the CorsPolicy to the typed_per_filter_config.
+	// Also requires Cors http_filter to be added to the filter chain.
+	pCtxTypedFilterConfig.AddTypedConfig("envoy.filters.http.cors", cors.corsConfig)
+	p.corsInChain = true
 }
 
 // called 1 time per listener
@@ -992,6 +1027,12 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.Filt
 		filters = append(filters, stagedRateLimitFilter)
 	}
 
+	// Add Cors filter to enable cors for the listener.
+	// Requires the cors policy to be set as typed_per_filter_config.
+	if p.corsInChain {
+		filters = append(filters, plugins.MustNewStagedFilter("envoy.filters.http.cors", &corsv3.Cors{}, plugins.DuringStage(plugins.CorsStage)))
+	}
+
 	if len(filters) == 0 {
 		return nil, nil
 	}
@@ -1091,6 +1132,10 @@ func mergePolicies(policies []ir.PolicyAtt) ir.PolicyAtt {
 			merged.spec.rateLimit = p2.spec.rateLimit
 			out.MergeOrigins["rateLimit"] = p2Ref
 		}
+		if policy.IsMergeable(merged.spec.cors, p2.spec.cors, mergeOpts) {
+			merged.spec.cors = p2.spec.cors
+			out.MergeOrigins["cors"] = p2Ref
+		}
 
 		out.HierarchicalPriority = policies[i].HierarchicalPriority
 	}
@@ -1154,6 +1199,12 @@ func TrafficPolicyBuilder(
 
 		// Apply global rate limit specific translation
 		rateLimitForSpec(commoncol, krtctx, policyCR, &outSpec, gatewayExtensions)
+
+		// Apply cors specific translation
+		err = corsForSpec(policyCR.Spec, &outSpec)
+		if err != nil {
+			errors = append(errors, err)
+		}
 
 		for _, err := range errors {
 			logger.Error("error translating policy", "namespace", policyCR.GetNamespace(), "name", policyCR.GetName(), "error", err)
