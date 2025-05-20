@@ -594,8 +594,9 @@ func (p *trafficPolicyPluginGwPass) ApplyVhostPlugin(ctx context.Context, pCtx *
 
 	// Add cors policy to the virtual host if policy has it at the gateway level
 	if policy.spec.cors != nil {
-		corsAny, err := anypb.New(policy.spec.cors.corsConfig)
+		corsAny, err := utils.MessageToAny(policy.spec.cors.corsConfig)
 		if err != nil {
+			logger.Error("failed to create Any for CORS config", "error", err.Error())
 			return
 		}
 		if out.GetTypedPerFilterConfig() == nil {
