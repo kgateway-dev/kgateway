@@ -415,18 +415,6 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 	}
 }
 
-// ResolveExtGrpcService resolves a gateway extension gRPC service by looking up the backend reference
-// and constructing an Envoy gRPC service configuration. It takes the following parameters:
-//   - krtctx: The KRT context
-//   - backends: The backend index collection
-//   - disableExtensionRefValidation: Whether to skip reference grant validation
-//   - objectSource: The source object making the request
-//   - grpcService: The gRPC service configuration to resolve
-//
-// Returns:
-//   - *envoy_core_v3.GrpcService: The resolved Envoy gRPC service configuration
-//   - error: Any error that occurred during resolution
-
 func ResolveExtGrpcService(krtctx krt.HandlerContext, backends *krtcollections.BackendIndex, disableExtensionRefValidation bool, objectSource ir.ObjectSource, grpcService *v1alpha1.ExtGrpcService) (*envoy_core_v3.GrpcService, error) {
 	var clusterName string
 	var authority string

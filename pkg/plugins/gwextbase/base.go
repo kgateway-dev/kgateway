@@ -10,6 +10,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/trafficpolicy"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
@@ -17,6 +18,7 @@ import (
 type TrafficPolicy = trafficpolicy.TrafficPolicy
 type TrafficPolicyBuilder = trafficpolicy.TrafficPolicyBuilder
 
+// Create a traffic policy builder. This converts a traffic policy into its IR form.
 func NewTrafficPolicyBuilder(
 	ctx context.Context,
 	commoncol *common.CommonCollections,
@@ -29,6 +31,18 @@ func NewGatewayTranslationPass(ctx context.Context, tctx ir.GwTranslationCtx, re
 	return trafficpolicy.NewGatewayTranslationPass(ctx, tctx, reporter)
 }
 
-func ResolveExtGrpcService(krtctx krt.HandlerContext, commoncol *common.CommonCollections, disableExtensionRefValidation bool, objectSource ir.ObjectSource, grpcService *v1alpha1.ExtGrpcService) (*envoy_core_v3.GrpcService, error) {
-	return trafficpolicy.ResolveExtGrpcService(krtctx, commoncol, disableExtensionRefValidation, objectSource, grpcService)
+// ResolveExtGrpcService resolves a gateway extension gRPC service by looking up the backend reference
+// and constructing an Envoy gRPC service configuration. It takes the following parameters:
+//   - krtctx: The KRT context
+//   - backends: The backend index collection
+//   - disableExtensionRefValidation: Whether to skip reference grant validation
+//   - objectSource: The source object making the request
+//   - grpcService: The gRPC service configuration to resolve
+//
+// Returns:
+//   - *envoy_core_v3.GrpcService: The resolved Envoy gRPC service configuration
+//   - error: Any error that occurred during resolution
+
+func ResolveExtGrpcService(krtctx krt.HandlerContext, backends *krtcollections.BackendIndex, disableExtensionRefValidation bool, objectSource ir.ObjectSource, grpcService *v1alpha1.ExtGrpcService) (*envoy_core_v3.GrpcService, error) {
+	return trafficpolicy.ResolveExtGrpcService(krtctx, backends, disableExtensionRefValidation, objectSource, grpcService)
 }
