@@ -25,6 +25,7 @@ func (b *TrafficPolicyBuilder) toEnvoyExtProc(
 	}
 
 	return &ExtprocIR{
+		provider:        gatewayExtension,
 		ExtProcPerRoute: translateExtProcPerFilterConfig(spec),
 	}, nil
 }
