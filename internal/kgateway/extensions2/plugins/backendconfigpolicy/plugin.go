@@ -36,10 +36,6 @@ type BackendConfigPolicyIR struct {
 	TCPKeepalive                  *corev3.TcpKeepalive
 	commonHttpProtocolOptions     *corev3.HttpProtocolOptions
 	http1ProtocolOptions          *corev3.Http1ProtocolOptions
-
-	// idleTimeout       *durationpb.Duration
-	// maxHeadersCount   *int
-	// maxStreamDuration *durationpb.Duration
 }
 
 var _ ir.PolicyIR = &BackendConfigPolicyIR{}
