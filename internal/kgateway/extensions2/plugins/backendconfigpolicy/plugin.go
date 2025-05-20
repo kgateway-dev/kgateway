@@ -98,7 +98,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 	}
 }
 
-func processBackend(ctx context.Context, polir ir.PolicyIR, in ir.BackendObjectIR, out *clusterv3.Cluster) {
+func processBackend(_ context.Context, polir ir.PolicyIR, in ir.BackendObjectIR, out *clusterv3.Cluster) {
 	pol := polir.(*BackendConfigPolicyIR)
 	if pol.maxRequestsPerConnection != nil {
 		out.MaxRequestsPerConnection = &wrapperspb.UInt32Value{Value: uint32(*pol.maxRequestsPerConnection)}
@@ -116,6 +116,14 @@ func processBackend(ctx context.Context, polir ir.PolicyIR, in ir.BackendObjectI
 		out.UpstreamConnectionOptions = &clusterv3.UpstreamConnectionOptions{
 			TcpKeepalive: pol.TCPKeepalive,
 		}
+	}
+
+	if pol.commonHttpProtocolOptions != nil {
+		out.CommonHttpProtocolOptions = pol.commonHttpProtocolOptions
+	}
+
+	if pol.http1ProtocolOptions != nil {
+		out.HttpProtocolOptions = pol.http1ProtocolOptions
 	}
 }
 
