@@ -114,3 +114,9 @@ spec:
         - "topology.kubernetes.io/region"
         - "topology.kubernetes.io/zone"
         - "topology.istio.io/subzone"
+    connectionPool:
+      tcp:
+        tcpKeepalive:
+          time: 111s
+          interval: 22s
+          probes: 3
