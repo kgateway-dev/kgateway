@@ -7,15 +7,34 @@ clusters:
   metadata: {}
   name: kube_default_kubernetes_443
   type: EDS
-- connectTimeout: 5s
+- commonHttpProtocolOptions:
+    headersWithUnderscoresAction: REJECT_REQUEST
+    idleTimeout: 10s
+    maxHeadersCount: 15
+    maxStreamDuration: 30s
+  connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
       ads: {}
       resourceApiVersion: V3
+  httpProtocolOptions:
+    enableTrailers: true
+    headerKeyFormat:
+      statefulFormatter:
+        name: envoy.http.stateful_header_formatters.preserve_case
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.http.header_formatters.preserve_case.v3.PreserveCaseFormatterConfig
+    overrideStreamErrorOnInvalidHttpMessage: true
   maxRequestsPerConnection: 100
   metadata: {}
   name: kube_gwtest_httpbin_8080
+  perConnectionBufferLimitBytes: 1024
   type: EDS
+  upstreamConnectionOptions:
+    tcpKeepalive:
+      keepaliveInterval: 5
+      keepaliveProbes: 3
+      keepaliveTime: 30
 endpoints:
 - clusterName: kube_gwtest_httpbin_8080
   endpoints:

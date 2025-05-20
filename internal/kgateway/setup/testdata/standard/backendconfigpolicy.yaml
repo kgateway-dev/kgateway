@@ -65,3 +65,18 @@ spec:
       group: ""
       kind: Service
   maxRequestsPerConnection: 100
+  connectTimeout: 5s
+  perConnectionBufferLimitBytes: 1024
+  tcpKeepalive:
+    keepAliveProbes: 3
+    keepAliveTime: 30s
+    keepAliveInterval: 5s
+  commonHttpProtocolOptions:
+    idleTimeout: 10s
+    maxHeadersCount: 15
+    maxStreamDuration: 30s
+    headersWithUnderscoresAction: RejectRequestsHeadersWithUnderscores
+  http1ProtocolOptions:
+    enableTrailers: true
+    overrideStreamErrorOnInvalidHttpMessage: true
+    headerFormat: PreserveCaseHeaderKeyFormat
