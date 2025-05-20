@@ -302,7 +302,7 @@ func TranslateGatewayExtensionBuilder(commoncol *common.CommonCollections) func(
 
 		switch gExt.Type {
 		case v1alpha1.GatewayExtensionTypeExtAuth:
-			envoyGrpcService, err := ResolveExtGrpcService(krtctx, commoncol, false, gExt.ObjectSource, gExt.ExtAuth.GrpcService)
+			envoyGrpcService, err := ResolveExtGrpcService(krtctx, commoncol.BackendIndex, false, gExt.ObjectSource, gExt.ExtAuth.GrpcService)
 			if err != nil {
 				// TODO: should this be a warning, and set cluster to blackhole?
 				p.err = fmt.Errorf("failed to resolve ExtAuth backend: %w", err)
@@ -332,7 +332,7 @@ func TranslateGatewayExtensionBuilder(commoncol *common.CommonCollections) func(
 			}
 
 		case v1alpha1.GatewayExtensionTypeExtProc:
-			envoyGrpcService, err := ResolveExtGrpcService(krtctx, commoncol, false, gExt.ObjectSource, gExt.ExtProc.GrpcService)
+			envoyGrpcService, err := ResolveExtGrpcService(krtctx, commoncol.BackendIndex, false, gExt.ObjectSource, gExt.ExtProc.GrpcService)
 			if err != nil {
 				p.err = fmt.Errorf("failed to resolve ExtProc backend: %w", err)
 				return p
@@ -348,7 +348,7 @@ func TranslateGatewayExtensionBuilder(commoncol *common.CommonCollections) func(
 				return p
 			}
 
-			grpcService, err := ResolveExtGrpcService(krtctx, commoncol, false, gExt.ObjectSource, gExt.RateLimit.GrpcService)
+			grpcService, err := ResolveExtGrpcService(krtctx, commoncol.BackendIndex, false, gExt.ObjectSource, gExt.RateLimit.GrpcService)
 			if err != nil {
 				p.err = fmt.Errorf("ratelimit: %w", err)
 				return p
@@ -415,7 +415,19 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 	}
 }
 
-func ResolveExtGrpcService(krtctx krt.HandlerContext, commoncol *common.CommonCollections, disableExtensionRefValidation bool, objectSource ir.ObjectSource, grpcService *v1alpha1.ExtGrpcService) (*envoy_core_v3.GrpcService, error) {
+// ResolveExtGrpcService resolves a gateway extension gRPC service by looking up the backend reference
+// and constructing an Envoy gRPC service configuration. It takes the following parameters:
+//   - krtctx: The KRT context
+//   - backends: The backend index collection
+//   - disableExtensionRefValidation: Whether to skip reference grant validation
+//   - objectSource: The source object making the request
+//   - grpcService: The gRPC service configuration to resolve
+//
+// Returns:
+//   - *envoy_core_v3.GrpcService: The resolved Envoy gRPC service configuration
+//   - error: Any error that occurred during resolution
+
+func ResolveExtGrpcService(krtctx krt.HandlerContext, backends *krtcollections.BackendIndex, disableExtensionRefValidation bool, objectSource ir.ObjectSource, grpcService *v1alpha1.ExtGrpcService) (*envoy_core_v3.GrpcService, error) {
 	var clusterName string
 	var authority string
 	if grpcService != nil {
@@ -427,9 +439,9 @@ func ResolveExtGrpcService(krtctx krt.HandlerContext, commoncol *common.CommonCo
 		var backend *ir.BackendObjectIR
 		var err error
 		if disableExtensionRefValidation {
-			backend, err = commoncol.BackendIndex.GetBackendFromRefWithoutRefGrantValidation(krtctx, objectSource, backendRef)
+			backend, err = backends.GetBackendFromRefWithoutRefGrantValidation(krtctx, objectSource, backendRef)
 		} else {
-			backend, err = commoncol.BackendIndex.GetBackendFromRef(krtctx, objectSource, backendRef)
+			backend, err = backends.GetBackendFromRef(krtctx, objectSource, backendRef)
 		}
 		if err != nil {
 			return nil, err
