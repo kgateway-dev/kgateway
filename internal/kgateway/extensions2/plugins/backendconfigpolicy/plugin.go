@@ -110,11 +110,7 @@ func processBackend(ctx context.Context, polir ir.PolicyIR, in ir.BackendObjectI
 
 	if pol.TCPKeepalive != nil {
 		out.UpstreamConnectionOptions = &clusterv3.UpstreamConnectionOptions{
-			TcpKeepalive: &corev3.TcpKeepalive{
-				KeepaliveProbes:   pol.TCPKeepalive.KeepaliveProbes,
-				KeepaliveTime:     pol.TCPKeepalive.KeepaliveTime,
-				KeepaliveInterval: pol.TCPKeepalive.KeepaliveInterval,
-			},
+			TcpKeepalive: pol.TCPKeepalive,
 		}
 	}
 }
