@@ -5,8 +5,8 @@ import (
 
 	corsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/cors/v3"
 	matcherv3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
-	"github.com/golang/protobuf/ptypes/wrappers"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 )
@@ -78,7 +78,7 @@ func toCorsFilterConfig(t *v1alpha1.CorsPolicy) (*corsv3.CorsPolicy, error) {
 		corsPolicy.AllowHeaders = strings.Join(t.AllowHeaders, ", ")
 	}
 	if t.AllowCredentials {
-		corsPolicy.AllowCredentials = &wrappers.BoolValue{Value: t.AllowCredentials}
+		corsPolicy.AllowCredentials = &wrapperspb.BoolValue{Value: t.AllowCredentials}
 	}
 	if len(t.ExposeHeaders) > 0 {
 		corsPolicy.ExposeHeaders = strings.Join(t.ExposeHeaders, ", ")
