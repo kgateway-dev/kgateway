@@ -15,6 +15,7 @@ import (
 )
 
 type TrafficPolicy = trafficpolicy.TrafficPolicy
+type TrafficPolicyBuilder = trafficpolicy.TrafficPolicyBuilder
 
 func NewTrafficPolicyBuilder(
 	ctx context.Context,

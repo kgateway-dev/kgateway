@@ -546,12 +546,13 @@ func (p *trafficPolicyPluginGwPass) ApplyListenerPlugin(ctx context.Context, pCt
 }
 
 func (p *trafficPolicyPluginGwPass) ApplyVhostPlugin(ctx context.Context, pCtx *ir.VirtualHostContext, out *routev3.VirtualHost) {
-	policy, ok := pCtx.Policy.(*TrafficPolicy)
-	if !ok {
-		return
-	}
+	//policy, ok := pCtx.Policy.(*TrafficPolicy)
+	//if !ok {
+	//	return
+	//}
 
-	p.handlePolicies(&pCtx.TypedFilterConfig, policy.spec)
+	// TODO: disable for now as we figure out the interaction of listener/routconfiguration/vhost policies.
+	//	p.handlePolicies(&pCtx.TypedFilterConfig, policy.spec)
 }
 
 // called 0 or more times
