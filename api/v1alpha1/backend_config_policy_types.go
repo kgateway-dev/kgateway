@@ -39,8 +39,7 @@ type BackendConfigPolicySpec struct {
 
 	// The timeout for new network connections to hosts in the cluster.
 	// +optional
-	ConnectTimeout *gwv1.Duration `json:"connectTimeout,omitempty"` // TODO check type
-	// *durationpb.Duration
+	ConnectTimeout *gwv1.Duration `json:"connectTimeout,omitempty"`
 
 	// Soft limit on size of the cluster’s connections read and write buffers.
 	// If unspecified, an implementation defined default is applied (1MiB).
@@ -67,9 +66,7 @@ type Http1ProtocolOptions struct {
 	// +optional
 	EnableTrailers *bool `json:"enableTrailers,omitempty"`
 
-	// Enables trailers for HTTP/1. By default the HTTP/1 codec drops proxied trailers.
-	// Note: Trailers must also be enabled at the gateway level in order for this option to take effect.
-	// Types that are valid to be assigned to HeaderFormat
+	// The format of the header key.
 	// +optional
 	// +kubebuilder:validation:Enum=ProperCaseHeaderKeyFormat;PreserveCaseHeaderKeyFormat
 	HeaderFormat *HeaderFormat `json:"headerFormat,omitempty"`

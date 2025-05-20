@@ -13,9 +13,10 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	"k8s.io/utils/ptr"
+
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
-	"k8s.io/utils/ptr"
 )
 
 func TestBackendConfigPolicyFlow(t *testing.T) {

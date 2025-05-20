@@ -2958,7 +2958,7 @@ func schema_kgateway_v2_api_v1alpha1_Http1ProtocolOptions(ref common.ReferenceCa
 					},
 					"headerFormat": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Enables trailers for HTTP/1. By default the HTTP/1 codec drops proxied trailers. Note: Trailers must also be enabled at the gateway level in order for this option to take effect. Types that are valid to be assigned to HeaderFormat",
+							Description: "The format of the header key.",
 							Type:        []string{"string"},
 							Format:      "",
 						},
