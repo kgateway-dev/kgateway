@@ -53,7 +53,7 @@ func StandardKgatewayDumpOnFail(outLog io.Writer, outDir string, namespaces []st
 // - process state
 // - kubernetes state
 // - logs from all pods in the given namespaces
-// - yaml representations of all solo.io CRs in the given namespaces
+// - yaml representations of all kgateway CRs in the given namespaces
 func KubeDumpOnFail(ctx context.Context, kubectlCli *kubectl.Cli, outLog io.Writer, outDir string,
 	namespaces []string) func() {
 	return func() {
@@ -119,16 +119,23 @@ func recordKubeState(ctx context.Context, kubectlCli *kubectl.Cli, f *os.File) {
 		// Kubernetes resources
 		"secrets",
 		// Kube GW API resources
-		"gateways.gateway.networking.k8s.io",
+		"backendlbpolicies.gateway.networking.k8s.io",
+		"backendtlspolicies.gateway.networking.k8s.io",
 		"gatewayclasses.gateway.networking.k8s.io",
+		"gateways.gateway.networking.k8s.io",
+		"grpcroutes.gateway.networking.k8s.io",
 		"httproutes.gateway.networking.k8s.io",
 		"referencegrants.gateway.networking.k8s.io",
+		"tcproutes.gateway.networking.k8s.io",
+		"tlsroutes.gateway.networking.k8s.io",
+		"udproutes.gateway.networking.k8s.io",
 		// kgateway resources
+		"backends.gateway.kgateway.dev",
 		"directresponses.gateway.kgateway.dev",
+		"gatewayextensions.gateway.kgateway.dev",
 		"gatewayparameters.gateway.kgateway.dev",
 		"httplistenerpolicies.gateway.kgateway.dev",
 		"trafficpolicies.gateway.kgateway.dev",
-		"upstreams.gateway.kgateway.dev",
 	}
 
 	kubeResources, err := kubectlCli.RunCommandWithOutput(ctx, "get", strings.Join(resourcesToGet, ","), "-A", "-owide")
@@ -169,7 +176,7 @@ func recordKubeDump(outDir string, namespaces ...string) {
 			fmt.Printf("error recording pod logs: %f, \n", err)
 		}
 
-		// ...and a subdirectory for each solo.io CRD with non-zero resources
+		// ...and a subdirectory for each kgateway CRD with non-zero resources
 		if err := recordCRs(filepath.Join(outDir, ns), ns); err != nil {
 			fmt.Printf("error recording pod logs: %f, \n", err)
 		}
@@ -224,8 +231,8 @@ func recordCRs(namespaceDir string, namespace string) error {
 
 	// record all unique CRs floating about
 	for _, crd := range crds {
-		// consider all installed CRDs that are solo-managed
-		if !strings.Contains(crd, "solo.io") {
+		// consider all installed CRDs that are kgateway-managed
+		if !strings.Contains(crd, "kgateway.dev") {
 			continue
 		}
 
@@ -391,8 +398,7 @@ func EnvoyDumpOnFail(ctx context.Context, kubectlCli *kubectl.Cli, _ io.Writer, 
 		for _, ns := range namespaces {
 			proxies := []string{}
 
-			// TODO need to get the right label, and pass in the Gateway namespaces
-			kubeGatewayProxies, err := kubectlCli.GetPodsInNsWithLabel(ctx, ns, "gloo=kube-gateway")
+			kubeGatewayProxies, err := kubectlCli.GetPodsInNsWithLabel(ctx, ns, "kgateway=kube-gateway")
 			if err != nil {
 				fmt.Printf("error fetching kube-gateway proxies: %f\n", err)
 			} else {

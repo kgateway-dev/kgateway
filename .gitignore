@@ -52,7 +52,7 @@ data
 # python pickle files
 *.p
 
-# The istio binary downloaded for the kube2e tests
+# The istio binary downloaded for the kubernetes e2e tests
 istio-*/*
 
 # Bin directory created by e2e test
