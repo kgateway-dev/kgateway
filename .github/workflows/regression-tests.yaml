@@ -10,32 +10,6 @@ env:
   GITHUB_TOKEN: ${{ github.token }} # necessary to pass upgrade tests
 
 jobs:
-
-  # regression_tests:
-  #   name: k8s regression tests (${{matrix.kube-e2e-test-type}})
-  #   runs-on: ubuntu-22.04
-  #   timeout-minutes: 60
-  #   if: ${{ !github.event.pull_request.draft }}
-  #   strategy:
-  #     fail-fast: false
-  #     matrix:
-  #       # upgrade tests are run on LTS but not on main branch, for main they are run nightly
-  #       # ingress will be deprecated from 1.17. Ref: https://solo-io-corp.slack.com/archives/G01EERAK3KJ/p1716389614777799
-  #       # this is the github action version of ternary op
-  #       kube-e2e-test-type: [ 'gateway', 'gloo', 'upgrade' ]
-  #       kube-version: [ { node: 'v1.32.2@sha256:f226345927d7e348497136874b6d207e0b32cc52154ad8323129352923a3142f', kubectl: 'v1.32.2', kind: 'v0.27.0', helm: 'v3.17.1' } ]
-  #       image-variant:
-  #         - distroless
-  #       merge-to-main:
-  #         - ${{ github.event.pull_request.base.ref == 'main' }}
-  #       exclude:
-  #         - merge-to-main: true
-  #           kube-e2e-test-type: upgrade
-  #   steps:
-  #   - uses: actions/checkout@v4
-  #   - id: run-tests
-  #     uses: ./.github/actions/regression-tests
-
   kube_gateway_api_conformance_tests:
     name: kubernetes gateway api conformance tests (${{matrix.image-variant}})
     runs-on: ubuntu-22.04

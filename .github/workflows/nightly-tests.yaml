@@ -24,10 +24,6 @@ on:
         description: "Run conformance tests"
         type: boolean
         default: false
-      # run-regression:
-      #   description: "Run regression tests"
-      #   type: boolean
-      #   default: false
       # run-performance:
       #   description: "Run performance tests"
       #   type: boolean
@@ -188,54 +184,6 @@ jobs:
   #         run-regex: ${{ matrix.test.go-test-run-regex }}
   #         istio-version: ${{ steps.dotenv.outputs.istio_version }}
   #         matrix-label: ${{ matrix.version-files.label }}
-
-  # regression_tests_on_demand:
-  #   name: on demand regression tests
-  #   if: ${{ github.event_name == 'workflow_dispatch' && inputs.run-regression && inputs.branch == 'workflow_initiating_branch' }}
-  #   runs-on: ubuntu-22.04
-  #   timeout-minutes: 60
-  #   strategy:
-  #     fail-fast: false
-  #     matrix:
-  #       kube-e2e-test-type: ['gateway', 'gloo', 'upgrade']
-  #       kube-version: [ { node: 'v1.25.16@sha256:5da57dfc290ac3599e775e63b8b6c49c0c85d3fec771cd7d55b45fae14b38d3b', kubectl: 'v1.25.16', kind: 'v0.20.0', helm: 'v3.13.2' },
-  #                       { node: 'v1.32.2@sha256:f226345927d7e348497136874b6d207e0b32cc52154ad8323129352923a3142f', kubectl: 'v1.32.2', kind: 'v0.27.0', helm: 'v3.17.1' }]
-  #       image-variant:
-  #         - standard
-  #   steps:
-  #   - uses: actions/checkout@v4
-  #     with:
-  #       ref: ${{ github.ref_name }}
-  #   - uses: ./.github/actions/regression-tests
-
-  # regression_tests_main:
-  #   name: main regression tests
-  #   if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-regression && inputs.branch == 'main') || github.event.schedule == '0 5 * * *' }}
-  #   runs-on: ubuntu-22.04
-  #   timeout-minutes: 60
-  #   # Previously, there was an environment variable, RELEASED_VERSION="LATEST" set.  This made use of some internal code:
-  #   #       https://github.com/kgateway-dev/kgateway/blob/main/test/kube2e/util.go#L229-L241
-  #   # which modified our testing process to pull the latest beta release.
-  #   #
-  #   # NOW, however, running this job is the same as normal CI.  (building a local chart, then using it)
-  #   strategy:
-  #     fail-fast: false
-  #     matrix:
-  #       # TODO:
-  #       #   As part of the end_to_end_tests_main job, we added support for importing versions from a .env file
-  #       #   We should extend the support/usage of those .env files to these other jobs.
-  #       #   The tests are currently in flux, and some of these regression tests are being migrated, so we decided
-  #       #   to limit the scope (and potentially unnecessary work) for now
-  #       kube-e2e-test-type: ['gateway', 'gloo', 'upgrade']
-  #       kube-version: [ { node: 'v1.27.3@sha256:3966ac761ae0136263ffdb6cfd4db23ef8a83cba8a463690e98317add2c9ba72', kubectl: 'v1.27.3', kind: 'v0.20.0', helm: 'v3.13.2' },
-  #                       { node: 'v1.32.2@sha256:f226345927d7e348497136874b6d207e0b32cc52154ad8323129352923a3142f', kubectl: 'v1.32.2', kind: 'v0.27.0', helm: 'v3.17.1' }]
-  #       image-variant:
-  #         - standard
-  #   steps:
-  #   - uses: actions/checkout@v4
-  #     with:
-  #       ref: main
-  #   - uses: ./.github/actions/regression-tests
 
   # performance_tests_on_demand:
   #   name: on demand performance tests
