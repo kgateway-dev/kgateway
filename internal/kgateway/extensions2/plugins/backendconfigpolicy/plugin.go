@@ -17,6 +17,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/watch"
 
+	"google.golang.org/protobuf/proto"
+
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
@@ -24,7 +26,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
-	"google.golang.org/protobuf/proto"
 )
 
 const PreserveCasePlugin = "envoy.http.stateful_header_formatters.preserve_case"
