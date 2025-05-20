@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"istio.io/istio/pkg/kube/kubetypes"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
@@ -65,6 +66,8 @@ type GatewayConfig struct {
 	ImageInfo *deployer.ImageInfo
 	// ClassInfo sets the default configuration for GatewayClasses managed by this controller.
 	ClassInfo map[string]*ClassInfo
+	// DiscoveryNamespaceFilter filters namespaced objects based on the discovery namespace filter.
+	DiscoveryNamespaceFilter kubetypes.DynamicObjectFilter
 }
 
 func NewBaseGatewayController(ctx context.Context, cfg GatewayConfig) error {
@@ -180,7 +183,13 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 		return err
 	}
 
+	discoveryNamespaceFilterPredicate := predicate.NewPredicateFuncs(func(o client.Object) bool {
+		filter := c.cfg.DiscoveryNamespaceFilter.Filter(o)
+		return filter
+	})
+
 	buildr := ctrl.NewControllerManagedBy(c.cfg.Mgr).
+		WithEventFilter(discoveryNamespaceFilterPredicate).
 		// Don't use WithEventFilter here as it also filters events for Owned objects.
 		For(&apiv1.Gateway{}, builder.WithPredicates(
 			// TODO(stevenctl) investigate perf implications of filtering in Reconcile
@@ -213,6 +222,7 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 			}
 			return reqs
 		}),
+		builder.WithPredicates(discoveryNamespaceFilterPredicate),
 	)
 	// watch for gatewayclasses managed by our controller and enqueue related gateways
 	buildr.Watches(
@@ -233,9 +243,11 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 			}
 			reqs := make([]reconcile.Request, 0, len(gwList.Items))
 			for _, gw := range gwList.Items {
-				reqs = append(reqs,
-					reconcile.Request{NamespacedName: client.ObjectKeyFromObject(&gw)},
-				)
+				if c.cfg.DiscoveryNamespaceFilter.Filter(&gw) {
+					reqs = append(reqs,
+						reconcile.Request{NamespacedName: client.ObjectKeyFromObject(&gw)},
+					)
+				}
 			}
 			return reqs
 		}),
@@ -308,7 +320,12 @@ func (c *controllerBuilder) watchInferencePool(ctx context.Context) error {
 		return fmt.Errorf("failed to register HTTPRoute index: %w", err)
 	}
 
+	discoveryNamespaceFilterPredicate := predicate.NewPredicateFuncs(func(o client.Object) bool {
+		return c.cfg.DiscoveryNamespaceFilter.Filter(o)
+	})
+
 	buildr := ctrl.NewControllerManagedBy(c.cfg.Mgr).
+		WithEventFilter(discoveryNamespaceFilterPredicate).
 		For(&infextv1a2.InferencePool{}, builder.WithPredicates(
 			predicate.Or(
 				predicate.AnnotationChangedPredicate{},
@@ -352,7 +369,9 @@ func (c *controllerBuilder) watchInferencePool(ctx context.Context) error {
 				})
 			}
 			return reqs
-		}))
+		}),
+			builder.WithPredicates(discoveryNamespaceFilterPredicate),
+		)
 
 	// If enabled, create a deployer using the controllerBuilder as inputs.
 	if c.poolCfg.InferenceExt != nil {

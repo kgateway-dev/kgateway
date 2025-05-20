@@ -92,10 +92,6 @@ jobs:
         if: ${{ github.event_name != 'pull_request' }}
         run: echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ${{ env.IMAGE_REGISTRY }} -u ${{ github.repository_owner }} --password-stdin
 
-      - name: Lint kgateway charts on PRs
-        if: ${{ github.event_name == 'pull_request' }}
-        run: make lint-kgateway-charts
-
       - name: Package kgateway chart
         run: make package-kgateway-charts
         env:

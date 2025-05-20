@@ -32,7 +32,7 @@ Run unit tests (ie non e2e)
 Run [in memory end-to-end tests](e2e-tests.md)
 
 ### run-kube-e2e-tests
-Run [kubernetes end-to-end tests](kube-e2e-tests.md)
+Run [kubernetes end-to-end tests](/test/kubernetes/e2e/README.md)
 
 ### run-benchmark-tests
 Run [performance tests](performance-tests.md)

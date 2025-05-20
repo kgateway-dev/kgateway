@@ -128,7 +128,7 @@ func (r *ReportMap) BuildRouteStatus(
 			parentRefs = append(parentRefs, routeReport.parentRefs()...)
 		}
 	default:
-		slog.Error(fmt.Sprintf("unsupported route type %T", obj), "error", "failed to build route status")
+		slog.Error("unsupported route type for status reporting", "route_type", fmt.Sprintf("%T", obj))
 		return nil
 	}
 

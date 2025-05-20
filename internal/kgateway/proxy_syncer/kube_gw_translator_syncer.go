@@ -17,9 +17,9 @@ func (s *ProxyTranslator) syncXds(
 
 	// stringifying the snapshot may be an expensive operation, so we'd like to avoid building the large
 	// string if we're not even going to log it anyway
-	logger.Debug("syncing xds snapshot", "proxyKey", proxyKey)
+	logger.Debug("syncing xds snapshot", "proxy_key", proxyKey)
 
-	logger.Log(ctx, logging.LevelTrace, "syncing xds snapshot", "proxyKey", proxyKey)
+	logger.Log(ctx, logging.LevelTrace, "syncing xds snapshot", "proxy_key", proxyKey)
 
 	// if the snapshot is not consistent, make it so
 	// TODO: me may need to copy this to not change krt cache.

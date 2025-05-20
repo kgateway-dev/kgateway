@@ -142,7 +142,7 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(ctx context.Context,
 		config, err := utils.MessageToAny(v)
 		if err != nil {
 			// TODO: error on status
-			h.logger.Error(err.Error())
+			h.logger.Error("unexpected marshalling error", "error", err)
 			continue
 		}
 		typedPerFilterConfigAny[k] = config
@@ -357,7 +357,7 @@ func (h *httpRouteConfigurationTranslator) translateRouteAction(
 		)
 		if err != nil {
 			// TODO: error on status
-			h.logger.Error(err.Error())
+			h.logger.Error("error processing backends", "error", err)
 		}
 
 		err = h.runBackendPolicies(
@@ -367,7 +367,7 @@ func (h *httpRouteConfigurationTranslator) translateRouteAction(
 		)
 		if err != nil {
 			// TODO: error on status
-			h.logger.Error(err.Error())
+			h.logger.Error("error processing backends with policies", "error", err)
 		}
 
 		// Translating weighted clusters needs the typed per filter config on each cluster
@@ -376,7 +376,7 @@ func (h *httpRouteConfigurationTranslator) translateRouteAction(
 			config, err := utils.MessageToAny(v)
 			if err != nil {
 				// TODO: error on status
-				h.logger.Error(err.Error())
+				h.logger.Error("unexpected marshalling error", "error", err)
 				continue
 			}
 			typedPerFilterConfigAny[k] = config

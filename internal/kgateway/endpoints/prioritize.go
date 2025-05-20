@@ -137,7 +137,7 @@ func prioritizeWithLbInfo(logger *slog.Logger, ep ir.EndpointsForBackend, lbInfo
 		applyLocalityFailover(&proxyLocality, cla, lbInfo.PriorityInfo.Failover)
 	}
 	if logger != nil {
-		logger.Debug("created cla", "cluster", cla.GetClusterName(), "numAddresses", totalEndpoints)
+		logger.Debug("created cla", "cluster", cla.GetClusterName(), "total_endpoints", totalEndpoints)
 	}
 
 	// in theory we want to run endpoint plugins here.

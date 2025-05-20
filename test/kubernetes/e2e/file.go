@@ -15,6 +15,8 @@ var (
 	EmptyValuesManifestPath = ManifestPath("empty-values.yaml")
 
 	AIValuesManifestPath = ManifestPath("ai-extension-helm.yaml")
+
+	AgentGatewayIntegratioValuesPath = ManifestPath("agent-gateway-integration.yaml")
 )
 
 // ManifestPath returns the absolute path to a manifest file.

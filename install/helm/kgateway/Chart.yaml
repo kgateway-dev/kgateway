@@ -1,6 +1,7 @@
 apiVersion: v2
 name: kgateway
 description: A Helm chart for the kgateway project
+icon: https://raw.githubusercontent.com/kgateway-dev/kgateway.dev/main/static/favicon.svg
 
 # A chart can be either an 'application' or a 'library' chart.
 #

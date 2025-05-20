@@ -26,31 +26,40 @@ jobs:
         # Above each test below, we document the latest date/time for the GitHub action step to run
         # NOTE: We use the GitHub action step time (as opposed to the `go test` time), because it is easier to capture
         test:
-        # May 5, 2025: ~19 minutes
+        # May 19, 2025: ~19 minutes
         - cluster-name: 'cluster-one'
           go-test-args: '-v -timeout=25m'
           go-test-run-regex: '^TestKgateway$$/^BasicRouting$$|^TestKgateway$$/^HTTPRouteServices$$|^TestKgateway$$/^TLSRouteServices$$|^TestKgateway$$/^GRPCRouteServices$$'
           localstack: 'false'
-        # May 5, 2025: ~23 minutes
+        # May 19, 2025: ~25 minutes
         - cluster-name: 'cluster-two'
           go-test-args: '-v -timeout=25m'
           go-test-run-regex: '^TestKgateway$$/^Backends$$|^TestKgateway$$/^Transforms$$|^TestKgateway$$/^BackendTLSPolicies$$|^TestKgatewayWaypoint$$'
           localstack: 'false'
-        # May 5, 2025: ~18 minutes
+        # May 19, 2025: ~18 minutes
         - cluster-name: 'cluster-three'
           go-test-args: '-v -timeout=25m'
-          go-test-run-regex: '^TestKgateway$$/^Deployer$$|^TestKgateway$$/^RouteDelegation$$|^TestKgateway$$/^Lambda$$|^TestKgateway$$/^AccessLog$$'
+          go-test-run-regex: '^TestKgateway$$/^Deployer$$|^TestKgateway$$/^RouteDelegation$$|^TestKgateway$$/^Lambda$$|^TestKgateway$$/^AccessLog$$|^TestKgateway$$/^LocalRateLimit$$'
           localstack: 'true'
-        # May 5, 2025: ~17 minutes
+        # May 19, 2025: ~20 minutes
         - cluster-name: 'cluster-four'
           go-test-args: '-v -timeout=25m'
           go-test-run-regex: '^TestKgateway$$/^ExtProc$$|^TestKgateway$$/^ExtAuth$$|^TestKgateway$$/^TCPRouteServices$$|^TestKgateway$$/^PolicySelector$$'
           localstack: 'false'
-        # May 5, 2025: ~16 minutes
+        # May 19, 2025: ~20 minutes
         - cluster-name: 'cluster-ai'
           go-test-args: '-v -timeout=25m'
           go-test-run-regex: '^TestAIExtension'
           localstack: 'false'
+        - cluster-name: 'cluster-multi-install'
+          go-test-args: '-v -timeout=5m'
+          go-test-run-regex: '^TestMultipleInstalls'
+          localstack: 'false'
+        # May 19, 2025: ~10 minutes
+        - cluster-name: 'agent-gateway-cluster'
+          go-test-args: '-v -timeout=25m'
+          go-test-run-regex: '^TestAgentGatewayIntegration'
+          agentgateway: 'true'
 
 #         # Dec 4, 2024: 23 minutes
 #         - cluster-name: 'cluster-two'
@@ -109,6 +118,7 @@ jobs:
         helm-version: ${{ steps.dotenv.outputs.helm_version }}
         istio-version: ${{ steps.dotenv.outputs.istio_version }}
         localstack: ${{ matrix.test.localstack }}
+        agentgateway: ${{ matrix.test.agentgateway }}
     - id: run-tests
       uses: ./.github/actions/kubernetes-e2e-tests
       with:
