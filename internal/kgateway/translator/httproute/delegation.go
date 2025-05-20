@@ -63,8 +63,8 @@ func flattenDelegatedRoutes(
 	for _, child := range children {
 		childRoute, ok := child.Object.(*ir.HttpRouteIR)
 		if !ok {
-			msg := fmt.Sprintf("ignoring unsupported child route type %T for parent httproute %v", child.Object, parentRef)
-			slog.Warn(msg)
+			slog.Warn("ignoring unsupported child route type",
+				"route_type", fmt.Sprintf("%T", child.Object), "parent_resource_ref", parentRef)
 			continue
 		}
 		childRef := types.NamespacedName{Namespace: childRoute.Namespace, Name: childRoute.Name}
@@ -73,7 +73,7 @@ func flattenDelegatedRoutes(
 			// This is an _extra_ safety check, but the given HTTPRouteInfo shouldn't ever contain cycles.
 			msg := fmt.Sprintf("cyclic reference detected while evaluating delegated routes for parent: %s; child route %s will be ignored",
 				parentRef, childRef)
-			slog.Warn(msg)
+			slog.Warn(msg) //nolint:sloglint // ignore formatting
 			parentReporter.SetCondition(reports.RouteCondition{
 				Type:    gwv1.RouteConditionResolvedRefs,
 				Status:  metav1.ConditionFalse,

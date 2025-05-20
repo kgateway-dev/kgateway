@@ -19,7 +19,7 @@ func dumpXDSCacheState(ctx context.Context, cache envoycache.SnapshotCache) {
 
 	// Get all snapshot IDs from cache
 	for _, nodeID := range cache.GetStatusKeys() {
-		logger.Info("snapshot has node", "nodeID", nodeID)
+		logger.Info("snapshot has node", "node_id", nodeID)
 
 		snapshot, err := cache.GetSnapshot(nodeID)
 		if err != nil {
@@ -28,7 +28,7 @@ func dumpXDSCacheState(ctx context.Context, cache envoycache.SnapshotCache) {
 		}
 
 		// Check for A2A targets
-		logger.Info("A2A targets version", "snapshot", snapshot.GetVersion(TargetTypeA2AUrl))
+		logger.Info("A2A targets version", "snapshot", snapshot.GetVersion(TargetTypeA2AUrl)) //nolint:sloglint // ignore msg-type
 		resources := snapshot.GetResources(TargetTypeA2AUrl)
 		for name := range resources {
 			logger.Info("snapshot has resources", "name", name)

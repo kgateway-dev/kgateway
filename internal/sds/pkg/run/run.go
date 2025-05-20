@@ -53,7 +53,7 @@ func Run(ctx context.Context, secrets []server.Secret, sdsClient, sdsServerAddre
 				watchFiles(watcher, secrets)
 			// watch for errors
 			case err := <-watcher.Errors:
-				logger.Warn("Received error from file watcher", "error", err)
+				logger.Warn("received error from file watcher", "error", err)
 			case <-ctx.Done():
 				return
 			}
@@ -73,7 +73,7 @@ func Run(ctx context.Context, secrets []server.Secret, sdsClient, sdsServerAddre
 
 func watchFiles(watcher *fsnotify.Watcher, secrets []server.Secret) {
 	for _, s := range secrets {
-		logger.Info("watcher started", "sslKeyFile", s.SslKeyFile, "sslCertFile", s.SslCertFile, "sslCaFile", s.SslCaFile)
+		logger.Info("watcher started", "key_file", s.SslKeyFile, "cert_file", s.SslCertFile, "ca_file", s.SslCaFile)
 		if err := watcher.Add(s.SslKeyFile); err != nil {
 			logger.Warn("failed to add watch for key file", "error", err, "file", s.SslKeyFile)
 		}

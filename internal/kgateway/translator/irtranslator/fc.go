@@ -283,7 +283,7 @@ func (h *hcmNetworkFilterTranslator) computeHttpFilters(ctx context.Context, l i
 
 		for _, httpFilter := range stagedFilters {
 			if httpFilter.Filter == nil {
-				logger.Warn("HttpFilters() returned nil", "name", plug.Name)
+				logger.Warn("got nil Filter from HttpFilters()", "plugin", plug.Name)
 				continue
 			}
 			httpFilters = append(httpFilters, httpFilter)

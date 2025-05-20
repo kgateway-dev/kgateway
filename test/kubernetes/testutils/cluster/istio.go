@@ -28,7 +28,7 @@ func GetIstioctl(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to download istio: %w", err)
 	}
-	slog.Info("Using Istio binary", "istioctlBinary", istioctlBinary)
+	slog.Info("using Istio binary", "path", istioctlBinary)
 
 	return istioctlBinary, nil
 }
@@ -125,7 +125,7 @@ func downloadIstio(ctx context.Context, version string) (string, error) {
 			return "", eris.New("ISTIO_VERSION environment variable must be specified or istioctl must be installed")
 		}
 
-		slog.Info("using istioctl path", "binaryPath", binaryPath)
+		slog.Info("using istioctl", "path", binaryPath)
 
 		return binaryPath, nil
 	}

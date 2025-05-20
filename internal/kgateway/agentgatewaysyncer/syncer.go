@@ -65,7 +65,7 @@ func NewAgentGwSyncer(
 		translator:     newTranslator(ctx, commonCols),
 		controllerName: controllerName,
 		xdsCache:       xdsCache,
-		//mgr:            mgr,
+		// mgr:            mgr,
 		istioClient: client,
 	}
 }
@@ -157,7 +157,7 @@ func (r report) Equals(in report) bool {
 }
 
 func (s *AgentGwSyncer) Init(krtopts krtutil.KrtOptions) {
-	logger.Debug("Init agentgateway Syncer", "controllername", s.controllerName)
+	logger.Debug("init agentgateway Syncer", "controllername", s.controllerName)
 
 	// TODO: convert auth to rbac json config for agentgateways
 
@@ -284,7 +284,7 @@ func (s *AgentGwSyncer) Init(krtopts krtutil.KrtOptions) {
 
 		// a2a services
 		a2aServiceResources := krt.Fetch(kctx, xdsA2AServices)
-		logger.Debug("found A2A resources for gateway", "LenA2AServices", len(a2aServiceResources), "gwnamespace", gw.Namespace, "gwname", gw.Name)
+		logger.Debug("found A2A resources for gateway", "total_services", len(a2aServiceResources), "resource_ref", gw.ResourceName())
 		a2aResources := make([]envoytypes.Resource, len(a2aServiceResources))
 		var a2aVersion uint64
 		for i, res := range a2aServiceResources {
@@ -294,7 +294,7 @@ func (s *AgentGwSyncer) Init(krtopts krtutil.KrtOptions) {
 		}
 		// mcp services
 		mcpServiceResources := krt.Fetch(kctx, xdsMcpServices)
-		logger.Debug("found MCP resources for gateway", "LenMCPServices", len(mcpServiceResources), "gwnamespace", gw.Namespace, "gwname", gw.Name)
+		logger.Debug("found MCP resources for gateway", "total_services", len(mcpServiceResources), "resource_ref", gw.ResourceName())
 		mcpResources := make([]envoytypes.Resource, len(mcpServiceResources))
 		var mcpVersion uint64
 		for i, res := range mcpServiceResources {
