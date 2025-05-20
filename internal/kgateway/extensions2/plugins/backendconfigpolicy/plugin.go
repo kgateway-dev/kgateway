@@ -98,7 +98,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 	}
 }
 
-func processBackend(_ context.Context, polir ir.PolicyIR, in ir.BackendObjectIR, out *clusterv3.Cluster) {
+func processBackend(_ context.Context, polir ir.PolicyIR, _ ir.BackendObjectIR, out *clusterv3.Cluster) {
 	pol := polir.(*BackendConfigPolicyIR)
 	if pol.maxRequestsPerConnection != nil {
 		out.MaxRequestsPerConnection = &wrapperspb.UInt32Value{Value: uint32(*pol.maxRequestsPerConnection)}
@@ -231,6 +231,10 @@ func translateHttp1ProtocolOptions(http1ProtocolOptions *v1alpha1.Http1ProtocolO
 	out := &corev3.Http1ProtocolOptions{}
 	if http1ProtocolOptions.EnableTrailers != nil {
 		out.EnableTrailers = *http1ProtocolOptions.EnableTrailers
+	}
+
+	if http1ProtocolOptions.OverrideStreamErrorOnInvalidHttpMessage != nil {
+		out.OverrideStreamErrorOnInvalidHttpMessage = &wrapperspb.BoolValue{Value: *http1ProtocolOptions.OverrideStreamErrorOnInvalidHttpMessage}
 	}
 
 	if http1ProtocolOptions.HeaderFormat != nil {
