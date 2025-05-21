@@ -355,11 +355,7 @@ func TranslateGatewayExtensionBuilder(commoncol *common.CommonCollections) func(
 			}
 
 			// Use the specialized function for rate limit service resolution
-			rateLimitConfig, err := resolveRateLimitService(grpcService, gExt.RateLimit)
-			if err != nil {
-				p.Err = fmt.Errorf("failed to resolve RateLimit backend: %w", err)
-				return p
-			}
+			rateLimitConfig := resolveRateLimitService(grpcService, gExt.RateLimit)
 
 			p.RateLimit = rateLimitConfig
 		}
@@ -455,7 +451,7 @@ func ResolveExtGrpcService(krtctx krt.HandlerContext, backends *krtcollections.B
 	return envoyGrpcService, nil
 }
 
-func resolveRateLimitService(grpcService *envoy_core_v3.GrpcService, rateLimit *v1alpha1.RateLimitProvider) (*ratev3.RateLimit, error) {
+func resolveRateLimitService(grpcService *envoy_core_v3.GrpcService, rateLimit *v1alpha1.RateLimitProvider) *ratev3.RateLimit {
 	envoyRateLimit := &ratev3.RateLimit{
 		Domain:          rateLimit.Domain,
 		FailureModeDeny: !rateLimit.FailOpen,
@@ -467,21 +463,19 @@ func resolveRateLimitService(grpcService *envoy_core_v3.GrpcService, rateLimit *
 
 	// Set timeout if specified
 	if rateLimit.Timeout != "" {
-		duration, err := time.ParseDuration(rateLimit.Timeout)
-		if err != nil {
-			return nil, fmt.Errorf("invalid timeout in rate limit provider: %w", err)
+		if duration, err := time.ParseDuration(string(rateLimit.Timeout)); err == nil {
+			envoyRateLimit.Timeout = durationpb.New(duration)
+		} else {
+			// CEL validation should catch this, so this should never happen. log it here just in case and don't error.
+			logger.Error("invalid timeout in rate limit provider", "error", err)
 		}
-		envoyRateLimit.Timeout = durationpb.New(duration)
-	} else {
-		envoyRateLimit.Timeout = durationpb.New(defaultRateLimitTimeout)
 	}
-
 	// Set defaults for other required fields
 	envoyRateLimit.StatPrefix = rateLimitStatPrefix
 	envoyRateLimit.EnableXRatelimitHeaders = ratev3.RateLimit_DRAFT_VERSION_03
 	envoyRateLimit.RequestType = "both"
 
-	return envoyRateLimit, nil
+	return envoyRateLimit
 }
 
 func NewGatewayTranslationPass(ctx context.Context, tctx ir.GwTranslationCtx, reporter reports.Reporter) ir.ProxyTranslationPass {

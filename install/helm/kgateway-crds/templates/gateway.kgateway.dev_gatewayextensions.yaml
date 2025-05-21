@@ -200,6 +200,7 @@ spec:
                     type: object
                   timeout:
                     default: 20ms
+                    pattern: ^([0-9]{1,5}(h|m|s|ms)){1,4}$
                     type: string
                 required:
                 - domain

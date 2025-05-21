@@ -3,7 +3,6 @@ package trafficpolicy
 import (
 	"errors"
 	"fmt"
-	"time"
 
 	routeconfv3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 
@@ -11,9 +10,8 @@ import (
 )
 
 const (
-	rateLimitFilterName     = "envoy.filters.http.ratelimit"
-	rateLimitStatPrefix     = "http_rate_limit"
-	defaultRateLimitTimeout = 2 * time.Second
+	rateLimitFilterName = "envoy.filters.http.ratelimit"
+	rateLimitStatPrefix = "http_rate_limit"
 )
 
 // RateLimitIR represents the intermediate representation of a rate limit policy
