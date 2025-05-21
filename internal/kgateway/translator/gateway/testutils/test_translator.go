@@ -49,10 +49,11 @@ func TestTranslation(
 	outputFile string,
 	gwNN types.NamespacedName,
 	assertReports AssertReports,
+	settingsOpts ...SettingsOpts,
 ) {
 	results, err := TestCase{
 		InputFiles: inputFiles,
-	}.Run(t, ctx)
+	}.Run(t, ctx, settingsOpts...)
 	Expect(err).NotTo(HaveOccurred())
 	// TODO allow expecting multiple gateways in the output (map nns -> outputFile?)
 	Expect(results).To(HaveLen(1))
@@ -161,27 +162,15 @@ func AreReportsSuccess(gwNN types.NamespacedName, reportsMap reports.ReportMap) 
 	return nil
 }
 
-var _ extensionsplug.GetBackendForRefPlugin = testBackendPlugin{}.GetBackendForRefPlugin
+type SettingsOpts func(*settings.Settings)
 
-type testBackendPlugin struct{}
-
-// GetBackendForRef implements query.BackendRefResolver.
-func (tp testBackendPlugin) GetBackendForRefPlugin(kctx krt.HandlerContext, key ir.ObjectSource, port int32) *ir.BackendObjectIR {
-	if key.Kind != "test-backend-plugin" {
-		return nil
-	}
-	// doesn't matter as long as its not nil
-	return &ir.BackendObjectIR{
-		ObjectSource: ir.ObjectSource{
-			Group:     "test",
-			Kind:      "test-backend-plugin",
-			Namespace: "test-backend-plugin-ns",
-			Name:      "test-backend-plugin-us",
-		},
+func SettingsWithDiscoveryNamespaceSelectors(cfgJson string) SettingsOpts {
+	return func(s *settings.Settings) {
+		s.DiscoveryNamespaceSelectors = cfgJson
 	}
 }
 
-func (tc TestCase) Run(t test.Failer, ctx context.Context) (map[types.NamespacedName]ActualTestResult, error) {
+func (tc TestCase) Run(t test.Failer, ctx context.Context, settingsOpts ...SettingsOpts) (map[types.NamespacedName]ActualTestResult, error) {
 	var (
 		anyObjs []runtime.Object
 		ourObjs []runtime.Object
@@ -250,7 +239,11 @@ func (tc TestCase) Run(t test.Failer, ctx context.Context) (map[types.Namespaced
 	if err != nil {
 		return nil, err
 	}
-	commoncol := common.NewCommonCollections(
+	for _, opt := range settingsOpts {
+		opt(st)
+	}
+
+	commoncol, err := common.NewCommonCollections(
 		ctx,
 		krtOpts,
 		cli,
@@ -260,6 +253,9 @@ func (tc TestCase) Run(t test.Failer, ctx context.Context) (map[types.Namespaced
 		logr.Discard(),
 		*st,
 	)
+	if err != nil {
+		return nil, err
+	}
 
 	plugins := registry.Plugins(ctx, commoncol)
 	// TODO: consider moving the common code to a util that both proxy syncer and this test call
@@ -271,8 +267,19 @@ func (tc TestCase) Run(t test.Failer, ctx context.Context) (map[types.Namespaced
 		Kind:  "test-backend-plugin",
 	}
 	extensions.ContributesPolicies[gk] = extensionsplug.PolicyPlugin{
-		Name:             "test-backend-plugin",
-		GetBackendForRef: testBackendPlugin{}.GetBackendForRefPlugin,
+		Name: "test-backend-plugin",
+	}
+	extensions.ContributesBackends[gk] = extensionsplug.BackendPlugin{
+		Backends: krt.NewStaticCollection([]ir.BackendObjectIR{
+			{
+				Port: 80,
+				ObjectSource: ir.ObjectSource{
+					Kind:      "test-backend-plugin",
+					Namespace: "default",
+					Name:      "example-svc",
+				},
+			},
+		}),
 	}
 
 	commoncol.InitPlugins(ctx, extensions)

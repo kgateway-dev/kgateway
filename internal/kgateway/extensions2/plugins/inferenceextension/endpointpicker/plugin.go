@@ -3,6 +3,7 @@ package endpointpicker
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"time"
 
 	clusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
@@ -14,7 +15,6 @@ import (
 	hcmv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	tlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	upstreamsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
-	"github.com/solo-io/go-utils/contextutils"
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -68,12 +68,10 @@ func registerTypes(cli versioned.Interface) {
 }
 
 func NewPlugin(ctx context.Context, commonCol *common.CommonCollections) *extplug.Plugin {
-	log := contextutils.LoggerFrom(ctx)
-
 	// Create the inference extension clientset.
 	cli, err := versioned.NewForConfig(commonCol.Client.RESTConfig())
 	if err != nil {
-		log.Errorf("failed to create inference extension client %w", err)
+		slog.Error("failed to create inference extension client", "error", err)
 		return nil
 	}
 
@@ -81,7 +79,10 @@ func NewPlugin(ctx context.Context, commonCol *common.CommonCollections) *extplu
 	registerTypes(cli)
 
 	// Create an InferencePool krt collection.
-	poolCol := krt.WrapClient(kclient.New[*infextv1a2.InferencePool](commonCol.Client), commonCol.KrtOpts.ToOptions("InferencePool")...)
+	poolCol := krt.WrapClient(kclient.NewFiltered[*infextv1a2.InferencePool](
+		commonCol.Client,
+		kclient.Filter{ObjectFilter: commonCol.Client.ObjectFilter()},
+	), commonCol.KrtOpts.ToOptions("InferencePool")...)
 
 	return NewPluginFromCollections(ctx, commonCol, poolCol)
 }

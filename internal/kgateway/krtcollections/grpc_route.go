@@ -26,7 +26,7 @@ func (h *RoutesIndex) transformGRPCRoute(kctx krt.HandlerContext, i *gwv1.GRPCRo
 		ParentRefs:       i.Spec.ParentRefs,
 		Hostnames:        tostr(i.Spec.Hostnames),
 		Rules:            h.transformGRPCRulesToHttp(kctx, src, i.Spec.Rules),
-		AttachedPolicies: toAttachedPolicies(h.policies.getTargetingPolicies(kctx, extensionsplug.RouteAttachmentPoint, src, "")),
+		AttachedPolicies: toAttachedPolicies(h.policies.getTargetingPolicies(kctx, extensionsplug.RouteAttachmentPoint, src, "", i.GetLabels())),
 		// IsHTTP2: true
 	}
 }

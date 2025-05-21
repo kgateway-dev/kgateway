@@ -125,6 +125,15 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: traceableFilter
       type:
         scalar: boolean
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AgentGateway
+  map:
+    fields:
+    - name: enabled
+      type:
+        scalar: boolean
+    - name: logLevel
+      type:
+        scalar: string
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AiExtension
   map:
     fields:
@@ -725,6 +734,12 @@ var schemaYAML = typed.YAMLObject(`types:
           elementType:
             namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LocalPolicyTargetReference
           elementRelationship: atomic
+    - name: targetSelectors
+      type:
+        list:
+          elementType:
+            namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LocalPolicyTargetSelector
+          elementRelationship: atomic
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.HeaderFilter
   map:
     fields:
@@ -812,6 +827,9 @@ var schemaYAML = typed.YAMLObject(`types:
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.KubernetesProxyConfig
   map:
     fields:
+    - name: agentGateway
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AgentGateway
     - name: aiExtension
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AiExtension
@@ -867,6 +885,22 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         scalar: string
       default: ""
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LocalPolicyTargetSelector
+  map:
+    fields:
+    - name: group
+      type:
+        scalar: string
+      default: ""
+    - name: kind
+      type:
+        scalar: string
+      default: ""
+    - name: matchLabels
+      type:
+        map:
+          elementType:
+            scalar: string
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LocalRateLimitPolicy
   map:
     fields:
@@ -1323,6 +1357,12 @@ var schemaYAML = typed.YAMLObject(`types:
         list:
           elementType:
             namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LocalPolicyTargetReference
+          elementRelationship: atomic
+    - name: targetSelectors
+      type:
+        list:
+          elementType:
+            namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LocalPolicyTargetSelector
           elementRelationship: atomic
     - name: transformation
       type:

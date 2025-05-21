@@ -88,6 +88,8 @@ type HttpResponse struct {
 	// Custom is a generic matcher that can be applied to validate any other properties of an http.Response
 	// Optional: If not provided, does not perform additional validation
 	Custom types.GomegaMatcher
+	// IgnoreExitCode is the exit code that should be ignored when validating the response
+	IgnoreExitCode int
 }
 
 func (r *HttpResponse) String() string {

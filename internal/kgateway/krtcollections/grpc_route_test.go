@@ -477,7 +477,7 @@ func TestTransformGRPCRoute(t *testing.T) {
 			policies := krtcollections.NewPolicyIndex(krtutil.KrtOptions{}, extensionsplug.ContributesPolicies{})
 
 			// Set up backend index
-			backends := krtcollections.NewBackendIndex(krtutil.KrtOptions{}, nil, policies, refgrants)
+			backends := krtcollections.NewBackendIndex(krtutil.KrtOptions{}, policies, refgrants)
 			backends.AddBackends(svcGk, k8sSvcUpstreams(services))
 
 			// Create RouteIndex with minimal collections needed for GRPC route transformation

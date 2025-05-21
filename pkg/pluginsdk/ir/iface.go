@@ -28,7 +28,8 @@ type RouteConfigContext struct {
 }
 
 type VirtualHostContext struct {
-	Policy PolicyIR
+	Policy            PolicyIR
+	TypedFilterConfig TypedFilterConfigMap
 }
 
 type TypedFilterConfigMap map[string]proto.Message

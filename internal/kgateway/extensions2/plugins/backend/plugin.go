@@ -12,7 +12,6 @@ import (
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoywellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
-	"github.com/solo-io/go-utils/contextutils"
 	"istio.io/istio/pkg/config/schema/kubeclient"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
@@ -34,7 +33,10 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
+	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 )
+
+var logger = logging.New("plugin/backend")
 
 const (
 	ExtensionName = "backend"
@@ -80,14 +82,17 @@ func registerTypes(ourCli versioned.Interface) {
 func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensionsplug.Plugin {
 	registerTypes(commoncol.OurClient)
 
-	col := krt.WrapClient(kclient.New[*v1alpha1.Backend](commoncol.Client), commoncol.KrtOpts.ToOptions("Backends")...)
+	col := krt.WrapClient(kclient.NewFiltered[*v1alpha1.Backend](
+		commoncol.Client,
+		kclient.Filter{ObjectFilter: commoncol.Client.ObjectFilter()},
+	), commoncol.KrtOpts.ToOptions("Backends")...)
 
 	gk := wellknown.BackendGVK.GroupKind()
 	translateFn := buildTranslateFunc(ctx, commoncol.Secrets)
 	bcol := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *v1alpha1.Backend) *ir.BackendObjectIR {
 		backendIR := translateFn(krtctx, i)
 		if len(backendIR.Errors) > 0 {
-			contextutils.LoggerFrom(ctx).Error("failed to translate backend", "backend", i.GetName(), "error", errors.Join(backendIR.Errors...))
+			logger.Error("failed to translate backend", "backend", i.GetName(), "error", errors.Join(backendIR.Errors...))
 		}
 		return &ir.BackendObjectIR{
 			ObjectSource: ir.ObjectSource{
@@ -246,15 +251,14 @@ func getAISecretRef(llm v1alpha1.SupportedLLMProvider) *corev1.LocalObjectRefere
 }
 
 func processBackend(ctx context.Context, in ir.BackendObjectIR, out *envoy_config_cluster_v3.Cluster) *ir.EndpointsForBackend {
-	log := contextutils.LoggerFrom(ctx)
 	up, ok := in.Obj.(*v1alpha1.Backend)
 	if !ok {
-		log.DPanic("failed to cast backend object")
+		logger.Error("failed to cast backend object")
 		return nil
 	}
 	ir, ok := in.ObjIr.(*BackendIr)
 	if !ok {
-		log.DPanic("failed to cast backend ir")
+		logger.Error("failed to cast backend ir")
 		return nil
 	}
 
@@ -264,20 +268,20 @@ func processBackend(ctx context.Context, in ir.BackendObjectIR, out *envoy_confi
 	switch {
 	case spec.Type == v1alpha1.BackendTypeStatic:
 		if err := processStatic(ctx, spec.Static, out); err != nil {
-			log.Error("failed to process static backend", "error", err)
+			logger.Error("failed to process static backend", "error", err)
 		}
 	case spec.Type == v1alpha1.BackendTypeAWS:
 		if err := processAws(ctx, spec.Aws, ir.AwsIr, out); err != nil {
-			log.Error("failed to process aws backend", "error", err)
+			logger.Error("failed to process aws backend", "error", err)
 		}
 	case spec.Type == v1alpha1.BackendTypeAI:
 		err := ai.ProcessAIBackend(ctx, spec.AI, ir.AIIr.AISecret, ir.AIIr.AIMultiSecret, out)
 		if err != nil {
-			log.Error(err)
+			logger.Error("failed to process ai backend", "error", err)
 		}
 		err = ai.AddUpstreamClusterHttpFilters(out)
 		if err != nil {
-			log.Error(err)
+			logger.Error("failed to add upstream cluster http filters", "error", err)
 		}
 	}
 	return nil

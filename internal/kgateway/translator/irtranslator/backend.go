@@ -9,7 +9,6 @@ import (
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	endpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoy_upstreams_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
-	"github.com/solo-io/go-utils/contextutils"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/durationpb"
@@ -115,7 +114,7 @@ func (t *BackendTranslator) runPolicies(
 	// never overwrite the CLA that was already initialized (potentially within a plugin).
 	if out.GetLoadAssignment() == nil && endpointInputs != nil && clusterSupportsInlineCLA(out) {
 		out.LoadAssignment = endpoints.PrioritizeEndpoints(
-			contextutils.LoggerFrom(ctx).Desugar(),
+			logger,
 			ucc,
 			*endpointInputs,
 		)

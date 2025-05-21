@@ -58,7 +58,6 @@ func (c *CommonCollections) HasSynced() bool {
 	return c.Secrets != nil && c.Secrets.HasSynced() &&
 		c.BackendIndex != nil && c.BackendIndex.HasSynced() &&
 		c.Routes != nil && c.Routes.HasSynced() &&
-		c.Namespaces != nil && c.Namespaces.HasSynced() &&
 		c.Pods != nil && c.Pods.HasSynced() &&
 		c.RefGrants != nil && c.RefGrants.HasSynced() &&
 		c.ConfigMaps != nil && c.ConfigMaps.HasSynced() &&
@@ -80,8 +79,22 @@ func NewCommonCollections(
 	controllerName string,
 	logger logr.Logger,
 	settings settings.Settings,
-) *CommonCollections {
-	secretClient := kclient.New[*corev1.Secret](client)
+) (*CommonCollections, error) {
+	// Namespace collection must be initialized first to enable discovery namespace
+	// selectors to be applies as filters to other collections
+	namespaces, nsClient := krtcollections.NewNamespaceCollection(ctx, client, krtOptions)
+
+	// Initialize discovery namespace filter
+	discoveryNamespacesFilter, err := newDiscoveryNamespacesFilter(nsClient, settings.DiscoveryNamespaceSelectors, ctx.Done())
+	if err != nil {
+		return nil, err
+	}
+	kube.SetObjectFilter(client, discoveryNamespacesFilter)
+
+	secretClient := kclient.NewFiltered[*corev1.Secret](
+		client,
+		kclient.Filter{ObjectFilter: client.ObjectFilter()},
+	)
 	k8sSecretsRaw := krt.WrapClient(secretClient, krt.WithStop(krtOptions.Stop), krt.WithName("Secrets") /* no debug here - we don't want raw secrets printed*/)
 	k8sSecrets := krt.NewCollection(k8sSecretsRaw, func(kctx krt.HandlerContext, i *corev1.Secret) *ir.Secret {
 		res := ir.Secret{
@@ -100,12 +113,16 @@ func NewCommonCollections(
 		{Group: "", Kind: "Secret"}: k8sSecrets,
 	}
 
-	refgrantsCol := krt.WrapClient(kclient.New[*gwv1beta1.ReferenceGrant](client), krtOptions.ToOptions("RefGrants")...)
+	refgrantsCol := krt.WrapClient(kclient.NewFiltered[*gwv1beta1.ReferenceGrant](
+		client,
+		kclient.Filter{ObjectFilter: client.ObjectFilter()},
+	), krtOptions.ToOptions("RefGrants")...)
 	refgrants := krtcollections.NewRefGrantIndex(refgrantsCol)
 
-	namespaces := krtcollections.NewNamespaceCollection(ctx, client, krtOptions)
-
-	serviceClient := kclient.New[*corev1.Service](client)
+	serviceClient := kclient.NewFiltered[*corev1.Service](
+		client,
+		kclient.Filter{ObjectFilter: client.ObjectFilter()},
+	)
 	services := krt.WrapClient(serviceClient, krtOptions.ToOptions("Services")...)
 
 	seInformer := kclient.NewDelayedInformer[*networkingclient.ServiceEntry](
@@ -114,7 +131,10 @@ func NewCommonCollections(
 	)
 	serviceEntries := krt.WrapClient(seInformer, krtOptions.ToOptions("ServiceEntries")...)
 
-	cmClient := kclient.New[*corev1.ConfigMap](client)
+	cmClient := kclient.NewFiltered[*corev1.ConfigMap](
+		client,
+		kclient.Filter{ObjectFilter: client.ObjectFilter()},
+	)
 	cfgmaps := krt.WrapClient(cmClient, krtOptions.ToOptions("ConfigMaps")...)
 
 	gwExts := krtcollections.NewGatewayExtensionsCollection(ctx, client, ourClient, krtOptions)
@@ -135,7 +155,7 @@ func NewCommonCollections(
 		GatewayExtensions: gwExts,
 
 		controllerName: controllerName,
-	}
+	}, nil
 }
 
 // InitPlugins set up collections that rely on plugins.

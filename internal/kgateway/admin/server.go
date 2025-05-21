@@ -5,12 +5,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/http"
-	"os"
 	"sort"
 
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
-	"github.com/solo-io/go-utils/contextutils"
 	"istio.io/istio/pkg/kube/krt"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/controller"
@@ -20,11 +19,6 @@ import (
 func RunAdminServer(ctx context.Context, setupOpts *controller.SetupOpts) error {
 	// serverHandlers defines the custom handlers that the Admin Server will support
 	serverHandlers := getServerHandlers(ctx, setupOpts.KrtDebugger, setupOpts.Cache)
-
-	// initialize the atomic log level
-	if envLogLevel := os.Getenv(contextutils.LogLevelEnvName); envLogLevel != "" {
-		contextutils.SetLogLevelFromString(envLogLevel)
-	}
 
 	startHandlers(ctx, serverHandlers)
 
@@ -89,13 +83,13 @@ func startHandlers(ctx context.Context, addHandlers ...func(mux *http.ServeMux, 
 		Addr:    fmt.Sprintf("localhost:%d", wellknown.KgatewayAdminPort),
 		Handler: mux,
 	}
-	contextutils.LoggerFrom(ctx).Infof("Admin server starting at %s", server.Addr)
+	slog.Info("admin server starting", "address", server.Addr)
 	go func() {
 		err := server.ListenAndServe()
 		if err == http.ErrServerClosed {
-			contextutils.LoggerFrom(ctx).Infof("Admin server closed")
+			slog.Info("admin server closed")
 		} else {
-			contextutils.LoggerFrom(ctx).Warnf("Admin server closed with unexpected error: %v", err)
+			slog.Warn("admin server closed with unexpected error", "error", err)
 		}
 	}()
 	go func() {
@@ -103,7 +97,7 @@ func startHandlers(ctx context.Context, addHandlers ...func(mux *http.ServeMux, 
 		if server != nil {
 			err := server.Close()
 			if err != nil {
-				contextutils.LoggerFrom(ctx).Warnf("Admin server shutdown returned error: %v", err)
+				slog.Warn("admin server shutdown returned error", "error", err)
 			}
 		}
 	}()

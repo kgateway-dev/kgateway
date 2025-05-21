@@ -24,11 +24,14 @@ linters:
     - usestdlibvars
     - whitespace
     - staticcheck
+    - sloglint
   settings:
     forbidigo:
       forbid:
         - pattern: anypb.New
-          msg: Do not use anypb.New; Use utils.MessageToAny instead.
+          msg: use utils.MessageToAny instead
+        - pattern: kclient.New$
+          msg: use kclient.NewFiltered with discovery namespace ObjectFilter instead
     importas:
       alias:
         - pkg: k8s.io/api/apps/v1
@@ -64,6 +67,16 @@ linters:
     staticcheck:
       checks:
         - ST1019 # duplicate imports
+    sloglint:
+      static-msg: true
+      msg-style: lowercased
+      key-naming-case: snake
+      # ignore built-in keys
+      forbidden-keys:
+        - time
+        - level
+        - msg
+        - source     
   exclusions:
     generated: lax
     presets:

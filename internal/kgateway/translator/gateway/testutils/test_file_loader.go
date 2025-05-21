@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"io/fs"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -20,14 +21,11 @@ import (
 
 	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
-	"go.uber.org/zap"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
-
-	"github.com/solo-io/go-utils/contextutils"
 )
 
 var NoFilesFound = errors.New("no k8s files found")
@@ -40,7 +38,7 @@ func LoadFromFiles(ctx context.Context, filename string) ([]client.Object, error
 
 	var yamlFiles []string
 	if fileOrDir.IsDir() {
-		contextutils.LoggerFrom(ctx).Infof("looking for YAML files in directory tree rooted at: %s", fileOrDir.Name())
+		slog.Info("looking for YAML files", "path", fileOrDir.Name())
 		err := filepath.WalkDir(filename, func(path string, d fs.DirEntry, _ error) error {
 			if strings.HasSuffix(path, ".yml") || strings.HasSuffix(path, ".yaml") {
 				yamlFiles = append(yamlFiles, path)
@@ -58,7 +56,7 @@ func LoadFromFiles(ctx context.Context, filename string) ([]client.Object, error
 		return nil, NoFilesFound
 	}
 
-	contextutils.LoggerFrom(ctx).Infow("user configuration YAML files found", zap.Strings("files", yamlFiles))
+	slog.Info("user configuration YAML files found", "files", yamlFiles)
 
 	var resources []client.Object
 	for _, file := range yamlFiles {
@@ -113,9 +111,9 @@ func parseFile(ctx context.Context, filename string) ([]runtime.Object, error) {
 
 		var meta metaOnly
 		if err := yaml.Unmarshal(objYaml, &meta); err != nil {
-			contextutils.LoggerFrom(ctx).Warnw("failed to parse resource metadata, skipping YAML document",
-				zap.String("filename", filename),
-				zap.String("truncatedYamlDoc", truncateString(string(objYaml), 100)),
+			slog.Warn("failed to parse resource metadata, skipping YAML document",
+				"filename", filename,
+				"data", truncateString(string(objYaml), 100),
 			)
 			continue
 		}
@@ -123,20 +121,20 @@ func parseFile(ctx context.Context, filename string) ([]runtime.Object, error) {
 		gvk := schema.FromAPIVersionAndKind(meta.APIVersion, meta.Kind)
 		obj, err := scheme.New(gvk)
 		if err != nil {
-			contextutils.LoggerFrom(ctx).Warnw("unknown resource kind",
-				zap.String("filename", filename),
-				zap.String("resourceKind", gvk.String()),
-				zap.String("truncatedYamlDoc", truncateString(string(objYaml), 100)),
+			slog.Warn("unknown resource kind",
+				"filename", filename,
+				"gvk", gvk.String(),
+				"data", truncateString(string(objYaml), 100),
 			)
 			continue
 		}
 		if err := yaml.Unmarshal(objYaml, obj); err != nil {
-			contextutils.LoggerFrom(ctx).Warnw("failed to parse resource YAML",
-				zap.Error(err),
-				zap.String("filename", filename),
-				zap.String("resourceKind", gvk.String()),
-				zap.String("resourceId", obj.(client.Object).GetName()+"."+obj.(client.Object).GetNamespace()),
-				zap.String("truncatedYamlDoc", truncateString(string(objYaml), 100)),
+			slog.Warn("failed to parse resource YAML",
+				"error", err,
+				"filename", filename,
+				"gvk", gvk.String(),
+				"resource_id", obj.(client.Object).GetName()+"."+obj.(client.Object).GetNamespace(),
+				"data", truncateString(string(objYaml), 100),
 			)
 			continue
 		}

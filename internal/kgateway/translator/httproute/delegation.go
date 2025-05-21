@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -12,7 +13,6 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/rotisserie/eris"
-	"github.com/solo-io/go-utils/contextutils"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/query"
@@ -63,8 +63,8 @@ func flattenDelegatedRoutes(
 	for _, child := range children {
 		childRoute, ok := child.Object.(*ir.HttpRouteIR)
 		if !ok {
-			msg := fmt.Sprintf("ignoring unsupported child route type %T for parent httproute %v", child.Object, parentRef)
-			contextutils.LoggerFrom(ctx).Warn(msg)
+			slog.Warn("ignoring unsupported child route type",
+				"route_type", fmt.Sprintf("%T", child.Object), "parent_resource_ref", parentRef)
 			continue
 		}
 		childRef := types.NamespacedName{Namespace: childRoute.Namespace, Name: childRoute.Name}
@@ -73,7 +73,7 @@ func flattenDelegatedRoutes(
 			// This is an _extra_ safety check, but the given HTTPRouteInfo shouldn't ever contain cycles.
 			msg := fmt.Sprintf("cyclic reference detected while evaluating delegated routes for parent: %s; child route %s will be ignored",
 				parentRef, childRef)
-			contextutils.LoggerFrom(ctx).Warn(msg)
+			slog.Warn(msg) //nolint:sloglint // ignore formatting
 			parentReporter.SetCondition(reports.RouteCondition{
 				Type:    gwv1.RouteConditionResolvedRefs,
 				Status:  metav1.ConditionFalse,

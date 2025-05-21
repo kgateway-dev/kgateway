@@ -5,6 +5,8 @@ import (
 	"encoding/pem"
 	"fmt"
 	"hash/fnv"
+	"log"
+	"log/slog"
 	"net"
 	"os"
 
@@ -15,15 +17,11 @@ import (
 	cache_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	server "github.com/envoyproxy/go-control-plane/pkg/server/v3"
-	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/hashutils"
-	"go.uber.org/zap"
 	"google.golang.org/grpc"
 )
 
-var (
-	grpcOptions = []grpc.ServerOption{grpc.MaxConcurrentStreams(10000)}
-)
+var grpcOptions = []grpc.ServerOption{grpc.MaxConcurrentStreams(10000)}
 
 // Secret represents an envoy auth secret
 type Secret struct {
@@ -74,16 +72,16 @@ func (s *Server) Run(ctx context.Context) (<-chan struct{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	contextutils.LoggerFrom(ctx).Infof("sds server listening on %s", s.address)
+	slog.Info("sds server listening", "address", s.address)
 	go func() {
 		if err = s.grpcServer.Serve(lis); err != nil {
-			contextutils.LoggerFrom(ctx).Fatalw("fatal error in gRPC server", zap.String("address", s.address), zap.Error(err))
+			log.Fatalf("fatal error in gRPC server: address=%s error=%v", s.address, err)
 		}
 	}()
 	serverStopped := make(chan struct{})
 	go func() {
 		<-ctx.Done()
-		contextutils.LoggerFrom(ctx).Infof("stopping sds server on %s\n", s.address)
+		slog.Info("stopping sds server", "address", s.address)
 		s.grpcServer.GracefulStop()
 		serverStopped <- struct{}{}
 	}()
@@ -124,10 +122,10 @@ func (s *Server) UpdateSDSConfig(ctx context.Context) error {
 
 	snapshotVersion, err := GetSnapshotVersion(certs)
 	if err != nil {
-		contextutils.LoggerFrom(ctx).Info("error getting snapshot version", zap.Error(err))
+		slog.Error("error getting snapshot version", "error", err)
 		return err
 	}
-	contextutils.LoggerFrom(ctx).Infof("Updating SDS config. sdsClient is %s. Snapshot version is %s", s.sdsClient, snapshotVersion)
+	slog.Info("updating SDS config", "client", s.sdsClient, "snapshot_version", snapshotVersion)
 
 	secretSnapshot := &cache.Snapshot{}
 	secretSnapshot.Resources[cache_types.Secret] = cache.NewResources(snapshotVersion, items)

@@ -11,6 +11,8 @@ serviceAccount:
   # If not set and create is true, a name is generated using the fullname template
   name: ""
 
+deploymentAnnotations: {}
+
 podAnnotations: {}
 
 podSecurityContext: {}
@@ -65,3 +67,25 @@ image:
 inferenceExtension:
   enabled: false
   autoProvision: false
+
+# List of namespace selectors to select namespaces for config discovery
+# Elements in the list are disjunctive (OR semantics), i.e. a namespace will be included if it matches any selector.
+# For each element in the list, the result of matchLabels and matchExpressions are conjunctive (AND semantics).
+#
+# The following selects namespaces if either of the following is true:
+# - the namespace has the label prod=enabled AND version=v2, OR
+# - the namespace has the label version=v3
+# discoveryNamespaceSelectors:
+# - matchExpressions:
+#   - key: environment
+#     operator: In
+#     values:
+#     - prod
+#   matchLabels:
+#     version: v2
+# - matchLabels:
+#     version: v3
+discoveryNamespaceSelectors: []
+
+agentGateway:
+  enabled: false

@@ -2,6 +2,7 @@ package ai
 
 import (
 	"context"
+	"log/slog"
 	"os"
 	"strconv"
 	"strings"
@@ -10,7 +11,6 @@ import (
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoy_upstreams_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
-	"github.com/solo-io/go-utils/contextutils"
 	"google.golang.org/protobuf/types/known/anypb"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
@@ -78,7 +78,7 @@ func GetAIAdditionalResources(ctx context.Context) []*envoy_config_cluster_v3.Cl
 	}
 	http2ProtocolOptionsAny, err := utils.MessageToAny(http2ProtocolOptions)
 	if err != nil {
-		contextutils.LoggerFrom(ctx).Error(err)
+		slog.Error("error converting http2 protocol options to any", "error", err)
 		return nil
 	}
 	udsCluster := &envoy_config_cluster_v3.Cluster{

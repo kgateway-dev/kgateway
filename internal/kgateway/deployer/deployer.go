@@ -16,6 +16,8 @@ import (
 	"helm.sh/helm/v3/pkg/chart/loader"
 	"helm.sh/helm/v3/pkg/storage"
 	"helm.sh/helm/v3/pkg/storage/driver"
+	"istio.io/api/annotation"
+	"istio.io/api/label"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -187,7 +189,7 @@ func (d *Deployer) renderChartToObjects(ns, name string, vals map[string]any) ([
 	return objs, nil
 }
 
-// getGatewayParametersForGateway returns the a merged GatewayParameters object resulting from the default GwParams object and
+// getGatewayParametersForGateway returns the merged GatewayParameters object resulting from the default GwParams object and
 // the GwParam object specifically associated with the given Gateway (if one exists).
 func (d *Deployer) getGatewayParametersForGateway(ctx context.Context, gw *api.Gateway) (*v1alpha1.GatewayParameters, error) {
 	logger := log.FromContext(ctx)
@@ -342,6 +344,7 @@ func (d *Deployer) getValues(gw *api.Gateway, gwParam *v1alpha1.GatewayParameter
 	statsConfig := kubeProxyConfig.GetStats()
 	istioContainerConfig := istioConfig.GetIstioProxyContainer()
 	aiExtensionConfig := kubeProxyConfig.GetAiExtension()
+	agentGatewayConfig := kubeProxyConfig.GetAgentGateway()
 
 	gateway := vals.Gateway
 	// deployment values
@@ -385,6 +388,13 @@ func (d *Deployer) getValues(gw *api.Gateway, gwParam *v1alpha1.GatewayParameter
 
 	// ai values
 	gateway.AIExtension, err = getAIExtensionValues(aiExtensionConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO(npolshak): Currently we are using the same chart for both data planes. Should revisit having a separate chart for agentgateway: https://github.com/kgateway-dev/kgateway/issues/11240
+	// agentgateway integration values
+	gateway.AgentGateway, err = getAgentGatewayValues(agentGatewayConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -712,9 +722,22 @@ func getInMemoryGatewayParameters(name string, imageInfo *ImageInfo) *v1alpha1.G
 		return defaultWaypointGatewayParameters(imageInfo)
 	case wellknown.GatewayClassName:
 		return defaultGatewayParameters(imageInfo)
+	case wellknown.AgentGatewayClassName:
+		return defaultAgentGatewayParameters(imageInfo)
 	default:
 		return defaultGatewayParameters(imageInfo)
 	}
+}
+
+// defaultAgentGatewayParameters returns an in-memory GatewayParameters with default values
+// set for the agentgateway deployment.
+func defaultAgentGatewayParameters(imageInfo *ImageInfo) *v1alpha1.GatewayParameters {
+	gwp := defaultGatewayParameters(imageInfo)
+	gwp.Spec.Kube.AgentGateway = &v1alpha1.AgentGateway{
+		Enabled:  ptr.To(true),
+		LogLevel: ptr.To("info"),
+	}
+	return gwp
 }
 
 // defaultWaypointGatewayParameters returns an in-memory GatewayParameters with default values
@@ -729,7 +752,15 @@ func defaultWaypointGatewayParameters(imageInfo *ImageInfo) *v1alpha1.GatewayPar
 	if gwp.Spec.Kube.PodTemplate.ExtraLabels == nil {
 		gwp.Spec.Kube.PodTemplate.ExtraLabels = make(map[string]string)
 	}
-	gwp.Spec.Kube.PodTemplate.ExtraLabels["istio.io/dataplane-mode"] = "ambient"
+	gwp.Spec.Kube.PodTemplate.ExtraLabels[label.IoIstioDataplaneMode.Name] = "ambient"
+
+	// do not have zTunnel resolve DNS for us - this can cause traffic loops when we're doing
+	// outbound based on DNS service entries
+	// TODO do we want this on the north-south gateway class as well?
+	if gwp.Spec.Kube.PodTemplate.ExtraAnnotations == nil {
+		gwp.Spec.Kube.PodTemplate.ExtraAnnotations = make(map[string]string)
+	}
+	gwp.Spec.Kube.PodTemplate.ExtraAnnotations[annotation.AmbientDnsCapture.Name] = "false"
 
 	return gwp
 }
@@ -807,6 +838,10 @@ func defaultGatewayParameters(imageInfo *ImageInfo) *v1alpha1.GatewayParameters 
 						Tag:        ptr.To(imageInfo.Tag),
 						PullPolicy: (*corev1.PullPolicy)(ptr.To(imageInfo.PullPolicy)),
 					},
+				},
+				AgentGateway: &v1alpha1.AgentGateway{
+					Enabled:  ptr.To(false),
+					LogLevel: ptr.To("info"),
 				},
 			},
 		},

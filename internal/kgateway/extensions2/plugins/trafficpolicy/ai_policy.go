@@ -40,7 +40,7 @@ type AIPolicyIR struct {
 func (p *trafficPolicyPluginGwPass) processAITrafficPolicy(
 	configMap *ir.TypedFilterConfigMap,
 	inIr *AIPolicyIR,
-) error {
+) {
 	if inIr.Transformation != nil {
 		configMap.AddTypedConfig(wellknown.AIPolicyTransformationFilterName, inIr.Transformation)
 	}
@@ -58,8 +58,6 @@ func (p *trafficPolicyPluginGwPass) processAITrafficPolicy(
 		}
 		configMap.AddTypedConfig(wellknown.AIExtProcFilterName, clonedExtProcFromIR)
 	}
-
-	return nil
 }
 
 func preProcessAITrafficPolicy(

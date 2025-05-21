@@ -26,7 +26,6 @@ import (
 // registertypes for common collections
 
 func registerTypes(ourCli versioned.Interface) {
-	// if it is a sig gateway api then it can pull directly from the kubeclientgetter
 	kubeclient.Register[*gwv1.HTTPRoute](
 		gvr.HTTPRoute_v1,
 		gvk.HTTPRoute_v1.Kubernetes(),
@@ -90,26 +89,24 @@ func InitCollections(
 ) (*GatewayIndex, *RoutesIndex, *BackendIndex, krt.Collection[ir.EndpointsForBackend]) {
 	registerTypes(ourClient)
 
+	// discovery filter
+	filter := kclient.Filter{ObjectFilter: istioClient.ObjectFilter()}
+
 	// create the KRT clients, remember to also register any needed types in the type registration setup.
-	httpRoutes := krt.WrapClient(kclient.New[*gwv1.HTTPRoute](istioClient), krtopts.ToOptions("HTTPRoute")...)
-	tcproutes := krt.WrapClient(kclient.NewDelayedInformer[*gwv1a2.TCPRoute](istioClient, gvr.TCPRoute, kubetypes.StandardInformer, kclient.Filter{}), krtopts.ToOptions("TCPRoute")...)
-	tlsRoutes := krt.WrapClient(kclient.NewDelayedInformer[*gwv1a2.TLSRoute](istioClient, gvr.TLSRoute, kubetypes.StandardInformer, kclient.Filter{}), krtopts.ToOptions("TLSRoute")...)
-	grpcRoutes := krt.WrapClient(kclient.New[*gwv1.GRPCRoute](istioClient), krtopts.ToOptions("GRPCRoute")...)
-	kubeRawGateways := krt.WrapClient(kclient.New[*gwv1.Gateway](istioClient), krtopts.ToOptions("KubeGateways")...)
+	httpRoutes := krt.WrapClient(kclient.NewFiltered[*gwv1.HTTPRoute](istioClient, filter), krtopts.ToOptions("HTTPRoute")...)
+	tcproutes := krt.WrapClient(kclient.NewDelayedInformer[*gwv1a2.TCPRoute](istioClient, gvr.TCPRoute, kubetypes.StandardInformer, filter), krtopts.ToOptions("TCPRoute")...)
+	tlsRoutes := krt.WrapClient(kclient.NewDelayedInformer[*gwv1a2.TLSRoute](istioClient, gvr.TLSRoute, kubetypes.StandardInformer, filter), krtopts.ToOptions("TLSRoute")...)
+	grpcRoutes := krt.WrapClient(kclient.NewFiltered[*gwv1.GRPCRoute](istioClient, filter), krtopts.ToOptions("GRPCRoute")...)
+	kubeRawGateways := krt.WrapClient(kclient.NewFiltered[*gwv1.Gateway](istioClient, filter), krtopts.ToOptions("KubeGateways")...)
+	//nolint:forbidigo // ObjectFilter is not needed for this client as it is cluster scoped
 	gatewayClasses := krt.WrapClient(kclient.New[*gwv1.GatewayClass](istioClient), krtopts.ToOptions("KubeGatewayClasses")...)
 
 	policies := NewPolicyIndex(krtopts, plugins.ContributesPolicies)
-	var backendRefPlugins []extensionsplug.GetBackendForRefPlugin
-	for _, ext := range plugins.ContributesPolicies {
-		if ext.GetBackendForRef != nil {
-			backendRefPlugins = append(backendRefPlugins, ext.GetBackendForRef)
-		}
-	}
-	backendIndex := NewBackendIndex(krtopts, backendRefPlugins, policies, refgrants)
+	backendIndex := NewBackendIndex(krtopts, policies, refgrants)
 	initBackends(plugins, backendIndex)
 	endpointIRs := initEndpoints(plugins, krtopts)
-	gateways := NewGatewayIndex(krtopts, controllerName, policies, kubeRawGateways, gatewayClasses)
 
+	gateways := NewGatewayIndex(krtopts, controllerName, policies, kubeRawGateways, gatewayClasses)
 	routes := NewRoutesIndex(krtopts, httpRoutes, grpcRoutes, tcproutes, tlsRoutes, policies, backendIndex, refgrants)
 	return gateways, routes, backendIndex, endpointIRs
 }
@@ -117,7 +114,7 @@ func InitCollections(
 func initBackends(plugins extensionsplug.Plugin, backendIndex *BackendIndex) {
 	for gk, plugin := range plugins.ContributesBackends {
 		if plugin.Backends != nil {
-			backendIndex.AddBackends(gk, plugin.Backends)
+			backendIndex.AddBackends(gk, plugin.Backends, plugin.AliasKinds...)
 		}
 	}
 }

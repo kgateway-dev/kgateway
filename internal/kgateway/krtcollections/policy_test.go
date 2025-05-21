@@ -2,12 +2,14 @@ package krtcollections
 
 import (
 	"fmt"
+	"maps"
 	"strings"
 	"testing"
 	"time"
 
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/kube/krt/krttest"
+	"istio.io/istio/pkg/test"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -18,6 +20,10 @@ import (
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
@@ -183,6 +189,7 @@ func TestFailWithNoRefGrant(t *testing.T) {
 		})
 	}
 }
+
 func TestFailWithWrongNs(t *testing.T) {
 	inputs := []any{
 		svc("default3"),
@@ -538,13 +545,18 @@ func tcpRouteWithBackendRef(refN, refNs string) *gwv1a2.TCPRoute {
 	}
 }
 
-func preRouteIndex(t *testing.T, inputs []any) *RoutesIndex {
+func preRouteIndex(t test.Failer, inputs []any) *RoutesIndex {
 	mock := krttest.NewMock(t, inputs)
 	services := krttest.GetMockCollection[*corev1.Service](mock)
+	policyCol := krttest.GetMockCollection[ir.PolicyWrapper](mock)
 
-	policies := NewPolicyIndex(krtutil.KrtOptions{}, extensionsplug.ContributesPolicies{})
+	policies := NewPolicyIndex(krtutil.KrtOptions{}, extensionsplug.ContributesPolicies{
+		wellknown.TrafficPolicyGVK.GroupKind(): {
+			Policies: policyCol,
+		},
+	})
 	refgrants := NewRefGrantIndex(krttest.GetMockCollection[*gwv1beta1.ReferenceGrant](mock))
-	upstreams := NewBackendIndex(krtutil.KrtOptions{}, nil, policies, refgrants)
+	upstreams := NewBackendIndex(krtutil.KrtOptions{}, policies, refgrants)
 	upstreams.AddBackends(svcGk, k8sSvcUpstreams(services))
 	pools := krttest.GetMockCollection[*infextv1a2.InferencePool](mock)
 	upstreams.AddBackends(infPoolGk, infPoolUpstreams(pools))
@@ -555,7 +567,8 @@ func preRouteIndex(t *testing.T, inputs []any) *RoutesIndex {
 	grpcroutes := krttest.GetMockCollection[*gwv1.GRPCRoute](mock)
 	rtidx := NewRoutesIndex(krtutil.KrtOptions{}, httproutes, grpcroutes, tcpproutes, tlsroutes, policies, upstreams, refgrants)
 	services.WaitUntilSynced(nil)
-	for !rtidx.HasSynced() || !refgrants.HasSynced() {
+	policyCol.WaitUntilSynced(nil)
+	for !rtidx.HasSynced() || !refgrants.HasSynced() || !policyCol.HasSynced() {
 		time.Sleep(time.Second / 10)
 	}
 	return rtidx
@@ -602,4 +615,156 @@ func translateRoute(t *testing.T, inputs []any) ir.Route {
 		return nil
 	}
 	return h
+}
+
+type fakePolicyIR struct{}
+
+func (f fakePolicyIR) CreationTime() time.Time {
+	return metav1.Now().Time
+}
+
+func (f fakePolicyIR) Equals(_ any) bool {
+	return false
+}
+
+type routeSelection string
+
+const (
+	onePolicyPerRoute routeSelection = "onePolicyPerRoute"
+
+	allPoliciesPerRoute routeSelection = "allPoliciesPerRoute"
+)
+
+// BenchmarkPolicyAttachment is a benchmark to test the performance of policy attachment
+// with TargetRef.Name and TargetRef.LabelSelector for different scenarios.
+func BenchmarkPolicyAttachment(b *testing.B) {
+	tests := []struct {
+		routes                   int
+		policies                 int
+		byLabel                  bool
+		selectionPolicy          routeSelection
+		randN                    int
+		expectedPoliciesPerRoute int
+	}{
+		{routes: 1000, policies: 1000, byLabel: false, selectionPolicy: onePolicyPerRoute, expectedPoliciesPerRoute: 1},
+		{routes: 1000, policies: 1000, byLabel: true, selectionPolicy: onePolicyPerRoute, expectedPoliciesPerRoute: 1},
+		{routes: 5000, policies: 5000, byLabel: false, selectionPolicy: onePolicyPerRoute, expectedPoliciesPerRoute: 1},
+		{routes: 5000, policies: 5000, byLabel: true, selectionPolicy: onePolicyPerRoute, expectedPoliciesPerRoute: 1},
+		{routes: 10000, policies: 10000, byLabel: false, selectionPolicy: onePolicyPerRoute, expectedPoliciesPerRoute: 1},
+		{routes: 10000, policies: 10000, byLabel: true, selectionPolicy: onePolicyPerRoute, expectedPoliciesPerRoute: 1},
+		{routes: 1, policies: 10000, byLabel: false, selectionPolicy: allPoliciesPerRoute, expectedPoliciesPerRoute: 10000},
+		{routes: 1, policies: 10000, byLabel: true, selectionPolicy: allPoliciesPerRoute, expectedPoliciesPerRoute: 10000},
+		{routes: 10, policies: 10000, byLabel: false, selectionPolicy: allPoliciesPerRoute, expectedPoliciesPerRoute: 10000},
+		{routes: 10, policies: 10000, byLabel: true, selectionPolicy: allPoliciesPerRoute, expectedPoliciesPerRoute: 10000},
+		{routes: 1000, policies: 10000, byLabel: false, selectionPolicy: allPoliciesPerRoute, expectedPoliciesPerRoute: 10000},
+		{routes: 1000, policies: 10000, byLabel: true, selectionPolicy: allPoliciesPerRoute, expectedPoliciesPerRoute: 10000},
+	}
+
+	for _, tc := range tests {
+		b.Run(fmt.Sprintf("routes=%d,policies=%d,byLabel=%t,selectionPolicy=%s,randN=%d", tc.routes, tc.policies, tc.byLabel, tc.selectionPolicy, tc.randN), func(b *testing.B) {
+			r := require.New(b)
+			if tc.selectionPolicy == onePolicyPerRoute {
+				r.Equal(tc.routes, tc.policies)
+			}
+
+			total := tc.routes + tc.policies
+			inputs := make([]any, 0, total)
+			var routeLabels map[string]string
+			if tc.byLabel {
+				routeLabels = map[string]string{"k1": "v1", "k2": "v2", "k3": "v3", "k4": "v4", "k5": "v5"}
+			}
+			for i := range tc.routes {
+				routeLabels := maps.Clone(routeLabels)
+				if tc.byLabel {
+					routeLabels[fmt.Sprint(i)] = "yes"
+				}
+				inputs = append(inputs, &gwv1.HTTPRoute{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "httproute-" + fmt.Sprint(i),
+						Namespace: "default",
+						Labels:    routeLabels,
+					},
+					Spec: gwv1.HTTPRouteSpec{
+						Rules: []gwv1.HTTPRouteRule{
+							{
+								BackendRefs: []gwv1.HTTPBackendRef{
+									{
+										BackendRef: gwv1.BackendRef{
+											BackendObjectReference: gwv1.BackendObjectReference{
+												Name: gwv1.ObjectName("foo"),
+												Port: ptr.To(gwv1.PortNumber(8080)),
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				})
+			}
+
+			for i := range tc.policies {
+				routeLabels := maps.Clone(routeLabels)
+				p := ir.PolicyWrapper{
+					ObjectSource: ir.ObjectSource{
+						Group:     wellknown.TrafficPolicyGVK.Group,
+						Kind:      wellknown.TrafficPolicyGVK.Kind,
+						Namespace: "default",
+						Name:      "policy-" + fmt.Sprint(i),
+					},
+					Policy:   &v1alpha1.TrafficPolicy{},
+					PolicyIR: fakePolicyIR{},
+				}
+				if tc.byLabel {
+					switch tc.selectionPolicy {
+					case onePolicyPerRoute:
+						routeLabels[fmt.Sprint(i)] = "yes"
+					case allPoliciesPerRoute:
+					}
+					p.TargetRefs = []ir.PolicyRef{
+						{
+							Group:       "gateway.networking.k8s.io",
+							Kind:        "HTTPRoute",
+							MatchLabels: routeLabels,
+						},
+					}
+				} else {
+					switch tc.selectionPolicy {
+					case onePolicyPerRoute:
+						p.TargetRefs = []ir.PolicyRef{
+							{
+								Group: "gateway.networking.k8s.io",
+								Kind:  "HTTPRoute",
+								Name:  "httproute-" + fmt.Sprint(i),
+							},
+						}
+					case allPoliciesPerRoute:
+						p.TargetRefs = make([]ir.PolicyRef, 0, tc.routes)
+						for r := range tc.routes {
+							p.TargetRefs = append(p.TargetRefs, ir.PolicyRef{
+								Group: "gateway.networking.k8s.io",
+								Kind:  "HTTPRoute",
+								Name:  "httproute-" + fmt.Sprint(r),
+							})
+						}
+					}
+				}
+				inputs = append(inputs, p)
+			}
+
+			a := assert.New(b)
+			for b.Loop() {
+				rtidx := preRouteIndex(b, inputs)
+				firstRoute := "httproute-0"
+				lastRoute := "httproute-" + fmt.Sprint(tc.routes-1)
+
+				for _, route := range []string{firstRoute, lastRoute} {
+					h := rtidx.FetchHttp(krt.TestingDummyContext{}, "default", route)
+					a.NotNil(h)
+					a.Len(h.AttachedPolicies.Policies, 1)
+					a.Len(h.AttachedPolicies.Policies[wellknown.TrafficPolicyGVK.GroupKind()], tc.expectedPoliciesPerRoute)
+				}
+			}
+		})
+	}
 }

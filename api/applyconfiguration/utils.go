@@ -21,6 +21,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.AccessLogApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("AccessLogFilter"):
 		return &apiv1alpha1.AccessLogFilterApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("AgentGateway"):
+		return &apiv1alpha1.AgentGatewayApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("AIBackend"):
 		return &apiv1alpha1.AIBackendApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("AiExtension"):
@@ -125,6 +127,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.LLMProviderApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("LocalPolicyTargetReference"):
 		return &apiv1alpha1.LocalPolicyTargetReferenceApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("LocalPolicyTargetSelector"):
+		return &apiv1alpha1.LocalPolicyTargetSelectorApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("LocalRateLimitPolicy"):
 		return &apiv1alpha1.LocalRateLimitPolicyApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("Message"):

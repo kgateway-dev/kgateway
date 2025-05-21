@@ -5,12 +5,13 @@ package v1alpha1
 // TrafficPolicySpecApplyConfiguration represents a declarative configuration of the TrafficPolicySpec type for use
 // with apply.
 type TrafficPolicySpecApplyConfiguration struct {
-	TargetRefs     []LocalPolicyTargetReferenceApplyConfiguration `json:"targetRefs,omitempty"`
-	AI             *AIPolicyApplyConfiguration                    `json:"ai,omitempty"`
-	Transformation *TransformationPolicyApplyConfiguration        `json:"transformation,omitempty"`
-	ExtProc        *ExtProcPolicyApplyConfiguration               `json:"extProc,omitempty"`
-	ExtAuth        *ExtAuthPolicyApplyConfiguration               `json:"extAuth,omitempty"`
-	RateLimit      *RateLimitApplyConfiguration                   `json:"rateLimit,omitempty"`
+	TargetRefs      []LocalPolicyTargetReferenceApplyConfiguration `json:"targetRefs,omitempty"`
+	TargetSelectors []LocalPolicyTargetSelectorApplyConfiguration  `json:"targetSelectors,omitempty"`
+	AI              *AIPolicyApplyConfiguration                    `json:"ai,omitempty"`
+	Transformation  *TransformationPolicyApplyConfiguration        `json:"transformation,omitempty"`
+	ExtProc         *ExtProcPolicyApplyConfiguration               `json:"extProc,omitempty"`
+	ExtAuth         *ExtAuthPolicyApplyConfiguration               `json:"extAuth,omitempty"`
+	RateLimit       *RateLimitApplyConfiguration                   `json:"rateLimit,omitempty"`
 }
 
 // TrafficPolicySpecApplyConfiguration constructs a declarative configuration of the TrafficPolicySpec type for use with
@@ -28,6 +29,19 @@ func (b *TrafficPolicySpecApplyConfiguration) WithTargetRefs(values ...*LocalPol
 			panic("nil value passed to WithTargetRefs")
 		}
 		b.TargetRefs = append(b.TargetRefs, *values[i])
+	}
+	return b
+}
+
+// WithTargetSelectors adds the given value to the TargetSelectors field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the TargetSelectors field.
+func (b *TrafficPolicySpecApplyConfiguration) WithTargetSelectors(values ...*LocalPolicyTargetSelectorApplyConfiguration) *TrafficPolicySpecApplyConfiguration {
+	for i := range values {
+		if values[i] == nil {
+			panic("nil value passed to WithTargetSelectors")
+		}
+		b.TargetSelectors = append(b.TargetSelectors, *values[i])
 	}
 	return b
 }

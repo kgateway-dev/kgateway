@@ -3,11 +3,11 @@ package reports
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"reflect"
 	"slices"
 	"strings"
 
-	"github.com/solo-io/go-utils/contextutils"
 	"istio.io/istio/pkg/ptr"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -90,13 +90,11 @@ func (r *ReportMap) BuildRouteStatus(
 ) *gwv1.RouteStatus {
 	routeReport := r.route(obj)
 	if routeReport == nil {
-		contextutils.LoggerFrom(ctx).Infof("missing route report for %T %s/%s", obj, obj.GetName(), obj.GetNamespace())
+		slog.Info("missing route report", "type", obj.GetObjectKind().GroupVersionKind().Kind, "name", obj.GetName(), "namespace", obj.GetNamespace())
 		return nil
 	}
 
-	contextutils.LoggerFrom(ctx).Debugf("building status for %s %s/%s",
-		obj.GetObjectKind().GroupVersionKind().Kind, obj.GetNamespace(),
-		obj.GetName())
+	slog.Debug("building status", "type", obj.GetObjectKind().GroupVersionKind().Kind, "name", obj.GetName(), "namespace", obj.GetNamespace())
 
 	var existingStatus gwv1.RouteStatus
 	// Default to using spec.ParentRefs when building the parent statuses for a route.
@@ -130,7 +128,7 @@ func (r *ReportMap) BuildRouteStatus(
 			parentRefs = append(parentRefs, routeReport.parentRefs()...)
 		}
 	default:
-		contextutils.LoggerFrom(ctx).Error(fmt.Errorf("unsupported route type %T", obj), "failed to build route status")
+		slog.Error("unsupported route type for status reporting", "route_type", fmt.Sprintf("%T", obj))
 		return nil
 	}
 
