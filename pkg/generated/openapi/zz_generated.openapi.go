@@ -2995,6 +2995,13 @@ func schema_kgateway_v2_api_v1alpha1_LocalPolicyTargetReference(ref common.Refer
 							Format:      "",
 						},
 					},
+					"sectionName": {
+						SchemaProps: spec.SchemaProps{
+							Description: "The section name of the target resource.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 				},
 				Required: []string{"group", "kind", "name"},
 			},

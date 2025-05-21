@@ -106,13 +106,13 @@ func sortProxy(proxy *irtranslator.TranslationResult) *irtranslator.TranslationR
 	}
 
 	sort.Slice(proxy.Listeners, func(i, j int) bool {
-		return proxy.Listeners[i].Name < proxy.Listeners[j].Name
+		return proxy.Listeners[i].GetName() < proxy.Listeners[j].GetName()
 	})
 	sort.Slice(proxy.Routes, func(i, j int) bool {
-		return proxy.Routes[i].Name < proxy.Routes[j].Name
+		return proxy.Routes[i].GetName() < proxy.Routes[j].GetName()
 	})
 	sort.Slice(proxy.ExtraClusters, func(i, j int) bool {
-		return proxy.ExtraClusters[i].Name < proxy.ExtraClusters[j].Name
+		return proxy.ExtraClusters[i].GetName() < proxy.ExtraClusters[j].GetName()
 	})
 
 	return proxy

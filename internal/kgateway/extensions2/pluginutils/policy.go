@@ -3,9 +3,10 @@ package pluginutils
 import (
 	"maps"
 
+	"k8s.io/utils/ptr"
+
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
-	"k8s.io/utils/ptr"
 )
 
 func TargetRefsToPolicyRefs(
