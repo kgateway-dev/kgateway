@@ -773,9 +773,12 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.Filt
 		if p.listenerTransform != nil {
 			convertClassicRouteToListener(&transformationCfg, p.listenerTransform)
 		}
-		filters = append(filters, plugins.MustNewStagedFilter(transformationFilterNamePrefix,
+		filter := plugins.MustNewStagedFilter(transformationFilterNamePrefix,
 			&transformationCfg,
-			plugins.BeforeStage(plugins.AcceptedStage)))
+			plugins.BeforeStage(plugins.AcceptedStage))
+		filter.Filter.Disabled = true
+
+		filters = append(filters, filter)
 	}
 	if p.setTransformationInChain[fcc.FilterChainName] && useRustformations {
 		// ---------------
@@ -853,9 +856,11 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.Filt
 	}
 
 	if p.localRateLimitInChain[fcc.FilterChainName] != nil {
-		filters = append(filters, plugins.MustNewStagedFilter(localRateLimitFilterNamePrefix,
+		filter := plugins.MustNewStagedFilter(localRateLimitFilterNamePrefix,
 			p.localRateLimitInChain[fcc.FilterChainName],
-			plugins.BeforeStage(plugins.AcceptedStage)))
+			plugins.BeforeStage(plugins.AcceptedStage))
+		filter.Filter.Disabled = true
+		filters = append(filters, filter)
 	}
 
 	// Add global rate limit filters from providers

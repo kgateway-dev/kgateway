@@ -80,7 +80,8 @@ listeners:
             grpcService:
               envoyGrpc:
                 clusterName: kube_gwtest_app-team-ext-authz_9000
-        - name: ext_auth/gwtest/basic-extauth
+        - disabled: true
+          name: ext_auth/gwtest/basic-extauth
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthz
             filterEnabledMetadata:
@@ -110,6 +111,10 @@ listeners:
 routes:
 - ignorePortInHostMatching: true
   name: http
+  typedPerFilterConfig:
+    ext_auth/gwtest/basic-extauth:
+      '@type': type.googleapis.com/envoy.config.route.v3.FilterConfig
+      config: {}
   virtualHosts:
   - domains:
     - www.example.com
@@ -123,5 +128,5 @@ routes:
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
       typedPerFilterConfig:
         ext_auth/gwtest/app-team-extauth:
-          '@type': type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthzPerRoute
-          checkSettings: {}
+          '@type': type.googleapis.com/envoy.config.route.v3.FilterConfig
+          config: {}
