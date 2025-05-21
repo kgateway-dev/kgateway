@@ -116,7 +116,6 @@ func sortProxy(proxy *irtranslator.TranslationResult) *irtranslator.TranslationR
 	})
 
 	return proxy
-
 }
 
 func AreReportsSuccess(gwNN types.NamespacedName, reportsMap reports.ReportMap) error {

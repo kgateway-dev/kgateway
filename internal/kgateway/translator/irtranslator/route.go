@@ -62,7 +62,6 @@ func (h *httpRouteConfigurationTranslator) ComputeRouteConfiguration(ctx context
 					Policy:            pol.PolicyIr,
 				}, cfg)
 			}
-
 		}
 	}
 

@@ -254,14 +254,25 @@ func (e TrafficPolicyGatewayExtensionIR) Equals(other TrafficPolicyGatewayExtens
 	return e.Err.Error() == other.Err.Error()
 }
 
-type providerWithFromListener struct {
-	provider *TrafficPolicyGatewayExtensionIR
-}
 type ProviderWithFilterChain struct {
 	ProviderName    string
 	FilterChainName string
 }
-type ProviderNeededMap map[ProviderWithFilterChain]providerWithFromListener
+type ProviderNeededMap struct {
+	// map filterhcain name -> providername -> provider
+	Providers map[string]map[string]*TrafficPolicyGatewayExtensionIR
+}
+
+func (p *ProviderNeededMap) Add(fcn, providerName string, provider *TrafficPolicyGatewayExtensionIR) {
+	if p.Providers == nil {
+		p.Providers = make(map[string]map[string]*TrafficPolicyGatewayExtensionIR)
+	}
+	if p.Providers[fcn] == nil {
+		p.Providers[fcn] = make(map[string]*TrafficPolicyGatewayExtensionIR)
+	}
+	p.Providers[fcn][providerName] = provider
+}
+
 type trafficPolicyPluginGwPass struct {
 	reporter reports.Reporter
 	ir.UnimplementedProxyTranslationPass
@@ -655,20 +666,9 @@ func (p *trafficPolicyPluginGwPass) handleRateLimit(fcn string, typedFilterConfi
 	}
 
 	providerName := rateLimit.provider.ResourceName()
-	key := ProviderWithFilterChain{
-		ProviderName:    providerName,
-		FilterChainName: fcn,
-	}
 
 	// Initialize the map if it doesn't exist yet
-	if p.rateLimitPerProvider == nil {
-		p.rateLimitPerProvider = ProviderNeededMap{}
-	}
-	if _, ok := p.rateLimitPerProvider[key]; !ok {
-		p.rateLimitPerProvider[key] = providerWithFromListener{
-			provider: rateLimit.provider,
-		}
-	}
+	p.rateLimitPerProvider.Add(fcn, providerName, rateLimit.provider)
 
 	// Configure rate limit per route - enabling it for this specific route
 	rateLimitPerRoute := &ratev3.RateLimitPerRoute{
@@ -708,10 +708,6 @@ func (p *trafficPolicyPluginGwPass) handleExtAuth(pfc string, pCtxTypedFilterCon
 		pCtxTypedFilterConfig.AddTypedConfig(extAuthGlobalDisableFilterName, enableFilterPerRoute)
 	} else {
 		providerName := extAuth.provider.ResourceName()
-		key := ProviderWithFilterChain{
-			ProviderName:    providerName,
-			FilterChainName: pfc,
-		}
 		if extAuth.extauthPerRoute != nil {
 			pCtxTypedFilterConfig.AddTypedConfig(extAuthFilterName(providerName),
 				extAuth.extauthPerRoute,
@@ -720,14 +716,7 @@ func (p *trafficPolicyPluginGwPass) handleExtAuth(pfc string, pCtxTypedFilterCon
 			// if you are on a route and not trying to disable it then we need to override the top level disable on the filter chain
 			pCtxTypedFilterConfig.AddTypedConfig(extAuthFilterName(providerName), enableFilterPerRoute)
 		}
-		if p.extAuthPerProvider == nil {
-			p.extAuthPerProvider = ProviderNeededMap{}
-		}
-		if _, ok := p.extAuthPerProvider[key]; !ok {
-			p.extAuthPerProvider[key] = providerWithFromListener{
-				provider: extAuth.provider,
-			}
-		}
+		p.extAuthPerProvider.Add(pfc, providerName, extAuth.provider)
 	}
 }
 
@@ -736,10 +725,6 @@ func (p *trafficPolicyPluginGwPass) handleExtProc(fcn string, pCtxTypedFilterCon
 		return
 	}
 	providerName := extProc.provider.ResourceName()
-	key := ProviderWithFilterChain{
-		ProviderName:    providerName,
-		FilterChainName: fcn,
-	}
 	// Handle the enablement state
 
 	if extProc.ExtProcPerRoute != nil {
@@ -753,14 +738,7 @@ func (p *trafficPolicyPluginGwPass) handleExtProc(fcn string, pCtxTypedFilterCon
 		)
 	}
 
-	if p.extProcPerProvider == nil {
-		p.extProcPerProvider = ProviderNeededMap{}
-	}
-	if _, ok := p.extProcPerProvider[key]; !ok {
-		p.extProcPerProvider[key] = providerWithFromListener{
-			provider: extProc.provider,
-		}
-	}
+	p.extProcPerProvider.Add(fcn, providerName, extProc.provider)
 }
 
 // called 1 time per listener
@@ -770,17 +748,14 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.Filt
 	filters := []plugins.StagedHttpFilter{}
 
 	// Add Ext_proc filters for listener
-	for key, providerExtProc := range p.extProcPerProvider {
-		if key.FilterChainName != fcc.FilterChainName {
-			continue
-		}
-		extProcFilter := providerExtProc.provider.ExtProc
+	for providerName, provider := range p.extProcPerProvider.Providers[fcc.FilterChainName] {
+		extProcFilter := provider.ExtProc
 		if extProcFilter == nil {
 			continue
 		}
 
 		// add the specific auth filter
-		extProcName := extProcFilterName(key.ProviderName)
+		extProcName := extProcFilterName(providerName)
 		stagedExtProcFilter := plugins.MustNewStagedFilter(extProcName,
 			extProcFilter,
 			plugins.AfterStage(plugins.WellKnownFilterStage(plugins.AuthZStage)))
@@ -850,7 +825,7 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.Filt
 	}
 
 	// register the transformation work once
-	if len(p.extAuthPerProvider) != 0 {
+	if len(p.extAuthPerProvider.Providers[fcc.FilterChainName]) != 0 {
 		// register the filter that sets metadata so that it can have overrides on the route level
 		f := plugins.MustNewStagedFilter(extAuthGlobalDisableFilterName,
 			setMetadataConfig,
@@ -860,17 +835,14 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.Filt
 	}
 
 	// Add Ext_authz filter for listener
-	for key, providerExtauth := range p.extAuthPerProvider {
-		if key.FilterChainName != fcc.FilterChainName {
-			continue
-		}
-		extAuthFilter := providerExtauth.provider.ExtAuth
+	for providerName, provider := range p.extAuthPerProvider.Providers[fcc.FilterChainName] {
+		extAuthFilter := provider.ExtAuth
 		if extAuthFilter == nil {
 			continue
 		}
 
 		// add the specific auth filter
-		extauthName := extAuthFilterName(key.ProviderName)
+		extauthName := extAuthFilterName(providerName)
 		stagedExtAuthFilter := plugins.MustNewStagedFilter(extauthName,
 			extAuthFilter,
 			plugins.DuringStage(plugins.AuthZStage))
@@ -887,17 +859,14 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.Filt
 	}
 
 	// Add global rate limit filters from providers
-	for key, providerRateLimit := range p.rateLimitPerProvider {
-		if key.FilterChainName != fcc.FilterChainName {
-			continue
-		}
-		rateLimitFilter := providerRateLimit.provider.RateLimit
+	for providerName, provider := range p.rateLimitPerProvider.Providers[fcc.FilterChainName] {
+		rateLimitFilter := provider.RateLimit
 		if rateLimitFilter == nil {
 			continue
 		}
 
 		// add the specific rate limit filter with a unique name
-		rateLimitName := getRateLimitFilterName(key.ProviderName)
+		rateLimitName := getRateLimitFilterName(providerName)
 		stagedRateLimitFilter := plugins.MustNewStagedFilter(rateLimitName,
 			rateLimitFilter,
 			plugins.DuringStage(plugins.RateLimitStage))
