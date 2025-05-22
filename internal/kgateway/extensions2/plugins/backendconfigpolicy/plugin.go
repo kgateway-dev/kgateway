@@ -7,6 +7,7 @@ import (
 	clusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	preserve_case_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/http/header_formatters/preserve_case/v3"
+	envoy_upstreams_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	skubeclient "istio.io/istio/pkg/config/schema/kubeclient"
@@ -23,9 +24,11 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
+	translatorutils "github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
+	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 )
 
 const PreserveCasePlugin = "envoy.http.stateful_header_formatters.preserve_case"
@@ -39,6 +42,8 @@ type BackendConfigPolicyIR struct {
 	commonHttpProtocolOptions     *corev3.HttpProtocolOptions
 	http1ProtocolOptions          *corev3.Http1ProtocolOptions
 }
+
+var logger = logging.New("backendconfigpolicy")
 
 var _ ir.PolicyIR = &BackendConfigPolicyIR{}
 
@@ -173,11 +178,25 @@ func processBackend(_ context.Context, polir ir.PolicyIR, _ ir.BackendObjectIR, 
 	}
 
 	if pol.commonHttpProtocolOptions != nil {
-		out.CommonHttpProtocolOptions = pol.commonHttpProtocolOptions
+		if err := translatorutils.MutateHttpOptions(out, func(opts *envoy_upstreams_v3.HttpProtocolOptions) {
+			opts.CommonHttpProtocolOptions = pol.commonHttpProtocolOptions
+		}); err != nil {
+			logger.Error("failed to apply common http protocol options", "error", err)
+		}
 	}
 
 	if pol.http1ProtocolOptions != nil {
-		out.HttpProtocolOptions = pol.http1ProtocolOptions
+		if err := translatorutils.MutateHttpOptions(out, func(opts *envoy_upstreams_v3.HttpProtocolOptions) {
+			opts.UpstreamProtocolOptions = &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig_{
+				ExplicitHttpConfig: &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig{
+					ProtocolConfig: &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig_HttpProtocolOptions{
+						HttpProtocolOptions: pol.http1ProtocolOptions,
+					},
+				},
+			}
+		}); err != nil {
+			logger.Error("failed to apply http1 protocol options", "error", err)
+		}
 	}
 }
 

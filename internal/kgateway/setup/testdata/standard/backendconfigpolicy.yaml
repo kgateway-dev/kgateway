@@ -64,7 +64,6 @@ spec:
     - name: httpbin
       group: ""
       kind: Service
-  maxRequestsPerConnection: 100
   connectTimeout: 5s
   perConnectionBufferLimitBytes: 1024
   tcpKeepalive:
@@ -75,6 +74,7 @@ spec:
     idleTimeout: 10s
     maxHeadersCount: 15
     maxStreamDuration: 30s
+    maxRequestsPerConnection: 100
     headersWithUnderscoresAction: RejectRequest
   http1ProtocolOptions:
     enableTrailers: true
