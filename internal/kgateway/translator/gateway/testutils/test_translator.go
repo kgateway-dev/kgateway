@@ -97,7 +97,7 @@ func CompareProxy(expectedFile string, actualProxy *irtranslator.TranslationResu
 	if err != nil {
 		return "", err
 	}
-	return cmp.Diff(expectedProxy, actualProxy, protocmp.Transform(), cmpopts.EquateNaNs()), nil
+	return cmp.Diff(sortProxy(expectedProxy), sortProxy(actualProxy), protocmp.Transform(), cmpopts.EquateNaNs()), nil
 }
 
 func sortProxy(proxy *irtranslator.TranslationResult) *irtranslator.TranslationResult {

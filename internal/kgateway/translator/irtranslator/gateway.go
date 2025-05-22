@@ -1,6 +1,8 @@
 package irtranslator
 
 import (
+	"sort"
+
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
@@ -121,6 +123,10 @@ func (t *Translator) ComputeListener(
 			hasTls = true
 		}
 	}
+	// sort filter chains for idempotency
+	sort.Slice(ret.FilterChains, func(i, j int) bool {
+		return ret.FilterChains[i].Name < ret.FilterChains[j].Name
+	})
 	if hasTls {
 		ret.ListenerFilters = append(ret.GetListenerFilters(), tlsInspectorFilter())
 	}
