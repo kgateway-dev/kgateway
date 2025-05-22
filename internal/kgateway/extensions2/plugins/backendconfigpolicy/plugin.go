@@ -56,7 +56,6 @@ func (d *BackendConfigPolicyIR) Equals(other any) bool {
 		return false
 	}
 
-	// Compare connect timeout
 	if (d.connectTimeout == nil) != (d2.connectTimeout == nil) {
 		return false
 	}
@@ -66,7 +65,6 @@ func (d *BackendConfigPolicyIR) Equals(other any) bool {
 		}
 	}
 
-	// Compare buffer limit
 	if (d.perConnectionBufferLimitBytes == nil) != (d2.perConnectionBufferLimitBytes == nil) {
 		return false
 	}
@@ -76,7 +74,6 @@ func (d *BackendConfigPolicyIR) Equals(other any) bool {
 		}
 	}
 
-	// Compare TCP keepalive
 	if (d.tcpKeepalive == nil) != (d2.tcpKeepalive == nil) {
 		return false
 	}
@@ -86,7 +83,6 @@ func (d *BackendConfigPolicyIR) Equals(other any) bool {
 		}
 	}
 
-	// Compare common HTTP protocol options
 	if (d.commonHttpProtocolOptions == nil) != (d2.commonHttpProtocolOptions == nil) {
 		return false
 	}
@@ -96,7 +92,6 @@ func (d *BackendConfigPolicyIR) Equals(other any) bool {
 		}
 	}
 
-	// Compare HTTP1 protocol options
 	if (d.http1ProtocolOptions == nil) != (d2.http1ProtocolOptions == nil) {
 		return false
 	}
