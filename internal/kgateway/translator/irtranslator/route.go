@@ -54,7 +54,7 @@ func (h *httpRouteConfigurationTranslator) ComputeRouteConfiguration(ctx context
 				// TODO: user error - they attached a non http policy
 				continue
 			}
-			for _, pol := range pols {
+			for _, pol := range mergePolicies(pass, pols) {
 				reportPolicyAcceptanceStatus(h.reporter, h.listener.PolicyAncestorRef, pols...)
 				pass.ApplyRouteConfigPlugin(ctx, &ir.RouteConfigContext{
 					FilterChainName:   h.fc.FilterChainName,
@@ -217,7 +217,7 @@ func (h *httpRouteConfigurationTranslator) runVhostPlugins(ctx context.Context, 
 				// TODO: user error - they attached a non http policy
 				continue
 			}
-			for _, pol := range pols {
+			for _, pol := range mergePolicies(pass, pols) {
 				reportPolicyAcceptanceStatus(h.reporter, h.listener.PolicyAncestorRef, pols...)
 				pctx := &ir.VirtualHostContext{
 					Policy:            pol.PolicyIr,
@@ -284,10 +284,7 @@ func (h *httpRouteConfigurationTranslator) runRoutePlugins(
 			In:                in,
 			TypedFilterConfig: typedPerFilterConfig,
 		}
-		if pass.MergePolicies != nil {
-			pols = []ir.PolicyAtt{pass.MergePolicies(pols)}
-		}
-		for _, pol := range pols {
+		for _, pol := range mergePolicies(pass, pols) {
 			// TODO: should we append pol.Error to errs?
 			// i.e. errs = append(errs, pol.Error)
 			pctx.Policy = pol.PolicyIr
@@ -310,6 +307,15 @@ func (h *httpRouteConfigurationTranslator) runRoutePlugins(
 	return err
 }
 
+func mergePolicies(pass *TranslationPass, policies []ir.PolicyAtt) []ir.PolicyAtt {
+	if pass.MergePolicies != nil {
+		merged := [1]ir.PolicyAtt{pass.MergePolicies(policies)}
+		return merged[:]
+	}
+
+	return policies
+}
+
 func (h *httpRouteConfigurationTranslator) runBackendPolicies(ctx context.Context, in ir.HttpBackend, pCtx *ir.RouteBackendContext) error {
 	var errs []error
 	for gk, pols := range in.AttachedPolicies.Policies {
@@ -318,7 +324,7 @@ func (h *httpRouteConfigurationTranslator) runBackendPolicies(ctx context.Contex
 			// TODO: should never happen, log error and report condition
 			continue
 		}
-		for _, pol := range pols {
+		for _, pol := range mergePolicies(pass, pols) {
 			reportPolicyAcceptanceStatus(h.reporter, h.listener.PolicyAncestorRef, pol)
 			// Policy on extension ref
 			err := pass.ApplyForRouteBackend(ctx, pol.PolicyIr, pCtx)
