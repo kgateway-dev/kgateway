@@ -124,8 +124,8 @@ func (t *Translator) ComputeListener(
 		}
 	}
 	// sort filter chains for idempotency
-	sort.Slice(ret.FilterChains, func(i, j int) bool {
-		return ret.FilterChains[i].Name < ret.FilterChains[j].Name
+	sort.Slice(ret.GetFilterChains(), func(i, j int) bool {
+		return ret.GetFilterChains()[i].GetName() < ret.GetFilterChains()[j].GetName()
 	})
 	if hasTls {
 		ret.ListenerFilters = append(ret.GetListenerFilters(), tlsInspectorFilter())
