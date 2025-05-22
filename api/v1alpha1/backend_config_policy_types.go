@@ -116,20 +116,20 @@ type CommonHttpProtocolOptions struct {
 	HeadersWithUnderscoresAction *HeadersWithUnderscoresAction `json:"headersWithUnderscoresAction,omitempty"`
 }
 
-// +kubebuilder:validation:Enum=AllowHeadersWithUnderscores;RejectRequestsHeadersWithUnderscores;DropHeadersWithUnderscores
+// +kubebuilder:validation:Enum=Allow;RejectRequest;DropHeader
 type HeadersWithUnderscoresAction string
 
 const (
 	// Allow headers with underscores. This is the default behavior.
-	AllowHeadersWithUnderscores HeadersWithUnderscoresAction = "AllowHeadersWithUnderscores"
+	HeadersWithUnderscoresActionAllow HeadersWithUnderscoresAction = "Allow"
 	// Reject client request. HTTP/1 requests are rejected with the 400 status. HTTP/2 requests
 	// end with the stream reset. The "httpN.requests_rejected_with_underscores_in_headers" counter
 	// is incremented for each rejected request.
-	RejectRequestsHeadersWithUnderscores HeadersWithUnderscoresAction = "RejectRequestsHeadersWithUnderscores"
+	HeadersWithUnderscoresActionRejectRequest HeadersWithUnderscoresAction = "RejectRequest"
 	// Drop the header with name containing underscores. The header is dropped before the filter chain is
 	// invoked and as such filters will not see dropped headers. The
 	// "httpN.dropped_headers_with_underscores" is incremented for each dropped header.
-	DropHeadersWithUnderscores HeadersWithUnderscoresAction = "DropHeadersWithUnderscores"
+	HeadersWithUnderscoresActionDropHeader HeadersWithUnderscoresAction = "DropHeader"
 )
 
 type TCPKeepalive struct {

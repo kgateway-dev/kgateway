@@ -42,7 +42,7 @@ func TestBackendConfigPolicyFlow(t *testing.T) {
 						IdleTimeout:                  ptr.To(gwv1.Duration("60s")),
 						MaxHeadersCount:              ptr.To(100),
 						MaxStreamDuration:            ptr.To(gwv1.Duration("30s")),
-						HeadersWithUnderscoresAction: ptr.To(v1alpha1.AllowHeadersWithUnderscores),
+						HeadersWithUnderscoresAction: ptr.To(v1alpha1.HeadersWithUnderscoresActionAllow),
 					},
 					Http1ProtocolOptions: &v1alpha1.Http1ProtocolOptions{
 						EnableTrailers:                          ptr.To(true),
