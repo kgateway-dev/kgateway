@@ -13,6 +13,20 @@ func TargetRefsToPolicyRefs(
 	targetRefs []v1alpha1.LocalPolicyTargetReference,
 	targetSelectors []v1alpha1.LocalPolicyTargetSelector,
 ) []ir.PolicyRef {
+	targetRefsWithSectionName := make([]v1alpha1.LocalPolicyTargetReferenceWithSectionName, 0, len(targetRefs))
+	for _, targetRef := range targetRefs {
+		targetRefsWithSectionName = append(targetRefsWithSectionName, v1alpha1.LocalPolicyTargetReferenceWithSectionName{
+			LocalPolicyTargetReference: targetRef,
+			SectionName:                nil,
+		})
+	}
+	return TargetRefsToPolicyRefsWithSectionName(targetRefsWithSectionName, targetSelectors)
+}
+
+func TargetRefsToPolicyRefsWithSectionName(
+	targetRefs []v1alpha1.LocalPolicyTargetReferenceWithSectionName,
+	targetSelectors []v1alpha1.LocalPolicyTargetSelector,
+) []ir.PolicyRef {
 	refs := make([]ir.PolicyRef, 0, len(targetRefs)+len(targetSelectors))
 	for _, targetRef := range targetRefs {
 		refs = append(refs, ir.PolicyRef{

@@ -127,6 +127,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.LLMProviderApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("LocalPolicyTargetReference"):
 		return &apiv1alpha1.LocalPolicyTargetReferenceApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("LocalPolicyTargetReferenceWithSectionName"):
+		return &apiv1alpha1.LocalPolicyTargetReferenceWithSectionNameApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("LocalPolicyTargetSelector"):
 		return &apiv1alpha1.LocalPolicyTargetSelectorApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("LocalRateLimitPolicy"):

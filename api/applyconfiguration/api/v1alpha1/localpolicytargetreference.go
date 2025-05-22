@@ -9,10 +9,9 @@ import (
 // LocalPolicyTargetReferenceApplyConfiguration represents a declarative configuration of the LocalPolicyTargetReference type for use
 // with apply.
 type LocalPolicyTargetReferenceApplyConfiguration struct {
-	Group       *v1.Group       `json:"group,omitempty"`
-	Kind        *v1.Kind        `json:"kind,omitempty"`
-	Name        *v1.ObjectName  `json:"name,omitempty"`
-	SectionName *v1.SectionName `json:"sectionName,omitempty"`
+	Group *v1.Group      `json:"group,omitempty"`
+	Kind  *v1.Kind       `json:"kind,omitempty"`
+	Name  *v1.ObjectName `json:"name,omitempty"`
 }
 
 // LocalPolicyTargetReferenceApplyConfiguration constructs a declarative configuration of the LocalPolicyTargetReference type for use with
@@ -42,13 +41,5 @@ func (b *LocalPolicyTargetReferenceApplyConfiguration) WithKind(value v1.Kind) *
 // If called multiple times, the Name field is set to the value of the last call.
 func (b *LocalPolicyTargetReferenceApplyConfiguration) WithName(value v1.ObjectName) *LocalPolicyTargetReferenceApplyConfiguration {
 	b.Name = &value
-	return b
-}
-
-// WithSectionName sets the SectionName field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the SectionName field is set to the value of the last call.
-func (b *LocalPolicyTargetReferenceApplyConfiguration) WithSectionName(value v1.SectionName) *LocalPolicyTargetReferenceApplyConfiguration {
-	b.SectionName = &value
 	return b
 }

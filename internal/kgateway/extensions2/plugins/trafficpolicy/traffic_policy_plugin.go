@@ -399,7 +399,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 			ObjectSource: objSrc,
 			Policy:       policyCR,
 			PolicyIR:     policyIR,
-			TargetRefs:   pluginutils.TargetRefsToPolicyRefs(policyCR.Spec.TargetRefs, policyCR.Spec.TargetSelectors),
+			TargetRefs:   pluginutils.TargetRefsToPolicyRefsWithSectionName(policyCR.Spec.TargetRefs, policyCR.Spec.TargetSelectors),
 			Errors:       errors,
 		}
 		return pol
