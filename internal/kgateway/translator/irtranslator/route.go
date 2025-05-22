@@ -38,7 +38,6 @@ type httpRouteConfigurationTranslator struct {
 }
 
 func (h *httpRouteConfigurationTranslator) ComputeRouteConfiguration(ctx context.Context, vhosts []*ir.VirtualHost) *envoy_config_route_v3.RouteConfiguration {
-
 	attachedPolicies := ir.AttachedPolicies{
 		Policies: map[schema.GroupKind][]ir.PolicyAtt{},
 	}
@@ -206,7 +205,6 @@ func toPerFilterConfigMap(typedPerFilterConfig ir.TypedFilterConfigMap) map[stri
 
 func (h *httpRouteConfigurationTranslator) runVhostPlugins(ctx context.Context, virtualHost *ir.VirtualHost, out *envoy_config_route_v3.VirtualHost,
 	typedPerFilterConfig ir.TypedFilterConfigMap) {
-
 	for gk, pols := range virtualHost.AttachedPolicies.Policies {
 		pass := h.PluginPass[gk]
 		if pass == nil {
