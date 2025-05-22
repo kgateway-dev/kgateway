@@ -38,30 +38,29 @@ type httpRouteConfigurationTranslator struct {
 }
 
 func (h *httpRouteConfigurationTranslator) ComputeRouteConfiguration(ctx context.Context, vhosts []*ir.VirtualHost) *envoy_config_route_v3.RouteConfiguration {
-	attachedPoliciesSlice := []ir.AttachedPolicies{
-		h.gw.AttachedHttpPolicies,
-		h.attachedPolicies,
+
+	attachedPolicies := ir.AttachedPolicies{
+		Policies: map[schema.GroupKind][]ir.PolicyAtt{},
 	}
+	attachedPolicies.Append(h.gw.AttachedHttpPolicies, h.attachedPolicies)
 	cfg := &envoy_config_route_v3.RouteConfiguration{
 		Name: h.routeConfigName,
 	}
 	typedPerFilterConfigRoute := ir.TypedFilterConfigMap(map[string]proto.Message{})
 
-	for _, attachedPolicies := range attachedPoliciesSlice {
-		for gk, pols := range attachedPolicies.Policies {
-			pass := h.PluginPass[gk]
-			if pass == nil {
-				// TODO: user error - they attached a non http policy
-				continue
-			}
-			for _, pol := range mergePolicies(pass, pols) {
-				reportPolicyAcceptanceStatus(h.reporter, h.listener.PolicyAncestorRef, pols...)
-				pass.ApplyRouteConfigPlugin(ctx, &ir.RouteConfigContext{
-					FilterChainName:   h.fc.FilterChainName,
-					TypedFilterConfig: typedPerFilterConfigRoute,
-					Policy:            pol.PolicyIr,
-				}, cfg)
-			}
+	for gk, pols := range attachedPolicies.Policies {
+		pass := h.PluginPass[gk]
+		if pass == nil {
+			// TODO: user error - they attached a non http policy
+			continue
+		}
+		for _, pol := range mergePolicies(pass, pols) {
+			reportPolicyAcceptanceStatus(h.reporter, h.listener.PolicyAncestorRef, pols...)
+			pass.ApplyRouteConfigPlugin(ctx, &ir.RouteConfigContext{
+				FilterChainName:   h.fc.FilterChainName,
+				TypedFilterConfig: typedPerFilterConfigRoute,
+				Policy:            pol.PolicyIr,
+			}, cfg)
 		}
 	}
 
@@ -207,26 +206,22 @@ func toPerFilterConfigMap(typedPerFilterConfig ir.TypedFilterConfigMap) map[stri
 
 func (h *httpRouteConfigurationTranslator) runVhostPlugins(ctx context.Context, virtualHost *ir.VirtualHost, out *envoy_config_route_v3.VirtualHost,
 	typedPerFilterConfig ir.TypedFilterConfigMap) {
-	attachedPoliciesSlice := []ir.AttachedPolicies{
-		virtualHost.AttachedPolicies,
-	}
-	for _, attachedPolicies := range attachedPoliciesSlice {
-		for gk, pols := range attachedPolicies.Policies {
-			pass := h.PluginPass[gk]
-			if pass == nil {
-				// TODO: user error - they attached a non http policy
-				continue
+
+	for gk, pols := range virtualHost.AttachedPolicies.Policies {
+		pass := h.PluginPass[gk]
+		if pass == nil {
+			// TODO: user error - they attached a non http policy
+			continue
+		}
+		for _, pol := range mergePolicies(pass, pols) {
+			reportPolicyAcceptanceStatus(h.reporter, h.listener.PolicyAncestorRef, pols...)
+			pctx := &ir.VirtualHostContext{
+				Policy:            pol.PolicyIr,
+				TypedFilterConfig: typedPerFilterConfig,
+				FilterChainName:   h.fc.FilterChainName,
 			}
-			for _, pol := range mergePolicies(pass, pols) {
-				reportPolicyAcceptanceStatus(h.reporter, h.listener.PolicyAncestorRef, pols...)
-				pctx := &ir.VirtualHostContext{
-					Policy:            pol.PolicyIr,
-					TypedFilterConfig: typedPerFilterConfig,
-					FilterChainName:   h.fc.FilterChainName,
-				}
-				pass.ApplyVhostPlugin(ctx, pctx, out)
-				// TODO: check return value, if error returned, log error and report condition
-			}
+			pass.ApplyVhostPlugin(ctx, pctx, out)
+			// TODO: check return value, if error returned, log error and report condition
 		}
 	}
 }
@@ -271,7 +266,6 @@ func (h *httpRouteConfigurationTranslator) runRoutePlugins(
 			errs = append(errs, err)
 		}
 	}
-
 	for gk, pols := range attachedPolicies.Policies {
 		pass := h.PluginPass[gk]
 		if pass == nil {
