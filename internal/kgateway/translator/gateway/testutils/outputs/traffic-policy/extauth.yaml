@@ -111,7 +111,7 @@ Listeners:
               envoyGrpc:
                 clusterName: kube_infra_ext-authz_9000
         - disabled: true
-          name: ext_auth/infra/basic-gw-extauth
+          name: ext_auth/infra/section-name-gw-extauth
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthz
             filterEnabledMetadata:
@@ -246,7 +246,7 @@ Routes:
 - ignorePortInHostMatching: true
   name: tls1
   typedPerFilterConfig:
-    ext_auth/infra/basic-gw-extauth:
+    ext_auth/infra/section-name-gw-extauth:
       '@type': type.googleapis.com/envoy.config.route.v3.FilterConfig
       config: {}
   virtualHosts:

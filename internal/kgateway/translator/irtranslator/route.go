@@ -13,7 +13,6 @@ import (
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
@@ -38,10 +37,10 @@ type httpRouteConfigurationTranslator struct {
 }
 
 func (h *httpRouteConfigurationTranslator) ComputeRouteConfiguration(ctx context.Context, vhosts []*ir.VirtualHost) *envoy_config_route_v3.RouteConfiguration {
-	attachedPolicies := ir.AttachedPolicies{
-		Policies: map[schema.GroupKind][]ir.PolicyAtt{},
-	}
-	attachedPolicies.Append(h.gw.AttachedHttpPolicies, h.attachedPolicies)
+	var attachedPolicies ir.AttachedPolicies
+	// the policies in order - first listener as they are more specific and thus higher priority.
+	// then gateway policies.
+	attachedPolicies.Append(h.attachedPolicies, h.gw.AttachedHttpPolicies)
 	cfg := &envoy_config_route_v3.RouteConfiguration{
 		Name: h.routeConfigName,
 	}
@@ -236,9 +235,7 @@ func (h *httpRouteConfigurationTranslator) runRoutePlugins(
 	// NOTE: AttachedPolicies must have policies in the ordered by hierarchy from root to leaf in the delegation chain where
 	// each level has policies ordered by rule level policies before entire route level policies.
 
-	attachedPolicies := ir.AttachedPolicies{
-		Policies: map[schema.GroupKind][]ir.PolicyAtt{},
-	}
+	var attachedPolicies ir.AttachedPolicies
 	delegatingParent := in.DelegatingParent
 	var hierarchicalPriority int
 	for delegatingParent != nil {
