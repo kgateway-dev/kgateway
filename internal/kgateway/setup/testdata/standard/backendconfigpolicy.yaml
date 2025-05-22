@@ -75,7 +75,7 @@ spec:
     idleTimeout: 10s
     maxHeadersCount: 15
     maxStreamDuration: 30s
-    headersWithUnderscoresAction: RejectRequestsHeadersWithUnderscores
+    headersWithUnderscoresAction: RejectRequest
   http1ProtocolOptions:
     enableTrailers: true
     overrideStreamErrorOnInvalidHttpMessage: true
