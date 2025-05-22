@@ -254,10 +254,6 @@ func (e TrafficPolicyGatewayExtensionIR) Equals(other TrafficPolicyGatewayExtens
 	return e.Err.Error() == other.Err.Error()
 }
 
-type ProviderWithFilterChain struct {
-	ProviderName    string
-	FilterChainName string
-}
 type ProviderNeededMap struct {
 	// map filterhcain name -> providername -> provider
 	Providers map[string]map[string]*TrafficPolicyGatewayExtensionIR
