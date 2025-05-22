@@ -38,7 +38,8 @@ listeners:
       typedConfig:
         '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
         httpFilters:
-        - name: ratelimit/local
+        - disabled: true
+          name: ratelimit/local
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
             statPrefix: http_local_rate_limiter
