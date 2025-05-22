@@ -31,7 +31,7 @@ func toLocalRateLimitFilterConfig(t *v1alpha1.LocalRateLimitPolicy) (*localratel
 
 	tokenBucket := &typev3.TokenBucket{}
 	if t.TokenBucket != nil {
-		fillInterval, err := time.ParseDuration(t.TokenBucket.FillInterval)
+		fillInterval, err := time.ParseDuration(string(t.TokenBucket.FillInterval))
 		if err != nil {
 			return nil, err
 		}
