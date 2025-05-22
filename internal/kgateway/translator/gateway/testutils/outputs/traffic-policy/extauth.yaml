@@ -124,20 +124,6 @@ Listeners:
             grpcService:
               envoyGrpc:
                 clusterName: kube_infra_ext-authz_9000
-        - disabled: true
-          name: ext_auth/infra/section-name-gw-extauth
-          typedConfig:
-            '@type': type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthz
-            filterEnabledMetadata:
-              filter: dev.kgateway.disable_ext_auth
-              invert: true
-              path:
-              - key: extauth_disable
-              value:
-                boolMatch: true
-            grpcService:
-              envoyGrpc:
-                clusterName: kube_infra_ext-authz_9000
         - name: envoy.filters.http.router
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -261,9 +247,6 @@ Routes:
   name: tls1
   typedPerFilterConfig:
     ext_auth/infra/basic-gw-extauth:
-      '@type': type.googleapis.com/envoy.config.route.v3.FilterConfig
-      config: {}
-    ext_auth/infra/section-name-gw-extauth:
       '@type': type.googleapis.com/envoy.config.route.v3.FilterConfig
       config: {}
   virtualHosts:
