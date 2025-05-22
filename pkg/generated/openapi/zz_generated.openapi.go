@@ -34,7 +34,6 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.BackendConfigPolicy":             schema_kgateway_v2_api_v1alpha1_BackendConfigPolicy(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.BackendConfigPolicyList":         schema_kgateway_v2_api_v1alpha1_BackendConfigPolicyList(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.BackendConfigPolicySpec":         schema_kgateway_v2_api_v1alpha1_BackendConfigPolicySpec(ref),
-		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.BackendConfigPolicyStatus":       schema_kgateway_v2_api_v1alpha1_BackendConfigPolicyStatus(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.BackendList":                     schema_kgateway_v2_api_v1alpha1_BackendList(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.BackendSpec":                     schema_kgateway_v2_api_v1alpha1_BackendSpec(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.BackendStatus":                   schema_kgateway_v2_api_v1alpha1_BackendStatus(ref),
@@ -1192,14 +1191,14 @@ func schema_kgateway_v2_api_v1alpha1_BackendConfigPolicy(ref common.ReferenceCal
 					"status": {
 						SchemaProps: spec.SchemaProps{
 							Default: map[string]interface{}{},
-							Ref:     ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.BackendConfigPolicyStatus"),
+							Ref:     ref("sigs.k8s.io/gateway-api/apis/v1alpha2.PolicyStatus"),
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.BackendConfigPolicySpec", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.BackendConfigPolicyStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.BackendConfigPolicySpec", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta", "sigs.k8s.io/gateway-api/apis/v1alpha2.PolicyStatus"},
 	}
 }
 
@@ -1314,33 +1313,6 @@ func schema_kgateway_v2_api_v1alpha1_BackendConfigPolicySpec(ref common.Referenc
 		},
 		Dependencies: []string{
 			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CommonHttpProtocolOptions", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Http1ProtocolOptions", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LocalPolicyTargetReference", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.TCPKeepalive"},
-	}
-}
-
-func schema_kgateway_v2_api_v1alpha1_BackendConfigPolicyStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"conditions": {
-						SchemaProps: spec.SchemaProps{
-							Type: []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.Condition"),
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		Dependencies: []string{
-			"k8s.io/apimachinery/pkg/apis/meta/v1.Condition"},
 	}
 }
 

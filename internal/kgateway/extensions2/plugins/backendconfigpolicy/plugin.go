@@ -146,9 +146,11 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 	return extensionsplug.Plugin{
 		ContributesPolicies: map[schema.GroupKind]extensionsplug.PolicyPlugin{
 			wellknown.BackendConfigPolicyGVK.GroupKind(): {
-				Name:           "BackendConfigPolicy",
-				Policies:       backendConfigPolicyCol,
-				ProcessBackend: processBackend,
+				Name:              "BackendConfigPolicy",
+				Policies:          backendConfigPolicyCol,
+				ProcessBackend:    processBackend,
+				GetPolicyStatus:   getPolicyStatusFn(commoncol.CrudClient),
+				PatchPolicyStatus: patchPolicyStatusFn(commoncol.CrudClient),
 			},
 		},
 	}

@@ -3,6 +3,7 @@ package v1alpha1
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 )
 
 // +kubebuilder:rbac:groups=gateway.kgateway.dev,resources=backendconfigpolicies,verbs=get;list;watch
@@ -16,8 +17,8 @@ import (
 type BackendConfigPolicy struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-	Spec              BackendConfigPolicySpec   `json:"spec,omitempty"`
-	Status            BackendConfigPolicyStatus `json:"status,omitempty"`
+	Spec              BackendConfigPolicySpec `json:"spec,omitempty"`
+	Status            gwv1alpha2.PolicyStatus `json:"status,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -141,8 +142,4 @@ type TCPKeepalive struct {
 
 	// +optional
 	KeepAliveInterval *gwv1.Duration `json:"keepAliveInterval,omitempty"`
-}
-
-type BackendConfigPolicyStatus struct {
-	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }

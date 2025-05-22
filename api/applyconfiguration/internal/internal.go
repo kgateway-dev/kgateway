@@ -292,7 +292,7 @@ var schemaYAML = typed.YAMLObject(`types:
       default: {}
     - name: status
       type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.BackendConfigPolicyStatus
+        namedType: io.k8s.sigs.gateway-api.apis.v1alpha2.PolicyStatus
       default: {}
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.BackendConfigPolicySpec
   map:
@@ -321,15 +321,6 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: tcpKeepalive
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.TCPKeepalive
-- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.BackendConfigPolicyStatus
-  map:
-    fields:
-    - name: conditions
-      type:
-        list:
-          elementType:
-            namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Condition
-          elementRelationship: atomic
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.BackendSpec
   map:
     fields:
