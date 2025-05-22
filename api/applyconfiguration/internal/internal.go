@@ -306,9 +306,6 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: http1ProtocolOptions
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Http1ProtocolOptions
-    - name: maxRequestsPerConnection
-      type:
-        scalar: numeric
     - name: perConnectionBufferLimitBytes
       type:
         scalar: numeric
@@ -397,6 +394,9 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         scalar: string
     - name: maxHeadersCount
+      type:
+        scalar: numeric
+    - name: maxRequestsPerConnection
       type:
         scalar: numeric
     - name: maxStreamDuration

@@ -1269,13 +1269,6 @@ func schema_kgateway_v2_api_v1alpha1_BackendConfigPolicySpec(ref common.Referenc
 							},
 						},
 					},
-					"maxRequestsPerConnection": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Maximum requests for a single upstream connection. If set to 0 or unspecified, defaults to unlimited.",
-							Type:        []string{"integer"},
-							Format:      "int32",
-						},
-					},
 					"connectTimeout": {
 						SchemaProps: spec.SchemaProps{
 							Description: "The timeout for new network connections to hosts in the cluster.",
@@ -1285,7 +1278,7 @@ func schema_kgateway_v2_api_v1alpha1_BackendConfigPolicySpec(ref common.Referenc
 					},
 					"perConnectionBufferLimitBytes": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Soft limit on size of the cluster’s connections read and write buffers. If unspecified, an implementation defined default is applied (1MiB).",
+							Description: "Soft limit on size of the cluster's connections read and write buffers. If unspecified, an implementation defined default is applied (1MiB).",
 							Type:        []string{"integer"},
 							Format:      "int32",
 						},
@@ -1548,7 +1541,8 @@ func schema_kgateway_v2_api_v1alpha1_CommonHttpProtocolOptions(ref common.Refere
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
+				Description: "CommonHttpProtocolOptions are options that are applicable to both HTTP1 and HTTP2 requests.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"idleTimeout": {
 						SchemaProps: spec.SchemaProps{
@@ -1559,7 +1553,7 @@ func schema_kgateway_v2_api_v1alpha1_CommonHttpProtocolOptions(ref common.Refere
 					},
 					"maxHeadersCount": {
 						SchemaProps: spec.SchemaProps{
-							Description: "The maximum number of headers. If unconfigured, the default maximum number of request headers allowed is 100. Requests that exceed this limit will receive a 431 response for HTTP/1.x and cause a stream reset for HTTP/2.",
+							Description: "Specifies the maximum number of headers that the connection will accept. If not specified, the default of 100 is used. Requests that exceed this limit will receive a 431 response for HTTP/1.x and cause a stream reset for HTTP/2.",
 							Type:        []string{"integer"},
 							Format:      "int32",
 						},
@@ -1576,6 +1570,13 @@ func schema_kgateway_v2_api_v1alpha1_CommonHttpProtocolOptions(ref common.Refere
 							Description: "Action to take when a client request with a header name containing underscore characters is received. If this setting is not specified, the value defaults to ALLOW. Note: upstream responses are not affected by this setting.",
 							Type:        []string{"string"},
 							Format:      "",
+						},
+					},
+					"maxRequestsPerConnection": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Maximum requests for a single upstream connection. If set to 0 or unspecified, defaults to unlimited.",
+							Type:        []string{"integer"},
+							Format:      "int32",
 						},
 					},
 				},

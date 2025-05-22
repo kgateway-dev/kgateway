@@ -33,16 +33,11 @@ type BackendConfigPolicySpec struct {
 	// +kubebuilder:validation:MaxItems=16
 	TargetRefs []LocalPolicyTargetReference `json:"targetRefs,omitempty"`
 
-	// Maximum requests for a single upstream connection.
-	// If set to 0 or unspecified, defaults to unlimited.
-	// +optional
-	MaxRequestsPerConnection *int `json:"maxRequestsPerConnection,omitempty"`
-
 	// The timeout for new network connections to hosts in the cluster.
 	// +optional
 	ConnectTimeout *gwv1.Duration `json:"connectTimeout,omitempty"`
 
-	// Soft limit on size of the cluster’s connections read and write buffers.
+	// Soft limit on size of the cluster's connections read and write buffers.
 	// If unspecified, an implementation defined default is applied (1MiB).
 	// +optional
 	PerConnectionBufferLimitBytes *int `json:"perConnectionBufferLimitBytes,omitempty"`
@@ -87,6 +82,9 @@ const (
 
 type HeaderFormat string
 
+// CommonHttpProtocolOptions are options that are applicable to both HTTP1 and HTTP2 requests.
+// +kubebuilder:validation:XValidation:message="idleTimeout must be a valid duration string (e.g. \"1s\", \"500ms\")",rule="(!has(self.idleTimeout) || (has(self.idleTimeout) && self.idleTimeout.matches('^([0-9]{1,5}(h|m|s|ms)){1,4}$')))"
+// +kubebuilder:validation:XValidation:message="maxStreamDuration must be a valid duration string (e.g. \"1s\", \"500ms\")",rule="(!has(self.maxStreamDuration) || (has(self.maxStreamDuration) && self.maxStreamDuration.matches('^([0-9]{1,5}(h|m|s|ms)){1,4}$')))"
 type CommonHttpProtocolOptions struct {
 	// The idle timeout for connections. The idle timeout is defined as the
 	// period in which there are no active requests. When the
@@ -99,8 +97,8 @@ type CommonHttpProtocolOptions struct {
 	// +optional
 	IdleTimeout *gwv1.Duration `json:"idleTimeout,omitempty"`
 
-	// The maximum number of headers. If unconfigured, the default
-	// maximum number of request headers allowed is 100. Requests that exceed this limit will receive
+	// Specifies the maximum number of headers that the connection will accept.
+	// If not specified, the default of 100 is used. Requests that exceed this limit will receive
 	// a 431 response for HTTP/1.x and cause a stream reset for HTTP/2.
 	// +optional
 	MaxHeadersCount *int `json:"maxHeadersCount,omitempty"`
@@ -115,6 +113,11 @@ type CommonHttpProtocolOptions struct {
 	// Note: upstream responses are not affected by this setting.
 	// +optional
 	HeadersWithUnderscoresAction *HeadersWithUnderscoresAction `json:"headersWithUnderscoresAction,omitempty"`
+
+	// Maximum requests for a single upstream connection.
+	// If set to 0 or unspecified, defaults to unlimited.
+	// +optional
+	MaxRequestsPerConnection *int `json:"maxRequestsPerConnection,omitempty"`
 }
 
 // +kubebuilder:validation:Enum=Allow;RejectRequest;DropHeader

@@ -10,7 +10,6 @@ import (
 // with apply.
 type BackendConfigPolicySpecApplyConfiguration struct {
 	TargetRefs                    []LocalPolicyTargetReferenceApplyConfiguration `json:"targetRefs,omitempty"`
-	MaxRequestsPerConnection      *int                                           `json:"maxRequestsPerConnection,omitempty"`
 	ConnectTimeout                *v1.Duration                                   `json:"connectTimeout,omitempty"`
 	PerConnectionBufferLimitBytes *int                                           `json:"perConnectionBufferLimitBytes,omitempty"`
 	TCPKeepalive                  *TCPKeepaliveApplyConfiguration                `json:"tcpKeepalive,omitempty"`
@@ -34,14 +33,6 @@ func (b *BackendConfigPolicySpecApplyConfiguration) WithTargetRefs(values ...*Lo
 		}
 		b.TargetRefs = append(b.TargetRefs, *values[i])
 	}
-	return b
-}
-
-// WithMaxRequestsPerConnection sets the MaxRequestsPerConnection field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the MaxRequestsPerConnection field is set to the value of the last call.
-func (b *BackendConfigPolicySpecApplyConfiguration) WithMaxRequestsPerConnection(value int) *BackendConfigPolicySpecApplyConfiguration {
-	b.MaxRequestsPerConnection = &value
 	return b
 }
 

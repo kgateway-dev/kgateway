@@ -486,11 +486,6 @@ func (in *BackendConfigPolicySpec) DeepCopyInto(out *BackendConfigPolicySpec) {
 		*out = make([]LocalPolicyTargetReference, len(*in))
 		copy(*out, *in)
 	}
-	if in.MaxRequestsPerConnection != nil {
-		in, out := &in.MaxRequestsPerConnection, &out.MaxRequestsPerConnection
-		*out = new(int)
-		**out = **in
-	}
 	if in.ConnectTimeout != nil {
 		in, out := &in.ConnectTimeout, &out.ConnectTimeout
 		*out = new(apisv1.Duration)
@@ -693,6 +688,11 @@ func (in *CommonHttpProtocolOptions) DeepCopyInto(out *CommonHttpProtocolOptions
 	if in.HeadersWithUnderscoresAction != nil {
 		in, out := &in.HeadersWithUnderscoresAction, &out.HeadersWithUnderscoresAction
 		*out = new(HeadersWithUnderscoresAction)
+		**out = **in
+	}
+	if in.MaxRequestsPerConnection != nil {
+		in, out := &in.MaxRequestsPerConnection, &out.MaxRequestsPerConnection
+		*out = new(int)
 		**out = **in
 	}
 }

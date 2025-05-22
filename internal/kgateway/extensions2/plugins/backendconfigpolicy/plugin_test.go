@@ -30,7 +30,6 @@ func TestBackendConfigPolicyFlow(t *testing.T) {
 			name: "full configuration",
 			policy: &v1alpha1.BackendConfigPolicy{
 				Spec: v1alpha1.BackendConfigPolicySpec{
-					MaxRequestsPerConnection:      ptr.To(100),
 					ConnectTimeout:                ptr.To(gwv1.Duration("5s")),
 					PerConnectionBufferLimitBytes: ptr.To(1024),
 					TCPKeepalive: &v1alpha1.TCPKeepalive{
@@ -43,6 +42,7 @@ func TestBackendConfigPolicyFlow(t *testing.T) {
 						MaxHeadersCount:              ptr.To(100),
 						MaxStreamDuration:            ptr.To(gwv1.Duration("30s")),
 						HeadersWithUnderscoresAction: ptr.To(v1alpha1.HeadersWithUnderscoresActionAllow),
+						MaxRequestsPerConnection:     ptr.To(100),
 					},
 					Http1ProtocolOptions: &v1alpha1.Http1ProtocolOptions{
 						EnableTrailers:                          ptr.To(true),
@@ -51,7 +51,6 @@ func TestBackendConfigPolicyFlow(t *testing.T) {
 				},
 			},
 			want: &clusterv3.Cluster{
-				MaxRequestsPerConnection:      &wrapperspb.UInt32Value{Value: 100},
 				ConnectTimeout:                durationpb.New(5 * time.Second),
 				PerConnectionBufferLimitBytes: &wrapperspb.UInt32Value{Value: 1024},
 				UpstreamConnectionOptions: &clusterv3.UpstreamConnectionOptions{
@@ -66,6 +65,7 @@ func TestBackendConfigPolicyFlow(t *testing.T) {
 					MaxHeadersCount:              &wrapperspb.UInt32Value{Value: 100},
 					MaxStreamDuration:            durationpb.New(30 * time.Second),
 					HeadersWithUnderscoresAction: corev3.HttpProtocolOptions_ALLOW,
+					MaxRequestsPerConnection:     &wrapperspb.UInt32Value{Value: 100},
 				},
 				HttpProtocolOptions: &corev3.Http1ProtocolOptions{
 					EnableTrailers:                          true,
@@ -78,13 +78,17 @@ func TestBackendConfigPolicyFlow(t *testing.T) {
 			name: "minimal configuration",
 			policy: &v1alpha1.BackendConfigPolicy{
 				Spec: v1alpha1.BackendConfigPolicySpec{
-					MaxRequestsPerConnection: ptr.To(50),
-					ConnectTimeout:           ptr.To(gwv1.Duration("2s")),
+					ConnectTimeout: ptr.To(gwv1.Duration("2s")),
+					CommonHttpProtocolOptions: &v1alpha1.CommonHttpProtocolOptions{
+						MaxRequestsPerConnection: ptr.To(50),
+					},
 				},
 			},
 			want: &clusterv3.Cluster{
-				MaxRequestsPerConnection: &wrapperspb.UInt32Value{Value: 50},
-				ConnectTimeout:           durationpb.New(2 * time.Second),
+				ConnectTimeout: durationpb.New(2 * time.Second),
+				CommonHttpProtocolOptions: &corev3.HttpProtocolOptions{
+					MaxRequestsPerConnection: &wrapperspb.UInt32Value{Value: 50},
+				},
 			},
 			wantErr: false,
 		},

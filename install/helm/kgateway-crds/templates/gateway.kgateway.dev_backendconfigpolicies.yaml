@@ -44,10 +44,20 @@ spec:
                     type: string
                   maxHeadersCount:
                     type: integer
+                  maxRequestsPerConnection:
+                    type: integer
                   maxStreamDuration:
                     pattern: ^([0-9]{1,5}(h|m|s|ms)){1,4}$
                     type: string
                 type: object
+                x-kubernetes-validations:
+                - message: idleTimeout must be a valid duration string (e.g. "1s",
+                    "500ms")
+                  rule: (!has(self.idleTimeout) || (has(self.idleTimeout) && self.idleTimeout.matches('^([0-9]{1,5}(h|m|s|ms)){1,4}$')))
+                - message: maxStreamDuration must be a valid duration string (e.g.
+                    "1s", "500ms")
+                  rule: (!has(self.maxStreamDuration) || (has(self.maxStreamDuration)
+                    && self.maxStreamDuration.matches('^([0-9]{1,5}(h|m|s|ms)){1,4}$')))
               connectTimeout:
                 pattern: ^([0-9]{1,5}(h|m|s|ms)){1,4}$
                 type: string
@@ -63,8 +73,6 @@ spec:
                   overrideStreamErrorOnInvalidHttpMessage:
                     type: boolean
                 type: object
-              maxRequestsPerConnection:
-                type: integer
               perConnectionBufferLimitBytes:
                 type: integer
               targetRefs:

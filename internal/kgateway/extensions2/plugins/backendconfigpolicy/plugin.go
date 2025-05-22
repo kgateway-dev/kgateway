@@ -158,10 +158,6 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 
 func processBackend(_ context.Context, polir ir.PolicyIR, _ ir.BackendObjectIR, out *clusterv3.Cluster) {
 	pol := polir.(*BackendConfigPolicyIR)
-	if pol.maxRequestsPerConnection != nil {
-		out.MaxRequestsPerConnection = &wrapperspb.UInt32Value{Value: uint32(*pol.maxRequestsPerConnection)}
-	}
-
 	if pol.connectTimeout != nil {
 		out.ConnectTimeout = pol.connectTimeout
 	}
@@ -188,9 +184,6 @@ func processBackend(_ context.Context, polir ir.PolicyIR, _ ir.BackendObjectIR, 
 func translate(pol *v1alpha1.BackendConfigPolicy) (*BackendConfigPolicyIR, error) {
 	ir := &BackendConfigPolicyIR{
 		ct: pol.CreationTimestamp.Time,
-	}
-	if pol.Spec.MaxRequestsPerConnection != nil {
-		ir.maxRequestsPerConnection = pol.Spec.MaxRequestsPerConnection
 	}
 	if pol.Spec.ConnectTimeout != nil {
 		timeout, err := time.ParseDuration(string(*pol.Spec.ConnectTimeout))
@@ -254,6 +247,9 @@ func translateTCPKeepalive(tcpKeepalive *v1alpha1.TCPKeepalive) (*corev3.TcpKeep
 
 func translateCommonHttpProtocolOptions(commonHttpProtocolOptions *v1alpha1.CommonHttpProtocolOptions) (*corev3.HttpProtocolOptions, error) {
 	out := &corev3.HttpProtocolOptions{}
+	if commonHttpProtocolOptions.MaxRequestsPerConnection != nil {
+		out.MaxRequestsPerConnection = &wrapperspb.UInt32Value{Value: uint32(*commonHttpProtocolOptions.MaxRequestsPerConnection)}
+	}
 	if commonHttpProtocolOptions.IdleTimeout != nil {
 		idleTimeout, err := time.ParseDuration(string(*commonHttpProtocolOptions.IdleTimeout))
 		if err != nil {
