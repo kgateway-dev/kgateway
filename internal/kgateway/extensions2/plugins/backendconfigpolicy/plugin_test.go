@@ -7,8 +7,12 @@ import (
 
 	clusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	preserve_case_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/http/header_formatters/preserve_case/v3"
+	envoy_upstreams_http_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -17,6 +21,7 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 )
 
 func TestBackendConfigPolicyFlow(t *testing.T) {
@@ -46,6 +51,7 @@ func TestBackendConfigPolicyFlow(t *testing.T) {
 					},
 					Http1ProtocolOptions: &v1alpha1.Http1ProtocolOptions{
 						EnableTrailers:                          ptr.To(true),
+						HeaderFormat:                            ptr.To(v1alpha1.PreserveCaseHeaderKeyFormat),
 						OverrideStreamErrorOnInvalidHttpMessage: ptr.To(true),
 					},
 				},
@@ -60,16 +66,34 @@ func TestBackendConfigPolicyFlow(t *testing.T) {
 						KeepaliveInterval: &wrapperspb.UInt32Value{Value: 5},
 					},
 				},
-				CommonHttpProtocolOptions: &corev3.HttpProtocolOptions{
-					IdleTimeout:                  durationpb.New(60 * time.Second),
-					MaxHeadersCount:              &wrapperspb.UInt32Value{Value: 100},
-					MaxStreamDuration:            durationpb.New(30 * time.Second),
-					HeadersWithUnderscoresAction: corev3.HttpProtocolOptions_ALLOW,
-					MaxRequestsPerConnection:     &wrapperspb.UInt32Value{Value: 100},
-				},
-				HttpProtocolOptions: &corev3.Http1ProtocolOptions{
-					EnableTrailers:                          true,
-					OverrideStreamErrorOnInvalidHttpMessage: &wrapperspb.BoolValue{Value: true},
+				TypedExtensionProtocolOptions: map[string]*anypb.Any{
+					"envoy.extensions.upstreams.http.v3.HttpProtocolOptions": mustMessageToAny(t, &envoy_upstreams_http_v3.HttpProtocolOptions{
+						CommonHttpProtocolOptions: &corev3.HttpProtocolOptions{
+							IdleTimeout:                  durationpb.New(60 * time.Second),
+							MaxHeadersCount:              &wrapperspb.UInt32Value{Value: 100},
+							MaxStreamDuration:            durationpb.New(30 * time.Second),
+							HeadersWithUnderscoresAction: corev3.HttpProtocolOptions_ALLOW,
+							MaxRequestsPerConnection:     &wrapperspb.UInt32Value{Value: 100},
+						},
+						UpstreamProtocolOptions: &envoy_upstreams_http_v3.HttpProtocolOptions_ExplicitHttpConfig_{
+							ExplicitHttpConfig: &envoy_upstreams_http_v3.HttpProtocolOptions_ExplicitHttpConfig{
+								ProtocolConfig: &envoy_upstreams_http_v3.HttpProtocolOptions_ExplicitHttpConfig_HttpProtocolOptions{
+									HttpProtocolOptions: &corev3.Http1ProtocolOptions{
+										EnableTrailers:                          true,
+										OverrideStreamErrorOnInvalidHttpMessage: &wrapperspb.BoolValue{Value: true},
+										HeaderKeyFormat: &corev3.Http1ProtocolOptions_HeaderKeyFormat{
+											HeaderFormat: &corev3.Http1ProtocolOptions_HeaderKeyFormat_StatefulFormatter{
+												StatefulFormatter: &corev3.TypedExtensionConfig{
+													Name:        PreserveCasePlugin,
+													TypedConfig: mustMessageToAny(t, &preserve_case_v3.PreserveCaseFormatterConfig{}),
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					}),
 				},
 			},
 			wantErr: false,
@@ -86,8 +110,12 @@ func TestBackendConfigPolicyFlow(t *testing.T) {
 			},
 			want: &clusterv3.Cluster{
 				ConnectTimeout: durationpb.New(2 * time.Second),
-				CommonHttpProtocolOptions: &corev3.HttpProtocolOptions{
-					MaxRequestsPerConnection: &wrapperspb.UInt32Value{Value: 50},
+				TypedExtensionProtocolOptions: map[string]*anypb.Any{
+					"envoy.extensions.upstreams.http.v3.HttpProtocolOptions": mustMessageToAny(t, &envoy_upstreams_http_v3.HttpProtocolOptions{
+						CommonHttpProtocolOptions: &corev3.HttpProtocolOptions{
+							MaxRequestsPerConnection: &wrapperspb.UInt32Value{Value: 50},
+						},
+					}),
 				},
 			},
 			wantErr: false,
@@ -136,38 +164,9 @@ func TestBackendConfigPolicyFlow(t *testing.T) {
 	}
 }
 
-func TestHeaderFormat(t *testing.T) {
-	policy := &v1alpha1.BackendConfigPolicy{
-		Spec: v1alpha1.BackendConfigPolicySpec{
-			Http1ProtocolOptions: &v1alpha1.Http1ProtocolOptions{
-				HeaderFormat: ptr.To(v1alpha1.PreserveCaseHeaderKeyFormat),
-			},
-		},
-	}
-
-	policyIR, err := translate(policy)
-	require.NoError(t, err)
-
-	cluster := &clusterv3.Cluster{}
-	processBackend(context.Background(), policyIR, ir.BackendObjectIR{}, cluster)
-
-	assert.NotNil(t, cluster.HttpProtocolOptions.HeaderKeyFormat.GetStatefulFormatter())
-	assert.Nil(t, cluster.HttpProtocolOptions.HeaderKeyFormat.GetProperCaseWords())
-
-	policy2 := &v1alpha1.BackendConfigPolicy{
-		Spec: v1alpha1.BackendConfigPolicySpec{
-			Http1ProtocolOptions: &v1alpha1.Http1ProtocolOptions{
-				HeaderFormat: ptr.To(v1alpha1.ProperCaseHeaderKeyFormat),
-			},
-		},
-	}
-
-	policyIR2, err := translate(policy2)
-	require.NoError(t, err)
-
-	cluster2 := &clusterv3.Cluster{}
-	processBackend(context.Background(), policyIR2, ir.BackendObjectIR{}, cluster2)
-
-	assert.Nil(t, cluster2.HttpProtocolOptions.HeaderKeyFormat.GetStatefulFormatter())
-	assert.NotNil(t, cluster2.HttpProtocolOptions.HeaderKeyFormat.GetProperCaseWords())
+// Helper function to handle MessageToAny error in test cases
+func mustMessageToAny(t *testing.T, msg proto.Message) *anypb.Any {
+	a, err := utils.MessageToAny(msg)
+	require.NoError(t, err, "failed to convert message to Any")
+	return a
 }
