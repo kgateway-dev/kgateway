@@ -7,12 +7,12 @@ import (
 
 	"istio.io/istio/pkg/kube/krt"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	apiv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
+	apixv1alpha1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
@@ -101,7 +101,7 @@ type GatewayQueries interface {
 	GetSecretForRef(kctx krt.HandlerContext, ctx context.Context, fromGk schema.GroupKind, fromns string, secretRef gwv1.SecretObjectReference) (*ir.Secret, error)
 
 	// GetRoutesForGateway finds the top level xRoutes attached to the provided Gateway
-	GetRoutesForGateway(kctx krt.HandlerContext, ctx context.Context, gw *gwv1.Gateway) (*RoutesForGwResult, error)
+	GetRoutesForGateway(kctx krt.HandlerContext, ctx context.Context, gw *ir.Gateway) (*RoutesForGwResult, error)
 	// GetRouteChain resolves backends and delegated routes for a the provided xRoute object
 	GetRouteChain(kctx krt.HandlerContext,
 		ctx context.Context,
@@ -112,9 +112,32 @@ type GatewayQueries interface {
 }
 
 type RoutesForGwResult struct {
-	// key is listener name
-	ListenerResults map[string]*ListenerResult
+	// key is <parent.Namespace/parent.Name/listener.Name>
+	listenerResults map[string]*ListenerResult
 	RouteErrors     []*RouteError
+}
+
+func (r *RoutesForGwResult) GetListenerResult(parent client.Object, listenerName string) *ListenerResult {
+	return r.listenerResults[GenerateRouteKey(parent, listenerName)]
+}
+
+func (r *RoutesForGwResult) GetListenerResults(yield func(string, *ListenerResult) bool) {
+	for k, v := range r.listenerResults {
+		if !yield(k, v) {
+			return
+		}
+	}
+}
+
+func (r *RoutesForGwResult) setListenerResult(parent client.Object, listenerName string, result *ListenerResult) {
+	r.listenerResults[GenerateRouteKey(parent, listenerName)] = result
+}
+
+func (r *RoutesForGwResult) merge(r2 *RoutesForGwResult) {
+	for k, v := range r2.listenerResults {
+		r.listenerResults[k] = v
+	}
+	r.RouteErrors = append(r.RouteErrors, r2.RouteErrors...)
 }
 
 type ListenerResult struct {
@@ -142,7 +165,7 @@ func NewData(
 // NewRoutesForGwResult creates and returns a new RoutesForGwResult with initialized fields.
 func NewRoutesForGwResult() *RoutesForGwResult {
 	return &RoutesForGwResult{
-		ListenerResults: make(map[string]*ListenerResult),
+		listenerResults: make(map[string]*ListenerResult),
 		RouteErrors:     []*RouteError{},
 	}
 }
@@ -161,23 +184,72 @@ func parentRefMatchListener(ref *gwv1.ParentReference, l *gwv1.Listener) bool {
 	return true
 }
 
-// getParentRefsForGw extracts the ParentReferences from the provided object for the provided Gateway.
+// getParentRefsForResource extracts the ParentReferences from the provided object for the provided Gateway.
 // Supported object types are:
 //
 //   - HTTPRoute
 //   - TCPRoute
 //   - TLSRoute
 //   - GRPCRoute
-func getParentRefsForGw(gw *gwv1.Gateway, obj ir.Route) []gwv1.ParentReference {
+func getParentRefsForResource(resource client.Object, obj ir.Route) []gwv1.ParentReference {
 	var ret []gwv1.ParentReference
 
 	for _, pRef := range obj.GetParentRefs() {
-		if isParentRefForGw(&pRef, gw, obj.GetNamespace()) {
+		if isParentRefForResource(&pRef, resource, obj.GetNamespace()) {
 			ret = append(ret, pRef)
 		}
 	}
 
 	return ret
+}
+
+// isParentRefForResource checks if a ParentReference is associated with the provided resource.
+// The resource must either be a Gateway or a ListenerSet
+func isParentRefForResource(pRef *gwv1.ParentReference, resource client.Object, defaultNs string) bool {
+	if resource == nil || pRef == nil {
+		return false
+	}
+
+	switch typed := resource.(type) {
+	case *gwv1.Gateway:
+		return isParentRefForGw(pRef, typed, defaultNs)
+	case *apixv1alpha1.XListenerSet:
+		// Check if the route belongs to the parent gateway. If so accept it
+		parentRef := getParentGatewayRef(typed)
+		parentGW := &gwv1.Gateway{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: parentRef.Namespace,
+				Name:      parentRef.Name,
+			},
+		}
+		gatewayRoute := isParentRefForGw(pRef, parentGW, defaultNs)
+
+		if gatewayRoute {
+			// If it is attached to the gateway but has a section name, it won't attach to the listener set
+			if pRef.SectionName != nil && *pRef.SectionName != "" {
+				return false
+			}
+			// If it is attached to the gateway but has no section name, it applies to the listener set also
+			return true
+		} else {
+			// Is it attached to a listener set and not a gateway ?
+			if pRef.Group != nil && *pRef.Group != apixv1alpha1.GroupName {
+				return false
+			}
+			if pRef.Kind != nil && *pRef.Kind != wellknown.XListenerSetKind {
+				return false
+			}
+
+			ns := defaultNs
+			if pRef.Namespace != nil {
+				ns = string(*pRef.Namespace)
+			}
+			// Does it attach to this resource ?
+			return ns == typed.Namespace && string(pRef.Name) == typed.Name
+		}
+	default:
+		return false
+	}
 }
 
 // isParentRefForGw checks if a ParentReference is associated with the provided Gateway.
@@ -253,25 +325,6 @@ func (r *gatewayQueries) GetSecretForRef(kctx krt.HandlerContext, ctx context.Co
 		Namespace: fromns,
 	}
 	return r.collections.Secrets.GetSecret(kctx, f, secretRef)
-}
-
-func SameNamespace(ns string) func(krt.HandlerContext, string) bool {
-	return func(_ krt.HandlerContext, s string) bool {
-		return ns == s
-	}
-}
-
-func AllNamespace() func(krt.HandlerContext, string) bool {
-	return func(krt.HandlerContext, string) bool {
-		return true
-	}
-}
-
-func (r *gatewayQueries) NamespaceSelector(sel labels.Selector) func(krt.HandlerContext, string) bool {
-	return func(kctx krt.HandlerContext, s string) bool {
-		ns := krt.FetchOne(kctx, r.collections.Namespaces, krt.FilterKey(s))
-		return sel.Matches(labels.Set(ns.Labels))
-	}
 }
 
 func ReferenceAllowed(ctx context.Context, fromgk metav1.GroupKind, fromns string, togk metav1.GroupKind, toname string, grantsInToNs []apiv1beta1.ReferenceGrant) bool {

@@ -35,6 +35,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/irtranslator"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/listener"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned/fake"
@@ -97,6 +98,7 @@ func CompareProxy(expectedFile string, actualProxy *irtranslator.TranslationResu
 	if err != nil {
 		return "", err
 	}
+
 	return cmp.Diff(sortProxy(expectedProxy), sortProxy(actualProxy), protocmp.Transform(), cmpopts.EquateNaNs()), nil
 }
 
@@ -172,6 +174,10 @@ func AreReportsSuccess(gwNN types.NamespacedName, reportsMap reports.ReportMap) 
 
 	for nns, gwReport := range reportsMap.Gateways {
 		for _, c := range gwReport.GetConditions() {
+			if c.Type == listener.AttachedListenerSetsConditionType {
+				// A gateway might or might not have AttachedListenerSets so skip this condition
+				continue
+			}
 			if c.Status != metav1.ConditionTrue {
 				return fmt.Errorf("condition not accepted for gw %v condition: %v", nns, c)
 			}
@@ -229,6 +235,7 @@ func (tc TestCase) Run(t test.Failer, ctx context.Context, settingsOpts ...Setti
 		gvr.ServiceEntry,
 		gvr.WorkloadEntry,
 		gvr.AuthorizationPolicy,
+		wellknown.XListenerSetGVR,
 	} {
 		clienttest.MakeCRD(t, cli, crd)
 	}

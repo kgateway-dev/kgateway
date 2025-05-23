@@ -19,18 +19,18 @@ Listeners:
           configSource:
             ads: {}
             resourceApiVersion: V3
-          routeConfigName: http
+          routeConfigName: listener~8080
         statPrefix: http
         useRemoteAddress: true
-    name: http
-  name: http
+    name: listener~8080
+  name: listener~8080
 Routes:
 - ignorePortInHostMatching: true
-  name: http
+  name: listener~8080
   virtualHosts:
   - domains:
     - example.com
-    name: http~example_com
+    name: listener~8080~example_com
     routes:
     - directResponse:
         body:
@@ -40,4 +40,4 @@ Routes:
         status: 510
       match:
         prefix: /
-      name: http~example_com-route-0-httproute-example-default-0-0-matcher-0
+      name: listener~8080~example_com-route-0-httproute-example-default-0-0-matcher-0

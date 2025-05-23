@@ -10,6 +10,7 @@ import (
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
+	gwxv1alpha1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	pluginsdkreporter "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
@@ -17,15 +18,22 @@ import (
 type PolicyKey = pluginsdkreporter.PolicyKey
 
 type ReportMap struct {
-	Gateways   map[types.NamespacedName]*GatewayReport
-	HTTPRoutes map[types.NamespacedName]*RouteReport
-	GRPCRoutes map[types.NamespacedName]*RouteReport
-	TCPRoutes  map[types.NamespacedName]*RouteReport
-	TLSRoutes  map[types.NamespacedName]*RouteReport
-	Policies   map[PolicyKey]*PolicyReport
+	Gateways     map[types.NamespacedName]*GatewayReport
+	ListenerSets map[types.NamespacedName]*ListenerSetReport
+	HTTPRoutes   map[types.NamespacedName]*RouteReport
+	GRPCRoutes   map[types.NamespacedName]*RouteReport
+	TCPRoutes    map[types.NamespacedName]*RouteReport
+	TLSRoutes    map[types.NamespacedName]*RouteReport
+	Policies     map[PolicyKey]*PolicyReport
 }
 
 type GatewayReport struct {
+	conditions         []metav1.Condition
+	listeners          map[string]*ListenerReport
+	observedGeneration int64
+}
+
+type ListenerSetReport struct {
 	conditions         []metav1.Condition
 	listeners          map[string]*ListenerReport
 	observedGeneration int64
@@ -53,12 +61,13 @@ type ParentRefKey struct {
 
 func NewReportMap() ReportMap {
 	return ReportMap{
-		Gateways:   make(map[types.NamespacedName]*GatewayReport),
-		HTTPRoutes: make(map[types.NamespacedName]*RouteReport),
-		GRPCRoutes: make(map[types.NamespacedName]*RouteReport),
-		TCPRoutes:  make(map[types.NamespacedName]*RouteReport),
-		TLSRoutes:  make(map[types.NamespacedName]*RouteReport),
-		Policies:   make(map[PolicyKey]*PolicyReport),
+		Gateways:     make(map[types.NamespacedName]*GatewayReport),
+		ListenerSets: make(map[types.NamespacedName]*ListenerSetReport),
+		HTTPRoutes:   make(map[types.NamespacedName]*RouteReport),
+		GRPCRoutes:   make(map[types.NamespacedName]*RouteReport),
+		TCPRoutes:    make(map[types.NamespacedName]*RouteReport),
+		TLSRoutes:    make(map[types.NamespacedName]*RouteReport),
+		Policies:     make(map[PolicyKey]*PolicyReport),
 	}
 }
 
@@ -82,6 +91,24 @@ func (r *ReportMap) newGatewayReport(gateway *gwv1.Gateway) *GatewayReport {
 	key := key(gateway)
 	r.Gateways[key] = gr
 	return gr
+}
+
+// Returns a ListenerSetReport for the provided ListenerSet, nil if there is not a report present.
+// This is different than the Reporter.ListenerSet() method, as we need to understand when
+// reports are not generated for a ListenerSet that has been translated.
+//
+// NOTE: Exported for unit testing, validation_test.go should be refactored to reduce this visibility
+func (r *ReportMap) ListenerSet(listenerSet *gwxv1alpha1.XListenerSet) *ListenerSetReport {
+	key := key(listenerSet)
+	return r.ListenerSets[key]
+}
+
+func (r *ReportMap) newListenerSetReport(listenerSet *gwxv1alpha1.XListenerSet) *ListenerSetReport {
+	lsr := &ListenerSetReport{}
+	lsr.observedGeneration = listenerSet.Generation
+	key := key(listenerSet)
+	r.ListenerSets[key] = lsr
+	return lsr
 }
 
 // route returns a RouteReport for the provided route object, nil if a report is not present.
@@ -175,6 +202,47 @@ func (g *GatewayReport) SetCondition(gc pluginsdkreporter.GatewayCondition) {
 	meta.SetStatusCondition(&g.conditions, condition)
 }
 
+func (g *ListenerSetReport) Listener(listener *gwv1.Listener) pluginsdkreporter.ListenerReporter {
+	return g.listener(string(listener.Name))
+}
+
+func (g *ListenerSetReport) ListenerName(listenerName string) pluginsdkreporter.ListenerReporter {
+	return g.listener(listenerName)
+}
+
+func (g *ListenerSetReport) listener(listenerName string) *ListenerReport {
+	if g.listeners == nil {
+		g.listeners = make(map[string]*ListenerReport)
+	}
+
+	// Return the ListenerReport if it already exists
+	if lr, exists := g.listeners[listenerName]; exists {
+		return lr
+	}
+
+	// Create and add the new ListenerReport if it doesn't exist
+	lr := NewListenerReport(listenerName)
+	g.listeners[listenerName] = lr
+	return lr
+}
+
+func (g *ListenerSetReport) GetConditions() []metav1.Condition {
+	if g == nil {
+		return []metav1.Condition{}
+	}
+	return g.conditions
+}
+
+func (g *ListenerSetReport) SetCondition(gc pluginsdkreporter.GatewayCondition) {
+	condition := metav1.Condition{
+		Type:    string(gc.Type),
+		Status:  gc.Status,
+		Reason:  string(gc.Reason),
+		Message: gc.Message,
+	}
+	g.conditions = append(g.conditions, condition)
+}
+
 func NewListenerReport(name string) *ListenerReport {
 	lr := ListenerReport{}
 	lr.Status.Name = gwv1.SectionName(name)
@@ -209,6 +277,14 @@ func (r *reporter) Gateway(gateway *gwv1.Gateway) pluginsdkreporter.GatewayRepor
 		gr = r.report.newGatewayReport(gateway)
 	}
 	return gr
+}
+
+func (r *reporter) ListenerSet(listenerSet *gwxv1alpha1.XListenerSet) pluginsdkreporter.ListenerSetReporter {
+	lsr := r.report.ListenerSet(listenerSet)
+	if lsr == nil {
+		lsr = r.report.newListenerSetReport(listenerSet)
+	}
+	return lsr
 }
 
 func (r *reporter) Route(obj metav1.Object) pluginsdkreporter.RouteReporter {

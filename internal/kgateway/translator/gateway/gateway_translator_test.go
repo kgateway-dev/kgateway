@@ -516,6 +516,17 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 			Name:      "example-gateway",
 		},
 	}),
+	// TODO: Add this once istio adds support for listener sets
+	// FEntry(
+	// 	"listener sets",
+	// 	translatorTestCase{
+	// 		inputFile:  "listener-sets/manifest.yaml",
+	// 		outputFile: "listener-sets-proxy.yaml",
+	// 		gwNN: types.NamespacedName{
+	// 			Namespace: "default",
+	// 			Name:      "example-gateway",
+	// 		},
+	// 	}),
 )
 
 var _ = DescribeTable("Route Delegation translator",

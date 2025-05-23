@@ -7,6 +7,7 @@ import (
 	"hash/fnv"
 	"log"
 	"log/slog"
+	"math"
 	"net"
 	"os"
 
@@ -21,7 +22,12 @@ import (
 	"google.golang.org/grpc"
 )
 
-var grpcOptions = []grpc.ServerOption{grpc.MaxConcurrentStreams(10000)}
+var (
+	grpcOptions = []grpc.ServerOption{
+		grpc.MaxConcurrentStreams(10000),
+		grpc.MaxRecvMsgSize(math.MaxInt32),
+	}
+)
 
 // Secret represents an envoy auth secret
 type Secret struct {

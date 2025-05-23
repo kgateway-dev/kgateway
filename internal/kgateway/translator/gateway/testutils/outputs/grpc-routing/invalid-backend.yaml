@@ -19,22 +19,22 @@ Listeners:
           configSource:
             ads: {}
             resourceApiVersion: V3
-          routeConfigName: grpc
+          routeConfigName: listener~8090
         statPrefix: http
         useRemoteAddress: true
-    name: grpc
-  name: grpc
+    name: listener~8090
+  name: listener~8090
 Routes:
 - ignorePortInHostMatching: true
-  name: grpc
+  name: listener~8090
   virtualHosts:
   - domains:
     - '*'
-    name: grpc~*
+    name: listener~8090~*
     routes:
     - match:
         path: /example.grpc.Service/ExampleMethod
-      name: grpc~*-route-0-grpcroute-example-grpc-route-default-0-0-matcher-0
+      name: listener~8090~*-route-0-grpcroute-example-grpc-route-default-0-0-matcher-0
       route:
         cluster: blackhole-cluster
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR

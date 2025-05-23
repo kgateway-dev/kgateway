@@ -16,7 +16,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
-	apiv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
+	gwv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
+	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
@@ -67,12 +68,12 @@ var _ = Describe("Query", func() {
 			}
 
 			gq := newQueries(GinkgoT(), hr)
-			routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), gwWithListener)
+			routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), &ir.Gateway{Obj: gwWithListener})
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(routes.RouteErrors).To(BeEmpty())
-			Expect(routes.ListenerResults["foo"].Error).NotTo(HaveOccurred())
-			Expect(routes.ListenerResults["foo"].Routes).To(HaveLen(1))
+			Expect(routes.GetListenerResult(gwWithListener, "foo").Error).NotTo(HaveOccurred())
+			Expect(routes.GetListenerResult(gwWithListener, "foo").Routes).To(HaveLen(1))
 		})
 
 		It("should get http routes in other ns for listener", func() {
@@ -100,12 +101,12 @@ var _ = Describe("Query", func() {
 
 			gq := newQueries(GinkgoT(), hr)
 
-			routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), gwWithListener)
+			routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), &ir.Gateway{Obj: gwWithListener})
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(routes.RouteErrors).To(BeEmpty())
-			Expect(routes.ListenerResults["foo"].Error).NotTo(HaveOccurred())
-			Expect(routes.ListenerResults["foo"].Routes).To(HaveLen(1))
+			Expect(routes.GetListenerResult(gwWithListener, "foo").Error).NotTo(HaveOccurred())
+			Expect(routes.GetListenerResult(gwWithListener, "foo").Routes).To(HaveLen(1))
 		})
 
 		It("should ignore http routes for wrong kind", func() {
@@ -126,7 +127,7 @@ var _ = Describe("Query", func() {
 			}
 
 			gq := newQueries(GinkgoT(), hr)
-			routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), gwWithListener)
+			routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), &ir.Gateway{Obj: gwWithListener})
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(routes.RouteErrors).To(BeEmpty())
@@ -153,10 +154,10 @@ var _ = Describe("Query", func() {
 			})
 
 			gq := newQueries(GinkgoT(), hr)
-			routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), gwWithListener)
+			routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), &ir.Gateway{Obj: gwWithListener})
 
 			Expect(err).NotTo(HaveOccurred())
-			Expect(routes.ListenerResults["foo"].Error).To(MatchError("selector must be set"))
+			Expect(routes.GetListenerResult(gwWithListener, "foo").Error).To(MatchError("selector must be set"))
 		})
 
 		It("should error when listeners do not allow route", func() {
@@ -183,7 +184,7 @@ var _ = Describe("Query", func() {
 			})
 
 			gq := newQueries(GinkgoT(), hr)
-			routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), gwWithListener)
+			routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), &ir.Gateway{Obj: gwWithListener})
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(routes.RouteErrors[0].Error.E).To(MatchError(query.ErrNotAllowedByListeners))
@@ -212,14 +213,14 @@ var _ = Describe("Query", func() {
 			})
 
 			gq := newQueries(GinkgoT(), hr)
-			routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), gwWithListener)
+			routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), &ir.Gateway{Obj: gwWithListener})
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(routes.RouteErrors).To(BeEmpty())
-			Expect(routes.ListenerResults["foo2"].Routes).To(HaveLen(1))
-			Expect(routes.ListenerResults["foo2"].Error).NotTo(HaveOccurred())
-			Expect(routes.ListenerResults["foo"].Routes).To(BeEmpty())
-			Expect(routes.ListenerResults["foo"].Error).NotTo(HaveOccurred())
+			Expect(routes.GetListenerResult(gwWithListener, "foo2").Routes).To(HaveLen(1))
+			Expect(routes.GetListenerResult(gwWithListener, "foo2").Error).NotTo(HaveOccurred())
+			Expect(routes.GetListenerResult(gwWithListener, "foo").Routes).To(BeEmpty())
+			Expect(routes.GetListenerResult(gwWithListener, "foo").Error).NotTo(HaveOccurred())
 		})
 
 		It("should error when listeners don't match route", func() {
@@ -244,7 +245,7 @@ var _ = Describe("Query", func() {
 			})
 
 			gq := newQueries(GinkgoT(), hr)
-			routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), gwWithListener)
+			routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), &ir.Gateway{Obj: gwWithListener})
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(routes.RouteErrors[0].Error.E).To(MatchError(query.ErrNoMatchingParent))
@@ -274,12 +275,12 @@ var _ = Describe("Query", func() {
 			})
 
 			gq := newQueries(GinkgoT(), hr)
-			routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), gwWithListener)
+			routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), &ir.Gateway{Obj: gwWithListener})
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(routes.RouteErrors).To(BeEmpty())
-			Expect(routes.ListenerResults["foo2"].Routes).To(HaveLen(1))
-			Expect(routes.ListenerResults["foo"].Routes).To(BeEmpty())
+			Expect(routes.GetListenerResult(gwWithListener, "foo2").Routes).To(HaveLen(1))
+			Expect(routes.GetListenerResult(gwWithListener, "foo").Routes).To(BeEmpty())
 		})
 
 		It("should error when listeners hostnames don't intersect", func() {
@@ -307,7 +308,7 @@ var _ = Describe("Query", func() {
 			})
 
 			gq := newQueries(GinkgoT(), hr)
-			routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), gwWithListener)
+			routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), &ir.Gateway{Obj: gwWithListener})
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(routes.RouteErrors[0].Error.E).To(MatchError(query.ErrNoMatchingListenerHostname))
@@ -340,12 +341,12 @@ var _ = Describe("Query", func() {
 			})
 
 			gq := newQueries(GinkgoT(), hr)
-			routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), gwWithListener)
+			routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), &ir.Gateway{Obj: gwWithListener})
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(routes.RouteErrors).To(BeEmpty())
-			Expect(routes.ListenerResults["foo2"].Routes).To(HaveLen(1))
-			Expect(routes.ListenerResults["foo"].Routes).To(BeEmpty())
+			Expect(routes.GetListenerResult(gwWithListener, "foo2").Routes).To(HaveLen(1))
+			Expect(routes.GetListenerResult(gwWithListener, "foo").Routes).To(BeEmpty())
 		})
 
 		It("should error for one parent ref but not the other", func() {
@@ -369,12 +370,12 @@ var _ = Describe("Query", func() {
 			})
 
 			gq := newQueries(GinkgoT(), hr)
-			routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), gwWithListener)
+			routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), &ir.Gateway{Obj: gwWithListener})
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(routes.RouteErrors).To(HaveLen(1))
-			Expect(routes.ListenerResults["foo"].Routes).To(HaveLen(1))
-			Expect(routes.ListenerResults["foo"].Routes[0].ParentRef).To(Equal(gwv1.ParentReference{
+			Expect(routes.GetListenerResult(gwWithListener, "foo").Routes).To(HaveLen(1))
+			Expect(routes.GetListenerResult(gwWithListener, "foo").Routes[0].ParentRef).To(Equal(gwv1.ParentReference{
 				Name: hr.Spec.ParentRefs[1].Name,
 			}))
 			Expect(routes.RouteErrors[0].Error.E).To(MatchError(query.ErrNoMatchingParent))
@@ -406,13 +407,13 @@ var _ = Describe("Query", func() {
 				})
 
 				gq := newQueries(GinkgoT(), hr)
-				routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), gwWithListener)
+				routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), &ir.Gateway{Obj: gwWithListener})
 
 				Expect(err).NotTo(HaveOccurred())
 				if expectedHostnames == nil {
 					expectedHostnames = []string{}
 				}
-				Expect(routes.ListenerResults["foo"].Routes[0].Hostnames()).To(Equal(expectedHostnames))
+				Expect(routes.GetListenerResult(gwWithListener, "foo").Routes[0].Hostnames()).To(Equal(expectedHostnames))
 			}
 
 			It("should work with identical names", func() {
@@ -459,11 +460,11 @@ var _ = Describe("Query", func() {
 			}
 
 			gq := newQueries(GinkgoT(), tcpRoute)
-			routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), gw)
+			routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), &ir.Gateway{Obj: gw})
 
 			Expect(err).NotTo(HaveOccurred())
-			Expect(routes.ListenerResults[string(gw.Spec.Listeners[0].Name)].Routes).To(HaveLen(1))
-			Expect(routes.ListenerResults[string(gw.Spec.Listeners[0].Name)].Error).NotTo(HaveOccurred())
+			Expect(routes.GetListenerResult(gw, string(gw.Spec.Listeners[0].Name)).Routes).To(HaveLen(1))
+			Expect(routes.GetListenerResult(gw, string(gw.Spec.Listeners[0].Name)).Error).NotTo(HaveOccurred())
 		})
 
 		It("should get TCPRoutes in other namespace for listener", func() {
@@ -494,11 +495,11 @@ var _ = Describe("Query", func() {
 
 			gq := newQueries(GinkgoT(), tcpRoute)
 
-			routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), gw)
+			routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), &ir.Gateway{Obj: gw})
 
 			Expect(err).NotTo(HaveOccurred())
-			Expect(routes.ListenerResults["foo-tcp"].Error).NotTo(HaveOccurred())
-			Expect(routes.ListenerResults["foo-tcp"].Routes).To(HaveLen(1))
+			Expect(routes.GetListenerResult(gw, "foo-tcp").Error).NotTo(HaveOccurred())
+			Expect(routes.GetListenerResult(gw, "foo-tcp").Routes).To(HaveLen(1))
 		})
 
 		It("should error when listeners don't match TCPRoute", func() {
@@ -530,7 +531,7 @@ var _ = Describe("Query", func() {
 			}
 
 			gq := newQueries(GinkgoT(), tcpRoute)
-			routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), gw)
+			routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), &ir.Gateway{Obj: gw})
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(routes.RouteErrors).To(HaveLen(1))
@@ -564,7 +565,7 @@ var _ = Describe("Query", func() {
 
 			gq := newQueries(GinkgoT(), tcpRoute)
 
-			routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), gw)
+			routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), &ir.Gateway{Obj: gw})
 			Expect(err).NotTo(HaveOccurred())
 			Expect(routes.RouteErrors).To(HaveLen(1))
 			Expect(routes.RouteErrors[0].Error.E).To(MatchError(query.ErrNotAllowedByListeners))
@@ -602,11 +603,11 @@ var _ = Describe("Query", func() {
 
 			gq := newQueries(GinkgoT(), tcpRoute)
 
-			routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), gw)
+			routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), &ir.Gateway{Obj: gw})
 			Expect(err).NotTo(HaveOccurred())
 			Expect(routes.RouteErrors).To(BeEmpty())
-			Expect(routes.ListenerResults["foo-tcp"].Routes).To(HaveLen(1))
-			Expect(routes.ListenerResults["bar"].Routes).To(BeEmpty())
+			Expect(routes.GetListenerResult(gw, "foo-tcp").Routes).To(HaveLen(1))
+			Expect(routes.GetListenerResult(gw, "bar").Routes).To(BeEmpty())
 		})
 	})
 
@@ -640,11 +641,11 @@ var _ = Describe("Query", func() {
 		}
 
 		gq := newQueries(GinkgoT(), tlsRoute)
-		routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), gw)
+		routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), &ir.Gateway{Obj: gw})
 
 		Expect(err).NotTo(HaveOccurred())
-		Expect(routes.ListenerResults[string(gw.Spec.Listeners[0].Name)].Routes).To(HaveLen(1))
-		Expect(routes.ListenerResults[string(gw.Spec.Listeners[0].Name)].Error).NotTo(HaveOccurred())
+		Expect(routes.GetListenerResult(gw, string(gw.Spec.Listeners[0].Name)).Routes).To(HaveLen(1))
+		Expect(routes.GetListenerResult(gw, string(gw.Spec.Listeners[0].Name)).Error).NotTo(HaveOccurred())
 	})
 
 	It("should get TLSRoutes in other namespace for listener", func() {
@@ -674,11 +675,11 @@ var _ = Describe("Query", func() {
 		}
 
 		gq := newQueries(GinkgoT(), tlsRoute)
-		routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), gw)
+		routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), &ir.Gateway{Obj: gw})
 
 		Expect(err).NotTo(HaveOccurred())
-		Expect(routes.ListenerResults["foo-tls"].Error).NotTo(HaveOccurred())
-		Expect(routes.ListenerResults["foo-tls"].Routes).To(HaveLen(1))
+		Expect(routes.GetListenerResult(gw, "foo-tls").Error).NotTo(HaveOccurred())
+		Expect(routes.GetListenerResult(gw, "foo-tls").Routes).To(HaveLen(1))
 	})
 
 	It("should error when listeners don't match TLSRoute", func() {
@@ -710,7 +711,7 @@ var _ = Describe("Query", func() {
 		}
 
 		gq := newQueries(GinkgoT(), tlsRoute)
-		routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), gw)
+		routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), &ir.Gateway{Obj: gw})
 
 		Expect(err).NotTo(HaveOccurred())
 		Expect(routes.RouteErrors).To(HaveLen(1))
@@ -743,7 +744,7 @@ var _ = Describe("Query", func() {
 		}
 
 		gq := newQueries(GinkgoT(), tlsRoute)
-		routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), gw)
+		routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), &ir.Gateway{Obj: gw})
 
 		Expect(err).NotTo(HaveOccurred())
 		Expect(routes.RouteErrors).To(HaveLen(1))
@@ -781,12 +782,12 @@ var _ = Describe("Query", func() {
 		}
 
 		gq := newQueries(GinkgoT(), tlsRoute)
-		routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), gw)
+		routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), &ir.Gateway{Obj: gw})
 
 		Expect(err).NotTo(HaveOccurred())
 		Expect(routes.RouteErrors).To(BeEmpty())
-		Expect(routes.ListenerResults["foo-tls"].Routes).To(HaveLen(1))
-		Expect(routes.ListenerResults["bar"].Routes).To(BeEmpty())
+		Expect(routes.GetListenerResult(gw, "foo-tls").Routes).To(HaveLen(1))
+		Expect(routes.GetListenerResult(gw, "bar").Routes).To(BeEmpty())
 	})
 
 	// GRPCRoute Tests
@@ -811,11 +812,11 @@ var _ = Describe("Query", func() {
 		}
 
 		gq := newQueries(GinkgoT(), gr)
-		routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), gw)
+		routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), &ir.Gateway{Obj: gw})
 
 		Expect(err).NotTo(HaveOccurred())
-		Expect(routes.ListenerResults[string(gw.Spec.Listeners[0].Name)].Routes).To(HaveLen(1))
-		Expect(routes.ListenerResults[string(gw.Spec.Listeners[0].Name)].Error).NotTo(HaveOccurred())
+		Expect(routes.GetListenerResult(gw, string(gw.Spec.Listeners[0].Name)).Routes).To(HaveLen(1))
+		Expect(routes.GetListenerResult(gw, string(gw.Spec.Listeners[0].Name)).Error).NotTo(HaveOccurred())
 	})
 
 	It("should get GRPCRoutes in other namespace for listener", func() {
@@ -845,11 +846,11 @@ var _ = Describe("Query", func() {
 		}
 
 		gq := newQueries(GinkgoT(), gr)
-		routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), gw)
+		routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), &ir.Gateway{Obj: gw})
 
 		Expect(err).NotTo(HaveOccurred())
-		Expect(routes.ListenerResults["foo-grpc"].Error).NotTo(HaveOccurred())
-		Expect(routes.ListenerResults["foo-grpc"].Routes).To(HaveLen(1))
+		Expect(routes.GetListenerResult(gw, "foo-grpc").Error).NotTo(HaveOccurred())
+		Expect(routes.GetListenerResult(gw, "foo-grpc").Routes).To(HaveLen(1))
 	})
 
 	It("should error when listeners don't match GRPCRoute", func() {
@@ -881,7 +882,7 @@ var _ = Describe("Query", func() {
 		}
 
 		gq := newQueries(GinkgoT(), gr)
-		routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), gw)
+		routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), &ir.Gateway{Obj: gw})
 
 		Expect(err).NotTo(HaveOccurred())
 		Expect(routes.RouteErrors).To(HaveLen(1))
@@ -914,7 +915,7 @@ var _ = Describe("Query", func() {
 		}
 
 		gq := newQueries(GinkgoT(), gr)
-		routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), gw)
+		routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), &ir.Gateway{Obj: gw})
 
 		Expect(err).NotTo(HaveOccurred())
 		Expect(routes.RouteErrors).To(HaveLen(1))
@@ -952,30 +953,85 @@ var _ = Describe("Query", func() {
 		}
 
 		gq := newQueries(GinkgoT(), gr)
-		routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), gw)
+		routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), &ir.Gateway{Obj: gw})
 
 		Expect(err).NotTo(HaveOccurred())
 		Expect(routes.RouteErrors).To(BeEmpty())
-		Expect(routes.ListenerResults["foo-grpc"].Routes).To(HaveLen(1))
-		Expect(routes.ListenerResults["bar"].Routes).To(BeEmpty())
+		Expect(routes.GetListenerResult(gw, "foo-grpc").Routes).To(HaveLen(1))
+		Expect(routes.GetListenerResult(gw, "bar").Routes).To(BeEmpty())
+	})
+
+	It("should get http routes for a consolidated gateway", func() {
+		gwWithListener := gw()
+		gwWithListener.Spec.Listeners = []gwv1.Listener{
+			{
+				Name:     "foo",
+				Protocol: gwv1.HTTPProtocolType,
+			},
+		}
+		allNamespaces := gwv1.NamespacesFromAll
+		gwWithListener.Spec.AllowedListeners = &gwv1.AllowedListeners{
+			Namespaces: &gwv1.ListenerNamespaces{
+				From: &allNamespaces,
+			},
+		}
+
+		lsWithListener := ls()
+		gwHR := httpRoute()
+		gwHR.Spec.ParentRefs = []gwv1.ParentReference{
+			{
+				Name: "test",
+			},
+		}
+
+		lsHR := httpRoute()
+		lsHR.Name = "ls-route"
+		lsKind := gwv1.Kind(wellknown.XListenerSetKind)
+		lsGroup := gwv1.Group(wellknown.XListenerSetGroup)
+		lsHR.Spec.ParentRefs = []gwv1.ParentReference{
+			{
+				Kind:  &lsKind,
+				Group: &lsGroup,
+				Name:  "ls",
+			},
+		}
+
+		irGW := ir.Gateway{
+			Obj:                 gwWithListener,
+			AllowedListenerSets: []ir.ListenerSet{{Obj: lsWithListener}},
+		}
+
+		gq := newQueries(GinkgoT(), gwHR, lsHR)
+
+		routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), &irGW)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(routes.RouteErrors).To(BeEmpty())
+		Expect(routes.GetListenerResult(gwWithListener, "foo").Error).NotTo(HaveOccurred())
+		Expect(routes.GetListenerResult(gwWithListener, "foo").Routes).To(HaveLen(1))
+		Expect(routes.GetListenerResult(lsWithListener, "bar").Error).NotTo(HaveOccurred())
+		Expect(routes.GetListenerResult(lsWithListener, "bar").Routes).To(HaveLen(2))
+		// The first route should be the route mapped to the parent gateway
+		Expect(routes.GetListenerResult(lsWithListener, string(lsWithListener.Spec.Listeners[0].Name)).Routes[0].GetName()).To(Equal("test"))
+		// The second should be the route mapped to the listener set
+		Expect(routes.GetListenerResult(lsWithListener, string(lsWithListener.Spec.Listeners[0].Name)).Routes[1].GetName()).To(Equal("ls-route"))
 	})
 })
 
-func refGrantSecret() *apiv1beta1.ReferenceGrant {
-	return &apiv1beta1.ReferenceGrant{
+func refGrantSecret() *gwv1beta1.ReferenceGrant {
+	return &gwv1beta1.ReferenceGrant{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "default2",
 			Name:      "foo",
 		},
-		Spec: apiv1beta1.ReferenceGrantSpec{
-			From: []apiv1beta1.ReferenceGrantFrom{
+		Spec: gwv1beta1.ReferenceGrantSpec{
+			From: []gwv1beta1.ReferenceGrantFrom{
 				{
 					Group:     gwv1.Group("gateway.networking.k8s.io"),
 					Kind:      gwv1.Kind("Gateway"),
 					Namespace: gwv1.Namespace("default"),
 				},
 			},
-			To: []apiv1beta1.ReferenceGrantTo{
+			To: []gwv1beta1.ReferenceGrantTo{
 				{
 					Group: gwv1.Group("core"),
 					Kind:  gwv1.Kind("Secret"),
@@ -1072,7 +1128,7 @@ func newQueries(t test.Failer, initObjs ...client.Object) query.GatewayQueries {
 	}
 	mock := krttest.NewMock(t, anys)
 	services := krttest.GetMockCollection[*corev1.Service](mock)
-	refgrants := krtcollections.NewRefGrantIndex(krttest.GetMockCollection[*apiv1beta1.ReferenceGrant](mock))
+	refgrants := krtcollections.NewRefGrantIndex(krttest.GetMockCollection[*gwv1beta1.ReferenceGrant](mock))
 
 	policies := krtcollections.NewPolicyIndex(krtutil.KrtOptions{}, extensionsplug.ContributesPolicies{})
 	upstreams := krtcollections.NewBackendIndex(krtutil.KrtOptions{}, policies, refgrants)
@@ -1131,4 +1187,24 @@ func k8sUpstreams(services krt.Collection[*corev1.Service]) krt.Collection[ir.Ba
 		}
 		return uss
 	})
+}
+
+func ls() *gwxv1a1.XListenerSet {
+	return &gwxv1a1.XListenerSet{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "default",
+			Name:      "ls",
+		},
+		Spec: gwxv1a1.ListenerSetSpec{
+			Listeners: []gwxv1a1.ListenerEntry{
+				{
+					Name:     "bar",
+					Protocol: gwv1.HTTPProtocolType,
+				},
+			},
+			ParentRef: gwxv1a1.ParentGatewayReference{
+				Name: "test",
+			},
+		},
+	}
 }

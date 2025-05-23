@@ -387,7 +387,7 @@ func (s *testingSuite) hasDynamicModuleLoaded(shouldBeLoaded bool) {
 	s.Assert().NoError(err, "get admin cli for envoy")
 
 	s.testInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
-		listener, err := adminClient.GetSingleListenerFromDynamicListeners(context.Background(), "http")
+		listener, err := adminClient.GetSingleListenerFromDynamicListeners(context.Background(), "listener~8080")
 		g.Expect(err).ToNot(gomega.HaveOccurred(), "failed to get listener")
 
 		// use a weak filter name check for cyclic imports
