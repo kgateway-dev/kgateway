@@ -35,7 +35,6 @@ const PreserveCasePlugin = "envoy.http.stateful_header_formatters.preserve_case"
 
 type BackendConfigPolicyIR struct {
 	ct                            time.Time
-	maxRequestsPerConnection      *int
 	connectTimeout                *durationpb.Duration
 	perConnectionBufferLimitBytes *int
 	tcpKeepalive                  *corev3.TcpKeepalive
@@ -54,10 +53,6 @@ func (d *BackendConfigPolicyIR) CreationTime() time.Time {
 func (d *BackendConfigPolicyIR) Equals(other any) bool {
 	d2, ok := other.(*BackendConfigPolicyIR)
 	if !ok {
-		return false
-	}
-
-	if d.maxRequestsPerConnection != d2.maxRequestsPerConnection {
 		return false
 	}
 
