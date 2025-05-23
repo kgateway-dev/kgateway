@@ -85,14 +85,7 @@ or
 ```go
 Expect(err).To(MatchError(ErrorFunc("expected error"))
 ```
-or
-```go
-Expect(err).To(MatchError(GlobalError))
-```
-or
-```go
-Expect(err).To(MatchError(ErrorFunc("expected error"))
-```
+
 
 ### Prefer Assertion Descriptions
 Sometimes you will see:
