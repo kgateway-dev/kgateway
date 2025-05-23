@@ -23,12 +23,15 @@ type ListenerContext struct {
 }
 
 type RouteConfigContext struct {
-	// No policy here, as you can't attach policies to route configs.
-	// we will call every policy with this to set defaults.
+	Policy            PolicyIR
+	FilterChainName   string
+	TypedFilterConfig TypedFilterConfigMap
 }
 
 type VirtualHostContext struct {
-	Policy PolicyIR
+	Policy            PolicyIR
+	FilterChainName   string
+	TypedFilterConfig TypedFilterConfigMap
 }
 
 type TypedFilterConfigMap map[string]proto.Message

@@ -146,6 +146,7 @@ func (ml *MergedListeners) appendHttpListener(
 		httpFilterChain:  fc,
 		listenerReporter: reporter,
 		listener:         listener,
+		gateway:          ml.parentGw,
 	})
 }
 
@@ -185,6 +186,7 @@ func (ml *MergedListeners) appendHttpsListener(
 		httpsFilterChains: []httpsFilterChain{mfc},
 		listenerReporter:  reporter,
 		listener:          listener,
+		gateway:           ml.parentGw,
 	})
 }
 
@@ -243,6 +245,7 @@ func (ml *MergedListeners) AppendTcpListener(
 		TcpFilterChains:  []tcpFilterChain{fc},
 		listenerReporter: reporter,
 		listener:         listener,
+		gateway:          ml.parentGw,
 	})
 }
 
@@ -343,6 +346,7 @@ type MergedListener struct {
 	TcpFilterChains   []tcpFilterChain
 	listenerReporter  reports.ListenerReporter
 	listener          ir.Listener
+	gateway           ir.Gateway
 
 	// TODO(policy via http listener options)
 }
@@ -364,6 +368,7 @@ func (ml *MergedListener) TranslateListener(
 			ctx,
 			ml.name,
 			ml.listener,
+			ml.gateway,
 			reporter,
 		)
 		httpFilterChains = append(httpFilterChains, httpFilterChain)
@@ -627,6 +632,7 @@ func (httpFilterChain *httpFilterChain) translateHttpFilterChain(
 	ctx context.Context,
 	parentName string,
 	listener ir.Listener,
+	gw ir.Gateway,
 	reporter reports.Reporter,
 ) ir.HttpFilterChainIR {
 	routesByHost := map[string]routeutils.SortableRoutes{}
@@ -684,6 +690,13 @@ func (httpFilterChain *httpFilterChain) translateHttpFilterChain(
 		FilterChainCommon: ir.FilterChainCommon{
 			FilterChainName: string(listener.Name),
 		},
+		// Http plain text filter chains do not have attached policies.
+		// Because a single chain is shared across multiple gateway-api listeners, we don't have a clean way
+		// of applying listener level policies.
+		// For route policies this is not an issue, as they will be applied on the vhost.
+		// This is a problem for example if section name on HttpListener policy.
+		// it won't attach in that case..
+		// i'm pretty sure this is what we want, as we can't attach HCM policies to only some of the vhosts.
 		Vhosts: virtualHosts,
 	}
 }
@@ -726,10 +739,9 @@ func (httpsFilterChain *httpsFilterChain) translateHttpsFilterChain(
 		if !virtualHostNames[vhostName] {
 			virtualHostNames[vhostName] = true
 			virtualHost := &ir.VirtualHost{
-				Name:             vhostName,
-				Hostname:         host,
-				Rules:            vhostRoutes.ToRoutes(),
-				AttachedPolicies: listener.AttachedPolicies,
+				Name:     vhostName,
+				Hostname: host,
+				Rules:    vhostRoutes.ToRoutes(),
 			}
 			virtualHosts = append(virtualHosts, virtualHost)
 		}
@@ -774,7 +786,8 @@ func (httpsFilterChain *httpsFilterChain) translateHttpsFilterChain(
 			Matcher:         matcher,
 			TLS:             sslConfig,
 		},
-		Vhosts: virtualHosts,
+		AttachedPolicies: httpsFilterChain.attachedPolicies,
+		Vhosts:           virtualHosts,
 	}
 }
 

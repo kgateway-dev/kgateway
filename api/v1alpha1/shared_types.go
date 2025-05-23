@@ -21,6 +21,17 @@ type LocalPolicyTargetReference struct {
 	Name gwv1.ObjectName `json:"name"`
 }
 
+// Select the object to attach the policy by Group, Kind, Name and SectionName.
+// The object must be in the same namespace as the policy.
+// You can target only one object at a time.
+type LocalPolicyTargetReferenceWithSectionName struct {
+	LocalPolicyTargetReference `json:",inline"`
+
+	// The section name of the target resource.
+	// +optional
+	SectionName *gwv1.SectionName `json:"sectionName,omitempty"`
+}
+
 // Select the object to attach the policy by Group, Kind, and its labels.
 // The object must be in the same namespace as the policy and match the
 // specified labels.

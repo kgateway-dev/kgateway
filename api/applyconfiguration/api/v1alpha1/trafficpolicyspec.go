@@ -5,13 +5,13 @@ package v1alpha1
 // TrafficPolicySpecApplyConfiguration represents a declarative configuration of the TrafficPolicySpec type for use
 // with apply.
 type TrafficPolicySpecApplyConfiguration struct {
-	TargetRefs      []LocalPolicyTargetReferenceApplyConfiguration `json:"targetRefs,omitempty"`
-	TargetSelectors []LocalPolicyTargetSelectorApplyConfiguration  `json:"targetSelectors,omitempty"`
-	AI              *AIPolicyApplyConfiguration                    `json:"ai,omitempty"`
-	Transformation  *TransformationPolicyApplyConfiguration        `json:"transformation,omitempty"`
-	ExtProc         *ExtProcPolicyApplyConfiguration               `json:"extProc,omitempty"`
-	ExtAuth         *ExtAuthPolicyApplyConfiguration               `json:"extAuth,omitempty"`
-	RateLimit       *RateLimitApplyConfiguration                   `json:"rateLimit,omitempty"`
+	TargetRefs      []LocalPolicyTargetReferenceWithSectionNameApplyConfiguration `json:"targetRefs,omitempty"`
+	TargetSelectors []LocalPolicyTargetSelectorApplyConfiguration                 `json:"targetSelectors,omitempty"`
+	AI              *AIPolicyApplyConfiguration                                   `json:"ai,omitempty"`
+	Transformation  *TransformationPolicyApplyConfiguration                       `json:"transformation,omitempty"`
+	ExtProc         *ExtProcPolicyApplyConfiguration                              `json:"extProc,omitempty"`
+	ExtAuth         *ExtAuthPolicyApplyConfiguration                              `json:"extAuth,omitempty"`
+	RateLimit       *RateLimitApplyConfiguration                                  `json:"rateLimit,omitempty"`
 }
 
 // TrafficPolicySpecApplyConfiguration constructs a declarative configuration of the TrafficPolicySpec type for use with
@@ -23,7 +23,7 @@ func TrafficPolicySpec() *TrafficPolicySpecApplyConfiguration {
 // WithTargetRefs adds the given value to the TargetRefs field in the declarative configuration
 // and returns the receiver, so that objects can be build by chaining "With" function invocations.
 // If called multiple times, values provided by each call will be appended to the TargetRefs field.
-func (b *TrafficPolicySpecApplyConfiguration) WithTargetRefs(values ...*LocalPolicyTargetReferenceApplyConfiguration) *TrafficPolicySpecApplyConfiguration {
+func (b *TrafficPolicySpecApplyConfiguration) WithTargetRefs(values ...*LocalPolicyTargetReferenceWithSectionNameApplyConfiguration) *TrafficPolicySpecApplyConfiguration {
 	for i := range values {
 		if values[i] == nil {
 			panic("nil value passed to WithTargetRefs")

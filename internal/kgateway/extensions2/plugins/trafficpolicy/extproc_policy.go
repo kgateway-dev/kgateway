@@ -5,33 +5,23 @@ import (
 
 	envoy_ext_proc_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_proc/v3"
 	"istio.io/istio/pkg/kube/krt"
-	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/pluginutils"
 )
 
 // toEnvoyExtProc converts an ExtProcPolicy to an ExternalProcessor
-func toEnvoyExtProc(
-	trafficPolicy *v1alpha1.TrafficPolicy, gatewayExtensions krt.Collection[TrafficPolicyGatewayExtensionIR],
+func (b *TrafficPolicyBuilder) toEnvoyExtProc(
 	krtctx krt.HandlerContext,
-	commoncol *common.CommonCollections,
+	trafficPolicy *v1alpha1.TrafficPolicy,
 ) (*ExtprocIR, error) {
 	spec := trafficPolicy.Spec.ExtProc
-	if spec.ExtensionRef == nil {
-		return nil, fmt.Errorf("extproc extensionRef is required")
+	gatewayExtension, err := b.FetchGatewayExtension(krtctx, spec.ExtensionRef, trafficPolicy.GetNamespace())
+	if err != nil {
+		return nil, fmt.Errorf("extproc: %w", err)
 	}
-	gwExtName := types.NamespacedName{Name: spec.ExtensionRef.Name, Namespace: trafficPolicy.GetNamespace()}
-	gatewayExtension := krt.FetchOne(krtctx, gatewayExtensions, krt.FilterObjectName(gwExtName))
-	if gatewayExtension == nil {
-		return nil, fmt.Errorf("extauth extension not found")
-	}
-	if gatewayExtension.err != nil {
-		return nil, gatewayExtension.err
-	}
-	if gatewayExtension.extProc == nil {
-		return nil, pluginutils.ErrInvalidExtensionType(v1alpha1.GatewayExtensionTypeExtAuth, gatewayExtension.extType)
+	if gatewayExtension.ExtType != v1alpha1.GatewayExtensionTypeExtProc || gatewayExtension.ExtProc == nil {
+		return nil, pluginutils.ErrInvalidExtensionType(v1alpha1.GatewayExtensionTypeExtAuth, gatewayExtension.ExtType)
 	}
 
 	return &ExtprocIR{

@@ -12,7 +12,7 @@ Its sole responsibility is to create [TestInstallations](#testinstallation).
 
 ## TestInstallation
 
-A [TestInstallation](./test.go) is the structure that manages a group of tests that run against an installation of Gloo Gateway, within a Kubernetes Cluster.
+A [TestInstallation](./test.go) is the structure that manages a group of tests that run against an installation within a Kubernetes Cluster.
 
 We try to define a single `TestInstallation` per file in a `TestCluster`. This way, it is easy to identify what behaviors are expected for that installation.
 

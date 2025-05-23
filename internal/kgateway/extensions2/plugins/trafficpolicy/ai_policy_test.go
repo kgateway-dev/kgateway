@@ -46,8 +46,7 @@ func TestProcessAITrafficPolicy(t *testing.T) {
 		// Execute
 		err := preProcessAITrafficPolicy(aiConfig, aiIR)
 		require.NoError(t, err)
-		err = plugin.processAITrafficPolicy(&typedFilterConfig, aiIR)
-		require.NoError(t, err)
+		plugin.processAITrafficPolicy(&typedFilterConfig, aiIR)
 
 		// Verify streaming header was added
 		extprocSettingsPostPlugin := typedFilterConfig.GetTypedConfig(wellknown.AIExtProcFilterName).(*envoy_ext_proc_v3.ExtProcPerRoute)
@@ -85,8 +84,7 @@ func TestProcessAITrafficPolicy(t *testing.T) {
 		err := preProcessAITrafficPolicy(aiConfig, aiIR)
 		require.NoError(t, err)
 
-		err = plugin.processAITrafficPolicy(&typedFilterConfig, aiIR)
-		require.NoError(t, err)
+		plugin.processAITrafficPolicy(&typedFilterConfig, aiIR)
 
 		// Verify
 		require.NoError(t, err)
@@ -124,11 +122,8 @@ func TestProcessAITrafficPolicy(t *testing.T) {
 		err := preProcessAITrafficPolicy(aiConfig, aiIR)
 		require.NoError(t, err)
 
-		err = plugin.processAITrafficPolicy(&typedFilterConfig, aiIR)
-		require.NoError(t, err)
+		plugin.processAITrafficPolicy(&typedFilterConfig, aiIR)
 
-		// Verify
-		require.NoError(t, err)
 		routeTransformations, ok := typedFilterConfig.GetTypedConfig(wellknown.AIPolicyTransformationFilterName).(*envoytransformation.RouteTransformations)
 		assert.True(t, ok)
 		assert.True(t, len(routeTransformations.Transformations) == 1)
@@ -177,11 +172,7 @@ func TestProcessAITrafficPolicy(t *testing.T) {
 		err := preProcessAITrafficPolicy(aiConfig, aiIR)
 		require.NoError(t, err)
 
-		err = plugin.processAITrafficPolicy(&typedFilterConfig, aiIR)
-		require.NoError(t, err)
-
-		// Verify
-		require.NoError(t, err)
+		plugin.processAITrafficPolicy(&typedFilterConfig, aiIR)
 
 		// Check that the guardrails config headers were added
 		foundReqConfig := false

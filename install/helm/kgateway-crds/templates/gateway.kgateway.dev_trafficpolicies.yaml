@@ -433,7 +433,7 @@ spec:
                       tokenBucket:
                         properties:
                           fillInterval:
-                            format: duration
+                            pattern: ^([0-9]{1,5}(h|m|s|ms)){1,4}$
                             type: string
                           maxTokens:
                             format: int32
@@ -464,6 +464,11 @@ spec:
                     name:
                       maxLength: 253
                       minLength: 1
+                      type: string
+                    sectionName:
+                      maxLength: 253
+                      minLength: 1
+                      pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
                       type: string
                   required:
                   - group

@@ -32,7 +32,7 @@ spec:
   - port: 5000
     name: http
   selector:
-    app: svc-b
+    app: svc-a
 ---
 # we should get a filter chain with a default virtualhost that just
 # sends traffic to the corresponding `kube` Service backend
