@@ -24,6 +24,7 @@ var (
 	validListenerSetManifest                = filepath.Join(fsutils.MustGetThisDir(), "testdata", "valid-listenerset.yaml")
 	invalidListenerSetNotAllowedManifest    = filepath.Join(fsutils.MustGetThisDir(), "testdata", "invalid-listenerset-not-allowed.yaml")
 	invalidListenerSetNonExistingGWManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "invalid-listenerset-non-existing-gw.yaml")
+	policyManifest                          = filepath.Join(fsutils.MustGetThisDir(), "testdata", "policies.yaml")
 
 	proxyObjectMeta = metav1.ObjectMeta{
 		Name:      "gw",
@@ -80,6 +81,16 @@ var (
 		Body:       gstruct.Ignore(),
 	}
 
+	expectOKWithCustomHeader = func(key, value string) *testmatchers.HttpResponse {
+		return &testmatchers.HttpResponse{
+			StatusCode: http.StatusOK,
+			Body:       gstruct.Ignore(),
+			Headers: map[string]interface{}{
+				key: value,
+			},
+		}
+	}
+
 	expectNotFound = &testmatchers.HttpResponse{
 		StatusCode: http.StatusNotFound,
 		Body:       gstruct.Ignore(),
@@ -107,6 +118,11 @@ var (
 		"TestInvalidListenerSetNonExistingGW": {
 			SimpleTestCase: base.SimpleTestCase{
 				Manifests: []string{invalidListenerSetNonExistingGWManifest},
+			},
+		},
+		"TestPolicies": {
+			SimpleTestCase: base.SimpleTestCase{
+				Manifests: []string{validListenerSetManifest, policyManifest},
 			},
 		},
 	}

@@ -11,6 +11,12 @@ spec:
       allowedRoutes:
         namespaces:
           from: Same
+    - protocol: HTTP
+      port: 8081
+      name: http-2
+      allowedRoutes:
+        namespaces:
+          from: Same
   allowedListeners:
     namespaces:
       from: Selector

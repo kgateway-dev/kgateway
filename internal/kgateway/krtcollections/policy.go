@@ -336,10 +336,10 @@ func NewGatewayIndex(
 				Obj:       ls,
 				Listeners: make([]ir.Listener, 0),
 			}
-			listenerSetPolicies := h.policies.getTargetingPolicies(kctx, extensionsplug.GatewayAttachmentPoint, lsIR.ObjectSource, "", i.GetLabels())
+			listenerSetPolicies := h.policies.getTargetingPolicies(kctx, extensionsplug.GatewayAttachmentPoint, lsIR.ObjectSource, "", ls.GetLabels())
 
 			for _, l := range ls.Spec.Listeners {
-				listenerSpecificPolicies := h.policies.getTargetingPolicies(kctx, extensionsplug.RouteAttachmentPoint, lsIR.ObjectSource, string(l.Name), i.GetLabels())
+				listenerSpecificPolicies := h.policies.getTargetingPolicies(kctx, extensionsplug.RouteAttachmentPoint, lsIR.ObjectSource, string(l.Name), ls.GetLabels())
 				// The Gateway Polices applies to all listeners but we need to apply them to listeners within the LS.
 				// Since there is no LS equivalent in Envoy, apply them on each listener in the LS.
 				// Ensure the sectioned policies are first
@@ -352,8 +352,8 @@ func NewGatewayIndex(
 					PolicyAncestorRef: gwv1.ParentReference{
 						Group:     k8sptr.To(gwv1.Group(wellknown.XListenerSetGVK.Group)),
 						Kind:      k8sptr.To(gwv1.Kind(wellknown.XListenerSetGVK.Kind)),
-						Name:      gwv1.ObjectName(i.Name),
-						Namespace: k8sptr.To(gwv1.Namespace(i.Namespace)),
+						Name:      gwv1.ObjectName(ls.Name),
+						Namespace: k8sptr.To(gwv1.Namespace(ls.Namespace)),
 					},
 				})
 			}

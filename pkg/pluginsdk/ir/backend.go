@@ -3,6 +3,7 @@ package ir
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"strings"
 
 	"istio.io/istio/pkg/kube/krt"
@@ -218,9 +219,13 @@ func (listener Listener) GetParentReporter(reporter pluginsdkreporter.Reporter) 
 	panic("Unknown parent type")
 }
 
+func (c Listener) Equals(in Listener) bool {
+	return reflect.DeepEqual(c, in)
+}
+
 type Gateway struct {
 	ObjectSource        `json:",inline"`
-	Listeners           []Listener
+	Listeners           Listeners
 	AllowedListenerSets ListenerSets
 	DeniedListenerSets  ListenerSets
 	Obj                 *gwv1.Gateway
@@ -270,7 +275,7 @@ func errorsEqual(a, b error) bool {
 
 type ListenerSet struct {
 	ObjectSource `json:",inline"`
-	Listeners    []Listener
+	Listeners    Listeners
 	Obj          *gwxv1.XListenerSet
 	// ListenerSet polices are attached to the individual listeners in addition
 	// to their specific policies
@@ -281,7 +286,7 @@ func (c ListenerSet) ResourceName() string {
 }
 
 func (c ListenerSet) Equals(in ListenerSet) bool {
-	return c.ObjectSource.Equals(in.ObjectSource) && versionEquals(c.Obj, in.Obj)
+	return c.ObjectSource.Equals(in.ObjectSource) && versionEquals(c.Obj, in.Obj) && c.Listeners.Equals(in.Listeners)
 }
 
 type ListenerSets []ListenerSet
@@ -292,6 +297,20 @@ func (c ListenerSets) Equals(in ListenerSets) bool {
 	}
 	for i, ls := range c {
 		if !ls.Equals(in[i]) {
+			return false
+		}
+	}
+	return true
+}
+
+type Listeners []Listener
+
+func (c Listeners) Equals(in Listeners) bool {
+	if len(c) != len(in) {
+		return false
+	}
+	for i, l := range c {
+		if !l.Equals(in[i]) {
 			return false
 		}
 	}

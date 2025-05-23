@@ -70,19 +70,63 @@ func (s *testingSuite) TestValidListenerSet() {
 		defaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
-			curl.WithPort(8081),
+			curl.WithPort(8090),
 			curl.WithHostHeader("example.com"),
 		},
 		expectOK)
 
-	// The route attached to the listenerset should work on the listener defined on the listener set
+	// The route attached to the listener set should work on the listener defined on the listener set
 	s.TestInstallation.Assertions.AssertEventualCurlResponse(
 		s.Ctx,
 		defaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
-			curl.WithPort(8081),
+			curl.WithPort(8090),
 			curl.WithHostHeader("listenerset.com"),
+		},
+		expectOK)
+
+	// The route attached to the listener set should not work on the listener it did not target
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
+		defaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
+			curl.WithPort(8090),
+			curl.WithHostHeader("listenerset-section.com"),
+		},
+		expectNotFound)
+
+	// The route attached to the gateway should work on the listener defined on the listener set
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
+		defaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
+			curl.WithPort(8091),
+			curl.WithHostHeader("example.com"),
+		},
+		expectOK)
+
+	// The route attached to the listener set should work on the listener defined on the listener set
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
+		defaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
+			curl.WithPort(8091),
+			curl.WithHostHeader("listenerset.com"),
+		},
+		expectOK)
+
+	// The route attached to the listener set should work on the listener it targets
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
+		defaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
+			curl.WithPort(8091),
+			curl.WithHostHeader("listenerset-section.com"),
 		},
 		expectOK)
 }
@@ -107,7 +151,7 @@ func (s *testingSuite) TestInvalidListenerSetNotAllowed() {
 		defaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
-			curl.WithPort(8081),
+			curl.WithPort(8090),
 			curl.WithHostHeader("example.com"),
 		},
 		curlExitErrorCode)
@@ -133,10 +177,56 @@ func (s *testingSuite) TestInvalidListenerSetNonExistingGW() {
 		defaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
-			curl.WithPort(8081),
+			curl.WithPort(8090),
 			curl.WithHostHeader("example.com"),
 		},
 		curlExitErrorCode)
+}
+
+func (s *testingSuite) TestPolicies() {
+	// The route attached to the gateway should work on the listener defined on the gateway
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
+		defaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
+			curl.WithPort(8080),
+			curl.WithHostHeader("example.com"),
+		},
+		expectOKWithCustomHeader("policy", "gateway"))
+
+	// The route attached to the listenerset should NOT work on the listener defined on the gateway
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
+		defaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
+			curl.WithPort(8081),
+			curl.WithHostHeader("example.com"),
+		},
+		expectOKWithCustomHeader("policy", "gateway-section"))
+
+	// The route attached to the gateway should work on the listener defined on the listener set
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
+		defaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
+			curl.WithPort(8090),
+			curl.WithHostHeader("example.com"),
+		},
+		expectOKWithCustomHeader("policy", "listener-set"))
+
+	// The route attached to the listener set should work on the listener defined on the listener set
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
+		defaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
+			curl.WithPort(8091),
+			curl.WithHostHeader("example.com"),
+		},
+		expectOKWithCustomHeader("policy", "listener-set-section"))
 }
 
 func (s *testingSuite) expectListenerSetAccepted(namespacedName types.NamespacedName) {
@@ -159,8 +249,35 @@ func (s *testingSuite) expectListenerSetAccepted(namespacedName types.Namespaced
 			Listeners: []gwxv1a1.ListenerEntryStatus{
 				{
 					Name:           "http",
-					Port:           8081,
+					Port:           8090,
 					AttachedRoutes: 2,
+					Conditions: []metav1.Condition{
+						{
+							Type:   string(gwxv1a1.ListenerEntryConditionAccepted),
+							Status: metav1.ConditionTrue,
+							Reason: string(gwxv1a1.ListenerEntryReasonAccepted),
+						},
+						{
+							Type:   string(gwxv1a1.ListenerEntryConditionConflicted),
+							Status: metav1.ConditionFalse,
+							Reason: string(gwv1.ListenerReasonNoConflicts),
+						},
+						{
+							Type:   string(gwxv1a1.ListenerEntryConditionResolvedRefs),
+							Status: metav1.ConditionTrue,
+							Reason: string(gwxv1a1.ListenerEntryReasonResolvedRefs),
+						},
+						{
+							Type:   string(gwxv1a1.ListenerEntryConditionProgrammed),
+							Status: metav1.ConditionTrue,
+							Reason: string(gwxv1a1.ListenerEntryReasonProgrammed),
+						},
+					},
+				},
+				{
+					Name:           "http-2",
+					Port:           8091,
+					AttachedRoutes: 3,
 					Conditions: []metav1.Condition{
 						{
 							Type:   string(gwxv1a1.ListenerEntryConditionAccepted),
