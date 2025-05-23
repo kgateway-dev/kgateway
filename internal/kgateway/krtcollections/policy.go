@@ -265,6 +265,22 @@ func NewGatewayIndex(
 ) *GatewayIndex {
 	h := &GatewayIndex{policies: policies}
 
+	byParentRefIndex := krt.NewIndex(lss, func(in *gwxv1a1.XListenerSet) []targetRefIndexKey {
+		pRef := in.Spec.ParentRef
+		ns := strOr(pRef.Namespace, "")
+		if ns == "" {
+			ns = in.GetNamespace()
+		}
+		// lookup by the root object
+		return []targetRefIndexKey{{
+			Group:     wellknown.GatewayGroup,
+			Kind:      wellknown.GatewayKind,
+			Name:      string(pRef.Name),
+			Namespace: ns,
+			// this index intentionally doesn't include sectionName
+		}}
+	})
+
 	h.Gateways = krt.NewCollection(gws, func(kctx krt.HandlerContext, i *gwv1.Gateway) *ir.Gateway {
 		// only care about gateways use a class controlled by us
 		gwClass := ptr.Flatten(krt.FetchOne(kctx, gwClasses, krt.FilterKey(string(i.Spec.GatewayClassName))))
@@ -301,22 +317,6 @@ func NewGatewayIndex(
 				},
 			})
 		}
-
-		byParentRefIndex := krt.NewIndex(lss, func(in *gwxv1a1.XListenerSet) []targetRefIndexKey {
-			pRef := in.Spec.ParentRef
-			ns := strOr(pRef.Namespace, "")
-			if ns == "" {
-				ns = in.GetNamespace()
-			}
-			// lookup by the root object
-			return []targetRefIndexKey{{
-				Group:     wellknown.GatewayGroup,
-				Kind:      wellknown.GatewayKind,
-				Name:      string(pRef.Name),
-				Namespace: ns,
-				// this index intentionally doesn't include sectionName
-			}}
-		})
 
 		listenerSets := krt.Fetch(kctx, lss, krt.FilterIndex(byParentRefIndex, targetRefIndexKey{
 			Group:     wellknown.GatewayGroup,
@@ -384,7 +384,7 @@ func NewGatewayIndex(
 	return h
 }
 
-func allowedListenerSet(gw *gwv1.Gateway, listenerSet *gwxv1a1.XListenerSet, namespaces krt.Collection[NamespaceMetadata]) (func(krt.HandlerContext, string) bool, error) {
+func allowedListenerSet(gw *gwv1.Gateway, listenerSet *gwxv1a1.XListenerSet, namespaces krt.Collection[NamespaceMetadata]) (func(kctx krt.HandlerContext, namespace string) bool, error) {
 	// Default to None. Ref: https://gateway-api.sigs.k8s.io/geps/gep-1713/#gateway-listenerset-handshake
 	allowedNs := NoNamespace()
 

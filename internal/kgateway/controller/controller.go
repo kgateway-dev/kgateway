@@ -272,14 +272,12 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 	)
 
 	// Trigger an event when the gateway changes. This can even be a change in listener sets attached to the gateway
-	go func() {
-		c.cfg.CommonCollections.GatewayIndex.Gateways.Register(func(o krt.Event[ir.Gateway]) {
-			gw := o.Latest()
-			c.reconciler.customEvents <- event.TypedGenericEvent[ir.Gateway]{
-				Object: gw,
-			}
-		})
-	}()
+	c.cfg.CommonCollections.GatewayIndex.Gateways.Register(func(o krt.Event[ir.Gateway]) {
+		gw := o.Latest()
+		c.reconciler.customEvents <- event.TypedGenericEvent[ir.Gateway]{
+			Object: gw,
+		}
+	})
 	buildr.WatchesRawSource(
 		// Add channel source for custom events
 		source.Channel(
