@@ -377,6 +377,9 @@ func (r *gatewayQueries) GetRoutesForGateway(kctx krt.HandlerContext, ctx contex
 }
 
 func GenerateRouteKey(parent client.Object, listenerName string) string {
+	if parent == nil {
+		return listenerName
+	}
 	if _, ok := parent.(*gwv1.Gateway); ok {
 		return listenerName
 	}

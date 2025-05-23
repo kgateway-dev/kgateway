@@ -275,7 +275,7 @@ func NewGatewayIndex(
 		out := ir.Gateway{
 			ObjectSource: ir.ObjectSource{
 				Group:     gwv1.SchemeGroupVersion.Group,
-				Kind:      "Gateway",
+				Kind:      wellknown.GatewayKind,
 				Namespace: i.Namespace,
 				Name:      i.Name,
 			},
@@ -326,12 +326,29 @@ func NewGatewayIndex(
 		}))
 
 		for _, ls := range listenerSets {
-			listeners := make([]ir.Listener, 0)
+			lsIR := ir.ListenerSet{
+				ObjectSource: ir.ObjectSource{
+					Group:     wellknown.XListenerSetGroup,
+					Kind:      wellknown.XListenerSetKind,
+					Namespace: ls.Namespace,
+					Name:      ls.Name,
+				},
+				Obj:       ls,
+				Listeners: make([]ir.Listener, 0),
+			}
+			listenerSetPolicies := h.policies.getTargetingPolicies(kctx, extensionsplug.GatewayAttachmentPoint, lsIR.ObjectSource, "", i.GetLabels())
+
 			for _, l := range ls.Spec.Listeners {
-				listeners = append(listeners, ir.Listener{
+				listenerSpecificPolicies := h.policies.getTargetingPolicies(kctx, extensionsplug.RouteAttachmentPoint, lsIR.ObjectSource, string(l.Name), i.GetLabels())
+				// The Gateway Polices applies to all listeners but we need to apply them to listeners within the LS.
+				// Since there is no LS equivalent in Envoy, apply them on each listener in the LS.
+				// Ensure the sectioned policies are first
+				listenerPolicies := append(listenerSpecificPolicies, listenerSetPolicies...)
+
+				lsIR.Listeners = append(lsIR.Listeners, ir.Listener{
 					Listener:         utils.ToListener(l),
 					Parent:           ls,
-					AttachedPolicies: toAttachedPolicies(h.policies.getTargetingPolicies(kctx, extensionsplug.RouteAttachmentPoint, out.ObjectSource, string(l.Name), i.GetLabels())),
+					AttachedPolicies: toAttachedPolicies(listenerPolicies),
 					PolicyAncestorRef: gwv1.ParentReference{
 						Group:     k8sptr.To(gwv1.Group(wellknown.XListenerSetGVK.Group)),
 						Kind:      k8sptr.To(gwv1.Kind(wellknown.XListenerSetGVK.Kind)),
@@ -343,52 +360,22 @@ func NewGatewayIndex(
 
 			allowedNs, err := allowedListenerSet(i, ls, namespaces)
 			if err != nil {
-				out.DeniedListenerSets = append(out.DeniedListenerSets, ir.ListenerSet{
-					ObjectSource: ir.ObjectSource{
-						Group:     wellknown.XListenerSetGroup,
-						Kind:      wellknown.XListenerSetKind,
-						Namespace: ls.Namespace,
-						Name:      ls.Name,
-					},
-					Obj:       ls,
-					Listeners: listeners,
-				})
+				out.DeniedListenerSets = append(out.DeniedListenerSets, lsIR)
 				continue
 			}
 
 			// Check if the namespace of the listenerSet is allowed by the gateway
 			// We return the denied list of ls to have their status set to rejected during validation
 			if !allowedNs(kctx, ls.GetNamespace()) {
-				out.DeniedListenerSets = append(out.DeniedListenerSets, ir.ListenerSet{
-					ObjectSource: ir.ObjectSource{
-						Group:     wellknown.XListenerSetGroup,
-						Kind:      wellknown.XListenerSetKind,
-						Namespace: ls.Namespace,
-						Name:      ls.Name,
-					},
-					Obj:       ls,
-					Listeners: listeners,
-				})
+				out.DeniedListenerSets = append(out.DeniedListenerSets, lsIR)
 				continue
 			}
 
-			out.AllowedListenerSets = append(out.AllowedListenerSets, ir.ListenerSet{
-				ObjectSource: ir.ObjectSource{
-					Group:     wellknown.XListenerSetGroup,
-					Kind:      wellknown.XListenerSetKind,
-					Namespace: ls.Namespace,
-					Name:      ls.Name,
-				},
-				Obj:       ls,
-				Listeners: listeners,
-			})
-			out.Listeners = append(out.Listeners, listeners...)
+			out.AllowedListenerSets = append(out.AllowedListenerSets, lsIR)
+			out.Listeners = append(out.Listeners, lsIR.Listeners...)
 		}
 
 		slices.SortFunc(out.AllowedListenerSets, func(a, b ir.ListenerSet) int {
-			return a.Obj.GetCreationTimestamp().Compare(b.Obj.GetCreationTimestamp().Time)
-		})
-		slices.SortFunc(out.DeniedListenerSets, func(a, b ir.ListenerSet) int {
 			return a.Obj.GetCreationTimestamp().Compare(b.Obj.GetCreationTimestamp().Time)
 		})
 

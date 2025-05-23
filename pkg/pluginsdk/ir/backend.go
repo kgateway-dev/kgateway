@@ -272,9 +272,8 @@ type ListenerSet struct {
 	ObjectSource `json:",inline"`
 	Listeners    []Listener
 	Obj          *gwxv1.XListenerSet
-
-	AttachedListenerPolicies AttachedPolicies
-	AttachedHttpPolicies     AttachedPolicies
+	// ListenerSet polices are attached to the individual listeners in addition
+	// to their specific policies
 }
 
 func (c ListenerSet) ResourceName() string {
@@ -282,7 +281,7 @@ func (c ListenerSet) ResourceName() string {
 }
 
 func (c ListenerSet) Equals(in ListenerSet) bool {
-	return c.ObjectSource.Equals(in.ObjectSource) && versionEquals(c.Obj, in.Obj) && c.AttachedListenerPolicies.Equals(in.AttachedListenerPolicies) && c.AttachedHttpPolicies.Equals(in.AttachedHttpPolicies)
+	return c.ObjectSource.Equals(in.ObjectSource) && versionEquals(c.Obj, in.Obj)
 }
 
 type ListenerSets []ListenerSet
