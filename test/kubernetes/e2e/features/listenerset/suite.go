@@ -42,6 +42,7 @@ func (s *testingSuite) SetupSuite() {
 func (s *testingSuite) TestValidListenerSet() {
 	s.expectListenerSetAccepted(validListenerSet)
 
+	// Gateway Listener
 	// The route attached to the gateway should work on the listener defined on the gateway
 	s.TestInstallation.Assertions.AssertEventualCurlResponse(
 		s.Ctx,
@@ -53,7 +54,7 @@ func (s *testingSuite) TestValidListenerSet() {
 		},
 		expectOK)
 
-	// The route attached to the listenerset should NOT work on the listener defined on the gateway
+	// The route attached to the listener set should NOT work on the listener defined on the gateway
 	s.TestInstallation.Assertions.AssertEventualCurlResponse(
 		s.Ctx,
 		defaults.CurlPodExecOpt,
@@ -64,6 +65,7 @@ func (s *testingSuite) TestValidListenerSet() {
 		},
 		expectNotFound)
 
+	// Listener Set Listeners
 	// The route attached to the gateway should work on the listener defined on the listener set
 	s.TestInstallation.Assertions.AssertEventualCurlResponse(
 		s.Ctx,
@@ -184,7 +186,7 @@ func (s *testingSuite) TestInvalidListenerSetNonExistingGW() {
 }
 
 func (s *testingSuite) TestPolicies() {
-	// The route attached to the gateway should work on the listener defined on the gateway
+	// The policy defined on the Gateway should apply to the Gateway listeners
 	s.TestInstallation.Assertions.AssertEventualCurlResponse(
 		s.Ctx,
 		defaults.CurlPodExecOpt,
@@ -195,7 +197,7 @@ func (s *testingSuite) TestPolicies() {
 		},
 		expectOKWithCustomHeader("policy", "gateway"))
 
-	// The route attached to the listenerset should NOT work on the listener defined on the gateway
+	// The policy defined on the Gateway should apply to the Gateway listeners it targets
 	s.TestInstallation.Assertions.AssertEventualCurlResponse(
 		s.Ctx,
 		defaults.CurlPodExecOpt,
@@ -206,7 +208,18 @@ func (s *testingSuite) TestPolicies() {
 		},
 		expectOKWithCustomHeader("policy", "gateway-section"))
 
-	// The route attached to the gateway should work on the listener defined on the listener set
+	// The policy defined on the Gateway should apply to the Listener Set listeners
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
+		defaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
+			curl.WithPort(8095),
+			curl.WithHostHeader("example.com"),
+		},
+		expectOKWithCustomHeader("policy", "gateway"))
+
+	// The policy defined on the Listener Set should apply to the Listener Set listeners
 	s.TestInstallation.Assertions.AssertEventualCurlResponse(
 		s.Ctx,
 		defaults.CurlPodExecOpt,
@@ -217,7 +230,7 @@ func (s *testingSuite) TestPolicies() {
 		},
 		expectOKWithCustomHeader("policy", "listener-set"))
 
-	// The route attached to the listener set should work on the listener defined on the listener set
+	// The policy defined on the Listener Set should apply to the Listener Set listeners it targets
 	s.TestInstallation.Assertions.AssertEventualCurlResponse(
 		s.Ctx,
 		defaults.CurlPodExecOpt,

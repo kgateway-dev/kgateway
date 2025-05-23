@@ -22,6 +22,7 @@ var (
 	// manifests
 	setupManifest                           = filepath.Join(fsutils.MustGetThisDir(), "testdata", "setup.yaml")
 	validListenerSetManifest                = filepath.Join(fsutils.MustGetThisDir(), "testdata", "valid-listenerset.yaml")
+	validListenerSetManifest2               = filepath.Join(fsutils.MustGetThisDir(), "testdata", "valid-listenerset-2.yaml")
 	invalidListenerSetNotAllowedManifest    = filepath.Join(fsutils.MustGetThisDir(), "testdata", "invalid-listenerset-not-allowed.yaml")
 	invalidListenerSetNonExistingGWManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "invalid-listenerset-non-existing-gw.yaml")
 	policyManifest                          = filepath.Join(fsutils.MustGetThisDir(), "testdata", "policies.yaml")
@@ -122,7 +123,7 @@ var (
 		},
 		"TestPolicies": {
 			SimpleTestCase: base.SimpleTestCase{
-				Manifests: []string{validListenerSetManifest, policyManifest},
+				Manifests: []string{validListenerSetManifest, validListenerSetManifest2, policyManifest},
 			},
 		},
 	}
