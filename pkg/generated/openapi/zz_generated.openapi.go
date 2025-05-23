@@ -1541,7 +1541,7 @@ func schema_kgateway_v2_api_v1alpha1_CommonHttpProtocolOptions(ref common.Refere
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "CommonHttpProtocolOptions are options that are applicable to both HTTP1 and HTTP2 requests.",
+				Description: "CommonHttpProtocolOptions are options that are applicable to both HTTP1 and HTTP2 requests. See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-msg-config-core-v3-httpprotocoloptions) for more details.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"idleTimeout": {
@@ -2920,7 +2920,8 @@ func schema_kgateway_v2_api_v1alpha1_Http1ProtocolOptions(ref common.ReferenceCa
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
+				Description: "See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-msg-config-core-v3-http1protocoloptions) for more details.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"enableTrailers": {
 						SchemaProps: spec.SchemaProps{
@@ -4566,7 +4567,8 @@ func schema_kgateway_v2_api_v1alpha1_TCPKeepalive(ref common.ReferenceCallback) 
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
+				Description: "See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/address.proto#envoy-v3-api-msg-config-core-v3-tcpkeepalive) for more details.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"keepAliveProbes": {
 						SchemaProps: spec.SchemaProps{

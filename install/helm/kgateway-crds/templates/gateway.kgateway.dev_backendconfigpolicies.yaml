@@ -41,12 +41,18 @@ spec:
                     type: string
                   idleTimeout:
                     type: string
+                    x-kubernetes-validations:
+                    - message: idleTimeout must be a valid duration string
+                      rule: duration(self) >= duration('0s')
                   maxHeadersCount:
                     type: integer
                   maxRequestsPerConnection:
                     type: integer
                   maxStreamDuration:
                     type: string
+                    x-kubernetes-validations:
+                    - message: maxStreamDuration must be a valid duration string
+                      rule: duration(self) >= duration('0s')
                 type: object
                 x-kubernetes-validations:
                 - message: idleTimeout must be a valid duration string (e.g. "1s",
@@ -58,6 +64,9 @@ spec:
                     && self.maxStreamDuration.matches('^([0-9]{1,5}(h|m|s|ms)){1,4}$')))
               connectTimeout:
                 type: string
+                x-kubernetes-validations:
+                - message: connectTimeout must be a valid duration string
+                  rule: duration(self) >= duration('0s')
               http1ProtocolOptions:
                 properties:
                   enableTrailers:
@@ -100,10 +109,20 @@ spec:
                 properties:
                   keepAliveInterval:
                     type: string
+                    x-kubernetes-validations:
+                    - message: keepAliveInterval must be a valid duration string
+                      rule: duration(self) >= duration('0s')
+                    - message: keepAliveInterval must be at least 1 second
+                      rule: self.keepAliveInterval.duration.seconds >= 1
                   keepAliveProbes:
                     type: integer
                   keepAliveTime:
                     type: string
+                    x-kubernetes-validations:
+                    - message: keepAliveTime must be a valid duration string
+                      rule: duration(self) >= duration('0s')
+                    - message: keepAliveTime must be at least 1 second
+                      rule: self.keepAliveTime.duration.seconds >= 1
                 type: object
             type: object
           status:

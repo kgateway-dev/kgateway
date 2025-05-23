@@ -34,6 +34,7 @@ type BackendConfigPolicySpec struct {
 
 	// The timeout for new network connections to hosts in the cluster.
 	// +optional
+	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('0s')",message="connectTimeout must be a valid duration string"
 	ConnectTimeout *metav1.Duration `json:"connectTimeout,omitempty"`
 
 	// Soft limit on size of the cluster's connections read and write buffers.
@@ -55,6 +56,7 @@ type BackendConfigPolicySpec struct {
 	Http1ProtocolOptions *Http1ProtocolOptions `json:"http1ProtocolOptions,omitempty"`
 }
 
+// See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-msg-config-core-v3-http1protocoloptions) for more details.
 type Http1ProtocolOptions struct {
 	// Enables trailers for HTTP/1. By default the HTTP/1 codec drops proxied trailers.
 	// Note: Trailers must also be enabled at the gateway level in order for this option to take effect
@@ -82,6 +84,7 @@ const (
 type HeaderFormat string
 
 // CommonHttpProtocolOptions are options that are applicable to both HTTP1 and HTTP2 requests.
+// See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-msg-config-core-v3-httpprotocoloptions) for more details.
 // +kubebuilder:validation:XValidation:message="idleTimeout must be a valid duration string (e.g. \"1s\", \"500ms\")",rule="(!has(self.idleTimeout) || (has(self.idleTimeout) && self.idleTimeout.matches('^([0-9]{1,5}(h|m|s|ms)){1,4}$')))"
 // +kubebuilder:validation:XValidation:message="maxStreamDuration must be a valid duration string (e.g. \"1s\", \"500ms\")",rule="(!has(self.maxStreamDuration) || (has(self.maxStreamDuration) && self.maxStreamDuration.matches('^([0-9]{1,5}(h|m|s|ms)){1,4}$')))"
 type CommonHttpProtocolOptions struct {
@@ -94,6 +97,7 @@ type CommonHttpProtocolOptions struct {
 	//	Disabling this timeout has a highly likelihood of yielding connection leaks due to lost TCP
 	//	FIN packets, etc.
 	// +optional
+	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('0s')",message="idleTimeout must be a valid duration string"
 	IdleTimeout *metav1.Duration `json:"idleTimeout,omitempty"`
 
 	// Specifies the maximum number of headers that the connection will accept.
@@ -105,6 +109,7 @@ type CommonHttpProtocolOptions struct {
 	// Total duration to keep alive an HTTP request/response stream. If the time limit is reached the stream will be
 	// reset independent of any other timeouts. If not specified, this value is not set.
 	// +optional
+	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('0s')",message="maxStreamDuration must be a valid duration string"
 	MaxStreamDuration *metav1.Duration `json:"maxStreamDuration,omitempty"`
 
 	// Action to take when a client request with a header name containing underscore characters is received.
@@ -135,6 +140,7 @@ const (
 	HeadersWithUnderscoresActionDropHeader HeadersWithUnderscoresAction = "DropHeader"
 )
 
+// See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/address.proto#envoy-v3-api-msg-config-core-v3-tcpkeepalive) for more details.
 type TCPKeepalive struct {
 	// Maximum number of keep-alive probes to send before dropping the connection.
 	// +optional
@@ -142,9 +148,13 @@ type TCPKeepalive struct {
 
 	// The number of seconds a connection needs to be idle before keep-alive probes start being sent.
 	// +optional
+	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('0s')",message="keepAliveTime must be a valid duration string"
+	// +kubebuilder:validation:XValidation:rule="self.keepAliveTime.duration.seconds >= 1",message="keepAliveTime must be at least 1 second"
 	KeepAliveTime *metav1.Duration `json:"keepAliveTime,omitempty"`
 
 	// The number of seconds between keep-alive probes.
 	// +optional
+	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('0s')",message="keepAliveInterval must be a valid duration string"
+	// +kubebuilder:validation:XValidation:rule="self.keepAliveInterval.duration.seconds >= 1",message="keepAliveInterval must be at least 1 second"
 	KeepAliveInterval *metav1.Duration `json:"keepAliveInterval,omitempty"`
 }
