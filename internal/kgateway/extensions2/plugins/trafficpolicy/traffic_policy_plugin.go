@@ -866,7 +866,7 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.Filt
 
 func AddDisableFilterIfNeeded(filters []plugins.StagedHttpFilter) []plugins.StagedHttpFilter {
 	for _, f := range filters {
-		if f.Filter.Name == extAuthGlobalDisableFilterName {
+		if f.Filter.GetName() == extAuthGlobalDisableFilterName {
 			return filters
 		}
 	}
