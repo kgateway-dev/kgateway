@@ -40,14 +40,12 @@ spec:
                     - DropHeader
                     type: string
                   idleTimeout:
-                    pattern: ^([0-9]{1,5}(h|m|s|ms)){1,4}$
                     type: string
                   maxHeadersCount:
                     type: integer
                   maxRequestsPerConnection:
                     type: integer
                   maxStreamDuration:
-                    pattern: ^([0-9]{1,5}(h|m|s|ms)){1,4}$
                     type: string
                 type: object
                 x-kubernetes-validations:
@@ -59,7 +57,6 @@ spec:
                   rule: (!has(self.maxStreamDuration) || (has(self.maxStreamDuration)
                     && self.maxStreamDuration.matches('^([0-9]{1,5}(h|m|s|ms)){1,4}$')))
               connectTimeout:
-                pattern: ^([0-9]{1,5}(h|m|s|ms)){1,4}$
                 type: string
               http1ProtocolOptions:
                 properties:
@@ -102,12 +99,10 @@ spec:
               tcpKeepalive:
                 properties:
                   keepAliveInterval:
-                    pattern: ^([0-9]{1,5}(h|m|s|ms)){1,4}$
                     type: string
                   keepAliveProbes:
                     type: integer
                   keepAliveTime:
-                    pattern: ^([0-9]{1,5}(h|m|s|ms)){1,4}$
                     type: string
                 type: object
             type: object

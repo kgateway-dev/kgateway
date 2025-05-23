@@ -1273,8 +1273,7 @@ func schema_kgateway_v2_api_v1alpha1_BackendConfigPolicySpec(ref common.Referenc
 					"connectTimeout": {
 						SchemaProps: spec.SchemaProps{
 							Description: "The timeout for new network connections to hosts in the cluster.",
-							Type:        []string{"string"},
-							Format:      "",
+							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Duration"),
 						},
 					},
 					"perConnectionBufferLimitBytes": {
@@ -1306,7 +1305,7 @@ func schema_kgateway_v2_api_v1alpha1_BackendConfigPolicySpec(ref common.Referenc
 			},
 		},
 		Dependencies: []string{
-			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CommonHttpProtocolOptions", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Http1ProtocolOptions", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LocalPolicyTargetReference", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.TCPKeepalive"},
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CommonHttpProtocolOptions", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Http1ProtocolOptions", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LocalPolicyTargetReference", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.TCPKeepalive", "k8s.io/apimachinery/pkg/apis/meta/v1.Duration"},
 	}
 }
 
@@ -1548,8 +1547,7 @@ func schema_kgateway_v2_api_v1alpha1_CommonHttpProtocolOptions(ref common.Refere
 					"idleTimeout": {
 						SchemaProps: spec.SchemaProps{
 							Description: "The idle timeout for connections. The idle timeout is defined as the period in which there are no active requests. When the idle timeout is reached the connection will be closed. If the connection is an HTTP/2 downstream connection a drain sequence will occur prior to closing the connection. Note that request based timeouts mean that HTTP/2 PINGs will not keep the connection alive. If not specified, this defaults to 1 hour. To disable idle timeouts explicitly set this to 0.\n\tDisabling this timeout has a highly likelihood of yielding connection leaks due to lost TCP\n\tFIN packets, etc.",
-							Type:        []string{"string"},
-							Format:      "",
+							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Duration"),
 						},
 					},
 					"maxHeadersCount": {
@@ -1562,8 +1560,7 @@ func schema_kgateway_v2_api_v1alpha1_CommonHttpProtocolOptions(ref common.Refere
 					"maxStreamDuration": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Total duration to keep alive an HTTP request/response stream. If the time limit is reached the stream will be reset independent of any other timeouts. If not specified, this value is not set.",
-							Type:        []string{"string"},
-							Format:      "",
+							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Duration"),
 						},
 					},
 					"headersWithUnderscoresAction": {
@@ -1583,6 +1580,8 @@ func schema_kgateway_v2_api_v1alpha1_CommonHttpProtocolOptions(ref common.Refere
 				},
 			},
 		},
+		Dependencies: []string{
+			"k8s.io/apimachinery/pkg/apis/meta/v1.Duration"},
 	}
 }
 
@@ -4571,25 +4570,28 @@ func schema_kgateway_v2_api_v1alpha1_TCPKeepalive(ref common.ReferenceCallback) 
 				Properties: map[string]spec.Schema{
 					"keepAliveProbes": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"integer"},
-							Format: "int32",
+							Description: "Maximum number of keep-alive probes to send before dropping the connection.",
+							Type:        []string{"integer"},
+							Format:      "int32",
 						},
 					},
 					"keepAliveTime": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Description: "The number of seconds a connection needs to be idle before keep-alive probes start being sent.",
+							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Duration"),
 						},
 					},
 					"keepAliveInterval": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Description: "The number of seconds between keep-alive probes.",
+							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Duration"),
 						},
 					},
 				},
 			},
 		},
+		Dependencies: []string{
+			"k8s.io/apimachinery/pkg/apis/meta/v1.Duration"},
 	}
 }
 

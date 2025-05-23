@@ -2,7 +2,6 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 )
 
@@ -35,7 +34,7 @@ type BackendConfigPolicySpec struct {
 
 	// The timeout for new network connections to hosts in the cluster.
 	// +optional
-	ConnectTimeout *gwv1.Duration `json:"connectTimeout,omitempty"`
+	ConnectTimeout *metav1.Duration `json:"connectTimeout,omitempty"`
 
 	// Soft limit on size of the cluster's connections read and write buffers.
 	// If unspecified, an implementation defined default is applied (1MiB).
@@ -95,7 +94,7 @@ type CommonHttpProtocolOptions struct {
 	//	Disabling this timeout has a highly likelihood of yielding connection leaks due to lost TCP
 	//	FIN packets, etc.
 	// +optional
-	IdleTimeout *gwv1.Duration `json:"idleTimeout,omitempty"`
+	IdleTimeout *metav1.Duration `json:"idleTimeout,omitempty"`
 
 	// Specifies the maximum number of headers that the connection will accept.
 	// If not specified, the default of 100 is used. Requests that exceed this limit will receive
@@ -106,7 +105,7 @@ type CommonHttpProtocolOptions struct {
 	// Total duration to keep alive an HTTP request/response stream. If the time limit is reached the stream will be
 	// reset independent of any other timeouts. If not specified, this value is not set.
 	// +optional
-	MaxStreamDuration *gwv1.Duration `json:"maxStreamDuration,omitempty"`
+	MaxStreamDuration *metav1.Duration `json:"maxStreamDuration,omitempty"`
 
 	// Action to take when a client request with a header name containing underscore characters is received.
 	// If this setting is not specified, the value defaults to ALLOW.
@@ -137,12 +136,15 @@ const (
 )
 
 type TCPKeepalive struct {
+	// Maximum number of keep-alive probes to send before dropping the connection.
 	// +optional
 	KeepAliveProbes *int `json:"keepAliveProbes,omitempty"`
 
+	// The number of seconds a connection needs to be idle before keep-alive probes start being sent.
 	// +optional
-	KeepAliveTime *gwv1.Duration `json:"keepAliveTime,omitempty"`
+	KeepAliveTime *metav1.Duration `json:"keepAliveTime,omitempty"`
 
+	// The number of seconds between keep-alive probes.
 	// +optional
-	KeepAliveInterval *gwv1.Duration `json:"keepAliveInterval,omitempty"`
+	KeepAliveInterval *metav1.Duration `json:"keepAliveInterval,omitempty"`
 }

@@ -488,7 +488,7 @@ func (in *BackendConfigPolicySpec) DeepCopyInto(out *BackendConfigPolicySpec) {
 	}
 	if in.ConnectTimeout != nil {
 		in, out := &in.ConnectTimeout, &out.ConnectTimeout
-		*out = new(apisv1.Duration)
+		*out = new(metav1.Duration)
 		**out = **in
 	}
 	if in.PerConnectionBufferLimitBytes != nil {
@@ -672,7 +672,7 @@ func (in *CommonHttpProtocolOptions) DeepCopyInto(out *CommonHttpProtocolOptions
 	*out = *in
 	if in.IdleTimeout != nil {
 		in, out := &in.IdleTimeout, &out.IdleTimeout
-		*out = new(apisv1.Duration)
+		*out = new(metav1.Duration)
 		**out = **in
 	}
 	if in.MaxHeadersCount != nil {
@@ -682,7 +682,7 @@ func (in *CommonHttpProtocolOptions) DeepCopyInto(out *CommonHttpProtocolOptions
 	}
 	if in.MaxStreamDuration != nil {
 		in, out := &in.MaxStreamDuration, &out.MaxStreamDuration
-		*out = new(apisv1.Duration)
+		*out = new(metav1.Duration)
 		**out = **in
 	}
 	if in.HeadersWithUnderscoresAction != nil {
@@ -2788,12 +2788,12 @@ func (in *TCPKeepalive) DeepCopyInto(out *TCPKeepalive) {
 	}
 	if in.KeepAliveTime != nil {
 		in, out := &in.KeepAliveTime, &out.KeepAliveTime
-		*out = new(apisv1.Duration)
+		*out = new(metav1.Duration)
 		**out = **in
 	}
 	if in.KeepAliveInterval != nil {
 		in, out := &in.KeepAliveInterval, &out.KeepAliveInterval
-		*out = new(apisv1.Duration)
+		*out = new(metav1.Duration)
 		**out = **in
 	}
 }

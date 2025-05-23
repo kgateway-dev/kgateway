@@ -205,30 +205,18 @@ func translate(pol *v1alpha1.BackendConfigPolicy) (*BackendConfigPolicyIR, error
 		ct: pol.CreationTimestamp.Time,
 	}
 	if pol.Spec.ConnectTimeout != nil {
-		timeout, err := time.ParseDuration(string(*pol.Spec.ConnectTimeout))
-		if err != nil {
-			return nil, err
-		}
-		ir.connectTimeout = durationpb.New(timeout)
+		ir.connectTimeout = durationpb.New(pol.Spec.ConnectTimeout.Duration)
 	}
 	if pol.Spec.PerConnectionBufferLimitBytes != nil {
 		ir.perConnectionBufferLimitBytes = pol.Spec.PerConnectionBufferLimitBytes
 	}
 
 	if pol.Spec.TCPKeepalive != nil {
-		tcpKeepalive, err := translateTCPKeepalive(pol.Spec.TCPKeepalive)
-		if err != nil {
-			return nil, err
-		}
-		ir.tcpKeepalive = tcpKeepalive
+		ir.tcpKeepalive = translateTCPKeepalive(pol.Spec.TCPKeepalive)
 	}
 
 	if pol.Spec.CommonHttpProtocolOptions != nil {
-		commonHttpProtocolOptions, err := translateCommonHttpProtocolOptions(pol.Spec.CommonHttpProtocolOptions)
-		if err != nil {
-			return nil, err
-		}
-		ir.commonHttpProtocolOptions = commonHttpProtocolOptions
+		ir.commonHttpProtocolOptions = translateCommonHttpProtocolOptions(pol.Spec.CommonHttpProtocolOptions)
 	}
 
 	if pol.Spec.Http1ProtocolOptions != nil {
@@ -242,39 +230,27 @@ func translate(pol *v1alpha1.BackendConfigPolicy) (*BackendConfigPolicyIR, error
 	return ir, nil
 }
 
-func translateTCPKeepalive(tcpKeepalive *v1alpha1.TCPKeepalive) (*corev3.TcpKeepalive, error) {
+func translateTCPKeepalive(tcpKeepalive *v1alpha1.TCPKeepalive) *corev3.TcpKeepalive {
 	out := &corev3.TcpKeepalive{}
 	if tcpKeepalive.KeepAliveProbes != nil {
 		out.KeepaliveProbes = &wrapperspb.UInt32Value{Value: uint32(*tcpKeepalive.KeepAliveProbes)}
 	}
 	if tcpKeepalive.KeepAliveTime != nil {
-		keepAliveTime, err := time.ParseDuration(string(*tcpKeepalive.KeepAliveTime))
-		if err != nil {
-			return nil, err
-		}
-		out.KeepaliveTime = &wrapperspb.UInt32Value{Value: uint32(keepAliveTime.Seconds())}
+		out.KeepaliveTime = &wrapperspb.UInt32Value{Value: uint32(tcpKeepalive.KeepAliveTime.Duration.Seconds())}
 	}
 	if tcpKeepalive.KeepAliveInterval != nil {
-		keepAliveInterval, err := time.ParseDuration(string(*tcpKeepalive.KeepAliveInterval))
-		if err != nil {
-			return nil, err
-		}
-		out.KeepaliveInterval = &wrapperspb.UInt32Value{Value: uint32(keepAliveInterval.Seconds())}
+		out.KeepaliveInterval = &wrapperspb.UInt32Value{Value: uint32(tcpKeepalive.KeepAliveInterval.Duration.Seconds())}
 	}
-	return out, nil
+	return out
 }
 
-func translateCommonHttpProtocolOptions(commonHttpProtocolOptions *v1alpha1.CommonHttpProtocolOptions) (*corev3.HttpProtocolOptions, error) {
+func translateCommonHttpProtocolOptions(commonHttpProtocolOptions *v1alpha1.CommonHttpProtocolOptions) *corev3.HttpProtocolOptions {
 	out := &corev3.HttpProtocolOptions{}
 	if commonHttpProtocolOptions.MaxRequestsPerConnection != nil {
 		out.MaxRequestsPerConnection = &wrapperspb.UInt32Value{Value: uint32(*commonHttpProtocolOptions.MaxRequestsPerConnection)}
 	}
 	if commonHttpProtocolOptions.IdleTimeout != nil {
-		idleTimeout, err := time.ParseDuration(string(*commonHttpProtocolOptions.IdleTimeout))
-		if err != nil {
-			return nil, err
-		}
-		out.IdleTimeout = durationpb.New(idleTimeout)
+		out.IdleTimeout = durationpb.New(commonHttpProtocolOptions.IdleTimeout.Duration)
 	}
 
 	if commonHttpProtocolOptions.MaxHeadersCount != nil {
@@ -282,11 +258,7 @@ func translateCommonHttpProtocolOptions(commonHttpProtocolOptions *v1alpha1.Comm
 	}
 
 	if commonHttpProtocolOptions.MaxStreamDuration != nil {
-		maxStreamDuration, err := time.ParseDuration(string(*commonHttpProtocolOptions.MaxStreamDuration))
-		if err != nil {
-			return nil, err
-		}
-		out.MaxStreamDuration = durationpb.New(maxStreamDuration)
+		out.MaxStreamDuration = durationpb.New(commonHttpProtocolOptions.MaxStreamDuration.Duration)
 	}
 
 	if commonHttpProtocolOptions.HeadersWithUnderscoresAction != nil {
@@ -299,7 +271,7 @@ func translateCommonHttpProtocolOptions(commonHttpProtocolOptions *v1alpha1.Comm
 			out.HeadersWithUnderscoresAction = corev3.HttpProtocolOptions_DROP_HEADER
 		}
 	}
-	return out, nil
+	return out
 }
 
 func translateHttp1ProtocolOptions(http1ProtocolOptions *v1alpha1.Http1ProtocolOptions) (*corev3.Http1ProtocolOptions, error) {

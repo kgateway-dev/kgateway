@@ -15,7 +15,7 @@ import (
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
-	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"k8s.io/utils/ptr"
 
@@ -35,17 +35,17 @@ func TestBackendConfigPolicyFlow(t *testing.T) {
 			name: "full configuration",
 			policy: &v1alpha1.BackendConfigPolicy{
 				Spec: v1alpha1.BackendConfigPolicySpec{
-					ConnectTimeout:                ptr.To(gwv1.Duration("5s")),
+					ConnectTimeout:                ptr.To(metav1.Duration{Duration: 5 * time.Second}),
 					PerConnectionBufferLimitBytes: ptr.To(1024),
 					TCPKeepalive: &v1alpha1.TCPKeepalive{
 						KeepAliveProbes:   ptr.To(3),
-						KeepAliveTime:     ptr.To(gwv1.Duration("30s")),
-						KeepAliveInterval: ptr.To(gwv1.Duration("5s")),
+						KeepAliveTime:     ptr.To(metav1.Duration{Duration: 30 * time.Second}),
+						KeepAliveInterval: ptr.To(metav1.Duration{Duration: 5 * time.Second}),
 					},
 					CommonHttpProtocolOptions: &v1alpha1.CommonHttpProtocolOptions{
-						IdleTimeout:                  ptr.To(gwv1.Duration("60s")),
+						IdleTimeout:                  ptr.To(metav1.Duration{Duration: 60 * time.Second}),
 						MaxHeadersCount:              ptr.To(100),
-						MaxStreamDuration:            ptr.To(gwv1.Duration("30s")),
+						MaxStreamDuration:            ptr.To(metav1.Duration{Duration: 30 * time.Second}),
 						HeadersWithUnderscoresAction: ptr.To(v1alpha1.HeadersWithUnderscoresActionAllow),
 						MaxRequestsPerConnection:     ptr.To(100),
 					},
@@ -102,7 +102,7 @@ func TestBackendConfigPolicyFlow(t *testing.T) {
 			name: "minimal configuration",
 			policy: &v1alpha1.BackendConfigPolicy{
 				Spec: v1alpha1.BackendConfigPolicySpec{
-					ConnectTimeout: ptr.To(gwv1.Duration("2s")),
+					ConnectTimeout: ptr.To(metav1.Duration{Duration: 2 * time.Second}),
 					CommonHttpProtocolOptions: &v1alpha1.CommonHttpProtocolOptions{
 						MaxRequestsPerConnection: ptr.To(50),
 					},
@@ -119,16 +119,6 @@ func TestBackendConfigPolicyFlow(t *testing.T) {
 				},
 			},
 			wantErr: false,
-		},
-		{
-			name: "invalid duration",
-			policy: &v1alpha1.BackendConfigPolicy{
-				Spec: v1alpha1.BackendConfigPolicySpec{
-					ConnectTimeout: ptr.To(gwv1.Duration("invalid")),
-				},
-			},
-			want:    nil,
-			wantErr: true,
 		},
 		{
 			name: "empty policy",

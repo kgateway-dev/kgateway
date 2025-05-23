@@ -302,7 +302,7 @@ var schemaYAML = typed.YAMLObject(`types:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.CommonHttpProtocolOptions
     - name: connectTimeout
       type:
-        scalar: string
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Duration
     - name: http1ProtocolOptions
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Http1ProtocolOptions
@@ -392,7 +392,7 @@ var schemaYAML = typed.YAMLObject(`types:
         scalar: string
     - name: idleTimeout
       type:
-        scalar: string
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Duration
     - name: maxHeadersCount
       type:
         scalar: numeric
@@ -401,7 +401,7 @@ var schemaYAML = typed.YAMLObject(`types:
         scalar: numeric
     - name: maxStreamDuration
       type:
-        scalar: string
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Duration
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.CustomLabel
   map:
     fields:
@@ -1400,13 +1400,13 @@ var schemaYAML = typed.YAMLObject(`types:
     fields:
     - name: keepAliveInterval
       type:
-        scalar: string
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Duration
     - name: keepAliveProbes
       type:
         scalar: numeric
     - name: keepAliveTime
       type:
-        scalar: string
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Duration
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.TokenBucket
   map:
     fields:
@@ -2377,6 +2377,8 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         scalar: string
       default: ""
+- name: io.k8s.apimachinery.pkg.apis.meta.v1.Duration
+  scalar: string
 - name: io.k8s.apimachinery.pkg.apis.meta.v1.FieldsV1
   map:
     elementType:
