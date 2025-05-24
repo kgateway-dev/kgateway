@@ -409,7 +409,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 				PatchPolicyStatus:         patchPolicyStatusFn(commoncol.CrudClient),
 			},
 		},
-		ExtraHasSynced: translator.gatewayExtensions.HasSynced,
+		ExtraHasSynced: translator.HasSynced,
 	}
 }
 
@@ -983,6 +983,10 @@ type TrafficPolicyBuilder struct {
 	commoncol         *common.CommonCollections
 	gatewayExtensions krt.Collection[TrafficPolicyGatewayExtensionIR]
 	extBuilder        func(krtctx krt.HandlerContext, gExt ir.GatewayExtension) *TrafficPolicyGatewayExtensionIR
+}
+
+func (b *TrafficPolicyBuilder) HasSynced() bool {
+	return b.gatewayExtensions.HasSynced()
 }
 
 func (b *TrafficPolicyBuilder) Translate(
