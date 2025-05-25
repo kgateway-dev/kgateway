@@ -220,6 +220,16 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 			},
 		}),
 	Entry(
+		"TrafficPolicy edge cases",
+		translatorTestCase{
+			inputFile:  "traffic-policy/extauth.yaml",
+			outputFile: "traffic-policy/extauth.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "infra",
+				Name:      "example-gateway",
+			},
+		}),
+	Entry(
 		"tcp gateway with basic routing",
 		translatorTestCase{
 			inputFile:  "tcp-routing/basic.yaml",

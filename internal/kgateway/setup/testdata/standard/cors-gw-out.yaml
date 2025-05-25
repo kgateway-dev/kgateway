@@ -58,6 +58,15 @@ listeners:
 routes:
 - ignorePortInHostMatching: true
   name: http
+  typedPerFilterConfig:
+    envoy.filters.http.cors:
+      '@type': type.googleapis.com/envoy.extensions.filters.http.cors.v3.CorsPolicy
+      allowHeaders: Content-Type, Authorization
+      allowMethods: GET, POST
+      allowOriginStringMatch:
+      - exact: https://example.com
+      exposeHeaders: X-Custom-Header
+      maxAge: "86400"
   virtualHosts:
   - domains:
     - www.example.com
@@ -69,12 +78,3 @@ routes:
       route:
         cluster: kube_gwtest_reviews_8080
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
-    typedPerFilterConfig:
-      envoy.filters.http.cors:
-        '@type': type.googleapis.com/envoy.extensions.filters.http.cors.v3.CorsPolicy
-        allowHeaders: Content-Type, Authorization
-        allowMethods: GET, POST
-        allowOriginStringMatch:
-        - exact: https://example.com
-        exposeHeaders: X-Custom-Header
-        maxAge: "86400"

@@ -42,21 +42,10 @@ listeners:
       typedConfig:
         '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
         httpFilters:
-        - name: transformation
+        - disabled: true
+          name: transformation
           typedConfig:
             '@type': type.googleapis.com/envoy.api.v2.filter.http.FilterTransformations
-            transformations:
-            - match:
-                prefix: /
-              routeTransformations:
-                responseTransformation:
-                  transformationTemplate:
-                    body:
-                      text: '{{ body }}'
-                    headersToAppend:
-                    - key: original-greatness
-                      value:
-                        text: '{{request_headers("x-greatness")}}'
         - name: envoy.filters.http.router
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -74,6 +63,19 @@ listeners:
 routes:
 - ignorePortInHostMatching: true
   name: http
+  typedPerFilterConfig:
+    transformation:
+      '@type': type.googleapis.com/envoy.api.v2.filter.http.RouteTransformations
+      transformations:
+      - requestMatch:
+          responseTransformation:
+            transformationTemplate:
+              body:
+                text: '{{ body }}'
+              headersToAppend:
+              - key: original-greatness
+                value:
+                  text: '{{request_headers("x-greatness")}}'
   virtualHosts:
   - domains:
     - www.example.com

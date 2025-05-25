@@ -526,7 +526,7 @@ HELM_CHART_DIR=install/helm/kgateway
 HELM_CHART_DIR_CRD=install/helm/kgateway-crds
 
 .PHONY: package-kgateway-charts
-package-kgateway-charts: package-kgateway-chart package-kgateway-crd-chart
+package-kgateway-charts: package-kgateway-chart package-kgateway-crd-chart ## Package the kgateway charts
 
 .PHONY: package-kgateway-chart
 package-kgateway-chart: ## Package the kgateway charts
@@ -539,6 +539,14 @@ package-kgateway-crd-chart: ## Package the kgateway crd chart
 	mkdir -p $(TEST_ASSET_DIR); \
 	$(HELM) package $(HELM_PACKAGE_ARGS) --destination $(TEST_ASSET_DIR) $(HELM_CHART_DIR_CRD); \
 	$(HELM) repo index $(TEST_ASSET_DIR);
+
+.PHONY: deploy-kgateway-crd-chart
+deploy-kgateway-crd-chart: ## Deploy the kgateway crd chart
+	$(HELM) upgrade --install kgateway-crds $(TEST_ASSET_DIR)/kgateway-crds-$(VERSION).tgz --namespace kgateway-system --create-namespace
+
+.PHONY: deploy-kgateway-chart
+deploy-kgateway-chart: ## Deploy the kgateway chart
+	$(HELM) upgrade --install kgateway $(TEST_ASSET_DIR)/kgateway-$(VERSION).tgz --namespace kgateway-system --create-namespace
 
 .PHONY: lint-kgateway-charts
 lint-kgateway-charts: ## Lint the kgateway charts
@@ -647,15 +655,32 @@ docker-retag: docker-distroless-retag
 endif # distroless images
 
 #----------------------------------------------------------------------------------
-# Build assets for kubernetes e2e tests
+# Development
 #----------------------------------------------------------------------------------
 
+KIND ?= go tool kind
 CLUSTER_NAME ?= kind
 INSTALL_NAMESPACE ?= kgateway-system
 
-KIND ?= go tool kind
+.PHONY: kind-create
+kind-create: ## Create a KinD cluster
+	$(KIND) get clusters | grep $(CLUSTER_NAME) || $(KIND) create cluster --name $(CLUSTER_NAME)
 
-kind-setup:
+.PHONY: kind-metallb
+metallb: ## Install the MetalLB load balancer
+	./hack/kind/setup-metalllb-on-kind.sh
+
+.PHONY: deploy-kgateway
+deploy-kgateway: package-kgateway-charts deploy-kgateway-crd-chart deploy-kgateway-chart ## Deploy the kgateway chart and CRDs
+
+.PHONY: run
+run: kind-create kind-build-and-load-standard metallb deploy-kgateway  ## Set up complete development environment
+
+#----------------------------------------------------------------------------------
+# Build assets for kubernetes e2e tests
+#----------------------------------------------------------------------------------
+
+kind-setup: ## Set up the KinD cluster. Deprecated: use kind-create instead.
 	VERSION=${VERSION} CLUSTER_NAME=${CLUSTER_NAME} ./hack/kind/setup-kind.sh
 
 kind-load-%-distroless:

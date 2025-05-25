@@ -10,10 +10,8 @@ import (
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/structpb"
 	"istio.io/istio/pkg/kube/krt"
-	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/pluginutils"
 )
 
@@ -60,44 +58,44 @@ func (e *extAuthIR) Equals(other *extAuthIR) bool {
 	}
 
 	// Compare providers
-	if e.provider == nil && other.provider == nil {
-		return true
-	}
-	if e.provider == nil || other.provider == nil {
+	if (e.provider == nil) != (other.provider == nil) {
 		return false
 	}
-
-	return e.provider.Equals(*other.provider)
+	if e.provider != nil && !e.provider.Equals(*other.provider) {
+		return false
+	}
+	return true
 }
 
 // extAuthForSpec translates the ExtAuthz spec into the Envoy configuration
-func extAuthForSpec(
-	commoncol *common.CommonCollections,
+
+func (b *TrafficPolicyBuilder) extAuthForSpec(
 	krtctx krt.HandlerContext,
-	trafficpolicy *v1alpha1.TrafficPolicy,
-	gatewayExtensions krt.Collection[TrafficPolicyGatewayExtensionIR],
+	trafficPolicy *v1alpha1.TrafficPolicy,
 	out *trafficPolicySpecIr,
 ) error {
-	policySpec := &trafficpolicy.Spec
+	policySpec := &trafficPolicy.Spec
 
 	if policySpec.ExtAuth == nil {
 		return nil
 	}
 	spec := policySpec.ExtAuth
-	var provider *TrafficPolicyGatewayExtensionIR
-	if spec.ExtensionRef != nil {
-		gwExtName := types.NamespacedName{Name: spec.ExtensionRef.Name, Namespace: trafficpolicy.GetNamespace()}
-		gatewayExtension := krt.FetchOne(krtctx, gatewayExtensions, krt.FilterObjectName(gwExtName))
-		if gatewayExtension == nil {
-			return fmt.Errorf("gateway extension %s not found", gwExtName)
+
+	if spec.Enablement == v1alpha1.ExtAuthDisableAll {
+		out.extAuth = &extAuthIR{
+			provider:        nil,
+			enablement:      v1alpha1.ExtAuthDisableAll,
+			extauthPerRoute: translatePerFilterConfig(spec),
 		}
-		if gatewayExtension.err != nil {
-			return gatewayExtension.err
-		}
-		if gatewayExtension.extAuth == nil {
-			return pluginutils.ErrInvalidExtensionType(v1alpha1.GatewayExtensionTypeExtAuth, gatewayExtension.extType)
-		}
-		provider = gatewayExtension
+		return nil
+	}
+
+	provider, err := b.FetchGatewayExtension(krtctx, spec.ExtensionRef, trafficPolicy.GetNamespace())
+	if err != nil {
+		return fmt.Errorf("extauthz: %w", err)
+	}
+	if provider.ExtType != v1alpha1.GatewayExtensionTypeExtAuth || provider.ExtAuth == nil {
+		return pluginutils.ErrInvalidExtensionType(v1alpha1.GatewayExtensionTypeExtAuth, provider.ExtType)
 	}
 
 	out.extAuth = &extAuthIR{

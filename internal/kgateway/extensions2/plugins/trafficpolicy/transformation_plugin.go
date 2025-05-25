@@ -1,7 +1,6 @@
 package trafficpolicy
 
 import (
-	"context"
 	"encoding/json"
 
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
@@ -15,7 +14,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 )
 
-func toTraditionalTransform(ctx context.Context, t *v1alpha1.Transform) *transformationpb.Transformation_TransformationTemplate {
+func toTraditionalTransform(t *v1alpha1.Transform) *transformationpb.Transformation_TransformationTemplate {
 	if t == nil {
 		return nil
 	}
@@ -85,7 +84,7 @@ func toTraditionalTransform(ctx context.Context, t *v1alpha1.Transform) *transfo
 	return tt
 }
 
-func toTransformFilterConfig(ctx context.Context, t *v1alpha1.TransformationPolicy) (*transformationpb.RouteTransformations, error) {
+func toTransformFilterConfig(t *v1alpha1.TransformationPolicy) (*transformationpb.RouteTransformations, error) {
 	if t == nil || *t == (v1alpha1.TransformationPolicy{}) {
 		return nil, nil
 	}
@@ -93,12 +92,12 @@ func toTransformFilterConfig(ctx context.Context, t *v1alpha1.TransformationPoli
 	var reqt *transformationpb.Transformation
 	var respt *transformationpb.Transformation
 
-	if rtt := toTraditionalTransform(ctx, t.Request); rtt != nil {
+	if rtt := toTraditionalTransform(t.Request); rtt != nil {
 		reqt = &transformationpb.Transformation{
 			TransformationType: rtt,
 		}
 	}
-	if rtt := toTraditionalTransform(ctx, t.Response); rtt != nil {
+	if rtt := toTraditionalTransform(t.Response); rtt != nil {
 		respt = &transformationpb.Transformation{
 			TransformationType: rtt,
 		}

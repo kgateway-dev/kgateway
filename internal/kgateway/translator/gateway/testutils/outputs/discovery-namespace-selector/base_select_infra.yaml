@@ -10,7 +10,8 @@ Listeners:
       typedConfig:
         '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
         httpFilters:
-        - name: transformation
+        - disabled: true
+          name: transformation
           typedConfig:
             '@type': type.googleapis.com/envoy.api.v2.filter.http.FilterTransformations
         - name: envoy.filters.http.router

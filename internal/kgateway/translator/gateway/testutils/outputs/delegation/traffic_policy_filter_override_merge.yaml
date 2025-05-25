@@ -17,11 +17,13 @@ Listeners:
             grpcService:
               envoyGrpc:
                 clusterName: kube_a_extproc1_9091
-        - name: ratelimit/local
+        - disabled: true
+          name: ratelimit/local
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
             statPrefix: http_local_rate_limiter
-        - name: transformation
+        - disabled: true
+          name: transformation
           typedConfig:
             '@type': type.googleapis.com/envoy.api.v2.filter.http.FilterTransformations
         - name: envoy.filters.http.router

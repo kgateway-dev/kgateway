@@ -135,6 +135,9 @@ func (a AttachedPolicies) Equals(b AttachedPolicies) bool {
 
 // Append appends the policies in l in the given order to the policies in a.
 func (a *AttachedPolicies) Append(l ...AttachedPolicies) {
+	if a.Policies == nil {
+		a.Policies = make(map[schema.GroupKind][]PolicyAtt)
+	}
 	for _, l := range l {
 		for k, v := range l.Policies {
 			if a.Policies == nil {
@@ -147,6 +150,9 @@ func (a *AttachedPolicies) Append(l ...AttachedPolicies) {
 
 // Prepend prepends the policies in l in the given to the policies in a.
 func (a *AttachedPolicies) Prepend(hierarchicalPriority int, l ...AttachedPolicies) {
+	if a.Policies == nil {
+		a.Policies = make(map[schema.GroupKind][]PolicyAtt)
+	}
 	// iterate in the reverse order so that the input order in l is preserved at the end
 	for i := len(l) - 1; i >= 0; i-- {
 		for k, v := range l[i].Policies {

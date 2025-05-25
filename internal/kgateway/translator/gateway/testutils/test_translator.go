@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"sort"
 	"strings"
 	"time"
 
@@ -85,7 +86,7 @@ type ActualTestResult struct {
 
 func CompareProxy(expectedFile string, actualProxy *irtranslator.TranslationResult) (string, error) {
 	if os.Getenv("UPDATE_OUTPUTS") == "1" {
-		d, err := MarshalAnyYaml(actualProxy)
+		d, err := MarshalAnyYaml(sortProxy(actualProxy))
 		if err != nil {
 			return "", err
 		}
@@ -96,7 +97,25 @@ func CompareProxy(expectedFile string, actualProxy *irtranslator.TranslationResu
 	if err != nil {
 		return "", err
 	}
-	return cmp.Diff(expectedProxy, actualProxy, protocmp.Transform(), cmpopts.EquateNaNs()), nil
+	return cmp.Diff(sortProxy(expectedProxy), sortProxy(actualProxy), protocmp.Transform(), cmpopts.EquateNaNs()), nil
+}
+
+func sortProxy(proxy *irtranslator.TranslationResult) *irtranslator.TranslationResult {
+	if proxy == nil {
+		return nil
+	}
+
+	sort.Slice(proxy.Listeners, func(i, j int) bool {
+		return proxy.Listeners[i].GetName() < proxy.Listeners[j].GetName()
+	})
+	sort.Slice(proxy.Routes, func(i, j int) bool {
+		return proxy.Routes[i].GetName() < proxy.Routes[j].GetName()
+	})
+	sort.Slice(proxy.ExtraClusters, func(i, j int) bool {
+		return proxy.ExtraClusters[i].GetName() < proxy.ExtraClusters[j].GetName()
+	})
+
+	return proxy
 }
 
 func AreReportsSuccess(gwNN types.NamespacedName, reportsMap reports.ReportMap) error {

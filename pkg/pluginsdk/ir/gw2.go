@@ -42,15 +42,16 @@ type HttpRouteRuleMatchIR struct {
 }
 
 type ListenerIR struct {
-	Name             string
-	BindAddress      string
-	BindPort         uint32
-	AttachedPolicies AttachedPolicies
+	Name        string
+	BindAddress string
+	BindPort    uint32
 
 	HttpFilterChain []HttpFilterChainIR
 	TcpFilterChain  []TcpIR
 
 	PolicyAncestorRef gwv1.ParentReference
+
+	AttachedPolicies AttachedPolicies
 }
 
 type VirtualHost struct {

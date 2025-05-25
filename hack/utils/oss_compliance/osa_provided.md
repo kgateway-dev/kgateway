@@ -43,7 +43,7 @@ Name|Version|License
 [k8s.io/utils](https://k8s.io/utils)|v0.0.0-20241210054802-24370beab758|Apache License 2.0
 [knative.dev/pkg](https://knative.dev/pkg)|v0.0.0-20211206113427-18589ac7627e|Apache License 2.0
 [sigs.k8s.io/controller-runtime](https://sigs.k8s.io/controller-runtime)|v0.20.4|Apache License 2.0
-[sigs.k8s.io/gateway-api](https://sigs.k8s.io/gateway-api)|v1.2.1|Apache License 2.0
+[sigs.k8s.io/gateway-api](https://sigs.k8s.io/gateway-api)|v1.3.0|Apache License 2.0
 [sigs.k8s.io/gateway-api-inference-extension](https://sigs.k8s.io/gateway-api-inference-extension)|v0.2.0|Apache License 2.0
 [structured-merge-diff/v4](https://sigs.k8s.io/structured-merge-diff/v4)|v4.7.0|Apache License 2.0
 [sigs.k8s.io/yaml](https://sigs.k8s.io/yaml)|v1.4.0|MIT License

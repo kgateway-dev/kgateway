@@ -21,7 +21,7 @@ Listeners:
             resourceApiVersion: V3
           routeConfigName: http-httpbin
         statPrefix: http
-        use_remote_address: true
+        useRemoteAddress: true
     name: http-httpbin
   name: http-httpbin~http-bookinfo
 Routes:

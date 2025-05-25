@@ -2605,8 +2605,8 @@ sigs.k8s.io/controller-runtime/tools/setup-envtest v0.0.0-20231019135941-15d7928
 sigs.k8s.io/controller-runtime/tools/setup-envtest v0.0.0-20231019135941-15d792835235/go.mod h1:TF/lVLWS+JNNaVqJuDDictY2hZSXSsIHCx4FClMvqFg=
 sigs.k8s.io/controller-tools v0.17.3 h1:lwFPLicpBKLgIepah+c8ikRBubFW5kOQyT88r3EwfNw=
 sigs.k8s.io/controller-tools v0.17.3/go.mod h1:1ii+oXcYZkxcBXzwv3YZBlzjt1fvkrCGjVF73blosJI=
-sigs.k8s.io/gateway-api v1.2.1 h1:fZZ/+RyRb+Y5tGkwxFKuYuSRQHu9dZtbjenblleOLHM=
-sigs.k8s.io/gateway-api v1.2.1/go.mod h1:EpNfEXNjiYfUJypf0eZ0P5iXA9ekSGWaS1WgPaM42X0=
+sigs.k8s.io/gateway-api v1.3.0 h1:q6okN+/UKDATola4JY7zXzx40WO4VISk7i9DIfOvr9M=
+sigs.k8s.io/gateway-api v1.3.0/go.mod h1:d8NV8nJbaRbEKem+5IuxkL8gJGOZ+FJ+NvOIltV8gDk=
 sigs.k8s.io/gateway-api-inference-extension v0.2.0 h1:AqENYqi2OHjAhBhTKARNcM7G5L/gsRIxZGS4P8CNqAI=
 sigs.k8s.io/gateway-api-inference-extension v0.2.0/go.mod h1:Ivs7Z9Q40HNqyeKZmSVTzHey91qNx87Nz3pwsIAns9Y=
 sigs.k8s.io/json v0.0.0-20241014173422-cfa47c3a1cc8 h1:gBQPwqORJ8d8/YNZWEjoZs7npUVDpVXUUOFfW6CgAqE=
