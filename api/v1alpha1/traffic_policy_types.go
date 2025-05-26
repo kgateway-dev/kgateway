@@ -71,7 +71,7 @@ type TrafficPolicySpec struct {
 
 	// Cors specifies the CORS configuration for the policy.
 	// +optional
-	Cors *CorsPolicy `json:"cors,omitempty"`
+	Cors *gwv1.HTTPCORSFilter `json:"cors,omitempty"`
 }
 
 // TransformationPolicy config is used to modify envoy behavior at a route level.
@@ -336,31 +336,4 @@ type RateLimitDescriptorEntryGeneric struct {
 	// Value is the static value for this descriptor entry.
 	// +required
 	Value string `json:"value"`
-}
-
-// CorsPolicy configures CORS settings.
-type CorsPolicy struct {
-	// An origin is allowed if any of the strings match
-	// +optional
-	AllowOrigins []string `json:"allowOrigins"`
-
-	// Specifies the content for the access-control-allow-methods header
-	// +optional
-	AllowMethods []string `json:"allowMethods"`
-
-	// Specifies the content for the access-control-allow-headers header
-	// +optional
-	AllowHeaders []string `json:"allowHeaders"`
-
-	// Specifies the content for the access-control-allow-credentials header
-	// +optional
-	AllowCredentials bool `json:"allowCredentials"`
-
-	// Specifies the content for the access-control-expose-headers header
-	// +optional
-	ExposeHeaders []string `json:"exposeHeaders"`
-
-	// Specifies the content for the access-control-max-age header
-	// +optional
-	MaxAge string `json:"maxAge"`
 }

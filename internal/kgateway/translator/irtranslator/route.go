@@ -155,7 +155,16 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(ctx context.Context,
 	}
 
 	// apply typed per filter config from translating route action and route plugins
-	out.TypedPerFilterConfig = toPerFilterConfigMap(typedPerFilterConfigRoute)
+	typedPerFilterConfig := toPerFilterConfigMap(typedPerFilterConfigRoute)
+	if out.GetTypedPerFilterConfig() == nil {
+		out.TypedPerFilterConfig = typedPerFilterConfig
+	} else {
+		for k, v := range typedPerFilterConfig {
+			if _, exists := out.GetTypedPerFilterConfig()[k]; !exists {
+				out.GetTypedPerFilterConfig()[k] = v
+			}
+		}
+	}
 
 	if err == nil && out.GetAction() == nil {
 		if in.Delegates {

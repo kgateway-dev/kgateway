@@ -18,7 +18,7 @@ import (
 
 var _ e2e.NewSuiteFunc = NewTestingSuite
 
-// testingSuite is a suite of basic routing / "happy path" tests
+// testingSuite is a suite of tests for testing CORS policies
 type testingSuite struct {
 	suite.Suite
 
@@ -97,13 +97,12 @@ func (s *testingSuite) TearDownSuite() {
 	})
 }
 
-// Test cors on specific route
-func (s *testingSuite) TestCorsForRoute() {
-	s.setupTest([]string{httpRoutesManifest, routeCorsManifest}, []client.Object{route, route2, routeCorsTrafficPolicy})
+// Test cors on specific route in a traffic policy
+func (s *testingSuite) TestTrafficPolicyCorsForRoute() {
+	s.setupTest([]string{httpRoutesManifest, routeCorsTrafficPolicyManifest}, []client.Object{route, route2, routeCorsTrafficPolicy})
 	requestHeaders := map[string]string{
-		"Origin":                         "https://notexample.com",
-		"Access-Control-Request-Method":  "POST",
-		"Access-Control-Request-Headers": "x-custom-header",
+		"Origin":                        "https://notexample.com",
+		"Access-Control-Request-Method": "GET",
 	}
 
 	expectedHeaders := map[string]any{
@@ -115,18 +114,18 @@ func (s *testingSuite) TestCorsForRoute() {
 	// Verify that the route with cors is responding to the OPTIONS request with the expected cors headers
 	s.assertResponse("/path1", http.StatusOK, requestHeaders, expectedHeaders, []string{})
 
-	// Verify that the route without cors is not affected by the cors traffic policy
-	s.assertResponse("/path2", http.StatusOK, requestHeaders, nil, []string{"Access-Control-Allow-Origin", "Access-Control-Allow-Methods", "Access-Control-Allow-Headers"})
+	// Verify that the route without cors is not affected by the cors traffic policy (i.e. no cors headers are returned)
+	s.assertResponse("/path2", http.StatusOK, requestHeaders, nil, []string{
+		"Access-Control-Allow-Origin", "Access-Control-Allow-Methods", "Access-Control-Allow-Headers"})
 }
 
-// Test cors at the gateway level
-func (s *testingSuite) TestCorsAtGatewayLevel() {
-	s.setupTest([]string{httpRoutesManifest, gwCorsManifest}, []client.Object{route, route2, gwCorsTrafficPolicy})
+// Test cors at the gateway level which configures cors policy in the virtual host and therefore affects all routes
+func (s *testingSuite) TestTrafficPolicyCorsAtGatewayLevel() {
+	s.setupTest([]string{httpRoutesManifest, gwCorsTrafficPolicyManifest}, []client.Object{route, route2, gwCorsTrafficPolicy})
 
 	requestHeaders := map[string]string{
-		"Origin":                         "https://notexample.com",
-		"Access-Control-Request-Method":  "GET",
-		"Access-Control-Request-Headers": "content-type",
+		"Origin":                        "https://notexample.com",
+		"Access-Control-Request-Method": "GET",
 	}
 
 	expectedHeaders := map[string]any{
@@ -140,13 +139,13 @@ func (s *testingSuite) TestCorsAtGatewayLevel() {
 }
 
 // Test different cors policies at the route level override the gateway level cors policy
-func (s *testingSuite) TestRouteCorsOverrideGwCors() {
-	s.setupTest([]string{httpRoutesManifest, gwCorsManifest, routeCorsManifest}, []client.Object{route, route2, gwCorsTrafficPolicy, routeCorsTrafficPolicy})
+func (s *testingSuite) TestTrafficPolicyRouteCorsOverrideGwCors() {
+	s.setupTest([]string{httpRoutesManifest, gwCorsTrafficPolicyManifest, routeCorsTrafficPolicyManifest},
+		[]client.Object{route, route2, gwCorsTrafficPolicy, routeCorsTrafficPolicy})
 
 	requestHeaders := map[string]string{
-		"Origin":                         "https://notexample.com",
-		"Access-Control-Request-Method":  "DELETE",
-		"Access-Control-Request-Headers": "x-custom-header",
+		"Origin":                        "https://notexample.com",
+		"Access-Control-Request-Method": "GET",
 	}
 
 	expectedHeadersPath1 := map[string]any{
@@ -155,6 +154,61 @@ func (s *testingSuite) TestRouteCorsOverrideGwCors() {
 		"Access-Control-Allow-Headers": "x-custom-header",
 	}
 
+	expectedHeadersPath2 := map[string]any{
+		"Access-Control-Allow-Origin":  "https://notexample.com",
+		"Access-Control-Allow-Methods": "GET, POST",
+		"Access-Control-Allow-Headers": "Content-Type, Authorization",
+	}
+
+	s.assertResponse("/path1", http.StatusOK, requestHeaders, expectedHeadersPath1, []string{})
+	s.assertResponse("/path2", http.StatusOK, requestHeaders, expectedHeadersPath2, []string{})
+}
+
+// Test cors in route rules of a HTTPRoute
+func (s *testingSuite) TestHttpRouteCorsInRouteRules() {
+	s.setupTest([]string{httpRoutesManifest, corsHttpRoutesManifest}, []client.Object{route, route2})
+
+	requestHeaders := map[string]string{
+		"Origin":                        "https://notexample.com",
+		"Access-Control-Request-Method": "GET",
+	}
+
+	// HTTPRoute for /path1 should have this cors response headers
+	expectedHeaders := map[string]any{
+		"Access-Control-Allow-Origin":  "https://notexample.com",
+		"Access-Control-Allow-Methods": "GET",
+		"Access-Control-Allow-Headers": "x-custom-header",
+	}
+
+	// Verify that the route with cors is responding to the OPTIONS request with the expected cors headers
+	s.assertResponse("/path1", http.StatusOK, requestHeaders, expectedHeaders, []string{})
+
+	// Verify that the route without cors is not affected by the cors in the HTTPRoute (i.e. no cors headers are returned)
+	s.assertResponse("/path2", http.StatusOK, requestHeaders, nil, []string{"Access-Control-Allow-Origin", "Access-Control-Allow-Methods", "Access-Control-Allow-Headers"})
+}
+
+// Test a combination of cors in route rules of a HTTPRoute and cors in a traffic policy
+// applied at the gateway level.
+// We expect the cors in the route rules to override the cors in the traffic policy for /path1 but
+// for /path2 the cors in the traffic policy should be applied.
+func (s *testingSuite) TestHttpRouteAndTrafficPolicyCors() {
+	s.setupTest([]string{httpRoutesManifest, corsHttpRoutesManifest, gwCorsTrafficPolicyManifest},
+		[]client.Object{route, route2, gwCorsTrafficPolicy})
+
+	requestHeaders := map[string]string{
+		"Origin":                        "https://notexample.com",
+		"Access-Control-Request-Method": "GET",
+	}
+
+	// HTTPRoute for /path1 should have this cors response headers
+	expectedHeadersPath1 := map[string]any{
+		"Access-Control-Allow-Origin":  "https://notexample.com",
+		"Access-Control-Allow-Methods": "GET",
+		"Access-Control-Allow-Headers": "x-custom-header",
+	}
+
+	// CORS at the vhost level translated from the TrafficPolicy should have
+	// this cors response headers for all other routes
 	expectedHeadersPath2 := map[string]any{
 		"Access-Control-Allow-Origin":  "https://notexample.com",
 		"Access-Control-Allow-Methods": "GET, POST",

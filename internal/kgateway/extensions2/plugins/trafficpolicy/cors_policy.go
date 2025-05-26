@@ -1,12 +1,15 @@
 package trafficpolicy
 
 import (
+	"strconv"
 	"strings"
 
 	corsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/cors/v3"
 	matcherv3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/wrapperspb"
+
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 )
@@ -42,7 +45,7 @@ func corsForSpec(spec v1alpha1.TrafficPolicySpec, out *trafficPolicySpecIr) erro
 	return nil
 }
 
-func toCorsFilterConfig(t *v1alpha1.CorsPolicy) (*corsv3.CorsPolicy, error) {
+func toCorsFilterConfig(t *gwv1.HTTPCORSFilter) (*corsv3.CorsPolicy, error) {
 	if t == nil {
 		return nil, nil
 	}
@@ -65,26 +68,38 @@ func toCorsFilterConfig(t *v1alpha1.CorsPolicy) (*corsv3.CorsPolicy, error) {
 		for i, origin := range t.AllowOrigins {
 			origins[i] = &matcherv3.StringMatcher{
 				MatchPattern: &matcherv3.StringMatcher_Exact{
-					Exact: origin,
+					Exact: string(origin),
 				},
 			}
 		}
 		corsPolicy.AllowOriginStringMatch = origins
 	}
 	if len(t.AllowMethods) > 0 {
-		corsPolicy.AllowMethods = strings.Join(t.AllowMethods, ", ")
+		methods := make([]string, len(t.AllowMethods))
+		for i, method := range t.AllowMethods {
+			methods[i] = string(method)
+		}
+		corsPolicy.AllowMethods = strings.Join(methods, ", ")
 	}
 	if len(t.AllowHeaders) > 0 {
-		corsPolicy.AllowHeaders = strings.Join(t.AllowHeaders, ", ")
+		headers := make([]string, len(t.AllowHeaders))
+		for i, header := range t.AllowHeaders {
+			headers[i] = string(header)
+		}
+		corsPolicy.AllowHeaders = strings.Join(headers, ", ")
 	}
 	if t.AllowCredentials {
-		corsPolicy.AllowCredentials = &wrapperspb.BoolValue{Value: t.AllowCredentials}
+		corsPolicy.AllowCredentials = &wrapperspb.BoolValue{Value: bool(t.AllowCredentials)}
 	}
 	if len(t.ExposeHeaders) > 0 {
-		corsPolicy.ExposeHeaders = strings.Join(t.ExposeHeaders, ", ")
+		headers := make([]string, len(t.ExposeHeaders))
+		for i, header := range t.ExposeHeaders {
+			headers[i] = string(header)
+		}
+		corsPolicy.ExposeHeaders = strings.Join(headers, ", ")
 	}
-	if t.MaxAge != "" {
-		corsPolicy.MaxAge = t.MaxAge
+	if t.MaxAge != 0 {
+		corsPolicy.MaxAge = strconv.FormatInt(int64(t.MaxAge), 10)
 	}
 
 	return corsPolicy, nil

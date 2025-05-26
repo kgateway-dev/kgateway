@@ -14,13 +14,15 @@ import (
 
 var (
 	// manifests
-	simpleServiceManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "service.yaml")
-	commonManifest        = filepath.Join(fsutils.MustGetThisDir(), "testdata", "common.yaml")
-	httpRoutesManifest    = filepath.Join(fsutils.MustGetThisDir(), "testdata", "httproutes.yaml")
+	simpleServiceManifest  = filepath.Join(fsutils.MustGetThisDir(), "testdata", "service.yaml")
+	commonManifest         = filepath.Join(fsutils.MustGetThisDir(), "testdata", "common.yaml")
+	httpRoutesManifest     = filepath.Join(fsutils.MustGetThisDir(), "testdata", "httproutes.yaml")
+	corsHttpRoutesManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "httproutes-cors.yaml")
 
-	// cors policies
-	gwCorsManifest    = filepath.Join(fsutils.MustGetThisDir(), "testdata", "gw-cors.yaml")
-	routeCorsManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "route-cors.yaml")
+	// traffic policies with cors configuration
+	gwCorsTrafficPolicyManifest    = filepath.Join(fsutils.MustGetThisDir(), "testdata", "tp-gw-cors.yaml")
+	routeCorsTrafficPolicyManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "tp-route-cors.yaml")
+
 	// objects from gateway manifest
 	gateway = &gwv1.Gateway{
 		ObjectMeta: metav1.ObjectMeta{

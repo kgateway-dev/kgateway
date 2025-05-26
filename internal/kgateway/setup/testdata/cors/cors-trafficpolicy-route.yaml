@@ -89,6 +89,6 @@ spec:
     allowHeaders:
     - "Content-Type"
     - "Authorization"
-    maxAge: "86400"
+    maxAge: 86400
     exposeHeaders:
     - "X-Custom-Header"
