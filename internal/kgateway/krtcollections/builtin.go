@@ -28,6 +28,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 )
 
 var VirtualBuiltInGK = schema.GroupKind{
@@ -492,7 +493,7 @@ func convertCORS(_ krt.HandlerContext, f *gwv1.HTTPCORSFilter) func(in ir.HttpRo
 		return nil
 	}
 	return func(in ir.HttpRouteRuleMatchIR, outputRoute *envoy_config_route_v3.Route) error {
-		corsPolicyAny, err := anypb.New(corsPolicy(f))
+		corsPolicyAny, err := utils.MessageToAny(corsPolicy(f))
 		if err != nil {
 			return fmt.Errorf("failed to convert CORS policy to Any: %w", err)
 		}
