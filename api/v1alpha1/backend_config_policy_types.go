@@ -149,12 +149,12 @@ type TCPKeepalive struct {
 	// The number of seconds a connection needs to be idle before keep-alive probes start being sent.
 	// +optional
 	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('0s')",message="keepAliveTime must be a valid duration string"
-	// +kubebuilder:validation:XValidation:rule="self.keepAliveTime.duration.seconds >= 1",message="keepAliveTime must be at least 1 second"
+	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1s')",message="keepAliveTime must be at least 1 second"
 	KeepAliveTime *metav1.Duration `json:"keepAliveTime,omitempty"`
 
 	// The number of seconds between keep-alive probes.
 	// +optional
 	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('0s')",message="keepAliveInterval must be a valid duration string"
-	// +kubebuilder:validation:XValidation:rule="self.keepAliveInterval.duration.seconds >= 1",message="keepAliveInterval must be at least 1 second"
+	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1s')",message="keepAliveInterval must be at least 1 second"
 	KeepAliveInterval *metav1.Duration `json:"keepAliveInterval,omitempty"`
 }

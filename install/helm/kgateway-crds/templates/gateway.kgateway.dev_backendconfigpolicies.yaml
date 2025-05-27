@@ -113,7 +113,7 @@ spec:
                     - message: keepAliveInterval must be a valid duration string
                       rule: duration(self) >= duration('0s')
                     - message: keepAliveInterval must be at least 1 second
-                      rule: self.keepAliveInterval.duration.seconds >= 1
+                      rule: duration(self) >= duration('1s')
                   keepAliveProbes:
                     type: integer
                   keepAliveTime:
@@ -122,7 +122,7 @@ spec:
                     - message: keepAliveTime must be a valid duration string
                       rule: duration(self) >= duration('0s')
                     - message: keepAliveTime must be at least 1 second
-                      rule: self.keepAliveTime.duration.seconds >= 1
+                      rule: duration(self) >= duration('1s')
                 type: object
             type: object
           status:
