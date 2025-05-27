@@ -13,16 +13,16 @@ import (
 	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/gateway/testutils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
+	translatortest "github.com/kgateway-dev/kgateway/v2/test/translator"
 )
 
 type translatorTestCase struct {
 	inputFile     string
 	outputFile    string
 	gwNN          types.NamespacedName
-	assertReports testutils.AssertReports
+	assertReports translatortest.AssertReports
 }
 
 var _ = DescribeTable("Basic GatewayTranslator Tests",
@@ -33,7 +33,7 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 
 		inputFiles := []string{filepath.Join(dir, "testutils/inputs/", in.inputFile)}
 		expectedProxyFile := filepath.Join(dir, "testutils/outputs/", in.outputFile)
-		testutils.TestTranslation(GinkgoT(), ctx, inputFiles, expectedProxyFile, in.gwNN, in.assertReports)
+		translatortest.TestTranslation(GinkgoT(), ctx, inputFiles, expectedProxyFile, in.gwNN, in.assertReports)
 	},
 	Entry(
 		"http gateway with basic routing",
@@ -521,7 +521,7 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 var _ = DescribeTable("Route Delegation translator",
 	func(inputFile string, errdesc string) {
 		dir := fsutils.MustGetThisDir()
-		testutils.TestTranslation(
+		translatortest.TestTranslation(
 			GinkgoT(),
 			context.TODO(),
 			[]string{
@@ -535,9 +535,9 @@ var _ = DescribeTable("Route Delegation translator",
 			},
 			func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
 				if errdesc == "" {
-					Expect(testutils.AreReportsSuccess(gwNN, reportsMap)).NotTo(HaveOccurred())
+					Expect(translatortest.AreReportsSuccess(gwNN, reportsMap)).NotTo(HaveOccurred())
 				} else {
-					Expect(testutils.AreReportsSuccess(gwNN, reportsMap)).To(MatchError(ContainSubstring(errdesc)))
+					Expect(translatortest.AreReportsSuccess(gwNN, reportsMap)).To(MatchError(ContainSubstring(errdesc)))
 				}
 			},
 		)
@@ -572,7 +572,7 @@ var _ = DescribeTable("Route Delegation translator",
 var _ = DescribeTable("Discovery Namespace Selector",
 	func(cfgJSON string, inputFile string, outputFile string, errdesc string) {
 		dir := fsutils.MustGetThisDir()
-		testutils.TestTranslation(
+		translatortest.TestTranslation(
 			GinkgoT(),
 			context.TODO(),
 			[]string{
@@ -585,12 +585,12 @@ var _ = DescribeTable("Discovery Namespace Selector",
 			},
 			func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
 				if errdesc == "" {
-					Expect(testutils.AreReportsSuccess(gwNN, reportsMap)).NotTo(HaveOccurred())
+					Expect(translatortest.AreReportsSuccess(gwNN, reportsMap)).NotTo(HaveOccurred())
 				} else {
-					Expect(testutils.AreReportsSuccess(gwNN, reportsMap)).To(MatchError(ContainSubstring(errdesc)))
+					Expect(translatortest.AreReportsSuccess(gwNN, reportsMap)).To(MatchError(ContainSubstring(errdesc)))
 				}
 			},
-			testutils.SettingsWithDiscoveryNamespaceSelectors(cfgJSON),
+			translatortest.SettingsWithDiscoveryNamespaceSelectors(cfgJSON),
 		)
 	},
 	Entry("Select all resources",
