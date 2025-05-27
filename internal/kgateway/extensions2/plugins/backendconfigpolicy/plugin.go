@@ -23,6 +23,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	translatorutils "github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
@@ -116,6 +117,7 @@ func registerTypes(ourCli versioned.Interface) {
 		},
 	)
 }
+
 func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensionsplug.Plugin {
 	registerTypes(commoncol.OurClient)
 	col := krt.WrapClient(kclient.NewFiltered[*v1alpha1.BackendConfigPolicy](
@@ -139,7 +141,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 			ObjectSource: objSrc,
 			Policy:       b,
 			PolicyIR:     policyIR,
-			TargetRefs:   convertTargetRefs(b.Spec.TargetRefs),
+			TargetRefs:   pluginutils.TargetRefsToPolicyRefs(b.Spec.TargetRefs, b.Spec.TargetSelectors),
 			Errors:       errs,
 		}
 	}, commoncol.KrtOpts.ToOptions("BackendConfigPolicyIRs")...)
@@ -303,17 +305,4 @@ func translateHttp1ProtocolOptions(http1ProtocolOptions *v1alpha1.Http1ProtocolO
 		}
 	}
 	return out, nil
-}
-
-// convertTargetRefs converts []v1alpha1.LocalPolicyTargetReference to []ir.PolicyRef
-func convertTargetRefs(targetRefs []v1alpha1.LocalPolicyTargetReference) []ir.PolicyRef {
-	refs := make([]ir.PolicyRef, 0, len(targetRefs))
-	for _, targetRef := range targetRefs {
-		refs = append(refs, ir.PolicyRef{
-			Kind:  string(targetRef.Kind),
-			Name:  string(targetRef.Name),
-			Group: string(targetRef.Group),
-		})
-	}
-	return refs
 }

@@ -32,6 +32,10 @@ type BackendConfigPolicySpec struct {
 	// +kubebuilder:validation:MaxItems=16
 	TargetRefs []LocalPolicyTargetReference `json:"targetRefs,omitempty"`
 
+	// TargetSelectors specifies the target selectors to select resources to attach the policy to.
+	// +optional
+	TargetSelectors []LocalPolicyTargetSelector `json:"targetSelectors,omitempty"`
+
 	// The timeout for new network connections to hosts in the cluster.
 	// +optional
 	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('0s')",message="connectTimeout must be a valid duration string"
