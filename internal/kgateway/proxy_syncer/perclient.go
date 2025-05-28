@@ -53,7 +53,6 @@ func snapshotPerClient(
 	endpoints PerClientEnvoyEndpoints,
 	clusters PerClientEnvoyClusters,
 ) krt.Collection[XdsSnapWrapper] {
-
 	clusterSnapshot := krt.NewCollection(uccCol, func(kctx krt.HandlerContext, ucc ir.UniqlyConnectedClient) *clustersWithErrors {
 		clustersForUcc := clusters.FetchClustersForClient(kctx, ucc)
 
@@ -90,7 +89,6 @@ func snapshotPerClient(
 	}, krtopts.ToOptions("ClusterResources")...)
 
 	endpointResources := krt.NewCollection(uccCol, func(kctx krt.HandlerContext, ucc ir.UniqlyConnectedClient) *endpointsWithUccName {
-
 		endpointsForUcc := endpoints.FetchEndpointsForClient(kctx, ucc)
 		endpointsProto := make([]envoycachetypes.ResourceWithTTL, 0, len(endpointsForUcc))
 		var endpointsHash uint64
