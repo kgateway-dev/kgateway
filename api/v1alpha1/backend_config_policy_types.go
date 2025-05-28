@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 )
@@ -54,6 +55,10 @@ type BackendConfigPolicySpec struct {
 	// Additional options when handling HTTP1 requests upstream.
 	// +optional
 	Http1ProtocolOptions *Http1ProtocolOptions `json:"http1ProtocolOptions,omitempty"`
+
+	// SSL configuration.
+	// +optional
+	SSLConfig *SSLConfig `json:"sslConfig,omitempty"`
 }
 
 // See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-msg-config-core-v3-http1protocoloptions) for more details.
@@ -157,4 +162,74 @@ type TCPKeepalive struct {
 	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('0s')",message="keepAliveInterval must be a valid duration string"
 	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1s')",message="keepAliveInterval must be at least 1 second"
 	KeepAliveInterval *metav1.Duration `json:"keepAliveInterval,omitempty"`
+}
+
+// +kubebuilder:validation:XValidation:rule="has(self.secretRef) != has(self.sslFiles)",message="Exactly one of secretRef or sslFiles must be set in SSLConfig"
+type SSLConfig struct {
+	// +optional
+	SecretRef *corev1.LocalObjectReference `json:"secretRef,omitempty"`
+
+	// +optional
+	SSLFiles *SSLFiles `json:"sslFiles,omitempty"`
+
+	// The SNI domains that should be considered for TLS connection
+	// +optional
+	Sni string `json:"sni,omitempty"`
+
+	// +optional
+	VerifySubjectAltName []string `json:"verifySubjectAltName,omitempty"`
+
+	// +optional
+	SSLParameters *SSLParameters `json:"sslParameters,omitempty"`
+
+	// +optional
+	AlpnProtocols []string `json:"alpnProtocols,omitempty"`
+
+	// +optional
+	AllowRenegotiation *bool `json:"allowRenegotiation,omitempty"`
+
+	// +optional
+	OneWayTLS *bool `json:"oneWayTLS,omitempty"`
+}
+
+// TLSVersion defines the TLS version.
+// +kubebuilder:validation:Enum=AUTO;"1.0";"1.1";"1.2";"1.3"
+type TLSVersion string
+
+const (
+	TLSVersionAUTO TLSVersion = "AUTO"
+	TLSVersion1_0  TLSVersion = "1.0"
+	TLSVersion1_1  TLSVersion = "1.1"
+	TLSVersion1_2  TLSVersion = "1.2"
+	TLSVersion1_3  TLSVersion = "1.3"
+)
+
+type SSLParameters struct {
+	// Minimum TLS version.
+	// +optional
+	TLSMinVersion *TLSVersion `json:"tlsMinVersion,omitempty"`
+
+	// Maximum TLS version.
+	// +optional
+	TLSMaxVersion *TLSVersion `json:"tlsMaxVersion,omitempty"`
+
+	// +optional
+	CipherSuites []string `json:"cipherSuites,omitempty"`
+
+	// +optional
+	EcdhCurves []string `json:"ecdhCurves,omitempty"`
+}
+
+type SSLFiles struct {
+	// +optional
+	TLSCertificate *string `json:"tlsCertificate,omitempty"`
+
+	// +optional
+	TLSKey *string `json:"tlsKey,omitempty"`
+
+	// +optional
+	RootCA *string `json:"rootCA,omitempty"`
+
+	// +optional
+	OCSPStaple *string `json:"ocspStaple,omitempty"`
 }
