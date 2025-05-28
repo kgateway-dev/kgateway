@@ -106,14 +106,14 @@ func (i *BackendIndex) BackendsWithPolicy() []krt.Collection[ir.BackendObjectIR]
 // policies attached.
 func (i *BackendIndex) AddBackends(gk schema.GroupKind, col krt.Collection[ir.BackendObjectIR], aliasKinds ...schema.GroupKind) {
 	backendsWithPoliciesCol := krt.NewCollection(col, func(kctx krt.HandlerContext, backendObj ir.BackendObjectIR) *ir.BackendObjectIR {
-		policies := i.policies.getTargetingPoliciesForBackends(kctx, extensionsplug.BackendAttachmentPoint, backendObj.ObjectSource, "", nil, false)
+		policies := i.policies.getTargetingPoliciesForBackends(kctx, extensionsplug.BackendAttachmentPoint, backendObj.ObjectSource, "", backendObj.GetObjectLabels(), false)
 		for _, aliasObjSrc := range backendObj.Aliases {
 			if aliasObjSrc.Namespace == "" {
 				// targeting policies must be namespace local
 				// some aliases might be "global" but for policy purposes, give them the src namespace
 				aliasObjSrc.Namespace = backendObj.GetNamespace()
 			}
-			aliasPolicies := i.policies.getTargetingPoliciesForBackends(kctx, extensionsplug.BackendAttachmentPoint, aliasObjSrc, "", nil, true)
+			aliasPolicies := i.policies.getTargetingPoliciesForBackends(kctx, extensionsplug.BackendAttachmentPoint, aliasObjSrc, "", backendObj.GetObjectLabels(), true)
 			policies = append(policies, aliasPolicies...)
 		}
 		backendObj.AttachedPolicies = toAttachedPolicies(policies)

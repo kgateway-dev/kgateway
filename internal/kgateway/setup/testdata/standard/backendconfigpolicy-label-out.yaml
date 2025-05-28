@@ -1,0 +1,81 @@
+clusters:
+- connectTimeout: 5s
+  edsClusterConfig:
+    edsConfig:
+      ads: {}
+      resourceApiVersion: V3
+  metadata: {}
+  name: kube_default_kubernetes_443
+  type: EDS
+- connectTimeout: 5s
+  edsClusterConfig:
+    edsConfig:
+      ads: {}
+      resourceApiVersion: V3
+  metadata: {}
+  name: kube_gwtest_httpbin_8080
+  perConnectionBufferLimitBytes: 1024
+  type: EDS
+  typedExtensionProtocolOptions:
+    envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+      '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+      commonHttpProtocolOptions:
+        headersWithUnderscoresAction: REJECT_REQUEST
+        idleTimeout: 10s
+        maxHeadersCount: 15
+        maxRequestsPerConnection: 100
+        maxStreamDuration: 30s
+      explicitHttpConfig:
+        httpProtocolOptions:
+          enableTrailers: true
+          headerKeyFormat:
+            statefulFormatter:
+              name: envoy.http.stateful_header_formatters.preserve_case
+              typedConfig:
+                '@type': type.googleapis.com/envoy.extensions.http.header_formatters.preserve_case.v3.PreserveCaseFormatterConfig
+          overrideStreamErrorOnInvalidHttpMessage: true
+  upstreamConnectionOptions:
+    tcpKeepalive:
+      keepaliveInterval: 5
+      keepaliveProbes: 3
+      keepaliveTime: 30
+endpoints:
+- clusterName: kube_gwtest_httpbin_8080
+  endpoints:
+  - lbEndpoints:
+    - endpoint:
+        address:
+          socketAddress:
+            address: 10.244.1.11
+            portValue: 8080
+      loadBalancingWeight: 1
+    loadBalancingWeight: 1
+listeners:
+- address:
+    socketAddress:
+      address: '::'
+      ipv4Compat: true
+      portValue: 8080
+  filterChains:
+  - filters:
+    - name: envoy.filters.network.http_connection_manager
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+        httpFilters:
+        - name: envoy.filters.http.router
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+        mergeSlashes: true
+        normalizePath: true
+        rds:
+          configSource:
+            ads: {}
+            resourceApiVersion: V3
+          routeConfigName: http
+        statPrefix: http
+        useRemoteAddress: true
+    name: http
+  name: http
+routes:
+- ignorePortInHostMatching: true
+  name: http
