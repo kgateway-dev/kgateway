@@ -3,11 +3,10 @@ package trafficpolicy
 import (
 	"fmt"
 
-	routev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_ext_authz_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_authz/v3"
 	set_metadata "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/set_metadata/v3"
+	envoy_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/structpb"
 	"istio.io/istio/pkg/kube/krt"
 
@@ -16,18 +15,30 @@ import (
 )
 
 var (
-	// from envoy code:
-	// If the field `config` is configured but is empty, we treat the filter is enabled
-	// explicitly.
-	// see: https://github.com/envoyproxy/envoy/blob/8ed93ef372f788456b708fc93a7e54e17a013aa7/source/common/router/config_impl.cc#L2552
-	enableFilterPerRoute = &routev3.FilterConfig{Config: &anypb.Any{}}
-	setMetadataConfig    = &set_metadata.Config{
+	setMetadataConfig = &set_metadata.Config{
 		Metadata: []*set_metadata.Metadata{
 			{
 				MetadataNamespace: extAuthGlobalDisableFilterMetadataNamespace,
 				Value: &structpb.Struct{Fields: map[string]*structpb.Value{
 					extAuthGlobalDisableKey: structpb.NewBoolValue(true),
 				}},
+			},
+		},
+	}
+
+	ExtAuthzEnabledMetadataMatcher = &envoy_matcher_v3.MetadataMatcher{
+		Filter: extAuthGlobalDisableFilterMetadataNamespace,
+		Invert: true,
+		Path: []*envoy_matcher_v3.MetadataMatcher_PathSegment{
+			{
+				Segment: &envoy_matcher_v3.MetadataMatcher_PathSegment_Key{
+					Key: extAuthGlobalDisableKey,
+				},
+			},
+		},
+		Value: &envoy_matcher_v3.ValueMatcher{
+			MatchPattern: &envoy_matcher_v3.ValueMatcher_BoolMatch{
+				BoolMatch: true,
 			},
 		},
 	}
