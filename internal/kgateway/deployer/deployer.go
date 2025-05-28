@@ -483,8 +483,6 @@ func (d *Deployer) Render(name, ns string, vals map[string]any) ([]client.Object
 //
 // * returns the objects to be deployed by the caller
 func (d *Deployer) GetObjsToDeploy(ctx context.Context, gw *api.Gateway) ([]client.Object, error) {
-	d.inputs.CommonCollections.GatewayIndex.Gateways.WaitUntilSynced(ctx.Done())
-
 	gwParam, err := d.getGatewayParametersForGateway(ctx, gw)
 	if err != nil {
 		return nil, err
