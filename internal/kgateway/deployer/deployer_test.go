@@ -2433,5 +2433,7 @@ func newCommonCols(t test.Failer, initObjs ...client.Object) *common.CommonColle
 	for !kubeRawGateways.HasSynced() || !kubeRawListenerSets.HasSynced() || !gatewayClasses.HasSynced() {
 		time.Sleep(time.Second / 10)
 	}
+
+	gateways.Gateways.WaitUntilSynced(ctx.Done())
 	return commonCols
 }
