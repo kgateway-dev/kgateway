@@ -57,14 +57,17 @@ type Namespaced interface {
 type AppProtocol string
 
 const (
-	DefaultAppProtocol AppProtocol = ""
-	HTTP2AppProtocol   AppProtocol = "http2"
+	DefaultAppProtocol   AppProtocol = ""
+	HTTP2AppProtocol     AppProtocol = "http2"
+	WebSocketAppProtocol AppProtocol = "ws"
 )
 
 func ParseAppProtocol(appProtocol *string) AppProtocol {
 	switch ptr.Deref(appProtocol, "") {
 	case "kubernetes.io/h2c":
 		return HTTP2AppProtocol
+	case "kubernetes.io/ws":
+		return WebSocketAppProtocol
 	default:
 		return DefaultAppProtocol
 	}

@@ -524,6 +524,14 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 			Name:      "example-gateway",
 		},
 	}),
+	Entry("WS upgrade for backend", translatorTestCase{
+		inputFile:  "https-listener-pol/ws-backend.yaml",
+		outputFile: "https-listener-pol/ws-backend.yaml",
+		gwNN: types.NamespacedName{
+			Namespace: "default",
+			Name:      "example-gateway",
+		},
+	}),
 )
 
 var _ = DescribeTable("Route Delegation translator",
