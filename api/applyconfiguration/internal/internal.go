@@ -315,6 +315,12 @@ var schemaYAML = typed.YAMLObject(`types:
           elementType:
             namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LocalPolicyTargetReference
           elementRelationship: atomic
+    - name: targetSelectors
+      type:
+        list:
+          elementType:
+            namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LocalPolicyTargetSelector
+          elementRelationship: atomic
     - name: tcpKeepalive
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.TCPKeepalive

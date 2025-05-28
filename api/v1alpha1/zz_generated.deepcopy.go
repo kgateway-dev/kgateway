@@ -486,6 +486,13 @@ func (in *BackendConfigPolicySpec) DeepCopyInto(out *BackendConfigPolicySpec) {
 		*out = make([]LocalPolicyTargetReference, len(*in))
 		copy(*out, *in)
 	}
+	if in.TargetSelectors != nil {
+		in, out := &in.TargetSelectors, &out.TargetSelectors
+		*out = make([]LocalPolicyTargetSelector, len(*in))
+		for i := range *in {
+			(*in)[i].DeepCopyInto(&(*out)[i])
+		}
+	}
 	if in.ConnectTimeout != nil {
 		in, out := &in.ConnectTimeout, &out.ConnectTimeout
 		*out = new(metav1.Duration)

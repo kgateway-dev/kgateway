@@ -10,6 +10,7 @@ import (
 // with apply.
 type BackendConfigPolicySpecApplyConfiguration struct {
 	TargetRefs                    []LocalPolicyTargetReferenceApplyConfiguration `json:"targetRefs,omitempty"`
+	TargetSelectors               []LocalPolicyTargetSelectorApplyConfiguration  `json:"targetSelectors,omitempty"`
 	ConnectTimeout                *v1.Duration                                   `json:"connectTimeout,omitempty"`
 	PerConnectionBufferLimitBytes *int                                           `json:"perConnectionBufferLimitBytes,omitempty"`
 	TCPKeepalive                  *TCPKeepaliveApplyConfiguration                `json:"tcpKeepalive,omitempty"`
@@ -32,6 +33,19 @@ func (b *BackendConfigPolicySpecApplyConfiguration) WithTargetRefs(values ...*Lo
 			panic("nil value passed to WithTargetRefs")
 		}
 		b.TargetRefs = append(b.TargetRefs, *values[i])
+	}
+	return b
+}
+
+// WithTargetSelectors adds the given value to the TargetSelectors field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the TargetSelectors field.
+func (b *BackendConfigPolicySpecApplyConfiguration) WithTargetSelectors(values ...*LocalPolicyTargetSelectorApplyConfiguration) *BackendConfigPolicySpecApplyConfiguration {
+	for i := range values {
+		if values[i] == nil {
+			panic("nil value passed to WithTargetSelectors")
+		}
+		b.TargetSelectors = append(b.TargetSelectors, *values[i])
 	}
 	return b
 }
