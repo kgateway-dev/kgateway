@@ -1,3 +1,23 @@
+Clusters:
+- clusterType:
+    name: envoy.clusters.dynamic_forward_proxy
+    typedConfig:
+      '@type': type.googleapis.com/envoy.extensions.clusters.dynamic_forward_proxy.v3.ClusterConfig
+      subClustersConfig:
+        lbPolicy: LEAST_REQUEST
+  connectTimeout: 5s
+  lbPolicy: CLUSTER_PROVIDED
+  metadata: {}
+  name: backend_default_dfp-backend_0
+  transportSocket:
+    name: envoy.transport_sockets.tls
+    typedConfig:
+      '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+      commonTlsContext:
+        combinedValidationContext:
+          defaultValidationContext: {}
+          validationContextSdsSecretConfig:
+            name: SYSTEM_CA_CERT
 Listeners:
 - address:
     socketAddress:

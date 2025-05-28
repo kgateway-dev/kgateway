@@ -454,7 +454,7 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 			Name:      "example-gateway",
 		},
 	}),
-	FEntry("DFP Backend with TLS", translatorTestCase{
+	Entry("DFP Backend with TLS", translatorTestCase{
 		inputFile:  "dfp/tls.yaml",
 		outputFile: "dfp/tls.yaml",
 		gwNN: types.NamespacedName{

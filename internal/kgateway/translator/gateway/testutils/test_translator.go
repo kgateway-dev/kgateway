@@ -2,21 +2,28 @@ package testutils
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
+	"sort"
 	"strings"
 	"time"
 
+	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/go-logr/logr"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/testing/protocmp"
 	"istio.io/istio/pkg/config/schema/gvr"
 	kubeclient "istio.io/istio/pkg/kube"
+
 	"istio.io/istio/pkg/kube/kclient/clienttest"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/test"
@@ -44,6 +51,149 @@ import (
 
 type AssertReports func(gwNN types.NamespacedName, reportsMap reports.ReportMap)
 
+type translationResult struct {
+	Routes        []*envoy_config_route_v3.RouteConfiguration
+	Listeners     []*envoy_config_listener_v3.Listener
+	ExtraClusters []*clusterv3.Cluster
+	Clusters      []*clusterv3.Cluster `json:"Clusters,omitempty"`
+}
+
+func (tr *translationResult) MarshalJSON() ([]byte, error) {
+	m := protojson.MarshalOptions{
+		Indent: "  ",
+	}
+
+	// Create a map to hold the marshaled fields
+	result := make(map[string]interface{})
+
+	// Marshal each field using protojson
+	if len(tr.Routes) > 0 {
+		routes, err := marshalProtoMessages(tr.Routes, m)
+		if err != nil {
+			return nil, err
+		}
+		result["Routes"] = routes
+	}
+
+	if len(tr.Listeners) > 0 {
+		listeners, err := marshalProtoMessages(tr.Listeners, m)
+		if err != nil {
+			return nil, err
+		}
+		result["Listeners"] = listeners
+	}
+
+	if len(tr.ExtraClusters) > 0 {
+		clusters, err := marshalProtoMessages(tr.ExtraClusters, m)
+		if err != nil {
+			return nil, err
+		}
+		result["ExtraClusters"] = clusters
+	}
+
+	if len(tr.Clusters) > 0 {
+		clusters, err := marshalProtoMessages(tr.Clusters, m)
+		if err != nil {
+			return nil, err
+		}
+		result["Clusters"] = clusters
+	}
+
+	// Marshal the result map to JSON
+	return json.Marshal(result)
+}
+
+func (tr *translationResult) UnmarshalJSON(data []byte) error {
+	m := protojson.UnmarshalOptions{}
+
+	// Create a map to hold the unmarshaled fields
+	result := make(map[string]json.RawMessage)
+
+	// Unmarshal the JSON data into the map
+	if err := json.Unmarshal(data, &result); err != nil {
+		return err
+	}
+
+	// Unmarshal each field using protojson
+	if routesData, ok := result["Routes"]; ok {
+		var routes []json.RawMessage
+		if err := json.Unmarshal(routesData, &routes); err != nil {
+			return err
+		}
+		tr.Routes = make([]*envoy_config_route_v3.RouteConfiguration, len(routes))
+		for i, routeData := range routes {
+			route := &envoy_config_route_v3.RouteConfiguration{}
+			if err := m.Unmarshal(routeData, route); err != nil {
+				return err
+			}
+			tr.Routes[i] = route
+		}
+	}
+
+	if listenersData, ok := result["Listeners"]; ok {
+		var listeners []json.RawMessage
+		if err := json.Unmarshal(listenersData, &listeners); err != nil {
+			return err
+		}
+		tr.Listeners = make([]*envoy_config_listener_v3.Listener, len(listeners))
+		for i, listenerData := range listeners {
+			listener := &envoy_config_listener_v3.Listener{}
+			if err := m.Unmarshal(listenerData, listener); err != nil {
+				return err
+			}
+			tr.Listeners[i] = listener
+		}
+	}
+
+	if clustersData, ok := result["ExtraClusters"]; ok {
+		var clusters []json.RawMessage
+		if err := json.Unmarshal(clustersData, &clusters); err != nil {
+			return err
+		}
+		tr.ExtraClusters = make([]*clusterv3.Cluster, len(clusters))
+		for i, clusterData := range clusters {
+			cluster := &clusterv3.Cluster{}
+			if err := m.Unmarshal(clusterData, cluster); err != nil {
+				return err
+			}
+			tr.ExtraClusters[i] = cluster
+		}
+	}
+
+	if clustersData, ok := result["Clusters"]; ok {
+		var clusters []json.RawMessage
+		if err := json.Unmarshal(clustersData, &clusters); err != nil {
+			return err
+		}
+		tr.Clusters = make([]*clusterv3.Cluster, len(clusters))
+		for i, clusterData := range clusters {
+			cluster := &clusterv3.Cluster{}
+			if err := m.Unmarshal(clusterData, cluster); err != nil {
+				return err
+			}
+			tr.Clusters[i] = cluster
+		}
+	}
+
+	return nil
+}
+
+func marshalProtoMessages[T proto.Message](messages []T, m protojson.MarshalOptions) ([]interface{}, error) {
+	var result []interface{}
+	for _, msg := range messages {
+		data, err := m.Marshal(msg)
+		if err != nil {
+			return nil, err
+		}
+		var jsonObj interface{}
+		if err := json.Unmarshal(data, &jsonObj); err != nil {
+			return nil, err
+		}
+		result = append(result, jsonObj)
+	}
+	return result, nil
+}
+
 func TestTranslation(
 	t test.Failer,
 	ctx context.Context,
@@ -66,12 +216,11 @@ func TestTranslation(
 	//var proxy ir.GatewayIR
 	//Expect(json.Unmarshal(b, &proxy)).NotTo(HaveOccurred())
 	if os.Getenv("UPDATE_OUTPUTS") == "1" {
-		output := struct {
-			*irtranslator.TranslationResult `json:",inline"`
-			Clusters                        []*clusterv3.Cluster
-		}{
-			TranslationResult: result.Proxy,
-			Clusters:          result.Clusters,
+		output := &translationResult{
+			Routes:        result.Proxy.Routes,
+			Listeners:     result.Proxy.Listeners,
+			ExtraClusters: result.Proxy.ExtraClusters,
+			Clusters:      result.Clusters,
 		}
 
 		d, err := MarshalAnyYaml(output)
@@ -113,6 +262,31 @@ func CompareProxy(expectedFile string, actualProxy *irtranslator.TranslationResu
 		return "", err
 	}
 	return cmp.Diff(expectedProxy, actualProxy, protocmp.Transform(), cmpopts.EquateNaNs()), nil
+}
+
+func CompareClusters(expectedFile string, actualClusters []*clusterv3.Cluster) (string, error) {
+	expectedOutput := &translationResult{}
+	if err := ReadYamlFile(expectedFile, expectedOutput); err != nil {
+		return "", err
+	}
+
+	// Sort both expected and actual clusters by name
+	sort.Slice(expectedOutput.Clusters, func(i, j int) bool {
+		return expectedOutput.Clusters[i].Name < expectedOutput.Clusters[j].Name
+	})
+	sort.Slice(actualClusters, func(i, j int) bool {
+		return actualClusters[i].Name < actualClusters[j].Name
+	})
+
+	return cmp.Diff(expectedOutput.Clusters, actualClusters, protocmp.Transform(), cmpopts.EquateNaNs()), nil
+}
+
+func ReadYamlFile(file string, out interface{}) error {
+	data, err := os.ReadFile(file)
+	if err != nil {
+		return err
+	}
+	return UnmarshalAnyYaml(data, out)
 }
 
 func AreReportsSuccess(gwNN types.NamespacedName, reportsMap reports.ReportMap) error {
