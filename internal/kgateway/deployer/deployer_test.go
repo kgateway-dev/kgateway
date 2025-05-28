@@ -27,10 +27,11 @@ import (
 	infextv1a2 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
 	api "sigs.k8s.io/gateway-api/apis/v1"
 
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/xds"
+
 	gw2_v1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/deployer"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/xds"
 	"github.com/kgateway-dev/kgateway/v2/internal/version"
 	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
 
@@ -270,6 +271,28 @@ var _ = Describe("Deployer", func() {
 				},
 			}
 		}
+
+		agentGatewayParam = func(name string) *gw2_v1alpha1.GatewayParameters {
+			return &gw2_v1alpha1.GatewayParameters{
+				TypeMeta: metav1.TypeMeta{
+					Kind: wellknown.GatewayParametersGVK.Kind,
+					// The parsing expects GROUP/VERSION format in this field
+					APIVersion: gw2_v1alpha1.GroupVersion.String(),
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      name,
+					Namespace: defaultNamespace,
+					UID:       "1237",
+				},
+				Spec: gw2_v1alpha1.GatewayParametersSpec{
+					Kube: &gw2_v1alpha1.KubernetesProxyConfig{
+						AgentGateway: &gw2_v1alpha1.AgentGateway{
+							Enabled: ptr.To(true),
+						},
+					},
+				},
+			}
+		}
 	)
 
 	Context("default case", func() {
@@ -404,6 +427,84 @@ var _ = Describe("Deployer", func() {
 		})
 	})
 
+	Context("agentgateway", func() {
+		var (
+			d   *deployer.Deployer
+			gwp *gw2_v1alpha1.GatewayParameters
+		)
+		BeforeEach(func() {
+			gwp = agentGatewayParam("agent-gateway-params")
+			gwc := &api.GatewayClass{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "agentgateway",
+				},
+				Spec: api.GatewayClassSpec{
+					ControllerName: wellknown.GatewayControllerName,
+					ParametersRef: &api.ParametersReference{
+						Group:     gw2_v1alpha1.GroupName,
+						Kind:      api.Kind(wellknown.GatewayParametersGVK.Kind),
+						Name:      gwp.GetName(),
+						Namespace: ptr.To(api.Namespace(defaultNamespace)),
+					},
+				},
+			}
+			var err error
+			d, err = deployer.NewDeployer(newFakeClientWithObjs(gwc, gwp), &deployer.Inputs{
+				ControllerName: wellknown.GatewayControllerName,
+				Dev:            false,
+				ControlPlane: deployer.ControlPlaneInfo{
+					XdsHost: "something.cluster.local",
+					XdsPort: 1234,
+				},
+				ImageInfo: &deployer.ImageInfo{
+					Registry: "foo",
+					Tag:      "bar",
+				},
+			})
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("deploys agentgateway", func() {
+			gw := &api.Gateway{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "agent-gateway",
+					Namespace: defaultNamespace,
+				},
+				Spec: api.GatewaySpec{
+					GatewayClassName: "agentgateway",
+					Infrastructure: &api.GatewayInfrastructure{
+						ParametersRef: &api.LocalParametersReference{
+							Group: gw2_v1alpha1.GroupName,
+							Kind:  api.Kind(wellknown.GatewayParametersGVK.Kind),
+							Name:  gwp.GetName(),
+						},
+					},
+					Listeners: []api.Listener{{
+						Name: "listener-1",
+						Port: 80,
+					}},
+				},
+			}
+			var objs clientObjects
+			objs, err := d.GetObjsToDeploy(context.Background(), gw)
+			Expect(err).ToNot(HaveOccurred())
+			// check the image is using the agentgateway image
+			deployment := objs.findDeployment(defaultNamespace, "agent-gateway")
+			Expect(deployment).ToNot(BeNil())
+			Expect(deployment.Spec.Template.Spec.Containers[0].Image).To(ContainSubstring("agentgateway"))
+			// check the service is using the agentgateway port
+			svc := objs.findService(defaultNamespace, "agent-gateway")
+			Expect(svc).ToNot(BeNil())
+			Expect(svc.Spec.Ports[0].Port).To(Equal(int32(80)))
+			// check the config map is using the xds address and port
+			cm := objs.findConfigMap(defaultNamespace, "agent-gateway")
+			Expect(cm).ToNot(BeNil())
+			Expect(cm.Data["config.json"]).To(ContainSubstring(`"xds_address": "http://something.cluster.local:1234"`))
+			Expect(cm.Data["config.json"]).To(ContainSubstring(`"alt_xds_hostname": "agent-gateway.default.svc.cluster.local"`))
+
+		})
+	})
+
 	Context("watches", func() {
 		var (
 			d *deployer.Deployer
@@ -513,7 +614,6 @@ var _ = Describe("Deployer", func() {
 			Expect(objs1.findService(defaultNamespace, gw1.Name)).ToNot(BeNil())
 			Expect(objs1.findConfigMap(defaultNamespace, gw1.Name)).ToNot(BeNil())
 			Expect(objs1.findServiceAccount(defaultNamespace, gw1.Name)).ToNot(BeNil())
-
 			objs2, err = d2.GetObjsToDeploy(context.Background(), gw2)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(objs2).NotTo(BeEmpty())

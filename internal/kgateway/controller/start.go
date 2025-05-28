@@ -3,12 +3,11 @@ package controller
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"net/http"
 	"sync/atomic"
 
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
-	"github.com/solo-io/go-utils/contextutils"
-	uzap "go.uber.org/zap"
 	istiokube "istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/krt"
 	istiolog "istio.io/istio/pkg/log"
@@ -17,10 +16,10 @@ import (
 	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/config"
-	czap "sigs.k8s.io/controller-runtime/pkg/log/zap"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	infextv1a2 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
 
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/deployer"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/inferenceextension/endpointpicker"
@@ -32,6 +31,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
+	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	common "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	kgtwschemes "github.com/kgateway-dev/kgateway/v2/pkg/schemes"
@@ -42,7 +42,8 @@ import (
 const (
 	// AutoProvision controls whether the controller will be responsible for provisioning dynamic
 	// infrastructure for the Gateway API.
-	AutoProvision = true
+	AutoProvision           = true
+	ControllerRuntimeLogger = "controllerruntime"
 )
 
 type SetupOpts struct {
@@ -90,15 +91,12 @@ type ControllerBuilder struct {
 }
 
 func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuilder, error) {
-	var opts []czap.Opts
 	loggingOptions := istiolog.DefaultOptions()
-
 	if cfg.Dev {
 		setupLog.Info("starting log in dev mode")
-		opts = append(opts, czap.UseDevMode(true))
 		loggingOptions.SetDefaultOutputLevel(istiolog.OverrideScopeName, istiolog.DebugLevel)
+		logging.MustSetLevel(ControllerRuntimeLogger, slog.LevelDebug)
 	}
-	ctrl.SetLogger(czap.New(opts...))
 	istiolog.Configure(loggingOptions)
 
 	scheme := DefaultScheme()
@@ -164,7 +162,7 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 	if err != nil {
 		return nil, err
 	}
-	commoncol := common.NewCommonCollections(
+	commoncol, err := common.NewCommonCollections(
 		ctx,
 		cfg.KrtOptions,
 		cfg.Client,
@@ -174,6 +172,9 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 		setupLog,
 		*cfg.SetupOpts.GlobalSettings,
 	)
+	if err != nil {
+		return nil, err
+	}
 	mergedPlugins := pluginFactoryWithBuiltin(cfg.ExtraPlugins)(ctx, commoncol)
 	commoncol.InitPlugins(ctx, mergedPlugins)
 
@@ -190,6 +191,23 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 		cfg.SetupOpts.Cache,
 	)
 	proxySyncer.Init(ctx, cfg.KrtOptions)
+
+	if cfg.SetupOpts.GlobalSettings.EnableAgentGateway {
+		agentGatewaySyncer := agentgatewaysyncer.NewAgentGwSyncer(
+			ctx,
+			cfg.ControllerName,
+			mgr,
+			cfg.Client,
+			commoncol,
+			cfg.SetupOpts.Cache,
+		)
+		agentGatewaySyncer.Init(cfg.KrtOptions)
+
+		if err := mgr.Add(agentGatewaySyncer); err != nil {
+			setupLog.Error(err, "unable to add agentGatewaySyncer runnable")
+			return nil, err
+		}
+	}
 
 	if err := mgr.Add(proxySyncer); err != nil {
 		setupLog.Error(err, "unable to add proxySyncer runnable")
@@ -229,8 +247,7 @@ func pluginFactoryWithBuiltin(extraPlugins func(ctx context.Context, commoncol *
 }
 
 func (c *ControllerBuilder) Start(ctx context.Context) error {
-	logger := contextutils.LoggerFrom(ctx).Desugar()
-	logger.Info("starting gateway controller")
+	slog.Info("starting gateway controller")
 
 	globalSettings := c.cfg.SetupOpts.GlobalSettings
 
@@ -243,7 +260,7 @@ func (c *ControllerBuilder) Start(ctx context.Context) error {
 	}
 
 	xdsPort := globalSettings.XdsServicePort
-	logger.Info("got xds address for deployer", uzap.String("xds_host", xdsHost), uzap.Uint32("xds_port", xdsPort))
+	slog.Info("got xds address for deployer", "xds_host", xdsHost, "xds_port", xdsPort)
 
 	istioAutoMtlsEnabled := globalSettings.EnableIstioAutoMtls
 
@@ -261,10 +278,11 @@ func (c *ControllerBuilder) Start(ctx context.Context) error {
 			Tag:        globalSettings.DefaultImageTag,
 			PullPolicy: globalSettings.DefaultImagePullPolicy,
 		},
+		DiscoveryNamespaceFilter: c.cfg.Client.ObjectFilter(),
 	}
 
 	setupLog.Info("creating gateway class provisioner")
-	if err := NewGatewayClassProvisioner(c.mgr, c.cfg.ControllerName, GetDefaultClassInfo()); err != nil {
+	if err := NewGatewayClassProvisioner(c.mgr, c.cfg.ControllerName, GetDefaultClassInfo(globalSettings)); err != nil {
 		setupLog.Error(err, "unable to create gateway class provisioner")
 		return err
 	}
@@ -295,7 +313,7 @@ func (c *ControllerBuilder) Start(ctx context.Context) error {
 	}
 
 	// mgr WaitForCacheSync is part of proxySyncer's HasSynced
-	// so we can can mark ready here before we call mgr.Start
+	// so we can mark ready here before we call mgr.Start
 	c.ready.Store(true)
 
 	setupLog.Info("starting manager")
@@ -308,8 +326,8 @@ func (c *ControllerBuilder) HasSynced() bool {
 
 // GetDefaultClassInfo returns the default GatewayClass for the kgateway controller.
 // Exported for testing.
-func GetDefaultClassInfo() map[string]*ClassInfo {
-	return map[string]*ClassInfo{
+func GetDefaultClassInfo(globalSettings *settings.Settings) map[string]*ClassInfo {
+	classInfos := map[string]*ClassInfo{
 		wellknown.GatewayClassName: {
 			Description: "Standard class for managing Gateway API ingress traffic.",
 			Labels:      map[string]string{},
@@ -323,4 +341,13 @@ func GetDefaultClassInfo() map[string]*ClassInfo {
 			},
 		},
 	}
+	// Only enable agentgateway gateway class if it's enabled in the settings
+	if globalSettings.EnableAgentGateway {
+		classInfos[wellknown.AgentGatewayClassName] = &ClassInfo{
+			Description: "Specialized class for agentgateway.",
+			Labels:      map[string]string{},
+			Annotations: map[string]string{},
+		}
+	}
+	return classInfos
 }

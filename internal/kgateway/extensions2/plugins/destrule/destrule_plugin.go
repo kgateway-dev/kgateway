@@ -9,6 +9,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_type_v3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"istio.io/api/networking/v1alpha3"
 	"istio.io/istio/pkg/config/schema/gvr"
@@ -126,6 +127,27 @@ func (d *destrulePlugin) processBackend(kctx krt.HandlerContext, ctx context.Con
 			}
 
 			outCluster.OutlierDetection = out
+
+			// Translate TCP keepalive settings
+			if tcpSettings := trafficPolicy.GetConnectionPool().GetTcp(); tcpSettings != nil {
+				if tcpKeepalive := tcpSettings.GetTcpKeepalive(); tcpKeepalive != nil {
+					if outCluster.GetUpstreamConnectionOptions() == nil {
+						outCluster.UpstreamConnectionOptions = &envoy_config_cluster_v3.UpstreamConnectionOptions{}
+					}
+					if outCluster.GetUpstreamConnectionOptions().GetTcpKeepalive() == nil {
+						outCluster.GetUpstreamConnectionOptions().TcpKeepalive = &envoy_config_core_v3.TcpKeepalive{}
+					}
+					if tcpKeepalive.GetTime() != nil {
+						outCluster.GetUpstreamConnectionOptions().GetTcpKeepalive().KeepaliveTime = &wrapperspb.UInt32Value{Value: uint32(tcpKeepalive.GetTime().GetSeconds())}
+					}
+					if tcpKeepalive.GetInterval() != nil {
+						outCluster.GetUpstreamConnectionOptions().GetTcpKeepalive().KeepaliveInterval = &wrapperspb.UInt32Value{Value: uint32(tcpKeepalive.GetInterval().GetSeconds())}
+					}
+					if tcpKeepalive.GetProbes() > 0 {
+						outCluster.GetUpstreamConnectionOptions().GetTcpKeepalive().KeepaliveProbes = &wrapperspb.UInt32Value{Value: uint32(tcpKeepalive.GetProbes())}
+					}
+				}
+			}
 		}
 	}
 }

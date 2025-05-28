@@ -48,14 +48,14 @@ think of a plugin as an independent k8s controller that translates a CRD to a
 KRT collection of policies in an IR form kgateway can understand (it's called
 `ir.PolicyWrapper`). A plugin lifecycle is the length of the program - it
 doesn't reset on each translation (we will explain later where we hold
-translation state).
+translation state). Examples of kgateway extension plugins can be found in [/internal/kgateway/extensions2/plugins](/internal/kgateway/extensions2/plugins)
 
 When a plugin can contribute a policy to kgateway, kgateway uses policy
 collection to perform **policy attachment** - this is the process of assigning
 policies to the object they impact (like HTTPRoutes) based on their targetRefs.
 
 You can see in the Plugin interface a field called `ContributesPolicies` which
-is a map of GK -> `PolicyPlugin`. The policy plugin contains a bunch of fields,
+is a map of GK -> `PolicyPlugin` (defined in [/pkg/pluginsdk/types.go](/pkg/pluginsdk/types.go)). The policy plugin contains a bunch of fields,
 but for our discussion we'll focus on these two:
 
 ```go
@@ -69,7 +69,7 @@ type PolicyPlugin struct {
 plugin is responsible for creating this collection, usually by starting with a
 CRD collection, and then translating to a `ir.PolicyWrapper` struct.
 
-Let's look at the important fields in the PolicyWrapper:
+Let's look at the important fields in the PolicyWrapper (defined in [/pkg/pluginsdk/ir/iface.go](/pkg/pluginsdk/ir/iface.go)):
 
 ```go
 type PolicyWrapper struct {

@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"slices"
 	"strings"
@@ -313,6 +314,7 @@ func (c *Cli) CurlFromPod(ctx context.Context, podOpts PodExecOptions, options .
 	}, curlArgs...)
 
 	stdout, stderr, err := c.ExecuteOn(ctx, c.kubeContext, args...)
+	log.Printf("executing curl with args: %v", args)
 
 	return &CurlResponse{StdOut: stdout, StdErr: stderr}, err
 }

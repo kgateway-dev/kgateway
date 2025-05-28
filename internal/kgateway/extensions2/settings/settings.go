@@ -56,6 +56,18 @@ type Settings struct {
 	// When enabled, backends with the ambient.istio.io/redirection=enabled annotation
 	// will be redirected through a waypoint proxy.
 	IngressUseWaypoints bool `split_words:"true" default:"false"`
+
+	// LogLevel specifies the logging level (e.g., "trace", "debug", "info", "warn", "error").
+	// Defaults to "info" if not set.
+	LogLevel string `split_words:"true" default:"info"`
+
+	// JSON representation of list of metav1.LabelSelector to select namespaces considered for resource discovery.
+	// Defaults to an empty list which selects all namespaces.
+	// E.g., [{"matchExpressions":[{"key":"kubernetes.io/metadata.name","operator":"In","values":["infra"]}]},{"matchLabels":{"app":"a"}}]
+	DiscoveryNamespaceSelectors string `split_words:"true" default:"[]"`
+
+	// EnableAgentGateway enables kgateway to send config to the agentgateway
+	EnableAgentGateway bool `split_words:"true" default:"false"`
 }
 
 // BuildSettings returns a zero-valued Settings obj if error is encountered when parsing env

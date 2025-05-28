@@ -6,12 +6,10 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 
-	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_ext_authz_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_authz/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/anypb"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
@@ -56,9 +54,9 @@ func TestApplyForRoute(t *testing.T) {
 			spec: trafficPolicySpecIr{
 				extAuth: &extAuthIR{
 					provider: &TrafficPolicyGatewayExtensionIR{
-						name:    "test-extension",
-						extType: v1alpha1.GatewayExtensionTypeExtAuth,
-						extAuth: &envoy_ext_authz_v3.ExtAuthz{
+						Name:    "test-extension",
+						ExtType: v1alpha1.GatewayExtensionTypeExtAuth,
+						ExtAuth: &envoy_ext_authz_v3.ExtAuthz{
 							FailureModeAllow: true,
 						},
 					},
@@ -104,72 +102,28 @@ func TestApplyForRoute(t *testing.T) {
 	})
 }
 
-func TestApplyListenerPlugin(t *testing.T) {
-	t.Run("configures listener with ext auth", func(t *testing.T) {
+func TestHttpFilters(t *testing.T) {
+	t.Run("adds ext auth filter to filter chain", func(t *testing.T) {
 		// Setup
-		plugin := &trafficPolicyPluginGwPass{}
-		ctx := context.Background()
-		policy := &TrafficPolicy{
-			spec: trafficPolicySpecIr{
-				extAuth: &extAuthIR{
-					provider: &TrafficPolicyGatewayExtensionIR{
-						name:    "test-extension",
-						extType: v1alpha1.GatewayExtensionTypeExtAuth,
-						extAuth: &envoy_ext_authz_v3.ExtAuthz{
-							FailureModeAllow: true,
-						},
-					},
-				},
-			},
-		}
-		pCtx := &ir.ListenerContext{
-			Policy: policy,
-		}
-		listener := &envoy_config_listener_v3.Listener{
-			FilterChains: []*envoy_config_listener_v3.FilterChain{
-				{
-					Filters: []*envoy_config_listener_v3.Filter{
-						{
-							Name: "envoy.filters.network.http_connection_manager",
-							ConfigType: &envoy_config_listener_v3.Filter_TypedConfig{
-								TypedConfig: &anypb.Any{
-									TypeUrl: "type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager",
-								},
+		plugin := &trafficPolicyPluginGwPass{
+			extAuthPerProvider: ProviderNeededMap{
+				Providers: map[string]map[string]*TrafficPolicyGatewayExtensionIR{
+					"test-filter-chain": {
+						"test-extension": {
+							Name:    "test-extension",
+							ExtType: v1alpha1.GatewayExtensionTypeExtAuth,
+							ExtAuth: &envoy_ext_authz_v3.ExtAuthz{
+								FailureModeAllow: true,
 							},
 						},
 					},
 				},
 			},
 		}
-
-		// Execute
-		plugin.ApplyListenerPlugin(ctx, pCtx, listener)
-
-		// Verify
-		ir, ok := plugin.extAuthPerProvider["test-extension"]
-		assert.True(t, ok)
-		assert.True(t, ir.fromListener)
-	})
-}
-
-func TestHttpFilters(t *testing.T) {
-	t.Run("adds ext auth filter to filter chain", func(t *testing.T) {
-		// Setup
-		plugin := &trafficPolicyPluginGwPass{
-			extAuthPerProvider: map[string]providerWithFromListener{
-				"test-extension": {
-					provider: &TrafficPolicyGatewayExtensionIR{
-						name:    "test-extension",
-						extType: v1alpha1.GatewayExtensionTypeExtAuth,
-						extAuth: &envoy_ext_authz_v3.ExtAuthz{
-							FailureModeAllow: true,
-						},
-					},
-				},
-			},
-		}
 		ctx := context.Background()
-		fcc := ir.FilterChainCommon{}
+		fcc := ir.FilterChainCommon{
+			FilterChainName: "test-filter-chain",
+		}
 
 		// Execute
 		filters, err := plugin.HttpFilters(ctx, fcc)
@@ -191,9 +145,9 @@ func TestExtAuthPolicyPlugin(t *testing.T) {
 			spec: trafficPolicySpecIr{
 				extAuth: &extAuthIR{
 					provider: &TrafficPolicyGatewayExtensionIR{
-						name:    "test-auth-extension",
-						extType: v1alpha1.GatewayExtensionTypeExtAuth,
-						extAuth: &envoy_ext_authz_v3.ExtAuthz{
+						Name:    "test-auth-extension",
+						ExtType: v1alpha1.GatewayExtensionTypeExtAuth,
+						ExtAuth: &envoy_ext_authz_v3.ExtAuthz{
 							FailureModeAllow: true,
 							WithRequestBody: &envoy_ext_authz_v3.BufferSettings{
 								MaxRequestBytes: 1024,

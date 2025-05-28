@@ -14,6 +14,7 @@ type KubernetesProxyConfigApplyConfiguration struct {
 	Istio          *IstioIntegrationApplyConfiguration `json:"istio,omitempty"`
 	Stats          *StatsConfigApplyConfiguration      `json:"stats,omitempty"`
 	AiExtension    *AiExtensionApplyConfiguration      `json:"aiExtension,omitempty"`
+	AgentGateway   *AgentGatewayApplyConfiguration     `json:"agentGateway,omitempty"`
 	FloatingUserId *bool                               `json:"floatingUserId,omitempty"`
 }
 
@@ -92,6 +93,14 @@ func (b *KubernetesProxyConfigApplyConfiguration) WithStats(value *StatsConfigAp
 // If called multiple times, the AiExtension field is set to the value of the last call.
 func (b *KubernetesProxyConfigApplyConfiguration) WithAiExtension(value *AiExtensionApplyConfiguration) *KubernetesProxyConfigApplyConfiguration {
 	b.AiExtension = value
+	return b
+}
+
+// WithAgentGateway sets the AgentGateway field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the AgentGateway field is set to the value of the last call.
+func (b *KubernetesProxyConfigApplyConfiguration) WithAgentGateway(value *AgentGatewayApplyConfiguration) *KubernetesProxyConfigApplyConfiguration {
+	b.AgentGateway = value
 	return b
 }
 

@@ -2,16 +2,14 @@ package translator
 
 import (
 	"context"
+	"log/slog"
 
-	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/tools/cache"
 
 	"istio.io/istio/pkg/kube/krt"
 
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
-	"github.com/solo-io/go-utils/contextutils"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/endpoints"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
@@ -22,7 +20,10 @@ import (
 	gwtranslator "github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/gateway"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/irtranslator"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 )
+
+var logger = logging.New("translator")
 
 // Combines all the translators needed for xDS translation.
 type CombinedTranslator struct {
@@ -36,7 +37,7 @@ type CombinedTranslator struct {
 	backendTranslator *irtranslator.BackendTranslator
 	endpointPlugins   []extensionsplug.EndpointPlugin
 
-	logger *zap.Logger
+	logger *slog.Logger
 }
 
 func NewCombinedTranslator(
@@ -54,7 +55,7 @@ func NewCombinedTranslator(
 		commonCols:      commonCols,
 		extensions:      extensions,
 		endpointPlugins: endpointPlugins,
-		logger:          contextutils.LoggerFrom(ctx).Desugar().With(zap.String("component", "translator_syncer")),
+		logger:          logger,
 		waitForSync:     []cache.InformerSynced{extensions.HasSynced},
 	}
 }
@@ -107,7 +108,7 @@ func (s *CombinedTranslator) buildProxy(kctx krt.HandlerContext, ctx context.Con
 	}
 
 	duration := stopwatch.Stop(ctx)
-	contextutils.LoggerFrom(ctx).Debugf("translated proxy %s/%s in %s", gw.Namespace, gw.Name, duration.String())
+	logger.Debug("translated proxy", "namespace", gw.Namespace, "name", gw.Name, "duration", duration.String())
 
 	// TODO: these are likely unnecessary and should be removed!
 	//	applyPostTranslationPlugins(ctx, pluginRegistry, &gwplugins.PostTranslationContext{
@@ -123,11 +124,9 @@ func (s *CombinedTranslator) GetUpstreamTranslator() *irtranslator.BackendTransl
 
 // ctx needed for logging; remove once we refactor logging.
 func (s *CombinedTranslator) TranslateGateway(kctx krt.HandlerContext, ctx context.Context, gw ir.Gateway) (*irtranslator.TranslationResult, reports.ReportMap) {
-	logger := contextutils.LoggerFrom(ctx)
-
 	rm := reports.NewReportMap()
 	r := reports.NewReporter(&rm)
-	logger.Debugf("building proxy for kube gw %s version %s", client.ObjectKeyFromObject(gw.Obj), gw.Obj.GetResourceVersion())
+	logger.Debug("translating Gateway", "resource_ref", gw.ResourceName(), "resource_version", gw.Obj.GetResourceVersion())
 	gwir := s.buildProxy(kctx, ctx, gw, r)
 
 	if gwir == nil {

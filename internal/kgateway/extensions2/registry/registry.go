@@ -9,6 +9,7 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/backend"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/backendconfigpolicy"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/backendtlspolicy"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/destrule"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/directresponse"
@@ -17,7 +18,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/kubernetes"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/sandwich"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/serviceentry"
-	trafficpolicy "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/trafficpolicy"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/trafficpolicy"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/waypoint"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 )
@@ -83,5 +84,6 @@ func Plugins(ctx context.Context, commoncol *common.CommonCollections) []sdk.Plu
 		serviceentry.NewPlugin(ctx, commoncol),
 		waypoint.NewPlugin(ctx, commoncol),
 		sandwich.NewPlugin(),
+		backendconfigpolicy.NewPlugin(ctx, commoncol),
 	}
 }

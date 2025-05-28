@@ -58,7 +58,8 @@ listeners:
             - metadataNamespace: dev.kgateway.disable_ext_auth
               value:
                 extauth_disable: true
-        - name: ext_auth/gwtest/basic-extauth
+        - disabled: true
+          name: ext_auth/gwtest/basic-extauth
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthz
             filterEnabledMetadata:
@@ -88,6 +89,10 @@ listeners:
 routes:
 - ignorePortInHostMatching: true
   name: http
+  typedPerFilterConfig:
+    ext_auth/gwtest/basic-extauth:
+      '@type': type.googleapis.com/envoy.config.route.v3.FilterConfig
+      config: {}
   virtualHosts:
   - domains:
     - www.example.com

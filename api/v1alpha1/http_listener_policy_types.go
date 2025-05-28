@@ -35,9 +35,16 @@ type HTTPListenerPolicyList struct {
 }
 
 type HTTPListenerPolicySpec struct {
+	// TargetRefs specifies the target resources by reference to attach the policy to.
+	// +optional
+	//
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=16
 	TargetRefs []LocalPolicyTargetReference `json:"targetRefs,omitempty"`
+
+	// TargetSelectors specifies the target selectors to select resources to attach the policy to.
+	// +optional
+	TargetSelectors []LocalPolicyTargetSelector `json:"targetSelectors,omitempty"`
 
 	// AccessLoggingConfig contains various settings for Envoy's access logging service.
 	// See here for more information: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto

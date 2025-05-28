@@ -43,6 +43,22 @@ tilt up
 
 If there are any issues, manually triggering an update on the problematic resource should fix it
 
+### Run the Delve debugger
+The [Delve ](https://github.com/go-delve/delve/tree/master/Documentation/installation) debugger can be run on the kgateway pod by editing the `tilt-settings.yaml` file to set the debug_port and add it to port_forwarding.
+The file currently has the settings to use port 50100 commented out.
+
+The following configuration can then can be added to `launch.json` in VSCode to attach to the debugger.
+
+```
+        {
+            "name": "Attach to Delve",
+            "type": "go",
+            "request": "attach",
+            "mode": "remote",
+            "port": 50100
+        }
+```
+
 ### Providers config
 
 The list of enabled providers is specified in the `enabled_providers` array in `tilt-settings.yaml`

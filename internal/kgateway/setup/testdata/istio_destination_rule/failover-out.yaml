@@ -21,6 +21,11 @@ clusters:
     baseEjectionTime: 900s
     consecutive5xx: 7
     interval: 300s
+  upstreamConnectionOptions:
+    tcpKeepalive:
+      keepaliveTime: 111
+      keepaliveInterval: 22
+      keepaliveProbes: 3
   type: EDS
 endpoints:
 - clusterName: kube_gwtest_reviews_8080

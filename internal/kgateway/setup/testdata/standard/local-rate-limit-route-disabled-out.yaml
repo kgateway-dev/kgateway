@@ -56,22 +56,11 @@ listeners:
       typedConfig:
         '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
         httpFilters:
-        - name: ratelimit/local
+        - disabled: true
+          name: ratelimit/local
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
-            filterEnabled:
-              defaultValue:
-                numerator: 100
-              runtimeKey: local_rate_limit_enabled
-            filterEnforced:
-              defaultValue:
-                numerator: 100
-              runtimeKey: local_rate_limit_enforced
             statPrefix: http_local_rate_limiter
-            tokenBucket:
-              fillInterval: 30s
-              maxTokens: 100
-              tokensPerFill: 1
         - name: envoy.filters.http.router
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -89,6 +78,22 @@ listeners:
 routes:
 - ignorePortInHostMatching: true
   name: http
+  typedPerFilterConfig:
+    ratelimit/local:
+      '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
+      filterEnabled:
+        defaultValue:
+          numerator: 100
+        runtimeKey: local_rate_limit_enabled
+      filterEnforced:
+        defaultValue:
+          numerator: 100
+        runtimeKey: local_rate_limit_enforced
+      statPrefix: http_local_rate_limiter
+      tokenBucket:
+        fillInterval: 30s
+        maxTokens: 100
+        tokensPerFill: 1
   virtualHosts:
   - domains:
     - www.example.com

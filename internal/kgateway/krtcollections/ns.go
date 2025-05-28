@@ -25,12 +25,14 @@ func (n NamespaceMetadata) Equals(in NamespaceMetadata) bool {
 	return n.Name == in.Name && maps.Equal(n.Labels, in.Labels)
 }
 
-func NewNamespaceCollection(ctx context.Context, istioClient kube.Client, krtOpts krtutil.KrtOptions) krt.Collection[NamespaceMetadata] {
+func NewNamespaceCollection(ctx context.Context, istioClient kube.Client, krtOpts krtutil.KrtOptions) (krt.Collection[NamespaceMetadata], kclient.Client[*corev1.Namespace]) {
 	client := kclient.NewFiltered[*corev1.Namespace](istioClient, kclient.Filter{
 		// ObjectTransform: ...,
+		// NOTE: Do not apply an ObjectFilter to namespaces as the discovery namespace ObjectFilter for other clients
+		// requires all namespaces to be watched
 	})
 	col := krt.WrapClient(client, krtOpts.ToOptions("Namespaces")...)
-	return NewNamespaceCollectionFromCol(ctx, col, krtOpts)
+	return NewNamespaceCollectionFromCol(ctx, col, krtOpts), client
 }
 
 func NewNamespaceCollectionFromCol(ctx context.Context, col krt.Collection[*corev1.Namespace], krtOpts krtutil.KrtOptions) krt.Collection[NamespaceMetadata] {

@@ -102,5 +102,5 @@ routes:
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
       typedPerFilterConfig:
         ext_auth/gwtest/basic-extauth:
-          '@type': type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthzPerRoute
-          checkSettings: {}
+          '@type': type.googleapis.com/envoy.config.route.v3.FilterConfig
+          config: {}

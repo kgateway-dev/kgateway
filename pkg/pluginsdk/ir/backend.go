@@ -91,6 +91,9 @@ type BackendObjectIR struct {
 	// i think so, assuming obj -> objir is a 1:1 mapping.
 	ObjIr interface{ Equals(any) bool }
 
+	// Aliases that we can key by when referencing this backend from policy or routes.
+	Aliases []ObjectSource
+
 	// ExtraKey allows ensuring uniqueness in the KRT key
 	// when there is more than one backend per ObjectSource+port.
 	// TODO this is a hack for ServiceEntry to workaround only having one
@@ -148,6 +151,13 @@ func (c BackendObjectIR) ClusterName() string {
 
 func (c BackendObjectIR) GetObjectSource() ObjectSource {
 	return c.ObjectSource
+}
+
+func (c BackendObjectIR) GetObjectLabels() map[string]string {
+	if c.Obj == nil {
+		return make(map[string]string)
+	}
+	return c.Obj.GetLabels()
 }
 
 func (c BackendObjectIR) GetAttachedPolicies() AttachedPolicies {

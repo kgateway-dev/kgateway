@@ -5,6 +5,10 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "kgateway.labels" . | nindent 4 }}
+  {{- with .Values.deploymentAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 spec:
   replicas: {{ .Values.controller.replicaCount }}
   selector:
@@ -56,7 +60,7 @@ spec:
                 resourceFieldRef:
                   divisor: "1"
                   resource: limits.cpu
-            - name: LOG_LEVEL
+            - name: KGW_LOG_LEVEL
               value: {{ .Values.controller.logLevel | quote }}
             - name: KGW_XDS_SERVICE_NAME
               value: {{ include "kgateway.fullname" . }}
@@ -76,11 +80,17 @@ spec:
               value: {{ .Values.image.tag | default .Chart.Version }}
             - name: KGW_DEFAULT_IMAGE_PULL_POLICY
               value: {{ .Values.image.pullPolicy | default "IfNotPresent" }}
+            - name: KGW_DISCOVERY_NAMESPACE_SELECTORS
+              value: {{ .Values.discoveryNamespaceSelectors | toJson | quote }}
             {{- if .Values.controller.extraEnv }}
             {{- range $key, $value := .Values.controller.extraEnv }}
             - name: {{ $key }}
               value: {{ $value | quote }}
             {{- end }}
+            {{- end }}
+            {{- if .Values.agentGateway.enabled }}
+            - name: KGW_ENABLE_AGENT_GATEWAY
+              value: "true"
             {{- end }}
             # TODO: Remove this once the cleanup is done. Required as the gloo-system
             # namespace is the default namespace and conformance will fail as a result.

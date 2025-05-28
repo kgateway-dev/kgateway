@@ -5,7 +5,6 @@ import (
 
 	envoycachetypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
-	"go.uber.org/zap"
 	"istio.io/istio/pkg/kube/krt"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
@@ -13,7 +12,6 @@ import (
 )
 
 func snapshotPerClient(
-	l *zap.Logger,
 	krtopts krtutil.KrtOptions,
 	uccCol krt.Collection[ir.UniqlyConnectedClient],
 	mostXdsSnapshots krt.Collection[GatewayXdsResources],
@@ -23,12 +21,12 @@ func snapshotPerClient(
 	xdsSnapshotsForUcc := krt.NewCollection(uccCol, func(kctx krt.HandlerContext, ucc ir.UniqlyConnectedClient) *XdsSnapWrapper {
 		maybeMostlySnap := krt.FetchOne(kctx, mostXdsSnapshots, krt.FilterKey(ucc.Role))
 		if maybeMostlySnap == nil {
-			l.Debug("snapshotPerClient - snapshot missing", zap.String("proxyKey", ucc.Role))
+			logger.Debug("snapshot missing", "proxy_key", ucc.Role)
 			return nil
 		}
 		clustersForUcc := clusters.FetchClustersForClient(kctx, ucc)
 
-		l.Debug("found perclient clusters", zap.String("client", ucc.ResourceName()), zap.Int("clusters", len(clustersForUcc)))
+		logger.Debug("found perclient clusters", "client", ucc.ResourceName(), "clusters", len(clustersForUcc))
 
 		// HACK
 		// https://github.com/solo-io/gloo/pull/10611/files#diff-060acb7cdd3a287a3aef1dd864aae3e0193da17b6230c382b649ce9dc0eca80b
@@ -43,7 +41,7 @@ func snapshotPerClient(
 		// While we're looking for a way to make this ordering predictable
 		// to avoid hacks like this, it will do for now.
 		if len(clustersForUcc) == 0 {
-			l.Info("no perclient clusters; defer building snapshot", zap.String("client", ucc.ResourceName()))
+			logger.Info("no perclient clusters; defer building snapshot", "client", ucc.ResourceName())
 			return nil
 		}
 
@@ -77,17 +75,17 @@ func snapshotPerClient(
 		snap.erroredClusters = erroredClusters
 		snap.proxyKey = ucc.ResourceName()
 		snapshot := &envoycache.Snapshot{}
-		snapshot.Resources[envoycachetypes.Cluster] = clusterResources //envoycache.NewResources(version, resource)
+		snapshot.Resources[envoycachetypes.Cluster] = clusterResources // envoycache.NewResources(version, resource)
 		snapshot.Resources[envoycachetypes.Endpoint] = endpointResources
 		snapshot.Resources[envoycachetypes.Route] = maybeMostlySnap.Routes
 		snapshot.Resources[envoycachetypes.Listener] = maybeMostlySnap.Listeners
-		//envoycache.NewResources(version, resource)
+		// envoycache.NewResources(version, resource)
 		snap.snap = snapshot
-		l.Debug("snapshotPerClient", zap.String("proxyKey", snap.proxyKey),
-			zap.Stringer("Listeners", resourcesStringer(maybeMostlySnap.Listeners)),
-			zap.Stringer("Clusters", resourcesStringer(clusterResources)),
-			zap.Stringer("Routes", resourcesStringer(maybeMostlySnap.Routes)),
-			zap.Stringer("Endpoints", resourcesStringer(endpointResources)),
+		logger.Debug("snapshots", "proxy_key", snap.proxyKey,
+			"listeners", resourcesStringer(maybeMostlySnap.Listeners).String(),
+			"clusters", resourcesStringer(clusterResources).String(),
+			"routes", resourcesStringer(maybeMostlySnap.Routes).String(),
+			"endpoints", resourcesStringer(endpointResources).String(),
 		)
 
 		return &snap

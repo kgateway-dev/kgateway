@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"google.golang.org/protobuf/proto"
@@ -17,7 +18,6 @@ import (
 	clusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
-	"github.com/solo-io/go-utils/contextutils"
 	"istio.io/istio/pkg/config/schema/kubeclient"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
@@ -80,7 +80,10 @@ func registerTypes() {
 
 func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensionsplug.Plugin {
 	registerTypes()
-	inf := kclient.NewDelayedInformer[*gwv1a3.BackendTLSPolicy](commoncol.Client, backendTlsPolicyGvr, kubetypes.StandardInformer, kclient.Filter{})
+	inf := kclient.NewDelayedInformer[*gwv1a3.BackendTLSPolicy](
+		commoncol.Client, backendTlsPolicyGvr, kubetypes.StandardInformer,
+		kclient.Filter{ObjectFilter: commoncol.Client.ObjectFilter()},
+	)
 	col := krt.WrapClient(inf, commoncol.KrtOpts.ToOptions("BackendTLSPolicy")...)
 
 	translate := buildTranslateFunc(ctx, commoncol.ConfigMaps)
@@ -149,19 +152,19 @@ func buildTranslateFunc(
 		cfgmap := krt.FetchOne(krtctx, cfgmaps, krt.FilterObjectName(nn))
 		if cfgmap == nil {
 			err := fmt.Errorf("%w: %v", ErrConfigMapNotFound, nn)
-			contextutils.LoggerFrom(ctx).Error(err)
+			slog.Error("error fetching policy", "error", err, "policy_name", policyCR.Name)
 			return &policyIr, err
 		}
 
 		tlsCfg, err := ResolveUpstreamSslConfig(*cfgmap, string(spec.Validation.Hostname))
 		if err != nil {
 			perr := fmt.Errorf("%w: %v", ErrCreatingTLSConfig, err)
-			contextutils.LoggerFrom(ctx).Error(perr)
+			slog.Error("error resolving TLS config", "error", perr, "policy_name", policyCR.Name)
 			return &policyIr, perr
 		}
 		typedConfig, err := utils.MessageToAny(tlsCfg)
 		if err != nil {
-			contextutils.LoggerFrom(ctx).Error("error converting TLS config to proto: %v", err)
+			slog.Error("error converting TLS config to proto", "error", err, "policy", policyCR.Name)
 			return &policyIr, ErrParsingTLSConfig
 		}
 

@@ -303,7 +303,7 @@ func TestToRateLimitFilterConfig(t *testing.T) {
 				assert.Equal(t, ratev3.RateLimit_DRAFT_VERSION_03, rl.EnableXRatelimitHeaders)
 				assert.Equal(t, "both", rl.RequestType)
 				assert.Equal(t, rateLimitStatPrefix, rl.StatPrefix)
-				assert.Equal(t, time.Duration(2*time.Second), rl.Timeout.AsDuration())
+				assert.Equal(t, (*durationpb.Duration)(nil), rl.Timeout)
 				assert.True(t, rl.FailureModeDeny) // Default should be failureModeAllow=false (deny)
 			},
 		},
@@ -540,16 +540,13 @@ func TestToRateLimitFilterConfig(t *testing.T) {
 					// Use timeout from extension if specified
 					if extension.Timeout != "" {
 						var parseDurationErr error
-						duration, parseDurationErr := time.ParseDuration(extension.Timeout)
+						duration, parseDurationErr := time.ParseDuration(string(extension.Timeout))
 						if parseDurationErr != nil {
 							err = fmt.Errorf("invalid timeout in GatewayExtension %s: %w",
 								tt.gatewayExtension.Name, parseDurationErr)
 						} else {
 							timeout = durationpb.New(duration)
 						}
-					} else {
-						// Default timeout if not specified in extension
-						timeout = durationpb.New(defaultRateLimitTimeout)
 					}
 
 					if err == nil {

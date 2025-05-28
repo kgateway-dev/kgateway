@@ -2,12 +2,16 @@
 
 package v1alpha1
 
+import (
+	v1 "sigs.k8s.io/gateway-api/apis/v1"
+)
+
 // TokenBucketApplyConfiguration represents a declarative configuration of the TokenBucket type for use
 // with apply.
 type TokenBucketApplyConfiguration struct {
-	MaxTokens     *uint32 `json:"maxTokens,omitempty"`
-	TokensPerFill *uint32 `json:"tokensPerFill,omitempty"`
-	FillInterval  *string `json:"fillInterval,omitempty"`
+	MaxTokens     *uint32      `json:"maxTokens,omitempty"`
+	TokensPerFill *uint32      `json:"tokensPerFill,omitempty"`
+	FillInterval  *v1.Duration `json:"fillInterval,omitempty"`
 }
 
 // TokenBucketApplyConfiguration constructs a declarative configuration of the TokenBucket type for use with
@@ -35,7 +39,7 @@ func (b *TokenBucketApplyConfiguration) WithTokensPerFill(value uint32) *TokenBu
 // WithFillInterval sets the FillInterval field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the FillInterval field is set to the value of the last call.
-func (b *TokenBucketApplyConfiguration) WithFillInterval(value string) *TokenBucketApplyConfiguration {
+func (b *TokenBucketApplyConfiguration) WithFillInterval(value v1.Duration) *TokenBucketApplyConfiguration {
 	b.FillInterval = &value
 	return b
 }

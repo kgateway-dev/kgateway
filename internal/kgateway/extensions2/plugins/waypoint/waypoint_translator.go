@@ -3,8 +3,8 @@ package waypoint
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
-	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	authcr "istio.io/client-go/pkg/apis/security/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -12,8 +12,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
-
-	"github.com/solo-io/go-utils/contextutils"
 
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/sandwich"
@@ -23,6 +21,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/query"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/httproute"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	reports "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/stringutils"
 
@@ -62,6 +61,8 @@ func NewTranslator(
 	}
 }
 
+var logger = logging.New("plugin/waypoint")
+
 // Translate implements extensionsplug.KGwTranslator.
 func (w *waypointTranslator) Translate(
 	kctx krt.HandlerContext,
@@ -69,8 +70,6 @@ func (w *waypointTranslator) Translate(
 	gateway *ir.Gateway,
 	reporter reports.Reporter,
 ) *ir.GatewayIR {
-	logger := contextutils.LoggerFrom(ctx)
-
 	gwReporter := reporter.Gateway(gateway.Obj)
 	proxyListener, gwListener := w.buildInboundListener(gateway, gwReporter)
 	if proxyListener == nil || gwListener == nil {
@@ -82,7 +81,7 @@ func (w *waypointTranslator) Translate(
 	// and get merged with per-service routes
 	routes, err := w.fetchGatewayRoutes(kctx, ctx, gateway, gwListener, reporter, gwReporter)
 	if err != nil {
-		logger.Errorf("failed getting HTTPRoutes for Gateway: %v", err)
+		logger.Error("failed getting HTTPRoutes for Gateway", "error", err)
 		return nil
 	}
 
@@ -235,7 +234,7 @@ func (t *waypointTranslator) fetchGatewayRoutes(
 		return nil, nil
 	}
 	if err := routes.Error; err != nil {
-		contextutils.LoggerFrom(ctx).Warnf("listener error when fetching HTTPRoutes for %s: %v", namespacedName(gw), err)
+		logger.Error("listener error when fetching HTTPRoutes for Gateway", "error", err)
 		return nil, err
 	}
 
@@ -245,7 +244,7 @@ func (t *waypointTranslator) fetchGatewayRoutes(
 func (t *waypointTranslator) buildServiceChains(
 	kctx krt.HandlerContext,
 	ctx context.Context,
-	logger *zap.SugaredLogger,
+	logger *slog.Logger,
 	baseReporter reports.Reporter,
 	gw *ir.Gateway,
 	gwRoutes []*query.RouteInfo,
@@ -257,7 +256,7 @@ func (t *waypointTranslator) buildServiceChains(
 	var tcpOut []ir.TcpIR
 	// get attached services (istio.io/use-waypoint)
 	services := t.waypointQueries.GetWaypointServices(kctx, ctx, gw.Obj)
-	logger.Debugw("attaching waypoint services", "gateway", namespacedName(gw).String(), "services", len(services))
+	logger.Debug("attaching waypoint services", "gateway", namespacedName(gw).String(), "services", len(services))
 
 	// Fetch Gateway (and GatewayClass) attached policies
 	gwAuthzPolicies := t.waypointQueries.GetAuthorizationPoliciesForGateway(
@@ -306,7 +305,7 @@ func (t *waypointTranslator) buildServiceChains(
 			filterChain, err := initServiceChain(svc, svcPort)
 			if err != nil {
 				// TODO if/when we support headless, initServiceChain should be infallible
-				logger.Debugw(
+				logger.Debug(
 					"service had invalid or missing VIPs",
 					"service",
 					svc.GetName(),

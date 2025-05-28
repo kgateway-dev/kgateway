@@ -28,6 +28,7 @@ env:
   IMAGE_REGISTRY: ghcr.io/${{ github.repository_owner }}
   VANITY_REGISTRY: cr.kgateway.dev/kgateway-dev
   MAIN_VERSION: v2.1.0-main
+  GORELEASER_DISABLE_RELEASE: false
 
 permissions:
   contents: write
@@ -92,10 +93,6 @@ jobs:
         if: ${{ github.event_name != 'pull_request' }}
         run: echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ${{ env.IMAGE_REGISTRY }} -u ${{ github.repository_owner }} --password-stdin
 
-      - name: Lint kgateway charts on PRs
-        if: ${{ github.event_name == 'pull_request' }}
-        run: make lint-kgateway-charts
-
       - name: Package kgateway chart
         run: make package-kgateway-charts
         env:
@@ -117,18 +114,10 @@ jobs:
       - name: Prep Go Runner
         uses: ./.github/actions/prep-go-runner
 
-      # We publish a rolling main release for every commit to main. Deleting the release
-      # ensures that the tagged commit is not stale. Goreleaser will create a new tag
-      # and release for the tagged commit.
-      - name: Delete ${MAIN_VERSION} release if it exists
+      - name: Conditionally disable release for pushes to main
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-        continue-on-error: true
         run: |
-          set -x
-          echo "Deleting the ${MAIN_VERSION} release"
-          gh release delete ${MAIN_VERSION} --repo ${{ github.repository }} --yes --cleanup-tag
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          echo "GORELEASER_DISABLE_RELEASE=true" >> $GITHUB_ENV
 
       - name: Log into ghcr.io
         if: ${{ github.event_name != 'pull_request' }}
@@ -149,6 +138,7 @@ jobs:
           IMAGE_REGISTRY: ${{ env.IMAGE_REGISTRY }}
           GORELEASER_ARGS: ${{ needs.setup.outputs.goreleaser_args }}
           GORELEASER_CURRENT_TAG: ${{ needs.setup.outputs.version }}
+          GORELEASER_DISABLE_RELEASE: ${{ env.GORELEASER_DISABLE_RELEASE }}
 
   validate:
     name: Validate release artifacts
