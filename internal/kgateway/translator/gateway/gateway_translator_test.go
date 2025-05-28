@@ -516,6 +516,14 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 			Name:      "example-gateway",
 		},
 	}),
+	Entry("HTTPListenerPolicy with upgrades", translatorTestCase{
+		inputFile:  "https-listener-pol/upgrades.yaml",
+		outputFile: "https-listener-pol/upgrades.yaml",
+		gwNN: types.NamespacedName{
+			Namespace: "default",
+			Name:      "example-gateway",
+		},
+	}),
 )
 
 var _ = DescribeTable("Route Delegation translator",

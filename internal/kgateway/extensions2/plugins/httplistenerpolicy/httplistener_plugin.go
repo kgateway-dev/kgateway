@@ -57,7 +57,7 @@ func (d *httpListenerPolicy) Equals(in any) bool {
 	}
 
 	// Check upgrade configs
-	if !slices.EqualFunc(d.upgradeConfigs, d2.upgradeConfigs, func(cfg *envoy_hcm.HttpConnectionManager_UpgradeConfig, cfg2 *envoy_hcm.HttpConnectionManager_UpgradeConfig) bool {
+	if !slices.EqualFunc(d.upgradeConfigs, d2.upgradeConfigs, func(cfg, cfg2 *envoy_hcm.HttpConnectionManager_UpgradeConfig) bool {
 		return proto.Equal(cfg, cfg2)
 	}) {
 		return false
