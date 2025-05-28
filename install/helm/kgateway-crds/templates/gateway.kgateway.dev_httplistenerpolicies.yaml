@@ -505,6 +505,14 @@ spec:
                   - matchLabels
                   type: object
                 type: array
+              upgradeConfig:
+                properties:
+                  enabledUpgrades:
+                    items:
+                      type: string
+                    minItems: 1
+                    type: array
+                type: object
             type: object
           status:
             properties:

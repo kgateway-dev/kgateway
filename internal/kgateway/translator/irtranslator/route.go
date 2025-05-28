@@ -445,10 +445,10 @@ func (h *httpRouteConfigurationTranslator) translateRouteAction(
 	for _, backend := range in.Backends {
 		if back := backend.Backend.BackendObject; back != nil && back.AppProtocol == ir.WebSocketAppProtocol {
 			// add websocket upgrade if not already present
-			if !slices.ContainsFunc(action.UpgradeConfigs, func(uc *envoy_config_route_v3.RouteAction_UpgradeConfig) bool {
-				return uc.UpgradeType == "websocket"
+			if !slices.ContainsFunc(action.GetUpgradeConfigs(), func(uc *envoy_config_route_v3.RouteAction_UpgradeConfig) bool {
+				return uc.GetUpgradeType() == "websocket"
 			}) {
-				action.UpgradeConfigs = append(action.UpgradeConfigs, &envoy_config_route_v3.RouteAction_UpgradeConfig{
+				action.UpgradeConfigs = append(action.GetUpgradeConfigs(), &envoy_config_route_v3.RouteAction_UpgradeConfig{
 					UpgradeType: "websocket",
 				})
 			}

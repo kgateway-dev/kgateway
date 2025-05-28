@@ -809,6 +809,9 @@ var schemaYAML = typed.YAMLObject(`types:
           elementType:
             namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LocalPolicyTargetSelector
           elementRelationship: atomic
+    - name: upgradeConfig
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.UpgradeConfig
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.HeaderFilter
   map:
     fields:
@@ -1515,6 +1518,15 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: response
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Transform
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.UpgradeConfig
+  map:
+    fields:
+    - name: enabledUpgrades
+      type:
+        list:
+          elementType:
+            scalar: string
+          elementRelationship: atomic
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.VertexAIConfig
   map:
     fields:
