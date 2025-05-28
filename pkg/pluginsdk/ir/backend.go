@@ -106,10 +106,23 @@ type BackendObjectIR struct {
 	// Errors is a list of errors, if any, encountered while constructing this BackendObject
 	// Not added to Equals() as it is derived from the inner ObjIr, which is already evaluated
 	Errors []error
+
+	// Name is the pre-calculated resource name
+	Name string
+}
+
+// NewBackendObjectIR creates a new BackendObjectIR with pre-calculated resource name
+func NewBackendObjectIR(objSource ObjectSource, port int32, extraKey string) BackendObjectIR {
+	return BackendObjectIR{
+		ObjectSource: objSource,
+		Port:         port,
+		ExtraKey:     extraKey,
+		Name:         BackendResourceName(objSource, port, extraKey),
+	}
 }
 
 func (c BackendObjectIR) ResourceName() string {
-	return BackendResourceName(c.ObjectSource, c.Port, c.ExtraKey)
+	return c.Name
 }
 
 func BackendResourceName(objSource ObjectSource, port int32, extraKey string) string {
@@ -124,6 +137,7 @@ func (c BackendObjectIR) Equals(in BackendObjectIR) bool {
 	objEq := c.ObjectSource.Equals(in.ObjectSource)
 	objVersionEq := versionEquals(c.Obj, in.Obj)
 	polEq := c.AttachedPolicies.Equals(in.AttachedPolicies)
+	nameEq := c.Name == in.Name
 
 	// objIr may currently be nil in the case of k8s Services
 	// TODO: add an IR for Services to avoid the need for this
@@ -133,7 +147,7 @@ func (c BackendObjectIR) Equals(in BackendObjectIR) bool {
 		objIrEq = c.ObjIr.Equals(in.ObjIr)
 	}
 
-	return objEq && objVersionEq && objIrEq && polEq
+	return objEq && objVersionEq && objIrEq && polEq && nameEq
 }
 
 func (c BackendObjectIR) ClusterName() string {
