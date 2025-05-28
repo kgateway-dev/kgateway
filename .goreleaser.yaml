@@ -173,6 +173,7 @@ docker_manifests:
 changelog:
   disable: true
 release:
+  disable: '{{ if isEnvSet "GORELEASER_DISABLE_RELEASE" }}{{ .Env.GORELEASER_DISABLE_RELEASE }}{{ else }}false{{ end }}'
   prerelease: "auto"
   mode: "replace"
   replace_existing_artifacts: true
