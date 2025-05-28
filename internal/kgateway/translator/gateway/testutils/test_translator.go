@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"time"
@@ -25,6 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	clusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/registry"
@@ -63,8 +65,29 @@ func TestTranslation(
 	//b, _ := json.Marshal(result.Proxy)
 	//var proxy ir.GatewayIR
 	//Expect(json.Unmarshal(b, &proxy)).NotTo(HaveOccurred())
+	if os.Getenv("UPDATE_OUTPUTS") == "1" {
+		output := struct {
+			*irtranslator.TranslationResult `json:",inline"`
+			Clusters                        []*clusterv3.Cluster
+		}{
+			TranslationResult: result.Proxy,
+			Clusters:          result.Clusters,
+		}
+
+		d, err := MarshalAnyYaml(output)
+		if err != nil {
+			Expect(err).NotTo(HaveOccurred())
+		}
+		// create parent directory if it doesn't exist
+		dir := filepath.Dir(outputFile)
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			Expect(err).NotTo(HaveOccurred())
+		}
+		os.WriteFile(outputFile, d, 0o644)
+	}
 
 	Expect(CompareProxy(outputFile, result.Proxy)).To(BeEmpty())
+	Expect(CompareClusters(outputFile, result.Clusters)).To(BeEmpty())
 
 	if assertReports != nil {
 		assertReports(gwNN, result.ReportsMap)
@@ -79,17 +102,11 @@ type TestCase struct {
 
 type ActualTestResult struct {
 	Proxy      *irtranslator.TranslationResult
+	Clusters   []*clusterv3.Cluster
 	ReportsMap reports.ReportMap
 }
 
 func CompareProxy(expectedFile string, actualProxy *irtranslator.TranslationResult) (string, error) {
-	if os.Getenv("UPDATE_OUTPUTS") == "1" {
-		d, err := MarshalAnyYaml(actualProxy)
-		if err != nil {
-			return "", err
-		}
-		os.WriteFile(expectedFile, d, 0o644)
-	}
 
 	expectedProxy, err := ReadProxyFromFile(expectedFile)
 	if err != nil {
@@ -310,6 +327,22 @@ func (tc TestCase) Run(t test.Failer, ctx context.Context) (map[types.Namespaced
 			ReportsMap: reportsMap,
 		}
 		results[gwNN] = actual
+
+		ucc := ir.NewUniqlyConnectedClient("test", "test", nil, ir.PodLocality{})
+		var clusters []*clusterv3.Cluster
+		for _, col := range commoncol.BackendIndex.BackendsWithPolicy() {
+			for _, backend := range col.List() {
+				if backend.ObjectSource.Kind != "Backend" {
+					continue
+				}
+				cluster, err := translator.GetUpstreamTranslator().TranslateBackend(krt.TestingDummyContext{}, ucc, backend)
+				Expect(err).NotTo(HaveOccurred())
+				clusters = append(clusters, cluster)
+			}
+		}
+		r := results[gwNN]
+		r.Clusters = clusters
+		results[gwNN] = r
 	}
 
 	return results, nil

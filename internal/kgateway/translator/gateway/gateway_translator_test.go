@@ -454,6 +454,14 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 			Name:      "example-gateway",
 		},
 	}),
+	FEntry("DFP Backend with TLS", translatorTestCase{
+		inputFile:  "dfp/tls.yaml",
+		outputFile: "dfp/tls.yaml",
+		gwNN: types.NamespacedName{
+			Namespace: "default",
+			Name:      "example-gateway",
+		},
+	}),
 	Entry("Proxy with no routes", translatorTestCase{
 		inputFile:  "edge-cases/no_route.yaml",
 		outputFile: "no_route.yaml",
