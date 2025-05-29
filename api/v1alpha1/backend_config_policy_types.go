@@ -226,14 +226,14 @@ type SSLParameters struct {
 
 type SSLFiles struct {
 	// +optional
-	TLSCertificate *string `json:"tlsCertificate,omitempty"`
+	TLSCertificate string `json:"tlsCertificate,omitempty"`
 
 	// +optional
-	TLSKey *string `json:"tlsKey,omitempty"`
+	TLSKey string `json:"tlsKey,omitempty"`
 
 	// +optional
-	RootCA *string `json:"rootCA,omitempty"`
+	RootCA string `json:"rootCA,omitempty"`
 
 	// +optional
-	OCSPStaple *string `json:"ocspStaple,omitempty"`
+	OCSPStaple string `json:"ocspStaple,omitempty"`
 }

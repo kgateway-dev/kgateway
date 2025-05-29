@@ -109,6 +109,9 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Regex":                                     schema_kgateway_v2_api_v1alpha1_Regex(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.RegexMatch":                                schema_kgateway_v2_api_v1alpha1_RegexMatch(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ResponseFlagFilter":                        schema_kgateway_v2_api_v1alpha1_ResponseFlagFilter(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.SSLConfig":                                 schema_kgateway_v2_api_v1alpha1_SSLConfig(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.SSLFiles":                                  schema_kgateway_v2_api_v1alpha1_SSLFiles(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.SSLParameters":                             schema_kgateway_v2_api_v1alpha1_SSLParameters(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.SdsBootstrap":                              schema_kgateway_v2_api_v1alpha1_SdsBootstrap(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.SdsContainer":                              schema_kgateway_v2_api_v1alpha1_SdsContainer(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.SelfManagedGateway":                        schema_kgateway_v2_api_v1alpha1_SelfManagedGateway(ref),
@@ -1315,11 +1318,17 @@ func schema_kgateway_v2_api_v1alpha1_BackendConfigPolicySpec(ref common.Referenc
 							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Http1ProtocolOptions"),
 						},
 					},
+					"sslConfig": {
+						SchemaProps: spec.SchemaProps{
+							Description: "SSL configuration.",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.SSLConfig"),
+						},
+					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CommonHttpProtocolOptions", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Http1ProtocolOptions", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LocalPolicyTargetReference", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LocalPolicyTargetSelector", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.TCPKeepalive", "k8s.io/apimachinery/pkg/apis/meta/v1.Duration"},
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CommonHttpProtocolOptions", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Http1ProtocolOptions", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LocalPolicyTargetReference", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LocalPolicyTargetSelector", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.SSLConfig", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.TCPKeepalive", "k8s.io/apimachinery/pkg/apis/meta/v1.Duration"},
 	}
 }
 
@@ -4211,6 +4220,172 @@ func schema_kgateway_v2_api_v1alpha1_ResponseFlagFilter(ref common.ReferenceCall
 					},
 				},
 				Required: []string{"flags"},
+			},
+		},
+	}
+}
+
+func schema_kgateway_v2_api_v1alpha1_SSLConfig(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"secretRef": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("k8s.io/api/core/v1.LocalObjectReference"),
+						},
+					},
+					"sslFiles": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.SSLFiles"),
+						},
+					},
+					"sni": {
+						SchemaProps: spec.SchemaProps{
+							Description: "The SNI domains that should be considered for TLS connection",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"verifySubjectAltName": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
+									},
+								},
+							},
+						},
+					},
+					"sslParameters": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.SSLParameters"),
+						},
+					},
+					"alpnProtocols": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
+									},
+								},
+							},
+						},
+					},
+					"allowRenegotiation": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"boolean"},
+							Format: "",
+						},
+					},
+					"oneWayTLS": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"boolean"},
+							Format: "",
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.SSLFiles", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.SSLParameters", "k8s.io/api/core/v1.LocalObjectReference"},
+	}
+}
+
+func schema_kgateway_v2_api_v1alpha1_SSLFiles(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"tlsCertificate": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"tlsKey": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"rootCA": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"ocspStaple": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func schema_kgateway_v2_api_v1alpha1_SSLParameters(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"tlsMinVersion": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Minimum TLS version.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"tlsMaxVersion": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Maximum TLS version.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"cipherSuites": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
+									},
+								},
+							},
+						},
+					},
+					"ecdhCurves": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
+									},
+								},
+							},
+						},
+					},
+				},
 			},
 		},
 	}
