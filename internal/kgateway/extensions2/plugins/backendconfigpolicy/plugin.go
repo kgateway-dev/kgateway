@@ -9,6 +9,7 @@ import (
 	preserve_case_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/http/header_formatters/preserve_case/v3"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoy_upstreams_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
+	envoywellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	skubeclient "istio.io/istio/pkg/config/schema/kubeclient"
@@ -204,6 +205,20 @@ func processBackend(_ context.Context, polir ir.PolicyIR, _ ir.BackendObjectIR, 
 			}
 		}); err != nil {
 			logger.Error("failed to apply http1 protocol options", "error", err)
+		}
+	}
+
+	if pol.sslConfig != nil {
+		typedConfig, err := utils.MessageToAny(pol.sslConfig)
+		if err != nil {
+			logger.Error("failed to convert ssl config to any", "error", err)
+			return
+		}
+		out.TransportSocket = &corev3.TransportSocket{
+			Name: envoywellknown.TransportSocketTls,
+			ConfigType: &corev3.TransportSocket_TypedConfig{
+				TypedConfig: typedConfig,
+			},
 		}
 	}
 }
