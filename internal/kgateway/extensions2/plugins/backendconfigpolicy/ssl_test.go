@@ -230,6 +230,22 @@ func TestTranslateSSLConfig(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			name: "should not have validation context if one way tls",
+			sslConfig: &v1alpha1.SSLConfig{
+				SSLFiles: &v1alpha1.SSLFiles{
+					TLSCertificate: CACert,
+					TLSKey:         TLSKey,
+					RootCA:         CACert,
+				},
+				OneWayTLS: ptr.To(true),
+			},
+			wantErr: false,
+			check: func(t *testing.T, result *envoyauth.UpstreamTlsContext) {
+				assert.NotNil(t, result)
+				assert.Nil(t, result.CommonTlsContext.GetValidationContext())
+			},
+		},
+		{
 			name: "should not have validation context if no rootca",
 			sslConfig: &v1alpha1.SSLConfig{
 				SecretRef: &corev1.LocalObjectReference{
