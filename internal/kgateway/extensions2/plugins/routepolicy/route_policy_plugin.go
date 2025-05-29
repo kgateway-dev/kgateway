@@ -408,12 +408,12 @@ func (p *trafficPolicyPluginGwPass) ApplyListenerPlugin(ctx context.Context, pCt
 		}
 	}
 	if policy.spec.ExtProc != nil && policy.spec.ExtProc.provider != nil {
-		if p.extAuthPerProvider == nil {
-			p.extAuthPerProvider = make(map[string]providerWithFromListener)
+		if p.extProcPerProvider == nil {
+			p.extProcPerProvider = make(map[string]providerWithFromListener)
 		}
-		k := policy.spec.extAuth.provider.ResourceName()
-		p.extAuthPerProvider[k] = providerWithFromListener{
-			provider:     policy.spec.extAuth.provider,
+		k := policy.spec.ExtProc.provider.ResourceName()
+		p.extProcPerProvider[k] = providerWithFromListener{
+			provider:     policy.spec.ExtProc.provider,
 			fromListener: true,
 		}
 	}
