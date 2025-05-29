@@ -104,6 +104,15 @@ func (d *BackendConfigPolicyIR) Equals(other any) bool {
 		}
 	}
 
+	if (d.sslConfig == nil) != (d2.sslConfig == nil) {
+		return false
+	}
+	if d.sslConfig != nil && d2.sslConfig != nil {
+		if !proto.Equal(d.sslConfig, d2.sslConfig) {
+			return false
+		}
+	}
+
 	return true
 }
 
