@@ -1320,7 +1320,7 @@ func schema_kgateway_v2_api_v1alpha1_BackendConfigPolicySpec(ref common.Referenc
 					},
 					"sslConfig": {
 						SchemaProps: spec.SchemaProps{
-							Description: "SSL configuration.",
+							Description: "SSLConfig contains the options necessary to configure a backend to use TLS origination. See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/transport_sockets/tls/v3/tls.proto#envoy-v3-api-msg-extensions-transport-sockets-tls-v3-sslconfig) for more details.",
 							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.SSLConfig"),
 						},
 					},
@@ -4233,12 +4233,14 @@ func schema_kgateway_v2_api_v1alpha1_SSLConfig(ref common.ReferenceCallback) com
 				Properties: map[string]spec.Schema{
 					"secretRef": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("k8s.io/api/core/v1.LocalObjectReference"),
+							Description: "Reference to the TLS secret containing the certificate, key, and optionally the root CA.",
+							Ref:         ref("k8s.io/api/core/v1.LocalObjectReference"),
 						},
 					},
 					"sslFiles": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.SSLFiles"),
+							Description: "File paths to certificates local to the proxy.",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.SSLFiles"),
 						},
 					},
 					"sni": {
@@ -4250,7 +4252,8 @@ func schema_kgateway_v2_api_v1alpha1_SSLConfig(ref common.ReferenceCallback) com
 					},
 					"verifySubjectAltName": {
 						SchemaProps: spec.SchemaProps{
-							Type: []string{"array"},
+							Description: "Verify that the Subject Alternative Name in the peer certificate is one of the specified values. note that a root_ca must be provided if this option is used.",
+							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
@@ -4264,12 +4267,14 @@ func schema_kgateway_v2_api_v1alpha1_SSLConfig(ref common.ReferenceCallback) com
 					},
 					"sslParameters": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.SSLParameters"),
+							Description: "General TLS parameters. See the [envoy docs](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/transport_sockets/tls/v3/common.proto#extensions-transport-sockets-tls-v3-tlsparameters) for more information on the meaning of these values.",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.SSLParameters"),
 						},
 					},
 					"alpnProtocols": {
 						SchemaProps: spec.SchemaProps{
-							Type: []string{"array"},
+							Description: "Set Application Level Protocol Negotiation If empty, defaults to [\"h2\", \"http/1.1\"].",
+							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
@@ -4283,14 +4288,16 @@ func schema_kgateway_v2_api_v1alpha1_SSLConfig(ref common.ReferenceCallback) com
 					},
 					"allowRenegotiation": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"boolean"},
-							Format: "",
+							Description: "Allow Tls renegotiation, the default value is false. TLS renegotiation is considered insecure and shouldn't be used unless absolutely necessary.",
+							Type:        []string{"boolean"},
+							Format:      "",
 						},
 					},
 					"oneWayTLS": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"boolean"},
-							Format: "",
+							Description: "If the SSL config has the ca.crt (root CA) provided, kgateway uses it to perform mTLS by default. Set oneWayTls to true to disable mTLS in favor of server-only TLS (one-way TLS), even if kgateway has the root CA. If unset, defaults to false.",
+							Type:        []string{"boolean"},
+							Format:      "",
 						},
 					},
 				},

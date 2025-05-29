@@ -60,7 +60,8 @@ type BackendConfigPolicySpec struct {
 	// +optional
 	Http1ProtocolOptions *Http1ProtocolOptions `json:"http1ProtocolOptions,omitempty"`
 
-	// SSL configuration.
+	// SSLConfig contains the options necessary to configure a backend to use TLS origination.
+	// See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/transport_sockets/tls/v3/tls.proto#envoy-v3-api-msg-extensions-transport-sockets-tls-v3-sslconfig) for more details.
 	// +optional
 	SSLConfig *SSLConfig `json:"sslConfig,omitempty"`
 }
@@ -170,9 +171,11 @@ type TCPKeepalive struct {
 
 // +kubebuilder:validation:XValidation:rule="has(self.secretRef) != has(self.sslFiles)",message="Exactly one of secretRef or sslFiles must be set in SSLConfig"
 type SSLConfig struct {
+	// Reference to the TLS secret containing the certificate, key, and optionally the root CA.
 	// +optional
 	SecretRef *corev1.LocalObjectReference `json:"secretRef,omitempty"`
 
+	// File paths to certificates local to the proxy.
 	// +optional
 	SSLFiles *SSLFiles `json:"sslFiles,omitempty"`
 
@@ -180,18 +183,30 @@ type SSLConfig struct {
 	// +optional
 	Sni string `json:"sni,omitempty"`
 
+	// Verify that the Subject Alternative Name in the peer certificate is one of the specified values.
+	// note that a root_ca must be provided if this option is used.
 	// +optional
+	// +kubebuilder:validation:XValidation:rule="has(self.sslFiles.rootCA) || has(self.secretRef)",message="rootCA must be provided if verifySubjectAltName is used"
 	VerifySubjectAltName []string `json:"verifySubjectAltName,omitempty"`
 
+	// General TLS parameters. See the [envoy docs](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/transport_sockets/tls/v3/common.proto#extensions-transport-sockets-tls-v3-tlsparameters)
+	// for more information on the meaning of these values.
 	// +optional
 	SSLParameters *SSLParameters `json:"sslParameters,omitempty"`
 
+	// Set Application Level Protocol Negotiation
+	// If empty, defaults to ["h2", "http/1.1"].
 	// +optional
 	AlpnProtocols []string `json:"alpnProtocols,omitempty"`
 
+	// Allow Tls renegotiation, the default value is false.
+	// TLS renegotiation is considered insecure and shouldn't be used unless absolutely necessary.
 	// +optional
 	AllowRenegotiation *bool `json:"allowRenegotiation,omitempty"`
 
+	// If the SSL config has the ca.crt (root CA) provided, kgateway uses it to perform mTLS by default.
+	// Set oneWayTls to true to disable mTLS in favor of server-only TLS (one-way TLS), even if kgateway has the root CA.
+	// If unset, defaults to false.
 	// +optional
 	OneWayTLS *bool `json:"oneWayTLS,omitempty"`
 }
