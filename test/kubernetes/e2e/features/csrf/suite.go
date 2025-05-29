@@ -53,6 +53,8 @@ func (s *testingSuite) SetupSuite() {
 		simpleSvc, simpleDeployment,
 		// resources from gateway manifest
 		gateway,
+		// routes
+		route, route2,
 		// deployer-generated resources
 		proxyDeployment, proxyService, proxyServiceAccount,
 	}
@@ -186,4 +188,5 @@ func (s *testingSuite) assertResponse(path string, expectedStatus int, options [
 		&testmatchers.HttpResponse{StatusCode: expectedStatus},
 	)
 	s.Equal(expectedStatus, resp.StatusCode)
+	resp.Body.Close()
 }

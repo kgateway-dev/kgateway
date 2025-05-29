@@ -345,12 +345,16 @@ type CsrfPolicy struct {
 	// Specifies the percentage of requests for which the CSRF filter is enabled.
 	// If both PercentageEnabled and PercentageShadowed are set, the PercentageEnabled flag will take precedence.
 	// +required
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=100
 	PercentageEnabled *uint32 `json:"percentageEnabled,omitempty"`
 
 	// Specifies that CSRF policies will be evaluated and tracked, but not enforced.
 	// This is intended to be used when PercentageEnabled is 0 and will be ignored otherwise.
 	// If both PercentageEnabled and PercentageShadowed are set, the PercentageEnabled flag will take precedence.
 	// +optional
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=100
 	PercentageShadowed *uint32 `json:"percentageShadowed,omitempty"`
 
 	// Specifies additional source origins that will be allowed in addition to the destination origin.

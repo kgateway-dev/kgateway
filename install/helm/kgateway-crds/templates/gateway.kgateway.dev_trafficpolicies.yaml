@@ -281,9 +281,13 @@ spec:
                     type: array
                   percentageEnabled:
                     format: int32
+                    maximum: 100
+                    minimum: 0
                     type: integer
                   percentageShadowed:
                     format: int32
+                    maximum: 100
+                    minimum: 0
                     type: integer
                 required:
                 - percentageEnabled
