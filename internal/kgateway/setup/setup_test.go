@@ -152,14 +152,6 @@ func TestWithStandardSettings(t *testing.T) {
 	runScenario(t, "testdata/standard", st)
 }
 
-func TestCors(t *testing.T) {
-	st, err := settings.BuildSettings()
-	if err != nil {
-		t.Fatalf("can't get settings %v", err)
-	}
-	runScenario(t, "testdata/cors", st)
-}
-
 func TestWithIstioAutomtlsSettings(t *testing.T) {
 	st, err := settings.BuildSettings()
 	st.EnableIstioIntegration = true

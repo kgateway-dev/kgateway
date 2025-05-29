@@ -332,6 +332,7 @@ spec:
                     minimum: 1
                     type: integer
                 type: object
+                x-kubernetes-preserve-unknown-fields: true
               extAuth:
                 properties:
                   contextExtensions:

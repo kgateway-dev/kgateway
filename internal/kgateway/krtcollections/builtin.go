@@ -489,7 +489,7 @@ func convertCORS(_ krt.HandlerContext, f *gwv1.HTTPCORSFilter) func(in ir.HttpRo
 		return nil
 	}
 	return func(in ir.HttpRouteRuleMatchIR, outputRoute *envoy_config_route_v3.Route) error {
-		corsPolicyAny, err := utils.MessageToAny(corsPolicy(f))
+		corsPolicyAny, err := utils.MessageToAny(ToEnvoyCorsPolicy(f))
 		if err != nil {
 			return fmt.Errorf("failed to convert CORS policy to Any: %w", err)
 		}
@@ -587,7 +587,7 @@ func (p *builtinPluginGwPass) ApplyForRouteBackend(
 		return nil
 	}
 	if inPolicy.spec.Type == gwv1.HTTPRouteFilterCORS {
-		pCtx.TypedFilterConfig[envoy_wellknown.CORS] = corsPolicy(inPolicy.spec.CORS)
+		pCtx.TypedFilterConfig[envoy_wellknown.CORS] = ToEnvoyCorsPolicy(inPolicy.spec.CORS)
 		p.hasCorsPolicy = true
 	}
 	return nil
@@ -617,7 +617,10 @@ func (p *builtinPluginGwPass) ResourcesToAdd(ctx context.Context) ir.Resources {
 	return ir.Resources{}
 }
 
-func corsPolicy(f *gwv1.HTTPCORSFilter) *corsv3.CorsPolicy {
+func ToEnvoyCorsPolicy(f *gwv1.HTTPCORSFilter) *corsv3.CorsPolicy {
+	if f == nil {
+		return nil
+	}
 	corsPolicy := &corsv3.CorsPolicy{}
 	if len(f.AllowOrigins) > 0 {
 		origins := make([]*envoy_type_matcher_v3.StringMatcher, len(f.AllowOrigins))
