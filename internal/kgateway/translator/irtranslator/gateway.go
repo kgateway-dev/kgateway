@@ -135,30 +135,27 @@ func (t *Translator) ComputeListener(
 }
 
 func (t *Translator) runListenerPlugins(ctx context.Context, pass TranslationPassPlugins, gw ir.GatewayIR, l ir.ListenerIR, out *envoy_config_listener_v3.Listener) {
-	attachedPoliciesSlice := []ir.AttachedPolicies{
-		l.AttachedPolicies,
-		gw.AttachedPolicies,
-	}
-	for _, attachedPolicies := range attachedPoliciesSlice {
-		for gk, pols := range attachedPolicies.Policies {
-			pass := pass[gk]
-			if pass == nil {
-				// TODO: report user error - they attached a non http policy
-				continue
+	var attachedPolicies ir.AttachedPolicies
+	attachedPolicies.Append(l.AttachedPolicies, gw.AttachedHttpPolicies)
+	for _, gk := range attachedPolicies.ApplyOrderedGroupKinds() {
+		pols := attachedPolicies.Policies[gk]
+		pass := pass[gk]
+		if pass == nil {
+			// TODO: report user error - they attached a non http policy
+			continue
+		}
+		for _, pol := range pols {
+			pctx := &ir.ListenerContext{
+				Policy: pol.PolicyIr,
+				PolicyAncestorRef: gwv1.ParentReference{
+					Group:     ptr.To(gwv1.Group(wellknown.GatewayGVK.Group)),
+					Kind:      ptr.To(gwv1.Kind(wellknown.GatewayGVK.Kind)),
+					Namespace: ptr.To(gwv1.Namespace(gw.SourceObject.GetNamespace())),
+					Name:      gwv1.ObjectName(gw.SourceObject.GetName()),
+				},
 			}
-			for _, pol := range pols {
-				pctx := &ir.ListenerContext{
-					Policy: pol.PolicyIr,
-					PolicyAncestorRef: gwv1.ParentReference{
-						Group:     ptr.To(gwv1.Group(wellknown.GatewayGVK.Group)),
-						Kind:      ptr.To(gwv1.Kind(wellknown.GatewayGVK.Kind)),
-						Namespace: ptr.To(gwv1.Namespace(gw.SourceObject.GetNamespace())),
-						Name:      gwv1.ObjectName(gw.SourceObject.GetName()),
-					},
-				}
-				pass.ApplyListenerPlugin(ctx, pctx, out)
-				// TODO: check return value, if error returned, log error and report condition
-			}
+			pass.ApplyListenerPlugin(ctx, pctx, out)
+			// TODO: check return value, if error returned, log error and report condition
 		}
 	}
 }

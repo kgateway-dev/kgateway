@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"strconv"
 	"time"
 
@@ -19,9 +20,9 @@ import (
 	localratelimitv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/local_ratelimit/v3"
 	ratev3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ratelimit/v3"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
-	envoy_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	skubeclient "istio.io/istio/pkg/config/schema/kubeclient"
@@ -45,12 +46,12 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/policy"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/policy"
 )
 
 const (
@@ -66,7 +67,15 @@ const (
 	rateLimitFilterNamePrefix                   = "ratelimit"
 )
 
-var logger = logging.New("plugin/trafficpolicy")
+var (
+	logger = logging.New("plugin/trafficpolicy")
+
+	// from envoy code:
+	// If the field `config` is configured but is empty, we treat the filter is enabled
+	// explicitly.
+	// see: https://github.com/envoyproxy/envoy/blob/8ed93ef372f788456b708fc93a7e54e17a013aa7/source/common/router/config_impl.cc#L2552
+	EnableFilterPerRoute = &routev3.FilterConfig{Config: &anypb.Any{}}
+)
 
 func extAuthFilterName(name string) string {
 	if name == "" {
@@ -222,7 +231,7 @@ func (r *RateLimitIR) Equals(other *RateLimitIR) bool {
 }
 
 type TrafficPolicyGatewayExtensionIR struct {
-	name      string
+	Name      string
 	ExtType   v1alpha1.GatewayExtensionType
 	ExtAuth   *envoy_ext_authz_v3.ExtAuthz
 	ExtProc   *envoy_ext_proc_v3.ExternalProcessor
@@ -232,7 +241,7 @@ type TrafficPolicyGatewayExtensionIR struct {
 
 // ResourceName returns the unique name for this extension.
 func (e TrafficPolicyGatewayExtensionIR) ResourceName() string {
-	return e.name
+	return e.Name
 }
 
 func (e TrafficPolicyGatewayExtensionIR) Equals(other TrafficPolicyGatewayExtensionIR) bool {
@@ -313,7 +322,7 @@ func registerTypes(ourCli versioned.Interface) {
 func TranslateGatewayExtensionBuilder(commoncol *common.CommonCollections) func(krtctx krt.HandlerContext, gExt ir.GatewayExtension) *TrafficPolicyGatewayExtensionIR {
 	return func(krtctx krt.HandlerContext, gExt ir.GatewayExtension) *TrafficPolicyGatewayExtensionIR {
 		p := &TrafficPolicyGatewayExtensionIR{
-			name:    krt.Named{Name: gExt.Name, Namespace: gExt.Namespace}.ResourceName(),
+			Name:    krt.Named{Name: gExt.Name, Namespace: gExt.Namespace}.ResourceName(),
 			ExtType: gExt.Type,
 		}
 
@@ -330,22 +339,7 @@ func TranslateGatewayExtensionBuilder(commoncol *common.CommonCollections) func(
 				Services: &envoy_ext_authz_v3.ExtAuthz_GrpcService{
 					GrpcService: envoyGrpcService,
 				},
-				FilterEnabledMetadata: &envoy_matcher_v3.MetadataMatcher{
-					Filter: extAuthGlobalDisableFilterMetadataNamespace,
-					Invert: true,
-					Path: []*envoy_matcher_v3.MetadataMatcher_PathSegment{
-						{
-							Segment: &envoy_matcher_v3.MetadataMatcher_PathSegment_Key{
-								Key: extAuthGlobalDisableKey,
-							},
-						},
-					},
-					Value: &envoy_matcher_v3.ValueMatcher{
-						MatchPattern: &envoy_matcher_v3.ValueMatcher_BoolMatch{
-							BoolMatch: true,
-						},
-					},
-				},
+				FilterEnabledMetadata: ExtAuthzEnabledMetadataMatcher,
 			}
 
 		case v1alpha1.GatewayExtensionTypeExtProc:
@@ -424,7 +418,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 				PatchPolicyStatus:         patchPolicyStatusFn(commoncol.CrudClient),
 			},
 		},
-		ExtraHasSynced: translator.gatewayExtensions.HasSynced,
+		ExtraHasSynced: translator.HasSynced,
 	}
 }
 
@@ -697,7 +691,7 @@ func (p *trafficPolicyPluginGwPass) ApplyForRouteBackend(
 	return nil
 }
 
-func (p *trafficPolicyPluginGwPass) handleExtAuth(pfc string, pCtxTypedFilterConfig *ir.TypedFilterConfigMap, extAuth *extAuthIR) {
+func (p *trafficPolicyPluginGwPass) handleExtAuth(fcn string, pCtxTypedFilterConfig *ir.TypedFilterConfigMap, extAuth *extAuthIR) {
 	if extAuth == nil {
 		return
 	}
@@ -706,7 +700,7 @@ func (p *trafficPolicyPluginGwPass) handleExtAuth(pfc string, pCtxTypedFilterCon
 	if extAuth.enablement == v1alpha1.ExtAuthDisableAll {
 		// Disable the filter under all providers via the metadata match
 		// we have to use the metadata as we dont know what other configurations may have extauth
-		pCtxTypedFilterConfig.AddTypedConfig(extAuthGlobalDisableFilterName, enableFilterPerRoute)
+		pCtxTypedFilterConfig.AddTypedConfig(extAuthGlobalDisableFilterName, EnableFilterPerRoute)
 	} else {
 		providerName := extAuth.provider.ResourceName()
 		if extAuth.extauthPerRoute != nil {
@@ -715,9 +709,9 @@ func (p *trafficPolicyPluginGwPass) handleExtAuth(pfc string, pCtxTypedFilterCon
 			)
 		} else {
 			// if you are on a route and not trying to disable it then we need to override the top level disable on the filter chain
-			pCtxTypedFilterConfig.AddTypedConfig(extAuthFilterName(providerName), enableFilterPerRoute)
+			pCtxTypedFilterConfig.AddTypedConfig(extAuthFilterName(providerName), EnableFilterPerRoute)
 		}
-		p.extAuthPerProvider.Add(pfc, providerName, extAuth.provider)
+		p.extAuthPerProvider.Add(fcn, providerName, extAuth.provider)
 	}
 }
 
@@ -850,11 +844,7 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.Filt
 	// register the transformation work once
 	if len(p.extAuthPerProvider.Providers[fcc.FilterChainName]) != 0 {
 		// register the filter that sets metadata so that it can have overrides on the route level
-		f := plugins.MustNewStagedFilter(extAuthGlobalDisableFilterName,
-			setMetadataConfig,
-			plugins.BeforeStage(plugins.FaultStage))
-		f.Filter.Disabled = true
-		filters = append(filters, f)
+		filters = AddDisableFilterIfNeeded(filters)
 	}
 
 	// Add Ext_authz filter for listener
@@ -912,6 +902,21 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.Filt
 		return nil, nil
 	}
 	return filters, nil
+}
+
+func AddDisableFilterIfNeeded(filters []plugins.StagedHttpFilter) []plugins.StagedHttpFilter {
+	for _, f := range filters {
+		if f.Filter.GetName() == extAuthGlobalDisableFilterName {
+			return filters
+		}
+	}
+
+	f := plugins.MustNewStagedFilter(extAuthGlobalDisableFilterName,
+		setMetadataConfig,
+		plugins.BeforeStage(plugins.FaultStage))
+	f.Filter.Disabled = true
+	filters = append(filters, f)
+	return filters
 }
 
 func (p *trafficPolicyPluginGwPass) NetworkFilters(ctx context.Context) ([]plugins.StagedNetworkFilter, error) {
@@ -977,51 +982,72 @@ func mergePolicies(policies []ir.PolicyAtt) ir.PolicyAtt {
 		p2 := policies[i].PolicyIr.(*TrafficPolicy)
 		p2Ref := policies[i].PolicyRef
 
-		if policy.IsMergeable(merged.spec.AI, p2.spec.AI, mergeOpts) {
-			merged.spec.AI = p2.spec.AI
-			out.MergeOrigins["ai"] = p2Ref
-		}
-		if policy.IsMergeable(merged.spec.ExtProc, p2.spec.ExtProc, mergeOpts) {
-			merged.spec.ExtProc = p2.spec.ExtProc
-			out.MergeOrigins["extProc"] = p2Ref
-		}
-		if policy.IsMergeable(merged.spec.transform, p2.spec.transform, mergeOpts) {
-			merged.spec.transform = p2.spec.transform
-			out.MergeOrigins["transformation"] = p2Ref
-		}
-		if policy.IsMergeable(merged.spec.rustformation, p2.spec.rustformation, mergeOpts) {
-			merged.spec.rustformation = p2.spec.rustformation
-			merged.spec.rustformationStringToStash = p2.spec.rustformationStringToStash
-			out.MergeOrigins["rustformation"] = p2Ref
-		}
-		if policy.IsMergeable(merged.spec.extAuth, p2.spec.extAuth, mergeOpts) {
-			merged.spec.extAuth = p2.spec.extAuth
-			out.MergeOrigins["extAuth"] = p2Ref
-		}
-		if policy.IsMergeable(merged.spec.localRateLimit, p2.spec.localRateLimit, mergeOpts) {
-			merged.spec.localRateLimit = p2.spec.localRateLimit
-			out.MergeOrigins["rateLimit"] = p2Ref
-		}
-		// Handle global rate limit merging
-		if policy.IsMergeable(merged.spec.rateLimit, p2.spec.rateLimit, mergeOpts) {
-			merged.spec.rateLimit = p2.spec.rateLimit
-			out.MergeOrigins["rateLimit"] = p2Ref
-		}
-		if policy.IsMergeable(merged.spec.cors, p2.spec.cors, mergeOpts) {
-			merged.spec.cors = p2.spec.cors
-			out.MergeOrigins["cors"] = p2Ref
-		}
-
+		mergeOrigins := MergeTrafficPolicies(merged, p2, p2Ref, mergeOpts)
+		maps.Copy(out.MergeOrigins, mergeOrigins)
 		out.HierarchicalPriority = policies[i].HierarchicalPriority
 	}
 
 	return out
 }
 
+// MergeTrafficPolicies merges two TrafficPolicy IRs, returning a map that contains information
+// about the origin policy reference for each merged field.
+func MergeTrafficPolicies(
+	p1, p2 *TrafficPolicy,
+	p2Ref *ir.AttachedPolicyRef,
+	mergeOpts policy.MergeOptions,
+) map[string]*ir.AttachedPolicyRef {
+	if p1 == nil || p2 == nil {
+		return nil
+	}
+	mergeOrigins := make(map[string]*ir.AttachedPolicyRef)
+	if policy.IsMergeable(p1.spec.AI, p2.spec.AI, mergeOpts) {
+		p1.spec.AI = p2.spec.AI
+		mergeOrigins["ai"] = p2Ref
+	}
+	if policy.IsMergeable(p1.spec.ExtProc, p2.spec.ExtProc, mergeOpts) {
+		p1.spec.ExtProc = p2.spec.ExtProc
+		mergeOrigins["extProc"] = p2Ref
+	}
+	if policy.IsMergeable(p1.spec.transform, p2.spec.transform, mergeOpts) {
+		p1.spec.transform = p2.spec.transform
+		mergeOrigins["transformation"] = p2Ref
+	}
+	if policy.IsMergeable(p1.spec.rustformation, p2.spec.rustformation, mergeOpts) {
+		p1.spec.rustformation = p2.spec.rustformation
+		p1.spec.rustformationStringToStash = p2.spec.rustformationStringToStash
+		mergeOrigins["rustformation"] = p2Ref
+	}
+	if policy.IsMergeable(p1.spec.extAuth, p2.spec.extAuth, mergeOpts) {
+		p1.spec.extAuth = p2.spec.extAuth
+		mergeOrigins["extAuth"] = p2Ref
+	}
+	if policy.IsMergeable(p1.spec.localRateLimit, p2.spec.localRateLimit, mergeOpts) {
+		p1.spec.localRateLimit = p2.spec.localRateLimit
+		mergeOrigins["rateLimit"] = p2Ref
+	}
+	// Handle global rate limit merging
+	if policy.IsMergeable(p1.spec.rateLimit, p2.spec.rateLimit, mergeOpts) {
+		p1.spec.rateLimit = p2.spec.rateLimit
+		mergeOrigins["rateLimit"] = p2Ref
+	}
+	// Handle cors merging
+	if policy.IsMergeable(p1.spec.cors, p2.spec.cors, mergeOpts) {
+		p1.spec.cors = p2.spec.cors
+		mergeOrigins["cors"] = p2Ref
+	}
+
+	return mergeOrigins
+}
+
 type TrafficPolicyBuilder struct {
 	commoncol         *common.CommonCollections
 	gatewayExtensions krt.Collection[TrafficPolicyGatewayExtensionIR]
 	extBuilder        func(krtctx krt.HandlerContext, gExt ir.GatewayExtension) *TrafficPolicyGatewayExtensionIR
+}
+
+func (b *TrafficPolicyBuilder) HasSynced() bool {
+	return b.gatewayExtensions.HasSynced()
 }
 
 func (b *TrafficPolicyBuilder) Translate(

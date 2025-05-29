@@ -273,6 +273,57 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.BackendStatus
       default: {}
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.BackendConfigPolicy
+  map:
+    fields:
+    - name: apiVersion
+      type:
+        scalar: string
+    - name: kind
+      type:
+        scalar: string
+    - name: metadata
+      type:
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta
+      default: {}
+    - name: spec
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.BackendConfigPolicySpec
+      default: {}
+    - name: status
+      type:
+        namedType: io.k8s.sigs.gateway-api.apis.v1alpha2.PolicyStatus
+      default: {}
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.BackendConfigPolicySpec
+  map:
+    fields:
+    - name: commonHttpProtocolOptions
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.CommonHttpProtocolOptions
+    - name: connectTimeout
+      type:
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Duration
+    - name: http1ProtocolOptions
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Http1ProtocolOptions
+    - name: perConnectionBufferLimitBytes
+      type:
+        scalar: numeric
+    - name: targetRefs
+      type:
+        list:
+          elementType:
+            namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LocalPolicyTargetReference
+          elementRelationship: atomic
+    - name: targetSelectors
+      type:
+        list:
+          elementType:
+            namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LocalPolicyTargetSelector
+          elementRelationship: atomic
+    - name: tcpKeepalive
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.TCPKeepalive
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.BackendSpec
   map:
     fields:
@@ -339,6 +390,24 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         scalar: string
       default: ""
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.CommonHttpProtocolOptions
+  map:
+    fields:
+    - name: headersWithUnderscoresAction
+      type:
+        scalar: string
+    - name: idleTimeout
+      type:
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Duration
+    - name: maxHeadersCount
+      type:
+        scalar: numeric
+    - name: maxRequestsPerConnection
+      type:
+        scalar: numeric
+    - name: maxStreamDuration
+      type:
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Duration
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.CustomLabel
   map:
     fields:
@@ -770,6 +839,18 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         scalar: numeric
       default: 0
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Http1ProtocolOptions
+  map:
+    fields:
+    - name: enableTrailers
+      type:
+        scalar: boolean
+    - name: headerFormat
+      type:
+        scalar: string
+    - name: overrideStreamErrorOnInvalidHttpMessage
+      type:
+        scalar: boolean
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Image
   map:
     fields:
@@ -1320,6 +1401,18 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: vertexai
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.VertexAIConfig
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.TCPKeepalive
+  map:
+    fields:
+    - name: keepAliveInterval
+      type:
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Duration
+    - name: keepAliveProbes
+      type:
+        scalar: numeric
+    - name: keepAliveTime
+      type:
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Duration
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.TokenBucket
   map:
     fields:
@@ -2293,6 +2386,8 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         scalar: string
       default: ""
+- name: io.k8s.apimachinery.pkg.apis.meta.v1.Duration
+  scalar: string
 - name: io.k8s.apimachinery.pkg.apis.meta.v1.FieldsV1
   map:
     elementType:

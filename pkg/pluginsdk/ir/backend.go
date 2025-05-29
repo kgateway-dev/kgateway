@@ -153,6 +153,13 @@ func (c BackendObjectIR) GetObjectSource() ObjectSource {
 	return c.ObjectSource
 }
 
+func (c BackendObjectIR) GetObjectLabels() map[string]string {
+	if c.Obj == nil {
+		return make(map[string]string)
+	}
+	return c.Obj.GetLabels()
+}
+
 func (c BackendObjectIR) GetAttachedPolicies() AttachedPolicies {
 	return c.AttachedPolicies
 }

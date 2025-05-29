@@ -47,6 +47,10 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.AzureOpenAIConfigApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("Backend"):
 		return &apiv1alpha1.BackendApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("BackendConfigPolicy"):
+		return &apiv1alpha1.BackendConfigPolicyApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("BackendConfigPolicySpec"):
+		return &apiv1alpha1.BackendConfigPolicySpecApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("BackendSpec"):
 		return &apiv1alpha1.BackendSpecApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("BackendStatus"):
@@ -57,6 +61,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.BufferSettingsApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("CELFilter"):
 		return &apiv1alpha1.CELFilterApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("CommonHttpProtocolOptions"):
+		return &apiv1alpha1.CommonHttpProtocolOptionsApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("CustomLabel"):
 		return &apiv1alpha1.CustomLabelApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("CustomResponse"):
@@ -111,6 +117,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.HeaderTransformationApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("Host"):
 		return &apiv1alpha1.HostApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("Http1ProtocolOptions"):
+		return &apiv1alpha1.Http1ProtocolOptionsApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("HTTPListenerPolicy"):
 		return &apiv1alpha1.HTTPListenerPolicyApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("HTTPListenerPolicySpec"):
@@ -191,6 +199,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.StatusCodeFilterApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("SupportedLLMProvider"):
 		return &apiv1alpha1.SupportedLLMProviderApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("TCPKeepalive"):
+		return &apiv1alpha1.TCPKeepaliveApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("TokenBucket"):
 		return &apiv1alpha1.TokenBucketApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("TrafficPolicy"):

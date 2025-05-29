@@ -54,7 +54,7 @@ func TestApplyForRoute(t *testing.T) {
 			spec: trafficPolicySpecIr{
 				extAuth: &extAuthIR{
 					provider: &TrafficPolicyGatewayExtensionIR{
-						name:    "test-extension",
+						Name:    "test-extension",
 						ExtType: v1alpha1.GatewayExtensionTypeExtAuth,
 						ExtAuth: &envoy_ext_authz_v3.ExtAuthz{
 							FailureModeAllow: true,
@@ -108,9 +108,9 @@ func TestHttpFilters(t *testing.T) {
 		plugin := &trafficPolicyPluginGwPass{
 			extAuthPerProvider: ProviderNeededMap{
 				Providers: map[string]map[string]*TrafficPolicyGatewayExtensionIR{
-					"test-filter-chain": map[string]*TrafficPolicyGatewayExtensionIR{
-						"test-extension": &TrafficPolicyGatewayExtensionIR{
-							name:    "test-extension",
+					"test-filter-chain": {
+						"test-extension": {
+							Name:    "test-extension",
 							ExtType: v1alpha1.GatewayExtensionTypeExtAuth,
 							ExtAuth: &envoy_ext_authz_v3.ExtAuthz{
 								FailureModeAllow: true,
@@ -145,7 +145,7 @@ func TestExtAuthPolicyPlugin(t *testing.T) {
 			spec: trafficPolicySpecIr{
 				extAuth: &extAuthIR{
 					provider: &TrafficPolicyGatewayExtensionIR{
-						name:    "test-auth-extension",
+						Name:    "test-auth-extension",
 						ExtType: v1alpha1.GatewayExtensionTypeExtAuth,
 						ExtAuth: &envoy_ext_authz_v3.ExtAuthz{
 							FailureModeAllow: true,

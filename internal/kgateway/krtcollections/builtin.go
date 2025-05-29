@@ -29,12 +29,8 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
+	pluginsdkir "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
-
-var VirtualBuiltInGK = schema.GroupKind{
-	Group: "builtin",
-	Kind:  "builtin",
-}
 
 type builtinPlugin struct {
 	spec           gwv1.HTTPRouteFilter
@@ -91,7 +87,7 @@ func NewBuiltInRuleIr(rule gwv1.HTTPRouteRule) ir.PolicyIR {
 func NewBuiltinPlugin(ctx context.Context) extensionsplug.Plugin {
 	return extensionsplug.Plugin{
 		ContributesPolicies: map[schema.GroupKind]extensionsplug.PolicyPlugin{
-			VirtualBuiltInGK: {
+			pluginsdkir.VirtualBuiltInGK: {
 				// AttachmentPoints: []ir.AttachmentPoints{ir.HttpAttachmentPoint},
 				NewGatewayTranslationPass: NewGatewayTranslationPass,
 			},
