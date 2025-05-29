@@ -1,8 +1,9 @@
-package testutils
+package translator
 
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"reflect"
 	"sort"
@@ -38,10 +39,23 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned/fake"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	common "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
+	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
 )
 
 type AssertReports func(gwNN types.NamespacedName, reportsMap reports.ReportMap)
+
+type ExtraPluginsFn func(ctx context.Context, commoncol *common.CommonCollections) []pluginsdk.Plugin
+
+func NewScheme(extraSchemes runtime.SchemeBuilder) *runtime.Scheme {
+	scheme := schemes.GatewayScheme()
+	extraSchemes = append(extraSchemes, v1alpha1.Install)
+	if err := extraSchemes.AddToScheme(scheme); err != nil {
+		log.Fatalf("failed to add extra schemes to scheme: %v", err)
+	}
+	return scheme
+}
 
 func TestTranslation(
 	t test.Failer,
@@ -52,9 +66,26 @@ func TestTranslation(
 	assertReports AssertReports,
 	settingsOpts ...SettingsOpts,
 ) {
+	TestTranslationWithExtraPlugins(t, ctx, inputFiles, outputFile, gwNN, assertReports, nil, nil, nil, settingsOpts...)
+}
+
+func TestTranslationWithExtraPlugins(
+	t test.Failer,
+	ctx context.Context,
+	inputFiles []string,
+	outputFile string,
+	gwNN types.NamespacedName,
+	assertReports AssertReports,
+	extraPluginsFn ExtraPluginsFn,
+	extraSchemes runtime.SchemeBuilder,
+	extraGroups []string,
+	settingsOpts ...SettingsOpts,
+) {
+	scheme := NewScheme(extraSchemes)
+
 	results, err := TestCase{
 		InputFiles: inputFiles,
-	}.Run(t, ctx, settingsOpts...)
+	}.Run(t, ctx, scheme, extraPluginsFn, extraGroups, settingsOpts...)
 	Expect(err).NotTo(HaveOccurred())
 	// TODO allow expecting multiple gateways in the output (map nns -> outputFile?)
 	Expect(results).To(HaveLen(1))
@@ -189,13 +220,20 @@ func SettingsWithDiscoveryNamespaceSelectors(cfgJson string) SettingsOpts {
 	}
 }
 
-func (tc TestCase) Run(t test.Failer, ctx context.Context, settingsOpts ...SettingsOpts) (map[types.NamespacedName]ActualTestResult, error) {
+func (tc TestCase) Run(
+	t test.Failer,
+	ctx context.Context,
+	scheme *runtime.Scheme,
+	extraPluginsFn ExtraPluginsFn,
+	extraGroups []string,
+	settingsOpts ...SettingsOpts,
+) (map[types.NamespacedName]ActualTestResult, error) {
 	var (
 		anyObjs []runtime.Object
 		ourObjs []runtime.Object
 	)
 	for _, file := range tc.InputFiles {
-		objs, err := LoadFromFiles(ctx, file)
+		objs, err := LoadFromFiles(ctx, file, scheme)
 		if err != nil {
 			return nil, err
 		}
@@ -209,7 +247,16 @@ func (tc TestCase) Run(t test.Failer, ctx context.Context, settingsOpts ...Setti
 				if strings.Contains(apiversion, v1alpha1.GroupName) {
 					ourObjs = append(ourObjs, obj)
 				} else {
-					anyObjs = append(anyObjs, objs[i])
+					external := false
+					for _, group := range extraGroups {
+						if strings.Contains(apiversion, group) {
+							external = true
+							break
+						}
+					}
+					if !external {
+						anyObjs = append(anyObjs, objs[i])
+					}
 				}
 			}
 		}
@@ -279,6 +326,13 @@ func (tc TestCase) Run(t test.Failer, ctx context.Context, settingsOpts ...Setti
 	plugins := registry.Plugins(ctx, commoncol)
 	// TODO: consider moving the common code to a util that both proxy syncer and this test call
 	plugins = append(plugins, krtcollections.NewBuiltinPlugin(ctx))
+
+	var extraPlugs []pluginsdk.Plugin
+	if extraPluginsFn != nil {
+		extraPlugins := extraPluginsFn(ctx, commoncol)
+		extraPlugs = append(extraPlugs, extraPlugins...)
+	}
+	plugins = append(plugins, extraPlugs...)
 	extensions := registry.MergePlugins(plugins...)
 
 	gk := schema.GroupKind{
@@ -315,6 +369,9 @@ func (tc TestCase) Run(t test.Failer, ctx context.Context, settingsOpts ...Setti
 	kubeclient.WaitForCacheSync("translator", ctx.Done(), translator.HasSynced)
 	kubeclient.WaitForCacheSync("backends", ctx.Done(), commoncol.BackendIndex.HasSynced)
 	kubeclient.WaitForCacheSync("endpoints", ctx.Done(), commoncol.Endpoints.HasSynced)
+	for i, plug := range extraPlugs {
+		kubeclient.WaitForCacheSync(fmt.Sprintf("extra-%d", i), ctx.Done(), plug.HasSynced)
+	}
 
 	time.Sleep(1 * time.Second)
 
