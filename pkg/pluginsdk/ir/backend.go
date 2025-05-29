@@ -108,7 +108,7 @@ type BackendObjectIR struct {
 	Errors []error
 
 	// Name is the pre-calculated resource name
-	Name string
+	Rname string
 }
 
 // NewBackendObjectIR creates a new BackendObjectIR with pre-calculated resource name
@@ -117,12 +117,12 @@ func NewBackendObjectIR(objSource ObjectSource, port int32, extraKey string) Bac
 		ObjectSource: objSource,
 		Port:         port,
 		ExtraKey:     extraKey,
-		Name:         BackendResourceName(objSource, port, extraKey),
+		Rname:        BackendResourceName(objSource, port, extraKey),
 	}
 }
 
 func (c BackendObjectIR) ResourceName() string {
-	return c.Name
+	return c.Rname
 }
 
 func BackendResourceName(objSource ObjectSource, port int32, extraKey string) string {
@@ -137,7 +137,7 @@ func (c BackendObjectIR) Equals(in BackendObjectIR) bool {
 	objEq := c.ObjectSource.Equals(in.ObjectSource)
 	objVersionEq := versionEquals(c.Obj, in.Obj)
 	polEq := c.AttachedPolicies.Equals(in.AttachedPolicies)
-	nameEq := c.Name == in.Name
+	nameEq := c.Rname == in.Rname
 
 	// objIr may currently be nil in the case of k8s Services
 	// TODO: add an IR for Services to avoid the need for this
