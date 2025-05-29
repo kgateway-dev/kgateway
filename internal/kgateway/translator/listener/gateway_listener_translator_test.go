@@ -36,6 +36,7 @@ var (
 func lisToIr(l gwv1.Listener) ir.Listener {
 	return ir.Listener{
 		Listener: l,
+		Parent:   &gwv1.Gateway{},
 	}
 }
 
