@@ -3,6 +3,8 @@ package ir
 import (
 	"context"
 	"encoding/json"
+	"maps"
+	"slices"
 	"strings"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
@@ -11,6 +13,11 @@ import (
 
 	apiannotations "github.com/kgateway-dev/kgateway/v2/api/annotations"
 )
+
+var VirtualBuiltInGK = schema.GroupKind{
+	Group: "builtin",
+	Kind:  "builtin",
+}
 
 type BackendInit struct {
 	// InitBackend optionally returns an `*ir.EndpointsForBackend` that can be used
@@ -113,6 +120,26 @@ func ptrEquals[T comparable](a, b *T) bool {
 
 type AttachedPolicies struct {
 	Policies map[schema.GroupKind][]PolicyAtt
+}
+
+// ApplyOrderedGroupKinds returns a list of GroupKinds sorted by their application order
+// such that subsequent policies can override previous ones.
+// Built-in policies are applied last so that they can override policies from other GroupKinds
+// since they are considered more specific than other policy attachments.
+func (a AttachedPolicies) ApplyOrderedGroupKinds() []schema.GroupKind {
+	return slices.SortedStableFunc(maps.Keys(a.Policies), func(a, b schema.GroupKind) int {
+		switch {
+		case a.Group == VirtualBuiltInGK.Group:
+			// If a is builtin, it should come after b
+			return 1
+		case b.Group == VirtualBuiltInGK.Group:
+			// If b is builtin, a should come before b
+			return -1
+		default:
+			// neither is builtin, preserve relative order
+			return 0
+		}
+	})
 }
 
 func (a AttachedPolicies) Equals(b AttachedPolicies) bool {

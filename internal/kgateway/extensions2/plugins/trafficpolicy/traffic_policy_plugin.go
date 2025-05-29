@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"strconv"
 	"time"
 
@@ -942,41 +943,56 @@ func mergePolicies(policies []ir.PolicyAtt) ir.PolicyAtt {
 		p2 := policies[i].PolicyIr.(*TrafficPolicy)
 		p2Ref := policies[i].PolicyRef
 
-		if policy.IsMergeable(merged.spec.AI, p2.spec.AI, mergeOpts) {
-			merged.spec.AI = p2.spec.AI
-			out.MergeOrigins["ai"] = p2Ref
-		}
-		if policy.IsMergeable(merged.spec.ExtProc, p2.spec.ExtProc, mergeOpts) {
-			merged.spec.ExtProc = p2.spec.ExtProc
-			out.MergeOrigins["extProc"] = p2Ref
-		}
-		if policy.IsMergeable(merged.spec.transform, p2.spec.transform, mergeOpts) {
-			merged.spec.transform = p2.spec.transform
-			out.MergeOrigins["transformation"] = p2Ref
-		}
-		if policy.IsMergeable(merged.spec.rustformation, p2.spec.rustformation, mergeOpts) {
-			merged.spec.rustformation = p2.spec.rustformation
-			merged.spec.rustformationStringToStash = p2.spec.rustformationStringToStash
-			out.MergeOrigins["rustformation"] = p2Ref
-		}
-		if policy.IsMergeable(merged.spec.extAuth, p2.spec.extAuth, mergeOpts) {
-			merged.spec.extAuth = p2.spec.extAuth
-			out.MergeOrigins["extAuth"] = p2Ref
-		}
-		if policy.IsMergeable(merged.spec.localRateLimit, p2.spec.localRateLimit, mergeOpts) {
-			merged.spec.localRateLimit = p2.spec.localRateLimit
-			out.MergeOrigins["rateLimit"] = p2Ref
-		}
-		// Handle global rate limit merging
-		if policy.IsMergeable(merged.spec.rateLimit, p2.spec.rateLimit, mergeOpts) {
-			merged.spec.rateLimit = p2.spec.rateLimit
-			out.MergeOrigins["rateLimit"] = p2Ref
-		}
-
+		mergeOrigins := MergeTrafficPolicies(merged, p2, p2Ref, mergeOpts)
+		maps.Copy(out.MergeOrigins, mergeOrigins)
 		out.HierarchicalPriority = policies[i].HierarchicalPriority
 	}
 
 	return out
+}
+
+// MergeTrafficPolicies merges two TrafficPolicy IRs, returning a map that contains information
+// about the origin policy reference for each merged field.
+func MergeTrafficPolicies(
+	p1, p2 *TrafficPolicy,
+	p2Ref *ir.AttachedPolicyRef,
+	mergeOpts policy.MergeOptions,
+) map[string]*ir.AttachedPolicyRef {
+	if p1 == nil || p2 == nil {
+		return nil
+	}
+	mergeOrigins := make(map[string]*ir.AttachedPolicyRef)
+	if policy.IsMergeable(p1.spec.AI, p2.spec.AI, mergeOpts) {
+		p1.spec.AI = p2.spec.AI
+		mergeOrigins["ai"] = p2Ref
+	}
+	if policy.IsMergeable(p1.spec.ExtProc, p2.spec.ExtProc, mergeOpts) {
+		p1.spec.ExtProc = p2.spec.ExtProc
+		mergeOrigins["extProc"] = p2Ref
+	}
+	if policy.IsMergeable(p1.spec.transform, p2.spec.transform, mergeOpts) {
+		p1.spec.transform = p2.spec.transform
+		mergeOrigins["transformation"] = p2Ref
+	}
+	if policy.IsMergeable(p1.spec.rustformation, p2.spec.rustformation, mergeOpts) {
+		p1.spec.rustformation = p2.spec.rustformation
+		p1.spec.rustformationStringToStash = p2.spec.rustformationStringToStash
+		mergeOrigins["rustformation"] = p2Ref
+	}
+	if policy.IsMergeable(p1.spec.extAuth, p2.spec.extAuth, mergeOpts) {
+		p1.spec.extAuth = p2.spec.extAuth
+		mergeOrigins["extAuth"] = p2Ref
+	}
+	if policy.IsMergeable(p1.spec.localRateLimit, p2.spec.localRateLimit, mergeOpts) {
+		p1.spec.localRateLimit = p2.spec.localRateLimit
+		mergeOrigins["rateLimit"] = p2Ref
+	}
+	// Handle global rate limit merging
+	if policy.IsMergeable(p1.spec.rateLimit, p2.spec.rateLimit, mergeOpts) {
+		p1.spec.rateLimit = p2.spec.rateLimit
+		mergeOrigins["rateLimit"] = p2Ref
+	}
+	return mergeOrigins
 }
 
 type TrafficPolicyBuilder struct {

@@ -46,7 +46,8 @@ func (h *httpRouteConfigurationTranslator) ComputeRouteConfiguration(ctx context
 	}
 	typedPerFilterConfigRoute := ir.TypedFilterConfigMap(map[string]proto.Message{})
 
-	for gk, pols := range attachedPolicies.Policies {
+	for _, gk := range attachedPolicies.ApplyOrderedGroupKinds() {
+		pols := attachedPolicies.Policies[gk]
 		pass := h.PluginPass[gk]
 		if pass == nil {
 			// TODO: user error - they attached a non http policy
@@ -203,8 +204,10 @@ func toPerFilterConfigMap(typedPerFilterConfig ir.TypedFilterConfigMap) map[stri
 }
 
 func (h *httpRouteConfigurationTranslator) runVhostPlugins(ctx context.Context, virtualHost *ir.VirtualHost, out *envoy_config_route_v3.VirtualHost,
-	typedPerFilterConfig ir.TypedFilterConfigMap) {
-	for gk, pols := range virtualHost.AttachedPolicies.Policies {
+	typedPerFilterConfig ir.TypedFilterConfigMap,
+) {
+	for _, gk := range virtualHost.AttachedPolicies.ApplyOrderedGroupKinds() {
+		pols := virtualHost.AttachedPolicies.Policies[gk]
 		pass := h.PluginPass[gk]
 		if pass == nil {
 			// TODO: user error - they attached a non http policy
@@ -261,7 +264,8 @@ func (h *httpRouteConfigurationTranslator) runRoutePlugins(
 			errs = append(errs, err)
 		}
 	}
-	for gk, pols := range attachedPolicies.Policies {
+	for _, gk := range attachedPolicies.ApplyOrderedGroupKinds() {
+		pols := attachedPolicies.Policies[gk]
 		pass := h.PluginPass[gk]
 		if pass == nil {
 			// TODO: should never happen, log error and report condition
@@ -307,7 +311,8 @@ func mergePolicies(pass *TranslationPass, policies []ir.PolicyAtt) []ir.PolicyAt
 
 func (h *httpRouteConfigurationTranslator) runBackendPolicies(ctx context.Context, in ir.HttpBackend, pCtx *ir.RouteBackendContext) error {
 	var errs []error
-	for gk, pols := range in.AttachedPolicies.Policies {
+	for _, gk := range in.AttachedPolicies.ApplyOrderedGroupKinds() {
+		pols := in.AttachedPolicies.Policies[gk]
 		pass := h.PluginPass[gk]
 		if pass == nil {
 			// TODO: should never happen, log error and report condition

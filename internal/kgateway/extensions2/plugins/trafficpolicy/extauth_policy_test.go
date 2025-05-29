@@ -108,8 +108,8 @@ func TestHttpFilters(t *testing.T) {
 		plugin := &trafficPolicyPluginGwPass{
 			extAuthPerProvider: ProviderNeededMap{
 				Providers: map[string]map[string]*TrafficPolicyGatewayExtensionIR{
-					"test-filter-chain": map[string]*TrafficPolicyGatewayExtensionIR{
-						"test-extension": &TrafficPolicyGatewayExtensionIR{
+					"test-filter-chain": {
+						"test-extension": {
 							Name:    "test-extension",
 							ExtType: v1alpha1.GatewayExtensionTypeExtAuth,
 							ExtAuth: &envoy_ext_authz_v3.ExtAuthz{
