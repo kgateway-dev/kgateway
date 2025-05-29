@@ -4325,12 +4325,6 @@ func schema_kgateway_v2_api_v1alpha1_SSLFiles(ref common.ReferenceCallback) comm
 							Format: "",
 						},
 					},
-					"ocspStaple": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
 				},
 			},
 		},

@@ -233,7 +233,4 @@ type SSLFiles struct {
 
 	// +optional
 	RootCA string `json:"rootCA,omitempty"`
-
-	// +optional
-	OCSPStaple string `json:"ocspStaple,omitempty"`
 }

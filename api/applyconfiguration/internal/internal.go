@@ -1305,9 +1305,6 @@ var schemaYAML = typed.YAMLObject(`types:
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SSLFiles
   map:
     fields:
-    - name: ocspStaple
-      type:
-        scalar: string
     - name: rootCA
       type:
         scalar: string

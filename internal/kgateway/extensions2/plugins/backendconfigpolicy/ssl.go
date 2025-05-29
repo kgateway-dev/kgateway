@@ -87,9 +87,8 @@ func translateSSLConfig(
 	namespace string,
 ) (*envoyauth.UpstreamTlsContext, error) {
 	var (
-		certChain, privateKey, rootCA, ocspStapleFile string
-		ocspStaple                                    []byte
-		inlineDataSource                              bool
+		certChain, privateKey, rootCA string
+		inlineDataSource              bool
 	)
 	if sslConfig.SecretRef != nil {
 		secret, err := secretGetter.GetSecret(sslConfig.SecretRef.Name, namespace)
@@ -99,13 +98,11 @@ func translateSSLConfig(
 		certChain = string(secret.Data["tls.crt"])
 		privateKey = string(secret.Data["tls.key"])
 		rootCA = string(secret.Data["ca.crt"])
-		ocspStaple = secret.Data["ocsp.staple"]
 		inlineDataSource = true
 	} else if sslConfig.SSLFiles != nil {
 		certChain = sslConfig.SSLFiles.TLSCertificate
 		privateKey = sslConfig.SSLFiles.TLSKey
 		rootCA = sslConfig.SSLFiles.RootCA
-		ocspStapleFile = sslConfig.SSLFiles.OCSPStaple
 	}
 
 	cleanedCertChain, err := cleanedSslKeyPair(certChain, privateKey, rootCA)
@@ -115,7 +112,7 @@ func translateSSLConfig(
 
 	dataSource := stringDataSourceGenerator(inlineDataSource)
 
-	var certChainData, privateKeyData, rootCaData, ocspStapleData *corev3.DataSource
+	var certChainData, privateKeyData, rootCaData *corev3.DataSource
 	if cleanedCertChain != "" {
 		certChainData = dataSource(cleanedCertChain)
 	}
@@ -124,12 +121,6 @@ func translateSSLConfig(
 	}
 	if rootCA != "" {
 		rootCaData = dataSource(rootCA)
-	}
-	// If we have a filename for the ocsp staple, we want to fetch ocsp data from the file otherwise, we use the []byte data stored in ocspStaple.
-	if ocspStapleFile != "" {
-		ocspStapleData = dataSource(ocspStapleFile)
-	} else if ocspStaple != nil {
-		ocspStapleData = byteDataSource(ocspStaple)
 	}
 
 	tlsContext := &envoyauth.CommonTlsContext{
@@ -142,7 +133,6 @@ func translateSSLConfig(
 			{
 				CertificateChain: certChainData,
 				PrivateKey:       privateKeyData,
-				OcspStaple:       ocspStapleData,
 			},
 		}
 	} else if certChainData != nil || privateKeyData != nil {

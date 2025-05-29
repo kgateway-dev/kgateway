@@ -8,7 +8,6 @@ type SSLFilesApplyConfiguration struct {
 	TLSCertificate *string `json:"tlsCertificate,omitempty"`
 	TLSKey         *string `json:"tlsKey,omitempty"`
 	RootCA         *string `json:"rootCA,omitempty"`
-	OCSPStaple     *string `json:"ocspStaple,omitempty"`
 }
 
 // SSLFilesApplyConfiguration constructs a declarative configuration of the SSLFiles type for use with
@@ -38,13 +37,5 @@ func (b *SSLFilesApplyConfiguration) WithTLSKey(value string) *SSLFilesApplyConf
 // If called multiple times, the RootCA field is set to the value of the last call.
 func (b *SSLFilesApplyConfiguration) WithRootCA(value string) *SSLFilesApplyConfiguration {
 	b.RootCA = &value
-	return b
-}
-
-// WithOCSPStaple sets the OCSPStaple field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the OCSPStaple field is set to the value of the last call.
-func (b *SSLFilesApplyConfiguration) WithOCSPStaple(value string) *SSLFilesApplyConfiguration {
-	b.OCSPStaple = &value
 	return b
 }

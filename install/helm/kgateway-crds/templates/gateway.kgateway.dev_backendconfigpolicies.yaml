@@ -102,8 +102,6 @@ spec:
                     type: string
                   sslFiles:
                     properties:
-                      ocspStaple:
-                        type: string
                       rootCA:
                         type: string
                       tlsCertificate:
