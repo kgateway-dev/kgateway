@@ -209,7 +209,7 @@ func processBackend(_ context.Context, polir ir.PolicyIR, _ ir.BackendObjectIR, 
 }
 
 func translate(commoncol *common.CommonCollections, krtctx krt.HandlerContext, pol *v1alpha1.BackendConfigPolicy) (*BackendConfigPolicyIR, error) {
-	ir := &BackendConfigPolicyIR{
+	ir := BackendConfigPolicyIR{
 		ct: pol.CreationTimestamp.Time,
 	}
 	if pol.Spec.ConnectTimeout != nil {
@@ -230,7 +230,8 @@ func translate(commoncol *common.CommonCollections, krtctx krt.HandlerContext, p
 	if pol.Spec.Http1ProtocolOptions != nil {
 		http1ProtocolOptions, err := translateHttp1ProtocolOptions(pol.Spec.Http1ProtocolOptions)
 		if err != nil {
-			return nil, err
+			logger.Error("failed to translate http1 protocol options", "error", err)
+			return &ir, err
 		}
 		ir.http1ProtocolOptions = http1ProtocolOptions
 	}
@@ -238,12 +239,13 @@ func translate(commoncol *common.CommonCollections, krtctx krt.HandlerContext, p
 	if pol.Spec.SSLConfig != nil {
 		sslConfig, err := translateSSLConfig(NewDefaultSecretGetter(commoncol.Secrets, krtctx), pol.Spec.SSLConfig, pol.Namespace)
 		if err != nil {
-			return nil, err
+			logger.Error("failed to translate ssl config", "error", err)
+			return &ir, err
 		}
 		ir.sslConfig = sslConfig
 	}
 
-	return ir, nil
+	return &ir, nil
 }
 
 func translateTCPKeepalive(tcpKeepalive *v1alpha1.TCPKeepalive) *corev3.TcpKeepalive {
