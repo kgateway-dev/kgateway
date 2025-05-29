@@ -140,10 +140,6 @@ spec:
                     items:
                       type: string
                     type: array
-                    x-kubernetes-validations:
-                    - message: rootCA must be provided if verifySubjectAltName is
-                        used
-                      rule: has(self.sslFiles.rootCA) || has(self.secretRef)
                 type: object
                 x-kubernetes-validations:
                 - message: Exactly one of secretRef or sslFiles must be set in SSLConfig

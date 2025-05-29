@@ -186,7 +186,6 @@ type SSLConfig struct {
 	// Verify that the Subject Alternative Name in the peer certificate is one of the specified values.
 	// note that a root_ca must be provided if this option is used.
 	// +optional
-	// +kubebuilder:validation:XValidation:rule="has(self.sslFiles.rootCA) || has(self.secretRef)",message="rootCA must be provided if verifySubjectAltName is used"
 	VerifySubjectAltName []string `json:"verifySubjectAltName,omitempty"`
 
 	// General TLS parameters. See the [envoy docs](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/transport_sockets/tls/v3/common.proto#extensions-transport-sockets-tls-v3-tlsparameters)
