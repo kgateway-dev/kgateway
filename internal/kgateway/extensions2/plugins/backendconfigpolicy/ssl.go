@@ -215,7 +215,6 @@ func parseTLSVersion(tlsVersion *v1alpha1.TLSVersion) (envoyauth.TlsParameters_T
 }
 
 func cleanedSslKeyPair(certChain, privateKey, rootCa string) (cleanedChain string, err error) {
-
 	// in the case where we _only_ provide a rootCa, we do not want to validate tls.key+tls.cert
 	if (certChain == "") && (privateKey == "") && (rootCa != "") {
 		return certChain, nil
@@ -262,15 +261,6 @@ func stringDataSourceGenerator(inlineDataSource bool) func(s string) *corev3.Dat
 				InlineString: s,
 			},
 		}
-	}
-}
-
-// byteDataSource returns an Envoy inline-bytes data source that uses the given byte slice as the data source.
-func byteDataSource(b []byte) *corev3.DataSource {
-	return &corev3.DataSource{
-		Specifier: &corev3.DataSource_InlineBytes{
-			InlineBytes: b,
-		},
 	}
 }
 
