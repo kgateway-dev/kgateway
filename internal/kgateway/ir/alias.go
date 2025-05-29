@@ -32,6 +32,7 @@ type (
 	UnimplementedProxyTranslationPass = ir.UnimplementedProxyTranslationPass
 
 	Gateway             = ir.Gateway
+	ListenerSet         = ir.ListenerSet
 	HcmContext          = ir.HcmContext
 	HttpBackend         = ir.HttpBackend
 	HttpRouteIR         = ir.HttpRouteIR

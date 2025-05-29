@@ -138,22 +138,22 @@ listeners:
           configSource:
             ads: {}
             resourceApiVersion: V3
-          routeConfigName: http
+          routeConfigName: listener~8080
         statPrefix: http
         useRemoteAddress: true
-    name: http
-  name: http
+    name: listener~8080
+  name: listener~8080
 routes:
 - ignorePortInHostMatching: true
-  name: http
+  name: listener~8080
   virtualHosts:
   - domains:
     - test
-    name: http~test
+    name: listener~8080~test
     routes:
     - match:
         pathSeparatedPrefix: /openai
-      name: http~test-route-0-httproute-route-to-backend-gwtest-0-0-matcher-0
+      name: listener~8080~test-route-0-httproute-route-to-backend-gwtest-0-0-matcher-0
       route:
         autoHostRewrite: true
         cluster: backend_gwtest_openai_0

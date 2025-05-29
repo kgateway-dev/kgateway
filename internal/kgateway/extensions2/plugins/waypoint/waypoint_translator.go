@@ -127,7 +127,7 @@ func (w *waypointTranslator) Translate(
 
 	return &ir.GatewayIR{
 		Listeners:            outListeners,
-		SourceObject:         gateway.Obj,
+		SourceObject:         gateway,
 		AttachedPolicies:     gateway.AttachedListenerPolicies,
 		AttachedHttpPolicies: gateway.AttachedHttpPolicies,
 	}
@@ -210,7 +210,7 @@ func (t *waypointTranslator) fetchGatewayRoutes(
 	reporter reports.Reporter,
 	gwReporter reports.GatewayReporter,
 ) ([]*query.RouteInfo, error) {
-	gwRoutes, err := t.queries.GetRoutesForGateway(kctx, ctx, gw.Obj)
+	gwRoutes, err := t.queries.GetRoutesForGateway(kctx, ctx, gw)
 	if err != nil {
 		gwReporter.SetCondition(reports.GatewayCondition{
 			Type:    gwv1.GatewayConditionProgrammed,
@@ -228,8 +228,8 @@ func (t *waypointTranslator) fetchGatewayRoutes(
 			Message: rErr.Error.Error(),
 		})
 	}
-	routes, ok := gwRoutes.ListenerResults[string(gwListener.Name)]
-	if !ok {
+	routes := gwRoutes.GetListenerResult(gwListener.Parent, string(gwListener.Name))
+	if routes == nil {
 		// no routes for the single inbound PROXY listener
 		return nil, nil
 	}

@@ -1,4 +1,4 @@
-package testutils
+package translator
 
 import (
 	"bytes"
@@ -10,12 +10,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
-
 	"github.com/rotisserie/eris"
 	"google.golang.org/protobuf/proto"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/irtranslator"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/protoutils"
 
@@ -30,7 +27,7 @@ import (
 
 var NoFilesFound = errors.New("no k8s files found")
 
-func LoadFromFiles(ctx context.Context, filename string) ([]client.Object, error) {
+func LoadFromFiles(ctx context.Context, filename string, scheme *runtime.Scheme) ([]client.Object, error) {
 	fileOrDir, err := os.Stat(filename)
 	if err != nil {
 		return nil, err
@@ -60,7 +57,7 @@ func LoadFromFiles(ctx context.Context, filename string) ([]client.Object, error
 
 	var resources []client.Object
 	for _, file := range yamlFiles {
-		objs, err := parseFile(ctx, file)
+		objs, err := parseFile(file, scheme)
 		if err != nil {
 			return nil, err
 		}
@@ -83,11 +80,7 @@ func LoadFromFiles(ctx context.Context, filename string) ([]client.Object, error
 	return resources, nil
 }
 
-func parseFile(ctx context.Context, filename string) ([]runtime.Object, error) {
-	scheme := schemes.GatewayScheme()
-	if err := v1alpha1.Install(scheme); err != nil {
-		return nil, err
-	}
+func parseFile(filename string, scheme *runtime.Scheme) ([]runtime.Object, error) {
 	file, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, err

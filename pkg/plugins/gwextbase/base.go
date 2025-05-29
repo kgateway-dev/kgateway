@@ -26,6 +26,7 @@ type (
 var (
 	ExtAuthzEnabledMetadataMatcher = trafficpolicy.ExtAuthzEnabledMetadataMatcher
 	EnableFilterPerRoute           = trafficpolicy.EnableFilterPerRoute
+	MergeTrafficPolicies           = trafficpolicy.MergeTrafficPolicies
 )
 
 // Create a traffic policy builder. This converts a traffic policy into its IR form.

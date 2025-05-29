@@ -19,22 +19,22 @@ Listeners:
           configSource:
             ads: {}
             resourceApiVersion: V3
-          routeConfigName: http
+          routeConfigName: listener~80
         statPrefix: http
         useRemoteAddress: true
-    name: http
-  name: http
+    name: listener~80
+  name: listener~80
 Routes:
 - ignorePortInHostMatching: true
-  name: http
+  name: listener~80
   virtualHosts:
   - domains:
     - example.com
-    name: http~example_com
+    name: listener~80~example_com
     routes:
     - match:
         path: /a/1
-      name: http~example_com-route-0-httproute-route-a-a-0-0-matcher-0
+      name: listener~80~example_com-route-0-httproute-route-a-a-0-0-matcher-0
       route:
         cluster: kube_a_svc-a_8080
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
@@ -42,13 +42,13 @@ Routes:
         safeRegex:
           googleRe2: {}
           regex: /b/.*
-      name: http~example_com-route-1-httproute-route-b-b-0-0-matcher-0
+      name: listener~80~example_com-route-1-httproute-route-b-b-0-0-matcher-0
       route:
         cluster: kube_b_svc-b_8080
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
     - match:
         prefix: /
-      name: http~example_com-route-4-httproute-example-route-infra-0-0-matcher-0
+      name: listener~80~example_com-route-4-httproute-example-route-infra-0-0-matcher-0
       route:
         cluster: kube_infra_example-svc_80
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR

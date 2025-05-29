@@ -8,8 +8,8 @@ import (
 	"github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/types"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/gateway/testutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
+	translatortest "github.com/kgateway-dev/kgateway/v2/test/translator"
 )
 
 // exampleGw is used in most tests, but we may want to have
@@ -51,7 +51,7 @@ func TestWaypointTranslator(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 			dir := fsutils.MustGetThisDir()
-			testutils.TestTranslation(
+			translatortest.TestTranslation(
 				t,
 				ctx,
 				[]string{filepath.Join(dir, "testdata/input", tt.file+".yaml")},

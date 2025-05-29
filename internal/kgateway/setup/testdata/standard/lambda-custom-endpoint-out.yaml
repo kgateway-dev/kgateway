@@ -1,13 +1,5 @@
 clusters:
 - connectTimeout: 5s
-  edsClusterConfig:
-    edsConfig:
-      ads: {}
-      resourceApiVersion: V3
-  metadata: {}
-  name: kube_default_kubernetes_443
-  type: EDS
-- connectTimeout: 5s
   dnsLookupFamily: V4_PREFERRED
   loadAssignment:
     clusterName: backend_gwtest_lambda-custom-backend_0
@@ -45,6 +37,14 @@ clusters:
       - name: envoy.filters.http.upstream_codec
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.http.upstream_codec.v3.UpstreamCodec
+- connectTimeout: 5s
+  edsClusterConfig:
+    edsConfig:
+      ads: {}
+      resourceApiVersion: V3
+  metadata: {}
+  name: kube_default_kubernetes_443
+  type: EDS
 listeners:
 - address:
     socketAddress:
@@ -66,22 +66,22 @@ listeners:
           configSource:
             ads: {}
             resourceApiVersion: V3
-          routeConfigName: http
+          routeConfigName: listener~8080
         statPrefix: http
         useRemoteAddress: true
-    name: http
-  name: http
+    name: listener~8080
+  name: listener~8080
 routes:
 - ignorePortInHostMatching: true
-  name: http
+  name: listener~8080
   virtualHosts:
   - domains:
     - lambda-custom.example.com
-    name: http~lambda-custom_example_com
+    name: listener~8080~lambda-custom_example_com
     routes:
     - match:
         pathSeparatedPrefix: /lambda-custom
-      name: http~lambda-custom_example_com-route-0-httproute-route-to-lambda-custom-gwtest-0-0-matcher-0
+      name: listener~8080~lambda-custom_example_com-route-0-httproute-route-to-lambda-custom-gwtest-0-0-matcher-0
       route:
         cluster: backend_gwtest_lambda-custom-backend_0
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
