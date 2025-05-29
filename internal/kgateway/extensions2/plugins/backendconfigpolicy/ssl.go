@@ -11,6 +11,7 @@ import (
 
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/client-go/util/cert"
+	"k8s.io/utils/ptr"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/pluginutils"
@@ -180,7 +181,7 @@ func translateSSLConfig(
 	return &envoyauth.UpstreamTlsContext{
 		CommonTlsContext:   tlsContext,
 		Sni:                sslConfig.Sni,
-		AllowRenegotiation: *sslConfig.AllowRenegotiation,
+		AllowRenegotiation: ptr.Deref(sslConfig.AllowRenegotiation, false),
 	}, nil
 }
 

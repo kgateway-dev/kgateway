@@ -107,6 +107,7 @@ func TestTranslateSSLConfig(t *testing.T) {
 				},
 				Sni:                "test.example.com",
 				AllowRenegotiation: ptr.To(true),
+				AlpnProtocols:      []string{"h2", "http/1.1"},
 			},
 			secret: &ir.Secret{
 				ObjectSource: ir.ObjectSource{
@@ -128,6 +129,7 @@ func TestTranslateSSLConfig(t *testing.T) {
 				assert.Equal(t, "test.example.com", result.Sni)
 				assert.True(t, result.AllowRenegotiation)
 				assert.NotNil(t, result.CommonTlsContext)
+				assert.Equal(t, []string{"h2", "http/1.1"}, result.CommonTlsContext.AlpnProtocols)
 				assert.Len(t, result.CommonTlsContext.TlsCertificates, 1)
 				validateCommonTlsContextInline(t, result)
 			},
@@ -194,6 +196,64 @@ func TestTranslateSSLConfig(t *testing.T) {
 				AllowRenegotiation: ptr.To(true),
 			},
 			wantErr: true,
+		},
+		{
+			name: "should not error with only rootca",
+			sslConfig: &v1alpha1.SSLConfig{
+				SSLFiles: &v1alpha1.SSLFiles{
+					RootCA: CACert,
+				},
+			},
+			wantErr: false,
+			check: func(t *testing.T, result *envoyauth.UpstreamTlsContext) {
+				assert.NotNil(t, result)
+			},
+		},
+		{
+			name: "should error with san and no rootca",
+			sslConfig: &v1alpha1.SSLConfig{
+				SSLFiles: &v1alpha1.SSLFiles{
+					TLSCertificate: CACert,
+					TLSKey:         TLSKey,
+				},
+				VerifySubjectAltName: []string{"test.example.com"},
+			},
+			wantErr: true,
+		},
+		{
+			name: "should error with only cert and no key",
+			sslConfig: &v1alpha1.SSLConfig{
+				SSLFiles: &v1alpha1.SSLFiles{
+					TLSCertificate: CACert,
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "should not have validation context if no rootca",
+			sslConfig: &v1alpha1.SSLConfig{
+				SecretRef: &corev1.LocalObjectReference{
+					Name: "test-secret",
+				},
+			},
+			secret: &ir.Secret{
+				ObjectSource: ir.ObjectSource{
+					Group:     "",
+					Kind:      "Secret",
+					Namespace: "default",
+					Name:      "test-secret",
+				},
+				Obj: &corev1.Secret{},
+				Data: map[string][]byte{
+					"tls.crt": []byte(CACert),
+					"tls.key": []byte(TLSKey),
+				},
+			},
+			wantErr: false,
+			check: func(t *testing.T, result *envoyauth.UpstreamTlsContext) {
+				assert.NotNil(t, result)
+				assert.Nil(t, result.CommonTlsContext.GetValidationContext())
+			},
 		},
 	}
 
