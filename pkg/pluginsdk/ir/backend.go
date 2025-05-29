@@ -3,13 +3,18 @@ package ir
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"strings"
 
 	"istio.io/istio/pkg/kube/krt"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/ptr"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+	gwxv1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
+
+	pluginsdkreporter "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
 
 type ObjectSource struct {
@@ -206,14 +211,31 @@ func (l Secret) MarshalJSON() ([]byte, error) {
 
 type Listener struct {
 	gwv1.Listener
+	Parent            client.Object
 	AttachedPolicies  AttachedPolicies
 	PolicyAncestorRef gwv1.ParentReference
 }
 
+func (listener Listener) GetParentReporter(reporter pluginsdkreporter.Reporter) pluginsdkreporter.GatewayReporter {
+	switch t := listener.Parent.(type) {
+	case *gwv1.Gateway:
+		return reporter.Gateway(t)
+	case *gwxv1.XListenerSet:
+		return reporter.ListenerSet(t)
+	}
+	panic("Unknown parent type")
+}
+
+func (c Listener) Equals(in Listener) bool {
+	return reflect.DeepEqual(c, in)
+}
+
 type Gateway struct {
-	ObjectSource `json:",inline"`
-	Listeners    []Listener
-	Obj          *gwv1.Gateway
+	ObjectSource        `json:",inline"`
+	Listeners           Listeners
+	AllowedListenerSets ListenerSets
+	DeniedListenerSets  ListenerSets
+	Obj                 *gwv1.Gateway
 
 	AttachedListenerPolicies AttachedPolicies
 	AttachedHttpPolicies     AttachedPolicies
@@ -224,7 +246,7 @@ func (c Gateway) ResourceName() string {
 }
 
 func (c Gateway) Equals(in Gateway) bool {
-	return c.ObjectSource.Equals(in.ObjectSource) && versionEquals(c.Obj, in.Obj) && c.AttachedListenerPolicies.Equals(in.AttachedListenerPolicies) && c.AttachedHttpPolicies.Equals(in.AttachedHttpPolicies)
+	return c.ObjectSource.Equals(in.ObjectSource) && versionEquals(c.Obj, in.Obj) && c.AttachedListenerPolicies.Equals(in.AttachedListenerPolicies) && c.AttachedHttpPolicies.Equals(in.AttachedHttpPolicies) && c.AllowedListenerSets.Equals(in.AllowedListenerSets) && c.DeniedListenerSets.Equals(in.DeniedListenerSets)
 }
 
 // Equals returns true if the two BackendRefIR instances are equal in cluster name, weight, backend object equality, and error.
@@ -256,4 +278,48 @@ func errorsEqual(a, b error) bool {
 		return a == b
 	}
 	return a.Error() == b.Error()
+}
+
+type ListenerSet struct {
+	ObjectSource `json:",inline"`
+	Listeners    Listeners
+	Obj          *gwxv1.XListenerSet
+	// ListenerSet polices are attached to the individual listeners in addition
+	// to their specific policies
+}
+
+func (c ListenerSet) ResourceName() string {
+	return c.ObjectSource.ResourceName()
+}
+
+func (c ListenerSet) Equals(in ListenerSet) bool {
+	return c.ObjectSource.Equals(in.ObjectSource) && versionEquals(c.Obj, in.Obj) && c.Listeners.Equals(in.Listeners)
+}
+
+type ListenerSets []ListenerSet
+
+func (c ListenerSets) Equals(in ListenerSets) bool {
+	if len(c) != len(in) {
+		return false
+	}
+	for i, ls := range c {
+		if !ls.Equals(in[i]) {
+			return false
+		}
+	}
+	return true
+}
+
+type Listeners []Listener
+
+func (c Listeners) Equals(in Listeners) bool {
+	if len(c) != len(in) {
+		return false
+	}
+	for i, l := range c {
+		if !l.Equals(in[i]) {
+			return false
+		}
+	}
+	return true
 }

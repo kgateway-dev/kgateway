@@ -19,11 +19,11 @@ Listeners:
           configSource:
             ads: {}
             resourceApiVersion: V3
-          routeConfigName: http
+          routeConfigName: listener~80
         statPrefix: http
         useRemoteAddress: true
-    name: http
-  name: http
+    name: listener~80
+  name: listener~80
 Routes:
 - ignorePortInHostMatching: true
-  name: http
+  name: listener~80

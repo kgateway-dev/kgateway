@@ -13,6 +13,19 @@ clusters:
       ads: {}
       resourceApiVersion: V3
   metadata: {}
+  name: kube_gwtest_extproc_9091
+  type: EDS
+  typedExtensionProtocolOptions:
+    envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+      '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+      explicitHttpConfig:
+        http2ProtocolOptions: {}
+- connectTimeout: 5s
+  edsClusterConfig:
+    edsConfig:
+      ads: {}
+      resourceApiVersion: V3
+  metadata: {}
   name: kube_gwtest_ratings_8080
   type: EDS
 - connectTimeout: 5s
@@ -23,19 +36,6 @@ clusters:
   metadata: {}
   name: kube_gwtest_reviews_8080
   type: EDS
-- connectTimeout: 5s
-  edsClusterConfig:
-    edsConfig:
-      ads: {}
-      resourceApiVersion: V3
-  metadata: {}
-  name: kube_gwtest_extproc_9091
-  type: EDS
-  typedExtensionProtocolOptions:
-    envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
-      '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
-      explicitHttpConfig:
-        http2ProtocolOptions: {}
 endpoints:
 - clusterName: kube_gwtest_reviews_8080
   endpoints:
@@ -87,22 +87,22 @@ listeners:
           configSource:
             ads: {}
             resourceApiVersion: V3
-          routeConfigName: http
+          routeConfigName: listener~8080
         statPrefix: http
         useRemoteAddress: true
-    name: http
-  name: http
+    name: listener~8080
+  name: listener~8080
 routes:
 - ignorePortInHostMatching: true
-  name: http
+  name: listener~8080
   virtualHosts:
   - domains:
     - example.com
-    name: http~example_com
+    name: listener~8080~example_com
     routes:
     - match:
         prefix: /
-      name: http~example_com-route-0-httproute-route-gwtest-0-0-matcher-0
+      name: listener~8080~example_com-route-0-httproute-route-gwtest-0-0-matcher-0
       route:
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
         weightedClusters:

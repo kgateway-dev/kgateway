@@ -4,12 +4,14 @@ import (
 	"context"
 	"fmt"
 
+	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/kube/kubetypes"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -19,12 +21,15 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	"sigs.k8s.io/controller-runtime/pkg/source"
 	infextv1a2 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
 	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/deployer"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	common "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 )
 
 const (
@@ -68,6 +73,8 @@ type GatewayConfig struct {
 	ClassInfo map[string]*ClassInfo
 	// DiscoveryNamespaceFilter filters namespaced objects based on the discovery namespace filter.
 	DiscoveryNamespaceFilter kubetypes.DynamicObjectFilter
+	// CommonCollections used to fetch ir.Gateways for the deployer to generate the ports for the proxy service
+	CommonCollections *common.CommonCollections
 }
 
 func NewBaseGatewayController(ctx context.Context, cfg GatewayConfig) error {
@@ -77,8 +84,9 @@ func NewBaseGatewayController(ctx context.Context, cfg GatewayConfig) error {
 	controllerBuilder := &controllerBuilder{
 		cfg: cfg,
 		reconciler: &controllerReconciler{
-			cli:    cfg.Mgr.GetClient(),
-			scheme: cfg.Mgr.GetScheme(),
+			cli:          cfg.Mgr.GetClient(),
+			scheme:       cfg.Mgr.GetScheme(),
+			customEvents: make(chan event.TypedGenericEvent[ir.Gateway], 1024),
 		},
 	}
 
@@ -105,8 +113,9 @@ func NewBaseInferencePoolController(ctx context.Context, poolCfg *InferencePoolC
 		cfg:     *gwCfg,
 		poolCfg: poolCfg,
 		reconciler: &controllerReconciler{
-			cli:    poolCfg.Mgr.GetClient(),
-			scheme: poolCfg.Mgr.GetScheme(),
+			cli:          poolCfg.Mgr.GetClient(),
+			scheme:       poolCfg.Mgr.GetScheme(),
+			customEvents: make(chan event.TypedGenericEvent[ir.Gateway], 1024),
 		},
 	}
 
@@ -173,6 +182,7 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 		IstioAutoMtlsEnabled: c.cfg.IstioAutoMtlsEnabled,
 		ControlPlane:         c.cfg.ControlPlane,
 		ImageInfo:            c.cfg.ImageInfo,
+		CommonCollections:    c.cfg.CommonCollections,
 	})
 	if err != nil {
 		return err
@@ -224,6 +234,7 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 		}),
 		builder.WithPredicates(discoveryNamespaceFilterPredicate),
 	)
+
 	// watch for gatewayclasses managed by our controller and enqueue related gateways
 	buildr.Watches(
 		&apiv1.GatewayClass{},
@@ -257,6 +268,28 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 				return ok && gc.Spec.ControllerName == apiv1.GatewayController(c.cfg.ControllerName)
 			}),
 			predicate.GenerationChangedPredicate{},
+		),
+	)
+
+	// Trigger an event when the gateway changes. This can even be a change in listener sets attached to the gateway
+	c.cfg.CommonCollections.GatewayIndex.Gateways.Register(func(o krt.Event[ir.Gateway]) {
+		gw := o.Latest()
+		c.reconciler.customEvents <- event.TypedGenericEvent[ir.Gateway]{
+			Object: gw,
+		}
+	})
+	buildr.WatchesRawSource(
+		// Add channel source for custom events
+		source.Channel(
+			c.reconciler.customEvents,
+			handler.TypedEnqueueRequestsFromMapFunc(func(ctx context.Context, obj ir.Gateway) []reconcile.Request {
+				// Convert the generic event to a reconcile request
+				return []reconcile.Request{
+					{
+						NamespacedName: types.NamespacedName{Namespace: obj.Namespace, Name: obj.Name},
+					},
+				}
+			}),
 		),
 	)
 
@@ -379,6 +412,7 @@ func (c *controllerBuilder) watchInferencePool(ctx context.Context) error {
 			ControllerName:     c.cfg.ControllerName,
 			ImageInfo:          c.cfg.ImageInfo,
 			InferenceExtension: c.poolCfg.InferenceExt,
+			CommonCollections:  c.cfg.CommonCollections,
 		})
 		if err != nil {
 			return err
@@ -440,8 +474,9 @@ func (c *controllerBuilder) watchGwClass(_ context.Context) error {
 }
 
 type controllerReconciler struct {
-	cli    client.Client
-	scheme *runtime.Scheme
+	cli          client.Client
+	scheme       *runtime.Scheme
+	customEvents chan event.TypedGenericEvent[ir.Gateway]
 }
 
 func (r *controllerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {

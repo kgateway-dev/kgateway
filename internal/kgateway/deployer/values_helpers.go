@@ -3,6 +3,7 @@ package deployer
 import (
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -10,10 +11,11 @@ import (
 	"golang.org/x/exp/slices"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/utils/ptr"
-	api "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ports"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/listener"
 )
 
 // This file contains helper functions that generate helm values in the format needed
@@ -23,46 +25,59 @@ var ComponentLogLevelEmptyError = func(key string, value string) error {
 	return eris.Errorf("an empty key or value was provided in componentLogLevels: key=%s, value=%s", key, value)
 }
 
-// Extract the listener ports from a Gateway. These will be used to populate:
+// Extract the listener ports from a Gateway and corresponding listener sets. These will be used to populate:
 // 1. the ports exposed on the envoy container
 // 2. the ports exposed on the proxy service
-func getPortsValues(gw *api.Gateway, gwp *v1alpha1.GatewayParameters) []helmPort {
+func getPortsValues(gw *ir.Gateway, gwp *v1alpha1.GatewayParameters) []helmPort {
 	gwPorts := []helmPort{}
-	for _, l := range gw.Spec.Listeners {
+	for _, l := range gw.Listeners {
 		listenerPort := uint16(l.Port)
-
-		// only process this port if we haven't already processed a listener with the same port
-		if slices.IndexFunc(gwPorts, func(p helmPort) bool { return *p.Port == listenerPort }) != -1 {
-			continue
-		}
-
-		targetPort := ports.TranslatePort(listenerPort)
-		portName := string(l.Name)
-		protocol := "TCP"
-
-		// Search for static NodePort set from the GatewayParameters spec
-		// If not found the default value of `nil` will not render anything.
-		var nodePort *uint16
-		if gwp.Spec.GetKube().GetService().GetType() != nil && *(gwp.Spec.GetKube().GetService().GetType()) == corev1.ServiceTypeNodePort {
-			if idx := slices.IndexFunc(gwp.Spec.GetKube().GetService().GetPorts(), func(p *v1alpha1.Port) bool {
-				return p.GetPort() == uint16(listenerPort)
-			}); idx != -1 {
-				if port := gwp.Spec.GetKube().GetService().GetPorts()[idx]; port != nil {
-					if nodePortVal := port.GetNodePort(); nodePortVal != nil {
-						nodePort = ptr.To(uint16(*nodePortVal))
-					}
-				}
-			}
-		}
-		gwPorts = append(gwPorts, helmPort{
-			Port:       &listenerPort,
-			TargetPort: &targetPort,
-			Name:       &portName,
-			Protocol:   &protocol,
-			NodePort:   nodePort,
-		})
+		portName := listener.GenerateListenerName(l)
+		gwPorts = appendPortValue(gwPorts, listenerPort, portName, gwp)
 	}
 	return gwPorts
+}
+
+func sanitizePortName(name string) string {
+	nonAlphanumericRegex := regexp.MustCompile(`[^a-zA-Z0-9-]+`)
+	str := nonAlphanumericRegex.ReplaceAllString(name, "-")
+	doubleHyphen := regexp.MustCompile(`-{2,}`)
+	str = doubleHyphen.ReplaceAllString(str, "-")
+
+	// This is a kubernetes spec requirement.
+	maxPortNameLength := 15
+	if len(str) > maxPortNameLength {
+		str = str[:maxPortNameLength]
+	}
+	return str
+}
+
+func appendPortValue(gwPorts []helmPort, port uint16, name string, gwp *v1alpha1.GatewayParameters) []helmPort {
+	if slices.IndexFunc(gwPorts, func(p helmPort) bool { return *p.Port == port }) != -1 {
+		return gwPorts
+	}
+
+	targetPort := ports.TranslatePort(port)
+	portName := sanitizePortName(name)
+	protocol := "TCP"
+
+	// Search for static NodePort set from the GatewayParameters spec
+	// If not found the default value of `nil` will not render anything.
+	var nodePort *uint16 = nil
+	if gwp.Spec.GetKube().GetService().GetType() != nil && *(gwp.Spec.GetKube().GetService().GetType()) == corev1.ServiceTypeNodePort {
+		if idx := slices.IndexFunc(gwp.Spec.GetKube().GetService().GetPorts(), func(p *v1alpha1.Port) bool {
+			return p.GetPort() == uint16(port)
+		}); idx != -1 {
+			nodePort = ptr.To(uint16(*gwp.Spec.GetKube().GetService().GetPorts()[idx].GetNodePort()))
+		}
+	}
+	return append(gwPorts, helmPort{
+		Port:       &port,
+		TargetPort: &targetPort,
+		Name:       &portName,
+		Protocol:   &protocol,
+		NodePort:   nodePort,
+	})
 }
 
 // TODO: Removing until autoscaling is re-added.

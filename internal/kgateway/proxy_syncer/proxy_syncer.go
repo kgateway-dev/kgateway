@@ -29,6 +29,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
+	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
@@ -174,6 +175,9 @@ func (r report) Equals(in report) bool {
 	if !maps.Equal(r.reportMap.Gateways, in.reportMap.Gateways) {
 		return false
 	}
+	if !maps.Equal(r.reportMap.ListenerSets, in.reportMap.ListenerSets) {
+		return false
+	}
 	if !maps.Equal(r.reportMap.HTTPRoutes, in.reportMap.HTTPRoutes) {
 		return false
 	}
@@ -268,7 +272,10 @@ func mergeProxyReports(
 		// 1. merge GW Reports for all Proxies' status reports
 		maps.Copy(merged.Gateways, p.reports.Gateways)
 
-		// 2. merge httproute parentRefs into RouteReports
+		// 2. merge LS Reports for all Proxies' status reports
+		maps.Copy(merged.ListenerSets, p.reports.ListenerSets)
+
+		// 3. merge httproute parentRefs into RouteReports
 		for rnn, rr := range p.reports.HTTPRoutes {
 			// if we haven't encountered this route, just copy it over completely
 			old := merged.HTTPRoutes[rnn]
@@ -281,7 +288,7 @@ func mergeProxyReports(
 			maps.Copy(merged.HTTPRoutes[rnn].Parents, rr.Parents)
 		}
 
-		// 3. merge tcproute parentRefs into RouteReports
+		// 4. merge tcproute parentRefs into RouteReports
 		for rnn, rr := range p.reports.TCPRoutes {
 			// if we haven't encountered this route, just copy it over completely
 			old := merged.TCPRoutes[rnn]
@@ -365,6 +372,7 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 	})
 
 	routeStatusLogger := logger.With("subcomponent", "routeStatusSyncer")
+	listenerSetStatusLogger := logger.With("subcomponent", "listenerSetStatusSyncer")
 	gatewayStatusLogger := logger.With("subcomponent", "gatewayStatusSyncer")
 	go func() {
 		for {
@@ -373,6 +381,7 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 				return
 			}
 			s.syncGatewayStatus(ctx, gatewayStatusLogger, latestReport)
+			s.syncListenerSetStatus(ctx, listenerSetStatusLogger, latestReport)
 			s.syncRouteStatus(ctx, routeStatusLogger, latestReport)
 			s.syncPolicyStatus(ctx, latestReport)
 		}
@@ -587,6 +596,47 @@ func (s *ProxySyncer) syncGatewayStatus(ctx context.Context, logger *slog.Logger
 	logger.Debug("synced gw status for gateways", "count", len(rm.Gateways), "duration", duration)
 }
 
+// syncListenerSetStatus will build and update status for all Listener Sets in a reportMap
+func (s *ProxySyncer) syncListenerSetStatus(ctx context.Context, logger *slog.Logger, rm reports.ReportMap) {
+	stopwatch := utils.NewTranslatorStopWatch("ListenerSetStatusSyncer")
+	stopwatch.Start()
+
+	// TODO: retry within loop per LS rathen that as a full block
+	err := retry.Do(func() error {
+		for lsnn := range rm.ListenerSets {
+			ls := gwxv1a1.XListenerSet{}
+			err := s.mgr.GetClient().Get(ctx, lsnn, &ls)
+			if err != nil {
+				logger.Info("error getting ls", "erro", err.Error())
+				return err
+			}
+			lsStatus := ls.Status
+			if status := rm.BuildListenerSetStatus(ctx, ls); status != nil {
+				if !isListenerSetStatusEqual(&lsStatus, status) {
+					ls.Status = *status
+					if err := s.mgr.GetClient().Status().Patch(ctx, &ls, client.Merge); err != nil {
+						logger.Error("error patching listener set status", "error", err, "gateway", lsnn.String())
+						return err
+					}
+					logger.Info("patched ls status", "listenerset", lsnn.String())
+				} else {
+					logger.Info("skipping k8s ls status update, status equal", "listenerset", lsnn.String())
+				}
+			}
+		}
+		return nil
+	},
+		retry.Attempts(5),
+		retry.Delay(100*time.Millisecond),
+		retry.DelayType(retry.BackOffDelay),
+	)
+	if err != nil {
+		logger.Error("all attempts failed at updating listener set statuses", "error", err)
+	}
+	duration := stopwatch.Stop(ctx)
+	logger.Debug("synced listener sets status for listener set", "count", len(rm.ListenerSets), "duration", duration.String())
+}
+
 func (s *ProxySyncer) syncPolicyStatus(ctx context.Context, rm reports.ReportMap) {
 	stopwatch := utils.NewTranslatorStopWatch("RouteStatusSyncer")
 	stopwatch.Start()
@@ -641,6 +691,10 @@ var opts = cmp.Options{
 }
 
 func isGatewayStatusEqual(objA, objB *gwv1.GatewayStatus) bool {
+	return cmp.Equal(objA, objB, opts)
+}
+
+func isListenerSetStatusEqual(objA, objB *gwxv1a1.ListenerSetStatus) bool {
 	return cmp.Equal(objA, objB, opts)
 }
 

@@ -24,6 +24,19 @@ clusters:
       '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
       explicitHttpConfig:
         http2ProtocolOptions: {}
+- circuitBreakers:
+    thresholds:
+    - maxConnections: 40000
+      maxPendingRequests: 40000
+      maxRequests: 40000
+  connectTimeout: 1000s
+  lbPolicy: CLUSTER_PROVIDED
+  metadata: {}
+  name: endpointpicker_gateway-pool_gwtest_original_dst
+  originalDstLbConfig:
+    httpHeaderName: x-gateway-destination-endpoint
+    useHttpHeader: true
+  type: ORIGINAL_DST
 - connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
@@ -48,19 +61,6 @@ clusters:
   metadata: {}
   name: kube_gwtest_gateway-pool-endpoint-picker_9090
   type: EDS
-- circuitBreakers:
-    thresholds:
-    - maxConnections: 40000
-      maxPendingRequests: 40000
-      maxRequests: 40000
-  connectTimeout: 1000s
-  lbPolicy: CLUSTER_PROVIDED
-  metadata: {}
-  name: endpointpicker_gateway-pool_gwtest_original_dst
-  originalDstLbConfig:
-    httpHeaderName: x-gateway-destination-endpoint
-    useHttpHeader: true
-  type: ORIGINAL_DST
 listeners:
 - address:
     socketAddress:
@@ -97,22 +97,22 @@ listeners:
           configSource:
             ads: {}
             resourceApiVersion: V3
-          routeConfigName: http
+          routeConfigName: listener~8080
         statPrefix: http
         useRemoteAddress: true
-    name: http
-  name: http
+    name: listener~8080
+  name: listener~8080
 routes:
 - ignorePortInHostMatching: true
-  name: http
+  name: listener~8080
   virtualHosts:
   - domains:
     - www.example.com
-    name: http~www_example_com
+    name: listener~8080~www_example_com
     routes:
     - match:
         prefix: /
-      name: http~www_example_com-route-0-httproute-gateway-route-gwtest-0-0-matcher-0
+      name: listener~8080~www_example_com-route-0-httproute-gateway-route-gwtest-0-0-matcher-0
       route:
         cluster: endpointpicker_gateway-pool_gwtest_original_dst
       typedPerFilterConfig:

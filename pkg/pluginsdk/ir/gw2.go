@@ -110,7 +110,7 @@ type TcpIR struct {
 // not in a collection so doesn't need a krt interfaces.
 type GatewayIR struct {
 	Listeners    []ListenerIR
-	SourceObject *gwv1.Gateway
+	SourceObject *Gateway
 
 	AttachedPolicies     AttachedPolicies
 	AttachedHttpPolicies AttachedPolicies

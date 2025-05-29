@@ -103,7 +103,7 @@ func StartKgatewayWithConfig(
 ) error {
 	slog.Info("starting kgateway")
 
-	kubeClient, err := createKubeClient(restConfig)
+	kubeClient, err := CreateKubeClient(restConfig)
 	if err != nil {
 		return err
 	}
@@ -167,7 +167,7 @@ func setupLogging(levelStr string) {
 	klog.SetLogger(klogLogger)
 }
 
-func createKubeClient(restConfig *rest.Config) (istiokube.Client, error) {
+func CreateKubeClient(restConfig *rest.Config) (istiokube.Client, error) {
 	restCfg := istiokube.NewClientConfigForRestConfig(restConfig)
 	client, err := istiokube.NewClient(restCfg, "")
 	if err != nil {
