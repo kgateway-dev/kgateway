@@ -7,6 +7,7 @@ import (
 	clusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	preserve_case_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/http/header_formatters/preserve_case/v3"
+	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoy_upstreams_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -41,6 +42,7 @@ type BackendConfigPolicyIR struct {
 	tcpKeepalive                  *corev3.TcpKeepalive
 	commonHttpProtocolOptions     *corev3.HttpProtocolOptions
 	http1ProtocolOptions          *corev3.Http1ProtocolOptions
+	sslConfig                     *envoyauth.UpstreamTlsContext
 }
 
 var logger = logging.New("backendconfigpolicy")
@@ -132,7 +134,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 			Name:      b.Name,
 		}
 
-		policyIR, err := translate(b)
+		policyIR, err := translate(commoncol, krtctx, b)
 		errs := []error{}
 		if err != nil {
 			errs = append(errs, err)
@@ -197,7 +199,7 @@ func processBackend(_ context.Context, polir ir.PolicyIR, _ ir.BackendObjectIR, 
 	}
 }
 
-func translate(pol *v1alpha1.BackendConfigPolicy) (*BackendConfigPolicyIR, error) {
+func translate(commoncol *common.CommonCollections, krtctx krt.HandlerContext, pol *v1alpha1.BackendConfigPolicy) (*BackendConfigPolicyIR, error) {
 	ir := &BackendConfigPolicyIR{
 		ct: pol.CreationTimestamp.Time,
 	}
@@ -222,6 +224,14 @@ func translate(pol *v1alpha1.BackendConfigPolicy) (*BackendConfigPolicyIR, error
 			return nil, err
 		}
 		ir.http1ProtocolOptions = http1ProtocolOptions
+	}
+
+	if pol.Spec.SSLConfig != nil {
+		sslConfig, err := translateSSLConfig(NewDefaultSecretGetter(commoncol.Secrets, krtctx), pol.Spec.SSLConfig, pol.Namespace)
+		if err != nil {
+			return nil, err
+		}
+		ir.sslConfig = sslConfig
 	}
 
 	return ir, nil
