@@ -68,6 +68,10 @@ type TrafficPolicySpec struct {
 	// This controls the rate at which requests are allowed to be processed.
 	// +optional
 	RateLimit *RateLimit `json:"rateLimit,omitempty"`
+
+	// Csrf specifies the Cross-Site Request Forgery (CSRF) policy for this traffic policy.
+	// +optional
+	Csrf *CsrfPolicy `json:"csrf,omitempty"`
 }
 
 // TransformationPolicy config is used to modify envoy behavior at a route level.
@@ -332,4 +336,25 @@ type RateLimitDescriptorEntryGeneric struct {
 	// Value is the static value for this descriptor entry.
 	// +required
 	Value string `json:"value"`
+}
+
+// CsrfPolicy can be used to set percent of requests for which the CSRF filter is enabled,
+// enable shadow-only mode where policies will be evaluated and tracked, but not enforced and
+// add additional source origins that will be allowed in addition to the destination origin.
+type CsrfPolicy struct {
+	// Specifies the percentage of requests for which the CSRF filter is enabled.
+	// If both PercentageEnabled and PercentageShadowed are set, the PercentageEnabled flag will take precedence.
+	// +required
+	PercentageEnabled *uint32 `json:"percentageEnabled,omitempty"`
+
+	// Specifies that CSRF policies will be evaluated and tracked, but not enforced.
+	// This is intended to be used when PercentageEnabled is 0 and will be ignored otherwise.
+	// If both PercentageEnabled and PercentageShadowed are set, the PercentageEnabled flag will take precedence.
+	// +optional
+	PercentageShadowed *uint32 `json:"percentageShadowed,omitempty"`
+
+	// Specifies additional source origins that will be allowed in addition to the destination origin.
+	// Only exact matches are supported.
+	// +optional
+	AdditionalOrigins []string `json:"additionalOrigins,omitempty"`
 }

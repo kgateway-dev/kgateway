@@ -273,6 +273,21 @@ spec:
                     - CHAT_STREAMING
                     type: string
                 type: object
+              csrf:
+                properties:
+                  additionalOrigins:
+                    items:
+                      type: string
+                    type: array
+                  percentageEnabled:
+                    format: int32
+                    type: integer
+                  percentageShadowed:
+                    format: int32
+                    type: integer
+                required:
+                - percentageEnabled
+                type: object
               extAuth:
                 properties:
                   contextExtensions:

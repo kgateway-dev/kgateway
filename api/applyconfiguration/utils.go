@@ -63,6 +63,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.CELFilterApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("CommonHttpProtocolOptions"):
 		return &apiv1alpha1.CommonHttpProtocolOptionsApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("CsrfPolicy"):
+		return &apiv1alpha1.CsrfPolicyApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("CustomLabel"):
 		return &apiv1alpha1.CustomLabelApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("CustomResponse"):

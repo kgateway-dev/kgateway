@@ -408,6 +408,21 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: maxStreamDuration
       type:
         namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Duration
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.CsrfPolicy
+  map:
+    fields:
+    - name: additionalOrigins
+      type:
+        list:
+          elementType:
+            scalar: string
+          elementRelationship: atomic
+    - name: percentageEnabled
+      type:
+        scalar: numeric
+    - name: percentageShadowed
+      type:
+        scalar: numeric
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.CustomLabel
   map:
     fields:
@@ -1454,6 +1469,9 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: ai
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AIPolicy
+    - name: csrf
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.CsrfPolicy
     - name: extAuth
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtAuthPolicy

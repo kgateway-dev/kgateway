@@ -13,12 +13,15 @@ import (
 	ratelimitv3 "github.com/envoyproxy/go-control-plane/envoy/config/ratelimit/v3"
 	routev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	exteniondynamicmodulev3 "github.com/envoyproxy/go-control-plane/envoy/extensions/dynamic_modules/v3"
+	envoy_csrf_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/csrf/v3"
 	dynamicmodulesv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/dynamic_modules/v3"
 	envoy_ext_authz_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_authz/v3"
 	envoy_ext_proc_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_proc/v3"
 	localratelimitv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/local_ratelimit/v3"
 	ratev3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ratelimit/v3"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	envoy_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
+	envoy_type_v3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/durationpb"
@@ -63,6 +66,7 @@ const (
 	localRateLimitFilterNamePrefix              = "ratelimit/local"
 	localRateLimitStatPrefix                    = "http_local_rate_limiter"
 	rateLimitFilterNamePrefix                   = "ratelimit"
+	csrfExtensionFilterName                     = "envoy.filters.http.csrf"
 )
 
 var (
@@ -137,6 +141,7 @@ type trafficPolicySpecIr struct {
 	extAuth                    *extAuthIR
 	localRateLimit             *localratelimitv3.LocalRateLimit
 	rateLimit                  *RateLimitIR
+	csrf                       *envoy_csrf_v3.CsrfPolicy
 }
 
 func (d *TrafficPolicy) CreationTime() time.Time {
@@ -191,6 +196,10 @@ func (d *TrafficPolicy) Equals(in any) bool {
 	}
 
 	if !d.spec.rateLimit.Equals(d2.spec.rateLimit) {
+		return false
+	}
+
+	if !proto.Equal(d.spec.csrf, d2.spec.csrf) {
 		return false
 	}
 
@@ -290,6 +299,7 @@ type trafficPolicyPluginGwPass struct {
 	extAuthPerProvider    ProviderNeededMap
 	extProcPerProvider    ProviderNeededMap
 	rateLimitPerProvider  ProviderNeededMap
+	csrfInChain           map[string]*envoy_csrf_v3.CsrfPolicy
 }
 
 func (p *trafficPolicyPluginGwPass) ApplyHCM(ctx context.Context, pCtx *ir.HcmContext, out *envoyhttp.HttpConnectionManager) error {
@@ -638,6 +648,8 @@ func (p *trafficPolicyPluginGwPass) handlePolicies(fcn string, typedFilterConfig
 	// Apply rate limit configuration if present
 	p.handleRateLimit(fcn, typedFilterConfig, spec.rateLimit)
 	p.handleLocalRateLimit(fcn, typedFilterConfig, spec.localRateLimit)
+	// Apply CSRF configuration if present
+	p.handleCsrf(fcn, typedFilterConfig, spec.csrf)
 }
 
 // handleRateLimit adds rate limit configurations to routes
@@ -859,6 +871,14 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.Filt
 		filters = append(filters, stagedRateLimitFilter)
 	}
 
+	// Add global CSRF http filter
+	if p.csrfInChain[fcc.FilterChainName] != nil {
+		filter := plugins.MustNewStagedFilter(csrfExtensionFilterName,
+			p.csrfInChain[fcc.FilterChainName],
+			plugins.BeforeStage(plugins.AuthZStage))
+		filters = append(filters, filter)
+	}
+
 	if len(filters) == 0 {
 		return nil, nil
 	}
@@ -992,6 +1012,11 @@ func MergeTrafficPolicies(
 		p1.spec.rateLimit = p2.spec.rateLimit
 		mergeOrigins["rateLimit"] = p2Ref
 	}
+	// Handle CSRF policy merging
+	if policy.IsMergeable(p1.spec.csrf, p2.spec.csrf, mergeOpts) {
+		p1.spec.csrf = p2.spec.csrf
+		mergeOrigins["csrf"] = p2Ref
+	}
 	return mergeOrigins
 }
 
@@ -1061,6 +1086,12 @@ func (b *TrafficPolicyBuilder) Translate(
 	// Apply global rate limit specific translation
 	errs := b.rateLimitForSpec(krtctx, policyCR, &outSpec)
 	errors = append(errors, errs...)
+
+	// Apply CSRF specific translation
+	err = csrfForSpec(policyCR.Spec, &outSpec)
+	if err != nil {
+		errors = append(errors, err)
+	}
 
 	for _, err := range errors {
 		logger.Error("error translating gateway extension", "namespace", policyCR.GetNamespace(), "name", policyCR.GetName(), "error", err)
@@ -1210,5 +1241,76 @@ func (b *TrafficPolicyBuilder) rateLimitForSpec(
 			},
 		},
 	}
+	return nil
+}
+
+// handleCsrf adds CSRF configuration to routes
+func (p *trafficPolicyPluginGwPass) handleCsrf(fcn string, typedFilterConfig *ir.TypedFilterConfigMap, csrf *envoy_csrf_v3.CsrfPolicy) {
+	if csrf == nil {
+		return
+	}
+	typedFilterConfig.AddTypedConfig(csrfExtensionFilterName, csrf)
+
+	// Add a filter to the chain. When having a csrf for a route we need to also have a
+	// globally disabled csrf filter in the chain otherwise it will be ignored.
+	// If there is also csrf for the listener, it will not override this one.
+	if p.csrfInChain == nil {
+		p.csrfInChain = make(map[string]*envoy_csrf_v3.CsrfPolicy)
+	}
+	if _, ok := p.csrfInChain[fcn]; !ok {
+		p.csrfInChain[fcn] = &envoy_csrf_v3.CsrfPolicy{
+			FilterEnabled: &envoy_core_v3.RuntimeFractionalPercent{
+				DefaultValue: &envoy_type_v3.FractionalPercent{
+					Numerator:   0,
+					Denominator: envoy_type_v3.FractionalPercent_HUNDRED,
+				},
+			},
+		}
+	}
+}
+
+// csrfForSpec translates the CSRF spec into and onto the IR policy
+func csrfForSpec(spec v1alpha1.TrafficPolicySpec, out *trafficPolicySpecIr) error {
+	if spec.Csrf == nil {
+		return nil
+	}
+
+	csrfPolicy := &envoy_csrf_v3.CsrfPolicy{}
+
+	// Set filter enabled percentage
+	if spec.Csrf.PercentageEnabled != nil {
+		csrfPolicy.FilterEnabled = &envoy_core_v3.RuntimeFractionalPercent{
+			DefaultValue: &envoy_type_v3.FractionalPercent{
+				Numerator:   *spec.Csrf.PercentageEnabled,
+				Denominator: envoy_type_v3.FractionalPercent_HUNDRED,
+			},
+			RuntimeKey: "csrf.percentage_enabled",
+		}
+	}
+
+	// Set shadow enabled percentage if specified
+	if spec.Csrf.PercentageShadowed != nil {
+		csrfPolicy.ShadowEnabled = &envoy_core_v3.RuntimeFractionalPercent{
+			DefaultValue: &envoy_type_v3.FractionalPercent{
+				Numerator:   *spec.Csrf.PercentageShadowed,
+				Denominator: envoy_type_v3.FractionalPercent_HUNDRED,
+			},
+			RuntimeKey: "csrf.percentage_shadowed",
+		}
+	}
+
+	// Add additional origins if specified
+	if len(spec.Csrf.AdditionalOrigins) > 0 {
+		csrfPolicy.AdditionalOrigins = make([]*envoy_matcher_v3.StringMatcher, len(spec.Csrf.AdditionalOrigins))
+		for i, origin := range spec.Csrf.AdditionalOrigins {
+			csrfPolicy.GetAdditionalOrigins()[i] = &envoy_matcher_v3.StringMatcher{
+				MatchPattern: &envoy_matcher_v3.StringMatcher_Exact{
+					Exact: origin,
+				},
+			}
+		}
+	}
+
+	out.csrf = csrfPolicy
 	return nil
 }
