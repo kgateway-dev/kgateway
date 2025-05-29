@@ -126,11 +126,15 @@ func (c BackendObjectIR) ResourceName() string {
 }
 
 func BackendResourceName(objSource ObjectSource, port int32, extraKey string) string {
-	key := fmt.Sprintf("%s:%d", objSource.ResourceName(), port)
+	var sb strings.Builder
+	sb.WriteString(objSource.ResourceName())
+	sb.WriteString(fmt.Sprintf(":%d", port))
+
 	if extraKey != "" {
-		key += extraKey
+		sb.WriteRune('_')
+		sb.WriteString(extraKey)
 	}
-	return key
+	return sb.String()
 }
 
 func (c BackendObjectIR) Equals(in BackendObjectIR) bool {
