@@ -214,42 +214,16 @@ func (c *Client) GetStaticClusters(ctx context.Context) (map[string]*clusterv3.C
 	return GetStaticClustersByName(configDump)
 }
 
-// findDynamicActiveClusters finds the dynamic active clusters in the config dump
-func (c *Client) FindDynamicActiveClusters(ctx context.Context) ([]*clusterv3.Cluster, error) {
-	dump, err := c.GetConfigDump(ctx, nil)
+// GetDynamicClusters returns the map of dynamic clusters available on a ConfigDump, indexed by their name
+func (c *Client) GetDynamicClusters(ctx context.Context) (map[string]*clusterv3.Cluster, error) {
+	configDump, err := c.GetConfigDump(ctx, map[string]string{
+		"resource": "dynamic_active_clusters",
+	})
 	if err != nil {
 		return nil, err
 	}
-	clusters := []*clusterv3.Cluster{}
 
-	var found []*adminv3.ClustersConfigDump_DynamicCluster
-	for _, cfg := range dump.Configs {
-		if cfg.TypeUrl == "type.googleapis.com/envoy.admin.v3.ClustersConfigDump" {
-			clusterConfigDump := &adminv3.ClustersConfigDump{}
-			err := cfg.UnmarshalTo(clusterConfigDump)
-			if err != nil {
-				return nil, err
-			}
-
-			found = clusterConfigDump.DynamicActiveClusters
-		}
-	}
-
-	if found == nil {
-		return clusters, nil
-	}
-
-	for _, clusterDump := range found {
-		cluster := clusterv3.Cluster{}
-		err := clusterDump.Cluster.UnmarshalTo(&cluster)
-		if err != nil {
-			return nil, err
-		}
-
-		clusters = append(clusters, &cluster)
-	}
-
-	return clusters, nil
+	return GetDynamicClustersByName(configDump)
 }
 
 // ModifyRuntimeConfiguration passes the queryParameters to the runtime_modify endpoint

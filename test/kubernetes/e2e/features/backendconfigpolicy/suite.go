@@ -22,7 +22,6 @@ import (
 
 var _ e2e.NewSuiteFunc = NewTestingSuite
 
-// testingSuite is a suite of basic routing / "happy path" tests
 type testingSuite struct {
 	suite.Suite
 
@@ -40,7 +39,7 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 	}
 }
 
-func (s *testingSuite) TestGatewayWithRoute() {
+func (s *testingSuite) TestBackendConfigPolicy() {
 	manifests := []string{
 		testdefaults.CurlPodManifest,
 		setupManifest,
@@ -93,29 +92,27 @@ func (s *testingSuite) TestGatewayWithRoute() {
 
 	// envoy config should reflect the backend config policy
 	s.testInstallation.Assertions.AssertEnvoyAdminApi(s.ctx, proxyObjectMeta, func(ctx context.Context, adminClient *admincli.Client) {
-		clusters, err := adminClient.FindDynamicActiveClusters(ctx)
+		clusters, err := adminClient.GetDynamicClusters(ctx)
 		s.Require().NoError(err)
 		s.Require().NotNil(clusters)
 		s.Require().NotEmpty(clusters)
 
-		found := false
-		for _, cluster := range clusters {
-			if cluster.Name == "kube_default_example-svc_8080" {
-				found = true
-				s.Assert().Equal(uint32(1024), cluster.PerConnectionBufferLimitBytes.Value)
-				s.Assert().Equal(int64(5), cluster.ConnectTimeout.Seconds)
-				cfg, ok := cluster.GetTypedExtensionProtocolOptions()["envoy.extensions.upstreams.http.v3.HttpProtocolOptions"]
-				s.Assert().True(ok)
-				s.Assert().NotNil(cfg)
-				http2ProtocolOptions := &envoy_upstreams_v3.HttpProtocolOptions{}
-				err := anypb.UnmarshalTo(cfg, http2ProtocolOptions, proto.UnmarshalOptions{})
-				s.Assert().NoError(err)
-				s.Assert().Equal(int64(10), http2ProtocolOptions.CommonHttpProtocolOptions.IdleTimeout.Seconds)
-				s.Assert().Equal(uint32(15), http2ProtocolOptions.CommonHttpProtocolOptions.MaxHeadersCount.Value)
-				s.Assert().Equal(int64(30), http2ProtocolOptions.CommonHttpProtocolOptions.MaxStreamDuration.Seconds)
-				s.Assert().Equal(uint32(100), http2ProtocolOptions.CommonHttpProtocolOptions.MaxRequestsPerConnection.Value)
-			}
-		}
-		s.Assert().True(found, "Expected to find cluster kube_default_example-svc_8080")
+		cluster, ok := clusters["kube_default_example-svc_8080"]
+		s.Assert().True(ok)
+		s.Assert().NotNil(cluster)
+		s.T().Logf("cluster: %+v", cluster)
+
+		s.Assert().Equal(uint32(1024), cluster.PerConnectionBufferLimitBytes.Value)
+		s.Assert().Equal(int64(5), cluster.ConnectTimeout.Seconds)
+		cfg, ok := cluster.GetTypedExtensionProtocolOptions()["envoy.extensions.upstreams.http.v3.HttpProtocolOptions"]
+		s.Assert().True(ok)
+		s.Assert().NotNil(cfg)
+		http2ProtocolOptions := &envoy_upstreams_v3.HttpProtocolOptions{}
+		err = anypb.UnmarshalTo(cfg, http2ProtocolOptions, proto.UnmarshalOptions{})
+		s.Assert().NoError(err)
+		s.Assert().Equal(int64(10), http2ProtocolOptions.CommonHttpProtocolOptions.IdleTimeout.Seconds)
+		s.Assert().Equal(uint32(15), http2ProtocolOptions.CommonHttpProtocolOptions.MaxHeadersCount.Value)
+		s.Assert().Equal(int64(30), http2ProtocolOptions.CommonHttpProtocolOptions.MaxStreamDuration.Seconds)
+		s.Assert().Equal(uint32(100), http2ProtocolOptions.CommonHttpProtocolOptions.MaxRequestsPerConnection.Value)
 	})
 }
