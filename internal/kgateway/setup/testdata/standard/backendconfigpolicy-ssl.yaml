@@ -53,7 +53,7 @@ data:
 apiVersion: discovery.k8s.io/v1
 kind: EndpointSlice
 metadata:
-  name: reviews-slice
+  name: httpbin-slice
   namespace: gwtest
   labels:
     kubernetes.io/service-name: httpbin
@@ -78,7 +78,7 @@ ports:
 kind: BackendConfigPolicy
 apiVersion: gateway.kgateway.dev/v1alpha1
 metadata:
-  name: httpbin-policy
+  name: httpbin-policy-ssl
   namespace: gwtest
 spec:
   targetRefs:
