@@ -14,7 +14,7 @@ type Settings struct {
 	DnsLookupFamily string `split_words:"true" default:"V4_PREFERRED"`
 
 	// Controls the listener bind address. Can be either V4 or V6
-	ListenerBindIpv6 bool `split_words:"true" default:"false"`
+	ListenerBindIpv6 bool `split_words:"true" default:"true"`
 
 	EnableIstioIntegration bool `split_words:"true"`
 	EnableIstioAutoMtls    bool `split_words:"true"`
