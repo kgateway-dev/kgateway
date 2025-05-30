@@ -35,6 +35,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	clusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/registry"
@@ -290,7 +291,6 @@ type ActualTestResult struct {
 }
 
 func CompareProxy(expectedFile string, actualProxy *irtranslator.TranslationResult) (string, error) {
-
 	expectedProxy, err := ReadProxyFromFile(expectedFile)
 	if err != nil {
 		return "", err

@@ -50,6 +50,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.DirectResponseSpec":                        schema_kgateway_v2_api_v1alpha1_DirectResponseSpec(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.DirectResponseStatus":                      schema_kgateway_v2_api_v1alpha1_DirectResponseStatus(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.DurationFilter":                            schema_kgateway_v2_api_v1alpha1_DurationFilter(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.DynamicForwardProxyBackend":                schema_kgateway_v2_api_v1alpha1_DynamicForwardProxyBackend(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.EnvoyBootstrap":                            schema_kgateway_v2_api_v1alpha1_EnvoyBootstrap(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.EnvoyContainer":                            schema_kgateway_v2_api_v1alpha1_EnvoyContainer(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtAuthPolicy":                             schema_kgateway_v2_api_v1alpha1_ExtAuthPolicy(ref),

@@ -283,7 +283,7 @@ func processBackend(ctx context.Context, in ir.BackendObjectIR, out *envoy_confi
 		}
 	case v1alpha1.BackendTypeDynamicForwardProxy:
 		if err := processDynamicForwardProxy(ctx, spec.DynamicForwardProxy, out); err != nil {
-			log.Error("failed to process dynamic forward proxy backend", "error", err)
+			logger.Error("failed to process dynamic forward proxy backend", "error", err)
 		}
 	}
 	return nil

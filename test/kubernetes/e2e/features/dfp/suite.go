@@ -92,7 +92,6 @@ func (s *testingSuite) TearDownSuite() {
 // TestExtAuthPolicy tests the basic ExtAuth functionality with header-based allow/deny
 // Checks for gateay level auth with route level opt out
 func (s *testingSuite) TestDynamicForwardProxyBackend() {
-
 	// Wait for pods to be running
 	s.ensureBasicRunning()
 
