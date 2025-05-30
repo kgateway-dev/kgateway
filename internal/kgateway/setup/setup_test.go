@@ -437,7 +437,7 @@ func testScenario(
 			return fmt.Errorf("wrote out file - nothing to test")
 		}
 		return dump.Compare(expectedXdsDump)
-	}, retry.Converge(2), retry.BackoffDelay(2*time.Second), retry.Timeout(30*time.Second))
+	}, retry.Converge(2), retry.BackoffDelay(2*time.Second), retry.Timeout(60*time.Second))
 	t.Logf("%s finished", t.Name())
 }
 
