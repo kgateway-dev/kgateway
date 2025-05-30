@@ -56,8 +56,8 @@ func (h *httpRouteConfigurationTranslator) ComputeRouteConfiguration(ctx context
 			// TODO: user error - they attached a non http policy
 			continue
 		}
+		reportPolicyAcceptanceStatus(h.reporter, h.listener.PolicyAncestorRef, pols...)
 		for _, pol := range mergePolicies(pass, pols) {
-			reportPolicyAcceptanceStatus(h.reporter, h.listener.PolicyAncestorRef, pols...)
 			pass.ApplyRouteConfigPlugin(ctx, &ir.RouteConfigContext{
 				FilterChainName:   h.fc.FilterChainName,
 				TypedFilterConfig: typedPerFilterConfigRoute,
@@ -159,7 +159,16 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(ctx context.Context,
 	}
 
 	// apply typed per filter config from translating route action and route plugins
-	out.TypedPerFilterConfig = toPerFilterConfigMap(typedPerFilterConfigRoute)
+	typedPerFilterConfig := toPerFilterConfigMap(typedPerFilterConfigRoute)
+	if out.GetTypedPerFilterConfig() == nil {
+		out.TypedPerFilterConfig = typedPerFilterConfig
+	} else {
+		for k, v := range typedPerFilterConfig {
+			if _, exists := out.GetTypedPerFilterConfig()[k]; !exists {
+				out.GetTypedPerFilterConfig()[k] = v
+			}
+		}
+	}
 
 	if err == nil && out.GetAction() == nil {
 		if in.Delegates {
@@ -216,8 +225,8 @@ func (h *httpRouteConfigurationTranslator) runVhostPlugins(ctx context.Context, 
 			// TODO: user error - they attached a non http policy
 			continue
 		}
+		reportPolicyAcceptanceStatus(h.reporter, h.listener.PolicyAncestorRef, pols...)
 		for _, pol := range mergePolicies(pass, pols) {
-			reportPolicyAcceptanceStatus(h.reporter, h.listener.PolicyAncestorRef, pols...)
 			pctx := &ir.VirtualHostContext{
 				Policy:            pol.PolicyIr,
 				TypedFilterConfig: typedPerFilterConfig,
@@ -321,8 +330,8 @@ func (h *httpRouteConfigurationTranslator) runBackendPolicies(ctx context.Contex
 			// TODO: should never happen, log error and report condition
 			continue
 		}
+		reportPolicyAcceptanceStatus(h.reporter, h.listener.PolicyAncestorRef, pols...)
 		for _, pol := range mergePolicies(pass, pols) {
-			reportPolicyAcceptanceStatus(h.reporter, h.listener.PolicyAncestorRef, pol)
 			// Policy on extension ref
 			err := pass.ApplyForRouteBackend(ctx, pol.PolicyIr, pCtx)
 			if err != nil {

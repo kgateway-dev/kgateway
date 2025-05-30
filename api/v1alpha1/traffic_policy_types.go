@@ -68,6 +68,10 @@ type TrafficPolicySpec struct {
 	// This controls the rate at which requests are allowed to be processed.
 	// +optional
 	RateLimit *RateLimit `json:"rateLimit,omitempty"`
+
+	// Cors specifies the CORS configuration for the policy.
+	// +optional
+	Cors *CorsPolicy `json:"cors,omitempty"`
 }
 
 // TransformationPolicy config is used to modify envoy behavior at a route level.
@@ -332,4 +336,9 @@ type RateLimitDescriptorEntryGeneric struct {
 	// Value is the static value for this descriptor entry.
 	// +required
 	Value string `json:"value"`
+}
+
+type CorsPolicy struct {
+	// +kubebuilder:pruning:PreserveUnknownFields
+	*gwv1.HTTPCORSFilter `json:",inline"`
 }

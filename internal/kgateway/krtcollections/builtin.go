@@ -8,6 +8,7 @@ import (
 	"time"
 
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/kube/krt"
@@ -17,14 +18,17 @@ import (
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	corsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/cors/v3"
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	envoytype "github.com/envoyproxy/go-control-plane/envoy/type/v3"
+	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	pluginsdkir "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
@@ -48,7 +52,8 @@ func (d *builtinPlugin) Equals(in any) bool {
 
 type builtinPluginGwPass struct {
 	ir.UnimplementedProxyTranslationPass
-	reporter reports.Reporter
+	reporter      reports.Reporter
+	hasCorsPolicy bool
 }
 
 func (p *builtinPluginGwPass) ApplyForBackend(ctx context.Context, pCtx *ir.RouteBackendContext, in ir.HttpBackend, out *envoy_config_route_v3.Route) error {
@@ -102,6 +107,8 @@ func convert(kctx krt.HandlerContext, f gwv1.HTTPRouteFilter, fromgk schema.Grou
 		return convertRequestRedirect(kctx, f.RequestRedirect)
 	case gwv1.HTTPRouteFilterURLRewrite:
 		return convertURLRewrite(kctx, f.URLRewrite)
+	case gwv1.HTTPRouteFilterCORS:
+		return convertCORS(kctx, f.CORS)
 	}
 	return nil
 }
@@ -477,6 +484,24 @@ func convertMirror(kctx krt.HandlerContext, f *gwv1.HTTPRequestMirrorFilter, fro
 	}
 }
 
+func convertCORS(_ krt.HandlerContext, f *gwv1.HTTPCORSFilter) func(in ir.HttpRouteRuleMatchIR, outputRoute *envoy_config_route_v3.Route) error {
+	if f == nil {
+		return nil
+	}
+	return func(in ir.HttpRouteRuleMatchIR, outputRoute *envoy_config_route_v3.Route) error {
+		corsPolicyAny, err := utils.MessageToAny(ToEnvoyCorsPolicy(f))
+		if err != nil {
+			return fmt.Errorf("failed to convert CORS policy to Any: %w", err)
+		}
+
+		if outputRoute.GetTypedPerFilterConfig() == nil {
+			outputRoute.TypedPerFilterConfig = make(map[string]*anypb.Any)
+		}
+		outputRoute.GetTypedPerFilterConfig()[envoy_wellknown.CORS] = corsPolicyAny
+		return nil
+	}
+}
+
 func getFractionPercent(f gwv1.HTTPRequestMirrorFilter) *envoy_config_core_v3.RuntimeFractionalPercent {
 	if f.Percent != nil {
 		return &envoy_config_core_v3.RuntimeFractionalPercent{
@@ -545,6 +570,10 @@ func (p *builtinPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.RouteC
 		}
 	}
 
+	if policy.spec.Type == gwv1.HTTPRouteFilterCORS {
+		p.hasCorsPolicy = true
+	}
+
 	return errs
 }
 
@@ -553,11 +582,30 @@ func (p *builtinPluginGwPass) ApplyForRouteBackend(
 	policy ir.PolicyIR,
 	pCtx *ir.RouteBackendContext,
 ) error {
+	inPolicy, ok := policy.(*builtinPlugin)
+	if !ok {
+		return nil
+	}
+	if inPolicy.spec.Type == gwv1.HTTPRouteFilterCORS {
+		pCtx.TypedFilterConfig[envoy_wellknown.CORS] = ToEnvoyCorsPolicy(inPolicy.spec.CORS)
+		p.hasCorsPolicy = true
+	}
 	return nil
 }
 
 func (p *builtinPluginGwPass) HttpFilters(ctx context.Context, fcc ir.FilterChainCommon) ([]plugins.StagedHttpFilter, error) {
-	return nil, nil
+	builtinStaged := []plugins.StagedHttpFilter{}
+
+	// If there is a cors policy for route rule or backendRef, add the cors http filter to the chain
+	if p.hasCorsPolicy {
+		stagedFilter, err := plugins.NewStagedFilter(envoy_wellknown.CORS, &corsv3.Cors{}, plugins.DuringStage(plugins.CorsStage))
+		if err != nil {
+			return nil, err
+		}
+		builtinStaged = append(builtinStaged, stagedFilter)
+	}
+
+	return builtinStaged, nil
 }
 
 func (p *builtinPluginGwPass) NetworkFilters(ctx context.Context) ([]plugins.StagedNetworkFilter, error) {
@@ -567,4 +615,50 @@ func (p *builtinPluginGwPass) NetworkFilters(ctx context.Context) ([]plugins.Sta
 // called 1 time (per envoy proxy). replaces GeneratedResources
 func (p *builtinPluginGwPass) ResourcesToAdd(ctx context.Context) ir.Resources {
 	return ir.Resources{}
+}
+
+func ToEnvoyCorsPolicy(f *gwv1.HTTPCORSFilter) *corsv3.CorsPolicy {
+	if f == nil {
+		return nil
+	}
+	corsPolicy := &corsv3.CorsPolicy{}
+	if len(f.AllowOrigins) > 0 {
+		origins := make([]*envoy_type_matcher_v3.StringMatcher, len(f.AllowOrigins))
+		for i, origin := range f.AllowOrigins {
+			origins[i] = &envoy_type_matcher_v3.StringMatcher{
+				MatchPattern: &envoy_type_matcher_v3.StringMatcher_Exact{
+					Exact: string(origin),
+				},
+			}
+		}
+		corsPolicy.AllowOriginStringMatch = origins
+	}
+	if len(f.AllowMethods) > 0 {
+		methods := make([]string, len(f.AllowMethods))
+		for i, method := range f.AllowMethods {
+			methods[i] = string(method)
+		}
+		corsPolicy.AllowMethods = strings.Join(methods, ", ")
+	}
+	if len(f.AllowHeaders) > 0 {
+		headers := make([]string, len(f.AllowHeaders))
+		for i, header := range f.AllowHeaders {
+			headers[i] = string(header)
+		}
+		corsPolicy.AllowHeaders = strings.Join(headers, ", ")
+	}
+	if f.AllowCredentials {
+		corsPolicy.AllowCredentials = &wrapperspb.BoolValue{Value: bool(f.AllowCredentials)}
+	}
+	if len(f.ExposeHeaders) > 0 {
+		headers := make([]string, len(f.ExposeHeaders))
+		for i, header := range f.ExposeHeaders {
+			headers[i] = string(header)
+		}
+		corsPolicy.ExposeHeaders = strings.Join(headers, ", ")
+	}
+	if f.MaxAge != 0 {
+		corsPolicy.MaxAge = fmt.Sprintf("%d", f.MaxAge)
+	}
+	return corsPolicy
 }
