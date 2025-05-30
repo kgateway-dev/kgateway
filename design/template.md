@@ -36,7 +36,7 @@ with suggested changes.
 One EP corresponds to one "feature" or "enhancement" for its whole lifecycle. Once a feature has become
 "implemented", major changes should get new EPs.
 -->
-# EP-[ID]: [Feature/Enhancement Name] 
+# EP-[ID]: [Feature/Enhancement Name]
 
 <!--
 This is the title of your EP. Keep it short, simple, and descriptive. A good
@@ -56,10 +56,10 @@ Ensure the TOC is wrapped with
 tags, and then generate with `hack/update-toc.sh`.
 -->
 
-## Background 
+## Background
 
-<!-- 
-Provide a brief overview of the feature/enhancement, including relevant background information, origin, and sponsors. 
+<!--
+Provide a brief overview of the feature/enhancement, including relevant background information, origin, and sponsors.
 Highlight the primary purpose and how it fits within the broader ecosystem.
 
 Include Motivation, concise overview of goals, challenges, and trade-offs.
@@ -77,7 +77,7 @@ demonstrate the interest in a EP within the wider Kubernetes community.
 [experience reports]: https://github.com/golang/go/wiki/ExperienceReports
 -->
 
-### Goals
+## Goals
 
 <!--
 
@@ -89,7 +89,7 @@ the proposed feature.
 -->
 
 
-### Non-Goals 
+## Non-Goals
 
 <!--
 What is out of scope for this EP? Listing non-goals helps to focus discussion
@@ -132,7 +132,7 @@ Describe changes to status reporting or monitoring frameworks.
 Include any caveats or limitations in initial reporting.
 -->
 
-### Test Plan 
+### Test Plan
 
 <!--
     Define the testing strategy for the feature.
