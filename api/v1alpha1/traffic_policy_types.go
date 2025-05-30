@@ -69,6 +69,10 @@ type TrafficPolicySpec struct {
 	// +optional
 	RateLimit *RateLimit `json:"rateLimit,omitempty"`
 
+	// Cors specifies the CORS configuration for the policy.
+	// +optional
+	Cors *CorsPolicy `json:"cors,omitempty"`
+
 	// Csrf specifies the Cross-Site Request Forgery (CSRF) policy for this traffic policy.
 	// +optional
 	Csrf *CsrfPolicy `json:"csrf,omitempty"`
@@ -336,6 +340,11 @@ type RateLimitDescriptorEntryGeneric struct {
 	// Value is the static value for this descriptor entry.
 	// +required
 	Value string `json:"value"`
+}
+
+type CorsPolicy struct {
+	// +kubebuilder:pruning:PreserveUnknownFields
+	*gwv1.HTTPCORSFilter `json:",inline"`
 }
 
 // CsrfPolicy can be used to set percent of requests for which the CSRF filter is enabled,

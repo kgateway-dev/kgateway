@@ -6,6 +6,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/backends"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/backendtls"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/basicrouting"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/cors"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/csrf"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/deployer"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/extauth"
@@ -51,6 +52,7 @@ func KubeGatewaySuiteRunner() e2e.SuiteRunner {
 	kubeGatewaySuiteRunner.Register("LocalRateLimit", local_rate_limit.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("GlobalRateLimit", rate_limit.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("PolicySelector", policyselector.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("Cors", cors.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("CSRF", csrf.NewTestingSuite)
 
 	// kubeGatewaySuiteRunner.Register("HttpListenerOptions", http_listener_options.NewTestingSuite)

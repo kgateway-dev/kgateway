@@ -1,0 +1,18 @@
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: gw-cors-policy
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: gw
+  cors:
+    allowOrigins:
+      - https://notexample.com
+    allowMethods:
+      - GET
+      - POST
+    allowHeaders:
+      - Content-Type
+      - Authorization

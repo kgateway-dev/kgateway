@@ -351,6 +351,10 @@ func sortHttpFilters(filters plugins.StagedHttpFilterList) []*envoyhttp.HttpFilt
 	sort.Sort(filters)
 	var sortedFilters []*envoyhttp.HttpFilter
 	for _, filter := range filters {
+		if len(sortedFilters) > 0 && proto.Equal(sortedFilters[len(sortedFilters)-1], filter.Filter) {
+			// skip repeated equal filters
+			continue
+		}
 		sortedFilters = append(sortedFilters, filter.Filter)
 	}
 	return sortedFilters

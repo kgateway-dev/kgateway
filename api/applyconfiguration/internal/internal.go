@@ -408,6 +408,39 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: maxStreamDuration
       type:
         namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Duration
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.CorsPolicy
+  map:
+    fields:
+    - name: allowCredentials
+      type:
+        scalar: boolean
+    - name: allowHeaders
+      type:
+        list:
+          elementType:
+            scalar: string
+          elementRelationship: associative
+    - name: allowMethods
+      type:
+        list:
+          elementType:
+            scalar: string
+          elementRelationship: associative
+    - name: allowOrigins
+      type:
+        list:
+          elementType:
+            scalar: string
+          elementRelationship: associative
+    - name: exposeHeaders
+      type:
+        list:
+          elementType:
+            scalar: string
+          elementRelationship: associative
+    - name: maxAge
+      type:
+        scalar: numeric
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.CsrfPolicy
   map:
     fields:
@@ -1469,6 +1502,9 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: ai
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AIPolicy
+    - name: cors
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.CorsPolicy
     - name: csrf
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.CsrfPolicy

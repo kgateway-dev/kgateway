@@ -12,6 +12,7 @@ type TrafficPolicySpecApplyConfiguration struct {
 	ExtProc         *ExtProcPolicyApplyConfiguration                              `json:"extProc,omitempty"`
 	ExtAuth         *ExtAuthPolicyApplyConfiguration                              `json:"extAuth,omitempty"`
 	RateLimit       *RateLimitApplyConfiguration                                  `json:"rateLimit,omitempty"`
+	Cors            *CorsPolicyApplyConfiguration                                 `json:"cors,omitempty"`
 	Csrf            *CsrfPolicyApplyConfiguration                                 `json:"csrf,omitempty"`
 }
 
@@ -84,6 +85,14 @@ func (b *TrafficPolicySpecApplyConfiguration) WithExtAuth(value *ExtAuthPolicyAp
 // If called multiple times, the RateLimit field is set to the value of the last call.
 func (b *TrafficPolicySpecApplyConfiguration) WithRateLimit(value *RateLimitApplyConfiguration) *TrafficPolicySpecApplyConfiguration {
 	b.RateLimit = value
+	return b
+}
+
+// WithCors sets the Cors field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Cors field is set to the value of the last call.
+func (b *TrafficPolicySpecApplyConfiguration) WithCors(value *CorsPolicyApplyConfiguration) *TrafficPolicySpecApplyConfiguration {
+	b.Cors = value
 	return b
 }
 

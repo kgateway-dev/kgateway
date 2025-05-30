@@ -31,6 +31,7 @@ import (
 var (
 	ErrMissingReferenceGrant = errors.New("missing reference grant")
 	ErrUnknownBackendKind    = errors.New("unknown backend kind")
+	ErrPolicyNotFound        = errors.New("policy not found")
 )
 
 type NotFoundError struct {
@@ -1058,9 +1059,15 @@ func (h *RoutesIndex) getExtensionRefs(kctx krt.HandlerContext, ns string, r []g
 	}
 	for _, ext := range r {
 		// TODO: propagate error if we can't find the extension
-		gk, policy := h.resolveExtension(kctx, ns, ext)
+		gk, policy, errs := h.resolveExtension(kctx, ns, ext)
 		if policy != nil {
-			ret.Policies[gk] = append(ret.Policies[gk], ir.PolicyAtt{PolicyIr: policy /*direct attachment - no target ref*/})
+			ret.Policies[gk] = append(ret.Policies[gk], ir.PolicyAtt{
+				// direct attachment - no target ref
+				PolicyIr: policy,
+				Errors:   errs,
+			})
+		} else if len(errs) > 0 {
+			logger.Error("unresolved HTTPRouteFilter", "error", errors.Join(errs...))
 		}
 	}
 	return ret
@@ -1077,11 +1084,11 @@ func (h *RoutesIndex) getBuiltInRulePolicies(rule gwv1.HTTPRouteRule) ir.Attache
 	return ret
 }
 
-func (h *RoutesIndex) resolveExtension(kctx krt.HandlerContext, ns string, ext gwv1.HTTPRouteFilter) (schema.GroupKind, ir.PolicyIR) {
+func (h *RoutesIndex) resolveExtension(kctx krt.HandlerContext, ns string, ext gwv1.HTTPRouteFilter) (schema.GroupKind, ir.PolicyIR, []error) {
 	if ext.Type == gwv1.HTTPRouteFilterExtensionRef {
 		if ext.ExtensionRef == nil {
 			// TODO: report error!!
-			return schema.GroupKind{}, nil
+			return schema.GroupKind{}, nil, nil
 		}
 		ref := *ext.ExtensionRef
 		key := ir.ObjectSource{
@@ -1092,15 +1099,14 @@ func (h *RoutesIndex) resolveExtension(kctx krt.HandlerContext, ns string, ext g
 		}
 		policy := h.policies.fetchPolicy(kctx, key)
 		if policy == nil {
-			// TODO: report error!!
-			return schema.GroupKind{}, nil
+			return schema.GroupKind{}, nil, []error{ErrPolicyNotFound}
 		}
 
 		gk := schema.GroupKind{
 			Group: string(ref.Group),
 			Kind:  string(ref.Kind),
 		}
-		return gk, policy.PolicyIR
+		return gk, policy.PolicyIR, policy.Errors
 	}
 
 	fromGK := schema.GroupKind{
@@ -1108,7 +1114,8 @@ func (h *RoutesIndex) resolveExtension(kctx krt.HandlerContext, ns string, ext g
 		Kind:  "HTTPRoute",
 	}
 
-	return pluginsdkir.VirtualBuiltInGK, NewBuiltInIr(kctx, ext, fromGK, ns, h.refgrants, h.backends)
+	builtinIR := NewBuiltInIr(kctx, ext, fromGK, ns, h.refgrants, h.backends)
+	return pluginsdkir.VirtualBuiltInGK, builtinIR, nil
 }
 
 func toFromBackendRef(fromns string, ref gwv1.BackendObjectReference) ir.ObjectSource {

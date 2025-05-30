@@ -13,6 +13,7 @@ import (
 	ratelimitv3 "github.com/envoyproxy/go-control-plane/envoy/config/ratelimit/v3"
 	routev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	exteniondynamicmodulev3 "github.com/envoyproxy/go-control-plane/envoy/extensions/dynamic_modules/v3"
+	corsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/cors/v3"
 	envoy_csrf_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/csrf/v3"
 	dynamicmodulesv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/dynamic_modules/v3"
 	envoy_ext_authz_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_authz/v3"
@@ -22,6 +23,7 @@ import (
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoy_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	envoy_type_v3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
+	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/durationpb"
@@ -141,6 +143,7 @@ type trafficPolicySpecIr struct {
 	extAuth                    *extAuthIR
 	localRateLimit             *localratelimitv3.LocalRateLimit
 	rateLimit                  *RateLimitIR
+	cors                       *CorsIR
 	csrf                       *envoy_csrf_v3.CsrfPolicy
 }
 
@@ -196,6 +199,10 @@ func (d *TrafficPolicy) Equals(in any) bool {
 	}
 
 	if !d.spec.rateLimit.Equals(d2.spec.rateLimit) {
+		return false
+	}
+
+	if !d.spec.cors.Equals(d2.spec.cors) {
 		return false
 	}
 
@@ -299,6 +306,7 @@ type trafficPolicyPluginGwPass struct {
 	extAuthPerProvider    ProviderNeededMap
 	extProcPerProvider    ProviderNeededMap
 	rateLimitPerProvider  ProviderNeededMap
+	corsInChain           map[string]*corsv3.Cors
 	csrfInChain           map[string]*envoy_csrf_v3.CsrfPolicy
 }
 
@@ -648,6 +656,9 @@ func (p *trafficPolicyPluginGwPass) handlePolicies(fcn string, typedFilterConfig
 	// Apply rate limit configuration if present
 	p.handleRateLimit(fcn, typedFilterConfig, spec.rateLimit)
 	p.handleLocalRateLimit(fcn, typedFilterConfig, spec.localRateLimit)
+
+	// Apply CORS configuration if present
+	p.handleCors(fcn, typedFilterConfig, spec.cors)
 	// Apply CSRF configuration if present
 	p.handleCsrf(fcn, typedFilterConfig, spec.csrf)
 }
@@ -735,6 +746,25 @@ func (p *trafficPolicyPluginGwPass) handleExtProc(fcn string, pCtxTypedFilterCon
 	}
 
 	p.extProcPerProvider.Add(fcn, providerName, extProc.provider)
+}
+
+func (p *trafficPolicyPluginGwPass) handleCors(fcn string, pCtxTypedFilterConfig *ir.TypedFilterConfigMap, cors *CorsIR) {
+	if cors == nil || cors.corsConfig == nil {
+		return
+	}
+
+	// Adds the CorsPolicy to the typed_per_filter_config.
+	// Also requires Cors http_filter to be added to the filter chain.
+	pCtxTypedFilterConfig.AddTypedConfig(envoy_wellknown.CORS, cors.corsConfig)
+
+	// Add a filter to the chain. When having a cors policy for a route we need to also have a
+	// globally cors http filter in the chain otherwise it will be ignored.
+	if p.corsInChain == nil {
+		p.corsInChain = make(map[string]*corsv3.Cors)
+	}
+	if _, ok := p.corsInChain[fcn]; !ok {
+		p.corsInChain[fcn] = &corsv3.Cors{}
+	}
 }
 
 // called 1 time per listener
@@ -869,6 +899,15 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.Filt
 			plugins.DuringStage(plugins.RateLimitStage))
 
 		filters = append(filters, stagedRateLimitFilter)
+	}
+
+	// Add Cors filter to enable cors for the listener.
+	// Requires the cors policy to be set as typed_per_filter_config.
+	if p.corsInChain[fcc.FilterChainName] != nil {
+		filter := plugins.MustNewStagedFilter(envoy_wellknown.CORS,
+			p.corsInChain[fcc.FilterChainName],
+			plugins.DuringStage(plugins.CorsStage))
+		filters = append(filters, filter)
 	}
 
 	// Add global CSRF http filter
@@ -1012,6 +1051,12 @@ func MergeTrafficPolicies(
 		p1.spec.rateLimit = p2.spec.rateLimit
 		mergeOrigins["rateLimit"] = p2Ref
 	}
+	// Handle cors merging
+	if policy.IsMergeable(p1.spec.cors, p2.spec.cors, mergeOpts) {
+		p1.spec.cors = p2.spec.cors
+		mergeOrigins["cors"] = p2Ref
+	}
+
 	// Handle CSRF policy merging
 	if policy.IsMergeable(p1.spec.csrf, p2.spec.csrf, mergeOpts) {
 		p1.spec.csrf = p2.spec.csrf
@@ -1086,6 +1131,12 @@ func (b *TrafficPolicyBuilder) Translate(
 	// Apply global rate limit specific translation
 	errs := b.rateLimitForSpec(krtctx, policyCR, &outSpec)
 	errors = append(errors, errs...)
+
+	// Apply cors specific translation
+	err = corsForSpec(policyCR.Spec, &outSpec)
+	if err != nil {
+		errors = append(errors, err)
+	}
 
 	// Apply CSRF specific translation
 	err = csrfForSpec(policyCR.Spec, &outSpec)
