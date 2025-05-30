@@ -45,3 +45,32 @@ func convertToCluster(a *anypb.Any) (*clusterv3.Cluster, error) {
 	}
 	return &cluster, nil
 }
+
+// GetDynamicClustersByName returns a map of dynamic clusters, indexed by their name
+// If there are no dynamic clusters present, an empty map is returned
+// An error is returned if any conversion fails
+func GetDynamicClustersByName(configDump *adminv3.ConfigDump) (map[string]*clusterv3.Cluster, error) {
+	clustersByName := make(map[string]*clusterv3.Cluster, 10)
+	for _, c := range configDump.GetConfigs() {
+		dynamicCluster, err := convertToDynamicCluster(c)
+		if err != nil {
+			return nil, err
+		}
+		cluster, err := convertToCluster(dynamicCluster.GetCluster())
+		if err != nil {
+			return nil, err
+		}
+		clustersByName[cluster.GetName()] = cluster
+	}
+	return clustersByName, nil
+}
+
+func convertToDynamicCluster(a *anypb.Any) (*adminv3.ClustersConfigDump_DynamicCluster, error) {
+	var dynamicCluster adminv3.ClustersConfigDump_DynamicCluster
+	err := a.UnmarshalTo(&dynamicCluster)
+	if err != nil {
+		// We do not expect this to ever happen
+		return nil, err
+	}
+	return &dynamicCluster, nil
+}

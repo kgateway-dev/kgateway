@@ -214,6 +214,18 @@ func (c *Client) GetStaticClusters(ctx context.Context) (map[string]*clusterv3.C
 	return GetStaticClustersByName(configDump)
 }
 
+// GetDynamicClusters returns the map of dynamic clusters available on a ConfigDump, indexed by their name
+func (c *Client) GetDynamicClusters(ctx context.Context) (map[string]*clusterv3.Cluster, error) {
+	configDump, err := c.GetConfigDump(ctx, map[string]string{
+		"resource": "dynamic_active_clusters",
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return GetDynamicClustersByName(configDump)
+}
+
 // ModifyRuntimeConfiguration passes the queryParameters to the runtime_modify endpoint
 func (c *Client) ModifyRuntimeConfiguration(ctx context.Context, queryParameters map[string]string) error {
 	return c.RunCommand(ctx,
