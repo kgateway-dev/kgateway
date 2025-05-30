@@ -100,8 +100,6 @@ func (s *testingSuite) TestBackendConfigPolicy() {
 		cluster, ok := clusters["kube_default_example-svc_8080"]
 		s.Assert().True(ok)
 		s.Assert().NotNil(cluster)
-		s.T().Logf("cluster: %+v", cluster)
-
 		s.Assert().Equal(uint32(1024), cluster.PerConnectionBufferLimitBytes.Value)
 		s.Assert().Equal(int64(5), cluster.ConnectTimeout.Seconds)
 		cfg, ok := cluster.GetTypedExtensionProtocolOptions()["envoy.extensions.upstreams.http.v3.HttpProtocolOptions"]
