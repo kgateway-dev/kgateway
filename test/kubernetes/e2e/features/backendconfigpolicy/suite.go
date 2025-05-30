@@ -98,8 +98,10 @@ func (s *testingSuite) TestGatewayWithRoute() {
 		s.Require().NotNil(clusters)
 		s.Require().NotEmpty(clusters)
 
+		found := false
 		for _, cluster := range clusters {
 			if cluster.Name == "kube_default_example-svc_8080" {
+				found = true
 				s.Assert().Equal(uint32(1024), cluster.PerConnectionBufferLimitBytes.Value)
 				s.Assert().Equal(int64(5), cluster.ConnectTimeout.Seconds)
 				cfg, ok := cluster.GetTypedExtensionProtocolOptions()["envoy.extensions.upstreams.http.v3.HttpProtocolOptions"]
@@ -114,5 +116,6 @@ func (s *testingSuite) TestGatewayWithRoute() {
 				s.Assert().Equal(uint32(100), http2ProtocolOptions.CommonHttpProtocolOptions.MaxRequestsPerConnection.Value)
 			}
 		}
+		s.Assert().True(found, "Expected to find cluster kube_default_example-svc_8080")
 	})
 }
