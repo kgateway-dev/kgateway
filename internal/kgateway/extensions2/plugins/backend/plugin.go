@@ -6,10 +6,8 @@ import (
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_ext_proc_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_proc/v3"
-	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoywellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"istio.io/istio/pkg/config/schema/kubeclient"
@@ -314,26 +312,14 @@ type backendPlugin struct {
 	aiGatewayEnabled map[string]bool
 }
 
+var _ ir.ProxyTranslationPass = &backendPlugin{}
+
 func newPlug(ctx context.Context, tctx ir.GwTranslationCtx, reporter reports.Reporter) ir.ProxyTranslationPass {
 	return &backendPlugin{}
 }
 
 func (p *backendPlugin) Name() string {
 	return ExtensionName
-}
-
-func (p *backendPlugin) ApplyListenerPlugin(ctx context.Context, pCtx *ir.ListenerContext, out *envoy_config_listener_v3.Listener) {
-}
-
-func (p *backendPlugin) ApplyHCM(ctx context.Context, pCtx *ir.HcmContext, out *envoy_hcm.HttpConnectionManager) error { // no-op
-	return nil
-}
-
-func (p *backendPlugin) ApplyVhostPlugin(ctx context.Context, pCtx *ir.VirtualHostContext, out *envoy_config_route_v3.VirtualHost) {
-}
-
-func (p *backendPlugin) ApplyForRoute(ctx context.Context, pCtx *ir.RouteContext, outputRoute *envoy_config_route_v3.Route) error {
-	return nil
 }
 
 func (p *backendPlugin) ApplyForBackend(ctx context.Context, pCtx *ir.RouteBackendContext, in ir.HttpBackend, out *envoy_config_route_v3.Route) error {
@@ -365,14 +351,6 @@ func (p *backendPlugin) ApplyForBackend(ctx context.Context, pCtx *ir.RouteBacke
 	return nil
 }
 
-func (p *backendPlugin) ApplyForRouteBackend(
-	_ context.Context,
-	_ ir.PolicyIR,
-	_ *ir.RouteBackendContext,
-) error {
-	return nil
-}
-
 // called 1 time per listener
 // if a plugin emits new filters, they must be with a plugin unique name.
 // any filter returned from route config must be disabled, so it doesnt impact other routes.
@@ -388,14 +366,6 @@ func (p *backendPlugin) HttpFilters(ctx context.Context, fc ir.FilterChainCommon
 		result = append(result, aiFilters...)
 	}
 	return result, errors.Join(errs...)
-}
-
-func (p *backendPlugin) UpstreamHttpFilters(ctx context.Context, fcc ir.FilterChainCommon) ([]plugins.StagedUpstreamHttpFilter, error) {
-	return nil, nil
-}
-
-func (p *backendPlugin) NetworkFilters(ctx context.Context) ([]plugins.StagedNetworkFilter, error) {
-	return nil, nil
 }
 
 // called 1 time (per envoy proxy). replaces GeneratedResources

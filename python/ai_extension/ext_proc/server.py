@@ -106,7 +106,10 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
             "completion_tokens", "Completion tokens", labels, ai_stat_namespace
         )
         self._rate_limited_tokens_ctr = Counter(
-            "rate_limited_tokens", "Rate Limited tokens", labels, ai_stat_namespace
+            "rate_limited_tokens",
+            "Tokens count toward rate limiting",
+            labels,
+            ai_stat_namespace,
         )
 
         OtelTracer.init(tracing_config.tracer())
@@ -480,9 +483,13 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
                                 "Rejected by guardrails moderation",
                             )
 
-            # increment tokens
+            # currently we only count the prompt token for ratelimiting. So,
+            # this is only set here. If we change to count completion token as well
+            # will need to add those into rate_limited_tokens for stats purpose.
+            handler.rate_limited_tokens = tokens
             return external_processor_pb2.ProcessingResponse(
                 dynamic_metadata=struct_pb2.Struct(
+                    # increment tokens for rate limiting
                     fields={
                         "envoy.ratelimit": struct_pb2.Value(
                             struct_value=struct_pb2.Struct(
