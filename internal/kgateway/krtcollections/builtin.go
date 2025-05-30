@@ -210,7 +210,7 @@ func convertSessionPersistence(sessionPersistence *gwv1.SessionPersistence) *any
 			TypedConfig: sessionStateAny,
 		},
 	}
-	typedConfig, err := anypb.New(statefulSession)
+	typedConfig, err := utils.MessageToAny(statefulSession)
 	if err != nil {
 		// logger.Errorf("failed to create session state: %v", err)
 	}
