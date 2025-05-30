@@ -187,7 +187,7 @@ func convertSessionPersistence(sessionPersistence *gwv1.SessionPersistence) *any
 				// Session cookies — cookies without a Max-Age or Expires attribute – are deleted when the current session ends
 				cookie.Ttl = nil
 			case gwv1.PermanentCookieLifetimeType:
-				if cookie.Ttl == nil {
+				if cookie.GetTtl() == nil {
 					cookie.Ttl = durationpb.New(time.Hour * 24 * 365)
 				}
 			}
@@ -222,10 +222,10 @@ func applySessionPersistence(route *envoy_config_route_v3.Route, sessionPersiste
 		return nil
 	}
 
-	if route.TypedPerFilterConfig == nil {
+	if route.GetTypedPerFilterConfig() == nil {
 		route.TypedPerFilterConfig = map[string]*anypb.Any{}
 	}
-	route.TypedPerFilterConfig[statefulSessionFilterName] = sessionPersistence
+	route.GetTypedPerFilterConfig()[statefulSessionFilterName] = sessionPersistence
 
 	return nil
 }
@@ -659,7 +659,7 @@ func (p *builtinPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.RouteC
 		if err := policy.ruleMutation(pCtx.In, outputRoute); err != nil {
 			errs = errors.Join(errs, err)
 		}
-		if outputRoute.TypedPerFilterConfig[statefulSessionFilterName] != nil {
+		if outputRoute.GetTypedPerFilterConfig()[statefulSessionFilterName] != nil {
 			p.needStatefulSession[pCtx.FilterChainName] = true
 		}
 	}
