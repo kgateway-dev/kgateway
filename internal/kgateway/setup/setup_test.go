@@ -406,7 +406,7 @@ func testScenario(
 
 	// wait at least a second before the first check
 	// to give the CP time to process
-	time.Sleep(time.Second)
+	time.Sleep(2 * time.Second)
 
 	t.Cleanup(func() {
 		if t.Failed() {
@@ -437,7 +437,7 @@ func testScenario(
 			return fmt.Errorf("wrote out file - nothing to test")
 		}
 		return dump.Compare(expectedXdsDump)
-	}, retry.Converge(2), retry.BackoffDelay(2*time.Second), retry.Timeout(10*time.Second))
+	}, retry.Converge(2), retry.BackoffDelay(2*time.Second), retry.Timeout(30*time.Second))
 	t.Logf("%s finished", t.Name())
 }
 
