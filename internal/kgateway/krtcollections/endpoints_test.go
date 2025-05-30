@@ -17,14 +17,23 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/ptr"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
+
+func newBackendObjectIR(in ir.BackendObjectIR) ir.BackendObjectIR {
+	src := in.ObjectSource
+	port := in.Port
+	extraKey := in.ExtraKey
+	b := ir.NewBackendObjectIR(src, port, extraKey)
+	b.Obj = in.Obj
+	return b
+}
 
 func TestEndpointsForUpstreamOrderDoesntMatter(t *testing.T) {
 	g := NewWithT(t)
 
-	us := ir.BackendObjectIR{
+	us := newBackendObjectIR(ir.BackendObjectIR{
 		ObjectSource: ir.ObjectSource{
 			Namespace: "ns",
 			Name:      "svc",
@@ -46,7 +55,7 @@ func TestEndpointsForUpstreamOrderDoesntMatter(t *testing.T) {
 				},
 			},
 		},
-	}
+	})
 	// input
 	emd1 := ir.EndpointWithMd{
 		LbEndpoint: &endpointv3.LbEndpoint{
@@ -147,7 +156,7 @@ func TestEndpointsForUpstreamOrderDoesntMatter(t *testing.T) {
 func TestEndpointsForUpstreamWithDifferentNameButSameEndpoints(t *testing.T) {
 	g := NewWithT(t)
 
-	us := ir.BackendObjectIR{
+	us := newBackendObjectIR(ir.BackendObjectIR{
 		ObjectSource: ir.ObjectSource{
 			Namespace: "ns",
 			Name:      "svc",
@@ -169,8 +178,8 @@ func TestEndpointsForUpstreamWithDifferentNameButSameEndpoints(t *testing.T) {
 				},
 			},
 		},
-	}
-	usd := ir.BackendObjectIR{
+	})
+	usd := newBackendObjectIR(ir.BackendObjectIR{
 		ObjectSource: ir.ObjectSource{
 			Namespace: "ns",
 			Name:      "discovered-name",
@@ -192,7 +201,7 @@ func TestEndpointsForUpstreamWithDifferentNameButSameEndpoints(t *testing.T) {
 				},
 			},
 		},
-	}
+	})
 	// input
 	emd1 := ir.EndpointWithMd{
 		LbEndpoint: &endpointv3.LbEndpoint{
@@ -338,7 +347,7 @@ func TestEndpoints(t *testing.T) {
 				},
 			},
 
-			upstream: ir.BackendObjectIR{
+			upstream: newBackendObjectIR(ir.BackendObjectIR{
 				ObjectSource: ir.ObjectSource{
 					Namespace: "ns",
 					Name:      "svc",
@@ -360,7 +369,7 @@ func TestEndpoints(t *testing.T) {
 						},
 					},
 				},
-			},
+			}),
 			result: func(us ir.BackendObjectIR) *ir.EndpointsForBackend {
 				// output
 				emd := ir.EndpointWithMd{
@@ -488,7 +497,7 @@ func TestEndpoints(t *testing.T) {
 				},
 			},
 
-			upstream: ir.BackendObjectIR{
+			upstream: newBackendObjectIR(ir.BackendObjectIR{
 				ObjectSource: ir.ObjectSource{
 					Namespace: "ns",
 					Name:      "svc",
@@ -510,7 +519,7 @@ func TestEndpoints(t *testing.T) {
 						},
 					},
 				},
-			},
+			}),
 			result: func(us ir.BackendObjectIR) *ir.EndpointsForBackend {
 				// output
 				result := ir.NewEndpointsForBackend(us)
@@ -636,7 +645,7 @@ func TestEndpoints(t *testing.T) {
 					},
 				},
 			},
-			upstream: ir.BackendObjectIR{
+			upstream: newBackendObjectIR(ir.BackendObjectIR{
 				ObjectSource: ir.ObjectSource{
 					Namespace: "ns",
 					Name:      "svc",
@@ -658,7 +667,7 @@ func TestEndpoints(t *testing.T) {
 						},
 					},
 				},
-			},
+			}),
 			result: func(us ir.BackendObjectIR) *ir.EndpointsForBackend {
 				// output
 				emd := ir.EndpointWithMd{
@@ -785,7 +794,7 @@ func TestEndpoints(t *testing.T) {
 					},
 				},
 			},
-			upstream: ir.BackendObjectIR{
+			upstream: newBackendObjectIR(ir.BackendObjectIR{
 				ObjectSource: ir.ObjectSource{
 					Namespace: "ns",
 					Name:      "svc",
@@ -807,7 +816,7 @@ func TestEndpoints(t *testing.T) {
 						},
 					},
 				},
-			},
+			}),
 			result: func(us ir.BackendObjectIR) *ir.EndpointsForBackend {
 				// Only one endpoint should be present after deduplication
 				emd := ir.EndpointWithMd{
@@ -904,7 +913,7 @@ func TestEndpoints(t *testing.T) {
 					},
 				},
 			},
-			upstream: ir.BackendObjectIR{
+			upstream: newBackendObjectIR(ir.BackendObjectIR{
 				ObjectSource: ir.ObjectSource{
 					Namespace: "ns",
 					Name:      "svc",
@@ -926,7 +935,7 @@ func TestEndpoints(t *testing.T) {
 						},
 					},
 				},
-			},
+			}),
 			result: func(us ir.BackendObjectIR) *ir.EndpointsForBackend {
 				// The result should be empty since no ready endpoints are available.
 				result := ir.NewEndpointsForBackend(us)
@@ -1000,7 +1009,7 @@ func TestEndpoints(t *testing.T) {
 					},
 				},
 			},
-			upstream: ir.BackendObjectIR{
+			upstream: newBackendObjectIR(ir.BackendObjectIR{
 				ObjectSource: ir.ObjectSource{
 					Namespace: "ns",
 					Name:      "svc",
@@ -1036,7 +1045,7 @@ func TestEndpoints(t *testing.T) {
 						},
 					},
 				},
-			},
+			}),
 			result: func(us ir.BackendObjectIR) *ir.EndpointsForBackend {
 				// output
 				emd := ir.EndpointWithMd{
