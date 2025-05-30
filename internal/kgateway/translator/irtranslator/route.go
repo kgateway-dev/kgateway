@@ -37,6 +37,8 @@ type httpRouteConfigurationTranslator struct {
 	logger                   *slog.Logger
 }
 
+const WebSocketUpgradeType = "websocket"
+
 func (h *httpRouteConfigurationTranslator) ComputeRouteConfiguration(ctx context.Context, vhosts []*ir.VirtualHost) *envoy_config_route_v3.RouteConfiguration {
 	var attachedPolicies ir.AttachedPolicies
 	// the policies in order - first listener as they are more specific and thus higher priority.
@@ -451,10 +453,10 @@ func (h *httpRouteConfigurationTranslator) translateRouteAction(
 		if back := backend.Backend.BackendObject; back != nil && back.AppProtocol == ir.WebSocketAppProtocol {
 			// add websocket upgrade if not already present
 			if !slices.ContainsFunc(action.GetUpgradeConfigs(), func(uc *envoy_config_route_v3.RouteAction_UpgradeConfig) bool {
-				return uc.GetUpgradeType() == "websocket"
+				return uc.GetUpgradeType() == WebSocketUpgradeType
 			}) {
 				action.UpgradeConfigs = append(action.GetUpgradeConfigs(), &envoy_config_route_v3.RouteAction_UpgradeConfig{
-					UpgradeType: "websocket",
+					UpgradeType: WebSocketUpgradeType,
 				})
 			}
 		}
