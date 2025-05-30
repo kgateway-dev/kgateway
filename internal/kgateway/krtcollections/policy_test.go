@@ -424,7 +424,6 @@ func k8sSvcUpstreams(services krt.Collection[*corev1.Service]) krt.Collection[ir
 			}, port.Port, "")
 			backend.Obj = svc
 			uss = append(uss, backend)
-
 		}
 		return uss
 	})
