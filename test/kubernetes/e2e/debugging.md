@@ -32,7 +32,7 @@ Basic Example:
 ## Step 2: Running Tests
 _To run the regression tests, your kubeconfig file must point to a running Kubernetes cluster:_
 ```
-kubectl config current-context`
+kubectl config current-context
 ```
 _should run `kind-<CLUSTER_NAME>`_
 
@@ -49,10 +49,7 @@ go test -v -timeout 600s ./test/kubernetes/e2e/tests -run ^TestKgateway$/^Deploy
 Note that the `-run` flag takes a sequence of regular expressions, and that each part may match a substring of a suite/test name. See https://pkg.go.dev/cmd/go#hdr-Testing_flags for details. To match only exact suite/test names, use the `^` and `$` characters as shown.
 
 #### VSCode
-
-In VSCode, this is easily accomplished by invoking the `run test` or `debug test` options when you hover the cursor over the corresponding subtest specified using `t.Run(...)`.
-
-Alternatively, you can use a custom debugger launch config that sets the `test.run` flag to run a specific test:
+You can use a custom debugger launch config that sets the `test.run` flag to run a specific test:
 ```
 {
   "name": "e2e",

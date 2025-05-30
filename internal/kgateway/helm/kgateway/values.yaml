@@ -42,3 +42,7 @@ gateway:
     maxReplicas: 100
     targetCPUUtilizationPercentage: 80
     # targetMemoryUtilizationPercentage: 80
+
+  agentGateway:
+    enabled: false
+    logLevel: info

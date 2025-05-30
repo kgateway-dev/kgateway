@@ -1,12 +1,9 @@
 package serviceentry
 
 import (
-	"context"
-	"strconv"
+	"log/slog"
 	"strings"
 
-	"github.com/solo-io/go-utils/contextutils"
-	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 	"istio.io/api/label"
 	"istio.io/istio/pkg/config/schema/gvr"
@@ -43,28 +40,6 @@ var (
 // serviceEntryKey keys ServiceEntry on its name and namespace
 func serviceEntryKey(obj ir.Namespaced) string {
 	return obj.GetNamespace() + "/" + obj.GetName()
-}
-
-// backendKey uniquely identifies a Backend resource.
-// It can be identified either by host/port combination OR by source object reference.
-// When used for indexing, both identifiers will be added to the index.
-type backendKey struct {
-	host string
-	port int32
-
-	srcObj string
-}
-
-func makeHostPortKey(host string, port int32) backendKey {
-	return backendKey{host: host, port: port}
-}
-
-func makeSrcObjKey(obj ir.ObjectSource) backendKey {
-	return backendKey{srcObj: serviceEntryKey(obj)}
-}
-
-func (h backendKey) String() string {
-	return h.host + ":" + strconv.Itoa(int(h.port)) + "~" + h.srcObj
 }
 
 func (s seSelector) ResourceName() string {
@@ -125,7 +100,7 @@ func (sw selectedWorkload) Equals(o selectedWorkload) bool {
 }
 
 type serviceEntryPlugin struct {
-	logger *zap.SugaredLogger
+	logger *slog.Logger
 
 	// core inputs
 	ServiceEntries  krt.Collection[*networkingclient.ServiceEntry]
@@ -137,25 +112,19 @@ type serviceEntryPlugin struct {
 	selectedWorkloadsIndex  krt.Index[string, selectedWorkload]
 
 	// output collections
-	Backends      krt.Collection[ir.BackendObjectIR]
-	Endpoints     krt.Collection[ir.EndpointsForBackend]
-	backendsIndex krt.Index[backendKey, ir.BackendObjectIR]
+	Backends  krt.Collection[ir.BackendObjectIR]
+	Endpoints krt.Collection[ir.EndpointsForBackend]
 }
 
 func initServiceEntryCollections(
-	ctx context.Context,
 	commonCols *common.CommonCollections,
 ) serviceEntryPlugin {
-	logger := contextutils.LoggerFrom(ctx).Named("serviceentry")
-
 	// setup input collections
-	defaultFilter := kclient.Filter{ObjectFilter: commonCols.Client.ObjectFilter()}
-
 	weInformer := kclient.NewDelayedInformer[*networkingclient.WorkloadEntry](
 		commonCols.Client,
 		gvr.WorkloadEntry,
 		kubetypes.StandardInformer,
-		defaultFilter,
+		kclient.Filter{ObjectFilter: commonCols.Client.ObjectFilter()},
 	)
 	WorkloadEntries := krt.WrapClient(weInformer, commonCols.KrtOpts.ToOptions("WorkloadEntries")...)
 
@@ -172,15 +141,9 @@ func initServiceEntryCollections(
 	// init the outputs
 	Backends := backendsCollections(logger, commonCols.ServiceEntries, commonCols.KrtOpts)
 	Endpoints := endpointsCollection(Backends, SelectedWorkloads, selectedWorkloadsIndex, commonCols.KrtOpts)
-	backendsIndex := krt.NewIndex(Backends, func(be ir.BackendObjectIR) []backendKey {
-		return []backendKey{
-			makeHostPortKey(be.CanonicalHostname, be.Port),
-			makeSrcObjKey(be.ObjectSource),
-		}
-	})
 
 	return serviceEntryPlugin{
-		logger: contextutils.LoggerFrom(ctx),
+		logger: logger,
 
 		ServiceEntries:  commonCols.ServiceEntries,
 		WorkloadEntries: WorkloadEntries,
@@ -189,9 +152,8 @@ func initServiceEntryCollections(
 		SelectedWorkloads:       SelectedWorkloads,
 		selectedWorkloadsIndex:  selectedWorkloadsIndex,
 
-		Backends:      Backends,
-		Endpoints:     Endpoints,
-		backendsIndex: backendsIndex,
+		Backends:  Backends,
+		Endpoints: Endpoints,
 	}
 }
 

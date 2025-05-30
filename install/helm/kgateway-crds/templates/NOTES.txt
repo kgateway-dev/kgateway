@@ -1,0 +1,24 @@
+Thank you for installing the {{ .Chart.Name }} chart.
+
+This chart installs the Custom Resource Definitions (CRDs) required by kgateway.
+
+To verify that the CRDs have been installed:
+
+  kubectl get crds | grep 'kgateway'
+
+To uninstall the CRDs:
+
+  helm uninstall {{ .Release.Name }} --namespace {{ .Release.Namespace }}
+
+Note: The above command does not remove the Custom Resource Definitions (CRDs) installed by this chart.
+You may need to manually delete the CRDs if they are no longer needed. To do so, run:
+
+  kubectl delete crd <crd-name>
+
+Replace <crd-name> with the name of the CRD(s) you wish to delete. For example:
+
+  kubectl delete crd gatewayparameters.gateway.kgateway.dev
+
+To learn how to access and use kgateway, please visit the official documentation:
+
+  https://kgateway.dev/docs/about/custom-resources/#kgateway

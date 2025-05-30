@@ -4,17 +4,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"regexp"
 
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
-	"github.com/solo-io/go-utils/contextutils"
-	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
@@ -26,29 +24,47 @@ import (
 )
 
 type httpRouteConfigurationTranslator struct {
-	gw       ir.GatewayIR
-	listener ir.ListenerIR
-	fc       ir.FilterChainCommon
+	gw               ir.GatewayIR
+	listener         ir.ListenerIR
+	fc               ir.FilterChainCommon
+	attachedPolicies ir.AttachedPolicies
 
 	routeConfigName          string
 	reporter                 reportssdk.Reporter
 	requireTlsOnVirtualHosts bool
 	PluginPass               TranslationPassPlugins
+	logger                   *slog.Logger
 }
 
 func (h *httpRouteConfigurationTranslator) ComputeRouteConfiguration(ctx context.Context, vhosts []*ir.VirtualHost) *envoy_config_route_v3.RouteConfiguration {
-	ctx = contextutils.WithLogger(ctx, "compute_route_config."+h.routeConfigName)
+	var attachedPolicies ir.AttachedPolicies
+	// the policies in order - first listener as they are more specific and thus higher priority.
+	// then gateway policies.
+	attachedPolicies.Append(h.attachedPolicies, h.gw.AttachedHttpPolicies)
 	cfg := &envoy_config_route_v3.RouteConfiguration{
 		Name: h.routeConfigName,
-		//		MaxDirectResponseBodySizeBytes: h.parentListener.GetRouteOptions().GetMaxDirectResponseBodySizeBytes(),
 	}
-	for _, pass := range h.PluginPass {
+	typedPerFilterConfigRoute := ir.TypedFilterConfigMap(map[string]proto.Message{})
+
+	for _, gk := range attachedPolicies.ApplyOrderedGroupKinds() {
+		pols := attachedPolicies.Policies[gk]
+		pass := h.PluginPass[gk]
 		if pass == nil {
+			// TODO: user error - they attached a non http policy
 			continue
 		}
-		pass.ApplyRouteConfigPlugin(ctx, &ir.RouteConfigContext{}, cfg)
+		reportPolicyAcceptanceStatus(h.reporter, h.listener.PolicyAncestorRef, pols...)
+		for _, pol := range mergePolicies(pass, pols) {
+			pass.ApplyRouteConfigPlugin(ctx, &ir.RouteConfigContext{
+				FilterChainName:   h.fc.FilterChainName,
+				TypedFilterConfig: typedPerFilterConfigRoute,
+				Policy:            pol.PolicyIr,
+			}, cfg)
+		}
 	}
+
 	cfg.VirtualHosts = h.computeVirtualHosts(ctx, vhosts)
+	cfg.TypedPerFilterConfig = toPerFilterConfigMap(typedPerFilterConfigRoute)
 
 	// Gateway API spec requires that port values in HTTP Host headers be ignored when performing a match
 	// See https://gateway-api.sigs.k8s.io/reference/spec/#gateway.networking.k8s.io/v1.HTTPRouteSpec - hostnames field
@@ -108,8 +124,10 @@ func (h *httpRouteConfigurationTranslator) computeVirtualHost(
 		RequireTls: envoyRequireTls,
 	}
 
+	typedPerFilterConfigRoute := ir.TypedFilterConfigMap(map[string]proto.Message{})
 	// run the http plugins that are attached to the listener or gateway on the virtual host
-	h.runVhostPlugins(ctx, out)
+	h.runVhostPlugins(ctx, virtualHost, out, typedPerFilterConfigRoute)
+	out.TypedPerFilterConfig = toPerFilterConfigMap(typedPerFilterConfigRoute)
 
 	return out
 }
@@ -138,17 +156,16 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(ctx context.Context,
 	}
 
 	// apply typed per filter config from translating route action and route plugins
-	typedPerFilterConfigAny := map[string]*anypb.Any{}
-	for k, v := range typedPerFilterConfigRoute {
-		config, err := utils.MessageToAny(v)
-		if err != nil {
-			// TODO: error on status
-			contextutils.LoggerFrom(ctx).Error(err)
-			continue
+	typedPerFilterConfig := toPerFilterConfigMap(typedPerFilterConfigRoute)
+	if out.GetTypedPerFilterConfig() == nil {
+		out.TypedPerFilterConfig = typedPerFilterConfig
+	} else {
+		for k, v := range typedPerFilterConfig {
+			if _, exists := out.GetTypedPerFilterConfig()[k]; !exists {
+				out.GetTypedPerFilterConfig()[k] = v
+			}
 		}
-		typedPerFilterConfigAny[k] = config
 	}
-	out.TypedPerFilterConfig = typedPerFilterConfigAny
 
 	if err == nil && out.GetAction() == nil {
 		if in.Delegates {
@@ -158,7 +175,7 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(ctx context.Context,
 		}
 	}
 	if err != nil {
-		contextutils.LoggerFrom(ctx).Desugar().Debug("invalid route", zap.Error(err))
+		h.logger.Debug("invalid route", "error", err)
 		// TODO: we may want to aggregate all these errors per http route object and report one message?
 		routeReport.SetCondition(reportssdk.RouteCondition{
 			Type:   gwv1.RouteConditionPartiallyInvalid,
@@ -181,26 +198,39 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(ctx context.Context,
 	return out
 }
 
-func (h *httpRouteConfigurationTranslator) runVhostPlugins(ctx context.Context, out *envoy_config_route_v3.VirtualHost) {
-	attachedPoliciesSlice := []ir.AttachedPolicies{
-		h.gw.AttachedHttpPolicies,
-		h.listener.AttachedPolicies,
+func toPerFilterConfigMap(typedPerFilterConfig ir.TypedFilterConfigMap) map[string]*anypb.Any {
+	typedPerFilterConfigAny := map[string]*anypb.Any{}
+	for k, v := range typedPerFilterConfig {
+		config, err := utils.MessageToAny(v)
+		if err != nil {
+			// TODO: error on status? this should never happen..
+			logger.Error("unexpected marshalling error", "error", err)
+			continue
+		}
+		typedPerFilterConfigAny[k] = config
 	}
-	for _, attachedPolicies := range attachedPoliciesSlice {
-		for gk, pols := range attachedPolicies.Policies {
-			pass := h.PluginPass[gk]
-			if pass == nil {
-				// TODO: user error - they attached a non http policy
-				continue
+	return typedPerFilterConfigAny
+}
+
+func (h *httpRouteConfigurationTranslator) runVhostPlugins(ctx context.Context, virtualHost *ir.VirtualHost, out *envoy_config_route_v3.VirtualHost,
+	typedPerFilterConfig ir.TypedFilterConfigMap,
+) {
+	for _, gk := range virtualHost.AttachedPolicies.ApplyOrderedGroupKinds() {
+		pols := virtualHost.AttachedPolicies.Policies[gk]
+		pass := h.PluginPass[gk]
+		if pass == nil {
+			// TODO: user error - they attached a non http policy
+			continue
+		}
+		reportPolicyAcceptanceStatus(h.reporter, h.listener.PolicyAncestorRef, pols...)
+		for _, pol := range mergePolicies(pass, pols) {
+			pctx := &ir.VirtualHostContext{
+				Policy:            pol.PolicyIr,
+				TypedFilterConfig: typedPerFilterConfig,
+				FilterChainName:   h.fc.FilterChainName,
 			}
-			for _, pol := range pols {
-				reportPolicyAcceptanceStatus(h.reporter, h.listener.PolicyAncestorRef, pols...)
-				pctx := &ir.VirtualHostContext{
-					Policy: pol.PolicyIr,
-				}
-				pass.ApplyVhostPlugin(ctx, pctx, out)
-				// TODO: check return value, if error returned, log error and report condition
-			}
+			pass.ApplyVhostPlugin(ctx, pctx, out)
+			// TODO: check return value, if error returned, log error and report condition
 		}
 	}
 }
@@ -217,9 +247,7 @@ func (h *httpRouteConfigurationTranslator) runRoutePlugins(
 	// NOTE: AttachedPolicies must have policies in the ordered by hierarchy from root to leaf in the delegation chain where
 	// each level has policies ordered by rule level policies before entire route level policies.
 
-	attachedPolicies := ir.AttachedPolicies{
-		Policies: map[schema.GroupKind][]ir.PolicyAtt{},
-	}
+	var attachedPolicies ir.AttachedPolicies
 	delegatingParent := in.DelegatingParent
 	var hierarchicalPriority int
 	for delegatingParent != nil {
@@ -245,8 +273,8 @@ func (h *httpRouteConfigurationTranslator) runRoutePlugins(
 			errs = append(errs, err)
 		}
 	}
-
-	for gk, pols := range attachedPolicies.Policies {
+	for _, gk := range attachedPolicies.ApplyOrderedGroupKinds() {
+		pols := attachedPolicies.Policies[gk]
 		pass := h.PluginPass[gk]
 		if pass == nil {
 			// TODO: should never happen, log error and report condition
@@ -258,16 +286,13 @@ func (h *httpRouteConfigurationTranslator) runRoutePlugins(
 			In:                in,
 			TypedFilterConfig: typedPerFilterConfig,
 		}
-		if pass.MergePolicies != nil {
-			mergedPolicy := pass.MergePolicies(pols)
-			pctx.Policy = mergedPolicy.PolicyIr
+		for _, pol := range mergePolicies(pass, pols) {
+			// TODO: should we append pol.Error to errs?
+			// i.e. errs = append(errs, pol.Error)
+			pctx.Policy = pol.PolicyIr
 			applyForPolicy(ctx, pass, pctx, out)
-		} else {
-			for _, pol := range pols {
-				pctx.Policy = pol.PolicyIr
-				applyForPolicy(ctx, pass, pctx, out)
-			}
 		}
+
 		// TODO: check return value, if error returned, log error and report condition
 	}
 
@@ -284,16 +309,26 @@ func (h *httpRouteConfigurationTranslator) runRoutePlugins(
 	return err
 }
 
+func mergePolicies(pass *TranslationPass, policies []ir.PolicyAtt) []ir.PolicyAtt {
+	if pass.MergePolicies != nil {
+		merged := [1]ir.PolicyAtt{pass.MergePolicies(policies)}
+		return merged[:]
+	}
+
+	return policies
+}
+
 func (h *httpRouteConfigurationTranslator) runBackendPolicies(ctx context.Context, in ir.HttpBackend, pCtx *ir.RouteBackendContext) error {
 	var errs []error
-	for gk, pols := range in.AttachedPolicies.Policies {
+	for _, gk := range in.AttachedPolicies.ApplyOrderedGroupKinds() {
+		pols := in.AttachedPolicies.Policies[gk]
 		pass := h.PluginPass[gk]
 		if pass == nil {
 			// TODO: should never happen, log error and report condition
 			continue
 		}
-		for _, pol := range pols {
-			reportPolicyAcceptanceStatus(h.reporter, h.listener.PolicyAncestorRef, pol)
+		reportPolicyAcceptanceStatus(h.reporter, h.listener.PolicyAncestorRef, pols...)
+		for _, pol := range mergePolicies(pass, pols) {
 			// Policy on extension ref
 			err := pass.ApplyForRouteBackend(ctx, pol.PolicyIr, pCtx)
 			if err != nil {
@@ -358,7 +393,7 @@ func (h *httpRouteConfigurationTranslator) translateRouteAction(
 		)
 		if err != nil {
 			// TODO: error on status
-			contextutils.LoggerFrom(ctx).Error(err)
+			h.logger.Error("error processing backends", "error", err)
 		}
 
 		err = h.runBackendPolicies(
@@ -368,7 +403,7 @@ func (h *httpRouteConfigurationTranslator) translateRouteAction(
 		)
 		if err != nil {
 			// TODO: error on status
-			contextutils.LoggerFrom(ctx).Error(err)
+			h.logger.Error("error processing backends with policies", "error", err)
 		}
 
 		// Translating weighted clusters needs the typed per filter config on each cluster
@@ -377,7 +412,7 @@ func (h *httpRouteConfigurationTranslator) translateRouteAction(
 			config, err := utils.MessageToAny(v)
 			if err != nil {
 				// TODO: error on status
-				contextutils.LoggerFrom(ctx).Error(err)
+				h.logger.Error("unexpected marshalling error", "error", err)
 				continue
 			}
 			typedPerFilterConfigAny[k] = config

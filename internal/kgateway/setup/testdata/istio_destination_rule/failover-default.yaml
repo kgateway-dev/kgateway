@@ -113,5 +113,11 @@ spec:
         consecutive5xxErrors: 2
         interval: 5s
         maxEjectionPercent: 100
+      connectionPool:
+        tcp:
+          tcpKeepalive:
+            time: 44s
+            interval: 55s
+            probes: 6
       port:
         number: 8080

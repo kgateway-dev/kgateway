@@ -3,11 +3,10 @@ package probes
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"strings"
 	"time"
-
-	"github.com/solo-io/go-utils/contextutils"
 )
 
 type ServerParams struct {
@@ -54,12 +53,12 @@ func StartServer(ctx context.Context, params ServerParams) {
 			Addr:    fmt.Sprintf(":%d", params.Port),
 			Handler: mux,
 		}
-		contextutils.LoggerFrom(ctx).Infof("probe server starting at %s listening for %s", server.Addr, params.Path)
+		slog.Info("probe server starting", "addr", server.Addr, "path", params.Path)
 		err := server.ListenAndServe()
 		if err == http.ErrServerClosed {
-			contextutils.LoggerFrom(ctx).Info("probe server closed")
+			slog.Info("probe server closed")
 		} else {
-			contextutils.LoggerFrom(ctx).Warnf("probe server closed with unexpected error: %v", err)
+			slog.Warn("probe server closed with unexpected error", "error", err)
 		}
 	}()
 
@@ -70,7 +69,7 @@ func StartServer(ctx context.Context, params ServerParams) {
 			shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 2*time.Second)
 			defer shutdownCancel()
 			if err := server.Shutdown(shutdownCtx); err != nil {
-				contextutils.LoggerFrom(shutdownCtx).Warnf("probe server shutdown returned error: %v", err)
+				slog.Warn("probe server shutdown returned error", "error", err)
 			}
 		}
 	}()

@@ -17,6 +17,10 @@ func (c *FakeGatewayV1alpha1) Backends(namespace string) v1alpha1.BackendInterfa
 	return newFakeBackends(c, namespace)
 }
 
+func (c *FakeGatewayV1alpha1) BackendConfigPolicies(namespace string) v1alpha1.BackendConfigPolicyInterface {
+	return newFakeBackendConfigPolicies(c, namespace)
+}
+
 func (c *FakeGatewayV1alpha1) DirectResponses(namespace string) v1alpha1.DirectResponseInterface {
 	return newFakeDirectResponses(c, namespace)
 }

@@ -120,6 +120,11 @@ type KubernetesProxyConfig struct {
 	// +kubebuilder:validation:Optional
 	AiExtension *AiExtension `json:"aiExtension,omitempty"`
 
+	// Configure the AgentGateway integration
+	//
+	// +kubebuilder:validation:Optional
+	AgentGateway *AgentGateway `json:"agentGateway,omitempty"`
+
 	// Used to unset the `runAsUser` values in security contexts.
 	FloatingUserId *bool `json:"floatingUserId,omitempty"`
 }
@@ -185,6 +190,13 @@ func (in *KubernetesProxyConfig) GetAiExtension() *AiExtension {
 		return nil
 	}
 	return in.AiExtension
+}
+
+func (in *KubernetesProxyConfig) GetAgentGateway() *AgentGateway {
+	if in == nil {
+		return nil
+	}
+	return in.AgentGateway
 }
 
 func (in *KubernetesProxyConfig) GetFloatingUserId() *bool {
@@ -745,4 +757,32 @@ func (in *CustomLabel) GetKeyDelimiter() *string {
 		return nil
 	}
 	return in.KeyDelimiter
+}
+
+// Configuration of the AgentGateway integration
+type AgentGateway struct {
+	// Whether to enable the extension.
+	//
+	// +kubebuilder:validation:Optional
+	Enabled *bool `json:"enabled,omitempty"`
+
+	// Log level for the agentgateway. Defaults to info.
+	// Levels include "trace", "debug", "info", "error", "warn". See: https://docs.rs/tracing/latest/tracing/struct.Level.html
+	//
+	// +kubebuilder:validation:Optional
+	LogLevel *string `json:"logLevel,omitempty"`
+}
+
+func (in *AgentGateway) GetEnabled() *bool {
+	if in == nil {
+		return nil
+	}
+	return in.Enabled
+}
+
+func (in *AgentGateway) GetLogLevel() *string {
+	if in == nil {
+		return nil
+	}
+	return in.LogLevel
 }

@@ -3,6 +3,7 @@ package v1alpha1
 import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 )
 
@@ -34,9 +35,16 @@ type TrafficPolicyList struct {
 }
 
 type TrafficPolicySpec struct {
+	// TargetRefs specifies the target resources by reference to attach the policy to.
+	// +optional
+	//
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=16
-	TargetRefs []LocalPolicyTargetReference `json:"targetRefs,omitempty"`
+	TargetRefs []LocalPolicyTargetReferenceWithSectionName `json:"targetRefs,omitempty"`
+
+	// TargetSelectors specifies the target selectors to select resources to attach the policy to.
+	// +optional
+	TargetSelectors []LocalPolicyTargetSelector `json:"targetSelectors,omitempty"`
 
 	// AI is used to configure AI-based policies for the policy.
 	// +optional
@@ -60,6 +68,10 @@ type TrafficPolicySpec struct {
 	// This controls the rate at which requests are allowed to be processed.
 	// +optional
 	RateLimit *RateLimit `json:"rateLimit,omitempty"`
+
+	// Cors specifies the CORS configuration for the policy.
+	// +optional
+	Cors *CorsPolicy `json:"cors,omitempty"`
 }
 
 // TransformationPolicy config is used to modify envoy behavior at a route level.
@@ -251,8 +263,7 @@ type TokenBucket struct {
 	// This value must be a valid duration string (e.g., "1s", "500ms").
 	// It determines the frequency of token replenishment.
 	// +required
-	// +kubebuilder:validation:Format=duration
-	FillInterval string `json:"fillInterval"`
+	FillInterval gwv1.Duration `json:"fillInterval"`
 }
 
 // RateLimitPolicy defines a global rate limiting policy using an external service.
@@ -325,4 +336,9 @@ type RateLimitDescriptorEntryGeneric struct {
 	// Value is the static value for this descriptor entry.
 	// +required
 	Value string `json:"value"`
+}
+
+type CorsPolicy struct {
+	// +kubebuilder:pruning:PreserveUnknownFields
+	*gwv1.HTTPCORSFilter `json:",inline"`
 }

@@ -1,10 +1,10 @@
 package endpoints
 
 import (
+	"log/slog"
 	"sort"
 	"strings"
 
-	"go.uber.org/zap"
 	"istio.io/api/networking/v1alpha3"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
@@ -23,7 +23,7 @@ type EndpointsInputs struct {
 
 // PrioritizeEndpoints converts EndpointsInputs into a ClusterLoadAssignment.
 func PrioritizeEndpoints(
-	logger *zap.Logger,
+	logger *slog.Logger,
 	ucc ir.UniqlyConnectedClient,
 	inputs EndpointsInputs,
 ) *envoy_config_endpoint_v3.ClusterLoadAssignment {
@@ -103,7 +103,7 @@ func priorityLabelOverrides(labels []string) ([]string, map[string]string) {
 	return priorityLabels, overriddenValueByLabel
 }
 
-func prioritizeWithLbInfo(logger *zap.Logger, ep ir.EndpointsForBackend, lbInfo LoadBalancingInfo) *envoy_config_endpoint_v3.ClusterLoadAssignment {
+func prioritizeWithLbInfo(logger *slog.Logger, ep ir.EndpointsForBackend, lbInfo LoadBalancingInfo) *envoy_config_endpoint_v3.ClusterLoadAssignment {
 	cla := &envoy_config_endpoint_v3.ClusterLoadAssignment{
 		ClusterName: ep.ClusterName,
 	}
@@ -137,7 +137,7 @@ func prioritizeWithLbInfo(logger *zap.Logger, ep ir.EndpointsForBackend, lbInfo 
 		applyLocalityFailover(&proxyLocality, cla, lbInfo.PriorityInfo.Failover)
 	}
 	if logger != nil {
-		logger.Debug("created cla", zap.String("cluster", cla.GetClusterName()), zap.Int("numAddresses", totalEndpoints))
+		logger.Debug("created cla", "cluster", cla.GetClusterName(), "total_endpoints", totalEndpoints)
 	}
 
 	// in theory we want to run endpoint plugins here.

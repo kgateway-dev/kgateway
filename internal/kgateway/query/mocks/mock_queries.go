@@ -55,7 +55,7 @@ func (mr *MockGatewayQueriesMockRecorder) GetRouteChain(arg0, arg1, arg2, arg3, 
 }
 
 // GetRoutesForGateway mocks base method.
-func (m *MockGatewayQueries) GetRoutesForGateway(arg0 krt.HandlerContext, arg1 context.Context, arg2 *v1.Gateway) (*query.RoutesForGwResult, error) {
+func (m *MockGatewayQueries) GetRoutesForGateway(arg0 krt.HandlerContext, arg1 context.Context, arg2 *ir.Gateway) (*query.RoutesForGwResult, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetRoutesForGateway", arg0, arg1, arg2)
 	ret0, _ := ret[0].(*query.RoutesForGwResult)

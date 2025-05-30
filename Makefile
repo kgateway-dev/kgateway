@@ -81,7 +81,7 @@ GOLANG_ALPINE_IMAGE_NAME = golang:$(shell go version | egrep -o '([0-9]+\.[0-9]+
 TEST_ASSET_DIR ?= $(ROOTDIR)/_test
 
 # This is the location where assets are placed after a test failure
-# This is used by our e2e tests to emit information about the running instance of Gloo Gateway
+# This is used by our e2e tests to emit information about the running instance of kgateway
 BUG_REPORT_DIR := $(TEST_ASSET_DIR)/bug_report
 $(BUG_REPORT_DIR):
 	mkdir -p $(BUG_REPORT_DIR)
@@ -214,7 +214,7 @@ run-tests: test
 # Performance tests are filtered using a Ginkgo label
 # This means that any tests which do not rely on Ginkgo, will by default be compiled and run
 # Since this is not the desired behavior, we explicitly skip these packages
-run-performance-tests: GINKGO_FLAGS += -skip-package=kgateway,kubernetes/e2e,test/kube2e
+run-performance-tests: GINKGO_FLAGS += -skip-package=kgateway,kubernetes/e2e
 run-performance-tests: GINKGO_FLAGS += --label-filter="performance" ## Run only tests with the Performance label
 run-performance-tests: test
 
@@ -222,10 +222,6 @@ run-performance-tests: test
 run-e2e-tests: TEST_PKG = ./test/e2e/ ## Run all in-memory E2E tests
 run-e2e-tests: GINKGO_FLAGS += --label-filter="end-to-end && !performance"
 run-e2e-tests: test
-
-.PHONY: run-kube-e2e-tests
-run-kube-e2e-tests: TEST_PKG = ./test/kube2e/$(KUBE2E_TESTS) ## Run the legacy Kubernetes E2E Tests in the {KUBE2E_TESTS} package
-run-kube-e2e-tests: test
 
 #----------------------------------------------------------------------------------
 # Env test
@@ -296,7 +292,7 @@ clean-gen:
 	rm -rf api/applyconfiguration
 	rm -rf pkg/generated/openapi
 	rm -rf pkg/client
-	rm -rf install/helm/kgateway-crds/templates
+	rm -f install/helm/kgateway-crds/templates/gateway.kgateway.dev_*.yaml
 
 .PHONY: clean-tests
 clean-tests:
@@ -413,7 +409,7 @@ K8S_GATEWAY_SOURCES=$(call get_sources,$(K8S_GATEWAY_DIR))
 CONTROLLER_OUTPUT_DIR=$(OUTPUT_DIR)/$(K8S_GATEWAY_DIR)
 export CONTROLLER_IMAGE_REPO ?= kgateway
 
-# We include the files in EDGE_GATEWAY_DIR and K8S_GATEWAY_DIR as dependencies to the gloo build
+# We include the files in K8S_GATEWAY_DIR as dependencies to the kgateway build
 # so changes in those directories cause the make target to rebuild
 $(CONTROLLER_OUTPUT_DIR)/kgateway-linux-$(GOARCH): $(K8S_GATEWAY_SOURCES)
 	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags='$(LDFLAGS)' -gcflags='$(GCFLAGS)' -o $@ ./cmd/kgateway/...
@@ -530,7 +526,7 @@ HELM_CHART_DIR=install/helm/kgateway
 HELM_CHART_DIR_CRD=install/helm/kgateway-crds
 
 .PHONY: package-kgateway-charts
-package-kgateway-charts: package-kgateway-chart package-kgateway-crd-chart
+package-kgateway-charts: package-kgateway-chart package-kgateway-crd-chart ## Package the kgateway charts
 
 .PHONY: package-kgateway-chart
 package-kgateway-chart: ## Package the kgateway charts
@@ -543,6 +539,14 @@ package-kgateway-crd-chart: ## Package the kgateway crd chart
 	mkdir -p $(TEST_ASSET_DIR); \
 	$(HELM) package $(HELM_PACKAGE_ARGS) --destination $(TEST_ASSET_DIR) $(HELM_CHART_DIR_CRD); \
 	$(HELM) repo index $(TEST_ASSET_DIR);
+
+.PHONY: deploy-kgateway-crd-chart
+deploy-kgateway-crd-chart: ## Deploy the kgateway crd chart
+	$(HELM) upgrade --install kgateway-crds $(TEST_ASSET_DIR)/kgateway-crds-$(VERSION).tgz --namespace kgateway-system --create-namespace
+
+.PHONY: deploy-kgateway-chart
+deploy-kgateway-chart: ## Deploy the kgateway chart
+	$(HELM) upgrade --install kgateway $(TEST_ASSET_DIR)/kgateway-$(VERSION).tgz --namespace kgateway-system --create-namespace
 
 .PHONY: lint-kgateway-charts
 lint-kgateway-charts: ## Lint the kgateway charts
@@ -651,15 +655,32 @@ docker-retag: docker-distroless-retag
 endif # distroless images
 
 #----------------------------------------------------------------------------------
-# Build assets for Kube2e tests
+# Development
 #----------------------------------------------------------------------------------
 
+KIND ?= go tool kind
 CLUSTER_NAME ?= kind
 INSTALL_NAMESPACE ?= kgateway-system
 
-KIND ?= go tool kind
+.PHONY: kind-create
+kind-create: ## Create a KinD cluster
+	$(KIND) get clusters | grep $(CLUSTER_NAME) || $(KIND) create cluster --name $(CLUSTER_NAME)
 
-kind-setup:
+.PHONY: kind-metallb
+metallb: ## Install the MetalLB load balancer
+	./hack/kind/setup-metalllb-on-kind.sh
+
+.PHONY: deploy-kgateway
+deploy-kgateway: package-kgateway-charts deploy-kgateway-crd-chart deploy-kgateway-chart ## Deploy the kgateway chart and CRDs
+
+.PHONY: run
+run: kind-create kind-build-and-load-standard metallb deploy-kgateway  ## Set up complete development environment
+
+#----------------------------------------------------------------------------------
+# Build assets for kubernetes e2e tests
+#----------------------------------------------------------------------------------
+
+kind-setup: ## Set up the KinD cluster. Deprecated: use kind-create instead.
 	VERSION=${VERSION} CLUSTER_NAME=${CLUSTER_NAME} ./hack/kind/setup-kind.sh
 
 kind-load-%-distroless:
@@ -682,7 +703,7 @@ kind-build-and-load-%: %-docker kind-load-% ; ## Use to build specified image an
 kind-set-image-%:
 	kubectl rollout pause deployment $* -n $(INSTALL_NAMESPACE) || true
 	kubectl set image deployment/$* $*=$(IMAGE_REGISTRY)/$*:$(VERSION) -n $(INSTALL_NAMESPACE)
-	kubectl patch deployment $* -n $(INSTALL_NAMESPACE) -p '{"spec": {"template":{"metadata":{"annotations":{"gloo-kind-last-update":"$(shell date)"}}}} }'
+	kubectl patch deployment $* -n $(INSTALL_NAMESPACE) -p '{"spec": {"template":{"metadata":{"annotations":{"kgateway-kind-last-update":"$(shell date)"}}}} }'
 	kubectl rollout resume deployment $* -n $(INSTALL_NAMESPACE)
 
 # Reload an image in KinD
@@ -699,7 +720,7 @@ kind-reload-envoy-wrapper: kind-build-and-load-envoy-wrapper
 kind-reload-envoy-wrapper:
 	kubectl rollout pause deployment gateway-proxy -n $(INSTALL_NAMESPACE) || true
 	kubectl set image deployment/gateway-proxy gateway-proxy=$(IMAGE_REGISTRY)/envoy-wrapper:$(VERSION) -n $(INSTALL_NAMESPACE)
-	kubectl patch deployment gateway-proxy -n $(INSTALL_NAMESPACE) -p '{"spec": {"template":{"metadata":{"annotations":{"gloo-kind-last-update":"$(shell date)"}}}} }'
+	kubectl patch deployment gateway-proxy -n $(INSTALL_NAMESPACE) -p '{"spec": {"template":{"metadata":{"annotations":{"kgateway-kind-last-update":"$(shell date)"}}}} }'
 	kubectl rollout resume deployment gateway-proxy -n $(INSTALL_NAMESPACE)
 
 .PHONY: kind-build-and-load-standard
@@ -771,6 +792,17 @@ kind-list-images: ## List solo-io images in the kind cluster named {CLUSTER_NAME
 .PHONY: kind-prune-images
 kind-prune-images: ## Remove images in the kind cluster named {CLUSTER_NAME}
 	docker exec -ti $(CLUSTER_NAME)-control-plane crictl rmi --prune
+
+#----------------------------------------------------------------------------------
+# A2A Test Server (for agentgateway a2a integration in e2e tests)
+#----------------------------------------------------------------------------------
+
+TEST_A2A_AGENT_SERVER_DIR := $(ROOTDIR)/test/kubernetes/e2e/features/agentgateway/a2a-example
+.PHONY: test-a2a-agent-docker
+test-a2a-agent-docker:
+	docker buildx build $(LOAD_OR_PUSH) $(PLATFORM_MULTIARCH) -f $(TEST_A2A_AGENT_SERVER_DIR)/Dockerfile $(TEST_A2A_AGENT_SERVER_DIR) \
+		-t $(IMAGE_REGISTRY)/test-a2a-agent:$(VERSION)
+
 
 #----------------------------------------------------------------------------------
 # AI Extensions Test Server (for mocking AI Providers in e2e tests)

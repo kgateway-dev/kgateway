@@ -9,8 +9,11 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"istio.io/istio/pkg/kube"
+	istiosets "istio.io/istio/pkg/util/sets"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -30,6 +33,14 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/controller"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/deployer"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/registry"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/settings"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/setup"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
 )
 
@@ -149,6 +160,16 @@ func generateKubeConfiguration(restconfig *rest.Config) string {
 	return tmpfile.Name()
 }
 
+type fakeDiscoveryNamespaceFilter struct{}
+
+func (f fakeDiscoveryNamespaceFilter) Filter(obj any) bool {
+	// this is a fake filter, so we just return true
+	return true
+}
+
+func (f fakeDiscoveryNamespaceFilter) AddHandler(func(selected, deselected istiosets.String)) {
+}
+
 func createManager(
 	parentCtx context.Context,
 	inferenceExt *deployer.InferenceExtInfo,
@@ -176,6 +197,8 @@ func createManager(
 		return nil, err
 	}
 
+	ctx, cancel := context.WithCancel(parentCtx)
+	kubeClient, _ := setup.CreateKubeClient(cfg)
 	gwCfg := controller.GatewayConfig{
 		Mgr:            mgr,
 		ControllerName: gatewayControllerName,
@@ -184,8 +207,11 @@ func createManager(
 			Registry: "ghcr.io/kgateway-dev",
 			Tag:      "latest",
 		},
+		DiscoveryNamespaceFilter: fakeDiscoveryNamespaceFilter{},
+		CommonCollections:        newCommonCols(ctx, kubeClient),
 	}
 	if err := controller.NewBaseGatewayController(parentCtx, gwCfg); err != nil {
+		cancel()
 		return nil, err
 	}
 
@@ -201,6 +227,7 @@ func createManager(
 	}
 
 	if err := controller.NewGatewayClassProvisioner(mgr, gatewayControllerName, classConfigs); err != nil {
+		cancel()
 		return nil, err
 	}
 
@@ -210,10 +237,10 @@ func createManager(
 		InferenceExt:   inferenceExt,
 	}
 	if err := controller.NewBaseInferencePoolController(parentCtx, poolCfg, &gwCfg); err != nil {
+		cancel()
 		return nil, err
 	}
 
-	ctx, cancel := context.WithCancel(parentCtx)
 	go func() {
 		defer GinkgoRecover()
 		kubeconfig = generateKubeConfiguration(cfg)
@@ -221,5 +248,33 @@ func createManager(
 		Expect(mgr.Start(ctx)).ToNot(HaveOccurred())
 	}()
 
-	return cancel, nil
+	return func() {
+		cancel()
+		kubeClient.Shutdown()
+	}, nil
+}
+
+func newCommonCols(ctx context.Context, kubeClient kube.Client) *collections.CommonCollections {
+	krtopts := krtutil.NewKrtOptions(ctx.Done(), nil)
+	cli, err := versioned.NewForConfig(cfg)
+	if err != nil {
+		Expect(err).ToNot(HaveOccurred())
+	}
+
+	settings, err := settings.BuildSettings()
+	if err != nil {
+		Expect(err).ToNot(HaveOccurred())
+	}
+	commoncol, err := collections.NewCommonCollections(ctx, krtopts, kubeClient, cli, nil, wellknown.GatewayControllerName, logr.Discard(), *settings)
+	if err != nil {
+		Expect(err).ToNot(HaveOccurred())
+	}
+
+	plugins := registry.Plugins(ctx, commoncol)
+	plugins = append(plugins, krtcollections.NewBuiltinPlugin(ctx))
+	extensions := registry.MergePlugins(plugins...)
+
+	commoncol.InitPlugins(ctx, extensions)
+	kubeClient.RunAndWait(ctx.Done())
+	return commoncol
 }

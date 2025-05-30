@@ -4,6 +4,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
+	gwxv1alpha1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 )
 
 const (
@@ -57,11 +58,18 @@ type PolicyReporter interface {
 
 type Reporter interface {
 	Gateway(gateway *gwv1.Gateway) GatewayReporter
+	ListenerSet(listenerSet *gwxv1alpha1.XListenerSet) ListenerSetReporter
 	Route(obj metav1.Object) RouteReporter
 	Policy(ref PolicyKey, observedGeneration int64) PolicyReporter
 }
 
 type GatewayReporter interface {
+	Listener(listener *gwv1.Listener) ListenerReporter
+	ListenerName(listenerName string) ListenerReporter
+	SetCondition(condition GatewayCondition)
+}
+
+type ListenerSetReporter interface {
 	Listener(listener *gwv1.Listener) ListenerReporter
 	ListenerName(listenerName string) ListenerReporter
 	SetCondition(condition GatewayCondition)

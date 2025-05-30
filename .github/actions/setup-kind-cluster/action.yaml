@@ -29,6 +29,10 @@ inputs:
     required: false
     default: "false"
     description: Whether to install localstack
+  agentgateway:
+    required: false
+    default: "false"
+    description: Enable the agentgateway integration with kgateway
 
 runs:
   using: "composite"
@@ -48,6 +52,8 @@ runs:
         ISTIO_VERSION: ${{ inputs.istio-version }}
         CONFORMANCE_VERSION: ${{ inputs.kgateway-api-version }}
         LOCALSTACK: ${{ inputs.localstack }}
+        AGENTGATEWAY: ${{ inputs.agentgateway }}
         # AI Tests rely on metal LB
         CONFORMANCE: true
-      run: ./hack/kind/setup-kind.sh
+      run: |
+        ./hack/kind/setup-kind.sh

@@ -1,0 +1,12 @@
+[project]
+name = "echo-agent"
+version = "0.1.0"
+dependencies = [
+    "click",
+    # The a2a-samples dependency is pinned to a specific SHA to prevent breaking changes from upstream when running the e2e tests.
+    "a2a-samples @ git+https://github.com/google/A2A@6743038e9f789f571d7f3d9af79fbb053bb61a73#subdirectory=samples/python"
+]
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"

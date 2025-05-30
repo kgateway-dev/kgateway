@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
+
 	"github.com/onsi/gomega"
 	"github.com/onsi/gomega/gstruct"
 	"github.com/stretchr/testify/assert"
@@ -146,6 +148,23 @@ func (s *testingSuite) TestConfigureProxiesFromGatewayParameters() {
 		gomega.HaveKeyWithValue("svc-label-key", "svc-label-val"))
 	s.testInstallation.Assertions.Gomega.Expect(svc.GetAnnotations()).To(
 		gomega.HaveKeyWithValue("svc-anno-key", "svc-anno-val"))
+
+	// check that the proxy pod has the expected labels
+	pods, err := kubeutils.GetReadyPodsForDeployment(s.ctx, s.testInstallation.ClusterContext.Clientset, proxyDeployment.ObjectMeta)
+	s.Require().NoError(err)
+	s.Require().Len(pods, 1)
+	pod := &corev1.Pod{}
+	err = s.testInstallation.ClusterContext.Client.Get(s.ctx, client.ObjectKey{
+		Namespace: proxyDeployment.Namespace,
+		Name:      pods[0],
+	}, pod)
+	s.Require().NoError(err)
+	s.Require().Subset(pod.Labels, map[string]string{
+		"app.kubernetes.io/instance":             proxyDeployment.Name,
+		"app.kubernetes.io/name":                 proxyDeployment.Name,
+		"gateway.networking.k8s.io/gateway-name": proxyDeployment.Name,
+		"kgateway":                               "kube-gateway",
+	})
 
 	// Update the Gateway to use the custom GatewayParameters
 	err = s.testInstallation.ClusterContext.Client.Get(s.ctx, client.ObjectKeyFromObject(gw), gw)

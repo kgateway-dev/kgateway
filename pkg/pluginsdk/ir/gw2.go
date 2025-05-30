@@ -42,15 +42,16 @@ type HttpRouteRuleMatchIR struct {
 }
 
 type ListenerIR struct {
-	Name             string
-	BindAddress      string
-	BindPort         uint32
-	AttachedPolicies AttachedPolicies
+	Name        string
+	BindAddress string
+	BindPort    uint32
 
 	HttpFilterChain []HttpFilterChainIR
 	TcpFilterChain  []TcpIR
 
 	PolicyAncestorRef gwv1.ParentReference
+
+	AttachedPolicies AttachedPolicies
 }
 
 type VirtualHost struct {
@@ -109,7 +110,7 @@ type TcpIR struct {
 // not in a collection so doesn't need a krt interfaces.
 type GatewayIR struct {
 	Listeners    []ListenerIR
-	SourceObject *gwv1.Gateway
+	SourceObject *Gateway
 
 	AttachedPolicies     AttachedPolicies
 	AttachedHttpPolicies AttachedPolicies

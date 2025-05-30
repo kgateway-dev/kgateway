@@ -10,6 +10,6 @@ Listeners:
       typedConfig:
         '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
         cluster: kube_default_example-tcp-svc_8080
-        statPrefix: default.example-tcp-route-rule-0
-    name: default.example-tcp-route-rule-0
-  name: tcp
+        statPrefix: listener~8080-default.example-tcp-route-rule-0
+    name: listener~8080-default.example-tcp-route-rule-0
+  name: listener~8080

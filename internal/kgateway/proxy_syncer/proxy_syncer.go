@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"maps"
 	"sync/atomic"
 	"time"
@@ -22,13 +23,13 @@ import (
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/solo-io/go-utils/contextutils"
 	"google.golang.org/protobuf/proto"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
+	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
@@ -39,6 +40,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/xds"
+	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	plug "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 )
 
@@ -173,6 +175,9 @@ func (r report) Equals(in report) bool {
 	if !maps.Equal(r.reportMap.Gateways, in.reportMap.Gateways) {
 		return false
 	}
+	if !maps.Equal(r.reportMap.ListenerSets, in.reportMap.ListenerSets) {
+		return false
+	}
 	if !maps.Equal(r.reportMap.HTTPRoutes, in.reportMap.HTTPRoutes) {
 		return false
 	}
@@ -188,17 +193,22 @@ func (r report) Equals(in report) bool {
 	return true
 }
 
-func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
-	ctx = contextutils.WithLogger(ctx, "k8s-gw-proxy-syncer")
-	logger := contextutils.LoggerFrom(ctx)
+var logger = logging.New("proxy_syncer")
 
+func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 	// all backends with policies attached in a single collection
 	finalBackends := krt.JoinCollection(s.commonCols.BackendIndex.BackendsWithPolicy(), krtopts.ToOptions("FinalBackends")...)
 
 	s.translator.Init(ctx)
 
 	s.mostXdsSnapshots = krt.NewCollection(s.commonCols.GatewayIndex.Gateways, func(kctx krt.HandlerContext, gw ir.Gateway) *GatewayXdsResources {
-		logger.Debugf("building proxy for kube gw %s version %s", client.ObjectKeyFromObject(gw.Obj), gw.Obj.GetResourceVersion())
+		// skip agentgateway proxies as they are not envoy-based gateways
+		if gw.Obj.Spec.GatewayClassName == wellknown.AgentGatewayClassName {
+			logger.Debug("skipping envoy proxy sync for agentgateway %s.%s", gw.Obj.Name, gw.Obj.Namespace)
+			return nil
+		}
+
+		logger.Debug("building proxy for kube gw", "name", client.ObjectKeyFromObject(gw.Obj), "version", gw.Obj.GetResourceVersion())
 
 		xdsSnap, rm := s.translator.TranslateGateway(kctx, ctx, gw)
 		if xdsSnap == nil {
@@ -209,7 +219,6 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 	}, krtopts.ToOptions("MostXdsSnapshots")...)
 
 	epPerClient := NewPerClientEnvoyEndpoints(
-		logger.Desugar(),
 		krtopts,
 		s.uniqueClients,
 		s.commonCols.Endpoints,
@@ -224,7 +233,6 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 	)
 
 	s.perclientSnapCollection = snapshotPerClient(
-		logger.Desugar(),
 		krtopts,
 		s.uniqueClients,
 		s.mostXdsSnapshots,
@@ -264,7 +272,10 @@ func mergeProxyReports(
 		// 1. merge GW Reports for all Proxies' status reports
 		maps.Copy(merged.Gateways, p.reports.Gateways)
 
-		// 2. merge httproute parentRefs into RouteReports
+		// 2. merge LS Reports for all Proxies' status reports
+		maps.Copy(merged.ListenerSets, p.reports.ListenerSets)
+
+		// 3. merge httproute parentRefs into RouteReports
 		for rnn, rr := range p.reports.HTTPRoutes {
 			// if we haven't encountered this route, just copy it over completely
 			old := merged.HTTPRoutes[rnn]
@@ -277,7 +288,7 @@ func mergeProxyReports(
 			maps.Copy(merged.HTTPRoutes[rnn].Parents, rr.Parents)
 		}
 
-		// 3. merge tcproute parentRefs into RouteReports
+		// 4. merge tcproute parentRefs into RouteReports
 		for rnn, rr := range p.reports.TCPRoutes {
 			// if we haven't encountered this route, just copy it over completely
 			old := merged.TCPRoutes[rnn]
@@ -331,11 +342,10 @@ func mergeProxyReports(
 }
 
 func (s *ProxySyncer) Start(ctx context.Context) error {
-	logger := contextutils.LoggerFrom(ctx)
-	logger.Infof("starting %s Proxy Syncer", s.controllerName)
+	logger.Info("starting Proxy Syncer", "controller", s.controllerName)
 
 	// wait for krt collections to sync
-	logger.Infof("waiting for cache to sync")
+	logger.Info("waiting for cache to sync")
 	s.istioClient.WaitForCacheSync(
 		"kube gw proxy syncer",
 		ctx.Done(),
@@ -346,7 +356,7 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 	if !s.mgr.GetCache().WaitForCacheSync(ctx) {
 		return errors.New("kube gateway sync loop waiting for all caches to sync failed")
 	}
-	logger.Infof("caches warm!")
+	logger.Info("caches warm!")
 
 	// caches are warm, now we can do registrations
 
@@ -360,14 +370,19 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 		}
 		latestReportQueue.Enqueue(o.Latest().reportMap)
 	})
+
+	routeStatusLogger := logger.With("subcomponent", "routeStatusSyncer")
+	listenerSetStatusLogger := logger.With("subcomponent", "listenerSetStatusSyncer")
+	gatewayStatusLogger := logger.With("subcomponent", "gatewayStatusSyncer")
 	go func() {
 		for {
 			latestReport, err := latestReportQueue.Dequeue(ctx)
 			if err != nil {
 				return
 			}
-			s.syncGatewayStatus(ctx, latestReport)
-			s.syncRouteStatus(ctx, latestReport)
+			s.syncGatewayStatus(ctx, gatewayStatusLogger, latestReport)
+			s.syncListenerSetStatus(ctx, listenerSetStatusLogger, latestReport)
+			s.syncRouteStatus(ctx, routeStatusLogger, latestReport)
 			s.syncPolicyStatus(ctx, latestReport)
 		}
 	}()
@@ -417,9 +432,7 @@ func (s *ProxySyncer) HasSynced() bool {
 	return s.ready.Load()
 }
 
-func (s *ProxySyncer) syncRouteStatus(ctx context.Context, rm reports.ReportMap) {
-	ctx = contextutils.WithLogger(ctx, "routeStatusSyncer")
-	logger := contextutils.LoggerFrom(ctx)
+func (s *ProxySyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger, rm reports.ReportMap) {
 	stopwatch := utils.NewTranslatorStopWatch("RouteStatusSyncer")
 	stopwatch.Start()
 	defer stopwatch.Stop(ctx)
@@ -441,12 +454,11 @@ func (s *ProxySyncer) syncRouteStatus(ctx context.Context, rm reports.ReportMap)
 						// if it's recreated, we'll retranslate it anyway
 						return nil
 					}
-					logger.Errorw(fmt.Sprintf("%s get failed", routeType), "error", err, "route", routeKey)
+					logger.Error("error getting route", "error", err, "resource_ref", routeKey, "route_type", routeType)
 					return err
 				}
 				if err := statusUpdater(route); err != nil {
-					logger.Debugw(fmt.Sprintf("%s status update attempt failed", routeType), "error", err,
-						"route", fmt.Sprintf("%s.%s", routeKey.Namespace, routeKey.Name))
+					logger.Debug("error updating status for route", "error", err, "resource_ref", routeKey, "route_type", routeType)
 					return err
 				}
 				return nil
@@ -486,7 +498,7 @@ func (s *ProxySyncer) syncRouteStatus(ctx context.Context, rm reports.ReportMap)
 			}
 			r.Status.RouteStatus = *status
 		default:
-			logger.Warnw(fmt.Sprintf("unsupported route type for %s", routeType), "route", route)
+			logger.Warn("unsupported route type", "route_type", routeType, "resource_ref", client.ObjectKeyFromObject(route))
 			return nil
 		}
 
@@ -507,7 +519,7 @@ func (s *ProxySyncer) syncRouteStatus(ctx context.Context, rm reports.ReportMap)
 			},
 		)
 		if err != nil {
-			logger.Errorw("all attempts failed at updating HTTPRoute status", "error", err, "route", rnn)
+			logger.Error("all attempts failed at updating HTTPRoute status", "error", err, "route", rnn)
 		}
 	}
 
@@ -517,7 +529,7 @@ func (s *ProxySyncer) syncRouteStatus(ctx context.Context, rm reports.ReportMap)
 			return buildAndUpdateStatus(route, wellknown.TCPRouteKind)
 		})
 		if err != nil {
-			logger.Errorw("all attempts failed at updating TCPRoute status", "error", err, "route", rnn)
+			logger.Error("all attempts failed at updating TCPRoute status", "error", err, "route", rnn)
 		}
 	}
 
@@ -527,7 +539,7 @@ func (s *ProxySyncer) syncRouteStatus(ctx context.Context, rm reports.ReportMap)
 			return buildAndUpdateStatus(route, wellknown.TLSRouteKind)
 		})
 		if err != nil {
-			logger.Errorw("all attempts failed at updating TLSRoute status", "error", err, "route", rnn)
+			logger.Error("all attempts failed at updating TLSRoute status", "error", err, "route", rnn)
 		}
 	}
 
@@ -537,25 +549,23 @@ func (s *ProxySyncer) syncRouteStatus(ctx context.Context, rm reports.ReportMap)
 			return buildAndUpdateStatus(route, wellknown.GRPCRouteKind)
 		})
 		if err != nil {
-			logger.Errorw("all attempts failed at updating GRPCRoute status", "error", err, "route", rnn)
+			logger.Error("all attempts failed at updating GRPCRoute status", "error", err, "route", rnn)
 		}
 	}
 }
 
 // syncGatewayStatus will build and update status for all Gateways in a reportMap
-func (s *ProxySyncer) syncGatewayStatus(ctx context.Context, rm reports.ReportMap) {
-	ctx = contextutils.WithLogger(ctx, "statusSyncer")
-	logger := contextutils.LoggerFrom(ctx)
+func (s *ProxySyncer) syncGatewayStatus(ctx context.Context, logger *slog.Logger, rm reports.ReportMap) {
 	stopwatch := utils.NewTranslatorStopWatch("GatewayStatusSyncer")
 	stopwatch.Start()
 
-	// TODO: retry within loop per GW rathen that as a full block
+	// TODO: retry within loop per GW rather that as a full block
 	err := retry.Do(func() error {
 		for gwnn := range rm.Gateways {
 			gw := gwv1.Gateway{}
 			err := s.mgr.GetClient().Get(ctx, gwnn, &gw)
 			if err != nil {
-				logger.Info("error getting gw", err.Error())
+				logger.Info("error getting gw", "error", err, "gateway", gwnn.String())
 				return err
 			}
 			gwStatusWithoutAddress := gw.Status
@@ -564,12 +574,12 @@ func (s *ProxySyncer) syncGatewayStatus(ctx context.Context, rm reports.ReportMa
 				if !isGatewayStatusEqual(&gwStatusWithoutAddress, status) {
 					gw.Status = *status
 					if err := s.mgr.GetClient().Status().Patch(ctx, &gw, client.Merge); err != nil {
-						logger.Error(err)
+						logger.Error("error patching gateway status", "error", err, "gateway", gwnn.String())
 						return err
 					}
-					logger.Infof("patched gw '%s' status", gwnn.String())
+					logger.Info("patched gw status", "gateway", gwnn.String())
 				} else {
-					logger.Infof("skipping k8s gateway %s status update, status equal", gwnn.String())
+					logger.Info("skipping k8s gateway status update, status equal", "gateway", gwnn.String())
 				}
 			}
 		}
@@ -580,15 +590,54 @@ func (s *ProxySyncer) syncGatewayStatus(ctx context.Context, rm reports.ReportMa
 		retry.DelayType(retry.BackOffDelay),
 	)
 	if err != nil {
-		logger.Errorw("all attempts failed at updating gateway statuses", "error", err)
+		logger.Error("all attempts failed at updating gateway statuses", "error", err)
 	}
 	duration := stopwatch.Stop(ctx)
-	logger.Debugf("synced gw status for %d gateways in %s", len(rm.Gateways), duration.String())
+	logger.Debug("synced gw status for gateways", "count", len(rm.Gateways), "duration", duration)
+}
+
+// syncListenerSetStatus will build and update status for all Listener Sets in a reportMap
+func (s *ProxySyncer) syncListenerSetStatus(ctx context.Context, logger *slog.Logger, rm reports.ReportMap) {
+	stopwatch := utils.NewTranslatorStopWatch("ListenerSetStatusSyncer")
+	stopwatch.Start()
+
+	// TODO: retry within loop per LS rathen that as a full block
+	err := retry.Do(func() error {
+		for lsnn := range rm.ListenerSets {
+			ls := gwxv1a1.XListenerSet{}
+			err := s.mgr.GetClient().Get(ctx, lsnn, &ls)
+			if err != nil {
+				logger.Info("error getting ls", "erro", err.Error())
+				return err
+			}
+			lsStatus := ls.Status
+			if status := rm.BuildListenerSetStatus(ctx, ls); status != nil {
+				if !isListenerSetStatusEqual(&lsStatus, status) {
+					ls.Status = *status
+					if err := s.mgr.GetClient().Status().Patch(ctx, &ls, client.Merge); err != nil {
+						logger.Error("error patching listener set status", "error", err, "gateway", lsnn.String())
+						return err
+					}
+					logger.Info("patched ls status", "listenerset", lsnn.String())
+				} else {
+					logger.Info("skipping k8s ls status update, status equal", "listenerset", lsnn.String())
+				}
+			}
+		}
+		return nil
+	},
+		retry.Attempts(5),
+		retry.Delay(100*time.Millisecond),
+		retry.DelayType(retry.BackOffDelay),
+	)
+	if err != nil {
+		logger.Error("all attempts failed at updating listener set statuses", "error", err)
+	}
+	duration := stopwatch.Stop(ctx)
+	logger.Debug("synced listener sets status for listener set", "count", len(rm.ListenerSets), "duration", duration.String())
 }
 
 func (s *ProxySyncer) syncPolicyStatus(ctx context.Context, rm reports.ReportMap) {
-	ctx = contextutils.WithLogger(ctx, "routeStatusSyncer")
-	logger := contextutils.LoggerFrom(ctx)
 	stopwatch := utils.NewTranslatorStopWatch("RouteStatusSyncer")
 	stopwatch.Start()
 	defer stopwatch.Stop(ctx)
@@ -600,20 +649,20 @@ func (s *ProxySyncer) syncPolicyStatus(ctx context.Context, rm reports.ReportMap
 
 		plugin, ok := s.plugins.ContributesPolicies[gk]
 		if !ok {
-			logger.Errorw("Policy plugin not registered for policy", "groupKind", gk, "resource", nsName)
+			logger.Error("policy plugin not registered for policy", "group_kind", gk, "resource", nsName)
 			continue
 		}
 		if plugin.GetPolicyStatus == nil {
-			logger.Errorw("GetPolicyStatus handler not registered for policy", "groupKind", gk, "resource", nsName)
+			logger.Error("GetPolicyStatus handler not registered for policy", "group_kind", gk, "resource", nsName) //nolint:sloglint // ignore PascalCase at start
 			continue
 		}
 		if plugin.PatchPolicyStatus == nil {
-			logger.Errorw("PatchPolicyStatus handler not registered for policy", "groupKind", gk, "resource", nsName)
+			logger.Error("PatchPolicyStatus handler not registered for policy", "group_kind", gk, "resource", nsName) //nolint:sloglint // ignore PascalCase at start
 			continue
 		}
 		currentStatus, err := plugin.GetPolicyStatus(ctx, nsName)
 		if err != nil {
-			logger.Errorw("error getting policy status", "error", err, "policy", nsName)
+			logger.Error("error getting policy status", "error", err, "resource_ref", nsName)
 			continue
 		}
 		status := rm.BuildPolicyStatus(ctx, key, s.controllerName, currentStatus)
@@ -629,7 +678,7 @@ func (s *ProxySyncer) syncPolicyStatus(ctx context.Context, rm reports.ReportMap
 			retry.DelayType(retry.BackOffDelay),
 		)
 		if err != nil {
-			logger.Errorw("error updating policy status", "error", err, "groupKind", gk, "policy", nsName)
+			logger.Error("error updating policy status", "error", err, "group_kind", gk, "resource_ref", nsName)
 		}
 	}
 }
@@ -642,6 +691,10 @@ var opts = cmp.Options{
 }
 
 func isGatewayStatusEqual(objA, objB *gwv1.GatewayStatus) bool {
+	return cmp.Equal(objA, objB, opts)
+}
+
+func isListenerSetStatusEqual(objA, objB *gwxv1a1.ListenerSetStatus) bool {
 	return cmp.Equal(objA, objB, opts)
 }
 

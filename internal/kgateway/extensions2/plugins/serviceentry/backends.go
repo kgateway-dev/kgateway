@@ -2,11 +2,11 @@ package serviceentry
 
 import (
 	"context"
-
-	"go.uber.org/zap"
+	"log/slog"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 
 	networking "istio.io/api/networking/v1alpha3"
 	networkingclient "istio.io/client-go/pkg/apis/networking/v1"
@@ -70,18 +70,18 @@ func (s *serviceEntryPlugin) initServiceEntryBackend(ctx context.Context, in ir.
 // backendsCollections produces a one-to-many collection from ServiceEntry into BackendObjectIR.
 // For each ServiceEntry, we create hosts*ports BackendObjectIRs.
 func backendsCollections(
-	logger *zap.SugaredLogger,
+	logger *slog.Logger,
 	ServiceEntries krt.Collection[*networkingclient.ServiceEntry],
 	krtOpts krtutil.KrtOptions,
 ) krt.Collection[ir.BackendObjectIR] {
 	return krt.NewManyCollection(ServiceEntries, func(ctx krt.HandlerContext, se *networkingclient.ServiceEntry) []ir.BackendObjectIR {
 		// passthrough not supported here
 		if se.Spec.GetResolution() == networking.ServiceEntry_NONE {
-			logger.Debugw("skipping ServiceEntry with resolution: NONE", "name", se.GetName(), "namespace", se.GetNamespace())
+			logger.Debug("skipping ServiceEntry with resolution: NONE", "name", se.GetName(), "namespace", se.GetNamespace())
 			return nil
 		}
 
-		logger.Debugw("converting ServiceEntry to Upstream", "name", se.GetName(), "namespace", se.GetNamespace())
+		logger.Debug("converting ServiceEntry to Upstream", "name", se.GetName(), "namespace", se.GetNamespace())
 		var out []ir.BackendObjectIR
 
 		for _, hostname := range se.Spec.GetHosts() {
@@ -105,25 +105,38 @@ func BuildServiceEntryBackendObjectIR(
 	svcPort int32,
 	svcProtocol string,
 ) ir.BackendObjectIR {
+	objSrc := ir.ObjectSource{
+		Group:     gvk.ServiceEntry.Group,
+		Kind:      gvk.ServiceEntry.Kind,
+		Namespace: se.GetNamespace(),
+		Name:      se.GetName(),
+	}
 	return ir.BackendObjectIR{
-		ObjectSource: ir.ObjectSource{
-			Group:     gvk.ServiceEntry.Group,
-			Kind:      gvk.ServiceEntry.Kind,
-			Namespace: se.GetNamespace(),
-			Name:      se.GetName(),
-		},
+		ObjectSource:      objSrc,
 		Port:              svcPort,
 		AppProtocol:       ir.ParseAppProtocol(ptr.To(svcProtocol)),
 		GvPrefix:          BackendClusterPrefix,
 		CanonicalHostname: hostname,
 		Obj:               se,
+
+		// also allow hostname reference
+		Aliases: []ir.ObjectSource{
+			{
+				Group:     wellknown.HostnameGVK.Group,
+				Kind:      wellknown.HostnameGVK.Kind,
+				Name:      hostname,
+				Namespace: "", // global
+			},
+			objSrc,
+		},
+
 		// TODO ObjIr:             nil,
 		AttachedPolicies: ir.AttachedPolicies{},
 
 		// TODO this is a hack so we don't have key conflicts in krt since we
-		// build per-hostname backends. This means the generic `getBackend`
-		// in policy.go will never work, and we resolve the direct
-		// ServiceEntry backendRefs in our backendref plugin.
+		// build per-hostname backends; since getBackend tries to use krt-key by
+		// default, it will never find ServiceEntry, so we "alias" ServiceEntry to ServiceEntry
+		// to get the ref-index-based logic instead of the krt-key based lookup.
 		ExtraKey: hostname,
 	}
 }

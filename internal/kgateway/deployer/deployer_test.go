@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+	"time"
 
 	envoy_config_bootstrap "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -15,6 +16,8 @@ import (
 	"github.com/onsi/gomega/types"
 	jsonpb "google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
+	"istio.io/istio/pkg/kube/krt/krttest"
+	"istio.io/istio/pkg/test"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -26,9 +29,14 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	infextv1a2 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
 	api "sigs.k8s.io/gateway-api/apis/v1"
+	apixv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	gw2_v1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/deployer"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
+	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/xds"
 	"github.com/kgateway-dev/kgateway/v2/internal/version"
@@ -165,7 +173,7 @@ var _ = Describe("Deployer", func() {
 				},
 				TypeMeta: metav1.TypeMeta{
 					Kind:       "Gateway",
-					APIVersion: "gateway.solo.io/v1beta1",
+					APIVersion: "gateway.networking.k8s.io",
 				},
 				Spec: api.GatewaySpec{
 					GatewayClassName: wellknown.GatewayClassName,
@@ -270,6 +278,28 @@ var _ = Describe("Deployer", func() {
 				},
 			}
 		}
+
+		agentGatewayParam = func(name string) *gw2_v1alpha1.GatewayParameters {
+			return &gw2_v1alpha1.GatewayParameters{
+				TypeMeta: metav1.TypeMeta{
+					Kind: wellknown.GatewayParametersGVK.Kind,
+					// The parsing expects GROUP/VERSION format in this field
+					APIVersion: gw2_v1alpha1.GroupVersion.String(),
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      name,
+					Namespace: defaultNamespace,
+					UID:       "1237",
+				},
+				Spec: gw2_v1alpha1.GatewayParametersSpec{
+					Kube: &gw2_v1alpha1.KubernetesProxyConfig{
+						AgentGateway: &gw2_v1alpha1.AgentGateway{
+							Enabled: ptr.To(true),
+						},
+					},
+				},
+			}
+		}
 	)
 
 	Context("default case", func() {
@@ -300,9 +330,26 @@ var _ = Describe("Deployer", func() {
 					UID:       "1237",
 				},
 			}
+
+			gw := &api.Gateway{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "foo",
+					Namespace: defaultNamespace,
+					UID:       "1235",
+				},
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "Gateway",
+					APIVersion: "gateway.networking.k8s.io",
+				},
+				Spec: api.GatewaySpec{
+					GatewayClassName: wellknown.GatewayClassName,
+				},
+			}
+
 			d, err := deployer.NewDeployer(newFakeClientWithObjs(gwc, gwParams), &deployer.Inputs{
-				ControllerName: wellknown.GatewayControllerName,
-				Dev:            false,
+				CommonCollections: newCommonCols(GinkgoT(), gwc, gw),
+				ControllerName:    wellknown.GatewayControllerName,
+				Dev:               false,
 				ControlPlane: deployer.ControlPlaneInfo{
 					XdsHost: "something.cluster.local",
 					XdsPort: 1234,
@@ -313,21 +360,6 @@ var _ = Describe("Deployer", func() {
 				},
 			})
 			Expect(err).NotTo(HaveOccurred())
-
-			gw := &api.Gateway{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "foo",
-					Namespace: defaultNamespace,
-					UID:       "1235",
-				},
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "Gateway",
-					APIVersion: "gateway.solo.io/v1beta1",
-				},
-				Spec: api.GatewaySpec{
-					GatewayClassName: wellknown.GatewayClassName,
-				},
-			}
 
 			var objs clientObjects
 			objs, err = d.GetObjsToDeploy(context.Background(), gw)
@@ -344,10 +376,11 @@ var _ = Describe("Deployer", func() {
 		var (
 			d   *deployer.Deployer
 			gwp *gw2_v1alpha1.GatewayParameters
+			gwc *api.GatewayClass
 		)
 		BeforeEach(func() {
 			gwp = selfManagedGatewayParam("self-managed-gateway-params")
-			gwc := &api.GatewayClass{
+			gwc = &api.GatewayClass{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: wellknown.GatewayClassName,
 				},
@@ -361,20 +394,6 @@ var _ = Describe("Deployer", func() {
 					},
 				},
 			}
-			var err error
-			d, err = deployer.NewDeployer(newFakeClientWithObjs(gwc, gwp), &deployer.Inputs{
-				ControllerName: wellknown.GatewayControllerName,
-				Dev:            false,
-				ControlPlane: deployer.ControlPlaneInfo{
-					XdsHost: "something.cluster.local",
-					XdsPort: 1234,
-				},
-				ImageInfo: &deployer.ImageInfo{
-					Registry: "foo",
-					Tag:      "bar",
-				},
-			})
-			Expect(err).NotTo(HaveOccurred())
 		})
 
 		It("deploys nothing", func() {
@@ -398,9 +417,104 @@ var _ = Describe("Deployer", func() {
 					}},
 				},
 			}
+			var err error
+			d, err = deployer.NewDeployer(newFakeClientWithObjs(gwc, gwp), &deployer.Inputs{
+				CommonCollections: newCommonCols(GinkgoT(), gwc, gw),
+				ControllerName:    wellknown.GatewayControllerName,
+				Dev:               false,
+				ControlPlane: deployer.ControlPlaneInfo{
+					XdsHost: "something.cluster.local",
+					XdsPort: 1234,
+				},
+				ImageInfo: &deployer.ImageInfo{
+					Registry: "foo",
+					Tag:      "bar",
+				},
+			})
+			Expect(err).NotTo(HaveOccurred())
+
 			objs, err := d.GetObjsToDeploy(context.Background(), gw)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(objs).To(BeEmpty())
+		})
+	})
+
+	Context("agentgateway", func() {
+		var (
+			gwp *gw2_v1alpha1.GatewayParameters
+			gwc *api.GatewayClass
+		)
+		BeforeEach(func() {
+			gwp = agentGatewayParam("agent-gateway-params")
+			gwc = &api.GatewayClass{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "agentgateway",
+				},
+				Spec: api.GatewayClassSpec{
+					ControllerName: wellknown.GatewayControllerName,
+					ParametersRef: &api.ParametersReference{
+						Group:     gw2_v1alpha1.GroupName,
+						Kind:      api.Kind(wellknown.GatewayParametersGVK.Kind),
+						Name:      gwp.GetName(),
+						Namespace: ptr.To(api.Namespace(defaultNamespace)),
+					},
+				},
+			}
+		})
+
+		It("deploys agentgateway", func() {
+			gw := &api.Gateway{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "agent-gateway",
+					Namespace: defaultNamespace,
+				},
+				Spec: api.GatewaySpec{
+					GatewayClassName: "agentgateway",
+					Infrastructure: &api.GatewayInfrastructure{
+						ParametersRef: &api.LocalParametersReference{
+							Group: gw2_v1alpha1.GroupName,
+							Kind:  api.Kind(wellknown.GatewayParametersGVK.Kind),
+							Name:  gwp.GetName(),
+						},
+					},
+					Listeners: []api.Listener{{
+						Name: "listener-1",
+						Port: 80,
+					}},
+				},
+			}
+			d, err := deployer.NewDeployer(newFakeClientWithObjs(gwc, gwp), &deployer.Inputs{
+				CommonCollections: newCommonCols(GinkgoT(), gwc, gw),
+				ControllerName:    wellknown.GatewayControllerName,
+				Dev:               false,
+				ControlPlane: deployer.ControlPlaneInfo{
+					XdsHost: "something.cluster.local",
+					XdsPort: 1234,
+				},
+				ImageInfo: &deployer.ImageInfo{
+					Registry: "foo",
+					Tag:      "bar",
+				},
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+			var objs clientObjects
+			objs, err = d.GetObjsToDeploy(context.Background(), gw)
+			Expect(err).ToNot(HaveOccurred())
+			// check the image is using the agentgateway image
+			deployment := objs.findDeployment(defaultNamespace, "agent-gateway")
+			Expect(deployment).ToNot(BeNil())
+			Expect(deployment.Spec.Template.Spec.Containers[0].Image).To(ContainSubstring("agentgateway"))
+			// check the service is using the agentgateway port
+			svc := objs.findService(defaultNamespace, "agent-gateway")
+			Expect(svc).ToNot(BeNil())
+			Expect(svc.Spec.Ports[0].Port).To(Equal(int32(80)))
+			// check the config map is using the xds address and port
+			cm := objs.findConfigMap(defaultNamespace, "agent-gateway")
+			Expect(cm).ToNot(BeNil())
+			Expect(cm.Data["config.json"]).To(ContainSubstring(`"xds_address": "http://something.cluster.local:1234"`))
+			Expect(cm.Data["config.json"]).To(ContainSubstring(`"alt_xds_hostname": "agent-gateway.default.svc.cluster.local"`))
+
 		})
 	})
 
@@ -411,8 +525,9 @@ var _ = Describe("Deployer", func() {
 		BeforeEach(func() {
 			var err error
 			d, err = deployer.NewDeployer(newFakeClientWithObjs(defaultGatewayClass(), defaultGatewayParams()), &deployer.Inputs{
-				ControllerName: wellknown.GatewayControllerName,
-				Dev:            false,
+				CommonCollections: newCommonCols(GinkgoT()),
+				ControllerName:    wellknown.GatewayControllerName,
+				Dev:               false,
 				ControlPlane: deployer.ControlPlaneInfo{
 					XdsHost: "something.cluster.local",
 					XdsPort: 1234,
@@ -447,34 +562,6 @@ var _ = Describe("Deployer", func() {
 		})
 
 		It("deploys multiple GWs with the same GWP", func() {
-			d1, err := deployer.NewDeployer(newFakeClientWithObjs(gwc, defaultGatewayParams()), &deployer.Inputs{
-				ControllerName: wellknown.GatewayControllerName,
-				Dev:            false,
-				ControlPlane: deployer.ControlPlaneInfo{
-					XdsHost: "something.cluster.local",
-					XdsPort: 1234,
-				},
-				ImageInfo: &deployer.ImageInfo{
-					Registry: "foo",
-					Tag:      "bar",
-				},
-			})
-			Expect(err).NotTo(HaveOccurred())
-
-			d2, err := deployer.NewDeployer(newFakeClientWithObjs(gwc, defaultGatewayParams()), &deployer.Inputs{
-				ControllerName: wellknown.GatewayControllerName,
-				Dev:            false,
-				ControlPlane: deployer.ControlPlaneInfo{
-					XdsHost: "something.cluster.local",
-					XdsPort: 1234,
-				},
-				ImageInfo: &deployer.ImageInfo{
-					Registry: "foo",
-					Tag:      "bar",
-				},
-			})
-			Expect(err).NotTo(HaveOccurred())
-
 			gw1 := &api.Gateway{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "foo",
@@ -483,7 +570,7 @@ var _ = Describe("Deployer", func() {
 				},
 				TypeMeta: metav1.TypeMeta{
 					Kind:       "Gateway",
-					APIVersion: "gateway.solo.io/v1beta1",
+					APIVersion: "gateway.networking.k8s.io",
 				},
 				Spec: api.GatewaySpec{
 					GatewayClassName: wellknown.GatewayClassName,
@@ -498,12 +585,42 @@ var _ = Describe("Deployer", func() {
 				},
 				TypeMeta: metav1.TypeMeta{
 					Kind:       "Gateway",
-					APIVersion: "gateway.solo.io/v1beta1",
+					APIVersion: "gateway.networking.k8s.io",
 				},
 				Spec: api.GatewaySpec{
 					GatewayClassName: wellknown.GatewayClassName,
 				},
 			}
+
+			d1, err := deployer.NewDeployer(newFakeClientWithObjs(gwc, defaultGatewayParams()), &deployer.Inputs{
+				CommonCollections: newCommonCols(GinkgoT(), gwc, gw1, gw2),
+				ControllerName:    wellknown.GatewayControllerName,
+				Dev:               false,
+				ControlPlane: deployer.ControlPlaneInfo{
+					XdsHost: "something.cluster.local",
+					XdsPort: 1234,
+				},
+				ImageInfo: &deployer.ImageInfo{
+					Registry: "foo",
+					Tag:      "bar",
+				},
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+			d2, err := deployer.NewDeployer(newFakeClientWithObjs(gwc, defaultGatewayParams()), &deployer.Inputs{
+				CommonCollections: newCommonCols(GinkgoT(), gwc, gw1, gw2),
+				ControllerName:    wellknown.GatewayControllerName,
+				Dev:               false,
+				ControlPlane: deployer.ControlPlaneInfo{
+					XdsHost: "something.cluster.local",
+					XdsPort: 1234,
+				},
+				ImageInfo: &deployer.ImageInfo{
+					Registry: "foo",
+					Tag:      "bar",
+				},
+			})
+			Expect(err).NotTo(HaveOccurred())
 
 			var objs1, objs2 clientObjects
 			objs1, err = d1.GetObjsToDeploy(context.Background(), gw1)
@@ -513,7 +630,6 @@ var _ = Describe("Deployer", func() {
 			Expect(objs1.findService(defaultNamespace, gw1.Name)).ToNot(BeNil())
 			Expect(objs1.findConfigMap(defaultNamespace, gw1.Name)).ToNot(BeNil())
 			Expect(objs1.findServiceAccount(defaultNamespace, gw1.Name)).ToNot(BeNil())
-
 			objs2, err = d2.GetObjsToDeploy(context.Background(), gw2)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(objs2).NotTo(BeEmpty())
@@ -552,8 +668,9 @@ var _ = Describe("Deployer", func() {
 			}
 
 			d, err := deployer.NewDeployer(newFakeClientWithObjs(defaultGatewayClass()), &deployer.Inputs{
-				ControllerName: wellknown.GatewayControllerName,
-				Dev:            false,
+				CommonCollections: newCommonCols(GinkgoT(), defaultGatewayClass(), gw),
+				ControllerName:    wellknown.GatewayControllerName,
+				Dev:               false,
 				ControlPlane: deployer.ControlPlaneInfo{
 					XdsHost: "something.cluster.local",
 					XdsPort: 1234,
@@ -589,8 +706,9 @@ var _ = Describe("Deployer", func() {
 			}
 
 			d, err := deployer.NewDeployer(newFakeClientWithObjs(defaultGatewayClass()), &deployer.Inputs{
-				ControllerName: wellknown.GatewayControllerName,
-				Dev:            false,
+				CommonCollections: newCommonCols(GinkgoT(), defaultGatewayClass(), gw),
+				ControllerName:    wellknown.GatewayControllerName,
+				Dev:               false,
 				ControlPlane: deployer.ControlPlaneInfo{
 					XdsHost: "something.cluster.local",
 					XdsPort: 1234,
@@ -620,12 +738,34 @@ var _ = Describe("Deployer", func() {
 			var (
 				d *deployer.Deployer
 			)
-			BeforeEach(func() {
-				gwc := defaultGatewayClass()
+			It("should use the default in-memory GWP", func() {
+				var objs clientObjects
 				var err error
+
+				gwc := defaultGatewayClass()
+				gw := &api.Gateway{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "foo",
+						Namespace: defaultNamespace,
+						UID:       "1235",
+					},
+					TypeMeta: metav1.TypeMeta{
+						Kind:       "Gateway",
+						APIVersion: "gateway.networking.k8s.io",
+					},
+					Spec: api.GatewaySpec{
+						GatewayClassName: wellknown.GatewayClassName,
+						Listeners: []api.Listener{{
+							Name: "listener-1",
+							Port: 80,
+						}},
+					},
+				}
+
 				d, err = deployer.NewDeployer(newFakeClientWithObjs(gwc), &deployer.Inputs{
-					ControllerName: wellknown.GatewayControllerName,
-					Dev:            false,
+					CommonCollections: newCommonCols(GinkgoT(), gwc, gw),
+					ControllerName:    wellknown.GatewayControllerName,
+					Dev:               false,
 					ControlPlane: deployer.ControlPlaneInfo{
 						XdsHost: "something.cluster.local",
 						XdsPort: 1234,
@@ -636,28 +776,8 @@ var _ = Describe("Deployer", func() {
 					},
 				})
 				Expect(err).NotTo(HaveOccurred())
-			})
-			It("should use the default in-memory GWP", func() {
-				var objs clientObjects
-				var err error
-				objs, err = d.GetObjsToDeploy(context.Background(), &api.Gateway{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "foo",
-						Namespace: defaultNamespace,
-						UID:       "1235",
-					},
-					TypeMeta: metav1.TypeMeta{
-						Kind:       "Gateway",
-						APIVersion: "gateway.solo.io/v1beta1",
-					},
-					Spec: api.GatewaySpec{
-						GatewayClassName: wellknown.GatewayClassName,
-						Listeners: []api.Listener{{
-							Name: "listener-1",
-							Port: 80,
-						}},
-					},
-				})
+
+				objs, err = d.GetObjsToDeploy(context.Background(), gw)
 				Expect(err).NotTo(HaveOccurred())
 
 				By("validating the expected objects are deployed")
@@ -695,29 +815,15 @@ var _ = Describe("Deployer", func() {
 						},
 					},
 				}
-				gwc := defaultGatewayClass()
-				var err error
-				d, err = deployer.NewDeployer(newFakeClientWithObjs(gwc, gwp), &deployer.Inputs{
-					ControllerName: wellknown.GatewayControllerName,
-					Dev:            false,
-					ControlPlane: deployer.ControlPlaneInfo{
-						XdsHost: "something.cluster.local",
-						XdsPort: 1234,
-					},
-					ImageInfo: &deployer.ImageInfo{
-						Registry: registry,
-						Tag:      tag,
-					},
-				})
-				Expect(err).NotTo(HaveOccurred())
 			})
 			It("should deploy the resources with the GWP overrides", func() {
 				var objs clientObjects
 				var err error
-				objs, err = d.GetObjsToDeploy(context.Background(), &api.Gateway{
+
+				gw := &api.Gateway{
 					TypeMeta: metav1.TypeMeta{
 						Kind:       "Gateway",
-						APIVersion: "gateway.solo.io/v1beta1",
+						APIVersion: "gateway.networking.k8s.io",
 					},
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "foo",
@@ -738,7 +844,24 @@ var _ = Describe("Deployer", func() {
 							Port: 80,
 						}},
 					},
+				}
+				gwc := defaultGatewayClass()
+				d, err = deployer.NewDeployer(newFakeClientWithObjs(gwc, gwp), &deployer.Inputs{
+					CommonCollections: newCommonCols(GinkgoT(), gwc, gw),
+					ControllerName:    wellknown.GatewayControllerName,
+					Dev:               false,
+					ControlPlane: deployer.ControlPlaneInfo{
+						XdsHost: "something.cluster.local",
+						XdsPort: 1234,
+					},
+					ImageInfo: &deployer.ImageInfo{
+						Registry: registry,
+						Tag:      tag,
+					},
 				})
+				Expect(err).NotTo(HaveOccurred())
+
+				objs, err = d.GetObjsToDeploy(context.Background(), gw)
 				Expect(err).NotTo(HaveOccurred())
 
 				By("validating the expected objects are deployed")
@@ -757,6 +880,7 @@ var _ = Describe("Deployer", func() {
 			var (
 				d   *deployer.Deployer
 				gwp *gw2_v1alpha1.GatewayParameters
+				gwc *api.GatewayClass
 			)
 			BeforeEach(func() {
 				gwp = &gw2_v1alpha1.GatewayParameters{
@@ -782,30 +906,17 @@ var _ = Describe("Deployer", func() {
 						},
 					},
 				}
-				gwc := defaultGatewayClassWithParamsRef()
+				gwc = defaultGatewayClassWithParamsRef()
 				gwc.Spec.ParametersRef.Name = gwp.GetName()
-				var err error
-				d, err = deployer.NewDeployer(newFakeClientWithObjs(gwc, gwp), &deployer.Inputs{
-					ControllerName: wellknown.GatewayControllerName,
-					Dev:            false,
-					ControlPlane: deployer.ControlPlaneInfo{
-						XdsHost: "something.cluster.local",
-						XdsPort: 1234,
-					},
-					ImageInfo: &deployer.ImageInfo{
-						Registry: registry,
-						Tag:      tag,
-					},
-				})
-				Expect(err).NotTo(HaveOccurred())
 			})
 			It("should inherit defaults for non-overridden fields", func() {
 				var objs clientObjects
 				var err error
-				objs, err = d.GetObjsToDeploy(context.Background(), &api.Gateway{
+
+				gw := &api.Gateway{
 					TypeMeta: metav1.TypeMeta{
 						Kind:       "Gateway",
-						APIVersion: "gateway.solo.io/v1beta1",
+						APIVersion: "gateway.networking.k8s.io",
 					},
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "foo",
@@ -826,7 +937,23 @@ var _ = Describe("Deployer", func() {
 							Port: 80,
 						}},
 					},
+				}
+				d, err = deployer.NewDeployer(newFakeClientWithObjs(gwc, gwp), &deployer.Inputs{
+					CommonCollections: newCommonCols(GinkgoT(), gwc, gw),
+					ControllerName:    wellknown.GatewayControllerName,
+					Dev:               false,
+					ControlPlane: deployer.ControlPlaneInfo{
+						XdsHost: "something.cluster.local",
+						XdsPort: 1234,
+					},
+					ImageInfo: &deployer.ImageInfo{
+						Registry: registry,
+						Tag:      tag,
+					},
 				})
+				Expect(err).NotTo(HaveOccurred())
+
+				objs, err = d.GetObjsToDeploy(context.Background(), gw)
 				Expect(err).NotTo(HaveOccurred())
 
 				By("validating the expected objects are deployed")
@@ -884,25 +1011,7 @@ var _ = Describe("Deployer", func() {
 		}
 
 		var (
-			gwpOverrideName       = "gateway-params-override"
-			defaultDeployerInputs = func() *deployer.Inputs {
-				return &deployer.Inputs{
-					ControllerName: wellknown.GatewayControllerName,
-					Dev:            false,
-					ControlPlane: deployer.ControlPlaneInfo{
-						XdsHost: "something.cluster.local", XdsPort: 1234,
-					},
-					ImageInfo: &deployer.ImageInfo{
-						Registry: "foo",
-						Tag:      "bar",
-					},
-				}
-			}
-			istioEnabledDeployerInputs = func() *deployer.Inputs {
-				inp := defaultDeployerInputs()
-				inp.IstioAutoMtlsEnabled = true
-				return inp
-			}
+			gwpOverrideName = "gateway-params-override"
 
 			defaultGatewayParamsOverride = func() *gw2_v1alpha1.GatewayParameters {
 				return &gw2_v1alpha1.GatewayParameters{
@@ -1144,6 +1253,24 @@ var _ = Describe("Deployer", func() {
 					},
 				}
 				return gw
+			}
+			defaultDeployerInputs = func() *deployer.Inputs {
+				return &deployer.Inputs{
+					ControllerName: wellknown.GatewayControllerName,
+					Dev:            false,
+					ControlPlane: deployer.ControlPlaneInfo{
+						XdsHost: "something.cluster.local", XdsPort: 1234,
+					},
+					ImageInfo: &deployer.ImageInfo{
+						Registry: "foo",
+						Tag:      "bar",
+					},
+				}
+			}
+			istioEnabledDeployerInputs = func() *deployer.Inputs {
+				inp := defaultDeployerInputs()
+				inp.IstioAutoMtlsEnabled = true
+				return inp
 			}
 			defaultInput = func() *input {
 				return &input{
@@ -1497,6 +1624,17 @@ var _ = Describe("Deployer", func() {
 				return false
 			}
 
+			inputObjs := []client.Object{defaultGateway(), defaultGatewayClass()}
+			if inp.gw != nil {
+				inputObjs = append(inputObjs, inp.gw)
+			}
+			if inp.gwc != nil {
+				inputObjs = append(inputObjs, inp.gwc)
+			}
+			if inp.dInputs != nil {
+				inp.dInputs.CommonCollections = newCommonCols(GinkgoT(), inputObjs...)
+			}
+
 			// run break-glass setup
 			if inp.arbitrarySetup != nil {
 				inp.arbitrarySetup()
@@ -1590,7 +1728,7 @@ var _ = Describe("Deployer", func() {
 					},
 					TypeMeta: metav1.TypeMeta{
 						Kind:       "Gateway",
-						APIVersion: "gateway.solo.io/v1beta1",
+						APIVersion: "gateway.networking.k8s.io",
 					},
 					Spec: api.GatewaySpec{
 						GatewayClassName: wellknown.GatewayClassName,
@@ -1660,7 +1798,7 @@ var _ = Describe("Deployer", func() {
 					},
 					TypeMeta: metav1.TypeMeta{
 						Kind:       "Gateway",
-						APIVersion: "gateway.solo.io/v1beta1",
+						APIVersion: "gateway.networking.k8s.io",
 					},
 					Spec: api.GatewaySpec{
 						GatewayClassName: wellknown.GatewayClassName,
@@ -1848,6 +1986,7 @@ var _ = Describe("Deployer", func() {
 
 			// Initialize a new deployer with InferenceExtension inputs.
 			d, err := deployer.NewDeployer(newFakeClientWithObjs(pool), &deployer.Inputs{
+				CommonCollections:  newCommonCols(GinkgoT()),
 				ControllerName:     wellknown.GatewayControllerName,
 				InferenceExtension: &deployer.InferenceExtInfo{},
 				ImageInfo: &deployer.ImageInfo{
@@ -1945,13 +2084,105 @@ var _ = Describe("Deployer", func() {
 
 			// Initialize a new deployer without InferenceExtension inputs.
 			d, err := deployer.NewDeployer(newFakeClientWithObjs(pool), &deployer.Inputs{
-				ControllerName: wellknown.GatewayControllerName,
+				CommonCollections: newCommonCols(GinkgoT()),
+				ControllerName:    wellknown.GatewayControllerName,
 			})
 			Expect(err).NotTo(HaveOccurred())
 
 			// Getting endpoint picker objects for the InferencePool should return an error.
 			_, err = d.GetEndpointPickerObjs(pool)
 			Expect(err).To(HaveOccurred())
+		})
+	})
+
+	Context("with listener sets", func() {
+
+		var (
+			listenerSetPort int32 = 4567
+			listenerPort    int32 = 1234
+		)
+
+		It("exposes all necessary ports", func() {
+			allNamespaces := api.NamespacesFromAll
+			gw := &api.Gateway{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "foo",
+					Namespace: defaultNamespace,
+					UID:       "1235",
+				},
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "Gateway",
+					APIVersion: "gateway.networking.k8s.io",
+				},
+				Spec: api.GatewaySpec{
+					GatewayClassName: wellknown.GatewayClassName,
+					AllowedListeners: &api.AllowedListeners{
+						Namespaces: &api.ListenerNamespaces{
+							From: &allNamespaces,
+						},
+					},
+					Listeners: []api.Listener{
+						{
+							Name: "gateway-listener",
+							Port: api.PortNumber(listenerPort),
+						},
+					},
+				},
+			}
+
+			ls := &apixv1a1.XListenerSet{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ls",
+					Namespace: defaultNamespace,
+				},
+				Spec: apixv1a1.ListenerSetSpec{
+					Listeners: []apixv1a1.ListenerEntry{
+						{
+							Name: "listenerset-listener",
+							Port: apixv1a1.PortNumber(listenerSetPort),
+						},
+					},
+					ParentRef: apixv1a1.ParentGatewayReference{
+						Kind:      (*apixv1a1.Kind)(&gw.Kind),
+						Group:     (*apixv1a1.Group)(&gw.APIVersion),
+						Name:      apixv1a1.ObjectName(gw.Name),
+						Namespace: (*apixv1a1.Namespace)(&gw.Namespace),
+					},
+				},
+			}
+
+			d, err := deployer.NewDeployer(newFakeClientWithObjs(defaultGatewayClass(), defaultGatewayParams()), &deployer.Inputs{
+				CommonCollections: newCommonCols(GinkgoT(), defaultGatewayClass(), gw, ls),
+				ControllerName:    wellknown.GatewayControllerName,
+				Dev:               false,
+				ControlPlane: deployer.ControlPlaneInfo{
+					XdsHost: "something.cluster.local", XdsPort: 1234,
+				},
+				ImageInfo: &deployer.ImageInfo{
+					Registry: "foo",
+					Tag:      "bar",
+				},
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+			var objs clientObjects
+			objs, err = d.GetObjsToDeploy(context.Background(), gw)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(objs).To(HaveLen(4))
+			Expect(objs.findConfigMap(defaultNamespace, gw.Name)).ToNot(BeNil())
+			Expect(objs.findServiceAccount(defaultNamespace, gw.Name)).ToNot(BeNil())
+
+			servicePorts := objs.findService(defaultNamespace, gw.Name).Spec.Ports
+			Expect(servicePorts[0].Name).To(Equal(fmt.Sprintf("listener-%d", listenerPort)))
+			Expect(servicePorts[0].Port).To(Equal(listenerPort))
+			Expect(servicePorts[1].Name).To(Equal(fmt.Sprintf("listener-%d", listenerSetPort)))
+			Expect(servicePorts[1].Port).To(Equal(listenerSetPort))
+
+			deploymentPorts := objs.findDeployment(defaultNamespace, gw.Name).Spec.Template.Spec.Containers[0].Ports
+			Expect(deploymentPorts[0].Name).To(Equal(fmt.Sprintf("listener-%d", listenerPort)))
+			Expect(deploymentPorts[0].ContainerPort).To(Equal(listenerPort))
+			Expect(deploymentPorts[1].Name).To(Equal(fmt.Sprintf("listener-%d", listenerSetPort)))
+			Expect(deploymentPorts[1].ContainerPort).To(Equal(listenerSetPort))
 		})
 	})
 })
@@ -2176,4 +2407,33 @@ func generateReadinessProbe() *corev1.Probe {
 		PeriodSeconds:       5,
 		FailureThreshold:    2,
 	}
+}
+
+func newCommonCols(t test.Failer, initObjs ...client.Object) *common.CommonCollections {
+	ctx := context.Background()
+	var anys []any
+	for _, obj := range initObjs {
+		anys = append(anys, obj)
+	}
+	mock := krttest.NewMock(t, anys)
+
+	policies := krtcollections.NewPolicyIndex(krtutil.KrtOptions{}, extensionsplug.ContributesPolicies{})
+	kubeRawGateways := krttest.GetMockCollection[*api.Gateway](mock)
+	kubeRawListenerSets := krttest.GetMockCollection[*apixv1a1.XListenerSet](mock)
+	gatewayClasses := krttest.GetMockCollection[*api.GatewayClass](mock)
+	nsCol := krtcollections.NewNamespaceCollectionFromCol(ctx, krttest.GetMockCollection[*corev1.Namespace](mock), krtutil.KrtOptions{})
+
+	krtopts := krtutil.NewKrtOptions(ctx.Done(), nil)
+	gateways := krtcollections.NewGatewayIndex(krtopts, wellknown.GatewayControllerName, policies, kubeRawGateways, kubeRawListenerSets, gatewayClasses, nsCol)
+
+	commonCols := &common.CommonCollections{
+		GatewayIndex: gateways,
+	}
+
+	for !kubeRawGateways.HasSynced() || !kubeRawListenerSets.HasSynced() || !gatewayClasses.HasSynced() {
+		time.Sleep(time.Second / 10)
+	}
+
+	gateways.Gateways.WaitUntilSynced(ctx.Done())
+	return commonCols
 }

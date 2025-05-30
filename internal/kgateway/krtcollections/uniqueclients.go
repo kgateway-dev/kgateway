@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -11,8 +12,6 @@ import (
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_service_discovery_v3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	xdsserver "github.com/envoyproxy/go-control-plane/pkg/server/v3"
-	"github.com/solo-io/go-utils/contextutils"
-	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/structpb"
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/types"
@@ -41,7 +40,7 @@ func newConnectedClient(uniqueClientName string) ConnectedClient {
 // We then fetch that pod to get its labels, create a UniqlyConnectedClient and it them to the collection.
 
 type callbacksCollection struct {
-	logger           *zap.Logger
+	logger           *slog.Logger
 	augmentedPods    krt.Collection[LocalityPod]
 	clients          map[int64]ConnectedClient
 	uniqClientsCount map[string]uint64
@@ -75,7 +74,7 @@ func buildCollection(callbacks *callbacks) UniquelyConnectedClientsBulider {
 	return func(ctx context.Context, krtOpts krtutil.KrtOptions, augmentedPods krt.Collection[LocalityPod]) krt.Collection[ir.UniqlyConnectedClient] {
 		trigger := krt.NewRecomputeTrigger(true)
 		col := &callbacksCollection{
-			logger:           contextutils.LoggerFrom(ctx).Desugar(),
+			logger:           logger,
 			augmentedPods:    augmentedPods,
 			clients:          make(map[int64]ConnectedClient),
 			uniqClientsCount: make(map[string]uint64),
@@ -163,7 +162,7 @@ func (x *callbacksCollection) add(sid int64, r *envoy_service_discovery_v3.Disco
 			}
 		}
 		role := roleFromRequest(r)
-		x.logger.Debug("adding xds client", zap.Any("locality", locality), zap.String("ns", ns), zap.Any("labels", labels), zap.String("role", role))
+		x.logger.Debug("adding xds client", "locality", locality, "ns", ns, "labels", labels, "role", role)
 		// TODO: modify request to include the label that are relevant for the client?
 		ucc := ir.NewUniqlyConnectedClient(role, ns, labels, locality)
 		c = newConnectedClient(ucc.ResourceName())
@@ -197,7 +196,7 @@ func (x *callbacks) OnStreamRequest(sid int64, r *envoy_service_discovery_v3.Dis
 func (x *callbacksCollection) newStream(sid int64, r *envoy_service_discovery_v3.DiscoveryRequest) error {
 	ucc, isNew, err := x.add(sid, r)
 	if err != nil {
-		x.logger.Debug("error processing xds client", zap.Error(err))
+		x.logger.Debug("error processing xds client", "error", err)
 		return err
 	}
 	if ucc != "" {
@@ -209,7 +208,7 @@ func (x *callbacksCollection) newStream(sid int64, r *envoy_service_discovery_v3
 			nodeMd.Fields = map[string]*structpb.Value{}
 		}
 
-		x.logger.Debug("augmenting role in node metadata", zap.String("resourceName", ucc))
+		x.logger.Debug("augmenting role in node metadata", "resource_name", ucc)
 		// NOTE: this changes the role to include the unique client. This is coupled
 		// with how the snapshot is inserted to the cache for the proxy - it needs to be done with
 		// the unique client resource name as well.
@@ -268,7 +267,7 @@ func (x *callbacksCollection) fetchRequest(_ context.Context, r *envoy_service_d
 		nodeMd.Fields = map[string]*structpb.Value{}
 	}
 
-	x.logger.Debug("augmenting role in node metadata", zap.String("resourceName", ucc.ResourceName()))
+	x.logger.Debug("augmenting role in node metadata", "resource_name", ucc.ResourceName())
 	// NOTE: this changes the role to include the unique client. This is coupled
 	// with how the snapshot is inserted to the cache for the proxy - it needs to be done with
 	// the unique client resource name as well.

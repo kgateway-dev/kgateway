@@ -2,13 +2,17 @@
 
 package v1alpha1
 
+import (
+	v1 "sigs.k8s.io/gateway-api/apis/v1"
+)
+
 // RateLimitProviderApplyConfiguration represents a declarative configuration of the RateLimitProvider type for use
 // with apply.
 type RateLimitProviderApplyConfiguration struct {
 	GrpcService *ExtGrpcServiceApplyConfiguration `json:"grpcService,omitempty"`
 	Domain      *string                           `json:"domain,omitempty"`
 	FailOpen    *bool                             `json:"failOpen,omitempty"`
-	Timeout     *string                           `json:"timeout,omitempty"`
+	Timeout     *v1.Duration                      `json:"timeout,omitempty"`
 }
 
 // RateLimitProviderApplyConfiguration constructs a declarative configuration of the RateLimitProvider type for use with
@@ -44,7 +48,7 @@ func (b *RateLimitProviderApplyConfiguration) WithFailOpen(value bool) *RateLimi
 // WithTimeout sets the Timeout field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Timeout field is set to the value of the last call.
-func (b *RateLimitProviderApplyConfiguration) WithTimeout(value string) *RateLimitProviderApplyConfiguration {
+func (b *RateLimitProviderApplyConfiguration) WithTimeout(value v1.Duration) *RateLimitProviderApplyConfiguration {
 	b.Timeout = &value
 	return b
 }
