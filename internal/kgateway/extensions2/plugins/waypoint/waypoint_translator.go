@@ -186,7 +186,7 @@ func (w *waypointTranslator) buildInboundListener(gw *ir.Gateway, reporter repor
 
 	bindAddr := wildcardBindAddr
 	if w.bindIpv6 {
-		bindAddr = loopbackBindAddrV6
+		bindAddr = wildcardBindAddrV6
 	}
 	if w.localBind {
 		bindAddr = loopbackBindAddr
