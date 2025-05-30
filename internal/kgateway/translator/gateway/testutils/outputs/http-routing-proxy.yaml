@@ -19,18 +19,18 @@ Listeners:
           configSource:
             ads: {}
             resourceApiVersion: V3
-          routeConfigName: http
+          routeConfigName: listener~80
         statPrefix: http
         useRemoteAddress: true
-    name: http
-  name: http
+    name: listener~80
+  name: listener~80
 Routes:
 - ignorePortInHostMatching: true
-  name: http
+  name: listener~80
   virtualHosts:
   - domains:
     - bar.example.com
-    name: http~bar_example_com
+    name: listener~80~bar_example_com
     routes:
     - match:
         headers:
@@ -38,33 +38,33 @@ Routes:
           stringMatch:
             exact: canary
         prefix: /
-      name: http~bar_example_com-route-0-httproute-bar-route-default-0-0-matcher-0
+      name: listener~80~bar_example_com-route-0-httproute-bar-route-default-0-0-matcher-0
       route:
         cluster: kube_default_bar-svc-canary_80
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
     - match:
         prefix: /
-      name: http~bar_example_com-route-1-httproute-bar-route-default-1-0-matcher-0
+      name: listener~80~bar_example_com-route-1-httproute-bar-route-default-1-0-matcher-0
       route:
         cluster: kube_default_bar-svc_80
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
   - domains:
     - example.com
-    name: http~example_com
+    name: listener~80~example_com
     routes:
     - match:
         prefix: /
-      name: http~example_com-route-0-httproute-example-route-default-0-0-matcher-0
+      name: listener~80~example_com-route-0-httproute-example-route-default-0-0-matcher-0
       route:
         cluster: kube_default_example-svc_80
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
   - domains:
     - foo.example.com
-    name: http~foo_example_com
+    name: listener~80~foo_example_com
     routes:
     - match:
         pathSeparatedPrefix: /login
-      name: http~foo_example_com-route-0-httproute-foo-route-default-0-0-matcher-0
+      name: listener~80~foo_example_com-route-0-httproute-foo-route-default-0-0-matcher-0
       route:
         cluster: kube_default_foo-svc_80
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR

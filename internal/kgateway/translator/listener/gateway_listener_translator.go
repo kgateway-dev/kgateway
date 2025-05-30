@@ -44,9 +44,9 @@ func TranslateListeners(
 	reporter reports.Reporter,
 	settings ListenerTranslatorConfig,
 ) []ir.ListenerIR {
-	validatedListeners := validateListeners(gateway, reporter.Gateway(gateway.Obj))
+	validatedListeners := validateGateway(gateway, reporter)
 
-	mergedListeners := mergeGWListeners(queries, gateway.Namespace, validatedListeners, *gateway, routesForGw, reporter.Gateway(gateway.Obj), settings)
+	mergedListeners := mergeGWListeners(queries, gateway.Namespace, validatedListeners, *gateway, routesForGw, reporter, settings)
 	translatedListeners := mergedListeners.translateListeners(kctx, ctx, queries, reporter)
 	return translatedListeners
 }
@@ -57,7 +57,7 @@ func mergeGWListeners(
 	listeners []ir.Listener,
 	parentGw ir.Gateway,
 	routesForGw *query.RoutesForGwResult,
-	reporter reports.GatewayReporter,
+	reporter reports.Reporter,
 	settings ListenerTranslatorConfig,
 ) *MergedListeners {
 	ml := &MergedListeners{
@@ -67,13 +67,14 @@ func mergeGWListeners(
 		settings:         settings,
 	}
 	for _, listener := range listeners {
-		result, ok := routesForGw.ListenerResults[string(listener.Name)]
-		if !ok || result.Error != nil {
+		result := routesForGw.GetListenerResult(listener.Parent, string(listener.Name))
+		if result == nil || result.Error != nil {
 			// TODO report
 			// TODO, if Error is not nil, this is a user-config error on selectors
 			// continue
 		}
-		listenerReporter := reporter.ListenerName(string(listener.Name))
+		parentReporter := listener.GetParentReporter(reporter)
+		listenerReporter := parentReporter.ListenerName(string(listener.Name))
 		var routes []*query.RouteInfo
 		if result != nil {
 			routes = result.Routes
@@ -119,7 +120,7 @@ func (ml *MergedListeners) appendHttpListener(
 	reporter reports.ListenerReporter,
 ) {
 	parent := httpFilterChainParent{
-		gatewayListenerName: string(listener.Name),
+		gatewayListenerName: query.GenerateRouteKey(listener.Parent, string(listener.Name)),
 		gatewayListener:     listener,
 		routesWithHosts:     routesWithHosts,
 		attachedPolicies:    listener.AttachedPolicies,
@@ -128,15 +129,11 @@ func (ml *MergedListeners) appendHttpListener(
 	fc := &httpFilterChain{
 		parents: []httpFilterChainParent{parent},
 	}
-	listenerName := string(listener.Name)
+	listenerName := GenerateListenerName(listener)
 	finalPort := gwv1.PortNumber(ports.TranslatePort(uint16(listener.Port)))
 
 	for _, lis := range ml.Listeners {
 		if lis.port == finalPort {
-			// concatenate the names on the parent output listener/filterchain
-			// TODO is this valid listener name?
-			// TODO: listener name should include the bind address and port (otherwise envoy goes crazy if they change)
-			lis.name += "~" + listenerName
 			if lis.httpFilterChain != nil {
 				lis.httpFilterChain.parents = append(lis.httpFilterChain.parents, parent)
 			} else {
@@ -166,8 +163,9 @@ func (ml *MergedListeners) appendHttpsListener(
 ) {
 	// create a new filter chain for the listener
 	// protocol:            listener.Protocol,
+
 	mfc := httpsFilterChain{
-		gatewayListenerName: string(listener.Name),
+		gatewayListenerName: query.GenerateRouteKey(listener.Parent, string(listener.Name)),
 		sniDomain:           listener.Hostname,
 		tls:                 listener.TLS,
 		routesWithHosts:     routesWithHosts,
@@ -178,12 +176,9 @@ func (ml *MergedListeners) appendHttpsListener(
 	// during both lookup and when appending the listener.
 	finalPort := gwv1.PortNumber(ports.TranslatePort(uint16(listener.Port)))
 
-	listenerName := string(listener.Name)
+	listenerName := GenerateListenerName(listener)
 	for _, lis := range ml.Listeners {
 		if lis.port == finalPort {
-			// concatenate the names on the parent output listener
-			// TODO is this valid listener name?
-			lis.name += "~" + listenerName
 			lis.httpsFilterChains = append(lis.httpsFilterChains, mfc)
 			return
 		}
@@ -228,20 +223,18 @@ func (ml *MergedListeners) AppendTcpListener(
 	}
 
 	parent := tcpFilterChainParent{
-		gatewayListenerName: string(listener.Name),
+		gatewayListenerName: query.GenerateRouteKey(listener.Parent, string(listener.Name)),
 		routesWithHosts:     validRouteInfos,
 	}
 
 	fc := tcpFilterChain{
 		parents: parent,
 	}
-	listenerName := string(listener.Name)
+	listenerName := GenerateListenerName(listener)
 	finalPort := gwv1.PortNumber(ports.TranslatePort(uint16(listener.Port)))
 
 	for _, lis := range ml.Listeners {
 		if lis.port == finalPort {
-			// concatenate the names on the parent output listener
-			lis.name += "~" + listenerName
 			lis.TcpFilterChains = append(lis.TcpFilterChains, fc)
 			return
 		}
@@ -288,7 +281,7 @@ func (ml *MergedListeners) AppendTlsListener(
 	}
 
 	parent := tcpFilterChainParent{
-		gatewayListenerName: string(listener.Name),
+		gatewayListenerName: query.GenerateRouteKey(listener.Parent, string(listener.Name)),
 		routesWithHosts:     validRouteInfos,
 	}
 
@@ -298,13 +291,11 @@ func (ml *MergedListeners) AppendTlsListener(
 		sniDomain: listener.Hostname,
 	}
 
-	listenerName := string(listener.Name)
+	listenerName := GenerateListenerName(listener)
 	finalPort := gwv1.PortNumber(ports.TranslatePort(uint16(listener.Port)))
 
 	for _, lis := range ml.Listeners {
 		if lis.port == finalPort {
-			// concatenate the names on the parent output listener
-			lis.name += "~" + listenerName
 			lis.TcpFilterChains = append(lis.TcpFilterChains, fc)
 			return
 		}
@@ -432,7 +423,7 @@ func (ml *MergedListener) TranslateListener(
 
 	// Translate TCP listeners (if any exist)
 	for _, tfc := range ml.TcpFilterChains {
-		if tcpListener := tfc.translateTcpFilterChain(ml.listener, reporter); tcpListener != nil {
+		if tcpListener := tfc.translateTcpFilterChain(ml.listener, ml.name, reporter); tcpListener != nil {
 			matchedTcpListeners = append(matchedTcpListeners, *tcpListener)
 		}
 	}
@@ -469,7 +460,7 @@ type tcpFilterChainParent struct {
 	routesWithHosts     []*query.RouteInfo
 }
 
-func (tc *tcpFilterChain) translateTcpFilterChain(_ ir.Listener, reporter reports.Reporter) *ir.TcpIR {
+func (tc *tcpFilterChain) translateTcpFilterChain(listener ir.Listener, parentName string, reporter reports.Reporter) *ir.TcpIR {
 	parent := tc.parents
 	if len(parent.routesWithHosts) == 0 {
 		return nil
@@ -520,7 +511,7 @@ func (tc *tcpFilterChain) translateTcpFilterChain(_ ir.Listener, reporter report
 		}
 
 		// Ensure unique names by appending the rule index to the TCPRoute name
-		tcpHostName := fmt.Sprintf("%s.%s-rule-%d", tRoute.Namespace, tRoute.Name, 0)
+		tcpHostName := fmt.Sprintf("%s-%s.%s-rule-%d", parentName, tRoute.Namespace, tRoute.Name, 0)
 		var backends []ir.BackendRefIR
 		for _, backend := range tRoute.Backends {
 			// validate that we don't have an error:
@@ -580,7 +571,7 @@ func (tc *tcpFilterChain) translateTcpFilterChain(_ ir.Listener, reporter report
 		}
 
 		// Ensure unique names by appending the rule index to the TLSRoute name
-		tcpHostName := fmt.Sprintf("%s.%s-rule-%d", tRoute.Namespace, tRoute.Name, 0)
+		tcpHostName := fmt.Sprintf("%s-%s.%s-rule-%d", parentName, tRoute.Namespace, tRoute.Name, 0)
 		var backends []ir.BackendRefIR
 		for _, backend := range tRoute.Backends {
 			// validate that we don't have an error:
@@ -704,9 +695,10 @@ func (httpFilterChain *httpFilterChain) translateHttpFilterChain(
 		return virtualHosts[i].Name < virtualHosts[j].Name
 	})
 
+	// TODO: Make a similar change for other filter chains ???
 	return ir.HttpFilterChainIR{
 		FilterChainCommon: ir.FilterChainCommon{
-			FilterChainName: string(listener.Name),
+			FilterChainName: parentName,
 		},
 		// Http plain text filter chains do not have attached policies.
 		// Because a single chain is shared across multiple gateway-api listeners, we don't have a clean way
@@ -800,7 +792,7 @@ func (httpsFilterChain *httpsFilterChain) translateHttpsFilterChain(
 	})
 	return &ir.HttpFilterChainIR{
 		FilterChainCommon: ir.FilterChainCommon{
-			FilterChainName: string(parentName),
+			FilterChainName: parentName,
 			Matcher:         matcher,
 			TLS:             sslConfig,
 		},
@@ -897,4 +889,9 @@ func makeVhostName(
 	domain string,
 ) string {
 	return utils.SanitizeForEnvoy(ctx, parentName+"~"+domain, "vHost")
+}
+
+func GenerateListenerName(listener ir.Listener) string {
+	// Add a ~ to make sure the name won't collide with user provided names in other listeners
+	return fmt.Sprintf("listener~%d", listener.Port)
 }

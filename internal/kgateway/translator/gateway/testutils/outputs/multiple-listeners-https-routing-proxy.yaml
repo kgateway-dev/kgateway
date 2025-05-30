@@ -4,4 +4,4 @@ Listeners:
       address: '::'
       ipv4Compat: true
       portValue: 8443
-  name: https-httpbin~https-bookinfo
+  name: listener~443

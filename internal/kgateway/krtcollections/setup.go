@@ -16,10 +16,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
+	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
 )
 
@@ -76,6 +78,18 @@ func registerTypes(ourCli versioned.Interface) {
 			return c.GatewayAPI().GatewayV1().GatewayClasses().Watch(context.Background(), o)
 		},
 	)
+
+	// TODO: Update when istio supports ListenerSets
+	kubeclient.Register[*gwxv1a1.XListenerSet](
+		wellknown.XListenerSetGVR,
+		wellknown.XListenerSetGVK,
+		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (runtime.Object, error) {
+			return c.GatewayAPI().ExperimentalV1alpha1().XListenerSets(namespace).List(context.Background(), o)
+		},
+		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
+			return c.GatewayAPI().ExperimentalV1alpha1().XListenerSets(namespace).Watch(context.Background(), o)
+		},
+	)
 }
 
 func InitCollections(
@@ -98,15 +112,17 @@ func InitCollections(
 	tlsRoutes := krt.WrapClient(kclient.NewDelayedInformer[*gwv1a2.TLSRoute](istioClient, gvr.TLSRoute, kubetypes.StandardInformer, filter), krtopts.ToOptions("TLSRoute")...)
 	grpcRoutes := krt.WrapClient(kclient.NewFiltered[*gwv1.GRPCRoute](istioClient, filter), krtopts.ToOptions("GRPCRoute")...)
 	kubeRawGateways := krt.WrapClient(kclient.NewFiltered[*gwv1.Gateway](istioClient, filter), krtopts.ToOptions("KubeGateways")...)
+	kubeRawListenerSets := krt.WrapClient(kclient.NewDelayedInformer[*gwxv1a1.XListenerSet](istioClient, wellknown.XListenerSetGVR, kubetypes.StandardInformer, kclient.Filter{}), krtopts.ToOptions("KubeListenerSets")...)
 	//nolint:forbidigo // ObjectFilter is not needed for this client as it is cluster scoped
 	gatewayClasses := krt.WrapClient(kclient.New[*gwv1.GatewayClass](istioClient), krtopts.ToOptions("KubeGatewayClasses")...)
+	namespaces, _ := NewNamespaceCollection(ctx, istioClient, krtopts)
 
 	policies := NewPolicyIndex(krtopts, plugins.ContributesPolicies)
 	backendIndex := NewBackendIndex(krtopts, policies, refgrants)
 	initBackends(plugins, backendIndex)
 	endpointIRs := initEndpoints(plugins, krtopts)
 
-	gateways := NewGatewayIndex(krtopts, controllerName, policies, kubeRawGateways, gatewayClasses)
+	gateways := NewGatewayIndex(krtopts, controllerName, policies, kubeRawGateways, kubeRawListenerSets, gatewayClasses, namespaces)
 	routes := NewRoutesIndex(krtopts, httpRoutes, grpcRoutes, tcproutes, tlsRoutes, policies, backendIndex, refgrants)
 	return gateways, routes, backendIndex, endpointIRs
 }

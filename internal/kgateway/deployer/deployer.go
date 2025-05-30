@@ -33,8 +33,10 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/helm"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/internal/version"
+	common "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 )
 
 var (
@@ -71,6 +73,7 @@ type Inputs struct {
 	ControlPlane         ControlPlaneInfo
 	InferenceExtension   *InferenceExtInfo
 	ImageInfo            *ImageInfo
+	CommonCollections    *common.CommonCollections
 }
 
 type ImageInfo struct {
@@ -302,13 +305,21 @@ func (d *Deployer) getGatewayClassFromGateway(ctx context.Context, gw *api.Gatew
 }
 
 func (d *Deployer) getValues(gw *api.Gateway, gwParam *v1alpha1.GatewayParameters) (*helmConfig, error) {
+	gwKey := ir.ObjectSource{
+		Group:     wellknown.GatewayGVK.GroupKind().Group,
+		Kind:      wellknown.GatewayGVK.GroupKind().Kind,
+		Name:      gw.GetName(),
+		Namespace: gw.GetNamespace(),
+	}
+	irGW := d.inputs.CommonCollections.GatewayIndex.Gateways.GetKey(gwKey.ResourceName())
+
 	// construct the default values
 	vals := &helmConfig{
 		Gateway: &helmGateway{
 			Name:             &gw.Name,
 			GatewayName:      &gw.Name,
 			GatewayNamespace: &gw.Namespace,
-			Ports:            getPortsValues(gw, gwParam),
+			Ports:            getPortsValues(irGW, gwParam),
 			Xds: &helmXds{
 				// The xds host/port MUST map to the Service definition for the Control Plane
 				// This is the socket address that the Proxy will connect to on startup, to receive xds updates

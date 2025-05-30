@@ -273,6 +273,66 @@ spec:
                     - CHAT_STREAMING
                     type: string
                 type: object
+              cors:
+                properties:
+                  allowCredentials:
+                    enum:
+                    - true
+                    type: boolean
+                  allowHeaders:
+                    items:
+                      maxLength: 256
+                      minLength: 1
+                      pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
+                      type: string
+                    maxItems: 64
+                    type: array
+                    x-kubernetes-list-type: set
+                  allowMethods:
+                    items:
+                      enum:
+                      - GET
+                      - HEAD
+                      - POST
+                      - PUT
+                      - DELETE
+                      - CONNECT
+                      - OPTIONS
+                      - TRACE
+                      - PATCH
+                      - '*'
+                      type: string
+                    maxItems: 9
+                    type: array
+                    x-kubernetes-list-type: set
+                    x-kubernetes-validations:
+                    - message: AllowMethods cannot contain '*' alongside other methods
+                      rule: '!(''*'' in self && self.size() > 1)'
+                  allowOrigins:
+                    items:
+                      maxLength: 253
+                      minLength: 1
+                      pattern: ^(([^:/?#]+):)(//([^/?#]*))([^?#]*)(\?([^#]*))?(#(.*))?
+                      type: string
+                    maxItems: 64
+                    type: array
+                    x-kubernetes-list-type: set
+                  exposeHeaders:
+                    items:
+                      maxLength: 256
+                      minLength: 1
+                      pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
+                      type: string
+                    maxItems: 64
+                    type: array
+                    x-kubernetes-list-type: set
+                  maxAge:
+                    default: 5
+                    format: int32
+                    minimum: 1
+                    type: integer
+                type: object
+                x-kubernetes-preserve-unknown-fields: true
               extAuth:
                 properties:
                   contextExtensions:

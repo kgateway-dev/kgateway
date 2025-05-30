@@ -7,6 +7,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
@@ -316,6 +317,53 @@ func TestMergeProxyReports(t *testing.T) {
 			}
 			if tt.expected.Policies != nil {
 				a.Equal(tt.expected.Policies, actual.Policies)
+			}
+		})
+	}
+}
+
+func TestIsListenerSetStatusEqual(t *testing.T) {
+	status1 := &gwxv1a1.ListenerSetStatus{
+		Listeners: []gwxv1a1.ListenerEntryStatus{
+			{
+				Name:           "listener-1",
+				AttachedRoutes: 2,
+			},
+		},
+	}
+	// same as status1
+	status2 := &gwxv1a1.ListenerSetStatus{
+		Listeners: []gwxv1a1.ListenerEntryStatus{
+			{
+				Name:           "listener-1",
+				AttachedRoutes: 2,
+			},
+		},
+	}
+	// different from status1
+	status3 := &gwxv1a1.ListenerSetStatus{
+		Listeners: []gwxv1a1.ListenerEntryStatus{
+			{
+				Name:           "listener-2",
+				AttachedRoutes: 1,
+			},
+		},
+	}
+
+	tests := []struct {
+		name string
+		objA *gwxv1a1.ListenerSetStatus
+		objB *gwxv1a1.ListenerSetStatus
+		want bool
+	}{
+		{"EqualStatus", status1, status2, true},
+		{"DifferentStatus", status1, status3, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := isListenerSetStatusEqual(tt.objA, tt.objB); got != tt.want {
+				t.Errorf("isListenerSetStatusEqual() = %v, want %v", got, tt.want)
 			}
 		})
 	}
