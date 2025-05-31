@@ -20,7 +20,6 @@ import (
 	envoy_ext_proc_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_proc/v3"
 	localratelimitv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/local_ratelimit/v3"
 	ratev3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ratelimit/v3"
-	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoy_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	envoy_type_v3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
@@ -310,9 +309,7 @@ type trafficPolicyPluginGwPass struct {
 	csrfInChain           map[string]*envoy_csrf_v3.CsrfPolicy
 }
 
-func (p *trafficPolicyPluginGwPass) ApplyHCM(ctx context.Context, pCtx *ir.HcmContext, out *envoyhttp.HttpConnectionManager) error {
-	return nil
-}
+var _ ir.ProxyTranslationPass = &trafficPolicyPluginGwPass{}
 
 var useRustformations bool
 
@@ -937,15 +934,6 @@ func AddDisableFilterIfNeeded(filters []plugins.StagedHttpFilter) []plugins.Stag
 	f.Filter.Disabled = true
 	filters = append(filters, f)
 	return filters
-}
-
-func (p *trafficPolicyPluginGwPass) NetworkFilters(ctx context.Context) ([]plugins.StagedNetworkFilter, error) {
-	return nil, nil
-}
-
-// called 1 time (per envoy proxy). replaces GeneratedResources
-func (p *trafficPolicyPluginGwPass) ResourcesToAdd(ctx context.Context) ir.Resources {
-	return ir.Resources{}
 }
 
 func (p *trafficPolicyPluginGwPass) SupportsPolicyMerge() bool {

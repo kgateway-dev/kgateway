@@ -9,10 +9,8 @@ import (
 	clusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	endpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
-	listenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	routev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	extprocv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_proc/v3"
-	hcmv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	tlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	upstreamsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
 	"google.golang.org/protobuf/types/known/anypb"
@@ -157,6 +155,8 @@ type endpointPickerPass struct {
 	reporter reports.Reporter
 }
 
+var _ ir.ProxyTranslationPass = &endpointPickerPass{}
+
 func newEndpointPickerPass(ctx context.Context, tctx ir.GwTranslationCtx, reporter reports.Reporter) ir.ProxyTranslationPass {
 	return &endpointPickerPass{
 		usedPools: make(map[types.NamespacedName]*inferencePool),
@@ -166,44 +166,6 @@ func newEndpointPickerPass(ctx context.Context, tctx ir.GwTranslationCtx, report
 
 func (p *endpointPickerPass) Name() string {
 	return "endpoint-picker"
-}
-
-// No-op for these standard translation pass methods.
-func (p *endpointPickerPass) ApplyListenerPlugin(ctx context.Context, lctx *ir.ListenerContext, out *listenerv3.Listener) {
-}
-
-func (p *endpointPickerPass) ApplyHCM(ctx context.Context, hctx *ir.HcmContext, out *hcmv3.HttpConnectionManager) error {
-	return nil
-}
-
-func (p *endpointPickerPass) NetworkFilters(ctx context.Context) ([]plugins.StagedNetworkFilter, error) {
-	return nil, nil
-}
-
-func (p *endpointPickerPass) UpstreamHttpFilters(ctx context.Context) ([]plugins.StagedUpstreamHttpFilter, error) {
-	return nil, nil
-}
-
-func (p *endpointPickerPass) ApplyVhostPlugin(ctx context.Context, vctx *ir.VirtualHostContext, out *routev3.VirtualHost) {
-}
-
-func (p *endpointPickerPass) ApplyForRoute(ctx context.Context, rctx *ir.RouteContext, out *routev3.Route) error {
-	return nil
-}
-
-func (p *endpointPickerPass) ApplyRouteConfigPlugin(
-	ctx context.Context,
-	pCtx *ir.RouteConfigContext,
-	out *routev3.RouteConfiguration,
-) {
-}
-
-func (p *endpointPickerPass) ApplyForRouteBackend(
-	ctx context.Context,
-	policy ir.PolicyIR,
-	pCtx *ir.RouteBackendContext,
-) error {
-	return nil
 }
 
 // ApplyForBackend updates the Envoy route for each InferencePool-backed HTTPRoute.

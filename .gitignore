@@ -9,6 +9,7 @@ _artifacts
 site
 .firebase
 *.code-workspace
+.venv
 
 # ignore local pollution from kind setup script
 docker-local
