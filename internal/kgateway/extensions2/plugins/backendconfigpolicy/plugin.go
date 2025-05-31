@@ -254,9 +254,10 @@ func translate(commoncol *common.CommonCollections, krtctx krt.HandlerContext, p
 	if pol.Spec.SSLConfig != nil {
 		sslConfig, err := translateSSLConfig(NewDefaultSecretGetter(commoncol.Secrets, krtctx), pol.Spec.SSLConfig, pol.Namespace)
 		if err != nil {
-			logger.Error("failed to translate ssl config", "error", err)
+			logger.Error("failed to translate ssl config", "error", err, "policy", pol.Name)
 			return &ir, err
 		}
+		logger.Debug("successfully translated ssl config", "sslConfig", sslConfig, "policy", pol.Name)
 		ir.sslConfig = sslConfig
 	}
 
