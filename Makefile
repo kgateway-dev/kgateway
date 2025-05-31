@@ -547,7 +547,8 @@ deploy-kgateway-crd-chart: ## Deploy the kgateway crd chart
 deploy-kgateway-chart: ## Deploy the kgateway chart
 	$(HELM) upgrade --install kgateway $(TEST_ASSET_DIR)/kgateway-$(VERSION).tgz \
 	--namespace kgateway-system --create-namespace \
-	--set image.registry=ghcr.io/kgateway-dev \
+	--set image.registry=$(IMAGE_REGISTRY) \
+	--set image.tag=$(VERSION)
 
 .PHONY: lint-kgateway-charts
 lint-kgateway-charts: ## Lint the kgateway charts
@@ -670,7 +671,7 @@ kind-create: ## Create a KinD cluster
 CONFORMANCE_CHANNEL ?= experimental
 CONFORMANCE_VERSION ?= v1.3.0
 .PHONY: gw-api-crds
-gw-api-crds:
+gw-api-crds: ## Install the Gateway API CRDs
 	kubectl apply --kustomize "https://github.com/kubernetes-sigs/gateway-api/config/crd/$(CONFORMANCE_CHANNEL)?ref=$(CONFORMANCE_VERSION)"
 
 .PHONY: kind-metallb
