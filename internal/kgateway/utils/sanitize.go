@@ -61,11 +61,22 @@ func SanitizeHeaderName(name string) string {
 	if len(name) == 0 {
 		return "header"
 	}
+	/*
+		https://www.rfc-editor.org/rfc/rfc7230#section-3.2.6
+		     token          = 1*tchar
+
+		     tchar          = "!" / "#" / "$" / "%" / "&" / "'" / "*"
+		                    / "+" / "-" / "." / "^" / "_" / "`" / "|" / "~"
+		                    / DIGIT / ALPHA
+		                    ; any VCHAR, except delimiters
+
+
+	*/
 	return strings.Map(func(c rune) rune {
 		if (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') ||
 			strings.ContainsRune("!#$%&'*+-.^_`|~", rune(c)) {
 			return c
 		}
-		return '_'
+		return '-'
 	}, name)
 }
