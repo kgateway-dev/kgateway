@@ -41,10 +41,9 @@ import (
 const statefulSessionFilterName = "envoy.filters.http.stateful_session"
 
 type builtinPlugin struct {
-	spec           gwv1.HTTPRouteFilter
-	ruleSpec       gwv1.HTTPRouteRule
 	filterMutation func(in ir.HttpRouteRuleMatchIR, outputRoute *envoy_config_route_v3.Route) error
 	ruleMutation   func(in ir.HttpRouteRuleMatchIR, outputRoute *envoy_config_route_v3.Route) error
+	cors           *gwv1.HTTPCORSFilter
 }
 
 func (d *builtinPlugin) CreationTime() time.Time {
@@ -76,8 +75,13 @@ func (p *builtinPluginGwPass) ApplyHCM(ctx context.Context, pCtx *ir.HcmContext,
 }
 
 func NewBuiltInIr(kctx krt.HandlerContext, f gwv1.HTTPRouteFilter, fromgk schema.GroupKind, fromns string, refgrants *RefGrantIndex, ups *BackendIndex) ir.PolicyIR {
+	var cors *gwv1.HTTPCORSFilter
+	if f.Type == gwv1.HTTPRouteFilterCORS {
+		cors = f.CORS
+	}
+
 	return &builtinPlugin{
-		spec:           f,
+		cors:           cors,
 		filterMutation: convert(kctx, f, fromgk, fromns, refgrants, ups),
 	}
 }
@@ -88,7 +92,6 @@ func NewBuiltInRuleIr(rule gwv1.HTTPRouteRule) ir.PolicyIR {
 		return nil
 	}
 	return &builtinPlugin{
-		ruleSpec:     rule,
 		ruleMutation: convertRule(rule),
 	}
 }
@@ -664,7 +667,7 @@ func (p *builtinPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.RouteC
 		}
 	}
 
-	if policy.spec.Type == gwv1.HTTPRouteFilterCORS {
+	if policy.cors != nil {
 		p.hasCorsPolicy[pCtx.FilterChainName] = true
 	}
 
@@ -680,8 +683,8 @@ func (p *builtinPluginGwPass) ApplyForRouteBackend(
 	if !ok {
 		return nil
 	}
-	if inPolicy.spec.Type == gwv1.HTTPRouteFilterCORS {
-		pCtx.TypedFilterConfig[envoy_wellknown.CORS] = ToEnvoyCorsPolicy(inPolicy.spec.CORS)
+	if inPolicy.cors != nil {
+		pCtx.TypedFilterConfig[envoy_wellknown.CORS] = ToEnvoyCorsPolicy(inPolicy.cors)
 		p.hasCorsPolicy[pCtx.FilterChainName] = true
 	}
 	return nil
