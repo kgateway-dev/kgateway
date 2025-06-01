@@ -127,6 +127,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.TrafficPolicySpec":                         schema_kgateway_v2_api_v1alpha1_TrafficPolicySpec(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Transform":                                 schema_kgateway_v2_api_v1alpha1_Transform(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.TransformationPolicy":                      schema_kgateway_v2_api_v1alpha1_TransformationPolicy(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.UpgradeConfig":                             schema_kgateway_v2_api_v1alpha1_UpgradeConfig(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.VertexAIConfig":                            schema_kgateway_v2_api_v1alpha1_VertexAIConfig(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Webhook":                                   schema_kgateway_v2_api_v1alpha1_Webhook(ref),
 		"k8s.io/api/core/v1.AWSElasticBlockStoreVolumeSource":                                        schema_k8sio_api_core_v1_AWSElasticBlockStoreVolumeSource(ref),
@@ -2943,11 +2944,17 @@ func schema_kgateway_v2_api_v1alpha1_HTTPListenerPolicySpec(ref common.Reference
 							},
 						},
 					},
+					"upgradeConfig": {
+						SchemaProps: spec.SchemaProps{
+							Description: "UpgradeConfig contains configuration for HTTP upgrades like WebSocket. See here for more information: https://www.envoyproxy.io/docs/envoy/v1.34.1/intro/arch_overview/http/upgrades.html",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.UpgradeConfig"),
+						},
+					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AccessLog", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LocalPolicyTargetReference", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LocalPolicyTargetSelector"},
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AccessLog", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LocalPolicyTargetReference", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LocalPolicyTargetSelector", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.UpgradeConfig"},
 	}
 }
 
@@ -5036,6 +5043,34 @@ func schema_kgateway_v2_api_v1alpha1_TransformationPolicy(ref common.ReferenceCa
 		},
 		Dependencies: []string{
 			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Transform"},
+	}
+}
+
+func schema_kgateway_v2_api_v1alpha1_UpgradeConfig(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "UpgradeConfig represents configuration for HTTP upgrades.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"enabledUpgrades": {
+						SchemaProps: spec.SchemaProps{
+							Description: "List of upgrade types to enable (e.g. \"websocket\", \"CONNECT\", etc.)",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 }
 

@@ -213,6 +213,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.TransformApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("TransformationPolicy"):
 		return &apiv1alpha1.TransformationPolicyApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("UpgradeConfig"):
+		return &apiv1alpha1.UpgradeConfigApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("VertexAIConfig"):
 		return &apiv1alpha1.VertexAIConfigApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("Webhook"):

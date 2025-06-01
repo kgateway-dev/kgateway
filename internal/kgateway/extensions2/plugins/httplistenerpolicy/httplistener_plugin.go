@@ -31,8 +31,9 @@ import (
 var logger = logging.New("plugin/httplistenerpolicy")
 
 type httpListenerPolicy struct {
-	ct        time.Time
-	accessLog []*envoyaccesslog.AccessLog
+	ct             time.Time
+	accessLog      []*envoyaccesslog.AccessLog
+	upgradeConfigs []*envoy_hcm.HttpConnectionManager_UpgradeConfig
 }
 
 func (d *httpListenerPolicy) CreationTime() time.Time {
@@ -48,6 +49,13 @@ func (d *httpListenerPolicy) Equals(in any) bool {
 	// Check the AccessLog slice
 	if !slices.EqualFunc(d.accessLog, d2.accessLog, func(log *envoyaccesslog.AccessLog, log2 *envoyaccesslog.AccessLog) bool {
 		return proto.Equal(log, log2)
+	}) {
+		return false
+	}
+
+	// Check upgrade configs
+	if !slices.EqualFunc(d.upgradeConfigs, d2.upgradeConfigs, func(cfg, cfg2 *envoy_hcm.HttpConnectionManager_UpgradeConfig) bool {
+		return proto.Equal(cfg, cfg2)
 	}) {
 		return false
 	}
@@ -98,12 +106,15 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 			errs = append(errs, err)
 		}
 
+		upgradeConfigs := convertUpgradeConfig(i)
+
 		pol := &ir.PolicyWrapper{
 			ObjectSource: objSrc,
 			Policy:       i,
 			PolicyIR: &httpListenerPolicy{
-				ct:        i.CreationTimestamp.Time,
-				accessLog: accessLog,
+				ct:             i.CreationTimestamp.Time,
+				accessLog:      accessLog,
+				upgradeConfigs: upgradeConfigs,
 			},
 			TargetRefs: pluginutils.TargetRefsToPolicyRefs(i.Spec.TargetRefs, i.Spec.TargetSelectors),
 			Errors:     errs,
@@ -147,5 +158,25 @@ func (p *httpListenerPolicyPluginGwPass) ApplyHCM(
 
 	// translate access logging configuration
 	out.AccessLog = append(out.GetAccessLog(), policy.accessLog...)
+
+	// translate upgrade configuration
+	if policy.upgradeConfigs != nil {
+		out.UpgradeConfigs = append(out.GetUpgradeConfigs(), policy.upgradeConfigs...)
+	}
+
 	return nil
+}
+
+func convertUpgradeConfig(policy *v1alpha1.HTTPListenerPolicy) []*envoy_hcm.HttpConnectionManager_UpgradeConfig {
+	if policy.Spec.UpgradeConfig == nil {
+		return nil
+	}
+
+	configs := make([]*envoy_hcm.HttpConnectionManager_UpgradeConfig, 0, len(policy.Spec.UpgradeConfig.EnabledUpgrades))
+	for _, upgradeType := range policy.Spec.UpgradeConfig.EnabledUpgrades {
+		configs = append(configs, &envoy_hcm.HttpConnectionManager_UpgradeConfig{
+			UpgradeType: upgradeType,
+		})
+	}
+	return configs
 }

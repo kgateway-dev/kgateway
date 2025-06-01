@@ -24,7 +24,6 @@ import (
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/backend/ai"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/pluginutils"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
@@ -32,6 +31,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
 var logger = logging.New("plugin/backend")
@@ -92,19 +92,19 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 		if len(backendIR.Errors) > 0 {
 			logger.Error("failed to translate backend", "backend", i.GetName(), "error", errors.Join(backendIR.Errors...))
 		}
-		return &ir.BackendObjectIR{
-			ObjectSource: ir.ObjectSource{
-				Kind:      gk.Kind,
-				Group:     gk.Group,
-				Namespace: i.GetNamespace(),
-				Name:      i.GetName(),
-			},
-			GvPrefix:          ExtensionName,
-			CanonicalHostname: hostname(i),
-			Obj:               i,
-			ObjIr:             backendIR,
-			Errors:            backendIR.Errors,
+		objSrc := ir.ObjectSource{
+			Kind:      gk.Kind,
+			Group:     gk.Group,
+			Namespace: i.GetNamespace(),
+			Name:      i.GetName(),
 		}
+		backend := ir.NewBackendObjectIR(objSrc, 0, "")
+		backend.GvPrefix = ExtensionName
+		backend.CanonicalHostname = hostname(i)
+		backend.Obj = i
+		backend.ObjIr = backendIR
+		backend.Errors = backendIR.Errors
+		return &backend
 	})
 	endpoints := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *v1alpha1.Backend) *ir.EndpointsForBackend {
 		return processEndpoints(i)

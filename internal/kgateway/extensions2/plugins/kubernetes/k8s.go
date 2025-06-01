@@ -18,10 +18,10 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/settings"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
 const BackendClusterPrefix = "kube"
@@ -72,21 +72,19 @@ func NewPluginFromCollections(
 }
 
 func BuildServiceBackendObjectIR(svc *corev1.Service, svcPort int32, svcProtocol string) ir.BackendObjectIR {
-	return ir.BackendObjectIR{
-		ObjectSource: ir.ObjectSource{
-			Kind:      wellknown.ServiceGVK.Kind,
-			Group:     wellknown.ServiceGVK.Group,
-			Namespace: svc.Namespace,
-			Name:      svc.Name,
-		},
-		Obj: svc,
-		// TODO: fill in ObjIR
-		Port:        svcPort,
-		AppProtocol: ir.ParseAppProtocol(&svcProtocol),
-		GvPrefix:    BackendClusterPrefix,
-		// TODO: reevaluate knative dep, dedupe with pkg/utils/kubeutils/dns.go
-		CanonicalHostname: fmt.Sprintf("%s.%s.svc.%s", svc.Name, svc.Namespace, network.GetClusterDomainName()),
+	objSrc := ir.ObjectSource{
+		Kind:      wellknown.ServiceGVK.Kind,
+		Group:     wellknown.ServiceGVK.Group,
+		Namespace: svc.Namespace,
+		Name:      svc.Name,
 	}
+	backend := ir.NewBackendObjectIR(objSrc, svcPort, "")
+	backend.Obj = svc
+	backend.AppProtocol = ir.ParseAppProtocol(&svcProtocol)
+	backend.GvPrefix = BackendClusterPrefix
+	// TODO: reevaluate knative dep, dedupe with pkg/utils/kubeutils/dns.go
+	backend.CanonicalHostname = fmt.Sprintf("%s.%s.svc.%s", svc.Name, svc.Namespace, network.GetClusterDomainName())
+	return backend
 }
 
 func processBackend(ctx context.Context, in ir.BackendObjectIR, out *envoy_config_cluster_v3.Cluster) *ir.EndpointsForBackend {

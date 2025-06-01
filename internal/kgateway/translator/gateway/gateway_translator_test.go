@@ -536,6 +536,22 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 				Name:      "example-gateway",
 			},
 		}),
+	Entry("HTTPListenerPolicy with upgrades", translatorTestCase{
+		inputFile:  "https-listener-pol/upgrades.yaml",
+		outputFile: "https-listener-pol/upgrades.yaml",
+		gwNN: types.NamespacedName{
+			Namespace: "default",
+			Name:      "example-gateway",
+		},
+	}),
+	Entry("WS upgrade for backend", translatorTestCase{
+		inputFile:  "https-listener-pol/ws-backend.yaml",
+		outputFile: "https-listener-pol/ws-backend.yaml",
+		gwNN: types.NamespacedName{
+			Namespace: "default",
+			Name:      "example-gateway",
+		},
+	}),
 	// TODO: Add this once istio adds support for listener sets
 	// FEntry(
 	// 	"listener sets",

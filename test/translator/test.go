@@ -31,7 +31,6 @@ import (
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/registry"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/settings"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator"
@@ -42,6 +41,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned/fake"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	common "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
 )
 
@@ -349,16 +349,14 @@ func (tc TestCase) Run(
 	extensions.ContributesPolicies[gk] = extensionsplug.PolicyPlugin{
 		Name: "test-backend-plugin",
 	}
+	testBackend := ir.NewBackendObjectIR(ir.ObjectSource{
+		Kind:      "test-backend-plugin",
+		Namespace: "default",
+		Name:      "example-svc",
+	}, 80, "")
 	extensions.ContributesBackends[gk] = extensionsplug.BackendPlugin{
 		Backends: krt.NewStaticCollection([]ir.BackendObjectIR{
-			{
-				Port: 80,
-				ObjectSource: ir.ObjectSource{
-					Kind:      "test-backend-plugin",
-					Namespace: "default",
-					Name:      "example-svc",
-				},
-			},
+			testBackend,
 		}),
 	}
 

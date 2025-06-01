@@ -17,9 +17,9 @@ import (
 	gwv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
 func TestTransformGRPCRoute(t *testing.T) {
@@ -528,16 +528,15 @@ func k8sSvcUpstreams(services krt.Collection[*corev1.Service]) krt.Collection[ir
 		uss := []ir.BackendObjectIR{}
 
 		for _, port := range svc.Spec.Ports {
-			uss = append(uss, ir.BackendObjectIR{
-				ObjectSource: ir.ObjectSource{
-					Kind:      "Service",
-					Group:     "",
-					Namespace: svc.Namespace,
-					Name:      svc.Name,
-				},
-				Obj:  svc,
-				Port: port.Port,
-			})
+			backend := ir.NewBackendObjectIR(ir.ObjectSource{
+				Kind:      "Service",
+				Group:     "",
+				Namespace: svc.Namespace,
+				Name:      svc.Name,
+			}, port.Port, "")
+			backend.Obj = svc
+
+			uss = append(uss, backend)
 		}
 		return uss
 	})
