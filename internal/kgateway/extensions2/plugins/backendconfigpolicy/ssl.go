@@ -168,6 +168,8 @@ func translateSSLConfig(
 	if sslConfig.AlpnProtocols != nil {
 		tlsContext.AlpnProtocols = sslConfig.AlpnProtocols
 	}
+
+	logger.Info("finished translating ssl config")
 	return &envoyauth.UpstreamTlsContext{
 		CommonTlsContext:   tlsContext,
 		Sni:                sslConfig.Sni,

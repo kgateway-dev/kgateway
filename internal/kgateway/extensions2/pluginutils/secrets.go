@@ -20,6 +20,8 @@ func GetSecretIr(secrets *krtcollections.SecretIndex, krtctx krt.HandlerContext,
 		GroupKind: wellknown.BackendGVK.GroupKind(),
 		Namespace: ns,
 	}
+	fmt.Println("secrets.HasSynced()", secrets.HasSynced())
+	fmt.Println("secretName", secretName, "ns", ns)
 	secret, err := secrets.GetSecret(krtctx, from, secretRef)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find secret %s: %v", secretName, err)
