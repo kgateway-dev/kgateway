@@ -60,6 +60,10 @@ func (d *BackendConfigPolicyIR) Equals(other any) bool {
 		return false
 	}
 
+	if !d.ct.Equal(d2.ct) {
+		return false
+	}
+
 	if (d.connectTimeout == nil) != (d2.connectTimeout == nil) {
 		return false
 	}
@@ -257,7 +261,7 @@ func translate(commoncol *common.CommonCollections, krtctx krt.HandlerContext, p
 			logger.Error("failed to translate ssl config", "error", err, "policy", pol.Name)
 			return &ir, err
 		}
-		logger.Debug("successfully translated ssl config", "sslConfig", sslConfig, "policy", pol.Name)
+		logger.Debug("successfully translated ssl config", "policy", pol.Name)
 		ir.sslConfig = sslConfig
 	}
 
