@@ -41,46 +41,6 @@ func (g *DefaultSecretGetter) GetSecret(name, namespace string) (*ir.Secret, err
 	return pluginutils.GetSecretIr(g.secrets, g.krtctx, name, namespace)
 }
 
-// type CertData struct {
-// 	CertChain      string
-// 	PrivateKey     string
-// 	RootCA         string
-// 	OcspStaple     []byte
-// 	OcspStapleFile string
-// 	// if using a Secret ref, we will inline the certs in the tls config
-// 	InlineDataSource bool
-// }
-
-// func getCertData(
-// 	secretGetter SecretGetter,
-// 	sslConfig *v1alpha1.SSLConfig,
-// 	namespace string,
-// ) (*CertData, error) {
-// 	var certData CertData
-// 	if sslConfig.SecretRef != nil {
-// 		secret, err := secretGetter.GetSecret(sslConfig.SecretRef.Name, namespace)
-// 		if err != nil {
-// 			return nil, err
-// 		}
-// 		certData = CertData{
-// 			CertChain:        string(secret.Data["tls.crt"]),
-// 			PrivateKey:       string(secret.Data["tls.key"]),
-// 			RootCA:           string(secret.Data["ca.crt"]),
-// 			OcspStaple:       secret.Data["ocsp.staple"],
-// 			InlineDataSource: true,
-// 		}
-// 	} else if sslConfig.SSLFiles != nil {
-// 		certData = CertData{
-// 			CertChain:        sslConfig.SSLFiles.TLSCertificate,
-// 			PrivateKey:       sslConfig.SSLFiles.TLSKey,
-// 			RootCA:           sslConfig.SSLFiles.RootCA,
-// 			OcspStapleFile:   sslConfig.SSLFiles.OCSPStaple,
-// 			InlineDataSource: false,
-// 		}
-// 	}
-// 	return &certData, nil
-// }
-
 func translateSSLConfig(
 	secretGetter SecretGetter,
 	sslConfig *v1alpha1.SSLConfig,
@@ -169,7 +129,6 @@ func translateSSLConfig(
 		tlsContext.AlpnProtocols = sslConfig.AlpnProtocols
 	}
 
-	logger.Info("finished translating ssl config")
 	return &envoyauth.UpstreamTlsContext{
 		CommonTlsContext:   tlsContext,
 		Sni:                sslConfig.Sni,
