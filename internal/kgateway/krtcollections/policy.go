@@ -950,6 +950,17 @@ func (h *RoutesIndex) FetchHttp(kctx krt.HandlerContext, ns, n string) *ir.HttpR
 	return route
 }
 
+// ListHTTPRoutesInNamespace returns all HTTPRouteIRs in the given namespace.
+func (h *RoutesIndex) ListHTTPRoutesInNamespace(ns string) []ir.HttpRouteIR {
+	var out []ir.HttpRouteIR
+	for _, rt := range h.httpRoutes.List() {
+		if rt.GetNamespace() == ns {
+			out = append(out, rt)
+		}
+	}
+	return out
+}
+
 func (h *RoutesIndex) Fetch(kctx krt.HandlerContext, gk schema.GroupKind, ns, n string) *RouteWrapper {
 	src := ir.ObjectSource{
 		Group:     gk.Group,
