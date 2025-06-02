@@ -7,8 +7,6 @@ import (
 	"time"
 
 	envoyaccesslog "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
-	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
-	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"google.golang.org/protobuf/proto"
 	skubeclient "istio.io/istio/pkg/config/schema/kubeclient"
@@ -24,7 +22,6 @@ import (
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
@@ -34,8 +31,9 @@ import (
 var logger = logging.New("plugin/httplistenerpolicy")
 
 type httpListenerPolicy struct {
-	ct        time.Time
-	accessLog []*envoyaccesslog.AccessLog
+	ct             time.Time
+	accessLog      []*envoyaccesslog.AccessLog
+	upgradeConfigs []*envoy_hcm.HttpConnectionManager_UpgradeConfig
 }
 
 func (d *httpListenerPolicy) CreationTime() time.Time {
@@ -55,6 +53,13 @@ func (d *httpListenerPolicy) Equals(in any) bool {
 		return false
 	}
 
+	// Check upgrade configs
+	if !slices.EqualFunc(d.upgradeConfigs, d2.upgradeConfigs, func(cfg, cfg2 *envoy_hcm.HttpConnectionManager_UpgradeConfig) bool {
+		return proto.Equal(cfg, cfg2)
+	}) {
+		return false
+	}
+
 	return true
 }
 
@@ -63,14 +68,7 @@ type httpListenerPolicyPluginGwPass struct {
 	reporter reports.Reporter
 }
 
-func (p *httpListenerPolicyPluginGwPass) ApplyForBackend(ctx context.Context, pCtx *ir.RouteBackendContext, in ir.HttpBackend, out *envoy_config_route_v3.Route) error {
-	// no op
-	return nil
-}
-
-func (p *httpListenerPolicyPluginGwPass) ApplyListenerPlugin(ctx context.Context, pCtx *ir.ListenerContext, out *envoy_config_listener_v3.Listener) {
-	// no op
-}
+var _ ir.ProxyTranslationPass = &httpListenerPolicyPluginGwPass{}
 
 func registerTypes(ourCli versioned.Interface) {
 	skubeclient.Register[*v1alpha1.HTTPListenerPolicy](
@@ -108,12 +106,15 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 			errs = append(errs, err)
 		}
 
+		upgradeConfigs := convertUpgradeConfig(i)
+
 		pol := &ir.PolicyWrapper{
 			ObjectSource: objSrc,
 			Policy:       i,
 			PolicyIR: &httpListenerPolicy{
-				ct:        i.CreationTimestamp.Time,
-				accessLog: accessLog,
+				ct:             i.CreationTimestamp.Time,
+				accessLog:      accessLog,
+				upgradeConfigs: upgradeConfigs,
 			},
 			TargetRefs: pluginutils.TargetRefsToPolicyRefs(i.Spec.TargetRefs, i.Spec.TargetSelectors),
 			Errors:     errs,
@@ -157,37 +158,25 @@ func (p *httpListenerPolicyPluginGwPass) ApplyHCM(
 
 	// translate access logging configuration
 	out.AccessLog = append(out.GetAccessLog(), policy.accessLog...)
+
+	// translate upgrade configuration
+	if policy.upgradeConfigs != nil {
+		out.UpgradeConfigs = append(out.GetUpgradeConfigs(), policy.upgradeConfigs...)
+	}
+
 	return nil
 }
 
-func (p *httpListenerPolicyPluginGwPass) ApplyVhostPlugin(ctx context.Context, pCtx *ir.VirtualHostContext, out *envoy_config_route_v3.VirtualHost) {
-}
+func convertUpgradeConfig(policy *v1alpha1.HTTPListenerPolicy) []*envoy_hcm.HttpConnectionManager_UpgradeConfig {
+	if policy.Spec.UpgradeConfig == nil {
+		return nil
+	}
 
-// called 0 or more times
-func (p *httpListenerPolicyPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.RouteContext, outputRoute *envoy_config_route_v3.Route) error {
-	return nil
-}
-
-func (p *httpListenerPolicyPluginGwPass) ApplyForRouteBackend(
-	ctx context.Context,
-	policy ir.PolicyIR,
-	pCtx *ir.RouteBackendContext,
-) error {
-	return nil
-}
-
-// called 1 time per listener
-// if a plugin emits new filters, they must be with a plugin unique name.
-// any filter returned from listener config must be disabled, so it doesnt impact other listeners.
-func (p *httpListenerPolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.FilterChainCommon) ([]plugins.StagedHttpFilter, error) {
-	return nil, nil
-}
-
-func (p *httpListenerPolicyPluginGwPass) NetworkFilters(ctx context.Context) ([]plugins.StagedNetworkFilter, error) {
-	return nil, nil
-}
-
-// called 1 time (per envoy proxy). replaces GeneratedResources
-func (p *httpListenerPolicyPluginGwPass) ResourcesToAdd(ctx context.Context) ir.Resources {
-	return ir.Resources{}
+	configs := make([]*envoy_hcm.HttpConnectionManager_UpgradeConfig, 0, len(policy.Spec.UpgradeConfig.EnabledUpgrades))
+	for _, upgradeType := range policy.Spec.UpgradeConfig.EnabledUpgrades {
+		configs = append(configs, &envoy_hcm.HttpConnectionManager_UpgradeConfig{
+			UpgradeType: upgradeType,
+		})
+	}
+	return configs
 }

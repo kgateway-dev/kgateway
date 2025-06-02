@@ -33,6 +33,7 @@ func TestSettings(t *testing.T) {
 				DnsLookupFamily:             "V4_PREFERRED",
 				EnableIstioIntegration:      false,
 				EnableIstioAutoMtls:         false,
+				ListenerBindIpv6:            true,
 				IstioNamespace:              "istio-system",
 				XdsServiceName:              wellknown.DefaultXdsService,
 				XdsServicePort:              wellknown.DefaultXdsPort,
@@ -55,6 +56,7 @@ func TestSettings(t *testing.T) {
 				"KGW_DNS_LOOKUP_FAMILY":             "V4_ONLY",
 				"KGW_ENABLE_ISTIO_INTEGRATION":      "true",
 				"KGW_ENABLE_ISTIO_AUTO_MTLS":        "true",
+				"KGW_LISTENER_BIND_IPV6":            "false",
 				"KGW_STS_CLUSTER_NAME":              "my-cluster",
 				"KGW_STS_URI":                       "my.sts.uri",
 				"KGW_XDS_SERVICE_HOST":              "my-xds-host",
@@ -74,6 +76,7 @@ func TestSettings(t *testing.T) {
 			},
 			expectedSettings: &settings.Settings{
 				DnsLookupFamily:             "V4_ONLY",
+				ListenerBindIpv6:            false,
 				EnableIstioIntegration:      true,
 				EnableIstioAutoMtls:         true,
 				IstioNamespace:              "istio-system",
@@ -117,6 +120,7 @@ func TestSettings(t *testing.T) {
 			expectedSettings: &settings.Settings{
 				DnsLookupFamily:             "V4_PREFERRED",
 				EnableIstioAutoMtls:         true,
+				ListenerBindIpv6:            true,
 				IstioNamespace:              "istio-system",
 				XdsServiceName:              wellknown.DefaultXdsService,
 				XdsServicePort:              wellknown.DefaultXdsPort,

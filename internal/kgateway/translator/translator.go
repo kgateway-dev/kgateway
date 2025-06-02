@@ -63,7 +63,10 @@ func NewCombinedTranslator(
 func (s *CombinedTranslator) Init(ctx context.Context) {
 	queries := query.NewData(s.commonCols)
 
-	s.gwtranslator = gwtranslator.NewTranslator(queries)
+	listenerTranslatorConfig := gwtranslator.TranslatorConfig{}
+	listenerTranslatorConfig.ListenerTranslatorConfig.ListenerBindIpv6 = s.commonCols.Settings.ListenerBindIpv6
+
+	s.gwtranslator = gwtranslator.NewTranslator(queries, listenerTranslatorConfig)
 	s.irtranslator = &irtranslator.Translator{
 		ContributedPolicies: s.extensions.ContributesPolicies,
 	}

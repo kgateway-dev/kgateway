@@ -7,6 +7,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/sets"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -119,7 +120,7 @@ func updateStatus(ctx context.Context, cli client.Client, gw *api.Gateway, svcmd
 	}
 
 	// update gateway addresses in the status
-	desiredAddresses := getDesiredAddresses(&svc)
+	desiredAddresses := getDesiredAddresses(gw, &svc)
 	actualAddresses := gw.Status.Addresses
 	if slices.Equal(desiredAddresses, actualAddresses) {
 		return nil
@@ -132,29 +133,31 @@ func updateStatus(ctx context.Context, cli client.Client, gw *api.Gateway, svcmd
 	return nil
 }
 
-func getDesiredAddresses(svc *corev1.Service) []api.GatewayStatusAddress {
+func getDesiredAddresses(gw *api.Gateway, svc *corev1.Service) []api.GatewayStatusAddress {
 	if svc.Spec.Type == corev1.ServiceTypeLoadBalancer {
 		if len(svc.Status.LoadBalancer.Ingress) == 0 {
 			return nil
 		}
 		var ret []api.GatewayStatusAddress
+		seen := sets.New[api.GatewayStatusAddress]()
 
 		for _, ing := range svc.Status.LoadBalancer.Ingress {
-			if ing.Hostname != "" {
-				t := api.HostnameAddressType
-				ret = append(ret, api.GatewayStatusAddress{
-					Type:  &t,
-					Value: ing.Hostname,
-				})
-			}
-			if ing.IP != "" {
-				t := api.IPAddressType
-				ret = append(ret, api.GatewayStatusAddress{
-					Type:  &t,
-					Value: ing.IP,
-				})
+			if addr, ok := convertIngressAddr(ing); ok {
+				seen.Insert(addr)
+				ret = append(ret, addr)
 			}
 		}
+
+		for _, specAddr := range gw.Spec.Addresses {
+			addr := api.GatewayStatusAddress{
+				Type:  specAddr.Type,
+				Value: specAddr.Value,
+			}
+			if !seen.Has(addr) {
+				ret = append(ret, addr)
+			}
+		}
+
 		return ret
 	}
 
@@ -175,4 +178,22 @@ func getDesiredAddresses(svc *corev1.Service) []api.GatewayStatusAddress {
 	}
 
 	return ret
+}
+
+func convertIngressAddr(ing corev1.LoadBalancerIngress) (api.GatewayStatusAddress, bool) {
+	if ing.Hostname != "" {
+		t := api.HostnameAddressType
+		return api.GatewayStatusAddress{
+			Type:  &t,
+			Value: ing.Hostname,
+		}, true
+	}
+	if ing.IP != "" {
+		t := api.IPAddressType
+		return api.GatewayStatusAddress{
+			Type:  &t,
+			Value: ing.IP,
+		}, true
+	}
+	return api.GatewayStatusAddress{}, false
 }

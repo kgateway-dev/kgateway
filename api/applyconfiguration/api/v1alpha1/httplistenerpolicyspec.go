@@ -8,6 +8,7 @@ type HTTPListenerPolicySpecApplyConfiguration struct {
 	TargetRefs      []LocalPolicyTargetReferenceApplyConfiguration `json:"targetRefs,omitempty"`
 	TargetSelectors []LocalPolicyTargetSelectorApplyConfiguration  `json:"targetSelectors,omitempty"`
 	AccessLog       []AccessLogApplyConfiguration                  `json:"accessLog,omitempty"`
+	UpgradeConfig   *UpgradeConfigApplyConfiguration               `json:"upgradeConfig,omitempty"`
 }
 
 // HTTPListenerPolicySpecApplyConfiguration constructs a declarative configuration of the HTTPListenerPolicySpec type for use with
@@ -52,5 +53,13 @@ func (b *HTTPListenerPolicySpecApplyConfiguration) WithAccessLog(values ...*Acce
 		}
 		b.AccessLog = append(b.AccessLog, *values[i])
 	}
+	return b
+}
+
+// WithUpgradeConfig sets the UpgradeConfig field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the UpgradeConfig field is set to the value of the last call.
+func (b *HTTPListenerPolicySpecApplyConfiguration) WithUpgradeConfig(value *UpgradeConfigApplyConfiguration) *HTTPListenerPolicySpecApplyConfiguration {
+	b.UpgradeConfig = value
 	return b
 }

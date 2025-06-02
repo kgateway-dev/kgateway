@@ -9,10 +9,8 @@ import (
 	clusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	endpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
-	listenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	routev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	extprocv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_proc/v3"
-	hcmv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	tlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	upstreamsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
 	"google.golang.org/protobuf/types/known/anypb"
@@ -31,11 +29,11 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	extplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
 // Derived from upstream Gateway API Inference Extension defaults (testdata/envoy.yaml).
@@ -100,18 +98,18 @@ func NewPluginFromCollections(
 
 	backendCol := krt.NewCollection(poolCol, func(kctx krt.HandlerContext, pool *infextv1a2.InferencePool) *ir.BackendObjectIR {
 		// Create a BackendObjectIR IR representation from the given InferencePool.
-		return &ir.BackendObjectIR{
-			ObjectSource: ir.ObjectSource{
-				Kind:      gk.Kind,
-				Group:     gk.Group,
-				Namespace: pool.Namespace,
-				Name:      pool.Name,
-			},
-			Obj:               pool,
-			GvPrefix:          "endpoint-picker",
-			CanonicalHostname: "",
-			ObjIr:             newInferencePool(pool),
+		objSrc := ir.ObjectSource{
+			Kind:      gk.Kind,
+			Group:     gk.Group,
+			Namespace: pool.Namespace,
+			Name:      pool.Name,
 		}
+		backend := ir.NewBackendObjectIR(objSrc, 0, "")
+		backend.Obj = pool
+		backend.GvPrefix = "endpoint-picker"
+		backend.CanonicalHostname = ""
+		backend.ObjIr = newInferencePool(pool)
+		return &backend
 	}, commonCol.KrtOpts.ToOptions("InferencePoolIR")...)
 
 	policyCol := krt.NewCollection(poolCol, func(krtctx krt.HandlerContext, pool *infextv1a2.InferencePool) *ir.PolicyWrapper {
@@ -157,6 +155,8 @@ type endpointPickerPass struct {
 	reporter reports.Reporter
 }
 
+var _ ir.ProxyTranslationPass = &endpointPickerPass{}
+
 func newEndpointPickerPass(ctx context.Context, tctx ir.GwTranslationCtx, reporter reports.Reporter) ir.ProxyTranslationPass {
 	return &endpointPickerPass{
 		usedPools: make(map[types.NamespacedName]*inferencePool),
@@ -166,44 +166,6 @@ func newEndpointPickerPass(ctx context.Context, tctx ir.GwTranslationCtx, report
 
 func (p *endpointPickerPass) Name() string {
 	return "endpoint-picker"
-}
-
-// No-op for these standard translation pass methods.
-func (p *endpointPickerPass) ApplyListenerPlugin(ctx context.Context, lctx *ir.ListenerContext, out *listenerv3.Listener) {
-}
-
-func (p *endpointPickerPass) ApplyHCM(ctx context.Context, hctx *ir.HcmContext, out *hcmv3.HttpConnectionManager) error {
-	return nil
-}
-
-func (p *endpointPickerPass) NetworkFilters(ctx context.Context) ([]plugins.StagedNetworkFilter, error) {
-	return nil, nil
-}
-
-func (p *endpointPickerPass) UpstreamHttpFilters(ctx context.Context) ([]plugins.StagedUpstreamHttpFilter, error) {
-	return nil, nil
-}
-
-func (p *endpointPickerPass) ApplyVhostPlugin(ctx context.Context, vctx *ir.VirtualHostContext, out *routev3.VirtualHost) {
-}
-
-func (p *endpointPickerPass) ApplyForRoute(ctx context.Context, rctx *ir.RouteContext, out *routev3.Route) error {
-	return nil
-}
-
-func (p *endpointPickerPass) ApplyRouteConfigPlugin(
-	ctx context.Context,
-	pCtx *ir.RouteConfigContext,
-	out *routev3.RouteConfiguration,
-) {
-}
-
-func (p *endpointPickerPass) ApplyForRouteBackend(
-	ctx context.Context,
-	policy ir.PolicyIR,
-	pCtx *ir.RouteBackendContext,
-) error {
-	return nil
 }
 
 // ApplyForBackend updates the Envoy route for each InferencePool-backed HTTPRoute.
@@ -279,7 +241,7 @@ func (p *endpointPickerPass) HttpFilters(ctx context.Context, fc ir.FilterChainC
 
 	var filters []plugins.StagedHttpFilter
 
-	// For each used pool, create a distinct ext_proc filter referencing that pool’s cluster.
+	// For each used pool, create a distinct ext_proc filter referencing that pool's cluster.
 	for _, pool := range p.usedPools {
 		if pool.configRef == nil || len(pool.configRef.ports) == 0 {
 			continue
@@ -382,7 +344,7 @@ func processBackendObjectIR(ctx context.Context, in ir.BackendObjectIR, out *clu
 	return nil
 }
 
-// buildExtProcCluster builds and returns a “STRICT_DNS” cluster from the given pool.
+// buildExtProcCluster builds and returns a "STRICT_DNS" cluster from the given pool.
 func buildExtProcCluster(pool *inferencePool) *clusterv3.Cluster {
 	if pool == nil || pool.configRef == nil || len(pool.configRef.ports) != 1 {
 		return nil

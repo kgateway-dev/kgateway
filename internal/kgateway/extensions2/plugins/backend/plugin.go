@@ -24,7 +24,6 @@ import (
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/backend/ai"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/pluginutils"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
@@ -32,6 +31,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
 var logger = logging.New("plugin/backend")
@@ -92,19 +92,19 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 		if len(backendIR.Errors) > 0 {
 			logger.Error("failed to translate backend", "backend", i.GetName(), "error", errors.Join(backendIR.Errors...))
 		}
-		return &ir.BackendObjectIR{
-			ObjectSource: ir.ObjectSource{
-				Kind:      gk.Kind,
-				Group:     gk.Group,
-				Namespace: i.GetNamespace(),
-				Name:      i.GetName(),
-			},
-			GvPrefix:          ExtensionName,
-			CanonicalHostname: hostname(i),
-			Obj:               i,
-			ObjIr:             backendIR,
-			Errors:            backendIR.Errors,
+		objSrc := ir.ObjectSource{
+			Kind:      gk.Kind,
+			Group:     gk.Group,
+			Namespace: i.GetNamespace(),
+			Name:      i.GetName(),
 		}
+		backend := ir.NewBackendObjectIR(objSrc, 0, "")
+		backend.GvPrefix = ExtensionName
+		backend.CanonicalHostname = hostname(i)
+		backend.Obj = i
+		backend.ObjIr = backendIR
+		backend.Errors = backendIR.Errors
+		return &backend
 	})
 	endpoints := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *v1alpha1.Backend) *ir.EndpointsForBackend {
 		return processEndpoints(i)
@@ -317,6 +317,8 @@ type backendPlugin struct {
 	needsDfpFilter   map[string]bool
 }
 
+var _ ir.ProxyTranslationPass = &backendPlugin{}
+
 func newPlug(ctx context.Context, tctx ir.GwTranslationCtx, reporter reports.Reporter) ir.ProxyTranslationPass {
 	return &backendPlugin{}
 }
@@ -359,14 +361,6 @@ func (p *backendPlugin) ApplyForBackend(ctx context.Context, pCtx *ir.RouteBacke
 	return nil
 }
 
-func (p *backendPlugin) ApplyForRouteBackend(
-	_ context.Context,
-	_ ir.PolicyIR,
-	_ *ir.RouteBackendContext,
-) error {
-	return nil
-}
-
 // called 1 time per listener
 // if a plugin emits new filters, they must be with a plugin unique name.
 // any filter returned from route config must be disabled, so it doesnt impact other routes.
@@ -387,14 +381,6 @@ func (p *backendPlugin) HttpFilters(ctx context.Context, fc ir.FilterChainCommon
 		result = append(result, f)
 	}
 	return result, errors.Join(errs...)
-}
-
-func (p *backendPlugin) UpstreamHttpFilters(ctx context.Context, fcc ir.FilterChainCommon) ([]plugins.StagedUpstreamHttpFilter, error) {
-	return nil, nil
-}
-
-func (p *backendPlugin) NetworkFilters(ctx context.Context) ([]plugins.StagedNetworkFilter, error) {
-	return nil, nil
 }
 
 // called 1 time (per envoy proxy). replaces GeneratedResources

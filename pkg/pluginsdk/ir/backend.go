@@ -62,14 +62,17 @@ type Namespaced interface {
 type AppProtocol string
 
 const (
-	DefaultAppProtocol AppProtocol = ""
-	HTTP2AppProtocol   AppProtocol = "http2"
+	DefaultAppProtocol   AppProtocol = ""
+	HTTP2AppProtocol     AppProtocol = "http2"
+	WebSocketAppProtocol AppProtocol = "ws"
 )
 
 func ParseAppProtocol(appProtocol *string) AppProtocol {
 	switch ptr.Deref(appProtocol, "") {
 	case "kubernetes.io/h2c":
 		return HTTP2AppProtocol
+	case "kubernetes.io/ws":
+		return WebSocketAppProtocol
 	default:
 		return DefaultAppProtocol
 	}
@@ -111,24 +114,42 @@ type BackendObjectIR struct {
 	// Errors is a list of errors, if any, encountered while constructing this BackendObject
 	// Not added to Equals() as it is derived from the inner ObjIr, which is already evaluated
 	Errors []error
+
+	// Name is the pre-calculated resource name. used as the krt resource name.
+	resourceName string
+}
+
+// NewBackendObjectIR creates a new BackendObjectIR with pre-calculated resource name
+func NewBackendObjectIR(objSource ObjectSource, port int32, extraKey string) BackendObjectIR {
+	return BackendObjectIR{
+		ObjectSource: objSource,
+		Port:         port,
+		ExtraKey:     extraKey,
+		resourceName: BackendResourceName(objSource, port, extraKey),
+	}
 }
 
 func (c BackendObjectIR) ResourceName() string {
-	return BackendResourceName(c.ObjectSource, c.Port, c.ExtraKey)
+	return c.resourceName
 }
 
 func BackendResourceName(objSource ObjectSource, port int32, extraKey string) string {
-	key := fmt.Sprintf("%s:%d", objSource.ResourceName(), port)
+	var sb strings.Builder
+	sb.WriteString(objSource.ResourceName())
+	sb.WriteString(fmt.Sprintf(":%d", port))
+
 	if extraKey != "" {
-		key += extraKey
+		sb.WriteRune('_')
+		sb.WriteString(extraKey)
 	}
-	return key
+	return sb.String()
 }
 
 func (c BackendObjectIR) Equals(in BackendObjectIR) bool {
 	objEq := c.ObjectSource.Equals(in.ObjectSource)
 	objVersionEq := versionEquals(c.Obj, in.Obj)
 	polEq := c.AttachedPolicies.Equals(in.AttachedPolicies)
+	nameEq := c.resourceName == in.resourceName
 
 	// objIr may currently be nil in the case of k8s Services
 	// TODO: add an IR for Services to avoid the need for this
@@ -138,7 +159,7 @@ func (c BackendObjectIR) Equals(in BackendObjectIR) bool {
 		objIrEq = c.ObjIr.Equals(in.ObjIr)
 	}
 
-	return objEq && objVersionEq && objIrEq && polEq
+	return objEq && objVersionEq && objIrEq && polEq && nameEq
 }
 
 func (c BackendObjectIR) ClusterName() string {
