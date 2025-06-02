@@ -103,13 +103,13 @@ func (s *testingSuite) TestDynamicForwardProxyBackend() {
 		expectedUpstreamBodyContents string
 	}{
 		{
-			name: "request allowed with allow header",
+			name: "request forwarded upstream",
 			headers: map[string]string{
-				"x-ext-authz": "allow",
+				"x-header": "header-value",
 			},
 			hostname:                     "simple-svc.kgateway-test.svc.cluster.local",
 			expectedStatus:               http.StatusOK,
-			expectedUpstreamBodyContents: "X-Ext-Authz-Check-Result",
+			expectedUpstreamBodyContents: "X-Header",
 		},
 	}
 
