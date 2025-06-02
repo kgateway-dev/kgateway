@@ -7,15 +7,18 @@ import (
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"golang.org/x/net/context"
+	"istio.io/istio/pkg/slices"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/query"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
 
 var logger = logging.New("translator/ir")
@@ -54,6 +57,17 @@ func (t *Translator) Translate(gw ir.GatewayIR, reporter reports.Reporter) Trans
 	return res
 }
 
+func getReporterForFilterChain(gw ir.GatewayIR, reporter reports.Reporter, filterChainName string) reporter.ListenerReporter {
+	listener := slices.FindFunc(gw.SourceObject.Listeners, func(l ir.Listener) bool {
+		return filterChainName == query.GenerateRouteKey(l.Parent, string(l.Name))
+	})
+	if listener == nil {
+		// This should never happen, but keep this as a safeguard.
+		return reporter.Gateway(gw.SourceObject.Obj).ListenerName(filterChainName)
+	}
+	return listener.GetParentReporter(reporter).ListenerName(string(listener.Name))
+}
+
 func (t *Translator) ComputeListener(
 	ctx context.Context,
 	pass TranslationPassPlugins,
@@ -62,7 +76,7 @@ func (t *Translator) ComputeListener(
 	reporter reports.Reporter,
 ) (*envoy_config_listener_v3.Listener, []*envoy_config_route_v3.RouteConfiguration) {
 	hasTls := false
-	gwreporter := reporter.Gateway(gw.SourceObject)
+	gwreporter := reporter.Gateway(gw.SourceObject.Obj)
 	var routes []*envoy_config_route_v3.RouteConfiguration
 	ret := &envoy_config_listener_v3.Listener{
 		Name:    lis.Name,
@@ -98,8 +112,7 @@ func (t *Translator) ComputeListener(
 		// compute chains
 
 		// TODO: make sure that all matchers are unique
-
-		rl := gwreporter.ListenerName(hfc.FilterChainName)
+		rl := getReporterForFilterChain(gw, reporter, hfc.FilterChainName)
 		fc := fct.initFilterChain(ctx, hfc.FilterChainCommon, rl)
 		fc.Filters = fct.computeHttpFilters(ctx, hfc, rl)
 		ret.FilterChains = append(ret.GetFilterChains(), fc)
@@ -115,7 +128,7 @@ func (t *Translator) ComputeListener(
 	}
 
 	for _, tfc := range lis.TcpFilterChain {
-		rl := gwreporter.ListenerName(tfc.FilterChainName)
+		rl := getReporterForFilterChain(gw, reporter, tfc.FilterChainName)
 		fc := fct.initFilterChain(ctx, tfc.FilterChainCommon, rl)
 		fc.Filters = fct.computeTcpFilters(ctx, tfc, rl)
 		ret.FilterChains = append(ret.GetFilterChains(), fc)
@@ -135,30 +148,27 @@ func (t *Translator) ComputeListener(
 }
 
 func (t *Translator) runListenerPlugins(ctx context.Context, pass TranslationPassPlugins, gw ir.GatewayIR, l ir.ListenerIR, out *envoy_config_listener_v3.Listener) {
-	attachedPoliciesSlice := []ir.AttachedPolicies{
-		l.AttachedPolicies,
-		gw.AttachedPolicies,
-	}
-	for _, attachedPolicies := range attachedPoliciesSlice {
-		for gk, pols := range attachedPolicies.Policies {
-			pass := pass[gk]
-			if pass == nil {
-				// TODO: report user error - they attached a non http policy
-				continue
+	var attachedPolicies ir.AttachedPolicies
+	attachedPolicies.Append(l.AttachedPolicies, gw.AttachedHttpPolicies)
+	for _, gk := range attachedPolicies.ApplyOrderedGroupKinds() {
+		pols := attachedPolicies.Policies[gk]
+		pass := pass[gk]
+		if pass == nil {
+			// TODO: report user error - they attached a non http policy
+			continue
+		}
+		for _, pol := range pols {
+			pctx := &ir.ListenerContext{
+				Policy: pol.PolicyIr,
+				PolicyAncestorRef: gwv1.ParentReference{
+					Group:     ptr.To(gwv1.Group(wellknown.GatewayGVK.Group)),
+					Kind:      ptr.To(gwv1.Kind(wellknown.GatewayGVK.Kind)),
+					Namespace: ptr.To(gwv1.Namespace(gw.SourceObject.GetNamespace())),
+					Name:      gwv1.ObjectName(gw.SourceObject.GetName()),
+				},
 			}
-			for _, pol := range pols {
-				pctx := &ir.ListenerContext{
-					Policy: pol.PolicyIr,
-					PolicyAncestorRef: gwv1.ParentReference{
-						Group:     ptr.To(gwv1.Group(wellknown.GatewayGVK.Group)),
-						Kind:      ptr.To(gwv1.Kind(wellknown.GatewayGVK.Kind)),
-						Namespace: ptr.To(gwv1.Namespace(gw.SourceObject.GetNamespace())),
-						Name:      gwv1.ObjectName(gw.SourceObject.GetName()),
-					},
-				}
-				pass.ApplyListenerPlugin(ctx, pctx, out)
-				// TODO: check return value, if error returned, log error and report condition
-			}
+			pass.ApplyListenerPlugin(ctx, pctx, out)
+			// TODO: check return value, if error returned, log error and report condition
 		}
 	}
 }

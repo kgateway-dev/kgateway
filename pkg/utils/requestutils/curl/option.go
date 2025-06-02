@@ -2,6 +2,7 @@ package curl
 
 import (
 	"encoding/base64"
+	"maps"
 	"net/http"
 	"strconv"
 	"strings"
@@ -196,6 +197,16 @@ func WithBasicAuth(username string, password string) Option {
 func WithHeader(key, value string) Option {
 	return func(config *requestConfig) {
 		config.headers[key] = value
+	}
+}
+
+// WithHeaders returns the Option to configure a list of headers for the curl request
+func WithHeaders(headers map[string]string) Option {
+	return func(config *requestConfig) {
+		if config.headers == nil {
+			config.headers = make(map[string]string)
+		}
+		maps.Copy(config.headers, headers)
 	}
 }
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"math"
 	"net"
 
 	envoy_service_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/service/cluster/v3"
@@ -80,6 +81,7 @@ func NewControlPlaneWithListener(ctx context.Context,
 	envoyLoggerAdapter := &slogAdapterForEnvoy{logger: baseLogger}
 
 	serverOpts := []grpc.ServerOption{
+		grpc.MaxRecvMsgSize(math.MaxInt32),
 		grpc.StreamInterceptor(
 			grpc_middleware.ChainStreamServer(
 				//				grpc_ctxtags.StreamServerInterceptor(),

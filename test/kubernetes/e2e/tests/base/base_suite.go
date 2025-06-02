@@ -1,5 +1,3 @@
-//go:build ignore
-
 package base
 
 import (
@@ -41,8 +39,6 @@ type SimpleTestCase struct {
 	Rollback func() error
 }
 
-var namespace string
-
 type BaseTestingSuite struct {
 	suite.Suite
 	Ctx              context.Context
@@ -57,7 +53,6 @@ type BaseTestingSuite struct {
 // Currently, tests that require upgrades (eg: to change settings) can not be run in Enterprise. To do so,
 // the test must be written without upgrades and call the `NewBaseTestingSuiteWithoutUpgrades` constructor.
 func NewBaseTestingSuite(ctx context.Context, testInst *e2e.TestInstallation, setup SimpleTestCase, testCase map[string]*TestCase) *BaseTestingSuite {
-	namespace = testInst.Metadata.InstallNamespace
 	return &BaseTestingSuite{
 		Ctx:              ctx,
 		TestInstallation: testInst,
@@ -69,7 +64,6 @@ func NewBaseTestingSuite(ctx context.Context, testInst *e2e.TestInstallation, se
 // NewBaseTestingSuiteWithoutUpgrades returns a BaseTestingSuite without allowing upgrades and reverts before the suite and tests.
 // This is useful when creating tests that need to run in Enterprise since the helm values change between OSS and Enterprise installations.
 func NewBaseTestingSuiteWithoutUpgrades(ctx context.Context, testInst *e2e.TestInstallation, setup SimpleTestCase, testCase map[string]*TestCase) *BaseTestingSuite {
-	namespace = testInst.Metadata.InstallNamespace
 	return &BaseTestingSuite{
 		Ctx:              ctx,
 		TestInstallation: testInst,
@@ -176,7 +170,6 @@ func (s *BaseTestingSuite) BeforeTest(suiteName, testName string) {
 			})
 		}
 	}
-
 }
 
 func (s *BaseTestingSuite) AfterTest(suiteName, testName string) {

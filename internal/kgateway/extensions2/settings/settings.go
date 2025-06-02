@@ -13,6 +13,9 @@ type Settings struct {
 	// https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/cluster/v3/cluster.proto#enum-config-cluster-v3-cluster-dnslookupfamily
 	DnsLookupFamily string `split_words:"true" default:"V4_PREFERRED"`
 
+	// Controls the listener bind address. Can be either V4 or V6
+	ListenerBindIpv6 bool `split_words:"true" default:"true"`
+
 	EnableIstioIntegration bool `split_words:"true"`
 	EnableIstioAutoMtls    bool `split_words:"true"`
 

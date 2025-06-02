@@ -11,12 +11,15 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/utils/ptr"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
+	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	apilabels "github.com/kgateway-dev/kgateway/v2/api/labels"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/utils"
 	delegationutils "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/delegation"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
@@ -137,7 +140,7 @@ func (r *gatewayQueries) GetRouteChain(
 	}
 }
 
-func (r *gatewayQueries) allowedRoutes(gw *gwv1.Gateway, l *gwv1.Listener) (func(krt.HandlerContext, string) bool, []metav1.GroupKind, error) {
+func (r *gatewayQueries) allowedRoutes(resource client.Object, l *gwv1.Listener) (func(krt.HandlerContext, string) bool, []metav1.GroupKind, error) {
 	var allowedKinds []metav1.GroupKind
 
 	// Determine the allowed route kinds based on the listener's protocol
@@ -160,7 +163,7 @@ func (r *gatewayQueries) allowedRoutes(gw *gwv1.Gateway, l *gwv1.Listener) (func
 		allowedKinds = []metav1.GroupKind{{Kind: wellknown.HTTPRouteKind, Group: gwv1.GroupName}}
 	}
 
-	allowedNs := SameNamespace(gw.Namespace)
+	allowedNs := krtcollections.SameNamespace(resource.GetNamespace())
 	if ar := l.AllowedRoutes; ar != nil {
 		// Override the allowed route kinds if specified in AllowedRoutes
 		if ar.Kinds != nil {
@@ -180,7 +183,7 @@ func (r *gatewayQueries) allowedRoutes(gw *gwv1.Gateway, l *gwv1.Listener) (func
 		if ar.Namespaces != nil && ar.Namespaces.From != nil {
 			switch *ar.Namespaces.From {
 			case gwv1.NamespacesFromAll:
-				allowedNs = AllNamespace()
+				allowedNs = krtcollections.AllNamespace()
 			case gwv1.NamespacesFromSelector:
 				if ar.Namespaces.Selector == nil {
 					return nil, nil, fmt.Errorf("selector must be set")
@@ -189,7 +192,7 @@ func (r *gatewayQueries) allowedRoutes(gw *gwv1.Gateway, l *gwv1.Listener) (func
 				if err != nil {
 					return nil, nil, err
 				}
-				allowedNs = r.NamespaceSelector(selector)
+				allowedNs = krtcollections.NamespaceSelector(r.collections.Namespaces, selector)
 			}
 		}
 	}
@@ -315,17 +318,28 @@ func (r *gatewayQueries) fetchRoutesByRef(
 	return refChildren, nil
 }
 
-func (r *gatewayQueries) GetRoutesForGateway(kctx krt.HandlerContext, ctx context.Context, gw *gwv1.Gateway) (*RoutesForGwResult, error) {
+func (r *gatewayQueries) GetRoutesForResource(kctx krt.HandlerContext, ctx context.Context, resource client.Object) (*RoutesForGwResult, error) {
 	nns := types.NamespacedName{
-		Namespace: gw.Namespace,
-		Name:      gw.Name,
+		Namespace: resource.GetNamespace(),
+		Name:      resource.GetName(),
 	}
 
 	// Process each route
 	ret := NewRoutesForGwResult()
-	routes := r.collections.Routes.RoutesForGateway(kctx, nns)
+
+	var routes []ir.Route
+	switch t := resource.(type) {
+	case *gwxv1a1.XListenerSet:
+		// If a listenerset, initially populate it with the list of routes attached to the parent gateway
+		parentRef := getParentGatewayRef(t)
+		routes = r.collections.Routes.RoutesForGateway(kctx, *parentRef)
+		routes = append(routes, r.collections.Routes.RoutesForListenerSet(kctx, nns)...)
+	default:
+		routes = r.collections.Routes.RoutesForGateway(kctx, nns)
+	}
+
 	for _, route := range routes {
-		if err := r.processRoute(kctx, ctx, gw, route, ret); err != nil {
+		if err := r.processRoute(kctx, ctx, resource, route, ret); err != nil {
 			return nil, err
 		}
 	}
@@ -333,14 +347,66 @@ func (r *gatewayQueries) GetRoutesForGateway(kctx krt.HandlerContext, ctx contex
 	return ret, nil
 }
 
+func getParentGatewayRef(ls *gwxv1a1.XListenerSet) *types.NamespacedName {
+	ns := ls.Namespace
+	if ls.Spec.ParentRef.Namespace != nil && *ls.Spec.ParentRef.Namespace != "" {
+		ns = string(*ls.Spec.ParentRef.Namespace)
+	}
+
+	return &types.NamespacedName{
+		Namespace: ns,
+		Name:      string(ls.Spec.ParentRef.Name),
+	}
+}
+
+func (r *gatewayQueries) GetRoutesForGateway(kctx krt.HandlerContext, ctx context.Context, gw *ir.Gateway) (*RoutesForGwResult, error) {
+	routes, err := r.GetRoutesForResource(kctx, ctx, gw.Obj)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, ls := range gw.AllowedListenerSets {
+		lsRoutes, err := r.GetRoutesForResource(kctx, ctx, ls.Obj)
+		if err != nil {
+			return nil, err
+		}
+		routes.merge(lsRoutes)
+	}
+
+	return routes, nil
+}
+
+func GenerateRouteKey(parent client.Object, listenerName string) string {
+	if parent == nil {
+		return listenerName
+	}
+	if _, ok := parent.(*gwv1.Gateway); ok {
+		return listenerName
+	}
+	return fmt.Sprintf("%s/%s/%s", parent.GetNamespace(), parent.GetName(), listenerName)
+}
+
+func getListeners(resource client.Object) ([]gwv1.Listener, error) {
+	var listeners []gwv1.Listener
+	switch typed := resource.(type) {
+	case *gwv1.Gateway:
+		listeners = typed.Spec.Listeners
+	case *gwxv1a1.XListenerSet:
+		listeners = utils.ToListenerSlice(typed.Spec.Listeners)
+	default:
+		return nil, fmt.Errorf("unknown type")
+	}
+	return listeners, nil
+}
+
 func (r *gatewayQueries) processRoute(
 	kctx krt.HandlerContext,
 	ctx context.Context,
-	gw *gwv1.Gateway,
+	resource client.Object,
 	route ir.Route,
 	ret *RoutesForGwResult,
 ) error {
-	refs := getParentRefsForGw(gw, route)
+	refs := getParentRefsForResource(resource, route)
 	routeKind := route.GetGroupKind().Kind
 
 	for _, ref := range refs {
@@ -348,14 +414,19 @@ func (r *gatewayQueries) processRoute(
 		anyListenerMatched := false
 		anyHostsMatch := false
 
-		for _, l := range gw.Spec.Listeners {
-			lr := ret.ListenerResults[string(l.Name)]
+		listeners, err := getListeners(resource)
+		if err != nil {
+			return err
+		}
+
+		for _, l := range listeners {
+			lr := ret.GetListenerResult(resource, string(l.Name))
 			if lr == nil {
 				lr = &ListenerResult{}
-				ret.ListenerResults[string(l.Name)] = lr
+				ret.setListenerResult(resource, string(l.Name), lr)
 			}
 
-			allowedNs, allowedKinds, err := r.allowedRoutes(gw, &l)
+			allowedNs, allowedKinds, err := r.allowedRoutes(resource, &l)
 			if err != nil {
 				lr.Error = err
 				continue

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"strconv"
 	"time"
 
@@ -12,12 +13,13 @@ import (
 	ratelimitv3 "github.com/envoyproxy/go-control-plane/envoy/config/ratelimit/v3"
 	routev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	exteniondynamicmodulev3 "github.com/envoyproxy/go-control-plane/envoy/extensions/dynamic_modules/v3"
+	corsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/cors/v3"
 	dynamicmodulesv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/dynamic_modules/v3"
 	envoy_ext_authz_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_authz/v3"
 	envoy_ext_proc_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_proc/v3"
 	localratelimitv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/local_ratelimit/v3"
 	ratev3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ratelimit/v3"
-	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/durationpb"
@@ -136,6 +138,7 @@ type trafficPolicySpecIr struct {
 	extAuth                    *extAuthIR
 	localRateLimit             *localratelimitv3.LocalRateLimit
 	rateLimit                  *RateLimitIR
+	cors                       *CorsIR
 }
 
 func (d *TrafficPolicy) CreationTime() time.Time {
@@ -190,6 +193,10 @@ func (d *TrafficPolicy) Equals(in any) bool {
 	}
 
 	if !d.spec.rateLimit.Equals(d2.spec.rateLimit) {
+		return false
+	}
+
+	if !d.spec.cors.Equals(d2.spec.cors) {
 		return false
 	}
 
@@ -289,11 +296,10 @@ type trafficPolicyPluginGwPass struct {
 	extAuthPerProvider    ProviderNeededMap
 	extProcPerProvider    ProviderNeededMap
 	rateLimitPerProvider  ProviderNeededMap
+	corsInChain           map[string]*corsv3.Cors
 }
 
-func (p *trafficPolicyPluginGwPass) ApplyHCM(ctx context.Context, pCtx *ir.HcmContext, out *envoyhttp.HttpConnectionManager) error {
-	return nil
-}
+var _ ir.ProxyTranslationPass = &trafficPolicyPluginGwPass{}
 
 var useRustformations bool
 
@@ -637,6 +643,9 @@ func (p *trafficPolicyPluginGwPass) handlePolicies(fcn string, typedFilterConfig
 	// Apply rate limit configuration if present
 	p.handleRateLimit(fcn, typedFilterConfig, spec.rateLimit)
 	p.handleLocalRateLimit(fcn, typedFilterConfig, spec.localRateLimit)
+
+	// Apply CORS configuration if present
+	p.handleCors(fcn, typedFilterConfig, spec.cors)
 }
 
 // handleRateLimit adds rate limit configurations to routes
@@ -722,6 +731,25 @@ func (p *trafficPolicyPluginGwPass) handleExtProc(fcn string, pCtxTypedFilterCon
 	}
 
 	p.extProcPerProvider.Add(fcn, providerName, extProc.provider)
+}
+
+func (p *trafficPolicyPluginGwPass) handleCors(fcn string, pCtxTypedFilterConfig *ir.TypedFilterConfigMap, cors *CorsIR) {
+	if cors == nil || cors.corsConfig == nil {
+		return
+	}
+
+	// Adds the CorsPolicy to the typed_per_filter_config.
+	// Also requires Cors http_filter to be added to the filter chain.
+	pCtxTypedFilterConfig.AddTypedConfig(envoy_wellknown.CORS, cors.corsConfig)
+
+	// Add a filter to the chain. When having a cors policy for a route we need to also have a
+	// globally cors http filter in the chain otherwise it will be ignored.
+	if p.corsInChain == nil {
+		p.corsInChain = make(map[string]*corsv3.Cors)
+	}
+	if _, ok := p.corsInChain[fcn]; !ok {
+		p.corsInChain[fcn] = &corsv3.Cors{}
+	}
 }
 
 // called 1 time per listener
@@ -858,6 +886,15 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.Filt
 		filters = append(filters, stagedRateLimitFilter)
 	}
 
+	// Add Cors filter to enable cors for the listener.
+	// Requires the cors policy to be set as typed_per_filter_config.
+	if p.corsInChain[fcc.FilterChainName] != nil {
+		filter := plugins.MustNewStagedFilter(envoy_wellknown.CORS,
+			p.corsInChain[fcc.FilterChainName],
+			plugins.DuringStage(plugins.CorsStage))
+		filters = append(filters, filter)
+	}
+
 	if len(filters) == 0 {
 		return nil, nil
 	}
@@ -877,15 +914,6 @@ func AddDisableFilterIfNeeded(filters []plugins.StagedHttpFilter) []plugins.Stag
 	f.Filter.Disabled = true
 	filters = append(filters, f)
 	return filters
-}
-
-func (p *trafficPolicyPluginGwPass) NetworkFilters(ctx context.Context) ([]plugins.StagedNetworkFilter, error) {
-	return nil, nil
-}
-
-// called 1 time (per envoy proxy). replaces GeneratedResources
-func (p *trafficPolicyPluginGwPass) ResourcesToAdd(ctx context.Context) ir.Resources {
-	return ir.Resources{}
 }
 
 func (p *trafficPolicyPluginGwPass) SupportsPolicyMerge() bool {
@@ -942,41 +970,62 @@ func mergePolicies(policies []ir.PolicyAtt) ir.PolicyAtt {
 		p2 := policies[i].PolicyIr.(*TrafficPolicy)
 		p2Ref := policies[i].PolicyRef
 
-		if policy.IsMergeable(merged.spec.AI, p2.spec.AI, mergeOpts) {
-			merged.spec.AI = p2.spec.AI
-			out.MergeOrigins["ai"] = p2Ref
-		}
-		if policy.IsMergeable(merged.spec.ExtProc, p2.spec.ExtProc, mergeOpts) {
-			merged.spec.ExtProc = p2.spec.ExtProc
-			out.MergeOrigins["extProc"] = p2Ref
-		}
-		if policy.IsMergeable(merged.spec.transform, p2.spec.transform, mergeOpts) {
-			merged.spec.transform = p2.spec.transform
-			out.MergeOrigins["transformation"] = p2Ref
-		}
-		if policy.IsMergeable(merged.spec.rustformation, p2.spec.rustformation, mergeOpts) {
-			merged.spec.rustformation = p2.spec.rustformation
-			merged.spec.rustformationStringToStash = p2.spec.rustformationStringToStash
-			out.MergeOrigins["rustformation"] = p2Ref
-		}
-		if policy.IsMergeable(merged.spec.extAuth, p2.spec.extAuth, mergeOpts) {
-			merged.spec.extAuth = p2.spec.extAuth
-			out.MergeOrigins["extAuth"] = p2Ref
-		}
-		if policy.IsMergeable(merged.spec.localRateLimit, p2.spec.localRateLimit, mergeOpts) {
-			merged.spec.localRateLimit = p2.spec.localRateLimit
-			out.MergeOrigins["rateLimit"] = p2Ref
-		}
-		// Handle global rate limit merging
-		if policy.IsMergeable(merged.spec.rateLimit, p2.spec.rateLimit, mergeOpts) {
-			merged.spec.rateLimit = p2.spec.rateLimit
-			out.MergeOrigins["rateLimit"] = p2Ref
-		}
-
+		mergeOrigins := MergeTrafficPolicies(merged, p2, p2Ref, mergeOpts)
+		maps.Copy(out.MergeOrigins, mergeOrigins)
 		out.HierarchicalPriority = policies[i].HierarchicalPriority
 	}
 
 	return out
+}
+
+// MergeTrafficPolicies merges two TrafficPolicy IRs, returning a map that contains information
+// about the origin policy reference for each merged field.
+func MergeTrafficPolicies(
+	p1, p2 *TrafficPolicy,
+	p2Ref *ir.AttachedPolicyRef,
+	mergeOpts policy.MergeOptions,
+) map[string]*ir.AttachedPolicyRef {
+	if p1 == nil || p2 == nil {
+		return nil
+	}
+	mergeOrigins := make(map[string]*ir.AttachedPolicyRef)
+	if policy.IsMergeable(p1.spec.AI, p2.spec.AI, mergeOpts) {
+		p1.spec.AI = p2.spec.AI
+		mergeOrigins["ai"] = p2Ref
+	}
+	if policy.IsMergeable(p1.spec.ExtProc, p2.spec.ExtProc, mergeOpts) {
+		p1.spec.ExtProc = p2.spec.ExtProc
+		mergeOrigins["extProc"] = p2Ref
+	}
+	if policy.IsMergeable(p1.spec.transform, p2.spec.transform, mergeOpts) {
+		p1.spec.transform = p2.spec.transform
+		mergeOrigins["transformation"] = p2Ref
+	}
+	if policy.IsMergeable(p1.spec.rustformation, p2.spec.rustformation, mergeOpts) {
+		p1.spec.rustformation = p2.spec.rustformation
+		p1.spec.rustformationStringToStash = p2.spec.rustformationStringToStash
+		mergeOrigins["rustformation"] = p2Ref
+	}
+	if policy.IsMergeable(p1.spec.extAuth, p2.spec.extAuth, mergeOpts) {
+		p1.spec.extAuth = p2.spec.extAuth
+		mergeOrigins["extAuth"] = p2Ref
+	}
+	if policy.IsMergeable(p1.spec.localRateLimit, p2.spec.localRateLimit, mergeOpts) {
+		p1.spec.localRateLimit = p2.spec.localRateLimit
+		mergeOrigins["rateLimit"] = p2Ref
+	}
+	// Handle global rate limit merging
+	if policy.IsMergeable(p1.spec.rateLimit, p2.spec.rateLimit, mergeOpts) {
+		p1.spec.rateLimit = p2.spec.rateLimit
+		mergeOrigins["rateLimit"] = p2Ref
+	}
+	// Handle cors merging
+	if policy.IsMergeable(p1.spec.cors, p2.spec.cors, mergeOpts) {
+		p1.spec.cors = p2.spec.cors
+		mergeOrigins["cors"] = p2Ref
+	}
+
+	return mergeOrigins
 }
 
 type TrafficPolicyBuilder struct {
@@ -1045,6 +1094,12 @@ func (b *TrafficPolicyBuilder) Translate(
 	// Apply global rate limit specific translation
 	errs := b.rateLimitForSpec(krtctx, policyCR, &outSpec)
 	errors = append(errors, errs...)
+
+	// Apply cors specific translation
+	err = corsForSpec(policyCR.Spec, &outSpec)
+	if err != nil {
+		errors = append(errors, err)
+	}
 
 	for _, err := range errors {
 		logger.Error("error translating gateway extension", "namespace", policyCR.GetNamespace(), "name", policyCR.GetName(), "error", err)

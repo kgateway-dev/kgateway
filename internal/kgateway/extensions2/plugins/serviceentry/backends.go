@@ -4,9 +4,9 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 
 	networking "istio.io/api/networking/v1alpha3"
 	networkingclient "istio.io/client-go/pkg/apis/networking/v1"
@@ -111,32 +111,24 @@ func BuildServiceEntryBackendObjectIR(
 		Namespace: se.GetNamespace(),
 		Name:      se.GetName(),
 	}
-	return ir.BackendObjectIR{
-		ObjectSource:      objSrc,
-		Port:              svcPort,
-		AppProtocol:       ir.ParseAppProtocol(ptr.To(svcProtocol)),
-		GvPrefix:          BackendClusterPrefix,
-		CanonicalHostname: hostname,
-		Obj:               se,
-
-		// also allow hostname reference
-		Aliases: []ir.ObjectSource{
-			{
-				Group:     wellknown.HostnameGVK.Group,
-				Kind:      wellknown.HostnameGVK.Kind,
-				Name:      hostname,
-				Namespace: "", // global
-			},
-			objSrc,
+	// TODO hostname as extraKey here is a hack so we don't have key conflicts in krt since we
+	// build per-hostname backends; since getBackend tries to use krt-key by
+	// default, it will never find ServiceEntry, so we "alias" ServiceEntry to ServiceEntry
+	// to get the ref-index-based logic instead of the krt-key based lookup.
+	backend := ir.NewBackendObjectIR(objSrc, svcPort, hostname)
+	backend.AppProtocol = ir.ParseAppProtocol(ptr.To(svcProtocol))
+	backend.GvPrefix = BackendClusterPrefix
+	backend.CanonicalHostname = hostname
+	backend.Obj = se
+	backend.Aliases = []ir.ObjectSource{
+		{
+			Group:     wellknown.HostnameGVK.Group,
+			Kind:      wellknown.HostnameGVK.Kind,
+			Name:      hostname,
+			Namespace: "", // global
 		},
-
-		// TODO ObjIr:             nil,
-		AttachedPolicies: ir.AttachedPolicies{},
-
-		// TODO this is a hack so we don't have key conflicts in krt since we
-		// build per-hostname backends; since getBackend tries to use krt-key by
-		// default, it will never find ServiceEntry, so we "alias" ServiceEntry to ServiceEntry
-		// to get the ref-index-based logic instead of the krt-key based lookup.
-		ExtraKey: hostname,
+		objSrc,
 	}
+	backend.AttachedPolicies = ir.AttachedPolicies{}
+	return backend
 }

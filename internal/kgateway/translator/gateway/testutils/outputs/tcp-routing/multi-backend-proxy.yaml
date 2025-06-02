@@ -9,12 +9,12 @@ Listeners:
     - name: envoy.filters.network.tcp_proxy
       typedConfig:
         '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-        statPrefix: default.example-tcp-route-rule-0
+        statPrefix: listener~8080-default.example-tcp-route-rule-0
         weightedClusters:
           clusters:
           - name: kube_default_example-tcp-svc-1_8080
             weight: 65
           - name: kube_default_example-tcp-svc-2_8081
             weight: 35
-    name: default.example-tcp-route-rule-0
-  name: tcp
+    name: listener~8080-default.example-tcp-route-rule-0
+  name: listener~8080

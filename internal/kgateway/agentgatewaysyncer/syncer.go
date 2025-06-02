@@ -24,11 +24,8 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
-	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/query"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
-	gwtranslator "github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/gateway"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
@@ -42,7 +39,6 @@ var logger = logging.New("agentgateway/syncer")
 // It watches Gateway resources with the agentgateway class and translates them to agentgateway configuration.
 type AgentGwSyncer struct {
 	commonCols     *common.CommonCollections
-	translator     *agentGwTranslator
 	controllerName string
 	xDS            krt.Collection[agentGwXdsResources]
 	xdsCache       envoycache.SnapshotCache
@@ -62,7 +58,6 @@ func NewAgentGwSyncer(
 	// TODO: register types (auth, policy, etc.) if necessary
 	return &AgentGwSyncer{
 		commonCols:     commonCols,
-		translator:     newTranslator(ctx, commonCols),
 		controllerName: controllerName,
 		xdsCache:       xdsCache,
 		// mgr:            mgr,
@@ -135,10 +130,6 @@ type agentGwService struct {
 
 func (r agentGwService) Equals(in agentGwService) bool {
 	return r.ip == in.ip && r.port == in.port && r.path == in.path && r.protocol == in.protocol && slices.Equal(r.allowedListeners, in.allowedListeners)
-}
-
-type agentGwTranslator struct {
-	gwtranslator extensionsplug.KGwTranslator
 }
 
 type report struct {
@@ -435,15 +426,6 @@ func (m *agentGwSnapshot) GetVersionMap(typeURL string) map[string]string {
 }
 
 var _ envoycache.ResourceSnapshot = &agentGwSnapshot{}
-
-func newTranslator(
-	ctx context.Context,
-	commonCols *common.CommonCollections,
-) *agentGwTranslator {
-	return &agentGwTranslator{
-		gwtranslator: gwtranslator.NewTranslator(query.NewData(commonCols)),
-	}
-}
 
 // getTargetName sanitizes the given resource name to ensure it matches the AgentGateway required pattern:
 // ^[a-zA-Z0-9-]+$ by replacing slashes and removing invalid characters.

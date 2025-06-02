@@ -60,7 +60,7 @@ func TestFilterChains(t *testing.T) {
 	}
 
 	// Create test gateway and listener IR
-	gateway := ir.GatewayIR{SourceObject: &gwv1.Gateway{}}
+	gateway := ir.GatewayIR{SourceObject: &ir.Gateway{Obj: &gwv1.Gateway{}}}
 	listener := ir.ListenerIR{
 		HttpFilterChain: []ir.HttpFilterChainIR{{
 			FilterChainCommon: ir.FilterChainCommon{

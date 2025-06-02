@@ -12,6 +12,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
+	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
@@ -523,6 +524,139 @@ var _ = Describe("Reporting Infrastructure", func() {
 		Entry("TLSRoute with missing parent reference", tlsRoute()),
 		Entry("GRPCRoute with missing parent reference", grpcRoute()),
 	)
+
+	Describe("building listener set status", func() {
+		It("should build all positive conditions with an empty report", func() {
+			ls := ls()
+			rm := reports.NewReportMap()
+
+			reporter := reports.NewReporter(&rm)
+			// initialize ListenerSetReporter to mimic translation loop (i.e. report gets initialized for all GWs)
+			reporter.ListenerSet(ls)
+
+			status := rm.BuildListenerSetStatus(context.Background(), *ls)
+
+			Expect(status).NotTo(BeNil())
+			Expect(status.Conditions).To(HaveLen(2))
+			Expect(status.Listeners).To(HaveLen(1))
+			Expect(status.Listeners[0].Conditions).To(HaveLen(4))
+		})
+
+		It("should preserve conditions set externally", func() {
+			ls := ls()
+			meta.SetStatusCondition(&ls.Status.Conditions, metav1.Condition{
+				Type:   "gloo.solo.io/SomeCondition",
+				Status: metav1.ConditionFalse,
+			})
+			rm := reports.NewReportMap()
+
+			reporter := reports.NewReporter(&rm)
+			// initialize ListenerSetReporter to mimic translation loop (i.e. report gets initialized for all GWs)
+			reporter.ListenerSet(ls)
+
+			status := rm.BuildListenerSetStatus(context.Background(), *ls)
+
+			Expect(status).NotTo(BeNil())
+			Expect(status.Conditions).To(HaveLen(3)) // 2 from the report, 1 from the original status
+			Expect(status.Listeners).To(HaveLen(1))
+			Expect(status.Listeners[0].Conditions).To(HaveLen(4))
+		})
+
+		It("should correctly set negative gateway conditions from report and not add extra conditions", func() {
+			ls := ls()
+			rm := reports.NewReportMap()
+			reporter := reports.NewReporter(&rm)
+			reporter.ListenerSet(ls).SetCondition(pluginsdkreporter.GatewayCondition{
+				Type:   gwv1.GatewayConditionProgrammed,
+				Status: metav1.ConditionFalse,
+				Reason: gwv1.GatewayReasonAddressNotUsable,
+			})
+			status := rm.BuildListenerSetStatus(context.Background(), *ls)
+
+			Expect(status).NotTo(BeNil())
+			Expect(status.Conditions).To(HaveLen(2))
+			Expect(status.Listeners).To(HaveLen(1))
+			Expect(status.Listeners[0].Conditions).To(HaveLen(4))
+
+			programmed := meta.FindStatusCondition(status.Conditions, string(gwv1.GatewayConditionProgrammed))
+			Expect(programmed.Status).To(Equal(metav1.ConditionFalse))
+		})
+
+		It("should correctly set negative listener conditions from report and not add extra conditions", func() {
+			ls := ls()
+			rm := reports.NewReportMap()
+			reporter := reports.NewReporter(&rm)
+			reporter.ListenerSet(ls).Listener(listener()).SetCondition(pluginsdkreporter.ListenerCondition{
+				Type:   gwv1.ListenerConditionResolvedRefs,
+				Status: metav1.ConditionFalse,
+				Reason: gwv1.ListenerReasonInvalidRouteKinds,
+			})
+			status := rm.BuildListenerSetStatus(context.Background(), *ls)
+
+			Expect(status).NotTo(BeNil())
+			Expect(status.Conditions).To(HaveLen(2))
+			Expect(status.Listeners).To(HaveLen(1))
+			Expect(status.Listeners[0].Conditions).To(HaveLen(4))
+
+			resolvedRefs := meta.FindStatusCondition(status.Listeners[0].Conditions, string(gwv1.ListenerConditionResolvedRefs))
+			Expect(resolvedRefs.Status).To(Equal(metav1.ConditionFalse))
+		})
+
+		It("should not modify LastTransitionTime for existing conditions that have not changed", func() {
+			ls := ls()
+			rm := reports.NewReportMap()
+
+			reporter := reports.NewReporter(&rm)
+			// initialize ListenerSetReporter to mimic translation loop (i.e. report gets initialized for all GWs)
+			reporter.ListenerSet(ls)
+
+			status := rm.BuildListenerSetStatus(context.Background(), *ls)
+
+			Expect(status).NotTo(BeNil())
+			Expect(status.Conditions).To(HaveLen(2))
+			Expect(status.Listeners).To(HaveLen(1))
+			Expect(status.Listeners[0].Conditions).To(HaveLen(4))
+
+			acceptedCond := meta.FindStatusCondition(status.Listeners[0].Conditions, string(gwv1.ListenerConditionAccepted))
+			oldTransitionTime := acceptedCond.LastTransitionTime
+
+			ls.Status = *status
+			status = rm.BuildListenerSetStatus(context.Background(), *ls)
+
+			Expect(status).NotTo(BeNil())
+			Expect(status.Conditions).To(HaveLen(2))
+			Expect(status.Listeners).To(HaveLen(1))
+			Expect(status.Listeners[0].Conditions).To(HaveLen(4))
+
+			acceptedCond = meta.FindStatusCondition(status.Listeners[0].Conditions, string(gwv1.ListenerConditionAccepted))
+			newTransitionTime := acceptedCond.LastTransitionTime
+			Expect(newTransitionTime).To(Equal(oldTransitionTime))
+		})
+
+		It("should not add status for listeners on a rejected listener set", func() {
+			ls := ls()
+			rm := reports.NewReportMap()
+
+			reporter := reports.NewReporter(&rm)
+			// initialize ListenerSetReporter to mimic translation loop (i.e. report gets initialized for all GWs)
+			reporter.ListenerSet(ls).SetCondition(pluginsdkreporter.GatewayCondition{
+				Type:   gwv1.GatewayConditionAccepted,
+				Status: metav1.ConditionFalse,
+				Reason: gwv1.GatewayConditionReason(gwxv1a1.ListenerSetReasonNotAllowed),
+			})
+			reporter.ListenerSet(ls).SetCondition(pluginsdkreporter.GatewayCondition{
+				Type:   gwv1.GatewayConditionProgrammed,
+				Status: metav1.ConditionFalse,
+				Reason: gwv1.GatewayConditionReason(gwxv1a1.ListenerSetReasonNotAllowed),
+			})
+
+			status := rm.BuildListenerSetStatus(context.Background(), *ls)
+
+			Expect(status).NotTo(BeNil())
+			Expect(status.Conditions).To(HaveLen(2))
+			Expect(status.Listeners).To(BeEmpty())
+		})
+	})
 })
 
 // fakeTranslate mimics the translation loop and reports for the provided route
@@ -680,4 +814,19 @@ func listener() *gwv1.Listener {
 	return &gwv1.Listener{
 		Name: "http",
 	}
+}
+
+func ls() *gwxv1a1.XListenerSet {
+	ls := &gwxv1a1.XListenerSet{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "default",
+			Name:      "test",
+		},
+	}
+	ls.Spec.Listeners = []gwxv1a1.ListenerEntry{
+		{
+			Name: "http",
+		},
+	}
+	return ls
 }

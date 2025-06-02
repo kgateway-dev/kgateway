@@ -12,16 +12,16 @@ Listeners:
     - name: envoy.filters.network.tcp_proxy
       typedConfig:
         '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-        statPrefix: default.example-tls-route-rule-0
+        statPrefix: listener~8443-default.example-tls-route-rule-0
         weightedClusters:
           clusters:
           - name: kube_default_example-tls-svc_443
             weight: 65
           - name: kube_default_example-tls-svc-2_443
             weight: 35
-    name: default.example-tls-route-rule-0
+    name: listener~8443-default.example-tls-route-rule-0
   listenerFilters:
   - name: envoy.filters.listener.tls_inspector
     typedConfig:
       '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
-  name: tls
+  name: listener~8443

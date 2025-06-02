@@ -7,11 +7,13 @@ import (
 	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
 	apiv1alpha3 "sigs.k8s.io/gateway-api/apis/v1alpha3"
 	apiv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
+	apixv1alpha1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 )
 
 const (
 	// Group string for Gateway API resources
-	GatewayGroup = apiv1.GroupName
+	GatewayGroup      = apiv1.GroupName
+	XListenerSetGroup = apixv1alpha1.GroupName
 
 	// Kind strings
 	ServiceKind          = "Service"
@@ -23,6 +25,9 @@ const (
 	GatewayClassKind     = "GatewayClass"
 	ReferenceGrantKind   = "ReferenceGrant"
 	BackendTLSPolicyKind = "BackendTLSPolicy"
+
+	// Kind string for XListenerSet resource
+	XListenerSetKind = "XListenerSet"
 
 	// Kind string for InferencePool resource
 	InferencePoolKind = "InferencePool"
@@ -73,5 +78,16 @@ var (
 		ObjectMeta: metav1.ObjectMeta{
 			Name: TCPRouteCRDName,
 		},
+	}
+
+	XListenerSetGVK = schema.GroupVersionKind{
+		Group:   XListenerSetGroup,
+		Version: apixv1alpha1.GroupVersion.Version,
+		Kind:    XListenerSetKind,
+	}
+	XListenerSetGVR = schema.GroupVersionResource{
+		Group:    XListenerSetGroup,
+		Version:  apixv1alpha1.GroupVersion.Version,
+		Resource: "xlistenersets",
 	}
 )

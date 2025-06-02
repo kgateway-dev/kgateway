@@ -19,14 +19,20 @@ import (
 
 var logger = logging.New("translator/gateway")
 
-func NewTranslator(queries query.GatewayQueries) extensionsplug.KGwTranslator {
+type TranslatorConfig struct {
+	ListenerTranslatorConfig listener.ListenerTranslatorConfig
+}
+
+func NewTranslator(queries query.GatewayQueries, settings TranslatorConfig) extensionsplug.KGwTranslator {
 	return &translator{
-		queries: queries,
+		queries:  queries,
+		settings: settings,
 	}
 }
 
 type translator struct {
-	queries query.GatewayQueries
+	queries  query.GatewayQueries
+	settings TranslatorConfig
 }
 
 func (t *translator) Translate(
@@ -39,7 +45,7 @@ func (t *translator) Translate(
 	stopwatch.Start()
 	defer stopwatch.Stop(ctx)
 
-	routesForGw, err := t.queries.GetRoutesForGateway(kctx, ctx, gateway.Obj)
+	routesForGw, err := t.queries.GetRoutesForGateway(kctx, ctx, gateway)
 	if err != nil {
 		logger.Error("failed to get routes for gateway", "namespace", gateway.Namespace, "name", gateway.Name, "error", err)
 		// TODO: decide how/if to report this error on Gateway
@@ -56,14 +62,7 @@ func (t *translator) Translate(
 		})
 	}
 
-	for _, listener := range gateway.Listeners {
-		availRoutes := 0
-		if res, ok := routesForGw.ListenerResults[string(listener.Name)]; ok {
-			// TODO we've never checked if the ListenerResult has an error.. is it already on RouteErrors?
-			availRoutes = len(res.Routes)
-		}
-		reporter.Gateway(gateway.Obj).ListenerName(string(listener.Name)).SetAttachedRoutes(uint(availRoutes))
-	}
+	setAttachedRoutes(gateway, routesForGw, reporter)
 
 	listeners := listener.TranslateListeners(
 		kctx,
@@ -72,12 +71,26 @@ func (t *translator) Translate(
 		gateway,
 		routesForGw,
 		reporter,
+		t.settings.ListenerTranslatorConfig,
 	)
 
 	return &ir.GatewayIR{
-		SourceObject:         gateway.Obj,
+		SourceObject:         gateway,
 		Listeners:            listeners,
 		AttachedPolicies:     gateway.AttachedListenerPolicies,
 		AttachedHttpPolicies: gateway.AttachedHttpPolicies,
+	}
+}
+
+func setAttachedRoutes(gateway *ir.Gateway, routesForGw *query.RoutesForGwResult, reporter reports.Reporter) {
+	for _, listener := range gateway.Listeners {
+		parentReporter := listener.GetParentReporter(reporter)
+
+		availRoutes := 0
+		if res := routesForGw.GetListenerResult(listener.Parent, string(listener.Name)); res != nil {
+			// TODO we've never checked if the ListenerResult has an error.. is it already on RouteErrors?
+			availRoutes = len(res.Routes)
+		}
+		parentReporter.Listener(&listener.Listener).SetAttachedRoutes(uint(availRoutes))
 	}
 }

@@ -3,13 +3,18 @@ package ir
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"strings"
 
 	"istio.io/istio/pkg/kube/krt"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/ptr"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+	gwxv1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
+
+	pluginsdkreporter "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
 
 type ObjectSource struct {
@@ -57,14 +62,17 @@ type Namespaced interface {
 type AppProtocol string
 
 const (
-	DefaultAppProtocol AppProtocol = ""
-	HTTP2AppProtocol   AppProtocol = "http2"
+	DefaultAppProtocol   AppProtocol = ""
+	HTTP2AppProtocol     AppProtocol = "http2"
+	WebSocketAppProtocol AppProtocol = "ws"
 )
 
 func ParseAppProtocol(appProtocol *string) AppProtocol {
 	switch ptr.Deref(appProtocol, "") {
 	case "kubernetes.io/h2c":
 		return HTTP2AppProtocol
+	case "kubernetes.io/ws":
+		return WebSocketAppProtocol
 	default:
 		return DefaultAppProtocol
 	}
@@ -106,24 +114,42 @@ type BackendObjectIR struct {
 	// Errors is a list of errors, if any, encountered while constructing this BackendObject
 	// Not added to Equals() as it is derived from the inner ObjIr, which is already evaluated
 	Errors []error
+
+	// Name is the pre-calculated resource name. used as the krt resource name.
+	resourceName string
+}
+
+// NewBackendObjectIR creates a new BackendObjectIR with pre-calculated resource name
+func NewBackendObjectIR(objSource ObjectSource, port int32, extraKey string) BackendObjectIR {
+	return BackendObjectIR{
+		ObjectSource: objSource,
+		Port:         port,
+		ExtraKey:     extraKey,
+		resourceName: BackendResourceName(objSource, port, extraKey),
+	}
 }
 
 func (c BackendObjectIR) ResourceName() string {
-	return BackendResourceName(c.ObjectSource, c.Port, c.ExtraKey)
+	return c.resourceName
 }
 
 func BackendResourceName(objSource ObjectSource, port int32, extraKey string) string {
-	key := fmt.Sprintf("%s:%d", objSource.ResourceName(), port)
+	var sb strings.Builder
+	sb.WriteString(objSource.ResourceName())
+	sb.WriteString(fmt.Sprintf(":%d", port))
+
 	if extraKey != "" {
-		key += extraKey
+		sb.WriteRune('_')
+		sb.WriteString(extraKey)
 	}
-	return key
+	return sb.String()
 }
 
 func (c BackendObjectIR) Equals(in BackendObjectIR) bool {
 	objEq := c.ObjectSource.Equals(in.ObjectSource)
 	objVersionEq := versionEquals(c.Obj, in.Obj)
 	polEq := c.AttachedPolicies.Equals(in.AttachedPolicies)
+	nameEq := c.resourceName == in.resourceName
 
 	// objIr may currently be nil in the case of k8s Services
 	// TODO: add an IR for Services to avoid the need for this
@@ -133,7 +159,7 @@ func (c BackendObjectIR) Equals(in BackendObjectIR) bool {
 		objIrEq = c.ObjIr.Equals(in.ObjIr)
 	}
 
-	return objEq && objVersionEq && objIrEq && polEq
+	return objEq && objVersionEq && objIrEq && polEq && nameEq
 }
 
 func (c BackendObjectIR) ClusterName() string {
@@ -206,14 +232,31 @@ func (l Secret) MarshalJSON() ([]byte, error) {
 
 type Listener struct {
 	gwv1.Listener
+	Parent            client.Object
 	AttachedPolicies  AttachedPolicies
 	PolicyAncestorRef gwv1.ParentReference
 }
 
+func (listener Listener) GetParentReporter(reporter pluginsdkreporter.Reporter) pluginsdkreporter.GatewayReporter {
+	switch t := listener.Parent.(type) {
+	case *gwv1.Gateway:
+		return reporter.Gateway(t)
+	case *gwxv1.XListenerSet:
+		return reporter.ListenerSet(t)
+	}
+	panic("Unknown parent type")
+}
+
+func (c Listener) Equals(in Listener) bool {
+	return reflect.DeepEqual(c, in)
+}
+
 type Gateway struct {
-	ObjectSource `json:",inline"`
-	Listeners    []Listener
-	Obj          *gwv1.Gateway
+	ObjectSource        `json:",inline"`
+	Listeners           Listeners
+	AllowedListenerSets ListenerSets
+	DeniedListenerSets  ListenerSets
+	Obj                 *gwv1.Gateway
 
 	AttachedListenerPolicies AttachedPolicies
 	AttachedHttpPolicies     AttachedPolicies
@@ -224,7 +267,7 @@ func (c Gateway) ResourceName() string {
 }
 
 func (c Gateway) Equals(in Gateway) bool {
-	return c.ObjectSource.Equals(in.ObjectSource) && versionEquals(c.Obj, in.Obj) && c.AttachedListenerPolicies.Equals(in.AttachedListenerPolicies) && c.AttachedHttpPolicies.Equals(in.AttachedHttpPolicies)
+	return c.ObjectSource.Equals(in.ObjectSource) && versionEquals(c.Obj, in.Obj) && c.AttachedListenerPolicies.Equals(in.AttachedListenerPolicies) && c.AttachedHttpPolicies.Equals(in.AttachedHttpPolicies) && c.AllowedListenerSets.Equals(in.AllowedListenerSets) && c.DeniedListenerSets.Equals(in.DeniedListenerSets)
 }
 
 // Equals returns true if the two BackendRefIR instances are equal in cluster name, weight, backend object equality, and error.
@@ -256,4 +299,48 @@ func errorsEqual(a, b error) bool {
 		return a == b
 	}
 	return a.Error() == b.Error()
+}
+
+type ListenerSet struct {
+	ObjectSource `json:",inline"`
+	Listeners    Listeners
+	Obj          *gwxv1.XListenerSet
+	// ListenerSet polices are attached to the individual listeners in addition
+	// to their specific policies
+}
+
+func (c ListenerSet) ResourceName() string {
+	return c.ObjectSource.ResourceName()
+}
+
+func (c ListenerSet) Equals(in ListenerSet) bool {
+	return c.ObjectSource.Equals(in.ObjectSource) && versionEquals(c.Obj, in.Obj) && c.Listeners.Equals(in.Listeners)
+}
+
+type ListenerSets []ListenerSet
+
+func (c ListenerSets) Equals(in ListenerSets) bool {
+	if len(c) != len(in) {
+		return false
+	}
+	for i, ls := range c {
+		if !ls.Equals(in[i]) {
+			return false
+		}
+	}
+	return true
+}
+
+type Listeners []Listener
+
+func (c Listeners) Equals(in Listeners) bool {
+	if len(c) != len(in) {
+		return false
+	}
+	for i, l := range c {
+		if !l.Equals(in[i]) {
+			return false
+		}
+	}
+	return true
 }

@@ -86,6 +86,7 @@ type ControllerBuilder struct {
 	proxySyncer *proxy_syncer.ProxySyncer
 	cfg         StartConfig
 	mgr         ctrl.Manager
+	commoncol   *common.CommonCollections
 
 	ready atomic.Bool
 }
@@ -219,6 +220,7 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 		proxySyncer: proxySyncer,
 		cfg:         cfg,
 		mgr:         mgr,
+		commoncol:   commoncol,
 	}
 
 	// wait for the ControllerBuilder to Start
@@ -279,6 +281,7 @@ func (c *ControllerBuilder) Start(ctx context.Context) error {
 			PullPolicy: globalSettings.DefaultImagePullPolicy,
 		},
 		DiscoveryNamespaceFilter: c.cfg.Client.ObjectFilter(),
+		CommonCollections:        c.commoncol,
 	}
 
 	setupLog.Info("creating gateway class provisioner")
