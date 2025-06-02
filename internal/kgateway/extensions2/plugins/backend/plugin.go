@@ -314,7 +314,7 @@ func processEndpoints(up *v1alpha1.Backend) *ir.EndpointsForBackend {
 type backendPlugin struct {
 	ir.UnimplementedProxyTranslationPass
 	aiGatewayEnabled map[string]bool
-	neededDfpFilter  map[string]bool
+	needsDfpFilter   map[string]bool
 }
 
 func newPlug(ctx context.Context, tctx ir.GwTranslationCtx, reporter reports.Reporter) ir.ProxyTranslationPass {
@@ -350,10 +350,10 @@ func (p *backendPlugin) ApplyForBackend(ctx context.Context, pCtx *ir.RouteBacke
 		}
 		pCtx.TypedFilterConfig.AddTypedConfig(wellknown.AIExtProcFilterName, disabledExtprocSettings)
 	case v1alpha1.BackendTypeDynamicForwardProxy:
-		if p.neededDfpFilter == nil {
-			p.neededDfpFilter = make(map[string]bool)
+		if p.needsDfpFilter == nil {
+			p.needsDfpFilter = make(map[string]bool)
 		}
-		p.neededDfpFilter[pCtx.FilterChainName] = true
+		p.needsDfpFilter[pCtx.FilterChainName] = true
 	}
 
 	return nil
@@ -381,7 +381,7 @@ func (p *backendPlugin) HttpFilters(ctx context.Context, fc ir.FilterChainCommon
 		}
 		result = append(result, aiFilters...)
 	}
-	if p.neededDfpFilter[fc.FilterChainName] {
+	if p.needsDfpFilter[fc.FilterChainName] {
 		pluginStage := plugins.DuringStage(plugins.OutAuthStage)
 		f, _ := plugins.NewStagedFilter("envoy.filters.http.dynamic_forward_proxy", dfpFilterConfig, pluginStage)
 		result = append(result, f)

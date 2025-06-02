@@ -60,7 +60,7 @@ type translationResult struct {
 	Routes        []*envoy_config_route_v3.RouteConfiguration
 	Listeners     []*envoy_config_listener_v3.Listener
 	ExtraClusters []*clusterv3.Cluster
-	Clusters      []*clusterv3.Cluster `json:"Clusters,omitempty"`
+	Clusters      []*clusterv3.Cluster
 }
 
 func (tr *translationResult) MarshalJSON() ([]byte, error) {
@@ -596,7 +596,7 @@ func (tc TestCase) Run(
 		var clusters []*clusterv3.Cluster
 		for _, col := range commoncol.BackendIndex.BackendsWithPolicy() {
 			for _, backend := range col.List() {
-				if backend.ObjectSource.Kind != "Backend" {
+				if backend.ObjectSource.Kind != wellknown.BackendGVK.Kind {
 					continue
 				}
 				cluster, err := translator.GetUpstreamTranslator().TranslateBackend(krt.TestingDummyContext{}, ucc, backend)
