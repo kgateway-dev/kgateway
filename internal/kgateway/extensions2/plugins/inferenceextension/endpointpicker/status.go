@@ -155,7 +155,7 @@ func buildRegisterCallback(
 }
 
 // referencesInferencePool returns the gateway name if any HTTPRoute in irRoutes references
-// the given InferencePool and is managed by a kgateway.
+// the given InferencePool and is managed by kgateway.
 func (p *inferencePool) referencesInferencePool(
 	ctx context.Context,
 	commonCol *common.CommonCollections,
@@ -163,8 +163,7 @@ func (p *inferencePool) referencesInferencePool(
 	poolNN types.NamespacedName,
 ) string {
 	if len(irRoutes) == 0 {
-		p.errors = append(p.errors, fmt.Errorf("no IR HTTPRoutes found"))
-		slog.Error("no IR HTTPRoutes found")
+		slog.Debug("no IR HTTPRoutes found")
 		return ""
 	}
 
@@ -222,7 +221,13 @@ func removeGatewayParentRef(
 	}
 
 	if pool.Status.Parents == nil || len(pool.Status.Parents) == 0 {
-		return fmt.Errorf("InferencePool status is nil or empty")
+		// Nothing to do if the InferencePool status Parents is nil or empty.
+		slog.Debug(
+			"inferencepool status parents is nil or empty, nothing to remove",
+			"namespace", pool.Namespace,
+			"name", pool.Name,
+		)
+		return nil
 	}
 
 	gws := gwIdx.Gateways.List()

@@ -80,11 +80,11 @@ func TestReferencesInferencePool(t *testing.T) {
 	commonCol := &common.CommonCollections{ControllerName: "ctrl"}
 	poolNN := types.NamespacedName{Namespace: "ns", Name: "pool1"}
 
-	// No routes -> record error, return empty
+	// No routes -> return empty
 	p.errors = nil
 	rs := p.referencesInferencePool(ctx, commonCol, nil, poolNN)
 	assert.Equal(t, "", rs)
-	assert.Len(t, p.errors, 1)
+	assert.Len(t, p.errors, 0)
 
 	// Route with wrong SourceObject type
 	p.errors = nil
@@ -192,7 +192,7 @@ func TestRemoveGatewayParentRef(t *testing.T) {
 	pool3 := &infextv1a2.InferencePool{ObjectMeta: metav1.ObjectMeta{Name: nn.Name, Namespace: nn.Namespace}}
 	fakeClient3 := fake.NewClientBuilder().WithScheme(scheme).WithStatusSubresource(pool3).WithRuntimeObjects(pool3).Build()
 	err = removeGatewayParentRef(ctx, fakeClient3, pool3, idx)
-	assert.Error(t, err)
+	assert.NoError(t, err)
 
 	// Case: no gateways in index
 	idxEmpty := &krtcollections.GatewayIndex{Gateways: fakeGatewayCollection{items: nil}}
