@@ -5,7 +5,6 @@ import (
 	"log/slog"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 
 	networking "istio.io/api/networking/v1alpha3"
@@ -73,6 +72,7 @@ func backendsCollections(
 	logger *slog.Logger,
 	ServiceEntries krt.Collection[*networkingclient.ServiceEntry],
 	krtOpts krtutil.KrtOptions,
+	aliaser Aliaser,
 ) krt.Collection[ir.BackendObjectIR] {
 	return krt.NewManyCollection(ServiceEntries, func(ctx krt.HandlerContext, se *networkingclient.ServiceEntry) []ir.BackendObjectIR {
 		// passthrough not supported here
@@ -91,6 +91,7 @@ func backendsCollections(
 					hostname,
 					int32(svcPort.GetNumber()),
 					svcPort.GetProtocol(),
+					aliaser,
 				))
 			}
 		}
@@ -104,6 +105,7 @@ func BuildServiceEntryBackendObjectIR(
 	hostname string,
 	svcPort int32,
 	svcProtocol string,
+	aliaser Aliaser,
 ) ir.BackendObjectIR {
 	objSrc := ir.ObjectSource{
 		Group:     gvk.ServiceEntry.Group,
@@ -120,15 +122,13 @@ func BuildServiceEntryBackendObjectIR(
 	backend.GvPrefix = BackendClusterPrefix
 	backend.CanonicalHostname = hostname
 	backend.Obj = se
-	backend.Aliases = []ir.ObjectSource{
-		{
-			Group:     wellknown.HostnameGVK.Group,
-			Kind:      wellknown.HostnameGVK.Kind,
-			Name:      hostname,
-			Namespace: "", // global
-		},
-		objSrc,
+
+	// include ourselves as alias to fix issues with one-to-many se-to-backend
+	backend.Aliases = []ir.ObjectSource{objSrc}
+	if aliaser != nil {
+		backend.Aliases = append(backend.Aliases, aliaser(se)...)
 	}
+
 	backend.AttachedPolicies = ir.AttachedPolicies{}
 	return backend
 }
