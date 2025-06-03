@@ -46,6 +46,13 @@ spec:
                 properties:
                   llm:
                     properties:
+                      authHeaderOverride:
+                        properties:
+                          headerName:
+                            type: string
+                          prefix:
+                            type: string
+                        type: object
                       hostOverride:
                         properties:
                           host:
@@ -61,6 +68,14 @@ spec:
                         required:
                         - host
                         - port
+                        type: object
+                      pathOverride:
+                        minProperties: 1
+                        properties:
+                          fullPath:
+                            type: string
+                        required:
+                        - fullPath
                         type: object
                       provider:
                         maxProperties: 1
@@ -250,6 +265,13 @@ spec:
                             pool:
                               items:
                                 properties:
+                                  authHeaderOverride:
+                                    properties:
+                                      headerName:
+                                        type: string
+                                      prefix:
+                                        type: string
+                                    type: object
                                   hostOverride:
                                     properties:
                                       host:
@@ -265,6 +287,14 @@ spec:
                                     required:
                                     - host
                                     - port
+                                    type: object
+                                  pathOverride:
+                                    minProperties: 1
+                                    properties:
+                                      fullPath:
+                                        type: string
+                                    required:
+                                    - fullPath
                                     type: object
                                   provider:
                                     maxProperties: 1

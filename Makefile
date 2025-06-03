@@ -27,7 +27,6 @@ help: ## Output the self-documenting make targets
 ROOTDIR := $(shell pwd)
 OUTPUT_DIR ?= $(ROOTDIR)/_output
 
-# TODO: fix this
 export IMAGE_REGISTRY ?= ghcr.io/kgateway-dev
 
 # Kind of a hack to make sure _output exists
@@ -546,7 +545,10 @@ deploy-kgateway-crd-chart: ## Deploy the kgateway crd chart
 
 .PHONY: deploy-kgateway-chart
 deploy-kgateway-chart: ## Deploy the kgateway chart
-	$(HELM) upgrade --install kgateway $(TEST_ASSET_DIR)/kgateway-$(VERSION).tgz --namespace kgateway-system --create-namespace
+	$(HELM) upgrade --install kgateway $(TEST_ASSET_DIR)/kgateway-$(VERSION).tgz \
+	--namespace kgateway-system --create-namespace \
+	--set image.registry=$(IMAGE_REGISTRY) \
+	--set image.tag=$(VERSION)
 
 .PHONY: lint-kgateway-charts
 lint-kgateway-charts: ## Lint the kgateway charts
@@ -666,6 +668,12 @@ INSTALL_NAMESPACE ?= kgateway-system
 kind-create: ## Create a KinD cluster
 	$(KIND) get clusters | grep $(CLUSTER_NAME) || $(KIND) create cluster --name $(CLUSTER_NAME)
 
+CONFORMANCE_CHANNEL ?= experimental
+CONFORMANCE_VERSION ?= v1.3.0
+.PHONY: gw-api-crds
+gw-api-crds: ## Install the Gateway API CRDs
+	kubectl apply --kustomize "https://github.com/kubernetes-sigs/gateway-api/config/crd/$(CONFORMANCE_CHANNEL)?ref=$(CONFORMANCE_VERSION)"
+
 .PHONY: kind-metallb
 metallb: ## Install the MetalLB load balancer
 	./hack/kind/setup-metalllb-on-kind.sh
@@ -674,7 +682,7 @@ metallb: ## Install the MetalLB load balancer
 deploy-kgateway: package-kgateway-charts deploy-kgateway-crd-chart deploy-kgateway-chart ## Deploy the kgateway chart and CRDs
 
 .PHONY: run
-run: kind-create kind-build-and-load-standard metallb deploy-kgateway  ## Set up complete development environment
+run: kind-create kind-build-and-load-standard gw-api-crds metallb deploy-kgateway  ## Set up complete development environment
 
 #----------------------------------------------------------------------------------
 # Build assets for kubernetes e2e tests

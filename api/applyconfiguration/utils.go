@@ -37,6 +37,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.AIPromptGuardApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("AnthropicConfig"):
 		return &apiv1alpha1.AnthropicConfigApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("AuthHeaderOverride"):
+		return &apiv1alpha1.AuthHeaderOverrideApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("AwsAuth"):
 		return &apiv1alpha1.AwsAuthApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("AwsBackend"):
@@ -151,6 +153,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.MultiPoolConfigApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("OpenAIConfig"):
 		return &apiv1alpha1.OpenAIConfigApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("PathOverride"):
+		return &apiv1alpha1.PathOverrideApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("Pod"):
 		return &apiv1alpha1.PodApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("Port"):

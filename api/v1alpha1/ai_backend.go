@@ -21,6 +21,37 @@ type LLMProvider struct {
 	// Send requests to a custom host and port, such as to proxy the request,
 	// or to use a different backend that is API-compliant with the Backend version.
 	HostOverride *Host `json:"hostOverride,omitempty"`
+
+	// TODO: Consolidate all Override options into ProviderOverride.
+	// Overrides the default API path for the LLM provider.
+	// Allows routing requests to a custom API endpoint path.
+	PathOverride *PathOverride `json:"pathOverride,omitempty"`
+
+	// Customizes the Authorization header sent to the LLM provider.
+	// Allows changing the header name and/or the prefix (e.g., "Bearer").
+	// Note: Not all LLM providers use the Authorization header and prefix.
+	// For example, OpenAI uses header: "Authorization" and prefix: "Bearer" But Azure OpenAI uses header: "api-key"
+	//and no Bearer.
+	AuthHeaderOverride *AuthHeaderOverride `json:"authHeaderOverride,omitempty"`
+}
+
+// PathOverride configures the AI gateway to use a custom path for LLM provider chat-completion API requests.
+// It allows overriding the default API path with a custom one.
+// This is useful when you need to route requests to a different API endpoint while maintaining
+// compatibility with the original provider's API structure.
+// +kubebuilder:validation:MinProperties=1
+type PathOverride struct {
+	// FullPath specifies the custom API path to use for the LLM provider requests.
+	// This path will replace the default API path for the provider.
+	FullPath *string `json:"fullPath"`
+}
+
+// AuthHeaderOverride allows customization of the default Authorization header sent to the LLM Provider.
+// The default header is `Authorization: Bearer <token>`. HeaderName can change the Authorization
+// header name and Prefix can change the Bearer prefix
+type AuthHeaderOverride struct {
+	Prefix     *string `json:"prefix,omitempty"`
+	HeaderName *string `json:"headerName,omitempty"`
 }
 
 // SupportedLLMProvider configures the AI gateway to use a single LLM provider backend.
