@@ -32,8 +32,8 @@ func (h *RoutesIndex) transformGRPCRoute(kctx krt.HandlerContext, i *gwv1.GRPCRo
 }
 
 func (h *RoutesIndex) transformGRPCRulesToHttp(
-        kctx krt.HandlerContext,
-        src ir.ObjectSource,
+	kctx krt.HandlerContext,
+	src ir.ObjectSource,
 	srcLabels map[string]string,
 	rules []gwv1.GRPCRouteRule,
 	opts ...ir.PolicyAttachmentOpts,
