@@ -205,7 +205,8 @@ func convertSessionPersistence(sessionPersistence *gwv1.SessionPersistence) *any
 	}
 	sessionStateAny, err := utils.MessageToAny(sessionState)
 	if err != nil {
-		// logger.Errorf("failed to create session state: %v", err)
+		logger.Error("failed to create session state: %v", "error", err)
+		return nil
 	}
 	statefulSession := &stateful_sessionv3.StatefulSession{
 		SessionState: &envoy_config_core_v3.TypedExtensionConfig{
@@ -215,7 +216,8 @@ func convertSessionPersistence(sessionPersistence *gwv1.SessionPersistence) *any
 	}
 	typedConfig, err := utils.MessageToAny(statefulSession)
 	if err != nil {
-		// logger.Errorf("failed to create session state: %v", err)
+		logger.Error("failed to create session state: %v", "error", err)
+		return nil
 	}
 	return typedConfig
 }
