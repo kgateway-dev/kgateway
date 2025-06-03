@@ -81,10 +81,11 @@ func snapshotPerClient(
 		clusterResources := envoycache.NewResourcesWithTTL(clustersVersion, clustersProto)
 
 		return &clustersWithErrors{
-			clusters:        clusterResources,
-			erroredClusters: erroredClusters,
-			clustersHash:    clustersHash,
-			resourceName:    ucc.ResourceName(),
+			clusters:            clusterResources,
+			erroredClusters:     erroredClusters,
+			clustersHash:        clustersHash,
+			erroredClustersHash: erroredClustersHash,
+			resourceName:        ucc.ResourceName(),
 		}
 	}, krtopts.ToOptions("ClusterResources")...)
 
@@ -131,7 +132,7 @@ func snapshotPerClient(
 
 		logger.Debug("found perclient clusters", "client", ucc.ResourceName(), "clusters", len(clustersForUcc.clusters.Items))
 		clusterResources := clustersForUcc.clusters
-		endpointResources := krt.FetchOne(kctx, endpointResources, krt.FilterKey(ucc.ResourceName()))
+		clientEndpointResources := krt.FetchOne(kctx, endpointResources, krt.FilterKey(ucc.ResourceName()))
 
 		snap := XdsSnapWrapper{}
 		if len(maybeMostlySnap.Clusters) > 0 {
@@ -148,7 +149,7 @@ func snapshotPerClient(
 		snap.proxyKey = ucc.ResourceName()
 		snapshot := &envoycache.Snapshot{}
 		snapshot.Resources[envoycachetypes.Cluster] = clusterResources //envoycache.NewResources(version, resource)
-		snapshot.Resources[envoycachetypes.Endpoint] = endpointResources.endpoints
+		snapshot.Resources[envoycachetypes.Endpoint] = clientEndpointResources.endpoints
 		snapshot.Resources[envoycachetypes.Route] = maybeMostlySnap.Routes
 		snapshot.Resources[envoycachetypes.Listener] = maybeMostlySnap.Listeners
 		// envoycache.NewResources(version, resource)
@@ -157,7 +158,7 @@ func snapshotPerClient(
 			"listeners", resourcesStringer(maybeMostlySnap.Listeners).String(),
 			"clusters", resourcesStringer(clusterResources).String(),
 			"routes", resourcesStringer(maybeMostlySnap.Routes).String(),
-			"endpoints", resourcesStringer(endpointResources.endpoints).String(),
+			"endpoints", resourcesStringer(clientEndpointResources.endpoints).String(),
 		)
 
 		return &snap
