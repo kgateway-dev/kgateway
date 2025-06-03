@@ -80,7 +80,7 @@ func (r *gatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{}, err
 	}
 
-	// find the the name/ns of the service we own so we can grab addresses
+	// find the name/ns of the service we own so we can grab addresses
 	// from it for status
 	var generatedSvc *metav1.ObjectMeta
 	for _, obj := range objs {
