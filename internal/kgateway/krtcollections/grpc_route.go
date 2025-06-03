@@ -31,9 +31,13 @@ func (h *RoutesIndex) transformGRPCRoute(kctx krt.HandlerContext, i *gwv1.GRPCRo
 	}
 }
 
-func (h *RoutesIndex) transformGRPCRulesToHttp(kctx krt.HandlerContext, src ir.ObjectSource,
-	srcLabels map[string]string, rules []gwv1.GRPCRouteRule,
-	opts ...ir.PolicyAttachmentOpts) []ir.HttpRouteRuleIR {
+func (h *RoutesIndex) transformGRPCRulesToHttp(
+        kctx krt.HandlerContext,
+        src ir.ObjectSource,
+	srcLabels map[string]string,
+	rules []gwv1.GRPCRouteRule,
+	opts ...ir.PolicyAttachmentOpts,
+) []ir.HttpRouteRuleIR {
 	httpRules := make([]ir.HttpRouteRuleIR, 0, len(rules))
 	for _, r := range rules {
 		httpMatches := h.convertGRPCMatchesToHTTP(r.Matches)

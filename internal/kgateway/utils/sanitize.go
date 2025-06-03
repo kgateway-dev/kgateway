@@ -25,7 +25,7 @@ func SanitizeForEnvoy(ctx context.Context, resourceName, resourceTypeName string
 	return resourceName
 }
 
-// sanitizeCookieName ensures the cookie name is valid per RFC 6265 and Gateway API conventions.
+// SanitizeCookieName ensures the cookie name is valid per RFC 6265 and Gateway API conventions.
 // - Only ASCII, no control chars, no separators, not empty, not too long (max 64 chars recommended)
 // - Replaces illegal characters with '_'
 func SanitizeCookieName(name string) string {
@@ -53,7 +53,7 @@ func SanitizeCookieName(name string) string {
 	}, name)
 }
 
-// sanitizeHeaderName ensures the header name is valid per RFC 7230 and Gateway API conventions.
+// SanitizeHeaderName ensures the header name is valid per RFC 7230 and Gateway API conventions.
 // - Only allowed header chars: ^[A-Za-z0-9!#$%&'*+\-.^_`|~]+$
 // - Not empty, not too long (max 256 chars)
 // - Replaces illegal characters with '_'
