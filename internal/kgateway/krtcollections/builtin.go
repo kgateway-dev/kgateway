@@ -688,6 +688,20 @@ func (p *builtinPluginGwPass) ApplyForRouteBackend(
 		pCtx.TypedFilterConfig[envoy_wellknown.CORS] = ToEnvoyCorsPolicy(inPolicy.cors)
 		p.hasCorsPolicy[pCtx.FilterChainName] = true
 	}
+
+	if inPolicy.filterMutation != nil {
+		var fakeIn ir.HttpRouteRuleMatchIR
+		var fakeOutputRoute envoy_config_route_v3.Route
+		err := inPolicy.filterMutation(fakeIn, &fakeOutputRoute)
+		if err != nil {
+			return err
+		}
+		pCtx.RequestHeadersToAdd = fakeOutputRoute.GetRequestHeadersToAdd()
+		pCtx.RequestHeadersToRemove = fakeOutputRoute.GetRequestHeadersToRemove()
+		pCtx.ResponseHeadersToAdd = fakeOutputRoute.GetResponseHeadersToAdd()
+		pCtx.ResponseHeadersToRemove = fakeOutputRoute.GetResponseHeadersToRemove()
+	}
+
 	return nil
 }
 
