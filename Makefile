@@ -519,7 +519,7 @@ envoy-wrapper-distroless-docker: $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-$(GOARC
 # Helm
 #----------------------------------------------------------------------------------
 
-HELM ?= helm
+HELM ?= go tool helm
 HELM_PACKAGE_ARGS ?= --version $(VERSION)
 HELM_CHART_DIR=install/helm/kgateway
 HELM_CHART_DIR_CRD=install/helm/kgateway-crds
