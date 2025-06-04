@@ -521,7 +521,7 @@ spec:
                 type: object
               dynamicForwardProxy:
                 properties:
-                  tls:
+                  enableTls:
                     type: boolean
                 type: object
               static:

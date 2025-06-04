@@ -5,7 +5,7 @@ package v1alpha1
 // DynamicForwardProxyBackendApplyConfiguration represents a declarative configuration of the DynamicForwardProxyBackend type for use
 // with apply.
 type DynamicForwardProxyBackendApplyConfiguration struct {
-	Tls *bool `json:"tls,omitempty"`
+	EnableTls *bool `json:"enableTls,omitempty"`
 }
 
 // DynamicForwardProxyBackendApplyConfiguration constructs a declarative configuration of the DynamicForwardProxyBackend type for use with
@@ -14,10 +14,10 @@ func DynamicForwardProxyBackend() *DynamicForwardProxyBackendApplyConfiguration 
 	return &DynamicForwardProxyBackendApplyConfiguration{}
 }
 
-// WithTls sets the Tls field in the declarative configuration to the given value
+// WithEnableTls sets the EnableTls field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the Tls field is set to the value of the last call.
-func (b *DynamicForwardProxyBackendApplyConfiguration) WithTls(value bool) *DynamicForwardProxyBackendApplyConfiguration {
-	b.Tls = &value
+// If called multiple times, the EnableTls field is set to the value of the last call.
+func (b *DynamicForwardProxyBackendApplyConfiguration) WithEnableTls(value bool) *DynamicForwardProxyBackendApplyConfiguration {
+	b.EnableTls = &value
 	return b
 }

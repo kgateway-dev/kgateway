@@ -1979,9 +1979,9 @@ func schema_kgateway_v2_api_v1alpha1_DynamicForwardProxyBackend(ref common.Refer
 				Description: "DynamicForwardProxyBackend is the dynamic forward proxy backend configuration.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
-					"tls": {
+					"enableTls": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Enabled TLS. When enabled, the backend will be configured to use TLS. System CA will be used for validation. The hostname will be used for SNI and auto SAN validation.",
+							Description: "EnableTls enables TLS. When true, the backend will be configured to use TLS. System CA will be used for validation. The hostname will be used for SNI and auto SAN validation.",
 							Type:        []string{"boolean"},
 							Format:      "",
 						},
