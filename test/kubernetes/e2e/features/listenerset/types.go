@@ -74,17 +74,9 @@ var (
 		},
 	}
 
-	// TestPolicies
 	validListenerSet2 = &gwxv1a1.XListenerSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "valid-ls-2",
-			Namespace: "allowed-ns",
-		},
-	}
-
-	validListenerSet3 = &gwxv1a1.XListenerSet{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "valid-ls-3",
 			Namespace: "allowed-ns",
 		},
 	}
@@ -136,8 +128,8 @@ var (
 	testCases = map[string]*base.TestCase{
 		"TestValidListenerSet": {
 			SimpleTestCase: base.SimpleTestCase{
-				Manifests: []string{validListenerSetManifest},
-				Resources: []client.Object{validListenerSet},
+				Manifests: []string{validListenerSetManifest, validListenerSetManifest2, policyManifest},
+				Resources: []client.Object{validListenerSet, validListenerSet2},
 			},
 		},
 		"TestInvalidListenerSetNotAllowed": {
@@ -150,12 +142,6 @@ var (
 			SimpleTestCase: base.SimpleTestCase{
 				Manifests: []string{invalidListenerSetNonExistingGWManifest},
 				Resources: []client.Object{invalidListenerSetNonExistingGW},
-			},
-		},
-		"TestPolicies": {
-			SimpleTestCase: base.SimpleTestCase{
-				Manifests: []string{validListenerSetManifest3, validListenerSetManifest2, policyManifest},
-				Resources: []client.Object{validListenerSet2, validListenerSet3},
 			},
 		},
 	}

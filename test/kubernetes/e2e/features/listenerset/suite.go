@@ -131,6 +131,51 @@ func (s *testingSuite) TestValidListenerSet() {
 			curl.WithHostHeader("listenerset-section.com"),
 		},
 		expectOK)
+
+	// Validate policies
+	// The policy defined on the Gateway should apply to the Gateway listeners
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
+		defaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
+			curl.WithPort(8080),
+			curl.WithHostHeader("example.com"),
+		},
+		expectOKWithCustomHeader("policy", "gateway"))
+
+	// The policy defined on the Gateway should apply to the Listener Set listeners
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
+		defaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
+			curl.WithPort(8095),
+			curl.WithHostHeader("example.com"),
+		},
+		expectOKWithCustomHeader("policy", "gateway"))
+
+	// The policy defined on the Listener Set should apply to the Listener Set listeners
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
+		defaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
+			curl.WithPort(8090),
+			curl.WithHostHeader("example.com"),
+		},
+		expectOKWithCustomHeader("policy", "listener-set"))
+
+	// The policy defined on the Listener Set should apply to the Listener Set listeners it targets
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
+		defaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
+			curl.WithPort(8091),
+			curl.WithHostHeader("example.com"),
+		},
+		expectOKWithCustomHeader("policy", "listener-set-section"))
 }
 
 func (s *testingSuite) TestInvalidListenerSetNotAllowed() {
@@ -183,63 +228,6 @@ func (s *testingSuite) TestInvalidListenerSetNonExistingGW() {
 			curl.WithHostHeader("example.com"),
 		},
 		curlExitErrorCode)
-}
-
-func (s *testingSuite) TestPolicies() {
-	// The policy defined on the Gateway should apply to the Gateway listeners
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
-		s.Ctx,
-		defaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
-			curl.WithPort(8080),
-			curl.WithHostHeader("example.com"),
-		},
-		expectOKWithCustomHeader("policy", "gateway"))
-
-	// The policy defined on the Gateway should apply to the Gateway listeners it targets
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
-		s.Ctx,
-		defaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
-			curl.WithPort(8081),
-			curl.WithHostHeader("example.com"),
-		},
-		expectOKWithCustomHeader("policy", "gateway-section"))
-
-	// The policy defined on the Gateway should apply to the Listener Set listeners
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
-		s.Ctx,
-		defaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
-			curl.WithPort(8095),
-			curl.WithHostHeader("example.com"),
-		},
-		expectOKWithCustomHeader("policy", "gateway"))
-
-	// The policy defined on the Listener Set should apply to the Listener Set listeners
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
-		s.Ctx,
-		defaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
-			curl.WithPort(8090),
-			curl.WithHostHeader("example.com"),
-		},
-		expectOKWithCustomHeader("policy", "listener-set"))
-
-	// The policy defined on the Listener Set should apply to the Listener Set listeners it targets
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
-		s.Ctx,
-		defaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
-			curl.WithPort(8091),
-			curl.WithHostHeader("example.com"),
-		},
-		expectOKWithCustomHeader("policy", "listener-set-section"))
 }
 
 func (s *testingSuite) expectListenerSetAccepted(namespacedName client.Object) {
