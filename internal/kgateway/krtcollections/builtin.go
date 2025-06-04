@@ -586,9 +586,16 @@ func (p *builtinPluginGwPass) ApplyForRouteBackend(
 	if inPolicy.filter == nil {
 		return nil
 	}
+	if inPolicy.filter.policy == nil {
+		return nil
+	}
 
 	if backendPolicy, ok := inPolicy.filter.policy.(applyToRouteBackend); ok {
 		backendPolicy.applyToBackend(pCtx)
+	} else {
+		logger.Error("filter policy is not supported on backendRef", "filterType", inPolicy.filter.filterType)
+		// TODO: once we have warnings / non terminal errors we should return it here, so the policy status is updated.
+		return nil
 	}
 
 	return nil
