@@ -136,13 +136,6 @@ func NewBuiltinPlugin(ctx context.Context) extensionsplug.Plugin {
 	}
 }
 
-func formatRuleError(action string, ruleIR ir.HttpRouteRuleMatchIR, err error) error {
-	if ruleIR.Name != "" {
-		return fmt.Errorf("failed to apply HTTPRoute %s for route %s/%s (rule: %s): %w", action, string(*ruleIR.ParentRef.Namespace), ruleIR.ParentRef.Name, ruleIR.Name, err)
-	}
-	return fmt.Errorf("failed to apply HTTPRoute %s for route %s/%s: %w", action, string(*ruleIR.ParentRef.Namespace), ruleIR.ParentRef.Name, err)
-}
-
 func convertRule(rule gwv1.HTTPRouteRule) ruleIr {
 	return ruleIr{
 		retry:              convertRetry(rule.Retry, rule.Timeouts),
@@ -164,7 +157,6 @@ func (r ruleIr) apply(outputRoute *envoy_config_route_v3.Route) error {
 			outputRoute.TypedPerFilterConfig = map[string]*anypb.Any{}
 		}
 		outputRoute.GetTypedPerFilterConfig()[statefulSessionFilterName] = r.sessionPersistence
-
 	}
 	return nil
 }
@@ -468,7 +460,6 @@ func (h *headerModifierIr) apply(outputRoute *envoy_config_route_v3.Route) {
 }
 
 func (h *headerModifierIr) applyToBackend(pCtx *ir.RouteBackendContext) {
-
 	if h.IsRequest {
 		pCtx.RequestHeadersToAdd = h.Add
 		pCtx.RequestHeadersToRemove = h.Remove
@@ -593,7 +584,7 @@ func (p *builtinPluginGwPass) ApplyForRouteBackend(
 	if backendPolicy, ok := inPolicy.filter.policy.(applyToRouteBackend); ok {
 		backendPolicy.applyToBackend(pCtx)
 	} else {
-		logger.Error("filter policy is not supported on backendRef", "filterType", inPolicy.filter.filterType)
+		logger.Error("filter policy is not supported on backendRef", "filter_type", inPolicy.filter.filterType)
 		// TODO: once we have warnings / non terminal errors we should return it here, so the policy status is updated.
 		return nil
 	}
