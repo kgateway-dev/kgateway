@@ -39,9 +39,20 @@ import (
 
 const statefulSessionFilterName = "envoy.filters.http.stateful_session"
 
+type timeouts struct {
+	requestTimeout        *durationpb.Duration
+	backendRequestTimeout *durationpb.Duration
+}
+
+type ruleIr struct {
+	retry              *envoy_config_route_v3.RetryPolicy
+	timeouts           timeouts
+	sessionPersistence *anypb.Any
+}
+
 type builtinPlugin struct {
 	filterMutation func(in ir.HttpRouteRuleMatchIR, outputRoute *envoy_config_route_v3.Route) error
-	ruleMutation   func(in ir.HttpRouteRuleMatchIR, outputRoute *envoy_config_route_v3.Route) error
+	rule           ruleIr
 	cors           *gwv1.HTTPCORSFilter
 }
 
@@ -91,7 +102,7 @@ func NewBuiltInRuleIr(rule gwv1.HTTPRouteRule) ir.PolicyIR {
 		return nil
 	}
 	return &builtinPlugin{
-		ruleMutation: convertRule(rule),
+		rule: convertRule(rule),
 	}
 }
 
@@ -131,30 +142,141 @@ func formatRuleError(action string, ruleIR ir.HttpRouteRuleMatchIR, err error) e
 	return fmt.Errorf("failed to apply HTTPRoute %s for route %s/%s: %w", action, string(*ruleIR.ParentRef.Namespace), ruleIR.ParentRef.Name, err)
 }
 
-func convertRule(rule gwv1.HTTPRouteRule) func(in ir.HttpRouteRuleMatchIR, outputRoute *envoy_config_route_v3.Route) error {
-	sessionState := convertSessionPersistence(rule.SessionPersistence)
-	return func(ruleIR ir.HttpRouteRuleMatchIR, outputRoute *envoy_config_route_v3.Route) error {
-		// A parent route rule with a delegated backend will not have outputRoute.RouteAction set
-		// but the plugin will be invoked on the rule, so treat this as a no-op call
-		if outputRoute == nil || outputRoute.GetRoute() == nil {
-			return nil
-		}
+func convertRule(rule gwv1.HTTPRouteRule) ruleIr {
+	return ruleIr{
+		retry:              convertRetry(rule.Retry, rule.Timeouts),
+		timeouts:           convertTimeouts(rule.Timeouts),
+		sessionPersistence: convertSessionPersistence(rule.SessionPersistence),
+	}
+}
 
-		err := applyTimeout(outputRoute, rule.Timeouts, rule.Retry != nil)
-		if err != nil {
-			return formatRuleError("timeout", ruleIR, err)
-		}
-
-		err = applyRetry(outputRoute, rule.Retry, rule.Timeouts)
-		if err != nil {
-			return formatRuleError("retry", ruleIR, err)
-		}
-		err = applySessionPersistence(outputRoute, sessionState)
-		if err != nil {
-			return formatRuleError("session persistence", ruleIR, err)
-		}
+func (r ruleIr) apply(in ir.HttpRouteRuleMatchIR, outputRoute *envoy_config_route_v3.Route) error {
+	// A parent route rule with a delegated backend will not have outputRoute.RouteAction set
+	// but the plugin will be invoked on the rule, so treat this as a no-op call
+	if outputRoute == nil || outputRoute.GetRoute() == nil {
 		return nil
 	}
+	r.applyTimeouts(outputRoute, r.retry != nil)
+	r.applyRetry(outputRoute)
+	if r.sessionPersistence != nil {
+		if outputRoute.GetTypedPerFilterConfig() == nil {
+			outputRoute.TypedPerFilterConfig = map[string]*anypb.Any{}
+		}
+		outputRoute.GetTypedPerFilterConfig()[statefulSessionFilterName] = r.sessionPersistence
+
+	}
+	return nil
+}
+
+func convertTimeouts(timeout *gwv1.HTTPRouteTimeouts) timeouts {
+	if timeout == nil {
+		return timeouts{}
+	}
+	var requestTimeout *durationpb.Duration
+	var backendRequestTimeout *durationpb.Duration
+
+	if timeout.Request != nil {
+		if parsed, err := time.ParseDuration(string(*timeout.Request)); err == nil {
+			requestTimeout = durationpb.New(parsed)
+		}
+	}
+
+	if timeout.BackendRequest != nil {
+		if parsed, err := time.ParseDuration(string(*timeout.BackendRequest)); err == nil {
+			backendRequestTimeout = durationpb.New(parsed)
+		}
+	}
+
+	return timeouts{
+		requestTimeout:        requestTimeout,
+		backendRequestTimeout: backendRequestTimeout,
+	}
+}
+
+func (r ruleIr) applyTimeouts(route *envoy_config_route_v3.Route, hasRetry bool) {
+	timeouts := r.timeouts
+	if timeouts.backendRequestTimeout == nil && timeouts.requestTimeout == nil {
+		return
+	}
+
+	var timeout *durationpb.Duration
+	// Apply the required timeout selection logic
+	switch {
+	case timeouts.backendRequestTimeout != nil && timeouts.requestTimeout != nil:
+		// When both timeouts are set:
+		// - Without retry: Use BackendRequest, since it's more specific (shorter)
+		// - With retry: Use Request as the overall route timeout since
+		//   BackendRequest will be applied to each retry attempt
+		if hasRetry {
+			timeout = timeouts.requestTimeout
+		} else {
+			timeout = timeouts.backendRequestTimeout
+		}
+	case timeouts.backendRequestTimeout != nil:
+		// Only BackendRequest is set
+		timeout = timeouts.backendRequestTimeout
+	case timeouts.requestTimeout != nil:
+		// Only Request is set
+		timeout = timeouts.requestTimeout
+	default:
+		return
+	}
+
+	route.GetRoute().Timeout = timeout
+}
+
+func convertRetry(retry *gwv1.HTTPRouteRetry, timeout *gwv1.HTTPRouteTimeouts) *envoy_config_route_v3.RetryPolicy {
+	if retry == nil {
+		return nil
+	}
+
+	retryPolicy := &envoy_config_route_v3.RetryPolicy{
+		NumRetries: &wrapperspb.UInt32Value{Value: 1},
+		RetryOn:    "cancelled,connect-failure,refused-stream,retriable-headers,retriable-status-codes,unavailable",
+	}
+
+	if retry.Attempts != nil {
+		retryPolicy.NumRetries = &wrapperspb.UInt32Value{Value: uint32(*retry.Attempts)}
+	}
+
+	if len(retry.Codes) > 0 {
+		retryPolicy.RetriableStatusCodes = make([]uint32, len(retry.Codes))
+		for i, c := range retry.Codes {
+			retryPolicy.GetRetriableStatusCodes()[i] = uint32(c)
+		}
+	}
+
+	if retry.Backoff != nil {
+		backoff, err := time.ParseDuration(string(*retry.Backoff))
+		if err != nil {
+			logger.Error("invalid HTTPRoute retry backoff", "backoff", string(*retry.Backoff), "error", err)
+		} else {
+			retryPolicy.RetryBackOff = &envoy_config_route_v3.RetryPolicy_RetryBackOff{
+				BaseInterval: durationpb.New(backoff),
+			}
+		}
+	}
+
+	// If a backend request timeout is set, use it as the per-try timeout.
+	// Otherwise, Envoy will by default use the global route timeout
+	// Refer to https://gateway-api.sigs.k8s.io/geps/gep-1742/
+	if timeout != nil && timeout.BackendRequest != nil {
+		timeoutDuration, err := time.ParseDuration(string(*timeout.BackendRequest))
+		if err != nil {
+			logger.Error("invalid HTTPRoute backend request timeout", "timeout", string(*timeout.BackendRequest), "error", err)
+		} else {
+			retryPolicy.PerTryTimeout = durationpb.New(timeoutDuration)
+		}
+	}
+
+	return retryPolicy
+}
+
+func (r ruleIr) applyRetry(route *envoy_config_route_v3.Route) {
+	if r.retry == nil {
+		return
+	}
+	route.GetRoute().RetryPolicy = r.retry
 }
 
 func convertSessionPersistence(sessionPersistence *gwv1.SessionPersistence) *anypb.Any {
@@ -219,101 +341,6 @@ func convertSessionPersistence(sessionPersistence *gwv1.SessionPersistence) *any
 		return nil
 	}
 	return typedConfig
-}
-
-func applySessionPersistence(route *envoy_config_route_v3.Route, sessionPersistence *anypb.Any) error {
-	if sessionPersistence == nil {
-		return nil
-	}
-
-	if route.GetTypedPerFilterConfig() == nil {
-		route.TypedPerFilterConfig = map[string]*anypb.Any{}
-	}
-	route.GetTypedPerFilterConfig()[statefulSessionFilterName] = sessionPersistence
-
-	return nil
-}
-
-func applyTimeout(route *envoy_config_route_v3.Route, timeout *gwv1.HTTPRouteTimeouts, hasRetry bool) error {
-	if timeout == nil {
-		return nil
-	}
-
-	var timeoutStr string
-	// Apply the required timeout selection logic
-	switch {
-	case timeout.BackendRequest != nil && timeout.Request != nil:
-		// When both timeouts are set:
-		// - Without retry: Use BackendRequest, since it's more specific (shorter)
-		// - With retry: Use Request as the overall route timeout since
-		//   BackendRequest will be applied to each retry attempt
-		if hasRetry {
-			timeoutStr = string(*timeout.Request)
-		} else {
-			timeoutStr = string(*timeout.BackendRequest)
-		}
-	case timeout.BackendRequest != nil:
-		// Only BackendRequest is set
-		timeoutStr = string(*timeout.BackendRequest)
-	case timeout.Request != nil:
-		// Only Request is set
-		timeoutStr = string(*timeout.Request)
-	default:
-		return nil
-	}
-
-	duration, err := time.ParseDuration(timeoutStr)
-	if err != nil {
-		return fmt.Errorf("invalid HTTPRoute timeout %s: %w", timeoutStr, err)
-	}
-	route.GetRoute().Timeout = durationpb.New(duration)
-	return nil
-}
-
-func applyRetry(route *envoy_config_route_v3.Route, retry *gwv1.HTTPRouteRetry, timeout *gwv1.HTTPRouteTimeouts) error {
-	if retry == nil {
-		return nil
-	}
-
-	retryPolicy := &envoy_config_route_v3.RetryPolicy{
-		NumRetries: &wrapperspb.UInt32Value{Value: 1},
-		RetryOn:    "cancelled,connect-failure,refused-stream,retriable-headers,retriable-status-codes,unavailable",
-	}
-
-	if retry.Attempts != nil {
-		retryPolicy.NumRetries = &wrapperspb.UInt32Value{Value: uint32(*retry.Attempts)}
-	}
-
-	if len(retry.Codes) > 0 {
-		retryPolicy.RetriableStatusCodes = make([]uint32, len(retry.Codes))
-		for i, c := range retry.Codes {
-			retryPolicy.GetRetriableStatusCodes()[i] = uint32(c)
-		}
-	}
-
-	if retry.Backoff != nil {
-		backoff, err := time.ParseDuration(string(*retry.Backoff))
-		if err != nil {
-			return fmt.Errorf("invalid HTTPRoute retry backoff %s: %w", *retry.Backoff, err)
-		}
-		retryPolicy.RetryBackOff = &envoy_config_route_v3.RetryPolicy_RetryBackOff{
-			BaseInterval: durationpb.New(backoff),
-		}
-	}
-
-	// If a backend request timeout is set, use it as the per-try timeout.
-	// Otherwise, Envoy will by default use the global route timeout
-	// Refer to https://gateway-api.sigs.k8s.io/geps/gep-1742/
-	if timeout != nil && timeout.BackendRequest != nil {
-		timeoutDuration, err := time.ParseDuration(string(*timeout.BackendRequest))
-		if err != nil {
-			return fmt.Errorf("invalid HTTPRoute backend request timeout %s: %w", *timeout.BackendRequest, err)
-		}
-		retryPolicy.PerTryTimeout = durationpb.New(timeoutDuration)
-	}
-
-	route.GetRoute().RetryPolicy = retryPolicy
-	return nil
 }
 
 func convertURLRewrite(kctx krt.HandlerContext, config *gwv1.HTTPURLRewriteFilter) func(in ir.HttpRouteRuleMatchIR, outputRoute *envoy_config_route_v3.Route) error {
@@ -659,13 +686,9 @@ func (p *builtinPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.RouteC
 		}
 	}
 
-	if policy.ruleMutation != nil {
-		if err := policy.ruleMutation(pCtx.In, outputRoute); err != nil {
-			errs = errors.Join(errs, err)
-		}
-		if outputRoute.GetTypedPerFilterConfig()[statefulSessionFilterName] != nil {
-			p.needStatefulSession[pCtx.FilterChainName] = true
-		}
+	policy.rule.apply(pCtx.In, outputRoute)
+	if outputRoute.GetTypedPerFilterConfig()[statefulSessionFilterName] != nil {
+		p.needStatefulSession[pCtx.FilterChainName] = true
 	}
 
 	if policy.cors != nil {
