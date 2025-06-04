@@ -390,8 +390,8 @@ func (tc TestCase) Run(
 
 		xdsSnap, reportsMap := translator.TranslateGateway(krt.TestingDummyContext{}, ctx, gw)
 
-		act, _ := MarshalAnyYaml(xdsSnap)
-		fmt.Fprintf(ginkgo.GinkgoWriter, "actual result:\n %s \n", act)
+		act, err := MarshalAnyYaml(xdsSnap)
+		fmt.Fprintf(ginkgo.GinkgoWriter, "actual result:\n %s \nerror: %v", act, err)
 
 		actual := ActualTestResult{
 			Proxy:      xdsSnap,
