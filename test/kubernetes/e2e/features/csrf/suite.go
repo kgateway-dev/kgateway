@@ -102,31 +102,24 @@ func (s *testingSuite) TestRouteLevelCSRF() {
 	s.setupTest([]string{csrfRouteTrafficPolicyManifest}, []client.Object{trafficPolicy})
 
 	// Request without origin header should be rejected
-	s.assertResponse("/path1", http.StatusForbidden, []curl.Option{
-		curl.WithMethod("POST"),
-	})
+	s.assertPreflightResponse("/path1", http.StatusForbidden, []curl.Option{})
 
 	// Request without origin header to route that doesn't have CSRF protection
 	// should be allowed
-	s.assertResponse("/path2", http.StatusOK, []curl.Option{
-		curl.WithMethod("POST"),
-	})
+	s.assertPreflightResponse("/path2", http.StatusOK, []curl.Option{})
 
 	// Request with valid origin header should be allowed
-	s.assertResponse("/path1", http.StatusOK, []curl.Option{
-		curl.WithMethod("POST"),
+	s.assertPreflightResponse("/path1", http.StatusOK, []curl.Option{
 		curl.WithHeader("Origin", "example.com"),
 	})
 
 	// Request with invalid origin header should be rejected
-	s.assertResponse("/path1", http.StatusForbidden, []curl.Option{
-		curl.WithMethod("POST"),
+	s.assertPreflightResponse("/path1", http.StatusForbidden, []curl.Option{
 		curl.WithHeader("Origin", "notexample.com"),
 	})
 
 	// Request with additional allowed origin header should be allowed
-	s.assertResponse("/path1", http.StatusOK, []curl.Option{
-		curl.WithMethod("POST"),
+	s.assertPreflightResponse("/path1", http.StatusOK, []curl.Option{
 		curl.WithHeader("Origin", "example.org"),
 	})
 }
@@ -135,24 +128,18 @@ func (s *testingSuite) TestGatewayLevelCSRF() {
 	s.setupTest([]string{csrfGwTrafficPolicyManifest}, []client.Object{trafficPolicy})
 
 	// Request without origin header should be rejected
-	s.assertResponse("/path1", http.StatusForbidden, []curl.Option{
-		curl.WithMethod("POST"),
-	})
+	s.assertPreflightResponse("/path1", http.StatusForbidden, []curl.Option{})
 
 	// Request without origin header should be rejected
-	s.assertResponse("/path2", http.StatusForbidden, []curl.Option{
-		curl.WithMethod("POST"),
-	})
+	s.assertPreflightResponse("/path2", http.StatusForbidden, []curl.Option{})
 
 	// Request with valid origin header should be allowed
-	s.assertResponse("/path1", http.StatusOK, []curl.Option{
-		curl.WithMethod("POST"),
+	s.assertPreflightResponse("/path1", http.StatusOK, []curl.Option{
 		curl.WithHeader("Origin", "example.com"),
 	})
 
 	// Request with valid origin header should be allowed
-	s.assertResponse("/path2", http.StatusOK, []curl.Option{
-		curl.WithMethod("POST"),
+	s.assertPreflightResponse("/path2", http.StatusOK, []curl.Option{
 		curl.WithHeader("Origin", "example.com"),
 	})
 }
@@ -173,8 +160,12 @@ func (s *testingSuite) setupTest(manifests []string, resources []client.Object) 
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, resources...)
 }
 
-func (s *testingSuite) assertResponse(path string, expectedStatus int, options []curl.Option) {
+// A safe http method is one that doesn't alter the state of the server (ie read only).
+// A CSRF attack targets state changing requests, so the filter only acts on unsafe methods (ones that change state).
+// We use POST as the unsafe method to test the filter.
+func (s *testingSuite) assertPreflightResponse(path string, expectedStatus int, options []curl.Option) {
 	allOptions := append([]curl.Option{
+		curl.WithMethod("POST"),
 		curl.WithPath(path),
 		curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
 		curl.WithHostHeader("example.com"),

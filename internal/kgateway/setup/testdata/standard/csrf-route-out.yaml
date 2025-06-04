@@ -80,4 +80,4 @@ routes:
           filterEnabled:
             defaultValue:
               numerator: 80
-            runtimeKey: csrf.percentage_enabled
+            runtimeKey: envoy.csrf.filter_enabled
