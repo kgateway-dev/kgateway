@@ -38,7 +38,7 @@ spec:
   targetRefs:
     - kind: XListenerSet
       group: gateway.networking.x-k8s.io
-      name: valid-ls-3
+      name: valid-ls
   transformation:
     response:
       set:
@@ -55,7 +55,7 @@ spec:
   targetRefs:
     - kind: XListenerSet
       group: gateway.networking.x-k8s.io
-      name: valid-ls-3
+      name: valid-ls
       sectionName: http-2
   transformation:
     response:
