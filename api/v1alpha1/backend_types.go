@@ -71,11 +71,11 @@ type BackendSpec struct {
 
 // DynamicForwardProxyBackend is the dynamic forward proxy backend configuration.
 type DynamicForwardProxyBackend struct {
-	// Enabled TLS. When enabled, the backend will be configured to use TLS. System CA will be used for validation.
+	// EnableTls enables TLS. When true, the backend will be configured to use TLS. System CA will be used for validation.
 	// The hostname will be used for SNI and auto SAN validation.
 	// +optional
 	// +kubebuilder:validation:Optional
-	Tls bool `json:"tls,omitempty"`
+	EnableTls bool `json:"enableTls,omitempty"`
 }
 
 // AwsBackend is the AWS backend configuration.

@@ -45,7 +45,7 @@ func processDynamicForwardProxy(ctx context.Context, in *v1alpha1.DynamicForward
 		},
 	}
 
-	if in.Tls {
+	if in.EnableTls {
 		validationContext := &envoy_tls_v3.CertificateValidationContext{}
 		sdsValidationCtx := &envoy_tls_v3.SdsSecretConfig{
 			Name: eiutils.SystemCaSecretName,

@@ -377,7 +377,7 @@ func (p *backendPlugin) HttpFilters(ctx context.Context, fc ir.FilterChainCommon
 	}
 	if p.needsDfpFilter[fc.FilterChainName] {
 		pluginStage := plugins.DuringStage(plugins.OutAuthStage)
-		f, _ := plugins.NewStagedFilter("envoy.filters.http.dynamic_forward_proxy", dfpFilterConfig, pluginStage)
+		f := plugins.MustNewStagedFilter("envoy.filters.http.dynamic_forward_proxy", dfpFilterConfig, pluginStage)
 		result = append(result, f)
 	}
 	return result, errors.Join(errs...)

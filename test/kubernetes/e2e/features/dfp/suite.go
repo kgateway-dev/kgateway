@@ -20,7 +20,7 @@ import (
 
 var _ e2e.NewSuiteFunc = NewTestingSuite
 
-// testingSuite is a suite of tests for ExtAuth functionality
+// testingSuite is a suite of tests for Dynamic Forward Proxy functionality
 type testingSuite struct {
 	suite.Suite
 
