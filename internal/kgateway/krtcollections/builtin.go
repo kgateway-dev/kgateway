@@ -37,6 +37,14 @@ import (
 
 const statefulSessionFilterName = "envoy.filters.http.stateful_session"
 
+type applyToRoute interface {
+	apply(outputRoute *envoy_config_route_v3.Route)
+}
+
+type applyToRouteBackend interface {
+	applyToBackend(pCtx *ir.RouteBackendContext)
+}
+
 type timeouts struct {
 	requestTimeout        *durationpb.Duration
 	backendRequestTimeout *durationpb.Duration
@@ -50,16 +58,15 @@ type ruleIr struct {
 
 type filterIr struct {
 	filterType gwv1.HTTPRouteFilterType
-	applyFunc  func(in ir.HttpRouteRuleMatchIR, outputRoute *envoy_config_route_v3.Route)
 
-	headerModifier *headerModifierIr
+	policy applyToRoute
 }
 
-func (f *filterIr) apply(in ir.HttpRouteRuleMatchIR, outputRoute *envoy_config_route_v3.Route) {
-	if f == nil || f.applyFunc == nil {
+func (f *filterIr) apply(outputRoute *envoy_config_route_v3.Route) {
+	if f.policy == nil {
 		return
 	}
-	f.applyFunc(in, outputRoute)
+	f.policy.apply(outputRoute)
 }
 
 type builtinPlugin struct {
@@ -144,7 +151,7 @@ func convertRule(rule gwv1.HTTPRouteRule) ruleIr {
 	}
 }
 
-func (r ruleIr) apply(in ir.HttpRouteRuleMatchIR, outputRoute *envoy_config_route_v3.Route) error {
+func (r ruleIr) apply(outputRoute *envoy_config_route_v3.Route) error {
 	// A parent route rule with a delegated backend will not have outputRoute.RouteAction set
 	// but the plugin will be invoked on the rule, so treat this as a no-op call
 	if outputRoute == nil || outputRoute.GetRoute() == nil {
@@ -243,6 +250,7 @@ func convertRetry(retry *gwv1.HTTPRouteRetry, timeout *gwv1.HTTPRouteTimeouts) *
 	if retry.Backoff != nil {
 		backoff, err := time.ParseDuration(string(*retry.Backoff))
 		if err != nil {
+			// duration fields are cel validated, so this should never happen
 			logger.Error("invalid HTTPRoute retry backoff", "backoff", string(*retry.Backoff), "error", err)
 		} else {
 			retryPolicy.RetryBackOff = &envoy_config_route_v3.RetryPolicy_RetryBackOff{
@@ -257,6 +265,7 @@ func convertRetry(retry *gwv1.HTTPRouteRetry, timeout *gwv1.HTTPRouteTimeouts) *
 	if timeout != nil && timeout.BackendRequest != nil {
 		timeoutDuration, err := time.ParseDuration(string(*timeout.BackendRequest))
 		if err != nil {
+			// duration fields are cel validated, so this should never happen
 			logger.Error("invalid HTTPRoute backend request timeout", "timeout", string(*timeout.BackendRequest), "error", err)
 		} else {
 			retryPolicy.PerTryTimeout = durationpb.New(timeoutDuration)
@@ -407,7 +416,7 @@ type mirrorIr struct {
 	RuntimeFraction *envoy_config_core_v3.RuntimeFractionalPercent
 }
 
-func (m *mirrorIr) apply(in ir.HttpRouteRuleMatchIR, outputRoute *envoy_config_route_v3.Route) {
+func (m *mirrorIr) apply(outputRoute *envoy_config_route_v3.Route) {
 	if outputRoute == nil || outputRoute.GetRoute() == nil {
 		return
 	}
@@ -445,7 +454,7 @@ type headerModifierIr struct {
 	IsRequest bool // true=request, false=response
 }
 
-func (h *headerModifierIr) apply(in ir.HttpRouteRuleMatchIR, outputRoute *envoy_config_route_v3.Route) {
+func (h *headerModifierIr) apply(outputRoute *envoy_config_route_v3.Route) {
 	if outputRoute == nil {
 		return
 	}
@@ -458,6 +467,16 @@ func (h *headerModifierIr) apply(in ir.HttpRouteRuleMatchIR, outputRoute *envoy_
 	}
 }
 
+func (h *headerModifierIr) applyToBackend(pCtx *ir.RouteBackendContext) {
+
+	if h.IsRequest {
+		pCtx.RequestHeadersToAdd = h.Add
+		pCtx.RequestHeadersToRemove = h.Remove
+	} else {
+		pCtx.ResponseHeadersToAdd = h.Add
+		pCtx.ResponseHeadersToRemove = h.Remove
+	}
+}
 func convertHeaderModifierIR(kctx krt.HandlerContext, f *gwv1.HTTPHeaderFilter, isRequest bool) *headerModifierIr {
 	if f == nil {
 		return nil
@@ -540,10 +559,10 @@ func (p *builtinPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.RouteC
 
 	var errs error
 	if policy.filter != nil {
-		policy.filter.apply(pCtx.In, outputRoute)
+		policy.filter.apply(outputRoute)
 	}
 
-	policy.rule.apply(pCtx.In, outputRoute)
+	policy.rule.apply(outputRoute)
 	if outputRoute.GetTypedPerFilterConfig()[statefulSessionFilterName] != nil {
 		p.needStatefulSession[pCtx.FilterChainName] = true
 	}
@@ -564,17 +583,12 @@ func (p *builtinPluginGwPass) ApplyForRouteBackend(
 	if !ok {
 		return nil
 	}
+	if inPolicy.filter == nil {
+		return nil
+	}
 
-	if inPolicy.filter != nil && inPolicy.filter.headerModifier != nil {
-		hm := inPolicy.filter.headerModifier
-
-		if hm.IsRequest {
-			pCtx.RequestHeadersToAdd = hm.Add
-			pCtx.RequestHeadersToRemove = hm.Remove
-		} else {
-			pCtx.ResponseHeadersToAdd = hm.Add
-			pCtx.ResponseHeadersToRemove = hm.Remove
-		}
+	if backendPolicy, ok := inPolicy.filter.policy.(applyToRouteBackend); ok {
+		backendPolicy.applyToBackend(pCtx)
 	}
 
 	return nil
@@ -652,47 +666,45 @@ func ToEnvoyCorsPolicy(f *gwv1.HTTPCORSFilter) *corsv3.CorsPolicy {
 
 // New helper to create filterIr
 func convertFilterIr(kctx krt.HandlerContext, f gwv1.HTTPRouteFilter, fromgk schema.GroupKind, fromns string, refgrants *RefGrantIndex, ups *BackendIndex) *filterIr {
-	var applyFunc func(in ir.HttpRouteRuleMatchIR, outputRoute *envoy_config_route_v3.Route)
-	var hm *headerModifierIr
+	var policy applyToRoute
 	switch f.Type {
 	case gwv1.HTTPRouteFilterRequestMirror:
 		mir := convertMirrorIR(kctx, f.RequestMirror, fromgk, fromns, refgrants, ups)
 		if mir != nil {
-			applyFunc = mir.apply
+			policy = mir
 		}
 	case gwv1.HTTPRouteFilterRequestHeaderModifier:
-		hm = convertHeaderModifierIR(kctx, f.RequestHeaderModifier, true)
+		hm := convertHeaderModifierIR(kctx, f.RequestHeaderModifier, true)
 		if hm != nil {
-			applyFunc = hm.apply
+			policy = hm
 		}
 	case gwv1.HTTPRouteFilterResponseHeaderModifier:
-		hm = convertHeaderModifierIR(kctx, f.ResponseHeaderModifier, false)
+		hm := convertHeaderModifierIR(kctx, f.ResponseHeaderModifier, false)
 		if hm != nil {
-			applyFunc = hm.apply
+			policy = hm
 		}
 	case gwv1.HTTPRouteFilterRequestRedirect:
 		rr := convertRequestRedirectIR(kctx, f.RequestRedirect)
 		if rr != nil {
-			applyFunc = rr.apply
+			policy = rr
 		}
 	case gwv1.HTTPRouteFilterURLRewrite:
 		uw := convertURLRewriteIR(kctx, f.URLRewrite)
 		if uw != nil {
-			applyFunc = uw.apply
+			policy = uw
 		}
 	case gwv1.HTTPRouteFilterCORS:
 		ci := convertCORSIR(kctx, f.CORS)
 		if ci != nil {
-			applyFunc = ci.apply
+			policy = ci
 		}
 	}
-	if applyFunc == nil {
+	if policy == nil {
 		return nil
 	}
 	return &filterIr{
-		filterType:     f.Type,
-		headerModifier: hm,
-		applyFunc:      applyFunc,
+		filterType: f.Type,
+		policy:     policy,
 	}
 }
 
@@ -702,7 +714,7 @@ type requestRedirectIr struct {
 	Redir *envoy_config_route_v3.RedirectAction
 }
 
-func (r *requestRedirectIr) apply(in ir.HttpRouteRuleMatchIR, outputRoute *envoy_config_route_v3.Route) {
+func (r *requestRedirectIr) apply(outputRoute *envoy_config_route_v3.Route) {
 	if outputRoute == nil {
 		return
 	}
@@ -733,7 +745,7 @@ type urlRewriteIr struct {
 	PrefixReplace string
 }
 
-func (u *urlRewriteIr) apply(in ir.HttpRouteRuleMatchIR, outputRoute *envoy_config_route_v3.Route) {
+func (u *urlRewriteIr) apply(outputRoute *envoy_config_route_v3.Route) {
 	if outputRoute == nil || outputRoute.GetRoute() == nil {
 		return
 	}
@@ -804,7 +816,7 @@ type corsIr struct {
 	Cors *anypb.Any
 }
 
-func (c *corsIr) apply(in ir.HttpRouteRuleMatchIR, outputRoute *envoy_config_route_v3.Route) {
+func (c *corsIr) apply(outputRoute *envoy_config_route_v3.Route) {
 	if c.Cors == nil {
 		return
 	}
