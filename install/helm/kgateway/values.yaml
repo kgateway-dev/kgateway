@@ -20,7 +20,7 @@ serviceAccount:
 # -- Add annotations to the kgateway deployment.
 deploymentAnnotations: {}
 
-# -- Add annotations to the kgatewaypods.
+# -- Add annotations to the kgateway pods.
 podAnnotations: {}
 
 # -- Set the pod-level security context.
