@@ -137,3 +137,10 @@ func createRateLimitActions(descriptors []v1alpha1.RateLimitDescriptor) ([]*rout
 
 	return result, nil
 }
+
+func getRateLimitFilterName(name string) string {
+	if name == "" {
+		return rateLimitFilterNamePrefix
+	}
+	return fmt.Sprintf("%s/%s", rateLimitFilterNamePrefix, name)
+}

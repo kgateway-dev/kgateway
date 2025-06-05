@@ -74,13 +74,6 @@ var (
 	EnableFilterPerRoute = &routev3.FilterConfig{Config: &anypb.Any{}}
 )
 
-func getRateLimitFilterName(name string) string {
-	if name == "" {
-		return rateLimitFilterNamePrefix
-	}
-	return fmt.Sprintf("%s/%s", rateLimitFilterNamePrefix, name)
-}
-
 type TrafficPolicy struct {
 	ct   time.Time
 	spec trafficPolicySpecIr
