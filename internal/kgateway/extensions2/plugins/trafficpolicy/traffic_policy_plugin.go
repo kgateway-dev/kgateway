@@ -74,13 +74,6 @@ var (
 	EnableFilterPerRoute = &routev3.FilterConfig{Config: &anypb.Any{}}
 )
 
-func extAuthFilterName(name string) string {
-	if name == "" {
-		return extauthFilterNamePrefix
-	}
-	return fmt.Sprintf("%s/%s", extauthFilterNamePrefix, name)
-}
-
 func getRateLimitFilterName(name string) string {
 	if name == "" {
 		return rateLimitFilterNamePrefix

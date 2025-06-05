@@ -144,3 +144,10 @@ func translatePerFilterConfig(spec *v1alpha1.ExtAuthPolicy) *envoy_ext_authz_v3.
 	}
 	return nil
 }
+
+func extAuthFilterName(name string) string {
+	if name == "" {
+		return extauthFilterNamePrefix
+	}
+	return fmt.Sprintf("%s/%s", extauthFilterNamePrefix, name)
+}
