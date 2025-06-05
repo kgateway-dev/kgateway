@@ -1,3 +1,23 @@
+Clusters:
+- connectTimeout: 5s
+  edsClusterConfig:
+    edsConfig:
+      ads: {}
+      resourceApiVersion: V3
+  metadata: {}
+  name: istio-se_infra_se-a_se-a.example.com_5000
+  type: EDS
+- connectTimeout: 5s
+  edsClusterConfig:
+    edsConfig:
+      ads: {}
+      resourceApiVersion: V3
+  metadata: {}
+  name: istio-se_infra_se-headless_se-headless.example.com_9000
+  type: EDS
+- connectTimeout: 5s
+  metadata: {}
+  name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:
     socketAddress:
