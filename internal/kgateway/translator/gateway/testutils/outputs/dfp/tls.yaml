@@ -18,6 +18,9 @@ Clusters:
           defaultValidationContext: {}
           validationContextSdsSecretConfig:
             name: SYSTEM_CA_CERT
+- connectTimeout: 5s
+  metadata: {}
+  name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:
     socketAddress:
