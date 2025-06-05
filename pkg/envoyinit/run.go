@@ -79,7 +79,7 @@ func RunEnvoy(envoyExecutable, inputPath, outputPath string) {
 		if err != nil {
 			log.Fatalf("failed to unmarshal bootstrap config: %v", err)
 		}
-		bootstrap.StaticResources.Secrets = append(bootstrap.StaticResources.Secrets, &tlsv3.Secret{
+		bootstrap.GetStaticResources().Secrets = append(bootstrap.GetStaticResources().GetSecrets(), &tlsv3.Secret{
 			Name: utils.SystemCaSecretName,
 			Type: &tlsv3.Secret_ValidationContext{
 				ValidationContext: &tlsv3.CertificateValidationContext{
