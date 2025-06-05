@@ -1,0 +1,38 @@
+kind: Gateway
+apiVersion: gateway.networking.k8s.io/v1
+metadata:
+  namespace: kgateway-test
+  name: super-gateway
+spec:
+  gatewayClassName: kgateway
+  listeners:
+  - protocol: HTTP
+    port: 8080
+    name: http
+    allowedRoutes:
+      namespaces:
+        from: All
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: dfp-backend
+  namespace: kgateway-test
+spec:
+  type: DynamicForwardProxy
+  dynamicForwardProxy: {}
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  namespace: kgateway-test
+  name: route-dfp
+spec:
+  parentRefs:
+    - name: super-gateway
+      namespace: kgateway-test
+  rules:
+    - backendRefs:
+        - name: dfp-backend
+          group: gateway.kgateway.dev
+          kind: Backend

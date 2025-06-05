@@ -51,6 +51,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.DirectResponseSpec":                        schema_kgateway_v2_api_v1alpha1_DirectResponseSpec(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.DirectResponseStatus":                      schema_kgateway_v2_api_v1alpha1_DirectResponseStatus(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.DurationFilter":                            schema_kgateway_v2_api_v1alpha1_DurationFilter(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.DynamicForwardProxyBackend":                schema_kgateway_v2_api_v1alpha1_DynamicForwardProxyBackend(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.EnvoyBootstrap":                            schema_kgateway_v2_api_v1alpha1_EnvoyBootstrap(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.EnvoyContainer":                            schema_kgateway_v2_api_v1alpha1_EnvoyContainer(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtAuthPolicy":                             schema_kgateway_v2_api_v1alpha1_ExtAuthPolicy(ref),
@@ -1433,6 +1434,12 @@ func schema_kgateway_v2_api_v1alpha1_BackendSpec(ref common.ReferenceCallback) c
 							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.StaticBackend"),
 						},
 					},
+					"dynamicForwardProxy": {
+						SchemaProps: spec.SchemaProps{
+							Description: "DynamicForwardProxy is the dynamic forward proxy backend configuration.",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.DynamicForwardProxyBackend"),
+						},
+					},
 				},
 				Required: []string{"type"},
 			},
@@ -1442,9 +1449,10 @@ func schema_kgateway_v2_api_v1alpha1_BackendSpec(ref common.ReferenceCallback) c
 						map[string]interface{}{
 							"discriminator": "type",
 							"fields-to-discriminateBy": map[string]interface{}{
-								"ai":     "AI",
-								"aws":    "Aws",
-								"static": "Static",
+								"ai":                  "AI",
+								"aws":                 "Aws",
+								"dynamicForwardProxy": "DynamicForwardProxy",
+								"static":              "Static",
 							},
 						},
 					},
@@ -1452,7 +1460,7 @@ func schema_kgateway_v2_api_v1alpha1_BackendSpec(ref common.ReferenceCallback) c
 			},
 		},
 		Dependencies: []string{
-			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AIBackend", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AwsBackend", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.StaticBackend"},
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AIBackend", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AwsBackend", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.DynamicForwardProxyBackend", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.StaticBackend"},
 	}
 }
 
@@ -1983,6 +1991,26 @@ func schema_kgateway_v2_api_v1alpha1_DurationFilter(ref common.ReferenceCallback
 							Description: "Value to compare against.",
 							Type:        []string{"integer"},
 							Format:      "int64",
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func schema_kgateway_v2_api_v1alpha1_DynamicForwardProxyBackend(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "DynamicForwardProxyBackend is the dynamic forward proxy backend configuration.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"enableTls": {
+						SchemaProps: spec.SchemaProps{
+							Description: "EnableTls enables TLS. When true, the backend will be configured to use TLS. System CA will be used for validation. The hostname will be used for SNI and auto SAN validation.",
+							Type:        []string{"boolean"},
+							Format:      "",
 						},
 					},
 				},
