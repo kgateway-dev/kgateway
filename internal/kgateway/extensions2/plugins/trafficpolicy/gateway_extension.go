@@ -3,12 +3,15 @@ package trafficpolicy
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	envoy_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	ratelimitv3 "github.com/envoyproxy/go-control-plane/envoy/config/ratelimit/v3"
 	envoy_ext_authz_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_authz/v3"
 	envoy_ext_proc_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_proc/v3"
 	ratev3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ratelimit/v3"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/durationpb"
 	"istio.io/istio/pkg/kube/krt"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
@@ -150,4 +153,31 @@ func ResolveExtGrpcService(krtctx krt.HandlerContext, backends *krtcollections.B
 		},
 	}
 	return envoyGrpcService, nil
+}
+
+func resolveRateLimitService(grpcService *envoy_core_v3.GrpcService, rateLimit *v1alpha1.RateLimitProvider) *ratev3.RateLimit {
+	envoyRateLimit := &ratev3.RateLimit{
+		Domain:          rateLimit.Domain,
+		FailureModeDeny: !rateLimit.FailOpen,
+		RateLimitService: &ratelimitv3.RateLimitServiceConfig{
+			GrpcService:         grpcService,
+			TransportApiVersion: envoy_core_v3.ApiVersion_V3,
+		},
+	}
+
+	// Set timeout if specified
+	if rateLimit.Timeout != "" {
+		if duration, err := time.ParseDuration(string(rateLimit.Timeout)); err == nil {
+			envoyRateLimit.Timeout = durationpb.New(duration)
+		} else {
+			// CEL validation should catch this, so this should never happen. log it here just in case and don't error.
+			logger.Error("invalid timeout in rate limit provider", "error", err)
+		}
+	}
+	// Set defaults for other required fields
+	envoyRateLimit.StatPrefix = rateLimitStatPrefix
+	envoyRateLimit.EnableXRatelimitHeaders = ratev3.RateLimit_DRAFT_VERSION_03
+	envoyRateLimit.RequestType = "both"
+
+	return envoyRateLimit
 }

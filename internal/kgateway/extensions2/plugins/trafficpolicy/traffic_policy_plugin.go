@@ -8,8 +8,6 @@ import (
 	"strconv"
 	"time"
 
-	envoy_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	ratelimitv3 "github.com/envoyproxy/go-control-plane/envoy/config/ratelimit/v3"
 	routev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	exteniondynamicmodulev3 "github.com/envoyproxy/go-control-plane/envoy/extensions/dynamic_modules/v3"
 	corsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/cors/v3"
@@ -20,7 +18,6 @@ import (
 	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
-	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	skubeclient "istio.io/istio/pkg/config/schema/kubeclient"
 	"istio.io/istio/pkg/kube/kclient"
@@ -246,33 +243,6 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 		},
 		ExtraHasSynced: translator.HasSynced,
 	}
-}
-
-func resolveRateLimitService(grpcService *envoy_core_v3.GrpcService, rateLimit *v1alpha1.RateLimitProvider) *ratev3.RateLimit {
-	envoyRateLimit := &ratev3.RateLimit{
-		Domain:          rateLimit.Domain,
-		FailureModeDeny: !rateLimit.FailOpen,
-		RateLimitService: &ratelimitv3.RateLimitServiceConfig{
-			GrpcService:         grpcService,
-			TransportApiVersion: envoy_core_v3.ApiVersion_V3,
-		},
-	}
-
-	// Set timeout if specified
-	if rateLimit.Timeout != "" {
-		if duration, err := time.ParseDuration(string(rateLimit.Timeout)); err == nil {
-			envoyRateLimit.Timeout = durationpb.New(duration)
-		} else {
-			// CEL validation should catch this, so this should never happen. log it here just in case and don't error.
-			logger.Error("invalid timeout in rate limit provider", "error", err)
-		}
-	}
-	// Set defaults for other required fields
-	envoyRateLimit.StatPrefix = rateLimitStatPrefix
-	envoyRateLimit.EnableXRatelimitHeaders = ratev3.RateLimit_DRAFT_VERSION_03
-	envoyRateLimit.RequestType = "both"
-
-	return envoyRateLimit
 }
 
 func NewGatewayTranslationPass(ctx context.Context, tctx ir.GwTranslationCtx, reporter reports.Reporter) ir.ProxyTranslationPass {
