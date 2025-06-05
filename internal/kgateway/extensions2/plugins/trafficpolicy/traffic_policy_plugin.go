@@ -15,7 +15,6 @@ import (
 	exteniondynamicmodulev3 "github.com/envoyproxy/go-control-plane/envoy/extensions/dynamic_modules/v3"
 	corsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/cors/v3"
 	dynamicmodulesv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/dynamic_modules/v3"
-	envoy_ext_authz_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_authz/v3"
 	envoy_ext_proc_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_proc/v3"
 	localratelimitv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/local_ratelimit/v3"
 	ratev3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ratelimit/v3"
@@ -155,46 +154,6 @@ func (d *TrafficPolicy) Equals(in any) bool {
 	return true
 }
 
-type TrafficPolicyGatewayExtensionIR struct {
-	Name      string
-	ExtType   v1alpha1.GatewayExtensionType
-	ExtAuth   *envoy_ext_authz_v3.ExtAuthz
-	ExtProc   *envoy_ext_proc_v3.ExternalProcessor
-	RateLimit *ratev3.RateLimit
-	Err       error
-}
-
-// ResourceName returns the unique name for this extension.
-func (e TrafficPolicyGatewayExtensionIR) ResourceName() string {
-	return e.Name
-}
-
-func (e TrafficPolicyGatewayExtensionIR) Equals(other TrafficPolicyGatewayExtensionIR) bool {
-	if e.ExtType != other.ExtType {
-		return false
-	}
-
-	if !proto.Equal(e.ExtAuth, other.ExtAuth) {
-		return false
-	}
-	if !proto.Equal(e.ExtProc, other.ExtProc) {
-		return false
-	}
-	if !proto.Equal(e.RateLimit, other.RateLimit) {
-		return false
-	}
-
-	// Compare providers
-	if e.Err == nil && other.Err == nil {
-		return true
-	}
-	if e.Err == nil || other.Err == nil {
-		return false
-	}
-
-	return e.Err.Error() == other.Err.Error()
-}
-
 type ProviderNeededMap struct {
 	// map filterhcain name -> providername -> provider
 	Providers map[string]map[string]*TrafficPolicyGatewayExtensionIR
@@ -240,61 +199,6 @@ func registerTypes(ourCli versioned.Interface) {
 			return ourCli.GatewayV1alpha1().TrafficPolicies(namespace).Watch(context.Background(), o)
 		},
 	)
-}
-
-func TranslateGatewayExtensionBuilder(commoncol *common.CommonCollections) func(krtctx krt.HandlerContext, gExt ir.GatewayExtension) *TrafficPolicyGatewayExtensionIR {
-	return func(krtctx krt.HandlerContext, gExt ir.GatewayExtension) *TrafficPolicyGatewayExtensionIR {
-		p := &TrafficPolicyGatewayExtensionIR{
-			Name:    krt.Named{Name: gExt.Name, Namespace: gExt.Namespace}.ResourceName(),
-			ExtType: gExt.Type,
-		}
-
-		switch gExt.Type {
-		case v1alpha1.GatewayExtensionTypeExtAuth:
-			envoyGrpcService, err := ResolveExtGrpcService(krtctx, commoncol.BackendIndex, false, gExt.ObjectSource, gExt.ExtAuth.GrpcService)
-			if err != nil {
-				// TODO: should this be a warning, and set cluster to blackhole?
-				p.Err = fmt.Errorf("failed to resolve ExtAuth backend: %w", err)
-				return p
-			}
-
-			p.ExtAuth = &envoy_ext_authz_v3.ExtAuthz{
-				Services: &envoy_ext_authz_v3.ExtAuthz_GrpcService{
-					GrpcService: envoyGrpcService,
-				},
-				FilterEnabledMetadata: ExtAuthzEnabledMetadataMatcher,
-			}
-
-		case v1alpha1.GatewayExtensionTypeExtProc:
-			envoyGrpcService, err := ResolveExtGrpcService(krtctx, commoncol.BackendIndex, false, gExt.ObjectSource, gExt.ExtProc.GrpcService)
-			if err != nil {
-				p.Err = fmt.Errorf("failed to resolve ExtProc backend: %w", err)
-				return p
-			}
-
-			p.ExtProc = &envoy_ext_proc_v3.ExternalProcessor{
-				GrpcService: envoyGrpcService,
-			}
-
-		case v1alpha1.GatewayExtensionTypeRateLimit:
-			if gExt.RateLimit == nil {
-				p.Err = fmt.Errorf("rate limit extension missing configuration")
-				return p
-			}
-
-			grpcService, err := ResolveExtGrpcService(krtctx, commoncol.BackendIndex, false, gExt.ObjectSource, gExt.RateLimit.GrpcService)
-			if err != nil {
-				p.Err = fmt.Errorf("ratelimit: %w", err)
-				return p
-			}
-
-			// Use the specialized function for rate limit service resolution
-			rateLimitConfig := resolveRateLimitService(grpcService, gExt.RateLimit)
-
-			p.RateLimit = rateLimitConfig
-		}
-		return p
-	}
 }
 
 func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensionsplug.Plugin {
