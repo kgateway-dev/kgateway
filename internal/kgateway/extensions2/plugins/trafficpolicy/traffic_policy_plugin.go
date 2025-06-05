@@ -908,7 +908,7 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.Filt
 	if p.csrfInChain[fcc.FilterChainName] != nil {
 		filter := plugins.MustNewStagedFilter(csrfExtensionFilterName,
 			p.csrfInChain[fcc.FilterChainName],
-			plugins.BeforeStage(plugins.AuthZStage))
+			plugins.DuringStage(plugins.RouteStage))
 		filters = append(filters, filter)
 	}
 
