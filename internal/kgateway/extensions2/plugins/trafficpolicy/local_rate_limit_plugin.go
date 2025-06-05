@@ -18,6 +18,23 @@ const (
 	localRatelimitFilterDisabledRuntimeKey = "local_rate_limit_disabled"
 )
 
+func localRateLimitForSpec(spec v1alpha1.TrafficPolicySpec, out *trafficPolicySpecIr) error {
+	if spec.RateLimit == nil || spec.RateLimit.Local == nil {
+		return nil
+	}
+
+	var err error
+	if spec.RateLimit.Local != nil {
+		out.localRateLimit, err = toLocalRateLimitFilterConfig(spec.RateLimit.Local)
+		if err != nil {
+			// In case of an error with translating the local rate limit configuration,
+			// the route will be dropped
+			return err
+		}
+	}
+	return nil
+}
+
 func toLocalRateLimitFilterConfig(t *v1alpha1.LocalRateLimitPolicy) (*localratelimitv3.LocalRateLimit, error) {
 	if t == nil {
 		return nil, nil
