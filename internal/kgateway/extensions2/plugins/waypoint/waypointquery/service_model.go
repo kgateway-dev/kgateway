@@ -108,6 +108,7 @@ func (s Service) BackendObject(port uint32) ir.BackendObjectIR {
 			hostname,
 			int32(port),
 			protocol,
+			nil, // we just need the cluster name, aliases not important here
 		)
 	case *corev1.Service:
 		return kubernetes.BuildServiceBackendObjectIR(obj, int32(port), protocol)

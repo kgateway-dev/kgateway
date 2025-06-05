@@ -10,6 +10,9 @@ Listeners:
       typedConfig:
         '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
         httpFilters:
+        - name: envoy.filters.http.cors
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.cors.v3.Cors
         - disabled: true
           name: ratelimit/local
           typedConfig:
@@ -43,11 +46,15 @@ Routes:
     routes:
     - match:
         prefix: /
-      name: listener~80~example_com-route-0-httproute-example-route-infra-0-0-matcher-0
+      name: listener~80~example_com-route-0-httproute-example-route-infra-0-0-rule0-matcher-0
       route:
         cluster: kube_infra_example-svc_80
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
       typedPerFilterConfig:
+        envoy.filters.http.cors:
+          '@type': type.googleapis.com/envoy.extensions.filters.http.cors.v3.CorsPolicy
+          allowOriginStringMatch:
+          - exact: https://example.com
         ratelimit/local:
           '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
           filterEnabled:

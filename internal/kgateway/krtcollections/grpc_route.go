@@ -25,25 +25,61 @@ func (h *RoutesIndex) transformGRPCRoute(kctx krt.HandlerContext, i *gwv1.GRPCRo
 		SourceObject:     i,
 		ParentRefs:       i.Spec.ParentRefs,
 		Hostnames:        tostr(i.Spec.Hostnames),
-		Rules:            h.transformGRPCRulesToHttp(kctx, src, i.Spec.Rules),
+		Rules:            h.transformGRPCRulesToHttp(kctx, src, i.GetLabels(), i.Spec.Rules),
 		AttachedPolicies: toAttachedPolicies(h.policies.getTargetingPolicies(kctx, extensionsplug.RouteAttachmentPoint, src, "", i.GetLabels())),
 		// IsHTTP2: true
 	}
 }
 
-func (h *RoutesIndex) transformGRPCRulesToHttp(kctx krt.HandlerContext, src ir.ObjectSource, rules []gwv1.GRPCRouteRule) []ir.HttpRouteRuleIR {
+func (h *RoutesIndex) transformGRPCRulesToHttp(
+	kctx krt.HandlerContext,
+	src ir.ObjectSource,
+	srcLabels map[string]string,
+	rules []gwv1.GRPCRouteRule,
+	opts ...ir.PolicyAttachmentOpts,
+) []ir.HttpRouteRuleIR {
 	httpRules := make([]ir.HttpRouteRuleIR, 0, len(rules))
 	for _, r := range rules {
 		httpMatches := h.convertGRPCMatchesToHTTP(r.Matches)
 		httpBackends := h.convertGRPCBackendsToHTTP(kctx, src, r.BackendRefs)
 
+		extensionRefs := h.getExtensionRefs(kctx, src.Namespace, convertFiltersToHTTP(r.Filters))
+		var policies ir.AttachedPolicies
+		if r.Name != nil {
+			policies = toAttachedPolicies(h.policies.getTargetingPolicies(kctx, extensionsplug.RouteAttachmentPoint, src, string(*r.Name), srcLabels), opts...)
+		}
+		rulePolicies := h.getBuiltInRulePolicies(convertRulesToHTTP(r))
+		policies.Append(rulePolicies)
+
 		httpRules = append(httpRules, ir.HttpRouteRuleIR{
 			Backends: httpBackends,
 			Matches:  httpMatches,
 			Name:     emptyIfNil(r.Name),
+
+			AttachedPolicies: policies,
+			ExtensionRefs:    extensionRefs,
 		})
 	}
 	return httpRules
+}
+
+func convertFiltersToHTTP(filters []gwv1.GRPCRouteFilter) []gwv1.HTTPRouteFilter {
+	httpFilters := make([]gwv1.HTTPRouteFilter, 0, len(filters))
+	for _, f := range filters {
+		httpFilters = append(httpFilters, gwv1.HTTPRouteFilter{
+			Type:                   gwv1.HTTPRouteFilterType(f.Type),
+			RequestHeaderModifier:  f.RequestHeaderModifier,
+			ResponseHeaderModifier: f.ResponseHeaderModifier,
+			RequestMirror:          f.RequestMirror,
+		})
+	}
+	return httpFilters
+}
+
+func convertRulesToHTTP(r gwv1.GRPCRouteRule) gwv1.HTTPRouteRule {
+	return gwv1.HTTPRouteRule{
+		SessionPersistence: r.SessionPersistence,
+	}
 }
 
 func (h *RoutesIndex) convertGRPCMatchesToHTTP(matches []gwv1.GRPCRouteMatch) []gwv1.HTTPRouteMatch {

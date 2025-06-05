@@ -1,3 +1,29 @@
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  labels:
+    app: kgateway
+  name: openai-override
+  namespace: ai-test
+spec:
+  type: AI
+  ai:
+    llm:
+      hostOverride:
+        host: test-ai-provider.ai-test.svc.cluster.local
+        port: 443
+        insecureSkipVerify: true
+      pathOverride:
+        fullPath: "/api/v1/chat/completions"
+      authHeaderOverride:
+        prefix: "custom-prefix"
+        headerName: "custom-header"
+      provider:
+        openai:
+          authToken:
+            kind: "SecretRef"
+            secretRef:
+              name: openai-secret
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: Backend

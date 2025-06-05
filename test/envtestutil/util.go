@@ -106,6 +106,7 @@ func RunController(t *testing.T, logger *zap.Logger, globalSettings *settings.Se
 		KrtDebugger:    new(krt.DebugHandler),
 		GlobalSettings: globalSettings,
 	}
+	t.Log("controller starting. xds port:", xdsPort)
 
 	// start kgateway
 	wg.Add(1)
@@ -118,6 +119,7 @@ func RunController(t *testing.T, logger *zap.Logger, globalSettings *settings.Se
 	// this means that it attaches the pod collection to the unique client set collection.
 	time.Sleep(time.Second)
 	run(t, ctx, setupOpts.KrtDebugger, client, xdsPort)
+	t.Log("controller done. shutting down. xds port:", xdsPort)
 }
 
 func GenerateKubeConfiguration(t *testing.T, restconfig *rest.Config) string {

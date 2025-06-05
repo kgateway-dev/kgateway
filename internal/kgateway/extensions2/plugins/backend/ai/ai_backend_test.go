@@ -19,19 +19,9 @@ import (
 )
 
 func TestApplyAIBackend(t *testing.T) {
-	typedFilterConfig := ir.TypedFilterConfigMap(map[string]proto.Message{})
-	pCtx := &ir.RouteBackendContext{
-		TypedFilterConfig: typedFilterConfig,
-		Backend: &ir.BackendObjectIR{
-			ObjectSource: ir.ObjectSource{
-				Group:     "test",
-				Kind:      "test-backend-plugin",
-				Namespace: "test-backend-plugin-ns",
-				Name:      "test-backend-plugin-us",
-			},
-		},
-		FilterChainName: "test",
-	}
+	customPath := "/api/v1/chat/completions"
+	customHeader := "custom-header "
+	customPrefix := "custom-prefix "
 
 	outRoute := &envoy_config_route_v3.Route{}
 
@@ -59,7 +49,6 @@ func TestApplyAIBackend(t *testing.T) {
 					},
 				},
 			},
-			pCtx:          pCtx,
 			out:           outRoute,
 			expectedError: "",
 			expectedTypedConfig: &map[string]proto.Message{
@@ -122,6 +111,89 @@ func TestApplyAIBackend(t *testing.T) {
 			},
 		},
 		{
+			name: "Single LLM provider with custom path",
+			aiBackend: &v1alpha1.AIBackend{
+				LLM: &v1alpha1.LLMProvider{
+					PathOverride: &v1alpha1.PathOverride{
+						FullPath: &customPath,
+					},
+					AuthHeaderOverride: &v1alpha1.AuthHeaderOverride{
+						Prefix:     &customPrefix,
+						HeaderName: &customHeader,
+					},
+					Provider: v1alpha1.SupportedLLMProvider{
+						OpenAI: &v1alpha1.OpenAIConfig{
+							Model: ptr.To("gpt-3"),
+							AuthToken: v1alpha1.SingleAuthToken{
+								Kind:   v1alpha1.SingleAuthTokenKind("Inline"),
+								Inline: ptr.To("test1"),
+							},
+						},
+					},
+				},
+			},
+			out:           outRoute,
+			expectedError: "",
+			expectedTypedConfig: &map[string]proto.Message{
+				wellknown.AIExtProcFilterName: &envoy_ext_proc_v3.ExtProcPerRoute{
+					Override: &envoy_ext_proc_v3.ExtProcPerRoute_Overrides{
+						Overrides: &envoy_ext_proc_v3.ExtProcOverrides{
+							GrpcInitialMetadata: []*envoy_config_core_v3.HeaderValue{
+								{
+									Key:   "x-llm-provider",
+									Value: "openai",
+								},
+								{
+									Key:   "x-llm-model",
+									Value: "gpt-3",
+								},
+								{
+									Key:   "x-request-id",
+									Value: "%REQ(X-REQUEST-ID)%",
+								},
+							},
+						},
+					},
+				},
+				wellknown.AIBackendTransformationFilterName: &envoytransformation.RouteTransformations{
+					Transformations: []*envoytransformation.RouteTransformations_RouteTransformation{
+						{
+							Match: &envoytransformation.RouteTransformations_RouteTransformation_RequestMatch_{
+								RequestMatch: &envoytransformation.RouteTransformations_RouteTransformation_RequestMatch{
+									RequestTransformation: &envoytransformation.Transformation{
+										LogRequestResponseInfo: &wrapperspb.BoolValue{},
+										TransformationType: &envoytransformation.Transformation_TransformationTemplate{
+											TransformationTemplate: &envoytransformation.TransformationTemplate{
+												Headers: map[string]*envoytransformation.InjaTemplate{
+													":path": {
+														Text: customPath,
+													},
+													customHeader: {
+														Text: customPrefix + `{% if host_metadata("auth_token") != "" %}{{host_metadata("auth_token")}}{% else %}{{dynamic_metadata("auth_token","ai.kgateway.io")}}{% endif %}`,
+													},
+												},
+												BodyTransformation: &envoytransformation.TransformationTemplate_MergeJsonKeys{
+													MergeJsonKeys: &envoytransformation.MergeJsonKeys{
+														JsonKeys: map[string]*envoytransformation.MergeJsonKeys_OverridableTemplate{
+															"model": {
+																Tmpl: &envoytransformation.InjaTemplate{
+																	Text: `{% if host_metadata("model") != "" %}"{{host_metadata("model")}}"{% else %}"{{model}}"{% endif %}`,
+																},
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
 			name: "Multiple LLM providers with different types",
 			aiBackend: &v1alpha1.AIBackend{
 				MultiPool: &v1alpha1.MultiPoolConfig{
@@ -155,7 +227,6 @@ func TestApplyAIBackend(t *testing.T) {
 					},
 				},
 			},
-			pCtx:                pCtx,
 			out:                 outRoute,
 			expectedError:       "multiple AI backend types found for single ai route",
 			expectedTypedConfig: nil,
@@ -164,6 +235,20 @@ func TestApplyAIBackend(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			typedFilterConfig := ir.TypedFilterConfigMap(map[string]proto.Message{})
+			pCtx := &ir.RouteBackendContext{
+				TypedFilterConfig: typedFilterConfig,
+				Backend: &ir.BackendObjectIR{
+					ObjectSource: ir.ObjectSource{
+						Group:     "test",
+						Kind:      "test-backend-plugin",
+						Namespace: "test-backend-plugin-ns",
+						Name:      "test-backend-plugin-us",
+					},
+				},
+				FilterChainName: "test",
+			}
+			tt.pCtx = pCtx
 			aiIR := &IR{}
 			err := PreprocessAIBackend(context.Background(), tt.aiBackend, aiIR)
 			if tt.expectedError != "" && err == nil {
