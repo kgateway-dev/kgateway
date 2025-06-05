@@ -4,11 +4,37 @@ import (
 	"fmt"
 
 	envoy_ext_proc_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_proc/v3"
+	"google.golang.org/protobuf/proto"
 	"istio.io/istio/pkg/kube/krt"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/pluginutils"
 )
+
+type ExtprocIR struct {
+	provider        *TrafficPolicyGatewayExtensionIR
+	ExtProcPerRoute *envoy_ext_proc_v3.ExtProcPerRoute
+}
+
+func (e *ExtprocIR) Equals(other *ExtprocIR) bool {
+	if e == nil && other == nil {
+		return true
+	}
+	if e == nil || other == nil {
+		return false
+	}
+
+	if !proto.Equal(e.ExtProcPerRoute, other.ExtProcPerRoute) {
+		return false
+	}
+	if (e.provider == nil) != (other.provider == nil) {
+		return false
+	}
+	if e.provider != nil && !e.provider.Equals(*other.provider) {
+		return false
+	}
+	return true
+}
 
 // toEnvoyExtProc converts an ExtProcPolicy to an ExternalProcessor
 func (b *TrafficPolicyBuilder) toEnvoyExtProc(

@@ -100,31 +100,6 @@ type TrafficPolicy struct {
 	spec trafficPolicySpecIr
 }
 
-type ExtprocIR struct {
-	provider        *TrafficPolicyGatewayExtensionIR
-	ExtProcPerRoute *envoy_ext_proc_v3.ExtProcPerRoute
-}
-
-func (e *ExtprocIR) Equals(other *ExtprocIR) bool {
-	if e == nil && other == nil {
-		return true
-	}
-	if e == nil || other == nil {
-		return false
-	}
-
-	if !proto.Equal(e.ExtProcPerRoute, other.ExtProcPerRoute) {
-		return false
-	}
-	if (e.provider == nil) != (other.provider == nil) {
-		return false
-	}
-	if e.provider != nil && !e.provider.Equals(*other.provider) {
-		return false
-	}
-	return true
-}
-
 type trafficPolicySpecIr struct {
 	AI        *AIPolicyIR
 	ExtProc   *ExtprocIR
