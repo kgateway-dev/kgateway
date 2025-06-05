@@ -43,28 +43,28 @@ func (p *TrafficPolicy) validateProto() error {
 	// TODO: rustformations, and ext auth/rate limit provider validation
 	// Note: no need for buffer validation as it's a single int field, right?
 	var validators []func() error
-	if p.spec.AI != nil {
-		if p.spec.AI.Transformation != nil {
-			validators = append(validators, p.spec.AI.Transformation.Validate)
+	if p.spec.ai != nil {
+		if p.spec.ai.Transformation != nil {
+			validators = append(validators, p.spec.ai.Transformation.Validate)
 		}
-		if p.spec.AI.Extproc != nil {
-			validators = append(validators, p.spec.AI.Extproc.Validate)
+		if p.spec.ai.Extproc != nil {
+			validators = append(validators, p.spec.ai.Extproc.Validate)
 		}
 	}
-	if p.spec.transform != nil {
-		validators = append(validators, p.spec.transform.Validate)
+	if p.spec.transformation != nil && p.spec.transformation.transformation != nil {
+		validators = append(validators, p.spec.transformation.transformation.Validate)
 	}
-	if p.spec.localRateLimit != nil {
-		validators = append(validators, p.spec.localRateLimit.Validate)
+	if p.spec.localRateLimit != nil && p.spec.localRateLimit.localRateLimit != nil {
+		validators = append(validators, p.spec.localRateLimit.localRateLimit.Validate)
 	}
-	if p.spec.rateLimit != nil {
-		for _, rateLimit := range p.spec.rateLimit.rateLimitActions {
+	if p.spec.globalRateLimit != nil {
+		for _, rateLimit := range p.spec.globalRateLimit.rateLimitActions {
 			validators = append(validators, rateLimit.Validate)
 		}
 	}
-	if p.spec.ExtProc != nil {
-		if p.spec.ExtProc.ExtProcPerRoute != nil {
-			validators = append(validators, p.spec.ExtProc.ExtProcPerRoute.Validate)
+	if p.spec.extProc != nil {
+		if p.spec.extProc.perRoute != nil {
+			validators = append(validators, p.spec.extProc.perRoute.Validate)
 		}
 	}
 	if p.spec.extAuth != nil {

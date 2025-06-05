@@ -227,7 +227,11 @@ func TestHashPolicyForSpec(t *testing.T) {
 
 			hashPolicyForSpec(tt.spec, outSpec)
 
-			assert.Equal(t, tt.expected, outSpec.hashPolicies)
+			var actual []*envoyroutev3.RouteAction_HashPolicy
+			if outSpec.hashPolicies != nil {
+				actual = outSpec.hashPolicies.HashPolicies()
+			}
+			assert.Equal(t, tt.expected, actual)
 		})
 	}
 }

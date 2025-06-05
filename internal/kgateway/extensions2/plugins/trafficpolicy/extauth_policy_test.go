@@ -53,7 +53,7 @@ func TestApplyForRoute(t *testing.T) {
 		ctx := context.Background()
 		policy := &TrafficPolicy{
 			spec: trafficPolicySpecIr{
-				extAuth: &extAuthIR{
+				extAuth: &ExtAuthIR{
 					provider: &TrafficPolicyGatewayExtensionIR{
 						Name:    "test-extension",
 						ExtType: v1alpha1.GatewayExtensionTypeExtAuth,
@@ -144,7 +144,7 @@ func TestExtAuthPolicyPlugin(t *testing.T) {
 		ctx := context.Background()
 		policy := &TrafficPolicy{
 			spec: trafficPolicySpecIr{
-				extAuth: &extAuthIR{
+				extAuth: &ExtAuthIR{
 					provider: &TrafficPolicyGatewayExtensionIR{
 						Name:    "test-auth-extension",
 						ExtType: v1alpha1.GatewayExtensionTypeExtAuth,
@@ -181,7 +181,7 @@ func TestExtAuthPolicyPlugin(t *testing.T) {
 		ctx := context.Background()
 		policy := &TrafficPolicy{
 			spec: trafficPolicySpecIr{
-				extAuth: &extAuthIR{
+				extAuth: &ExtAuthIR{
 					enablement: ptr.To(v1alpha1.ExtAuthDisableAll),
 				},
 			},

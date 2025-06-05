@@ -14,8 +14,8 @@ import (
 )
 
 type ExtprocIR struct {
-	provider        *TrafficPolicyGatewayExtensionIR
-	ExtProcPerRoute *envoy_ext_proc_v3.ExtProcPerRoute
+	provider *TrafficPolicyGatewayExtensionIR
+	perRoute *envoy_ext_proc_v3.ExtProcPerRoute
 }
 
 func (e *ExtprocIR) Equals(other *ExtprocIR) bool {
@@ -26,7 +26,7 @@ func (e *ExtprocIR) Equals(other *ExtprocIR) bool {
 		return false
 	}
 
-	if !proto.Equal(e.ExtProcPerRoute, other.ExtProcPerRoute) {
+	if !proto.Equal(e.perRoute, other.perRoute) {
 		return false
 	}
 	if !cmputils.CompareWithNils(e.provider, other.provider, func(a, b *TrafficPolicyGatewayExtensionIR) bool {
@@ -38,23 +38,27 @@ func (e *ExtprocIR) Equals(other *ExtprocIR) bool {
 }
 
 // toEnvoyExtProc converts an ExtProcPolicy to an ExternalProcessor
-func (b *TrafficPolicyBuilder) toEnvoyExtProc(
+func extProcForSpec(
 	krtctx krt.HandlerContext,
-	trafficPolicy *v1alpha1.TrafficPolicy,
-) (*ExtprocIR, error) {
-	spec := trafficPolicy.Spec.ExtProc
-	gatewayExtension, err := b.FetchGatewayExtension(krtctx, spec.ExtensionRef, trafficPolicy.GetNamespace())
+	in *v1alpha1.TrafficPolicy,
+	out *trafficPolicySpecIr,
+	fetchGatewayExtension FetchGatewayExtensionFunc,
+) error {
+	if in.Spec.ExtProc == nil {
+		return nil
+	}
+	gatewayExtension, err := fetchGatewayExtension(krtctx, in.Spec.ExtProc.ExtensionRef, in.GetNamespace())
 	if err != nil {
-		return nil, fmt.Errorf("extproc: %w", err)
+		return fmt.Errorf("extproc: %w", err)
 	}
 	if gatewayExtension.ExtType != v1alpha1.GatewayExtensionTypeExtProc || gatewayExtension.ExtProc == nil {
-		return nil, pluginutils.ErrInvalidExtensionType(v1alpha1.GatewayExtensionTypeExtAuth, gatewayExtension.ExtType)
+		return pluginutils.ErrInvalidExtensionType(v1alpha1.GatewayExtensionTypeExtAuth, gatewayExtension.ExtType)
 	}
-
-	return &ExtprocIR{
-		provider:        gatewayExtension,
-		ExtProcPerRoute: translateExtProcPerFilterConfig(spec),
-	}, nil
+	out.extProc = &ExtprocIR{
+		provider: gatewayExtension,
+		perRoute: translateExtProcPerFilterConfig(in.Spec.ExtProc),
+	}
+	return nil
 }
 
 func translateExtProcPerFilterConfig(extProc *v1alpha1.ExtProcPolicy) *envoy_ext_proc_v3.ExtProcPerRoute {
@@ -135,9 +139,9 @@ func (p *trafficPolicyPluginGwPass) handleExtProc(fcn string, pCtxTypedFilterCon
 	providerName := extProc.provider.ResourceName()
 	// Handle the enablement state
 
-	if extProc.ExtProcPerRoute != nil {
+	if extProc.perRoute != nil {
 		pCtxTypedFilterConfig.AddTypedConfig(extProcFilterName(providerName),
-			extProc.ExtProcPerRoute,
+			extProc.perRoute,
 		)
 	} else {
 		// if you are on a route and not trying to disable it then we need to override the top level disable on the filter chain
@@ -145,6 +149,5 @@ func (p *trafficPolicyPluginGwPass) handleExtProc(fcn string, pCtxTypedFilterCon
 			&envoy_ext_proc_v3.ExtProcPerRoute{Override: &envoy_ext_proc_v3.ExtProcPerRoute_Overrides{Overrides: &envoy_ext_proc_v3.ExtProcOverrides{}}},
 		)
 	}
-
 	p.extProcPerProvider.Add(fcn, providerName, extProc.provider)
 }

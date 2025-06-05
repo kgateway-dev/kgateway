@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"slices"
 	"strconv"
 	"time"
 
@@ -16,7 +15,6 @@ import (
 	dynamicmodulesv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/dynamic_modules/v3"
 	localratelimitv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/local_ratelimit/v3"
 	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
-	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	skubeclient "istio.io/istio/pkg/config/schema/kubeclient"
@@ -75,21 +73,18 @@ type TrafficPolicy struct {
 }
 
 type trafficPolicySpecIr struct {
-	AI        *AIPolicyIR
-	ExtProc   *ExtprocIR
-	transform *transformationpb.RouteTransformations
-	// rustformation is currently a *dynamicmodulesv3.DynamicModuleFilter, but can potentially change at some point
-	// in the future so we use proto.Message here
-	rustformation              proto.Message
-	rustformationStringToStash string
-	extAuth                    *extAuthIR
-	localRateLimit             *localratelimitv3.LocalRateLimit
-	rateLimit                  *GlobalRateLimitIR
-	cors                       *CorsIR
-	csrf                       *CsrfIR
-	hashPolicies               []*envoyroutev3.RouteAction_HashPolicy
-	autoHostRewrite            *wrapperspb.BoolValue
-	buffer                     *BufferIR
+	ai              *AIPolicyIR
+	buffer          *BufferIR
+	extProc         *ExtprocIR
+	transformation  *TransformationIR
+	rustformation   *RustformationIR
+	extAuth         *ExtAuthIR
+	localRateLimit  *LocalRateLimitIR
+	globalRateLimit *GlobalRateLimitIR
+	cors            *CorsIR
+	csrf            *CsrfIR
+	hashPolicies    *HashPolicyIR
+	autoHostRewrite *AutoHostRewriteIR
 }
 
 func (d *TrafficPolicy) CreationTime() time.Time {
@@ -101,71 +96,44 @@ func (d *TrafficPolicy) Equals(in any) bool {
 	if !ok {
 		return false
 	}
-
 	if d.ct != d2.ct {
 		return false
 	}
-	if !proto.Equal(d.spec.transform, d2.spec.transform) {
-		return false
-	}
-	if !proto.Equal(d.spec.rustformation, d2.spec.rustformation) {
-		return false
-	}
 
-	// AI equality checks
-	if d.spec.AI != nil && d2.spec.AI != nil {
-		if d.spec.AI.AISecret != nil && d2.spec.AI.AISecret != nil && !d.spec.AI.AISecret.Equals(*d2.spec.AI.AISecret) {
-			return false
-		}
-		if (d.spec.AI.AISecret != nil) != (d2.spec.AI.AISecret != nil) {
-			return false
-		}
-		if !proto.Equal(d.spec.AI.Extproc, d2.spec.AI.Extproc) {
-			return false
-		}
-		if !proto.Equal(d.spec.AI.Transformation, d2.spec.AI.Transformation) {
-			return false
-		}
-	} else if d.spec.AI != d2.spec.AI {
-		// If one of the AI IR values is nil and the other isn't, not equal
+	if !d.spec.ai.Equals(d2.spec.ai) {
 		return false
 	}
-
+	if !d.spec.transformation.Equals(d2.spec.transformation) {
+		return false
+	}
+	if !d.spec.rustformation.Equals(d2.spec.rustformation) {
+		return false
+	}
 	if !d.spec.extAuth.Equals(d2.spec.extAuth) {
 		return false
 	}
-
-	if !d.spec.ExtProc.Equals(d2.spec.ExtProc) {
+	if !d.spec.extProc.Equals(d2.spec.extProc) {
 		return false
 	}
-
-	if !proto.Equal(d.spec.localRateLimit, d2.spec.localRateLimit) {
+	if !d.spec.localRateLimit.Equals(d2.spec.localRateLimit) {
 		return false
 	}
-
-	if !d.spec.rateLimit.Equals(d2.spec.rateLimit) {
+	if !d.spec.globalRateLimit.Equals(d2.spec.globalRateLimit) {
 		return false
 	}
-
 	if !d.spec.cors.Equals(d2.spec.cors) {
 		return false
 	}
-
 	if !d.spec.csrf.Equals(d2.spec.csrf) {
 		return false
 	}
-
-	if !proto.Equal(d.spec.autoHostRewrite, d2.spec.autoHostRewrite) {
+	if !d.spec.autoHostRewrite.Equals(d2.spec.autoHostRewrite) {
 		return false
 	}
-
 	if !d.spec.buffer.Equals(d2.spec.buffer) {
 		return false
 	}
-
-	if !slices.EqualFunc(d.spec.hashPolicies, d2.spec.hashPolicies, func(a, b *envoyroutev3.RouteAction_HashPolicy) bool {
-		return proto.Equal(a, b)
-	}) {
+	if !d.spec.hashPolicies.Equals(d2.spec.hashPolicies) {
 		return false
 	}
 
@@ -316,7 +284,7 @@ func (p *trafficPolicyPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.
 			p.rustformationStash = make(map[string]string)
 		}
 		// encode the configuration that would be route level and stash the serialized version in a map
-		p.rustformationStash[routeHash] = string(policy.spec.rustformationStringToStash)
+		p.rustformationStash[routeHash] = string(policy.spec.rustformation.toStash)
 
 		// augment the dynamic metadata so that we can do our route hack
 		// set_dynamic_metadata filter DOES NOT have a route level configuration
@@ -355,7 +323,7 @@ func (p *trafficPolicyPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.
 		p.setTransformationInChain[pCtx.FilterChainName] = true
 	}
 
-	if policy.spec.AI != nil {
+	if policy.spec.ai != nil {
 		var aiBackends []*v1alpha1.Backend
 		// check if the backends selected by targetRef are all AI backends before applying the policy
 		for _, backend := range pCtx.In.Backends {
@@ -380,19 +348,19 @@ func (p *trafficPolicyPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.
 		}
 		if len(aiBackends) > 0 {
 			// Apply the AI policy to the all AI backends
-			p.processAITrafficPolicy(&pCtx.TypedFilterConfig, policy.spec.AI)
+			p.processAITrafficPolicy(&pCtx.TypedFilterConfig, policy.spec.ai)
 		}
 	}
 
 	if policy.spec.hashPolicies != nil {
-		outputRoute.GetRoute().HashPolicy = policy.spec.hashPolicies
+		outputRoute.GetRoute().HashPolicy = policy.spec.hashPolicies.HashPolicies()
 	}
 
-	if policy.spec.autoHostRewrite != nil && policy.spec.autoHostRewrite.GetValue() {
+	if policy.spec.autoHostRewrite != nil && policy.spec.autoHostRewrite.AutoHostRewrite() != nil && policy.spec.autoHostRewrite.AutoHostRewrite().GetValue() {
 		// Only apply TrafficPolicy's AutoHostRewrite if built-in policy's AutoHostRewrite is not already set
 		if ra := outputRoute.GetRoute(); ra != nil && ra.GetHostRewriteSpecifier() == nil {
 			ra.HostRewriteSpecifier = &envoyroutev3.RouteAction_AutoHostRewrite{
-				AutoHostRewrite: policy.spec.autoHostRewrite,
+				AutoHostRewrite: policy.spec.autoHostRewrite.AutoHostRewrite(),
 			}
 		}
 	}
@@ -414,8 +382,8 @@ func (p *trafficPolicyPluginGwPass) ApplyForRouteBackend(
 
 	p.handlePolicies(pCtx.FilterChainName, &pCtx.TypedFilterConfig, rtPolicy.spec)
 
-	if rtPolicy.spec.AI != nil && (rtPolicy.spec.AI.Transformation != nil || rtPolicy.spec.AI.Extproc != nil) {
-		p.processAITrafficPolicy(&pCtx.TypedFilterConfig, rtPolicy.spec.AI)
+	if rtPolicy.spec.ai != nil && (rtPolicy.spec.ai.Transformation != nil || rtPolicy.spec.ai.Extproc != nil) {
+		p.processAITrafficPolicy(&pCtx.TypedFilterConfig, rtPolicy.spec.ai)
 	}
 
 	return nil
@@ -438,7 +406,8 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.Filt
 		extProcName := extProcFilterName(providerName)
 		stagedExtProcFilter := plugins.MustNewStagedFilter(extProcName,
 			extProcFilter,
-			plugins.AfterStage(plugins.WellKnownFilterStage(plugins.AuthZStage)))
+			plugins.AfterStage(plugins.WellKnownFilterStage(plugins.AuthZStage)),
+		)
 
 		// handle the case where route level only should be fired
 		stagedExtProcFilter.Filter.Disabled = true
@@ -455,7 +424,8 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.Filt
 		}
 		filter := plugins.MustNewStagedFilter(transformationFilterNamePrefix,
 			&transformationCfg,
-			plugins.BeforeStage(plugins.AcceptedStage))
+			plugins.BeforeStage(plugins.AcceptedStage),
+		)
 		filter.Filter.Disabled = true
 
 		filters = append(filters, filter)
@@ -498,13 +468,15 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.Filt
 
 		filters = append(filters, plugins.MustNewStagedFilter(rustformationFilterNamePrefix,
 			&rustCfg,
-			plugins.BeforeStage(plugins.AcceptedStage)))
+			plugins.BeforeStage(plugins.AcceptedStage),
+		))
 
 		// filters = append(filters, plugins.MustNewStagedFilter(setFilterStateFilterName,
 		// 	&set_filter_statev3.Config{}, plugins.AfterStage(plugins.FaultStage)))
 		filters = append(filters, plugins.MustNewStagedFilter(metadataRouteTransformation,
 			&transformationpb.FilterTransformations{},
-			plugins.AfterStage(plugins.FaultStage)))
+			plugins.AfterStage(plugins.FaultStage),
+		))
 	}
 
 	// register the transformation work once
@@ -524,7 +496,8 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.Filt
 		extauthName := extAuthFilterName(providerName)
 		stagedExtAuthFilter := plugins.MustNewStagedFilter(extauthName,
 			extAuthFilter,
-			plugins.DuringStage(plugins.AuthZStage))
+			plugins.DuringStage(plugins.AuthZStage),
+		)
 
 		stagedExtAuthFilter.Filter.Disabled = true
 
@@ -534,7 +507,8 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.Filt
 	if p.localRateLimitInChain[fcc.FilterChainName] != nil {
 		filter := plugins.MustNewStagedFilter(localRateLimitFilterNamePrefix,
 			p.localRateLimitInChain[fcc.FilterChainName],
-			plugins.BeforeStage(plugins.AcceptedStage))
+			plugins.BeforeStage(plugins.AcceptedStage),
+		)
 		filter.Filter.Disabled = true
 		filters = append(filters, filter)
 	}
@@ -550,7 +524,8 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.Filt
 		rateLimitName := getRateLimitFilterName(providerName)
 		stagedRateLimitFilter := plugins.MustNewStagedFilter(rateLimitName,
 			rateLimitFilter,
-			plugins.DuringStage(plugins.RateLimitStage))
+			plugins.DuringStage(plugins.RateLimitStage),
+		)
 
 		filters = append(filters, stagedRateLimitFilter)
 	}
@@ -560,7 +535,8 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.Filt
 	if p.corsInChain[fcc.FilterChainName] != nil {
 		filter := plugins.MustNewStagedFilter(envoy_wellknown.CORS,
 			p.corsInChain[fcc.FilterChainName],
-			plugins.DuringStage(plugins.CorsStage))
+			plugins.DuringStage(plugins.CorsStage),
+		)
 		filters = append(filters, filter)
 	}
 
@@ -589,17 +565,14 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.Filt
 }
 
 func (p *trafficPolicyPluginGwPass) handlePolicies(fcn string, typedFilterConfig *ir.TypedFilterConfigMap, spec trafficPolicySpecIr) {
-	p.handleTransformation(fcn, typedFilterConfig, spec.transform)
+	p.handleTransformation(fcn, typedFilterConfig, spec.transformation)
 	// Apply ExtAuthz configuration if present
 	// ExtAuth does not allow for most information such as destination
 	// to be set at the route level so we need to smuggle info upwards.
 	p.handleExtAuth(fcn, typedFilterConfig, spec.extAuth)
-	p.handleExtProc(fcn, typedFilterConfig, spec.ExtProc)
-	// Apply rate limit configuration if present
-	p.handleRateLimit(fcn, typedFilterConfig, spec.rateLimit)
+	p.handleExtProc(fcn, typedFilterConfig, spec.extProc)
+	p.handleGlobalRateLimit(fcn, typedFilterConfig, spec.globalRateLimit)
 	p.handleLocalRateLimit(fcn, typedFilterConfig, spec.localRateLimit)
-
-	// Apply CORS configuration if present
 	p.handleCors(fcn, typedFilterConfig, spec.cors)
 
 	// Apply CSRF configuration if present

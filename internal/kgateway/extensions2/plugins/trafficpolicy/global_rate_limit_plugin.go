@@ -26,6 +26,7 @@ type GlobalRateLimitIR struct {
 	rateLimitActions []*envoyroutev3.RateLimit
 }
 
+// Equals checks if two GlobalRateLimitIR instances are equal.
 func (r *GlobalRateLimitIR) Equals(other *GlobalRateLimitIR) bool {
 	if r == nil && other == nil {
 		return true
@@ -52,38 +53,31 @@ func (r *GlobalRateLimitIR) Equals(other *GlobalRateLimitIR) bool {
 }
 
 // globalRateLimitForSpec translates the global rate limit spec into and onto the IR policy.
-func (b *TrafficPolicyBuilder) globalRateLimitForSpec(
+func globalRateLimitForSpec(
 	krtctx krt.HandlerContext,
-	policy *v1alpha1.TrafficPolicy,
+	in *v1alpha1.TrafficPolicy,
 	out *trafficPolicySpecIr,
-) []error {
-	if policy.Spec.RateLimit == nil || policy.Spec.RateLimit.Global == nil {
+	fetchGatewayExtension FetchGatewayExtensionFunc,
+) error {
+	if in.Spec.RateLimit == nil || in.Spec.RateLimit.Global == nil {
 		return nil
 	}
-	var errors []error
-	globalPolicy := policy.Spec.RateLimit.Global
 
+	globalPolicy := in.Spec.RateLimit.Global
 	// Create rate limit actions for the route or vhost
 	actions, err := createRateLimitActions(globalPolicy.Descriptors)
 	if err != nil {
-		errors = append(errors, fmt.Errorf("failed to create rate limit actions: %w", err))
+		return fmt.Errorf("failed to create rate limit actions: %w", err)
 	}
-
-	gwExtIR, err := b.FetchGatewayExtension(krtctx, globalPolicy.ExtensionRef, policy.GetNamespace())
+	gwExtIR, err := fetchGatewayExtension(krtctx, globalPolicy.ExtensionRef, in.GetNamespace())
 	if err != nil {
-		errors = append(errors, fmt.Errorf("ratelimit: %w", err))
-		return errors
+		return fmt.Errorf("ratelimit: %w", err)
 	}
 	if gwExtIR.ExtType != v1alpha1.GatewayExtensionTypeRateLimit || gwExtIR.RateLimit == nil {
-		errors = append(errors, pluginutils.ErrInvalidExtensionType(v1alpha1.GatewayExtensionTypeExtAuth, gwExtIR.ExtType))
+		return pluginutils.ErrInvalidExtensionType(v1alpha1.GatewayExtensionTypeExtAuth, gwExtIR.ExtType)
 	}
-
-	if len(errors) > 0 {
-		return errors
-	}
-
 	// Create route rate limits and store in the RateLimitIR struct
-	out.rateLimit = &GlobalRateLimitIR{
+	out.globalRateLimit = &GlobalRateLimitIR{
 		provider: gwExtIR,
 		rateLimitActions: []*envoyroutev3.RateLimit{
 			{
@@ -173,8 +167,8 @@ func getRateLimitFilterName(name string) string {
 	return fmt.Sprintf("%s/%s", rateLimitFilterNamePrefix, name)
 }
 
-// handleRateLimit adds rate limit configurations to routes
-func (p *trafficPolicyPluginGwPass) handleRateLimit(fcn string, typedFilterConfig *ir.TypedFilterConfigMap, rateLimit *GlobalRateLimitIR) {
+// handleGlobalRateLimit adds rate limit configurations to routes
+func (p *trafficPolicyPluginGwPass) handleGlobalRateLimit(fcn string, typedFilterConfig *ir.TypedFilterConfigMap, rateLimit *GlobalRateLimitIR) {
 	if rateLimit == nil {
 		return
 	}
