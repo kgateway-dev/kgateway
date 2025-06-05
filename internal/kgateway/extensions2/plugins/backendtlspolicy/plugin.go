@@ -8,9 +8,7 @@ import (
 	"time"
 
 	envoy_tls_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
-	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoymatcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
-	eiutils "github.com/kgateway-dev/kgateway/v2/internal/envoyinit/pkg/utils"
 	"google.golang.org/protobuf/proto"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -19,6 +17,8 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/utils/ptr"
+
+	eiutils "github.com/kgateway-dev/kgateway/v2/internal/envoyinit/pkg/utils"
 
 	clusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -216,12 +216,12 @@ func convertTargetRefs(targetRefs []gwv1a2.LocalPolicyTargetReferenceWithSection
 	}}
 }
 
-func convertSubjectAltNames(validation gwv1a3.BackendTLSPolicyValidation) []*envoyauth.SubjectAltNameMatcher {
+func convertSubjectAltNames(validation gwv1a3.BackendTLSPolicyValidation) []*envoy_tls_v3.SubjectAltNameMatcher {
 	if len(validation.SubjectAltNames) == 0 {
 		hostname := string(validation.Hostname)
 		if hostname != "" {
-			return []*envoyauth.SubjectAltNameMatcher{{
-				SanType: envoyauth.SubjectAltNameMatcher_DNS,
+			return []*envoy_tls_v3.SubjectAltNameMatcher{{
+				SanType: envoy_tls_v3.SubjectAltNameMatcher_DNS,
 				Matcher: &envoymatcher.StringMatcher{
 					MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: hostname},
 				},
@@ -229,19 +229,19 @@ func convertSubjectAltNames(validation gwv1a3.BackendTLSPolicyValidation) []*env
 		}
 	}
 
-	matchers := make([]*envoyauth.SubjectAltNameMatcher, 0, len(validation.SubjectAltNames))
+	matchers := make([]*envoy_tls_v3.SubjectAltNameMatcher, 0, len(validation.SubjectAltNames))
 	for _, san := range validation.SubjectAltNames {
 		switch san.Type {
 		case gwv1a3.HostnameSubjectAltNameType:
-			matchers = append(matchers, &envoyauth.SubjectAltNameMatcher{
-				SanType: envoyauth.SubjectAltNameMatcher_DNS,
+			matchers = append(matchers, &envoy_tls_v3.SubjectAltNameMatcher{
+				SanType: envoy_tls_v3.SubjectAltNameMatcher_DNS,
 				Matcher: &envoymatcher.StringMatcher{
 					MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: string(san.Hostname)},
 				},
 			})
 		case gwv1a3.URISubjectAltNameType:
-			matchers = append(matchers, &envoyauth.SubjectAltNameMatcher{
-				SanType: envoyauth.SubjectAltNameMatcher_URI,
+			matchers = append(matchers, &envoy_tls_v3.SubjectAltNameMatcher{
+				SanType: envoy_tls_v3.SubjectAltNameMatcher_URI,
 				Matcher: &envoymatcher.StringMatcher{
 					MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: string(san.URI)},
 				},
