@@ -416,7 +416,7 @@ func (m *mirrorIr) apply(outputRoute *envoy_config_route_v3.Route) {
 		Cluster:         m.Cluster,
 		RuntimeFraction: m.RuntimeFraction,
 	}
-	outputRoute.GetRoute().RequestMirrorPolicies = append(outputRoute.GetRoute().RequestMirrorPolicies, mirror)
+	outputRoute.GetRoute().RequestMirrorPolicies = append(outputRoute.GetRoute().GetRequestMirrorPolicies(), mirror)
 }
 
 func convertMirrorIR(kctx krt.HandlerContext, f *gwv1.HTTPRequestMirrorFilter, fromgk schema.GroupKind, fromns string, refgrants *RefGrantIndex, ups *BackendIndex) *mirrorIr {
