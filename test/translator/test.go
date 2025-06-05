@@ -474,6 +474,7 @@ func (tc TestCase) Run(
 		gvr.WorkloadEntry,
 		gvr.AuthorizationPolicy,
 		wellknown.XListenerSetGVR,
+		wellknown.BackendTLSPolicyGVR,
 	} {
 		clienttest.MakeCRD(t, cli, crd)
 	}

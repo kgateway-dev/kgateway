@@ -508,6 +508,14 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 			Name:      "example-gateway",
 		},
 	}),
+	Entry("Backend TLS Policy", translatorTestCase{
+		inputFile:  "backendtlspolicy/tls.yaml",
+		outputFile: "backendtlspolicy/tls.yaml",
+		gwNN: types.NamespacedName{
+			Namespace: "default",
+			Name:      "example-gateway",
+		},
+	}),
 	Entry("Proxy with no routes", translatorTestCase{
 		inputFile:  "edge-cases/no_route.yaml",
 		outputFile: "no_route.yaml",
