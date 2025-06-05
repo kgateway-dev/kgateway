@@ -364,34 +364,6 @@ func (p *trafficPolicyPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.
 	return nil
 }
 
-func (p *trafficPolicyPluginGwPass) handleTransformation(fcn string, typedFilterConfig *ir.TypedFilterConfigMap, transform *transformationpb.RouteTransformations) {
-	if transform == nil {
-		return
-	}
-
-	typedFilterConfig.AddTypedConfig(transformationFilterNamePrefix, transform)
-	p.setTransformationInChain[fcn] = true
-}
-
-func (p *trafficPolicyPluginGwPass) handleLocalRateLimit(fcn string, typedFilterConfig *ir.TypedFilterConfigMap, localRateLimit *localratelimitv3.LocalRateLimit) {
-	if localRateLimit == nil {
-		return
-	}
-	typedFilterConfig.AddTypedConfig(localRateLimitFilterNamePrefix, localRateLimit)
-
-	// Add a filter to the chain. When having a rate limit for a route we need to also have a
-	// globally disabled rate limit filter in the chain otherwise it will be ignored.
-	// If there is also rate limit for the listener, it will not override this one.
-	if p.localRateLimitInChain == nil {
-		p.localRateLimitInChain = make(map[string]*localratelimitv3.LocalRateLimit)
-	}
-	if _, ok := p.localRateLimitInChain[fcn]; !ok {
-		p.localRateLimitInChain[fcn] = &localratelimitv3.LocalRateLimit{
-			StatPrefix: localRateLimitStatPrefix,
-		}
-	}
-}
-
 func (p *trafficPolicyPluginGwPass) handlePolicies(fcn string, typedFilterConfig *ir.TypedFilterConfigMap, spec trafficPolicySpecIr) {
 	p.handleTransformation(fcn, typedFilterConfig, spec.transform)
 	// Apply ExtAuthz configuration if present
@@ -407,44 +379,13 @@ func (p *trafficPolicyPluginGwPass) handlePolicies(fcn string, typedFilterConfig
 	p.handleCors(fcn, typedFilterConfig, spec.cors)
 }
 
-// handleRateLimit adds rate limit configurations to routes
-func (p *trafficPolicyPluginGwPass) handleRateLimit(fcn string, typedFilterConfig *ir.TypedFilterConfigMap, rateLimit *GlobalRateLimitIR) {
-	if rateLimit == nil {
-		return
-	}
-	if rateLimit.rateLimitActions == nil {
+func (p *trafficPolicyPluginGwPass) handleTransformation(fcn string, typedFilterConfig *ir.TypedFilterConfigMap, transform *transformationpb.RouteTransformations) {
+	if transform == nil {
 		return
 	}
 
-	providerName := rateLimit.provider.ResourceName()
-
-	// Initialize the map if it doesn't exist yet
-	p.rateLimitPerProvider.Add(fcn, providerName, rateLimit.provider)
-
-	// Configure rate limit per route - enabling it for this specific route
-	rateLimitPerRoute := &ratev3.RateLimitPerRoute{
-		RateLimits: rateLimit.rateLimitActions,
-	}
-	typedFilterConfig.AddTypedConfig(getRateLimitFilterName(providerName), rateLimitPerRoute)
-}
-
-func (p *trafficPolicyPluginGwPass) ApplyForRouteBackend(
-	ctx context.Context,
-	policy ir.PolicyIR,
-	pCtx *ir.RouteBackendContext,
-) error {
-	rtPolicy, ok := policy.(*TrafficPolicy)
-	if !ok {
-		return nil
-	}
-
-	p.handlePolicies(pCtx.FilterChainName, &pCtx.TypedFilterConfig, rtPolicy.spec)
-
-	if rtPolicy.spec.AI != nil && (rtPolicy.spec.AI.Transformation != nil || rtPolicy.spec.AI.Extproc != nil) {
-		p.processAITrafficPolicy(&pCtx.TypedFilterConfig, rtPolicy.spec.AI)
-	}
-
-	return nil
+	typedFilterConfig.AddTypedConfig(transformationFilterNamePrefix, transform)
+	p.setTransformationInChain[fcn] = true
 }
 
 func (p *trafficPolicyPluginGwPass) handleExtAuth(fcn string, pCtxTypedFilterConfig *ir.TypedFilterConfigMap, extAuth *extAuthIR) {
@@ -469,6 +410,46 @@ func (p *trafficPolicyPluginGwPass) handleExtAuth(fcn string, pCtxTypedFilterCon
 		}
 		p.extAuthPerProvider.Add(fcn, providerName, extAuth.provider)
 	}
+}
+
+func (p *trafficPolicyPluginGwPass) handleLocalRateLimit(fcn string, typedFilterConfig *ir.TypedFilterConfigMap, localRateLimit *localratelimitv3.LocalRateLimit) {
+	if localRateLimit == nil {
+		return
+	}
+	typedFilterConfig.AddTypedConfig(localRateLimitFilterNamePrefix, localRateLimit)
+
+	// Add a filter to the chain. When having a rate limit for a route we need to also have a
+	// globally disabled rate limit filter in the chain otherwise it will be ignored.
+	// If there is also rate limit for the listener, it will not override this one.
+	if p.localRateLimitInChain == nil {
+		p.localRateLimitInChain = make(map[string]*localratelimitv3.LocalRateLimit)
+	}
+	if _, ok := p.localRateLimitInChain[fcn]; !ok {
+		p.localRateLimitInChain[fcn] = &localratelimitv3.LocalRateLimit{
+			StatPrefix: localRateLimitStatPrefix,
+		}
+	}
+}
+
+// handleRateLimit adds rate limit configurations to routes
+func (p *trafficPolicyPluginGwPass) handleRateLimit(fcn string, typedFilterConfig *ir.TypedFilterConfigMap, rateLimit *GlobalRateLimitIR) {
+	if rateLimit == nil {
+		return
+	}
+	if rateLimit.rateLimitActions == nil {
+		return
+	}
+
+	providerName := rateLimit.provider.ResourceName()
+
+	// Initialize the map if it doesn't exist yet
+	p.rateLimitPerProvider.Add(fcn, providerName, rateLimit.provider)
+
+	// Configure rate limit per route - enabling it for this specific route
+	rateLimitPerRoute := &ratev3.RateLimitPerRoute{
+		RateLimits: rateLimit.rateLimitActions,
+	}
+	typedFilterConfig.AddTypedConfig(getRateLimitFilterName(providerName), rateLimitPerRoute)
 }
 
 func (p *trafficPolicyPluginGwPass) handleExtProc(fcn string, pCtxTypedFilterConfig *ir.TypedFilterConfigMap, extProc *ExtprocIR) {
@@ -509,6 +490,25 @@ func (p *trafficPolicyPluginGwPass) handleCors(fcn string, pCtxTypedFilterConfig
 	if _, ok := p.corsInChain[fcn]; !ok {
 		p.corsInChain[fcn] = &corsv3.Cors{}
 	}
+}
+
+func (p *trafficPolicyPluginGwPass) ApplyForRouteBackend(
+	ctx context.Context,
+	policy ir.PolicyIR,
+	pCtx *ir.RouteBackendContext,
+) error {
+	rtPolicy, ok := policy.(*TrafficPolicy)
+	if !ok {
+		return nil
+	}
+
+	p.handlePolicies(pCtx.FilterChainName, &pCtx.TypedFilterConfig, rtPolicy.spec)
+
+	if rtPolicy.spec.AI != nil && (rtPolicy.spec.AI.Transformation != nil || rtPolicy.spec.AI.Extproc != nil) {
+		p.processAITrafficPolicy(&pCtx.TypedFilterConfig, rtPolicy.spec.AI)
+	}
+
+	return nil
 }
 
 // called 1 time per listener
