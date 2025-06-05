@@ -163,17 +163,23 @@ func TestWithIstioAutomtlsSettings(t *testing.T) {
 }
 
 func TestWithBindIpv6(t *testing.T) {
-	st, err := settings.BuildSettings()
-	st.ListenerBindIpv6 = true
-	if err != nil {
-		t.Fatalf("can't get settings %v", err)
-	}
-	runScenario(t, "testdata/listenerbind/v6", st)
-	st.ListenerBindIpv6 = false
-	if err != nil {
-		t.Fatalf("can't get settings %v", err)
-	}
-	runScenario(t, "testdata/listenerbind/v4", st)
+	t.Run("ipv6", func(t *testing.T) {
+		st, err := settings.BuildSettings()
+		st.ListenerBindIpv6 = true
+		if err != nil {
+			t.Fatalf("can't get settings %v", err)
+		}
+		runScenario(t, "testdata/listenerbind/v6", st)
+	})
+
+	t.Run("ipv4", func(t *testing.T) {
+		st, err := settings.BuildSettings()
+		st.ListenerBindIpv6 = false
+		if err != nil {
+			t.Fatalf("can't get settings %v", err)
+		}
+		runScenario(t, "testdata/listenerbind/v4", st)
+	})
 }
 
 func TestWithAutoDns(t *testing.T) {
