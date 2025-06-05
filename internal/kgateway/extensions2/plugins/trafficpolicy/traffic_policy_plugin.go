@@ -155,32 +155,6 @@ func (d *TrafficPolicy) Equals(in any) bool {
 	return true
 }
 
-func (r *GlobalRateLimitIR) Equals(other *GlobalRateLimitIR) bool {
-	if r == nil && other == nil {
-		return true
-	}
-	if r == nil || other == nil {
-		return false
-	}
-
-	if len(r.rateLimitActions) != len(other.rateLimitActions) {
-		return false
-	}
-	for i, action := range r.rateLimitActions {
-		if !proto.Equal(action, other.rateLimitActions[i]) {
-			return false
-		}
-	}
-	if (r.provider == nil) != (other.provider == nil) {
-		return false
-	}
-	if r.provider != nil && !r.provider.Equals(*other.provider) {
-		return false
-	}
-
-	return true
-}
-
 type TrafficPolicyGatewayExtensionIR struct {
 	Name      string
 	ExtType   v1alpha1.GatewayExtensionType

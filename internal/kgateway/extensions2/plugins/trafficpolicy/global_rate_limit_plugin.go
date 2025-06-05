@@ -6,6 +6,7 @@ import (
 
 	routeconfv3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	routev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	"google.golang.org/protobuf/proto"
 	"istio.io/istio/pkg/kube/krt"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
@@ -21,6 +22,32 @@ const (
 type GlobalRateLimitIR struct {
 	provider         *TrafficPolicyGatewayExtensionIR
 	rateLimitActions []*routeconfv3.RateLimit
+}
+
+func (r *GlobalRateLimitIR) Equals(other *GlobalRateLimitIR) bool {
+	if r == nil && other == nil {
+		return true
+	}
+	if r == nil || other == nil {
+		return false
+	}
+
+	if len(r.rateLimitActions) != len(other.rateLimitActions) {
+		return false
+	}
+	for i, action := range r.rateLimitActions {
+		if !proto.Equal(action, other.rateLimitActions[i]) {
+			return false
+		}
+	}
+	if (r.provider == nil) != (other.provider == nil) {
+		return false
+	}
+	if r.provider != nil && !r.provider.Equals(*other.provider) {
+		return false
+	}
+
+	return true
 }
 
 // globalRateLimitForSpec translates the global rate limit spec into and onto the IR policy.
