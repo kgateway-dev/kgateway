@@ -558,6 +558,11 @@ func (tc TestCase) Run(
 		Backends: krt.NewStaticCollection([]ir.BackendObjectIR{
 			testBackend,
 		}),
+		BackendInit: ir.BackendInit{
+			InitBackend: func(ctx context.Context, in ir.BackendObjectIR, out *clusterv3.Cluster) *ir.EndpointsForBackend {
+				return nil
+			},
+		},
 	}
 
 	commoncol.InitPlugins(ctx, extensions)
@@ -600,10 +605,6 @@ func (tc TestCase) Run(
 		var clusters []*clusterv3.Cluster
 		for _, col := range commoncol.BackendIndex.BackendsWithPolicy() {
 			for _, backend := range col.List() {
-				if backend.ObjectSource.Kind != wellknown.BackendGVK.Kind &&
-					backend.ObjectSource.Kind != wellknown.ServiceKind {
-					continue
-				}
 				cluster, err := translator.GetUpstreamTranslator().TranslateBackend(krt.TestingDummyContext{}, ucc, backend)
 				Expect(err).NotTo(HaveOccurred())
 				clusters = append(clusters, cluster)
