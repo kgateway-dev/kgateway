@@ -12,9 +12,7 @@ import (
 	exteniondynamicmodulev3 "github.com/envoyproxy/go-control-plane/envoy/extensions/dynamic_modules/v3"
 	corsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/cors/v3"
 	dynamicmodulesv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/dynamic_modules/v3"
-	envoy_ext_proc_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_proc/v3"
 	localratelimitv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/local_ratelimit/v3"
-	ratev3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ratelimit/v3"
 	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
@@ -376,119 +374,6 @@ func (p *trafficPolicyPluginGwPass) handlePolicies(fcn string, typedFilterConfig
 
 	// Apply CORS configuration if present
 	p.handleCors(fcn, typedFilterConfig, spec.cors)
-}
-
-func (p *trafficPolicyPluginGwPass) handleTransformation(fcn string, typedFilterConfig *ir.TypedFilterConfigMap, transform *transformationpb.RouteTransformations) {
-	if transform == nil {
-		return
-	}
-
-	typedFilterConfig.AddTypedConfig(transformationFilterNamePrefix, transform)
-	p.setTransformationInChain[fcn] = true
-}
-
-func (p *trafficPolicyPluginGwPass) handleExtAuth(fcn string, pCtxTypedFilterConfig *ir.TypedFilterConfigMap, extAuth *extAuthIR) {
-	if extAuth == nil {
-		return
-	}
-
-	// Handle the enablement state
-	if extAuth.enablement == v1alpha1.ExtAuthDisableAll {
-		// Disable the filter under all providers via the metadata match
-		// we have to use the metadata as we dont know what other configurations may have extauth
-		pCtxTypedFilterConfig.AddTypedConfig(extAuthGlobalDisableFilterName, EnableFilterPerRoute)
-	} else {
-		providerName := extAuth.provider.ResourceName()
-		if extAuth.extauthPerRoute != nil {
-			pCtxTypedFilterConfig.AddTypedConfig(extAuthFilterName(providerName),
-				extAuth.extauthPerRoute,
-			)
-		} else {
-			// if you are on a route and not trying to disable it then we need to override the top level disable on the filter chain
-			pCtxTypedFilterConfig.AddTypedConfig(extAuthFilterName(providerName), EnableFilterPerRoute)
-		}
-		p.extAuthPerProvider.Add(fcn, providerName, extAuth.provider)
-	}
-}
-
-func (p *trafficPolicyPluginGwPass) handleLocalRateLimit(fcn string, typedFilterConfig *ir.TypedFilterConfigMap, localRateLimit *localratelimitv3.LocalRateLimit) {
-	if localRateLimit == nil {
-		return
-	}
-	typedFilterConfig.AddTypedConfig(localRateLimitFilterNamePrefix, localRateLimit)
-
-	// Add a filter to the chain. When having a rate limit for a route we need to also have a
-	// globally disabled rate limit filter in the chain otherwise it will be ignored.
-	// If there is also rate limit for the listener, it will not override this one.
-	if p.localRateLimitInChain == nil {
-		p.localRateLimitInChain = make(map[string]*localratelimitv3.LocalRateLimit)
-	}
-	if _, ok := p.localRateLimitInChain[fcn]; !ok {
-		p.localRateLimitInChain[fcn] = &localratelimitv3.LocalRateLimit{
-			StatPrefix: localRateLimitStatPrefix,
-		}
-	}
-}
-
-// handleRateLimit adds rate limit configurations to routes
-func (p *trafficPolicyPluginGwPass) handleRateLimit(fcn string, typedFilterConfig *ir.TypedFilterConfigMap, rateLimit *GlobalRateLimitIR) {
-	if rateLimit == nil {
-		return
-	}
-	if rateLimit.rateLimitActions == nil {
-		return
-	}
-
-	providerName := rateLimit.provider.ResourceName()
-
-	// Initialize the map if it doesn't exist yet
-	p.rateLimitPerProvider.Add(fcn, providerName, rateLimit.provider)
-
-	// Configure rate limit per route - enabling it for this specific route
-	rateLimitPerRoute := &ratev3.RateLimitPerRoute{
-		RateLimits: rateLimit.rateLimitActions,
-	}
-	typedFilterConfig.AddTypedConfig(getRateLimitFilterName(providerName), rateLimitPerRoute)
-}
-
-func (p *trafficPolicyPluginGwPass) handleExtProc(fcn string, pCtxTypedFilterConfig *ir.TypedFilterConfigMap, extProc *ExtprocIR) {
-	if extProc == nil || extProc.provider == nil {
-		return
-	}
-	providerName := extProc.provider.ResourceName()
-	// Handle the enablement state
-
-	if extProc.ExtProcPerRoute != nil {
-		pCtxTypedFilterConfig.AddTypedConfig(extProcFilterName(providerName),
-			extProc.ExtProcPerRoute,
-		)
-	} else {
-		// if you are on a route and not trying to disable it then we need to override the top level disable on the filter chain
-		pCtxTypedFilterConfig.AddTypedConfig(extProcFilterName(providerName),
-			&envoy_ext_proc_v3.ExtProcPerRoute{Override: &envoy_ext_proc_v3.ExtProcPerRoute_Overrides{Overrides: &envoy_ext_proc_v3.ExtProcOverrides{}}},
-		)
-	}
-
-	p.extProcPerProvider.Add(fcn, providerName, extProc.provider)
-}
-
-func (p *trafficPolicyPluginGwPass) handleCors(fcn string, pCtxTypedFilterConfig *ir.TypedFilterConfigMap, cors *CorsIR) {
-	if cors == nil || cors.corsConfig == nil {
-		return
-	}
-
-	// Adds the CorsPolicy to the typed_per_filter_config.
-	// Also requires Cors http_filter to be added to the filter chain.
-	pCtxTypedFilterConfig.AddTypedConfig(envoy_wellknown.CORS, cors.corsConfig)
-
-	// Add a filter to the chain. When having a cors policy for a route we need to also have a
-	// globally cors http filter in the chain otherwise it will be ignored.
-	if p.corsInChain == nil {
-		p.corsInChain = make(map[string]*corsv3.Cors)
-	}
-	if _, ok := p.corsInChain[fcn]; !ok {
-		p.corsInChain[fcn] = &corsv3.Cors{}
-	}
 }
 
 func (p *trafficPolicyPluginGwPass) ApplyForRouteBackend(

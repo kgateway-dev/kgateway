@@ -9,6 +9,7 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/pluginutils"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 )
 
 type ExtprocIR struct {
@@ -125,4 +126,25 @@ func extProcFilterName(name string) string {
 		return extauthFilterNamePrefix
 	}
 	return fmt.Sprintf("%s/%s", "ext_proc", name)
+}
+
+func (p *trafficPolicyPluginGwPass) handleExtProc(fcn string, pCtxTypedFilterConfig *ir.TypedFilterConfigMap, extProc *ExtprocIR) {
+	if extProc == nil || extProc.provider == nil {
+		return
+	}
+	providerName := extProc.provider.ResourceName()
+	// Handle the enablement state
+
+	if extProc.ExtProcPerRoute != nil {
+		pCtxTypedFilterConfig.AddTypedConfig(extProcFilterName(providerName),
+			extProc.ExtProcPerRoute,
+		)
+	} else {
+		// if you are on a route and not trying to disable it then we need to override the top level disable on the filter chain
+		pCtxTypedFilterConfig.AddTypedConfig(extProcFilterName(providerName),
+			&envoy_ext_proc_v3.ExtProcPerRoute{Override: &envoy_ext_proc_v3.ExtProcPerRoute_Overrides{Overrides: &envoy_ext_proc_v3.ExtProcOverrides{}}},
+		)
+	}
+
+	p.extProcPerProvider.Add(fcn, providerName, extProc.provider)
 }

@@ -6,11 +6,13 @@ import (
 
 	routeconfv3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	routev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	ratev3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ratelimit/v3"
 	"google.golang.org/protobuf/proto"
 	"istio.io/istio/pkg/kube/krt"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/pluginutils"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 )
 
 const (
@@ -170,4 +172,25 @@ func getRateLimitFilterName(name string) string {
 		return rateLimitFilterNamePrefix
 	}
 	return fmt.Sprintf("%s/%s", rateLimitFilterNamePrefix, name)
+}
+
+// handleRateLimit adds rate limit configurations to routes
+func (p *trafficPolicyPluginGwPass) handleRateLimit(fcn string, typedFilterConfig *ir.TypedFilterConfigMap, rateLimit *GlobalRateLimitIR) {
+	if rateLimit == nil {
+		return
+	}
+	if rateLimit.rateLimitActions == nil {
+		return
+	}
+
+	providerName := rateLimit.provider.ResourceName()
+
+	// Initialize the map if it doesn't exist yet
+	p.rateLimitPerProvider.Add(fcn, providerName, rateLimit.provider)
+
+	// Configure rate limit per route - enabling it for this specific route
+	rateLimitPerRoute := &ratev3.RateLimitPerRoute{
+		RateLimits: rateLimit.rateLimitActions,
+	}
+	typedFilterConfig.AddTypedConfig(getRateLimitFilterName(providerName), rateLimitPerRoute)
 }

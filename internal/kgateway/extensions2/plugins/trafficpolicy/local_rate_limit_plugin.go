@@ -10,6 +10,7 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 )
 
 const (
@@ -101,5 +102,24 @@ func createDisabledRateLimit() *localratelimitv3.LocalRateLimit {
 			RuntimeKey:   localRatelimitFilterDisabledRuntimeKey,
 			DefaultValue: &typev3.FractionalPercent{},
 		},
+	}
+}
+
+func (p *trafficPolicyPluginGwPass) handleLocalRateLimit(fcn string, typedFilterConfig *ir.TypedFilterConfigMap, localRateLimit *localratelimitv3.LocalRateLimit) {
+	if localRateLimit == nil {
+		return
+	}
+	typedFilterConfig.AddTypedConfig(localRateLimitFilterNamePrefix, localRateLimit)
+
+	// Add a filter to the chain. When having a rate limit for a route we need to also have a
+	// globally disabled rate limit filter in the chain otherwise it will be ignored.
+	// If there is also rate limit for the listener, it will not override this one.
+	if p.localRateLimitInChain == nil {
+		p.localRateLimitInChain = make(map[string]*localratelimitv3.LocalRateLimit)
+	}
+	if _, ok := p.localRateLimitInChain[fcn]; !ok {
+		p.localRateLimitInChain[fcn] = &localratelimitv3.LocalRateLimit{
+			StatPrefix: localRateLimitStatPrefix,
+		}
 	}
 }

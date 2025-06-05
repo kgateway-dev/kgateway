@@ -11,6 +11,7 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 )
 
@@ -259,4 +260,13 @@ func convertClassicRouteToListener(
 		},
 	}
 	listenerFilter.Transformations = append(listenerFilter.GetTransformations(), &transform)
+}
+
+func (p *trafficPolicyPluginGwPass) handleTransformation(fcn string, typedFilterConfig *ir.TypedFilterConfigMap, transform *transformationpb.RouteTransformations) {
+	if transform == nil {
+		return
+	}
+
+	typedFilterConfig.AddTypedConfig(transformationFilterNamePrefix, transform)
+	p.setTransformationInChain[fcn] = true
 }
