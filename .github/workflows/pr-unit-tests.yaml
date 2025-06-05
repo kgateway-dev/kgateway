@@ -30,7 +30,7 @@ jobs:
     - name: Run Tests
       shell: bash
       env:
-        TEST_PKG: "./internal/kgateway/..."
+        TEST_PKG: "./internal/... ./pkg/..."
       run: make go-test-with-coverage
     - name: Validate Test Coverage
       shell: bash
