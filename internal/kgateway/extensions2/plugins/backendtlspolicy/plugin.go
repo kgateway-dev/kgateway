@@ -44,6 +44,8 @@ var (
 	ErrCreatingTLSConfig = errors.New("TLS config error")
 
 	ErrParsingTLSConfig = errors.New("TLS config parse error")
+
+	ErrInvalidValidationSpec = errors.New("invalid validation spec")
 )
 
 var (
@@ -54,7 +56,6 @@ var (
 type backendTlsPolicy struct {
 	ct              time.Time
 	transportSocket *envoy_config_core_v3.TransportSocket
-	sni             string
 }
 
 var _ ir.PolicyIR = &backendTlsPolicy{}
@@ -143,21 +144,19 @@ func buildTranslateFunc(
 	return func(krtctx krt.HandlerContext, policyCR *gwv1a3.BackendTLSPolicy) (*backendTlsPolicy, error) {
 		spec := policyCR.Spec
 		policyIr := backendTlsPolicy{
-			ct:  policyCR.CreationTimestamp.Time,
-			sni: string(spec.Validation.Hostname),
+			ct: policyCR.CreationTimestamp.Time,
 		}
-
+		validationContext := &envoy_tls_v3.CertificateValidationContext{}
+		validationContext.MatchTypedSubjectAltNames = convertSubjectAltNames(spec.Validation)
+		var tlsContextDefault *envoy_tls_v3.UpstreamTlsContext
 		switch {
 		case ptr.Deref(spec.Validation.WellKnownCACertificates, "") == gwv1a3.WellKnownCACertificatesSystem:
-
-			validationContext := &envoy_tls_v3.CertificateValidationContext{}
 			sdsValidationCtx := &envoy_tls_v3.SdsSecretConfig{
 				Name: eiutils.SystemCaSecretName,
 			}
-			validationContext.MatchTypedSubjectAltNames = convertSubjectAltNames(spec.Validation)
 
 			hostname := string(spec.Validation.Hostname)
-			tlsContextDefault := &envoy_tls_v3.UpstreamTlsContext{
+			tlsContextDefault = &envoy_tls_v3.UpstreamTlsContext{
 				CommonTlsContext: &envoy_tls_v3.CommonTlsContext{
 					ValidationContextType: &envoy_tls_v3.CommonTlsContext_CombinedValidationContext{
 						CombinedValidationContext: &envoy_tls_v3.CommonTlsContext_CombinedCertificateValidationContext{
@@ -168,15 +167,7 @@ func buildTranslateFunc(
 				},
 				Sni: hostname,
 			}
-			policyIr.sni = hostname
 
-			typedConfig, _ := utils.MessageToAny(tlsContextDefault)
-			policyIr.transportSocket = &envoy_config_core_v3.TransportSocket{
-				Name: wellknown.TransportSocketTls,
-				ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{
-					TypedConfig: typedConfig,
-				},
-			}
 		case len(spec.Validation.CACertificateRefs) > 0:
 
 			certRef := spec.Validation.CACertificateRefs[0]
@@ -190,29 +181,27 @@ func buildTranslateFunc(
 				slog.Error("error fetching policy", "error", err, "policy_name", policyCR.Name)
 				return &policyIr, err
 			}
-
-			tlsCfg, err := ResolveUpstreamSslConfig(*cfgmap, string(spec.Validation.Hostname))
+			var err error
+			tlsContextDefault, err = ResolveUpstreamSslConfig(*cfgmap, validationContext, string(spec.Validation.Hostname))
 			if err != nil {
 				perr := fmt.Errorf("%w: %v", ErrCreatingTLSConfig, err)
 				slog.Error("error resolving TLS config", "error", perr, "policy_name", policyCR.Name)
 				return &policyIr, perr
 			}
-			typedConfig, err := utils.MessageToAny(tlsCfg)
-			if err != nil {
-				slog.Error("error converting TLS config to proto", "error", err, "policy", policyCR.Name)
-				return &policyIr, ErrParsingTLSConfig
-			}
-
-			policyIr.transportSocket = &envoy_config_core_v3.TransportSocket{
-				Name: wellknown.TransportSocketTls,
-				ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{
-					TypedConfig: typedConfig,
-				},
-			}
-
 		default:
-			return &policyIr, nil
+			return &policyIr, ErrInvalidValidationSpec
+		}
 
+		typedConfig, err := utils.MessageToAny(tlsContextDefault)
+		if err != nil {
+			slog.Error("error converting TLS config to proto", "error", err, "policy", policyCR.Name)
+			return &policyIr, ErrParsingTLSConfig
+		}
+		policyIr.transportSocket = &envoy_config_core_v3.TransportSocket{
+			Name: wellknown.TransportSocketTls,
+			ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{
+				TypedConfig: typedConfig,
+			},
 		}
 
 		return &policyIr, nil

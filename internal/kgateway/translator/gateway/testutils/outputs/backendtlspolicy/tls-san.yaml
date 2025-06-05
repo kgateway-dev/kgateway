@@ -24,8 +24,11 @@ Clusters:
         validationContext:
           matchTypedSubjectAltNames:
           - matcher:
-              exact: example.com
+              exact: example-san.com
             sanType: DNS
+          - matcher:
+              exact: spifee://example-san.com
+            sanType: URI
           trustedCa:
             inlineString: |
               -----BEGIN CERTIFICATE-----
@@ -73,8 +76,11 @@ Clusters:
           defaultValidationContext:
             matchTypedSubjectAltNames:
             - matcher:
-                exact: example2.com
+                exact: example2-san.com
               sanType: DNS
+            - matcher:
+                exact: spifee://example2-san.com
+              sanType: URI
           validationContextSdsSecretConfig:
             name: SYSTEM_CA_CERT
       sni: example2.com
