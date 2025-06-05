@@ -361,21 +361,6 @@ func (p *trafficPolicyPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.
 	return nil
 }
 
-func (p *trafficPolicyPluginGwPass) handlePolicies(fcn string, typedFilterConfig *ir.TypedFilterConfigMap, spec trafficPolicySpecIr) {
-	p.handleTransformation(fcn, typedFilterConfig, spec.transform)
-	// Apply ExtAuthz configuration if present
-	// ExtAuth does not allow for most information such as destination
-	// to be set at the route level so we need to smuggle info upwards.
-	p.handleExtAuth(fcn, typedFilterConfig, spec.extAuth)
-	p.handleExtProc(fcn, typedFilterConfig, spec.ExtProc)
-	// Apply rate limit configuration if present
-	p.handleRateLimit(fcn, typedFilterConfig, spec.rateLimit)
-	p.handleLocalRateLimit(fcn, typedFilterConfig, spec.localRateLimit)
-
-	// Apply CORS configuration if present
-	p.handleCors(fcn, typedFilterConfig, spec.cors)
-}
-
 func (p *trafficPolicyPluginGwPass) ApplyForRouteBackend(
 	ctx context.Context,
 	policy ir.PolicyIR,
@@ -542,6 +527,21 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.Filt
 		return nil, nil
 	}
 	return filters, nil
+}
+
+func (p *trafficPolicyPluginGwPass) handlePolicies(fcn string, typedFilterConfig *ir.TypedFilterConfigMap, spec trafficPolicySpecIr) {
+	p.handleTransformation(fcn, typedFilterConfig, spec.transform)
+	// Apply ExtAuthz configuration if present
+	// ExtAuth does not allow for most information such as destination
+	// to be set at the route level so we need to smuggle info upwards.
+	p.handleExtAuth(fcn, typedFilterConfig, spec.extAuth)
+	p.handleExtProc(fcn, typedFilterConfig, spec.ExtProc)
+	// Apply rate limit configuration if present
+	p.handleRateLimit(fcn, typedFilterConfig, spec.rateLimit)
+	p.handleLocalRateLimit(fcn, typedFilterConfig, spec.localRateLimit)
+
+	// Apply CORS configuration if present
+	p.handleCors(fcn, typedFilterConfig, spec.cors)
 }
 
 func AddDisableFilterIfNeeded(filters []plugins.StagedHttpFilter) []plugins.StagedHttpFilter {
