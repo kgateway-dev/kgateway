@@ -34,6 +34,8 @@ type Cmd interface {
 
 	// WithStderr sets the io.Reader used for stderr
 	WithStderr(io.Writer) Cmd
+
+	PrettyCommand() string
 }
 
 // Cmder abstracts over creating commands

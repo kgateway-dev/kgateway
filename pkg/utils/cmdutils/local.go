@@ -133,3 +133,7 @@ func (cmd *LocalCmd) Wait() *RunError {
 func (cmd *LocalCmd) Output() []byte {
 	return cmd.combinedOutput.Bytes()
 }
+
+func (cmd *LocalCmd) PrettyCommand() string {
+	return PrettyCommand(cmd.Args[0], cmd.Args[1:]...)
+}
