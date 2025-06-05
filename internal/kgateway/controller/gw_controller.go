@@ -107,21 +107,20 @@ func (r *gatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 }
 
 func updateStatus(ctx context.Context, cli client.Client, gw *api.Gateway, svcmd *metav1.ObjectMeta) error {
-	var svcPtr *corev1.Service
+	var svc *corev1.Service
 	if svcmd != nil {
 		svcnns := client.ObjectKey{
 			Namespace: svcmd.Namespace,
 			Name:      svcmd.Name,
 		}
 
-		var svc corev1.Service
-		svcPtr = &svc
-		if err := cli.Get(ctx, svcnns, svcPtr); err != nil {
+		svc = &corev1.Service{}
+		if err := cli.Get(ctx, svcnns, svc); err != nil {
 			return client.IgnoreNotFound(err)
 		}
 
 		// make sure we own this service
-		controller := metav1.GetControllerOf(&svc)
+		controller := metav1.GetControllerOf(svc)
 		if controller == nil {
 			return nil
 		}
@@ -132,7 +131,7 @@ func updateStatus(ctx context.Context, cli client.Client, gw *api.Gateway, svcmd
 	}
 
 	// update gateway addresses in the status
-	desiredAddresses := getDesiredAddresses(gw, svcPtr)
+	desiredAddresses := getDesiredAddresses(gw, svc)
 	actualAddresses := gw.Status.Addresses
 	if slices.Equal(desiredAddresses, actualAddresses) {
 		return nil
