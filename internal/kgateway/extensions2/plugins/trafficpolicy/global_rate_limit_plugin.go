@@ -14,8 +14,8 @@ const (
 	rateLimitStatPrefix = "http_rate_limit"
 )
 
-// RateLimitIR represents the intermediate representation of a rate limit policy
-type RateLimitIR struct {
+// GlobalRateLimitIR represents the intermediate representation for a global rate limit policy.
+type GlobalRateLimitIR struct {
 	provider         *TrafficPolicyGatewayExtensionIR
 	rateLimitActions []*routeconfv3.RateLimit
 }

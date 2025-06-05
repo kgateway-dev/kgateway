@@ -137,7 +137,7 @@ type trafficPolicySpecIr struct {
 	rustformationStringToStash string
 	extAuth                    *extAuthIR
 	localRateLimit             *localratelimitv3.LocalRateLimit
-	rateLimit                  *RateLimitIR
+	rateLimit                  *GlobalRateLimitIR
 	cors                       *CorsIR
 }
 
@@ -203,7 +203,7 @@ func (d *TrafficPolicy) Equals(in any) bool {
 	return true
 }
 
-func (r *RateLimitIR) Equals(other *RateLimitIR) bool {
+func (r *GlobalRateLimitIR) Equals(other *GlobalRateLimitIR) bool {
 	if r == nil && other == nil {
 		return true
 	}
@@ -649,7 +649,7 @@ func (p *trafficPolicyPluginGwPass) handlePolicies(fcn string, typedFilterConfig
 }
 
 // handleRateLimit adds rate limit configurations to routes
-func (p *trafficPolicyPluginGwPass) handleRateLimit(fcn string, typedFilterConfig *ir.TypedFilterConfigMap, rateLimit *RateLimitIR) {
+func (p *trafficPolicyPluginGwPass) handleRateLimit(fcn string, typedFilterConfig *ir.TypedFilterConfigMap, rateLimit *GlobalRateLimitIR) {
 	if rateLimit == nil {
 		return
 	}
@@ -1092,7 +1092,7 @@ func (b *TrafficPolicyBuilder) Translate(
 	}
 
 	// Apply global rate limit specific translation
-	errs := b.rateLimitForSpec(krtctx, policyCR, &outSpec)
+	errs := b.globalRateLimitForSpec(krtctx, policyCR, &outSpec)
 	errors = append(errors, errs...)
 
 	// Apply cors specific translation
@@ -1209,8 +1209,8 @@ func localRateLimitForSpec(spec v1alpha1.TrafficPolicySpec, out *trafficPolicySp
 	return nil
 }
 
-// Add this function to handle the global rate limit configuration
-func (b *TrafficPolicyBuilder) rateLimitForSpec(
+// globalRateLimitForSpec translates the global rate limit spec into and onto the IR policy.
+func (b *TrafficPolicyBuilder) globalRateLimitForSpec(
 	krtctx krt.HandlerContext,
 	policy *v1alpha1.TrafficPolicy,
 	out *trafficPolicySpecIr,
@@ -1241,7 +1241,7 @@ func (b *TrafficPolicyBuilder) rateLimitForSpec(
 	}
 
 	// Create route rate limits and store in the RateLimitIR struct
-	out.rateLimit = &RateLimitIR{
+	out.rateLimit = &GlobalRateLimitIR{
 		provider: gwExtIR,
 		rateLimitActions: []*routev3.RateLimit{
 			{
