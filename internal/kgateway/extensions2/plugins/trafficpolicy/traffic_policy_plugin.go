@@ -36,7 +36,6 @@ import (
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
@@ -785,33 +784,4 @@ func MergeTrafficPolicies(
 	}
 
 	return mergeOrigins
-}
-
-// aiSecret checks for the presence of the OpenAI Moderation which may require a secret reference
-// will log an error if the secret is needed but not found
-func aiSecretForSpec(
-	krtctx krt.HandlerContext,
-	secrets *krtcollections.SecretIndex,
-	policyCR *v1alpha1.TrafficPolicy,
-) (*ir.Secret, error) {
-	if policyCR.Spec.AI == nil ||
-		policyCR.Spec.AI.PromptGuard == nil ||
-		policyCR.Spec.AI.PromptGuard.Request == nil ||
-		policyCR.Spec.AI.PromptGuard.Request.Moderation == nil {
-		return nil, nil
-	}
-
-	secretRef := policyCR.Spec.AI.PromptGuard.Request.Moderation.OpenAIModeration.AuthToken.SecretRef
-	if secretRef == nil {
-		// no secret ref is set
-		return nil, nil
-	}
-
-	// Retrieve and assign the secret
-	secret, err := pluginutils.GetSecretIr(secrets, krtctx, secretRef.Name, policyCR.GetNamespace())
-	if err != nil {
-		logger.Error("failed to get secret for AI policy", "secret_name", secretRef.Name, "namespace", policyCR.GetNamespace(), "error", err)
-		return nil, err
-	}
-	return secret, nil
 }
