@@ -118,3 +118,11 @@ func toEnvoyProcessingMode(p *v1alpha1.ProcessingMode) *envoy_ext_proc_v3.Proces
 		ResponseTrailerMode: headerSendModeFromString(p.ResponseTrailerMode),
 	}
 }
+
+// FIXME: Using the wrong filter name prefix when the name is empty?
+func extProcFilterName(name string) string {
+	if name == "" {
+		return extauthFilterNamePrefix
+	}
+	return fmt.Sprintf("%s/%s", "ext_proc", name)
+}
