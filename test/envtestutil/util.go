@@ -106,7 +106,7 @@ func RunController(t *testing.T, logger *zap.Logger, globalSettings *settings.Se
 		KrtDebugger:    new(krt.DebugHandler),
 		GlobalSettings: globalSettings,
 	}
-	t.Log("controller starting.xds port:", xdsPort)
+	t.Log("controller starting. xds port:", xdsPort)
 
 	// start kgateway
 	wg.Add(1)
