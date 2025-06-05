@@ -21,7 +21,6 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/pluginutils"
-	aiutils "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
@@ -257,7 +256,7 @@ func applyPromptGuard(pg *v1alpha1.AIPromptGuard, extProcRouteSettings *envoy_ex
 	if req := pg.Request; req != nil {
 		if mod := req.Moderation; mod != nil {
 			if mod.OpenAIModeration != nil {
-				token, err := aiutils.GetAuthToken(mod.OpenAIModeration.AuthToken, secret)
+				token, err := pluginutils.GetAuthToken(mod.OpenAIModeration.AuthToken, secret)
 				if err != nil {
 					return err
 				}

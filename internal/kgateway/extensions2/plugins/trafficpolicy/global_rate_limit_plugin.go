@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 
-	routeconfv3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	routev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	ratev3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ratelimit/v3"
 	"google.golang.org/protobuf/proto"
@@ -23,7 +22,7 @@ const (
 // GlobalRateLimitIR represents the intermediate representation for a global rate limit policy.
 type GlobalRateLimitIR struct {
 	provider         *TrafficPolicyGatewayExtensionIR
-	rateLimitActions []*routeconfv3.RateLimit
+	rateLimitActions []*routev3.RateLimit
 }
 
 func (r *GlobalRateLimitIR) Equals(other *GlobalRateLimitIR) bool {
@@ -96,21 +95,21 @@ func (b *TrafficPolicyBuilder) globalRateLimitForSpec(
 }
 
 // createRateLimitActions translates the API descriptors to Envoy route config rate limit actions
-func createRateLimitActions(descriptors []v1alpha1.RateLimitDescriptor) ([]*routeconfv3.RateLimit_Action, error) {
+func createRateLimitActions(descriptors []v1alpha1.RateLimitDescriptor) ([]*routev3.RateLimit_Action, error) {
 	if len(descriptors) == 0 {
 		return nil, errors.New("at least one descriptor is required for global rate limiting")
 	}
 
-	var result []*routeconfv3.RateLimit_Action
+	var result []*routev3.RateLimit_Action
 
 	// Process each descriptor
 	for _, descriptor := range descriptors {
 		// Each descriptor becomes a separate RateLimit in Envoy with its own set of actions
 		// Create actions for each entry in the descriptor
-		var actions []*routeconfv3.RateLimit_Action
+		var actions []*routev3.RateLimit_Action
 
 		for _, entry := range descriptor.Entries {
-			action := &routeconfv3.RateLimit_Action{}
+			action := &routev3.RateLimit_Action{}
 
 			// Set the action specifier based on entry type
 			switch entry.Type {
@@ -118,8 +117,8 @@ func createRateLimitActions(descriptors []v1alpha1.RateLimitDescriptor) ([]*rout
 				if entry.Generic == nil {
 					return nil, fmt.Errorf("generic entry requires Generic field to be set")
 				}
-				action.ActionSpecifier = &routeconfv3.RateLimit_Action_GenericKey_{
-					GenericKey: &routeconfv3.RateLimit_Action_GenericKey{
+				action.ActionSpecifier = &routev3.RateLimit_Action_GenericKey_{
+					GenericKey: &routev3.RateLimit_Action_GenericKey{
 						DescriptorKey:   entry.Generic.Key,
 						DescriptorValue: entry.Generic.Value,
 					},
@@ -128,19 +127,19 @@ func createRateLimitActions(descriptors []v1alpha1.RateLimitDescriptor) ([]*rout
 				if entry.Header == "" {
 					return nil, fmt.Errorf("header entry requires Header field to be set")
 				}
-				action.ActionSpecifier = &routeconfv3.RateLimit_Action_RequestHeaders_{
-					RequestHeaders: &routeconfv3.RateLimit_Action_RequestHeaders{
+				action.ActionSpecifier = &routev3.RateLimit_Action_RequestHeaders_{
+					RequestHeaders: &routev3.RateLimit_Action_RequestHeaders{
 						HeaderName:    entry.Header,
 						DescriptorKey: entry.Header, // Use header name as key
 					},
 				}
 			case v1alpha1.RateLimitDescriptorEntryTypeRemoteAddress:
-				action.ActionSpecifier = &routeconfv3.RateLimit_Action_RemoteAddress_{
-					RemoteAddress: &routeconfv3.RateLimit_Action_RemoteAddress{},
+				action.ActionSpecifier = &routev3.RateLimit_Action_RemoteAddress_{
+					RemoteAddress: &routev3.RateLimit_Action_RemoteAddress{},
 				}
 			case v1alpha1.RateLimitDescriptorEntryTypePath:
-				action.ActionSpecifier = &routeconfv3.RateLimit_Action_RequestHeaders_{
-					RequestHeaders: &routeconfv3.RateLimit_Action_RequestHeaders{
+				action.ActionSpecifier = &routev3.RateLimit_Action_RequestHeaders_{
+					RequestHeaders: &routev3.RateLimit_Action_RequestHeaders{
 						HeaderName:    ":path",
 						DescriptorKey: "path",
 					},
@@ -155,7 +154,7 @@ func createRateLimitActions(descriptors []v1alpha1.RateLimitDescriptor) ([]*rout
 		// If we have actions for this descriptor, add it
 		if len(actions) > 0 {
 			// In Envoy, a single RateLimit includes multiple Actions that together form a descriptor
-			rateLimit := &routeconfv3.RateLimit{
+			rateLimit := &routev3.RateLimit{
 				Actions: actions,
 			}
 
