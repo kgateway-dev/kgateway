@@ -155,6 +155,7 @@ func ResolveExtGrpcService(krtctx krt.HandlerContext, backends *krtcollections.B
 	return envoyGrpcService, nil
 }
 
+// FIXME: Should this live here instead of the global rate limit plugin?
 func resolveRateLimitService(grpcService *envoy_core_v3.GrpcService, rateLimit *v1alpha1.RateLimitProvider) *ratev3.RateLimit {
 	envoyRateLimit := &ratev3.RateLimit{
 		Domain:          rateLimit.Domain,
