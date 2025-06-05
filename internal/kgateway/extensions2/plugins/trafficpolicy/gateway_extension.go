@@ -1,8 +1,10 @@
 package trafficpolicy
 
 import (
+	"errors"
 	"fmt"
 
+	envoy_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_ext_authz_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_authz/v3"
 	envoy_ext_proc_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_proc/v3"
 	ratev3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ratelimit/v3"
@@ -12,6 +14,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 )
 
 type TrafficPolicyGatewayExtensionIR struct {
@@ -107,4 +110,44 @@ func TranslateGatewayExtensionBuilder(commoncol *common.CommonCollections) func(
 		}
 		return p
 	}
+}
+
+func ResolveExtGrpcService(krtctx krt.HandlerContext, backends *krtcollections.BackendIndex, disableExtensionRefValidation bool, objectSource ir.ObjectSource, grpcService *v1alpha1.ExtGrpcService) (*envoy_core_v3.GrpcService, error) {
+	var clusterName string
+	var authority string
+	if grpcService != nil {
+		if grpcService.BackendRef == nil {
+			return nil, errors.New("backend not provided")
+		}
+		backendRef := grpcService.BackendRef.BackendObjectReference
+
+		var backend *ir.BackendObjectIR
+		var err error
+		if disableExtensionRefValidation {
+			backend, err = backends.GetBackendFromRefWithoutRefGrantValidation(krtctx, objectSource, backendRef)
+		} else {
+			backend, err = backends.GetBackendFromRef(krtctx, objectSource, backendRef)
+		}
+		if err != nil {
+			return nil, err
+		}
+		if backend != nil {
+			clusterName = backend.ClusterName()
+		}
+		if grpcService.Authority != nil {
+			authority = *grpcService.Authority
+		}
+	}
+	if clusterName == "" {
+		return nil, errors.New("backend not found")
+	}
+	envoyGrpcService := &envoy_core_v3.GrpcService{
+		TargetSpecifier: &envoy_core_v3.GrpcService_EnvoyGrpc_{
+			EnvoyGrpc: &envoy_core_v3.GrpcService_EnvoyGrpc{
+				ClusterName: clusterName,
+				Authority:   authority,
+			},
+		},
+	}
+	return envoyGrpcService, nil
 }

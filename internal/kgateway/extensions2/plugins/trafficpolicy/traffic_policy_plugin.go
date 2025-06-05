@@ -3,7 +3,6 @@ package trafficpolicy
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"maps"
 	"strconv"
@@ -247,46 +246,6 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 		},
 		ExtraHasSynced: translator.HasSynced,
 	}
-}
-
-func ResolveExtGrpcService(krtctx krt.HandlerContext, backends *krtcollections.BackendIndex, disableExtensionRefValidation bool, objectSource ir.ObjectSource, grpcService *v1alpha1.ExtGrpcService) (*envoy_core_v3.GrpcService, error) {
-	var clusterName string
-	var authority string
-	if grpcService != nil {
-		if grpcService.BackendRef == nil {
-			return nil, errors.New("backend not provided")
-		}
-		backendRef := grpcService.BackendRef.BackendObjectReference
-
-		var backend *ir.BackendObjectIR
-		var err error
-		if disableExtensionRefValidation {
-			backend, err = backends.GetBackendFromRefWithoutRefGrantValidation(krtctx, objectSource, backendRef)
-		} else {
-			backend, err = backends.GetBackendFromRef(krtctx, objectSource, backendRef)
-		}
-		if err != nil {
-			return nil, err
-		}
-		if backend != nil {
-			clusterName = backend.ClusterName()
-		}
-		if grpcService.Authority != nil {
-			authority = *grpcService.Authority
-		}
-	}
-	if clusterName == "" {
-		return nil, errors.New("backend not found")
-	}
-	envoyGrpcService := &envoy_core_v3.GrpcService{
-		TargetSpecifier: &envoy_core_v3.GrpcService_EnvoyGrpc_{
-			EnvoyGrpc: &envoy_core_v3.GrpcService_EnvoyGrpc{
-				ClusterName: clusterName,
-				Authority:   authority,
-			},
-		},
-	}
-	return envoyGrpcService, nil
 }
 
 func resolveRateLimitService(grpcService *envoy_core_v3.GrpcService, rateLimit *v1alpha1.RateLimitProvider) *ratev3.RateLimit {
