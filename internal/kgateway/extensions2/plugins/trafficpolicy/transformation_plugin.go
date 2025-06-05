@@ -14,6 +14,29 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 )
 
+// transformationForSpec translates the transformation spec into and onto the IR policy
+func transformationForSpec(spec v1alpha1.TrafficPolicySpec, out *trafficPolicySpecIr) error {
+	if spec.Transformation == nil {
+		return nil
+	}
+	var err error
+	if !useRustformations {
+		out.transform, err = toTransformFilterConfig(spec.Transformation)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	rustformation, toStash, err := toRustformFilterConfig(spec.Transformation)
+	if err != nil {
+		return err
+	}
+	out.rustformation = rustformation
+	out.rustformationStringToStash = toStash
+	return nil
+}
+
 func toTraditionalTransform(t *v1alpha1.Transform) *transformationpb.Transformation_TransformationTemplate {
 	if t == nil {
 		return nil
