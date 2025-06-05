@@ -81,6 +81,7 @@ func extAuthFilterName(name string) string {
 	return fmt.Sprintf("%s/%s", extauthFilterNamePrefix, name)
 }
 
+// FIXME: Using the wrong filter name prefix when the name is empty?
 func extProcFilterName(name string) string {
 	if name == "" {
 		return extauthFilterNamePrefix
