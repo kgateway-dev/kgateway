@@ -7,6 +7,10 @@ import (
 	"log/slog"
 	"time"
 
+	envoy_tls_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
+	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
+	envoymatcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
+	eiutils "github.com/kgateway-dev/kgateway/v2/internal/envoyinit/pkg/utils"
 	"google.golang.org/protobuf/proto"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -14,6 +18,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/utils/ptr"
 
 	clusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -49,6 +54,7 @@ var (
 type backendTlsPolicy struct {
 	ct              time.Time
 	transportSocket *envoy_config_core_v3.TransportSocket
+	sni             string
 }
 
 var _ ir.PolicyIR = &backendTlsPolicy{}
@@ -137,43 +143,78 @@ func buildTranslateFunc(
 	return func(krtctx krt.HandlerContext, policyCR *gwv1a3.BackendTLSPolicy) (*backendTlsPolicy, error) {
 		spec := policyCR.Spec
 		policyIr := backendTlsPolicy{
-			ct: policyCR.CreationTimestamp.Time,
+			ct:  policyCR.CreationTimestamp.Time,
+			sni: string(spec.Validation.Hostname),
 		}
 
-		if len(spec.Validation.CACertificateRefs) == 0 {
+		switch {
+		case ptr.Deref(spec.Validation.WellKnownCACertificates, "") == gwv1a3.WellKnownCACertificatesSystem:
+
+			validationContext := &envoy_tls_v3.CertificateValidationContext{}
+			sdsValidationCtx := &envoy_tls_v3.SdsSecretConfig{
+				Name: eiutils.SystemCaSecretName,
+			}
+			validationContext.MatchTypedSubjectAltNames = convertSubjectAltNames(spec.Validation)
+
+			hostname := string(spec.Validation.Hostname)
+			tlsContextDefault := &envoy_tls_v3.UpstreamTlsContext{
+				CommonTlsContext: &envoy_tls_v3.CommonTlsContext{
+					ValidationContextType: &envoy_tls_v3.CommonTlsContext_CombinedValidationContext{
+						CombinedValidationContext: &envoy_tls_v3.CommonTlsContext_CombinedCertificateValidationContext{
+							DefaultValidationContext:         validationContext,
+							ValidationContextSdsSecretConfig: sdsValidationCtx,
+						},
+					},
+				},
+				Sni: hostname,
+			}
+			policyIr.sni = hostname
+
+			typedConfig, _ := utils.MessageToAny(tlsContextDefault)
+			policyIr.transportSocket = &envoy_config_core_v3.TransportSocket{
+				Name: wellknown.TransportSocketTls,
+				ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{
+					TypedConfig: typedConfig,
+				},
+			}
+		case len(spec.Validation.CACertificateRefs) > 0:
+
+			certRef := spec.Validation.CACertificateRefs[0]
+			nn := types.NamespacedName{
+				Name:      string(certRef.Name),
+				Namespace: policyCR.Namespace,
+			}
+			cfgmap := krt.FetchOne(krtctx, cfgmaps, krt.FilterObjectName(nn))
+			if cfgmap == nil {
+				err := fmt.Errorf("%w: %v", ErrConfigMapNotFound, nn)
+				slog.Error("error fetching policy", "error", err, "policy_name", policyCR.Name)
+				return &policyIr, err
+			}
+
+			tlsCfg, err := ResolveUpstreamSslConfig(*cfgmap, string(spec.Validation.Hostname))
+			if err != nil {
+				perr := fmt.Errorf("%w: %v", ErrCreatingTLSConfig, err)
+				slog.Error("error resolving TLS config", "error", perr, "policy_name", policyCR.Name)
+				return &policyIr, perr
+			}
+			typedConfig, err := utils.MessageToAny(tlsCfg)
+			if err != nil {
+				slog.Error("error converting TLS config to proto", "error", err, "policy", policyCR.Name)
+				return &policyIr, ErrParsingTLSConfig
+			}
+
+			policyIr.transportSocket = &envoy_config_core_v3.TransportSocket{
+				Name: wellknown.TransportSocketTls,
+				ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{
+					TypedConfig: typedConfig,
+				},
+			}
+
+		default:
 			return &policyIr, nil
+
 		}
 
-		certRef := spec.Validation.CACertificateRefs[0]
-		nn := types.NamespacedName{
-			Name:      string(certRef.Name),
-			Namespace: policyCR.Namespace,
-		}
-		cfgmap := krt.FetchOne(krtctx, cfgmaps, krt.FilterObjectName(nn))
-		if cfgmap == nil {
-			err := fmt.Errorf("%w: %v", ErrConfigMapNotFound, nn)
-			slog.Error("error fetching policy", "error", err, "policy_name", policyCR.Name)
-			return &policyIr, err
-		}
-
-		tlsCfg, err := ResolveUpstreamSslConfig(*cfgmap, string(spec.Validation.Hostname))
-		if err != nil {
-			perr := fmt.Errorf("%w: %v", ErrCreatingTLSConfig, err)
-			slog.Error("error resolving TLS config", "error", perr, "policy_name", policyCR.Name)
-			return &policyIr, perr
-		}
-		typedConfig, err := utils.MessageToAny(tlsCfg)
-		if err != nil {
-			slog.Error("error converting TLS config to proto", "error", err, "policy", policyCR.Name)
-			return &policyIr, ErrParsingTLSConfig
-		}
-
-		policyIr.transportSocket = &envoy_config_core_v3.TransportSocket{
-			Name: wellknown.TransportSocketTls,
-			ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{
-				TypedConfig: typedConfig,
-			},
-		}
 		return &policyIr, nil
 	}
 }
@@ -184,4 +225,39 @@ func convertTargetRefs(targetRefs []gwv1a2.LocalPolicyTargetReferenceWithSection
 		Name:  string(targetRefs[0].Name),
 		Group: string(targetRefs[0].Group),
 	}}
+}
+
+func convertSubjectAltNames(validation gwv1a3.BackendTLSPolicyValidation) []*envoyauth.SubjectAltNameMatcher {
+	if len(validation.SubjectAltNames) == 0 {
+		hostname := string(validation.Hostname)
+		if hostname != "" {
+			return []*envoyauth.SubjectAltNameMatcher{{
+				SanType: envoyauth.SubjectAltNameMatcher_DNS,
+				Matcher: &envoymatcher.StringMatcher{
+					MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: hostname},
+				},
+			}}
+		}
+	}
+
+	matchers := make([]*envoyauth.SubjectAltNameMatcher, 0, len(validation.SubjectAltNames))
+	for _, san := range validation.SubjectAltNames {
+		switch san.Type {
+		case gwv1a3.HostnameSubjectAltNameType:
+			matchers = append(matchers, &envoyauth.SubjectAltNameMatcher{
+				SanType: envoyauth.SubjectAltNameMatcher_DNS,
+				Matcher: &envoymatcher.StringMatcher{
+					MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: string(san.Hostname)},
+				},
+			})
+		case gwv1a3.URISubjectAltNameType:
+			matchers = append(matchers, &envoyauth.SubjectAltNameMatcher{
+				SanType: envoyauth.SubjectAltNameMatcher_URI,
+				Matcher: &envoymatcher.StringMatcher{
+					MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: string(san.URI)},
+				},
+			})
+		}
+	}
+	return matchers
 }
