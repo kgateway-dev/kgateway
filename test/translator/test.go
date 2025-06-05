@@ -52,6 +52,7 @@ import (
 	common "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
 )
 
 type AssertReports func(gwNN types.NamespacedName, reportsMap reports.ReportMap)
@@ -249,29 +250,31 @@ func TestTranslationWithExtraPlugins(
 	//b, _ := json.Marshal(result.Proxy)
 	//var proxy ir.GatewayIR
 	//Expect(json.Unmarshal(b, &proxy)).NotTo(HaveOccurred())
-	if os.Getenv("UPDATE_OUTPUTS") == "1" {
-		result.Proxy = sortProxy(result.Proxy)
-		output := &translationResult{
-			Routes:        result.Proxy.Routes,
-			Listeners:     result.Proxy.Listeners,
-			ExtraClusters: result.Proxy.ExtraClusters,
-			Clusters:      result.Clusters,
-		}
 
-		d, err := MarshalAnyYaml(output)
-		if err != nil {
-			Expect(err).NotTo(HaveOccurred())
-		}
+	// sort the output and print it
+	result.Proxy = sortProxy(result.Proxy)
+	result.Clusters = sortClusters(result.Clusters)
+	output := &translationResult{
+		Routes:        result.Proxy.Routes,
+		Listeners:     result.Proxy.Listeners,
+		ExtraClusters: result.Proxy.ExtraClusters,
+		Clusters:      result.Clusters,
+	}
+	outputYaml, err := MarshalAnyYaml(output)
+	fmt.Fprintf(ginkgo.GinkgoWriter, "actual result:\n %s \nerror: %v", outputYaml, err)
+	Expect(err).NotTo(HaveOccurred())
+
+	if envutils.IsEnvTruthy("REFRESH_GOLDEN") {
 		// create parent directory if it doesn't exist
 		dir := filepath.Dir(outputFile)
 		if err := os.MkdirAll(dir, 0o755); err != nil {
 			Expect(err).NotTo(HaveOccurred())
 		}
-		os.WriteFile(outputFile, d, 0o644)
+		os.WriteFile(outputFile, outputYaml, 0o644)
 	}
 
-	Expect(CompareProxy(outputFile, result.Proxy)).To(BeEmpty())
-	Expect(CompareClusters(outputFile, result.Clusters)).To(BeEmpty())
+	Expect(compareProxy(outputFile, result.Proxy)).To(BeEmpty())
+	Expect(compareClusters(outputFile, result.Clusters)).To(BeEmpty())
 
 	if assertReports != nil {
 		assertReports(gwNN, result.ReportsMap)
@@ -290,7 +293,7 @@ type ActualTestResult struct {
 	ReportsMap reports.ReportMap
 }
 
-func CompareProxy(expectedFile string, actualProxy *irtranslator.TranslationResult) (string, error) {
+func compareProxy(expectedFile string, actualProxy *irtranslator.TranslationResult) (string, error) {
 	expectedProxy, err := ReadProxyFromFile(expectedFile)
 	if err != nil {
 		return "", err
@@ -317,21 +320,26 @@ func sortProxy(proxy *irtranslator.TranslationResult) *irtranslator.TranslationR
 	return proxy
 }
 
-func CompareClusters(expectedFile string, actualClusters []*clusterv3.Cluster) (string, error) {
+func compareClusters(expectedFile string, actualClusters []*clusterv3.Cluster) (string, error) {
 	expectedOutput := &translationResult{}
 	if err := ReadYamlFile(expectedFile, expectedOutput); err != nil {
 		return "", err
 	}
 
-	// Sort both expected and actual clusters by name
-	sort.Slice(expectedOutput.Clusters, func(i, j int) bool {
-		return expectedOutput.Clusters[i].Name < expectedOutput.Clusters[j].Name
-	})
-	sort.Slice(actualClusters, func(i, j int) bool {
-		return actualClusters[i].Name < actualClusters[j].Name
+	// Sort both expected and actual clusters by name and compare
+	return cmp.Diff(sortClusters(expectedOutput.Clusters), sortClusters(actualClusters), protocmp.Transform(), cmpopts.EquateNaNs()), nil
+}
+
+func sortClusters(clusters []*clusterv3.Cluster) []*clusterv3.Cluster {
+	if len(clusters) == 0 {
+		return clusters
+	}
+
+	sort.Slice(clusters, func(i, j int) bool {
+		return clusters[i].GetName() < clusters[j].GetName()
 	})
 
-	return cmp.Diff(expectedOutput.Clusters, actualClusters, protocmp.Transform(), cmpopts.EquateNaNs()), nil
+	return clusters
 }
 
 func ReadYamlFile(file string, out interface{}) error {
@@ -533,6 +541,7 @@ func (tc TestCase) Run(
 	plugins = append(plugins, extraPlugs...)
 	extensions := registry.MergePlugins(plugins...)
 
+	// needed for the Plugin Backend test (backend-plugin/gateway.yaml)
 	gk := schema.GroupKind{
 		Group: "",
 		Kind:  "test-backend-plugin",
@@ -549,6 +558,11 @@ func (tc TestCase) Run(
 		Backends: krt.NewStaticCollection([]ir.BackendObjectIR{
 			testBackend,
 		}),
+		BackendInit: ir.BackendInit{
+			InitBackend: func(ctx context.Context, in ir.BackendObjectIR, out *clusterv3.Cluster) *ir.EndpointsForBackend {
+				return nil
+			},
+		},
 	}
 
 	commoncol.InitPlugins(ctx, extensions)
@@ -581,9 +595,6 @@ func (tc TestCase) Run(
 
 		xdsSnap, reportsMap := translator.TranslateGateway(krt.TestingDummyContext{}, ctx, gw)
 
-		act, err := MarshalAnyYaml(xdsSnap)
-		fmt.Fprintf(ginkgo.GinkgoWriter, "actual result:\n %s \nerror: %v", act, err)
-
 		actual := ActualTestResult{
 			Proxy:      xdsSnap,
 			ReportsMap: reportsMap,
@@ -594,9 +605,6 @@ func (tc TestCase) Run(
 		var clusters []*clusterv3.Cluster
 		for _, col := range commoncol.BackendIndex.BackendsWithPolicy() {
 			for _, backend := range col.List() {
-				if backend.ObjectSource.Kind != wellknown.BackendGVK.Kind {
-					continue
-				}
 				cluster, err := translator.GetUpstreamTranslator().TranslateBackend(krt.TestingDummyContext{}, ucc, backend)
 				Expect(err).NotTo(HaveOccurred())
 				clusters = append(clusters, cluster)
