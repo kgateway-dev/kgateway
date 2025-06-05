@@ -581,6 +581,9 @@ func (p *builtinPluginGwPass) ApplyForRouteBackend(
 		return nil
 	}
 
+	if inPolicy.hasCors {
+		p.hasCorsPolicy[pCtx.FilterChainName] = true
+	}
 	if backendPolicy, ok := inPolicy.filter.policy.(applyToRouteBackend); ok {
 		backendPolicy.applyToBackend(pCtx)
 	} else {
@@ -823,6 +826,12 @@ func (c *corsIr) apply(outputRoute *envoy_config_route_v3.Route) {
 		outputRoute.TypedPerFilterConfig = make(map[string]*anypb.Any)
 	}
 	outputRoute.GetTypedPerFilterConfig()[envoy_wellknown.CORS] = c.Cors
+}
+func (c *corsIr) applyToBackend(pCtx *ir.RouteBackendContext) {
+	if c.Cors == nil {
+		return
+	}
+	pCtx.TypedFilterConfig[envoy_wellknown.CORS] = c.Cors
 }
 
 func convertCORSIR(_ krt.HandlerContext, f *gwv1.HTTPCORSFilter) *corsIr {

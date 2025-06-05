@@ -217,6 +217,10 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(ctx context.Context,
 func toPerFilterConfigMap(typedPerFilterConfig ir.TypedFilterConfigMap) map[string]*anypb.Any {
 	typedPerFilterConfigAny := map[string]*anypb.Any{}
 	for k, v := range typedPerFilterConfig {
+		if anyMsg, ok := v.(*anypb.Any); ok {
+			typedPerFilterConfigAny[k] = anyMsg
+			continue
+		}
 		config, err := utils.MessageToAny(v)
 		if err != nil {
 			// TODO: error on status? this should never happen..
@@ -427,17 +431,7 @@ func (h *httpRouteConfigurationTranslator) translateRouteAction(
 		backendConfigCtx.ResponseHeadersToRemove = pCtx.ResponseHeadersToRemove
 
 		// Translating weighted clusters needs the typed per filter config on each cluster
-		typedPerFilterConfigAny := map[string]*anypb.Any{}
-		for k, v := range backendConfigCtx.typedPerFilterConfigRoute {
-			config, err := utils.MessageToAny(v)
-			if err != nil {
-				// TODO: error on status
-				h.logger.Error("unexpected marshalling error", "error", err)
-				continue
-			}
-			typedPerFilterConfigAny[k] = config
-		}
-		cw.TypedPerFilterConfig = typedPerFilterConfigAny
+		cw.TypedPerFilterConfig = toPerFilterConfigMap(backendConfigCtx.typedPerFilterConfigRoute)
 		cw.RequestHeadersToAdd = backendConfigCtx.RequestHeadersToAdd
 		cw.RequestHeadersToRemove = backendConfigCtx.RequestHeadersToRemove
 		cw.ResponseHeadersToAdd = backendConfigCtx.ResponseHeadersToAdd
