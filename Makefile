@@ -368,7 +368,7 @@ GETTERCHECK ?= go tool github.com/saiskee/gettercheck
 # TODO: do we still want this?
 .PHONY: getter-check
 getter-check: ## Runs all generate directives for mockgen in the repo
-	$(GETTERCHECK) -ignoretests -ignoregenerated -write ./internal/kgateway/...
+	$(GETTERCHECK) -ignoretests -ignoregenerated -write ./internal/... ./pkg/...
 
 #----------------------------------------------------------------------------------
 # Distroless base images

@@ -29,7 +29,7 @@ var _ = Describe("Client", func() {
 				curl.Silent(),             // new value
 			)
 
-			curlCommand := client.Command(ctx).Run().PrettyCommand()
+			curlCommand := client.Command(ctx).PrettyCommand()
 			Expect(curlCommand).To(And(
 				ContainSubstring("\"--retry\" \"1\""),
 				ContainSubstring("\"--retry-delay\" \"1\""),
