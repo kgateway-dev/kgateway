@@ -109,6 +109,10 @@ spec:
                       tlsKey:
                         type: string
                     type: object
+                    x-kubernetes-validations:
+                    - message: At least one of tlsCertificate, tlsKey, or rootCA must
+                        be set in SSLFiles
+                      rule: has(self.tlsCertificate) || has(self.tlsKey) || has(self.rootCA)
                   sslParameters:
                     properties:
                       cipherSuites:
