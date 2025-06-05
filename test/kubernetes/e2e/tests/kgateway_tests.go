@@ -9,6 +9,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/basicrouting"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/cors"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/deployer"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/dfp"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/extauth"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/extproc"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/lambda"
@@ -41,6 +42,7 @@ func KubeGatewaySuiteRunner() e2e.SuiteRunner {
 	kubeGatewaySuiteRunner.Register("BackendTLSPolicies", backendtls.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("BasicRouting", basicrouting.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("Deployer", deployer.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("DynamicForwardProxy", dfp.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("HTTPRouteServices", httproute.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("Lambda", lambda.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("RouteDelegation", route_delegation.NewTestingSuite)

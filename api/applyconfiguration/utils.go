@@ -77,6 +77,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.DirectResponseSpecApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("DurationFilter"):
 		return &apiv1alpha1.DurationFilterApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("DynamicForwardProxyBackend"):
+		return &apiv1alpha1.DynamicForwardProxyBackendApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("EnvoyBootstrap"):
 		return &apiv1alpha1.EnvoyBootstrapApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("EnvoyContainer"):

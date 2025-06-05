@@ -35,6 +35,8 @@ const (
 	BackendTypeAWS BackendType = "AWS"
 	// BackendTypeStatic is the type for static backends.
 	BackendTypeStatic BackendType = "Static"
+	// BackendTypeDynamicForwardProxy is the type for dynamic forward proxy backends.
+	BackendTypeDynamicForwardProxy BackendType = "DynamicForwardProxy"
 )
 
 // BackendSpec defines the desired state of Backend.
@@ -45,10 +47,12 @@ const (
 // +kubebuilder:validation:XValidation:message="aws backend must be specified when type is 'aws'",rule="!(!has(self.aws) && self.type == 'AWS')"
 // +kubebuilder:validation:XValidation:message="static backend must be nil if the type is not 'static'",rule="!(has(self.static) && self.type != 'Static')"
 // +kubebuilder:validation:XValidation:message="static backend must be specified when type is 'static'",rule="!(!has(self.static) && self.type == 'Static')"
+// +kubebuilder:validation:XValidation:message="dynamic forward proxy backend must be nil if the type is not 'dynamicForwardProxy'",rule="!(has(self.dynamicForwardProxy) && self.type != 'DynamicForwardProxy')"
+// +kubebuilder:validation:XValidation:message="dynamic forward proxy backend must be specified when type is 'dynamicForwardProxy'",rule="!(!has(self.dynamicForwardProxy) && self.type == 'DynamicForwardProxy')"
 type BackendSpec struct {
 	// Type indicates the type of the backend to be used.
 	// +unionDiscriminator
-	// +kubebuilder:validation:Enum=AI;AWS;Static
+	// +kubebuilder:validation:Enum=AI;AWS;Static;DynamicForwardProxy
 	// +kubebuilder:validation:Required
 	Type BackendType `json:"type"`
 	// AI is the AI backend configuration.
@@ -60,6 +64,18 @@ type BackendSpec struct {
 	// Static is the static backend configuration.
 	// +optional
 	Static *StaticBackend `json:"static,omitempty"`
+	// DynamicForwardProxy is the dynamic forward proxy backend configuration.
+	// +optional
+	DynamicForwardProxy *DynamicForwardProxyBackend `json:"dynamicForwardProxy,omitempty"`
+}
+
+// DynamicForwardProxyBackend is the dynamic forward proxy backend configuration.
+type DynamicForwardProxyBackend struct {
+	// EnableTls enables TLS. When true, the backend will be configured to use TLS. System CA will be used for validation.
+	// The hostname will be used for SNI and auto SAN validation.
+	// +optional
+	// +kubebuilder:validation:Optional
+	EnableTls bool `json:"enableTls,omitempty"`
 }
 
 // AwsBackend is the AWS backend configuration.
