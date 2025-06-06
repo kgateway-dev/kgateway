@@ -63,10 +63,3 @@ spec:
     - protocol: TCP
       port: 8080
       targetPort: http-web-svc
----
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: allowed-ns
-  labels:
-    allowed: ns
