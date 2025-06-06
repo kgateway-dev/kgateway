@@ -60,7 +60,6 @@ spec:
       hostname: example-san.com
     - type: URI
       uri: spifee://example-san.com
-
     caCertificateRefs:
     - group: ""
       kind: ConfigMap
@@ -82,7 +81,6 @@ spec:
       hostname: example2-san.com
     - type: URI
       uri: spifee://example2-san.com
-
     wellKnownCACertificates: System
 ---
 apiVersion: v1
