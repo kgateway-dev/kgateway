@@ -35,32 +35,32 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 
 func (s *testingSuite) TestHTTPRouteWithInferencePool() {
 	s.T().Cleanup(func() {
-		for _, m := range []string{
+		for _, m := range [][]byte{
 			// reverse order of install
 			clientManifest,
 			routeManifest,
 			gtwManifest,
 			poolManifest,
 			eppManifest,
-			modelManifest,
+			modelsManifest,
 			vllmManifest,
 		} {
-			err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, m)
+			err := s.testInstallation.Actions.Kubectl().Delete(s.ctx, m)
 			s.NoError(err, "can delete manifest %s", m)
 		}
 	})
 
 	// Install test manifests
-	for _, m := range []string{
+	for _, m := range [][]byte{
 		vllmManifest,
-		modelManifest,
+		modelsManifest,
 		poolManifest,
 		eppManifest,
 		gtwManifest,
 		routeManifest,
 		clientManifest,
 	} {
-		err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, m)
+		err := s.testInstallation.Actions.Kubectl().Apply(s.ctx, m)
 		s.NoError(err, "can apply manifest %s", m)
 	}
 
@@ -128,25 +128,25 @@ func (s *testingSuite) TestHTTPRouteWithInferencePool() {
 
 	for i := range tests {
 		tc := tests[i]
-		// Append an index so test names are unique
 		testName := fmt.Sprintf("CurlTestCase%d", i)
 
 		s.T().Run(testName, func(t *testing.T) {
-			var body string
+			// Build the "prompt" or "messages" fragment of the request body.
+			var fieldJSON string
 			if tc.api == "/v1/completions" {
-				body = fmt.Sprintf(
-					`{"model":"food-review","prompt":"%s","max_tokens":100,"temperature":0}`,
-					tc.promptOrMessages,
-				)
+				fieldJSON = fmt.Sprintf(`"prompt":"%s"`, tc.promptOrMessages)
 			} else {
-				// "/v1/chat/completions"
-				body = fmt.Sprintf(
-					`{"model":"food-review","messages":%s,"max_tokens":100,"temperature":0}`,
-					tc.promptOrMessages,
-				)
+				fieldJSON = fmt.Sprintf(`"messages":%s`, tc.promptOrMessages)
 			}
 
-			// Assert connectivity to vLLM OpenAI endpoints
+			// Inject that field into the rest of the body template
+			body := fmt.Sprintf(
+				`{"model":"%s",%s,"max_tokens":100,"temperature":0}`,
+				baseModelName,
+				fieldJSON,
+			)
+
+			// Assert expected curl response
 			s.testInstallation.Assertions.AssertEventualCurlResponse(
 				s.ctx,
 				defaults.CurlPodExecOpt,

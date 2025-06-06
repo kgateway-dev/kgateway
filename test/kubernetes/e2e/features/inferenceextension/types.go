@@ -1,18 +1,16 @@
 package inferenceextension
 
 import (
+	_ "embed"
 	"net/http"
-	"path/filepath"
 	"time"
 
-	testmatchers "github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
-
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
-
-	"github.com/onsi/gomega/gstruct"
+	"github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	testmatchers "github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 )
 
 var (
@@ -20,18 +18,36 @@ var (
 	testNS = "inf-ext-e2e"
 	// vllmDeployName is the name of the vLLM deployment name
 	vllmDeployName = "vllm-llama3-8b-instruct"
+	// baseModelName is the model name value defined in request bodies.
+	baseModelName = "food-review"
+	// targetModelName is the expected value in response bodies when requesting the baseModelName
+	// and the vLLM model server is configured for the `food-review-1` LoRA adapter.
+	targetModelName = baseModelName + "-1"
 	// podRunTimeout is time required for a pod to reach a "Running" status
 	podRunTimeout = 3 * time.Minute
 	// gtwProgramTimeout is time required for the gateway to reach "Programmed" status
 	gtwProgramTimeout = 60 * time.Second
-	// Manifests used to run test resources
-	vllmManifest   = filepath.Join(fsutils.MustGetThisDir(), "testdata", "vllm.yaml")
-	modelManifest  = filepath.Join(fsutils.MustGetThisDir(), "testdata", "models.yaml")
-	poolManifest   = filepath.Join(fsutils.MustGetThisDir(), "testdata", "pool.yaml")
-	eppManifest    = filepath.Join(fsutils.MustGetThisDir(), "testdata", "epp.yaml")
-	gtwManifest    = filepath.Join(fsutils.MustGetThisDir(), "testdata", "gateway.yaml")
-	routeManifest  = filepath.Join(fsutils.MustGetThisDir(), "testdata", "route.yaml")
-	clientManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "client.yaml")
+	// vllmManifest is the manifest for the vLLM simulator model server
+	//go:embed testdata/vllm.yaml
+	vllmManifest []byte
+	// modelsManifest is the manifest for the InferenceModel resource
+	//go:embed testdata/models.yaml
+	modelsManifest []byte
+	// poolManifest is the manifest for the InferencePool resource
+	//go:embed testdata/pool.yaml
+	poolManifest []byte
+	// eppManifest is the manifest for the Endpoint Picker (EPP)
+	//go:embed testdata/epp.yaml
+	eppManifest []byte
+	// gtwManifest is the manifest for the Gateway resource
+	//go:embed testdata/gateway.yaml
+	gtwManifest []byte
+	// routeManifest is the manifest for the HTTPRoute resource
+	//go:embed testdata/route.yaml
+	routeManifest []byte
+	// clientManifest is the manifest for the curl client
+	//go:embed testdata/curl_pod.yaml
+	clientManifest []byte
 
 	// The Gateway resources created by kgateway
 	gtwObjectMeta = metav1.ObjectMeta{
@@ -44,6 +60,7 @@ var (
 	// The expected response when curl'ing the vLLM backend
 	expectedVllmResp = &testmatchers.HttpResponse{
 		StatusCode: http.StatusOK,
-		Body:       gstruct.Ignore(),
+		// Use a Gomega matcher so that we assert that the response body CONTAINS the substring `"model":"<modelName>"`
+		Body: gomega.ContainSubstring(`"model":"` + targetModelName + `"`),
 	}
 )
