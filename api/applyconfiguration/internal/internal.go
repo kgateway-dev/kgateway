@@ -318,6 +318,9 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: perConnectionBufferLimitBytes
       type:
         scalar: numeric
+    - name: sslConfig
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SSLConfig
     - name: targetRefs
       type:
         list:
@@ -1334,6 +1337,72 @@ var schemaYAML = typed.YAMLObject(`types:
           elementType:
             scalar: string
           elementRelationship: atomic
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SSLConfig
+  map:
+    fields:
+    - name: allowRenegotiation
+      type:
+        scalar: boolean
+    - name: alpnProtocols
+      type:
+        list:
+          elementType:
+            scalar: string
+          elementRelationship: atomic
+    - name: oneWayTLS
+      type:
+        scalar: boolean
+    - name: secretRef
+      type:
+        namedType: io.k8s.api.core.v1.LocalObjectReference
+    - name: sni
+      type:
+        scalar: string
+    - name: sslFiles
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SSLFiles
+    - name: sslParameters
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SSLParameters
+    - name: verifySubjectAltName
+      type:
+        list:
+          elementType:
+            scalar: string
+          elementRelationship: atomic
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SSLFiles
+  map:
+    fields:
+    - name: rootCA
+      type:
+        scalar: string
+    - name: tlsCertificate
+      type:
+        scalar: string
+    - name: tlsKey
+      type:
+        scalar: string
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SSLParameters
+  map:
+    fields:
+    - name: cipherSuites
+      type:
+        list:
+          elementType:
+            scalar: string
+          elementRelationship: atomic
+    - name: ecdhCurves
+      type:
+        list:
+          elementType:
+            scalar: string
+          elementRelationship: atomic
+    - name: tlsMaxVersion
+      type:
+        scalar: string
+    - name: tlsMinVersion
+      type:
+        scalar: string
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SdsBootstrap
   map:
     fields:
