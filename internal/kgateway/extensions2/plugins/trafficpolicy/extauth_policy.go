@@ -12,6 +12,7 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/pluginutils"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 )
 
 var (
@@ -143,4 +144,35 @@ func translatePerFilterConfig(spec *v1alpha1.ExtAuthPolicy) *envoy_ext_authz_v3.
 		}
 	}
 	return nil
+}
+
+func extAuthFilterName(name string) string {
+	if name == "" {
+		return extauthFilterNamePrefix
+	}
+	return fmt.Sprintf("%s/%s", extauthFilterNamePrefix, name)
+}
+
+func (p *trafficPolicyPluginGwPass) handleExtAuth(fcn string, pCtxTypedFilterConfig *ir.TypedFilterConfigMap, extAuth *extAuthIR) {
+	if extAuth == nil {
+		return
+	}
+
+	// Handle the enablement state
+	if extAuth.enablement == v1alpha1.ExtAuthDisableAll {
+		// Disable the filter under all providers via the metadata match
+		// we have to use the metadata as we dont know what other configurations may have extauth
+		pCtxTypedFilterConfig.AddTypedConfig(extAuthGlobalDisableFilterName, EnableFilterPerRoute)
+	} else {
+		providerName := extAuth.provider.ResourceName()
+		if extAuth.extauthPerRoute != nil {
+			pCtxTypedFilterConfig.AddTypedConfig(extAuthFilterName(providerName),
+				extAuth.extauthPerRoute,
+			)
+		} else {
+			// if you are on a route and not trying to disable it then we need to override the top level disable on the filter chain
+			pCtxTypedFilterConfig.AddTypedConfig(extAuthFilterName(providerName), EnableFilterPerRoute)
+		}
+		p.extAuthPerProvider.Add(fcn, providerName, extAuth.provider)
+	}
 }
