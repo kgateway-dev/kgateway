@@ -48,7 +48,7 @@ tolerations: []
 # -- Set affinity rules for pod scheduling, such as 'nodeAffinity:'.
 affinity: {}
 
-# -- Configure the kgateway controller deployment.
+# -- Configure the kgateway control plane deployment.
 controller:
   # -- Set the number of controller pod replicas.
   replicaCount: 1
@@ -75,8 +75,8 @@ controller:
   # -- Add extra environment variables to the controller container.
   extraEnv: {}
 
-# -- Configure the default container image for deployments created by Helm.
-# -- You can override these settings for each particular deployment in that deployment's section, such as controller.image.
+# -- Configure the default container image for the components that Helm deploys.
+# -- You can override these settings for each particular component in that component's section, such as 'controller.image' for the kgateway control plane.
 # -- If you use your own private registry, make sure to include the imagePullSecrets.
 image:
   # -- Set the default image registry. 
