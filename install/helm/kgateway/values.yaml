@@ -1,10 +1,14 @@
 # -- Set a list of image pull secrets for Kubernetes to use when pulling container images from your own private registry instead of the default kgateway registry.
 imagePullSecrets: []
 
-# -- Override the name of the Helm base release, which is 'kgateway' by default.
+# -- Add a name to the Helm base release.
+# -- The default name is 'kgateway'.
+# -- If you set 'nameOverride: "foo", the name of the resources that the Helm release creates become 'kgateway-foo'.
 nameOverride: ""
 
-# -- Override the full name resources created by the Helm chart.
+# -- Override the full name of resources created by the Helm chart.
+# -- The default full name is 'kgateway'.
+# -- If you set 'fullnameOverride: "foo", the full name of the resources that the Helm release creates become 'foo'.
 fullnameOverride: ""
 
 # -- Configure the service account for the deployment.
@@ -69,7 +73,8 @@ controller:
   # -- Add extra environment variables to the controller container.
   extraEnv: {}
 
-# -- Configure the default container image for the deployment.
+# -- Configure the default container image for deployments created by Helm.
+# -- You can override these settings for each particular deployment in that deployment's section, such as controller.image.
 # -- If you use your own private registry, make sure to include the imagePullSecrets.
 image:
   # -- Set the default image registry. 
