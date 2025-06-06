@@ -11,8 +11,32 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 )
+
+// transformationForSpec translates the transformation spec into and onto the IR policy
+func transformationForSpec(spec v1alpha1.TrafficPolicySpec, out *trafficPolicySpecIr) error {
+	if spec.Transformation == nil {
+		return nil
+	}
+	var err error
+	if !useRustformations {
+		out.transform, err = toTransformFilterConfig(spec.Transformation)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	rustformation, toStash, err := toRustformFilterConfig(spec.Transformation)
+	if err != nil {
+		return err
+	}
+	out.rustformation = rustformation
+	out.rustformationStringToStash = toStash
+	return nil
+}
 
 func toTraditionalTransform(t *v1alpha1.Transform) *transformationpb.Transformation_TransformationTemplate {
 	if t == nil {
@@ -236,4 +260,13 @@ func convertClassicRouteToListener(
 		},
 	}
 	listenerFilter.Transformations = append(listenerFilter.GetTransformations(), &transform)
+}
+
+func (p *trafficPolicyPluginGwPass) handleTransformation(fcn string, typedFilterConfig *ir.TypedFilterConfigMap, transform *transformationpb.RouteTransformations) {
+	if transform == nil {
+		return
+	}
+
+	typedFilterConfig.AddTypedConfig(transformationFilterNamePrefix, transform)
+	p.setTransformationInChain[fcn] = true
 }

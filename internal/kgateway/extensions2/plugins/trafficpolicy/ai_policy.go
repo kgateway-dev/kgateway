@@ -16,11 +16,13 @@ import (
 	envoytransformation "github.com/solo-io/envoy-gloo/go/config/filter/http/transformation/v2"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/wrapperspb"
+	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/utils/ptr"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	aiutils "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/pluginutils"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
 
@@ -254,7 +256,7 @@ func applyPromptGuard(pg *v1alpha1.AIPromptGuard, extProcRouteSettings *envoy_ex
 	if req := pg.Request; req != nil {
 		if mod := req.Moderation; mod != nil {
 			if mod.OpenAIModeration != nil {
-				token, err := aiutils.GetAuthToken(mod.OpenAIModeration.AuthToken, secret)
+				token, err := pluginutils.GetAuthToken(mod.OpenAIModeration.AuthToken, secret)
 				if err != nil {
 					return err
 				}
@@ -356,4 +358,33 @@ func emptyBodyTransformation() *envoytransformation.TransformationTemplate_Merge
 			JsonKeys: map[string]*envoytransformation.MergeJsonKeys_OverridableTemplate{},
 		},
 	}
+}
+
+// aiSecret checks for the presence of the OpenAI Moderation which may require a secret reference
+// will log an error if the secret is needed but not found
+func aiSecretForSpec(
+	krtctx krt.HandlerContext,
+	secrets *krtcollections.SecretIndex,
+	policyCR *v1alpha1.TrafficPolicy,
+) (*ir.Secret, error) {
+	if policyCR.Spec.AI == nil ||
+		policyCR.Spec.AI.PromptGuard == nil ||
+		policyCR.Spec.AI.PromptGuard.Request == nil ||
+		policyCR.Spec.AI.PromptGuard.Request.Moderation == nil {
+		return nil, nil
+	}
+
+	secretRef := policyCR.Spec.AI.PromptGuard.Request.Moderation.OpenAIModeration.AuthToken.SecretRef
+	if secretRef == nil {
+		// no secret ref is set
+		return nil, nil
+	}
+
+	// Retrieve and assign the secret
+	secret, err := pluginutils.GetSecretIr(secrets, krtctx, secretRef.Name, policyCR.GetNamespace())
+	if err != nil {
+		logger.Error("failed to get secret for AI policy", "secret_name", secretRef.Name, "namespace", policyCR.GetNamespace(), "error", err)
+		return nil, err
+	}
+	return secret, nil
 }
