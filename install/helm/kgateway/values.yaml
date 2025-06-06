@@ -3,12 +3,14 @@ imagePullSecrets: []
 
 # -- Add a name to the Helm base release.
 # -- The default name is 'kgateway'.
-# -- If you set 'nameOverride: "foo", the name of the resources that the Helm release creates become 'kgateway-foo'.
+# -- If you set 'nameOverride: "foo", the name of the resources that the Helm release creates become 'kgateway-foo',
+# -- such as the deployment, service, and service account for the kgateway control plane in the kgateway-system namespace.
 nameOverride: ""
 
 # -- Override the full name of resources created by the Helm chart.
 # -- The default full name is 'kgateway'.
-# -- If you set 'fullnameOverride: "foo", the full name of the resources that the Helm release creates become 'foo'.
+# -- If you set 'fullnameOverride: "foo", the full name of the resources that the Helm release creates become 'foo',
+# -- such as the deployment, service, and service account for the kgateway control plane in the kgateway-system namespace.
 fullnameOverride: ""
 
 # -- Configure the service account for the deployment.
