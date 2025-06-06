@@ -14,7 +14,7 @@ serviceAccount:
   # -- Add annotations to the service account.
   annotations: {}
   # -- Set the name of the service account to use.
-  # -- If not set and create is true, a name is generated using the fullname template
+  # -- If not set and create is true, a name is generated using the fullname template.
   name: ""
 
 # -- Add annotations to the kgateway deployment.
@@ -109,6 +109,6 @@ inferenceExtension:
 discoveryNamespaceSelectors: []
 
 # -- Enable the integration with Agent Gateway.
-# -- Agent Gateway lets you use kgateway to help manage agent connectivity across MCP servers, agents, and REST APIs.
+# -- Agent Gateway lets you use kgateway to help manage agent connectivity across MCP servers, A2A agents, and REST APIs.
 agentGateway:
   enabled: false
