@@ -1,19 +1,20 @@
-clusters:
+Clusters:
 - connectTimeout: 5s
-  edsClusterConfig:
-    edsConfig:
-      ads: {}
-      resourceApiVersion: V3
+  dnsLookupFamily: V4_PREFERRED
+  loadAssignment:
+    clusterName: backend_default_backend1_0
+    endpoints:
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: example.com
+              portValue: 8080
+          healthCheckConfig:
+            hostname: example.com
+          hostname: example.com
   metadata: {}
-  name: kube_default_kubernetes_443
-  type: EDS
-- connectTimeout: 5s
-  edsClusterConfig:
-    edsConfig:
-      ads: {}
-      resourceApiVersion: V3
-  metadata: {}
-  name: kube_gwtest_reviews_8080
+  name: backend_default_backend1_0
   transportSocket:
     name: envoy.transport_sockets.tls
     typedConfig:
@@ -23,8 +24,11 @@ clusters:
         validationContext:
           matchTypedSubjectAltNames:
           - matcher:
-              exact: example.com
+              exact: example-san.com
             sanType: DNS
+          - matcher:
+              exact: spifee://example-san.com
+            sanType: URI
           trustedCa:
             inlineString: |
               -----BEGIN CERTIFICATE-----
@@ -46,19 +50,45 @@ clusters:
               SxODgqhtaPnOxQ==
               -----END CERTIFICATE-----
       sni: example.com
-  type: EDS
-endpoints:
-- clusterName: kube_gwtest_reviews_8080
-  endpoints:
-  - lbEndpoints:
-    - endpoint:
-        address:
-          socketAddress:
-            address: 10.244.1.11
-            portValue: 8080
-      loadBalancingWeight: 1
-    loadBalancingWeight: 1
-listeners:
+  type: STRICT_DNS
+- connectTimeout: 5s
+  dnsLookupFamily: V4_PREFERRED
+  loadAssignment:
+    clusterName: backend_default_backend2_0
+    endpoints:
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: example2.com
+              portValue: 8080
+          healthCheckConfig:
+            hostname: example2.com
+          hostname: example2.com
+  metadata: {}
+  name: backend_default_backend2_0
+  transportSocket:
+    name: envoy.transport_sockets.tls
+    typedConfig:
+      '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+      commonTlsContext:
+        combinedValidationContext:
+          defaultValidationContext:
+            matchTypedSubjectAltNames:
+            - matcher:
+                exact: example2-san.com
+              sanType: DNS
+            - matcher:
+                exact: spifee://example2-san.com
+              sanType: URI
+          validationContextSdsSecretConfig:
+            name: SYSTEM_CA_CERT
+      sni: example2.com
+  type: STRICT_DNS
+- connectTimeout: 5s
+  metadata: {}
+  name: test-backend-plugin_default_example-svc_80
+Listeners:
 - address:
     socketAddress:
       address: '::'
@@ -79,22 +109,26 @@ listeners:
           configSource:
             ads: {}
             resourceApiVersion: V3
-          routeConfigName: listener~8080
+          routeConfigName: listener~80
         statPrefix: http
         useRemoteAddress: true
-    name: listener~8080
-  name: listener~8080
-routes:
+    name: listener~80
+  name: listener~80
+Routes:
 - ignorePortInHostMatching: true
-  name: listener~8080
+  name: listener~80
   virtualHosts:
   - domains:
-    - www.example.com
-    name: listener~8080~www_example_com
+    - '*'
+    name: listener~80~*
     routes:
     - match:
         prefix: /
-      name: listener~8080~www_example_com-route-0-httproute-happypath-gwtest-0-0-matcher-0
+      name: listener~80~*-route-0-httproute-example-route-default-0-0-matcher-0
       route:
-        cluster: kube_gwtest_reviews_8080
+        cluster: backend_default_backend1_0
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+      typedPerFilterConfig:
+        ai.extproc.kgateway.io:
+          '@type': type.googleapis.com/envoy.extensions.filters.http.ext_proc.v3.ExtProcPerRoute
+          disabled: true

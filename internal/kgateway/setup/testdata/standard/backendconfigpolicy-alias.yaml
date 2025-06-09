@@ -61,7 +61,7 @@ ports:
 kind: BackendConfigPolicy
 apiVersion: gateway.kgateway.dev/v1alpha1
 metadata:
-  name: httpbin-policy
+  name: httpbin-policy-alias
   namespace: gwtest
 spec:
   targetSelectors:

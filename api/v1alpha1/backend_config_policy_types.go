@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 )
@@ -58,6 +59,11 @@ type BackendConfigPolicySpec struct {
 	// Additional options when handling HTTP1 requests upstream.
 	// +optional
 	Http1ProtocolOptions *Http1ProtocolOptions `json:"http1ProtocolOptions,omitempty"`
+
+	// SSLConfig contains the options necessary to configure a backend to use TLS origination.
+	// See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/transport_sockets/tls/v3/tls.proto#envoy-v3-api-msg-extensions-transport-sockets-tls-v3-sslconfig) for more details.
+	// +optional
+	SSLConfig *SSLConfig `json:"sslConfig,omitempty"`
 }
 
 // See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-msg-config-core-v3-http1protocoloptions) for more details.
@@ -161,4 +167,85 @@ type TCPKeepalive struct {
 	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('0s')",message="keepAliveInterval must be a valid duration string"
 	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1s')",message="keepAliveInterval must be at least 1 second"
 	KeepAliveInterval *metav1.Duration `json:"keepAliveInterval,omitempty"`
+}
+
+// +kubebuilder:validation:XValidation:rule="has(self.secretRef) != has(self.sslFiles)",message="Exactly one of secretRef or sslFiles must be set in SSLConfig"
+type SSLConfig struct {
+	// Reference to the TLS secret containing the certificate, key, and optionally the root CA.
+	// +optional
+	SecretRef *corev1.LocalObjectReference `json:"secretRef,omitempty"`
+
+	// File paths to certificates local to the proxy.
+	// +optional
+	SSLFiles *SSLFiles `json:"sslFiles,omitempty"`
+
+	// The SNI domains that should be considered for TLS connection
+	// +optional
+	Sni string `json:"sni,omitempty"`
+
+	// Verify that the Subject Alternative Name in the peer certificate is one of the specified values.
+	// note that a root_ca must be provided if this option is used.
+	// +optional
+	VerifySubjectAltName []string `json:"verifySubjectAltName,omitempty"`
+
+	// General TLS parameters. See the [envoy docs](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/transport_sockets/tls/v3/common.proto#extensions-transport-sockets-tls-v3-tlsparameters)
+	// for more information on the meaning of these values.
+	// +optional
+	SSLParameters *SSLParameters `json:"sslParameters,omitempty"`
+
+	// Set Application Level Protocol Negotiation
+	// If empty, defaults to ["h2", "http/1.1"].
+	// +optional
+	AlpnProtocols []string `json:"alpnProtocols,omitempty"`
+
+	// Allow Tls renegotiation, the default value is false.
+	// TLS renegotiation is considered insecure and shouldn't be used unless absolutely necessary.
+	// +optional
+	AllowRenegotiation *bool `json:"allowRenegotiation,omitempty"`
+
+	// If the SSL config has the ca.crt (root CA) provided, kgateway uses it to perform mTLS by default.
+	// Set oneWayTls to true to disable mTLS in favor of server-only TLS (one-way TLS), even if kgateway has the root CA.
+	// If unset, defaults to false.
+	// +optional
+	OneWayTLS *bool `json:"oneWayTLS,omitempty"`
+}
+
+// TLSVersion defines the TLS version.
+// +kubebuilder:validation:Enum=AUTO;"1.0";"1.1";"1.2";"1.3"
+type TLSVersion string
+
+const (
+	TLSVersionAUTO TLSVersion = "AUTO"
+	TLSVersion1_0  TLSVersion = "1.0"
+	TLSVersion1_1  TLSVersion = "1.1"
+	TLSVersion1_2  TLSVersion = "1.2"
+	TLSVersion1_3  TLSVersion = "1.3"
+)
+
+type SSLParameters struct {
+	// Minimum TLS version.
+	// +optional
+	TLSMinVersion *TLSVersion `json:"tlsMinVersion,omitempty"`
+
+	// Maximum TLS version.
+	// +optional
+	TLSMaxVersion *TLSVersion `json:"tlsMaxVersion,omitempty"`
+
+	// +optional
+	CipherSuites []string `json:"cipherSuites,omitempty"`
+
+	// +optional
+	EcdhCurves []string `json:"ecdhCurves,omitempty"`
+}
+
+// +kubebuilder:validation:XValidation:rule="has(self.tlsCertificate) || has(self.tlsKey) || has(self.rootCA)",message="At least one of tlsCertificate, tlsKey, or rootCA must be set in SSLFiles"
+type SSLFiles struct {
+	// +optional
+	TLSCertificate string `json:"tlsCertificate,omitempty"`
+
+	// +optional
+	TLSKey string `json:"tlsKey,omitempty"`
+
+	// +optional
+	RootCA string `json:"rootCA,omitempty"`
 }
