@@ -85,6 +85,9 @@ Clusters:
             name: SYSTEM_CA_CERT
       sni: example2.com
   type: STRICT_DNS
+- connectTimeout: 5s
+  metadata: {}
+  name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:
     socketAddress:
