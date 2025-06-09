@@ -119,6 +119,19 @@ func (s *clientTlsTestingSuite) TestBackendTLSPolicyAndStatus() {
 			Body:       gomega.ContainSubstring(defaults.NginxResponse),
 		},
 	)
+	s.testInstallation.Assertions.AssertEventualCurlResponse(
+		s.ctx,
+		defaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
+			curl.WithHostHeader("foo.com"),
+			curl.WithPath("/"),
+		},
+		&matchers.HttpResponse{
+			// google return 404 this when going to google.com  with host header of "foo.com"
+			StatusCode: http.StatusNotFound,
+		},
+	)
 
 	s.assertPolicyStatus(metav1.Condition{
 		Type:    string(gwv1a2.PolicyConditionAccepted),

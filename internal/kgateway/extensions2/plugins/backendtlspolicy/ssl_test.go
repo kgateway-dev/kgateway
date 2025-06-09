@@ -81,7 +81,8 @@ func TestUpstreamTlsConfig(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tlsCtx, err := ResolveUpstreamSslConfig(tt.cm, tt.sni)
+			validation := &envoyauth.CertificateValidationContext{}
+			tlsCtx, err := ResolveUpstreamSslConfig(tt.cm, validation, tt.sni)
 			if tt.expectedError != "" && err == nil {
 				t.Fatalf("expected error but got nil")
 			} else if tt.expectedError != "" && err != nil {

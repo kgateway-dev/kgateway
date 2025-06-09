@@ -73,6 +73,11 @@ var (
 		Version: apiv1alpha3.GroupVersion.Version,
 		Kind:    BackendTLSPolicyKind,
 	}
+	BackendTLSPolicyGVR = schema.GroupVersionResource{
+		Group:    GatewayGroup,
+		Version:  apiv1alpha3.GroupVersion.Version,
+		Resource: "backendtlspolicies",
+	}
 
 	TCPRouteCRD = apiextv1.CustomResourceDefinition{
 		ObjectMeta: metav1.ObjectMeta{

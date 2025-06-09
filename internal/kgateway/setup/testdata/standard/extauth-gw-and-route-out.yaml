@@ -15,6 +15,11 @@ clusters:
   metadata: {}
   name: kube_gwtest_app-team-ext-authz_9000
   type: EDS
+  typedExtensionProtocolOptions:
+    envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+      '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+      explicitHttpConfig:
+        http2ProtocolOptions: {}
 - connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
@@ -23,6 +28,11 @@ clusters:
   metadata: {}
   name: kube_gwtest_ext-authz_9000
   type: EDS
+  typedExtensionProtocolOptions:
+    envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+      '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+      explicitHttpConfig:
+        http2ProtocolOptions: {}
 - connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
