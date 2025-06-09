@@ -10,6 +10,7 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 )
 
 const (
@@ -17,6 +18,23 @@ const (
 	localRatelimitFilterEnforcedRuntimeKey = "local_rate_limit_enforced"
 	localRatelimitFilterDisabledRuntimeKey = "local_rate_limit_disabled"
 )
+
+func localRateLimitForSpec(spec v1alpha1.TrafficPolicySpec, out *trafficPolicySpecIr) error {
+	if spec.RateLimit == nil || spec.RateLimit.Local == nil {
+		return nil
+	}
+
+	var err error
+	if spec.RateLimit.Local != nil {
+		out.localRateLimit, err = toLocalRateLimitFilterConfig(spec.RateLimit.Local)
+		if err != nil {
+			// In case of an error with translating the local rate limit configuration,
+			// the route will be dropped
+			return err
+		}
+	}
+	return nil
+}
 
 func toLocalRateLimitFilterConfig(t *v1alpha1.LocalRateLimitPolicy) (*localratelimitv3.LocalRateLimit, error) {
 	if t == nil {
@@ -84,5 +102,24 @@ func createDisabledRateLimit() *localratelimitv3.LocalRateLimit {
 			RuntimeKey:   localRatelimitFilterDisabledRuntimeKey,
 			DefaultValue: &typev3.FractionalPercent{},
 		},
+	}
+}
+
+func (p *trafficPolicyPluginGwPass) handleLocalRateLimit(fcn string, typedFilterConfig *ir.TypedFilterConfigMap, localRateLimit *localratelimitv3.LocalRateLimit) {
+	if localRateLimit == nil {
+		return
+	}
+	typedFilterConfig.AddTypedConfig(localRateLimitFilterNamePrefix, localRateLimit)
+
+	// Add a filter to the chain. When having a rate limit for a route we need to also have a
+	// globally disabled rate limit filter in the chain otherwise it will be ignored.
+	// If there is also rate limit for the listener, it will not override this one.
+	if p.localRateLimitInChain == nil {
+		p.localRateLimitInChain = make(map[string]*localratelimitv3.LocalRateLimit)
+	}
+	if _, ok := p.localRateLimitInChain[fcn]; !ok {
+		p.localRateLimitInChain[fcn] = &localratelimitv3.LocalRateLimit{
+			StatPrefix: localRateLimitStatPrefix,
+		}
 	}
 }

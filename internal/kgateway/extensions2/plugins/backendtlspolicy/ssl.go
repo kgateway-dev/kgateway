@@ -5,7 +5,6 @@ import (
 
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
-	envoymatcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -14,8 +13,8 @@ import (
 
 var noKeyFoundMsg = "no key ca.crt found"
 
-func ResolveUpstreamSslConfig(cm *corev1.ConfigMap, sni string) (*envoyauth.UpstreamTlsContext, error) {
-	common, err := ResolveCommonSslConfig(cm, false)
+func ResolveUpstreamSslConfig(cm *corev1.ConfigMap, validation *envoyauth.CertificateValidationContext, sni string) (*envoyauth.UpstreamTlsContext, error) {
+	common, err := ResolveCommonSslConfig(cm, validation, false)
 	if err != nil {
 		return nil, err
 	}
@@ -26,7 +25,7 @@ func ResolveUpstreamSslConfig(cm *corev1.ConfigMap, sni string) (*envoyauth.Upst
 	}, nil
 }
 
-func ResolveCommonSslConfig(cm *corev1.ConfigMap, mustHaveCert bool) (*envoyauth.CommonTlsContext, error) {
+func ResolveCommonSslConfig(cm *corev1.ConfigMap, validation *envoyauth.CertificateValidationContext, mustHaveCert bool) (*envoyauth.CommonTlsContext, error) {
 	caCrt, err := getSslSecrets(cm)
 	if err != nil {
 		return nil, err
@@ -43,16 +42,11 @@ func ResolveCommonSslConfig(cm *corev1.ConfigMap, mustHaveCert bool) (*envoyauth
 		// default params
 		TlsParams: &envoyauth.TlsParameters{},
 	}
-
+	validation.TrustedCa = &caCrtData
 	validationCtx := &envoyauth.CommonTlsContext_ValidationContext{
-		ValidationContext: &envoyauth.CertificateValidationContext{
-			TrustedCa: &caCrtData,
-		},
+		ValidationContext: validation,
 	}
-	// sanList := VerifySanListToMatchSanList(cs.GetVerifySubjectAltName())
-	// if len(sanList) != 0 {
-	// 	validationCtx.ValidationContext.MatchSubjectAltNames = sanList
-	// }
+
 	tlsContext.ValidationContextType = validationCtx
 	return tlsContext, nil
 }
@@ -64,15 +58,4 @@ func getSslSecrets(cm *corev1.ConfigMap) (string, error) {
 	}
 
 	return caCrt, nil
-}
-
-func VerifySanListToMatchSanList(sanList []string) []*envoymatcher.StringMatcher {
-	var matchSanList []*envoymatcher.StringMatcher
-	for _, san := range sanList {
-		matchSan := &envoymatcher.StringMatcher{
-			MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: san},
-		}
-		matchSanList = append(matchSanList, matchSan)
-	}
-	return matchSanList
 }

@@ -263,16 +263,16 @@ func processBackend(ctx context.Context, in ir.BackendObjectIR, out *envoy_confi
 	// TODO(tim): Bubble up error to Backend status once https://github.com/kgateway-dev/kgateway/issues/10555
 	// is resolved and add test cases for invalid endpoint URLs.
 	spec := up.Spec
-	switch {
-	case spec.Type == v1alpha1.BackendTypeStatic:
+	switch spec.Type {
+	case v1alpha1.BackendTypeStatic:
 		if err := processStatic(ctx, spec.Static, out); err != nil {
 			logger.Error("failed to process static backend", "error", err)
 		}
-	case spec.Type == v1alpha1.BackendTypeAWS:
+	case v1alpha1.BackendTypeAWS:
 		if err := processAws(ctx, spec.Aws, ir.AwsIr, out); err != nil {
 			logger.Error("failed to process aws backend", "error", err)
 		}
-	case spec.Type == v1alpha1.BackendTypeAI:
+	case v1alpha1.BackendTypeAI:
 		err := ai.ProcessAIBackend(ctx, spec.AI, ir.AIIr.AISecret, ir.AIIr.AIMultiSecret, out)
 		if err != nil {
 			logger.Error("failed to process ai backend", "error", err)
@@ -280,6 +280,10 @@ func processBackend(ctx context.Context, in ir.BackendObjectIR, out *envoy_confi
 		err = ai.AddUpstreamClusterHttpFilters(out)
 		if err != nil {
 			logger.Error("failed to add upstream cluster http filters", "error", err)
+		}
+	case v1alpha1.BackendTypeDynamicForwardProxy:
+		if err := processDynamicForwardProxy(ctx, spec.DynamicForwardProxy, out); err != nil {
+			logger.Error("failed to process dynamic forward proxy backend", "error", err)
 		}
 	}
 	return nil
@@ -310,6 +314,7 @@ func processEndpoints(up *v1alpha1.Backend) *ir.EndpointsForBackend {
 type backendPlugin struct {
 	ir.UnimplementedProxyTranslationPass
 	aiGatewayEnabled map[string]bool
+	needsDfpFilter   map[string]bool
 }
 
 var _ ir.ProxyTranslationPass = &backendPlugin{}
@@ -346,6 +351,11 @@ func (p *backendPlugin) ApplyForBackend(ctx context.Context, pCtx *ir.RouteBacke
 			},
 		}
 		pCtx.TypedFilterConfig.AddTypedConfig(wellknown.AIExtProcFilterName, disabledExtprocSettings)
+	case v1alpha1.BackendTypeDynamicForwardProxy:
+		if p.needsDfpFilter == nil {
+			p.needsDfpFilter = make(map[string]bool)
+		}
+		p.needsDfpFilter[pCtx.FilterChainName] = true
 	}
 
 	return nil
@@ -364,6 +374,11 @@ func (p *backendPlugin) HttpFilters(ctx context.Context, fc ir.FilterChainCommon
 			errs = append(errs, err)
 		}
 		result = append(result, aiFilters...)
+	}
+	if p.needsDfpFilter[fc.FilterChainName] {
+		pluginStage := plugins.DuringStage(plugins.OutAuthStage)
+		f := plugins.MustNewStagedFilter("envoy.filters.http.dynamic_forward_proxy", dfpFilterConfig, pluginStage)
+		result = append(result, f)
 	}
 	return result, errors.Join(errs...)
 }

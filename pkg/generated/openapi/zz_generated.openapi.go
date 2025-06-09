@@ -26,6 +26,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AiExtension":                               schema_kgateway_v2_api_v1alpha1_AiExtension(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AiExtensionStats":                          schema_kgateway_v2_api_v1alpha1_AiExtensionStats(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AnthropicConfig":                           schema_kgateway_v2_api_v1alpha1_AnthropicConfig(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AuthHeaderOverride":                        schema_kgateway_v2_api_v1alpha1_AuthHeaderOverride(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AwsAuth":                                   schema_kgateway_v2_api_v1alpha1_AwsAuth(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AwsBackend":                                schema_kgateway_v2_api_v1alpha1_AwsBackend(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AwsLambda":                                 schema_kgateway_v2_api_v1alpha1_AwsLambda(ref),
@@ -50,6 +51,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.DirectResponseSpec":                        schema_kgateway_v2_api_v1alpha1_DirectResponseSpec(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.DirectResponseStatus":                      schema_kgateway_v2_api_v1alpha1_DirectResponseStatus(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.DurationFilter":                            schema_kgateway_v2_api_v1alpha1_DurationFilter(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.DynamicForwardProxyBackend":                schema_kgateway_v2_api_v1alpha1_DynamicForwardProxyBackend(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.EnvoyBootstrap":                            schema_kgateway_v2_api_v1alpha1_EnvoyBootstrap(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.EnvoyContainer":                            schema_kgateway_v2_api_v1alpha1_EnvoyContainer(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtAuthPolicy":                             schema_kgateway_v2_api_v1alpha1_ExtAuthPolicy(ref),
@@ -92,6 +94,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Moderation":                                schema_kgateway_v2_api_v1alpha1_Moderation(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.MultiPoolConfig":                           schema_kgateway_v2_api_v1alpha1_MultiPoolConfig(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.OpenAIConfig":                              schema_kgateway_v2_api_v1alpha1_OpenAIConfig(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.PathOverride":                              schema_kgateway_v2_api_v1alpha1_PathOverride(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Pod":                                       schema_kgateway_v2_api_v1alpha1_Pod(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.PolicyAncestorStatus":                      schema_kgateway_v2_api_v1alpha1_PolicyAncestorStatus(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.PolicyStatus":                              schema_kgateway_v2_api_v1alpha1_PolicyStatus(ref),
@@ -110,6 +113,9 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Regex":                                     schema_kgateway_v2_api_v1alpha1_Regex(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.RegexMatch":                                schema_kgateway_v2_api_v1alpha1_RegexMatch(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ResponseFlagFilter":                        schema_kgateway_v2_api_v1alpha1_ResponseFlagFilter(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.SSLConfig":                                 schema_kgateway_v2_api_v1alpha1_SSLConfig(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.SSLFiles":                                  schema_kgateway_v2_api_v1alpha1_SSLFiles(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.SSLParameters":                             schema_kgateway_v2_api_v1alpha1_SSLParameters(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.SdsBootstrap":                              schema_kgateway_v2_api_v1alpha1_SdsBootstrap(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.SdsContainer":                              schema_kgateway_v2_api_v1alpha1_SdsContainer(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.SelfManagedGateway":                        schema_kgateway_v2_api_v1alpha1_SelfManagedGateway(ref),
@@ -938,6 +944,31 @@ func schema_kgateway_v2_api_v1alpha1_AnthropicConfig(ref common.ReferenceCallbac
 	}
 }
 
+func schema_kgateway_v2_api_v1alpha1_AuthHeaderOverride(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "AuthHeaderOverride allows customization of the default Authorization header sent to the LLM Provider. The default header is `Authorization: Bearer <token>`. HeaderName can change the Authorization header name and Prefix can change the Bearer prefix",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"prefix": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"headerName": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
 func schema_kgateway_v2_api_v1alpha1_AwsAuth(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -1317,11 +1348,17 @@ func schema_kgateway_v2_api_v1alpha1_BackendConfigPolicySpec(ref common.Referenc
 							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Http1ProtocolOptions"),
 						},
 					},
+					"sslConfig": {
+						SchemaProps: spec.SchemaProps{
+							Description: "SSLConfig contains the options necessary to configure a backend to use TLS origination. See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/transport_sockets/tls/v3/tls.proto#envoy-v3-api-msg-extensions-transport-sockets-tls-v3-sslconfig) for more details.",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.SSLConfig"),
+						},
+					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CommonHttpProtocolOptions", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Http1ProtocolOptions", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LocalPolicyTargetReference", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LocalPolicyTargetSelector", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.TCPKeepalive", "k8s.io/apimachinery/pkg/apis/meta/v1.Duration"},
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CommonHttpProtocolOptions", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Http1ProtocolOptions", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LocalPolicyTargetReference", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LocalPolicyTargetSelector", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.SSLConfig", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.TCPKeepalive", "k8s.io/apimachinery/pkg/apis/meta/v1.Duration"},
 	}
 }
 
@@ -1406,6 +1443,12 @@ func schema_kgateway_v2_api_v1alpha1_BackendSpec(ref common.ReferenceCallback) c
 							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.StaticBackend"),
 						},
 					},
+					"dynamicForwardProxy": {
+						SchemaProps: spec.SchemaProps{
+							Description: "DynamicForwardProxy is the dynamic forward proxy backend configuration.",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.DynamicForwardProxyBackend"),
+						},
+					},
 				},
 				Required: []string{"type"},
 			},
@@ -1415,9 +1458,10 @@ func schema_kgateway_v2_api_v1alpha1_BackendSpec(ref common.ReferenceCallback) c
 						map[string]interface{}{
 							"discriminator": "type",
 							"fields-to-discriminateBy": map[string]interface{}{
-								"ai":     "AI",
-								"aws":    "Aws",
-								"static": "Static",
+								"ai":                  "AI",
+								"aws":                 "Aws",
+								"dynamicForwardProxy": "DynamicForwardProxy",
+								"static":              "Static",
 							},
 						},
 					},
@@ -1425,7 +1469,7 @@ func schema_kgateway_v2_api_v1alpha1_BackendSpec(ref common.ReferenceCallback) c
 			},
 		},
 		Dependencies: []string{
-			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AIBackend", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AwsBackend", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.StaticBackend"},
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AIBackend", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AwsBackend", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.DynamicForwardProxyBackend", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.StaticBackend"},
 	}
 }
 
@@ -1956,6 +2000,26 @@ func schema_kgateway_v2_api_v1alpha1_DurationFilter(ref common.ReferenceCallback
 							Description: "Value to compare against.",
 							Type:        []string{"integer"},
 							Format:      "int64",
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func schema_kgateway_v2_api_v1alpha1_DynamicForwardProxyBackend(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "DynamicForwardProxyBackend is the dynamic forward proxy backend configuration.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"enableTls": {
+						SchemaProps: spec.SchemaProps{
+							Description: "EnableTls enables TLS. When true, the backend will be configured to use TLS. System CA will be used for validation. The hostname will be used for SNI and auto SAN validation.",
+							Type:        []string{"boolean"},
+							Format:      "",
 						},
 					},
 				},
@@ -3324,12 +3388,24 @@ func schema_kgateway_v2_api_v1alpha1_LLMProvider(ref common.ReferenceCallback) c
 							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Host"),
 						},
 					},
+					"pathOverride": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Overrides the default API path for the LLM provider. Allows routing requests to a custom API endpoint path.",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.PathOverride"),
+						},
+					},
+					"authHeaderOverride": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Customizes the Authorization header sent to the LLM provider. Allows changing the header name and/or the prefix (e.g., \"Bearer\"). Note: Not all LLM providers use the Authorization header and prefix. For example, OpenAI uses header: \"Authorization\" and prefix: \"Bearer\" But Azure OpenAI uses header: \"api-key\" and no Bearer.",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AuthHeaderOverride"),
+						},
+					},
 				},
 				Required: []string{"provider"},
 			},
 		},
 		Dependencies: []string{
-			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Host", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.SupportedLLMProvider"},
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AuthHeaderOverride", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Host", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.PathOverride", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.SupportedLLMProvider"},
 	}
 }
 
@@ -3590,6 +3666,27 @@ func schema_kgateway_v2_api_v1alpha1_OpenAIConfig(ref common.ReferenceCallback) 
 		},
 		Dependencies: []string{
 			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.SingleAuthToken"},
+	}
+}
+
+func schema_kgateway_v2_api_v1alpha1_PathOverride(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "PathOverride configures the AI gateway to use a custom path for LLM provider chat-completion API requests. It allows overriding the default API path with a custom one. This is useful when you need to route requests to a different API endpoint while maintaining compatibility with the original provider's API structure.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"fullPath": {
+						SchemaProps: spec.SchemaProps{
+							Description: "FullPath specifies the custom API path to use for the LLM provider requests. This path will replace the default API path for the provider.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+				},
+				Required: []string{"fullPath"},
+			},
+		},
 	}
 }
 
@@ -4325,6 +4422,173 @@ func schema_kgateway_v2_api_v1alpha1_ResponseFlagFilter(ref common.ReferenceCall
 					},
 				},
 				Required: []string{"flags"},
+			},
+		},
+	}
+}
+
+func schema_kgateway_v2_api_v1alpha1_SSLConfig(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"secretRef": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Reference to the TLS secret containing the certificate, key, and optionally the root CA.",
+							Ref:         ref("k8s.io/api/core/v1.LocalObjectReference"),
+						},
+					},
+					"sslFiles": {
+						SchemaProps: spec.SchemaProps{
+							Description: "File paths to certificates local to the proxy.",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.SSLFiles"),
+						},
+					},
+					"sni": {
+						SchemaProps: spec.SchemaProps{
+							Description: "The SNI domains that should be considered for TLS connection",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"verifySubjectAltName": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Verify that the Subject Alternative Name in the peer certificate is one of the specified values. note that a root_ca must be provided if this option is used.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
+									},
+								},
+							},
+						},
+					},
+					"sslParameters": {
+						SchemaProps: spec.SchemaProps{
+							Description: "General TLS parameters. See the [envoy docs](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/transport_sockets/tls/v3/common.proto#extensions-transport-sockets-tls-v3-tlsparameters) for more information on the meaning of these values.",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.SSLParameters"),
+						},
+					},
+					"alpnProtocols": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Set Application Level Protocol Negotiation If empty, defaults to [\"h2\", \"http/1.1\"].",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
+									},
+								},
+							},
+						},
+					},
+					"allowRenegotiation": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Allow Tls renegotiation, the default value is false. TLS renegotiation is considered insecure and shouldn't be used unless absolutely necessary.",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
+					"oneWayTLS": {
+						SchemaProps: spec.SchemaProps{
+							Description: "If the SSL config has the ca.crt (root CA) provided, kgateway uses it to perform mTLS by default. Set oneWayTls to true to disable mTLS in favor of server-only TLS (one-way TLS), even if kgateway has the root CA. If unset, defaults to false.",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.SSLFiles", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.SSLParameters", "k8s.io/api/core/v1.LocalObjectReference"},
+	}
+}
+
+func schema_kgateway_v2_api_v1alpha1_SSLFiles(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"tlsCertificate": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"tlsKey": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"rootCA": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func schema_kgateway_v2_api_v1alpha1_SSLParameters(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"tlsMinVersion": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Minimum TLS version.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"tlsMaxVersion": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Maximum TLS version.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"cipherSuites": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
+									},
+								},
+							},
+						},
+					},
+					"ecdhCurves": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
+									},
+								},
+							},
+						},
+					},
+				},
 			},
 		},
 	}

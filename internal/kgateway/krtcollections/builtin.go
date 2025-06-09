@@ -7,7 +7,12 @@ import (
 	"strings"
 	"time"
 
+	stateful_sessionv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/stateful_session/v3"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	stateful_cookie "github.com/envoyproxy/go-control-plane/envoy/extensions/http/stateful_session/cookie/v3"
+	stateful_header "github.com/envoyproxy/go-control-plane/envoy/extensions/http/stateful_session/header/v3"
+	httpv3 "github.com/envoyproxy/go-control-plane/envoy/type/http/v3"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -32,11 +37,12 @@ import (
 	pluginsdkir "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
+const statefulSessionFilterName = "envoy.filters.http.stateful_session"
+
 type builtinPlugin struct {
-	spec           gwv1.HTTPRouteFilter
-	ruleSpec       gwv1.HTTPRouteRule
 	filterMutation func(in ir.HttpRouteRuleMatchIR, outputRoute *envoy_config_route_v3.Route) error
 	ruleMutation   func(in ir.HttpRouteRuleMatchIR, outputRoute *envoy_config_route_v3.Route) error
+	cors           *gwv1.HTTPCORSFilter
 }
 
 func (d *builtinPlugin) CreationTime() time.Time {
@@ -52,8 +58,9 @@ func (d *builtinPlugin) Equals(in any) bool {
 
 type builtinPluginGwPass struct {
 	ir.UnimplementedProxyTranslationPass
-	reporter      reports.Reporter
-	hasCorsPolicy bool
+	reporter            reports.Reporter
+	hasCorsPolicy       map[string]bool
+	needStatefulSession map[string]bool
 }
 
 func (p *builtinPluginGwPass) ApplyForBackend(ctx context.Context, pCtx *ir.RouteBackendContext, in ir.HttpBackend, out *envoy_config_route_v3.Route) error {
@@ -67,19 +74,23 @@ func (p *builtinPluginGwPass) ApplyHCM(ctx context.Context, pCtx *ir.HcmContext,
 }
 
 func NewBuiltInIr(kctx krt.HandlerContext, f gwv1.HTTPRouteFilter, fromgk schema.GroupKind, fromns string, refgrants *RefGrantIndex, ups *BackendIndex) ir.PolicyIR {
+	var cors *gwv1.HTTPCORSFilter
+	if f.Type == gwv1.HTTPRouteFilterCORS {
+		cors = f.CORS
+	}
+
 	return &builtinPlugin{
-		spec:           f,
+		cors:           cors,
 		filterMutation: convert(kctx, f, fromgk, fromns, refgrants, ups),
 	}
 }
 
 func NewBuiltInRuleIr(rule gwv1.HTTPRouteRule) ir.PolicyIR {
 	// If no rule policies are set, return nil so that we don't have a no-op policy
-	if rule.Timeouts == nil && rule.Retry == nil {
+	if rule.Timeouts == nil && rule.Retry == nil && rule.SessionPersistence == nil {
 		return nil
 	}
 	return &builtinPlugin{
-		ruleSpec:     rule,
 		ruleMutation: convertRule(rule),
 	}
 }
@@ -121,6 +132,7 @@ func formatRuleError(action string, ruleIR ir.HttpRouteRuleMatchIR, err error) e
 }
 
 func convertRule(rule gwv1.HTTPRouteRule) func(in ir.HttpRouteRuleMatchIR, outputRoute *envoy_config_route_v3.Route) error {
+	sessionState := convertSessionPersistence(rule.SessionPersistence)
 	return func(ruleIR ir.HttpRouteRuleMatchIR, outputRoute *envoy_config_route_v3.Route) error {
 		// A parent route rule with a delegated backend will not have outputRoute.RouteAction set
 		// but the plugin will be invoked on the rule, so treat this as a no-op call
@@ -137,8 +149,89 @@ func convertRule(rule gwv1.HTTPRouteRule) func(in ir.HttpRouteRuleMatchIR, outpu
 		if err != nil {
 			return formatRuleError("retry", ruleIR, err)
 		}
+		err = applySessionPersistence(outputRoute, sessionState)
+		if err != nil {
+			return formatRuleError("session persistence", ruleIR, err)
+		}
 		return nil
 	}
+}
+
+func convertSessionPersistence(sessionPersistence *gwv1.SessionPersistence) *anypb.Any {
+	if sessionPersistence == nil {
+		return nil
+	}
+
+	// Handle session persistence if specified
+	var sessionState proto.Message
+	spType := gwv1.CookieBasedSessionPersistence
+	if sessionPersistence.Type != nil {
+		spType = *sessionPersistence.Type
+	}
+
+	switch spType {
+	case gwv1.CookieBasedSessionPersistence:
+		var ttl *durationpb.Duration
+		if sessionPersistence.AbsoluteTimeout != nil {
+			if parsed, err := time.ParseDuration(string(*sessionPersistence.AbsoluteTimeout)); err == nil {
+				ttl = durationpb.New(parsed)
+			}
+		}
+		cookie := &httpv3.Cookie{
+			Name: utils.SanitizeCookieName(ptr.Deref(sessionPersistence.SessionName, "sessionPersistence")),
+			Ttl:  ttl,
+		}
+		// Only set LifetimeType if present in CookieConfig
+		if sessionPersistence.CookieConfig != nil &&
+			sessionPersistence.CookieConfig.LifetimeType != nil {
+			switch *sessionPersistence.CookieConfig.LifetimeType {
+			case gwv1.SessionCookieLifetimeType:
+				// Session cookies — cookies without a Max-Age or Expires attribute – are deleted when the current session ends
+				cookie.Ttl = nil
+			case gwv1.PermanentCookieLifetimeType:
+				if cookie.GetTtl() == nil {
+					cookie.Ttl = durationpb.New(time.Hour * 24 * 365)
+				}
+			}
+		}
+		sessionState = &stateful_cookie.CookieBasedSessionState{
+			Cookie: cookie,
+		}
+	case gwv1.HeaderBasedSessionPersistence:
+		sessionState = &stateful_header.HeaderBasedSessionState{
+			Name: utils.SanitizeHeaderName(ptr.Deref(sessionPersistence.SessionName, "x-session-persistence")),
+		}
+	}
+	sessionStateAny, err := utils.MessageToAny(sessionState)
+	if err != nil {
+		logger.Error("failed to create session state: %v", "error", err)
+		return nil
+	}
+	statefulSession := &stateful_sessionv3.StatefulSession{
+		SessionState: &envoy_config_core_v3.TypedExtensionConfig{
+			Name:        "envoy.http.stateful_session." + strings.ToLower(string(spType)),
+			TypedConfig: sessionStateAny,
+		},
+	}
+	typedConfig, err := utils.MessageToAny(statefulSession)
+	if err != nil {
+		logger.Error("failed to create session state: %v", "error", err)
+		return nil
+	}
+	return typedConfig
+}
+
+func applySessionPersistence(route *envoy_config_route_v3.Route, sessionPersistence *anypb.Any) error {
+	if sessionPersistence == nil {
+		return nil
+	}
+
+	if route.GetTypedPerFilterConfig() == nil {
+		route.TypedPerFilterConfig = map[string]*anypb.Any{}
+	}
+	route.GetTypedPerFilterConfig()[statefulSessionFilterName] = sessionPersistence
+
+	return nil
 }
 
 func applyTimeout(route *envoy_config_route_v3.Route, timeout *gwv1.HTTPRouteTimeouts, hasRetry bool) error {
@@ -535,7 +628,9 @@ func toEnvoyPercentage(percentage float64) *envoytype.FractionalPercent {
 
 func NewGatewayTranslationPass(ctx context.Context, tctx ir.GwTranslationCtx, reporter reports.Reporter) ir.ProxyTranslationPass {
 	return &builtinPluginGwPass{
-		reporter: reporter,
+		reporter:            reporter,
+		hasCorsPolicy:       make(map[string]bool),
+		needStatefulSession: make(map[string]bool),
 	}
 }
 
@@ -568,10 +663,13 @@ func (p *builtinPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.RouteC
 		if err := policy.ruleMutation(pCtx.In, outputRoute); err != nil {
 			errs = errors.Join(errs, err)
 		}
+		if outputRoute.GetTypedPerFilterConfig()[statefulSessionFilterName] != nil {
+			p.needStatefulSession[pCtx.FilterChainName] = true
+		}
 	}
 
-	if policy.spec.Type == gwv1.HTTPRouteFilterCORS {
-		p.hasCorsPolicy = true
+	if policy.cors != nil {
+		p.hasCorsPolicy[pCtx.FilterChainName] = true
 	}
 
 	return errs
@@ -586,9 +684,9 @@ func (p *builtinPluginGwPass) ApplyForRouteBackend(
 	if !ok {
 		return nil
 	}
-	if inPolicy.spec.Type == gwv1.HTTPRouteFilterCORS {
-		pCtx.TypedFilterConfig[envoy_wellknown.CORS] = ToEnvoyCorsPolicy(inPolicy.spec.CORS)
-		p.hasCorsPolicy = true
+	if inPolicy.cors != nil {
+		pCtx.TypedFilterConfig[envoy_wellknown.CORS] = ToEnvoyCorsPolicy(inPolicy.cors)
+		p.hasCorsPolicy[pCtx.FilterChainName] = true
 	}
 	return nil
 }
@@ -597,11 +695,20 @@ func (p *builtinPluginGwPass) HttpFilters(ctx context.Context, fcc ir.FilterChai
 	builtinStaged := []plugins.StagedHttpFilter{}
 
 	// If there is a cors policy for route rule or backendRef, add the cors http filter to the chain
-	if p.hasCorsPolicy {
+	if p.hasCorsPolicy[fcc.FilterChainName] {
 		stagedFilter, err := plugins.NewStagedFilter(envoy_wellknown.CORS, &corsv3.Cors{}, plugins.DuringStage(plugins.CorsStage))
 		if err != nil {
 			return nil, err
 		}
+		builtinStaged = append(builtinStaged, stagedFilter)
+	}
+
+	if p.needStatefulSession[fcc.FilterChainName] {
+		stagedFilter, err := plugins.NewStagedFilter(statefulSessionFilterName, &stateful_sessionv3.StatefulSession{}, plugins.DuringStage(plugins.AcceptedStage))
+		if err != nil {
+			return nil, err
+		}
+		stagedFilter.Filter.Disabled = true
 		builtinStaged = append(builtinStaged, stagedFilter)
 	}
 

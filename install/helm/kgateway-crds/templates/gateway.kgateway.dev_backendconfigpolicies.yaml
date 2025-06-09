@@ -81,6 +81,73 @@ spec:
                 type: object
               perConnectionBufferLimitBytes:
                 type: integer
+              sslConfig:
+                properties:
+                  allowRenegotiation:
+                    type: boolean
+                  alpnProtocols:
+                    items:
+                      type: string
+                    type: array
+                  oneWayTLS:
+                    type: boolean
+                  secretRef:
+                    properties:
+                      name:
+                        default: ""
+                        type: string
+                    type: object
+                    x-kubernetes-map-type: atomic
+                  sni:
+                    type: string
+                  sslFiles:
+                    properties:
+                      rootCA:
+                        type: string
+                      tlsCertificate:
+                        type: string
+                      tlsKey:
+                        type: string
+                    type: object
+                    x-kubernetes-validations:
+                    - message: At least one of tlsCertificate, tlsKey, or rootCA must
+                        be set in SSLFiles
+                      rule: has(self.tlsCertificate) || has(self.tlsKey) || has(self.rootCA)
+                  sslParameters:
+                    properties:
+                      cipherSuites:
+                        items:
+                          type: string
+                        type: array
+                      ecdhCurves:
+                        items:
+                          type: string
+                        type: array
+                      tlsMaxVersion:
+                        enum:
+                        - AUTO
+                        - "1.0"
+                        - "1.1"
+                        - "1.2"
+                        - "1.3"
+                        type: string
+                      tlsMinVersion:
+                        enum:
+                        - AUTO
+                        - "1.0"
+                        - "1.1"
+                        - "1.2"
+                        - "1.3"
+                        type: string
+                    type: object
+                  verifySubjectAltName:
+                    items:
+                      type: string
+                    type: array
+                type: object
+                x-kubernetes-validations:
+                - message: Exactly one of secretRef or sslFiles must be set in SSLConfig
+                  rule: has(self.secretRef) != has(self.sslFiles)
               targetRefs:
                 items:
                   properties:

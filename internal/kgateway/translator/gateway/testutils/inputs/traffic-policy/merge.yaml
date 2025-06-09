@@ -24,20 +24,42 @@ spec:
   hostnames:
   - "example.com"
   rules:
-  - backendRefs:
+  - name: rule0
+    backendRefs:
     - name: example-svc
       port: 80
+    filters:
+    - type: ExtensionRef
+      extensionRef:
+        group: gateway.kgateway.dev
+        kind: TrafficPolicy
+        name: extensionref-policy
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: TrafficPolicy
 metadata:
-  name: transform
+  name: extensionref-policy
+  namespace: infra
+spec:
+  cors:
+    allowOrigins:
+    - "https://example.com"
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: policy-with-section-name
   namespace: infra
 spec:
   targetRefs:
   - group: gateway.networking.k8s.io
     kind: HTTPRoute
     name: example-route
+    sectionName: rule0
+  # cors will be ignored in favor of extensionref-policy
+  cors:
+    allowOrigins:
+    - "https://ignored.com"
   transformation:
     response:
       add:
@@ -47,7 +69,7 @@ spec:
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: TrafficPolicy
 metadata:
-  name: rate-limit
+  name: policy-without-section-name
   namespace: infra
 spec:
   targetRefs:
@@ -60,6 +82,12 @@ spec:
         maxTokens: 99
         tokensPerFill: 1
         fillInterval: 33s
+  # transformation will be ignored in favor of policy-with-section-name
+  transformation:
+    response:
+      add:
+      - name: ignored
+        value: ignored
 ---
 apiVersion: v1
 kind: Service

@@ -176,15 +176,15 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 				var currentStatus gwv1alpha2.PolicyStatus
 
 				expectedPolicies := []reports.PolicyKey{
-					{Group: "gateway.kgateway.dev", Kind: "TrafficPolicy", Namespace: "infra", Name: "transform"},
-					{Group: "gateway.kgateway.dev", Kind: "TrafficPolicy", Namespace: "infra", Name: "rate-limit"},
+					{Group: "gateway.kgateway.dev", Kind: "TrafficPolicy", Namespace: "infra", Name: "policy-with-section-name"},
+					{Group: "gateway.kgateway.dev", Kind: "TrafficPolicy", Namespace: "infra", Name: "policy-without-section-name"},
 				}
 
 				for _, policy := range expectedPolicies {
 					// Validate the 2 policies attached to the route
 					status := reportsMap.BuildPolicyStatus(context.TODO(), policy, wellknown.GatewayControllerName, currentStatus)
-					Expect(status).NotTo(BeNil())
-					Expect(status.Ancestors).To(HaveLen(1)) // 1 Gateway(ancestor)
+					Expect(status).NotTo(BeNil(), "status missing for policy %v", policy)
+					Expect(status.Ancestors).To(HaveLen(1), "ancestor missing for policy %v", policy) // 1 Gateway(ancestor)
 					acceptedCondition := meta.FindStatusCondition(status.Ancestors[0].Conditions, string(gwv1alpha2.PolicyConditionAccepted))
 					Expect(acceptedCondition).NotTo(BeNil())
 					Expect(acceptedCondition.Status).To(Equal(metav1.ConditionTrue))
@@ -492,6 +492,38 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 			Name:      "example-gateway",
 		},
 	}),
+	Entry("DFP Backend with TLS", translatorTestCase{
+		inputFile:  "dfp/tls.yaml",
+		outputFile: "dfp/tls.yaml",
+		gwNN: types.NamespacedName{
+			Namespace: "default",
+			Name:      "example-gateway",
+		},
+	}),
+	Entry("DFP Backend with simple", translatorTestCase{
+		inputFile:  "dfp/simple.yaml",
+		outputFile: "dfp/simple.yaml",
+		gwNN: types.NamespacedName{
+			Namespace: "default",
+			Name:      "example-gateway",
+		},
+	}),
+	Entry("Backend TLS Policy", translatorTestCase{
+		inputFile:  "backendtlspolicy/tls.yaml",
+		outputFile: "backendtlspolicy/tls.yaml",
+		gwNN: types.NamespacedName{
+			Namespace: "default",
+			Name:      "example-gateway",
+		},
+	}),
+	Entry("Backend TLS Policy with SAN", translatorTestCase{
+		inputFile:  "backendtlspolicy/tls-san.yaml",
+		outputFile: "backendtlspolicy/tls-san.yaml",
+		gwNN: types.NamespacedName{
+			Namespace: "default",
+			Name:      "example-gateway",
+		},
+	}),
 	Entry("Proxy with no routes", translatorTestCase{
 		inputFile:  "edge-cases/no_route.yaml",
 		outputFile: "no_route.yaml",
@@ -516,6 +548,26 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 			Name:      "example-gateway",
 		},
 	}),
+	Entry(
+		"http gateway with session persistence (cookie)",
+		translatorTestCase{
+			inputFile:  "session-persistence/cookie.yaml",
+			outputFile: "session-persistence/cookie.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		}),
+	Entry(
+		"http gateway with session persistence (header)",
+		translatorTestCase{
+			inputFile:  "session-persistence/header.yaml",
+			outputFile: "session-persistence/header.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		}),
 	Entry("HTTPListenerPolicy with upgrades", translatorTestCase{
 		inputFile:  "https-listener-pol/upgrades.yaml",
 		outputFile: "https-listener-pol/upgrades.yaml",

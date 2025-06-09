@@ -23,6 +23,8 @@ CONFORMANCE_VERSION="${CONFORMANCE_VERSION:-$(go list -m sigs.k8s.io/gateway-api
 CONFORMANCE_CHANNEL="${CONFORMANCE_CHANNEL:-"experimental"}"
 # The kind CLI to use. Defaults to the latest version from the kind repo.
 KIND="${KIND:-go tool kind}"
+# The helm CLI to use. Defaults to the latest version from the helm repo.
+HELM="${HELM:-go tool helm}"
 # If true, use localstack for lambda functions
 LOCALSTACK="${LOCALSTACK:-false}"
 
@@ -60,8 +62,8 @@ if [[ $SKIP_DOCKER == 'true' ]]; then
   # TODO(tim): refactor the Makefile & CI scripts so we're loading local
   # charts to real helm repos, and then we can remove this block.
   echo "SKIP_DOCKER=true, not building images or chart"
-  helm repo add gloo https://storage.googleapis.com/solo-public-helm
-  helm repo update
+  $HELM repo add gloo https://storage.googleapis.com/solo-public-helm
+  $HELM repo update
 else
   # 2. Make all the docker images and load them to the kind cluster
   VERSION=$VERSION CLUSTER_NAME=$CLUSTER_NAME IMAGE_VARIANT=$IMAGE_VARIANT make kind-build-and-load
