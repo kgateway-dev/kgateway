@@ -9,6 +9,9 @@ Clusters:
   lbPolicy: CLUSTER_PROVIDED
   metadata: {}
   name: backend_default_dfp-backend_0
+- connectTimeout: 5s
+  metadata: {}
+  name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:
     socketAddress:

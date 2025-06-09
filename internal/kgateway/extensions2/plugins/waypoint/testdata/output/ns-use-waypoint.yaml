@@ -1,3 +1,47 @@
+Clusters:
+- connectTimeout: 5s
+  dnsLookupFamily: V4_PREFERRED
+  loadAssignment:
+    clusterName: istio-se_infra_se-c_se-c.infra.svc.cluster.local_9000
+    endpoints:
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: 3.3.3.3
+              portValue: 9000
+        loadBalancingWeight: 1
+      loadBalancingWeight: 1
+  metadata: {}
+  name: istio-se_infra_se-c_se-c.infra.svc.cluster.local_9000
+  type: STATIC
+- connectTimeout: 5s
+  edsClusterConfig:
+    edsConfig:
+      ads: {}
+      resourceApiVersion: V3
+  metadata: {}
+  name: kube_infra_helloworld-headless_5000
+  type: EDS
+- connectTimeout: 5s
+  edsClusterConfig:
+    edsConfig:
+      ads: {}
+      resourceApiVersion: V3
+  metadata: {}
+  name: kube_infra_svc-a_5000
+  type: EDS
+- connectTimeout: 5s
+  edsClusterConfig:
+    edsConfig:
+      ads: {}
+      resourceApiVersion: V3
+  metadata: {}
+  name: kube_infra_svc-b_9000
+  type: EDS
+- connectTimeout: 5s
+  metadata: {}
+  name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:
     socketAddress:
