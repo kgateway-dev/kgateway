@@ -79,6 +79,78 @@ spec:
                   overrideStreamErrorOnInvalidHttpMessage:
                     type: boolean
                 type: object
+              loadBalancerConfig:
+                properties:
+                  closeConnectionsOnHostSetChange:
+                    type: boolean
+                  healthyPanicThreshold:
+                    format: int32
+                    type: integer
+                  leastRequest:
+                    properties:
+                      choiceCount:
+                        format: int32
+                        type: integer
+                      slowStartConfig:
+                        properties:
+                          aggression:
+                            type: string
+                            x-kubernetes-validations:
+                            - message: Aggression, if specified, must be a string
+                                representing a number greater than 0.0
+                              rule: self == "" || (self.matches('^-?(?:[0-9]+(?:\\.[0-9]*)?|\\.[0-9]+)$')
+                                && double(self) > 0.0)
+                          minWeightPercent:
+                            format: int32
+                            type: integer
+                          window:
+                            type: string
+                        type: object
+                    type: object
+                  localityConfigType:
+                    enum:
+                    - WeightedLb
+                    type: string
+                  ringHash:
+                    properties:
+                      maximumRingSize:
+                        format: int64
+                        type: integer
+                      minimumRingSize:
+                        format: int64
+                        type: integer
+                    type: object
+                  roundRobin:
+                    properties:
+                      slowStartConfig:
+                        properties:
+                          aggression:
+                            type: string
+                            x-kubernetes-validations:
+                            - message: Aggression, if specified, must be a string
+                                representing a number greater than 0.0
+                              rule: self == "" || (self.matches('^-?(?:[0-9]+(?:\\.[0-9]*)?|\\.[0-9]+)$')
+                                && double(self) > 0.0)
+                          minWeightPercent:
+                            format: int32
+                            type: integer
+                          window:
+                            type: string
+                        type: object
+                    type: object
+                  type:
+                    enum:
+                    - LeastRequest
+                    - RoundRobin
+                    - Random
+                    - RingHash
+                    - Maglev
+                    type: string
+                  updateMergeWindow:
+                    type: string
+                  useHostnameForHashing:
+                    type: boolean
+                type: object
               perConnectionBufferLimitBytes:
                 type: integer
               sslConfig:
