@@ -584,6 +584,14 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 			Name:      "example-gateway",
 		},
 	}),
+	Entry("Backend Config Policy with LB Config", translatorTestCase{
+		inputFile:  "backendconfigpolicy/lb-config.yaml",
+		outputFile: "backendconfigpolicy/lb-config.yaml",
+		gwNN: types.NamespacedName{
+			Namespace: "default",
+			Name:      "example-gateway",
+		},
+	}),
 	// TODO: Add this once istio adds support for listener sets
 	// FEntry(
 	// 	"listener sets",
