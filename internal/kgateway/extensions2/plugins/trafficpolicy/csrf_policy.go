@@ -8,6 +8,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 )
 
 const (
@@ -29,6 +30,24 @@ func (c *CsrfIR) Equals(other *CsrfIR) bool {
 	}
 
 	return proto.Equal(c.csrfPolicy, other.csrfPolicy)
+}
+
+// handleCsrf adds CSRF configuration to routes
+func (p *trafficPolicyPluginGwPass) handleCsrf(fcn string, typedFilterConfig *ir.TypedFilterConfigMap, ir *CsrfIR) {
+	if ir == nil {
+		return
+	}
+	typedFilterConfig.AddTypedConfig(csrfExtensionFilterName, ir.csrfPolicy)
+
+	// Add a filter to the chain. When having a csrf for a route we need to also have a
+	// globally disabled csrf filter in the chain otherwise it will be ignored.
+	// If there is also csrf for the listener, it will not override this one.
+	if p.csrfInChain == nil {
+		p.csrfInChain = make(map[string]*envoy_csrf_v3.CsrfPolicy)
+	}
+	if _, ok := p.csrfInChain[fcn]; !ok {
+		p.csrfInChain[fcn] = csrfFilter()
+	}
 }
 
 // csrfForSpec translates the CSRF spec into and onto the IR policy

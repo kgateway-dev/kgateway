@@ -80,6 +80,10 @@ class TestRouting(LLMClient):
         os.environ.get("TEST_TOKEN_PASSTHROUGH") == "true",
         reason="passthrough not enabled for gemini",
     )
+    @pytest.mark.skipif(
+        os.environ.get("TEST_OVERRIDE_PROVIDER") == "true",
+        reason="overrideProvider not enabled for gemini",
+    )
     def test_gemini_completion(self):
         resp = self.gemini_client.generate_content(
             "Compose a poem that explains the concept of recursion in programming.",

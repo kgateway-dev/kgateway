@@ -8,24 +8,31 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/solo-io/go-utils/contextutils"
-
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/query"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/listener"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	reports "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
 
-func NewTranslator(queries query.GatewayQueries) extensionsplug.KGwTranslator {
+var logger = logging.New("translator/gateway")
+
+type TranslatorConfig struct {
+	ListenerTranslatorConfig listener.ListenerTranslatorConfig
+}
+
+func NewTranslator(queries query.GatewayQueries, settings TranslatorConfig) extensionsplug.KGwTranslator {
 	return &translator{
-		queries: queries,
+		queries:  queries,
+		settings: settings,
 	}
 }
 
 type translator struct {
-	queries query.GatewayQueries
+	queries  query.GatewayQueries
+	settings TranslatorConfig
 }
 
 func (t *translator) Translate(
@@ -38,8 +45,6 @@ func (t *translator) Translate(
 	stopwatch.Start()
 	defer stopwatch.Stop(ctx)
 
-	ctx = contextutils.WithLogger(ctx, "k8s-gateway-translator")
-	logger := contextutils.LoggerFrom(ctx)
 	routesForGw, err := t.queries.GetRoutesForGateway(kctx, ctx, gateway)
 	if err != nil {
 		logger.Error("failed to get routes for gateway", "namespace", gateway.Namespace, "name", gateway.Name, "error", err)
@@ -66,6 +71,7 @@ func (t *translator) Translate(
 		gateway,
 		routesForGw,
 		reporter,
+		t.settings.ListenerTranslatorConfig,
 	)
 
 	return &ir.GatewayIR{

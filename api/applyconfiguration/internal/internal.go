@@ -186,6 +186,15 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: model
       type:
         scalar: string
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AuthHeaderOverride
+  map:
+    fields:
+    - name: headerName
+      type:
+        scalar: string
+    - name: prefix
+      type:
+        scalar: string
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AwsAuth
   map:
     fields:
@@ -309,6 +318,9 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: perConnectionBufferLimitBytes
       type:
         scalar: numeric
+    - name: sslConfig
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SSLConfig
     - name: targetRefs
       type:
         list:
@@ -333,6 +345,9 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: aws
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AwsBackend
+    - name: dynamicForwardProxy
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.DynamicForwardProxyBackend
     - name: static
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.StaticBackend
@@ -347,6 +362,8 @@ var schemaYAML = typed.YAMLObject(`types:
         discriminatorValue: AI
       - fieldName: aws
         discriminatorValue: Aws
+      - fieldName: dynamicForwardProxy
+        discriminatorValue: DynamicForwardProxy
       - fieldName: static
         discriminatorValue: Static
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.BackendStatus
@@ -534,6 +551,12 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: value
       type:
         scalar: numeric
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.DynamicForwardProxyBackend
+  map:
+    fields:
+    - name: enableTls
+      type:
+        scalar: boolean
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.EnvoyBootstrap
   map:
     fields:
@@ -857,6 +880,9 @@ var schemaYAML = typed.YAMLObject(`types:
           elementType:
             namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LocalPolicyTargetSelector
           elementRelationship: atomic
+    - name: upgradeConfig
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.UpgradeConfig
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.HeaderFilter
   map:
     fields:
@@ -992,9 +1018,15 @@ var schemaYAML = typed.YAMLObject(`types:
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LLMProvider
   map:
     fields:
+    - name: authHeaderOverride
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AuthHeaderOverride
     - name: hostOverride
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Host
+    - name: pathOverride
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.PathOverride
     - name: provider
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SupportedLLMProvider
@@ -1088,6 +1120,12 @@ var schemaYAML = typed.YAMLObject(`types:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SingleAuthToken
       default: {}
     - name: model
+      type:
+        scalar: string
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.PathOverride
+  map:
+    fields:
+    - name: fullPath
       type:
         scalar: string
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Pod
@@ -1314,6 +1352,72 @@ var schemaYAML = typed.YAMLObject(`types:
           elementType:
             scalar: string
           elementRelationship: atomic
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SSLConfig
+  map:
+    fields:
+    - name: allowRenegotiation
+      type:
+        scalar: boolean
+    - name: alpnProtocols
+      type:
+        list:
+          elementType:
+            scalar: string
+          elementRelationship: atomic
+    - name: oneWayTLS
+      type:
+        scalar: boolean
+    - name: secretRef
+      type:
+        namedType: io.k8s.api.core.v1.LocalObjectReference
+    - name: sni
+      type:
+        scalar: string
+    - name: sslFiles
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SSLFiles
+    - name: sslParameters
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SSLParameters
+    - name: verifySubjectAltName
+      type:
+        list:
+          elementType:
+            scalar: string
+          elementRelationship: atomic
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SSLFiles
+  map:
+    fields:
+    - name: rootCA
+      type:
+        scalar: string
+    - name: tlsCertificate
+      type:
+        scalar: string
+    - name: tlsKey
+      type:
+        scalar: string
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SSLParameters
+  map:
+    fields:
+    - name: cipherSuites
+      type:
+        list:
+          elementType:
+            scalar: string
+          elementRelationship: atomic
+    - name: ecdhCurves
+      type:
+        list:
+          elementType:
+            scalar: string
+          elementRelationship: atomic
+    - name: tlsMaxVersion
+      type:
+        scalar: string
+    - name: tlsMinVersion
+      type:
+        scalar: string
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SdsBootstrap
   map:
     fields:
@@ -1584,6 +1688,15 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: response
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Transform
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.UpgradeConfig
+  map:
+    fields:
+    - name: enabledUpgrades
+      type:
+        list:
+          elementType:
+            scalar: string
+          elementRelationship: atomic
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.VertexAIConfig
   map:
     fields:

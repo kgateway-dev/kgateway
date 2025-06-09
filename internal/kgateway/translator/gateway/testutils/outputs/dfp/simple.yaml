@@ -1,0 +1,58 @@
+Clusters:
+- clusterType:
+    name: envoy.clusters.dynamic_forward_proxy
+    typedConfig:
+      '@type': type.googleapis.com/envoy.extensions.clusters.dynamic_forward_proxy.v3.ClusterConfig
+      subClustersConfig:
+        lbPolicy: LEAST_REQUEST
+  connectTimeout: 5s
+  lbPolicy: CLUSTER_PROVIDED
+  metadata: {}
+  name: backend_default_dfp-backend_0
+- connectTimeout: 5s
+  metadata: {}
+  name: test-backend-plugin_default_example-svc_80
+Listeners:
+- address:
+    socketAddress:
+      address: '::'
+      ipv4Compat: true
+      portValue: 8080
+  filterChains:
+  - filters:
+    - name: envoy.filters.network.http_connection_manager
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+        httpFilters:
+        - name: envoy.filters.http.dynamic_forward_proxy
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.dynamic_forward_proxy.v3.FilterConfig
+            subClusterConfig: {}
+        - name: envoy.filters.http.router
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+        mergeSlashes: true
+        normalizePath: true
+        rds:
+          configSource:
+            ads: {}
+            resourceApiVersion: V3
+          routeConfigName: listener~80
+        statPrefix: http
+        useRemoteAddress: true
+    name: listener~80
+  name: listener~80
+Routes:
+- ignorePortInHostMatching: true
+  name: listener~80
+  virtualHosts:
+  - domains:
+    - '*'
+    name: listener~80~*
+    routes:
+    - match:
+        prefix: /
+      name: listener~80~*-route-0-httproute-example-route-default-0-0-matcher-0
+      route:
+        cluster: backend_default_dfp-backend_0
+        clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR

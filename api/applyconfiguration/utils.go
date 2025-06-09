@@ -37,6 +37,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.AIPromptGuardApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("AnthropicConfig"):
 		return &apiv1alpha1.AnthropicConfigApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("AuthHeaderOverride"):
+		return &apiv1alpha1.AuthHeaderOverrideApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("AwsAuth"):
 		return &apiv1alpha1.AwsAuthApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("AwsBackend"):
@@ -77,6 +79,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.DirectResponseSpecApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("DurationFilter"):
 		return &apiv1alpha1.DurationFilterApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("DynamicForwardProxyBackend"):
+		return &apiv1alpha1.DynamicForwardProxyBackendApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("EnvoyBootstrap"):
 		return &apiv1alpha1.EnvoyBootstrapApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("EnvoyContainer"):
@@ -153,6 +157,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.MultiPoolConfigApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("OpenAIConfig"):
 		return &apiv1alpha1.OpenAIConfigApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("PathOverride"):
+		return &apiv1alpha1.PathOverrideApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("Pod"):
 		return &apiv1alpha1.PodApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("Port"):
@@ -195,6 +201,12 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.ServiceAccountApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("SingleAuthToken"):
 		return &apiv1alpha1.SingleAuthTokenApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("SSLConfig"):
+		return &apiv1alpha1.SSLConfigApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("SSLFiles"):
+		return &apiv1alpha1.SSLFilesApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("SSLParameters"):
+		return &apiv1alpha1.SSLParametersApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("StaticBackend"):
 		return &apiv1alpha1.StaticBackendApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("StatsConfig"):
@@ -217,6 +229,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.TransformApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("TransformationPolicy"):
 		return &apiv1alpha1.TransformationPolicyApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("UpgradeConfig"):
+		return &apiv1alpha1.UpgradeConfigApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("VertexAIConfig"):
 		return &apiv1alpha1.VertexAIConfigApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("Webhook"):

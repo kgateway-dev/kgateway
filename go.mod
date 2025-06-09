@@ -11,7 +11,7 @@ require (
 	github.com/envoyproxy/go-control-plane/contrib v1.32.5-0.20250507123352-93990c5ec02f
 	github.com/envoyproxy/go-control-plane/envoy v1.32.5-0.20250507123352-93990c5ec02f
 	github.com/envoyproxy/go-control-plane/ratelimit v0.1.1-0.20250507123352-93990c5ec02f
-	github.com/fsnotify/fsnotify v1.8.0
+	github.com/fsnotify/fsnotify v1.9.0
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 	github.com/go-logr/logr v1.4.2
 	github.com/go-logr/zapr v1.3.0
@@ -36,7 +36,7 @@ require (
 	golang.org/x/net v0.39.0
 	google.golang.org/grpc v1.72.0
 	google.golang.org/protobuf v1.36.6
-	helm.sh/helm/v3 v3.17.0
+	helm.sh/helm/v3 v3.17.3
 	istio.io/api v1.25.0-alpha.0.0.20250210220544-0b64afd2de85
 	istio.io/client-go v1.25.0-alpha.0.0.20250210220843-5a4065fded65
 	istio.io/istio v0.0.0-20250212203644-c2ac935c5888
@@ -56,6 +56,7 @@ require (
 )
 
 require (
+	github.com/Masterminds/vcs v1.13.3 // indirect
 	github.com/alecthomas/chroma/v2 v2.17.2 // indirect
 	github.com/dlclark/regexp2 v1.11.5 // indirect
 	github.com/manuelarte/funcorder v0.2.1 // indirect
@@ -619,6 +620,7 @@ tool (
 	github.com/onsi/ginkgo/v2/ginkgo
 	github.com/saiskee/gettercheck
 	golang.org/x/tools/cmd/goimports
+	helm.sh/helm/v3/cmd/helm
 	k8s.io/code-generator/cmd/applyconfiguration-gen
 	k8s.io/code-generator/cmd/client-gen
 	k8s.io/code-generator/cmd/register-gen

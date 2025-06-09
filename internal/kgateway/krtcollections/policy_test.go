@@ -25,9 +25,9 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
 var (
@@ -416,16 +416,14 @@ func k8sSvcUpstreams(services krt.Collection[*corev1.Service]) krt.Collection[ir
 		uss := []ir.BackendObjectIR{}
 
 		for _, port := range svc.Spec.Ports {
-			uss = append(uss, ir.BackendObjectIR{
-				ObjectSource: ir.ObjectSource{
-					Kind:      svcGk.Kind,
-					Group:     svcGk.Group,
-					Namespace: svc.Namespace,
-					Name:      svc.Name,
-				},
-				Obj:  svc,
-				Port: port.Port,
-			})
+			backend := ir.NewBackendObjectIR(ir.ObjectSource{
+				Kind:      svcGk.Kind,
+				Group:     svcGk.Group,
+				Namespace: svc.Namespace,
+				Name:      svc.Name,
+			}, port.Port, "")
+			backend.Obj = svc
+			uss = append(uss, backend)
 		}
 		return uss
 	})
@@ -434,18 +432,16 @@ func k8sSvcUpstreams(services krt.Collection[*corev1.Service]) krt.Collection[ir
 func infPoolUpstreams(poolCol krt.Collection[*infextv1a2.InferencePool]) krt.Collection[ir.BackendObjectIR] {
 	return krt.NewCollection(poolCol, func(kctx krt.HandlerContext, pool *infextv1a2.InferencePool) *ir.BackendObjectIR {
 		// Create a BackendObjectIR IR representation from the given InferencePool.
-		return &ir.BackendObjectIR{
-			ObjectSource: ir.ObjectSource{
-				Kind:      infPoolGk.Kind,
-				Group:     infPoolGk.Group,
-				Namespace: pool.Namespace,
-				Name:      pool.Name,
-			},
-			Obj:               pool,
-			Port:              pool.Spec.TargetPortNumber,
-			GvPrefix:          "endpoint-picker",
-			CanonicalHostname: "",
-		}
+		backend := ir.NewBackendObjectIR(ir.ObjectSource{
+			Kind:      infPoolGk.Kind,
+			Group:     infPoolGk.Group,
+			Namespace: pool.Namespace,
+			Name:      pool.Name,
+		}, pool.Spec.TargetPortNumber, "")
+		backend.Obj = pool
+		backend.GvPrefix = "endpoint-picker"
+		backend.CanonicalHostname = ""
+		return &backend
 	})
 }
 

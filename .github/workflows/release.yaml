@@ -91,7 +91,7 @@ jobs:
 
       - name: Helm login to ${{ env.IMAGE_REGISTRY }}
         if: ${{ github.event_name != 'pull_request' }}
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ${{ env.IMAGE_REGISTRY }} -u ${{ github.repository_owner }} --password-stdin
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | go tool helm registry login ${{ env.IMAGE_REGISTRY }} -u ${{ github.repository_owner }} --password-stdin
 
       - name: Package kgateway chart
         run: make package-kgateway-charts
@@ -101,8 +101,9 @@ jobs:
       - name: Push kgateway chart to registry
         if: ${{ github.event_name != 'pull_request' }}
         run: |
-          helm push _test/kgateway-${{ needs.setup.outputs.version }}.tgz oci://${{ env.IMAGE_REGISTRY }}/charts
-          helm push _test/kgateway-crds-${{ needs.setup.outputs.version }}.tgz oci://${{ env.IMAGE_REGISTRY }}/charts
+          # TODO(tim): Add Makefile target for this.
+          go tool helm push _test/kgateway-${{ needs.setup.outputs.version }}.tgz oci://${{ env.IMAGE_REGISTRY }}/charts
+          go tool helm push _test/kgateway-crds-${{ needs.setup.outputs.version }}.tgz oci://${{ env.IMAGE_REGISTRY }}/charts
   goreleaser:
     name: goreleaser
     needs: [setup, helm]
@@ -152,7 +153,7 @@ jobs:
 
       - name: Login to ghcr.io
         if: ${{ github.event_name != 'pull_request' }}
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ${{ env.IMAGE_REGISTRY }} -u ${{ github.repository_owner }} --password-stdin
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | go tool helm registry login ${{ env.IMAGE_REGISTRY }} -u ${{ github.repository_owner }} --password-stdin
 
       - name: Download module dependencies
         run: make mod-download
@@ -167,12 +168,12 @@ jobs:
       - name: Install the released chart
         run: |
           # install the crds first
-          helm install kgateway-crds oci://${{ env.IMAGE_REGISTRY }}/charts/kgateway-crds \
+          go tool helm install kgateway-crds oci://${{ env.IMAGE_REGISTRY }}/charts/kgateway-crds \
             --version ${{ needs.setup.outputs.version }} \
             --wait --timeout 5m
 
           # install the main chart
-          helm install --create-namespace --namespace kgateway-system kgateway \
+          go tool helm install --create-namespace --namespace kgateway-system kgateway \
             oci://${{ env.IMAGE_REGISTRY }}/charts/kgateway \
             --set image.registry=${{ env.IMAGE_REGISTRY }} \
             --version ${{ needs.setup.outputs.version }} \

@@ -4,9 +4,8 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 
 	networking "istio.io/api/networking/v1alpha3"
 	networkingclient "istio.io/client-go/pkg/apis/networking/v1"
@@ -73,6 +72,7 @@ func backendsCollections(
 	logger *slog.Logger,
 	ServiceEntries krt.Collection[*networkingclient.ServiceEntry],
 	krtOpts krtutil.KrtOptions,
+	aliaser Aliaser,
 ) krt.Collection[ir.BackendObjectIR] {
 	return krt.NewManyCollection(ServiceEntries, func(ctx krt.HandlerContext, se *networkingclient.ServiceEntry) []ir.BackendObjectIR {
 		// passthrough not supported here
@@ -91,6 +91,7 @@ func backendsCollections(
 					hostname,
 					int32(svcPort.GetNumber()),
 					svcPort.GetProtocol(),
+					aliaser,
 				))
 			}
 		}
@@ -104,6 +105,7 @@ func BuildServiceEntryBackendObjectIR(
 	hostname string,
 	svcPort int32,
 	svcProtocol string,
+	aliaser Aliaser,
 ) ir.BackendObjectIR {
 	objSrc := ir.ObjectSource{
 		Group:     gvk.ServiceEntry.Group,
@@ -111,32 +113,22 @@ func BuildServiceEntryBackendObjectIR(
 		Namespace: se.GetNamespace(),
 		Name:      se.GetName(),
 	}
-	return ir.BackendObjectIR{
-		ObjectSource:      objSrc,
-		Port:              svcPort,
-		AppProtocol:       ir.ParseAppProtocol(ptr.To(svcProtocol)),
-		GvPrefix:          BackendClusterPrefix,
-		CanonicalHostname: hostname,
-		Obj:               se,
+	// TODO hostname as extraKey here is a hack so we don't have key conflicts in krt since we
+	// build per-hostname backends; since getBackend tries to use krt-key by
+	// default, it will never find ServiceEntry, so we "alias" ServiceEntry to ServiceEntry
+	// to get the ref-index-based logic instead of the krt-key based lookup.
+	backend := ir.NewBackendObjectIR(objSrc, svcPort, hostname)
+	backend.AppProtocol = ir.ParseAppProtocol(ptr.To(svcProtocol))
+	backend.GvPrefix = BackendClusterPrefix
+	backend.CanonicalHostname = hostname
+	backend.Obj = se
 
-		// also allow hostname reference
-		Aliases: []ir.ObjectSource{
-			{
-				Group:     wellknown.HostnameGVK.Group,
-				Kind:      wellknown.HostnameGVK.Kind,
-				Name:      hostname,
-				Namespace: "", // global
-			},
-			objSrc,
-		},
-
-		// TODO ObjIr:             nil,
-		AttachedPolicies: ir.AttachedPolicies{},
-
-		// TODO this is a hack so we don't have key conflicts in krt since we
-		// build per-hostname backends; since getBackend tries to use krt-key by
-		// default, it will never find ServiceEntry, so we "alias" ServiceEntry to ServiceEntry
-		// to get the ref-index-based logic instead of the krt-key based lookup.
-		ExtraKey: hostname,
+	// include ourselves as alias to fix issues with one-to-many se-to-backend
+	backend.Aliases = []ir.ObjectSource{objSrc}
+	if aliaser != nil {
+		backend.Aliases = append(backend.Aliases, aliaser(se)...)
 	}
+
+	backend.AttachedPolicies = ir.AttachedPolicies{}
+	return backend
 }

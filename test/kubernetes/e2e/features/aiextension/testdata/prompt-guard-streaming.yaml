@@ -1,6 +1,37 @@
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: TrafficPolicy
 metadata:
+  name: openai-override-opt
+  namespace: ai-test
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: openai-override
+  ai:
+    promptGuard:
+      request:
+        customResponse:
+          message: "{ \"message\": \"Please provide a valid input.\" }"
+          statusCode: 400
+        regex:
+          action: REJECT
+          builtins:
+            - PHONE_NUMBER
+            - EMAIL
+            - SSN
+            - CREDIT_CARD
+      response:
+        regex:
+          builtins:
+            - PHONE_NUMBER
+            - EMAIL
+            - SSN
+            - CREDIT_CARD
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
   name: openai-opt
   namespace: ai-test
 spec:

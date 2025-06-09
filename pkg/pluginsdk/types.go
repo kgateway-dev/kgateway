@@ -29,12 +29,13 @@ func (a AttachmentPoints) Has(p AttachmentPoints) bool {
 }
 
 type (
-	ProcessBackend func(ctx context.Context, pol ir.PolicyIR, in ir.BackendObjectIR, out *envoy_config_cluster_v3.Cluster)
-	EndpointPlugin func(
+	EndpointsInputs = endpoints.EndpointsInputs
+	ProcessBackend  func(ctx context.Context, pol ir.PolicyIR, in ir.BackendObjectIR, out *envoy_config_cluster_v3.Cluster)
+	EndpointPlugin  func(
 		kctx krt.HandlerContext,
 		ctx context.Context,
 		ucc ir.UniqlyConnectedClient,
-		out *endpoints.EndpointsInputs,
+		out *EndpointsInputs,
 	) uint64
 )
 

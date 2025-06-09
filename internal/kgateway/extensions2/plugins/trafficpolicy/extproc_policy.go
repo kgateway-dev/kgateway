@@ -4,11 +4,38 @@ import (
 	"fmt"
 
 	envoy_ext_proc_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_proc/v3"
+	"google.golang.org/protobuf/proto"
 	"istio.io/istio/pkg/kube/krt"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/pluginutils"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 )
+
+type ExtprocIR struct {
+	provider        *TrafficPolicyGatewayExtensionIR
+	ExtProcPerRoute *envoy_ext_proc_v3.ExtProcPerRoute
+}
+
+func (e *ExtprocIR) Equals(other *ExtprocIR) bool {
+	if e == nil && other == nil {
+		return true
+	}
+	if e == nil || other == nil {
+		return false
+	}
+
+	if !proto.Equal(e.ExtProcPerRoute, other.ExtProcPerRoute) {
+		return false
+	}
+	if (e.provider == nil) != (other.provider == nil) {
+		return false
+	}
+	if e.provider != nil && !e.provider.Equals(*other.provider) {
+		return false
+	}
+	return true
+}
 
 // toEnvoyExtProc converts an ExtProcPolicy to an ExternalProcessor
 func (b *TrafficPolicyBuilder) toEnvoyExtProc(
@@ -91,4 +118,33 @@ func toEnvoyProcessingMode(p *v1alpha1.ProcessingMode) *envoy_ext_proc_v3.Proces
 		RequestTrailerMode:  headerSendModeFromString(p.RequestTrailerMode),
 		ResponseTrailerMode: headerSendModeFromString(p.ResponseTrailerMode),
 	}
+}
+
+// FIXME: Using the wrong filter name prefix when the name is empty?
+func extProcFilterName(name string) string {
+	if name == "" {
+		return extauthFilterNamePrefix
+	}
+	return fmt.Sprintf("%s/%s", "ext_proc", name)
+}
+
+func (p *trafficPolicyPluginGwPass) handleExtProc(fcn string, pCtxTypedFilterConfig *ir.TypedFilterConfigMap, extProc *ExtprocIR) {
+	if extProc == nil || extProc.provider == nil {
+		return
+	}
+	providerName := extProc.provider.ResourceName()
+	// Handle the enablement state
+
+	if extProc.ExtProcPerRoute != nil {
+		pCtxTypedFilterConfig.AddTypedConfig(extProcFilterName(providerName),
+			extProc.ExtProcPerRoute,
+		)
+	} else {
+		// if you are on a route and not trying to disable it then we need to override the top level disable on the filter chain
+		pCtxTypedFilterConfig.AddTypedConfig(extProcFilterName(providerName),
+			&envoy_ext_proc_v3.ExtProcPerRoute{Override: &envoy_ext_proc_v3.ExtProcPerRoute_Overrides{Overrides: &envoy_ext_proc_v3.ExtProcOverrides{}}},
+		)
+	}
+
+	p.extProcPerProvider.Add(fcn, providerName, extProc.provider)
 }

@@ -39,7 +39,7 @@ jobs:
         # May 19, 2025: ~18 minutes
         - cluster-name: 'cluster-three'
           go-test-args: '-v -timeout=25m'
-          go-test-run-regex: '^TestKgateway$$/^Deployer$$|^TestKgateway$$/^RouteDelegation$$|^TestKgateway$$/^Lambda$$|^TestKgateway$$/^AccessLog$$|^TestKgateway$$/^LocalRateLimit$$|^TestKgateway$$/^Cors$$|^TestKgateway$$/^BackendConfigPolicy$$'
+          go-test-run-regex: '^TestKgateway$$/^DynamicForwardProxy$$|^TestKgateway$$/^Deployer$$|^TestKgateway$$/^RouteDelegation$$|^TestKgateway$$/^Lambda$$|^TestKgateway$$/^AccessLog$$|^TestKgateway$$/^LocalRateLimit$$|^TestKgateway$$/^Cors$$|^TestKgateway$$/^BackendConfigPolicy$$'
           localstack: 'true'
         # May 19, 2025: ~20 minutes
         - cluster-name: 'cluster-four'
@@ -115,7 +115,6 @@ jobs:
         kind-node-version: ${{ steps.dotenv.outputs.node_version }}
         kind-version: ${{ steps.dotenv.outputs.kind_version }}
         kubectl-version: ${{ steps.dotenv.outputs.kubectl_version }}
-        helm-version: ${{ steps.dotenv.outputs.helm_version }}
         istio-version: ${{ steps.dotenv.outputs.istio_version }}
         localstack: ${{ matrix.test.localstack }}
         agentgateway: ${{ matrix.test.agentgateway }}

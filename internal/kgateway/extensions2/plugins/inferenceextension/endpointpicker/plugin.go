@@ -29,11 +29,11 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	extplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
 // Derived from upstream Gateway API Inference Extension defaults (testdata/envoy.yaml).
@@ -98,18 +98,18 @@ func NewPluginFromCollections(
 
 	backendCol := krt.NewCollection(poolCol, func(kctx krt.HandlerContext, pool *infextv1a2.InferencePool) *ir.BackendObjectIR {
 		// Create a BackendObjectIR IR representation from the given InferencePool.
-		return &ir.BackendObjectIR{
-			ObjectSource: ir.ObjectSource{
-				Kind:      gk.Kind,
-				Group:     gk.Group,
-				Namespace: pool.Namespace,
-				Name:      pool.Name,
-			},
-			Obj:               pool,
-			GvPrefix:          "endpoint-picker",
-			CanonicalHostname: "",
-			ObjIr:             newInferencePool(pool),
+		objSrc := ir.ObjectSource{
+			Kind:      gk.Kind,
+			Group:     gk.Group,
+			Namespace: pool.Namespace,
+			Name:      pool.Name,
 		}
+		backend := ir.NewBackendObjectIR(objSrc, 0, "")
+		backend.Obj = pool
+		backend.GvPrefix = "endpoint-picker"
+		backend.CanonicalHostname = ""
+		backend.ObjIr = newInferencePool(pool)
+		return &backend
 	}, commonCol.KrtOpts.ToOptions("InferencePoolIR")...)
 
 	policyCol := krt.NewCollection(poolCol, func(krtctx krt.HandlerContext, pool *infextv1a2.InferencePool) *ir.PolicyWrapper {
@@ -241,7 +241,7 @@ func (p *endpointPickerPass) HttpFilters(ctx context.Context, fc ir.FilterChainC
 
 	var filters []plugins.StagedHttpFilter
 
-	// For each used pool, create a distinct ext_proc filter referencing that pool’s cluster.
+	// For each used pool, create a distinct ext_proc filter referencing that pool's cluster.
 	for _, pool := range p.usedPools {
 		if pool.configRef == nil || len(pool.configRef.ports) == 0 {
 			continue
@@ -344,7 +344,7 @@ func processBackendObjectIR(ctx context.Context, in ir.BackendObjectIR, out *clu
 	return nil
 }
 
-// buildExtProcCluster builds and returns a “STRICT_DNS” cluster from the given pool.
+// buildExtProcCluster builds and returns a "STRICT_DNS" cluster from the given pool.
 func buildExtProcCluster(pool *inferencePool) *clusterv3.Cluster {
 	if pool == nil || pool.configRef == nil || len(pool.configRef.ports) != 1 {
 		return nil

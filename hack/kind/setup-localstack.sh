@@ -5,13 +5,14 @@ set -o pipefail
 set -o nounset
 
 ROOT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+HELM="${HELM:-go tool helm}"
 
 function install_localstack() {
   # Install localstack
-  helm repo add localstack-repo https://helm.localstack.cloud
-  helm repo update
+  $HELM repo add localstack-repo https://helm.localstack.cloud
+  $HELM repo update
 
-  helm upgrade -i --create-namespace localstack localstack-repo/localstack --namespace localstack -f ${ROOT_DIR}/localstack-values.yaml
+  $HELM upgrade -i --create-namespace localstack localstack-repo/localstack --namespace localstack -f ${ROOT_DIR}/localstack-values.yaml
   kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=localstack -n localstack --timeout=120s
 }
 

@@ -39,14 +39,16 @@ TEST_OPENAI_BASE_URL = os.environ.get("TEST_OPENAI_BASE_URL", "")
 TEST_AZURE_OPENAI_BASE_URL = os.environ.get("TEST_AZURE_OPENAI_BASE_URL", "")
 TEST_GEMINI_BASE_URL = os.environ.get("TEST_GEMINI_BASE_URL", "")
 TEST_VERTEX_AI_BASE_URL = os.environ.get("TEST_VERTEX_AI_BASE_URL", "")
+TEST_OVERRIDE_BASE_URL = os.environ.get("TEST_OVERRIDE_BASE_URL","")
 
 passthrough = os.environ.get("TEST_TOKEN_PASSTHROUGH", "false").lower() == "true"
-
+overrideProvider = os.environ.get("TEST_OVERRIDE_PROVIDER", "false").lower() == "true"
 
 class LLMClient:
     openai_client = OpenAI(
+        default_headers={"custom-header":"custom-prefix"} if overrideProvider else None,
         api_key="passthrough-openai-key" if passthrough else "FAKE",
-        base_url=TEST_OPENAI_BASE_URL,
+        base_url = TEST_OVERRIDE_BASE_URL if overrideProvider else TEST_OPENAI_BASE_URL,
         max_retries=10,
     )
     azure_openai_client = AzureOpenAI(

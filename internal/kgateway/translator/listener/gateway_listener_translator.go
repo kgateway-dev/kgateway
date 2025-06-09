@@ -30,6 +30,10 @@ import (
 
 var logger = logging.New("translator/listener")
 
+type ListenerTranslatorConfig struct {
+	ListenerBindIpv6 bool
+}
+
 // TranslateListeners translates the set of gloo listeners required to produce a full output proxy (either form one Gateway or multiple merged Gateways)
 func TranslateListeners(
 	kctx krt.HandlerContext,
@@ -38,10 +42,11 @@ func TranslateListeners(
 	gateway *ir.Gateway,
 	routesForGw *query.RoutesForGwResult,
 	reporter reports.Reporter,
+	settings ListenerTranslatorConfig,
 ) []ir.ListenerIR {
 	validatedListeners := validateGateway(gateway, reporter)
 
-	mergedListeners := mergeGWListeners(queries, gateway.Namespace, validatedListeners, *gateway, routesForGw, reporter)
+	mergedListeners := mergeGWListeners(queries, gateway.Namespace, validatedListeners, *gateway, routesForGw, reporter, settings)
 	translatedListeners := mergedListeners.translateListeners(kctx, ctx, queries, reporter)
 	return translatedListeners
 }
@@ -53,11 +58,13 @@ func mergeGWListeners(
 	parentGw ir.Gateway,
 	routesForGw *query.RoutesForGwResult,
 	reporter reports.Reporter,
+	settings ListenerTranslatorConfig,
 ) *MergedListeners {
 	ml := &MergedListeners{
 		parentGw:         parentGw,
 		GatewayNamespace: gatewayNamespace,
 		Queries:          queries,
+		settings:         settings,
 	}
 	for _, listener := range listeners {
 		result := routesForGw.GetListenerResult(listener.Parent, string(listener.Name))
@@ -82,6 +89,7 @@ type MergedListeners struct {
 	parentGw         ir.Gateway
 	Listeners        []*MergedListener
 	Queries          query.GatewayQueries
+	settings         ListenerTranslatorConfig
 }
 
 func (ml *MergedListeners) AppendListener(
@@ -144,6 +152,7 @@ func (ml *MergedListeners) appendHttpListener(
 		listenerReporter: reporter,
 		listener:         listener,
 		gateway:          ml.parentGw,
+		settings:         ml.settings,
 	})
 }
 
@@ -182,6 +191,7 @@ func (ml *MergedListeners) appendHttpsListener(
 		listenerReporter:  reporter,
 		listener:          listener,
 		gateway:           ml.parentGw,
+		settings:          ml.settings,
 	})
 }
 
@@ -239,6 +249,7 @@ func (ml *MergedListeners) AppendTcpListener(
 		listenerReporter: reporter,
 		listener:         listener,
 		gateway:          ml.parentGw,
+		settings:         ml.settings,
 	})
 }
 
@@ -298,6 +309,7 @@ func (ml *MergedListeners) AppendTlsListener(
 		TcpFilterChains:  []tcpFilterChain{fc},
 		listenerReporter: reporter,
 		listener:         listener,
+		settings:         ml.settings,
 	})
 }
 
@@ -338,6 +350,7 @@ type MergedListener struct {
 	listenerReporter  reports.ListenerReporter
 	listener          ir.Listener
 	gateway           ir.Gateway
+	settings          ListenerTranslatorConfig
 
 	// TODO(policy via http listener options)
 }
@@ -415,11 +428,16 @@ func (ml *MergedListener) TranslateListener(
 		}
 	}
 
+	// Get bind address based on ListenerBindIpv6 setting
+	bindAddress := "0.0.0.0"
+	if ml.settings.ListenerBindIpv6 {
+		bindAddress = "::"
+	}
+
 	// Create and return the listener with all filter chains and TCP listeners
-	//	panic("TODO: handle listener policy attachment")
 	return ir.ListenerIR{
 		Name:              ml.name,
-		BindAddress:       "::",
+		BindAddress:       bindAddress,
 		BindPort:          uint32(ml.port),
 		AttachedPolicies:  ir.AttachedPolicies{}, // TODO: find policies attached to listener and attach them <- this might not be possilbe due to listener merging. also a gw listener ~= envoy filter chain; and i don't believe we need policies there
 		HttpFilterChain:   httpFilterChains,

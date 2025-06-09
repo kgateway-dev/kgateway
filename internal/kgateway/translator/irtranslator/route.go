@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"regexp"
+	"slices"
 
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
@@ -15,10 +16,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/routeutils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	reportssdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/regexutils"
 )
@@ -35,6 +36,8 @@ type httpRouteConfigurationTranslator struct {
 	PluginPass               TranslationPassPlugins
 	logger                   *slog.Logger
 }
+
+const WebSocketUpgradeType = "websocket"
 
 func (h *httpRouteConfigurationTranslator) ComputeRouteConfiguration(ctx context.Context, vhosts []*ir.VirtualHost) *envoy_config_route_v3.RouteConfiguration {
 	var attachedPolicies ir.AttachedPolicies
@@ -451,6 +454,19 @@ func (h *httpRouteConfigurationTranslator) translateRouteAction(
 				WeightedClusters: &envoy_config_route_v3.WeightedCluster{
 					Clusters: clusters,
 				},
+			}
+		}
+	}
+
+	for _, backend := range in.Backends {
+		if back := backend.Backend.BackendObject; back != nil && back.AppProtocol == ir.WebSocketAppProtocol {
+			// add websocket upgrade if not already present
+			if !slices.ContainsFunc(action.GetUpgradeConfigs(), func(uc *envoy_config_route_v3.RouteAction_UpgradeConfig) bool {
+				return uc.GetUpgradeType() == WebSocketUpgradeType
+			}) {
+				action.UpgradeConfigs = append(action.GetUpgradeConfigs(), &envoy_config_route_v3.RouteAction_UpgradeConfig{
+					UpgradeType: WebSocketUpgradeType,
+				})
 			}
 		}
 	}
