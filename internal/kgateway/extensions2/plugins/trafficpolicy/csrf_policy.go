@@ -65,10 +65,9 @@ func csrfForSpec(spec v1alpha1.TrafficPolicySpec, out *trafficPolicySpecIr) erro
 	if len(spec.Csrf.AdditionalOrigins) > 0 {
 		csrfPolicy.AdditionalOrigins = make([]*envoy_matcher_v3.StringMatcher, len(spec.Csrf.AdditionalOrigins))
 		for i, origin := range spec.Csrf.AdditionalOrigins {
-			csrfPolicy.GetAdditionalOrigins()[i] = &envoy_matcher_v3.StringMatcher{
-				MatchPattern: &envoy_matcher_v3.StringMatcher_Exact{
-					Exact: origin,
-				},
+			envoyStringMatcher := toEnvoyStringMatcher(origin)
+			if envoyStringMatcher != nil {
+				csrfPolicy.GetAdditionalOrigins()[i] = envoyStringMatcher
 			}
 		}
 	}
@@ -90,4 +89,46 @@ func csrfFilter() *envoy_csrf_v3.CsrfPolicy {
 			},
 		},
 	}
+}
+
+func toEnvoyStringMatcher(origin *v1alpha1.StringMatcher) *envoy_matcher_v3.StringMatcher {
+	if origin.Exact != "" {
+		return &envoy_matcher_v3.StringMatcher{
+			MatchPattern: &envoy_matcher_v3.StringMatcher_Exact{
+				Exact: origin.Exact,
+			},
+		}
+	}
+
+	if origin.Prefix != "" {
+		return &envoy_matcher_v3.StringMatcher{
+			MatchPattern: &envoy_matcher_v3.StringMatcher_Prefix{
+				Prefix: origin.Prefix,
+			},
+		}
+	}
+
+	if origin.Suffix != "" {
+		return &envoy_matcher_v3.StringMatcher{
+			MatchPattern: &envoy_matcher_v3.StringMatcher_Suffix{
+				Suffix: origin.Suffix,
+			},
+		}
+	}
+
+	if origin.SafeRegex != "" {
+		return &envoy_matcher_v3.StringMatcher{
+			MatchPattern: &envoy_matcher_v3.StringMatcher_SafeRegex{
+				SafeRegex: &envoy_matcher_v3.RegexMatcher{
+					EngineType: &envoy_matcher_v3.RegexMatcher_GoogleRe2{
+						GoogleRe2: &envoy_matcher_v3.RegexMatcher_GoogleRE2{},
+					},
+					Regex: origin.SafeRegex,
+				},
+			},
+		}
+	}
+
+	// Shouldn't happen because we validate that only one matching type is set
+	return nil
 }

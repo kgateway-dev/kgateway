@@ -337,7 +337,18 @@ spec:
                 properties:
                   additionalOrigins:
                     items:
-                      type: string
+                      maxProperties: 1
+                      minProperties: 1
+                      properties:
+                        exact:
+                          type: string
+                        prefix:
+                          type: string
+                        safeRegex:
+                          type: string
+                        suffix:
+                          type: string
+                      type: object
                     type: array
                   percentageEnabled:
                     format: int32

@@ -118,9 +118,9 @@ func (s *testingSuite) TestRouteLevelCSRF() {
 		curl.WithHeader("Origin", "notexample.com"),
 	})
 
-	// Request with additional allowed origin header should be allowed
+	// Test suffix matching
 	s.assertPreflightResponse("/path1", http.StatusOK, []curl.Option{
-		curl.WithHeader("Origin", "example.org"),
+		curl.WithHeader("Origin", "a.test.io"),
 	})
 }
 
@@ -138,9 +138,19 @@ func (s *testingSuite) TestGatewayLevelCSRF() {
 		curl.WithHeader("Origin", "example.com"),
 	})
 
+	// Test suffix matching
+	s.assertPreflightResponse("/path1", http.StatusOK, []curl.Option{
+		curl.WithHeader("Origin", "a.test.io"),
+	})
+
 	// Request with valid origin header should be allowed
 	s.assertPreflightResponse("/path2", http.StatusOK, []curl.Option{
 		curl.WithHeader("Origin", "example.com"),
+	})
+
+	// Test prefix matching
+	s.assertPreflightResponse("/path2", http.StatusOK, []curl.Option{
+		curl.WithHeader("Origin", "sample.com"),
 	})
 }
 

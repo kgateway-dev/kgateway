@@ -201,6 +201,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.StatsConfigApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("StatusCodeFilter"):
 		return &apiv1alpha1.StatusCodeFilterApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("StringMatcher"):
+		return &apiv1alpha1.StringMatcherApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("SupportedLLMProvider"):
 		return &apiv1alpha1.SupportedLLMProviderApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("TCPKeepalive"):

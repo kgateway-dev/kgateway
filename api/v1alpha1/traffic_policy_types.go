@@ -367,7 +367,6 @@ type CsrfPolicy struct {
 	PercentageShadowed *uint32 `json:"percentageShadowed,omitempty"`
 
 	// Specifies additional source origins that will be allowed in addition to the destination origin.
-	// Only exact matches are supported.
 	// +optional
-	AdditionalOrigins []string `json:"additionalOrigins,omitempty"`
+	AdditionalOrigins []*StringMatcher `json:"additionalOrigins,omitempty"`
 }

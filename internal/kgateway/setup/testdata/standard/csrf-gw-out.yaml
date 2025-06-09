@@ -64,8 +64,12 @@ routes:
     envoy.filters.http.csrf:
       '@type': type.googleapis.com/envoy.extensions.filters.http.csrf.v3.CsrfPolicy
       additionalOrigins:
-      - exact: https://www.example.org
-      - exact: https://www.example.io
+      - exact: www.example.org
+      - prefix: pref
+      - suffix: suff
+      - safeRegex:
+          googleRe2: {}
+          regex: a.b
       filterEnabled:
         defaultValue:
           numerator: 80

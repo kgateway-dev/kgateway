@@ -10,5 +10,5 @@ spec:
   csrf:
     percentageEnabled: 100
     additionalOrigins:
-    - example.org
-    - example.io
+    - exact: example.org
+    - suffix: test.io

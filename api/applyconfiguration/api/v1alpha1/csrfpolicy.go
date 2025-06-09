@@ -2,12 +2,16 @@
 
 package v1alpha1
 
+import (
+	apiv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+)
+
 // CsrfPolicyApplyConfiguration represents a declarative configuration of the CsrfPolicy type for use
 // with apply.
 type CsrfPolicyApplyConfiguration struct {
-	PercentageEnabled  *uint32  `json:"percentageEnabled,omitempty"`
-	PercentageShadowed *uint32  `json:"percentageShadowed,omitempty"`
-	AdditionalOrigins  []string `json:"additionalOrigins,omitempty"`
+	PercentageEnabled  *uint32                      `json:"percentageEnabled,omitempty"`
+	PercentageShadowed *uint32                      `json:"percentageShadowed,omitempty"`
+	AdditionalOrigins  []*apiv1alpha1.StringMatcher `json:"additionalOrigins,omitempty"`
 }
 
 // CsrfPolicyApplyConfiguration constructs a declarative configuration of the CsrfPolicy type for use with
@@ -35,9 +39,12 @@ func (b *CsrfPolicyApplyConfiguration) WithPercentageShadowed(value uint32) *Csr
 // WithAdditionalOrigins adds the given value to the AdditionalOrigins field in the declarative configuration
 // and returns the receiver, so that objects can be build by chaining "With" function invocations.
 // If called multiple times, values provided by each call will be appended to the AdditionalOrigins field.
-func (b *CsrfPolicyApplyConfiguration) WithAdditionalOrigins(values ...string) *CsrfPolicyApplyConfiguration {
+func (b *CsrfPolicyApplyConfiguration) WithAdditionalOrigins(values ...**apiv1alpha1.StringMatcher) *CsrfPolicyApplyConfiguration {
 	for i := range values {
-		b.AdditionalOrigins = append(b.AdditionalOrigins, values[i])
+		if values[i] == nil {
+			panic("nil value passed to WithAdditionalOrigins")
+		}
+		b.AdditionalOrigins = append(b.AdditionalOrigins, *values[i])
 	}
 	return b
 }

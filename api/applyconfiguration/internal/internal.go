@@ -448,7 +448,7 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         list:
           elementType:
-            scalar: string
+            namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.StringMatcher
           elementRelationship: atomic
     - name: percentageEnabled
       type:
@@ -1431,6 +1431,21 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: value
       type:
         scalar: numeric
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.StringMatcher
+  map:
+    fields:
+    - name: exact
+      type:
+        scalar: string
+    - name: prefix
+      type:
+        scalar: string
+    - name: safeRegex
+      type:
+        scalar: string
+    - name: suffix
+      type:
+        scalar: string
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SupportedLLMProvider
   map:
     fields:

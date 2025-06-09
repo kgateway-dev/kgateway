@@ -82,5 +82,7 @@ spec:
   csrf:
     percentageEnabled: 80
     additionalOrigins:
-      - "https://www.example.org"
-      - "https://www.example.io"
+      - exact: "www.example.org"
+      - prefix: "pref"
+      - suffix: "suff"
+      - safeRegex: "a.b"

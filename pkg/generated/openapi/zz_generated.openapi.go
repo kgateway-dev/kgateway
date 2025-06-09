@@ -120,6 +120,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.StaticBackend":                             schema_kgateway_v2_api_v1alpha1_StaticBackend(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.StatsConfig":                               schema_kgateway_v2_api_v1alpha1_StatsConfig(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.StatusCodeFilter":                          schema_kgateway_v2_api_v1alpha1_StatusCodeFilter(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.StringMatcher":                             schema_kgateway_v2_api_v1alpha1_StringMatcher(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.SupportedLLMProvider":                      schema_kgateway_v2_api_v1alpha1_SupportedLLMProvider(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.TCPKeepalive":                              schema_kgateway_v2_api_v1alpha1_TCPKeepalive(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.TokenBucket":                               schema_kgateway_v2_api_v1alpha1_TokenBucket(ref),
@@ -1756,14 +1757,12 @@ func schema_kgateway_v2_api_v1alpha1_CsrfPolicy(ref common.ReferenceCallback) co
 					},
 					"additionalOrigins": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Specifies additional source origins that will be allowed in addition to the destination origin. Only exact matches are supported.",
+							Description: "Specifies additional source origins that will be allowed in addition to the destination origin.",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Default: "",
-										Type:    []string{"string"},
-										Format:  "",
+										Ref: ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.StringMatcher"),
 									},
 								},
 							},
@@ -1773,6 +1772,8 @@ func schema_kgateway_v2_api_v1alpha1_CsrfPolicy(ref common.ReferenceCallback) co
 				Required: []string{"percentageEnabled"},
 			},
 		},
+		Dependencies: []string{
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.StringMatcher"},
 	}
 }
 
@@ -4680,6 +4681,47 @@ func schema_kgateway_v2_api_v1alpha1_StatusCodeFilter(ref common.ReferenceCallba
 							Description: "Value to compare against.",
 							Type:        []string{"integer"},
 							Format:      "int64",
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func schema_kgateway_v2_api_v1alpha1_StringMatcher(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "Specifies the way to match a string.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"exact": {
+						SchemaProps: spec.SchemaProps{
+							Description: "The input string must match exactly the string specified here. Example: abc matches the value abc",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"prefix": {
+						SchemaProps: spec.SchemaProps{
+							Description: "The input string must have the prefix specified here. Note: empty prefix is not allowed, please use regex instead. Example: abc matches the value abc.xyz",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"suffix": {
+						SchemaProps: spec.SchemaProps{
+							Description: "The input string must have the suffix specified here. Note: empty prefix is not allowed, please use regex instead. Example: abc matches the value xyz.abc",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"safeRegex": {
+						SchemaProps: spec.SchemaProps{
+							Description: "The input string must match the Google RE2 regular expression specified here. See https://github.com/google/re2/wiki/Syntax for the syntax.",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 				},
