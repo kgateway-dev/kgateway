@@ -53,6 +53,11 @@ clusters:
   metadata: {}
   name: kube_gwtest_gateway-pool-endpoint-picker_9002
   type: EDS
+  typedExtensionProtocolOptions:
+    envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+      '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+      explicitHttpConfig:
+        http2ProtocolOptions: {}
 - connectTimeout: 5s
   edsClusterConfig:
     edsConfig:

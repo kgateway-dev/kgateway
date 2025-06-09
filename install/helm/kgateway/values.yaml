@@ -1,91 +1,121 @@
+# -- Set a list of image pull secrets for Kubernetes to use when pulling container images from your own private registry instead of the default kgateway registry.
 imagePullSecrets: []
+
+# -- Add a name to the Helm base release.
+# -- The default name is 'kgateway'.
+# -- If you set 'nameOverride: "foo", the name of the resources that the Helm release creates become 'kgateway-foo',
+# -- such as the deployment, service, and service account for the kgateway control plane in the kgateway-system namespace.
 nameOverride: ""
+
+# -- Override the full name of resources created by the Helm chart.
+# -- The default full name is 'kgateway'.
+# -- If you set 'fullnameOverride: "foo", the full name of the resources that the Helm release creates become 'foo',
+# -- such as the deployment, service, and service account for the kgateway control plane in the kgateway-system namespace.
 fullnameOverride: ""
 
+# -- Configure the service account for the deployment.
 serviceAccount:
-  # Specifies whether a service account should be created
+  # -- Specify whether a service account should be created.
   create: true
-  # Annotations to add to the service account
+  # -- Add annotations to the service account.
   annotations: {}
-  # The name of the service account to use.
-  # If not set and create is true, a name is generated using the fullname template
+  # -- Set the name of the service account to use.
+  # -- If not set and create is true, a name is generated using the fullname template.
   name: ""
 
+# -- Add annotations to the kgateway deployment.
 deploymentAnnotations: {}
 
+# -- Add annotations to the kgateway pods.
 podAnnotations: {}
 
+# -- Set the pod-level security context.
+# -- For example, 'fsGroup: 2000' sets the filesystem group to 2000.
 podSecurityContext: {}
-  # fsGroup: 2000
 
+# -- Set the container-level security context, such as 'runAsNonRoot: true'.
 securityContext: {}
-  # capabilities:
-  #   drop:
-  #   - ALL
-  # readOnlyRootFilesystem: true
-  # runAsNonRoot: true
-  # runAsUser: 1000
 
+# -- Configure resource requests and limits for the container, such as 'limits.cpu: 100m' or 'requests.memory: 128Mi'.
 resources: {}
-  # We usually recommend not to specify default resources and to leave this as a conscious
-  # choice for the user. This also increases chances charts run on environments with little
-  # resources, such as Minikube. If you do want to specify resources, uncomment the following
-  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
-  # limits:
-  #   cpu: 100m
-  #   memory: 128Mi
-  # requests:
-  #   cpu: 100m
-  #   memory: 128Mi
 
+# -- Set node selector labels for pod scheduling, such as 'kubernetes.io/arch: amd64'.
 nodeSelector: {}
 
+# -- Set tolerations for pod scheduling, such as 'key: "nvidia.com/gpu"'.
 tolerations: []
 
+# -- Set affinity rules for pod scheduling, such as 'nodeAffinity:'.
 affinity: {}
 
+# -- Configure the kgateway control plane deployment.
 controller:
+  # -- Set the number of controller pod replicas.
   replicaCount: 1
+  # -- Set the log level for the controller.
   logLevel: info
+  # -- Configure the controller container image.
   image:
+    # -- Set the image registry for the controller.
     registry: ""
+    # -- Set the image repository for the controller.
     repository: kgateway
+    # -- Set the image pull policy for the controller.
     pullPolicy: ""
+    # -- Set the image tag for the controller.
     tag: ""
+  # -- Configure the controller service.
   service:
+    # -- Set the service type for the controller.
     type: ClusterIP
+    # -- Set the service ports for gRPC and health endpoints.
     ports:
       grpc: 9977
       health: 9093
+  # -- Add extra environment variables to the controller container.
   extraEnv: {}
 
+# -- Configure the default container image for the components that Helm deploys.
+# -- You can override these settings for each particular component in that component's section, such as 'controller.image' for the kgateway control plane.
+# -- If you use your own private registry, make sure to include the imagePullSecrets.
 image:
+  # -- Set the default image registry. 
   registry: cr.kgateway.dev/kgateway-dev
+  # -- Set the default image tag.
   tag: ""
+  # -- Set the default image pull policy.
   pullPolicy: IfNotPresent
 
+# -- Configure the integration with the Gateway API Inference Extension project.
+# -- With Inference Extension, you can use kgateway to route to AI inference workloads like LLMs that run locally in your Kubernetes cluster.
 inferenceExtension:
+  # -- Enable Inference Extension.
   enabled: false
+  # -- Enable automatic provisioning for Inference Extension.
   autoProvision: false
 
-# List of namespace selectors to select namespaces for config discovery
-# Elements in the list are disjunctive (OR semantics), i.e. a namespace will be included if it matches any selector.
-# For each element in the list, the result of matchLabels and matchExpressions are conjunctive (AND semantics).
-#
-# The following selects namespaces if either of the following is true:
-# - the namespace has the label prod=enabled AND version=v2, OR
-# - the namespace has the label version=v3
-# discoveryNamespaceSelectors:
-# - matchExpressions:
-#   - key: environment
-#     operator: In
-#     values:
-#     - prod
-#   matchLabels:
-#     version: v2
-# - matchLabels:
-#     version: v3
+# -- Set namespace selectors for config discovery.
+# -- Elements in the list are disjunctive (OR semantics).
+# -- This means that a namespace is selected if it matches any selector.
+# -- For each element in the list, the result of matchLabels and matchExpressions are conjunctive (AND semantics).
+# --
+# --The following selects namespaces if either of the following is true:
+# -- - the namespace has the label prod=enabled AND version=v2, OR
+# -- - the namespace has the label version=v3
+# -- 
+# -- discoveryNamespaceSelectors:
+# -- - matchExpressions:
+# --   - key: environment
+# --     operator: In
+# --     values:
+# --     - prod
+# --   matchLabels:
+# --     version: v2
+# -- - matchLabels:
+# --     version: v3
 discoveryNamespaceSelectors: []
 
+# -- Enable the integration with Agent Gateway.
+# -- Agent Gateway lets you use kgateway to help manage agent connectivity across MCP servers, A2A agents, and REST APIs.
 agentGateway:
   enabled: false

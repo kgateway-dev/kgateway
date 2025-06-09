@@ -2,22 +2,29 @@ package translator
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"reflect"
 	"sort"
 	"strings"
 	"time"
 
+	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/go-logr/logr"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/testing/protocmp"
 	"istio.io/istio/pkg/config/schema/gvr"
 	kubeclient "istio.io/istio/pkg/kube"
+
 	"istio.io/istio/pkg/kube/kclient/clienttest"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/test"
@@ -26,6 +33,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+
+	clusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
@@ -43,9 +52,153 @@ import (
 	common "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
 )
 
 type AssertReports func(gwNN types.NamespacedName, reportsMap reports.ReportMap)
+
+type translationResult struct {
+	Routes        []*envoy_config_route_v3.RouteConfiguration
+	Listeners     []*envoy_config_listener_v3.Listener
+	ExtraClusters []*clusterv3.Cluster
+	Clusters      []*clusterv3.Cluster
+}
+
+func (tr *translationResult) MarshalJSON() ([]byte, error) {
+	m := protojson.MarshalOptions{
+		Indent: "  ",
+	}
+
+	// Create a map to hold the marshaled fields
+	result := make(map[string]interface{})
+
+	// Marshal each field using protojson
+	if len(tr.Routes) > 0 {
+		routes, err := marshalProtoMessages(tr.Routes, m)
+		if err != nil {
+			return nil, err
+		}
+		result["Routes"] = routes
+	}
+
+	if len(tr.Listeners) > 0 {
+		listeners, err := marshalProtoMessages(tr.Listeners, m)
+		if err != nil {
+			return nil, err
+		}
+		result["Listeners"] = listeners
+	}
+
+	if len(tr.ExtraClusters) > 0 {
+		clusters, err := marshalProtoMessages(tr.ExtraClusters, m)
+		if err != nil {
+			return nil, err
+		}
+		result["ExtraClusters"] = clusters
+	}
+
+	if len(tr.Clusters) > 0 {
+		clusters, err := marshalProtoMessages(tr.Clusters, m)
+		if err != nil {
+			return nil, err
+		}
+		result["Clusters"] = clusters
+	}
+
+	// Marshal the result map to JSON
+	return json.Marshal(result)
+}
+
+func (tr *translationResult) UnmarshalJSON(data []byte) error {
+	m := protojson.UnmarshalOptions{}
+
+	// Create a map to hold the unmarshaled fields
+	result := make(map[string]json.RawMessage)
+
+	// Unmarshal the JSON data into the map
+	if err := json.Unmarshal(data, &result); err != nil {
+		return err
+	}
+
+	// Unmarshal each field using protojson
+	if routesData, ok := result["Routes"]; ok {
+		var routes []json.RawMessage
+		if err := json.Unmarshal(routesData, &routes); err != nil {
+			return err
+		}
+		tr.Routes = make([]*envoy_config_route_v3.RouteConfiguration, len(routes))
+		for i, routeData := range routes {
+			route := &envoy_config_route_v3.RouteConfiguration{}
+			if err := m.Unmarshal(routeData, route); err != nil {
+				return err
+			}
+			tr.Routes[i] = route
+		}
+	}
+
+	if listenersData, ok := result["Listeners"]; ok {
+		var listeners []json.RawMessage
+		if err := json.Unmarshal(listenersData, &listeners); err != nil {
+			return err
+		}
+		tr.Listeners = make([]*envoy_config_listener_v3.Listener, len(listeners))
+		for i, listenerData := range listeners {
+			listener := &envoy_config_listener_v3.Listener{}
+			if err := m.Unmarshal(listenerData, listener); err != nil {
+				return err
+			}
+			tr.Listeners[i] = listener
+		}
+	}
+
+	if clustersData, ok := result["ExtraClusters"]; ok {
+		var clusters []json.RawMessage
+		if err := json.Unmarshal(clustersData, &clusters); err != nil {
+			return err
+		}
+		tr.ExtraClusters = make([]*clusterv3.Cluster, len(clusters))
+		for i, clusterData := range clusters {
+			cluster := &clusterv3.Cluster{}
+			if err := m.Unmarshal(clusterData, cluster); err != nil {
+				return err
+			}
+			tr.ExtraClusters[i] = cluster
+		}
+	}
+
+	if clustersData, ok := result["Clusters"]; ok {
+		var clusters []json.RawMessage
+		if err := json.Unmarshal(clustersData, &clusters); err != nil {
+			return err
+		}
+		tr.Clusters = make([]*clusterv3.Cluster, len(clusters))
+		for i, clusterData := range clusters {
+			cluster := &clusterv3.Cluster{}
+			if err := m.Unmarshal(clusterData, cluster); err != nil {
+				return err
+			}
+			tr.Clusters[i] = cluster
+		}
+	}
+
+	return nil
+}
+
+func marshalProtoMessages[T proto.Message](messages []T, m protojson.MarshalOptions) ([]interface{}, error) {
+	var result []interface{}
+	for _, msg := range messages {
+		data, err := m.Marshal(msg)
+		if err != nil {
+			return nil, err
+		}
+		var jsonObj interface{}
+		if err := json.Unmarshal(data, &jsonObj); err != nil {
+			return nil, err
+		}
+		result = append(result, jsonObj)
+	}
+	return result, nil
+}
 
 type ExtraPluginsFn func(ctx context.Context, commoncol *common.CommonCollections) []pluginsdk.Plugin
 
@@ -98,7 +251,30 @@ func TestTranslationWithExtraPlugins(
 	//var proxy ir.GatewayIR
 	//Expect(json.Unmarshal(b, &proxy)).NotTo(HaveOccurred())
 
-	Expect(CompareProxy(outputFile, result.Proxy)).To(BeEmpty())
+	// sort the output and print it
+	result.Proxy = sortProxy(result.Proxy)
+	result.Clusters = sortClusters(result.Clusters)
+	output := &translationResult{
+		Routes:        result.Proxy.Routes,
+		Listeners:     result.Proxy.Listeners,
+		ExtraClusters: result.Proxy.ExtraClusters,
+		Clusters:      result.Clusters,
+	}
+	outputYaml, err := MarshalAnyYaml(output)
+	fmt.Fprintf(ginkgo.GinkgoWriter, "actual result:\n %s \nerror: %v", outputYaml, err)
+	Expect(err).NotTo(HaveOccurred())
+
+	if envutils.IsEnvTruthy("REFRESH_GOLDEN") {
+		// create parent directory if it doesn't exist
+		dir := filepath.Dir(outputFile)
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			Expect(err).NotTo(HaveOccurred())
+		}
+		os.WriteFile(outputFile, outputYaml, 0o644)
+	}
+
+	Expect(compareProxy(outputFile, result.Proxy)).To(BeEmpty())
+	Expect(compareClusters(outputFile, result.Clusters)).To(BeEmpty())
 
 	if assertReports != nil {
 		assertReports(gwNN, result.ReportsMap)
@@ -113,18 +289,11 @@ type TestCase struct {
 
 type ActualTestResult struct {
 	Proxy      *irtranslator.TranslationResult
+	Clusters   []*clusterv3.Cluster
 	ReportsMap reports.ReportMap
 }
 
-func CompareProxy(expectedFile string, actualProxy *irtranslator.TranslationResult) (string, error) {
-	if os.Getenv("UPDATE_OUTPUTS") == "1" {
-		d, err := MarshalAnyYaml(sortProxy(actualProxy))
-		if err != nil {
-			return "", err
-		}
-		os.WriteFile(expectedFile, d, 0o644)
-	}
-
+func compareProxy(expectedFile string, actualProxy *irtranslator.TranslationResult) (string, error) {
 	expectedProxy, err := ReadProxyFromFile(expectedFile)
 	if err != nil {
 		return "", err
@@ -149,6 +318,36 @@ func sortProxy(proxy *irtranslator.TranslationResult) *irtranslator.TranslationR
 	})
 
 	return proxy
+}
+
+func compareClusters(expectedFile string, actualClusters []*clusterv3.Cluster) (string, error) {
+	expectedOutput := &translationResult{}
+	if err := ReadYamlFile(expectedFile, expectedOutput); err != nil {
+		return "", err
+	}
+
+	// Sort both expected and actual clusters by name and compare
+	return cmp.Diff(sortClusters(expectedOutput.Clusters), sortClusters(actualClusters), protocmp.Transform(), cmpopts.EquateNaNs()), nil
+}
+
+func sortClusters(clusters []*clusterv3.Cluster) []*clusterv3.Cluster {
+	if len(clusters) == 0 {
+		return clusters
+	}
+
+	sort.Slice(clusters, func(i, j int) bool {
+		return clusters[i].GetName() < clusters[j].GetName()
+	})
+
+	return clusters
+}
+
+func ReadYamlFile(file string, out interface{}) error {
+	data, err := os.ReadFile(file)
+	if err != nil {
+		return err
+	}
+	return UnmarshalAnyYaml(data, out)
 }
 
 func AreReportsSuccess(gwNN types.NamespacedName, reportsMap reports.ReportMap) error {
@@ -283,6 +482,7 @@ func (tc TestCase) Run(
 		gvr.WorkloadEntry,
 		gvr.AuthorizationPolicy,
 		wellknown.XListenerSetGVR,
+		wellknown.BackendTLSPolicyGVR,
 	} {
 		clienttest.MakeCRD(t, cli, crd)
 	}
@@ -342,6 +542,7 @@ func (tc TestCase) Run(
 	plugins = append(plugins, extraPlugs...)
 	extensions := registry.MergePlugins(plugins...)
 
+	// needed for the Plugin Backend test (backend-plugin/gateway.yaml)
 	gk := schema.GroupKind{
 		Group: "",
 		Kind:  "test-backend-plugin",
@@ -358,6 +559,11 @@ func (tc TestCase) Run(
 		Backends: krt.NewStaticCollection([]ir.BackendObjectIR{
 			testBackend,
 		}),
+		BackendInit: ir.BackendInit{
+			InitBackend: func(ctx context.Context, in ir.BackendObjectIR, out *clusterv3.Cluster) *ir.EndpointsForBackend {
+				return nil
+			},
+		},
 	}
 
 	commoncol.InitPlugins(ctx, extensions)
@@ -390,14 +596,24 @@ func (tc TestCase) Run(
 
 		xdsSnap, reportsMap := translator.TranslateGateway(krt.TestingDummyContext{}, ctx, gw)
 
-		act, _ := MarshalAnyYaml(xdsSnap)
-		fmt.Fprintf(ginkgo.GinkgoWriter, "actual result:\n %s \n", act)
-
 		actual := ActualTestResult{
 			Proxy:      xdsSnap,
 			ReportsMap: reportsMap,
 		}
 		results[gwNN] = actual
+
+		ucc := ir.NewUniqlyConnectedClient("test", "test", nil, ir.PodLocality{})
+		var clusters []*clusterv3.Cluster
+		for _, col := range commoncol.BackendIndex.BackendsWithPolicy() {
+			for _, backend := range col.List() {
+				cluster, err := translator.GetUpstreamTranslator().TranslateBackend(krt.TestingDummyContext{}, ucc, backend)
+				Expect(err).NotTo(HaveOccurred())
+				clusters = append(clusters, cluster)
+			}
+		}
+		r := results[gwNN]
+		r.Clusters = clusters
+		results[gwNN] = r
 	}
 
 	return results, nil

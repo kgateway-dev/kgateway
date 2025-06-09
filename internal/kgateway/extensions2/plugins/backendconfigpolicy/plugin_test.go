@@ -133,7 +133,7 @@ func TestBackendConfigPolicyFlow(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// First translate the policy
-			policyIR, err := translate(tt.policy)
+			policyIR, err := translate(nil, nil, tt.policy)
 			if tt.wantErr {
 				assert.Error(t, err)
 				return

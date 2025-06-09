@@ -7,6 +7,8 @@ import (
 	"log/slog"
 	"time"
 
+	envoy_tls_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
+	envoymatcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"google.golang.org/protobuf/proto"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -14,6 +16,9 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/utils/ptr"
+
+	eiutils "github.com/kgateway-dev/kgateway/v2/internal/envoyinit/pkg/utils"
 
 	clusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -39,6 +44,8 @@ var (
 	ErrCreatingTLSConfig = errors.New("TLS config error")
 
 	ErrParsingTLSConfig = errors.New("TLS config parse error")
+
+	ErrInvalidValidationSpec = errors.New("invalid validation spec")
 )
 
 var (
@@ -139,41 +146,64 @@ func buildTranslateFunc(
 		policyIr := backendTlsPolicy{
 			ct: policyCR.CreationTimestamp.Time,
 		}
+		validationContext := &envoy_tls_v3.CertificateValidationContext{}
+		validationContext.MatchTypedSubjectAltNames = convertSubjectAltNames(spec.Validation)
+		var tlsContextDefault *envoy_tls_v3.UpstreamTlsContext
+		switch {
+		case ptr.Deref(spec.Validation.WellKnownCACertificates, "") == gwv1a3.WellKnownCACertificatesSystem:
+			sdsValidationCtx := &envoy_tls_v3.SdsSecretConfig{
+				Name: eiutils.SystemCaSecretName,
+			}
 
-		if len(spec.Validation.CACertificateRefs) == 0 {
-			return &policyIr, nil
+			hostname := string(spec.Validation.Hostname)
+			tlsContextDefault = &envoy_tls_v3.UpstreamTlsContext{
+				CommonTlsContext: &envoy_tls_v3.CommonTlsContext{
+					ValidationContextType: &envoy_tls_v3.CommonTlsContext_CombinedValidationContext{
+						CombinedValidationContext: &envoy_tls_v3.CommonTlsContext_CombinedCertificateValidationContext{
+							DefaultValidationContext:         validationContext,
+							ValidationContextSdsSecretConfig: sdsValidationCtx,
+						},
+					},
+				},
+				Sni: hostname,
+			}
+
+		case len(spec.Validation.CACertificateRefs) > 0:
+
+			certRef := spec.Validation.CACertificateRefs[0]
+			nn := types.NamespacedName{
+				Name:      string(certRef.Name),
+				Namespace: policyCR.Namespace,
+			}
+			cfgmap := krt.FetchOne(krtctx, cfgmaps, krt.FilterObjectName(nn))
+			if cfgmap == nil {
+				err := fmt.Errorf("%w: %v", ErrConfigMapNotFound, nn)
+				slog.Error("error fetching policy", "error", err, "policy_name", policyCR.Name)
+				return &policyIr, err
+			}
+			var err error
+			tlsContextDefault, err = ResolveUpstreamSslConfig(*cfgmap, validationContext, string(spec.Validation.Hostname))
+			if err != nil {
+				perr := fmt.Errorf("%w: %v", ErrCreatingTLSConfig, err)
+				slog.Error("error resolving TLS config", "error", perr, "policy_name", policyCR.Name)
+				return &policyIr, perr
+			}
+		default:
+			return &policyIr, ErrInvalidValidationSpec
 		}
 
-		certRef := spec.Validation.CACertificateRefs[0]
-		nn := types.NamespacedName{
-			Name:      string(certRef.Name),
-			Namespace: policyCR.Namespace,
-		}
-		cfgmap := krt.FetchOne(krtctx, cfgmaps, krt.FilterObjectName(nn))
-		if cfgmap == nil {
-			err := fmt.Errorf("%w: %v", ErrConfigMapNotFound, nn)
-			slog.Error("error fetching policy", "error", err, "policy_name", policyCR.Name)
-			return &policyIr, err
-		}
-
-		tlsCfg, err := ResolveUpstreamSslConfig(*cfgmap, string(spec.Validation.Hostname))
-		if err != nil {
-			perr := fmt.Errorf("%w: %v", ErrCreatingTLSConfig, err)
-			slog.Error("error resolving TLS config", "error", perr, "policy_name", policyCR.Name)
-			return &policyIr, perr
-		}
-		typedConfig, err := utils.MessageToAny(tlsCfg)
+		typedConfig, err := utils.MessageToAny(tlsContextDefault)
 		if err != nil {
 			slog.Error("error converting TLS config to proto", "error", err, "policy", policyCR.Name)
 			return &policyIr, ErrParsingTLSConfig
 		}
-
 		policyIr.transportSocket = &envoy_config_core_v3.TransportSocket{
 			Name: wellknown.TransportSocketTls,
 			ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{
 				TypedConfig: typedConfig,
 			},
 		}
+
 		return &policyIr, nil
 	}
 }
@@ -184,4 +214,39 @@ func convertTargetRefs(targetRefs []gwv1a2.LocalPolicyTargetReferenceWithSection
 		Name:  string(targetRefs[0].Name),
 		Group: string(targetRefs[0].Group),
 	}}
+}
+
+func convertSubjectAltNames(validation gwv1a3.BackendTLSPolicyValidation) []*envoy_tls_v3.SubjectAltNameMatcher {
+	if len(validation.SubjectAltNames) == 0 {
+		hostname := string(validation.Hostname)
+		if hostname != "" {
+			return []*envoy_tls_v3.SubjectAltNameMatcher{{
+				SanType: envoy_tls_v3.SubjectAltNameMatcher_DNS,
+				Matcher: &envoymatcher.StringMatcher{
+					MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: hostname},
+				},
+			}}
+		}
+	}
+
+	matchers := make([]*envoy_tls_v3.SubjectAltNameMatcher, 0, len(validation.SubjectAltNames))
+	for _, san := range validation.SubjectAltNames {
+		switch san.Type {
+		case gwv1a3.HostnameSubjectAltNameType:
+			matchers = append(matchers, &envoy_tls_v3.SubjectAltNameMatcher{
+				SanType: envoy_tls_v3.SubjectAltNameMatcher_DNS,
+				Matcher: &envoymatcher.StringMatcher{
+					MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: string(san.Hostname)},
+				},
+			})
+		case gwv1a3.URISubjectAltNameType:
+			matchers = append(matchers, &envoy_tls_v3.SubjectAltNameMatcher{
+				SanType: envoy_tls_v3.SubjectAltNameMatcher_URI,
+				Matcher: &envoymatcher.StringMatcher{
+					MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: string(san.URI)},
+				},
+			})
+		}
+	}
+	return matchers
 }

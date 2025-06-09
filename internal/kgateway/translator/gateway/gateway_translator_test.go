@@ -492,6 +492,38 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 			Name:      "example-gateway",
 		},
 	}),
+	Entry("DFP Backend with TLS", translatorTestCase{
+		inputFile:  "dfp/tls.yaml",
+		outputFile: "dfp/tls.yaml",
+		gwNN: types.NamespacedName{
+			Namespace: "default",
+			Name:      "example-gateway",
+		},
+	}),
+	Entry("DFP Backend with simple", translatorTestCase{
+		inputFile:  "dfp/simple.yaml",
+		outputFile: "dfp/simple.yaml",
+		gwNN: types.NamespacedName{
+			Namespace: "default",
+			Name:      "example-gateway",
+		},
+	}),
+	Entry("Backend TLS Policy", translatorTestCase{
+		inputFile:  "backendtlspolicy/tls.yaml",
+		outputFile: "backendtlspolicy/tls.yaml",
+		gwNN: types.NamespacedName{
+			Namespace: "default",
+			Name:      "example-gateway",
+		},
+	}),
+	Entry("Backend TLS Policy with SAN", translatorTestCase{
+		inputFile:  "backendtlspolicy/tls-san.yaml",
+		outputFile: "backendtlspolicy/tls-san.yaml",
+		gwNN: types.NamespacedName{
+			Namespace: "default",
+			Name:      "example-gateway",
+		},
+	}),
 	Entry("Proxy with no routes", translatorTestCase{
 		inputFile:  "edge-cases/no_route.yaml",
 		outputFile: "no_route.yaml",
@@ -544,9 +576,49 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 			Name:      "example-gateway",
 		},
 	}),
-	Entry("WS upgrade for backend", translatorTestCase{
-		inputFile:  "https-listener-pol/ws-backend.yaml",
-		outputFile: "https-listener-pol/ws-backend.yaml",
+	Entry("Service with appProtocol=kubernetes.io/h2c", translatorTestCase{
+		inputFile:  "backend-protocol/h2c.yaml",
+		outputFile: "backend-protocol/h2c.yaml",
+		gwNN: types.NamespacedName{
+			Namespace: "default",
+			Name:      "example-gateway",
+		},
+	}),
+	Entry("Service with appProtocol=http2", translatorTestCase{
+		inputFile:  "backend-protocol/http2.yaml",
+		outputFile: "backend-protocol/http2.yaml",
+		gwNN: types.NamespacedName{
+			Namespace: "default",
+			Name:      "example-gateway",
+		},
+	}),
+	Entry("Service with appProtocol=grpc", translatorTestCase{
+		inputFile:  "backend-protocol/grpc.yaml",
+		outputFile: "backend-protocol/grpc.yaml",
+		gwNN: types.NamespacedName{
+			Namespace: "default",
+			Name:      "example-gateway",
+		},
+	}),
+	Entry("Service with appProtocol=grpc-web", translatorTestCase{
+		inputFile:  "backend-protocol/grpc-web.yaml",
+		outputFile: "backend-protocol/grpc-web.yaml",
+		gwNN: types.NamespacedName{
+			Namespace: "default",
+			Name:      "example-gateway",
+		},
+	}),
+	Entry("Service with appProtocol=kubernetes.io/ws", translatorTestCase{
+		inputFile:  "backend-protocol/ws.yaml",
+		outputFile: "backend-protocol/ws.yaml",
+		gwNN: types.NamespacedName{
+			Namespace: "default",
+			Name:      "example-gateway",
+		},
+	}),
+	Entry("Service with appProtocol=anything", translatorTestCase{
+		inputFile:  "backend-protocol/default.yaml",
+		outputFile: "backend-protocol/default.yaml",
 		gwNN: types.NamespacedName{
 			Namespace: "default",
 			Name:      "example-gateway",

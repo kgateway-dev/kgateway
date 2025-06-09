@@ -35,9 +35,22 @@ var ErrUnsupportedServiceType = eris.New("unsupported service type")
 type Service struct {
 	client.Object
 	GroupKind schema.GroupKind
+	Aliases   []ir.ObjectSource
 	Addresses []string
 	Ports     []ServicePort
 	Hostnames []string
+}
+
+// Keys give all the name/namespace/group/kind keys
+// including those from aliases.
+// Specifically returns the aliases _first_.
+func (s Service) Keys() []ir.ObjectSource {
+	return append(s.Aliases, ir.ObjectSource{
+		Name:      s.GetName(),
+		Namespace: s.GetNamespace(),
+		Group:     s.GroupKind.Group,
+		Kind:      s.GroupKind.Kind,
+	})
 }
 
 func (s Service) IsHeadless() bool {
@@ -108,6 +121,7 @@ func (s Service) BackendObject(port uint32) ir.BackendObjectIR {
 			hostname,
 			int32(port),
 			protocol,
+			nil, // we just need the cluster name, aliases not important here
 		)
 	case *corev1.Service:
 		return kubernetes.BuildServiceBackendObjectIR(obj, int32(port), protocol)
@@ -235,12 +249,13 @@ func FromService(svc *corev1.Service) Service {
 	}
 }
 
-func FromServiceEntry(se *networkingclient.ServiceEntry) Service {
+func FromServiceEntry(se *networkingclient.ServiceEntry, aliases []ir.ObjectSource) Service {
 	addrs := serviceEntryAddresses(se)
 
 	return Service{
 		Object:    se,
 		GroupKind: wellknown.ServiceEntryGVK.GroupKind(),
+		Aliases:   aliases,
 		Addresses: addrs,
 		Hostnames: se.Spec.GetHosts(),
 		Ports: slices.Map(se.Spec.GetPorts(), func(p *networkingv1beta1.ServicePort) ServicePort {

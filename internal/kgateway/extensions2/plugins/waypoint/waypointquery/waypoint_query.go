@@ -11,10 +11,12 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/kube/kubetypes"
 	"istio.io/istio/pkg/slices"
+	"istio.io/istio/pkg/util/sets"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
@@ -104,7 +106,7 @@ type waypointQueries struct {
 	waypointByService  krt.Index[string, WaypointedService]
 	authzPolicies      krt.Collection[*authcr.AuthorizationPolicy]
 	byNamespace        krt.Index[string, *authcr.AuthorizationPolicy]
-	byTargetRefKey     krt.Index[targetRefKey, *authcr.AuthorizationPolicy]
+	byTargetRefKey     krt.Index[ir.ObjectSource, *authcr.AuthorizationPolicy]
 }
 
 func (w *waypointQueries) HasSynced() bool {
@@ -117,46 +119,44 @@ func (w *waypointQueries) GetHTTPRoutesForService(
 	ctx context.Context,
 	svc *Service,
 ) []query.RouteInfo {
-	nns := types.NamespacedName{
-		Namespace: svc.GetNamespace(),
-		Name:      svc.GetName(),
-	}
-
-	targetGK := svc.GroupKind
-	routes := w.commonCols.Routes.RoutesFor(kctx, nns, targetGK.Group, targetGK.Kind)
-
-	// also allow route attachment via Hostname kind
-	// this behavior is unique to Waypoint, as parentRef to Service[Entry] is a GAMMA-only pattern.
-	hostnameGK := wellknown.HostnameGVK.GroupKind()
-	for _, host := range svc.Hostnames {
-		routes = append(routes, w.commonCols.Routes.RoutesFor(kctx, types.NamespacedName{
-			Name: host,
-			// TODO currently the routes parentRef index must have namespace
-			// this means currently, we can only find namespace-local policies like this
-			// OR policies that use Hostname and specify this Service[Entry]'s namespace.
-			Namespace: nns.Namespace,
-		}, hostnameGK.Group, hostnameGK.Kind)...)
-	}
-
-	// resolve delegation
-	out := slices.MapFilter(routes, func(route ir.Route) *query.RouteInfo {
-		pRef := findParentRef(
-			svc,
-			route.GetNamespace(),
-			route.GetParentRefs(),
-			svc.GroupKind,
-		)
-		if pRef == nil {
-			return nil
+	var out []query.RouteInfo
+	seen := sets.New[types.NamespacedName]()
+	for _, key := range svc.Keys() {
+		nns := types.NamespacedName{
+			// TODO  routes index requires a namespace
+			// meaning global references (such as Hostname) are effectively namespace-local
+			Namespace: getEffectiveNamespace(key.GetNamespace(), svc.GetNamespace()),
+			Name:      key.GetName(),
 		}
-		return w.queries.GetRouteChain(kctx, ctx, route, nil, *pRef)
-	})
+		routes := w.commonCols.Routes.RoutesFor(kctx, nns, key.Group, key.Kind)
+		out = append(out, slices.MapFilter(routes, func(route ir.Route) *query.RouteInfo {
+			if seen.InsertContains(types.NamespacedName{
+				Namespace: route.GetNamespace(),
+				Name:      route.GetName(),
+			}) {
+				return nil
+			}
+
+			// resolve delegation
+			pRef := findParentRef(
+				key,
+				route.GetNamespace(),
+				route.GetParentRefs(),
+				key.GetGroupKind(),
+			)
+			if pRef == nil {
+				return nil
+			}
+			return w.queries.GetRouteChain(kctx, ctx, route, nil, *pRef)
+		})...)
+	}
+
 	return out
 }
 
 // findParentRef that targets the given object
 func findParentRef(
-	svc *Service,
+	key ir.ObjectSource,
 	routeNs string,
 	parentRefs []gwv1.ParentReference,
 	gk schema.GroupKind,
@@ -164,26 +164,24 @@ func findParentRef(
 	// TODO peering will need to consider original and simulated GK
 	matchingParentRefs := findParentRefsForType(parentRefs, gk.Group, gk.Kind)
 	for _, pr := range matchingParentRefs {
+		if string(pr.Name) != key.GetName() {
+			continue
+		}
+
+		// global key, no namespace
+		if key.GetNamespace() == "" && pr.Namespace == nil {
+			return pr
+		}
+
 		// default to routes's own ns if not specified on the ref
 		ns := routeNs
 		if pr.Namespace != nil {
 			ns = string(*pr.Namespace)
 		}
-		if string(pr.Name) == svc.GetName() && ns == svc.GetNamespace() {
+		if key.GetNamespace() == ns {
 			return pr
 		}
 	}
-
-	hostnameGK := wellknown.HostnameGVK.GroupKind()
-	hostnameParentRefs := findParentRefsForType(parentRefs, hostnameGK.Group, hostnameGK.Kind)
-	for _, host := range svc.Hostnames {
-		for _, pr := range hostnameParentRefs {
-			if string(pr.Name) == host {
-				return pr
-			}
-		}
-	}
-
 	return nil
 }
 
@@ -261,34 +259,42 @@ func doWaypointAttachment(
 	commonCols *common.CommonCollections,
 	svc Service,
 ) *WaypointedService {
-	// direct attachment
-	waypoint, waypointNone := getUseWaypoint(svc.GetLabels(), svc.GetNamespace())
-	if waypointNone {
-		// explicitly don't want it
-		return nil
-	}
+	// look at aliases and the actual object ns
+	// NOTE: we respect aliases over the original object (see svc.Keys())
+	seenNs := sets.New[string]()
+	for _, k := range svc.Keys() {
+		ns := k.GetNamespace()
+		if ns == "" || seenNs.InsertContains(ns) {
+			continue
+		}
 
-	// try Namespace attachment
-	if waypoint == nil {
-		nsMeta := krt.FetchOne(ctx, commonCols.Namespaces, krt.FilterKey(svc.GetNamespace()))
-		if nsMeta != nil {
-			waypoint, waypointNone = getUseWaypoint(nsMeta.Labels, nsMeta.Name)
-			if waypointNone {
-				// explicitly don't want it
-				return nil
+		// direct attachment - object's own labels
+		waypoint, waypointNone := getUseWaypoint(svc.GetLabels(), ns)
+		if waypointNone {
+			// explicitly don't want it
+			return nil
+		}
+
+		// try Namespace attachment
+		if waypoint == nil {
+			nsMeta := krt.FetchOne(ctx, commonCols.Namespaces, krt.FilterKey(ns))
+			if nsMeta != nil {
+				waypoint, waypointNone = getUseWaypoint(nsMeta.Labels, nsMeta.Name)
+				if waypointNone {
+					// explicitly don't want it
+					return nil
+				}
+			}
+		}
+
+		if waypoint != nil {
+			return &WaypointedService{
+				Waypoint: *waypoint,
+				Service:  svc,
 			}
 		}
 	}
-
-	// no waypoint labels found
-	if waypoint == nil {
-		return nil
-	}
-
-	return &WaypointedService{
-		Waypoint: *waypoint,
-		Service:  svc,
-	}
+	return nil
 }
 
 func waypointAttachmentIndex(
@@ -298,9 +304,6 @@ func waypointAttachmentIndex(
 	krt.Index[types.NamespacedName, WaypointedService],
 	krt.Index[string, WaypointedService],
 ) {
-	// TODO we may want to expand the "logical Service" concept outside of this
-	// package so it can be used for all policy attachment, peering, routing, etc.
-
 	// do basic attachment logic
 	waypointServiceAttachments := krt.JoinCollection(
 		[]krt.Collection[WaypointedService]{
@@ -308,7 +311,8 @@ func waypointAttachmentIndex(
 				return doWaypointAttachment(ctx, commonCols, FromService(kubeSvc))
 			}, commonCols.KrtOpts.ToOptions("WaypointKubeServices")...),
 			krt.NewCollection(commonCols.ServiceEntries, func(ctx krt.HandlerContext, istioSE *networkingclient.ServiceEntry) *WaypointedService {
-				return doWaypointAttachment(ctx, commonCols, FromServiceEntry(istioSE))
+				aliases := getAliases(ctx, commonCols, istioSE)
+				return doWaypointAttachment(ctx, commonCols, FromServiceEntry(istioSE, aliases))
 			}, commonCols.KrtOpts.ToOptions("WaypointServiceEntries")...),
 		},
 		commonCols.KrtOpts.ToOptions("WaypointLogicalServices")...,
@@ -324,6 +328,35 @@ func waypointAttachmentIndex(
 	})
 
 	return waypointServiceAttachments, byWaypointGateway, waypointAttachmentsByService
+}
+
+func getAliases(
+	ctx krt.HandlerContext,
+	commonCols *common.CommonCollections,
+	se *networkingclient.ServiceEntry,
+) []ir.ObjectSource {
+	if len(se.Spec.GetPorts()) == 0 {
+		// require a port since we find aliases via BackendIndex
+		// this is fine b/c a ServiceEntry with no ports isn't reachable via waypoint
+		return nil
+	}
+	objSrc := ir.ObjectSource{
+		Group:     wellknown.ServiceEntryGVK.Group,
+		Kind:      wellknown.ServiceEntryGVK.Kind,
+		Namespace: se.GetNamespace(),
+		Name:      se.GetName(),
+	}
+	be, _ := commonCols.BackendIndex.GetBackendFromRef(ctx, objSrc, gwv1.BackendObjectReference{
+		Group:     ptr.To(gwv1.Group(objSrc.Group)),
+		Kind:      ptr.To(gwv1.Kind(objSrc.Kind)),
+		Name:      gwv1.ObjectName(objSrc.Name),
+		Namespace: ptr.To(gwv1.Namespace(objSrc.Namespace)),
+		Port:      ptr.To(gwv1.PortNumber(se.Spec.GetPorts()[0].GetNumber())),
+	})
+	if be == nil {
+		return nil
+	}
+	return be.Aliases
 }
 
 // getUseWaypoint returns the NamespacedName of the waypoint the given object uses.

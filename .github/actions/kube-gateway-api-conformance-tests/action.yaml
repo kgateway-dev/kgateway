@@ -13,9 +13,6 @@ runs:
     id: kubectl
     with:
       version: ${{ matrix.kube-version.kubectl }}
-  - uses: azure/setup-helm@v4
-    with:
-      version: ${{ matrix.kube-version.helm }}
   - name: Set and retrieve environment variables
     shell: bash
     run: |

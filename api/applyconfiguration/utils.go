@@ -77,6 +77,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.DirectResponseSpecApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("DurationFilter"):
 		return &apiv1alpha1.DurationFilterApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("DynamicForwardProxyBackend"):
+		return &apiv1alpha1.DynamicForwardProxyBackendApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("EnvoyBootstrap"):
 		return &apiv1alpha1.EnvoyBootstrapApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("EnvoyContainer"):
@@ -197,6 +199,12 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.ServiceAccountApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("SingleAuthToken"):
 		return &apiv1alpha1.SingleAuthTokenApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("SSLConfig"):
+		return &apiv1alpha1.SSLConfigApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("SSLFiles"):
+		return &apiv1alpha1.SSLFilesApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("SSLParameters"):
+		return &apiv1alpha1.SSLParametersApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("StaticBackend"):
 		return &apiv1alpha1.StaticBackendApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("StatsConfig"):

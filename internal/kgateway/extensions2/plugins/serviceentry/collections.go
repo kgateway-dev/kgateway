@@ -23,6 +23,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/sets"
 )
 
 // wrapper around ServiceEntry that allows using FilterSelect and
@@ -118,6 +119,7 @@ type serviceEntryPlugin struct {
 
 func initServiceEntryCollections(
 	commonCols *common.CommonCollections,
+	opts Options,
 ) serviceEntryPlugin {
 	// setup input collections
 	weInformer := kclient.NewDelayedInformer[*networkingclient.WorkloadEntry](
@@ -136,10 +138,11 @@ func initServiceEntryCollections(
 		SelectingServiceEntries,
 		WorkloadEntries,
 		commonCols.Pods,
+		opts.Aliaser,
 	)
 
 	// init the outputs
-	Backends := backendsCollections(logger, commonCols.ServiceEntries, commonCols.KrtOpts)
+	Backends := backendsCollections(logger, commonCols.ServiceEntries, commonCols.KrtOpts, opts.Aliaser)
 	Endpoints := endpointsCollection(Backends, SelectedWorkloads, selectedWorkloadsIndex, commonCols.KrtOpts)
 
 	return serviceEntryPlugin{
@@ -177,15 +180,21 @@ func selectedWorkloads(
 	ServiceEntries krt.Collection[seSelector],
 	WorkloadEntries krt.Collection[*networkingclient.WorkloadEntry],
 	Pods krt.Collection[krtcollections.LocalityPod],
+	aliaser Aliaser,
 ) (
 	krt.Collection[selectedWorkload],
 	krt.Index[string, selectedWorkload],
 ) {
 	seNsIndex := krt.NewIndex(ServiceEntries, func(o seSelector) []string {
-		actualNs := o.GetNamespace()
-		namespaces := []string{actualNs}
-		// TODO peering should also include the parent namespace
-		return namespaces
+		namespaces := sets.New(o.GetNamespace())
+		if aliaser != nil {
+			for _, alias := range aliaser(o.ServiceEntry) {
+				if ns := alias.GetNamespace(); ns != "" {
+					namespaces.Insert(ns)
+				}
+			}
+		}
+		return namespaces.UnsortedList()
 	})
 
 	// WorkloadEntries: selection logic and conver to LocalityPod

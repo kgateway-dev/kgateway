@@ -88,6 +88,10 @@ func (l LocalityLbMap) MarshalJSON() ([]byte, error) {
 var _ json.Marshaler = LocalityLbMap{}
 
 type EndpointsForBackend struct {
+	// preserve the labels from the original backend object
+	// for use in endpoints plugins
+	BackendLabels map[string]string
+
 	LbEps LocalityLbMap
 	// Note - in theory, cluster name should be a function of the UpstreamResourceName.
 	// But due to an upstream envoy bug, the cluster name also includes the upstream hash.
@@ -102,6 +106,11 @@ type EndpointsForBackend struct {
 }
 
 func NewEndpointsForBackend(us BackendObjectIR) *EndpointsForBackend {
+	labels := map[string]string{}
+	if us.Obj != nil && us.Obj.GetLabels() != nil {
+		labels = us.Obj.GetLabels()
+	}
+
 	// start with a hash of the cluster name. technically we dont need it for krt, as we can compare the upstream name. but it helps later
 	// to compute the hash we present envoy with.
 	// note: we no longer need to add the upstream body hash to the clustername, as we applied `use_eds_cache_for_ads`
@@ -115,9 +124,14 @@ func NewEndpointsForBackend(us BackendObjectIR) *EndpointsForBackend {
 	h.Write([]byte(us.Name))
 	h.Write([]byte{0})
 	h.Write([]byte(us.Namespace))
+	for k, v := range labels {
+		h.Write([]byte{0})
+		h.Write([]byte(k + "=" + v))
+	}
 	upstreamHash := h.Sum64()
 
 	return &EndpointsForBackend{
+		BackendLabels:        labels,
 		LbEps:                make(map[PodLocality][]EndpointWithMd),
 		ClusterName:          us.ClusterName(),
 		UpstreamResourceName: us.ResourceName(),
@@ -125,6 +139,21 @@ func NewEndpointsForBackend(us BackendObjectIR) *EndpointsForBackend {
 		Hostname:             us.CanonicalHostname,
 		LbEpsEqualityHash:    upstreamHash,
 		upstreamHash:         upstreamHash,
+	}
+}
+
+// EmptyCopy creates a fresh EndpointsForBackend with no endpoints
+// for the same backend.
+func (e EndpointsForBackend) EmptyCopy() EndpointsForBackend {
+	return EndpointsForBackend{
+		BackendLabels:        e.BackendLabels,
+		LbEps:                make(map[PodLocality][]EndpointWithMd),
+		ClusterName:          e.ClusterName,
+		UpstreamResourceName: e.UpstreamResourceName,
+		Port:                 e.Port,
+		Hostname:             e.Hostname,
+		LbEpsEqualityHash:    e.upstreamHash,
+		upstreamHash:         e.upstreamHash,
 	}
 }
 
