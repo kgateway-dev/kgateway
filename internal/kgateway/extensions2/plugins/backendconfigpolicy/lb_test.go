@@ -56,7 +56,7 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 		{
 			name: "LoadBalancerTypeRandom",
 			config: &v1alpha1.LoadBalancerConfig{
-				Type: ptr.To(v1alpha1.LoadBalancerTypeRandom),
+				Random: &v1alpha1.LoadBalancerRandomConfig{},
 			},
 			expected: &clusterv3.Cluster{
 				Name:     "test",
@@ -69,7 +69,7 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 		{
 			name: "RoundRobin basic config",
 			config: &v1alpha1.LoadBalancerConfig{
-				Type: ptr.To(v1alpha1.LoadBalancerTypeRoundRobin),
+				RoundRobin: &v1alpha1.LoadBalancerRoundRobinConfig{},
 			},
 			expected: &clusterv3.Cluster{
 				Name:     "test",
@@ -82,7 +82,6 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 		{
 			name: "RoundRobin full config",
 			config: &v1alpha1.LoadBalancerConfig{
-				Type: ptr.To(v1alpha1.LoadBalancerTypeRoundRobin),
 				RoundRobin: &v1alpha1.LoadBalancerRoundRobinConfig{
 					SlowStartConfig: &v1alpha1.SlowStartConfig{
 						Window: &metav1.Duration{
@@ -118,11 +117,16 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 		{
 			name: "LeastRequest basic config",
 			config: &v1alpha1.LoadBalancerConfig{
-				Type: ptr.To(v1alpha1.LoadBalancerTypeLeastRequest),
+				LeastRequest: &v1alpha1.LoadBalancerLeastRequestConfig{},
 			},
 			expected: &clusterv3.Cluster{
 				Name:     "test",
 				LbPolicy: clusterv3.Cluster_LEAST_REQUEST,
+				LbConfig: &clusterv3.Cluster_LeastRequestLbConfig_{
+					LeastRequestLbConfig: &clusterv3.Cluster_LeastRequestLbConfig{
+						ChoiceCount: &wrapperspb.UInt32Value{},
+					},
+				},
 				CommonLbConfig: &clusterv3.Cluster_CommonLbConfig{
 					ConsistentHashingLbConfig: &clusterv3.Cluster_CommonLbConfig_ConsistentHashingLbConfig{},
 				},
@@ -131,7 +135,6 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 		{
 			name: "LeastRequest full config",
 			config: &v1alpha1.LoadBalancerConfig{
-				Type: ptr.To(v1alpha1.LoadBalancerTypeLeastRequest),
 				LeastRequest: &v1alpha1.LoadBalancerLeastRequestConfig{
 					ChoiceCount: 10,
 					SlowStartConfig: &v1alpha1.SlowStartConfig{
@@ -169,7 +172,7 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 		{
 			name: "RingHash basic config",
 			config: &v1alpha1.LoadBalancerConfig{
-				Type: ptr.To(v1alpha1.LoadBalancerTypeRingHash),
+				RingHash: &v1alpha1.LoadBalancerRingHashConfig{},
 			},
 			expected: &clusterv3.Cluster{
 				Name:     "test",
@@ -185,7 +188,6 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 		{
 			name: "RingHash full config",
 			config: &v1alpha1.LoadBalancerConfig{
-				Type: ptr.To(v1alpha1.LoadBalancerTypeRingHash),
 				RingHash: &v1alpha1.LoadBalancerRingHashConfig{
 					MinimumRingSize: ptr.To(uint64(10)),
 					MaximumRingSize: ptr.To(uint64(100)),
@@ -208,7 +210,7 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 		{
 			name: "Maglev",
 			config: &v1alpha1.LoadBalancerConfig{
-				Type: ptr.To(v1alpha1.LoadBalancerTypeMaglev),
+				Maglev: &v1alpha1.LoadBalancerMaglevConfig{},
 			},
 			expected: &clusterv3.Cluster{
 				Name:     "test",

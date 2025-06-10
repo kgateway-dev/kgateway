@@ -53,7 +53,6 @@ spec:
     overrideStreamErrorOnInvalidHttpMessage: true
     headerFormat: PreserveCaseHeaderKeyFormat
   loadBalancerConfig:
-    type: RingHash
     ringHash:
       minimumRingSize: 1024
       maximumRingSize: 2048
@@ -85,7 +84,6 @@ spec:
       group: ""
       kind: Service
   loadBalancerConfig:
-    type: LeastRequest
     leastRequest:
       choiceCount: 3
 ---
@@ -114,7 +112,6 @@ spec:
       group: ""
       kind: Service
   loadBalancerConfig:
-    type: RoundRobin
     roundRobin:
       slowStartConfig:
         window: 10s
@@ -146,7 +143,6 @@ spec:
       group: ""
       kind: Service
   loadBalancerConfig:
-    type: RingHash
     ringHash:
       minimumRingSize: 1024
 ---
@@ -175,7 +171,7 @@ spec:
       group: ""
       kind: Service
   loadBalancerConfig:
-    type: Random
+    random: {}
 ---
 apiVersion: v1
 kind: Service
@@ -202,7 +198,7 @@ spec:
       group: ""
       kind: Service
   loadBalancerConfig:
-    type: Maglev
+    maglev: {}
 ---
 apiVersion: v1
 kind: Service
@@ -230,4 +226,4 @@ spec:
       kind: Service
   loadBalancerConfig:
     localityConfigType: WeightedLb
-    type: RoundRobin
+    roundRobin: {}

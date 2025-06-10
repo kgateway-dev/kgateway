@@ -60,42 +60,33 @@ func translateLoadBalancerConfig(config *v1alpha1.LoadBalancerConfig) *LoadBalan
 		out.commonLbConfig.CloseConnectionsOnHostSetChange = *config.CloseConnectionsOnHostSetChange
 	}
 
-	if config.Type != nil {
-		switch *config.Type {
-		case v1alpha1.LoadBalancerTypeLeastRequest:
-			out.lbPolicy = clusterv3.Cluster_LEAST_REQUEST
-			out.leastRequestLbConfig = &clusterv3.Cluster_LeastRequestLbConfig{}
-			if config.LeastRequest != nil {
-				out.leastRequestLbConfig.ChoiceCount = &wrapperspb.UInt32Value{
-					Value: config.LeastRequest.ChoiceCount,
-				}
-				out.slowStartConfigIR = toSlowStartConfigIR(config.LeastRequest.SlowStartConfig)
-			}
-		case v1alpha1.LoadBalancerTypeRoundRobin:
-			out.lbPolicy = clusterv3.Cluster_ROUND_ROBIN
-			if config.RoundRobin != nil {
-				out.slowStartConfigIR = toSlowStartConfigIR(config.RoundRobin.SlowStartConfig)
-			}
-		case v1alpha1.LoadBalancerTypeRingHash:
-			out.lbPolicy = clusterv3.Cluster_RING_HASH
-			out.ringHashLbConfig = &clusterv3.Cluster_RingHashLbConfig{}
-			if config.RingHash != nil {
-				if config.RingHash.MinimumRingSize != nil {
-					out.ringHashLbConfig.MinimumRingSize = &wrapperspb.UInt64Value{
-						Value: *config.RingHash.MinimumRingSize,
-					}
-				}
-				if config.RingHash.MaximumRingSize != nil {
-					out.ringHashLbConfig.MaximumRingSize = &wrapperspb.UInt64Value{
-						Value: *config.RingHash.MaximumRingSize,
-					}
-				}
-			}
-		case v1alpha1.LoadBalancerTypeMaglev:
-			out.lbPolicy = clusterv3.Cluster_MAGLEV
-		case v1alpha1.LoadBalancerTypeRandom:
-			out.lbPolicy = clusterv3.Cluster_RANDOM
+	if config.LeastRequest != nil {
+		out.lbPolicy = clusterv3.Cluster_LEAST_REQUEST
+		out.leastRequestLbConfig = &clusterv3.Cluster_LeastRequestLbConfig{}
+		out.leastRequestLbConfig.ChoiceCount = &wrapperspb.UInt32Value{
+			Value: config.LeastRequest.ChoiceCount,
 		}
+		out.slowStartConfigIR = toSlowStartConfigIR(config.LeastRequest.SlowStartConfig)
+	} else if config.RoundRobin != nil {
+		out.lbPolicy = clusterv3.Cluster_ROUND_ROBIN
+		out.slowStartConfigIR = toSlowStartConfigIR(config.RoundRobin.SlowStartConfig)
+	} else if config.RingHash != nil {
+		out.lbPolicy = clusterv3.Cluster_RING_HASH
+		out.ringHashLbConfig = &clusterv3.Cluster_RingHashLbConfig{}
+		if config.RingHash.MinimumRingSize != nil {
+			out.ringHashLbConfig.MinimumRingSize = &wrapperspb.UInt64Value{
+				Value: *config.RingHash.MinimumRingSize,
+			}
+		}
+		if config.RingHash.MaximumRingSize != nil {
+			out.ringHashLbConfig.MaximumRingSize = &wrapperspb.UInt64Value{
+				Value: *config.RingHash.MaximumRingSize,
+			}
+		}
+	} else if config.Maglev != nil {
+		out.lbPolicy = clusterv3.Cluster_MAGLEV
+	} else if config.Random != nil {
+		out.lbPolicy = clusterv3.Cluster_RANDOM
 	}
 
 	return out
@@ -187,8 +178,10 @@ func toSlowStartConfig(ir *slowStartConfigIR, clusterName string) *clusterv3.Clu
 			logger.Error("error parsing slowStartConfig.aggression", "error", err, "cluster", clusterName)
 			return nil
 		}
+		// Envoy requires runtime key for RuntimeDouble types,
+		// so use a cluster-specific runtime key.
+		// See https://github.com/kgateway-dev/kgateway/pull/9031
 		runtimeKeyPrefix := "upstream"
-
 		if clusterName != "" {
 			runtimeKeyPrefix = fmt.Sprintf("%s.%s", runtimeKeyPrefix, clusterName)
 		}

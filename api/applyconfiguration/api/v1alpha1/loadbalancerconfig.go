@@ -13,10 +13,11 @@ import (
 type LoadBalancerConfigApplyConfiguration struct {
 	HealthyPanicThreshold           *uint32                                           `json:"healthyPanicThreshold,omitempty"`
 	UpdateMergeWindow               *v1.Duration                                      `json:"updateMergeWindow,omitempty"`
-	Type                            *apiv1alpha1.LoadBalancerType                     `json:"type,omitempty"`
 	LeastRequest                    *LoadBalancerLeastRequestConfigApplyConfiguration `json:"leastRequest,omitempty"`
 	RoundRobin                      *LoadBalancerRoundRobinConfigApplyConfiguration   `json:"roundRobin,omitempty"`
 	RingHash                        *LoadBalancerRingHashConfigApplyConfiguration     `json:"ringHash,omitempty"`
+	Maglev                          *apiv1alpha1.LoadBalancerMaglevConfig             `json:"maglev,omitempty"`
+	Random                          *apiv1alpha1.LoadBalancerRandomConfig             `json:"random,omitempty"`
 	LocalityConfigType              *apiv1alpha1.LocalityConfigType                   `json:"localityConfigType,omitempty"`
 	UseHostnameForHashing           *bool                                             `json:"useHostnameForHashing,omitempty"`
 	CloseConnectionsOnHostSetChange *bool                                             `json:"closeConnectionsOnHostSetChange,omitempty"`
@@ -44,14 +45,6 @@ func (b *LoadBalancerConfigApplyConfiguration) WithUpdateMergeWindow(value v1.Du
 	return b
 }
 
-// WithType sets the Type field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the Type field is set to the value of the last call.
-func (b *LoadBalancerConfigApplyConfiguration) WithType(value apiv1alpha1.LoadBalancerType) *LoadBalancerConfigApplyConfiguration {
-	b.Type = &value
-	return b
-}
-
 // WithLeastRequest sets the LeastRequest field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the LeastRequest field is set to the value of the last call.
@@ -73,6 +66,22 @@ func (b *LoadBalancerConfigApplyConfiguration) WithRoundRobin(value *LoadBalance
 // If called multiple times, the RingHash field is set to the value of the last call.
 func (b *LoadBalancerConfigApplyConfiguration) WithRingHash(value *LoadBalancerRingHashConfigApplyConfiguration) *LoadBalancerConfigApplyConfiguration {
 	b.RingHash = value
+	return b
+}
+
+// WithMaglev sets the Maglev field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Maglev field is set to the value of the last call.
+func (b *LoadBalancerConfigApplyConfiguration) WithMaglev(value apiv1alpha1.LoadBalancerMaglevConfig) *LoadBalancerConfigApplyConfiguration {
+	b.Maglev = &value
+	return b
+}
+
+// WithRandom sets the Random field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Random field is set to the value of the last call.
+func (b *LoadBalancerConfigApplyConfiguration) WithRandom(value apiv1alpha1.LoadBalancerRandomConfig) *LoadBalancerConfigApplyConfiguration {
+	b.Random = &value
 	return b
 }
 

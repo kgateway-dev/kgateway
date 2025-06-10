@@ -1034,15 +1034,18 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: localityConfigType
       type:
         scalar: string
+    - name: maglev
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LoadBalancerMaglevConfig
+    - name: random
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LoadBalancerRandomConfig
     - name: ringHash
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LoadBalancerRingHashConfig
     - name: roundRobin
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LoadBalancerRoundRobinConfig
-    - name: type
-      type:
-        scalar: string
     - name: updateMergeWindow
       type:
         namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Duration
@@ -1060,6 +1063,30 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: slowStartConfig
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SlowStartConfig
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LoadBalancerMaglevConfig
+  map:
+    elementType:
+      scalar: untyped
+      list:
+        elementType:
+          namedType: __untyped_atomic_
+        elementRelationship: atomic
+      map:
+        elementType:
+          namedType: __untyped_deduced_
+        elementRelationship: separable
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LoadBalancerRandomConfig
+  map:
+    elementType:
+      scalar: untyped
+      list:
+        elementType:
+          namedType: __untyped_atomic_
+        elementRelationship: atomic
+      map:
+        elementType:
+          namedType: __untyped_deduced_
+        elementRelationship: separable
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LoadBalancerRingHashConfig
   map:
     fields:

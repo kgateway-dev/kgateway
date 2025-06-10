@@ -88,6 +88,8 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LLMProvider":                               schema_kgateway_v2_api_v1alpha1_LLMProvider(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LoadBalancerConfig":                        schema_kgateway_v2_api_v1alpha1_LoadBalancerConfig(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LoadBalancerLeastRequestConfig":            schema_kgateway_v2_api_v1alpha1_LoadBalancerLeastRequestConfig(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LoadBalancerMaglevConfig":                  schema_kgateway_v2_api_v1alpha1_LoadBalancerMaglevConfig(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LoadBalancerRandomConfig":                  schema_kgateway_v2_api_v1alpha1_LoadBalancerRandomConfig(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LoadBalancerRingHashConfig":                schema_kgateway_v2_api_v1alpha1_LoadBalancerRingHashConfig(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LoadBalancerRoundRobinConfig":              schema_kgateway_v2_api_v1alpha1_LoadBalancerRoundRobinConfig(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LocalPolicyTargetReference":                schema_kgateway_v2_api_v1alpha1_LocalPolicyTargetReference(ref),
@@ -3439,26 +3441,34 @@ func schema_kgateway_v2_api_v1alpha1_LoadBalancerConfig(ref common.ReferenceCall
 							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Duration"),
 						},
 					},
-					"type": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Type of load balancer to use. See https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/load_balancing/load_balancers",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
 					"leastRequest": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LoadBalancerLeastRequestConfig"),
+							Description: "LeastRequest configures the least request load balancer type.",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LoadBalancerLeastRequestConfig"),
 						},
 					},
 					"roundRobin": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LoadBalancerRoundRobinConfig"),
+							Description: "RoundRobin configures the round robin load balancer type.",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LoadBalancerRoundRobinConfig"),
 						},
 					},
 					"ringHash": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LoadBalancerRingHashConfig"),
+							Description: "RingHash configures the ring hash load balancer type.",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LoadBalancerRingHashConfig"),
+						},
+					},
+					"maglev": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Maglev configures the maglev load balancer type.",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LoadBalancerMaglevConfig"),
+						},
+					},
+					"random": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Random configures the random load balancer type.",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LoadBalancerRandomConfig"),
 						},
 					},
 					"localityConfigType": {
@@ -3487,7 +3497,7 @@ func schema_kgateway_v2_api_v1alpha1_LoadBalancerConfig(ref common.ReferenceCall
 			},
 		},
 		Dependencies: []string{
-			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LoadBalancerLeastRequestConfig", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LoadBalancerRingHashConfig", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LoadBalancerRoundRobinConfig", "k8s.io/apimachinery/pkg/apis/meta/v1.Duration"},
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LoadBalancerLeastRequestConfig", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LoadBalancerMaglevConfig", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LoadBalancerRandomConfig", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LoadBalancerRingHashConfig", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LoadBalancerRoundRobinConfig", "k8s.io/apimachinery/pkg/apis/meta/v1.Duration"},
 	}
 }
 
@@ -3517,6 +3527,26 @@ func schema_kgateway_v2_api_v1alpha1_LoadBalancerLeastRequestConfig(ref common.R
 		},
 		Dependencies: []string{
 			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.SlowStartConfig"},
+	}
+}
+
+func schema_kgateway_v2_api_v1alpha1_LoadBalancerMaglevConfig(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+			},
+		},
+	}
+}
+
+func schema_kgateway_v2_api_v1alpha1_LoadBalancerRandomConfig(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+			},
+		},
 	}
 }
 

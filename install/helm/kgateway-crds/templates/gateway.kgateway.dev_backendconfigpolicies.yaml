@@ -117,6 +117,10 @@ spec:
                     enum:
                     - WeightedLb
                     type: string
+                  maglev:
+                    type: object
+                  random:
+                    type: object
                   ringHash:
                     properties:
                       maximumRingSize:
@@ -147,14 +151,6 @@ spec:
                               rule: duration(self) >= duration('0s')
                         type: object
                     type: object
-                  type:
-                    enum:
-                    - LeastRequest
-                    - RoundRobin
-                    - Random
-                    - RingHash
-                    - Maglev
-                    type: string
                   updateMergeWindow:
                     type: string
                     x-kubernetes-validations:
@@ -164,6 +160,11 @@ spec:
                     default: false
                     type: boolean
                 type: object
+                x-kubernetes-validations:
+                - message: only one of leastRequest, roundRobin, ringHash, maglev,
+                    or random can be set
+                  rule: has(self.leastRequest) + has(self.roundRobin) + has(self.ringHash)
+                    + has(self.maglev) + has(self.random) <= 1
               perConnectionBufferLimitBytes:
                 type: integer
               sslConfig:

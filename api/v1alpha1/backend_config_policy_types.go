@@ -254,6 +254,7 @@ type SSLFiles struct {
 	RootCA string `json:"rootCA,omitempty"`
 }
 
+// +kubebuilder:validation:XValidation:rule="has(self.leastRequest) + has(self.roundRobin) + has(self.ringHash) + has(self.maglev) + has(self.random) <= 1",message="only one of leastRequest, roundRobin, ringHash, maglev, or random can be set"
 type LoadBalancerConfig struct {
 	// HealthyPanicThreshold configures envoy's panic threshold percentage between 0-100. Once the number of non-healthy hosts
 	// reaches this percentage, envoy disregards health information.
@@ -270,24 +271,25 @@ type LoadBalancerConfig struct {
 	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('0s')",message="updateMergeWindow must be a valid duration string"
 	UpdateMergeWindow *metav1.Duration `json:"updateMergeWindow,omitempty"`
 
-	// Type of load balancer to use.
-	// See https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/load_balancing/load_balancers
-	// +optional
-	// +unionDiscriminator
-	// +kubebuilder:validation:Enum=LeastRequest;RoundRobin;Random;RingHash;Maglev
-	Type *LoadBalancerType `json:"type,omitempty"`
-
-	// +unionMember:type=LeastRequest
+	// LeastRequest configures the least request load balancer type.
 	// +optional
 	LeastRequest *LoadBalancerLeastRequestConfig `json:"leastRequest,omitempty"`
 
-	// +unionMember:type=RoundRobin
+	// RoundRobin configures the round robin load balancer type.
 	// +optional
 	RoundRobin *LoadBalancerRoundRobinConfig `json:"roundRobin,omitempty"`
 
-	// +unionMember:type=RingHash
+	// RingHash configures the ring hash load balancer type.
 	// +optional
 	RingHash *LoadBalancerRingHashConfig `json:"ringHash,omitempty"`
+
+	// Maglev configures the maglev load balancer type.
+	// +optional
+	Maglev *LoadBalancerMaglevConfig `json:"maglev,omitempty"`
+
+	// Random configures the random load balancer type.
+	// +optional
+	Random *LoadBalancerRandomConfig `json:"random,omitempty"`
 
 	// LocalityConfigType specifies the locality config type to use.
 	// See https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/load_balancing_policies/common/v3/common.proto#envoy-v3-api-msg-extensions-load-balancing-policies-common-v3-localitylbconfig
@@ -315,21 +317,6 @@ type LoadBalancerConfig struct {
 	// +optional
 	CloseConnectionsOnHostSetChange *bool `json:"closeConnectionsOnHostSetChange,omitempty"`
 }
-
-type LoadBalancerType string
-
-const (
-	// LoadBalancerTypeRoundRobin is the envoy default load balancer type.
-	LoadBalancerTypeRoundRobin LoadBalancerType = "RoundRobin"
-	// LoadBalancerTypeLeastRequest is a load balancer type that selects the least requested host.
-	LoadBalancerTypeLeastRequest LoadBalancerType = "LeastRequest"
-	// LoadBalancerTypeRandom is a load balancer type that selects a random host.
-	LoadBalancerTypeRandom LoadBalancerType = "Random"
-	// LoadBalancerTypeRingHash is a load balancer type that uses consistent hashing to route requests to a specific host.
-	LoadBalancerTypeRingHash LoadBalancerType = "RingHash"
-	// LoadBalancerTypeMaglev is a load balancer type that uses maglev hashing to route requests to a specific host.
-	LoadBalancerTypeMaglev LoadBalancerType = "Maglev"
-)
 
 // LoadBalancerLeastRequestConfig configures the least request load balancer type.
 type LoadBalancerLeastRequestConfig struct {
@@ -361,6 +348,9 @@ type LoadBalancerRingHashConfig struct {
 	// +optional
 	MaximumRingSize *uint64 `json:"maximumRingSize,omitempty"`
 }
+
+type LoadBalancerMaglevConfig struct{}
+type LoadBalancerRandomConfig struct{}
 
 type SlowStartConfig struct {
 	// Represents the size of slow start window.
