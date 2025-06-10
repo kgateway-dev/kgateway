@@ -3,7 +3,6 @@ package endpointpicker
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"strings"
 	"time"
 
@@ -58,7 +57,7 @@ func buildRegisterCallback(
 					irRoutes := commonCol.Routes.ListHTTPRoutesInNamespace(poolNsName.Namespace)
 
 					// Check if any HTTPRoute references this InferencePool.
-					gtwName := ir.referencesInferencePool(ctx, commonCol, irRoutes, poolNsName)
+					gtwName := ir.referencedGateway(ctx, commonCol, irRoutes, poolNsName)
 					if gtwName == "" {
 						// If needed, remove the Kgateway-managed gateway from the InferencePool status.
 						if err := removeGatewayParentRef(ctx, cli, pool, commonCol.GatewayIndex); err != nil {
@@ -72,7 +71,7 @@ func buildRegisterCallback(
 
 					pIdx := findGatewayParentRef(&pool.Status, gtwName)
 					if pIdx == -1 {
-						slog.Info(
+						logger.Debug(
 							"inferencepool not managed by kgateway, bypassing status update",
 							"namespace",
 							poolNsName.Namespace,
@@ -83,23 +82,23 @@ func buildRegisterCallback(
 					}
 
 					// Build the InferencePool Accepted status condition.
-					newAckCond := buildAcceptedCondition(pool.Generation, commonCol.ControllerName)
+					newAcceptedCond := buildAcceptedCondition(pool.Generation, commonCol.ControllerName)
 
 					// Check if the Accepted condition already exists and is up-to-date.
-					existingAckCond := meta.FindStatusCondition(pool.Status.Parents[pIdx].Conditions, string(infextv1a2.InferencePoolConditionAccepted))
+					existingAcceptedCond := meta.FindStatusCondition(pool.Status.Parents[pIdx].Conditions, string(infextv1a2.InferencePoolConditionAccepted))
 					ackCondChanged := false
 					switch {
-					case existingAckCond == nil:
+					case existingAcceptedCond == nil:
 						// If the condition doesn't exist, add it.
-						ackCondChanged = meta.SetStatusCondition(&pool.Status.Parents[pIdx].Conditions, newAckCond)
+						ackCondChanged = meta.SetStatusCondition(&pool.Status.Parents[pIdx].Conditions, newAcceptedCond)
 					default:
 						// If the condition exists, check if it needs to be updated.
-						statusEq := existingAckCond.Status == newAckCond.Status
-						reasonEq := existingAckCond.Reason == newAckCond.Reason
-						messageEq := existingAckCond.Message == newAckCond.Message
-						genEq := existingAckCond.ObservedGeneration == newAckCond.ObservedGeneration
+						statusEq := existingAcceptedCond.Status == newAcceptedCond.Status
+						reasonEq := existingAcceptedCond.Reason == newAcceptedCond.Reason
+						messageEq := existingAcceptedCond.Message == newAcceptedCond.Message
+						genEq := existingAcceptedCond.ObservedGeneration == newAcceptedCond.ObservedGeneration
 						if !statusEq || !reasonEq || !messageEq || !genEq {
-							ackCondChanged = meta.SetStatusCondition(&pool.Status.Parents[pIdx].Conditions, newAckCond)
+							ackCondChanged = meta.SetStatusCondition(&pool.Status.Parents[pIdx].Conditions, newAcceptedCond)
 						}
 					}
 
@@ -128,7 +127,7 @@ func buildRegisterCallback(
 						if err := cli.Status().Patch(ctx, pool, client.Merge); err != nil {
 							return err
 						}
-						slog.Info(
+						logger.Info(
 							"patched inferencepool status",
 							"name", poolNsName.String(),
 							"namespace", poolNsName.Namespace,
@@ -142,7 +141,7 @@ func buildRegisterCallback(
 				retry.DelayType(retry.BackOffDelay),
 			)
 			if err != nil {
-				slog.Error(
+				logger.Error(
 					"all attempts failed for patching resource status",
 					"inferencepool",
 					poolNsName.String(),
@@ -154,16 +153,16 @@ func buildRegisterCallback(
 	}
 }
 
-// referencesInferencePool returns the gateway name if any HTTPRoute in irRoutes references
+// referencedGateway returns the gateway name if any HTTPRoute in irRoutes references
 // the given InferencePool and is managed by kgateway.
-func (p *inferencePool) referencesInferencePool(
+func (p *inferencePool) referencedGateway(
 	ctx context.Context,
 	commonCol *common.CommonCollections,
 	irRoutes []ir.HttpRouteIR,
 	poolNN types.NamespacedName,
 ) string {
 	if len(irRoutes) == 0 {
-		slog.Debug("no IR HTTPRoutes found")
+		logger.Debug("no IR HTTPRoutes found")
 		return ""
 	}
 
@@ -171,7 +170,7 @@ func (p *inferencePool) referencesInferencePool(
 		route, ok := irRoute.SourceObject.(*gwv1.HTTPRoute)
 		if !ok {
 			p.errors = append(p.errors, fmt.Errorf("error casting IR Route to HTTPRoute"))
-			slog.Error("error casting IR Route to HTTPRoute", "namespace", irRoute.Namespace, "name", irRoute.Name)
+			logger.Error("error casting IR Route to HTTPRoute", "namespace", irRoute.Namespace, "name", irRoute.Name)
 			return ""
 		}
 		backendMatches := false
@@ -195,7 +194,7 @@ func (p *inferencePool) referencesInferencePool(
 		}
 
 		// Check status.ParentRefs for the kgtw controllerName.
-		// TODO [danehans]: Support cross-namespace references by using commonCol RefGrants.
+		// TODO [danehans]: Support cross-namespace references https://github.com/kgateway-dev/kgateway/issues/11370
 		if backendMatches {
 			for _, parent := range route.Status.Parents {
 				if parent.ControllerName == gwv1.GatewayController(commonCol.ControllerName) {
@@ -222,7 +221,7 @@ func removeGatewayParentRef(
 
 	if pool.Status.Parents == nil || len(pool.Status.Parents) == 0 {
 		// Nothing to do if the InferencePool status Parents is nil or empty.
-		slog.Debug(
+		logger.Debug(
 			"inferencepool status parents is nil or empty, nothing to remove",
 			"namespace", pool.Namespace,
 			"name", pool.Name,
@@ -259,7 +258,7 @@ func removeGatewayParentRef(
 
 	pool.Status.Parents = updated
 	if err := cli.Status().Patch(ctx, pool, client.Merge); err != nil {
-		slog.Error(
+		logger.Error(
 			"failed to remove ParentRef from InferencePool status",
 			"namespace", pool.Namespace,
 			"name", pool.Name,
@@ -338,23 +337,23 @@ func buildResolvedRefsCondition(gen int64, errs []error) metav1.Condition {
 		return cond
 	}
 
-	var aggErrs strings.Builder
-	var prologue string
+	// Build a human-friendly prefix.
+	var prefix string
 	if len(errs) == 1 {
-		prologue = "InferencePool error:"
+		prefix = "error:"
 	} else {
-		prologue = fmt.Sprintf("InferencePool has %d errors:", len(errs))
+		prefix = fmt.Sprintf("InferencePool has %d errors:", len(errs))
 	}
-	aggErrs.Write([]byte(prologue))
+
+	// Collect and semicolon-join all error messages.
+	msgs := make([]string, 0, len(errs))
 	for _, err := range errs {
-		aggErrs.Write([]byte(` "`))
-		aggErrs.Write([]byte(err.Error()))
-		aggErrs.Write([]byte(`"`))
+		msgs = append(msgs, err.Error())
 	}
+	joined := strings.Join(msgs, "; ")
 
 	cond.Status = metav1.ConditionFalse
 	cond.Reason = string(infextv1a2.InferencePoolReasonInvalidExtensionRef)
-	cond.Message = aggErrs.String()
-
+	cond.Message = fmt.Sprintf("%s %s", prefix, joined)
 	return cond
 }

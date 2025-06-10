@@ -63,15 +63,17 @@ func TestBuildResolvedRefsCondition_WithErrors(t *testing.T) {
 	cond1 := buildResolvedRefsCondition(1, []error{err1})
 	assert.Equal(t, metav1.ConditionFalse, cond1.Status)
 	assert.Equal(t, string(infextv1a2.InferencePoolReasonInvalidExtensionRef), cond1.Reason)
-	assert.Contains(t, cond1.Message, "InferencePool error:")
-	assert.Contains(t, cond1.Message, "\"foo failed\"")
+	// single-error prefix is now just "error:"
+	assert.Contains(t, cond1.Message, "error:")
+	// no embedded quotes
+	assert.Contains(t, cond1.Message, "foo failed")
 
 	cond2 := buildResolvedRefsCondition(2, []error{err1, err2})
 	assert.Equal(t, metav1.ConditionFalse, cond2.Status)
 	assert.Equal(t, string(infextv1a2.InferencePoolReasonInvalidExtensionRef), cond2.Reason)
 	assert.Contains(t, cond2.Message, "InferencePool has 2 errors:")
-	assert.Contains(t, cond2.Message, "\"foo failed\"")
-	assert.Contains(t, cond2.Message, "\"bar crash\"")
+	// joined with "; "
+	assert.Contains(t, cond2.Message, "foo failed; bar crash")
 }
 
 func TestReferencesInferencePool(t *testing.T) {
@@ -82,7 +84,7 @@ func TestReferencesInferencePool(t *testing.T) {
 
 	// No routes -> return empty
 	p.errors = nil
-	rs := p.referencesInferencePool(ctx, commonCol, nil, poolNN)
+	rs := p.referencedGateway(ctx, commonCol, nil, poolNN)
 	assert.Equal(t, "", rs)
 	assert.Len(t, p.errors, 0)
 
@@ -90,7 +92,7 @@ func TestReferencesInferencePool(t *testing.T) {
 	p.errors = nil
 	wrong := &corev1.Service{}
 	routes := []ir.HttpRouteIR{{SourceObject: wrong}}
-	rs = p.referencesInferencePool(ctx, commonCol, routes, poolNN)
+	rs = p.referencedGateway(ctx, commonCol, routes, poolNN)
 	assert.Equal(t, "", rs)
 	assert.Len(t, p.errors, 1)
 
@@ -99,7 +101,7 @@ func TestReferencesInferencePool(t *testing.T) {
 	r := &gwv1.HTTPRoute{}
 	r.Spec.Rules = []gwv1.HTTPRouteRule{{}}
 	routes = []ir.HttpRouteIR{{SourceObject: r}}
-	rs = p.referencesInferencePool(ctx, commonCol, routes, poolNN)
+	rs = p.referencedGateway(ctx, commonCol, routes, poolNN)
 	assert.Equal(t, "", rs)
 
 	// Route with matching backend but no parent with controllerName
@@ -119,7 +121,7 @@ func TestReferencesInferencePool(t *testing.T) {
 		ControllerName: gwv1.GatewayController("other"),
 	}}
 	routes = []ir.HttpRouteIR{{SourceObject: r}}
-	rs = p.referencesInferencePool(ctx, commonCol, routes, poolNN)
+	rs = p.referencedGateway(ctx, commonCol, routes, poolNN)
 	assert.Equal(t, "", rs)
 
 	// Route with matching backend and matching parent
@@ -129,7 +131,7 @@ func TestReferencesInferencePool(t *testing.T) {
 		ControllerName: gwv1.GatewayController("ctrl"),
 	}}
 	routes = []ir.HttpRouteIR{{SourceObject: r}}
-	rs = p.referencesInferencePool(ctx, commonCol, routes, poolNN)
+	rs = p.referencedGateway(ctx, commonCol, routes, poolNN)
 	assert.Equal(t, "gw-ok", rs)
 }
 

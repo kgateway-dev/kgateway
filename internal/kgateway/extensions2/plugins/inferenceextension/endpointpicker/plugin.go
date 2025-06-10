@@ -3,7 +3,6 @@ package endpointpicker
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"time"
 
 	clusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
@@ -33,6 +32,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
@@ -40,6 +40,8 @@ import (
 const DefaultExtProcMaxRequests = 40000
 
 var (
+	logger = logging.New("plugin/inference-epp")
+
 	inferencePoolGVK = wellknown.InferencePoolGVK
 	inferencePoolGVR = inferencePoolGVK.GroupVersion().WithResource("inferencepools")
 )
@@ -61,11 +63,11 @@ func NewPlugin(ctx context.Context, commonCol *common.CommonCollections) *extplu
 	// Create the inference extension clientset.
 	cli, err := versioned.NewForConfig(commonCol.Client.RESTConfig())
 	if err != nil {
-		slog.Error("failed to create inference extension client", "error", err)
+		logger.Error("failed to create inference extension client", "error", err)
 		return nil
 	}
 
-	// Register the InfencePool type to enable dynamic object translation.
+	// Register the InferencePool type to enable dynamic object translation.
 	registerTypes(cli)
 
 	// Create an InferencePool krt collection.
@@ -92,11 +94,6 @@ func NewPluginFromCollections(
 	}
 
 	backendCol := krt.NewCollection(poolCol, func(kctx krt.HandlerContext, pool *infextv1a2.InferencePool) *ir.BackendObjectIR {
-		if pool == nil {
-			slog.Error("inferencepool is nil")
-			return nil
-		}
-
 		// Validate the InferencePool and create the associated IR.
 		irPool := newInferencePool(pool)
 		errs := validatePool(pool, svcCol)
@@ -120,12 +117,7 @@ func NewPluginFromCollections(
 		return &backend
 	}, commonCol.KrtOpts.ToOptions("InferencePoolIR")...)
 
-	policyCol := krt.NewCollection(poolCol, func(krtctx krt.HandlerContext, pool *infextv1a2.InferencePool) *ir.PolicyWrapper {
-		if pool == nil {
-			slog.Error("inferencepool is nil")
-			return nil
-		}
-
+	policyCol := krt.NewCollection(poolCol, func(kctx krt.HandlerContext, pool *infextv1a2.InferencePool) *ir.PolicyWrapper {
 		// Validate the InferencePool and create the associated IR.
 		irPool := newInferencePool(pool)
 		errs := validatePool(pool, svcCol)
