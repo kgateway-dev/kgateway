@@ -254,7 +254,7 @@ type SSLFiles struct {
 	RootCA string `json:"rootCA,omitempty"`
 }
 
-// +kubebuilder:validation:XValidation:rule="has(self.leastRequest) + has(self.roundRobin) + has(self.ringHash) + has(self.maglev) + has(self.random) <= 1",message="only one of leastRequest, roundRobin, ringHash, maglev, or random can be set"
+// +kubebuilder:validation:XValidation:rule="[has(self.leastRequest), has(self.roundRobin), has(self.ringHash), has(self.maglev), has(self.random)].filter(x, x).size() <= 1",message="only one of leastRequest, roundRobin, ringHash, maglev, or random can be set"
 type LoadBalancerConfig struct {
 	// HealthyPanicThreshold configures envoy's panic threshold percentage between 0-100. Once the number of non-healthy hosts
 	// reaches this percentage, envoy disregards health information.

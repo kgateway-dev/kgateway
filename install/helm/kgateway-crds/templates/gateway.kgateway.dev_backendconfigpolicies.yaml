@@ -163,8 +163,8 @@ spec:
                 x-kubernetes-validations:
                 - message: only one of leastRequest, roundRobin, ringHash, maglev,
                     or random can be set
-                  rule: has(self.leastRequest) + has(self.roundRobin) + has(self.ringHash)
-                    + has(self.maglev) + has(self.random) <= 1
+                  rule: '[has(self.leastRequest), has(self.roundRobin), has(self.ringHash),
+                    has(self.maglev), has(self.random)].filter(x, x).size() <= 1'
               perConnectionBufferLimitBytes:
                 type: integer
               sslConfig:
