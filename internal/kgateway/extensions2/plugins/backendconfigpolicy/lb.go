@@ -7,69 +7,124 @@ import (
 	clusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	typev3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 )
 
-func applyLoadBalancerConfig(config *v1alpha1.LoadBalancerConfig, out *clusterv3.Cluster) {
-	if config.HealthyPanicThreshold != nil || config.UpdateMergeWindow != nil ||
-		config.LocalityConfigType != nil || config.CloseConnectionsOnHostSetChange != nil {
-		out.CommonLbConfig = &clusterv3.Cluster_CommonLbConfig{}
-		if config.HealthyPanicThreshold != nil {
-			out.GetCommonLbConfig().HealthyPanicThreshold = &typev3.Percent{
-				Value: float64(*config.HealthyPanicThreshold),
+type LoadBalancerConfigIR struct {
+	commonLbConfig       *clusterv3.Cluster_CommonLbConfig
+	lbPolicy             clusterv3.Cluster_LbPolicy
+	roundRobinLbConfig   *clusterv3.Cluster_RoundRobinLbConfig
+	leastRequestLbConfig *clusterv3.Cluster_LeastRequestLbConfig
+	ringHashLbConfig     *clusterv3.Cluster_RingHashLbConfig
+	slowStartConfigIR    *slowStartConfigIR
+}
+
+type slowStartConfigIR struct {
+	slowStartConfig *clusterv3.Cluster_SlowStartConfig
+	aggression      string
+}
+
+func translateLoadBalancerConfig(config *v1alpha1.LoadBalancerConfig) *LoadBalancerConfigIR {
+	out := &LoadBalancerConfigIR{}
+
+	out.commonLbConfig = &clusterv3.Cluster_CommonLbConfig{}
+
+	out.commonLbConfig.ConsistentHashingLbConfig = &clusterv3.Cluster_CommonLbConfig_ConsistentHashingLbConfig{
+		UseHostnameForHashing: config.UseHostnameForHashing,
+	}
+
+	if config.HealthyPanicThreshold != nil {
+		out.commonLbConfig.HealthyPanicThreshold = &typev3.Percent{
+			Value: float64(*config.HealthyPanicThreshold),
+		}
+	}
+
+	if config.UpdateMergeWindow != nil {
+		out.commonLbConfig.UpdateMergeWindow = durationpb.New(config.UpdateMergeWindow.Duration)
+	}
+
+	if config.LocalityConfigType != nil {
+		switch *config.LocalityConfigType {
+		case v1alpha1.LocalityConfigTypeWeightedLb:
+			out.commonLbConfig.LocalityConfigSpecifier = &clusterv3.Cluster_CommonLbConfig_LocalityWeightedLbConfig_{
+				LocalityWeightedLbConfig: &clusterv3.Cluster_CommonLbConfig_LocalityWeightedLbConfig{},
 			}
 		}
-		if config.UpdateMergeWindow != nil {
-			out.GetCommonLbConfig().UpdateMergeWindow = durationpb.New(config.UpdateMergeWindow.Duration)
-		}
-		if config.LocalityConfigType != nil {
-			switch *config.LocalityConfigType {
-			case v1alpha1.LocalityConfigTypeWeightedLb:
-				out.GetCommonLbConfig().LocalityConfigSpecifier = &clusterv3.Cluster_CommonLbConfig_LocalityWeightedLbConfig_{
-					LocalityWeightedLbConfig: &clusterv3.Cluster_CommonLbConfig_LocalityWeightedLbConfig{},
-				}
-			}
-		}
-		if config.CloseConnectionsOnHostSetChange != nil {
-			out.GetCommonLbConfig().CloseConnectionsOnHostSetChange = *config.CloseConnectionsOnHostSetChange
-		}
+	}
+
+	if config.CloseConnectionsOnHostSetChange != nil {
+		out.commonLbConfig.CloseConnectionsOnHostSetChange = *config.CloseConnectionsOnHostSetChange
 	}
 
 	if config.Type != nil {
 		switch *config.Type {
 		case v1alpha1.LoadBalancerTypeLeastRequest:
-			configureLeastRequestLb(out, config.LeastRequest)
+			out.lbPolicy = clusterv3.Cluster_LEAST_REQUEST
+			out.leastRequestLbConfig = &clusterv3.Cluster_LeastRequestLbConfig{}
+			if config.LeastRequest != nil {
+				out.leastRequestLbConfig.ChoiceCount = &wrapperspb.UInt32Value{
+					Value: config.LeastRequest.ChoiceCount,
+				}
+				out.slowStartConfigIR = toSlowStartConfigIR(config.LeastRequest.SlowStartConfig)
+			}
 		case v1alpha1.LoadBalancerTypeRoundRobin:
-			configureRoundRobinLb(out, config.RoundRobin)
+			out.lbPolicy = clusterv3.Cluster_ROUND_ROBIN
+			if config.RoundRobin != nil {
+				out.slowStartConfigIR = toSlowStartConfigIR(config.RoundRobin.SlowStartConfig)
+			}
 		case v1alpha1.LoadBalancerTypeRingHash:
-			setRingHashLbConfig(out, config.RingHash)
+			out.lbPolicy = clusterv3.Cluster_RING_HASH
+			out.ringHashLbConfig = &clusterv3.Cluster_RingHashLbConfig{}
+			if config.RingHash != nil {
+				if config.RingHash.MinimumRingSize != nil {
+					out.ringHashLbConfig.MinimumRingSize = &wrapperspb.UInt64Value{
+						Value: *config.RingHash.MinimumRingSize,
+					}
+				}
+				if config.RingHash.MaximumRingSize != nil {
+					out.ringHashLbConfig.MaximumRingSize = &wrapperspb.UInt64Value{
+						Value: *config.RingHash.MaximumRingSize,
+					}
+				}
+			}
 		case v1alpha1.LoadBalancerTypeMaglev:
-			out.LbPolicy = clusterv3.Cluster_MAGLEV
+			out.lbPolicy = clusterv3.Cluster_MAGLEV
 		case v1alpha1.LoadBalancerTypeRandom:
-			out.LbPolicy = clusterv3.Cluster_RANDOM
+			out.lbPolicy = clusterv3.Cluster_RANDOM
 		}
 	}
 
-	if config.UseHostnameForHashing != nil {
-		if out.GetCommonLbConfig() == nil {
-			out.CommonLbConfig = &clusterv3.Cluster_CommonLbConfig{}
-		}
-		out.GetCommonLbConfig().ConsistentHashingLbConfig = &clusterv3.Cluster_CommonLbConfig_ConsistentHashingLbConfig{
-			UseHostnameForHashing: *config.UseHostnameForHashing,
+	return out
+}
+
+func applyLoadBalancerConfig(config *LoadBalancerConfigIR, out *clusterv3.Cluster) {
+	if config == nil {
+		return
+	}
+
+	out.CommonLbConfig = config.commonLbConfig
+	out.LbPolicy = config.lbPolicy
+	switch config.lbPolicy {
+	case clusterv3.Cluster_ROUND_ROBIN:
+		configureRoundRobinLb(out, config)
+	case clusterv3.Cluster_LEAST_REQUEST:
+		configureLeastRequestLb(out, config)
+	case clusterv3.Cluster_RING_HASH:
+		out.LbConfig = &clusterv3.Cluster_RingHashLbConfig_{
+			RingHashLbConfig: config.ringHashLbConfig,
 		}
 	}
 }
 
-func configureRoundRobinLb(out *clusterv3.Cluster, cfg *v1alpha1.LoadBalancerRoundRobinConfig) {
-	out.LbPolicy = clusterv3.Cluster_ROUND_ROBIN
-
+func configureRoundRobinLb(out *clusterv3.Cluster, cfg *LoadBalancerConfigIR) {
 	if cfg == nil {
 		return
 	}
-	slowStartConfig := toSlowStartConfig(out, cfg.SlowStartConfig)
+	slowStartConfig := toSlowStartConfig(cfg.slowStartConfigIR, out.GetName())
 	if slowStartConfig != nil {
 		out.LbConfig = &clusterv3.Cluster_RoundRobinLbConfig_{
 			RoundRobinLbConfig: &clusterv3.Cluster_RoundRobinLbConfig{
@@ -79,7 +134,7 @@ func configureRoundRobinLb(out *clusterv3.Cluster, cfg *v1alpha1.LoadBalancerRou
 	}
 }
 
-func configureLeastRequestLb(out *clusterv3.Cluster, cfg *v1alpha1.LoadBalancerLeastRequestConfig) {
+func configureLeastRequestLb(out *clusterv3.Cluster, cfg *LoadBalancerConfigIR) {
 	out.LbPolicy = clusterv3.Cluster_LEAST_REQUEST
 
 	if cfg == nil {
@@ -87,12 +142,11 @@ func configureLeastRequestLb(out *clusterv3.Cluster, cfg *v1alpha1.LoadBalancerL
 	}
 
 	var choiceCount *wrapperspb.UInt32Value
-	if cfg.ChoiceCount != nil {
-		choiceCount = &wrapperspb.UInt32Value{
-			Value: *cfg.ChoiceCount,
-		}
+	if cfg.leastRequestLbConfig != nil && cfg.leastRequestLbConfig.ChoiceCount != nil {
+		choiceCount = cfg.leastRequestLbConfig.ChoiceCount
 	}
-	slowStartConfig := toSlowStartConfig(out, cfg.SlowStartConfig)
+
+	slowStartConfig := toSlowStartConfig(cfg.slowStartConfigIR, out.GetName())
 	if choiceCount != nil || slowStartConfig != nil {
 		out.LbConfig = &clusterv3.Cluster_LeastRequestLbConfig_{
 			LeastRequestLbConfig: &clusterv3.Cluster_LeastRequestLbConfig{
@@ -103,24 +157,40 @@ func configureLeastRequestLb(out *clusterv3.Cluster, cfg *v1alpha1.LoadBalancerL
 	}
 }
 
-func toSlowStartConfig(clusterInfo *clusterv3.Cluster, cfg *v1alpha1.SlowStartConfig) *clusterv3.Cluster_SlowStartConfig {
+func toSlowStartConfigIR(cfg *v1alpha1.SlowStartConfig) *slowStartConfigIR {
 	if cfg == nil {
 		return nil
 	}
-	out := clusterv3.Cluster_SlowStartConfig{
+	slowStart := clusterv3.Cluster_SlowStartConfig{
 		SlowStartWindow: durationpb.New(cfg.Window.Duration),
 	}
-	if cfg.Aggression != "" {
-		aggressionValue, err := strconv.ParseFloat(cfg.Aggression, 64)
+	if cfg.MinWeightPercent != nil {
+		slowStart.MinWeightPercent = &typev3.Percent{
+			Value: float64(*cfg.MinWeightPercent),
+		}
+	}
+	return &slowStartConfigIR{
+		slowStartConfig: &slowStart,
+		aggression:      cfg.Aggression,
+	}
+}
+
+func toSlowStartConfig(ir *slowStartConfigIR, clusterName string) *clusterv3.Cluster_SlowStartConfig {
+	if ir == nil {
+		return nil
+	}
+	out := ir.slowStartConfig
+	if ir.aggression != "" {
+		aggressionValue, err := strconv.ParseFloat(ir.aggression, 64)
 		if err != nil {
 			// This should ideally not happen due to CRD validation
-			logger.Error("failed to parse aggression value", "error", err)
+			logger.Error("error parsing slowStartConfig.aggression", "error", err, "cluster", clusterName)
 			return nil
 		}
 		runtimeKeyPrefix := "upstream"
 
-		if clusterInfo.GetName() != "" {
-			runtimeKeyPrefix = fmt.Sprintf("%s.%s", runtimeKeyPrefix, clusterInfo.GetName())
+		if clusterName != "" {
+			runtimeKeyPrefix = fmt.Sprintf("%s.%s", runtimeKeyPrefix, clusterName)
 		}
 
 		out.Aggression = &corev3.RuntimeDouble{
@@ -128,176 +198,41 @@ func toSlowStartConfig(clusterInfo *clusterv3.Cluster, cfg *v1alpha1.SlowStartCo
 			RuntimeKey:   fmt.Sprintf("%s.slowStart.aggression", runtimeKeyPrefix),
 		}
 	}
-	if cfg.MinWeightPercent != nil {
-		out.MinWeightPercent = &typev3.Percent{
-			Value: float64(*cfg.MinWeightPercent),
+	return out
+}
+
+func (a *LoadBalancerConfigIR) Equals(b *LoadBalancerConfigIR) bool {
+	if a == nil && b == nil {
+		return true
+	}
+	if a == nil || b == nil {
+		return false
+	}
+	if !proto.Equal(a.commonLbConfig, b.commonLbConfig) {
+		return false
+	}
+	if a.lbPolicy != b.lbPolicy {
+		return false
+	}
+	if !proto.Equal(a.roundRobinLbConfig, b.roundRobinLbConfig) {
+		return false
+	}
+	if !proto.Equal(a.leastRequestLbConfig, b.leastRequestLbConfig) {
+		return false
+	}
+	if !proto.Equal(a.ringHashLbConfig, b.ringHashLbConfig) {
+		return false
+	}
+	if (a.slowStartConfigIR == nil) != (b.slowStartConfigIR == nil) {
+		return false
+	}
+	if a.slowStartConfigIR != nil && b.slowStartConfigIR != nil {
+		if !proto.Equal(a.slowStartConfigIR.slowStartConfig, b.slowStartConfigIR.slowStartConfig) {
+			return false
+		}
+		if a.slowStartConfigIR.aggression != b.slowStartConfigIR.aggression {
+			return false
 		}
 	}
-	return &out
-}
-
-func setRingHashLbConfig(out *clusterv3.Cluster, userConfig *v1alpha1.LoadBalancerRingHashConfig) {
-	out.LbPolicy = clusterv3.Cluster_RING_HASH
-	cfg := &clusterv3.Cluster_RingHashLbConfig_{
-		RingHashLbConfig: &clusterv3.Cluster_RingHashLbConfig{},
-	}
-	if userConfig != nil {
-		if userConfig.MinimumRingSize != nil {
-			cfg.RingHashLbConfig.MinimumRingSize = &wrapperspb.UInt64Value{
-				Value: *userConfig.MinimumRingSize,
-			}
-		}
-		if userConfig.MaximumRingSize != nil {
-			cfg.RingHashLbConfig.MaximumRingSize = &wrapperspb.UInt64Value{
-				Value: *userConfig.MaximumRingSize,
-			}
-		}
-	}
-	out.LbConfig = cfg
-}
-
-func equalsLoadBalancerConfig(a, b *v1alpha1.LoadBalancerConfig) bool {
-	if a == b {
-		return true
-	}
-	if a == nil || b == nil {
-		return false
-	}
-
-	if (a.HealthyPanicThreshold == nil) != (b.HealthyPanicThreshold == nil) {
-		return false
-	}
-	if a.HealthyPanicThreshold != nil && *a.HealthyPanicThreshold != *b.HealthyPanicThreshold {
-		return false
-	}
-
-	if (a.UpdateMergeWindow == nil) != (b.UpdateMergeWindow == nil) {
-		return false
-	}
-	if a.UpdateMergeWindow != nil && *a.UpdateMergeWindow != *b.UpdateMergeWindow {
-		return false
-	}
-
-	if (a.Type == nil) != (b.Type == nil) {
-		return false
-	}
-	if a.Type != nil && *a.Type != *b.Type {
-		return false
-	}
-
-	if !equalsLeastRequest(a.LeastRequest, b.LeastRequest) {
-		return false
-	}
-
-	if !equalsRoundRobin(a.RoundRobin, b.RoundRobin) {
-		return false
-	}
-
-	if !equalsRingHash(a.RingHash, b.RingHash) {
-		return false
-	}
-
-	if (a.LocalityConfigType == nil) != (b.LocalityConfigType == nil) {
-		return false
-	}
-	if a.LocalityConfigType != nil && *a.LocalityConfigType != *b.LocalityConfigType {
-		return false
-	}
-
-	if (a.UseHostnameForHashing == nil) != (b.UseHostnameForHashing == nil) {
-		return false
-	}
-	if a.UseHostnameForHashing != nil && *a.UseHostnameForHashing != *b.UseHostnameForHashing {
-		return false
-	}
-
-	if (a.CloseConnectionsOnHostSetChange == nil) != (b.CloseConnectionsOnHostSetChange == nil) {
-		return false
-	}
-	if a.CloseConnectionsOnHostSetChange != nil && *a.CloseConnectionsOnHostSetChange != *b.CloseConnectionsOnHostSetChange {
-		return false
-	}
-
-	return true
-}
-
-func equalsLeastRequest(a, b *v1alpha1.LoadBalancerLeastRequestConfig) bool {
-	if a == nil && b == nil {
-		return true
-	}
-	if a == nil || b == nil {
-		return false
-	}
-
-	if (a.ChoiceCount == nil) != (b.ChoiceCount == nil) {
-		return false
-	}
-	if a.ChoiceCount != nil && *a.ChoiceCount != *b.ChoiceCount {
-		return false
-	}
-	return equalsSlowStart(a.SlowStartConfig, b.SlowStartConfig)
-}
-
-func equalsRoundRobin(a, b *v1alpha1.LoadBalancerRoundRobinConfig) bool {
-	if a == nil && b == nil {
-		return true
-	}
-	if a == nil || b == nil {
-		return false
-	}
-	return equalsSlowStart(a.SlowStartConfig, b.SlowStartConfig)
-}
-
-func equalsRingHash(a, b *v1alpha1.LoadBalancerRingHashConfig) bool {
-	if a == nil && b == nil {
-		return true
-	}
-	if a == nil || b == nil {
-		return false
-	}
-
-	if (a.MinimumRingSize == nil) != (b.MinimumRingSize == nil) {
-		return false
-	}
-	if a.MinimumRingSize != nil && *a.MinimumRingSize != *b.MinimumRingSize {
-		return false
-	}
-
-	if (a.MaximumRingSize == nil) != (b.MaximumRingSize == nil) {
-		return false
-	}
-	if a.MaximumRingSize != nil && *a.MaximumRingSize != *b.MaximumRingSize {
-		return false
-	}
-
-	return true
-}
-
-func equalsSlowStart(a, b *v1alpha1.SlowStartConfig) bool {
-	if a == nil && b == nil {
-		return true
-	}
-	if a == nil || b == nil {
-		return false
-	}
-
-	if (a.Window == nil) != (b.Window == nil) {
-		return false
-	}
-	if a.Window != nil && *a.Window != *b.Window {
-		return false
-	}
-
-	if a.Aggression != b.Aggression {
-		return false
-	}
-
-	if (a.MinWeightPercent == nil) != (b.MinWeightPercent == nil) {
-		return false
-	}
-	if a.MinWeightPercent != nil && *a.MinWeightPercent != *b.MinWeightPercent {
-		return false
-	}
-
 	return true
 }

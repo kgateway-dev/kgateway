@@ -34,6 +34,7 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 					HealthyPanicThreshold: &typev3.Percent{
 						Value: 100,
 					},
+					ConsistentHashingLbConfig: &clusterv3.Cluster_CommonLbConfig_ConsistentHashingLbConfig{},
 				},
 			},
 		},
@@ -47,7 +48,8 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 			expected: &clusterv3.Cluster{
 				Name: "test",
 				CommonLbConfig: &clusterv3.Cluster_CommonLbConfig{
-					UpdateMergeWindow: durationpb.New(10 * time.Second),
+					UpdateMergeWindow:         durationpb.New(10 * time.Second),
+					ConsistentHashingLbConfig: &clusterv3.Cluster_CommonLbConfig_ConsistentHashingLbConfig{},
 				},
 			},
 		},
@@ -59,6 +61,9 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 			expected: &clusterv3.Cluster{
 				Name:     "test",
 				LbPolicy: clusterv3.Cluster_RANDOM,
+				CommonLbConfig: &clusterv3.Cluster_CommonLbConfig{
+					ConsistentHashingLbConfig: &clusterv3.Cluster_CommonLbConfig_ConsistentHashingLbConfig{},
+				},
 			},
 		},
 		{
@@ -69,6 +74,9 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 			expected: &clusterv3.Cluster{
 				Name:     "test",
 				LbPolicy: clusterv3.Cluster_ROUND_ROBIN,
+				CommonLbConfig: &clusterv3.Cluster_CommonLbConfig{
+					ConsistentHashingLbConfig: &clusterv3.Cluster_CommonLbConfig_ConsistentHashingLbConfig{},
+				},
 			},
 		},
 		{
@@ -102,6 +110,9 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 						},
 					},
 				},
+				CommonLbConfig: &clusterv3.Cluster_CommonLbConfig{
+					ConsistentHashingLbConfig: &clusterv3.Cluster_CommonLbConfig_ConsistentHashingLbConfig{},
+				},
 			},
 		},
 		{
@@ -112,6 +123,9 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 			expected: &clusterv3.Cluster{
 				Name:     "test",
 				LbPolicy: clusterv3.Cluster_LEAST_REQUEST,
+				CommonLbConfig: &clusterv3.Cluster_CommonLbConfig{
+					ConsistentHashingLbConfig: &clusterv3.Cluster_CommonLbConfig_ConsistentHashingLbConfig{},
+				},
 			},
 		},
 		{
@@ -119,7 +133,7 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 			config: &v1alpha1.LoadBalancerConfig{
 				Type: ptr.To(v1alpha1.LoadBalancerTypeLeastRequest),
 				LeastRequest: &v1alpha1.LoadBalancerLeastRequestConfig{
-					ChoiceCount: ptr.To(uint32(10)),
+					ChoiceCount: 10,
 					SlowStartConfig: &v1alpha1.SlowStartConfig{
 						Window: &metav1.Duration{
 							Duration: 10 * time.Second,
@@ -147,6 +161,9 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 						},
 					},
 				},
+				CommonLbConfig: &clusterv3.Cluster_CommonLbConfig{
+					ConsistentHashingLbConfig: &clusterv3.Cluster_CommonLbConfig_ConsistentHashingLbConfig{},
+				},
 			},
 		},
 		{
@@ -159,6 +176,9 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 				LbPolicy: clusterv3.Cluster_RING_HASH,
 				LbConfig: &clusterv3.Cluster_RingHashLbConfig_{
 					RingHashLbConfig: &clusterv3.Cluster_RingHashLbConfig{},
+				},
+				CommonLbConfig: &clusterv3.Cluster_CommonLbConfig{
+					ConsistentHashingLbConfig: &clusterv3.Cluster_CommonLbConfig_ConsistentHashingLbConfig{},
 				},
 			},
 		},
@@ -180,6 +200,9 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 						MaximumRingSize: &wrapperspb.UInt64Value{Value: 100},
 					},
 				},
+				CommonLbConfig: &clusterv3.Cluster_CommonLbConfig{
+					ConsistentHashingLbConfig: &clusterv3.Cluster_CommonLbConfig_ConsistentHashingLbConfig{},
+				},
 			},
 		},
 		{
@@ -190,6 +213,9 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 			expected: &clusterv3.Cluster{
 				Name:     "test",
 				LbPolicy: clusterv3.Cluster_MAGLEV,
+				CommonLbConfig: &clusterv3.Cluster_CommonLbConfig{
+					ConsistentHashingLbConfig: &clusterv3.Cluster_CommonLbConfig_ConsistentHashingLbConfig{},
+				},
 			},
 		},
 		{
@@ -203,6 +229,7 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 					LocalityConfigSpecifier: &clusterv3.Cluster_CommonLbConfig_LocalityWeightedLbConfig_{
 						LocalityWeightedLbConfig: &clusterv3.Cluster_CommonLbConfig_LocalityWeightedLbConfig{},
 					},
+					ConsistentHashingLbConfig: &clusterv3.Cluster_CommonLbConfig_ConsistentHashingLbConfig{},
 				},
 			},
 		},
@@ -215,13 +242,14 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 				Name: "test",
 				CommonLbConfig: &clusterv3.Cluster_CommonLbConfig{
 					CloseConnectionsOnHostSetChange: true,
+					ConsistentHashingLbConfig:       &clusterv3.Cluster_CommonLbConfig_ConsistentHashingLbConfig{},
 				},
 			},
 		},
 		{
 			name: "UseHostnameForHashing",
 			config: &v1alpha1.LoadBalancerConfig{
-				UseHostnameForHashing: ptr.To(true),
+				UseHostnameForHashing: true,
 			},
 			expected: &clusterv3.Cluster{
 				Name: "test",
@@ -238,7 +266,8 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			cluster := &clusterv3.Cluster{}
 			cluster.Name = "test"
-			applyLoadBalancerConfig(test.config, cluster)
+			lbConfig := translateLoadBalancerConfig(test.config)
+			applyLoadBalancerConfig(lbConfig, cluster)
 			if !proto.Equal(cluster, test.expected) {
 				t.Errorf("expected %v, got %v", test.expected, cluster)
 			}
