@@ -142,8 +142,8 @@ func configureLeastRequestLb(out *clusterv3.Cluster, cfg *LoadBalancerConfigIR) 
 	}
 
 	var choiceCount *wrapperspb.UInt32Value
-	if cfg.leastRequestLbConfig != nil && cfg.leastRequestLbConfig.ChoiceCount != nil {
-		choiceCount = cfg.leastRequestLbConfig.ChoiceCount
+	if cfg.leastRequestLbConfig != nil && cfg.leastRequestLbConfig.GetChoiceCount() != nil {
+		choiceCount = cfg.leastRequestLbConfig.GetChoiceCount()
 	}
 
 	slowStartConfig := toSlowStartConfig(cfg.slowStartConfigIR, out.GetName())

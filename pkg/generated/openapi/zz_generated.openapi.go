@@ -3463,8 +3463,9 @@ func schema_kgateway_v2_api_v1alpha1_LoadBalancerConfig(ref common.ReferenceCall
 					},
 					"localityConfigType": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Description: "LocalityConfigType specifies the locality config type to use. See https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/load_balancing_policies/common/v3/common.proto#envoy-v3-api-msg-extensions-load-balancing-policies-common-v3-localitylbconfig",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 					"useHostnameForHashing": {
@@ -3500,6 +3501,7 @@ func schema_kgateway_v2_api_v1alpha1_LoadBalancerLeastRequestConfig(ref common.R
 					"choiceCount": {
 						SchemaProps: spec.SchemaProps{
 							Description: "How many choices to take into account. Defaults to 2.",
+							Default:     2,
 							Type:        []string{"integer"},
 							Format:      "int64",
 						},

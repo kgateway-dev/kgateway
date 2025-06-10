@@ -1056,6 +1056,7 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: choiceCount
       type:
         scalar: numeric
+      default: 2
     - name: slowStartConfig
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SlowStartConfig
