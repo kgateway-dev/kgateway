@@ -24,42 +24,49 @@ type testingSuite struct {
 	// testInstallation contains all the metadata/utilities necessary to execute a series of tests
 	// against a kgateway installation
 	testInstallation *e2e.TestInstallation
+
+	// manifests is a map of manifests keyed by a test name
+	manifests map[string][][]byte
 }
 
 func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
 	return &testingSuite{
 		ctx:              ctx,
 		testInstallation: testInst,
+		manifests:        map[string][][]byte{},
 	}
 }
 
 func (s *testingSuite) TestHTTPRouteWithInferencePool() {
+	testName := "TestHTTPRouteWithInferencePool"
+
 	s.T().Cleanup(func() {
-		for _, m := range [][]byte{
-			// reverse order of install
-			clientManifest,
-			routeManifest,
-			gtwManifest,
-			poolManifest,
-			eppManifest,
-			modelsManifest,
-			vllmManifest,
-		} {
+		manifests, ok := s.manifests[testName]
+		if !ok {
+			s.FailNow("no manifests found for %s", testName)
+		}
+
+		for _, m := range manifests {
 			err := s.testInstallation.Actions.Kubectl().Delete(s.ctx, m)
 			s.NoError(err, "can delete manifest %s", m)
 		}
 	})
 
-	// Install test manifests
-	for _, m := range [][]byte{
-		vllmManifest,
-		modelsManifest,
-		poolManifest,
-		eppManifest,
-		gtwManifest,
-		routeManifest,
-		clientManifest,
-	} {
+	// Add the testdata manifests to the manifests map
+	s.manifests = map[string][][]byte{
+		testName: {
+			clientManifest,
+			vllmManifest,
+			modelsManifest,
+			routeManifest,
+			poolManifest,
+			eppManifest,
+			gtwManifest,
+		},
+	}
+
+	// Apply the testdata manifests
+	for _, m := range s.manifests[testName] {
 		err := s.testInstallation.Actions.Kubectl().Apply(s.ctx, m)
 		s.NoError(err, "can apply manifest %s", m)
 	}
@@ -91,7 +98,7 @@ func (s *testingSuite) TestHTTPRouteWithInferencePool() {
 	for _, c := range conditions {
 		s.testInstallation.Assertions.EventuallyHTTPRouteCondition(
 			s.ctx,
-			"llm-route", // Hardcoded name in route.yaml
+			testRouteName,
 			testNS,
 			c,
 			metav1.ConditionTrue,

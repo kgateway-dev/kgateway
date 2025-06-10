@@ -23,6 +23,8 @@ var (
 	// targetModelName is the expected value in response bodies when requesting the baseModelName
 	// and the vLLM model server is configured for the `food-review-1` LoRA adapter.
 	targetModelName = baseModelName + "-1"
+	// testRouteName is the test data HTTPRoute name used in tests
+	testRouteName = "llm-route"
 	// podRunTimeout is time required for a pod to reach a "Running" status
 	podRunTimeout = 3 * time.Minute
 	// gtwProgramTimeout is time required for the gateway to reach "Programmed" status
