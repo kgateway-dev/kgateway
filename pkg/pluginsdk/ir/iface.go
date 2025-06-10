@@ -6,6 +6,7 @@ import (
 	"time"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
@@ -58,7 +59,11 @@ type RouteBackendContext struct {
 	FilterChainName string
 	Backend         *BackendObjectIR
 	// TypedFilterConfig will be output on the Route or WeightedCluster level after all plugins have run
-	TypedFilterConfig TypedFilterConfigMap
+	TypedFilterConfig       TypedFilterConfigMap
+	RequestHeadersToAdd     []*envoy_config_core_v3.HeaderValueOption
+	RequestHeadersToRemove  []string
+	ResponseHeadersToAdd    []*envoy_config_core_v3.HeaderValueOption
+	ResponseHeadersToRemove []string
 }
 
 type RouteContext struct {
