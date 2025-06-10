@@ -85,10 +85,13 @@ spec:
                     type: boolean
                   healthyPanicThreshold:
                     format: int32
+                    maximum: 100
+                    minimum: 0
                     type: integer
                   leastRequest:
                     properties:
                       choiceCount:
+                        default: 2
                         format: int32
                         type: integer
                       slowStartConfig:
@@ -105,6 +108,9 @@ spec:
                             type: integer
                           window:
                             type: string
+                            x-kubernetes-validations:
+                            - message: window must be a valid duration string
+                              rule: duration(self) >= duration('0s')
                         type: object
                     type: object
                   localityConfigType:
@@ -136,6 +142,9 @@ spec:
                             type: integer
                           window:
                             type: string
+                            x-kubernetes-validations:
+                            - message: window must be a valid duration string
+                              rule: duration(self) >= duration('0s')
                         type: object
                     type: object
                   type:
@@ -148,7 +157,11 @@ spec:
                     type: string
                   updateMergeWindow:
                     type: string
+                    x-kubernetes-validations:
+                    - message: updateMergeWindow must be a valid duration string
+                      rule: duration(self) >= duration('0s')
                   useHostnameForHashing:
+                    default: false
                     type: boolean
                 type: object
               perConnectionBufferLimitBytes:

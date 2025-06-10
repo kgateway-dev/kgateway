@@ -3441,7 +3441,7 @@ func schema_kgateway_v2_api_v1alpha1_LoadBalancerConfig(ref common.ReferenceCall
 					},
 					"type": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Type of load balancer to use.",
+							Description: "Type of load balancer to use. See https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/load_balancing/load_balancers",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -3469,7 +3469,8 @@ func schema_kgateway_v2_api_v1alpha1_LoadBalancerConfig(ref common.ReferenceCall
 					},
 					"useHostnameForHashing": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Default: false, If set to true, the hostname will be used for hashing when using maglev for example, useful when using multiple host in the upstreams that resolve to the same IP.",
+							Description: "UseHostnameForHashing specifies whether to use the hostname instead of the resolved IP address for hashing. Defaults to false.",
+							Default:     false,
 							Type:        []string{"boolean"},
 							Format:      "",
 						},
@@ -3493,11 +3494,12 @@ func schema_kgateway_v2_api_v1alpha1_LoadBalancerLeastRequestConfig(ref common.R
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
+				Description: "LoadBalancerLeastRequestConfig configures the least request load balancer type.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"choiceCount": {
 						SchemaProps: spec.SchemaProps{
-							Description: "How many choices to take into account. defaults to 2.",
+							Description: "How many choices to take into account. Defaults to 2.",
 							Type:        []string{"integer"},
 							Format:      "int64",
 						},
@@ -3520,7 +3522,8 @@ func schema_kgateway_v2_api_v1alpha1_LoadBalancerRingHashConfig(ref common.Refer
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
+				Description: "LoadBalancerRingHashConfig configures the ring hash load balancer type.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"minimumRingSize": {
 						SchemaProps: spec.SchemaProps{
@@ -3546,7 +3549,8 @@ func schema_kgateway_v2_api_v1alpha1_LoadBalancerRoundRobinConfig(ref common.Ref
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
+				Description: "LoadBalancerRoundRobinConfig configures the round robin load balancer type.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"slowStartConfig": {
 						SchemaProps: spec.SchemaProps{

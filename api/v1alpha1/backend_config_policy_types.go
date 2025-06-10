@@ -259,14 +259,19 @@ type LoadBalancerConfig struct {
 	// reaches this percentage, envoy disregards health information.
 	// See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/load_balancing/panic_threshold.html).
 	// +optional
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=100
 	HealthyPanicThreshold *uint32 `json:"healthyPanicThreshold,omitempty"`
 
 	// This allows batch updates of endpoints health/weight/metadata that happen during a time window.
 	// this help lower cpu usage when endpoint change rate is high. defaults to 1 second.
 	// Set to 0 to disable and have changes applied immediately.
+	// +optional
+	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('0s')",message="updateMergeWindow must be a valid duration string"
 	UpdateMergeWindow *metav1.Duration `json:"updateMergeWindow,omitempty"`
 
 	// Type of load balancer to use.
+	// See https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/load_balancing/load_balancers
 	// +optional
 	// +unionDiscriminator
 	// +kubebuilder:validation:Enum=LeastRequest;RoundRobin;Random;RingHash;Maglev
@@ -284,12 +289,17 @@ type LoadBalancerConfig struct {
 	// +optional
 	RingHash *LoadBalancerRingHashConfig `json:"ringHash,omitempty"`
 
+	// LocalityConfigType specifies the locality config type to use.
+	// See https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/load_balancing_policies/common/v3/common.proto#envoy-v3-api-msg-extensions-load-balancing-policies-common-v3-localitylbconfig
 	// +optional
 	// +kubebuilder:validation:Enum=WeightedLb
 	LocalityConfigType *LocalityConfigType `json:"localityConfigType,omitempty"`
 
-	// Default: false, If set to true, the hostname will be used for hashing when using maglev for example, useful when using multiple host in the upstreams that resolve to the same IP.
-	UseHostnameForHashing *bool `json:"useHostnameForHashing,omitempty"`
+	// UseHostnameForHashing specifies whether to use the hostname instead of the resolved IP address for hashing.
+	// Defaults to false.
+	// +optional
+	// +default=false
+	UseHostnameForHashing bool `json:"useHostnameForHashing,omitempty"`
 
 	// If set to true, the load balancer will drain connections when the host set changes.
 	//
@@ -309,29 +319,39 @@ type LoadBalancerConfig struct {
 type LoadBalancerType string
 
 const (
+	// LoadBalancerTypeRoundRobin is the envoy default load balancer type.
+	LoadBalancerTypeRoundRobin LoadBalancerType = "RoundRobin"
+	// LoadBalancerTypeLeastRequest is a load balancer type that selects the least requested host.
 	LoadBalancerTypeLeastRequest LoadBalancerType = "LeastRequest"
-	LoadBalancerTypeRoundRobin   LoadBalancerType = "RoundRobin"
-	LoadBalancerTypeRandom       LoadBalancerType = "Random"
-	LoadBalancerTypeRingHash     LoadBalancerType = "RingHash"
-	LoadBalancerTypeMaglev       LoadBalancerType = "Maglev"
+	// LoadBalancerTypeRandom is a load balancer type that selects a random host.
+	LoadBalancerTypeRandom LoadBalancerType = "Random"
+	// LoadBalancerTypeRingHash is a load balancer type that uses consistent hashing to route requests to a specific host.
+	LoadBalancerTypeRingHash LoadBalancerType = "RingHash"
+	// LoadBalancerTypeMaglev is a load balancer type that uses maglev hashing to route requests to a specific host.
+	LoadBalancerTypeMaglev LoadBalancerType = "Maglev"
 )
 
+// LoadBalancerLeastRequestConfig configures the least request load balancer type.
 type LoadBalancerLeastRequestConfig struct {
-	// How many choices to take into account. defaults to 2.
+	// How many choices to take into account.
+	// Defaults to 2.
 	// +optional
-	ChoiceCount *uint32 `json:"choiceCount,omitempty"`
+	// +default=2
+	ChoiceCount uint32 `json:"choiceCount,omitempty"`
 
 	// SlowStartConfig configures the slow start configuration for the load balancer.
 	// +optional
 	SlowStartConfig *SlowStartConfig `json:"slowStartConfig,omitempty"`
 }
 
+// LoadBalancerRoundRobinConfig configures the round robin load balancer type.
 type LoadBalancerRoundRobinConfig struct {
 	// SlowStartConfig configures the slow start configuration for the load balancer.
 	// +optional
 	SlowStartConfig *SlowStartConfig `json:"slowStartConfig,omitempty"`
 }
 
+// LoadBalancerRingHashConfig configures the ring hash load balancer type.
 type LoadBalancerRingHashConfig struct {
 	// MinimumRingSize is the minimum size of the ring.
 	// +optional
@@ -347,6 +367,7 @@ type SlowStartConfig struct {
 	// If set, the newly created host remains in slow start mode starting from its creation time
 	// for the duration of slow start window.
 	// +optional
+	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('0s')",message="window must be a valid duration string"
 	Window *metav1.Duration `json:"window,omitempty"`
 
 	// This parameter controls the speed of traffic increase over the slow start window. Defaults to 1.0,
