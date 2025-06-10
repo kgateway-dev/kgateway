@@ -815,7 +815,7 @@ func defaultGatewayParameters(imageInfo *ImageInfo) *v1alpha1.GatewayParameters 
 				},
 				Stats: &v1alpha1.StatsConfig{
 					Enabled:                 ptr.To(true),
-					RoutePrefixRewrite:      ptr.To("/stats/prometheus"),
+					RoutePrefixRewrite:      ptr.To("/stats/prometheus?usedonly"),
 					EnableStatsRoute:        ptr.To(true),
 					StatsRoutePrefixRewrite: ptr.To("/stats"),
 				},
