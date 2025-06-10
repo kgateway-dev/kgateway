@@ -86,8 +86,10 @@ image:
   # -- Set the default image pull policy.
   pullPolicy: IfNotPresent
 
+
 # -- Configure the integration with the Gateway API Inference Extension project.
 # -- With Inference Extension, you can use kgateway to route to AI inference workloads like LLMs that run locally in your Kubernetes cluster.
+# -- Documentation for Inferance Extension can be found here: https://kgateway.dev/docs/integrations/inference-extension/
 inferenceExtension:
   # -- Enable Inference Extension.
   enabled: false
@@ -117,5 +119,6 @@ discoveryNamespaceSelectors: []
 
 # -- Enable the integration with Agent Gateway.
 # -- Agent Gateway lets you use kgateway to help manage agent connectivity across MCP servers, A2A agents, and REST APIs.
+# -- Documentation for agentGateway is coming soon.
 agentGateway:
   enabled: false
