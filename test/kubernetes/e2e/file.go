@@ -16,6 +16,8 @@ var (
 
 	AIValuesManifestPath = ManifestPath("ai-extension-helm.yaml")
 
+	InfExtValuesManifestPath = ManifestPath("inference-extension-helm.yaml")
+
 	AgentGatewayIntegratioValuesPath = ManifestPath("agent-gateway-integration.yaml")
 )
 

@@ -106,7 +106,7 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 				Expect(gwpKube.GetServiceAccount()).To(BeNil())
 
 				Expect(*gwpKube.GetStats().GetEnabled()).To(BeTrue())
-				Expect(*gwpKube.GetStats().GetRoutePrefixRewrite()).To(Equal("/stats/prometheus"))
+				Expect(*gwpKube.GetStats().GetRoutePrefixRewrite()).To(Equal("/stats/prometheus?usedonly"))
 				Expect(*gwpKube.GetStats().GetEnableStatsRoute()).To(BeTrue())
 				Expect(*gwpKube.GetStats().GetStatsRoutePrefixRewrite()).To(Equal("/stats"))
 

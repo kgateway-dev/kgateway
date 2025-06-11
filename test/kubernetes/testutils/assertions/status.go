@@ -243,7 +243,7 @@ func (p *Provider) EventuallyHTTPRouteCondition(
 				break
 			}
 		}
-		g.Expect(conditionFound).To(gomega.BeTrue(), fmt.Sprintf("%v condition is not %v for any parent of TLSRoute %s/%s",
+		g.Expect(conditionFound).To(gomega.BeTrue(), fmt.Sprintf("%v condition is not %v for any parent of HTTPRoute %s/%s",
 			cond, expect, routeNamespace, routeName))
 	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 }

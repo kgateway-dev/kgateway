@@ -2,13 +2,18 @@
 
 package v1alpha1
 
+import (
+	apiv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+)
+
 // AwsLambdaApplyConfiguration represents a declarative configuration of the AwsLambda type for use
 // with apply.
 type AwsLambdaApplyConfiguration struct {
-	EndpointURL    *string `json:"endpointURL,omitempty"`
-	FunctionName   *string `json:"functionName,omitempty"`
-	InvocationMode *string `json:"invocationMode,omitempty"`
-	Qualifier      *string `json:"qualifier,omitempty"`
+	EndpointURL          *string                                    `json:"endpointURL,omitempty"`
+	FunctionName         *string                                    `json:"functionName,omitempty"`
+	InvocationMode       *string                                    `json:"invocationMode,omitempty"`
+	Qualifier            *string                                    `json:"qualifier,omitempty"`
+	PayloadTransformMode *apiv1alpha1.AWSLambdaPayloadTransformMode `json:"payloadTransformMode,omitempty"`
 }
 
 // AwsLambdaApplyConfiguration constructs a declarative configuration of the AwsLambda type for use with
@@ -46,5 +51,13 @@ func (b *AwsLambdaApplyConfiguration) WithInvocationMode(value string) *AwsLambd
 // If called multiple times, the Qualifier field is set to the value of the last call.
 func (b *AwsLambdaApplyConfiguration) WithQualifier(value string) *AwsLambdaApplyConfiguration {
 	b.Qualifier = &value
+	return b
+}
+
+// WithPayloadTransformMode sets the PayloadTransformMode field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the PayloadTransformMode field is set to the value of the last call.
+func (b *AwsLambdaApplyConfiguration) WithPayloadTransformMode(value apiv1alpha1.AWSLambdaPayloadTransformMode) *AwsLambdaApplyConfiguration {
+	b.PayloadTransformMode = &value
 	return b
 }

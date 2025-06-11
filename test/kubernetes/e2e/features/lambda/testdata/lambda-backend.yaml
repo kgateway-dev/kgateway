@@ -18,6 +18,14 @@ spec:
         - name: lambda-backend
           kind: Backend
           group: gateway.kgateway.dev
+    - matches:
+      - path:
+          type: Exact
+          value: /lambda/no-payload-transform
+      backendRefs:
+        - name: lambda-without-payload-transform
+          kind: Backend
+          group: gateway.kgateway.dev          
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: Backend
@@ -35,3 +43,21 @@ spec:
     lambda:
       functionName: hello-function
       endpointURL: "http://172.18.0.2:31566"
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: lambda-without-payload-transform
+  namespace: lambda-test
+spec:
+  type: AWS
+  aws:
+    accountId: "000000000000"
+    auth:
+      type: Secret
+      secretRef:
+        name: aws-creds
+    lambda:
+      functionName: hello-function
+      endpointURL: "http://172.18.0.2:31566"
+      payloadTransformMode: None

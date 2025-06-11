@@ -8,9 +8,9 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
 	testmatchers "github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
@@ -59,22 +59,42 @@ var (
 		},
 	}
 
+	allowedNamespace = &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "allowed-ns",
+		},
+	}
+
 	// TestValidListenerSet
-	validListenerSet = types.NamespacedName{
-		Name:      "valid-ls",
-		Namespace: "allowed-ns",
+	validListenerSet = &gwxv1a1.XListenerSet{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "valid-ls",
+			Namespace: "allowed-ns",
+		},
+	}
+
+	// TestPolicies
+	validListenerSet2 = &gwxv1a1.XListenerSet{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "valid-ls-2",
+			Namespace: "allowed-ns",
+		},
 	}
 
 	// TestInvalidListenerSetNotAllowed
-	invalidListenerSetNotAllowed = types.NamespacedName{
-		Name:      "invalid-ls-not-allowed",
-		Namespace: "curl",
+	invalidListenerSetNotAllowed = &gwxv1a1.XListenerSet{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "invalid-ls-not-allowed",
+			Namespace: "curl",
+		},
 	}
 
 	// TestInvalidListenerSetNonExistingGW
-	invalidListenerSetNonExistingGW = types.NamespacedName{
-		Name:      "invalid-ls-non-existing-gw",
-		Namespace: "default",
+	invalidListenerSetNonExistingGW = &gwxv1a1.XListenerSet{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "invalid-ls-non-existing-gw",
+			Namespace: "default",
+		},
 	}
 
 	expectOK = &testmatchers.HttpResponse{
@@ -101,7 +121,7 @@ var (
 
 	setup = base.SimpleTestCase{
 		Manifests: []string{e2edefaults.CurlPodManifest, setupManifest},
-		Resources: []client.Object{e2edefaults.CurlPod, exampleSvc, nginxPod, proxyDeployment, proxyService},
+		Resources: []client.Object{e2edefaults.CurlPod, exampleSvc, nginxPod, proxyDeployment, proxyService, allowedNamespace},
 	}
 
 	// test cases
@@ -109,21 +129,25 @@ var (
 		"TestValidListenerSet": {
 			SimpleTestCase: base.SimpleTestCase{
 				Manifests: []string{validListenerSetManifest},
+				Resources: []client.Object{validListenerSet},
 			},
 		},
 		"TestInvalidListenerSetNotAllowed": {
 			SimpleTestCase: base.SimpleTestCase{
 				Manifests: []string{invalidListenerSetNotAllowedManifest},
+				Resources: []client.Object{invalidListenerSetNotAllowed},
 			},
 		},
 		"TestInvalidListenerSetNonExistingGW": {
 			SimpleTestCase: base.SimpleTestCase{
 				Manifests: []string{invalidListenerSetNonExistingGWManifest},
+				Resources: []client.Object{invalidListenerSetNonExistingGW},
 			},
 		},
 		"TestPolicies": {
 			SimpleTestCase: base.SimpleTestCase{
 				Manifests: []string{validListenerSetManifest, validListenerSetManifest2, policyManifest},
+				Resources: []client.Object{validListenerSet, validListenerSet2},
 			},
 		},
 	}

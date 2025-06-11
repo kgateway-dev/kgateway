@@ -534,6 +534,12 @@ spec:
                         - Sync
                         - Async
                         type: string
+                      payloadTransformMode:
+                        default: Envoy
+                        enum:
+                        - None
+                        - Envoy
+                        type: string
                       qualifier:
                         pattern: ^(\$LATEST|[0-9]+|[A-Za-z0-9-_]{1,128})$
                         type: string

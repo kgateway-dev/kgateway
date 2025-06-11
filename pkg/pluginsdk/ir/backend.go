@@ -67,8 +67,16 @@ const (
 	WebSocketAppProtocol AppProtocol = "ws"
 )
 
+// Recognizes http2 app protocols defined by istio (https://istio.io/latest/docs/ops/configuration/traffic-management/protocol-selection/)
+// and GEP-1911 (https://gateway-api.sigs.k8s.io/geps/gep-1911/#api-semantics)
 func ParseAppProtocol(appProtocol *string) AppProtocol {
 	switch ptr.Deref(appProtocol, "") {
+	case "http2":
+		fallthrough
+	case "grpc":
+		fallthrough
+	case "grpc-web":
+		fallthrough
 	case "kubernetes.io/h2c":
 		return HTTP2AppProtocol
 	case "kubernetes.io/ws":

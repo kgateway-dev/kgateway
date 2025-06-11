@@ -113,14 +113,15 @@ func endpointsFromWorkloads(
 	eps := ir.NewEndpointsForBackend(be)
 	for _, workload := range workloads {
 		address := workload.Address()
-		if address == "" {
-			continue
-		}
 
 		// for static, it must be an IP
 		// for DNS it can be IP or hostname
 		if se.Spec.GetResolution() == networking.ServiceEntry_STATIC {
-			if net.ParseIP(address) == nil {
+			// allow empty address workloads that have a network specificed
+			// so that endpoint plugins can process them.
+			// if they reach the ClusterLoadAssignment generation code with no
+			// address (post-plugins) then we will filter them there
+			if net.ParseIP(address) == nil && workload.network == "" {
 				continue
 			}
 		}

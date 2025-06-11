@@ -97,12 +97,6 @@ var (
 			Namespace: "kgateway-test",
 		},
 	}
-	insecureTrafficPolicy2 = &v1alpha1.TrafficPolicy{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "insecure-route-policy2",
-			Namespace: "kgateway-test",
-		},
-	}
 	secureRoute = &gwv1.HTTPRoute{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "route-example-secure",
@@ -115,18 +109,6 @@ var (
 			Namespace: "kgateway-test",
 		},
 	}
-	secureTrafficPolicy2 = &v1alpha1.TrafficPolicy{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "secure-route-policy2",
-			Namespace: "kgateway-test",
-		},
-	}
-	disableAllRoute = &gwv1.HTTPRoute{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "route-example-disableall",
-			Namespace: "kgateway-test",
-		},
-	}
 
 	// Manifest files
 	gatewayWithRouteManifest     = getTestFile("common.yaml")
@@ -134,7 +116,6 @@ var (
 	extAuthManifest              = getTestFile("ext-authz-server.yaml")
 	securedGatewayPolicyManifest = getTestFile("secured-gateway-policy.yaml")
 	securedRouteManifest         = getTestFile("secured-route.yaml")
-	secureAndDisableAllManifest  = getTestFile("secure-and-disable-all.yaml")
 	insecureRouteManifest        = getTestFile("insecure-route.yaml")
 )
 
