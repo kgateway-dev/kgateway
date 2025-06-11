@@ -1090,6 +1090,13 @@ func schema_kgateway_v2_api_v1alpha1_AwsLambda(ref common.ReferenceCallback) com
 							Format:      "",
 						},
 					},
+					"payloadTransformMode": {
+						SchemaProps: spec.SchemaProps{
+							Description: "PayloadTransformation specifies payload transformation mode before it is sent to the Lambda function. Defaults to Envoy.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 				},
 				Required: []string{"functionName"},
 			},

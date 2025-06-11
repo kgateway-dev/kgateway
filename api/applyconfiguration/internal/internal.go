@@ -239,6 +239,9 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: invocationMode
       type:
         scalar: string
+    - name: payloadTransformMode
+      type:
+        scalar: string
     - name: qualifier
       type:
         scalar: string
