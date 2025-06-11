@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
@@ -242,10 +242,10 @@ func (s *testingSuite) TestPolicies() {
 		expectOKWithCustomHeader("policy", "listener-set-section"))
 }
 
-func (s *testingSuite) expectListenerSetAccepted(namespacedName types.NamespacedName) {
+func (s *testingSuite) expectListenerSetAccepted(obj client.Object) {
 	s.TestInstallation.Assertions.EventuallyGatewayCondition(s.Ctx, proxyObjectMeta.Name, proxyObjectMeta.Namespace, listener.AttachedListenerSetsConditionType, metav1.ConditionTrue)
 
-	s.TestInstallation.Assertions.EventuallyListenerSetStatus(s.Ctx, namespacedName.Name, namespacedName.Namespace,
+	s.TestInstallation.Assertions.EventuallyListenerSetStatus(s.Ctx, obj.GetName(), obj.GetNamespace(),
 		gwxv1a1.ListenerSetStatus{
 			Conditions: []metav1.Condition{
 				{
@@ -318,10 +318,10 @@ func (s *testingSuite) expectListenerSetAccepted(namespacedName types.Namespaced
 		})
 }
 
-func (s *testingSuite) expectListenerSetNotAllowed(namespacedName types.NamespacedName) {
+func (s *testingSuite) expectListenerSetNotAllowed(obj client.Object) {
 	s.TestInstallation.Assertions.EventuallyGatewayCondition(s.Ctx, proxyObjectMeta.Name, proxyObjectMeta.Namespace, listener.AttachedListenerSetsConditionType, metav1.ConditionFalse)
 
-	s.TestInstallation.Assertions.EventuallyListenerSetStatus(s.Ctx, namespacedName.Name, namespacedName.Namespace,
+	s.TestInstallation.Assertions.EventuallyListenerSetStatus(s.Ctx, obj.GetName(), obj.GetNamespace(),
 		gwxv1a1.ListenerSetStatus{
 			Conditions: []metav1.Condition{
 				{
@@ -338,10 +338,10 @@ func (s *testingSuite) expectListenerSetNotAllowed(namespacedName types.Namespac
 		})
 }
 
-func (s *testingSuite) expectListenerSetUnknown(namespacedName types.NamespacedName) {
+func (s *testingSuite) expectListenerSetUnknown(obj client.Object) {
 	s.TestInstallation.Assertions.EventuallyGatewayCondition(s.Ctx, proxyObjectMeta.Name, proxyObjectMeta.Namespace, listener.AttachedListenerSetsConditionType, metav1.ConditionFalse)
 
-	s.TestInstallation.Assertions.EventuallyListenerSetStatus(s.Ctx, namespacedName.Name, namespacedName.Namespace,
+	s.TestInstallation.Assertions.EventuallyListenerSetStatus(s.Ctx, obj.GetName(), obj.GetNamespace(),
 		gwxv1a1.ListenerSetStatus{
 			Conditions: []metav1.Condition{
 				{

@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"slices"
 
+	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"google.golang.org/protobuf/proto"
@@ -135,6 +136,14 @@ func (h *httpRouteConfigurationTranslator) computeVirtualHost(
 	return out
 }
 
+type backendConfigContext struct {
+	typedPerFilterConfigRoute ir.TypedFilterConfigMap
+	RequestHeadersToAdd       []*envoy_config_core_v3.HeaderValueOption
+	RequestHeadersToRemove    []string
+	ResponseHeadersToAdd      []*envoy_config_core_v3.HeaderValueOption
+	ResponseHeadersToRemove   []string
+}
+
 func (h *httpRouteConfigurationTranslator) envoyRoutes(ctx context.Context,
 	routeReport reportssdk.ParentRefReporter,
 	in ir.HttpRouteRuleMatchIR,
@@ -142,10 +151,10 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(ctx context.Context,
 ) *envoy_config_route_v3.Route {
 	out := h.initRoutes(in, generatedName)
 
-	typedPerFilterConfigRoute := ir.TypedFilterConfigMap(map[string]proto.Message{})
+	backendConfigCtx := backendConfigContext{typedPerFilterConfigRoute: ir.TypedFilterConfigMap(map[string]proto.Message{})}
 	if len(in.Backends) == 1 {
 		// if there's only one backend, we need to reuse typedPerFilterConfigRoute in both translateRouteAction and runRoutePlugins
-		out.Action = h.translateRouteAction(ctx, in, out, typedPerFilterConfigRoute)
+		out.Action = h.translateRouteAction(ctx, in, out, &backendConfigCtx)
 	} else if len(in.Backends) > 0 {
 		// If there is more than one backend, we translate the backends as WeightedClusters and each weighted cluster
 		// will have a TypedPerFilterConfig that overrides the parent route-level config.
@@ -153,13 +162,13 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(ctx context.Context,
 	}
 
 	// run plugins here that may set action
-	err := h.runRoutePlugins(ctx, routeReport, in, out, typedPerFilterConfigRoute)
+	err := h.runRoutePlugins(ctx, routeReport, in, out, backendConfigCtx.typedPerFilterConfigRoute)
 	if err == nil {
 		err = validateEnvoyRoute(out)
 	}
 
 	// apply typed per filter config from translating route action and route plugins
-	typedPerFilterConfig := toPerFilterConfigMap(typedPerFilterConfigRoute)
+	typedPerFilterConfig := toPerFilterConfigMap(backendConfigCtx.typedPerFilterConfigRoute)
 	if out.GetTypedPerFilterConfig() == nil {
 		out.TypedPerFilterConfig = typedPerFilterConfig
 	} else {
@@ -169,6 +178,10 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(ctx context.Context,
 			}
 		}
 	}
+	out.RequestHeadersToAdd = append(out.GetRequestHeadersToAdd(), backendConfigCtx.RequestHeadersToAdd...)
+	out.RequestHeadersToRemove = append(out.GetRequestHeadersToRemove(), backendConfigCtx.RequestHeadersToRemove...)
+	out.ResponseHeadersToAdd = append(out.GetResponseHeadersToAdd(), backendConfigCtx.ResponseHeadersToAdd...)
+	out.ResponseHeadersToRemove = append(out.GetResponseHeadersToRemove(), backendConfigCtx.ResponseHeadersToRemove...)
 
 	if err == nil && out.GetAction() == nil {
 		if in.Delegates {
@@ -204,6 +217,10 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(ctx context.Context,
 func toPerFilterConfigMap(typedPerFilterConfig ir.TypedFilterConfigMap) map[string]*anypb.Any {
 	typedPerFilterConfigAny := map[string]*anypb.Any{}
 	for k, v := range typedPerFilterConfig {
+		if anyMsg, ok := v.(*anypb.Any); ok {
+			typedPerFilterConfigAny[k] = anyMsg
+			continue
+		}
 		config, err := utils.MessageToAny(v)
 		if err != nil {
 			// TODO: error on status? this should never happen..
@@ -362,7 +379,7 @@ func (h *httpRouteConfigurationTranslator) translateRouteAction(
 	ctx context.Context,
 	in ir.HttpRouteRuleMatchIR,
 	outRoute *envoy_config_route_v3.Route,
-	parentTypedPerFilterConfig ir.TypedFilterConfigMap,
+	parentBackendConfigCtx *backendConfigContext,
 ) *envoy_config_route_v3.Route_Route {
 	var clusters []*envoy_config_route_v3.WeightedCluster_ClusterWeight
 
@@ -376,15 +393,15 @@ func (h *httpRouteConfigurationTranslator) translateRouteAction(
 			Weight: wrapperspb.UInt32(backend.Backend.Weight),
 		}
 
-		typedPerFilterConfig := parentTypedPerFilterConfig
-		if parentTypedPerFilterConfig == nil {
-			typedPerFilterConfig = map[string]proto.Message{}
+		backendConfigCtx := parentBackendConfigCtx
+		if parentBackendConfigCtx == nil {
+			backendConfigCtx = &backendConfigContext{typedPerFilterConfigRoute: ir.TypedFilterConfigMap(map[string]proto.Message{})}
 		}
 
 		pCtx := ir.RouteBackendContext{
 			FilterChainName:   h.fc.FilterChainName,
 			Backend:           backend.Backend.BackendObject,
-			TypedFilterConfig: typedPerFilterConfig,
+			TypedFilterConfig: backendConfigCtx.typedPerFilterConfigRoute,
 		}
 
 		// non attached policy translation
@@ -398,7 +415,6 @@ func (h *httpRouteConfigurationTranslator) translateRouteAction(
 			// TODO: error on status
 			h.logger.Error("error processing backends", "error", err)
 		}
-
 		err = h.runBackendPolicies(
 			ctx,
 			backend,
@@ -409,18 +425,17 @@ func (h *httpRouteConfigurationTranslator) translateRouteAction(
 			h.logger.Error("error processing backends with policies", "error", err)
 		}
 
+		backendConfigCtx.RequestHeadersToAdd = pCtx.RequestHeadersToAdd
+		backendConfigCtx.RequestHeadersToRemove = pCtx.RequestHeadersToRemove
+		backendConfigCtx.ResponseHeadersToAdd = pCtx.ResponseHeadersToAdd
+		backendConfigCtx.ResponseHeadersToRemove = pCtx.ResponseHeadersToRemove
+
 		// Translating weighted clusters needs the typed per filter config on each cluster
-		typedPerFilterConfigAny := map[string]*anypb.Any{}
-		for k, v := range typedPerFilterConfig {
-			config, err := utils.MessageToAny(v)
-			if err != nil {
-				// TODO: error on status
-				h.logger.Error("unexpected marshalling error", "error", err)
-				continue
-			}
-			typedPerFilterConfigAny[k] = config
-		}
-		cw.TypedPerFilterConfig = typedPerFilterConfigAny
+		cw.TypedPerFilterConfig = toPerFilterConfigMap(backendConfigCtx.typedPerFilterConfigRoute)
+		cw.RequestHeadersToAdd = backendConfigCtx.RequestHeadersToAdd
+		cw.RequestHeadersToRemove = backendConfigCtx.RequestHeadersToRemove
+		cw.ResponseHeadersToAdd = backendConfigCtx.ResponseHeadersToAdd
+		cw.ResponseHeadersToRemove = backendConfigCtx.ResponseHeadersToRemove
 		clusters = append(clusters, cw)
 	}
 

@@ -32,6 +32,14 @@ spec:
     backendRefs:
     - name: example-svc
       port: 8080
+      filters:
+      - type: RequestHeaderModifier
+        requestHeaderModifier:
+          set:
+          - name: X-Backend-Header-Set-1
+            value: header-set-1
+          - name: X-Backend-Header-Set-2
+            value: header-set-2
     filters:
     # taken from https://github.com/kubernetes-sigs/gateway-api/blob/main/conformance/tests/httproute-request-header-modifier.yaml
     - type: RequestHeaderModifier
@@ -51,6 +59,28 @@ spec:
         remove:
         - X-Header-Remove-1
         - X-Header-Remove-2
+
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /multiple-backends
+    backendRefs:
+    - name: example-svc
+      port: 8080
+      filters:
+      - type: RequestHeaderModifier
+        requestHeaderModifier:
+          set:
+          - name: X-Backend-Header-Set-1
+            value: header-set-1
+    - name: example-svc
+      port: 8080
+      filters:
+      - type: RequestHeaderModifier
+        requestHeaderModifier:
+          set:
+          - name: X-Backend-Header-Set-1
+            value: header-set-2
 ---
 apiVersion: v1
 kind: Service
