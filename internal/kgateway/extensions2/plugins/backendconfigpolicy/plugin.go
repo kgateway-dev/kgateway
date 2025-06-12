@@ -45,6 +45,7 @@ type BackendConfigPolicyIR struct {
 	http1ProtocolOptions          *corev3.Http1ProtocolOptions
 	sslConfig                     *envoyauth.UpstreamTlsContext
 	loadBalancerConfig            *LoadBalancerConfigIR
+	healthCheck                   *corev3.HealthCheck
 }
 
 var logger = logging.New("backendconfigpolicy")
@@ -123,6 +124,10 @@ func (d *BackendConfigPolicyIR) Equals(other any) bool {
 		return false
 	}
 	if !d.loadBalancerConfig.Equals(d2.loadBalancerConfig) {
+		return false
+	}
+
+	if !proto.Equal(d.healthCheck, d2.healthCheck) {
 		return false
 	}
 
@@ -235,6 +240,10 @@ func processBackend(_ context.Context, polir ir.PolicyIR, _ ir.BackendObjectIR, 
 	}
 
 	applyLoadBalancerConfig(pol.loadBalancerConfig, out)
+
+	if pol.healthCheck != nil {
+		out.HealthChecks = []*corev3.HealthCheck{pol.healthCheck}
+	}
 }
 
 func translate(commoncol *common.CommonCollections, krtctx krt.HandlerContext, pol *v1alpha1.BackendConfigPolicy) (*BackendConfigPolicyIR, error) {
@@ -275,6 +284,10 @@ func translate(commoncol *common.CommonCollections, krtctx krt.HandlerContext, p
 
 	if pol.Spec.LoadBalancerConfig != nil {
 		ir.loadBalancerConfig = translateLoadBalancerConfig(pol.Spec.LoadBalancerConfig)
+	}
+
+	if pol.Spec.HealthCheck != nil {
+		ir.healthCheck = translateHealthCheck(pol.Spec.HealthCheck)
 	}
 
 	return &ir, nil

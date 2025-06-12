@@ -1,0 +1,63 @@
+package backendconfigpolicy
+
+import (
+	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	typev3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
+	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
+
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+)
+
+func translateHealthCheck(hc *v1alpha1.HealthCheck) *corev3.HealthCheck {
+	if hc == nil {
+		return nil
+	}
+
+	healthCheck := &corev3.HealthCheck{}
+
+	if hc.Timeout != nil {
+		healthCheck.Timeout = durationpb.New(hc.Timeout.Duration)
+	}
+	if hc.Interval != nil {
+		healthCheck.Interval = durationpb.New(hc.Interval.Duration)
+	}
+	if hc.UnhealthyThreshold != nil {
+		healthCheck.UnhealthyThreshold = &wrapperspb.UInt32Value{Value: *hc.UnhealthyThreshold}
+	}
+	if hc.HealthyThreshold != nil {
+		healthCheck.HealthyThreshold = &wrapperspb.UInt32Value{Value: *hc.HealthyThreshold}
+	}
+
+	if hc.Http != nil {
+		httpHealthCheck := &corev3.HealthCheck_HttpHealthCheck{
+			Host: hc.Http.Host,
+			Path: hc.Http.Path,
+		}
+		if hc.Http.Method != nil {
+			httpHealthCheck.Method = corev3.RequestMethod(corev3.RequestMethod_value[*hc.Http.Method])
+		}
+		if len(hc.Http.ExpectedStatuses) > 0 {
+			expectedStatuses := make([]*typev3.Int64Range, len(hc.Http.ExpectedStatuses))
+			for i, status := range hc.Http.ExpectedStatuses {
+				expectedStatuses[i] = &typev3.Int64Range{
+					Start: status.Start,
+					End:   status.End,
+				}
+			}
+			httpHealthCheck.ExpectedStatuses = expectedStatuses
+		}
+		healthCheck.HealthChecker = &corev3.HealthCheck_HttpHealthCheck_{
+			HttpHealthCheck: httpHealthCheck,
+		}
+	} else if hc.Grpc != nil {
+		healthCheck.HealthChecker = &corev3.HealthCheck_GrpcHealthCheck_{
+			GrpcHealthCheck: &corev3.HealthCheck_GrpcHealthCheck{
+				ServiceName: hc.Grpc.ServiceName,
+				Authority:   hc.Grpc.Authority,
+			},
+		}
+	}
+
+	return healthCheck
+}
