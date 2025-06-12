@@ -74,7 +74,6 @@ type DynamicForwardProxyBackend struct {
 	// EnableTls enables TLS. When true, the backend will be configured to use TLS. System CA will be used for validation.
 	// The hostname will be used for SNI and auto SAN validation.
 	// +optional
-	// +kubebuilder:validation:Optional
 	EnableTls bool `json:"enableTls,omitempty"`
 }
 
@@ -95,16 +94,13 @@ type AwsBackend struct {
 	// https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/aws_request_signing_filter#credentials
 	//
 	// +optional
-	// +kubebuilder:validation:Optional
 	Auth *AwsAuth `json:"auth,omitempty"`
 	// Lambda configures the AWS lambda service.
 	// +optional
-	// +kubebuilder:validation:Optional
 	Lambda *AwsLambda `json:"lambda,omitempty"`
 	// Region is the AWS region to use for the backend.
 	// Defaults to us-east-1 if not specified.
 	// +optional
-	// +kubebuilder:validation:Optional
 	// +kubebuilder:default=us-east-1
 	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:MaxLength=63
@@ -133,7 +129,6 @@ type AwsAuth struct {
 	// SecretRef references a Kubernetes Secret containing the AWS credentials.
 	// The Secret must have keys "accessKey", "secretKey", and optionally "sessionToken".
 	// +optional
-	// +kubebuilder:validation:Optional
 	SecretRef *corev1.LocalObjectReference `json:"secretRef,omitempty"`
 }
 
@@ -150,7 +145,6 @@ type AwsLambda struct {
 	// useful for testing and development purposes. When omitted, the default
 	// lambda hostname will be used.
 	// +optional
-	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:Pattern="^https?://[-a-zA-Z0-9@:%.+~#?&/=]+$"
 	// +kubebuilder:validation:MaxLength=2048
 	EndpointURL string `json:"endpointURL,omitempty"`
@@ -161,7 +155,6 @@ type AwsLambda struct {
 	// InvocationMode defines how to invoke the Lambda function.
 	// Defaults to Sync.
 	// +optional
-	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:Enum=Sync;Async
 	// +kubebuilder:default=Sync
 	InvocationMode string `json:"invocationMode,omitempty"`
@@ -169,7 +162,6 @@ type AwsLambda struct {
 	// Valid values include a numeric version (e.g. "1"), an alias name
 	// (alphanumeric plus "-" or "_"), or the special literal "$LATEST".
 	// +optional
-	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:Pattern="^(\\$LATEST|[0-9]+|[A-Za-z0-9-_]{1,128})$"
 	Qualifier string `json:"qualifier,omitempty"`
 	// PayloadTransformation specifies payload transformation mode before it is sent to the Lambda function.
@@ -216,7 +208,6 @@ type Host struct {
 	Port gwv1.PortNumber `json:"port"`
 	// InsecureSkipVerify allows skipping ssl validation for custom hosts
 	// +optional
-	// +kubebuilder:validation:Optional
 	InsecureSkipVerify *bool `json:"insecureSkipVerify,omitempty"`
 }
 

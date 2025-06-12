@@ -41,7 +41,7 @@ type DirectResponseSpec struct {
 	// The maximum length of the body is restricted to prevent excessively large responses.
 	//
 	// +kubebuilder:validation:MaxLength=4096
-	// +kubebuilder:validation:Optional
+	// +optional
 	Body string `json:"body,omitempty"`
 }
 

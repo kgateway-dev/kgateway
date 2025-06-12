@@ -39,12 +39,12 @@ type GatewayParametersList struct {
 type GatewayParametersSpec struct {
 	// The proxy will be deployed on Kubernetes.
 	//
-	// +kubebuilder:validation:Optional
+	// +optional
 	Kube *KubernetesProxyConfig `json:"kube,omitempty"`
 
 	// The proxy will be self-managed and not auto-provisioned.
 	//
-	// +kubebuilder:validation:Optional
+	// +optional
 	// +kubebuilder:pruning:PreserveUnknownFields
 	SelfManaged *SelfManagedGateway `json:"selfManaged,omitempty"`
 }
@@ -76,53 +76,53 @@ type KubernetesProxyConfig struct {
 	// Use a Kubernetes deployment as the proxy workload type. Currently, this is the only
 	// supported workload type.
 	//
-	// +kubebuilder:validation:Optional
+	// +optional
 	Deployment *ProxyDeployment `json:"deployment,omitempty"`
 
 	// Configuration for the container running Envoy.
 	//
-	// +kubebuilder:validation:Optional
+	// +optional
 	EnvoyContainer *EnvoyContainer `json:"envoyContainer,omitempty"`
 
 	// Configuration for the container running the Secret Discovery Service (SDS).
 	//
-	// +kubebuilder:validation:Optional
+	// +optional
 	SdsContainer *SdsContainer `json:"sdsContainer,omitempty"`
 
 	// Configuration for the pods that will be created.
 	//
-	// +kubebuilder:validation:Optional
+	// +optional
 	PodTemplate *Pod `json:"podTemplate,omitempty"`
 
 	// Configuration for the Kubernetes Service that exposes the Envoy proxy over
 	// the network.
 	//
-	// +kubebuilder:validation:Optional
+	// +optional
 	Service *Service `json:"service,omitempty"`
 
 	// Configuration for the Kubernetes ServiceAccount used by the Envoy pod.
 	//
-	// +kubebuilder:validation:Optional
+	// +optional
 	ServiceAccount *ServiceAccount `json:"serviceAccount,omitempty"`
 
 	// Configuration for the Istio integration.
 	//
-	// +kubebuilder:validation:Optional
+	// +optional
 	Istio *IstioIntegration `json:"istio,omitempty"`
 
 	// Configuration for the stats server.
 	//
-	// +kubebuilder:validation:Optional
+	// +optional
 	Stats *StatsConfig `json:"stats,omitempty"`
 
 	// Configuration for the AI extension.
 	//
-	// +kubebuilder:validation:Optional
+	// +optional
 	AiExtension *AiExtension `json:"aiExtension,omitempty"`
 
 	// Configure the AgentGateway integration
 	//
-	// +kubebuilder:validation:Optional
+	// +optional
 	AgentGateway *AgentGateway `json:"agentGateway,omitempty"`
 
 	// Used to unset the `runAsUser` values in security contexts.
@@ -210,7 +210,7 @@ func (in *KubernetesProxyConfig) GetFloatingUserId() *bool {
 type ProxyDeployment struct {
 	// The number of desired pods. Defaults to 1.
 	//
-	// +kubebuilder:validation:Optional
+	// +optional
 	Replicas *uint32 `json:"replicas,omitempty"`
 }
 
@@ -226,7 +226,7 @@ type EnvoyContainer struct {
 
 	// Initial envoy configuration.
 	//
-	// +kubebuilder:validation:Optional
+	// +optional
 	Bootstrap *EnvoyBootstrap `json:"bootstrap,omitempty"`
 
 	// The envoy container image. See
@@ -240,21 +240,21 @@ type EnvoyContainer struct {
 	//	tag: <gloo version> (OSS) / <gloo-ee version> (EE)
 	//	pullPolicy: IfNotPresent
 	//
-	// +kubebuilder:validation:Optional
+	// +optional
 	Image *Image `json:"image,omitempty"`
 
 	// The security context for this container. See
 	// https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core
 	// for details.
 	//
-	// +kubebuilder:validation:Optional
+	// +optional
 	SecurityContext *corev1.SecurityContext `json:"securityContext,omitempty"`
 
 	// The compute resources required by this container. See
 	// https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
 	// for details.
 	//
-	// +kubebuilder:validation:Optional
+	// +optional
 	Resources *corev1.ResourceRequirements `json:"resources,omitempty"`
 }
 
@@ -294,7 +294,7 @@ type EnvoyBootstrap struct {
 	// https://www.envoyproxy.io/docs/envoy/latest/start/quick-start/run-envoy#debugging-envoy
 	// for more information.
 	//
-	// +kubebuilder:validation:Optional
+	// +optional
 	LogLevel *string `json:"logLevel,omitempty"`
 
 	// Envoy log levels for specific components. The keys are component names and
@@ -314,7 +314,7 @@ type EnvoyBootstrap struct {
 	//
 	// Note: the keys and values cannot be empty, but they are not otherwise validated.
 	//
-	// +kubebuilder:validation:Optional
+	// +optional
 	ComponentLogLevels map[string]string `json:"componentLogLevels,omitempty"`
 }
 
@@ -338,26 +338,26 @@ type SdsContainer struct {
 	// https://kubernetes.io/docs/concepts/containers/images
 	// for details.
 	//
-	// +kubebuilder:validation:Optional
+	// +optional
 	Image *Image `json:"image,omitempty"`
 
 	// The security context for this container. See
 	// https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core
 	// for details.
 	//
-	// +kubebuilder:validation:Optional
+	// +optional
 	SecurityContext *corev1.SecurityContext `json:"securityContext,omitempty"`
 
 	// The compute resources required by this container. See
 	// https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
 	// for details.
 	//
-	// +kubebuilder:validation:Optional
+	// +optional
 	Resources *corev1.ResourceRequirements `json:"resources,omitempty"`
 
 	// Initial SDS container configuration.
 	//
-	// +kubebuilder:validation:Optional
+	// +optional
 	Bootstrap *SdsBootstrap `json:"bootstrap,omitempty"`
 }
 
@@ -394,7 +394,7 @@ type SdsBootstrap struct {
 	// Log level for SDS. Options include "info", "debug", "warn", "error", "panic" and "fatal".
 	// Default level is "info".
 	//
-	// +kubebuilder:validation:Optional
+	// +optional
 	LogLevel *string `json:"logLevel,omitempty"`
 }
 
@@ -411,13 +411,13 @@ type IstioIntegration struct {
 	// Note that if Istio integration is not enabled, the istio container will not be injected
 	// into the gateway proxy deployment.
 	//
-	// +kubebuilder:validation:Optional
+	// +optional
 	IstioProxyContainer *IstioContainer `json:"istioProxyContainer,omitempty"`
 
 	// do not use slice of pointers: https://github.com/kubernetes/code-generator/issues/166
 	// Override the default Istio sidecar in gateway-proxy with a custom container.
 	//
-	// +kubebuilder:validation:Optional
+	// +optional
 	CustomSidecars []corev1.Container `json:"customSidecars,omitempty"`
 }
 
@@ -441,42 +441,42 @@ type IstioContainer struct {
 	// https://kubernetes.io/docs/concepts/containers/images
 	// for details.
 	//
-	// +kubebuilder:validation:Optional
+	// +optional
 	Image *Image `json:"image,omitempty"`
 
 	// The security context for this container. See
 	// https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core
 	// for details.
 	//
-	// +kubebuilder:validation:Optional
+	// +optional
 	SecurityContext *corev1.SecurityContext `json:"securityContext,omitempty"`
 
 	// The compute resources required by this container. See
 	// https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
 	// for details.
 	//
-	// +kubebuilder:validation:Optional
+	// +optional
 	Resources *corev1.ResourceRequirements `json:"resources,omitempty"`
 
 	// Log level for istio-proxy. Options include "info", "debug", "warning", and "error".
 	// Default level is info Default is "warning".
 	//
-	// +kubebuilder:validation:Optional
+	// +optional
 	LogLevel *string `json:"logLevel,omitempty"`
 
 	// The address of the istio discovery service. Defaults to "istiod.istio-system.svc:15012".
 	//
-	// +kubebuilder:validation:Optional
+	// +optional
 	IstioDiscoveryAddress *string `json:"istioDiscoveryAddress,omitempty"`
 
 	// The mesh id of the istio mesh. Defaults to "cluster.local".
 	//
-	// +kubebuilder:validation:Optional
+	// +optional
 	IstioMetaMeshId *string `json:"istioMetaMeshId,omitempty"`
 
 	// The cluster id of the istio cluster. Defaults to "Kubernetes".
 	//
-	// +kubebuilder:validation:Optional
+	// +optional
 	IstioMetaClusterId *string `json:"istioMetaClusterId,omitempty"`
 }
 
@@ -533,22 +533,22 @@ func (in *IstioContainer) GetIstioMetaClusterId() *string {
 type StatsConfig struct {
 	// Whether to expose metrics annotations and ports for scraping metrics.
 	//
-	// +kubebuilder:validation:Optional
+	// +optional
 	Enabled *bool `json:"enabled,omitempty"`
 
 	// The Envoy stats endpoint to which the metrics are written
 	//
-	// +kubebuilder:validation:Optional
+	// +optional
 	RoutePrefixRewrite *string `json:"routePrefixRewrite,omitempty"`
 
 	// Enables an additional route to the stats cluster defaulting to /stats
 	//
-	// +kubebuilder:validation:Optional
+	// +optional
 	EnableStatsRoute *bool `json:"enableStatsRoute,omitempty"`
 
 	// The Envoy stats endpoint with general metrics for the additional stats route
 	//
-	// +kubebuilder:validation:Optional
+	// +optional
 	StatsRoutePrefixRewrite *string `json:"statsRoutePrefixRewrite,omitempty"`
 }
 
@@ -584,40 +584,40 @@ func (in *StatsConfig) GetStatsRoutePrefixRewrite() *string {
 type AiExtension struct {
 	// Whether to enable the extension.
 	//
-	// +kubebuilder:validation:Optional
+	// +optional
 	Enabled *bool `json:"enabled,omitempty"`
 
 	// The extension's container image. See
 	// https://kubernetes.io/docs/concepts/containers/images
 	// for details.
 	//
-	// +kubebuilder:validation:Optional
+	// +optional
 	Image *Image `json:"image,omitempty"`
 
 	// The security context for this container. See
 	// https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core
 	// for details.
 	//
-	// +kubebuilder:validation:Optional
+	// +optional
 	SecurityContext *corev1.SecurityContext `json:"securityContext,omitempty"`
 
 	// The compute resources required by this container. See
 	// https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
 	// for details.
 	//
-	// +kubebuilder:validation:Optional
+	// +optional
 	Resources *corev1.ResourceRequirements `json:"resources,omitempty"`
 
 	// do not use slice of pointers: https://github.com/kubernetes/code-generator/issues/166
 
 	// The extension's container environment variables.
 	//
-	// +kubebuilder:validation:Optional
+	// +optional
 	Env []corev1.EnvVar `json:"env,omitempty"`
 
 	// The extension's container ports.
 	//
-	// +kubebuilder:validation:Optional
+	// +optional
 	Ports []corev1.ContainerPort `json:"ports,omitempty"`
 
 	// Additional stats config for AI Extension.
@@ -711,7 +711,6 @@ type CustomLabel struct {
 	// the envoy JWT filter namespace.
 	// This can also be used in combination with early_transformations to insert custom data.
 	// +optional
-	//
 	// +kubebuilder:validation:Enum=envoy.filters.http.jwt_authn;io.solo.transformation
 	MetadataNamespace *string `json:"metadataNamespace,omitempty"`
 
@@ -763,13 +762,13 @@ func (in *CustomLabel) GetKeyDelimiter() *string {
 type AgentGateway struct {
 	// Whether to enable the extension.
 	//
-	// +kubebuilder:validation:Optional
+	// +optional
 	Enabled *bool `json:"enabled,omitempty"`
 
 	// Log level for the agentgateway. Defaults to info.
 	// Levels include "trace", "debug", "info", "error", "warn". See: https://docs.rs/tracing/latest/tracing/struct.Level.html
 	//
-	// +kubebuilder:validation:Optional
+	// +optional
 	LogLevel *string `json:"logLevel,omitempty"`
 }
 
