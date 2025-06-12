@@ -239,6 +239,9 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: invocationMode
       type:
         scalar: string
+    - name: payloadTransformMode
+      type:
+        scalar: string
     - name: qualifier
       type:
         scalar: string
@@ -315,6 +318,9 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: http1ProtocolOptions
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Http1ProtocolOptions
+    - name: loadBalancerConfig
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LoadBalancerConfig
     - name: perConnectionBufferLimitBytes
       type:
         scalar: numeric
@@ -1016,6 +1022,89 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SupportedLLMProvider
       default: {}
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LoadBalancerConfig
+  map:
+    fields:
+    - name: closeConnectionsOnHostSetChange
+      type:
+        scalar: boolean
+    - name: healthyPanicThreshold
+      type:
+        scalar: numeric
+    - name: leastRequest
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LoadBalancerLeastRequestConfig
+    - name: localityConfigType
+      type:
+        scalar: string
+    - name: maglev
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LoadBalancerMaglevConfig
+    - name: random
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LoadBalancerRandomConfig
+    - name: ringHash
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LoadBalancerRingHashConfig
+    - name: roundRobin
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LoadBalancerRoundRobinConfig
+    - name: updateMergeWindow
+      type:
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Duration
+    - name: useHostnameForHashing
+      type:
+        scalar: boolean
+      default: false
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LoadBalancerLeastRequestConfig
+  map:
+    fields:
+    - name: choiceCount
+      type:
+        scalar: numeric
+      default: 2
+    - name: slowStartConfig
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SlowStartConfig
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LoadBalancerMaglevConfig
+  map:
+    elementType:
+      scalar: untyped
+      list:
+        elementType:
+          namedType: __untyped_atomic_
+        elementRelationship: atomic
+      map:
+        elementType:
+          namedType: __untyped_deduced_
+        elementRelationship: separable
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LoadBalancerRandomConfig
+  map:
+    elementType:
+      scalar: untyped
+      list:
+        elementType:
+          namedType: __untyped_atomic_
+        elementRelationship: atomic
+      map:
+        elementType:
+          namedType: __untyped_deduced_
+        elementRelationship: separable
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LoadBalancerRingHashConfig
+  map:
+    fields:
+    - name: maximumRingSize
+      type:
+        scalar: numeric
+    - name: minimumRingSize
+      type:
+        scalar: numeric
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LoadBalancerRoundRobinConfig
+  map:
+    fields:
+    - name: slowStartConfig
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SlowStartConfig
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LocalPolicyTargetReference
   map:
     fields:
@@ -1487,6 +1576,18 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: secretRef
       type:
         namedType: io.k8s.api.core.v1.LocalObjectReference
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SlowStartConfig
+  map:
+    fields:
+    - name: aggression
+      type:
+        scalar: string
+    - name: minWeightPercent
+      type:
+        scalar: numeric
+    - name: window
+      type:
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Duration
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.StaticBackend
   map:
     fields:

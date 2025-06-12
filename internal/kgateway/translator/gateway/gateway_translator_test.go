@@ -484,9 +484,17 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 				Name:      "example-grpc-gateway",
 			},
 		}),
-	Entry("Plugin Backend", translatorTestCase{
-		inputFile:  "backend-plugin/gateway.yaml",
-		outputFile: "backend-plugin-proxy.yaml",
+	Entry("Basic service backend", translatorTestCase{
+		inputFile:  "backends/basic.yaml",
+		outputFile: "backends/basic.yaml",
+		gwNN: types.NamespacedName{
+			Namespace: "default",
+			Name:      "example-gateway",
+		},
+	}),
+	Entry("AWS Lambda backend", translatorTestCase{
+		inputFile:  "backends/aws_lambda.yaml",
+		outputFile: "backends/aws_lambda.yaml",
 		gwNN: types.NamespacedName{
 			Namespace: "default",
 			Name:      "example-gateway",
@@ -619,6 +627,14 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 	Entry("Service with appProtocol=anything", translatorTestCase{
 		inputFile:  "backend-protocol/default.yaml",
 		outputFile: "backend-protocol/default.yaml",
+		gwNN: types.NamespacedName{
+			Namespace: "default",
+			Name:      "example-gateway",
+		},
+	}),
+	Entry("Backend Config Policy with LB Config", translatorTestCase{
+		inputFile:  "backendconfigpolicy/lb-config.yaml",
+		outputFile: "backendconfigpolicy/lb-config.yaml",
 		gwNN: types.NamespacedName{
 			Namespace: "default",
 			Name:      "example-gateway",

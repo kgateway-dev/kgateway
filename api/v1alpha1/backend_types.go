@@ -172,7 +172,31 @@ type AwsLambda struct {
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:Pattern="^(\\$LATEST|[0-9]+|[A-Za-z0-9-_]{1,128})$"
 	Qualifier string `json:"qualifier,omitempty"`
+	// PayloadTransformation specifies payload transformation mode before it is sent to the Lambda function.
+	// Defaults to Envoy.
+	// +optional
+	// +kubebuilder:default=Envoy
+	PayloadTransformMode AWSLambdaPayloadTransformMode `json:"payloadTransformMode,omitempty"`
 }
+
+// AWSLambdaPayloadTransformMode defines the transformation mode for the payload in the request
+// before it is sent to the AWS Lambda function.
+//
+// +kubebuilder:validation:Enum=None;Envoy
+type AWSLambdaPayloadTransformMode string
+
+const (
+	// AWSLambdaPayloadTransformNone indicates that the payload will not be transformed using Envoy's
+	// built-in transformation before it is sent to the Lambda function.
+	// Note: Transformation policies configured on the route will still apply.
+	AWSLambdaPayloadTransformNone AWSLambdaPayloadTransformMode = "None"
+
+	// AWSLambdaPayloadTransformEnvoy indicates that the payload will be transformed using Envoy's
+	// built-in transformation. Refer to
+	// https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/aws_lambda_filter#configuration-as-a-listener-filter
+	// for more details on how Envoy transforms the payload.
+	AWSLambdaPayloadTransformEnvoy AWSLambdaPayloadTransformMode = "Envoy"
+)
 
 // StaticBackend references a static list of hosts.
 type StaticBackend struct {

@@ -2,14 +2,14 @@ package lambda
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 	"os"
 	"strings"
-
-	"encoding/base64"
+	"time"
 
 	"github.com/onsi/gomega"
 	"github.com/stretchr/testify/suite"
@@ -54,7 +54,7 @@ func (s *testingSuite) SetupSuite() {
 	s.ti.Assertions.EventuallyPodsRunning(s.ctx, testdefaults.CurlPod.GetNamespace(), metav1.ListOptions{
 		LabelSelector: "app.kubernetes.io/name=curl",
 	})
-	s.ti.Assertions.EventuallyPodReady(s.ctx, "lambda-test", "aws-cli")
+	s.ti.Assertions.EventuallyPodReady(s.ctx, "lambda-test", "aws-cli", 30*time.Second)
 
 	s.manifests = map[string][]string{
 		"TestLambdaBackendRouting":      {lambdaBackendManifest},
@@ -136,6 +136,32 @@ func (s *testingSuite) TestLambdaBackendRouting() {
 		&testmatchers.HttpResponse{
 			StatusCode: http.StatusOK,
 			Body:       gomega.ContainSubstring(`Hello from Lambda`),
+		},
+	)
+
+	// Test Lambda backend with Envoy payload transformation disabled
+	s.ti.Assertions.AssertEventualCurlResponse(
+		s.ctx,
+		testdefaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(gatewayObjectMeta)),
+			curl.WithHostHeader("www.example.com"),
+			curl.WithPort(8080),
+			curl.WithPath("/lambda/no-payload-transform"),
+			curl.WithBody("{}"), // JSON payload is a requirement when Envoy payload transformation is disabled
+		},
+		// Ensure the JSON transformation Envoy applies are not a part of the lambda's response body:
+		// https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/aws_lambda_filter#configuration-as-a-listener-filter
+		&testmatchers.HttpResponse{
+			StatusCode: http.StatusOK,
+			Body: gomega.And(
+				gomega.ContainSubstring(`Hello from Lambda`),
+				gomega.Not(gomega.ContainSubstring(`raw_path`)),
+				gomega.Not(gomega.ContainSubstring(`method`)),
+				gomega.Not(gomega.ContainSubstring(`headers`)),
+				gomega.Not(gomega.ContainSubstring(`query_string_parameters`)),
+				gomega.Not(gomega.ContainSubstring(`is_base64_encoded`)),
+			),
 		},
 	)
 }

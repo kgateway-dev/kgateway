@@ -79,6 +79,92 @@ spec:
                   overrideStreamErrorOnInvalidHttpMessage:
                     type: boolean
                 type: object
+              loadBalancerConfig:
+                properties:
+                  closeConnectionsOnHostSetChange:
+                    type: boolean
+                  healthyPanicThreshold:
+                    format: int32
+                    maximum: 100
+                    minimum: 0
+                    type: integer
+                  leastRequest:
+                    properties:
+                      choiceCount:
+                        default: 2
+                        format: int32
+                        type: integer
+                      slowStartConfig:
+                        properties:
+                          aggression:
+                            type: string
+                            x-kubernetes-validations:
+                            - message: Aggression, if specified, must be a string
+                                representing a number greater than 0.0
+                              rule: self == "" || (self.matches('^-?(?:[0-9]+(?:\\.[0-9]*)?|\\.[0-9]+)$')
+                                && double(self) > 0.0)
+                          minWeightPercent:
+                            format: int32
+                            type: integer
+                          window:
+                            type: string
+                            x-kubernetes-validations:
+                            - message: window must be a valid duration string
+                              rule: duration(self) >= duration('0s')
+                        type: object
+                    type: object
+                  localityConfigType:
+                    enum:
+                    - WeightedLb
+                    type: string
+                  maglev:
+                    type: object
+                  random:
+                    type: object
+                  ringHash:
+                    properties:
+                      maximumRingSize:
+                        format: int64
+                        type: integer
+                      minimumRingSize:
+                        format: int64
+                        type: integer
+                    type: object
+                  roundRobin:
+                    properties:
+                      slowStartConfig:
+                        properties:
+                          aggression:
+                            type: string
+                            x-kubernetes-validations:
+                            - message: Aggression, if specified, must be a string
+                                representing a number greater than 0.0
+                              rule: self == "" || (self.matches('^-?(?:[0-9]+(?:\\.[0-9]*)?|\\.[0-9]+)$')
+                                && double(self) > 0.0)
+                          minWeightPercent:
+                            format: int32
+                            type: integer
+                          window:
+                            type: string
+                            x-kubernetes-validations:
+                            - message: window must be a valid duration string
+                              rule: duration(self) >= duration('0s')
+                        type: object
+                    type: object
+                  updateMergeWindow:
+                    type: string
+                    x-kubernetes-validations:
+                    - message: updateMergeWindow must be a valid duration string
+                      rule: duration(self) >= duration('0s')
+                  useHostnameForHashing:
+                    default: false
+                    type: boolean
+                type: object
+                x-kubernetes-validations:
+                - message: only one of leastRequest, roundRobin, ringHash, maglev,
+                    or random can be set
+                  rule: '[has(self.leastRequest), has(self.roundRobin), has(self.ringHash),
+                    has(self.maglev), has(self.random)].filter(x, x).size() <= 1'
               perConnectionBufferLimitBytes:
                 type: integer
               sslConfig:

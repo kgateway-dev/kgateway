@@ -180,7 +180,8 @@ func buildTranslateFunc(
 				}
 			}
 
-			lambdaFilters, err := buildLambdaFilters(lambdaArn, region, secret, invokeMode)
+			lambdaFilters, err := buildLambdaFilters(
+				lambdaArn, region, secret, invokeMode, i.Spec.Aws.Lambda.PayloadTransformMode)
 			if err != nil {
 				backendIr.Errors = append(backendIr.Errors, err)
 			}
