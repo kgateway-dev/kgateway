@@ -1686,6 +1686,7 @@ func schema_kgateway_v2_api_v1alpha1_ComparisonFilter(ref common.ReferenceCallba
 						},
 					},
 				},
+				Required: []string{"op"},
 			},
 		},
 	}
@@ -2023,6 +2024,7 @@ func schema_kgateway_v2_api_v1alpha1_DurationFilter(ref common.ReferenceCallback
 						},
 					},
 				},
+				Required: []string{"op"},
 			},
 		},
 	}
@@ -3828,6 +3830,7 @@ func schema_kgateway_v2_api_v1alpha1_MultiPoolConfig(ref common.ReferenceCallbac
 						},
 					},
 				},
+				Required: []string{"priorities"},
 			},
 		},
 		Dependencies: []string{
@@ -5071,6 +5074,7 @@ func schema_kgateway_v2_api_v1alpha1_StaticBackend(ref common.ReferenceCallback)
 						},
 					},
 				},
+				Required: []string{"hosts"},
 			},
 		},
 		Dependencies: []string{
@@ -5140,6 +5144,7 @@ func schema_kgateway_v2_api_v1alpha1_StatusCodeFilter(ref common.ReferenceCallba
 						},
 					},
 				},
+				Required: []string{"op"},
 			},
 		},
 	}

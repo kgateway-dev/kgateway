@@ -581,6 +581,8 @@ spec:
                       type: object
                     minItems: 1
                     type: array
+                required:
+                - hosts
                 type: object
               type:
                 enum:
