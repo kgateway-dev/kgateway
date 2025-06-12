@@ -41,10 +41,10 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.BodyTransformation":                        schema_kgateway_v2_api_v1alpha1_BodyTransformation(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.BufferSettings":                            schema_kgateway_v2_api_v1alpha1_BufferSettings(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CELFilter":                                 schema_kgateway_v2_api_v1alpha1_CELFilter(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CSRFPolicy":                                schema_kgateway_v2_api_v1alpha1_CSRFPolicy(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CommonHttpProtocolOptions":                 schema_kgateway_v2_api_v1alpha1_CommonHttpProtocolOptions(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ComparisonFilter":                          schema_kgateway_v2_api_v1alpha1_ComparisonFilter(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CorsPolicy":                                schema_kgateway_v2_api_v1alpha1_CorsPolicy(ref),
-		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CsrfPolicy":                                schema_kgateway_v2_api_v1alpha1_CsrfPolicy(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CustomLabel":                               schema_kgateway_v2_api_v1alpha1_CustomLabel(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CustomResponse":                            schema_kgateway_v2_api_v1alpha1_CustomResponse(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.DirectResponse":                            schema_kgateway_v2_api_v1alpha1_DirectResponse(ref),
@@ -1619,6 +1619,48 @@ func schema_kgateway_v2_api_v1alpha1_CELFilter(ref common.ReferenceCallback) com
 	}
 }
 
+func schema_kgateway_v2_api_v1alpha1_CSRFPolicy(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "CSRFPolicy can be used to set percent of requests for which the CSRF filter is enabled, enable shadow-only mode where policies will be evaluated and tracked, but not enforced and add additional source origins that will be allowed in addition to the destination origin.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"percentageEnabled": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Specifies the percentage of requests for which the CSRF filter is enabled. If both PercentageEnabled and PercentageShadowed are set, the PercentageEnabled flag will take precedence.",
+							Type:        []string{"integer"},
+							Format:      "int64",
+						},
+					},
+					"percentageShadowed": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Specifies that CSRF policies will be evaluated and tracked, but not enforced. This is intended to be used when PercentageEnabled is 0 and will be ignored otherwise. If both PercentageEnabled and PercentageShadowed are set, the PercentageEnabled flag will take precedence.",
+							Type:        []string{"integer"},
+							Format:      "int64",
+						},
+					},
+					"additionalOrigins": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Specifies additional source origins that will be allowed in addition to the destination origin.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Ref: ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.StringMatcher"),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.StringMatcher"},
+	}
+}
+
 func schema_kgateway_v2_api_v1alpha1_CommonHttpProtocolOptions(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -1796,49 +1838,6 @@ func schema_kgateway_v2_api_v1alpha1_CorsPolicy(ref common.ReferenceCallback) co
 				},
 			},
 		},
-	}
-}
-
-func schema_kgateway_v2_api_v1alpha1_CsrfPolicy(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "CsrfPolicy can be used to set percent of requests for which the CSRF filter is enabled, enable shadow-only mode where policies will be evaluated and tracked, but not enforced and add additional source origins that will be allowed in addition to the destination origin.",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"percentageEnabled": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Specifies the percentage of requests for which the CSRF filter is enabled. If both PercentageEnabled and PercentageShadowed are set, the PercentageEnabled flag will take precedence.",
-							Type:        []string{"integer"},
-							Format:      "int64",
-						},
-					},
-					"percentageShadowed": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Specifies that CSRF policies will be evaluated and tracked, but not enforced. This is intended to be used when PercentageEnabled is 0 and will be ignored otherwise. If both PercentageEnabled and PercentageShadowed are set, the PercentageEnabled flag will take precedence.",
-							Type:        []string{"integer"},
-							Format:      "int64",
-						},
-					},
-					"additionalOrigins": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Specifies additional source origins that will be allowed in addition to the destination origin.",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.StringMatcher"),
-									},
-								},
-							},
-						},
-					},
-				},
-				Required: []string{"percentageEnabled"},
-			},
-		},
-		Dependencies: []string{
-			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.StringMatcher"},
 	}
 }
 
@@ -5218,6 +5217,13 @@ func schema_kgateway_v2_api_v1alpha1_StringMatcher(ref common.ReferenceCallback)
 							Format:      "",
 						},
 					},
+					"contains": {
+						SchemaProps: spec.SchemaProps{
+							Description: "The input string must contain the substring specified here. Example: abc matches the value xyz.abc.def",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 					"safeRegex": {
 						SchemaProps: spec.SchemaProps{
 							Description: "The input string must match the Google RE2 regular expression specified here. See https://github.com/google/re2/wiki/Syntax for the syntax.",
@@ -5225,7 +5231,16 @@ func schema_kgateway_v2_api_v1alpha1_StringMatcher(ref common.ReferenceCallback)
 							Format:      "",
 						},
 					},
+					"ignoreCase": {
+						SchemaProps: spec.SchemaProps{
+							Description: "If true, indicates the exact/prefix/suffix/contains matching should be case insensitive. This has no effect on the regex match. For example, the matcher data will match both input string Data and data if this option is set to true.",
+							Default:     false,
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
 				},
+				Required: []string{"ignoreCase"},
 			},
 		},
 	}
@@ -5509,14 +5524,14 @@ func schema_kgateway_v2_api_v1alpha1_TrafficPolicySpec(ref common.ReferenceCallb
 					"csrf": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Csrf specifies the Cross-Site Request Forgery (CSRF) policy for this traffic policy.",
-							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CsrfPolicy"),
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CSRFPolicy"),
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AIPolicy", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CorsPolicy", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CsrfPolicy", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtAuthPolicy", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtProcPolicy", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LocalPolicyTargetReferenceWithSectionName", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LocalPolicyTargetSelector", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.RateLimit", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.TransformationPolicy"},
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AIPolicy", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CSRFPolicy", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CorsPolicy", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtAuthPolicy", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtProcPolicy", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LocalPolicyTargetReferenceWithSectionName", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LocalPolicyTargetSelector", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.RateLimit", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.TransformationPolicy"},
 	}
 }
 

@@ -14,9 +14,10 @@ import (
 
 var (
 	// manifests
-	commonManifest                 = filepath.Join(fsutils.MustGetThisDir(), "testdata", "common.yaml")
-	csrfRouteTrafficPolicyManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "csrf-route.yaml")
-	csrfGwTrafficPolicyManifest    = filepath.Join(fsutils.MustGetThisDir(), "testdata", "csrf-gw.yaml")
+	commonManifest                         = filepath.Join(fsutils.MustGetThisDir(), "testdata", "common.yaml")
+	csrfRouteTrafficPolicyManifest         = filepath.Join(fsutils.MustGetThisDir(), "testdata", "csrf-route.yaml")
+	csrfGwTrafficPolicyManifest            = filepath.Join(fsutils.MustGetThisDir(), "testdata", "csrf-gw.yaml")
+	csrfShadowedRouteTrafficPolicyManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "csrf-shadowed-route.yaml")
 
 	// objects from gateway manifest
 	gateway = &gwv1.Gateway{
@@ -60,9 +61,16 @@ var (
 		},
 	}
 
-	trafficPolicy = &kgatewayv1alpha1.TrafficPolicy{
+	gwtrafficPolicy = &kgatewayv1alpha1.TrafficPolicy{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "csrf-policy",
+			Name:      "csrf-gw-policy",
+			Namespace: "default",
+		},
+	}
+
+	routeTrafficPolicy = &kgatewayv1alpha1.TrafficPolicy{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "csrf-route-policy",
 			Namespace: "default",
 		},
 	}

@@ -5,10 +5,12 @@ package v1alpha1
 // StringMatcherApplyConfiguration represents a declarative configuration of the StringMatcher type for use
 // with apply.
 type StringMatcherApplyConfiguration struct {
-	Exact     *string `json:"exact,omitempty"`
-	Prefix    *string `json:"prefix,omitempty"`
-	Suffix    *string `json:"suffix,omitempty"`
-	SafeRegex *string `json:"safeRegex,omitempty"`
+	Exact      *string `json:"exact,omitempty"`
+	Prefix     *string `json:"prefix,omitempty"`
+	Suffix     *string `json:"suffix,omitempty"`
+	Contains   *string `json:"contains,omitempty"`
+	SafeRegex  *string `json:"safeRegex,omitempty"`
+	IgnoreCase *bool   `json:"ignoreCase,omitempty"`
 }
 
 // StringMatcherApplyConfiguration constructs a declarative configuration of the StringMatcher type for use with
@@ -41,10 +43,26 @@ func (b *StringMatcherApplyConfiguration) WithSuffix(value string) *StringMatche
 	return b
 }
 
+// WithContains sets the Contains field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Contains field is set to the value of the last call.
+func (b *StringMatcherApplyConfiguration) WithContains(value string) *StringMatcherApplyConfiguration {
+	b.Contains = &value
+	return b
+}
+
 // WithSafeRegex sets the SafeRegex field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the SafeRegex field is set to the value of the last call.
 func (b *StringMatcherApplyConfiguration) WithSafeRegex(value string) *StringMatcherApplyConfiguration {
 	b.SafeRegex = &value
+	return b
+}
+
+// WithIgnoreCase sets the IgnoreCase field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the IgnoreCase field is set to the value of the last call.
+func (b *StringMatcherApplyConfiguration) WithIgnoreCase(value bool) *StringMatcherApplyConfiguration {
+	b.IgnoreCase = &value
 	return b
 }

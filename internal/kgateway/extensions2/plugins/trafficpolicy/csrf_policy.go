@@ -34,7 +34,7 @@ func (c *CsrfIR) Equals(other *CsrfIR) bool {
 
 // handleCsrf adds CSRF configuration to routes
 func (p *trafficPolicyPluginGwPass) handleCsrf(fcn string, typedFilterConfig *ir.TypedFilterConfigMap, ir *CsrfIR) {
-	if ir == nil {
+	if typedFilterConfig == nil || ir == nil {
 		return
 	}
 	typedFilterConfig.AddTypedConfig(csrfExtensionFilterName, ir.csrfPolicy)
@@ -59,14 +59,18 @@ func csrfForSpec(spec v1alpha1.TrafficPolicySpec, out *trafficPolicySpecIr) erro
 	csrfPolicy := &envoy_csrf_v3.CsrfPolicy{}
 
 	// Set filter enabled percentage
+	numerator := uint32(0)
 	if spec.Csrf.PercentageEnabled != nil {
-		csrfPolicy.FilterEnabled = &envoy_core_v3.RuntimeFractionalPercent{
-			DefaultValue: &envoy_type_v3.FractionalPercent{
-				Numerator:   *spec.Csrf.PercentageEnabled,
-				Denominator: envoy_type_v3.FractionalPercent_HUNDRED,
-			},
-			RuntimeKey: csrfFilterEnabledKey,
-		}
+		numerator = *spec.Csrf.PercentageEnabled
+	}
+
+	// FilterEnabled is required by the envoy filter and is set to 0 (off) by default
+	csrfPolicy.FilterEnabled = &envoy_core_v3.RuntimeFractionalPercent{
+		DefaultValue: &envoy_type_v3.FractionalPercent{
+			Numerator:   numerator,
+			Denominator: envoy_type_v3.FractionalPercent_HUNDRED,
+		},
+		RuntimeKey: csrfFilterEnabledKey,
 	}
 
 	// Set shadow enabled percentage if specified
@@ -111,43 +115,44 @@ func csrfFilter() *envoy_csrf_v3.CsrfPolicy {
 }
 
 func toEnvoyStringMatcher(origin *v1alpha1.StringMatcher) *envoy_matcher_v3.StringMatcher {
-	if origin.Exact != "" {
-		return &envoy_matcher_v3.StringMatcher{
-			MatchPattern: &envoy_matcher_v3.StringMatcher_Exact{
-				Exact: origin.Exact,
-			},
-		}
+	if origin == nil {
+		return nil
 	}
 
-	if origin.Prefix != "" {
-		return &envoy_matcher_v3.StringMatcher{
-			MatchPattern: &envoy_matcher_v3.StringMatcher_Prefix{
-				Prefix: origin.Prefix,
-			},
-		}
+	matcher := &envoy_matcher_v3.StringMatcher{
+		IgnoreCase: origin.IgnoreCase,
 	}
 
-	if origin.Suffix != "" {
-		return &envoy_matcher_v3.StringMatcher{
-			MatchPattern: &envoy_matcher_v3.StringMatcher_Suffix{
-				Suffix: origin.Suffix,
-			},
+	switch {
+	case origin.Exact != "":
+		matcher.MatchPattern = &envoy_matcher_v3.StringMatcher_Exact{
+			Exact: origin.Exact,
 		}
-	}
-
-	if origin.SafeRegex != "" {
-		return &envoy_matcher_v3.StringMatcher{
-			MatchPattern: &envoy_matcher_v3.StringMatcher_SafeRegex{
-				SafeRegex: &envoy_matcher_v3.RegexMatcher{
-					EngineType: &envoy_matcher_v3.RegexMatcher_GoogleRe2{
-						GoogleRe2: &envoy_matcher_v3.RegexMatcher_GoogleRE2{},
-					},
-					Regex: origin.SafeRegex,
+	case origin.Prefix != "":
+		matcher.MatchPattern = &envoy_matcher_v3.StringMatcher_Prefix{
+			Prefix: origin.Prefix,
+		}
+	case origin.Suffix != "":
+		matcher.MatchPattern = &envoy_matcher_v3.StringMatcher_Suffix{
+			Suffix: origin.Suffix,
+		}
+	case origin.Contains != "":
+		matcher.MatchPattern = &envoy_matcher_v3.StringMatcher_Contains{
+			Contains: origin.Contains,
+		}
+	case origin.SafeRegex != "":
+		matcher.MatchPattern = &envoy_matcher_v3.StringMatcher_SafeRegex{
+			SafeRegex: &envoy_matcher_v3.RegexMatcher{
+				EngineType: &envoy_matcher_v3.RegexMatcher_GoogleRe2{
+					GoogleRe2: &envoy_matcher_v3.RegexMatcher_GoogleRE2{},
 				},
+				Regex: origin.SafeRegex,
 			},
 		}
+	default:
+		// Shouldn't happen because we validate that one and only one matching type is set
+		return nil
 	}
 
-	// Shouldn't happen because we validate that only one matching type is set
-	return nil
+	return matcher
 }

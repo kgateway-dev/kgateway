@@ -337,20 +337,33 @@ spec:
                 properties:
                   additionalOrigins:
                     items:
-                      maxProperties: 1
-                      minProperties: 1
                       properties:
+                        contains:
+                          type: string
                         exact:
                           type: string
+                        ignoreCase:
+                          default: false
+                          type: boolean
                         prefix:
                           type: string
                         safeRegex:
                           type: string
                         suffix:
                           type: string
+                      required:
+                      - ignoreCase
                       type: object
+                      x-kubernetes-validations:
+                      - message: exactly one of Exact, Prefix, Suffix, Contains, or
+                          SafeRegex must be set
+                        rule: '[has(self.exact), has(self.prefix), has(self.suffix),
+                          has(self.contains), has(self.safeRegex)].filter(x, x).size()
+                          == 1'
+                    maxItems: 16
                     type: array
                   percentageEnabled:
+                    default: 0
                     format: int32
                     maximum: 100
                     minimum: 0
@@ -360,8 +373,6 @@ spec:
                     maximum: 100
                     minimum: 0
                     type: integer
-                required:
-                - percentageEnabled
                 type: object
               extAuth:
                 properties:

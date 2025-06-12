@@ -6,24 +6,24 @@ import (
 	apiv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 )
 
-// CsrfPolicyApplyConfiguration represents a declarative configuration of the CsrfPolicy type for use
+// CSRFPolicyApplyConfiguration represents a declarative configuration of the CSRFPolicy type for use
 // with apply.
-type CsrfPolicyApplyConfiguration struct {
+type CSRFPolicyApplyConfiguration struct {
 	PercentageEnabled  *uint32                      `json:"percentageEnabled,omitempty"`
 	PercentageShadowed *uint32                      `json:"percentageShadowed,omitempty"`
 	AdditionalOrigins  []*apiv1alpha1.StringMatcher `json:"additionalOrigins,omitempty"`
 }
 
-// CsrfPolicyApplyConfiguration constructs a declarative configuration of the CsrfPolicy type for use with
+// CSRFPolicyApplyConfiguration constructs a declarative configuration of the CSRFPolicy type for use with
 // apply.
-func CsrfPolicy() *CsrfPolicyApplyConfiguration {
-	return &CsrfPolicyApplyConfiguration{}
+func CSRFPolicy() *CSRFPolicyApplyConfiguration {
+	return &CSRFPolicyApplyConfiguration{}
 }
 
 // WithPercentageEnabled sets the PercentageEnabled field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the PercentageEnabled field is set to the value of the last call.
-func (b *CsrfPolicyApplyConfiguration) WithPercentageEnabled(value uint32) *CsrfPolicyApplyConfiguration {
+func (b *CSRFPolicyApplyConfiguration) WithPercentageEnabled(value uint32) *CSRFPolicyApplyConfiguration {
 	b.PercentageEnabled = &value
 	return b
 }
@@ -31,7 +31,7 @@ func (b *CsrfPolicyApplyConfiguration) WithPercentageEnabled(value uint32) *Csrf
 // WithPercentageShadowed sets the PercentageShadowed field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the PercentageShadowed field is set to the value of the last call.
-func (b *CsrfPolicyApplyConfiguration) WithPercentageShadowed(value uint32) *CsrfPolicyApplyConfiguration {
+func (b *CSRFPolicyApplyConfiguration) WithPercentageShadowed(value uint32) *CSRFPolicyApplyConfiguration {
 	b.PercentageShadowed = &value
 	return b
 }
@@ -39,7 +39,7 @@ func (b *CsrfPolicyApplyConfiguration) WithPercentageShadowed(value uint32) *Csr
 // WithAdditionalOrigins adds the given value to the AdditionalOrigins field in the declarative configuration
 // and returns the receiver, so that objects can be build by chaining "With" function invocations.
 // If called multiple times, values provided by each call will be appended to the AdditionalOrigins field.
-func (b *CsrfPolicyApplyConfiguration) WithAdditionalOrigins(values ...**apiv1alpha1.StringMatcher) *CsrfPolicyApplyConfiguration {
+func (b *CSRFPolicyApplyConfiguration) WithAdditionalOrigins(values ...**apiv1alpha1.StringMatcher) *CSRFPolicyApplyConfiguration {
 	for i := range values {
 		if values[i] == nil {
 			panic("nil value passed to WithAdditionalOrigins")

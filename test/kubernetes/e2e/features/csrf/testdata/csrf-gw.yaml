@@ -1,7 +1,7 @@
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: TrafficPolicy
 metadata:
-  name: csrf-policy
+  name: csrf-gw-policy
 spec:
   targetRefs:
   - group: gateway.networking.k8s.io
@@ -9,7 +9,9 @@ spec:
     name: gw
   csrf:
     percentageEnabled: 100
+    # Making sure that percentageShadowed is ignored when percentageEnabled is set
+    percentageShadowed: 100
     additionalOrigins:
     - exact: example.org
-    - suffix: test.io
+    - suffix: gwtest.io
     - prefix: sample

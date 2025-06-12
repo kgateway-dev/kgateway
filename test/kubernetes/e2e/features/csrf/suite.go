@@ -99,7 +99,7 @@ func (s *testingSuite) TearDownSuite() {
 }
 
 func (s *testingSuite) TestRouteLevelCSRF() {
-	s.setupTest([]string{csrfRouteTrafficPolicyManifest}, []client.Object{trafficPolicy})
+	s.setupTest([]string{csrfRouteTrafficPolicyManifest}, []client.Object{routeTrafficPolicy})
 
 	// Request without origin header should be rejected
 	s.assertPreflightResponse("/path1", http.StatusForbidden, []curl.Option{})
@@ -120,12 +120,12 @@ func (s *testingSuite) TestRouteLevelCSRF() {
 
 	// Test suffix matching
 	s.assertPreflightResponse("/path1", http.StatusOK, []curl.Option{
-		curl.WithHeader("Origin", "a.test.io"),
+		curl.WithHeader("Origin", "a.routetest.io"),
 	})
 }
 
 func (s *testingSuite) TestGatewayLevelCSRF() {
-	s.setupTest([]string{csrfGwTrafficPolicyManifest}, []client.Object{trafficPolicy})
+	s.setupTest([]string{csrfGwTrafficPolicyManifest}, []client.Object{gwtrafficPolicy})
 
 	// Request without origin header should be rejected
 	s.assertPreflightResponse("/path1", http.StatusForbidden, []curl.Option{})
@@ -140,7 +140,7 @@ func (s *testingSuite) TestGatewayLevelCSRF() {
 
 	// Test suffix matching
 	s.assertPreflightResponse("/path1", http.StatusOK, []curl.Option{
-		curl.WithHeader("Origin", "a.test.io"),
+		curl.WithHeader("Origin", "a.gwtest.io"),
 	})
 
 	// Request with valid origin header should be allowed
@@ -151,6 +151,41 @@ func (s *testingSuite) TestGatewayLevelCSRF() {
 	// Test prefix matching
 	s.assertPreflightResponse("/path2", http.StatusOK, []curl.Option{
 		curl.WithHeader("Origin", "sample.com"),
+	})
+}
+
+func (s *testingSuite) TestMultiLevelsCSRF() {
+	s.setupTest([]string{csrfGwTrafficPolicyManifest, csrfRouteTrafficPolicyManifest}, []client.Object{gwtrafficPolicy, routeTrafficPolicy})
+
+	// Request without origin header should be rejected
+	s.assertPreflightResponse("/path1", http.StatusForbidden, []curl.Option{})
+
+	// Request without origin header should be rejected
+	s.assertPreflightResponse("/path2", http.StatusForbidden, []curl.Option{})
+
+	// Test suffix matching from route level policy (overrides the gateway additional origins)
+	s.assertPreflightResponse("/path1", http.StatusOK, []curl.Option{
+		curl.WithHeader("Origin", "a.routetest.io"),
+	})
+
+	// Test suffix matching from gateway level policy as no route level policy is set
+	s.assertPreflightResponse("/path2", http.StatusOK, []curl.Option{
+		curl.WithHeader("Origin", "a.gwtest.io"),
+	})
+}
+
+func (s *testingSuite) TestShadowedRouteLevelCSRF() {
+	s.setupTest([]string{csrfShadowedRouteTrafficPolicyManifest}, []client.Object{routeTrafficPolicy})
+
+	// CSRF policies are being evaluated (not tested) but not enforced
+
+	s.assertPreflightResponse("/path1", http.StatusOK, []curl.Option{})
+	s.assertPreflightResponse("/path2", http.StatusOK, []curl.Option{})
+	s.assertPreflightResponse("/path1", http.StatusOK, []curl.Option{
+		curl.WithHeader("Origin", "example.com"),
+	})
+	s.assertPreflightResponse("/path1", http.StatusOK, []curl.Option{
+		curl.WithHeader("Origin", "notexample.com"),
 	})
 }
 

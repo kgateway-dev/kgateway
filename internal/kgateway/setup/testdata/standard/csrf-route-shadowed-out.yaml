@@ -76,18 +76,15 @@ routes:
           '@type': type.googleapis.com/envoy.extensions.filters.http.csrf.v3.CsrfPolicy
           additionalOrigins:
           - exact: www.example.org
-          - ignoreCase: true
-            prefix: pref
+          - prefix: pref
           - suffix: suff
-          - contains: cont
           - safeRegex:
               googleRe2: {}
               regex: a.b
           filterEnabled:
-            defaultValue:
-              numerator: 80
+            defaultValue: {}
             runtimeKey: envoy.csrf.filter_enabled
           shadowEnabled:
             defaultValue:
-              numerator: 100
+              numerator: 80
             runtimeKey: envoy.csrf.shadow_enabled

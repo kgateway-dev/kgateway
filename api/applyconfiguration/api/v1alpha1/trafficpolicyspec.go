@@ -13,7 +13,7 @@ type TrafficPolicySpecApplyConfiguration struct {
 	ExtAuth         *ExtAuthPolicyApplyConfiguration                              `json:"extAuth,omitempty"`
 	RateLimit       *RateLimitApplyConfiguration                                  `json:"rateLimit,omitempty"`
 	Cors            *CorsPolicyApplyConfiguration                                 `json:"cors,omitempty"`
-	Csrf            *CsrfPolicyApplyConfiguration                                 `json:"csrf,omitempty"`
+	Csrf            *CSRFPolicyApplyConfiguration                                 `json:"csrf,omitempty"`
 }
 
 // TrafficPolicySpecApplyConfiguration constructs a declarative configuration of the TrafficPolicySpec type for use with
@@ -99,7 +99,7 @@ func (b *TrafficPolicySpecApplyConfiguration) WithCors(value *CorsPolicyApplyCon
 // WithCsrf sets the Csrf field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Csrf field is set to the value of the last call.
-func (b *TrafficPolicySpecApplyConfiguration) WithCsrf(value *CsrfPolicyApplyConfiguration) *TrafficPolicySpecApplyConfiguration {
+func (b *TrafficPolicySpecApplyConfiguration) WithCsrf(value *CSRFPolicyApplyConfiguration) *TrafficPolicySpecApplyConfiguration {
 	b.Csrf = value
 	return b
 }

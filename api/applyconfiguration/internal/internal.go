@@ -413,6 +413,21 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         scalar: string
       default: ""
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.CSRFPolicy
+  map:
+    fields:
+    - name: additionalOrigins
+      type:
+        list:
+          elementType:
+            namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.StringMatcher
+          elementRelationship: atomic
+    - name: percentageEnabled
+      type:
+        scalar: numeric
+    - name: percentageShadowed
+      type:
+        scalar: numeric
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.CommonHttpProtocolOptions
   map:
     fields:
@@ -462,21 +477,6 @@ var schemaYAML = typed.YAMLObject(`types:
             scalar: string
           elementRelationship: associative
     - name: maxAge
-      type:
-        scalar: numeric
-- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.CsrfPolicy
-  map:
-    fields:
-    - name: additionalOrigins
-      type:
-        list:
-          elementType:
-            namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.StringMatcher
-          elementRelationship: atomic
-    - name: percentageEnabled
-      type:
-        scalar: numeric
-    - name: percentageShadowed
       type:
         scalar: numeric
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.CustomLabel
@@ -1639,9 +1639,16 @@ var schemaYAML = typed.YAMLObject(`types:
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.StringMatcher
   map:
     fields:
+    - name: contains
+      type:
+        scalar: string
     - name: exact
       type:
         scalar: string
+    - name: ignoreCase
+      type:
+        scalar: boolean
+      default: false
     - name: prefix
       type:
         scalar: string
@@ -1727,7 +1734,7 @@ var schemaYAML = typed.YAMLObject(`types:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.CorsPolicy
     - name: csrf
       type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.CsrfPolicy
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.CSRFPolicy
     - name: extAuth
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtAuthPolicy

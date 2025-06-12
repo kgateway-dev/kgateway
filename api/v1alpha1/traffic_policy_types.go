@@ -75,7 +75,7 @@ type TrafficPolicySpec struct {
 
 	// Csrf specifies the Cross-Site Request Forgery (CSRF) policy for this traffic policy.
 	// +optional
-	Csrf *CsrfPolicy `json:"csrf,omitempty"`
+	Csrf *CSRFPolicy `json:"csrf,omitempty"`
 }
 
 // TransformationPolicy config is used to modify envoy behavior at a route level.
@@ -260,7 +260,7 @@ type TokenBucket struct {
 	// If not specified, it defaults to 1.
 	// This controls the steady-state rate of token generation.
 	// +optional
-	// +kubebuilder:default:=1
+	// +kubebuilder:default=1
 	TokensPerFill *uint32 `json:"tokensPerFill,omitempty"`
 
 	// FillInterval defines the time duration between consecutive token fills.
@@ -347,13 +347,14 @@ type CorsPolicy struct {
 	*gwv1.HTTPCORSFilter `json:",inline"`
 }
 
-// CsrfPolicy can be used to set percent of requests for which the CSRF filter is enabled,
+// CSRFPolicy can be used to set percent of requests for which the CSRF filter is enabled,
 // enable shadow-only mode where policies will be evaluated and tracked, but not enforced and
 // add additional source origins that will be allowed in addition to the destination origin.
-type CsrfPolicy struct {
+type CSRFPolicy struct {
 	// Specifies the percentage of requests for which the CSRF filter is enabled.
 	// If both PercentageEnabled and PercentageShadowed are set, the PercentageEnabled flag will take precedence.
-	// +required
+	// +optional
+	// +kubebuilder:default=0
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Maximum=100
 	PercentageEnabled *uint32 `json:"percentageEnabled,omitempty"`
@@ -368,5 +369,6 @@ type CsrfPolicy struct {
 
 	// Specifies additional source origins that will be allowed in addition to the destination origin.
 	// +optional
+	// +kubebuilder:validation:MaxItems=16
 	AdditionalOrigins []*StringMatcher `json:"additionalOrigins,omitempty"`
 }

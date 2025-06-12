@@ -8,7 +8,7 @@ spec:
     kind: HTTPRoute
     name: svc-route
   csrf:
-    percentageEnabled: 100
+    percentageShadowed: 100
     additionalOrigins:
     - exact: example.org
     - suffix: routetest.io

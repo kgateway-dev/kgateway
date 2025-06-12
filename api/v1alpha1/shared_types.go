@@ -90,8 +90,7 @@ type PolicyAncestorStatus struct {
 }
 
 // Specifies the way to match a string.
-// +kubebuilder:validation:MaxProperties=1
-// +kubebuilder:validation:MinProperties=1
+// +kubebuilder:validation:XValidation:message="exactly one of Exact, Prefix, Suffix, Contains, or SafeRegex must be set",rule="[has(self.exact), has(self.prefix), has(self.suffix), has(self.contains), has(self.safeRegex)].filter(x, x).size() == 1"
 type StringMatcher struct {
 	// The input string must match exactly the string specified here.
 	// Example: abc matches the value abc
@@ -107,7 +106,18 @@ type StringMatcher struct {
 	// Example: abc matches the value xyz.abc
 	Suffix string `json:"suffix,omitempty"`
 
+	// The input string must contain the substring specified here.
+	// Example: abc matches the value xyz.abc.def
+	Contains string `json:"contains,omitempty"`
+
 	// The input string must match the Google RE2 regular expression specified here.
 	// See https://github.com/google/re2/wiki/Syntax for the syntax.
 	SafeRegex string `json:"safeRegex,omitempty"`
+
+	// If true, indicates the exact/prefix/suffix/contains matching should be
+	// case insensitive. This has no effect on the regex match.
+	// For example, the matcher data will match both input string Data and data if this
+	// option is set to true.
+	// +kubebuilder:default=false
+	IgnoreCase bool `json:"ignoreCase"`
 }
