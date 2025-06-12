@@ -193,7 +193,7 @@ const (
 // StaticBackend references a static list of hosts.
 type StaticBackend struct {
 	// Hosts is a list of hosts to use for the backend.
-	// +kubebuilder:validation:required
+	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinItems=1
 	Hosts []Host `json:"hosts,omitempty"`
 }
