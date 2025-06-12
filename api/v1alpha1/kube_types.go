@@ -115,7 +115,7 @@ func (in *Service) GetPorts() []*Port {
 type Port struct {
 	// The port number to match on the Gateway
 	//
-	// +kubebuilder:validation:Required
+	// +required
 	Port uint16 `json:"port"`
 
 	// The NodePort to be used for the service. If not specified, a random port

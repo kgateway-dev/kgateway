@@ -53,7 +53,7 @@ type BackendSpec struct {
 	// Type indicates the type of the backend to be used.
 	// +unionDiscriminator
 	// +kubebuilder:validation:Enum=AI;AWS;Static;DynamicForwardProxy
-	// +kubebuilder:validation:Required
+	// +required
 	Type BackendType `json:"type"`
 	// AI is the AI backend configuration.
 	// +optional
@@ -80,7 +80,7 @@ type DynamicForwardProxyBackend struct {
 // AwsBackend is the AWS backend configuration.
 type AwsBackend struct {
 	// AccountId is the AWS account ID to use for the backend.
-	// +kubebuilder:validation:Required
+	// +required
 	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:MaxLength=12
 	// +kubebuilder:validation:Pattern="^[0-9]{12}$"
@@ -123,7 +123,7 @@ const (
 type AwsAuth struct {
 	// Type specifies the authentication method to use for the backend.
 	// +unionDiscriminator
-	// +kubebuilder:validation:Required
+	// +required
 	// +kubebuilder:validation:Enum=Secret
 	Type AwsAuthType `json:"type"`
 	// SecretRef references a Kubernetes Secret containing the AWS credentials.
@@ -149,7 +149,7 @@ type AwsLambda struct {
 	// +kubebuilder:validation:MaxLength=2048
 	EndpointURL string `json:"endpointURL,omitempty"`
 	// FunctionName is the name of the Lambda function to invoke.
-	// +kubebuilder:validation:Required
+	// +required
 	// +kubebuilder:validation:Pattern="^[A-Za-z0-9-_]{1,140}$"
 	FunctionName string `json:"functionName"`
 	// InvocationMode defines how to invoke the Lambda function.
@@ -193,7 +193,7 @@ const (
 // StaticBackend references a static list of hosts.
 type StaticBackend struct {
 	// Hosts is a list of hosts to use for the backend.
-	// +kubebuilder:validation:Required
+	// +required
 	// +kubebuilder:validation:MinItems=1
 	Hosts []Host `json:"hosts,omitempty"`
 }
@@ -204,7 +204,7 @@ type Host struct {
 	// +kubebuilder:validation:MinLength=1
 	Host string `json:"host"`
 	// Port is the port to use for the backend.
-	// +kubebuilder:validation:Required
+	// +required
 	Port gwv1.PortNumber `json:"port"`
 	// InsecureSkipVerify allows skipping ssl validation for custom hosts
 	// +optional

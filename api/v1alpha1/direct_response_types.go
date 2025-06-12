@@ -33,7 +33,7 @@ type DirectResponseList struct {
 type DirectResponseSpec struct {
 	// StatusCode defines the HTTP status code to return for this route.
 	//
-	// +kubebuilder:validation:Required
+	// +required
 	// +kubebuilder:validation:Minimum=200
 	// +kubebuilder:validation:Maximum=599
 	StatusCode uint32 `json:"status"`
