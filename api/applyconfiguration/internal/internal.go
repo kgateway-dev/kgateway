@@ -315,6 +315,9 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: connectTimeout
       type:
         namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Duration
+    - name: healthCheck
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.HealthCheck
     - name: http1ProtocolOptions
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Http1ProtocolOptions
@@ -890,6 +893,58 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: value
       type:
         scalar: string
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.HealthCheck
+  map:
+    fields:
+    - name: grpc
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.HealthCheckGrpc
+    - name: healthyThreshold
+      type:
+        scalar: numeric
+      default: 1
+    - name: http
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.HealthCheckHttp
+    - name: interval
+      type:
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Duration
+      default: 1s
+    - name: timeout
+      type:
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Duration
+      default: 5s
+    - name: unhealthyThreshold
+      type:
+        scalar: numeric
+      default: 3
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.HealthCheckGrpc
+  map:
+    fields:
+    - name: authority
+      type:
+        scalar: string
+    - name: serviceName
+      type:
+        scalar: string
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.HealthCheckHttp
+  map:
+    fields:
+    - name: expectedStatuses
+      type:
+        list:
+          elementType:
+            namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Int64Range
+          elementRelationship: atomic
+    - name: host
+      type:
+        scalar: string
+    - name: method
+      type:
+        scalar: string
+    - name: path
+      type:
+        scalar: string
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Host
   map:
     fields:
@@ -934,6 +989,15 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: tag
       type:
         scalar: string
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Int64Range
+  map:
+    fields:
+    - name: end
+      type:
+        scalar: numeric
+    - name: start
+      type:
+        scalar: numeric
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.IstioContainer
   map:
     fields:

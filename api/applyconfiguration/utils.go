@@ -121,6 +121,12 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.HeaderFilterApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("HeaderTransformation"):
 		return &apiv1alpha1.HeaderTransformationApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("HealthCheck"):
+		return &apiv1alpha1.HealthCheckApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("HealthCheckGrpc"):
+		return &apiv1alpha1.HealthCheckGrpcApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("HealthCheckHttp"):
+		return &apiv1alpha1.HealthCheckHttpApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("Host"):
 		return &apiv1alpha1.HostApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("Http1ProtocolOptions"):
@@ -131,6 +137,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.HTTPListenerPolicySpecApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("Image"):
 		return &apiv1alpha1.ImageApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("Int64Range"):
+		return &apiv1alpha1.Int64RangeApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("IstioContainer"):
 		return &apiv1alpha1.IstioContainerApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("IstioIntegration"):

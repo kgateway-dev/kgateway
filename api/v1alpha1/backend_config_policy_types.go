@@ -68,6 +68,10 @@ type BackendConfigPolicySpec struct {
 	// LoadBalancerConfig contains the options necessary to configure the load balancer.
 	// +optional
 	LoadBalancerConfig *LoadBalancerConfig `json:"loadBalancerConfig,omitempty"`
+
+	// HealthCheck contains the options necessary to configure the health check.
+	// +optional
+	HealthCheck *HealthCheck `json:"healthCheck,omitempty"`
 }
 
 // See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-msg-config-core-v3-http1protocoloptions) for more details.
@@ -389,3 +393,90 @@ const (
 	// This field is required to enable locality weighted load balancing.
 	LocalityConfigTypeWeightedLb LocalityConfigType = "WeightedLb"
 )
+
+// HealthCheck contains the options to configure the health check.
+// See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/health_check.proto) for more details.
+// +optional
+// +kubebuilder:validation:XValidation:rule="has(self.http) || has(self.grpc)",message="exactly one of http or grpc must be set"
+type HealthCheck struct {
+	// Timeout is time to wait for a health check response. If the timeout is reached the
+	// health check attempt will be considered a failure.
+	// +optional
+	// +default="5s"
+	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('0s')",message="timeout must be a valid duration string"
+	Timeout *metav1.Duration `json:"timeout,omitempty"`
+
+	// Interval is the time between health checks.
+	// +optional
+	// +default="1s"
+	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('0s')",message="interval must be a valid duration string"
+	Interval *metav1.Duration `json:"interval,omitempty"`
+
+	// UnhealthyThreshold is the number of consecutive failed health checks that will be considered
+	// unhealthy.
+	// +optional
+	// +default=3
+	UnhealthyThreshold *uint32 `json:"unhealthyThreshold,omitempty"`
+
+	// HealthyThreshold is the number of healthy health checks required before a host is marked
+	// healthy. Note that during startup, only a single successful health check is
+	// required to mark a host healthy.
+	// +optional
+	// +default=1
+	HealthyThreshold *uint32 `json:"healthyThreshold,omitempty"`
+
+	// Http contains the options to configure the HTTP health check.
+	// +optional
+	Http *HealthCheckHttp `json:"http,omitempty"`
+
+	// Grpc contains the options to configure the gRPC health check.
+	// +optional
+	Grpc *HealthCheckGrpc `json:"grpc,omitempty"`
+}
+type HealthCheckHttp struct {
+	// Host is the value of the host header in the HTTP health check request. If
+	// unset, the name of the cluster this health check is associated
+	// with will be used.
+	// +optional
+	Host string `json:"host,omitempty"`
+
+	// Path is the HTTP path requested.
+	// +optional
+	Path string `json:"path,omitempty"`
+
+	// Method is the HTTP method to use.
+	// If unset, GET is used.
+	// +optional
+	// +kubebuilder:validation:Enum=GET;HEAD;POST;PUT;DELETE;OPTIONS;TRACE;PATCH
+	Method *string `json:"method,omitempty"`
+
+	// ExpectedStatuses is the list of status codes considered healthy.
+	// If provided, replaces the default 200-only policy - 200 must be included explicitly as needed.
+	// Ranges follow half-open semantics (e.g. [200, 300) includes 200 but not 300).
+	// +optional
+	ExpectedStatuses []Int64Range `json:"expectedStatuses,omitempty"`
+}
+
+// Int64Range represents a range of integers.
+// +kubebuilder:validation:XValidation:rule="self.start <= self.end",message="start must be less than or equal to end"
+type Int64Range struct {
+	// Start is the start of the range.
+	// +required
+	Start int64 `json:"start,omitempty"`
+
+	// End is the end of the range.
+	// +required
+	End int64 `json:"end,omitempty"`
+}
+
+type HealthCheckGrpc struct {
+	// ServiceName is the optional name of the service to check.
+	// +optional
+	ServiceName string `json:"serviceName,omitempty"`
+
+	// Authority is the authority header used to make the gRPC health check request.
+	// If unset, the name of the cluster this health check is associated
+	// with will be used.
+	// +optional
+	Authority string `json:"authority,omitempty"`
+}
