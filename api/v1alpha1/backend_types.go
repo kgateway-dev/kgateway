@@ -69,6 +69,23 @@ type BackendSpec struct {
 	DynamicForwardProxy *DynamicForwardProxyBackend `json:"dynamicForwardProxy,omitempty"`
 }
 
+// AppProtocol defines the application protocol to use when communicating with the backend.
+// +kubebuilder:validation:Enum=http2;grpc;grpc-web;kubernetes.io/h2c;kubernetes.io/ws
+type AppProtocol string
+
+const (
+	// AppProtocolHttp2 is the http2 app protocol.
+	AppProtocolHttp2 AppProtocol = "http2"
+	// AppProtocolGrpc is the grpc app protocol.
+	AppProtocolGrpc AppProtocol = "grpc"
+	// AppProtocolGrpcWeb is the grpc-web app protocol.
+	AppProtocolGrpcWeb AppProtocol = "grpc-web"
+	// AppProtocolKubernetesH2C is the kubernetes.io/h2c app protocol.
+	AppProtocolKubernetesH2C AppProtocol = "kubernetes.io/h2c"
+	// AppProtocolKubernetesWs is the kubernetes.io/ws app protocol.
+	AppProtocolKubernetesWs AppProtocol = "kubernetes.io/ws"
+)
+
 // DynamicForwardProxyBackend is the dynamic forward proxy backend configuration.
 type DynamicForwardProxyBackend struct {
 	// EnableTls enables TLS. When true, the backend will be configured to use TLS. System CA will be used for validation.
@@ -204,6 +221,11 @@ type StaticBackend struct {
 	// +kubebuilder:validation:required
 	// +kubebuilder:validation:MinItems=1
 	Hosts []Host `json:"hosts,omitempty"`
+
+	// AppProtocol is the application protocol to use when communicating with the backend.
+	// +optional
+	// +kubebuilder:validation:Optional
+	AppProtocol *AppProtocol `json:"appProtocol,omitempty"`
 }
 
 // Host defines a static backend host.
