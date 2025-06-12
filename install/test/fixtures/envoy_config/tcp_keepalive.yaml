@@ -49,7 +49,7 @@ static_resources:
                               - name: ":method"
                                 exact_match: GET
                           route:
-                            prefix_rewrite: /stats/prometheus
+                            prefix_rewrite: /stats/prometheus?usedonly
                             cluster: admin_port_cluster
                 http_filters:
                   - name: envoy.filters.http.router

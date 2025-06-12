@@ -7,6 +7,11 @@ Clusters:
   metadata: {}
   name: kube_default_example-svc_80
   type: EDS
+  typedExtensionProtocolOptions:
+    envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+      '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+      explicitHttpConfig:
+        http2ProtocolOptions: {}
 - connectTimeout: 5s
   metadata: {}
   name: test-backend-plugin_default_example-svc_80
@@ -46,9 +51,7 @@ Routes:
     routes:
     - match:
         prefix: /
-      name: listener~80~example_com-route-0-httproute-example-route-timeout-default-0-0-matcher-0
+      name: listener~80~example_com-route-0-httproute-example-route-default-0-0-matcher-0
       route:
         cluster: kube_default_example-svc_80
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
-        upgradeConfigs:
-        - upgradeType: websocket

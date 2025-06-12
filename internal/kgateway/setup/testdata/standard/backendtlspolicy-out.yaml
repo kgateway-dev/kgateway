@@ -21,6 +21,10 @@ clusters:
       commonTlsContext:
         tlsParams: {}
         validationContext:
+          matchTypedSubjectAltNames:
+          - matcher:
+              exact: example.com
+            sanType: DNS
           trustedCa:
             inlineString: |
               -----BEGIN CERTIFICATE-----

@@ -234,9 +234,15 @@ func validateListeners(gw *ir.Gateway, reporter reports.Reporter) []ir.Listener 
 		return validListeners
 	}
 
-	// Since the listeners are sorted by GW and LS, we check if the last listener belongs to an LS
-	// This is an easy way to check if the GW has any valid attached LS
-	if _, ok := validListeners[len(validListeners)-1].Parent.(*gwxv1a1.XListenerSet); ok {
+	listenerSetListenerExists := false
+	for _, listener := range validListeners {
+		if _, ok := listener.Parent.(*gwxv1a1.XListenerSet); ok {
+			listenerSetListenerExists = true
+			break
+		}
+	}
+
+	if listenerSetListenerExists {
 		reporter.Gateway(gw.Obj).SetCondition(reports.GatewayCondition{
 			Type:   AttachedListenerSetsConditionType,
 			Status: metav1.ConditionTrue,

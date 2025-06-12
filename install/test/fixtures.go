@@ -54,7 +54,7 @@ static_resources:
                   - name: ":method"
                     exact_match: GET
                 route:
-                  prefix_rewrite: "/stats/prometheus"
+                  prefix_rewrite: "/stats/prometheus?usedonly"
                   cluster: admin_port_cluster
           http_filters:
           - name: envoy.filters.http.router # if $spec.tracing # if $statsConfig.enabled # if $spec.readConfig
@@ -302,7 +302,7 @@ static_resources:
                   prefix: /metrics
                 route:
                   cluster: admin_port_cluster
-                  prefix_rewrite: /stats/prometheus
+                  prefix_rewrite: /stats/prometheus?usedonly
           stat_prefix: prometheus
         name: envoy.filters.network.http_connection_manager
     name: prometheus_listener
@@ -459,7 +459,7 @@ static_resources:
                   prefix: /metrics
                 route:
                   cluster: admin_port_cluster
-                  prefix_rewrite: /stats/prometheus
+                  prefix_rewrite: /stats/prometheus?usedonly
           stat_prefix: prometheus
         name: envoy.filters.network.http_connection_manager
     name: prometheus_listener
@@ -602,7 +602,7 @@ static_resources:
                   prefix: /metrics
                 route:
                   cluster: admin_port_cluster
-                  prefix_rewrite: /stats/prometheus
+                  prefix_rewrite: /stats/prometheus?usedonly
           stat_prefix: prometheus
         name: envoy.filters.network.http_connection_manager
     name: prometheus_listener
@@ -809,7 +809,7 @@ static_resources:
                   prefix: /metrics
                 route:
                   cluster: admin_port_cluster
-                  prefix_rewrite: /stats/prometheus
+                  prefix_rewrite: /stats/prometheus?usedonly
           stat_prefix: prometheus
         name: envoy.filters.network.http_connection_manager
     name: prometheus_listener

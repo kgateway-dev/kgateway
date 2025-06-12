@@ -17,6 +17,7 @@ type BackendConfigPolicySpecApplyConfiguration struct {
 	CommonHttpProtocolOptions     *CommonHttpProtocolOptionsApplyConfiguration   `json:"commonHttpProtocolOptions,omitempty"`
 	Http1ProtocolOptions          *Http1ProtocolOptionsApplyConfiguration        `json:"http1ProtocolOptions,omitempty"`
 	SSLConfig                     *SSLConfigApplyConfiguration                   `json:"sslConfig,omitempty"`
+	LoadBalancerConfig            *LoadBalancerConfigApplyConfiguration          `json:"loadBalancerConfig,omitempty"`
 }
 
 // BackendConfigPolicySpecApplyConfiguration constructs a declarative configuration of the BackendConfigPolicySpec type for use with
@@ -96,5 +97,13 @@ func (b *BackendConfigPolicySpecApplyConfiguration) WithHttp1ProtocolOptions(val
 // If called multiple times, the SSLConfig field is set to the value of the last call.
 func (b *BackendConfigPolicySpecApplyConfiguration) WithSSLConfig(value *SSLConfigApplyConfiguration) *BackendConfigPolicySpecApplyConfiguration {
 	b.SSLConfig = value
+	return b
+}
+
+// WithLoadBalancerConfig sets the LoadBalancerConfig field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the LoadBalancerConfig field is set to the value of the last call.
+func (b *BackendConfigPolicySpecApplyConfiguration) WithLoadBalancerConfig(value *LoadBalancerConfigApplyConfiguration) *BackendConfigPolicySpecApplyConfiguration {
+	b.LoadBalancerConfig = value
 	return b
 }
