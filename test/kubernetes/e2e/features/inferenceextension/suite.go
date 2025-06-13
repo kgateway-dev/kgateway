@@ -3,16 +3,15 @@ package inferenceextension
 import (
 	"context"
 	"fmt"
-	"testing"
 
 	"github.com/stretchr/testify/suite"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
-	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/defaults"
 )
 
 // testingSuite is the entire Suite of tests for testing K8s Service-specific features/fixes
@@ -27,6 +26,9 @@ type testingSuite struct {
 
 	// manifests is a map of manifests keyed by a test name
 	manifests map[string][][]byte
+
+	// objects is a list of client objects used by a test
+	objects []client.Object
 }
 
 func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
@@ -37,134 +39,261 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 	}
 }
 
-func (s *testingSuite) TestHTTPRouteWithInferencePool() {
-	testName := "TestHTTPRouteWithInferencePool"
-
-	s.T().Cleanup(func() {
-		manifests, ok := s.manifests[testName]
-		if !ok {
-			s.FailNow("no manifests found for %s", testName)
-		}
-
-		for _, m := range manifests {
-			err := s.testInstallation.Actions.Kubectl().Delete(s.ctx, m)
-			s.NoError(err, "can delete manifest %s", m)
-		}
-	})
-
-	// Add the testdata manifests to the manifests map
+func (s *testingSuite) SetupSuite() {
 	s.manifests = map[string][][]byte{
-		testName: {
-			clientManifest,
-			vllmManifest,
-			modelsManifest,
-			routeManifest,
-			poolManifest,
-			eppManifest,
-			gtwManifest,
+		"TestSingleHTTPRouteSingleInferencePool": {
+			basicManifest,
+		},
+		"TestSingleHTTPRouteMultiInferencePool": {
+			singleRouteMultiPoolManifest,
+		},
+		"TestMultiHTTPRouteSingleInferencePool": {
+			multiRouteSinglePoolManifest,
 		},
 	}
+}
 
-	// Apply the testdata manifests
-	for _, m := range s.manifests[testName] {
-		err := s.testInstallation.Actions.Kubectl().Apply(s.ctx, m)
-		s.NoError(err, "can apply manifest %s", m)
+func (s *testingSuite) BeforeTest(suiteName, testName string) {
+	fmt.Printf("Applying manifests for test %s in suite %s", testName, suiteName)
+	for _, manifest := range s.manifests[testName] {
+		err := s.testInstallation.Actions.Kubectl().Apply(s.ctx, manifest)
+		s.Require().NoError(err)
 	}
+}
+
+func (s *testingSuite) AfterTest(suiteName, testName string) {
+	if s.T().Failed() {
+		s.testInstallation.PreFailHandler(s.ctx)
+	}
+
+	fmt.Printf("Deleting manifests for test %s in suite %s", testName, suiteName)
+
+	manifests, ok := s.manifests[testName]
+	if !ok {
+		s.FailNow("no manifests found for %s", testName)
+	}
+
+	for _, manifest := range manifests {
+		err := s.testInstallation.Actions.Kubectl().Delete(s.ctx, manifest)
+		s.NoError(err, "can delete manifest %s", string(manifest))
+	}
+
+	s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, s.objects...)
+}
+
+func (s *testingSuite) TestSingleHTTPRouteSingleInferencePool() {
+	// Track core objects from testdata manifests
+	clientPod := &corev1.Pod{ObjectMeta: objectMeta(basicTestNs, clientName)}
+	gtwDeployment := &appsv1.Deployment{ObjectMeta: objectMeta(basicTestNs, gtwName)}
+	gtwService := &corev1.Service{ObjectMeta: objectMeta(basicTestNs, gtwName)}
+	vllmDeployment := &appsv1.Deployment{ObjectMeta: objectMeta(basicTestNs, vllmName)}
+	eppDeployment := &appsv1.Deployment{ObjectMeta: objectMeta(basicTestNs, eppName)}
+	eppService := &corev1.Service{ObjectMeta: objectMeta(basicTestNs, eppName)}
+	s.objects = []client.Object{
+		clientPod,
+		gtwDeployment,
+		gtwService,
+		vllmDeployment,
+		eppDeployment,
+		eppService,
+	}
+
+	// Assert test objects exist
+	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, s.objects...)
 
 	// Assert test pods are running using key=pod_name and value=pod_namespace map.
 	for k, v := range map[string]string{
-		vllmDeployName:          testNS,
-		vllmDeployName + "-epp": testNS,
-		"curl":                  "curl"} {
+		vllmName:   basicTestNs,
+		eppName:    basicTestNs,
+		clientName: basicTestNs,
+	} {
 		s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, v, metav1.ListOptions{
 			LabelSelector: "app=" + k,
 		}, podRunTimeout)
 	}
 
-	// Assert gateway service and deployment are created
-	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, gtwService, gtwDeployment)
-
-	// Assert gateway programmed condition
+	// Assert the gateway programmed condition
 	s.testInstallation.Assertions.EventuallyGatewayCondition(
 		s.ctx,
-		gtwObjectMeta.Name,
-		gtwObjectMeta.Namespace,
+		gtwDeployment.Name,
+		gtwDeployment.Namespace,
 		gwv1.GatewayConditionProgrammed,
 		metav1.ConditionTrue,
 		gtwProgramTimeout,
 	)
 
+	// Assert the route status conditions
 	conditions := []gwv1.RouteConditionType{gwv1.RouteConditionAccepted, gwv1.RouteConditionResolvedRefs}
 	for _, c := range conditions {
 		s.testInstallation.Assertions.EventuallyHTTPRouteCondition(
 			s.ctx,
-			testRouteName,
-			testNS,
+			routeName,
+			basicTestNs,
 			c,
 			metav1.ConditionTrue,
 		)
 	}
 
-	// TODO [danehans]: Assert InferencePool status when https://github.com/kgateway-dev/kgateway/pull/11230 merges
+	// TODO [danehans]: Assert InferencePool status when https://github.com/kgateway-dev/kgateway/issues/11379 is fixed
 
-	// Exercise OpenAI API endpoint test cases
-	type apiTest struct {
-		api              string
-		promptOrMessages string
+	// Assert the OpenAI API endpoint test cases
+	s.runOpenAITests(
+		basicTestNs,
+		gtwService.ObjectMeta,
+		map[string]string{
+			"": baseModelName,
+		},
+	)
+}
+
+func (s *testingSuite) TestSingleHTTPRouteMultiInferencePool() {
+	// Track core objects from testdata manifests
+	clientPod := &corev1.Pod{ObjectMeta: objectMeta(singleRouteMultiPoolNs, clientName)}
+	gtwDeployment := &appsv1.Deployment{ObjectMeta: objectMeta(singleRouteMultiPoolNs, gtwName)}
+	gtwService := &corev1.Service{ObjectMeta: objectMeta(singleRouteMultiPoolNs, gtwName)}
+	vllmDeployment := &appsv1.Deployment{ObjectMeta: objectMeta(singleRouteMultiPoolNs, vllmName)}
+	secondVllmDeployment := &appsv1.Deployment{ObjectMeta: objectMeta(singleRouteMultiPoolNs, secondVllmName)}
+	eppDeployment := &appsv1.Deployment{ObjectMeta: objectMeta(singleRouteMultiPoolNs, eppName)}
+	eppService := &corev1.Service{ObjectMeta: objectMeta(singleRouteMultiPoolNs, eppName)}
+	secondEPPDeployment := &appsv1.Deployment{ObjectMeta: objectMeta(singleRouteMultiPoolNs, secondEPPName)}
+	secondEPPService := &corev1.Service{ObjectMeta: objectMeta(singleRouteMultiPoolNs, secondEPPName)}
+	s.objects = []client.Object{
+		clientPod,
+		gtwDeployment,
+		gtwService,
+		vllmDeployment,
+		secondVllmDeployment,
+		eppDeployment,
+		eppService,
+		secondEPPDeployment,
+		secondEPPService,
 	}
 
-	tests := []apiTest{
-		// Call with a single "prompt" field
-		{
-			api:              "/v1/completions",
-			promptOrMessages: "Write as if you were a critic: San Francisco",
+	// Assert test objects exist
+	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, s.objects...)
+
+	// Assert test pods are running using key=pod_name and value=pod_namespace map.
+	for k, v := range map[string]string{
+		vllmName:       singleRouteMultiPoolNs,
+		eppName:        singleRouteMultiPoolNs,
+		secondVllmName: singleRouteMultiPoolNs,
+		secondEPPName:  singleRouteMultiPoolNs,
+		clientName:     singleRouteMultiPoolNs,
+	} {
+		s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, v, metav1.ListOptions{
+			LabelSelector: "app=" + k,
+		}, podRunTimeout)
+	}
+
+	// Assert the gateway programmed condition
+	s.testInstallation.Assertions.EventuallyGatewayCondition(
+		s.ctx,
+		gtwDeployment.Name,
+		gtwDeployment.Namespace,
+		gwv1.GatewayConditionProgrammed,
+		metav1.ConditionTrue,
+		gtwProgramTimeout,
+	)
+
+	// Assert the route status conditions
+	conditions := []gwv1.RouteConditionType{gwv1.RouteConditionAccepted, gwv1.RouteConditionResolvedRefs}
+	for _, c := range conditions {
+		s.testInstallation.Assertions.EventuallyHTTPRouteCondition(
+			s.ctx,
+			routeName,
+			singleRouteMultiPoolNs,
+			c,
+			metav1.ConditionTrue,
+		)
+	}
+
+	// TODO [danehans]: Assert InferencePool status when https://github.com/kgateway-dev/kgateway/issues/11379 is fixed
+
+	// Assert the OpenAI API endpoint test cases
+	s.runOpenAITests(singleRouteMultiPoolNs,
+		gtwService.ObjectMeta,
+		headerToModel,
+	)
+}
+
+func (s *testingSuite) TestMultiHTTPRouteSingleInferencePool() {
+	// Track core objects from testdata manifests
+	clientPod := &corev1.Pod{ObjectMeta: objectMeta(multiRouteSinglePoolNs, clientName)}
+	gtwDeployment := &appsv1.Deployment{ObjectMeta: objectMeta(multiRouteSinglePoolNs, gtwName)}
+	gtwService := &corev1.Service{ObjectMeta: objectMeta(multiRouteSinglePoolNs, gtwName)}
+	vllmDeployment := &appsv1.Deployment{ObjectMeta: objectMeta(multiRouteSinglePoolNs, vllmName)}
+	secondVllmDeployment := &appsv1.Deployment{ObjectMeta: objectMeta(multiRouteSinglePoolNs, secondVllmName)}
+	eppDeployment := &appsv1.Deployment{ObjectMeta: objectMeta(multiRouteSinglePoolNs, eppName)}
+	eppService := &corev1.Service{ObjectMeta: objectMeta(multiRouteSinglePoolNs, eppName)}
+	secondEPPDeployment := &appsv1.Deployment{ObjectMeta: objectMeta(multiRouteSinglePoolNs, secondEPPName)}
+	secondEPPService := &corev1.Service{ObjectMeta: objectMeta(multiRouteSinglePoolNs, secondEPPName)}
+	s.objects = []client.Object{
+		clientPod,
+		gtwDeployment,
+		gtwService,
+		vllmDeployment,
+		secondVllmDeployment,
+		eppDeployment,
+		eppService,
+		secondEPPDeployment,
+		secondEPPService,
+	}
+
+	// Assert test objects exist
+	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, s.objects...)
+
+	// Assert test pods are running using key=pod_name and value=pod_namespace map.
+	for k, v := range map[string]string{
+		vllmName:       multiRouteSinglePoolNs,
+		eppName:        multiRouteSinglePoolNs,
+		secondVllmName: multiRouteSinglePoolNs,
+		secondEPPName:  multiRouteSinglePoolNs,
+		clientName:     multiRouteSinglePoolNs,
+	} {
+		s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, v, metav1.ListOptions{
+			LabelSelector: "app=" + k,
+		}, podRunTimeout)
+	}
+
+	// Assert the gateway programmed condition
+	s.testInstallation.Assertions.EventuallyGatewayCondition(
+		s.ctx,
+		gtwDeployment.Name,
+		gtwDeployment.Namespace,
+		gwv1.GatewayConditionProgrammed,
+		metav1.ConditionTrue,
+		gtwProgramTimeout,
+	)
+
+	// Assert the route status conditions for each route
+	routeConditions := map[string][]gwv1.RouteConditionType{
+		routeName: []gwv1.RouteConditionType{
+			gwv1.RouteConditionAccepted,
+			gwv1.RouteConditionResolvedRefs,
 		},
-		// Call with one user message
-		{
-			api:              "/v1/chat/completions",
-			promptOrMessages: `[{"role":"user","content":"Write as if you were a critic: San Francisco"}]`,
-		},
-		// Call with a user–assistant–user message sequence
-		{
-			api: "/v1/chat/completions",
-			promptOrMessages: `[{"role":"user","content":"Write as if you were a critic: San Francisco"},` +
-				`{"role":"assistant","content":"Okay, let's see..."},` +
-				`{"role":"user","content":"Now summarize your thoughts."}]`,
+		secondRouteName: []gwv1.RouteConditionType{
+			gwv1.RouteConditionAccepted,
+			gwv1.RouteConditionResolvedRefs,
 		},
 	}
 
-	for i := range tests {
-		tc := tests[i]
-		testName := fmt.Sprintf("CurlTestCase%d", i)
-
-		s.T().Run(testName, func(t *testing.T) {
-			// Build the "prompt" or "messages" fragment of the request body.
-			var fieldJSON string
-			if tc.api == "/v1/completions" {
-				fieldJSON = fmt.Sprintf(`"prompt":"%s"`, tc.promptOrMessages)
-			} else {
-				fieldJSON = fmt.Sprintf(`"messages":%s`, tc.promptOrMessages)
-			}
-
-			// Inject that field into the rest of the body template
-			body := fmt.Sprintf(
-				`{"model":"%s",%s,"max_tokens":100,"temperature":0}`,
-				baseModelName,
-				fieldJSON,
-			)
-
-			// Assert expected curl response
-			s.testInstallation.Assertions.AssertEventualCurlResponse(
+	for routeName, conditions := range routeConditions {
+		for _, c := range conditions {
+			s.testInstallation.Assertions.EventuallyHTTPRouteCondition(
 				s.ctx,
-				defaults.CurlPodExecOpt,
-				[]curl.Option{
-					curl.WithHost(kubeutils.ServiceFQDN(gtwService.ObjectMeta)),
-					curl.WithHeader("Content-Type", "application/json"),
-					curl.WithPath(tc.api),
-					curl.WithBody(body),
-				},
-				expectedVllmResp,
+				routeName,
+				multiRouteSinglePoolNs,
+				c,
+				metav1.ConditionTrue,
 			)
-		})
+		}
 	}
+
+	// TODO [danehans]: Assert InferencePool status when https://github.com/kgateway-dev/kgateway/issues/11379 is fixed
+
+	// Assert the OpenAI API endpoint test cases
+	s.runOpenAITests(multiRouteSinglePoolNs,
+		gtwService.ObjectMeta,
+		headerToModel,
+	)
 }

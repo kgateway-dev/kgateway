@@ -1,0 +1,245 @@
+# A single HTTPRoute that routes to one InferencePool.
+# Curl pod copied from https://github.com/kgateway-dev/kgateway/blob/main/test/kubernetes/e2e/defaults/testdata/curl_pod.yaml
+# since `go:embed` cannot reference a file outside the pkg.
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: inf-ext-basic
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: curl
+  namespace: inf-ext-basic
+  labels:
+    app: curl
+    version: v1
+    app.kubernetes.io/name: curl
+spec:
+  terminationGracePeriodSeconds: 0
+  containers:
+    - name: curl
+      image: curlimages/curl:7.83.1
+      imagePullPolicy: IfNotPresent
+      command:
+        - "tail"
+        - "-f"
+        - "/dev/null"
+      resources:
+        requests:
+          cpu: "100m"
+        limits:
+          cpu: "200m"
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: inference-gateway
+  namespace: inf-ext-basic
+spec:
+  gatewayClassName: kgateway
+  listeners:
+  - name: http
+    port: 8080
+    protocol: HTTP
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: llm-route
+  namespace: inf-ext-basic
+spec:
+  parentRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: inference-gateway
+  rules:
+  - backendRefs:
+    - group: inference.networking.x-k8s.io
+      kind: InferencePool
+      name: vllm-llama3-8b-instruct
+    matches:
+    - path:
+        type: PathPrefix
+        value: /
+    timeouts:
+      request: 300s
+---
+apiVersion: inference.networking.x-k8s.io/v1alpha2
+kind: InferencePool
+metadata:
+  name: vllm-llama3-8b-instruct
+  namespace: inf-ext-basic
+spec:
+  targetPortNumber: 8000
+  selector:
+    app: vllm-llama3-8b-instruct
+  extensionRef:
+    name: vllm-llama3-8b-instruct-epp
+---
+apiVersion: inference.networking.x-k8s.io/v1alpha2
+kind: InferenceModel
+metadata:
+  name: food-review
+  namespace: inf-ext-basic
+spec:
+  modelName: food-review
+  criticality: Standard
+  poolRef:
+    name: vllm-llama3-8b-instruct
+  targetModels:
+  - name: food-review-1
+    weight: 100
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vllm-llama3-8b-instruct
+  namespace: inf-ext-basic
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: vllm-llama3-8b-instruct
+  template:
+    metadata:
+      labels:
+        app: vllm-llama3-8b-instruct
+    spec:
+      containers:
+      - name: vllm-sim
+        # Update image tag to `latest` when https://github.com/llm-d/llm-d-inference-sim/pull/54 merges
+        image: ghcr.io/llm-d/llm-d-inference-sim:v0.1.1
+        imagePullPolicy: Always
+        args:
+        - --model
+        - meta-llama/Llama-3.1-8B-Instruct
+        - --port
+        - "8000"
+        - --max-loras
+        - "2"
+        - --lora
+        - food-review-1
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        ports:
+        - containerPort: 8000
+          name: http
+          protocol: TCP
+        resources:
+          requests:
+            cpu: 10m
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vllm-llama3-8b-instruct-epp
+  namespace: inf-ext-basic
+spec:
+  selector:
+    app: vllm-llama3-8b-instruct-epp
+  ports:
+    - protocol: TCP
+      port: 9002
+      targetPort: 9002
+      appProtocol: http2
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vllm-llama3-8b-instruct-epp
+  namespace: inf-ext-basic
+  labels:
+    app: vllm-llama3-8b-instruct-epp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vllm-llama3-8b-instruct-epp
+  template:
+    metadata:
+      labels:
+        app: vllm-llama3-8b-instruct-epp
+    spec:
+      containers:
+      - name: epp
+        image: us-central1-docker.pkg.dev/k8s-staging-images/gateway-api-inference-extension/epp:main
+        imagePullPolicy: Always
+        args:
+        - -poolName
+        - vllm-llama3-8b-instruct
+        - -poolNamespace
+        - inf-ext-basic
+        - -v
+        - "4"
+        - --zap-encoder
+        - json
+        - -grpcPort
+        - "9002"
+        - -grpcHealthPort
+        - "9003"
+        ports:
+        - containerPort: 9002
+        - containerPort: 9003
+        - name: metrics
+          containerPort: 9090
+        livenessProbe:
+          grpc:
+            port: 9003
+            service: inference-extension
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        readinessProbe:
+          grpc:
+            port: 9003
+            service: inference-extension
+          initialDelaySeconds: 5
+          periodSeconds: 10
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: pod-read-basic
+rules:
+- apiGroups: ["inference.networking.x-k8s.io"]
+  resources: ["inferencepools"]
+  verbs: ["get", "watch", "list"]
+- apiGroups: ["inference.networking.x-k8s.io"]
+  resources: ["inferencemodels"]
+  verbs: ["get", "watch", "list"]
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "watch", "list"]
+- apiGroups:
+  - authentication.k8s.io
+  resources:
+  - tokenreviews
+  verbs:
+  - create
+- apiGroups:
+  - authorization.k8s.io
+  resources:
+  - subjectaccessreviews
+  verbs:
+  - create
+--- 
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: pod-read-binding-basic
+subjects:
+- kind: ServiceAccount
+  name: default
+  namespace: inf-ext-basic
+roleRef:
+  kind: ClusterRole
+  name: pod-read-basic
