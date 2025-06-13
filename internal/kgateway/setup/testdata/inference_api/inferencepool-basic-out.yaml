@@ -78,12 +78,12 @@ listeners:
       typedConfig:
         '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
         httpFilters:
-        - name: inferencepool.backend.transformation.kgateway.io_gwtest_gateway-pool
+        - name: inferencepool.backend.transformation.kgateway.io
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.ext_proc.v3.ExternalProcessor
             grpcService:
               envoyGrpc:
-                authority: gateway-pool-endpoint-picker.gwtest:9002
+                authority: gateway-pool-endpoint-picker.gwtest.svc:9002
                 clusterName: endpointpicker_gateway-pool_gwtest_ext_proc
             messageTimeout: 5s
             processingMode:
