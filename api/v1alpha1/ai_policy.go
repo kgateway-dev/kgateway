@@ -142,7 +142,7 @@ type Regex struct {
 type Webhook struct {
 	// Host to send the traffic to.
 	// Note: TLS is not currently supported for webhook.
-	// +kubebuilder:validation:Required
+	// +required
 	Host Host `json:"host"`
 
 	// ForwardHeaders define headers to forward with the request to the webhook.
@@ -280,11 +280,11 @@ type AIPromptGuard struct {
 // Note: The `field` values correspond to keys in the JSON request body, not fields in this CRD.
 type FieldDefault struct {
 	// The name of the field.
-	// +kubebuilder:validation:Required
+	// +required
 	// +kubebuilder:validation:MinLength=1
 	Field string `json:"field"`
 	// The field default value, which can be any JSON Data Type.
-	// +kubebuilder:validation:Required
+	// +required
 	// +kubebuilder:validation:MinLength=1
 	Value string `json:"value"`
 	// Whether to override the field's value if it already exists.

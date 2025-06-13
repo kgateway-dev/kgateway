@@ -204,7 +204,7 @@ type ExtAuthPolicy struct {
 type BufferSettings struct {
 	// MaxRequestBytes sets the maximum size of a message body to buffer.
 	// Requests exceeding this size will receive HTTP 413 and not be sent to the authorization service.
-	// +kubebuilder:validation:Required
+	// +required
 	// +kubebuilder:validation:Minimum=1
 	MaxRequestBytes uint32 `json:"maxRequestBytes"`
 

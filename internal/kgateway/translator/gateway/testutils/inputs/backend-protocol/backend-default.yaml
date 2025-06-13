@@ -20,18 +20,17 @@ spec:
   - "example.com"
   rules:
   - backendRefs:
-    - name: example-svc
-      port: 80
+    - group: gateway.kgateway.dev
+      kind: Backend
+      name: example-backend
 ---
-apiVersion: v1
-kind: Service
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
 metadata:
-  name: example-svc
+  name: example-backend
 spec:
-  selector:
-    test: test
-  ports:
-    - protocol: TCP
-      appProtocol: http2
-      port: 80
-      targetPort: test
+  type: Static
+  static:
+    hosts:
+    - host: example.com
+      port: 8080
