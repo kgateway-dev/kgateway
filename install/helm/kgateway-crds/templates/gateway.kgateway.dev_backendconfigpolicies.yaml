@@ -297,7 +297,7 @@ spec:
                     type: array
                 type: object
                 x-kubernetes-validations:
-                - message: Exactly one of secretRef or tlsFiles must be set in TLSConfig
+                - message: Exactly one of secretRef or tlsFiles must be set in TLS
                   rule: has(self.secretRef) != has(self.tlsFiles)
             type: object
           status:

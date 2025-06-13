@@ -6,29 +6,29 @@ import (
 	v1 "k8s.io/api/core/v1"
 )
 
-// TLSConfigApplyConfiguration represents a declarative configuration of the TLSConfig type for use
+// TLSApplyConfiguration represents a declarative configuration of the TLS type for use
 // with apply.
-type TLSConfigApplyConfiguration struct {
-	SecretRef            *v1.LocalObjectReference         `json:"secretRef,omitempty"`
-	TLSFiles             *TLSFilesApplyConfiguration      `json:"tlsFiles,omitempty"`
-	Sni                  *string                          `json:"sni,omitempty"`
-	VerifySubjectAltName []string                         `json:"verifySubjectAltName,omitempty"`
-	TLSParameters        *TLSParametersApplyConfiguration `json:"tlsParameters,omitempty"`
-	AlpnProtocols        []string                         `json:"alpnProtocols,omitempty"`
-	AllowRenegotiation   *bool                            `json:"allowRenegotiation,omitempty"`
-	OneWayTLS            *bool                            `json:"oneWayTLS,omitempty"`
+type TLSApplyConfiguration struct {
+	SecretRef            *v1.LocalObjectReference      `json:"secretRef,omitempty"`
+	TLSFiles             *TLSFilesApplyConfiguration   `json:"tlsFiles,omitempty"`
+	Sni                  *string                       `json:"sni,omitempty"`
+	VerifySubjectAltName []string                      `json:"verifySubjectAltName,omitempty"`
+	TLSParameters        *ParametersApplyConfiguration `json:"tlsParameters,omitempty"`
+	AlpnProtocols        []string                      `json:"alpnProtocols,omitempty"`
+	AllowRenegotiation   *bool                         `json:"allowRenegotiation,omitempty"`
+	OneWayTLS            *bool                         `json:"oneWayTLS,omitempty"`
 }
 
-// TLSConfigApplyConfiguration constructs a declarative configuration of the TLSConfig type for use with
+// TLSApplyConfiguration constructs a declarative configuration of the TLS type for use with
 // apply.
-func TLSConfig() *TLSConfigApplyConfiguration {
-	return &TLSConfigApplyConfiguration{}
+func TLS() *TLSApplyConfiguration {
+	return &TLSApplyConfiguration{}
 }
 
 // WithSecretRef sets the SecretRef field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the SecretRef field is set to the value of the last call.
-func (b *TLSConfigApplyConfiguration) WithSecretRef(value v1.LocalObjectReference) *TLSConfigApplyConfiguration {
+func (b *TLSApplyConfiguration) WithSecretRef(value v1.LocalObjectReference) *TLSApplyConfiguration {
 	b.SecretRef = &value
 	return b
 }
@@ -36,7 +36,7 @@ func (b *TLSConfigApplyConfiguration) WithSecretRef(value v1.LocalObjectReferenc
 // WithTLSFiles sets the TLSFiles field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the TLSFiles field is set to the value of the last call.
-func (b *TLSConfigApplyConfiguration) WithTLSFiles(value *TLSFilesApplyConfiguration) *TLSConfigApplyConfiguration {
+func (b *TLSApplyConfiguration) WithTLSFiles(value *TLSFilesApplyConfiguration) *TLSApplyConfiguration {
 	b.TLSFiles = value
 	return b
 }
@@ -44,7 +44,7 @@ func (b *TLSConfigApplyConfiguration) WithTLSFiles(value *TLSFilesApplyConfigura
 // WithSni sets the Sni field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Sni field is set to the value of the last call.
-func (b *TLSConfigApplyConfiguration) WithSni(value string) *TLSConfigApplyConfiguration {
+func (b *TLSApplyConfiguration) WithSni(value string) *TLSApplyConfiguration {
 	b.Sni = &value
 	return b
 }
@@ -52,7 +52,7 @@ func (b *TLSConfigApplyConfiguration) WithSni(value string) *TLSConfigApplyConfi
 // WithVerifySubjectAltName adds the given value to the VerifySubjectAltName field in the declarative configuration
 // and returns the receiver, so that objects can be build by chaining "With" function invocations.
 // If called multiple times, values provided by each call will be appended to the VerifySubjectAltName field.
-func (b *TLSConfigApplyConfiguration) WithVerifySubjectAltName(values ...string) *TLSConfigApplyConfiguration {
+func (b *TLSApplyConfiguration) WithVerifySubjectAltName(values ...string) *TLSApplyConfiguration {
 	for i := range values {
 		b.VerifySubjectAltName = append(b.VerifySubjectAltName, values[i])
 	}
@@ -62,7 +62,7 @@ func (b *TLSConfigApplyConfiguration) WithVerifySubjectAltName(values ...string)
 // WithTLSParameters sets the TLSParameters field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the TLSParameters field is set to the value of the last call.
-func (b *TLSConfigApplyConfiguration) WithTLSParameters(value *TLSParametersApplyConfiguration) *TLSConfigApplyConfiguration {
+func (b *TLSApplyConfiguration) WithTLSParameters(value *ParametersApplyConfiguration) *TLSApplyConfiguration {
 	b.TLSParameters = value
 	return b
 }
@@ -70,7 +70,7 @@ func (b *TLSConfigApplyConfiguration) WithTLSParameters(value *TLSParametersAppl
 // WithAlpnProtocols adds the given value to the AlpnProtocols field in the declarative configuration
 // and returns the receiver, so that objects can be build by chaining "With" function invocations.
 // If called multiple times, values provided by each call will be appended to the AlpnProtocols field.
-func (b *TLSConfigApplyConfiguration) WithAlpnProtocols(values ...string) *TLSConfigApplyConfiguration {
+func (b *TLSApplyConfiguration) WithAlpnProtocols(values ...string) *TLSApplyConfiguration {
 	for i := range values {
 		b.AlpnProtocols = append(b.AlpnProtocols, values[i])
 	}
@@ -80,7 +80,7 @@ func (b *TLSConfigApplyConfiguration) WithAlpnProtocols(values ...string) *TLSCo
 // WithAllowRenegotiation sets the AllowRenegotiation field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the AllowRenegotiation field is set to the value of the last call.
-func (b *TLSConfigApplyConfiguration) WithAllowRenegotiation(value bool) *TLSConfigApplyConfiguration {
+func (b *TLSApplyConfiguration) WithAllowRenegotiation(value bool) *TLSApplyConfiguration {
 	b.AllowRenegotiation = &value
 	return b
 }
@@ -88,7 +88,7 @@ func (b *TLSConfigApplyConfiguration) WithAllowRenegotiation(value bool) *TLSCon
 // WithOneWayTLS sets the OneWayTLS field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the OneWayTLS field is set to the value of the last call.
-func (b *TLSConfigApplyConfiguration) WithOneWayTLS(value bool) *TLSConfigApplyConfiguration {
+func (b *TLSApplyConfiguration) WithOneWayTLS(value bool) *TLSApplyConfiguration {
 	b.OneWayTLS = &value
 	return b
 }

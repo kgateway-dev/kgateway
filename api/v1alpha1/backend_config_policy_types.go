@@ -63,7 +63,7 @@ type BackendConfigPolicySpec struct {
 	// TLSConfig contains the options necessary to configure a backend to use TLS origination.
 	// See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/transport_sockets/tls/v3/tls.proto#envoy-v3-api-msg-extensions-transport-sockets-tls-v3-sslconfig) for more details.
 	// +optional
-	TLSConfig *TLSConfig `json:"tlsConfig,omitempty"`
+	TLSConfig *TLS `json:"tlsConfig,omitempty"`
 
 	// LoadBalancerConfig contains the options necessary to configure the load balancer.
 	// +optional
@@ -173,8 +173,8 @@ type TCPKeepalive struct {
 	KeepAliveInterval *metav1.Duration `json:"keepAliveInterval,omitempty"`
 }
 
-// +kubebuilder:validation:XValidation:rule="has(self.secretRef) != has(self.tlsFiles)",message="Exactly one of secretRef or tlsFiles must be set in TLSConfig"
-type TLSConfig struct {
+// +kubebuilder:validation:XValidation:rule="has(self.secretRef) != has(self.tlsFiles)",message="Exactly one of secretRef or tlsFiles must be set in TLS"
+type TLS struct {
 	// Reference to the TLS secret containing the certificate, key, and optionally the root CA.
 	// +optional
 	SecretRef *corev1.LocalObjectReference `json:"secretRef,omitempty"`
@@ -195,7 +195,7 @@ type TLSConfig struct {
 	// General TLS parameters. See the [envoy docs](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/transport_sockets/tls/v3/common.proto#extensions-transport-sockets-tls-v3-tlsparameters)
 	// for more information on the meaning of these values.
 	// +optional
-	TLSParameters *TLSParameters `json:"tlsParameters,omitempty"`
+	TLSParameters *Parameters `json:"tlsParameters,omitempty"`
 
 	// Set Application Level Protocol Negotiation
 	// If empty, defaults to ["h2", "http/1.1"].
@@ -226,7 +226,7 @@ const (
 	TLSVersion1_3  TLSVersion = "1.3"
 )
 
-type TLSParameters struct {
+type Parameters struct {
 	// Minimum TLS version.
 	// +optional
 	TLSMinVersion *TLSVersion `json:"tlsMinVersion,omitempty"`

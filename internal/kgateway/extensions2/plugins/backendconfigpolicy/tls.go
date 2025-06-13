@@ -43,7 +43,7 @@ func (g *DefaultSecretGetter) GetSecret(name, namespace string) (*ir.Secret, err
 
 func translateTLSConfig(
 	secretGetter SecretGetter,
-	tlsConfig *v1alpha1.TLSConfig,
+	tlsConfig *v1alpha1.TLS,
 	namespace string,
 ) (*envoyauth.UpstreamTlsContext, error) {
 	var (
@@ -136,7 +136,7 @@ func translateTLSConfig(
 	}, nil
 }
 
-func parseTLSParameters(tlsParameters *v1alpha1.TLSParameters) (*envoyauth.TlsParameters, error) {
+func parseTLSParameters(tlsParameters *v1alpha1.Parameters) (*envoyauth.TlsParameters, error) {
 	if tlsParameters == nil {
 		return nil, nil
 	}

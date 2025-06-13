@@ -94,14 +94,14 @@ r8/mqGkEdNyd5BqGOFWoUi7kDqslOAl359Gd5ndxAoGAK3TVwhuLR9XoicDjmo6b
 func TestTranslateTLSConfig(t *testing.T) {
 	tests := []struct {
 		name      string
-		tlsConfig *v1alpha1.TLSConfig
+		tlsConfig *v1alpha1.TLS
 		secret    *ir.Secret
 		wantErr   bool
 		check     func(t *testing.T, result *envoyauth.UpstreamTlsContext)
 	}{
 		{
 			name: "secret-based TLS config",
-			tlsConfig: &v1alpha1.TLSConfig{
+			tlsConfig: &v1alpha1.TLS{
 				SecretRef: &corev1.LocalObjectReference{
 					Name: "test-secret",
 				},
@@ -136,7 +136,7 @@ func TestTranslateTLSConfig(t *testing.T) {
 		},
 		{
 			name: "file-based TLS config",
-			tlsConfig: &v1alpha1.TLSConfig{
+			tlsConfig: &v1alpha1.TLS{
 				TLSFiles: &v1alpha1.TLSFiles{
 					TLSCertificate: CACert,
 					TLSKey:         TLSKey,
@@ -157,12 +157,12 @@ func TestTranslateTLSConfig(t *testing.T) {
 		},
 		{
 			name: "TLS config with parameters",
-			tlsConfig: &v1alpha1.TLSConfig{
+			tlsConfig: &v1alpha1.TLS{
 				TLSFiles: &v1alpha1.TLSFiles{
 					TLSCertificate: CACert,
 					TLSKey:         TLSKey,
 				},
-				TLSParameters: &v1alpha1.TLSParameters{
+				TLSParameters: &v1alpha1.Parameters{
 					TLSMinVersion: ptr.To(v1alpha1.TLSVersion1_2),
 					TLSMaxVersion: ptr.To(v1alpha1.TLSVersion1_3),
 					CipherSuites:  []string{"TLS_AES_128_GCM_SHA256"},
@@ -182,14 +182,14 @@ func TestTranslateTLSConfig(t *testing.T) {
 		},
 		{
 			name: "invalid TLS config - missing both secret and files",
-			tlsConfig: &v1alpha1.TLSConfig{
+			tlsConfig: &v1alpha1.TLS{
 				AllowRenegotiation: ptr.To(true),
 			},
 			wantErr: true,
 		},
 		{
 			name: "invalid TLS config - missing secret",
-			tlsConfig: &v1alpha1.TLSConfig{
+			tlsConfig: &v1alpha1.TLS{
 				SecretRef: &corev1.LocalObjectReference{
 					Name: "non-existent-secret",
 				},
@@ -199,7 +199,7 @@ func TestTranslateTLSConfig(t *testing.T) {
 		},
 		{
 			name: "should not error with only rootca",
-			tlsConfig: &v1alpha1.TLSConfig{
+			tlsConfig: &v1alpha1.TLS{
 				TLSFiles: &v1alpha1.TLSFiles{
 					RootCA: CACert,
 				},
@@ -211,7 +211,7 @@ func TestTranslateTLSConfig(t *testing.T) {
 		},
 		{
 			name: "should error with san and no rootca",
-			tlsConfig: &v1alpha1.TLSConfig{
+			tlsConfig: &v1alpha1.TLS{
 				TLSFiles: &v1alpha1.TLSFiles{
 					TLSCertificate: CACert,
 					TLSKey:         TLSKey,
@@ -222,7 +222,7 @@ func TestTranslateTLSConfig(t *testing.T) {
 		},
 		{
 			name: "should error with only cert and no key",
-			tlsConfig: &v1alpha1.TLSConfig{
+			tlsConfig: &v1alpha1.TLS{
 				TLSFiles: &v1alpha1.TLSFiles{
 					TLSCertificate: CACert,
 				},
@@ -231,7 +231,7 @@ func TestTranslateTLSConfig(t *testing.T) {
 		},
 		{
 			name: "should not have validation context if one way tls",
-			tlsConfig: &v1alpha1.TLSConfig{
+			tlsConfig: &v1alpha1.TLS{
 				TLSFiles: &v1alpha1.TLSFiles{
 					TLSCertificate: CACert,
 					TLSKey:         TLSKey,
@@ -247,7 +247,7 @@ func TestTranslateTLSConfig(t *testing.T) {
 		},
 		{
 			name: "should not have validation context if no rootca",
-			tlsConfig: &v1alpha1.TLSConfig{
+			tlsConfig: &v1alpha1.TLS{
 				SecretRef: &corev1.LocalObjectReference{
 					Name: "test-secret",
 				},
