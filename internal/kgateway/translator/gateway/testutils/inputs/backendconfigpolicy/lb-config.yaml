@@ -197,7 +197,7 @@ spec:
     - name: httpbin-maglev
       group: ""
       kind: Service
-  loadBalancerConfig:
+  loadBalancer:
     maglev: {}
 ---
 apiVersion: v1
