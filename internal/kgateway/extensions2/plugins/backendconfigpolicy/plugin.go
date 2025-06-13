@@ -273,8 +273,8 @@ func translate(commoncol *common.CommonCollections, krtctx krt.HandlerContext, p
 		ir.tlsConfig = tlsConfig
 	}
 
-	if pol.Spec.LoadBalancerConfig != nil {
-		ir.loadBalancerConfig = translateLoadBalancerConfig(pol.Spec.LoadBalancerConfig)
+	if pol.Spec.LoadBalancer != nil {
+		ir.loadBalancerConfig = translateLoadBalancerConfig(pol.Spec.LoadBalancer)
 	}
 
 	return &ir, nil

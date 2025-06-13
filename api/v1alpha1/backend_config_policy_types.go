@@ -65,9 +65,9 @@ type BackendConfigPolicySpec struct {
 	// +optional
 	TLS *TLS `json:"tls,omitempty"`
 
-	// LoadBalancerConfig contains the options necessary to configure the load balancer.
+	// LoadBalancer contains the options necessary to configure the load balancer.
 	// +optional
-	LoadBalancerConfig *LoadBalancerConfig `json:"loadBalancerConfig,omitempty"`
+	LoadBalancer *LoadBalancer `json:"loadBalancer,omitempty"`
 }
 
 // See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-msg-config-core-v3-http1protocoloptions) for more details.
@@ -255,7 +255,7 @@ type TLSFiles struct {
 }
 
 // +kubebuilder:validation:XValidation:rule="[has(self.leastRequest), has(self.roundRobin), has(self.ringHash), has(self.maglev), has(self.random)].filter(x, x).size() <= 1",message="only one of leastRequest, roundRobin, ringHash, maglev, or random can be set"
-type LoadBalancerConfig struct {
+type LoadBalancer struct {
 	// HealthyPanicThreshold configures envoy's panic threshold percentage between 0-100. Once the number of non-healthy hosts
 	// reaches this percentage, envoy disregards health information.
 	// See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/load_balancing/panic_threshold.html).
@@ -326,16 +326,16 @@ type LoadBalancerLeastRequestConfig struct {
 	// +default=2
 	ChoiceCount uint32 `json:"choiceCount,omitempty"`
 
-	// SlowStartConfig configures the slow start configuration for the load balancer.
+	// SlowStart configures the slow start configuration for the load balancer.
 	// +optional
-	SlowStartConfig *SlowStartConfig `json:"slowStartConfig,omitempty"`
+	SlowStart *SlowStart `json:"slowStart,omitempty"`
 }
 
 // LoadBalancerRoundRobinConfig configures the round robin load balancer type.
 type LoadBalancerRoundRobinConfig struct {
-	// SlowStartConfig configures the slow start configuration for the load balancer.
+	// SlowStart configures the slow start configuration for the load balancer.
 	// +optional
-	SlowStartConfig *SlowStartConfig `json:"slowStartConfig,omitempty"`
+	SlowStart *SlowStart `json:"slowStart,omitempty"`
 }
 
 // LoadBalancerRingHashConfig configures the ring hash load balancer type.
@@ -352,7 +352,7 @@ type LoadBalancerRingHashConfig struct {
 type LoadBalancerMaglevConfig struct{}
 type LoadBalancerRandomConfig struct{}
 
-type SlowStartConfig struct {
+type SlowStart struct {
 	// Represents the size of slow start window.
 	// If set, the newly created host remains in slow start mode starting from its creation time
 	// for the duration of slow start window.

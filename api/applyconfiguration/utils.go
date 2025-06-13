@@ -139,8 +139,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.KubernetesProxyConfigApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("LLMProvider"):
 		return &apiv1alpha1.LLMProviderApplyConfiguration{}
-	case v1alpha1.SchemeGroupVersion.WithKind("LoadBalancerConfig"):
-		return &apiv1alpha1.LoadBalancerConfigApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("LoadBalancer"):
+		return &apiv1alpha1.LoadBalancerApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("LoadBalancerLeastRequestConfig"):
 		return &apiv1alpha1.LoadBalancerLeastRequestConfigApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("LoadBalancerRingHashConfig"):
@@ -209,8 +209,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.ServiceAccountApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("SingleAuthToken"):
 		return &apiv1alpha1.SingleAuthTokenApplyConfiguration{}
-	case v1alpha1.SchemeGroupVersion.WithKind("SlowStartConfig"):
-		return &apiv1alpha1.SlowStartConfigApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("SlowStart"):
+		return &apiv1alpha1.SlowStartApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("StaticBackend"):
 		return &apiv1alpha1.StaticBackendApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("StatsConfig"):

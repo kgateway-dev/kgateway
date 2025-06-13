@@ -318,9 +318,9 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: http1ProtocolOptions
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Http1ProtocolOptions
-    - name: loadBalancerConfig
+    - name: loadBalancer
       type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LoadBalancerConfig
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LoadBalancer
     - name: perConnectionBufferLimitBytes
       type:
         scalar: numeric
@@ -1022,7 +1022,7 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SupportedLLMProvider
       default: {}
-- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LoadBalancerConfig
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LoadBalancer
   map:
     fields:
     - name: closeConnectionsOnHostSetChange
@@ -1063,9 +1063,9 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         scalar: numeric
       default: 2
-    - name: slowStartConfig
+    - name: slowStart
       type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SlowStartConfig
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SlowStart
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LoadBalancerMaglevConfig
   map:
     elementType:
@@ -1102,9 +1102,9 @@ var schemaYAML = typed.YAMLObject(`types:
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LoadBalancerRoundRobinConfig
   map:
     fields:
-    - name: slowStartConfig
+    - name: slowStart
       type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SlowStartConfig
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SlowStart
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LocalPolicyTargetReference
   map:
     fields:
@@ -1531,7 +1531,7 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: secretRef
       type:
         namedType: io.k8s.api.core.v1.LocalObjectReference
-- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SlowStartConfig
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SlowStart
   map:
     fields:
     - name: aggression

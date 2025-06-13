@@ -6,24 +6,24 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// SlowStartConfigApplyConfiguration represents a declarative configuration of the SlowStartConfig type for use
+// SlowStartApplyConfiguration represents a declarative configuration of the SlowStart type for use
 // with apply.
-type SlowStartConfigApplyConfiguration struct {
+type SlowStartApplyConfiguration struct {
 	Window           *v1.Duration `json:"window,omitempty"`
 	Aggression       *string      `json:"aggression,omitempty"`
 	MinWeightPercent *uint32      `json:"minWeightPercent,omitempty"`
 }
 
-// SlowStartConfigApplyConfiguration constructs a declarative configuration of the SlowStartConfig type for use with
+// SlowStartApplyConfiguration constructs a declarative configuration of the SlowStart type for use with
 // apply.
-func SlowStartConfig() *SlowStartConfigApplyConfiguration {
-	return &SlowStartConfigApplyConfiguration{}
+func SlowStart() *SlowStartApplyConfiguration {
+	return &SlowStartApplyConfiguration{}
 }
 
 // WithWindow sets the Window field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Window field is set to the value of the last call.
-func (b *SlowStartConfigApplyConfiguration) WithWindow(value v1.Duration) *SlowStartConfigApplyConfiguration {
+func (b *SlowStartApplyConfiguration) WithWindow(value v1.Duration) *SlowStartApplyConfiguration {
 	b.Window = &value
 	return b
 }
@@ -31,7 +31,7 @@ func (b *SlowStartConfigApplyConfiguration) WithWindow(value v1.Duration) *SlowS
 // WithAggression sets the Aggression field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Aggression field is set to the value of the last call.
-func (b *SlowStartConfigApplyConfiguration) WithAggression(value string) *SlowStartConfigApplyConfiguration {
+func (b *SlowStartApplyConfiguration) WithAggression(value string) *SlowStartApplyConfiguration {
 	b.Aggression = &value
 	return b
 }
@@ -39,7 +39,7 @@ func (b *SlowStartConfigApplyConfiguration) WithAggression(value string) *SlowSt
 // WithMinWeightPercent sets the MinWeightPercent field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the MinWeightPercent field is set to the value of the last call.
-func (b *SlowStartConfigApplyConfiguration) WithMinWeightPercent(value uint32) *SlowStartConfigApplyConfiguration {
+func (b *SlowStartApplyConfiguration) WithMinWeightPercent(value uint32) *SlowStartApplyConfiguration {
 	b.MinWeightPercent = &value
 	return b
 }

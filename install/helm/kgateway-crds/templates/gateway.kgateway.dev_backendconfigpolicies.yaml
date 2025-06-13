@@ -79,7 +79,7 @@ spec:
                   overrideStreamErrorOnInvalidHttpMessage:
                     type: boolean
                 type: object
-              loadBalancerConfig:
+              loadBalancer:
                 properties:
                   closeConnectionsOnHostSetChange:
                     type: boolean
@@ -94,7 +94,7 @@ spec:
                         default: 2
                         format: int32
                         type: integer
-                      slowStartConfig:
+                      slowStart:
                         properties:
                           aggression:
                             type: string
@@ -132,7 +132,7 @@ spec:
                     type: object
                   roundRobin:
                     properties:
-                      slowStartConfig:
+                      slowStart:
                         properties:
                           aggression:
                             type: string
