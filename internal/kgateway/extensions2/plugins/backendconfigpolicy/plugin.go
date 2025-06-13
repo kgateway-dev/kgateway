@@ -265,8 +265,8 @@ func translate(commoncol *common.CommonCollections, krtctx krt.HandlerContext, p
 		ir.http1ProtocolOptions = http1ProtocolOptions
 	}
 
-	if pol.Spec.TLSConfig != nil {
-		tlsConfig, err := translateTLSConfig(NewDefaultSecretGetter(commoncol.Secrets, krtctx), pol.Spec.TLSConfig, pol.Namespace)
+	if pol.Spec.TLS != nil {
+		tlsConfig, err := translateTLSConfig(NewDefaultSecretGetter(commoncol.Secrets, krtctx), pol.Spec.TLS, pol.Namespace)
 		if err != nil {
 			return &ir, err
 		}

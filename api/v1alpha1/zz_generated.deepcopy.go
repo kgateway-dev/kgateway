@@ -543,8 +543,8 @@ func (in *BackendConfigPolicySpec) DeepCopyInto(out *BackendConfigPolicySpec) {
 		*out = new(Http1ProtocolOptions)
 		(*in).DeepCopyInto(*out)
 	}
-	if in.TLSConfig != nil {
-		in, out := &in.TLSConfig, &out.TLSConfig
+	if in.TLS != nil {
+		in, out := &in.TLS, &out.TLS
 		*out = new(TLS)
 		(*in).DeepCopyInto(*out)
 	}

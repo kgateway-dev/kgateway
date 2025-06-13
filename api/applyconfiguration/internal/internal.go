@@ -339,7 +339,7 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: tcpKeepalive
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.TCPKeepalive
-    - name: tlsConfig
+    - name: tls
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.TLS
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.BackendSpec

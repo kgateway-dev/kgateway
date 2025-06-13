@@ -60,10 +60,10 @@ type BackendConfigPolicySpec struct {
 	// +optional
 	Http1ProtocolOptions *Http1ProtocolOptions `json:"http1ProtocolOptions,omitempty"`
 
-	// TLSConfig contains the options necessary to configure a backend to use TLS origination.
+	// TLS contains the options necessary to configure a backend to use TLS origination.
 	// See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/transport_sockets/tls/v3/tls.proto#envoy-v3-api-msg-extensions-transport-sockets-tls-v3-sslconfig) for more details.
 	// +optional
-	TLSConfig *TLS `json:"tlsConfig,omitempty"`
+	TLS *TLS `json:"tls,omitempty"`
 
 	// LoadBalancerConfig contains the options necessary to configure the load balancer.
 	// +optional

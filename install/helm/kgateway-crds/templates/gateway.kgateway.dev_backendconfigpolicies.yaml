@@ -232,7 +232,7 @@ spec:
                     - message: keepAliveTime must be at least 1 second
                       rule: duration(self) >= duration('1s')
                 type: object
-              tlsConfig:
+              tls:
                 properties:
                   allowRenegotiation:
                     type: boolean
