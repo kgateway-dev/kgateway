@@ -47,8 +47,8 @@ func translateLoadBalancerConfig(config *v1alpha1.LoadBalancer) *LoadBalancerCon
 		out.commonLbConfig.UpdateMergeWindow = durationpb.New(config.UpdateMergeWindow.Duration)
 	}
 
-	if config.LocalityConfigType != nil {
-		switch *config.LocalityConfigType {
+	if config.LocalityType != nil {
+		switch *config.LocalityType {
 		case v1alpha1.LocalityConfigTypeWeightedLb:
 			out.commonLbConfig.LocalityConfigSpecifier = &clusterv3.Cluster_CommonLbConfig_LocalityWeightedLbConfig_{
 				LocalityWeightedLbConfig: &clusterv3.Cluster_CommonLbConfig_LocalityWeightedLbConfig{},

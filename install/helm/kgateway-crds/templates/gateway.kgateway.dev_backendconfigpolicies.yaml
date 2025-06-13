@@ -113,7 +113,7 @@ spec:
                               rule: duration(self) >= duration('0s')
                         type: object
                     type: object
-                  localityConfigType:
+                  localityType:
                     enum:
                     - WeightedLb
                     type: string

@@ -1034,7 +1034,7 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: leastRequest
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LoadBalancerLeastRequestConfig
-    - name: localityConfigType
+    - name: localityType
       type:
         scalar: string
     - name: maglev

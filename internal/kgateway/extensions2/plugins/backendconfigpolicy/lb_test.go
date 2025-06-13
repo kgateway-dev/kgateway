@@ -223,7 +223,7 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 		{
 			name: "LocalityWeightedLb",
 			config: &v1alpha1.LoadBalancer{
-				LocalityConfigType: ptr.To(v1alpha1.LocalityConfigTypeWeightedLb),
+				LocalityType: ptr.To(v1alpha1.LocalityConfigTypeWeightedLb),
 			},
 			expected: &clusterv3.Cluster{
 				Name: "test",

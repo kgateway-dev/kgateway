@@ -291,11 +291,11 @@ type LoadBalancer struct {
 	// +optional
 	Random *LoadBalancerRandomConfig `json:"random,omitempty"`
 
-	// LocalityConfigType specifies the locality config type to use.
+	// LocalityType specifies the locality config type to use.
 	// See https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/load_balancing_policies/common/v3/common.proto#envoy-v3-api-msg-extensions-load-balancing-policies-common-v3-localitylbconfig
 	// +optional
 	// +kubebuilder:validation:Enum=WeightedLb
-	LocalityConfigType *LocalityConfigType `json:"localityConfigType,omitempty"`
+	LocalityType *LocalityType `json:"localityType,omitempty"`
 
 	// UseHostnameForHashing specifies whether to use the hostname instead of the resolved IP address for hashing.
 	// Defaults to false.
@@ -381,11 +381,11 @@ type SlowStart struct {
 	MinWeightPercent *uint32 `json:"minWeightPercent,omitempty"`
 }
 
-type LocalityConfigType string
+type LocalityType string
 
 const (
 	// https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/load_balancing/locality_weight#locality-weighted-load-balancing
 	// Locality weighted load balancing enables weighting assignments across different zones and geographical locations by using explicit weights.
 	// This field is required to enable locality weighted load balancing.
-	LocalityConfigTypeWeightedLb LocalityConfigType = "WeightedLb"
+	LocalityConfigTypeWeightedLb LocalityType = "WeightedLb"
 )

@@ -18,7 +18,7 @@ type LoadBalancerApplyConfiguration struct {
 	RingHash                        *LoadBalancerRingHashConfigApplyConfiguration     `json:"ringHash,omitempty"`
 	Maglev                          *apiv1alpha1.LoadBalancerMaglevConfig             `json:"maglev,omitempty"`
 	Random                          *apiv1alpha1.LoadBalancerRandomConfig             `json:"random,omitempty"`
-	LocalityConfigType              *apiv1alpha1.LocalityConfigType                   `json:"localityConfigType,omitempty"`
+	LocalityType                    *apiv1alpha1.LocalityType                         `json:"localityType,omitempty"`
 	UseHostnameForHashing           *bool                                             `json:"useHostnameForHashing,omitempty"`
 	CloseConnectionsOnHostSetChange *bool                                             `json:"closeConnectionsOnHostSetChange,omitempty"`
 }
@@ -85,11 +85,11 @@ func (b *LoadBalancerApplyConfiguration) WithRandom(value apiv1alpha1.LoadBalanc
 	return b
 }
 
-// WithLocalityConfigType sets the LocalityConfigType field in the declarative configuration to the given value
+// WithLocalityType sets the LocalityType field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the LocalityConfigType field is set to the value of the last call.
-func (b *LoadBalancerApplyConfiguration) WithLocalityConfigType(value apiv1alpha1.LocalityConfigType) *LoadBalancerApplyConfiguration {
-	b.LocalityConfigType = &value
+// If called multiple times, the LocalityType field is set to the value of the last call.
+func (b *LoadBalancerApplyConfiguration) WithLocalityType(value apiv1alpha1.LocalityType) *LoadBalancerApplyConfiguration {
+	b.LocalityType = &value
 	return b
 }
 

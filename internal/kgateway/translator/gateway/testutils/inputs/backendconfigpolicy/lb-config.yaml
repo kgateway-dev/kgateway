@@ -225,5 +225,5 @@ spec:
       group: ""
       kind: Service
   loadBalancer:
-    localityConfigType: WeightedLb
+    localityType: WeightedLb
     roundRobin: {}

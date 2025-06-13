@@ -1968,9 +1968,9 @@ func (in *LoadBalancer) DeepCopyInto(out *LoadBalancer) {
 		*out = new(LoadBalancerRandomConfig)
 		**out = **in
 	}
-	if in.LocalityConfigType != nil {
-		in, out := &in.LocalityConfigType, &out.LocalityConfigType
-		*out = new(LocalityConfigType)
+	if in.LocalityType != nil {
+		in, out := &in.LocalityType, &out.LocalityType
+		*out = new(LocalityType)
 		**out = **in
 	}
 	if in.CloseConnectionsOnHostSetChange != nil {

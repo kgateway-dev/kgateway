@@ -3480,9 +3480,9 @@ func schema_kgateway_v2_api_v1alpha1_LoadBalancer(ref common.ReferenceCallback) 
 							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LoadBalancerRandomConfig"),
 						},
 					},
-					"localityConfigType": {
+					"localityType": {
 						SchemaProps: spec.SchemaProps{
-							Description: "LocalityConfigType specifies the locality config type to use. See https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/load_balancing_policies/common/v3/common.proto#envoy-v3-api-msg-extensions-load-balancing-policies-common-v3-localitylbconfig",
+							Description: "LocalityType specifies the locality config type to use. See https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/load_balancing_policies/common/v3/common.proto#envoy-v3-api-msg-extensions-load-balancing-policies-common-v3-localitylbconfig",
 							Type:        []string{"string"},
 							Format:      "",
 						},
