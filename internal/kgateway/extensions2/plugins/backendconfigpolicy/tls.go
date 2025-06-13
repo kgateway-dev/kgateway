@@ -96,7 +96,7 @@ func translateTLSConfig(
 			},
 		}
 	} else if certChainData != nil || privateKeyData != nil {
-		return nil, errors.New("invalid SSL config: certChain and privateKey must both be provided")
+		return nil, errors.New("invalid TLS config: certChain and privateKey must both be provided")
 	}
 
 	sanList := verifySanListToMatchSanList(tlsConfig.VerifySubjectAltName)
