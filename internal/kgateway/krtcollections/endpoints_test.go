@@ -1116,8 +1116,7 @@ func TestEndpoints(t *testing.T) {
 				Pods:                    pods,
 				EndpointsSettings:       endpointSettings,
 			}
-			ctx := context.Background()
-			builder := transformK8sEndpoints(ctx, ei)
+			builder := transformK8sEndpoints(ei)
 
 			eps := builder(krt.TestingDummyContext{}, tc.upstream)
 			res := tc.result(tc.upstream)

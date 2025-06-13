@@ -1,7 +1,6 @@
 package backend
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"net/url"
@@ -81,7 +80,7 @@ func (u *AwsIr) Equals(other any) bool {
 }
 
 // processAws processes an AWS backend and returns an envoy cluster.
-func processAws(ctx context.Context, in *v1alpha1.AwsBackend, ir *AwsIr, out *envoy_config_cluster_v3.Cluster) error {
+func processAws(ir *AwsIr, out *envoy_config_cluster_v3.Cluster) error {
 	// defensive check; this should never happen with union types
 	if ir == nil {
 		return fmt.Errorf("aws ir is nil")
