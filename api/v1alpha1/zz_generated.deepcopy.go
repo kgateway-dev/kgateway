@@ -3163,8 +3163,8 @@ func (in *TLS) DeepCopyInto(out *TLS) {
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
-	if in.TLSParameters != nil {
-		in, out := &in.TLSParameters, &out.TLSParameters
+	if in.Parameters != nil {
+		in, out := &in.Parameters, &out.Parameters
 		*out = new(Parameters)
 		(*in).DeepCopyInto(*out)
 	}

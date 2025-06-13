@@ -115,7 +115,7 @@ func translateTLSConfig(
 		return nil, errors.New("a root_ca must be provided if verify_subject_alt_name is not empty")
 	}
 
-	tlsParams, err := parseTLSParameters(tlsConfig.TLSParameters)
+	tlsParams, err := parseTLSParameters(tlsConfig.Parameters)
 	if err != nil {
 		return nil, err
 	}

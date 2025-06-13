@@ -1624,6 +1624,9 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: oneWayTLS
       type:
         scalar: boolean
+    - name: parameters
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Parameters
     - name: secretRef
       type:
         namedType: io.k8s.api.core.v1.LocalObjectReference
@@ -1633,9 +1636,6 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: tlsFiles
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.TLSFiles
-    - name: tlsParameters
-      type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Parameters
     - name: verifySubjectAltName
       type:
         list:

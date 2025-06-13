@@ -5158,7 +5158,7 @@ func schema_kgateway_v2_api_v1alpha1_TLS(ref common.ReferenceCallback) common.Op
 							},
 						},
 					},
-					"tlsParameters": {
+					"parameters": {
 						SchemaProps: spec.SchemaProps{
 							Description: "General TLS parameters. See the [envoy docs](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/transport_sockets/tls/v3/common.proto#extensions-transport-sockets-tls-v3-tlsparameters) for more information on the meaning of these values.",
 							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Parameters"),

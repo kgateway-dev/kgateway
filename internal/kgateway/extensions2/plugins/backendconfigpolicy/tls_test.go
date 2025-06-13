@@ -162,7 +162,7 @@ func TestTranslateTLSConfig(t *testing.T) {
 					TLSCertificate: CACert,
 					TLSKey:         TLSKey,
 				},
-				TLSParameters: &v1alpha1.Parameters{
+				Parameters: &v1alpha1.Parameters{
 					TLSMinVersion: ptr.To(v1alpha1.TLSVersion1_2),
 					TLSMaxVersion: ptr.To(v1alpha1.TLSVersion1_3),
 					CipherSuites:  []string{"TLS_AES_128_GCM_SHA256"},

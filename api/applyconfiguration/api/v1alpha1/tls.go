@@ -13,7 +13,7 @@ type TLSApplyConfiguration struct {
 	TLSFiles             *TLSFilesApplyConfiguration   `json:"tlsFiles,omitempty"`
 	Sni                  *string                       `json:"sni,omitempty"`
 	VerifySubjectAltName []string                      `json:"verifySubjectAltName,omitempty"`
-	TLSParameters        *ParametersApplyConfiguration `json:"tlsParameters,omitempty"`
+	Parameters           *ParametersApplyConfiguration `json:"parameters,omitempty"`
 	AlpnProtocols        []string                      `json:"alpnProtocols,omitempty"`
 	AllowRenegotiation   *bool                         `json:"allowRenegotiation,omitempty"`
 	OneWayTLS            *bool                         `json:"oneWayTLS,omitempty"`
@@ -59,11 +59,11 @@ func (b *TLSApplyConfiguration) WithVerifySubjectAltName(values ...string) *TLSA
 	return b
 }
 
-// WithTLSParameters sets the TLSParameters field in the declarative configuration to the given value
+// WithParameters sets the Parameters field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the TLSParameters field is set to the value of the last call.
-func (b *TLSApplyConfiguration) WithTLSParameters(value *ParametersApplyConfiguration) *TLSApplyConfiguration {
-	b.TLSParameters = value
+// If called multiple times, the Parameters field is set to the value of the last call.
+func (b *TLSApplyConfiguration) WithParameters(value *ParametersApplyConfiguration) *TLSApplyConfiguration {
+	b.Parameters = value
 	return b
 }
 
