@@ -16,7 +16,7 @@ type BackendConfigPolicySpecApplyConfiguration struct {
 	TCPKeepalive                  *TCPKeepaliveApplyConfiguration                `json:"tcpKeepalive,omitempty"`
 	CommonHttpProtocolOptions     *CommonHttpProtocolOptionsApplyConfiguration   `json:"commonHttpProtocolOptions,omitempty"`
 	Http1ProtocolOptions          *Http1ProtocolOptionsApplyConfiguration        `json:"http1ProtocolOptions,omitempty"`
-	SSLConfig                     *SSLConfigApplyConfiguration                   `json:"sslConfig,omitempty"`
+	TLSConfig                     *TLSConfigApplyConfiguration                   `json:"tlsConfig,omitempty"`
 	LoadBalancerConfig            *LoadBalancerConfigApplyConfiguration          `json:"loadBalancerConfig,omitempty"`
 }
 
@@ -92,11 +92,11 @@ func (b *BackendConfigPolicySpecApplyConfiguration) WithHttp1ProtocolOptions(val
 	return b
 }
 
-// WithSSLConfig sets the SSLConfig field in the declarative configuration to the given value
+// WithTLSConfig sets the TLSConfig field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the SSLConfig field is set to the value of the last call.
-func (b *BackendConfigPolicySpecApplyConfiguration) WithSSLConfig(value *SSLConfigApplyConfiguration) *BackendConfigPolicySpecApplyConfiguration {
-	b.SSLConfig = value
+// If called multiple times, the TLSConfig field is set to the value of the last call.
+func (b *BackendConfigPolicySpecApplyConfiguration) WithTLSConfig(value *TLSConfigApplyConfiguration) *BackendConfigPolicySpecApplyConfiguration {
+	b.TLSConfig = value
 	return b
 }
 

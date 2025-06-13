@@ -2,24 +2,24 @@
 
 package v1alpha1
 
-// SSLFilesApplyConfiguration represents a declarative configuration of the SSLFiles type for use
+// TLSFilesApplyConfiguration represents a declarative configuration of the TLSFiles type for use
 // with apply.
-type SSLFilesApplyConfiguration struct {
+type TLSFilesApplyConfiguration struct {
 	TLSCertificate *string `json:"tlsCertificate,omitempty"`
 	TLSKey         *string `json:"tlsKey,omitempty"`
 	RootCA         *string `json:"rootCA,omitempty"`
 }
 
-// SSLFilesApplyConfiguration constructs a declarative configuration of the SSLFiles type for use with
+// TLSFilesApplyConfiguration constructs a declarative configuration of the TLSFiles type for use with
 // apply.
-func SSLFiles() *SSLFilesApplyConfiguration {
-	return &SSLFilesApplyConfiguration{}
+func TLSFiles() *TLSFilesApplyConfiguration {
+	return &TLSFilesApplyConfiguration{}
 }
 
 // WithTLSCertificate sets the TLSCertificate field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the TLSCertificate field is set to the value of the last call.
-func (b *SSLFilesApplyConfiguration) WithTLSCertificate(value string) *SSLFilesApplyConfiguration {
+func (b *TLSFilesApplyConfiguration) WithTLSCertificate(value string) *TLSFilesApplyConfiguration {
 	b.TLSCertificate = &value
 	return b
 }
@@ -27,7 +27,7 @@ func (b *SSLFilesApplyConfiguration) WithTLSCertificate(value string) *SSLFilesA
 // WithTLSKey sets the TLSKey field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the TLSKey field is set to the value of the last call.
-func (b *SSLFilesApplyConfiguration) WithTLSKey(value string) *SSLFilesApplyConfiguration {
+func (b *TLSFilesApplyConfiguration) WithTLSKey(value string) *TLSFilesApplyConfiguration {
 	b.TLSKey = &value
 	return b
 }
@@ -35,7 +35,7 @@ func (b *SSLFilesApplyConfiguration) WithTLSKey(value string) *SSLFilesApplyConf
 // WithRootCA sets the RootCA field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the RootCA field is set to the value of the last call.
-func (b *SSLFilesApplyConfiguration) WithRootCA(value string) *SSLFilesApplyConfiguration {
+func (b *TLSFilesApplyConfiguration) WithRootCA(value string) *TLSFilesApplyConfiguration {
 	b.RootCA = &value
 	return b
 }

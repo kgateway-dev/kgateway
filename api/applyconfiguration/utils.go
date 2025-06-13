@@ -209,12 +209,6 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.SingleAuthTokenApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("SlowStartConfig"):
 		return &apiv1alpha1.SlowStartConfigApplyConfiguration{}
-	case v1alpha1.SchemeGroupVersion.WithKind("SSLConfig"):
-		return &apiv1alpha1.SSLConfigApplyConfiguration{}
-	case v1alpha1.SchemeGroupVersion.WithKind("SSLFiles"):
-		return &apiv1alpha1.SSLFilesApplyConfiguration{}
-	case v1alpha1.SchemeGroupVersion.WithKind("SSLParameters"):
-		return &apiv1alpha1.SSLParametersApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("StaticBackend"):
 		return &apiv1alpha1.StaticBackendApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("StatsConfig"):
@@ -225,6 +219,12 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.SupportedLLMProviderApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("TCPKeepalive"):
 		return &apiv1alpha1.TCPKeepaliveApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("TLSConfig"):
+		return &apiv1alpha1.TLSConfigApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("TLSFiles"):
+		return &apiv1alpha1.TLSFilesApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("TLSParameters"):
+		return &apiv1alpha1.TLSParametersApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("TokenBucket"):
 		return &apiv1alpha1.TokenBucketApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("TrafficPolicy"):
