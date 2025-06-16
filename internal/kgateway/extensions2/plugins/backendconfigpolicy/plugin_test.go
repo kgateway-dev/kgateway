@@ -115,6 +115,11 @@ func TestBackendConfigPolicyFlow(t *testing.T) {
 						CommonHttpProtocolOptions: &corev3.HttpProtocolOptions{
 							MaxRequestsPerConnection: &wrapperspb.UInt32Value{Value: 50},
 						},
+						UpstreamProtocolOptions: &envoy_upstreams_http_v3.HttpProtocolOptions_ExplicitHttpConfig_{
+							ExplicitHttpConfig: &envoy_upstreams_http_v3.HttpProtocolOptions_ExplicitHttpConfig{
+								ProtocolConfig: &envoy_upstreams_http_v3.HttpProtocolOptions_ExplicitHttpConfig_HttpProtocolOptions{},
+							},
+						},
 					}),
 				},
 			},
