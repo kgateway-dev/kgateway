@@ -268,15 +268,15 @@ func processBackend(ctx context.Context, in ir.BackendObjectIR, out *envoy_confi
 	spec := be.Spec
 	switch spec.Type {
 	case v1alpha1.BackendTypeStatic:
-		if err := processStatic(ctx, spec.Static, out); err != nil {
+		if err := processStatic(spec.Static, out); err != nil {
 			logger.Error("failed to process static backend", "error", err)
 		}
 	case v1alpha1.BackendTypeAWS:
-		if err := processAws(ctx, spec.Aws, ir.AwsIr, out); err != nil {
+		if err := processAws(ir.AwsIr, out); err != nil {
 			logger.Error("failed to process aws backend", "error", err)
 		}
 	case v1alpha1.BackendTypeAI:
-		err := ai.ProcessAIBackend(ctx, spec.AI, ir.AIIr.AISecret, ir.AIIr.AIMultiSecret, out)
+		err := ai.ProcessAIBackend(spec.AI, ir.AIIr.AISecret, ir.AIIr.AIMultiSecret, out)
 		if err != nil {
 			logger.Error("failed to process ai backend", "error", err)
 		}
@@ -285,7 +285,7 @@ func processBackend(ctx context.Context, in ir.BackendObjectIR, out *envoy_confi
 			logger.Error("failed to add upstream cluster http filters", "error", err)
 		}
 	case v1alpha1.BackendTypeDynamicForwardProxy:
-		if err := processDynamicForwardProxy(ctx, spec.DynamicForwardProxy, out); err != nil {
+		if err := processDynamicForwardProxy(spec.DynamicForwardProxy, out); err != nil {
 			logger.Error("failed to process dynamic forward proxy backend", "error", err)
 		}
 	}
