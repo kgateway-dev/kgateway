@@ -76,19 +76,26 @@ func (r *gatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 
 	log.Info("reconciling gateway")
 	objs, err := r.deployer.GetObjsToDeploy(ctx, &gw)
-	if err != nil {
+	if client.IgnoreNotFound(err) != nil {
 		return ctrl.Result{}, err
 	}
-	// update gw status: find the name of the service we own, and see if it update the status with it
-	result := ctrl.Result{}
+
+	// find the name/ns of the service we own so we can grab addresses
+	// from it for status
+	var generatedSvc *metav1.ObjectMeta
 	for _, obj := range objs {
 		if svc, ok := obj.(*corev1.Service); ok {
-			err := updateStatus(ctx, r.cli, &gw, &svc.ObjectMeta)
-			if err != nil {
-				log.Error(err, "failed to update status")
-				result.Requeue = true
-			}
+			generatedSvc = &svc.ObjectMeta
+			break
 		}
+	}
+
+	// update status (whether we generated a service or not, for unmanaged)
+	result := ctrl.Result{}
+	err = updateStatus(ctx, r.cli, &gw, generatedSvc)
+	if err != nil {
+		log.Error(err, "failed to update status")
+		result.Requeue = true
 	}
 
 	err = r.deployer.DeployObjs(ctx, objs)
@@ -100,27 +107,31 @@ func (r *gatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 }
 
 func updateStatus(ctx context.Context, cli client.Client, gw *api.Gateway, svcmd *metav1.ObjectMeta) error {
-	svcnns := client.ObjectKey{
-		Namespace: svcmd.Namespace,
-		Name:      svcmd.Name,
-	}
-	var svc corev1.Service
-	if err := cli.Get(ctx, svcnns, &svc); err != nil {
-		return client.IgnoreNotFound(err)
-	}
+	var svc *corev1.Service
+	if svcmd != nil {
+		svcnns := client.ObjectKey{
+			Namespace: svcmd.Namespace,
+			Name:      svcmd.Name,
+		}
 
-	// make sure we own this service
-	controller := metav1.GetControllerOf(&svc)
-	if controller == nil {
-		return nil
-	}
+		svc = &corev1.Service{}
+		if err := cli.Get(ctx, svcnns, svc); err != nil {
+			return client.IgnoreNotFound(err)
+		}
 
-	if gw.UID != controller.UID {
-		return nil
+		// make sure we own this service
+		controller := metav1.GetControllerOf(svc)
+		if controller == nil {
+			return nil
+		}
+
+		if gw.UID != controller.UID {
+			return nil
+		}
 	}
 
 	// update gateway addresses in the status
-	desiredAddresses := getDesiredAddresses(gw, &svc)
+	desiredAddresses := getDesiredAddresses(gw, svc)
 	actualAddresses := gw.Status.Addresses
 	if slices.Equal(desiredAddresses, actualAddresses) {
 		return nil
@@ -134,13 +145,13 @@ func updateStatus(ctx context.Context, cli client.Client, gw *api.Gateway, svcmd
 }
 
 func getDesiredAddresses(gw *api.Gateway, svc *corev1.Service) []api.GatewayStatusAddress {
-	if svc.Spec.Type == corev1.ServiceTypeLoadBalancer {
+	var ret []api.GatewayStatusAddress
+	seen := sets.New[api.GatewayStatusAddress]()
+
+	if svc != nil && svc.Spec.Type == corev1.ServiceTypeLoadBalancer {
 		if len(svc.Status.LoadBalancer.Ingress) == 0 {
 			return nil
 		}
-		var ret []api.GatewayStatusAddress
-		seen := sets.New[api.GatewayStatusAddress]()
-
 		for _, ing := range svc.Status.LoadBalancer.Ingress {
 			if addr, ok := convertIngressAddr(ing); ok {
 				seen.Insert(addr)
@@ -148,33 +159,32 @@ func getDesiredAddresses(gw *api.Gateway, svc *corev1.Service) []api.GatewayStat
 			}
 		}
 
-		for _, specAddr := range gw.Spec.Addresses {
-			addr := api.GatewayStatusAddress{
-				Type:  specAddr.Type,
-				Value: specAddr.Value,
-			}
-			if !seen.Has(addr) {
-				ret = append(ret, addr)
-			}
-		}
-
 		return ret
-	}
-
-	var ret []api.GatewayStatusAddress
-	t := api.IPAddressType
-	if len(svc.Spec.ClusterIPs) != 0 {
-		for _, ip := range svc.Spec.ClusterIPs {
+	} else if svc != nil {
+		t := api.IPAddressType
+		if len(svc.Spec.ClusterIPs) != 0 {
+			for _, ip := range svc.Spec.ClusterIPs {
+				ret = append(ret, api.GatewayStatusAddress{
+					Type:  &t,
+					Value: ip,
+				})
+			}
+		} else if svc.Spec.ClusterIP != "" {
 			ret = append(ret, api.GatewayStatusAddress{
 				Type:  &t,
-				Value: ip,
+				Value: svc.Spec.ClusterIP,
 			})
 		}
-	} else if svc.Spec.ClusterIP != "" {
-		ret = append(ret, api.GatewayStatusAddress{
-			Type:  &t,
-			Value: svc.Spec.ClusterIP,
-		})
+	}
+
+	for _, specAddr := range gw.Spec.Addresses {
+		addr := api.GatewayStatusAddress{
+			Type:  specAddr.Type,
+			Value: specAddr.Value,
+		}
+		if !seen.Has(addr) {
+			ret = append(ret, addr)
+		}
 	}
 
 	return ret
