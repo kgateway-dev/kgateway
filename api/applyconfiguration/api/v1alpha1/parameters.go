@@ -6,25 +6,25 @@ import (
 	apiv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 )
 
-// SSLParametersApplyConfiguration represents a declarative configuration of the SSLParameters type for use
+// ParametersApplyConfiguration represents a declarative configuration of the Parameters type for use
 // with apply.
-type SSLParametersApplyConfiguration struct {
+type ParametersApplyConfiguration struct {
 	TLSMinVersion *apiv1alpha1.TLSVersion `json:"tlsMinVersion,omitempty"`
 	TLSMaxVersion *apiv1alpha1.TLSVersion `json:"tlsMaxVersion,omitempty"`
 	CipherSuites  []string                `json:"cipherSuites,omitempty"`
 	EcdhCurves    []string                `json:"ecdhCurves,omitempty"`
 }
 
-// SSLParametersApplyConfiguration constructs a declarative configuration of the SSLParameters type for use with
+// ParametersApplyConfiguration constructs a declarative configuration of the Parameters type for use with
 // apply.
-func SSLParameters() *SSLParametersApplyConfiguration {
-	return &SSLParametersApplyConfiguration{}
+func Parameters() *ParametersApplyConfiguration {
+	return &ParametersApplyConfiguration{}
 }
 
 // WithTLSMinVersion sets the TLSMinVersion field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the TLSMinVersion field is set to the value of the last call.
-func (b *SSLParametersApplyConfiguration) WithTLSMinVersion(value apiv1alpha1.TLSVersion) *SSLParametersApplyConfiguration {
+func (b *ParametersApplyConfiguration) WithTLSMinVersion(value apiv1alpha1.TLSVersion) *ParametersApplyConfiguration {
 	b.TLSMinVersion = &value
 	return b
 }
@@ -32,7 +32,7 @@ func (b *SSLParametersApplyConfiguration) WithTLSMinVersion(value apiv1alpha1.TL
 // WithTLSMaxVersion sets the TLSMaxVersion field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the TLSMaxVersion field is set to the value of the last call.
-func (b *SSLParametersApplyConfiguration) WithTLSMaxVersion(value apiv1alpha1.TLSVersion) *SSLParametersApplyConfiguration {
+func (b *ParametersApplyConfiguration) WithTLSMaxVersion(value apiv1alpha1.TLSVersion) *ParametersApplyConfiguration {
 	b.TLSMaxVersion = &value
 	return b
 }
@@ -40,7 +40,7 @@ func (b *SSLParametersApplyConfiguration) WithTLSMaxVersion(value apiv1alpha1.TL
 // WithCipherSuites adds the given value to the CipherSuites field in the declarative configuration
 // and returns the receiver, so that objects can be build by chaining "With" function invocations.
 // If called multiple times, values provided by each call will be appended to the CipherSuites field.
-func (b *SSLParametersApplyConfiguration) WithCipherSuites(values ...string) *SSLParametersApplyConfiguration {
+func (b *ParametersApplyConfiguration) WithCipherSuites(values ...string) *ParametersApplyConfiguration {
 	for i := range values {
 		b.CipherSuites = append(b.CipherSuites, values[i])
 	}
@@ -50,7 +50,7 @@ func (b *SSLParametersApplyConfiguration) WithCipherSuites(values ...string) *SS
 // WithEcdhCurves adds the given value to the EcdhCurves field in the declarative configuration
 // and returns the receiver, so that objects can be build by chaining "With" function invocations.
 // If called multiple times, values provided by each call will be appended to the EcdhCurves field.
-func (b *SSLParametersApplyConfiguration) WithEcdhCurves(values ...string) *SSLParametersApplyConfiguration {
+func (b *ParametersApplyConfiguration) WithEcdhCurves(values ...string) *ParametersApplyConfiguration {
 	for i := range values {
 		b.EcdhCurves = append(b.EcdhCurves, values[i])
 	}

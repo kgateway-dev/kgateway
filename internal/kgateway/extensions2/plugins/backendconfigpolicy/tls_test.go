@@ -91,17 +91,17 @@ r8/mqGkEdNyd5BqGOFWoUi7kDqslOAl359Gd5ndxAoGAK3TVwhuLR9XoicDjmo6b
 -----END PRIVATE KEY-----
 ` // must have this newline at the end
 
-func TestTranslateSSLConfig(t *testing.T) {
+func TestTranslateTLSConfig(t *testing.T) {
 	tests := []struct {
 		name      string
-		sslConfig *v1alpha1.SSLConfig
+		tlsConfig *v1alpha1.TLS
 		secret    *ir.Secret
 		wantErr   bool
 		check     func(t *testing.T, result *envoyauth.UpstreamTlsContext)
 	}{
 		{
-			name: "secret-based SSL config",
-			sslConfig: &v1alpha1.SSLConfig{
+			name: "secret-based TLS config",
+			tlsConfig: &v1alpha1.TLS{
 				SecretRef: &corev1.LocalObjectReference{
 					Name: "test-secret",
 				},
@@ -135,9 +135,9 @@ func TestTranslateSSLConfig(t *testing.T) {
 			},
 		},
 		{
-			name: "file-based SSL config",
-			sslConfig: &v1alpha1.SSLConfig{
-				SSLFiles: &v1alpha1.SSLFiles{
+			name: "file-based TLS config",
+			tlsConfig: &v1alpha1.TLS{
+				TLSFiles: &v1alpha1.TLSFiles{
 					TLSCertificate: CACert,
 					TLSKey:         TLSKey,
 					RootCA:         CACert,
@@ -156,13 +156,13 @@ func TestTranslateSSLConfig(t *testing.T) {
 			},
 		},
 		{
-			name: "SSL config with parameters",
-			sslConfig: &v1alpha1.SSLConfig{
-				SSLFiles: &v1alpha1.SSLFiles{
+			name: "TLS config with parameters",
+			tlsConfig: &v1alpha1.TLS{
+				TLSFiles: &v1alpha1.TLSFiles{
 					TLSCertificate: CACert,
 					TLSKey:         TLSKey,
 				},
-				SSLParameters: &v1alpha1.SSLParameters{
+				Parameters: &v1alpha1.Parameters{
 					TLSMinVersion: ptr.To(v1alpha1.TLSVersion1_2),
 					TLSMaxVersion: ptr.To(v1alpha1.TLSVersion1_3),
 					CipherSuites:  []string{"TLS_AES_128_GCM_SHA256"},
@@ -181,15 +181,15 @@ func TestTranslateSSLConfig(t *testing.T) {
 			},
 		},
 		{
-			name: "invalid SSL config - missing both secret and files",
-			sslConfig: &v1alpha1.SSLConfig{
+			name: "invalid TLS config - missing both secret and files",
+			tlsConfig: &v1alpha1.TLS{
 				AllowRenegotiation: ptr.To(true),
 			},
 			wantErr: true,
 		},
 		{
-			name: "invalid SSL config - missing secret",
-			sslConfig: &v1alpha1.SSLConfig{
+			name: "invalid TLS config - missing secret",
+			tlsConfig: &v1alpha1.TLS{
 				SecretRef: &corev1.LocalObjectReference{
 					Name: "non-existent-secret",
 				},
@@ -199,8 +199,8 @@ func TestTranslateSSLConfig(t *testing.T) {
 		},
 		{
 			name: "should not error with only rootca",
-			sslConfig: &v1alpha1.SSLConfig{
-				SSLFiles: &v1alpha1.SSLFiles{
+			tlsConfig: &v1alpha1.TLS{
+				TLSFiles: &v1alpha1.TLSFiles{
 					RootCA: CACert,
 				},
 			},
@@ -211,8 +211,8 @@ func TestTranslateSSLConfig(t *testing.T) {
 		},
 		{
 			name: "should error with san and no rootca",
-			sslConfig: &v1alpha1.SSLConfig{
-				SSLFiles: &v1alpha1.SSLFiles{
+			tlsConfig: &v1alpha1.TLS{
+				TLSFiles: &v1alpha1.TLSFiles{
 					TLSCertificate: CACert,
 					TLSKey:         TLSKey,
 				},
@@ -222,8 +222,8 @@ func TestTranslateSSLConfig(t *testing.T) {
 		},
 		{
 			name: "should error with only cert and no key",
-			sslConfig: &v1alpha1.SSLConfig{
-				SSLFiles: &v1alpha1.SSLFiles{
+			tlsConfig: &v1alpha1.TLS{
+				TLSFiles: &v1alpha1.TLSFiles{
 					TLSCertificate: CACert,
 				},
 			},
@@ -231,8 +231,8 @@ func TestTranslateSSLConfig(t *testing.T) {
 		},
 		{
 			name: "should not have validation context if one way tls",
-			sslConfig: &v1alpha1.SSLConfig{
-				SSLFiles: &v1alpha1.SSLFiles{
+			tlsConfig: &v1alpha1.TLS{
+				TLSFiles: &v1alpha1.TLSFiles{
 					TLSCertificate: CACert,
 					TLSKey:         TLSKey,
 					RootCA:         CACert,
@@ -247,7 +247,7 @@ func TestTranslateSSLConfig(t *testing.T) {
 		},
 		{
 			name: "should not have validation context if no rootca",
-			sslConfig: &v1alpha1.SSLConfig{
+			tlsConfig: &v1alpha1.TLS{
 				SecretRef: &corev1.LocalObjectReference{
 					Name: "test-secret",
 				},
@@ -284,7 +284,7 @@ func TestTranslateSSLConfig(t *testing.T) {
 			}
 
 			// Call the function
-			result, err := translateSSLConfig(secretGetter, tt.sslConfig, "default")
+			result, err := translateTLSConfig(secretGetter, tt.tlsConfig, "default")
 
 			// Check error
 			if tt.wantErr {

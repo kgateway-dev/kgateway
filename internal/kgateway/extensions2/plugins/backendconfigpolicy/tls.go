@@ -41,17 +41,17 @@ func (g *DefaultSecretGetter) GetSecret(name, namespace string) (*ir.Secret, err
 	return pluginutils.GetSecretIr(g.secrets, g.krtctx, name, namespace)
 }
 
-func translateSSLConfig(
+func translateTLSConfig(
 	secretGetter SecretGetter,
-	sslConfig *v1alpha1.SSLConfig,
+	tlsConfig *v1alpha1.TLS,
 	namespace string,
 ) (*envoyauth.UpstreamTlsContext, error) {
 	var (
 		certChain, privateKey, rootCA string
 		inlineDataSource              bool
 	)
-	if sslConfig.SecretRef != nil {
-		secret, err := secretGetter.GetSecret(sslConfig.SecretRef.Name, namespace)
+	if tlsConfig.SecretRef != nil {
+		secret, err := secretGetter.GetSecret(tlsConfig.SecretRef.Name, namespace)
 		if err != nil {
 			return nil, err
 		}
@@ -59,10 +59,10 @@ func translateSSLConfig(
 		privateKey = string(secret.Data["tls.key"])
 		rootCA = string(secret.Data["ca.crt"])
 		inlineDataSource = true
-	} else if sslConfig.SSLFiles != nil {
-		certChain = sslConfig.SSLFiles.TLSCertificate
-		privateKey = sslConfig.SSLFiles.TLSKey
-		rootCA = sslConfig.SSLFiles.RootCA
+	} else if tlsConfig.TLSFiles != nil {
+		certChain = tlsConfig.TLSFiles.TLSCertificate
+		privateKey = tlsConfig.TLSFiles.TLSKey
+		rootCA = tlsConfig.TLSFiles.RootCA
 	}
 
 	cleanedCertChain, err := cleanedSslKeyPair(certChain, privateKey, rootCA)
@@ -96,10 +96,10 @@ func translateSSLConfig(
 			},
 		}
 	} else if certChainData != nil || privateKeyData != nil {
-		return nil, errors.New("invalid SSL config: certChain and privateKey must both be provided")
+		return nil, errors.New("invalid TLS config: certChain and privateKey must both be provided")
 	}
 
-	sanList := verifySanListToMatchSanList(sslConfig.VerifySubjectAltName)
+	sanList := verifySanListToMatchSanList(tlsConfig.VerifySubjectAltName)
 
 	if rootCaData != nil {
 		validationCtx := &envoyauth.CommonTlsContext_ValidationContext{
@@ -115,44 +115,44 @@ func translateSSLConfig(
 		return nil, errors.New("a root_ca must be provided if verify_subject_alt_name is not empty")
 	}
 
-	tlsParams, err := parseSSLParameters(sslConfig.SSLParameters)
+	tlsParams, err := parseTLSParameters(tlsConfig.Parameters)
 	if err != nil {
 		return nil, err
 	}
 	tlsContext.TlsParams = tlsParams
 
-	if sslConfig.OneWayTLS != nil && *sslConfig.OneWayTLS {
+	if tlsConfig.OneWayTLS != nil && *tlsConfig.OneWayTLS {
 		tlsContext.ValidationContextType = nil
 	}
 
-	if sslConfig.AlpnProtocols != nil {
-		tlsContext.AlpnProtocols = sslConfig.AlpnProtocols
+	if tlsConfig.AlpnProtocols != nil {
+		tlsContext.AlpnProtocols = tlsConfig.AlpnProtocols
 	}
 
 	return &envoyauth.UpstreamTlsContext{
 		CommonTlsContext:   tlsContext,
-		Sni:                sslConfig.Sni,
-		AllowRenegotiation: ptr.Deref(sslConfig.AllowRenegotiation, false),
+		Sni:                tlsConfig.Sni,
+		AllowRenegotiation: ptr.Deref(tlsConfig.AllowRenegotiation, false),
 	}, nil
 }
 
-func parseSSLParameters(sslParameters *v1alpha1.SSLParameters) (*envoyauth.TlsParameters, error) {
-	if sslParameters == nil {
+func parseTLSParameters(tlsParameters *v1alpha1.Parameters) (*envoyauth.TlsParameters, error) {
+	if tlsParameters == nil {
 		return nil, nil
 	}
 
-	tlsMaxVersion, err := parseTLSVersion(sslParameters.TLSMaxVersion)
+	tlsMaxVersion, err := parseTLSVersion(tlsParameters.TLSMaxVersion)
 	if err != nil {
 		return nil, err
 	}
-	tlsMinVersion, err := parseTLSVersion(sslParameters.TLSMinVersion)
+	tlsMinVersion, err := parseTLSVersion(tlsParameters.TLSMinVersion)
 	if err != nil {
 		return nil, err
 	}
 
 	return &envoyauth.TlsParameters{
-		CipherSuites:              sslParameters.CipherSuites,
-		EcdhCurves:                sslParameters.EcdhCurves,
+		CipherSuites:              tlsParameters.CipherSuites,
+		EcdhCurves:                tlsParameters.EcdhCurves,
 		TlsMinimumProtocolVersion: tlsMinVersion,
 		TlsMaximumProtocolVersion: tlsMaxVersion,
 	}, nil

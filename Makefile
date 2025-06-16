@@ -157,7 +157,8 @@ check-spelling:
 # Analyze
 #----------------------------------------------------------------------------
 
-LINTER_VERSION := $(shell cat .github/workflows/static-analysis.yaml | yq '.jobs.static-analysis.steps.[] | select( .uses == "*golangci/golangci-lint-action*") | .with.version ')
+YQ ?= go tool yq
+LINTER_VERSION := $(shell cat .github/workflows/static-analysis.yaml | $(YQ) '.jobs.static-analysis.steps.[] | select( .uses == "*golangci/golangci-lint-action*") | .with.version ')
 GO_VERSION := $(shell cat go.mod | grep -E '^go' | awk '{print $$2}')
 GOTOOLCHAIN ?= go$(GO_VERSION)
 

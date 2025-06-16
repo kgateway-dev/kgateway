@@ -3,7 +3,6 @@ package endpointpicker
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"time"
 
 	clusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
@@ -33,6 +32,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
@@ -40,17 +40,11 @@ import (
 const DefaultExtProcMaxRequests = 40000
 
 var (
-	inferencePoolGVK = buildInfPoolGvk("InferencePool")
+	logger = logging.New("plugin/inference-epp")
+
+	inferencePoolGVK = wellknown.InferencePoolGVK
 	inferencePoolGVR = inferencePoolGVK.GroupVersion().WithResource("inferencepools")
 )
-
-func buildInfPoolGvk(kind string) schema.GroupVersionKind {
-	return schema.GroupVersionKind{
-		Group:   infextv1a2.GroupVersion.Group,
-		Version: infextv1a2.GroupVersion.Version,
-		Kind:    kind,
-	}
-}
 
 func registerTypes(cli versioned.Interface) {
 	skubeclient.Register[*infextv1a2.InferencePool](
@@ -69,11 +63,11 @@ func NewPlugin(ctx context.Context, commonCol *common.CommonCollections) *extplu
 	// Create the inference extension clientset.
 	cli, err := versioned.NewForConfig(commonCol.Client.RESTConfig())
 	if err != nil {
-		slog.Error("failed to create inference extension client", "error", err)
+		logger.Error("failed to create inference extension client", "error", err)
 		return nil
 	}
 
-	// Register the InfencePool type to enable dynamic object translation.
+	// Register the InferencePool type to enable dynamic object translation.
 	registerTypes(cli)
 
 	// Create an InferencePool krt collection.
@@ -90,13 +84,24 @@ func NewPluginFromCollections(
 	commonCol *common.CommonCollections,
 	poolCol krt.Collection[*infextv1a2.InferencePool],
 ) *extplug.Plugin {
+	// Get the Services KRT collection for computing InferencePool status
+	svcCol := commonCol.Services
+
 	// The InferencePool group kind used by the BackendObjectIR and the ContributesBackendObjectIRs plugin.
 	gk := schema.GroupKind{
-		Group: infextv1a2.GroupVersion.Group,
-		Kind:  wellknown.InferencePoolKind,
+		Group: inferencePoolGVK.Group,
+		Kind:  inferencePoolGVK.Kind,
 	}
 
 	backendCol := krt.NewCollection(poolCol, func(kctx krt.HandlerContext, pool *infextv1a2.InferencePool) *ir.BackendObjectIR {
+		// Validate the InferencePool and create the associated IR.
+		irPool := newInferencePool(pool)
+		errs := validatePool(pool, svcCol)
+		if errs != nil {
+			// If there are validation errors, add them to the IR.
+			irPool.errors = errs
+		}
+
 		// Create a BackendObjectIR IR representation from the given InferencePool.
 		objSrc := ir.ObjectSource{
 			Kind:      gk.Kind,
@@ -108,11 +113,19 @@ func NewPluginFromCollections(
 		backend.Obj = pool
 		backend.GvPrefix = "endpoint-picker"
 		backend.CanonicalHostname = ""
-		backend.ObjIr = newInferencePool(pool)
+		backend.ObjIr = irPool
 		return &backend
 	}, commonCol.KrtOpts.ToOptions("InferencePoolIR")...)
 
-	policyCol := krt.NewCollection(poolCol, func(krtctx krt.HandlerContext, pool *infextv1a2.InferencePool) *ir.PolicyWrapper {
+	policyCol := krt.NewCollection(poolCol, func(kctx krt.HandlerContext, pool *infextv1a2.InferencePool) *ir.PolicyWrapper {
+		// Validate the InferencePool and create the associated IR.
+		irPool := newInferencePool(pool)
+		errs := validatePool(pool, svcCol)
+		if errs != nil {
+			// If there are validation errors, add them to the IR.
+			irPool.errors = errs
+		}
+
 		// Create a PolicyWrapper IR representation from the given InferencePool.
 		return &ir.PolicyWrapper{
 			ObjectSource: ir.ObjectSource{
@@ -122,7 +135,7 @@ func NewPluginFromCollections(
 				Name:      pool.Name,
 			},
 			Policy:   pool,
-			PolicyIR: newInferencePool(pool),
+			PolicyIR: irPool,
 		}
 	})
 
@@ -142,6 +155,9 @@ func NewPluginFromCollections(
 				Policies:                  policyCol,
 				NewGatewayTranslationPass: newEndpointPickerPass,
 			},
+		},
+		ContributesRegistration: map[schema.GroupKind]func(){
+			gk: buildRegisterCallback(ctx, commonCol, backendCol),
 		},
 	}
 }

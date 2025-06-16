@@ -60,14 +60,14 @@ type BackendConfigPolicySpec struct {
 	// +optional
 	Http1ProtocolOptions *Http1ProtocolOptions `json:"http1ProtocolOptions,omitempty"`
 
-	// SSLConfig contains the options necessary to configure a backend to use TLS origination.
+	// TLS contains the options necessary to configure a backend to use TLS origination.
 	// See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/transport_sockets/tls/v3/tls.proto#envoy-v3-api-msg-extensions-transport-sockets-tls-v3-sslconfig) for more details.
 	// +optional
-	SSLConfig *SSLConfig `json:"sslConfig,omitempty"`
+	TLS *TLS `json:"tls,omitempty"`
 
-	// LoadBalancerConfig contains the options necessary to configure the load balancer.
+	// LoadBalancer contains the options necessary to configure the load balancer.
 	// +optional
-	LoadBalancerConfig *LoadBalancerConfig `json:"loadBalancerConfig,omitempty"`
+	LoadBalancer *LoadBalancer `json:"loadBalancer,omitempty"`
 }
 
 // See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-msg-config-core-v3-http1protocoloptions) for more details.
@@ -173,15 +173,15 @@ type TCPKeepalive struct {
 	KeepAliveInterval *metav1.Duration `json:"keepAliveInterval,omitempty"`
 }
 
-// +kubebuilder:validation:XValidation:rule="has(self.secretRef) != has(self.sslFiles)",message="Exactly one of secretRef or sslFiles must be set in SSLConfig"
-type SSLConfig struct {
+// +kubebuilder:validation:XValidation:rule="has(self.secretRef) != has(self.tlsFiles)",message="Exactly one of secretRef or tlsFiles must be set in TLS"
+type TLS struct {
 	// Reference to the TLS secret containing the certificate, key, and optionally the root CA.
 	// +optional
 	SecretRef *corev1.LocalObjectReference `json:"secretRef,omitempty"`
 
 	// File paths to certificates local to the proxy.
 	// +optional
-	SSLFiles *SSLFiles `json:"sslFiles,omitempty"`
+	TLSFiles *TLSFiles `json:"tlsFiles,omitempty"`
 
 	// The SNI domains that should be considered for TLS connection
 	// +optional
@@ -195,7 +195,7 @@ type SSLConfig struct {
 	// General TLS parameters. See the [envoy docs](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/transport_sockets/tls/v3/common.proto#extensions-transport-sockets-tls-v3-tlsparameters)
 	// for more information on the meaning of these values.
 	// +optional
-	SSLParameters *SSLParameters `json:"sslParameters,omitempty"`
+	Parameters *Parameters `json:"parameters,omitempty"`
 
 	// Set Application Level Protocol Negotiation
 	// If empty, defaults to ["h2", "http/1.1"].
@@ -207,7 +207,7 @@ type SSLConfig struct {
 	// +optional
 	AllowRenegotiation *bool `json:"allowRenegotiation,omitempty"`
 
-	// If the SSL config has the ca.crt (root CA) provided, kgateway uses it to perform mTLS by default.
+	// If the TLS config has the ca.crt (root CA) provided, kgateway uses it to perform mTLS by default.
 	// Set oneWayTls to true to disable mTLS in favor of server-only TLS (one-way TLS), even if kgateway has the root CA.
 	// If unset, defaults to false.
 	// +optional
@@ -226,7 +226,7 @@ const (
 	TLSVersion1_3  TLSVersion = "1.3"
 )
 
-type SSLParameters struct {
+type Parameters struct {
 	// Minimum TLS version.
 	// +optional
 	TLSMinVersion *TLSVersion `json:"tlsMinVersion,omitempty"`
@@ -242,8 +242,8 @@ type SSLParameters struct {
 	EcdhCurves []string `json:"ecdhCurves,omitempty"`
 }
 
-// +kubebuilder:validation:XValidation:rule="has(self.tlsCertificate) || has(self.tlsKey) || has(self.rootCA)",message="At least one of tlsCertificate, tlsKey, or rootCA must be set in SSLFiles"
-type SSLFiles struct {
+// +kubebuilder:validation:XValidation:rule="has(self.tlsCertificate) || has(self.tlsKey) || has(self.rootCA)",message="At least one of tlsCertificate, tlsKey, or rootCA must be set in TLSFiles"
+type TLSFiles struct {
 	// +optional
 	TLSCertificate string `json:"tlsCertificate,omitempty"`
 
@@ -255,7 +255,7 @@ type SSLFiles struct {
 }
 
 // +kubebuilder:validation:XValidation:rule="[has(self.leastRequest), has(self.roundRobin), has(self.ringHash), has(self.maglev), has(self.random)].filter(x, x).size() <= 1",message="only one of leastRequest, roundRobin, ringHash, maglev, or random can be set"
-type LoadBalancerConfig struct {
+type LoadBalancer struct {
 	// HealthyPanicThreshold configures envoy's panic threshold percentage between 0-100. Once the number of non-healthy hosts
 	// reaches this percentage, envoy disregards health information.
 	// See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/load_balancing/panic_threshold.html).
@@ -291,11 +291,11 @@ type LoadBalancerConfig struct {
 	// +optional
 	Random *LoadBalancerRandomConfig `json:"random,omitempty"`
 
-	// LocalityConfigType specifies the locality config type to use.
+	// LocalityType specifies the locality config type to use.
 	// See https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/load_balancing_policies/common/v3/common.proto#envoy-v3-api-msg-extensions-load-balancing-policies-common-v3-localitylbconfig
 	// +optional
 	// +kubebuilder:validation:Enum=WeightedLb
-	LocalityConfigType *LocalityConfigType `json:"localityConfigType,omitempty"`
+	LocalityType *LocalityType `json:"localityType,omitempty"`
 
 	// UseHostnameForHashing specifies whether to use the hostname instead of the resolved IP address for hashing.
 	// Defaults to false.
@@ -326,16 +326,16 @@ type LoadBalancerLeastRequestConfig struct {
 	// +default=2
 	ChoiceCount uint32 `json:"choiceCount,omitempty"`
 
-	// SlowStartConfig configures the slow start configuration for the load balancer.
+	// SlowStart configures the slow start configuration for the load balancer.
 	// +optional
-	SlowStartConfig *SlowStartConfig `json:"slowStartConfig,omitempty"`
+	SlowStart *SlowStart `json:"slowStart,omitempty"`
 }
 
 // LoadBalancerRoundRobinConfig configures the round robin load balancer type.
 type LoadBalancerRoundRobinConfig struct {
-	// SlowStartConfig configures the slow start configuration for the load balancer.
+	// SlowStart configures the slow start configuration for the load balancer.
 	// +optional
-	SlowStartConfig *SlowStartConfig `json:"slowStartConfig,omitempty"`
+	SlowStart *SlowStart `json:"slowStart,omitempty"`
 }
 
 // LoadBalancerRingHashConfig configures the ring hash load balancer type.
@@ -352,7 +352,7 @@ type LoadBalancerRingHashConfig struct {
 type LoadBalancerMaglevConfig struct{}
 type LoadBalancerRandomConfig struct{}
 
-type SlowStartConfig struct {
+type SlowStart struct {
 	// Represents the size of slow start window.
 	// If set, the newly created host remains in slow start mode starting from its creation time
 	// for the duration of slow start window.
@@ -381,11 +381,11 @@ type SlowStartConfig struct {
 	MinWeightPercent *uint32 `json:"minWeightPercent,omitempty"`
 }
 
-type LocalityConfigType string
+type LocalityType string
 
 const (
 	// https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/load_balancing/locality_weight#locality-weighted-load-balancing
 	// Locality weighted load balancing enables weighting assignments across different zones and geographical locations by using explicit weights.
 	// This field is required to enable locality weighted load balancing.
-	LocalityConfigTypeWeightedLb LocalityConfigType = "WeightedLb"
+	LocalityConfigTypeWeightedLb LocalityType = "WeightedLb"
 )
