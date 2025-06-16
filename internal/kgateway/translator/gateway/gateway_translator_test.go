@@ -585,48 +585,48 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 		},
 	}),
 	Entry("Service with appProtocol=kubernetes.io/h2c", translatorTestCase{
-		inputFile:  "backend-protocol/h2c.yaml",
-		outputFile: "backend-protocol/h2c.yaml",
-		gwNN: types.NamespacedName{
-			Namespace: "default",
-			Name:      "example-gateway",
-		},
-	}),
-	Entry("Service with appProtocol=http2", translatorTestCase{
-		inputFile:  "backend-protocol/http2.yaml",
-		outputFile: "backend-protocol/http2.yaml",
-		gwNN: types.NamespacedName{
-			Namespace: "default",
-			Name:      "example-gateway",
-		},
-	}),
-	Entry("Service with appProtocol=grpc", translatorTestCase{
-		inputFile:  "backend-protocol/grpc.yaml",
-		outputFile: "backend-protocol/grpc.yaml",
-		gwNN: types.NamespacedName{
-			Namespace: "default",
-			Name:      "example-gateway",
-		},
-	}),
-	Entry("Service with appProtocol=grpc-web", translatorTestCase{
-		inputFile:  "backend-protocol/grpc-web.yaml",
-		outputFile: "backend-protocol/grpc-web.yaml",
+		inputFile:  "backend-protocol/svc-h2c.yaml",
+		outputFile: "backend-protocol/svc-h2c.yaml",
 		gwNN: types.NamespacedName{
 			Namespace: "default",
 			Name:      "example-gateway",
 		},
 	}),
 	Entry("Service with appProtocol=kubernetes.io/ws", translatorTestCase{
-		inputFile:  "backend-protocol/ws.yaml",
-		outputFile: "backend-protocol/ws.yaml",
+		inputFile:  "backend-protocol/svc-ws.yaml",
+		outputFile: "backend-protocol/svc-ws.yaml",
 		gwNN: types.NamespacedName{
 			Namespace: "default",
 			Name:      "example-gateway",
 		},
 	}),
 	Entry("Service with appProtocol=anything", translatorTestCase{
-		inputFile:  "backend-protocol/default.yaml",
-		outputFile: "backend-protocol/default.yaml",
+		inputFile:  "backend-protocol/svc-default.yaml",
+		outputFile: "backend-protocol/svc-default.yaml",
+		gwNN: types.NamespacedName{
+			Namespace: "default",
+			Name:      "example-gateway",
+		},
+	}),
+	Entry("Static Backend with appProtocol=kubernetes.io/h2c", translatorTestCase{
+		inputFile:  "backend-protocol/backend-h2c.yaml",
+		outputFile: "backend-protocol/backend-h2c.yaml",
+		gwNN: types.NamespacedName{
+			Namespace: "default",
+			Name:      "example-gateway",
+		},
+	}),
+	Entry("Static Backend with appProtocol=kubernetes.io/ws", translatorTestCase{
+		inputFile:  "backend-protocol/backend-ws.yaml",
+		outputFile: "backend-protocol/backend-ws.yaml",
+		gwNN: types.NamespacedName{
+			Namespace: "default",
+			Name:      "example-gateway",
+		},
+	}),
+	Entry("Static Backend with no appProtocol", translatorTestCase{
+		inputFile:  "backend-protocol/backend-default.yaml",
+		outputFile: "backend-protocol/backend-default.yaml",
 		gwNN: types.NamespacedName{
 			Namespace: "default",
 			Name:      "example-gateway",

@@ -15,6 +15,7 @@ import (
 	"istio.io/istio/pkg/kube"
 	istiosets "istio.io/istio/pkg/util/sets"
 	rbacv1 "k8s.io/api/rbac/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/rest"
@@ -30,7 +31,9 @@ import (
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	infextv1a2 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
+	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/controller"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/deployer"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/registry"
@@ -45,10 +48,11 @@ import (
 )
 
 const (
-	gatewayClassName      = "clsname"
-	altGatewayClassName   = "clsname-alt"
-	gatewayControllerName = "kgateway.dev/kgateway"
-	defaultNamespace      = "default"
+	gatewayClassName            = "clsname"
+	altGatewayClassName         = "clsname-alt"
+	selfManagedGatewayClassName = "clsname-selfmanaged"
+	gatewayControllerName       = "kgateway.dev/kgateway"
+	defaultNamespace            = "default"
 )
 
 var (
@@ -58,7 +62,7 @@ var (
 	ctx          context.Context
 	cancel       context.CancelFunc
 	kubeconfig   string
-	gwClasses    = sets.New(gatewayClassName, altGatewayClassName)
+	gwClasses    = sets.New(gatewayClassName, altGatewayClassName, selfManagedGatewayClassName)
 	scheme       *runtime.Scheme
 	inferenceExt *deployer.InferenceExtInfo
 )
@@ -214,6 +218,15 @@ func createManager(
 		cancel()
 		return nil, err
 	}
+	mgr.GetClient().Create(ctx, &v1alpha1.GatewayParameters{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      selfManagedGatewayClassName,
+			Namespace: "kgateway-system",
+		},
+		Spec: v1alpha1.GatewayParametersSpec{
+			SelfManaged: &v1alpha1.SelfManagedGateway{},
+		},
+	})
 
 	// Use the default & alt GCs when no class configs are provided.
 	if classConfigs == nil {
@@ -223,6 +236,14 @@ func createManager(
 		}
 		classConfigs[gatewayClassName] = &controller.ClassInfo{
 			Description: "default gateway class",
+		}
+		classConfigs[selfManagedGatewayClassName] = &controller.ClassInfo{
+			Description: "self managed gw",
+			ParametersRef: &apiv1.ParametersReference{
+				Group: apiv1.Group(wellknown.GatewayParametersGVK.Group),
+				Kind:  apiv1.Kind(wellknown.GatewayParametersGVK.Kind),
+				Name:  selfManagedGatewayClassName,
+			},
 		}
 	}
 

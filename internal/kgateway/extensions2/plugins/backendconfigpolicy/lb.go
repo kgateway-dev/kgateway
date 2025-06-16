@@ -28,7 +28,7 @@ type slowStartConfigIR struct {
 	aggression      string
 }
 
-func translateLoadBalancerConfig(config *v1alpha1.LoadBalancerConfig) *LoadBalancerConfigIR {
+func translateLoadBalancerConfig(config *v1alpha1.LoadBalancer) *LoadBalancerConfigIR {
 	out := &LoadBalancerConfigIR{}
 
 	out.commonLbConfig = &clusterv3.Cluster_CommonLbConfig{}
@@ -47,8 +47,8 @@ func translateLoadBalancerConfig(config *v1alpha1.LoadBalancerConfig) *LoadBalan
 		out.commonLbConfig.UpdateMergeWindow = durationpb.New(config.UpdateMergeWindow.Duration)
 	}
 
-	if config.LocalityConfigType != nil {
-		switch *config.LocalityConfigType {
+	if config.LocalityType != nil {
+		switch *config.LocalityType {
 		case v1alpha1.LocalityConfigTypeWeightedLb:
 			out.commonLbConfig.LocalityConfigSpecifier = &clusterv3.Cluster_CommonLbConfig_LocalityWeightedLbConfig_{
 				LocalityWeightedLbConfig: &clusterv3.Cluster_CommonLbConfig_LocalityWeightedLbConfig{},
@@ -66,10 +66,10 @@ func translateLoadBalancerConfig(config *v1alpha1.LoadBalancerConfig) *LoadBalan
 		out.leastRequestLbConfig.ChoiceCount = &wrapperspb.UInt32Value{
 			Value: config.LeastRequest.ChoiceCount,
 		}
-		out.slowStartConfigIR = toSlowStartConfigIR(config.LeastRequest.SlowStartConfig)
+		out.slowStartConfigIR = toSlowStartConfigIR(config.LeastRequest.SlowStart)
 	} else if config.RoundRobin != nil {
 		out.lbPolicy = clusterv3.Cluster_ROUND_ROBIN
-		out.slowStartConfigIR = toSlowStartConfigIR(config.RoundRobin.SlowStartConfig)
+		out.slowStartConfigIR = toSlowStartConfigIR(config.RoundRobin.SlowStart)
 	} else if config.RingHash != nil {
 		out.lbPolicy = clusterv3.Cluster_RING_HASH
 		out.ringHashLbConfig = &clusterv3.Cluster_RingHashLbConfig{}
@@ -148,7 +148,7 @@ func configureLeastRequestLb(out *clusterv3.Cluster, cfg *LoadBalancerConfigIR) 
 	}
 }
 
-func toSlowStartConfigIR(cfg *v1alpha1.SlowStartConfig) *slowStartConfigIR {
+func toSlowStartConfigIR(cfg *v1alpha1.SlowStart) *slowStartConfigIR {
 	if cfg == nil {
 		return nil
 	}

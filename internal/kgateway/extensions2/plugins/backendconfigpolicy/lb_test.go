@@ -20,12 +20,12 @@ import (
 func TestApplyLoadBalancerConfig(t *testing.T) {
 	tests := []struct {
 		name     string
-		config   *v1alpha1.LoadBalancerConfig
+		config   *v1alpha1.LoadBalancer
 		expected *clusterv3.Cluster
 	}{
 		{
 			name: "HealthyPanicThreshold",
-			config: &v1alpha1.LoadBalancerConfig{
+			config: &v1alpha1.LoadBalancer{
 				HealthyPanicThreshold: ptr.To(uint32(100)),
 			},
 			expected: &clusterv3.Cluster{
@@ -40,7 +40,7 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 		},
 		{
 			name: "UpdateMergeWindow",
-			config: &v1alpha1.LoadBalancerConfig{
+			config: &v1alpha1.LoadBalancer{
 				UpdateMergeWindow: &metav1.Duration{
 					Duration: 10 * time.Second,
 				},
@@ -55,7 +55,7 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 		},
 		{
 			name: "LoadBalancerTypeRandom",
-			config: &v1alpha1.LoadBalancerConfig{
+			config: &v1alpha1.LoadBalancer{
 				Random: &v1alpha1.LoadBalancerRandomConfig{},
 			},
 			expected: &clusterv3.Cluster{
@@ -68,7 +68,7 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 		},
 		{
 			name: "RoundRobin basic config",
-			config: &v1alpha1.LoadBalancerConfig{
+			config: &v1alpha1.LoadBalancer{
 				RoundRobin: &v1alpha1.LoadBalancerRoundRobinConfig{},
 			},
 			expected: &clusterv3.Cluster{
@@ -81,9 +81,9 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 		},
 		{
 			name: "RoundRobin full config",
-			config: &v1alpha1.LoadBalancerConfig{
+			config: &v1alpha1.LoadBalancer{
 				RoundRobin: &v1alpha1.LoadBalancerRoundRobinConfig{
-					SlowStartConfig: &v1alpha1.SlowStartConfig{
+					SlowStart: &v1alpha1.SlowStart{
 						Window: &metav1.Duration{
 							Duration: 10 * time.Second,
 						},
@@ -116,7 +116,7 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 		},
 		{
 			name: "LeastRequest basic config",
-			config: &v1alpha1.LoadBalancerConfig{
+			config: &v1alpha1.LoadBalancer{
 				LeastRequest: &v1alpha1.LoadBalancerLeastRequestConfig{},
 			},
 			expected: &clusterv3.Cluster{
@@ -134,10 +134,10 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 		},
 		{
 			name: "LeastRequest full config",
-			config: &v1alpha1.LoadBalancerConfig{
+			config: &v1alpha1.LoadBalancer{
 				LeastRequest: &v1alpha1.LoadBalancerLeastRequestConfig{
 					ChoiceCount: 10,
-					SlowStartConfig: &v1alpha1.SlowStartConfig{
+					SlowStart: &v1alpha1.SlowStart{
 						Window: &metav1.Duration{
 							Duration: 10 * time.Second,
 						},
@@ -171,7 +171,7 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 		},
 		{
 			name: "RingHash basic config",
-			config: &v1alpha1.LoadBalancerConfig{
+			config: &v1alpha1.LoadBalancer{
 				RingHash: &v1alpha1.LoadBalancerRingHashConfig{},
 			},
 			expected: &clusterv3.Cluster{
@@ -187,7 +187,7 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 		},
 		{
 			name: "RingHash full config",
-			config: &v1alpha1.LoadBalancerConfig{
+			config: &v1alpha1.LoadBalancer{
 				RingHash: &v1alpha1.LoadBalancerRingHashConfig{
 					MinimumRingSize: ptr.To(uint64(10)),
 					MaximumRingSize: ptr.To(uint64(100)),
@@ -209,7 +209,7 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 		},
 		{
 			name: "Maglev",
-			config: &v1alpha1.LoadBalancerConfig{
+			config: &v1alpha1.LoadBalancer{
 				Maglev: &v1alpha1.LoadBalancerMaglevConfig{},
 			},
 			expected: &clusterv3.Cluster{
@@ -222,8 +222,8 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 		},
 		{
 			name: "LocalityWeightedLb",
-			config: &v1alpha1.LoadBalancerConfig{
-				LocalityConfigType: ptr.To(v1alpha1.LocalityConfigTypeWeightedLb),
+			config: &v1alpha1.LoadBalancer{
+				LocalityType: ptr.To(v1alpha1.LocalityConfigTypeWeightedLb),
 			},
 			expected: &clusterv3.Cluster{
 				Name: "test",
@@ -237,7 +237,7 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 		},
 		{
 			name: "CloseConnectionsOnHostSetChange",
-			config: &v1alpha1.LoadBalancerConfig{
+			config: &v1alpha1.LoadBalancer{
 				CloseConnectionsOnHostSetChange: ptr.To(true),
 			},
 			expected: &clusterv3.Cluster{
@@ -250,7 +250,7 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 		},
 		{
 			name: "UseHostnameForHashing",
-			config: &v1alpha1.LoadBalancerConfig{
+			config: &v1alpha1.LoadBalancer{
 				UseHostnameForHashing: true,
 			},
 			expected: &clusterv3.Cluster{
