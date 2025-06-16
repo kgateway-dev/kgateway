@@ -363,7 +363,6 @@ spec:
                     maxItems: 16
                     type: array
                   percentageEnabled:
-                    default: 0
                     format: int32
                     maximum: 100
                     minimum: 0
@@ -374,6 +373,10 @@ spec:
                     minimum: 0
                     type: integer
                 type: object
+                x-kubernetes-validations:
+                - message: exactly one of PercentageEnabled or PercentageShadowed
+                    must be set
+                  rule: has(self.percentageEnabled) != has(self.percentageShadowed)
               extAuth:
                 properties:
                   contextExtensions:

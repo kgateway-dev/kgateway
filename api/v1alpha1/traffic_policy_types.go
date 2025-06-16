@@ -350,18 +350,15 @@ type CorsPolicy struct {
 // CSRFPolicy can be used to set percent of requests for which the CSRF filter is enabled,
 // enable shadow-only mode where policies will be evaluated and tracked, but not enforced and
 // add additional source origins that will be allowed in addition to the destination origin.
+// +kubebuilder:validation:XValidation:message="exactly one of PercentageEnabled or PercentageShadowed must be set",rule="has(self.percentageEnabled) != has(self.percentageShadowed)"
 type CSRFPolicy struct {
 	// Specifies the percentage of requests for which the CSRF filter is enabled.
-	// If both PercentageEnabled and PercentageShadowed are set, the PercentageEnabled flag will take precedence.
 	// +optional
-	// +kubebuilder:default=0
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Maximum=100
 	PercentageEnabled *uint32 `json:"percentageEnabled,omitempty"`
 
 	// Specifies that CSRF policies will be evaluated and tracked, but not enforced.
-	// This is intended to be used when PercentageEnabled is 0 and will be ignored otherwise.
-	// If both PercentageEnabled and PercentageShadowed are set, the PercentageEnabled flag will take precedence.
 	// +optional
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Maximum=100

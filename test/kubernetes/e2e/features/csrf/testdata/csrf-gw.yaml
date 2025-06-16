@@ -9,8 +9,6 @@ spec:
     name: gw
   csrf:
     percentageEnabled: 100
-    # Making sure that percentageShadowed is ignored when percentageEnabled is set
-    percentageShadowed: 100
     additionalOrigins:
     - exact: example.org
     - suffix: gwtest.io

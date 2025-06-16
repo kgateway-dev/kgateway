@@ -124,29 +124,29 @@ func toEnvoyStringMatcher(origin *v1alpha1.StringMatcher) *envoy_matcher_v3.Stri
 	}
 
 	switch {
-	case origin.Exact != "":
+	case origin.Exact != nil:
 		matcher.MatchPattern = &envoy_matcher_v3.StringMatcher_Exact{
-			Exact: origin.Exact,
+			Exact: *origin.Exact,
 		}
-	case origin.Prefix != "":
+	case origin.Prefix != nil:
 		matcher.MatchPattern = &envoy_matcher_v3.StringMatcher_Prefix{
-			Prefix: origin.Prefix,
+			Prefix: *origin.Prefix,
 		}
-	case origin.Suffix != "":
+	case origin.Suffix != nil:
 		matcher.MatchPattern = &envoy_matcher_v3.StringMatcher_Suffix{
-			Suffix: origin.Suffix,
+			Suffix: *origin.Suffix,
 		}
-	case origin.Contains != "":
+	case origin.Contains != nil:
 		matcher.MatchPattern = &envoy_matcher_v3.StringMatcher_Contains{
-			Contains: origin.Contains,
+			Contains: *origin.Contains,
 		}
-	case origin.SafeRegex != "":
+	case origin.SafeRegex != nil:
 		matcher.MatchPattern = &envoy_matcher_v3.StringMatcher_SafeRegex{
 			SafeRegex: &envoy_matcher_v3.RegexMatcher{
 				EngineType: &envoy_matcher_v3.RegexMatcher_GoogleRe2{
 					GoogleRe2: &envoy_matcher_v3.RegexMatcher_GoogleRE2{},
 				},
-				Regex: origin.SafeRegex,
+				Regex: *origin.SafeRegex,
 			},
 		}
 	default:

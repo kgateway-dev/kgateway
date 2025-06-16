@@ -1628,14 +1628,14 @@ func schema_kgateway_v2_api_v1alpha1_CSRFPolicy(ref common.ReferenceCallback) co
 				Properties: map[string]spec.Schema{
 					"percentageEnabled": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Specifies the percentage of requests for which the CSRF filter is enabled. If both PercentageEnabled and PercentageShadowed are set, the PercentageEnabled flag will take precedence.",
+							Description: "Specifies the percentage of requests for which the CSRF filter is enabled.",
 							Type:        []string{"integer"},
 							Format:      "int64",
 						},
 					},
 					"percentageShadowed": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Specifies that CSRF policies will be evaluated and tracked, but not enforced. This is intended to be used when PercentageEnabled is 0 and will be ignored otherwise. If both PercentageEnabled and PercentageShadowed are set, the PercentageEnabled flag will take precedence.",
+							Description: "Specifies that CSRF policies will be evaluated and tracked, but not enforced.",
 							Type:        []string{"integer"},
 							Format:      "int64",
 						},

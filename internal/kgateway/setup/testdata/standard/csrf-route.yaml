@@ -81,7 +81,6 @@ spec:
     name: my-route
   csrf:
     percentageEnabled: 80
-    percentageShadowed: 100 # should be ignored by envoy when percentageEnabled is set
     additionalOrigins:
       - exact: "www.example.org"
       - prefix: "pref"

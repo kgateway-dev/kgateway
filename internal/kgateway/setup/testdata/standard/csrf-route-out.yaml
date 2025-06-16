@@ -87,7 +87,3 @@ routes:
             defaultValue:
               numerator: 80
             runtimeKey: envoy.csrf.filter_enabled
-          shadowEnabled:
-            defaultValue:
-              numerator: 100
-            runtimeKey: envoy.csrf.shadow_enabled
