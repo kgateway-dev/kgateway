@@ -173,8 +173,8 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 	Entry(
 		"httproute with invalid prefix match reports correctly",
 		translatorTestCase{
-			inputFile:  "http-routing/invalid-prefix-match.yaml",
-			outputFile: "http-routing/invalid-prefix-match.yaml",
+			inputFile:  "http-routing-invalid-prefix/manifest.yaml",
+			outputFile: "http-routing-invalid-prefix/manifest.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "gwtest",
 				Name:      "example-gateway",
@@ -216,7 +216,7 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 			},
 		}),
 	Entry(
-		"TrafficPolicy with with targetSelectors",
+		"TrafficPolicy with targetSelectors",
 		translatorTestCase{
 			inputFile:  "traffic-policy/label_based.yaml",
 			outputFile: "traffic-policy/label_based.yaml",
