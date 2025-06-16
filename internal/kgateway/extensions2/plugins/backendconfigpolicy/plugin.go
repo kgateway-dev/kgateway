@@ -201,7 +201,7 @@ func processBackend(_ context.Context, polir ir.PolicyIR, _ ir.BackendObjectIR, 
 	if pol.commonHttpProtocolOptions != nil {
 		if err := translatorutils.MutateHttpOptions(out, func(opts *envoy_upstreams_v3.HttpProtocolOptions) {
 			opts.CommonHttpProtocolOptions = pol.commonHttpProtocolOptions
-			if opts.UpstreamProtocolOptions == nil {
+			if opts.GetUpstreamProtocolOptions() == nil {
 				// Envoy requires UpstreamProtocolOptions if CommonHttpProtocolOptions is set.
 				opts.UpstreamProtocolOptions = &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig_{
 					ExplicitHttpConfig: &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig{
