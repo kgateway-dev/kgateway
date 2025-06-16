@@ -1232,10 +1232,11 @@ func toAttachedPolicies(policies []ir.PolicyAtt, opts ...ir.PolicyAttachmentOpts
 		// Create a new PolicyAtt instead of using `p` because the PolicyAttchmentOpts are per-route
 		// and not encoded in `p`
 		polAtt := ir.PolicyAtt{
-			PolicyIr:  p.PolicyIr,
-			PolicyRef: p.PolicyRef,
-			GroupKind: gk,
-			Errors:    p.Errors,
+			PolicyIr:   p.PolicyIr,
+			PolicyRef:  p.PolicyRef,
+			GroupKind:  gk,
+			Errors:     p.Errors,
+			Generation: p.Generation,
 		}
 		for _, o := range opts {
 			o(&polAtt)

@@ -116,6 +116,7 @@ func snapshotPerClient(
 			return nil
 		}
 		clustersForUcc := krt.FetchOne(kctx, clusterSnapshot, krt.FilterKey(ucc.ResourceName()))
+		clientEndpointResources := krt.FetchOne(kctx, endpointResources, krt.FilterKey(ucc.ResourceName()))
 
 		// HACK
 		// https://github.com/solo-io/gloo/pull/10611/files#diff-060acb7cdd3a287a3aef1dd864aae3e0193da17b6230c382b649ce9dc0eca80b
@@ -129,14 +130,13 @@ func snapshotPerClient(
 		// with that computation and will almost always lose.
 		// While we're looking for a way to make this ordering predictable
 		// to avoid hacks like this, it will do for now.
-		if clustersForUcc == nil {
+		if clustersForUcc == nil || clientEndpointResources == nil {
 			logger.Info("no perclient clusters; defer building snapshot", "client", ucc.ResourceName())
 			return nil
 		}
 
 		logger.Debug("found perclient clusters", "client", ucc.ResourceName(), "clusters", len(clustersForUcc.clusters.Items))
 		clusterResources := clustersForUcc.clusters
-		clientEndpointResources := krt.FetchOne(kctx, endpointResources, krt.FilterKey(ucc.ResourceName()))
 
 		snap := XdsSnapWrapper{}
 		if len(listenerRouteSnapshot.Clusters) > 0 {

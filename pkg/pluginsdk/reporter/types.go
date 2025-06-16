@@ -14,10 +14,11 @@ const (
 )
 
 type PolicyCondition struct {
-	Type    gwv1alpha2.PolicyConditionType
-	Status  metav1.ConditionStatus
-	Reason  gwv1alpha2.PolicyConditionReason
-	Message string
+	Type               gwv1alpha2.PolicyConditionType
+	Status             metav1.ConditionStatus
+	Reason             gwv1alpha2.PolicyConditionReason
+	Message            string
+	ObservedGeneration int64
 }
 
 type PolicyKey struct {
