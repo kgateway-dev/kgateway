@@ -22,6 +22,8 @@ clusters:
         headersWithUnderscoresAction: DROP_HEADER
         maxHeadersCount: 15
         maxRequestsPerConnection: 100
+      explicitHttpConfig:
+        httpProtocolOptions: {}
 - connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
