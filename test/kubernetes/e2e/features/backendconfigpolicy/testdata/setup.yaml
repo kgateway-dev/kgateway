@@ -77,4 +77,68 @@ spec:
       ports:
         - containerPort: 80
           name: http-web-svc
-          
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: httpbin
+  labels:
+    app: httpbin
+    service: httpbin
+spec:
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+  selector:
+    app: httpbin
+---
+# make sure proxy works with commonHttpProtocolOptions for HTTP backend
+kind: BackendConfigPolicy
+apiVersion: gateway.kgateway.dev/v1alpha1
+metadata:
+  name: httpbin-policy
+spec:
+  targetRefs:
+    - name: httpbin
+      group: ""
+      kind: Service
+  commonHttpProtocolOptions:
+    idleTimeout: 10s
+    maxHeadersCount: 15
+    maxStreamDuration: 30s
+    maxRequestsPerConnection: 100
+    headersWithUnderscoresAction: RejectRequest
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: httpbin-h2c
+  labels:
+    app: httpbin-h2c
+    service: httpbin-h2c
+spec:
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+      appProtocol: kubernetes.io/h2c
+  selector:
+    app: httpbin-h2c
+---
+# make sure proxy works with commonHttpProtocolOptions for HTTP2 backend
+kind: BackendConfigPolicy
+apiVersion: gateway.kgateway.dev/v1alpha1
+metadata:
+  name: httpbin-h2c-policy
+spec:
+  targetRefs:
+    - name: httpbin-h2c
+      group: ""
+      kind: Service
+  commonHttpProtocolOptions:
+    idleTimeout: 10s
+    maxHeadersCount: 15
+    maxStreamDuration: 30s
+    maxRequestsPerConnection: 100
+    headersWithUnderscoresAction: RejectRequest
