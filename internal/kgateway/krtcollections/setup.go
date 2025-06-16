@@ -27,7 +27,7 @@ import (
 
 // registertypes for common collections
 
-func registerTypes(ourCli versioned.Interface) {
+func registerTypes(_ versioned.Interface) {
 	kubeclient.Register[*gwv1.HTTPRoute](
 		gvr.HTTPRoute_v1,
 		gvk.HTTPRoute_v1.Kubernetes(),

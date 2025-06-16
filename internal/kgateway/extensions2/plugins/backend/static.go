@@ -1,7 +1,6 @@
 package backend
 
 import (
-	"context"
 	"fmt"
 	"net/netip"
 
@@ -13,7 +12,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 )
 
-func processStatic(ctx context.Context, in *v1alpha1.StaticBackend, out *envoy_config_cluster_v3.Cluster) error {
+func processStatic(in *v1alpha1.StaticBackend, out *envoy_config_cluster_v3.Cluster) error {
 	var hostname string
 	out.ClusterDiscoveryType = &envoy_config_cluster_v3.Cluster_Type{
 		Type: envoy_config_cluster_v3.Cluster_STATIC,
@@ -76,13 +75,13 @@ func processStatic(ctx context.Context, in *v1alpha1.StaticBackend, out *envoy_c
 			Type: envoy_config_cluster_v3.Cluster_STRICT_DNS,
 		}
 
-		//do we still need this?
+		// do we still need this?
 		//		// fix issue where ipv6 addr cannot bind
 		//		out.DnsLookupFamily = envoy_config_cluster_v3.Cluster_V4_ONLY
 	}
 	return nil
 }
 
-func processEndpointsStatic(in *v1alpha1.StaticBackend) *ir.EndpointsForBackend {
+func processEndpointsStatic(_ *v1alpha1.StaticBackend) *ir.EndpointsForBackend {
 	return nil
 }

@@ -130,7 +130,7 @@ func PreprocessAIBackend(ctx context.Context, aiBackend *v1alpha1.AIBackend, ir 
 
 	// We only want to add the transformation filter if we have a single AI backend
 	// Otherwise we already have the transformation filter added by the weighted destination.
-	transformation := createTransformationTemplate(ctx, aiBackend)
+	transformation := createTransformationTemplate(aiBackend)
 	routeTransformation := &envoytransformation.RouteTransformations_RouteTransformation{
 		Match: &envoytransformation.RouteTransformations_RouteTransformation_RequestMatch_{
 			RequestMatch: &envoytransformation.RouteTransformations_RouteTransformation_RequestMatch{
