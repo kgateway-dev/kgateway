@@ -31,19 +31,21 @@ func reportPolicyAcceptanceStatus(
 
 		if len(policy.Errors) > 0 {
 			r.SetCondition(reports.PolicyCondition{
-				Type:    gwv1alpha2.PolicyConditionAccepted,
-				Status:  metav1.ConditionFalse,
-				Reason:  gwv1alpha2.PolicyReasonInvalid,
-				Message: policy.FormatErrors(),
+				Type:               gwv1alpha2.PolicyConditionAccepted,
+				Status:             metav1.ConditionFalse,
+				Reason:             gwv1alpha2.PolicyReasonInvalid,
+				Message:            policy.FormatErrors(),
+				ObservedGeneration: policy.Generation,
 			})
 			return
 		}
 
 		r.SetCondition(reports.PolicyCondition{
-			Type:    gwv1alpha2.PolicyConditionAccepted,
-			Status:  metav1.ConditionTrue,
-			Reason:  gwv1alpha2.PolicyReasonAccepted,
-			Message: reports.PolicyAcceptedMsg,
+			Type:               gwv1alpha2.PolicyConditionAccepted,
+			Status:             metav1.ConditionTrue,
+			Reason:             gwv1alpha2.PolicyReasonAccepted,
+			Message:            reports.PolicyAcceptedMsg,
+			ObservedGeneration: policy.Generation,
 		})
 	}
 }

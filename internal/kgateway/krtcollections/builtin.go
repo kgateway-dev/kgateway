@@ -468,7 +468,8 @@ func (h *headerModifierIr) applyToBackend(pCtx *ir.RouteBackendContext) {
 		pCtx.ResponseHeadersToRemove = h.Remove
 	}
 }
-func convertHeaderModifierIR(kctx krt.HandlerContext, f *gwv1.HTTPHeaderFilter, isRequest bool) *headerModifierIr {
+
+func convertHeaderModifierIR(_ krt.HandlerContext, f *gwv1.HTTPHeaderFilter, isRequest bool) *headerModifierIr {
 	if f == nil {
 		return nil
 	}
@@ -724,7 +725,7 @@ func (r *requestRedirectIr) apply(outputRoute *envoy_config_route_v3.Route) {
 	}
 }
 
-func convertRequestRedirectIR(kctx krt.HandlerContext, config *gwv1.HTTPRequestRedirectFilter) *requestRedirectIr {
+func convertRequestRedirectIR(_ krt.HandlerContext, config *gwv1.HTTPRequestRedirectFilter) *requestRedirectIr {
 	if config == nil {
 		return nil
 	}
@@ -784,7 +785,7 @@ func (u *urlRewriteIr) apply(outputRoute *envoy_config_route_v3.Route) {
 	}
 }
 
-func convertURLRewriteIR(kctx krt.HandlerContext, config *gwv1.HTTPURLRewriteFilter) *urlRewriteIr {
+func convertURLRewriteIR(_ krt.HandlerContext, config *gwv1.HTTPURLRewriteFilter) *urlRewriteIr {
 	if config == nil {
 		return nil
 	}
@@ -827,6 +828,7 @@ func (c *corsIr) apply(outputRoute *envoy_config_route_v3.Route) {
 	}
 	outputRoute.GetTypedPerFilterConfig()[envoy_wellknown.CORS] = c.Cors
 }
+
 func (c *corsIr) applyToBackend(pCtx *ir.RouteBackendContext) {
 	if c.Cors == nil {
 		return
