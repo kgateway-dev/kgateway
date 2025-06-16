@@ -144,7 +144,8 @@ type backendConfigContext struct {
 	ResponseHeadersToRemove   []string
 }
 
-func (h *httpRouteConfigurationTranslator) envoyRoutes(ctx context.Context,
+func (h *httpRouteConfigurationTranslator) envoyRoutes(
+	ctx context.Context,
 	routeReport reportssdk.ParentRefReporter,
 	in ir.HttpRouteRuleMatchIR,
 	generatedName string,
@@ -194,11 +195,10 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(ctx context.Context,
 		h.logger.Debug("invalid route", "error", err)
 		// TODO: we may want to aggregate all these errors per http route object and report one message?
 		routeReport.SetCondition(reportssdk.RouteCondition{
-			Type:   gwv1.RouteConditionPartiallyInvalid,
-			Status: metav1.ConditionTrue,
-			Reason: gwv1.RouteConditionReason(err.Error()),
-			// The message for this condition MUST start with the prefix "Dropped Rule"
-			Message: fmt.Sprintf("Dropped Rule: %v", err),
+			Type:    gwv1.RouteConditionPartiallyInvalid,
+			Status:  metav1.ConditionTrue,
+			Reason:  gwv1.RouteReasonUnsupportedValue,
+			Message: fmt.Sprintf("Dropped Rule (%d): %v", in.MatchIndex, err),
 		})
 		//  TODO: we currently drop the route which is not good;
 		//    we should implement route replacement.
