@@ -232,10 +232,7 @@ func (p *endpointPickerPass) ApplyForBackend(
 								irPool.objMeta.GetName(),
 								irPool.objMeta.GetNamespace(),
 							),
-							Authority: fmt.Sprintf("%s.%s.svc:%d",
-								irPool.configRef.Name,
-								irPool.objMeta.GetNamespace(),
-								irPool.configRef.ports[0].portNum),
+							Authority: authorityForPool(irPool),
 						},
 					},
 				},
@@ -249,67 +246,54 @@ func (p *endpointPickerPass) ApplyForBackend(
 	return nil
 }
 
-// HttpFilters inserts one ext_proc filter per used InferencePool.
+// HttpFilters returns one ext_proc filter, using the well-known filter name.
 func (p *endpointPickerPass) HttpFilters(ctx context.Context, fc ir.FilterChainCommon) ([]plugins.StagedHttpFilter, error) {
 	if p == nil || len(p.usedPools) == 0 {
 		return nil, nil
 	}
 
-	var filters []plugins.StagedHttpFilter
-
-	// For each used pool, create a distinct ext_proc filter referencing that pool's cluster.
+	// Pick any pool as placeholder for the static config
+	var tmpPool *inferencePool
 	for _, pool := range p.usedPools {
-		if pool.configRef == nil || len(pool.configRef.ports) == 0 {
-			continue
-		}
-
-		clusterName := clusterNameExtProc(pool.objMeta.GetName(), pool.objMeta.GetNamespace())
-		authority := fmt.Sprintf("%s.%s:%d",
-			pool.configRef.Name,
-			pool.objMeta.GetNamespace(),
-			pool.configRef.ports[0].portNum,
-		)
-
-		// Use a unique filter name per pool to avoid collisions.
-		filterName := fmt.Sprintf("%s_%s_%s",
-			wellknown.InfPoolTransformationFilterName,
-			pool.objMeta.GetNamespace(),
-			pool.objMeta.GetName(),
-		)
-
-		extProcSettings := &extprocv3.ExternalProcessor{
-			GrpcService: &corev3.GrpcService{
-				TargetSpecifier: &corev3.GrpcService_EnvoyGrpc_{
-					EnvoyGrpc: &corev3.GrpcService_EnvoyGrpc{
-						ClusterName: clusterName,
-						Authority:   authority,
-					},
-				},
-			},
-			ProcessingMode: &extprocv3.ProcessingMode{
-				RequestHeaderMode:   extprocv3.ProcessingMode_SEND,
-				RequestBodyMode:     extprocv3.ProcessingMode_FULL_DUPLEX_STREAMED,
-				RequestTrailerMode:  extprocv3.ProcessingMode_SEND,
-				ResponseBodyMode:    extprocv3.ProcessingMode_FULL_DUPLEX_STREAMED,
-				ResponseHeaderMode:  extprocv3.ProcessingMode_SEND,
-				ResponseTrailerMode: extprocv3.ProcessingMode_SEND,
-			},
-			MessageTimeout:   durationpb.New(5 * time.Second),
-			FailureModeAllow: false,
-		}
-
-		stagedFilter, err := plugins.NewStagedFilter(
-			filterName, // must be unique
-			extProcSettings,
-			plugins.BeforeStage(plugins.RouteStage),
-		)
-		if err != nil {
-			return nil, err
-		}
-		filters = append(filters, stagedFilter)
+		tmpPool = pool
+		break
 	}
 
-	return filters, nil
+	// Static ExternalProcessor that will be overridden by ExtProcPerRoute
+	extProcSettings := &extprocv3.ExternalProcessor{
+		GrpcService: &corev3.GrpcService{
+			TargetSpecifier: &corev3.GrpcService_EnvoyGrpc_{
+				EnvoyGrpc: &corev3.GrpcService_EnvoyGrpc{
+					ClusterName: clusterNameExtProc(
+						tmpPool.objMeta.GetName(),
+						tmpPool.objMeta.GetNamespace(),
+					),
+					Authority: authorityForPool(tmpPool),
+				},
+			},
+		},
+		ProcessingMode: &extprocv3.ProcessingMode{
+			RequestHeaderMode:   extprocv3.ProcessingMode_SEND,
+			RequestBodyMode:     extprocv3.ProcessingMode_FULL_DUPLEX_STREAMED,
+			RequestTrailerMode:  extprocv3.ProcessingMode_SEND,
+			ResponseBodyMode:    extprocv3.ProcessingMode_FULL_DUPLEX_STREAMED,
+			ResponseHeaderMode:  extprocv3.ProcessingMode_SEND,
+			ResponseTrailerMode: extprocv3.ProcessingMode_SEND,
+		},
+		MessageTimeout:   durationpb.New(5 * time.Second),
+		FailureModeAllow: false,
+	}
+
+	stagedFilter, err := plugins.NewStagedFilter(
+		wellknown.InfPoolTransformationFilterName,
+		extProcSettings,
+		plugins.BeforeStage(plugins.RouteStage),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return []plugins.StagedHttpFilter{stagedFilter}, nil
 }
 
 // ResourcesToAdd returns the ext_proc clusters for all used InferencePools.
@@ -438,4 +422,12 @@ func clusterNameExtProc(name, ns string) string {
 
 func clusterNameOriginalDst(name, ns string) string {
 	return fmt.Sprintf("endpointpicker_%s_%s_original_dst", name, ns)
+}
+
+// authorityForPool formats the gRPC authority based on the given InferencePool IR.
+func authorityForPool(pool *inferencePool) string {
+	ns := pool.objMeta.GetNamespace()
+	svc := pool.configRef.Name
+	port := pool.configRef.ports[0].portNum
+	return fmt.Sprintf("%s.%s.svc:%d", svc, ns, port)
 }
