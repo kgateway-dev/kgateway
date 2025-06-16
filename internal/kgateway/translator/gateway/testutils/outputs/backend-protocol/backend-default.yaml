@@ -63,4 +63,3 @@ Routes:
         ai.extproc.kgateway.io:
           '@type': type.googleapis.com/envoy.extensions.filters.http.ext_proc.v3.ExtProcPerRoute
           disabled: true
-
