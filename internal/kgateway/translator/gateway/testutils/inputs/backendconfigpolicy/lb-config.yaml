@@ -52,7 +52,7 @@ spec:
     enableTrailers: true
     overrideStreamErrorOnInvalidHttpMessage: true
     headerFormat: PreserveCaseHeaderKeyFormat
-  loadBalancerConfig:
+  loadBalancer:
     ringHash:
       minimumRingSize: 1024
       maximumRingSize: 2048
@@ -83,7 +83,7 @@ spec:
     - name: httpbin-lr
       group: ""
       kind: Service
-  loadBalancerConfig:
+  loadBalancer:
     leastRequest:
       choiceCount: 3
 ---
@@ -111,9 +111,9 @@ spec:
     - name: httpbin-rr
       group: ""
       kind: Service
-  loadBalancerConfig:
+  loadBalancer:
     roundRobin:
-      slowStartConfig:
+      slowStart:
         window: 10s
         aggression: "1.5"
         minWeightPercent: 10
@@ -142,7 +142,7 @@ spec:
     - name: httpbin-rh
       group: ""
       kind: Service
-  loadBalancerConfig:
+  loadBalancer:
     ringHash:
       minimumRingSize: 1024
 ---
@@ -170,7 +170,7 @@ spec:
     - name: httpbin-random
       group: ""
       kind: Service
-  loadBalancerConfig:
+  loadBalancer:
     random: {}
 ---
 apiVersion: v1
@@ -197,7 +197,7 @@ spec:
     - name: httpbin-maglev
       group: ""
       kind: Service
-  loadBalancerConfig:
+  loadBalancer:
     maglev: {}
 ---
 apiVersion: v1
@@ -224,6 +224,6 @@ spec:
     - name: httpbin-weighted
       group: ""
       kind: Service
-  loadBalancerConfig:
-    localityConfigType: WeightedLb
+  loadBalancer:
+    localityType: WeightedLb
     roundRobin: {}

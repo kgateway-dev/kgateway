@@ -108,7 +108,7 @@ type OpenAIConfig struct {
 	// The authorization token that the AI gateway uses to access the OpenAI API.
 	// This token is automatically sent in the `Authorization` header of the
 	// request and prefixed with `Bearer`.
-	// +kubebuilder:validation:Required
+	// +required
 	AuthToken SingleAuthToken `json:"authToken"`
 	// Optional: Override the model name, such as `gpt-4o-mini`.
 	// If unset, the model name is taken from the request.
@@ -120,24 +120,24 @@ type OpenAIConfig struct {
 type AzureOpenAIConfig struct {
 	// The authorization token that the AI gateway uses to access the Azure OpenAI API.
 	// This token is automatically sent in the `api-key` header of the request.
-	// +kubebuilder:validation:Required
+	// +required
 	AuthToken SingleAuthToken `json:"authToken"`
 
 	// The endpoint for the Azure OpenAI API to use, such as `my-endpoint.openai.azure.com`.
 	// If the scheme is included, it is stripped.
-	// +kubebuilder:validation:Required
+	// +required
 	// +kubebuilder:validation:MinLength=1
 	Endpoint string `json:"endpoint"`
 
 	// The name of the Azure OpenAI model deployment to use.
 	// For more information, see the [Azure OpenAI model docs](https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/models).
-	// +kubebuilder:validation:Required
+	// +required
 	// +kubebuilder:validation:MinLength=1
 	DeploymentName string `json:"deploymentName"`
 
 	// The version of the Azure OpenAI API to use.
 	// For more information, see the [Azure OpenAI API version reference](https://learn.microsoft.com/en-us/azure/ai-services/openai/reference#api-specs).
-	// +kubebuilder:validation:Required
+	// +required
 	// +kubebuilder:validation:MinLength=1
 	ApiVersion string `json:"apiVersion"`
 }
@@ -146,17 +146,17 @@ type AzureOpenAIConfig struct {
 type GeminiConfig struct {
 	// The authorization token that the AI gateway uses to access the Gemini API.
 	// This token is automatically sent in the `key` query parameter of the request.
-	// +kubebuilder:validation:Required
+	// +required
 	AuthToken SingleAuthToken `json:"authToken"`
 
 	// The Gemini model to use.
 	// For more information, see the [Gemini models docs](https://ai.google.dev/gemini-api/docs/models/gemini).
-	// +kubebuilder:validation:Required
+	// +required
 	Model string `json:"model"`
 
 	// The version of the Gemini API to use.
 	// For more information, see the [Gemini API version docs](https://ai.google.dev/gemini-api/docs/api-versions).
-	// +kubebuilder:validation:Required
+	// +required
 	ApiVersion string `json:"apiVersion"`
 }
 
@@ -171,28 +171,28 @@ const GOOGLE Publisher = "GOOGLE"
 type VertexAIConfig struct {
 	// The authorization token that the AI gateway uses to access the Vertex AI API.
 	// This token is automatically sent in the `key` header of the request.
-	// +kubebuilder:validation:Required
+	// +required
 	AuthToken SingleAuthToken `json:"authToken"`
 
 	// The Vertex AI model to use.
 	// For more information, see the [Vertex AI model docs](https://cloud.google.com/vertex-ai/generative-ai/docs/learn/models).
-	// +kubebuilder:validation:Required
+	// +required
 	// +kubebuilder:validation:MinLength=1
 	Model string `json:"model"`
 
 	// The version of the Vertex AI API to use.
 	// For more information, see the [Vertex AI API reference](https://cloud.google.com/vertex-ai/docs/reference#versions).
-	// +kubebuilder:validation:Required
+	// +required
 	// +kubebuilder:validation:MinLength=1
 	ApiVersion string `json:"apiVersion"`
 
 	// The ID of the Google Cloud Project that you use for the Vertex AI.
-	// +kubebuilder:validation:Required
+	// +required
 	// +kubebuilder:validation:MinLength=1
 	ProjectId string `json:"projectId"`
 
 	// The location of the Google Cloud Project that you use for the Vertex AI.
-	// +kubebuilder:validation:Required
+	// +required
 	// +kubebuilder:validation:MinLength=1
 	Location string `json:"location"`
 
@@ -208,7 +208,7 @@ type VertexAIConfig struct {
 type AnthropicConfig struct {
 	// The authorization token that the AI gateway uses to access the Anthropic API.
 	// This token is automatically sent in the `x-api-key` header of the request.
-	// +kubebuilder:validation:Required
+	// +required
 	AuthToken SingleAuthToken `json:"authToken"`
 	// Optional: A version header to pass to the Anthropic API.
 	// For more information, see the [Anthropic API versioning docs](https://docs.anthropic.com/en/api/versioning).
@@ -262,7 +262,7 @@ type Priority struct {
 type MultiPoolConfig struct {
 	// The priority list of backend pools. Each entry represents a set of LLM provider backends.
 	// The order defines the priority of the backend endpoints.
-	// +kubebuilder:validation:Required
+	// +required
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=20
 	Priorities []Priority `json:"priorities,omitempty"`

@@ -5,8 +5,8 @@ package v1alpha1
 // LoadBalancerLeastRequestConfigApplyConfiguration represents a declarative configuration of the LoadBalancerLeastRequestConfig type for use
 // with apply.
 type LoadBalancerLeastRequestConfigApplyConfiguration struct {
-	ChoiceCount     *uint32                            `json:"choiceCount,omitempty"`
-	SlowStartConfig *SlowStartConfigApplyConfiguration `json:"slowStartConfig,omitempty"`
+	ChoiceCount *uint32                      `json:"choiceCount,omitempty"`
+	SlowStart   *SlowStartApplyConfiguration `json:"slowStart,omitempty"`
 }
 
 // LoadBalancerLeastRequestConfigApplyConfiguration constructs a declarative configuration of the LoadBalancerLeastRequestConfig type for use with
@@ -23,10 +23,10 @@ func (b *LoadBalancerLeastRequestConfigApplyConfiguration) WithChoiceCount(value
 	return b
 }
 
-// WithSlowStartConfig sets the SlowStartConfig field in the declarative configuration to the given value
+// WithSlowStart sets the SlowStart field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the SlowStartConfig field is set to the value of the last call.
-func (b *LoadBalancerLeastRequestConfigApplyConfiguration) WithSlowStartConfig(value *SlowStartConfigApplyConfiguration) *LoadBalancerLeastRequestConfigApplyConfiguration {
-	b.SlowStartConfig = value
+// If called multiple times, the SlowStart field is set to the value of the last call.
+func (b *LoadBalancerLeastRequestConfigApplyConfiguration) WithSlowStart(value *SlowStartApplyConfiguration) *LoadBalancerLeastRequestConfigApplyConfiguration {
+	b.SlowStart = value
 	return b
 }

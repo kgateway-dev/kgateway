@@ -19,6 +19,12 @@ func HashProto(resource proto.Message) uint64 {
 	return hasher.Sum64()
 }
 
+func HashString(s string) uint64 {
+	hasher := fnv.New64a()
+	hasher.Write([]byte(s))
+	return hasher.Sum64()
+}
+
 func HashProtoWithHasher(hasher hash.Hash, resource proto.Message) {
 	var buffer [1024]byte
 	mo := proto.MarshalOptions{Deterministic: true}

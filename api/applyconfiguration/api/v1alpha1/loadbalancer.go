@@ -8,9 +8,9 @@ import (
 	apiv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 )
 
-// LoadBalancerConfigApplyConfiguration represents a declarative configuration of the LoadBalancerConfig type for use
+// LoadBalancerApplyConfiguration represents a declarative configuration of the LoadBalancer type for use
 // with apply.
-type LoadBalancerConfigApplyConfiguration struct {
+type LoadBalancerApplyConfiguration struct {
 	HealthyPanicThreshold           *uint32                                           `json:"healthyPanicThreshold,omitempty"`
 	UpdateMergeWindow               *v1.Duration                                      `json:"updateMergeWindow,omitempty"`
 	LeastRequest                    *LoadBalancerLeastRequestConfigApplyConfiguration `json:"leastRequest,omitempty"`
@@ -18,21 +18,21 @@ type LoadBalancerConfigApplyConfiguration struct {
 	RingHash                        *LoadBalancerRingHashConfigApplyConfiguration     `json:"ringHash,omitempty"`
 	Maglev                          *apiv1alpha1.LoadBalancerMaglevConfig             `json:"maglev,omitempty"`
 	Random                          *apiv1alpha1.LoadBalancerRandomConfig             `json:"random,omitempty"`
-	LocalityConfigType              *apiv1alpha1.LocalityConfigType                   `json:"localityConfigType,omitempty"`
+	LocalityType                    *apiv1alpha1.LocalityType                         `json:"localityType,omitempty"`
 	UseHostnameForHashing           *bool                                             `json:"useHostnameForHashing,omitempty"`
 	CloseConnectionsOnHostSetChange *bool                                             `json:"closeConnectionsOnHostSetChange,omitempty"`
 }
 
-// LoadBalancerConfigApplyConfiguration constructs a declarative configuration of the LoadBalancerConfig type for use with
+// LoadBalancerApplyConfiguration constructs a declarative configuration of the LoadBalancer type for use with
 // apply.
-func LoadBalancerConfig() *LoadBalancerConfigApplyConfiguration {
-	return &LoadBalancerConfigApplyConfiguration{}
+func LoadBalancer() *LoadBalancerApplyConfiguration {
+	return &LoadBalancerApplyConfiguration{}
 }
 
 // WithHealthyPanicThreshold sets the HealthyPanicThreshold field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the HealthyPanicThreshold field is set to the value of the last call.
-func (b *LoadBalancerConfigApplyConfiguration) WithHealthyPanicThreshold(value uint32) *LoadBalancerConfigApplyConfiguration {
+func (b *LoadBalancerApplyConfiguration) WithHealthyPanicThreshold(value uint32) *LoadBalancerApplyConfiguration {
 	b.HealthyPanicThreshold = &value
 	return b
 }
@@ -40,7 +40,7 @@ func (b *LoadBalancerConfigApplyConfiguration) WithHealthyPanicThreshold(value u
 // WithUpdateMergeWindow sets the UpdateMergeWindow field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the UpdateMergeWindow field is set to the value of the last call.
-func (b *LoadBalancerConfigApplyConfiguration) WithUpdateMergeWindow(value v1.Duration) *LoadBalancerConfigApplyConfiguration {
+func (b *LoadBalancerApplyConfiguration) WithUpdateMergeWindow(value v1.Duration) *LoadBalancerApplyConfiguration {
 	b.UpdateMergeWindow = &value
 	return b
 }
@@ -48,7 +48,7 @@ func (b *LoadBalancerConfigApplyConfiguration) WithUpdateMergeWindow(value v1.Du
 // WithLeastRequest sets the LeastRequest field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the LeastRequest field is set to the value of the last call.
-func (b *LoadBalancerConfigApplyConfiguration) WithLeastRequest(value *LoadBalancerLeastRequestConfigApplyConfiguration) *LoadBalancerConfigApplyConfiguration {
+func (b *LoadBalancerApplyConfiguration) WithLeastRequest(value *LoadBalancerLeastRequestConfigApplyConfiguration) *LoadBalancerApplyConfiguration {
 	b.LeastRequest = value
 	return b
 }
@@ -56,7 +56,7 @@ func (b *LoadBalancerConfigApplyConfiguration) WithLeastRequest(value *LoadBalan
 // WithRoundRobin sets the RoundRobin field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the RoundRobin field is set to the value of the last call.
-func (b *LoadBalancerConfigApplyConfiguration) WithRoundRobin(value *LoadBalancerRoundRobinConfigApplyConfiguration) *LoadBalancerConfigApplyConfiguration {
+func (b *LoadBalancerApplyConfiguration) WithRoundRobin(value *LoadBalancerRoundRobinConfigApplyConfiguration) *LoadBalancerApplyConfiguration {
 	b.RoundRobin = value
 	return b
 }
@@ -64,7 +64,7 @@ func (b *LoadBalancerConfigApplyConfiguration) WithRoundRobin(value *LoadBalance
 // WithRingHash sets the RingHash field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the RingHash field is set to the value of the last call.
-func (b *LoadBalancerConfigApplyConfiguration) WithRingHash(value *LoadBalancerRingHashConfigApplyConfiguration) *LoadBalancerConfigApplyConfiguration {
+func (b *LoadBalancerApplyConfiguration) WithRingHash(value *LoadBalancerRingHashConfigApplyConfiguration) *LoadBalancerApplyConfiguration {
 	b.RingHash = value
 	return b
 }
@@ -72,7 +72,7 @@ func (b *LoadBalancerConfigApplyConfiguration) WithRingHash(value *LoadBalancerR
 // WithMaglev sets the Maglev field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Maglev field is set to the value of the last call.
-func (b *LoadBalancerConfigApplyConfiguration) WithMaglev(value apiv1alpha1.LoadBalancerMaglevConfig) *LoadBalancerConfigApplyConfiguration {
+func (b *LoadBalancerApplyConfiguration) WithMaglev(value apiv1alpha1.LoadBalancerMaglevConfig) *LoadBalancerApplyConfiguration {
 	b.Maglev = &value
 	return b
 }
@@ -80,23 +80,23 @@ func (b *LoadBalancerConfigApplyConfiguration) WithMaglev(value apiv1alpha1.Load
 // WithRandom sets the Random field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Random field is set to the value of the last call.
-func (b *LoadBalancerConfigApplyConfiguration) WithRandom(value apiv1alpha1.LoadBalancerRandomConfig) *LoadBalancerConfigApplyConfiguration {
+func (b *LoadBalancerApplyConfiguration) WithRandom(value apiv1alpha1.LoadBalancerRandomConfig) *LoadBalancerApplyConfiguration {
 	b.Random = &value
 	return b
 }
 
-// WithLocalityConfigType sets the LocalityConfigType field in the declarative configuration to the given value
+// WithLocalityType sets the LocalityType field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the LocalityConfigType field is set to the value of the last call.
-func (b *LoadBalancerConfigApplyConfiguration) WithLocalityConfigType(value apiv1alpha1.LocalityConfigType) *LoadBalancerConfigApplyConfiguration {
-	b.LocalityConfigType = &value
+// If called multiple times, the LocalityType field is set to the value of the last call.
+func (b *LoadBalancerApplyConfiguration) WithLocalityType(value apiv1alpha1.LocalityType) *LoadBalancerApplyConfiguration {
+	b.LocalityType = &value
 	return b
 }
 
 // WithUseHostnameForHashing sets the UseHostnameForHashing field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the UseHostnameForHashing field is set to the value of the last call.
-func (b *LoadBalancerConfigApplyConfiguration) WithUseHostnameForHashing(value bool) *LoadBalancerConfigApplyConfiguration {
+func (b *LoadBalancerApplyConfiguration) WithUseHostnameForHashing(value bool) *LoadBalancerApplyConfiguration {
 	b.UseHostnameForHashing = &value
 	return b
 }
@@ -104,7 +104,7 @@ func (b *LoadBalancerConfigApplyConfiguration) WithUseHostnameForHashing(value b
 // WithCloseConnectionsOnHostSetChange sets the CloseConnectionsOnHostSetChange field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the CloseConnectionsOnHostSetChange field is set to the value of the last call.
-func (b *LoadBalancerConfigApplyConfiguration) WithCloseConnectionsOnHostSetChange(value bool) *LoadBalancerConfigApplyConfiguration {
+func (b *LoadBalancerApplyConfiguration) WithCloseConnectionsOnHostSetChange(value bool) *LoadBalancerApplyConfiguration {
 	b.CloseConnectionsOnHostSetChange = &value
 	return b
 }

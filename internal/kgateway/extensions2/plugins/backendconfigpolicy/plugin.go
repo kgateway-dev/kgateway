@@ -43,7 +43,7 @@ type BackendConfigPolicyIR struct {
 	tcpKeepalive                  *corev3.TcpKeepalive
 	commonHttpProtocolOptions     *corev3.HttpProtocolOptions
 	http1ProtocolOptions          *corev3.Http1ProtocolOptions
-	sslConfig                     *envoyauth.UpstreamTlsContext
+	tlsConfig                     *envoyauth.UpstreamTlsContext
 	loadBalancerConfig            *LoadBalancerConfigIR
 }
 
@@ -110,11 +110,11 @@ func (d *BackendConfigPolicyIR) Equals(other any) bool {
 		}
 	}
 
-	if (d.sslConfig == nil) != (d2.sslConfig == nil) {
+	if (d.tlsConfig == nil) != (d2.tlsConfig == nil) {
 		return false
 	}
-	if d.sslConfig != nil && d2.sslConfig != nil {
-		if !proto.Equal(d.sslConfig, d2.sslConfig) {
+	if d.tlsConfig != nil && d2.tlsConfig != nil {
+		if !proto.Equal(d.tlsConfig, d2.tlsConfig) {
 			return false
 		}
 	}
@@ -220,10 +220,10 @@ func processBackend(_ context.Context, polir ir.PolicyIR, _ ir.BackendObjectIR, 
 		}
 	}
 
-	if pol.sslConfig != nil {
-		typedConfig, err := utils.MessageToAny(pol.sslConfig)
+	if pol.tlsConfig != nil {
+		typedConfig, err := utils.MessageToAny(pol.tlsConfig)
 		if err != nil {
-			logger.Error("failed to convert ssl config to any", "error", err)
+			logger.Error("failed to convert tls config to any", "error", err)
 			return
 		}
 		out.TransportSocket = &corev3.TransportSocket{
@@ -265,16 +265,16 @@ func translate(commoncol *common.CommonCollections, krtctx krt.HandlerContext, p
 		ir.http1ProtocolOptions = http1ProtocolOptions
 	}
 
-	if pol.Spec.SSLConfig != nil {
-		sslConfig, err := translateSSLConfig(NewDefaultSecretGetter(commoncol.Secrets, krtctx), pol.Spec.SSLConfig, pol.Namespace)
+	if pol.Spec.TLS != nil {
+		tlsConfig, err := translateTLSConfig(NewDefaultSecretGetter(commoncol.Secrets, krtctx), pol.Spec.TLS, pol.Namespace)
 		if err != nil {
 			return &ir, err
 		}
-		ir.sslConfig = sslConfig
+		ir.tlsConfig = tlsConfig
 	}
 
-	if pol.Spec.LoadBalancerConfig != nil {
-		ir.loadBalancerConfig = translateLoadBalancerConfig(pol.Spec.LoadBalancerConfig)
+	if pol.Spec.LoadBalancer != nil {
+		ir.loadBalancerConfig = translateLoadBalancerConfig(pol.Spec.LoadBalancer)
 	}
 
 	return &ir, nil

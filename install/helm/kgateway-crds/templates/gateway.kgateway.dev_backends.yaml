@@ -562,6 +562,14 @@ spec:
                 type: object
               static:
                 properties:
+                  appProtocol:
+                    enum:
+                    - http2
+                    - grpc
+                    - grpc-web
+                    - kubernetes.io/h2c
+                    - kubernetes.io/ws
+                    type: string
                   hosts:
                     items:
                       properties:
@@ -581,6 +589,8 @@ spec:
                       type: object
                     minItems: 1
                     type: array
+                required:
+                - hosts
                 type: object
               type:
                 enum:

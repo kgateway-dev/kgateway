@@ -9,29 +9,29 @@ import (
 type Image struct {
 	// The image registry.
 	//
-	// +kubebuilder:validation:Optional
+	// +optional
 	Registry *string `json:"registry,omitempty"`
 
 	// The image repository (name).
 	//
-	// +kubebuilder:validation:Optional
+	// +optional
 	Repository *string `json:"repository,omitempty"`
 
 	// The image tag.
 	//
-	// +kubebuilder:validation:Optional
+	// +optional
 	Tag *string `json:"tag,omitempty"`
 
 	// The hash digest of the image, e.g. `sha256:12345...`
 	//
-	// +kubebuilder:validation:Optional
+	// +optional
 	Digest *string `json:"digest,omitempty"`
 
 	// The image pull policy for the container. See
 	// https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy
 	// for details.
 	//
-	// +kubebuilder:validation:Optional
+	// +optional
 	PullPolicy *corev1.PullPolicy `json:"pullPolicy,omitempty"`
 }
 
@@ -74,7 +74,7 @@ func (in *Image) GetPullPolicy() *corev1.PullPolicy {
 type Service struct {
 	// The Kubernetes Service type.
 	//
-	// +kubebuilder:validation:Optional
+	// +optional
 	// +kubebuilder:validation:Enum=ClusterIP;NodePort;LoadBalancer;ExternalName
 	Type *corev1.ServiceType `json:"type,omitempty"`
 
@@ -85,17 +85,17 @@ type Service struct {
 	// https://kubernetes.io/docs/concepts/services-networking/service/#headless-services
 	// on the implications of setting `clusterIP`.
 	//
-	// +kubebuilder:validation:Optional
+	// +optional
 	ClusterIP *string `json:"clusterIP,omitempty"`
 
 	// Additional labels to add to the Service object metadata.
 	//
-	// +kubebuilder:validation:Optional
+	// +optional
 	ExtraLabels map[string]string `json:"extraLabels,omitempty"`
 
 	// Additional annotations to add to the Service object metadata.
 	//
-	// +kubebuilder:validation:Optional
+	// +optional
 	ExtraAnnotations map[string]string `json:"extraAnnotations,omitempty"`
 
 	// Additional configuration for the service ports.
@@ -115,13 +115,13 @@ func (in *Service) GetPorts() []*Port {
 type Port struct {
 	// The port number to match on the Gateway
 	//
-	// +kubebuilder:validation:Required
+	// +required
 	Port uint16 `json:"port"`
 
 	// The NodePort to be used for the service. If not specified, a random port
 	// will be assigned by the Kubernetes API server.
 	//
-	// +kubebuilder:validation:Optional
+	// +optional
 	NodePort *uint16 `json:"nodePort,omitempty"`
 }
 
@@ -170,12 +170,12 @@ func (in *Service) GetExtraAnnotations() map[string]string {
 type ServiceAccount struct {
 	// Additional labels to add to the ServiceAccount object metadata.
 	//
-	// +kubebuilder:validation:Optional
+	// +optional
 	ExtraLabels map[string]string `json:"extraLabels,omitempty"`
 
 	// Additional annotations to add to the ServiceAccount object metadata.
 	//
-	// +kubebuilder:validation:Optional
+	// +optional
 	ExtraAnnotations map[string]string `json:"extraAnnotations,omitempty"`
 }
 
@@ -197,19 +197,19 @@ func (in *ServiceAccount) GetExtraAnnotations() map[string]string {
 type Pod struct {
 	// Additional labels to add to the Pod object metadata.
 	//
-	// +kubebuilder:validation:Optional
+	// +optional
 	ExtraLabels map[string]string `json:"extraLabels,omitempty"`
 
 	// Additional annotations to add to the Pod object metadata.
 	//
-	// +kubebuilder:validation:Optional
+	// +optional
 	ExtraAnnotations map[string]string `json:"extraAnnotations,omitempty"`
 
 	// The pod security context. See
 	// https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#podsecuritycontext-v1-core
 	// for details.
 	//
-	// +kubebuilder:validation:Optional
+	// +optional
 	SecurityContext *corev1.PodSecurityContext `json:"securityContext,omitempty"`
 
 	// An optional list of references to secrets in the same namespace to use for
@@ -217,21 +217,21 @@ type Pod struct {
 	// https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
 	// for details.
 	//
-	// +kubebuilder:validation:Optional
+	// +optional
 	ImagePullSecrets []corev1.LocalObjectReference `json:"imagePullSecrets,omitempty"`
 
 	// A selector which must be true for the pod to fit on a node. See
 	// https://kubernetes.io/docs/concepts/configuration/assign-pod-node/ for
 	// details.
 	//
-	// +kubebuilder:validation:Optional
+	// +optional
 	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
 
 	// If specified, the pod's scheduling constraints. See
 	// https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#affinity-v1-core
 	// for details.
 	//
-	// +kubebuilder:validation:Optional
+	// +optional
 	Affinity *corev1.Affinity `json:"affinity,omitempty"`
 
 	// do not use slice of pointers: https://github.com/kubernetes/code-generator/issues/166
@@ -239,19 +239,19 @@ type Pod struct {
 	// https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#toleration-v1-core
 	// for details.
 	//
-	// +kubebuilder:validation:Optional
+	// +optional
 	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
 
 	// If specified, the pod's graceful shutdown spec.
 	//
-	// +kubebuilder:validation:Optional
+	// +optional
 	GracefulShutdown *GracefulShutdownSpec `json:"gracefulShutdown,omitempty"`
 
 	// If specified, the pod's termination grace period in seconds. See
 	// https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#pod-v1-core
 	// for details
 	//
-	// +kubebuilder:validation:Optional
+	// +optional
 	TerminationGracePeriodSeconds *int `json:"terminationGracePeriodSeconds,omitempty"`
 
 	// If specified, the pod's readiness probe. Periodic probe of container service readiness.
@@ -259,7 +259,7 @@ type Pod struct {
 	// https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#probe-v1-core
 	// for details.
 	//
-	// +kubebuilder:validation:Optional
+	// +optional
 	ReadinessProbe *corev1.Probe `json:"readinessProbe,omitempty"`
 
 	// If specified, the pod's liveness probe. Periodic probe of container service readiness.
@@ -267,7 +267,7 @@ type Pod struct {
 	// https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#probe-v1-core
 	// for details.
 	//
-	// +kubebuilder:validation:Optional
+	// +optional
 	LivenessProbe *corev1.Probe `json:"livenessProbe,omitempty"`
 }
 
@@ -351,12 +351,12 @@ func (in *Pod) GetLivenessProbe() *corev1.Probe {
 type GracefulShutdownSpec struct {
 	// Enable grace period before shutdown to finish current requests while Envoy health checks fail to e.g. notify external load balancers. *NOTE:* This will not have any effect if you have not defined health checks via the health check filter
 	//
-	// +kubebuilder:validation:Optional
+	// +optional
 	Enabled *bool `json:"enabled,omitempty"`
 
 	// Time (in seconds) for the preStop hook to wait before allowing Envoy to terminate
 	//
-	// +kubebuilder:validation:Optional
+	// +optional
 	SleepTimeSeconds *int `json:"sleepTimeSeconds,omitempty"`
 }
 

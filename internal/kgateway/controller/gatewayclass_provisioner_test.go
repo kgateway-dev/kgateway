@@ -51,7 +51,7 @@ var _ = Describe("GatewayClassProvisioner", func() {
 				if err != nil {
 					return false
 				}
-				if len(gcs.Items) != 2 {
+				if len(gcs.Items) != gwClasses.Len() {
 					return false
 				}
 				for _, gc := range gcs.Items {
@@ -131,7 +131,7 @@ var _ = Describe("GatewayClassProvisioner", func() {
 			Eventually(func() bool {
 				gcs := &apiv1.GatewayClassList{}
 				err := k8sClient.List(ctx, gcs)
-				return err == nil && len(gcs.Items) == 2
+				return err == nil && len(gcs.Items) == gwClasses.Len()
 			}, timeout, interval).Should(BeTrue())
 		})
 
@@ -148,7 +148,7 @@ var _ = Describe("GatewayClassProvisioner", func() {
 				if err != nil {
 					return false
 				}
-				return len(gcs.Items) == 2
+				return len(gcs.Items) == gwClasses.Len()
 			}, timeout, interval).Should(BeTrue())
 		})
 	})

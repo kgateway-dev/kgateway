@@ -5,7 +5,7 @@ package v1alpha1
 // LoadBalancerRoundRobinConfigApplyConfiguration represents a declarative configuration of the LoadBalancerRoundRobinConfig type for use
 // with apply.
 type LoadBalancerRoundRobinConfigApplyConfiguration struct {
-	SlowStartConfig *SlowStartConfigApplyConfiguration `json:"slowStartConfig,omitempty"`
+	SlowStart *SlowStartApplyConfiguration `json:"slowStart,omitempty"`
 }
 
 // LoadBalancerRoundRobinConfigApplyConfiguration constructs a declarative configuration of the LoadBalancerRoundRobinConfig type for use with
@@ -14,10 +14,10 @@ func LoadBalancerRoundRobinConfig() *LoadBalancerRoundRobinConfigApplyConfigurat
 	return &LoadBalancerRoundRobinConfigApplyConfiguration{}
 }
 
-// WithSlowStartConfig sets the SlowStartConfig field in the declarative configuration to the given value
+// WithSlowStart sets the SlowStart field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the SlowStartConfig field is set to the value of the last call.
-func (b *LoadBalancerRoundRobinConfigApplyConfiguration) WithSlowStartConfig(value *SlowStartConfigApplyConfiguration) *LoadBalancerRoundRobinConfigApplyConfiguration {
-	b.SlowStartConfig = value
+// If called multiple times, the SlowStart field is set to the value of the last call.
+func (b *LoadBalancerRoundRobinConfigApplyConfiguration) WithSlowStart(value *SlowStartApplyConfiguration) *LoadBalancerRoundRobinConfigApplyConfiguration {
+	b.SlowStart = value
 	return b
 }

@@ -39,21 +39,21 @@ const (
 // ExtAuthProvider defines the configuration for an ExtAuth provider.
 type ExtAuthProvider struct {
 	// GrpcService is the GRPC service that will handle the authentication.
-	// +kubebuilder:validation:Required
+	// +required
 	GrpcService *ExtGrpcService `json:"grpcService"`
 }
 
 // ExtProcProvider defines the configuration for an ExtProc provider.
 type ExtProcProvider struct {
 	// GrpcService is the GRPC service that will handle the processing.
-	// +kubebuilder:validation:Required
+	// +required
 	GrpcService *ExtGrpcService `json:"grpcService"`
 }
 
 // ExtGrpcService defines the GRPC service that will handle the processing.
 type ExtGrpcService struct {
 	// BackendRef references the backend GRPC service.
-	// +kubebuilder:validation:Required
+	// +required
 	BackendRef *gwv1.BackendRef `json:"backendRef"`
 
 	// Authority is the authority header to use for the GRPC service.
@@ -64,13 +64,13 @@ type ExtGrpcService struct {
 // RateLimitProvider defines the configuration for a RateLimit service provider.
 type RateLimitProvider struct {
 	// GrpcService is the GRPC service that will handle the rate limiting.
-	// +kubebuilder:validation:Required
+	// +required
 	GrpcService *ExtGrpcService `json:"grpcService"`
 
 	// Domain identifies a rate limiting configuration for the rate limit service.
 	// All rate limit requests must specify a domain, which enables the configuration
 	// to be per application without fear of overlap (e.g., "api", "web", "admin").
-	// +kubebuilder:validation:Required
+	// +required
 	Domain string `json:"domain"`
 
 	// FailOpen determines if requests are limited when the rate limit service is unavailable.
@@ -96,7 +96,7 @@ type GatewayExtensionSpec struct {
 	// Type indicates the type of the GatewayExtension to be used.
 	// +unionDiscriminator
 	// +kubebuilder:validation:Enum=ExtAuth;ExtProc;RateLimit;Extended
-	// +kubebuilder:validation:Required
+	// +required
 	Type GatewayExtensionType `json:"type"`
 
 	// ExtAuth configuration for ExtAuth extension type.

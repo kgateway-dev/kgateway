@@ -16,8 +16,8 @@ type BackendConfigPolicySpecApplyConfiguration struct {
 	TCPKeepalive                  *TCPKeepaliveApplyConfiguration                `json:"tcpKeepalive,omitempty"`
 	CommonHttpProtocolOptions     *CommonHttpProtocolOptionsApplyConfiguration   `json:"commonHttpProtocolOptions,omitempty"`
 	Http1ProtocolOptions          *Http1ProtocolOptionsApplyConfiguration        `json:"http1ProtocolOptions,omitempty"`
-	SSLConfig                     *SSLConfigApplyConfiguration                   `json:"sslConfig,omitempty"`
-	LoadBalancerConfig            *LoadBalancerConfigApplyConfiguration          `json:"loadBalancerConfig,omitempty"`
+	TLS                           *TLSApplyConfiguration                         `json:"tls,omitempty"`
+	LoadBalancer                  *LoadBalancerApplyConfiguration                `json:"loadBalancer,omitempty"`
 }
 
 // BackendConfigPolicySpecApplyConfiguration constructs a declarative configuration of the BackendConfigPolicySpec type for use with
@@ -92,18 +92,18 @@ func (b *BackendConfigPolicySpecApplyConfiguration) WithHttp1ProtocolOptions(val
 	return b
 }
 
-// WithSSLConfig sets the SSLConfig field in the declarative configuration to the given value
+// WithTLS sets the TLS field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the SSLConfig field is set to the value of the last call.
-func (b *BackendConfigPolicySpecApplyConfiguration) WithSSLConfig(value *SSLConfigApplyConfiguration) *BackendConfigPolicySpecApplyConfiguration {
-	b.SSLConfig = value
+// If called multiple times, the TLS field is set to the value of the last call.
+func (b *BackendConfigPolicySpecApplyConfiguration) WithTLS(value *TLSApplyConfiguration) *BackendConfigPolicySpecApplyConfiguration {
+	b.TLS = value
 	return b
 }
 
-// WithLoadBalancerConfig sets the LoadBalancerConfig field in the declarative configuration to the given value
+// WithLoadBalancer sets the LoadBalancer field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the LoadBalancerConfig field is set to the value of the last call.
-func (b *BackendConfigPolicySpecApplyConfiguration) WithLoadBalancerConfig(value *LoadBalancerConfigApplyConfiguration) *BackendConfigPolicySpecApplyConfiguration {
-	b.LoadBalancerConfig = value
+// If called multiple times, the LoadBalancer field is set to the value of the last call.
+func (b *BackendConfigPolicySpecApplyConfiguration) WithLoadBalancer(value *LoadBalancerApplyConfiguration) *BackendConfigPolicySpecApplyConfiguration {
+	b.LoadBalancer = value
 	return b
 }

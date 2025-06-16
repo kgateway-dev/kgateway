@@ -76,7 +76,7 @@ image:
   # -- Set the default image pull policy.
   pullPolicy: IfNotPresent
 
-# -- Configure the integration with the Gateway API Inference Extension project, which lets you use kgateway to route to AI inference workloads like LLMs that run locally in your Kubernetes cluster.
+# -- Configure the integration with the Gateway API Inference Extension project, which lets you use kgateway to route to AI inference workloads like LLMs that run locally in your Kubernetes cluster. Documentation for Inference Extension can be found here: https://kgateway.dev/docs/integrations/inference-extension/
 inferenceExtension:
   # -- Enable Inference Extension.
   enabled: false

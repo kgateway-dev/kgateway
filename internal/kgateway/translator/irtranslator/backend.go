@@ -199,10 +199,10 @@ func translateAppProtocol(appProtocol ir.AppProtocol) map[string]*anypb.Any {
 
 // initializeCluster creates a default envoy cluster with minimal configuration,
 // that will then be augmented by various backend plugins
-func initializeCluster(u ir.BackendObjectIR) *clusterv3.Cluster {
+func initializeCluster(b ir.BackendObjectIR) *clusterv3.Cluster {
 	// circuitBreakers := t.settings.GetGloo().GetCircuitBreakers()
 	out := &clusterv3.Cluster{
-		Name:     u.ClusterName(),
+		Name:     b.ClusterName(),
 		Metadata: new(envoy_config_core_v3.Metadata),
 		//	CircuitBreakers:  getCircuitBreakers(upstream.GetCircuitBreakers(), circuitBreakers),
 		//	LbSubsetConfig:   createLbConfig(upstream),
@@ -212,7 +212,7 @@ func initializeCluster(u ir.BackendObjectIR) *clusterv3.Cluster {
 		// ProtocolSelection: envoy_config_cluster_v3.Cluster_ClusterProtocolSelection(upstream.GetProtocolSelection()),
 		// this field can be overridden by plugins
 		ConnectTimeout:                durationpb.New(ClusterConnectionTimeout),
-		TypedExtensionProtocolOptions: translateAppProtocol(u.AppProtocol),
+		TypedExtensionProtocolOptions: translateAppProtocol(b.AppProtocol),
 
 		// Http2ProtocolOptions:      getHttp2options(upstream),
 		// IgnoreHealthOnHostRemoval: upstream.GetIgnoreHealthOnHostRemoval().GetValue(),
@@ -236,15 +236,15 @@ func initializeCluster(u ir.BackendObjectIR) *clusterv3.Cluster {
 	return out
 }
 
-func buildBlackholeCluster(u *ir.BackendObjectIR) *clusterv3.Cluster {
+func buildBlackholeCluster(b *ir.BackendObjectIR) *clusterv3.Cluster {
 	out := &clusterv3.Cluster{
-		Name:     u.ClusterName(),
+		Name:     b.ClusterName(),
 		Metadata: new(envoy_config_core_v3.Metadata),
 		ClusterDiscoveryType: &clusterv3.Cluster_Type{
 			Type: clusterv3.Cluster_STATIC,
 		},
 		LoadAssignment: &endpointv3.ClusterLoadAssignment{
-			ClusterName: u.ClusterName(),
+			ClusterName: b.ClusterName(),
 			Endpoints:   []*endpointv3.LocalityLbEndpoints{},
 		},
 	}
