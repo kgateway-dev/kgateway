@@ -625,6 +625,22 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 			Name:      "example-gateway",
 		},
 	}),
+	Entry("Backend Config Policy with Common HTTP Protocol - HTTP backend", translatorTestCase{
+		inputFile:  "backendconfigpolicy/commonhttpprotocol-httpbackend.yaml",
+		outputFile: "backendconfigpolicy/commonhttpprotocol-httpbackend.yaml",
+		gwNN: types.NamespacedName{
+			Namespace: "default",
+			Name:      "example-gateway",
+		},
+	}),
+	Entry("Backend Config Policy with Common HTTP Protocol - HTTP2 backend", translatorTestCase{
+		inputFile:  "backendconfigpolicy/commonhttpprotocol-http2backend.yaml",
+		outputFile: "backendconfigpolicy/commonhttpprotocol-http2backend.yaml",
+		gwNN: types.NamespacedName{
+			Namespace: "default",
+			Name:      "example-gateway",
+		},
+	}),
 	Entry(
 		"TrafficPolicy with explicit generation",
 		translatorTestCase{

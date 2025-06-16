@@ -1,39 +1,25 @@
-clusters:
-- connectTimeout: 5s
-  dnsLookupFamily: V4_PREFERRED
-  loadAssignment:
-    clusterName: istio-se_gwtest_httpbin-se_se.example.com_80
-    endpoints:
-    - lbEndpoints:
-      - endpoint:
-          address:
-            socketAddress:
-              address: 1.1.1.1
-              portValue: 80
-        loadBalancingWeight: 1
-      loadBalancingWeight: 1
-  metadata: {}
-  name: istio-se_gwtest_httpbin-se_se.example.com_80
-  type: STATIC
-  typedExtensionProtocolOptions:
-    envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
-      '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
-      commonHttpProtocolOptions:
-        headersWithUnderscoresAction: DROP_HEADER
-        maxHeadersCount: 15
-        maxRequestsPerConnection: 100
-      explicitHttpConfig:
-        httpProtocolOptions: {}
+Clusters:
 - connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
       ads: {}
       resourceApiVersion: V3
-  ignoreHealthOnHostRemoval: true
   metadata: {}
-  name: kube_default_kubernetes_443
+  name: kube_default_httpbin_8080
   type: EDS
-listeners:
+  typedExtensionProtocolOptions:
+    envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+      '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+      commonHttpProtocolOptions:
+        idleTimeout: 10s
+        maxHeadersCount: 15
+        maxStreamDuration: 30s
+      explicitHttpConfig:
+        httpProtocolOptions: {}
+- connectTimeout: 5s
+  metadata: {}
+  name: test-backend-plugin_default_example-svc_80
+Listeners:
 - address:
     socketAddress:
       address: '::'
@@ -59,6 +45,6 @@ listeners:
         useRemoteAddress: true
     name: listener~8080
   name: listener~8080
-routes:
+Routes:
 - ignorePortInHostMatching: true
   name: listener~8080
