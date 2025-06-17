@@ -1687,13 +1687,6 @@ func schema_kgateway_v2_api_v1alpha1_CommonHttpProtocolOptions(ref common.Refere
 							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Duration"),
 						},
 					},
-					"headersWithUnderscoresAction": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Action to take when a client request with a header name containing underscore characters is received. If this setting is not specified, the value defaults to ALLOW. Note: upstream responses are not affected by this setting.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
 					"maxRequestsPerConnection": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Maximum requests for a single upstream connection. If set to 0 or unspecified, defaults to unlimited.",
