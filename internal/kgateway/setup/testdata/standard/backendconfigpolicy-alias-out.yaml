@@ -22,11 +22,14 @@ clusters:
         headersWithUnderscoresAction: DROP_HEADER
         maxHeadersCount: 15
         maxRequestsPerConnection: 100
+      explicitHttpConfig:
+        httpProtocolOptions: {}
 - connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
       ads: {}
       resourceApiVersion: V3
+  ignoreHealthOnHostRemoval: true
   metadata: {}
   name: kube_default_kubernetes_443
   type: EDS

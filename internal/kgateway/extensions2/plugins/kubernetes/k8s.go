@@ -99,5 +99,6 @@ func processBackend(ctx context.Context, in ir.BackendObjectIR, out *envoy_confi
 			},
 		},
 	}
+	out.IgnoreHealthOnHostRemoval = true
 	return nil
 }

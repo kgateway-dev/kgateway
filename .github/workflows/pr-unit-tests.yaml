@@ -11,10 +11,9 @@ env:
   GITHUB_TOKEN: ${{ github.token }}
 
 jobs:
-  # Runs the unit tests for `internal/kgateway`
-  kube_gateway_project:
-    # TODO(tim): rename this job or consolidate with the other workflows.
-    name: projects/gateway2
+  # Runs the unit tests for Go packages
+  go:
+    name: Go Unit Tests
     runs-on: ubuntu-22.04
     timeout-minutes: 25
     steps:
@@ -38,8 +37,8 @@ jobs:
       # We intentionally ignore the errors while we build out our test coverage, to establish a good baseline
       # However, we should strive to establish a baseline, and then make it required on PRs
       run: make --always-make --ignore-errors validate-test-coverage
-  # Runs the units tests for `python`
-  python_unit_tests:
+  # Runs the units tests for Python
+  python:
     timeout-minutes: 60
     name: Python Unit Tests
     env:

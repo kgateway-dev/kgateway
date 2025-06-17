@@ -1,8 +1,6 @@
 package backend
 
 import (
-	"context"
-
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_dfp_cluster "github.com/envoyproxy/go-control-plane/envoy/extensions/clusters/dynamic_forward_proxy/v3"
@@ -17,15 +15,13 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 )
 
-var (
-	dfpFilterConfig = &envoydfp.FilterConfig{
-		ImplementationSpecifier: &envoydfp.FilterConfig_SubClusterConfig{
-			SubClusterConfig: &envoydfp.SubClusterConfig{},
-		},
-	}
-)
+var dfpFilterConfig = &envoydfp.FilterConfig{
+	ImplementationSpecifier: &envoydfp.FilterConfig_SubClusterConfig{
+		SubClusterConfig: &envoydfp.SubClusterConfig{},
+	},
+}
 
-func processDynamicForwardProxy(ctx context.Context, in *v1alpha1.DynamicForwardProxyBackend, out *envoy_config_cluster_v3.Cluster) error {
+func processDynamicForwardProxy(in *v1alpha1.DynamicForwardProxyBackend, out *envoy_config_cluster_v3.Cluster) error {
 	out.LbPolicy = envoy_config_cluster_v3.Cluster_CLUSTER_PROVIDED
 	c := &envoy_dfp_cluster.ClusterConfig{
 		ClusterImplementationSpecifier: &envoy_dfp_cluster.ClusterConfig_SubClustersConfig{

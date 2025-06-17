@@ -11,6 +11,7 @@ import (
 	routev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	exteniondynamicmodulev3 "github.com/envoyproxy/go-control-plane/envoy/extensions/dynamic_modules/v3"
 	corsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/cors/v3"
+	envoy_csrf_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/csrf/v3"
 	dynamicmodulesv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/dynamic_modules/v3"
 	localratelimitv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/local_ratelimit/v3"
 	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
@@ -83,6 +84,7 @@ type trafficPolicySpecIr struct {
 	localRateLimit             *localratelimitv3.LocalRateLimit
 	rateLimit                  *GlobalRateLimitIR
 	cors                       *CorsIR
+	csrf                       *CsrfIR
 }
 
 func (d *TrafficPolicy) CreationTime() time.Time {
@@ -144,6 +146,10 @@ func (d *TrafficPolicy) Equals(in any) bool {
 		return false
 	}
 
+	if !d.spec.csrf.Equals(d2.spec.csrf) {
+		return false
+	}
+
 	return true
 }
 
@@ -160,6 +166,7 @@ type trafficPolicyPluginGwPass struct {
 	extProcPerProvider    ProviderNeededMap
 	rateLimitPerProvider  ProviderNeededMap
 	corsInChain           map[string]*corsv3.Cors
+	csrfInChain           map[string]*envoy_csrf_v3.CsrfPolicy
 }
 
 var _ ir.ProxyTranslationPass = &trafficPolicyPluginGwPass{}
@@ -508,6 +515,14 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.Filt
 		filters = append(filters, filter)
 	}
 
+	// Add global CSRF http filter
+	if p.csrfInChain[fcc.FilterChainName] != nil {
+		filter := plugins.MustNewStagedFilter(csrfExtensionFilterName,
+			p.csrfInChain[fcc.FilterChainName],
+			plugins.DuringStage(plugins.RouteStage))
+		filters = append(filters, filter)
+	}
+
 	if len(filters) == 0 {
 		return nil, nil
 	}
@@ -527,6 +542,9 @@ func (p *trafficPolicyPluginGwPass) handlePolicies(fcn string, typedFilterConfig
 
 	// Apply CORS configuration if present
 	p.handleCors(fcn, typedFilterConfig, spec.cors)
+
+	// Apply CSRF configuration if present
+	p.handleCsrf(fcn, typedFilterConfig, spec.csrf)
 }
 
 func (p *trafficPolicyPluginGwPass) SupportsPolicyMerge() bool {
@@ -638,5 +656,10 @@ func MergeTrafficPolicies(
 		mergeOrigins["cors"] = p2Ref
 	}
 
+	// Handle CSRF policy merging
+	if policy.IsMergeable(p1.spec.csrf, p2.spec.csrf, mergeOpts) {
+		p1.spec.csrf = p2.spec.csrf
+		mergeOrigins["csrf"] = p2Ref
+	}
 	return mergeOrigins
 }

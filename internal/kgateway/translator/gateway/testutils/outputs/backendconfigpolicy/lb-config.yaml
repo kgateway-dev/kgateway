@@ -6,6 +6,7 @@ Clusters:
     edsConfig:
       ads: {}
       resourceApiVersion: V3
+  ignoreHealthOnHostRemoval: true
   lbPolicy: LEAST_REQUEST
   leastRequestLbConfig:
     choiceCount: 3
@@ -19,6 +20,7 @@ Clusters:
     edsConfig:
       ads: {}
       resourceApiVersion: V3
+  ignoreHealthOnHostRemoval: true
   lbPolicy: MAGLEV
   metadata: {}
   name: kube_default_httpbin-maglev_8080
@@ -30,6 +32,7 @@ Clusters:
     edsConfig:
       ads: {}
       resourceApiVersion: V3
+  ignoreHealthOnHostRemoval: true
   lbPolicy: RANDOM
   metadata: {}
   name: kube_default_httpbin-random_8080
@@ -41,6 +44,7 @@ Clusters:
     edsConfig:
       ads: {}
       resourceApiVersion: V3
+  ignoreHealthOnHostRemoval: true
   lbPolicy: RING_HASH
   metadata: {}
   name: kube_default_httpbin-rh_8080
@@ -54,6 +58,7 @@ Clusters:
     edsConfig:
       ads: {}
       resourceApiVersion: V3
+  ignoreHealthOnHostRemoval: true
   metadata: {}
   name: kube_default_httpbin-rr_8080
   roundRobinLbConfig:
@@ -73,6 +78,7 @@ Clusters:
     edsConfig:
       ads: {}
       resourceApiVersion: V3
+  ignoreHealthOnHostRemoval: true
   metadata: {}
   name: kube_default_httpbin-weighted_8080
   type: EDS
@@ -85,6 +91,7 @@ Clusters:
     edsConfig:
       ads: {}
       resourceApiVersion: V3
+  ignoreHealthOnHostRemoval: true
   lbPolicy: RING_HASH
   metadata: {}
   name: kube_default_httpbin_8080

@@ -84,10 +84,10 @@ func NewGlooK8sEndpointInputs(
 }
 
 func NewK8sEndpoints(ctx context.Context, inputs EndpointsInputs) krt.Collection[ir.EndpointsForBackend] {
-	return krt.NewCollection(inputs.Backends, transformK8sEndpoints(ctx, inputs), inputs.KrtOpts.ToOptions("K8sEndpoints")...)
+	return krt.NewCollection(inputs.Backends, transformK8sEndpoints(inputs), inputs.KrtOpts.ToOptions("K8sEndpoints")...)
 }
 
-func transformK8sEndpoints(ctx context.Context, inputs EndpointsInputs) func(kctx krt.HandlerContext, backend ir.BackendObjectIR) *ir.EndpointsForBackend {
+func transformK8sEndpoints(inputs EndpointsInputs) func(kctx krt.HandlerContext, backend ir.BackendObjectIR) *ir.EndpointsForBackend {
 	augmentedPods := inputs.Pods
 
 	return func(kctx krt.HandlerContext, backend ir.BackendObjectIR) *ir.EndpointsForBackend {
@@ -285,13 +285,10 @@ func findPortInEndpointSlice(endpointSlice *discoveryv1.EndpointSlice, singlePor
 		}
 		// If the endpoint port is not named, it implies that
 		// the kube service only has a single unnamed port as well.
-		switch {
-		case singlePortService:
-			port = uint32(*p.Port)
-		case p.Name != nil && *p.Name == kubeServicePort.Name:
-			port = uint32(*p.Port)
-			break
+		if singlePortService || (p.Name != nil && *p.Name == kubeServicePort.Name) {
+			return uint32(*p.Port)
 		}
 	}
+
 	return port
 }

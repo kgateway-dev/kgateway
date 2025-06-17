@@ -94,10 +94,11 @@ func (s *testingSuite) SetupSuite() {
 	})
 
 	s.assertStatus(metav1.Condition{
-		Type:    string(gwv1alpha2.PolicyConditionAccepted),
-		Status:  metav1.ConditionTrue,
-		Reason:  string(gwv1alpha2.PolicyReasonAccepted),
-		Message: reports.PolicyAcceptedMsg,
+		Type:               string(gwv1alpha2.PolicyConditionAccepted),
+		Status:             metav1.ConditionTrue,
+		Reason:             string(gwv1alpha2.PolicyReasonAccepted),
+		Message:            reports.PolicyAcceptedMsg,
+		ObservedGeneration: routeForHeaders.Generation,
 	})
 }
 
@@ -379,6 +380,7 @@ func (s *testingSuite) assertStatus(expected metav1.Condition) {
 		g.Expect(cond.Status).To(gomega.Equal(expected.Status))
 		g.Expect(cond.Reason).To(gomega.Equal(expected.Reason))
 		g.Expect(cond.Message).To(gomega.Equal(expected.Message))
+		g.Expect(cond.ObservedGeneration).To(gomega.Equal(expected.ObservedGeneration))
 	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 }
 

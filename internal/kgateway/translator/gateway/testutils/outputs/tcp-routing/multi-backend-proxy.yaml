@@ -4,6 +4,7 @@ Clusters:
     edsConfig:
       ads: {}
       resourceApiVersion: V3
+  ignoreHealthOnHostRemoval: true
   metadata: {}
   name: kube_default_example-tcp-svc-1_8080
   type: EDS
@@ -12,6 +13,7 @@ Clusters:
     edsConfig:
       ads: {}
       resourceApiVersion: V3
+  ignoreHealthOnHostRemoval: true
   metadata: {}
   name: kube_default_example-tcp-svc-2_8081
   type: EDS
