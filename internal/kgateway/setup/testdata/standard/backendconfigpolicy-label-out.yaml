@@ -40,17 +40,6 @@ clusters:
       keepaliveInterval: 5
       keepaliveProbes: 3
       keepaliveTime: 30
-endpoints:
-- clusterName: kube_gwtest_httpbin_8080
-  endpoints:
-  - lbEndpoints:
-    - endpoint:
-        address:
-          socketAddress:
-            address: 10.244.1.11
-            portValue: 8080
-      loadBalancingWeight: 1
-    loadBalancingWeight: 1
 listeners:
 - address:
     socketAddress:
