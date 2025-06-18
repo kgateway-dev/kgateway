@@ -24,6 +24,19 @@ clusters:
       '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
       explicitHttpConfig:
         http2ProtocolOptions: {}
+- circuitBreakers:
+    thresholds:
+    - maxConnections: 40000
+      maxPendingRequests: 40000
+      maxRequests: 40000
+  connectTimeout: 1000s
+  lbPolicy: CLUSTER_PROVIDED
+  metadata: {}
+  name: endpointpicker_gateway-pool_gwtest_original_dst
+  originalDstLbConfig:
+    httpHeaderName: x-gateway-destination-endpoint
+    useHttpHeader: true
+  type: ORIGINAL_DST
 - connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
@@ -48,19 +61,6 @@ clusters:
   metadata: {}
   name: kube_gwtest_gateway-pool-endpoint-picker_9090
   type: EDS
-- circuitBreakers:
-    thresholds:
-    - maxConnections: 40000
-      maxPendingRequests: 40000
-      maxRequests: 40000
-  connectTimeout: 1000s
-  lbPolicy: CLUSTER_PROVIDED
-  metadata: {}
-  name: endpointpicker_gateway-pool_gwtest_original_dst
-  originalDstLbConfig:
-    httpHeaderName: x-gateway-destination-endpoint
-    useHttpHeader: true
-  type: ORIGINAL_DST
 listeners:
 - address:
     socketAddress:

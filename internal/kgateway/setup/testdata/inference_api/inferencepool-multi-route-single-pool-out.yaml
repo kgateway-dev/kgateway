@@ -91,11 +91,6 @@ clusters:
   metadata: {}
   name: kube_gwtest_gateway-pool-2-endpoint-picker_9002
   type: EDS
-  typedExtensionProtocolOptions:
-    envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
-      '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
-      explicitHttpConfig:
-        http2ProtocolOptions: {}
 - connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
@@ -112,11 +107,6 @@ clusters:
   metadata: {}
   name: kube_gwtest_gateway-pool-endpoint-picker-2_9002
   type: EDS
-  typedExtensionProtocolOptions:
-    envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
-      '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
-      explicitHttpConfig:
-        http2ProtocolOptions: {}
 - connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
@@ -125,11 +115,6 @@ clusters:
   metadata: {}
   name: kube_gwtest_gateway-pool-endpoint-picker_9002
   type: EDS
-  typedExtensionProtocolOptions:
-    envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
-      '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
-      explicitHttpConfig:
-        http2ProtocolOptions: {}
 - connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
@@ -174,26 +159,25 @@ listeners:
           configSource:
             ads: {}
             resourceApiVersion: V3
-          routeConfigName: listener~8080
+          routeConfigName: http
         statPrefix: http
         useRemoteAddress: true
-    name: listener~8080
-  name: listener~8080
+    name: http
+  name: http
 routes:
 - ignorePortInHostMatching: true
-  name: listener~8080
+  name: http
   virtualHosts:
   - domains:
     - www.example.com
-    name: listener~8080~www_example_com
+    name: http~www_example_com
     routes:
     - match:
         headers:
-        - name: x-model-name
-          stringMatch:
-            exact: facebook/llama3-8b-instruct
+        - exactMatch: facebook/llama3-8b-instruct
+          name: x-model-name
         prefix: /
-      name: listener~8080~www_example_com-route-0-httproute-gateway-route-gwtest-0-0-matcher-0
+      name: http~www_example_com-route-0-httproute-gateway-route-gwtest-0-0-matcher-0
       route:
         cluster: endpointpicker_gateway-pool_gwtest_original_dst
         timeout: 300s
@@ -208,11 +192,10 @@ routes:
               timeout: 10s
     - match:
         headers:
-        - name: x-model-name
-          stringMatch:
-            exact: facebook/llama3-8b-instruct-2
+        - exactMatch: facebook/llama3-8b-instruct-2
+          name: x-model-name
         prefix: /
-      name: listener~8080~www_example_com-route-1-httproute-gateway-route-2-gwtest-0-0-matcher-0
+      name: http~www_example_com-route-1-httproute-gateway-route-2-gwtest-0-0-matcher-0
       route:
         cluster: endpointpicker_gateway-pool-2_gwtest_original_dst
         timeout: 300s
