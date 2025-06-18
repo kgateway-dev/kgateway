@@ -104,10 +104,10 @@ spec:
       group: ""
       kind: Service
   commonHttpProtocolOptions:
-    idleTimeout: 10s
-    maxHeadersCount: 15
-    maxStreamDuration: 30s
-    maxRequestsPerConnection: 100
+    idleTimeout: 11s
+    maxHeadersCount: 16
+    maxStreamDuration: 31s
+    maxRequestsPerConnection: 101
     headersWithUnderscoresAction: RejectRequest
 ---
 apiVersion: v1
@@ -137,8 +137,8 @@ spec:
       group: ""
       kind: Service
   commonHttpProtocolOptions:
-    idleTimeout: 10s
-    maxHeadersCount: 15
-    maxStreamDuration: 30s
-    maxRequestsPerConnection: 100
+    idleTimeout: 12s
+    maxHeadersCount: 17
+    maxStreamDuration: 32s
+    maxRequestsPerConnection: 102
     headersWithUnderscoresAction: RejectRequest
