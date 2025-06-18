@@ -431,9 +431,6 @@ var schemaYAML = typed.YAMLObject(`types:
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.CommonHttpProtocolOptions
   map:
     fields:
-    - name: headersWithUnderscoresAction
-      type:
-        scalar: string
     - name: idleTimeout
       type:
         namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Duration
