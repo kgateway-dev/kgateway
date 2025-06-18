@@ -333,6 +333,50 @@ spec:
                     type: integer
                 type: object
                 x-kubernetes-preserve-unknown-fields: true
+              csrf:
+                properties:
+                  additionalOrigins:
+                    items:
+                      properties:
+                        contains:
+                          type: string
+                        exact:
+                          type: string
+                        ignoreCase:
+                          default: false
+                          type: boolean
+                        prefix:
+                          type: string
+                        safeRegex:
+                          type: string
+                        suffix:
+                          type: string
+                      required:
+                      - ignoreCase
+                      type: object
+                      x-kubernetes-validations:
+                      - message: exactly one of Exact, Prefix, Suffix, Contains, or
+                          SafeRegex must be set
+                        rule: '[has(self.exact), has(self.prefix), has(self.suffix),
+                          has(self.contains), has(self.safeRegex)].filter(x, x).size()
+                          == 1'
+                    maxItems: 16
+                    type: array
+                  percentageEnabled:
+                    format: int32
+                    maximum: 100
+                    minimum: 0
+                    type: integer
+                  percentageShadowed:
+                    format: int32
+                    maximum: 100
+                    minimum: 0
+                    type: integer
+                type: object
+                x-kubernetes-validations:
+                - message: exactly one of PercentageEnabled or PercentageShadowed
+                    must be set
+                  rule: has(self.percentageEnabled) != has(self.percentageShadowed)
               extAuth:
                 properties:
                   contextExtensions:

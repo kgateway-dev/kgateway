@@ -19,6 +19,8 @@ For these tests to run, we require the following conditions:
 - kgateway helm chart archive present in the `_test` folder
 - running kind cluster loaded with the images (with correct tags) referenced in the helm chart
 
+#### Option 1: Using setup-kind.sh script
+
 [hack/kind/setup-kind.sh](/hack/kind/setup-kind.sh) gets run in CI to setup the test environment for the above requirements.
 The default settings should be sufficient for a working local environment.
 However, the setup script accepts a number of environment variables to control the creation of a kind cluster and deployment of kgateway resources.
@@ -28,6 +30,50 @@ Basic Example:
 ```bash
 ./hack/kind/setup-kind.sh
 ```
+
+#### Option 2: Using Tilt for development workflow
+
+Tilt provides an excellent development workflow for e2e testing as it automatically rebuilds and redeploys images when you make code changes. This is particularly useful for iterative debugging.
+
+**Prerequisites:**
+
+- [Tilt](https://tilt.dev/) installed locally
+- [ctlptl](https://github.com/tilt-dev/ctlptl) installed for cluster management
+
+**Setup Steps:**
+
+1. Create a kind cluster with a local registry:
+
+```bash
+ctlptl create cluster kind --name kind-kind --registry=ctlptl-registry
+```
+
+You can see the status of the cluster with:
+
+```bash
+kubectl cluster-info --context kind-kind
+```
+
+2. Build and load the initial images:
+
+```bash
+VERSION=1.0.0-ci1 CLUSTER_NAME=kind IMAGE_VARIANT=standard make kind-build-and-load
+```
+
+3. Start Tilt to enable live reloading:
+
+```bash
+tilt up
+```
+
+**Benefits of using Tilt:**
+
+- Automatic image rebuilding and redeployment when code changes are detected
+- Live updates without needing to restart the entire test environment
+- Web UI for monitoring resource status and logs
+- Faster iteration cycles during debugging
+
+For more detailed instructions on using Tilt, see [devel/tilt/tilt.md](/devel/tilt/tilt.md).
 
 ## Step 2: Running Tests
 _To run the regression tests, your kubeconfig file must point to a running Kubernetes cluster:_
@@ -42,14 +88,31 @@ _should run `kind-<CLUSTER_NAME>`_
 
 Since each feature suite is a subtest of the top level suite, you can run a single feature suite by running the top level suite with the `-run` flag.
 
-For example, to run the `Deployer` feature suite in the `TestKgateway` test, you can run:
+For example, to run the `Deployer` feature suite in the `TestKgateway` test:
+
+You can either set environment variables inline with the command:
+
 ```bash
+SKIP_INSTALL=true CLUSTER_NAME=kind INSTALL_NAMESPACE=kgateway-system go test -v -timeout 600s ./test/kubernetes/e2e/tests -run ^TestKgateway$/^Deployer$
+```
+
+Or export the environment variables first and then run the test:
+
+```bash
+export SKIP_INSTALL=true
+export CLUSTER_NAME=kind
+export INSTALL_NAMESPACE=kgateway-system
 go test -v -timeout 600s ./test/kubernetes/e2e/tests -run ^TestKgateway$/^Deployer$
 ```
+
 Note that the `-run` flag takes a sequence of regular expressions, and that each part may match a substring of a suite/test name. See https://pkg.go.dev/cmd/go#hdr-Testing_flags for details. To match only exact suite/test names, use the `^` and `$` characters as shown.
+
+**Additional Environment Variables:**
+For a complete list of available environment variables that can be used to configure the test behavior, see [test/testutils/env.go](/test/testutils/env.go). This file contains all the environment variable definitions used by the e2e test suite.
 
 #### VSCode
 You can use a custom debugger launch config that sets the `test.run` flag to run a specific test:
+
 ```
 {
   "name": "e2e",
@@ -64,12 +127,18 @@ You can use a custom debugger launch config that sets the `test.run` flag to run
   ],
   "env": {
     "SKIP_INSTALL": "true",
+    "CLUSTER_NAME": "kind",
+    "INSTALL_NAMESPACE": "kgateway-system"
   },
 }
 ```
 
 Setting `SKIP_INSTALL` to `true` will skip the installation of kgateway, which is useful to
 debug against a pre-existing/stable environment with kgateway already installed.
+
+`CLUSTER_NAME` specifies the name of the cluster used for e2e tests (corresponds to the cluster name used when creating the kind cluster).
+
+`INSTALL_NAMESPACE` specifies the namespace in which kgateway is installed (typically `kgateway-system` when using Tilt).
 
 When invoking tests using VSCode's `run test` option, remember to set `"go.testTimeout": "600s"` in the user `settings.json` file as this may default to a lower value such as `30s` which may not be enough time for the e2e test to complete.
 
@@ -79,7 +148,7 @@ Similar to running a specific feature suite, you can run a single test within a 
 
 For example, to run `TestProvisionDeploymentAndService` in `Deployer` feature suite that is a part of `TestKgateway`, you can run:
 ```bash
-go test -v -timeout 600s ./test/kubernetes/e2e/tests -run ^TestKgateway$/^Deployer$/^TestProvisionDeploymentAndService$
+SKIP_INSTALL=true CLUSTER_NAME=kind INSTALL_NAMESPACE=kgateway-system go test -v -timeout 600s ./test/kubernetes/e2e/tests -run ^TestKgateway$/^Deployer$/^TestProvisionDeploymentAndService$
 ```
 
 Alternatively, with VSCode you can use a custom debugger launch config that sets the `test.run` flag to run a specific test:
@@ -97,6 +166,8 @@ Alternatively, with VSCode you can use a custom debugger launch config that sets
   ],
   "env": {
     "SKIP_INSTALL": "true",
+    "CLUSTER_NAME": "kind",
+    "INSTALL_NAMESPACE": "kgateway-system"
   },
 }
 ```
