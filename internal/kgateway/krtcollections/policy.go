@@ -168,19 +168,8 @@ func (i *BackendIndex) GetBackendFromRef(kctx krt.HandlerContext, src ir.ObjectS
 			return nil, &NotFoundError{NotFoundObj: to}
 		}
 
-		// Compare backendRef and pool ports
-		resolvedPort := poolIR.Port
-		if ref.Port != nil && int32(*ref.Port) != resolvedPort {
-			logger.Warn(
-				"backendRef.port does not match InferencePool targetPort; overriding",
-				"provided_port", *ref.Port,
-				"pool_port", resolvedPort,
-				"inference_pool", nns,
-			)
-		}
-
 		// Overwrite ref.Port so lookup uses the correct port
-		correct := gwv1.PortNumber(resolvedPort)
+		correct := gwv1.PortNumber(poolIR.Port)
 		ref.Port = &correct
 
 		// Delegate to the normal port-aware lookup
