@@ -182,7 +182,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 	}
 }
 
-func processBackend(_ context.Context, polir ir.PolicyIR, _ ir.BackendObjectIR, out *clusterv3.Cluster) {
+func processBackend(_ context.Context, polir ir.PolicyIR, backend ir.BackendObjectIR, out *clusterv3.Cluster) {
 	pol := polir.(*BackendConfigPolicyIR)
 	if pol.connectTimeout != nil {
 		out.ConnectTimeout = pol.connectTimeout
@@ -216,6 +216,14 @@ func processBackend(_ context.Context, polir ir.PolicyIR, _ ir.BackendObjectIR, 
 
 	if pol.http1ProtocolOptions != nil {
 		if err := translatorutils.MutateHttpOptions(out, func(opts *envoy_upstreams_v3.HttpProtocolOptions) {
+			// Check if ExplicitHttpConfig is already defined and if HTTP/2 protocol options are set
+			if explicitConfig := opts.GetExplicitHttpConfig(); explicitConfig != nil {
+				if explicitConfig.GetHttp2ProtocolOptions() != nil {
+					logger.Warn("HTTP/1 protocol options cannot be applied because HTTP/2 protocol options are already configured on the backend", "backend", backend.GetName())
+					return
+				}
+			}
+
 			opts.UpstreamProtocolOptions = &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig_{
 				ExplicitHttpConfig: &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig{
 					ProtocolConfig: &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig_HttpProtocolOptions{
