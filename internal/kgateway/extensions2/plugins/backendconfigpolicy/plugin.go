@@ -319,16 +319,6 @@ func translateCommonHttpProtocolOptions(commonHttpProtocolOptions *v1alpha1.Comm
 		out.MaxStreamDuration = durationpb.New(commonHttpProtocolOptions.MaxStreamDuration.Duration)
 	}
 
-	if commonHttpProtocolOptions.HeadersWithUnderscoresAction != nil {
-		switch *commonHttpProtocolOptions.HeadersWithUnderscoresAction {
-		case v1alpha1.HeadersWithUnderscoresActionAllow:
-			out.HeadersWithUnderscoresAction = corev3.HttpProtocolOptions_ALLOW
-		case v1alpha1.HeadersWithUnderscoresActionRejectRequest:
-			out.HeadersWithUnderscoresAction = corev3.HttpProtocolOptions_REJECT_REQUEST
-		case v1alpha1.HeadersWithUnderscoresActionDropHeader:
-			out.HeadersWithUnderscoresAction = corev3.HttpProtocolOptions_DROP_HEADER
-		}
-	}
 	return out
 }
 

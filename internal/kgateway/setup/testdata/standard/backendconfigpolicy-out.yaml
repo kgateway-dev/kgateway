@@ -22,7 +22,6 @@ clusters:
     envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
       '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
       commonHttpProtocolOptions:
-        headersWithUnderscoresAction: REJECT_REQUEST
         idleTimeout: 10s
         maxHeadersCount: 15
         maxRequestsPerConnection: 100
