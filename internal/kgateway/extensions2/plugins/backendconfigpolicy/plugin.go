@@ -38,11 +38,13 @@ const PreserveCasePlugin = "envoy.http.stateful_header_formatters.preserve_case"
 
 type BackendConfigPolicyIR struct {
 	ct                            time.Time
+	name                          string
 	connectTimeout                *durationpb.Duration
 	perConnectionBufferLimitBytes *int
 	tcpKeepalive                  *corev3.TcpKeepalive
 	commonHttpProtocolOptions     *corev3.HttpProtocolOptions
 	http1ProtocolOptions          *corev3.Http1ProtocolOptions
+	http2ProtocolOptions          *corev3.Http2ProtocolOptions
 	tlsConfig                     *envoyauth.UpstreamTlsContext
 	loadBalancerConfig            *LoadBalancerConfigIR
 }
@@ -106,6 +108,15 @@ func (d *BackendConfigPolicyIR) Equals(other any) bool {
 	}
 	if d.http1ProtocolOptions != nil && d2.http1ProtocolOptions != nil {
 		if !proto.Equal(d.http1ProtocolOptions, d2.http1ProtocolOptions) {
+			return false
+		}
+	}
+
+	if (d.http2ProtocolOptions == nil) != (d2.http2ProtocolOptions == nil) {
+		return false
+	}
+	if d.http2ProtocolOptions != nil && d2.http2ProtocolOptions != nil {
+		if !proto.Equal(d.http2ProtocolOptions, d2.http2ProtocolOptions) {
 			return false
 		}
 	}
@@ -224,7 +235,27 @@ func processBackend(_ context.Context, polir ir.PolicyIR, _ ir.BackendObjectIR, 
 				},
 			}
 		}); err != nil {
-			logger.Error("failed to apply http1 protocol options", "error", err)
+			logger.Error("failed to apply http1 protocol options", "policy", pol.name, "error", err)
+		}
+	}
+
+	if pol.http2ProtocolOptions != nil {
+		if err := translatorutils.MutateHttpOptions(out, func(opts *envoy_upstreams_v3.HttpProtocolOptions) {
+			// http2 backends will have UpstreamProtocolOptions set by the backend plugin
+			// if it's not set, it's not an http2 backend
+			if opts.GetUpstreamProtocolOptions() == nil {
+				logger.Warn("can't apply http2 protocol options to non-http2 backend", "policy", pol.name)
+				return
+			}
+			opts.UpstreamProtocolOptions = &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig_{
+				ExplicitHttpConfig: &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig{
+					ProtocolConfig: &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig_Http2ProtocolOptions{
+						Http2ProtocolOptions: pol.http2ProtocolOptions,
+					},
+				},
+			}
+		}); err != nil {
+			logger.Error("failed to apply http2 protocol options", "policy", pol.name, "error", err)
 		}
 	}
 
@@ -247,7 +278,8 @@ func processBackend(_ context.Context, polir ir.PolicyIR, _ ir.BackendObjectIR, 
 
 func translate(commoncol *common.CommonCollections, krtctx krt.HandlerContext, pol *v1alpha1.BackendConfigPolicy) (*BackendConfigPolicyIR, error) {
 	ir := BackendConfigPolicyIR{
-		ct: pol.CreationTimestamp.Time,
+		ct:   pol.CreationTimestamp.Time,
+		name: pol.Name,
 	}
 	if pol.Spec.ConnectTimeout != nil {
 		ir.connectTimeout = durationpb.New(pol.Spec.ConnectTimeout.Duration)
@@ -271,6 +303,10 @@ func translate(commoncol *common.CommonCollections, krtctx krt.HandlerContext, p
 			return &ir, err
 		}
 		ir.http1ProtocolOptions = http1ProtocolOptions
+	}
+
+	if pol.Spec.Http2ProtocolOptions != nil {
+		ir.http2ProtocolOptions = translateHttp2ProtocolOptions(pol.Spec.Http2ProtocolOptions)
 	}
 
 	if pol.Spec.TLS != nil {
@@ -366,4 +402,21 @@ func translateHttp1ProtocolOptions(http1ProtocolOptions *v1alpha1.Http1ProtocolO
 		}
 	}
 	return out, nil
+}
+
+func translateHttp2ProtocolOptions(http2ProtocolOptions *v1alpha1.Http2ProtocolOptions) *corev3.Http2ProtocolOptions {
+	out := &corev3.Http2ProtocolOptions{}
+	if http2ProtocolOptions.MaxConcurrentStreams != nil {
+		out.MaxConcurrentStreams = &wrapperspb.UInt32Value{Value: uint32(*http2ProtocolOptions.MaxConcurrentStreams)}
+	}
+	if http2ProtocolOptions.InitialStreamWindowSize != nil {
+		out.InitialStreamWindowSize = &wrapperspb.UInt32Value{Value: uint32(http2ProtocolOptions.InitialStreamWindowSize.MilliValue())}
+	}
+	if http2ProtocolOptions.InitialConnectionWindowSize != nil {
+		out.InitialConnectionWindowSize = &wrapperspb.UInt32Value{Value: uint32(http2ProtocolOptions.InitialConnectionWindowSize.MilliValue())}
+	}
+	if http2ProtocolOptions.OverrideStreamErrorOnInvalidHttpMessage != nil {
+		out.OverrideStreamErrorOnInvalidHttpMessage = &wrapperspb.BoolValue{Value: *http2ProtocolOptions.OverrideStreamErrorOnInvalidHttpMessage}
+	}
+	return out
 }

@@ -83,6 +83,24 @@ spec:
   selector:
     app: gateway
 ---
+apiVersion: discovery.k8s.io/v1
+kind: EndpointSlice
+metadata:
+  name: gateway-pool-endpoint-picker
+  namespace: gwtest
+  labels:
+    kubernetes.io/service-name: gateway-pool-endpoint-picker
+addressType: IPv4
+ports:
+  - name: grpc
+    port: 9002
+    protocol: TCP
+endpoints:
+  - addresses:
+      - "10.0.0.1"
+    conditions:
+      ready: true
+---
 apiVersion: inference.networking.x-k8s.io/v1alpha2
 kind: InferencePool
 metadata:
@@ -115,6 +133,24 @@ spec:
   selector:
     app: gateway
 ---
+apiVersion: discovery.k8s.io/v1
+kind: EndpointSlice
+metadata:
+  name: gateway-pool-endpoint-picker-2
+  namespace: gwtest
+  labels:
+    kubernetes.io/service-name: gateway-pool-endpoint-picker-2
+addressType: IPv4
+ports:
+  - name: grpc
+    port: 9002
+    protocol: TCP
+endpoints:
+  - addresses:
+      - "10.0.0.2"
+    conditions:
+      ready: true
+---
 apiVersion: inference.networking.x-k8s.io/v1alpha2
 kind: InferencePool
 metadata:
@@ -130,3 +166,4 @@ spec:
   selector:
     app: gateway
   targetPortNumber: 8080
+---

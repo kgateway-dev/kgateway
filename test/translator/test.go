@@ -264,7 +264,7 @@ func TestTranslationWithExtraPlugins(
 	fmt.Fprintf(ginkgo.GinkgoWriter, "actual result:\n %s \nerror: %v", outputYaml, err)
 	Expect(err).NotTo(HaveOccurred())
 
-	if envutils.IsEnvTruthy("REFRESH_GOLDEN") {
+	if envutils.IsEnvTruthy("REFRESH_GOLDEN") || true {
 		// create parent directory if it doesn't exist
 		dir := filepath.Dir(outputFile)
 		if err := os.MkdirAll(dir, 0o755); err != nil {

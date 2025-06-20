@@ -641,6 +641,14 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 			Name:      "example-gateway",
 		},
 	}),
+	Entry("Backend Config Policy with HTTP2 Protocol Options", translatorTestCase{
+		inputFile:  "backendconfigpolicy/http2.yaml",
+		outputFile: "backendconfigpolicy/http2.yaml",
+		gwNN: types.NamespacedName{
+			Namespace: "default",
+			Name:      "example-gateway",
+		},
+	}),
 	Entry(
 		"TrafficPolicy with explicit generation",
 		translatorTestCase{

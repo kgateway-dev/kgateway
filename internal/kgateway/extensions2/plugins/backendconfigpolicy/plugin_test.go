@@ -133,6 +133,9 @@ func TestBackendConfigPolicyFlow(t *testing.T) {
 			want:    &clusterv3.Cluster{},
 			wantErr: false,
 		},
+		{
+			name: "http2 protocol options",
+		},
 	}
 
 	for _, tt := range tests {
