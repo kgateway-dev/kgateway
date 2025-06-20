@@ -133,34 +133,11 @@ type CommonHttpProtocolOptions struct {
 	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('0s')",message="maxStreamDuration must be a valid duration string"
 	MaxStreamDuration *metav1.Duration `json:"maxStreamDuration,omitempty"`
 
-	// Action to take when a client request with a header name containing underscore characters is received.
-	// If this setting is not specified, the value defaults to ALLOW.
-	// Note: upstream responses are not affected by this setting.
-	// +optional
-	HeadersWithUnderscoresAction *HeadersWithUnderscoresAction `json:"headersWithUnderscoresAction,omitempty"`
-
 	// Maximum requests for a single upstream connection.
 	// If set to 0 or unspecified, defaults to unlimited.
 	// +optional
 	MaxRequestsPerConnection *int `json:"maxRequestsPerConnection,omitempty"`
 }
-
-// +kubebuilder:validation:Enum=Allow;RejectRequest;DropHeader
-type HeadersWithUnderscoresAction string
-
-const (
-	// Allow headers with underscores. This is the default behavior.
-	HeadersWithUnderscoresActionAllow HeadersWithUnderscoresAction = "Allow"
-	// Reject client request. HTTP/1 requests are rejected with the 400 status. HTTP/2 requests
-	// end with the stream reset. The "httpN.requests_rejected_with_underscores_in_headers" counter
-	// is incremented for each rejected request.
-	HeadersWithUnderscoresActionRejectRequest HeadersWithUnderscoresAction = "RejectRequest"
-	// Drop the header with name containing underscores. The header is dropped before the filter chain is
-	// invoked and as such filters will not see dropped headers. The
-	// "httpN.dropped_headers_with_underscores" is incremented for each dropped header.
-	HeadersWithUnderscoresActionDropHeader HeadersWithUnderscoresAction = "DropHeader"
-)
-
 type Http2ProtocolOptions struct {
 	// The initial window size for the connection.
 	// Valid values range from 65535 (2^16 - 1, HTTP/2 default) to 2147483647 (2^31 - 1, HTTP/2 maximum).

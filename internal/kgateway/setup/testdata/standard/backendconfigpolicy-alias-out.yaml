@@ -19,7 +19,6 @@ clusters:
     envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
       '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
       commonHttpProtocolOptions:
-        headersWithUnderscoresAction: DROP_HEADER
         maxHeadersCount: 15
         maxRequestsPerConnection: 100
       explicitHttpConfig:
@@ -29,6 +28,7 @@ clusters:
     edsConfig:
       ads: {}
       resourceApiVersion: V3
+  ignoreHealthOnHostRemoval: true
   metadata: {}
   name: kube_default_kubernetes_443
   type: EDS

@@ -416,12 +416,24 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         scalar: string
       default: ""
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.CSRFPolicy
+  map:
+    fields:
+    - name: additionalOrigins
+      type:
+        list:
+          elementType:
+            namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.StringMatcher
+          elementRelationship: atomic
+    - name: percentageEnabled
+      type:
+        scalar: numeric
+    - name: percentageShadowed
+      type:
+        scalar: numeric
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.CommonHttpProtocolOptions
   map:
     fields:
-    - name: headersWithUnderscoresAction
-      type:
-        scalar: string
     - name: idleTimeout
       type:
         namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Duration
@@ -1597,6 +1609,28 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: value
       type:
         scalar: numeric
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.StringMatcher
+  map:
+    fields:
+    - name: contains
+      type:
+        scalar: string
+    - name: exact
+      type:
+        scalar: string
+    - name: ignoreCase
+      type:
+        scalar: boolean
+      default: false
+    - name: prefix
+      type:
+        scalar: string
+    - name: safeRegex
+      type:
+        scalar: string
+    - name: suffix
+      type:
+        scalar: string
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SupportedLLMProvider
   map:
     fields:
@@ -1716,6 +1750,9 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: cors
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.CorsPolicy
+    - name: csrf
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.CSRFPolicy
     - name: extAuth
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtAuthPolicy

@@ -33,12 +33,6 @@ spec:
             properties:
               commonHttpProtocolOptions:
                 properties:
-                  headersWithUnderscoresAction:
-                    enum:
-                    - Allow
-                    - RejectRequest
-                    - DropHeader
-                    type: string
                   idleTimeout:
                     type: string
                     x-kubernetes-validations:

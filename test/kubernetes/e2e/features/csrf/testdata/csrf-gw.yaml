@@ -1,0 +1,15 @@
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: csrf-gw-policy
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: gw
+  csrf:
+    percentageEnabled: 100
+    additionalOrigins:
+    - exact: example.org
+    - suffix: gwtest.io
+    - prefix: sample

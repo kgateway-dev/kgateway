@@ -74,4 +74,3 @@ spec:
   commonHttpProtocolOptions:
     maxHeadersCount: 15
     maxRequestsPerConnection: 100
-    headersWithUnderscoresAction: DropHeader
