@@ -45,17 +45,26 @@ func backends(refN, refNs string) []any {
 	return []any{
 		httpRouteWithSvcBackendRef(refN, refNs),
 		tcpRouteWithBackendRef(refN, refNs),
+		httpRouteWithInfPoolBackendRefWithPort(refN, refNs, gwv1.PortNumber(8080)), // matching port
+		httpRouteWithInfPoolBackendRefWithPort(refN, refNs, gwv1.PortNumber(1234)), // overridden
 	}
 }
 
 func TestGetBackendSameNamespace(t *testing.T) {
-	inputs := []any{
-		svc(""),
-	}
-
 	for _, backend := range backends("foo", "") {
 		t.Run(fmt.Sprintf("backend %T", backend), func(t *testing.T) {
-			inputs := append(inputs, backend)
+			inputs := []any{svc("")}
+
+			// If HTTPRoute points at an InferencePool, inject its CR first
+			if rt, ok := backend.(*gwv1.HTTPRoute); ok {
+				ref := rt.Spec.Rules[0].BackendRefs[0].BackendRef.BackendObjectReference
+				if ref.Kind != nil && *ref.Kind == wellknown.InferencePoolKind {
+					inputs = append(inputs, infPool(""))
+				}
+			}
+
+			// Finally add the route itself and translate it
+			inputs = append(inputs, backend)
 			ir := translateRoute(t, inputs)
 			if ir == nil {
 				t.Fatalf("expected ir")
@@ -78,14 +87,19 @@ func TestGetBackendSameNamespace(t *testing.T) {
 }
 
 func TestGetBackendDifNsWithRefGrant(t *testing.T) {
-	inputs := []any{
-		svc("default2"),
-		refGrant(),
-	}
-
 	for _, backend := range backends("foo", "default2") {
 		t.Run(fmt.Sprintf("backend %T", backend), func(t *testing.T) {
-			inputs := append(inputs, backend)
+			inputs := []any{svc("default2"), refGrant()}
+
+			// If HTTPRoute points at an InferencePool, inject that pool CR
+			if rt, ok := backend.(*gwv1.HTTPRoute); ok {
+				ref := rt.Spec.Rules[0].BackendRefs[0].BackendRef.BackendObjectReference
+				if ref.Kind != nil && *ref.Kind == wellknown.InferencePoolKind {
+					inputs = append(inputs, infPool("default2"))
+				}
+			}
+			// Add the route under test and translate it
+			inputs = append(inputs, backend)
 			ir := translateRoute(t, inputs)
 			if ir == nil {
 				t.Fatalf("expected ir")
@@ -633,6 +647,36 @@ func tcpRouteWithBackendRef(refN, refNs string) *gwv1a2.TCPRoute {
 					},
 				},
 			},
+		},
+	}
+}
+
+// helper to generate an HTTPRoute that references an InferencePool with a custom port
+func httpRouteWithInfPoolBackendRefWithPort(refN, refNs string, port gwv1.PortNumber) *gwv1.HTTPRoute {
+	var ns *gwv1.Namespace
+	if refNs != "" {
+		n := gwv1.Namespace(refNs)
+		ns = &n
+	}
+	return &gwv1.HTTPRoute{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "httproute",
+			Namespace: "default",
+		},
+		Spec: gwv1.HTTPRouteSpec{
+			Rules: []gwv1.HTTPRouteRule{{
+				BackendRefs: []gwv1.HTTPBackendRef{{
+					BackendRef: gwv1.BackendRef{
+						BackendObjectReference: gwv1.BackendObjectReference{
+							Group:     ptr.To(gwv1.Group(infextv1a2.GroupVersion.Group)),
+							Kind:      ptr.To(gwv1.Kind(wellknown.InferencePoolKind)),
+							Name:      gwv1.ObjectName(refN),
+							Namespace: ns,
+							Port:      &port,
+						},
+					},
+				}},
+			}},
 		},
 	}
 }
