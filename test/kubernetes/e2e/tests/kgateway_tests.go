@@ -13,6 +13,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/dfp"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/extauth"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/extproc"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/http_listener_policy"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/lambda"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/local_rate_limit"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/policyselector"
@@ -45,6 +46,7 @@ func KubeGatewaySuiteRunner() e2e.SuiteRunner {
 	kubeGatewaySuiteRunner.Register("Deployer", deployer.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("DynamicForwardProxy", dfp.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("HTTPRouteServices", httproute.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("HttpListenerPolicy", http_listener_policy.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("Lambda", lambda.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("RouteDelegation", route_delegation.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("TCPRouteServices", tcproute.NewTestingSuite)

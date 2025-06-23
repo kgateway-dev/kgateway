@@ -54,6 +54,30 @@ type HTTPListenerPolicySpec struct {
 	// UpgradeConfig contains configuration for HTTP upgrades like WebSocket.
 	// See here for more information: https://www.envoyproxy.io/docs/envoy/v1.34.1/intro/arch_overview/http/upgrades.html
 	UpgradeConfig *UpgradeConfig `json:"upgradeConfig,omitempty"`
+
+	// UseRemoteAddress determines whether to use the remote address for the original client.
+	// When true, Envoy will use the remote address of the connection as the client address.
+	// When false, Envoy will use the X-Forwarded-For header to determine the client address.
+	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-use-remote-address
+	// +optional
+	UseRemoteAddress *bool `json:"useRemoteAddress,omitempty"`
+
+	// XffNumTrustedHops is the number of additional ingress proxy hops from the right side of the X-Forwarded-For HTTP header to trust when determining the origin client's IP address.
+	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-xff-num-trusted-hops
+	// +kubebuilder:validation:Minimum=0
+	// +optional
+	XffNumTrustedHops *uint32 `json:"xffNumTrustedHops,omitempty"`
+
+	// ServerHeaderTransformation determines how the server header is transformed.
+	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-server-header-transformation
+	// +kubebuilder:validation:Enum=OVERWRITE;APPEND_IF_ABSENT;PASS_THROUGH
+	// +optional
+	ServerHeaderTransformation *ServerHeaderTransformation `json:"serverHeaderTransformation,omitempty"`
+
+	// StreamIdleTimeout is the idle timeout for HTTP streams.
+	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-stream-idle-timeout
+	// +optional
+	StreamIdleTimeout *metav1.Duration `json:"streamIdleTimeout,omitempty"`
 }
 
 // AccessLog represents the top-level access log configuration.
@@ -246,3 +270,16 @@ type UpgradeConfig struct {
 	// +kubebuilder:validation:MinItems=1
 	EnabledUpgrades []string `json:"enabledUpgrades,omitempty"`
 }
+
+// ServerHeaderTransformation determines how the server header is transformed.
+// +kubebuilder:validation:Enum=OVERWRITE;APPEND_IF_ABSENT;PASS_THROUGH
+type ServerHeaderTransformation string
+
+const (
+	// OverwriteServerHeaderTransformation overwrites the server header.
+	OverwriteServerHeaderTransformation ServerHeaderTransformation = "OVERWRITE"
+	// AppendIfAbsentServerHeaderTransformation appends to the server header if it's not present.
+	AppendIfAbsentServerHeaderTransformation ServerHeaderTransformation = "APPEND_IF_ABSENT"
+	// PassThroughServerHeaderTransformation passes through the server header unchanged.
+	PassThroughServerHeaderTransformation ServerHeaderTransformation = "PASS_THROUGH"
+)

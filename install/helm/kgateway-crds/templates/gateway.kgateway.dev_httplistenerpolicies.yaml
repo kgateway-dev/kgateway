@@ -459,6 +459,19 @@ spec:
                       type: object
                   type: object
                 type: array
+              serverHeaderTransformation:
+                allOf:
+                - enum:
+                  - OVERWRITE
+                  - APPEND_IF_ABSENT
+                  - PASS_THROUGH
+                - enum:
+                  - OVERWRITE
+                  - APPEND_IF_ABSENT
+                  - PASS_THROUGH
+                type: string
+              streamIdleTimeout:
+                type: string
               targetRefs:
                 items:
                   properties:
@@ -513,6 +526,12 @@ spec:
                     minItems: 1
                     type: array
                 type: object
+              useRemoteAddress:
+                type: boolean
+              xffNumTrustedHops:
+                format: int32
+                minimum: 0
+                type: integer
             type: object
           status:
             properties:

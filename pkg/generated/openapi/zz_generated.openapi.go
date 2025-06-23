@@ -3073,11 +3073,38 @@ func schema_kgateway_v2_api_v1alpha1_HTTPListenerPolicySpec(ref common.Reference
 							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.UpgradeConfig"),
 						},
 					},
+					"useRemoteAddress": {
+						SchemaProps: spec.SchemaProps{
+							Description: "UseRemoteAddress determines whether to use the remote address for the original client. When true, Envoy will use the remote address of the connection as the client address. When false, Envoy will use the X-Forwarded-For header to determine the client address. See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-use-remote-address",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
+					"xffNumTrustedHops": {
+						SchemaProps: spec.SchemaProps{
+							Description: "XffNumTrustedHops is the number of additional ingress proxy hops from the right side of the X-Forwarded-For HTTP header to trust when determining the origin client's IP address. See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-xff-num-trusted-hops",
+							Type:        []string{"integer"},
+							Format:      "int64",
+						},
+					},
+					"serverHeaderTransformation": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ServerHeaderTransformation determines how the server header is transformed. See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-server-header-transformation",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"streamIdleTimeout": {
+						SchemaProps: spec.SchemaProps{
+							Description: "StreamIdleTimeout is the idle timeout for HTTP streams. See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-stream-idle-timeout",
+							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Duration"),
+						},
+					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AccessLog", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LocalPolicyTargetReference", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LocalPolicyTargetSelector", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.UpgradeConfig"},
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AccessLog", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LocalPolicyTargetReference", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LocalPolicyTargetSelector", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.UpgradeConfig", "k8s.io/apimachinery/pkg/apis/meta/v1.Duration"},
 	}
 }
 
