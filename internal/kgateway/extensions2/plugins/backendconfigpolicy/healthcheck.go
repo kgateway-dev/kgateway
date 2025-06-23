@@ -57,10 +57,10 @@ func translateHealthCheck(hc *v1alpha1.HealthCheck) *corev3.HealthCheck {
 			GrpcHealthCheck: &corev3.HealthCheck_GrpcHealthCheck{},
 		}
 		if hc.Grpc.ServiceName != nil {
-			healthCheck.GetHealthChecker().(*corev3.HealthCheck_GrpcHealthCheck_).GrpcHealthCheck.ServiceName = *hc.Grpc.ServiceName
+			healthCheck.GetGrpcHealthCheck().ServiceName = *hc.Grpc.ServiceName
 		}
 		if hc.Grpc.Authority != nil {
-			healthCheck.GetHealthChecker().(*corev3.HealthCheck_GrpcHealthCheck_).GrpcHealthCheck.Authority = *hc.Grpc.Authority
+			healthCheck.GetGrpcHealthCheck().Authority = *hc.Grpc.Authority
 		}
 	}
 
