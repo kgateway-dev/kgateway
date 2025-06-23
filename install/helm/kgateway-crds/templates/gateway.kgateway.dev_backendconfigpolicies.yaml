@@ -71,7 +71,6 @@ spec:
                         type: string
                     type: object
                   healthyThreshold:
-                    default: 1
                     format: int32
                     type: integer
                   http:
@@ -112,6 +111,27 @@ spec:
                         type: string
                       path:
                         type: string
+                      retriableStatuses:
+                        items:
+                          properties:
+                            end:
+                              format: int64
+                              maximum: 599
+                              minimum: 100
+                              type: integer
+                            start:
+                              format: int64
+                              maximum: 599
+                              minimum: 100
+                              type: integer
+                          required:
+                          - end
+                          - start
+                          type: object
+                          x-kubernetes-validations:
+                          - message: start must be less than or equal to end
+                            rule: self.start <= self.end
+                        type: array
                     required:
                     - path
                     type: object
@@ -126,12 +146,13 @@ spec:
                     - message: timeout must be a valid duration string
                       rule: duration(self) >= duration('0s')
                   unhealthyThreshold:
-                    default: 3
                     format: int32
                     type: integer
                 required:
+                - healthyThreshold
                 - interval
                 - timeout
+                - unhealthyThreshold
                 type: object
                 x-kubernetes-validations:
                 - message: exactly one of http or grpc must be set

@@ -914,7 +914,6 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: healthyThreshold
       type:
         scalar: numeric
-      default: 1
     - name: http
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.HealthCheckHttp
@@ -927,7 +926,6 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: unhealthyThreshold
       type:
         scalar: numeric
-      default: 3
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.HealthCheckGrpc
   map:
     fields:
@@ -956,6 +954,12 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         scalar: string
       default: ""
+    - name: retriableStatuses
+      type:
+        list:
+          elementType:
+            namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Int64Range
+          elementRelationship: atomic
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Host
   map:
     fields:

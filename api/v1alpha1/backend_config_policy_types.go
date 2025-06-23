@@ -381,25 +381,25 @@ type HealthCheck struct {
 	// health check attempt will be considered a failure.
 	// +required
 	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('0s')",message="timeout must be a valid duration string"
-	Timeout *metav1.Duration `json:"timeout,omitempty"`
+	Timeout *metav1.Duration `json:"timeout"`
 
 	// Interval is the time between health checks.
 	// +required
 	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('0s')",message="interval must be a valid duration string"
-	Interval *metav1.Duration `json:"interval,omitempty"`
+	Interval *metav1.Duration `json:"interval"`
 
 	// UnhealthyThreshold is the number of consecutive failed health checks that will be considered
 	// unhealthy.
-	// +optional
-	// +default=3
-	UnhealthyThreshold *uint32 `json:"unhealthyThreshold,omitempty"`
+	// Note that for HTTP health checks, if a host responds with a code not in ExpectedStatuses or RetriableStatuses,
+	// this threshold is ignored and the host is considered immediately unhealthy.
+	// +required
+	UnhealthyThreshold *uint32 `json:"unhealthyThreshold"`
 
 	// HealthyThreshold is the number of healthy health checks required before a host is marked
 	// healthy. Note that during startup, only a single successful health check is
 	// required to mark a host healthy.
-	// +optional
-	// +default=1
-	HealthyThreshold *uint32 `json:"healthyThreshold,omitempty"`
+	// +required
+	HealthyThreshold *uint32 `json:"healthyThreshold"`
 
 	// Http contains the options to configure the HTTP health check.
 	// +optional
@@ -431,6 +431,12 @@ type HealthCheckHttp struct {
 	// Ranges follow half-open semantics (e.g. [200, 300) includes 200 but not 300).
 	// +optional
 	ExpectedStatuses []Int64Range `json:"expectedStatuses,omitempty"`
+
+	// RetriableStatuses will count to the UnhealthyThreshold, but will not be considered immediately unhealthy.
+	// In case of overlap, ExpectedStatuses takes precedence over RetriableStatuses, i.e. if a host responds with a code in both,
+	// it will be considered a healthy response.
+	// +optional
+	RetriableStatuses []Int64Range `json:"retriableStatuses,omitempty"`
 }
 
 // Int64Range represents a range of integers.

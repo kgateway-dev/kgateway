@@ -3161,8 +3161,7 @@ func schema_kgateway_v2_api_v1alpha1_HealthCheck(ref common.ReferenceCallback) c
 					},
 					"unhealthyThreshold": {
 						SchemaProps: spec.SchemaProps{
-							Description: "UnhealthyThreshold is the number of consecutive failed health checks that will be considered unhealthy.",
-							Default:     3,
+							Description: "UnhealthyThreshold is the number of consecutive failed health checks that will be considered unhealthy. Note that for HTTP health checks, if a host responds with a code not in ExpectedStatuses or RetriableStatuses, this threshold is ignored and the host is considered immediately unhealthy.",
 							Type:        []string{"integer"},
 							Format:      "int64",
 						},
@@ -3170,7 +3169,6 @@ func schema_kgateway_v2_api_v1alpha1_HealthCheck(ref common.ReferenceCallback) c
 					"healthyThreshold": {
 						SchemaProps: spec.SchemaProps{
 							Description: "HealthyThreshold is the number of healthy health checks required before a host is marked healthy. Note that during startup, only a single successful health check is required to mark a host healthy.",
-							Default:     1,
 							Type:        []string{"integer"},
 							Format:      "int64",
 						},
@@ -3188,7 +3186,7 @@ func schema_kgateway_v2_api_v1alpha1_HealthCheck(ref common.ReferenceCallback) c
 						},
 					},
 				},
-				Required: []string{"timeout", "interval"},
+				Required: []string{"timeout", "interval", "unhealthyThreshold", "healthyThreshold"},
 			},
 		},
 		Dependencies: []string{
@@ -3253,6 +3251,20 @@ func schema_kgateway_v2_api_v1alpha1_HealthCheckHttp(ref common.ReferenceCallbac
 					"expectedStatuses": {
 						SchemaProps: spec.SchemaProps{
 							Description: "ExpectedStatuses is the list of status codes considered healthy. If provided, replaces the default 200-only policy - 200 must be included explicitly as needed. Ranges follow half-open semantics (e.g. [200, 300) includes 200 but not 300).",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Int64Range"),
+									},
+								},
+							},
+						},
+					},
+					"retriableStatuses": {
+						SchemaProps: spec.SchemaProps{
+							Description: "RetriableStatuses will count to the UnhealthyThreshold, but will not be considered immediately unhealthy. In case of overlap, ExpectedStatuses takes precedence over RetriableStatuses, i.e. if a host responds with a code in both, it will be considered a healthy response.",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
