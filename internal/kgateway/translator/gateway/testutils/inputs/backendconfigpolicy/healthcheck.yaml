@@ -37,15 +37,20 @@ spec:
       group: ""
       kind: Service
   healthCheck:
+    timeout: 3s
+    interval: 2s
+    unhealthyThreshold: 3
+    healthyThreshold: 2
     http:
-      timeout: 3s
       path: /healthz
-      interval: 2s
       host: example.com
       method: HEAD
       expectedStatuses:
         - start: 200
           end: 300
+      retriableStatuses:
+        - start: 400
+          end: 500
 ---
 apiVersion: v1
 kind: Service

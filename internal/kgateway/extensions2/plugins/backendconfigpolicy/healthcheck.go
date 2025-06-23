@@ -49,6 +49,16 @@ func translateHealthCheck(hc *v1alpha1.HealthCheck) *corev3.HealthCheck {
 			}
 			httpHealthCheck.ExpectedStatuses = expectedStatuses
 		}
+		if len(hc.Http.RetriableStatuses) > 0 {
+			retriableStatuses := make([]*typev3.Int64Range, len(hc.Http.RetriableStatuses))
+			for i, status := range hc.Http.RetriableStatuses {
+				retriableStatuses[i] = &typev3.Int64Range{
+					Start: status.Start,
+					End:   status.End,
+				}
+			}
+			httpHealthCheck.RetriableStatuses = retriableStatuses
+		}
 		healthCheck.HealthChecker = &corev3.HealthCheck_HttpHealthCheck_{
 			HttpHealthCheck: httpHealthCheck,
 		}

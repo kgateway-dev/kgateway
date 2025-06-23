@@ -34,12 +34,20 @@ func TestTranslateHealthCheck(t *testing.T) {
 				Interval:           &metav1.Duration{Duration: 10 * time.Second},
 				UnhealthyThreshold: ptr.To(uint32(3)),
 				HealthyThreshold:   ptr.To(uint32(2)),
+				Http: &v1alpha1.HealthCheckHttp{
+					Path: "/health",
+				},
 			},
 			expected: &corev3.HealthCheck{
 				Timeout:            durationpb.New(5 * time.Second),
 				Interval:           durationpb.New(10 * time.Second),
 				UnhealthyThreshold: &wrapperspb.UInt32Value{Value: 3},
 				HealthyThreshold:   &wrapperspb.UInt32Value{Value: 2},
+				HealthChecker: &corev3.HealthCheck_HttpHealthCheck_{
+					HttpHealthCheck: &corev3.HealthCheck_HttpHealthCheck{
+						Path: "/health",
+					},
+				},
 			},
 		},
 		{
