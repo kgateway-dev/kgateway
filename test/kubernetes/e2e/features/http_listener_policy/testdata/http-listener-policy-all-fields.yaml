@@ -11,4 +11,4 @@ spec:
   useRemoteAddress: true
   xffNumTrustedHops: 2
   serverHeaderTransformation: APPEND_IF_ABSENT
-  streamIdleTimeout: 30s 
+  streamIdleTimeout: 30s

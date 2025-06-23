@@ -460,15 +460,10 @@ spec:
                   type: object
                 type: array
               serverHeaderTransformation:
-                allOf:
-                - enum:
-                  - OVERWRITE
-                  - APPEND_IF_ABSENT
-                  - PASS_THROUGH
-                - enum:
-                  - OVERWRITE
-                  - APPEND_IF_ABSENT
-                  - PASS_THROUGH
+                enum:
+                - OVERWRITE
+                - APPEND_IF_ABSENT
+                - PASS_THROUGH
                 type: string
               streamIdleTimeout:
                 type: string
