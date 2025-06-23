@@ -83,7 +83,7 @@ spec:
           value: "0"
 {{- if $gateway.env }}
 {{ toYaml $gateway.env | indent 8 }}
-{{- end }} {{/* if $gateway.aiExtension.env */}}
+{{- end }} {{/* if $gateway.env */}}
         ports:
         {{- range $p := $gateway.ports }}
         - name: {{ $p.name }}
