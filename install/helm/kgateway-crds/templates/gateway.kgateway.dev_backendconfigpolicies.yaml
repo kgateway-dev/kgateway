@@ -87,9 +87,13 @@ spec:
                           properties:
                             end:
                               format: int64
+                              maximum: 599
+                              minimum: 100
                               type: integer
                             start:
                               format: int64
+                              maximum: 599
+                              minimum: 100
                               type: integer
                           required:
                           - end
@@ -114,15 +118,15 @@ spec:
                         type: string
                       path:
                         type: string
+                    required:
+                    - path
                     type: object
                   interval:
-                    default: 1s
                     type: string
                     x-kubernetes-validations:
                     - message: interval must be a valid duration string
                       rule: duration(self) >= duration('0s')
                   timeout:
-                    default: 5s
                     type: string
                     x-kubernetes-validations:
                     - message: timeout must be a valid duration string
@@ -131,10 +135,13 @@ spec:
                     default: 3
                     format: int32
                     type: integer
+                required:
+                - interval
+                - timeout
                 type: object
                 x-kubernetes-validations:
                 - message: exactly one of http or grpc must be set
-                  rule: has(self.http) || has(self.grpc)
+                  rule: has(self.http) != has(self.grpc)
               http1ProtocolOptions:
                 properties:
                   enableTrailers:

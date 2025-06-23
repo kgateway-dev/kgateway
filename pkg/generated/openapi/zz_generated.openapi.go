@@ -3157,14 +3157,12 @@ func schema_kgateway_v2_api_v1alpha1_HealthCheck(ref common.ReferenceCallback) c
 					"timeout": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Timeout is time to wait for a health check response. If the timeout is reached the health check attempt will be considered a failure.",
-							Default:     "5s",
 							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Duration"),
 						},
 					},
 					"interval": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Interval is the time between health checks.",
-							Default:     "1s",
 							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Duration"),
 						},
 					},
@@ -3197,6 +3195,7 @@ func schema_kgateway_v2_api_v1alpha1_HealthCheck(ref common.ReferenceCallback) c
 						},
 					},
 				},
+				Required: []string{"timeout", "interval"},
 			},
 		},
 		Dependencies: []string{
@@ -3246,6 +3245,7 @@ func schema_kgateway_v2_api_v1alpha1_HealthCheckHttp(ref common.ReferenceCallbac
 					"path": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Path is the HTTP path requested.",
+							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -3272,6 +3272,7 @@ func schema_kgateway_v2_api_v1alpha1_HealthCheckHttp(ref common.ReferenceCallbac
 						},
 					},
 				},
+				Required: []string{"path"},
 			},
 		},
 		Dependencies: []string{
@@ -3409,6 +3410,7 @@ func schema_kgateway_v2_api_v1alpha1_Int64Range(ref common.ReferenceCallback) co
 					"start": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Start is the start of the range.",
+							Default:     0,
 							Type:        []string{"integer"},
 							Format:      "int64",
 						},
@@ -3416,6 +3418,7 @@ func schema_kgateway_v2_api_v1alpha1_Int64Range(ref common.ReferenceCallback) co
 					"end": {
 						SchemaProps: spec.SchemaProps{
 							Description: "End is the end of the range.",
+							Default:     0,
 							Type:        []string{"integer"},
 							Format:      "int64",
 						},

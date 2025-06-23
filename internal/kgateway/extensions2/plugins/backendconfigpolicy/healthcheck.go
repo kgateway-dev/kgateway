@@ -31,8 +31,10 @@ func translateHealthCheck(hc *v1alpha1.HealthCheck) *corev3.HealthCheck {
 
 	if hc.Http != nil {
 		httpHealthCheck := &corev3.HealthCheck_HttpHealthCheck{
-			Host: hc.Http.Host,
 			Path: hc.Http.Path,
+		}
+		if hc.Http.Host != nil {
+			httpHealthCheck.Host = *hc.Http.Host
 		}
 		if hc.Http.Method != nil {
 			httpHealthCheck.Method = corev3.RequestMethod(corev3.RequestMethod_value[*hc.Http.Method])
@@ -52,10 +54,13 @@ func translateHealthCheck(hc *v1alpha1.HealthCheck) *corev3.HealthCheck {
 		}
 	} else if hc.Grpc != nil {
 		healthCheck.HealthChecker = &corev3.HealthCheck_GrpcHealthCheck_{
-			GrpcHealthCheck: &corev3.HealthCheck_GrpcHealthCheck{
-				ServiceName: hc.Grpc.ServiceName,
-				Authority:   hc.Grpc.Authority,
-			},
+			GrpcHealthCheck: &corev3.HealthCheck_GrpcHealthCheck{},
+		}
+		if hc.Grpc.ServiceName != nil {
+			healthCheck.GetHealthChecker().(*corev3.HealthCheck_GrpcHealthCheck_).GrpcHealthCheck.ServiceName = *hc.Grpc.ServiceName
+		}
+		if hc.Grpc.Authority != nil {
+			healthCheck.GetHealthChecker().(*corev3.HealthCheck_GrpcHealthCheck_).GrpcHealthCheck.Authority = *hc.Grpc.Authority
 		}
 	}
 

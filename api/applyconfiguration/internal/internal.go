@@ -924,11 +924,9 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: interval
       type:
         namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Duration
-      default: 1s
     - name: timeout
       type:
         namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Duration
-      default: 5s
     - name: unhealthyThreshold
       type:
         scalar: numeric
@@ -960,6 +958,7 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: path
       type:
         scalar: string
+      default: ""
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Host
   map:
     fields:
@@ -1010,9 +1009,11 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: end
       type:
         scalar: numeric
+      default: 0
     - name: start
       type:
         scalar: numeric
+      default: 0
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.IstioContainer
   map:
     fields:

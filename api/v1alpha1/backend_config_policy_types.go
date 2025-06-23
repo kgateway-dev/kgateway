@@ -397,18 +397,16 @@ const (
 // HealthCheck contains the options to configure the health check.
 // See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/health_check.proto) for more details.
 // +optional
-// +kubebuilder:validation:XValidation:rule="has(self.http) || has(self.grpc)",message="exactly one of http or grpc must be set"
+// +kubebuilder:validation:XValidation:rule="has(self.http) != has(self.grpc)",message="exactly one of http or grpc must be set"
 type HealthCheck struct {
 	// Timeout is time to wait for a health check response. If the timeout is reached the
 	// health check attempt will be considered a failure.
-	// +optional
-	// +default="5s"
+	// +required
 	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('0s')",message="timeout must be a valid duration string"
 	Timeout *metav1.Duration `json:"timeout,omitempty"`
 
 	// Interval is the time between health checks.
-	// +optional
-	// +default="1s"
+	// +required
 	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('0s')",message="interval must be a valid duration string"
 	Interval *metav1.Duration `json:"interval,omitempty"`
 
@@ -438,11 +436,11 @@ type HealthCheckHttp struct {
 	// unset, the name of the cluster this health check is associated
 	// with will be used.
 	// +optional
-	Host string `json:"host,omitempty"`
+	Host *string `json:"host,omitempty"`
 
 	// Path is the HTTP path requested.
-	// +optional
-	Path string `json:"path,omitempty"`
+	// +required
+	Path string `json:"path"`
 
 	// Method is the HTTP method to use.
 	// If unset, GET is used.
@@ -462,21 +460,25 @@ type HealthCheckHttp struct {
 type Int64Range struct {
 	// Start is the start of the range.
 	// +required
-	Start int64 `json:"start,omitempty"`
+	// +kubebuilder:validation:Minimum=100
+	// +kubebuilder:validation:Maximum=599
+	Start int64 `json:"start"`
 
 	// End is the end of the range.
 	// +required
-	End int64 `json:"end,omitempty"`
+	// +kubebuilder:validation:Minimum=100
+	// +kubebuilder:validation:Maximum=599
+	End int64 `json:"end"`
 }
 
 type HealthCheckGrpc struct {
 	// ServiceName is the optional name of the service to check.
 	// +optional
-	ServiceName string `json:"serviceName,omitempty"`
+	ServiceName *string `json:"serviceName,omitempty"`
 
 	// Authority is the authority header used to make the gRPC health check request.
 	// If unset, the name of the cluster this health check is associated
 	// with will be used.
 	// +optional
-	Authority string `json:"authority,omitempty"`
+	Authority *string `json:"authority,omitempty"`
 }

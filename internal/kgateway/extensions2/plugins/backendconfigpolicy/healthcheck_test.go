@@ -48,7 +48,7 @@ func TestTranslateHealthCheck(t *testing.T) {
 				Timeout:  &metav1.Duration{Duration: 5 * time.Second},
 				Interval: &metav1.Duration{Duration: 10 * time.Second},
 				Http: &v1alpha1.HealthCheckHttp{
-					Host:   "example.com",
+					Host:   ptr.To("example.com"),
 					Path:   "/health",
 					Method: ptr.To("GET"),
 					ExpectedStatuses: []v1alpha1.Int64Range{
@@ -80,8 +80,8 @@ func TestTranslateHealthCheck(t *testing.T) {
 				Timeout:  &metav1.Duration{Duration: 5 * time.Second},
 				Interval: &metav1.Duration{Duration: 10 * time.Second},
 				Grpc: &v1alpha1.HealthCheckGrpc{
-					ServiceName: "grpc.health.v1.Health",
-					Authority:   "example.com",
+					ServiceName: ptr.To("grpc.health.v1.Health"),
+					Authority:   ptr.To("example.com"),
 				},
 			},
 			expected: &corev3.HealthCheck{
@@ -101,7 +101,7 @@ func TestTranslateHealthCheck(t *testing.T) {
 				Timeout:  &metav1.Duration{Duration: 5 * time.Second},
 				Interval: &metav1.Duration{Duration: 10 * time.Second},
 				Http: &v1alpha1.HealthCheckHttp{
-					Host: "example.com",
+					Host: ptr.To("example.com"),
 					Path: "/health",
 					ExpectedStatuses: []v1alpha1.Int64Range{
 						{Start: 200, End: 299},
