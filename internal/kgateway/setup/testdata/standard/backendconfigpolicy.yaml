@@ -75,7 +75,6 @@ spec:
     maxHeadersCount: 15
     maxStreamDuration: 30s
     maxRequestsPerConnection: 100
-    headersWithUnderscoresAction: RejectRequest
   http1ProtocolOptions:
     enableTrailers: true
     overrideStreamErrorOnInvalidHttpMessage: true

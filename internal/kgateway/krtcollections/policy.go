@@ -229,19 +229,24 @@ func (i *BackendIndex) getBackendFromRef(kctx krt.HandlerContext, localns string
 }
 
 func (i *BackendIndex) GetBackendFromRef(kctx krt.HandlerContext, src ir.ObjectSource, ref gwv1.BackendObjectReference) (*ir.BackendObjectIR, error) {
-	fromns := src.Namespace
-
-	fromgk := schema.GroupKind{
-		Group: src.Group,
-		Kind:  src.Kind,
-	}
-	to := toFromBackendRef(fromns, ref)
-
-	if i.refgrants.ReferenceAllowed(kctx, fromgk, fromns, to) {
-		return i.getBackendFromRef(kctx, src.Namespace, ref)
-	} else {
+	// Check if a ReferenceGrant allows the cross-namespace ref
+	fromNs := src.Namespace
+	fromGK := schema.GroupKind{Group: src.Group, Kind: src.Kind}
+	to := toFromBackendRef(fromNs, ref)
+	if !i.refgrants.ReferenceAllowed(kctx, fromGK, fromNs, to) {
 		return nil, ErrMissingReferenceGrant
 	}
+
+	// Ignore user’s port and always use poolIR.Port for InferencePool backends.
+	// TODO [danehans]: Add a warning message to HTTPRoute status the required change is made per
+	// discussion in github.com/kubernetes-sigs/gateway-api-inference-extension/discussions/918
+	if strOr(ref.Kind, string(wellknown.ServiceKind)) == wellknown.InferencePoolKind {
+		if err := i.normalizeInfPoolBackendPort(kctx, src.Namespace, &ref); err != nil {
+			return nil, err
+		}
+	}
+
+	return i.getBackendFromRef(kctx, src.Namespace, ref)
 }
 
 // Intentionally long name, to make sure the user doesn't use this by mistake.
@@ -1269,4 +1274,51 @@ func emptyIfCore(s string) string {
 		return ""
 	}
 	return s
+}
+
+// normalizeInfPoolBackendPort looks up the InferencePool IR for the given BackendObjectReference,
+// logs a warning if the user-supplied port doesn’t match the pool’s targetPort, and then
+// mutates ref.Port to the correct pool port.
+func (i *BackendIndex) normalizeInfPoolBackendPort(
+	kctx krt.HandlerContext,
+	srcNamespace string,
+	ref *gwv1.BackendObjectReference,
+) error {
+	// Build an ObjectSource for the pool (ignoring any port for lookup)
+	poolSrc := toFromBackendRef(srcNamespace, *ref)
+	poolGK := poolSrc.GetGroupKind()
+
+	// Fetch the collection for that kind
+	col, exists := i.availableBackends[poolGK]
+	if !exists {
+		return &NotFoundError{NotFoundObj: poolSrc}
+	}
+
+	// Find matching pool IR(s) by name/namespace
+	matches := krt.Fetch(kctx, col, krt.FilterGeneric(func(obj any) bool {
+		b, ok := obj.(ir.BackendObjectIR)
+		return ok &&
+			b.ObjectSource.Name == poolSrc.Name &&
+			b.ObjectSource.Namespace == poolSrc.Namespace
+	}))
+	if len(matches) == 0 {
+		return &NotFoundError{NotFoundObj: poolSrc}
+	}
+	poolIR := &matches[0]
+
+	// If the user gave a port and it doesn’t match, warn
+	resolvedPort := poolIR.Port
+	if ref.Port != nil && int32(*ref.Port) != resolvedPort {
+		logger.Warn(
+			"backendRef.port does not match InferencePool targetPort; overriding",
+			"provided_port", *ref.Port,
+			"pool_port", resolvedPort,
+			"inference_pool", types.NamespacedName{Namespace: poolSrc.Namespace, Name: poolSrc.Name},
+		)
+	}
+
+	// Overwrite ref.Port so downstream lookup is correct
+	correct := gwv1.PortNumber(resolvedPort)
+	ref.Port = &correct
+	return nil
 }

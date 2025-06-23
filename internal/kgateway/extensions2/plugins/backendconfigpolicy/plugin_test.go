@@ -28,6 +28,7 @@ func TestBackendConfigPolicyFlow(t *testing.T) {
 	tests := []struct {
 		name    string
 		policy  *v1alpha1.BackendConfigPolicy
+		cluster *clusterv3.Cluster
 		want    *clusterv3.Cluster
 		wantErr bool
 	}{
@@ -43,11 +44,10 @@ func TestBackendConfigPolicyFlow(t *testing.T) {
 						KeepAliveInterval: ptr.To(metav1.Duration{Duration: 5 * time.Second}),
 					},
 					CommonHttpProtocolOptions: &v1alpha1.CommonHttpProtocolOptions{
-						IdleTimeout:                  ptr.To(metav1.Duration{Duration: 60 * time.Second}),
-						MaxHeadersCount:              ptr.To(100),
-						MaxStreamDuration:            ptr.To(metav1.Duration{Duration: 30 * time.Second}),
-						HeadersWithUnderscoresAction: ptr.To(v1alpha1.HeadersWithUnderscoresActionAllow),
-						MaxRequestsPerConnection:     ptr.To(100),
+						IdleTimeout:              ptr.To(metav1.Duration{Duration: 60 * time.Second}),
+						MaxHeadersCount:          ptr.To(100),
+						MaxStreamDuration:        ptr.To(metav1.Duration{Duration: 30 * time.Second}),
+						MaxRequestsPerConnection: ptr.To(100),
 					},
 					Http1ProtocolOptions: &v1alpha1.Http1ProtocolOptions{
 						EnableTrailers:                          ptr.To(true),
@@ -69,11 +69,10 @@ func TestBackendConfigPolicyFlow(t *testing.T) {
 				TypedExtensionProtocolOptions: map[string]*anypb.Any{
 					"envoy.extensions.upstreams.http.v3.HttpProtocolOptions": mustMessageToAny(t, &envoy_upstreams_http_v3.HttpProtocolOptions{
 						CommonHttpProtocolOptions: &corev3.HttpProtocolOptions{
-							IdleTimeout:                  durationpb.New(60 * time.Second),
-							MaxHeadersCount:              &wrapperspb.UInt32Value{Value: 100},
-							MaxStreamDuration:            durationpb.New(30 * time.Second),
-							HeadersWithUnderscoresAction: corev3.HttpProtocolOptions_ALLOW,
-							MaxRequestsPerConnection:     &wrapperspb.UInt32Value{Value: 100},
+							IdleTimeout:              durationpb.New(60 * time.Second),
+							MaxHeadersCount:          &wrapperspb.UInt32Value{Value: 100},
+							MaxStreamDuration:        durationpb.New(30 * time.Second),
+							MaxRequestsPerConnection: &wrapperspb.UInt32Value{Value: 100},
 						},
 						UpstreamProtocolOptions: &envoy_upstreams_http_v3.HttpProtocolOptions_ExplicitHttpConfig_{
 							ExplicitHttpConfig: &envoy_upstreams_http_v3.HttpProtocolOptions_ExplicitHttpConfig{
@@ -133,6 +132,43 @@ func TestBackendConfigPolicyFlow(t *testing.T) {
 			want:    &clusterv3.Cluster{},
 			wantErr: false,
 		},
+		{
+			name: "attempt to apply http1 protocol options to http2 backend should not apply",
+			policy: &v1alpha1.BackendConfigPolicy{
+				Spec: v1alpha1.BackendConfigPolicySpec{
+					Http1ProtocolOptions: &v1alpha1.Http1ProtocolOptions{
+						EnableTrailers: ptr.To(true),
+					},
+				},
+			},
+			cluster: &clusterv3.Cluster{
+				TypedExtensionProtocolOptions: map[string]*anypb.Any{
+					"envoy.extensions.upstreams.http.v3.HttpProtocolOptions": mustMessageToAny(t, &envoy_upstreams_http_v3.HttpProtocolOptions{
+						UpstreamProtocolOptions: &envoy_upstreams_http_v3.HttpProtocolOptions_ExplicitHttpConfig_{
+							ExplicitHttpConfig: &envoy_upstreams_http_v3.HttpProtocolOptions_ExplicitHttpConfig{
+								ProtocolConfig: &envoy_upstreams_http_v3.HttpProtocolOptions_ExplicitHttpConfig_Http2ProtocolOptions{
+									Http2ProtocolOptions: &corev3.Http2ProtocolOptions{},
+								},
+							},
+						},
+					}),
+				},
+			},
+			want: &clusterv3.Cluster{
+				TypedExtensionProtocolOptions: map[string]*anypb.Any{
+					"envoy.extensions.upstreams.http.v3.HttpProtocolOptions": mustMessageToAny(t, &envoy_upstreams_http_v3.HttpProtocolOptions{
+						UpstreamProtocolOptions: &envoy_upstreams_http_v3.HttpProtocolOptions_ExplicitHttpConfig_{
+							ExplicitHttpConfig: &envoy_upstreams_http_v3.HttpProtocolOptions_ExplicitHttpConfig{
+								ProtocolConfig: &envoy_upstreams_http_v3.HttpProtocolOptions_ExplicitHttpConfig_Http2ProtocolOptions{
+									Http2ProtocolOptions: &corev3.Http2ProtocolOptions{},
+								},
+							},
+						},
+					}),
+				},
+			},
+			wantErr: false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -146,7 +182,10 @@ func TestBackendConfigPolicyFlow(t *testing.T) {
 			require.NoError(t, err)
 
 			// Then process the backend with the translated policy
-			cluster := &clusterv3.Cluster{}
+			cluster := tt.cluster
+			if cluster == nil {
+				cluster = &clusterv3.Cluster{}
+			}
 			processBackend(context.Background(), policyIR, ir.BackendObjectIR{}, cluster)
 
 			// Compare the resulting cluster configuration

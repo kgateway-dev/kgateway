@@ -58,7 +58,6 @@ spec:
     maxHeadersCount: 15
     maxStreamDuration: 30s
     maxRequestsPerConnection: 100
-    headersWithUnderscoresAction: RejectRequest
   http1ProtocolOptions:
     enableTrailers: true
     overrideStreamErrorOnInvalidHttpMessage: true
@@ -104,11 +103,10 @@ spec:
       group: ""
       kind: Service
   commonHttpProtocolOptions:
-    idleTimeout: 10s
-    maxHeadersCount: 15
-    maxStreamDuration: 30s
-    maxRequestsPerConnection: 100
-    headersWithUnderscoresAction: RejectRequest
+    idleTimeout: 11s
+    maxHeadersCount: 16
+    maxStreamDuration: 31s
+    maxRequestsPerConnection: 101
 ---
 apiVersion: v1
 kind: Service
@@ -137,8 +135,7 @@ spec:
       group: ""
       kind: Service
   commonHttpProtocolOptions:
-    idleTimeout: 10s
-    maxHeadersCount: 15
-    maxStreamDuration: 30s
-    maxRequestsPerConnection: 100
-    headersWithUnderscoresAction: RejectRequest
+    idleTimeout: 12s
+    maxHeadersCount: 17
+    maxStreamDuration: 32s
+    maxRequestsPerConnection: 102

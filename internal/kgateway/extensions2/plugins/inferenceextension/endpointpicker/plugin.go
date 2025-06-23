@@ -252,11 +252,16 @@ func (p *endpointPickerPass) HttpFilters(ctx context.Context, fc ir.FilterChainC
 		return nil, nil
 	}
 
-	// Pick any pool as placeholder for the static config
-	var tmpPool *inferencePool
-	for _, pool := range p.usedPools {
-		tmpPool = pool
-		break
+	// Create a pool as placeholder for the static config
+	tmpPool := &inferencePool{
+		objMeta: metav1.ObjectMeta{
+			Name:      "placeholder-pool",
+			Namespace: "placeholder-namespace",
+		},
+		configRef: &service{
+			ObjectSource: ir.ObjectSource{Name: "placeholder-service"},
+			ports:        []servicePort{{name: "grpc", portNum: 9002}},
+		},
 	}
 
 	// Static ExternalProcessor that will be overridden by ExtProcPerRoute

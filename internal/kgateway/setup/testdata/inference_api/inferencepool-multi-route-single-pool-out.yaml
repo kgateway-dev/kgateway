@@ -161,8 +161,8 @@ listeners:
             '@type': type.googleapis.com/envoy.extensions.filters.http.ext_proc.v3.ExternalProcessor
             grpcService:
               envoyGrpc:
-                authority: gateway-pool-endpoint-picker.gwtest.svc:9002
-                clusterName: endpointpicker_gateway-pool_gwtest_ext_proc
+                authority: placeholder-service.placeholder-namespace.svc:9002
+                clusterName: endpointpicker_placeholder-pool_placeholder-namespace_ext_proc
             messageTimeout: 5s
             processingMode:
               requestBodyMode: FULL_DUPLEX_STREAMED
