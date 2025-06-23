@@ -372,7 +372,7 @@ func testScenario(
 		write = true
 		err = nil
 	}
-	if os.Getenv("REFRESH_GOLDEN") == "true" || true {
+	if os.Getenv("REFRESH_GOLDEN") == "true" {
 		write = true
 	}
 	if err != nil {
