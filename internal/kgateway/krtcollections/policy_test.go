@@ -23,8 +23,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	apiannotations "github.com/kgateway-dev/kgateway/v2/api/annotations"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -701,7 +703,7 @@ func preRouteIndex(t test.Failer, inputs []any) *RoutesIndex {
 	tcpproutes := krttest.GetMockCollection[*gwv1a2.TCPRoute](mock)
 	tlsroutes := krttest.GetMockCollection[*gwv1a2.TLSRoute](mock)
 	grpcroutes := krttest.GetMockCollection[*gwv1.GRPCRoute](mock)
-	rtidx := NewRoutesIndex(krtutil.KrtOptions{}, httproutes, grpcroutes, tcpproutes, tlsroutes, policies, upstreams, refgrants)
+	rtidx := NewRoutesIndex(krtutil.KrtOptions{}, httproutes, grpcroutes, tcpproutes, tlsroutes, policies, upstreams, refgrants, settings.Settings{})
 	services.WaitUntilSynced(nil)
 	policyCol.WaitUntilSynced(nil)
 	for !rtidx.HasSynced() || !refgrants.HasSynced() || !policyCol.HasSynced() {
@@ -901,6 +903,102 @@ func BenchmarkPolicyAttachment(b *testing.B) {
 					a.Len(h.AttachedPolicies.Policies[wellknown.TrafficPolicyGVK.GroupKind()], tc.expectedPoliciesPerRoute)
 				}
 			}
+		})
+	}
+}
+
+func TestParseRoutePrecedenceWeight(t *testing.T) {
+	tests := []struct {
+		name        string
+		annotations map[string]string
+		expected    int32
+		expectError bool
+	}{
+		{
+			name:        "No annotation",
+			annotations: map[string]string{},
+			expected:    0,
+			expectError: false,
+		},
+		{
+			name: "Valid positive weight",
+			annotations: map[string]string{
+				apiannotations.RoutePrecedenceWeight: "100",
+			},
+			expected:    100,
+			expectError: false,
+		},
+		{
+			name: "Valid negative weight",
+			annotations: map[string]string{
+				apiannotations.RoutePrecedenceWeight: "-50",
+			},
+			expected:    -50,
+			expectError: false,
+		},
+		{
+			name: "Valid zero weight",
+			annotations: map[string]string{
+				apiannotations.RoutePrecedenceWeight: "0",
+			},
+			expected:    0,
+			expectError: false,
+		},
+		{
+			name: "Invalid non-numeric value",
+			annotations: map[string]string{
+				apiannotations.RoutePrecedenceWeight: "invalid",
+			},
+			expected:    0,
+			expectError: true,
+		},
+		{
+			name: "Invalid decimal value",
+			annotations: map[string]string{
+				apiannotations.RoutePrecedenceWeight: "100.5",
+			},
+			expected:    0,
+			expectError: true,
+		},
+		{
+			name: "Empty string value",
+			annotations: map[string]string{
+				apiannotations.RoutePrecedenceWeight: "",
+			},
+			expected:    0,
+			expectError: true,
+		},
+		{
+			name: "Value too large for int32",
+			annotations: map[string]string{
+				apiannotations.RoutePrecedenceWeight: "2147483648", // int32 max + 1
+			},
+			expected:    0,
+			expectError: true,
+		},
+		{
+			name: "Value too small for int32",
+			annotations: map[string]string{
+				apiannotations.RoutePrecedenceWeight: "-2147483649", // int32 min - 1
+			},
+			expected:    0,
+			expectError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			a := assert.New(t)
+
+			weight, err := parseRoutePrecedenceWeight(tt.annotations)
+
+			if tt.expectError {
+				a.Error(err)
+				a.Equal(int32(0), weight)
+				return
+			}
+			a.NoError(err)
+			a.Equal(tt.expected, weight)
 		})
 	}
 }

@@ -163,6 +163,8 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 	if err != nil {
 		return nil, err
 	}
+
+	globalSettings := *cfg.SetupOpts.GlobalSettings
 	commoncol, err := common.NewCommonCollections(
 		ctx,
 		cfg.KrtOptions,
@@ -171,13 +173,13 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 		mgr.GetClient(),
 		cfg.ControllerName,
 		setupLog,
-		*cfg.SetupOpts.GlobalSettings,
+		globalSettings,
 	)
 	if err != nil {
 		return nil, err
 	}
 	mergedPlugins := pluginFactoryWithBuiltin(cfg.ExtraPlugins)(ctx, commoncol)
-	commoncol.InitPlugins(ctx, mergedPlugins)
+	commoncol.InitPlugins(ctx, mergedPlugins, globalSettings)
 
 	// Create the proxy syncer for the Gateway API resources
 	setupLog.Info("initializing proxy syncer")

@@ -17,9 +17,23 @@ type SortableRoute struct {
 
 type SortableRoutes []*SortableRoute
 
-func (a SortableRoutes) Len() int           { return len(a) }
-func (a SortableRoutes) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
-func (a SortableRoutes) Less(i, j int) bool { return !routeWrapperLessFunc(a[i], a[j]) }
+func (a SortableRoutes) Len() int {
+	return len(a)
+}
+
+func (a SortableRoutes) Swap(i, j int) {
+	a[i], a[j] = a[j], a[i]
+}
+
+func (a SortableRoutes) Less(i, j int) bool {
+	// If weights are different, use weight to determine order
+	if a[i].Route.PrecedenceWeight != a[j].Route.PrecedenceWeight {
+		return a[i].Route.PrecedenceWeight > a[j].Route.PrecedenceWeight
+	}
+
+	// If weights are equal, use the existing comparison logic
+	return !routeWrapperLessFunc(a[i], a[j])
+}
 
 func (a SortableRoutes) ToRoutes() []ir.HttpRouteRuleMatchIR {
 	routes := make([]ir.HttpRouteRuleMatchIR, 0, len(a))

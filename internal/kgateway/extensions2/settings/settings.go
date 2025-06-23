@@ -71,6 +71,11 @@ type Settings struct {
 
 	// EnableAgentGateway enables kgateway to send config to the agentgateway
 	EnableAgentGateway bool `split_words:"true" default:"false"`
+
+	// WeightedRoutePrecedence enables routes with a larger weight to take precedence over routes with a smaller weight.
+	// If two routes have the same weight, Gateway API route precedence rules apply.
+	// When enabled, the default weight for a route is 0.
+	WeightedRoutePrecedence bool `split_words:"true" default:"false"`
 }
 
 // BuildSettings returns a zero-valued Settings obj if error is encountered when parsing env

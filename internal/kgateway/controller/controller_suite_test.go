@@ -295,7 +295,7 @@ func newCommonCols(ctx context.Context, kubeClient kube.Client) *collections.Com
 	plugins = append(plugins, krtcollections.NewBuiltinPlugin(ctx))
 	extensions := registry.MergePlugins(plugins...)
 
-	commoncol.InitPlugins(ctx, extensions)
+	commoncol.InitPlugins(ctx, extensions, *settings)
 	kubeClient.RunAndWait(ctx.Done())
 	return commoncol
 }

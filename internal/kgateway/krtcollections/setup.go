@@ -19,6 +19,7 @@ import (
 	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
@@ -100,6 +101,7 @@ func InitCollections(
 	ourClient versioned.Interface,
 	refgrants *RefGrantIndex,
 	krtopts krtutil.KrtOptions,
+	globalSettings settings.Settings,
 ) (*GatewayIndex, *RoutesIndex, *BackendIndex, krt.Collection[ir.EndpointsForBackend]) {
 	registerTypes(ourClient)
 
@@ -123,7 +125,7 @@ func InitCollections(
 	endpointIRs := initEndpoints(plugins, krtopts)
 
 	gateways := NewGatewayIndex(krtopts, controllerName, policies, kubeRawGateways, kubeRawListenerSets, gatewayClasses, namespaces)
-	routes := NewRoutesIndex(krtopts, httpRoutes, grpcRoutes, tcproutes, tlsRoutes, policies, backendIndex, refgrants)
+	routes := NewRoutesIndex(krtopts, httpRoutes, grpcRoutes, tcproutes, tlsRoutes, policies, backendIndex, refgrants, globalSettings)
 	return gateways, routes, backendIndex, endpointIRs
 }
 
