@@ -256,6 +256,13 @@ type EnvoyContainer struct {
 	//
 	// +optional
 	Resources *corev1.ResourceRequirements `json:"resources,omitempty"`
+
+	// do not use slice of pointers: https://github.com/kubernetes/code-generator/issues/166
+
+	// The container environment variables.
+	//
+	// +optional
+	Env []corev1.EnvVar `json:"env,omitempty"`
 }
 
 func (in *EnvoyContainer) GetBootstrap() *EnvoyBootstrap {
@@ -284,6 +291,13 @@ func (in *EnvoyContainer) GetResources() *corev1.ResourceRequirements {
 		return nil
 	}
 	return in.Resources
+}
+
+func (in *EnvoyContainer) GetEnv() []corev1.EnvVar {
+	if in == nil {
+		return nil
+	}
+	return in.Env
 }
 
 // Configuration for the Envoy proxy instance that is provisioned from a

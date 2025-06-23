@@ -1237,6 +1237,17 @@ var _ = Describe("Deployer", func() {
 				return params
 			}
 
+			fullyDefinedGatewayParamsWithCustomEnv = func() *gw2_v1alpha1.GatewayParameters {
+				params := fullyDefinedGatewayParameters(wellknown.DefaultGatewayParametersName, defaultNamespace)
+				params.Spec.Kube.EnvoyContainer.Env = []corev1.EnvVar{
+					{
+						Name:  "CUSTOM_ENV",
+						Value: "abcd",
+					},
+				}
+				return params
+			}
+
 			fullyDefinedGatewayParamsWithFloatingUserId = func() *gw2_v1alpha1.GatewayParameters {
 				params := fullyDefinedGatewayParameters(wellknown.DefaultGatewayParametersName, defaultNamespace)
 				params.Spec.Kube.FloatingUserId = ptr.To(true)
@@ -1501,6 +1512,22 @@ var _ = Describe("Deployer", func() {
 			return nil
 		}
 
+		fullyDefinedValidationCustomEnv := func(objs clientObjects, inp *input) error {
+			err := fullyDefinedValidationWithoutRunAsUser(objs, inp)
+			if err != nil {
+				return err
+			}
+
+			envoyContainer := objs.findDeployment(defaultNamespace, defaultDeploymentName).Spec.Template.Spec.Containers[0]
+			Expect(envoyContainer.Env).To(ContainElement(corev1.EnvVar{
+				Name:      "CUSTOM_ENV",
+				Value:     "abcd",
+				ValueFrom: nil,
+			}))
+
+			return nil
+		}
+
 		fullyDefinedValidationFloatingUserId := func(objs clientObjects, inp *input) error {
 			err := fullyDefinedValidationWithoutRunAsUser(objs, inp)
 			if err != nil {
@@ -1693,6 +1720,13 @@ var _ = Describe("Deployer", func() {
 				defaultGwp: fullyDefinedGatewayParamsWithProbes(),
 			}, &expectedOutput{
 				validationFunc: fullyDefinedValidationWithProbes,
+			}),
+			Entry("Fully defined GatewayParameters with custom env vars", &input{
+				dInputs:    istioEnabledDeployerInputs(),
+				gw:         defaultGateway(),
+				defaultGwp: fullyDefinedGatewayParamsWithCustomEnv(),
+			}, &expectedOutput{
+				validationFunc: fullyDefinedValidationCustomEnv,
 			}),
 
 			Entry("Fully defined GatewayParameters with floating user id", &input{

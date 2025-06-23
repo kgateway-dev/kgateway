@@ -81,6 +81,9 @@ spec:
               fieldPath: metadata.namespace
         - name: ENVOY_UID
           value: "0"
+{{- if $gateway.env }}
+{{ toYaml $gateway.env | indent 8 }}
+{{- end }} {{/* if $gateway.aiExtension.env */}}
         ports:
         {{- range $p := $gateway.ports }}
         - name: {{ $p.name }}
