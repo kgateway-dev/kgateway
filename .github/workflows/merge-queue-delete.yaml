@@ -16,16 +16,6 @@ jobs:
     steps:
       - name: Checkout current repository
         uses: actions/checkout@v4
-
-      - name: Clone solo-io/solo-tools
-        uses: actions/checkout@v4
-        with:
-          repository: solo-io/solo-tools
-          # NOTE: This is a fine-grained personal access token (FG-PAT) with read-only access
-          # to the solo-io/solo-tools repository, used to clone a private composite action across orgs.
-          # TODO: Get this token from IT
-          token: ${{ secrets.SOLO_TOOLS_PAT }}
-          path: .github/actions/mq-cancel-dangling-wfs
         
       - name: Cancel GH workflows
         # This action cancels any running builds for MQ branches which have already been deleted.
