@@ -10,5 +10,5 @@ spec:
     name: gw
   useRemoteAddress: true
   xffNumTrustedHops: 2
-  serverHeaderTransformation: APPEND_IF_ABSENT
+  serverHeaderTransformation: AppendIfAbsent
   streamIdleTimeout: 30s
