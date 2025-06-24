@@ -44,9 +44,7 @@ var _ = Describe("GwControllerMetrics", func() {
 	})
 
 	AfterEach(func() {
-		if cancel != nil {
-			cancel()
-		}
+		cancel()
 
 		// ensure goroutines cleanup
 		Eventually(func() bool { return true }).WithTimeout(3 * time.Second).Should(BeTrue())

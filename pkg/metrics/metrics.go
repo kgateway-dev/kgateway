@@ -22,6 +22,11 @@ var (
 	registryLock = sync.RWMutex{}
 )
 
+// Metric defines a base interface for metrics.
+type Metric interface {
+	Labels() []string
+}
+
 // Label defines a name-value pair for labeling metrics.
 type Label struct {
 	Name  string
@@ -30,6 +35,7 @@ type Label struct {
 
 // Counter defines the interface for a counter metric.
 type Counter interface {
+	Metric
 	Inc(...Label)
 	Add(float64, ...Label)
 	Reset()
@@ -65,10 +71,15 @@ func NewCounter(opts CounterOpts, labels []string) Counter {
 	return c
 }
 
+// Labels returns names of the labels associated with the counter metric.
+func (c *prometheusCounter) Labels() []string {
+	return c.labels
+}
+
 // validateLabels validates a slice of Label values and converts to a slice of string values.
 // It ensures that the order of labels is consistent with the order of the metric's labels.
 // If a label is not present, it uses an empty string for that label.
-func (c *prometheusCounter) validateLabels(labels []Label) []string {
+func validateLabels(metric Metric, labels []Label) []string {
 	values := make([]string, 0, len(labels))
 
 	labelMap := make(map[string]string, len(labels))
@@ -77,7 +88,7 @@ func (c *prometheusCounter) validateLabels(labels []Label) []string {
 		labelMap[label.Name] = label.Value
 	}
 
-	for _, label := range c.labels {
+	for _, label := range metric.Labels() {
 		if value, exists := labelMap[label]; exists {
 			values = append(values, value)
 		} else {
@@ -86,6 +97,11 @@ func (c *prometheusCounter) validateLabels(labels []Label) []string {
 	}
 
 	return values
+}
+
+// validateLabels validates a slice of Label values for the counter metric.
+func (c *prometheusCounter) validateLabels(labels []Label) []string {
+	return validateLabels(c, labels)
 }
 
 // Inc increments the counter by 1.
@@ -105,6 +121,7 @@ func (c *prometheusCounter) Reset() {
 
 // Histogram defines the interface for a histogram metric.
 type Histogram interface {
+	Metric
 	Observe(float64, ...Label)
 	Reset()
 }
@@ -139,27 +156,14 @@ func NewHistogram(opts HistogramOpts, labels []string) Histogram {
 	return h
 }
 
-// validateLabels validates a slice of Label values and converts to a slice of string values.
-// It ensures that the order of labels is consistent with the order of the metric's labels.
-// If a label is not present, it uses an empty string for that label.
+// Labels returns the labels associated with the histogram metric.
+func (c *prometheusHistogram) Labels() []string {
+	return c.labels
+}
+
+// validateLabels validates a slice of Label values for the histogram metric.
 func (h *prometheusHistogram) validateLabels(labels []Label) []string {
-	values := make([]string, 0, len(labels))
-
-	labelMap := make(map[string]string, len(labels))
-
-	for _, label := range labels {
-		labelMap[label.Name] = label.Value
-	}
-
-	for _, label := range h.labels {
-		if value, exists := labelMap[label]; exists {
-			values = append(values, value)
-		} else {
-			values = append(values, "")
-		}
-	}
-
-	return values
+	return validateLabels(h, labels)
 }
 
 // Observe records a value in the histogram.
@@ -174,6 +178,7 @@ func (h *prometheusHistogram) Reset() {
 
 // Gauge defines the interface for a gauge metric.
 type Gauge interface {
+	Metric
 	Set(float64, ...Label)
 	Add(float64, ...Label)
 	Sub(float64, ...Label)
@@ -210,27 +215,14 @@ func NewGauge(opts GaugeOpts, labels []string) Gauge {
 	return g
 }
 
-// validateLabels validates a slice of Label values and converts to a slice of string values.
-// It ensures that the order of labels is consistent with the order of the metric's labels.
-// If a label is not present, it uses an empty string for that label.
+// Labels returns the labels associated with the gauge metric.
+func (c *prometheusGauge) Labels() []string {
+	return c.labels
+}
+
+// validateLabels validates a slice of Label values for the gauge metric.
 func (g *prometheusGauge) validateLabels(labels []Label) []string {
-	values := make([]string, 0, len(labels))
-
-	labelMap := make(map[string]string, len(labels))
-
-	for _, label := range labels {
-		labelMap[label.Name] = label.Value
-	}
-
-	for _, label := range g.labels {
-		if value, exists := labelMap[label]; exists {
-			values = append(values, value)
-		} else {
-			values = append(values, "")
-		}
-	}
-
-	return values
+	return validateLabels(g, labels)
 }
 
 // Set sets the gauge to a specific value.
@@ -268,6 +260,10 @@ func GetPromCollector(c any) prometheus.Collector {
 	return nil
 }
 
+// This allows metrics instrumentation to be globally enabled or disabled.
+// By default, metrics are enabled.
+// When disabled, metrics instrumentation will collapse into no-op statements,
+// which can be useful for performance testing, or when metrics are not needed.
 var (
 	disabled uint32
 )
