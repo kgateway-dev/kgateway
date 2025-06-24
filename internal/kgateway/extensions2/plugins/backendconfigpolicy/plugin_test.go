@@ -143,6 +143,9 @@ func TestBackendConfigPolicyFlow(t *testing.T) {
 					},
 				},
 			},
+			backend: &ir.BackendObjectIR{
+				AppProtocol: ir.HTTP2AppProtocol,
+			},
 			cluster: &clusterv3.Cluster{
 				TypedExtensionProtocolOptions: map[string]*anypb.Any{
 					"envoy.extensions.upstreams.http.v3.HttpProtocolOptions": mustMessageToAny(t, &envoy_upstreams_http_v3.HttpProtocolOptions{
