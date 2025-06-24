@@ -394,6 +394,7 @@ func (d *Deployer) getValues(gw *api.Gateway, gwParam *v1alpha1.GatewayParameter
 	gateway.Resources = envoyContainerConfig.GetResources()
 	gateway.SecurityContext = envoyContainerConfig.GetSecurityContext()
 	gateway.Image = getImageValues(envoyContainerConfig.GetImage())
+	gateway.Env = envoyContainerConfig.GetEnv()
 
 	// istio values
 	gateway.Istio = getIstioValues(d.inputs.IstioAutoMtlsEnabled, istioConfig)
