@@ -297,9 +297,6 @@ func runScenario(t *testing.T, scenarioDir string, globalSettings *settings.Sett
 		for _, f := range files {
 			// run tests with the yaml files (but not -out.yaml files)/s
 			parentT := t
-			// if !strings.HasPrefix(f.Name(), "backendconfigpolicy") {
-			// 	continue
-			// }
 			if strings.HasSuffix(f.Name(), ".yaml") && !strings.HasSuffix(f.Name(), "-out.yaml") {
 				if os.Getenv("TEST_PREFIX") != "" && !strings.HasPrefix(f.Name(), os.Getenv("TEST_PREFIX")) {
 					continue
