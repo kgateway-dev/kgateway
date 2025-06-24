@@ -165,13 +165,13 @@ def enable_provider(provider):
     # set the correct namespace
     deployment["metadata"]["namespace"] = settings.get("helm_installation_namespace")
 
-    for container in deployment["spec"]["template"]["spec"]["containers"] :
-        if provider.get("live_reload_deps") :
-            # Overwrite the deployment image name with our custom one
-            container["image"] = provider.get("image")
-        # We need to run as root to avoid pesky permission issues when copying the new binary over to the running container and restarting it
-        if container.pop("securityContext", None) :
-            container["securityContext"] = {"runAsNonRoot": False, "runAsUser": 0, "readOnlyRootFilesystem": False}
+    if provider.get("live_reload_deps") :
+        # Overwrite the deployment image name with our custom one
+        deployment["spec"]["template"]["spec"]["containers"][0]["image"] = provider.get("image")
+
+    # We need to run as root to avoid pesky permission issues when copying the new binary over to the running container and restarting it
+    if deployment["spec"]["template"]["spec"]["containers"][0].pop("securityContext", None) :
+        deployment["spec"]["template"]["spec"]["containers"][0]["securityContext"] = {"runAsNonRoot": False, "runAsUser": 0, "readOnlyRootFilesystem": False}
     if deployment["spec"]["template"]["spec"].pop("securityContext", None) :
         deployment["spec"]["template"]["spec"]["securityContext"] = {"runAsNonRoot": False, "runAsUser": 0, "readOnlyRootFilesystem": False}
 
