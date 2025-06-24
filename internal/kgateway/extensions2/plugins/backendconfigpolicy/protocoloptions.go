@@ -112,15 +112,12 @@ func applyHttp1ProtocolOptions(http1ProtocolOptions *corev3.Http1ProtocolOptions
 		return
 	}
 
-	if err := translatorutils.MutateHttpOptions(out, func(opts *envoy_upstreams_v3.HttpProtocolOptions) {
-		// Check if ExplicitHttpConfig is already defined and if HTTP/2 protocol options are set
-		if explicitConfig := opts.GetExplicitHttpConfig(); explicitConfig != nil {
-			if explicitConfig.GetHttp2ProtocolOptions() != nil {
-				logger.Warn("HTTP/1 protocol options cannot be applied because HTTP/2 protocol options are already configured on the backend", "backend", backend.GetName())
-				return
-			}
-		}
+	if backend.AppProtocol == ir.HTTP2AppProtocol {
+		logger.Warn("can't apply http1 protocol options to http2 backend", "backend", backend.GetName())
+		return
+	}
 
+	if err := translatorutils.MutateHttpOptions(out, func(opts *envoy_upstreams_v3.HttpProtocolOptions) {
 		opts.UpstreamProtocolOptions = &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig_{
 			ExplicitHttpConfig: &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig{
 				ProtocolConfig: &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig_HttpProtocolOptions{
@@ -138,13 +135,12 @@ func applyHttp2ProtocolOptions(http2ProtocolOptions *corev3.Http2ProtocolOptions
 		return
 	}
 
+	if backend.AppProtocol != ir.HTTP2AppProtocol {
+		logger.Warn("can't apply http2 protocol options to non-http2 backend", "backend", backend.GetName())
+		return
+	}
+
 	if err := translatorutils.MutateHttpOptions(out, func(opts *envoy_upstreams_v3.HttpProtocolOptions) {
-		// http2 backends will have UpstreamProtocolOptions set by the backend plugin
-		// if it's not set, it's not an http2 backend
-		if opts.GetUpstreamProtocolOptions() == nil || opts.GetExplicitHttpConfig().GetHttp2ProtocolOptions() == nil {
-			logger.Warn("can't apply http2 protocol options to non-http2 backend", "backend", backend.GetName())
-			return
-		}
 		opts.UpstreamProtocolOptions = &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig_{
 			ExplicitHttpConfig: &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig{
 				ProtocolConfig: &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig_Http2ProtocolOptions{

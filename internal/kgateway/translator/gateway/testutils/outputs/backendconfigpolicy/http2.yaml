@@ -24,6 +24,15 @@ Clusters:
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
   metadata: {}
+  name: kube_default_httpbin2_8080
+  type: EDS
+- connectTimeout: 5s
+  edsClusterConfig:
+    edsConfig:
+      ads: {}
+      resourceApiVersion: V3
+  ignoreHealthOnHostRemoval: true
+  metadata: {}
   name: kube_default_httpbin_8080
   type: EDS
   typedExtensionProtocolOptions:

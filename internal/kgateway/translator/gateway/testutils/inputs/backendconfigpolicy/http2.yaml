@@ -78,3 +78,35 @@ spec:
     initialStreamWindowSize: 1024Ki
     initialConnectionWindowSize: 1024Ki
     overrideStreamErrorOnInvalidHttpMessage: true
+---
+# this test ensures BackendConfigPolicy with only http2 options will not be applied to non-http2 backend
+# additionally, the output cluster should not have any HttpProtocolOptions set 
+apiVersion: v1
+kind: Service
+metadata:
+  name: httpbin2
+  labels:
+    app: httpbin2
+    service: httpbin2
+spec:
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+  selector:
+    app: httpbin2
+---
+kind: BackendConfigPolicy
+apiVersion: gateway.kgateway.dev/v1alpha1
+metadata:
+  name: httpbin2-policy
+spec:
+  targetRefs:
+    - name: httpbin2
+      group: ""
+      kind: Service
+  http2ProtocolOptions:
+    maxConcurrentStreams: 100
+    initialStreamWindowSize: 64Ki
+    initialConnectionWindowSize: 64Ki
+    overrideStreamErrorOnInvalidHttpMessage: true

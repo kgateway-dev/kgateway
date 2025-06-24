@@ -30,6 +30,7 @@ func TestBackendConfigPolicyFlow(t *testing.T) {
 		name    string
 		policy  *v1alpha1.BackendConfigPolicy
 		cluster *clusterv3.Cluster
+		backend *ir.BackendObjectIR
 		want    *clusterv3.Cluster
 		wantErr bool
 	}{
@@ -182,6 +183,9 @@ func TestBackendConfigPolicyFlow(t *testing.T) {
 					},
 				},
 			},
+			backend: &ir.BackendObjectIR{
+				AppProtocol: ir.HTTP2AppProtocol,
+			},
 			cluster: &clusterv3.Cluster{
 				TypedExtensionProtocolOptions: map[string]*anypb.Any{
 					"envoy.extensions.upstreams.http.v3.HttpProtocolOptions": mustMessageToAny(t, &envoy_upstreams_http_v3.HttpProtocolOptions{
@@ -224,13 +228,9 @@ func TestBackendConfigPolicyFlow(t *testing.T) {
 					},
 				},
 			},
+			backend: &ir.BackendObjectIR{},
 			cluster: &clusterv3.Cluster{},
-			want: &clusterv3.Cluster{
-				// simply calling MutateHttpOptions will set empty HttpProtocolOptions (won't be nil)
-				TypedExtensionProtocolOptions: map[string]*anypb.Any{
-					"envoy.extensions.upstreams.http.v3.HttpProtocolOptions": mustMessageToAny(t, &envoy_upstreams_http_v3.HttpProtocolOptions{}),
-				},
-			},
+			want:    &clusterv3.Cluster{},
 			wantErr: false,
 		},
 	}
@@ -250,7 +250,11 @@ func TestBackendConfigPolicyFlow(t *testing.T) {
 			if cluster == nil {
 				cluster = &clusterv3.Cluster{}
 			}
-			processBackend(context.Background(), policyIR, ir.BackendObjectIR{}, cluster)
+			backend := tt.backend
+			if backend == nil {
+				backend = &ir.BackendObjectIR{}
+			}
+			processBackend(context.Background(), policyIR, *backend, cluster)
 
 			// Compare the resulting cluster configuration
 			if tt.wantErr {
