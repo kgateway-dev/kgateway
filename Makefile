@@ -544,12 +544,14 @@ package-kgateway-crd-chart: ## Package the kgateway crd chart
 deploy-kgateway-crd-chart: ## Deploy the kgateway crd chart
 	$(HELM) upgrade --install kgateway-crds $(TEST_ASSET_DIR)/kgateway-crds-$(VERSION).tgz --namespace kgateway-system --create-namespace
 
+HELM_ADDITIONAL_VALUES ?= hack/helm/dev.yaml
 .PHONY: deploy-kgateway-chart
 deploy-kgateway-chart: ## Deploy the kgateway chart
 	$(HELM) upgrade --install kgateway $(TEST_ASSET_DIR)/kgateway-$(VERSION).tgz \
 	--namespace kgateway-system --create-namespace \
 	--set image.registry=$(IMAGE_REGISTRY) \
-	--set image.tag=$(VERSION)
+	--set image.tag=$(VERSION) \
+	-f $(HELM_ADDITIONAL_VALUES)
 
 .PHONY: lint-kgateway-charts
 lint-kgateway-charts: ## Lint the kgateway charts
