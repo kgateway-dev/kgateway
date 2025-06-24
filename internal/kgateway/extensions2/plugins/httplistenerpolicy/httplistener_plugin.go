@@ -276,35 +276,3 @@ func convertServerHeaderTransformation(transformation *v1alpha1.ServerHeaderTran
 		return nil
 	}
 }
-
-// ConvertPolicy converts an API HTTPListenerPolicy to internal representation for testing
-func ConvertPolicy(policy *v1alpha1.HTTPListenerPolicy) *httpListenerPolicy {
-	if policy == nil {
-		return nil
-	}
-
-	internalPolicy := &httpListenerPolicy{}
-
-	// Convert UseRemoteAddress
-	if policy.Spec.UseRemoteAddress != nil {
-		internalPolicy.useRemoteAddress = policy.Spec.UseRemoteAddress
-	}
-
-	// Convert XffNumTrustedHops
-	if policy.Spec.XffNumTrustedHops != nil {
-		internalPolicy.xffNumTrustedHops = policy.Spec.XffNumTrustedHops
-	}
-
-	// Convert ServerHeaderTransformation
-	if policy.Spec.ServerHeaderTransformation != nil {
-		transformation := convertServerHeaderTransformation(policy.Spec.ServerHeaderTransformation)
-		internalPolicy.serverHeaderTransformation = transformation
-	}
-
-	// Convert StreamIdleTimeout
-	if policy.Spec.StreamIdleTimeout != nil {
-		internalPolicy.streamIdleTimeout = &policy.Spec.StreamIdleTimeout.Duration
-	}
-
-	return internalPolicy
-}

@@ -70,7 +70,7 @@ type HTTPListenerPolicySpec struct {
 
 	// ServerHeaderTransformation determines how the server header is transformed.
 	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-server-header-transformation
-	// +kubebuilder:validation:Enum=OVERWRITE;APPEND_IF_ABSENT;PASS_THROUGH
+	// +kubebuilder:validation:Enum=Overwrite;AppendIfAbsent;PassThrough
 	// +optional
 	ServerHeaderTransformation *ServerHeaderTransformation `json:"serverHeaderTransformation,omitempty"`
 
@@ -272,14 +272,13 @@ type UpgradeConfig struct {
 }
 
 // ServerHeaderTransformation determines how the server header is transformed.
-// +kubebuilder:validation:Enum=OVERWRITE;APPEND_IF_ABSENT;PASS_THROUGH
 type ServerHeaderTransformation string
 
 const (
 	// OverwriteServerHeaderTransformation overwrites the server header.
-	OverwriteServerHeaderTransformation ServerHeaderTransformation = "OVERWRITE"
+	OverwriteServerHeaderTransformation ServerHeaderTransformation = "Overwrite"
 	// AppendIfAbsentServerHeaderTransformation appends to the server header if it's not present.
-	AppendIfAbsentServerHeaderTransformation ServerHeaderTransformation = "APPEND_IF_ABSENT"
+	AppendIfAbsentServerHeaderTransformation ServerHeaderTransformation = "AppendIfAbsent"
 	// PassThroughServerHeaderTransformation passes through the server header unchanged.
-	PassThroughServerHeaderTransformation ServerHeaderTransformation = "PASS_THROUGH"
+	PassThroughServerHeaderTransformation ServerHeaderTransformation = "PassThrough"
 )
