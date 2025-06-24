@@ -44,16 +44,3 @@ jobs:
             echo "Ruff formatting issues detected. Please run 'ruff format . --exclude '**/*_pb2.py' --exclude '**/*_pb2.pyi' --exclude '**/*_pb2_*.py'' locally to fix formatting issues."
             exit 1
           fi
-
-      # TODO: undo after testing
-      - name: Cancel GH workflows
-        # This action cancels any running builds for MQ branches which have already been deleted.
-        # NOTE: GitHub Actions doesn't currently support filtering by branch pattern
-        # on delete events, so this action handles filtering out non-MQ branches internally.
-        # Related discussion: https://github.com/orgs/community/discussions/10589
-        uses: ./.github/actions/mq-cancel-dangling-wfs
-        with:
-          GH_ORG_REPO: ${{ github.repository }}
-        # Best practice: Pass secrets via env vars, not as inputs
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
