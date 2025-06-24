@@ -13,7 +13,7 @@ spec:
   # Number of additional ingress proxy hops to trust in X-Forwarded-For header
   xffNumTrustedHops: 2
   # How to transform the server header
-  serverHeaderTransformation: OVERWRITE
+  serverHeaderTransformation: Overwrite
   # Idle timeout for HTTP streams
   streamIdleTimeout: 30s
 ---
@@ -33,7 +33,7 @@ spec:
   # Trust 1 additional proxy hop
   xffNumTrustedHops: 1
   # Append server header if not present
-  serverHeaderTransformation: APPEND_IF_ABSENT
+  serverHeaderTransformation: AppendIfAbsent
   # Longer idle timeout
   streamIdleTimeout: 60s
 ---
