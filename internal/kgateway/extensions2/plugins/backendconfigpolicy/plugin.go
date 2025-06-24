@@ -35,7 +35,6 @@ const PreserveCasePlugin = "envoy.http.stateful_header_formatters.preserve_case"
 
 type BackendConfigPolicyIR struct {
 	ct                            time.Time
-	name                          string
 	connectTimeout                *durationpb.Duration
 	perConnectionBufferLimitBytes *int
 	tcpKeepalive                  *corev3.TcpKeepalive
@@ -229,8 +228,7 @@ func processBackend(_ context.Context, polir ir.PolicyIR, backend ir.BackendObje
 
 func translate(commoncol *common.CommonCollections, krtctx krt.HandlerContext, pol *v1alpha1.BackendConfigPolicy) (*BackendConfigPolicyIR, error) {
 	ir := BackendConfigPolicyIR{
-		ct:   pol.CreationTimestamp.Time,
-		name: pol.Name,
+		ct: pol.CreationTimestamp.Time,
 	}
 	if pol.Spec.ConnectTimeout != nil {
 		ir.connectTimeout = durationpb.New(pol.Spec.ConnectTimeout.Duration)
