@@ -574,12 +574,19 @@ func mergePolicies(policies []ir.PolicyAtt) ir.PolicyAtt {
 		return out
 	}
 
+	// collect all errors from the policies being merged
+	var allErrors []error
+	for _, p := range policies {
+		allErrors = append(allErrors, p.Errors...)
+	}
+
 	// base policy to merge into has an empty PolicyIr so it can always be merged into
 	out = ir.PolicyAtt{
 		GroupKind:    policies[0].GroupKind,
 		PolicyRef:    policies[0].PolicyRef,
 		MergeOrigins: map[string]*ir.AttachedPolicyRef{},
 		PolicyIr:     &TrafficPolicy{},
+		Errors:       allErrors,
 	}
 	merged := out.PolicyIr.(*TrafficPolicy)
 
