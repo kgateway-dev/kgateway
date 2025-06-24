@@ -461,9 +461,9 @@ spec:
                 type: array
               serverHeaderTransformation:
                 enum:
-                - OVERWRITE
-                - APPEND_IF_ABSENT
-                - PASS_THROUGH
+                - Overwrite
+                - AppendIfAbsent
+                - PassThrough
                 type: string
               streamIdleTimeout:
                 type: string
