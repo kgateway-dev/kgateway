@@ -251,7 +251,7 @@ func processBackend(_ context.Context, polir ir.PolicyIR, backend ir.BackendObje
 		if err := translatorutils.MutateHttpOptions(out, func(opts *envoy_upstreams_v3.HttpProtocolOptions) {
 			// http2 backends will have UpstreamProtocolOptions set by the backend plugin
 			// if it's not set, it's not an http2 backend
-			if opts.GetUpstreamProtocolOptions() == nil {
+			if opts.GetUpstreamProtocolOptions() == nil || opts.GetExplicitHttpConfig().GetHttp2ProtocolOptions() == nil {
 				logger.Warn("can't apply http2 protocol options to non-http2 backend", "policy", pol.name)
 				return
 			}
