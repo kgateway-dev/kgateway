@@ -14,5 +14,4 @@ runs:
       env:
         GH_ORG_REPO: ${{ inputs.GH_ORG_REPO }}
       run: |
-        chmod +x "${{ github.action_path }}/mq-cancel-dangling-wfs.sh"
         "${{ github.action_path }}/mq-cancel-dangling-wfs.sh"
