@@ -70,7 +70,7 @@ type GatewayParametersStatus struct {
 type SelfManagedGateway struct {
 }
 
-// Configuration for the set of Kubernetes resources that will be provisioned
+// KubernetesProxyConfig configures the set of Kubernetes resources that will be provisioned
 // for a given Gateway.
 type KubernetesProxyConfig struct {
 	// Use a Kubernetes deployment as the proxy workload type. Currently, this is the only
@@ -80,6 +80,7 @@ type KubernetesProxyConfig struct {
 	Deployment *ProxyDeployment `json:"deployment,omitempty"`
 
 	// Configuration for the container running Envoy.
+	// If AgentGateway is enabled, the EnvoyContainer values will be ignored.
 	//
 	// +optional
 	EnvoyContainer *EnvoyContainer `json:"envoyContainer,omitempty"`
@@ -120,7 +121,8 @@ type KubernetesProxyConfig struct {
 	// +optional
 	AiExtension *AiExtension `json:"aiExtension,omitempty"`
 
-	// Configure the AgentGateway integration
+	// Configure the AgentGateway integration. If AgentGateway is disabled, the EnvoyContainer values will be used by
+	// default to configure the data plane proxy.
 	//
 	// +optional
 	AgentGateway *AgentGateway `json:"agentGateway,omitempty"`
@@ -206,7 +208,7 @@ func (in *KubernetesProxyConfig) GetFloatingUserId() *bool {
 	return in.FloatingUserId
 }
 
-// Configuration for the Proxy deployment in Kubernetes.
+// ProxyDeployment configures the Proxy deployment in Kubernetes.
 type ProxyDeployment struct {
 	// The number of desired pods. Defaults to 1.
 	//
@@ -221,7 +223,7 @@ func (in *ProxyDeployment) GetReplicas() *uint32 {
 	return in.Replicas
 }
 
-// Configuration for the container running Envoy.
+// EnvoyContainer configures the container running Envoy.
 type EnvoyContainer struct {
 
 	// Initial envoy configuration.
@@ -236,8 +238,8 @@ type EnvoyContainer struct {
 	// Default values, which may be overridden individually:
 	//
 	//	registry: quay.io/solo-io
-	//	repository: gloo-envoy-wrapper (OSS) / gloo-ee-envoy-wrapper (EE)
-	//	tag: <gloo version> (OSS) / <gloo-ee version> (EE)
+	//	repository: envoy-wrapper
+	//	tag: <kgateway version>
 	//	pullPolicy: IfNotPresent
 	//
 	// +optional
@@ -300,7 +302,7 @@ func (in *EnvoyContainer) GetEnv() []corev1.EnvVar {
 	return in.Env
 }
 
-// Configuration for the Envoy proxy instance that is provisioned from a
+// EnvoyBootstrap configures the Envoy proxy instance that is provisioned from a
 // Kubernetes Gateway.
 type EnvoyBootstrap struct {
 	// Envoy log level. Options include "trace", "debug", "info", "warn", "error",
@@ -346,7 +348,7 @@ func (in *EnvoyBootstrap) GetComponentLogLevels() map[string]string {
 	return in.ComponentLogLevels
 }
 
-// Configuration for the container running Gloo SDS.
+// SdsContainer configures the container running SDS sidecar.
 type SdsContainer struct {
 	// The SDS container image. See
 	// https://kubernetes.io/docs/concepts/containers/images
@@ -403,7 +405,7 @@ func (in *SdsContainer) GetBootstrap() *SdsBootstrap {
 	return in.Bootstrap
 }
 
-// Configuration for the SDS instance that is provisioned from a Kubernetes Gateway.
+// SdsBootstrap configures the SDS instance that is provisioned from a Kubernetes Gateway.
 type SdsBootstrap struct {
 	// Log level for SDS. Options include "info", "debug", "warn", "error", "panic" and "fatal".
 	// Default level is "info".
@@ -419,7 +421,7 @@ func (in *SdsBootstrap) GetLogLevel() *string {
 	return in.LogLevel
 }
 
-// Configuration for the Istio integration settings used by a Gloo Gateway's data plane (Envoy proxy instance)
+// IstioIntegration configures the Istio integration settings used by a kgateway's data plane (Envoy proxy instance)
 type IstioIntegration struct {
 	// Configuration for the container running istio-proxy.
 	// Note that if Istio integration is not enabled, the istio container will not be injected
@@ -449,7 +451,7 @@ func (in *IstioIntegration) GetCustomSidecars() []corev1.Container {
 	return in.CustomSidecars
 }
 
-// Configuration for the container running the istio-proxy.
+// IstioContainer configures the container running the istio-proxy.
 type IstioContainer struct {
 	// The envoy container image. See
 	// https://kubernetes.io/docs/concepts/containers/images
@@ -772,7 +774,7 @@ func (in *CustomLabel) GetKeyDelimiter() *string {
 	return in.KeyDelimiter
 }
 
-// Configuration of the AgentGateway integration
+// AgentGateway configures the AgentGateway integration. If AgentGateway is enabled, Envoy
 type AgentGateway struct {
 	// Whether to enable the extension.
 	//
@@ -784,6 +786,41 @@ type AgentGateway struct {
 	//
 	// +optional
 	LogLevel *string `json:"logLevel,omitempty"`
+
+	// The agentgateway container image. See
+	// https://kubernetes.io/docs/concepts/containers/images
+	// for details.
+	//
+	// Default values, which may be overridden individually:
+	//
+	//	registry: ghcr.io/agentgateway
+	//	repository: agentgateway
+	//	tag: <agentgateway version>
+	//	pullPolicy: IfNotPresent
+	//
+	// +optional
+	Image *Image `json:"image,omitempty"`
+
+	// The security context for this container. See
+	// https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core
+	// for details.
+	//
+	// +optional
+	SecurityContext *corev1.SecurityContext `json:"securityContext,omitempty"`
+
+	// The compute resources required by this container. See
+	// https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+	// for details.
+	//
+	// +optional
+	Resources *corev1.ResourceRequirements `json:"resources,omitempty"`
+
+	// do not use slice of pointers: https://github.com/kubernetes/code-generator/issues/166
+
+	// The container environment variables.
+	//
+	// +optional
+	Env []corev1.EnvVar `json:"env,omitempty"`
 }
 
 func (in *AgentGateway) GetEnabled() *bool {
@@ -798,4 +835,32 @@ func (in *AgentGateway) GetLogLevel() *string {
 		return nil
 	}
 	return in.LogLevel
+}
+
+func (in *AgentGateway) GetImage() *Image {
+	if in == nil {
+		return nil
+	}
+	return in.Image
+}
+
+func (in *AgentGateway) GetSecurityContext() *corev1.SecurityContext {
+	if in == nil {
+		return nil
+	}
+	return in.SecurityContext
+}
+
+func (in *AgentGateway) GetResources() *corev1.ResourceRequirements {
+	if in == nil {
+		return nil
+	}
+	return in.Resources
+}
+
+func (in *AgentGateway) GetEnv() []corev1.EnvVar {
+	if in == nil {
+		return nil
+	}
+	return in.Env
 }

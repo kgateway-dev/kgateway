@@ -295,6 +295,21 @@ var _ = Describe("Deployer", func() {
 					Kube: &gw2_v1alpha1.KubernetesProxyConfig{
 						AgentGateway: &gw2_v1alpha1.AgentGateway{
 							Enabled: ptr.To(true),
+							Image: &gw2_v1alpha1.Image{
+								Tag: ptr.To("0.4.0"),
+							},
+							SecurityContext: &corev1.SecurityContext{
+								RunAsUser: ptr.To(int64(333)),
+							},
+							Resources: &corev1.ResourceRequirements{
+								Limits: corev1.ResourceList{"cpu": resource.MustParse("101m")},
+							},
+							Env: []corev1.EnvVar{
+								{
+									Name:  "test",
+									Value: "value",
+								},
+							},
 						},
 					},
 				},
@@ -504,7 +519,18 @@ var _ = Describe("Deployer", func() {
 			// check the image is using the agentgateway image
 			deployment := objs.findDeployment(defaultNamespace, "agent-gateway")
 			Expect(deployment).ToNot(BeNil())
+			// check the image uses the override tag
 			Expect(deployment.Spec.Template.Spec.Containers[0].Image).To(ContainSubstring("agentgateway"))
+			Expect(deployment.Spec.Template.Spec.Containers[0].Image).To(ContainSubstring("0.4.0"))
+			// check security context and resource requirements are correctly set
+			expectedSecurityContext := deployment.Spec.Template.Spec.Containers[0].SecurityContext
+			Expect(expectedSecurityContext).ToNot(BeNil())
+			Expect(expectedSecurityContext.RunAsUser).ToNot(BeNil())
+			Expect(*expectedSecurityContext.RunAsUser).To(Equal(int64(333)))
+			Expect(deployment.Spec.Template.Spec.Containers[0].Resources.Limits.Cpu().Equal(resource.MustParse("101m"))).To(BeTrue())
+			// check env values are appended to the end of the list
+			Expect(deployment.Spec.Template.Spec.Containers[0].Env[6].Name).To(Equal("test"))
+			Expect(deployment.Spec.Template.Spec.Containers[0].Env[6].Value).To(Equal("value"))
 			// check the service is using the agentgateway port
 			svc := objs.findService(defaultNamespace, "agent-gateway")
 			Expect(svc).ToNot(BeNil())
@@ -514,7 +540,6 @@ var _ = Describe("Deployer", func() {
 			Expect(cm).ToNot(BeNil())
 			Expect(cm.Data["config.json"]).To(ContainSubstring(`"xds_address": "http://something.cluster.local:1234"`))
 			Expect(cm.Data["config.json"]).To(ContainSubstring(`"alt_xds_hostname": "agent-gateway.default.svc.cluster.local"`))
-
 		})
 	})
 

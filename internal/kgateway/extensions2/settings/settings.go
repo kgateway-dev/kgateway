@@ -28,7 +28,7 @@ type Settings struct {
 	XdsServiceHost string `split_words:"true"`
 
 	// XdsServiceName is the name of the Kubernetes Service that serves xDS config.
-	// It it assumed to be in the kgateway install namespace.
+	// It is assumed to be in the kgateway install namespace.
 	// Ignored if XdsServiceHost is set.
 	XdsServiceName string `split_words:"true" default:"kgateway"`
 

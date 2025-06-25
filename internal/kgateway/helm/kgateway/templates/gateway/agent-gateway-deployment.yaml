@@ -29,7 +29,16 @@ spec:
     spec:
       containers:
         - name: agent-gateway
-          image: ghcr.io/agentgateway/agentgateway:0.4.29
+          image: "{{ template "kgateway.gateway.image" $gateway.image }}"
+          imagePullPolicy: {{ $gateway.image.pullPolicy }}
+          {{- if $gateway.securityContext }}
+          securityContext:
+            {{- toYaml $gateway.securityContext | nindent 12 }}
+          {{- end }} {{/* if $gateway.securityContext */}}
+          {{- if $gateway.resources }}
+          resources:
+            {{- toYaml $gateway.resources | nindent 12 }}
+          {{- end }} {{/* if $gateway.resources */}}
           args:
             - --file=/config/config.json
           env:
@@ -51,6 +60,9 @@ spec:
               value: "1"
             - name: RUST_LOG
               value: {{ $gateway.agentGateway.logLevel }}
+            {{- if $gateway.env }}
+            {{- toYaml $gateway.env | nindent 12 }}
+            {{- end }} {{/* if $gateway.env */}}
           volumeMounts:
             - name: config-volume
               mountPath: /config
