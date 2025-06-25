@@ -92,22 +92,7 @@ TEST_LOG_DIR := $(TEST_ASSET_DIR)/test_log
 $(TEST_LOG_DIR):
 	mkdir -p $(TEST_LOG_DIR)
 
-# Used to install ca-certificates in GLOO_DISTROLESS_BASE_IMAGE
-PACKAGE_DONOR_IMAGE ?= debian:11
-# Harvested for utility binaries (sh, wget, sleep, nc, echo, ls, cat, vi)
-# in GLOO_DISTROLESS_BASE_WITH_UTILS_IMAGE
-# We use the uclibc variant as it is statically compiled so the binaries can be copied over and run on another image without issues (unlike glibc)
-UTILS_DONOR_IMAGE ?= busybox:uclibc
-# Use a distroless debian variant that is in sync with the ubuntu version used for envoy
-# https://github.com/solo-io/envoy-gloo-ee/blob/main/ci/Dockerfile#L7 - check /etc/debian_version in the ubuntu version used
-# This is the true base image for GLOO_DISTROLESS_BASE_IMAGE and GLOO_DISTROLESS_BASE_WITH_UTILS_IMAGE
-# Since we only publish amd64 images, we use the amd64 variant. If we decide to change this, we need to update the distroless dockerfiles as well
-DISTROLESS_BASE_IMAGE ?= gcr.io/distroless/base-debian11:latest
-# DISTROLESS_BASE_IMAGE + ca-certificates
-GLOO_DISTROLESS_BASE_IMAGE ?= $(IMAGE_REGISTRY)/distroless-base:$(VERSION)
-# GLOO_DISTROLESS_BASE_IMAGE + utility binaries (sh, wget, sleep, nc, echo, ls, cat, vi)
-GLOO_DISTROLESS_BASE_WITH_UTILS_IMAGE ?= $(IMAGE_REGISTRY)/distroless-base-with-utils:$(VERSION)
-# BASE_IMAGE used in non distroless variants. Exported for use in goreleaser.yaml.
+# Base Alpine image used for all containers. Exported for use in goreleaser.yaml.
 export ALPINE_BASE_IMAGE ?= alpine:3.17.6
 
 #----------------------------------------------------------------------------------
@@ -371,34 +356,7 @@ GETTERCHECK ?= go tool github.com/saiskee/gettercheck
 getter-check: ## Runs all generate directives for mockgen in the repo
 	$(GETTERCHECK) -ignoretests -ignoregenerated -write ./internal/... ./pkg/...
 
-#----------------------------------------------------------------------------------
-# Distroless base images
-#----------------------------------------------------------------------------------
 
-DISTROLESS_DIR=internal/distroless
-DISTROLESS_OUTPUT_DIR=$(OUTPUT_DIR)/$(DISTROLESS_DIR)
-
-$(DISTROLESS_OUTPUT_DIR)/Dockerfile: $(DISTROLESS_DIR)/Dockerfile
-	mkdir -p $(DISTROLESS_OUTPUT_DIR)
-	cp $< $@
-
-.PHONY: distroless-docker
-distroless-docker: $(DISTROLESS_OUTPUT_DIR)/Dockerfile
-	docker buildx build $(LOAD_OR_PUSH) $(PLATFORM_MULTIARCH) $(DISTROLESS_OUTPUT_DIR) -f $(DISTROLESS_OUTPUT_DIR)/Dockerfile \
-		--build-arg PACKAGE_DONOR_IMAGE=$(PACKAGE_DONOR_IMAGE) \
-		--build-arg BASE_IMAGE=$(DISTROLESS_BASE_IMAGE) \
-		-t $(GLOO_DISTROLESS_BASE_IMAGE)
-
-$(DISTROLESS_OUTPUT_DIR)/Dockerfile.utils: $(DISTROLESS_DIR)/Dockerfile.utils
-	mkdir -p $(DISTROLESS_OUTPUT_DIR)
-	cp $< $@
-
-.PHONY: distroless-with-utils-docker
-distroless-with-utils-docker: distroless-docker $(DISTROLESS_OUTPUT_DIR)/Dockerfile.utils
-	docker buildx build $(LOAD_OR_PUSH) $(PLATFORM_MULTIARCH) $(DISTROLESS_OUTPUT_DIR) -f $(DISTROLESS_OUTPUT_DIR)/Dockerfile.utils \
-		--build-arg UTILS_DONOR_IMAGE=$(UTILS_DONOR_IMAGE) \
-		--build-arg BASE_IMAGE=$(GLOO_DISTROLESS_BASE_IMAGE) \
-		-t  $(GLOO_DISTROLESS_BASE_WITH_UTILS_IMAGE)
 
 #----------------------------------------------------------------------------------
 # Controller
@@ -427,17 +385,7 @@ kgateway-docker: $(CONTROLLER_OUTPUT_DIR)/kgateway-linux-$(GOARCH) $(CONTROLLER_
 		--build-arg ENVOY_IMAGE=$(ENVOY_IMAGE) \
 		-t $(IMAGE_REGISTRY)/$(CONTROLLER_IMAGE_REPO):$(VERSION)
 
-$(CONTROLLER_OUTPUT_DIR)/Dockerfile.distroless: cmd/kgateway/Dockerfile.distroless
-	cp $< $@
 
-# Explicitly specify the base image is amd64 as we only build the amd64 flavour of envoy
-.PHONY: kgateway-distroless-docker
-kgateway-distroless-docker: $(CONTROLLER_OUTPUT_DIR)/kgateway-linux-$(GOARCH) $(CONTROLLER_OUTPUT_DIR)/Dockerfile.distroless distroless-with-utils-docker
-	docker buildx build --load $(PLATFORM) $(CONTROLLER_OUTPUT_DIR) -f $(CONTROLLER_OUTPUT_DIR)/Dockerfile.distroless \
-		--build-arg GOARCH=$(GOARCH) \
-		--build-arg ENVOY_IMAGE=$(ENVOY_IMAGE) \
-		--build-arg BASE_IMAGE=$(GLOO_DISTROLESS_BASE_WITH_UTILS_IMAGE) \
-		-t $(IMAGE_REGISTRY)/$(CONTROLLER_IMAGE_REPO):$(VERSION)-distroless
 
 #----------------------------------------------------------------------------------
 # SDS Server - gRPC server for serving Secret Discovery Service config
@@ -464,15 +412,7 @@ sds-docker: $(SDS_OUTPUT_DIR)/sds-linux-$(GOARCH) $(SDS_OUTPUT_DIR)/Dockerfile.s
 		--build-arg BASE_IMAGE=$(ALPINE_BASE_IMAGE) \
 		-t $(IMAGE_REGISTRY)/$(SDS_IMAGE_REPO):$(VERSION)
 
-$(SDS_OUTPUT_DIR)/Dockerfile.sds.distroless: cmd/sds/Dockerfile.distroless
-	cp $< $@
 
-.PHONY: sds-distroless-docker
-sds-distroless-docker: $(SDS_OUTPUT_DIR)/sds-linux-$(GOARCH) $(SDS_OUTPUT_DIR)/Dockerfile.sds.distroless distroless-with-utils-docker
-	docker buildx build --load $(PLATFORM) $(SDS_OUTPUT_DIR) -f $(SDS_OUTPUT_DIR)/Dockerfile.sds.distroless \
-		--build-arg GOARCH=$(GOARCH) \
-		--build-arg BASE_IMAGE=$(GLOO_DISTROLESS_BASE_WITH_UTILS_IMAGE) \
-		-t $(IMAGE_REGISTRY)/$(SDS_IMAGE_REPO):$(VERSION)-distroless
 
 #----------------------------------------------------------------------------------
 # Envoy init (BASE/SIDECAR)
@@ -504,17 +444,7 @@ envoy-wrapper-docker: $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-$(GOARCH) $(ENVOYI
 		--build-arg ENVOY_IMAGE=$(ENVOY_IMAGE) \
 		-t $(IMAGE_REGISTRY)/$(ENVOYINIT_IMAGE_REPO):$(VERSION)
 
-$(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit.distroless: internal/envoyinit/Dockerfile.envoyinit.distroless
-	cp $< $@
 
-# Explicitly specify the base image is amd64 as we only build the amd64 flavour of envoy
-.PHONY: envoy-wrapper-distroless-docker
-envoy-wrapper-distroless-docker: $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-$(GOARCH) $(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit.distroless $(ENVOYINIT_OUTPUT_DIR)/docker-entrypoint.sh distroless-with-utils-docker
-	docker buildx build --load $(PLATFORM) $(ENVOYINIT_OUTPUT_DIR) -f $(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit.distroless \
-		--build-arg GOARCH=$(GOARCH) \
-		--build-arg ENVOY_IMAGE=$(ENVOY_IMAGE) \
-		--build-arg BASE_IMAGE=$(GLOO_DISTROLESS_BASE_WITH_UTILS_IMAGE) \
-		-t $(IMAGE_REGISTRY)/$(ENVOYINIT_IMAGE_REPO):$(VERSION)-distroless
 
 #----------------------------------------------------------------------------------
 # Helm
@@ -575,89 +505,29 @@ release: ## Create a release using goreleaser
 # Docker
 #----------------------------------------------------------------------------------
 
-docker-retag-%-distroless:
-	docker tag $(ORIGINAL_IMAGE_REGISTRY)/$*:$(VERSION)-distroless $(IMAGE_REGISTRY)/$*:$(VERSION)-distroless
+.PHONY: docker
+docker: kgateway-docker ## Build docker images
+docker: envoy-wrapper-docker
+docker: sds-docker
+docker: kgateway-ai-extension-docker
+
+.PHONY: docker-push
+docker-push: docker-push-kgateway
+docker-push: docker-push-envoy-wrapper
+docker-push: docker-push-sds
+docker-push: docker-push-kgateway-ai-extension
+
+.PHONY: docker-retag
+docker-retag: docker-retag-kgateway
+docker-retag: docker-retag-envoy-wrapper
+docker-retag: docker-retag-sds
+docker-retag: docker-retag-kgateway-ai-extension
 
 docker-retag-%:
 	docker tag $(ORIGINAL_IMAGE_REGISTRY)/$*:$(VERSION) $(IMAGE_REGISTRY)/$*:$(VERSION)
 
-docker-push-%-distroless:
-	docker push $(IMAGE_REGISTRY)/$*:$(VERSION)-distroless
-
 docker-push-%:
 	docker push $(IMAGE_REGISTRY)/$*:$(VERSION)
-
-.PHONY: docker-standard
-docker-standard: kgateway-docker ## Build docker images (standard only)
-docker-standard: envoy-wrapper-docker
-docker-standard: sds-docker
-docker-standard: kgateway-ai-extension-docker # single image variant
-
-.PHONY: docker-distroless
-docker-distroless: kgateway-distroless-docker ## Build docker images (distroless only)
-docker-distroless: envoy-wrapper-distroless-docker
-docker-distroless: sds-distroless-docker
-docker-distroless: kgateway-ai-extension-docker # single image variant
-
-IMAGE_VARIANT ?= all
-# Build docker images using the defined IMAGE_REGISTRY, VERSION
-.PHONY: docker
-docker: ## Build all docker images (standard and distroless)
-docker: # Standard images
-ifeq ($(IMAGE_VARIANT),$(filter $(IMAGE_VARIANT),all standard))
-docker: docker-standard
-endif # standard images
-docker: # Distroless images
-ifeq ($(IMAGE_VARIANT),$(filter $(IMAGE_VARIANT),all distroless))
-docker: docker-distroless
-endif # distroless images
-
-.PHONY: docker-standard-push
-docker-standard-push: docker-push-kgateway
-docker-standard-push: docker-push-envoy-wrapper
-docker-standard-push: docker-push-sds
-docker-standard-push: docker-push-kgateway-ai-extension # single image variant
-
-.PHONY: docker-distroless-push
-docker-distroless-push: docker-push-kgateway-distroless
-docker-distroless-push: docker-push-envoy-wrapper-distroless
-docker-distroless-push: docker-push-sds-distroless
-docker-distroless-push: docker-push-kgateway-ai-extension # single image variant
-
-# Push docker images to the defined IMAGE_REGISTRY
-.PHONY: docker-push
-docker-push: # Standard images
-ifeq ($(IMAGE_VARIANT),$(filter $(IMAGE_VARIANT),all standard))
-docker-push: docker-standard-push
-endif # standard images
-docker-push: # Distroless images
-ifeq ($(IMAGE_VARIANT),$(filter $(IMAGE_VARIANT),all distroless))
-docker-push: docker-distroless-push
-endif # distroless images
-
-.PHONY: docker-standard-retag
-docker-standard-retag: docker-retag-kgateway
-docker-standard-retag: docker-retag-envoy-wrapper
-docker-standard-retag: docker-retag-sds
-docker-standard-retag: docker-retag-kgateway-ai-extension # single image variant
-
-.PHONY: docker-distroless-retag
-docker-distroless-retag: docker-retag-kgateway-distroless
-docker-distroless-retag: docker-retag-envoy-wrapper-distroless
-docker-distroless-retag: docker-retag-sds-distroless
-docker-distroless-retag: docker-retag-kgateway-ai-extension # single image variant
-
-# Re-tag docker images previously pushed to the ORIGINAL_IMAGE_REGISTRY,
-# and tag them with a secondary repository, defined at IMAGE_REGISTRY
-.PHONY: docker-retag
-docker-retag: # Standard images
-ifeq ($(IMAGE_VARIANT),$(filter $(IMAGE_VARIANT),all standard))
-docker-retag: docker-standard-retag
-endif # standard images
-docker-retag: # Distroless images
-ifeq ($(IMAGE_VARIANT),$(filter $(IMAGE_VARIANT),all distroless))
-docker-retag: docker-distroless-retag
-endif # distroless images
 
 #----------------------------------------------------------------------------------
 # Development
@@ -685,7 +555,7 @@ metallb: ## Install the MetalLB load balancer
 deploy-kgateway: package-kgateway-charts deploy-kgateway-crd-chart deploy-kgateway-chart ## Deploy the kgateway chart and CRDs
 
 .PHONY: run
-run: kind-create kind-build-and-load-standard gw-api-crds metallb deploy-kgateway  ## Set up complete development environment
+run: kind-create kind-build-and-load gw-api-crds metallb deploy-kgateway  ## Set up complete development environment
 
 #----------------------------------------------------------------------------------
 # Build assets for kubernetes e2e tests
@@ -693,9 +563,6 @@ run: kind-create kind-build-and-load-standard gw-api-crds metallb deploy-kgatewa
 
 kind-setup: ## Set up the KinD cluster. Deprecated: use kind-create instead.
 	VERSION=${VERSION} CLUSTER_NAME=${CLUSTER_NAME} ./hack/kind/setup-kind.sh
-
-kind-load-%-distroless:
-	$(KIND) load docker-image $(IMAGE_REGISTRY)/$*:$(VERSION)-distroless --name $(CLUSTER_NAME)
 
 kind-load-%:
 	$(KIND) load docker-image $(IMAGE_REGISTRY)/$*:$(VERSION) --name $(CLUSTER_NAME)
@@ -734,54 +601,17 @@ kind-reload-envoy-wrapper:
 	kubectl patch deployment gateway-proxy -n $(INSTALL_NAMESPACE) -p '{"spec": {"template":{"metadata":{"annotations":{"kgateway-kind-last-update":"$(shell date)"}}}} }'
 	kubectl rollout resume deployment gateway-proxy -n $(INSTALL_NAMESPACE)
 
-.PHONY: kind-build-and-load-standard
-kind-build-and-load-standard: kind-build-and-load-kgateway
-kind-build-and-load-standard: kind-build-and-load-envoy-wrapper
-kind-build-and-load-standard: kind-build-and-load-sds
-kind-build-and-load-standard: kind-build-and-load-kgateway-ai-extension # single image variant
-
-.PHONY: kind-build-and-load-distroless
-kind-build-and-load-distroless: kind-build-and-load-kgateway-distroless
-kind-build-and-load-distroless: kind-build-and-load-envoy-wrapper-distroless
-kind-build-and-load-distroless: kind-build-and-load-sds-distroless
-kind-build-and-load-distroless: kind-build-and-load-kgateway-ai-extension # single image variant
-
 .PHONY: kind-build-and-load ## Use to build all images and load them into kind
-kind-build-and-load: # Standard images
-ifeq ($(IMAGE_VARIANT),$(filter $(IMAGE_VARIANT),all standard))
-kind-build-and-load: kind-build-and-load-standard
-endif # standard images
-kind-build-and-load: # Distroless images
-ifeq ($(IMAGE_VARIANT),$(filter $(IMAGE_VARIANT),all distroless))
-kind-build-and-load: kind-build-and-load-distroless
-endif # distroless images
-kind-build-and-load: # As of now the glooctl istio inject command is not smart enough to determine the variant used, so we always build the standard variant of the sds image.
+kind-build-and-load: kind-build-and-load-kgateway
+kind-build-and-load: kind-build-and-load-envoy-wrapper
 kind-build-and-load: kind-build-and-load-sds
+kind-build-and-load: kind-build-and-load-kgateway-ai-extension
 
-# Load existing images. This can speed up development if the images have already been built / are unchanged
-.PHONY: kind-load-standard
-kind-load-standard: kind-load-kgateway
-kind-load-standard: kind-load-envoy-wrapper
-kind-load-standard: kind-load-sds
-kind-load-standard: kind-load-kgateway-ai-extension # single image variant
-
-.PHONY: kind-build-and-load-distroless
-kind-load-distroless: kind-load-kgateway-distroless
-kind-load-distroless: kind-load-envoy-wrapper-distroless
-kind-load-distroless: kind-load-sds-distroless
-kind-load-distroless: kind-load-kgateway-ai-extension # single image variant
-
-.PHONY: kind-load ## Use to build all images and load them into kind
-kind-load: # Standard images
-ifeq ($(IMAGE_VARIANT),$(filter $(IMAGE_VARIANT),all standard))
-kind-load: kind-load-standard
-endif # standard images
-kind-load: # Distroless images
-ifeq ($(IMAGE_VARIANT),$(filter $(IMAGE_VARIANT),all distroless))
-kind-load: kind-load-distroless
-endif # distroless images
-kind-load: # As of now the glooctl istio inject command is not smart enough to determine the variant used, so we always build the standard variant of the sds image.
+.PHONY: kind-load ## Use to load all images into kind
+kind-load: kind-load-kgateway
+kind-load: kind-load-envoy-wrapper
 kind-load: kind-load-sds
+kind-load: kind-load-kgateway-ai-extension
 
 define kind_reload_msg
 The kind-reload-% targets exist in order to assist developers with the work cycle of
@@ -836,11 +666,11 @@ $(TEST_ASSET_DIR)/conformance/conformance_test.go:
 	cat $(shell go list -json -m sigs.k8s.io/gateway-api | jq -r '.Dir')/conformance/conformance_test.go >> $@
 	go fmt $@
 
-CONFORMANCE_SUPPORTED_FEATURES ?= -supported-features=Gateway,ReferenceGrant,HTTPRoute,HTTPRouteQueryParamMatching,HTTPRouteMethodMatching,HTTPRouteResponseHeaderModification,HTTPRoutePortRedirect,HTTPRouteHostRewrite,HTTPRouteSchemeRedirect,HTTPRoutePathRedirect,HTTPRouteHostRewrite,HTTPRoutePathRewrite,HTTPRouteRequestMirror,TLSRoute,HTTPRouteBackendProtocolH2C,HTTPRouteRequestTimeout,HTTPRouteBackendTimeout,GRPCRoute,HTTPRouteBackendProtocolWebSocket
+CONFORMANCE_UNSUPPORTED_FEATURES ?= -exempt-features=GatewayAddressEmpty,GatewayHTTPListenerIsolation,GatewayInfrastructurePropagation,GatewayPort8080,GatewayStaticAddresses,HTTPRouteBackendRequestHeaderModification,HTTPRouteDestinationPortMatching,HTTPRouteParentRefPort,HTTPRouteRequestMultipleMirrors,HTTPRouteRequestPercentageMirror
 CONFORMANCE_SUPPORTED_PROFILES ?= -conformance-profiles=GATEWAY-HTTP
 CONFORMANCE_GATEWAY_CLASS ?= kgateway
 CONFORMANCE_REPORT_ARGS ?= -report-output=$(TEST_ASSET_DIR)/conformance/$(VERSION)-report.yaml -organization=kgateway-dev -project=kgateway -version=$(VERSION) -url=github.com/kgateway-dev/kgateway -contact=github.com/kgateway-dev/kgateway/issues/new/choose
-CONFORMANCE_ARGS := -gateway-class=$(CONFORMANCE_GATEWAY_CLASS) $(CONFORMANCE_SUPPORTED_FEATURES) $(CONFORMANCE_SUPPORTED_PROFILES) $(CONFORMANCE_REPORT_ARGS)
+CONFORMANCE_ARGS := -gateway-class=$(CONFORMANCE_GATEWAY_CLASS) $(CONFORMANCE_UNSUPPORTED_FEATURES) $(CONFORMANCE_SUPPORTED_PROFILES) $(CONFORMANCE_REPORT_ARGS)
 
 .PHONY: conformance ## Run the conformance test suite
 conformance: $(TEST_ASSET_DIR)/conformance/conformance_test.go
