@@ -57,7 +57,7 @@ kubectl cluster-info --context kind-kind
 2. Build and load the initial images:
 
 ```bash
-VERSION=1.0.0-ci1 CLUSTER_NAME=kind IMAGE_VARIANT=standard make kind-build-and-load
+VERSION=1.0.0-ci1 CLUSTER_NAME=kind make kind-build-and-load
 ```
 
 3. Start Tilt to enable live reloading:

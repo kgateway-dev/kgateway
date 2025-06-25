@@ -2,10 +2,12 @@ package krtcollections
 
 import (
 	"context"
+	"strings"
 
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
+	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/krt"
 	corev1 "k8s.io/api/core/v1"
 	discoveryv1 "k8s.io/api/discovery/v1"
@@ -19,6 +21,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
+	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
 )
 
 type EndpointsSettings struct {
@@ -84,13 +87,54 @@ func NewGlooK8sEndpointInputs(
 }
 
 func NewK8sEndpoints(ctx context.Context, inputs EndpointsInputs) krt.Collection[ir.EndpointsForBackend] {
-	return krt.NewCollection(inputs.Backends, transformK8sEndpoints(inputs), inputs.KrtOpts.ToOptions("K8sEndpoints")...)
+	metricsRecorder := NewCollectionMetricsRecorder("K8sEndpoints")
+
+	c := krt.NewCollection(inputs.Backends, transformK8sEndpoints(inputs, metricsRecorder), inputs.KrtOpts.ToOptions("K8sEndpoints")...)
+
+	metrics.RegisterEvents(c, func(o krt.Event[ir.EndpointsForBackend]) {
+		namespace := o.Latest().ClusterName
+
+		cns := strings.SplitN(namespace, "_", 3)
+		if len(cns) > 1 {
+			namespace = cns[1]
+		}
+
+		name := o.Latest().Hostname
+
+		hns := strings.SplitN(name, ".", 2)
+		if len(hns) > 0 {
+			name = hns[0]
+		}
+
+		switch o.Event {
+		case controllers.EventDelete:
+			metricsRecorder.SetResources(CollectionResourcesMetricLabels{
+				Namespace: namespace,
+				Name:      name,
+				Resource:  "Endpoints",
+			}, 0)
+		case controllers.EventAdd, controllers.EventUpdate:
+			metricsRecorder.SetResources(CollectionResourcesMetricLabels{
+				Namespace: namespace,
+				Name:      name,
+				Resource:  "Endpoints",
+			}, len(o.Latest().LbEps))
+		}
+	})
+
+	return c
 }
 
-func transformK8sEndpoints(inputs EndpointsInputs) func(kctx krt.HandlerContext, backend ir.BackendObjectIR) *ir.EndpointsForBackend {
+func transformK8sEndpoints(inputs EndpointsInputs,
+	metricsRecorder CollectionMetricsRecorder,
+) func(kctx krt.HandlerContext, backend ir.BackendObjectIR) *ir.EndpointsForBackend {
 	augmentedPods := inputs.Pods
 
 	return func(kctx krt.HandlerContext, backend ir.BackendObjectIR) *ir.EndpointsForBackend {
+		if metricsRecorder != nil {
+			defer metricsRecorder.TransformStart()(nil)
+		}
+
 		var warnsToLog []string
 		defer func() {
 			for _, warn := range warnsToLog {
@@ -203,7 +247,9 @@ func transformK8sEndpoints(inputs EndpointsInputs) func(kctx krt.HandlerContext,
 				}
 			}
 		}
+
 		kubeSvcLogger.Debug("created endpoint", "total_endpoints", len(ret.LbEps))
+
 		return ret
 	}
 }

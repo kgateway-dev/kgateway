@@ -161,7 +161,11 @@ func NewCommonCollections(
 // InitPlugins set up collections that rely on plugins.
 // This can't be part of NewCommonCollections because the setup
 // of plugins themselves rely on a reference to CommonCollections.
-func (c *CommonCollections) InitPlugins(ctx context.Context, mergedPlugins extensionsplug.Plugin) {
+func (c *CommonCollections) InitPlugins(
+	ctx context.Context,
+	mergedPlugins extensionsplug.Plugin,
+	globalSettings settings.Settings,
+) {
 	gateways, routeIndex, backendIndex, endpointIRs := krtcollections.InitCollections(
 		ctx,
 		c.ControllerName,
@@ -170,6 +174,7 @@ func (c *CommonCollections) InitPlugins(ctx context.Context, mergedPlugins exten
 		c.OurClient,
 		c.RefGrants,
 		c.KrtOpts,
+		globalSettings,
 	)
 
 	// init plugin-extended collections

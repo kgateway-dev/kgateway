@@ -1,8 +1,48 @@
 package settings
 
 import (
+	"fmt"
+
 	"github.com/kelseyhightower/envconfig"
 )
+
+// DnsLookupFamily controls the DNS lookup family for all static clusters created via Backend resources.
+type DnsLookupFamily string
+
+const (
+	// DnsLookupFamilyV4Preferred is the default value for DnsLookupFamily.
+	// The DNS resolver will first perform a lookup for addresses in the IPv4 family
+	// and fallback to a lookup for addresses in the IPv6 family. The callback target
+	// will only get v6 addresses if there were no v4 addresses to return.
+	DnsLookupFamilyV4Preferred DnsLookupFamily = "V4_PREFERRED"
+	// DnsLookupFamilyV4Only is the value for DnsLookupFamily that only performs
+	// DNS lookups for addresses in the IPv4 family.
+	DnsLookupFamilyV4Only DnsLookupFamily = "V4_ONLY"
+	// DnsLookupFamilyV6Only is the value for DnsLookupFamily that only performs
+	// DNS lookups for addresses in the IPv6 family.
+	DnsLookupFamilyV6Only DnsLookupFamily = "V6_ONLY"
+	// DnsLookupFamilyAll is the value for DnsLookupFamily that performs lookups
+	// for both IPv4 and IPv6 families and returns all resolved addresses.
+	DnsLookupFamilyAll DnsLookupFamily = "ALL"
+	// DnsLookupFamilyAuto is the value for DnsLookupFamily that first performs
+	// a lookup for addresses in the IPv6 family and falls back to a lookup for
+	// addresses in the IPv4 family. This is semantically equivalent to a
+	// non-existent V6_PREFERRED option and is a legacy name that will be
+	// deprecated in favor of V6_PREFERRED in a future major version.
+	DnsLookupFamilyAuto DnsLookupFamily = "AUTO"
+)
+
+// Decode implements envconfig.Decoder.
+func (m *DnsLookupFamily) Decode(value string) error {
+	mode := DnsLookupFamily(value)
+	switch mode {
+	case DnsLookupFamilyV4Preferred, DnsLookupFamilyV4Only, DnsLookupFamilyV6Only, DnsLookupFamilyAll, DnsLookupFamilyAuto:
+		*m = mode
+		return nil
+	default:
+		return fmt.Errorf("invalid DNS lookup family: %q", value)
+	}
+}
 
 type Settings struct {
 	// Controls the DnsLookupFamily for all static clusters created via Backend resources.
@@ -11,7 +51,7 @@ type Settings struct {
 	// Supported values are: "ALL", "AUTO", "V4_PREFERRED", "V4_ONLY", "V6_ONLY"
 	// Details on the behavior of these options are available on the Envoy documentation:
 	// https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/cluster/v3/cluster.proto#enum-config-cluster-v3-cluster-dnslookupfamily
-	DnsLookupFamily string `split_words:"true" default:"V4_PREFERRED"`
+	DnsLookupFamily DnsLookupFamily `split_words:"true" default:"V4_PREFERRED"`
 
 	// Controls the listener bind address. Can be either V4 or V6
 	ListenerBindIpv6 bool `split_words:"true" default:"true"`
@@ -28,7 +68,7 @@ type Settings struct {
 	XdsServiceHost string `split_words:"true"`
 
 	// XdsServiceName is the name of the Kubernetes Service that serves xDS config.
-	// It it assumed to be in the kgateway install namespace.
+	// It is assumed to be in the kgateway install namespace.
 	// Ignored if XdsServiceHost is set.
 	XdsServiceName string `split_words:"true" default:"kgateway"`
 
@@ -71,6 +111,11 @@ type Settings struct {
 
 	// EnableAgentGateway enables kgateway to send config to the agentgateway
 	EnableAgentGateway bool `split_words:"true" default:"false"`
+
+	// WeightedRoutePrecedence enables routes with a larger weight to take precedence over routes with a smaller weight.
+	// If two routes have the same weight, Gateway API route precedence rules apply.
+	// When enabled, the default weight for a route is 0.
+	WeightedRoutePrecedence bool `split_words:"true" default:"false"`
 }
 
 // BuildSettings returns a zero-valued Settings obj if error is encountered when parsing env

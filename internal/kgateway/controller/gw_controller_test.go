@@ -72,22 +72,7 @@ var _ = Describe("GwController", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			if gwClass != selfManagedGatewayClassName {
-				// Wait for service to be created
-				var svc corev1.Service
-				Eventually(func() bool {
-					var createdServices corev1.ServiceList
-					err := k8sClient.List(ctx, &createdServices)
-					if err != nil {
-						return false
-					}
-					for _, svc = range createdServices.Items {
-						if len(svc.ObjectMeta.OwnerReferences) == 1 && svc.ObjectMeta.OwnerReferences[0].UID == gw.UID {
-							return true
-						}
-					}
-					return false
-				}, timeout, interval).Should(BeTrue(), "service not created")
-				Expect(svc.Spec.ClusterIP).NotTo(BeEmpty())
+				svc := waitForGatewayService(ctx, &gw)
 
 				// Need to update the status of the service
 				svc.Status.LoadBalancer = corev1.LoadBalancerStatus{

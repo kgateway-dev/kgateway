@@ -105,12 +105,46 @@ func (s *testingSuite) TestBackendConfigPolicy() {
 		cfg, ok := cluster.GetTypedExtensionProtocolOptions()["envoy.extensions.upstreams.http.v3.HttpProtocolOptions"]
 		s.Assert().True(ok)
 		s.Assert().NotNil(cfg)
+		httpProtocolOptions := &envoy_upstreams_v3.HttpProtocolOptions{}
+		err = anypb.UnmarshalTo(cfg, httpProtocolOptions, proto.UnmarshalOptions{})
+		s.Assert().NoError(err)
+		s.Assert().Equal(int64(10), httpProtocolOptions.CommonHttpProtocolOptions.IdleTimeout.Seconds)
+		s.Assert().Equal(uint32(15), httpProtocolOptions.CommonHttpProtocolOptions.MaxHeadersCount.Value)
+		s.Assert().Equal(int64(30), httpProtocolOptions.CommonHttpProtocolOptions.MaxStreamDuration.Seconds)
+		s.Assert().Equal(uint32(100), httpProtocolOptions.CommonHttpProtocolOptions.MaxRequestsPerConnection.Value)
+
+		// check that a BackendConfigPolicy for HTTP2 backend is applied
+		// when only CommonHttpProtocolOptions is set
+		h2cCluster, ok := clusters["kube_default_httpbin-h2c_8080"]
+		s.Assert().True(ok)
+		s.Assert().NotNil(h2cCluster)
+		cfg, ok = h2cCluster.GetTypedExtensionProtocolOptions()["envoy.extensions.upstreams.http.v3.HttpProtocolOptions"]
+		s.Assert().True(ok)
+		s.Assert().NotNil(cfg)
 		http2ProtocolOptions := &envoy_upstreams_v3.HttpProtocolOptions{}
 		err = anypb.UnmarshalTo(cfg, http2ProtocolOptions, proto.UnmarshalOptions{})
 		s.Assert().NoError(err)
-		s.Assert().Equal(int64(10), http2ProtocolOptions.CommonHttpProtocolOptions.IdleTimeout.Seconds)
-		s.Assert().Equal(uint32(15), http2ProtocolOptions.CommonHttpProtocolOptions.MaxHeadersCount.Value)
-		s.Assert().Equal(int64(30), http2ProtocolOptions.CommonHttpProtocolOptions.MaxStreamDuration.Seconds)
-		s.Assert().Equal(uint32(100), http2ProtocolOptions.CommonHttpProtocolOptions.MaxRequestsPerConnection.Value)
+		s.Assert().NotNil(http2ProtocolOptions)
+		s.Assert().Equal(int64(12), http2ProtocolOptions.CommonHttpProtocolOptions.IdleTimeout.Seconds)
+		s.Assert().Equal(uint32(17), http2ProtocolOptions.CommonHttpProtocolOptions.MaxHeadersCount.Value)
+		s.Assert().Equal(int64(32), http2ProtocolOptions.CommonHttpProtocolOptions.MaxStreamDuration.Seconds)
+		s.Assert().Equal(uint32(102), http2ProtocolOptions.CommonHttpProtocolOptions.MaxRequestsPerConnection.Value)
+
+		// check that a BackendConfigPolicy for HTTP1 backend is applied
+		// when only CommonHttpProtocolOptions is set
+		http1Cluster, ok := clusters["kube_default_httpbin_8080"]
+		s.Assert().True(ok)
+		s.Assert().NotNil(http1Cluster)
+		cfg, ok = http1Cluster.GetTypedExtensionProtocolOptions()["envoy.extensions.upstreams.http.v3.HttpProtocolOptions"]
+		s.Assert().True(ok)
+		s.Assert().NotNil(cfg)
+		http1ProtocolOptions := &envoy_upstreams_v3.HttpProtocolOptions{}
+		err = anypb.UnmarshalTo(cfg, http1ProtocolOptions, proto.UnmarshalOptions{})
+		s.Assert().NoError(err)
+		s.Assert().NotNil(http1ProtocolOptions)
+		s.Assert().Equal(int64(11), http1ProtocolOptions.CommonHttpProtocolOptions.IdleTimeout.Seconds)
+		s.Assert().Equal(uint32(16), http1ProtocolOptions.CommonHttpProtocolOptions.MaxHeadersCount.Value)
+		s.Assert().Equal(int64(31), http1ProtocolOptions.CommonHttpProtocolOptions.MaxStreamDuration.Seconds)
+		s.Assert().Equal(uint32(101), http1ProtocolOptions.CommonHttpProtocolOptions.MaxRequestsPerConnection.Value)
 	})
 }

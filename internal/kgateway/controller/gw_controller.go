@@ -28,11 +28,16 @@ type gatewayReconciler struct {
 
 	scheme   *runtime.Scheme
 	deployer *deployer.Deployer
+	metrics  controllerMetricsRecorder
 }
 
-func (r *gatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *gatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.Result, rErr error) {
 	log := log.FromContext(ctx).WithValues("gw", req.NamespacedName)
 	log.V(1).Info("reconciling request", "req", req)
+
+	if r.metrics != nil {
+		defer r.metrics.reconcileStart()(rErr)
+	}
 
 	// check if we need to auto deploy the gateway
 	ns := req.Namespace
@@ -53,6 +58,7 @@ func (r *gatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	if err := r.cli.Get(ctx, req.NamespacedName, &gw); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
+
 	if gw.GetDeletionTimestamp() != nil {
 		// no need to do anything as we have owner refs, so children will be deleted
 		log.Info("gateway deleted, no need for reconciling")

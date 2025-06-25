@@ -6,9 +6,7 @@ import (
 
 	clusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	preserve_case_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/http/header_formatters/preserve_case/v3"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
-	envoy_upstreams_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
 	envoywellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -25,13 +23,12 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
-	translatorutils "github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
+	pluginsdkutils "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/utils"
 )
 
 const PreserveCasePlugin = "envoy.http.stateful_header_formatters.preserve_case"
@@ -165,7 +162,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 			ObjectSource: objSrc,
 			Policy:       b,
 			PolicyIR:     policyIR,
-			TargetRefs:   pluginutils.TargetRefsToPolicyRefs(b.Spec.TargetRefs, b.Spec.TargetSelectors),
+			TargetRefs:   pluginsdkutils.TargetRefsToPolicyRefs(b.Spec.TargetRefs, b.Spec.TargetSelectors),
 			Errors:       errs,
 		}
 	}, commoncol.KrtOpts.ToOptions("BackendConfigPolicyIRs")...)
@@ -182,7 +179,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 	}
 }
 
-func processBackend(_ context.Context, polir ir.PolicyIR, _ ir.BackendObjectIR, out *clusterv3.Cluster) {
+func processBackend(_ context.Context, polir ir.PolicyIR, backend ir.BackendObjectIR, out *clusterv3.Cluster) {
 	pol := polir.(*BackendConfigPolicyIR)
 	if pol.connectTimeout != nil {
 		out.ConnectTimeout = pol.connectTimeout
@@ -198,35 +195,8 @@ func processBackend(_ context.Context, polir ir.PolicyIR, _ ir.BackendObjectIR, 
 		}
 	}
 
-	if pol.commonHttpProtocolOptions != nil {
-		if err := translatorutils.MutateHttpOptions(out, func(opts *envoy_upstreams_v3.HttpProtocolOptions) {
-			opts.CommonHttpProtocolOptions = pol.commonHttpProtocolOptions
-			if opts.GetUpstreamProtocolOptions() == nil {
-				// Envoy requires UpstreamProtocolOptions if CommonHttpProtocolOptions is set.
-				opts.UpstreamProtocolOptions = &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig_{
-					ExplicitHttpConfig: &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig{
-						ProtocolConfig: &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig_HttpProtocolOptions{},
-					},
-				}
-			}
-		}); err != nil {
-			logger.Error("failed to apply common http protocol options", "error", err)
-		}
-	}
-
-	if pol.http1ProtocolOptions != nil {
-		if err := translatorutils.MutateHttpOptions(out, func(opts *envoy_upstreams_v3.HttpProtocolOptions) {
-			opts.UpstreamProtocolOptions = &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig_{
-				ExplicitHttpConfig: &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig{
-					ProtocolConfig: &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig_HttpProtocolOptions{
-						HttpProtocolOptions: pol.http1ProtocolOptions,
-					},
-				},
-			}
-		}); err != nil {
-			logger.Error("failed to apply http1 protocol options", "error", err)
-		}
-	}
+	applyCommonHttpProtocolOptions(pol.commonHttpProtocolOptions, backend, out)
+	applyHttp1ProtocolOptions(pol.http1ProtocolOptions, backend, out)
 
 	if pol.tlsConfig != nil {
 		typedConfig, err := utils.MessageToAny(pol.tlsConfig)
@@ -300,60 +270,4 @@ func translateTCPKeepalive(tcpKeepalive *v1alpha1.TCPKeepalive) *corev3.TcpKeepa
 		out.KeepaliveInterval = &wrapperspb.UInt32Value{Value: uint32(tcpKeepalive.KeepAliveInterval.Duration.Seconds())}
 	}
 	return out
-}
-
-func translateCommonHttpProtocolOptions(commonHttpProtocolOptions *v1alpha1.CommonHttpProtocolOptions) *corev3.HttpProtocolOptions {
-	out := &corev3.HttpProtocolOptions{}
-	if commonHttpProtocolOptions.MaxRequestsPerConnection != nil {
-		out.MaxRequestsPerConnection = &wrapperspb.UInt32Value{Value: uint32(*commonHttpProtocolOptions.MaxRequestsPerConnection)}
-	}
-	if commonHttpProtocolOptions.IdleTimeout != nil {
-		out.IdleTimeout = durationpb.New(commonHttpProtocolOptions.IdleTimeout.Duration)
-	}
-
-	if commonHttpProtocolOptions.MaxHeadersCount != nil {
-		out.MaxHeadersCount = &wrapperspb.UInt32Value{Value: uint32(*commonHttpProtocolOptions.MaxHeadersCount)}
-	}
-
-	if commonHttpProtocolOptions.MaxStreamDuration != nil {
-		out.MaxStreamDuration = durationpb.New(commonHttpProtocolOptions.MaxStreamDuration.Duration)
-	}
-
-	return out
-}
-
-func translateHttp1ProtocolOptions(http1ProtocolOptions *v1alpha1.Http1ProtocolOptions) (*corev3.Http1ProtocolOptions, error) {
-	out := &corev3.Http1ProtocolOptions{}
-	if http1ProtocolOptions.EnableTrailers != nil {
-		out.EnableTrailers = *http1ProtocolOptions.EnableTrailers
-	}
-
-	if http1ProtocolOptions.OverrideStreamErrorOnInvalidHttpMessage != nil {
-		out.OverrideStreamErrorOnInvalidHttpMessage = &wrapperspb.BoolValue{Value: *http1ProtocolOptions.OverrideStreamErrorOnInvalidHttpMessage}
-	}
-
-	if http1ProtocolOptions.HeaderFormat != nil {
-		switch *http1ProtocolOptions.HeaderFormat {
-		case v1alpha1.ProperCaseHeaderKeyFormat:
-			out.HeaderKeyFormat = &corev3.Http1ProtocolOptions_HeaderKeyFormat{
-				HeaderFormat: &corev3.Http1ProtocolOptions_HeaderKeyFormat_ProperCaseWords_{
-					ProperCaseWords: &corev3.Http1ProtocolOptions_HeaderKeyFormat_ProperCaseWords{},
-				},
-			}
-		case v1alpha1.PreserveCaseHeaderKeyFormat:
-			typedConfig, err := utils.MessageToAny(&preserve_case_v3.PreserveCaseFormatterConfig{})
-			if err != nil {
-				return nil, err
-			}
-			out.HeaderKeyFormat = &corev3.Http1ProtocolOptions_HeaderKeyFormat{
-				HeaderFormat: &corev3.Http1ProtocolOptions_HeaderKeyFormat_StatefulFormatter{
-					StatefulFormatter: &corev3.TypedExtensionConfig{
-						Name:        PreserveCasePlugin,
-						TypedConfig: typedConfig,
-					},
-				},
-			}
-		}
-	}
-	return out, nil
 }

@@ -20,6 +20,8 @@ Name|Version|License
 [ginkgo/v2](https://github.com/onsi/ginkgo)|v2.23.3|MIT License
 [onsi/gomega](https://github.com/onsi/gomega)|v1.36.3|MIT License
 [pkg/errors](https://github.com/pkg/errors)|v0.9.1|BSD 2-clause "Simplified" License
+[prometheus/client_golang](https://github.com/prometheus/client_golang)|v1.21.1|Apache License 2.0
+[prometheus/client_model](https://github.com/prometheus/client_model)|v0.6.2|Apache License 2.0
 [rotisserie/eris](https://github.com/rotisserie/eris)|v0.5.4|MIT License
 [spf13/afero](https://github.com/spf13/afero)|v1.14.0|Apache License 2.0
 [spf13/cobra](https://github.com/spf13/cobra)|v1.9.1|Apache License 2.0

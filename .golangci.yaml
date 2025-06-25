@@ -20,11 +20,13 @@ linters:
     - misspell
     - nakedret
     - predeclared
+    - promlinter
+    - sloglint
+    - spancheck
+    - staticcheck
     - unused
     - usestdlibvars
     - whitespace
-    - staticcheck
-    - sloglint
   settings:
     forbidigo:
       forbid:

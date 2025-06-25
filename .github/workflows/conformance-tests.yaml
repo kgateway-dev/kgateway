@@ -4,17 +4,14 @@ on:
   # TODO: Trigger on release events too.
   workflow_dispatch:
     inputs:
-      image-variant:
-        description: "The image variant to use."
-        required: true
-        type: choice
-        options:
-          - standard
-          - distroless
       version:
         description: "Optional: Specify an existing kgateway release tag to deploy and test. Leave empty to use the default branch."
         required: false
         type: string
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref_name }}
+  cancel-in-progress: true
 
 jobs:
   run-conformance-tests:
@@ -30,8 +27,6 @@ jobs:
         - node: 'v1.32.2@sha256:f226345927d7e348497136874b6d207e0b32cc52154ad8323129352923a3142f'
           kubectl: 'v1.32.2'
           kind: 'v0.27.0'
-        image-variant:
-          - ${{ inputs.image-variant }}
         version:
           - ${{ inputs.version }}
     steps:

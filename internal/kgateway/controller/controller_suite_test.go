@@ -214,7 +214,7 @@ func createManager(
 		DiscoveryNamespaceFilter: fakeDiscoveryNamespaceFilter{},
 		CommonCollections:        newCommonCols(ctx, kubeClient),
 	}
-	if err := controller.NewBaseGatewayController(parentCtx, gwCfg); err != nil {
+	if err := controller.NewBaseGatewayController(parentCtx, gwCfg, nil); err != nil {
 		cancel()
 		return nil, err
 	}
@@ -257,7 +257,7 @@ func createManager(
 		ControllerName: gatewayControllerName,
 		InferenceExt:   inferenceExt,
 	}
-	if err := controller.NewBaseInferencePoolController(parentCtx, poolCfg, &gwCfg); err != nil {
+	if err := controller.NewBaseInferencePoolController(parentCtx, poolCfg, &gwCfg, nil); err != nil {
 		cancel()
 		return nil, err
 	}
@@ -295,7 +295,7 @@ func newCommonCols(ctx context.Context, kubeClient kube.Client) *collections.Com
 	plugins = append(plugins, krtcollections.NewBuiltinPlugin(ctx))
 	extensions := registry.MergePlugins(plugins...)
 
-	commoncol.InitPlugins(ctx, extensions)
+	commoncol.InitPlugins(ctx, extensions, *settings)
 	kubeClient.RunAndWait(ctx.Done())
 	return commoncol
 }

@@ -28,6 +28,7 @@ func TestBackendConfigPolicyFlow(t *testing.T) {
 	tests := []struct {
 		name    string
 		policy  *v1alpha1.BackendConfigPolicy
+		cluster *clusterv3.Cluster
 		want    *clusterv3.Cluster
 		wantErr bool
 	}{
@@ -131,6 +132,43 @@ func TestBackendConfigPolicyFlow(t *testing.T) {
 			want:    &clusterv3.Cluster{},
 			wantErr: false,
 		},
+		{
+			name: "attempt to apply http1 protocol options to http2 backend should not apply",
+			policy: &v1alpha1.BackendConfigPolicy{
+				Spec: v1alpha1.BackendConfigPolicySpec{
+					Http1ProtocolOptions: &v1alpha1.Http1ProtocolOptions{
+						EnableTrailers: ptr.To(true),
+					},
+				},
+			},
+			cluster: &clusterv3.Cluster{
+				TypedExtensionProtocolOptions: map[string]*anypb.Any{
+					"envoy.extensions.upstreams.http.v3.HttpProtocolOptions": mustMessageToAny(t, &envoy_upstreams_http_v3.HttpProtocolOptions{
+						UpstreamProtocolOptions: &envoy_upstreams_http_v3.HttpProtocolOptions_ExplicitHttpConfig_{
+							ExplicitHttpConfig: &envoy_upstreams_http_v3.HttpProtocolOptions_ExplicitHttpConfig{
+								ProtocolConfig: &envoy_upstreams_http_v3.HttpProtocolOptions_ExplicitHttpConfig_Http2ProtocolOptions{
+									Http2ProtocolOptions: &corev3.Http2ProtocolOptions{},
+								},
+							},
+						},
+					}),
+				},
+			},
+			want: &clusterv3.Cluster{
+				TypedExtensionProtocolOptions: map[string]*anypb.Any{
+					"envoy.extensions.upstreams.http.v3.HttpProtocolOptions": mustMessageToAny(t, &envoy_upstreams_http_v3.HttpProtocolOptions{
+						UpstreamProtocolOptions: &envoy_upstreams_http_v3.HttpProtocolOptions_ExplicitHttpConfig_{
+							ExplicitHttpConfig: &envoy_upstreams_http_v3.HttpProtocolOptions_ExplicitHttpConfig{
+								ProtocolConfig: &envoy_upstreams_http_v3.HttpProtocolOptions_ExplicitHttpConfig_Http2ProtocolOptions{
+									Http2ProtocolOptions: &corev3.Http2ProtocolOptions{},
+								},
+							},
+						},
+					}),
+				},
+			},
+			wantErr: false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -144,7 +182,10 @@ func TestBackendConfigPolicyFlow(t *testing.T) {
 			require.NoError(t, err)
 
 			// Then process the backend with the translated policy
-			cluster := &clusterv3.Cluster{}
+			cluster := tt.cluster
+			if cluster == nil {
+				cluster = &clusterv3.Cluster{}
+			}
 			processBackend(context.Background(), policyIR, ir.BackendObjectIR{}, cluster)
 
 			// Compare the resulting cluster configuration

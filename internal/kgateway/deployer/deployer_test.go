@@ -295,6 +295,21 @@ var _ = Describe("Deployer", func() {
 					Kube: &gw2_v1alpha1.KubernetesProxyConfig{
 						AgentGateway: &gw2_v1alpha1.AgentGateway{
 							Enabled: ptr.To(true),
+							Image: &gw2_v1alpha1.Image{
+								Tag: ptr.To("0.4.0"),
+							},
+							SecurityContext: &corev1.SecurityContext{
+								RunAsUser: ptr.To(int64(333)),
+							},
+							Resources: &corev1.ResourceRequirements{
+								Limits: corev1.ResourceList{"cpu": resource.MustParse("101m")},
+							},
+							Env: []corev1.EnvVar{
+								{
+									Name:  "test",
+									Value: "value",
+								},
+							},
 						},
 					},
 				},
@@ -346,6 +361,7 @@ var _ = Describe("Deployer", func() {
 				},
 			}
 
+			gwp := deployer.NewGatewayParameters(newFakeClientWithObjs(gwc, gwParams))
 			d, err := deployer.NewDeployer(newFakeClientWithObjs(gwc, gwParams), &deployer.Inputs{
 				CommonCollections: newCommonCols(GinkgoT(), gwc, gw),
 				ControllerName:    wellknown.GatewayControllerName,
@@ -358,7 +374,7 @@ var _ = Describe("Deployer", func() {
 					Registry: "foo",
 					Tag:      "bar",
 				},
-			})
+			}, gwp)
 			Expect(err).NotTo(HaveOccurred())
 
 			var objs clientObjects
@@ -418,6 +434,7 @@ var _ = Describe("Deployer", func() {
 				},
 			}
 			var err error
+			gwParams := deployer.NewGatewayParameters(newFakeClientWithObjs(gwc, gwp))
 			d, err = deployer.NewDeployer(newFakeClientWithObjs(gwc, gwp), &deployer.Inputs{
 				CommonCollections: newCommonCols(GinkgoT(), gwc, gw),
 				ControllerName:    wellknown.GatewayControllerName,
@@ -430,7 +447,7 @@ var _ = Describe("Deployer", func() {
 					Registry: "foo",
 					Tag:      "bar",
 				},
-			})
+			}, gwParams)
 			Expect(err).NotTo(HaveOccurred())
 
 			objs, err := d.GetObjsToDeploy(context.Background(), gw)
@@ -483,6 +500,7 @@ var _ = Describe("Deployer", func() {
 					}},
 				},
 			}
+			gwParams := deployer.NewGatewayParameters(newFakeClientWithObjs(gwc, gwp))
 			d, err := deployer.NewDeployer(newFakeClientWithObjs(gwc, gwp), &deployer.Inputs{
 				CommonCollections: newCommonCols(GinkgoT(), gwc, gw),
 				ControllerName:    wellknown.GatewayControllerName,
@@ -495,7 +513,7 @@ var _ = Describe("Deployer", func() {
 					Registry: "foo",
 					Tag:      "bar",
 				},
-			})
+			}, gwParams)
 			Expect(err).NotTo(HaveOccurred())
 
 			var objs clientObjects
@@ -504,7 +522,18 @@ var _ = Describe("Deployer", func() {
 			// check the image is using the agentgateway image
 			deployment := objs.findDeployment(defaultNamespace, "agent-gateway")
 			Expect(deployment).ToNot(BeNil())
+			// check the image uses the override tag
 			Expect(deployment.Spec.Template.Spec.Containers[0].Image).To(ContainSubstring("agentgateway"))
+			Expect(deployment.Spec.Template.Spec.Containers[0].Image).To(ContainSubstring("0.4.0"))
+			// check security context and resource requirements are correctly set
+			expectedSecurityContext := deployment.Spec.Template.Spec.Containers[0].SecurityContext
+			Expect(expectedSecurityContext).ToNot(BeNil())
+			Expect(expectedSecurityContext.RunAsUser).ToNot(BeNil())
+			Expect(*expectedSecurityContext.RunAsUser).To(Equal(int64(333)))
+			Expect(deployment.Spec.Template.Spec.Containers[0].Resources.Limits.Cpu().Equal(resource.MustParse("101m"))).To(BeTrue())
+			// check env values are appended to the end of the list
+			Expect(deployment.Spec.Template.Spec.Containers[0].Env[6].Name).To(Equal("test"))
+			Expect(deployment.Spec.Template.Spec.Containers[0].Env[6].Value).To(Equal("value"))
 			// check the service is using the agentgateway port
 			svc := objs.findService(defaultNamespace, "agent-gateway")
 			Expect(svc).ToNot(BeNil())
@@ -514,7 +543,6 @@ var _ = Describe("Deployer", func() {
 			Expect(cm).ToNot(BeNil())
 			Expect(cm.Data["config.json"]).To(ContainSubstring(`"xds_address": "http://something.cluster.local:1234"`))
 			Expect(cm.Data["config.json"]).To(ContainSubstring(`"alt_xds_hostname": "agent-gateway.default.svc.cluster.local"`))
-
 		})
 	})
 
@@ -524,6 +552,7 @@ var _ = Describe("Deployer", func() {
 		)
 		BeforeEach(func() {
 			var err error
+			gwParams := deployer.NewGatewayParameters(newFakeClientWithObjs(defaultGatewayClass(), defaultGatewayParams()))
 			d, err = deployer.NewDeployer(newFakeClientWithObjs(defaultGatewayClass(), defaultGatewayParams()), &deployer.Inputs{
 				CommonCollections: newCommonCols(GinkgoT()),
 				ControllerName:    wellknown.GatewayControllerName,
@@ -536,7 +565,7 @@ var _ = Describe("Deployer", func() {
 					Registry: "foo",
 					Tag:      "bar",
 				},
-			})
+			}, gwParams)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
@@ -592,6 +621,7 @@ var _ = Describe("Deployer", func() {
 				},
 			}
 
+			gwParams1 := deployer.NewGatewayParameters(newFakeClientWithObjs(gwc, defaultGatewayParams()))
 			d1, err := deployer.NewDeployer(newFakeClientWithObjs(gwc, defaultGatewayParams()), &deployer.Inputs{
 				CommonCollections: newCommonCols(GinkgoT(), gwc, gw1, gw2),
 				ControllerName:    wellknown.GatewayControllerName,
@@ -604,9 +634,10 @@ var _ = Describe("Deployer", func() {
 					Registry: "foo",
 					Tag:      "bar",
 				},
-			})
+			}, gwParams1)
 			Expect(err).NotTo(HaveOccurred())
 
+			gwParams2 := deployer.NewGatewayParameters(newFakeClientWithObjs(gwc, defaultGatewayParams()))
 			d2, err := deployer.NewDeployer(newFakeClientWithObjs(gwc, defaultGatewayParams()), &deployer.Inputs{
 				CommonCollections: newCommonCols(GinkgoT(), gwc, gw1, gw2),
 				ControllerName:    wellknown.GatewayControllerName,
@@ -619,7 +650,7 @@ var _ = Describe("Deployer", func() {
 					Registry: "foo",
 					Tag:      "bar",
 				},
-			})
+			}, gwParams2)
 			Expect(err).NotTo(HaveOccurred())
 
 			var objs1, objs2 clientObjects
@@ -667,6 +698,7 @@ var _ = Describe("Deployer", func() {
 				},
 			}
 
+			gwParams := deployer.NewGatewayParameters(newFakeClientWithObjs(defaultGatewayClass()))
 			d, err := deployer.NewDeployer(newFakeClientWithObjs(defaultGatewayClass()), &deployer.Inputs{
 				CommonCollections: newCommonCols(GinkgoT(), defaultGatewayClass(), gw),
 				ControllerName:    wellknown.GatewayControllerName,
@@ -679,11 +711,11 @@ var _ = Describe("Deployer", func() {
 					Registry: "foo",
 					Tag:      "bar",
 				},
-			})
+			}, gwParams)
 			Expect(err).NotTo(HaveOccurred())
 
 			_, err = d.GetObjsToDeploy(context.Background(), gw)
-			Expect(err).To(MatchError(`invalid group invalid.group for GatewayParameters`))
+			Expect(err).To(MatchError(ContainSubstring("invalid group invalid.group for GatewayParameters")))
 		})
 
 		It("rejects invalid kind in spec.infrastructure.parametersRef", func() {
@@ -705,6 +737,7 @@ var _ = Describe("Deployer", func() {
 				},
 			}
 
+			gwParams := deployer.NewGatewayParameters(newFakeClientWithObjs(defaultGatewayClass()))
 			d, err := deployer.NewDeployer(newFakeClientWithObjs(defaultGatewayClass()), &deployer.Inputs{
 				CommonCollections: newCommonCols(GinkgoT(), defaultGatewayClass(), gw),
 				ControllerName:    wellknown.GatewayControllerName,
@@ -717,11 +750,11 @@ var _ = Describe("Deployer", func() {
 					Registry: "foo",
 					Tag:      "bar",
 				},
-			})
+			}, gwParams)
 			Expect(err).NotTo(HaveOccurred())
 
 			_, err = d.GetObjsToDeploy(context.Background(), gw)
-			Expect(err).To(MatchError(`invalid kind InvalidKind for GatewayParameters`))
+			Expect(err).To(MatchError(ContainSubstring("invalid kind InvalidKind for GatewayParameters")))
 		})
 	})
 
@@ -762,6 +795,7 @@ var _ = Describe("Deployer", func() {
 					},
 				}
 
+				gwParams := deployer.NewGatewayParameters(newFakeClientWithObjs(gwc))
 				d, err = deployer.NewDeployer(newFakeClientWithObjs(gwc), &deployer.Inputs{
 					CommonCollections: newCommonCols(GinkgoT(), gwc, gw),
 					ControllerName:    wellknown.GatewayControllerName,
@@ -774,7 +808,7 @@ var _ = Describe("Deployer", func() {
 						Registry: registry,
 						Tag:      tag,
 					},
-				})
+				}, gwParams)
 				Expect(err).NotTo(HaveOccurred())
 
 				objs, err = d.GetObjsToDeploy(context.Background(), gw)
@@ -846,6 +880,7 @@ var _ = Describe("Deployer", func() {
 					},
 				}
 				gwc := defaultGatewayClass()
+				gwParams := deployer.NewGatewayParameters(newFakeClientWithObjs(gwc, gwp))
 				d, err = deployer.NewDeployer(newFakeClientWithObjs(gwc, gwp), &deployer.Inputs{
 					CommonCollections: newCommonCols(GinkgoT(), gwc, gw),
 					ControllerName:    wellknown.GatewayControllerName,
@@ -858,7 +893,7 @@ var _ = Describe("Deployer", func() {
 						Registry: registry,
 						Tag:      tag,
 					},
-				})
+				}, gwParams)
 				Expect(err).NotTo(HaveOccurred())
 
 				objs, err = d.GetObjsToDeploy(context.Background(), gw)
@@ -938,6 +973,7 @@ var _ = Describe("Deployer", func() {
 						}},
 					},
 				}
+				gwParams := deployer.NewGatewayParameters(newFakeClientWithObjs(gwc, gwp))
 				d, err = deployer.NewDeployer(newFakeClientWithObjs(gwc, gwp), &deployer.Inputs{
 					CommonCollections: newCommonCols(GinkgoT(), gwc, gw),
 					ControllerName:    wellknown.GatewayControllerName,
@@ -950,7 +986,7 @@ var _ = Describe("Deployer", func() {
 						Registry: registry,
 						Tag:      tag,
 					},
-				})
+				}, gwParams)
 				Expect(err).NotTo(HaveOccurred())
 
 				objs, err = d.GetObjsToDeploy(context.Background(), gw)
@@ -1237,6 +1273,17 @@ var _ = Describe("Deployer", func() {
 				return params
 			}
 
+			fullyDefinedGatewayParamsWithCustomEnv = func() *gw2_v1alpha1.GatewayParameters {
+				params := fullyDefinedGatewayParameters(wellknown.DefaultGatewayParametersName, defaultNamespace)
+				params.Spec.Kube.EnvoyContainer.Env = []corev1.EnvVar{
+					{
+						Name:  "CUSTOM_ENV",
+						Value: "abcd",
+					},
+				}
+				return params
+			}
+
 			fullyDefinedGatewayParamsWithFloatingUserId = func() *gw2_v1alpha1.GatewayParameters {
 				params := fullyDefinedGatewayParameters(wellknown.DefaultGatewayParametersName, defaultNamespace)
 				params.Spec.Kube.FloatingUserId = ptr.To(true)
@@ -1501,6 +1548,22 @@ var _ = Describe("Deployer", func() {
 			return nil
 		}
 
+		fullyDefinedValidationCustomEnv := func(objs clientObjects, inp *input) error {
+			err := fullyDefinedValidationWithoutRunAsUser(objs, inp)
+			if err != nil {
+				return err
+			}
+
+			envoyContainer := objs.findDeployment(defaultNamespace, defaultDeploymentName).Spec.Template.Spec.Containers[0]
+			Expect(envoyContainer.Env).To(ContainElement(corev1.EnvVar{
+				Name:      "CUSTOM_ENV",
+				Value:     "abcd",
+				ValueFrom: nil,
+			}))
+
+			return nil
+		}
+
 		fullyDefinedValidationFloatingUserId := func(objs clientObjects, inp *input) error {
 			err := fullyDefinedValidationWithoutRunAsUser(objs, inp)
 			if err != nil {
@@ -1657,7 +1720,8 @@ var _ = Describe("Deployer", func() {
 				overrideGwp = &gw2_v1alpha1.GatewayParameters{}
 			}
 
-			d, err := deployer.NewDeployer(newFakeClientWithObjs(gwc, defaultGwp, overrideGwp), inp.dInputs)
+			gwParams := deployer.NewGatewayParameters(newFakeClientWithObjs(gwc, defaultGwp, overrideGwp))
+			d, err := deployer.NewDeployer(newFakeClientWithObjs(gwc, defaultGwp, overrideGwp), inp.dInputs, gwParams)
 			if checkErr(err, expected.newDeployerErr) {
 				return
 			}
@@ -1693,6 +1757,13 @@ var _ = Describe("Deployer", func() {
 				defaultGwp: fullyDefinedGatewayParamsWithProbes(),
 			}, &expectedOutput{
 				validationFunc: fullyDefinedValidationWithProbes,
+			}),
+			Entry("Fully defined GatewayParameters with custom env vars", &input{
+				dInputs:    istioEnabledDeployerInputs(),
+				gw:         defaultGateway(),
+				defaultGwp: fullyDefinedGatewayParamsWithCustomEnv(),
+			}, &expectedOutput{
+				validationFunc: fullyDefinedValidationCustomEnv,
 			}),
 
 			Entry("Fully defined GatewayParameters with floating user id", &input{
@@ -1985,6 +2056,7 @@ var _ = Describe("Deployer", func() {
 			}
 
 			// Initialize a new deployer with InferenceExtension inputs.
+			gwParams := deployer.NewGatewayParameters(newFakeClientWithObjs(pool))
 			d, err := deployer.NewDeployer(newFakeClientWithObjs(pool), &deployer.Inputs{
 				CommonCollections:  newCommonCols(GinkgoT()),
 				ControllerName:     wellknown.GatewayControllerName,
@@ -1993,7 +2065,7 @@ var _ = Describe("Deployer", func() {
 					Registry: "foo",
 					Tag:      "bar",
 				},
-			})
+			}, gwParams)
 			Expect(err).NotTo(HaveOccurred())
 
 			// Simulate reconciliation so that the pool gets its finalizer added.
@@ -2083,10 +2155,11 @@ var _ = Describe("Deployer", func() {
 			}
 
 			// Initialize a new deployer without InferenceExtension inputs.
+			gwParams := deployer.NewGatewayParameters(newFakeClientWithObjs(pool))
 			d, err := deployer.NewDeployer(newFakeClientWithObjs(pool), &deployer.Inputs{
 				CommonCollections: newCommonCols(GinkgoT()),
 				ControllerName:    wellknown.GatewayControllerName,
-			})
+			}, gwParams)
 			Expect(err).NotTo(HaveOccurred())
 
 			// Getting endpoint picker objects for the InferencePool should return an error.
@@ -2151,6 +2224,7 @@ var _ = Describe("Deployer", func() {
 				},
 			}
 
+			gwParams := deployer.NewGatewayParameters(newFakeClientWithObjs(defaultGatewayClass(), defaultGatewayParams()))
 			d, err := deployer.NewDeployer(newFakeClientWithObjs(defaultGatewayClass(), defaultGatewayParams()), &deployer.Inputs{
 				CommonCollections: newCommonCols(GinkgoT(), defaultGatewayClass(), gw, ls),
 				ControllerName:    wellknown.GatewayControllerName,
@@ -2162,7 +2236,7 @@ var _ = Describe("Deployer", func() {
 					Registry: "foo",
 					Tag:      "bar",
 				},
-			})
+			}, gwParams)
 			Expect(err).NotTo(HaveOccurred())
 
 			var objs clientObjects

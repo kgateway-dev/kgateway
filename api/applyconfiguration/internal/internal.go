@@ -131,9 +131,24 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: enabled
       type:
         scalar: boolean
+    - name: env
+      type:
+        list:
+          elementType:
+            namedType: io.k8s.api.core.v1.EnvVar
+          elementRelationship: atomic
+    - name: image
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Image
     - name: logLevel
       type:
         scalar: string
+    - name: resources
+      type:
+        namedType: io.k8s.api.core.v1.ResourceRequirements
+    - name: securityContext
+      type:
+        namedType: io.k8s.api.core.v1.SecurityContext
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AiExtension
   map:
     fields:
@@ -577,6 +592,12 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: bootstrap
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.EnvoyBootstrap
+    - name: env
+      type:
+        list:
+          elementType:
+            namedType: io.k8s.api.core.v1.EnvVar
+          elementRelationship: atomic
     - name: image
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Image

@@ -21,6 +21,7 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/query"
@@ -1138,7 +1139,7 @@ func newQueries(t test.Failer, initObjs ...client.Object) query.GatewayQueries {
 	tcpproutes := krttest.GetMockCollection[*gwv1a2.TCPRoute](mock)
 	tlsroutes := krttest.GetMockCollection[*gwv1a2.TLSRoute](mock)
 	grpcroutes := krttest.GetMockCollection[*gwv1.GRPCRoute](mock)
-	rtidx := krtcollections.NewRoutesIndex(krtutil.KrtOptions{}, httproutes, grpcroutes, tcpproutes, tlsroutes, policies, upstreams, refgrants)
+	rtidx := krtcollections.NewRoutesIndex(krtutil.KrtOptions{}, httproutes, grpcroutes, tcpproutes, tlsroutes, policies, upstreams, refgrants, settings.Settings{})
 	services.WaitUntilSynced(nil)
 
 	secretsCol := map[schema.GroupKind]krt.Collection[ir.Secret]{

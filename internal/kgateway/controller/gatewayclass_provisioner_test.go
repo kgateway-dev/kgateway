@@ -137,6 +137,13 @@ var _ = Describe("GatewayClassProvisioner", func() {
 
 		It("should be recreated by the provisioner", func() {
 			By("deleting the default GCs")
+
+			// wait for the default GCs to be created, especially needed if this is the first test to run
+			gc := &apiv1.GatewayClass{}
+			Eventually(func() error {
+				return k8sClient.Get(ctx, types.NamespacedName{Name: gatewayClassName}, gc)
+			}, timeout, interval).Should(Succeed())
+
 			for name := range gwClasses {
 				err := k8sClient.Delete(ctx, &apiv1.GatewayClass{ObjectMeta: metav1.ObjectMeta{Name: name}})
 				Expect(err).NotTo(HaveOccurred())
