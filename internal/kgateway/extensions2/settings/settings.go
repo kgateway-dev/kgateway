@@ -1,8 +1,38 @@
 package settings
 
 import (
+	"fmt"
+
 	"github.com/kelseyhightower/envconfig"
 )
+
+// DnsLookupFamily controls the DNS lookup family for all static clusters created via Backend resources.
+type DnsLookupFamily string
+
+const (
+	// DnsLookupFamilyV4Preferred is the default value for DnsLookupFamily.
+	DnsLookupFamilyV4Preferred DnsLookupFamily = "V4_PREFERRED"
+	// DnsLookupFamilyV4Only is the value for DnsLookupFamily that disables IPv6.
+	DnsLookupFamilyV4Only DnsLookupFamily = "V4_ONLY"
+	// DnsLookupFamilyV6Only is the value for DnsLookupFamily that disables IPv4.
+	DnsLookupFamilyV6Only DnsLookupFamily = "V6_ONLY"
+	// DnsLookupFamilyAll is the value for DnsLookupFamily that enables both IPv4 and IPv6.
+	DnsLookupFamilyAll DnsLookupFamily = "ALL"
+	// DnsLookupFamilyAuto is the value for DnsLookupFamily that enables both IPv4 and IPv6.
+	DnsLookupFamilyAuto DnsLookupFamily = "AUTO"
+)
+
+// Decode implements envconfig.Decoder.
+func (m *DnsLookupFamily) Decode(value string) error {
+	mode := DnsLookupFamily(value)
+	switch mode {
+	case DnsLookupFamilyV4Preferred, DnsLookupFamilyV4Only, DnsLookupFamilyV6Only, DnsLookupFamilyAll, DnsLookupFamilyAuto:
+		*m = mode
+		return nil
+	default:
+		return fmt.Errorf("invalid DNS lookup family: %q", value)
+	}
+}
 
 type Settings struct {
 	// Controls the DnsLookupFamily for all static clusters created via Backend resources.
@@ -11,7 +41,7 @@ type Settings struct {
 	// Supported values are: "ALL", "AUTO", "V4_PREFERRED", "V4_ONLY", "V6_ONLY"
 	// Details on the behavior of these options are available on the Envoy documentation:
 	// https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/cluster/v3/cluster.proto#enum-config-cluster-v3-cluster-dnslookupfamily
-	DnsLookupFamily string `split_words:"true" default:"V4_PREFERRED"`
+	DnsLookupFamily DnsLookupFamily `split_words:"true" default:"V4_PREFERRED"`
 
 	// Controls the listener bind address. Can be either V4 or V6
 	ListenerBindIpv6 bool `split_words:"true" default:"true"`

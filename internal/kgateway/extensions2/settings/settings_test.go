@@ -30,7 +30,7 @@ func TestSettings(t *testing.T) {
 			name:    "defaults to empty or default values",
 			envVars: map[string]string{},
 			expectedSettings: &settings.Settings{
-				DnsLookupFamily:             "V4_PREFERRED",
+				DnsLookupFamily:             settings.DnsLookupFamilyV4Preferred,
 				EnableIstioIntegration:      false,
 				EnableIstioAutoMtls:         false,
 				ListenerBindIpv6:            true,
@@ -53,7 +53,7 @@ func TestSettings(t *testing.T) {
 		{
 			name: "all values set",
 			envVars: map[string]string{
-				"KGW_DNS_LOOKUP_FAMILY":             "V4_ONLY",
+				"KGW_DNS_LOOKUP_FAMILY":             string(settings.DnsLookupFamilyV4Only),
 				"KGW_ENABLE_ISTIO_INTEGRATION":      "true",
 				"KGW_ENABLE_ISTIO_AUTO_MTLS":        "true",
 				"KGW_LISTENER_BIND_IPV6":            "false",
@@ -75,7 +75,7 @@ func TestSettings(t *testing.T) {
 				"KGW_ENABLE_AGENT_GATEWAY":          "true",
 			},
 			expectedSettings: &settings.Settings{
-				DnsLookupFamily:             "V4_ONLY",
+				DnsLookupFamily:             settings.DnsLookupFamilyV4Only,
 				ListenerBindIpv6:            false,
 				EnableIstioIntegration:      true,
 				EnableIstioAutoMtls:         true,
@@ -111,6 +111,13 @@ func TestSettings(t *testing.T) {
 			expectedErrorStr: "invalid syntax",
 		},
 		{
+			name: "errors on invalid dns lookup family",
+			envVars: map[string]string{
+				"KGW_DNS_LOOKUP_FAMILY": "invalid",
+			},
+			expectedErrorStr: `invalid DNS lookup family: "invalid"`,
+		},
+		{
 			name: "ignores other env vars",
 			envVars: map[string]string{
 				"KGW_DOES_NOT_EXIST":         "true",
@@ -118,7 +125,7 @@ func TestSettings(t *testing.T) {
 				"KGW_ENABLE_ISTIO_AUTO_MTLS": "true",
 			},
 			expectedSettings: &settings.Settings{
-				DnsLookupFamily:             "V4_PREFERRED",
+				DnsLookupFamily:             settings.DnsLookupFamilyV4Preferred,
 				EnableIstioAutoMtls:         true,
 				ListenerBindIpv6:            true,
 				IstioNamespace:              "istio-system",
