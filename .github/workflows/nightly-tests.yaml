@@ -41,6 +41,10 @@ on:
       #   required: false
       #   default: '^Test'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref_name }}
+  cancel-in-progress: true
+
 # TODO(tim): Add back in main branch tests once they're green.
 # TODO(tim): Evaluate whether we want to publish nightly results to Slack.
 jobs:

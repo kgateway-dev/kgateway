@@ -9,6 +9,10 @@ env:
   VERSION: '1.0.0-ci1'
   GITHUB_TOKEN: ${{ github.token }}
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref_name }}
+  cancel-in-progress: true
+
 jobs:
   end_to_end_tests:
     name: End-to-End (${{ matrix.test.cluster-name }})
