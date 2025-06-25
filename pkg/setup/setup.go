@@ -4,11 +4,12 @@ import (
 	"context"
 
 	xdsserver "github.com/envoyproxy/go-control-plane/pkg/server/v3"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/deployer"
 	core "github.com/kgateway-dev/kgateway/v2/internal/kgateway/setup"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	common "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type Options struct {
