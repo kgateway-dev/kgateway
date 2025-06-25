@@ -133,7 +133,7 @@ func InitCollections(
 		gwResourceMetricEventHandler(o, "Gateway")
 	})
 
-	kubeRawListenerSets := krt.WrapClient(kclient.NewDelayedInformer[*gwxv1a1.XListenerSet](istioClient, wellknown.XListenerSetGVR, kubetypes.StandardInformer, kclient.Filter{}), krtopts.ToOptions("KubeListenerSets")...)
+	kubeRawListenerSets := krt.WrapClient(kclient.NewDelayedInformer[*gwxv1a1.XListenerSet](istioClient, wellknown.XListenerSetGVR, kubetypes.StandardInformer, filter), krtopts.ToOptions("KubeListenerSets")...)
 	metrics.RegisterEvents(kubeRawListenerSets, func(o krt.Event[*gwxv1a1.XListenerSet]) {
 		gwResourceMetricEventHandler(o, "XListenerSet")
 	})

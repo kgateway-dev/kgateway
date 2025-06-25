@@ -15,6 +15,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/config"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	infextv1a2 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
@@ -69,7 +70,8 @@ type StartConfig struct {
 	RestConfig *rest.Config
 	// ExtensionsFactory is the factory function which will return an extensions.K8sGatewayExtensions
 	// This is responsible for producing the extension points that this controller requires
-	ExtraPlugins func(ctx context.Context, commoncol *common.CommonCollections) []sdk.Plugin
+	ExtraPlugins           func(ctx context.Context, commoncol *common.CommonCollections) []sdk.Plugin
+	ExtraGatewayParameters func(cli client.Client, inputs *deployer.Inputs) []deployer.ExtraGatewayParameters
 
 	Client istiokube.Client
 
@@ -291,7 +293,7 @@ func (c *ControllerBuilder) Start(ctx context.Context) error {
 	}
 
 	setupLog.Info("creating base gateway controller")
-	if err := NewBaseGatewayController(ctx, gwCfg); err != nil {
+	if err := NewBaseGatewayController(ctx, gwCfg, c.cfg.ExtraGatewayParameters); err != nil {
 		setupLog.Error(err, "unable to create gateway controller")
 		return err
 	}
@@ -309,7 +311,7 @@ func (c *ControllerBuilder) Start(ctx context.Context) error {
 		if globalSettings.InferExtAutoProvision {
 			poolCfg.InferenceExt = new(deployer.InferenceExtInfo)
 		}
-		if err := NewBaseInferencePoolController(ctx, poolCfg, &gwCfg); err != nil {
+		if err := NewBaseInferencePoolController(ctx, poolCfg, &gwCfg, c.cfg.ExtraGatewayParameters); err != nil {
 			setupLog.Error(err, "unable to create inferencepool controller")
 			return err
 		}

@@ -2,11 +2,19 @@
 
 package v1alpha1
 
+import (
+	v1 "k8s.io/api/core/v1"
+)
+
 // AgentGatewayApplyConfiguration represents a declarative configuration of the AgentGateway type for use
 // with apply.
 type AgentGatewayApplyConfiguration struct {
-	Enabled  *bool   `json:"enabled,omitempty"`
-	LogLevel *string `json:"logLevel,omitempty"`
+	Enabled         *bool                    `json:"enabled,omitempty"`
+	LogLevel        *string                  `json:"logLevel,omitempty"`
+	Image           *ImageApplyConfiguration `json:"image,omitempty"`
+	SecurityContext *v1.SecurityContext      `json:"securityContext,omitempty"`
+	Resources       *v1.ResourceRequirements `json:"resources,omitempty"`
+	Env             []v1.EnvVar              `json:"env,omitempty"`
 }
 
 // AgentGatewayApplyConfiguration constructs a declarative configuration of the AgentGateway type for use with
@@ -28,5 +36,39 @@ func (b *AgentGatewayApplyConfiguration) WithEnabled(value bool) *AgentGatewayAp
 // If called multiple times, the LogLevel field is set to the value of the last call.
 func (b *AgentGatewayApplyConfiguration) WithLogLevel(value string) *AgentGatewayApplyConfiguration {
 	b.LogLevel = &value
+	return b
+}
+
+// WithImage sets the Image field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Image field is set to the value of the last call.
+func (b *AgentGatewayApplyConfiguration) WithImage(value *ImageApplyConfiguration) *AgentGatewayApplyConfiguration {
+	b.Image = value
+	return b
+}
+
+// WithSecurityContext sets the SecurityContext field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the SecurityContext field is set to the value of the last call.
+func (b *AgentGatewayApplyConfiguration) WithSecurityContext(value v1.SecurityContext) *AgentGatewayApplyConfiguration {
+	b.SecurityContext = &value
+	return b
+}
+
+// WithResources sets the Resources field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Resources field is set to the value of the last call.
+func (b *AgentGatewayApplyConfiguration) WithResources(value v1.ResourceRequirements) *AgentGatewayApplyConfiguration {
+	b.Resources = &value
+	return b
+}
+
+// WithEnv adds the given value to the Env field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the Env field.
+func (b *AgentGatewayApplyConfiguration) WithEnv(values ...v1.EnvVar) *AgentGatewayApplyConfiguration {
+	for i := range values {
+		b.Env = append(b.Env, values[i])
+	}
 	return b
 }
