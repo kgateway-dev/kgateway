@@ -3,8 +3,9 @@
 package v1alpha1
 
 import (
-	apiv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	apiv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 )
 
 // HTTPListenerPolicySpecApplyConfiguration represents a declarative configuration of the HTTPListenerPolicySpec type for use
