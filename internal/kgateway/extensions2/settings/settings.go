@@ -11,14 +11,24 @@ type DnsLookupFamily string
 
 const (
 	// DnsLookupFamilyV4Preferred is the default value for DnsLookupFamily.
+	// The DNS resolver will first perform a lookup for addresses in the IPv4 family
+	// and fallback to a lookup for addresses in the IPv6 family. The callback target
+	// will only get v6 addresses if there were no v4 addresses to return.
 	DnsLookupFamilyV4Preferred DnsLookupFamily = "V4_PREFERRED"
-	// DnsLookupFamilyV4Only is the value for DnsLookupFamily that disables IPv6.
+	// DnsLookupFamilyV4Only is the value for DnsLookupFamily that only performs
+	// DNS lookups for addresses in the IPv4 family.
 	DnsLookupFamilyV4Only DnsLookupFamily = "V4_ONLY"
-	// DnsLookupFamilyV6Only is the value for DnsLookupFamily that disables IPv4.
+	// DnsLookupFamilyV6Only is the value for DnsLookupFamily that only performs
+	// DNS lookups for addresses in the IPv6 family.
 	DnsLookupFamilyV6Only DnsLookupFamily = "V6_ONLY"
-	// DnsLookupFamilyAll is the value for DnsLookupFamily that enables both IPv4 and IPv6.
+	// DnsLookupFamilyAll is the value for DnsLookupFamily that performs lookups
+	// for both IPv4 and IPv6 families and returns all resolved addresses.
 	DnsLookupFamilyAll DnsLookupFamily = "ALL"
-	// DnsLookupFamilyAuto is the value for DnsLookupFamily that enables both IPv4 and IPv6.
+	// DnsLookupFamilyAuto is the value for DnsLookupFamily that first performs
+	// a lookup for addresses in the IPv6 family and falls back to a lookup for
+	// addresses in the IPv4 family. This is semantically equivalent to a
+	// non-existent V6_PREFERRED option and is a legacy name that will be
+	// deprecated in favor of V6_PREFERRED in a future major version.
 	DnsLookupFamilyAuto DnsLookupFamily = "AUTO"
 )
 
