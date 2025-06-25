@@ -11,7 +11,7 @@ env:
 
 jobs:
   kube_gateway_api_conformance_tests:
-    name: kubernetes gateway api conformance tests (standard)
+    name: kubernetes gateway api conformance tests (${{matrix.image-variant}})
     runs-on: ubuntu-22.04
     timeout-minutes: 60
     if: ${{ !github.event.pull_request.draft }}
@@ -19,6 +19,8 @@ jobs:
       fail-fast: false
       matrix:
         kube-version: [ { node: 'v1.32.2@sha256:f226345927d7e348497136874b6d207e0b32cc52154ad8323129352923a3142f', kubectl: 'v1.32.2', kind: 'v0.27.0' } ]
+        image-variant:
+          - standard
     steps:
     - uses: actions/checkout@v4
     - id: run-tests
