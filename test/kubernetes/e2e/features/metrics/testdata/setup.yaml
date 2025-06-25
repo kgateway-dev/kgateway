@@ -62,7 +62,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: kgateway
+  name: kgateway-metrics
   namespace: kgateway-test
 spec:
   selector:

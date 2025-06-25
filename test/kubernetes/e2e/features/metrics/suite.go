@@ -37,7 +37,7 @@ func (s *testingSuite) checkPodsRunning() {
 	s.TestInstallation.Assertions.EventuallyPodsRunning(s.Ctx, proxyObjectMeta.GetNamespace(), metav1.ListOptions{
 		LabelSelector: "app.kubernetes.io/name=gw1",
 	})
-	s.TestInstallation.Assertions.EventuallyPodsRunning(s.Ctx, kgatewayObjectMeta.GetNamespace(), metav1.ListOptions{
+	s.TestInstallation.Assertions.EventuallyPodsRunning(s.Ctx, kgatewayMetricsObjectMeta.GetNamespace(), metav1.ListOptions{
 		LabelSelector: "app.kubernetes.io/name=kgateway",
 	})
 }
@@ -64,7 +64,7 @@ func (s *testingSuite) TestMetrics() {
 		s.Ctx,
 		e2edefaults.CurlPodExecOpt,
 		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(kgatewayObjectMeta)),
+			curl.WithHost(kubeutils.ServiceFQDN(kgatewayMetricsObjectMeta)),
 			curl.WithPort(9092),
 			curl.WithPath("/metrics"),
 		},
@@ -106,7 +106,7 @@ func (s *testingSuite) TestResourceCountingMetrics() {
 		s.Ctx,
 		e2edefaults.CurlPodExecOpt,
 		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(kgatewayObjectMeta)),
+			curl.WithHost(kubeutils.ServiceFQDN(kgatewayMetricsObjectMeta)),
 			curl.WithPort(9092),
 			curl.WithPath("/metrics"),
 		},

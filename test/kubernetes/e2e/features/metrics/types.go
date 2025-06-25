@@ -31,12 +31,12 @@ var (
 	proxyService        = &corev1.Service{ObjectMeta: proxyObjectMeta}
 	proxyServiceAccount = &corev1.ServiceAccount{ObjectMeta: proxyObjectMeta}
 
-	kgatewayObjectMeta = metav1.ObjectMeta{
-		Name:      "kgateway",
+	kgatewayMetricsObjectMeta = metav1.ObjectMeta{
+		Name:      "kgateway-metrics",
 		Namespace: "kgateway-test",
 	}
 
-	kgatewayService = &corev1.Service{ObjectMeta: kgatewayObjectMeta}
+	kgatewayMetricsService = &corev1.Service{ObjectMeta: kgatewayMetricsObjectMeta}
 
 	exampleSvc = &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
@@ -61,7 +61,7 @@ var (
 
 	setup = base.SimpleTestCase{
 		Manifests: []string{setupManifest, e2edefaults.CurlPodManifest},
-		Resources: []client.Object{kgatewayService, exampleSvc, proxyDeployment, proxyService, proxyServiceAccount, nginxPod, e2edefaults.CurlPod},
+		Resources: []client.Object{kgatewayMetricsService, exampleSvc, proxyDeployment, proxyService, proxyServiceAccount, nginxPod, e2edefaults.CurlPod},
 	}
 
 	gw2 = &apiv1.Gateway{
