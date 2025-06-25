@@ -485,7 +485,6 @@ require (
 	github.com/ryanrolds/sqlclosecheck v0.5.1 // indirect
 	github.com/sagikazarmark/locafero v0.6.0 // indirect
 	github.com/sagikazarmark/slog-shim v0.1.0 // indirect
-	github.com/saiskee/gettercheck v0.0.0-20210820204958-38443d06ebe0 // indirect
 	github.com/sanposhiho/wastedassign/v2 v2.1.0 // indirect
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.1 // indirect
 	github.com/sashamelentyev/interfacebloat v1.1.0 // indirect
@@ -627,7 +626,6 @@ tool (
 	github.com/goreleaser/goreleaser/v2
 	github.com/mikefarah/yq/v4
 	github.com/onsi/ginkgo/v2/ginkgo
-	github.com/saiskee/gettercheck
 	golang.org/x/tools/cmd/goimports
 	helm.sh/helm/v3/cmd/helm
 	k8s.io/code-generator/cmd/applyconfiguration-gen
