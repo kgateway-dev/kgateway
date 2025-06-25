@@ -90,7 +90,7 @@ type PolicyAncestorStatus struct {
 }
 
 // Specifies the way to match a string.
-// +kubebuilder:validation:XValidation:message="exactly one of Exact, Prefix, Suffix, Contains, or SafeRegex must be set",rule="[has(self.exact), has(self.prefix), has(self.suffix), has(self.contains), has(self.safeRegex)].filter(x, x).size() == 1"
+// +kubebuilder:validation:ExactlyOneOf=exact;prefix;suffix;contains;safeRegex
 type StringMatcher struct {
 	// The input string must match exactly the string specified here.
 	// Example: abc matches the value abc

@@ -155,7 +155,7 @@ type TCPKeepalive struct {
 	KeepAliveInterval *metav1.Duration `json:"keepAliveInterval,omitempty"`
 }
 
-// +kubebuilder:validation:XValidation:rule="has(self.secretRef) != has(self.tlsFiles)",message="Exactly one of secretRef or tlsFiles must be set in TLS"
+// +kubebuilder:validation:ExactlyOneOf=secretRef;tlsFiles
 type TLS struct {
 	// Reference to the TLS secret containing the certificate, key, and optionally the root CA.
 	// +optional
@@ -236,7 +236,7 @@ type TLSFiles struct {
 	RootCA string `json:"rootCA,omitempty"`
 }
 
-// +kubebuilder:validation:XValidation:rule="[has(self.leastRequest), has(self.roundRobin), has(self.ringHash), has(self.maglev), has(self.random)].filter(x, x).size() <= 1",message="only one of leastRequest, roundRobin, ringHash, maglev, or random can be set"
+// +kubebuilder:validation:AtMostOneOf=leastRequest;roundRobin;ringHash;maglev;random
 type LoadBalancer struct {
 	// HealthyPanicThreshold configures envoy's panic threshold percentage between 0-100. Once the number of non-healthy hosts
 	// reaches this percentage, envoy disregards health information.
@@ -331,8 +331,10 @@ type LoadBalancerRingHashConfig struct {
 	MaximumRingSize *uint64 `json:"maximumRingSize,omitempty"`
 }
 
-type LoadBalancerMaglevConfig struct{}
-type LoadBalancerRandomConfig struct{}
+type (
+	LoadBalancerMaglevConfig struct{}
+	LoadBalancerRandomConfig struct{}
+)
 
 type SlowStart struct {
 	// Represents the size of slow start window.

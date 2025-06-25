@@ -49,6 +49,8 @@ type HTTPListenerPolicySpec struct {
 	// AccessLoggingConfig contains various settings for Envoy's access logging service.
 	// See here for more information: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto
 	// +kubebuilder:validation:Items={type=object}
+	//
+	// +kubebuilder:validation:MaxItems=16
 	AccessLog []AccessLog `json:"accessLog,omitempty"`
 
 	// UpgradeConfig contains configuration for HTTP upgrades like WebSocket.
@@ -69,7 +71,7 @@ type AccessLog struct {
 }
 
 // FileSink represents the file sink configuration for access logs.
-// +kubebuilder:validation:XValidation:message="only one of 'StringFormat' or 'JsonFormat' may be set",rule="(has(self.stringFormat) && !has(self.jsonFormat)) || (!has(self.stringFormat) && has(self.jsonFormat))"
+// +kubebuilder:validation:ExactlyOneOf=stringFormat;jsonFormat
 type FileSink struct {
 	// the file path to which the file access logging service will sink
 	// +required

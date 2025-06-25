@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.3
+    controller-gen.kubebuilder.io/version: v0.18.1-0.20250625175829-8d11ce77f347
   labels:
     app: kgateway
     app.kubernetes.io/name: kgateway
@@ -48,10 +48,10 @@ spec:
                       - path
                       type: object
                       x-kubernetes-validations:
-                      - message: only one of 'StringFormat' or 'JsonFormat' may be
-                          set
-                        rule: (has(self.stringFormat) && !has(self.jsonFormat)) ||
-                          (!has(self.stringFormat) && has(self.jsonFormat))
+                      - message: exactly one of the fields in [stringFormat jsonFormat]
+                          must be set
+                        rule: '[has(self.stringFormat),has(self.jsonFormat)].filter(x,x==true).size()
+                          == 1'
                     filter:
                       allOf:
                       - maxProperties: 1
@@ -458,6 +458,7 @@ spec:
                       - logName
                       type: object
                   type: object
+                maxItems: 16
                 type: array
               targetRefs:
                 items:

@@ -238,6 +238,7 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: lambda
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AwsLambda
+      default: {}
     - name: region
       type:
         scalar: string
@@ -2224,6 +2225,9 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: preStop
       type:
         namedType: io.k8s.api.core.v1.LifecycleHandler
+    - name: stopSignal
+      type:
+        scalar: string
 - name: io.k8s.api.core.v1.LifecycleHandler
   map:
     fields:

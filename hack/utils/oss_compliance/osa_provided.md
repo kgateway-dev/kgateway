@@ -18,9 +18,9 @@ Name|Version|License
 [kelseyhightower/envconfig](https://github.com/kelseyhightower/envconfig)|v1.4.0|MIT License
 [mitchellh/hashstructure](https://github.com/mitchellh/hashstructure)|v1.0.0|MIT License
 [ginkgo/v2](https://github.com/onsi/ginkgo)|v2.23.3|MIT License
-[onsi/gomega](https://github.com/onsi/gomega)|v1.36.3|MIT License
+[onsi/gomega](https://github.com/onsi/gomega)|v1.37.0|MIT License
 [pkg/errors](https://github.com/pkg/errors)|v0.9.1|BSD 2-clause "Simplified" License
-[prometheus/client_golang](https://github.com/prometheus/client_golang)|v1.21.1|Apache License 2.0
+[prometheus/client_golang](https://github.com/prometheus/client_golang)|v1.22.0|Apache License 2.0
 [prometheus/client_model](https://github.com/prometheus/client_model)|v0.6.2|Apache License 2.0
 [rotisserie/eris](https://github.com/rotisserie/eris)|v0.5.4|MIT License
 [spf13/afero](https://github.com/spf13/afero)|v1.14.0|Apache License 2.0
@@ -29,17 +29,17 @@ Name|Version|License
 [go.opencensus.io](https://go.opencensus.io)|v0.24.0|Apache License 2.0
 [go.uber.org/zap](https://go.uber.org/zap)|v1.27.0|MIT License
 [x/exp](https://golang.org/x/exp)|v0.0.0-20241215155358-4a5509556b9e|BSD 3-clause "New" or "Revised" License
-[x/net](https://golang.org/x/net)|v0.40.0|BSD 3-clause "New" or "Revised" License
+[x/net](https://golang.org/x/net)|v0.41.0|BSD 3-clause "New" or "Revised" License
 [google.golang.org/grpc](https://google.golang.org/grpc)|v1.72.0|Apache License 2.0
 [google.golang.org/protobuf](https://google.golang.org/protobuf)|v1.36.6|BSD 3-clause "New" or "Revised" License
 [helm/v3](https://helm.sh/helm/v3)|v3.17.3|Apache License 2.0
 [istio.io/api](https://istio.io/api)|v1.25.0-alpha.0.0.20250210220544-0b64afd2de85|Apache License 2.0
 [istio.io/client-go](https://istio.io/client-go)|v1.25.0-alpha.0.0.20250210220843-5a4065fded65|Apache License 2.0
 [istio.io/istio](https://istio.io/istio)|v0.0.0-20250212203644-c2ac935c5888|Apache License 2.0
-[k8s.io/api](https://k8s.io/api)|v0.32.3|Apache License 2.0
-[k8s.io/apiextensions-apiserver](https://k8s.io/apiextensions-apiserver)|v0.32.3|Apache License 2.0
-[k8s.io/apimachinery](https://k8s.io/apimachinery)|v0.32.3|Apache License 2.0
-[k8s.io/client-go](https://k8s.io/client-go)|v0.32.3|Apache License 2.0
+[k8s.io/api](https://k8s.io/api)|v0.33.2|Apache License 2.0
+[k8s.io/apiextensions-apiserver](https://k8s.io/apiextensions-apiserver)|v0.33.2|Apache License 2.0
+[k8s.io/apimachinery](https://k8s.io/apimachinery)|v0.33.2|Apache License 2.0
+[k8s.io/client-go](https://k8s.io/client-go)|v0.33.2|Apache License 2.0
 [klog/v2](https://k8s.io/klog/v2)|v2.130.1|Apache License 2.0
 [k8s.io/kube-openapi](https://k8s.io/kube-openapi)|v0.0.0-20250318190949-c8a335a9a2ff|Apache License 2.0
 [k8s.io/utils](https://k8s.io/utils)|v0.0.0-20241210054802-24370beab758|Apache License 2.0

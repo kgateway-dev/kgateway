@@ -41,14 +41,11 @@ const (
 
 // BackendSpec defines the desired state of Backend.
 // +union
-// +kubebuilder:validation:XValidation:message="ai backend must be nil if the type is not 'ai'",rule="!(has(self.ai) && self.type != 'AI')"
-// +kubebuilder:validation:XValidation:message="ai backend must be specified when type is 'ai'",rule="!(!has(self.ai) && self.type == 'AI')"
-// +kubebuilder:validation:XValidation:message="aws backend must be nil if the type is not 'aws'",rule="!(has(self.aws) && self.type != 'AWS')"
-// +kubebuilder:validation:XValidation:message="aws backend must be specified when type is 'aws'",rule="!(!has(self.aws) && self.type == 'AWS')"
-// +kubebuilder:validation:XValidation:message="static backend must be nil if the type is not 'static'",rule="!(has(self.static) && self.type != 'Static')"
-// +kubebuilder:validation:XValidation:message="static backend must be specified when type is 'static'",rule="!(!has(self.static) && self.type == 'Static')"
-// +kubebuilder:validation:XValidation:message="dynamic forward proxy backend must be nil if the type is not 'dynamicForwardProxy'",rule="!(has(self.dynamicForwardProxy) && self.type != 'DynamicForwardProxy')"
-// +kubebuilder:validation:XValidation:message="dynamic forward proxy backend must be specified when type is 'dynamicForwardProxy'",rule="!(!has(self.dynamicForwardProxy) && self.type == 'DynamicForwardProxy')"
+// +kubebuilder:validation:XValidation:message="ai backend must be specified when type is 'AI'",rule="self.type == 'AI' ? has(self.ai) : true"
+// +kubebuilder:validation:XValidation:message="aws backend must be specified when type is 'AWS'",rule="self.type == 'AWS' ? has(self.aws) : true"
+// +kubebuilder:validation:XValidation:message="static backend must be specified when type is 'Static'",rule="self.type == 'Static' ? has(self.static) : true"
+// +kubebuilder:validation:XValidation:message="dynamicForwardProxy backend must be specified when type is 'DynamicForwardProxy'",rule="self.type == 'DynamicForwardProxy' ? has(self.dynamicForwardProxy) : true"
+// +kubebuilder:validation:ExactlyOneOf=ai;aws;static;dynamicForwardProxy
 type BackendSpec struct {
 	// Type indicates the type of the backend to be used.
 	// +unionDiscriminator
@@ -96,12 +93,16 @@ type DynamicForwardProxyBackend struct {
 
 // AwsBackend is the AWS backend configuration.
 type AwsBackend struct {
+	// Lambda configures the AWS lambda service.
+	Lambda AwsLambda `json:"lambda"`
+
 	// AccountId is the AWS account ID to use for the backend.
 	// +required
 	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:MaxLength=12
 	// +kubebuilder:validation:Pattern="^[0-9]{12}$"
 	AccountId string `json:"accountId"`
+
 	// Auth specifies an explicit AWS authentication method for the backend.
 	// When omitted, the following credential providers are tried in order, stopping when one
 	// of them returns an access key ID and a secret access key (the session token is optional):
@@ -114,9 +115,7 @@ type AwsBackend struct {
 	//
 	// +optional
 	Auth *AwsAuth `json:"auth,omitempty"`
-	// Lambda configures the AWS lambda service.
-	// +optional
-	Lambda *AwsLambda `json:"lambda,omitempty"`
+
 	// Region is the AWS region to use for the backend.
 	// Defaults to us-east-1 if not specified.
 	// +optional

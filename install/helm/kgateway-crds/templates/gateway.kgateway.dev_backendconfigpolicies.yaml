@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.3
+    controller-gen.kubebuilder.io/version: v0.18.1-0.20250625175829-8d11ce77f347
   labels:
     app: kgateway
     app.kubernetes.io/name: kgateway
@@ -209,10 +209,10 @@ spec:
                     type: boolean
                 type: object
                 x-kubernetes-validations:
-                - message: only one of leastRequest, roundRobin, ringHash, maglev,
-                    or random can be set
-                  rule: '[has(self.leastRequest), has(self.roundRobin), has(self.ringHash),
-                    has(self.maglev), has(self.random)].filter(x, x).size() <= 1'
+                - message: at most one of the fields in [leastRequest roundRobin ringHash
+                    maglev random] may be set
+                  rule: '[has(self.leastRequest),has(self.roundRobin),has(self.ringHash),has(self.maglev),has(self.random)].filter(x,x==true).size()
+                    <= 1'
               perConnectionBufferLimitBytes:
                 type: integer
               targetRefs:
@@ -345,8 +345,10 @@ spec:
                     type: array
                 type: object
                 x-kubernetes-validations:
-                - message: Exactly one of secretRef or tlsFiles must be set in TLS
-                  rule: has(self.secretRef) != has(self.tlsFiles)
+                - message: exactly one of the fields in [secretRef tlsFiles] must
+                    be set
+                  rule: '[has(self.secretRef),has(self.tlsFiles)].filter(x,x==true).size()
+                    == 1'
             type: object
           status:
             properties:
