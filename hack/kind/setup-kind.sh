@@ -13,8 +13,6 @@ VERSION="${VERSION:-1.0.0-ci1}"
 SKIP_DOCKER="${SKIP_DOCKER:-false}"
 # Stop after creating the kind cluster
 JUST_KIND="${JUST_KIND:-false}"
-# Set the default image variant to standard
-IMAGE_VARIANT="${IMAGE_VARIANT:-standard}"
 # If true, run extra steps to set up k8s gateway api conformance test environment
 CONFORMANCE="${CONFORMANCE:-false}"
 # The version of the k8s gateway api conformance tests to run. Requires CONFORMANCE=true
@@ -66,7 +64,7 @@ if [[ $SKIP_DOCKER == 'true' ]]; then
   $HELM repo update
 else
   # 2. Make all the docker images and load them to the kind cluster
-  VERSION=$VERSION CLUSTER_NAME=$CLUSTER_NAME IMAGE_VARIANT=$IMAGE_VARIANT make kind-build-and-load
+  VERSION=$VERSION CLUSTER_NAME=$CLUSTER_NAME make kind-build-and-load
 
   # 3. Build the test helm chart, ensuring we have a chart in the `_test` folder
   VERSION=$VERSION make package-kgateway-charts

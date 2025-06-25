@@ -32,7 +32,6 @@ runs:
     shell: bash
     env:
       CLUSTER_NODE_VERSION: ${{ matrix.kube-version.node }}
-      IMAGE_VARIANT: ${{ matrix.image-variant }}
       CONFORMANCE: "true"
       CONFORMANCE_VERSION: ${{ env.CONFORMANCE_VERSION }}
     run: ./hack/kind/setup-kind.sh
