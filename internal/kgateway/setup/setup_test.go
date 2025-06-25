@@ -173,7 +173,7 @@ func TestWithAutoDns(t *testing.T) {
 	if err != nil {
 		t.Fatalf("can't get settings %v", err)
 	}
-	st.DnsLookupFamily = "AUTO"
+	st.DnsLookupFamily = settings.DnsLookupFamilyAuto
 
 	runScenario(t, "testdata/autodns", st)
 }
