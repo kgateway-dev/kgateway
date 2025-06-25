@@ -306,9 +306,8 @@ generate-all: generated-code
 
 # Generates all required code, cleaning and formatting as well; this target is executed in CI
 .PHONY: generated-code
-generated-code: clean-gen go-generate-all getter-check mod-tidy
+generated-code: clean-gen go-generate-all mod-tidy
 generated-code: update-licenses
-# generated-code: generate-crd-reference-docs
 generated-code: fmt
 
 .PHONY: go-generate-all
@@ -349,15 +348,6 @@ kgateway-ai-extension-docker:
 		--build-arg PYTHON_DIR=python \
 		-t  $(IMAGE_REGISTRY)/kgateway-ai-extension:$(VERSION)
 
-GETTERCHECK ?= go tool github.com/saiskee/gettercheck
-# Ensures that accesses for fields which have "getter" functions are exclusively done via said "getter" functions
-# TODO: do we still want this?
-.PHONY: getter-check
-getter-check: ## Runs all generate directives for mockgen in the repo
-	$(GETTERCHECK) -ignoretests -ignoregenerated -write ./internal/... ./pkg/...
-
-
-
 #----------------------------------------------------------------------------------
 # Controller
 #----------------------------------------------------------------------------------
@@ -385,8 +375,6 @@ kgateway-docker: $(CONTROLLER_OUTPUT_DIR)/kgateway-linux-$(GOARCH) $(CONTROLLER_
 		--build-arg ENVOY_IMAGE=$(ENVOY_IMAGE) \
 		-t $(IMAGE_REGISTRY)/$(CONTROLLER_IMAGE_REPO):$(VERSION)
 
-
-
 #----------------------------------------------------------------------------------
 # SDS Server - gRPC server for serving Secret Discovery Service config
 #----------------------------------------------------------------------------------
@@ -411,8 +399,6 @@ sds-docker: $(SDS_OUTPUT_DIR)/sds-linux-$(GOARCH) $(SDS_OUTPUT_DIR)/Dockerfile.s
 		--build-arg GOARCH=$(GOARCH) \
 		--build-arg BASE_IMAGE=$(ALPINE_BASE_IMAGE) \
 		-t $(IMAGE_REGISTRY)/$(SDS_IMAGE_REPO):$(VERSION)
-
-
 
 #----------------------------------------------------------------------------------
 # Envoy init (BASE/SIDECAR)
@@ -443,8 +429,6 @@ envoy-wrapper-docker: $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-$(GOARCH) $(ENVOYI
 		--build-arg GOARCH=$(GOARCH) \
 		--build-arg ENVOY_IMAGE=$(ENVOY_IMAGE) \
 		-t $(IMAGE_REGISTRY)/$(ENVOYINIT_IMAGE_REPO):$(VERSION)
-
-
 
 #----------------------------------------------------------------------------------
 # Helm
@@ -643,7 +627,6 @@ TEST_A2A_AGENT_SERVER_DIR := $(ROOTDIR)/test/kubernetes/e2e/features/agentgatewa
 test-a2a-agent-docker:
 	docker buildx build $(LOAD_OR_PUSH) $(PLATFORM_MULTIARCH) -f $(TEST_A2A_AGENT_SERVER_DIR)/Dockerfile $(TEST_A2A_AGENT_SERVER_DIR) \
 		-t $(IMAGE_REGISTRY)/test-a2a-agent:$(VERSION)
-
 
 #----------------------------------------------------------------------------------
 # AI Extensions Test Server (for mocking AI Providers in e2e tests)
