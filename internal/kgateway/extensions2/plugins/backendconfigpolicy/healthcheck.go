@@ -2,7 +2,6 @@ package backendconfigpolicy
 
 import (
 	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	typev3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
@@ -38,26 +37,6 @@ func translateHealthCheck(hc *v1alpha1.HealthCheck) *corev3.HealthCheck {
 		}
 		if hc.Http.Method != nil {
 			httpHealthCheck.Method = corev3.RequestMethod(corev3.RequestMethod_value[*hc.Http.Method])
-		}
-		if len(hc.Http.ExpectedStatuses) > 0 {
-			expectedStatuses := make([]*typev3.Int64Range, len(hc.Http.ExpectedStatuses))
-			for i, status := range hc.Http.ExpectedStatuses {
-				expectedStatuses[i] = &typev3.Int64Range{
-					Start: status.Start,
-					End:   status.End,
-				}
-			}
-			httpHealthCheck.ExpectedStatuses = expectedStatuses
-		}
-		if len(hc.Http.RetriableStatuses) > 0 {
-			retriableStatuses := make([]*typev3.Int64Range, len(hc.Http.RetriableStatuses))
-			for i, status := range hc.Http.RetriableStatuses {
-				retriableStatuses[i] = &typev3.Int64Range{
-					Start: status.Start,
-					End:   status.End,
-				}
-			}
-			httpHealthCheck.RetriableStatuses = retriableStatuses
 		}
 		healthCheck.HealthChecker = &corev3.HealthCheck_HttpHealthCheck_{
 			HttpHealthCheck: httpHealthCheck,

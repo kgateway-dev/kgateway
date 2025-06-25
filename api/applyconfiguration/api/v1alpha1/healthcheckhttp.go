@@ -5,11 +5,9 @@ package v1alpha1
 // HealthCheckHttpApplyConfiguration represents a declarative configuration of the HealthCheckHttp type for use
 // with apply.
 type HealthCheckHttpApplyConfiguration struct {
-	Host              *string                        `json:"host,omitempty"`
-	Path              *string                        `json:"path,omitempty"`
-	Method            *string                        `json:"method,omitempty"`
-	ExpectedStatuses  []Int64RangeApplyConfiguration `json:"expectedStatuses,omitempty"`
-	RetriableStatuses []Int64RangeApplyConfiguration `json:"retriableStatuses,omitempty"`
+	Host   *string `json:"host,omitempty"`
+	Path   *string `json:"path,omitempty"`
+	Method *string `json:"method,omitempty"`
 }
 
 // HealthCheckHttpApplyConfiguration constructs a declarative configuration of the HealthCheckHttp type for use with
@@ -39,31 +37,5 @@ func (b *HealthCheckHttpApplyConfiguration) WithPath(value string) *HealthCheckH
 // If called multiple times, the Method field is set to the value of the last call.
 func (b *HealthCheckHttpApplyConfiguration) WithMethod(value string) *HealthCheckHttpApplyConfiguration {
 	b.Method = &value
-	return b
-}
-
-// WithExpectedStatuses adds the given value to the ExpectedStatuses field in the declarative configuration
-// and returns the receiver, so that objects can be build by chaining "With" function invocations.
-// If called multiple times, values provided by each call will be appended to the ExpectedStatuses field.
-func (b *HealthCheckHttpApplyConfiguration) WithExpectedStatuses(values ...*Int64RangeApplyConfiguration) *HealthCheckHttpApplyConfiguration {
-	for i := range values {
-		if values[i] == nil {
-			panic("nil value passed to WithExpectedStatuses")
-		}
-		b.ExpectedStatuses = append(b.ExpectedStatuses, *values[i])
-	}
-	return b
-}
-
-// WithRetriableStatuses adds the given value to the RetriableStatuses field in the declarative configuration
-// and returns the receiver, so that objects can be build by chaining "With" function invocations.
-// If called multiple times, values provided by each call will be appended to the RetriableStatuses field.
-func (b *HealthCheckHttpApplyConfiguration) WithRetriableStatuses(values ...*Int64RangeApplyConfiguration) *HealthCheckHttpApplyConfiguration {
-	for i := range values {
-		if values[i] == nil {
-			panic("nil value passed to WithRetriableStatuses")
-		}
-		b.RetriableStatuses = append(b.RetriableStatuses, *values[i])
-	}
 	return b
 }

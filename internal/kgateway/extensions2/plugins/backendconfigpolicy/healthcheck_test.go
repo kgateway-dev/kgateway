@@ -5,7 +5,6 @@ import (
 	"time"
 
 	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	typev3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -59,9 +58,6 @@ func TestTranslateHealthCheck(t *testing.T) {
 					Host:   ptr.To("example.com"),
 					Path:   "/health",
 					Method: ptr.To("GET"),
-					ExpectedStatuses: []v1alpha1.Int64Range{
-						{Start: 200, End: 299},
-					},
 				},
 			},
 			expected: &corev3.HealthCheck{
@@ -72,12 +68,6 @@ func TestTranslateHealthCheck(t *testing.T) {
 						Host:   "example.com",
 						Path:   "/health",
 						Method: corev3.RequestMethod_GET,
-						ExpectedStatuses: []*typev3.Int64Range{
-							{
-								Start: 200,
-								End:   299,
-							},
-						},
 					},
 				},
 			},
@@ -111,10 +101,6 @@ func TestTranslateHealthCheck(t *testing.T) {
 				Http: &v1alpha1.HealthCheckHttp{
 					Host: ptr.To("example.com"),
 					Path: "/health",
-					ExpectedStatuses: []v1alpha1.Int64Range{
-						{Start: 200, End: 299},
-						{Start: 401, End: 403},
-					},
 				},
 			},
 			expected: &corev3.HealthCheck{
@@ -124,16 +110,6 @@ func TestTranslateHealthCheck(t *testing.T) {
 					HttpHealthCheck: &corev3.HealthCheck_HttpHealthCheck{
 						Host: "example.com",
 						Path: "/health",
-						ExpectedStatuses: []*typev3.Int64Range{
-							{
-								Start: 200,
-								End:   299,
-							},
-							{
-								Start: 401,
-								End:   403,
-							},
-						},
 					},
 				},
 			},

@@ -45,12 +45,6 @@ spec:
       path: /healthz
       host: example.com
       method: HEAD
-      expectedStatuses:
-        - start: 200
-          end: 300
-      retriableStatuses:
-        - start: 400
-          end: 500
 ---
 apiVersion: v1
 kind: Service

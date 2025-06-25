@@ -938,12 +938,6 @@ var schemaYAML = typed.YAMLObject(`types:
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.HealthCheckHttp
   map:
     fields:
-    - name: expectedStatuses
-      type:
-        list:
-          elementType:
-            namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Int64Range
-          elementRelationship: atomic
     - name: host
       type:
         scalar: string
@@ -954,12 +948,6 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         scalar: string
       default: ""
-    - name: retriableStatuses
-      type:
-        list:
-          elementType:
-            namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Int64Range
-          elementRelationship: atomic
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Host
   map:
     fields:
@@ -1004,17 +992,6 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: tag
       type:
         scalar: string
-- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Int64Range
-  map:
-    fields:
-    - name: end
-      type:
-        scalar: numeric
-      default: 0
-    - name: start
-      type:
-        scalar: numeric
-      default: 0
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.IstioContainer
   map:
     fields:

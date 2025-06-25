@@ -425,34 +425,6 @@ type HealthCheckHttp struct {
 	// +optional
 	// +kubebuilder:validation:Enum=GET;HEAD;POST;PUT;DELETE;OPTIONS;TRACE;PATCH
 	Method *string `json:"method,omitempty"`
-
-	// ExpectedStatuses is the list of status codes considered healthy.
-	// If provided, replaces the default 200-only policy - 200 must be included explicitly as needed.
-	// Ranges follow half-open semantics (e.g. [200, 300) includes 200 but not 300).
-	// +optional
-	ExpectedStatuses []Int64Range `json:"expectedStatuses,omitempty"`
-
-	// RetriableStatuses will count to the UnhealthyThreshold, but will not be considered immediately unhealthy.
-	// In case of overlap, ExpectedStatuses takes precedence over RetriableStatuses, i.e. if a host responds with a code in both,
-	// it will be considered a healthy response.
-	// +optional
-	RetriableStatuses []Int64Range `json:"retriableStatuses,omitempty"`
-}
-
-// Int64Range represents a range of integers.
-// +kubebuilder:validation:XValidation:rule="self.start <= self.end",message="start must be less than or equal to end"
-type Int64Range struct {
-	// Start is the start of the range.
-	// +required
-	// +kubebuilder:validation:Minimum=100
-	// +kubebuilder:validation:Maximum=599
-	Start int64 `json:"start"`
-
-	// End is the end of the range.
-	// +required
-	// +kubebuilder:validation:Minimum=100
-	// +kubebuilder:validation:Maximum=599
-	End int64 `json:"end"`
 }
 
 type HealthCheckGrpc struct {

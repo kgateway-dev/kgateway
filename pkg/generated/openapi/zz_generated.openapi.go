@@ -86,7 +86,6 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Host":                                      schema_kgateway_v2_api_v1alpha1_Host(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Http1ProtocolOptions":                      schema_kgateway_v2_api_v1alpha1_Http1ProtocolOptions(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Image":                                     schema_kgateway_v2_api_v1alpha1_Image(ref),
-		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Int64Range":                                schema_kgateway_v2_api_v1alpha1_Int64Range(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.IstioContainer":                            schema_kgateway_v2_api_v1alpha1_IstioContainer(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.IstioIntegration":                          schema_kgateway_v2_api_v1alpha1_IstioIntegration(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.KubernetesProxyConfig":                     schema_kgateway_v2_api_v1alpha1_KubernetesProxyConfig(ref),
@@ -3248,40 +3247,10 @@ func schema_kgateway_v2_api_v1alpha1_HealthCheckHttp(ref common.ReferenceCallbac
 							Format:      "",
 						},
 					},
-					"expectedStatuses": {
-						SchemaProps: spec.SchemaProps{
-							Description: "ExpectedStatuses is the list of status codes considered healthy. If provided, replaces the default 200-only policy - 200 must be included explicitly as needed. Ranges follow half-open semantics (e.g. [200, 300) includes 200 but not 300).",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Int64Range"),
-									},
-								},
-							},
-						},
-					},
-					"retriableStatuses": {
-						SchemaProps: spec.SchemaProps{
-							Description: "RetriableStatuses will count to the UnhealthyThreshold, but will not be considered immediately unhealthy. In case of overlap, ExpectedStatuses takes precedence over RetriableStatuses, i.e. if a host responds with a code in both, it will be considered a healthy response.",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Int64Range"),
-									},
-								},
-							},
-						},
-					},
 				},
 				Required: []string{"path"},
 			},
 		},
-		Dependencies: []string{
-			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Int64Range"},
 	}
 }
 
@@ -3400,36 +3369,6 @@ func schema_kgateway_v2_api_v1alpha1_Image(ref common.ReferenceCallback) common.
 						},
 					},
 				},
-			},
-		},
-	}
-}
-
-func schema_kgateway_v2_api_v1alpha1_Int64Range(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "Int64Range represents a range of integers.",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"start": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Start is the start of the range.",
-							Default:     0,
-							Type:        []string{"integer"},
-							Format:      "int64",
-						},
-					},
-					"end": {
-						SchemaProps: spec.SchemaProps{
-							Description: "End is the end of the range.",
-							Default:     0,
-							Type:        []string{"integer"},
-							Format:      "int64",
-						},
-					},
-				},
-				Required: []string{"start", "end"},
 			},
 		},
 	}

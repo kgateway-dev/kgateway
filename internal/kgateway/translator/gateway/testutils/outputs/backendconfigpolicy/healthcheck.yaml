@@ -20,15 +20,9 @@ Clusters:
   healthChecks:
   - healthyThreshold: 2
     httpHealthCheck:
-      expectedStatuses:
-      - end: "300"
-        start: "200"
       host: example.com
       method: HEAD
       path: /healthz
-      retriableStatuses:
-      - end: "500"
-        start: "400"
     interval: 2s
     timeout: 3s
     unhealthyThreshold: 3

@@ -75,27 +75,6 @@ spec:
                     type: integer
                   http:
                     properties:
-                      expectedStatuses:
-                        items:
-                          properties:
-                            end:
-                              format: int64
-                              maximum: 599
-                              minimum: 100
-                              type: integer
-                            start:
-                              format: int64
-                              maximum: 599
-                              minimum: 100
-                              type: integer
-                          required:
-                          - end
-                          - start
-                          type: object
-                          x-kubernetes-validations:
-                          - message: start must be less than or equal to end
-                            rule: self.start <= self.end
-                        type: array
                       host:
                         type: string
                       method:
@@ -111,27 +90,6 @@ spec:
                         type: string
                       path:
                         type: string
-                      retriableStatuses:
-                        items:
-                          properties:
-                            end:
-                              format: int64
-                              maximum: 599
-                              minimum: 100
-                              type: integer
-                            start:
-                              format: int64
-                              maximum: 599
-                              minimum: 100
-                              type: integer
-                          required:
-                          - end
-                          - start
-                          type: object
-                          x-kubernetes-validations:
-                          - message: start must be less than or equal to end
-                            rule: self.start <= self.end
-                        type: array
                     required:
                     - path
                     type: object

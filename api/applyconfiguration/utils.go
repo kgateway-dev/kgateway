@@ -139,8 +139,6 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.HTTPListenerPolicySpecApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("Image"):
 		return &apiv1alpha1.ImageApplyConfiguration{}
-	case v1alpha1.SchemeGroupVersion.WithKind("Int64Range"):
-		return &apiv1alpha1.Int64RangeApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("IstioContainer"):
 		return &apiv1alpha1.IstioContainerApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("IstioIntegration"):
