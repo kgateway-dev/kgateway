@@ -14,7 +14,6 @@ var (
 	setupManifest                          = filepath.Join(fsutils.MustGetThisDir(), "testdata", "setup.yaml")
 	gatewayManifest                        = filepath.Join(fsutils.MustGetThisDir(), "testdata", "gateway.yaml")
 	httpRouteManifest                      = filepath.Join(fsutils.MustGetThisDir(), "testdata", "httproute.yaml")
-	httpListenerPolicyManifest             = filepath.Join(fsutils.MustGetThisDir(), "testdata", "http-listener-policy.yaml")
 	httpListenerPolicyAllFieldsManifest    = filepath.Join(fsutils.MustGetThisDir(), "testdata", "http-listener-policy-all-fields.yaml")
 	httpListenerPolicyServerHeaderManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "http-listener-policy-server-header.yaml")
 
