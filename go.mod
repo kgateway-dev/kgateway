@@ -613,6 +613,9 @@ require (
 	software.sslmate.com/src/go-pkcs12 v0.5.0 // indirect
 )
 
+// Remove once https://github.com/kubernetes-sigs/controller-tools/pull/1224 merges
+replace sigs.k8s.io/controller-tools => github.com/shashankram/controller-tools v0.0.0-20250626172831-f7be064a9132
+
 replace github.com/imdario/mergo => github.com/imdario/mergo v0.3.16
 
 // Use a patched version of gengo to produce consistent zz_generated.openapi.go
