@@ -654,6 +654,10 @@ spec:
             - type
             type: object
             x-kubernetes-validations:
+            - message: exactly one of the fields in [ai aws static dynamicForwardProxy]
+                must be set
+              rule: '[has(self.ai),has(self.aws),has(self.static),has(self.dynamicForwardProxy)].filter(x,x==true).size()
+                == 1'
             - message: ai backend must be specified when type is 'AI'
               rule: 'self.type == ''AI'' ? has(self.ai) : true'
             - message: aws backend must be specified when type is 'AWS'
@@ -664,10 +668,6 @@ spec:
                 'DynamicForwardProxy'
               rule: 'self.type == ''DynamicForwardProxy'' ? has(self.dynamicForwardProxy)
                 : true'
-            - message: exactly one of the fields in [ai aws static dynamicForwardProxy]
-                must be set
-              rule: '[has(self.ai),has(self.aws),has(self.static),has(self.dynamicForwardProxy)].filter(x,x==true).size()
-                == 1'
           status:
             properties:
               conditions:
