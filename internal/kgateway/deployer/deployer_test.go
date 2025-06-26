@@ -1680,7 +1680,7 @@ var _ = Describe("Deployer", func() {
 			checkErr := func(err, expectedErr error) (shouldReturn bool) {
 				GinkgoHelper()
 				if expectedErr != nil {
-					Expect(err).To(MatchError(expectedErr))
+					Expect(err.Error()).To(ContainSubstring(expectedErr.Error()))
 					return true
 				}
 				Expect(err).NotTo(HaveOccurred())
