@@ -760,11 +760,13 @@ var _ = Describe("Deployer", func() {
 
 	Context("defaulting", func() {
 		var (
-			registry string
-			tag      string
+			registry   string
+			repository string
+			tag        string
 		)
 		BeforeEach(func() {
 			registry = "foo"
+			repository = "bar"
 			tag = "1.2.3"
 		})
 		When("a GC is created with an empty spec.parametersRef", func() {
@@ -822,7 +824,7 @@ var _ = Describe("Deployer", func() {
 				Expect(objs.findConfigMap(defaultNamespace, "foo")).NotTo(BeNil())
 
 				By("validating the default values are used")
-				Expect(objs.findDeployment(defaultNamespace, "foo").Spec.Template.Spec.Containers[0].Image).To(Equal(fmt.Sprintf("%s/%s:%s", registry, deployer.EnvoyWrapperImage, tag)))
+				Expect(objs.findDeployment(defaultNamespace, "foo").Spec.Template.Spec.Containers[0].Image).To(Equal(fmt.Sprintf("%s/%s:%s", registry, repository, tag)))
 			})
 		})
 
@@ -907,7 +909,7 @@ var _ = Describe("Deployer", func() {
 				Expect(objs.findConfigMap(defaultNamespace, "foo")).NotTo(BeNil())
 
 				By("validating the image overrides the default")
-				Expect(objs.findDeployment(defaultNamespace, "foo").Spec.Template.Spec.Containers[0].Image).To(Equal(fmt.Sprintf("bar/%s:2.3.4", deployer.EnvoyWrapperImage)))
+				Expect(objs.findDeployment(defaultNamespace, "foo").Spec.Template.Spec.Containers[0].Image).To(Equal(fmt.Sprintf("bar/%s:2.3.4", repository)))
 			})
 		})
 
@@ -1025,7 +1027,7 @@ var _ = Describe("Deployer", func() {
 				Expect(port.PortValue).To(Equal(uint32(9091)))
 
 				By("verifying image registry and tag were inherited")
-				Expect(envoyContainer.Image).To(Equal(fmt.Sprintf("%s/%s:%s", registry, deployer.EnvoyWrapperImage, tag)))
+				Expect(envoyContainer.Image).To(Equal(fmt.Sprintf("%s/%s:%s", registry, repository, tag)))
 			})
 		})
 	})

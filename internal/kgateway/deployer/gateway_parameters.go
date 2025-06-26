@@ -442,7 +442,7 @@ func defaultGatewayParameters(imageInfo *ImageInfo) *v1alpha1.GatewayParameters 
 					Image: &v1alpha1.Image{
 						Registry:   ptr.To(imageInfo.Registry),
 						Tag:        ptr.To(imageInfo.Tag),
-						Repository: ptr.To(EnvoyWrapperImage),
+						Repository: ptr.To(imageInfo.Repository),
 						PullPolicy: (*corev1.PullPolicy)(ptr.To(imageInfo.PullPolicy)),
 					},
 					SecurityContext: &corev1.SecurityContext{

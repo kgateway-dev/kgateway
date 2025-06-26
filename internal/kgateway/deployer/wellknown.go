@@ -8,8 +8,6 @@ const (
 	KgatewayAIContainerName = "kgateway-ai-extension"
 	// IstioContainerName is the name of the container in the proxy deployment for the Istio integration.
 	IstioContainerName = "istio-proxy"
-	// EnvoyWrapperImage is the image of the envoy wrapper container.
-	EnvoyWrapperImage = "envoy-wrapper"
 	// AgentgatewayImage is the agentgateway image repository
 	AgentgatewayImage = "agentgateway"
 	// AgentgatewayRegistry is the agentgateway registry
