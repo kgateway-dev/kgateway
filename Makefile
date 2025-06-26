@@ -75,7 +75,6 @@ endif
 GOOS ?= $(shell uname -s | tr '[:upper:]' '[:lower:]')
 
 GO_BUILD_FLAGS := GO111MODULE=on CGO_ENABLED=0 GOARCH=$(GOARCH)
-GOLANG_ALPINE_IMAGE_NAME = golang:$(shell go version | egrep -o '([0-9]+\.[0-9]+)')-alpine3.18
 
 TEST_ASSET_DIR ?= $(ROOTDIR)/_test
 
@@ -130,20 +129,11 @@ mod-download:  ## Download the dependencies
 mod-tidy: mod-download  ## Tidy the go mod file
 	go mod tidy
 
-.PHONY: check-format
-check-format:
-	NOT_FORMATTED=$$(gofmt -l ./pkg/ ./internal/ ./test/) && if [ -n "$$NOT_FORMATTED" ]; then echo These files are not formatted: $$NOT_FORMATTED; exit 1; fi
-
-.PHONY: check-spelling
-check-spelling:
-	./ci/spell.sh check
-
 #----------------------------------------------------------------------------
 # Analyze
 #----------------------------------------------------------------------------
 
 YQ ?= go tool yq
-LINTER_VERSION := $(shell cat .github/workflows/static-analysis.yaml | $(YQ) '.jobs.static-analysis.steps.[] | select( .uses == "*golangci/golangci-lint-action*") | .with.version ')
 GO_VERSION := $(shell cat go.mod | grep -E '^go' | awk '{print $$2}')
 GOTOOLCHAIN ?= go$(GO_VERSION)
 
@@ -156,12 +146,14 @@ analyze:  ## Run golangci-lint. Override options with ANALYZE_ARGS.
 #----------------------------------------------------------------------------
 # Info
 #----------------------------------------------------------------------------
+
 .PHONY: envoyversion
 envoyversion: ENVOY_VERSION_TAG ?= $(shell echo $(ENVOY_IMAGE) | cut -d':' -f2)
 envoyversion:
 	echo "Version is $(ENVOY_VERSION_TAG)"
 	echo "Commit for envoyproxy is $(shell curl -s https://raw.githubusercontent.com/solo-io/envoy-gloo/refs/tags/v$(ENVOY_VERSION_TAG)/bazel/repository_locations.bzl | grep "envoy =" -A 4 | grep commit | cut -d'"' -f2)"
 	echo "Current ABI in envoyinit can be found in the cargo.toml's envoy-proxy-dynamic-modules-rust-sdk"
+
 #----------------------------------------------------------------------------------
 # Ginkgo Tests
 #----------------------------------------------------------------------------------
@@ -294,7 +286,7 @@ clean-test-logs:
 	rm -rf $(TEST_LOG_DIR)
 
 #----------------------------------------------------------------------------------
-# Generated Code and Docs
+# Generated Code
 #----------------------------------------------------------------------------------
 
 .PHONY: verify
@@ -321,25 +313,11 @@ go-generate-apis: ## Run all go generate directives in the repo, including codeg
 go-generate-mocks: ## Runs all generate directives for mockgen in the repo
 	GO111MODULE=on go generate -run="mockgen" ./...
 
-PYTHON_DIR := $(ROOTDIR)/python
-
-.PHONY: generate-ai-extension-apis
-generate-ai-extension-apis:
-ifeq ($(SKIP_VENV), true)
-	ENVOY_VERSION=$(UPSTREAM_ENVOY_VERSION) $(PYTHON_DIR)/scripts/genproto.sh
-else
-	( \
-		python3 -m venv .pyenv; \
-		. .pyenv/bin/activate; \
-		pip3 install -r $(PYTHON_DIR)/scripts/requirements.txt; \
-		ENVOY_VERSION=$(UPSTREAM_ENVOY_VERSION) $(PYTHON_DIR)/scripts/genproto.sh; \
-		rm -rf .pyenv; \
-	)
-endif
-
 #----------------------------------------------------------------------------------
 # AI Extensions ExtProc Server
 #----------------------------------------------------------------------------------
+
+PYTHON_DIR := $(ROOTDIR)/python
 
 export AI_EXTENSION_IMAGE_REPO ?= kgateway-ai-extension
 .PHONY: kgateway-ai-extension-docker
