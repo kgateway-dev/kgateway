@@ -30,7 +30,6 @@ linters:
     - whitespace
   settings:
     forbidigo:
-      analyze-types: true
       forbid:
         - pattern: anypb.New
           msg: use utils.MessageToAny instead
