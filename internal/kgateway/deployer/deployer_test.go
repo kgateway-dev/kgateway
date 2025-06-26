@@ -807,8 +807,9 @@ var _ = Describe("Deployer", func() {
 						XdsPort: 1234,
 					},
 					ImageInfo: &deployer.ImageInfo{
-						Registry: registry,
-						Tag:      tag,
+						Registry:   registry,
+						Repository: repository,
+						Tag:        tag,
 					},
 				}, gwParams)
 				Expect(err).NotTo(HaveOccurred())
@@ -892,8 +893,9 @@ var _ = Describe("Deployer", func() {
 						XdsPort: 1234,
 					},
 					ImageInfo: &deployer.ImageInfo{
-						Registry: registry,
-						Tag:      tag,
+						Registry:   registry,
+						Repository: repository,
+						Tag:        tag,
 					},
 				}, gwParams)
 				Expect(err).NotTo(HaveOccurred())
@@ -985,8 +987,9 @@ var _ = Describe("Deployer", func() {
 						XdsPort: 1234,
 					},
 					ImageInfo: &deployer.ImageInfo{
-						Registry: registry,
-						Tag:      tag,
+						Registry:   registry,
+						Repository: repository,
+						Tag:        tag,
 					},
 				}, gwParams)
 				Expect(err).NotTo(HaveOccurred())
