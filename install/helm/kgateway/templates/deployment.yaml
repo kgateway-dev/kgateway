@@ -16,10 +16,10 @@ spec:
       {{- include "kgateway.selectorLabels" . | nindent 6 }}
   template:
     metadata:
-      {{- with .Values.podAnnotations }}
       annotations:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
+        prometheus.io/path: "/metrics"
+        prometheus.io/port: {{ .Values.controller.service.ports.metrics | default 9092 | quote}}
+        {{- toYaml .Values.podAnnotations | nindent 8 }}
       labels:
         {{- include "kgateway.selectorLabels" . | nindent 8 }}
     spec:
@@ -42,6 +42,9 @@ spec:
               protocol: TCP
             - containerPort: {{ .Values.controller.service.ports.health }}
               name: health
+              protocol: TCP
+            - containerPort: {{ .Values.controller.service.ports.metrics }}
+              name: metrics
               protocol: TCP
           readinessProbe:
             httpGet:

@@ -273,6 +273,11 @@ func selectedWorkloadFromEntry(
 		network = labels[label.TopologyNetwork.Name]
 	}
 
+	// we propagate the value to the labels so that endpoint plugins can see it
+	if network != "" {
+		labels[label.TopologyNetwork.Name] = network
+	}
+
 	// TODO inline endpoints don't get correct priority unless we copy
 	// the locality into labels; investigate prioritize logic to ensure
 	// we rely directly on PodLocality struct

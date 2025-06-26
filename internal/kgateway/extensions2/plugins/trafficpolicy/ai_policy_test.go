@@ -76,9 +76,9 @@ func TestProcessAITrafficPolicy(t *testing.T) {
 		}
 
 		// Set env var
-		oldEnv := os.Getenv("AI_PLUGIN_DEBUG_TRANSFORMATIONS")
-		os.Setenv("AI_PLUGIN_DEBUG_TRANSFORMATIONS", "true")
-		defer os.Setenv("AI_PLUGIN_DEBUG_TRANSFORMATIONS", oldEnv)
+		oldEnv := os.Getenv(AiDebugTransformations)
+		os.Setenv(AiDebugTransformations, "true")
+		defer os.Setenv(AiDebugTransformations, oldEnv)
 
 		// Execute
 		err := preProcessAITrafficPolicy(aiConfig, aiIR)

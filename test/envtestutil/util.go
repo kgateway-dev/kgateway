@@ -23,7 +23,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	"sigs.k8s.io/yaml"
 
+	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
+
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/controller"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/deployer"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
@@ -76,6 +79,7 @@ func RunController(t *testing.T, logger *zap.Logger, globalSettings *settings.Se
 	if postStart != nil {
 		extraPlugins = postStart(t, ctx, client)
 	}
+	var extraGatewayParameters func(cli ctrlclient.Client, inputs *deployer.Inputs) []deployer.ExtraGatewayParameters
 
 	for _, yamlFileWithNs := range yamlFilesToApply {
 		ns := yamlFileWithNs[0]
@@ -91,7 +95,7 @@ func RunController(t *testing.T, logger *zap.Logger, globalSettings *settings.Se
 	}
 
 	// setup xDS server:
-	uniqueClientCallbacks, builder := krtcollections.NewUniquelyConnectedClients()
+	uniqueClientCallbacks, builder := krtcollections.NewUniquelyConnectedClients(nil)
 
 	lis, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
@@ -112,7 +116,7 @@ func RunController(t *testing.T, logger *zap.Logger, globalSettings *settings.Se
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		setup.StartKgatewayWithConfig(ctx, setupOpts, cfg, builder, extraPlugins)
+		setup.StartKgatewayWithConfig(ctx, setupOpts, cfg, builder, extraPlugins, extraGatewayParameters)
 	}()
 	// give kgateway time to initialize so we don't get
 	// "kgateway not initialized" error

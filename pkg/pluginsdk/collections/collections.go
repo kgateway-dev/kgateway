@@ -49,7 +49,7 @@ type CommonCollections struct {
 	// TODO: this should be refactored to a more correct location,
 	// or even better, be removed entirely and done per Gateway (maybe in GwParams)
 	Settings       settings.Settings
-	controllerName string
+	ControllerName string
 }
 
 func (c *CommonCollections) HasSynced() bool {
@@ -154,22 +154,27 @@ func NewCommonCollections(
 		ConfigMaps:        cfgmaps,
 		GatewayExtensions: gwExts,
 
-		controllerName: controllerName,
+		ControllerName: controllerName,
 	}, nil
 }
 
 // InitPlugins set up collections that rely on plugins.
 // This can't be part of NewCommonCollections because the setup
 // of plugins themselves rely on a reference to CommonCollections.
-func (c *CommonCollections) InitPlugins(ctx context.Context, mergedPlugins extensionsplug.Plugin) {
+func (c *CommonCollections) InitPlugins(
+	ctx context.Context,
+	mergedPlugins extensionsplug.Plugin,
+	globalSettings settings.Settings,
+) {
 	gateways, routeIndex, backendIndex, endpointIRs := krtcollections.InitCollections(
 		ctx,
-		c.controllerName,
+		c.ControllerName,
 		mergedPlugins,
 		c.Client,
 		c.OurClient,
 		c.RefGrants,
 		c.KrtOpts,
+		globalSettings,
 	)
 
 	// init plugin-extended collections

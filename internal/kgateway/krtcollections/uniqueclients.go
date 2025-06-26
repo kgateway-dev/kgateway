@@ -51,7 +51,8 @@ type callbacksCollection struct {
 }
 
 type callbacks struct {
-	collection atomic.Pointer[callbacksCollection]
+	collection        atomic.Pointer[callbacksCollection]
+	extraXDSCallbacks xdsserver.Callbacks
 }
 
 // If augmentedPods is nil, we won't use the pod locality info, and all pods for the same gateway will receive the same config.
@@ -60,8 +61,9 @@ type UniquelyConnectedClientsBulider func(ctx context.Context, krtOpts krtutil.K
 // THIS IS THE SET OF THINGS WE RUN TRANSLATION FOR
 // add returned callbacks to the xds server.
 
-func NewUniquelyConnectedClients() (xdsserver.Callbacks, UniquelyConnectedClientsBulider) {
-	cb := &callbacks{}
+func NewUniquelyConnectedClients(extraXDSCallbacks xdsserver.Callbacks) (xdsserver.Callbacks, UniquelyConnectedClientsBulider) {
+	cb := &callbacks{extraXDSCallbacks: extraXDSCallbacks}
+
 	envoycb := xdsserver.CallbackFuncs{
 		StreamClosedFunc:  cb.OnStreamClosed,
 		StreamRequestFunc: cb.OnStreamRequest,
@@ -96,6 +98,10 @@ func buildCollection(callbacks *callbacks) UniquelyConnectedClientsBulider {
 
 // OnStreamClosed is called immediately prior to closing an xDS stream with a stream ID.
 func (x *callbacks) OnStreamClosed(sid int64, node *envoy_config_core_v3.Node) {
+	if x.extraXDSCallbacks != nil {
+		x.extraXDSCallbacks.OnStreamClosed(sid, node)
+	}
+
 	c := x.collection.Load()
 	if c == nil {
 		return
@@ -180,6 +186,12 @@ func (x *callbacksCollection) add(sid int64, r *envoy_service_discovery_v3.Disco
 // OnStreamRequest is called once a request is received on a stream.
 // Returning an error will end processing and close the stream. OnStreamClosed will still be called.
 func (x *callbacks) OnStreamRequest(sid int64, r *envoy_service_discovery_v3.DiscoveryRequest) error {
+	if x.extraXDSCallbacks != nil {
+		if err := x.extraXDSCallbacks.OnStreamRequest(sid, r); err != nil {
+			return err
+		}
+	}
+
 	role := roleFromRequest(r)
 	// as gloo-edge and kgateway share a control plane, check that this collection only handles kgateway clients
 	// TODO remove this check if it's no longer needed
@@ -234,6 +246,12 @@ func (x *callbacksCollection) getClients() []ir.UniqlyConnectedClient {
 // OnFetchRequest is called for each Fetch request. Returning an error will end processing of the
 // request and respond with an error.
 func (x *callbacks) OnFetchRequest(ctx context.Context, r *envoy_service_discovery_v3.DiscoveryRequest) error {
+	if x.extraXDSCallbacks != nil {
+		if err := x.extraXDSCallbacks.OnFetchRequest(ctx, r); err != nil {
+			return err
+		}
+	}
+
 	role := r.GetNode().GetMetadata().GetFields()[xds.RoleKey].GetStringValue()
 	// as gloo-edge and kgateway share a control plane, check that this collection only handles kgateway clients
 	// TODO remove this check if it's no longer needed

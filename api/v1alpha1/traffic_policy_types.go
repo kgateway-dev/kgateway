@@ -72,6 +72,10 @@ type TrafficPolicySpec struct {
 	// Cors specifies the CORS configuration for the policy.
 	// +optional
 	Cors *CorsPolicy `json:"cors,omitempty"`
+
+	// Csrf specifies the Cross-Site Request Forgery (CSRF) policy for this traffic policy.
+	// +optional
+	Csrf *CSRFPolicy `json:"csrf,omitempty"`
 }
 
 // TransformationPolicy config is used to modify envoy behavior at a route level.
@@ -178,7 +182,8 @@ const (
 // Note that most of these fields are passed along as is to Envoy.
 // For more details on particular fields please see the Envoy ExtAuth documentation.
 // https://raw.githubusercontent.com/envoyproxy/envoy/f910f4abea24904aff04ec33a00147184ea7cffa/api/envoy/extensions/filters/http/ext_authz/v3/ext_authz.proto
-// +kubebuilder:validation:XValidation:message="only one of 'extensionRef' or 'enablement' may be set",rule="(has(self.extensionRef) && !has(self.enablement)) || (!has(self.extensionRef) && has(self.enablement))"
+//
+// +kubebuilder:validation:ExactlyOneOf=extensionRef;enablement
 type ExtAuthPolicy struct {
 	// ExtensionRef references the ExternalExtension that should be used for authentication.
 	// +optional
@@ -204,7 +209,7 @@ type ExtAuthPolicy struct {
 type BufferSettings struct {
 	// MaxRequestBytes sets the maximum size of a message body to buffer.
 	// Requests exceeding this size will receive HTTP 413 and not be sent to the authorization service.
-	// +kubebuilder:validation:Required
+	// +required
 	// +kubebuilder:validation:Minimum=1
 	MaxRequestBytes uint32 `json:"maxRequestBytes"`
 
@@ -256,7 +261,7 @@ type TokenBucket struct {
 	// If not specified, it defaults to 1.
 	// This controls the steady-state rate of token generation.
 	// +optional
-	// +kubebuilder:default:=1
+	// +kubebuilder:default=1
 	TokensPerFill *uint32 `json:"tokensPerFill,omitempty"`
 
 	// FillInterval defines the time duration between consecutive token fills.
@@ -341,4 +346,28 @@ type RateLimitDescriptorEntryGeneric struct {
 type CorsPolicy struct {
 	// +kubebuilder:pruning:PreserveUnknownFields
 	*gwv1.HTTPCORSFilter `json:",inline"`
+}
+
+// CSRFPolicy can be used to set percent of requests for which the CSRF filter is enabled,
+// enable shadow-only mode where policies will be evaluated and tracked, but not enforced and
+// add additional source origins that will be allowed in addition to the destination origin.
+//
+// +kubebuilder:validation:AtMostOneOf=percentageEnabled;percentageShadowed
+type CSRFPolicy struct {
+	// Specifies the percentage of requests for which the CSRF filter is enabled.
+	// +optional
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=100
+	PercentageEnabled *uint32 `json:"percentageEnabled,omitempty"`
+
+	// Specifies that CSRF policies will be evaluated and tracked, but not enforced.
+	// +optional
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=100
+	PercentageShadowed *uint32 `json:"percentageShadowed,omitempty"`
+
+	// Specifies additional source origins that will be allowed in addition to the destination origin.
+	// +optional
+	// +kubebuilder:validation:MaxItems=16
+	AdditionalOrigins []*StringMatcher `json:"additionalOrigins,omitempty"`
 }

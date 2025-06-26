@@ -15,6 +15,7 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/trafficpolicy"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
@@ -129,13 +130,13 @@ func PreprocessAIBackend(ctx context.Context, aiBackend *v1alpha1.AIBackend, ir 
 
 	// We only want to add the transformation filter if we have a single AI backend
 	// Otherwise we already have the transformation filter added by the weighted destination.
-	transformation := createTransformationTemplate(ctx, aiBackend)
+	transformation := createTransformationTemplate(aiBackend)
 	routeTransformation := &envoytransformation.RouteTransformations_RouteTransformation{
 		Match: &envoytransformation.RouteTransformations_RouteTransformation_RequestMatch_{
 			RequestMatch: &envoytransformation.RouteTransformations_RouteTransformation_RequestMatch{
 				RequestTransformation: &envoytransformation.Transformation{
 					// Set this env var to true to log the request/response info for each transformation
-					LogRequestResponseInfo: wrapperspb.Bool(os.Getenv("AI_PLUGIN_DEBUG_TRANSFORMATIONS") == "true"),
+					LogRequestResponseInfo: wrapperspb.Bool(os.Getenv(trafficpolicy.AiDebugTransformations) == "true"),
 					TransformationType: &envoytransformation.Transformation_TransformationTemplate{
 						TransformationTemplate: transformation,
 					},

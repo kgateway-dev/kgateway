@@ -60,10 +60,18 @@ type BackendConfigPolicySpec struct {
 	// +optional
 	Http1ProtocolOptions *Http1ProtocolOptions `json:"http1ProtocolOptions,omitempty"`
 
-	// SSLConfig contains the options necessary to configure a backend to use TLS origination.
+	// TLS contains the options necessary to configure a backend to use TLS origination.
 	// See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/transport_sockets/tls/v3/tls.proto#envoy-v3-api-msg-extensions-transport-sockets-tls-v3-sslconfig) for more details.
 	// +optional
-	SSLConfig *SSLConfig `json:"sslConfig,omitempty"`
+	TLS *TLS `json:"tls,omitempty"`
+
+	// LoadBalancer contains the options necessary to configure the load balancer.
+	// +optional
+	LoadBalancer *LoadBalancer `json:"loadBalancer,omitempty"`
+
+	// HealthCheck contains the options necessary to configure the health check.
+	// +optional
+	HealthCheck *HealthCheck `json:"healthCheck,omitempty"`
 }
 
 // See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-msg-config-core-v3-http1protocoloptions) for more details.
@@ -122,33 +130,11 @@ type CommonHttpProtocolOptions struct {
 	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('0s')",message="maxStreamDuration must be a valid duration string"
 	MaxStreamDuration *metav1.Duration `json:"maxStreamDuration,omitempty"`
 
-	// Action to take when a client request with a header name containing underscore characters is received.
-	// If this setting is not specified, the value defaults to ALLOW.
-	// Note: upstream responses are not affected by this setting.
-	// +optional
-	HeadersWithUnderscoresAction *HeadersWithUnderscoresAction `json:"headersWithUnderscoresAction,omitempty"`
-
 	// Maximum requests for a single upstream connection.
 	// If set to 0 or unspecified, defaults to unlimited.
 	// +optional
 	MaxRequestsPerConnection *int `json:"maxRequestsPerConnection,omitempty"`
 }
-
-// +kubebuilder:validation:Enum=Allow;RejectRequest;DropHeader
-type HeadersWithUnderscoresAction string
-
-const (
-	// Allow headers with underscores. This is the default behavior.
-	HeadersWithUnderscoresActionAllow HeadersWithUnderscoresAction = "Allow"
-	// Reject client request. HTTP/1 requests are rejected with the 400 status. HTTP/2 requests
-	// end with the stream reset. The "httpN.requests_rejected_with_underscores_in_headers" counter
-	// is incremented for each rejected request.
-	HeadersWithUnderscoresActionRejectRequest HeadersWithUnderscoresAction = "RejectRequest"
-	// Drop the header with name containing underscores. The header is dropped before the filter chain is
-	// invoked and as such filters will not see dropped headers. The
-	// "httpN.dropped_headers_with_underscores" is incremented for each dropped header.
-	HeadersWithUnderscoresActionDropHeader HeadersWithUnderscoresAction = "DropHeader"
-)
 
 // See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/address.proto#envoy-v3-api-msg-config-core-v3-tcpkeepalive) for more details.
 type TCPKeepalive struct {
@@ -169,15 +155,15 @@ type TCPKeepalive struct {
 	KeepAliveInterval *metav1.Duration `json:"keepAliveInterval,omitempty"`
 }
 
-// +kubebuilder:validation:XValidation:rule="has(self.secretRef) != has(self.sslFiles)",message="Exactly one of secretRef or sslFiles must be set in SSLConfig"
-type SSLConfig struct {
+// +kubebuilder:validation:ExactlyOneOf=secretRef;tlsFiles
+type TLS struct {
 	// Reference to the TLS secret containing the certificate, key, and optionally the root CA.
 	// +optional
 	SecretRef *corev1.LocalObjectReference `json:"secretRef,omitempty"`
 
 	// File paths to certificates local to the proxy.
 	// +optional
-	SSLFiles *SSLFiles `json:"sslFiles,omitempty"`
+	TLSFiles *TLSFiles `json:"tlsFiles,omitempty"`
 
 	// The SNI domains that should be considered for TLS connection
 	// +optional
@@ -191,7 +177,7 @@ type SSLConfig struct {
 	// General TLS parameters. See the [envoy docs](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/transport_sockets/tls/v3/common.proto#extensions-transport-sockets-tls-v3-tlsparameters)
 	// for more information on the meaning of these values.
 	// +optional
-	SSLParameters *SSLParameters `json:"sslParameters,omitempty"`
+	Parameters *Parameters `json:"parameters,omitempty"`
 
 	// Set Application Level Protocol Negotiation
 	// If empty, defaults to ["h2", "http/1.1"].
@@ -203,7 +189,7 @@ type SSLConfig struct {
 	// +optional
 	AllowRenegotiation *bool `json:"allowRenegotiation,omitempty"`
 
-	// If the SSL config has the ca.crt (root CA) provided, kgateway uses it to perform mTLS by default.
+	// If the TLS config has the ca.crt (root CA) provided, kgateway uses it to perform mTLS by default.
 	// Set oneWayTls to true to disable mTLS in favor of server-only TLS (one-way TLS), even if kgateway has the root CA.
 	// If unset, defaults to false.
 	// +optional
@@ -222,7 +208,7 @@ const (
 	TLSVersion1_3  TLSVersion = "1.3"
 )
 
-type SSLParameters struct {
+type Parameters struct {
 	// Minimum TLS version.
 	// +optional
 	TLSMinVersion *TLSVersion `json:"tlsMinVersion,omitempty"`
@@ -238,8 +224,8 @@ type SSLParameters struct {
 	EcdhCurves []string `json:"ecdhCurves,omitempty"`
 }
 
-// +kubebuilder:validation:XValidation:rule="has(self.tlsCertificate) || has(self.tlsKey) || has(self.rootCA)",message="At least one of tlsCertificate, tlsKey, or rootCA must be set in SSLFiles"
-type SSLFiles struct {
+// +kubebuilder:validation:XValidation:rule="has(self.tlsCertificate) || has(self.tlsKey) || has(self.rootCA)",message="At least one of tlsCertificate, tlsKey, or rootCA must be set in TLSFiles"
+type TLSFiles struct {
 	// +optional
 	TLSCertificate string `json:"tlsCertificate,omitempty"`
 
@@ -248,4 +234,209 @@ type SSLFiles struct {
 
 	// +optional
 	RootCA string `json:"rootCA,omitempty"`
+}
+
+// +kubebuilder:validation:AtMostOneOf=leastRequest;roundRobin;ringHash;maglev;random
+type LoadBalancer struct {
+	// HealthyPanicThreshold configures envoy's panic threshold percentage between 0-100. Once the number of non-healthy hosts
+	// reaches this percentage, envoy disregards health information.
+	// See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/load_balancing/panic_threshold.html).
+	// +optional
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=100
+	HealthyPanicThreshold *uint32 `json:"healthyPanicThreshold,omitempty"`
+
+	// This allows batch updates of endpoints health/weight/metadata that happen during a time window.
+	// this help lower cpu usage when endpoint change rate is high. defaults to 1 second.
+	// Set to 0 to disable and have changes applied immediately.
+	// +optional
+	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('0s')",message="updateMergeWindow must be a valid duration string"
+	UpdateMergeWindow *metav1.Duration `json:"updateMergeWindow,omitempty"`
+
+	// LeastRequest configures the least request load balancer type.
+	// +optional
+	LeastRequest *LoadBalancerLeastRequestConfig `json:"leastRequest,omitempty"`
+
+	// RoundRobin configures the round robin load balancer type.
+	// +optional
+	RoundRobin *LoadBalancerRoundRobinConfig `json:"roundRobin,omitempty"`
+
+	// RingHash configures the ring hash load balancer type.
+	// +optional
+	RingHash *LoadBalancerRingHashConfig `json:"ringHash,omitempty"`
+
+	// Maglev configures the maglev load balancer type.
+	// +optional
+	Maglev *LoadBalancerMaglevConfig `json:"maglev,omitempty"`
+
+	// Random configures the random load balancer type.
+	// +optional
+	Random *LoadBalancerRandomConfig `json:"random,omitempty"`
+
+	// LocalityType specifies the locality config type to use.
+	// See https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/load_balancing_policies/common/v3/common.proto#envoy-v3-api-msg-extensions-load-balancing-policies-common-v3-localitylbconfig
+	// +optional
+	// +kubebuilder:validation:Enum=WeightedLb
+	LocalityType *LocalityType `json:"localityType,omitempty"`
+
+	// UseHostnameForHashing specifies whether to use the hostname instead of the resolved IP address for hashing.
+	// Defaults to false.
+	// +optional
+	// +default=false
+	UseHostnameForHashing bool `json:"useHostnameForHashing,omitempty"`
+
+	// If set to true, the load balancer will drain connections when the host set changes.
+	//
+	// Ring Hash or Maglev can be used to ensure that clients with the same key
+	// are routed to the same upstream host.
+	// Distruptions can cause new connections with the same key as existing connections
+	// to be routed to different hosts.
+	// Enabling this feature will cause the load balancer to drain existing connections
+	// when the host set changes, ensuring that new connections with the same key are
+	// consistently routed to the same host.
+	// Connections are not immediately closed, but are allowed to drain
+	// before being closed.
+	// +optional
+	CloseConnectionsOnHostSetChange *bool `json:"closeConnectionsOnHostSetChange,omitempty"`
+}
+
+// LoadBalancerLeastRequestConfig configures the least request load balancer type.
+type LoadBalancerLeastRequestConfig struct {
+	// How many choices to take into account.
+	// Defaults to 2.
+	// +optional
+	// +default=2
+	ChoiceCount uint32 `json:"choiceCount,omitempty"`
+
+	// SlowStart configures the slow start configuration for the load balancer.
+	// +optional
+	SlowStart *SlowStart `json:"slowStart,omitempty"`
+}
+
+// LoadBalancerRoundRobinConfig configures the round robin load balancer type.
+type LoadBalancerRoundRobinConfig struct {
+	// SlowStart configures the slow start configuration for the load balancer.
+	// +optional
+	SlowStart *SlowStart `json:"slowStart,omitempty"`
+}
+
+// LoadBalancerRingHashConfig configures the ring hash load balancer type.
+type LoadBalancerRingHashConfig struct {
+	// MinimumRingSize is the minimum size of the ring.
+	// +optional
+	MinimumRingSize *uint64 `json:"minimumRingSize,omitempty"`
+
+	// MaximumRingSize is the maximum size of the ring.
+	// +optional
+	MaximumRingSize *uint64 `json:"maximumRingSize,omitempty"`
+}
+
+type (
+	LoadBalancerMaglevConfig struct{}
+	LoadBalancerRandomConfig struct{}
+)
+
+type SlowStart struct {
+	// Represents the size of slow start window.
+	// If set, the newly created host remains in slow start mode starting from its creation time
+	// for the duration of slow start window.
+	// +optional
+	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('0s')",message="window must be a valid duration string"
+	Window *metav1.Duration `json:"window,omitempty"`
+
+	// This parameter controls the speed of traffic increase over the slow start window. Defaults to 1.0,
+	// so that endpoint would get linearly increasing amount of traffic.
+	// When increasing the value for this parameter, the speed of traffic ramp-up increases non-linearly.
+	// The value of aggression parameter should be greater than 0.0.
+	// By tuning the parameter, is possible to achieve polynomial or exponential shape of ramp-up curve.
+	//
+	// During slow start window, effective weight of an endpoint would be scaled with time factor and aggression:
+	// `new_weight = weight * max(min_weight_percent, time_factor ^ (1 / aggression))`,
+	// where `time_factor=(time_since_start_seconds / slow_start_time_seconds)`.
+	//
+	// As time progresses, more and more traffic would be sent to endpoint, which is in slow start window.
+	// Once host exits slow start, time_factor and aggression no longer affect its weight.
+	// +optional
+	// +kubebuilder:validation:XValidation:rule="self == \"\" || (self.matches('^-?(?:[0-9]+(?:\\\\.[0-9]*)?|\\\\.[0-9]+)$') && double(self) > 0.0)",message="Aggression, if specified, must be a string representing a number greater than 0.0"
+	Aggression string `json:"aggression,omitempty"`
+
+	// Minimum weight percentage of an endpoint during slow start.
+	// +optional
+	MinWeightPercent *uint32 `json:"minWeightPercent,omitempty"`
+}
+
+type LocalityType string
+
+const (
+	// https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/load_balancing/locality_weight#locality-weighted-load-balancing
+	// Locality weighted load balancing enables weighting assignments across different zones and geographical locations by using explicit weights.
+	// This field is required to enable locality weighted load balancing.
+	LocalityConfigTypeWeightedLb LocalityType = "WeightedLb"
+)
+
+// HealthCheck contains the options to configure the health check.
+// See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/health_check.proto) for more details.
+// +optional
+// +kubebuilder:validation:XValidation:rule="has(self.http) != has(self.grpc)",message="exactly one of http or grpc must be set"
+type HealthCheck struct {
+	// Timeout is time to wait for a health check response. If the timeout is reached the
+	// health check attempt will be considered a failure.
+	// +required
+	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('0s')",message="timeout must be a valid duration string"
+	Timeout *metav1.Duration `json:"timeout"`
+
+	// Interval is the time between health checks.
+	// +required
+	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('0s')",message="interval must be a valid duration string"
+	Interval *metav1.Duration `json:"interval"`
+
+	// UnhealthyThreshold is the number of consecutive failed health checks that will be considered
+	// unhealthy.
+	// Note that for HTTP health checks, if a host responds with a code not in ExpectedStatuses or RetriableStatuses,
+	// this threshold is ignored and the host is considered immediately unhealthy.
+	// +required
+	UnhealthyThreshold *uint32 `json:"unhealthyThreshold"`
+
+	// HealthyThreshold is the number of healthy health checks required before a host is marked
+	// healthy. Note that during startup, only a single successful health check is
+	// required to mark a host healthy.
+	// +required
+	HealthyThreshold *uint32 `json:"healthyThreshold"`
+
+	// Http contains the options to configure the HTTP health check.
+	// +optional
+	Http *HealthCheckHttp `json:"http,omitempty"`
+
+	// Grpc contains the options to configure the gRPC health check.
+	// +optional
+	Grpc *HealthCheckGrpc `json:"grpc,omitempty"`
+}
+type HealthCheckHttp struct {
+	// Host is the value of the host header in the HTTP health check request. If
+	// unset, the name of the cluster this health check is associated
+	// with will be used.
+	// +optional
+	Host *string `json:"host,omitempty"`
+
+	// Path is the HTTP path requested.
+	// +required
+	Path string `json:"path"`
+
+	// Method is the HTTP method to use.
+	// If unset, GET is used.
+	// +optional
+	// +kubebuilder:validation:Enum=GET;HEAD;POST;PUT;DELETE;OPTIONS;TRACE;PATCH
+	Method *string `json:"method,omitempty"`
+}
+
+type HealthCheckGrpc struct {
+	// ServiceName is the optional name of the service to check.
+	// +optional
+	ServiceName *string `json:"serviceName,omitempty"`
+
+	// Authority is the authority header used to make the gRPC health check request.
+	// If unset, the name of the cluster this health check is associated
+	// with will be used.
+	// +optional
+	Authority *string `json:"authority,omitempty"`
 }

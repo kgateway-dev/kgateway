@@ -1,0 +1,84 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: example-gateway
+  namespace: default
+spec:
+  gatewayClassName: example-gateway-class
+  listeners:
+  - name: http
+    protocol: HTTP
+    port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: HTTPRoute
+metadata:
+  name: lambda-route
+  namespace: default
+spec:
+  parentRefs:
+    - name: example-gateway
+  hostnames:
+    - "www.example.com"
+  rules:
+    - matches:
+      - path:
+          type: Exact
+          value: /lambda
+      backendRefs:
+        - name: lambda-backend
+          kind: Backend
+          group: gateway.kgateway.dev
+    - matches:
+      - path:
+          type: Exact
+          value: /lambda/no-payload-transform
+      backendRefs:
+        - name: lambda-without-payload-transform
+          kind: Backend
+          group: gateway.kgateway.dev          
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: lambda-backend
+  namespace: default
+spec:
+  type: AWS
+  aws:
+    accountId: "000000000000"
+    auth:
+      type: Secret
+      secretRef:
+        name: aws-creds
+    lambda:
+      functionName: hello-function
+      endpointURL: "http://172.18.0.2:31566"
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: lambda-without-payload-transform
+  namespace: default
+spec:
+  type: AWS
+  aws:
+    accountId: "000000000000"
+    auth:
+      type: Secret
+      secretRef:
+        name: aws-creds
+    lambda:
+      functionName: hello-function
+      endpointURL: "http://172.18.0.2:31566"
+      payloadTransformMode: None
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: aws-creds
+  namespace: default
+type: Opaque
+data:
+  accessKey: QUtJQUlPU0ZPRE5ON0VYQU1QTEU= # Base64 encoded "AKIAIOSFODNN7EXAMPLE"
+  secretKey: d0phbHJYVXRuRkVNSS9LN01ERU5HL2JQeFJmaUNZRVhBTVBMRUtFWQ== # Base64 encoded "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"

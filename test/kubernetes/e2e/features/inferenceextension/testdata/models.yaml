@@ -1,0 +1,24 @@
+apiVersion: inference.networking.x-k8s.io/v1alpha2
+kind: InferenceModel
+metadata:
+  name: food-review
+  namespace: inf-ext-e2e
+spec:
+  modelName: food-review
+  criticality: Standard
+  poolRef:
+    name: vllm-llama3-8b-instruct
+  targetModels:
+  - name: food-review-1
+    weight: 100
+---
+apiVersion: inference.networking.x-k8s.io/v1alpha2
+kind: InferenceModel
+metadata:
+  name: base-model
+  namespace: inf-ext-e2e
+spec:
+  modelName: meta-llama/Llama-3.1-8B-Instruct
+  criticality: Critical
+  poolRef:
+    name: vllm-llama3-8b-instruct

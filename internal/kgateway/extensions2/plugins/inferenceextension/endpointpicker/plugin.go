@@ -3,7 +3,6 @@ package endpointpicker
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"time"
 
 	clusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
@@ -33,6 +32,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
@@ -40,17 +40,11 @@ import (
 const DefaultExtProcMaxRequests = 40000
 
 var (
-	inferencePoolGVK = buildInfPoolGvk("InferencePool")
+	logger = logging.New("plugin/inference-epp")
+
+	inferencePoolGVK = wellknown.InferencePoolGVK
 	inferencePoolGVR = inferencePoolGVK.GroupVersion().WithResource("inferencepools")
 )
-
-func buildInfPoolGvk(kind string) schema.GroupVersionKind {
-	return schema.GroupVersionKind{
-		Group:   infextv1a2.GroupVersion.Group,
-		Version: infextv1a2.GroupVersion.Version,
-		Kind:    kind,
-	}
-}
 
 func registerTypes(cli versioned.Interface) {
 	skubeclient.Register[*infextv1a2.InferencePool](
@@ -69,11 +63,11 @@ func NewPlugin(ctx context.Context, commonCol *common.CommonCollections) *extplu
 	// Create the inference extension clientset.
 	cli, err := versioned.NewForConfig(commonCol.Client.RESTConfig())
 	if err != nil {
-		slog.Error("failed to create inference extension client", "error", err)
+		logger.Error("failed to create inference extension client", "error", err)
 		return nil
 	}
 
-	// Register the InfencePool type to enable dynamic object translation.
+	// Register the InferencePool type to enable dynamic object translation.
 	registerTypes(cli)
 
 	// Create an InferencePool krt collection.
@@ -90,13 +84,24 @@ func NewPluginFromCollections(
 	commonCol *common.CommonCollections,
 	poolCol krt.Collection[*infextv1a2.InferencePool],
 ) *extplug.Plugin {
+	// Get the Services KRT collection for computing InferencePool status
+	svcCol := commonCol.Services
+
 	// The InferencePool group kind used by the BackendObjectIR and the ContributesBackendObjectIRs plugin.
 	gk := schema.GroupKind{
-		Group: infextv1a2.GroupVersion.Group,
-		Kind:  wellknown.InferencePoolKind,
+		Group: inferencePoolGVK.Group,
+		Kind:  inferencePoolGVK.Kind,
 	}
 
 	backendCol := krt.NewCollection(poolCol, func(kctx krt.HandlerContext, pool *infextv1a2.InferencePool) *ir.BackendObjectIR {
+		// Validate the InferencePool and create the associated IR.
+		irPool := newInferencePool(pool)
+		errs := validatePool(pool, svcCol)
+		if errs != nil {
+			// If there are validation errors, add them to the IR.
+			irPool.errors = errs
+		}
+
 		// Create a BackendObjectIR IR representation from the given InferencePool.
 		objSrc := ir.ObjectSource{
 			Kind:      gk.Kind,
@@ -108,11 +113,19 @@ func NewPluginFromCollections(
 		backend.Obj = pool
 		backend.GvPrefix = "endpoint-picker"
 		backend.CanonicalHostname = ""
-		backend.ObjIr = newInferencePool(pool)
+		backend.ObjIr = irPool
 		return &backend
 	}, commonCol.KrtOpts.ToOptions("InferencePoolIR")...)
 
-	policyCol := krt.NewCollection(poolCol, func(krtctx krt.HandlerContext, pool *infextv1a2.InferencePool) *ir.PolicyWrapper {
+	policyCol := krt.NewCollection(poolCol, func(kctx krt.HandlerContext, pool *infextv1a2.InferencePool) *ir.PolicyWrapper {
+		// Validate the InferencePool and create the associated IR.
+		irPool := newInferencePool(pool)
+		errs := validatePool(pool, svcCol)
+		if errs != nil {
+			// If there are validation errors, add them to the IR.
+			irPool.errors = errs
+		}
+
 		// Create a PolicyWrapper IR representation from the given InferencePool.
 		return &ir.PolicyWrapper{
 			ObjectSource: ir.ObjectSource{
@@ -122,7 +135,7 @@ func NewPluginFromCollections(
 				Name:      pool.Name,
 			},
 			Policy:   pool,
-			PolicyIR: newInferencePool(pool),
+			PolicyIR: irPool,
 		}
 	})
 
@@ -142,6 +155,9 @@ func NewPluginFromCollections(
 				Policies:                  policyCol,
 				NewGatewayTranslationPass: newEndpointPickerPass,
 			},
+		},
+		ContributesRegistration: map[schema.GroupKind]func(){
+			gk: buildRegisterCallback(ctx, commonCol, backendCol),
 		},
 	}
 }
@@ -216,10 +232,7 @@ func (p *endpointPickerPass) ApplyForBackend(
 								irPool.objMeta.GetName(),
 								irPool.objMeta.GetNamespace(),
 							),
-							Authority: fmt.Sprintf("%s.%s.svc:%d",
-								irPool.configRef.Name,
-								irPool.objMeta.GetNamespace(),
-								irPool.configRef.ports[0].portNum),
+							Authority: authorityForPool(irPool),
 						},
 					},
 				},
@@ -233,67 +246,59 @@ func (p *endpointPickerPass) ApplyForBackend(
 	return nil
 }
 
-// HttpFilters inserts one ext_proc filter per used InferencePool.
+// HttpFilters returns one ext_proc filter, using the well-known filter name.
 func (p *endpointPickerPass) HttpFilters(ctx context.Context, fc ir.FilterChainCommon) ([]plugins.StagedHttpFilter, error) {
 	if p == nil || len(p.usedPools) == 0 {
 		return nil, nil
 	}
 
-	var filters []plugins.StagedHttpFilter
-
-	// For each used pool, create a distinct ext_proc filter referencing that pool's cluster.
-	for _, pool := range p.usedPools {
-		if pool.configRef == nil || len(pool.configRef.ports) == 0 {
-			continue
-		}
-
-		clusterName := clusterNameExtProc(pool.objMeta.GetName(), pool.objMeta.GetNamespace())
-		authority := fmt.Sprintf("%s.%s:%d",
-			pool.configRef.Name,
-			pool.objMeta.GetNamespace(),
-			pool.configRef.ports[0].portNum,
-		)
-
-		// Use a unique filter name per pool to avoid collisions.
-		filterName := fmt.Sprintf("%s_%s_%s",
-			wellknown.InfPoolTransformationFilterName,
-			pool.objMeta.GetNamespace(),
-			pool.objMeta.GetName(),
-		)
-
-		extProcSettings := &extprocv3.ExternalProcessor{
-			GrpcService: &corev3.GrpcService{
-				TargetSpecifier: &corev3.GrpcService_EnvoyGrpc_{
-					EnvoyGrpc: &corev3.GrpcService_EnvoyGrpc{
-						ClusterName: clusterName,
-						Authority:   authority,
-					},
-				},
-			},
-			ProcessingMode: &extprocv3.ProcessingMode{
-				RequestHeaderMode:   extprocv3.ProcessingMode_SEND,
-				RequestBodyMode:     extprocv3.ProcessingMode_FULL_DUPLEX_STREAMED,
-				RequestTrailerMode:  extprocv3.ProcessingMode_SEND,
-				ResponseBodyMode:    extprocv3.ProcessingMode_FULL_DUPLEX_STREAMED,
-				ResponseHeaderMode:  extprocv3.ProcessingMode_SEND,
-				ResponseTrailerMode: extprocv3.ProcessingMode_SEND,
-			},
-			MessageTimeout:   durationpb.New(5 * time.Second),
-			FailureModeAllow: false,
-		}
-
-		stagedFilter, err := plugins.NewStagedFilter(
-			filterName, // must be unique
-			extProcSettings,
-			plugins.BeforeStage(plugins.RouteStage),
-		)
-		if err != nil {
-			return nil, err
-		}
-		filters = append(filters, stagedFilter)
+	// Create a pool as placeholder for the static config
+	tmpPool := &inferencePool{
+		objMeta: metav1.ObjectMeta{
+			Name:      "placeholder-pool",
+			Namespace: "placeholder-namespace",
+		},
+		configRef: &service{
+			ObjectSource: ir.ObjectSource{Name: "placeholder-service"},
+			ports:        []servicePort{{name: "grpc", portNum: 9002}},
+		},
 	}
 
-	return filters, nil
+	// Static ExternalProcessor that will be overridden by ExtProcPerRoute
+	extProcSettings := &extprocv3.ExternalProcessor{
+		GrpcService: &corev3.GrpcService{
+			TargetSpecifier: &corev3.GrpcService_EnvoyGrpc_{
+				EnvoyGrpc: &corev3.GrpcService_EnvoyGrpc{
+					ClusterName: clusterNameExtProc(
+						tmpPool.objMeta.GetName(),
+						tmpPool.objMeta.GetNamespace(),
+					),
+					Authority: authorityForPool(tmpPool),
+				},
+			},
+		},
+		ProcessingMode: &extprocv3.ProcessingMode{
+			RequestHeaderMode:   extprocv3.ProcessingMode_SEND,
+			RequestBodyMode:     extprocv3.ProcessingMode_FULL_DUPLEX_STREAMED,
+			RequestTrailerMode:  extprocv3.ProcessingMode_SEND,
+			ResponseBodyMode:    extprocv3.ProcessingMode_FULL_DUPLEX_STREAMED,
+			ResponseHeaderMode:  extprocv3.ProcessingMode_SEND,
+			ResponseTrailerMode: extprocv3.ProcessingMode_SEND,
+		},
+		MessageTimeout:   durationpb.New(5 * time.Second),
+		FailureModeAllow: false,
+	}
+
+	stagedFilter, err := plugins.NewStagedFilter(
+		wellknown.InfPoolTransformationFilterName,
+		extProcSettings,
+		plugins.BeforeStage(plugins.RouteStage),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return []plugins.StagedHttpFilter{stagedFilter}, nil
 }
 
 // ResourcesToAdd returns the ext_proc clusters for all used InferencePools.
@@ -422,4 +427,12 @@ func clusterNameExtProc(name, ns string) string {
 
 func clusterNameOriginalDst(name, ns string) string {
 	return fmt.Sprintf("endpointpicker_%s_%s_original_dst", name, ns)
+}
+
+// authorityForPool formats the gRPC authority based on the given InferencePool IR.
+func authorityForPool(pool *inferencePool) string {
+	ns := pool.objMeta.GetNamespace()
+	svc := pool.configRef.Name
+	port := pool.configRef.ports[0].portNum
+	return fmt.Sprintf("%s.%s.svc:%d", svc, ns, port)
 }

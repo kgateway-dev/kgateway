@@ -41,19 +41,16 @@ const (
 
 // BackendSpec defines the desired state of Backend.
 // +union
-// +kubebuilder:validation:XValidation:message="ai backend must be nil if the type is not 'ai'",rule="!(has(self.ai) && self.type != 'AI')"
-// +kubebuilder:validation:XValidation:message="ai backend must be specified when type is 'ai'",rule="!(!has(self.ai) && self.type == 'AI')"
-// +kubebuilder:validation:XValidation:message="aws backend must be nil if the type is not 'aws'",rule="!(has(self.aws) && self.type != 'AWS')"
-// +kubebuilder:validation:XValidation:message="aws backend must be specified when type is 'aws'",rule="!(!has(self.aws) && self.type == 'AWS')"
-// +kubebuilder:validation:XValidation:message="static backend must be nil if the type is not 'static'",rule="!(has(self.static) && self.type != 'Static')"
-// +kubebuilder:validation:XValidation:message="static backend must be specified when type is 'static'",rule="!(!has(self.static) && self.type == 'Static')"
-// +kubebuilder:validation:XValidation:message="dynamic forward proxy backend must be nil if the type is not 'dynamicForwardProxy'",rule="!(has(self.dynamicForwardProxy) && self.type != 'DynamicForwardProxy')"
-// +kubebuilder:validation:XValidation:message="dynamic forward proxy backend must be specified when type is 'dynamicForwardProxy'",rule="!(!has(self.dynamicForwardProxy) && self.type == 'DynamicForwardProxy')"
+// +kubebuilder:validation:XValidation:message="ai backend must be specified when type is 'AI'",rule="self.type == 'AI' ? has(self.ai) : true"
+// +kubebuilder:validation:XValidation:message="aws backend must be specified when type is 'AWS'",rule="self.type == 'AWS' ? has(self.aws) : true"
+// +kubebuilder:validation:XValidation:message="static backend must be specified when type is 'Static'",rule="self.type == 'Static' ? has(self.static) : true"
+// +kubebuilder:validation:XValidation:message="dynamicForwardProxy backend must be specified when type is 'DynamicForwardProxy'",rule="self.type == 'DynamicForwardProxy' ? has(self.dynamicForwardProxy) : true"
+// +kubebuilder:validation:ExactlyOneOf=ai;aws;static;dynamicForwardProxy
 type BackendSpec struct {
 	// Type indicates the type of the backend to be used.
 	// +unionDiscriminator
 	// +kubebuilder:validation:Enum=AI;AWS;Static;DynamicForwardProxy
-	// +kubebuilder:validation:Required
+	// +required
 	Type BackendType `json:"type"`
 	// AI is the AI backend configuration.
 	// +optional
@@ -69,42 +66,59 @@ type BackendSpec struct {
 	DynamicForwardProxy *DynamicForwardProxyBackend `json:"dynamicForwardProxy,omitempty"`
 }
 
+// AppProtocol defines the application protocol to use when communicating with the backend.
+// +kubebuilder:validation:Enum=http2;grpc;grpc-web;kubernetes.io/h2c;kubernetes.io/ws
+type AppProtocol string
+
+const (
+	// AppProtocolHttp2 is the http2 app protocol.
+	AppProtocolHttp2 AppProtocol = "http2"
+	// AppProtocolGrpc is the grpc app protocol.
+	AppProtocolGrpc AppProtocol = "grpc"
+	// AppProtocolGrpcWeb is the grpc-web app protocol.
+	AppProtocolGrpcWeb AppProtocol = "grpc-web"
+	// AppProtocolKubernetesH2C is the kubernetes.io/h2c app protocol.
+	AppProtocolKubernetesH2C AppProtocol = "kubernetes.io/h2c"
+	// AppProtocolKubernetesWs is the kubernetes.io/ws app protocol.
+	AppProtocolKubernetesWs AppProtocol = "kubernetes.io/ws"
+)
+
 // DynamicForwardProxyBackend is the dynamic forward proxy backend configuration.
 type DynamicForwardProxyBackend struct {
 	// EnableTls enables TLS. When true, the backend will be configured to use TLS. System CA will be used for validation.
 	// The hostname will be used for SNI and auto SAN validation.
 	// +optional
-	// +kubebuilder:validation:Optional
 	EnableTls bool `json:"enableTls,omitempty"`
 }
 
 // AwsBackend is the AWS backend configuration.
 type AwsBackend struct {
+	// Lambda configures the AWS lambda service.
+	Lambda AwsLambda `json:"lambda"`
+
 	// AccountId is the AWS account ID to use for the backend.
-	// +kubebuilder:validation:Required
+	// +required
 	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:MaxLength=12
 	// +kubebuilder:validation:Pattern="^[0-9]{12}$"
 	AccountId string `json:"accountId"`
+
 	// Auth specifies an explicit AWS authentication method for the backend.
-	// When omitted, the authentication method will be inferred from the
-	// environment (e.g. instance metadata, EKS Pod Identity, environment variables, etc.)
-	// This may not work in all environments, so it is recommended to specify an authentication method.
+	// When omitted, the following credential providers are tried in order, stopping when one
+	// of them returns an access key ID and a secret access key (the session token is optional):
+	// 1. Environment variables: when the environment variables AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, and AWS_SESSION_TOKEN are set.
+	// 2. AssumeRoleWithWebIdentity API call: when the environment variables AWS_WEB_IDENTITY_TOKEN_FILE and AWS_ROLE_ARN are set.
+	// 3. EKS Pod Identity: when the environment variable AWS_CONTAINER_AUTHORIZATION_TOKEN_FILE is set.
 	//
 	// See the Envoy docs for more info:
 	// https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/aws_request_signing_filter#credentials
 	//
 	// +optional
-	// +kubebuilder:validation:Optional
 	Auth *AwsAuth `json:"auth,omitempty"`
-	// Lambda configures the AWS lambda service.
-	// +optional
-	// +kubebuilder:validation:Optional
-	Lambda *AwsLambda `json:"lambda,omitempty"`
+
 	// Region is the AWS region to use for the backend.
 	// Defaults to us-east-1 if not specified.
 	// +optional
-	// +kubebuilder:validation:Optional
 	// +kubebuilder:default=us-east-1
 	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:MaxLength=63
@@ -127,13 +141,12 @@ const (
 type AwsAuth struct {
 	// Type specifies the authentication method to use for the backend.
 	// +unionDiscriminator
-	// +kubebuilder:validation:Required
+	// +required
 	// +kubebuilder:validation:Enum=Secret
 	Type AwsAuthType `json:"type"`
 	// SecretRef references a Kubernetes Secret containing the AWS credentials.
 	// The Secret must have keys "accessKey", "secretKey", and optionally "sessionToken".
 	// +optional
-	// +kubebuilder:validation:Optional
 	SecretRef *corev1.LocalObjectReference `json:"secretRef,omitempty"`
 }
 
@@ -150,18 +163,16 @@ type AwsLambda struct {
 	// useful for testing and development purposes. When omitted, the default
 	// lambda hostname will be used.
 	// +optional
-	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:Pattern="^https?://[-a-zA-Z0-9@:%.+~#?&/=]+$"
 	// +kubebuilder:validation:MaxLength=2048
 	EndpointURL string `json:"endpointURL,omitempty"`
 	// FunctionName is the name of the Lambda function to invoke.
-	// +kubebuilder:validation:Required
+	// +required
 	// +kubebuilder:validation:Pattern="^[A-Za-z0-9-_]{1,140}$"
 	FunctionName string `json:"functionName"`
 	// InvocationMode defines how to invoke the Lambda function.
 	// Defaults to Sync.
 	// +optional
-	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:Enum=Sync;Async
 	// +kubebuilder:default=Sync
 	InvocationMode string `json:"invocationMode,omitempty"`
@@ -169,17 +180,45 @@ type AwsLambda struct {
 	// Valid values include a numeric version (e.g. "1"), an alias name
 	// (alphanumeric plus "-" or "_"), or the special literal "$LATEST".
 	// +optional
-	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:Pattern="^(\\$LATEST|[0-9]+|[A-Za-z0-9-_]{1,128})$"
 	Qualifier string `json:"qualifier,omitempty"`
+	// PayloadTransformation specifies payload transformation mode before it is sent to the Lambda function.
+	// Defaults to Envoy.
+	// +optional
+	// +kubebuilder:default=Envoy
+	PayloadTransformMode AWSLambdaPayloadTransformMode `json:"payloadTransformMode,omitempty"`
 }
+
+// AWSLambdaPayloadTransformMode defines the transformation mode for the payload in the request
+// before it is sent to the AWS Lambda function.
+//
+// +kubebuilder:validation:Enum=None;Envoy
+type AWSLambdaPayloadTransformMode string
+
+const (
+	// AWSLambdaPayloadTransformNone indicates that the payload will not be transformed using Envoy's
+	// built-in transformation before it is sent to the Lambda function.
+	// Note: Transformation policies configured on the route will still apply.
+	AWSLambdaPayloadTransformNone AWSLambdaPayloadTransformMode = "None"
+
+	// AWSLambdaPayloadTransformEnvoy indicates that the payload will be transformed using Envoy's
+	// built-in transformation. Refer to
+	// https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/aws_lambda_filter#configuration-as-a-listener-filter
+	// for more details on how Envoy transforms the payload.
+	AWSLambdaPayloadTransformEnvoy AWSLambdaPayloadTransformMode = "Envoy"
+)
 
 // StaticBackend references a static list of hosts.
 type StaticBackend struct {
 	// Hosts is a list of hosts to use for the backend.
-	// +kubebuilder:validation:required
+	// +required
 	// +kubebuilder:validation:MinItems=1
 	Hosts []Host `json:"hosts,omitempty"`
+
+	// AppProtocol is the application protocol to use when communicating with the backend.
+	// +optional
+	// +kubebuilder:validation:Optional
+	AppProtocol *AppProtocol `json:"appProtocol,omitempty"`
 }
 
 // Host defines a static backend host.
@@ -188,11 +227,10 @@ type Host struct {
 	// +kubebuilder:validation:MinLength=1
 	Host string `json:"host"`
 	// Port is the port to use for the backend.
-	// +kubebuilder:validation:Required
+	// +required
 	Port gwv1.PortNumber `json:"port"`
 	// InsecureSkipVerify allows skipping ssl validation for custom hosts
 	// +optional
-	// +kubebuilder:validation:Optional
 	InsecureSkipVerify *bool `json:"insecureSkipVerify,omitempty"`
 }
 

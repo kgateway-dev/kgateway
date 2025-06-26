@@ -1,0 +1,110 @@
+Clusters:
+- connectTimeout: 5s
+  dnsLookupFamily: V4_PREFERRED
+  loadAssignment:
+    clusterName: backend_default_lambda-backend_0
+    endpoints:
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: 172.18.0.2
+              portValue: 31566
+  metadata: {}
+  name: backend_default_lambda-backend_0
+  type: LOGICAL_DNS
+  typedExtensionProtocolOptions:
+    envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+      '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+      commonHttpProtocolOptions:
+        idleTimeout: 30s
+      explicitHttpConfig:
+        http2ProtocolOptions: {}
+      httpFilters:
+      - name: envoy.filters.http.aws_lambda
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.http.aws_lambda.v3.Config
+          arn: arn:aws:lambda:us-east-1:000000000000:function:hello-function:$LATEST
+      - name: envoy.filters.http.aws_request_signing
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.http.aws_request_signing.v3.AwsRequestSigning
+          credentialProvider:
+            inlineCredential:
+              accessKeyId: AKIAIOSFODNN7EXAMPLE
+              secretAccessKey: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+          region: us-east-1
+          serviceName: lambda
+      - name: envoy.filters.http.upstream_codec
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.http.upstream_codec.v3.UpstreamCodec
+- connectTimeout: 5s
+  dnsLookupFamily: V4_PREFERRED
+  loadAssignment:
+    clusterName: backend_default_lambda-without-payload-transform_0
+    endpoints:
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: 172.18.0.2
+              portValue: 31566
+  metadata: {}
+  name: backend_default_lambda-without-payload-transform_0
+  type: LOGICAL_DNS
+  typedExtensionProtocolOptions:
+    envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+      '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+      commonHttpProtocolOptions:
+        idleTimeout: 30s
+      explicitHttpConfig:
+        http2ProtocolOptions: {}
+      httpFilters:
+      - name: envoy.filters.http.aws_lambda
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.http.aws_lambda.v3.Config
+          arn: arn:aws:lambda:us-east-1:000000000000:function:hello-function:$LATEST
+          payloadPassthrough: true
+      - name: envoy.filters.http.aws_request_signing
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.http.aws_request_signing.v3.AwsRequestSigning
+          credentialProvider:
+            inlineCredential:
+              accessKeyId: AKIAIOSFODNN7EXAMPLE
+              secretAccessKey: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+          region: us-east-1
+          serviceName: lambda
+      - name: envoy.filters.http.upstream_codec
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.http.upstream_codec.v3.UpstreamCodec
+- connectTimeout: 5s
+  metadata: {}
+  name: test-backend-plugin_default_example-svc_80
+Listeners:
+- address:
+    socketAddress:
+      address: '::'
+      ipv4Compat: true
+      portValue: 8080
+  filterChains:
+  - filters:
+    - name: envoy.filters.network.http_connection_manager
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+        httpFilters:
+        - name: envoy.filters.http.router
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+        mergeSlashes: true
+        normalizePath: true
+        rds:
+          configSource:
+            ads: {}
+            resourceApiVersion: V3
+          routeConfigName: listener~80
+        statPrefix: http
+        useRemoteAddress: true
+    name: listener~80
+  name: listener~80
+Routes:
+- ignorePortInHostMatching: true
+  name: listener~80

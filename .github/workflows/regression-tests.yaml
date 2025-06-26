@@ -9,6 +9,10 @@ env:
   VERSION: '1.0.0-ci1'
   GITHUB_TOKEN: ${{ github.token }} # necessary to pass upgrade tests
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref_name }}
+  cancel-in-progress: true
+
 jobs:
   kube_gateway_api_conformance_tests:
     name: kubernetes gateway api conformance tests (${{matrix.image-variant}})
@@ -19,8 +23,6 @@ jobs:
       fail-fast: false
       matrix:
         kube-version: [ { node: 'v1.32.2@sha256:f226345927d7e348497136874b6d207e0b32cc52154ad8323129352923a3142f', kubectl: 'v1.32.2', kind: 'v0.27.0' } ]
-        # use standard since other variants don't currently work with these tests
-        # (see https://github.com/solo-io/solo-projects/issues/6094)
         image-variant:
           - standard
     steps:

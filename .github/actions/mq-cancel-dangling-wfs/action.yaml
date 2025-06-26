@@ -1,0 +1,17 @@
+name: Cancel Dangling MQ Workflow Runs
+description: Cancels running GitHub WF runs for MQ branches that no longer exist.
+
+inputs:
+  GH_ORG_REPO:
+    description: GitHub organization/repository name
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Run MQ cancellation script
+      shell: bash
+      env:
+        GH_ORG_REPO: ${{ inputs.GH_ORG_REPO }}
+      run: |
+        "${{ github.action_path }}/mq-cancel-dangling-wfs.sh"

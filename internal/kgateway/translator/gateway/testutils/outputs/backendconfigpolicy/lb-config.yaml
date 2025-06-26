@@ -1,0 +1,156 @@
+Clusters:
+- commonLbConfig:
+    consistentHashingLbConfig: {}
+  connectTimeout: 5s
+  edsClusterConfig:
+    edsConfig:
+      ads: {}
+      resourceApiVersion: V3
+  ignoreHealthOnHostRemoval: true
+  lbPolicy: LEAST_REQUEST
+  leastRequestLbConfig:
+    choiceCount: 3
+  metadata: {}
+  name: kube_default_httpbin-lr_8080
+  type: EDS
+- commonLbConfig:
+    consistentHashingLbConfig: {}
+  connectTimeout: 5s
+  edsClusterConfig:
+    edsConfig:
+      ads: {}
+      resourceApiVersion: V3
+  ignoreHealthOnHostRemoval: true
+  lbPolicy: MAGLEV
+  metadata: {}
+  name: kube_default_httpbin-maglev_8080
+  type: EDS
+- commonLbConfig:
+    consistentHashingLbConfig: {}
+  connectTimeout: 5s
+  edsClusterConfig:
+    edsConfig:
+      ads: {}
+      resourceApiVersion: V3
+  ignoreHealthOnHostRemoval: true
+  lbPolicy: RANDOM
+  metadata: {}
+  name: kube_default_httpbin-random_8080
+  type: EDS
+- commonLbConfig:
+    consistentHashingLbConfig: {}
+  connectTimeout: 5s
+  edsClusterConfig:
+    edsConfig:
+      ads: {}
+      resourceApiVersion: V3
+  ignoreHealthOnHostRemoval: true
+  lbPolicy: RING_HASH
+  metadata: {}
+  name: kube_default_httpbin-rh_8080
+  ringHashLbConfig:
+    minimumRingSize: "1024"
+  type: EDS
+- commonLbConfig:
+    consistentHashingLbConfig: {}
+  connectTimeout: 5s
+  edsClusterConfig:
+    edsConfig:
+      ads: {}
+      resourceApiVersion: V3
+  ignoreHealthOnHostRemoval: true
+  metadata: {}
+  name: kube_default_httpbin-rr_8080
+  roundRobinLbConfig:
+    slowStartConfig:
+      aggression:
+        defaultValue: 1.5
+        runtimeKey: upstream.kube_default_httpbin-rr_8080.slowStart.aggression
+      minWeightPercent:
+        value: 10
+      slowStartWindow: 10s
+  type: EDS
+- commonLbConfig:
+    consistentHashingLbConfig: {}
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
+  edsClusterConfig:
+    edsConfig:
+      ads: {}
+      resourceApiVersion: V3
+  ignoreHealthOnHostRemoval: true
+  metadata: {}
+  name: kube_default_httpbin-weighted_8080
+  type: EDS
+- commonLbConfig:
+    closeConnectionsOnHostSetChange: true
+    consistentHashingLbConfig:
+      useHostnameForHashing: true
+  connectTimeout: 5s
+  edsClusterConfig:
+    edsConfig:
+      ads: {}
+      resourceApiVersion: V3
+  ignoreHealthOnHostRemoval: true
+  lbPolicy: RING_HASH
+  metadata: {}
+  name: kube_default_httpbin_8080
+  perConnectionBufferLimitBytes: 1024
+  ringHashLbConfig:
+    maximumRingSize: "2048"
+    minimumRingSize: "1024"
+  type: EDS
+  typedExtensionProtocolOptions:
+    envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+      '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+      commonHttpProtocolOptions:
+        idleTimeout: 10s
+        maxHeadersCount: 15
+        maxRequestsPerConnection: 100
+        maxStreamDuration: 30s
+      explicitHttpConfig:
+        httpProtocolOptions:
+          enableTrailers: true
+          headerKeyFormat:
+            statefulFormatter:
+              name: envoy.http.stateful_header_formatters.preserve_case
+              typedConfig:
+                '@type': type.googleapis.com/envoy.extensions.http.header_formatters.preserve_case.v3.PreserveCaseFormatterConfig
+          overrideStreamErrorOnInvalidHttpMessage: true
+  upstreamConnectionOptions:
+    tcpKeepalive:
+      keepaliveInterval: 5
+      keepaliveProbes: 3
+      keepaliveTime: 30
+- connectTimeout: 5s
+  metadata: {}
+  name: test-backend-plugin_default_example-svc_80
+Listeners:
+- address:
+    socketAddress:
+      address: '::'
+      ipv4Compat: true
+      portValue: 8080
+  filterChains:
+  - filters:
+    - name: envoy.filters.network.http_connection_manager
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+        httpFilters:
+        - name: envoy.filters.http.router
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+        mergeSlashes: true
+        normalizePath: true
+        rds:
+          configSource:
+            ads: {}
+            resourceApiVersion: V3
+          routeConfigName: listener~8080
+        statPrefix: http
+        useRemoteAddress: true
+    name: listener~8080
+  name: listener~8080
+Routes:
+- ignorePortInHostMatching: true
+  name: listener~8080

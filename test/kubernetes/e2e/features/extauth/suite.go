@@ -95,7 +95,7 @@ func (s *testingSuite) TearDownSuite() {
 }
 
 // TestExtAuthPolicy tests the basic ExtAuth functionality with header-based allow/deny
-// Checks for gateay level auth with route level opt out
+// Checks for gateway level auth with route level opt out
 func (s *testingSuite) TestExtAuthPolicy() {
 	manifests := []string{
 		securedGatewayPolicyManifest,
@@ -191,13 +191,11 @@ func (s *testingSuite) TestExtAuthPolicy() {
 func (s *testingSuite) TestRouteTargetedExtAuthPolicy() {
 	manifests := []string{
 		securedRouteManifest,
-		secureAndDisableAllManifest,
 		insecureRouteManifest,
 	}
 
 	resources := []client.Object{
 		secureRoute, secureTrafficPolicy,
-		disableAllRoute, insecureTrafficPolicy2, secureTrafficPolicy2,
 		insecureRoute, insecureTrafficPolicy,
 	}
 	s.T().Cleanup(func() {
@@ -233,11 +231,6 @@ func (s *testingSuite) TestRouteTargetedExtAuthPolicy() {
 		{
 			name:           "request allowed on insecure route",
 			hostname:       "insecureroute.com",
-			expectedStatus: http.StatusOK,
-		},
-		{
-			name:           "request allowed on reinsecured route",
-			hostname:       "disableall.com",
 			expectedStatus: http.StatusOK,
 		},
 		{

@@ -19,11 +19,16 @@ type inferencePoolReconciler struct {
 	cli      client.Client
 	scheme   *runtime.Scheme
 	deployer *deployer.Deployer
+	metrics  controllerMetricsRecorder
 }
 
-func (r *inferencePoolReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *inferencePoolReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.Result, rErr error) {
 	log := log.FromContext(ctx).WithValues("inferencepool", req.NamespacedName)
 	log.V(1).Info("reconciling request", "request", req)
+
+	if r.metrics != nil {
+		defer r.metrics.reconcileStart()(rErr)
+	}
 
 	pool := new(infextv1a2.InferencePool)
 	if err := r.cli.Get(ctx, req.NamespacedName, pool); err != nil {

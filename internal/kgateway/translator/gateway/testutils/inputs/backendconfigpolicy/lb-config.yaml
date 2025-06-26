@@ -1,0 +1,228 @@
+kind: Gateway
+apiVersion: gateway.networking.k8s.io/v1
+metadata:
+  name: example-gateway
+spec:
+  gatewayClassName: kgateway
+  listeners:
+  - protocol: HTTP
+    port: 8080
+    name: http
+    allowedRoutes:
+      namespaces:
+        from: All
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: httpbin
+  labels:
+    app: httpbin
+    service: httpbin
+spec:
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+  selector:
+    app: httpbin
+---
+kind: BackendConfigPolicy
+apiVersion: gateway.kgateway.dev/v1alpha1
+metadata:
+  name: httpbin-policy
+spec:
+  targetRefs:
+    - name: httpbin
+      group: ""
+      kind: Service
+  connectTimeout: 5s
+  perConnectionBufferLimitBytes: 1024
+  tcpKeepalive:
+    keepAliveProbes: 3
+    keepAliveTime: 30s
+    keepAliveInterval: 5s
+  commonHttpProtocolOptions:
+    idleTimeout: 10s
+    maxHeadersCount: 15
+    maxStreamDuration: 30s
+    maxRequestsPerConnection: 100
+  http1ProtocolOptions:
+    enableTrailers: true
+    overrideStreamErrorOnInvalidHttpMessage: true
+    headerFormat: PreserveCaseHeaderKeyFormat
+  loadBalancer:
+    ringHash:
+      minimumRingSize: 1024
+      maximumRingSize: 2048
+    useHostnameForHashing: true
+    closeConnectionsOnHostSetChange: true
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: httpbin-lr
+  labels:
+    app: httpbin-lr
+    service: httpbin-lr
+spec:
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+  selector:
+    app: httpbin-lr
+---
+kind: BackendConfigPolicy
+apiVersion: gateway.kgateway.dev/v1alpha1
+metadata:
+  name: httpbin-lr-policy
+spec:
+  targetRefs:
+    - name: httpbin-lr
+      group: ""
+      kind: Service
+  loadBalancer:
+    leastRequest:
+      choiceCount: 3
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: httpbin-rr
+  labels:
+    app: httpbin-rr
+    service: httpbin-rr
+spec:
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+  selector:
+    app: httpbin-rr
+---
+kind: BackendConfigPolicy
+apiVersion: gateway.kgateway.dev/v1alpha1
+metadata:
+  name: httpbin-rr-policy
+spec:
+  targetRefs:
+    - name: httpbin-rr
+      group: ""
+      kind: Service
+  loadBalancer:
+    roundRobin:
+      slowStart:
+        window: 10s
+        aggression: "1.5"
+        minWeightPercent: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: httpbin-rh
+  labels:
+    app: httpbin-rh
+    service: httpbin-rh
+spec:
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+  selector:
+    app: httpbin-rh
+---
+kind: BackendConfigPolicy
+apiVersion: gateway.kgateway.dev/v1alpha1
+metadata:
+  name: httpbin-rh-policy
+spec:
+  targetRefs:
+    - name: httpbin-rh
+      group: ""
+      kind: Service
+  loadBalancer:
+    ringHash:
+      minimumRingSize: 1024
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: httpbin-random
+  labels:
+    app: httpbin-random
+    service: httpbin-random
+spec:
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+  selector:
+    app: httpbin-random
+---
+kind: BackendConfigPolicy
+apiVersion: gateway.kgateway.dev/v1alpha1
+metadata:
+  name: httpbin-random-policy
+spec:
+  targetRefs:
+    - name: httpbin-random
+      group: ""
+      kind: Service
+  loadBalancer:
+    random: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: httpbin-maglev
+  labels:
+    app: httpbin-maglev
+    service: httpbin-maglev
+spec:
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+  selector:
+    app: httpbin-maglev
+---
+kind: BackendConfigPolicy
+apiVersion: gateway.kgateway.dev/v1alpha1
+metadata:
+  name: httpbin-maglev-policy
+spec:
+  targetRefs:
+    - name: httpbin-maglev
+      group: ""
+      kind: Service
+  loadBalancer:
+    maglev: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: httpbin-weighted
+  labels:
+    app: httpbin-weighted
+    service: httpbin-weighted
+spec:
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+  selector:
+    app: httpbin-weighted
+---
+kind: BackendConfigPolicy
+apiVersion: gateway.kgateway.dev/v1alpha1
+metadata:
+  name: httpbin-weighted-policy
+spec:
+  targetRefs:
+    - name: httpbin-weighted
+      group: ""
+      kind: Service
+  loadBalancer:
+    localityType: WeightedLb
+    roundRobin: {}

@@ -48,6 +48,27 @@ spec:
     labels:
       app: reviews
 ---
+apiVersion: networking.istio.io/v1
+kind: WorkloadEntry
+metadata:
+  name: example-we
+  namespace: gwtest
+  labels:
+    app: reviews
+spec:
+  address: 255.0.0.1 # make sure WE selection works in EDS
+---
+apiVersion: networking.istio.io/v1
+kind: WorkloadEntry
+metadata:
+  name: example-we-no-addr
+  namespace: gwtest
+  labels:
+    app: reviews
+spec:
+  # no IP! this should be filtered out
+  network: some-remote-net
+---
 apiVersion: networking.istio.io/v1alpha3
 kind: DestinationRule
 metadata:

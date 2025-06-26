@@ -122,6 +122,7 @@ func translateGatewayHTTPRouteRule(
 			MatchIndex:        idx,
 			Match:             match,
 			DelegatingParent:  delegatingParent,
+			PrecedenceWeight:  parent.PrecedenceWeight,
 		}
 
 		if len(rule.Backends) > 0 {

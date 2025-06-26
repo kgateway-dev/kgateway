@@ -1,0 +1,30 @@
+# This workflow handles cleanup after a branch is deleted.
+# For MergeQueue (MQ) branches, we want to cancel redundant builds when an MQ PR is removed or reshuffled in the queue.
+# NOTE: This workflow runs only from the main branch; it's safe to remove from LTS branches after deployment.
+name: On Merge Queue Branch Delete
+
+on: delete
+
+jobs:
+  handle-delete:
+    # The delete event can be triggered for either a tag or a branch.
+    # We only care about branch deletions.
+    # Reference: https://docs.github.com/en/rest/using-the-rest-api/github-event-types?apiVersion=2022-11-28#deleteevent
+    if: github.event.ref_type == 'branch'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout current repository
+        uses: actions/checkout@v4
+        
+      - name: Cancel GH workflows
+        # This action cancels any running builds for MQ branches which have already been deleted.
+        # NOTE: GitHub Actions doesn't currently support filtering by branch pattern
+        # on delete events, so this action handles filtering out non-MQ branches internally.
+        # Related discussion: https://github.com/orgs/community/discussions/10589
+        uses: ./.github/actions/mq-cancel-dangling-wfs
+        with:
+          GH_ORG_REPO: ${{ github.repository }}
+        # Best practice: Pass secrets via env vars, not as inputs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

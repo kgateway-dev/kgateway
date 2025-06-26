@@ -18,6 +18,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/utils/ptr"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
@@ -101,6 +102,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 		backend := ir.NewBackendObjectIR(objSrc, 0, "")
 		backend.GvPrefix = ExtensionName
 		backend.CanonicalHostname = hostname(i)
+		backend.AppProtocol = parseAppProtocol(i)
 		backend.Obj = i
 		backend.ObjIr = backendIR
 		backend.Errors = backendIR.Errors
@@ -180,7 +182,8 @@ func buildTranslateFunc(
 				}
 			}
 
-			lambdaFilters, err := buildLambdaFilters(lambdaArn, region, secret, invokeMode)
+			lambdaFilters, err := buildLambdaFilters(
+				lambdaArn, region, secret, invokeMode, i.Spec.Aws.Lambda.PayloadTransformMode)
 			if err != nil {
 				backendIr.Errors = append(backendIr.Errors, err)
 			}
@@ -249,7 +252,7 @@ func getAISecretRef(llm v1alpha1.SupportedLLMProvider) *corev1.LocalObjectRefere
 }
 
 func processBackend(ctx context.Context, in ir.BackendObjectIR, out *envoy_config_cluster_v3.Cluster) *ir.EndpointsForBackend {
-	up, ok := in.Obj.(*v1alpha1.Backend)
+	be, ok := in.Obj.(*v1alpha1.Backend)
 	if !ok {
 		logger.Error("failed to cast backend object")
 		return nil
@@ -262,18 +265,18 @@ func processBackend(ctx context.Context, in ir.BackendObjectIR, out *envoy_confi
 
 	// TODO(tim): Bubble up error to Backend status once https://github.com/kgateway-dev/kgateway/issues/10555
 	// is resolved and add test cases for invalid endpoint URLs.
-	spec := up.Spec
+	spec := be.Spec
 	switch spec.Type {
 	case v1alpha1.BackendTypeStatic:
-		if err := processStatic(ctx, spec.Static, out); err != nil {
+		if err := processStatic(spec.Static, out); err != nil {
 			logger.Error("failed to process static backend", "error", err)
 		}
 	case v1alpha1.BackendTypeAWS:
-		if err := processAws(ctx, spec.Aws, ir.AwsIr, out); err != nil {
+		if err := processAws(ir.AwsIr, out); err != nil {
 			logger.Error("failed to process aws backend", "error", err)
 		}
 	case v1alpha1.BackendTypeAI:
-		err := ai.ProcessAIBackend(ctx, spec.AI, ir.AIIr.AISecret, ir.AIIr.AIMultiSecret, out)
+		err := ai.ProcessAIBackend(spec.AI, ir.AIIr.AISecret, ir.AIIr.AIMultiSecret, out)
 		if err != nil {
 			logger.Error("failed to process ai backend", "error", err)
 		}
@@ -282,11 +285,22 @@ func processBackend(ctx context.Context, in ir.BackendObjectIR, out *envoy_confi
 			logger.Error("failed to add upstream cluster http filters", "error", err)
 		}
 	case v1alpha1.BackendTypeDynamicForwardProxy:
-		if err := processDynamicForwardProxy(ctx, spec.DynamicForwardProxy, out); err != nil {
+		if err := processDynamicForwardProxy(spec.DynamicForwardProxy, out); err != nil {
 			logger.Error("failed to process dynamic forward proxy backend", "error", err)
 		}
 	}
 	return nil
+}
+
+func parseAppProtocol(b *v1alpha1.Backend) ir.AppProtocol {
+	switch b.Spec.Type {
+	case v1alpha1.BackendTypeStatic:
+		appProtocol := b.Spec.Static.AppProtocol
+		if appProtocol != nil {
+			return ir.ParseAppProtocol(ptr.To(string(*appProtocol)))
+		}
+	}
+	return ir.DefaultAppProtocol
 }
 
 // hostname returns the hostname for the backend. Only static backends are supported.
@@ -300,8 +314,8 @@ func hostname(in *v1alpha1.Backend) string {
 	return in.Spec.Static.Hosts[0].Host
 }
 
-func processEndpoints(up *v1alpha1.Backend) *ir.EndpointsForBackend {
-	spec := up.Spec
+func processEndpoints(be *v1alpha1.Backend) *ir.EndpointsForBackend {
+	spec := be.Spec
 	switch {
 	case spec.Type == v1alpha1.BackendTypeStatic:
 		return processEndpointsStatic(spec.Static)

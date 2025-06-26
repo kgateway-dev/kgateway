@@ -1,7 +1,6 @@
 package backend
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"net/url"
@@ -81,7 +80,7 @@ func (u *AwsIr) Equals(other any) bool {
 }
 
 // processAws processes an AWS backend and returns an envoy cluster.
-func processAws(ctx context.Context, in *v1alpha1.AwsBackend, ir *AwsIr, out *envoy_config_cluster_v3.Cluster) error {
+func processAws(ir *AwsIr, out *envoy_config_cluster_v3.Cluster) error {
 	// defensive check; this should never happen with union types
 	if ir == nil {
 		return fmt.Errorf("aws ir is nil")
@@ -188,10 +187,25 @@ func (u *lambdaFilters) Equals(other *lambdaFilters) bool {
 }
 
 // buildLambdaFilters configures cluster's upstream HTTP filters for the given backend.
-func buildLambdaFilters(arn, region string, secret *ir.Secret, invokeMode envoy_lambda_v3.Config_InvocationMode) (*lambdaFilters, error) {
+func buildLambdaFilters(
+	arn string,
+	region string,
+	secret *ir.Secret,
+	invokeMode envoy_lambda_v3.Config_InvocationMode,
+	payloadTransformMode v1alpha1.AWSLambdaPayloadTransformMode,
+) (*lambdaFilters, error) {
+	var payloadPassthrough bool
+	switch payloadTransformMode {
+	case v1alpha1.AWSLambdaPayloadTransformNone:
+		payloadPassthrough = true
+	case v1alpha1.AWSLambdaPayloadTransformEnvoy:
+		payloadPassthrough = false
+	}
+
 	lambdaConfigAny, err := utils.MessageToAny(&envoy_lambda_v3.Config{
-		Arn:            arn,
-		InvocationMode: invokeMode,
+		Arn:                arn,
+		InvocationMode:     invokeMode,
+		PayloadPassthrough: payloadPassthrough,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create lambda config: %v", err)

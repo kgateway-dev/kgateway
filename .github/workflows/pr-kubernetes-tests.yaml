@@ -9,6 +9,10 @@ env:
   VERSION: '1.0.0-ci1'
   GITHUB_TOKEN: ${{ github.token }}
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref_name }}
+  cancel-in-progress: true
+
 jobs:
   end_to_end_tests:
     name: End-to-End (${{ matrix.test.cluster-name }})
@@ -36,15 +40,15 @@ jobs:
           go-test-args: '-v -timeout=25m'
           go-test-run-regex: '^TestKgateway$$/^Backends$$|^TestKgateway$$/^Transforms$$|^TestKgateway$$/^BackendTLSPolicies$$|^TestKgatewayWaypoint$$'
           localstack: 'false'
-        # May 19, 2025: ~18 minutes
+        # June 23, 2025: ~20 minutes
         - cluster-name: 'cluster-three'
           go-test-args: '-v -timeout=25m'
-          go-test-run-regex: '^TestKgateway$$/^DynamicForwardProxy$$|^TestKgateway$$/^Deployer$$|^TestKgateway$$/^RouteDelegation$$|^TestKgateway$$/^Lambda$$|^TestKgateway$$/^AccessLog$$|^TestKgateway$$/^LocalRateLimit$$|^TestKgateway$$/^Cors$$|^TestKgateway$$/^BackendConfigPolicy$$'
+          go-test-run-regex: '^TestKgateway$$/^DynamicForwardProxy$$|^TestKgateway$$/^Deployer$$|^TestKgateway$$/^RouteDelegation$$|^TestKgateway$$/^Lambda$$|^TestKgateway$$/^AccessLog$$|^TestKgateway$$/^LocalRateLimit$$|^TestKgateway$$/^Cors$$|^TestKgateway$$/^BackendConfigPolicy$$|^TestKgateway$$/^Metrics$$'
           localstack: 'true'
         # May 19, 2025: ~20 minutes
         - cluster-name: 'cluster-four'
           go-test-args: '-v -timeout=25m'
-          go-test-run-regex: '^TestKgateway$$/^ExtProc$$|^TestKgateway$$/^ExtAuth$$|^TestKgateway$$/^TCPRouteServices$$|^TestKgateway$$/^PolicySelector$$'
+          go-test-run-regex: '^TestKgateway$$/^ExtProc$$|^TestKgateway$$/^ExtAuth$$|^TestKgateway$$/^TCPRouteServices$$|^TestKgateway$$/^PolicySelector$$|^TestInferenceExtension$$|^TestKgateway$$/^CSRF$$'
           localstack: 'false'
         # May 19, 2025: ~20 minutes
         - cluster-name: 'cluster-ai'
@@ -60,6 +64,9 @@ jobs:
           go-test-args: '-v -timeout=25m'
           go-test-run-regex: '^TestAgentGatewayIntegration'
           agentgateway: 'true'
+        - cluster-name: 'api-validation'
+          go-test-args: '-v -timeout=10m'
+          go-test-run-regex: '^TestAPIValidation'
 
 #         # Dec 4, 2024: 23 minutes
 #         - cluster-name: 'cluster-two'

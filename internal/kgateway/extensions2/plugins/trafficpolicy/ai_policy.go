@@ -99,7 +99,7 @@ func preProcessAITrafficPolicy(
 					RequestMatch: &envoytransformation.RouteTransformations_RouteTransformation_RequestMatch{
 						RequestTransformation: &envoytransformation.Transformation{
 							// Set this env var to true to log the request/response info for each transformation
-							LogRequestResponseInfo: wrapperspb.Bool(os.Getenv("AI_PLUGIN_DEBUG_TRANSFORMATIONS") == "true"),
+							LogRequestResponseInfo: wrapperspb.Bool(os.Getenv(AiDebugTransformations) == "true"),
 							TransformationType: &envoytransformation.Transformation_TransformationTemplate{
 								TransformationTemplate: transformationTemplate,
 							},

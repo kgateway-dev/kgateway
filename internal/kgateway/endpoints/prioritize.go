@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"istio.io/api/networking/v1alpha3"
+	"istio.io/istio/pkg/slices"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 
@@ -118,6 +119,8 @@ func prioritizeWithLbInfo(logger *slog.Logger, ep ir.EndpointsForBackend, lbInfo
 			}
 		}
 
+		eps = filterInvalidEps(eps)
+
 		endpoints := getEndpoints(eps, lbInfo)
 		for _, ep := range endpoints {
 			ep.Locality = l
@@ -144,6 +147,17 @@ func prioritizeWithLbInfo(logger *slog.Logger, ep ir.EndpointsForBackend, lbInfo
 	// we only have one endpoint plugin, and it's not clear if it is in use. so
 	// consider deprecating the functionality. it's not easy to do as with krt we no longer have gloo 'Endpoint' objects
 	return cla
+}
+
+// ensure we don't send invalid endpoints to envoy and cause NACKs
+func filterInvalidEps(eps []ir.EndpointWithMd) []ir.EndpointWithMd {
+	return slices.Filter(eps, func(ewm ir.EndpointWithMd) bool {
+		sock := ewm.GetEndpoint().GetAddress().GetSocketAddress()
+		if sock != nil && sock.GetAddress() == "" {
+			return false
+		}
+		return true
+	})
 }
 
 func getEndpoints(eps []ir.EndpointWithMd, lbinfo LoadBalancingInfo) []*envoy_config_endpoint_v3.LocalityLbEndpoints {

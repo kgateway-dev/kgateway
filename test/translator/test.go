@@ -419,12 +419,6 @@ func AreReportsSuccess(gwNN types.NamespacedName, reportsMap reports.ReportMap) 
 
 type SettingsOpts func(*settings.Settings)
 
-func SettingsWithDiscoveryNamespaceSelectors(cfgJson string) SettingsOpts {
-	return func(s *settings.Settings) {
-		s.DiscoveryNamespaceSelectors = cfgJson
-	}
-}
-
 func (tc TestCase) Run(
 	t test.Failer,
 	ctx context.Context,
@@ -508,12 +502,12 @@ func (tc TestCase) Run(
 		Stop: ctx.Done(),
 	}
 
-	st, err := settings.BuildSettings()
+	settings, err := settings.BuildSettings()
 	if err != nil {
 		return nil, err
 	}
 	for _, opt := range settingsOpts {
-		opt(st)
+		opt(settings)
 	}
 
 	commoncol, err := common.NewCommonCollections(
@@ -524,7 +518,7 @@ func (tc TestCase) Run(
 		nil,
 		wellknown.GatewayControllerName,
 		logr.Discard(),
-		*st,
+		*settings,
 	)
 	if err != nil {
 		return nil, err
@@ -566,7 +560,7 @@ func (tc TestCase) Run(
 		},
 	}
 
-	commoncol.InitPlugins(ctx, extensions)
+	commoncol.InitPlugins(ctx, extensions, *settings)
 
 	translator := translator.NewCombinedTranslator(ctx, extensions, commoncol)
 	translator.Init(ctx)

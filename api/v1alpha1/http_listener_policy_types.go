@@ -49,6 +49,8 @@ type HTTPListenerPolicySpec struct {
 	// AccessLoggingConfig contains various settings for Envoy's access logging service.
 	// See here for more information: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto
 	// +kubebuilder:validation:Items={type=object}
+	//
+	// +kubebuilder:validation:MaxItems=16
 	AccessLog []AccessLog `json:"accessLog,omitempty"`
 
 	// UpgradeConfig contains configuration for HTTP upgrades like WebSocket.
@@ -69,10 +71,10 @@ type AccessLog struct {
 }
 
 // FileSink represents the file sink configuration for access logs.
-// +kubebuilder:validation:XValidation:message="only one of 'StringFormat' or 'JsonFormat' may be set",rule="(has(self.stringFormat) && !has(self.jsonFormat)) || (!has(self.stringFormat) && has(self.jsonFormat))"
+// +kubebuilder:validation:ExactlyOneOf=stringFormat;jsonFormat
 type FileSink struct {
 	// the file path to which the file access logging service will sink
-	// +kubebuilder:validation:Required
+	// +required
 	Path string `json:"path"`
 	// the format string by which envoy will format the log lines
 	// https://www.envoyproxy.io/docs/envoy/v1.33.0/configuration/observability/access_log/usage#format-strings
@@ -85,11 +87,11 @@ type FileSink struct {
 // GrpcService represents the gRPC service configuration for access logs.
 type GrpcService struct {
 	// name of log stream
-	// +kubebuilder:validation:Required
+	// +required
 	LogName string `json:"logName"`
 
 	// The backend gRPC service. Can be any type of supported backend (Kubernetes Service, kgateway Backend, etc..)
-	// +kubebuilder:validation:Required
+	// +required
 	BackendRef *gwv1.BackendRef `json:"backendRef"`
 
 	// Additional request headers to log in the access log
@@ -140,7 +142,7 @@ type FilterType struct {
 // ComparisonFilter represents a filter based on a comparison.
 // Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-comparisonfilter
 type ComparisonFilter struct {
-	// +kubebuilder:validation:Required
+	// +required
 	Op Op `json:"op,omitempty"`
 
 	// Value to compare against.
@@ -189,7 +191,7 @@ const (
 // HeaderFilter filters requests based on headers.
 // Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-headerfilter
 type HeaderFilter struct {
-	// +kubebuilder:validation:Required
+	// +required
 	Header gwv1.HTTPHeaderMatch `json:"header"`
 }
 
