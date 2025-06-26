@@ -67,6 +67,7 @@ func TestSettings(t *testing.T) {
 				"KGW_ENABLE_INFER_EXT":              "true",
 				"KGW_INFER_EXT_AUTO_PROVISION":      "true",
 				"KGW_DEFAULT_IMAGE_REGISTRY":        "my-registry",
+				"KGW_DEFAULT_IMAGE_REPOSITORY":      "my-repository",
 				"KGW_DEFAULT_IMAGE_TAG":             "my-tag",
 				"KGW_DEFAULT_IMAGE_PULL_POLICY":     "Always",
 				"KGW_WAYPOINT_LOCAL_BINDING":        "true",

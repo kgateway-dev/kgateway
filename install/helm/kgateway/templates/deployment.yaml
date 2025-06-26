@@ -79,6 +79,8 @@ spec:
             {{- end }}
             - name: KGW_DEFAULT_IMAGE_REGISTRY
               value: {{ .Values.image.registry }}
+            - name: KGW_DEFAULT_IMAGE_REPOSITORY
+              value: {{ .Values.image.repository }}
             - name: KGW_DEFAULT_IMAGE_TAG
               value: {{ .Values.image.tag | default .Chart.Version }}
             - name: KGW_DEFAULT_IMAGE_PULL_POLICY

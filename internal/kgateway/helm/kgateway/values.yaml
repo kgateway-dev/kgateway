@@ -22,6 +22,7 @@ gateway:
     type: LoadBalancer
 
   image:
+    repository: envoy-wrapper
     pullPolicy: IfNotPresent
 
   istio:
