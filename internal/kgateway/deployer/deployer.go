@@ -4,13 +4,13 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
 	"path/filepath"
 	"slices"
 
-	"github.com/rotisserie/eris"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/chart/loader"
@@ -37,13 +37,12 @@ import (
 )
 
 var (
-	GetGatewayParametersError = eris.New("could not retrieve GatewayParameters")
+	GetGatewayParametersError = errors.New("could not retrieve GatewayParameters")
 	getGatewayParametersError = func(err error, gwpNamespace, gwpName, gwNamespace, gwName, resourceType string) error {
-		wrapped := eris.Wrap(err, GetGatewayParametersError.Error())
-		return eris.Wrapf(wrapped, "(%s.%s) for %s (%s.%s)",
-			gwpNamespace, gwpName, resourceType, gwNamespace, gwName)
+		return fmt.Errorf("(%s.%s) for %s (%s.%s): %w",
+			gwpNamespace, gwpName, resourceType, gwNamespace, gwName, fmt.Errorf("%s: %w", GetGatewayParametersError.Error(), err))
 	}
-	NilDeployerInputsErr = eris.New("nil inputs to NewDeployer")
+	NilDeployerInputsErr = errors.New("nil inputs to NewDeployer")
 )
 
 // A Deployer is responsible for deploying proxies and inference extensions.
@@ -351,7 +350,7 @@ func (d *Deployer) DeployObjs(ctx context.Context, objs []client.Object) error {
 	return nil
 }
 
-// EnsureFinalizer adds the InferencePool finalizer to the given pool if it’s not already present.
+// EnsureFinalizer adds the InferencePool finalizer to the given pool if it's not already present.
 // The deployer requires InferencePools to be finalized to remove cluster-scoped resources.
 // This can be removed if the endpoint picker no longer requires cluster-scoped resources.
 // See: https://github.com/kubernetes-sigs/gateway-api-inference-extension/issues/224 for details.

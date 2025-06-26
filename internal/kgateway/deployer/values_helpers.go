@@ -7,7 +7,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/rotisserie/eris"
 	"golang.org/x/exp/slices"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/utils/ptr"
@@ -22,7 +21,7 @@ import (
 // by the deployer.
 
 var ComponentLogLevelEmptyError = func(key string, value string) error {
-	return eris.Errorf("an empty key or value was provided in componentLogLevels: key=%s, value=%s", key, value)
+	return fmt.Errorf("an empty key or value was provided in componentLogLevels: key=%s, value=%s", key, value)
 }
 
 // Extract the listener ports from a Gateway and corresponding listener sets. These will be used to populate:

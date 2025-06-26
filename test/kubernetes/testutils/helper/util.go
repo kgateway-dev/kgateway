@@ -4,6 +4,7 @@ package helper
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -12,7 +13,6 @@ import (
 
 	"github.com/google/go-github/v32/github"
 	. "github.com/onsi/gomega"
-	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/changelogutils"
 	"github.com/solo-io/go-utils/githubutils"
 	"github.com/solo-io/go-utils/versionutils"
@@ -66,7 +66,7 @@ func GetUpgradeVersions(ctx context.Context, repoName string) (*versionutils.Ver
 	// TODO(nfuden): Update goutils to not use a struct but rather interface so we can test this more easily.
 	client, githubClientErr := githubutils.GetClient(ctx)
 	if githubClientErr != nil {
-		return nil, nil, errors.Wrapf(githubClientErr, "unable to create github client")
+		return nil, nil, fmt.Errorf("unable to create github client: %w", githubClientErr)
 	}
 	prevLtsRelease, prevLtsReleaseErr := getLatestReleasedPatchVersion(ctx, client, repoName, upcomingRelease.Major, upcomingRelease.Minor-1)
 	if prevLtsReleaseErr != nil {
@@ -106,14 +106,14 @@ func getLatestReleasedPatchVersion(ctx context.Context, client *github.Client, r
 	versionPrefix := fmt.Sprintf("v%d.%d", majorVersion, minorVersion)
 	releases, err := githubutils.GetRepoReleasesWithPredicateAndMax(ctx, client, "solo-io", repoName, newLatestPatchForMinorPredicate(versionPrefix), 1)
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to get releases")
+		return nil, fmt.Errorf("unable to get releases: %w", err)
 	}
 	if len(releases) == 0 {
-		return nil, errors.Errorf("Could not find a recent release with version prefix: %s", versionPrefix)
+		return nil, fmt.Errorf("could not find a recent release with version prefix: %s", versionPrefix)
 	}
 	v, err := versionutils.ParseVersion(*releases[0].Name)
 	if err != nil {
-		return nil, errors.Wrapf(err, "error parsing release name")
+		return nil, fmt.Errorf("error parsing release name: %w", err)
 	}
 	return v, nil
 }

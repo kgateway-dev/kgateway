@@ -2,9 +2,10 @@ package deployer
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"slices"
 
-	"github.com/rotisserie/eris"
 	"istio.io/api/annotation"
 	"istio.io/api/label"
 	corev1 "k8s.io/api/core/v1"
@@ -157,10 +158,10 @@ func (k *kGatewayParameters) getGatewayParametersForGateway(ctx context.Context,
 
 	gwpName := gw.Spec.Infrastructure.ParametersRef.Name
 	if group := gw.Spec.Infrastructure.ParametersRef.Group; group != v1alpha1.GroupName {
-		return nil, eris.Errorf("invalid group %s for GatewayParameters", group)
+		return nil, fmt.Errorf("invalid group %s for GatewayParameters", group)
 	}
 	if kind := gw.Spec.Infrastructure.ParametersRef.Kind; kind != api.Kind(wellknown.GatewayParametersGVK.Kind) {
-		return nil, eris.Errorf("invalid kind %s for GatewayParameters", kind)
+		return nil, fmt.Errorf("invalid kind %s for GatewayParameters", kind)
 	}
 
 	// the GatewayParameters must live in the same namespace as the Gateway
@@ -203,7 +204,7 @@ func (k *kGatewayParameters) getGatewayParametersForGatewayClass(ctx context.Con
 
 	gwpName := paramRef.Name
 	if gwpName == "" {
-		err := eris.New("parametersRef.name cannot be empty when parametersRef is specified")
+		err := errors.New("parametersRef.name cannot be empty when parametersRef is specified")
 		logger.Error(err,
 			"gatewayClassName", gwc.GetName(),
 			"gatewayClassNamespace", gwc.GetNamespace(),
@@ -360,16 +361,16 @@ func (k *kGatewayParameters) getValues(gw *api.Gateway, gwParam *v1alpha1.Gatewa
 
 func getGatewayClassFromGateway(ctx context.Context, cli client.Client, gw *api.Gateway) (*api.GatewayClass, error) {
 	if gw == nil {
-		return nil, eris.New("nil Gateway")
+		return nil, errors.New("nil Gateway")
 	}
 	if gw.Spec.GatewayClassName == "" {
-		return nil, eris.New("GatewayClassName must not be empty")
+		return nil, errors.New("GatewayClassName must not be empty")
 	}
 
 	gwc := &api.GatewayClass{}
 	err := cli.Get(ctx, client.ObjectKey{Name: string(gw.Spec.GatewayClassName)}, gwc)
 	if err != nil {
-		return nil, eris.Errorf("failed to get GatewayClass for Gateway %s/%s", gw.GetName(), gw.GetNamespace())
+		return nil, fmt.Errorf("failed to get GatewayClass for Gateway %s/%s: %w", gw.GetName(), gw.GetNamespace(), err)
 	}
 
 	return gwc, nil

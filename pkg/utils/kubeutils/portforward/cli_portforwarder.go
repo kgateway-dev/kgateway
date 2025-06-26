@@ -9,8 +9,6 @@ import (
 	"strconv"
 	"strings"
 
-	errors "github.com/rotisserie/eris"
-
 	"github.com/avast/retry-go/v4"
 )
 
@@ -101,7 +99,7 @@ func (c *cliPortForwarder) startOnce(ctx context.Context) error {
 	// If we get here, we didn't get any stdout, so grab stderr and return it as error
 	stdErr := bufio.NewScanner(fwdErr)
 	stdErr.Scan()
-	return errors.Errorf("failed to start port-forward: %s", stdErr.Text())
+	return fmt.Errorf("failed to start port-forward: %s", stdErr.Text())
 }
 
 func (c *cliPortForwarder) Address() string {
@@ -133,7 +131,7 @@ func getFreePort() (int, error) {
 	defer l.Close()
 	tcpAddr, ok := l.Addr().(*net.TCPAddr)
 	if !ok {
-		return 0, errors.Errorf("Error occurred looking for an open tcp port")
+		return 0, fmt.Errorf("Error occurred looking for an open tcp port")
 	}
 	return tcpAddr.Port, nil
 }

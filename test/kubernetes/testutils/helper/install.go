@@ -5,7 +5,6 @@ import (
 	"path/filepath"
 
 	"github.com/pkg/errors"
-	"github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/log"
 	"helm.sh/helm/v3/pkg/repo"
 
@@ -46,9 +45,9 @@ func getChartVersion(testAssetDir string, chartName string) (string, error) {
 
 	// Read and return version from helm index file
 	if chartVersions, ok := helmIndex.Entries[chartName]; !ok {
-		return "", eris.Errorf("index file does not contain entry with key: %s", chartName)
+		return "", fmt.Errorf("index file does not contain entry with key: %s", chartName)
 	} else if len(chartVersions) == 0 || len(chartVersions) > 1 {
-		return "", eris.Errorf("expected a single entry with name [%s], found: %v", chartName, len(chartVersions))
+		return "", fmt.Errorf("expected a single entry with name [%s], found: %v", chartName, len(chartVersions))
 	} else {
 		version := chartVersions[0].Version
 		log.Printf("version of [%s] Helm chart is: %s", chartName, version)

@@ -1,21 +1,19 @@
 package errutils
 
 import (
+	"fmt"
 	"sync/atomic"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/rotisserie/eris"
 )
 
 var _ = Describe("Concurrent", func() {
-
 	Context("AggregateConcurrent", func() {
-
 		It("returns the aggregate error", func() {
 			badFns := []func() error{
-				errorFn(eris.Errorf("Erroring function. ID=%d", 1)),
-				errorFn(eris.Errorf("Erroring function. ID=%d", 2)),
+				errorFn(fmt.Errorf("Erroring function. ID=%d", 1)),
+				errorFn(fmt.Errorf("Erroring function. ID=%d", 2)),
 			}
 
 			aggregateErr := AggregateConcurrent(badFns)
@@ -36,7 +34,7 @@ var _ = Describe("Concurrent", func() {
 				goodFn(&sum),
 			}
 			badFns := []func() error{
-				errorFn(eris.Errorf("Erroring function. ID=%d", 1)),
+				errorFn(fmt.Errorf("Erroring function. ID=%d", 1)),
 			}
 
 			aggregateErr := AggregateConcurrent(append(badFns, goodFns...))

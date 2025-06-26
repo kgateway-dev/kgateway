@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"log"
 	"log/slog"
 	"os"
@@ -13,7 +14,6 @@ import (
 	envoy_config_bootstrap "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
 	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	tlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
-	"github.com/rotisserie/eris"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/envoyinit/pkg/downward"
 	"github.com/kgateway-dev/kgateway/v2/internal/envoyinit/pkg/utils"
@@ -53,7 +53,7 @@ func RunEnvoyValidate(ctx context.Context, envoyExecutable, bootstrapConfig stri
 			slog.Warn("unable to validate envoy configuration", "executable", envoyExecutable)
 			return nil
 		}
-		return eris.Errorf("envoy validation mode output: %v, error: %v", err.OutputString(), err.Error())
+		return fmt.Errorf("envoy validation mode output: %v, error: %w", err.OutputString(), err)
 	}
 
 	return nil

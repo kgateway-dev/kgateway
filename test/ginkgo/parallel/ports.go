@@ -8,8 +8,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/rotisserie/eris"
-
 	"github.com/avast/retry-go"
 
 	"github.com/onsi/ginkgo/v2"
@@ -94,7 +92,7 @@ func portInUseListen(proposedPort uint32) error {
 	ln, err := net.Listen("tcp", fmt.Sprintf(":%d", proposedPort))
 
 	if err != nil {
-		return eris.Wrapf(err, "port %d is in use", proposedPort)
+		return fmt.Errorf("port %d is in use: %w", proposedPort, err)
 	}
 
 	// Port should available if the listener closes without an error
@@ -109,7 +107,7 @@ var denyListPorts = map[uint32]struct{}{
 
 func portInDenyList(proposedPort uint32) error {
 	if _, ok := denyListPorts[proposedPort]; ok {
-		return eris.Errorf("port %d is in deny list", proposedPort)
+		return fmt.Errorf("port %d is in deny list", proposedPort)
 	}
 	return nil
 }
