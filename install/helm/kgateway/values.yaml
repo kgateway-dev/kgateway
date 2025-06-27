@@ -20,7 +20,8 @@ serviceAccount:
 deploymentAnnotations: {}
 
 # -- Add annotations to the kgateway pods.
-podAnnotations: {}
+podAnnotations:
+  prometheus.io/scrape: "true"
 
 # -- Set the pod-level security context. For example, 'fsGroup: 2000' sets the filesystem group to 2000.
 podSecurityContext: {}
@@ -64,12 +65,13 @@ controller:
     ports:
       grpc: 9977
       health: 9093
+      metrics: 9092
   # -- Add extra environment variables to the controller container.
   extraEnv: {}
 
 # -- Configure the default container image for the components that Helm deploys. You can override these settings for each particular component in that component's section, such as 'controller.image' for the kgateway control plane. If you use your own private registry, make sure to include the imagePullSecrets.
 image:
-  # -- Set the default image registry. 
+  # -- Set the default image registry.
   registry: cr.kgateway.dev/kgateway-dev
   # -- Set the default image tag.
   tag: ""

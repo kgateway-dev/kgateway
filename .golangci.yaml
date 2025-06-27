@@ -15,16 +15,19 @@ linters:
     - copyloopvar
     - forbidigo
     - ginkgolinter
+    - gomodguard
     - importas
     - ineffassign
     - misspell
     - nakedret
     - predeclared
+    - promlinter
+    - sloglint
+    - spancheck
+    - staticcheck
     - unused
     - usestdlibvars
     - whitespace
-    - staticcheck
-    - sloglint
   settings:
     forbidigo:
       forbid:
@@ -32,6 +35,17 @@ linters:
           msg: use utils.MessageToAny instead
         - pattern: kclient.New$
           msg: use kclient.NewFiltered with discovery namespace ObjectFilter instead
+    gomodguard:
+      blocked:
+        modules:
+          - github.com/rotisserie/eris:
+              recommendations:
+                - errors.Join
+              reason: Use the std-lib errors package with \\%w instead.
+          - github.com/hashicorp/go-multierror:
+              recommendations:
+                - errors.Join
+              reason: Use errors.Join (Go 1.20+) instead.
     importas:
       alias:
         - pkg: k8s.io/api/apps/v1
@@ -76,7 +90,7 @@ linters:
         - time
         - level
         - msg
-        - source     
+        - source
   exclusions:
     generated: lax
     presets:

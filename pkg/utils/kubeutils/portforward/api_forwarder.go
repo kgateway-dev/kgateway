@@ -16,7 +16,6 @@ import (
 
 	"github.com/avast/retry-go/v4"
 
-	"github.com/rotisserie/eris"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/portforward"
 	"k8s.io/client-go/transport/spdy"
@@ -171,9 +170,8 @@ func (f *apiPortForwarder) getPodName(ctx context.Context) (string, error) {
 		if err != nil {
 			return "", err
 		}
-
 		if len(pods) == 0 {
-			return "", eris.Errorf("No pods found for deployment %s: %s", f.properties.resourceNamespace, f.properties.resourceName)
+			return "", fmt.Errorf("No pods found for deployment %s: %s", f.properties.resourceNamespace, f.properties.resourceName)
 		}
 		return pods[0], nil
 
@@ -184,9 +182,8 @@ func (f *apiPortForwarder) getPodName(ctx context.Context) (string, error) {
 		if err != nil {
 			return "", err
 		}
-
 		if len(pods) == 0 {
-			return "", eris.Errorf("No pods found for service %s: %s", f.properties.resourceNamespace, f.properties.resourceName)
+			return "", fmt.Errorf("No pods found for service %s: %s", f.properties.resourceNamespace, f.properties.resourceName)
 		}
 		return pods[0], nil
 
@@ -194,7 +191,7 @@ func (f *apiPortForwarder) getPodName(ctx context.Context) (string, error) {
 		return f.properties.resourceName, nil
 	}
 
-	return "", eris.Errorf("Could not determine pod name for resourceType: %s", f.properties.resourceType)
+	return "", fmt.Errorf("Could not determine pod name for resourceType: %s", f.properties.resourceType)
 }
 
 // Fetch ClientConfig. If kubeConfigPath is not specified, retrieve the kubeconfig from environment in which this is invoked.

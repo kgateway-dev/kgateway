@@ -5,9 +5,9 @@ package v1alpha1
 // AwsBackendApplyConfiguration represents a declarative configuration of the AwsBackend type for use
 // with apply.
 type AwsBackendApplyConfiguration struct {
+	Lambda    *AwsLambdaApplyConfiguration `json:"lambda,omitempty"`
 	AccountId *string                      `json:"accountId,omitempty"`
 	Auth      *AwsAuthApplyConfiguration   `json:"auth,omitempty"`
-	Lambda    *AwsLambdaApplyConfiguration `json:"lambda,omitempty"`
 	Region    *string                      `json:"region,omitempty"`
 }
 
@@ -15,6 +15,14 @@ type AwsBackendApplyConfiguration struct {
 // apply.
 func AwsBackend() *AwsBackendApplyConfiguration {
 	return &AwsBackendApplyConfiguration{}
+}
+
+// WithLambda sets the Lambda field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Lambda field is set to the value of the last call.
+func (b *AwsBackendApplyConfiguration) WithLambda(value *AwsLambdaApplyConfiguration) *AwsBackendApplyConfiguration {
+	b.Lambda = value
+	return b
 }
 
 // WithAccountId sets the AccountId field in the declarative configuration to the given value
@@ -30,14 +38,6 @@ func (b *AwsBackendApplyConfiguration) WithAccountId(value string) *AwsBackendAp
 // If called multiple times, the Auth field is set to the value of the last call.
 func (b *AwsBackendApplyConfiguration) WithAuth(value *AwsAuthApplyConfiguration) *AwsBackendApplyConfiguration {
 	b.Auth = value
-	return b
-}
-
-// WithLambda sets the Lambda field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the Lambda field is set to the value of the last call.
-func (b *AwsBackendApplyConfiguration) WithLambda(value *AwsLambdaApplyConfiguration) *AwsBackendApplyConfiguration {
-	b.Lambda = value
 	return b
 }
 

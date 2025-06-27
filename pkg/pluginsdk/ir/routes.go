@@ -29,11 +29,16 @@ type HttpRouteIR struct {
 	Hostnames        []string
 	AttachedPolicies AttachedPolicies
 	Rules            []HttpRouteRuleIR
+
+	// PrecedenceWeight specifies the weight of this route relative to other route.
+	// Higher weight means higher priority, and are evaluated before routes with lower weight
+	PrecedenceWeight int32
 }
 
 func (c *HttpRouteIR) GetParentRefs() []gwv1.ParentReference {
 	return c.ParentRefs
 }
+
 func (c *HttpRouteIR) GetSourceObject() metav1.Object {
 	return c.SourceObject
 }
@@ -50,8 +55,10 @@ func (c *HttpRouteIR) GetHostnames() []string {
 	return c.Hostnames
 }
 
-var _ krt.ResourceNamer = &HttpRouteIR{}
-var _ krt.ResourceNamer = HttpRouteIR{}
+var (
+	_ krt.ResourceNamer = &HttpRouteIR{}
+	_ krt.ResourceNamer = HttpRouteIR{}
+)
 
 func (c HttpRouteIR) Equals(in HttpRouteIR) bool {
 	// TODO: equals should take the attached policies to account too!
@@ -60,6 +67,7 @@ func (c HttpRouteIR) Equals(in HttpRouteIR) bool {
 	// note - if we stop setting cluster to black whole here (and always set it to the expect cluster name) we can remove the backend equality check.
 	return c.ObjectSource == in.ObjectSource && versionEquals(c.SourceObject, in.SourceObject) && c.AttachedPolicies.Equals(in.AttachedPolicies) && c.rulesEqual(in)
 }
+
 func (c HttpRouteIR) rulesEqual(in HttpRouteIR) bool {
 	// we don't need to check the rules themselves as this is covered by versionEquals.
 	// we do need to check backends and policies
@@ -114,9 +122,11 @@ type TcpRouteIR struct {
 func (c *TcpRouteIR) GetParentRefs() []gwv1.ParentReference {
 	return c.ParentRefs
 }
+
 func (c *TcpRouteIR) GetSourceObject() metav1.Object {
 	return c.SourceObject
 }
+
 func (c TcpRouteIR) ResourceName() string {
 	return c.ObjectSource.ResourceName()
 }
@@ -156,9 +166,11 @@ type TlsRouteIR struct {
 func (c *TlsRouteIR) GetParentRefs() []gwv1.ParentReference {
 	return c.ParentRefs
 }
+
 func (c *TlsRouteIR) GetSourceObject() metav1.Object {
 	return c.SourceObject
 }
+
 func (c TlsRouteIR) ResourceName() string {
 	return c.ObjectSource.ResourceName()
 }

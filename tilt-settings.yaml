@@ -21,6 +21,9 @@ providers:
     build_binary:  make -B kgateway
     binary_name: kgateway-linux-$ARCH
     # debug_port: 50100
+    links:
+      - http://localhost:9092/metrics
     port_forwards:
-      - 9091
+      - 9092
+      - 9097
     #  - 50100

@@ -185,7 +185,7 @@ func TestUniqueClients(t *testing.T) {
 				pods.WaitUntilSynced(context.Background().Done())
 			}
 
-			cb, uccBuilder := NewUniquelyConnectedClients()
+			cb, uccBuilder := NewUniquelyConnectedClients(nil)
 			ucc := uccBuilder(context.Background(), krtutil.KrtOptions{}, pods)
 			ucc.WaitUntilSynced(context.Background().Done())
 

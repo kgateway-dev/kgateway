@@ -1,11 +1,11 @@
 package waypointquery
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
 
-	"github.com/rotisserie/eris"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -29,7 +29,7 @@ import (
 
 // ErrUnsupportedServiceType should never occur due to unexpected input.
 // If we see this, there is a bug and we're converting a non-Service type into Service.
-var ErrUnsupportedServiceType = eris.New("unsupported service type")
+var ErrUnsupportedServiceType = errors.New("unsupported service type")
 
 // Service is a common type to use between Service and ServiceEntry
 type Service struct {
@@ -165,7 +165,7 @@ func (s Service) Provider() provider.ID {
 // ClusterIP, or ServiceEntry that don't have addresses in Spec or Status.
 // We also validate the format of these addresses are either IPs or CIDR ranges,
 // but those cases should already get rejected by Kubernetes or Istio validation.
-var ErrNoServiceVIPs = eris.New("service has no valid VIPs")
+var ErrNoServiceVIPs = errors.New("service has no valid VIPs")
 
 func (svc *Service) CidrRanges() ([]*v3.CidrRange, error) {
 	// TODO support headless by passing dest hostname on TLVs and

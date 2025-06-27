@@ -1,0 +1,77 @@
+kind: Gateway
+apiVersion: gateway.networking.k8s.io/v1
+metadata:
+  name: example-gateway
+spec:
+  gatewayClassName: kgateway
+  listeners:
+  - protocol: HTTP
+    port: 8080
+    name: http
+    allowedRoutes:
+      namespaces:
+        from: All
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: httpbin
+  labels:
+    app: httpbin
+    service: httpbin
+spec:
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+  selector:
+    app: httpbin
+---
+kind: BackendConfigPolicy
+apiVersion: gateway.kgateway.dev/v1alpha1
+metadata:
+  name: httpbin-policy
+spec:
+  targetRefs:
+    - name: httpbin
+      group: ""
+      kind: Service
+  healthCheck:
+    timeout: 3s
+    interval: 2s
+    unhealthyThreshold: 3
+    healthyThreshold: 2
+    http:
+      path: /healthz
+      host: example.com
+      method: HEAD
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: httpbin-grpc
+  labels:
+    app: httpbin-grpc
+    service: httpbin-grpc
+spec:
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+  selector:
+    app: httpbin-grpc
+---
+kind: BackendConfigPolicy
+apiVersion: gateway.kgateway.dev/v1alpha1
+metadata:
+  name: httpbin-grpc-hc-policy
+spec:
+  targetRefs:
+    - name: httpbin-grpc
+      group: ""
+      kind: Service
+  healthCheck:
+    grpc:
+      serviceName: grpc.health.v1.Health
+      authority: example.com
+

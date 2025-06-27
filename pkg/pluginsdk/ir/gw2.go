@@ -39,6 +39,10 @@ type HttpRouteRuleMatchIR struct {
 	Match      gwv1.HTTPRouteMatch
 	MatchIndex int
 	Name       string
+
+	// PrecedenceWeight specifies the weight of this route rule relative to other route rules.
+	// Higher weight means higher priority, and are evaluated before routes with lower weight
+	PrecedenceWeight int32
 }
 
 type ListenerIR struct {

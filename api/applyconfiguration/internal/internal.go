@@ -131,9 +131,24 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: enabled
       type:
         scalar: boolean
+    - name: env
+      type:
+        list:
+          elementType:
+            namedType: io.k8s.api.core.v1.EnvVar
+          elementRelationship: atomic
+    - name: image
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Image
     - name: logLevel
       type:
         scalar: string
+    - name: resources
+      type:
+        namedType: io.k8s.api.core.v1.ResourceRequirements
+    - name: securityContext
+      type:
+        namedType: io.k8s.api.core.v1.SecurityContext
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AiExtension
   map:
     fields:
@@ -223,6 +238,7 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: lambda
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AwsLambda
+      default: {}
     - name: region
       type:
         scalar: string
@@ -315,6 +331,9 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: connectTimeout
       type:
         namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Duration
+    - name: healthCheck
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.HealthCheck
     - name: http1ProtocolOptions
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Http1ProtocolOptions
@@ -911,6 +930,49 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: value
       type:
         scalar: string
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.HealthCheck
+  map:
+    fields:
+    - name: grpc
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.HealthCheckGrpc
+    - name: healthyThreshold
+      type:
+        scalar: numeric
+    - name: http
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.HealthCheckHttp
+    - name: interval
+      type:
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Duration
+    - name: timeout
+      type:
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Duration
+    - name: unhealthyThreshold
+      type:
+        scalar: numeric
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.HealthCheckGrpc
+  map:
+    fields:
+    - name: authority
+      type:
+        scalar: string
+    - name: serviceName
+      type:
+        scalar: string
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.HealthCheckHttp
+  map:
+    fields:
+    - name: host
+      type:
+        scalar: string
+    - name: method
+      type:
+        scalar: string
+    - name: path
+      type:
+        scalar: string
+      default: ""
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Host
   map:
     fields:
@@ -2181,6 +2243,9 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: preStop
       type:
         namedType: io.k8s.api.core.v1.LifecycleHandler
+    - name: stopSignal
+      type:
+        scalar: string
 - name: io.k8s.api.core.v1.LifecycleHandler
   map:
     fields:

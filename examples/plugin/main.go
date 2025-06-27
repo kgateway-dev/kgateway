@@ -16,12 +16,16 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/setup"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 )
 
 /******
@@ -235,11 +239,15 @@ func pluginFactory(ctx context.Context, commoncol *common.CommonCollections) []e
 	}
 }
 
+func extraGatewayParametersFactory(cli client.Client, inputs *deployer.Inputs) []deployer.ExtraGatewayParameters {
+	return make([]deployer.ExtraGatewayParameters, 0)
+}
+
 func main() {
 	// TODO: move setup.StartGGv2 from internal to public.
 	// Start Kgateway and provide our plugin.
 	// This demonstrates how to start Kgateway with a custom plugin.
 	// This binary is the control plane. normally it would be packaged in a docker image and run
 	// in a k8s cluster.
-	setup.StartKgateway(context.Background(), pluginFactory)
+	setup.StartKgateway(context.Background(), wellknown.GatewayControllerName, pluginFactory, extraGatewayParametersFactory, nil)
 }

@@ -22,6 +22,7 @@ import (
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/settings"
 )
 
 var ClusterConnectionTimeout = time.Second * 5
@@ -175,15 +176,15 @@ func processDnsLookupFamily(out *clusterv3.Cluster, cc *common.CommonCollections
 	}
 	// if we have settings, use value from it
 	switch cc.Settings.DnsLookupFamily {
-	case "V4_PREFERRED":
+	case settings.DnsLookupFamilyV4Preferred:
 		out.DnsLookupFamily = clusterv3.Cluster_V4_PREFERRED
-	case "V4_ONLY":
+	case settings.DnsLookupFamilyV4Only:
 		out.DnsLookupFamily = clusterv3.Cluster_V4_ONLY
-	case "V6_ONLY":
+	case settings.DnsLookupFamilyV6Only:
 		out.DnsLookupFamily = clusterv3.Cluster_V6_ONLY
-	case "AUTO":
+	case settings.DnsLookupFamilyAuto:
 		out.DnsLookupFamily = clusterv3.Cluster_AUTO
-	case "ALL":
+	case settings.DnsLookupFamilyAll:
 		out.DnsLookupFamily = clusterv3.Cluster_ALL
 	}
 }

@@ -4,8 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"strconv"
 
 	"istio.io/istio/pkg/config/labels"
+	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/ptr"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -20,11 +22,13 @@ import (
 	apiannotations "github.com/kgateway-dev/kgateway/v2/api/annotations"
 	apilabels "github.com/kgateway-dev/kgateway/v2/api/labels"
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/backendref"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
 	pluginsdkir "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
@@ -288,7 +292,11 @@ func NewGatewayIndex(
 		}}
 	})
 
+	metricsRecorder := NewCollectionMetricsRecorder("Gateways")
+
 	h.Gateways = krt.NewCollection(gws, func(kctx krt.HandlerContext, i *gwv1.Gateway) *ir.Gateway {
+		defer metricsRecorder.TransformStart()(nil)
+
 		// only care about gateways use a class controlled by us
 		gwClass := ptr.Flatten(krt.FetchOne(kctx, gwClasses, krt.FilterKey(string(i.Spec.GatewayClassName))))
 		if gwClass == nil || controllerName != string(gwClass.Spec.ControllerName) {
@@ -388,6 +396,34 @@ func NewGatewayIndex(
 
 		return &out
 	}, krtopts.ToOptions("gateways")...)
+
+	metrics.RegisterEvents(h.Gateways, func(o krt.Event[ir.Gateway]) {
+		switch o.Event {
+		case controllers.EventDelete:
+			metricsRecorder.SetResources(CollectionResourcesMetricLabels{
+				Namespace: o.Latest().Namespace,
+				Name:      o.Latest().Name,
+				Resource:  "Gateway",
+			}, 0)
+			metricsRecorder.SetResources(CollectionResourcesMetricLabels{
+				Namespace: o.Latest().Namespace,
+				Name:      o.Latest().Name,
+				Resource:  "Listeners",
+			}, 0)
+		case controllers.EventAdd, controllers.EventUpdate:
+			metricsRecorder.SetResources(CollectionResourcesMetricLabels{
+				Namespace: o.Latest().Namespace,
+				Name:      o.Latest().Name,
+				Resource:  "Gateway",
+			}, 1)
+			metricsRecorder.SetResources(CollectionResourcesMetricLabels{
+				Namespace: o.Latest().Namespace,
+				Name:      o.Latest().Name,
+				Resource:  "Listeners",
+			}, len(o.Latest().Obj.Spec.Listeners))
+		}
+	})
+
 	return h
 }
 
@@ -768,10 +804,7 @@ func (r *RefGrantIndex) ReferenceAllowed(kctx krt.HandlerContext, fromgk schema.
 	}
 	// try with name:
 	key.ToName = to.Name
-	if len(krt.Fetch(kctx, r.refgrants, krt.FilterIndex(r.refGrantIndex, key))) != 0 {
-		return true
-	}
-	return false
+	return len(krt.Fetch(kctx, r.refgrants, krt.FilterIndex(r.refGrantIndex, key))) != 0
 }
 
 type RouteWrapper struct {
@@ -815,10 +848,11 @@ func (c RouteWrapper) Equals(in RouteWrapper) bool {
 // MARK: RoutesIndex
 
 type RoutesIndex struct {
-	routes         krt.Collection[RouteWrapper]
-	httpRoutes     krt.Collection[ir.HttpRouteIR]
-	httpBySelector krt.Index[HTTPRouteSelector, ir.HttpRouteIR]
-	byParentRef    krt.Index[targetRefIndexKey, RouteWrapper]
+	routes                  krt.Collection[RouteWrapper]
+	httpRoutes              krt.Collection[ir.HttpRouteIR]
+	httpBySelector          krt.Index[HTTPRouteSelector, ir.HttpRouteIR]
+	byParentRef             krt.Index[targetRefIndexKey, RouteWrapper]
+	weightedRoutePrecedence bool
 
 	policies  *PolicyIndex
 	refgrants *RefGrantIndex
@@ -845,8 +879,9 @@ func NewRoutesIndex(
 	policies *PolicyIndex,
 	backends *BackendIndex,
 	refgrants *RefGrantIndex,
+	globalSettings settings.Settings,
 ) *RoutesIndex {
-	h := &RoutesIndex{policies: policies, refgrants: refgrants, backends: backends}
+	h := &RoutesIndex{policies: policies, refgrants: refgrants, backends: backends, weightedRoutePrecedence: globalSettings.WeightedRoutePrecedence}
 	h.hasSyncedFuncs = append(h.hasSyncedFuncs, httproutes.HasSynced, grpcroutes.HasSynced, tcproutes.HasSynced, tlsroutes.HasSynced)
 	h.httpRoutes = krt.NewCollection(httproutes, h.transformHttpRoute, krtopts.ToOptions("http-routes-with-policy")...)
 	httpRouteCollection := krt.NewCollection(h.httpRoutes, func(kctx krt.HandlerContext, i ir.HttpRouteIR) *RouteWrapper {
@@ -1027,6 +1062,15 @@ func (h *RoutesIndex) transformHttpRoute(kctx krt.HandlerContext, i *gwv1.HTTPRo
 
 	delegationInheritedPolicyPriority := apiannotations.DelegationInheritedPolicyPriorityValue(i.Annotations[apiannotations.DelegationInheritedPolicyPriority])
 
+	var precedenceWeight int32
+	var err error
+	if h.weightedRoutePrecedence {
+		precedenceWeight, err = parseRoutePrecedenceWeight(i.Annotations)
+		if err != nil {
+			logger.Error("error parsing route weight; defaulting to 0", "resource_ref", src, "error", err)
+		}
+	}
+
 	return &ir.HttpRouteIR{
 		ObjectSource: src,
 		SourceObject: i,
@@ -1038,6 +1082,7 @@ func (h *RoutesIndex) transformHttpRoute(kctx krt.HandlerContext, i *gwv1.HTTPRo
 			h.policies.getTargetingPolicies(kctx, extensionsplug.RouteAttachmentPoint, src, "", i.GetLabels()),
 			ir.WithDelegationInheritedPolicyPriority(delegationInheritedPolicyPriority),
 		),
+		PrecedenceWeight: precedenceWeight,
 	}
 }
 
@@ -1321,4 +1366,16 @@ func (i *BackendIndex) normalizeInfPoolBackendPort(
 	correct := gwv1.PortNumber(resolvedPort)
 	ref.Port = &correct
 	return nil
+}
+
+func parseRoutePrecedenceWeight(annotations map[string]string) (int32, error) {
+	val, ok := annotations[apiannotations.RoutePrecedenceWeight]
+	if !ok {
+		return 0, nil
+	}
+	weight, err := strconv.ParseInt(val, 10, 32)
+	if err != nil {
+		return 0, fmt.Errorf("invalid value for annotation %s: %s; must be a valid integer", apiannotations.RoutePrecedenceWeight, val)
+	}
+	return int32(weight), nil
 }

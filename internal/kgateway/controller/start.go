@@ -12,15 +12,16 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 	istiolog "istio.io/istio/pkg/log"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/config"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	infextv1a2 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/deployer"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/inferenceextension/endpointpicker"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/registry"
@@ -31,6 +32,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
+	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	common "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
@@ -69,9 +71,11 @@ type StartConfig struct {
 	RestConfig *rest.Config
 	// ExtensionsFactory is the factory function which will return an extensions.K8sGatewayExtensions
 	// This is responsible for producing the extension points that this controller requires
-	ExtraPlugins func(ctx context.Context, commoncol *common.CommonCollections) []sdk.Plugin
-
-	Client istiokube.Client
+	ExtraPlugins           func(ctx context.Context, commoncol *common.CommonCollections) []sdk.Plugin
+	ExtraGatewayParameters func(cli client.Client, inputs *deployer.Inputs) []deployer.ExtraGatewayParameters
+	// kgateway default scheme will be extended with these schemes
+	AddToScheme func(s *runtime.Scheme) error
+	Client      istiokube.Client
 
 	AugmentedPods krt.Collection[krtcollections.LocalityPod]
 	UniqueClients krt.Collection[ir.UniqlyConnectedClient]
@@ -105,6 +109,13 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 	// Extend the scheme if the TCPRoute CRD exists.
 	if err := kgtwschemes.AddGatewayV1A2Scheme(cfg.RestConfig, scheme); err != nil {
 		return nil, err
+	}
+
+	if cfg.AddToScheme != nil {
+		setupLog.Info("extending scheme")
+		if err := cfg.AddToScheme(scheme); err != nil {
+			return nil, err
+		}
 	}
 
 	mgrOpts := ctrl.Options{
@@ -163,6 +174,8 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 	if err != nil {
 		return nil, err
 	}
+
+	globalSettings := *cfg.SetupOpts.GlobalSettings
 	commoncol, err := common.NewCommonCollections(
 		ctx,
 		cfg.KrtOptions,
@@ -171,13 +184,13 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 		mgr.GetClient(),
 		cfg.ControllerName,
 		setupLog,
-		*cfg.SetupOpts.GlobalSettings,
+		globalSettings,
 	)
 	if err != nil {
 		return nil, err
 	}
 	mergedPlugins := pluginFactoryWithBuiltin(cfg.ExtraPlugins)(ctx, commoncol)
-	commoncol.InitPlugins(ctx, mergedPlugins)
+	commoncol.InitPlugins(ctx, mergedPlugins, globalSettings)
 
 	// Create the proxy syncer for the Gateway API resources
 	setupLog.Info("initializing proxy syncer")
@@ -291,7 +304,7 @@ func (c *ControllerBuilder) Start(ctx context.Context) error {
 	}
 
 	setupLog.Info("creating base gateway controller")
-	if err := NewBaseGatewayController(ctx, gwCfg); err != nil {
+	if err := NewBaseGatewayController(ctx, gwCfg, c.cfg.ExtraGatewayParameters); err != nil {
 		setupLog.Error(err, "unable to create gateway controller")
 		return err
 	}
@@ -309,7 +322,7 @@ func (c *ControllerBuilder) Start(ctx context.Context) error {
 		if globalSettings.InferExtAutoProvision {
 			poolCfg.InferenceExt = new(deployer.InferenceExtInfo)
 		}
-		if err := NewBaseInferencePoolController(ctx, poolCfg, &gwCfg); err != nil {
+		if err := NewBaseInferencePoolController(ctx, poolCfg, &gwCfg, c.cfg.ExtraGatewayParameters); err != nil {
 			setupLog.Error(err, "unable to create inferencepool controller")
 			return err
 		}

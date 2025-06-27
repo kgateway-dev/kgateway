@@ -13,8 +13,6 @@ import (
 	"strings"
 	"time"
 
-	errors "github.com/rotisserie/eris"
-
 	"github.com/onsi/gomega"
 	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
 
@@ -154,7 +152,7 @@ func (i *VaultInstance) waitForVaultToBeRunning() error {
 	for {
 		select {
 		case <-ctx.Done():
-			return errors.Errorf("timed out waiting for vault on %s", pingEndpoint)
+			return fmt.Errorf("timed out waiting for vault on %s", pingEndpoint)
 
 		case <-pingInterval:
 			conn, _ := net.Dial("tcp", pingEndpoint)

@@ -6,10 +6,10 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"os"
 	"strings"
 
-	errors "github.com/rotisserie/eris"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
@@ -35,7 +35,7 @@ func WriteResourcesToFile(resources []client.Object, fileName string) error {
 	for _, resource := range resources {
 		yamlData, err := objectToYaml(resource)
 		if err != nil {
-			return errors.Wrap(err, "can marshal resources to YAML")
+			return fmt.Errorf("can marshal resources to YAML: %w", err)
 		}
 
 		outputResourceManifest.Write(yamlData)
@@ -47,13 +47,13 @@ func WriteResourcesToFile(resources []client.Object, fileName string) error {
 	// Write YAML data to file
 	manifestFile, err := os.Create(fileName)
 	if err != nil {
-		return errors.Wrap(err, "can create generated file")
+		return fmt.Errorf("can create generated file: %w", err)
 	}
 	defer manifestFile.Close()
 
 	_, err = manifestFile.Write(outputResourceManifest.Bytes())
 	if err != nil {
-		return errors.Wrap(err, "can write resources to file")
+		return fmt.Errorf("can write resources to file: %w", err)
 	}
 	return nil
 }
@@ -61,12 +61,12 @@ func WriteResourcesToFile(resources []client.Object, fileName string) error {
 func objectToYaml(obj client.Object) ([]byte, error) {
 	jsonBytes, err := json.Marshal(obj)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to marshal resource to JSON")
+		return nil, fmt.Errorf("failed to marshal resource to JSON: %w", err)
 	}
 
 	yamlBytes, err := yaml.JSONToYAML(jsonBytes)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to convert resource JSON to YAML")
+		return nil, fmt.Errorf("failed to convert resource JSON to YAML: %w", err)
 	}
 
 	return cleanUp(yamlBytes), nil

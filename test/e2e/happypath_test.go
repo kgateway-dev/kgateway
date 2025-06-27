@@ -19,7 +19,6 @@ import (
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
@@ -228,7 +227,7 @@ var _ = Describe("Happy path", func() {
 					return err
 				}
 				if res.StatusCode != http.StatusOK {
-					return errors.Errorf("bad status code: %v", res.StatusCode)
+					return fmt.Errorf("bad status code: %v", res.StatusCode)
 				}
 				return nil
 			}, time.Second*10, time.Second/2).ShouldNot(HaveOccurred())
@@ -243,7 +242,7 @@ var _ = Describe("Happy path", func() {
 					return err
 				}
 				if res.StatusCode != http.StatusServiceUnavailable {
-					return errors.Errorf("bad status code: %v", res.StatusCode)
+					return fmt.Errorf("bad status code: %v", res.StatusCode)
 				}
 				return nil
 			}, time.Second*10, time.Second/2).ShouldNot(HaveOccurred())

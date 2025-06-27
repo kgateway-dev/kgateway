@@ -60,11 +60,11 @@ func (p XdsSnapWrapper) MarshalJSON() (out []byte, err error) {
 	if !UseDetailedUnmarshalling {
 		// use a new struct to prevent infinite recursion
 		return json.Marshal(struct {
-			snap     *envoycache.Snapshot
-			proxyKey string
+			Snap     *envoycache.Snapshot
+			ProxyKey string
 		}{
-			snap:     p.snap,
-			proxyKey: p.proxyKey,
+			Snap:     p.snap,
+			ProxyKey: p.proxyKey,
 		})
 	}
 
@@ -116,7 +116,7 @@ func redact(snap *envoycache.Snapshot) {
 }
 
 func redactProto(m proto.Message) {
-	var msg proto.Message = m.(proto.Message)
+	var msg proto.Message = m
 	visitFields(msg.ProtoReflect(), false)
 }
 

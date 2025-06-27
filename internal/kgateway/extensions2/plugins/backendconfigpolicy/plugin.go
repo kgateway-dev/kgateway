@@ -23,12 +23,12 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
+	pluginsdkutils "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/utils"
 )
 
 const PreserveCasePlugin = "envoy.http.stateful_header_formatters.preserve_case"
@@ -43,6 +43,7 @@ type BackendConfigPolicyIR struct {
 	http2ProtocolOptions          *corev3.Http2ProtocolOptions
 	tlsConfig                     *envoyauth.UpstreamTlsContext
 	loadBalancerConfig            *LoadBalancerConfigIR
+	healthCheck                   *corev3.HealthCheck
 }
 
 var logger = logging.New("backendconfigpolicy")
@@ -133,6 +134,10 @@ func (d *BackendConfigPolicyIR) Equals(other any) bool {
 		return false
 	}
 
+	if !proto.Equal(d.healthCheck, d2.healthCheck) {
+		return false
+	}
+
 	return true
 }
 
@@ -172,7 +177,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 			ObjectSource: objSrc,
 			Policy:       b,
 			PolicyIR:     policyIR,
-			TargetRefs:   pluginutils.TargetRefsToPolicyRefs(b.Spec.TargetRefs, b.Spec.TargetSelectors),
+			TargetRefs:   pluginsdkutils.TargetRefsToPolicyRefs(b.Spec.TargetRefs, b.Spec.TargetSelectors),
 			Errors:       errs,
 		}
 	}, commoncol.KrtOpts.ToOptions("BackendConfigPolicyIRs")...)
@@ -224,6 +229,10 @@ func processBackend(_ context.Context, polir ir.PolicyIR, backend ir.BackendObje
 	}
 
 	applyLoadBalancerConfig(pol.loadBalancerConfig, out)
+
+	if pol.healthCheck != nil {
+		out.HealthChecks = []*corev3.HealthCheck{pol.healthCheck}
+	}
 }
 
 func translate(commoncol *common.CommonCollections, krtctx krt.HandlerContext, pol *v1alpha1.BackendConfigPolicy) (*BackendConfigPolicyIR, error) {
@@ -268,6 +277,10 @@ func translate(commoncol *common.CommonCollections, krtctx krt.HandlerContext, p
 
 	if pol.Spec.LoadBalancer != nil {
 		ir.loadBalancerConfig = translateLoadBalancerConfig(pol.Spec.LoadBalancer)
+	}
+
+	if pol.Spec.HealthCheck != nil {
+		ir.healthCheck = translateHealthCheck(pol.Spec.HealthCheck)
 	}
 
 	return &ir, nil
