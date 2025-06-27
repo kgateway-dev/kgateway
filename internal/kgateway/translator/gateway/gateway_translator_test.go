@@ -37,6 +37,16 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 		translatortest.TestTranslation(GinkgoT(), ctx, inputFiles, expectedProxyFile, in.gwNN, in.assertReports)
 	},
 	Entry(
+		"http gateway with per connection buffer limit",
+		translatorTestCase{
+			inputFile:  "gateway-per-conn-buf-lim/gateway.yaml",
+			outputFile: "gateway-per-conn-buf-lim/proxy.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		}),
+	Entry(
 		"http gateway with basic routing",
 		translatorTestCase{
 			inputFile:  "http-routing",

@@ -271,6 +271,8 @@ type Gateway struct {
 
 	AttachedListenerPolicies AttachedPolicies
 	AttachedHttpPolicies     AttachedPolicies
+
+	PerConnectionBufferLimitBytes *uint32
 }
 
 func (c Gateway) ResourceName() string {
