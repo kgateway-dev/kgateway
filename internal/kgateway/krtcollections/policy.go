@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"slices"
 	"strconv"
+	"sync/atomic"
 
 	"istio.io/istio/pkg/config/labels"
 	"istio.io/istio/pkg/kube/controllers"
@@ -66,6 +67,10 @@ type BackendIndex struct {
 	policies  *PolicyIndex
 	refgrants *RefGrantIndex
 	krtopts   krtutil.KrtOptions
+
+	// poolReady is used to recompute the backend index when an InferencePool is ready.
+	poolReady *krt.RecomputeTrigger
+	readyOnce atomic.Bool
 }
 
 type backendKey struct {
@@ -85,6 +90,7 @@ func NewBackendIndex(
 		aliasIndex:        map[schema.GroupKind]krt.Index[backendKey, ir.BackendObjectIR]{},
 		gkAliases:         map[schema.GroupKind][]schema.GroupKind{},
 		krtopts:           krtopts,
+		poolReady:         krt.NewRecomputeTrigger(false, krt.WithName("InferencePoolReady")),
 	}
 }
 
@@ -100,6 +106,24 @@ func (i *BackendIndex) HasSynced() bool {
 			return false
 		}
 	}
+	// If no InferencePool collection exists, unblock dependants.
+	hasPool := false
+	for gk, col := range i.availableBackends {
+		if !col.HasSynced() {
+			return false
+		}
+		hasPool = hasPool || isInfPoolGK(gk)
+	}
+
+	if !i.readyOnce.Load() {
+		if hasPool {
+			i.readyOnce.CompareAndSwap(false, true)
+		} else {
+			i.readyOnce.Store(true)
+		}
+		i.poolReady.MarkSynced()
+	}
+
 	return true
 }
 
@@ -141,6 +165,15 @@ func (i *BackendIndex) AddBackends(gk schema.GroupKind, col krt.Collection[ir.Ba
 	// when we query by the alias, also check our "actual" gk
 	for _, aliasGK := range aliasKinds {
 		i.gkAliases[aliasGK] = append(i.gkAliases[aliasGK], gk)
+	}
+
+	// Re-queue dependents only for InferencePool collections. This avoids unnecessary
+	// wake-ups when the inference extension plugin is not enabled.
+	isInfPool := isInfPoolGK(gk) || sliceHasInfPool(aliasKinds)
+	if isInfPool {
+		col.Register(func(e krt.Event[ir.BackendObjectIR]) {
+			i.poolReady.TriggerRecomputation()
+		})
 	}
 }
 
@@ -1329,6 +1362,16 @@ func (i *BackendIndex) normalizeInfPoolBackendPort(
 	srcNamespace string,
 	ref *gwv1.BackendObjectReference,
 ) error {
+	if i.poolReady != nil {
+		// Register the caller, i.e. HTTPRoute, as dependant on the all pools synced trigger.
+		i.poolReady.MarkDependant(kctx)
+	}
+
+	// If pools are still loading, defer and the route will re-run after MarkSynced()
+	if !i.readyOnce.Load() {
+		return nil
+	}
+
 	// Build an ObjectSource for the pool (ignoring any port for lookup)
 	poolSrc := toFromBackendRef(srcNamespace, *ref)
 	poolGK := poolSrc.GetGroupKind()
@@ -1378,4 +1421,19 @@ func parseRoutePrecedenceWeight(annotations map[string]string) (int32, error) {
 		return 0, fmt.Errorf("invalid value for annotation %s: %s; must be a valid integer", apiannotations.RoutePrecedenceWeight, val)
 	}
 	return int32(weight), nil
+}
+
+// isInfPoolGK returns true if the GroupKind represents an InferencePool.
+func isInfPoolGK(gk schema.GroupKind) bool {
+	return gk.Kind == wellknown.InferencePoolKind
+}
+
+// sliceHasInfPool returns true if any GroupKind in the slice is an InferencePool.
+func sliceHasInfPool(list []schema.GroupKind) bool {
+	for _, gk := range list {
+		if isInfPoolGK(gk) {
+			return true
+		}
+	}
+	return false
 }

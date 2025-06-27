@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"maps"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -27,6 +28,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/settings"
+	intir "github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -699,6 +701,11 @@ func preRouteIndex(t test.Failer, inputs []any) *RoutesIndex {
 	pools := krttest.GetMockCollection[*infextv1a2.InferencePool](mock)
 	upstreams.AddBackends(infPoolGk, infPoolUpstreams(pools))
 
+	// Wait until the backend index synced before proceeding
+	for !upstreams.HasSynced() {
+		time.Sleep(10 * time.Millisecond)
+	}
+
 	httproutes := krttest.GetMockCollection[*gwv1.HTTPRoute](mock)
 	tcpproutes := krttest.GetMockCollection[*gwv1a2.TCPRoute](mock)
 	tlsroutes := krttest.GetMockCollection[*gwv1a2.TLSRoute](mock)
@@ -1001,4 +1008,70 @@ func TestParseRoutePrecedenceWeight(t *testing.T) {
 			a.Equal(tt.expected, weight)
 		})
 	}
+}
+
+// backendCountingCollection is a wrapper that counts Register() calls for
+// BackendObjectIR collections.
+type backendCountingCollection struct {
+	*krt.StaticCollection[intir.BackendObjectIR]
+	cnt *atomic.Int32
+}
+
+func (c *backendCountingCollection) Register(f func(krt.Event[intir.BackendObjectIR])) krt.Syncer {
+	c.cnt.Add(1)
+	return c.StaticCollection.Register(f)
+}
+
+func newCountingCollection(counter *atomic.Int32) *backendCountingCollection {
+	sc := krt.NewStaticCollection[intir.BackendObjectIR](nil)
+	return &backendCountingCollection{
+		StaticCollection: &sc,
+		cnt:              counter,
+	}
+}
+
+func TestAddBackendsRegistersTriggerOnlyForPools(t *testing.T) {
+	var svcCnt, poolCnt atomic.Int32
+
+	svcCol := newCountingCollection(&svcCnt)
+	poolCol := newCountingCollection(&poolCnt)
+
+	bi := NewBackendIndex(krtutil.KrtOptions{}, &PolicyIndex{}, &RefGrantIndex{})
+
+	bi.AddBackends(svcGk, svcCol)
+	require.Equal(t, int32(0), svcCnt.Load(),
+		"adding Service backends must NOT register poolReady")
+
+	bi.AddBackends(infPoolGk, poolCol)
+	require.Equal(t, int32(1), poolCnt.Load(),
+		"adding InferencePool backends must register poolReady once")
+}
+
+func TestNormalizeInfPoolBackendPortHandlesNilTrigger(t *testing.T) {
+	idx := &BackendIndex{}
+	ctx := krt.TestingDummyContext{}
+	// Minimal fake inputs
+	ns := "default"
+	ref := &gwv1.BackendObjectReference{Name: "foo"}
+	// The function should no longer panic
+	assert.NotPanics(t, func() {
+		_ = idx.normalizeInfPoolBackendPort(ctx, ns, ref)
+	})
+}
+
+func TestNewBackendIndexInitializesPoolReady(t *testing.T) {
+	idx := NewBackendIndex(krtutil.KrtOptions{}, nil, nil)
+	assert.NotNil(t, idx)
+	assert.NotNil(t, idx.poolReady, "poolReady should be pre-initialized")
+}
+
+func TestIsAndSliceHasInfPool(t *testing.T) {
+	ipGK := schema.GroupKind{Group: infextv1a2.GroupVersion.Group, Kind: wellknown.InferencePoolKind}
+	othGK := schema.GroupKind{Group: "", Kind: "Service"}
+
+	require.True(t, isInfPoolGK(ipGK))
+	require.False(t, isInfPoolGK(othGK))
+
+	require.True(t, sliceHasInfPool([]schema.GroupKind{othGK, ipGK}))
+	require.False(t, sliceHasInfPool([]schema.GroupKind{othGK}))
 }
