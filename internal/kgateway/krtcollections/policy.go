@@ -68,8 +68,9 @@ type BackendIndex struct {
 	refgrants *RefGrantIndex
 	krtopts   krtutil.KrtOptions
 
-	// poolReady is used to recompute the backend index when an InferencePool is ready.
-	poolReady *krt.RecomputeTrigger
+	// infPoolReady is used to recompute the backend index when an InferencePool is ready.
+	infPoolReady *krt.RecomputeTrigger
+	// readyOnce is used to ensure that the infPoolReady is only marked as ready once.
 	readyOnce atomic.Bool
 }
 
@@ -90,7 +91,7 @@ func NewBackendIndex(
 		aliasIndex:        map[schema.GroupKind]krt.Index[backendKey, ir.BackendObjectIR]{},
 		gkAliases:         map[schema.GroupKind][]schema.GroupKind{},
 		krtopts:           krtopts,
-		poolReady:         krt.NewRecomputeTrigger(false, krt.WithName("InferencePoolReady")),
+		infPoolReady:      krt.NewRecomputeTrigger(false, krt.WithName("InferencePoolReady")),
 	}
 }
 
@@ -106,7 +107,7 @@ func (i *BackendIndex) HasSynced() bool {
 			return false
 		}
 	}
-	// If no InferencePool collection exists, unblock dependants.
+	// If no InferencePool collection exists, unblock dependents.
 	hasPool := false
 	for gk, col := range i.availableBackends {
 		if !col.HasSynced() {
@@ -121,7 +122,7 @@ func (i *BackendIndex) HasSynced() bool {
 		} else {
 			i.readyOnce.Store(true)
 		}
-		i.poolReady.MarkSynced()
+		i.infPoolReady.MarkSynced()
 	}
 
 	return true
@@ -172,7 +173,7 @@ func (i *BackendIndex) AddBackends(gk schema.GroupKind, col krt.Collection[ir.Ba
 	isInfPool := isInfPoolGK(gk) || sliceHasInfPool(aliasKinds)
 	if isInfPool {
 		col.Register(func(e krt.Event[ir.BackendObjectIR]) {
-			i.poolReady.TriggerRecomputation()
+			i.infPoolReady.TriggerRecomputation()
 		})
 	}
 }
@@ -1362,9 +1363,9 @@ func (i *BackendIndex) normalizeInfPoolBackendPort(
 	srcNamespace string,
 	ref *gwv1.BackendObjectReference,
 ) error {
-	if i.poolReady != nil {
+	if i.infPoolReady != nil {
 		// Register the caller, i.e. HTTPRoute, as dependant on the all pools synced trigger.
-		i.poolReady.MarkDependant(kctx)
+		i.infPoolReady.MarkDependant(kctx)
 	}
 
 	// If pools are still loading, defer and the route will re-run after MarkSynced()

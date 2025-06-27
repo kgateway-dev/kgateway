@@ -1062,7 +1062,7 @@ func TestNormalizeInfPoolBackendPortHandlesNilTrigger(t *testing.T) {
 func TestNewBackendIndexInitializesPoolReady(t *testing.T) {
 	idx := NewBackendIndex(krtutil.KrtOptions{}, nil, nil)
 	assert.NotNil(t, idx)
-	assert.NotNil(t, idx.poolReady, "poolReady should be pre-initialized")
+	assert.NotNil(t, idx.infPoolReady, "poolReady should be pre-initialized")
 }
 
 func TestIsAndSliceHasInfPool(t *testing.T) {
