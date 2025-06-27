@@ -127,6 +127,25 @@ spec:
                   overrideStreamErrorOnInvalidHttpMessage:
                     type: boolean
                 type: object
+              http2ProtocolOptions:
+                properties:
+                  initialConnectionWindowSize:
+                    anyOf:
+                    - type: integer
+                    - type: string
+                    pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                    x-kubernetes-int-or-string: true
+                  initialStreamWindowSize:
+                    anyOf:
+                    - type: integer
+                    - type: string
+                    pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                    x-kubernetes-int-or-string: true
+                  maxConcurrentStreams:
+                    type: integer
+                  overrideStreamErrorOnInvalidHttpMessage:
+                    type: boolean
+                type: object
               loadBalancer:
                 properties:
                   closeConnectionsOnHostSetChange:
@@ -350,6 +369,10 @@ spec:
                   rule: '[has(self.secretRef),has(self.tlsFiles)].filter(x,x==true).size()
                     == 1'
             type: object
+            x-kubernetes-validations:
+            - message: Http1ProtocolOptions and Http2ProtocolOptions cannot both be
+                set
+              rule: '!has(self.http1ProtocolOptions) || !has(self.http2ProtocolOptions)'
           status:
             properties:
               ancestors:

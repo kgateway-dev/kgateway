@@ -9,8 +9,6 @@ import (
 	"github.com/onsi/gomega"
 	"github.com/onsi/gomega/gstruct"
 
-	// errors "github.com/rotisserie/eris"
-	// "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"

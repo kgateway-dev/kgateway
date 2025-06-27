@@ -3,9 +3,9 @@ package admincli
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 
-	"github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/threadsafe"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
@@ -116,9 +116,8 @@ func (c *Client) GetInputSnapshot(ctx context.Context) ([]interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	if output.Error != "" {
-		return nil, eris.New(output.Error)
+		return nil, errors.New(output.Error)
 	}
 	return output.Data, nil
 }

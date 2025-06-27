@@ -337,6 +337,9 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: http1ProtocolOptions
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Http1ProtocolOptions
+    - name: http2ProtocolOptions
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Http2ProtocolOptions
     - name: loadBalancer
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LoadBalancer
@@ -993,6 +996,21 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: headerFormat
       type:
         scalar: string
+    - name: overrideStreamErrorOnInvalidHttpMessage
+      type:
+        scalar: boolean
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Http2ProtocolOptions
+  map:
+    fields:
+    - name: initialConnectionWindowSize
+      type:
+        namedType: io.k8s.apimachinery.pkg.api.resource.Quantity
+    - name: initialStreamWindowSize
+      type:
+        namedType: io.k8s.apimachinery.pkg.api.resource.Quantity
+    - name: maxConcurrentStreams
+      type:
+        scalar: numeric
     - name: overrideStreamErrorOnInvalidHttpMessage
       type:
         scalar: boolean

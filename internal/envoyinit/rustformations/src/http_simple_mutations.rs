@@ -40,7 +40,7 @@ impl FilterConfig {
             Ok(cfg) => cfg,
             Err(err) => {
                 // TODO(nfuden): Dont panic if there is incorrect configuration
-                eprintln!("Error parsing filter config: {}", err);
+                eprintln!("Error parsing filter config: {err}");
                 return None;
             }
         };
@@ -93,7 +93,7 @@ impl<EC: EnvoyHttpFilterConfig, EHF: EnvoyHttpFilter> HttpFilterConfig<EC, EHF> 
             let route_specific: PerRouteConfig = match serde_json::from_str(value) {
                 Ok(cfg) => cfg,
                 Err(err) => {
-                    eprintln!("Error parsing route specific config: {} {}", err, value);
+                    eprintln!("Error parsing route specific config: {err} {value}");
                     continue;
                 }
             };

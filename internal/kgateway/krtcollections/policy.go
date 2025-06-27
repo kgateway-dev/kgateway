@@ -10,6 +10,7 @@ import (
 	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/ptr"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
@@ -312,6 +313,15 @@ func NewGatewayIndex(
 			},
 			Obj:       i,
 			Listeners: make([]ir.Listener, 0, len(i.Spec.Listeners)),
+		}
+
+		if i.Annotations[apiannotations.PerConnectionBufferLimit] != "" {
+			limit, err := resource.ParseQuantity(i.Annotations[apiannotations.PerConnectionBufferLimit])
+			if err != nil {
+				logger.Error("failed to parse per connection buffer limit", "error", err)
+			} else {
+				out.PerConnectionBufferLimitBytes = k8sptr.To(uint32(limit.Value()))
+			}
 		}
 
 		// TODO: http polic

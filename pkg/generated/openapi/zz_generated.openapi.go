@@ -85,6 +85,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.HealthCheckHttp":                           schema_kgateway_v2_api_v1alpha1_HealthCheckHttp(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Host":                                      schema_kgateway_v2_api_v1alpha1_Host(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Http1ProtocolOptions":                      schema_kgateway_v2_api_v1alpha1_Http1ProtocolOptions(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Http2ProtocolOptions":                      schema_kgateway_v2_api_v1alpha1_Http2ProtocolOptions(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Image":                                     schema_kgateway_v2_api_v1alpha1_Image(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.IstioContainer":                            schema_kgateway_v2_api_v1alpha1_IstioContainer(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.IstioIntegration":                          schema_kgateway_v2_api_v1alpha1_IstioIntegration(ref),
@@ -1403,6 +1404,12 @@ func schema_kgateway_v2_api_v1alpha1_BackendConfigPolicySpec(ref common.Referenc
 							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Http1ProtocolOptions"),
 						},
 					},
+					"http2ProtocolOptions": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Http2ProtocolOptions contains the options necessary to configure HTTP/2 backends. Note: Http2ProtocolOptions can only be applied to HTTP/2 backends. See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/transport_sockets/tls/v3/tls.proto#envoy-v3-api-msg-extensions-transport-sockets-tls-v3-sslconfig) for more details.",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Http2ProtocolOptions"),
+						},
+					},
 					"tls": {
 						SchemaProps: spec.SchemaProps{
 							Description: "TLS contains the options necessary to configure a backend to use TLS origination. See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/transport_sockets/tls/v3/tls.proto#envoy-v3-api-msg-extensions-transport-sockets-tls-v3-sslconfig) for more details.",
@@ -1425,7 +1432,7 @@ func schema_kgateway_v2_api_v1alpha1_BackendConfigPolicySpec(ref common.Referenc
 			},
 		},
 		Dependencies: []string{
-			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CommonHttpProtocolOptions", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.HealthCheck", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Http1ProtocolOptions", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LoadBalancer", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LocalPolicyTargetReference", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LocalPolicyTargetSelector", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.TCPKeepalive", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.TLS", "k8s.io/apimachinery/pkg/apis/meta/v1.Duration"},
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CommonHttpProtocolOptions", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.HealthCheck", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Http1ProtocolOptions", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Http2ProtocolOptions", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LoadBalancer", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LocalPolicyTargetReference", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LocalPolicyTargetSelector", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.TCPKeepalive", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.TLS", "k8s.io/apimachinery/pkg/apis/meta/v1.Duration"},
 	}
 }
 
@@ -3372,6 +3379,46 @@ func schema_kgateway_v2_api_v1alpha1_Http1ProtocolOptions(ref common.ReferenceCa
 				},
 			},
 		},
+	}
+}
+
+func schema_kgateway_v2_api_v1alpha1_Http2ProtocolOptions(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"initialStreamWindowSize": {
+						SchemaProps: spec.SchemaProps{
+							Description: "InitialStreamWindowSize is the initial window size for the stream. Valid values range from 65535 (2^16 - 1, HTTP/2 default) to 2147483647 (2^31 - 1, HTTP/2 maximum). Defaults to 268435456 (256 * 1024 * 1024). Values can be specified with units like \"64Ki\".",
+							Ref:         ref("k8s.io/apimachinery/pkg/api/resource.Quantity"),
+						},
+					},
+					"initialConnectionWindowSize": {
+						SchemaProps: spec.SchemaProps{
+							Description: "InitialConnectionWindowSize is similar to InitialStreamWindowSize, but for the connection level. Same range and default value as InitialStreamWindowSize. Values can be specified with units like \"64Ki\".",
+							Ref:         ref("k8s.io/apimachinery/pkg/api/resource.Quantity"),
+						},
+					},
+					"maxConcurrentStreams": {
+						SchemaProps: spec.SchemaProps{
+							Description: "The maximum number of concurrent streams that the connection can have.",
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
+					"overrideStreamErrorOnInvalidHttpMessage": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Allows invalid HTTP messaging and headers. When disabled (default), then the whole HTTP/2 connection is terminated upon receiving invalid HEADERS frame. When enabled, only the offending stream is terminated.",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"k8s.io/apimachinery/pkg/api/resource.Quantity"},
 	}
 }
 

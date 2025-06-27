@@ -13,7 +13,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	api "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/deployer"
+	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 )
 
 const (
@@ -85,6 +85,7 @@ func (r *gatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (re
 	if client.IgnoreNotFound(err) != nil {
 		return ctrl.Result{}, err
 	}
+	objs = r.deployer.SetNamespaceAndOwner(&gw, objs)
 
 	// find the name/ns of the service we own so we can grab addresses
 	// from it for status

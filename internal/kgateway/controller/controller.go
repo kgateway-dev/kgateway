@@ -25,9 +25,10 @@ import (
 	infextv1a2 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
 	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/deployer"
+	internaldeployer "github.com/kgateway-dev/kgateway/v2/internal/kgateway/deployer"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 	common "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 )
 
@@ -186,23 +187,21 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 
 	log.Info("creating gateway deployer", "ctrlname", c.cfg.ControllerName, "server", c.cfg.ControlPlane.XdsHost, "port", c.cfg.ControlPlane.XdsPort)
 	inputs := &deployer.Inputs{
-		ControllerName:       c.cfg.ControllerName,
 		Dev:                  c.cfg.Dev,
 		IstioAutoMtlsEnabled: c.cfg.IstioAutoMtlsEnabled,
 		ControlPlane:         c.cfg.ControlPlane,
 		ImageInfo:            c.cfg.ImageInfo,
 		CommonCollections:    c.cfg.CommonCollections,
 	}
-	gwParams := deployer.NewGatewayParameters(c.cfg.Mgr.GetClient())
+	gwParams := internaldeployer.NewGatewayParameters(c.cfg.Mgr.GetClient(), inputs)
 	if c.extraGatewayParameters != nil {
 		gwParams.WithExtraGatewayParameters(c.extraGatewayParameters(c.cfg.Mgr.GetClient(), inputs)...)
 	}
-	d, err := deployer.NewDeployer(c.cfg.Mgr.GetClient(), inputs, gwParams)
+	d, err := internaldeployer.NewGatewayDeployer(c.cfg.ControllerName, c.cfg.Mgr.GetClient(), gwParams)
 	if err != nil {
 		return err
 	}
-
-	gvks, err := d.GetGvksToWatch(ctx)
+	gvks, err := internaldeployer.GatewayGVKsToWatch(ctx, d)
 	if err != nil {
 		return err
 	}
@@ -425,22 +424,12 @@ func (c *controllerBuilder) watchInferencePool(ctx context.Context) error {
 
 	// If enabled, create a deployer using the controllerBuilder as inputs.
 	if c.poolCfg.InferenceExt != nil {
-		inputs := &deployer.Inputs{
-			ControllerName:     c.cfg.ControllerName,
-			ImageInfo:          c.cfg.ImageInfo,
-			InferenceExtension: c.poolCfg.InferenceExt,
-			CommonCollections:  c.cfg.CommonCollections,
-		}
-		gwParams := deployer.NewGatewayParameters(c.cfg.Mgr.GetClient())
-		if c.extraGatewayParameters != nil {
-			gwParams.WithExtraGatewayParameters(c.extraGatewayParameters(c.cfg.Mgr.GetClient(), inputs)...)
-		}
-		d, err := deployer.NewDeployer(c.cfg.Mgr.GetClient(), inputs, gwParams)
+		d, err := internaldeployer.NewInferencePoolDeployer(c.cfg.ControllerName, c.cfg.Mgr.GetClient())
 		if err != nil {
 			return err
 		}
 		// Watch child objects, e.g. Deployments, created by the inference pool deployer.
-		gvks, err := d.GetGvksToWatch(ctx)
+		gvks, err := internaldeployer.InferencePoolGVKsToWatch(ctx, d)
 		if err != nil {
 			return err
 		}

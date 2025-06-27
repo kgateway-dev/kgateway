@@ -16,6 +16,7 @@ type BackendConfigPolicySpecApplyConfiguration struct {
 	TCPKeepalive                  *TCPKeepaliveApplyConfiguration                `json:"tcpKeepalive,omitempty"`
 	CommonHttpProtocolOptions     *CommonHttpProtocolOptionsApplyConfiguration   `json:"commonHttpProtocolOptions,omitempty"`
 	Http1ProtocolOptions          *Http1ProtocolOptionsApplyConfiguration        `json:"http1ProtocolOptions,omitempty"`
+	Http2ProtocolOptions          *Http2ProtocolOptionsApplyConfiguration        `json:"http2ProtocolOptions,omitempty"`
 	TLS                           *TLSApplyConfiguration                         `json:"tls,omitempty"`
 	LoadBalancer                  *LoadBalancerApplyConfiguration                `json:"loadBalancer,omitempty"`
 	HealthCheck                   *HealthCheckApplyConfiguration                 `json:"healthCheck,omitempty"`
@@ -90,6 +91,14 @@ func (b *BackendConfigPolicySpecApplyConfiguration) WithCommonHttpProtocolOption
 // If called multiple times, the Http1ProtocolOptions field is set to the value of the last call.
 func (b *BackendConfigPolicySpecApplyConfiguration) WithHttp1ProtocolOptions(value *Http1ProtocolOptionsApplyConfiguration) *BackendConfigPolicySpecApplyConfiguration {
 	b.Http1ProtocolOptions = value
+	return b
+}
+
+// WithHttp2ProtocolOptions sets the Http2ProtocolOptions field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Http2ProtocolOptions field is set to the value of the last call.
+func (b *BackendConfigPolicySpecApplyConfiguration) WithHttp2ProtocolOptions(value *Http2ProtocolOptionsApplyConfiguration) *BackendConfigPolicySpecApplyConfiguration {
+	b.Http2ProtocolOptions = value
 	return b
 }
 

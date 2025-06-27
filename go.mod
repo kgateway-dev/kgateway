@@ -23,7 +23,6 @@ require (
 	github.com/onsi/ginkgo/v2 v2.23.3
 	github.com/onsi/gomega v1.37.0
 	github.com/pkg/errors v0.9.1
-	github.com/rotisserie/eris v0.5.4
 	github.com/solo-io/envoy-gloo/go v0.0.0-20250102165327-33a74fcf9966
 	github.com/solo-io/go-list-licenses v0.1.4
 	github.com/solo-io/go-utils v0.27.3
@@ -66,6 +65,7 @@ require (
 	github.com/jinzhu/copier v0.4.0 // indirect
 	github.com/manuelarte/funcorder v0.2.1 // indirect
 	github.com/mikefarah/yq/v4 v4.45.4 // indirect
+	github.com/rotisserie/eris v0.5.4 // indirect
 	github.com/yuin/gopher-lua v1.1.1 // indirect
 	go.augendre.info/fatcontext v0.8.0 // indirect
 	gopkg.in/op/go-logging.v1 v1.0.0-20160211212156-b2cb9fa56473 // indirect
@@ -612,6 +612,9 @@ require (
 	sigs.k8s.io/randfill v1.0.0 // indirect
 	software.sslmate.com/src/go-pkcs12 v0.5.0 // indirect
 )
+
+// Remove once https://github.com/kubernetes-sigs/controller-tools/pull/1224 merges
+replace sigs.k8s.io/controller-tools => github.com/shashankram/controller-tools v0.0.0-20250626172831-f7be064a9132
 
 replace github.com/imdario/mergo => github.com/imdario/mergo v0.3.16
 

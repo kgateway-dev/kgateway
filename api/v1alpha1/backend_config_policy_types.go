@@ -2,6 +2,7 @@ package v1alpha1
 
 import (
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 )
@@ -28,6 +29,7 @@ type BackendConfigPolicyList struct {
 	Items           []BackendConfigPolicy `json:"items"`
 }
 
+// +kubebuilder:validation:XValidation:rule="!has(self.http1ProtocolOptions) || !has(self.http2ProtocolOptions)",message="Http1ProtocolOptions and Http2ProtocolOptions cannot both be set"
 type BackendConfigPolicySpec struct {
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=16
@@ -59,6 +61,12 @@ type BackendConfigPolicySpec struct {
 	// Additional options when handling HTTP1 requests upstream.
 	// +optional
 	Http1ProtocolOptions *Http1ProtocolOptions `json:"http1ProtocolOptions,omitempty"`
+
+	// Http2ProtocolOptions contains the options necessary to configure HTTP/2 backends.
+	// Note: Http2ProtocolOptions can only be applied to HTTP/2 backends.
+	// See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/transport_sockets/tls/v3/tls.proto#envoy-v3-api-msg-extensions-transport-sockets-tls-v3-sslconfig) for more details.
+	// +optional
+	Http2ProtocolOptions *Http2ProtocolOptions `json:"http2ProtocolOptions,omitempty"`
 
 	// TLS contains the options necessary to configure a backend to use TLS origination.
 	// See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/transport_sockets/tls/v3/tls.proto#envoy-v3-api-msg-extensions-transport-sockets-tls-v3-sslconfig) for more details.
@@ -134,6 +142,30 @@ type CommonHttpProtocolOptions struct {
 	// If set to 0 or unspecified, defaults to unlimited.
 	// +optional
 	MaxRequestsPerConnection *int `json:"maxRequestsPerConnection,omitempty"`
+}
+type Http2ProtocolOptions struct {
+	// InitialStreamWindowSize is the initial window size for the stream.
+	// Valid values range from 65535 (2^16 - 1, HTTP/2 default) to 2147483647 (2^31 - 1, HTTP/2 maximum).
+	// Defaults to 268435456 (256 * 1024 * 1024).
+	// Values can be specified with units like "64Ki".
+	// +optional
+	InitialStreamWindowSize *resource.Quantity `json:"initialStreamWindowSize,omitempty"`
+
+	// InitialConnectionWindowSize is similar to InitialStreamWindowSize, but for the connection level.
+	// Same range and default value as InitialStreamWindowSize.
+	// Values can be specified with units like "64Ki".
+	// +optional
+	InitialConnectionWindowSize *resource.Quantity `json:"initialConnectionWindowSize,omitempty"`
+
+	// The maximum number of concurrent streams that the connection can have.
+	// +optional
+	MaxConcurrentStreams *int `json:"maxConcurrentStreams,omitempty"`
+
+	// Allows invalid HTTP messaging and headers. When disabled (default), then
+	// the whole HTTP/2 connection is terminated upon receiving invalid HEADERS frame.
+	// When enabled, only the offending stream is terminated.
+	// +optional
+	OverrideStreamErrorOnInvalidHttpMessage *bool `json:"overrideStreamErrorOnInvalidHttpMessage,omitempty"`
 }
 
 // See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/address.proto#envoy-v3-api-msg-config-core-v3-tcpkeepalive) for more details.

@@ -9,7 +9,6 @@ import (
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoy_tls_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
-	"github.com/rotisserie/eris"
 	envoytransformation "github.com/solo-io/envoy-gloo/go/config/filter/http/transformation/v2"
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -125,7 +124,7 @@ func buildModelCluster(aiUs *v1alpha1.AIBackend, aiSecret *ir.Secret, multiSecre
 			})
 		}
 		if len(epByType) > 1 {
-			return eris.Errorf("multi backend pools must all be of the same type, got %v", epByType)
+			return fmt.Errorf("multi backend pools must all be of the same type, got %v", epByType)
 		}
 	} else if aiUs.LLM != nil {
 		prioritized, err = buildLLMEndpoint(aiUs, aiSecret)

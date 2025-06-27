@@ -40,6 +40,7 @@ type BackendConfigPolicyIR struct {
 	tcpKeepalive                  *corev3.TcpKeepalive
 	commonHttpProtocolOptions     *corev3.HttpProtocolOptions
 	http1ProtocolOptions          *corev3.Http1ProtocolOptions
+	http2ProtocolOptions          *corev3.Http2ProtocolOptions
 	tlsConfig                     *envoyauth.UpstreamTlsContext
 	loadBalancerConfig            *LoadBalancerConfigIR
 	healthCheck                   *corev3.HealthCheck
@@ -104,6 +105,15 @@ func (d *BackendConfigPolicyIR) Equals(other any) bool {
 	}
 	if d.http1ProtocolOptions != nil && d2.http1ProtocolOptions != nil {
 		if !proto.Equal(d.http1ProtocolOptions, d2.http1ProtocolOptions) {
+			return false
+		}
+	}
+
+	if (d.http2ProtocolOptions == nil) != (d2.http2ProtocolOptions == nil) {
+		return false
+	}
+	if d.http2ProtocolOptions != nil && d2.http2ProtocolOptions != nil {
+		if !proto.Equal(d.http2ProtocolOptions, d2.http2ProtocolOptions) {
 			return false
 		}
 	}
@@ -202,6 +212,7 @@ func processBackend(_ context.Context, polir ir.PolicyIR, backend ir.BackendObje
 
 	applyCommonHttpProtocolOptions(pol.commonHttpProtocolOptions, backend, out)
 	applyHttp1ProtocolOptions(pol.http1ProtocolOptions, backend, out)
+	applyHttp2ProtocolOptions(pol.http2ProtocolOptions, backend, out)
 
 	if pol.tlsConfig != nil {
 		typedConfig, err := utils.MessageToAny(pol.tlsConfig)
@@ -250,6 +261,10 @@ func translate(commoncol *common.CommonCollections, krtctx krt.HandlerContext, p
 			return &ir, err
 		}
 		ir.http1ProtocolOptions = http1ProtocolOptions
+	}
+
+	if pol.Spec.Http2ProtocolOptions != nil {
+		ir.http2ProtocolOptions = translateHttp2ProtocolOptions(pol.Spec.Http2ProtocolOptions)
 	}
 
 	if pol.Spec.TLS != nil {

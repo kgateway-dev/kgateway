@@ -133,6 +133,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.HostApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("Http1ProtocolOptions"):
 		return &apiv1alpha1.Http1ProtocolOptionsApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("Http2ProtocolOptions"):
+		return &apiv1alpha1.Http2ProtocolOptionsApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("HTTPListenerPolicy"):
 		return &apiv1alpha1.HTTPListenerPolicyApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("HTTPListenerPolicySpec"):
