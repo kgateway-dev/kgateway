@@ -58,6 +58,10 @@ var (
 	}
 	nginxMeta = metav1.ObjectMeta{
 		Name:      "nginx",
+		Namespace: "kgateway-test",
+	}
+	nginx2Meta = metav1.ObjectMeta{
+		Name:      "nginx2",
 		Namespace: "default",
 	}
 	svcGroup = ""
@@ -101,6 +105,9 @@ func (s *clientTlsTestingSuite) TestBackendTLSPolicyAndStatus() {
 	})
 	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, nginxMeta.GetNamespace(), metav1.ListOptions{
 		LabelSelector: "app.kubernetes.io/name=nginx",
+	})
+	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, nginx2Meta.GetNamespace(), metav1.ListOptions{
+		LabelSelector: "app.kubernetes.io/name=nginx2",
 	})
 	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, proxyObjMeta.GetNamespace(), metav1.ListOptions{
 		LabelSelector: "app.kubernetes.io/name=gw",
@@ -163,23 +170,34 @@ func (s *clientTlsTestingSuite) assertPolicyStatus(inCondition metav1.Condition)
 		err := s.testInstallation.ClusterContext.Client.Get(s.ctx, objKey, tlsPol)
 		g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get BackendTLSPolicy %s", objKey)
 
-		g.Expect(tlsPol.Status.Ancestors).To(gomega.HaveLen(1), "ancestors didn't have length of 1")
-		ancestor := tlsPol.Status.Ancestors[0]
+		g.Expect(tlsPol.Status.Ancestors).To(gomega.HaveLen(2), "ancestors didn't have length of 2")
 
-		expectedAncestorRef := gwv1a2.ParentReference{
-			Group:     (*gwv1.Group)(&svcGroup),
-			Kind:      (*gwv1.Kind)(&svcKind),
-			Namespace: ptr.To(gwv1.Namespace(nginxMeta.Namespace)),
-			Name:      gwv1.ObjectName(nginxMeta.Name),
+		expectedAncestorRefs := []gwv1a2.ParentReference{
+			{
+				Group:     (*gwv1.Group)(&svcGroup),
+				Kind:      (*gwv1.Kind)(&svcKind),
+				Namespace: ptr.To(gwv1.Namespace(nginxMeta.Namespace)),
+				Name:      gwv1.ObjectName(nginxMeta.Name),
+			},
+			{
+				Group:     (*gwv1.Group)(&svcGroup),
+				Kind:      (*gwv1.Kind)(&svcKind),
+				Namespace: ptr.To(gwv1.Namespace(nginx2Meta.Namespace)),
+				Name:      gwv1.ObjectName(nginx2Meta.Name),
+			},
 		}
-		g.Expect(ancestor.AncestorRef).To(gomega.BeEquivalentTo(expectedAncestorRef))
 
-		g.Expect(ancestor.Conditions).To(gomega.HaveLen(1), "ancestors conditions wasn't length of 1")
-		cond := meta.FindStatusCondition(ancestor.Conditions, inCondition.Type)
-		g.Expect(cond).NotTo(gomega.BeNil(), "policy should have accepted condition")
-		g.Expect(cond.Status).To(gomega.Equal(inCondition.Status), "policy accepted condition should be true")
-		g.Expect(cond.Reason).To(gomega.Equal(inCondition.Reason), "policy reason should be accepted")
-		g.Expect(cond.Message).To(gomega.Equal(inCondition.Message))
-		g.Expect(cond.ObservedGeneration).To(gomega.Equal(inCondition.ObservedGeneration))
+		for i, ancestor := range tlsPol.Status.Ancestors {
+			expectedRef := expectedAncestorRefs[i]
+			g.Expect(ancestor.AncestorRef).To(gomega.BeEquivalentTo(expectedRef))
+
+			g.Expect(ancestor.Conditions).To(gomega.HaveLen(1), "ancestors conditions wasn't length of 1")
+			cond := meta.FindStatusCondition(ancestor.Conditions, inCondition.Type)
+			g.Expect(cond).NotTo(gomega.BeNil(), "policy should have accepted condition")
+			g.Expect(cond.Status).To(gomega.Equal(inCondition.Status), "policy accepted condition should be true")
+			g.Expect(cond.Reason).To(gomega.Equal(inCondition.Reason), "policy reason should be accepted")
+			g.Expect(cond.Message).To(gomega.Equal(inCondition.Message))
+			g.Expect(cond.ObservedGeneration).To(gomega.Equal(inCondition.ObservedGeneration))
+		}
 	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 }

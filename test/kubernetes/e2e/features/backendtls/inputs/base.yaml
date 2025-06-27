@@ -35,6 +35,9 @@ spec:
   - group: ""
     kind: Service
     name: nginx
+  - group: ""
+    kind: Service
+    name: nginx2
   validation:
     hostname: "example.com"
     caCertificateRefs:

@@ -4,6 +4,7 @@ import (
 	"maps"
 
 	"k8s.io/utils/ptr"
+	v1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
@@ -44,5 +45,19 @@ func TargetRefsToPolicyRefsWithSectionName(
 			MatchLabels: maps.Clone(targetSelector.MatchLabels),
 		})
 	}
+	return refs
+}
+
+func TargetRefsToPolicyRefsWithSectionNameV1Alpha2(targetRefs []v1alpha2.LocalPolicyTargetReferenceWithSectionName) []ir.PolicyRef {
+	refs := make([]ir.PolicyRef, 0, len(targetRefs))
+	for _, targetRef := range targetRefs {
+		refs = append(refs, ir.PolicyRef{
+			Group:       string(targetRef.Group),
+			Kind:        string(targetRef.Kind),
+			Name:        string(targetRef.Name),
+			SectionName: string(ptr.Deref(targetRef.SectionName, "")),
+		})
+	}
+
 	return refs
 }
