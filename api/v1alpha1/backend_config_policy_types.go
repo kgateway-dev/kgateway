@@ -62,7 +62,8 @@ type BackendConfigPolicySpec struct {
 	// +optional
 	Http1ProtocolOptions *Http1ProtocolOptions `json:"http1ProtocolOptions,omitempty"`
 
-	// Http2ProtocolOptions contains the options necessary to configure a backend to use HTTP/2.
+	// Http2ProtocolOptions contains the options necessary to configure HTTP/2 backends.
+	// Note: Http2ProtocolOptions can only be applied to HTTP/2 backends.
 	// See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/transport_sockets/tls/v3/tls.proto#envoy-v3-api-msg-extensions-transport-sockets-tls-v3-sslconfig) for more details.
 	// +optional
 	Http2ProtocolOptions *Http2ProtocolOptions `json:"http2ProtocolOptions,omitempty"`
@@ -139,14 +140,16 @@ type CommonHttpProtocolOptions struct {
 	MaxRequestsPerConnection *int `json:"maxRequestsPerConnection,omitempty"`
 }
 type Http2ProtocolOptions struct {
-	// The initial window size for the connection.
+	// InitialStreamWindowSize is the initial window size for the stream.
 	// Valid values range from 65535 (2^16 - 1, HTTP/2 default) to 2147483647 (2^31 - 1, HTTP/2 maximum).
 	// Defaults to 268435456 (256 * 1024 * 1024).
 	// Values can be specified with units like "64Ki".
 	// +optional
 	InitialStreamWindowSize *resource.Quantity `json:"initialStreamWindowSize,omitempty"`
 
-	// The initial window size for the connection.
+	// InitialConnectionWindowSize is similar to InitialStreamWindowSize, but for the connection level.
+	// Same range and default value as InitialStreamWindowSize.
+	// Values can be specified with units like "64Ki".
 	// +optional
 	InitialConnectionWindowSize *resource.Quantity `json:"initialConnectionWindowSize,omitempty"`
 

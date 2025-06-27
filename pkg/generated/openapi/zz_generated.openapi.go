@@ -1367,7 +1367,7 @@ func schema_kgateway_v2_api_v1alpha1_BackendConfigPolicySpec(ref common.Referenc
 					},
 					"http2ProtocolOptions": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Http2ProtocolOptions contains the options necessary to configure a backend to use HTTP/2. See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/transport_sockets/tls/v3/tls.proto#envoy-v3-api-msg-extensions-transport-sockets-tls-v3-sslconfig) for more details.",
+							Description: "Http2ProtocolOptions contains the options necessary to configure HTTP/2 backends. Note: Http2ProtocolOptions can only be applied to HTTP/2 backends. See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/transport_sockets/tls/v3/tls.proto#envoy-v3-api-msg-extensions-transport-sockets-tls-v3-sslconfig) for more details.",
 							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Http2ProtocolOptions"),
 						},
 					},
@@ -3230,13 +3230,13 @@ func schema_kgateway_v2_api_v1alpha1_Http2ProtocolOptions(ref common.ReferenceCa
 				Properties: map[string]spec.Schema{
 					"initialStreamWindowSize": {
 						SchemaProps: spec.SchemaProps{
-							Description: "The initial window size for the connection. Valid values range from 65535 (2^16 - 1, HTTP/2 default) to 2147483647 (2^31 - 1, HTTP/2 maximum). Defaults to 268435456 (256 * 1024 * 1024). Values can be specified with units like \"64Ki\".",
+							Description: "InitialStreamWindowSize is the initial window size for the stream. Valid values range from 65535 (2^16 - 1, HTTP/2 default) to 2147483647 (2^31 - 1, HTTP/2 maximum). Defaults to 268435456 (256 * 1024 * 1024). Values can be specified with units like \"64Ki\".",
 							Ref:         ref("k8s.io/apimachinery/pkg/api/resource.Quantity"),
 						},
 					},
 					"initialConnectionWindowSize": {
 						SchemaProps: spec.SchemaProps{
-							Description: "The initial window size for the connection.",
+							Description: "InitialConnectionWindowSize is similar to InitialStreamWindowSize, but for the connection level. Same range and default value as InitialStreamWindowSize. Values can be specified with units like \"64Ki\".",
 							Ref:         ref("k8s.io/apimachinery/pkg/api/resource.Quantity"),
 						},
 					},
