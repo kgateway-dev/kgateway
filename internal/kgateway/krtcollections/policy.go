@@ -963,6 +963,11 @@ func NewRoutesIndex(
 	return h
 }
 
+// HTTPRoutes returns the underlying krt collection of HTTPRoute IRs.
+func (h *RoutesIndex) HTTPRoutes() krt.Collection[ir.HttpRouteIR] {
+	return h.httpRoutes
+}
+
 func (h *RoutesIndex) FetchHTTPRoutesBySelector(kctx krt.HandlerContext, selector HTTPRouteSelector) []ir.HttpRouteIR {
 	return krt.Fetch(kctx, h.httpRoutes, krt.FilterIndex(h.httpBySelector, selector))
 }
@@ -998,17 +1003,6 @@ func (h *RoutesIndex) FetchHttp(kctx krt.HandlerContext, ns, n string) *ir.HttpR
 	}
 	route := krt.FetchOne(kctx, h.httpRoutes, krt.FilterKey(src.ResourceName()))
 	return route
-}
-
-// ListHTTPRoutesInNamespace returns all HTTPRouteIRs in the given namespace.
-func (h *RoutesIndex) ListHTTPRoutesInNamespace(ns string) []ir.HttpRouteIR {
-	var out []ir.HttpRouteIR
-	for _, rt := range h.httpRoutes.List() {
-		if rt.GetNamespace() == ns {
-			out = append(out, rt)
-		}
-	}
-	return out
 }
 
 func (h *RoutesIndex) Fetch(kctx krt.HandlerContext, gk schema.GroupKind, ns, n string) *RouteWrapper {
@@ -1388,4 +1382,11 @@ func parseRoutePrecedenceWeight(annotations map[string]string) (int32, error) {
 		return 0, fmt.Errorf("invalid value for annotation %s: %s; must be a valid integer", apiannotations.RoutePrecedenceWeight, val)
 	}
 	return int32(weight), nil
+}
+
+// Lookup returns all objects stored under key k without registering any
+// dependency in krt’s DAG. It's meant for status-update side paths where we
+// only need a snapshot.
+func Lookup[K comparable, V any](idx krt.Index[K, V], k K) []V {
+	return idx.Lookup(k)
 }

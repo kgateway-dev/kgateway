@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/avast/retry-go"
@@ -28,15 +29,54 @@ func buildRegisterCallback(
 	commonCol *common.CommonCollections,
 	bcol krt.Collection[ir.BackendObjectIR],
 ) func() {
+	var (
+		once   sync.Once
+		byPool krt.Index[types.NamespacedName, ir.HttpRouteIR]
+	)
+
 	return func() {
 		bcol.Register(func(o krt.Event[ir.BackendObjectIR]) {
+			// Bail out until Routes exist.
+			if commonCol.Routes == nil {
+				return
+			}
+
 			if o.Event == controllers.EventDelete {
 				return
 			}
 
 			in := o.Latest()
-			ir, ok := in.ObjIr.(*inferencePool)
+			irPool, ok := in.ObjIr.(*inferencePool)
 			if !ok {
+				return
+			}
+
+			// Build the index only once since routes
+			once.Do(func() {
+				byPool = krt.NewIndex(
+					commonCol.Routes.HTTPRoutes(),
+					func(rt ir.HttpRouteIR) []types.NamespacedName {
+						// Collect every ns/name of pools referenced by the route
+						var keys []types.NamespacedName
+						for _, rule := range rt.Rules {
+							for _, be := range rule.Backends {
+								if be.Backend != nil &&
+									be.Backend.BackendObject != nil &&
+									be.Backend.BackendObject.Group == infextv1a2.GroupVersion.Group &&
+									be.Backend.BackendObject.Kind == wellknown.InferencePoolKind {
+									keys = append(keys, types.NamespacedName{
+										Namespace: be.Backend.BackendObject.Namespace,
+										Name:      be.Backend.BackendObject.Name,
+									})
+								}
+							}
+						}
+						return keys
+					})
+			})
+
+			if byPool == nil {
+				// Still uninitialized, so wait for the next event
 				return
 			}
 
@@ -54,12 +94,11 @@ func buildRegisterCallback(
 						return err
 					}
 
-					irRoutes := commonCol.Routes.ListHTTPRoutesInNamespace(poolNsName.Namespace)
-
-					// Check if any HTTPRoute references this InferencePool.
-					gtwName := ir.referencedGateway(ctx, commonCol, irRoutes, poolNsName)
+					// Only fetch routes that reference this pool
+					irRoutes := krtcollections.Lookup(byPool, poolNsName)
+					gtwName := irPool.referencedGateway(ctx, commonCol, irRoutes, poolNsName)
 					if gtwName == "" {
-						// If needed, remove the Kgateway-managed gateway from the InferencePool status.
+						// No route references this pool anymore, so clean up.
 						if err := removeGatewayParentRef(ctx, cli, pool, commonCol.GatewayIndex); err != nil {
 							return err
 						}
@@ -103,7 +142,7 @@ func buildRegisterCallback(
 					}
 
 					// Build the InferencePool ResolvedRefs status condition.
-					newRRCond := buildResolvedRefsCondition(pool.Generation, ir.errors)
+					newRRCond := buildResolvedRefsCondition(pool.Generation, irPool.errors)
 
 					// Check if the Accepted condition already exists and is up-to-date.
 					existingRRCond := meta.FindStatusCondition(pool.Status.Parents[pIdx].Conditions, string(infextv1a2.InferencePoolConditionResolvedRefs))
