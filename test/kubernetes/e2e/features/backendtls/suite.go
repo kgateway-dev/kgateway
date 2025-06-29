@@ -58,7 +58,7 @@ var (
 	}
 	nginxMeta = metav1.ObjectMeta{
 		Name:      "nginx",
-		Namespace: "kgateway-test",
+		Namespace: "default",
 	}
 	nginx2Meta = metav1.ObjectMeta{
 		Name:      "nginx2",
