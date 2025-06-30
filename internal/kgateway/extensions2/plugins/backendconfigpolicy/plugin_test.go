@@ -247,6 +247,17 @@ func TestBackendConfigPolicyFlow(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "reports error when initial connection window size is too small",
+			policy: &v1alpha1.BackendConfigPolicy{
+				Spec: v1alpha1.BackendConfigPolicySpec{
+					Http2ProtocolOptions: &v1alpha1.Http2ProtocolOptions{
+						InitialConnectionWindowSize: ptr.To(resource.MustParse("10Ki")),
+					},
+				},
+			},
+			wantErr: true,
+		},
 	}
 
 	for _, tt := range tests {
