@@ -95,7 +95,7 @@ type RateLimitProvider struct {
 type GatewayExtensionSpec struct {
 	// Type indicates the type of the GatewayExtension to be used.
 	// +unionDiscriminator
-	// +kubebuilder:validation:Enum=ExtAuth;ExtProc;RateLimit;Extended
+	// +kubebuilder:validation:Enum=ExtAuth;ExtProc;RateLimit
 	// +required
 	Type GatewayExtensionType `json:"type"`
 
