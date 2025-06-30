@@ -152,12 +152,14 @@ type Http2ProtocolOptions struct {
 	// Defaults to 268435456 (256 * 1024 * 1024).
 	// Values can be specified with units like "64Ki".
 	// +optional
+	// +kubebuilder:validation:XValidation:message="InitialStreamWindowSize must be between 64Ki and 2048Mi",rule="quantity(self).isGreaterThan(quantity('64Ki')) && quantity(self).isLessThan(quantity('2048Mi'))"
 	InitialStreamWindowSize *resource.Quantity `json:"initialStreamWindowSize,omitempty"`
 
 	// InitialConnectionWindowSize is similar to InitialStreamWindowSize, but for the connection level.
 	// Same range and default value as InitialStreamWindowSize.
 	// Values can be specified with units like "64Ki".
 	// +optional
+	// +kubebuilder:validation:XValidation:message="InitialConnectionWindowSize must be between 64Ki and 2048Mi",rule="quantity(self).isGreaterThan(quantity('64Ki')) && quantity(self).isLessThan(quantity('2048Mi'))"
 	InitialConnectionWindowSize *resource.Quantity `json:"initialConnectionWindowSize,omitempty"`
 
 	// The maximum number of concurrent streams that the connection can have.
