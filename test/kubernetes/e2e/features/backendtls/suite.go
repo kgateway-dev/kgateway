@@ -113,19 +113,32 @@ func (s *clientTlsTestingSuite) TestBackendTLSPolicyAndStatus() {
 		LabelSelector: "app.kubernetes.io/name=gw",
 	})
 
-	s.testInstallation.Assertions.AssertEventualCurlResponse(
-		s.ctx,
-		defaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
-			curl.WithHostHeader("example.com"),
-			curl.WithPath("/"),
+	tt := []struct {
+		host string
+	}{
+		{
+			host: "example.com",
 		},
-		&matchers.HttpResponse{
-			StatusCode: http.StatusOK,
-			Body:       gomega.ContainSubstring(defaults.NginxResponse),
+		{
+			host: "example2.com",
 		},
-	)
+	}
+	for _, tc := range tt {
+		s.testInstallation.Assertions.AssertEventualCurlResponse(
+			s.ctx,
+			defaults.CurlPodExecOpt,
+			[]curl.Option{
+				curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
+				curl.WithHostHeader(tc.host),
+				curl.WithPath("/"),
+			},
+			&matchers.HttpResponse{
+				StatusCode: http.StatusOK,
+				Body:       gomega.ContainSubstring(defaults.NginxResponse),
+			},
+		)
+	}
+
 	s.testInstallation.Assertions.AssertEventualCurlResponse(
 		s.ctx,
 		defaults.CurlPodExecOpt,
