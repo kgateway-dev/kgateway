@@ -594,8 +594,8 @@ kind-reload:
 
 # Useful utility for listing images loaded into the kind cluster
 .PHONY: kind-list-images
-kind-list-images: ## List solo-io images in the kind cluster named {CLUSTER_NAME}
-	docker exec -ti $(CLUSTER_NAME)-control-plane crictl images | grep "solo-io"
+kind-list-images: ## List project images in the kind cluster named {CLUSTER_NAME}
+	docker exec -ti $(CLUSTER_NAME)-control-plane crictl images | grep "$(IMAGE_REGISTRY)"
 
 # Useful utility for pruning images that were previously loaded into the kind cluster
 .PHONY: kind-prune-images
