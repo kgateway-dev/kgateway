@@ -18,8 +18,8 @@ import (
 
 // https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-field-config-core-v3-http2protocoloptions-initial-stream-window-size
 const (
-	MaxStreamWindowSize = 2147483647
-	MinStreamWindowSize = 65535
+	maxStreamWindowSize = 2147483647
+	minStreamWindowSize = 65535
 )
 
 func translateCommonHttpProtocolOptions(commonHttpProtocolOptions *v1alpha1.CommonHttpProtocolOptions) *corev3.HttpProtocolOptions {
@@ -85,15 +85,15 @@ func translateHttp2ProtocolOptions(http2ProtocolOptions *v1alpha1.Http2ProtocolO
 	}
 	if http2ProtocolOptions.InitialStreamWindowSize != nil {
 		value := http2ProtocolOptions.InitialStreamWindowSize.Value()
-		if value < MinStreamWindowSize || value > MaxStreamWindowSize {
-			return nil, fmt.Errorf("initial stream window size (%d) must be between %d and %d", value, MinStreamWindowSize, MaxStreamWindowSize)
+		if value < minStreamWindowSize || value > maxStreamWindowSize {
+			return nil, fmt.Errorf("initial stream window size (%d) must be between %d and %d", value, minStreamWindowSize, maxStreamWindowSize)
 		}
 		out.InitialStreamWindowSize = &wrapperspb.UInt32Value{Value: uint32(value)}
 	}
 	if http2ProtocolOptions.InitialConnectionWindowSize != nil {
 		value := http2ProtocolOptions.InitialConnectionWindowSize.Value()
-		if value < MinStreamWindowSize || value > MaxStreamWindowSize {
-			return nil, fmt.Errorf("initial connection window size (%d) must be between %d and %d", value, MinStreamWindowSize, MaxStreamWindowSize)
+		if value < minStreamWindowSize || value > maxStreamWindowSize {
+			return nil, fmt.Errorf("initial connection window size (%d) must be between %d and %d", value, minStreamWindowSize, maxStreamWindowSize)
 		}
 		out.InitialConnectionWindowSize = &wrapperspb.UInt32Value{Value: uint32(value)}
 	}
