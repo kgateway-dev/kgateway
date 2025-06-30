@@ -263,11 +263,7 @@ func translate(commoncol *common.CommonCollections, krtctx krt.HandlerContext, p
 	}
 
 	if pol.Spec.Http2ProtocolOptions != nil {
-		http2ProtocolOptions, err := translateHttp2ProtocolOptions(pol.Spec.Http2ProtocolOptions)
-		if err != nil {
-			return &ir, err
-		}
-		ir.http2ProtocolOptions = http2ProtocolOptions
+		ir.http2ProtocolOptions = translateHttp2ProtocolOptions(pol.Spec.Http2ProtocolOptions)
 	}
 
 	if pol.Spec.TLS != nil {
