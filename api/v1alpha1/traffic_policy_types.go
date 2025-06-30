@@ -2,6 +2,7 @@ package v1alpha1
 
 import (
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
@@ -77,8 +78,8 @@ type TrafficPolicySpec struct {
 	// +optional
 	Csrf *CSRFPolicy `json:"csrf,omitempty"`
 
-	// Buffer can be used to set the maximum request size
-	// that will be buffered. Requests exceeding this size will return a 413 response.
+	// Buffer can be used to set the maximum request size that will be buffered.
+	// Requests exceeding this size will return a 413 response.
 	// +optional
 	Buffer *Buffer `json:"buffer,omitempty"`
 }
@@ -378,9 +379,10 @@ type CSRFPolicy struct {
 }
 
 type Buffer struct {
-	// MaxRequestBytes sets the maximum size of a message body to buffer.
+	// MaxRequestSize sets the maximum size in bytes of a message body to buffer.
 	// Requests exceeding this size will receive HTTP 413.
+	// Example format: "1Mi", "512Ki", "1Gi"
 	// +required
-	// +kubebuilder:validation:Minimum=1
-	MaxRequestBytes uint32 `json:"maxRequestBytes"`
+	// +kubebuilder:validation:XValidation:message="maxRequestSize must be less than 4Gi",rule="quantity(self).isLessThan(quantity('4Gi'))"
+	MaxRequestSize *resource.Quantity `json:"maxRequestSize"`
 }

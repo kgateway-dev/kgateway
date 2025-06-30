@@ -22,4 +22,4 @@ spec:
       kind: Gateway
       name: example-gateway
   buffer:
-    maxRequestBytes: 65536
+    maxRequestSize: 65536

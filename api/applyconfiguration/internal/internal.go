@@ -418,10 +418,9 @@ var schemaYAML = typed.YAMLObject(`types:
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Buffer
   map:
     fields:
-    - name: maxRequestBytes
+    - name: maxRequestSize
       type:
-        scalar: numeric
-      default: 0
+        namedType: io.k8s.apimachinery.pkg.api.resource.Quantity
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.BufferSettings
   map:
     fields:

@@ -32,7 +32,7 @@ func bufferForSpec(spec v1alpha1.TrafficPolicySpec, out *trafficPolicySpecIr) {
 	}
 
 	out.buffer = &BufferIR{
-		maxRequestBytes: spec.Buffer.MaxRequestBytes,
+		maxRequestBytes: uint32(spec.Buffer.MaxRequestSize.Value()),
 	}
 }
 

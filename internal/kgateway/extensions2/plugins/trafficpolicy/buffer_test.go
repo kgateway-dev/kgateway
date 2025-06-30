@@ -4,6 +4,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"k8s.io/apimachinery/pkg/api/resource"
+	"k8s.io/utils/ptr"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 )
@@ -23,7 +25,7 @@ func TestBufferForSpec(t *testing.T) {
 			name: "valid buffer spec",
 			spec: v1alpha1.TrafficPolicySpec{
 				Buffer: &v1alpha1.Buffer{
-					MaxRequestBytes: 1024,
+					MaxRequestSize: ptr.To(resource.MustParse("1Ki")),
 				},
 			},
 			expected: &BufferIR{

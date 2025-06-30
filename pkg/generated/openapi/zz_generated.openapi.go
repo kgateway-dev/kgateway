@@ -1622,18 +1622,18 @@ func schema_kgateway_v2_api_v1alpha1_Buffer(ref common.ReferenceCallback) common
 			SchemaProps: spec.SchemaProps{
 				Type: []string{"object"},
 				Properties: map[string]spec.Schema{
-					"maxRequestBytes": {
+					"maxRequestSize": {
 						SchemaProps: spec.SchemaProps{
-							Description: "MaxRequestBytes sets the maximum size of a message body to buffer. Requests exceeding this size will receive HTTP 413.",
-							Default:     0,
-							Type:        []string{"integer"},
-							Format:      "int64",
+							Description: "MaxRequestSize sets the maximum size in bytes of a message body to buffer. Requests exceeding this size will receive HTTP 413. Example format: \"1Mi\", \"512Ki\", \"1Gi\"",
+							Ref:         ref("k8s.io/apimachinery/pkg/api/resource.Quantity"),
 						},
 					},
 				},
-				Required: []string{"maxRequestBytes"},
+				Required: []string{"maxRequestSize"},
 			},
 		},
+		Dependencies: []string{
+			"k8s.io/apimachinery/pkg/api/resource.Quantity"},
 	}
 }
 
