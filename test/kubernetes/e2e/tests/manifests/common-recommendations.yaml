@@ -18,6 +18,8 @@ controller:
   # we need to be able to troubleshoot failures using logs; when users encounter problems enabling debug logging is
   # a very early step in the troubleshooting process
   logLevel: debug
+  extraEnv:
+    KGW_WEIGHTED_ROUTE_PRECEDENCE: "true" # enable weighted route precedence by default in tests
 # TODO enable other values
   # deployment:
   #   livenessProbeEnabled: true

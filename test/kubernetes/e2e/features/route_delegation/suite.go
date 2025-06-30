@@ -41,21 +41,22 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 	return &tsuite{
 		ctx: ctx,
 		ti:  testInst,
+		manifests: map[string][]string{
+			"TestBasic":                       {basicRoutesManifest},
+			"TestRecursive":                   {recursiveRoutesManifest},
+			"TestCyclic":                      {cyclicRoutesManifest},
+			"TestInvalidChild":                {invalidChildRoutesManifest},
+			"TestHeaderQueryMatch":            {headerQueryMatchRoutesManifest},
+			"TestMultipleParents":             {multipleParentsManifest},
+			"TestInvalidChildValidStandalone": {invalidChildValidStandaloneManifest},
+			"TestUnresolvedChild":             {unresolvedChildManifest},
+			"TestMatcherInheritance":          {matcherInheritanceManifest},
+			"TestRouteWeight":                 {routeWeightManifest},
+		},
 	}
 }
 
 func (s *tsuite) SetupSuite() {
-	s.manifests = map[string][]string{
-		"TestBasic":                       {basicRoutesManifest},
-		"TestRecursive":                   {recursiveRoutesManifest},
-		"TestCyclic":                      {cyclicRoutesManifest},
-		"TestInvalidChild":                {invalidChildRoutesManifest},
-		"TestHeaderQueryMatch":            {headerQueryMatchRoutesManifest},
-		"TestMultipleParents":             {multipleParentsManifest},
-		"TestInvalidChildValidStandalone": {invalidChildValidStandaloneManifest},
-		"TestUnresolvedChild":             {unresolvedChildManifest},
-		"TestMatcherInheritance":          {matcherInheritanceManifest},
-	}
 	// Not every resource that is applied needs to be verified. We are not testing `kubectl apply`,
 	// but the below code demonstrates how it can be done if necessary
 	s.manifestObjects = map[string][]client.Object{
@@ -291,4 +292,27 @@ func (s *tsuite) TestMatcherInheritance() {
 	s.ti.Assertions.AssertEventuallyConsistentCurlResponse(s.ctx, defaults.CurlPodExecOpt,
 		[]curl.Option{curl.WithHostPort(proxyHostPort), curl.WithPath("/anything/baz/child")},
 		&testmatchers.HttpResponse{StatusCode: http.StatusOK, Body: ContainSubstring("/anything/baz/child")})
+}
+
+func (s *tsuite) TestRouteWeight() {
+	// Assert traffic to /anything path prefix is always routed to svc1
+	s.ti.Assertions.AssertEventuallyConsistentCurlResponse(s.ctx, defaults.CurlPodExecOpt,
+		[]curl.Option{curl.WithHostPort(proxyHostPort), curl.WithPath(pathTeam1)},
+		&testmatchers.HttpResponse{
+			StatusCode: http.StatusOK,
+			Body:       ContainSubstring(pathTeam1),
+			Headers: map[string]any{
+				"origin": "svc1",
+			},
+		})
+	// Assert traffic to /anything/team2 is also routed to svc1 since its route has higher weight
+	s.ti.Assertions.AssertEventuallyConsistentCurlResponse(s.ctx, defaults.CurlPodExecOpt,
+		[]curl.Option{curl.WithHostPort(proxyHostPort), curl.WithPath(pathTeam2)},
+		&testmatchers.HttpResponse{
+			StatusCode: http.StatusOK,
+			Body:       ContainSubstring(pathTeam2),
+			Headers: map[string]any{
+				"origin": "svc1",
+			},
+		})
 }
