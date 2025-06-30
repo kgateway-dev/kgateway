@@ -76,10 +76,10 @@ func translateHttp2ProtocolOptions(http2ProtocolOptions *v1alpha1.Http2ProtocolO
 		out.MaxConcurrentStreams = &wrapperspb.UInt32Value{Value: uint32(*http2ProtocolOptions.MaxConcurrentStreams)}
 	}
 	if http2ProtocolOptions.InitialStreamWindowSize != nil {
-		out.InitialStreamWindowSize = &wrapperspb.UInt32Value{Value: uint32(http2ProtocolOptions.InitialStreamWindowSize.MilliValue())}
+		out.InitialStreamWindowSize = &wrapperspb.UInt32Value{Value: uint32(http2ProtocolOptions.InitialStreamWindowSize.Value())}
 	}
 	if http2ProtocolOptions.InitialConnectionWindowSize != nil {
-		out.InitialConnectionWindowSize = &wrapperspb.UInt32Value{Value: uint32(http2ProtocolOptions.InitialConnectionWindowSize.MilliValue())}
+		out.InitialConnectionWindowSize = &wrapperspb.UInt32Value{Value: uint32(http2ProtocolOptions.InitialConnectionWindowSize.Value())}
 	}
 	if http2ProtocolOptions.OverrideStreamErrorOnInvalidHttpMessage != nil {
 		out.OverrideStreamErrorOnInvalidHttpMessage = &wrapperspb.BoolValue{Value: *http2ProtocolOptions.OverrideStreamErrorOnInvalidHttpMessage}
