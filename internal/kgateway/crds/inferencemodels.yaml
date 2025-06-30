@@ -89,7 +89,7 @@ spec:
                   ModelNames must be unique for a referencing InferencePool
                   (names can be reused for a different pool in the same cluster).
                   The modelName with the oldest creation timestamp is retained, and the incoming
-                  InferenceModel is sets the Ready status to false with a corresponding reason.
+                  InferenceModel's Ready status is set to false with a corresponding reason.
                   In the rare case of a race condition, one Model will be selected randomly to be considered valid, and the other rejected.
                   Names can be reserved without an underlying model configured in the pool.
                   This can be done by specifying a target model and setting the weight to zero,
