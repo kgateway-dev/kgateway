@@ -1,6 +1,8 @@
 package backendconfigpolicy
 
 import (
+	"fmt"
+
 	clusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	preserve_case_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/http/header_formatters/preserve_case/v3"
@@ -13,6 +15,9 @@ import (
 	translatorutils "github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 )
+
+// https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-field-config-core-v3-http2protocoloptions-initial-stream-window-size
+const MaxStreamWindowSize = 2147483647
 
 func translateCommonHttpProtocolOptions(commonHttpProtocolOptions *v1alpha1.CommonHttpProtocolOptions) *corev3.HttpProtocolOptions {
 	out := &corev3.HttpProtocolOptions{}
@@ -70,21 +75,29 @@ func translateHttp1ProtocolOptions(http1ProtocolOptions *v1alpha1.Http1ProtocolO
 	return out, nil
 }
 
-func translateHttp2ProtocolOptions(http2ProtocolOptions *v1alpha1.Http2ProtocolOptions) *corev3.Http2ProtocolOptions {
+func translateHttp2ProtocolOptions(http2ProtocolOptions *v1alpha1.Http2ProtocolOptions) (*corev3.Http2ProtocolOptions, error) {
 	out := &corev3.Http2ProtocolOptions{}
 	if http2ProtocolOptions.MaxConcurrentStreams != nil {
 		out.MaxConcurrentStreams = &wrapperspb.UInt32Value{Value: uint32(*http2ProtocolOptions.MaxConcurrentStreams)}
 	}
 	if http2ProtocolOptions.InitialStreamWindowSize != nil {
-		out.InitialStreamWindowSize = &wrapperspb.UInt32Value{Value: uint32(http2ProtocolOptions.InitialStreamWindowSize.MilliValue())}
+		value := http2ProtocolOptions.InitialStreamWindowSize.Value()
+		if value > MaxStreamWindowSize {
+			return nil, fmt.Errorf("initial stream window size (%d) must be less than or equal to %d", value, MaxStreamWindowSize)
+		}
+		out.InitialStreamWindowSize = &wrapperspb.UInt32Value{Value: uint32(value)}
 	}
 	if http2ProtocolOptions.InitialConnectionWindowSize != nil {
-		out.InitialConnectionWindowSize = &wrapperspb.UInt32Value{Value: uint32(http2ProtocolOptions.InitialConnectionWindowSize.MilliValue())}
+		value := http2ProtocolOptions.InitialConnectionWindowSize.Value()
+		if value > MaxStreamWindowSize {
+			return nil, fmt.Errorf("initial connection window size (%d) must be less than or equal to %d", value, MaxStreamWindowSize)
+		}
+		out.InitialConnectionWindowSize = &wrapperspb.UInt32Value{Value: uint32(value)}
 	}
 	if http2ProtocolOptions.OverrideStreamErrorOnInvalidHttpMessage != nil {
 		out.OverrideStreamErrorOnInvalidHttpMessage = &wrapperspb.BoolValue{Value: *http2ProtocolOptions.OverrideStreamErrorOnInvalidHttpMessage}
 	}
-	return out
+	return out, nil
 }
 
 func applyCommonHttpProtocolOptions(commonHttpProtocolOptions *corev3.HttpProtocolOptions, backend ir.BackendObjectIR, out *clusterv3.Cluster) {

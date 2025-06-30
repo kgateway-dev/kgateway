@@ -209,8 +209,8 @@ func TestBackendConfigPolicyFlow(t *testing.T) {
 							ExplicitHttpConfig: &envoy_upstreams_http_v3.HttpProtocolOptions_ExplicitHttpConfig{
 								ProtocolConfig: &envoy_upstreams_http_v3.HttpProtocolOptions_ExplicitHttpConfig_Http2ProtocolOptions{
 									Http2ProtocolOptions: &corev3.Http2ProtocolOptions{
-										InitialStreamWindowSize:                 &wrapperspb.UInt32Value{Value: 65536000},
-										InitialConnectionWindowSize:             &wrapperspb.UInt32Value{Value: 65536000},
+										InitialStreamWindowSize:                 &wrapperspb.UInt32Value{Value: 65536},
+										InitialConnectionWindowSize:             &wrapperspb.UInt32Value{Value: 65536},
 										MaxConcurrentStreams:                    &wrapperspb.UInt32Value{Value: 100},
 										OverrideStreamErrorOnInvalidHttpMessage: &wrapperspb.BoolValue{Value: true},
 									},
@@ -236,6 +236,17 @@ func TestBackendConfigPolicyFlow(t *testing.T) {
 			want:    &clusterv3.Cluster{},
 			wantErr: false,
 		},
+		{
+			name: "reports error when initial stream window size is too large",
+			policy: &v1alpha1.BackendConfigPolicy{
+				Spec: v1alpha1.BackendConfigPolicySpec{
+					Http2ProtocolOptions: &v1alpha1.Http2ProtocolOptions{
+						InitialStreamWindowSize: ptr.To(resource.MustParse("100Gi")),
+					},
+				},
+			},
+			wantErr: true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -258,12 +269,6 @@ func TestBackendConfigPolicyFlow(t *testing.T) {
 				backend = &ir.BackendObjectIR{}
 			}
 			processBackend(context.Background(), policyIR, *backend, cluster)
-
-			// Compare the resulting cluster configuration
-			if tt.wantErr {
-				assert.Error(t, err)
-				return
-			}
 			assert.Equal(t, tt.want, cluster)
 		})
 	}

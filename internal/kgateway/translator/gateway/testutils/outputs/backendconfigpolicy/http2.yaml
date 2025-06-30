@@ -13,8 +13,8 @@ Clusters:
       '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
       explicitHttpConfig:
         http2ProtocolOptions:
-          initialConnectionWindowSize: 1048576000
-          initialStreamWindowSize: 1048576000
+          initialConnectionWindowSize: 1048576
+          initialStreamWindowSize: 1048576
           maxConcurrentStreams: 101
           overrideStreamErrorOnInvalidHttpMessage: true
 - connectTimeout: 5s
