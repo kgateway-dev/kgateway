@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/envoyproxy/go-control-plane/pkg/cache/v3"
-	"github.com/rotisserie/eris"
 )
 
 // The xDS Snapshot is intended to return the full in-memory xDS cache that the Control Plane manages
@@ -37,7 +36,7 @@ func getXdsSnapshotDataFromCache(xdsCache cache.SnapshotCache) SnapshotResponseD
 func getXdsSnapshot(xdsCache cache.SnapshotCache, k string) (cache cache.ResourceSnapshot, err error) {
 	defer func() {
 		if r := recover(); r != nil {
-			err = eris.New(fmt.Sprintf("panic occurred while getting xds snapshot: %v", r))
+			err = fmt.Errorf("panic occurred while getting xds snapshot: %v", r)
 		}
 	}()
 	return xdsCache.GetSnapshot(k)

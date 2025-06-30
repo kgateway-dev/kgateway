@@ -31,7 +31,7 @@ type LLMProvider struct {
 	// Allows changing the header name and/or the prefix (e.g., "Bearer").
 	// Note: Not all LLM providers use the Authorization header and prefix.
 	// For example, OpenAI uses header: "Authorization" and prefix: "Bearer" But Azure OpenAI uses header: "api-key"
-	//and no Bearer.
+	// and no Bearer.
 	AuthHeaderOverride *AuthHeaderOverride `json:"authHeaderOverride,omitempty"`
 }
 
@@ -85,9 +85,12 @@ const (
 
 // SingleAuthToken configures the authorization token that the AI gateway uses to access the LLM provider API.
 // This token is automatically sent in a request header, depending on the LLM provider.
+//
+// +kubebuilder:validation:AtMostOneOf=inline;secretRef
 type SingleAuthToken struct {
 	// Kind specifies which type of authorization token is being used.
 	// Must be one of: "Inline", "SecretRef", "Passthrough".
+	//
 	// +kubebuilder:validation:Enum=Inline;SecretRef;Passthrough
 	Kind SingleAuthTokenKind `json:"kind"`
 

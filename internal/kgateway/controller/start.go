@@ -12,6 +12,7 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 	istiolog "istio.io/istio/pkg/log"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -21,7 +22,6 @@ import (
 	infextv1a2 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/deployer"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/inferenceextension/endpointpicker"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/registry"
@@ -32,6 +32,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
+	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	common "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
@@ -72,8 +73,9 @@ type StartConfig struct {
 	// This is responsible for producing the extension points that this controller requires
 	ExtraPlugins           func(ctx context.Context, commoncol *common.CommonCollections) []sdk.Plugin
 	ExtraGatewayParameters func(cli client.Client, inputs *deployer.Inputs) []deployer.ExtraGatewayParameters
-
-	Client istiokube.Client
+	// kgateway default scheme will be extended with these schemes
+	AddToScheme func(s *runtime.Scheme) error
+	Client      istiokube.Client
 
 	AugmentedPods krt.Collection[krtcollections.LocalityPod]
 	UniqueClients krt.Collection[ir.UniqlyConnectedClient]
@@ -107,6 +109,13 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 	// Extend the scheme if the TCPRoute CRD exists.
 	if err := kgtwschemes.AddGatewayV1A2Scheme(cfg.RestConfig, scheme); err != nil {
 		return nil, err
+	}
+
+	if cfg.AddToScheme != nil {
+		setupLog.Info("extending scheme")
+		if err := cfg.AddToScheme(scheme); err != nil {
+			return nil, err
+		}
 	}
 
 	mgrOpts := ctrl.Options{

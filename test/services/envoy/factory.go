@@ -4,6 +4,7 @@ package envoy
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"log"
 	"net"
@@ -20,7 +21,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/defaults"
 
 	"github.com/onsi/ginkgo/v2"
-	errors "github.com/rotisserie/eris"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
 	"github.com/kgateway-dev/kgateway/v2/test/services/utils"
@@ -112,7 +112,7 @@ func mustGetEnvoyGlooTag() string {
 	makefile := filepath.Join(fsutils.GetModuleRoot(), "Makefile")
 	inFile, err := os.Open(makefile)
 	if err != nil {
-		ginkgo.Fail(errors.Wrapf(err, "failed to open Makefile").Error())
+		ginkgo.Fail(fmt.Errorf("failed to open Makefile: %w", err).Error())
 	}
 
 	defer inFile.Close()
@@ -143,7 +143,7 @@ func mustGetEnvoyWrapperTag() string {
 
 	latestPatchVersion, err := version.GetLastReleaseOfCurrentBranch()
 	if err != nil {
-		ginkgo.Fail(errors.Wrap(err, "Failed to extract the latest release of current minor").Error())
+		ginkgo.Fail(fmt.Errorf("Failed to extract the latest release of current minor: %w", err).Error())
 	}
 
 	return strings.TrimPrefix(latestPatchVersion.String(), "v")
@@ -178,7 +178,7 @@ func (f *factoryImpl) Clean() {
 func (f *factoryImpl) NewInstance() *Instance {
 	instance, err := f.newInstanceOrError()
 	if err != nil {
-		ginkgo.Fail(errors.Wrap(err, "failed to create envoy instance").Error())
+		ginkgo.Fail(fmt.Errorf("failed to create envoy instance: %w", err).Error())
 	}
 	return instance
 }

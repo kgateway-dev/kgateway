@@ -182,7 +182,8 @@ const (
 // Note that most of these fields are passed along as is to Envoy.
 // For more details on particular fields please see the Envoy ExtAuth documentation.
 // https://raw.githubusercontent.com/envoyproxy/envoy/f910f4abea24904aff04ec33a00147184ea7cffa/api/envoy/extensions/filters/http/ext_authz/v3/ext_authz.proto
-// +kubebuilder:validation:XValidation:message="only one of 'extensionRef' or 'enablement' may be set",rule="(has(self.extensionRef) && !has(self.enablement)) || (!has(self.extensionRef) && has(self.enablement))"
+//
+// +kubebuilder:validation:ExactlyOneOf=extensionRef;enablement
 type ExtAuthPolicy struct {
 	// ExtensionRef references the ExternalExtension that should be used for authentication.
 	// +optional
@@ -350,7 +351,8 @@ type CorsPolicy struct {
 // CSRFPolicy can be used to set percent of requests for which the CSRF filter is enabled,
 // enable shadow-only mode where policies will be evaluated and tracked, but not enforced and
 // add additional source origins that will be allowed in addition to the destination origin.
-// +kubebuilder:validation:XValidation:message="exactly one of PercentageEnabled or PercentageShadowed must be set",rule="has(self.percentageEnabled) != has(self.percentageShadowed)"
+//
+// +kubebuilder:validation:AtMostOneOf=percentageEnabled;percentageShadowed
 type CSRFPolicy struct {
 	// Specifies the percentage of requests for which the CSRF filter is enabled.
 	// +optional

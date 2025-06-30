@@ -1,0 +1,62 @@
+Clusters:
+- connectTimeout: 5s
+  metadata: {}
+  name: test-backend-plugin_default_example-svc_80
+Listeners:
+- address:
+    socketAddress:
+      address: '::'
+      ipv4Compat: true
+      portValue: 3000
+  filterChains:
+  - filters:
+    - name: envoy.filters.network.http_connection_manager
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+        httpFilters:
+        - name: envoy.filters.http.router
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+        mergeSlashes: true
+        normalizePath: true
+        rds:
+          configSource:
+            ads: {}
+            resourceApiVersion: V3
+          routeConfigName: listener~3000
+        statPrefix: http
+        useRemoteAddress: true
+    name: listener~3000
+  name: listener~3000
+  perConnectionBufferLimitBytes: 65536
+- address:
+    socketAddress:
+      address: '::'
+      ipv4Compat: true
+      portValue: 8080
+  filterChains:
+  - filters:
+    - name: envoy.filters.network.http_connection_manager
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+        httpFilters:
+        - name: envoy.filters.http.router
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+        mergeSlashes: true
+        normalizePath: true
+        rds:
+          configSource:
+            ads: {}
+            resourceApiVersion: V3
+          routeConfigName: listener~80
+        statPrefix: http
+        useRemoteAddress: true
+    name: listener~80
+  name: listener~80
+  perConnectionBufferLimitBytes: 65536
+Routes:
+- ignorePortInHostMatching: true
+  name: listener~3000
+- ignorePortInHostMatching: true
+  name: listener~80

@@ -1,12 +1,12 @@
 package matchers
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/onsi/gomega"
 	"github.com/onsi/gomega/gstruct"
 	"github.com/onsi/gomega/types"
-	"github.com/rotisserie/eris"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
@@ -55,13 +55,13 @@ func (m *HaveKubeGatewayRouteStatusMatcher) Match(actual interface{}) (success b
 		// For example, the underlying http body matcher caches the response body, so if you are wrapping this
 		// matcher in an Eventually, you need to create a new matcher each iteration.
 		// This error is intended to help prevent developers hitting this edge case
-		return false, eris.New("using the same matcher twice can lead to inconsistent behaviors")
+		return false, errors.New("using the same matcher twice can lead to inconsistent behaviors")
 	}
 	m.evaluated = true
 
 	val, ok := actual.(gwv1.RouteStatus)
 	if !ok {
-		return false, eris.Errorf("matcher expected gwv1.RouteStatus, got %T", actual)
+		return false, fmt.Errorf("matcher expected gwv1.RouteStatus, got %T", actual)
 	}
 
 	if ok, err := m.statusMatcher.Match(val); !ok {

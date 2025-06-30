@@ -64,6 +64,9 @@ jobs:
           go-test-args: '-v -timeout=25m'
           go-test-run-regex: '^TestAgentGatewayIntegration'
           agentgateway: 'true'
+        - cluster-name: 'api-validation'
+          go-test-args: '-v -timeout=10m'
+          go-test-run-regex: '^TestAPIValidation'
 
 #         # Dec 4, 2024: 23 minutes
 #         - cluster-name: 'cluster-two'

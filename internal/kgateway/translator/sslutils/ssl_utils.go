@@ -2,9 +2,9 @@ package sslutils
 
 import (
 	"crypto/tls"
+	"errors"
 	"fmt"
 
-	"github.com/rotisserie/eris"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/util/cert"
 )
@@ -14,7 +14,7 @@ var (
 		return fmt.Errorf("%v.%v is not a valid TLS secret: %w", ns, n, err)
 	}
 
-	NoCertificateFoundError = eris.New("no certificate information found")
+	NoCertificateFoundError = errors.New("no certificate information found")
 )
 
 // ValidateTlsSecret and return a cleaned cert

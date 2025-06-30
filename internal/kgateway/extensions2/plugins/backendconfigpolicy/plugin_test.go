@@ -15,6 +15,7 @@ import (
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"k8s.io/utils/ptr"
@@ -29,6 +30,7 @@ func TestBackendConfigPolicyFlow(t *testing.T) {
 		name    string
 		policy  *v1alpha1.BackendConfigPolicy
 		cluster *clusterv3.Cluster
+		backend *ir.BackendObjectIR
 		want    *clusterv3.Cluster
 		wantErr bool
 	}{
@@ -141,6 +143,9 @@ func TestBackendConfigPolicyFlow(t *testing.T) {
 					},
 				},
 			},
+			backend: &ir.BackendObjectIR{
+				AppProtocol: ir.HTTP2AppProtocol,
+			},
 			cluster: &clusterv3.Cluster{
 				TypedExtensionProtocolOptions: map[string]*anypb.Any{
 					"envoy.extensions.upstreams.http.v3.HttpProtocolOptions": mustMessageToAny(t, &envoy_upstreams_http_v3.HttpProtocolOptions{
@@ -169,6 +174,68 @@ func TestBackendConfigPolicyFlow(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "http2 protocol options applied to http2 backend",
+			policy: &v1alpha1.BackendConfigPolicy{
+				Spec: v1alpha1.BackendConfigPolicySpec{
+					Http2ProtocolOptions: &v1alpha1.Http2ProtocolOptions{
+						InitialStreamWindowSize:                 ptr.To(resource.MustParse("64Ki")),
+						InitialConnectionWindowSize:             ptr.To(resource.MustParse("64Ki")),
+						MaxConcurrentStreams:                    ptr.To(100),
+						OverrideStreamErrorOnInvalidHttpMessage: ptr.To(true),
+					},
+				},
+			},
+			backend: &ir.BackendObjectIR{
+				AppProtocol: ir.HTTP2AppProtocol,
+			},
+			cluster: &clusterv3.Cluster{
+				TypedExtensionProtocolOptions: map[string]*anypb.Any{
+					"envoy.extensions.upstreams.http.v3.HttpProtocolOptions": mustMessageToAny(t, &envoy_upstreams_http_v3.HttpProtocolOptions{
+						UpstreamProtocolOptions: &envoy_upstreams_http_v3.HttpProtocolOptions_ExplicitHttpConfig_{
+							ExplicitHttpConfig: &envoy_upstreams_http_v3.HttpProtocolOptions_ExplicitHttpConfig{
+								ProtocolConfig: &envoy_upstreams_http_v3.HttpProtocolOptions_ExplicitHttpConfig_Http2ProtocolOptions{
+									Http2ProtocolOptions: &corev3.Http2ProtocolOptions{},
+								},
+							},
+						},
+					}),
+				},
+			},
+			want: &clusterv3.Cluster{
+				TypedExtensionProtocolOptions: map[string]*anypb.Any{
+					"envoy.extensions.upstreams.http.v3.HttpProtocolOptions": mustMessageToAny(t, &envoy_upstreams_http_v3.HttpProtocolOptions{
+						UpstreamProtocolOptions: &envoy_upstreams_http_v3.HttpProtocolOptions_ExplicitHttpConfig_{
+							ExplicitHttpConfig: &envoy_upstreams_http_v3.HttpProtocolOptions_ExplicitHttpConfig{
+								ProtocolConfig: &envoy_upstreams_http_v3.HttpProtocolOptions_ExplicitHttpConfig_Http2ProtocolOptions{
+									Http2ProtocolOptions: &corev3.Http2ProtocolOptions{
+										InitialStreamWindowSize:                 &wrapperspb.UInt32Value{Value: 65536000},
+										InitialConnectionWindowSize:             &wrapperspb.UInt32Value{Value: 65536000},
+										MaxConcurrentStreams:                    &wrapperspb.UInt32Value{Value: 100},
+										OverrideStreamErrorOnInvalidHttpMessage: &wrapperspb.BoolValue{Value: true},
+									},
+								},
+							},
+						},
+					}),
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "http2 protocol options not applied to non-http2 backend",
+			policy: &v1alpha1.BackendConfigPolicy{
+				Spec: v1alpha1.BackendConfigPolicySpec{
+					Http2ProtocolOptions: &v1alpha1.Http2ProtocolOptions{
+						MaxConcurrentStreams: ptr.To(100),
+					},
+				},
+			},
+			backend: &ir.BackendObjectIR{},
+			cluster: &clusterv3.Cluster{},
+			want:    &clusterv3.Cluster{},
+			wantErr: false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -186,7 +253,11 @@ func TestBackendConfigPolicyFlow(t *testing.T) {
 			if cluster == nil {
 				cluster = &clusterv3.Cluster{}
 			}
-			processBackend(context.Background(), policyIR, ir.BackendObjectIR{}, cluster)
+			backend := tt.backend
+			if backend == nil {
+				backend = &ir.BackendObjectIR{}
+			}
+			processBackend(context.Background(), policyIR, *backend, cluster)
 
 			// Compare the resulting cluster configuration
 			if tt.wantErr {

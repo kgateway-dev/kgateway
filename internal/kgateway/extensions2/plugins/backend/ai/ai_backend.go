@@ -3,13 +3,13 @@ package ai
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"maps"
 	"os"
 
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_ext_proc_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_proc/v3"
-	"github.com/rotisserie/eris"
 	envoytransformation "github.com/solo-io/envoy-gloo/go/config/filter/http/transformation/v2"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -119,7 +119,7 @@ func PreprocessAIBackend(ctx context.Context, aiBackend *v1alpha1.AIBackend, ir 
 	}
 
 	if len(byType) != 1 {
-		return eris.Errorf("multiple AI backend types found for single ai route %+v", byType)
+		return fmt.Errorf("multiple AI backend types found for single ai route %+v", byType)
 	}
 
 	// This is only len(1)

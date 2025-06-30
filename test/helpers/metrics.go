@@ -3,7 +3,8 @@
 package helpers
 
 import (
-	errors "github.com/rotisserie/eris"
+	"fmt"
+
 	"go.opencensus.io/stats/view"
 )
 
@@ -17,7 +18,7 @@ import (
 func ReadMetricByLabel(metricName string, labelKey string, labelValue string) (int, error) {
 	rows, err := view.RetrieveData(metricName)
 	if err != nil {
-		return 0, errors.Wrapf(err, "failed to retrieve data for %s", metricName)
+		return 0, fmt.Errorf("failed to retrieve data for %s: %w", metricName, err)
 	}
 	for _, row := range rows {
 		for _, tag := range row.Tags {
@@ -26,5 +27,5 @@ func ReadMetricByLabel(metricName string, labelKey string, labelValue string) (i
 			}
 		}
 	}
-	return 0, errors.Errorf("%s does not have any time series with label (key=%s,value=%s)", metricName, labelKey, labelValue)
+	return 0, fmt.Errorf("%s does not have any time series with label (key=%s,value=%s)", metricName, labelKey, labelValue)
 }

@@ -12,6 +12,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -22,9 +23,10 @@ import (
 	gw2_v1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 	common "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
 )
 
@@ -34,7 +36,7 @@ const (
 
 type testHelmValuesGenerator struct{}
 
-func (thv *testHelmValuesGenerator) GetValues(ctx context.Context, gw *api.Gateway, inputs *Inputs) (map[string]any, error) {
+func (thv *testHelmValuesGenerator) GetValues(ctx context.Context, gw client.Object) (map[string]any, error) {
 	return map[string]any{
 		"testHelmValuesGenerator": struct{}{},
 	}, nil
@@ -59,8 +61,8 @@ func TestShouldUseDefaultGatewayParameters(t *testing.T) {
 		},
 	}
 
-	gwp := NewGatewayParameters(newFakeClientWithObjs(gwc, gwParams))
-	vals, err := gwp.GetValues(context.Background(), gw, defaultInputs(t, gwc, gw))
+	gwp := NewGatewayParameters(newFakeClientWithObjs(gwc, gwParams), defaultInputs(t, gwc, gw))
+	vals, err := gwp.GetValues(context.Background(), gw)
 
 	assert.NoError(t, err)
 	assert.Contains(t, vals, "gateway")
@@ -94,12 +96,51 @@ func TestShouldUseExtendedGatewayParameters(t *testing.T) {
 		},
 	}
 
-	gwp := NewGatewayParameters(newFakeClientWithObjs(gwc, gwParams, extraGwParams)).
-		WithExtraGatewayParameters(ExtraGatewayParameters{Group: "v1", Kind: "ConfigMap", Object: extraGwParams, Generator: &testHelmValuesGenerator{}})
-	vals, err := gwp.GetValues(context.Background(), gw, defaultInputs(t, gwc, gw))
+	gwp := NewGatewayParameters(newFakeClientWithObjs(gwc, gwParams, extraGwParams), defaultInputs(t, gwc, gw)).
+		WithExtraGatewayParameters(deployer.ExtraGatewayParameters{Group: "v1", Kind: "ConfigMap", Object: extraGwParams, Generator: &testHelmValuesGenerator{}})
+	vals, err := gwp.GetValues(context.Background(), gw)
 
 	assert.NoError(t, err)
 	assert.Contains(t, vals, "testHelmValuesGenerator")
+}
+
+func TestGatewayGVKsToWatch(t *testing.T) {
+	gwc := defaultGatewayClass()
+	gwParams := emptyGatewayParameters()
+	cli := newFakeClientWithObjs(gwc, gwParams)
+	gwp := NewGatewayParameters(cli, defaultInputs(t, gwc))
+
+	d, err := NewGatewayDeployer(wellknown.GatewayControllerName, cli, gwp)
+	assert.NoError(t, err)
+
+	gvks, err := GatewayGVKsToWatch(context.TODO(), d)
+	assert.NoError(t, err)
+	assert.Len(t, gvks, 4)
+	assert.ElementsMatch(t, gvks, []schema.GroupVersionKind{
+		wellknown.DeploymentGVK,
+		wellknown.ServiceGVK,
+		wellknown.ServiceAccountGVK,
+		wellknown.ConfigMapGVK,
+	})
+}
+
+func TestInferencePoolGVKsToWatch(t *testing.T) {
+	gwc := defaultGatewayClass()
+	gwParams := emptyGatewayParameters()
+	cli := newFakeClientWithObjs(gwc, gwParams)
+
+	d, err := NewInferencePoolDeployer(wellknown.GatewayControllerName, cli)
+	assert.NoError(t, err)
+
+	gvks, err := InferencePoolGVKsToWatch(context.TODO(), d)
+	assert.NoError(t, err)
+	assert.Len(t, gvks, 4)
+	assert.ElementsMatch(t, gvks, []schema.GroupVersionKind{
+		wellknown.DeploymentGVK,
+		wellknown.ServiceGVK,
+		wellknown.ServiceAccountGVK,
+		wellknown.ClusterRoleBindingGVK,
+	})
 }
 
 func defaultGatewayClass() *api.GatewayClass {
@@ -134,16 +175,15 @@ func emptyGatewayParameters() *gw2_v1alpha1.GatewayParameters {
 	}
 }
 
-func defaultInputs(t *testing.T, gwc *api.GatewayClass, gw *api.Gateway) *Inputs {
-	return &Inputs{
-		CommonCollections: newCommonCols(t, gwc, gw),
-		ControllerName:    wellknown.GatewayControllerName,
+func defaultInputs(t *testing.T, objs ...client.Object) *deployer.Inputs {
+	return &deployer.Inputs{
+		CommonCollections: newCommonCols(t, objs...),
 		Dev:               false,
-		ControlPlane: ControlPlaneInfo{
+		ControlPlane: deployer.ControlPlaneInfo{
 			XdsHost: "something.cluster.local",
 			XdsPort: 1234,
 		},
-		ImageInfo: &ImageInfo{
+		ImageInfo: &deployer.ImageInfo{
 			Registry: "foo",
 			Tag:      "bar",
 		},

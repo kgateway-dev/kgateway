@@ -1,0 +1,112 @@
+kind: Gateway
+apiVersion: gateway.networking.k8s.io/v1
+metadata:
+  name: example-gateway
+spec:
+  gatewayClassName: kgateway
+  listeners:
+  - protocol: HTTP
+    port: 8080
+    name: http
+    allowedRoutes:
+      namespaces:
+        from: All
+---
+# this test ensures http2 options will not be applied to non-http2 backend
+apiVersion: v1
+kind: Service
+metadata:
+  name: httpbin
+  labels:
+    app: httpbin
+    service: httpbin
+spec:
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+  selector:
+    app: httpbin
+---
+kind: BackendConfigPolicy
+apiVersion: gateway.kgateway.dev/v1alpha1
+metadata:
+  name: httpbin-policy
+spec:
+  targetRefs:
+    - name: httpbin
+      group: ""
+      kind: Service
+  commonHttpProtocolOptions:
+    idleTimeout: 10s
+    maxHeadersCount: 15
+    maxStreamDuration: 30s
+  http2ProtocolOptions:
+    maxConcurrentStreams: 100
+    initialStreamWindowSize: 64Ki
+    initialConnectionWindowSize: 64Ki
+    overrideStreamErrorOnInvalidHttpMessage: true
+---
+# http2 options will be applied due to the kubernetes.io/h2c appProtocol
+apiVersion: v1
+kind: Service
+metadata:
+  name: httpbin-h2c
+  labels:
+    app: httpbin-h2c
+    service: httpbin-h2c
+spec:
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+      appProtocol: kubernetes.io/h2c
+  selector:
+    app: httpbin-h2c
+---
+kind: BackendConfigPolicy
+apiVersion: gateway.kgateway.dev/v1alpha1
+metadata:
+  name: httpbin-h2c-policy
+spec:
+  targetRefs:
+    - name: httpbin-h2c
+      group: ""
+      kind: Service
+  http2ProtocolOptions:
+    maxConcurrentStreams: 101
+    initialStreamWindowSize: 1024Ki
+    initialConnectionWindowSize: 1024Ki
+    overrideStreamErrorOnInvalidHttpMessage: true
+---
+# this test ensures BackendConfigPolicy with only http2 options will not be applied to non-http2 backend
+# additionally, the output cluster should not have any HttpProtocolOptions set 
+apiVersion: v1
+kind: Service
+metadata:
+  name: httpbin2
+  labels:
+    app: httpbin2
+    service: httpbin2
+spec:
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+  selector:
+    app: httpbin2
+---
+kind: BackendConfigPolicy
+apiVersion: gateway.kgateway.dev/v1alpha1
+metadata:
+  name: httpbin2-policy
+spec:
+  targetRefs:
+    - name: httpbin2
+      group: ""
+      kind: Service
+  http2ProtocolOptions:
+    maxConcurrentStreams: 100
+    initialStreamWindowSize: 64Ki
+    initialConnectionWindowSize: 64Ki
+    overrideStreamErrorOnInvalidHttpMessage: true

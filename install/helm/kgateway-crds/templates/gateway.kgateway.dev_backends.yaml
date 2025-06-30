@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.3
+    controller-gen.kubebuilder.io/version: v0.18.1-0.20250625175829-8d11ce77f347
   labels:
     app: kgateway
     app.kubernetes.io/name: kgateway
@@ -105,6 +105,11 @@ spec:
                                 required:
                                 - kind
                                 type: object
+                                x-kubernetes-validations:
+                                - message: at most one of the fields in [inline secretRef]
+                                    may be set
+                                  rule: '[has(self.inline),has(self.secretRef)].filter(x,x==true).size()
+                                    <= 1'
                               model:
                                 type: string
                             required:
@@ -135,6 +140,11 @@ spec:
                                 required:
                                 - kind
                                 type: object
+                                x-kubernetes-validations:
+                                - message: at most one of the fields in [inline secretRef]
+                                    may be set
+                                  rule: '[has(self.inline),has(self.secretRef)].filter(x,x==true).size()
+                                    <= 1'
                               deploymentName:
                                 minLength: 1
                                 type: string
@@ -171,6 +181,11 @@ spec:
                                 required:
                                 - kind
                                 type: object
+                                x-kubernetes-validations:
+                                - message: at most one of the fields in [inline secretRef]
+                                    may be set
+                                  rule: '[has(self.inline),has(self.secretRef)].filter(x,x==true).size()
+                                    <= 1'
                               model:
                                 type: string
                             required:
@@ -200,6 +215,11 @@ spec:
                                 required:
                                 - kind
                                 type: object
+                                x-kubernetes-validations:
+                                - message: at most one of the fields in [inline secretRef]
+                                    may be set
+                                  rule: '[has(self.inline),has(self.secretRef)].filter(x,x==true).size()
+                                    <= 1'
                               model:
                                 type: string
                             required:
@@ -230,6 +250,11 @@ spec:
                                 required:
                                 - kind
                                 type: object
+                                x-kubernetes-validations:
+                                - message: at most one of the fields in [inline secretRef]
+                                    may be set
+                                  rule: '[has(self.inline),has(self.secretRef)].filter(x,x==true).size()
+                                    <= 1'
                               location:
                                 minLength: 1
                                 type: string
@@ -324,6 +349,11 @@ spec:
                                             required:
                                             - kind
                                             type: object
+                                            x-kubernetes-validations:
+                                            - message: at most one of the fields in
+                                                [inline secretRef] may be set
+                                              rule: '[has(self.inline),has(self.secretRef)].filter(x,x==true).size()
+                                                <= 1'
                                           model:
                                             type: string
                                         required:
@@ -354,6 +384,11 @@ spec:
                                             required:
                                             - kind
                                             type: object
+                                            x-kubernetes-validations:
+                                            - message: at most one of the fields in
+                                                [inline secretRef] may be set
+                                              rule: '[has(self.inline),has(self.secretRef)].filter(x,x==true).size()
+                                                <= 1'
                                           deploymentName:
                                             minLength: 1
                                             type: string
@@ -390,6 +425,11 @@ spec:
                                             required:
                                             - kind
                                             type: object
+                                            x-kubernetes-validations:
+                                            - message: at most one of the fields in
+                                                [inline secretRef] may be set
+                                              rule: '[has(self.inline),has(self.secretRef)].filter(x,x==true).size()
+                                                <= 1'
                                           model:
                                             type: string
                                         required:
@@ -419,6 +459,11 @@ spec:
                                             required:
                                             - kind
                                             type: object
+                                            x-kubernetes-validations:
+                                            - message: at most one of the fields in
+                                                [inline secretRef] may be set
+                                              rule: '[has(self.inline),has(self.secretRef)].filter(x,x==true).size()
+                                                <= 1'
                                           model:
                                             type: string
                                         required:
@@ -449,6 +494,11 @@ spec:
                                             required:
                                             - kind
                                             type: object
+                                            x-kubernetes-validations:
+                                            - message: at most one of the fields in
+                                                [inline secretRef] may be set
+                                              rule: '[has(self.inline),has(self.secretRef)].filter(x,x==true).size()
+                                                <= 1'
                                           location:
                                             minLength: 1
                                             type: string
@@ -554,6 +604,7 @@ spec:
                     type: string
                 required:
                 - accountId
+                - lambda
                 type: object
               dynamicForwardProxy:
                 properties:
@@ -603,24 +654,20 @@ spec:
             - type
             type: object
             x-kubernetes-validations:
-            - message: ai backend must be nil if the type is not 'ai'
-              rule: '!(has(self.ai) && self.type != ''AI'')'
-            - message: ai backend must be specified when type is 'ai'
-              rule: '!(!has(self.ai) && self.type == ''AI'')'
-            - message: aws backend must be nil if the type is not 'aws'
-              rule: '!(has(self.aws) && self.type != ''AWS'')'
-            - message: aws backend must be specified when type is 'aws'
-              rule: '!(!has(self.aws) && self.type == ''AWS'')'
-            - message: static backend must be nil if the type is not 'static'
-              rule: '!(has(self.static) && self.type != ''Static'')'
-            - message: static backend must be specified when type is 'static'
-              rule: '!(!has(self.static) && self.type == ''Static'')'
-            - message: dynamic forward proxy backend must be nil if the type is not
-                'dynamicForwardProxy'
-              rule: '!(has(self.dynamicForwardProxy) && self.type != ''DynamicForwardProxy'')'
-            - message: dynamic forward proxy backend must be specified when type is
-                'dynamicForwardProxy'
-              rule: '!(!has(self.dynamicForwardProxy) && self.type == ''DynamicForwardProxy'')'
+            - message: ai backend must be specified when type is 'AI'
+              rule: 'self.type == ''AI'' ? has(self.ai) : true'
+            - message: aws backend must be specified when type is 'AWS'
+              rule: 'self.type == ''AWS'' ? has(self.aws) : true'
+            - message: static backend must be specified when type is 'Static'
+              rule: 'self.type == ''Static'' ? has(self.static) : true'
+            - message: dynamicForwardProxy backend must be specified when type is
+                'DynamicForwardProxy'
+              rule: 'self.type == ''DynamicForwardProxy'' ? has(self.dynamicForwardProxy)
+                : true'
+            - message: exactly one of the fields in [ai aws static dynamicForwardProxy]
+                must be set
+              rule: '[has(self.ai),has(self.aws),has(self.static),has(self.dynamicForwardProxy)].filter(x,x==true).size()
+                == 1'
           status:
             properties:
               conditions:

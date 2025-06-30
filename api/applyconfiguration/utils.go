@@ -123,10 +123,18 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.HeaderFilterApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("HeaderTransformation"):
 		return &apiv1alpha1.HeaderTransformationApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("HealthCheck"):
+		return &apiv1alpha1.HealthCheckApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("HealthCheckGrpc"):
+		return &apiv1alpha1.HealthCheckGrpcApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("HealthCheckHttp"):
+		return &apiv1alpha1.HealthCheckHttpApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("Host"):
 		return &apiv1alpha1.HostApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("Http1ProtocolOptions"):
 		return &apiv1alpha1.Http1ProtocolOptionsApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("Http2ProtocolOptions"):
+		return &apiv1alpha1.Http2ProtocolOptionsApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("HTTPListenerPolicy"):
 		return &apiv1alpha1.HTTPListenerPolicyApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("HTTPListenerPolicySpec"):

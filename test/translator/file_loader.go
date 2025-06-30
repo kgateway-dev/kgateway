@@ -4,13 +4,13 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io/fs"
 	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
 
-	"github.com/rotisserie/eris"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/irtranslator"
@@ -149,12 +149,12 @@ func truncateString(str string, num int) string {
 func ReadProxyFromFile(filename string) (*irtranslator.TranslationResult, error) {
 	data, err := os.ReadFile(filename)
 	if err != nil {
-		return nil, eris.Wrapf(err, "reading proxy file")
+		return nil, fmt.Errorf("reading proxy file: %w", err)
 	}
 	var proxy irtranslator.TranslationResult
 
 	if err := UnmarshalAnyYaml(data, &proxy); err != nil {
-		return nil, eris.Wrapf(err, "parsing proxy from file")
+		return nil, fmt.Errorf("parsing proxy from file: %w", err)
 	}
 	return &proxy, nil
 }

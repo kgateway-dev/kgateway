@@ -80,10 +80,11 @@ func (t *translator) Translate(
 	)
 
 	return &ir.GatewayIR{
-		SourceObject:         gateway,
-		Listeners:            listeners,
-		AttachedPolicies:     gateway.AttachedListenerPolicies,
-		AttachedHttpPolicies: gateway.AttachedHttpPolicies,
+		SourceObject:                  gateway,
+		Listeners:                     listeners,
+		AttachedPolicies:              gateway.AttachedListenerPolicies,
+		AttachedHttpPolicies:          gateway.AttachedHttpPolicies,
+		PerConnectionBufferLimitBytes: gateway.PerConnectionBufferLimitBytes,
 	}
 }
 

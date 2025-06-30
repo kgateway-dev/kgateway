@@ -2,87 +2,99 @@ package deployer
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"slices"
 
-	"github.com/rotisserie/eris"
-	"istio.io/api/annotation"
-	"istio.io/api/label"
-	corev1 "k8s.io/api/core/v1"
+	"helm.sh/helm/v3/pkg/chart"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	api "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/helm"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 )
 
-type HelmValuesGenerator interface {
-	GetValues(ctx context.Context, gw *api.Gateway, inputs *Inputs) (map[string]any, error)
-}
-
-type ExtraGatewayParameters struct {
-	Group     string
-	Kind      string
-	Object    client.Object
-	Generator HelmValuesGenerator
-}
-
-func NewGatewayParameters(cli client.Client) *GatewayParameters {
+func NewGatewayParameters(cli client.Client, inputs *deployer.Inputs) *GatewayParameters {
 	return &GatewayParameters{
 		cli:               cli,
+		inputs:            inputs,
 		knownGWParameters: []client.Object{&v1alpha1.GatewayParameters{}}, // always include default GatewayParameters
-		extraHVGenerators: make(map[schema.GroupKind]HelmValuesGenerator),
+		extraHVGenerators: make(map[schema.GroupKind]deployer.HelmValuesGenerator),
 	}
 }
 
 type GatewayParameters struct {
 	cli               client.Client
-	extraHVGenerators map[schema.GroupKind]HelmValuesGenerator
+	inputs            *deployer.Inputs
+	extraHVGenerators map[schema.GroupKind]deployer.HelmValuesGenerator
 	knownGWParameters []client.Object
 }
 
 type kGatewayParameters struct {
 	cli    client.Client
-	inputs *Inputs
+	inputs *deployer.Inputs
 }
 
-func (gp *GatewayParameters) WithExtraGatewayParameters(params ...ExtraGatewayParameters) *GatewayParameters {
+func (gp *GatewayParameters) WithExtraGatewayParameters(params ...deployer.ExtraGatewayParameters) *GatewayParameters {
 	for _, p := range params {
 		gp.knownGWParameters = append(gp.knownGWParameters, p.Object)
-		group := p.Group
-		kind := p.Kind
-		gp.extraHVGenerators[schema.GroupKind{Group: group, Kind: kind}] = p.Generator
+		gp.extraHVGenerators[schema.GroupKind{Group: p.Group, Kind: p.Kind}] = p.Generator
 	}
 	return gp
+}
+
+func LoadGatewayChart() (*chart.Chart, error) {
+	return loadChart(helm.KgatewayHelmChart)
+}
+
+func GatewayGVKsToWatch(ctx context.Context, d *deployer.Deployer) ([]schema.GroupVersionKind, error) {
+	return d.GetGvksToWatch(ctx, map[string]any{
+		"gateway": map[string]any{
+			"istio": map[string]any{
+				"enabled": false,
+			},
+			"image": map[string]any{},
+		},
+	})
 }
 
 func (gp *GatewayParameters) AllKnownGatewayParameters() []client.Object {
 	return slices.Clone(gp.knownGWParameters)
 }
 
-func (gp *GatewayParameters) GetValues(ctx context.Context, gw *api.Gateway, inputs *Inputs) (map[string]any, error) {
+func (gp *GatewayParameters) GetValues(ctx context.Context, obj client.Object) (map[string]any, error) {
 	logger := log.FromContext(ctx)
 
-	ref, err := gp.getGatewayParametersRef(ctx, gw)
+	gw, ok := obj.(*api.Gateway)
+	if !ok {
+		return nil, fmt.Errorf("expected a Gateway resource, got %s", obj.GetObjectKind().GroupVersionKind().String())
+	}
+
+	ref, err := gp.getGatewayParametersGK(ctx, gw)
 	if err != nil {
 		return nil, err
 	}
 
 	if g, ok := gp.extraHVGenerators[ref]; ok {
-		return g.GetValues(ctx, gw, inputs)
+		return g.GetValues(ctx, gw)
 	}
 	logger.V(1).Info("using default GatewayParameters for Gateway",
 		"gatewayName", gw.GetName(),
 		"gatewayNamespace", gw.GetNamespace(),
 	)
 
-	return newKGatewayParameters(gp.cli, inputs).GetValues(ctx, gw)
+	return newKGatewayParameters(gp.cli, gp.inputs).GetValues(ctx, gw)
 }
 
-func (gp *GatewayParameters) getGatewayParametersRef(ctx context.Context, gw *api.Gateway) (schema.GroupKind, error) {
+func GatewayReleaseNameAndNamespace(obj client.Object) (string, string) {
+	return obj.GetName(), obj.GetNamespace()
+}
+
+func (gp *GatewayParameters) getGatewayParametersGK(ctx context.Context, gw *api.Gateway) (schema.GroupKind, error) {
 	logger := log.FromContext(ctx)
 
 	// attempt to get the GatewayParameters name from the Gateway. If we can't find it,
@@ -92,7 +104,7 @@ func (gp *GatewayParameters) getGatewayParametersRef(ctx context.Context, gw *ap
 			"gatewayName", gw.GetName(),
 			"gatewayNamespace", gw.GetNamespace(),
 		)
-		return gp.getDefaultGatewayParametersRef(ctx, gw)
+		return gp.getDefaultGatewayParametersGK(ctx, gw)
 	}
 
 	return schema.GroupKind{
@@ -101,7 +113,7 @@ func (gp *GatewayParameters) getGatewayParametersRef(ctx context.Context, gw *ap
 		nil
 }
 
-func (gp *GatewayParameters) getDefaultGatewayParametersRef(ctx context.Context, gw *api.Gateway) (schema.GroupKind, error) {
+func (gp *GatewayParameters) getDefaultGatewayParametersGK(ctx context.Context, gw *api.Gateway) (schema.GroupKind, error) {
 	gwc, err := getGatewayClassFromGateway(ctx, gp.cli, gw)
 	if err != nil {
 		return schema.GroupKind{}, err
@@ -117,7 +129,7 @@ func (gp *GatewayParameters) getDefaultGatewayParametersRef(ctx context.Context,
 	return schema.GroupKind{}, nil
 }
 
-func newKGatewayParameters(cli client.Client, inputs *Inputs) *kGatewayParameters {
+func newKGatewayParameters(cli client.Client, inputs *deployer.Inputs) *kGatewayParameters {
 	return &kGatewayParameters{cli: cli, inputs: inputs}
 }
 
@@ -136,7 +148,7 @@ func (h *kGatewayParameters) GetValues(ctx context.Context, gw *api.Gateway) (ma
 	}
 
 	var jsonVals map[string]any
-	err = jsonConvert(vals, &jsonVals)
+	err = deployer.JsonConvert(vals, &jsonVals)
 	return jsonVals, err
 }
 
@@ -157,10 +169,10 @@ func (k *kGatewayParameters) getGatewayParametersForGateway(ctx context.Context,
 
 	gwpName := gw.Spec.Infrastructure.ParametersRef.Name
 	if group := gw.Spec.Infrastructure.ParametersRef.Group; group != v1alpha1.GroupName {
-		return nil, eris.Errorf("invalid group %s for GatewayParameters", group)
+		return nil, fmt.Errorf("invalid group %s for GatewayParameters", group)
 	}
 	if kind := gw.Spec.Infrastructure.ParametersRef.Kind; kind != api.Kind(wellknown.GatewayParametersGVK.Kind) {
-		return nil, eris.Errorf("invalid kind %s for GatewayParameters", kind)
+		return nil, fmt.Errorf("invalid kind %s for GatewayParameters", kind)
 	}
 
 	// the GatewayParameters must live in the same namespace as the Gateway
@@ -168,7 +180,7 @@ func (k *kGatewayParameters) getGatewayParametersForGateway(ctx context.Context,
 	gwp := &v1alpha1.GatewayParameters{}
 	err := k.cli.Get(ctx, client.ObjectKey{Namespace: gwpNamespace, Name: gwpName}, gwp)
 	if err != nil {
-		return nil, getGatewayParametersError(err, gwpNamespace, gwpName, gw.GetNamespace(), gw.GetName(), "Gateway")
+		return nil, deployer.GetGatewayParametersError(err, gwpNamespace, gwpName, gw.GetNamespace(), gw.GetName(), "Gateway")
 	}
 
 	defaultGwp, err := k.getDefaultGatewayParameters(ctx, gw)
@@ -177,7 +189,7 @@ func (k *kGatewayParameters) getGatewayParametersForGateway(ctx context.Context,
 	}
 
 	mergedGwp := defaultGwp
-	deepMergeGatewayParameters(mergedGwp, gwp)
+	deployer.DeepMergeGatewayParameters(mergedGwp, gwp)
 	return mergedGwp, nil
 }
 
@@ -194,7 +206,7 @@ func (k *kGatewayParameters) getDefaultGatewayParameters(ctx context.Context, gw
 func (k *kGatewayParameters) getGatewayParametersForGatewayClass(ctx context.Context, gwc *api.GatewayClass) (*v1alpha1.GatewayParameters, error) {
 	logger := log.FromContext(ctx)
 
-	defaultGwp := getInMemoryGatewayParameters(gwc.GetName(), k.inputs.ImageInfo)
+	defaultGwp := deployer.GetInMemoryGatewayParameters(gwc.GetName(), k.inputs.ImageInfo)
 	paramRef := gwc.Spec.ParametersRef
 	if paramRef == nil {
 		// when there is no parametersRef, just return the defaults
@@ -203,7 +215,7 @@ func (k *kGatewayParameters) getGatewayParametersForGatewayClass(ctx context.Con
 
 	gwpName := paramRef.Name
 	if gwpName == "" {
-		err := eris.New("parametersRef.name cannot be empty when parametersRef is specified")
+		err := errors.New("parametersRef.name cannot be empty when parametersRef is specified")
 		logger.Error(err,
 			"gatewayClassName", gwc.GetName(),
 			"gatewayClassNamespace", gwc.GetNamespace(),
@@ -219,7 +231,7 @@ func (k *kGatewayParameters) getGatewayParametersForGatewayClass(ctx context.Con
 	gwp := &v1alpha1.GatewayParameters{}
 	err := k.cli.Get(ctx, client.ObjectKey{Namespace: gwpNamespace, Name: gwpName}, gwp)
 	if err != nil {
-		return nil, getGatewayParametersError(
+		return nil, deployer.GetGatewayParametersError(
 			err,
 			gwpNamespace, gwpName,
 			gwc.GetNamespace(), gwc.GetName(),
@@ -231,30 +243,21 @@ func (k *kGatewayParameters) getGatewayParametersForGatewayClass(ctx context.Con
 	// primarily done to ensure that the image registry and tag are
 	// correctly set when they aren't overridden by the GatewayParameters.
 	mergedGwp := defaultGwp
-	deepMergeGatewayParameters(mergedGwp, gwp)
+	deployer.DeepMergeGatewayParameters(mergedGwp, gwp)
 	return mergedGwp, nil
 }
 
-func (k *kGatewayParameters) getValues(gw *api.Gateway, gwParam *v1alpha1.GatewayParameters) (*helmConfig, error) {
-	gwKey := ir.ObjectSource{
-		Group:     wellknown.GatewayGVK.GroupKind().Group,
-		Kind:      wellknown.GatewayGVK.GroupKind().Kind,
-		Name:      gw.GetName(),
-		Namespace: gw.GetNamespace(),
-	}
-	irGW := k.inputs.CommonCollections.GatewayIndex.Gateways.GetKey(gwKey.ResourceName())
-	if irGW == nil {
-		irGW = gatewayFrom(gw)
-	}
+func (k *kGatewayParameters) getValues(gw *api.Gateway, gwParam *v1alpha1.GatewayParameters) (*deployer.HelmConfig, error) {
+	irGW := deployer.GetGatewayIR(gw, k.inputs.CommonCollections)
 
 	// construct the default values
-	vals := &helmConfig{
-		Gateway: &helmGateway{
+	vals := &deployer.HelmConfig{
+		Gateway: &deployer.HelmGateway{
 			Name:             &gw.Name,
 			GatewayName:      &gw.Name,
 			GatewayNamespace: &gw.Namespace,
-			Ports:            getPortsValues(irGW, gwParam),
-			Xds: &helmXds{
+			Ports:            deployer.GetPortsValues(irGW, gwParam),
+			Xds: &deployer.HelmXds{
 				// The xds host/port MUST map to the Service definition for the Control Plane
 				// This is the socket address that the Proxy will connect to on startup, to receive xds updates
 				Host: &k.inputs.ControlPlane.XdsHost,
@@ -274,7 +277,7 @@ func (k *kGatewayParameters) getValues(gw *api.Gateway, gwParam *v1alpha1.Gatewa
 
 	// Apply the floating user ID if it is set
 	if gwParam.Spec.Kube.GetFloatingUserId() != nil && *gwParam.Spec.Kube.GetFloatingUserId() {
-		applyFloatingUserId(gwParam.Spec.Kube)
+		deployer.ApplyFloatingUserId(gwParam.Spec.Kube)
 	}
 
 	kubeProxyConfig := gwParam.Spec.Kube
@@ -296,9 +299,9 @@ func (k *kGatewayParameters) getValues(gw *api.Gateway, gwParam *v1alpha1.Gatewa
 	gateway.ReplicaCount = deployConfig.GetReplicas()
 
 	// service values
-	gateway.Service = getServiceValues(svcConfig)
+	gateway.Service = deployer.GetServiceValues(svcConfig)
 	// serviceaccount values
-	gateway.ServiceAccount = getServiceAccountValues(svcAccountConfig)
+	gateway.ServiceAccount = deployer.GetServiceAccountValues(svcAccountConfig)
 	// pod template values
 	gateway.ExtraPodAnnotations = podConfig.GetExtraAnnotations()
 	gateway.ExtraPodLabels = podConfig.GetExtraLabels()
@@ -316,7 +319,7 @@ func (k *kGatewayParameters) getValues(gw *api.Gateway, gwParam *v1alpha1.Gatewa
 	logLevel := envoyContainerConfig.GetBootstrap().GetLogLevel()
 	compLogLevels := envoyContainerConfig.GetBootstrap().GetComponentLogLevels()
 	gateway.LogLevel = logLevel
-	compLogLevelStr, err := ComponentLogLevelsToString(compLogLevels)
+	compLogLevelStr, err := deployer.ComponentLogLevelsToString(compLogLevels)
 	if err != nil {
 		return nil, err
 	}
@@ -326,218 +329,51 @@ func (k *kGatewayParameters) getValues(gw *api.Gateway, gwParam *v1alpha1.Gatewa
 	if agentgatewayEnabled != nil && *agentgatewayEnabled {
 		gateway.Resources = agentGatewayConfig.GetResources()
 		gateway.SecurityContext = agentGatewayConfig.GetSecurityContext()
-		gateway.Image = getImageValues(agentGatewayConfig.GetImage())
+		gateway.Image = deployer.GetImageValues(agentGatewayConfig.GetImage())
 		gateway.Env = agentGatewayConfig.GetEnv()
 	} else {
 		gateway.Resources = envoyContainerConfig.GetResources()
 		gateway.SecurityContext = envoyContainerConfig.GetSecurityContext()
-		gateway.Image = getImageValues(envoyContainerConfig.GetImage())
+		gateway.Image = deployer.GetImageValues(envoyContainerConfig.GetImage())
 		gateway.Env = envoyContainerConfig.GetEnv()
 	}
 
 	// istio values
-	gateway.Istio = getIstioValues(k.inputs.IstioAutoMtlsEnabled, istioConfig)
-	gateway.SdsContainer = getSdsContainerValues(sdsContainerConfig)
-	gateway.IstioContainer = getIstioContainerValues(istioContainerConfig)
+	gateway.Istio = deployer.GetIstioValues(k.inputs.IstioAutoMtlsEnabled, istioConfig)
+	gateway.SdsContainer = deployer.GetSdsContainerValues(sdsContainerConfig)
+	gateway.IstioContainer = deployer.GetIstioContainerValues(istioContainerConfig)
 
 	// ai values
-	gateway.AIExtension, err = getAIExtensionValues(aiExtensionConfig)
+	gateway.AIExtension, err = deployer.GetAIExtensionValues(aiExtensionConfig)
 	if err != nil {
 		return nil, err
 	}
 
 	// TODO(npolshak): Currently we are using the same chart for both data planes. Should revisit having a separate chart for agentgateway: https://github.com/kgateway-dev/kgateway/issues/11240
 	// agentgateway integration values
-	gateway.AgentGateway, err = getAgentGatewayValues(agentGatewayConfig)
+	gateway.AgentGateway, err = deployer.GetAgentGatewayValues(agentGatewayConfig)
 	if err != nil {
 		return nil, err
 	}
 
-	gateway.Stats = getStatsValues(statsConfig)
+	gateway.Stats = deployer.GetStatsValues(statsConfig)
 
 	return vals, nil
 }
 
 func getGatewayClassFromGateway(ctx context.Context, cli client.Client, gw *api.Gateway) (*api.GatewayClass, error) {
 	if gw == nil {
-		return nil, eris.New("nil Gateway")
+		return nil, errors.New("nil Gateway")
 	}
 	if gw.Spec.GatewayClassName == "" {
-		return nil, eris.New("GatewayClassName must not be empty")
+		return nil, errors.New("GatewayClassName must not be empty")
 	}
 
 	gwc := &api.GatewayClass{}
 	err := cli.Get(ctx, client.ObjectKey{Name: string(gw.Spec.GatewayClassName)}, gwc)
 	if err != nil {
-		return nil, eris.Errorf("failed to get GatewayClass for Gateway %s/%s", gw.GetName(), gw.GetNamespace())
+		return nil, fmt.Errorf("failed to get GatewayClass for Gateway %s/%s: %w", gw.GetName(), gw.GetNamespace(), err)
 	}
 
 	return gwc, nil
-}
-
-// getInMemoryGatewayParameters returns an in-memory GatewayParameters based on the name of the gateway class.
-func getInMemoryGatewayParameters(name string, imageInfo *ImageInfo) *v1alpha1.GatewayParameters {
-	switch name {
-	case wellknown.WaypointClassName:
-		return defaultWaypointGatewayParameters(imageInfo)
-	case wellknown.GatewayClassName:
-		return defaultGatewayParameters(imageInfo)
-	case wellknown.AgentGatewayClassName:
-		return defaultAgentGatewayParameters(imageInfo)
-	default:
-		return defaultGatewayParameters(imageInfo)
-	}
-}
-
-// defaultAgentGatewayParameters returns an in-memory GatewayParameters with default values
-// set for the agentgateway deployment.
-func defaultAgentGatewayParameters(imageInfo *ImageInfo) *v1alpha1.GatewayParameters {
-	gwp := defaultGatewayParameters(imageInfo)
-	gwp.Spec.Kube.AgentGateway.Enabled = ptr.To(true)
-	return gwp
-}
-
-// defaultWaypointGatewayParameters returns an in-memory GatewayParameters with default values
-// set for the waypoint deployment.
-func defaultWaypointGatewayParameters(imageInfo *ImageInfo) *v1alpha1.GatewayParameters {
-	gwp := defaultGatewayParameters(imageInfo)
-	gwp.Spec.Kube.Service.Type = ptr.To(corev1.ServiceTypeClusterIP)
-
-	if gwp.Spec.Kube.PodTemplate == nil {
-		gwp.Spec.Kube.PodTemplate = &v1alpha1.Pod{}
-	}
-	if gwp.Spec.Kube.PodTemplate.ExtraLabels == nil {
-		gwp.Spec.Kube.PodTemplate.ExtraLabels = make(map[string]string)
-	}
-	gwp.Spec.Kube.PodTemplate.ExtraLabels[label.IoIstioDataplaneMode.Name] = "ambient"
-
-	// do not have zTunnel resolve DNS for us - this can cause traffic loops when we're doing
-	// outbound based on DNS service entries
-	// TODO do we want this on the north-south gateway class as well?
-	if gwp.Spec.Kube.PodTemplate.ExtraAnnotations == nil {
-		gwp.Spec.Kube.PodTemplate.ExtraAnnotations = make(map[string]string)
-	}
-	gwp.Spec.Kube.PodTemplate.ExtraAnnotations[annotation.AmbientDnsCapture.Name] = "false"
-
-	return gwp
-}
-
-// defaultGatewayParameters returns an in-memory GatewayParameters with the default values
-// set for the gateway.
-func defaultGatewayParameters(imageInfo *ImageInfo) *v1alpha1.GatewayParameters {
-	return &v1alpha1.GatewayParameters{
-		Spec: v1alpha1.GatewayParametersSpec{
-			SelfManaged: nil,
-			Kube: &v1alpha1.KubernetesProxyConfig{
-				Deployment: &v1alpha1.ProxyDeployment{
-					Replicas: ptr.To[uint32](1),
-				},
-				Service: &v1alpha1.Service{
-					Type: (*corev1.ServiceType)(ptr.To(string(corev1.ServiceTypeLoadBalancer))),
-				},
-				EnvoyContainer: &v1alpha1.EnvoyContainer{
-					Bootstrap: &v1alpha1.EnvoyBootstrap{
-						LogLevel: ptr.To("info"),
-					},
-					Image: &v1alpha1.Image{
-						Registry:   ptr.To(imageInfo.Registry),
-						Tag:        ptr.To(imageInfo.Tag),
-						Repository: ptr.To(EnvoyWrapperImage),
-						PullPolicy: (*corev1.PullPolicy)(ptr.To(imageInfo.PullPolicy)),
-					},
-					SecurityContext: &corev1.SecurityContext{
-						AllowPrivilegeEscalation: ptr.To(false),
-						ReadOnlyRootFilesystem:   ptr.To(true),
-						RunAsNonRoot:             ptr.To(true),
-						RunAsUser:                ptr.To[int64](10101),
-						Capabilities: &corev1.Capabilities{
-							Drop: []corev1.Capability{"ALL"},
-							Add:  []corev1.Capability{"NET_BIND_SERVICE"},
-						},
-					},
-				},
-				Stats: &v1alpha1.StatsConfig{
-					Enabled:                 ptr.To(true),
-					RoutePrefixRewrite:      ptr.To("/stats/prometheus?usedonly"),
-					EnableStatsRoute:        ptr.To(true),
-					StatsRoutePrefixRewrite: ptr.To("/stats"),
-				},
-				SdsContainer: &v1alpha1.SdsContainer{
-					Image: &v1alpha1.Image{
-						Registry:   ptr.To(imageInfo.Registry),
-						Tag:        ptr.To(imageInfo.Tag),
-						Repository: ptr.To(SdsImage),
-						PullPolicy: (*corev1.PullPolicy)(ptr.To(imageInfo.PullPolicy)),
-					},
-					Bootstrap: &v1alpha1.SdsBootstrap{
-						LogLevel: ptr.To("info"),
-					},
-				},
-				Istio: &v1alpha1.IstioIntegration{
-					IstioProxyContainer: &v1alpha1.IstioContainer{
-						Image: &v1alpha1.Image{
-							Registry:   ptr.To("docker.io/istio"),
-							Repository: ptr.To("proxyv2"),
-							Tag:        ptr.To("1.22.0"),
-							PullPolicy: (*corev1.PullPolicy)(ptr.To(imageInfo.PullPolicy)),
-						},
-						LogLevel:              ptr.To("warning"),
-						IstioDiscoveryAddress: ptr.To("istiod.istio-system.svc:15012"),
-						IstioMetaMeshId:       ptr.To("cluster.local"),
-						IstioMetaClusterId:    ptr.To("Kubernetes"),
-					},
-				},
-				AiExtension: &v1alpha1.AiExtension{
-					Enabled: ptr.To(false),
-					Image: &v1alpha1.Image{
-						Repository: ptr.To(KgatewayAIContainerName),
-						Registry:   ptr.To(imageInfo.Registry),
-						Tag:        ptr.To(imageInfo.Tag),
-						PullPolicy: (*corev1.PullPolicy)(ptr.To(imageInfo.PullPolicy)),
-					},
-				},
-				AgentGateway: &v1alpha1.AgentGateway{
-					Enabled:  ptr.To(false),
-					LogLevel: ptr.To("info"),
-					Image: &v1alpha1.Image{
-						Registry:   ptr.To(AgentgatewayRegistry),
-						Tag:        ptr.To(AgentgatewayDefaultTag),
-						Repository: ptr.To(AgentgatewayImage),
-						PullPolicy: (*corev1.PullPolicy)(ptr.To(imageInfo.PullPolicy)),
-					},
-					SecurityContext: &corev1.SecurityContext{
-						AllowPrivilegeEscalation: ptr.To(false),
-						ReadOnlyRootFilesystem:   ptr.To(true),
-						RunAsNonRoot:             ptr.To(true),
-						RunAsUser:                ptr.To[int64](10101),
-						Capabilities: &corev1.Capabilities{
-							Drop: []corev1.Capability{"ALL"},
-							Add:  []corev1.Capability{"NET_BIND_SERVICE"},
-						},
-					},
-				},
-			},
-		},
-	}
-}
-
-func gatewayFrom(gw *api.Gateway) *ir.Gateway {
-	out := &ir.Gateway{
-		ObjectSource: ir.ObjectSource{
-			Group:     api.SchemeGroupVersion.Group,
-			Kind:      wellknown.GatewayKind,
-			Namespace: gw.Namespace,
-			Name:      gw.Name,
-		},
-		Obj:       gw,
-		Listeners: make([]ir.Listener, 0, len(gw.Spec.Listeners)),
-	}
-
-	for _, l := range gw.Spec.Listeners {
-		out.Listeners = append(out.Listeners, ir.Listener{
-			Listener: l,
-			Parent:   gw,
-		})
-	}
-	return out
 }

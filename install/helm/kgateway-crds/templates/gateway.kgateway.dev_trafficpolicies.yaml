@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.3
+    controller-gen.kubebuilder.io/version: v0.18.1-0.20250625175829-8d11ce77f347
   labels:
     app: kgateway
     app.kubernetes.io/name: kgateway
@@ -119,6 +119,11 @@ spec:
                                     required:
                                     - kind
                                     type: object
+                                    x-kubernetes-validations:
+                                    - message: at most one of the fields in [inline
+                                        secretRef] may be set
+                                      rule: '[has(self.inline),has(self.secretRef)].filter(x,x==true).size()
+                                        <= 1'
                                   model:
                                     type: string
                                 required:
@@ -355,10 +360,9 @@ spec:
                       - ignoreCase
                       type: object
                       x-kubernetes-validations:
-                      - message: exactly one of Exact, Prefix, Suffix, Contains, or
-                          SafeRegex must be set
-                        rule: '[has(self.exact), has(self.prefix), has(self.suffix),
-                          has(self.contains), has(self.safeRegex)].filter(x, x).size()
+                      - message: exactly one of the fields in [exact prefix suffix
+                          contains safeRegex] must be set
+                        rule: '[has(self.exact),has(self.prefix),has(self.suffix),has(self.contains),has(self.safeRegex)].filter(x,x==true).size()
                           == 1'
                     maxItems: 16
                     type: array
@@ -374,9 +378,10 @@ spec:
                     type: integer
                 type: object
                 x-kubernetes-validations:
-                - message: exactly one of PercentageEnabled or PercentageShadowed
-                    must be set
-                  rule: has(self.percentageEnabled) != has(self.percentageShadowed)
+                - message: at most one of the fields in [percentageEnabled percentageShadowed]
+                    may be set
+                  rule: '[has(self.percentageEnabled),has(self.percentageShadowed)].filter(x,x==true).size()
+                    <= 1'
               extAuth:
                 properties:
                   contextExtensions:
@@ -409,9 +414,10 @@ spec:
                     type: object
                 type: object
                 x-kubernetes-validations:
-                - message: only one of 'extensionRef' or 'enablement' may be set
-                  rule: (has(self.extensionRef) && !has(self.enablement)) || (!has(self.extensionRef)
-                    && has(self.enablement))
+                - message: exactly one of the fields in [extensionRef enablement]
+                    must be set
+                  rule: '[has(self.extensionRef),has(self.enablement)].filter(x,x==true).size()
+                    == 1'
               extProc:
                 properties:
                   extensionRef:

@@ -118,4 +118,8 @@ type GatewayIR struct {
 
 	AttachedPolicies     AttachedPolicies
 	AttachedHttpPolicies AttachedPolicies
+
+	// PerConnectionBufferLimitBytes is the listener-level per connection buffer limit.
+	// Applied to all listeners in the gateway.
+	PerConnectionBufferLimitBytes *uint32
 }

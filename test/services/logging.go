@@ -11,7 +11,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 
 	"github.com/onsi/gomega"
-	errors "github.com/rotisserie/eris"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
@@ -139,7 +138,7 @@ func (l *logProvider) ReloadFromString(userDefinedLogLevel string) {
 		// We intentionally error loudly here
 		// This will occur if the user passes an invalid log level string
 		if err != nil {
-			panic(errors.Wrapf(err, "invalid log level string: %s", logLevelStr))
+			panic(fmt.Errorf("invalid log level string: %s: %w", logLevelStr, err))
 		}
 
 		// This whole function operates with a lock, so we can modify the map directly

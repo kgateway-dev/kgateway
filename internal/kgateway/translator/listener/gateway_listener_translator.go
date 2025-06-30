@@ -8,7 +8,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/rotisserie/eris"
 	"istio.io/istio/pkg/kube/krt"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -108,7 +107,7 @@ func (ml *MergedListeners) AppendListener(
 	case gwv1.TLSProtocolType:
 		ml.AppendTlsListener(listener, routes, reporter)
 	default:
-		return eris.Errorf("unsupported protocol: %v", listener.Protocol)
+		return fmt.Errorf("unsupported protocol: %v", listener.Protocol)
 	}
 
 	return nil

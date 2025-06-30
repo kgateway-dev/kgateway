@@ -3,6 +3,7 @@ package bootstrap
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	envoy_config_bootstrap_v3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
@@ -13,7 +14,6 @@ import (
 	envoy_extensions_filters_network_http_connection_manager_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
-	"github.com/rotisserie/eris"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
@@ -25,7 +25,7 @@ var (
 	// errNoHcm represents a situation where a filter chain does not have an HttpConnectionManager.
 	// Because this could occur for valid reasons, such as a TCP proxy, we use
 	// this as a sentinel error to inform us it's ok to ignore it and continue.
-	errNoHcm = eris.New("no HttpConnectionManager found")
+	errNoHcm = errors.New("no HttpConnectionManager found")
 )
 
 func FromEnvoyResources(resources *EnvoyResources) (string, error) {
@@ -283,7 +283,7 @@ func getHcmForFilterChain(fc *envoy_config_listener_v3.FilterChain) (
 			if hcm, ok := hcmAny.(*envoy_extensions_filters_network_http_connection_manager_v3.HttpConnectionManager); ok {
 				return hcm, f, nil
 			} else {
-				return nil, nil, eris.Errorf("filter %v has hcm type url but casting to concrete failed", f.GetName())
+				return nil, nil, fmt.Errorf("filter %v has hcm type url but casting to concrete failed", f.GetName())
 			}
 		}
 	}

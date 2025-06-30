@@ -35,7 +35,7 @@ type GatewayParametersList struct {
 // A GatewayParametersSpec describes the type of environment/platform in which
 // the proxy will be provisioned.
 //
-// +kubebuilder:validation:XValidation:message="exactly one of 'kube' or 'selfManaged' must be set",rule="has(self.kube) ? !has(self.selfManaged) : has(self.selfManaged)"
+// +kubebuilder:validation:ExactlyOneOf=kube;selfManaged
 type GatewayParametersSpec struct {
 	// The proxy will be deployed on Kubernetes.
 	//
@@ -64,11 +64,9 @@ func (in *GatewayParametersSpec) GetSelfManaged() *SelfManagedGateway {
 }
 
 // The current conditions of the GatewayParameters. This is not currently implemented.
-type GatewayParametersStatus struct {
-}
+type GatewayParametersStatus struct{}
 
-type SelfManagedGateway struct {
-}
+type SelfManagedGateway struct{}
 
 // KubernetesProxyConfig configures the set of Kubernetes resources that will be provisioned
 // for a given Gateway.
@@ -225,7 +223,6 @@ func (in *ProxyDeployment) GetReplicas() *uint32 {
 
 // EnvoyContainer configures the container running Envoy.
 type EnvoyContainer struct {
-
 	// Initial envoy configuration.
 	//
 	// +optional

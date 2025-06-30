@@ -70,6 +70,23 @@ func translateHttp1ProtocolOptions(http1ProtocolOptions *v1alpha1.Http1ProtocolO
 	return out, nil
 }
 
+func translateHttp2ProtocolOptions(http2ProtocolOptions *v1alpha1.Http2ProtocolOptions) *corev3.Http2ProtocolOptions {
+	out := &corev3.Http2ProtocolOptions{}
+	if http2ProtocolOptions.MaxConcurrentStreams != nil {
+		out.MaxConcurrentStreams = &wrapperspb.UInt32Value{Value: uint32(*http2ProtocolOptions.MaxConcurrentStreams)}
+	}
+	if http2ProtocolOptions.InitialStreamWindowSize != nil {
+		out.InitialStreamWindowSize = &wrapperspb.UInt32Value{Value: uint32(http2ProtocolOptions.InitialStreamWindowSize.MilliValue())}
+	}
+	if http2ProtocolOptions.InitialConnectionWindowSize != nil {
+		out.InitialConnectionWindowSize = &wrapperspb.UInt32Value{Value: uint32(http2ProtocolOptions.InitialConnectionWindowSize.MilliValue())}
+	}
+	if http2ProtocolOptions.OverrideStreamErrorOnInvalidHttpMessage != nil {
+		out.OverrideStreamErrorOnInvalidHttpMessage = &wrapperspb.BoolValue{Value: *http2ProtocolOptions.OverrideStreamErrorOnInvalidHttpMessage}
+	}
+	return out
+}
+
 func applyCommonHttpProtocolOptions(commonHttpProtocolOptions *corev3.HttpProtocolOptions, backend ir.BackendObjectIR, out *clusterv3.Cluster) {
 	if commonHttpProtocolOptions == nil {
 		return
@@ -95,15 +112,12 @@ func applyHttp1ProtocolOptions(http1ProtocolOptions *corev3.Http1ProtocolOptions
 		return
 	}
 
-	if err := translatorutils.MutateHttpOptions(out, func(opts *envoy_upstreams_v3.HttpProtocolOptions) {
-		// Check if ExplicitHttpConfig is already defined and if HTTP/2 protocol options are set
-		if explicitConfig := opts.GetExplicitHttpConfig(); explicitConfig != nil {
-			if explicitConfig.GetHttp2ProtocolOptions() != nil {
-				logger.Warn("HTTP/1 protocol options cannot be applied because HTTP/2 protocol options are already configured on the backend", "backend", backend.GetName())
-				return
-			}
-		}
+	if backend.AppProtocol == ir.HTTP2AppProtocol {
+		logger.Warn("can't apply http1 protocol options to http2 backend", "backend", backend.GetName())
+		return
+	}
 
+	if err := translatorutils.MutateHttpOptions(out, func(opts *envoy_upstreams_v3.HttpProtocolOptions) {
 		opts.UpstreamProtocolOptions = &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig_{
 			ExplicitHttpConfig: &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig{
 				ProtocolConfig: &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig_HttpProtocolOptions{
@@ -112,6 +126,29 @@ func applyHttp1ProtocolOptions(http1ProtocolOptions *corev3.Http1ProtocolOptions
 			},
 		}
 	}); err != nil {
-		logger.Error("failed to apply http1 protocol options", "error", err)
+		logger.Error("failed to apply http1 protocol options", "backend", backend.GetName(), "error", err)
+	}
+}
+
+func applyHttp2ProtocolOptions(http2ProtocolOptions *corev3.Http2ProtocolOptions, backend ir.BackendObjectIR, out *clusterv3.Cluster) {
+	if http2ProtocolOptions == nil {
+		return
+	}
+
+	if backend.AppProtocol != ir.HTTP2AppProtocol {
+		logger.Warn("can't apply http2 protocol options to non-http2 backend", "backend", backend.GetName())
+		return
+	}
+
+	if err := translatorutils.MutateHttpOptions(out, func(opts *envoy_upstreams_v3.HttpProtocolOptions) {
+		opts.UpstreamProtocolOptions = &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig_{
+			ExplicitHttpConfig: &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig{
+				ProtocolConfig: &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig_Http2ProtocolOptions{
+					Http2ProtocolOptions: http2ProtocolOptions,
+				},
+			},
+		}
+	}); err != nil {
+		logger.Error("failed to apply http2 protocol options", "backend", backend.GetName(), "error", err)
 	}
 }

@@ -12,8 +12,6 @@ import (
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/rotisserie/eris"
-
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/query"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
@@ -40,7 +38,7 @@ func flattenDelegatedRoutes(
 ) error {
 	parentRoute, ok := parentInfo.Object.(*ir.HttpRouteIR)
 	if !ok {
-		return eris.Errorf("unsupported route type: %T", parentInfo.Object)
+		return fmt.Errorf("unsupported route type: %T", parentInfo.Object)
 	}
 	parentRef := types.NamespacedName{Namespace: parentRoute.Namespace, Name: parentRoute.Name}
 	routesVisited.Insert(parentRef)
@@ -49,7 +47,7 @@ func flattenDelegatedRoutes(
 	rawChildren, err := parentInfo.GetChildrenForRef(*backend.Delegate)
 	if len(rawChildren) == 0 || err != nil {
 		if err == nil {
-			err = eris.Errorf("unresolved reference %s", backend.Delegate.ResourceName())
+			err = fmt.Errorf("unresolved reference %s", backend.Delegate.ResourceName())
 		}
 		return err
 	}

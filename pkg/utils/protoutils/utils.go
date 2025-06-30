@@ -1,10 +1,10 @@
 package protoutils
 
 import (
+	"errors"
 	"io"
 
 	"github.com/ghodss/yaml"
-	"github.com/rotisserie/eris"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	structpb "google.golang.org/protobuf/types/known/structpb"
@@ -16,7 +16,7 @@ var (
 	jsonpbMarshalerIndented       = &protojson.MarshalOptions{UseProtoNames: false, Indent: "  "}
 	jsonpbUnmarshalerAllowUnknown = &protojson.UnmarshalOptions{DiscardUnknown: true}
 
-	NilStructError = eris.New("cannot unmarshal nil struct")
+	NilStructError = errors.New("cannot unmarshal nil struct")
 )
 
 // this function is designed for converting go object (that is not a proto.Message) into a

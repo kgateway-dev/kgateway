@@ -10,6 +10,7 @@ import (
 	"github.com/go-logr/logr"
 	istiokube "istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/krt"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -17,20 +18,26 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/admin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/controller"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/deployer"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
+	"github.com/kgateway-dev/kgateway/v2/pkg/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
 )
 
 type Server interface {
 	Start(ctx context.Context) error
+}
+
+func WithGatewayControllerName(name func() string) func(*setup) {
+	return func(s *setup) {
+		s.gatewayControllerName = name()
+	}
 }
 
 func WithExtraPlugins(extraPlugins func(ctx context.Context, commoncol *common.CommonCollections) []sdk.Plugin) func(*setup) {
@@ -45,6 +52,12 @@ func ExtraGatewayParameters(extraGatewayParameters func(cli client.Client, input
 	}
 }
 
+func AddToScheme(addToScheme func(s *runtime.Scheme) error) func(s *setup) {
+	return func(s *setup) {
+		s.addToScheme = addToScheme
+	}
+}
+
 func WithExtraXDSCallbacks(extraXDSCallbacks xdsserver.Callbacks) func(*setup) {
 	return func(s *setup) {
 		s.extraXDSCallbacks = extraXDSCallbacks
@@ -52,15 +65,19 @@ func WithExtraXDSCallbacks(extraXDSCallbacks xdsserver.Callbacks) func(*setup) {
 }
 
 type setup struct {
+	gatewayControllerName  string
 	extraPlugins           func(ctx context.Context, commoncol *common.CommonCollections) []sdk.Plugin
 	extraGatewayParameters func(cli client.Client, inputs *deployer.Inputs) []deployer.ExtraGatewayParameters
+	addToScheme            func(s *runtime.Scheme) error
 	extraXDSCallbacks      xdsserver.Callbacks
 }
 
 var _ Server = &setup{}
 
 func New(opts ...func(*setup)) *setup {
-	s := &setup{}
+	s := &setup{
+		gatewayControllerName: wellknown.GatewayControllerName,
+	}
 	for _, opt := range opts {
 		opt(s)
 	}
@@ -69,23 +86,27 @@ func New(opts ...func(*setup)) *setup {
 
 func (s *setup) Start(ctx context.Context) error {
 	if s.extraXDSCallbacks != nil {
-		return StartKgatewayWithXDSCallbacks(ctx, s.extraPlugins, s.extraGatewayParameters, s.extraXDSCallbacks)
+		return StartKgatewayWithXDSCallbacks(ctx, s.gatewayControllerName, s.extraPlugins, s.extraGatewayParameters, s.addToScheme, s.extraXDSCallbacks)
 	}
 
-	return StartKgateway(ctx, s.extraPlugins, s.extraGatewayParameters)
+	return StartKgateway(ctx, s.gatewayControllerName, s.extraPlugins, s.extraGatewayParameters, s.addToScheme)
 }
 
 func StartKgateway(
 	ctx context.Context,
+	gatewayControllerName string,
 	extraPlugins func(ctx context.Context, commoncol *common.CommonCollections) []sdk.Plugin,
 	extraGatewayParameters func(cli client.Client, inputs *deployer.Inputs) []deployer.ExtraGatewayParameters,
+	addToScheme func(s *runtime.Scheme) error,
 ) error {
-	return StartKgatewayWithXDSCallbacks(ctx, extraPlugins, extraGatewayParameters, nil)
+	return StartKgatewayWithXDSCallbacks(ctx, gatewayControllerName, extraPlugins, extraGatewayParameters, addToScheme, nil)
 }
 
 func StartKgatewayWithXDSCallbacks(ctx context.Context,
+	gatewayControllerName string,
 	extraPlugins func(ctx context.Context, commoncol *common.CommonCollections) []sdk.Plugin,
 	extraGatewayParameters func(cli client.Client, inputs *deployer.Inputs) []deployer.ExtraGatewayParameters,
+	addToScheme func(s *runtime.Scheme) error,
 	extraXDSCallbacks xdsserver.Callbacks,
 ) error {
 	// load global settings
@@ -113,7 +134,16 @@ func StartKgatewayWithXDSCallbacks(ctx context.Context,
 	}
 
 	restConfig := ctrl.GetConfigOrDie()
-	return StartKgatewayWithConfig(ctx, setupOpts, restConfig, uccBuilder, extraPlugins, extraGatewayParameters)
+	return StartKgatewayWithConfig(
+		ctx,
+		gatewayControllerName,
+		setupOpts,
+		restConfig,
+		uccBuilder,
+		extraPlugins,
+		extraGatewayParameters,
+		addToScheme,
+	)
 }
 
 func startControlPlane(
@@ -126,11 +156,13 @@ func startControlPlane(
 
 func StartKgatewayWithConfig(
 	ctx context.Context,
+	gatewayControllerName string,
 	setupOpts *controller.SetupOpts,
 	restConfig *rest.Config,
 	uccBuilder krtcollections.UniquelyConnectedClientsBulider,
 	extraPlugins func(ctx context.Context, commoncol *common.CommonCollections) []sdk.Plugin,
 	extraGatewayParameters func(cli client.Client, inputs *deployer.Inputs) []deployer.ExtraGatewayParameters,
+	addToScheme func(s *runtime.Scheme) error,
 ) error {
 	slog.Info("starting kgateway")
 
@@ -156,10 +188,10 @@ func StartKgatewayWithConfig(
 
 	slog.Info("initializing controller")
 	c, err := controller.NewControllerBuilder(ctx, controller.StartConfig{
-		// TODO: why do we plumb this through if it's wellknown?
-		ControllerName:         wellknown.GatewayControllerName,
+		ControllerName:         gatewayControllerName,
 		ExtraPlugins:           extraPlugins,
 		ExtraGatewayParameters: extraGatewayParameters,
+		AddToScheme:            addToScheme,
 		RestConfig:             restConfig,
 		SetupOpts:              setupOpts,
 		Client:                 kubeClient,

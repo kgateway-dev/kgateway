@@ -3,6 +3,7 @@
 package helpers
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/onsi/gomega/types"
@@ -13,7 +14,6 @@ import (
 
 	"github.com/onsi/gomega"
 	"github.com/onsi/gomega/gstruct"
-	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	skerrors "github.com/solo-io/solo-kit/pkg/errors"
@@ -91,7 +91,7 @@ func EventuallyResourceStatusMatchesWithOffset(offset int, getter InputResourceG
 func getResourceStatus(getter InputResourceGetter) (core.Status, error) {
 	resource, err := getter()
 	if err != nil {
-		return core.Status{}, errors.Wrapf(err, "failed to get resource")
+		return core.Status{}, fmt.Errorf("failed to get resource: %w", err)
 	}
 
 	statusClient := statusutils.GetStatusClientFromEnvOrDefault(defaults.GlooSystem)
@@ -101,7 +101,7 @@ func getResourceStatus(getter InputResourceGetter) (core.Status, error) {
 	// As a result, a nil check isn't enough to determine that that status hasn't been reported
 	// Note: RateLimitConfig statuses can have an empty reporter
 	if status == nil {
-		return core.Status{}, errors.Wrapf(err, "waiting for %v status to be non-empty", resource.GetMetadata().GetName())
+		return core.Status{}, fmt.Errorf("waiting for %v status to be non-empty: %w", resource.GetMetadata().GetName(), err)
 	}
 
 	return *status, nil

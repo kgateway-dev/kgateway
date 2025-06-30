@@ -8,6 +8,7 @@ import (
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"golang.org/x/net/context"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/slices"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/ptr"
@@ -90,6 +91,9 @@ func (t *Translator) ComputeListener(
 	ret := &envoy_config_listener_v3.Listener{
 		Name:    lis.Name,
 		Address: computeListenerAddress(lis.BindAddress, lis.BindPort, gwreporter),
+	}
+	if gw.PerConnectionBufferLimitBytes != nil {
+		ret.PerConnectionBufferLimitBytes = &wrapperspb.UInt32Value{Value: *gw.PerConnectionBufferLimitBytes}
 	}
 	t.runListenerPlugins(ctx, pass, gw, lis, ret)
 
