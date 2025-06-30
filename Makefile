@@ -299,7 +299,7 @@ generate-all: generated-code
 # Generates all required code, cleaning and formatting as well; this target is executed in CI
 .PHONY: generated-code
 generated-code: clean-gen go-generate-all mod-tidy
-generated-code: update-licenses
+generated-code: generate-licenses
 generated-code: fmt
 
 .PHONY: go-generate-all
@@ -312,6 +312,12 @@ go-generate-apis: ## Run all go generate directives in the repo, including codeg
 .PHONY: go-generate-mocks
 go-generate-mocks: ## Runs all generate directives for mockgen in the repo
 	GO111MODULE=on go generate -run="mockgen" ./...
+
+.PHONY: generate-licenses
+generate-licenses: ## Generate the licenses for the project
+	GO111MODULE=on go run hack/utils/oss_compliance/oss_compliance.go osagen -c "GNU General Public License v2.0,GNU General Public License v3.0,GNU Lesser General Public License v2.1,GNU Lesser General Public License v3.0,GNU Affero General Public License v3.0"
+	GO111MODULE=on go run hack/utils/oss_compliance/oss_compliance.go osagen -s "Mozilla Public License 2.0,GNU General Public License v2.0,GNU General Public License v3.0,GNU Lesser General Public License v2.1,GNU Lesser General Public License v3.0,GNU Affero General Public License v3.0"> hack/utils/oss_compliance/osa_provided.md
+	GO111MODULE=on go run hack/utils/oss_compliance/oss_compliance.go osagen -i "Mozilla Public License 2.0"> hack/utils/oss_compliance/osa_included.md
 
 #----------------------------------------------------------------------------------
 # AI Extensions ExtProc Server
@@ -642,16 +648,6 @@ conformance: $(TEST_ASSET_DIR)/conformance/conformance_test.go
 conformance-%: $(TEST_ASSET_DIR)/conformance/conformance_test.go
 	go test -mod=mod -ldflags='$(LDFLAGS)' -tags conformance -test.v $(TEST_ASSET_DIR)/conformance/... -args $(CONFORMANCE_ARGS) \
 	-run-test=$*
-
-#----------------------------------------------------------------------------------
-# Third Party License Management
-#----------------------------------------------------------------------------------
-
-.PHONY: update-licenses
-update-licenses: ## Update the licenses for the project
-	GO111MODULE=on go run hack/utils/oss_compliance/oss_compliance.go osagen -c "GNU General Public License v2.0,GNU General Public License v3.0,GNU Lesser General Public License v2.1,GNU Lesser General Public License v3.0,GNU Affero General Public License v3.0"
-	GO111MODULE=on go run hack/utils/oss_compliance/oss_compliance.go osagen -s "Mozilla Public License 2.0,GNU General Public License v2.0,GNU General Public License v3.0,GNU Lesser General Public License v2.1,GNU Lesser General Public License v3.0,GNU Affero General Public License v3.0"> hack/utils/oss_compliance/osa_provided.md
-	GO111MODULE=on go run hack/utils/oss_compliance/oss_compliance.go osagen -i "Mozilla Public License 2.0"> hack/utils/oss_compliance/osa_included.md
 
 #----------------------------------------------------------------------------------
 # Printing makefile variables utility
