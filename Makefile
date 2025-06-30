@@ -560,15 +560,6 @@ kind-set-image-%:
 # Envoy image may be specified via ENVOY_IMAGE on the command line or at the top of this file
 kind-reload-%: kind-build-and-load-% kind-set-image-% ; ## Use to build specified image, load it into kind, and restart its deployment
 
-# This is an alias to remedy the fact that the deployment is called gateway-proxy
-# but our make targets refer to envoy-wrapper
-kind-reload-envoy-wrapper: kind-build-and-load-envoy-wrapper
-kind-reload-envoy-wrapper:
-	kubectl rollout pause deployment gateway-proxy -n $(INSTALL_NAMESPACE) || true
-	kubectl set image deployment/gateway-proxy gateway-proxy=$(IMAGE_REGISTRY)/envoy-wrapper:$(VERSION) -n $(INSTALL_NAMESPACE)
-	kubectl patch deployment gateway-proxy -n $(INSTALL_NAMESPACE) -p '{"spec": {"template":{"metadata":{"annotations":{"kgateway-kind-last-update":"$(shell date)"}}}} }'
-	kubectl rollout resume deployment gateway-proxy -n $(INSTALL_NAMESPACE)
-
 .PHONY: kind-build-and-load ## Use to build all images and load them into kind
 kind-build-and-load: kind-build-and-load-kgateway
 kind-build-and-load: kind-build-and-load-envoy-wrapper
@@ -580,27 +571,6 @@ kind-load: kind-load-kgateway
 kind-load: kind-load-envoy-wrapper
 kind-load: kind-load-sds
 kind-load: kind-load-kgateway-ai-extension
-
-define kind_reload_msg
-The kind-reload-% targets exist in order to assist developers with the work cycle of
-build->test->change->build->test. To that end, rebuilding/reloading every image, then
-restarting every deployment is seldom necessary. Consider using kind-reload-% to do so
-for a specific component, or kind-build-and-load to push new images for every component.
-endef
-export kind_reload_msg
-.PHONY: kind-reload
-kind-reload:
-	@echo "$$kind_reload_msg"
-
-# Useful utility for listing images loaded into the kind cluster
-.PHONY: kind-list-images
-kind-list-images: ## List project images in the kind cluster named {CLUSTER_NAME}
-	docker exec -ti $(CLUSTER_NAME)-control-plane crictl images | grep "$(IMAGE_REGISTRY)"
-
-# Useful utility for pruning images that were previously loaded into the kind cluster
-.PHONY: kind-prune-images
-kind-prune-images: ## Remove images in the kind cluster named {CLUSTER_NAME}
-	docker exec -ti $(CLUSTER_NAME)-control-plane crictl rmi --prune
 
 #----------------------------------------------------------------------------------
 # A2A Test Server (for agentgateway a2a integration in e2e tests)
