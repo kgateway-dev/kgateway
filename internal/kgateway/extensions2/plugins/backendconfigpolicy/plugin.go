@@ -257,7 +257,6 @@ func translate(commoncol *common.CommonCollections, krtctx krt.HandlerContext, p
 	if pol.Spec.Http1ProtocolOptions != nil {
 		http1ProtocolOptions, err := translateHttp1ProtocolOptions(pol.Spec.Http1ProtocolOptions)
 		if err != nil {
-			logger.Error("failed to translate http1 protocol options", "error", err)
 			return &ir, err
 		}
 		ir.http1ProtocolOptions = http1ProtocolOptions
@@ -266,7 +265,6 @@ func translate(commoncol *common.CommonCollections, krtctx krt.HandlerContext, p
 	if pol.Spec.Http2ProtocolOptions != nil {
 		http2ProtocolOptions, err := translateHttp2ProtocolOptions(pol.Spec.Http2ProtocolOptions)
 		if err != nil {
-			logger.Error("failed to translate http2 protocol options", "error", err)
 			return &ir, err
 		}
 		ir.http2ProtocolOptions = http2ProtocolOptions
