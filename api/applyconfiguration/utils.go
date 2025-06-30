@@ -59,6 +59,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.BackendStatusApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("BodyTransformation"):
 		return &apiv1alpha1.BodyTransformationApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("Buffer"):
+		return &apiv1alpha1.BufferApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("BufferSettings"):
 		return &apiv1alpha1.BufferSettingsApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("CELFilter"):

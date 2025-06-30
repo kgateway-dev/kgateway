@@ -104,6 +104,8 @@ func (b *TrafficPolicyBuilder) Translate(
 		errors = append(errors, err)
 	}
 
+	bufferForSpec(policyCR.Spec, &outSpec)
+
 	for _, err := range errors {
 		logger.Error("error translating gateway extension", "namespace", policyCR.GetNamespace(), "name", policyCR.GetName(), "error", err)
 	}

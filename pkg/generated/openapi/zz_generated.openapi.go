@@ -39,6 +39,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.BackendSpec":                               schema_kgateway_v2_api_v1alpha1_BackendSpec(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.BackendStatus":                             schema_kgateway_v2_api_v1alpha1_BackendStatus(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.BodyTransformation":                        schema_kgateway_v2_api_v1alpha1_BodyTransformation(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Buffer":                                    schema_kgateway_v2_api_v1alpha1_Buffer(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.BufferSettings":                            schema_kgateway_v2_api_v1alpha1_BufferSettings(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CELFilter":                                 schema_kgateway_v2_api_v1alpha1_CELFilter(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CSRFPolicy":                                schema_kgateway_v2_api_v1alpha1_CSRFPolicy(ref),
@@ -1610,6 +1611,27 @@ func schema_kgateway_v2_api_v1alpha1_BodyTransformation(ref common.ReferenceCall
 					},
 				},
 				Required: []string{"parseAs"},
+			},
+		},
+	}
+}
+
+func schema_kgateway_v2_api_v1alpha1_Buffer(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"maxRequestBytes": {
+						SchemaProps: spec.SchemaProps{
+							Description: "MaxRequestBytes sets the maximum size of a message body to buffer. Requests exceeding this size will receive HTTP 413.",
+							Default:     0,
+							Type:        []string{"integer"},
+							Format:      "int64",
+						},
+					},
+				},
+				Required: []string{"maxRequestBytes"},
 			},
 		},
 	}
@@ -5755,11 +5777,17 @@ func schema_kgateway_v2_api_v1alpha1_TrafficPolicySpec(ref common.ReferenceCallb
 							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CSRFPolicy"),
 						},
 					},
+					"buffer": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Buffer can be used to set the maximum request size that will be buffered. Requests exceeding this size will return a 413 response.",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Buffer"),
+						},
+					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AIPolicy", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CSRFPolicy", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CorsPolicy", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtAuthPolicy", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtProcPolicy", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LocalPolicyTargetReferenceWithSectionName", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LocalPolicyTargetSelector", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.RateLimit", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.TransformationPolicy"},
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AIPolicy", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Buffer", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CSRFPolicy", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CorsPolicy", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtAuthPolicy", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtProcPolicy", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LocalPolicyTargetReferenceWithSectionName", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LocalPolicyTargetSelector", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.RateLimit", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.TransformationPolicy"},
 	}
 }
 

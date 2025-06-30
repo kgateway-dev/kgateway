@@ -268,6 +268,26 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 			},
 		}),
 	Entry(
+		"TrafficPolicy with buffer attached to gateway",
+		translatorTestCase{
+			inputFile:  "traffic-policy/buffer-gateway.yaml",
+			outputFile: "traffic-policy/buffer-gateway.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		}),
+	Entry(
+		"TrafficPolicy with buffer attached to route",
+		translatorTestCase{
+			inputFile:  "traffic-policy/buffer-route.yaml",
+			outputFile: "traffic-policy/buffer-route.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		}),
+	Entry(
 		"tcp gateway with basic routing",
 		translatorTestCase{
 			inputFile:  "tcp-routing/basic.yaml",

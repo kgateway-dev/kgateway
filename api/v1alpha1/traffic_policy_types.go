@@ -76,6 +76,11 @@ type TrafficPolicySpec struct {
 	// Csrf specifies the Cross-Site Request Forgery (CSRF) policy for this traffic policy.
 	// +optional
 	Csrf *CSRFPolicy `json:"csrf,omitempty"`
+
+	// Buffer can be used to set the maximum request size
+	// that will be buffered. Requests exceeding this size will return a 413 response.
+	// +optional
+	Buffer *Buffer `json:"buffer,omitempty"`
 }
 
 // TransformationPolicy config is used to modify envoy behavior at a route level.
@@ -370,4 +375,12 @@ type CSRFPolicy struct {
 	// +optional
 	// +kubebuilder:validation:MaxItems=16
 	AdditionalOrigins []*StringMatcher `json:"additionalOrigins,omitempty"`
+}
+
+type Buffer struct {
+	// MaxRequestBytes sets the maximum size of a message body to buffer.
+	// Requests exceeding this size will receive HTTP 413.
+	// +required
+	// +kubebuilder:validation:Minimum=1
+	MaxRequestBytes uint32 `json:"maxRequestBytes"`
 }

@@ -278,6 +278,15 @@ spec:
                     - CHAT_STREAMING
                     type: string
                 type: object
+              buffer:
+                properties:
+                  maxRequestBytes:
+                    format: int32
+                    minimum: 1
+                    type: integer
+                required:
+                - maxRequestBytes
+                type: object
               cors:
                 properties:
                   allowCredentials:
