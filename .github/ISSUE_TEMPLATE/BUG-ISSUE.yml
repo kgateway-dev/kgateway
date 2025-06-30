@@ -1,6 +1,7 @@
 name: Bug Report
 description: Create a report to help us improve
 labels: ["Type: Bug"]
+type: Bug
 body:
   - type: markdown
     attributes:
@@ -10,8 +11,8 @@ body:
     id: version
     attributes:
       label: kgateway version
-      description: What version of your product are you using? Please specify a specific patch version
-      placeholder: eg v1.14.2
+      description: What version of kgateway are you using? Please specify a specific patch version
+      placeholder: eg v2.0.2
     validations:
       required: true
   - type: input
@@ -37,7 +38,7 @@ body:
       label: Expected Behavior
       description: A clear and concise description of what is expected to happen
       placeholder: |
-        Resource x should be accepted. 
+        Resource x should be accepted.
         Or, if "bar" is not a valid possible value for field "foo", then an error message should say so.
     validations:
       required: true
