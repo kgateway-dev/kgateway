@@ -56,7 +56,6 @@ const (
 	localRateLimitFilterNamePrefix              = "ratelimit/local"
 	localRateLimitStatPrefix                    = "http_local_rate_limiter"
 	rateLimitFilterNamePrefix                   = "ratelimit"
-	bufferFilterNamePrefix                      = "envoy.filters.http.buffer"
 )
 
 var (
@@ -534,7 +533,7 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.Filt
 	// Add Buffer filter to enable buffer for the listener.
 	// Requires the buffer policy to be set as typed_per_filter_config.
 	if p.bufferInChain[fcc.FilterChainName] != nil {
-		filter := plugins.MustNewStagedFilter(bufferFilterNamePrefix,
+		filter := plugins.MustNewStagedFilter(bufferFilterName,
 			p.bufferInChain[fcc.FilterChainName],
 			plugins.DuringStage(plugins.RouteStage))
 		filter.Filter.Disabled = true

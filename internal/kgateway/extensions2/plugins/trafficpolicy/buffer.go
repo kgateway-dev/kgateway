@@ -10,6 +10,8 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 )
 
+const bufferFilterName = "envoy.filters.http.buffer"
+
 type BufferIR struct {
 	maxRequestBytes uint32
 }
@@ -49,7 +51,7 @@ func (p *trafficPolicyPluginGwPass) handleBuffer(fcn string, pCtxTypedFilterConf
 			},
 		},
 	}
-	pCtxTypedFilterConfig.AddTypedConfig(bufferFilterNamePrefix, bufferPerRoute)
+	pCtxTypedFilterConfig.AddTypedConfig(bufferFilterName, bufferPerRoute)
 
 	// Add a filter to the chain. When having a buffer policy for a route we need to also have a
 	// globally disabled buffer filter in the chain otherwise it will be ignored.
