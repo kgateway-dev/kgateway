@@ -14,7 +14,8 @@ as an example) so that every task is visible and auditable.
 
 ## Prerequisites
 
-Set the environment variables that will be used throughout the release workflow:
+After confirming that you have permissions to push to the Kgateway repo, set the
+environment variables that will be used throughout the release workflow:
 
 ```bash
 export MINOR=0
@@ -43,17 +44,25 @@ If the release branch **does not** exist, create one:
     git push ${REMOTE} v2.${MINOR}.x
     ```
 
+### Patch Release
+
+A patch release is generated from an existing release branch, i.e. [v2.0.x](https://github.com/kgateway-dev/kgateway/commits/v2.0.x/).
+After all the necessary backport pull requests have merged, you can proceed to the next section.
+
 ## Publish the Release
 
 Navigate to the [Release workflow](https://github.com/kgateway-dev/kgateway/actions/workflows/release.yaml) page.
 
 Use the "Run workflow" drop-down in the right corner of the page to dispatch a release, then:
 
-- Select the branch to release from, e.g. `v2.0.x`.
+- Select the branch to release from
+  - Minor release: Select the `main` branch.
+  - Patch release: Select the release branch, e.g. `v2.0.x`, that will be patched.
 - Enter the version for the release to create, e.g. `v2.0.3`. This will trigger
   the release process and result in a new GitHub release, [v2.0.3](https://github.com/kgateway-dev/kgateway/releases/tag/v2.0.3) for example.
-- The release notes must be manually added to contain the bug fixes, features, etc. included in the release.
-- This part of the process will be improved once [Issue 11436](https://github.com/kgateway-dev/kgateway/issues/11436) is fixed.
+- Click on the "validate release" option, which bootstraps an environment from the
+  generated artifacts and runs the conformance suite against that deployed environment.
+- The release notes must be manually added to contain the bug fixes, features, etc. included in the release. This part of the process will be improved once [Issue 11436](https://github.com/kgateway-dev/kgateway/issues/11436) is fixed.
 
 ## Verification
 
