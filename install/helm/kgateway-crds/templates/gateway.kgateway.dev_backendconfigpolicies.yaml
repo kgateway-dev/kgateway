@@ -136,9 +136,9 @@ spec:
                     pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                     x-kubernetes-int-or-string: true
                     x-kubernetes-validations:
-                    - message: InitialConnectionWindowSize must be between 64Ki and
-                        2048Mi
-                      rule: quantity(self).isGreaterThan(quantity('64Ki')) && quantity(self).isLessThan(quantity('2048Mi'))
+                    - message: InitialConnectionWindowSize must be between 65535 and
+                        2147483647 bytes (inclusive)
+                      rule: quantity(self).isGreaterThan(quantity('65534')) && quantity(self).isLessThan(quantity('2147483648'))
                   initialStreamWindowSize:
                     anyOf:
                     - type: integer
@@ -146,8 +146,9 @@ spec:
                     pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                     x-kubernetes-int-or-string: true
                     x-kubernetes-validations:
-                    - message: InitialStreamWindowSize must be between 64Ki and 2048Mi
-                      rule: quantity(self).isGreaterThan(quantity('64Ki')) && quantity(self).isLessThan(quantity('2048Mi'))
+                    - message: InitialStreamWindowSize must be between 65535 and 2147483647
+                        bytes (inclusive)
+                      rule: quantity(self).isGreaterThan(quantity('65534')) && quantity(self).isLessThan(quantity('2147483648'))
                   maxConcurrentStreams:
                     type: integer
                   overrideStreamErrorOnInvalidHttpMessage:
