@@ -151,6 +151,10 @@ type Settings struct {
 	// - "STANDARD": Rewrites invalid routes to direct responses (typically HTTP 500)
 	// - "STRICT": Builds on STANDARD by running targeted validation
 	RouteReplacementMode RouteReplacementMode `split_words:"true" default:"STANDARD"`
+
+	// EnableBuiltinDefaultMetrics enables the default builtin controller-runtime metrics and go runtime metrics.
+	// Since these metrics can be numerous, it is disabled by default.
+	EnableBuiltinDefaultMetrics bool `split_words:"true" default:"false"`
 }
 
 // BuildSettings returns a zero-valued Settings obj if error is encountered when parsing env
