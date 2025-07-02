@@ -170,6 +170,9 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(
 	if err == nil {
 		err = validateEnvoyRoute(out)
 	}
+	if err == nil {
+		err = validateBackendWeights(in.Backends)
+	}
 
 	// apply typed per filter config from translating route action and route plugins
 	typedPerFilterConfig := toPerFilterConfigMap(backendConfigCtx.typedPerFilterConfigRoute)
@@ -447,7 +450,6 @@ func (h *httpRouteConfigurationTranslator) translateRouteAction(
 		clusters = append(clusters, cw)
 	}
 
-	// TODO: i think envoy nacks if all weights are 0, we should error on that.
 	action := outRoute.GetRoute()
 	if action == nil {
 		action = &envoy_config_route_v3.RouteAction{
@@ -513,6 +515,27 @@ func validateEnvoyRoute(r *envoy_config_route_v3.Route) error {
 		return nil
 	}
 	return fmt.Errorf("error %s: %w", r.GetName(), errors.Join(errs...))
+}
+
+// validateBackendWeights checks if all backend weights are 0, which would cause Envoy to NACK the configuration
+func validateBackendWeights(backends []ir.HttpBackend) error {
+	if len(backends) == 0 {
+		return nil
+	}
+
+	allZeroWeight := true
+	for _, backend := range backends {
+		if backend.Backend.Weight > 0 {
+			allZeroWeight = false
+			break
+		}
+	}
+
+	if allZeroWeight {
+		return errors.New("all backend weights are 0, which would cause Envoy to NACK the configuration")
+	}
+
+	return nil
 }
 
 // creates Envoy routes for each matcher provided on our Gateway route
