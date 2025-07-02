@@ -522,8 +522,11 @@ metallb: ## Install the MetalLB load balancer
 .PHONY: deploy-kgateway
 deploy-kgateway: package-kgateway-charts deploy-kgateway-crd-chart deploy-kgateway-chart ## Deploy the kgateway chart and CRDs
 
+.PHONY: setup
+setup: kind-create kind-build-and-load gw-api-crds metallb package-kgateway-charts ## Set up basic infrastructure (kind cluster, images, CRDs, MetalLB)
+
 .PHONY: run
-run: kind-create kind-build-and-load gw-api-crds metallb deploy-kgateway  ## Set up complete development environment
+run: setup deploy-kgateway  ## Set up complete development environment
 
 #----------------------------------------------------------------------------------
 # Build assets for kubernetes e2e tests
