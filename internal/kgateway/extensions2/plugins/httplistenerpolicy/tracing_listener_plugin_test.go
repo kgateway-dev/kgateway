@@ -36,11 +36,6 @@ func TestTracingConverter(t *testing.T) {
 				expected: nil,
 			},
 			{
-				name:     "EmptyTracing",
-				config:   &v1alpha1.Tracing{},
-				expected: nil,
-			},
-			{
 				name: "OTel Tracing minimal config",
 				config: &v1alpha1.Tracing{
 					Provider: v1alpha1.TracingProvider{

@@ -53,7 +53,7 @@ func translateTracing(
 		return nil, nil
 	}
 
-	if config.Provider.OpenTelemetry.GrpcService.BackendRef == nil {
+	if config.Provider.OpenTelemetry == nil || config.Provider.OpenTelemetry.GrpcService.BackendRef == nil {
 		return nil, fmt.Errorf("Tracing.OpenTelemetryConfig.GrpcService.BackendRef must be specified")
 	}
 
@@ -210,6 +210,10 @@ func convertOTelTracingConfig(
 	config *v1alpha1.OpenTelemetryTracingConfig,
 	backend *ir.BackendObjectIR,
 ) (*tracev3.Tracing_Http, error) {
+	if config == nil {
+		return nil, nil
+	}
+
 	envoyGrpcService, err := ToEnvoyGrpc(config.GrpcService, backend)
 	if err != nil {
 		return nil, err
