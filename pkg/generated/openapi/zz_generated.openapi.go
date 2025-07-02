@@ -1808,6 +1808,7 @@ func schema_kgateway_v2_api_v1alpha1_BackoffStrategy(ref common.ReferenceCallbac
 						},
 					},
 				},
+				Required: []string{"baseInterval"},
 			},
 		},
 		Dependencies: []string{
@@ -2295,6 +2296,7 @@ func schema_kgateway_v2_api_v1alpha1_CustomAttribute(ref common.ReferenceCallbac
 					"name": {
 						SchemaProps: spec.SchemaProps{
 							Description: "The name of the attribute",
+							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -2324,6 +2326,7 @@ func schema_kgateway_v2_api_v1alpha1_CustomAttribute(ref common.ReferenceCallbac
 						},
 					},
 				},
+				Required: []string{"name"},
 			},
 		},
 		Dependencies: []string{
@@ -2341,6 +2344,7 @@ func schema_kgateway_v2_api_v1alpha1_CustomAttributeEnvironment(ref common.Refer
 					"name": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Environment variable name to obtain the value to populate the attribute value.",
+							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -2353,6 +2357,7 @@ func schema_kgateway_v2_api_v1alpha1_CustomAttributeEnvironment(ref common.Refer
 						},
 					},
 				},
+				Required: []string{"name"},
 			},
 		},
 	}
@@ -2368,6 +2373,7 @@ func schema_kgateway_v2_api_v1alpha1_CustomAttributeHeader(ref common.ReferenceC
 					"name": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Header name to obtain the value to populate the attribute value.",
+							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -2380,6 +2386,7 @@ func schema_kgateway_v2_api_v1alpha1_CustomAttributeHeader(ref common.ReferenceC
 						},
 					},
 				},
+				Required: []string{"name"},
 			},
 		},
 	}
@@ -2395,11 +2402,13 @@ func schema_kgateway_v2_api_v1alpha1_CustomAttributeLiteral(ref common.Reference
 					"value": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Static literal value to populate the attribute value.",
+							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
 					},
 				},
+				Required: []string{"value"},
 			},
 		},
 	}
@@ -2415,6 +2424,7 @@ func schema_kgateway_v2_api_v1alpha1_CustomAttributeMetadata(ref common.Referenc
 					"kind": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Specify what kind of metadata to obtain attribute value from",
+							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -2422,6 +2432,7 @@ func schema_kgateway_v2_api_v1alpha1_CustomAttributeMetadata(ref common.Referenc
 					"metadataKey": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Metadata key to define the path to retrieve the attribute value.",
+							Default:     map[string]interface{}{},
 							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.MetadataKey"),
 						},
 					},
@@ -2433,6 +2444,7 @@ func schema_kgateway_v2_api_v1alpha1_CustomAttributeMetadata(ref common.Referenc
 						},
 					},
 				},
+				Required: []string{"kind", "metadataKey"},
 			},
 		},
 		Dependencies: []string{
@@ -3729,6 +3741,7 @@ func schema_kgateway_v2_api_v1alpha1_HeaderValue(ref common.ReferenceCallback) c
 					"key": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Header name.",
+							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -3741,6 +3754,7 @@ func schema_kgateway_v2_api_v1alpha1_HeaderValue(ref common.ReferenceCallback) c
 						},
 					},
 				},
+				Required: []string{"key"},
 			},
 		},
 	}
@@ -4127,6 +4141,7 @@ func schema_kgateway_v2_api_v1alpha1_KeyAnyValue(ref common.ReferenceCallback) c
 					"key": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Attribute keys must be unique",
+							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -4139,6 +4154,7 @@ func schema_kgateway_v2_api_v1alpha1_KeyAnyValue(ref common.ReferenceCallback) c
 						},
 					},
 				},
+				Required: []string{"key", "value"},
 			},
 		},
 		Dependencies: []string{
@@ -4663,6 +4679,7 @@ func schema_kgateway_v2_api_v1alpha1_MetadataKey(ref common.ReferenceCallback) c
 					"key": {
 						SchemaProps: spec.SchemaProps{
 							Description: "The key name of the Metadata from which to retrieve the Struct",
+							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -4682,6 +4699,7 @@ func schema_kgateway_v2_api_v1alpha1_MetadataKey(ref common.ReferenceCallback) c
 						},
 					},
 				},
+				Required: []string{"key", "path"},
 			},
 		},
 		Dependencies: []string{
@@ -4699,11 +4717,13 @@ func schema_kgateway_v2_api_v1alpha1_MetadataPathSegment(ref common.ReferenceCal
 					"key": {
 						SchemaProps: spec.SchemaProps{
 							Description: "The key used to retrieve the value in the struct",
+							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
 					},
 				},
+				Required: []string{"key"},
 			},
 		},
 	}
@@ -4800,6 +4820,7 @@ func schema_kgateway_v2_api_v1alpha1_OpenTelemetryAccessLogService(ref common.Re
 					"grpcService": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Send access logs to gRPC service",
+							Default:     map[string]interface{}{},
 							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CommonAccessLogGrpcService"),
 						},
 					},
@@ -4824,6 +4845,7 @@ func schema_kgateway_v2_api_v1alpha1_OpenTelemetryAccessLogService(ref common.Re
 						},
 					},
 				},
+				Required: []string{"grpcService"},
 			},
 		},
 		Dependencies: []string{
@@ -4841,12 +4863,14 @@ func schema_kgateway_v2_api_v1alpha1_OpenTelemetryTracingConfig(ref common.Refer
 					"grpcService": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Send traces to the gRPC service",
+							Default:     map[string]interface{}{},
 							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CommonGrpcService"),
 						},
 					},
 					"serviceName": {
 						SchemaProps: spec.SchemaProps{
 							Description: "The name for the service. This will be populated in the ResourceSpan Resource attributes",
+							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -4872,6 +4896,7 @@ func schema_kgateway_v2_api_v1alpha1_OpenTelemetryTracingConfig(ref common.Refer
 						},
 					},
 				},
+				Required: []string{"grpcService", "serviceName"},
 			},
 		},
 		Dependencies: []string{
@@ -6414,6 +6439,7 @@ func schema_kgateway_v2_api_v1alpha1_Tracing(ref common.ReferenceCallback) commo
 					"provider": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Provider defines the upstream to which envoy sends traces",
+							Default:     map[string]interface{}{},
 							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.TracingProvider"),
 						},
 					},

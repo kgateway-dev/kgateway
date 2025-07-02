@@ -122,7 +122,7 @@ type FileSink struct {
 // AccessLogGrpcService represents the gRPC service configuration for access logs.
 // Ref: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/access_loggers/grpc/v3/als.proto#envoy-v3-api-msg-extensions-access-loggers-grpc-v3-httpgrpcaccesslogconfig
 type AccessLogGrpcService struct {
-	*CommonAccessLogGrpcService `json:",inline"`
+	CommonAccessLogGrpcService `json:",inline"`
 
 	// Additional request headers to log in the access log
 	AdditionalRequestHeadersToLog []string `json:"additionalRequestHeadersToLog,omitempty"`
@@ -137,7 +137,7 @@ type AccessLogGrpcService struct {
 // Common configuration for gRPC access logs.
 // Ref: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/access_loggers/grpc/v3/als.proto#envoy-v3-api-msg-extensions-access-loggers-grpc-v3-commongrpcaccesslogconfig
 type CommonAccessLogGrpcService struct {
-	*CommonGrpcService `json:",inline"`
+	CommonGrpcService `json:",inline"`
 
 	// name of log stream
 	// +kubebuilder:validation:Required
@@ -186,7 +186,7 @@ type CommonGrpcService struct {
 type HeaderValue struct {
 	// Header name.
 	// +kubebuilder:validation:Required
-	Key string `json:"key,omitempty"`
+	Key string `json:"key"`
 
 	// Header value.
 	// +kubebuilder:validation:Optional
@@ -211,7 +211,7 @@ type RetryPolicy struct {
 type BackoffStrategy struct {
 	// The base interval to be used for the next back off computation. It should be greater than zero and less than or equal to max_interval.
 	// +kubebuilder:validation:Required
-	BaseInterval metav1.Duration `json:"baseInterval,omitempty"`
+	BaseInterval metav1.Duration `json:"baseInterval"`
 
 	// Specifies the maximum interval between retries. This parameter is optional, but must be greater than or equal to the base_interval if set. The default is 10 times the base_interval.
 	// +kubebuilder:validation:Optional
@@ -223,7 +223,7 @@ type BackoffStrategy struct {
 type OpenTelemetryAccessLogService struct {
 	// Send access logs to gRPC service
 	// +kubebuilder:validation:Required
-	GrpcService *CommonAccessLogGrpcService `json:"grpcService,omitempty"`
+	GrpcService CommonAccessLogGrpcService `json:"grpcService"`
 
 	// OpenTelemetry LogResource fields, following Envoy access logging formatting.
 	// +kubebuilder:validation:Optional
@@ -249,10 +249,10 @@ type KeyAnyValueList struct {
 type KeyAnyValue struct {
 	// Attribute keys must be unique
 	// +kubebuilder:validation:Required
-	Key string `json:"key,omitempty"`
+	Key string `json:"key"`
 	// Value may contain a primitive value such as a string or integer or it may contain an arbitrary nested object containing arrays, key-value lists and primitives.
 	// +kubebuilder:validation:Required
-	Value AnyValue `json:"value,omitempty"`
+	Value AnyValue `json:"value"`
 }
 
 // AnyValue is used to represent any type of attribute value. AnyValue may contain a primitive value such as a string or integer or it may contain an arbitrary nested object containing arrays, key-value lists and primitives.
@@ -389,7 +389,7 @@ type GrpcStatusFilter struct {
 type Tracing struct {
 	// Provider defines the upstream to which envoy sends traces
 	// +kubebuilder:validation:Required
-	Provider *TracingProvider `json:"provider"`
+	Provider TracingProvider `json:"provider"`
 
 	// Target percentage of requests managed by this HTTP connection manager that will be force traced if the x-client-trace-id header is set. Defaults to 100%
 	// +kubebuilder:validation:Optional
@@ -434,7 +434,7 @@ type Tracing struct {
 type CustomAttribute struct {
 	// The name of the attribute
 	// +kubebuilder:validation:Required
-	Name string `json:"name,omitempty"`
+	Name string `json:"name"`
 
 	// A literal attribute value.
 	// +kubebuilder:validation:Optional
@@ -458,7 +458,7 @@ type CustomAttribute struct {
 type CustomAttributeLiteral struct {
 	// Static literal value to populate the attribute value.
 	// +kubebuilder:validation:Required
-	Value string `json:"value,omitempty"`
+	Value string `json:"value"`
 }
 
 // Environment type attribute with environment name and default value.
@@ -466,7 +466,7 @@ type CustomAttributeLiteral struct {
 type CustomAttributeEnvironment struct {
 	// Environment variable name to obtain the value to populate the attribute value.
 	// +kubebuilder:validation:Required
-	Name string `json:"name,omitempty"`
+	Name string `json:"name"`
 
 	// When the environment variable is not found, the attribute value will be populated with this default value if specified,
 	// otherwise no attribute will be populated.
@@ -479,7 +479,7 @@ type CustomAttributeEnvironment struct {
 type CustomAttributeHeader struct {
 	// Header name to obtain the value to populate the attribute value.
 	// +kubebuilder:validation:Required
-	Name string `json:"name,omitempty"`
+	Name string `json:"name"`
 
 	// When the header does not exist, the attribute value will be populated with this default value if specified,
 	// otherwise no attribute will be populated.
@@ -491,11 +491,12 @@ type CustomAttributeHeader struct {
 // Ref: https://www.envoyproxy.io/docs/envoy/latest/api-v3/type/tracing/v3/custom_tag.proto#type-tracing-v3-customtag-metadata
 type CustomAttributeMetadata struct {
 	// Specify what kind of metadata to obtain attribute value from
-	Kind MetadataKind `json:"kind,omitempty"`
+	// +kubebuilder:validation:Required
+	Kind MetadataKind `json:"kind"`
 
 	// Metadata key to define the path to retrieve the attribute value.
 	// +kubebuilder:validation:Required
-	MetadataKey *MetadataKey `json:"metadataKey,omitempty"`
+	MetadataKey MetadataKey `json:"metadataKey"`
 
 	// When no valid metadata is found, the attribute value would be populated with this default value if specified, otherwise no attribute would be populated.
 	// +kubebuilder:validation:Optional
@@ -522,19 +523,19 @@ const (
 type MetadataKey struct {
 	// The key name of the Metadata from which to retrieve the Struct
 	// +kubebuilder:validation:Required
-	Key string `json:"key,omitempty"`
+	Key string `json:"key"`
 
 	// The path used to retrieve a specific Value from the Struct. This can be either a prefix or a full path,
 	// depending on the use case
 	// +kubebuilder:validation:Required
-	Path []MetadataPathSegment `json:"path,omitempty"`
+	Path []MetadataPathSegment `json:"path"`
 }
 
 // Specifies a segment in a path for retrieving values from Metadata.
 type MetadataPathSegment struct {
 	// The key used to retrieve the value in the struct
 	// +kubebuilder:validation:Required
-	Key string `json:"key,omitempty"`
+	Key string `json:"key"`
 }
 
 // TracingProvider defines the list of providers for tracing
@@ -542,7 +543,6 @@ type MetadataPathSegment struct {
 // +kubebuilder:validation:MinProperties=1
 type TracingProvider struct {
 	// Tracing contains various settings for Envoy's OTel tracer.
-	// +kubebuilder:validation:Required
 	OpenTelemetry *OpenTelemetryTracingConfig `json:"openTelemetry,omitempty"`
 }
 
@@ -551,11 +551,11 @@ type TracingProvider struct {
 type OpenTelemetryTracingConfig struct {
 	// Send traces to the gRPC service
 	// +kubebuilder:validation:Required
-	GrpcService *CommonGrpcService `json:"grpcService,omitempty"`
+	GrpcService CommonGrpcService `json:"grpcService"`
 
 	// The name for the service. This will be populated in the ResourceSpan Resource attributes
 	// +kubebuilder:validation:Required
-	ServiceName string `json:"serviceName,omitempty"`
+	ServiceName string `json:"serviceName"`
 
 	// An ordered list of resource detectors. Currently supported values are `EnvironmentResourceDetector`
 	// +kubebuilder:validation:Optional

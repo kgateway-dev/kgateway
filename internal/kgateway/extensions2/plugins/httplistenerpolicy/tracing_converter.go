@@ -29,11 +29,11 @@ func convertTracingConfig(
 	parentSrc ir.ObjectSource,
 ) (*envoy_hcm.HttpConnectionManager_Tracing, error) {
 	config := policy.Spec.Tracing
-	if config == nil || config.Provider == nil {
+	if config == nil {
 		return nil, nil
 	}
 
-	if config.Provider.OpenTelemetry == nil || config.Provider.OpenTelemetry.GrpcService == nil || config.Provider.OpenTelemetry.GrpcService.BackendRef == nil {
+	if config.Provider.OpenTelemetry.GrpcService.BackendRef == nil {
 		return nil, fmt.Errorf("Tracing.OpenTelemetryConfig.GrpcService.BackendRef must be specified")
 	}
 
@@ -49,11 +49,11 @@ func translateTracing(
 	config *v1alpha1.Tracing,
 	backend *ir.BackendObjectIR,
 ) (*envoy_hcm.HttpConnectionManager_Tracing, error) {
-	if config == nil || config.Provider == nil {
+	if config == nil {
 		return nil, nil
 	}
 
-	if config.Provider.OpenTelemetry == nil || config.Provider.OpenTelemetry.GrpcService == nil || config.Provider.OpenTelemetry.GrpcService.BackendRef == nil {
+	if config.Provider.OpenTelemetry.GrpcService.BackendRef == nil {
 		return nil, fmt.Errorf("Tracing.OpenTelemetryConfig.GrpcService.BackendRef must be specified")
 	}
 
@@ -137,7 +137,7 @@ func translateTracing(
 				continue
 			}
 
-			if ct.Metadata != nil && ct.Metadata.MetadataKey != nil {
+			if ct.Metadata != nil {
 				tagType := &tracingv3.CustomTag_Metadata_{
 					Metadata: &tracingv3.CustomTag_Metadata{
 						MetadataKey: &metadatav3.MetadataKey{
@@ -210,10 +210,6 @@ func convertOTelTracingConfig(
 	config *v1alpha1.OpenTelemetryTracingConfig,
 	backend *ir.BackendObjectIR,
 ) (*tracev3.Tracing_Http, error) {
-	if config == nil {
-		return nil, nil
-	}
-
 	envoyGrpcService, err := ToEnvoyGrpc(config.GrpcService, backend)
 	if err != nil {
 		return nil, err

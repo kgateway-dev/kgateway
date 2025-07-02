@@ -665,6 +665,7 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: name
       type:
         scalar: string
+      default: ""
     - name: requestHeader
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.CustomAttributeHeader
@@ -677,6 +678,7 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: name
       type:
         scalar: string
+      default: ""
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.CustomAttributeHeader
   map:
     fields:
@@ -686,12 +688,14 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: name
       type:
         scalar: string
+      default: ""
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.CustomAttributeLiteral
   map:
     fields:
     - name: value
       type:
         scalar: string
+      default: ""
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.CustomAttributeMetadata
   map:
     fields:
@@ -701,9 +705,11 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: kind
       type:
         scalar: string
+      default: ""
     - name: metadataKey
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.MetadataKey
+      default: {}
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.CustomLabel
   map:
     fields:
@@ -1141,6 +1147,7 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: key
       type:
         scalar: string
+      default: ""
     - name: value
       type:
         scalar: string
@@ -1288,6 +1295,7 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: key
       type:
         scalar: string
+      default: ""
     - name: value
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AnyValue
@@ -1508,6 +1516,7 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: key
       type:
         scalar: string
+      default: ""
     - name: path
       type:
         list:
@@ -1520,6 +1529,7 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: key
       type:
         scalar: string
+      default: ""
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Moderation
   map:
     fields:
@@ -1560,12 +1570,14 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: grpcService
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.CommonAccessLogGrpcService
+      default: {}
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.OpenTelemetryTracingConfig
   map:
     fields:
     - name: grpcService
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.CommonGrpcService
+      default: {}
     - name: resourceDetectors
       type:
         list:
@@ -1578,6 +1590,7 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: serviceName
       type:
         scalar: string
+      default: ""
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Parameters
   map:
     fields:
@@ -2114,6 +2127,7 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: provider
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.TracingProvider
+      default: {}
     - name: randomSampling
       type:
         scalar: numeric

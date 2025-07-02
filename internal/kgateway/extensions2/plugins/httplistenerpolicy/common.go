@@ -1,8 +1,6 @@
 package httplistenerpolicy
 
 import (
-	"errors"
-
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
@@ -11,11 +9,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 )
 
-func ToEnvoyGrpc(in *v1alpha1.CommonGrpcService, backend *ir.BackendObjectIR) (*envoycore.GrpcService, error) {
-	if in == nil {
-		return nil, errors.New("grpc service object cannot be nil")
-	}
-
+func ToEnvoyGrpc(in v1alpha1.CommonGrpcService, backend *ir.BackendObjectIR) (*envoycore.GrpcService, error) {
 	envoyGrpcService := &envoycore.GrpcService_EnvoyGrpc{
 		ClusterName: backend.ClusterName(),
 	}

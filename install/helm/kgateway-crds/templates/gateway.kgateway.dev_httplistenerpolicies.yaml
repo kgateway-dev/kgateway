@@ -729,6 +729,7 @@ spec:
                               - path
                               type: object
                           required:
+                          - kind
                           - metadataKey
                           type: object
                         name:
@@ -867,8 +868,6 @@ spec:
                         - grpcService
                         - serviceName
                         type: object
-                    required:
-                    - openTelemetry
                     type: object
                   randomSampling:
                     format: int32

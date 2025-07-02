@@ -43,9 +43,9 @@ func TestTracingConverter(t *testing.T) {
 			{
 				name: "OTel Tracing minimal config",
 				config: &v1alpha1.Tracing{
-					Provider: &v1alpha1.TracingProvider{
+					Provider: v1alpha1.TracingProvider{
 						OpenTelemetry: &v1alpha1.OpenTelemetryTracingConfig{
-							GrpcService: &v1alpha1.CommonGrpcService{
+							GrpcService: v1alpha1.CommonGrpcService{
 								BackendRef: &gwv1.BackendRef{
 									BackendObjectReference: gwv1.BackendObjectReference{
 										Name: "test-service",
@@ -77,9 +77,9 @@ func TestTracingConverter(t *testing.T) {
 			{
 				name: "OTel Tracing with nil attributes",
 				config: &v1alpha1.Tracing{
-					Provider: &v1alpha1.TracingProvider{
+					Provider: v1alpha1.TracingProvider{
 						OpenTelemetry: &v1alpha1.OpenTelemetryTracingConfig{
-							GrpcService: &v1alpha1.CommonGrpcService{
+							GrpcService: v1alpha1.CommonGrpcService{
 								BackendRef: &gwv1.BackendRef{
 									BackendObjectReference: gwv1.BackendObjectReference{
 										Name: "test-service",
@@ -112,9 +112,9 @@ func TestTracingConverter(t *testing.T) {
 			{
 				name: "OTel Tracing with nil attributes",
 				config: &v1alpha1.Tracing{
-					Provider: &v1alpha1.TracingProvider{
+					Provider: v1alpha1.TracingProvider{
 						OpenTelemetry: &v1alpha1.OpenTelemetryTracingConfig{
-							GrpcService: &v1alpha1.CommonGrpcService{
+							GrpcService: v1alpha1.CommonGrpcService{
 								BackendRef: &gwv1.BackendRef{
 									BackendObjectReference: gwv1.BackendObjectReference{
 										Name: "test-service",
@@ -148,9 +148,9 @@ func TestTracingConverter(t *testing.T) {
 			{
 				name: "OTel Tracing full config",
 				config: &v1alpha1.Tracing{
-					Provider: &v1alpha1.TracingProvider{
+					Provider: v1alpha1.TracingProvider{
 						OpenTelemetry: &v1alpha1.OpenTelemetryTracingConfig{
-							GrpcService: &v1alpha1.CommonGrpcService{
+							GrpcService: v1alpha1.CommonGrpcService{
 								BackendRef: &gwv1.BackendRef{
 									BackendObjectReference: gwv1.BackendObjectReference{
 										Name: "test-service",
@@ -196,7 +196,7 @@ func TestTracingConverter(t *testing.T) {
 							Name: "Metadata Request",
 							Metadata: &v1alpha1.CustomAttributeMetadata{
 								Kind: v1alpha1.MetadataKindRequest,
-								MetadataKey: &v1alpha1.MetadataKey{
+								MetadataKey: v1alpha1.MetadataKey{
 									Key: "Request",
 									Path: []v1alpha1.MetadataPathSegment{{
 										Key: "Request-key",
@@ -208,7 +208,7 @@ func TestTracingConverter(t *testing.T) {
 							Name: "Metadata Route",
 							Metadata: &v1alpha1.CustomAttributeMetadata{
 								Kind: v1alpha1.MetadataKindRoute,
-								MetadataKey: &v1alpha1.MetadataKey{
+								MetadataKey: v1alpha1.MetadataKey{
 									Key: "Route",
 									Path: []v1alpha1.MetadataPathSegment{{
 										Key: "Route-key",
@@ -220,7 +220,7 @@ func TestTracingConverter(t *testing.T) {
 							Name: "Metadata Cluster",
 							Metadata: &v1alpha1.CustomAttributeMetadata{
 								Kind: v1alpha1.MetadataKindCluster,
-								MetadataKey: &v1alpha1.MetadataKey{
+								MetadataKey: v1alpha1.MetadataKey{
 									Key: "Cluster",
 									Path: []v1alpha1.MetadataPathSegment{{
 										Key: "Cluster-key",
@@ -232,7 +232,7 @@ func TestTracingConverter(t *testing.T) {
 							Name: "Metadata Host",
 							Metadata: &v1alpha1.CustomAttributeMetadata{
 								Kind: v1alpha1.MetadataKindHost,
-								MetadataKey: &v1alpha1.MetadataKey{
+								MetadataKey: v1alpha1.MetadataKey{
 									Key: "Host",
 									Path: []v1alpha1.MetadataPathSegment{{
 										Key: "Host-key-1",

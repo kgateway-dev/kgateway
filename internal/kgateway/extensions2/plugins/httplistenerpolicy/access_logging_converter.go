@@ -49,7 +49,7 @@ func convertAccessLogConfig(
 
 	grpcBackends := make(map[string]*ir.BackendObjectIR, len(policy.Spec.AccessLog))
 	for idx, log := range configs {
-		if log.GrpcService != nil && log.GrpcService.BackendRef != nil {
+		if log.GrpcService != nil {
 			backend, err := commoncol.BackendIndex.GetBackendFromRef(krtctx, parentSrc, log.GrpcService.BackendRef.BackendObjectReference)
 			// TODO: what is the correct behavior? maybe route to static blackhole?
 			if err != nil {
@@ -58,7 +58,7 @@ func convertAccessLogConfig(
 			grpcBackends[getLogId(log.GrpcService.LogName, idx)] = backend
 			continue
 		}
-		if log.OpenTelemetry != nil && log.OpenTelemetry.GrpcService != nil && log.OpenTelemetry.GrpcService.BackendRef != nil {
+		if log.OpenTelemetry != nil {
 			backend, err := commoncol.BackendIndex.GetBackendFromRef(krtctx, parentSrc, log.OpenTelemetry.GrpcService.BackendRef.BackendObjectReference)
 			// TODO: what is the correct behavior? maybe route to static blackhole?
 			if err != nil {
@@ -405,11 +405,7 @@ func convertJsonFormat(jsonFormat *runtime.RawExtension) *structpb.Struct {
 	return structVal
 }
 
-func generateCommonAccessLogGrpcConfig(grpcService *v1alpha1.CommonAccessLogGrpcService, grpcBackends map[string]*ir.BackendObjectIR, accessLogId int) (*envoygrpc.CommonGrpcAccessLogConfig, error) {
-	if grpcService == nil {
-		return nil, errors.New("grpc service object cannot be nil")
-	}
-
+func generateCommonAccessLogGrpcConfig(grpcService v1alpha1.CommonAccessLogGrpcService, grpcBackends map[string]*ir.BackendObjectIR, accessLogId int) (*envoygrpc.CommonGrpcAccessLogConfig, error) {
 	if grpcService.LogName == "" {
 		return nil, errors.New("grpc service log name cannot be empty")
 	}
