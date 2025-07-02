@@ -287,8 +287,9 @@ spec:
                     pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                     x-kubernetes-int-or-string: true
                     x-kubernetes-validations:
-                    - message: maxRequestSize must be less than 4Gi
-                      rule: quantity(self).isLessThan(quantity('4Gi'))
+                    - message: maxRequestSize must be greater than 0 and less than
+                        4Gi
+                      rule: quantity(self).isGreaterThan(quantity('0')) && quantity(self).isLessThan(quantity('4Gi'))
                 required:
                 - maxRequestSize
                 type: object
