@@ -386,6 +386,6 @@ type Buffer struct {
 	// Requests exceeding this size will receive HTTP 413.
 	// Example format: "1Mi", "512Ki", "1Gi"
 	// +required
-	// +kubebuilder:validation:XValidation:message="maxRequestSize must be less than 4Gi",rule="quantity(self).isLessThan(quantity('4Gi'))"
+	// +kubebuilder:validation:XValidation:message="maxRequestSize must be greater than 0 and less than 4Gi",rule="quantity(self).isGreaterThan(quantity('0')) && quantity(self).isLessThan(quantity('4Gi'))"
 	MaxRequestSize *resource.Quantity `json:"maxRequestSize"`
 }
