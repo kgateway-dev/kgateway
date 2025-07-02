@@ -3,88 +3,73 @@ package irtranslator
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
+	"github.com/stretchr/testify/assert"
 )
 
-func TestValidateBackendWeights(t *testing.T) {
+func TestValidateWeightedClusters(t *testing.T) {
 	tests := []struct {
 		name     string
-		backends []ir.HttpBackend
+		clusters []*envoy_config_route_v3.WeightedCluster_ClusterWeight
 		wantErr  bool
 	}{
 		{
-			name:     "no backends",
-			backends: []ir.HttpBackend{},
+			name:     "no clusters",
+			clusters: []*envoy_config_route_v3.WeightedCluster_ClusterWeight{},
 			wantErr:  false,
 		},
 		{
-			name: "single backend with weight 0",
-			backends: []ir.HttpBackend{
+			name: "single cluster with weight 0",
+			clusters: []*envoy_config_route_v3.WeightedCluster_ClusterWeight{
 				{
-					Backend: ir.BackendRefIR{
-						Weight: 0,
-					},
+					Weight: wrapperspb.UInt32(0),
 				},
 			},
 			wantErr: true,
 		},
 		{
-			name: "single backend with weight > 0",
-			backends: []ir.HttpBackend{
+			name: "single cluster with weight > 0",
+			clusters: []*envoy_config_route_v3.WeightedCluster_ClusterWeight{
 				{
-					Backend: ir.BackendRefIR{
-						Weight: 100,
-					},
+					Weight: wrapperspb.UInt32(100),
 				},
 			},
 			wantErr: false,
 		},
 		{
-			name: "multiple backends all with weight 0",
-			backends: []ir.HttpBackend{
+			name: "multiple clusters all with weight 0",
+			clusters: []*envoy_config_route_v3.WeightedCluster_ClusterWeight{
 				{
-					Backend: ir.BackendRefIR{
-						Weight: 0,
-					},
+					Weight: wrapperspb.UInt32(0),
 				},
 				{
-					Backend: ir.BackendRefIR{
-						Weight: 0,
-					},
+					Weight: wrapperspb.UInt32(0),
 				},
 			},
 			wantErr: true,
 		},
 		{
-			name: "multiple backends with mixed weights",
-			backends: []ir.HttpBackend{
+			name: "multiple clusters with mixed weights",
+			clusters: []*envoy_config_route_v3.WeightedCluster_ClusterWeight{
 				{
-					Backend: ir.BackendRefIR{
-						Weight: 0,
-					},
+					Weight: wrapperspb.UInt32(0),
 				},
 				{
-					Backend: ir.BackendRefIR{
-						Weight: 100,
-					},
+					Weight: wrapperspb.UInt32(100),
 				},
 			},
 			wantErr: false,
 		},
 		{
-			name: "multiple backends all with weight > 0",
-			backends: []ir.HttpBackend{
+			name: "multiple clusters all with weight > 0",
+			clusters: []*envoy_config_route_v3.WeightedCluster_ClusterWeight{
 				{
-					Backend: ir.BackendRefIR{
-						Weight: 50,
-					},
+					Weight: wrapperspb.UInt32(50),
 				},
 				{
-					Backend: ir.BackendRefIR{
-						Weight: 50,
-					},
+					Weight: wrapperspb.UInt32(50),
 				},
 			},
 			wantErr: false,
@@ -93,12 +78,14 @@ func TestValidateBackendWeights(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := validateBackendWeights(tt.backends)
+			var errs []error
+			validateWeightedClusters(tt.clusters, &errs)
+
 			if tt.wantErr {
-				assert.Error(t, err)
-				assert.Contains(t, err.Error(), "all backend weights are 0")
+				assert.Len(t, errs, 1)
+				assert.Contains(t, errs[0].Error(), "All backend weights are 0. At least one backendRef in the HTTPRoute rule must specify a non-zero weight")
 			} else {
-				assert.NoError(t, err)
+				assert.Len(t, errs, 0)
 			}
 		})
 	}
