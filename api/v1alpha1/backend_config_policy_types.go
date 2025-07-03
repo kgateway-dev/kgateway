@@ -30,16 +30,19 @@ type BackendConfigPolicyList struct {
 }
 
 // BackendConfigPolicySpec defines the desired state of BackendConfigPolicy.
+//
 // +kubebuilder:validation:AtMostOneOf=http1ProtocolOptions;http2ProtocolOptions
 type BackendConfigPolicySpec struct {
 	// TargetRefs specifies the target references to attach the policy to.
 	// +optional
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=16
+	// +kubebuilder:validation:XValidation:rule="self.all(r, (r.group == '' && r.kind == 'Service') || (r.group == 'gateway.kgateway.dev' && r.kind == 'Backend'))",message="TargetRefs must reference either a Kubernetes Service or a Backend API"
 	TargetRefs []LocalPolicyTargetReference `json:"targetRefs,omitempty"`
 
 	// TargetSelectors specifies the target selectors to select resources to attach the policy to.
 	// +optional
+	// +kubebuilder:validation:XValidation:rule="self.all(r, (r.group == '' && r.kind == 'Service') || (r.group == 'gateway.kgateway.dev' && r.kind == 'Backend'))",message="TargetSelectors must reference either a Kubernetes Service or a Backend API"
 	TargetSelectors []LocalPolicyTargetSelector `json:"targetSelectors,omitempty"`
 
 	// The timeout for new network connections to hosts in the cluster.
@@ -152,12 +155,14 @@ type Http2ProtocolOptions struct {
 	// Defaults to 268435456 (256 * 1024 * 1024).
 	// Values can be specified with units like "64Ki".
 	// +optional
+	// +kubebuilder:validation:XValidation:message="InitialStreamWindowSize must be between 65535 and 2147483647 bytes (inclusive)",rule="quantity(self).isGreaterThan(quantity('65534')) && quantity(self).isLessThan(quantity('2147483648'))"
 	InitialStreamWindowSize *resource.Quantity `json:"initialStreamWindowSize,omitempty"`
 
 	// InitialConnectionWindowSize is similar to InitialStreamWindowSize, but for the connection level.
 	// Same range and default value as InitialStreamWindowSize.
 	// Values can be specified with units like "64Ki".
 	// +optional
+	// +kubebuilder:validation:XValidation:message="InitialConnectionWindowSize must be between 65535 and 2147483647 bytes (inclusive)",rule="quantity(self).isGreaterThan(quantity('65534')) && quantity(self).isLessThan(quantity('2147483648'))"
 	InitialConnectionWindowSize *resource.Quantity `json:"initialConnectionWindowSize,omitempty"`
 
 	// The maximum number of concurrent streams that the connection can have.

@@ -15,6 +15,23 @@ spec:
       targetPort: https-web-svc
       name: https
 ---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx2
+spec:
+  selector:
+    app.kubernetes.io/name: nginx2
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: http-web-svc
+      name: http
+    - protocol: TCP
+      port: 8443
+      targetPort: https-web-svc
+      name: https
+---
 # nginx cert and key generated via:
 # openssl req -x509 -out ex.crt -keyout ex.key \
 #   -newkey rsa:2048 -nodes -sha256 \
@@ -102,6 +119,38 @@ metadata:
   name: nginx
   labels:
     app.kubernetes.io/name: nginx
+spec:
+  terminationGracePeriodSeconds: 0
+  containers:
+  - name: nginx
+    image: nginx:stable
+    ports:
+    - containerPort: 80
+      name: http-web-svc
+    - containerPort: 443
+      name: https-web-svc
+    volumeMounts:
+    - name: nginx-conf
+      mountPath: /etc/nginx/
+      readOnly: true
+  volumes:
+  - name: nginx-conf
+    configMap:
+      name: nginx-conf
+      items:
+      - key: nginx.conf
+        path: nginx.conf
+      - key: example.crt
+        path: example.crt
+      - key: example.key
+        path: example.key
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx2
+  labels:
+    app.kubernetes.io/name: nginx2
 spec:
   terminationGracePeriodSeconds: 0
   containers:

@@ -135,12 +135,20 @@ spec:
                     - type: string
                     pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                     x-kubernetes-int-or-string: true
+                    x-kubernetes-validations:
+                    - message: InitialConnectionWindowSize must be between 65535 and
+                        2147483647 bytes (inclusive)
+                      rule: quantity(self).isGreaterThan(quantity('65534')) && quantity(self).isLessThan(quantity('2147483648'))
                   initialStreamWindowSize:
                     anyOf:
                     - type: integer
                     - type: string
                     pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                     x-kubernetes-int-or-string: true
+                    x-kubernetes-validations:
+                    - message: InitialStreamWindowSize must be between 65535 and 2147483647
+                        bytes (inclusive)
+                      rule: quantity(self).isGreaterThan(quantity('65534')) && quantity(self).isLessThan(quantity('2147483648'))
                   maxConcurrentStreams:
                     type: integer
                   overrideStreamErrorOnInvalidHttpMessage:
@@ -258,6 +266,11 @@ spec:
                 maxItems: 16
                 minItems: 1
                 type: array
+                x-kubernetes-validations:
+                - message: TargetRefs must reference either a Kubernetes Service or
+                    a Backend API
+                  rule: self.all(r, (r.group == '' && r.kind == 'Service') || (r.group
+                    == 'gateway.kgateway.dev' && r.kind == 'Backend'))
               targetSelectors:
                 items:
                   properties:
@@ -280,6 +293,11 @@ spec:
                   - matchLabels
                   type: object
                 type: array
+                x-kubernetes-validations:
+                - message: TargetSelectors must reference either a Kubernetes Service
+                    or a Backend API
+                  rule: self.all(r, (r.group == '' && r.kind == 'Service') || (r.group
+                    == 'gateway.kgateway.dev' && r.kind == 'Backend'))
               tcpKeepalive:
                 properties:
                   keepAliveInterval:

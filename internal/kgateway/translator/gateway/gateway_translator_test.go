@@ -278,6 +278,26 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 			},
 		}),
 	Entry(
+		"TrafficPolicy with buffer attached to gateway",
+		translatorTestCase{
+			inputFile:  "traffic-policy/buffer-gateway.yaml",
+			outputFile: "traffic-policy/buffer-gateway.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		}),
+	Entry(
+		"TrafficPolicy with buffer attached to route",
+		translatorTestCase{
+			inputFile:  "traffic-policy/buffer-route.yaml",
+			outputFile: "traffic-policy/buffer-route.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		}),
+	Entry(
 		"tcp gateway with basic routing",
 		translatorTestCase{
 			inputFile:  "tcp-routing/basic.yaml",
@@ -715,6 +735,14 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 	Entry("Backend Config Policy with HTTP2 Protocol Options", translatorTestCase{
 		inputFile:  "backendconfigpolicy/http2.yaml",
 		outputFile: "backendconfigpolicy/http2.yaml",
+		gwNN: types.NamespacedName{
+			Namespace: "default",
+			Name:      "example-gateway",
+		},
+	}),
+	Entry("Backend Config Policy with TLS and SAN verification", translatorTestCase{
+		inputFile:  "backendconfigpolicy/tls-san.yaml",
+		outputFile: "backendconfigpolicy/tls-san.yaml",
 		gwNN: types.NamespacedName{
 			Namespace: "default",
 			Name:      "example-gateway",

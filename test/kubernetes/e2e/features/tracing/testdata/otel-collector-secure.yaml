@@ -1,0 +1,190 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otel-collector-conf
+  labels:
+    app: otel-collector
+    component: otel-collector-conf
+data:
+  otel-collector-config: |
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            include_metadata: true
+            endpoint: 0.0.0.0:4317
+            tls:
+              cert_file: /conf/collector.crt
+              key_file: /conf/collector.key
+    processors:
+    exporters:
+      debug:
+        verbosity: detailed
+    service:
+      extensions: []
+      pipelines:
+        logs:
+          receivers: [otlp]
+          processors: []
+          exporters: [debug]
+        traces:
+          receivers: [otlp]
+          processors: []
+          exporters: [debug]
+      telemetry:
+        logs:
+          level: "DEBUG"
+          development: true
+          encoding: "json"
+  collector.crt: |
+    -----BEGIN CERTIFICATE-----
+    MIIDFTCCAf2gAwIBAgIUNrmDuzMzk7Fj5/qq6FdxOyhmYUIwDQYJKoZIhvcNAQEL
+    BQAwFjEUMBIGA1UEAwwLZXhhbXBsZS5jb20wHhcNMjUwNjA1MTkyNjQ2WhcNMjUw
+    NzA1MTkyNjQ2WjAWMRQwEgYDVQQDDAtleGFtcGxlLmNvbTCCASIwDQYJKoZIhvcN
+    AQEBBQADggEPADCCAQoCggEBAKQE/tTuc2YkRdvtQeavYXWn7vMaZlN7CVdHz77L
+    TbkQqgY9jW8z+fytLNezn+rRz2+Egyn+EZkZY/r5KfYKHcGbrYZym9P3roJUNkcv
+    fx541TCmzVWb5NTBpyWfVRWmmvHIPRN6vzpUAy8IBV6Vi6drgYEfVLq80sTKI3xW
+    JGq/tuIMRf4Vxsney0BTiH2R9EuxEd4yRVmZuXHnmRAd1Lvzj8AUPnRwGp3iDExb
+    lLrf9atIubVK5wbeVayuqhZlA/vJI2ds2DwWk9GbXjTCsNdhNFxzScufuSslRCwc
+    VEZywk0z/1d0XajyUwpazr5ZPM/vvfA5px6HlqbidShPZ18CAwEAAaNbMFkwFgYD
+    VR0RBA8wDYILZXhhbXBsZS5jb20wCwYDVR0PBAQDAgeAMBMGA1UdJQQMMAoGCCsG
+    AQUFBwMBMB0GA1UdDgQWBBQaC/3wAQewXS9TbWN+lejEulC5fDANBgkqhkiG9w0B
+    AQsFAAOCAQEAOyQ7VNO04sjvzfyqXjh0qPXYx7Hyu06yMndr3B0XxG/9AZ396icS
+    B3LZgZ6R7LsAHD4Fw6QsTWxCW0S6mVBRX8972DvtNZuOIB0zb1A5qORJ0DajzwAh
+    l4wTra0oG6sFI1FSwl/I5poRiLMVUaoIzdW4HObhKIGe5F/J/iXtdAxFxLKtStQx
+    M9sP76Nw3FgzsXmMd04of7hGYSwrpANvyd49JO/mIzVfy4MRtbn5m4XKtahtT8vv
+    NGZZF13q6tdnAUptWWAvPShEeNj4xSw6Vam0JIbGcpH2Ch9ltOfDEDByELgdu7a/
+    /vAjhVKjL51vkbtmRxRSYbJZmyp4gNUKcQ==
+    -----END CERTIFICATE-----
+  collector.key: |
+    -----BEGIN PRIVATE KEY-----
+    MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCkBP7U7nNmJEXb
+    7UHmr2F1p+7zGmZTewlXR8++y025EKoGPY1vM/n8rSzXs5/q0c9vhIMp/hGZGWP6
+    +Sn2Ch3Bm62GcpvT966CVDZHL38eeNUwps1Vm+TUwacln1UVpprxyD0Ter86VAMv
+    CAVelYuna4GBH1S6vNLEyiN8ViRqv7biDEX+FcbJ3stAU4h9kfRLsRHeMkVZmblx
+    55kQHdS784/AFD50cBqd4gxMW5S63/WrSLm1SucG3lWsrqoWZQP7ySNnbNg8FpPR
+    m140wrDXYTRcc0nLn7krJUQsHFRGcsJNM/9XdF2o8lMKWs6+WTzP773wOaceh5am
+    4nUoT2dfAgMBAAECggEAC7M7hm74Fmox/Y1ALTeHiUAQgJD6iav2L560yBRyl+gD
+    aOyNIUig5ZBo6X4rwzFyTa8zOBSiprwz8JxDjQSNuNjlGPkl+onpjex57rwJol/W
+    PWE4tomnWjHyPXHPPPskhGjXSoNwDrYdgAZfc67RRoEZvN9CSQvdMSKGQ4FVmbO0
+    AgnKdJFeHciCLeCWIwkK2I2qJUVcH8n/0ANTPFzj2bDFGlGQRmdZb3zOwjIHn4oL
+    tAvhVIY1M66RNMSbcog6O/JtS5RbwNvQP5kLdNlfOOtL0HwJspn+qSKx2+MF4wcS
+    NnwOoqkWlQ6eFMau9u5vaZXYiCMD0olNHJ3eamEAmQKBgQDdlrzwvN4P+0n+P6I/
+    AtRS04iuo90aG1XKtxNQD4rIHzkUQ7hWt26PsIBRIswndu6QOftUeScGbmSwhKxE
+    S5vW9/QWn7AjWJF7sEk+trU+6XmOaxau5cBSSNvbuuORX0l9yvNZ/IRnmb9m27jS
+    rcZN4yGUKApXKViiAaL6W6xg5QKBgQC9fZcKbw+XwAkqnr2pcEWaz5SbzD0boO9Z
+    5Khox54nW5XqGEb0Y7bOEjiz7xa/Q4Xj7oFJZSAdKl3jZjnpbQ49fOx5Qhaock0f
+    1CYX8QB2kWNPN0wq00V1f18z12i+MN6eEI6r4xWRS1BSH14m6FvTmVaB8gu4kpwc
+    PbL3JPDW8wKBgQC/U+dCCiHHNNd302P4+i1wcrui51QCtbWG+jqPt0vCbcswJyTk
+    oy+wm9q/s8cJEFT+bUIIdy9uCyWfkH7Z3Vrq619zpWBFtLSxUs57evDWKGvPv8Fv
+    NGux4L0NZboWjGr9VZ53hWShu4wbeP6F0ovWNpaIwWXkSowAHl+lwj/9zQKBgAws
+    7K6T8kmK4kvlxUQE3cQTwHW+StLipV5+Tb/ly6i1vs064BxF5/IXw6L0It8JRKof
+    ohkIMWcOWNgKsn/oLPkQdNVZxMDwDzqTVBtHtgLoVpw5bmB2EMl69LANEELgOv2n
+    DLPItJMQZsnQECmp1nSjLqbM2anzaap64Gv26K63AoGAbC4c2u+mcnaZu0nwbEuj
+    3kUzotboXZnHyrQ0YvJAFDqFuGVqnkbKk9o6tvw2enh5q0srmkLZqFT/qDNSPqJe
+    oThbSJHIyRV9ZmN3z7W/TTPi9le/wz/xD/LJHqEmUbdA7UlSEgj5xAPEta9bVWHw
+    PYigje+A6GaAnmdNC3LY64E=
+    -----END PRIVATE KEY-----
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: otel-collector
+  labels:
+    app: otel-collector
+    component: otel-collector
+    app.kubernetes.io/name: otel-collector
+spec:
+  containers:
+  - command:
+      - "/otelcol-contrib"
+      - "--config"
+      - "/conf/otel-collector-config.yaml"
+    image: otel/opentelemetry-collector-contrib:0.116.1
+    name: otel-collector
+    resources:
+      limits:
+        cpu: 1
+        memory: 2Gi
+      requests:
+        cpu: 200m
+        memory: 400Mi
+    ports: # Comment out ports for platforms as needed.
+    - containerPort: 4317 # Default gRPC endpoint for OpenTelemetry receiver.
+    volumeMounts:
+    - name: otel-collector-config-vol
+      mountPath: /conf
+  volumes:
+    - name: otel-collector-config-vol
+      configMap:
+        name: otel-collector-conf
+        items:
+          - key: otel-collector-config
+            path: otel-collector-config.yaml
+          - key: collector.crt
+            path: collector.crt
+          - key: collector.key
+            path: collector.key
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: otel-collector
+  labels:
+    app: otel-collector
+    component: otel-collector
+    app.kubernetes.io/name: opentelemetry
+spec:
+  ports:
+  - name: otlp-grpc # Default endpoint for OpenTelemetry gRPC receiver.
+    port: 4317
+    protocol: TCP
+    targetPort: 4317
+    appProtocol: grpc
+  selector:
+    app.kubernetes.io/name: otel-collector
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ca
+data:
+  ca.crt: |
+    -----BEGIN CERTIFICATE-----
+    MIIDFTCCAf2gAwIBAgIUNrmDuzMzk7Fj5/qq6FdxOyhmYUIwDQYJKoZIhvcNAQEL
+    BQAwFjEUMBIGA1UEAwwLZXhhbXBsZS5jb20wHhcNMjUwNjA1MTkyNjQ2WhcNMjUw
+    NzA1MTkyNjQ2WjAWMRQwEgYDVQQDDAtleGFtcGxlLmNvbTCCASIwDQYJKoZIhvcN
+    AQEBBQADggEPADCCAQoCggEBAKQE/tTuc2YkRdvtQeavYXWn7vMaZlN7CVdHz77L
+    TbkQqgY9jW8z+fytLNezn+rRz2+Egyn+EZkZY/r5KfYKHcGbrYZym9P3roJUNkcv
+    fx541TCmzVWb5NTBpyWfVRWmmvHIPRN6vzpUAy8IBV6Vi6drgYEfVLq80sTKI3xW
+    JGq/tuIMRf4Vxsney0BTiH2R9EuxEd4yRVmZuXHnmRAd1Lvzj8AUPnRwGp3iDExb
+    lLrf9atIubVK5wbeVayuqhZlA/vJI2ds2DwWk9GbXjTCsNdhNFxzScufuSslRCwc
+    VEZywk0z/1d0XajyUwpazr5ZPM/vvfA5px6HlqbidShPZ18CAwEAAaNbMFkwFgYD
+    VR0RBA8wDYILZXhhbXBsZS5jb20wCwYDVR0PBAQDAgeAMBMGA1UdJQQMMAoGCCsG
+    AQUFBwMBMB0GA1UdDgQWBBQaC/3wAQewXS9TbWN+lejEulC5fDANBgkqhkiG9w0B
+    AQsFAAOCAQEAOyQ7VNO04sjvzfyqXjh0qPXYx7Hyu06yMndr3B0XxG/9AZ396icS
+    B3LZgZ6R7LsAHD4Fw6QsTWxCW0S6mVBRX8972DvtNZuOIB0zb1A5qORJ0DajzwAh
+    l4wTra0oG6sFI1FSwl/I5poRiLMVUaoIzdW4HObhKIGe5F/J/iXtdAxFxLKtStQx
+    M9sP76Nw3FgzsXmMd04of7hGYSwrpANvyd49JO/mIzVfy4MRtbn5m4XKtahtT8vv
+    NGZZF13q6tdnAUptWWAvPShEeNj4xSw6Vam0JIbGcpH2Ch9ltOfDEDByELgdu7a/
+    /vAjhVKjL51vkbtmRxRSYbJZmyp4gNUKcQ==
+    -----END CERTIFICATE-----
+---
+apiVersion: gateway.networking.k8s.io/v1alpha3
+kind: BackendTLSPolicy
+metadata:
+  name: otel-collector-tls-policy
+  labels:
+    app: otel-collector
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: otel-collector
+  validation:
+    hostname: "example.com"
+    caCertificateRefs:
+    - group: ""
+      kind: ConfigMap
+      name: ca

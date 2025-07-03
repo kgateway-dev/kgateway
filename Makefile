@@ -299,7 +299,7 @@ generate-all: generated-code
 # Generates all required code, cleaning and formatting as well; this target is executed in CI
 .PHONY: generated-code
 generated-code: clean-gen go-generate-all mod-tidy
-generated-code: update-licenses
+generated-code: generate-licenses
 generated-code: fmt
 
 .PHONY: go-generate-all
@@ -312,6 +312,12 @@ go-generate-apis: ## Run all go generate directives in the repo, including codeg
 .PHONY: go-generate-mocks
 go-generate-mocks: ## Runs all generate directives for mockgen in the repo
 	GO111MODULE=on go generate -run="mockgen" ./...
+
+.PHONY: generate-licenses
+generate-licenses: ## Generate the licenses for the project
+	GO111MODULE=on go run hack/utils/oss_compliance/oss_compliance.go osagen -c "GNU General Public License v2.0,GNU General Public License v3.0,GNU Lesser General Public License v2.1,GNU Lesser General Public License v3.0,GNU Affero General Public License v3.0"
+	GO111MODULE=on go run hack/utils/oss_compliance/oss_compliance.go osagen -s "Mozilla Public License 2.0,GNU General Public License v2.0,GNU General Public License v3.0,GNU Lesser General Public License v2.1,GNU Lesser General Public License v3.0,GNU Affero General Public License v3.0"> hack/utils/oss_compliance/osa_provided.md
+	GO111MODULE=on go run hack/utils/oss_compliance/oss_compliance.go osagen -i "Mozilla Public License 2.0"> hack/utils/oss_compliance/osa_included.md
 
 #----------------------------------------------------------------------------------
 # AI Extensions ExtProc Server
@@ -464,34 +470,6 @@ release: ## Create a release using goreleaser
 	GORELEASER_CURRENT_TAG=$(GORELEASER_CURRENT_TAG) $(GORELEASER) release $(GORELEASER_ARGS) --timeout $(GORELEASER_TIMEOUT)
 
 #----------------------------------------------------------------------------------
-# Docker
-#----------------------------------------------------------------------------------
-
-.PHONY: docker
-docker: kgateway-docker ## Build docker images
-docker: envoy-wrapper-docker
-docker: sds-docker
-docker: kgateway-ai-extension-docker
-
-.PHONY: docker-push
-docker-push: docker-push-kgateway
-docker-push: docker-push-envoy-wrapper
-docker-push: docker-push-sds
-docker-push: docker-push-kgateway-ai-extension
-
-.PHONY: docker-retag
-docker-retag: docker-retag-kgateway
-docker-retag: docker-retag-envoy-wrapper
-docker-retag: docker-retag-sds
-docker-retag: docker-retag-kgateway-ai-extension
-
-docker-retag-%:
-	docker tag $(ORIGINAL_IMAGE_REGISTRY)/$*:$(VERSION) $(IMAGE_REGISTRY)/$*:$(VERSION)
-
-docker-push-%:
-	docker push $(IMAGE_REGISTRY)/$*:$(VERSION)
-
-#----------------------------------------------------------------------------------
 # Development
 #----------------------------------------------------------------------------------
 
@@ -516,8 +494,11 @@ metallb: ## Install the MetalLB load balancer
 .PHONY: deploy-kgateway
 deploy-kgateway: package-kgateway-charts deploy-kgateway-crd-chart deploy-kgateway-chart ## Deploy the kgateway chart and CRDs
 
+.PHONY: setup
+setup: kind-create kind-build-and-load gw-api-crds metallb package-kgateway-charts ## Set up basic infrastructure (kind cluster, images, CRDs, MetalLB)
+
 .PHONY: run
-run: kind-create kind-build-and-load gw-api-crds metallb deploy-kgateway  ## Set up complete development environment
+run: setup deploy-kgateway  ## Set up complete development environment
 
 #----------------------------------------------------------------------------------
 # Build assets for kubernetes e2e tests
@@ -554,15 +535,6 @@ kind-set-image-%:
 # Envoy image may be specified via ENVOY_IMAGE on the command line or at the top of this file
 kind-reload-%: kind-build-and-load-% kind-set-image-% ; ## Use to build specified image, load it into kind, and restart its deployment
 
-# This is an alias to remedy the fact that the deployment is called gateway-proxy
-# but our make targets refer to envoy-wrapper
-kind-reload-envoy-wrapper: kind-build-and-load-envoy-wrapper
-kind-reload-envoy-wrapper:
-	kubectl rollout pause deployment gateway-proxy -n $(INSTALL_NAMESPACE) || true
-	kubectl set image deployment/gateway-proxy gateway-proxy=$(IMAGE_REGISTRY)/envoy-wrapper:$(VERSION) -n $(INSTALL_NAMESPACE)
-	kubectl patch deployment gateway-proxy -n $(INSTALL_NAMESPACE) -p '{"spec": {"template":{"metadata":{"annotations":{"kgateway-kind-last-update":"$(shell date)"}}}} }'
-	kubectl rollout resume deployment gateway-proxy -n $(INSTALL_NAMESPACE)
-
 .PHONY: kind-build-and-load ## Use to build all images and load them into kind
 kind-build-and-load: kind-build-and-load-kgateway
 kind-build-and-load: kind-build-and-load-envoy-wrapper
@@ -574,27 +546,6 @@ kind-load: kind-load-kgateway
 kind-load: kind-load-envoy-wrapper
 kind-load: kind-load-sds
 kind-load: kind-load-kgateway-ai-extension
-
-define kind_reload_msg
-The kind-reload-% targets exist in order to assist developers with the work cycle of
-build->test->change->build->test. To that end, rebuilding/reloading every image, then
-restarting every deployment is seldom necessary. Consider using kind-reload-% to do so
-for a specific component, or kind-build-and-load to push new images for every component.
-endef
-export kind_reload_msg
-.PHONY: kind-reload
-kind-reload:
-	@echo "$$kind_reload_msg"
-
-# Useful utility for listing images loaded into the kind cluster
-.PHONY: kind-list-images
-kind-list-images: ## List solo-io images in the kind cluster named {CLUSTER_NAME}
-	docker exec -ti $(CLUSTER_NAME)-control-plane crictl images | grep "solo-io"
-
-# Useful utility for pruning images that were previously loaded into the kind cluster
-.PHONY: kind-prune-images
-kind-prune-images: ## Remove images in the kind cluster named {CLUSTER_NAME}
-	docker exec -ti $(CLUSTER_NAME)-control-plane crictl rmi --prune
 
 #----------------------------------------------------------------------------------
 # A2A Test Server (for agentgateway a2a integration in e2e tests)
@@ -642,16 +593,6 @@ conformance: $(TEST_ASSET_DIR)/conformance/conformance_test.go
 conformance-%: $(TEST_ASSET_DIR)/conformance/conformance_test.go
 	go test -mod=mod -ldflags='$(LDFLAGS)' -tags conformance -test.v $(TEST_ASSET_DIR)/conformance/... -args $(CONFORMANCE_ARGS) \
 	-run-test=$*
-
-#----------------------------------------------------------------------------------
-# Third Party License Management
-#----------------------------------------------------------------------------------
-
-.PHONY: update-licenses
-update-licenses: ## Update the licenses for the project
-	GO111MODULE=on go run hack/utils/oss_compliance/oss_compliance.go osagen -c "GNU General Public License v2.0,GNU General Public License v3.0,GNU Lesser General Public License v2.1,GNU Lesser General Public License v3.0,GNU Affero General Public License v3.0"
-	GO111MODULE=on go run hack/utils/oss_compliance/oss_compliance.go osagen -s "Mozilla Public License 2.0,GNU General Public License v2.0,GNU General Public License v3.0,GNU Lesser General Public License v2.1,GNU Lesser General Public License v3.0,GNU Affero General Public License v3.0"> hack/utils/oss_compliance/osa_provided.md
-	GO111MODULE=on go run hack/utils/oss_compliance/oss_compliance.go osagen -i "Mozilla Public License 2.0"> hack/utils/oss_compliance/osa_included.md
 
 #----------------------------------------------------------------------------------
 # Printing makefile variables utility

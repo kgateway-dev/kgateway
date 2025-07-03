@@ -12,8 +12,8 @@ import (
 
 var (
 	// manifests
-	setupManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "setup.yaml")
-	// gatewayTargetRefManifest   = filepath.Join(fsutils.MustGetThisDir(), "testdata", "gateway-targetref.yaml")
+	setupManifest              = filepath.Join(fsutils.MustGetThisDir(), "testdata", "setup.yaml")
+	gatewayTargetRefManifest   = filepath.Join(fsutils.MustGetThisDir(), "testdata", "gateway-targetref.yaml")
 	httpRouteTargetRefManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "httproute-targetref.yaml")
 	singleRouteManifest        = filepath.Join(fsutils.MustGetThisDir(), "testdata", "single-route.yaml")
 	backendFilterManifest      = filepath.Join(fsutils.MustGetThisDir(), "testdata", "backend-filter.yaml")

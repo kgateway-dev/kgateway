@@ -3,6 +3,7 @@ package httplistenerpolicy
 import (
 	"context"
 	"testing"
+	"time"
 
 	v33 "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -10,15 +11,21 @@ import (
 	envoyalfile "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/file/v3"
 	cel "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/filters/cel/v3"
 	envoygrpc "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/grpc/v3"
+	envoy_open_telemetry "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/open_telemetry/v3"
 	envoy_metadata_formatter "github.com/envoyproxy/go-control-plane/envoy/extensions/formatter/metadata/v3"
 	envoy_req_without_query "github.com/envoyproxy/go-control-plane/envoy/extensions/formatter/req_without_query/v3"
 	envoymatcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	otelv1 "go.opentelemetry.io/proto/otlp/common/v1"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
+	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/structpb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/utils/pointer"
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
@@ -101,13 +108,17 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 				name: "GRPCAdditionalHeaders",
 				config: []v1alpha1.AccessLog{
 					{
-						GrpcService: &v1alpha1.GrpcService{
-							BackendRef: &gwv1.BackendRef{
-								BackendObjectReference: gwv1.BackendObjectReference{
-									Name: "test-service",
+						GrpcService: &v1alpha1.AccessLogGrpcService{
+							CommonAccessLogGrpcService: v1alpha1.CommonAccessLogGrpcService{
+								CommonGrpcService: v1alpha1.CommonGrpcService{
+									BackendRef: &gwv1.BackendRef{
+										BackendObjectReference: gwv1.BackendObjectReference{
+											Name: "test-service",
+										},
+									},
 								},
+								LogName: "grpc-log",
 							},
-							LogName:                         "grpc-log",
 							AdditionalRequestHeadersToLog:   []string{"x-request-id"},
 							AdditionalResponseHeadersToLog:  []string{"x-response-id"},
 							AdditionalResponseTrailersToLog: []string{"x-trailer"},
@@ -272,13 +283,17 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 				name: "GrpcServiceConfig",
 				config: []v1alpha1.AccessLog{
 					{
-						GrpcService: &v1alpha1.GrpcService{
-							BackendRef: &gwv1.BackendRef{
-								BackendObjectReference: gwv1.BackendObjectReference{
-									Name: "test-service",
+						GrpcService: &v1alpha1.AccessLogGrpcService{
+							CommonAccessLogGrpcService: v1alpha1.CommonAccessLogGrpcService{
+								CommonGrpcService: v1alpha1.CommonGrpcService{
+									BackendRef: &gwv1.BackendRef{
+										BackendObjectReference: gwv1.BackendObjectReference{
+											Name: "test-service",
+										},
+									},
 								},
+								LogName: "grpc-log",
 							},
-							LogName: "grpc-log",
 						},
 					},
 				},
@@ -294,6 +309,125 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 											EnvoyGrpc: &envoycore.GrpcService_EnvoyGrpc{
 												ClusterName: "backend_default_test-service_0",
 											},
+										},
+									},
+									TransportApiVersion: envoycore.ApiVersion_V3,
+								},
+							}),
+						},
+					},
+				},
+			},
+			{
+				name: "GrpcServiceConfig with invalid retry policy",
+				config: []v1alpha1.AccessLog{
+					{
+						GrpcService: &v1alpha1.AccessLogGrpcService{
+							CommonAccessLogGrpcService: v1alpha1.CommonAccessLogGrpcService{
+								CommonGrpcService: v1alpha1.CommonGrpcService{
+									BackendRef: &gwv1.BackendRef{
+										BackendObjectReference: gwv1.BackendObjectReference{
+											Name: "test-service",
+										},
+									},
+									RetryPolicy: &v1alpha1.RetryPolicy{
+										RetryBackOff: &v1alpha1.BackoffStrategy{
+											BaseInterval: metav1.Duration{Duration: 5 * time.Second},
+											MaxInterval:  &metav1.Duration{Duration: 1 * time.Second},
+										},
+									},
+								},
+								LogName: "grpc-log",
+							},
+						},
+					},
+				},
+				expected: []*v33.AccessLog{
+					{
+						Name: "envoy.access_loggers.http_grpc",
+						ConfigType: &v33.AccessLog_TypedConfig{
+							TypedConfig: mustMessageToAny(t, &envoygrpc.HttpGrpcAccessLogConfig{
+								CommonConfig: &envoygrpc.CommonGrpcAccessLogConfig{
+									LogName: "grpc-log",
+									GrpcService: &envoycore.GrpcService{
+										TargetSpecifier: &envoycore.GrpcService_EnvoyGrpc_{
+											EnvoyGrpc: &envoycore.GrpcService_EnvoyGrpc{
+												ClusterName: "backend_default_test-service_0",
+											},
+										},
+										RetryPolicy: &envoycore.RetryPolicy{
+											RetryBackOff: &envoycore.BackoffStrategy{
+												BaseInterval: &durationpb.Duration{Seconds: 5},
+											},
+										},
+									},
+									TransportApiVersion: envoycore.ApiVersion_V3,
+								},
+							}),
+						},
+					},
+				},
+			},
+			{
+				name: "GrpcServiceConfig with all the common options",
+				config: []v1alpha1.AccessLog{
+					{
+						GrpcService: &v1alpha1.AccessLogGrpcService{
+							CommonAccessLogGrpcService: v1alpha1.CommonAccessLogGrpcService{
+								CommonGrpcService: v1alpha1.CommonGrpcService{
+									BackendRef: &gwv1.BackendRef{
+										BackendObjectReference: gwv1.BackendObjectReference{
+											Name: "test-service",
+										},
+									},
+									Authority:               pointer.String("www.example.com"),
+									MaxReceiveMessageLength: pointer.Uint32(127),
+									SkipEnvoyHeaders:        pointer.Bool(true),
+									Timeout:                 &metav1.Duration{Duration: 10 * time.Second},
+									InitialMetadata: []v1alpha1.HeaderValue{{
+										Key:   "key",
+										Value: "value",
+									}},
+									RetryPolicy: &v1alpha1.RetryPolicy{
+										RetryBackOff: &v1alpha1.BackoffStrategy{
+											BaseInterval: metav1.Duration{Duration: 5 * time.Second},
+											MaxInterval:  &metav1.Duration{Duration: 10 * time.Second},
+										},
+										NumRetries: pointer.Uint32(3),
+									},
+								},
+								LogName: "grpc-log",
+							},
+						},
+					},
+				},
+				expected: []*v33.AccessLog{
+					{
+						Name: "envoy.access_loggers.http_grpc",
+						ConfigType: &v33.AccessLog_TypedConfig{
+							TypedConfig: mustMessageToAny(t, &envoygrpc.HttpGrpcAccessLogConfig{
+								CommonConfig: &envoygrpc.CommonGrpcAccessLogConfig{
+									LogName: "grpc-log",
+									GrpcService: &envoycore.GrpcService{
+										TargetSpecifier: &envoycore.GrpcService_EnvoyGrpc_{
+											EnvoyGrpc: &envoycore.GrpcService_EnvoyGrpc{
+												ClusterName:             "backend_default_test-service_0",
+												Authority:               "www.example.com",
+												MaxReceiveMessageLength: &wrapperspb.UInt32Value{Value: 127},
+												SkipEnvoyHeaders:        true,
+											},
+										},
+										Timeout: &durationpb.Duration{Seconds: 10},
+										InitialMetadata: []*envoycore.HeaderValue{{
+											Key:   "key",
+											Value: "value",
+										}},
+										RetryPolicy: &envoycore.RetryPolicy{
+											RetryBackOff: &envoycore.BackoffStrategy{
+												BaseInterval: &durationpb.Duration{Seconds: 5},
+												MaxInterval:  &durationpb.Duration{Seconds: 10},
+											},
+											NumRetries: &wrapperspb.UInt32Value{Value: 3},
 										},
 									},
 									TransportApiVersion: envoycore.ApiVersion_V3,
@@ -623,6 +757,264 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 					},
 				},
 			},
+			{
+				name: "OTel Sink",
+				config: []v1alpha1.AccessLog{
+					{
+						OpenTelemetry: &v1alpha1.OpenTelemetryAccessLogService{
+							GrpcService: v1alpha1.CommonAccessLogGrpcService{
+								CommonGrpcService: v1alpha1.CommonGrpcService{
+									BackendRef: &gwv1.BackendRef{
+										BackendObjectReference: gwv1.BackendObjectReference{
+											Name: "test-service",
+										},
+									},
+								},
+								LogName: "otel-log",
+							},
+						},
+					},
+				},
+				expected: []*v33.AccessLog{
+					{
+						Name: "envoy.access_loggers.open_telemetry",
+						ConfigType: &v33.AccessLog_TypedConfig{
+							TypedConfig: mustMessageToAny(t, &envoy_open_telemetry.OpenTelemetryAccessLogConfig{
+								CommonConfig: &envoygrpc.CommonGrpcAccessLogConfig{
+									LogName: "otel-log",
+									GrpcService: &envoycore.GrpcService{
+										TargetSpecifier: &envoycore.GrpcService_EnvoyGrpc_{
+											EnvoyGrpc: &envoycore.GrpcService_EnvoyGrpc{
+												ClusterName: "backend_default_test-service_0",
+											},
+										},
+									},
+									TransportApiVersion: envoycore.ApiVersion_V3,
+								},
+							}),
+						},
+					},
+				},
+			},
+			{
+				name: "OTel Sink with all the options",
+				config: []v1alpha1.AccessLog{
+					{
+						OpenTelemetry: &v1alpha1.OpenTelemetryAccessLogService{
+							GrpcService: v1alpha1.CommonAccessLogGrpcService{
+								CommonGrpcService: v1alpha1.CommonGrpcService{
+									BackendRef: &gwv1.BackendRef{
+										BackendObjectReference: gwv1.BackendObjectReference{
+											Name: "test-service",
+										},
+									},
+								},
+								LogName: "otel-log",
+							},
+							Body:                 pointer.String(`"%REQ(:METHOD)% %REQ(X-ENVOY-ORIGINAL-PATH?:PATH)% %RESPONSE_CODE% "%REQ(:AUTHORITY)%" "%UPSTREAM_CLUSTER%"\n'`),
+							DisableBuiltinLabels: pointer.Bool(true),
+							Attributes: &v1alpha1.KeyAnyValueList{
+								Values: []v1alpha1.KeyAnyValue{
+									{
+										Key: "string-key-1",
+										Value: v1alpha1.AnyValue{
+											StringValue: pointer.String("string-value-1"),
+										},
+									},
+									{
+										Key: "array-key",
+										Value: v1alpha1.AnyValue{
+											ArrayValue: []v1alpha1.AnyValue{
+												{
+													StringValue: pointer.String("1-string-value"),
+												},
+												{
+													StringValue: pointer.String("2-string-value"),
+												},
+											},
+										},
+									},
+									{
+										Key: "kvlist-key",
+										Value: v1alpha1.AnyValue{
+											KvListValue: &v1alpha1.KeyAnyValueList{
+												Values: []v1alpha1.KeyAnyValue{
+													{
+														Key: "string-key-2",
+														Value: v1alpha1.AnyValue{
+															StringValue: pointer.String("string-value-2"),
+														},
+													},
+													{
+														Key: "array-key",
+														Value: v1alpha1.AnyValue{
+															ArrayValue: []v1alpha1.AnyValue{
+																{
+																	StringValue: pointer.String("3-string-value"),
+																},
+																{
+																	StringValue: pointer.String("4-string-value"),
+																},
+															},
+														},
+													},
+													{
+														Key: "kvlist-key",
+														Value: v1alpha1.AnyValue{
+															KvListValue: &v1alpha1.KeyAnyValueList{
+																Values: []v1alpha1.KeyAnyValue{
+																	{
+																		Key: "string-key-3",
+																		Value: v1alpha1.AnyValue{
+																			StringValue: pointer.String("string-value-3"),
+																		},
+																	},
+																	{
+																		Key: "string-key-4",
+																		Value: v1alpha1.AnyValue{
+																			StringValue: pointer.String("string-value-4"),
+																		},
+																	},
+																},
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				expected: []*v33.AccessLog{
+					{
+						Name: "envoy.access_loggers.open_telemetry",
+						ConfigType: &v33.AccessLog_TypedConfig{
+							TypedConfig: mustMessageToAny(t, &envoy_open_telemetry.OpenTelemetryAccessLogConfig{
+								CommonConfig: &envoygrpc.CommonGrpcAccessLogConfig{
+									LogName: "otel-log",
+									GrpcService: &envoycore.GrpcService{
+										TargetSpecifier: &envoycore.GrpcService_EnvoyGrpc_{
+											EnvoyGrpc: &envoycore.GrpcService_EnvoyGrpc{
+												ClusterName: "backend_default_test-service_0",
+											},
+										},
+									},
+									TransportApiVersion: envoycore.ApiVersion_V3,
+								},
+								Body: &otelv1.AnyValue{
+									Value: &otelv1.AnyValue_StringValue{
+										StringValue: `"%REQ(:METHOD)% %REQ(X-ENVOY-ORIGINAL-PATH?:PATH)% %RESPONSE_CODE% "%REQ(:AUTHORITY)%" "%UPSTREAM_CLUSTER%"\n'`,
+									},
+								},
+								DisableBuiltinLabels: true,
+								Attributes: &otelv1.KeyValueList{
+									Values: []*otelv1.KeyValue{
+										{
+											Key: "string-key-1",
+											Value: &otelv1.AnyValue{
+												Value: &otelv1.AnyValue_StringValue{
+													StringValue: "string-value-1",
+												},
+											},
+										},
+										{
+											Key: "array-key",
+											Value: &otelv1.AnyValue{
+												Value: &otelv1.AnyValue_ArrayValue{
+													ArrayValue: &otelv1.ArrayValue{
+														Values: []*otelv1.AnyValue{
+															{
+																Value: &otelv1.AnyValue_StringValue{
+																	StringValue: "1-string-value",
+																},
+															},
+															{
+																Value: &otelv1.AnyValue_StringValue{
+																	StringValue: "2-string-value",
+																},
+															},
+														},
+													},
+												},
+											},
+										},
+										{
+											Key: "kvlist-key",
+											Value: &otelv1.AnyValue{
+												Value: &otelv1.AnyValue_KvlistValue{
+													KvlistValue: &otelv1.KeyValueList{
+														Values: []*otelv1.KeyValue{
+															{
+																Key: "string-key-2",
+																Value: &otelv1.AnyValue{
+																	Value: &otelv1.AnyValue_StringValue{
+																		StringValue: "string-value-2",
+																	},
+																},
+															},
+															{
+																Key: "array-key",
+																Value: &otelv1.AnyValue{
+																	Value: &otelv1.AnyValue_ArrayValue{
+																		ArrayValue: &otelv1.ArrayValue{
+																			Values: []*otelv1.AnyValue{
+																				{
+																					Value: &otelv1.AnyValue_StringValue{
+																						StringValue: "3-string-value",
+																					},
+																				},
+																				{
+																					Value: &otelv1.AnyValue_StringValue{
+																						StringValue: "4-string-value",
+																					},
+																				},
+																			},
+																		},
+																	},
+																},
+															},
+															{
+																Key: "kvlist-key",
+																Value: &otelv1.AnyValue{
+																	Value: &otelv1.AnyValue_KvlistValue{
+																		KvlistValue: &otelv1.KeyValueList{
+																			Values: []*otelv1.KeyValue{
+																				{
+																					Key: "string-key-3",
+																					Value: &otelv1.AnyValue{
+																						Value: &otelv1.AnyValue_StringValue{
+																							StringValue: "string-value-3",
+																						},
+																					},
+																				},
+																				{
+																					Key: "string-key-4",
+																					Value: &otelv1.AnyValue{
+																						Value: &otelv1.AnyValue_StringValue{
+																							StringValue: "string-value-4",
+																						},
+																					},
+																				},
+																			},
+																		},
+																	},
+																},
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							}),
+						},
+					},
+				},
+			},
 		}
 		for _, tc := range testCases {
 			_, cancel := context.WithCancel(context.Background())
@@ -634,6 +1026,13 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 					// Example grpcBackends map for upstreams
 					map[string]*ir.BackendObjectIR{
 						"grpc-log-0": {
+							ObjectSource: ir.ObjectSource{
+								Kind:      "Backend",
+								Name:      "test-service",
+								Namespace: "default",
+							},
+						},
+						"otel-log-0": {
 							ObjectSource: ir.ObjectSource{
 								Kind:      "Backend",
 								Name:      "test-service",

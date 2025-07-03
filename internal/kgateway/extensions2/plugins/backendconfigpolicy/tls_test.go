@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
+	envoymatcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
@@ -271,6 +272,38 @@ func TestTranslateTLSConfig(t *testing.T) {
 				assert.Nil(t, result.CommonTlsContext.GetValidationContext())
 			},
 		},
+		{
+			name: "TLS config with SAN verification",
+			tlsConfig: &v1alpha1.TLS{
+				TLSFiles: &v1alpha1.TLSFiles{
+					TLSCertificate: CACert,
+					TLSKey:         TLSKey,
+					RootCA:         CACert,
+				},
+				VerifySubjectAltName: []string{"test.example.com", "api.example.com"},
+				Sni:                  "test.example.com",
+			},
+			wantErr: false,
+			check: func(t *testing.T, result *envoyauth.UpstreamTlsContext) {
+				assert.NotNil(t, result)
+				assert.Equal(t, "test.example.com", result.Sni)
+				assert.NotNil(t, result.CommonTlsContext)
+
+				validationCtx := result.CommonTlsContext.GetValidationContext()
+				assert.NotNil(t, validationCtx)
+				assert.Equal(t, CACert, validationCtx.TrustedCa.GetFilename())
+
+				assert.Len(t, validationCtx.MatchTypedSubjectAltNames, 2)
+
+				san1 := validationCtx.MatchTypedSubjectAltNames[0]
+				assert.Equal(t, envoyauth.SubjectAltNameMatcher_DNS, san1.SanType)
+				assert.Equal(t, "test.example.com", san1.Matcher.GetExact())
+
+				san2 := validationCtx.MatchTypedSubjectAltNames[1]
+				assert.Equal(t, envoyauth.SubjectAltNameMatcher_DNS, san2.SanType)
+				assert.Equal(t, "api.example.com", san2.Matcher.GetExact())
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -322,4 +355,67 @@ func validateCommonTlsContextFiles(t *testing.T, result *envoyauth.UpstreamTlsCo
 
 	assert.Equal(t, CACert, result.CommonTlsContext.TlsCertificates[0].GetCertificateChain().GetFilename())
 	assert.Equal(t, TLSKey, result.CommonTlsContext.TlsCertificates[0].GetPrivateKey().GetFilename())
+}
+
+func TestVerifySanListToTypedMatchSanList(t *testing.T) {
+	tests := []struct {
+		name     string
+		sanList  []string
+		expected []*envoyauth.SubjectAltNameMatcher
+	}{
+		{
+			name:     "empty SAN list",
+			sanList:  []string{},
+			expected: []*envoyauth.SubjectAltNameMatcher{},
+		},
+		{
+			name:    "single SAN",
+			sanList: []string{"example.com"},
+			expected: []*envoyauth.SubjectAltNameMatcher{
+				{
+					SanType: envoyauth.SubjectAltNameMatcher_DNS,
+					Matcher: &envoymatcher.StringMatcher{
+						MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: "example.com"},
+					},
+				},
+			},
+		},
+		{
+			name:    "multiple SANs",
+			sanList: []string{"example.com", "api.example.com", "www.example.com"},
+			expected: []*envoyauth.SubjectAltNameMatcher{
+				{
+					SanType: envoyauth.SubjectAltNameMatcher_DNS,
+					Matcher: &envoymatcher.StringMatcher{
+						MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: "example.com"},
+					},
+				},
+				{
+					SanType: envoyauth.SubjectAltNameMatcher_DNS,
+					Matcher: &envoymatcher.StringMatcher{
+						MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: "api.example.com"},
+					},
+				},
+				{
+					SanType: envoyauth.SubjectAltNameMatcher_DNS,
+					Matcher: &envoymatcher.StringMatcher{
+						MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: "www.example.com"},
+					},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := verifySanListToTypedMatchSanList(tt.sanList)
+
+			assert.Len(t, result, len(tt.expected))
+
+			for i, expected := range tt.expected {
+				assert.Equal(t, expected.SanType, result[i].SanType)
+				assert.Equal(t, expected.Matcher.GetExact(), result[i].Matcher.GetExact())
+			}
+		})
+	}
 }

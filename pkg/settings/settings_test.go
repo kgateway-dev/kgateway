@@ -4,7 +4,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/onsi/gomega"
+	"github.com/google/go-cmp/cmp"
+	"github.com/stretchr/testify/require"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/settings"
@@ -148,9 +149,11 @@ func TestSettings(t *testing.T) {
 				DefaultImageTag:             "",
 				DefaultImagePullPolicy:      "IfNotPresent",
 				WaypointLocalBinding:        false,
+				IngressUseWaypoints:         false,
 				LogLevel:                    "info",
 				DiscoveryNamespaceSelectors: "[]",
 				EnableAgentGateway:          false,
+				WeightedRoutePrecedence:     false,
 				RouteReplacementMode:        settings.RouteReplacementStandard,
 			},
 		},
@@ -158,27 +161,36 @@ func TestSettings(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			g := gomega.NewWithT(t)
-
 			t.Cleanup(func() {
-				for k := range tc.envVars {
-					err := os.Unsetenv(k)
-					g.Expect(err).NotTo(gomega.HaveOccurred())
-				}
+				cleanupEnvVars(t, tc.envVars)
 			})
 
 			for k, v := range tc.envVars {
-				err := os.Setenv(k, v)
-				g.Expect(err).NotTo(gomega.HaveOccurred())
+				if err := os.Setenv(k, v); err != nil {
+					t.Fatalf("Failed to set environment variable %s=%s: %v", k, v, err)
+				}
 			}
+
 			s, err := settings.BuildSettings()
+
 			if tc.expectedErrorStr != "" {
-				g.Expect(err).To(gomega.HaveOccurred())
-				g.Expect(err.Error()).To(gomega.ContainSubstring(tc.expectedErrorStr))
-			} else {
-				g.Expect(err).NotTo(gomega.HaveOccurred())
-				g.Expect(s).To(gomega.Equal(tc.expectedSettings))
+				require.ErrorContains(t, err, tc.expectedErrorStr)
+				return
 			}
+
+			require.NoError(t, err)
+
+			diff := cmp.Diff(tc.expectedSettings, s)
+			require.Emptyf(t, diff, "Settings do not match expected values (-expected +got):\n%s", diff)
 		})
+	}
+}
+
+func cleanupEnvVars(t *testing.T, envVars map[string]string) {
+	t.Helper()
+	for k := range envVars {
+		if err := os.Unsetenv(k); err != nil {
+			t.Errorf("Failed to unset environment variable %s: %v", k, err)
+		}
 	}
 }

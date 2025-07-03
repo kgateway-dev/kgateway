@@ -50,7 +50,7 @@ spec:
   template:
     metadata:
       labels:
-        app: kgateway
+        app: gateway-proxy-access-logger
         kgateway: gateway-proxy-access-logger
     spec:
       containers:

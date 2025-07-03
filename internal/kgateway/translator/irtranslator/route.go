@@ -447,7 +447,6 @@ func (h *httpRouteConfigurationTranslator) translateRouteAction(
 		clusters = append(clusters, cw)
 	}
 
-	// TODO: i think envoy nacks if all weights are 0, we should error on that.
 	action := outRoute.GetRoute()
 	if action == nil {
 		action = &envoy_config_route_v3.RouteAction{
@@ -509,10 +508,28 @@ func validateEnvoyRoute(r *envoy_config_route_v3.Route) error {
 	validatePath(re.GetSchemeRedirect(), &errs)
 	validatePrefixRewrite(route.GetPrefixRewrite(), &errs)
 	validatePrefixRewrite(re.GetPrefixRewrite(), &errs)
+	validateWeightedClusters(route.GetWeightedClusters().GetClusters(), &errs)
 	if len(errs) == 0 {
 		return nil
 	}
 	return fmt.Errorf("error %s: %w", r.GetName(), errors.Join(errs...))
+}
+
+func validateWeightedClusters(clusters []*envoy_config_route_v3.WeightedCluster_ClusterWeight, errs *[]error) {
+	if len(clusters) == 0 {
+		return
+	}
+
+	allZeroWeight := true
+	for _, cluster := range clusters {
+		if cluster.GetWeight().GetValue() > 0 {
+			allZeroWeight = false
+			break
+		}
+	}
+	if allZeroWeight {
+		*errs = append(*errs, errors.New("All backend weights are 0. At least one backendRef in the HTTPRoute rule must specify a non-zero weight"))
+	}
 }
 
 // creates Envoy routes for each matcher provided on our Gateway route

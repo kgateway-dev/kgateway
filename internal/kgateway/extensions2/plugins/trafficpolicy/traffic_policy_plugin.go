@@ -10,6 +10,7 @@ import (
 
 	routev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	exteniondynamicmodulev3 "github.com/envoyproxy/go-control-plane/envoy/extensions/dynamic_modules/v3"
+	bufferv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/buffer/v3"
 	corsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/cors/v3"
 	envoy_csrf_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/csrf/v3"
 	dynamicmodulesv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/dynamic_modules/v3"
@@ -86,6 +87,7 @@ type trafficPolicySpecIr struct {
 	cors                       *CorsIR
 	csrf                       *CsrfIR
 	hashPolicies               []*routev3.RouteAction_HashPolicy
+	buffer                     *BufferIR
 }
 
 func (d *TrafficPolicy) CreationTime() time.Time {
@@ -151,6 +153,10 @@ func (d *TrafficPolicy) Equals(in any) bool {
 		return false
 	}
 
+	if !d.spec.buffer.Equals(d2.spec.buffer) {
+		return false
+	}
+
 	return true
 }
 
@@ -168,6 +174,7 @@ type trafficPolicyPluginGwPass struct {
 	rateLimitPerProvider  ProviderNeededMap
 	corsInChain           map[string]*corsv3.Cors
 	csrfInChain           map[string]*envoy_csrf_v3.CsrfPolicy
+	bufferInChain         map[string]*bufferv3.Buffer
 }
 
 var _ ir.ProxyTranslationPass = &trafficPolicyPluginGwPass{}
@@ -529,6 +536,16 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.Filt
 		filters = append(filters, filter)
 	}
 
+	// Add Buffer filter to enable buffer for the listener.
+	// Requires the buffer policy to be set as typed_per_filter_config.
+	if p.bufferInChain[fcc.FilterChainName] != nil {
+		filter := plugins.MustNewStagedFilter(bufferFilterName,
+			p.bufferInChain[fcc.FilterChainName],
+			plugins.DuringStage(plugins.RouteStage))
+		filter.Filter.Disabled = true
+		filters = append(filters, filter)
+	}
+
 	if len(filters) == 0 {
 		return nil, nil
 	}
@@ -551,6 +568,8 @@ func (p *trafficPolicyPluginGwPass) handlePolicies(fcn string, typedFilterConfig
 
 	// Apply CSRF configuration if present
 	p.handleCsrf(fcn, typedFilterConfig, spec.csrf)
+
+	p.handleBuffer(fcn, typedFilterConfig, spec.buffer)
 }
 
 func (p *trafficPolicyPluginGwPass) SupportsPolicyMerge() bool {
@@ -673,6 +692,12 @@ func MergeTrafficPolicies(
 	if policy.IsMergeable(p1.spec.hashPolicies, p2.spec.hashPolicies, mergeOpts) {
 		p1.spec.hashPolicies = p2.spec.hashPolicies
 		mergeOrigins["hashPolicies"] = p2Ref
+	}
+
+	// Handle buffer policy merging
+	if policy.IsMergeable(p1.spec.buffer, p2.spec.buffer, mergeOpts) {
+		p1.spec.buffer = p2.spec.buffer
+		mergeOrigins["buffer"] = p2Ref
 	}
 
 	return mergeOrigins
