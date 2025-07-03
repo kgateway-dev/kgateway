@@ -532,6 +532,7 @@ spec:
                       may be set
                     rule: '[has(self.header),has(self.cookie),has(self.sourceIP)].filter(x,x==true).size()
                       <= 1'
+                maxItems: 16
                 type: array
               rateLimit:
                 properties:

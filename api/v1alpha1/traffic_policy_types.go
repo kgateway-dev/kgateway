@@ -84,6 +84,7 @@ type TrafficPolicySpec struct {
 	// HashPolicies specifies the hash policies for hashing load balancers (RingHash, Maglev).
 	// Should be used in conjunction with Load Balancer on the BackendConfigPolicy.
 	// +optional
+	// +kubebuilder:validation:MaxItems=16
 	HashPolicies []*HashPolicy `json:"hashPolicies,omitempty"`
 
 	// Buffer can be used to set the maximum request size that will be buffered.
