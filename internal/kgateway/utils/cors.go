@@ -61,18 +61,21 @@ func ToEnvoyCorsPolicy(f *gwv1.HTTPCORSFilter) *corsv3.CorsPolicy {
 // According to the CORS specification, '*' is a greedy match to the left, including any number
 // of DNS labels to the left of its position.
 //
+// This implementation adheres to the definition above (from the gateway-api spec) and therefore
+// an allowed origin of "https://*.example.com" will not match "https://example.com".
+//
 // Matching strategy:
 // - No wildcard -> Exact match
-// - Wildcard at the end (e.g., "example.*") -> Prefix match
-// - Wildcard by itself ("*") -> Prefix match for scheme
-// - Any other wildcard position -> Regex match with proper DNS label validation
+// - Single wildcard at the end (e.g., "https://*") -> Prefix match
+// - Any other wildcard pattern -> Regex match where * becomes .*
 //
 // Examples:
 // - "https://example.com" -> Exact match
-// - "https://*.example.com" -> Regex match (matches example.com, www.example.com, a.b.example.com, etc.)
-// - "https://example.*" -> Prefix match (matches example.com, example.org, etc.)
-// - "https://*" -> Prefix match
-// - "https://sub.*.example.com" -> Regex match (matches sub.example.com, sub.api.example.com, etc.)
+// - "https://*.example.com" -> Regex match: ^https://.*\.example\.com$
+// - "https://example.*" -> Prefix match: "https://example."
+// - "https://*" -> Prefix match: "https://"
+// - "https://sub.*.example.com" -> Regex match: ^https://sub\..*\.example\.com$
+// - "https://example.*:8080" -> Regex match: ^https://example\..*:8080$
 func ConvertOriginToEnvoyStringMatcher(origin string) *envoy_type_matcher_v3.StringMatcher {
 	// Check if the origin contains wildcards
 	if !strings.Contains(origin, "*") {
@@ -84,8 +87,9 @@ func ConvertOriginToEnvoyStringMatcher(origin string) *envoy_type_matcher_v3.Str
 		}
 	}
 
-	// Check if wildcard is at the end
-	if strings.HasSuffix(origin, "*") {
+	// Check if there is a single wildcard and it is at the end
+	// In this case, we can use prefix matching
+	if strings.Count(origin, "*") == 1 && strings.HasSuffix(origin, "*") {
 		// Extract the prefix before the wildcard
 		prefix := strings.TrimSuffix(origin, "*")
 		return &envoy_type_matcher_v3.StringMatcher{
@@ -97,9 +101,11 @@ func ConvertOriginToEnvoyStringMatcher(origin string) *envoy_type_matcher_v3.Str
 
 	// For any other wildcard pattern, use regex matching
 
-	// Replace wildcards with DNS label pattern: one or more valid DNS labels
-	// DNS labels can contain: a-z, A-Z, 0-9, hyphen, underscore
-	regexPattern := strings.ReplaceAll(origin, "*", "([a-zA-Z0-9_-]+.)+")
+	// First escape all dots
+	regexPattern := strings.ReplaceAll(origin, ".", "\\.")
+
+	// Then convert wildcards to regex patterns
+	regexPattern = strings.ReplaceAll(regexPattern, "*", ".*")
 
 	return &envoy_type_matcher_v3.StringMatcher{
 		MatchPattern: &envoy_type_matcher_v3.StringMatcher_SafeRegex{

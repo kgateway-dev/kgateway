@@ -80,7 +80,7 @@ routes:
           - exact: https://example.com
           - safeRegex:
               googleRe2: {}
-              regex: ^https://([a-zA-Z0-9_-]+.)+.notexample.com$
+              regex: ^https://.*\.notexample\.com$
           - prefix: https://a.b
           - prefix: http://
           exposeHeaders: X-Custom-Header
