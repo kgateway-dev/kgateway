@@ -465,6 +465,24 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: maxStreamDuration
       type:
         namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Duration
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Cookie
+  map:
+    fields:
+    - name: attributes
+      type:
+        map:
+          elementType:
+            scalar: string
+    - name: name
+      type:
+        scalar: string
+      default: ""
+    - name: path
+      type:
+        scalar: string
+    - name: ttl
+      type:
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Duration
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.CorsPolicy
   map:
     fields:
@@ -926,6 +944,28 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: xffNumTrustedHops
       type:
         scalar: numeric
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.HashPolicy
+  map:
+    fields:
+    - name: cookie
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Cookie
+    - name: header
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Header
+    - name: sourceIP
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SourceIP
+    - name: terminal
+      type:
+        scalar: boolean
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Header
+  map:
+    fields:
+    - name: name
+      type:
+        scalar: string
+      default: ""
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.HeaderFilter
   map:
     fields:
@@ -1653,6 +1693,12 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: window
       type:
         namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Duration
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SourceIP
+  map:
+    fields:
+    - name: sourceIP
+      type:
+        scalar: boolean
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.StaticBackend
   map:
     fields:
@@ -1839,6 +1885,12 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: extProc
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtProcPolicy
+    - name: hashPolicies
+      type:
+        list:
+          elementType:
+            namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.HashPolicy
+          elementRelationship: atomic
     - name: rateLimit
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.RateLimit
