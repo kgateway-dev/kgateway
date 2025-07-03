@@ -85,6 +85,7 @@ type trafficPolicySpecIr struct {
 	rateLimit                  *GlobalRateLimitIR
 	cors                       *CorsIR
 	csrf                       *CsrfIR
+	hashPolicies               []*routev3.RouteAction_HashPolicy
 }
 
 func (d *TrafficPolicy) CreationTime() time.Time {
@@ -348,6 +349,11 @@ func (p *trafficPolicyPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.
 			p.processAITrafficPolicy(&pCtx.TypedFilterConfig, policy.spec.AI)
 		}
 	}
+
+	if policy.spec.hashPolicies != nil {
+		outputRoute.GetRoute().HashPolicy = policy.spec.hashPolicies
+	}
+
 	p.handlePolicies(pCtx.FilterChainName, &pCtx.TypedFilterConfig, policy.spec)
 
 	return nil
@@ -662,5 +668,12 @@ func MergeTrafficPolicies(
 		p1.spec.csrf = p2.spec.csrf
 		mergeOrigins["csrf"] = p2Ref
 	}
+
+	// Handle hash policies merging
+	if policy.IsMergeable(p1.spec.hashPolicies, p2.spec.hashPolicies, mergeOpts) {
+		p1.spec.hashPolicies = p2.spec.hashPolicies
+		mergeOrigins["hashPolicies"] = p2Ref
+	}
+
 	return mergeOrigins
 }

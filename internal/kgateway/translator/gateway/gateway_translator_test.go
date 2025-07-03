@@ -268,6 +268,16 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 			},
 		}),
 	Entry(
+		"Load balancer with hash policies, route level",
+		translatorTestCase{
+			inputFile:  "loadbalancer/route.yaml",
+			outputFile: "loadbalancer/route.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		}),
+	Entry(
 		"tcp gateway with basic routing",
 		translatorTestCase{
 			inputFile:  "tcp-routing/basic.yaml",
