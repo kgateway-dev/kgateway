@@ -1,10 +1,11 @@
 package pluginutils
 
 import (
+	"fmt"
+
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
-	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 
@@ -46,7 +47,7 @@ func EnvoyEndpoint(address string, port uint32) *envoy_config_endpoint_v3.Endpoi
 func SetExtensionProtocolOptions(out *envoy_config_cluster_v3.Cluster, filterName string, protoext proto.Message) error {
 	protoextAny, err := utils.MessageToAny(protoext)
 	if err != nil {
-		return errors.Wrapf(err, "converting extension %s protocol options to struct", filterName)
+		return fmt.Errorf("converting extension %s protocol options to struct: %w", filterName, err)
 	}
 	if out.GetTypedExtensionProtocolOptions() == nil {
 		out.TypedExtensionProtocolOptions = make(map[string]*anypb.Any)
