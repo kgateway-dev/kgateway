@@ -43,6 +43,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
+	"github.com/kgateway-dev/kgateway/v2/pkg/settings"
 
 	// TODO BML tests in this suite fail if this no-op import is not imported first.
 	//
@@ -567,9 +568,7 @@ var _ = Describe("Deployer", func() {
 	})
 
 	Context("special cases", func() {
-		var (
-			gwc *api.GatewayClass
-		)
+		var gwc *api.GatewayClass
 		BeforeEach(func() {
 			gwc = defaultGatewayClass()
 		})
@@ -771,9 +770,7 @@ var _ = Describe("Deployer", func() {
 			tag = "1.2.3"
 		})
 		When("a GC is created with an empty spec.parametersRef", func() {
-			var (
-				d *deployer.Deployer
-			)
+			var d *deployer.Deployer
 			It("should use the default in-memory GWP", func() {
 				var objs clientObjects
 				var err error
@@ -2099,7 +2096,7 @@ var _ = Describe("Deployer", func() {
 			Expect(pool.GetFinalizers()).To(ContainElement(wellknown.InferencePoolFinalizer))
 
 			// Get the endpoint picker objects for the InferencePool.
-			objs, err := d.GetObjsToDeploy(nil, pool)
+			objs, err := d.GetObjsToDeploy(context.Background(), pool)
 			Expect(err).NotTo(HaveOccurred())
 			objs = d.SetNamespaceAndOwner(pool, objs)
 
@@ -2167,7 +2164,6 @@ var _ = Describe("Deployer", func() {
 	})
 
 	Context("with listener sets", func() {
-
 		var (
 			listenerSetPort int32 = 4567
 			listenerPort    int32 = 1234
@@ -2505,7 +2501,7 @@ func newCommonCols(t test.Failer, initObjs ...client.Object) *common.CommonColle
 	}
 	mock := krttest.NewMock(t, anys)
 
-	policies := krtcollections.NewPolicyIndex(krtutil.KrtOptions{}, extensionsplug.ContributesPolicies{})
+	policies := krtcollections.NewPolicyIndex(krtutil.KrtOptions{}, extensionsplug.ContributesPolicies{}, settings.Settings{})
 	kubeRawGateways := krttest.GetMockCollection[*api.Gateway](mock)
 	kubeRawListenerSets := krttest.GetMockCollection[*apixv1a1.XListenerSet](mock)
 	gatewayClasses := krttest.GetMockCollection[*api.GatewayClass](mock)

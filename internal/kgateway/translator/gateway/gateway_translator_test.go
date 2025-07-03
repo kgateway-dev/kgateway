@@ -258,6 +258,28 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 			},
 		}),
 	Entry(
+		"TrafficPolicy with targetSelectors and global policy attachment",
+		translatorTestCase{
+			inputFile:  "traffic-policy/label_based.yaml",
+			outputFile: "traffic-policy/label_based_global_policy.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "infra",
+				Name:      "example-gateway",
+			},
+			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
+				expectedPolicies := []reports.PolicyKey{
+					{Group: "gateway.kgateway.dev", Kind: "TrafficPolicy", Namespace: "infra", Name: "transform"},
+					{Group: "gateway.kgateway.dev", Kind: "TrafficPolicy", Namespace: "infra", Name: "rate-limit"},
+					{Group: "gateway.kgateway.dev", Kind: "TrafficPolicy", Namespace: "kgateway-system", Name: "global-policy"},
+				}
+				assertAcceptedPolicyStatus(reportsMap, expectedPolicies)
+			},
+		},
+		func(s *settings.Settings) {
+			s.GlobalPolicyNamespace = "kgateway-system"
+		},
+	),
+	Entry(
 		"TrafficPolicy edge cases",
 		translatorTestCase{
 			inputFile:  "traffic-policy/extauth.yaml",
