@@ -231,6 +231,9 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: stats
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AiExtensionStats
+    - name: tracing
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AiExtensionTrace
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AiExtensionStats
   map:
     fields:
@@ -240,6 +243,25 @@ var schemaYAML = typed.YAMLObject(`types:
           elementType:
             namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.CustomLabel
           elementRelationship: atomic
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AiExtensionTrace
+  map:
+    fields:
+    - name: endpoint
+      type:
+        scalar: string
+      default: ""
+    - name: protocol
+      type:
+        scalar: string
+    - name: sampler
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.OTelTracesSampler
+    - name: timeout
+      type:
+        scalar: string
+    - name: transportSecurity
+      type:
+        scalar: string
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AlwaysOnConfig
   map:
     elementType:
@@ -1545,6 +1567,15 @@ var schemaYAML = typed.YAMLObject(`types:
           elementType:
             namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Priority
           elementRelationship: atomic
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.OTelTracesSampler
+  map:
+    fields:
+    - name: arg
+      type:
+        scalar: string
+    - name: type
+      type:
+        scalar: string
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.OpenAIConfig
   map:
     fields:

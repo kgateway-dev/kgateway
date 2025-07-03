@@ -26,6 +26,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AgentGateway":                              schema_kgateway_v2_api_v1alpha1_AgentGateway(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AiExtension":                               schema_kgateway_v2_api_v1alpha1_AiExtension(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AiExtensionStats":                          schema_kgateway_v2_api_v1alpha1_AiExtensionStats(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AiExtensionTrace":                          schema_kgateway_v2_api_v1alpha1_AiExtensionTrace(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AlwaysOnConfig":                            schema_kgateway_v2_api_v1alpha1_AlwaysOnConfig(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AnthropicConfig":                           schema_kgateway_v2_api_v1alpha1_AnthropicConfig(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AnyValue":                                  schema_kgateway_v2_api_v1alpha1_AnyValue(ref),
@@ -121,6 +122,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.MetadataPathSegment":                       schema_kgateway_v2_api_v1alpha1_MetadataPathSegment(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Moderation":                                schema_kgateway_v2_api_v1alpha1_Moderation(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.MultiPoolConfig":                           schema_kgateway_v2_api_v1alpha1_MultiPoolConfig(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.OTelTracesSampler":                         schema_kgateway_v2_api_v1alpha1_OTelTracesSampler(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.OpenAIConfig":                              schema_kgateway_v2_api_v1alpha1_OpenAIConfig(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.OpenTelemetryAccessLogService":             schema_kgateway_v2_api_v1alpha1_OpenTelemetryAccessLogService(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.OpenTelemetryTracingConfig":                schema_kgateway_v2_api_v1alpha1_OpenTelemetryTracingConfig(ref),
@@ -1072,11 +1074,17 @@ func schema_kgateway_v2_api_v1alpha1_AiExtension(ref common.ReferenceCallback) c
 							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AiExtensionStats"),
 						},
 					},
+					"tracing": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Additional OTel tracing config for AI Extension.",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AiExtensionTrace"),
+						},
+					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AiExtensionStats", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Image", "k8s.io/api/core/v1.ContainerPort", "k8s.io/api/core/v1.EnvVar", "k8s.io/api/core/v1.ResourceRequirements", "k8s.io/api/core/v1.SecurityContext"},
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AiExtensionStats", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AiExtensionTrace", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Image", "k8s.io/api/core/v1.ContainerPort", "k8s.io/api/core/v1.EnvVar", "k8s.io/api/core/v1.ResourceRequirements", "k8s.io/api/core/v1.SecurityContext"},
 	}
 }
 
@@ -1104,6 +1112,57 @@ func schema_kgateway_v2_api_v1alpha1_AiExtensionStats(ref common.ReferenceCallba
 		},
 		Dependencies: []string{
 			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CustomLabel"},
+	}
+}
+
+func schema_kgateway_v2_api_v1alpha1_AiExtensionTrace(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "AiExtensionTrace defines the tracing configuration for the AI extension",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"endpoint": {
+						SchemaProps: spec.SchemaProps{
+							Description: "EndPoint specifies the URL of the OTLP Exporter for traces. Example: \"http://my-otel-collector.svc.cluster.local:4317\" https://opentelemetry.io/docs/languages/sdk-configuration/otlp-exporter/#otel_exporter_otlp_traces_endpoint",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"sampler": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Sampler defines the sampling strategy for OpenTelemetry traces. Sampling helps in reducing the volume of trace data by selectively recording only a subset of traces. https://opentelemetry.io/docs/languages/sdk-configuration/general/#otel_traces_sampler",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.OTelTracesSampler"),
+						},
+					},
+					"timeout": {
+						SchemaProps: spec.SchemaProps{
+							Description: "OTLPTimeout specifies timeout configurations for OTLP (OpenTelemetry Protocol) exports. It allows setting general and trace-specific timeouts for sending data. https://opentelemetry.io/docs/languages/sdk-configuration/otlp-exporter/#otel_exporter_otlp_traces_timeout",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"protocol": {
+						SchemaProps: spec.SchemaProps{
+							Description: "OTLPProtocol specifies the protocol to be used for OTLP exports. This determines how tracing data is serialized and transported (e.g., gRPC, HTTP/Protobuf). https://opentelemetry.io/docs/languages/sdk-configuration/otlp-exporter/#otel_exporter_otlp_traces_protocol",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"transportSecurity": {
+						SchemaProps: spec.SchemaProps{
+							Description: "TransportSecurity controls the TLS (Transport Layer Security) settings when connecting to the tracing server. It determines whether certificate verification should be skipped.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+				},
+				Required: []string{"endpoint"},
+			},
+		},
+		Dependencies: []string{
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.OTelTracesSampler"},
 	}
 }
 
@@ -4777,6 +4836,33 @@ func schema_kgateway_v2_api_v1alpha1_MultiPoolConfig(ref common.ReferenceCallbac
 		},
 		Dependencies: []string{
 			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Priority"},
+	}
+}
+
+func schema_kgateway_v2_api_v1alpha1_OTelTracesSampler(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "OTelTracesSampler defines the configuration for an OpenTelemetry trace sampler. It combines the sampler type with any required arguments for that type.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"type": {
+						SchemaProps: spec.SchemaProps{
+							Description: "SamplerType specifies the type of sampler to use (default value: \"parentbased_always_on\"). Refer to OTelTracesSamplerType for available options. https://opentelemetry.io/docs/languages/sdk-configuration/general/#otel_traces_sampler",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"arg": {
+						SchemaProps: spec.SchemaProps{
+							Description: "SamplerArg provides an argument for the chosen sampler type. For \"traceidratio\" or \"parentbased_traceidratio\" samplers: Sampling probability, a number in the [0..1] range, e.g. 0.25. Default is 1.0 if unset. https://opentelemetry.io/docs/languages/sdk-configuration/general/#otel_traces_sampler_arg",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+				},
+			},
+		},
 	}
 }
 

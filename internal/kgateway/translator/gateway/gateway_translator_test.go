@@ -730,6 +730,14 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 			Name:      "example-gateway",
 		},
 	}),
+	Entry("Backend Config Policy with TLS and SAN verification", translatorTestCase{
+		inputFile:  "backendconfigpolicy/tls-san.yaml",
+		outputFile: "backendconfigpolicy/tls-san.yaml",
+		gwNN: types.NamespacedName{
+			Namespace: "default",
+			Name:      "example-gateway",
+		},
+	}),
 	Entry(
 		"TrafficPolicy with explicit generation",
 		translatorTestCase{

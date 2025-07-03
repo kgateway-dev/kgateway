@@ -55,6 +55,7 @@ func NewSuite(
 
 func (s *tsuite) SetupSuite() {
 	s.manifests = map[string][]string{
+		"TestTracing":                 {tracingManifest},
 		"TestRouting":                 {commonManifest, backendManifest, routesBasicManifest},
 		"TestRoutingPassthrough":      {commonManifest, backendPassthroughManifest, routesBasicManifest},
 		"TestRoutingOverrideProvider": {commonManifest, backendPassthroughManifest, routesBasicManifest},
@@ -105,6 +106,27 @@ func (s *tsuite) AfterTest(suiteName, testName string) {
 		err := s.testInst.Actions.Kubectl().DeleteFileSafe(s.ctx, manifest)
 		s.Require().NoError(err)
 	}
+}
+
+// TODO: Test that spans generated after traffic passes through the AI extension are correctly sent to the backend storage (Tempo).
+func (s *tsuite) TestTracing() {
+	tracingConfig := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "ai-gateway",
+			Namespace: s.testInst.Metadata.InstallNamespace,
+		},
+	}
+
+	s.testInst.Assertions.EventuallyObjectsExist(s.ctx, tracingConfig)
+
+	s.Require().EventuallyWithT(func(c *assert.CollectT) {
+		err := s.testInst.ClusterContext.Client.Get(
+			s.ctx,
+			types.NamespacedName{Name: tracingConfig.Name, Namespace: tracingConfig.Namespace},
+			tracingConfig,
+		)
+		assert.NoErrorf(c, err, "failed to get configMap %s/%s", tracingConfig.Namespace, tracingConfig.Name)
+	}, 30*time.Second, 1*time.Second)
 }
 
 func (s *tsuite) TestRouting() {

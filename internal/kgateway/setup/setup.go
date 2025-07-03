@@ -207,9 +207,8 @@ func StartKgatewayWithConfig(
 		return err
 	}
 
-	if setupOpts.MetricsBindAddress == "" || setupOpts.MetricsBindAddress == "0" {
-		metrics.SetActive(false)
-	}
+	metrics.SetRegistry(setupOpts.GlobalSettings.EnableBuiltinDefaultMetrics, nil)
+	metrics.SetActive(!(setupOpts.MetricsBindAddress == "" || setupOpts.MetricsBindAddress == "0"))
 
 	slog.Info("creating krt collections")
 	krtOpts := krtutil.NewKrtOptions(ctx.Done(), setupOpts.KrtDebugger)

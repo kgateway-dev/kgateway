@@ -1242,6 +1242,16 @@ var _ = Describe("Deployer", func() {
 									Name:          "foo",
 									ContainerPort: 80,
 								}},
+								Tracing: &gw2_v1alpha1.AiExtensionTrace{
+									EndPoint: "http://my-otel-collector.svc.cluster.local:4317",
+									Sampler: &gw2_v1alpha1.OTelTracesSampler{
+										SamplerType: ptr.To(gw2_v1alpha1.OTelTracesSamplerTraceidratio),
+										SamplerArg:  ptr.To("0.5"),
+									},
+									Timeout:           ptr.To(api.Duration("100s")),
+									Protocol:          ptr.To(gw2_v1alpha1.OTLPTracesProtocolTypeGrpc),
+									TransportSecurity: ptr.To(gw2_v1alpha1.OTLPTransportSecurityInsecure),
+								},
 							},
 						},
 					},
@@ -1507,6 +1517,9 @@ var _ = Describe("Deployer", func() {
 
 			cm := objs.findConfigMap(defaultNamespace, defaultConfigMapName)
 			Expect(cm).ToNot(BeNil())
+
+			aiTracingConfig := objs.findConfigMap(defaultNamespace, defaultConfigMapName+"-ai-otel-config")
+			Expect(aiTracingConfig).ToNot(BeNil())
 
 			logLevelsMap := expectedGwp.EnvoyContainer.Bootstrap.ComponentLogLevels
 			levels := []types.GomegaMatcher{}
@@ -2432,6 +2445,16 @@ func fullyDefinedGatewayParameters(name, namespace string) *gw2_v1alpha1.Gateway
 						Tag:        ptr.To("ai-extension-tag"),
 						Digest:     ptr.To("ai-extension-digest"),
 						PullPolicy: ptr.To(corev1.PullAlways),
+					},
+					Tracing: &gw2_v1alpha1.AiExtensionTrace{
+						EndPoint: "http://my-otel-collector.svc.cluster.local:4317",
+						Sampler: &gw2_v1alpha1.OTelTracesSampler{
+							SamplerType: ptr.To(gw2_v1alpha1.OTelTracesSamplerTraceidratio),
+							SamplerArg:  ptr.To("0.5"),
+						},
+						Timeout:           ptr.To(api.Duration("100s")),
+						Protocol:          ptr.To(gw2_v1alpha1.OTLPTracesProtocolTypeGrpc),
+						TransportSecurity: ptr.To(gw2_v1alpha1.OTLPTransportSecurityInsecure),
 					},
 				},
 			},
