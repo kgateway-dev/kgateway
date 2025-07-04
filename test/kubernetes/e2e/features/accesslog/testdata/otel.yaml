@@ -92,7 +92,8 @@ spec:
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: HTTPListenerPolicy
 metadata:
-  name: tracing-policy
+  name: access-logs
+  namespace: default
 spec:
   targetRefs:
   - group: gateway.networking.k8s.io
