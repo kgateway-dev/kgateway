@@ -3,7 +3,6 @@ package waypoint
 import (
 	"fmt"
 
-	"github.com/caarlos0/log"
 	"google.golang.org/protobuf/types/known/anypb"
 	authpb "istio.io/api/security/v1"
 	authcr "istio.io/client-go/pkg/apis/security/v1"
@@ -135,8 +134,11 @@ func separateAndDeduplicatePolicies(policies []*authcr.AuthorizationPolicy) mode
 			result.Custom = append(result.Custom, convertedPolicy)
 		default:
 			// Log error for unsupported action
-			log.Errorf("ignored authorization policy %s.%s with unsupported action: %s",
-				policy.GetNamespace(), policy.GetName(), convertedSpec.GetAction())
+			logger.Error("ignored authorization policy",
+				"namespace", policy.GetNamespace(),
+				"name", policy.GetName(),
+				"action", convertedSpec.GetAction(),
+			)
 		}
 	}
 
