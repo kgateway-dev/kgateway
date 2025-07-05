@@ -3,7 +3,6 @@ Name|Version|License
 [agentgateway/agentgateway](https://github.com/agentgateway/agentgateway)|v0.4.31-0.20250519135723-61536c2b3fa0|Apache License 2.0
 [avast/retry-go](https://github.com/avast/retry-go)|v2.4.3+incompatible|MIT License
 [retry-go/v4](https://github.com/avast/retry-go)|v4.3.3|MIT License
-[caarlos0/log](https://github.com/caarlos0/log)|v0.4.6|MIT License
 [xds/go](https://github.com/cncf/xds)|v0.0.0-20250121191232-2f005788dc42|Apache License 2.0
 [envoyproxy/go-control-plane](https://github.com/envoyproxy/go-control-plane)|v0.13.5-0.20250507123352-93990c5ec02f|Apache License 2.0
 [go-control-plane/contrib](https://github.com/envoyproxy/go-control-plane)|v1.32.5-0.20250507123352-93990c5ec02f|Apache License 2.0

@@ -5,7 +5,6 @@ go 1.24.4
 require (
 	github.com/avast/retry-go v2.4.3+incompatible
 	github.com/avast/retry-go/v4 v4.3.3
-	github.com/caarlos0/log v0.4.6
 	github.com/cncf/xds/go v0.0.0-20250121191232-2f005788dc42
 	github.com/envoyproxy/go-control-plane v0.13.5-0.20250507123352-93990c5ec02f
 	github.com/envoyproxy/go-control-plane/contrib v1.32.5-0.20250507123352-93990c5ec02f
@@ -58,6 +57,7 @@ require (
 	github.com/a8m/envsubst v1.4.3 // indirect
 	github.com/alecthomas/chroma/v2 v2.17.2 // indirect
 	github.com/alecthomas/participle/v2 v2.1.4 // indirect
+	github.com/caarlos0/log v0.4.6 // indirect
 	github.com/dlclark/regexp2 v1.11.5 // indirect
 	github.com/elliotchance/orderedmap v1.8.0 // indirect
 	github.com/goccy/go-yaml v1.17.1 // indirect
