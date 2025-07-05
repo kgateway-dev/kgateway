@@ -7,6 +7,9 @@ import (
 
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	authcr "istio.io/client-go/pkg/apis/security/v1"
+	"istio.io/istio/pkg/kube/krt"
+	"istio.io/istio/pkg/slices"
+	"istio.io/istio/pkg/util/sets"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
@@ -24,10 +27,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	reports "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/stringutils"
-
-	"istio.io/istio/pkg/kube/krt"
-	"istio.io/istio/pkg/slices"
-	"istio.io/istio/pkg/util/sets"
 )
 
 const (
@@ -40,7 +39,7 @@ const (
 	wildcardBindAddrV6 = "::"
 )
 
-var _ extensionsplug.KGwTranslator = &waypointTranslator{}
+var logger = logging.New("plugin/waypoint")
 
 type waypointTranslator struct {
 	queries         query.GatewayQueries
@@ -50,6 +49,8 @@ type waypointTranslator struct {
 	rootNamespace string
 	bindIpv6      bool
 }
+
+var _ extensionsplug.KGwTranslator = &waypointTranslator{}
 
 func NewTranslator(
 	queries query.GatewayQueries,
@@ -64,8 +65,6 @@ func NewTranslator(
 		bindIpv6:        settings.ListenerBindIpv6,
 	}
 }
-
-var logger = logging.New("plugin/waypoint")
 
 // Translate implements extensionsplug.KGwTranslator.
 func (w *waypointTranslator) Translate(
