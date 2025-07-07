@@ -790,7 +790,7 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 )
 
 var _ = DescribeTable("Route Delegation translator",
-	func(inputFile string, errdesc string) {
+	func(inputFile string, errors map[types.NamespacedName]string) {
 		dir := fsutils.MustGetThisDir()
 		translatortest.TestTranslation(
 			GinkgoT(),
@@ -805,39 +805,76 @@ var _ = DescribeTable("Route Delegation translator",
 				Name:      "example-gateway",
 			},
 			func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
-				if errdesc == "" {
+				if errors == nil {
 					Expect(translatortest.AreReportsSuccess(gwNN, reportsMap)).NotTo(HaveOccurred())
 				} else {
-					Expect(translatortest.AreReportsSuccess(gwNN, reportsMap)).To(MatchError(ContainSubstring(errdesc)))
+					for route, err := range errors {
+						Expect(translatortest.GetHTTPRouteStatusError(reportsMap, &route)).To(MatchError(ContainSubstring(err)))
+					}
 				}
 			},
 		)
 	},
-	Entry("Basic config", "basic.yaml", ""),
-	Entry("Child matches parent via parentRefs", "basic_parentref_match.yaml", ""),
-	Entry("Child doesn't match parent via parentRefs", "basic_parentref_mismatch.yaml", "BackendNotFound unresolved reference gateway.networking.k8s.io/HTTPRoute/a/*"),
-	Entry("Children using parentRefs and inherit-parent-matcher", "inherit_parentref.yaml", ""),
-	Entry("Parent delegates to multiple chidren", "multiple_children.yaml", ""),
-	Entry("Child is invalid as it is delegatee and specifies hostnames", "basic_invalid_hostname.yaml", "spec.hostnames must be unset on a delegatee route as they are inherited from the parent route"),
-	Entry("Multi-level recursive delegation", "recursive.yaml", ""),
-	Entry("Cyclic child route", "cyclic1.yaml", "cyclic reference detected while evaluating delegated routes"),
-	Entry("Multi-level cyclic child route", "cyclic2.yaml", "cyclic reference detected while evaluating delegated routes"),
-	Entry("Child rule matcher", "child_rule_matcher.yaml", ""),
-	Entry("Child with multiple parents", "multiple_parents.yaml", "BackendNotFound unresolved reference gateway.networking.k8s.io/HTTPRoute/b/*"),
-	Entry("Child can be an invalid delegatee but valid standalone", "invalid_child_valid_standalone.yaml", "spec.hostnames must be unset on a delegatee route as they are inherited from the parent route"),
-	Entry("Relative paths", "relative_paths.yaml", ""),
-	Entry("Nested absolute and relative path inheritance", "nested_absolute_relative.yaml", ""),
-	Entry("Child route matcher does not match parent", "discard_invalid_child_matches.yaml", ""),
-	Entry("Multi-level multiple parents delegation", "multi_level_multiple_parents.yaml", ""),
-	Entry("TrafficPolicy only on child", "traffic_policy.yaml", ""),
-	Entry("TrafficPolicy inheritance from parent", "traffic_policy_inheritance.yaml", ""),
-	Entry("TrafficPolicy ignore child override on conflict", "traffic_policy_inheritance_child_override_ignore.yaml", ""),
-	Entry("TrafficPolicy merge child override on no conflict", "traffic_policy_inheritance_child_override_ok.yaml", ""),
-	Entry("TrafficPolicy multi level inheritance with child override disabled", "traffic_policy_multi_level_inheritance_override_disabled.yaml", ""),
-	Entry("TrafficPolicy multi level inheritance with child override enabled", "traffic_policy_multi_level_inheritance_override_enabled.yaml", ""),
-	Entry("TrafficPolicy filter override merge", "traffic_policy_filter_override_merge.yaml", ""),
-	Entry("Built-in rule inheritance", "builtin_rule_inheritance.yaml", ""),
-	Entry("Label based delegation", "label_based.yaml", ""),
+	Entry("Basic config", "basic.yaml", nil),
+	Entry("Child matches parent via parentRefs", "basic_parentref_match.yaml", nil),
+	Entry("Child doesn't match parent via parentRefs", "basic_parentref_mismatch.yaml",
+		map[types.NamespacedName]string{
+			{Name: "example-route", Namespace: "infra"}: "BackendNotFound gateway.networking.k8s.io/HTTPRoute/a/*: unresolved reference",
+		},
+	),
+	Entry("Children using parentRefs and inherit-parent-matcher", "inherit_parentref.yaml", nil),
+	Entry("Parent delegates to multiple chidren", "multiple_children.yaml", nil),
+	Entry("Child is invalid as it is delegatee and specifies hostnames", "basic_invalid_hostname.yaml",
+		map[types.NamespacedName]string{
+			{Name: "route-a", Namespace: "a"}:           "spec.hostnames must be unset on a delegatee route as they are inherited from the parent route",
+			{Name: "example-route", Namespace: "infra"}: "BackendNotFound gateway.networking.k8s.io/HTTPRoute/a/*: unresolved reference",
+		},
+	),
+	Entry("Multi-level recursive delegation", "recursive.yaml", nil),
+	Entry("Cyclic child route", "cyclic1.yaml",
+		map[types.NamespacedName]string{
+			{Name: "route-a", Namespace: "a"}: "cyclic reference detected while evaluating delegated routes",
+		},
+	),
+	Entry("Multi-level cyclic child route", "cyclic2.yaml",
+		map[types.NamespacedName]string{
+			{Name: "route-a-b", Namespace: "a-b"}: "cyclic reference detected while evaluating delegated routes",
+		},
+	),
+	Entry("Child rule matcher", "child_rule_matcher.yaml",
+		map[types.NamespacedName]string{
+			{Name: "example-route", Namespace: "infra"}: "BackendNotFound gateway.networking.k8s.io/HTTPRoute/b/*: unresolved reference",
+		},
+	),
+	Entry("Child with multiple parents", "multiple_parents.yaml",
+		map[types.NamespacedName]string{
+			{Name: "foo-route", Namespace: "infra"}: "BackendNotFound gateway.networking.k8s.io/HTTPRoute/b/*: unresolved reference",
+		},
+	),
+	Entry("Child can be an invalid delegatee but valid standalone", "invalid_child_valid_standalone.yaml",
+		map[types.NamespacedName]string{
+			{Name: "route-a", Namespace: "a"}: "spec.hostnames must be unset on a delegatee route as they are inherited from the parent route",
+		},
+	),
+	Entry("Relative paths", "relative_paths.yaml", nil),
+	Entry("Nested absolute and relative path inheritance", "nested_absolute_relative.yaml", nil),
+	Entry("Child route matcher does not match parent", "discard_invalid_child_matches.yaml", nil),
+	Entry("Multi-level multiple parents delegation", "multi_level_multiple_parents.yaml", nil),
+	Entry("TrafficPolicy only on child", "traffic_policy.yaml", nil),
+	Entry("TrafficPolicy inheritance from parent", "traffic_policy_inheritance.yaml", nil),
+	Entry("TrafficPolicy ignore child override on conflict", "traffic_policy_inheritance_child_override_ignore.yaml", nil),
+	Entry("TrafficPolicy merge child override on no conflict", "traffic_policy_inheritance_child_override_ok.yaml", nil),
+	Entry("TrafficPolicy multi level inheritance with child override disabled", "traffic_policy_multi_level_inheritance_override_disabled.yaml", nil),
+	Entry("TrafficPolicy multi level inheritance with child override enabled", "traffic_policy_multi_level_inheritance_override_enabled.yaml", nil),
+	Entry("TrafficPolicy filter override merge", "traffic_policy_filter_override_merge.yaml", nil),
+	Entry("Built-in rule inheritance", "builtin_rule_inheritance.yaml", nil),
+	Entry("Label based delegation", "label_based.yaml", nil),
+	Entry("Unresolved child reference", "unresolved_ref.yaml",
+		map[types.NamespacedName]string{
+			{Name: "example-route", Namespace: "infra"}: "BackendNotFound gateway.networking.k8s.io/HTTPRoute/b/*: unresolved reference",
+			{Name: "route-a", Namespace: "a"}:           "BackendNotFound gateway.networking.k8s.io/HTTPRoute/a-c/: unresolved reference",
+		},
+	),
 )
 
 var _ = DescribeTable("Discovery Namespace Selector",

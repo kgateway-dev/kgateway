@@ -182,13 +182,9 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(
 			}
 		}
 	}
-	out.RequestHeadersToAdd = append(out.GetRequestHeadersToAdd(), backendConfigCtx.RequestHeadersToAdd...)
-	out.RequestHeadersToRemove = append(out.GetRequestHeadersToRemove(), backendConfigCtx.RequestHeadersToRemove...)
-	out.ResponseHeadersToAdd = append(out.GetResponseHeadersToAdd(), backendConfigCtx.ResponseHeadersToAdd...)
-	out.ResponseHeadersToRemove = append(out.GetResponseHeadersToRemove(), backendConfigCtx.ResponseHeadersToRemove...)
 
 	if err == nil && out.GetAction() == nil {
-		if in.Delegates {
+		if in.Delegates && in.Error == nil {
 			return nil
 		} else {
 			err = errors.New("no action specified")
@@ -206,6 +202,8 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(
 
 		switch h.routeReplacementMode {
 		case settings.RouteReplacementStandard, settings.RouteReplacementStrict:
+			// Unset the TypedPerFilterConfig when the route is replaced with a direct response
+			out.TypedPerFilterConfig = nil
 			// Replace invalid route with a direct response
 			out.Action = &envoy_config_route_v3.Route_DirectResponse{
 				DirectResponse: &envoy_config_route_v3.DirectResponseAction{
@@ -218,6 +216,11 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(
 			return nil
 		}
 	}
+
+	out.RequestHeadersToAdd = append(out.GetRequestHeadersToAdd(), backendConfigCtx.RequestHeadersToAdd...)
+	out.RequestHeadersToRemove = append(out.GetRequestHeadersToRemove(), backendConfigCtx.RequestHeadersToRemove...)
+	out.ResponseHeadersToAdd = append(out.GetResponseHeadersToAdd(), backendConfigCtx.ResponseHeadersToAdd...)
+	out.ResponseHeadersToRemove = append(out.GetResponseHeadersToRemove(), backendConfigCtx.ResponseHeadersToRemove...)
 
 	return out
 }

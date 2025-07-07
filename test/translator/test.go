@@ -350,8 +350,14 @@ func ReadYamlFile(file string, out interface{}) error {
 	return UnmarshalAnyYaml(data, out)
 }
 
-func AreReportsSuccess(gwNN types.NamespacedName, reportsMap reports.ReportMap) error {
+func GetHTTPRouteStatusError(
+	reportsMap reports.ReportMap,
+	route *types.NamespacedName,
+) error {
 	for nns, routeReport := range reportsMap.HTTPRoutes {
+		if route != nil && nns != *route {
+			continue
+		}
 		for ref, parentRefReport := range routeReport.Parents {
 			for _, c := range parentRefReport.Conditions {
 				// most route conditions true is good, except RouteConditionPartiallyInvalid
@@ -363,6 +369,15 @@ func AreReportsSuccess(gwNN types.NamespacedName, reportsMap reports.ReportMap) 
 			}
 		}
 	}
+	return nil
+}
+
+func AreReportsSuccess(gwNN types.NamespacedName, reportsMap reports.ReportMap) error {
+	err := GetHTTPRouteStatusError(reportsMap, nil)
+	if err != nil {
+		return err
+	}
+
 	for nns, routeReport := range reportsMap.TCPRoutes {
 		for ref, parentRefReport := range routeReport.Parents {
 			for _, c := range parentRefReport.Conditions {

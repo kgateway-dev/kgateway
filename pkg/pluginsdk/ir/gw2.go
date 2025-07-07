@@ -43,6 +43,9 @@ type HttpRouteRuleMatchIR struct {
 	// PrecedenceWeight specifies the weight of this route rule relative to other route rules.
 	// Higher weight means higher priority, and are evaluated before routes with lower weight
 	PrecedenceWeight int32
+
+	// Error encountered during translation
+	Error error
 }
 
 type ListenerIR struct {

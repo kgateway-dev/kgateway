@@ -63,6 +63,11 @@ Routes:
     - example.com
     name: listener~80~example_com
     routes:
+    - directResponse:
+        status: 500
+      match:
+        pathSeparatedPrefix: /a
+      name: listener~80~example_com-route-0-httproute-example-route-infra-1-0-matcher-0
     - match:
         prefix: /
       name: listener~80~example_com-route-1-httproute-example-route-infra-0-0-matcher-0
