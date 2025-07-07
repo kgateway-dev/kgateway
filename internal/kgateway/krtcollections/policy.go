@@ -721,7 +721,9 @@ func (p *PolicyIndex) getTargetingPoliciesMaybeForBackends(
 		policiesByLabel := p.fetchByTargetRefLabels(kctx, refIndexKeyByNamespace, onlyBackends, targetLabels)
 		policies = append(policies, policiesByLabel...)
 
-		// Check if policies defined in the global policy namespace target this ref
+		// Check if policies defined in the global policy namespace target this ref.
+		// `targetRef.Namespace != p.globalPolicyNamespace` ensures we avoid a duplicate lookup as done
+		// above when targetRef.Namespace is the same as globalPolicyNamespace
 		if p.globalPolicyNamespace != "" && targetRef.Namespace != p.globalPolicyNamespace {
 			refIndexKeyByNamespace.Namespace = p.globalPolicyNamespace
 			globalPolicies := p.fetchByTargetRefLabels(kctx, refIndexKeyByNamespace, onlyBackends, targetLabels)
