@@ -22,10 +22,10 @@ func ToEnvoyCorsPolicy(f *gwv1.HTTPCORSFilter) *corsv3.CorsPolicy {
 	corsPolicy := &corsv3.CorsPolicy{}
 	if len(f.AllowOrigins) > 0 {
 		origins := make([]*envoy_type_matcher_v3.StringMatcher, 0, len(f.AllowOrigins))
-		for i, origin := range f.AllowOrigins {
+		for _, origin := range f.AllowOrigins {
 			matcher := ConvertOriginToEnvoyStringMatcher(string(origin))
 			if matcher != nil {
-				origins[i] = matcher
+				origins = append(origins, matcher)
 			}
 		}
 		if len(origins) > 0 {
