@@ -8,9 +8,10 @@ import (
 
 	corsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/cors/v3"
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/regexutils"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/regexutils"
 )
 
 // ToEnvoyCorsPolicy converts a Gateway API CORS filter to an Envoy CORS policy
