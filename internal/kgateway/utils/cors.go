@@ -2,10 +2,13 @@ package utils
 
 import (
 	"fmt"
+	"log/slog"
+	"regexp"
 	"strings"
 
 	corsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/cors/v3"
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/regexutils"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
@@ -17,11 +20,16 @@ func ToEnvoyCorsPolicy(f *gwv1.HTTPCORSFilter) *corsv3.CorsPolicy {
 	}
 	corsPolicy := &corsv3.CorsPolicy{}
 	if len(f.AllowOrigins) > 0 {
-		origins := make([]*envoy_type_matcher_v3.StringMatcher, len(f.AllowOrigins))
+		origins := make([]*envoy_type_matcher_v3.StringMatcher, 0, len(f.AllowOrigins))
 		for i, origin := range f.AllowOrigins {
-			origins[i] = ConvertOriginToEnvoyStringMatcher(string(origin))
+			matcher := ConvertOriginToEnvoyStringMatcher(string(origin))
+			if matcher != nil {
+				origins[i] = matcher
+			}
 		}
-		corsPolicy.AllowOriginStringMatch = origins
+		if len(origins) > 0 {
+			corsPolicy.AllowOriginStringMatch = origins
+		}
 	}
 	if len(f.AllowMethods) > 0 {
 		methods := make([]string, len(f.AllowMethods))
@@ -101,11 +109,17 @@ func ConvertOriginToEnvoyStringMatcher(origin string) *envoy_type_matcher_v3.Str
 
 	// For any other wildcard pattern, use regex matching
 
-	// First escape all dots
-	regexPattern := strings.ReplaceAll(origin, ".", "\\.")
+	// First escape all special characters
+	regexPattern := regexp.QuoteMeta(origin)
 
-	// Then convert wildcards to regex patterns
-	regexPattern = strings.ReplaceAll(regexPattern, "*", ".*")
+	// Then convert escaped wildcards to regex wildcard patterns
+	regexPattern = strings.ReplaceAll(regexPattern, "\\*", ".*")
+
+	// Test the regex pattern to make sure it is a valid RE2 pattern
+	if err := regexutils.CheckRegexString(regexPattern); err != nil {
+		slog.Error("failed to convert origin to regex pattern", "origin", origin, "error", err)
+		return nil
+	}
 
 	return &envoy_type_matcher_v3.StringMatcher{
 		MatchPattern: &envoy_type_matcher_v3.StringMatcher_SafeRegex{
