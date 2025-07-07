@@ -1,5 +1,0 @@
-gatewayProxies:
-  gatewayProxy:
-    customStaticLayer:
-      envoy.reloadable_features.strict_1xx_and_204_response_headers: false
-      envoy.reloadable_features.disable_tls_inspector_injection: false

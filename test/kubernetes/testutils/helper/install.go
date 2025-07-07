@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/pkg/errors"
 	"github.com/solo-io/go-utils/log"
 	"helm.sh/helm/v3/pkg/repo"
 
@@ -28,7 +27,7 @@ func GetLocalChartPath(chartName string) (string, error) {
 
 	version, err := getChartVersion(testAssetDir, chartName)
 	if err != nil {
-		return "", errors.Wrapf(err, "getting Helm chart version")
+		return "", fmt.Errorf("getting Helm chart version: %w", err)
 	}
 	return filepath.Join(testAssetDir, fmt.Sprintf("%s-%s.tgz", chartName, version)), nil
 }
@@ -39,7 +38,7 @@ func getChartVersion(testAssetDir string, chartName string) (string, error) {
 	helmIndexPath := filepath.Join(testAssetDir, HelmRepoIndexFileName)
 	helmIndex, err := repo.LoadIndexFile(helmIndexPath)
 	if err != nil {
-		return "", errors.Wrapf(err, "parsing Helm index file")
+		return "", fmt.Errorf("parsing Helm index file: %w", err)
 	}
 	log.Printf("found Helm index file at: %s", helmIndexPath)
 
