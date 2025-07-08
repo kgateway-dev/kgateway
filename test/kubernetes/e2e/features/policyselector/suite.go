@@ -1,13 +1,17 @@
 package policyselector
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"net/http"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
@@ -27,36 +31,53 @@ type tsuite struct {
 	ti *e2e.TestInstallation
 
 	// maps test name to a list of manifests to apply before the test
-	manifests map[string][]string
+	commonManifests []string
+	testManifests   map[string][]string
 
 	manifestObjects map[string][]client.Object
 }
 
 func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
 	return &tsuite{
-		ctx: ctx,
-		ti:  testInst,
+		ctx:             ctx,
+		ti:              testInst,
+		commonManifests: []string{labelSelectorManifest, defaults.CurlPodManifest, defaults.HttpbinManifest},
+		testManifests:   map[string][]string{},
 	}
 }
 
 func (s *tsuite) SetupSuite() {
-	s.manifests = map[string][]string{
-		"TestLabelSelector": {labelSelectorManifest, defaults.CurlPodManifest},
+	for _, manifest := range s.commonManifests {
+		content, err := os.ReadFile(manifest)
+		s.Require().NoError(err, manifest)
+		yamlStr := strings.ReplaceAll(string(content), "$INSTALL_NAMESPACE", s.ti.Metadata.InstallNamespace)
+
+		out := new(bytes.Buffer)
+		err = s.ti.Actions.Kubectl().WithReceiver(out).Apply(s.T().Context(), []byte(yamlStr))
+		s.Require().NoErrorf(err, "manifest %s, out: %s", manifest, out.String())
 	}
-	// Not every resource that is applied needs to be verified. We are not testing `kubectl apply`,
-	// but the below code demonstrates how it can be done if necessary
-	s.manifestObjects = map[string][]client.Object{
-		labelSelectorManifest:    {gateway, httpbinRoute, httpbinDeployment},
-		defaults.CurlPodManifest: {defaults.CurlPod},
-	}
+
+	s.ti.Assertions.EventuallyPodsRunning(s.ctx, defaults.CurlPod.Namespace, metav1.ListOptions{
+		LabelSelector: defaults.CurlPodLabelSelector,
+	})
+	s.ti.Assertions.EventuallyPodsRunning(s.ctx, defaults.HttpbinPod.Namespace, metav1.ListOptions{
+		LabelSelector: defaults.HttpbinLabelSelector,
+	})
+	s.ti.Assertions.EventuallyPodsRunning(s.ctx, gateway.Namespace, metav1.ListOptions{
+		LabelSelector: defaults.WellKnownAppLabel + "=" + gateway.Name,
+	})
 }
 
 func (s *tsuite) TearDownSuite() {
+	for i := len(s.commonManifests) - 1; i >= 0; i-- {
+		manifest := s.commonManifests[i]
+		err := s.ti.Actions.Kubectl().DeleteFileSafe(s.ctx, manifest)
+		s.NoError(err, manifest)
+	}
 }
 
 func (s *tsuite) BeforeTest(suiteName, testName string) {
-	manifests := s.manifests[testName]
-	for _, manifest := range manifests {
+	for _, manifest := range s.testManifests[testName] {
 		err := s.ti.Actions.Kubectl().ApplyFile(s.ctx, manifest)
 		s.Require().NoError(err)
 		s.ti.Assertions.EventuallyObjectsExist(s.ctx, s.manifestObjects[manifest]...)
@@ -64,10 +85,9 @@ func (s *tsuite) BeforeTest(suiteName, testName string) {
 }
 
 func (s *tsuite) AfterTest(suiteName, testName string) {
-	manifests := s.manifests[testName]
-	for _, manifest := range manifests {
+	for _, manifest := range s.testManifests[testName] {
 		err := s.ti.Actions.Kubectl().DeleteFileSafe(s.ctx, manifest)
-		s.Require().NoError(err)
+		s.NoError(err)
 		s.ti.Assertions.EventuallyObjectsNotExist(s.ctx, s.manifestObjects[manifest]...)
 	}
 }
@@ -94,4 +114,25 @@ func (s *tsuite) TestLabelSelector() {
 		assert.Contains(c, logs, `"response_code":200`)
 		assert.Contains(c, logs, `"backendCluster":"kube_default_httpbin_8000"`)
 	}, 5*time.Second, 100*time.Millisecond)
+}
+
+func (s *tsuite) TestGlobalPolicy() {
+	requestHeaders := map[string]string{
+		"Origin":                        "https://example.com",
+		"Access-Control-Request-Method": "GET",
+	}
+	wantResponseHeaders := map[string]any{
+		"Access-Control-Allow-Origin":  "https://example.com",
+		"Access-Control-Allow-Methods": "GET, POST, DELETE",
+		"Access-Control-Allow-Headers": "x-custom-header",
+	}
+
+	// Verify cors policy defined in Settings.GlobalPolicyNamespace (kgateway-system) is applied
+	s.ti.Assertions.AssertEventuallyConsistentCurlResponse(s.ctx, defaults.CurlPodExecOpt,
+		[]curl.Option{curl.WithHostPort(proxyHostPort), curl.WithPath("/get"), curl.WithHeaders(requestHeaders), curl.WithMethod(http.MethodOptions)},
+		&testmatchers.HttpResponse{
+			StatusCode: http.StatusOK,
+			Headers:    wantResponseHeaders,
+		},
+	)
 }

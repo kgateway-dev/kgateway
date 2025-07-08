@@ -688,11 +688,15 @@ func preRouteIndex(t test.Failer, inputs []any) *RoutesIndex {
 	services := krttest.GetMockCollection[*corev1.Service](mock)
 	policyCol := krttest.GetMockCollection[ir.PolicyWrapper](mock)
 
-	policies := NewPolicyIndex(krtutil.KrtOptions{}, extensionsplug.ContributesPolicies{
-		wellknown.TrafficPolicyGVK.GroupKind(): {
-			Policies: policyCol,
+	policies := NewPolicyIndex(
+		krtutil.KrtOptions{},
+		extensionsplug.ContributesPolicies{
+			wellknown.TrafficPolicyGVK.GroupKind(): {
+				Policies: policyCol,
+			},
 		},
-	})
+		settings.Settings{},
+	)
 	refgrants := NewRefGrantIndex(krttest.GetMockCollection[*gwv1beta1.ReferenceGrant](mock))
 	upstreams := NewBackendIndex(krtutil.KrtOptions{}, policies, refgrants)
 	upstreams.AddBackends(svcGk, k8sSvcUpstreams(services))

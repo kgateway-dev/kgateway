@@ -144,7 +144,7 @@ func InitCollections(
 	gatewayClasses := krt.WrapClient(kclient.New[*gwv1.GatewayClass](istioClient), krtopts.ToOptions("KubeGatewayClasses")...)
 	namespaces, _ := NewNamespaceCollection(ctx, istioClient, krtopts)
 
-	policies := NewPolicyIndex(krtopts, plugins.ContributesPolicies)
+	policies := NewPolicyIndex(krtopts, plugins.ContributesPolicies, globalSettings)
 	backendIndex := NewBackendIndex(krtopts, policies, refgrants)
 	initBackends(plugins, backendIndex)
 	endpointIRs := initEndpoints(plugins, krtopts)

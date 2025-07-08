@@ -1,0 +1,126 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otel-collector-conf
+  labels:
+    app: opentelemetry
+    component: otel-collector-conf
+data:
+  otel-collector-config: |
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            include_metadata: true
+            endpoint: 0.0.0.0:4317
+    processors:
+    exporters:
+      debug:
+        verbosity: detailed
+    service:
+      extensions: []
+      pipelines:
+        logs:
+          receivers: [otlp]
+          processors: []
+          exporters: [debug]
+        traces:
+          receivers: [otlp]
+          processors: []
+          exporters: [debug]
+      telemetry:
+        logs:
+          level: "DEBUG"
+          development: true
+          encoding: "json"
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: otel-collector
+  labels:
+    app: opentelemetry
+    component: otel-collector
+    app.kubernetes.io/name: otel-collector
+spec:
+  containers:
+  - command:
+      - "/otelcol-contrib"
+      - "--config"
+      - "/conf/otel-collector-config.yaml"
+    image: otel/opentelemetry-collector-contrib:0.116.1
+    name: otel-collector
+    resources:
+      limits:
+        cpu: 1
+        memory: 2Gi
+      requests:
+        cpu: 200m
+        memory: 400Mi
+    ports: # Comment out ports for platforms as needed.
+    - containerPort: 4317 # Default gRPC endpoint for OpenTelemetry receiver.
+    volumeMounts:
+    - name: otel-collector-config-vol
+      mountPath: /conf
+  volumes:
+    - name: otel-collector-config-vol
+      configMap:
+        name: otel-collector-conf
+        items:
+          - key: otel-collector-config
+            path: otel-collector-config.yaml
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: otel-collector
+  labels:
+    app: opentelemetry
+    component: otel-collector
+    app.kubernetes.io/name: opentelemetry
+spec:
+  ports:
+  - name: otlp-grpc # Default endpoint for OpenTelemetry gRPC receiver.
+    port: 4317
+    protocol: TCP
+    targetPort: 4317
+    appProtocol: grpc
+  selector:
+    app.kubernetes.io/name: otel-collector
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: HTTPListenerPolicy
+metadata:
+  name: access-logs
+  namespace: default
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: gw
+  accessLog:
+  - openTelemetry:
+      grpcService:
+        backendRef:
+          name: otel-collector
+          namespace: default
+          port: 4317
+        logName: "test-otel-accesslog-service"
+      body: >-
+        "%REQ(:METHOD)% %REQ(X-ENVOY-ORIGINAL-PATH?:PATH)% %RESPONSE_CODE% "%REQ(:AUTHORITY)%" "%UPSTREAM_CLUSTER%"\n'
+      attributes:
+        values:
+        - key: custom
+          value:
+            stringValue: string
+        - key: kvlist
+          value:
+            kvListValue:
+              values:
+              - key: key-1
+                value:
+                  stringValue: value-1
+              - key: key-2
+                value:
+                  stringValue: value-2

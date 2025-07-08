@@ -258,6 +258,28 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 			},
 		}),
 	Entry(
+		"TrafficPolicy with targetSelectors and global policy attachment",
+		translatorTestCase{
+			inputFile:  "traffic-policy/label_based.yaml",
+			outputFile: "traffic-policy/label_based_global_policy.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "infra",
+				Name:      "example-gateway",
+			},
+			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
+				expectedPolicies := []reports.PolicyKey{
+					{Group: "gateway.kgateway.dev", Kind: "TrafficPolicy", Namespace: "infra", Name: "transform"},
+					{Group: "gateway.kgateway.dev", Kind: "TrafficPolicy", Namespace: "infra", Name: "rate-limit"},
+					{Group: "gateway.kgateway.dev", Kind: "TrafficPolicy", Namespace: "kgateway-system", Name: "global-policy"},
+				}
+				assertAcceptedPolicyStatus(reportsMap, expectedPolicies)
+			},
+		},
+		func(s *settings.Settings) {
+			s.GlobalPolicyNamespace = "kgateway-system"
+		},
+	),
+	Entry(
 		"TrafficPolicy edge cases",
 		translatorTestCase{
 			inputFile:  "traffic-policy/extauth.yaml",
@@ -606,6 +628,89 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 			Name:      "example-gateway",
 		},
 	}),
+	Entry("DirectResponse with missing reference reports correctly", translatorTestCase{
+		inputFile:  "directresponse/missing-ref.yaml",
+		outputFile: "directresponse/missing-ref.yaml",
+		gwNN: types.NamespacedName{
+			Namespace: "default",
+			Name:      "example-gateway",
+		},
+		assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
+			route := &gwv1.HTTPRoute{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "example-route",
+					Namespace: "default",
+				},
+			}
+			routeStatus := reportsMap.BuildRouteStatus(context.Background(), route, wellknown.DefaultGatewayClassName)
+			Expect(routeStatus).NotTo(BeNil())
+			Expect(routeStatus.Parents).To(HaveLen(1))
+
+			// The route itself is considered resolved, but there should be a condition indicating the DirectResponse issue
+			resolvedRefs := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionResolvedRefs))
+			Expect(resolvedRefs).NotTo(BeNil())
+			Expect(resolvedRefs.Status).To(Equal(metav1.ConditionTrue))
+			Expect(resolvedRefs.Reason).To(Equal(string(gwv1.RouteReasonResolvedRefs)))
+
+			// Check if there's a PartiallyInvalid condition that reports the missing DirectResponse
+			partiallyInvalid := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionPartiallyInvalid))
+			Expect(partiallyInvalid).NotTo(BeNil())
+			Expect(partiallyInvalid.Status).To(Equal(metav1.ConditionTrue))
+			Expect(partiallyInvalid.Message).To(ContainSubstring("Dropped Rule"))
+			Expect(partiallyInvalid.Message).To(ContainSubstring("no action specified"))
+		},
+	}),
+	Entry("DirectResponse with overlapping filters reports correctly", translatorTestCase{
+		inputFile:  "directresponse/overlapping-filters.yaml",
+		outputFile: "directresponse/overlapping-filters.yaml",
+		gwNN: types.NamespacedName{
+			Namespace: "default",
+			Name:      "example-gateway",
+		},
+		assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
+			route := &gwv1.HTTPRoute{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "example-route",
+					Namespace: "default",
+				},
+			}
+			routeStatus := reportsMap.BuildRouteStatus(context.Background(), route, wellknown.DefaultGatewayClassName)
+			Expect(routeStatus).NotTo(BeNil())
+			Expect(routeStatus.Parents).To(HaveLen(1))
+
+			// Check for PartiallyInvalid condition due to overlapping filters
+			partiallyInvalid := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionPartiallyInvalid))
+			Expect(partiallyInvalid).NotTo(BeNil())
+			Expect(partiallyInvalid.Status).To(Equal(metav1.ConditionTrue))
+			Expect(partiallyInvalid.Reason).To(Equal(string(gwv1.RouteReasonUnsupportedValue)))
+			Expect(partiallyInvalid.Message).To(ContainSubstring("cannot be applied to route with existing action"))
+		},
+	}),
+	Entry("DirectResponse with invalid backendRef filter reports correctly", translatorTestCase{
+		inputFile:  "directresponse/invalid-backendref-filter.yaml",
+		outputFile: "directresponse/invalid-backendref-filter.yaml",
+		gwNN: types.NamespacedName{
+			Namespace: "default",
+			Name:      "example-gateway",
+		},
+		assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
+			route := &gwv1.HTTPRoute{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "example-route",
+					Namespace: "default",
+				},
+			}
+			routeStatus := reportsMap.BuildRouteStatus(context.Background(), route, wellknown.DefaultGatewayClassName)
+			Expect(routeStatus).NotTo(BeNil())
+			Expect(routeStatus.Parents).To(HaveLen(1))
+
+			// DirectResponse attached to backendRef should be ignored, route should resolve normally
+			resolvedRefs := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionResolvedRefs))
+			Expect(resolvedRefs).NotTo(BeNil())
+			Expect(resolvedRefs.Status).To(Equal(metav1.ConditionTrue))
+			Expect(resolvedRefs.Reason).To(Equal(string(gwv1.RouteReasonResolvedRefs)))
+		},
+	}),
 	Entry("HTTPRoutes with timeout and retry", translatorTestCase{
 		inputFile:  "httproute-timeout-retry/manifest.yaml",
 		outputFile: "httproute-timeout-retry-proxy.yaml",
@@ -730,6 +835,14 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 			Name:      "example-gateway",
 		},
 	}),
+	Entry("Backend Config Policy with TLS and SAN verification", translatorTestCase{
+		inputFile:  "backendconfigpolicy/tls-san.yaml",
+		outputFile: "backendconfigpolicy/tls-san.yaml",
+		gwNN: types.NamespacedName{
+			Namespace: "default",
+			Name:      "example-gateway",
+		},
+	}),
 	Entry(
 		"TrafficPolicy with explicit generation",
 		translatorTestCase{
@@ -760,7 +873,7 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 )
 
 var _ = DescribeTable("Route Delegation translator",
-	func(inputFile string, errdesc string) {
+	func(inputFile string, errors map[types.NamespacedName]string) {
 		dir := fsutils.MustGetThisDir()
 		translatortest.TestTranslation(
 			GinkgoT(),
@@ -775,39 +888,76 @@ var _ = DescribeTable("Route Delegation translator",
 				Name:      "example-gateway",
 			},
 			func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
-				if errdesc == "" {
+				if errors == nil {
 					Expect(translatortest.AreReportsSuccess(gwNN, reportsMap)).NotTo(HaveOccurred())
 				} else {
-					Expect(translatortest.AreReportsSuccess(gwNN, reportsMap)).To(MatchError(ContainSubstring(errdesc)))
+					for route, err := range errors {
+						Expect(translatortest.GetHTTPRouteStatusError(reportsMap, &route)).To(MatchError(ContainSubstring(err)))
+					}
 				}
 			},
 		)
 	},
-	Entry("Basic config", "basic.yaml", ""),
-	Entry("Child matches parent via parentRefs", "basic_parentref_match.yaml", ""),
-	Entry("Child doesn't match parent via parentRefs", "basic_parentref_mismatch.yaml", "BackendNotFound unresolved reference gateway.networking.k8s.io/HTTPRoute/a/*"),
-	Entry("Children using parentRefs and inherit-parent-matcher", "inherit_parentref.yaml", ""),
-	Entry("Parent delegates to multiple chidren", "multiple_children.yaml", ""),
-	Entry("Child is invalid as it is delegatee and specifies hostnames", "basic_invalid_hostname.yaml", "spec.hostnames must be unset on a delegatee route as they are inherited from the parent route"),
-	Entry("Multi-level recursive delegation", "recursive.yaml", ""),
-	Entry("Cyclic child route", "cyclic1.yaml", "cyclic reference detected while evaluating delegated routes"),
-	Entry("Multi-level cyclic child route", "cyclic2.yaml", "cyclic reference detected while evaluating delegated routes"),
-	Entry("Child rule matcher", "child_rule_matcher.yaml", ""),
-	Entry("Child with multiple parents", "multiple_parents.yaml", "BackendNotFound unresolved reference gateway.networking.k8s.io/HTTPRoute/b/*"),
-	Entry("Child can be an invalid delegatee but valid standalone", "invalid_child_valid_standalone.yaml", "spec.hostnames must be unset on a delegatee route as they are inherited from the parent route"),
-	Entry("Relative paths", "relative_paths.yaml", ""),
-	Entry("Nested absolute and relative path inheritance", "nested_absolute_relative.yaml", ""),
-	Entry("Child route matcher does not match parent", "discard_invalid_child_matches.yaml", ""),
-	Entry("Multi-level multiple parents delegation", "multi_level_multiple_parents.yaml", ""),
-	Entry("TrafficPolicy only on child", "traffic_policy.yaml", ""),
-	Entry("TrafficPolicy inheritance from parent", "traffic_policy_inheritance.yaml", ""),
-	Entry("TrafficPolicy ignore child override on conflict", "traffic_policy_inheritance_child_override_ignore.yaml", ""),
-	Entry("TrafficPolicy merge child override on no conflict", "traffic_policy_inheritance_child_override_ok.yaml", ""),
-	Entry("TrafficPolicy multi level inheritance with child override disabled", "traffic_policy_multi_level_inheritance_override_disabled.yaml", ""),
-	Entry("TrafficPolicy multi level inheritance with child override enabled", "traffic_policy_multi_level_inheritance_override_enabled.yaml", ""),
-	Entry("TrafficPolicy filter override merge", "traffic_policy_filter_override_merge.yaml", ""),
-	Entry("Built-in rule inheritance", "builtin_rule_inheritance.yaml", ""),
-	Entry("Label based delegation", "label_based.yaml", ""),
+	Entry("Basic config", "basic.yaml", nil),
+	Entry("Child matches parent via parentRefs", "basic_parentref_match.yaml", nil),
+	Entry("Child doesn't match parent via parentRefs", "basic_parentref_mismatch.yaml",
+		map[types.NamespacedName]string{
+			{Name: "example-route", Namespace: "infra"}: "BackendNotFound gateway.networking.k8s.io/HTTPRoute/a/*: unresolved reference",
+		},
+	),
+	Entry("Children using parentRefs and inherit-parent-matcher", "inherit_parentref.yaml", nil),
+	Entry("Parent delegates to multiple chidren", "multiple_children.yaml", nil),
+	Entry("Child is invalid as it is delegatee and specifies hostnames", "basic_invalid_hostname.yaml",
+		map[types.NamespacedName]string{
+			{Name: "route-a", Namespace: "a"}:           "spec.hostnames must be unset on a delegatee route as they are inherited from the parent route",
+			{Name: "example-route", Namespace: "infra"}: "BackendNotFound gateway.networking.k8s.io/HTTPRoute/a/*: unresolved reference",
+		},
+	),
+	Entry("Multi-level recursive delegation", "recursive.yaml", nil),
+	Entry("Cyclic child route", "cyclic1.yaml",
+		map[types.NamespacedName]string{
+			{Name: "route-a", Namespace: "a"}: "cyclic reference detected while evaluating delegated routes",
+		},
+	),
+	Entry("Multi-level cyclic child route", "cyclic2.yaml",
+		map[types.NamespacedName]string{
+			{Name: "route-a-b", Namespace: "a-b"}: "cyclic reference detected while evaluating delegated routes",
+		},
+	),
+	Entry("Child rule matcher", "child_rule_matcher.yaml",
+		map[types.NamespacedName]string{
+			{Name: "example-route", Namespace: "infra"}: "BackendNotFound gateway.networking.k8s.io/HTTPRoute/b/*: unresolved reference",
+		},
+	),
+	Entry("Child with multiple parents", "multiple_parents.yaml",
+		map[types.NamespacedName]string{
+			{Name: "foo-route", Namespace: "infra"}: "BackendNotFound gateway.networking.k8s.io/HTTPRoute/b/*: unresolved reference",
+		},
+	),
+	Entry("Child can be an invalid delegatee but valid standalone", "invalid_child_valid_standalone.yaml",
+		map[types.NamespacedName]string{
+			{Name: "route-a", Namespace: "a"}: "spec.hostnames must be unset on a delegatee route as they are inherited from the parent route",
+		},
+	),
+	Entry("Relative paths", "relative_paths.yaml", nil),
+	Entry("Nested absolute and relative path inheritance", "nested_absolute_relative.yaml", nil),
+	Entry("Child route matcher does not match parent", "discard_invalid_child_matches.yaml", nil),
+	Entry("Multi-level multiple parents delegation", "multi_level_multiple_parents.yaml", nil),
+	Entry("TrafficPolicy only on child", "traffic_policy.yaml", nil),
+	Entry("TrafficPolicy inheritance from parent", "traffic_policy_inheritance.yaml", nil),
+	Entry("TrafficPolicy ignore child override on conflict", "traffic_policy_inheritance_child_override_ignore.yaml", nil),
+	Entry("TrafficPolicy merge child override on no conflict", "traffic_policy_inheritance_child_override_ok.yaml", nil),
+	Entry("TrafficPolicy multi level inheritance with child override disabled", "traffic_policy_multi_level_inheritance_override_disabled.yaml", nil),
+	Entry("TrafficPolicy multi level inheritance with child override enabled", "traffic_policy_multi_level_inheritance_override_enabled.yaml", nil),
+	Entry("TrafficPolicy filter override merge", "traffic_policy_filter_override_merge.yaml", nil),
+	Entry("Built-in rule inheritance", "builtin_rule_inheritance.yaml", nil),
+	Entry("Label based delegation", "label_based.yaml", nil),
+	Entry("Unresolved child reference", "unresolved_ref.yaml",
+		map[types.NamespacedName]string{
+			{Name: "example-route", Namespace: "infra"}: "BackendNotFound gateway.networking.k8s.io/HTTPRoute/b/*: unresolved reference",
+			{Name: "route-a", Namespace: "a"}:           "BackendNotFound gateway.networking.k8s.io/HTTPRoute/a-c/: unresolved reference",
+		},
+	),
 )
 
 var _ = DescribeTable("Discovery Namespace Selector",

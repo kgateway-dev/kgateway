@@ -85,4 +85,17 @@ Commercial support is available at
 <p><em>Thank you for using nginx.</em></p>
 </body>
 </html>`
+
+	HttpbinManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "httpbin.yaml")
+
+	HttpbinLabelSelector = "app=httpbin"
+
+	HttpbinPod = &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "httpbin",
+			Namespace: "default",
+		},
+	}
+
+	WellKnownAppLabel = "app.kubernetes.io/name"
 )

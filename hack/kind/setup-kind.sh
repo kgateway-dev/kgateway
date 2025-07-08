@@ -60,8 +60,6 @@ if [[ $SKIP_DOCKER == 'true' ]]; then
   # TODO(tim): refactor the Makefile & CI scripts so we're loading local
   # charts to real helm repos, and then we can remove this block.
   echo "SKIP_DOCKER=true, not building images or chart"
-  $HELM repo add gloo https://storage.googleapis.com/solo-public-helm
-  $HELM repo update
 else
   # 2. Make all the docker images and load them to the kind cluster
   VERSION=$VERSION CLUSTER_NAME=$CLUSTER_NAME make kind-build-and-load

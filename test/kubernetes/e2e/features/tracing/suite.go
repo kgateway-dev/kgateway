@@ -1,242 +1,97 @@
-//go:build ignore
-
 package tracing
 
 import (
 	"context"
-	"net/http"
+	"fmt"
+	"math/rand"
+	"strings"
 	"time"
 
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	"github.com/stretchr/testify/assert"
+	"github.com/onsi/gomega"
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	gloo_defaults "github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/defaults"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
-	testdefaults "github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/defaults"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/defaults"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/tests/base"
 )
 
 var _ e2e.NewSuiteFunc = NewTestingSuite
 
 type testingSuite struct {
-	suite.Suite
-
-	ctx context.Context
-
-	testInstallation *e2e.TestInstallation
+	*base.BaseTestingSuite
 }
 
-func NewTestingSuite(
-	ctx context.Context,
-	testInst *e2e.TestInstallation,
-) suite.TestingSuite {
+func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
 	return &testingSuite{
-		ctx:              ctx,
-		testInstallation: testInst,
+		base.NewBaseTestingSuite(ctx, testInst, setup, testCases),
 	}
 }
 
-/*
-Overview of tracing tests:
-
-1. install echo-server (upstream) and curl in SetupSuite (this can be done
-once)
-
-2. install/reinstall otelcol in BeforeTest - this avoids contamination between
-tests by ensuring the console output is clean for each test.
-
-3. send requests to the gateway-proxy so envoy sends traces to otelcol
-
-4. parse stdout from otelcol to see if the trace contains the data that we want
-*/
-
-func (s *testingSuite) SetupSuite() {
-	var err error
-
-	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, testdefaults.CurlPodManifest)
-	s.NoError(err, "can apply CurlPodManifest")
-	s.testInstallation.Assertions.EventuallyPodsRunning(
-		s.ctx,
-		testdefaults.CurlPod.GetObjectMeta().GetNamespace(),
-		metav1.ListOptions{
-			LabelSelector: "app.kubernetes.io/name=curl",
-		},
-	)
-
-	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, testdefaults.HttpEchoPodManifest)
-	s.NoError(err, "can apply HttpEchoPodManifest")
-	s.testInstallation.Assertions.EventuallyPodsRunning(
-		s.ctx,
-		testdefaults.HttpEchoPod.GetObjectMeta().GetNamespace(),
-		metav1.ListOptions{
-			LabelSelector: "app.kubernetes.io/name=http-echo",
-		},
-	)
-
-	// Previously, we would create/delete the Service for each test. However, this would occasionally lead to:
-	// * Hostname gateway-proxy-tracing.gloo-gateway-edge-test.svc.cluster.local was found in DNS cache
-	//*   Trying 10.96.181.139:18080...
-	//* Connection timed out after 3001 milliseconds
-	//
-	// The suspicion is that the rotation of the Service meant that the DNS cache became out of date,
-	// and we would curl the old IP.
-	// The workaround to that is to create the service just once at the beginning of the suite.
-	// This mirrors how Services are typically managed in Gloo Gateway, where they are tied
-	// to an installation, and not dynamically updated
-	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, gatewayProxyServiceManifest,
-		"-n", s.testInstallation.Metadata.InstallNamespace)
-	s.NoError(err, "can apply service/gateway-proxy-tracing")
+func (s *testingSuite) TestOTelTracing() {
+	s.testOTelTracing()
 }
 
-func (s *testingSuite) TearDownSuite() {
-	var err error
-
-	err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, testdefaults.CurlPodManifest)
-	s.Assertions.NoError(err, "can delete curl pod")
-
-	err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, testdefaults.HttpEchoPodManifest)
-	s.Assertions.NoError(err, "can delete echo server")
-
-	err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, gatewayProxyServiceManifest,
-		"-n", s.testInstallation.Metadata.InstallNamespace)
-	s.NoError(err, "can delete service/gateway-proxy-tracing")
+func (s *testingSuite) TestOTelTracingSecure() {
+	s.testOTelTracing()
 }
 
-func (s *testingSuite) BeforeTest(string, string) {
-	var err error
+// testOTelTracing makes a request to the httpbin service
+// and checks if the collector pod logs contain the expected lines
+func (s *testingSuite) testOTelTracing() {
+	s.TestInstallation.Assertions.EventuallyHTTPListenerPolicyCondition(s.Ctx, "tracing-policy", "default", gwv1.GatewayConditionAccepted, metav1.ConditionTrue)
 
-	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, setupOtelcolManifest)
-	s.NoError(err, "can apply opentelemetry collector")
-	s.testInstallation.Assertions.EventuallyPodsRunning(
-		s.ctx,
-		otelcolPod.GetObjectMeta().GetNamespace(),
-		otelcolSelector,
-	)
+	// The headerValue passed is used to differentiate between multiple calls by identifying a unique trace per call
+	headerValue := fmt.Sprintf("%v", rand.Intn(10000))
+	s.TestInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
+		// make curl request to httpbin service with the custom header
+		s.TestInstallation.Assertions.AssertEventualCurlResponse(
+			s.Ctx,
+			defaults.CurlPodExecOpt,
+			[]curl.Option{
+				curl.WithHostHeader("www.example.com"),
+				curl.WithHeader("x-header-tag", headerValue),
+				curl.WithPath("/status/200"),
+				curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
+			},
+			&matchers.HttpResponse{
+				StatusCode: 200,
+			},
+			20*time.Second,
+			2*time.Second,
+		)
 
-	// Technical Debt!!
-	// https://github.com/kgateway-dev/kgateway/issues/10293
-	// There is a bug in the Control Plane that results in an Error reported on the status
-	// when the Upstream of the Tracing Collector is not found. This results in the VirtualService
-	// that references that Upstream being rejected. What should occur is a Warning is reported,
-	// and the resource is accepted since validation.allowWarnings=true is set.
-	// We have plans to fix this in the code itself. But for a short-term solution, to reduce the
-	// noise in CI/CD of this test flaking, we perform some simple retry logic here.
-	s.EventuallyWithT(func(c *assert.CollectT) {
-		err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, tracingConfigManifest)
-		assert.NoError(c, err, "can apply gloo tracing resources")
-	}, time.Second*5, time.Second*1, "can apply tracing resources")
+		// Example trace found in the otel-collector logs
+		// {"level":"info","ts":"2025-06-20T17:58:58.513Z","msg":"ResourceSpans #0\nResource SchemaURL: \nResource attributes:\n     -> service.name: Str(my:service)\n     -> telemetry.sdk.language: Str(cpp)\n     -> telemetry.sdk.name: Str(envoy)\n     -> telemetry.sdk.version: Str(a152096e910205ccf09863f93fc66150dc5438aa/1.34.1/Distribution/RELEASE/BoringSSL)\nScopeSpans #0\nScopeSpans SchemaURL: \nInstrumentationScope envoy a152096e910205ccf09863f93fc66150dc5438aa/1.34.1/Distribution/RELEASE/BoringSSL\nSpan #0\n    Trace ID       : 3771968e2d941a83f41517dd052fbfdb\n    Parent ID      : \n    ID             : 8d10646806636467\n    Name           : ingress\n    Kind           : Server\n    Start time     : 2025-06-20 17:58:55.73679 +0000 UTC\n    End time       : 2025-06-20 17:58:55.759439 +0000 UTC\n    Status code    : Unset\n    Status message : \nAttributes:\n     -> node_id: Str(gw-7fc7dbd6fc-fb24g.default)\n     -> zone: Str()\n     -> guid:x-request-id: Str(b5fa5226-ad2f-90a1-bd3a-e02d834301cd)\n     -> http.url: Str(http://www.example.com/status/200)\n     -> http.method: Str(GET)\n     -> downstream_cluster: Str(-)\n     -> user_agent: Str(curl/7.83.1-DEV)\n     -> http.protocol: Str(HTTP/1.1)\n     -> peer.address: Str(10.244.0.21)\n     -> request_size: Str(0)\n     -> response_size: Str(0)\n     -> component: Str(proxy)\n     -> upstream_cluster: Str(kube_httpbin_httpbin_8000)\n     -> upstream_cluster.name: Str(kube_httpbin_httpbin_8000)\n     -> http.status_code: Str(200)\n     -> response_flags: Str(-)\n     -> custom: Str(literal)\n     -> request: Str(value)\n","kind":"exporter","data_type":"traces","name":"debug"}
+		expectedLines := []string{
+			`-> http.url: Str(http://www.example.com/status/200)`,
+			`-> http.method: Str(GET)`,
+			`-> http.status_code: Str(200)`,
+			`-> upstream_cluster: Str(kube_httpbin_httpbin_8000)`,
+			// Resource attributes specified via the environmentResourceDetector
+			`-> environment: Str(detector)`,
+			`-> resource: Str(attribute)`,
+			// Custom tag passed in the config
+			`-> custom: Str(literal)`,
+			// Custom tag fetched from the request header
+			fmt.Sprintf("-> request: Str(%s)", headerValue),
+		}
 
-	// accept the upstream
-	// Upstreams no longer report status if they have not been translated at all to avoid conflicting with
-	// other syncers that have translated them, so we can only detect that the objects exist here
-	s.testInstallation.Assertions.EventuallyResourceExists(
-		func() (resources.Resource, error) {
-			return s.testInstallation.ResourceClients.UpstreamClient().Read(
-				otelcolUpstream.Namespace, otelcolUpstream.Name, clients.ReadOpts{Ctx: s.ctx})
-		},
-	)
+		// fetch the collector pod logs
+		logs, err := s.TestInstallation.Actions.Kubectl().GetContainerLogs(s.Ctx, "default", "otel-collector")
+		g.Expect(err).NotTo(gomega.HaveOccurred(), "Failed to get pod logs")
 
-	// accept the virtual service
-	s.testInstallation.Assertions.EventuallyResourceStatusMatchesState(
-		func() (resources.InputResource, error) {
-			return s.testInstallation.ResourceClients.VirtualServiceClient().Read(
-				tracingVs.Namespace, tracingVs.Name, clients.ReadOpts{Ctx: s.ctx})
-		},
-		core.Status_Accepted,
-		gloo_defaults.GlooReporter,
-	)
-
-	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, gatewayConfigManifest,
-		"-n", s.testInstallation.Metadata.InstallNamespace)
-	s.NoError(err, "can create gateway and service")
-	s.testInstallation.Assertions.EventuallyResourceStatusMatchesState(
-		func() (resources.InputResource, error) {
-			return s.testInstallation.ResourceClients.GatewayClient().Read(
-				s.testInstallation.Metadata.InstallNamespace, "gateway-proxy-tracing", clients.ReadOpts{Ctx: s.ctx})
-		},
-		core.Status_Accepted,
-		gloo_defaults.GlooReporter,
-	)
-}
-
-func (s *testingSuite) AfterTest(string, string) {
-	var err error
-	err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, setupOtelcolManifest)
-	s.Assertions.NoError(err, "can delete otel collector")
-
-	err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, tracingConfigManifest)
-	s.Assertions.NoError(err, "can delete gloo tracing config")
-
-	err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, gatewayConfigManifest,
-		"-n", s.testInstallation.Metadata.InstallNamespace)
-	s.Assertions.NoError(err, "can delete gateway config")
-}
-
-func (s *testingSuite) TestSpanNameTransformationsWithoutRouteDecorator() {
-	testHostname := "test-really-cool-hostname.com"
-	s.testInstallation.Assertions.AssertEventuallyConsistentCurlResponse(s.ctx, testdefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(metav1.ObjectMeta{
-				Name:      gatewayProxyHost,
-				Namespace: s.testInstallation.Metadata.InstallNamespace,
-			})),
-			curl.WithHostHeader(testHostname),
-			curl.WithPort(gatewayProxyPort),
-			curl.WithPath(pathWithoutRouteDescriptor),
-			// We are asserting that a request is consistent. To prevent flakes with that assertion,
-			// we should have some basic retries built into the request
-			curl.WithRetryConnectionRefused(true),
-			curl.WithRetries(3, 0, 10),
-			curl.Silent(),
-		},
-		&matchers.HttpResponse{
-			StatusCode: http.StatusOK,
-		},
-		5*time.Second, 30*time.Second,
-	)
-
-	s.EventuallyWithT(func(c *assert.CollectT) {
-		logs, err := s.testInstallation.Actions.Kubectl().GetContainerLogs(s.ctx, otelcolPod.ObjectMeta.GetNamespace(), otelcolPod.ObjectMeta.GetName())
-		assert.NoError(c, err, "can get otelcol logs")
-		// Looking for a line like this:
-		// Name       : <value of host header>
-		assert.Regexp(c, "Name *: "+testHostname, logs)
-	}, time.Second*30, time.Second*3, "otelcol logs contain span with name == hostname")
-}
-
-func (s *testingSuite) TestSpanNameTransformationsWithRouteDecorator() {
-	s.testInstallation.Assertions.AssertEventuallyConsistentCurlResponse(s.ctx, testdefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(metav1.ObjectMeta{
-				Name:      gatewayProxyHost,
-				Namespace: s.testInstallation.Metadata.InstallNamespace,
-			})),
-			curl.WithHostHeader("example.com"),
-			curl.WithPort(gatewayProxyPort),
-			curl.WithPath(pathWithRouteDescriptor),
-			// We are asserting that a request is consistent. To prevent flakes with that assertion,
-			// we should have some basic retries built into the request
-			curl.WithRetryConnectionRefused(true),
-			curl.WithRetries(3, 0, 10),
-			curl.Silent(),
-		},
-		&matchers.HttpResponse{
-			StatusCode: http.StatusOK,
-		},
-		5*time.Second, 30*time.Second,
-	)
-
-	s.EventuallyWithT(func(c *assert.CollectT) {
-		logs, err := s.testInstallation.Actions.Kubectl().GetContainerLogs(s.ctx, otelcolPod.ObjectMeta.GetNamespace(), otelcolPod.ObjectMeta.GetName())
-		assert.NoError(c, err, "can get otelcol logs")
-		// Looking for a line like this:
-		// Name       : <value of routeDescriptorSpanName>
-		assert.Regexp(c, "Name *: "+routeDescriptorSpanName, logs)
-	}, time.Second*30, time.Second*3, "otelcol logs contain span with name == routeDescriptor")
+		// check if the logs match the patterns
+		allMatched := true
+		for _, line := range expectedLines {
+			if !strings.Contains(logs, line) {
+				allMatched = false
+			}
+		}
+		g.Expect(allMatched).To(gomega.BeTrue(), "lines not found in logs")
+	}, time.Second*60, time.Second*15, "should find traces in collector pod logs").Should(gomega.Succeed())
 }

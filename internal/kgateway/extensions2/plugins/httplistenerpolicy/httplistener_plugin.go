@@ -35,6 +35,7 @@ var logger = logging.New("plugin/httplistenerpolicy")
 type httpListenerPolicy struct {
 	ct                         time.Time
 	accessLog                  []*envoyaccesslog.AccessLog
+	tracing                    *envoy_hcm.HttpConnectionManager_Tracing
 	upgradeConfigs             []*envoy_hcm.HttpConnectionManager_UpgradeConfig
 	useRemoteAddress           *bool
 	xffNumTrustedHops          *uint32
@@ -56,6 +57,11 @@ func (d *httpListenerPolicy) Equals(in any) bool {
 	if !slices.EqualFunc(d.accessLog, d2.accessLog, func(log *envoyaccesslog.AccessLog, log2 *envoyaccesslog.AccessLog) bool {
 		return proto.Equal(log, log2)
 	}) {
+		return false
+	}
+
+	// Check tracing
+	if !proto.Equal(d.tracing, d2.tracing) {
 		return false
 	}
 
@@ -149,6 +155,11 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 			logger.Error("error translating access log", "error", err)
 			errs = append(errs, err)
 		}
+		tracing, err := convertTracingConfig(ctx, i, commoncol, krtctx, objSrc)
+		if err != nil {
+			logger.Error("error translating tracing", "error", err)
+			errs = append(errs, err)
+		}
 
 		upgradeConfigs := convertUpgradeConfig(i)
 		serverHeaderTransformation := convertServerHeaderTransformation(i.Spec.ServerHeaderTransformation)
@@ -166,6 +177,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 			PolicyIR: &httpListenerPolicy{
 				ct:                         i.CreationTimestamp.Time,
 				accessLog:                  accessLog,
+				tracing:                    tracing,
 				upgradeConfigs:             upgradeConfigs,
 				useRemoteAddress:           i.Spec.UseRemoteAddress,
 				xffNumTrustedHops:          i.Spec.XffNumTrustedHops,
@@ -214,6 +226,9 @@ func (p *httpListenerPolicyPluginGwPass) ApplyHCM(
 
 	// translate access logging configuration
 	out.AccessLog = append(out.GetAccessLog(), policy.accessLog...)
+
+	// translate tracing configuration
+	out.Tracing = policy.tracing
 
 	// translate upgrade configuration
 	if policy.upgradeConfigs != nil {

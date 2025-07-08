@@ -1,9 +1,8 @@
 package utils
 
 import (
+	"fmt"
 	"net"
-
-	"github.com/pkg/errors"
 )
 
 // IsIpv4Address returns whether
@@ -13,7 +12,7 @@ func IsIpv4Address(bindAddress string) (validIpv4, strictIPv4 bool, err error) {
 	bindIP := net.ParseIP(bindAddress)
 	if bindIP == nil {
 		// If bindAddress is not a valid textual representation of an IP address
-		return false, false, errors.Errorf("bindAddress %s is not a valid IP address", bindAddress)
+		return false, false, fmt.Errorf("bindAddress %s is not a valid IP address", bindAddress)
 	} else if bindIP.To4() == nil {
 		// If bindIP is not an IPv4 address, To4 returns nil.
 		// so this is not an acceptable ipv4

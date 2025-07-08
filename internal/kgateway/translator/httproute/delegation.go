@@ -45,11 +45,8 @@ func flattenDelegatedRoutes(
 	defer routesVisited.Delete(parentRef)
 
 	rawChildren, err := parentInfo.GetChildrenForRef(*backend.Delegate)
-	if len(rawChildren) == 0 || err != nil {
-		if err == nil {
-			err = fmt.Errorf("unresolved reference %s", backend.Delegate.ResourceName())
-		}
-		return err
+	if err != nil {
+		return fmt.Errorf("%s: %w", backend.Delegate.ResourceName(), err)
 	}
 	children := filterDelegatedChildren(parentRef, parentMatch, rawChildren)
 
@@ -58,6 +55,7 @@ func flattenDelegatedRoutes(
 	copy(hostnames, parentRoute.Hostnames)
 
 	// For these child routes, recursively flatten them
+	validChildren := 0
 	for _, child := range children {
 		childRoute, ok := child.Object.(*ir.HttpRouteIR)
 		if !ok {
@@ -99,10 +97,14 @@ func flattenDelegatedRoutes(
 			continue
 		}
 
+		validChildren++
 		translateGatewayHTTPRouteRulesUtil(
 			ctx, child, reporter, baseReporter, outputs, routesVisited, delegatingParent)
 	}
 
+	if validChildren == 0 {
+		return fmt.Errorf("%s: %w", backend.Delegate.ResourceName(), query.ErrUnresolvedReference)
+	}
 	return nil
 }
 

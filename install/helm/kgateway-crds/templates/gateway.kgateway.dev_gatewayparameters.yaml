@@ -456,6 +456,45 @@ spec:
                               type: object
                             type: array
                         type: object
+                      tracing:
+                        properties:
+                          endpoint:
+                            maxLength: 253
+                            minLength: 1
+                            pattern: ^(([^:/?#]+):)(//([^/?#]*))([^?#]*)(\?([^#]*))?(#(.*))?
+                            type: string
+                          protocol:
+                            enum:
+                            - grpc
+                            - http/protobuf
+                            - http/json
+                            type: string
+                          sampler:
+                            properties:
+                              arg:
+                                pattern: ^0(\.\d+)?|1(\.0+)?$
+                                type: string
+                              type:
+                                enum:
+                                - alwaysOn
+                                - alwaysOff
+                                - traceidratio
+                                - parentbasedAlwaysOn
+                                - parentbasedAlwaysOff
+                                - parentbasedTraceidratio
+                                type: string
+                            type: object
+                          timeout:
+                            pattern: ^([0-9]{1,5}(h|m|s|ms)){1,4}$
+                            type: string
+                          transportSecurity:
+                            enum:
+                            - secure
+                            - insecure
+                            type: string
+                        required:
+                        - endpoint
+                        type: object
                     type: object
                   deployment:
                     properties:

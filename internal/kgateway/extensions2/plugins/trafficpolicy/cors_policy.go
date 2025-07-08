@@ -7,7 +7,7 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 )
 
 type CorsIR struct {
@@ -32,7 +32,7 @@ func corsForSpec(spec v1alpha1.TrafficPolicySpec, out *trafficPolicySpecIr) erro
 		return nil
 	}
 	out.cors = &CorsIR{
-		corsConfig: krtcollections.ToEnvoyCorsPolicy(spec.Cors.HTTPCORSFilter),
+		corsConfig: utils.ToEnvoyCorsPolicy(spec.Cors.HTTPCORSFilter),
 	}
 	return nil
 }

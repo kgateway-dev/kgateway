@@ -1,4 +1,4 @@
-# This file defines the minimal configuration for a user who wants to run kgateway with ai extnesions enabled.
+# This file defines the minimal configuration for a user who wants to run kgateway with ai extensions and observability tracing enabled.
 # These should be reviewed and tested before being adopted.
 
 image:
