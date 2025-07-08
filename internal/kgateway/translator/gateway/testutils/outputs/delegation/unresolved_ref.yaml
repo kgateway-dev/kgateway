@@ -86,16 +86,16 @@ Routes:
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
     - directResponse:
         body:
-          inlineString: kgateway detected an invalid route configuration and replaced
-            it with a direct response.
+          inlineString: invalid route configuration detected and replaced with a direct
+            response.
         status: 500
       match:
         pathSeparatedPrefix: /a/c
       name: listener~80~example_com-route-3-httproute-route-a-a-2-0-matcher-0
     - directResponse:
         body:
-          inlineString: kgateway detected an invalid route configuration and replaced
-            it with a direct response.
+          inlineString: invalid route configuration detected and replaced with a direct
+            response.
         status: 500
       match:
         pathSeparatedPrefix: /b

@@ -65,8 +65,8 @@ Routes:
     routes:
     - directResponse:
         body:
-          inlineString: kgateway detected an invalid route configuration and replaced
-            it with a direct response.
+          inlineString: invalid route configuration detected and replaced with a direct
+            response.
         status: 500
       match:
         pathSeparatedPrefix: /a/b/1
