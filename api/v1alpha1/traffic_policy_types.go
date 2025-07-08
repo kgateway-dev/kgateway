@@ -278,6 +278,7 @@ type TokenBucket struct {
 	// This value must be a valid duration string (e.g., "1s", "500ms").
 	// It determines the frequency of token replenishment.
 	// +required
+	// +kubebuilder:validation:XValidation:rule="self != '0s'",message="fillInterval must not be '0s'"
 	FillInterval gwv1.Duration `json:"fillInterval"`
 }
 

@@ -560,6 +560,9 @@ spec:
                           fillInterval:
                             pattern: ^([0-9]{1,5}(h|m|s|ms)){1,4}$
                             type: string
+                            x-kubernetes-validations:
+                            - message: fillInterval must not be '0s'
+                              rule: self != '0s'
                           maxTokens:
                             format: int32
                             minimum: 1
