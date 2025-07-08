@@ -59,14 +59,15 @@ Routes:
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
       typedPerFilterConfig:
         envoy.filters.http.stateful_session:
-          '@type': type.googleapis.com/envoy.extensions.filters.http.stateful_session.v3.StatefulSession
-          sessionState:
-            name: envoy.http.stateful_session.cookie
-            typedConfig:
-              '@type': type.googleapis.com/envoy.extensions.http.stateful_session.cookie.v3.CookieBasedSessionState
-              cookie:
-                name: Session-A
-                ttl: 10s
+          '@type': type.googleapis.com/envoy.extensions.filters.http.stateful_session.v3.StatefulSessionPerRoute
+          statefulSession:
+            sessionState:
+              name: envoy.http.stateful_session.cookie
+              typedConfig:
+                '@type': type.googleapis.com/envoy.extensions.http.stateful_session.cookie.v3.CookieBasedSessionState
+                cookie:
+                  name: Session-A
+                  ttl: 10s
     - match:
         safeRegex:
           googleRe2: {}
@@ -77,14 +78,15 @@ Routes:
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
       typedPerFilterConfig:
         envoy.filters.http.stateful_session:
-          '@type': type.googleapis.com/envoy.extensions.filters.http.stateful_session.v3.StatefulSession
-          sessionState:
-            name: envoy.http.stateful_session.cookie
-            typedConfig:
-              '@type': type.googleapis.com/envoy.extensions.http.stateful_session.cookie.v3.CookieBasedSessionState
-              cookie:
-                name: Session-B
-                ttl: 31536000s
+          '@type': type.googleapis.com/envoy.extensions.filters.http.stateful_session.v3.StatefulSessionPerRoute
+          statefulSession:
+            sessionState:
+              name: envoy.http.stateful_session.cookie
+              typedConfig:
+                '@type': type.googleapis.com/envoy.extensions.http.stateful_session.cookie.v3.CookieBasedSessionState
+                cookie:
+                  name: Session-B
+                  ttl: 31536000s
     - match:
         safeRegex:
           googleRe2: {}
@@ -95,13 +97,14 @@ Routes:
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
       typedPerFilterConfig:
         envoy.filters.http.stateful_session:
-          '@type': type.googleapis.com/envoy.extensions.filters.http.stateful_session.v3.StatefulSession
-          sessionState:
-            name: envoy.http.stateful_session.cookie
-            typedConfig:
-              '@type': type.googleapis.com/envoy.extensions.http.stateful_session.cookie.v3.CookieBasedSessionState
-              cookie:
-                name: Session-B
+          '@type': type.googleapis.com/envoy.extensions.filters.http.stateful_session.v3.StatefulSessionPerRoute
+          statefulSession:
+            sessionState:
+              name: envoy.http.stateful_session.cookie
+              typedConfig:
+                '@type': type.googleapis.com/envoy.extensions.http.stateful_session.cookie.v3.CookieBasedSessionState
+                cookie:
+                  name: Session-B
     - match:
         pathSeparatedPrefix: /c1
       name: listener~80~*-route-3-httproute-example-route-default-0-0-matcher-0
@@ -110,14 +113,15 @@ Routes:
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
       typedPerFilterConfig:
         envoy.filters.http.stateful_session:
-          '@type': type.googleapis.com/envoy.extensions.filters.http.stateful_session.v3.StatefulSession
-          sessionState:
-            name: envoy.http.stateful_session.cookie
-            typedConfig:
-              '@type': type.googleapis.com/envoy.extensions.http.stateful_session.cookie.v3.CookieBasedSessionState
-              cookie:
-                name: Session-A
-                ttl: 10s
+          '@type': type.googleapis.com/envoy.extensions.filters.http.stateful_session.v3.StatefulSessionPerRoute
+          statefulSession:
+            sessionState:
+              name: envoy.http.stateful_session.cookie
+              typedConfig:
+                '@type': type.googleapis.com/envoy.extensions.http.stateful_session.cookie.v3.CookieBasedSessionState
+                cookie:
+                  name: Session-A
+                  ttl: 10s
     - match:
         pathSeparatedPrefix: /c2
       name: listener~80~*-route-4-httproute-example-route-default-1-0-matcher-0
@@ -126,14 +130,15 @@ Routes:
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
       typedPerFilterConfig:
         envoy.filters.http.stateful_session:
-          '@type': type.googleapis.com/envoy.extensions.filters.http.stateful_session.v3.StatefulSession
-          sessionState:
-            name: envoy.http.stateful_session.cookie
-            typedConfig:
-              '@type': type.googleapis.com/envoy.extensions.http.stateful_session.cookie.v3.CookieBasedSessionState
-              cookie:
-                name: Session-B
-                ttl: 31536000s
+          '@type': type.googleapis.com/envoy.extensions.filters.http.stateful_session.v3.StatefulSessionPerRoute
+          statefulSession:
+            sessionState:
+              name: envoy.http.stateful_session.cookie
+              typedConfig:
+                '@type': type.googleapis.com/envoy.extensions.http.stateful_session.cookie.v3.CookieBasedSessionState
+                cookie:
+                  name: Session-B
+                  ttl: 31536000s
     - match:
         pathSeparatedPrefix: /c3
       name: listener~80~*-route-5-httproute-example-route-default-2-0-matcher-0
@@ -142,10 +147,11 @@ Routes:
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
       typedPerFilterConfig:
         envoy.filters.http.stateful_session:
-          '@type': type.googleapis.com/envoy.extensions.filters.http.stateful_session.v3.StatefulSession
-          sessionState:
-            name: envoy.http.stateful_session.cookie
-            typedConfig:
-              '@type': type.googleapis.com/envoy.extensions.http.stateful_session.cookie.v3.CookieBasedSessionState
-              cookie:
-                name: Session-B
+          '@type': type.googleapis.com/envoy.extensions.filters.http.stateful_session.v3.StatefulSessionPerRoute
+          statefulSession:
+            sessionState:
+              name: envoy.http.stateful_session.cookie
+              typedConfig:
+                '@type': type.googleapis.com/envoy.extensions.http.stateful_session.cookie.v3.CookieBasedSessionState
+                cookie:
+                  name: Session-B
