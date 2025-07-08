@@ -7,9 +7,20 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 	"github.com/kgateway-dev/kgateway/v2/pkg/xds/bootstrap"
 )
+
+func (p *TrafficPolicy) Validate(ctx context.Context, v validator.Validator, mode settings.RouteReplacementMode) error {
+	switch mode {
+	case settings.RouteReplacementStandard:
+		return p.validateStandard()
+	case settings.RouteReplacementStrict:
+		return p.validateStrict(ctx, v)
+	}
+	return nil
+}
 
 // validateStandard performs basic proto validation that runs in STANDARD mode
 func (p *TrafficPolicy) validateStandard() error {
