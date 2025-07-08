@@ -3,11 +3,11 @@ package trafficpolicy
 import (
 	"context"
 
-	ratev3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ratelimit/v3"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 	"github.com/kgateway-dev/kgateway/v2/pkg/xds/bootstrap"
 )
@@ -66,52 +66,26 @@ func (p *TrafficPolicy) validateProto(ctx context.Context) error {
 	return nil
 }
 
-// validateXDS builds a partial bootstrap config and validates it via
-// envoy validate mode.
+// validateXDS builds a partial bootstrap config and validates it via envoy
+// validate mode. It re-uses the ApplyForRoute method to ensure that the translation
+// and validation logic go through the same code path as normal.
 func (p *TrafficPolicy) validateXDS(ctx context.Context, v validator.Validator) error {
-	builder := bootstrap.New()
-	if p.spec.transform != nil {
-		builder.AddFilterConfig(transformationFilterNamePrefix, p.spec.transform)
-	}
-	if p.spec.rustformation != nil {
-		builder.AddFilterConfig(rustformationFilterNamePrefix, p.spec.rustformation)
-	}
-	if p.spec.localRateLimit != nil {
-		builder.AddFilterConfig(localRateLimitFilterNamePrefix, p.spec.localRateLimit)
-	}
-	if p.spec.rateLimit != nil {
-		// TODO: provider-based validation.
-		if len(p.spec.rateLimit.rateLimitActions) > 0 {
-			rateLimitPerRoute := &ratev3.RateLimitPerRoute{
-				RateLimits: p.spec.rateLimit.rateLimitActions,
-			}
-			builder.AddFilterConfig(getRateLimitFilterName(p.spec.rateLimit.provider.ResourceName()), rateLimitPerRoute)
-		}
-	}
-	if p.spec.ExtProc != nil {
-		// TODO: provider-based validation.
-		if p.spec.ExtProc.ExtProcPerRoute != nil {
-			builder.AddFilterConfig(extProcFilterName(p.spec.ExtProc.provider.ResourceName()), p.spec.ExtProc.ExtProcPerRoute)
-		}
-	}
-	if p.spec.extAuth != nil && p.spec.extAuth.provider != nil {
-		// TODO: provider-based validation.
-		if p.spec.extAuth.extauthPerRoute != nil {
-			builder.AddFilterConfig(extAuthFilterName(p.spec.extAuth.provider.ResourceName()), p.spec.extAuth.extauthPerRoute)
-		}
-	}
-	if p.spec.csrf != nil {
-		builder.AddFilterConfig(csrfExtensionFilterName, p.spec.csrf.csrfPolicy)
-	}
-	if p.spec.AI != nil {
-		if p.spec.AI.Transformation != nil {
-			builder.AddFilterConfig(wellknown.AIPolicyTransformationFilterName, p.spec.AI.Transformation)
-		}
-		if p.spec.AI.Extproc != nil {
-			builder.AddFilterConfig(wellknown.AIExtProcFilterName, p.spec.AI.Extproc)
-		}
+	// use a fake translation pass to ensure we have the desired typed filter config
+	// on the placeholder vhost.
+	typedPerFilterConfig := ir.TypedFilterConfigMap(map[string]proto.Message{})
+	fakePass := NewGatewayTranslationPass(ctx, ir.GwTranslationCtx{}, nil)
+	if err := fakePass.ApplyForRoute(ctx, &ir.RouteContext{
+		Policy:            p,
+		TypedFilterConfig: typedPerFilterConfig,
+	}, nil); err != nil {
+		return err
 	}
 
+	// build a partial bootstrap config with the typed filter config applied.
+	builder := bootstrap.New()
+	for name, config := range typedPerFilterConfig {
+		builder.AddFilterConfig(name, config)
+	}
 	bootstrap, err := builder.Build()
 	if err != nil {
 		return err
@@ -120,8 +94,7 @@ func (p *TrafficPolicy) validateXDS(ctx context.Context, v validator.Validator) 
 	if err != nil {
 		return err
 	}
-	if err := v.Validate(ctx, string(data)); err != nil {
-		return err
-	}
-	return nil
+
+	// shell out to envoy to validate the partial bootstrap config.
+	return v.Validate(ctx, string(data))
 }
