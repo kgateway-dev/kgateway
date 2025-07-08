@@ -797,6 +797,7 @@ var _ = DescribeTable("Route Replacement Tests",
 				Expect(partiallyInvalid.Reason).To(Equal(string(gwv1.RouteReasonUnsupportedValue)))
 				Expect(partiallyInvalid.Message).To(ContainSubstring("Dropped Rule (0)"))
 				Expect(partiallyInvalid.Message).To(ContainSubstring("the rewrite /new//../path is invalid"))
+				Expect(partiallyInvalid.ObservedGeneration).To(Equal(int64(1)))
 			},
 		},
 		func(s *settings.Settings) {
@@ -828,6 +829,7 @@ var _ = DescribeTable("Route Replacement Tests",
 				Expect(partiallyInvalid.Reason).To(Equal(string(gwv1.RouteReasonUnsupportedValue)))
 				Expect(partiallyInvalid.Message).To(ContainSubstring("Dropped Rule (0)"))
 				Expect(partiallyInvalid.Message).To(ContainSubstring("failed to create rate limit actions"))
+				Expect(partiallyInvalid.ObservedGeneration).To(Equal(int64(0)))
 			},
 		},
 		func(s *settings.Settings) {
@@ -854,6 +856,13 @@ var _ = DescribeTable("Route Replacement Tests",
 				routeStatus := reportsMap.BuildRouteStatus(context.Background(), route, wellknown.DefaultGatewayClassName)
 				Expect(routeStatus).NotTo(BeNil())
 				Expect(routeStatus.Parents).To(HaveLen(1))
+
+				accepted := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionAccepted))
+				Expect(accepted).NotTo(BeNil())
+				Expect(accepted.Status).To(Equal(metav1.ConditionTrue))
+				Expect(accepted.Reason).To(Equal(string(gwv1.RouteReasonAccepted)))
+				Expect(accepted.Message).To(Equal(""))
+				Expect(accepted.ObservedGeneration).To(Equal(int64(0)))
 
 				// Expect no PartiallyInvalid condition since template validation is skipped in standard mode
 				partiallyInvalid := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionPartiallyInvalid))
@@ -885,6 +894,13 @@ var _ = DescribeTable("Route Replacement Tests",
 				Expect(routeStatus).NotTo(BeNil())
 				Expect(routeStatus.Parents).To(HaveLen(1))
 
+				accepted := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionAccepted))
+				Expect(accepted).NotTo(BeNil())
+				Expect(accepted.Status).To(Equal(metav1.ConditionTrue))
+				Expect(accepted.Reason).To(Equal(string(gwv1.RouteReasonAccepted)))
+				Expect(accepted.Message).To(Equal(""))
+				Expect(accepted.ObservedGeneration).To(Equal(int64(0)))
+
 				// Expect no PartiallyInvalid condition since template validation is skipped in standard mode
 				partiallyInvalid := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionPartiallyInvalid))
 				Expect(partiallyInvalid).To(BeNil())
@@ -913,6 +929,13 @@ var _ = DescribeTable("Route Replacement Tests",
 				routeStatus := reportsMap.BuildRouteStatus(context.Background(), route, wellknown.DefaultGatewayClassName)
 				Expect(routeStatus).NotTo(BeNil())
 				Expect(routeStatus.Parents).To(HaveLen(1))
+
+				accepted := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionAccepted))
+				Expect(accepted).NotTo(BeNil())
+				Expect(accepted.Status).To(Equal(metav1.ConditionTrue))
+				Expect(accepted.Reason).To(Equal(string(gwv1.RouteReasonAccepted)))
+				Expect(accepted.Message).To(Equal(""))
+				Expect(accepted.ObservedGeneration).To(Equal(int64(0)))
 
 				// Expect no PartiallyInvalid condition since template validation is skipped in standard mode
 				partiallyInvalid := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionPartiallyInvalid))
@@ -947,6 +970,7 @@ var _ = DescribeTable("Route Replacement Tests",
 				Expect(partiallyInvalid.Reason).To(Equal(string(gwv1.RouteReasonUnsupportedValue)))
 				Expect(partiallyInvalid.Message).To(ContainSubstring("Dropped Rule (0)"))
 				Expect(partiallyInvalid.Message).To(ContainSubstring("invalid xds configuration"))
+				Expect(partiallyInvalid.ObservedGeneration).To(Equal(int64(0)))
 			},
 		},
 		func(s *settings.Settings) {
@@ -977,6 +1001,7 @@ var _ = DescribeTable("Route Replacement Tests",
 				Expect(partiallyInvalid.Reason).To(Equal(string(gwv1.RouteReasonUnsupportedValue)))
 				Expect(partiallyInvalid.Message).To(ContainSubstring("Dropped Rule (0)"))
 				Expect(partiallyInvalid.Message).To(ContainSubstring("extauthz: extension not found"))
+				Expect(partiallyInvalid.ObservedGeneration).To(Equal(int64(0)))
 			},
 		},
 		func(s *settings.Settings) {
@@ -1007,6 +1032,7 @@ var _ = DescribeTable("Route Replacement Tests",
 				Expect(partiallyInvalid.Reason).To(Equal(string(gwv1.RouteReasonUnsupportedValue)))
 				Expect(partiallyInvalid.Message).To(ContainSubstring("Dropped Rule (0)"))
 				Expect(partiallyInvalid.Message).To(ContainSubstring("invalid xds configuration"))
+				Expect(partiallyInvalid.ObservedGeneration).To(Equal(int64(0)))
 			},
 		},
 		func(s *settings.Settings) {
@@ -1037,6 +1063,7 @@ var _ = DescribeTable("Route Replacement Tests",
 				Expect(partiallyInvalid.Reason).To(Equal(string(gwv1.RouteReasonUnsupportedValue)))
 				Expect(partiallyInvalid.Message).To(ContainSubstring("Dropped Rule (0)"))
 				Expect(partiallyInvalid.Message).To(ContainSubstring("invalid xds configuration"))
+				Expect(partiallyInvalid.ObservedGeneration).To(Equal(int64(0)))
 			},
 		},
 		func(s *settings.Settings) {
@@ -1067,6 +1094,7 @@ var _ = DescribeTable("Route Replacement Tests",
 				Expect(partiallyInvalid.Reason).To(Equal(string(gwv1.RouteReasonUnsupportedValue)))
 				Expect(partiallyInvalid.Message).To(ContainSubstring("Dropped Rule (0)"))
 				Expect(partiallyInvalid.Message).To(ContainSubstring("invalid xds configuration"))
+				Expect(partiallyInvalid.ObservedGeneration).To(Equal(int64(0)))
 			},
 		},
 		func(s *settings.Settings) {
@@ -1090,6 +1118,13 @@ var _ = DescribeTable("Route Replacement Tests",
 				routeStatus := reportsMap.BuildRouteStatus(context.Background(), route, wellknown.DefaultGatewayClassName)
 				Expect(routeStatus).NotTo(BeNil())
 				Expect(routeStatus.Parents).To(HaveLen(1))
+
+				accepted := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionAccepted))
+				Expect(accepted).NotTo(BeNil())
+				Expect(accepted.Status).To(Equal(metav1.ConditionTrue))
+				Expect(accepted.Reason).To(Equal(string(gwv1.RouteReasonAccepted)))
+				Expect(accepted.Message).To(Equal(""))
+				Expect(accepted.ObservedGeneration).To(Equal(int64(0)))
 
 				// Template is structurally valid (passes xDS validation) but would fail at runtime
 				// No PartiallyInvalid condition should be set since it passes validation
