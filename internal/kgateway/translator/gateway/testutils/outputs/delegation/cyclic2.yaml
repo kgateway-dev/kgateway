@@ -64,6 +64,9 @@ Routes:
     name: listener~80~example_com
     routes:
     - directResponse:
+        body:
+          inlineString: kgateway detected an invalid route configuration and replaced
+            it with a direct response.
         status: 500
       match:
         pathSeparatedPrefix: /a/b/1
