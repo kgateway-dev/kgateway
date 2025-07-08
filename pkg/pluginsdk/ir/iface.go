@@ -155,7 +155,8 @@ type ProxyTranslationPass interface {
 	ApplyForRoute(
 		ctx context.Context,
 		pCtx *RouteContext,
-		out *envoy_config_route_v3.Route) error
+		out *envoy_config_route_v3.Route,
+	) error
 
 	// called 1 time per filter-chain.
 	// If a plugin emits new filters, they must be with a plugin unique name.

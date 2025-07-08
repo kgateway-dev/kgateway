@@ -283,13 +283,13 @@ func (h *httpRouteConfigurationTranslator) runRoutePlugins(
 	}
 
 	var errs []error
-
 	applyForPolicy := func(ctx context.Context, pass *TranslationPass, pctx *ir.RouteContext, out *envoy_config_route_v3.Route) {
 		err := pass.ApplyForRoute(ctx, pctx, out)
 		if err != nil {
 			errs = append(errs, err)
 		}
 	}
+
 	for _, gk := range attachedPolicies.ApplyOrderedGroupKinds() {
 		pols := attachedPolicies.Policies[gk]
 		pass := h.PluginPass[gk]
@@ -308,10 +308,7 @@ func (h *httpRouteConfigurationTranslator) runRoutePlugins(
 			pctx.Policy = pol.PolicyIr
 			applyForPolicy(ctx, pass, pctx, out)
 		}
-
-		// TODO: check return value, if error returned, log error and report condition
 	}
-
 	err := errors.Join(errs...)
 	if err != nil {
 		routeReport.SetCondition(reportssdk.RouteCondition{

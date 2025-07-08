@@ -12,17 +12,19 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/xds/bootstrap"
 )
 
+// Validate performs validation checks on the policy IR.
 func (p *TrafficPolicy) Validate(ctx context.Context, v validator.Validator, policy *v1alpha1.TrafficPolicy) error {
 	if err := p.validateProto(ctx); err != nil {
 		return err
 	}
-	if err := p.validateXDS(ctx, v); err != nil {
-		return err
-	}
-	return nil
+	return p.validateXDS(ctx, v)
 }
 
-func (p *TrafficPolicy) validateProto(ctx context.Context) error {
+// validateProto performs basic proto validation that runs in STANDARD mode.
+// TODO(tim): this logic will be refactored in the future to be less brittle,
+// easier to read/maintain/etc. but requires additional traffic policy plugin
+// refactoring to do properly.
+func (p *TrafficPolicy) validateProto(_ context.Context) error {
 	// TODO: rustformations, and ext auth/rate limit provider validation
 	// Note: no need for buffer validation as it's a single int field, right?
 	var validators []func() error
