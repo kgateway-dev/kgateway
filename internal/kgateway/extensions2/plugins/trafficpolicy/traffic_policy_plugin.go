@@ -220,8 +220,13 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 
 		policyIR, errors := translator.Translate(krtctx, policyCR)
 		switch commoncol.Settings.RouteReplacementMode {
+		case settings.RouteReplacementStandard:
+			if err := policyIR.validateStandard(); err != nil {
+				logger.Error("standard mode validation failed", "policy", policyCR.Name, "error", err)
+				errors = append(errors, err)
+			}
 		case settings.RouteReplacementStrict:
-			if err := policyIR.Validate(ctx, v, policyCR); err != nil {
+			if err := policyIR.validateStrict(ctx, v); err != nil {
 				logger.Error("strict mode validation failed", "policy", policyCR.Name, "error", err)
 				errors = append(errors, err)
 			}

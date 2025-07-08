@@ -6,15 +6,19 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 	"github.com/kgateway-dev/kgateway/v2/pkg/xds/bootstrap"
 )
 
-// Validate performs validation checks on the policy IR.
-func (p *TrafficPolicy) Validate(ctx context.Context, v validator.Validator, policy *v1alpha1.TrafficPolicy) error {
-	if err := p.validateProto(ctx); err != nil {
+// validateStandard performs basic proto validation that runs in STANDARD mode
+func (p *TrafficPolicy) validateStandard() error {
+	return p.validateProto()
+}
+
+// ValidateStrict performs both proto and xDS validation that runs in STRICT mode
+func (p *TrafficPolicy) validateStrict(ctx context.Context, v validator.Validator) error {
+	if err := p.validateStandard(); err != nil {
 		return err
 	}
 	return p.validateXDS(ctx, v)
@@ -24,7 +28,7 @@ func (p *TrafficPolicy) Validate(ctx context.Context, v validator.Validator, pol
 // TODO(tim): this logic will be refactored in the future to be less brittle,
 // easier to read/maintain/etc. but requires additional traffic policy plugin
 // refactoring to do properly.
-func (p *TrafficPolicy) validateProto(_ context.Context) error {
+func (p *TrafficPolicy) validateProto() error {
 	// TODO: rustformations, and ext auth/rate limit provider validation
 	// Note: no need for buffer validation as it's a single int field, right?
 	var validators []func() error
