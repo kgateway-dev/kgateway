@@ -16,7 +16,7 @@ func (p *TrafficPolicy) validateStandard() error {
 	return p.validateProto()
 }
 
-// ValidateStrict performs both proto and xDS validation that runs in STRICT mode
+// validateStrict performs both proto and xDS validation that runs in STRICT mode
 func (p *TrafficPolicy) validateStrict(ctx context.Context, v validator.Validator) error {
 	if err := p.validateStandard(); err != nil {
 		return err
