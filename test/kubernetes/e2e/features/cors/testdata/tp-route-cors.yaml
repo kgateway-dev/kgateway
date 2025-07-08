@@ -10,6 +10,8 @@ spec:
   cors:
     allowOrigins:
       - https://notexample.com
+      - https://a.b.*
+      - https://*.edu
     allowMethods:
       - GET
       - POST
