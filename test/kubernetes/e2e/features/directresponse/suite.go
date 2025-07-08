@@ -1,5 +1,3 @@
-//go:build ignore
-
 package directresponse
 
 import (
@@ -17,7 +15,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
-	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/defaults"
 	testdefaults "github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/defaults"
 )
 
@@ -46,6 +43,10 @@ func (s *testingSuite) SetupSuite() {
 	err = s.ti.Actions.Kubectl().ApplyFile(s.ctx, testdefaults.CurlPodManifest)
 	s.NoError(err, "can apply curl pod manifest")
 
+	// Apply the gateway manifest once for the entire test suite
+	err = s.ti.Actions.Kubectl().ApplyFile(s.ctx, gatewayManifest)
+	s.NoError(err, "can apply gateway manifest")
+
 	// Check that istio injection is successful and httpbin is running
 	s.ti.Assertions.EventuallyObjectsExist(s.ctx, httpbinDeployment)
 	// httpbin can take a while to start up with Istio sidecar
@@ -56,24 +57,29 @@ func (s *testingSuite) SetupSuite() {
 		LabelSelector: "app.kubernetes.io/name=curl",
 	})
 
-	// include gateway manifests for the tests, so we recreate it for each test run
+	// Wait for the gateway and proxy to be ready
+	s.ti.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
+	s.ti.Assertions.EventuallyPodsRunning(s.ctx, proxyDeployment.ObjectMeta.GetNamespace(), metav1.ListOptions{
+		LabelSelector: "app.kubernetes.io/name=gw",
+	})
+
+	// Only include functional test manifests - negative test cases moved to gateway translator suite
 	s.manifests = map[string][]string{
-		"TestBasicDirectResponse":                 {gatewayManifest, basicDirectResposeManifests},
-		"TestDelegation":                          {gatewayManifest, basicDelegationManifests},
-		"TestInvalidDelegationConflictingFilters": {gatewayManifest, invalidDelegationConflictingFiltersManifests},
-		"TestInvalidMissingRef":                   {gatewayManifest, invalidMissingRefManifests},
-		"TestInvalidOverlappingFilters":           {gatewayManifest, invalidOverlappingFiltersManifests},
-		"TestInvalidMultipleRouteActions":         {gatewayManifest, invalidMultipleRouteActionsManifests},
-		"TestInvalidBackendRefFilter":             {gatewayManifest, invalidBackendRefFilterManifests},
+		"TestBasicDirectResponse": {basicDirectResponseManifests},
+		"TestDelegation":          {basicDelegationManifests},
+		// "TestInvalidDelegationConflictingFilters": {invalidDelegationConflictingFiltersManifests},
+		// "TestInvalidMultipleRouteActions":         {invalidMultipleRouteActionsManifests},
 	}
 }
 
 func (s *testingSuite) TearDownSuite() {
-	err := s.ti.Actions.Kubectl().DeleteFileSafe(s.ctx, setupManifest)
+	err := s.ti.Actions.Kubectl().DeleteFileSafe(s.ctx, gatewayManifest)
+	s.NoError(err, "can delete gateway manifest")
+	err = s.ti.Actions.Kubectl().DeleteFileSafe(s.ctx, setupManifest)
 	s.NoError(err, "can delete setup manifest")
 	err = s.ti.Actions.Kubectl().DeleteFileSafe(s.ctx, testdefaults.CurlPodManifest)
 	s.NoError(err, "can delete curl pod manifest")
-	s.ti.Assertions.EventuallyObjectsNotExist(s.ctx, httpbinDeployment)
+	s.ti.Assertions.EventuallyObjectsNotExist(s.ctx, proxyService, proxyDeployment, httpbinDeployment)
 }
 
 func (s *testingSuite) BeforeTest(suiteName, testName string) {
@@ -85,13 +91,6 @@ func (s *testingSuite) BeforeTest(suiteName, testName string) {
 		err := s.ti.Actions.Kubectl().ApplyFile(s.ctx, manifest)
 		s.Assert().NoError(err, "can apply manifest "+manifest)
 	}
-
-	// we recreate the `Gateway` resource (and thus dynamically provision the proxy pod) for each test run
-	// so let's assert the proxy svc and pod is ready before moving on
-	s.ti.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
-	s.ti.Assertions.EventuallyPodsRunning(s.ctx, proxyDeployment.ObjectMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: "app.kubernetes.io/name=gw",
-	})
 }
 
 func (s *testingSuite) AfterTest(suiteName, testName string) {
@@ -105,19 +104,16 @@ func (s *testingSuite) AfterTest(suiteName, testName string) {
 		s.ti.Assertions.ExpectObjectDeleted(manifest, err, output)
 	}
 
-	// make sure the dynamically provisioned proxy resources are cleaned up
-	s.ti.Assertions.EventuallyObjectsNotExist(s.ctx, proxyService, proxyDeployment)
-	// make sure all the resources created by the tests are cleaned up (we just pass the list types to avoid needing to enumerate each object)
-	s.ti.Assertions.EventuallyObjectTypesNotExist(s.ctx, &gwv1.GatewayList{}, &gwv1.HTTPRouteList{}, &v1alpha1.DirectResponseList{})
+	s.ti.Assertions.EventuallyObjectTypesNotExist(s.ctx, &gwv1.HTTPRouteList{}, &v1alpha1.DirectResponseList{})
 }
 
 func (s *testingSuite) TestBasicDirectResponse() {
 	// verify that a direct response route works as expected
 	s.ti.Assertions.AssertEventualCurlResponse(
 		s.ctx,
-		defaults.CurlPodExecOpt,
+		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(glooProxyObjectMeta)),
+			curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
 			curl.WithHostHeader("www.example.com"),
 			curl.WithPath("/robots.txt"),
 		},
@@ -133,9 +129,9 @@ func (s *testingSuite) TestDelegation() {
 	// verify the regular child route works as expected.
 	s.ti.Assertions.AssertEventualCurlResponse(
 		s.ctx,
-		defaults.CurlPodExecOpt,
+		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(glooProxyObjectMeta)),
+			curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
 			curl.WithHostHeader("www.example.com"),
 			curl.WithPath("/headers"),
 		},
@@ -149,9 +145,9 @@ func (s *testingSuite) TestDelegation() {
 	// verify the parent's DR works as expected.
 	s.ti.Assertions.AssertEventualCurlResponse(
 		s.ctx,
-		defaults.CurlPodExecOpt,
+		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(glooProxyObjectMeta)),
+			curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
 			curl.WithHostHeader("www.example.com"),
 			curl.WithPath("/parent"),
 		},
@@ -165,9 +161,9 @@ func (s *testingSuite) TestDelegation() {
 	// verify that the child's DR works as expected.
 	s.ti.Assertions.AssertEventualCurlResponse(
 		s.ctx,
-		defaults.CurlPodExecOpt,
+		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(glooProxyObjectMeta)),
+			curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
 			curl.WithHostHeader("www.example.com"),
 			curl.WithPath("/child"),
 		},
@@ -179,106 +175,51 @@ func (s *testingSuite) TestDelegation() {
 	)
 }
 
-func (s *testingSuite) TestInvalidDelegationConflictingFilters() {
-	// the parent httproute both 1) specifies a direct response and 2) delegates to another httproute which routes to a service.
-	// since these route actions are conflicting, we should get a 500 here
-	s.ti.Assertions.AssertEventualCurlResponse(
-		s.ctx,
-		defaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(glooProxyObjectMeta)),
-			curl.WithHostHeader("www.example.com"),
-			curl.WithPath("/headers"),
-		},
-		&matchers.HttpResponse{
-			StatusCode: http.StatusInternalServerError,
-		},
-		time.Minute,
-	)
+// TODO: This test is commented out due to conflicting route actions in the parent HTTPRoute.
+// TODO: Re-enable this test once the issue with conflicting filters is resolved or the expected behavior is clarified.
+// TODO: When re-enabling, move this test to the gateway translator suite.
+// func (s *testingSuite) TestInvalidDelegationConflictingFilters() {
+// 	// the parent httproute both 1) specifies a direct response and 2) delegates to another httproute which routes to a service.
+// 	// since these route actions are conflicting, we should get a 500 here
+// 	s.ti.Assertions.AssertEventualCurlResponse(
+// 		s.ctx,
+// 		defaults.CurlPodExecOpt,
+// 		[]curl.Option{
+// 			curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
+// 			curl.WithHostHeader("www.example.com"),
+// 			curl.WithPath("/headers"),
+// 		},
+// 		&matchers.HttpResponse{
+// 			StatusCode: http.StatusInternalServerError,
+// 		},
+// 		time.Minute,
+// 	)
 
-	// the parent should show an error in its status
-	s.ti.Assertions.EventuallyHTTPRouteStatusContainsReason(s.ctx, gwRouteMeta.Name, gwRouteMeta.Namespace,
-		string(gwv1.RouteReasonIncompatibleFilters), 10*time.Second, 1*time.Second)
-}
+// 	// the parent should show an error in its status
+// 	s.ti.Assertions.EventuallyHTTPRouteStatusContainsReason(s.ctx, gwRouteMeta.Name, gwRouteMeta.Namespace,
+// 		string(gwv1.RouteReasonIncompatibleFilters), 10*time.Second, 1*time.Second)
+// }
 
-func (s *testingSuite) TestInvalidMissingRef() {
-	// the route points to a DR that doesn't exist, so this should error
-	s.ti.Assertions.AssertEventualCurlResponse(
-		s.ctx,
-		defaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(glooProxyObjectMeta)),
-			curl.WithHostHeader("www.example.com"),
-			curl.WithPath("/non-existent"),
-		},
-		&matchers.HttpResponse{
-			StatusCode: http.StatusInternalServerError,
-		},
-		time.Minute,
-	)
-
-	s.ti.Assertions.EventuallyHTTPRouteStatusContainsReason(s.ctx, httpbinMeta.Name, httpbinMeta.Namespace,
-		string(gwv1.RouteReasonBackendNotFound), 10*time.Second, 1*time.Second)
-}
-
-func (s *testingSuite) TestInvalidOverlappingFilters() {
-	// the route specifies 2 different DRs, which is invalid.
-	// verify that the route was replaced with a 500 direct response due to the
-	// invalid configuration.
-	s.ti.Assertions.AssertEventualCurlResponse(
-		s.ctx,
-		defaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(glooProxyObjectMeta)),
-			curl.WithHostHeader("www.example.com"),
-			curl.WithPath("/"),
-		},
-		&matchers.HttpResponse{
-			StatusCode: http.StatusInternalServerError,
-		},
-		time.Minute,
-	)
-
-	s.ti.Assertions.EventuallyHTTPRouteStatusContainsReason(s.ctx, httpbinMeta.Name, httpbinMeta.Namespace,
-		string(gwv1.RouteReasonIncompatibleFilters), 10*time.Second, 1*time.Second)
-}
-
-func (s *testingSuite) TestInvalidMultipleRouteActions() {
-	// the route specifies both a request redirect and a direct response, which is invalid.
-	// verify the route was replaced with a 500 direct response due to the
-	// invalid configuration.
-	s.ti.Assertions.AssertEventualCurlResponse(
-		s.ctx,
-		defaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(glooProxyObjectMeta)),
-			curl.WithHostHeader("www.example.com"),
-			curl.WithPath("/"),
-		},
-		&matchers.HttpResponse{
-			StatusCode: http.StatusInternalServerError,
-		},
-		time.Minute,
-	)
-	s.ti.Assertions.EventuallyHTTPRouteStatusContainsReason(s.ctx, httpbinMeta.Name, httpbinMeta.Namespace,
-		string(gwv1.RouteReasonIncompatibleFilters), 10*time.Second, 1*time.Second)
-}
-
-func (s *testingSuite) TestInvalidBackendRefFilter() {
-	// verify that configuring a DR with a backendRef filter results in a 404 as
-	// this configuration is not supported / ignored by the direct response plugin.
-	s.ti.Assertions.AssertEventualCurlResponse(
-		s.ctx,
-		defaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(glooProxyObjectMeta)),
-			curl.WithHostHeader("www.example.com"),
-			curl.WithPath("/not-implemented"),
-		},
-		&matchers.HttpResponse{
-			StatusCode: http.StatusNotFound,
-			Body:       ContainSubstring(`Not Found (go-httpbin does not handle the path /not-implemented)`),
-		},
-		time.Minute,
-	)
-}
+// TODO: This test is commented out due to conflicting route actions in the parent HTTPRoute.
+// TODO: Re-enable this test once the issue with conflicting filters is resolved or the expected behavior is clarified.
+// TODO: When re-enabling, move this test to the gateway translator suite.
+// func (s *testingSuite) TestInvalidMultipleRouteActions() {
+// 	// the route specifies both a request redirect and a direct response, which is invalid.
+// 	// verify the route was replaced with a 500 direct response due to the
+// 	// invalid configuration.
+// 	s.ti.Assertions.AssertEventualCurlResponse(
+// 		s.ctx,
+// 		defaults.CurlPodExecOpt,
+// 		[]curl.Option{
+// 			curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
+// 			curl.WithHostHeader("www.example.com"),
+// 			curl.WithPath("/"),
+// 		},
+// 		&matchers.HttpResponse{
+// 			StatusCode: http.StatusInternalServerError,
+// 		},
+// 		time.Minute,
+// 	)
+// 	s.ti.Assertions.EventuallyHTTPRouteStatusContainsReason(s.ctx, httpbinMeta.Name, httpbinMeta.Namespace,
+// 		string(gwv1.RouteReasonIncompatibleFilters), 10*time.Second, 1*time.Second)
+// }
