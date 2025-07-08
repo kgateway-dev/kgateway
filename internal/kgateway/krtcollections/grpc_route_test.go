@@ -475,7 +475,7 @@ func TestTransformGRPCRoute(t *testing.T) {
 			grpcRoutes := krttest.GetMockCollection[*gwv1.GRPCRoute](mock)
 			services := krttest.GetMockCollection[*corev1.Service](mock)
 			refgrants := krtcollections.NewRefGrantIndex(krttest.GetMockCollection[*gwv1beta1.ReferenceGrant](mock))
-			policies := krtcollections.NewPolicyIndex(krtutil.KrtOptions{}, extensionsplug.ContributesPolicies{})
+			policies := krtcollections.NewPolicyIndex(krtutil.KrtOptions{}, extensionsplug.ContributesPolicies{}, settings.Settings{})
 
 			// Set up backend index
 			backends := krtcollections.NewBackendIndex(krtutil.KrtOptions{}, policies, refgrants)

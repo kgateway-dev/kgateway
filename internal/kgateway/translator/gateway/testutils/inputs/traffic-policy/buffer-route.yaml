@@ -52,7 +52,7 @@ spec:
       kind: HTTPRoute
       name: example-route
   buffer:
-    maxRequestSize: 65536
+    maxRequestSize: "65536"
 ---
 apiVersion: v1
 kind: Service

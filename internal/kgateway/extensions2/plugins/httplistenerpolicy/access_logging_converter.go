@@ -12,10 +12,12 @@ import (
 	envoyalfile "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/file/v3"
 	cel "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/filters/cel/v3"
 	envoygrpc "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/grpc/v3"
+	envoy_open_telemetry "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/open_telemetry/v3"
 	envoy_metadata_formatter "github.com/envoyproxy/go-control-plane/envoy/extensions/formatter/metadata/v3"
 	envoy_req_without_query "github.com/envoyproxy/go-control-plane/envoy/extensions/formatter/req_without_query/v3"
 	envoymatcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
+	otelv1 "go.opentelemetry.io/proto/otlp/common/v1"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
 	"istio.io/istio/pkg/kube/krt"
@@ -47,13 +49,22 @@ func convertAccessLogConfig(
 
 	grpcBackends := make(map[string]*ir.BackendObjectIR, len(policy.Spec.AccessLog))
 	for idx, log := range configs {
-		if log.GrpcService != nil && log.GrpcService.BackendRef != nil {
+		if log.GrpcService != nil {
 			backend, err := commoncol.BackendIndex.GetBackendFromRef(krtctx, parentSrc, log.GrpcService.BackendRef.BackendObjectReference)
 			// TODO: what is the correct behavior? maybe route to static blackhole?
 			if err != nil {
 				return nil, fmt.Errorf("%w: %v", ErrUnresolvedBackendRef, err)
 			}
 			grpcBackends[getLogId(log.GrpcService.LogName, idx)] = backend
+			continue
+		}
+		if log.OpenTelemetry != nil {
+			backend, err := commoncol.BackendIndex.GetBackendFromRef(krtctx, parentSrc, log.OpenTelemetry.GrpcService.BackendRef.BackendObjectReference)
+			// TODO: what is the correct behavior? maybe route to static blackhole?
+			if err != nil {
+				return nil, fmt.Errorf("%w: %v", ErrUnresolvedBackendRef, err)
+			}
+			grpcBackends[getLogId(log.OpenTelemetry.GrpcService.LogName, idx)] = backend
 		}
 	}
 
@@ -95,6 +106,8 @@ func translateAccessLog(logConfig v1alpha1.AccessLog, grpcBackends map[string]*i
 		accessLogCfg, err = createFileAccessLog(logConfig.FileSink)
 	case logConfig.GrpcService != nil:
 		accessLogCfg, err = createGrpcAccessLog(logConfig.GrpcService, grpcBackends, accessLogId)
+	case logConfig.OpenTelemetry != nil:
+		accessLogCfg, err = createOTelAccessLog(logConfig.OpenTelemetry, grpcBackends, accessLogId)
 	default:
 		return nil, errors.New("no access log sink specified")
 	}
@@ -156,13 +169,23 @@ func createFileAccessLog(fileSink *v1alpha1.FileSink) (*envoyaccesslog.AccessLog
 }
 
 // createGrpcAccessLog generates a gRPC-based access log configuration
-func createGrpcAccessLog(grpcService *v1alpha1.GrpcService, grpcBackends map[string]*ir.BackendObjectIR, accessLogId int) (*envoyaccesslog.AccessLog, error) {
+func createGrpcAccessLog(grpcService *v1alpha1.AccessLogGrpcService, grpcBackends map[string]*ir.BackendObjectIR, accessLogId int) (*envoyaccesslog.AccessLog, error) {
 	var cfg envoygrpc.HttpGrpcAccessLogConfig
 	if err := copyGrpcSettings(&cfg, grpcService, grpcBackends, accessLogId); err != nil {
 		return nil, fmt.Errorf("error converting grpc access log config: %w", err)
 	}
 
 	return newAccessLogWithConfig(wellknown.HTTPGRPCAccessLog, &cfg)
+}
+
+// createOTelAccessLog generates an OTel access log configuration
+func createOTelAccessLog(grpcService *v1alpha1.OpenTelemetryAccessLogService, grpcBackends map[string]*ir.BackendObjectIR, accessLogId int) (*envoyaccesslog.AccessLog, error) {
+	var cfg envoy_open_telemetry.OpenTelemetryAccessLogConfig
+	if err := copyOTelSettings(&cfg, grpcService, grpcBackends, accessLogId); err != nil {
+		return nil, fmt.Errorf("error converting otel access log config: %w", err)
+	}
+
+	return newAccessLogWithConfig("envoy.access_loggers.open_telemetry", &cfg)
 }
 
 // addAccessLogFilter adds filtering logic to an access log configuration
@@ -382,36 +405,111 @@ func convertJsonFormat(jsonFormat *runtime.RawExtension) *structpb.Struct {
 	return structVal
 }
 
-func copyGrpcSettings(cfg *envoygrpc.HttpGrpcAccessLogConfig, grpcService *v1alpha1.GrpcService, grpcBackends map[string]*ir.BackendObjectIR, accessLogId int) error {
-	if grpcService == nil {
-		return errors.New("grpc service object cannot be nil")
-	}
-
+func generateCommonAccessLogGrpcConfig(grpcService v1alpha1.CommonAccessLogGrpcService, grpcBackends map[string]*ir.BackendObjectIR, accessLogId int) (*envoygrpc.CommonGrpcAccessLogConfig, error) {
 	if grpcService.LogName == "" {
-		return errors.New("grpc service log name cannot be empty")
+		return nil, errors.New("grpc service log name cannot be empty")
 	}
 
 	backend := grpcBackends[getLogId(grpcService.LogName, accessLogId)]
 	if backend == nil {
-		return errors.New("backend ref not found")
+		return nil, errors.New("backend ref not found")
 	}
 
-	svc := &envoycore.GrpcService{
-		TargetSpecifier: &envoycore.GrpcService_EnvoyGrpc_{
-			EnvoyGrpc: &envoycore.GrpcService_EnvoyGrpc{
-				ClusterName: backend.ClusterName(),
-			},
-		},
+	commonConfig, err := ToEnvoyGrpc(grpcService.CommonGrpcService, backend)
+	if err != nil {
+		return nil, err
 	}
+
+	return &envoygrpc.CommonGrpcAccessLogConfig{
+		LogName:             grpcService.LogName,
+		GrpcService:         commonConfig,
+		TransportApiVersion: envoycore.ApiVersion_V3,
+	}, nil
+}
+
+func copyGrpcSettings(cfg *envoygrpc.HttpGrpcAccessLogConfig, grpcService *v1alpha1.AccessLogGrpcService, grpcBackends map[string]*ir.BackendObjectIR, accessLogId int) error {
+	config, err := generateCommonAccessLogGrpcConfig(grpcService.CommonAccessLogGrpcService, grpcBackends, accessLogId)
+	if err != nil {
+		return err
+	}
+
+	cfg.CommonConfig = config
 	cfg.AdditionalRequestHeadersToLog = grpcService.AdditionalRequestHeadersToLog
 	cfg.AdditionalResponseHeadersToLog = grpcService.AdditionalResponseHeadersToLog
 	cfg.AdditionalResponseTrailersToLog = grpcService.AdditionalResponseTrailersToLog
-	cfg.CommonConfig = &envoygrpc.CommonGrpcAccessLogConfig{
-		LogName:             grpcService.LogName,
-		GrpcService:         svc,
-		TransportApiVersion: envoycore.ApiVersion_V3,
-	}
 	return cfg.Validate()
+}
+
+func copyOTelSettings(cfg *envoy_open_telemetry.OpenTelemetryAccessLogConfig, otelService *v1alpha1.OpenTelemetryAccessLogService, grpcBackends map[string]*ir.BackendObjectIR, accessLogId int) error {
+	config, err := generateCommonAccessLogGrpcConfig(otelService.GrpcService, grpcBackends, accessLogId)
+	if err != nil {
+		return err
+	}
+
+	cfg.CommonConfig = config
+	if otelService.Body != nil {
+		cfg.Body = &otelv1.AnyValue{
+			Value: &otelv1.AnyValue_StringValue{
+				StringValue: *otelService.Body,
+			},
+		}
+	}
+	if otelService.DisableBuiltinLabels != nil {
+		cfg.DisableBuiltinLabels = *otelService.DisableBuiltinLabels
+	}
+	if otelService.Attributes != nil {
+		cfg.Attributes = ToOTelKeyValueList(otelService.Attributes)
+	}
+
+	return cfg.Validate()
+}
+
+func ToOTelKeyValueList(in *v1alpha1.KeyAnyValueList) *otelv1.KeyValueList {
+	kvList := make([]*otelv1.KeyValue, len(in.Values))
+	ret := &otelv1.KeyValueList{
+		Values: kvList,
+	}
+	for i, value := range in.Values {
+		ret.GetValues()[i] = &otelv1.KeyValue{
+			Key:   value.Key,
+			Value: ToOTelAnyValue(&value.Value),
+		}
+	}
+	return ret
+}
+
+func ToOTelAnyValue(in *v1alpha1.AnyValue) *otelv1.AnyValue {
+	if in == nil {
+		return nil
+	}
+	if in.StringValue != nil {
+		return &otelv1.AnyValue{
+			Value: &otelv1.AnyValue_StringValue{
+				StringValue: *in.StringValue,
+			},
+		}
+	}
+	if in.ArrayValue != nil {
+		arrayValue := &otelv1.AnyValue_ArrayValue{
+			ArrayValue: &otelv1.ArrayValue{
+				Values: make([]*otelv1.AnyValue, len(in.ArrayValue)),
+			},
+		}
+		for i, value := range in.ArrayValue {
+			arrayValue.ArrayValue.GetValues()[i] = ToOTelAnyValue(&value)
+		}
+		return &otelv1.AnyValue{
+			Value: arrayValue,
+		}
+	}
+	if in.KvListValue != nil {
+		return &otelv1.AnyValue{
+			Value: &otelv1.AnyValue_KvlistValue{
+				KvlistValue: ToOTelKeyValueList(in.KvListValue),
+			},
+		}
+	}
+	return nil
 }
 
 func getFormatterExtensions() ([]*envoycore.TypedExtensionConfig, error) {

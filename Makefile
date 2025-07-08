@@ -470,34 +470,6 @@ release: ## Create a release using goreleaser
 	GORELEASER_CURRENT_TAG=$(GORELEASER_CURRENT_TAG) $(GORELEASER) release $(GORELEASER_ARGS) --timeout $(GORELEASER_TIMEOUT)
 
 #----------------------------------------------------------------------------------
-# Docker
-#----------------------------------------------------------------------------------
-
-.PHONY: docker
-docker: kgateway-docker ## Build docker images
-docker: envoy-wrapper-docker
-docker: sds-docker
-docker: kgateway-ai-extension-docker
-
-.PHONY: docker-push
-docker-push: docker-push-kgateway
-docker-push: docker-push-envoy-wrapper
-docker-push: docker-push-sds
-docker-push: docker-push-kgateway-ai-extension
-
-.PHONY: docker-retag
-docker-retag: docker-retag-kgateway
-docker-retag: docker-retag-envoy-wrapper
-docker-retag: docker-retag-sds
-docker-retag: docker-retag-kgateway-ai-extension
-
-docker-retag-%:
-	docker tag $(ORIGINAL_IMAGE_REGISTRY)/$*:$(VERSION) $(IMAGE_REGISTRY)/$*:$(VERSION)
-
-docker-push-%:
-	docker push $(IMAGE_REGISTRY)/$*:$(VERSION)
-
-#----------------------------------------------------------------------------------
 # Development
 #----------------------------------------------------------------------------------
 
@@ -522,8 +494,11 @@ metallb: ## Install the MetalLB load balancer
 .PHONY: deploy-kgateway
 deploy-kgateway: package-kgateway-charts deploy-kgateway-crd-chart deploy-kgateway-chart ## Deploy the kgateway chart and CRDs
 
+.PHONY: setup
+setup: kind-create kind-build-and-load gw-api-crds metallb package-kgateway-charts ## Set up basic infrastructure (kind cluster, images, CRDs, MetalLB)
+
 .PHONY: run
-run: kind-create kind-build-and-load gw-api-crds metallb deploy-kgateway  ## Set up complete development environment
+run: setup deploy-kgateway  ## Set up complete development environment
 
 #----------------------------------------------------------------------------------
 # Build assets for kubernetes e2e tests

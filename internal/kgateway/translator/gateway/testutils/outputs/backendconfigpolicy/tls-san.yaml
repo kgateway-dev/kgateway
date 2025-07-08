@@ -1,0 +1,141 @@
+Clusters:
+- connectTimeout: 5s
+  edsClusterConfig:
+    edsConfig:
+      ads: {}
+      resourceApiVersion: V3
+  ignoreHealthOnHostRemoval: true
+  metadata: {}
+  name: kube_default_backend-service_443
+  transportSocket:
+    name: envoy.transport_sockets.tls
+    typedConfig:
+      '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+      allowRenegotiation: true
+      commonTlsContext:
+        tlsCertificates:
+        - certificateChain:
+            inlineString: |
+              -----BEGIN CERTIFICATE-----
+              MIIDFzCCAf+gAwIBAgIUUP+jhPkrikdqW87lHMDpW3wY13wwDQYJKoZIhvcNAQEL
+              BQAwGzEZMBcGA1UEAwwQdGVzdC5leGFtcGxlLmNvbTAeFw0yNTA3MDIxMjM0MjRa
+              Fw0yNjA3MDIxMjM0MjRaMBsxGTAXBgNVBAMMEHRlc3QuZXhhbXBsZS5jb20wggEi
+              MA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQC2xPi+xL+5M9e6uJb4B9f9Ds2z
+              1Mqeq2OmEaPAwg1BOaRpg9pZ5X9jaj/LGkJ8X7BR6DfMOEvxEBu2ugvO/zlNVd23
+              uWcxdSMjRB52mGZDNycsSCKSJ71EeaWjhI7+IGdJJ2rzaw2NZwiCfcjVgkH7Gfxf
+              OYc7mm18wif9YxVJi87IF8aBJE6u7aKhnQT+SgD2w91+OZNFVBdFEIcqjRH1WMOF
+              KkCY8ejr0aiBWimQVk41iLj1/F/bSqhdadMlBRc3ToLFXOY39HlU7Dq7cf2QfVwf
+              zkUViFwpzvPETX/WVO9IiVExD3cpC3zUjDukjSAd26QS4xP4mvnjo3pymNTnAgMB
+              AAGjUzBRMB0GA1UdDgQWBBSk3FlWiH9236y5hhj7ItT/efSsVjAfBgNVHSMEGDAW
+              gBSk3FlWiH9236y5hhj7ItT/efSsVjAPBgNVHRMBAf8EBTADAQH/MA0GCSqGSIb3
+              DQEBCwUAA4IBAQB/j8eD4TfUuCPPCp37Pd/YiWUFa0pZWD1rJcwZtmZFW2E7/86T
+              l0yBEcgbKIsZmUT2rnJG4zcCumAxpzP5LuoO9Wu5RUgqFbM+nGnQ39w53mVC3CV4
+              hcZxSNizMicSwmA01M4HTdv9P7tj/7m9tTb8VQ/TywI3kdMajOPDI+GtrE76m+pP
+              sozQotvRMRmona9+496LBFsStBaP8NiAqZfuleNj0hD1oAdL3ekQ+HZ1b1ABfa6D
+              BxIrQCVvyC4Jl0zLmnEDPIBvsroCVivq4C/MKXbXsn/bDrhMHd5yqDv1/mmvGRSn
+              2b5vNa1aVtIqWJGKpuI2rKzd7LSIQv+kuFF3
+              -----END CERTIFICATE-----
+          privateKey:
+            inlineString: |
+              -----BEGIN PRIVATE KEY-----
+              MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC2xPi+xL+5M9e6
+              uJb4B9f9Ds2z1Mqeq2OmEaPAwg1BOaRpg9pZ5X9jaj/LGkJ8X7BR6DfMOEvxEBu2
+              ugvO/zlNVd23uWcxdSMjRB52mGZDNycsSCKSJ71EeaWjhI7+IGdJJ2rzaw2NZwiC
+              fcjVgkH7GfxfOYc7mm18wif9YxVJi87IF8aBJE6u7aKhnQT+SgD2w91+OZNFVBdF
+              EIcqjRH1WMOFKkCY8ejr0aiBWimQVk41iLj1/F/bSqhdadMlBRc3ToLFXOY39HlU
+              7Dq7cf2QfVwfzkUViFwpzvPETX/WVO9IiVExD3cpC3zUjDukjSAd26QS4xP4mvnj
+              o3pymNTnAgMBAAECggEABvwpfYZLcCqOY3EhOULOJbpmcNRVwhFOx6QDnB75HrWz
+              QOJseo8OJUsu5kuPSu2P8YbByyjuThI4MkLop0qTHWTbX7rS5M2olXUfAkKkyzYq
+              ZcOD/riiFSHeYLd04jrJd77tPsxSl5redQ5ARK4BE4r/XYGiAiHOxBEvh2boA118
+              miz6s28aIuqzFhQGi8Hyz4D9RBS2dEalk1V+euAXhpqqgoGFk8LXkXlmRZseWX7C
+              dJrV8P/H+LfWorB3OJDk7Ib+zOBsJKzIp3sbFUlj7khg2wlcb/ReD+QNAGUPGxua
+              GVwjDUAJjpoTfjhHv7aaL0ikrUPzkRvLAPv0psK2oQKBgQDM9WkrfAaf8veSqGis
+              MZJCm9aUVE0tf8yi1/z0hlQbREonLslY3CBZQY0vuOZ0XW5SoOCPTjdJEmeR1GLR
+              U/AIBpFhg5nU1R1hJkRI29kOhaGUqADJRGQ+ega+B+BWK5XTkxFTWEF0RD8UXCdA
+              WkishPkSUtV5vV7j7/bn+RGOaQKBgQDkSPJiA11M88AHCSv4VhrCosQv6TFvr+Jv
+              qIVif0z0pPoOFCTMNuG17VqkoVWGzSDzz0LaBGZYFFY93a4pkqecgKy1eSuxrJvQ
+              RJ8Y4JIzJayCo4asITDbOWmKhi5jovly1D5fJQJ23rQSlZTRluNubiUlSBA+M/Dq
+              mpX8svd+zwKBgH+3NQ/Zuy8Ucd07f+48/YzwGuhXF7iQeG3I9WFSCzrqdOKxrtnm
+              YWn9BQOFzmUYi1SF1yi1bpHkHBGtLN6P1XTK0vDW1pbfLe2JsOdNx5XbA3LktYi1
+              S1n7JBRqSAqqIjSy4grzZeYTWNNREUxydfK68ZHPeCLiNC0JLOwkMiJxAoGBAI/2
+              FKyMtJzfpnyJYyozmqKdpJ0WMO/e+iwyGRO5dd1d4LdaKq6B+asR6LSjbV0aJSq7
+              zMvSNHxdLtnK35cl/f9rAf9bT5u3X3dinvZAQNJycqzb1QTd1YKaXR1Xaw+4ahjp
+              EgBMRZaS8Po7TGM0BW7RlSlCncOsW8SHAgkfD4bvAoGATvlFOBb42foxH16lC5mm
+              le8XugtxNsPf595TUl88TUeXgeyERT00684j83Jqr5bLChsMzFV+i50R5PZvlamm
+              udvm84AfnSu2KGiPhLZ/fE6+sUOo85b3ktzRFkxPHBIdlKzWqVD8aWCcrlFn7WMU
+              3teRYW/cEDQ1PTgLfAkb7Fk=
+              -----END PRIVATE KEY-----
+        validationContext:
+          matchTypedSubjectAltNames:
+          - matcher:
+              exact: test.example.com
+            sanType: DNS
+          - matcher:
+              exact: api.example.com
+            sanType: DNS
+          trustedCa:
+            inlineString: |
+              -----BEGIN CERTIFICATE-----
+              MIIDFzCCAf+gAwIBAgIUUP+jhPkrikdqW87lHMDpW3wY13wwDQYJKoZIhvcNAQEL
+              BQAwGzEZMBcGA1UEAwwQdGVzdC5leGFtcGxlLmNvbTAeFw0yNTA3MDIxMjM0MjRa
+              Fw0yNjA3MDIxMjM0MjRaMBsxGTAXBgNVBAMMEHRlc3QuZXhhbXBsZS5jb20wggEi
+              MA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQC2xPi+xL+5M9e6uJb4B9f9Ds2z
+              1Mqeq2OmEaPAwg1BOaRpg9pZ5X9jaj/LGkJ8X7BR6DfMOEvxEBu2ugvO/zlNVd23
+              uWcxdSMjRB52mGZDNycsSCKSJ71EeaWjhI7+IGdJJ2rzaw2NZwiCfcjVgkH7Gfxf
+              OYc7mm18wif9YxVJi87IF8aBJE6u7aKhnQT+SgD2w91+OZNFVBdFEIcqjRH1WMOF
+              KkCY8ejr0aiBWimQVk41iLj1/F/bSqhdadMlBRc3ToLFXOY39HlU7Dq7cf2QfVwf
+              zkUViFwpzvPETX/WVO9IiVExD3cpC3zUjDukjSAd26QS4xP4mvnjo3pymNTnAgMB
+              AAGjUzBRMB0GA1UdDgQWBBSk3FlWiH9236y5hhj7ItT/efSsVjAfBgNVHSMEGDAW
+              gBSk3FlWiH9236y5hhj7ItT/efSsVjAPBgNVHRMBAf8EBTADAQH/MA0GCSqGSIb3
+              DQEBCwUAA4IBAQB/j8eD4TfUuCPPCp37Pd/YiWUFa0pZWD1rJcwZtmZFW2E7/86T
+              l0yBEcgbKIsZmUT2rnJG4zcCumAxpzP5LuoO9Wu5RUgqFbM+nGnQ39w53mVC3CV4
+              hcZxSNizMicSwmA01M4HTdv9P7tj/7m9tTb8VQ/TywI3kdMajOPDI+GtrE76m+pP
+              sozQotvRMRmona9+496LBFsStBaP8NiAqZfuleNj0hD1oAdL3ekQ+HZ1b1ABfa6D
+              BxIrQCVvyC4Jl0zLmnEDPIBvsroCVivq4C/MKXbXsn/bDrhMHd5yqDv1/mmvGRSn
+              2b5vNa1aVtIqWJGKpuI2rKzd7LSIQv+kuFF3
+              -----END CERTIFICATE-----
+      sni: test.example.com
+  type: EDS
+- connectTimeout: 5s
+  metadata: {}
+  name: test-backend-plugin_default_example-svc_80
+Listeners:
+- address:
+    socketAddress:
+      address: '::'
+      ipv4Compat: true
+      portValue: 8080
+  filterChains:
+  - filters:
+    - name: envoy.filters.network.http_connection_manager
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+        httpFilters:
+        - name: envoy.filters.http.router
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+        mergeSlashes: true
+        normalizePath: true
+        rds:
+          configSource:
+            ads: {}
+            resourceApiVersion: V3
+          routeConfigName: listener~8080
+        statPrefix: http
+        useRemoteAddress: true
+    name: listener~8080
+  name: listener~8080
+Routes:
+- ignorePortInHostMatching: true
+  name: listener~8080
+  virtualHosts:
+  - domains:
+    - example.com
+    name: listener~8080~example_com
+    routes:
+    - match:
+        prefix: /
+      name: listener~8080~example_com-route-0-httproute-backend-route-default-0-0-matcher-0
+      route:
+        cluster: kube_default_backend-service_443
+        clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR

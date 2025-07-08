@@ -2,7 +2,6 @@ package krtcollections
 
 import (
 	"context"
-	"fmt"
 	"strings"
 	"time"
 
@@ -620,52 +619,6 @@ func (p *builtinPluginGwPass) HttpFilters(ctx context.Context, fcc ir.FilterChai
 	return builtinStaged, nil
 }
 
-func ToEnvoyCorsPolicy(f *gwv1.HTTPCORSFilter) *corsv3.CorsPolicy {
-	if f == nil {
-		return nil
-	}
-	corsPolicy := &corsv3.CorsPolicy{}
-	if len(f.AllowOrigins) > 0 {
-		origins := make([]*envoy_type_matcher_v3.StringMatcher, len(f.AllowOrigins))
-		for i, origin := range f.AllowOrigins {
-			origins[i] = &envoy_type_matcher_v3.StringMatcher{
-				MatchPattern: &envoy_type_matcher_v3.StringMatcher_Exact{
-					Exact: string(origin),
-				},
-			}
-		}
-		corsPolicy.AllowOriginStringMatch = origins
-	}
-	if len(f.AllowMethods) > 0 {
-		methods := make([]string, len(f.AllowMethods))
-		for i, method := range f.AllowMethods {
-			methods[i] = string(method)
-		}
-		corsPolicy.AllowMethods = strings.Join(methods, ", ")
-	}
-	if len(f.AllowHeaders) > 0 {
-		headers := make([]string, len(f.AllowHeaders))
-		for i, header := range f.AllowHeaders {
-			headers[i] = string(header)
-		}
-		corsPolicy.AllowHeaders = strings.Join(headers, ", ")
-	}
-	if f.AllowCredentials {
-		corsPolicy.AllowCredentials = &wrapperspb.BoolValue{Value: bool(f.AllowCredentials)}
-	}
-	if len(f.ExposeHeaders) > 0 {
-		headers := make([]string, len(f.ExposeHeaders))
-		for i, header := range f.ExposeHeaders {
-			headers[i] = string(header)
-		}
-		corsPolicy.ExposeHeaders = strings.Join(headers, ", ")
-	}
-	if f.MaxAge != 0 {
-		corsPolicy.MaxAge = fmt.Sprintf("%d", f.MaxAge)
-	}
-	return corsPolicy
-}
-
 // New helper to create filterIr
 func convertFilterIr(kctx krt.HandlerContext, f gwv1.HTTPRouteFilter, fromgk schema.GroupKind, fromns string, refgrants *RefGrantIndex, ups *BackendIndex) *filterIr {
 	var policy applyToRoute
@@ -840,7 +793,7 @@ func convertCORSIR(_ krt.HandlerContext, f *gwv1.HTTPCORSFilter) *corsIr {
 	if f == nil {
 		return nil
 	}
-	corsPolicyAny, err := utils.MessageToAny(ToEnvoyCorsPolicy(f))
+	corsPolicyAny, err := utils.MessageToAny(utils.ToEnvoyCorsPolicy(f))
 	if err != nil {
 		// this should never happen.
 		logger.Error("failed to convert CORS policy to Any", "error", err)

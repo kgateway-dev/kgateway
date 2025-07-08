@@ -208,6 +208,22 @@ func GetStatsValues(statsConfig *v1alpha1.StatsConfig) *HelmStatsConfig {
 	}
 }
 
+func getTracingValues(tracingConfig *v1alpha1.AiExtensionTrace) *helmAITracing {
+	if tracingConfig == nil {
+		return nil
+	}
+	return &helmAITracing{
+		EndPoint: tracingConfig.EndPoint,
+		Sampler: &helmAITracingSampler{
+			SamplerType: tracingConfig.GetSamplerType(),
+			SamplerArg:  tracingConfig.GetSamplerArg(),
+		},
+		Timeout:           tracingConfig.GetTimeout(),
+		Protocol:          tracingConfig.GetOTLPProtocolType(),
+		TransportSecurity: tracingConfig.GetTransportSecurityMode(),
+	}
+}
+
 // ComponentLogLevelsToString converts the key-value pairs in the map into a string of the
 // format: key1:value1,key2:value2,key3:value3, where the keys are sorted alphabetically.
 // If an empty map is passed in, then an empty string is returned.
@@ -253,6 +269,7 @@ func GetAIExtensionValues(config *v1alpha1.AiExtension) (*HelmAIExtension, error
 		Env:             config.GetEnv(),
 		Ports:           config.GetPorts(),
 		Stats:           byt,
+		Tracing:         getTracingValues(config.Tracing),
 	}, nil
 }
 

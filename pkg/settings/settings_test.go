@@ -4,7 +4,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/onsi/gomega"
+	"github.com/google/go-cmp/cmp"
+	"github.com/stretchr/testify/require"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/settings"
@@ -50,33 +51,37 @@ func TestSettings(t *testing.T) {
 				EnableAgentGateway:          false,
 				WeightedRoutePrecedence:     false,
 				RouteReplacementMode:        settings.RouteReplacementStandard,
+				EnableBuiltinDefaultMetrics: false,
+				GlobalPolicyNamespace:       "",
 			},
 		},
 		{
 			name: "all values set",
 			envVars: map[string]string{
-				"KGW_DNS_LOOKUP_FAMILY":             string(settings.DnsLookupFamilyV4Only),
-				"KGW_ENABLE_ISTIO_INTEGRATION":      "true",
-				"KGW_ENABLE_ISTIO_AUTO_MTLS":        "true",
-				"KGW_LISTENER_BIND_IPV6":            "false",
-				"KGW_STS_CLUSTER_NAME":              "my-cluster",
-				"KGW_STS_URI":                       "my.sts.uri",
-				"KGW_XDS_SERVICE_HOST":              "my-xds-host",
-				"KGW_XDS_SERVICE_NAME":              "custom-svc",
-				"KGW_XDS_SERVICE_PORT":              "1234",
-				"KGW_USE_RUST_FORMATIONS":           "true",
-				"KGW_ENABLE_INFER_EXT":              "true",
-				"KGW_INFER_EXT_AUTO_PROVISION":      "true",
-				"KGW_DEFAULT_IMAGE_REGISTRY":        "my-registry",
-				"KGW_DEFAULT_IMAGE_TAG":             "my-tag",
-				"KGW_DEFAULT_IMAGE_PULL_POLICY":     "Always",
-				"KGW_WAYPOINT_LOCAL_BINDING":        "true",
-				"KGW_INGRESS_USE_WAYPOINTS":         "true",
-				"KGW_LOG_LEVEL":                     "debug",
-				"KGW_DISCOVERY_NAMESPACE_SELECTORS": `[{"matchExpressions":[{"key":"kubernetes.io/metadata.name","operator":"In","values":["infra"]}]},{"matchLabels":{"app":"a"}}]`,
-				"KGW_ENABLE_AGENT_GATEWAY":          "true",
-				"KGW_WEIGHTED_ROUTE_PRECEDENCE":     "true",
-				"KGW_ROUTE_REPLACEMENT_MODE":        string(settings.RouteReplacementStrict),
+				"KGW_DNS_LOOKUP_FAMILY":              string(settings.DnsLookupFamilyV4Only),
+				"KGW_ENABLE_ISTIO_INTEGRATION":       "true",
+				"KGW_ENABLE_ISTIO_AUTO_MTLS":         "true",
+				"KGW_LISTENER_BIND_IPV6":             "false",
+				"KGW_STS_CLUSTER_NAME":               "my-cluster",
+				"KGW_STS_URI":                        "my.sts.uri",
+				"KGW_XDS_SERVICE_HOST":               "my-xds-host",
+				"KGW_XDS_SERVICE_NAME":               "custom-svc",
+				"KGW_XDS_SERVICE_PORT":               "1234",
+				"KGW_USE_RUST_FORMATIONS":            "true",
+				"KGW_ENABLE_INFER_EXT":               "true",
+				"KGW_INFER_EXT_AUTO_PROVISION":       "true",
+				"KGW_DEFAULT_IMAGE_REGISTRY":         "my-registry",
+				"KGW_DEFAULT_IMAGE_TAG":              "my-tag",
+				"KGW_DEFAULT_IMAGE_PULL_POLICY":      "Always",
+				"KGW_WAYPOINT_LOCAL_BINDING":         "true",
+				"KGW_INGRESS_USE_WAYPOINTS":          "true",
+				"KGW_LOG_LEVEL":                      "debug",
+				"KGW_DISCOVERY_NAMESPACE_SELECTORS":  `[{"matchExpressions":[{"key":"kubernetes.io/metadata.name","operator":"In","values":["infra"]}]},{"matchLabels":{"app":"a"}}]`,
+				"KGW_ENABLE_AGENT_GATEWAY":           "true",
+				"KGW_WEIGHTED_ROUTE_PRECEDENCE":      "true",
+				"KGW_ROUTE_REPLACEMENT_MODE":         string(settings.RouteReplacementStrict),
+				"KGW_ENABLE_BUILTIN_DEFAULT_METRICS": "true",
+				"KGW_GLOBAL_POLICY_NAMESPACE":        "foo",
 			},
 			expectedSettings: &settings.Settings{
 				DnsLookupFamily:             settings.DnsLookupFamilyV4Only,
@@ -100,6 +105,8 @@ func TestSettings(t *testing.T) {
 				EnableAgentGateway:          true,
 				WeightedRoutePrecedence:     true,
 				RouteReplacementMode:        settings.RouteReplacementStrict,
+				EnableBuiltinDefaultMetrics: true,
+				GlobalPolicyNamespace:       "foo",
 			},
 		},
 		{
@@ -148,9 +155,11 @@ func TestSettings(t *testing.T) {
 				DefaultImageTag:             "",
 				DefaultImagePullPolicy:      "IfNotPresent",
 				WaypointLocalBinding:        false,
+				IngressUseWaypoints:         false,
 				LogLevel:                    "info",
 				DiscoveryNamespaceSelectors: "[]",
 				EnableAgentGateway:          false,
+				WeightedRoutePrecedence:     false,
 				RouteReplacementMode:        settings.RouteReplacementStandard,
 			},
 		},
@@ -158,27 +167,36 @@ func TestSettings(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			g := gomega.NewWithT(t)
-
 			t.Cleanup(func() {
-				for k := range tc.envVars {
-					err := os.Unsetenv(k)
-					g.Expect(err).NotTo(gomega.HaveOccurred())
-				}
+				cleanupEnvVars(t, tc.envVars)
 			})
 
 			for k, v := range tc.envVars {
-				err := os.Setenv(k, v)
-				g.Expect(err).NotTo(gomega.HaveOccurred())
+				if err := os.Setenv(k, v); err != nil {
+					t.Fatalf("Failed to set environment variable %s=%s: %v", k, v, err)
+				}
 			}
+
 			s, err := settings.BuildSettings()
+
 			if tc.expectedErrorStr != "" {
-				g.Expect(err).To(gomega.HaveOccurred())
-				g.Expect(err.Error()).To(gomega.ContainSubstring(tc.expectedErrorStr))
-			} else {
-				g.Expect(err).NotTo(gomega.HaveOccurred())
-				g.Expect(s).To(gomega.Equal(tc.expectedSettings))
+				require.ErrorContains(t, err, tc.expectedErrorStr)
+				return
 			}
+
+			require.NoError(t, err)
+
+			diff := cmp.Diff(tc.expectedSettings, s)
+			require.Emptyf(t, diff, "Settings do not match expected values (-expected +got):\n%s", diff)
 		})
+	}
+}
+
+func cleanupEnvVars(t *testing.T, envVars map[string]string) {
+	t.Helper()
+	for k := range envVars {
+		if err := os.Unsetenv(k); err != nil {
+			t.Errorf("Failed to unset environment variable %s: %v", k, err)
+		}
 	}
 }

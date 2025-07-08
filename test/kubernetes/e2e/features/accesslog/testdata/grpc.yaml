@@ -1,0 +1,79 @@
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: HTTPListenerPolicy
+metadata:
+  name: access-logs
+  namespace: default
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: gw
+  accessLog:
+  - grpcService:
+      logName: "test-accesslog-service"
+      backendRef:
+        name: gateway-proxy-access-logger
+        namespace: default
+        port: 8083
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: kgateway
+    kgateway: gateway-proxy-access-logger
+  name: gateway-proxy-access-logger
+  namespace: default
+spec:
+  ports:
+  - appProtocol: kubernetes.io/h2c
+    name: http
+    port: 8083
+    protocol: TCP
+    targetPort: 8083
+  selector:
+    kgateway: gateway-proxy-access-logger
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: kgateway
+    kgateway: gateway-proxy-access-logger
+  name: gateway-proxy-access-logger
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      kgateway: gateway-proxy-access-logger
+  template:
+    metadata:
+      labels:
+        app: gateway-proxy-access-logger
+        kgateway: gateway-proxy-access-logger
+    spec:
+      containers:
+      - env:
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.name
+        - name: SERVICE_NAME
+          value: AccessLog
+        - name: SERVER_PORT
+          value: "8083"
+        image: quay.io/solo-io/access-logger:1.18.13
+        imagePullPolicy: IfNotPresent
+        name: access-logger
+        ports:
+        - containerPort: 8083
+          name: http
+          protocol: TCP
+---

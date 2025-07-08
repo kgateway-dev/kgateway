@@ -14,6 +14,9 @@ type Context struct {
 
 	// ValuesManifestFile points to the file that contains the set of Helm values that are unique to this test
 	ValuesManifestFile string
+
+	// ExtraHelmArgs are additional Helm arguments
+	ExtraHelmArgs []string
 }
 
 // ValidateInstallContext returns an error if the provided Context is invalid

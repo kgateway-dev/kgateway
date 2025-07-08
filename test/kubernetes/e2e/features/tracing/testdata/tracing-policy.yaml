@@ -1,0 +1,30 @@
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: HTTPListenerPolicy
+metadata:
+  name: tracing-policy
+  namespace: default
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: gw
+  tracing:
+    provider:
+      openTelemetry:
+        serviceName: "my:service"
+        resourceDetectors:
+        - environmentResourceDetector: {}
+        grpcService:
+          authority: "example.com"
+          backendRef:
+            name: otel-collector
+            namespace: default
+            port: 4317
+    spawnUpstreamSpan: true
+    attributes:
+      - name: custom
+        literal:
+          value: literal
+      - name: request
+        requestHeader:
+          name: x-header-tag

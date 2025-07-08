@@ -1,0 +1,90 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otel-collector-conf
+  labels:
+    app: otel-collector
+    component: otel-collector-conf
+data:
+  otel-collector-config: |
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            include_metadata: true
+            endpoint: 0.0.0.0:4317
+    processors:
+    exporters:
+      debug:
+        verbosity: detailed
+    service:
+      extensions: []
+      pipelines:
+        logs:
+          receivers: [otlp]
+          processors: []
+          exporters: [debug]
+        traces:
+          receivers: [otlp]
+          processors: []
+          exporters: [debug]
+      telemetry:
+        logs:
+          level: "DEBUG"
+          development: true
+          encoding: "json"
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: otel-collector
+  labels:
+    app: otel-collector
+    component: otel-collector
+    app.kubernetes.io/name: otel-collector
+spec:
+  containers:
+  - command:
+      - "/otelcol-contrib"
+      - "--config"
+      - "/conf/otel-collector-config.yaml"
+    image: otel/opentelemetry-collector-contrib:0.116.1
+    name: otel-collector
+    resources:
+      limits:
+        cpu: 1
+        memory: 2Gi
+      requests:
+        cpu: 200m
+        memory: 400Mi
+    ports: # Comment out ports for platforms as needed.
+    - containerPort: 4317 # Default gRPC endpoint for OpenTelemetry receiver.
+    volumeMounts:
+    - name: otel-collector-config-vol
+      mountPath: /conf
+  volumes:
+    - name: otel-collector-config-vol
+      configMap:
+        name: otel-collector-conf
+        items:
+          - key: otel-collector-config
+            path: otel-collector-config.yaml
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: otel-collector
+  labels:
+    app: otel-collector
+    component: otel-collector
+    app.kubernetes.io/name: opentelemetry
+spec:
+  ports:
+  - name: otlp-grpc # Default endpoint for OpenTelemetry gRPC receiver.
+    port: 4317
+    protocol: TCP
+    targetPort: 4317
+    appProtocol: grpc
+  selector:
+    app.kubernetes.io/name: otel-collector
