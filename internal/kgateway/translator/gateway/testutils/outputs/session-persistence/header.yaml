@@ -57,9 +57,10 @@ Routes:
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
       typedPerFilterConfig:
         envoy.filters.http.stateful_session:
-          '@type': type.googleapis.com/envoy.extensions.filters.http.stateful_session.v3.StatefulSession
-          sessionState:
-            name: envoy.http.stateful_session.header
-            typedConfig:
-              '@type': type.googleapis.com/envoy.extensions.http.stateful_session.header.v3.HeaderBasedSessionState
-              name: Session-A
+          '@type': type.googleapis.com/envoy.extensions.filters.http.stateful_session.v3.StatefulSessionPerRoute
+          statefulSession:
+            sessionState:
+              name: envoy.http.stateful_session.header
+              typedConfig:
+                '@type': type.googleapis.com/envoy.extensions.http.stateful_session.header.v3.HeaderBasedSessionState
+                name: Session-A

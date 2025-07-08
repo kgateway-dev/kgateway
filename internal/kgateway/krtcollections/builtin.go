@@ -329,7 +329,12 @@ func convertSessionPersistence(sessionPersistence *gwv1.SessionPersistence) *any
 			TypedConfig: sessionStateAny,
 		},
 	}
-	typedConfig, err := utils.MessageToAny(statefulSession)
+	perRoute := &stateful_sessionv3.StatefulSessionPerRoute{
+		Override: &stateful_sessionv3.StatefulSessionPerRoute_StatefulSession{
+			StatefulSession: statefulSession,
+		},
+	}
+	typedConfig, err := utils.MessageToAny(perRoute)
 	if err != nil {
 		logger.Error("failed to create session state: %v", "error", err)
 		return nil
