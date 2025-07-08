@@ -58,4 +58,4 @@ spec:
       - name: ":method"
         value: "POST"
       - name: "x-forwarded-for"
-        value: '{{ request_headers("x-real-ip") }}'  ## Test unknown Inja function validation (should be header())
+        value: '{{ request_headers("x-real-ip") }}'  ## validate unknown Inja function validation (should be header())

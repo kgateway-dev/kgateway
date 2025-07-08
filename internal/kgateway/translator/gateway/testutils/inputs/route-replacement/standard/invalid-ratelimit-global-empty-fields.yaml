@@ -75,9 +75,9 @@ spec:
       descriptors:
         - entries:
             - type: Header
-              header: ""  # Empty header name should be rejected in the code
+              header: ""  # Proto validation error: header name cannot be empty
         - entries:
             - type: Generic
               generic:
-                key: ""  # Empty key should be rejected in the code
-                value: ""  # Empty value should be rejected in the code
+                key: ""    # Proto validation error: key cannot be empty
+                value: ""  # Proto validation error: value cannot be empty

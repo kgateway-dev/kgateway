@@ -53,7 +53,7 @@ spec:
   transformation:
     request:
       body:
-        parseAs: AsJson
+        parseAs: AsJson  ## validate complex template syntax scenarios are caught in STRICT mode
         value: |
           {
             "user": "{{ request.headers['x-user'] }}",

@@ -56,4 +56,4 @@ spec:
     request:
       body:
         parseAs: AsJson
-        value: "{{ invalid_template }"
+        value: "{{ invalid_template }"  ## Verify that STRICT mode needs to be used to catch this.
