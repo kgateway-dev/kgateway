@@ -833,6 +833,66 @@ var _ = DescribeTable("Route Replacement Tests",
 		func(s *settings.Settings) {
 			s.RouteReplacementMode = settings.RouteReplacementStandard
 		}),
+	Entry("Standard Mode - Gateway Level Policy Invalid Rate Limit (Not Validated)",
+		translatorTestCase{
+			inputFile:  "route-replacement/standard/gateway-level-policy-validation.yaml",
+			outputFile: "route-replacement/standard/gateway-level-policy-validation-out.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "gwtest",
+				Name:      "example-gateway",
+			},
+			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
+				// Verify that despite the invalid rate limit config, attaching the policy to the gateway
+				// does not cause the route to be invalidated as the route translator does not currently
+				// handle IR errors outside of the envoyRoutes method. This will be fixed in the future.
+				route := &gwv1.HTTPRoute{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test-route",
+						Namespace: "gwtest",
+					},
+				}
+				routeStatus := reportsMap.BuildRouteStatus(context.Background(), route, wellknown.DefaultGatewayClassName)
+				Expect(routeStatus).NotTo(BeNil())
+				Expect(routeStatus.Parents).To(HaveLen(1))
+
+				// Expect no PartiallyInvalid condition since template validation is skipped in standard mode
+				partiallyInvalid := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionPartiallyInvalid))
+				Expect(partiallyInvalid).To(BeNil())
+			},
+		},
+		func(s *settings.Settings) {
+			s.RouteReplacementMode = settings.RouteReplacementStandard
+		}),
+	Entry("Standard Mode - Gateway Listener Policy Invalid Rate Limit (Not Validated)",
+		translatorTestCase{
+			inputFile:  "route-replacement/standard/gateway-listener-policy-validation.yaml",
+			outputFile: "route-replacement/standard/gateway-listener-policy-validation-out.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "gwtest",
+				Name:      "example-gateway",
+			},
+			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
+				// Verify that despite the invalid rate limit config, attaching the policy to a specific listener
+				// does not cause the route to be invalidated as the route translator does not currently
+				// handle IR errors outside of the envoyRoutes method. This will be fixed in the future.
+				route := &gwv1.HTTPRoute{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test-route",
+						Namespace: "gwtest",
+					},
+				}
+				routeStatus := reportsMap.BuildRouteStatus(context.Background(), route, wellknown.DefaultGatewayClassName)
+				Expect(routeStatus).NotTo(BeNil())
+				Expect(routeStatus.Parents).To(HaveLen(1))
+
+				// Expect no PartiallyInvalid condition since template validation is skipped in standard mode
+				partiallyInvalid := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionPartiallyInvalid))
+				Expect(partiallyInvalid).To(BeNil())
+			},
+		},
+		func(s *settings.Settings) {
+			s.RouteReplacementMode = settings.RouteReplacementStandard
+		}),
 	Entry("Standard Mode - Invalid Transformation Template (Not Validated)",
 		translatorTestCase{
 			inputFile:  "route-replacement/standard/transformation-template-not-validated.yaml",
@@ -842,6 +902,8 @@ var _ = DescribeTable("Route Replacement Tests",
 				Name:      "example-gateway",
 			},
 			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
+				// Verify that in standard mode, invalid transformation templates are not validated
+				// and thus no route replacement occurs
 				route := &gwv1.HTTPRoute{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "invalid-traffic-policy-route",
