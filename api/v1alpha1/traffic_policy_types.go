@@ -271,6 +271,7 @@ type TokenBucket struct {
 	// This controls the steady-state rate of token generation.
 	// +optional
 	// +kubebuilder:default=1
+	// +kubebuilder:validation:Minimum=1
 	TokensPerFill *uint32 `json:"tokensPerFill,omitempty"`
 
 	// FillInterval defines the time duration between consecutive token fills.
