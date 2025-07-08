@@ -129,7 +129,6 @@ func (s *testingSuite) TestRegexMatch() {
 	s.assertStatus("anything/plus/this/what3v3r/4./1a/stuff/ends", http.StatusNotFound)     // extra char
 	s.assertStatus("anything/plus/this/what3v3r/4./1a/stuff/end/", http.StatusNotFound)     // extra slash
 	s.assertStatus("anything/plus/this/what3v3r/4./1a/stuff/end/more", http.StatusNotFound) // extra path element
-
 }
 
 // TestPrefixRewrite tests an HTTPRoute with a path match of type PathPrefix
