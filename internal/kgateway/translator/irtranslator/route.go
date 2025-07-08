@@ -307,7 +307,12 @@ func (h *httpRouteConfigurationTranslator) runRoutePlugins(
 			TypedFilterConfig: typedPerFilterConfig,
 		}
 		for _, pol := range mergePolicies(pass, pols) {
-			errs = append(errs, pol.Errors...)
+			// skip plugin application if we encountered any errors while constructing
+			// the policy IR.
+			if len(pol.Errors) > 0 {
+				errs = append(errs, pol.Errors...)
+				continue
+			}
 			pctx.Policy = pol.PolicyIr
 			applyForPolicy(ctx, pass, pctx, out)
 		}
