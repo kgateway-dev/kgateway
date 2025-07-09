@@ -285,6 +285,7 @@ func (c Gateway) Equals(in Gateway) bool {
 		versionEquals(c.Obj, in.Obj) &&
 		c.AttachedListenerPolicies.Equals(in.AttachedListenerPolicies) &&
 		c.AttachedHttpPolicies.Equals(in.AttachedHttpPolicies) &&
+		c.Listeners.Equals(in.Listeners) &&
 		c.AllowedListenerSets.Equals(in.AllowedListenerSets) &&
 		c.DeniedListenerSets.Equals(in.DeniedListenerSets)
 }
