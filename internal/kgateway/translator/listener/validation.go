@@ -1,6 +1,7 @@
 package listener
 
 import (
+	"fmt"
 	"slices"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -78,9 +79,10 @@ func validateSupportedRoutes(listeners []ir.Listener, reporter reports.Reporter)
 		if !ok {
 			// todo: log?
 			parentReporter.ListenerName(string(listener.Name)).SetCondition(reports.ListenerCondition{
-				Type:   gwv1.ListenerConditionAccepted,
-				Status: metav1.ConditionFalse,
-				Reason: gwv1.ListenerReasonUnsupportedProtocol, //TODO: add message
+				Type:    gwv1.ListenerConditionAccepted,
+				Status:  metav1.ConditionFalse,
+				Reason:  gwv1.ListenerReasonUnsupportedProtocol,
+				Message: fmt.Sprintf("Protocol %s is unsupported.", listener.Protocol),
 			})
 			continue
 		}

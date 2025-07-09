@@ -245,6 +245,9 @@ func (g *ListenerSetReport) SetCondition(gc pluginsdkreporter.GatewayCondition) 
 
 func NewListenerReport(name string) *ListenerReport {
 	lr := ListenerReport{}
+	// Set SupportedKinds to empty slice because it must be non-nil
+	// without it, it will fail to set status
+	lr.Status.SupportedKinds = []gwv1.RouteGroupKind{}
 	lr.Status.Name = gwv1.SectionName(name)
 	return &lr
 }
