@@ -23,14 +23,15 @@ type ConfigBuilder struct {
 	clusters      []*envoy_config_cluster_v3.Cluster
 }
 
-// New creates a new ConfigBuilder
+// New creates a new ConfigBuilder.
 func New() *ConfigBuilder {
 	return &ConfigBuilder{
 		filterConfigs: make(ir.TypedFilterConfigMap),
 	}
 }
 
-// AddFilterConfig adds a filter configuration to the builder.
+// AddFilterConfig adds a filter configuration to the builder. Assumes that the
+// filter config is a valid proto message and error handling is done by the caller.
 func (b *ConfigBuilder) AddFilterConfig(name string, config proto.Message) {
 	b.filterConfigs.AddTypedConfig(name, config)
 }
