@@ -10,8 +10,9 @@ import (
 )
 
 const (
-	envoyPath  = "/usr/local/bin/envoy"
-	envoyImage = "quay.io/solo-io/envoy-gloo:1.34.1-patch1"
+	envoyPath = "/usr/local/bin/envoy"
+	// TODO(tim): avoid hardcoding the envoy image version in multiple places.
+	envoyImage = "quay.io/solo-io/envoy-gloo:1.34.1-patch3"
 )
 
 // ErrInvalidXDS is returned when Envoy rejects the supplied YAML.
