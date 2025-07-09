@@ -24,7 +24,7 @@ on:
       - main
 
 env:
-  # this is uses the `github.repository_owner` to support releases from forks (useful for testing).
+  # this uses the `github.repository_owner` to support releases from forks (useful for testing).
   IMAGE_REGISTRY: ghcr.io/${{ github.repository_owner }}
   VANITY_REGISTRY: cr.kgateway.dev/kgateway-dev
   MAIN_VERSION: v2.1.0-main
@@ -65,9 +65,6 @@ jobs:
           elif [[ ${{ github.event_name }} == 'workflow_dispatch' ]]; then
             VERSION="v0.0.0-manual-${GIT_SHA}"
             echo "goreleaser_args=--clean --skip=validate" >> $GITHUB_OUTPUT
-          elif [[ $GITHUB_REF == refs/tags/* ]]; then
-            VERSION="${GITHUB_REF#refs/tags/}"
-            echo "goreleaser_args=--clean" >> $GITHUB_OUTPUT
           elif [[ $GITHUB_REF == refs/heads/main ]]; then
             VERSION="${MAIN_VERSION}"
             echo "goreleaser_args=--clean --skip=validate" >> $GITHUB_OUTPUT

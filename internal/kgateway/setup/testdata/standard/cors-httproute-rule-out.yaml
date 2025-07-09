@@ -95,5 +95,10 @@ routes:
           '@type': type.googleapis.com/envoy.extensions.filters.http.cors.v3.CorsPolicy
           allowMethods: POST
           allowOriginStringMatch:
-          - exact: https://notexample.com
+          - safeRegex:
+              googleRe2: {}
+              regex: ^https://.*\.notexample\.com$
+          - prefix: https://a.b
+          - exact: https://exact.domain.com
+          - prefix: http://
           maxAge: "5"

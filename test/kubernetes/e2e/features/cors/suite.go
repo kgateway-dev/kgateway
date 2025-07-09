@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"testing"
 
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -98,25 +99,105 @@ func (s *testingSuite) TearDownSuite() {
 }
 
 // Test cors on specific route in a traffic policy
+// The policy has the following allowOrigins:
+// - https://notexample.com
+// - https://a.b.*
+// - https://*.edu
 func (s *testingSuite) TestTrafficPolicyCorsForRoute() {
 	s.setupTest([]string{httpRoutesManifest, routeCorsTrafficPolicyManifest}, []client.Object{route, route2, routeCorsTrafficPolicy})
-	requestHeaders := map[string]string{
-		"Origin":                        "https://notexample.com",
-		"Access-Control-Request-Method": "GET",
+
+	testCases := []struct {
+		name   string
+		origin string
+	}{
+		{
+			name:   "exact_match_origin",
+			origin: "https://notexample.com",
+		},
+		{
+			name:   "prefix_match_origin",
+			origin: "https://a.b.c.d",
+		},
+		{
+			name:   "regex_match_origin",
+			origin: "https://test.cors.edu",
+		},
 	}
 
-	expectedHeaders := map[string]any{
-		"Access-Control-Allow-Origin":  "https://notexample.com",
-		"Access-Control-Allow-Methods": "GET, POST, DELETE",
-		"Access-Control-Allow-Headers": "x-custom-header",
+	for _, tc := range testCases {
+		s.T().Run(tc.name, func(t *testing.T) {
+			requestHeaders := map[string]string{
+				"Origin":                        tc.origin,
+				"Access-Control-Request-Method": "GET",
+			}
+
+			expectedHeaders := map[string]any{
+				"Access-Control-Allow-Origin":  tc.origin,
+				"Access-Control-Allow-Methods": "GET, POST, DELETE",
+				"Access-Control-Allow-Headers": "x-custom-header",
+			}
+
+			// Verify that the route with cors is responding to the OPTIONS request with the expected cors headers
+			s.assertResponse("/path1", http.StatusOK, requestHeaders, expectedHeaders, []string{})
+
+			// Verify that the route without cors is not affected by the cors traffic policy (i.e. no cors headers are returned)
+			s.assertResponse("/path2", http.StatusOK, requestHeaders, nil, []string{
+				"Access-Control-Allow-Origin", "Access-Control-Allow-Methods", "Access-Control-Allow-Headers"})
+		})
 	}
 
-	// Verify that the route with cors is responding to the OPTIONS request with the expected cors headers
-	s.assertResponse("/path1", http.StatusOK, requestHeaders, expectedHeaders, []string{})
+	// Negative test cases - origins that should NOT match the patterns
+	negativeTestCases := []struct {
+		name   string
+		origin string
+	}{
+		{
+			name:   "wildcard_subdomain_should_not_match_different_domain",
+			origin: "https://notedu.com",
+		},
+		{
+			name:   "wildcard_subdomain_should_not_match_different_tld",
+			origin: "https://api.example.org",
+		},
+		{
+			name:   "wildcard_subdomain_should_not_match_without_subdomain",
+			origin: "https://edu",
+		},
+		{
+			name:   "prefix_match_should_not_match_different_scheme",
+			origin: "http://a.b.c.d",
+		},
+		{
+			name:   "exact_match_should_not_match_similar_domain",
+			origin: "https://notexample.org",
+		},
+		{
+			name:   "exact_match_should_not_match_with_subdomain",
+			origin: "https://api.notexample.com",
+		},
+		{
+			name:   "prefix_match_should_not_match_invalid_url",
+			origin: "https:/a.b",
+		},
+	}
 
-	// Verify that the route without cors is not affected by the cors traffic policy (i.e. no cors headers are returned)
-	s.assertResponse("/path2", http.StatusOK, requestHeaders, nil, []string{
-		"Access-Control-Allow-Origin", "Access-Control-Allow-Methods", "Access-Control-Allow-Headers"})
+	for _, tc := range negativeTestCases {
+		s.T().Run("negative_"+tc.name, func(t *testing.T) {
+			requestHeaders := map[string]string{
+				"Origin":                        tc.origin,
+				"Access-Control-Request-Method": "GET",
+			}
+
+			// For negative cases, we expect no CORS headers to be returned
+			// since the origin doesn't match any of the allowed patterns
+			s.assertResponse("/path1", http.StatusOK, requestHeaders, nil, []string{
+				"Access-Control-Allow-Origin", "Access-Control-Allow-Methods", "Access-Control-Allow-Headers"})
+
+			// Verify that the route without cors is also not affected
+			s.assertResponse("/path2", http.StatusOK, requestHeaders, nil, []string{
+				"Access-Control-Allow-Origin", "Access-Control-Allow-Methods", "Access-Control-Allow-Headers"})
+		})
+	}
 }
 
 // Test cors at the gateway level which configures cors policy in the virtual host and therefore affects all routes
@@ -165,26 +246,104 @@ func (s *testingSuite) TestTrafficPolicyRouteCorsOverrideGwCors() {
 }
 
 // Test cors in route rules of a HTTPRoute
+// The route has the following allowOrigins:
+// - https://notexample.com
+// - https://a.b.*
+// - https://*.edu
 func (s *testingSuite) TestHttpRouteCorsInRouteRules() {
 	s.setupTest([]string{httpRoutesManifest, corsHttpRoutesManifest}, []client.Object{route, route2})
 
-	requestHeaders := map[string]string{
-		"Origin":                        "https://notexample.com",
-		"Access-Control-Request-Method": "GET",
+	testCases := []struct {
+		name   string
+		origin string
+	}{
+		{
+			name:   "exact_match_origin",
+			origin: "https://notexample.com",
+		},
+		{
+			name:   "prefix_match_origin",
+			origin: "https://a.b.c.d",
+		},
+		{
+			name:   "regex_match_origin",
+			origin: "https://test.cors.edu",
+		},
 	}
 
-	// HTTPRoute for /path1 should have this cors response headers
-	expectedHeaders := map[string]any{
-		"Access-Control-Allow-Origin":  "https://notexample.com",
-		"Access-Control-Allow-Methods": "GET",
-		"Access-Control-Allow-Headers": "x-custom-header",
+	for _, tc := range testCases {
+		s.T().Run(tc.name, func(t *testing.T) {
+			requestHeaders := map[string]string{
+				"Origin":                        tc.origin,
+				"Access-Control-Request-Method": "GET",
+			}
+
+			expectedHeaders := map[string]any{
+				"Access-Control-Allow-Origin":  tc.origin,
+				"Access-Control-Allow-Methods": "GET",
+				"Access-Control-Allow-Headers": "x-custom-header",
+			}
+
+			// Verify that the route with cors is responding to the OPTIONS request with the expected cors headers
+			s.assertResponse("/path1", http.StatusOK, requestHeaders, expectedHeaders, []string{})
+
+			// Verify that the route without cors is not affected by the cors in the HTTPRoute (i.e. no cors headers are returned)
+			s.assertResponse("/path2", http.StatusOK, requestHeaders, nil, []string{"Access-Control-Allow-Origin", "Access-Control-Allow-Methods", "Access-Control-Allow-Headers"})
+		})
 	}
 
-	// Verify that the route with cors is responding to the OPTIONS request with the expected cors headers
-	s.assertResponse("/path1", http.StatusOK, requestHeaders, expectedHeaders, []string{})
+	// Negative test cases - origins that should NOT match the patterns
+	negativeTestCases := []struct {
+		name   string
+		origin string
+	}{
+		{
+			name:   "wildcard_subdomain_should_not_match_different_domain",
+			origin: "https://notedu.com",
+		},
+		{
+			name:   "wildcard_subdomain_should_not_match_different_tld",
+			origin: "https://api.example.org",
+		},
+		{
+			name:   "wildcard_subdomain_should_not_match_without_subdomain",
+			origin: "https://edu",
+		},
+		{
+			name:   "prefix_match_should_not_match_different_scheme",
+			origin: "http://a.b.c.d",
+		},
+		{
+			name:   "exact_match_should_not_match_similar_domain",
+			origin: "https://notexample.org",
+		},
+		{
+			name:   "exact_match_should_not_match_with_subdomain",
+			origin: "https://api.notexample.com",
+		},
+		{
+			name:   "prefix_match_should_not_match_invalid_url",
+			origin: "https:/a.b",
+		},
+	}
 
-	// Verify that the route without cors is not affected by the cors in the HTTPRoute (i.e. no cors headers are returned)
-	s.assertResponse("/path2", http.StatusOK, requestHeaders, nil, []string{"Access-Control-Allow-Origin", "Access-Control-Allow-Methods", "Access-Control-Allow-Headers"})
+	for _, tc := range negativeTestCases {
+		s.T().Run("negative_"+tc.name, func(t *testing.T) {
+			requestHeaders := map[string]string{
+				"Origin":                        tc.origin,
+				"Access-Control-Request-Method": "GET",
+			}
+
+			// For negative cases, we expect no CORS headers to be returned
+			// since the origin doesn't match any of the allowed patterns
+			s.assertResponse("/path1", http.StatusOK, requestHeaders, nil, []string{
+				"Access-Control-Allow-Origin", "Access-Control-Allow-Methods", "Access-Control-Allow-Headers"})
+
+			// Verify that the route without cors is also not affected
+			s.assertResponse("/path2", http.StatusOK, requestHeaders, nil, []string{
+				"Access-Control-Allow-Origin", "Access-Control-Allow-Methods", "Access-Control-Allow-Headers"})
+		})
+	}
 }
 
 // Test a combination of cors in route rules of a HTTPRoute and cors in a traffic policy
