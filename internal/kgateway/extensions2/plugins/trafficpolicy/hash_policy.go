@@ -1,6 +1,8 @@
 package trafficpolicy
 
 import (
+	"sort"
+
 	"google.golang.org/protobuf/types/known/durationpb"
 
 	routev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
@@ -37,11 +39,18 @@ func hashPolicyForSpec(spec v1alpha1.TrafficPolicySpec, outSpec *trafficPolicySp
 				policy.GetCookie().Path = hashPolicy.Cookie.Path
 			}
 			if hashPolicy.Cookie.Attributes != nil {
+				// Get all attribute names and sort them for consistent ordering
+				names := make([]string, 0, len(hashPolicy.Cookie.Attributes))
+				for name := range hashPolicy.Cookie.Attributes {
+					names = append(names, name)
+				}
+				sort.Strings(names)
+
 				attributes := make([]*routev3.RouteAction_HashPolicy_CookieAttribute, 0, len(hashPolicy.Cookie.Attributes))
-				for name, value := range hashPolicy.Cookie.Attributes {
+				for _, name := range names {
 					attributes = append(attributes, &routev3.RouteAction_HashPolicy_CookieAttribute{
 						Name:  name,
-						Value: value,
+						Value: hashPolicy.Cookie.Attributes[name],
 					})
 				}
 				policy.GetCookie().Attributes = attributes
