@@ -54,6 +54,7 @@ spec:
       sessionPersistence:
         sessionName: Session-B
         type: Cookie
+        absoluteTimeout: 8760h
         cookieConfig:
           lifetimeType: Permanent 
     - matches:
@@ -102,6 +103,7 @@ spec:
       sessionPersistence:
         sessionName: Session-B
         type: Cookie
+        absoluteTimeout: 8760h
         cookieConfig:
           lifetimeType: Permanent 
     - matches:
