@@ -7,12 +7,11 @@ import (
 	"fmt"
 	"os/exec"
 	"strings"
-
-	"github.com/kgateway-dev/kgateway/v2/pkg/envoy"
 )
 
 const (
-	envoyPath = "/usr/local/bin/envoy"
+	envoyPath  = "/usr/local/bin/envoy"
+	envoyImage = "quay.io/solo-io/envoy-gloo:1.34.1-patch1"
 )
 
 // ErrInvalidXDS is returned when Envoy rejects the supplied YAML.
@@ -32,7 +31,7 @@ func New() Validator {
 		return &binaryValidator{path: envoyPath}
 	}
 	// otherwise, fallback to docker
-	return &dockerValidator{img: envoy.Image}
+	return &dockerValidator{img: envoyImage}
 }
 
 // binaryValidator validates envoy using the binary.
