@@ -157,6 +157,15 @@ func (d *TrafficPolicy) Equals(in any) bool {
 		return false
 	}
 
+	if len(d.spec.hashPolicies) != len(d2.spec.hashPolicies) {
+		return false
+	}
+	for i, policy := range d.spec.hashPolicies {
+		if !proto.Equal(policy, d2.spec.hashPolicies[i]) {
+			return false
+		}
+	}
+
 	return true
 }
 
