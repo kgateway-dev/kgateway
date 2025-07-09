@@ -59,10 +59,13 @@ Use the "Run workflow" drop-down in the right corner of the page to dispatch a r
   - Minor release: Select the `main` branch.
   - Patch release: Select the release branch, e.g. `v2.0.x`, that will be patched.
 - Enter the version for the release to create, e.g. `v2.0.3`. This will trigger
-  the release process and result in a new GitHub release, [v2.0.3](https://github.com/kgateway-dev/kgateway/releases/tag/v2.0.3) for example.
+  the release process and result in a new GitHub release, [v2.0.3](https://github.com/kgateway-dev/kgateway/releases/tag/v2.0.3)
+  for example.
 - Click on the "validate release" option, which bootstraps an environment from the
   generated artifacts and runs the conformance suite against that deployed environment.
-- The release notes must be manually added to contain the bug fixes, features, etc. included in the release. This part of the process will be improved once [Issue 11436](https://github.com/kgateway-dev/kgateway/issues/11436) is fixed.
+- The release notes must be manually added to contain the bug fixes, features, etc. included in the release.
+  This part of the process will be improved once [Issue 11436](https://github.com/kgateway-dev/kgateway/issues/11436)
+  is fixed.
 
 ## Verification
 
@@ -82,7 +85,7 @@ The Kgateway documentation must be updated to reference the new version.
 If needed, clone the [Kgateway.dev repo](https://github.com/kgateway-dev/kgateway.dev):
 
 ```bash
-git clone -o $REMOTE https://github.com/kgateway-dev/kgatewa.dev.git && cd kgateway.dev
+git clone -o $REMOTE https://github.com/kgateway-dev/kgateway.dev.git && cd kgateway.dev
 ```
 
 Bump the Kgateway version used by the docs. The following is an example of bumping from v2.0.3 to 2.0.4:
@@ -101,10 +104,16 @@ git push $FORK
 
 Submit a pull request to merge the changes from your fork to the kgateway.dev upstream.
 
-## Update Dowstreams
+## Update Downstreams
 
-The following projects consume Kgateway and should be updated to reference the new release:
+The following projects consume Kgateway and should be updated or an issue created to reference
+the new release (not required for a patch release):
 
-- Create an issue and submit a pull request to [Inference Gateway][https://github.com/kubernetes-sigs/gateway-api-inference-extension] to bump the Kgateway version. See [PR 1094](https://github.com/kubernetes-sigs/gateway-api-inference-extension/pull/1094) as an example. **Note** The [getting started](https://gateway-api-inference-extension.sigs.k8s.io/guides/) guide should be tested with the new Kgateway version before submitting the PR.
+- Create an issue and submit a pull request to [Inference Gateway][https://github.com/kubernetes-sigs/gateway-api-inference-extension]
+  to bump the Kgateway version. See [PR 1094](https://github.com/kubernetes-sigs/gateway-api-inference-extension/pull/1094) as an example.
+  **Note** The [getting started](https://gateway-api-inference-extension.sigs.k8s.io/guides/) guide should be tested with the new Kgateway
+  version before submitting the PR.
 
-- Create an issue and submit a pull request to [llm-d-deployer][https://github.com/llm-d/llm-d-deployer] to bump the Kgateway version. See [PR 352](https://github.com/llm-d/llm-d-deployer/issues/352) as an example. **Note** The [quickstart](https://github.com/llm-d/llm-d-deployer/tree/main/quickstart) guide should be tested with the new Kgateway version before submitting the PR.
+- Create an issue and submit a pull request to [llm-d-deployer][https://github.com/llm-d/llm-d-deployer] to bump the Kgateway version.
+  See [PR 352](https://github.com/llm-d/llm-d-deployer/issues/352) as an example. **Note** The [quickstart](https://github.com/llm-d/llm-d-deployer/tree/main/quickstart)
+  guide should be tested with the new Kgateway version before submitting the PR.
