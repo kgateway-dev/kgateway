@@ -36,6 +36,7 @@ type TrafficPolicyList struct {
 }
 
 // TrafficPolicySpec defines the desired state of a traffic policy.
+// +kubebuilder:validation:XValidation:rule="!has(self.hashPolicies) || ((has(self.targetRefs) && self.targetRefs.all(r, r.kind == 'HTTPRoute')) || (has(self.targetSelectors) && self.targetSelectors.all(r, r.kind == 'HTTPRoute')))",message="hash policies can only be used when targeting HTTPRoute resources"
 type TrafficPolicySpec struct {
 	// TargetRefs specifies the target resources by reference to attach the policy to.
 	// +optional
