@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/protobuf/types/known/durationpb"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/ptr"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 )
@@ -40,7 +41,7 @@ func TestHashPolicyForSpec(t *testing.T) {
 						Header: &v1alpha1.Header{
 							Name: "x-user-id",
 						},
-						Terminal: true,
+						Terminal: ptr.To(true),
 					},
 				},
 			},
@@ -63,7 +64,6 @@ func TestHashPolicyForSpec(t *testing.T) {
 						Cookie: &v1alpha1.Cookie{
 							Name: "session-id",
 						},
-						Terminal: false,
 					},
 				},
 			},
@@ -88,13 +88,13 @@ func TestHashPolicyForSpec(t *testing.T) {
 							TTL: &metav1.Duration{
 								Duration: 30 * time.Minute,
 							},
-							Path: "/api",
+							Path: ptr.To("/api"),
 							Attributes: map[string]string{
 								"domain": "example.com",
 								"secure": "true",
 							},
 						},
-						Terminal: true,
+						Terminal: ptr.To(true),
 					},
 				},
 			},
@@ -129,7 +129,7 @@ func TestHashPolicyForSpec(t *testing.T) {
 						SourceIP: &v1alpha1.SourceIP{
 							SourceIP: true,
 						},
-						Terminal: false,
+						Terminal: ptr.To(false),
 					},
 				},
 			},
@@ -152,7 +152,7 @@ func TestHashPolicyForSpec(t *testing.T) {
 						Header: &v1alpha1.Header{
 							Name: "x-user-id",
 						},
-						Terminal: true,
+						Terminal: ptr.To(true),
 					},
 					{
 						Cookie: &v1alpha1.Cookie{
@@ -161,13 +161,11 @@ func TestHashPolicyForSpec(t *testing.T) {
 								Duration: 1 * time.Hour,
 							},
 						},
-						Terminal: false,
 					},
 					{
 						SourceIP: &v1alpha1.SourceIP{
 							SourceIP: true,
 						},
-						Terminal: false,
 					},
 				},
 			},
@@ -200,30 +198,6 @@ func TestHashPolicyForSpec(t *testing.T) {
 			},
 		},
 		{
-			name: "cookie hash policy with empty path",
-			spec: v1alpha1.TrafficPolicySpec{
-				HashPolicies: []*v1alpha1.HashPolicy{
-					{
-						Cookie: &v1alpha1.Cookie{
-							Name: "session-id",
-							Path: "",
-						},
-						Terminal: false,
-					},
-				},
-			},
-			expected: []*routev3.RouteAction_HashPolicy{
-				{
-					Terminal: false,
-					PolicySpecifier: &routev3.RouteAction_HashPolicy_Cookie_{
-						Cookie: &routev3.RouteAction_HashPolicy_Cookie{
-							Name: "session-id",
-						},
-					},
-				},
-			},
-		},
-		{
 			name: "cookie hash policy with nil TTL",
 			spec: v1alpha1.TrafficPolicySpec{
 				HashPolicies: []*v1alpha1.HashPolicy{
@@ -231,9 +205,9 @@ func TestHashPolicyForSpec(t *testing.T) {
 						Cookie: &v1alpha1.Cookie{
 							Name: "session-id",
 							TTL:  nil,
-							Path: "/api",
+							Path: ptr.To("/api"),
 						},
-						Terminal: false,
+						Terminal: ptr.To(false),
 					},
 				},
 			},

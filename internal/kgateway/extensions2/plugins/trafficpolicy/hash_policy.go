@@ -16,8 +16,9 @@ func hashPolicyForSpec(spec v1alpha1.TrafficPolicySpec, outSpec *trafficPolicySp
 	}
 	policies := make([]*routev3.RouteAction_HashPolicy, 0, len(spec.HashPolicies))
 	for _, hashPolicy := range spec.HashPolicies {
-		policy := &routev3.RouteAction_HashPolicy{
-			Terminal: hashPolicy.Terminal,
+		policy := &routev3.RouteAction_HashPolicy{}
+		if hashPolicy.Terminal != nil {
+			policy.Terminal = *hashPolicy.Terminal
 		}
 		switch {
 		case hashPolicy.Header != nil:
@@ -35,8 +36,8 @@ func hashPolicyForSpec(spec v1alpha1.TrafficPolicySpec, outSpec *trafficPolicySp
 			if hashPolicy.Cookie.TTL != nil {
 				policy.GetCookie().Ttl = durationpb.New(hashPolicy.Cookie.TTL.Duration)
 			}
-			if hashPolicy.Cookie.Path != "" {
-				policy.GetCookie().Path = hashPolicy.Cookie.Path
+			if hashPolicy.Cookie.Path != nil {
+				policy.GetCookie().Path = *hashPolicy.Cookie.Path
 			}
 			if hashPolicy.Cookie.Attributes != nil {
 				// Get all attribute names and sort them for consistent ordering

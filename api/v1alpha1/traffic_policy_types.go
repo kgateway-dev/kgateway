@@ -83,6 +83,7 @@ type TrafficPolicySpec struct {
 
 	// HashPolicies specifies the hash policies for hashing load balancers (RingHash, Maglev).
 	// Should be used in conjunction with Load Balancer on the BackendConfigPolicy.
+	// Note: can only be used when targeting routes.
 	// +optional
 	// +kubebuilder:validation:MaxItems=16
 	HashPolicies []*HashPolicy `json:"hashPolicies,omitempty"`
@@ -405,23 +406,21 @@ type HashPolicy struct {
 	// use the key as it is.
 	// This is useful for defining "fallback" policies and limiting the time Envoy spends generating hash keys.
 	// +optional
-	Terminal bool `json:"terminal,omitempty"`
+	Terminal *bool `json:"terminal,omitempty"`
 }
 
 type Header struct {
 	// Name is the name of the header to use as a component of the hash key.
-	// +required
 	Name string `json:"name"`
 }
 
 type Cookie struct {
 	// Name of the cookie.
-	// +required
 	Name string `json:"name"`
 
 	// Path is the name of the path for the cookie.
 	// +optional
-	Path string `json:"path,omitempty"`
+	Path *string `json:"path,omitempty"`
 
 	// TTL specifies the time to live of the cookie.
 	// If specified, a cookie with the TTL will be generated if the cookie is not present.
