@@ -31,8 +31,9 @@ kind: HTTPRoute
 metadata:
   name: example-route
   namespace: infra
-  annotations:
-    delegation.kgateway.dev/inherited-policy-priority: PreferChild
+  # ShallowMergePreferChild is implicit
+  # annotations:
+  #   kgateway.dev/inherited-policy-priority: ShallowMergePreferChild
 spec:
   parentRefs:
   - name: example-gateway
@@ -57,8 +58,9 @@ kind: HTTPRoute
 metadata:
   name: mid-a
   namespace: mid
+  # Default policy is being explicitly set
   annotations:
-    delegation.kgateway.dev/inherited-policy-priority: PreferChild
+    kgateway.dev/inherited-policy-priority: ShallowMergePreferChild
 spec:
   rules:
   - matches:
@@ -76,6 +78,8 @@ kind: HTTPRoute
 metadata:
   name: mid-b
   namespace: mid
+  annotations:
+    kgateway.dev/inherited-policy-priority: ShallowMergePreferParent 
 spec:
   rules:
   - matches:

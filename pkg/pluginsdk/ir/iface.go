@@ -15,6 +15,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	apiannotations "github.com/kgateway-dev/kgateway/v2/api/annotations"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
@@ -94,6 +95,8 @@ type RouteContext struct {
 	In              HttpRouteRuleMatchIR
 	// TypedFilterConfig will be output on the Route level after all plugins have run
 	TypedFilterConfig TypedFilterConfigMap
+
+	InheritedPolicyPriority apiannotations.InheritedPolicyPriorityValue
 }
 
 type HcmContext struct {
