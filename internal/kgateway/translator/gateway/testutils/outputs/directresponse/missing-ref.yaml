@@ -37,6 +37,9 @@ Routes:
     name: listener~8080~www_example_com
     routes:
     - directResponse:
+        body:
+          inlineString: invalid route configuration detected and replaced with a direct
+            response.
         status: 500
       match:
         path: /non-existent
