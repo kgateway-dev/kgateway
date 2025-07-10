@@ -1,0 +1,95 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: echo
+  namespace: default
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: echo
+  template:
+    metadata:
+      labels:
+        app: echo
+    spec:
+      containers:
+      - name: echo
+        image: hashicorp/http-echo
+        args:
+          - "-text=pod=$(POD_NAME)"
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        ports:
+        - containerPort: 5678
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: echo
+  namespace: default
+spec:
+  selector:
+    app: echo
+  ports:
+  - port: 80
+    targetPort: 5678
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: gw-header
+  namespace: default
+spec:
+  gatewayClassName: kgateway
+  listeners:
+  - name: http
+    port: 8080
+    protocol: HTTP
+    allowedRoutes:
+      namespaces:
+        from: Same
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: echo-header
+  namespace: default
+spec:
+  parentRefs:
+  - name: gw-header
+  hostnames: ["echo.local"]
+  rules:
+  - backendRefs:
+    - name: echo
+      port: 80
+    sessionPersistence:
+      sessionName: Session-A
+      type: Header
+      absoluteTimeout: 100s
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: curl
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: curl
+  namespace: curl
+  labels:
+    app: curl
+    version: v1
+spec:
+  containers:
+    - name: curl
+      image: curlimages/curl:7.83.1
+      imagePullPolicy: IfNotPresent
+      command:
+        - "tail"
+        - "-f"
+        - "/dev/null" 
