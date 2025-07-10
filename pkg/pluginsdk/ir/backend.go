@@ -280,7 +280,14 @@ func (c Gateway) ResourceName() string {
 }
 
 func (c Gateway) Equals(in Gateway) bool {
-	return c.ObjectSource.Equals(in.ObjectSource) && versionEquals(c.Obj, in.Obj) && c.AttachedListenerPolicies.Equals(in.AttachedListenerPolicies) && c.AttachedHttpPolicies.Equals(in.AttachedHttpPolicies) && c.AllowedListenerSets.Equals(in.AllowedListenerSets) && c.DeniedListenerSets.Equals(in.DeniedListenerSets)
+	return c.ObjectSource.Equals(in.ObjectSource) &&
+		ptrEquals(c.PerConnectionBufferLimitBytes, in.PerConnectionBufferLimitBytes) &&
+		versionEquals(c.Obj, in.Obj) &&
+		c.AttachedListenerPolicies.Equals(in.AttachedListenerPolicies) &&
+		c.AttachedHttpPolicies.Equals(in.AttachedHttpPolicies) &&
+		c.Listeners.Equals(in.Listeners) &&
+		c.AllowedListenerSets.Equals(in.AllowedListenerSets) &&
+		c.DeniedListenerSets.Equals(in.DeniedListenerSets)
 }
 
 // Equals returns true if the two BackendRefIR instances are equal in cluster name, weight, backend object equality, and error.
