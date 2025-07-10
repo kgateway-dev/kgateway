@@ -104,15 +104,12 @@ func (b *TrafficPolicyBuilder) Translate(
 		errors = append(errors, err)
 	}
 
-	err = hashPolicyForSpec(policyCR.Spec, &outSpec)
-	if err != nil {
-		errors = append(errors, err)
-	}
+	hashPolicyForSpec(policyCR.Spec, &outSpec)
 
 	bufferForSpec(policyCR.Spec, &outSpec)
 
 	for _, err := range errors {
-		logger.Error("error translating traffic policy", "namespace", policyCR.GetNamespace(), "name", policyCR.GetName(), "error", err)
+		logger.Error("error translating gateway extension", "namespace", policyCR.GetNamespace(), "name", policyCR.GetName(), "error", err)
 	}
 	policyIr.spec = outSpec
 
