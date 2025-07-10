@@ -229,9 +229,107 @@ func TestHashPolicyForSpec(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			outSpec := &trafficPolicySpecIr{}
 
-			hashPolicyForSpec(tt.spec, outSpec)
-
+			err := hashPolicyForSpec(tt.spec, outSpec)
+			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, outSpec.hashPolicies)
+		})
+	}
+}
+
+func TestHashPolicyForSpecWithGatewayTargetRef(t *testing.T) {
+	tests := []struct {
+		name        string
+		spec        v1alpha1.TrafficPolicySpec
+		expectedErr string
+	}{
+		{
+			name: "http route target ref should not return error",
+			spec: v1alpha1.TrafficPolicySpec{
+				TargetRefs: []v1alpha1.LocalPolicyTargetReferenceWithSectionName{
+					{
+						LocalPolicyTargetReference: v1alpha1.LocalPolicyTargetReference{
+							Group: "gateway.networking.k8s.io",
+							Kind:  "HTTPRoute",
+							Name:  "test-route",
+						},
+					},
+				},
+				HashPolicies: []*v1alpha1.HashPolicy{
+					{
+						Header: &v1alpha1.Header{
+							Name: "x-user-id",
+						},
+					},
+				},
+			},
+			expectedErr: "",
+		},
+		{
+			name: "gateway target ref should return error",
+			spec: v1alpha1.TrafficPolicySpec{
+				TargetRefs: []v1alpha1.LocalPolicyTargetReferenceWithSectionName{
+					{
+						LocalPolicyTargetReference: v1alpha1.LocalPolicyTargetReference{
+							Group: "gateway.networking.k8s.io",
+							Kind:  "Gateway",
+							Name:  "test-gateway",
+						},
+					},
+				},
+				HashPolicies: []*v1alpha1.HashPolicy{
+					{
+						Header: &v1alpha1.Header{
+							Name: "x-user-id",
+						},
+					},
+				},
+			},
+			expectedErr: "hash policy is not supported for target kind Gateway",
+		},
+		{
+			name: "mixed target refs with gateway should return error",
+			spec: v1alpha1.TrafficPolicySpec{
+				TargetRefs: []v1alpha1.LocalPolicyTargetReferenceWithSectionName{
+					{
+						LocalPolicyTargetReference: v1alpha1.LocalPolicyTargetReference{
+							Group: "gateway.networking.k8s.io",
+							Kind:  "HTTPRoute",
+							Name:  "test-route",
+						},
+					},
+					{
+						LocalPolicyTargetReference: v1alpha1.LocalPolicyTargetReference{
+							Group: "gateway.networking.k8s.io",
+							Kind:  "Gateway",
+							Name:  "test-gateway",
+						},
+					},
+				},
+				HashPolicies: []*v1alpha1.HashPolicy{
+					{
+						Header: &v1alpha1.Header{
+							Name: "x-user-id",
+						},
+					},
+				},
+			},
+			expectedErr: "hash policy is not supported for target kind Gateway",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			outSpec := &trafficPolicySpecIr{}
+
+			err := hashPolicyForSpec(tt.spec, outSpec)
+
+			if tt.expectedErr != "" {
+				assert.Error(t, err)
+				assert.Equal(t, tt.expectedErr, err.Error())
+				assert.Nil(t, outSpec.hashPolicies)
+			} else {
+				assert.NoError(t, err)
+			}
 		})
 	}
 }
