@@ -11,7 +11,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
-	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/defaults"
+	testdefaults "github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/defaults"
 )
 
 type testingSuite struct {
@@ -20,6 +20,7 @@ type testingSuite struct {
 	ctx context.Context
 
 	testInstallation *e2e.TestInstallation
+	manifests        map[string][]string
 }
 
 func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
@@ -29,72 +30,107 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 	}
 }
 
-func (s *testingSuite) TestCookieSessionPersistence() {
-	s.T().Cleanup(func() {
-		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, cookieSessionPersistenceManifest)
-		s.NoError(err, "can delete cookie session persistence manifest")
-		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, echoService, echoDeployment, cookieGateway, cookieHTTPRoute)
+func (s *testingSuite) SetupSuite() {
+	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, testdefaults.CurlPodManifest)
+	s.NoError(err, "can apply curl pod manifest")
+
+	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, testdefaults.CurlPod)
+	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, testdefaults.CurlPod.GetNamespace(), metav1.ListOptions{
+		LabelSelector: testdefaults.CurlPodLabelSelector,
 	})
 
-	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, cookieSessionPersistenceManifest)
-	s.Assert().NoError(err, "can apply cookie session persistence manifest")
+	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, echoServiceManifest)
+	s.NoError(err, "can apply echo service manifest")
 
-	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, echoService, echoDeployment, cookieGateway, cookieHTTPRoute)
+	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, echoService, echoDeployment)
 	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, echoDeployment.GetNamespace(), metav1.ListOptions{
 		LabelSelector: "app=echo",
 	})
-	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, cookieGateway.GetNamespace(), metav1.ListOptions{
-		LabelSelector: "app.kubernetes.io/name=gw-cookie",
-	})
 
+	s.manifests = map[string][]string{
+		"TestCookieSessionPersistence": {cookieSessionPersistenceManifest},
+		"TestHeaderSessionPersistence": {headerSessionPersistenceManifest},
+	}
+}
+
+func (s *testingSuite) TearDownSuite() {
+	err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, testdefaults.CurlPodManifest)
+	s.NoError(err, "can delete curl pod manifest")
+
+	err = s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, echoServiceManifest)
+	s.NoError(err, "can delete echo service manifest")
+}
+
+func (s *testingSuite) BeforeTest(suiteName, testName string) {
+	manifests, ok := s.manifests[testName]
+	if !ok {
+		s.FailNow("no manifests found for %s, manifest map contents: %v", testName, s.manifests)
+	}
+
+	for _, manifest := range manifests {
+		err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, manifest)
+		s.Require().NoError(err, "can apply manifest "+manifest)
+	}
+
+	switch testName {
+	case "TestCookieSessionPersistence":
+		s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, cookieGateway, cookieHTTPRoute)
+		s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, cookieGateway.GetNamespace(), metav1.ListOptions{
+			LabelSelector: fmt.Sprintf("app.kubernetes.io/name=%s", cookieGateway.Name),
+		})
+	case "TestHeaderSessionPersistence":
+		s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, headerGateway, headerHTTPRoute)
+		s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, headerGateway.GetNamespace(), metav1.ListOptions{
+			LabelSelector: fmt.Sprintf("app.kubernetes.io/name=%s", headerGateway.Name),
+		})
+	}
+}
+
+func (s *testingSuite) AfterTest(suiteName, testName string) {
+	manifests, ok := s.manifests[testName]
+	if !ok {
+		s.FailNow("no manifests found for %s, manifest map contents: %v", testName, s.manifests)
+	}
+
+	// Clean up test-specific manifests
+	for _, manifest := range manifests {
+		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, manifest, "--grace-period", "0")
+		s.NoError(err, "can delete manifest "+manifest)
+	}
+}
+
+func (s *testingSuite) TestCookieSessionPersistence() {
 	s.assertSessionPersistence("cookie")
 }
 
 func (s *testingSuite) TestHeaderSessionPersistence() {
-	s.T().Cleanup(func() {
-		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, headerSessionPersistenceManifest)
-		s.NoError(err, "can delete header session persistence manifest")
-		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, echoService, echoDeployment, headerGateway, headerHTTPRoute)
-	})
-
-	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, headerSessionPersistenceManifest)
-	s.Assert().NoError(err, "can apply header session persistence manifest")
-
-	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, echoService, echoDeployment, headerGateway, headerHTTPRoute)
-	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, echoDeployment.GetNamespace(), metav1.ListOptions{
-		LabelSelector: "app=echo",
-	})
-	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, headerGateway.GetNamespace(), metav1.ListOptions{
-		LabelSelector: "app.kubernetes.io/name=gw-header",
-	})
-
 	s.assertSessionPersistence("header")
 }
 
 // assertSessionPersistence makes multiple requests and verifies they go to the same backend pod
 func (s *testingSuite) assertSessionPersistence(persistenceType string) {
 	var (
-		gatewayService *metav1.ObjectMeta
+		gatewayService metav1.ObjectMeta
 		sessionHeader  string
 	)
 
 	switch persistenceType {
 	case "cookie":
-		gatewayService = &cookieGateway.ObjectMeta
+		gatewayService = cookieGateway.ObjectMeta
 	case "header":
-		gatewayService = &headerGateway.ObjectMeta
+		gatewayService = headerGateway.ObjectMeta
 		sessionHeader = "session-a"
 	}
 
 	firstCurlOpts := []curl.Option{
-		curl.WithHost(kubeutils.ServiceFQDN(*gatewayService)),
+		curl.WithHost(kubeutils.ServiceFQDN(gatewayService)),
 		curl.WithHostHeader("echo.local"),
 		curl.WithPort(8080),
 		curl.Silent(),
 		curl.WithArgs([]string{"-i"}),
 	}
 
-	firstResp, err := s.testInstallation.ClusterContext.Cli.CurlFromPod(s.ctx, defaults.CurlPodExecOpt, firstCurlOpts...)
+	firstResp, err := s.testInstallation.ClusterContext.Cli.CurlFromPod(s.ctx, testdefaults.CurlPodExecOpt, firstCurlOpts...)
 	s.Assert().NoError(err, "first request should succeed")
 
 	firstPodName := s.extractPodNameFromResponse(firstResp.StdOut)
@@ -105,7 +141,7 @@ func (s *testingSuite) assertSessionPersistence(persistenceType string) {
 		cookie := s.extractSessionCookieFromResponse(firstResp.StdOut)
 		s.Assert().NotEmpty(cookie, "should have received a session cookie")
 		subsequentCurlOpts = []curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(*gatewayService)),
+			curl.WithHost(kubeutils.ServiceFQDN(gatewayService)),
 			curl.WithHostHeader("echo.local"),
 			curl.WithPort(8080),
 			curl.Silent(),
@@ -115,7 +151,7 @@ func (s *testingSuite) assertSessionPersistence(persistenceType string) {
 		headerValue := s.extractSessionHeaderFromResponse(firstResp.StdOut)
 		s.Assert().NotEmpty(headerValue, "should have received a session header")
 		subsequentCurlOpts = []curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(*gatewayService)),
+			curl.WithHost(kubeutils.ServiceFQDN(gatewayService)),
 			curl.WithHostHeader("echo.local"),
 			curl.WithPort(8080),
 			curl.Silent(),
@@ -124,7 +160,7 @@ func (s *testingSuite) assertSessionPersistence(persistenceType string) {
 	}
 
 	for i := 0; i < 10; i++ {
-		resp, err := s.testInstallation.ClusterContext.Cli.CurlFromPod(s.ctx, defaults.CurlPodExecOpt, subsequentCurlOpts...)
+		resp, err := s.testInstallation.ClusterContext.Cli.CurlFromPod(s.ctx, testdefaults.CurlPodExecOpt, subsequentCurlOpts...)
 		s.Assert().NoError(err, fmt.Sprintf("request %d should succeed", i+2))
 
 		podName := s.extractPodNameFromResponse(resp.StdOut)
