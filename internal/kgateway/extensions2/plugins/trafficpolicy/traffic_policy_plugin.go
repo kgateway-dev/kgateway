@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"maps"
+	"slices"
 	"strconv"
 	"time"
 
@@ -157,13 +158,10 @@ func (d *TrafficPolicy) Equals(in any) bool {
 		return false
 	}
 
-	if len(d.spec.hashPolicies) != len(d2.spec.hashPolicies) {
+	if !slices.EqualFunc(d.spec.hashPolicies, d2.spec.hashPolicies, func(a, b *routev3.RouteAction_HashPolicy) bool {
+		return proto.Equal(a, b)
+	}) {
 		return false
-	}
-	for i, policy := range d.spec.hashPolicies {
-		if !proto.Equal(policy, d2.spec.hashPolicies[i]) {
-			return false
-		}
 	}
 
 	return true
