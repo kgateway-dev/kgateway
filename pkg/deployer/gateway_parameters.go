@@ -32,18 +32,18 @@ type ExtraGatewayParameters struct {
 
 // UpdateSecurityContexts updates the security contexts in the gateway parameters.
 // It applies the floating user ID if it is set and adds the sysctl to allow the privileged ports if the gateway uses them.
-func UpdateSecurityContexts(gwp *v1alpha1.GatewayParameters, vals *HelmConfig) {
+func UpdateSecurityContexts(cfg *v1alpha1.KubernetesProxyConfig, ports []HelmPort) {
 	// If the floating user ID is set, unset the RunAsUser field from all security contexts
-	if gwp.Spec.Kube.GetFloatingUserId() != nil && *gwp.Spec.Kube.GetFloatingUserId() {
-		applyFloatingUserId(gwp.Spec.Kube)
+	if cfg.GetFloatingUserId() != nil && *cfg.GetFloatingUserId() {
+		applyFloatingUserId(cfg)
 	}
 
-	if usesPrivilegedPorts(vals.Gateway.Ports) {
-		allowPrivilegedPorts(gwp.Spec.Kube)
+	if usesPrivilegedPorts(ports) {
+		allowPrivilegedPorts(cfg)
 	}
 }
 
-// usesPrivilegedPorts checks if the gateway uses privileged ports by checking the ports in the HelmConfig
+// usesPrivilegedPorts checks the helm ports to see if any of them are less than 1024
 func usesPrivilegedPorts(ports []HelmPort) bool {
 	for _, p := range ports {
 		if int32(*p.Port) < 1024 {
