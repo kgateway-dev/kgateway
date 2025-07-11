@@ -207,6 +207,7 @@ func (k *kGatewayParameters) getGatewayParametersForGatewayClass(ctx context.Con
 	logger := log.FromContext(ctx)
 
 	defaultGwp := deployer.GetInMemoryGatewayParameters(gwc.GetName(), k.inputs.ImageInfo, k.inputs.GatewayClassName, k.inputs.WaypointGatewayClassName, k.inputs.AgentGatewayClassName)
+
 	paramRef := gwc.Spec.ParametersRef
 	if paramRef == nil {
 		// when there is no parametersRef, just return the defaults
@@ -275,11 +276,6 @@ func (k *kGatewayParameters) getValues(gw *api.Gateway, gwParam *v1alpha1.Gatewa
 	// (note: if we add new fields to GatewayParameters, they will
 	// need to be plumbed through here as well)
 
-	// Apply the floating user ID if it is set
-	if gwParam.Spec.Kube.GetFloatingUserId() != nil && *gwParam.Spec.Kube.GetFloatingUserId() {
-		deployer.ApplyFloatingUserId(gwParam.Spec.Kube)
-	}
-
 	kubeProxyConfig := gwParam.Spec.Kube
 	deployConfig := kubeProxyConfig.GetDeployment()
 	podConfig := kubeProxyConfig.GetPodTemplate()
@@ -307,6 +303,9 @@ func (k *kGatewayParameters) getValues(gw *api.Gateway, gwParam *v1alpha1.Gatewa
 	gateway.ExtraPodLabels = podConfig.GetExtraLabels()
 	gateway.ImagePullSecrets = podConfig.GetImagePullSecrets()
 	gateway.PodSecurityContext = podConfig.GetSecurityContext()
+	// The security contexts may need to be updated if floating user ID is set or if privileged ports are used
+	// This may affect both the PodSecurityContext and the SecurityContexts for the containers defined in gwParam
+	deployer.UpdateSecurityContexts(gwParam.Spec.Kube, vals.Gateway.Ports)
 	gateway.NodeSelector = podConfig.GetNodeSelector()
 	gateway.Affinity = podConfig.GetAffinity()
 	gateway.Tolerations = podConfig.GetTolerations()

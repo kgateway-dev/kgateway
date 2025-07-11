@@ -12,10 +12,10 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/settings"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
+	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
+	"github.com/kgateway-dev/kgateway/v2/pkg/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
 	translatortest "github.com/kgateway-dev/kgateway/v2/test/translator"
 )
@@ -196,34 +196,6 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 			},
 		}),
 	Entry(
-		"httproute with invalid prefix match reports correctly",
-		translatorTestCase{
-			inputFile:  "http-routing-invalid-prefix/manifest.yaml",
-			outputFile: "http-routing-invalid-prefix/manifest.yaml",
-			gwNN: types.NamespacedName{
-				Namespace: "gwtest",
-				Name:      "example-gateway",
-			},
-			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
-				route := &gwv1.HTTPRoute{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:       "invalid-traffic-policy-route",
-						Namespace:  "gwtest",
-						Generation: 1,
-					},
-				}
-				routeStatus := reportsMap.BuildRouteStatus(context.Background(), route, wellknown.DefaultGatewayClassName)
-				Expect(routeStatus).NotTo(BeNil())
-				Expect(routeStatus.Parents).To(HaveLen(1))
-				partiallyInvalid := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionPartiallyInvalid))
-				Expect(partiallyInvalid).NotTo(BeNil())
-				Expect(partiallyInvalid.Status).To(Equal(metav1.ConditionTrue))
-				Expect(partiallyInvalid.Reason).To(Equal(string(gwv1.RouteReasonUnsupportedValue)))
-				Expect(partiallyInvalid.Message).To(ContainSubstring(`Dropped Rule`))
-				Expect(partiallyInvalid.ObservedGeneration).To(Equal(int64(1)))
-			},
-		}),
-	Entry(
 		"TrafficPolicy merging",
 		translatorTestCase{
 			inputFile:  "traffic-policy/merge.yaml",
@@ -257,6 +229,28 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 				assertAcceptedPolicyStatus(reportsMap, expectedPolicies)
 			},
 		}),
+	Entry(
+		"TrafficPolicy with targetSelectors and global policy attachment",
+		translatorTestCase{
+			inputFile:  "traffic-policy/label_based.yaml",
+			outputFile: "traffic-policy/label_based_global_policy.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "infra",
+				Name:      "example-gateway",
+			},
+			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
+				expectedPolicies := []reports.PolicyKey{
+					{Group: "gateway.kgateway.dev", Kind: "TrafficPolicy", Namespace: "infra", Name: "transform"},
+					{Group: "gateway.kgateway.dev", Kind: "TrafficPolicy", Namespace: "infra", Name: "rate-limit"},
+					{Group: "gateway.kgateway.dev", Kind: "TrafficPolicy", Namespace: "kgateway-system", Name: "global-policy"},
+				}
+				assertAcceptedPolicyStatus(reportsMap, expectedPolicies)
+			},
+		},
+		func(s *settings.Settings) {
+			s.GlobalPolicyNamespace = "kgateway-system"
+		},
+	),
 	Entry(
 		"TrafficPolicy edge cases",
 		translatorTestCase{
@@ -616,6 +610,89 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 			Name:      "example-gateway",
 		},
 	}),
+	Entry("DirectResponse with missing reference reports correctly", translatorTestCase{
+		inputFile:  "directresponse/missing-ref.yaml",
+		outputFile: "directresponse/missing-ref.yaml",
+		gwNN: types.NamespacedName{
+			Namespace: "default",
+			Name:      "example-gateway",
+		},
+		assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
+			route := &gwv1.HTTPRoute{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "example-route",
+					Namespace: "default",
+				},
+			}
+			routeStatus := reportsMap.BuildRouteStatus(context.Background(), route, wellknown.DefaultGatewayClassName)
+			Expect(routeStatus).NotTo(BeNil())
+			Expect(routeStatus.Parents).To(HaveLen(1))
+
+			// The route itself is considered resolved, but there should be a condition indicating the DirectResponse issue
+			resolvedRefs := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionResolvedRefs))
+			Expect(resolvedRefs).NotTo(BeNil())
+			Expect(resolvedRefs.Status).To(Equal(metav1.ConditionTrue))
+			Expect(resolvedRefs.Reason).To(Equal(string(gwv1.RouteReasonResolvedRefs)))
+
+			// Check if there's a PartiallyInvalid condition that reports the missing DirectResponse
+			partiallyInvalid := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionPartiallyInvalid))
+			Expect(partiallyInvalid).NotTo(BeNil())
+			Expect(partiallyInvalid.Status).To(Equal(metav1.ConditionTrue))
+			Expect(partiallyInvalid.Message).To(ContainSubstring("Dropped Rule"))
+			Expect(partiallyInvalid.Message).To(ContainSubstring("no action specified"))
+		},
+	}),
+	Entry("DirectResponse with overlapping filters reports correctly", translatorTestCase{
+		inputFile:  "directresponse/overlapping-filters.yaml",
+		outputFile: "directresponse/overlapping-filters.yaml",
+		gwNN: types.NamespacedName{
+			Namespace: "default",
+			Name:      "example-gateway",
+		},
+		assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
+			route := &gwv1.HTTPRoute{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "example-route",
+					Namespace: "default",
+				},
+			}
+			routeStatus := reportsMap.BuildRouteStatus(context.Background(), route, wellknown.DefaultGatewayClassName)
+			Expect(routeStatus).NotTo(BeNil())
+			Expect(routeStatus.Parents).To(HaveLen(1))
+
+			// Check for PartiallyInvalid condition due to overlapping filters
+			partiallyInvalid := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionPartiallyInvalid))
+			Expect(partiallyInvalid).NotTo(BeNil())
+			Expect(partiallyInvalid.Status).To(Equal(metav1.ConditionTrue))
+			Expect(partiallyInvalid.Reason).To(Equal(string(gwv1.RouteReasonUnsupportedValue)))
+			Expect(partiallyInvalid.Message).To(ContainSubstring("cannot be applied to route with existing action"))
+		},
+	}),
+	Entry("DirectResponse with invalid backendRef filter reports correctly", translatorTestCase{
+		inputFile:  "directresponse/invalid-backendref-filter.yaml",
+		outputFile: "directresponse/invalid-backendref-filter.yaml",
+		gwNN: types.NamespacedName{
+			Namespace: "default",
+			Name:      "example-gateway",
+		},
+		assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
+			route := &gwv1.HTTPRoute{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "example-route",
+					Namespace: "default",
+				},
+			}
+			routeStatus := reportsMap.BuildRouteStatus(context.Background(), route, wellknown.DefaultGatewayClassName)
+			Expect(routeStatus).NotTo(BeNil())
+			Expect(routeStatus.Parents).To(HaveLen(1))
+
+			// DirectResponse attached to backendRef should be ignored, route should resolve normally
+			resolvedRefs := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionResolvedRefs))
+			Expect(resolvedRefs).NotTo(BeNil())
+			Expect(resolvedRefs.Status).To(Equal(metav1.ConditionTrue))
+			Expect(resolvedRefs.Reason).To(Equal(string(gwv1.RouteReasonResolvedRefs)))
+		},
+	}),
 	Entry("HTTPRoutes with timeout and retry", translatorTestCase{
 		inputFile:  "httproute-timeout-retry/manifest.yaml",
 		outputFile: "httproute-timeout-retry-proxy.yaml",
@@ -766,19 +843,395 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 		}),
 	// TODO: Add this once istio adds support for listener sets
 	// Entry(
-	// 	"listener sets",
-	// 	translatorTestCase{
-	// 		inputFile:  "listener-sets/manifest.yaml",
-	// 		outputFile: "listener-sets-proxy.yaml",
-	// 		gwNN: types.NamespacedName{
-	// 			Namespace: "default",
-	// 			Name:      "example-gateway",
-	// 		},
-	// 	}),
+	//
+	//	"listener sets",
+	//	translatorTestCase{
+	//		inputFile:  "listener-sets/manifest.yaml",
+	//		outputFile: "listener-sets-proxy.yaml",
+	//		gwNN: types.NamespacedName{
+	//			Namespace: "default",
+	//			Name:      "example-gateway",
+	//		},
+	//	}),
+)
+
+var _ = DescribeTable("Route Replacement Tests",
+	func(in translatorTestCase, settingOpts ...translatortest.SettingsOpts) {
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+		dir := fsutils.MustGetThisDir()
+
+		inputFiles := []string{filepath.Join(dir, "testutils/inputs/", in.inputFile)}
+		expectedProxyFile := filepath.Join(dir, "testutils/outputs/", in.outputFile)
+		translatortest.TestTranslation(GinkgoT(), ctx, inputFiles, expectedProxyFile, in.gwNN, in.assertReports, settingOpts...)
+	},
+	Entry("Standard Mode - Invalid HTTPRoute Prefix Match",
+		translatorTestCase{
+			inputFile:  "route-replacement/standard/invalid-httproute-prefix-match.yaml",
+			outputFile: "route-replacement/standard/invalid-httproute-prefix-match-out.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "gwtest",
+				Name:      "example-gateway",
+			},
+			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
+				route := &gwv1.HTTPRoute{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "invalid-traffic-policy-route",
+						Namespace: "gwtest",
+					},
+				}
+				routeStatus := reportsMap.BuildRouteStatus(context.Background(), route, wellknown.DefaultGatewayClassName)
+				Expect(routeStatus).NotTo(BeNil())
+				Expect(routeStatus.Parents).To(HaveLen(1))
+
+				partiallyInvalid := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionPartiallyInvalid))
+				Expect(partiallyInvalid).NotTo(BeNil())
+				Expect(partiallyInvalid.Status).To(Equal(metav1.ConditionTrue))
+				Expect(partiallyInvalid.Reason).To(Equal(string(gwv1.RouteReasonUnsupportedValue)))
+				Expect(partiallyInvalid.Message).To(ContainSubstring("Dropped Rule (0)"))
+				Expect(partiallyInvalid.Message).To(ContainSubstring("the rewrite /new//../path is invalid"))
+				Expect(partiallyInvalid.ObservedGeneration).To(Equal(int64(1)))
+			},
+		},
+		func(s *settings.Settings) {
+			s.RouteReplacementMode = settings.RouteReplacementStandard
+		}),
+
+	Entry("Standard Mode - Invalid Rate Limit Global Fields",
+		translatorTestCase{
+			inputFile:  "route-replacement/standard/invalid-ratelimit-global-empty-fields.yaml",
+			outputFile: "route-replacement/standard/invalid-ratelimit-global-empty-fields-out.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "gwtest",
+				Name:      "example-gateway",
+			},
+			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
+				route := &gwv1.HTTPRoute{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test-route",
+						Namespace: "gwtest",
+					},
+				}
+				routeStatus := reportsMap.BuildRouteStatus(context.Background(), route, wellknown.DefaultGatewayClassName)
+				Expect(routeStatus).NotTo(BeNil())
+				Expect(routeStatus.Parents).To(HaveLen(1))
+
+				partiallyInvalid := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionPartiallyInvalid))
+				Expect(partiallyInvalid).NotTo(BeNil())
+				Expect(partiallyInvalid.Status).To(Equal(metav1.ConditionTrue))
+				Expect(partiallyInvalid.Reason).To(Equal(string(gwv1.RouteReasonUnsupportedValue)))
+				Expect(partiallyInvalid.Message).To(ContainSubstring("Dropped Rule (0)"))
+				Expect(partiallyInvalid.Message).To(ContainSubstring("failed to create rate limit actions"))
+				Expect(partiallyInvalid.ObservedGeneration).To(Equal(int64(0)))
+			},
+		},
+		func(s *settings.Settings) {
+			s.RouteReplacementMode = settings.RouteReplacementStandard
+		}),
+	Entry("Standard Mode - Gateway Level Policy Invalid Rate Limit (Not Validated)",
+		translatorTestCase{
+			inputFile:  "route-replacement/standard/gateway-level-policy-validation.yaml",
+			outputFile: "route-replacement/standard/gateway-level-policy-validation-out.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "gwtest",
+				Name:      "example-gateway",
+			},
+			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
+				// Verify that despite the invalid rate limit config, attaching the policy to the gateway
+				// does not cause the route to be invalidated as the route translator does not currently
+				// handle IR errors outside of the envoyRoutes method. This will be fixed in the future.
+				route := &gwv1.HTTPRoute{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test-route",
+						Namespace: "gwtest",
+					},
+				}
+				routeStatus := reportsMap.BuildRouteStatus(context.Background(), route, wellknown.DefaultGatewayClassName)
+				Expect(routeStatus).NotTo(BeNil())
+				Expect(routeStatus.Parents).To(HaveLen(1))
+
+				accepted := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionAccepted))
+				Expect(accepted).NotTo(BeNil())
+				Expect(accepted.Status).To(Equal(metav1.ConditionTrue))
+				Expect(accepted.Reason).To(Equal(string(gwv1.RouteReasonAccepted)))
+				Expect(accepted.Message).To(Equal(""))
+				Expect(accepted.ObservedGeneration).To(Equal(int64(0)))
+
+				// Expect no PartiallyInvalid condition since template validation is skipped in standard mode
+				partiallyInvalid := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionPartiallyInvalid))
+				Expect(partiallyInvalid).To(BeNil())
+			},
+		},
+		func(s *settings.Settings) {
+			s.RouteReplacementMode = settings.RouteReplacementStandard
+		}),
+	Entry("Standard Mode - Gateway Listener Policy Invalid Rate Limit (Not Validated)",
+		translatorTestCase{
+			inputFile:  "route-replacement/standard/gateway-listener-policy-validation.yaml",
+			outputFile: "route-replacement/standard/gateway-listener-policy-validation-out.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "gwtest",
+				Name:      "example-gateway",
+			},
+			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
+				// Verify that despite the invalid rate limit config, attaching the policy to a specific listener
+				// does not cause the route to be invalidated as the route translator does not currently
+				// handle IR errors outside of the envoyRoutes method. This will be fixed in the future.
+				route := &gwv1.HTTPRoute{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test-route",
+						Namespace: "gwtest",
+					},
+				}
+				routeStatus := reportsMap.BuildRouteStatus(context.Background(), route, wellknown.DefaultGatewayClassName)
+				Expect(routeStatus).NotTo(BeNil())
+				Expect(routeStatus.Parents).To(HaveLen(1))
+
+				accepted := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionAccepted))
+				Expect(accepted).NotTo(BeNil())
+				Expect(accepted.Status).To(Equal(metav1.ConditionTrue))
+				Expect(accepted.Reason).To(Equal(string(gwv1.RouteReasonAccepted)))
+				Expect(accepted.Message).To(Equal(""))
+				Expect(accepted.ObservedGeneration).To(Equal(int64(0)))
+
+				// Expect no PartiallyInvalid condition since template validation is skipped in standard mode
+				partiallyInvalid := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionPartiallyInvalid))
+				Expect(partiallyInvalid).To(BeNil())
+			},
+		},
+		func(s *settings.Settings) {
+			s.RouteReplacementMode = settings.RouteReplacementStandard
+		}),
+	Entry("Standard Mode - Invalid Transformation Template (Not Validated)",
+		translatorTestCase{
+			inputFile:  "route-replacement/standard/transformation-template-not-validated.yaml",
+			outputFile: "route-replacement/standard/transformation-template-not-validated-out.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "gwtest",
+				Name:      "example-gateway",
+			},
+			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
+				// Verify that in standard mode, invalid transformation templates are not validated
+				// and thus no route replacement occurs
+				route := &gwv1.HTTPRoute{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "invalid-traffic-policy-route",
+						Namespace: "gwtest",
+					},
+				}
+				routeStatus := reportsMap.BuildRouteStatus(context.Background(), route, wellknown.DefaultGatewayClassName)
+				Expect(routeStatus).NotTo(BeNil())
+				Expect(routeStatus.Parents).To(HaveLen(1))
+
+				accepted := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionAccepted))
+				Expect(accepted).NotTo(BeNil())
+				Expect(accepted.Status).To(Equal(metav1.ConditionTrue))
+				Expect(accepted.Reason).To(Equal(string(gwv1.RouteReasonAccepted)))
+				Expect(accepted.Message).To(Equal(""))
+				Expect(accepted.ObservedGeneration).To(Equal(int64(0)))
+
+				// Expect no PartiallyInvalid condition since template validation is skipped in standard mode
+				partiallyInvalid := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionPartiallyInvalid))
+				Expect(partiallyInvalid).To(BeNil())
+			},
+		},
+		func(s *settings.Settings) {
+			s.RouteReplacementMode = settings.RouteReplacementStandard
+		}),
+	Entry("Strict Mode - Invalid CSRF Regex Configuration",
+		translatorTestCase{
+			inputFile:  "route-replacement/strict/invalid-csrf-regex-config.yaml",
+			outputFile: "route-replacement/strict/invalid-csrf-regex-config-out.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "gwtest",
+				Name:      "example-gateway",
+			},
+			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
+				route := &gwv1.HTTPRoute{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test-route",
+						Namespace: "gwtest",
+					},
+				}
+				routeStatus := reportsMap.BuildRouteStatus(context.Background(), route, wellknown.DefaultGatewayClassName)
+				Expect(routeStatus).NotTo(BeNil())
+				Expect(routeStatus.Parents).To(HaveLen(1))
+
+				partiallyInvalid := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionPartiallyInvalid))
+				Expect(partiallyInvalid).NotTo(BeNil())
+				Expect(partiallyInvalid.Status).To(Equal(metav1.ConditionTrue))
+				Expect(partiallyInvalid.Reason).To(Equal(string(gwv1.RouteReasonUnsupportedValue)))
+				Expect(partiallyInvalid.Message).To(ContainSubstring("Dropped Rule (0)"))
+				Expect(partiallyInvalid.Message).To(ContainSubstring("invalid xds configuration"))
+				Expect(partiallyInvalid.ObservedGeneration).To(Equal(int64(0)))
+			},
+		},
+		func(s *settings.Settings) {
+			s.RouteReplacementMode = settings.RouteReplacementStrict
+		}),
+	Entry("Strict Mode - Invalid ExtAuth Extension Reference (Referential Error)",
+		translatorTestCase{
+			inputFile:  "route-replacement/strict/invalid-extauth-extension-ref.yaml",
+			outputFile: "route-replacement/strict/invalid-extauth-extension-ref-out.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "gwtest",
+				Name:      "example-gateway",
+			},
+			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
+				route := &gwv1.HTTPRoute{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "invalid-traffic-policy-route",
+						Namespace: "gwtest",
+					},
+				}
+				routeStatus := reportsMap.BuildRouteStatus(context.Background(), route, wellknown.DefaultGatewayClassName)
+				Expect(routeStatus).NotTo(BeNil())
+				Expect(routeStatus.Parents).To(HaveLen(1))
+
+				partiallyInvalid := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionPartiallyInvalid))
+				Expect(partiallyInvalid).NotTo(BeNil())
+				Expect(partiallyInvalid.Status).To(Equal(metav1.ConditionTrue))
+				Expect(partiallyInvalid.Reason).To(Equal(string(gwv1.RouteReasonUnsupportedValue)))
+				Expect(partiallyInvalid.Message).To(ContainSubstring("Dropped Rule (0)"))
+				Expect(partiallyInvalid.Message).To(ContainSubstring("extauthz: extension not found"))
+				Expect(partiallyInvalid.ObservedGeneration).To(Equal(int64(0)))
+			},
+		},
+		func(s *settings.Settings) {
+			s.RouteReplacementMode = settings.RouteReplacementStrict
+		}),
+	Entry("Strict Mode - Invalid Transformation Body Template",
+		translatorTestCase{
+			inputFile:  "route-replacement/strict/invalid-transformation-body-template.yaml",
+			outputFile: "route-replacement/strict/invalid-transformation-body-template-out.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "gwtest",
+				Name:      "example-gateway",
+			},
+			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
+				route := &gwv1.HTTPRoute{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "invalid-traffic-policy-route",
+						Namespace: "gwtest",
+					},
+				}
+				routeStatus := reportsMap.BuildRouteStatus(context.Background(), route, wellknown.DefaultGatewayClassName)
+				Expect(routeStatus).NotTo(BeNil())
+				Expect(routeStatus.Parents).To(HaveLen(1))
+
+				partiallyInvalid := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionPartiallyInvalid))
+				Expect(partiallyInvalid).NotTo(BeNil())
+				Expect(partiallyInvalid.Status).To(Equal(metav1.ConditionTrue))
+				Expect(partiallyInvalid.Reason).To(Equal(string(gwv1.RouteReasonUnsupportedValue)))
+				Expect(partiallyInvalid.Message).To(ContainSubstring("Dropped Rule (0)"))
+				Expect(partiallyInvalid.Message).To(ContainSubstring("invalid xds configuration"))
+				Expect(partiallyInvalid.ObservedGeneration).To(Equal(int64(0)))
+			},
+		},
+		func(s *settings.Settings) {
+			s.RouteReplacementMode = settings.RouteReplacementStrict
+		}),
+	Entry("Strict Mode - Invalid Transformation Header Template",
+		translatorTestCase{
+			inputFile:  "route-replacement/strict/invalid-transformation-header-template.yaml",
+			outputFile: "route-replacement/strict/invalid-transformation-header-template-out.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "gwtest",
+				Name:      "example-gateway",
+			},
+			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
+				route := &gwv1.HTTPRoute{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "invalid-traffic-policy-route",
+						Namespace: "gwtest",
+					},
+				}
+				routeStatus := reportsMap.BuildRouteStatus(context.Background(), route, wellknown.DefaultGatewayClassName)
+				Expect(routeStatus).NotTo(BeNil())
+				Expect(routeStatus.Parents).To(HaveLen(1))
+
+				partiallyInvalid := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionPartiallyInvalid))
+				Expect(partiallyInvalid).NotTo(BeNil())
+				Expect(partiallyInvalid.Status).To(Equal(metav1.ConditionTrue))
+				Expect(partiallyInvalid.Reason).To(Equal(string(gwv1.RouteReasonUnsupportedValue)))
+				Expect(partiallyInvalid.Message).To(ContainSubstring("Dropped Rule (0)"))
+				Expect(partiallyInvalid.Message).To(ContainSubstring("invalid xds configuration"))
+				Expect(partiallyInvalid.ObservedGeneration).To(Equal(int64(0)))
+			},
+		},
+		func(s *settings.Settings) {
+			s.RouteReplacementMode = settings.RouteReplacementStrict
+		}),
+	Entry("Strict Mode - Invalid Transformation Malformed Template",
+		translatorTestCase{
+			inputFile:  "route-replacement/strict/invalid-transformation-malformed-template.yaml",
+			outputFile: "route-replacement/strict/invalid-transformation-malformed-template-out.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "gwtest",
+				Name:      "example-gateway",
+			},
+			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
+				route := &gwv1.HTTPRoute{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "invalid-traffic-policy-route",
+						Namespace: "gwtest",
+					},
+				}
+				routeStatus := reportsMap.BuildRouteStatus(context.Background(), route, wellknown.DefaultGatewayClassName)
+				Expect(routeStatus).NotTo(BeNil())
+				Expect(routeStatus.Parents).To(HaveLen(1))
+
+				partiallyInvalid := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionPartiallyInvalid))
+				Expect(partiallyInvalid).NotTo(BeNil())
+				Expect(partiallyInvalid.Status).To(Equal(metav1.ConditionTrue))
+				Expect(partiallyInvalid.Reason).To(Equal(string(gwv1.RouteReasonUnsupportedValue)))
+				Expect(partiallyInvalid.Message).To(ContainSubstring("Dropped Rule (0)"))
+				Expect(partiallyInvalid.Message).To(ContainSubstring("invalid xds configuration"))
+				Expect(partiallyInvalid.ObservedGeneration).To(Equal(int64(0)))
+			},
+		},
+		func(s *settings.Settings) {
+			s.RouteReplacementMode = settings.RouteReplacementStrict
+		}),
+	Entry("Strict Mode - Valid Structure Invalid Template (Runtime Error)",
+		translatorTestCase{
+			inputFile:  "route-replacement/strict/valid-structure-invalid-template-policy.yaml",
+			outputFile: "route-replacement/strict/valid-structure-invalid-template-policy-out.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "gwtest",
+				Name:      "example-gateway",
+			},
+			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
+				route := &gwv1.HTTPRoute{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "invalid-traffic-policy-route",
+						Namespace: "gwtest",
+					},
+				}
+				routeStatus := reportsMap.BuildRouteStatus(context.Background(), route, wellknown.DefaultGatewayClassName)
+				Expect(routeStatus).NotTo(BeNil())
+				Expect(routeStatus.Parents).To(HaveLen(1))
+
+				accepted := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionAccepted))
+				Expect(accepted).NotTo(BeNil())
+				Expect(accepted.Status).To(Equal(metav1.ConditionTrue))
+				Expect(accepted.Reason).To(Equal(string(gwv1.RouteReasonAccepted)))
+				Expect(accepted.Message).To(Equal(""))
+				Expect(accepted.ObservedGeneration).To(Equal(int64(0)))
+
+				// Template is structurally valid (passes xDS validation) but would fail at runtime
+				// No PartiallyInvalid condition should be set since it passes validation
+				partiallyInvalid := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionPartiallyInvalid))
+				Expect(partiallyInvalid).To(BeNil())
+			},
+		},
+		func(s *settings.Settings) {
+			s.RouteReplacementMode = settings.RouteReplacementStrict
+		}),
 )
 
 var _ = DescribeTable("Route Delegation translator",
-	func(inputFile string, errdesc string) {
+	func(inputFile string, errors map[types.NamespacedName]string) {
 		dir := fsutils.MustGetThisDir()
 		translatortest.TestTranslation(
 			GinkgoT(),
@@ -793,39 +1246,76 @@ var _ = DescribeTable("Route Delegation translator",
 				Name:      "example-gateway",
 			},
 			func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
-				if errdesc == "" {
+				if errors == nil {
 					Expect(translatortest.AreReportsSuccess(gwNN, reportsMap)).NotTo(HaveOccurred())
 				} else {
-					Expect(translatortest.AreReportsSuccess(gwNN, reportsMap)).To(MatchError(ContainSubstring(errdesc)))
+					for route, err := range errors {
+						Expect(translatortest.GetHTTPRouteStatusError(reportsMap, &route)).To(MatchError(ContainSubstring(err)))
+					}
 				}
 			},
 		)
 	},
-	Entry("Basic config", "basic.yaml", ""),
-	Entry("Child matches parent via parentRefs", "basic_parentref_match.yaml", ""),
-	Entry("Child doesn't match parent via parentRefs", "basic_parentref_mismatch.yaml", "BackendNotFound unresolved reference gateway.networking.k8s.io/HTTPRoute/a/*"),
-	Entry("Children using parentRefs and inherit-parent-matcher", "inherit_parentref.yaml", ""),
-	Entry("Parent delegates to multiple chidren", "multiple_children.yaml", ""),
-	Entry("Child is invalid as it is delegatee and specifies hostnames", "basic_invalid_hostname.yaml", "spec.hostnames must be unset on a delegatee route as they are inherited from the parent route"),
-	Entry("Multi-level recursive delegation", "recursive.yaml", ""),
-	Entry("Cyclic child route", "cyclic1.yaml", "cyclic reference detected while evaluating delegated routes"),
-	Entry("Multi-level cyclic child route", "cyclic2.yaml", "cyclic reference detected while evaluating delegated routes"),
-	Entry("Child rule matcher", "child_rule_matcher.yaml", ""),
-	Entry("Child with multiple parents", "multiple_parents.yaml", "BackendNotFound unresolved reference gateway.networking.k8s.io/HTTPRoute/b/*"),
-	Entry("Child can be an invalid delegatee but valid standalone", "invalid_child_valid_standalone.yaml", "spec.hostnames must be unset on a delegatee route as they are inherited from the parent route"),
-	Entry("Relative paths", "relative_paths.yaml", ""),
-	Entry("Nested absolute and relative path inheritance", "nested_absolute_relative.yaml", ""),
-	Entry("Child route matcher does not match parent", "discard_invalid_child_matches.yaml", ""),
-	Entry("Multi-level multiple parents delegation", "multi_level_multiple_parents.yaml", ""),
-	Entry("TrafficPolicy only on child", "traffic_policy.yaml", ""),
-	Entry("TrafficPolicy inheritance from parent", "traffic_policy_inheritance.yaml", ""),
-	Entry("TrafficPolicy ignore child override on conflict", "traffic_policy_inheritance_child_override_ignore.yaml", ""),
-	Entry("TrafficPolicy merge child override on no conflict", "traffic_policy_inheritance_child_override_ok.yaml", ""),
-	Entry("TrafficPolicy multi level inheritance with child override disabled", "traffic_policy_multi_level_inheritance_override_disabled.yaml", ""),
-	Entry("TrafficPolicy multi level inheritance with child override enabled", "traffic_policy_multi_level_inheritance_override_enabled.yaml", ""),
-	Entry("TrafficPolicy filter override merge", "traffic_policy_filter_override_merge.yaml", ""),
-	Entry("Built-in rule inheritance", "builtin_rule_inheritance.yaml", ""),
-	Entry("Label based delegation", "label_based.yaml", ""),
+	Entry("Basic config", "basic.yaml", nil),
+	Entry("Child matches parent via parentRefs", "basic_parentref_match.yaml", nil),
+	Entry("Child doesn't match parent via parentRefs", "basic_parentref_mismatch.yaml",
+		map[types.NamespacedName]string{
+			{Name: "example-route", Namespace: "infra"}: "BackendNotFound gateway.networking.k8s.io/HTTPRoute/a/*: unresolved reference",
+		},
+	),
+	Entry("Children using parentRefs and inherit-parent-matcher", "inherit_parentref.yaml", nil),
+	Entry("Parent delegates to multiple chidren", "multiple_children.yaml", nil),
+	Entry("Child is invalid as it is delegatee and specifies hostnames", "basic_invalid_hostname.yaml",
+		map[types.NamespacedName]string{
+			{Name: "route-a", Namespace: "a"}:           "spec.hostnames must be unset on a delegatee route as they are inherited from the parent route",
+			{Name: "example-route", Namespace: "infra"}: "BackendNotFound gateway.networking.k8s.io/HTTPRoute/a/*: unresolved reference",
+		},
+	),
+	Entry("Multi-level recursive delegation", "recursive.yaml", nil),
+	Entry("Cyclic child route", "cyclic1.yaml",
+		map[types.NamespacedName]string{
+			{Name: "route-a", Namespace: "a"}: "cyclic reference detected while evaluating delegated routes",
+		},
+	),
+	Entry("Multi-level cyclic child route", "cyclic2.yaml",
+		map[types.NamespacedName]string{
+			{Name: "route-a-b", Namespace: "a-b"}: "cyclic reference detected while evaluating delegated routes",
+		},
+	),
+	Entry("Child rule matcher", "child_rule_matcher.yaml",
+		map[types.NamespacedName]string{
+			{Name: "example-route", Namespace: "infra"}: "BackendNotFound gateway.networking.k8s.io/HTTPRoute/b/*: unresolved reference",
+		},
+	),
+	Entry("Child with multiple parents", "multiple_parents.yaml",
+		map[types.NamespacedName]string{
+			{Name: "foo-route", Namespace: "infra"}: "BackendNotFound gateway.networking.k8s.io/HTTPRoute/b/*: unresolved reference",
+		},
+	),
+	Entry("Child can be an invalid delegatee but valid standalone", "invalid_child_valid_standalone.yaml",
+		map[types.NamespacedName]string{
+			{Name: "route-a", Namespace: "a"}: "spec.hostnames must be unset on a delegatee route as they are inherited from the parent route",
+		},
+	),
+	Entry("Relative paths", "relative_paths.yaml", nil),
+	Entry("Nested absolute and relative path inheritance", "nested_absolute_relative.yaml", nil),
+	Entry("Child route matcher does not match parent", "discard_invalid_child_matches.yaml", nil),
+	Entry("Multi-level multiple parents delegation", "multi_level_multiple_parents.yaml", nil),
+	Entry("TrafficPolicy only on child", "traffic_policy.yaml", nil),
+	Entry("TrafficPolicy inheritance from parent", "traffic_policy_inheritance.yaml", nil),
+	Entry("TrafficPolicy ignore child override on conflict", "traffic_policy_inheritance_child_override_ignore.yaml", nil),
+	Entry("TrafficPolicy merge child override on no conflict", "traffic_policy_inheritance_child_override_ok.yaml", nil),
+	Entry("TrafficPolicy multi level inheritance with child override disabled", "traffic_policy_multi_level_inheritance_override_disabled.yaml", nil),
+	Entry("TrafficPolicy multi level inheritance with child override enabled", "traffic_policy_multi_level_inheritance_override_enabled.yaml", nil),
+	Entry("TrafficPolicy filter override merge", "traffic_policy_filter_override_merge.yaml", nil),
+	Entry("Built-in rule inheritance", "builtin_rule_inheritance.yaml", nil),
+	Entry("Label based delegation", "label_based.yaml", nil),
+	Entry("Unresolved child reference", "unresolved_ref.yaml",
+		map[types.NamespacedName]string{
+			{Name: "example-route", Namespace: "infra"}: "BackendNotFound gateway.networking.k8s.io/HTTPRoute/b/*: unresolved reference",
+			{Name: "route-a", Namespace: "a"}:           "BackendNotFound gateway.networking.k8s.io/HTTPRoute/a-c/: unresolved reference",
+		},
+	),
 )
 
 var _ = DescribeTable("Discovery Namespace Selector",

@@ -165,9 +165,9 @@ func (s *tsuite) TestCyclic() {
 	s.ti.Assertions.AssertEventuallyConsistentCurlResponse(s.ctx, defaults.CurlPodExecOpt, []curl.Option{curl.WithHostPort(proxyHostPort), curl.WithPath(pathTeam1)},
 		&testmatchers.HttpResponse{StatusCode: http.StatusOK, Body: ContainSubstring(pathTeam1)})
 
-	// Assert traffic to team2 route fails with HTTP 404 as it is a cyclic route
+	// Assert traffic to team2 route fails with HTTP 500 as it is a cyclic route
 	s.ti.Assertions.AssertEventuallyConsistentCurlResponse(s.ctx, defaults.CurlPodExecOpt, []curl.Option{curl.WithHostPort(proxyHostPort), curl.WithPath(pathTeam2)},
-		&testmatchers.HttpResponse{StatusCode: http.StatusNotFound})
+		&testmatchers.HttpResponse{StatusCode: http.StatusInternalServerError})
 
 	s.ti.Assertions.EventuallyHTTPRouteStatusContainsMessage(s.ctx, routeTeam2.Name, routeTeam2.Namespace,
 		"cyclic reference detected", 10*time.Second, 1*time.Second)
@@ -178,9 +178,9 @@ func (s *tsuite) TestInvalidChild() {
 	s.ti.Assertions.AssertEventuallyConsistentCurlResponse(s.ctx, defaults.CurlPodExecOpt, []curl.Option{curl.WithHostPort(proxyHostPort), curl.WithPath(pathTeam1)},
 		&testmatchers.HttpResponse{StatusCode: http.StatusOK, Body: ContainSubstring(pathTeam1)})
 
-	// Assert traffic to team2 route fails with HTTP 404 as the route is invalid due to specifying a hostname on the child route
+	// Assert traffic to team2 route fails with HTTP 500 as the route is invalid due to specifying a hostname on the child route
 	s.ti.Assertions.AssertEventuallyConsistentCurlResponse(s.ctx, defaults.CurlPodExecOpt, []curl.Option{curl.WithHostPort(proxyHostPort), curl.WithPath(pathTeam2)},
-		&testmatchers.HttpResponse{StatusCode: http.StatusNotFound})
+		&testmatchers.HttpResponse{StatusCode: http.StatusInternalServerError})
 
 	s.ti.Assertions.EventuallyHTTPRouteStatusContainsMessage(s.ctx, routeTeam2.Name, routeTeam2.Namespace,
 		"spec.hostnames must be unset", 10*time.Second, 1*time.Second)
@@ -197,7 +197,7 @@ func (s *tsuite) TestHeaderQueryMatch() {
 		},
 		&testmatchers.HttpResponse{StatusCode: http.StatusOK, Body: ContainSubstring(pathTeam1)})
 
-	// Assert traffic to team2 route fails with HTTP 404 as it does not match the parent's header and query parameters
+	// Assert traffic to team2 child route fails with HTTP 404 as it does not match the parent's header and query parameters
 	s.ti.Assertions.AssertEventuallyConsistentCurlResponse(s.ctx, defaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHostPort(proxyHostPort), curl.WithPath(pathTeam2),
@@ -205,6 +205,15 @@ func (s *tsuite) TestHeaderQueryMatch() {
 			curl.WithQueryParameters(map[string]string{"queryX": "valX"}),
 		},
 		&testmatchers.HttpResponse{StatusCode: http.StatusNotFound})
+
+	// Assert traffic to team2 parent route fails with HTTP 500 due to unresolved child route
+	s.ti.Assertions.AssertEventuallyConsistentCurlResponse(s.ctx, defaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHostPort(proxyHostPort), curl.WithPath(pathTeam2),
+			curl.WithHeader("header2", "val2"),
+			curl.WithQueryParameters(map[string]string{"query2": "val2"}),
+		},
+		&testmatchers.HttpResponse{StatusCode: http.StatusInternalServerError})
 }
 
 func (s *tsuite) TestMultipleParents() {
@@ -242,7 +251,7 @@ func (s *tsuite) TestMultipleParents() {
 			curl.WithPath(pathTeam2),
 			curl.WithHostHeader(routeParent2Host),
 		},
-		&testmatchers.HttpResponse{StatusCode: http.StatusNotFound})
+		&testmatchers.HttpResponse{StatusCode: http.StatusInternalServerError})
 }
 
 func (s *tsuite) TestInvalidChildValidStandalone() {
@@ -255,14 +264,14 @@ func (s *tsuite) TestInvalidChildValidStandalone() {
 		},
 		&testmatchers.HttpResponse{StatusCode: http.StatusOK, Body: ContainSubstring(pathTeam1)})
 
-	// Assert traffic to team2 route on parent hostname fails with HTTP 404 as the route is invalid due to specifying a hostname on the child route
+	// Assert traffic to team2 route on parent hostname fails with HTTP 500 as the route is invalid due to specifying a hostname on the child route
 	s.ti.Assertions.AssertEventuallyConsistentCurlResponse(s.ctx, defaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHostPort(proxyTestHostPort),
 			curl.WithPath(pathTeam2),
 			curl.WithHostHeader(routeParentHost),
 		},
-		&testmatchers.HttpResponse{StatusCode: http.StatusNotFound})
+		&testmatchers.HttpResponse{StatusCode: http.StatusInternalServerError})
 
 	// Assert traffic to team2 route on standalone host succeeds
 	s.ti.Assertions.AssertEventuallyConsistentCurlResponse(s.ctx, defaults.CurlPodExecOpt,

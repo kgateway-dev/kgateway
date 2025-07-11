@@ -38,6 +38,12 @@ func (s *testingSuite) SetupSuite() {
 	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(s.Ctx, "httpbin", "httpbin", gwv1.RouteConditionAccepted, metav1.ConditionTrue)
 }
 
+func (s *testingSuite) BeforeTest(suiteName, testName string) {
+	s.BaseTestingSuite.BeforeTest(suiteName, testName)
+
+	s.TestInstallation.Assertions.EventuallyHTTPListenerPolicyCondition(s.Ctx, "access-logs", "default", gwv1.GatewayConditionAccepted, metav1.ConditionTrue)
+}
+
 // TestAccessLogWithFileSink tests access log with file sink
 func (s *testingSuite) TestAccessLogWithFileSink() {
 	pods := s.getPods(fmt.Sprintf("app.kubernetes.io/name=%s", gatewayObjectMeta.GetName()))

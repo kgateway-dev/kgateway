@@ -3,7 +3,6 @@ package waypoint
 import (
 	"fmt"
 
-	"github.com/caarlos0/log"
 	"google.golang.org/protobuf/types/known/anypb"
 	authpb "istio.io/api/security/v1"
 	authcr "istio.io/client-go/pkg/apis/security/v1"
@@ -16,7 +15,6 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/waypoint/waypointquery"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/filters"
-
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 )
 
@@ -40,7 +38,6 @@ func BuildRBAC(
 ) {
 	// Deduplicate and separate policies by action
 	policyResult := separateAndDeduplicatePolicies(authzPolicies)
-
 	// If no policies are applicable, return early
 	if len(policyResult.Deny) == 0 && len(policyResult.Allow) == 0 &&
 		len(policyResult.Audit) == 0 && len(policyResult.Custom) == 0 {
@@ -58,11 +55,10 @@ func BuildRBAC(
 	const predicate = filters.FilterStage_After
 
 	tcpFilters := authzBuilder.BuildTCP()
-	httpFilters := authzBuilder.BuildHTTP()
-
 	if len(tcpFilters) > 0 {
 		tcpRBAC = append(tcpRBAC, CustomNetworkFilters(tcpFilters, stage, predicate)...)
 	}
+	httpFilters := authzBuilder.BuildHTTP()
 	if len(httpFilters) > 0 {
 		httpRBAC = append(httpRBAC, CustomHTTPFilters(httpFilters, stage, predicate)...)
 	}
@@ -70,31 +66,33 @@ func BuildRBAC(
 }
 
 func applyHTTPRBACFilters(httpChain *ir.HttpFilterChainIR, httpRBAC []*ir.CustomEnvoyFilter) {
+	if len(httpRBAC) == 0 {
+		return
+	}
 	// Apply RBAC filters regardless of the presence of proxy_protocol_authority
-	if len(httpRBAC) > 0 {
-		// Initialize CustomHTTPFilters if it's nil
-		if httpChain.CustomHTTPFilters == nil {
-			httpChain.CustomHTTPFilters = []ir.CustomEnvoyFilter{}
-		}
+	// Initialize CustomHTTPFilters if it's nil
+	if httpChain.CustomHTTPFilters == nil {
+		httpChain.CustomHTTPFilters = []ir.CustomEnvoyFilter{}
+	}
 
-		// Add RBAC filters to CustomHTTPFilters
-		for _, f := range httpRBAC {
-			httpChain.CustomHTTPFilters = append(httpChain.CustomHTTPFilters, *f)
-		}
+	// Add RBAC filters to CustomHTTPFilters
+	for _, f := range httpRBAC {
+		httpChain.CustomHTTPFilters = append(httpChain.CustomHTTPFilters, *f)
 	}
 }
 
 func applyTCPRBACFilters(tcpChain *ir.TcpIR, tcpRBAC []*ir.CustomEnvoyFilter, svc waypointquery.Service) {
+	if len(tcpRBAC) == 0 {
+		return
+	}
 	// Apply RBAC filters regardless of the presence of proxy_protocol_authority
-	if len(tcpRBAC) > 0 {
-		if tcpChain.NetworkFilters == nil {
-			tcpChain.NetworkFilters = []*anypb.Any{}
-		}
+	if tcpChain.NetworkFilters == nil {
+		tcpChain.NetworkFilters = []*anypb.Any{}
+	}
 
-		// Add RBAC filters as built-in network filters
-		for _, f := range tcpRBAC {
-			tcpChain.NetworkFilters = append(tcpChain.NetworkFilters, f.Config)
-		}
+	// Add RBAC filters as built-in network filters
+	for _, f := range tcpRBAC {
+		tcpChain.NetworkFilters = append(tcpChain.NetworkFilters, f.Config)
 	}
 }
 
@@ -136,8 +134,11 @@ func separateAndDeduplicatePolicies(policies []*authcr.AuthorizationPolicy) mode
 			result.Custom = append(result.Custom, convertedPolicy)
 		default:
 			// Log error for unsupported action
-			log.Errorf("ignored authorization policy %s.%s with unsupported action: %s",
-				policy.GetNamespace(), policy.GetName(), convertedSpec.GetAction())
+			logger.Error("ignored authorization policy",
+				"namespace", policy.GetNamespace(),
+				"name", policy.GetName(),
+				"action", convertedSpec.GetAction(),
+			)
 		}
 	}
 

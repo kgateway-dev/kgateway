@@ -3,11 +3,12 @@
 package version
 
 import (
+	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
 
-	"github.com/pkg/errors"
 	"github.com/solo-io/go-utils/changelogutils"
 	"github.com/solo-io/go-utils/versionutils"
 
@@ -42,7 +43,7 @@ func ChangelogDirForLatestRelease[T namedEntry](files ...T) (
 	currentRelease *versionutils.Version, unreleasedVersion *versionutils.Version, err error) {
 
 	if len(files) < 3 {
-		return nil, nil, errors.Errorf("Could not get sufficient versions from files: %v\n", files)
+		return nil, nil, fmt.Errorf("Could not get sufficient versions from files: %v\n", files)
 	}
 
 	versions := make([]*versionutils.Version, 0, len(files))
@@ -56,7 +57,7 @@ func ChangelogDirForLatestRelease[T namedEntry](files ...T) (
 		}
 	}
 	if len(versions) < 2 {
-		return nil, nil, errors.Errorf("Could not get sufficient valid versions from files: %v\n", files)
+		return nil, nil, fmt.Errorf("Could not get sufficient valid versions from files: %v\n", files)
 	}
 
 	sort.Sort(sortableVersionSlice(versions))

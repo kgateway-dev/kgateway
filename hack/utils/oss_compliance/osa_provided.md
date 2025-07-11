@@ -3,7 +3,6 @@ Name|Version|License
 [agentgateway/agentgateway](https://github.com/agentgateway/agentgateway)|v0.4.31-0.20250519135723-61536c2b3fa0|Apache License 2.0
 [avast/retry-go](https://github.com/avast/retry-go)|v2.4.3+incompatible|MIT License
 [retry-go/v4](https://github.com/avast/retry-go)|v4.3.3|MIT License
-[caarlos0/log](https://github.com/caarlos0/log)|v0.4.6|MIT License
 [xds/go](https://github.com/cncf/xds)|v0.0.0-20250121191232-2f005788dc42|Apache License 2.0
 [envoyproxy/go-control-plane](https://github.com/envoyproxy/go-control-plane)|v0.13.5-0.20250507123352-93990c5ec02f|Apache License 2.0
 [go-control-plane/contrib](https://github.com/envoyproxy/go-control-plane)|v1.32.5-0.20250507123352-93990c5ec02f|Apache License 2.0
@@ -19,7 +18,6 @@ Name|Version|License
 [mitchellh/hashstructure](https://github.com/mitchellh/hashstructure)|v1.0.0|MIT License
 [ginkgo/v2](https://github.com/onsi/ginkgo)|v2.23.3|MIT License
 [onsi/gomega](https://github.com/onsi/gomega)|v1.37.0|MIT License
-[pkg/errors](https://github.com/pkg/errors)|v0.9.1|BSD 2-clause "Simplified" License
 [prometheus/client_golang](https://github.com/prometheus/client_golang)|v1.22.0|Apache License 2.0
 [prometheus/client_model](https://github.com/prometheus/client_model)|v0.6.2|Apache License 2.0
 [spf13/afero](https://github.com/spf13/afero)|v1.14.0|Apache License 2.0

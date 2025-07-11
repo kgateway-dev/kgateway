@@ -28,6 +28,7 @@ import (
 	common "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
+	"github.com/kgateway-dev/kgateway/v2/pkg/settings"
 )
 
 const (
@@ -72,7 +73,8 @@ func TestShouldUseExtendedGatewayParameters(t *testing.T) {
 	gwc := defaultGatewayClass()
 	gwParams := emptyGatewayParameters()
 	extraGwParams := &corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{Namespace: defaultNamespace}}
+		ObjectMeta: metav1.ObjectMeta{Namespace: defaultNamespace},
+	}
 
 	gw := &api.Gateway{
 		ObjectMeta: metav1.ObjectMeta{
@@ -227,7 +229,7 @@ func newCommonCols(t test.Failer, initObjs ...client.Object) *common.CommonColle
 	}
 	mock := krttest.NewMock(t, anys)
 
-	policies := krtcollections.NewPolicyIndex(krtutil.KrtOptions{}, extensionsplug.ContributesPolicies{})
+	policies := krtcollections.NewPolicyIndex(krtutil.KrtOptions{}, extensionsplug.ContributesPolicies{}, settings.Settings{})
 	kubeRawGateways := krttest.GetMockCollection[*api.Gateway](mock)
 	kubeRawListenerSets := krttest.GetMockCollection[*apixv1a1.XListenerSet](mock)
 	gatewayClasses := krttest.GetMockCollection[*api.GatewayClass](mock)

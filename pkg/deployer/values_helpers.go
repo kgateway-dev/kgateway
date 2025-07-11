@@ -13,7 +13,6 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ports"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/listener"
 )
 
@@ -56,7 +55,6 @@ func AppendPortValue(gwPorts []HelmPort, port uint16, name string, gwp *v1alpha1
 		return gwPorts
 	}
 
-	targetPort := ports.TranslatePort(port)
 	portName := SanitizePortName(name)
 	protocol := "TCP"
 
@@ -72,7 +70,7 @@ func AppendPortValue(gwPorts []HelmPort, port uint16, name string, gwp *v1alpha1
 	}
 	return append(gwPorts, HelmPort{
 		Port:       &port,
-		TargetPort: &targetPort,
+		TargetPort: &port,
 		Name:       &portName,
 		Protocol:   &protocol,
 		NodePort:   nodePort,
@@ -208,6 +206,22 @@ func GetStatsValues(statsConfig *v1alpha1.StatsConfig) *HelmStatsConfig {
 	}
 }
 
+func getTracingValues(tracingConfig *v1alpha1.AiExtensionTrace) *helmAITracing {
+	if tracingConfig == nil {
+		return nil
+	}
+	return &helmAITracing{
+		EndPoint: tracingConfig.EndPoint,
+		Sampler: &helmAITracingSampler{
+			SamplerType: tracingConfig.GetSamplerType(),
+			SamplerArg:  tracingConfig.GetSamplerArg(),
+		},
+		Timeout:           tracingConfig.GetTimeout(),
+		Protocol:          tracingConfig.GetOTLPProtocolType(),
+		TransportSecurity: tracingConfig.GetTransportSecurityMode(),
+	}
+}
+
 // ComponentLogLevelsToString converts the key-value pairs in the map into a string of the
 // format: key1:value1,key2:value2,key3:value3, where the keys are sorted alphabetically.
 // If an empty map is passed in, then an empty string is returned.
@@ -253,6 +267,7 @@ func GetAIExtensionValues(config *v1alpha1.AiExtension) (*HelmAIExtension, error
 		Env:             config.GetEnv(),
 		Ports:           config.GetPorts(),
 		Stats:           byt,
+		Tracing:         getTracingValues(config.Tracing),
 	}, nil
 }
 

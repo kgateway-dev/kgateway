@@ -43,7 +43,7 @@ spec:
           request_id: "%REQ(X-REQUEST-ID)%"
           authority: "%REQ(:AUTHORITY)%"
           backendHost: "%UPSTREAM_HOST%"
-          backendCluster: "%UPSTREAM_CLUSTER%"        
+          backendCluster: "%UPSTREAM_CLUSTER%"
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
@@ -51,6 +51,7 @@ metadata:
   name: httpbin
   labels:
     route: httpbin-app
+    global-policy: cors
 spec:
   parentRefs:
   - name: http-gw
@@ -73,54 +74,25 @@ spec:
     response:
       add:
       - name: x-foo
-        value: bar        
+        value: bar
 ---
-apiVersion: v1
-kind: Service
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
 metadata:
-  name: httpbin
-  labels:
-    app: httpbin
+  name: global-cors
+  namespace: $INSTALL_NAMESPACE
 spec:
-  ports:
-  - name: http
-    port: 8000
-    targetPort: 8080
-  selector:
-    app: httpbin
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: httpbin
-spec:
-  replicas: 1
-  selector:
+  targetSelectors:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
     matchLabels:
-      app: httpbin
-      version: v1
-  template:
-    metadata:
-      labels:
-        app: httpbin
-        version: v1
-    spec:
-      containers:
-      - image: docker.io/kennethreitz/httpbin
-        imagePullPolicy: IfNotPresent
-        name: httpbin
-        command:
-        - gunicorn
-        - -b
-        - 0.0.0.0:8080
-        - httpbin:app
-        - -k
-        - gevent
-        env:
-        # Tells pipenv to use a writable directory instead of $HOME
-        - name: WORKON_HOME
-          value: /tmp
-        ports:
-        - containerPort: 8080
----
-
+      global-policy: cors
+  cors:
+    allowOrigins:
+      - https://example.com
+    allowMethods:
+      - GET
+      - POST
+      - DELETE
+    allowHeaders:
+      - x-custom-header

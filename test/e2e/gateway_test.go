@@ -258,7 +258,7 @@ var _ = Describe("Gateway", func() {
 						return proxy, nil
 					}
 
-					return nil, errors.Errorf("non-ssl listener virtual hosts: expected 1, found %d ", vhostCount)
+					return nil, fmt.Errorf("non-ssl listener virtual hosts: expected 1, found %d", vhostCount)
 				})
 
 				// Create a third trivial vs with valid config
@@ -281,7 +281,7 @@ var _ = Describe("Gateway", func() {
 						return proxy, nil
 					}
 
-					return nil, errors.Errorf("non-ssl listener virtual hosts: expected 2, found %d ", vhostCount)
+					return nil, fmt.Errorf("non-ssl listener virtual hosts: expected 2, found %d", vhostCount)
 				})
 
 				// Verify that the proxy is as expected (2 functional virtualservices)

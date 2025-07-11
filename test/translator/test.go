@@ -40,7 +40,6 @@ import (
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/registry"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/irtranslator"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/listener"
@@ -50,6 +49,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	common "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
 	"github.com/kgateway-dev/kgateway/v2/pkg/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
@@ -350,8 +350,14 @@ func ReadYamlFile(file string, out interface{}) error {
 	return UnmarshalAnyYaml(data, out)
 }
 
-func AreReportsSuccess(gwNN types.NamespacedName, reportsMap reports.ReportMap) error {
+func GetHTTPRouteStatusError(
+	reportsMap reports.ReportMap,
+	route *types.NamespacedName,
+) error {
 	for nns, routeReport := range reportsMap.HTTPRoutes {
+		if route != nil && nns != *route {
+			continue
+		}
 		for ref, parentRefReport := range routeReport.Parents {
 			for _, c := range parentRefReport.Conditions {
 				// most route conditions true is good, except RouteConditionPartiallyInvalid
@@ -363,6 +369,15 @@ func AreReportsSuccess(gwNN types.NamespacedName, reportsMap reports.ReportMap) 
 			}
 		}
 	}
+	return nil
+}
+
+func AreReportsSuccess(gwNN types.NamespacedName, reportsMap reports.ReportMap) error {
+	err := GetHTTPRouteStatusError(reportsMap, nil)
+	if err != nil {
+		return err
+	}
+
 	for nns, routeReport := range reportsMap.TCPRoutes {
 		for ref, parentRefReport := range routeReport.Parents {
 			for _, c := range parentRefReport.Conditions {

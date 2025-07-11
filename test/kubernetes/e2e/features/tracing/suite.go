@@ -9,6 +9,8 @@ import (
 
 	"github.com/onsi/gomega"
 	"github.com/stretchr/testify/suite"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
@@ -41,6 +43,8 @@ func (s *testingSuite) TestOTelTracingSecure() {
 // testOTelTracing makes a request to the httpbin service
 // and checks if the collector pod logs contain the expected lines
 func (s *testingSuite) testOTelTracing() {
+	s.TestInstallation.Assertions.EventuallyHTTPListenerPolicyCondition(s.Ctx, "tracing-policy", "default", gwv1.GatewayConditionAccepted, metav1.ConditionTrue)
+
 	// The headerValue passed is used to differentiate between multiple calls by identifying a unique trace per call
 	headerValue := fmt.Sprintf("%v", rand.Intn(10000))
 	s.TestInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {

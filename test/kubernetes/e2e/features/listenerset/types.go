@@ -27,6 +27,12 @@ var (
 	invalidListenerSetNonExistingGWManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "invalid-listenerset-non-existing-gw.yaml")
 	policyManifest                          = filepath.Join(fsutils.MustGetThisDir(), "testdata", "policies.yaml")
 
+	gwListener1Port = 80
+	gwListener2Port = 8081
+	lsListener1Port = 90
+	lsListener2Port = 8091
+	lsInvalidPort   = 8095
+
 	proxyObjectMeta = metav1.ObjectMeta{
 		Name:      "gw",
 		Namespace: "default",

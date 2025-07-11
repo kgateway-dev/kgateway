@@ -77,6 +77,7 @@ type GatheredMetrics interface {
 	AssertMetricLabels(name string, expectedLabels []metrics.Label)
 	AssertMetricHistogramValue(name string, expectedValue HistogramMetricOutput)
 	AssertHistogramPopulated(name string)
+	AssertHistogramBuckets(name string, expectedBuckets []float64)
 	AssertMetricExists(name string)
 	AssertMetricNotExists(name string)
 	AssertMetric(name string, expectedMetric ExpectMetric)
@@ -138,7 +139,7 @@ func (g *prometheusGatheredMetrics) assertMetricObjLabels(metric *dto.Metric, ex
 
 func (g *prometheusGatheredMetrics) metricObjLabelsMatch(metric *dto.Metric, expectedLabels []metrics.Label) error {
 	if len(expectedLabels) != len(metric.GetLabel()) {
-		return fmt.Errorf("Expected %d labels, got %d", len(expectedLabels), len(metric.GetLabel()))
+		return fmt.Errorf("expected %d labels, got %d", len(expectedLabels), len(metric.GetLabel()))
 	}
 
 	labelMap := make(map[string]string, len(expectedLabels))
@@ -150,10 +151,10 @@ func (g *prometheusGatheredMetrics) metricObjLabelsMatch(metric *dto.Metric, exp
 	for _, label := range metric.GetLabel() {
 		labelValue, ok := labelMap[label.GetName()]
 		if !ok {
-			return fmt.Errorf("Label %s not found", label.GetName())
+			return fmt.Errorf("label %s not found", label.GetName())
 		}
 		if labelValue != label.GetValue() {
-			return fmt.Errorf("Label %s value mismatch - expected %s, got %s", label.GetName(), labelValue, label.GetValue())
+			return fmt.Errorf("label %s value mismatch - expected %s, got %s", label.GetName(), labelValue, label.GetValue())
 		}
 	}
 
@@ -206,6 +207,21 @@ func (g *prometheusGatheredMetrics) AssertHistogramPopulated(name string) {
 	assert.True(g.t, metric.GetHistogram().GetSampleSum() > 0, "Histogram %s is not populated", name)
 }
 
+// AssertHistogramBuckets asserts that a histogram metric has the expected bucket values.
+func (g *prometheusGatheredMetrics) AssertHistogramBuckets(name string, expectedBuckets []float64) {
+	metric := g.MustGetMetric(name)
+
+	histogram := metric.GetHistogram()
+	require.NotNil(g.t, histogram, "Metric %s is not a histogram", name)
+
+	buckets := histogram.GetBucket()
+	require.Equal(g.t, len(expectedBuckets), len(buckets), "Expected %d buckets for histogram %s, got %d", len(expectedBuckets), name, len(buckets))
+
+	for i, bucket := range buckets {
+		assert.Equal(g.t, expectedBuckets[i], bucket.GetUpperBound(), "Bucket %d for histogram %s does not match expected value", i, name)
+	}
+}
+
 // AssertMetricExists asserts that a metric with the given name exists.
 func (g *prometheusGatheredMetrics) AssertMetricExists(name string) {
 	_, ok := g.metrics[name]
@@ -224,6 +240,8 @@ func (g *prometheusGatheredMetrics) AssertMetric(name string, expected ExpectMet
 }
 
 func (g *prometheusGatheredMetrics) AssertMetrics(name string, expectedMetrics []ExpectMetric) {
+	require.NotEmpty(g.t, g.metrics[name], "Expected metrics %s not found", name)
+
 	for _, m := range g.metrics[name] {
 		matchedExpectedMetric := g.findMetricObj(m, expectedMetrics)
 		assert.NotNil(g.t, matchedExpectedMetric, "Metric %s with labels %v not found", name, m.GetLabel())

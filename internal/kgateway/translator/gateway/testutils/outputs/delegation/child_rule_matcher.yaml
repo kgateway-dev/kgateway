@@ -34,7 +34,7 @@ Listeners:
     socketAddress:
       address: '::'
       ipv4Compat: true
-      portValue: 8080
+      portValue: 80
   filterChains:
   - filters:
     - name: envoy.filters.network.http_connection_manager
@@ -83,6 +83,28 @@ Routes:
       route:
         cluster: kube_a_svc-a_8080
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+    - directResponse:
+        body:
+          inlineString: invalid route configuration detected and replaced with a direct
+            response.
+        status: 500
+      match:
+        headers:
+        - name: header2
+          stringMatch:
+            exact: val2
+        - name: header3
+          stringMatch:
+            exact: val3
+        pathSeparatedPrefix: /b
+        queryParameters:
+        - name: query2
+          stringMatch:
+            exact: val2
+        - name: query3
+          stringMatch:
+            exact: val3
+      name: listener~80~example_com-route-1-httproute-example-route-infra-2-0-matcher-0
     - match:
         prefix: /
       name: listener~80~example_com-route-3-httproute-example-route-infra-0-0-matcher-0

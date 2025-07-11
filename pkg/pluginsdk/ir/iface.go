@@ -11,12 +11,17 @@ import (
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/anypb"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
+	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
+
+var logger = logging.New("pluginsdk/ir")
 
 type ListenerContext struct {
 	Policy            PolicyIR
@@ -53,6 +58,23 @@ func (r *TypedFilterConfigMap) GetTypedConfig(key string) proto.Message {
 		return v
 	}
 	return nil
+}
+
+func (r *TypedFilterConfigMap) ToAnyMap() map[string]*anypb.Any {
+	typedPerFilterConfigAny := map[string]*anypb.Any{}
+	for k, v := range *r {
+		if anyMsg, ok := v.(*anypb.Any); ok {
+			typedPerFilterConfigAny[k] = anyMsg
+			continue
+		}
+		config, err := utils.MessageToAny(v)
+		if err != nil {
+			logger.Error("unexpected marshalling error", "error", err)
+			continue
+		}
+		typedPerFilterConfigAny[k] = config
+	}
+	return typedPerFilterConfigAny
 }
 
 type RouteBackendContext struct {
@@ -133,7 +155,8 @@ type ProxyTranslationPass interface {
 	ApplyForRoute(
 		ctx context.Context,
 		pCtx *RouteContext,
-		out *envoy_config_route_v3.Route) error
+		out *envoy_config_route_v3.Route,
+	) error
 
 	// called 1 time per filter-chain.
 	// If a plugin emits new filters, they must be with a plugin unique name.

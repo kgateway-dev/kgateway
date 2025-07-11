@@ -2,7 +2,6 @@ package krtcollections
 
 import (
 	"context"
-	"fmt"
 	"strings"
 	"time"
 
@@ -30,9 +29,9 @@ import (
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	pluginsdkir "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
 
 const statefulSessionFilterName = "envoy.filters.http.stateful_session"
@@ -330,7 +329,12 @@ func convertSessionPersistence(sessionPersistence *gwv1.SessionPersistence) *any
 			TypedConfig: sessionStateAny,
 		},
 	}
-	typedConfig, err := utils.MessageToAny(statefulSession)
+	perRoute := &stateful_sessionv3.StatefulSessionPerRoute{
+		Override: &stateful_sessionv3.StatefulSessionPerRoute_StatefulSession{
+			StatefulSession: statefulSession,
+		},
+	}
+	typedConfig, err := utils.MessageToAny(perRoute)
 	if err != nil {
 		logger.Error("failed to create session state: %v", "error", err)
 		return nil
@@ -620,52 +624,6 @@ func (p *builtinPluginGwPass) HttpFilters(ctx context.Context, fcc ir.FilterChai
 	return builtinStaged, nil
 }
 
-func ToEnvoyCorsPolicy(f *gwv1.HTTPCORSFilter) *corsv3.CorsPolicy {
-	if f == nil {
-		return nil
-	}
-	corsPolicy := &corsv3.CorsPolicy{}
-	if len(f.AllowOrigins) > 0 {
-		origins := make([]*envoy_type_matcher_v3.StringMatcher, len(f.AllowOrigins))
-		for i, origin := range f.AllowOrigins {
-			origins[i] = &envoy_type_matcher_v3.StringMatcher{
-				MatchPattern: &envoy_type_matcher_v3.StringMatcher_Exact{
-					Exact: string(origin),
-				},
-			}
-		}
-		corsPolicy.AllowOriginStringMatch = origins
-	}
-	if len(f.AllowMethods) > 0 {
-		methods := make([]string, len(f.AllowMethods))
-		for i, method := range f.AllowMethods {
-			methods[i] = string(method)
-		}
-		corsPolicy.AllowMethods = strings.Join(methods, ", ")
-	}
-	if len(f.AllowHeaders) > 0 {
-		headers := make([]string, len(f.AllowHeaders))
-		for i, header := range f.AllowHeaders {
-			headers[i] = string(header)
-		}
-		corsPolicy.AllowHeaders = strings.Join(headers, ", ")
-	}
-	if f.AllowCredentials {
-		corsPolicy.AllowCredentials = &wrapperspb.BoolValue{Value: bool(f.AllowCredentials)}
-	}
-	if len(f.ExposeHeaders) > 0 {
-		headers := make([]string, len(f.ExposeHeaders))
-		for i, header := range f.ExposeHeaders {
-			headers[i] = string(header)
-		}
-		corsPolicy.ExposeHeaders = strings.Join(headers, ", ")
-	}
-	if f.MaxAge != 0 {
-		corsPolicy.MaxAge = fmt.Sprintf("%d", f.MaxAge)
-	}
-	return corsPolicy
-}
-
 // New helper to create filterIr
 func convertFilterIr(kctx krt.HandlerContext, f gwv1.HTTPRouteFilter, fromgk schema.GroupKind, fromns string, refgrants *RefGrantIndex, ups *BackendIndex) *filterIr {
 	var policy applyToRoute
@@ -840,7 +798,7 @@ func convertCORSIR(_ krt.HandlerContext, f *gwv1.HTTPCORSFilter) *corsIr {
 	if f == nil {
 		return nil
 	}
-	corsPolicyAny, err := utils.MessageToAny(ToEnvoyCorsPolicy(f))
+	corsPolicyAny, err := utils.MessageToAny(utils.ToEnvoyCorsPolicy(f))
 	if err != nil {
 		// this should never happen.
 		logger.Error("failed to convert CORS policy to Any", "error", err)

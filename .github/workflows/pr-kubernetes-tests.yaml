@@ -27,43 +27,45 @@ jobs:
         # If tests are exceeding the 30-minute limit, please see:
         # /test/kubernetes/e2e/load_balancing_tests.md
         #
-        # Above each test below, we document the latest date/time for the GitHub action step to run
-        # NOTE: We use the GitHub action step time (as opposed to the `go test` time), because it is easier to capture
+        # Above each test below, we document the latest date/time for the GitHub action step `Run /./.github/actions/kubernetes-e2e-tests` to run
+        # NOTE: We use the GitHub action step time (as opposed to the `go test` time or the GitHub action job time), because it is easier to capture and fairly consistent
         test:
-        # May 19, 2025: ~19 minutes
+        # July 8, 2025: ~10 minutes
         - cluster-name: 'cluster-one'
           go-test-args: '-v -timeout=25m'
-          go-test-run-regex: '^TestKgateway$$/^BasicRouting$$|^TestKgateway$$/^HTTPRouteServices$$|^TestKgateway$$/^TLSRouteServices$$|^TestKgateway$$/^GRPCRouteServices$$|^TestListenerSet$$'
+          go-test-run-regex: '^TestKgateway$$/^BasicRouting$$|^TestKgateway$$/^PathMatching$$|^TestKgateway$$/^HTTPRouteServices$$|^TestKgateway$$/^TLSRouteServices$$|^TestKgateway$$/^GRPCRouteServices$$|^TestListenerSet$$|^TestKgateway$$/^SessionPersistence$$'
           localstack: 'false'
-        # May 19, 2025: ~25 minutes
+        # July 8, 2025: ~13 minutes
         - cluster-name: 'cluster-two'
           go-test-args: '-v -timeout=25m'
-          go-test-run-regex: '^TestKgateway$$/^Backends$$|^TestKgateway$$/^Transforms$$|^TestKgateway$$/^BackendTLSPolicies$$|^TestKgatewayWaypoint$$'
+          go-test-run-regex: '^TestKgatewayWaypoint$$'
           localstack: 'false'
-        # June 23, 2025: ~20 minutes
+        # July 8, 2025: ~11 minutes
         - cluster-name: 'cluster-three'
           go-test-args: '-v -timeout=25m'
-          go-test-run-regex: '^TestKgateway$$/^DynamicForwardProxy$$|^TestKgateway$$/^Deployer$$|^TestKgateway$$/^RouteDelegation$$|^TestKgateway$$/^Lambda$$|^TestKgateway$$/^AccessLog$$|^TestKgateway$$/^LocalRateLimit$$|^TestKgateway$$/^Cors$$|^TestKgateway$$/^BackendConfigPolicy$$|^TestKgateway$$/^Metrics$$|^TestKgateway$$/^HttpListenerPolicy$$|^TestKgateway$$/^Tracing$$'
+          go-test-run-regex: '^TestKgateway$$/^DynamicForwardProxy$$|^TestKgateway$$/^Deployer$$|^TestKgateway$$/^RouteDelegation$$|^TestKgateway$$/^Lambda$$|^TestKgateway$$/^AccessLog$$|^TestKgateway$$/^LocalRateLimit$$|^TestKgateway$$/^Cors$$|^TestKgateway$$/^BackendConfigPolicy$$|^TestKgateway$$/^Metrics$$|^TestKgateway$$/^HttpListenerPolicy$$|^TestKgateway$$/^Tracing$$|^TestKgateway$$/^DirectResponse$$'
           localstack: 'true'
-        # May 19, 2025: ~20 minutes
+        # July 8, 2025: ~9 minutes
         - cluster-name: 'cluster-four'
           go-test-args: '-v -timeout=25m'
-          go-test-run-regex: '^TestKgateway$$/^ExtProc$$|^TestKgateway$$/^ExtAuth$$|^TestKgateway$$/^TCPRouteServices$$|^TestKgateway$$/^PolicySelector$$|^TestInferenceExtension$$|^TestKgateway$$/^CSRF$$'
+          go-test-run-regex: '^TestKgateway$$/^ExtProc$$|^TestKgateway$$/^ExtAuth$$|^TestKgateway$$/^TCPRouteServices$$|^TestKgateway$$/^PolicySelector$$|^TestKgateway$$/^Backends$$|^TestKgateway$$/^Transforms$$|^TestKgateway$$/^BackendTLSPolicies$$|^TestKgateway$$/^CSRF$$|^TestInferenceExtension$$'
           localstack: 'false'
-        # May 19, 2025: ~20 minutes
+        # July 8, 2025: ~7 minutes
         - cluster-name: 'cluster-ai'
           go-test-args: '-v -timeout=25m'
           go-test-run-regex: '^TestAIExtension'
           localstack: 'false'
+        # July 8, 2025: ~4 minutes
         - cluster-name: 'cluster-multi-install'
           go-test-args: '-v -timeout=5m'
           go-test-run-regex: '^TestMultipleInstalls'
           localstack: 'false'
-        # May 19, 2025: ~10 minutes
+        # July 8, 2025: ~4 minutes
         - cluster-name: 'agent-gateway-cluster'
           go-test-args: '-v -timeout=25m'
           go-test-run-regex: '^TestAgentGatewayIntegration'
           agentgateway: 'true'
+        # July 8, 2025: ~3 minutes
         - cluster-name: 'api-validation'
           go-test-args: '-v -timeout=10m'
           go-test-run-regex: '^TestAPIValidation'

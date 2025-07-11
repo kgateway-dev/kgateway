@@ -5,7 +5,6 @@ go 1.24.4
 require (
 	github.com/avast/retry-go v2.4.3+incompatible
 	github.com/avast/retry-go/v4 v4.3.3
-	github.com/caarlos0/log v0.4.6
 	github.com/cncf/xds/go v0.0.0-20250121191232-2f005788dc42
 	github.com/envoyproxy/go-control-plane v0.13.5-0.20250507123352-93990c5ec02f
 	github.com/envoyproxy/go-control-plane/contrib v1.32.5-0.20250507123352-93990c5ec02f
@@ -22,7 +21,6 @@ require (
 	github.com/mitchellh/hashstructure v1.0.0
 	github.com/onsi/ginkgo/v2 v2.23.3
 	github.com/onsi/gomega v1.37.0
-	github.com/pkg/errors v0.9.1
 	github.com/solo-io/envoy-gloo/go v0.0.0-20250102165327-33a74fcf9966
 	github.com/solo-io/go-list-licenses v0.1.4
 	github.com/solo-io/go-utils v0.27.3
@@ -59,12 +57,14 @@ require (
 	github.com/a8m/envsubst v1.4.3 // indirect
 	github.com/alecthomas/chroma/v2 v2.17.2 // indirect
 	github.com/alecthomas/participle/v2 v2.1.4 // indirect
+	github.com/caarlos0/log v0.4.6 // indirect
 	github.com/dlclark/regexp2 v1.11.5 // indirect
 	github.com/elliotchance/orderedmap v1.8.0 // indirect
 	github.com/goccy/go-yaml v1.17.1 // indirect
 	github.com/jinzhu/copier v0.4.0 // indirect
 	github.com/manuelarte/funcorder v0.2.1 // indirect
 	github.com/mikefarah/yq/v4 v4.45.4 // indirect
+	github.com/pkg/errors v0.9.1 // indirect
 	github.com/rotisserie/eris v0.5.4 // indirect
 	github.com/yuin/gopher-lua v1.1.1 // indirect
 	go.augendre.info/fatcontext v0.8.0 // indirect

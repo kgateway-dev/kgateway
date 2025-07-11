@@ -508,7 +508,8 @@ type policyAndIndex struct {
 	forBackends         bool
 }
 type PolicyIndex struct {
-	availablePolicies map[schema.GroupKind]policyAndIndex
+	globalPolicyNamespace string
+	availablePolicies     map[schema.GroupKind]policyAndIndex
 
 	policiesFetch  map[schema.GroupKind]func(n string, ns string) ir.PolicyIR
 	globalPolicies []globalPolicy
@@ -534,8 +535,16 @@ func (h *PolicyIndex) HasSynced() bool {
 	return true
 }
 
-func NewPolicyIndex(krtopts krtutil.KrtOptions, contributesPolicies extensionsplug.ContributesPolicies) *PolicyIndex {
-	index := &PolicyIndex{policiesFetch: policyFetcherMap{}, availablePolicies: map[schema.GroupKind]policyAndIndex{}}
+func NewPolicyIndex(
+	krtopts krtutil.KrtOptions,
+	contributesPolicies extensionsplug.ContributesPolicies,
+	globalSettings settings.Settings,
+) *PolicyIndex {
+	index := &PolicyIndex{
+		globalPolicyNamespace: globalSettings.GlobalPolicyNamespace,
+		policiesFetch:         policyFetcherMap{},
+		availablePolicies:     map[schema.GroupKind]policyAndIndex{},
+	}
 
 	for gk, plugin := range contributesPolicies {
 		if plugin.Policies != nil {
@@ -711,6 +720,15 @@ func (p *PolicyIndex) getTargetingPoliciesMaybeForBackends(
 		}
 		policiesByLabel := p.fetchByTargetRefLabels(kctx, refIndexKeyByNamespace, onlyBackends, targetLabels)
 		policies = append(policies, policiesByLabel...)
+
+		// Check if policies defined in the global policy namespace target this ref.
+		// `targetRef.Namespace != p.globalPolicyNamespace` ensures we avoid a duplicate lookup as done
+		// above when targetRef.Namespace is the same as globalPolicyNamespace
+		if p.globalPolicyNamespace != "" && targetRef.Namespace != p.globalPolicyNamespace {
+			refIndexKeyByNamespace.Namespace = p.globalPolicyNamespace
+			globalPolicies := p.fetchByTargetRefLabels(kctx, refIndexKeyByNamespace, onlyBackends, targetLabels)
+			policies = append(policies, globalPolicies...)
+		}
 	}
 
 	for _, p := range policies {
