@@ -274,7 +274,7 @@ func (k *kGatewayParameters) getValues(gw *api.Gateway, gwParam *v1alpha1.Gatewa
 
 	// The security contexts may need to be updated if floating user ID is set or if privileged ports are used
 	// This may affect both the PodSecurityContext and the SecurityContexts for the containers defined in gwParam
-	// Note: this call may populate the PodSecurityContext and SecurityContext fields in the HelmConfig if they are null,
+	// Note: this call may populate the PodSecurityContext and SecurityContext fields in the gateway parameters if they are null,
 	// so this needs to happen before those kubeProxyConfig fields are extracted to local variables.
 	deployer.UpdateSecurityContexts(gwParam.Spec.Kube, vals.Gateway.Ports)
 
