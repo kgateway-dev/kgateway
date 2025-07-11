@@ -502,6 +502,7 @@ spec:
                         attributes:
                           additionalProperties:
                             type: string
+                          minProperties: 1
                           type: object
                         name:
                           type: string
@@ -509,6 +510,9 @@ spec:
                           type: string
                         ttl:
                           type: string
+                          x-kubernetes-validations:
+                          - message: ttl must be a valid duration string
+                            rule: duration(self) >= duration('0s')
                       required:
                       - name
                       type: object
@@ -520,19 +524,17 @@ spec:
                       - name
                       type: object
                     sourceIP:
-                      properties:
-                        sourceIP:
-                          type: boolean
                       type: object
                     terminal:
                       type: boolean
                   type: object
                   x-kubernetes-validations:
-                  - message: at most one of the fields in [header cookie sourceIP]
-                      may be set
+                  - message: exactly one of the fields in [header cookie sourceIP]
+                      must be set
                     rule: '[has(self.header),has(self.cookie),has(self.sourceIP)].filter(x,x==true).size()
-                      <= 1'
+                      == 1'
                 maxItems: 16
+                minItems: 1
                 type: array
               rateLimit:
                 properties:

@@ -267,8 +267,6 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.SingleAuthTokenApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("SlowStart"):
 		return &apiv1alpha1.SlowStartApplyConfiguration{}
-	case v1alpha1.SchemeGroupVersion.WithKind("SourceIP"):
-		return &apiv1alpha1.SourceIPApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("StaticBackend"):
 		return &apiv1alpha1.StaticBackendApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("StatsConfig"):

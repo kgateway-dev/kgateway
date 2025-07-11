@@ -126,9 +126,7 @@ func TestHashPolicyForSpec(t *testing.T) {
 			spec: v1alpha1.TrafficPolicySpec{
 				HashPolicies: []*v1alpha1.HashPolicy{
 					{
-						SourceIP: &v1alpha1.SourceIP{
-							SourceIP: true,
-						},
+						SourceIP: &v1alpha1.SourceIP{},
 						Terminal: ptr.To(false),
 					},
 				},
@@ -163,9 +161,7 @@ func TestHashPolicyForSpec(t *testing.T) {
 						},
 					},
 					{
-						SourceIP: &v1alpha1.SourceIP{
-							SourceIP: true,
-						},
+						SourceIP: &v1alpha1.SourceIP{},
 					},
 				},
 			},

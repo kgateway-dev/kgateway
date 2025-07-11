@@ -2,13 +2,17 @@
 
 package v1alpha1
 
+import (
+	apiv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+)
+
 // HashPolicyApplyConfiguration represents a declarative configuration of the HashPolicy type for use
 // with apply.
 type HashPolicyApplyConfiguration struct {
-	Header   *HeaderApplyConfiguration   `json:"header,omitempty"`
-	Cookie   *CookieApplyConfiguration   `json:"cookie,omitempty"`
-	SourceIP *SourceIPApplyConfiguration `json:"sourceIP,omitempty"`
-	Terminal *bool                       `json:"terminal,omitempty"`
+	Header   *HeaderApplyConfiguration `json:"header,omitempty"`
+	Cookie   *CookieApplyConfiguration `json:"cookie,omitempty"`
+	SourceIP *apiv1alpha1.SourceIP     `json:"sourceIP,omitempty"`
+	Terminal *bool                     `json:"terminal,omitempty"`
 }
 
 // HashPolicyApplyConfiguration constructs a declarative configuration of the HashPolicy type for use with
@@ -36,8 +40,8 @@ func (b *HashPolicyApplyConfiguration) WithCookie(value *CookieApplyConfiguratio
 // WithSourceIP sets the SourceIP field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the SourceIP field is set to the value of the last call.
-func (b *HashPolicyApplyConfiguration) WithSourceIP(value *SourceIPApplyConfiguration) *HashPolicyApplyConfiguration {
-	b.SourceIP = value
+func (b *HashPolicyApplyConfiguration) WithSourceIP(value apiv1alpha1.SourceIP) *HashPolicyApplyConfiguration {
+	b.SourceIP = &value
 	return b
 }
 

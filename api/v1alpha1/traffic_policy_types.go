@@ -86,6 +86,7 @@ type TrafficPolicySpec struct {
 	// Should be used in conjunction with Load Balancer on the BackendConfigPolicy.
 	// Note: can only be used when targeting routes.
 	// +optional
+	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=16
 	HashPolicies []*HashPolicy `json:"hashPolicies,omitempty"`
 
@@ -389,7 +390,7 @@ type CSRFPolicy struct {
 	AdditionalOrigins []*StringMatcher `json:"additionalOrigins,omitempty"`
 }
 
-// +kubebuilder:validation:AtMostOneOf=header;cookie;sourceIP
+// +kubebuilder:validation:ExactlyOneOf=header;cookie;sourceIP
 type HashPolicy struct {
 	// Header specifies a header's value as a component of the hash key.
 	// +optional
@@ -399,7 +400,7 @@ type HashPolicy struct {
 	// +optional
 	Cookie *Cookie `json:"cookie,omitempty"`
 
-	// SourceIP specifies the request's source IP address as a component of the hash key.
+	// SourceIP specifies whether to use the request's source IP address as a component of the hash key.
 	// +optional
 	SourceIP *SourceIP `json:"sourceIP,omitempty"`
 
@@ -427,16 +428,16 @@ type Cookie struct {
 	// If specified, a cookie with the TTL will be generated if the cookie is not present.
 	// If the TTL is present and zero, the generated cookie will be a session cookie.
 	// +optional
+	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('0s')",message="ttl must be a valid duration string"
 	TTL *metav1.Duration `json:"ttl,omitempty"`
 
 	// Attributes are additional attributes for the cookie.
 	// +optional
+	// +kubebuilder:validation:MinProperties=1
 	Attributes map[string]string `json:"attributes,omitempty"`
 }
 
-type SourceIP struct {
-	SourceIP bool `json:"sourceIP,omitempty"`
-}
+type SourceIP struct{}
 
 type Buffer struct {
 	// MaxRequestSize sets the maximum size in bytes of a message body to buffer.

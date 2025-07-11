@@ -3758,7 +3758,7 @@ func schema_kgateway_v2_api_v1alpha1_HashPolicy(ref common.ReferenceCallback) co
 					},
 					"sourceIP": {
 						SchemaProps: spec.SchemaProps{
-							Description: "SourceIP specifies the request's source IP address as a component of the hash key.",
+							Description: "SourceIP specifies whether to use the request's source IP address as a component of the hash key.",
 							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.SourceIP"),
 						},
 					},
@@ -6164,14 +6164,6 @@ func schema_kgateway_v2_api_v1alpha1_SourceIP(ref common.ReferenceCallback) comm
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"sourceIP": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"boolean"},
-							Format: "",
-						},
-					},
-				},
 			},
 		},
 	}
