@@ -111,16 +111,14 @@ func init() {
 }
 
 func TestServiceEntry(t *testing.T) {
-	t.Run("DR plugin enabled", func(t *testing.T) {
-		st, err := settings.BuildSettings()
-		if err != nil {
-			t.Fatalf("can't get settings %v", err)
-		}
-		st.EnableIstioIntegration = true
+	st, err := settings.BuildSettings()
+	if err != nil {
+		t.Fatalf("can't get settings %v", err)
+	}
+	st.EnableIstioIntegration = true
 
-		// these exercise applying a DR to a ServiceEntry
-		runScenario(t, "testdata/serviceentry/dr", st)
-	})
+	// these exercise applying a DR to a ServiceEntry
+	runScenario(t, "testdata/serviceentry/dr", st)
 }
 
 func TestDestinationRule(t *testing.T) {
