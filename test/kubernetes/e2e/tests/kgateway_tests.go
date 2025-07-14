@@ -3,6 +3,7 @@ package tests
 import (
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/accesslog"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/auto_host_rewrite"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/backendconfigpolicy"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/backends"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/backendtls"
@@ -66,6 +67,7 @@ func KubeGatewaySuiteRunner() e2e.SuiteRunner {
 	kubeGatewaySuiteRunner.Register("BackendConfigPolicy", backendconfigpolicy.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("Metrics", metrics.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("CSRF", csrf.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("AutoHostRewrite", auto_host_rewrite.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("Tracing", tracing.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("DirectResponse", directresponse.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("PathMatching", path_matching.NewTestingSuite)

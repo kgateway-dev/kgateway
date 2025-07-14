@@ -19,6 +19,7 @@ type TrafficPolicySpecApplyConfiguration struct {
 	Cors            *CorsPolicyApplyConfiguration                                 `json:"cors,omitempty"`
 	Csrf            *CSRFPolicyApplyConfiguration                                 `json:"csrf,omitempty"`
 	HashPolicies    []*apiv1alpha1.HashPolicy                                     `json:"hashPolicies,omitempty"`
+	AutoHostRewrite *bool                                                         `json:"autoHostRewrite,omitempty"`
 	Buffer          *BufferApplyConfiguration                                     `json:"buffer,omitempty"`
 }
 
@@ -120,6 +121,14 @@ func (b *TrafficPolicySpecApplyConfiguration) WithHashPolicies(values ...**apiv1
 		}
 		b.HashPolicies = append(b.HashPolicies, *values[i])
 	}
+	return b
+}
+
+// WithAutoHostRewrite sets the AutoHostRewrite field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the AutoHostRewrite field is set to the value of the last call.
+func (b *TrafficPolicySpecApplyConfiguration) WithAutoHostRewrite(value bool) *TrafficPolicySpecApplyConfiguration {
+	b.AutoHostRewrite = &value
 	return b
 }
 

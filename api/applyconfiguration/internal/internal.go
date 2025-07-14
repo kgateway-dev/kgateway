@@ -2253,6 +2253,9 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: ai
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AIPolicy
+    - name: autoHostRewrite
+      type:
+        scalar: boolean
     - name: buffer
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Buffer

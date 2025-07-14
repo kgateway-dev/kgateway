@@ -278,6 +278,8 @@ spec:
                     - CHAT_STREAMING
                     type: string
                 type: object
+              autoHostRewrite:
+                type: boolean
               buffer:
                 properties:
                   maxRequestSize:
@@ -796,6 +798,10 @@ spec:
             x-kubernetes-validations:
             - message: hash policies can only be used when targeting HTTPRoute resources
               rule: '!has(self.hashPolicies) || ((has(self.targetRefs) && self.targetRefs.all(r,
+                r.kind == ''HTTPRoute'')) || (has(self.targetSelectors) && self.targetSelectors.all(r,
+                r.kind == ''HTTPRoute'')))'
+            - message: autoHostRewrite can only be used when targeting HTTPRoute resources
+              rule: '!has(self.autoHostRewrite) || ((has(self.targetRefs) && self.targetRefs.all(r,
                 r.kind == ''HTTPRoute'')) || (has(self.targetSelectors) && self.targetSelectors.all(r,
                 r.kind == ''HTTPRoute'')))'
           status:
