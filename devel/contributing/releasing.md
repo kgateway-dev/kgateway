@@ -109,11 +109,11 @@ Submit a pull request to merge the changes from your fork to the kgateway.dev up
 The following projects consume Kgateway and should be updated or an issue created to reference
 the new release (not required for a patch release):
 
-- Create an issue and submit a pull request to [Inference Gateway][https://github.com/kubernetes-sigs/gateway-api-inference-extension]
+- Create an issue and submit a pull request to [Inference Gateway](https://github.com/kubernetes-sigs/gateway-api-inference-extension)
   to bump the Kgateway version. See [PR 1094](https://github.com/kubernetes-sigs/gateway-api-inference-extension/pull/1094) as an example.
   **Note** The [getting started](https://gateway-api-inference-extension.sigs.k8s.io/guides/) guide should be tested with the new Kgateway
   version before submitting the PR.
 
-- Create an issue and submit a pull request to [llm-d-deployer][https://github.com/llm-d/llm-d-deployer] to bump the Kgateway version.
+- Create an issue and submit a pull request to [llm-d-deployer](https://github.com/llm-d/llm-d-deployer) to bump the Kgateway version.
   See [PR 352](https://github.com/llm-d/llm-d-deployer/issues/352) as an example. **Note** The [quickstart](https://github.com/llm-d/llm-d-deployer/tree/main/quickstart)
   guide should be tested with the new Kgateway version before submitting the PR.
