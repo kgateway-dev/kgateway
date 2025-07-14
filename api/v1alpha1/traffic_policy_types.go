@@ -437,6 +437,7 @@ type Cookie struct {
 	// Attributes are additional attributes for the cookie.
 	// +optional
 	// +kubebuilder:validation:MinProperties=1
+	// +kubebuilder:validation:MaxProperties=16
 	Attributes map[string]string `json:"attributes,omitempty"`
 }
 
