@@ -414,11 +414,13 @@ type HashPolicy struct {
 
 type Header struct {
 	// Name is the name of the header to use as a component of the hash key.
+	// +kubebuilder:validation:MinLength=1
 	Name string `json:"name"`
 }
 
 type Cookie struct {
 	// Name of the cookie.
+	// +kubebuilder:validation:MinLength=1
 	Name string `json:"name"`
 
 	// Path is the name of the path for the cookie.

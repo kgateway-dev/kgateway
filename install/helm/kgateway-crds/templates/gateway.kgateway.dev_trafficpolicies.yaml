@@ -505,6 +505,7 @@ spec:
                           minProperties: 1
                           type: object
                         name:
+                          minLength: 1
                           type: string
                         path:
                           type: string
@@ -519,6 +520,7 @@ spec:
                     header:
                       properties:
                         name:
+                          minLength: 1
                           type: string
                       required:
                       - name
