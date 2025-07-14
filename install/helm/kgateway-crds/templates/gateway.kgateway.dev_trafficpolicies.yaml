@@ -502,7 +502,7 @@ spec:
                         attributes:
                           additionalProperties:
                             type: string
-                          maxProperties: 16
+                          maxProperties: 10
                           minProperties: 1
                           type: object
                         name:
