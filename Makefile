@@ -203,7 +203,7 @@ run-e2e-tests: test
 # Env test
 #----------------------------------------------------------------------------------
 
-ENVTEST_K8S_VERSION = 1.23
+ENVTEST_K8S_VERSION = 1.33.1
 ENVTEST ?= go tool setup-envtest
 
 .PHONY: envtest-path
