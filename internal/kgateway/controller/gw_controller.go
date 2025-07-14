@@ -82,7 +82,7 @@ func (r *gatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (re
 
 	log.Info("reconciling gateway")
 	objs, err := r.deployer.GetObjsToDeploy(ctx, &gw)
-	if client.IgnoreNotFound(err) != nil {
+	if err != nil {
 		return ctrl.Result{}, err
 	}
 	objs = r.deployer.SetNamespaceAndOwner(&gw, objs)
