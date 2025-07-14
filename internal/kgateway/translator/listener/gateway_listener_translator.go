@@ -202,31 +202,9 @@ func (ml *MergedListeners) AppendTcpListener(
 	routeInfos []*query.RouteInfo,
 	reporter reports.ListenerReporter,
 ) {
-	var validRouteInfos []*query.RouteInfo
-
-	for _, routeInfo := range routeInfos {
-		tRoute, ok := routeInfo.Object.(*ir.TcpRouteIR)
-		if !ok {
-			continue
-		}
-
-		if len(tRoute.ParentRefs) == 0 {
-			logger.Warn("no parent references found for TCPRoute", "resource_ref", tRoute.ResourceName())
-			continue
-		}
-
-		validRouteInfos = append(validRouteInfos, routeInfo)
-	}
-
-	// If no valid routes are found, do not create a listener
-	if len(validRouteInfos) == 0 {
-		logger.Error("no valid routes found for listener", "listener", listener.Name)
-		return
-	}
-
 	parent := tcpFilterChainParent{
 		gatewayListenerName: query.GenerateRouteKey(listener.Parent, string(listener.Name)),
-		routesWithHosts:     validRouteInfos,
+		routesWithHosts:     routeInfos,
 	}
 
 	fc := tcpFilterChain{
@@ -260,31 +238,9 @@ func (ml *MergedListeners) AppendTlsListener(
 	routeInfos []*query.RouteInfo,
 	reporter reports.ListenerReporter,
 ) {
-	var validRouteInfos []*query.RouteInfo
-
-	for _, routeInfo := range routeInfos {
-		tRoute, ok := routeInfo.Object.(*ir.TlsRouteIR)
-		if !ok {
-			continue
-		}
-
-		if len(tRoute.ParentRefs) == 0 {
-			logger.Warn("no parent references found for TLSRoute", "resource_ref", tRoute.ResourceName())
-			continue
-		}
-
-		validRouteInfos = append(validRouteInfos, routeInfo)
-	}
-
-	// If no valid routes are found, do not create a listener
-	if len(validRouteInfos) == 0 {
-		logger.Error("no valid routes found for listener", "listener", listener.Name)
-		return
-	}
-
 	parent := tcpFilterChainParent{
 		gatewayListenerName: query.GenerateRouteKey(listener.Parent, string(listener.Name)),
-		routesWithHosts:     validRouteInfos,
+		routesWithHosts:     routeInfos,
 	}
 
 	fc := tcpFilterChain{
