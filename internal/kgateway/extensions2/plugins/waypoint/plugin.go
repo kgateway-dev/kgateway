@@ -102,31 +102,9 @@ func (t *PerClientProcessor) processBackend(kctx krt.HandlerContext, ctx context
 	}
 
 	// Only handle backends with the istio.io/ingress-use-waypoint label
-	if val, ok := in.Obj.GetLabels()[wellknown.IngressUseWaypointLabel]; !ok || val != "true" {
-		// Service doesn't have the label, check the namespace of its aliases
-		// Use a set to avoid checking the same namespace multiple times
-		seenNs := sets.New[string]()
-		foundLabeledNamespace := false
-
-		for _, alias := range in.Aliases {
-			ns := alias.GetNamespace()
-			if ns == "" || seenNs.InsertContains(ns) {
-				continue
-			}
-
-			nsMeta := krt.FetchOne(kctx, t.commonCols.Namespaces, krt.FilterKey(ns))
-			if nsMeta != nil {
-				if val, ok := nsMeta.Labels[wellknown.IngressUseWaypointLabel]; ok && val == "true" {
-					foundLabeledNamespace = true
-					break // Found a namespace with the label, no need to check more
-				}
-			}
-		}
-
-		if !foundLabeledNamespace {
-			// No namespace has the label, skip processing
-			return
-		}
+	if !hasIngressUseWaypointLabel(kctx, t.commonCols, in) {
+		// Neither the backend nor any relevant namespace/alias has the label, skip processing
+		return
 	}
 
 	// Verify that the service is indeed attached to a waypoint by querying the reverse
@@ -184,4 +162,41 @@ func claEndpoint(address string, port uint32) *envoy_config_endpoint_v3.Locality
 			},
 		},
 	}
+}
+
+// hasIngressUseWaypointLabel checks if the backend or any relevant namespace/alias has the ingress-use-waypoint label.
+func hasIngressUseWaypointLabel(kctx krt.HandlerContext, commonCols *common.CommonCollections, in ir.BackendObjectIR) bool {
+	// Check the backend's own label first
+	if val, ok := in.Obj.GetLabels()[wellknown.IngressUseWaypointLabel]; ok && val == "true" {
+		return true
+	}
+
+	// Then, check the namespace of the backend object itself
+	backendNs := in.Obj.GetNamespace()
+	if backendNs != "" {
+		nsMeta := krt.FetchOne(kctx, commonCols.Namespaces, krt.FilterKey(backendNs))
+		if nsMeta != nil {
+			if val, ok := nsMeta.Labels[wellknown.IngressUseWaypointLabel]; ok && val == "true" {
+				return true
+			}
+		}
+	}
+
+	// If not found in backend's own namespace, check aliases
+	seenNs := sets.New[string]()
+	for _, alias := range in.Aliases {
+		ns := alias.GetNamespace()
+		if ns == "" || seenNs.InsertContains(ns) {
+			continue
+		}
+		nsMeta := krt.FetchOne(kctx, commonCols.Namespaces, krt.FilterKey(ns))
+		if nsMeta != nil {
+			if val, ok := nsMeta.Labels[wellknown.IngressUseWaypointLabel]; ok && val == "true" {
+				return true
+			}
+		}
+	}
+
+	// If we get here, we didn't find any namespace with the ingress-use-waypoint label
+	return false
 }
