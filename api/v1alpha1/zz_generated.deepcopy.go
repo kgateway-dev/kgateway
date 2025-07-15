@@ -4253,6 +4253,11 @@ func (in *TrafficPolicySpec) DeepCopyInto(out *TrafficPolicySpec) {
 		*out = new(CSRFPolicy)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.AutoHostRewrite != nil {
+		in, out := &in.AutoHostRewrite, &out.AutoHostRewrite
+		*out = new(bool)
+		**out = **in
+	}
 	if in.Buffer != nil {
 		in, out := &in.Buffer, &out.Buffer
 		*out = new(Buffer)

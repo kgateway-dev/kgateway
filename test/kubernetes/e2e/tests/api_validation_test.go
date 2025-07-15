@@ -161,6 +161,22 @@ spec:
 			wantError: "targetRefs may only reference Gateway, HTTPRoute, or XListenerSet resources",
 		},
 		{
+			name: "TrafficPolicy: policy with autoHostRewrite can only target HTTPRoute",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: traffic-policy-ahr-invalid-target
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: test-gateway
+  autoHostRewrite: true
+`,
+			wantError: "autoHostRewrite can only be used when targeting HTTPRoute resources",
+		},
+		{
 			name: "HTTPListenerPolicy: valid target references",
 			input: `---
 apiVersion: gateway.kgateway.dev/v1alpha1

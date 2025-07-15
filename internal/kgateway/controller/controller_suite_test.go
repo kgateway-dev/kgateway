@@ -218,15 +218,18 @@ func createManager(
 		cancel()
 		return nil, err
 	}
-	mgr.GetClient().Create(ctx, &v1alpha1.GatewayParameters{
+	if err := mgr.GetClient().Create(ctx, &v1alpha1.GatewayParameters{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      selfManagedGatewayClassName,
-			Namespace: "kgateway-system",
+			Namespace: "default",
 		},
 		Spec: v1alpha1.GatewayParametersSpec{
 			SelfManaged: &v1alpha1.SelfManagedGateway{},
 		},
-	})
+	}); client.IgnoreAlreadyExists(err) != nil {
+		cancel()
+		return nil, err
+	}
 
 	// Use the default & alt GCs when no class configs are provided.
 	if classConfigs == nil {
@@ -240,9 +243,10 @@ func createManager(
 		classConfigs[selfManagedGatewayClassName] = &controller.ClassInfo{
 			Description: "self managed gw",
 			ParametersRef: &apiv1.ParametersReference{
-				Group: apiv1.Group(wellknown.GatewayParametersGVK.Group),
-				Kind:  apiv1.Kind(wellknown.GatewayParametersGVK.Kind),
-				Name:  selfManagedGatewayClassName,
+				Group:     apiv1.Group(wellknown.GatewayParametersGVK.Group),
+				Kind:      apiv1.Kind(wellknown.GatewayParametersGVK.Kind),
+				Name:      selfManagedGatewayClassName,
+				Namespace: ptr.To(apiv1.Namespace("default")),
 			},
 		}
 	}

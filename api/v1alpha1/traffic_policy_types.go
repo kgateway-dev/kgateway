@@ -36,6 +36,7 @@ type TrafficPolicyList struct {
 }
 
 // TrafficPolicySpec defines the desired state of a traffic policy.
+// +kubebuilder:validation:XValidation:rule="!has(self.autoHostRewrite) || ((has(self.targetRefs) && self.targetRefs.all(r, r.kind == 'HTTPRoute')) || (has(self.targetSelectors) && self.targetSelectors.all(r, r.kind == 'HTTPRoute')))",message="autoHostRewrite can only be used when targeting HTTPRoute resources"
 type TrafficPolicySpec struct {
 	// TargetRefs specifies the target resources by reference to attach the policy to.
 	// +optional
@@ -80,6 +81,13 @@ type TrafficPolicySpec struct {
 	// Csrf specifies the Cross-Site Request Forgery (CSRF) policy for this traffic policy.
 	// +optional
 	Csrf *CSRFPolicy `json:"csrf,omitempty"`
+
+	// AutoHostRewrite rewrites the Host header to the DNS name of the selected upstream.
+	// NOTE: This field is only honoured for HTTPRoute targets.
+	// NOTE: If `autoHostRewrite` is set on a route that also has a [URLRewrite filter](https://gateway-api.sigs.k8s.io/reference/spec/#httpurlrewritefilter)
+	// configured to override the `hostname`, the `hostname` value will be used and `autoHostRewrite` will be ignored.
+	// +optional
+	AutoHostRewrite *bool `json:"autoHostRewrite,omitempty"`
 
 	// Buffer can be used to set the maximum request size that will be buffered.
 	// Requests exceeding this size will return a 413 response.

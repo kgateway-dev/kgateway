@@ -92,7 +92,7 @@ Commercial support is available at
 
 	HttpbinPod = &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "httpbin",
+			Name:      "httpbin", // FIXME: this is incorrect, pod name is ~generated
 			Namespace: "default",
 		},
 	}
