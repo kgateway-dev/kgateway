@@ -719,6 +719,14 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 			Name:      "example-gateway",
 		},
 	}),
+	Entry("HTTPListenerPolicy with healthCheck", translatorTestCase{
+		inputFile:  "httplistenerpolicy/route-and-pol.yaml",
+		outputFile: "httplistenerpolicy/route-and-pol.yaml",
+		gwNN: types.NamespacedName{
+			Namespace: "default",
+			Name:      "example-gateway",
+		},
+	}),
 	Entry("Service with appProtocol=kubernetes.io/h2c", translatorTestCase{
 		inputFile:  "backend-protocol/svc-h2c.yaml",
 		outputFile: "backend-protocol/svc-h2c.yaml",

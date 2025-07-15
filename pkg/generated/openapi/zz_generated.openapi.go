@@ -2873,10 +2873,9 @@ func schema_kgateway_v2_api_v1alpha1_EnvoyHealthCheck(ref common.ReferenceCallba
 				Properties: map[string]spec.Schema{
 					"path": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Path defines the exact path that will be matched for health check requests.",
-							Default:     "",
-							Type:        []string{"string"},
-							Format:      "",
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
 						},
 					},
 				},

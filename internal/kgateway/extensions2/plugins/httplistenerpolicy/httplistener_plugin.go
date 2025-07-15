@@ -127,6 +127,11 @@ func (d *httpListenerPolicy) Equals(in any) bool {
 		return false
 	}
 
+	// Check healthCheckPolicy
+	if !proto.Equal(d.healthCheckPolicy, d2.healthCheckPolicy) {
+		return false
+	}
+
 	return true
 }
 
@@ -285,6 +290,8 @@ func (p *httpListenerPolicyPluginGwPass) HttpFilters(ctx context.Context, fc ir.
 		return nil, nil
 	}
 
+	// Add the health check filter after the authz filter but before the rate limit filter
+	// This allows the health check filter to be secured by authz if needed, but ensures it won't be rate limited
 	stagedFilter, err := plugins.NewStagedFilter(
 		"envoy.filters.http.health_check",
 		p.healthCheckPolicy,
