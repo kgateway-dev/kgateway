@@ -1,0 +1,72 @@
+Clusters:
+- connectTimeout: 5s
+  dnsLookupFamily: V4_PREFERRED
+  loadAssignment:
+    clusterName: backend_default_cnn_0
+    endpoints:
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: edition.cnn.com
+              portValue: 443
+          healthCheckConfig:
+            hostname: edition.cnn.com
+          hostname: edition.cnn.com
+  metadata: {}
+  name: backend_default_cnn_0
+  transportSocket:
+    name: envoy.transport_sockets.tls
+    typedConfig:
+      '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+      commonTlsContext:
+        tlsParams: {}
+  type: STRICT_DNS
+- connectTimeout: 5s
+  metadata: {}
+  name: test-backend-plugin_default_example-svc_80
+Listeners:
+- address:
+    socketAddress:
+      address: '::'
+      ipv4Compat: true
+      portValue: 8080
+  filterChains:
+  - filters:
+    - name: envoy.filters.network.http_connection_manager
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+        httpFilters:
+        - name: envoy.filters.http.router
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+        mergeSlashes: true
+        normalizePath: true
+        rds:
+          configSource:
+            ads: {}
+            resourceApiVersion: V3
+          routeConfigName: listener~8080
+        statPrefix: http
+        useRemoteAddress: true
+    name: listener~8080
+  name: listener~8080
+Routes:
+- ignorePortInHostMatching: true
+  name: listener~8080
+  virtualHosts:
+  - domains:
+    - '*'
+    name: listener~8080~*
+    routes:
+    - match:
+        prefix: /
+      name: listener~8080~*-route-0-httproute-route-cnn-default-0-0-matcher-0
+      route:
+        cluster: backend_default_cnn_0
+        clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+        hostRewriteLiteral: edition.cnn.com
+      typedPerFilterConfig:
+        ai.extproc.kgateway.io:
+          '@type': type.googleapis.com/envoy.extensions.filters.http.ext_proc.v3.ExtProcPerRoute
+          disabled: true

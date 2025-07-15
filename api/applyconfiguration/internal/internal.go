@@ -2105,6 +2105,9 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: tlsFiles
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.TLSFiles
+    - name: tlsOrigination
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.TLSOrigination
     - name: verifySubjectAltName
       type:
         list:
@@ -2123,6 +2126,18 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: tlsKey
       type:
         scalar: string
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.TLSOrigination
+  map:
+    elementType:
+      scalar: untyped
+      list:
+        elementType:
+          namedType: __untyped_atomic_
+        elementRelationship: atomic
+      map:
+        elementType:
+          namedType: __untyped_deduced_
+        elementRelationship: separable
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.TokenBucket
   map:
     fields:

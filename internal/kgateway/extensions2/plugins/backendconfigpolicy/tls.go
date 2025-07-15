@@ -50,6 +50,16 @@ func translateTLSConfig(
 		certChain, privateKey, rootCA string
 		inlineDataSource              bool
 	)
+
+	// for TLS origination without certs, just need empty tls context
+	if tlsConfig.TLSOrigination != nil && (tlsConfig.SecretRef == nil && tlsConfig.TLSFiles == nil) {
+		return &envoyauth.UpstreamTlsContext{
+			CommonTlsContext: &envoyauth.CommonTlsContext{
+				TlsParams: &envoyauth.TlsParameters{},
+			},
+		}, nil
+	}
+
 	if tlsConfig.SecretRef != nil {
 		secret, err := secretGetter.GetSecret(tlsConfig.SecretRef.Name, namespace)
 		if err != nil {

@@ -376,16 +376,18 @@ spec:
                     - message: At least one of tlsCertificate, tlsKey, or rootCA must
                         be set in TLSFiles
                       rule: has(self.tlsCertificate) || has(self.tlsKey) || has(self.rootCA)
+                  tlsOrigination:
+                    type: object
                   verifySubjectAltName:
                     items:
                       type: string
                     type: array
                 type: object
                 x-kubernetes-validations:
-                - message: exactly one of the fields in [secretRef tlsFiles] must
-                    be set
+                - message: at most one of the fields in [secretRef tlsFiles] may be
+                    set
                   rule: '[has(self.secretRef),has(self.tlsFiles)].filter(x,x==true).size()
-                    == 1'
+                    <= 1'
             type: object
             x-kubernetes-validations:
             - message: at most one of the fields in [http1ProtocolOptions http2ProtocolOptions]

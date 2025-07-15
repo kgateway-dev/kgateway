@@ -164,6 +164,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.TCPKeepalive":                              schema_kgateway_v2_api_v1alpha1_TCPKeepalive(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.TLS":                                       schema_kgateway_v2_api_v1alpha1_TLS(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.TLSFiles":                                  schema_kgateway_v2_api_v1alpha1_TLSFiles(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.TLSOrigination":                            schema_kgateway_v2_api_v1alpha1_TLSOrigination(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.TokenBucket":                               schema_kgateway_v2_api_v1alpha1_TokenBucket(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Tracing":                                   schema_kgateway_v2_api_v1alpha1_Tracing(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.TracingProvider":                           schema_kgateway_v2_api_v1alpha1_TracingProvider(ref),
@@ -6383,6 +6384,12 @@ func schema_kgateway_v2_api_v1alpha1_TLS(ref common.ReferenceCallback) common.Op
 							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.TLSFiles"),
 						},
 					},
+					"tlsOrigination": {
+						SchemaProps: spec.SchemaProps{
+							Description: "TLSOrigination specifies whether to use TLS origination for the backend.",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.TLSOrigination"),
+						},
+					},
 					"sni": {
 						SchemaProps: spec.SchemaProps{
 							Description: "The SNI domains that should be considered for TLS connection",
@@ -6444,7 +6451,7 @@ func schema_kgateway_v2_api_v1alpha1_TLS(ref common.ReferenceCallback) common.Op
 			},
 		},
 		Dependencies: []string{
-			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Parameters", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.TLSFiles", "k8s.io/api/core/v1.LocalObjectReference"},
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Parameters", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.TLSFiles", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.TLSOrigination", "k8s.io/api/core/v1.LocalObjectReference"},
 	}
 }
 
@@ -6473,6 +6480,16 @@ func schema_kgateway_v2_api_v1alpha1_TLSFiles(ref common.ReferenceCallback) comm
 						},
 					},
 				},
+			},
+		},
+	}
+}
+
+func schema_kgateway_v2_api_v1alpha1_TLSOrigination(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
 			},
 		},
 	}
