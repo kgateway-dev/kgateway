@@ -30,6 +30,7 @@ package logging
 import (
 	"fmt"
 	"log/slog"
+	"os"
 	"sync"
 )
 
@@ -37,12 +38,27 @@ const (
 	DefaultComponent = "default"
 )
 
-// componentLeveler maps component names to their respective slog.LevelVar instance
-var componentLeveler sync.Map
+var (
+	componentLeveler sync.Map
+	once             sync.Once
+)
 
-func init() {
-	defaultLogger := New(DefaultComponent)
-	slog.SetDefault(defaultLogger)
+// InitLogger configures the default logger globally.
+// If devMode is true, logs are in text format and level is set to trace/debug.
+func InitLogger(devMode bool) {
+	once.Do(func() {
+		opts := Options{}
+		if devMode {
+			traceLevel := slog.LevelDebug // or slog.Level(-8) if using custom trace level
+			opts = Options{
+				Level:  &traceLevel,
+				Format: TextFormat,
+				Writer: os.Stderr,
+			}
+		}
+		defaultLogger := NewWithOptions(DefaultComponent, opts)
+		slog.SetDefault(defaultLogger)
+	})
 }
 
 // New returns a new slog.Logger instance for the given component with default Options.
@@ -51,7 +67,7 @@ func New(component string) *slog.Logger {
 	return NewWithOptions(component, Options{})
 }
 
-// NewWithOptions returns a new slog.Logger instance for the given component with the provided Options
+// NewWithOptions returns a new slog.Logger instance for the given component with the provided Options.
 // If the component is empty, it returns the default logger.
 func NewWithOptions(component string, opts Options) *slog.Logger {
 	if component == "" {
@@ -78,6 +94,7 @@ func NewWithOptions(component string, opts Options) *slog.Logger {
 	attrs := []slog.Attr{{Key: "component", Value: slog.StringValue(component)}}
 
 	componentLeveler.Store(component, level)
+
 	var slogHandler slog.Handler
 	switch opts.Format {
 	case TextFormat:
@@ -109,3 +126,4 @@ func GetComponentLevels() map[string]slog.Level {
 	})
 	return levels
 }
+
