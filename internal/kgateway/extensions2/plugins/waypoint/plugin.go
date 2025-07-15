@@ -8,6 +8,7 @@ import (
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	istioannot "istio.io/api/annotation"
 	"istio.io/istio/pkg/kube/krt"
+	"istio.io/istio/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
@@ -102,13 +103,28 @@ func (t *PerClientProcessor) processBackend(kctx krt.HandlerContext, ctx context
 
 	// Only handle backends with the istio.io/ingress-use-waypoint label
 	if val, ok := in.Obj.GetLabels()[wellknown.IngressUseWaypointLabel]; !ok || val != "true" {
-		// Also check the service'snamespace for the label
-		nsMeta := krt.FetchOne(kctx, t.commonCols.Namespaces, krt.FilterKey(in.Obj.GetNamespace()))
-		if nsMeta == nil {
-			return
+		// Service doesn't have the label, check the namespace of its aliases
+		// Use a set to avoid checking the same namespace multiple times
+		seenNs := sets.New[string]()
+		foundLabeledNamespace := false
+
+		for _, alias := range in.Aliases {
+			ns := alias.GetNamespace()
+			if ns == "" || seenNs.InsertContains(ns) {
+				continue
+			}
+
+			nsMeta := krt.FetchOne(kctx, t.commonCols.Namespaces, krt.FilterKey(ns))
+			if nsMeta != nil {
+				if val, ok := nsMeta.Labels[wellknown.IngressUseWaypointLabel]; ok && val == "true" {
+					foundLabeledNamespace = true
+					break // Found a namespace with the label, no need to check more
+				}
+			}
 		}
-		if val, ok := nsMeta.Labels[wellknown.IngressUseWaypointLabel]; !ok || val != "true" {
-			// Both the service and the namespace do not have the label, no op
+
+		if !foundLabeledNamespace {
+			// No namespace has the label, skip processing
 			return
 		}
 	}
