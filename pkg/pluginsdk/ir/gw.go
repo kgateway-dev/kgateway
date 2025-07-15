@@ -182,9 +182,6 @@ func (a *AttachedPolicies) AppendWithPriority(HierarchicalPriority int, l ...Att
 	}
 	for _, l := range l {
 		for k, v := range l.Policies {
-			if a.Policies == nil {
-				a.Policies = make(map[schema.GroupKind][]PolicyAtt)
-			}
 			for j := range v {
 				v[j].HierarchicalPriority = HierarchicalPriority
 			}
@@ -201,9 +198,6 @@ func (a *AttachedPolicies) Prepend(hierarchicalPriority int, l ...AttachedPolici
 	// iterate in the reverse order so that the input order in l is preserved at the end
 	for i := len(l) - 1; i >= 0; i-- {
 		for k, v := range l[i].Policies {
-			if a.Policies == nil {
-				a.Policies = make(map[schema.GroupKind][]PolicyAtt)
-			}
 			for j := range v {
 				v[j].HierarchicalPriority = hierarchicalPriority
 			}

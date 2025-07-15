@@ -38,6 +38,13 @@ import (
 const statefulSessionFilterName = "envoy.filters.http.stateful_session"
 
 type applyToRoute interface {
+	// apply may be invoked multiple times on the route, once for each policy.
+	// For delegated routes, policies attached to the parent route are inherited
+	// and may override the current policy on the output route if MergeOptions allows it,
+	// and hence the apply implementation must use policy.IsSettable(field, mergeOpts)
+	// to check if the field on the output route can be set before being set.
+	// Currently, the apply method is invoked in order of priority from highest(child route policies)
+	// to lowest(parent route policies).
 	apply(outputRoute *envoy_config_route_v3.Route, mergeOpts policy.MergeOptions)
 }
 
@@ -159,8 +166,6 @@ func (r ruleIr) apply(
 	r.applyTimeouts(outputRoute, r.retry != nil, mergeOpts)
 	r.applyRetry(outputRoute, mergeOpts)
 
-	// policy.IsSettable check is necessary to allow parent policies (parent HTTPRoute with a built-in filter)
-	// to conditionally override the rule's policy depending on the MergeOptions
 	if r.sessionPersistence != nil && policy.IsSettable(outputRoute.GetTypedPerFilterConfig()[statefulSessionFilterName], mergeOpts) {
 		if outputRoute.GetTypedPerFilterConfig() == nil {
 			outputRoute.TypedPerFilterConfig = map[string]*anypb.Any{}
@@ -201,8 +206,6 @@ func (r ruleIr) applyTimeouts(
 	mergeOpts policy.MergeOptions,
 ) {
 	timeouts := r.timeouts
-	// policy.IsSettable check is necessary to allow parent policies (parent HTTPRoute with a built-in filter)
-	// to conditionally override the route's policy depending on the MergeOptions
 	if timeouts == nil || timeouts.backendRequestTimeout == nil && timeouts.requestTimeout == nil ||
 		!policy.IsSettable(route.GetRoute().GetTimeout(), mergeOpts) {
 		return
@@ -290,8 +293,6 @@ func (r ruleIr) applyRetry(
 	route *envoy_config_route_v3.Route,
 	mergeOpts policy.MergeOptions,
 ) {
-	// policy.IsSettable check is necessary to allow parent policies (parent HTTPRoute with a built-in filter)
-	// to conditionally override the route's policy depending on the MergeOptions
 	if r.retry == nil || !policy.IsSettable(route.GetRoute().GetRetryPolicy(), mergeOpts) {
 		return
 	}
@@ -441,8 +442,6 @@ func (m *mirrorIr) apply(
 	outputRoute *envoy_config_route_v3.Route,
 	mergeOpts policy.MergeOptions,
 ) {
-	// policy.IsSettable check is necessary to allow parent policies (parent HTTPRoute with a built-in filter)
-	// to conditionally override the route's policy depending on the MergeOptions
 	if outputRoute == nil || outputRoute.GetRoute() == nil ||
 		!policy.IsSettable(outputRoute.GetRoute().GetRequestMirrorPolicies(), mergeOpts) {
 		return
@@ -580,7 +579,12 @@ func (p *builtinPlugin) Name() string {
 	return "builtin"
 }
 
-// called one or more times per route rule
+// ApplyForRoute may be invoked multiple times on the route, once for each policy since
+// the builtin plugin does not implement MergePolicies.
+// For delegated routes, policies attached to the parent route are inherited
+// and may override the current policy on the output route if pCtx.InheritedPolicyPriority allows it
+// Currently, ApplyForRoute is invoked per policy in order of priority from highest(child route policies)
+// to lowest(parent route policies).
 func (p *builtinPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.RouteContext, outputRoute *envoy_config_route_v3.Route) error {
 	pol, ok := pCtx.Policy.(*builtinPlugin)
 	if !ok {
@@ -716,8 +720,6 @@ func (r *requestRedirectIr) apply(
 	outputRoute *envoy_config_route_v3.Route,
 	mergeOpts policy.MergeOptions,
 ) {
-	// policy.IsSettable check is necessary to allow parent policies (parent HTTPRoute with a built-in filter)
-	// to conditionally override the route's policy depending on the MergeOptions
 	if outputRoute == nil || !policy.IsSettable(outputRoute.GetRedirect(), mergeOpts) {
 		return
 	}
@@ -756,8 +758,6 @@ func (u *urlRewriteIr) apply(
 		return
 	}
 
-	// policy.IsSettable check is necessary to allow parent policies (parent HTTPRoute with a built-in filter)
-	// to conditionally override the route's policy depending on the MergeOptions
 	if u.HostRewrite != nil && policy.IsSettable(outputRoute.GetRoute().GetHostRewriteSpecifier(), mergeOpts) {
 		outputRoute.GetRoute().HostRewriteSpecifier = u.HostRewrite
 	}
@@ -829,8 +829,6 @@ func (c *corsIr) apply(
 	outputRoute *envoy_config_route_v3.Route,
 	mergeOpts policy.MergeOptions,
 ) {
-	// policy.IsSettable check is necessary to allow parent policies (parent HTTPRoute with a built-in filter)
-	// to conditionally override the route's policy depending on the MergeOptions
 	if c.Cors == nil || !policy.IsSettable(outputRoute.GetTypedPerFilterConfig()[envoy_wellknown.CORS], mergeOpts) {
 		return
 	}

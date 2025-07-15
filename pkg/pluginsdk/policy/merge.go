@@ -57,8 +57,10 @@ func IsMergeable(p1, p2 any, opts MergeOptions) bool {
 	}
 }
 
+// IsSettable returns a boolean indicating whether p1 can be set for the given merge options
 func IsSettable(p1 any, opts MergeOptions) bool {
-	return IsMergeable(p1, 1, opts)
+	// Pass non-empty string value to treat p2 as a non-nil value while short-circuiting to IsMergeable
+	return IsMergeable(p1, "not-nil", opts)
 }
 
 func GetMergeStrategy(
