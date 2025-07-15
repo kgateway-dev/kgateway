@@ -278,6 +278,8 @@ spec:
                     - CHAT_STREAMING
                     type: string
                 type: object
+              autoHostRewrite:
+                type: boolean
               buffer:
                 properties:
                   maxRequestSize:
@@ -748,6 +750,11 @@ spec:
                     type: object
                 type: object
             type: object
+            x-kubernetes-validations:
+            - message: autoHostRewrite can only be used when targeting HTTPRoute resources
+              rule: '!has(self.autoHostRewrite) || ((has(self.targetRefs) && self.targetRefs.all(r,
+                r.kind == ''HTTPRoute'')) || (has(self.targetSelectors) && self.targetSelectors.all(r,
+                r.kind == ''HTTPRoute'')))'
           status:
             properties:
               ancestors:

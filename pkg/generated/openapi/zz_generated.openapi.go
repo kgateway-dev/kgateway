@@ -6815,6 +6815,13 @@ func schema_kgateway_v2_api_v1alpha1_TrafficPolicySpec(ref common.ReferenceCallb
 							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CSRFPolicy"),
 						},
 					},
+					"autoHostRewrite": {
+						SchemaProps: spec.SchemaProps{
+							Description: "AutoHostRewrite rewrites the Host header to the DNS name of the selected upstream. NOTE: This field is only honoured for HTTPRoute targets. NOTE: If `autoHostRewrite` is set on a route that also has a [URLRewrite filter](https://gateway-api.sigs.k8s.io/reference/spec/#httpurlrewritefilter) configured to override the `hostname`, the `hostname` value will be used and `autoHostRewrite` will be ignored.",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
 					"buffer": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Buffer can be used to set the maximum request size that will be buffered. Requests exceeding this size will return a 413 response.",

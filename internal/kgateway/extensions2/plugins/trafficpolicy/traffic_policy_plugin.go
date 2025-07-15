@@ -87,6 +87,7 @@ type trafficPolicySpecIr struct {
 	rateLimit                  *GlobalRateLimitIR
 	cors                       *CorsIR
 	csrf                       *CsrfIR
+	autoHostRewrite            *wrapperspb.BoolValue
 	buffer                     *BufferIR
 }
 
@@ -150,6 +151,10 @@ func (d *TrafficPolicy) Equals(in any) bool {
 	}
 
 	if !d.spec.csrf.Equals(d2.spec.csrf) {
+		return false
+	}
+
+	if !proto.Equal(d.spec.autoHostRewrite, d2.spec.autoHostRewrite) {
 		return false
 	}
 
@@ -258,7 +263,11 @@ func (p *TrafficPolicy) Name() string {
 	return "trafficpolicies"
 }
 
-func (p *trafficPolicyPluginGwPass) ApplyRouteConfigPlugin(ctx context.Context, pCtx *ir.RouteConfigContext, out *routev3.RouteConfiguration) {
+func (p *trafficPolicyPluginGwPass) ApplyRouteConfigPlugin(
+	ctx context.Context,
+	pCtx *ir.RouteConfigContext,
+	out *routev3.RouteConfiguration,
+) {
 	policy, ok := pCtx.Policy.(*TrafficPolicy)
 	if !ok {
 		return
@@ -267,7 +276,11 @@ func (p *trafficPolicyPluginGwPass) ApplyRouteConfigPlugin(ctx context.Context, 
 	p.handlePolicies(pCtx.FilterChainName, &pCtx.TypedFilterConfig, policy.spec)
 }
 
-func (p *trafficPolicyPluginGwPass) ApplyVhostPlugin(ctx context.Context, pCtx *ir.VirtualHostContext, out *routev3.VirtualHost) {
+func (p *trafficPolicyPluginGwPass) ApplyVhostPlugin(
+	ctx context.Context,
+	pCtx *ir.VirtualHostContext,
+	out *routev3.VirtualHost,
+) {
 	policy, ok := pCtx.Policy.(*TrafficPolicy)
 	if !ok {
 		return
@@ -361,6 +374,15 @@ func (p *trafficPolicyPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.
 			p.processAITrafficPolicy(&pCtx.TypedFilterConfig, policy.spec.AI)
 		}
 	}
+
+	if policy.spec.autoHostRewrite != nil && policy.spec.autoHostRewrite.GetValue() {
+		if ra := outputRoute.GetRoute(); ra != nil {
+			ra.HostRewriteSpecifier = &routev3.RouteAction_AutoHostRewrite{
+				AutoHostRewrite: policy.spec.autoHostRewrite,
+			}
+		}
+	}
+
 	p.handlePolicies(pCtx.FilterChainName, &pCtx.TypedFilterConfig, policy.spec)
 
 	return nil
@@ -686,6 +708,10 @@ func MergeTrafficPolicies(
 	if policy.IsMergeable(p1.spec.csrf, p2.spec.csrf, mergeOpts) {
 		p1.spec.csrf = p2.spec.csrf
 		mergeOrigins["csrf"] = p2Ref
+	}
+	if policy.IsMergeable(p1.spec.autoHostRewrite, p2.spec.autoHostRewrite, mergeOpts) {
+		p1.spec.autoHostRewrite = p2.spec.autoHostRewrite
+		mergeOrigins["autoHostRewrite"] = p2Ref
 	}
 
 	// Handle buffer policy merging
