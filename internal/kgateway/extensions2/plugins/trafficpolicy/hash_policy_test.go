@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	routev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/protobuf/types/known/durationpb"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -17,7 +17,7 @@ func TestHashPolicyForSpec(t *testing.T) {
 	tests := []struct {
 		name     string
 		spec     v1alpha1.TrafficPolicySpec
-		expected []*routev3.RouteAction_HashPolicy
+		expected []*envoyroutev3.RouteAction_HashPolicy
 	}{
 		{
 			name: "nil hash policies",
@@ -45,11 +45,11 @@ func TestHashPolicyForSpec(t *testing.T) {
 					},
 				},
 			},
-			expected: []*routev3.RouteAction_HashPolicy{
+			expected: []*envoyroutev3.RouteAction_HashPolicy{
 				{
 					Terminal: true,
-					PolicySpecifier: &routev3.RouteAction_HashPolicy_Header_{
-						Header: &routev3.RouteAction_HashPolicy_Header{
+					PolicySpecifier: &envoyroutev3.RouteAction_HashPolicy_Header_{
+						Header: &envoyroutev3.RouteAction_HashPolicy_Header{
 							HeaderName: "x-user-id",
 						},
 					},
@@ -67,11 +67,11 @@ func TestHashPolicyForSpec(t *testing.T) {
 					},
 				},
 			},
-			expected: []*routev3.RouteAction_HashPolicy{
+			expected: []*envoyroutev3.RouteAction_HashPolicy{
 				{
 					Terminal: false,
-					PolicySpecifier: &routev3.RouteAction_HashPolicy_Cookie_{
-						Cookie: &routev3.RouteAction_HashPolicy_Cookie{
+					PolicySpecifier: &envoyroutev3.RouteAction_HashPolicy_Cookie_{
+						Cookie: &envoyroutev3.RouteAction_HashPolicy_Cookie{
 							Name: "session-id",
 						},
 					},
@@ -98,15 +98,15 @@ func TestHashPolicyForSpec(t *testing.T) {
 					},
 				},
 			},
-			expected: []*routev3.RouteAction_HashPolicy{
+			expected: []*envoyroutev3.RouteAction_HashPolicy{
 				{
 					Terminal: true,
-					PolicySpecifier: &routev3.RouteAction_HashPolicy_Cookie_{
-						Cookie: &routev3.RouteAction_HashPolicy_Cookie{
+					PolicySpecifier: &envoyroutev3.RouteAction_HashPolicy_Cookie_{
+						Cookie: &envoyroutev3.RouteAction_HashPolicy_Cookie{
 							Name: "session-id",
 							Ttl:  durationpb.New(30 * time.Minute),
 							Path: "/api",
-							Attributes: []*routev3.RouteAction_HashPolicy_CookieAttribute{
+							Attributes: []*envoyroutev3.RouteAction_HashPolicy_CookieAttribute{
 								{
 									Name:  "domain",
 									Value: "example.com",
@@ -131,11 +131,11 @@ func TestHashPolicyForSpec(t *testing.T) {
 					},
 				},
 			},
-			expected: []*routev3.RouteAction_HashPolicy{
+			expected: []*envoyroutev3.RouteAction_HashPolicy{
 				{
 					Terminal: false,
-					PolicySpecifier: &routev3.RouteAction_HashPolicy_ConnectionProperties_{
-						ConnectionProperties: &routev3.RouteAction_HashPolicy_ConnectionProperties{
+					PolicySpecifier: &envoyroutev3.RouteAction_HashPolicy_ConnectionProperties_{
+						ConnectionProperties: &envoyroutev3.RouteAction_HashPolicy_ConnectionProperties{
 							SourceIp: true,
 						},
 					},
@@ -165,19 +165,19 @@ func TestHashPolicyForSpec(t *testing.T) {
 					},
 				},
 			},
-			expected: []*routev3.RouteAction_HashPolicy{
+			expected: []*envoyroutev3.RouteAction_HashPolicy{
 				{
 					Terminal: true,
-					PolicySpecifier: &routev3.RouteAction_HashPolicy_Header_{
-						Header: &routev3.RouteAction_HashPolicy_Header{
+					PolicySpecifier: &envoyroutev3.RouteAction_HashPolicy_Header_{
+						Header: &envoyroutev3.RouteAction_HashPolicy_Header{
 							HeaderName: "x-user-id",
 						},
 					},
 				},
 				{
 					Terminal: false,
-					PolicySpecifier: &routev3.RouteAction_HashPolicy_Cookie_{
-						Cookie: &routev3.RouteAction_HashPolicy_Cookie{
+					PolicySpecifier: &envoyroutev3.RouteAction_HashPolicy_Cookie_{
+						Cookie: &envoyroutev3.RouteAction_HashPolicy_Cookie{
 							Name: "session-id",
 							Ttl:  durationpb.New(1 * time.Hour),
 						},
@@ -185,8 +185,8 @@ func TestHashPolicyForSpec(t *testing.T) {
 				},
 				{
 					Terminal: false,
-					PolicySpecifier: &routev3.RouteAction_HashPolicy_ConnectionProperties_{
-						ConnectionProperties: &routev3.RouteAction_HashPolicy_ConnectionProperties{
+					PolicySpecifier: &envoyroutev3.RouteAction_HashPolicy_ConnectionProperties_{
+						ConnectionProperties: &envoyroutev3.RouteAction_HashPolicy_ConnectionProperties{
 							SourceIp: true,
 						},
 					},
@@ -207,11 +207,11 @@ func TestHashPolicyForSpec(t *testing.T) {
 					},
 				},
 			},
-			expected: []*routev3.RouteAction_HashPolicy{
+			expected: []*envoyroutev3.RouteAction_HashPolicy{
 				{
 					Terminal: false,
-					PolicySpecifier: &routev3.RouteAction_HashPolicy_Cookie_{
-						Cookie: &routev3.RouteAction_HashPolicy_Cookie{
+					PolicySpecifier: &envoyroutev3.RouteAction_HashPolicy_Cookie_{
+						Cookie: &envoyroutev3.RouteAction_HashPolicy_Cookie{
 							Name: "session-id",
 							Path: "/api",
 						},
