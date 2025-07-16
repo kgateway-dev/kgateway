@@ -46,7 +46,7 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 			},
 			expected: &envoyclusterv3.Cluster{
 				Name: "test",
-				CommonLbConfig: &clusterv3.Cluster_CommonLbConfig{
+				CommonLbConfig: &envoyclusterv3.Cluster_CommonLbConfig{
 					UpdateMergeWindow: durationpb.New(10 * time.Second),
 				},
 			},
@@ -56,10 +56,10 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 			config: &v1alpha1.LoadBalancer{
 				Random: &v1alpha1.LoadBalancerRandomConfig{},
 			},
-			expected: &clusterv3.Cluster{
+			expected: &envoyclusterv3.Cluster{
 				Name:           "test",
-				LbPolicy:       clusterv3.Cluster_RANDOM,
-				CommonLbConfig: &clusterv3.Cluster_CommonLbConfig{},
+				LbPolicy:       envoyclusterv3.Cluster_RANDOM,
+				CommonLbConfig: &envoyclusterv3.Cluster_CommonLbConfig{},
 			},
 		},
 		{
@@ -67,10 +67,10 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 			config: &v1alpha1.LoadBalancer{
 				RoundRobin: &v1alpha1.LoadBalancerRoundRobinConfig{},
 			},
-			expected: &clusterv3.Cluster{
+			expected: &envoyclusterv3.Cluster{
 				Name:           "test",
-				LbPolicy:       clusterv3.Cluster_ROUND_ROBIN,
-				CommonLbConfig: &clusterv3.Cluster_CommonLbConfig{},
+				LbPolicy:       envoyclusterv3.Cluster_ROUND_ROBIN,
+				CommonLbConfig: &envoyclusterv3.Cluster_CommonLbConfig{},
 			},
 		},
 		{
@@ -103,7 +103,7 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 						},
 					},
 				},
-				CommonLbConfig: &clusterv3.Cluster_CommonLbConfig{},
+				CommonLbConfig: &envoyclusterv3.Cluster_CommonLbConfig{},
 			},
 		},
 		{
@@ -119,7 +119,7 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 						ChoiceCount: &wrapperspb.UInt32Value{},
 					},
 				},
-				CommonLbConfig: &clusterv3.Cluster_CommonLbConfig{},
+				CommonLbConfig: &envoyclusterv3.Cluster_CommonLbConfig{},
 			},
 		},
 		{
@@ -154,7 +154,7 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 						},
 					},
 				},
-				CommonLbConfig: &clusterv3.Cluster_CommonLbConfig{},
+				CommonLbConfig: &envoyclusterv3.Cluster_CommonLbConfig{},
 			},
 		},
 		{
@@ -168,7 +168,7 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 				LbConfig: &envoyclusterv3.Cluster_RingHashLbConfig_{
 					RingHashLbConfig: &envoyclusterv3.Cluster_RingHashLbConfig{},
 				},
-				CommonLbConfig: &clusterv3.Cluster_CommonLbConfig{},
+				CommonLbConfig: &envoyclusterv3.Cluster_CommonLbConfig{},
 			},
 		},
 		{
@@ -188,7 +188,7 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 						MaximumRingSize: &wrapperspb.UInt64Value{Value: 100},
 					},
 				},
-				CommonLbConfig: &clusterv3.Cluster_CommonLbConfig{},
+				CommonLbConfig: &envoyclusterv3.Cluster_CommonLbConfig{},
 			},
 		},
 		{
@@ -196,10 +196,10 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 			config: &v1alpha1.LoadBalancer{
 				Maglev: &v1alpha1.LoadBalancerMaglevConfig{},
 			},
-			expected: &clusterv3.Cluster{
+			expected: &envoyclusterv3.Cluster{
 				Name:           "test",
-				LbPolicy:       clusterv3.Cluster_MAGLEV,
-				CommonLbConfig: &clusterv3.Cluster_CommonLbConfig{},
+				LbPolicy:       envoyclusterv3.Cluster_MAGLEV,
+				CommonLbConfig: &envoyclusterv3.Cluster_CommonLbConfig{},
 			},
 		},
 		{
