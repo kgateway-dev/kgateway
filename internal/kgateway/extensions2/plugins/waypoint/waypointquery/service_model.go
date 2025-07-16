@@ -45,7 +45,20 @@ type Service struct {
 // including those from aliases.
 // Specifically returns the aliases _first_.
 func (s Service) Keys() []ir.ObjectSource {
-	return append(s.Aliases, ir.ObjectSource{
+	aliases := s.Aliases
+
+	// Check if the first alias is a ServiceEntry's own ObjectSource
+	if len(aliases) > 0 && aliases[0].Equals(ir.ObjectSource{
+		Name:      s.GetName(),
+		Namespace: s.GetNamespace(),
+		Group:     wellknown.ServiceEntryGVK.Group,
+		Kind:      wellknown.ServiceEntryGVK.Kind,
+	}) {
+		// ServiceEntry has self as the first one (see BuildServiceEntryBackendObjectIR).
+		// We want to return the aliases _after_ the self.
+		aliases = aliases[1:]
+	}
+	return append(aliases, ir.ObjectSource{
 		Name:      s.GetName(),
 		Namespace: s.GetNamespace(),
 		Group:     s.GroupKind.Group,
