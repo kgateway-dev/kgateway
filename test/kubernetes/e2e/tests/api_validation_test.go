@@ -121,6 +121,41 @@ spec:
 			wantError: "TargetSelectors must reference either a Kubernetes Service or a Backend API",
 		},
 		{
+			name: "BackendConfigPolicy: invalid useHostnameForHashing",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: backend-config-invalid-use-hostname-for-hashing
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: test-service
+  loadBalancer:
+    random: {}
+    useHostnameForHashing: true
+`,
+			wantError: "UseHostnameForHashing can only be true when RingHash or Maglev load balancer type is configured",
+		},
+		{
+			name: "BackendConfigPolicy: valid useHostnameForHashing",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: backend-config-valid-use-hostname-for-hashing
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: test-service
+  loadBalancer:
+    ringHash: {}
+    useHostnameForHashing: true
+`,
+		},
+		{
 			name: "TrafficPolicy: valid target references",
 			input: `---
 apiVersion: gateway.kgateway.dev/v1alpha1

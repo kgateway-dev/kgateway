@@ -277,6 +277,7 @@ type TLSFiles struct {
 }
 
 // +kubebuilder:validation:AtMostOneOf=leastRequest;roundRobin;ringHash;maglev;random
+// +kubebuilder:validation:XValidation:rule="!self.useHostnameForHashing || has(self.ringHash) || has(self.maglev)",message="UseHostnameForHashing can only be true when RingHash or Maglev load balancer type is configured"
 type LoadBalancer struct {
 	// HealthyPanicThreshold configures envoy's panic threshold percentage between 0-100. Once the number of non-healthy hosts
 	// reaches this percentage, envoy disregards health information.
@@ -320,7 +321,7 @@ type LoadBalancer struct {
 	LocalityType *LocalityType `json:"localityType,omitempty"`
 
 	// UseHostnameForHashing specifies whether to use the hostname instead of the resolved IP address for hashing.
-	// Defaults to false.
+	// Defaults to false. Can only be true when RingHash or Maglev load balancer type is configured.
 	// +optional
 	// +default=false
 	UseHostnameForHashing bool `json:"useHostnameForHashing,omitempty"`

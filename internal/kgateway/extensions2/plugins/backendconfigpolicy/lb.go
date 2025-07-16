@@ -33,8 +33,10 @@ func translateLoadBalancerConfig(config *v1alpha1.LoadBalancer) *LoadBalancerCon
 
 	out.commonLbConfig = &clusterv3.Cluster_CommonLbConfig{}
 
-	out.commonLbConfig.ConsistentHashingLbConfig = &clusterv3.Cluster_CommonLbConfig_ConsistentHashingLbConfig{
-		UseHostnameForHashing: config.UseHostnameForHashing,
+	if config.UseHostnameForHashing {
+		out.commonLbConfig.ConsistentHashingLbConfig = &clusterv3.Cluster_CommonLbConfig_ConsistentHashingLbConfig{
+			UseHostnameForHashing: config.UseHostnameForHashing,
+		}
 	}
 
 	if config.HealthyPanicThreshold != nil {

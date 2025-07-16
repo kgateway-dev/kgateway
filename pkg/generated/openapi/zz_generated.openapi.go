@@ -4459,7 +4459,7 @@ func schema_kgateway_v2_api_v1alpha1_LoadBalancer(ref common.ReferenceCallback) 
 					},
 					"useHostnameForHashing": {
 						SchemaProps: spec.SchemaProps{
-							Description: "UseHostnameForHashing specifies whether to use the hostname instead of the resolved IP address for hashing. Defaults to false.",
+							Description: "UseHostnameForHashing specifies whether to use the hostname instead of the resolved IP address for hashing. Defaults to false. Can only be true when RingHash or Maglev load balancer type is configured.",
 							Default:     false,
 							Type:        []string{"boolean"},
 							Format:      "",

@@ -236,6 +236,9 @@ spec:
                     type: boolean
                 type: object
                 x-kubernetes-validations:
+                - message: UseHostnameForHashing can only be true when RingHash or
+                    Maglev load balancer type is configured
+                  rule: '!self.useHostnameForHashing || has(self.ringHash) || has(self.maglev)'
                 - message: at most one of the fields in [leastRequest roundRobin ringHash
                     maglev random] may be set
                   rule: '[has(self.leastRequest),has(self.roundRobin),has(self.ringHash),has(self.maglev),has(self.random)].filter(x,x==true).size()
