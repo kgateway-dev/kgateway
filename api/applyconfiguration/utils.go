@@ -111,6 +111,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.EnvoyBootstrapApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("EnvoyContainer"):
 		return &apiv1alpha1.EnvoyContainerApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("EnvoyHealthCheck"):
+		return &apiv1alpha1.EnvoyHealthCheckApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("ExtAuthPolicy"):
 		return &apiv1alpha1.ExtAuthPolicyApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("ExtAuthProvider"):

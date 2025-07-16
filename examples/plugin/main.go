@@ -5,8 +5,8 @@ import (
 	"time"
 
 	mutation_v3 "github.com/envoyproxy/go-control-plane/envoy/config/common/mutation_rules/v3"
-	envoy_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	header_mutationv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/header_mutation/v3"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -169,7 +169,7 @@ type ourPolicyPass struct {
 }
 
 // ApplyForRoute is called when a an HTTPRouteRule is being translated to an envoy route.
-func (s *ourPolicyPass) ApplyForRoute(ctx context.Context, pCtx *ir.RouteContext, out *envoy_config_route_v3.Route) error {
+func (s *ourPolicyPass) ApplyForRoute(ctx context.Context, pCtx *ir.RouteContext, out *envoyroutev3.Route) error {
 	// get our policy IR. Kgateway used the targetRef to attach the policy to the HTTPRoute. and now as it
 	// translates the HTTPRoute to xDS, it calls our plugin and passes the policy for the plugin's translation pass to do the
 	// policy to xDS translation.
@@ -180,7 +180,7 @@ func (s *ourPolicyPass) ApplyForRoute(ctx context.Context, pCtx *ir.RouteContext
 	}
 	// apply the metadata from our IR to envoy's route object
 	if out.Metadata == nil {
-		out.Metadata = &envoy_core_v3.Metadata{}
+		out.Metadata = &envoycorev3.Metadata{}
 	}
 	out.Metadata.FilterMetadata["example.plugin"] = cmIr.metadata
 
@@ -205,8 +205,8 @@ func (s *ourPolicyPass) HttpFilters(ctx context.Context, fc ir.FilterChainCommon
 					ResponseMutations: []*mutation_v3.HeaderMutation{
 						{
 							Action: &mutation_v3.HeaderMutation_Append{
-								Append: &envoy_core_v3.HeaderValueOption{
-									Header: &envoy_core_v3.HeaderValue{
+								Append: &envoycorev3.HeaderValueOption{
+									Header: &envoycorev3.HeaderValue{
 										Key:   "x-metadata-added",
 										Value: "true",
 									},

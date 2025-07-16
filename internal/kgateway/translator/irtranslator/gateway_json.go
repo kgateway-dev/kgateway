@@ -3,9 +3,9 @@ package irtranslator
 import (
 	"encoding/json"
 
-	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
-	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
-	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 )
@@ -82,9 +82,9 @@ func (tr *TranslationResult) UnmarshalJSON(data []byte) error {
 		if err := json.Unmarshal(routesData, &routes); err != nil {
 			return err
 		}
-		tr.Routes = make([]*envoy_config_route_v3.RouteConfiguration, len(routes))
+		tr.Routes = make([]*envoyroutev3.RouteConfiguration, len(routes))
 		for i, routeData := range routes {
-			route := &envoy_config_route_v3.RouteConfiguration{}
+			route := &envoyroutev3.RouteConfiguration{}
 			if err := m.Unmarshal(routeData, route); err != nil {
 				return err
 			}
@@ -97,9 +97,9 @@ func (tr *TranslationResult) UnmarshalJSON(data []byte) error {
 		if err := json.Unmarshal(listenersData, &listeners); err != nil {
 			return err
 		}
-		tr.Listeners = make([]*envoy_config_listener_v3.Listener, len(listeners))
+		tr.Listeners = make([]*envoylistenerv3.Listener, len(listeners))
 		for i, listenerData := range listeners {
-			listener := &envoy_config_listener_v3.Listener{}
+			listener := &envoylistenerv3.Listener{}
 			if err := m.Unmarshal(listenerData, listener); err != nil {
 				return err
 			}
@@ -112,9 +112,9 @@ func (tr *TranslationResult) UnmarshalJSON(data []byte) error {
 		if err := json.Unmarshal(clustersData, &clusters); err != nil {
 			return err
 		}
-		tr.ExtraClusters = make([]*envoy_config_cluster_v3.Cluster, len(clusters))
+		tr.ExtraClusters = make([]*envoyclusterv3.Cluster, len(clusters))
 		for i, clusterData := range clusters {
-			cluster := &envoy_config_cluster_v3.Cluster{}
+			cluster := &envoyclusterv3.Cluster{}
 			if err := m.Unmarshal(clusterData, cluster); err != nil {
 				return err
 			}

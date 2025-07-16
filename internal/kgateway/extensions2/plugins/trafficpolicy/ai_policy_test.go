@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_ext_proc_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_proc/v3"
 	envoytransformation "github.com/solo-io/envoy-gloo/go/config/filter/http/transformation/v2"
 	"github.com/stretchr/testify/assert"
@@ -22,7 +22,7 @@ func TestProcessAITrafficPolicy(t *testing.T) {
 	backendExtprocSettings := &envoy_ext_proc_v3.ExtProcPerRoute{
 		Override: &envoy_ext_proc_v3.ExtProcPerRoute_Overrides{
 			Overrides: &envoy_ext_proc_v3.ExtProcOverrides{
-				GrpcInitialMetadata: []*envoy_config_core_v3.HeaderValue{},
+				GrpcInitialMetadata: []*envoycorev3.HeaderValue{},
 			},
 		},
 	}

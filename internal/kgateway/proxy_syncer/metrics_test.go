@@ -4,9 +4,9 @@ import (
 	"testing"
 	"time"
 
-	clusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
-	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	endpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
+	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoycachetypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"github.com/stretchr/testify/assert"
@@ -225,9 +225,9 @@ func TestXDSSnapshotsCollectionMetrics(t *testing.T) {
 						},
 					},
 					Clusters: []envoycachetypes.ResourceWithTTL{{
-						Resource: &clusterv3.Cluster{
+						Resource: &envoyclusterv3.Cluster{
 							Name: "test",
-							TransportSocketMatches: []*clusterv3.Cluster_TransportSocketMatch{{
+							TransportSocketMatches: []*envoyclusterv3.Cluster_TransportSocketMatch{{
 								Name: "test",
 							}},
 						},
@@ -244,23 +244,23 @@ func TestXDSSnapshotsCollectionMetrics(t *testing.T) {
 							Region:  "region1",
 							Subzone: "subzone1",
 						}),
-					Endpoints: &endpointv3.ClusterLoadAssignment{
+					Endpoints: &envoyendpointv3.ClusterLoadAssignment{
 						ClusterName: "test",
-						Endpoints: []*endpointv3.LocalityLbEndpoints{
+						Endpoints: []*envoyendpointv3.LocalityLbEndpoints{
 							{
-								Locality: &corev3.Locality{
+								Locality: &envoycorev3.Locality{
 									Region:  "region1",
 									Zone:    "zone1",
 									SubZone: "subzone1",
 								},
-								LbEndpoints: []*endpointv3.LbEndpoint{{
-									HostIdentifier: &endpointv3.LbEndpoint_Endpoint{
-										Endpoint: &endpointv3.Endpoint{
-											Address: &corev3.Address{
-												Address: &corev3.Address_SocketAddress{
-													SocketAddress: &corev3.SocketAddress{
+								LbEndpoints: []*envoyendpointv3.LbEndpoint{{
+									HostIdentifier: &envoyendpointv3.LbEndpoint_Endpoint{
+										Endpoint: &envoyendpointv3.Endpoint{
+											Address: &envoycorev3.Address{
+												Address: &envoycorev3.Address_SocketAddress{
+													SocketAddress: &envoycorev3.SocketAddress{
 														Address: "",
-														PortSpecifier: &corev3.SocketAddress_PortValue{
+														PortSpecifier: &envoycorev3.SocketAddress_PortValue{
 															PortValue: 8080,
 														},
 													},
@@ -283,8 +283,8 @@ func TestXDSSnapshotsCollectionMetrics(t *testing.T) {
 							Region:  "region1",
 							Subzone: "subzone1",
 						}),
-					Cluster: &clusterv3.Cluster{
-						TransportSocketMatches: []*clusterv3.Cluster_TransportSocketMatch{{
+					Cluster: &envoyclusterv3.Cluster{
+						TransportSocketMatches: []*envoyclusterv3.Cluster_TransportSocketMatch{{
 							Name: "test",
 						}},
 						Name: "test",

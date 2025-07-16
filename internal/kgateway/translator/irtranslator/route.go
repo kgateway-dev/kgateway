@@ -9,8 +9,8 @@ import (
 	"regexp"
 	"slices"
 
-	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -42,12 +42,12 @@ type httpRouteConfigurationTranslator struct {
 
 const WebSocketUpgradeType = "websocket"
 
-func (h *httpRouteConfigurationTranslator) ComputeRouteConfiguration(ctx context.Context, vhosts []*ir.VirtualHost) *envoy_config_route_v3.RouteConfiguration {
+func (h *httpRouteConfigurationTranslator) ComputeRouteConfiguration(ctx context.Context, vhosts []*ir.VirtualHost) *envoyroutev3.RouteConfiguration {
 	var attachedPolicies ir.AttachedPolicies
 	// the policies in order - first listener as they are more specific and thus higher priority.
 	// then gateway policies.
 	attachedPolicies.Append(h.attachedPolicies, h.gw.AttachedHttpPolicies)
-	cfg := &envoy_config_route_v3.RouteConfiguration{
+	cfg := &envoyroutev3.RouteConfiguration{
 		Name: h.routeConfigName,
 	}
 	typedPerFilterConfigRoute := ir.TypedFilterConfigMap(map[string]proto.Message{})
@@ -83,8 +83,8 @@ func (h *httpRouteConfigurationTranslator) ComputeRouteConfiguration(ctx context
 	return cfg
 }
 
-func (h *httpRouteConfigurationTranslator) computeVirtualHosts(ctx context.Context, virtualHosts []*ir.VirtualHost) []*envoy_config_route_v3.VirtualHost {
-	var envoyVirtualHosts []*envoy_config_route_v3.VirtualHost
+func (h *httpRouteConfigurationTranslator) computeVirtualHosts(ctx context.Context, virtualHosts []*ir.VirtualHost) []*envoyroutev3.VirtualHost {
+	var envoyVirtualHosts []*envoyroutev3.VirtualHost
 	for _, virtualHost := range virtualHosts {
 		envoyVirtualHosts = append(envoyVirtualHosts, h.computeVirtualHost(ctx, virtualHost))
 	}
@@ -94,10 +94,10 @@ func (h *httpRouteConfigurationTranslator) computeVirtualHosts(ctx context.Conte
 func (h *httpRouteConfigurationTranslator) computeVirtualHost(
 	ctx context.Context,
 	virtualHost *ir.VirtualHost,
-) *envoy_config_route_v3.VirtualHost {
+) *envoyroutev3.VirtualHost {
 	sanitizedName := utils.SanitizeForEnvoy(ctx, virtualHost.Name, "virtual host")
 
-	var envoyRoutes []*envoy_config_route_v3.Route
+	var envoyRoutes []*envoyroutev3.Route
 	for i, route := range virtualHost.Rules {
 		// TODO: not sure if we need listener parent ref here or the http parent ref
 		var routeReport reportssdk.ParentRefReporter = &reports.ParentRefReport{}
@@ -117,13 +117,13 @@ func (h *httpRouteConfigurationTranslator) computeVirtualHost(
 	if len(domains) == 0 || (len(domains) == 1 && domains[0] == "") {
 		domains = []string{"*"}
 	}
-	var envoyRequireTls envoy_config_route_v3.VirtualHost_TlsRequirementType
+	var envoyRequireTls envoyroutev3.VirtualHost_TlsRequirementType
 	if h.requireTlsOnVirtualHosts {
 		// TODO (ilackarms): support external-only TLS
-		envoyRequireTls = envoy_config_route_v3.VirtualHost_ALL
+		envoyRequireTls = envoyroutev3.VirtualHost_ALL
 	}
 
-	out := &envoy_config_route_v3.VirtualHost{
+	out := &envoyroutev3.VirtualHost{
 		Name:       sanitizedName,
 		Domains:    domains,
 		Routes:     envoyRoutes,
@@ -140,9 +140,9 @@ func (h *httpRouteConfigurationTranslator) computeVirtualHost(
 
 type backendConfigContext struct {
 	typedPerFilterConfigRoute ir.TypedFilterConfigMap
-	RequestHeadersToAdd       []*envoy_config_core_v3.HeaderValueOption
+	RequestHeadersToAdd       []*envoycorev3.HeaderValueOption
 	RequestHeadersToRemove    []string
-	ResponseHeadersToAdd      []*envoy_config_core_v3.HeaderValueOption
+	ResponseHeadersToAdd      []*envoycorev3.HeaderValueOption
 	ResponseHeadersToRemove   []string
 }
 
@@ -151,7 +151,7 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(
 	routeReport reportssdk.ParentRefReporter,
 	in ir.HttpRouteRuleMatchIR,
 	generatedName string,
-) *envoy_config_route_v3.Route {
+) *envoyroutev3.Route {
 	out := h.initRoutes(in, generatedName)
 
 	backendConfigCtx := backendConfigContext{typedPerFilterConfigRoute: ir.TypedFilterConfigMap(map[string]proto.Message{})}
@@ -204,11 +204,11 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(
 			// Unset the TypedPerFilterConfig when the route is replaced with a direct response
 			out.TypedPerFilterConfig = nil
 			// Replace invalid route with a direct response
-			out.Action = &envoy_config_route_v3.Route_DirectResponse{
-				DirectResponse: &envoy_config_route_v3.DirectResponseAction{
+			out.Action = &envoyroutev3.Route_DirectResponse{
+				DirectResponse: &envoyroutev3.DirectResponseAction{
 					Status: http.StatusInternalServerError,
-					Body: &envoy_config_core_v3.DataSource{
-						Specifier: &envoy_config_core_v3.DataSource_InlineString{
+					Body: &envoycorev3.DataSource{
+						Specifier: &envoycorev3.DataSource_InlineString{
 							InlineString: `invalid route configuration detected and replaced with a direct response.`,
 						},
 					},
@@ -232,7 +232,7 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(
 func (h *httpRouteConfigurationTranslator) runVhostPlugins(
 	ctx context.Context,
 	virtualHost *ir.VirtualHost,
-	out *envoy_config_route_v3.VirtualHost,
+	out *envoyroutev3.VirtualHost,
 	typedPerFilterConfig ir.TypedFilterConfigMap,
 ) {
 	for _, gk := range virtualHost.AttachedPolicies.ApplyOrderedGroupKinds() {
@@ -259,7 +259,7 @@ func (h *httpRouteConfigurationTranslator) runRoutePlugins(
 	ctx context.Context,
 	routeReport reportssdk.ParentRefReporter,
 	in ir.HttpRouteRuleMatchIR,
-	out *envoy_config_route_v3.Route,
+	out *envoyroutev3.Route,
 	typedPerFilterConfig ir.TypedFilterConfigMap,
 ) error {
 	// all policies up to listener have been applied as vhost polices; we need to apply the httproute policies and below
@@ -289,7 +289,7 @@ func (h *httpRouteConfigurationTranslator) runRoutePlugins(
 	}
 
 	var errs []error
-	applyForPolicy := func(ctx context.Context, pass *TranslationPass, pctx *ir.RouteContext, out *envoy_config_route_v3.Route) {
+	applyForPolicy := func(ctx context.Context, pass *TranslationPass, pctx *ir.RouteContext, out *envoyroutev3.Route) {
 		err := pass.ApplyForRoute(ctx, pctx, out)
 		if err != nil {
 			errs = append(errs, err)
@@ -366,7 +366,7 @@ func (h *httpRouteConfigurationTranslator) runBackendPolicies(ctx context.Contex
 	return errors.Join(errs...)
 }
 
-func (h *httpRouteConfigurationTranslator) runBackend(ctx context.Context, in ir.HttpBackend, pCtx *ir.RouteBackendContext, outRoute *envoy_config_route_v3.Route) error {
+func (h *httpRouteConfigurationTranslator) runBackend(ctx context.Context, in ir.HttpBackend, pCtx *ir.RouteBackendContext, outRoute *envoyroutev3.Route) error {
 	var errs []error
 	if in.Backend.BackendObject != nil {
 		backendPass := h.PluginPass[in.Backend.BackendObject.GetGroupKind()]
@@ -384,17 +384,17 @@ func (h *httpRouteConfigurationTranslator) runBackend(ctx context.Context, in ir
 func (h *httpRouteConfigurationTranslator) translateRouteAction(
 	ctx context.Context,
 	in ir.HttpRouteRuleMatchIR,
-	outRoute *envoy_config_route_v3.Route,
+	outRoute *envoyroutev3.Route,
 	parentBackendConfigCtx *backendConfigContext,
-) *envoy_config_route_v3.Route_Route {
-	var clusters []*envoy_config_route_v3.WeightedCluster_ClusterWeight
+) *envoyroutev3.Route_Route {
+	var clusters []*envoyroutev3.WeightedCluster_ClusterWeight
 
 	for _, backend := range in.Backends {
 		clusterName := backend.Backend.ClusterName
 
 		// get backend for ref - we must do it to make sure we have permissions to access it.
 		// also we need the service so we can translate its name correctly.
-		cw := &envoy_config_route_v3.WeightedCluster_ClusterWeight{
+		cw := &envoyroutev3.WeightedCluster_ClusterWeight{
 			Name:   clusterName,
 			Weight: wrapperspb.UInt32(backend.Backend.Weight),
 		}
@@ -447,12 +447,12 @@ func (h *httpRouteConfigurationTranslator) translateRouteAction(
 
 	action := outRoute.GetRoute()
 	if action == nil {
-		action = &envoy_config_route_v3.RouteAction{
-			ClusterNotFoundResponseCode: envoy_config_route_v3.RouteAction_INTERNAL_SERVER_ERROR,
+		action = &envoyroutev3.RouteAction{
+			ClusterNotFoundResponseCode: envoyroutev3.RouteAction_INTERNAL_SERVER_ERROR,
 		}
 	}
 
-	routeAction := &envoy_config_route_v3.Route_Route{
+	routeAction := &envoyroutev3.Route_Route{
 		Route: action,
 	}
 	switch len(clusters) {
@@ -461,7 +461,7 @@ func (h *httpRouteConfigurationTranslator) translateRouteAction(
 	case 1:
 		// Only set the cluster name if unspecified since a plugin may have set it.
 		if action.GetCluster() == "" {
-			action.ClusterSpecifier = &envoy_config_route_v3.RouteAction_Cluster{
+			action.ClusterSpecifier = &envoyroutev3.RouteAction_Cluster{
 				Cluster: clusters[0].GetName(),
 			}
 		}
@@ -470,8 +470,8 @@ func (h *httpRouteConfigurationTranslator) translateRouteAction(
 	default:
 		// Only set weighted clusters if unspecified since a plugin may have set it.
 		if action.GetWeightedClusters() == nil {
-			action.ClusterSpecifier = &envoy_config_route_v3.RouteAction_WeightedClusters{
-				WeightedClusters: &envoy_config_route_v3.WeightedCluster{
+			action.ClusterSpecifier = &envoyroutev3.RouteAction_WeightedClusters{
+				WeightedClusters: &envoyroutev3.WeightedCluster{
 					Clusters: clusters,
 				},
 			}
@@ -481,10 +481,10 @@ func (h *httpRouteConfigurationTranslator) translateRouteAction(
 	for _, backend := range in.Backends {
 		if back := backend.Backend.BackendObject; back != nil && back.AppProtocol == ir.WebSocketAppProtocol {
 			// add websocket upgrade if not already present
-			if !slices.ContainsFunc(action.GetUpgradeConfigs(), func(uc *envoy_config_route_v3.RouteAction_UpgradeConfig) bool {
+			if !slices.ContainsFunc(action.GetUpgradeConfigs(), func(uc *envoyroutev3.RouteAction_UpgradeConfig) bool {
 				return uc.GetUpgradeType() == WebSocketUpgradeType
 			}) {
-				action.UpgradeConfigs = append(action.GetUpgradeConfigs(), &envoy_config_route_v3.RouteAction_UpgradeConfig{
+				action.UpgradeConfigs = append(action.GetUpgradeConfigs(), &envoyroutev3.RouteAction_UpgradeConfig{
 					UpgradeType: WebSocketUpgradeType,
 				})
 			}
@@ -493,7 +493,7 @@ func (h *httpRouteConfigurationTranslator) translateRouteAction(
 	return routeAction
 }
 
-func validateEnvoyRoute(r *envoy_config_route_v3.Route) error {
+func validateEnvoyRoute(r *envoyroutev3.Route) error {
 	var errs []error
 	match := r.GetMatch()
 	route := r.GetRoute()
@@ -513,7 +513,7 @@ func validateEnvoyRoute(r *envoy_config_route_v3.Route) error {
 	return fmt.Errorf("error %s: %w", r.GetName(), errors.Join(errs...))
 }
 
-func validateWeightedClusters(clusters []*envoy_config_route_v3.WeightedCluster_ClusterWeight, errs *[]error) {
+func validateWeightedClusters(clusters []*envoyroutev3.WeightedCluster_ClusterWeight, errs *[]error) {
 	if len(clusters) == 0 {
 		return
 	}
@@ -534,18 +534,18 @@ func validateWeightedClusters(clusters []*envoy_config_route_v3.WeightedCluster_
 func (h *httpRouteConfigurationTranslator) initRoutes(
 	in ir.HttpRouteRuleMatchIR,
 	generatedName string,
-) *envoy_config_route_v3.Route {
+) *envoyroutev3.Route {
 	//	if len(in.Matches) == 0 {
-	//		return []*envoy_config_route_v3.Route{
+	//		return []*envoyroutev3.Route{
 	//			{
-	//				Match: &envoy_config_route_v3.RouteMatch{
-	//					PathSpecifier: &envoy_config_route_v3.RouteMatch_Prefix{Prefix: "/"},
+	//				Match: &envoyroutev3.RouteMatch{
+	//					PathSpecifier: &envoyroutev3.RouteMatch_Prefix{Prefix: "/"},
 	//				},
 	//			},
 	//		}
 	//	}
 
-	out := &envoy_config_route_v3.Route{
+	out := &envoyroutev3.Route{
 		Match: translateMatcher(in.Match),
 	}
 	name := in.Name
@@ -558,15 +558,15 @@ func (h *httpRouteConfigurationTranslator) initRoutes(
 	return out
 }
 
-func translateMatcher(matcher gwv1.HTTPRouteMatch) *envoy_config_route_v3.RouteMatch {
-	match := &envoy_config_route_v3.RouteMatch{
+func translateMatcher(matcher gwv1.HTTPRouteMatch) *envoyroutev3.RouteMatch {
+	match := &envoyroutev3.RouteMatch{
 		Headers:         envoyHeaderMatcher(matcher.Headers),
 		QueryParameters: envoyQueryMatcher(matcher.QueryParams),
 	}
 	if matcher.Method != nil {
-		match.Headers = append(match.GetHeaders(), &envoy_config_route_v3.HeaderMatcher{
+		match.Headers = append(match.GetHeaders(), &envoyroutev3.HeaderMatcher{
 			Name: ":method",
-			HeaderMatchSpecifier: &envoy_config_route_v3.HeaderMatcher_StringMatch{
+			HeaderMatchSpecifier: &envoyroutev3.HeaderMatcher_StringMatch{
 				StringMatch: &envoy_type_matcher_v3.StringMatcher{
 					MatchPattern: &envoy_type_matcher_v3.StringMatcher_Exact{
 						Exact: string(*matcher.Method),
@@ -588,34 +588,34 @@ func isValidPathSparated(path string) bool {
 	return separatedPathRegex.MatchString(path)
 }
 
-func setEnvoyPathMatcher(match gwv1.HTTPRouteMatch, out *envoy_config_route_v3.RouteMatch) {
+func setEnvoyPathMatcher(match gwv1.HTTPRouteMatch, out *envoyroutev3.RouteMatch) {
 	pathType, pathValue := routeutils.ParsePath(match.Path)
 	switch pathType {
 	case gwv1.PathMatchPathPrefix:
 		if !isValidPathSparated(pathValue) {
-			out.PathSpecifier = &envoy_config_route_v3.RouteMatch_Prefix{
+			out.PathSpecifier = &envoyroutev3.RouteMatch_Prefix{
 				Prefix: pathValue,
 			}
 		} else {
-			out.PathSpecifier = &envoy_config_route_v3.RouteMatch_PathSeparatedPrefix{
+			out.PathSpecifier = &envoyroutev3.RouteMatch_PathSeparatedPrefix{
 				PathSeparatedPrefix: pathValue,
 			}
 		}
 	case gwv1.PathMatchExact:
-		out.PathSpecifier = &envoy_config_route_v3.RouteMatch_Path{
+		out.PathSpecifier = &envoyroutev3.RouteMatch_Path{
 			Path: pathValue,
 		}
 	case gwv1.PathMatchRegularExpression:
-		out.PathSpecifier = &envoy_config_route_v3.RouteMatch_SafeRegex{
+		out.PathSpecifier = &envoyroutev3.RouteMatch_SafeRegex{
 			SafeRegex: regexutils.NewRegexWithProgramSize(pathValue, nil),
 		}
 	}
 }
 
-func envoyHeaderMatcher(in []gwv1.HTTPHeaderMatch) []*envoy_config_route_v3.HeaderMatcher {
-	var out []*envoy_config_route_v3.HeaderMatcher
+func envoyHeaderMatcher(in []gwv1.HTTPHeaderMatch) []*envoyroutev3.HeaderMatcher {
+	var out []*envoyroutev3.HeaderMatcher
 	for _, matcher := range in {
-		envoyMatch := &envoy_config_route_v3.HeaderMatcher{
+		envoyMatch := &envoyroutev3.HeaderMatcher{
 			Name: string(matcher.Name),
 		}
 		regex := false
@@ -625,12 +625,12 @@ func envoyHeaderMatcher(in []gwv1.HTTPHeaderMatch) []*envoy_config_route_v3.Head
 
 		// TODO: not sure if we should do PresentMatch according to the spec.
 		if matcher.Value == "" {
-			envoyMatch.HeaderMatchSpecifier = &envoy_config_route_v3.HeaderMatcher_PresentMatch{
+			envoyMatch.HeaderMatchSpecifier = &envoyroutev3.HeaderMatcher_PresentMatch{
 				PresentMatch: true,
 			}
 		} else {
 			if regex {
-				envoyMatch.HeaderMatchSpecifier = &envoy_config_route_v3.HeaderMatcher_StringMatch{
+				envoyMatch.HeaderMatchSpecifier = &envoyroutev3.HeaderMatcher_StringMatch{
 					StringMatch: &envoy_type_matcher_v3.StringMatcher{
 						MatchPattern: &envoy_type_matcher_v3.StringMatcher_SafeRegex{
 							SafeRegex: regexutils.NewRegexWithProgramSize(matcher.Value, nil),
@@ -638,7 +638,7 @@ func envoyHeaderMatcher(in []gwv1.HTTPHeaderMatch) []*envoy_config_route_v3.Head
 					},
 				}
 			} else {
-				envoyMatch.HeaderMatchSpecifier = &envoy_config_route_v3.HeaderMatcher_StringMatch{
+				envoyMatch.HeaderMatchSpecifier = &envoyroutev3.HeaderMatcher_StringMatch{
 					StringMatch: &envoy_type_matcher_v3.StringMatcher{
 						MatchPattern: &envoy_type_matcher_v3.StringMatcher_Exact{
 							Exact: matcher.Value,
@@ -652,10 +652,10 @@ func envoyHeaderMatcher(in []gwv1.HTTPHeaderMatch) []*envoy_config_route_v3.Head
 	return out
 }
 
-func envoyQueryMatcher(in []gwv1.HTTPQueryParamMatch) []*envoy_config_route_v3.QueryParameterMatcher {
-	var out []*envoy_config_route_v3.QueryParameterMatcher
+func envoyQueryMatcher(in []gwv1.HTTPQueryParamMatch) []*envoyroutev3.QueryParameterMatcher {
+	var out []*envoyroutev3.QueryParameterMatcher
 	for _, matcher := range in {
-		envoyMatch := &envoy_config_route_v3.QueryParameterMatcher{
+		envoyMatch := &envoyroutev3.QueryParameterMatcher{
 			Name: string(matcher.Name),
 		}
 		regex := false
@@ -665,12 +665,12 @@ func envoyQueryMatcher(in []gwv1.HTTPQueryParamMatch) []*envoy_config_route_v3.Q
 
 		// TODO: not sure if we should do PresentMatch according to the spec.
 		if matcher.Value == "" {
-			envoyMatch.QueryParameterMatchSpecifier = &envoy_config_route_v3.QueryParameterMatcher_PresentMatch{
+			envoyMatch.QueryParameterMatchSpecifier = &envoyroutev3.QueryParameterMatcher_PresentMatch{
 				PresentMatch: true,
 			}
 		} else {
 			if regex {
-				envoyMatch.QueryParameterMatchSpecifier = &envoy_config_route_v3.QueryParameterMatcher_StringMatch{
+				envoyMatch.QueryParameterMatchSpecifier = &envoyroutev3.QueryParameterMatcher_StringMatch{
 					StringMatch: &envoy_type_matcher_v3.StringMatcher{
 						MatchPattern: &envoy_type_matcher_v3.StringMatcher_SafeRegex{
 							SafeRegex: regexutils.NewRegexWithProgramSize(matcher.Value, nil),
@@ -678,7 +678,7 @@ func envoyQueryMatcher(in []gwv1.HTTPQueryParamMatch) []*envoy_config_route_v3.Q
 					},
 				}
 			} else {
-				envoyMatch.QueryParameterMatchSpecifier = &envoy_config_route_v3.QueryParameterMatcher_StringMatch{
+				envoyMatch.QueryParameterMatchSpecifier = &envoyroutev3.QueryParameterMatcher_StringMatch{
 					StringMatch: &envoy_type_matcher_v3.StringMatcher{
 						MatchPattern: &envoy_type_matcher_v3.StringMatcher_Exact{
 							Exact: matcher.Value,

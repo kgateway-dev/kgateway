@@ -3,7 +3,7 @@ package proxy_syncer
 import (
 	"fmt"
 
-	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
+	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	"istio.io/istio/pkg/kube/krt"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
@@ -12,7 +12,7 @@ import (
 
 type UccWithEndpoints struct {
 	Client        ir.UniqlyConnectedClient
-	Endpoints     *envoy_config_endpoint_v3.ClusterLoadAssignment
+	Endpoints     *envoyendpointv3.ClusterLoadAssignment
 	EndpointsHash uint64
 	endpointsName string
 }
@@ -38,7 +38,7 @@ func NewPerClientEnvoyEndpoints(
 	krtopts krtutil.KrtOptions,
 	uccs krt.Collection[ir.UniqlyConnectedClient],
 	glooEndpoints krt.Collection[ir.EndpointsForBackend],
-	translateEndpoints func(kctx krt.HandlerContext, ucc ir.UniqlyConnectedClient, ep ir.EndpointsForBackend) (*envoy_config_endpoint_v3.ClusterLoadAssignment, uint64),
+	translateEndpoints func(kctx krt.HandlerContext, ucc ir.UniqlyConnectedClient, ep ir.EndpointsForBackend) (*envoyendpointv3.ClusterLoadAssignment, uint64),
 ) PerClientEnvoyEndpoints {
 	eps := krt.NewManyCollection(glooEndpoints, func(kctx krt.HandlerContext, ep ir.EndpointsForBackend) []UccWithEndpoints {
 		uccs := krt.Fetch(kctx, uccs)

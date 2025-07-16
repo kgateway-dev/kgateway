@@ -3,11 +3,11 @@ package bootstrap
 import (
 	"fmt"
 
-	envoy_config_bootstrap_v3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
-	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
-	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
-	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoybootstrapv3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
+	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_extensions_filters_network_http_connection_manager_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoywellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"google.golang.org/protobuf/proto"
@@ -19,8 +19,8 @@ import (
 // ConfigBuilder helps construct a partial bootstrap config for validation.
 type ConfigBuilder struct {
 	filterConfigs ir.TypedFilterConfigMap
-	routes        []*envoy_config_route_v3.Route
-	clusters      []*envoy_config_cluster_v3.Cluster
+	routes        []*envoyroutev3.Route
+	clusters      []*envoyclusterv3.Cluster
 }
 
 // New creates a new ConfigBuilder.
@@ -37,8 +37,8 @@ func (b *ConfigBuilder) AddFilterConfig(name string, config proto.Message) {
 }
 
 // Build creates a partial bootstrap config suitable for validation.
-func (b *ConfigBuilder) Build() (*envoy_config_bootstrap_v3.Bootstrap, error) {
-	vhost := &envoy_config_route_v3.VirtualHost{
+func (b *ConfigBuilder) Build() (*envoybootstrapv3.Bootstrap, error) {
+	vhost := &envoyroutev3.VirtualHost{
 		Name:    "placeholder_vhost",
 		Domains: []string{"*"},
 	}
@@ -52,8 +52,8 @@ func (b *ConfigBuilder) Build() (*envoy_config_bootstrap_v3.Bootstrap, error) {
 	hcmAny, err := utils.MessageToAny(&envoy_extensions_filters_network_http_connection_manager_v3.HttpConnectionManager{
 		StatPrefix: "placeholder",
 		RouteSpecifier: &envoy_extensions_filters_network_http_connection_manager_v3.HttpConnectionManager_RouteConfig{
-			RouteConfig: &envoy_config_route_v3.RouteConfiguration{
-				VirtualHosts: []*envoy_config_route_v3.VirtualHost{vhost},
+			RouteConfig: &envoyroutev3.RouteConfiguration{
+				VirtualHosts: []*envoyroutev3.VirtualHost{vhost},
 			},
 		},
 	})
@@ -61,22 +61,22 @@ func (b *ConfigBuilder) Build() (*envoy_config_bootstrap_v3.Bootstrap, error) {
 		return nil, fmt.Errorf("failed to marshal HttpConnectionManager: %w", err)
 	}
 
-	staticResources := &envoy_config_bootstrap_v3.Bootstrap_StaticResources{
-		Listeners: []*envoy_config_listener_v3.Listener{{
+	staticResources := &envoybootstrapv3.Bootstrap_StaticResources{
+		Listeners: []*envoylistenerv3.Listener{{
 			Name: "placeholder_listener",
-			Address: &envoy_config_core_v3.Address{
-				Address: &envoy_config_core_v3.Address_SocketAddress{
-					SocketAddress: &envoy_config_core_v3.SocketAddress{
+			Address: &envoycorev3.Address{
+				Address: &envoycorev3.Address_SocketAddress{
+					SocketAddress: &envoycorev3.SocketAddress{
 						Address:       "0.0.0.0",
-						PortSpecifier: &envoy_config_core_v3.SocketAddress_PortValue{PortValue: 8081},
+						PortSpecifier: &envoycorev3.SocketAddress_PortValue{PortValue: 8081},
 					},
 				},
 			},
-			FilterChains: []*envoy_config_listener_v3.FilterChain{{
+			FilterChains: []*envoylistenerv3.FilterChain{{
 				Name: "placeholder_filter_chain",
-				Filters: []*envoy_config_listener_v3.Filter{{
+				Filters: []*envoylistenerv3.Filter{{
 					Name: envoywellknown.HTTPConnectionManager,
-					ConfigType: &envoy_config_listener_v3.Filter_TypedConfig{
+					ConfigType: &envoylistenerv3.Filter_TypedConfig{
 						TypedConfig: hcmAny,
 					},
 				}},
@@ -87,8 +87,8 @@ func (b *ConfigBuilder) Build() (*envoy_config_bootstrap_v3.Bootstrap, error) {
 		staticResources.Clusters = b.clusters
 	}
 
-	return &envoy_config_bootstrap_v3.Bootstrap{
-		Node: &envoy_config_core_v3.Node{
+	return &envoybootstrapv3.Bootstrap{
+		Node: &envoycorev3.Node{
 			Id:      "validation-node-id",
 			Cluster: "validation-cluster",
 		},

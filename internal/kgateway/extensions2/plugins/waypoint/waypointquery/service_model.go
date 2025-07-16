@@ -12,7 +12,7 @@ import (
 	"knative.dev/pkg/network"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 
 	networkingv1beta1 "istio.io/api/networking/v1beta1"
 	networkingclient "istio.io/client-go/pkg/apis/networking/v1"
@@ -45,7 +45,20 @@ type Service struct {
 // including those from aliases.
 // Specifically returns the aliases _first_.
 func (s Service) Keys() []ir.ObjectSource {
-	return append(s.Aliases, ir.ObjectSource{
+	aliases := s.Aliases
+
+	// Check if the first alias is a ServiceEntry's own ObjectSource
+	if len(aliases) > 0 && aliases[0].Equals(ir.ObjectSource{
+		Name:      s.GetName(),
+		Namespace: s.GetNamespace(),
+		Group:     wellknown.ServiceEntryGVK.Group,
+		Kind:      wellknown.ServiceEntryGVK.Kind,
+	}) {
+		// ServiceEntry has self as the first one (see BuildServiceEntryBackendObjectIR).
+		// We want to return the aliases _after_ the self.
+		aliases = aliases[1:]
+	}
+	return append(aliases, ir.ObjectSource{
 		Name:      s.GetName(),
 		Namespace: s.GetNamespace(),
 		Group:     s.GroupKind.Group,
@@ -167,7 +180,7 @@ func (s Service) Provider() provider.ID {
 // but those cases should already get rejected by Kubernetes or Istio validation.
 var ErrNoServiceVIPs = errors.New("service has no valid VIPs")
 
-func (svc *Service) CidrRanges() ([]*v3.CidrRange, error) {
+func (svc *Service) CidrRanges() ([]*envoycorev3.CidrRange, error) {
 	// TODO support headless by passing dest hostname on TLVs and
 	// using that as a filter chain matcher
 	cidrRanges := ipsToCidrRanges(svc.Addresses)
@@ -179,15 +192,15 @@ func (svc *Service) CidrRanges() ([]*v3.CidrRange, error) {
 
 // ipsToCidrRanges maps a list of strings that can be IPs (1.2.3.4) or cidrs (1.2.3.4/32)
 // to CidrRange, picking the correct prefix length for single IPv4 or IPv6 addresses.
-func ipsToCidrRanges(ips []string) []*v3.CidrRange {
-	var clusterIPs []*v3.CidrRange
+func ipsToCidrRanges(ips []string) []*envoycorev3.CidrRange {
+	var clusterIPs []*envoycorev3.CidrRange
 	for _, addr := range ips {
 		cidrRange, err := istioutil.AddrStrToCidrRange(addr)
 		if err != nil {
 			// this should never happen as either Kubernetes or Istio validation prevents it.
 			continue
 		}
-		clusterIPs = append(clusterIPs, &v3.CidrRange{
+		clusterIPs = append(clusterIPs, &envoycorev3.CidrRange{
 			AddressPrefix: cidrRange.GetAddressPrefix(),
 			PrefixLen:     cidrRange.GetPrefixLen(),
 		})

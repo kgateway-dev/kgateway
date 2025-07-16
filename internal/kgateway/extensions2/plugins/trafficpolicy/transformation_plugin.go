@@ -3,7 +3,7 @@ package trafficpolicy
 import (
 	"encoding/json"
 
-	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	exteniondynamicmodulev3 "github.com/envoyproxy/go-control-plane/envoy/extensions/dynamic_modules/v3"
 	dynamicmodulesv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/dynamic_modules/v3"
 	transformationpb "github.com/solo-io/envoy-gloo/go/config/filter/http/transformation/v2"
@@ -246,8 +246,8 @@ func convertClassicRouteToListener(
 	routeTransform := routeCfg.GetTransformations()[0].GetMatch().(*transformationpb.RouteTransformations_RouteTransformation_RequestMatch_)
 
 	transform := transformationpb.TransformationRule{
-		Match: &envoy_config_route_v3.RouteMatch{
-			PathSpecifier: &envoy_config_route_v3.RouteMatch_Prefix{
+		Match: &envoyroutev3.RouteMatch{
+			PathSpecifier: &envoyroutev3.RouteMatch_Prefix{
 				// match all as we arent doing submatches at this point
 				// consider attaching to a route or wiating until merging logic is done
 				Prefix: "/",

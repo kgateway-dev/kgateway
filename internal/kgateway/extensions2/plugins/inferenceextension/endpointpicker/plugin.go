@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"time"
 
-	clusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
-	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	endpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
-	routev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
+	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	extprocv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_proc/v3"
-	tlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
+	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	upstreamsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/durationpb"
@@ -189,7 +189,7 @@ func (p *endpointPickerPass) ApplyForBackend(
 	ctx context.Context,
 	pCtx *ir.RouteBackendContext,
 	in ir.HttpBackend,
-	out *routev3.Route,
+	out *envoyroutev3.Route,
 ) error {
 	if p == nil || pCtx == nil || pCtx.Backend == nil {
 		return nil
@@ -210,13 +210,13 @@ func (p *endpointPickerPass) ApplyForBackend(
 
 	// Ensure RouteAction is initialized.
 	if out.GetRoute() == nil {
-		out.Action = &routev3.Route_Route{
-			Route: &routev3.RouteAction{},
+		out.Action = &envoyroutev3.Route_Route{
+			Route: &envoyroutev3.RouteAction{},
 		}
 	}
 
 	// Point the route to the ORIGINAL_DST cluster for this pool.
-	out.GetRoute().ClusterSpecifier = &routev3.RouteAction_Cluster{
+	out.GetRoute().ClusterSpecifier = &envoyroutev3.RouteAction_Cluster{
 		Cluster: clusterNameOriginalDst(irPool.objMeta.GetName(), irPool.objMeta.GetNamespace()),
 	}
 
@@ -224,10 +224,10 @@ func (p *endpointPickerPass) ApplyForBackend(
 	override := &extprocv3.ExtProcPerRoute{
 		Override: &extprocv3.ExtProcPerRoute_Overrides{
 			Overrides: &extprocv3.ExtProcOverrides{
-				GrpcService: &corev3.GrpcService{
+				GrpcService: &envoycorev3.GrpcService{
 					Timeout: durationpb.New(10 * time.Second),
-					TargetSpecifier: &corev3.GrpcService_EnvoyGrpc_{
-						EnvoyGrpc: &corev3.GrpcService_EnvoyGrpc{
+					TargetSpecifier: &envoycorev3.GrpcService_EnvoyGrpc_{
+						EnvoyGrpc: &envoycorev3.GrpcService_EnvoyGrpc{
 							ClusterName: clusterNameExtProc(
 								irPool.objMeta.GetName(),
 								irPool.objMeta.GetNamespace(),
@@ -266,9 +266,9 @@ func (p *endpointPickerPass) HttpFilters(ctx context.Context, fc ir.FilterChainC
 
 	// Static ExternalProcessor that will be overridden by ExtProcPerRoute
 	extProcSettings := &extprocv3.ExternalProcessor{
-		GrpcService: &corev3.GrpcService{
-			TargetSpecifier: &corev3.GrpcService_EnvoyGrpc_{
-				EnvoyGrpc: &corev3.GrpcService_EnvoyGrpc{
+		GrpcService: &envoycorev3.GrpcService{
+			TargetSpecifier: &envoycorev3.GrpcService_EnvoyGrpc_{
+				EnvoyGrpc: &envoycorev3.GrpcService_EnvoyGrpc{
 					ClusterName: clusterNameExtProc(
 						tmpPool.objMeta.GetName(),
 						tmpPool.objMeta.GetNamespace(),
@@ -307,7 +307,7 @@ func (p *endpointPickerPass) ResourcesToAdd(ctx context.Context) ir.Resources {
 		return ir.Resources{}
 	}
 
-	var clusters []*clusterv3.Cluster
+	var clusters []*envoyclusterv3.Cluster
 	for _, pool := range p.usedPools {
 		c := buildExtProcCluster(pool)
 		if c != nil {
@@ -319,23 +319,23 @@ func (p *endpointPickerPass) ResourcesToAdd(ctx context.Context) ir.Resources {
 }
 
 // processBackendObjectIR builds the ORIGINAL_DST cluster for each InferencePool.
-func processBackendObjectIR(ctx context.Context, in ir.BackendObjectIR, out *clusterv3.Cluster) *ir.EndpointsForBackend {
+func processBackendObjectIR(ctx context.Context, in ir.BackendObjectIR, out *envoyclusterv3.Cluster) *ir.EndpointsForBackend {
 	out.ConnectTimeout = durationpb.New(1000 * time.Second)
 
-	out.ClusterDiscoveryType = &clusterv3.Cluster_Type{
-		Type: clusterv3.Cluster_ORIGINAL_DST,
+	out.ClusterDiscoveryType = &envoyclusterv3.Cluster_Type{
+		Type: envoyclusterv3.Cluster_ORIGINAL_DST,
 	}
 
-	out.LbPolicy = clusterv3.Cluster_CLUSTER_PROVIDED
-	out.LbConfig = &clusterv3.Cluster_OriginalDstLbConfig_{
-		OriginalDstLbConfig: &clusterv3.Cluster_OriginalDstLbConfig{
+	out.LbPolicy = envoyclusterv3.Cluster_CLUSTER_PROVIDED
+	out.LbConfig = &envoyclusterv3.Cluster_OriginalDstLbConfig_{
+		OriginalDstLbConfig: &envoyclusterv3.Cluster_OriginalDstLbConfig{
 			UseHttpHeader:  true,
 			HttpHeaderName: "x-gateway-destination-endpoint",
 		},
 	}
 
-	out.CircuitBreakers = &clusterv3.CircuitBreakers{
-		Thresholds: []*clusterv3.CircuitBreakers_Thresholds{
+	out.CircuitBreakers = &envoyclusterv3.CircuitBreakers{
+		Thresholds: []*envoyclusterv3.CircuitBreakers_Thresholds{
 			{
 				MaxConnections:     wrapperspb.UInt32(DefaultExtProcMaxRequests),
 				MaxPendingRequests: wrapperspb.UInt32(DefaultExtProcMaxRequests),
@@ -350,32 +350,32 @@ func processBackendObjectIR(ctx context.Context, in ir.BackendObjectIR, out *clu
 }
 
 // buildExtProcCluster builds and returns a "STRICT_DNS" cluster from the given pool.
-func buildExtProcCluster(pool *inferencePool) *clusterv3.Cluster {
+func buildExtProcCluster(pool *inferencePool) *envoyclusterv3.Cluster {
 	if pool == nil || pool.configRef == nil || len(pool.configRef.ports) != 1 {
 		return nil
 	}
 
 	name := clusterNameExtProc(pool.objMeta.GetName(), pool.objMeta.GetNamespace())
-	c := &clusterv3.Cluster{
+	c := &envoyclusterv3.Cluster{
 		Name:           name,
 		ConnectTimeout: durationpb.New(10 * time.Second),
-		ClusterDiscoveryType: &clusterv3.Cluster_Type{
-			Type: clusterv3.Cluster_STRICT_DNS,
+		ClusterDiscoveryType: &envoyclusterv3.Cluster_Type{
+			Type: envoyclusterv3.Cluster_STRICT_DNS,
 		},
-		LbPolicy: clusterv3.Cluster_LEAST_REQUEST,
-		LoadAssignment: &endpointv3.ClusterLoadAssignment{
+		LbPolicy: envoyclusterv3.Cluster_LEAST_REQUEST,
+		LoadAssignment: &envoyendpointv3.ClusterLoadAssignment{
 			ClusterName: name,
-			Endpoints: []*endpointv3.LocalityLbEndpoints{{
-				LbEndpoints: []*endpointv3.LbEndpoint{{
-					HealthStatus: corev3.HealthStatus_HEALTHY,
-					HostIdentifier: &endpointv3.LbEndpoint_Endpoint{
-						Endpoint: &endpointv3.Endpoint{
-							Address: &corev3.Address{
-								Address: &corev3.Address_SocketAddress{
-									SocketAddress: &corev3.SocketAddress{
+			Endpoints: []*envoyendpointv3.LocalityLbEndpoints{{
+				LbEndpoints: []*envoyendpointv3.LbEndpoint{{
+					HealthStatus: envoycorev3.HealthStatus_HEALTHY,
+					HostIdentifier: &envoyendpointv3.LbEndpoint_Endpoint{
+						Endpoint: &envoyendpointv3.Endpoint{
+							Address: &envoycorev3.Address{
+								Address: &envoycorev3.Address_SocketAddress{
+									SocketAddress: &envoycorev3.SocketAddress{
 										Address:  fmt.Sprintf("%s.%s.svc", pool.configRef.Name, pool.objMeta.Namespace),
-										Protocol: corev3.SocketAddress_TCP,
-										PortSpecifier: &corev3.SocketAddress_PortValue{
+										Protocol: envoycorev3.SocketAddress_TCP,
+										PortSpecifier: &envoycorev3.SocketAddress_PortValue{
 											PortValue: uint32(pool.configRef.ports[0].portNum),
 										},
 									},
@@ -387,13 +387,13 @@ func buildExtProcCluster(pool *inferencePool) *clusterv3.Cluster {
 			}},
 		},
 		// Ensure Envoy accepts untrusted certificates.
-		TransportSocket: &corev3.TransportSocket{
+		TransportSocket: &envoycorev3.TransportSocket{
 			Name: "envoy.transport_sockets.tls",
-			ConfigType: &corev3.TransportSocket_TypedConfig{
+			ConfigType: &envoycorev3.TransportSocket_TypedConfig{
 				TypedConfig: func() *anypb.Any {
-					tlsCtx := &tlsv3.UpstreamTlsContext{
-						CommonTlsContext: &tlsv3.CommonTlsContext{
-							ValidationContextType: &tlsv3.CommonTlsContext_ValidationContext{},
+					tlsCtx := &envoytlsv3.UpstreamTlsContext{
+						CommonTlsContext: &envoytlsv3.CommonTlsContext{
+							ValidationContextType: &envoytlsv3.CommonTlsContext_ValidationContext{},
 						},
 					}
 					anyTLS, _ := utils.MessageToAny(tlsCtx)
@@ -407,7 +407,7 @@ func buildExtProcCluster(pool *inferencePool) *clusterv3.Cluster {
 		UpstreamProtocolOptions: &upstreamsv3.HttpProtocolOptions_ExplicitHttpConfig_{
 			ExplicitHttpConfig: &upstreamsv3.HttpProtocolOptions_ExplicitHttpConfig{
 				ProtocolConfig: &upstreamsv3.HttpProtocolOptions_ExplicitHttpConfig_Http2ProtocolOptions{
-					Http2ProtocolOptions: &corev3.Http2ProtocolOptions{},
+					Http2ProtocolOptions: &envoycorev3.Http2ProtocolOptions{},
 				},
 			},
 		},

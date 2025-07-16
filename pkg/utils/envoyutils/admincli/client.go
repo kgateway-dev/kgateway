@@ -8,8 +8,8 @@ import (
 	"net/http"
 
 	adminv3 "github.com/envoyproxy/go-control-plane/envoy/admin/v3"
-	clusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
-	listenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	"github.com/solo-io/go-utils/threadsafe"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
@@ -203,7 +203,7 @@ func (c *Client) GetConfigDump(ctx context.Context, queryParams map[string]strin
 }
 
 // GetStaticClusters returns the map of static clusters available on a ConfigDump, indexed by their name
-func (c *Client) GetStaticClusters(ctx context.Context) (map[string]*clusterv3.Cluster, error) {
+func (c *Client) GetStaticClusters(ctx context.Context) (map[string]*envoyclusterv3.Cluster, error) {
 	configDump, err := c.GetConfigDump(ctx, map[string]string{
 		"resource": "static_clusters",
 	})
@@ -215,7 +215,7 @@ func (c *Client) GetStaticClusters(ctx context.Context) (map[string]*clusterv3.C
 }
 
 // GetDynamicClusters returns the map of dynamic clusters available on a ConfigDump, indexed by their name
-func (c *Client) GetDynamicClusters(ctx context.Context) (map[string]*clusterv3.Cluster, error) {
+func (c *Client) GetDynamicClusters(ctx context.Context) (map[string]*envoyclusterv3.Cluster, error) {
 	configDump, err := c.GetConfigDump(ctx, map[string]string{
 		"resource": "dynamic_active_clusters",
 	})
@@ -290,7 +290,7 @@ func (c *Client) GetServerInfo(ctx context.Context) (*adminv3.ServerInfo, error)
 func (c *Client) GetSingleListenerFromDynamicListeners(
 	ctx context.Context,
 	listenerNameRegex string,
-) (*listenerv3.Listener, error) {
+) (*envoylistenerv3.Listener, error) {
 	queryParams := map[string]string{
 		"resource":   "dynamic_listeners",
 		"name_regex": listenerNameRegex,
@@ -315,7 +315,7 @@ func (c *Client) GetSingleListenerFromDynamicListeners(
 		return nil, fmt.Errorf("could not unmarshal envoy config_dump: %w", err)
 	}
 
-	listener := listenerv3.Listener{}
+	listener := envoylistenerv3.Listener{}
 	err = listenerDump.GetActiveState().GetListener().UnmarshalTo(&listener)
 	if err != nil {
 		return nil, fmt.Errorf("could not unmarshal listener from listener dump: %w", err)

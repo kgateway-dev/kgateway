@@ -8,8 +8,8 @@ import (
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	skubeclient "istio.io/istio/pkg/config/schema/kubeclient"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
@@ -108,7 +108,7 @@ func NewGatewayTranslationPass(ctx context.Context, tctx ir.GwTranslationCtx, re
 }
 
 // called one or more times per route rule
-func (p *directResponsePluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.RouteContext, outputRoute *envoy_config_route_v3.Route) error {
+func (p *directResponsePluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.RouteContext, outputRoute *envoyroutev3.Route) error {
 	dr, ok := pCtx.Policy.(*directResponse)
 	if !ok {
 		return fmt.Errorf("internal error: expected *directResponse, got %T", pCtx.Policy)
@@ -118,19 +118,19 @@ func (p *directResponsePluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir
 		// the output route already has an action, which is incompatible with the DirectResponse,
 		// so we'll return an error. note: the direct response plugin runs after other route plugins
 		// that modify the output route (e.g. the redirect plugin), so this should be a rare case.
-		outputRoute.Action = &envoy_config_route_v3.Route_DirectResponse{
-			DirectResponse: &envoy_config_route_v3.DirectResponseAction{
+		outputRoute.Action = &envoyroutev3.Route_DirectResponse{
+			DirectResponse: &envoyroutev3.DirectResponseAction{
 				Status: http.StatusInternalServerError,
 			},
 		}
 		return fmt.Errorf("DirectResponse cannot be applied to route with existing action: %T", outputRoute.GetAction())
 	}
 
-	outputRoute.Action = &envoy_config_route_v3.Route_DirectResponse{
-		DirectResponse: &envoy_config_route_v3.DirectResponseAction{
+	outputRoute.Action = &envoyroutev3.Route_DirectResponse{
+		DirectResponse: &envoyroutev3.DirectResponseAction{
 			Status: dr.spec.StatusCode,
-			Body: &corev3.DataSource{
-				Specifier: &corev3.DataSource_InlineString{
+			Body: &envoycorev3.DataSource{
+				Specifier: &envoycorev3.DataSource_InlineString{
 					InlineString: dr.spec.Body,
 				},
 			},

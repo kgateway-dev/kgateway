@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strconv"
 
-	clusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
-	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	typev3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
@@ -15,25 +15,25 @@ import (
 )
 
 type LoadBalancerConfigIR struct {
-	commonLbConfig       *clusterv3.Cluster_CommonLbConfig
-	lbPolicy             clusterv3.Cluster_LbPolicy
-	roundRobinLbConfig   *clusterv3.Cluster_RoundRobinLbConfig
-	leastRequestLbConfig *clusterv3.Cluster_LeastRequestLbConfig
-	ringHashLbConfig     *clusterv3.Cluster_RingHashLbConfig
+	commonLbConfig       *envoyclusterv3.Cluster_CommonLbConfig
+	lbPolicy             envoyclusterv3.Cluster_LbPolicy
+	roundRobinLbConfig   *envoyclusterv3.Cluster_RoundRobinLbConfig
+	leastRequestLbConfig *envoyclusterv3.Cluster_LeastRequestLbConfig
+	ringHashLbConfig     *envoyclusterv3.Cluster_RingHashLbConfig
 	slowStartConfigIR    *slowStartConfigIR
 }
 
 type slowStartConfigIR struct {
-	slowStartConfig *clusterv3.Cluster_SlowStartConfig
+	slowStartConfig *envoyclusterv3.Cluster_SlowStartConfig
 	aggression      string
 }
 
 func translateLoadBalancerConfig(config *v1alpha1.LoadBalancer) *LoadBalancerConfigIR {
 	out := &LoadBalancerConfigIR{}
 
-	out.commonLbConfig = &clusterv3.Cluster_CommonLbConfig{}
+	out.commonLbConfig = &envoyclusterv3.Cluster_CommonLbConfig{}
 
-	out.commonLbConfig.ConsistentHashingLbConfig = &clusterv3.Cluster_CommonLbConfig_ConsistentHashingLbConfig{
+	out.commonLbConfig.ConsistentHashingLbConfig = &envoyclusterv3.Cluster_CommonLbConfig_ConsistentHashingLbConfig{
 		UseHostnameForHashing: config.UseHostnameForHashing,
 	}
 
@@ -50,8 +50,8 @@ func translateLoadBalancerConfig(config *v1alpha1.LoadBalancer) *LoadBalancerCon
 	if config.LocalityType != nil {
 		switch *config.LocalityType {
 		case v1alpha1.LocalityConfigTypeWeightedLb:
-			out.commonLbConfig.LocalityConfigSpecifier = &clusterv3.Cluster_CommonLbConfig_LocalityWeightedLbConfig_{
-				LocalityWeightedLbConfig: &clusterv3.Cluster_CommonLbConfig_LocalityWeightedLbConfig{},
+			out.commonLbConfig.LocalityConfigSpecifier = &envoyclusterv3.Cluster_CommonLbConfig_LocalityWeightedLbConfig_{
+				LocalityWeightedLbConfig: &envoyclusterv3.Cluster_CommonLbConfig_LocalityWeightedLbConfig{},
 			}
 		}
 	}
@@ -61,18 +61,18 @@ func translateLoadBalancerConfig(config *v1alpha1.LoadBalancer) *LoadBalancerCon
 	}
 
 	if config.LeastRequest != nil {
-		out.lbPolicy = clusterv3.Cluster_LEAST_REQUEST
-		out.leastRequestLbConfig = &clusterv3.Cluster_LeastRequestLbConfig{}
+		out.lbPolicy = envoyclusterv3.Cluster_LEAST_REQUEST
+		out.leastRequestLbConfig = &envoyclusterv3.Cluster_LeastRequestLbConfig{}
 		out.leastRequestLbConfig.ChoiceCount = &wrapperspb.UInt32Value{
 			Value: config.LeastRequest.ChoiceCount,
 		}
 		out.slowStartConfigIR = toSlowStartConfigIR(config.LeastRequest.SlowStart)
 	} else if config.RoundRobin != nil {
-		out.lbPolicy = clusterv3.Cluster_ROUND_ROBIN
+		out.lbPolicy = envoyclusterv3.Cluster_ROUND_ROBIN
 		out.slowStartConfigIR = toSlowStartConfigIR(config.RoundRobin.SlowStart)
 	} else if config.RingHash != nil {
-		out.lbPolicy = clusterv3.Cluster_RING_HASH
-		out.ringHashLbConfig = &clusterv3.Cluster_RingHashLbConfig{}
+		out.lbPolicy = envoyclusterv3.Cluster_RING_HASH
+		out.ringHashLbConfig = &envoyclusterv3.Cluster_RingHashLbConfig{}
 		if config.RingHash.MinimumRingSize != nil {
 			out.ringHashLbConfig.MinimumRingSize = &wrapperspb.UInt64Value{
 				Value: *config.RingHash.MinimumRingSize,
@@ -84,15 +84,15 @@ func translateLoadBalancerConfig(config *v1alpha1.LoadBalancer) *LoadBalancerCon
 			}
 		}
 	} else if config.Maglev != nil {
-		out.lbPolicy = clusterv3.Cluster_MAGLEV
+		out.lbPolicy = envoyclusterv3.Cluster_MAGLEV
 	} else if config.Random != nil {
-		out.lbPolicy = clusterv3.Cluster_RANDOM
+		out.lbPolicy = envoyclusterv3.Cluster_RANDOM
 	}
 
 	return out
 }
 
-func applyLoadBalancerConfig(config *LoadBalancerConfigIR, out *clusterv3.Cluster) {
+func applyLoadBalancerConfig(config *LoadBalancerConfigIR, out *envoyclusterv3.Cluster) {
 	if config == nil {
 		return
 	}
@@ -100,33 +100,33 @@ func applyLoadBalancerConfig(config *LoadBalancerConfigIR, out *clusterv3.Cluste
 	out.CommonLbConfig = config.commonLbConfig
 	out.LbPolicy = config.lbPolicy
 	switch config.lbPolicy {
-	case clusterv3.Cluster_ROUND_ROBIN:
+	case envoyclusterv3.Cluster_ROUND_ROBIN:
 		configureRoundRobinLb(out, config)
-	case clusterv3.Cluster_LEAST_REQUEST:
+	case envoyclusterv3.Cluster_LEAST_REQUEST:
 		configureLeastRequestLb(out, config)
-	case clusterv3.Cluster_RING_HASH:
-		out.LbConfig = &clusterv3.Cluster_RingHashLbConfig_{
+	case envoyclusterv3.Cluster_RING_HASH:
+		out.LbConfig = &envoyclusterv3.Cluster_RingHashLbConfig_{
 			RingHashLbConfig: config.ringHashLbConfig,
 		}
 	}
 }
 
-func configureRoundRobinLb(out *clusterv3.Cluster, cfg *LoadBalancerConfigIR) {
+func configureRoundRobinLb(out *envoyclusterv3.Cluster, cfg *LoadBalancerConfigIR) {
 	if cfg == nil {
 		return
 	}
 	slowStartConfig := toSlowStartConfig(cfg.slowStartConfigIR, out.GetName())
 	if slowStartConfig != nil {
-		out.LbConfig = &clusterv3.Cluster_RoundRobinLbConfig_{
-			RoundRobinLbConfig: &clusterv3.Cluster_RoundRobinLbConfig{
+		out.LbConfig = &envoyclusterv3.Cluster_RoundRobinLbConfig_{
+			RoundRobinLbConfig: &envoyclusterv3.Cluster_RoundRobinLbConfig{
 				SlowStartConfig: slowStartConfig,
 			},
 		}
 	}
 }
 
-func configureLeastRequestLb(out *clusterv3.Cluster, cfg *LoadBalancerConfigIR) {
-	out.LbPolicy = clusterv3.Cluster_LEAST_REQUEST
+func configureLeastRequestLb(out *envoyclusterv3.Cluster, cfg *LoadBalancerConfigIR) {
+	out.LbPolicy = envoyclusterv3.Cluster_LEAST_REQUEST
 
 	if cfg == nil {
 		return
@@ -139,8 +139,8 @@ func configureLeastRequestLb(out *clusterv3.Cluster, cfg *LoadBalancerConfigIR) 
 
 	slowStartConfig := toSlowStartConfig(cfg.slowStartConfigIR, out.GetName())
 	if choiceCount != nil || slowStartConfig != nil {
-		out.LbConfig = &clusterv3.Cluster_LeastRequestLbConfig_{
-			LeastRequestLbConfig: &clusterv3.Cluster_LeastRequestLbConfig{
+		out.LbConfig = &envoyclusterv3.Cluster_LeastRequestLbConfig_{
+			LeastRequestLbConfig: &envoyclusterv3.Cluster_LeastRequestLbConfig{
 				ChoiceCount:     choiceCount,
 				SlowStartConfig: slowStartConfig,
 			},
@@ -152,7 +152,7 @@ func toSlowStartConfigIR(cfg *v1alpha1.SlowStart) *slowStartConfigIR {
 	if cfg == nil {
 		return nil
 	}
-	slowStart := clusterv3.Cluster_SlowStartConfig{
+	slowStart := envoyclusterv3.Cluster_SlowStartConfig{
 		SlowStartWindow: durationpb.New(cfg.Window.Duration),
 	}
 	if cfg.MinWeightPercent != nil {
@@ -166,7 +166,7 @@ func toSlowStartConfigIR(cfg *v1alpha1.SlowStart) *slowStartConfigIR {
 	}
 }
 
-func toSlowStartConfig(ir *slowStartConfigIR, clusterName string) *clusterv3.Cluster_SlowStartConfig {
+func toSlowStartConfig(ir *slowStartConfigIR, clusterName string) *envoyclusterv3.Cluster_SlowStartConfig {
 	if ir == nil {
 		return nil
 	}
@@ -186,7 +186,7 @@ func toSlowStartConfig(ir *slowStartConfigIR, clusterName string) *clusterv3.Clu
 			runtimeKeyPrefix = fmt.Sprintf("%s.%s", runtimeKeyPrefix, clusterName)
 		}
 
-		out.Aggression = &corev3.RuntimeDouble{
+		out.Aggression = &envoycorev3.RuntimeDouble{
 			DefaultValue: aggressionValue,
 			RuntimeKey:   fmt.Sprintf("%s.slowStart.aggression", runtimeKeyPrefix),
 		}

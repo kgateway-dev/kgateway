@@ -88,6 +88,10 @@ type HTTPListenerPolicySpec struct {
 	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-stream-idle-timeout
 	// +optional
 	StreamIdleTimeout *metav1.Duration `json:"streamIdleTimeout,omitempty"`
+
+	// HealthCheck configures [Envoy health checks](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/health_check/v3/health_check.proto)
+	// +optional
+	HealthCheck *EnvoyHealthCheck `json:"healthCheck,omitempty"`
 }
 
 // AccessLog represents the top-level access log configuration.
@@ -629,3 +633,12 @@ const (
 	// PassThroughServerHeaderTransformation passes through the server header unchanged.
 	PassThroughServerHeaderTransformation ServerHeaderTransformation = "PassThrough"
 )
+
+// EnvoyHealthCheck represents configuration for Envoy's health check filter.
+// The filter will be configured in No pass through mode, and will only match requests with the specified path.
+type EnvoyHealthCheck struct {
+	// Path defines the exact path that will be matched for health check requests.
+	// +kubebuilder:validation:MaxLength=2048
+	// +kubebuilder:validation:Pattern="^/[-a-zA-Z0-9@:%.+~#?&/=_]+$"
+	Path string `json:"path"`
+}

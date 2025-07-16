@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"unicode/utf8"
 
-	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
-	envoy_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_aws_common_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/common/aws/v3"
 	envoy_lambda_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/aws_lambda/v3"
 	envoy_request_signing_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/aws_request_signing/v3"
@@ -50,7 +50,7 @@ const (
 type AwsIr struct {
 	lambdaFilters         *lambdaFilters
 	lambdaEndpoint        *lambdaEndpointConfig
-	lambdaTransportSocket *envoy_core_v3.TransportSocket
+	lambdaTransportSocket *envoycorev3.TransportSocket
 }
 
 // Equals checks if two AwsIr objects are equal.
@@ -80,14 +80,14 @@ func (u *AwsIr) Equals(other any) bool {
 }
 
 // processAws processes an AWS backend and returns an envoy cluster.
-func processAws(ir *AwsIr, out *envoy_config_cluster_v3.Cluster) error {
+func processAws(ir *AwsIr, out *envoyclusterv3.Cluster) error {
 	// defensive check; this should never happen with union types
 	if ir == nil {
 		return fmt.Errorf("aws ir is nil")
 	}
 
-	out.ClusterDiscoveryType = &envoy_config_cluster_v3.Cluster_Type{
-		Type: envoy_config_cluster_v3.Cluster_LOGICAL_DNS,
+	out.ClusterDiscoveryType = &envoyclusterv3.Cluster_Type{
+		Type: envoyclusterv3.Cluster_LOGICAL_DNS,
 	}
 	if ir.lambdaTransportSocket != nil {
 		out.TransportSocket = ir.lambdaTransportSocket
@@ -97,11 +97,11 @@ func processAws(ir *AwsIr, out *envoy_config_cluster_v3.Cluster) error {
 		opts.UpstreamProtocolOptions = &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig_{
 			ExplicitHttpConfig: &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig{
 				ProtocolConfig: &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig_Http2ProtocolOptions{
-					Http2ProtocolOptions: &envoy_core_v3.Http2ProtocolOptions{},
+					Http2ProtocolOptions: &envoycorev3.Http2ProtocolOptions{},
 				},
 			},
 		}
-		opts.CommonHttpProtocolOptions = &envoy_core_v3.HttpProtocolOptions{
+		opts.CommonHttpProtocolOptions = &envoycorev3.HttpProtocolOptions{
 			IdleTimeout: &durationpb.Duration{
 				Seconds: 30,
 			},

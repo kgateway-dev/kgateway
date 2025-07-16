@@ -10,7 +10,7 @@ import (
 	"reflect"
 	"strings"
 
-	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_ext_proc_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_proc/v3"
 	"github.com/mitchellh/hashstructure"
 	envoytransformation "github.com/solo-io/envoy-gloo/go/config/filter/http/transformation/v2"
@@ -77,7 +77,7 @@ func preProcessAITrafficPolicy(
 	// If the route options specify this as a chat streaming route, add a header to the ext-proc request
 	if aiConfig.RouteType != nil && *aiConfig.RouteType == v1alpha1.CHAT_STREAMING {
 		// append streaming header if it's a streaming route
-		extprocSettings.GetOverrides().GrpcInitialMetadata = append(extprocSettings.GetOverrides().GetGrpcInitialMetadata(), &envoy_config_core_v3.HeaderValue{
+		extprocSettings.GetOverrides().GrpcInitialMetadata = append(extprocSettings.GetOverrides().GetGrpcInitialMetadata(), &envoycorev3.HeaderValue{
 			Key:   "x-chat-streaming",
 			Value: "true",
 		})
@@ -274,7 +274,7 @@ func applyPromptGuard(pg *v1alpha1.AIPromptGuard, extProcRouteSettings *envoy_ex
 			return err
 		}
 		extProcRouteSettings.GetOverrides().GrpcInitialMetadata = append(extProcRouteSettings.GetOverrides().GetGrpcInitialMetadata(),
-			&envoy_config_core_v3.HeaderValue{
+			&envoycorev3.HeaderValue{
 				Key:   "x-req-guardrails-config",
 				Value: string(bin),
 			},
@@ -283,7 +283,7 @@ func applyPromptGuard(pg *v1alpha1.AIPromptGuard, extProcRouteSettings *envoy_ex
 		// Better to do it here because we have generated functions
 		reqHash, _ := hashUnique(req, nil)
 		extProcRouteSettings.GetOverrides().GrpcInitialMetadata = append(extProcRouteSettings.GetOverrides().GetGrpcInitialMetadata(),
-			&envoy_config_core_v3.HeaderValue{
+			&envoycorev3.HeaderValue{
 				Key:   "x-req-guardrails-config-hash",
 				Value: fmt.Sprint(reqHash),
 			},
@@ -297,7 +297,7 @@ func applyPromptGuard(pg *v1alpha1.AIPromptGuard, extProcRouteSettings *envoy_ex
 			return err
 		}
 		extProcRouteSettings.GetOverrides().GrpcInitialMetadata = append(extProcRouteSettings.GetOverrides().GetGrpcInitialMetadata(),
-			&envoy_config_core_v3.HeaderValue{
+			&envoycorev3.HeaderValue{
 				Key:   "x-resp-guardrails-config",
 				Value: string(bin),
 			},
@@ -306,7 +306,7 @@ func applyPromptGuard(pg *v1alpha1.AIPromptGuard, extProcRouteSettings *envoy_ex
 		// Better to do it here because we have generated functions
 		respHash, _ := hashUnique(resp, nil)
 		extProcRouteSettings.GetOverrides().GrpcInitialMetadata = append(extProcRouteSettings.GetOverrides().GetGrpcInitialMetadata(),
-			&envoy_config_core_v3.HeaderValue{
+			&envoycorev3.HeaderValue{
 				Key:   "x-resp-guardrails-config-hash",
 				Value: fmt.Sprint(respHash),
 			},
