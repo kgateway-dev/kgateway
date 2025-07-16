@@ -1,6 +1,8 @@
 package deployer
 
 import (
+	"fmt"
+
 	"istio.io/api/annotation"
 	"istio.io/api/label"
 	corev1 "k8s.io/api/core/v1"
@@ -112,6 +114,7 @@ func applyFloatingUserId(dstKube *v1alpha1.KubernetesProxyConfig) {
 func GetInMemoryGatewayParameters(name string, imageInfo *ImageInfo, gatewayClassName, waypointClassName, agentGatewayClassName string) *v1alpha1.GatewayParameters {
 	switch name {
 	case waypointClassName:
+		fmt.Printf("🎯 WAYPOINT MATCHED: calling defaultWaypointGatewayParameters\n")
 		return defaultWaypointGatewayParameters(imageInfo)
 	case gatewayClassName:
 		return defaultGatewayParameters(imageInfo)
@@ -136,17 +139,26 @@ func defaultWaypointGatewayParameters(imageInfo *ImageInfo) *v1alpha1.GatewayPar
 	gwp := defaultGatewayParameters(imageInfo)
 	gwp.Spec.Kube.Service.Type = ptr.To(corev1.ServiceTypeClusterIP)
 
+	// Ensure Service is initialized before adding ports
 	if gwp.Spec.Kube.Service == nil {
 		gwp.Spec.Kube.Service = &v1alpha1.Service{}
 	}
 	if gwp.Spec.Kube.Service.Ports == nil {
 		gwp.Spec.Kube.Service.Ports = []*v1alpha1.Port{}
 	}
+
+	// Port 15008 is reserved for Istio. This port enables sidecars to include waypoint proxies
+	// to the list of possible communication targets. There is no actual traffic on this port.
+	// Similar to labeling in kubernetes, this is used to identify the service as a waypoint service.
 	meshPort := &v1alpha1.Port{
 		Port: 15008,
 		// Don't set NodePort as this is ClusterIP service type
 	}
 	gwp.Spec.Kube.Service.Ports = append(gwp.Spec.Kube.Service.Ports, meshPort)
+
+	if gwp.Spec.Kube.PodTemplate == nil {
+		gwp.Spec.Kube.PodTemplate = &v1alpha1.Pod{}
+	}
 	if gwp.Spec.Kube.PodTemplate.ExtraLabels == nil {
 		gwp.Spec.Kube.PodTemplate.ExtraLabels = make(map[string]string)
 	}
@@ -159,7 +171,6 @@ func defaultWaypointGatewayParameters(imageInfo *ImageInfo) *v1alpha1.GatewayPar
 		gwp.Spec.Kube.PodTemplate.ExtraAnnotations = make(map[string]string)
 	}
 	gwp.Spec.Kube.PodTemplate.ExtraAnnotations[annotation.AmbientDnsCapture.Name] = "false"
-
 	return gwp
 }
 

@@ -28,23 +28,26 @@ var ComponentLogLevelEmptyError = func(key string, value string) error {
 // 2. the ports exposed on the proxy service
 func GetPortsValues(gw *ir.Gateway, gwp *v1alpha1.GatewayParameters) []HelmPort {
 	gwPorts := []HelmPort{}
+
 	// Add ports from Gateway listeners
 	for _, l := range gw.Listeners {
 		listenerPort := uint16(l.Port)
 		portName := listener.GenerateListenerName(l)
 		gwPorts = AppendPortValue(gwPorts, listenerPort, portName, gwp)
 	}
-	
-	// Include ports from GatewayParameters.Service.Ports (for waypoint mesh ports)
+
+	// Add ports from GatewayParameters.Service.Ports
 	if gwp != nil && gwp.Spec.GetKube() != nil && gwp.Spec.GetKube().GetService() != nil {
-		for _, servicePort := range gwp.Spec.GetKube().GetService().GetPorts() {
+		servicePorts := gwp.Spec.GetKube().GetService().GetPorts()
+		for _, servicePort := range servicePorts {
 			if servicePort != nil {
 				port := uint16(servicePort.GetPort())
-				portName := fmt.Sprintf("listener-%d", port) // Matches Gateway listener naming pattern
+				portName := fmt.Sprintf("listener~%d", port)
 				gwPorts = AppendPortValue(gwPorts, port, portName, gwp)
 			}
 		}
 	}
+
 	return gwPorts
 }
 
