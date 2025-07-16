@@ -18,10 +18,10 @@ func TestPolicyApplyOrderedGroupKinds(t *testing.T) {
 	}{
 		{
 			name:     "1",
-			policies: map[schema.GroupKind][]PolicyAtt{VirtualBuiltInGK: {}, fooGK: {}, barGK: {}},
+			policies: map[schema.GroupKind][]PolicyAtt{fooGK: {}, barGK: {}, VirtualBuiltInGK: {}},
 			assertFn: func(a *assert.Assertions, got []schema.GroupKind) {
 				a.Len(got, 3)
-				a.Equal(got[2], VirtualBuiltInGK, "VirtualBuiltInGK should be last in the list")
+				a.Equal(got[0], VirtualBuiltInGK, "VirtualBuiltInGK should be first in the list")
 			},
 		},
 		{
@@ -37,7 +37,7 @@ func TestPolicyApplyOrderedGroupKinds(t *testing.T) {
 			policies: map[schema.GroupKind][]PolicyAtt{barGK: {}, VirtualBuiltInGK: {}, fooGK: {}},
 			assertFn: func(a *assert.Assertions, got []schema.GroupKind) {
 				a.Len(got, 3)
-				a.Equal(got[2], VirtualBuiltInGK, "VirtualBuiltInGK should be last in the list")
+				a.Equal(got[0], VirtualBuiltInGK, "VirtualBuiltInGK should be first in the list")
 			},
 		},
 	}

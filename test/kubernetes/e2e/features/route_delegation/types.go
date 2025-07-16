@@ -128,4 +128,5 @@ var (
 	unresolvedChildManifest             = filepath.Join(fsutils.MustGetThisDir(), "testdata", "unresolved_child.yaml")
 	matcherInheritanceManifest          = filepath.Join(fsutils.MustGetThisDir(), "testdata", "matcher_inheritance.yaml")
 	routeWeightManifest                 = filepath.Join(fsutils.MustGetThisDir(), "testdata", "route_weight.yaml")
+	policyMergingManifest               = filepath.Join(fsutils.MustGetThisDir(), "testdata", "policy_merging.yaml")
 )
