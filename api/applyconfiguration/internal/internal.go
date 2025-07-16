@@ -1423,10 +1423,6 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: updateMergeWindow
       type:
         namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Duration
-    - name: useHostnameForHashing
-      type:
-        scalar: boolean
-      default: false
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LoadBalancerLeastRequestConfig
   map:
     fields:
@@ -1439,16 +1435,11 @@ var schemaYAML = typed.YAMLObject(`types:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SlowStart
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LoadBalancerMaglevConfig
   map:
-    elementType:
-      scalar: untyped
-      list:
-        elementType:
-          namedType: __untyped_atomic_
-        elementRelationship: atomic
-      map:
-        elementType:
-          namedType: __untyped_deduced_
-        elementRelationship: separable
+    fields:
+    - name: useHostnameForHashing
+      type:
+        scalar: boolean
+      default: false
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LoadBalancerRandomConfig
   map:
     elementType:
@@ -1470,6 +1461,10 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: minimumRingSize
       type:
         scalar: numeric
+    - name: useHostnameForHashing
+      type:
+        scalar: boolean
+      default: false
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LoadBalancerRoundRobinConfig
   map:
     fields:

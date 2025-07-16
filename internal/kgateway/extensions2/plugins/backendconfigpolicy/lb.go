@@ -33,12 +33,6 @@ func translateLoadBalancerConfig(config *v1alpha1.LoadBalancer) *LoadBalancerCon
 
 	out.commonLbConfig = &envoyclusterv3.Cluster_CommonLbConfig{}
 
-	if config.UseHostnameForHashing {
-		out.commonLbConfig.ConsistentHashingLbConfig = &envoyclusterv3.Cluster_CommonLbConfig_ConsistentHashingLbConfig{
-			UseHostnameForHashing: config.UseHostnameForHashing,
-		}
-	}
-
 	if config.HealthyPanicThreshold != nil {
 		out.commonLbConfig.HealthyPanicThreshold = &typev3.Percent{
 			Value: float64(*config.HealthyPanicThreshold),
@@ -85,8 +79,18 @@ func translateLoadBalancerConfig(config *v1alpha1.LoadBalancer) *LoadBalancerCon
 				Value: *config.RingHash.MaximumRingSize,
 			}
 		}
+		if config.RingHash.UseHostnameForHashing {
+			out.commonLbConfig.ConsistentHashingLbConfig = &envoyclusterv3.Cluster_CommonLbConfig_ConsistentHashingLbConfig{
+				UseHostnameForHashing: config.RingHash.UseHostnameForHashing,
+			}
+		}
 	} else if config.Maglev != nil {
 		out.lbPolicy = envoyclusterv3.Cluster_MAGLEV
+		if config.Maglev.UseHostnameForHashing {
+			out.commonLbConfig.ConsistentHashingLbConfig = &envoyclusterv3.Cluster_CommonLbConfig_ConsistentHashingLbConfig{
+				UseHostnameForHashing: config.Maglev.UseHostnameForHashing,
+			}
+		}
 	} else if config.Random != nil {
 		out.lbPolicy = envoyclusterv3.Cluster_RANDOM
 	}

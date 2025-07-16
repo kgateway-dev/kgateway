@@ -277,7 +277,6 @@ type TLSFiles struct {
 }
 
 // +kubebuilder:validation:AtMostOneOf=leastRequest;roundRobin;ringHash;maglev;random
-// +kubebuilder:validation:XValidation:rule="!self.useHostnameForHashing || has(self.ringHash) || has(self.maglev)",message="UseHostnameForHashing can only be true when RingHash or Maglev load balancer type is configured"
 type LoadBalancer struct {
 	// HealthyPanicThreshold configures envoy's panic threshold percentage between 0-100. Once the number of non-healthy hosts
 	// reaches this percentage, envoy disregards health information.
@@ -319,12 +318,6 @@ type LoadBalancer struct {
 	// +optional
 	// +kubebuilder:validation:Enum=WeightedLb
 	LocalityType *LocalityType `json:"localityType,omitempty"`
-
-	// UseHostnameForHashing specifies whether to use the hostname instead of the resolved IP address for hashing.
-	// Defaults to false. Can only be true when RingHash or Maglev load balancer type is configured.
-	// +optional
-	// +default=false
-	UseHostnameForHashing bool `json:"useHostnameForHashing,omitempty"`
 
 	// If set to true, the load balancer will drain connections when the host set changes.
 	//
@@ -370,13 +363,23 @@ type LoadBalancerRingHashConfig struct {
 	// MaximumRingSize is the maximum size of the ring.
 	// +optional
 	MaximumRingSize *uint64 `json:"maximumRingSize,omitempty"`
+
+	// UseHostnameForHashing specifies whether to use the hostname instead of the resolved IP address for hashing.
+	// Defaults to false.
+	// +optional
+	// +default=false
+	UseHostnameForHashing bool `json:"useHostnameForHashing,omitempty"`
 }
 
-type (
-	LoadBalancerMaglevConfig struct{}
-	LoadBalancerRandomConfig struct{}
-)
+type LoadBalancerMaglevConfig struct {
+	// UseHostnameForHashing specifies whether to use the hostname instead of the resolved IP address for hashing.
+	// Defaults to false.
+	// +optional
+	// +default=false
+	UseHostnameForHashing bool `json:"useHostnameForHashing,omitempty"`
+}
 
+type LoadBalancerRandomConfig struct{}
 type SlowStart struct {
 	// Represents the size of slow start window.
 	// If set, the newly created host remains in slow start mode starting from its creation time

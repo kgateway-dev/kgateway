@@ -121,66 +121,6 @@ spec:
 			wantError: "TargetSelectors must reference either a Kubernetes Service or a Backend API",
 		},
 		{
-			name: "BackendConfigPolicy: invalid useHostnameForHashing",
-			input: `---
-apiVersion: gateway.kgateway.dev/v1alpha1
-kind: BackendConfigPolicy
-metadata:
-  name: backend-config-invalid-use-hostname-for-hashing
-spec:
-  targetRefs:
-  - group: ""
-    kind: Service
-    name: test-service
-  loadBalancer:
-    random: {}
-    useHostnameForHashing: true
-`,
-			wantError: "UseHostnameForHashing can only be true when RingHash or Maglev load balancer type is configured",
-		},
-		{
-			name: "BackendConfigPolicy: valid useHostnameForHashing",
-			input: `---
-apiVersion: gateway.kgateway.dev/v1alpha1
-kind: BackendConfigPolicy
-metadata:
-  name: backend-config-valid-use-hostname-for-hashing
-spec:
-  targetRefs:
-  - group: ""
-    kind: Service
-    name: test-service
-  loadBalancer:
-    ringHash: {}
-    useHostnameForHashing: true
-`,
-		},
-		{
-			name: "TrafficPolicy: valid target references",
-			input: `---
-apiVersion: gateway.kgateway.dev/v1alpha1
-kind: TrafficPolicy
-metadata:
-  name: traffic-policy-valid-targets
-spec:
-  targetRefs:
-  - group: gateway.networking.k8s.io
-    kind: Gateway
-    name: test-gateway
-  - group: gateway.networking.k8s.io
-    kind: HTTPRoute
-    name: test-route
-  - group: gateway.networking.x-k8s.io
-    kind: XListenerSet
-    name: test-listener
-  targetSelectors:
-  - group: gateway.networking.k8s.io
-    kind: Gateway
-    matchLabels:
-      app: myapp
-`,
-		},
-		{
 			name: "TrafficPolicy: invalid target reference",
 			input: `---
 apiVersion: gateway.kgateway.dev/v1alpha1

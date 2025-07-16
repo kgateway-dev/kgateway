@@ -231,10 +231,16 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 		{
 			name: "UseHostnameForHashing",
 			config: &v1alpha1.LoadBalancer{
-				UseHostnameForHashing: true,
+				RingHash: &v1alpha1.LoadBalancerRingHashConfig{
+					UseHostnameForHashing: true,
+				},
 			},
 			expected: &envoyclusterv3.Cluster{
-				Name: "test",
+				Name:     "test",
+				LbPolicy: envoyclusterv3.Cluster_RING_HASH,
+				LbConfig: &envoyclusterv3.Cluster_RingHashLbConfig_{
+					RingHashLbConfig: &envoyclusterv3.Cluster_RingHashLbConfig{},
+				},
 				CommonLbConfig: &envoyclusterv3.Cluster_CommonLbConfig{
 					ConsistentHashingLbConfig: &envoyclusterv3.Cluster_CommonLbConfig_ConsistentHashingLbConfig{
 						UseHostnameForHashing: true,

@@ -183,6 +183,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.LoadBalancerApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("LoadBalancerLeastRequestConfig"):
 		return &apiv1alpha1.LoadBalancerLeastRequestConfigApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("LoadBalancerMaglevConfig"):
+		return &apiv1alpha1.LoadBalancerMaglevConfigApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("LoadBalancerRingHashConfig"):
 		return &apiv1alpha1.LoadBalancerRingHashConfigApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("LoadBalancerRoundRobinConfig"):
