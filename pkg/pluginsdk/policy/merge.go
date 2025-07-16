@@ -117,7 +117,7 @@ func groupPoliciesByHierarchicalPriority(policies []ir.PolicyAtt) map[int][]ir.P
 //
 // It first merges policies that belong to the same hierarchy in the config tree, and then
 // merges the result of the merged policy per hierarchy into a single policy.
-func MergePolicies[T comparable](
+func MergePolicies[T any](
 	policies []ir.PolicyAtt,
 	mergeFn func(*T, *T, *ir.AttachedPolicyRef, MergeOptions, ir.MergeOrigins),
 ) ir.PolicyAtt {
@@ -147,7 +147,7 @@ func MergePolicies[T comparable](
 	return out
 }
 
-func merge[T comparable](
+func merge[T any](
 	policies []ir.PolicyAtt,
 	sameHierarchy bool,
 	mergeOrigins ir.MergeOrigins,
