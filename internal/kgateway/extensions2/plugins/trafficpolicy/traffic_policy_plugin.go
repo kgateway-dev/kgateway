@@ -87,7 +87,7 @@ type trafficPolicySpecIr struct {
 	rateLimit                  *GlobalRateLimitIR
 	cors                       *CorsIR
 	csrf                       *CsrfIR
-	hashPolicies               []*routev3.RouteAction_HashPolicy
+	hashPolicies               []*envoyroutev3.RouteAction_HashPolicy
 	autoHostRewrite            *wrapperspb.BoolValue
 	buffer                     *BufferIR
 }
@@ -163,7 +163,7 @@ func (d *TrafficPolicy) Equals(in any) bool {
 		return false
 	}
 
-	if !slices.EqualFunc(d.spec.hashPolicies, d2.spec.hashPolicies, func(a, b *routev3.RouteAction_HashPolicy) bool {
+	if !slices.EqualFunc(d.spec.hashPolicies, d2.spec.hashPolicies, func(a, b *envoyroutev3.RouteAction_HashPolicy) bool {
 		return proto.Equal(a, b)
 	}) {
 		return false
