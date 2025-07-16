@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"testing"
 
-	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_service_discovery_v3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	. "github.com/onsi/gomega"
 	"google.golang.org/protobuf/proto"
@@ -57,7 +57,7 @@ func TestUniqueClients(t *testing.T) {
 			},
 			requests: []*envoy_service_discovery_v3.DiscoveryRequest{
 				{
-					Node: &corev3.Node{
+					Node: &envoycorev3.Node{
 						Id: "podname.ns",
 						Metadata: &structpb.Struct{
 							Fields: map[string]*structpb.Value{
@@ -121,7 +121,7 @@ func TestUniqueClients(t *testing.T) {
 			},
 			requests: []*envoy_service_discovery_v3.DiscoveryRequest{
 				{
-					Node: &corev3.Node{
+					Node: &envoycorev3.Node{
 						Id: "podname.ns",
 						Metadata: &structpb.Struct{
 							Fields: map[string]*structpb.Value{
@@ -131,7 +131,7 @@ func TestUniqueClients(t *testing.T) {
 					},
 				},
 				{
-					Node: &corev3.Node{
+					Node: &envoycorev3.Node{
 						Id: "podname2.ns",
 						Metadata: &structpb.Struct{
 							Fields: map[string]*structpb.Value{
@@ -158,7 +158,7 @@ func TestUniqueClients(t *testing.T) {
 			inputs: nil,
 			requests: []*envoy_service_discovery_v3.DiscoveryRequest{
 				{
-					Node: &corev3.Node{
+					Node: &envoycorev3.Node{
 						Id: "podname.ns",
 						Metadata: &structpb.Struct{
 							Fields: map[string]*structpb.Value{

@@ -7,7 +7,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 
 	envoy_admin_v3 "github.com/envoyproxy/go-control-plane/envoy/admin/v3"
-	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -88,7 +88,7 @@ var _ = Describe("Load Balancer Plugin", Label(), func() {
 				g.Expect(dacs).NotTo(BeEmpty())
 				g.Expect(dacs).To(HaveLen(1))
 
-				g.Expect(dacs[0].LbPolicy).To(Equal(envoy_config_cluster_v3.Cluster_MAGLEV))
+				g.Expect(dacs[0].LbPolicy).To(Equal(envoyclusterv3.Cluster_MAGLEV))
 				g.Expect(dacs[0].CommonLbConfig).To(BeNil())
 			}, "5s", ".5s").Should(Succeed())
 		})
@@ -114,7 +114,7 @@ var _ = Describe("Load Balancer Plugin", Label(), func() {
 				g.Expect(dacs).NotTo(BeEmpty())
 				g.Expect(dacs).To(HaveLen(1))
 
-				g.Expect(dacs[0].LbPolicy).To(Equal(envoy_config_cluster_v3.Cluster_MAGLEV), dacs[0])
+				g.Expect(dacs[0].LbPolicy).To(Equal(envoyclusterv3.Cluster_MAGLEV), dacs[0])
 				g.Expect(dacs[0].CommonLbConfig).ToNot(BeNil())
 				g.Expect(dacs[0].CommonLbConfig.CloseConnectionsOnHostSetChange).To(BeTrue())
 			}, "5s", ".5s").Should(Succeed())
@@ -123,8 +123,8 @@ var _ = Describe("Load Balancer Plugin", Label(), func() {
 })
 
 // findDynamicActiveClusters finds the dynamic active clusters in the config dump
-func findDynamicActiveClusters(dump *envoy_admin_v3.ConfigDump) ([]*envoy_config_cluster_v3.Cluster, error) {
-	clusters := []*envoy_config_cluster_v3.Cluster{}
+func findDynamicActiveClusters(dump *envoy_admin_v3.ConfigDump) ([]*envoyclusterv3.Cluster, error) {
+	clusters := []*envoyclusterv3.Cluster{}
 
 	var found []*envoy_admin_v3.ClustersConfigDump_DynamicCluster
 	for _, cfg := range dump.Configs {
@@ -144,7 +144,7 @@ func findDynamicActiveClusters(dump *envoy_admin_v3.ConfigDump) ([]*envoy_config
 	}
 
 	for _, clusterDump := range found {
-		cluster := envoy_config_cluster_v3.Cluster{}
+		cluster := envoyclusterv3.Cluster{}
 		err := clusterDump.Cluster.UnmarshalTo(&cluster)
 		if err != nil {
 			return nil, err

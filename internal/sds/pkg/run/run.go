@@ -2,6 +2,7 @@ package run
 
 import (
 	"context"
+	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
@@ -12,7 +13,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/sds/pkg/server"
 )
 
-func Run(ctx context.Context, secrets []server.Secret, sdsClient, sdsServerAddress string) error {
+func Run(ctx context.Context, secrets []server.Secret, sdsClient, sdsServerAddress string, logger *slog.Logger) error {
 	ctx, cancel := context.WithCancel(ctx)
 
 	// Set up the gRPC server
@@ -50,7 +51,7 @@ func Run(ctx context.Context, secrets []server.Secret, sdsClient, sdsServerAddre
 			case event := <-watcher.Events:
 				logger.Info("received event", "event", event)
 				sdsServer.UpdateSDSConfig(ctx)
-				watchFiles(watcher, secrets)
+				watchFiles(watcher, secrets, logger)
 			// watch for errors
 			case err := <-watcher.Errors:
 				logger.Warn("received error from file watcher", "error", err)
@@ -59,7 +60,7 @@ func Run(ctx context.Context, secrets []server.Secret, sdsClient, sdsServerAddre
 			}
 		}
 	}()
-	watchFiles(watcher, secrets)
+	watchFiles(watcher, secrets, logger)
 
 	<-sigs
 	cancel()
@@ -71,7 +72,7 @@ func Run(ctx context.Context, secrets []server.Secret, sdsClient, sdsServerAddre
 	}
 }
 
-func watchFiles(watcher *fsnotify.Watcher, secrets []server.Secret) {
+func watchFiles(watcher *fsnotify.Watcher, secrets []server.Secret, logger *slog.Logger) {
 	for _, s := range secrets {
 		logger.Info("watcher started", "key_file", s.SslKeyFile, "cert_file", s.SslCertFile, "ca_file", s.SslCaFile)
 		if err := watcher.Add(s.SslKeyFile); err != nil {

@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"time"
 
-	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
-	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
-	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
@@ -83,9 +83,9 @@ type RouteBackendContext struct {
 	Backend         *BackendObjectIR
 	// TypedFilterConfig will be output on the Route or WeightedCluster level after all plugins have run
 	TypedFilterConfig       TypedFilterConfigMap
-	RequestHeadersToAdd     []*envoy_config_core_v3.HeaderValueOption
+	RequestHeadersToAdd     []*envoycorev3.HeaderValueOption
 	RequestHeadersToRemove  []string
-	ResponseHeadersToAdd    []*envoy_config_core_v3.HeaderValueOption
+	ResponseHeadersToAdd    []*envoycorev3.HeaderValueOption
 	ResponseHeadersToRemove []string
 }
 
@@ -112,7 +112,7 @@ type ProxyTranslationPass interface {
 	ApplyListenerPlugin(
 		ctx context.Context,
 		pCtx *ListenerContext,
-		out *envoy_config_listener_v3.Listener,
+		out *envoylistenerv3.Listener,
 	)
 
 	// called 1 time for all the routes in a filter chain. Use this to set default PerFilterConfig
@@ -120,12 +120,12 @@ type ProxyTranslationPass interface {
 	ApplyRouteConfigPlugin(
 		ctx context.Context,
 		pCtx *RouteConfigContext,
-		out *envoy_config_route_v3.RouteConfiguration,
+		out *envoyroutev3.RouteConfiguration,
 	)
 	ApplyVhostPlugin(
 		ctx context.Context,
 		pCtx *VirtualHostContext,
-		out *envoy_config_route_v3.VirtualHost,
+		out *envoyroutev3.VirtualHost,
 	)
 	// no policy applied - this is called for every backend in a route.
 	// For this to work the backend needs to register itself as a policy. TODO: rethink this.
@@ -135,7 +135,7 @@ type ProxyTranslationPass interface {
 		ctx context.Context,
 		pCtx *RouteBackendContext,
 		in HttpBackend,
-		out *envoy_config_route_v3.Route,
+		out *envoyroutev3.Route,
 	) error
 	// Applies a policy attached to a specific Backend (via extensionRef on the BackendRef).
 	// Note: TypedFilterConfig should be applied in the pCtx and is shared between ApplyForRoute, ApplyForBackend
@@ -148,13 +148,13 @@ type ProxyTranslationPass interface {
 	// called once per route rule if SupportsPolicyMerge returns false, otherwise this is called only
 	// once on the value returned by MergePolicies.
 	// Applies policy for an HTTPRoute that has a policy attached via a targetRef.
-	// The output configures the envoy_config_route_v3.Route
+	// The output configures the envoyroutev3.Route
 	// Note: TypedFilterConfig should be applied in the pCtx and is shared between ApplyForRoute, ApplyForBackend
 	// and ApplyForRouteBacken (do not apply on the output route directly)
 	ApplyForRoute(
 		ctx context.Context,
 		pCtx *RouteContext,
-		out *envoy_config_route_v3.Route,
+		out *envoyroutev3.Route,
 	) error
 
 	NetworkFilters(ctx context.Context) ([]plugins.StagedNetworkFilter, error)
@@ -177,24 +177,24 @@ type UnimplementedProxyTranslationPass struct{}
 
 var _ ProxyTranslationPass = UnimplementedProxyTranslationPass{}
 
-func (s UnimplementedProxyTranslationPass) ApplyListenerPlugin(ctx context.Context, pCtx *ListenerContext, out *envoy_config_listener_v3.Listener) {
+func (s UnimplementedProxyTranslationPass) ApplyListenerPlugin(ctx context.Context, pCtx *ListenerContext, out *envoylistenerv3.Listener) {
 }
 
 func (s UnimplementedProxyTranslationPass) ApplyHCM(ctx context.Context, pCtx *HcmContext, out *envoy_hcm.HttpConnectionManager) error {
 	return nil
 }
 
-func (s UnimplementedProxyTranslationPass) ApplyForBackend(ctx context.Context, pCtx *RouteBackendContext, in HttpBackend, out *envoy_config_route_v3.Route) error {
+func (s UnimplementedProxyTranslationPass) ApplyForBackend(ctx context.Context, pCtx *RouteBackendContext, in HttpBackend, out *envoyroutev3.Route) error {
 	return nil
 }
 
-func (s UnimplementedProxyTranslationPass) ApplyRouteConfigPlugin(ctx context.Context, pCtx *RouteConfigContext, out *envoy_config_route_v3.RouteConfiguration) {
+func (s UnimplementedProxyTranslationPass) ApplyRouteConfigPlugin(ctx context.Context, pCtx *RouteConfigContext, out *envoyroutev3.RouteConfiguration) {
 }
 
-func (s UnimplementedProxyTranslationPass) ApplyVhostPlugin(ctx context.Context, pCtx *VirtualHostContext, out *envoy_config_route_v3.VirtualHost) {
+func (s UnimplementedProxyTranslationPass) ApplyVhostPlugin(ctx context.Context, pCtx *VirtualHostContext, out *envoyroutev3.VirtualHost) {
 }
 
-func (s UnimplementedProxyTranslationPass) ApplyForRoute(ctx context.Context, pCtx *RouteContext, out *envoy_config_route_v3.Route) error {
+func (s UnimplementedProxyTranslationPass) ApplyForRoute(ctx context.Context, pCtx *RouteContext, out *envoyroutev3.Route) error {
 	return nil
 }
 
@@ -215,7 +215,7 @@ func (s UnimplementedProxyTranslationPass) ResourcesToAdd(ctx context.Context) R
 }
 
 type Resources struct {
-	Clusters []*envoy_config_cluster_v3.Cluster
+	Clusters []*envoyclusterv3.Cluster
 }
 
 type GwTranslationCtx struct{}
@@ -274,5 +274,5 @@ type PolicyRun interface {
 	// Allocate state for single listener+rotue translation pass.
 	NewGatewayTranslationPass(ctx context.Context, tctx GwTranslationCtx, reporter reports.Reporter) ProxyTranslationPass
 	// Process cluster for a backend
-	ProcessBackend(ctx context.Context, in BackendObjectIR, out *envoy_config_cluster_v3.Cluster) error
+	ProcessBackend(ctx context.Context, in BackendObjectIR, out *envoyclusterv3.Cluster) error
 }

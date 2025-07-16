@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	routev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -24,9 +24,9 @@ func TestApplyForRoute_SetsRouteActionFlag(t *testing.T) {
 		}
 
 		pCtx := &ir.RouteContext{Policy: policy}
-		out := &routev3.Route{
-			Action: &routev3.Route_Route{
-				Route: &routev3.RouteAction{},
+		out := &envoyroutev3.Route{
+			Action: &envoyroutev3.Route_Route{
+				Route: &envoyroutev3.RouteAction{},
 			},
 		}
 
@@ -43,8 +43,8 @@ func TestApplyForRoute_SetsRouteActionFlag(t *testing.T) {
 			spec: trafficPolicySpecIr{autoHostRewrite: nil},
 		}
 		pCtx := &ir.RouteContext{Policy: policy}
-		out := &routev3.Route{
-			Action: &routev3.Route_Route{Route: &routev3.RouteAction{}},
+		out := &envoyroutev3.Route{
+			Action: &envoyroutev3.Route_Route{Route: &envoyroutev3.RouteAction{}},
 		}
 
 		require.NoError(t, plugin.ApplyForRoute(ctx, pCtx, out))

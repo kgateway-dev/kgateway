@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	listenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
@@ -38,7 +38,7 @@ type addFilters struct {
 func (a addFilters) NetworkFilters(ctx context.Context) ([]plugins.StagedNetworkFilter, error) {
 	return []plugins.StagedNetworkFilter{
 		{
-			Filter: &listenerv3.Filter{Name: testPluginFilterName},
+			Filter: &envoylistenerv3.Filter{Name: testPluginFilterName},
 			Stage:  plugins.BeforeStage(plugins.AuthZStage),
 		},
 	}, nil
@@ -105,7 +105,7 @@ func TestFilterChains(t *testing.T) {
 	expectedFilters := []string{testPluginFilterName, testCustomFilterName}
 	for _, filterChain := range envoyListener.FilterChains {
 		for _, expectedFilterName := range expectedFilters {
-			filter := ptr.Flatten(slices.FindFunc(filterChain.Filters, func(filter *listenerv3.Filter) bool {
+			filter := ptr.Flatten(slices.FindFunc(filterChain.Filters, func(filter *envoylistenerv3.Filter) bool {
 				return filter.Name == expectedFilterName
 			}))
 

@@ -3,7 +3,7 @@ package irtranslator
 import (
 	"testing"
 
-	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/stretchr/testify/assert"
@@ -12,17 +12,17 @@ import (
 func TestValidateWeightedClusters(t *testing.T) {
 	tests := []struct {
 		name     string
-		clusters []*envoy_config_route_v3.WeightedCluster_ClusterWeight
+		clusters []*envoyroutev3.WeightedCluster_ClusterWeight
 		wantErr  bool
 	}{
 		{
 			name:     "no clusters",
-			clusters: []*envoy_config_route_v3.WeightedCluster_ClusterWeight{},
+			clusters: []*envoyroutev3.WeightedCluster_ClusterWeight{},
 			wantErr:  false,
 		},
 		{
 			name: "single cluster with weight 0",
-			clusters: []*envoy_config_route_v3.WeightedCluster_ClusterWeight{
+			clusters: []*envoyroutev3.WeightedCluster_ClusterWeight{
 				{
 					Weight: wrapperspb.UInt32(0),
 				},
@@ -31,7 +31,7 @@ func TestValidateWeightedClusters(t *testing.T) {
 		},
 		{
 			name: "single cluster with weight > 0",
-			clusters: []*envoy_config_route_v3.WeightedCluster_ClusterWeight{
+			clusters: []*envoyroutev3.WeightedCluster_ClusterWeight{
 				{
 					Weight: wrapperspb.UInt32(100),
 				},
@@ -40,7 +40,7 @@ func TestValidateWeightedClusters(t *testing.T) {
 		},
 		{
 			name: "multiple clusters all with weight 0",
-			clusters: []*envoy_config_route_v3.WeightedCluster_ClusterWeight{
+			clusters: []*envoyroutev3.WeightedCluster_ClusterWeight{
 				{
 					Weight: wrapperspb.UInt32(0),
 				},
@@ -52,7 +52,7 @@ func TestValidateWeightedClusters(t *testing.T) {
 		},
 		{
 			name: "multiple clusters with mixed weights",
-			clusters: []*envoy_config_route_v3.WeightedCluster_ClusterWeight{
+			clusters: []*envoyroutev3.WeightedCluster_ClusterWeight{
 				{
 					Weight: wrapperspb.UInt32(0),
 				},
@@ -64,7 +64,7 @@ func TestValidateWeightedClusters(t *testing.T) {
 		},
 		{
 			name: "multiple clusters all with weight > 0",
-			clusters: []*envoy_config_route_v3.WeightedCluster_ClusterWeight{
+			clusters: []*envoyroutev3.WeightedCluster_ClusterWeight{
 				{
 					Weight: wrapperspb.UInt32(50),
 				},

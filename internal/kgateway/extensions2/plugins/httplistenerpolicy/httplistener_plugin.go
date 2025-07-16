@@ -6,9 +6,9 @@ import (
 	"slices"
 	"time"
 
-	envoyaccesslog "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
-	listenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
-	routev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoyaccesslogv3 "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
+	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	healthcheckv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/health_check/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"google.golang.org/protobuf/proto"
@@ -39,7 +39,7 @@ var logger = logging.New("plugin/httplistenerpolicy")
 
 type httpListenerPolicy struct {
 	ct                         time.Time
-	accessLog                  []*envoyaccesslog.AccessLog
+	accessLog                  []*envoyaccesslogv3.AccessLog
 	tracing                    *envoy_hcm.HttpConnectionManager_Tracing
 	upgradeConfigs             []*envoy_hcm.HttpConnectionManager_UpgradeConfig
 	useRemoteAddress           *bool
@@ -60,7 +60,7 @@ func (d *httpListenerPolicy) Equals(in any) bool {
 	}
 
 	// Check the AccessLog slice
-	if !slices.EqualFunc(d.accessLog, d2.accessLog, func(log *envoyaccesslog.AccessLog, log2 *envoyaccesslog.AccessLog) bool {
+	if !slices.EqualFunc(d.accessLog, d2.accessLog, func(log *envoyaccesslogv3.AccessLog, log2 *envoyaccesslogv3.AccessLog) bool {
 		return proto.Equal(log, log2)
 	}) {
 		return false
@@ -307,7 +307,7 @@ func (p *httpListenerPolicyPluginGwPass) HttpFilters(ctx context.Context, fc ir.
 func (p *httpListenerPolicyPluginGwPass) ApplyListenerPlugin(
 	ctx context.Context,
 	pCtx *ir.ListenerContext,
-	out *listenerv3.Listener,
+	out *envoylistenerv3.Listener,
 ) {
 	policy, ok := pCtx.Policy.(*httpListenerPolicy)
 	if !ok {
@@ -355,9 +355,9 @@ func convertHealthCheckPolicy(policy *v1alpha1.HTTPListenerPolicy) *healthcheckv
 	if policy.Spec.HealthCheck != nil {
 		return &healthcheckv3.HealthCheck{
 			PassThroughMode: wrapperspb.Bool(false),
-			Headers: []*routev3.HeaderMatcher{{
+			Headers: []*envoyroutev3.HeaderMatcher{{
 				Name: ":path",
-				HeaderMatchSpecifier: &routev3.HeaderMatcher_ExactMatch{
+				HeaderMatchSpecifier: &envoyroutev3.HeaderMatcher_ExactMatch{
 					ExactMatch: policy.Spec.HealthCheck.Path,
 				},
 			}},

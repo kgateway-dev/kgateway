@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	envoy_config_bootstrap "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
-	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoybootstrapv3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
 	"github.com/ghodss/yaml"
 	. "github.com/onsi/ginkgo/v2"
@@ -118,9 +118,9 @@ func (objs *clientObjects) findConfigMap(namespace, name string) *corev1.ConfigM
 	return nil
 }
 
-func (objs *clientObjects) getEnvoyConfig(namespace, name string) *envoy_config_bootstrap.Bootstrap {
+func (objs *clientObjects) getEnvoyConfig(namespace, name string) *envoybootstrapv3.Bootstrap {
 	cm := objs.findConfigMap(namespace, name).Data
-	var bootstrapCfg envoy_config_bootstrap.Bootstrap
+	var bootstrapCfg envoybootstrapv3.Bootstrap
 	err := unmarshalYaml([]byte(cm["envoy.yaml"]), &bootstrapCfg)
 	ExpectWithOffset(1, err).ToNot(HaveOccurred())
 	return &bootstrapCfg
@@ -1045,7 +1045,7 @@ var _ = Describe("Deployer", func() {
 				bootstrapCfg := objs.getEnvoyConfig(defaultNamespace, defaultConfigMapName)
 				Expect(bootstrapCfg.StaticResources.Listeners).To(HaveLen(2))
 				prometheusListener := bootstrapCfg.StaticResources.Listeners[1]
-				port := prometheusListener.Address.GetSocketAddress().PortSpecifier.(*envoy_config_core_v3.SocketAddress_PortValue)
+				port := prometheusListener.Address.GetSocketAddress().PortSpecifier.(*envoycorev3.SocketAddress_PortValue)
 				Expect(port.PortValue).To(Equal(uint32(9091)))
 
 				By("verifying image registry and tag were inherited")

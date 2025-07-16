@@ -5,7 +5,7 @@ import (
 
 	"istio.io/istio/pkg/kube/krt"
 
-	envoy_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
@@ -54,9 +54,9 @@ func AddDisableFilterIfNeeded(filters []plugins.StagedHttpFilter) []plugins.Stag
 //   - grpcService: The gRPC service configuration to resolve
 //
 // Returns:
-//   - *envoy_core_v3.GrpcService: The resolved Envoy gRPC service configuration
+//   - *envoycorev3.GrpcService: The resolved Envoy gRPC service configuration
 //   - error: Any error that occurred during resolution
 
-func ResolveExtGrpcService(krtctx krt.HandlerContext, backends *krtcollections.BackendIndex, disableExtensionRefValidation bool, objectSource ir.ObjectSource, grpcService *v1alpha1.ExtGrpcService) (*envoy_core_v3.GrpcService, error) {
+func ResolveExtGrpcService(krtctx krt.HandlerContext, backends *krtcollections.BackendIndex, disableExtensionRefValidation bool, objectSource ir.ObjectSource, grpcService *v1alpha1.ExtGrpcService) (*envoycorev3.GrpcService, error) {
 	return trafficpolicy.ResolveExtGrpcService(krtctx, backends, disableExtensionRefValidation, objectSource, grpcService)
 }

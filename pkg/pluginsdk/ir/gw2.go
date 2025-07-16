@@ -4,7 +4,7 @@ import (
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
@@ -72,7 +72,7 @@ type VirtualHost struct {
 
 type FilterChainMatch struct {
 	SniDomains      []string
-	PrefixRanges    []*v3.CidrRange
+	PrefixRanges    []*envoycorev3.CidrRange
 	DestinationPort *wrapperspb.UInt32Value
 }
 
