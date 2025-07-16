@@ -136,9 +136,17 @@ func defaultWaypointGatewayParameters(imageInfo *ImageInfo) *v1alpha1.GatewayPar
 	gwp := defaultGatewayParameters(imageInfo)
 	gwp.Spec.Kube.Service.Type = ptr.To(corev1.ServiceTypeClusterIP)
 
-	if gwp.Spec.Kube.PodTemplate == nil {
-		gwp.Spec.Kube.PodTemplate = &v1alpha1.Pod{}
+	if gwp.Spec.Kube.Service == nil {
+		gwp.Spec.Kube.Service = &v1alpha1.Service{}
 	}
+	if gwp.Spec.Kube.Service.Ports == nil {
+		gwp.Spec.Kube.Service.Ports = []*v1alpha1.Port{}
+	}
+	meshPort := &v1alpha1.Port{
+		Port: 15008,
+		// Don't set NodePort as this is ClusterIP service type
+	}
+	gwp.Spec.Kube.Service.Ports = append(gwp.Spec.Kube.Service.Ports, meshPort)
 	if gwp.Spec.Kube.PodTemplate.ExtraLabels == nil {
 		gwp.Spec.Kube.PodTemplate.ExtraLabels = make(map[string]string)
 	}
