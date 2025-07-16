@@ -1304,6 +1304,12 @@ var _ = Describe("Deployer", func() {
 				return fullyDefinedGatewayParameters(wellknown.DefaultGatewayParametersName, defaultNamespace)
 			}
 
+			gwParamsNoPodTemplate = func() *gw2_v1alpha1.GatewayParameters {
+				params := fullyDefinedGatewayParameters(wellknown.DefaultGatewayParametersName, defaultNamespace)
+				params.Spec.Kube.PodTemplate = nil
+				return params
+			}
+
 			fullyDefinedGatewayParamsWithUnprivilegedPortStartSysctl = func() *gw2_v1alpha1.GatewayParameters {
 				params := fullyDefinedGatewayParameters(wellknown.DefaultGatewayParametersName, defaultNamespace)
 				params.Spec.Kube.PodTemplate.SecurityContext.Sysctls = []corev1.Sysctl{
@@ -1476,6 +1482,14 @@ var _ = Describe("Deployer", func() {
 
 			// Calculate expected PodSecurityContext. The deployer conditionall addes the net.ipv4.ip_unprivileged_port_start=0 sysctl
 			// to the default parameters if the gateway uses low ports.
+
+			// There are tests that don't set a pod template, so we need to handle that case
+			if expectedGwp.PodTemplate == nil {
+				expectedGwp.PodTemplate = &gw2_v1alpha1.Pod{
+					SecurityContext: &corev1.PodSecurityContext{},
+				}
+			}
+
 			expectedPodSecurityContext := expectedGwp.PodTemplate.SecurityContext
 
 			gwUsesLowPorts := false
@@ -1601,12 +1615,7 @@ var _ = Describe("Deployer", func() {
 			return nil
 		}
 
-		fullyDefinedValidation := func(objs clientObjects, inp *input) error {
-			err := fullyDefinedValidationWithoutRunAsUser(objs, inp)
-			if err != nil {
-				return err
-			}
-
+		validateRunAsUser := func(objs clientObjects, inp *input) {
 			expectedGwp := inp.defaultGwp.Spec.Kube
 			dep := objs.findDeployment(defaultNamespace, defaultDeploymentName)
 			Expect(dep.Spec.Template.Spec.SecurityContext.RunAsUser).To(Equal(expectedGwp.PodTemplate.SecurityContext.RunAsUser))
@@ -1616,6 +1625,15 @@ var _ = Describe("Deployer", func() {
 
 			istioContainer := dep.Spec.Template.Spec.Containers[2]
 			Expect(istioContainer.SecurityContext.RunAsUser).To(Equal(expectedGwp.Istio.IstioProxyContainer.SecurityContext.RunAsUser))
+		}
+
+		fullyDefinedValidation := func(objs clientObjects, inp *input) error {
+			err := fullyDefinedValidationWithoutRunAsUser(objs, inp)
+			if err != nil {
+				return err
+			}
+
+			validateRunAsUser(objs, inp)
 
 			return nil
 		}
@@ -1877,6 +1895,13 @@ var _ = Describe("Deployer", func() {
 			}, &expectedOutput{
 				validationFunc: fullyDefinedValidation,
 			}),
+			Entry("Fully defined GatewayParameters with no pod template", &input{
+				dInputs:    istioEnabledDeployerInputs(),
+				gw:         defaultGateway(),
+				defaultGwp: gwParamsNoPodTemplate(),
+			}, &expectedOutput{
+				validationFunc: fullyDefinedValidation,
+			}),
 			Entry("Fully defined GatewayParameters with custom env vars", &input{
 				dInputs:    istioEnabledDeployerInputs(),
 				gw:         defaultGateway(),
@@ -1884,7 +1909,6 @@ var _ = Describe("Deployer", func() {
 			}, &expectedOutput{
 				validationFunc: fullyDefinedValidationCustomEnv,
 			}),
-
 			Entry("Fully defined GatewayParameters with floating user id", &input{
 				dInputs:    istioEnabledDeployerInputs(),
 				gw:         defaultGateway(),

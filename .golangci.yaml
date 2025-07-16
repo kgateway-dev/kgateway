@@ -62,6 +62,8 @@ linters:
           alias: metav1
         - pkg: k8s.io/api/batch/v1
           alias: batchv1
+        - pkg: github.com/kgateway-dev/kgateway/v2/api/annotations
+          alias: apiannotations
     misspell:
       ignore-rules:
         - kgateway

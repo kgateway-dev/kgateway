@@ -66,11 +66,11 @@ type (
 )
 
 var (
-	HTTP2AppProtocol                      = ir.HTTP2AppProtocol
-	NewEndpointsForBackend                = ir.NewEndpointsForBackend
-	BackendResourceName                   = ir.BackendResourceName
-	NewUniqlyConnectedClient              = ir.NewUniqlyConnectedClient
-	WithDelegationInheritedPolicyPriority = ir.WithDelegationInheritedPolicyPriority
-	ErrNotAttachable                      = ir.ErrNotAttachable
-	ParseAppProtocol                      = ir.ParseAppProtocol
+	HTTP2AppProtocol            = ir.HTTP2AppProtocol
+	NewEndpointsForBackend      = ir.NewEndpointsForBackend
+	BackendResourceName         = ir.BackendResourceName
+	NewUniqlyConnectedClient    = ir.NewUniqlyConnectedClient
+	WithInheritedPolicyPriority = ir.WithInheritedPolicyPriority
+	ErrNotAttachable            = ir.ErrNotAttachable
+	ParseAppProtocol            = ir.ParseAppProtocol
 )

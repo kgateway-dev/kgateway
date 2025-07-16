@@ -66,9 +66,9 @@ type PolicyAtt struct {
 
 	// MergeOrigins maps field names in the PolicyIr to their original source in the merged PolicyAtt.
 	// It can be used to determine which PolicyAtt a merged field came from.
-	MergeOrigins map[string]*AttachedPolicyRef
+	MergeOrigins MergeOrigins
 
-	DelegationInheritedPolicyPriority apiannotations.DelegationInheritedPolicyPriorityValue
+	InheritedPolicyPriority apiannotations.InheritedPolicyPriorityValue
 
 	// HierarchicalPriority is the priority of the policy in an inheritance hierarchy.
 	// A higher value means higher priority. It is used to accurately merge policies
@@ -90,9 +90,9 @@ func (c PolicyAtt) FormatErrors() string {
 
 type PolicyAttachmentOpts func(*PolicyAtt)
 
-func WithDelegationInheritedPolicyPriority(priority apiannotations.DelegationInheritedPolicyPriorityValue) PolicyAttachmentOpts {
+func WithInheritedPolicyPriority(priority apiannotations.InheritedPolicyPriorityValue) PolicyAttachmentOpts {
 	return func(p *PolicyAtt) {
-		p.DelegationInheritedPolicyPriority = priority
+		p.InheritedPolicyPriority = priority
 	}
 }
 
@@ -123,18 +123,18 @@ type AttachedPolicies struct {
 }
 
 // ApplyOrderedGroupKinds returns a list of GroupKinds sorted by their application order
-// such that subsequent policies can override previous ones.
-// Built-in policies are applied last so that they can override policies from other GroupKinds
-// since they are considered more specific than other policy attachments.
+// from highest to lowest priority.
+// Built-in policies are applied first as they are of highest priority relative to other GroupKinds
+// as they are considered more specific than other policy attachments.
 func (a AttachedPolicies) ApplyOrderedGroupKinds() []schema.GroupKind {
 	return slices.SortedStableFunc(maps.Keys(a.Policies), func(a, b schema.GroupKind) int {
 		switch {
 		case a.Group == VirtualBuiltInGK.Group:
-			// If a is builtin, it should come after b
-			return 1
-		case b.Group == VirtualBuiltInGK.Group:
-			// If b is builtin, a should come before b
+			// If a is builtin, a should come before b
 			return -1
+		case b.Group == VirtualBuiltInGK.Group:
+			// If b is builtin, a should come after b
+			return 1
 		default:
 			// neither is builtin, preserve relative order
 			return 0
@@ -175,6 +175,21 @@ func (a *AttachedPolicies) Append(l ...AttachedPolicies) {
 	}
 }
 
+// Append appends the policies in l in the given order to the policies in a.
+func (a *AttachedPolicies) AppendWithPriority(HierarchicalPriority int, l ...AttachedPolicies) {
+	if a.Policies == nil {
+		a.Policies = make(map[schema.GroupKind][]PolicyAtt)
+	}
+	for _, l := range l {
+		for k, v := range l.Policies {
+			for j := range v {
+				v[j].HierarchicalPriority = HierarchicalPriority
+			}
+			a.Policies[k] = append(a.Policies[k], v...)
+		}
+	}
+}
+
 // Prepend prepends the policies in l in the given to the policies in a.
 func (a *AttachedPolicies) Prepend(hierarchicalPriority int, l ...AttachedPolicies) {
 	if a.Policies == nil {
@@ -183,9 +198,6 @@ func (a *AttachedPolicies) Prepend(hierarchicalPriority int, l ...AttachedPolici
 	// iterate in the reverse order so that the input order in l is preserved at the end
 	for i := len(l) - 1; i >= 0; i-- {
 		for k, v := range l[i].Policies {
-			if a.Policies == nil {
-				a.Policies = make(map[schema.GroupKind][]PolicyAtt)
-			}
 			for j := range v {
 				v[j].HierarchicalPriority = hierarchicalPriority
 			}
@@ -226,4 +238,29 @@ type HttpRouteRuleIR struct {
 	Backends         []HttpBackendOrDelegate
 	Matches          []gwv1.HTTPRouteMatch
 	Name             string
+}
+
+type MergeOrigins map[string][]*AttachedPolicyRef
+
+func (m MergeOrigins) Append(
+	field string,
+	policyRef *AttachedPolicyRef,
+) {
+	if _, ok := m[field]; !ok {
+		m[field] = []*AttachedPolicyRef{}
+	}
+	m[field] = append(m[field], policyRef)
+}
+
+func (m MergeOrigins) Get(
+	field string,
+) []*AttachedPolicyRef {
+	return m[field]
+}
+
+func (m MergeOrigins) SetOne(
+	field string,
+	policyRef *AttachedPolicyRef,
+) {
+	m[field] = []*AttachedPolicyRef{policyRef}
 }
