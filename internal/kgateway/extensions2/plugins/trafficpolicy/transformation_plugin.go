@@ -139,7 +139,6 @@ func toTransformFilterConfig(t *v1alpha1.TransformationPolicy) (*transformationp
 	envoyT := &transformationpb.RouteTransformations{
 		Transformations: []*transformationpb.RouteTransformations_RouteTransformation{
 			{
-
 				Match: &transformationpb.RouteTransformations_RouteTransformation_RequestMatch_{
 					RequestMatch: reqm,
 				},
@@ -168,7 +167,7 @@ func toRustFormationPerRouteConfig(t *v1alpha1.Transform) (map[string]interface{
 		hasTransform = true
 	}
 
-	//BODY
+	// BODY
 	// if t.Body == nil {
 	// 	tt.TransformationTemplate.BodyTransformation = &transformationpb.TransformationTemplate_Passthrough{
 	// 		Passthrough: &transformationpb.Passthrough{},
@@ -238,7 +237,8 @@ func toRustformFilterConfig(t *v1alpha1.TransformationPolicy) (proto.Message, st
 
 func convertClassicRouteToListener(
 	listenerFilter *transformationpb.FilterTransformations,
-	routeCfg *transformationpb.RouteTransformations) {
+	routeCfg *transformationpb.RouteTransformations,
+) {
 	if len(routeCfg.GetTransformations()) == 0 {
 		return
 	}

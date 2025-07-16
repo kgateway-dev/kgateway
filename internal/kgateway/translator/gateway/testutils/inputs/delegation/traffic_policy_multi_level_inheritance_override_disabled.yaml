@@ -32,6 +32,8 @@ kind: HTTPRoute
 metadata:
   name: example-route
   namespace: infra
+  annotations:
+    kgateway.dev/inherited-policy-priority: ShallowMergePreferParent
 spec:
   parentRefs:
   - name: example-gateway
@@ -56,6 +58,8 @@ kind: HTTPRoute
 metadata:
   name: route-a-root
   namespace: a-root
+  annotations:
+    kgateway.dev/inherited-policy-priority: ShallowMergePreferParent  
 spec:
   rules:
   - matches:

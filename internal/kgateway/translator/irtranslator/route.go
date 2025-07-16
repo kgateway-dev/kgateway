@@ -264,18 +264,11 @@ func (h *httpRouteConfigurationTranslator) runRoutePlugins(
 ) error {
 	// all policies up to listener have been applied as vhost polices; we need to apply the httproute policies and below
 	//
-	// NOTE: AttachedPolicies must have policies in the ordered by hierarchy from root to leaf in the delegation chain where
+	// NOTE: AttachedPolicies must have policies in the ordered by hierarchy from leaf to root in the delegation chain where
 	// each level has policies ordered by rule level policies before entire route level policies.
+	// A policy appearing earlier in the list has a higher priority than a policy appearing later in the list during merging.
 
 	var attachedPolicies ir.AttachedPolicies
-	delegatingParent := in.DelegatingParent
-	var hierarchicalPriority int
-	for delegatingParent != nil {
-		hierarchicalPriority++
-		attachedPolicies.Prepend(hierarchicalPriority,
-			delegatingParent.ExtensionRefs, delegatingParent.AttachedPolicies, delegatingParent.Parent.AttachedPolicies)
-		delegatingParent = delegatingParent.DelegatingParent
-	}
 
 	// rule-level policies in priority order (high to low)
 	attachedPolicies.Append(in.ExtensionRefs, in.AttachedPolicies)
@@ -283,6 +276,16 @@ func (h *httpRouteConfigurationTranslator) runRoutePlugins(
 	// route-level policy
 	if in.Parent != nil {
 		attachedPolicies.Append(in.Parent.AttachedPolicies)
+	}
+
+	hierarchicalPriority := 0
+	delegatingParent := in.DelegatingParent
+	for delegatingParent != nil {
+		// parent policies are lower in priority by default, so mark them with their relative priority
+		hierarchicalPriority--
+		attachedPolicies.AppendWithPriority(hierarchicalPriority,
+			delegatingParent.ExtensionRefs, delegatingParent.AttachedPolicies, delegatingParent.Parent.AttachedPolicies)
+		delegatingParent = delegatingParent.DelegatingParent
 	}
 
 	var errs []error
@@ -307,6 +310,8 @@ func (h *httpRouteConfigurationTranslator) runRoutePlugins(
 			TypedFilterConfig: typedPerFilterConfig,
 		}
 		for _, pol := range mergePolicies(pass, pols) {
+			// Builtin policies use InheritedPolicyPriority
+			pctx.InheritedPolicyPriority = pol.InheritedPolicyPriority
 			// skip plugin application if we encountered any errors while constructing
 			// the policy IR.
 			if len(pol.Errors) > 0 {
