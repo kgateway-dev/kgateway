@@ -27,7 +27,7 @@ type translatorTestCase struct {
 	assertReports translatortest.AssertReports
 }
 
-var _ = DescribeTable("Basic GatewayTranslator Tests",
+var _ = DescribeTable("Basic",
 	func(in translatorTestCase, settingOpts ...translatortest.SettingsOpts) {
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
@@ -853,7 +853,7 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 	//	}),
 )
 
-var _ = DescribeTable("Route Replacement Tests",
+var _ = DescribeTable("Route Replacement",
 	func(in translatorTestCase, settingOpts ...translatortest.SettingsOpts) {
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
@@ -1228,7 +1228,7 @@ var _ = DescribeTable("Route Replacement Tests",
 		}),
 )
 
-var _ = DescribeTable("Route Delegation translator",
+var _ = DescribeTable("Route Delegation",
 	func(inputFile string, errors map[types.NamespacedName]string) {
 		dir := fsutils.MustGetThisDir()
 		translatortest.TestTranslation(
@@ -1314,6 +1314,7 @@ var _ = DescribeTable("Route Delegation translator",
 			{Name: "route-a", Namespace: "a"}:           "BackendNotFound gateway.networking.k8s.io/HTTPRoute/a-c/: unresolved reference",
 		},
 	),
+	Entry("Policy deep merge", "policy_deep_merge.yaml", nil),
 )
 
 var _ = DescribeTable("Discovery Namespace Selector",
