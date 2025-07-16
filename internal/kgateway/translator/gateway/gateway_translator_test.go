@@ -737,6 +737,14 @@ var _ = DescribeTable("Basic",
 			Name:      "example-gateway",
 		},
 	}),
+	Entry("HTTPListenerPolicy merging", translatorTestCase{
+		inputFile:  "httplistenerpolicy/merge.yaml",
+		outputFile: "httplistenerpolicy/merge.yaml",
+		gwNN: types.NamespacedName{
+			Namespace: "default",
+			Name:      "example-gateway",
+		},
+	}),
 	Entry("Service with appProtocol=kubernetes.io/h2c", translatorTestCase{
 		inputFile:  "backend-protocol/svc-h2c.yaml",
 		outputFile: "backend-protocol/svc-h2c.yaml",

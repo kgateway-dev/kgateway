@@ -31,6 +31,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/policy"
 	pluginsdkutils "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
@@ -226,6 +227,9 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 				Policies:                  policyCol,
 				GetPolicyStatus:           getPolicyStatusFn(commoncol.CrudClient),
 				PatchPolicyStatus:         patchPolicyStatusFn(commoncol.CrudClient),
+				MergePolicies: func(pols []ir.PolicyAtt) ir.PolicyAtt {
+					return policy.MergePolicies(pols, mergePolicies)
+				},
 			},
 		},
 	}

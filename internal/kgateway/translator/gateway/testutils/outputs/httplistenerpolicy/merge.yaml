@@ -1,0 +1,94 @@
+Clusters:
+- connectTimeout: 5s
+  edsClusterConfig:
+    edsConfig:
+      ads: {}
+      resourceApiVersion: V3
+  ignoreHealthOnHostRemoval: true
+  metadata: {}
+  name: kube_default_opentelemetry-collector_4317
+  type: EDS
+- connectTimeout: 5s
+  metadata: {}
+  name: test-backend-plugin_default_example-svc_80
+Listeners:
+- address:
+    socketAddress:
+      address: '::'
+      ipv4Compat: true
+      portValue: 8080
+  filterChains:
+  - filters:
+    - name: envoy.filters.network.http_connection_manager
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+        accessLog:
+        - name: envoy.access_loggers.open_telemetry
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.access_loggers.open_telemetry.v3.OpenTelemetryAccessLogConfig
+            attributes:
+              values:
+              - key: customkey
+                value:
+                  stringValue: customvalue
+            body:
+              stringValue: '"%REQ(:METHOD)% %REQ(X-ENVOY-ORIGINAL-PATH?:PATH)% %RESPONSE_CODE%
+                "%REQ(:AUTHORITY)%" "%UPSTREAM_CLUSTER%"'''
+            commonConfig:
+              grpcService:
+                envoyGrpc:
+                  clusterName: kube_default_opentelemetry-collector_4317
+              logName: otel-accesslog-service
+              transportApiVersion: V3
+        httpFilters:
+        - name: envoy.filters.http.health_check
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.health_check.v3.HealthCheck
+            headers:
+            - exactMatch: /health_check
+              name: :path
+            passThroughMode: false
+        - name: envoy.filters.http.router
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+        mergeSlashes: true
+        normalizePath: true
+        rds:
+          configSource:
+            ads: {}
+            resourceApiVersion: V3
+          routeConfigName: listener~8080
+        serverHeaderTransformation: APPEND_IF_ABSENT
+        statPrefix: http
+        streamIdleTimeout: 30s
+        tracing:
+          customTags:
+          - literal:
+              value: customvalue
+            tag: customkey
+          - requestHeader:
+              name: x-header-tag
+            tag: request
+          provider:
+            name: envoy.tracers.opentelemetry
+            typedConfig:
+              '@type': type.googleapis.com/envoy.config.trace.v3.OpenTelemetryConfig
+              grpcService:
+                envoyGrpc:
+                  authority: httpbin.example.com
+                  clusterName: kube_default_opentelemetry-collector_4317
+              resourceDetectors:
+              - name: envoy.tracers.opentelemetry.resource_detectors.environment
+                typedConfig:
+                  '@type': type.googleapis.com/envoy.extensions.tracers.opentelemetry.resource_detectors.v3.EnvironmentResourceDetectorConfig
+              serviceName: my-gateway
+          spawnUpstreamSpan: true
+        upgradeConfigs:
+        - upgradeType: websocket
+        useRemoteAddress: false
+        xffNumTrustedHops: 2
+    name: listener~8080
+  name: listener~8080
+Routes:
+- ignorePortInHostMatching: true
+  name: listener~8080
