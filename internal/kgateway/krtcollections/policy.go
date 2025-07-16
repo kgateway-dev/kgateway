@@ -1088,7 +1088,7 @@ func (h *RoutesIndex) transformHttpRoute(kctx krt.HandlerContext, i *gwv1.HTTPRo
 		Name:      i.Name,
 	}
 
-	delegationInheritedPolicyPriority := apiannotations.DelegationInheritedPolicyPriorityValue(i.Annotations[apiannotations.DelegationInheritedPolicyPriority])
+	inheritedPolicyPriority := getInheritedPolicyPriority(i.Annotations)
 
 	var precedenceWeight int32
 	var err error
@@ -1105,10 +1105,10 @@ func (h *RoutesIndex) transformHttpRoute(kctx krt.HandlerContext, i *gwv1.HTTPRo
 		ParentRefs:   i.Spec.ParentRefs,
 		Hostnames:    tostr(i.Spec.Hostnames),
 		Rules: h.transformRules(
-			kctx, src, i.Spec.Rules, i.GetLabels(), ir.WithDelegationInheritedPolicyPriority(delegationInheritedPolicyPriority)),
+			kctx, src, i.Spec.Rules, i.GetLabels(), ir.WithInheritedPolicyPriority(inheritedPolicyPriority)),
 		AttachedPolicies: toAttachedPolicies(
 			h.policies.getTargetingPolicies(kctx, extensionsplug.RouteAttachmentPoint, src, "", i.GetLabels()),
-			ir.WithDelegationInheritedPolicyPriority(delegationInheritedPolicyPriority),
+			ir.WithInheritedPolicyPriority(inheritedPolicyPriority),
 		),
 		PrecedenceWeight: precedenceWeight,
 	}
@@ -1123,12 +1123,12 @@ func (h *RoutesIndex) transformRules(
 ) []ir.HttpRouteRuleIR {
 	rules := make([]ir.HttpRouteRuleIR, 0, len(i))
 	for _, r := range i {
-		extensionRefs := h.getExtensionRefs(kctx, src.Namespace, r.Filters)
+		extensionRefs := h.getExtensionRefs(kctx, src.Namespace, r.Filters, opts...)
 		var policies ir.AttachedPolicies
 		if r.Name != nil {
 			policies = toAttachedPolicies(h.policies.getTargetingPolicies(kctx, extensionsplug.RouteAttachmentPoint, src, string(*r.Name), srcLabels), opts...)
 		}
-		rulePolicies := h.getBuiltInRulePolicies(r)
+		rulePolicies := h.getBuiltInRulePolicies(r, opts...)
 		policies.Append(rulePolicies)
 
 		rules = append(rules, ir.HttpRouteRuleIR{
@@ -1142,7 +1142,12 @@ func (h *RoutesIndex) transformRules(
 	return rules
 }
 
-func (h *RoutesIndex) getExtensionRefs(kctx krt.HandlerContext, ns string, r []gwv1.HTTPRouteFilter) ir.AttachedPolicies {
+func (h *RoutesIndex) getExtensionRefs(
+	kctx krt.HandlerContext,
+	ns string,
+	r []gwv1.HTTPRouteFilter,
+	opts ...ir.PolicyAttachmentOpts,
+) ir.AttachedPolicies {
 	ret := ir.AttachedPolicies{
 		Policies: map[schema.GroupKind][]ir.PolicyAtt{},
 	}
@@ -1150,11 +1155,15 @@ func (h *RoutesIndex) getExtensionRefs(kctx krt.HandlerContext, ns string, r []g
 		// TODO: propagate error if we can't find the extension
 		gk, policy, errs := h.resolveExtension(kctx, ns, ext)
 		if policy != nil {
-			ret.Policies[gk] = append(ret.Policies[gk], ir.PolicyAtt{
+			polAtt := ir.PolicyAtt{
 				// direct attachment - no target ref
 				PolicyIr: policy,
 				Errors:   errs,
-			})
+			}
+			for _, o := range opts {
+				o(&polAtt)
+			}
+			ret.Policies[gk] = append(ret.Policies[gk], polAtt)
 		} else if len(errs) > 0 {
 			logger.Error("unresolved HTTPRouteFilter", "error", errors.Join(errs...))
 		}
@@ -1162,13 +1171,20 @@ func (h *RoutesIndex) getExtensionRefs(kctx krt.HandlerContext, ns string, r []g
 	return ret
 }
 
-func (h *RoutesIndex) getBuiltInRulePolicies(rule gwv1.HTTPRouteRule) ir.AttachedPolicies {
+func (h *RoutesIndex) getBuiltInRulePolicies(
+	rule gwv1.HTTPRouteRule,
+	opts ...ir.PolicyAttachmentOpts,
+) ir.AttachedPolicies {
 	ret := ir.AttachedPolicies{
 		Policies: map[schema.GroupKind][]ir.PolicyAtt{},
 	}
 	policy := NewBuiltInRuleIr(rule)
 	if policy != nil {
-		ret.Policies[pluginsdkir.VirtualBuiltInGK] = append(ret.Policies[pluginsdkir.VirtualBuiltInGK], ir.PolicyAtt{PolicyIr: policy /*direct attachment - no target ref*/})
+		policyAtt := ir.PolicyAtt{PolicyIr: policy /*direct attachment - no target ref*/}
+		for _, o := range opts {
+			o(&policyAtt)
+		}
+		ret.Policies[pluginsdkir.VirtualBuiltInGK] = append(ret.Policies[pluginsdkir.VirtualBuiltInGK], policyAtt)
 	}
 	return ret
 }
@@ -1406,4 +1422,19 @@ func parseRoutePrecedenceWeight(annotations map[string]string) (int32, error) {
 		return 0, fmt.Errorf("invalid value for annotation %s: %s; must be a valid integer", apiannotations.RoutePrecedenceWeight, val)
 	}
 	return int32(weight), nil
+}
+
+func getInheritedPolicyPriority(annotations map[string]string) apiannotations.InheritedPolicyPriorityValue {
+	def := apiannotations.ShallowMergePreferChild
+	val, ok := annotations[apiannotations.InheritedPolicyPriority]
+	if !ok {
+		return def
+	}
+	switch v := apiannotations.InheritedPolicyPriorityValue(val); v {
+	case apiannotations.ShallowMergePreferChild, apiannotations.ShallowMergePreferParent, apiannotations.DeepMergePreferChild, apiannotations.DeepMergePreferParent:
+		return v
+	default:
+		logger.Error("invalid value for annotation", "annotation", apiannotations.InheritedPolicyPriority, "value", v)
+		return def
+	}
 }

@@ -24,6 +24,9 @@ var (
 	proxyService        = &corev1.Service{ObjectMeta: proxyObjectMeta}
 	proxyServiceAccount = &corev1.ServiceAccount{ObjectMeta: proxyObjectMeta}
 
+	listenerHighPort = 8080
+	listenerLowPort  = 80
+
 	exampleSvc = &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "example-svc",

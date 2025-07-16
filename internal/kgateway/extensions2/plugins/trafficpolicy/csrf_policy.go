@@ -1,7 +1,7 @@
 package trafficpolicy
 
 import (
-	envoy_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_csrf_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/csrf/v3"
 	envoy_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	envoy_type_v3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
@@ -65,7 +65,7 @@ func csrfForSpec(spec v1alpha1.TrafficPolicySpec, out *trafficPolicySpecIr) erro
 	}
 
 	// FilterEnabled is required by the envoy filter and is set to 0 (off) by default
-	csrfPolicy.FilterEnabled = &envoy_core_v3.RuntimeFractionalPercent{
+	csrfPolicy.FilterEnabled = &envoycorev3.RuntimeFractionalPercent{
 		DefaultValue: &envoy_type_v3.FractionalPercent{
 			Numerator:   numerator,
 			Denominator: envoy_type_v3.FractionalPercent_HUNDRED,
@@ -75,7 +75,7 @@ func csrfForSpec(spec v1alpha1.TrafficPolicySpec, out *trafficPolicySpecIr) erro
 
 	// Set shadow enabled percentage if specified
 	if spec.Csrf.PercentageShadowed != nil {
-		csrfPolicy.ShadowEnabled = &envoy_core_v3.RuntimeFractionalPercent{
+		csrfPolicy.ShadowEnabled = &envoycorev3.RuntimeFractionalPercent{
 			DefaultValue: &envoy_type_v3.FractionalPercent{
 				Numerator:   *spec.Csrf.PercentageShadowed,
 				Denominator: envoy_type_v3.FractionalPercent_HUNDRED,
@@ -105,7 +105,7 @@ func csrfForSpec(spec v1alpha1.TrafficPolicySpec, out *trafficPolicySpecIr) erro
 // chain.
 func csrfFilter() *envoy_csrf_v3.CsrfPolicy {
 	return &envoy_csrf_v3.CsrfPolicy{
-		FilterEnabled: &envoy_core_v3.RuntimeFractionalPercent{
+		FilterEnabled: &envoycorev3.RuntimeFractionalPercent{
 			DefaultValue: &envoy_type_v3.FractionalPercent{
 				Numerator:   0,
 				Denominator: envoy_type_v3.FractionalPercent_HUNDRED,

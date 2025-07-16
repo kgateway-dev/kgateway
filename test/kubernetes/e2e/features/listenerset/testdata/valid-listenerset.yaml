@@ -12,7 +12,7 @@ spec:
   listeners:
   - name: http
     protocol: HTTP
-    port: 8090
+    port: 90
     allowedRoutes:
         namespaces:
           from: All

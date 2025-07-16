@@ -23,6 +23,8 @@ kind: HTTPRoute
 metadata:
   name: example-route
   namespace: infra
+  annotations:
+    kgateway.dev/inherited-policy-priority: ShallowMergePreferParent
 spec:
   parentRefs:
   - name: example-gateway

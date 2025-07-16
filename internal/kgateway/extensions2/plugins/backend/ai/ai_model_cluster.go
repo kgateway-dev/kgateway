@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"log/slog"
 
-	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
-	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
-	envoy_tls_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
+	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
+	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	envoytransformation "github.com/solo-io/envoy-gloo/go/config/filter/http/transformation/v2"
 	"google.golang.org/protobuf/types/known/anypb"
@@ -38,7 +38,7 @@ func tlsMatch(matchStr string) *structpb.Struct {
 	}
 }
 
-func ProcessAIBackend(in *v1alpha1.AIBackend, aiSecret *ir.Secret, multiSecrets map[string]*ir.Secret, out *envoy_config_cluster_v3.Cluster) error {
+func ProcessAIBackend(in *v1alpha1.AIBackend, aiSecret *ir.Secret, multiSecrets map[string]*ir.Secret, out *envoyclusterv3.Cluster) error {
 	if in == nil {
 		return nil
 	}
@@ -54,26 +54,26 @@ func ProcessAIBackend(in *v1alpha1.AIBackend, aiSecret *ir.Secret, multiSecrets 
 // This function is used by the `ProcessBackend` function to build the cluster for the AI backend.
 // It is ALSO used by `ProcessRoute` to create the cluster in the event of backup models being used
 // and fallbacks being required.
-func buildModelCluster(aiUs *v1alpha1.AIBackend, aiSecret *ir.Secret, multiSecrets map[string]*ir.Secret, out *envoy_config_cluster_v3.Cluster) error {
+func buildModelCluster(aiUs *v1alpha1.AIBackend, aiSecret *ir.Secret, multiSecrets map[string]*ir.Secret, out *envoyclusterv3.Cluster) error {
 	// set the type to strict dns to support mutli pool backends
-	out.ClusterDiscoveryType = &envoy_config_cluster_v3.Cluster_Type{
-		Type: envoy_config_cluster_v3.Cluster_STRICT_DNS,
+	out.ClusterDiscoveryType = &envoyclusterv3.Cluster_Type{
+		Type: envoyclusterv3.Cluster_STRICT_DNS,
 	}
 
 	// We are reliant on https://github.com/envoyproxy/envoy/pull/34154 to merge
 	// before we can do OutlierDetection on 429s here
 	// out.OutlierDetection = getOutlierDetectionConfig(aiUs)
 
-	var prioritized []*envoy_config_endpoint_v3.LocalityLbEndpoints
+	var prioritized []*envoyendpointv3.LocalityLbEndpoints
 	var err error
 
 	if aiUs.MultiPool != nil {
 		epByType := map[string]struct{}{}
-		prioritized = make([]*envoy_config_endpoint_v3.LocalityLbEndpoints, 0, len(aiUs.MultiPool.Priorities))
+		prioritized = make([]*envoyendpointv3.LocalityLbEndpoints, 0, len(aiUs.MultiPool.Priorities))
 		for idx, pool := range aiUs.MultiPool.Priorities {
-			eps := make([]*envoy_config_endpoint_v3.LbEndpoint, 0, len(pool.Pool))
+			eps := make([]*envoyendpointv3.LbEndpoint, 0, len(pool.Pool))
 			for jdx, ep := range pool.Pool {
-				var result *envoy_config_endpoint_v3.LbEndpoint
+				var result *envoyendpointv3.LbEndpoint
 				var err error
 				epByType[fmt.Sprintf("%T", ep)] = struct{}{}
 				if ep.Provider.OpenAI != nil {
@@ -118,7 +118,7 @@ func buildModelCluster(aiUs *v1alpha1.AIBackend, aiSecret *ir.Secret, multiSecre
 				eps = append(eps, result)
 			}
 			priority := idx
-			prioritized = append(prioritized, &envoy_config_endpoint_v3.LocalityLbEndpoints{
+			prioritized = append(prioritized, &envoyendpointv3.LocalityLbEndpoints{
 				Priority:    uint32(priority),
 				LbEndpoints: eps,
 			})
@@ -134,15 +134,15 @@ func buildModelCluster(aiUs *v1alpha1.AIBackend, aiSecret *ir.Secret, multiSecre
 	}
 
 	// Add proper certificate validation
-	validationContext := &envoy_tls_v3.CertificateValidationContext{}
-	sdsValidationCtx := &envoy_tls_v3.SdsSecretConfig{
+	validationContext := &envoytlsv3.CertificateValidationContext{}
+	sdsValidationCtx := &envoytlsv3.SdsSecretConfig{
 		Name: eiutils.SystemCaSecretName,
 	}
 
-	tlsContextDefault := &envoy_tls_v3.UpstreamTlsContext{
-		CommonTlsContext: &envoy_tls_v3.CommonTlsContext{
-			ValidationContextType: &envoy_tls_v3.CommonTlsContext_CombinedValidationContext{
-				CombinedValidationContext: &envoy_tls_v3.CommonTlsContext_CombinedCertificateValidationContext{
+	tlsContextDefault := &envoytlsv3.UpstreamTlsContext{
+		CommonTlsContext: &envoytlsv3.CommonTlsContext{
+			ValidationContextType: &envoytlsv3.CommonTlsContext_CombinedValidationContext{
+				CombinedValidationContext: &envoytlsv3.CommonTlsContext_CombinedCertificateValidationContext{
 					DefaultValidationContext:         validationContext,
 					ValidationContextSdsSecretConfig: sdsValidationCtx,
 				},
@@ -154,11 +154,11 @@ func buildModelCluster(aiUs *v1alpha1.AIBackend, aiSecret *ir.Secret, multiSecre
 	if err != nil {
 		return err
 	}
-	tlsMatchDefault := &envoy_config_cluster_v3.Cluster_TransportSocketMatch{
+	tlsMatchDefault := &envoyclusterv3.Cluster_TransportSocketMatch{
 		Name: "tls",
-		TransportSocket: &envoy_config_core_v3.TransportSocket{
+		TransportSocket: &envoycorev3.TransportSocket{
 			Name: wellknown.TransportSocketTls,
-			ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{
+			ConfigType: &envoycorev3.TransportSocket_TypedConfig{
 				TypedConfig: tlsCtxDefaultAny,
 			},
 		},
@@ -167,19 +167,19 @@ func buildModelCluster(aiUs *v1alpha1.AIBackend, aiSecret *ir.Secret, multiSecre
 
 	// Skip verification if explicitly requested
 	// Note: We don't set ValidationContextType at all, which effectively disables verification
-	tlsContextSkipValidation := &envoy_tls_v3.UpstreamTlsContext{
-		CommonTlsContext: &envoy_tls_v3.CommonTlsContext{},
+	tlsContextSkipValidation := &envoytlsv3.UpstreamTlsContext{
+		CommonTlsContext: &envoytlsv3.CommonTlsContext{},
 		AutoHostSni:      true,
 	}
 	tlsCtxSkipValidationAny, err := utils.MessageToAny(tlsContextSkipValidation)
 	if err != nil {
 		return err
 	}
-	tsMatchSkipValidation := &envoy_config_cluster_v3.Cluster_TransportSocketMatch{
+	tsMatchSkipValidation := &envoyclusterv3.Cluster_TransportSocketMatch{
 		Name: "tls",
-		TransportSocket: &envoy_config_core_v3.TransportSocket{
+		TransportSocket: &envoycorev3.TransportSocket{
 			Name: wellknown.TransportSocketTls,
-			ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{
+			ConfigType: &envoycorev3.TransportSocket_TypedConfig{
 				TypedConfig: tlsCtxSkipValidationAny,
 			},
 		},
@@ -188,7 +188,7 @@ func buildModelCluster(aiUs *v1alpha1.AIBackend, aiSecret *ir.Secret, multiSecre
 
 	// First attempt to match tls or if skip verification is enabled. The default match is always plaintext
 	// append all transport socket matches
-	out.TransportSocketMatches = append(out.GetTransportSocketMatches(), []*envoy_config_cluster_v3.Cluster_TransportSocketMatch{
+	out.TransportSocketMatches = append(out.GetTransportSocketMatches(), []*envoyclusterv3.Cluster_TransportSocketMatch{
 		// attempt to match tls default if match is set
 		tlsMatchDefault,
 		// attempt to match tls skip validation if match is set and skip verification is true
@@ -196,9 +196,9 @@ func buildModelCluster(aiUs *v1alpha1.AIBackend, aiSecret *ir.Secret, multiSecre
 		// add the plaintext default match
 		{
 			Name: "plaintext",
-			TransportSocket: &envoy_config_core_v3.TransportSocket{
+			TransportSocket: &envoycorev3.TransportSocket{
 				Name: wellknown.TransportSocketRawBuffer,
-				ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{
+				ConfigType: &envoycorev3.TransportSocket_TypedConfig{
 					TypedConfig: &anypb.Any{
 						TypeUrl: "type.googleapis.com/envoy.extensions.transport_sockets.raw_buffer.v3.RawBuffer",
 					},
@@ -207,7 +207,7 @@ func buildModelCluster(aiUs *v1alpha1.AIBackend, aiSecret *ir.Secret, multiSecre
 			Match: &structpb.Struct{},
 		},
 	}...)
-	out.LoadAssignment = &envoy_config_endpoint_v3.ClusterLoadAssignment{
+	out.LoadAssignment = &envoyendpointv3.ClusterLoadAssignment{
 		ClusterName: out.GetName(),
 		Endpoints:   prioritized,
 	}
@@ -215,54 +215,54 @@ func buildModelCluster(aiUs *v1alpha1.AIBackend, aiSecret *ir.Secret, multiSecre
 	return nil
 }
 
-func buildLLMEndpoint(aiUs *v1alpha1.AIBackend, aiSecrets *ir.Secret) ([]*envoy_config_endpoint_v3.LocalityLbEndpoints, error) {
-	var prioritized []*envoy_config_endpoint_v3.LocalityLbEndpoints
+func buildLLMEndpoint(aiUs *v1alpha1.AIBackend, aiSecrets *ir.Secret) ([]*envoyendpointv3.LocalityLbEndpoints, error) {
+	var prioritized []*envoyendpointv3.LocalityLbEndpoints
 	provider := aiUs.LLM.Provider
 	if provider.OpenAI != nil {
 		host, err := buildOpenAIEndpoint(provider.OpenAI, aiUs.LLM.HostOverride, aiSecrets)
 		if err != nil {
 			return nil, err
 		}
-		prioritized = []*envoy_config_endpoint_v3.LocalityLbEndpoints{
-			{LbEndpoints: []*envoy_config_endpoint_v3.LbEndpoint{host}},
+		prioritized = []*envoyendpointv3.LocalityLbEndpoints{
+			{LbEndpoints: []*envoyendpointv3.LbEndpoint{host}},
 		}
 	} else if provider.Anthropic != nil {
 		host, err := buildAnthropicEndpoint(provider.Anthropic, aiUs.LLM.HostOverride, aiSecrets)
 		if err != nil {
 			return nil, err
 		}
-		prioritized = []*envoy_config_endpoint_v3.LocalityLbEndpoints{
-			{LbEndpoints: []*envoy_config_endpoint_v3.LbEndpoint{host}},
+		prioritized = []*envoyendpointv3.LocalityLbEndpoints{
+			{LbEndpoints: []*envoyendpointv3.LbEndpoint{host}},
 		}
 	} else if provider.AzureOpenAI != nil {
 		host, err := buildAzureOpenAIEndpoint(provider.AzureOpenAI, aiUs.LLM.HostOverride, aiSecrets)
 		if err != nil {
 			return nil, err
 		}
-		prioritized = []*envoy_config_endpoint_v3.LocalityLbEndpoints{
-			{LbEndpoints: []*envoy_config_endpoint_v3.LbEndpoint{host}},
+		prioritized = []*envoyendpointv3.LocalityLbEndpoints{
+			{LbEndpoints: []*envoyendpointv3.LbEndpoint{host}},
 		}
 	} else if provider.Gemini != nil {
 		host, err := buildGeminiEndpoint(provider.Gemini, aiUs.LLM.HostOverride, aiSecrets)
 		if err != nil {
 			return nil, err
 		}
-		prioritized = []*envoy_config_endpoint_v3.LocalityLbEndpoints{
-			{LbEndpoints: []*envoy_config_endpoint_v3.LbEndpoint{host}},
+		prioritized = []*envoyendpointv3.LocalityLbEndpoints{
+			{LbEndpoints: []*envoyendpointv3.LbEndpoint{host}},
 		}
 	} else if provider.VertexAI != nil {
 		host, err := buildVertexAIEndpoint(provider.VertexAI, aiUs.LLM.HostOverride, aiSecrets)
 		if err != nil {
 			return nil, err
 		}
-		prioritized = []*envoy_config_endpoint_v3.LocalityLbEndpoints{
-			{LbEndpoints: []*envoy_config_endpoint_v3.LbEndpoint{host}},
+		prioritized = []*envoyendpointv3.LocalityLbEndpoints{
+			{LbEndpoints: []*envoyendpointv3.LbEndpoint{host}},
 		}
 	}
 	return prioritized, nil
 }
 
-func buildOpenAIEndpoint(data *v1alpha1.OpenAIConfig, hostOverride *v1alpha1.Host, aiSecrets *ir.Secret) (*envoy_config_endpoint_v3.LbEndpoint, error) {
+func buildOpenAIEndpoint(data *v1alpha1.OpenAIConfig, hostOverride *v1alpha1.Host, aiSecrets *ir.Secret) (*envoyendpointv3.LbEndpoint, error) {
 	token, err := aiutils.GetAuthToken(data.AuthToken, aiSecrets)
 	if err != nil {
 		return nil, err
@@ -279,7 +279,7 @@ func buildOpenAIEndpoint(data *v1alpha1.OpenAIConfig, hostOverride *v1alpha1.Hos
 	), nil
 }
 
-func buildAnthropicEndpoint(data *v1alpha1.AnthropicConfig, hostOverride *v1alpha1.Host, aiSecrets *ir.Secret) (*envoy_config_endpoint_v3.LbEndpoint, error) {
+func buildAnthropicEndpoint(data *v1alpha1.AnthropicConfig, hostOverride *v1alpha1.Host, aiSecrets *ir.Secret) (*envoyendpointv3.LbEndpoint, error) {
 	token, err := aiutils.GetAuthToken(data.AuthToken, aiSecrets)
 	if err != nil {
 		return nil, err
@@ -296,7 +296,7 @@ func buildAnthropicEndpoint(data *v1alpha1.AnthropicConfig, hostOverride *v1alph
 	), nil
 }
 
-func buildAzureOpenAIEndpoint(data *v1alpha1.AzureOpenAIConfig, hostOverride *v1alpha1.Host, aiSecrets *ir.Secret) (*envoy_config_endpoint_v3.LbEndpoint, error) {
+func buildAzureOpenAIEndpoint(data *v1alpha1.AzureOpenAIConfig, hostOverride *v1alpha1.Host, aiSecrets *ir.Secret) (*envoyendpointv3.LbEndpoint, error) {
 	token, err := aiutils.GetAuthToken(data.AuthToken, aiSecrets)
 	if err != nil {
 		return nil, err
@@ -309,7 +309,7 @@ func buildAzureOpenAIEndpoint(data *v1alpha1.AzureOpenAIConfig, hostOverride *v1
 	), nil
 }
 
-func buildGeminiEndpoint(data *v1alpha1.GeminiConfig, hostOverride *v1alpha1.Host, aiSecrets *ir.Secret) (*envoy_config_endpoint_v3.LbEndpoint, error) {
+func buildGeminiEndpoint(data *v1alpha1.GeminiConfig, hostOverride *v1alpha1.Host, aiSecrets *ir.Secret) (*envoyendpointv3.LbEndpoint, error) {
 	token, err := aiutils.GetAuthToken(data.AuthToken, aiSecrets)
 	if err != nil {
 		return nil, err
@@ -322,7 +322,7 @@ func buildGeminiEndpoint(data *v1alpha1.GeminiConfig, hostOverride *v1alpha1.Hos
 	), nil
 }
 
-func buildVertexAIEndpoint(data *v1alpha1.VertexAIConfig, hostOverride *v1alpha1.Host, aiSecrets *ir.Secret) (*envoy_config_endpoint_v3.LbEndpoint, error) {
+func buildVertexAIEndpoint(data *v1alpha1.VertexAIConfig, hostOverride *v1alpha1.Host, aiSecrets *ir.Secret) (*envoyendpointv3.LbEndpoint, error) {
 	token, err := aiutils.GetAuthToken(data.AuthToken, aiSecrets)
 	if err != nil {
 		return nil, err
@@ -348,8 +348,8 @@ func buildLocalityLbEndpoint(
 	host string,
 	port int32,
 	hostOverride *v1alpha1.Host,
-	metadata *envoy_config_core_v3.Metadata,
-) *envoy_config_endpoint_v3.LbEndpoint {
+	metadata *envoycorev3.Metadata,
+) *envoyendpointv3.LbEndpoint {
 	var insecureSkipVerify bool
 	if hostOverride != nil {
 		if hostOverride.Host != "" {
@@ -380,17 +380,17 @@ func buildLocalityLbEndpoint(
 		}
 	}
 
-	return &envoy_config_endpoint_v3.LbEndpoint{
+	return &envoyendpointv3.LbEndpoint{
 		Metadata: metadata,
-		HostIdentifier: &envoy_config_endpoint_v3.LbEndpoint_Endpoint{
-			Endpoint: &envoy_config_endpoint_v3.Endpoint{
+		HostIdentifier: &envoyendpointv3.LbEndpoint_Endpoint{
+			Endpoint: &envoyendpointv3.Endpoint{
 				Hostname: host,
-				Address: &envoy_config_core_v3.Address{
-					Address: &envoy_config_core_v3.Address_SocketAddress{
-						SocketAddress: &envoy_config_core_v3.SocketAddress{
-							Protocol: envoy_config_core_v3.SocketAddress_TCP,
+				Address: &envoycorev3.Address{
+					Address: &envoycorev3.Address_SocketAddress{
+						SocketAddress: &envoycorev3.SocketAddress{
+							Protocol: envoycorev3.SocketAddress_TCP,
 							Address:  host,
-							PortSpecifier: &envoy_config_core_v3.SocketAddress_PortValue{
+							PortSpecifier: &envoycorev3.SocketAddress_PortValue{
 								PortValue: uint32(port),
 							},
 						},
@@ -403,7 +403,7 @@ func buildLocalityLbEndpoint(
 
 // `buildEndpointMeta` builds the metadata for the endpoint.
 // This metadata is used by the post routing transformation filter to modify the request body.
-func buildEndpointMeta(token, model string, additionalFields map[string]string) *envoy_config_core_v3.Metadata {
+func buildEndpointMeta(token, model string, additionalFields map[string]string) *envoycorev3.Metadata {
 	fields := map[string]*structpb.Value{
 		"auth_token": structpb.NewStringValue(token),
 	}
@@ -413,7 +413,7 @@ func buildEndpointMeta(token, model string, additionalFields map[string]string) 
 	for k, v := range additionalFields {
 		fields[k] = structpb.NewStringValue(v)
 	}
-	return &envoy_config_core_v3.Metadata{
+	return &envoycorev3.Metadata{
 		FilterMetadata: map[string]*structpb.Struct{
 			"io.solo.transformation": {
 				Fields: fields,

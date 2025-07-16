@@ -615,6 +615,15 @@ spec:
                   type: object
                 maxItems: 16
                 type: array
+              healthCheck:
+                properties:
+                  path:
+                    maxLength: 2048
+                    pattern: ^/[-a-zA-Z0-9@:%.+~#?&/=_]+$
+                    type: string
+                required:
+                - path
+                type: object
               serverHeaderTransformation:
                 enum:
                 - Overwrite

@@ -3,9 +3,9 @@ package proxy_syncer_test
 import (
 	"testing"
 
-	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
-	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
+	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoycachetypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"github.com/onsi/gomega"
@@ -27,16 +27,16 @@ func mustAny(src proto.Message) *anypb.Any {
 func TestRedacted(t *testing.T) {
 	UseDetailedUnmarshalling = true
 	g := gomega.NewWithT(t)
-	c := &envoy_config_cluster_v3.Cluster{
-		TransportSocket: &corev3.TransportSocket{
+	c := &envoyclusterv3.Cluster{
+		TransportSocket: &envoycorev3.TransportSocket{
 			Name: "foo",
-			ConfigType: &corev3.TransportSocket_TypedConfig{
-				TypedConfig: mustAny(&envoyauth.UpstreamTlsContext{
-					CommonTlsContext: &envoyauth.CommonTlsContext{
-						TlsCertificates: []*envoyauth.TlsCertificate{
+			ConfigType: &envoycorev3.TransportSocket_TypedConfig{
+				TypedConfig: mustAny(&envoytlsv3.UpstreamTlsContext{
+					CommonTlsContext: &envoytlsv3.CommonTlsContext{
+						TlsCertificates: []*envoytlsv3.TlsCertificate{
 							{
-								PrivateKey: &corev3.DataSource{
-									Specifier: &corev3.DataSource_InlineString{
+								PrivateKey: &envoycorev3.DataSource{
+									Specifier: &envoycorev3.DataSource_InlineString{
 										InlineString: "foo",
 									},
 								},

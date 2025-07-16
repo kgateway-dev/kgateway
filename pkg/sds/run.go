@@ -1,4 +1,4 @@
-package run
+package sds
 
 import (
 	"context"
@@ -13,6 +13,7 @@ import (
 
 	"github.com/solo-io/go-utils/stats"
 
+	"github.com/kgateway-dev/kgateway/v2/internal/sds/pkg/run"
 	"github.com/kgateway-dev/kgateway/v2/internal/sds/pkg/server"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 )
@@ -90,7 +91,7 @@ func RunMain() {
 
 	logger.Info("secrets confirmed present, proceeding to start SDS server")
 
-	if err := Run(context.Background(), secrets, c.SdsClient, c.SdsServerAddress); err != nil {
+	if err := run.Run(context.Background(), secrets, c.SdsClient, c.SdsServerAddress, logger); err != nil {
 		log.Fatalf("failed to run SDS server: %v", err)
 	}
 }

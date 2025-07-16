@@ -3,11 +3,12 @@ package waypoint
 import (
 	"context"
 
-	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
-	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
+	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	istioannot "istio.io/api/annotation"
 	"istio.io/istio/pkg/kube/krt"
+	"istio.io/istio/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
@@ -79,7 +80,7 @@ type PerClientProcessor struct {
 	waypointGatewayClassName string
 }
 
-func (t *PerClientProcessor) processBackend(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniqlyConnectedClient, in ir.BackendObjectIR, out *envoy_config_cluster_v3.Cluster) {
+func (t *PerClientProcessor) processBackend(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniqlyConnectedClient, in ir.BackendObjectIR, out *envoyclusterv3.Cluster) {
 	// If the ucc has a waypoint gateway class we will let it have an EDS cluster
 	gwKey := ir.ObjectSource{
 		Group:     wellknown.GatewayGVK.GroupKind().Group,
@@ -101,16 +102,9 @@ func (t *PerClientProcessor) processBackend(kctx krt.HandlerContext, ctx context
 	}
 
 	// Only handle backends with the istio.io/ingress-use-waypoint label
-	if val, ok := in.Obj.GetLabels()[wellknown.IngressUseWaypointLabel]; !ok || val != "true" {
-		// Also check the service'snamespace for the label
-		nsMeta := krt.FetchOne(kctx, t.commonCols.Namespaces, krt.FilterKey(in.Obj.GetNamespace()))
-		if nsMeta == nil {
-			return
-		}
-		if val, ok := nsMeta.Labels[wellknown.IngressUseWaypointLabel]; !ok || val != "true" {
-			// Both the service and the namespace do not have the label, no op
-			return
-		}
+	if !hasIngressUseWaypointLabel(kctx, t.commonCols, in) {
+		// Neither the backend nor any relevant namespace/alias has the label, skip processing
+		return
 	}
 
 	// Verify that the service is indeed attached to a waypoint by querying the reverse
@@ -128,18 +122,18 @@ func (t *PerClientProcessor) processBackend(kctx krt.HandlerContext, ctx context
 // processIngressUseWaypoint configures the cluster of the connected gateway to have a static
 // inlined addresses of the destination service. This will cause the traffic from the kgateway
 // to be redirected to the waypoint by the ztunnel.
-func processIngressUseWaypoint(in ir.BackendObjectIR, out *envoy_config_cluster_v3.Cluster) {
+func processIngressUseWaypoint(in ir.BackendObjectIR, out *envoyclusterv3.Cluster) {
 	addresses := waypointquery.BackendAddresses(in)
 
 	// Set the output cluster to be of type STATIC and instead of the default EDS and add
 	// the addresses of the backend embedded into the CLA of this cluster config.
-	out.ClusterDiscoveryType = &envoy_config_cluster_v3.Cluster_Type{
-		Type: envoy_config_cluster_v3.Cluster_STATIC,
+	out.ClusterDiscoveryType = &envoyclusterv3.Cluster_Type{
+		Type: envoyclusterv3.Cluster_STATIC,
 	}
 	out.EdsClusterConfig = nil
-	out.LoadAssignment = &envoy_config_endpoint_v3.ClusterLoadAssignment{
+	out.LoadAssignment = &envoyendpointv3.ClusterLoadAssignment{
 		ClusterName: out.GetName(),
-		Endpoints:   make([]*envoy_config_endpoint_v3.LocalityLbEndpoints, 0, len(addresses)),
+		Endpoints:   make([]*envoyendpointv3.LocalityLbEndpoints, 0, len(addresses)),
 	}
 
 	for _, addr := range addresses {
@@ -147,17 +141,17 @@ func processIngressUseWaypoint(in ir.BackendObjectIR, out *envoy_config_cluster_
 	}
 }
 
-func claEndpoint(address string, port uint32) *envoy_config_endpoint_v3.LocalityLbEndpoints {
-	return &envoy_config_endpoint_v3.LocalityLbEndpoints{
-		LbEndpoints: []*envoy_config_endpoint_v3.LbEndpoint{
+func claEndpoint(address string, port uint32) *envoyendpointv3.LocalityLbEndpoints {
+	return &envoyendpointv3.LocalityLbEndpoints{
+		LbEndpoints: []*envoyendpointv3.LbEndpoint{
 			{
-				HostIdentifier: &envoy_config_endpoint_v3.LbEndpoint_Endpoint{
-					Endpoint: &envoy_config_endpoint_v3.Endpoint{
-						Address: &envoy_config_core_v3.Address{
-							Address: &envoy_config_core_v3.Address_SocketAddress{
-								SocketAddress: &envoy_config_core_v3.SocketAddress{
+				HostIdentifier: &envoyendpointv3.LbEndpoint_Endpoint{
+					Endpoint: &envoyendpointv3.Endpoint{
+						Address: &envoycorev3.Address{
+							Address: &envoycorev3.Address_SocketAddress{
+								SocketAddress: &envoycorev3.SocketAddress{
 									Address: address,
-									PortSpecifier: &envoy_config_core_v3.SocketAddress_PortValue{
+									PortSpecifier: &envoycorev3.SocketAddress_PortValue{
 										PortValue: port,
 									},
 								},
@@ -168,4 +162,41 @@ func claEndpoint(address string, port uint32) *envoy_config_endpoint_v3.Locality
 			},
 		},
 	}
+}
+
+// hasIngressUseWaypointLabel checks if the backend or any relevant namespace/alias has the ingress-use-waypoint label.
+func hasIngressUseWaypointLabel(kctx krt.HandlerContext, commonCols *common.CommonCollections, in ir.BackendObjectIR) bool {
+	// Check the backend's own label first
+	if val, ok := in.Obj.GetLabels()[wellknown.IngressUseWaypointLabel]; ok && val == "true" {
+		return true
+	}
+
+	// Then, check the namespace of the backend object itself
+	backendNs := in.Obj.GetNamespace()
+	if backendNs != "" {
+		nsMeta := krt.FetchOne(kctx, commonCols.Namespaces, krt.FilterKey(backendNs))
+		if nsMeta != nil {
+			if val, ok := nsMeta.Labels[wellknown.IngressUseWaypointLabel]; ok && val == "true" {
+				return true
+			}
+		}
+	}
+
+	// If not found in backend's own namespace, check aliases
+	seenNs := sets.New[string]()
+	for _, alias := range in.Aliases {
+		ns := alias.GetNamespace()
+		if ns == "" || seenNs.InsertContains(ns) {
+			continue
+		}
+		nsMeta := krt.FetchOne(kctx, commonCols.Namespaces, krt.FilterKey(ns))
+		if nsMeta != nil {
+			if val, ok := nsMeta.Labels[wellknown.IngressUseWaypointLabel]; ok && val == "true" {
+				return true
+			}
+		}
+	}
+
+	// If we get here, we didn't find any namespace with the ingress-use-waypoint label
+	return false
 }

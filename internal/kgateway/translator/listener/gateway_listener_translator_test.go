@@ -16,10 +16,10 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/query"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/query/mocks"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/listener"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	pluginsdkreporter "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
+	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
 
 var (
@@ -182,26 +182,6 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 				tcpListener := translatedListener.TcpFilterChain[0]
 				Expect(tcpListener.BackendRefs).To(HaveLen(2))
 			})
-
-			It("should log an error for TCPRoute with missing parent reference", func() {
-				By("Creating a TCPRoute with no parent references")
-				tcpRoute := tcpRoute("test-tcp-route", "default")
-				tcpRoute.Spec = gwv1a2.TCPRouteSpec{
-					CommonRouteSpec: gwv1.CommonRouteSpec{
-						ParentRefs: []gwv1.ParentReference{}, // Empty ParentRefs to trigger the error
-					},
-				}
-
-				By("Creating the RouteInfo")
-				routes := []*query.RouteInfo{{Object: tcpToIr(tcpRoute)}}
-
-				By("Appending the TCP listener")
-				ml.AppendTcpListener(lisToIr(gwListener), routes, listenerReporter)
-
-				By("Validating that no TCP listeners are created")
-				Expect(ml.Listeners).To(BeEmpty(), "Expected no listeners due to missing ParentRefs")
-			})
-
 			It("should handle TCPRoute with empty backend references", func() {
 				By("Creating a TCPRoute with an empty backend references")
 				tcpRoute := tcpRoute("test-empty-backend", "default")
@@ -673,25 +653,6 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 				tlsListener := translatedListener.TcpFilterChain[0]
 				Expect(tlsListener.BackendRefs).To(HaveLen(2))
 				Expect(tlsListener.FilterChainCommon.Matcher.SniDomains).To(ContainElement("example.com"))
-			})
-
-			It("should log an error for TLSRoute with missing parent reference", func() {
-				By("Creating a TLSRoute with no parent references")
-				tlsRoute := tlsRoute("test-tls-route", "default")
-				tlsRoute.Spec = gwv1a2.TLSRouteSpec{
-					CommonRouteSpec: gwv1.CommonRouteSpec{
-						ParentRefs: []gwv1.ParentReference{}, // Empty ParentRefs to trigger the error
-					},
-				}
-
-				By("Creating the RouteInfo")
-				routes := []*query.RouteInfo{{Object: tlsToIr(tlsRoute)}}
-
-				By("Appending the TLS listener")
-				ml.AppendTlsListener(lisToIr(gwListener), routes, listenerReporter)
-
-				By("Validating that no TLS listeners are created")
-				Expect(ml.Listeners).To(BeEmpty(), "Expected no listeners due to missing ParentRefs")
 			})
 
 			It("should skip routes with invalid parent references and process valid ones", func() {

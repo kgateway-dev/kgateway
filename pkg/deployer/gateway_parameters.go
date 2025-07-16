@@ -30,8 +30,58 @@ type ExtraGatewayParameters struct {
 	Generator HelmValuesGenerator
 }
 
+// UpdateSecurityContexts updates the security contexts in the gateway parameters.
+// It applies the floating user ID if it is set and adds the sysctl to allow the privileged ports if the gateway uses them.
+func UpdateSecurityContexts(cfg *v1alpha1.KubernetesProxyConfig, ports []HelmPort) {
+	// If the floating user ID is set, unset the RunAsUser field from all security contexts
+	if cfg.GetFloatingUserId() != nil && *cfg.GetFloatingUserId() {
+		applyFloatingUserId(cfg)
+	}
+
+	if usesPrivilegedPorts(ports) {
+		allowPrivilegedPorts(cfg)
+	}
+}
+
+// usesPrivilegedPorts checks the helm ports to see if any of them are less than 1024
+func usesPrivilegedPorts(ports []HelmPort) bool {
+	for _, p := range ports {
+		if int32(*p.Port) < 1024 {
+			return true
+		}
+	}
+	return false
+}
+
+// allowPrivilegedPorts allows the use of privileged ports by appending the "net.ipv4.ip_unprivileged_port_start" sysctl with a value of 0
+// to the PodTemplate.SecurityContext.Sysctls, or updating the value if it already exists.
+func allowPrivilegedPorts(cfg *v1alpha1.KubernetesProxyConfig) {
+	if cfg.PodTemplate == nil {
+		cfg.PodTemplate = &v1alpha1.Pod{}
+	}
+
+	if cfg.PodTemplate.SecurityContext == nil {
+		cfg.PodTemplate.SecurityContext = &corev1.PodSecurityContext{}
+	}
+
+	// If the sysctl already exists, update the value
+	for i, sysctl := range cfg.PodTemplate.SecurityContext.Sysctls {
+		if sysctl.Name == "net.ipv4.ip_unprivileged_port_start" {
+			sysctl.Value = "0"
+			cfg.PodTemplate.SecurityContext.Sysctls[i] = sysctl
+			return
+		}
+	}
+
+	// If the sysctl does not exist, append it
+	cfg.PodTemplate.SecurityContext.Sysctls = append(cfg.PodTemplate.SecurityContext.Sysctls, corev1.Sysctl{
+		Name:  "net.ipv4.ip_unprivileged_port_start",
+		Value: "0",
+	})
+}
+
 // applyFloatingUserId will set the RunAsUser field from all security contexts to null if the floatingUserId field is set
-func ApplyFloatingUserId(dstKube *v1alpha1.KubernetesProxyConfig) {
+func applyFloatingUserId(dstKube *v1alpha1.KubernetesProxyConfig) {
 	floatingUserId := dstKube.GetFloatingUserId()
 	if floatingUserId == nil || !*floatingUserId {
 		return

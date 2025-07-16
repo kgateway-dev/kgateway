@@ -17,7 +17,6 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ports"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/query"
 	route "github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/httproute"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/routeutils"
@@ -113,6 +112,10 @@ func (ml *MergedListeners) AppendListener(
 	return nil
 }
 
+func getListenerPortNumber(listener ir.Listener) gwv1.PortNumber {
+	return gwv1.PortNumber(listener.Port)
+}
+
 func (ml *MergedListeners) appendHttpListener(
 	listener ir.Listener,
 	routesWithHosts []*query.RouteInfo,
@@ -129,7 +132,7 @@ func (ml *MergedListeners) appendHttpListener(
 		parents: []httpFilterChainParent{parent},
 	}
 	listenerName := GenerateListenerName(listener)
-	finalPort := gwv1.PortNumber(ports.TranslatePort(uint16(listener.Port)))
+	finalPort := getListenerPortNumber(listener)
 
 	for _, lis := range ml.Listeners {
 		if lis.port == finalPort {
@@ -173,7 +176,7 @@ func (ml *MergedListeners) appendHttpsListener(
 
 	// Perform the port transformation away from privileged ports only once to use
 	// during both lookup and when appending the listener.
-	finalPort := gwv1.PortNumber(ports.TranslatePort(uint16(listener.Port)))
+	finalPort := getListenerPortNumber(listener)
 
 	listenerName := GenerateListenerName(listener)
 	for _, lis := range ml.Listeners {
@@ -199,38 +202,16 @@ func (ml *MergedListeners) AppendTcpListener(
 	routeInfos []*query.RouteInfo,
 	reporter reports.ListenerReporter,
 ) {
-	var validRouteInfos []*query.RouteInfo
-
-	for _, routeInfo := range routeInfos {
-		tRoute, ok := routeInfo.Object.(*ir.TcpRouteIR)
-		if !ok {
-			continue
-		}
-
-		if len(tRoute.ParentRefs) == 0 {
-			logger.Warn("no parent references found for TCPRoute", "resource_ref", tRoute.ResourceName())
-			continue
-		}
-
-		validRouteInfos = append(validRouteInfos, routeInfo)
-	}
-
-	// If no valid routes are found, do not create a listener
-	if len(validRouteInfos) == 0 {
-		logger.Error("no valid routes found for listener", "listener", listener.Name)
-		return
-	}
-
 	parent := tcpFilterChainParent{
 		gatewayListenerName: query.GenerateRouteKey(listener.Parent, string(listener.Name)),
-		routesWithHosts:     validRouteInfos,
+		routesWithHosts:     routeInfos,
 	}
 
 	fc := tcpFilterChain{
 		parents: parent,
 	}
 	listenerName := GenerateListenerName(listener)
-	finalPort := gwv1.PortNumber(ports.TranslatePort(uint16(listener.Port)))
+	finalPort := getListenerPortNumber(listener)
 
 	for _, lis := range ml.Listeners {
 		if lis.port == finalPort {
@@ -257,31 +238,9 @@ func (ml *MergedListeners) AppendTlsListener(
 	routeInfos []*query.RouteInfo,
 	reporter reports.ListenerReporter,
 ) {
-	var validRouteInfos []*query.RouteInfo
-
-	for _, routeInfo := range routeInfos {
-		tRoute, ok := routeInfo.Object.(*ir.TlsRouteIR)
-		if !ok {
-			continue
-		}
-
-		if len(tRoute.ParentRefs) == 0 {
-			logger.Warn("no parent references found for TLSRoute", "resource_ref", tRoute.ResourceName())
-			continue
-		}
-
-		validRouteInfos = append(validRouteInfos, routeInfo)
-	}
-
-	// If no valid routes are found, do not create a listener
-	if len(validRouteInfos) == 0 {
-		logger.Error("no valid routes found for listener", "listener", listener.Name)
-		return
-	}
-
 	parent := tcpFilterChainParent{
 		gatewayListenerName: query.GenerateRouteKey(listener.Parent, string(listener.Name)),
-		routesWithHosts:     validRouteInfos,
+		routesWithHosts:     routeInfos,
 	}
 
 	fc := tcpFilterChain{
@@ -291,7 +250,7 @@ func (ml *MergedListeners) AppendTlsListener(
 	}
 
 	listenerName := GenerateListenerName(listener)
-	finalPort := gwv1.PortNumber(ports.TranslatePort(uint16(listener.Port)))
+	finalPort := getListenerPortNumber(listener)
 
 	for _, lis := range ml.Listeners {
 		if lis.port == finalPort {

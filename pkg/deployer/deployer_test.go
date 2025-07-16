@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	envoy_config_bootstrap "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
-	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoybootstrapv3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
 	"github.com/ghodss/yaml"
 	. "github.com/onsi/ginkgo/v2"
@@ -118,9 +118,9 @@ func (objs *clientObjects) findConfigMap(namespace, name string) *corev1.ConfigM
 	return nil
 }
 
-func (objs *clientObjects) getEnvoyConfig(namespace, name string) *envoy_config_bootstrap.Bootstrap {
+func (objs *clientObjects) getEnvoyConfig(namespace, name string) *envoybootstrapv3.Bootstrap {
 	cm := objs.findConfigMap(namespace, name).Data
-	var bootstrapCfg envoy_config_bootstrap.Bootstrap
+	var bootstrapCfg envoybootstrapv3.Bootstrap
 	err := unmarshalYaml([]byte(cm["envoy.yaml"]), &bootstrapCfg)
 	ExpectWithOffset(1, err).ToNot(HaveOccurred())
 	return &bootstrapCfg
@@ -186,6 +186,15 @@ var _ = Describe("Deployer", func() {
 					}},
 				},
 			}
+		}
+
+		highPortGateway = func() *api.Gateway {
+			gw := defaultGateway()
+			gw.Spec.Listeners = []api.Listener{{
+				Name: "listener-1",
+				Port: 8088,
+			}}
+			return gw
 		}
 
 		// Note that this is NOT meant to reflect the actual defaults defined in install/helm/kgateway/templates/gatewayparameters.yaml
@@ -1036,7 +1045,7 @@ var _ = Describe("Deployer", func() {
 				bootstrapCfg := objs.getEnvoyConfig(defaultNamespace, defaultConfigMapName)
 				Expect(bootstrapCfg.StaticResources.Listeners).To(HaveLen(2))
 				prometheusListener := bootstrapCfg.StaticResources.Listeners[1]
-				port := prometheusListener.Address.GetSocketAddress().PortSpecifier.(*envoy_config_core_v3.SocketAddress_PortValue)
+				port := prometheusListener.Address.GetSocketAddress().PortSpecifier.(*envoycorev3.SocketAddress_PortValue)
 				Expect(port.PortValue).To(Equal(uint32(9091)))
 
 				By("verifying image registry and tag were inherited")
@@ -1127,7 +1136,7 @@ var _ = Describe("Deployer", func() {
 				}
 			}
 			// this is the result of `defaultGatewayParams` (GatewayClass-level) merged with `defaultGatewayParamsOverride` (Gateway-level)
-			mergedGatewayParams = func() *gw2_v1alpha1.GatewayParameters {
+			mergedGatewayParamsNoLowPorts = func() *gw2_v1alpha1.GatewayParameters {
 				return &gw2_v1alpha1.GatewayParameters{
 					TypeMeta: metav1.TypeMeta{
 						Kind: wellknown.GatewayParametersGVK.Kind,
@@ -1194,6 +1203,16 @@ var _ = Describe("Deployer", func() {
 						},
 					},
 				}
+			}
+			mergedGatewayParams = func() *gw2_v1alpha1.GatewayParameters {
+				gwp := mergedGatewayParamsNoLowPorts()
+				gwp.Spec.Kube.PodTemplate.SecurityContext.Sysctls = []corev1.Sysctl{
+					{
+						Name:  "net.ipv4.ip_unprivileged_port_start",
+						Value: "0",
+					},
+				}
+				return gwp
 			}
 			gatewayParamsOverrideWithSds = func() *gw2_v1alpha1.GatewayParameters {
 				return &gw2_v1alpha1.GatewayParameters{
@@ -1285,6 +1304,23 @@ var _ = Describe("Deployer", func() {
 				return fullyDefinedGatewayParameters(wellknown.DefaultGatewayParametersName, defaultNamespace)
 			}
 
+			gwParamsNoPodTemplate = func() *gw2_v1alpha1.GatewayParameters {
+				params := fullyDefinedGatewayParameters(wellknown.DefaultGatewayParametersName, defaultNamespace)
+				params.Spec.Kube.PodTemplate = nil
+				return params
+			}
+
+			fullyDefinedGatewayParamsWithUnprivilegedPortStartSysctl = func() *gw2_v1alpha1.GatewayParameters {
+				params := fullyDefinedGatewayParameters(wellknown.DefaultGatewayParametersName, defaultNamespace)
+				params.Spec.Kube.PodTemplate.SecurityContext.Sysctls = []corev1.Sysctl{
+					{
+						Name:  "net.ipv4.ip_unprivileged_port_start",
+						Value: "100",
+					},
+				}
+				return params
+			}
+
 			fullyDefinedGatewayParamsWithProbes = func() *gw2_v1alpha1.GatewayParameters {
 				params := fullyDefinedGatewayParameters(wellknown.DefaultGatewayParametersName, defaultNamespace)
 				params.Spec.Kube.PodTemplate.LivenessProbe = generateLivenessProbe()
@@ -1311,11 +1347,11 @@ var _ = Describe("Deployer", func() {
 			fullyDefinedGatewayParamsWithFloatingUserId = func() *gw2_v1alpha1.GatewayParameters {
 				params := fullyDefinedGatewayParameters(wellknown.DefaultGatewayParametersName, defaultNamespace)
 				params.Spec.Kube.FloatingUserId = ptr.To(true)
+				params.Spec.Kube.PodTemplate.SecurityContext.RunAsUser = nil
 				return params
 			}
 
-			defaultGatewayWithGatewayParams = func(gwpName string) *api.Gateway {
-				gw := defaultGateway()
+			withGatewayParams = func(gw *api.Gateway, gwpName string) *api.Gateway {
 				gw.Spec.Infrastructure = &api.GatewayInfrastructure{
 					ParametersRef: &api.LocalParametersReference{
 						Group: gw2_v1alpha1.GroupName,
@@ -1325,6 +1361,15 @@ var _ = Describe("Deployer", func() {
 				}
 				return gw
 			}
+
+			highPortGatewayWithGatewayParams = func(gwpName string) *api.Gateway {
+				return withGatewayParams(highPortGateway(), gwpName)
+			}
+
+			defaultGatewayWithGatewayParams = func(gwpName string) *api.Gateway {
+				return withGatewayParams(defaultGateway(), gwpName)
+			}
+
 			defaultDeployerInputs = func() *deployer.Inputs {
 				return &deployer.Inputs{
 					Dev: false,
@@ -1363,10 +1408,14 @@ var _ = Describe("Deployer", func() {
 				Expect(dep).ToNot(BeNil())
 				Expect(dep.Spec.Replicas).ToNot(BeNil())
 				Expect(*dep.Spec.Replicas).To(Equal(int32(*expectedGwp.Deployment.Replicas)))
+
+				Expect(dep.Spec.Template.Spec.SecurityContext).To(Equal(expectedGwp.PodTemplate.SecurityContext))
+
 				expectedImage := fmt.Sprintf("%s/%s",
 					*expectedGwp.EnvoyContainer.Image.Registry,
 					*expectedGwp.EnvoyContainer.Image.Repository,
 				)
+
 				Expect(dep.Spec.Template.Spec.Containers[0].Image).To(ContainSubstring(expectedImage))
 				if expectedTag := expectedGwp.EnvoyContainer.Image.Tag; *expectedTag != "" {
 					Expect(dep.Spec.Template.Spec.Containers[0].Image).To(ContainSubstring(":" + *expectedTag))
@@ -1419,7 +1468,8 @@ var _ = Describe("Deployer", func() {
 			}
 		)
 
-		// fullyDefinedValidationWithoutRunAsUser doesn't check "runAsUser"
+		// fullyDefinedValidationWithoutRunAsUser doesn't validate "runAsUser" at the container level
+		// The entire PodSecurityContext is validated in this function.
 		fullyDefinedValidationWithoutRunAsUser := func(objs clientObjects, inp *input) error {
 			expectedGwp := inp.defaultGwp.Spec.Kube
 			Expect(objs).NotTo(BeEmpty())
@@ -1429,6 +1479,34 @@ var _ = Describe("Deployer", func() {
 			Expect(dep).ToNot(BeNil())
 			Expect(dep.Spec.Replicas).ToNot(BeNil())
 			Expect(*dep.Spec.Replicas).To(Equal(int32(*expectedGwp.Deployment.Replicas)))
+
+			// Calculate expected PodSecurityContext. The deployer conditionall addes the net.ipv4.ip_unprivileged_port_start=0 sysctl
+			// to the default parameters if the gateway uses low ports.
+
+			// There are tests that don't set a pod template, so we need to handle that case
+			if expectedGwp.PodTemplate == nil {
+				expectedGwp.PodTemplate = &gw2_v1alpha1.Pod{
+					SecurityContext: &corev1.PodSecurityContext{},
+				}
+			}
+
+			expectedPodSecurityContext := expectedGwp.PodTemplate.SecurityContext
+
+			gwUsesLowPorts := false
+			for _, listener := range inp.gw.Spec.Listeners {
+				if listener.Port < 1024 {
+					gwUsesLowPorts = true
+					break
+				}
+			}
+			if gwUsesLowPorts {
+				expectedPodSecurityContext.Sysctls = []corev1.Sysctl{{
+					Name:  "net.ipv4.ip_unprivileged_port_start",
+					Value: "0",
+				}}
+			}
+			// assert pod level security context
+			Expect(dep.Spec.Template.Spec.SecurityContext).To(Equal(expectedPodSecurityContext))
 
 			Expect(dep.Spec.Template.Annotations).To(containMapElements(expectedGwp.PodTemplate.ExtraAnnotations))
 
@@ -1537,12 +1615,7 @@ var _ = Describe("Deployer", func() {
 			return nil
 		}
 
-		fullyDefinedValidation := func(objs clientObjects, inp *input) error {
-			err := fullyDefinedValidationWithoutRunAsUser(objs, inp)
-			if err != nil {
-				return err
-			}
-
+		validateRunAsUser := func(objs clientObjects, inp *input) {
 			expectedGwp := inp.defaultGwp.Spec.Kube
 			dep := objs.findDeployment(defaultNamespace, defaultDeploymentName)
 			Expect(dep.Spec.Template.Spec.SecurityContext.RunAsUser).To(Equal(expectedGwp.PodTemplate.SecurityContext.RunAsUser))
@@ -1552,6 +1625,15 @@ var _ = Describe("Deployer", func() {
 
 			istioContainer := dep.Spec.Template.Spec.Containers[2]
 			Expect(istioContainer.SecurityContext.RunAsUser).To(Equal(expectedGwp.Istio.IstioProxyContainer.SecurityContext.RunAsUser))
+		}
+
+		fullyDefinedValidation := func(objs clientObjects, inp *input) error {
+			err := fullyDefinedValidationWithoutRunAsUser(objs, inp)
+			if err != nil {
+				return err
+			}
+
+			validateRunAsUser(objs, inp)
 
 			return nil
 		}
@@ -1775,7 +1857,24 @@ var _ = Describe("Deployer", func() {
 					return validateGatewayParametersPropagation(objs, mergedGatewayParams())
 				},
 			}),
+			Entry("high port gateway", &input{
+				dInputs:     defaultDeployerInputs(),
+				gw:          highPortGatewayWithGatewayParams(gwpOverrideName),
+				defaultGwp:  defaultGatewayParams(),
+				overrideGwp: defaultGatewayParamsOverride(),
+			}, &expectedOutput{
+				validationFunc: func(objs clientObjects, inp *input) error {
+					return validateGatewayParametersPropagation(objs, mergedGatewayParamsNoLowPorts())
+				},
+			}),
 			Entry("Fully defined GatewayParameters", &input{
+				dInputs:    istioEnabledDeployerInputs(),
+				gw:         defaultGateway(),
+				defaultGwp: fullyDefinedGatewayParams(),
+			}, &expectedOutput{
+				validationFunc: fullyDefinedValidation,
+			}),
+			Entry("Fully defined GatewayParameters with ip_unprivileged_port_start sysctl already defined", &input{
 				dInputs:    istioEnabledDeployerInputs(),
 				gw:         defaultGateway(),
 				defaultGwp: fullyDefinedGatewayParams(),
@@ -1789,6 +1888,20 @@ var _ = Describe("Deployer", func() {
 			}, &expectedOutput{
 				validationFunc: fullyDefinedValidationWithProbes,
 			}),
+			Entry("Fully defined GatewayParameters with unprivileged port start sysctl", &input{
+				dInputs:    istioEnabledDeployerInputs(),
+				gw:         defaultGateway(),
+				defaultGwp: fullyDefinedGatewayParamsWithUnprivilegedPortStartSysctl(),
+			}, &expectedOutput{
+				validationFunc: fullyDefinedValidation,
+			}),
+			Entry("Fully defined GatewayParameters with no pod template", &input{
+				dInputs:    istioEnabledDeployerInputs(),
+				gw:         defaultGateway(),
+				defaultGwp: gwParamsNoPodTemplate(),
+			}, &expectedOutput{
+				validationFunc: fullyDefinedValidation,
+			}),
 			Entry("Fully defined GatewayParameters with custom env vars", &input{
 				dInputs:    istioEnabledDeployerInputs(),
 				gw:         defaultGateway(),
@@ -1796,7 +1909,6 @@ var _ = Describe("Deployer", func() {
 			}, &expectedOutput{
 				validationFunc: fullyDefinedValidationCustomEnv,
 			}),
-
 			Entry("Fully defined GatewayParameters with floating user id", &input{
 				dInputs:    istioEnabledDeployerInputs(),
 				gw:         defaultGateway(),
@@ -1843,14 +1955,14 @@ var _ = Describe("Deployer", func() {
 					return nil
 				},
 			}),
-			Entry("port offset", defaultInput(), &expectedOutput{
+			Entry("no port offset", defaultInput(), &expectedOutput{
 				validationFunc: func(objs clientObjects, inp *input) error {
 					svc := objs.findService(defaultNamespace, defaultServiceName)
 					Expect(svc).NotTo(BeNil())
 
 					port := svc.Spec.Ports[0]
 					Expect(port.Port).To(Equal(int32(80)))
-					Expect(port.TargetPort.IntVal).To(Equal(int32(8080)))
+					Expect(port.TargetPort.IntVal).To(Equal(int32(80)))
 					Expect(port.NodePort).To(Equal(int32(0)))
 					return nil
 				},
@@ -1885,7 +1997,7 @@ var _ = Describe("Deployer", func() {
 
 					port := svc.Spec.Ports[0]
 					Expect(port.Port).To(Equal(int32(80)))
-					Expect(port.TargetPort.IntVal).To(Equal(int32(8080)))
+					Expect(port.TargetPort.IntVal).To(Equal(int32(80)))
 					Expect(port.NodePort).To(Equal(int32(30000)))
 					return nil
 				},
@@ -1925,7 +2037,7 @@ var _ = Describe("Deployer", func() {
 					Expect(svc.Spec.Ports).To(HaveLen(1))
 					port := svc.Spec.Ports[0]
 					Expect(port.Port).To(Equal(int32(80)))
-					Expect(port.TargetPort.IntVal).To(Equal(int32(8080)))
+					Expect(port.TargetPort.IntVal).To(Equal(int32(80)))
 					return nil
 				},
 			}),
