@@ -1,8 +1,6 @@
 package deployer
 
 import (
-	"fmt"
-
 	"istio.io/api/annotation"
 	"istio.io/api/label"
 	corev1 "k8s.io/api/core/v1"
@@ -114,7 +112,6 @@ func applyFloatingUserId(dstKube *v1alpha1.KubernetesProxyConfig) {
 func GetInMemoryGatewayParameters(name string, imageInfo *ImageInfo, gatewayClassName, waypointClassName, agentGatewayClassName string) *v1alpha1.GatewayParameters {
 	switch name {
 	case waypointClassName:
-		fmt.Printf("🎯 WAYPOINT MATCHED: calling defaultWaypointGatewayParameters\n")
 		return defaultWaypointGatewayParameters(imageInfo)
 	case gatewayClassName:
 		return defaultGatewayParameters(imageInfo)
@@ -137,12 +134,14 @@ func defaultAgentGatewayParameters(imageInfo *ImageInfo) *v1alpha1.GatewayParame
 // set for the waypoint deployment.
 func defaultWaypointGatewayParameters(imageInfo *ImageInfo) *v1alpha1.GatewayParameters {
 	gwp := defaultGatewayParameters(imageInfo)
-	gwp.Spec.Kube.Service.Type = ptr.To(corev1.ServiceTypeClusterIP)
 
 	// Ensure Service is initialized before adding ports
 	if gwp.Spec.Kube.Service == nil {
 		gwp.Spec.Kube.Service = &v1alpha1.Service{}
 	}
+
+	gwp.Spec.Kube.Service.Type = ptr.To(corev1.ServiceTypeClusterIP)
+
 	if gwp.Spec.Kube.Service.Ports == nil {
 		gwp.Spec.Kube.Service.Ports = []*v1alpha1.Port{}
 	}
@@ -152,7 +151,6 @@ func defaultWaypointGatewayParameters(imageInfo *ImageInfo) *v1alpha1.GatewayPar
 	// Similar to labeling in kubernetes, this is used to identify the service as a waypoint service.
 	meshPort := &v1alpha1.Port{
 		Port: 15008,
-		// Don't set NodePort as this is ClusterIP service type
 	}
 	gwp.Spec.Kube.Service.Ports = append(gwp.Spec.Kube.Service.Ports, meshPort)
 
