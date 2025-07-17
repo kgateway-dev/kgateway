@@ -179,6 +179,7 @@ func (t *Translator) ComputeListener(
 
 func (t *Translator) runListenerPlugins(ctx context.Context, pass TranslationPassPlugins, gw ir.GatewayIR, l ir.ListenerIR, out *envoylistenerv3.Listener) {
 	var attachedPolicies ir.AttachedPolicies
+	// Listener policies take precedence over gateway policies, so they are ordered first
 	attachedPolicies.Append(l.AttachedPolicies, gw.AttachedHttpPolicies)
 	for _, gk := range attachedPolicies.ApplyOrderedGroupKinds() {
 		pols := attachedPolicies.Policies[gk]
@@ -187,7 +188,7 @@ func (t *Translator) runListenerPlugins(ctx context.Context, pass TranslationPas
 			// TODO: report user error - they attached a non http policy
 			continue
 		}
-		for _, pol := range pols {
+		for _, pol := range mergePolicies(pass, pols) {
 			pctx := &ir.ListenerContext{
 				Policy: pol.PolicyIr,
 				PolicyAncestorRef: gwv1.ParentReference{

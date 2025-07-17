@@ -9,10 +9,10 @@ import (
 	"github.com/avast/retry-go"
 	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/krt"
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	infextv1a2 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -243,7 +243,7 @@ func removeGatewayParentRef(
 		}
 		// Remove any ParentStatus whose GatewayRef.Name equals matchedGtw.
 		for _, p := range pool.Status.Parents {
-			if p.GatewayRef.Name == gw.Name {
+			if p.GatewayRef.Name == infextv1a2.ObjectName(gw.Name) {
 				exists = true
 				continue
 			}
@@ -280,16 +280,16 @@ func addGatewayParentRef(status *infextv1a2.InferencePoolStatus, gtwName string)
 	}
 
 	for _, p := range status.Parents {
-		if p.GatewayRef.Name == gtwName {
+		if p.GatewayRef.Name == infextv1a2.ObjectName(gtwName) {
 			// Nothing to do if the InferencePool already has this GatewayRef
 			return
 		}
 	}
 
 	status.Parents = append(status.Parents, infextv1a2.PoolStatus{
-		GatewayRef: corev1.ObjectReference{
-			Name: gtwName,
-			Kind: "Gateway",
+		GatewayRef: infextv1a2.ParentGatewayReference{
+			Name: infextv1a2.ObjectName(gtwName),
+			Kind: ptr.To(infextv1a2.Kind(wellknown.GatewayKind)),
 		},
 	})
 }
@@ -304,7 +304,7 @@ func findGatewayParentRef(status *infextv1a2.InferencePoolStatus, gtwName string
 	}
 
 	for i, parent := range status.Parents {
-		if parent.GatewayRef.Name == gtwName {
+		if parent.GatewayRef.Name == infextv1a2.ObjectName(gtwName) {
 			return i
 		}
 	}
