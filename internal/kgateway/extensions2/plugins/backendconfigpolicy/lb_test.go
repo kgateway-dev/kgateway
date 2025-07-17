@@ -21,6 +21,7 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 	tests := []struct {
 		name     string
 		config   *v1alpha1.LoadBalancer
+		cluster  *envoyclusterv3.Cluster
 		expected *envoyclusterv3.Cluster
 	}{
 		{
@@ -229,14 +230,22 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 			},
 		},
 		{
-			name: "UseHostnameForHashing",
+			name: "UseHostnameForHashing, STRICT_DNS",
 			config: &v1alpha1.LoadBalancer{
 				RingHash: &v1alpha1.LoadBalancerRingHashConfig{
 					UseHostnameForHashing: true,
 				},
 			},
+			cluster: &envoyclusterv3.Cluster{
+				ClusterDiscoveryType: &envoyclusterv3.Cluster_Type{
+					Type: envoyclusterv3.Cluster_STRICT_DNS,
+				},
+			},
 			expected: &envoyclusterv3.Cluster{
-				Name:     "test",
+				Name: "test",
+				ClusterDiscoveryType: &envoyclusterv3.Cluster_Type{
+					Type: envoyclusterv3.Cluster_STRICT_DNS,
+				},
 				LbPolicy: envoyclusterv3.Cluster_RING_HASH,
 				LbConfig: &envoyclusterv3.Cluster_RingHashLbConfig_{
 					RingHashLbConfig: &envoyclusterv3.Cluster_RingHashLbConfig{},
@@ -248,11 +257,38 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "UseHostnameForHashing, EDS",
+			config: &v1alpha1.LoadBalancer{
+				RingHash: &v1alpha1.LoadBalancerRingHashConfig{
+					UseHostnameForHashing: true,
+				},
+			},
+			cluster: &envoyclusterv3.Cluster{
+				ClusterDiscoveryType: &envoyclusterv3.Cluster_Type{
+					Type: envoyclusterv3.Cluster_EDS,
+				},
+			},
+			expected: &envoyclusterv3.Cluster{
+				Name: "test",
+				ClusterDiscoveryType: &envoyclusterv3.Cluster_Type{
+					Type: envoyclusterv3.Cluster_EDS,
+				},
+				LbPolicy: envoyclusterv3.Cluster_RING_HASH,
+				LbConfig: &envoyclusterv3.Cluster_RingHashLbConfig_{
+					RingHashLbConfig: &envoyclusterv3.Cluster_RingHashLbConfig{},
+				},
+				CommonLbConfig: &envoyclusterv3.Cluster_CommonLbConfig{},
+			},
+		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			cluster := &envoyclusterv3.Cluster{}
+			cluster := test.cluster
+			if cluster == nil {
+				cluster = &envoyclusterv3.Cluster{}
+			}
 			cluster.Name = "test"
 			lbConfig := translateLoadBalancerConfig(test.config)
 			applyLoadBalancerConfig(lbConfig, cluster)
