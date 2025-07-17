@@ -15,7 +15,7 @@ spec:
 kind: BackendConfigPolicy
 apiVersion: gateway.kgateway.dev/v1alpha1
 metadata:
-  name: httpbin-policy
+  name: example-policy
 spec:
   targetRefs:
     - name: example-backend
@@ -37,3 +37,33 @@ spec:
     hosts:
     - host: example.com
       port: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: httpbin
+  labels:
+    app: httpbin
+    service: httpbin
+spec:
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+  selector:
+    app: httpbin
+---
+kind: BackendConfigPolicy
+apiVersion: gateway.kgateway.dev/v1alpha1
+metadata:
+  name: httpbin-policy
+spec:
+  targetRefs:
+    - name: httpbin
+      group: ""
+      kind: Service
+  loadBalancer:
+    ringHash:
+      minimumRingSize: 1024
+      maximumRingSize: 2048
+      useHostnameForHashing: true # this should be ignored because the cluster is not STRICT_DNS

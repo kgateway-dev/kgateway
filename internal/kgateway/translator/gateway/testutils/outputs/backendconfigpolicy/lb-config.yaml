@@ -78,7 +78,6 @@ Clusters:
   type: EDS
 - commonLbConfig:
     closeConnectionsOnHostSetChange: true
-    consistentHashingLbConfig: {}
   connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
