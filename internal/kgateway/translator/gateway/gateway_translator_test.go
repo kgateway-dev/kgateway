@@ -783,6 +783,14 @@ var _ = DescribeTable("Basic",
 			Name:      "example-gateway",
 		},
 	}),
+	Entry("Backend Config Policy with LB UseHostnameForHashing", translatorTestCase{
+		inputFile:  "backendconfigpolicy/lb-usehostnameforhashing.yaml",
+		outputFile: "backendconfigpolicy/lb-usehostnameforhashing.yaml",
+		gwNN: types.NamespacedName{
+			Namespace: "default",
+			Name:      "example-gateway",
+		},
+	}),
 	Entry("Backend Config Policy with Health Check", translatorTestCase{
 		inputFile:  "backendconfigpolicy/healthcheck.yaml",
 		outputFile: "backendconfigpolicy/healthcheck.yaml",
