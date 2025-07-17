@@ -52,6 +52,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CommonGrpcService":                         schema_kgateway_v2_api_v1alpha1_CommonGrpcService(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CommonHttpProtocolOptions":                 schema_kgateway_v2_api_v1alpha1_CommonHttpProtocolOptions(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ComparisonFilter":                          schema_kgateway_v2_api_v1alpha1_ComparisonFilter(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Cookie":                                    schema_kgateway_v2_api_v1alpha1_Cookie(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CorsPolicy":                                schema_kgateway_v2_api_v1alpha1_CorsPolicy(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CustomAttribute":                           schema_kgateway_v2_api_v1alpha1_CustomAttribute(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CustomAttributeEnvironment":                schema_kgateway_v2_api_v1alpha1_CustomAttributeEnvironment(ref),
@@ -92,6 +93,8 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.HTTPListenerPolicy":                        schema_kgateway_v2_api_v1alpha1_HTTPListenerPolicy(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.HTTPListenerPolicyList":                    schema_kgateway_v2_api_v1alpha1_HTTPListenerPolicyList(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.HTTPListenerPolicySpec":                    schema_kgateway_v2_api_v1alpha1_HTTPListenerPolicySpec(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.HashPolicy":                                schema_kgateway_v2_api_v1alpha1_HashPolicy(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Header":                                    schema_kgateway_v2_api_v1alpha1_Header(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.HeaderFilter":                              schema_kgateway_v2_api_v1alpha1_HeaderFilter(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.HeaderTransformation":                      schema_kgateway_v2_api_v1alpha1_HeaderTransformation(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.HeaderValue":                               schema_kgateway_v2_api_v1alpha1_HeaderValue(ref),
@@ -157,6 +160,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ServiceAccount":                            schema_kgateway_v2_api_v1alpha1_ServiceAccount(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.SingleAuthToken":                           schema_kgateway_v2_api_v1alpha1_SingleAuthToken(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.SlowStart":                                 schema_kgateway_v2_api_v1alpha1_SlowStart(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.SourceIP":                                  schema_kgateway_v2_api_v1alpha1_SourceIP(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.StaticBackend":                             schema_kgateway_v2_api_v1alpha1_StaticBackend(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.StatsConfig":                               schema_kgateway_v2_api_v1alpha1_StatsConfig(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.StatusCodeFilter":                          schema_kgateway_v2_api_v1alpha1_StatusCodeFilter(ref),
@@ -2240,6 +2244,58 @@ func schema_kgateway_v2_api_v1alpha1_ComparisonFilter(ref common.ReferenceCallba
 	}
 }
 
+func schema_kgateway_v2_api_v1alpha1_Cookie(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"name": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Name of the cookie.",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"path": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Path is the name of the path for the cookie.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"ttl": {
+						SchemaProps: spec.SchemaProps{
+							Description: "TTL specifies the time to live of the cookie. If specified, a cookie with the TTL will be generated if the cookie is not present. If the TTL is present and zero, the generated cookie will be a session cookie.",
+							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Duration"),
+						},
+					},
+					"attributes": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Attributes are additional attributes for the cookie.",
+							Type:        []string{"object"},
+							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
+									},
+								},
+							},
+						},
+					},
+				},
+				Required: []string{"name"},
+			},
+		},
+		Dependencies: []string{
+			"k8s.io/apimachinery/pkg/apis/meta/v1.Duration"},
+	}
+}
+
 func schema_kgateway_v2_api_v1alpha1_CorsPolicy(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -3767,6 +3823,66 @@ func schema_kgateway_v2_api_v1alpha1_HTTPListenerPolicySpec(ref common.Reference
 		},
 		Dependencies: []string{
 			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AccessLog", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.EnvoyHealthCheck", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LocalPolicyTargetReference", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LocalPolicyTargetSelector", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Tracing", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.UpgradeConfig", "k8s.io/apimachinery/pkg/apis/meta/v1.Duration"},
+	}
+}
+
+func schema_kgateway_v2_api_v1alpha1_HashPolicy(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"header": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Header specifies a header's value as a component of the hash key.",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Header"),
+						},
+					},
+					"cookie": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Cookie specifies a given cookie as a component of the hash key.",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Cookie"),
+						},
+					},
+					"sourceIP": {
+						SchemaProps: spec.SchemaProps{
+							Description: "SourceIP specifies whether to use the request's source IP address as a component of the hash key.",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.SourceIP"),
+						},
+					},
+					"terminal": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Terminal, if set, and a hash key is available after evaluating this policy, will cause Envoy to skip the subsequent policies and use the key as it is. This is useful for defining \"fallback\" policies and limiting the time Envoy spends generating hash keys.",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Cookie", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Header", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.SourceIP"},
+	}
+}
+
+func schema_kgateway_v2_api_v1alpha1_Header(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"name": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Name is the name of the header to use as a component of the hash key.",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+				},
+				Required: []string{"name"},
+			},
+		},
 	}
 }
 
@@ -6168,6 +6284,16 @@ func schema_kgateway_v2_api_v1alpha1_SlowStart(ref common.ReferenceCallback) com
 	}
 }
 
+func schema_kgateway_v2_api_v1alpha1_SourceIP(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+			},
+		},
+	}
+}
+
 func schema_kgateway_v2_api_v1alpha1_StaticBackend(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -6825,6 +6951,19 @@ func schema_kgateway_v2_api_v1alpha1_TrafficPolicySpec(ref common.ReferenceCallb
 							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CSRFPolicy"),
 						},
 					},
+					"hashPolicies": {
+						SchemaProps: spec.SchemaProps{
+							Description: "HashPolicies specifies the hash policies for hashing load balancers (RingHash, Maglev). Should be used in conjunction with Load Balancer on the BackendConfigPolicy. Note: can only be used when targeting routes.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Ref: ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.HashPolicy"),
+									},
+								},
+							},
+						},
+					},
 					"autoHostRewrite": {
 						SchemaProps: spec.SchemaProps{
 							Description: "AutoHostRewrite rewrites the Host header to the DNS name of the selected upstream. NOTE: This field is only honoured for HTTPRoute targets. NOTE: If `autoHostRewrite` is set on a route that also has a [URLRewrite filter](https://gateway-api.sigs.k8s.io/reference/spec/#httpurlrewritefilter) configured to override the `hostname`, the `hostname` value will be used and `autoHostRewrite` will be ignored.",
@@ -6842,7 +6981,7 @@ func schema_kgateway_v2_api_v1alpha1_TrafficPolicySpec(ref common.ReferenceCallb
 			},
 		},
 		Dependencies: []string{
-			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AIPolicy", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Buffer", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CSRFPolicy", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CorsPolicy", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtAuthPolicy", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtProcPolicy", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LocalPolicyTargetReferenceWithSectionName", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LocalPolicyTargetSelector", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.RateLimit", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.TransformationPolicy"},
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AIPolicy", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Buffer", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CSRFPolicy", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CorsPolicy", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtAuthPolicy", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtProcPolicy", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.HashPolicy", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LocalPolicyTargetReferenceWithSectionName", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LocalPolicyTargetSelector", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.RateLimit", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.TransformationPolicy"},
 	}
 }
 

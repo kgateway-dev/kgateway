@@ -79,6 +79,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.CommonGrpcServiceApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("CommonHttpProtocolOptions"):
 		return &apiv1alpha1.CommonHttpProtocolOptionsApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("Cookie"):
+		return &apiv1alpha1.CookieApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("CorsPolicy"):
 		return &apiv1alpha1.CorsPolicyApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("CSRFPolicy"):
@@ -143,6 +145,10 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.GracefulShutdownSpecApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("GrpcStatusFilter"):
 		return &apiv1alpha1.GrpcStatusFilterApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("HashPolicy"):
+		return &apiv1alpha1.HashPolicyApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("Header"):
+		return &apiv1alpha1.HeaderApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("HeaderFilter"):
 		return &apiv1alpha1.HeaderFilterApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("HeaderTransformation"):

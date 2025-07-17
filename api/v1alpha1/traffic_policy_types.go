@@ -36,6 +36,7 @@ type TrafficPolicyList struct {
 }
 
 // TrafficPolicySpec defines the desired state of a traffic policy.
+// +kubebuilder:validation:XValidation:rule="!has(self.hashPolicies) || ((has(self.targetRefs) && self.targetRefs.all(r, r.kind == 'HTTPRoute')) || (has(self.targetSelectors) && self.targetSelectors.all(r, r.kind == 'HTTPRoute')))",message="hash policies can only be used when targeting HTTPRoute resources"
 // +kubebuilder:validation:XValidation:rule="!has(self.autoHostRewrite) || ((has(self.targetRefs) && self.targetRefs.all(r, r.kind == 'HTTPRoute')) || (has(self.targetSelectors) && self.targetSelectors.all(r, r.kind == 'HTTPRoute')))",message="autoHostRewrite can only be used when targeting HTTPRoute resources"
 type TrafficPolicySpec struct {
 	// TargetRefs specifies the target resources by reference to attach the policy to.
@@ -81,6 +82,14 @@ type TrafficPolicySpec struct {
 	// Csrf specifies the Cross-Site Request Forgery (CSRF) policy for this traffic policy.
 	// +optional
 	Csrf *CSRFPolicy `json:"csrf,omitempty"`
+
+	// HashPolicies specifies the hash policies for hashing load balancers (RingHash, Maglev).
+	// Should be used in conjunction with Load Balancer on the BackendConfigPolicy.
+	// Note: can only be used when targeting routes.
+	// +optional
+	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:MaxItems=16
+	HashPolicies []*HashPolicy `json:"hashPolicies,omitempty"`
 
 	// AutoHostRewrite rewrites the Host header to the DNS name of the selected upstream.
 	// NOTE: This field is only honoured for HTTPRoute targets.
@@ -389,6 +398,58 @@ type CSRFPolicy struct {
 	// +kubebuilder:validation:MaxItems=16
 	AdditionalOrigins []*StringMatcher `json:"additionalOrigins,omitempty"`
 }
+
+// +kubebuilder:validation:ExactlyOneOf=header;cookie;sourceIP
+type HashPolicy struct {
+	// Header specifies a header's value as a component of the hash key.
+	// +optional
+	Header *Header `json:"header,omitempty"`
+
+	// Cookie specifies a given cookie as a component of the hash key.
+	// +optional
+	Cookie *Cookie `json:"cookie,omitempty"`
+
+	// SourceIP specifies whether to use the request's source IP address as a component of the hash key.
+	// +optional
+	SourceIP *SourceIP `json:"sourceIP,omitempty"`
+
+	// Terminal, if set, and a hash key is available after evaluating this policy, will cause Envoy to skip the subsequent policies and
+	// use the key as it is.
+	// This is useful for defining "fallback" policies and limiting the time Envoy spends generating hash keys.
+	// +optional
+	Terminal *bool `json:"terminal,omitempty"`
+}
+
+type Header struct {
+	// Name is the name of the header to use as a component of the hash key.
+	// +kubebuilder:validation:MinLength=1
+	Name string `json:"name"`
+}
+
+type Cookie struct {
+	// Name of the cookie.
+	// +kubebuilder:validation:MinLength=1
+	Name string `json:"name"`
+
+	// Path is the name of the path for the cookie.
+	// +optional
+	Path *string `json:"path,omitempty"`
+
+	// TTL specifies the time to live of the cookie.
+	// If specified, a cookie with the TTL will be generated if the cookie is not present.
+	// If the TTL is present and zero, the generated cookie will be a session cookie.
+	// +optional
+	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('0s')",message="ttl must be a valid duration string"
+	TTL *metav1.Duration `json:"ttl,omitempty"`
+
+	// Attributes are additional attributes for the cookie.
+	// +optional
+	// +kubebuilder:validation:MinProperties=1
+	// +kubebuilder:validation:MaxProperties=10
+	Attributes map[string]string `json:"attributes,omitempty"`
+}
+
+type SourceIP struct{}
 
 type Buffer struct {
 	// MaxRequestSize sets the maximum size in bytes of a message body to buffer.

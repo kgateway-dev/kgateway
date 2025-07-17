@@ -496,6 +496,51 @@ spec:
                 required:
                 - extensionRef
                 type: object
+              hashPolicies:
+                items:
+                  properties:
+                    cookie:
+                      properties:
+                        attributes:
+                          additionalProperties:
+                            type: string
+                          maxProperties: 10
+                          minProperties: 1
+                          type: object
+                        name:
+                          minLength: 1
+                          type: string
+                        path:
+                          type: string
+                        ttl:
+                          type: string
+                          x-kubernetes-validations:
+                          - message: ttl must be a valid duration string
+                            rule: duration(self) >= duration('0s')
+                      required:
+                      - name
+                      type: object
+                    header:
+                      properties:
+                        name:
+                          minLength: 1
+                          type: string
+                      required:
+                      - name
+                      type: object
+                    sourceIP:
+                      type: object
+                    terminal:
+                      type: boolean
+                  type: object
+                  x-kubernetes-validations:
+                  - message: exactly one of the fields in [header cookie sourceIP]
+                      must be set
+                    rule: '[has(self.header),has(self.cookie),has(self.sourceIP)].filter(x,x==true).size()
+                      == 1'
+                maxItems: 16
+                minItems: 1
+                type: array
               rateLimit:
                 properties:
                   global:
@@ -751,6 +796,10 @@ spec:
                 type: object
             type: object
             x-kubernetes-validations:
+            - message: hash policies can only be used when targeting HTTPRoute resources
+              rule: '!has(self.hashPolicies) || ((has(self.targetRefs) && self.targetRefs.all(r,
+                r.kind == ''HTTPRoute'')) || (has(self.targetSelectors) && self.targetSelectors.all(r,
+                r.kind == ''HTTPRoute'')))'
             - message: autoHostRewrite can only be used when targeting HTTPRoute resources
               rule: '!has(self.autoHostRewrite) || ((has(self.targetRefs) && self.targetRefs.all(r,
                 r.kind == ''HTTPRoute'')) || (has(self.targetSelectors) && self.targetSelectors.all(r,

@@ -262,6 +262,16 @@ var _ = DescribeTable("Basic",
 			},
 		}),
 	Entry(
+		"Load balancer with hash policies, route level",
+		translatorTestCase{
+			inputFile:  "loadbalancer/route.yaml",
+			outputFile: "loadbalancer/route.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		}),
+	Entry(
 		"TrafficPolicy with buffer attached to gateway",
 		translatorTestCase{
 			inputFile:  "traffic-policy/buffer-gateway.yaml",

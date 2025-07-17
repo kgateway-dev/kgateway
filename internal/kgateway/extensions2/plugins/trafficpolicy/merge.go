@@ -312,3 +312,29 @@ func mergeAutoHostRewrite(
 		logger.Warn("unsupported merge strategy for AutoHostRewrite policy", "strategy", opts.Strategy, "policy", p2Ref)
 	}
 }
+
+func mergeHashPolicies(
+	p1, p2 *TrafficPolicy,
+	p2Ref *pluginsdkir.AttachedPolicyRef,
+	opts policy.MergeOptions,
+	mergeOrigins pluginsdkir.MergeOrigins,
+) {
+	if !policy.IsMergeable(p1.spec.hashPolicies, p2.spec.hashPolicies, opts) {
+		return
+	}
+
+	switch opts.Strategy {
+	case policy.AugmentedDeepMerge, policy.OverridableDeepMerge:
+		if p1.spec.hashPolicies != nil {
+			return
+		}
+		fallthrough // can override p1 if it is unset
+
+	case policy.AugmentedShallowMerge, policy.OverridableShallowMerge:
+		p1.spec.hashPolicies = p2.spec.hashPolicies
+		mergeOrigins.SetOne("hashPolicies", p2Ref)
+
+	default:
+		logger.Warn("unsupported merge strategy for hashPolicies policy", "strategy", opts.Strategy, "policy", p2Ref)
+	}
+}

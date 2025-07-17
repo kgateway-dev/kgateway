@@ -99,10 +99,12 @@ type ControllerBuilder struct {
 
 func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuilder, error) {
 	loggingOptions := istiolog.DefaultOptions()
+	loggingOptions.JSONEncoding = true
 	if cfg.Dev {
 		setupLog.Info("starting log in dev mode")
 		loggingOptions.SetDefaultOutputLevel(istiolog.OverrideScopeName, istiolog.DebugLevel)
 		logging.MustSetLevel(ControllerRuntimeLogger, slog.LevelDebug)
+		loggingOptions.JSONEncoding = false
 	}
 	istiolog.Configure(loggingOptions)
 

@@ -105,6 +105,8 @@ func (b *TrafficPolicyBuilder) Translate(
 		errors = append(errors, err)
 	}
 
+	hashPolicyForSpec(policyCR.Spec, &outSpec)
+
 	if policyCR.Spec.AutoHostRewrite != nil {
 		outSpec.autoHostRewrite = wrapperspb.Bool(*policyCR.Spec.AutoHostRewrite)
 	}

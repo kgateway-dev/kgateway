@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"slices"
 	"strconv"
 	"time"
 
@@ -86,6 +87,7 @@ type trafficPolicySpecIr struct {
 	rateLimit                  *GlobalRateLimitIR
 	cors                       *CorsIR
 	csrf                       *CsrfIR
+	hashPolicies               []*envoyroutev3.RouteAction_HashPolicy
 	autoHostRewrite            *wrapperspb.BoolValue
 	buffer                     *BufferIR
 }
@@ -158,6 +160,12 @@ func (d *TrafficPolicy) Equals(in any) bool {
 	}
 
 	if !d.spec.buffer.Equals(d2.spec.buffer) {
+		return false
+	}
+
+	if !slices.EqualFunc(d.spec.hashPolicies, d2.spec.hashPolicies, func(a, b *envoyroutev3.RouteAction_HashPolicy) bool {
+		return proto.Equal(a, b)
+	}) {
 		return false
 	}
 
@@ -374,6 +382,10 @@ func (p *trafficPolicyPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.
 			// Apply the AI policy to the all AI backends
 			p.processAITrafficPolicy(&pCtx.TypedFilterConfig, policy.spec.AI)
 		}
+	}
+
+	if policy.spec.hashPolicies != nil {
+		outputRoute.GetRoute().HashPolicy = policy.spec.hashPolicies
 	}
 
 	if policy.spec.autoHostRewrite != nil && policy.spec.autoHostRewrite.GetValue() {
@@ -624,6 +636,7 @@ func MergeTrafficPolicies(
 		mergeCSRF,
 		mergeBuffer,
 		mergeAutoHostRewrite,
+		mergeHashPolicies,
 	}
 
 	for _, mergeFunc := range mergeFuncs {
