@@ -61,7 +61,8 @@ func (h *httpRouteConfigurationTranslator) ComputeRouteConfiguration(ctx context
 			continue
 		}
 		reportPolicyAcceptanceStatus(h.reporter, h.listener.PolicyAncestorRef, pols...)
-		for _, pol := range mergePolicies(pass, pols) {
+		policies, mergeOrigins := mergePolicies(pass, pols)
+		for _, pol := range policies {
 			if pol.PolicyRef != nil {
 				metrics.StartResourceSync(pol.PolicyRef.Name, metrics.ResourceMetricLabels{
 					Gateway:   h.gw.SourceObject.Name,
@@ -69,7 +70,6 @@ func (h *httpRouteConfigurationTranslator) ComputeRouteConfiguration(ctx context
 					Resource:  gk.Kind,
 				})
 			}
-
 			pass.ApplyRouteConfigPlugin(ctx, &ir.RouteConfigContext{
 				FilterChainName:   h.fc.FilterChainName,
 				TypedFilterConfig: typedPerFilterConfigRoute,
@@ -77,6 +77,8 @@ func (h *httpRouteConfigurationTranslator) ComputeRouteConfiguration(ctx context
 				GatewayContext:    ir.GatewayContext{GatewayClassName: h.gw.GatewayClassName()},
 			}, cfg)
 		}
+		cfg.Metadata = addMergeOriginsToFilterMetadata(gk, mergeOrigins, cfg.GetMetadata())
+		reportPolicyAttachmentStatus(h.reporter, h.listener.PolicyAncestorRef, mergeOrigins, pols...)
 	}
 
 	cfg.VirtualHosts = h.computeVirtualHosts(ctx, vhosts)
@@ -253,7 +255,8 @@ func (h *httpRouteConfigurationTranslator) runVhostPlugins(
 			continue
 		}
 		reportPolicyAcceptanceStatus(h.reporter, h.listener.PolicyAncestorRef, pols...)
-		for _, pol := range mergePolicies(pass, pols) {
+		policies, mergeOrigins := mergePolicies(pass, pols)
+		for _, pol := range policies {
 			if pol.PolicyRef != nil {
 				metrics.StartResourceSync(pol.PolicyRef.Name, metrics.ResourceMetricLabels{
 					Gateway:   h.gw.SourceObject.Name,
@@ -261,7 +264,6 @@ func (h *httpRouteConfigurationTranslator) runVhostPlugins(
 					Resource:  gk.Kind,
 				})
 			}
-
 			pctx := &ir.VirtualHostContext{
 				Policy:            pol.PolicyIr,
 				TypedFilterConfig: typedPerFilterConfig,
@@ -269,8 +271,9 @@ func (h *httpRouteConfigurationTranslator) runVhostPlugins(
 				GatewayContext:    ir.GatewayContext{GatewayClassName: h.gw.GatewayClassName()},
 			}
 			pass.ApplyVhostPlugin(ctx, pctx, out)
-			// TODO: check return value, if error returned, log error and report condition
 		}
+		out.Metadata = addMergeOriginsToFilterMetadata(gk, mergeOrigins, out.GetMetadata())
+		reportPolicyAttachmentStatus(h.reporter, h.listener.PolicyAncestorRef, mergeOrigins, pols...)
 	}
 }
 
@@ -308,13 +311,6 @@ func (h *httpRouteConfigurationTranslator) runRoutePlugins(
 	}
 
 	var errs []error
-	applyForPolicy := func(ctx context.Context, pass *TranslationPass, pctx *ir.RouteContext, out *envoyroutev3.Route) {
-		err := pass.ApplyForRoute(ctx, pctx, out)
-		if err != nil {
-			errs = append(errs, err)
-		}
-	}
-
 	for _, gk := range attachedPolicies.ApplyOrderedGroupKinds() {
 		pols := attachedPolicies.Policies[gk]
 		pass := h.PluginPass[gk]
@@ -322,16 +318,18 @@ func (h *httpRouteConfigurationTranslator) runRoutePlugins(
 			// TODO: should never happen, log error and report condition
 			continue
 		}
-		reportPolicyAcceptanceStatus(h.reporter, h.listener.PolicyAncestorRef, pols...)
 		pctx := &ir.RouteContext{
 			GatewayContext:    ir.GatewayContext{GatewayClassName: h.gw.GatewayClassName()},
 			FilterChainName:   h.fc.FilterChainName,
 			In:                in,
 			TypedFilterConfig: typedPerFilterConfig,
 		}
-		for _, pol := range mergePolicies(pass, pols) {
+		reportPolicyAcceptanceStatus(h.reporter, h.listener.PolicyAncestorRef, pols...)
+		policies, mergeOrigins := mergePolicies(pass, pols)
+		for _, pol := range policies {
 			// Builtin policies use InheritedPolicyPriority
 			pctx.InheritedPolicyPriority = pol.InheritedPolicyPriority
+
 			// skip plugin application if we encountered any errors while constructing
 			// the policy IR.
 			if len(pol.Errors) > 0 {
@@ -348,8 +346,13 @@ func (h *httpRouteConfigurationTranslator) runRoutePlugins(
 			}
 
 			pctx.Policy = pol.PolicyIr
-			applyForPolicy(ctx, pass, pctx, out)
+			err := pass.ApplyForRoute(ctx, pctx, out)
+			if err != nil {
+				errs = append(errs, err)
+			}
 		}
+		out.Metadata = addMergeOriginsToFilterMetadata(gk, mergeOrigins, out.GetMetadata())
+		reportPolicyAttachmentStatus(h.reporter, h.listener.PolicyAncestorRef, mergeOrigins, pols...)
 	}
 	err := errors.Join(errs...)
 	if err != nil {
@@ -364,13 +367,14 @@ func (h *httpRouteConfigurationTranslator) runRoutePlugins(
 	return err
 }
 
-func mergePolicies(pass *TranslationPass, policies []ir.PolicyAtt) []ir.PolicyAtt {
+func mergePolicies(pass *TranslationPass, policies []ir.PolicyAtt) ([]ir.PolicyAtt, ir.MergeOrigins) {
 	if pass.MergePolicies != nil {
-		merged := [1]ir.PolicyAtt{pass.MergePolicies(policies)}
-		return merged[:]
+		mergedPolicy := pass.MergePolicies(policies)
+		merged := [1]ir.PolicyAtt{mergedPolicy}
+		return merged[:], mergedPolicy.MergeOrigins
 	}
 
-	return policies
+	return policies, nil
 }
 
 func (h *httpRouteConfigurationTranslator) runBackendPolicies(ctx context.Context, in ir.HttpBackend, pCtx *ir.RouteBackendContext) error {
@@ -383,7 +387,8 @@ func (h *httpRouteConfigurationTranslator) runBackendPolicies(ctx context.Contex
 			continue
 		}
 		reportPolicyAcceptanceStatus(h.reporter, h.listener.PolicyAncestorRef, pols...)
-		for _, pol := range mergePolicies(pass, pols) {
+		policies, _ := mergePolicies(pass, pols)
+		for _, pol := range policies {
 			if pol.PolicyRef != nil {
 				metrics.StartResourceSync(pol.PolicyRef.Name, metrics.ResourceMetricLabels{
 					Gateway:   h.gw.SourceObject.Name,
@@ -391,13 +396,11 @@ func (h *httpRouteConfigurationTranslator) runBackendPolicies(ctx context.Contex
 					Resource:  gk.Kind,
 				})
 			}
-
 			// Policy on extension ref
 			err := pass.ApplyForRouteBackend(ctx, pol.PolicyIr, pCtx)
 			if err != nil {
 				errs = append(errs, err)
 			}
-			// TODO: check return value, if error returned, log error and report condition
 		}
 	}
 	return errors.Join(errs...)

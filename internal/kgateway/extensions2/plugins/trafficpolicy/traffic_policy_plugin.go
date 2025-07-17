@@ -617,6 +617,7 @@ func (p *trafficPolicyPluginGwPass) SupportsPolicyMerge() bool {
 func MergeTrafficPolicies(
 	p1, p2 *TrafficPolicy,
 	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins pluginsdkir.MergeOrigins,
 	mergeOpts policy.MergeOptions,
 	mergeOrigins pluginsdkir.MergeOrigins,
 ) {
@@ -624,7 +625,7 @@ func MergeTrafficPolicies(
 		return
 	}
 
-	mergeFuncs := []func(*TrafficPolicy, *TrafficPolicy, *ir.AttachedPolicyRef, policy.MergeOptions, pluginsdkir.MergeOrigins){
+	mergeFuncs := []func(*TrafficPolicy, *TrafficPolicy, *ir.AttachedPolicyRef, pluginsdkir.MergeOrigins, policy.MergeOptions, pluginsdkir.MergeOrigins){
 		mergeAI,
 		mergeExtProc,
 		mergeTransformation,
@@ -640,6 +641,6 @@ func MergeTrafficPolicies(
 	}
 
 	for _, mergeFunc := range mergeFuncs {
-		mergeFunc(p1, p2, p2Ref, mergeOpts, mergeOrigins)
+		mergeFunc(p1, p2, p2Ref, p2MergeOrigins, mergeOpts, mergeOrigins)
 	}
 }

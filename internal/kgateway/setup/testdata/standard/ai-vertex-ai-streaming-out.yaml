@@ -158,6 +158,11 @@ routes:
     routes:
     - match:
         path: /vertexai
+      metadata:
+        filterMetadata:
+          merge.TrafficPolicy.gateway.kgateway.dev:
+            ai:
+            - gateway.kgateway.dev/TrafficPolicy/gwtest/route-test
       name: listener~8080~test-route-0-httproute-route-to-backend-gwtest-0-0-matcher-0
       route:
         autoHostRewrite: true

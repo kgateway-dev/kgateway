@@ -56,9 +56,19 @@ listeners:
         statPrefix: http
         useRemoteAddress: true
     name: listener~8080
+  metadata:
+    filterMetadata:
+      merge.TrafficPolicy.gateway.kgateway.dev:
+        cors:
+        - gateway.kgateway.dev/TrafficPolicy/gwtest/my-route-policy
   name: listener~8080
 routes:
 - ignorePortInHostMatching: true
+  metadata:
+    filterMetadata:
+      merge.TrafficPolicy.gateway.kgateway.dev:
+        cors:
+        - gateway.kgateway.dev/TrafficPolicy/gwtest/my-route-policy
   name: listener~8080
   typedPerFilterConfig:
     envoy.filters.http.cors:

@@ -2,6 +2,7 @@ package policy
 
 import (
 	"errors"
+	"log/slog"
 	"maps"
 	"reflect"
 	"slices"
@@ -119,7 +120,7 @@ func groupPoliciesByHierarchicalPriority(policies []ir.PolicyAtt) map[int][]ir.P
 // merges the result of the merged policy per hierarchy into a single policy.
 func MergePolicies[T any](
 	policies []ir.PolicyAtt,
-	mergeFn func(*T, *T, *ir.AttachedPolicyRef, MergeOptions, ir.MergeOrigins),
+	mergeFn func(*T, *T, *ir.AttachedPolicyRef, ir.MergeOrigins, MergeOptions, ir.MergeOrigins),
 ) ir.PolicyAtt {
 	var out ir.PolicyAtt
 	if len(policies) == 0 {
@@ -136,13 +137,12 @@ func MergePolicies[T any](
 		return out
 	}
 
-	out.MergeOrigins = make(ir.MergeOrigins)
 	mergedByHierarchy := make([]ir.PolicyAtt, 0, len(policiesByHierarchy))
 	for _, hierarchicalPriority := range slices.Backward(slices.Sorted(maps.Keys(policiesByHierarchy))) {
-		tmp := merge(policiesByHierarchy[hierarchicalPriority], true, out.MergeOrigins, mergeFn)
+		tmp := merge(policiesByHierarchy[hierarchicalPriority], true, mergeFn)
 		mergedByHierarchy = append(mergedByHierarchy, tmp)
 	}
-	out = merge(mergedByHierarchy, false, out.MergeOrigins, mergeFn)
+	out = merge(mergedByHierarchy, false, mergeFn)
 
 	return out
 }
@@ -150,15 +150,15 @@ func MergePolicies[T any](
 func merge[T any](
 	policies []ir.PolicyAtt,
 	sameHierarchy bool,
-	mergeOrigins ir.MergeOrigins,
-	mergeFn func(*T, *T, *ir.AttachedPolicyRef, MergeOptions, ir.MergeOrigins),
+	mergeFn func(*T, *T, *ir.AttachedPolicyRef, ir.MergeOrigins, MergeOptions, ir.MergeOrigins),
 ) ir.PolicyAtt {
 	// base policy to merge into has an empty PolicyIr so it can always be merged into
 	var pol T
 	out := ir.PolicyAtt{
-		GroupKind: policies[0].GroupKind,
-		PolicyRef: policies[0].PolicyRef,
-		PolicyIr:  any(&pol).(ir.PolicyIR),
+		GroupKind:    policies[0].GroupKind,
+		PolicyIr:     any(&pol).(ir.PolicyIR),
+		MergeOrigins: ir.MergeOrigins{},
+		// Merged policy should not set PolicyRef
 	}
 	merged := any(out.PolicyIr).(*T)
 
@@ -166,17 +166,21 @@ func merge[T any](
 		p2 := any(policies[i].PolicyIr).(*T)
 		p2Ref := policies[i].PolicyRef
 
+		out.Errors = append(out.Errors, policies[i].Errors...)
+		if len(policies[i].Errors) > 0 {
+			slog.Warn("ignoring policy with errors", "resource_ref", p2Ref, "errors", policies[i].FormatErrors())
+			continue
+		}
+
 		mergeOpts := MergeOptions{
 			Strategy: GetMergeStrategy(policies[i].InheritedPolicyPriority, sameHierarchy),
 		}
 
-		mergeFn(merged, p2, p2Ref, mergeOpts, mergeOrigins)
-		out.Errors = append(out.Errors, policies[i].Errors...)
+		mergeFn(merged, p2, p2Ref, policies[i].MergeOrigins, mergeOpts, out.MergeOrigins)
 		if sameHierarchy {
 			out.InheritedPolicyPriority = policies[i].InheritedPolicyPriority
 		}
 	}
-	out.MergeOrigins = mergeOrigins
 
 	return out
 }

@@ -65,6 +65,13 @@ Routes:
     routes:
     - match:
         pathSeparatedPrefix: /a/1
+      metadata:
+        filterMetadata:
+          merge.TrafficPolicy.gateway.kgateway.dev:
+            rateLimit.local:
+            - gateway.kgateway.dev/TrafficPolicy/a/route-a-policy
+            transformation:
+            - gateway.kgateway.dev/TrafficPolicy/infra/example-policy
       name: listener~80~example_com-route-0-httproute-route-a-a-0-0-matcher-0
       route:
         cluster: kube_a_svc-a_8080
@@ -99,6 +106,11 @@ Routes:
                   passthrough: {}
     - match:
         prefix: /
+      metadata:
+        filterMetadata:
+          merge.TrafficPolicy.gateway.kgateway.dev:
+            transformation:
+            - gateway.kgateway.dev/TrafficPolicy/infra/example-policy
       name: listener~80~example_com-route-2-httproute-example-route-infra-0-0-matcher-0
       route:
         cluster: kube_infra_example-svc_80

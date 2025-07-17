@@ -19,8 +19,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/query"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
-	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
-	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
+	sdkreporter "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/settings"
 )
 
@@ -40,7 +39,7 @@ type TranslationResult struct {
 }
 
 // Translate IR to gateway. IR is self contained, so no need for krt context
-func (t *Translator) Translate(gw ir.GatewayIR, reporter reports.Reporter) TranslationResult {
+func (t *Translator) Translate(gw ir.GatewayIR, reporter sdkreporter.Reporter) TranslationResult {
 	pass := t.newPass(reporter)
 	var res TranslationResult
 
@@ -61,7 +60,7 @@ func (t *Translator) Translate(gw ir.GatewayIR, reporter reports.Reporter) Trans
 	return res
 }
 
-func getReporterForFilterChain(gw ir.GatewayIR, reporter reports.Reporter, filterChainName string) reporter.ListenerReporter {
+func getReporterForFilterChain(gw ir.GatewayIR, reporter sdkreporter.Reporter, filterChainName string) sdkreporter.ListenerReporter {
 	listener := slices.FindFunc(gw.SourceObject.Listeners, func(l ir.Listener) bool {
 		return filterChainName == query.GenerateRouteKey(l.Parent, string(l.Name))
 	})
@@ -77,7 +76,7 @@ func (t *Translator) ComputeListener(
 	pass TranslationPassPlugins,
 	gw ir.GatewayIR,
 	lis ir.ListenerIR,
-	reporter reports.Reporter,
+	reporter sdkreporter.Reporter,
 ) (*envoylistenerv3.Listener, []*envoyroutev3.RouteConfiguration) {
 	hasTls := false
 	gwreporter := reporter.Gateway(gw.SourceObject.Obj)
@@ -89,13 +88,14 @@ func (t *Translator) ComputeListener(
 	if gw.PerConnectionBufferLimitBytes != nil {
 		ret.PerConnectionBufferLimitBytes = &wrapperspb.UInt32Value{Value: *gw.PerConnectionBufferLimitBytes}
 	}
-	t.runListenerPlugins(ctx, pass, gw, lis, ret)
+	t.runListenerPlugins(ctx, pass, gw, lis, reporter, ret)
 
 	for _, hfc := range lis.HttpFilterChain {
 		fct := filterChainTranslator{
 			listener:        lis,
 			gateway:         gw,
 			routeConfigName: hfc.FilterChainName,
+			reporter:        reporter,
 			PluginPass:      pass,
 		}
 
@@ -169,7 +169,14 @@ func (t *Translator) ComputeListener(
 	return ret, routes
 }
 
-func (t *Translator) runListenerPlugins(ctx context.Context, pass TranslationPassPlugins, gw ir.GatewayIR, l ir.ListenerIR, out *envoylistenerv3.Listener) {
+func (t *Translator) runListenerPlugins(
+	ctx context.Context,
+	pass TranslationPassPlugins,
+	gw ir.GatewayIR,
+	l ir.ListenerIR,
+	reporter sdkreporter.Reporter,
+	out *envoylistenerv3.Listener,
+) {
 	var attachedPolicies ir.AttachedPolicies
 	// Listener policies take precedence over gateway policies, so they are ordered first
 	attachedPolicies.Append(l.AttachedPolicies, gw.AttachedHttpPolicies)
@@ -180,7 +187,9 @@ func (t *Translator) runListenerPlugins(ctx context.Context, pass TranslationPas
 			// TODO: report user error - they attached a non http policy
 			continue
 		}
-		for _, pol := range mergePolicies(pass, pols) {
+		reportPolicyAcceptanceStatus(reporter, l.PolicyAncestorRef, pols...)
+		policies, mergeOrigins := mergePolicies(pass, pols)
+		for _, pol := range policies {
 			pctx := &ir.ListenerContext{
 				Policy: pol.PolicyIr,
 				PolicyAncestorRef: gwv1.ParentReference{
@@ -191,12 +200,13 @@ func (t *Translator) runListenerPlugins(ctx context.Context, pass TranslationPas
 				},
 			}
 			pass.ApplyListenerPlugin(ctx, pctx, out)
-			// TODO: check return value, if error returned, log error and report condition
 		}
+		out.Metadata = addMergeOriginsToFilterMetadata(gk, mergeOrigins, out.GetMetadata())
+		reportPolicyAttachmentStatus(reporter, l.PolicyAncestorRef, mergeOrigins, pols...)
 	}
 }
 
-func (t *Translator) newPass(reporter reports.Reporter) TranslationPassPlugins {
+func (t *Translator) newPass(reporter sdkreporter.Reporter) TranslationPassPlugins {
 	ret := TranslationPassPlugins{}
 	for k, v := range t.ContributedPolicies {
 		if v.NewGatewayTranslationPass == nil {

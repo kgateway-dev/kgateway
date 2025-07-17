@@ -30,6 +30,41 @@ endpoints:
     - endpoint:
         address:
           socketAddress:
+            address: 10.244.3.3
+            portValue: 80
+      loadBalancingWeight: 1
+    loadBalancingWeight: 1
+    locality:
+      region: r1
+      subZone: r1z3s4
+      zone: r1z3
+    priority: 2
+  - lbEndpoints:
+    - endpoint:
+        address:
+          socketAddress:
+            address: 255.0.0.1
+            portValue: 80
+      loadBalancingWeight: 1
+    loadBalancingWeight: 1
+    priority: 3
+  - lbEndpoints:
+    - endpoint:
+        address:
+          socketAddress:
+            address: 10.244.4.4
+            portValue: 80
+      loadBalancingWeight: 1
+    loadBalancingWeight: 1
+    locality:
+      region: r2
+      subZone: r2z1s1
+      zone: r2z1
+    priority: 3
+  - lbEndpoints:
+    - endpoint:
+        address:
+          socketAddress:
             address: 10.244.1.11
             portValue: 80
       loadBalancingWeight: 1
@@ -51,41 +86,6 @@ endpoints:
       subZone: r1z2s4
       zone: r1z2
     priority: 1
-  - lbEndpoints:
-    - endpoint:
-        address:
-          socketAddress:
-            address: 10.244.3.3
-            portValue: 80
-      loadBalancingWeight: 1
-    loadBalancingWeight: 1
-    locality:
-      region: r1
-      subZone: r1z3s4
-      zone: r1z3
-    priority: 2
-  - lbEndpoints:
-    - endpoint:
-        address:
-          socketAddress:
-            address: 10.244.4.4
-            portValue: 80
-      loadBalancingWeight: 1
-    loadBalancingWeight: 1
-    locality:
-      region: r2
-      subZone: r2z1s1
-      zone: r2z1
-    priority: 3
-  - lbEndpoints:
-    - endpoint:
-        address:
-          socketAddress:
-            address: 255.0.0.1
-            portValue: 80
-      loadBalancingWeight: 1
-    loadBalancingWeight: 1
-    priority: 3
 listeners:
 - address:
     socketAddress:

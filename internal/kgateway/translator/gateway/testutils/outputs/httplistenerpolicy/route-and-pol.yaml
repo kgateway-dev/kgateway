@@ -46,9 +46,35 @@ Listeners:
         useRemoteAddress: true
         xffNumTrustedHops: 2
     name: listener~80
+  metadata:
+    filterMetadata:
+      merge.HTTPListenerPolicy.gateway.kgateway.dev:
+        healthCheckPolicy:
+        - gateway.kgateway.dev/HTTPListenerPolicy/default/upgrades
+        mergeStreamIdleTimeout:
+        - gateway.kgateway.dev/HTTPListenerPolicy/default/upgrades
+        serverHeaderTransformation:
+        - gateway.kgateway.dev/HTTPListenerPolicy/default/upgrades
+        useRemoteAddress:
+        - gateway.kgateway.dev/HTTPListenerPolicy/default/upgrades
+        xffNumTrustedHops:
+        - gateway.kgateway.dev/HTTPListenerPolicy/default/upgrades
   name: listener~80
 Routes:
 - ignorePortInHostMatching: true
+  metadata:
+    filterMetadata:
+      merge.HTTPListenerPolicy.gateway.kgateway.dev:
+        healthCheckPolicy:
+        - gateway.kgateway.dev/HTTPListenerPolicy/default/upgrades
+        mergeStreamIdleTimeout:
+        - gateway.kgateway.dev/HTTPListenerPolicy/default/upgrades
+        serverHeaderTransformation:
+        - gateway.kgateway.dev/HTTPListenerPolicy/default/upgrades
+        useRemoteAddress:
+        - gateway.kgateway.dev/HTTPListenerPolicy/default/upgrades
+        xffNumTrustedHops:
+        - gateway.kgateway.dev/HTTPListenerPolicy/default/upgrades
   name: listener~80
   virtualHosts:
   - domains:

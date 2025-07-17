@@ -13,6 +13,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
@@ -1288,11 +1289,9 @@ var _ = DescribeTable("Route Replacement",
 )
 
 var _ = DescribeTable("Route Delegation",
-	func(inputFile string, errors map[types.NamespacedName]string) {
+	func(inputFile string, wantHTTPRouteErrors map[types.NamespacedName]string) {
 		dir := fsutils.MustGetThisDir()
-		translatortest.TestTranslation(
-			GinkgoT(),
-			context.Background(),
+		test(
 			[]string{
 				filepath.Join(dir, "testutils/inputs/delegation/common.yaml"),
 				filepath.Join(dir, "testutils/inputs/delegation", inputFile),
@@ -1303,12 +1302,12 @@ var _ = DescribeTable("Route Delegation",
 				Name:      "example-gateway",
 			},
 			func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
-				if errors == nil {
+				if wantHTTPRouteErrors == nil {
 					Expect(translatortest.AreReportsSuccess(gwNN, reportsMap)).NotTo(HaveOccurred())
-				} else {
-					for route, err := range errors {
-						Expect(translatortest.GetHTTPRouteStatusError(reportsMap, &route)).To(MatchError(ContainSubstring(err)))
-					}
+					return
+				}
+				for route, err := range wantHTTPRouteErrors {
+					Expect(translatortest.GetHTTPRouteStatusError(reportsMap, &route)).To(MatchError(ContainSubstring(err)))
 				}
 			},
 		)
@@ -1468,6 +1467,22 @@ var _ = DescribeTable("Discovery Namespace Selector",
 		"base.yaml", "base_select_infra.yaml", "condition error for httproute: infra/example-route"),
 )
 
+func test(
+	inputFiles []string,
+	outputFile string,
+	wantGateway types.NamespacedName,
+	wantReportsFn func(gwNN types.NamespacedName, reportsMap reports.ReportMap),
+) {
+	translatortest.TestTranslation(
+		GinkgoT(),
+		context.Background(),
+		inputFiles,
+		outputFile,
+		wantGateway,
+		wantReportsFn,
+	)
+}
+
 // assertPolicyStatusWithGeneration is a helper function to verify policy status conditions with a specific generation
 func assertPolicyStatusWithGeneration(reportsMap reports.ReportMap, policies []reports.PolicyKey, expectedGeneration int64) {
 	var currentStatus gwv1alpha2.PolicyStatus
@@ -1478,10 +1493,10 @@ func assertPolicyStatusWithGeneration(reportsMap reports.ReportMap, policies []r
 		Expect(status).NotTo(BeNil(), "status missing for policy %v", policy)
 		Expect(status.Ancestors).To(HaveLen(1), "ancestor missing for policy %v", policy) // 1 Gateway(ancestor)
 
-		acceptedCondition := meta.FindStatusCondition(status.Ancestors[0].Conditions, string(gwv1alpha2.PolicyConditionAccepted))
+		acceptedCondition := meta.FindStatusCondition(status.Ancestors[0].Conditions, string(v1alpha1.PolicyConditionAccepted))
 		Expect(acceptedCondition).NotTo(BeNil())
 		Expect(acceptedCondition.Status).To(Equal(metav1.ConditionTrue))
-		Expect(acceptedCondition.Reason).To(Equal(string(gwv1alpha2.PolicyReasonAccepted)))
+		Expect(acceptedCondition.Reason).To(Equal(string(v1alpha1.PolicyReasonValid)))
 		Expect(acceptedCondition.Message).To(Equal(reporter.PolicyAcceptedMsg))
 		Expect(acceptedCondition.ObservedGeneration).To(Equal(expectedGeneration))
 	}
