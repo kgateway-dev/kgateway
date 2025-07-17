@@ -139,7 +139,7 @@ func visitFields(msg protoreflect.Message, ancestor_sensitive bool) {
 			for i := 0; i < list.Len(); i++ {
 				elem := list.Get(i)
 				if fd.Message() != nil {
-					visitMessage(msg, fd, elem, sensitive)
+					visitMessage(fd, elem, sensitive)
 				} else {
 					// Redact scalar fields if needed
 					if sensitive {
@@ -151,7 +151,7 @@ func visitFields(msg protoreflect.Message, ancestor_sensitive bool) {
 			m := v.Map()
 			m.Range(func(k protoreflect.MapKey, v protoreflect.Value) bool {
 				if fd.MapValue().Message() != nil {
-					visitMessage(msg, fd.MapValue(), v, sensitive)
+					visitMessage(fd.MapValue(), v, sensitive)
 				} else {
 					// Redact scalar fields if needed
 					if sensitive {
@@ -162,7 +162,7 @@ func visitFields(msg protoreflect.Message, ancestor_sensitive bool) {
 			})
 		} else {
 			if fd.Message() != nil {
-				visitMessage(msg, fd, v, sensitive)
+				visitMessage(fd, v, sensitive)
 			} else {
 				// Redact scalar fields if needed
 				if sensitive {
@@ -174,7 +174,7 @@ func visitFields(msg protoreflect.Message, ancestor_sensitive bool) {
 	})
 }
 
-func visitMessage(msg protoreflect.Message, fd protoreflect.FieldDescriptor, v protoreflect.Value, sensitive bool) {
+func visitMessage(fd protoreflect.FieldDescriptor, v protoreflect.Value, sensitive bool) {
 	visitMsg := v.Message()
 	var anyMsg proto.Message
 	m := visitMsg.Interface()
@@ -185,7 +185,10 @@ func visitMessage(msg protoreflect.Message, fd protoreflect.FieldDescriptor, v p
 	visitFields(visitMsg, sensitive)
 	if anyMsg != nil {
 		anymsg, _ := utils.MessageToAny(anyMsg)
-		msg.Set(fd, protoreflect.ValueOf(anymsg.ProtoReflect()))
+		a := m.(*anypb.Any)
+		a.TypeUrl = anymsg.TypeUrl
+		a.Value = anymsg.Value
+		//		msg.Set(fd, protoreflect.ValueOf(anymsg.ProtoReflect()))
 	}
 }
 
