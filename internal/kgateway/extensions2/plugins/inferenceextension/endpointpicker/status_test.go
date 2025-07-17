@@ -143,14 +143,22 @@ func TestRemoveGatewayParentRef(t *testing.T) {
 	pool := &infextv1a2.InferencePool{
 		ObjectMeta: metav1.ObjectMeta{Name: nn.Name, Namespace: nn.Namespace},
 		Status: infextv1a2.InferencePoolStatus{Parents: []infextv1a2.PoolStatus{
-			{GatewayRef: corev1.ObjectReference{Name: "kgtw"}},
-			{GatewayRef: corev1.ObjectReference{Name: "gw-other"}},
+			{
+				GatewayRef: infextv1a2.ParentGatewayReference{
+					Name: infextv1a2.ObjectName("kgtw"),
+				},
+			},
+			{
+				GatewayRef: infextv1a2.ParentGatewayReference{
+					Name: infextv1a2.ObjectName("gw-other"),
+				},
+			},
 		}},
 	}
 
 	// Setup the scheme and client with initial inferencepool
 	scheme := schemes.DefaultScheme()
-	err := infextv1a2.AddToScheme(scheme)
+	err := infextv1a2.Install(scheme)
 	assert.NoError(t, err, "Failed to add InferencePool scheme")
 	fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithStatusSubresource(pool).WithRuntimeObjects(pool).Build()
 
@@ -169,13 +177,25 @@ func TestRemoveGatewayParentRef(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Expect one parent removed
-	expected := []infextv1a2.PoolStatus{{GatewayRef: corev1.ObjectReference{Name: "gw-other"}}}
+	expected := []infextv1a2.PoolStatus{
+		{
+			GatewayRef: infextv1a2.ParentGatewayReference{
+				Name: infextv1a2.ObjectName("gw-other"),
+			},
+		},
+	}
 	assert.Equal(t, expected, updated.Status.Parents)
 
 	// Case: no matching gateway -> no status change
 	pool2 := &infextv1a2.InferencePool{
 		ObjectMeta: metav1.ObjectMeta{Name: nn.Name, Namespace: nn.Namespace},
-		Status:     infextv1a2.InferencePoolStatus{Parents: []infextv1a2.PoolStatus{{GatewayRef: corev1.ObjectReference{Name: "gw-none"}}}},
+		Status: infextv1a2.InferencePoolStatus{Parents: []infextv1a2.PoolStatus{
+			{
+				GatewayRef: infextv1a2.ParentGatewayReference{
+					Name: infextv1a2.ObjectName("gw-none"),
+				},
+			},
+		}},
 	}
 	fakeClient2 := fake.NewClientBuilder().WithScheme(scheme).WithStatusSubresource(pool2).WithRuntimeObjects(pool2).Build()
 	err = removeGatewayParentRef(ctx, fakeClient2, pool2, idx)
