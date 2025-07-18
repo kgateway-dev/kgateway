@@ -65,6 +65,7 @@ func (h *httpRouteConfigurationTranslator) ComputeRouteConfiguration(ctx context
 				FilterChainName:   h.fc.FilterChainName,
 				TypedFilterConfig: typedPerFilterConfigRoute,
 				Policy:            pol.PolicyIr,
+				GatewayContext:    ir.GatewayContext{GatewayClassName: h.gw.GatewayClassName()},
 			}, cfg)
 		}
 	}
@@ -248,6 +249,7 @@ func (h *httpRouteConfigurationTranslator) runVhostPlugins(
 				Policy:            pol.PolicyIr,
 				TypedFilterConfig: typedPerFilterConfig,
 				FilterChainName:   h.fc.FilterChainName,
+				GatewayContext:    ir.GatewayContext{GatewayClassName: h.gw.GatewayClassName()},
 			}
 			pass.ApplyVhostPlugin(ctx, pctx, out)
 			// TODO: check return value, if error returned, log error and report condition
@@ -305,6 +307,7 @@ func (h *httpRouteConfigurationTranslator) runRoutePlugins(
 		}
 		reportPolicyAcceptanceStatus(h.reporter, h.listener.PolicyAncestorRef, pols...)
 		pctx := &ir.RouteContext{
+			GatewayContext:    ir.GatewayContext{GatewayClassName: h.gw.GatewayClassName()},
 			FilterChainName:   h.fc.FilterChainName,
 			In:                in,
 			TypedFilterConfig: typedPerFilterConfig,
@@ -405,6 +408,7 @@ func (h *httpRouteConfigurationTranslator) translateRouteAction(
 		}
 
 		pCtx := ir.RouteBackendContext{
+			GatewayContext:    ir.GatewayContext{GatewayClassName: h.gw.GatewayClassName()},
 			FilterChainName:   h.fc.FilterChainName,
 			Backend:           backend.Backend.BackendObject,
 			TypedFilterConfig: backendConfigCtx.typedPerFilterConfigRoute,

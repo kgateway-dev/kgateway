@@ -24,6 +24,10 @@ import (
 
 var logger = logging.New("pluginsdk/ir")
 
+type GatewayContext struct {
+	GatewayClassName string
+}
+
 type ListenerContext struct {
 	Policy            PolicyIR
 	PolicyAncestorRef gwv1.ParentReference
@@ -33,12 +37,14 @@ type RouteConfigContext struct {
 	Policy            PolicyIR
 	FilterChainName   string
 	TypedFilterConfig TypedFilterConfigMap
+	GatewayContext    GatewayContext
 }
 
 type VirtualHostContext struct {
 	Policy            PolicyIR
 	FilterChainName   string
 	TypedFilterConfig TypedFilterConfigMap
+	GatewayContext    GatewayContext
 }
 
 type TypedFilterConfigMap map[string]proto.Message
@@ -79,6 +85,7 @@ func (r *TypedFilterConfigMap) ToAnyMap() map[string]*anypb.Any {
 }
 
 type RouteBackendContext struct {
+	GatewayContext  GatewayContext
 	FilterChainName string
 	Backend         *BackendObjectIR
 	// TypedFilterConfig will be output on the Route or WeightedCluster level after all plugins have run
@@ -92,6 +99,7 @@ type RouteBackendContext struct {
 type RouteContext struct {
 	FilterChainName string
 	Policy          PolicyIR
+	GatewayContext  GatewayContext
 	In              HttpRouteRuleMatchIR
 	// TypedFilterConfig will be output on the Route level after all plugins have run
 	TypedFilterConfig TypedFilterConfigMap

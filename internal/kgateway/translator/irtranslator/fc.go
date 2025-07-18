@@ -202,7 +202,8 @@ func (h *hcmNetworkFilterTranslator) computeNetworkFilters(ctx context.Context, 
 
 	// 3. Allow any HCM plugins to make their changes, with respect to any changes the core plugin made
 	var attachedPolicies ir.AttachedPolicies
-	attachedPolicies.Append(h.gateway.AttachedHttpPolicies, l.AttachedPolicies)
+	// Listener policies take precedence over gateway policies, so they are ordered first
+	attachedPolicies.Append(l.AttachedPolicies, h.gateway.AttachedHttpPolicies)
 	for _, gk := range attachedPolicies.ApplyOrderedGroupKinds() {
 		pols := attachedPolicies.Policies[gk]
 		pass := pass[gk]
@@ -210,7 +211,7 @@ func (h *hcmNetworkFilterTranslator) computeNetworkFilters(ctx context.Context, 
 			// TODO: report user error - they attached a non http policy
 			continue
 		}
-		for _, pol := range pols {
+		for _, pol := range mergePolicies(pass, pols) {
 			pctx := &ir.HcmContext{
 				Policy: pol.PolicyIr,
 			}
