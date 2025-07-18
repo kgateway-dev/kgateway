@@ -88,14 +88,17 @@ fi
 # the CRDs yet, or won't be for the foreseeable future.
 kubectl apply --kustomize "https://github.com/kubernetes-sigs/gateway-api/config/crd/$CONFORMANCE_CHANNEL?ref=$CONFORMANCE_VERSION"
 
-# 7. Conformance test setup
+# 7. Apply the Kubernetes Gateway API Inference Extension CRDs
+kubectl apply --kustomize "https://github.com/kubernetes-sigs/gateway-api-inference-extension/config/crd/"
+
+# 8. Conformance test setup
 if [[ $CONFORMANCE == "true" ]]; then
   echo "Running conformance test setup"
 
   . $SCRIPT_DIR/setup-metalllb-on-kind.sh
 fi
 
-# 7. Setup localstack
+# 9. Setup localstack
 if [[ $LOCALSTACK == "true" ]]; then
   echo "Setting up localstack"
   . $SCRIPT_DIR/setup-localstack.sh
