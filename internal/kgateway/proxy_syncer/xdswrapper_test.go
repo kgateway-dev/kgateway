@@ -123,7 +123,6 @@ func TestRedactMapOfAny(t *testing.T) {
 }
 
 func redactCluster(t *testing.T, testCase string) string {
-
 	var c envoyclusterv3.Cluster
 	var j protojson.UnmarshalOptions
 	err := j.Unmarshal([]byte(testCase), &c)
