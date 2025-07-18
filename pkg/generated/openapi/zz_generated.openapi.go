@@ -2752,7 +2752,7 @@ func schema_kgateway_v2_api_v1alpha1_DirectResponseSpec(ref common.ReferenceCall
 					},
 					"body": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Body defines the content to be returned in the HTTP response body. The maximum length of the body is restricted to prevent excessively large responses.",
+							Description: "Body defines the content to be returned in the HTTP response body. The maximum length of the body is restricted to prevent excessively large responses. If this field is omitted, no body is included in the response.",
 							Type:        []string{"string"},
 							Format:      "",
 						},
