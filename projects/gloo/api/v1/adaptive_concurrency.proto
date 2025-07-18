@@ -1,0 +1,118 @@
+// {{% reuse "conrefs/snippets/policies/ov_adaptive_request_concurrency.md" %}}
+//
+// By setting up adaptive concurrency, you can help protect your APIs from being overwhelmed by too many concurrent requests.
+// In the policy, you set up the parameters to control how many concurrent requests are allowed.
+// Then, the policy applies the adaptive concurrency filter, which automatically adjusts the rate of requests sent to a backend service based on 
+// the observed latency of the responses from that service. It calculates the concurrency values by sampling the latency of
+// completed requests, and comparing the measured samples in a time window against the expected latency for hosts in the cluster.
+//
+// The filter uses a gradient controller to calculate forwarding decisions based on an ideal, minimum round-trip time (minRTT) for a service.
+// The controller periodically measures the minRTT by allowing only a very low outstanding request count to a service, and measuring
+// the latency under these ideal conditions. The controller then uses the minRTT value to calculate the concurrency limit. For more
+// information about the formulas that the controller calculates, see the
+// [Envoy adaptive concurrency docs](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/adaptive_concurrency_filter).
+// 
+// Adaptive request concurrency policies are applied at the *Destination* level. The filter is applied to the Envoy listener and
+// contains only listener-level configuration, and no route-level configuration.
+//
+// ## Example
+// This example applies to the `httpbin` destination and dynamically adjusts
+// its concurrency limits based on network conditions. The settings in the policy configure the following:
+// * Cap the concurrency limit to a maximum of 6 connections (`maxConcurrencyLimit: 6`), in the case that the calculated concurrency limit exceeds this value.
+// * When the service has 6 concurrent connections, return a 503 HTTP response code to any new client requests (`concurrencyLimitExceededStatus: 503`).
+// * When measuring the minRTT to determine the concurrency limit:
+//   * Gather 1 request latency sample (`requestCount: 1`) in a timeframe of 3000ms (`concurrencyUpdateIntervalMillis: 3000`).
+//   * Recalculate the minRTT every 1000ms (`intervalMillis: 1000`).
+//   * Until the latest minRTT measurement is complete, temporarily set the concurrency limit to 6 connections (`minConcurrency: 6`).
+//   * Do not add a jitter (random delay) to the start of each minRTT measurement (`jitterPercentile: 0`).
+//   * Do not add a buffer (to stabilize natural variability in latency) to the measured minRTT (`bufferPercentile: 0`).
+// ```yaml
+// {{% readfile file="static/content/examples/generated/int/adaptive_concurrency_on_virtual_destination/cluster-1/adaptive-request-concurrency-policy_httpbin_simple-adaptive-request-concurrency-policy.yaml" %}}
+// ```
+syntax = "proto3";
+
+package gloo.solo.io;
+
+import "extproto/ext.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/wrappers.proto";
+
+option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1";
+
+option (extproto.equal_all) = true;
+option (extproto.hash_all) = true;
+option (extproto.clone_all) = true;
+
+// Specifications for the policy.
+message AdaptiveRequestConcurrencyPolicySpec {
+
+    // The percent of sampled requests to use when summarizing aggregated samples in the minRTT
+    // calculation. If unset, defaults to 50%.
+    google.protobuf.DoubleValue sample_aggregate_percentile = 2;
+
+    // The allowed upper-bound on the calculated concurrency limit. For example, you can cap the concurrency
+    // limit to a maximum of 800 connections, in the case that the calculated concurrency limit exceeds this value.
+    // If unset, defaults to 1000.
+    google.protobuf.UInt32Value max_concurrency_limit = 3;
+
+    // The period of time during which request latency samples are taken to recalculate the concurrency limit.
+    // This field is required.
+    uint32 concurrency_update_interval_millis = 4;
+
+    // Configure how the gradient controller calculates the minimum round-trip time (minRTT) for the destination.
+    // For more information about the minRTT formula and the following fields, see the
+    // [Envoy adaptive concurrency docs](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/adaptive_concurrency_filter).
+    // This field is required.
+    MinRoundtripTimeCalculationParams min_rtt_calc_params = 5;
+
+    // Return a custom HTTP response status code to the downstream client when the concurrency limit is exceeded.
+    // If this field is empty, omitted, or set to a non-error response of < 400, the response code defaults to 503 (Service Unavailable).
+    uint32 concurrency_limit_exceeded_status = 6;
+
+    // Configure how the gradient controller calculates the minimum round-trip time (minRTT) for the destination.
+    // For more information about the minRTT formula and the following fields, see the
+    // [Envoy adaptive concurrency docs](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/adaptive_concurrency_filter).
+    // This field is required.
+    message MinRoundtripTimeCalculationParams {
+      // The amount of time between each minRTT remeasurement.
+      // This field is required.
+      uint32 interval_millis = 1;
+
+      // The number of requests to sample during the `concurrencyUpdateIntervalMillis` timeframe.
+      // If unset, defaults to 50.
+      google.protobuf.UInt32Value request_count = 2;
+
+      // Temporarily set the concurrency limit until the latest minRTT measurement is complete.
+      // If unset, defaults to 3.
+      google.protobuf.UInt32Value min_concurrency = 3;
+
+      // Add a random delay to the start of each minRTT measurement, represented as a percentage of the interval between each
+      // remeasurement (`intervalMillis`). For example, if the interval is 1000ms and the jitter is 15%, the next minRTT measurement
+      // begins in the range of 1000ms - 1150ms, because a delay between 0ms - 150ms is added to the 1000ms interval.
+      // If unset, defaults to 15%.
+      google.protobuf.DoubleValue jitter_percentile = 4;
+
+      // Add a buffer to the measured minRTT to stabilize natural variability in latency. This is represented as a percentage
+      // of the measured value, and can be adjusted to allow more or less tolerance to the sampled latency values.
+      // If unset, defaults to 25%.
+      google.protobuf.DoubleValue buffer_percentile = 5;
+    }
+
+}
+
+// The status of the policy after it is applied to your Gloo environment.
+message AdaptiveRequestConcurrencyPolicyStatus {
+  // The state and workspace conditions of the applied resource.
+  .common.gloo.solo.io.Status common = 1;
+
+  // The number of destinations selected by this policy.
+  uint32 num_selected_destinations = 2;
+}
+
+message AdaptiveRequestConcurrencyPolicyReport {
+  // A list of workspaces in which the policy can apply to workloads.
+  map<string, .common.gloo.solo.io.Report> workspaces = 1;
+
+  // A list of destination selected by this policy.
+  repeated .common.gloo.solo.io.DestinationReference selected_destinations = 2;
+}
