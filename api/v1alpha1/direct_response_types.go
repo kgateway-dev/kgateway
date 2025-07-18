@@ -39,9 +39,11 @@ type DirectResponseSpec struct {
 	StatusCode uint32 `json:"status"`
 	// Body defines the content to be returned in the HTTP response body.
 	// The maximum length of the body is restricted to prevent excessively large responses.
+	// If this field is omitted, no body is included in the response.
 	//
-	// +kubebuilder:validation:MaxLength=4096
 	// +optional
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=4096
 	Body *string `json:"body,omitempty"`
 }
 

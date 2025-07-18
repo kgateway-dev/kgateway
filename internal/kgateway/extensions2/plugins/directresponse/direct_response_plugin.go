@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/utils/ptr"
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
@@ -127,16 +126,20 @@ func (p *directResponsePluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir
 		return fmt.Errorf("DirectResponse cannot be applied to route with existing action: %T", outputRoute.GetAction())
 	}
 
-	outputRoute.Action = &envoyroutev3.Route_DirectResponse{
-		DirectResponse: &envoyroutev3.DirectResponseAction{
-			Status: dr.spec.StatusCode,
-			Body: &envoycorev3.DataSource{
-				Specifier: &envoycorev3.DataSource_InlineString{
-					InlineString: ptr.Deref(dr.spec.Body, ""),
-				},
-			},
-		},
+	drAction := &envoyroutev3.DirectResponseAction{
+		Status: dr.spec.StatusCode,
 	}
+	if dr.spec.Body != nil {
+		drAction.Body = &envoycorev3.DataSource{
+			Specifier: &envoycorev3.DataSource_InlineString{
+				InlineString: *dr.spec.Body,
+			},
+		}
+	}
+	outputRoute.Action = &envoyroutev3.Route_DirectResponse{
+		DirectResponse: drAction,
+	}
+
 	return nil
 }
 
