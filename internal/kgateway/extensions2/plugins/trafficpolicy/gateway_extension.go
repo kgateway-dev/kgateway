@@ -55,7 +55,7 @@ func (e TrafficPolicyGatewayExtensionIR) Equals(other TrafficPolicyGatewayExtens
 	if e.Err != nil && other.Err == nil {
 		return false
 	}
-	if e.Err.Error() != other.Err.Error() {
+	if (e.Err != nil && other.Err != nil) && e.Err.Error() != other.Err.Error() {
 		return false
 	}
 

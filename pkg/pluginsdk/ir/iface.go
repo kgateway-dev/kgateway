@@ -275,7 +275,17 @@ func (c PolicyWrapper) Equals(in PolicyWrapper) bool {
 	}
 
 	if !slices.EqualFunc(c.Errors, in.Errors, func(e1, e2 error) bool {
-		return e1.Error() == e2.Error()
+		if e1 == nil && e2 != nil {
+			return false
+		}
+		if e1 != nil && e2 == nil {
+			return false
+		}
+		if (e1 != nil && e2 != nil) && e1.Error() != e2.Error() {
+			return false
+		}
+
+		return true
 	}) {
 		return false
 	}
