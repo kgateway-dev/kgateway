@@ -37,6 +37,8 @@ func GetPortsValues(gw *ir.Gateway, gwp *v1alpha1.GatewayParameters) []HelmPort 
 	}
 
 	// Add ports from GatewayParameters.Service.Ports
+	// Merge user-defined service ports with auto-generated listener ports
+	// Without this, user-specified ports would be ignored, causing service connectivity issues
 	if gwp != nil && gwp.Spec.GetKube() != nil && gwp.Spec.GetKube().GetService() != nil {
 		servicePorts := gwp.Spec.GetKube().GetService().GetPorts()
 		for _, servicePort := range servicePorts {

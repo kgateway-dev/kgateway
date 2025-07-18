@@ -8,6 +8,9 @@ const (
 	KgatewayAIContainerName = "kgateway-ai-extension"
 	// IstioContainerName is the name of the container in the proxy deployment for the Istio integration.
 	IstioContainerName = "istio-proxy"
+	// IstioMeshPort - Port 15008 is reserved for Istio. This port enables sidecars to include waypoint proxies
+	// to the list of possible communication targets. There is no actual traffic on this port.
+	IstioMeshPort = 15008
 	// EnvoyWrapperImage is the image of the envoy wrapper container.
 	EnvoyWrapperImage = "envoy-wrapper"
 	// AgentgatewayImage is the agentgateway image repository

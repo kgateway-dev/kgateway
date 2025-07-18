@@ -146,11 +146,9 @@ func defaultWaypointGatewayParameters(imageInfo *ImageInfo) *v1alpha1.GatewayPar
 		gwp.Spec.Kube.Service.Ports = []*v1alpha1.Port{}
 	}
 
-	// Port 15008 is reserved for Istio. This port enables sidecars to include waypoint proxies
-	// to the list of possible communication targets. There is no actual traffic on this port.
 	// Similar to labeling in kubernetes, this is used to identify the service as a waypoint service.
 	meshPort := &v1alpha1.Port{
-		Port: 15008,
+		Port: IstioMeshPort,
 	}
 	gwp.Spec.Kube.Service.Ports = append(gwp.Spec.Kube.Service.Ports, meshPort)
 
