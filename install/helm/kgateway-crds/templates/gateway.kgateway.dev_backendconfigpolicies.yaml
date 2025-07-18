@@ -195,7 +195,6 @@ spec:
                   maglev:
                     properties:
                       useHostnameForHashing:
-                        default: false
                         type: boolean
                     type: object
                   random:
@@ -209,7 +208,6 @@ spec:
                         format: int64
                         type: integer
                       useHostnameForHashing:
-                        default: false
                         type: boolean
                     type: object
                   roundRobin:

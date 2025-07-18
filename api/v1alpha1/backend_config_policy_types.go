@@ -367,16 +367,14 @@ type LoadBalancerRingHashConfig struct {
 	// UseHostnameForHashing specifies whether to use the hostname instead of the resolved IP address for hashing.
 	// Defaults to false.
 	// +optional
-	// +default=false
-	UseHostnameForHashing bool `json:"useHostnameForHashing,omitempty"`
+	UseHostnameForHashing *bool `json:"useHostnameForHashing,omitempty"`
 }
 
 type LoadBalancerMaglevConfig struct {
 	// UseHostnameForHashing specifies whether to use the hostname instead of the resolved IP address for hashing.
 	// Defaults to false.
 	// +optional
-	// +default=false
-	UseHostnameForHashing bool `json:"useHostnameForHashing,omitempty"`
+	UseHostnameForHashing *bool `json:"useHostnameForHashing,omitempty"`
 }
 
 type LoadBalancerRandomConfig struct{}

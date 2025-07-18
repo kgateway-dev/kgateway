@@ -1479,7 +1479,6 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: useHostnameForHashing
       type:
         scalar: boolean
-      default: false
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LoadBalancerRandomConfig
   map:
     elementType:
@@ -1504,7 +1503,6 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: useHostnameForHashing
       type:
         scalar: boolean
-      default: false
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LoadBalancerRoundRobinConfig
   map:
     fields:

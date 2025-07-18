@@ -79,16 +79,16 @@ func translateLoadBalancerConfig(config *v1alpha1.LoadBalancer) *LoadBalancerCon
 				Value: *config.RingHash.MaximumRingSize,
 			}
 		}
-		if config.RingHash.UseHostnameForHashing {
+		if config.RingHash.UseHostnameForHashing != nil {
 			out.commonLbConfig.ConsistentHashingLbConfig = &envoyclusterv3.Cluster_CommonLbConfig_ConsistentHashingLbConfig{
-				UseHostnameForHashing: config.RingHash.UseHostnameForHashing,
+				UseHostnameForHashing: *config.RingHash.UseHostnameForHashing,
 			}
 		}
 	} else if config.Maglev != nil {
 		out.lbPolicy = envoyclusterv3.Cluster_MAGLEV
-		if config.Maglev.UseHostnameForHashing {
+		if config.Maglev.UseHostnameForHashing != nil {
 			out.commonLbConfig.ConsistentHashingLbConfig = &envoyclusterv3.Cluster_CommonLbConfig_ConsistentHashingLbConfig{
-				UseHostnameForHashing: config.Maglev.UseHostnameForHashing,
+				UseHostnameForHashing: *config.Maglev.UseHostnameForHashing,
 			}
 		}
 	} else if config.Random != nil {

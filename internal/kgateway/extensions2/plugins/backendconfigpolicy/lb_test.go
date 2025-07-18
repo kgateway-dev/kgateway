@@ -233,7 +233,7 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 			name: "UseHostnameForHashing, STRICT_DNS",
 			config: &v1alpha1.LoadBalancer{
 				RingHash: &v1alpha1.LoadBalancerRingHashConfig{
-					UseHostnameForHashing: true,
+					UseHostnameForHashing: ptr.To(true),
 				},
 			},
 			cluster: &envoyclusterv3.Cluster{
@@ -261,7 +261,7 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 			name: "UseHostnameForHashing, EDS",
 			config: &v1alpha1.LoadBalancer{
 				RingHash: &v1alpha1.LoadBalancerRingHashConfig{
-					UseHostnameForHashing: true,
+					UseHostnameForHashing: ptr.To(true),
 				},
 			},
 			cluster: &envoyclusterv3.Cluster{
