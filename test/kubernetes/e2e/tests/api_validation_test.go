@@ -45,6 +45,23 @@ spec:
 			wantError: "exactly one of the fields in [ai aws static dynamicForwardProxy] must be set",
 		},
 		{
+			name: "Backend: empty lambda qualifier does not match pattern",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: backend-empty-lambda-qualifier
+spec:
+  type: AWS
+  aws:
+    accountId: "000000000000"
+    lambda:
+      functionName: hello-function
+      qualifier: ""
+`,
+			wantError: "spec.aws.lambda.qualifier in body should match ",
+		},
+		{
 			name: "BackendConfigPolicy: enforce AtMostOneOf for HTTP protocol options",
 			input: `---
 apiVersion: gateway.kgateway.dev/v1alpha1
@@ -318,6 +335,8 @@ spec:
 			if tc.wantError != "" {
 				r.Error(err)
 				r.Contains(out.String(), tc.wantError)
+			} else {
+				r.NoError(err)
 			}
 		})
 	}

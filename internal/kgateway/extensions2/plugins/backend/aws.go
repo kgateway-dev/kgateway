@@ -44,8 +44,6 @@ const (
 	upstreamCodecFilterName = "envoy.filters.http.upstream_codec"
 	// defaultAWSRegion is the default AWS region.
 	defaultAWSRegion = "us-east-1"
-	// defaultLambdaQualifier is the default qualifier for the lambda function.
-	defaultLambdaQualifier = "$LATEST"
 )
 
 // AwsIr is the internal representation of an AWS backend.
@@ -262,15 +260,12 @@ func getLambdaInvocationMode(in *v1alpha1.AwsBackend) envoy_lambda_v3.Config_Inv
 }
 
 // buildLambdaARN attempts to build a fully qualified lambda arn from the given backend configuration.
-// If the qualifier is not specified, the $LATEST qualifier is used. An error is returned if the arn
-// is not a valid lambda arn.
+// CEL validation should reject invalid `qualifier` values and handle defaulting, so we can assume
+// the qualifier passed here is valid.
+// An error is returned if the arn is not a valid lambda arn.
 func buildLambdaARN(in *v1alpha1.AwsBackend, region string) (string, error) {
-	qualifier := defaultLambdaQualifier
-	if in.Lambda.Qualifier != "" {
-		qualifier = in.Lambda.Qualifier
-	}
 	// TODO(tim): url.QueryEscape(...)?
-	arnStr := fmt.Sprintf("arn:aws:lambda:%s:%s:function:%s:%s", region, in.AccountId, in.Lambda.FunctionName, qualifier)
+	arnStr := fmt.Sprintf("arn:aws:lambda:%s:%s:function:%s:%s", region, in.AccountId, in.Lambda.FunctionName, in.Lambda.Qualifier)
 	parsedARN, err := arnutils.Parse(arnStr)
 	if err != nil {
 		return "", fmt.Errorf("failed to parse lambda arn: %v", err)
