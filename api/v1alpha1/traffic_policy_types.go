@@ -356,6 +356,7 @@ type RateLimitDescriptorEntry struct {
 	// Header specifies a request header to extract the descriptor value from.
 	// This field must be specified when Type is Header.
 	// +optional
+	// +kubebuilder:validation:MinLength=1
 	Header *string `json:"header,omitempty"`
 }
 
