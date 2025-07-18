@@ -10,7 +10,6 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
-	"k8s.io/utils/ptr"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 )
@@ -172,9 +171,8 @@ func toSlowStartConfig(ir *slowStartConfigIR, clusterName string) *envoyclusterv
 		return nil
 	}
 	out := ir.slowStartConfig
-	aggression := ptr.Deref(ir.aggression, "")
-	if aggression != "" {
-		aggressionValue, err := strconv.ParseFloat(aggression, 64)
+	if ir.aggression != nil {
+		aggressionValue, err := strconv.ParseFloat(*ir.aggression, 64)
 		if err != nil {
 			// This should ideally not happen due to CRD validation
 			logger.Error("error parsing slowStartConfig.aggression", "error", err, "cluster", clusterName)

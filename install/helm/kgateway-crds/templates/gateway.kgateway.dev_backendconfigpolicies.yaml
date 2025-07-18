@@ -176,7 +176,7 @@ spec:
                             x-kubernetes-validations:
                             - message: Aggression, if specified, must be a string
                                 representing a number greater than 0.0
-                              rule: self == "" || (self.matches('^-?(?:[0-9]+(?:\\.[0-9]*)?|\\.[0-9]+)$')
+                              rule: (self.matches('^-?(?:[0-9]+(?:\\.[0-9]*)?|\\.[0-9]+)$')
                                 && double(self) > 0.0)
                           minWeightPercent:
                             format: int32
@@ -214,7 +214,7 @@ spec:
                             x-kubernetes-validations:
                             - message: Aggression, if specified, must be a string
                                 representing a number greater than 0.0
-                              rule: self == "" || (self.matches('^-?(?:[0-9]+(?:\\.[0-9]*)?|\\.[0-9]+)$')
+                              rule: (self.matches('^-?(?:[0-9]+(?:\\.[0-9]*)?|\\.[0-9]+)$')
                                 && double(self) > 0.0)
                           minWeightPercent:
                             format: int32
@@ -362,14 +362,18 @@ spec:
                     type: object
                     x-kubernetes-map-type: atomic
                   sni:
+                    minLength: 1
                     type: string
                   tlsFiles:
                     properties:
                       rootCA:
+                        minLength: 1
                         type: string
                       tlsCertificate:
+                        minLength: 1
                         type: string
                       tlsKey:
+                        minLength: 1
                         type: string
                     type: object
                     x-kubernetes-validations:
