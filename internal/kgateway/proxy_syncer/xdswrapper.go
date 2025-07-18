@@ -95,7 +95,7 @@ func (p XdsSnapWrapper) MarshalJSON() (out []byte, err error) {
 
 func addToSnap(snapJson map[string]map[string]any, k string, resources map[string]envoycachetypes.ResourceWithTTL) {
 	for rname, r := range resources {
-		rJson, _ := protojson.Marshal(r.Resource)
+		rJson, _ := protojson.MarshalOptions{UseProtoNames: true}.Marshal(r.Resource)
 		var rAny any
 		json.Unmarshal(rJson, &rAny)
 		if snapJson[k] == nil {
@@ -175,21 +175,19 @@ func visitFields(msg protoreflect.Message, ancestor_sensitive bool) {
 }
 
 func visitMessage(fd protoreflect.FieldDescriptor, v protoreflect.Value, sensitive bool) {
-	visitMsg := v.Message()
-	var anyMsg proto.Message
-	m := visitMsg.Interface()
-	if anymsg, ok := m.(*anypb.Any); ok {
-		anyMsg, _ = anypb.UnmarshalNew(anymsg, proto.UnmarshalOptions{})
-		visitMsg = anyMsg.ProtoReflect()
+	msg := v.Message()
+	m := msg.Interface()
+	anymsg, ok := m.(*anypb.Any)
+	if !ok {
+		visitFields(msg, sensitive)
+		return
 	}
-	visitFields(visitMsg, sensitive)
-	if anyMsg != nil {
-		anymsg, _ := utils.MessageToAny(anyMsg)
-		a := m.(*anypb.Any)
-		a.TypeUrl = anymsg.TypeUrl
-		a.Value = anymsg.Value
-		//		msg.Set(fd, protoreflect.ValueOf(anymsg.ProtoReflect()))
-	}
+
+	// special any handling - deserialize it, visit it and write it back.
+	newMsg, _ := anymsg.UnmarshalNew()
+	visitFields(newMsg.ProtoReflect(), sensitive)
+	a, _ := utils.MessageToAny(newMsg)
+	anymsg.Value = a.Value
 }
 
 func redactValue(fd protoreflect.FieldDescriptor, v protoreflect.Value) protoreflect.Value {

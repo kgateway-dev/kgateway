@@ -1,6 +1,7 @@
 package proxy_syncer_test
 
 import (
+	"strings"
 	"testing"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
@@ -61,18 +62,14 @@ func TestRedacted(t *testing.T) {
 		t.Fatal(err)
 	}
 	s := string(data)
-	expectedJson := `{"Snap":{"Clusters":{"foo":{"transportSocket":{"name":"foo","typedConfig":{"@type":"type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext","commonTlsContext":{"tlsCertificates":[{"privateKey":{"inlineString":"[REDACTED]"}}]}}}}}},"ProxyKey":""}`
+	expectedJson := `{"Snap":{"Clusters":{"foo":{"transport_socket":{"name":"foo","typed_config":{"@type":"type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext","common_tls_context":{"tls_certificates":[{"private_key":{"inline_string":"[REDACTED]"}}]}}}}}},"ProxyKey":""}`
 	g.Expect(s).To(gomega.MatchJSON(expectedJson))
 }
 
-func TestNotCrashing(t *testing.T) {
+func TestMapOfAny(t *testing.T) {
 	UseDetailedUnmarshalling = true
 	g := gomega.NewWithT(t)
-
-	var a anypb.Any
-	var j protojson.UnmarshalOptions
-	j.Unmarshal([]byte(`{
-      "@type": "type.googleapis.com/envoy.config.cluster.v3.Cluster",
+	testCase := `{
       "name": "kube_gloo-gateway-system_rate-limiter-gloo-gateway-v2_8083",
       "type": "EDS",
       "eds_cluster_config": {
@@ -92,18 +89,52 @@ func TestNotCrashing(t *testing.T) {
         }
        }
       }
-     }`), &a)
-	c, err := a.UnmarshalNew()
+     }`
+	s := redactCluster(t, testCase)
+
+	expectedJson := `{"Snap":{"Clusters":{"foo":` + testCase + `}},"ProxyKey":""}`
+	g.Expect(s).To(gomega.MatchJSON(expectedJson))
+}
+
+func TestRedactMapOfAny(t *testing.T) {
+	UseDetailedUnmarshalling = true
+	g := gomega.NewWithT(t)
+	// this is not valid envoy config - just for testing
+	testCase := `{
+      "name": "kube_gloo-gateway-system_rate-limiter-gloo-gateway-v2_8083",
+      "type": "EDS",
+      "eds_cluster_config": {
+       "eds_config": {
+        "ads": {},
+        "resource_api_version": "V3"
+       }
+      },
+      "typed_extension_protocol_options": {
+       "secret": {
+        "@type": "type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext",
+		"common_tls_context":{"tls_certificates":[{"private_key":{"inline_string":"secret!"}}]}
+       }
+      }
+     }`
+	s := redactCluster(t, testCase)
+
+	expectedJson := `{"Snap":{"Clusters":{"foo":` + strings.Replace(testCase, "secret!", "[REDACTED]", -1) + `}},"ProxyKey":""}`
+	g.Expect(s).To(gomega.MatchJSON(expectedJson))
+}
+
+func redactCluster(t *testing.T, testCase string) string {
+
+	var c envoyclusterv3.Cluster
+	var j protojson.UnmarshalOptions
+	err := j.Unmarshal([]byte(testCase), &c)
+
 	if err != nil {
 		t.Fatal(err)
-	}
-	if c == nil {
-		t.Fatal("UnmarshalNew returned nil")
 	}
 	snap := &envoycache.Snapshot{}
 	snap.Resources[envoycachetypes.Cluster] = envoycache.Resources{
 		Version: "foo",
-		Items:   map[string]envoycachetypes.ResourceWithTTL{"foo": envoycachetypes.ResourceWithTTL{Resource: c}},
+		Items:   map[string]envoycachetypes.ResourceWithTTL{"foo": {Resource: &c}},
 	}
 
 	x := XdsSnapWrapper{}.WithSnapshot(snap)
@@ -112,6 +143,5 @@ func TestNotCrashing(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	s := string(data)
-	g.Expect(s).ToNot(gomega.BeEmpty())
+	return string(data)
 }
