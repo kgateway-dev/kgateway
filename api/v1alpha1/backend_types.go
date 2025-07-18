@@ -181,7 +181,8 @@ type AwsLambda struct {
 	// (alphanumeric plus "-" or "_"), or the special literal "$LATEST".
 	// +optional
 	// +kubebuilder:validation:Pattern="^(\\$LATEST|[0-9]+|[A-Za-z0-9-_]{1,128})$"
-	Qualifier *string `json:"qualifier,omitempty"`
+	// +kubebuilder:default=$LATEST
+	Qualifier string `json:"qualifier,omitempty"`
 	// PayloadTransformation specifies payload transformation mode before it is sent to the Lambda function.
 	// Defaults to Envoy.
 	// +optional
