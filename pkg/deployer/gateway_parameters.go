@@ -143,14 +143,14 @@ func defaultWaypointGatewayParameters(imageInfo *ImageInfo) *v1alpha1.GatewayPar
 	gwp.Spec.Kube.Service.Type = ptr.To(corev1.ServiceTypeClusterIP)
 
 	if gwp.Spec.Kube.Service.Ports == nil {
-		gwp.Spec.Kube.Service.Ports = []*v1alpha1.Port{}
+		gwp.Spec.Kube.Service.Ports = []v1alpha1.Port{}
 	}
 
 	// Similar to labeling in kubernetes, this is used to identify the service as a waypoint service.
 	meshPort := &v1alpha1.Port{
 		Port: IstioWaypointPort,
 	}
-	gwp.Spec.Kube.Service.Ports = append(gwp.Spec.Kube.Service.Ports, meshPort)
+	gwp.Spec.Kube.Service.Ports = append(gwp.Spec.Kube.Service.Ports, *meshPort)
 
 	if gwp.Spec.Kube.PodTemplate == nil {
 		gwp.Spec.Kube.PodTemplate = &v1alpha1.Pod{}

@@ -42,7 +42,7 @@ func GetPortsValues(gw *ir.Gateway, gwp *v1alpha1.GatewayParameters) []HelmPort 
 	if gwp != nil && gwp.Spec.GetKube() != nil && gwp.Spec.GetKube().GetService() != nil {
 		servicePorts := gwp.Spec.GetKube().GetService().GetPorts()
 		for _, servicePort := range servicePorts {
-			if servicePort != nil {
+			if servicePort != (v1alpha1.Port{}) {
 				port := uint16(servicePort.GetPort())
 				portName := fmt.Sprintf("listener~%d", port)
 				gwPorts = AppendPortValue(gwPorts, port, portName, gwp)
