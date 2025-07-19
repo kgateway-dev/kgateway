@@ -53,6 +53,7 @@ spec:
         name: aws-creds
     lambda:
       functionName: hello-function
+      qualifier: $LATEST
       endpointURL: "http://172.18.0.2:31566"
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
@@ -70,6 +71,7 @@ spec:
         name: aws-creds
     lambda:
       functionName: hello-function
+      qualifier: $LATEST
       endpointURL: "http://172.18.0.2:31566"
       payloadTransformMode: None
 ---

@@ -25,7 +25,7 @@ type LoadBalancerConfigIR struct {
 
 type slowStartConfigIR struct {
 	slowStartConfig *envoyclusterv3.Cluster_SlowStartConfig
-	aggression      string
+	aggression      *string
 }
 
 func translateLoadBalancerConfig(config *v1alpha1.LoadBalancer) *LoadBalancerConfigIR {
@@ -171,8 +171,8 @@ func toSlowStartConfig(ir *slowStartConfigIR, clusterName string) *envoyclusterv
 		return nil
 	}
 	out := ir.slowStartConfig
-	if ir.aggression != "" {
-		aggressionValue, err := strconv.ParseFloat(ir.aggression, 64)
+	if ir.aggression != nil {
+		aggressionValue, err := strconv.ParseFloat(*ir.aggression, 64)
 		if err != nil {
 			// This should ideally not happen due to CRD validation
 			logger.Error("error parsing slowStartConfig.aggression", "error", err, "cluster", clusterName)

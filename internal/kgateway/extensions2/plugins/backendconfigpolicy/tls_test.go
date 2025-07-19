@@ -106,7 +106,7 @@ func TestTranslateTLSConfig(t *testing.T) {
 				SecretRef: &corev1.LocalObjectReference{
 					Name: "test-secret",
 				},
-				Sni:                "test.example.com",
+				Sni:                ptr.To("test.example.com"),
 				AllowRenegotiation: ptr.To(true),
 				AlpnProtocols:      []string{"h2", "http/1.1"},
 			},
@@ -139,11 +139,11 @@ func TestTranslateTLSConfig(t *testing.T) {
 			name: "file-based TLS config",
 			tlsConfig: &v1alpha1.TLS{
 				TLSFiles: &v1alpha1.TLSFiles{
-					TLSCertificate: CACert,
-					TLSKey:         TLSKey,
-					RootCA:         CACert,
+					TLSCertificate: ptr.To(CACert),
+					TLSKey:         ptr.To(TLSKey),
+					RootCA:         ptr.To(CACert),
 				},
-				Sni:                "test.example.com",
+				Sni:                ptr.To("test.example.com"),
 				AllowRenegotiation: ptr.To(true),
 			},
 			wantErr: false,
@@ -160,8 +160,8 @@ func TestTranslateTLSConfig(t *testing.T) {
 			name: "TLS config with parameters",
 			tlsConfig: &v1alpha1.TLS{
 				TLSFiles: &v1alpha1.TLSFiles{
-					TLSCertificate: CACert,
-					TLSKey:         TLSKey,
+					TLSCertificate: ptr.To(CACert),
+					TLSKey:         ptr.To(TLSKey),
 				},
 				Parameters: &v1alpha1.Parameters{
 					TLSMinVersion: ptr.To(v1alpha1.TLSVersion1_2),
@@ -202,7 +202,7 @@ func TestTranslateTLSConfig(t *testing.T) {
 			name: "should not error with only rootca",
 			tlsConfig: &v1alpha1.TLS{
 				TLSFiles: &v1alpha1.TLSFiles{
-					RootCA: CACert,
+					RootCA: ptr.To(CACert),
 				},
 			},
 			wantErr: false,
@@ -214,8 +214,8 @@ func TestTranslateTLSConfig(t *testing.T) {
 			name: "should error with san and no rootca",
 			tlsConfig: &v1alpha1.TLS{
 				TLSFiles: &v1alpha1.TLSFiles{
-					TLSCertificate: CACert,
-					TLSKey:         TLSKey,
+					TLSCertificate: ptr.To(CACert),
+					TLSKey:         ptr.To(TLSKey),
 				},
 				VerifySubjectAltName: []string{"test.example.com"},
 			},
@@ -225,7 +225,7 @@ func TestTranslateTLSConfig(t *testing.T) {
 			name: "should error with only cert and no key",
 			tlsConfig: &v1alpha1.TLS{
 				TLSFiles: &v1alpha1.TLSFiles{
-					TLSCertificate: CACert,
+					TLSCertificate: ptr.To(CACert),
 				},
 			},
 			wantErr: true,
@@ -234,9 +234,9 @@ func TestTranslateTLSConfig(t *testing.T) {
 			name: "should not have validation context if one way tls",
 			tlsConfig: &v1alpha1.TLS{
 				TLSFiles: &v1alpha1.TLSFiles{
-					TLSCertificate: CACert,
-					TLSKey:         TLSKey,
-					RootCA:         CACert,
+					TLSCertificate: ptr.To(CACert),
+					TLSKey:         ptr.To(TLSKey),
+					RootCA:         ptr.To(CACert),
 				},
 				OneWayTLS: ptr.To(true),
 			},
@@ -276,12 +276,12 @@ func TestTranslateTLSConfig(t *testing.T) {
 			name: "TLS config with SAN verification",
 			tlsConfig: &v1alpha1.TLS{
 				TLSFiles: &v1alpha1.TLSFiles{
-					TLSCertificate: CACert,
-					TLSKey:         TLSKey,
-					RootCA:         CACert,
+					TLSCertificate: ptr.To(CACert),
+					TLSKey:         ptr.To(TLSKey),
+					RootCA:         ptr.To(CACert),
 				},
 				VerifySubjectAltName: []string{"test.example.com", "api.example.com"},
-				Sni:                  "test.example.com",
+				Sni:                  ptr.To("test.example.com"),
 			},
 			wantErr: false,
 			check: func(t *testing.T, result *envoytlsv3.UpstreamTlsContext) {
