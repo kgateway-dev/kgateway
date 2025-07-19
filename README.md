@@ -18,7 +18,7 @@ Kgateway is:
 * **An AI gateway for securing LLM usage**: Protect applications, models, and data from inappropriate access or use, whether you're producing or consuming. Manage traffic to LLM providers, and enrich prompts at a system level.
 * **An LLM Gateway utilizing the [Inference Extension](https://gateway-api-inference-extension.sigs.k8s.io/) project**: Intelligently route to AI inference workloads and LLMs in your Kubernetes environment.
 * **A model context protocol (MCP) gateway**: Federate MCP tool servers into a single, scalable and secure endpoint.
-* **A migration engine for hybrid apps**: Route to backends implemented as microservices, serverless functions, or legacy apps. This can help you gradually migrate from legacy code to microservices and serverless, add new functionalities using cloud-native technologies while maintaining a legacy codebase, or allow different teams in an organization to choose different architectures.
+* **A migration engine for hybrid apps**: Route to backends implemented as microservices, serverless functions, or legacy apps. This can help you gradually migrate from legacy code to microservices and serverless, add new functionalities using cloud-native technologies, while maintaining a legacy codebase, or allow different teams in an organization to choose different architectures.
 
 Kgateway is feature-rich, fast, and flexible. It excels in function-level routing, supports legacy apps, microservices and serverless, offers robust discovery capabilities, integrates seamlessly with open-source projects, and is designed to support hybrid applications with various technologies, architectures, protocols, and clouds.
 
