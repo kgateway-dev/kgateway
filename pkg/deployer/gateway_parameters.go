@@ -147,10 +147,10 @@ func defaultWaypointGatewayParameters(imageInfo *ImageInfo) *v1alpha1.GatewayPar
 	}
 
 	// Similar to labeling in kubernetes, this is used to identify the service as a waypoint service.
-	meshPort := &v1alpha1.Port{
+	meshPort := v1alpha1.Port{
 		Port: IstioWaypointPort,
 	}
-	gwp.Spec.Kube.Service.Ports = append(gwp.Spec.Kube.Service.Ports, *meshPort)
+	gwp.Spec.Kube.Service.Ports = append(gwp.Spec.Kube.Service.Ports, meshPort)
 
 	if gwp.Spec.Kube.PodTemplate == nil {
 		gwp.Spec.Kube.PodTemplate = &v1alpha1.Pod{}

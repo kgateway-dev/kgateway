@@ -10,6 +10,7 @@ import (
 	"golang.org/x/exp/slices"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/utils/ptr"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
@@ -42,11 +43,14 @@ func GetPortsValues(gw *ir.Gateway, gwp *v1alpha1.GatewayParameters) []HelmPort 
 	if gwp != nil && gwp.Spec.GetKube() != nil && gwp.Spec.GetKube().GetService() != nil {
 		servicePorts := gwp.Spec.GetKube().GetService().GetPorts()
 		for _, servicePort := range servicePorts {
-			if servicePort != (v1alpha1.Port{}) {
-				port := uint16(servicePort.GetPort())
-				portName := fmt.Sprintf("listener~%d", port)
-				gwPorts = AppendPortValue(gwPorts, port, portName, gwp)
+			portValue := servicePort.GetPort()
+			l := ir.Listener{
+				Listener: gwv1.Listener{
+					Port: gwv1.PortNumber(portValue),
+				},
 			}
+			portName := listener.GenerateListenerName(l)
+			gwPorts = AppendPortValue(gwPorts, portValue, portName, gwp)
 		}
 	}
 
