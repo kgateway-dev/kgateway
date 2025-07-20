@@ -1,0 +1,59 @@
+# Validate that a single rule with an invalid policy is not replaced
+# in standard mode.
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: example-gateway
+  namespace: gwtest
+spec:
+  gatewayClassName: kgateway
+  listeners:
+  - name: http
+    port: 8080
+    protocol: HTTP
+    hostname: www.example.com
+    allowedRoutes:
+      namespaces:
+        from: All
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: example-svc
+  namespace: gwtest
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: example
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: invalid-traffic-policy-route
+  namespace: gwtest
+spec:
+  parentRefs:
+  - name: example-gateway
+  rules:
+  - backendRefs:
+    - name: example-svc
+      port: 80
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: invalid-traffic-policy
+  namespace: gwtest
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: invalid-traffic-policy-route
+  transformation:
+    request:
+      body:
+        parseAs: AsJson
+        value: "{{ invalid_template }"  ## Verify that STRICT mode needs to be used to catch this.

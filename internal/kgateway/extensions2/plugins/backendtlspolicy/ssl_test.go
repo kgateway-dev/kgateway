@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -35,7 +35,7 @@ func TestUpstreamTlsConfig(t *testing.T) {
 		cm            *corev1.ConfigMap
 		sni           string
 		expectedError string
-		expectedTls   *envoyauth.UpstreamTlsContext
+		expectedTls   *envoytlsv3.UpstreamTlsContext
 	}{
 		{
 			name: "Basic config",
@@ -50,12 +50,12 @@ func TestUpstreamTlsConfig(t *testing.T) {
 			},
 			sni:           "example.com",
 			expectedError: "",
-			expectedTls: &envoyauth.UpstreamTlsContext{
-				CommonTlsContext: &envoyauth.CommonTlsContext{
-					ValidationContextType: &envoyauth.CommonTlsContext_ValidationContext{
-						ValidationContext: &envoyauth.CertificateValidationContext{
-							TrustedCa: &corev3.DataSource{
-								Specifier: &corev3.DataSource_InlineString{
+			expectedTls: &envoytlsv3.UpstreamTlsContext{
+				CommonTlsContext: &envoytlsv3.CommonTlsContext{
+					ValidationContextType: &envoytlsv3.CommonTlsContext_ValidationContext{
+						ValidationContext: &envoytlsv3.CertificateValidationContext{
+							TrustedCa: &envoycorev3.DataSource{
+								Specifier: &envoycorev3.DataSource_InlineString{
 									InlineString: CA_CERT,
 								},
 							},
@@ -81,7 +81,7 @@ func TestUpstreamTlsConfig(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			validation := &envoyauth.CertificateValidationContext{}
+			validation := &envoytlsv3.CertificateValidationContext{}
 			tlsCtx, err := ResolveUpstreamSslConfig(tt.cm, validation, tt.sni)
 			if tt.expectedError != "" && err == nil {
 				t.Fatalf("expected error but got nil")

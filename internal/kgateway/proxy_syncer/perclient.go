@@ -2,14 +2,53 @@ package proxy_syncer
 
 import (
 	"fmt"
+	"maps"
+	"strings"
 
 	envoycachetypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
+	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/krt"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
+	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
 )
+
+type clustersWithErrors struct {
+	clusters            envoycache.Resources
+	erroredClusters     []string
+	erroredClustersHash uint64
+	clustersHash        uint64
+	resourceName        string
+}
+
+type endpointsWithUccName struct {
+	endpoints    envoycache.Resources
+	resourceName string
+}
+
+func (c clustersWithErrors) ResourceName() string {
+	return c.resourceName
+}
+
+var _ krt.Equaler[clustersWithErrors] = new(clustersWithErrors)
+
+func (c clustersWithErrors) Equals(k clustersWithErrors) bool {
+	return c.clustersHash == k.clustersHash && c.erroredClustersHash == k.erroredClustersHash
+}
+
+func (c endpointsWithUccName) ResourceName() string {
+	return c.resourceName
+}
+
+var _ krt.Equaler[endpointsWithUccName] = new(endpointsWithUccName)
+
+func (c endpointsWithUccName) Equals(k endpointsWithUccName) bool {
+	return c.endpoints.Version == k.endpoints.Version
+}
 
 func snapshotPerClient(
 	krtopts krtutil.KrtOptions,
@@ -17,16 +56,74 @@ func snapshotPerClient(
 	mostXdsSnapshots krt.Collection[GatewayXdsResources],
 	endpoints PerClientEnvoyEndpoints,
 	clusters PerClientEnvoyClusters,
+	metricsRecorder krtcollections.CollectionMetricsRecorder,
 ) krt.Collection[XdsSnapWrapper] {
-	xdsSnapshotsForUcc := krt.NewCollection(uccCol, func(kctx krt.HandlerContext, ucc ir.UniqlyConnectedClient) *XdsSnapWrapper {
-		maybeMostlySnap := krt.FetchOne(kctx, mostXdsSnapshots, krt.FilterKey(ucc.Role))
-		if maybeMostlySnap == nil {
-			logger.Debug("snapshot missing", "proxy_key", ucc.Role)
-			return nil
-		}
+	clusterSnapshot := krt.NewCollection(uccCol, func(kctx krt.HandlerContext, ucc ir.UniqlyConnectedClient) *clustersWithErrors {
 		clustersForUcc := clusters.FetchClustersForClient(kctx, ucc)
 
 		logger.Debug("found perclient clusters", "client", ucc.ResourceName(), "clusters", len(clustersForUcc))
+
+		if len(clustersForUcc) == 0 {
+			logger.Info("no perclient clusters; defer building snapshot", "client", ucc.ResourceName())
+			return nil
+		}
+
+		clustersProto := make([]envoycachetypes.ResourceWithTTL, 0, len(clustersForUcc))
+		var clustersHash uint64
+		var erroredClustersHash uint64
+		var erroredClusters []string
+		for _, c := range clustersForUcc {
+			if c.Error == nil {
+				clustersProto = append(clustersProto, envoycachetypes.ResourceWithTTL{Resource: c.Cluster})
+				clustersHash ^= c.ClusterVersion
+			} else {
+				erroredClusters = append(erroredClusters, c.Name)
+				// For errored clusters, we don't want to include the cluster version
+				// in the hash. The cluster version is the hash of the proto. because this cluster
+				// won't be sent to envoy anyway, there's no point trigger updates if it changes from
+				// one error state to a different error state.
+				erroredClustersHash ^= utils.HashString(c.Name)
+			}
+		}
+		clustersVersion := fmt.Sprintf("%d", clustersHash)
+
+		clusterResources := envoycache.NewResourcesWithTTL(clustersVersion, clustersProto)
+
+		return &clustersWithErrors{
+			clusters:            clusterResources,
+			erroredClusters:     erroredClusters,
+			clustersHash:        clustersHash,
+			erroredClustersHash: erroredClustersHash,
+			resourceName:        ucc.ResourceName(),
+		}
+	}, krtopts.ToOptions("ClusterResources")...)
+
+	endpointResources := krt.NewCollection(uccCol, func(kctx krt.HandlerContext, ucc ir.UniqlyConnectedClient) *endpointsWithUccName {
+		endpointsForUcc := endpoints.FetchEndpointsForClient(kctx, ucc)
+		endpointsProto := make([]envoycachetypes.ResourceWithTTL, 0, len(endpointsForUcc))
+		var endpointsHash uint64
+		for _, ep := range endpointsForUcc {
+			endpointsProto = append(endpointsProto, envoycachetypes.ResourceWithTTL{Resource: ep.Endpoints})
+			endpointsHash ^= ep.EndpointsHash
+		}
+
+		endpointResources := envoycache.NewResourcesWithTTL(fmt.Sprintf("%d", endpointsHash), endpointsProto)
+		return &endpointsWithUccName{
+			endpoints:    endpointResources,
+			resourceName: ucc.ResourceName(),
+		}
+	}, krtopts.ToOptions("EndpointResources")...)
+
+	xdsSnapshotsForUcc := krt.NewCollection(uccCol, func(kctx krt.HandlerContext, ucc ir.UniqlyConnectedClient) *XdsSnapWrapper {
+		defer metricsRecorder.TransformStart()(nil)
+
+		listenerRouteSnapshot := krt.FetchOne(kctx, mostXdsSnapshots, krt.FilterKey(ucc.Role))
+		if listenerRouteSnapshot == nil {
+			logger.Debug("snapshot missing", "proxy_key", ucc.Role)
+			return nil
+		}
+		clustersForUcc := krt.FetchOne(kctx, clusterSnapshot, krt.FilterKey(ucc.ResourceName()))
+		clientEndpointResources := krt.FetchOne(kctx, endpointResources, krt.FilterKey(ucc.ResourceName()))
 
 		// HACK
 		// https://github.com/solo-io/gloo/pull/10611/files#diff-060acb7cdd3a287a3aef1dd864aae3e0193da17b6230c382b649ce9dc0eca80b
@@ -40,55 +137,108 @@ func snapshotPerClient(
 		// with that computation and will almost always lose.
 		// While we're looking for a way to make this ordering predictable
 		// to avoid hacks like this, it will do for now.
-		if len(clustersForUcc) == 0 {
+		if clustersForUcc == nil || clientEndpointResources == nil {
 			logger.Info("no perclient clusters; defer building snapshot", "client", ucc.ResourceName())
 			return nil
 		}
 
-		clustersProto := make([]envoycachetypes.ResourceWithTTL, 0, len(clustersForUcc)+len(maybeMostlySnap.Clusters))
-		var clustersHash uint64
-		var erroredClusters []string
-		for _, c := range clustersForUcc {
-			if c.Error == nil {
-				clustersProto = append(clustersProto, envoycachetypes.ResourceWithTTL{Resource: c.Cluster})
-				clustersHash ^= c.ClusterVersion
-			} else {
-				erroredClusters = append(erroredClusters, c.Name)
-			}
-		}
-		clustersProto = append(clustersProto, maybeMostlySnap.Clusters...)
-		clustersHash ^= maybeMostlySnap.ClustersHash
-		clustersVersion := fmt.Sprintf("%d", clustersHash)
-
-		endpointsForUcc := endpoints.FetchEndpointsForClient(kctx, ucc)
-		endpointsProto := make([]envoycachetypes.ResourceWithTTL, 0, len(endpointsForUcc))
-		var endpointsHash uint64
-		for _, ep := range endpointsForUcc {
-			endpointsProto = append(endpointsProto, envoycachetypes.ResourceWithTTL{Resource: ep.Endpoints})
-			endpointsHash ^= ep.EndpointsHash
-		}
+		logger.Debug("found perclient clusters", "client", ucc.ResourceName(), "clusters", len(clustersForUcc.clusters.Items))
+		clusterResources := clustersForUcc.clusters
 
 		snap := XdsSnapWrapper{}
+		if len(listenerRouteSnapshot.Clusters) > 0 {
+			clustersProto := make(map[string]envoycachetypes.ResourceWithTTL, len(listenerRouteSnapshot.Clusters)+len(clustersForUcc.clusters.Items))
+			maps.Copy(clustersProto, clustersForUcc.clusters.Items)
+			for _, item := range listenerRouteSnapshot.Clusters {
+				clustersProto[envoycache.GetResourceName(item.Resource)] = item
+			}
+			clusterResources.Version = fmt.Sprintf("%d", clustersForUcc.clustersHash^listenerRouteSnapshot.ClustersHash)
+			clusterResources.Items = clustersProto
+		}
 
-		clusterResources := envoycache.NewResourcesWithTTL(clustersVersion, clustersProto)
-		endpointResources := envoycache.NewResourcesWithTTL(fmt.Sprintf("%d", endpointsHash), endpointsProto)
-		snap.erroredClusters = erroredClusters
+		snap.erroredClusters = clustersForUcc.erroredClusters
 		snap.proxyKey = ucc.ResourceName()
 		snapshot := &envoycache.Snapshot{}
-		snapshot.Resources[envoycachetypes.Cluster] = clusterResources // envoycache.NewResources(version, resource)
-		snapshot.Resources[envoycachetypes.Endpoint] = endpointResources
-		snapshot.Resources[envoycachetypes.Route] = maybeMostlySnap.Routes
-		snapshot.Resources[envoycachetypes.Listener] = maybeMostlySnap.Listeners
+		snapshot.Resources[envoycachetypes.Cluster] = clusterResources //envoycache.NewResources(version, resource)
+		snapshot.Resources[envoycachetypes.Endpoint] = clientEndpointResources.endpoints
+		snapshot.Resources[envoycachetypes.Route] = listenerRouteSnapshot.Routes
+		snapshot.Resources[envoycachetypes.Listener] = listenerRouteSnapshot.Listeners
 		// envoycache.NewResources(version, resource)
 		snap.snap = snapshot
 		logger.Debug("snapshots", "proxy_key", snap.proxyKey,
-			"listeners", resourcesStringer(maybeMostlySnap.Listeners).String(),
+			"listeners", resourcesStringer(listenerRouteSnapshot.Listeners).String(),
 			"clusters", resourcesStringer(clusterResources).String(),
-			"routes", resourcesStringer(maybeMostlySnap.Routes).String(),
-			"endpoints", resourcesStringer(endpointResources).String(),
+			"routes", resourcesStringer(listenerRouteSnapshot.Routes).String(),
+			"endpoints", resourcesStringer(clientEndpointResources.endpoints).String(),
 		)
 
 		return &snap
 	}, krtopts.ToOptions("PerClientXdsSnapshots")...)
+
+	metrics.RegisterEvents(xdsSnapshotsForUcc, func(o krt.Event[XdsSnapWrapper]) {
+		name := o.Latest().ResourceName()
+		namespace := "unknown"
+
+		pks := strings.SplitN(name, "~", 5)
+		if len(pks) > 1 {
+			namespace = pks[1]
+		}
+
+		if len(pks) > 2 {
+			name = pks[2]
+		}
+
+		switch o.Event {
+		case controllers.EventDelete:
+			metricsRecorder.SetResources(krtcollections.CollectionResourcesMetricLabels{
+				Namespace: namespace,
+				Name:      name,
+				Resource:  "Cluster",
+			}, 0)
+
+			metricsRecorder.SetResources(krtcollections.CollectionResourcesMetricLabels{
+				Namespace: namespace,
+				Name:      name,
+				Resource:  "Endpoint",
+			}, 0)
+
+			metricsRecorder.SetResources(krtcollections.CollectionResourcesMetricLabels{
+				Namespace: namespace,
+				Name:      name,
+				Resource:  "Route",
+			}, 0)
+
+			metricsRecorder.SetResources(krtcollections.CollectionResourcesMetricLabels{
+				Namespace: namespace,
+				Name:      name,
+				Resource:  "Listener",
+			}, 0)
+		case controllers.EventAdd, controllers.EventUpdate:
+			metricsRecorder.SetResources(krtcollections.CollectionResourcesMetricLabels{
+				Namespace: namespace,
+				Name:      name,
+				Resource:  "Cluster",
+			}, len(o.Latest().snap.Resources[envoycachetypes.Cluster].Items))
+
+			metricsRecorder.SetResources(krtcollections.CollectionResourcesMetricLabels{
+				Namespace: namespace,
+				Name:      name,
+				Resource:  "Endpoint",
+			}, len(o.Latest().snap.Resources[envoycachetypes.Endpoint].Items))
+
+			metricsRecorder.SetResources(krtcollections.CollectionResourcesMetricLabels{
+				Namespace: namespace,
+				Name:      name,
+				Resource:  "Route",
+			}, len(o.Latest().snap.Resources[envoycachetypes.Route].Items))
+
+			metricsRecorder.SetResources(krtcollections.CollectionResourcesMetricLabels{
+				Namespace: namespace,
+				Name:      name,
+				Resource:  "Listener",
+			}, len(o.Latest().snap.Resources[envoycachetypes.Listener].Items))
+		}
+	})
+
 	return xdsSnapshotsForUcc
 }

@@ -1,0 +1,53 @@
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: HTTPListenerPolicy
+metadata:
+  name: http-listener-policy-with-additional-fields
+  namespace: default
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: test-gateway
+  # Use remote address for the original client
+  useRemoteAddress: true
+  # Number of additional ingress proxy hops to trust in X-Forwarded-For header
+  xffNumTrustedHops: 2
+  # How to transform the server header
+  serverHeaderTransformation: Overwrite
+  # Idle timeout for HTTP streams
+  streamIdleTimeout: 30s
+---
+# Example with all fields set to different values
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: HTTPListenerPolicy
+metadata:
+  name: http-listener-policy-all-fields
+  namespace: default
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: test-gateway
+  # Use X-Forwarded-For header to determine client address
+  useRemoteAddress: false
+  # Trust 1 additional proxy hop
+  xffNumTrustedHops: 1
+  # Append server header if not present
+  serverHeaderTransformation: AppendIfAbsent
+  # Longer idle timeout
+  streamIdleTimeout: 60s
+---
+# Example with only some fields set
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: HTTPListenerPolicy
+metadata:
+  name: http-listener-policy-partial-fields
+  namespace: default
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: test-gateway
+  # Only set useRemoteAddress and streamIdleTimeout
+  useRemoteAddress: true
+  streamIdleTimeout: 45s 

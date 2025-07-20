@@ -4,6 +4,7 @@ Clusters:
     edsConfig:
       ads: {}
       resourceApiVersion: V3
+  ignoreHealthOnHostRemoval: true
   metadata: {}
   name: kube_infra_svc-a_5000
   type: EDS

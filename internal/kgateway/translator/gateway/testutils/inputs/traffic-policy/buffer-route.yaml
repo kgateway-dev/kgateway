@@ -1,0 +1,79 @@
+kind: Gateway
+apiVersion: gateway.networking.k8s.io/v1
+metadata:
+  name: example-gateway
+spec:
+  gatewayClassName: kgateway
+  listeners:
+  - protocol: HTTP
+    port: 8080
+    name: http
+    hostname: "www.example.com"
+  - protocol: HTTP
+    port: 8081
+    name: http2
+    hostname: "www.test.com"
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: example-route
+spec:
+  parentRefs:
+    - name: example-gateway
+  hostnames:
+    - "www.example.com"
+  rules:
+    - backendRefs:
+        - name: example-svc
+          port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: example-route-2
+spec:
+  parentRefs:
+    - name: example-gateway
+  hostnames:
+    - "www.test.com"
+  rules:
+    - backendRefs:
+        - name: example-svc-2
+          port: 3000
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: buffer-policy
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: example-route
+  buffer:
+    maxRequestSize: "65536"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: example-svc
+spec:
+  selector:
+    test: test
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: test
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: example-svc-2
+spec:
+  selector:
+    test: test
+  ports:
+  - protocol: TCP
+    port: 3000
+    targetPort: test

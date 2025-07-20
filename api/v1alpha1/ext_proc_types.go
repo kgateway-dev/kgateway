@@ -7,7 +7,7 @@ import (
 // ExtProcPolicy defines the configuration for the Envoy External Processing filter.
 type ExtProcPolicy struct {
 	// ExtensionRef references the GatewayExtension that should be used for external processing.
-	// +kubebuilder:validation:Required
+	// +required
 	ExtensionRef *corev1.LocalObjectReference `json:"extensionRef"`
 
 	// ProcessingMode defines how the filter should interact with the request/response streams

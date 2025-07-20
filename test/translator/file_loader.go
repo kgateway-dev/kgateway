@@ -4,20 +4,20 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"io/fs"
 	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
 
-	"github.com/rotisserie/eris"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/irtranslator"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/protoutils"
 
 	"github.com/ghodss/yaml"
-	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -65,7 +65,7 @@ func LoadFromFiles(ctx context.Context, filename string, scheme *runtime.Scheme)
 		for _, obj := range objs {
 			clientObj, ok := obj.(client.Object)
 			if !ok {
-				return nil, errors.Errorf("cannot convert runtime.Object to client.Object: %+v", obj)
+				return nil, fmt.Errorf("cannot convert runtime.Object to client.Object: %+v", obj)
 			}
 
 			_, isGwc := clientObj.(*gwv1.GatewayClass)
@@ -149,12 +149,12 @@ func truncateString(str string, num int) string {
 func ReadProxyFromFile(filename string) (*irtranslator.TranslationResult, error) {
 	data, err := os.ReadFile(filename)
 	if err != nil {
-		return nil, eris.Wrapf(err, "reading proxy file")
+		return nil, fmt.Errorf("reading proxy file: %w", err)
 	}
 	var proxy irtranslator.TranslationResult
 
 	if err := UnmarshalAnyYaml(data, &proxy); err != nil {
-		return nil, eris.Wrapf(err, "parsing proxy from file")
+		return nil, fmt.Errorf("parsing proxy from file: %w", err)
 	}
 	return &proxy, nil
 }

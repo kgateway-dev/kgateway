@@ -25,10 +25,10 @@ import (
 	infextv1a2 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
 	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/deployer"
+	internaldeployer "github.com/kgateway-dev/kgateway/v2/internal/kgateway/deployer"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 	common "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 )
 
@@ -75,9 +75,17 @@ type GatewayConfig struct {
 	DiscoveryNamespaceFilter kubetypes.DynamicObjectFilter
 	// CommonCollections used to fetch ir.Gateways for the deployer to generate the ports for the proxy service
 	CommonCollections *common.CommonCollections
+	// GatewayClassName is the configured gateway class name.
+	GatewayClassName string
+	// WaypointGatewayClassName is the configured waypoint gateway class name.
+	WaypointGatewayClassName string
+	// AgentGatewayClassName is the configured agent gateway class name.
+	AgentGatewayClassName string
 }
 
-func NewBaseGatewayController(ctx context.Context, cfg GatewayConfig) error {
+type ExtraGatewayParametersFunc func(cli client.Client, inputs *deployer.Inputs) []deployer.ExtraGatewayParameters
+
+func NewBaseGatewayController(ctx context.Context, cfg GatewayConfig, extraGatewayParameters ExtraGatewayParametersFunc) error {
 	log := log.FromContext(ctx)
 	log.V(5).Info("starting gateway controller", "controllerName", cfg.ControllerName)
 
@@ -87,7 +95,9 @@ func NewBaseGatewayController(ctx context.Context, cfg GatewayConfig) error {
 			cli:          cfg.Mgr.GetClient(),
 			scheme:       cfg.Mgr.GetScheme(),
 			customEvents: make(chan event.TypedGenericEvent[ir.Gateway], 1024),
+			metrics:      newControllerMetricsRecorder("gatewayclass"),
 		},
+		extraGatewayParameters: extraGatewayParameters,
 	}
 
 	return run(
@@ -104,7 +114,10 @@ type InferencePoolConfig struct {
 	InferenceExt   *deployer.InferenceExtInfo
 }
 
-func NewBaseInferencePoolController(ctx context.Context, poolCfg *InferencePoolConfig, gwCfg *GatewayConfig) error {
+func NewBaseInferencePoolController(ctx context.Context,
+	poolCfg *InferencePoolConfig,
+	gwCfg *GatewayConfig,
+	extraGatewayParameters func(cli client.Client, inputs *deployer.Inputs) []deployer.ExtraGatewayParameters) error {
 	log := log.FromContext(ctx)
 	log.V(5).Info("starting inferencepool controller", "controllerName", poolCfg.ControllerName)
 
@@ -116,7 +129,9 @@ func NewBaseInferencePoolController(ctx context.Context, poolCfg *InferencePoolC
 			cli:          poolCfg.Mgr.GetClient(),
 			scheme:       poolCfg.Mgr.GetScheme(),
 			customEvents: make(chan event.TypedGenericEvent[ir.Gateway], 1024),
+			metrics:      newControllerMetricsRecorder("gatewayclass-inferencepool"),
 		},
+		extraGatewayParameters: extraGatewayParameters,
 	}
 
 	return run(ctx, controllerBuilder.watchInferencePool)
@@ -132,9 +147,10 @@ func run(ctx context.Context, funcs ...func(ctx context.Context) error) error {
 }
 
 type controllerBuilder struct {
-	cfg        GatewayConfig
-	poolCfg    *InferencePoolConfig
-	reconciler *controllerReconciler
+	cfg                    GatewayConfig
+	poolCfg                *InferencePoolConfig
+	reconciler             *controllerReconciler
+	extraGatewayParameters func(cli client.Client, inputs *deployer.Inputs) []deployer.ExtraGatewayParameters
 }
 
 func (c *controllerBuilder) addIndexes(ctx context.Context) error {
@@ -176,19 +192,25 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 	log := log.FromContext(ctx)
 
 	log.Info("creating gateway deployer", "ctrlname", c.cfg.ControllerName, "server", c.cfg.ControlPlane.XdsHost, "port", c.cfg.ControlPlane.XdsPort)
-	d, err := deployer.NewDeployer(c.cfg.Mgr.GetClient(), &deployer.Inputs{
-		ControllerName:       c.cfg.ControllerName,
-		Dev:                  c.cfg.Dev,
-		IstioAutoMtlsEnabled: c.cfg.IstioAutoMtlsEnabled,
-		ControlPlane:         c.cfg.ControlPlane,
-		ImageInfo:            c.cfg.ImageInfo,
-		CommonCollections:    c.cfg.CommonCollections,
-	})
+	inputs := &deployer.Inputs{
+		Dev:                      c.cfg.Dev,
+		IstioAutoMtlsEnabled:     c.cfg.IstioAutoMtlsEnabled,
+		ControlPlane:             c.cfg.ControlPlane,
+		ImageInfo:                c.cfg.ImageInfo,
+		CommonCollections:        c.cfg.CommonCollections,
+		GatewayClassName:         c.cfg.GatewayClassName,
+		WaypointGatewayClassName: c.cfg.WaypointGatewayClassName,
+		AgentGatewayClassName:    c.cfg.AgentGatewayClassName,
+	}
+	gwParams := internaldeployer.NewGatewayParameters(c.cfg.Mgr.GetClient(), inputs)
+	if c.extraGatewayParameters != nil {
+		gwParams.WithExtraGatewayParameters(c.extraGatewayParameters(c.cfg.Mgr.GetClient(), inputs)...)
+	}
+	d, err := internaldeployer.NewGatewayDeployer(c.cfg.ControllerName, c.cfg.Mgr.GetClient(), gwParams)
 	if err != nil {
 		return err
 	}
-
-	gvks, err := d.GetGvksToWatch(ctx)
+	gvks, err := internaldeployer.GatewayGVKsToWatch(ctx, d)
 	if err != nil {
 		return err
 	}
@@ -212,28 +234,30 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 
 	// watch for changes in GatewayParameters and enqueue Gateways that use them
 	cli := c.cfg.Mgr.GetClient()
-	buildr.Watches(&v1alpha1.GatewayParameters{}, handler.EnqueueRequestsFromMapFunc(
-		func(ctx context.Context, obj client.Object) []reconcile.Request {
-			gwpName := obj.GetName()
-			gwpNamespace := obj.GetNamespace()
-			// look up the Gateways that are using this GatewayParameters object
-			var gwList apiv1.GatewayList
-			err := cli.List(ctx, &gwList, client.InNamespace(gwpNamespace), client.MatchingFieldsSelector{Selector: fields.OneTermEqualSelector(GatewayParamsField, gwpName)})
-			if err != nil {
-				log.Error(err, "could not list Gateways using GatewayParameters", "gwpNamespace", gwpNamespace, "gwpName", gwpName)
-				return []reconcile.Request{}
-			}
-			// requeue each Gateway that is using this GatewayParameters object
-			reqs := make([]reconcile.Request, 0, len(gwList.Items))
-			for _, gw := range gwList.Items {
-				reqs = append(reqs, reconcile.Request{
-					NamespacedName: client.ObjectKeyFromObject(&gw),
-				})
-			}
-			return reqs
-		}),
-		builder.WithPredicates(discoveryNamespaceFilterPredicate),
-	)
+	for _, gp := range gwParams.AllKnownGatewayParameters() {
+		buildr.Watches(gp, handler.EnqueueRequestsFromMapFunc(
+			func(ctx context.Context, obj client.Object) []reconcile.Request {
+				gwpName := obj.GetName()
+				gwpNamespace := obj.GetNamespace()
+				// look up the Gateways that are using this GatewayParameters object
+				var gwList apiv1.GatewayList
+				err := cli.List(ctx, &gwList, client.InNamespace(gwpNamespace), client.MatchingFieldsSelector{Selector: fields.OneTermEqualSelector(GatewayParamsField, gwpName)})
+				if err != nil {
+					log.Error(err, "could not list Gateways using GatewayParameters", "gwpNamespace", gwpNamespace, "gwpName", gwpName)
+					return []reconcile.Request{}
+				}
+				// requeue each Gateway that is using this GatewayParameters object
+				reqs := make([]reconcile.Request, 0, len(gwList.Items))
+				for _, gw := range gwList.Items {
+					reqs = append(reqs, reconcile.Request{
+						NamespacedName: client.ObjectKeyFromObject(&gw),
+					})
+				}
+				return reqs
+			}),
+			builder.WithPredicates(discoveryNamespaceFilterPredicate),
+		)
+	}
 
 	// watch for gatewayclasses managed by our controller and enqueue related gateways
 	buildr.Watches(
@@ -317,6 +341,7 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 		controllerName: c.cfg.ControllerName,
 		autoProvision:  c.cfg.AutoProvision,
 		deployer:       d,
+		metrics:        newControllerMetricsRecorder("gateway"),
 	})
 }
 
@@ -408,17 +433,12 @@ func (c *controllerBuilder) watchInferencePool(ctx context.Context) error {
 
 	// If enabled, create a deployer using the controllerBuilder as inputs.
 	if c.poolCfg.InferenceExt != nil {
-		d, err := deployer.NewDeployer(c.cfg.Mgr.GetClient(), &deployer.Inputs{
-			ControllerName:     c.cfg.ControllerName,
-			ImageInfo:          c.cfg.ImageInfo,
-			InferenceExtension: c.poolCfg.InferenceExt,
-			CommonCollections:  c.cfg.CommonCollections,
-		})
+		d, err := internaldeployer.NewInferencePoolDeployer(c.cfg.ControllerName, c.cfg.Mgr.GetClient())
 		if err != nil {
 			return err
 		}
 		// Watch child objects, e.g. Deployments, created by the inference pool deployer.
-		gvks, err := d.GetGvksToWatch(ctx)
+		gvks, err := internaldeployer.InferencePoolGVKsToWatch(ctx, d)
 		if err != nil {
 			return err
 		}
@@ -442,6 +462,7 @@ func (c *controllerBuilder) watchInferencePool(ctx context.Context) error {
 			cli:      c.cfg.Mgr.GetClient(),
 			scheme:   c.cfg.Mgr.GetScheme(),
 			deployer: d,
+			metrics:  newControllerMetricsRecorder("gateway-inferencepool"),
 		}
 		if err := buildr.Complete(r); err != nil {
 			return err
@@ -477,10 +498,15 @@ type controllerReconciler struct {
 	cli          client.Client
 	scheme       *runtime.Scheme
 	customEvents chan event.TypedGenericEvent[ir.Gateway]
+	metrics      controllerMetricsRecorder
 }
 
-func (r *controllerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *controllerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.Result, rErr error) {
 	log := log.FromContext(ctx).WithValues("gwclass", req.NamespacedName)
+
+	if r.metrics != nil {
+		defer r.metrics.reconcileStart()(rErr)
+	}
 
 	gwclass := &apiv1.GatewayClass{}
 	if err := r.cli.Get(ctx, req.NamespacedName, gwclass); err != nil {

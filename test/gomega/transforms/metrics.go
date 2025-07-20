@@ -3,7 +3,8 @@
 package transforms
 
 import (
-	errors "github.com/rotisserie/eris"
+	"fmt"
+
 	"go.opencensus.io/stats/view"
 )
 
@@ -17,7 +18,7 @@ func WithLastValueTransform() func(rows []*view.Row) (int, error) {
 		}
 
 		if len(rows) > 1 {
-			return 0, errors.Errorf("expected 1 row, found %d", len(rows))
+			return 0, fmt.Errorf("expected 1 row, found %d", len(rows))
 		}
 
 		return int(rows[0].Data.(*view.LastValueData).Value), nil
@@ -35,7 +36,7 @@ func WithSumValueTransform() func(rows []*view.Row) (int, error) {
 		}
 
 		if len(rows) > 1 {
-			return 0, errors.Errorf("expected 1 row, found %d", len(rows))
+			return 0, fmt.Errorf("expected 1 row, found %d", len(rows))
 		}
 
 		return int(rows[0].Data.(*view.SumData).Value), nil

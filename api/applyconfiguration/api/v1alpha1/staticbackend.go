@@ -2,10 +2,15 @@
 
 package v1alpha1
 
+import (
+	apiv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+)
+
 // StaticBackendApplyConfiguration represents a declarative configuration of the StaticBackend type for use
 // with apply.
 type StaticBackendApplyConfiguration struct {
-	Hosts []HostApplyConfiguration `json:"hosts,omitempty"`
+	Hosts       []HostApplyConfiguration `json:"hosts,omitempty"`
+	AppProtocol *apiv1alpha1.AppProtocol `json:"appProtocol,omitempty"`
 }
 
 // StaticBackendApplyConfiguration constructs a declarative configuration of the StaticBackend type for use with
@@ -24,5 +29,13 @@ func (b *StaticBackendApplyConfiguration) WithHosts(values ...*HostApplyConfigur
 		}
 		b.Hosts = append(b.Hosts, *values[i])
 	}
+	return b
+}
+
+// WithAppProtocol sets the AppProtocol field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the AppProtocol field is set to the value of the last call.
+func (b *StaticBackendApplyConfiguration) WithAppProtocol(value apiv1alpha1.AppProtocol) *StaticBackendApplyConfiguration {
+	b.AppProtocol = &value
 	return b
 }

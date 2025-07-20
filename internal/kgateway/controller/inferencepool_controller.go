@@ -2,8 +2,10 @@ package controller
 
 import (
 	"context"
+	"fmt"
 	"slices"
 
+	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -11,19 +13,24 @@ import (
 	infextv1a2 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/deployer"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 )
 
 type inferencePoolReconciler struct {
 	cli      client.Client
 	scheme   *runtime.Scheme
 	deployer *deployer.Deployer
+	metrics  controllerMetricsRecorder
 }
 
-func (r *inferencePoolReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *inferencePoolReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.Result, rErr error) {
 	log := log.FromContext(ctx).WithValues("inferencepool", req.NamespacedName)
 	log.V(1).Info("reconciling request", "request", req)
+
+	if r.metrics != nil {
+		defer r.metrics.reconcileStart()(rErr)
+	}
 
 	pool := new(infextv1a2.InferencePool)
 	if err := r.cli.Get(ctx, req.NamespacedName, pool); err != nil {
@@ -34,7 +41,7 @@ func (r *inferencePoolReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		log.Info("Removing endpoint picker for InferencePool", "name", pool.Name, "namespace", pool.Namespace)
 
 		// TODO [danehans]: EPP should use role and rolebinding RBAC: https://github.com/kubernetes-sigs/gateway-api-inference-extension/issues/224
-		if err := r.deployer.CleanupClusterScopedResources(ctx, pool); err != nil {
+		if err := r.cleanupClusterScopedResources(ctx, pool); err != nil {
 			return ctrl.Result{}, err
 		}
 
@@ -50,7 +57,7 @@ func (r *inferencePoolReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	}
 
 	// Ensure the finalizer is present for the InferencePool.
-	if err := r.deployer.EnsureFinalizer(ctx, pool); err != nil {
+	if err := EnsureFinalizer(ctx, r.cli, pool); err != nil {
 		return ctrl.Result{}, err
 	}
 
@@ -74,10 +81,11 @@ func (r *inferencePoolReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		return ctrl.Result{}, nil
 	}
 
-	objs, err := r.deployer.GetEndpointPickerObjs(pool)
+	objs, err := r.deployer.GetObjsToDeploy(ctx, pool)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
+	objs = r.deployer.SetNamespaceAndOwner(pool, objs)
 
 	// TODO [danehans]: Manage inferencepool status conditions.
 
@@ -91,4 +99,33 @@ func (r *inferencePoolReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	log.V(1).Info("reconciled request", "request", req)
 
 	return ctrl.Result{}, nil
+}
+
+// EnsureFinalizer adds the InferencePool finalizer to the given pool if it’s not already present.
+// The deployer requires InferencePools to be finalized to remove cluster-scoped resources.
+// This can be removed if the endpoint picker no longer requires cluster-scoped resources.
+// See: https://github.com/kubernetes-sigs/gateway-api-inference-extension/issues/224 for details.
+func EnsureFinalizer(ctx context.Context, cli client.Client, pool *infextv1a2.InferencePool) error {
+	if slices.Contains(pool.Finalizers, wellknown.InferencePoolFinalizer) {
+		return nil
+	}
+	pool.Finalizers = append(pool.Finalizers, wellknown.InferencePoolFinalizer)
+	return cli.Update(ctx, pool)
+}
+
+// CleanupClusterScopedResources deletes the ClusterRoleBinding for the given pool.
+// TODO [danehans]: EPP should use role and rolebinding RBAC: https://github.com/kubernetes-sigs/gateway-api-inference-extension/issues/224
+func (r *inferencePoolReconciler) cleanupClusterScopedResources(ctx context.Context, pool *infextv1a2.InferencePool) error {
+	// The same release name as in the Helm template.
+	releaseName := fmt.Sprintf("%s-endpoint-picker", pool.Name)
+
+	// Delete the ClusterRoleBinding.
+	var crb rbacv1.ClusterRoleBinding
+	if err := r.cli.Get(ctx, client.ObjectKey{Name: releaseName}, &crb); err == nil {
+		if err := r.cli.Delete(ctx, &crb); err != nil {
+			return fmt.Errorf("failed to delete ClusterRoleBinding %s: %w", releaseName, err)
+		}
+	}
+
+	return nil
 }

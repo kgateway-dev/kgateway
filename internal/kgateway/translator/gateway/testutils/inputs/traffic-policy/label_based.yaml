@@ -46,6 +46,7 @@ metadata:
   namespace: infra
   labels:
     route: example
+    global-policy: cors # will be applied only when Settings.GlobalPolicyNamespace=kgateway-system
 spec:
   parentRefs:
   - name: example-gateway
@@ -120,3 +121,18 @@ spec:
     targetPort: 50051
   selector:
     app: log-test
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: global-policy
+  namespace: kgateway-system
+spec:
+  targetSelectors:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    matchLabels: 
+      global-policy: cors
+  cors:
+    allowOrigins:
+    - "https://example.com"

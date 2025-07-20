@@ -1,0 +1,199 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: example-gateway
+  namespace: infra
+spec:
+  gatewayClassName: example-gateway-class
+  listeners:
+  - name: http
+    protocol: HTTP
+    port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: route-1
+  namespace: infra
+  annotations:
+    kgateway.dev/route-weight: "-1"
+spec:
+  parentRefs:
+  - name: example-gateway
+  hostnames:
+  - "example.com"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /a
+    backendRefs:
+    - name: example-svc
+      port: 80
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /a/1
+    backendRefs:
+    - name: example-svc
+      port: 80
+  - matches:
+    - path:
+        type: RegularExpression
+        value: /a/.*
+    backendRefs:
+    - name: example-svc
+      port: 80
+  - matches:
+    - path:
+        type: RegularExpression
+        value: /b/c/.*
+    backendRefs:
+    - name: example-svc
+      port: 80
+  - matches:
+    - path:
+        type: Exact
+        value: /a/1
+    backendRefs:
+    - name: example-svc
+      port: 80
+  - matches:
+    - path:
+        type: Exact
+        value: /a/1/2
+    backendRefs:
+    - name: example-svc
+      port: 80
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /d
+    backendRefs:
+    - group: delegation.kgateway.dev
+      kind: label
+      name: d-routes
+      namespace: infra
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: route-2
+  namespace: infra
+  annotations:
+    kgateway.dev/route-weight: "5"
+spec:
+  parentRefs:
+  - name: example-gateway
+  hostnames:
+  - "example.com"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /x
+    backendRefs:
+    - name: example-svc
+      port: 80
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /x/1
+    backendRefs:
+    - name: example-svc
+      port: 80
+  - matches:
+    - path:
+        type: RegularExpression
+        value: /x/.*
+    backendRefs:
+    - name: example-svc
+      port: 80
+  - matches:
+    - path:
+        type: RegularExpression
+        value: /x/y/.*
+    backendRefs:
+    - name: example-svc
+      port: 80
+  - matches:
+    - path:
+        type: Exact
+        value: /x/1
+    backendRefs:
+    - name: example-svc
+      port: 80
+  - matches:
+    - path:
+        type: Exact
+        value: /x/1/2
+    backendRefs:
+    - name: example-svc
+      port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: d-lower-weight
+  namespace: infra
+  annotations:
+    kgateway.dev/route-weight: "-1"
+  labels:
+    delegation.kgateway.dev/label: d-routes
+spec:
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /d/1/1/1
+    backendRefs:
+    - name: example-svc
+      port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: d-no-weight
+  namespace: infra
+  labels:
+    delegation.kgateway.dev/label: d-routes
+spec:
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /d/1/1
+    backendRefs:
+    - name: example-svc
+      port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: d-higher-weight
+  namespace: infra
+  annotations:
+    kgateway.dev/route-weight: "1"
+  labels:
+    delegation.kgateway.dev/label: d-routes
+spec:
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /d/1
+    backendRefs:
+    - name: example-svc
+      port: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: example-svc
+  namespace: infra
+spec:
+  selector:
+    test: test
+  ports:
+    - protocol: TCP
+      port: 80

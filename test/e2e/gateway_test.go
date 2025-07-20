@@ -10,7 +10,6 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/test/services/envoy"
 
-	"github.com/rotisserie/eris"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
@@ -259,7 +258,7 @@ var _ = Describe("Gateway", func() {
 						return proxy, nil
 					}
 
-					return nil, errors.Errorf("non-ssl listener virtual hosts: expected 1, found %d ", vhostCount)
+					return nil, fmt.Errorf("non-ssl listener virtual hosts: expected 1, found %d", vhostCount)
 				})
 
 				// Create a third trivial vs with valid config
@@ -282,7 +281,7 @@ var _ = Describe("Gateway", func() {
 						return proxy, nil
 					}
 
-					return nil, errors.Errorf("non-ssl listener virtual hosts: expected 2, found %d ", vhostCount)
+					return nil, fmt.Errorf("non-ssl listener virtual hosts: expected 2, found %d", vhostCount)
 				})
 
 				// Verify that the proxy is as expected (2 functional virtualservices)
@@ -876,20 +875,20 @@ var _ = Describe("Gateway", func() {
 					// There should only be a single listener on the proxy and it should be a HybridListener
 					hybridListener := proxy.GetListeners()[0].GetHybridListener()
 					if hybridListener == nil {
-						return nil, eris.New("HybridListener is not present on Proxy")
+						return nil, errors.New("HybridListener is not present on Proxy")
 					}
 
 					matchedListeners := hybridListener.GetMatchedListeners()
 					if len(matchedListeners) != 2 {
-						return nil, eris.New("HybridListener should have 2 matched listeners")
+						return nil, errors.New("HybridListener should have 2 matched listeners")
 					}
 
 					if len(matchedListeners[0].GetHttpListener().GetVirtualHosts()) != 1 {
-						return nil, eris.New("HybridListener should have HttpListener with 1 Virtual host")
+						return nil, errors.New("HybridListener should have HttpListener with 1 Virtual host")
 					}
 
 					if matchedListeners[1].GetTcpListener() == nil {
-						return nil, eris.New("HybridListener should have non-nil TcpListener")
+						return nil, errors.New("HybridListener should have non-nil TcpListener")
 					}
 
 					// if all conditions are met, return the proxy

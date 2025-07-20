@@ -2,13 +2,25 @@
 
 package v1alpha1
 
+import (
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	apiv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+)
+
 // HTTPListenerPolicySpecApplyConfiguration represents a declarative configuration of the HTTPListenerPolicySpec type for use
 // with apply.
 type HTTPListenerPolicySpecApplyConfiguration struct {
-	TargetRefs      []LocalPolicyTargetReferenceApplyConfiguration `json:"targetRefs,omitempty"`
-	TargetSelectors []LocalPolicyTargetSelectorApplyConfiguration  `json:"targetSelectors,omitempty"`
-	AccessLog       []AccessLogApplyConfiguration                  `json:"accessLog,omitempty"`
-	UpgradeConfig   *UpgradeConfigApplyConfiguration               `json:"upgradeConfig,omitempty"`
+	TargetRefs                 []LocalPolicyTargetReferenceApplyConfiguration `json:"targetRefs,omitempty"`
+	TargetSelectors            []LocalPolicyTargetSelectorApplyConfiguration  `json:"targetSelectors,omitempty"`
+	AccessLog                  []AccessLogApplyConfiguration                  `json:"accessLog,omitempty"`
+	Tracing                    *TracingApplyConfiguration                     `json:"tracing,omitempty"`
+	UpgradeConfig              *UpgradeConfigApplyConfiguration               `json:"upgradeConfig,omitempty"`
+	UseRemoteAddress           *bool                                          `json:"useRemoteAddress,omitempty"`
+	XffNumTrustedHops          *uint32                                        `json:"xffNumTrustedHops,omitempty"`
+	ServerHeaderTransformation *apiv1alpha1.ServerHeaderTransformation        `json:"serverHeaderTransformation,omitempty"`
+	StreamIdleTimeout          *v1.Duration                                   `json:"streamIdleTimeout,omitempty"`
+	HealthCheck                *EnvoyHealthCheckApplyConfiguration            `json:"healthCheck,omitempty"`
 }
 
 // HTTPListenerPolicySpecApplyConfiguration constructs a declarative configuration of the HTTPListenerPolicySpec type for use with
@@ -56,10 +68,58 @@ func (b *HTTPListenerPolicySpecApplyConfiguration) WithAccessLog(values ...*Acce
 	return b
 }
 
+// WithTracing sets the Tracing field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Tracing field is set to the value of the last call.
+func (b *HTTPListenerPolicySpecApplyConfiguration) WithTracing(value *TracingApplyConfiguration) *HTTPListenerPolicySpecApplyConfiguration {
+	b.Tracing = value
+	return b
+}
+
 // WithUpgradeConfig sets the UpgradeConfig field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the UpgradeConfig field is set to the value of the last call.
 func (b *HTTPListenerPolicySpecApplyConfiguration) WithUpgradeConfig(value *UpgradeConfigApplyConfiguration) *HTTPListenerPolicySpecApplyConfiguration {
 	b.UpgradeConfig = value
+	return b
+}
+
+// WithUseRemoteAddress sets the UseRemoteAddress field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the UseRemoteAddress field is set to the value of the last call.
+func (b *HTTPListenerPolicySpecApplyConfiguration) WithUseRemoteAddress(value bool) *HTTPListenerPolicySpecApplyConfiguration {
+	b.UseRemoteAddress = &value
+	return b
+}
+
+// WithXffNumTrustedHops sets the XffNumTrustedHops field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the XffNumTrustedHops field is set to the value of the last call.
+func (b *HTTPListenerPolicySpecApplyConfiguration) WithXffNumTrustedHops(value uint32) *HTTPListenerPolicySpecApplyConfiguration {
+	b.XffNumTrustedHops = &value
+	return b
+}
+
+// WithServerHeaderTransformation sets the ServerHeaderTransformation field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the ServerHeaderTransformation field is set to the value of the last call.
+func (b *HTTPListenerPolicySpecApplyConfiguration) WithServerHeaderTransformation(value apiv1alpha1.ServerHeaderTransformation) *HTTPListenerPolicySpecApplyConfiguration {
+	b.ServerHeaderTransformation = &value
+	return b
+}
+
+// WithStreamIdleTimeout sets the StreamIdleTimeout field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the StreamIdleTimeout field is set to the value of the last call.
+func (b *HTTPListenerPolicySpecApplyConfiguration) WithStreamIdleTimeout(value v1.Duration) *HTTPListenerPolicySpecApplyConfiguration {
+	b.StreamIdleTimeout = &value
+	return b
+}
+
+// WithHealthCheck sets the HealthCheck field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the HealthCheck field is set to the value of the last call.
+func (b *HTTPListenerPolicySpecApplyConfiguration) WithHealthCheck(value *EnvoyHealthCheckApplyConfiguration) *HTTPListenerPolicySpecApplyConfiguration {
+	b.HealthCheck = value
 	return b
 }

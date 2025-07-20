@@ -19,6 +19,7 @@ clusters:
     edsConfig:
       ads: {}
       resourceApiVersion: V3
+  ignoreHealthOnHostRemoval: true
   metadata: {}
   name: kube_default_kubernetes_443
   type: EDS
@@ -67,15 +68,6 @@ endpoints:
     - endpoint:
         address:
           socketAddress:
-            address: 255.0.0.1
-            portValue: 80
-      loadBalancingWeight: 1
-    loadBalancingWeight: 1
-    priority: 3
-  - lbEndpoints:
-    - endpoint:
-        address:
-          socketAddress:
             address: 10.244.4.4
             portValue: 80
       loadBalancingWeight: 1
@@ -84,6 +76,15 @@ endpoints:
       region: r2
       subZone: r2z1s1
       zone: r2z1
+    priority: 3
+  - lbEndpoints:
+    - endpoint:
+        address:
+          socketAddress:
+            address: 255.0.0.1
+            portValue: 80
+      loadBalancingWeight: 1
+    loadBalancingWeight: 1
     priority: 3
 listeners:
 - address:

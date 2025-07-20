@@ -25,12 +25,11 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/xds"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
+	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
 
 var logger = logging.New("agentgateway/syncer")
@@ -38,11 +37,12 @@ var logger = logging.New("agentgateway/syncer")
 // AgentGwSyncer synchronizes Kubernetes Gateway API resources with xDS for agentgateway proxies.
 // It watches Gateway resources with the agentgateway class and translates them to agentgateway configuration.
 type AgentGwSyncer struct {
-	commonCols     *common.CommonCollections
-	controllerName string
-	xDS            krt.Collection[agentGwXdsResources]
-	xdsCache       envoycache.SnapshotCache
-	istioClient    kube.Client
+	commonCols            *common.CommonCollections
+	controllerName        string
+	agentGatewayClassName string
+	xDS                   krt.Collection[agentGwXdsResources]
+	xdsCache              envoycache.SnapshotCache
+	istioClient           kube.Client
 
 	waitForSync []cache.InformerSynced
 }
@@ -50,6 +50,7 @@ type AgentGwSyncer struct {
 func NewAgentGwSyncer(
 	ctx context.Context,
 	controllerName string,
+	agentGatewayClassName string,
 	mgr manager.Manager,
 	client kube.Client,
 	commonCols *common.CommonCollections,
@@ -57,9 +58,10 @@ func NewAgentGwSyncer(
 ) *AgentGwSyncer {
 	// TODO: register types (auth, policy, etc.) if necessary
 	return &AgentGwSyncer{
-		commonCols:     commonCols,
-		controllerName: controllerName,
-		xdsCache:       xdsCache,
+		commonCols:            commonCols,
+		controllerName:        controllerName,
+		agentGatewayClassName: agentGatewayClassName,
+		xdsCache:              xdsCache,
 		// mgr:            mgr,
 		istioClient: client,
 	}
@@ -153,7 +155,7 @@ func (s *AgentGwSyncer) Init(krtopts krtutil.KrtOptions) {
 	// TODO: convert auth to rbac json config for agentgateways
 
 	gatewaysCol := krt.NewCollection(s.commonCols.GatewayIndex.Gateways, func(kctx krt.HandlerContext, gw ir.Gateway) *ir.Gateway {
-		if gw.Obj.Spec.GatewayClassName != wellknown.AgentGatewayClassName {
+		if string(gw.Obj.Spec.GatewayClassName) != s.agentGatewayClassName {
 			return nil
 		}
 		return &gw

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/kube/krt"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -97,6 +98,20 @@ func (b *TrafficPolicyBuilder) Translate(
 	if err != nil {
 		errors = append(errors, err)
 	}
+
+	// Apply csrf specific translation
+	err = csrfForSpec(policyCR.Spec, &outSpec)
+	if err != nil {
+		errors = append(errors, err)
+	}
+
+	hashPolicyForSpec(policyCR.Spec, &outSpec)
+
+	if policyCR.Spec.AutoHostRewrite != nil {
+		outSpec.autoHostRewrite = wrapperspb.Bool(*policyCR.Spec.AutoHostRewrite)
+	}
+
+	bufferForSpec(policyCR.Spec, &outSpec)
 
 	for _, err := range errors {
 		logger.Error("error translating gateway extension", "namespace", policyCR.GetNamespace(), "name", policyCR.GetName(), "error", err)

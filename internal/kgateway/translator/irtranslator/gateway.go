@@ -2,11 +2,13 @@ package irtranslator
 
 import (
 	"sort"
+	"strconv"
 
-	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
-	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
-	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"golang.org/x/net/context"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/slices"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/ptr"
@@ -15,28 +17,38 @@ import (
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/query"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/metrics"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
+	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
+	"github.com/kgateway-dev/kgateway/v2/pkg/settings"
 )
 
 var logger = logging.New("translator/ir")
 
 type Translator struct {
-	ContributedPolicies map[schema.GroupKind]extensionsplug.PolicyPlugin
+	ContributedPolicies  map[schema.GroupKind]extensionsplug.PolicyPlugin
+	RouteReplacementMode settings.RouteReplacementMode
+	metrics              metrics.TranslatorMetricsRecorder
 }
 
 type TranslationPassPlugins map[schema.GroupKind]*TranslationPass
 
 type TranslationResult struct {
-	Routes        []*envoy_config_route_v3.RouteConfiguration
-	Listeners     []*envoy_config_listener_v3.Listener
-	ExtraClusters []*envoy_config_cluster_v3.Cluster
+	Routes        []*envoyroutev3.RouteConfiguration
+	Listeners     []*envoylistenerv3.Listener
+	ExtraClusters []*envoyclusterv3.Cluster
 }
 
 // Translate IR to gateway. IR is self contained, so no need for krt context
 func (t *Translator) Translate(gw ir.GatewayIR, reporter reports.Reporter) TranslationResult {
+	if t.metrics == nil {
+		t.metrics = metrics.NewTranslatorMetricsRecorder("TranslateGatewayIR")
+	}
+
+	defer t.metrics.TranslationStart()(nil)
+
 	pass := t.newPass(reporter)
 	var res TranslationResult
 
@@ -74,13 +86,16 @@ func (t *Translator) ComputeListener(
 	gw ir.GatewayIR,
 	lis ir.ListenerIR,
 	reporter reports.Reporter,
-) (*envoy_config_listener_v3.Listener, []*envoy_config_route_v3.RouteConfiguration) {
+) (*envoylistenerv3.Listener, []*envoyroutev3.RouteConfiguration) {
 	hasTls := false
 	gwreporter := reporter.Gateway(gw.SourceObject.Obj)
-	var routes []*envoy_config_route_v3.RouteConfiguration
-	ret := &envoy_config_listener_v3.Listener{
+	var routes []*envoyroutev3.RouteConfiguration
+	ret := &envoylistenerv3.Listener{
 		Name:    lis.Name,
 		Address: computeListenerAddress(lis.BindAddress, lis.BindPort, gwreporter),
+	}
+	if gw.PerConnectionBufferLimitBytes != nil {
+		ret.PerConnectionBufferLimitBytes = &wrapperspb.UInt32Value{Value: *gw.PerConnectionBufferLimitBytes}
 	}
 	t.runListenerPlugins(ctx, pass, gw, lis, ret)
 
@@ -103,10 +118,25 @@ func (t *Translator) ComputeListener(
 			requireTlsOnVirtualHosts: hfc.FilterChainCommon.TLS != nil,
 			PluginPass:               pass,
 			logger:                   logger.With("route_config_name", hfc.FilterChainName),
+			routeReplacementMode:     t.RouteReplacementMode,
 		}
 		rc := hr.ComputeRouteConfiguration(ctx, hfc.Vhosts)
 		if rc != nil {
 			routes = append(routes, rc)
+
+			// Record metrics for the number of domains per listener.
+			// Only one domain per virtual host is supported currently, but that may change in the future,
+			// so loop through the virtual hosts and count the domains.
+			domainsOnListener := 0
+			for _, vhost := range rc.GetVirtualHosts() {
+				domainsOnListener += len(vhost.GetDomains())
+			}
+
+			setDomainsPerListener(domainsPerListenerMetricLabels{
+				Namespace:   hr.gw.SourceObject.GetNamespace(),
+				GatewayName: hr.gw.SourceObject.GetName(),
+				Port:        strconv.Itoa(int(lis.BindPort)),
+			}, domainsOnListener)
 		}
 
 		// compute chains
@@ -147,8 +177,9 @@ func (t *Translator) ComputeListener(
 	return ret, routes
 }
 
-func (t *Translator) runListenerPlugins(ctx context.Context, pass TranslationPassPlugins, gw ir.GatewayIR, l ir.ListenerIR, out *envoy_config_listener_v3.Listener) {
+func (t *Translator) runListenerPlugins(ctx context.Context, pass TranslationPassPlugins, gw ir.GatewayIR, l ir.ListenerIR, out *envoylistenerv3.Listener) {
 	var attachedPolicies ir.AttachedPolicies
+	// Listener policies take precedence over gateway policies, so they are ordered first
 	attachedPolicies.Append(l.AttachedPolicies, gw.AttachedHttpPolicies)
 	for _, gk := range attachedPolicies.ApplyOrderedGroupKinds() {
 		pols := attachedPolicies.Policies[gk]
@@ -157,7 +188,7 @@ func (t *Translator) runListenerPlugins(ctx context.Context, pass TranslationPas
 			// TODO: report user error - they attached a non http policy
 			continue
 		}
-		for _, pol := range pols {
+		for _, pol := range mergePolicies(pass, pols) {
 			pctx := &ir.ListenerContext{
 				Policy: pol.PolicyIr,
 				PolicyAncestorRef: gwv1.ParentReference{

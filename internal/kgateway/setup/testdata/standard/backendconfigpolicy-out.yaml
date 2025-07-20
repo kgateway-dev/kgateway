@@ -4,6 +4,7 @@ clusters:
     edsConfig:
       ads: {}
       resourceApiVersion: V3
+  ignoreHealthOnHostRemoval: true
   metadata: {}
   name: kube_default_kubernetes_443
   type: EDS
@@ -12,6 +13,7 @@ clusters:
     edsConfig:
       ads: {}
       resourceApiVersion: V3
+  ignoreHealthOnHostRemoval: true
   metadata: {}
   name: kube_gwtest_httpbin_8080
   perConnectionBufferLimitBytes: 1024
@@ -20,7 +22,6 @@ clusters:
     envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
       '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
       commonHttpProtocolOptions:
-        headersWithUnderscoresAction: REJECT_REQUEST
         idleTimeout: 10s
         maxHeadersCount: 15
         maxRequestsPerConnection: 100

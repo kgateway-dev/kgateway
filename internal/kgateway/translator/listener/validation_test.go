@@ -6,9 +6,9 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/utils"
 	reporter "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
+	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -86,12 +86,12 @@ func TestValidate(t *testing.T) {
 	assertExpectedListenerStatuses(t, g, report.Gateway(gateway), gateway.Spec.Listeners, expectedStatuses)
 	assertExpectedListenerStatuses(t, g, report.ListenerSet(listenerSet), utils.ToListenerSlice(listenerSet.Spec.Listeners), expectedStatuses)
 	g.Expect(report.ListenerSet(deniedListenerSet).GetConditions()).To(Equal([]metav1.Condition{
-		metav1.Condition{
+		{
 			Type:   string(gwv1.GatewayConditionAccepted),
 			Status: metav1.ConditionFalse,
 			Reason: string(gwv1.GatewayConditionReason(gwxv1a1.ListenerSetReasonNotAllowed)),
 		},
-		metav1.Condition{
+		{
 			Type:   string(gwv1.GatewayConditionProgrammed),
 			Status: metav1.ConditionFalse,
 			Reason: string(gwv1.GatewayConditionReason(gwxv1a1.ListenerSetReasonNotAllowed)),
@@ -236,6 +236,32 @@ func TestSimpleListenerWithInvalidRouteKind(t *testing.T) {
 	}
 	assertExpectedListenerStatuses(t, g, report.Gateway(gateway), gateway.Spec.Listeners, expectedStatuses)
 	assertExpectedListenerStatuses(t, g, report.ListenerSet(listenerSet), utils.ToListenerSlice(listenerSet.Spec.Listeners), expectedStatuses)
+}
+
+func TestUnsupportedProtocol(t *testing.T) {
+	gateway := unsupportedProtocolGw()
+	report := reports.NewReportMap()
+	reporter := reports.NewReporter(&report)
+
+	validListeners := validateGateway(gwToIr(gateway, nil, nil), reporter)
+	g := NewWithT(t)
+	g.Expect(validListeners).To(BeEmpty())
+
+	expectedGwStatuses := map[string]gwv1.ListenerStatus{
+		"udp": {
+			Name:           "udp",
+			SupportedKinds: []gwv1.RouteGroupKind{},
+			Conditions: []metav1.Condition{
+				{
+					Type:    string(gwv1.ListenerConditionAccepted),
+					Status:  metav1.ConditionFalse,
+					Reason:  string(gwv1.ListenerReasonUnsupportedProtocol),
+					Message: "Protocol UDP is unsupported.",
+				},
+			},
+		},
+	}
+	assertExpectedListenerStatuses(t, g, report.Gateway(gateway), gateway.Spec.Listeners, expectedGwStatuses)
 }
 
 func TestMultiListener(t *testing.T) {
@@ -2070,6 +2096,25 @@ func hostConfLs2() *gwxv1a1.XListenerSet {
 					Hostname: &hostname4,
 					Port:     8080,
 					Protocol: gwv1.HTTPProtocolType,
+				},
+			},
+		},
+	}
+}
+
+func unsupportedProtocolGw() *gwv1.Gateway {
+	return &gwv1.Gateway{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "default",
+			Name:      "unsupported-protocol-gateway",
+		},
+		Spec: gwv1.GatewaySpec{
+			GatewayClassName: "solo",
+			Listeners: []gwv1.Listener{
+				{
+					Name:     "udp",
+					Port:     8080,
+					Protocol: gwv1.UDPProtocolType,
 				},
 			},
 		},

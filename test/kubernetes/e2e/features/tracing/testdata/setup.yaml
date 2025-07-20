@@ -1,0 +1,114 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: httpbin
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: httpbin
+  namespace: httpbin
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: httpbin
+  namespace: httpbin
+  labels:
+    app: httpbin
+    service: httpbin
+spec:
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 8080
+    - name: tcp
+      port: 9000
+  selector:
+    app: httpbin
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: httpbin
+  namespace: httpbin
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: httpbin
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: httpbin
+        version: v1
+    spec:
+      serviceAccountName: httpbin
+      containers:
+        - image: docker.io/mccutchen/go-httpbin:v2.6.0
+          imagePullPolicy: IfNotPresent
+          name: httpbin
+          command: [ go-httpbin ]
+          args:
+            - "-port"
+            - "8080"
+            - "-max-duration"
+            - "600s" # override default 10s
+          ports:
+            - containerPort: 8080
+          resources:
+            requests:
+              cpu: "100m"
+            limits:
+              cpu: "200m"
+---
+# Custom GWP to define OTEL_RESOURCE_ATTRIBUTES required for the environment detector
+kind: GatewayParameters
+apiVersion: gateway.kgateway.dev/v1alpha1
+metadata:
+  name: tracing-params
+spec:
+  kube:
+    envoyContainer:
+      env:
+      - name: OTEL_RESOURCE_ATTRIBUTES
+        value: "environment=detector,resource=attribute"
+---
+kind: Gateway
+apiVersion: gateway.networking.k8s.io/v1
+metadata:
+  name: gw
+spec:
+  gatewayClassName: kgateway
+  infrastructure:
+    parametersRef:
+      name: tracing-params
+      group: gateway.kgateway.dev
+      kind: GatewayParameters
+  listeners:
+    - protocol: HTTP
+      port: 8080
+      name: http
+      allowedRoutes:
+        namespaces:
+          from: All
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: httpbin
+  namespace: httpbin
+  labels:
+    example: httpbin-route
+spec:
+  parentRefs:
+    - name: gw
+      namespace: default
+  hostnames:
+    - "www.example.com"
+  rules:
+    - backendRefs:
+        - name: httpbin
+          port: 8000
+---

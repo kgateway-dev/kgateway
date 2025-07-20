@@ -16,10 +16,10 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/query"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/httproute"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	pluginsdkreporter "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
+	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
 
 var _ = Describe("GatewayHttpRouteTranslator", func() {
@@ -173,7 +173,7 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 				Expect(routes[0].Match.Path.Type).To(BeEquivalentTo(ptr.To(gwv1.PathMatchPathPrefix)))
 				Expect(routes[0].Match.Path.Value).To(BeEquivalentTo(ptr.To("/")))
 
-				routeStatus := reportsMap.BuildRouteStatus(ctx, route, wellknown.GatewayControllerName)
+				routeStatus := reportsMap.BuildRouteStatus(ctx, route, wellknown.DefaultGatewayClassName)
 				Expect(routeStatus).NotTo(BeNil())
 				Expect(routeStatus.Parents).To(HaveLen(1))
 				By("verifying the route was accepted")
@@ -253,7 +253,7 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 				Expect(routes[0].Match.Path.Type).To(BeEquivalentTo(ptr.To(gwv1.PathMatchPathPrefix)))
 				Expect(routes[0].Match.Path.Value).To(BeEquivalentTo(ptr.To("/")))
 
-				routeStatus := reportsMap.BuildRouteStatus(ctx, route, wellknown.GatewayControllerName)
+				routeStatus := reportsMap.BuildRouteStatus(ctx, route, wellknown.DefaultGatewayClassName)
 				Expect(routeStatus).NotTo(BeNil())
 				Expect(routeStatus.Parents).To(HaveLen(1))
 				By("verifying the route was accepted")
@@ -353,7 +353,7 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 				Expect(routes[0].Backends).To(HaveLen(1))
 				Expect(routes[0].Backends[0].Backend.ClusterName).To(Equal("inferencepool_cluster"))
 
-				routeStatus := reportsMap.BuildRouteStatus(ctx, route, wellknown.GatewayControllerName)
+				routeStatus := reportsMap.BuildRouteStatus(ctx, route, wellknown.DefaultGatewayClassName)
 				Expect(routeStatus).NotTo(BeNil())
 				Expect(routeStatus.Parents).To(HaveLen(1))
 				By("verifying the route was accepted")
@@ -428,7 +428,7 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 				Expect(routes).To(HaveLen(1))
 				Expect(routes[0].Backends[0].Backend.ClusterName).To(Equal("blackhole_cluster"))
 
-				routeStatus := reportsMap.BuildRouteStatus(ctx, route, wellknown.GatewayControllerName)
+				routeStatus := reportsMap.BuildRouteStatus(ctx, route, wellknown.DefaultGatewayClassName)
 				Expect(routeStatus).NotTo(BeNil())
 				Expect(routeStatus.Parents).To(HaveLen(1))
 				By("verifying the route was accepted")

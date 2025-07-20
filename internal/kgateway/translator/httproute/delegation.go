@@ -12,8 +12,6 @@ import (
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/rotisserie/eris"
-
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/query"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
@@ -40,18 +38,15 @@ func flattenDelegatedRoutes(
 ) error {
 	parentRoute, ok := parentInfo.Object.(*ir.HttpRouteIR)
 	if !ok {
-		return eris.Errorf("unsupported route type: %T", parentInfo.Object)
+		return fmt.Errorf("unsupported route type: %T", parentInfo.Object)
 	}
 	parentRef := types.NamespacedName{Namespace: parentRoute.Namespace, Name: parentRoute.Name}
 	routesVisited.Insert(parentRef)
 	defer routesVisited.Delete(parentRef)
 
 	rawChildren, err := parentInfo.GetChildrenForRef(*backend.Delegate)
-	if len(rawChildren) == 0 || err != nil {
-		if err == nil {
-			err = eris.Errorf("unresolved reference %s", backend.Delegate.ResourceName())
-		}
-		return err
+	if err != nil {
+		return fmt.Errorf("%s: %w", backend.Delegate.ResourceName(), err)
 	}
 	children := filterDelegatedChildren(parentRef, parentMatch, rawChildren)
 
@@ -60,6 +55,7 @@ func flattenDelegatedRoutes(
 	copy(hostnames, parentRoute.Hostnames)
 
 	// For these child routes, recursively flatten them
+	validChildren := 0
 	for _, child := range children {
 		childRoute, ok := child.Object.(*ir.HttpRouteIR)
 		if !ok {
@@ -101,10 +97,14 @@ func flattenDelegatedRoutes(
 			continue
 		}
 
+		validChildren++
 		translateGatewayHTTPRouteRulesUtil(
 			ctx, child, reporter, baseReporter, outputs, routesVisited, delegatingParent)
 	}
 
+	if validChildren == 0 {
+		return fmt.Errorf("%s: %w", backend.Delegate.ResourceName(), query.ErrUnresolvedReference)
+	}
 	return nil
 }
 

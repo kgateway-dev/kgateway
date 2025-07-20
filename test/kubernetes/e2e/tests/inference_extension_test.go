@@ -26,7 +26,7 @@ func TestInferenceExtension(t *testing.T) {
 		t,
 		&install.Context{
 			InstallNamespace:          infExtNs,
-			ProfileValuesManifestFile: e2e.InfExtValuesManifestPath,
+			ProfileValuesManifestFile: e2e.ManifestPath("inference-extension-helm.yaml"),
 			ValuesManifestFile:        e2e.EmptyValuesManifestPath,
 		},
 	)

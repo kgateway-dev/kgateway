@@ -85,7 +85,10 @@ var schemaYAML = typed.YAMLObject(`types:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AccessLogFilter
     - name: grpcService
       type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.GrpcService
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AccessLogGrpcService
+    - name: openTelemetry
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.OpenTelemetryAccessLogService
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AccessLogFilter
   map:
     fields:
@@ -125,15 +128,79 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: traceableFilter
       type:
         scalar: boolean
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AccessLogGrpcService
+  map:
+    fields:
+    - name: additionalRequestHeadersToLog
+      type:
+        list:
+          elementType:
+            scalar: string
+          elementRelationship: atomic
+    - name: additionalResponseHeadersToLog
+      type:
+        list:
+          elementType:
+            scalar: string
+          elementRelationship: atomic
+    - name: additionalResponseTrailersToLog
+      type:
+        list:
+          elementType:
+            scalar: string
+          elementRelationship: atomic
+    - name: authority
+      type:
+        scalar: string
+    - name: backendRef
+      type:
+        namedType: io.k8s.sigs.gateway-api.apis.v1.BackendRef
+    - name: initialMetadata
+      type:
+        list:
+          elementType:
+            namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.HeaderValue
+          elementRelationship: atomic
+    - name: logName
+      type:
+        scalar: string
+      default: ""
+    - name: maxReceiveMessageLength
+      type:
+        scalar: numeric
+    - name: retryPolicy
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.RetryPolicy
+    - name: skipEnvoyHeaders
+      type:
+        scalar: boolean
+    - name: timeout
+      type:
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Duration
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AgentGateway
   map:
     fields:
     - name: enabled
       type:
         scalar: boolean
+    - name: env
+      type:
+        list:
+          elementType:
+            namedType: io.k8s.api.core.v1.EnvVar
+          elementRelationship: atomic
+    - name: image
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Image
     - name: logLevel
       type:
         scalar: string
+    - name: resources
+      type:
+        namedType: io.k8s.api.core.v1.ResourceRequirements
+    - name: securityContext
+      type:
+        namedType: io.k8s.api.core.v1.SecurityContext
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AiExtension
   map:
     fields:
@@ -164,6 +231,9 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: stats
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AiExtensionStats
+    - name: tracing
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AiExtensionTrace
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AiExtensionStats
   map:
     fields:
@@ -173,6 +243,37 @@ var schemaYAML = typed.YAMLObject(`types:
           elementType:
             namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.CustomLabel
           elementRelationship: atomic
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AiExtensionTrace
+  map:
+    fields:
+    - name: endpoint
+      type:
+        scalar: string
+      default: ""
+    - name: protocol
+      type:
+        scalar: string
+    - name: sampler
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.OTelTracesSampler
+    - name: timeout
+      type:
+        scalar: string
+    - name: transportSecurity
+      type:
+        scalar: string
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AlwaysOnConfig
+  map:
+    elementType:
+      scalar: untyped
+      list:
+        elementType:
+          namedType: __untyped_atomic_
+        elementRelationship: atomic
+      map:
+        elementType:
+          namedType: __untyped_deduced_
+        elementRelationship: separable
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AnthropicConfig
   map:
     fields:
@@ -184,6 +285,21 @@ var schemaYAML = typed.YAMLObject(`types:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SingleAuthToken
       default: {}
     - name: model
+      type:
+        scalar: string
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AnyValue
+  map:
+    fields:
+    - name: arrayValue
+      type:
+        list:
+          elementType:
+            namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AnyValue
+          elementRelationship: atomic
+    - name: kvListValue
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.KeyAnyValueList
+    - name: stringValue
       type:
         scalar: string
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AuthHeaderOverride
@@ -223,6 +339,7 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: lambda
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AwsLambda
+      default: {}
     - name: region
       type:
         scalar: string
@@ -315,18 +432,21 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: connectTimeout
       type:
         namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Duration
+    - name: healthCheck
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.HealthCheck
     - name: http1ProtocolOptions
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Http1ProtocolOptions
-    - name: loadBalancerConfig
+    - name: http2ProtocolOptions
       type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LoadBalancerConfig
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Http2ProtocolOptions
+    - name: loadBalancer
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LoadBalancer
     - name: perConnectionBufferLimitBytes
       type:
         scalar: numeric
-    - name: sslConfig
-      type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SSLConfig
     - name: targetRefs
       type:
         list:
@@ -342,6 +462,9 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: tcpKeepalive
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.TCPKeepalive
+    - name: tls
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.TLS
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.BackendSpec
   map:
     fields:
@@ -383,6 +506,15 @@ var schemaYAML = typed.YAMLObject(`types:
           elementRelationship: associative
           keys:
           - type
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.BackoffStrategy
+  map:
+    fields:
+    - name: baseInterval
+      type:
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Duration
+    - name: maxInterval
+      type:
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Duration
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.BodyTransformation
   map:
     fields:
@@ -393,6 +525,12 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: value
       type:
         scalar: string
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Buffer
+  map:
+    fields:
+    - name: maxRequestSize
+      type:
+        namedType: io.k8s.apimachinery.pkg.api.resource.Quantity
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.BufferSettings
   map:
     fields:
@@ -413,12 +551,82 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         scalar: string
       default: ""
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.CSRFPolicy
+  map:
+    fields:
+    - name: additionalOrigins
+      type:
+        list:
+          elementType:
+            namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.StringMatcher
+          elementRelationship: atomic
+    - name: percentageEnabled
+      type:
+        scalar: numeric
+    - name: percentageShadowed
+      type:
+        scalar: numeric
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.CommonAccessLogGrpcService
+  map:
+    fields:
+    - name: authority
+      type:
+        scalar: string
+    - name: backendRef
+      type:
+        namedType: io.k8s.sigs.gateway-api.apis.v1.BackendRef
+    - name: initialMetadata
+      type:
+        list:
+          elementType:
+            namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.HeaderValue
+          elementRelationship: atomic
+    - name: logName
+      type:
+        scalar: string
+      default: ""
+    - name: maxReceiveMessageLength
+      type:
+        scalar: numeric
+    - name: retryPolicy
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.RetryPolicy
+    - name: skipEnvoyHeaders
+      type:
+        scalar: boolean
+    - name: timeout
+      type:
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Duration
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.CommonGrpcService
+  map:
+    fields:
+    - name: authority
+      type:
+        scalar: string
+    - name: backendRef
+      type:
+        namedType: io.k8s.sigs.gateway-api.apis.v1.BackendRef
+    - name: initialMetadata
+      type:
+        list:
+          elementType:
+            namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.HeaderValue
+          elementRelationship: atomic
+    - name: maxReceiveMessageLength
+      type:
+        scalar: numeric
+    - name: retryPolicy
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.RetryPolicy
+    - name: skipEnvoyHeaders
+      type:
+        scalar: boolean
+    - name: timeout
+      type:
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Duration
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.CommonHttpProtocolOptions
   map:
     fields:
-    - name: headersWithUnderscoresAction
-      type:
-        scalar: string
     - name: idleTimeout
       type:
         namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Duration
@@ -429,6 +637,24 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         scalar: numeric
     - name: maxStreamDuration
+      type:
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Duration
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Cookie
+  map:
+    fields:
+    - name: attributes
+      type:
+        map:
+          elementType:
+            scalar: string
+    - name: name
+      type:
+        scalar: string
+      default: ""
+    - name: path
+      type:
+        scalar: string
+    - name: ttl
       type:
         namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Duration
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.CorsPolicy
@@ -464,6 +690,66 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: maxAge
       type:
         scalar: numeric
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.CustomAttribute
+  map:
+    fields:
+    - name: environment
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.CustomAttributeEnvironment
+    - name: literal
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.CustomAttributeLiteral
+    - name: metadata
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.CustomAttributeMetadata
+    - name: name
+      type:
+        scalar: string
+      default: ""
+    - name: requestHeader
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.CustomAttributeHeader
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.CustomAttributeEnvironment
+  map:
+    fields:
+    - name: defaultValue
+      type:
+        scalar: string
+    - name: name
+      type:
+        scalar: string
+      default: ""
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.CustomAttributeHeader
+  map:
+    fields:
+    - name: defaultValue
+      type:
+        scalar: string
+    - name: name
+      type:
+        scalar: string
+      default: ""
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.CustomAttributeLiteral
+  map:
+    fields:
+    - name: value
+      type:
+        scalar: string
+      default: ""
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.CustomAttributeMetadata
+  map:
+    fields:
+    - name: defaultValue
+      type:
+        scalar: string
+    - name: kind
+      type:
+        scalar: string
+      default: ""
+    - name: metadataKey
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.MetadataKey
+      default: {}
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.CustomLabel
   map:
     fields:
@@ -548,6 +834,18 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: enableTls
       type:
         scalar: boolean
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.EnvironmentResourceDetectorConfig
+  map:
+    elementType:
+      scalar: untyped
+      list:
+        elementType:
+          namedType: __untyped_atomic_
+        elementRelationship: atomic
+      map:
+        elementType:
+          namedType: __untyped_deduced_
+        elementRelationship: separable
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.EnvoyBootstrap
   map:
     fields:
@@ -565,6 +863,12 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: bootstrap
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.EnvoyBootstrap
+    - name: env
+      type:
+        list:
+          elementType:
+            namedType: io.k8s.api.core.v1.EnvVar
+          elementRelationship: atomic
     - name: image
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Image
@@ -574,6 +878,13 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: securityContext
       type:
         namedType: io.k8s.api.core.v1.SecurityContext
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.EnvoyHealthCheck
+  map:
+    fields:
+    - name: path
+      type:
+        scalar: string
+      default: ""
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtAuthPolicy
   map:
     fields:
@@ -789,34 +1100,6 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: sleepTimeSeconds
       type:
         scalar: numeric
-- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.GrpcService
-  map:
-    fields:
-    - name: additionalRequestHeadersToLog
-      type:
-        list:
-          elementType:
-            scalar: string
-          elementRelationship: atomic
-    - name: additionalResponseHeadersToLog
-      type:
-        list:
-          elementType:
-            scalar: string
-          elementRelationship: atomic
-    - name: additionalResponseTrailersToLog
-      type:
-        list:
-          elementType:
-            scalar: string
-          elementRelationship: atomic
-    - name: backendRef
-      type:
-        namedType: io.k8s.sigs.gateway-api.apis.v1.BackendRef
-    - name: logName
-      type:
-        scalar: string
-      default: ""
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.GrpcStatusFilter
   map:
     fields:
@@ -859,6 +1142,15 @@ var schemaYAML = typed.YAMLObject(`types:
           elementType:
             namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AccessLog
           elementRelationship: atomic
+    - name: healthCheck
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.EnvoyHealthCheck
+    - name: serverHeaderTransformation
+      type:
+        scalar: string
+    - name: streamIdleTimeout
+      type:
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Duration
     - name: targetRefs
       type:
         list:
@@ -871,9 +1163,40 @@ var schemaYAML = typed.YAMLObject(`types:
           elementType:
             namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LocalPolicyTargetSelector
           elementRelationship: atomic
+    - name: tracing
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Tracing
     - name: upgradeConfig
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.UpgradeConfig
+    - name: useRemoteAddress
+      type:
+        scalar: boolean
+    - name: xffNumTrustedHops
+      type:
+        scalar: numeric
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.HashPolicy
+  map:
+    fields:
+    - name: cookie
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Cookie
+    - name: header
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Header
+    - name: sourceIP
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SourceIP
+    - name: terminal
+      type:
+        scalar: boolean
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Header
+  map:
+    fields:
+    - name: name
+      type:
+        scalar: string
+      default: ""
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.HeaderFilter
   map:
     fields:
@@ -890,6 +1213,59 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: value
       type:
         scalar: string
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.HeaderValue
+  map:
+    fields:
+    - name: key
+      type:
+        scalar: string
+      default: ""
+    - name: value
+      type:
+        scalar: string
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.HealthCheck
+  map:
+    fields:
+    - name: grpc
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.HealthCheckGrpc
+    - name: healthyThreshold
+      type:
+        scalar: numeric
+    - name: http
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.HealthCheckHttp
+    - name: interval
+      type:
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Duration
+    - name: timeout
+      type:
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Duration
+    - name: unhealthyThreshold
+      type:
+        scalar: numeric
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.HealthCheckGrpc
+  map:
+    fields:
+    - name: authority
+      type:
+        scalar: string
+    - name: serviceName
+      type:
+        scalar: string
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.HealthCheckHttp
+  map:
+    fields:
+    - name: host
+      type:
+        scalar: string
+    - name: method
+      type:
+        scalar: string
+    - name: path
+      type:
+        scalar: string
+      default: ""
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Host
   map:
     fields:
@@ -913,6 +1289,21 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: headerFormat
       type:
         scalar: string
+    - name: overrideStreamErrorOnInvalidHttpMessage
+      type:
+        scalar: boolean
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Http2ProtocolOptions
+  map:
+    fields:
+    - name: initialConnectionWindowSize
+      type:
+        namedType: io.k8s.apimachinery.pkg.api.resource.Quantity
+    - name: initialStreamWindowSize
+      type:
+        namedType: io.k8s.apimachinery.pkg.api.resource.Quantity
+    - name: maxConcurrentStreams
+      type:
+        scalar: numeric
     - name: overrideStreamErrorOnInvalidHttpMessage
       type:
         scalar: boolean
@@ -970,6 +1361,26 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: istioProxyContainer
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.IstioContainer
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.KeyAnyValue
+  map:
+    fields:
+    - name: key
+      type:
+        scalar: string
+      default: ""
+    - name: value
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AnyValue
+      default: {}
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.KeyAnyValueList
+  map:
+    fields:
+    - name: values
+      type:
+        list:
+          elementType:
+            namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.KeyAnyValue
+          elementRelationship: atomic
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.KubernetesProxyConfig
   map:
     fields:
@@ -1022,7 +1433,7 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SupportedLLMProvider
       default: {}
-- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LoadBalancerConfig
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LoadBalancer
   map:
     fields:
     - name: closeConnectionsOnHostSetChange
@@ -1034,7 +1445,7 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: leastRequest
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LoadBalancerLeastRequestConfig
-    - name: localityConfigType
+    - name: localityType
       type:
         scalar: string
     - name: maglev
@@ -1063,9 +1474,9 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         scalar: numeric
       default: 2
-    - name: slowStartConfig
+    - name: slowStart
       type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SlowStartConfig
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SlowStart
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LoadBalancerMaglevConfig
   map:
     elementType:
@@ -1102,9 +1513,9 @@ var schemaYAML = typed.YAMLObject(`types:
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LoadBalancerRoundRobinConfig
   map:
     fields:
-    - name: slowStartConfig
+    - name: slowStart
       type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SlowStartConfig
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SlowStart
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LocalPolicyTargetReference
   map:
     fields:
@@ -1171,6 +1582,26 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         scalar: string
       default: ""
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.MetadataKey
+  map:
+    fields:
+    - name: key
+      type:
+        scalar: string
+      default: ""
+    - name: path
+      type:
+        list:
+          elementType:
+            namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.MetadataPathSegment
+          elementRelationship: atomic
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.MetadataPathSegment
+  map:
+    fields:
+    - name: key
+      type:
+        scalar: string
+      default: ""
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Moderation
   map:
     fields:
@@ -1186,6 +1617,15 @@ var schemaYAML = typed.YAMLObject(`types:
           elementType:
             namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Priority
           elementRelationship: atomic
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.OTelTracesSampler
+  map:
+    fields:
+    - name: arg
+      type:
+        scalar: string
+    - name: type
+      type:
+        scalar: string
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.OpenAIConfig
   map:
     fields:
@@ -1194,6 +1634,63 @@ var schemaYAML = typed.YAMLObject(`types:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SingleAuthToken
       default: {}
     - name: model
+      type:
+        scalar: string
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.OpenTelemetryAccessLogService
+  map:
+    fields:
+    - name: attributes
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.KeyAnyValueList
+    - name: body
+      type:
+        scalar: string
+    - name: disableBuiltinLabels
+      type:
+        scalar: boolean
+    - name: grpcService
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.CommonAccessLogGrpcService
+      default: {}
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.OpenTelemetryTracingConfig
+  map:
+    fields:
+    - name: grpcService
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.CommonGrpcService
+      default: {}
+    - name: resourceDetectors
+      type:
+        list:
+          elementType:
+            namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ResourceDetector
+          elementRelationship: atomic
+    - name: sampler
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Sampler
+    - name: serviceName
+      type:
+        scalar: string
+      default: ""
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Parameters
+  map:
+    fields:
+    - name: cipherSuites
+      type:
+        list:
+          elementType:
+            scalar: string
+          elementRelationship: atomic
+    - name: ecdhCurves
+      type:
+        list:
+          elementType:
+            scalar: string
+          elementRelationship: atomic
+    - name: tlsMaxVersion
+      type:
+        scalar: string
+    - name: tlsMinVersion
       type:
         scalar: string
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.PathOverride
@@ -1417,6 +1914,12 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: pattern
       type:
         scalar: string
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ResourceDetector
+  map:
+    fields:
+    - name: environmentResourceDetector
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.EnvironmentResourceDetectorConfig
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ResponseFlagFilter
   map:
     fields:
@@ -1426,72 +1929,21 @@ var schemaYAML = typed.YAMLObject(`types:
           elementType:
             scalar: string
           elementRelationship: atomic
-- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SSLConfig
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.RetryPolicy
   map:
     fields:
-    - name: allowRenegotiation
+    - name: numRetries
       type:
-        scalar: boolean
-    - name: alpnProtocols
+        scalar: numeric
+    - name: retryBackOff
       type:
-        list:
-          elementType:
-            scalar: string
-          elementRelationship: atomic
-    - name: oneWayTLS
-      type:
-        scalar: boolean
-    - name: secretRef
-      type:
-        namedType: io.k8s.api.core.v1.LocalObjectReference
-    - name: sni
-      type:
-        scalar: string
-    - name: sslFiles
-      type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SSLFiles
-    - name: sslParameters
-      type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SSLParameters
-    - name: verifySubjectAltName
-      type:
-        list:
-          elementType:
-            scalar: string
-          elementRelationship: atomic
-- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SSLFiles
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.BackoffStrategy
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Sampler
   map:
     fields:
-    - name: rootCA
+    - name: alwaysOnConfig
       type:
-        scalar: string
-    - name: tlsCertificate
-      type:
-        scalar: string
-    - name: tlsKey
-      type:
-        scalar: string
-- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SSLParameters
-  map:
-    fields:
-    - name: cipherSuites
-      type:
-        list:
-          elementType:
-            scalar: string
-          elementRelationship: atomic
-    - name: ecdhCurves
-      type:
-        list:
-          elementType:
-            scalar: string
-          elementRelationship: atomic
-    - name: tlsMaxVersion
-      type:
-        scalar: string
-    - name: tlsMinVersion
-      type:
-        scalar: string
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AlwaysOnConfig
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SdsBootstrap
   map:
     fields:
@@ -1576,7 +2028,7 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: secretRef
       type:
         namedType: io.k8s.api.core.v1.LocalObjectReference
-- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SlowStartConfig
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SlowStart
   map:
     fields:
     - name: aggression
@@ -1588,9 +2040,24 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: window
       type:
         namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Duration
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SourceIP
+  map:
+    elementType:
+      scalar: untyped
+      list:
+        elementType:
+          namedType: __untyped_atomic_
+        elementRelationship: atomic
+      map:
+        elementType:
+          namedType: __untyped_deduced_
+        elementRelationship: separable
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.StaticBackend
   map:
     fields:
+    - name: appProtocol
+      type:
+        scalar: string
     - name: hosts
       type:
         list:
@@ -1621,6 +2088,28 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: value
       type:
         scalar: numeric
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.StringMatcher
+  map:
+    fields:
+    - name: contains
+      type:
+        scalar: string
+    - name: exact
+      type:
+        scalar: string
+    - name: ignoreCase
+      type:
+        scalar: boolean
+      default: false
+    - name: prefix
+      type:
+        scalar: string
+    - name: safeRegex
+      type:
+        scalar: string
+    - name: suffix
+      type:
+        scalar: string
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SupportedLLMProvider
   map:
     fields:
@@ -1651,6 +2140,51 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: keepAliveTime
       type:
         namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Duration
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.TLS
+  map:
+    fields:
+    - name: allowRenegotiation
+      type:
+        scalar: boolean
+    - name: alpnProtocols
+      type:
+        list:
+          elementType:
+            scalar: string
+          elementRelationship: atomic
+    - name: oneWayTLS
+      type:
+        scalar: boolean
+    - name: parameters
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Parameters
+    - name: secretRef
+      type:
+        namedType: io.k8s.api.core.v1.LocalObjectReference
+    - name: sni
+      type:
+        scalar: string
+    - name: tlsFiles
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.TLSFiles
+    - name: verifySubjectAltName
+      type:
+        list:
+          elementType:
+            scalar: string
+          elementRelationship: atomic
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.TLSFiles
+  map:
+    fields:
+    - name: rootCA
+      type:
+        scalar: string
+    - name: tlsCertificate
+      type:
+        scalar: string
+    - name: tlsKey
+      type:
+        scalar: string
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.TokenBucket
   map:
     fields:
@@ -1665,6 +2199,43 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: tokensPerFill
       type:
         scalar: numeric
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Tracing
+  map:
+    fields:
+    - name: attributes
+      type:
+        list:
+          elementType:
+            namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.CustomAttribute
+          elementRelationship: atomic
+    - name: clientSampling
+      type:
+        scalar: numeric
+    - name: maxPathTagLength
+      type:
+        scalar: numeric
+    - name: overallSampling
+      type:
+        scalar: numeric
+    - name: provider
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.TracingProvider
+      default: {}
+    - name: randomSampling
+      type:
+        scalar: numeric
+    - name: spawnUpstreamSpan
+      type:
+        scalar: boolean
+    - name: verbose
+      type:
+        scalar: boolean
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.TracingProvider
+  map:
+    fields:
+    - name: openTelemetry
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.OpenTelemetryTracingConfig
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.TrafficPolicy
   map:
     fields:
@@ -1692,15 +2263,30 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: ai
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AIPolicy
+    - name: autoHostRewrite
+      type:
+        scalar: boolean
+    - name: buffer
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Buffer
     - name: cors
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.CorsPolicy
+    - name: csrf
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.CSRFPolicy
     - name: extAuth
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtAuthPolicy
     - name: extProc
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtProcPolicy
+    - name: hashPolicies
+      type:
+        list:
+          elementType:
+            namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.HashPolicy
+          elementRelationship: atomic
     - name: rateLimit
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.RateLimit
@@ -2117,6 +2703,9 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: preStop
       type:
         namedType: io.k8s.api.core.v1.LifecycleHandler
+    - name: stopSignal
+      type:
+        scalar: string
 - name: io.k8s.api.core.v1.LifecycleHandler
   map:
     fields:

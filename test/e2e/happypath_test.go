@@ -15,11 +15,10 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
@@ -89,7 +88,7 @@ var _ = Describe("Happy path", func() {
 				},
 			}
 			testClients = services.RunGlooGatewayUdsFds(ctx, ro)
-			envoyInstance.ApiVersion = envoy_config_core_v3.ApiVersion_V3.String()
+			envoyInstance.ApiVersion = envoycorev3.ApiVersion_V3.String()
 			err := envoyInstance.RunWithRoleAndRestXds(ns+"~"+gatewaydefaults.GatewayProxyName, testClients.GlooPort, testClients.RestXdsPort)
 			Expect(err).NotTo(HaveOccurred())
 
@@ -228,7 +227,7 @@ var _ = Describe("Happy path", func() {
 					return err
 				}
 				if res.StatusCode != http.StatusOK {
-					return errors.Errorf("bad status code: %v", res.StatusCode)
+					return fmt.Errorf("bad status code: %v", res.StatusCode)
 				}
 				return nil
 			}, time.Second*10, time.Second/2).ShouldNot(HaveOccurred())
@@ -243,7 +242,7 @@ var _ = Describe("Happy path", func() {
 					return err
 				}
 				if res.StatusCode != http.StatusServiceUnavailable {
-					return errors.Errorf("bad status code: %v", res.StatusCode)
+					return fmt.Errorf("bad status code: %v", res.StatusCode)
 				}
 				return nil
 			}, time.Second*10, time.Second/2).ShouldNot(HaveOccurred())

@@ -2,15 +2,15 @@ package admincli
 
 import (
 	adminv3 "github.com/envoyproxy/go-control-plane/envoy/admin/v3"
-	clusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	anypb "google.golang.org/protobuf/types/known/anypb"
 )
 
 // GetStaticClustersByName returns a map of static clusters, indexed by their name
 // If there are no static clusters present, an empty map is returned
 // An error is returned if any conversion fails
-func GetStaticClustersByName(configDump *adminv3.ConfigDump) (map[string]*clusterv3.Cluster, error) {
-	clustersByName := make(map[string]*clusterv3.Cluster, 10)
+func GetStaticClustersByName(configDump *adminv3.ConfigDump) (map[string]*envoyclusterv3.Cluster, error) {
+	clustersByName := make(map[string]*envoyclusterv3.Cluster, 10)
 	for _, c := range configDump.GetConfigs() {
 		staticCluster, err := convertToStaticCluster(c)
 		if err != nil {
@@ -36,8 +36,8 @@ func convertToStaticCluster(a *anypb.Any) (*adminv3.ClustersConfigDump_StaticClu
 	return &staticCluster, nil
 }
 
-func convertToCluster(a *anypb.Any) (*clusterv3.Cluster, error) {
-	var cluster clusterv3.Cluster
+func convertToCluster(a *anypb.Any) (*envoyclusterv3.Cluster, error) {
+	var cluster envoyclusterv3.Cluster
 	err := a.UnmarshalTo(&cluster)
 	if err != nil {
 		// We do not expect this to ever happen
@@ -49,8 +49,8 @@ func convertToCluster(a *anypb.Any) (*clusterv3.Cluster, error) {
 // GetDynamicClustersByName returns a map of dynamic clusters, indexed by their name
 // If there are no dynamic clusters present, an empty map is returned
 // An error is returned if any conversion fails
-func GetDynamicClustersByName(configDump *adminv3.ConfigDump) (map[string]*clusterv3.Cluster, error) {
-	clustersByName := make(map[string]*clusterv3.Cluster, 10)
+func GetDynamicClustersByName(configDump *adminv3.ConfigDump) (map[string]*envoyclusterv3.Cluster, error) {
+	clustersByName := make(map[string]*envoyclusterv3.Cluster, 10)
 	for _, c := range configDump.GetConfigs() {
 		dynamicCluster, err := convertToDynamicCluster(c)
 		if err != nil {

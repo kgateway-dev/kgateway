@@ -2,10 +2,10 @@ package validation
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
-	"github.com/rotisserie/eris"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/xds"
 	"github.com/kgateway-dev/kgateway/v2/pkg/envoyinit"
@@ -46,7 +46,7 @@ func ValidateSnapshot(
 
 	bootstrapJson, err := bootstrap.FromSnapshot(ctx, snap)
 	if err != nil {
-		err = eris.Wrap(err, "error converting xDS snapshot to static bootstrap")
+		err = fmt.Errorf("error converting xDS snapshot to static bootstrap: %w", err)
 		slog.Error("error converting xDS snapshot to static bootstrap", "error", err)
 		return err
 	}

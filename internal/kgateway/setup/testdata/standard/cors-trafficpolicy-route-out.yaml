@@ -4,6 +4,7 @@ clusters:
     edsConfig:
       ads: {}
       resourceApiVersion: V3
+  ignoreHealthOnHostRemoval: true
   metadata: {}
   name: kube_default_kubernetes_443
   type: EDS
@@ -12,6 +13,7 @@ clusters:
     edsConfig:
       ads: {}
       resourceApiVersion: V3
+  ignoreHealthOnHostRemoval: true
   metadata: {}
   name: kube_gwtest_reviews_8080
   type: EDS
@@ -76,5 +78,10 @@ routes:
           allowMethods: GET, POST, OPTIONS
           allowOriginStringMatch:
           - exact: https://example.com
+          - safeRegex:
+              googleRe2: {}
+              regex: ^https://.*\.notexample\.com$
+          - prefix: https://a.b
+          - prefix: http://
           exposeHeaders: X-Custom-Header
           maxAge: "86400"

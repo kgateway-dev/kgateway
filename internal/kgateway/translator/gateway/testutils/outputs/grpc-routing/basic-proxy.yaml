@@ -4,6 +4,7 @@ Clusters:
     edsConfig:
       ads: {}
       resourceApiVersion: V3
+  ignoreHealthOnHostRemoval: true
   metadata: {}
   name: kube_default_example-grpc-svc_9000
   type: EDS

@@ -1,9 +1,9 @@
 package main
 
 import (
-	"github.com/kgateway-dev/kgateway/v2/internal/sds/pkg/run"
+	"github.com/kgateway-dev/kgateway/v2/pkg/sds"
 )
 
 func main() {
-	run.RunMain()
+	sds.RunMain()
 }

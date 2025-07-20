@@ -12,6 +12,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/query"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/listener"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/metrics"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	reports "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
@@ -27,12 +28,14 @@ func NewTranslator(queries query.GatewayQueries, settings TranslatorConfig) exte
 	return &translator{
 		queries:  queries,
 		settings: settings,
+		metrics:  metrics.NewTranslatorMetricsRecorder("TranslateGatewayProxy"),
 	}
 }
 
 type translator struct {
 	queries  query.GatewayQueries
 	settings TranslatorConfig
+	metrics  metrics.TranslatorMetricsRecorder
 }
 
 func (t *translator) Translate(
@@ -44,6 +47,8 @@ func (t *translator) Translate(
 	stopwatch := utils.NewTranslatorStopWatch("TranslateProxy")
 	stopwatch.Start()
 	defer stopwatch.Stop(ctx)
+
+	defer t.metrics.TranslationStart()(nil)
 
 	routesForGw, err := t.queries.GetRoutesForGateway(kctx, ctx, gateway)
 	if err != nil {
@@ -75,10 +80,11 @@ func (t *translator) Translate(
 	)
 
 	return &ir.GatewayIR{
-		SourceObject:         gateway,
-		Listeners:            listeners,
-		AttachedPolicies:     gateway.AttachedListenerPolicies,
-		AttachedHttpPolicies: gateway.AttachedHttpPolicies,
+		SourceObject:                  gateway,
+		Listeners:                     listeners,
+		AttachedPolicies:              gateway.AttachedListenerPolicies,
+		AttachedHttpPolicies:          gateway.AttachedHttpPolicies,
+		PerConnectionBufferLimitBytes: gateway.PerConnectionBufferLimitBytes,
 	}
 }
 

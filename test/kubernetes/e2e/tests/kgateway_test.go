@@ -21,6 +21,9 @@ func TestKgateway(t *testing.T) {
 			InstallNamespace:          installNs,
 			ProfileValuesManifestFile: e2e.CommonRecommendationManifest,
 			ValuesManifestFile:        e2e.EmptyValuesManifestPath,
+			ExtraHelmArgs: []string{
+				"--set", "controller.extraEnv.KGW_GLOBAL_POLICY_NAMESPACE=" + installNs,
+			},
 		},
 	)
 

@@ -2,7 +2,6 @@ package httproute
 
 import (
 	"context"
-	"log/slog"
 
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -11,8 +10,11 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/query"
+	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	reports "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
+
+var logger = logging.New("translator/httproute")
 
 // TODO: Uncomment when the gateway_http_route_translator_test.go is uncommented.
 // var (
@@ -122,6 +124,7 @@ func translateGatewayHTTPRouteRule(
 			MatchIndex:        idx,
 			Match:             match,
 			DelegatingParent:  delegatingParent,
+			PrecedenceWeight:  parent.PrecedenceWeight,
 		}
 
 		if len(rule.Backends) > 0 {
@@ -172,10 +175,6 @@ func setRouteAction(
 	routesVisited sets.Set[types.NamespacedName],
 ) {
 	backends := rule.Backends
-	// this was coming from internal/kgateway/translator/gateway/gateway_translator.go
-	// TODO: scope this to httproute?
-	logger := slog.Default()
-
 	for _, backend := range backends {
 		// If the backend is an HTTPRoute, it implies route delegation
 		// for which delegated routes are recursively flattened and translated
@@ -195,6 +194,7 @@ func setRouteAction(
 			)
 			if err != nil {
 				query.ProcessBackendError(err, reporter)
+				outputRoute.Error = err
 			}
 			continue
 		}

@@ -57,7 +57,7 @@ var (
 	GlobalLevel = &slog.LevelVar{} // default is INFO
 
 	levelNames = map[slog.Leveler]string{
-		LevelTrace: "TRACE",
+		LevelTrace: traceLevel,
 	}
 )
 
@@ -189,7 +189,7 @@ func slogLevelReplacer(groups []string, attr slog.Attr) slog.Attr {
 func levelName(level slog.Level) string {
 	levelname, ok := levelNames[level]
 	if !ok {
-		levelname = level.String()
+		levelname = strings.ToLower(level.String())
 	}
 	return levelname
 }

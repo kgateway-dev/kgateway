@@ -13,12 +13,6 @@ var (
 	// We prefer to have our tests be explicit and require defining a values file. However, some tests
 	// rely entirely on the values provided by the "profile". In those cases, the test supplies this reference
 	EmptyValuesManifestPath = ManifestPath("empty-values.yaml")
-
-	AIValuesManifestPath = ManifestPath("ai-extension-helm.yaml")
-
-	InfExtValuesManifestPath = ManifestPath("inference-extension-helm.yaml")
-
-	AgentGatewayIntegratioValuesPath = ManifestPath("agent-gateway-integration.yaml")
 )
 
 // ManifestPath returns the absolute path to a manifest file.

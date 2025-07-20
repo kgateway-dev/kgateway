@@ -1,0 +1,43 @@
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayParameters
+metadata:
+  name: kgateway-gateway-override
+  namespace: ai-test
+spec:
+  kube:
+    aiExtension:
+      enabled: true
+      ports:
+        - name: ai-monitoring
+          containerPort: 9092
+      tracing:
+        endpoint: "http://my-otel-collector.svc.cluster.local:4317"
+        sampler:
+          type: "traceidratio"
+          arg: "0.5"
+        timeout: "100s"
+        protocol: "grpc"
+        transportSecurity: "insecure"
+      env:
+        - name: LOG_LEVEL
+          value: DEBUG
+---
+kind: Gateway
+apiVersion: gateway.networking.k8s.io/v1
+metadata:
+  name: ai-gateway
+  namespace: ai-test
+spec:
+  gatewayClassName: kgateway
+  infrastructure:
+    parametersRef:
+      name: kgateway-gateway-override
+      group: gateway.kgateway.dev
+      kind: GatewayParameters
+  listeners:
+    - protocol: HTTP
+      port: 8080
+      name: http
+      allowedRoutes:
+        namespaces:
+          from: All

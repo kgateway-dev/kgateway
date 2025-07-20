@@ -11,6 +11,19 @@ clusters:
       - endpoint:
           address:
             socketAddress:
+              address: 1.1.1.1
+              portValue: 80
+        loadBalancingWeight: 1
+      loadBalancingWeight: 1
+      locality:
+        region: r1
+        subZone: r1z2s4
+        zone: r1z2
+      priority: 1
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
               address: 2.2.2.2
               portValue: 80
         loadBalancingWeight: 1
@@ -33,19 +46,6 @@ clusters:
         subZone: r2z1s1
         zone: r2z1
       priority: 3
-    - lbEndpoints:
-      - endpoint:
-          address:
-            socketAddress:
-              address: 1.1.1.1
-              portValue: 80
-        loadBalancingWeight: 1
-      loadBalancingWeight: 1
-      locality:
-        region: r1
-        subZone: r1z2s4
-        zone: r1z2
-      priority: 1
   metadata: {}
   name: istio-se_gwtest_example-se_se.example.com_80
   outlierDetection:
@@ -58,6 +58,7 @@ clusters:
     edsConfig:
       ads: {}
       resourceApiVersion: V3
+  ignoreHealthOnHostRemoval: true
   metadata: {}
   name: kube_default_kubernetes_443
   type: EDS

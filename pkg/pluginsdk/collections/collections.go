@@ -16,11 +16,11 @@ import (
 	gwv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
+	"github.com/kgateway-dev/kgateway/v2/pkg/settings"
 
 	networkingclient "istio.io/client-go/pkg/apis/networking/v1"
 )
@@ -49,7 +49,7 @@ type CommonCollections struct {
 	// TODO: this should be refactored to a more correct location,
 	// or even better, be removed entirely and done per Gateway (maybe in GwParams)
 	Settings       settings.Settings
-	controllerName string
+	ControllerName string
 }
 
 func (c *CommonCollections) HasSynced() bool {
@@ -154,22 +154,27 @@ func NewCommonCollections(
 		ConfigMaps:        cfgmaps,
 		GatewayExtensions: gwExts,
 
-		controllerName: controllerName,
+		ControllerName: controllerName,
 	}, nil
 }
 
 // InitPlugins set up collections that rely on plugins.
 // This can't be part of NewCommonCollections because the setup
 // of plugins themselves rely on a reference to CommonCollections.
-func (c *CommonCollections) InitPlugins(ctx context.Context, mergedPlugins extensionsplug.Plugin) {
+func (c *CommonCollections) InitPlugins(
+	ctx context.Context,
+	mergedPlugins extensionsplug.Plugin,
+	globalSettings settings.Settings,
+) {
 	gateways, routeIndex, backendIndex, endpointIRs := krtcollections.InitCollections(
 		ctx,
-		c.controllerName,
+		c.ControllerName,
 		mergedPlugins,
 		c.Client,
 		c.OurClient,
 		c.RefGrants,
 		c.KrtOpts,
+		globalSettings,
 	)
 
 	// init plugin-extended collections

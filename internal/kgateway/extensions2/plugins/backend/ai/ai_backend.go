@@ -3,18 +3,19 @@ package ai
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"maps"
 	"os"
 
-	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_ext_proc_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_proc/v3"
-	"github.com/rotisserie/eris"
 	envoytransformation "github.com/solo-io/envoy-gloo/go/config/filter/http/transformation/v2"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/trafficpolicy"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
@@ -63,7 +64,7 @@ func data(s *ir.Secret) map[string][]byte {
 	return s.Data
 }
 
-func ApplyAIBackend(ir *IR, pCtx *ir.RouteBackendContext, out *envoy_config_route_v3.Route) error {
+func ApplyAIBackend(ir *IR, pCtx *ir.RouteBackendContext, out *envoyroutev3.Route) error {
 	pCtx.TypedFilterConfig.AddTypedConfig(wellknown.AIBackendTransformationFilterName, ir.Transformation)
 
 	copyBackendExtproc := proto.Clone(ir.Extproc).(*envoy_ext_proc_v3.ExtProcPerRoute)
@@ -78,12 +79,12 @@ func ApplyAIBackend(ir *IR, pCtx *ir.RouteBackendContext, out *envoy_config_rout
 	// Add things which require basic AI backend.
 	if out.GetRoute() == nil {
 		// initialize route action if not set
-		out.Action = &envoy_config_route_v3.Route_Route{
-			Route: &envoy_config_route_v3.RouteAction{},
+		out.Action = &envoyroutev3.Route_Route{
+			Route: &envoyroutev3.RouteAction{},
 		}
 	}
 	// LLM providers (open ai, etc.) expect the auto host rewrite to be set
-	out.GetRoute().HostRewriteSpecifier = &envoy_config_route_v3.RouteAction_AutoHostRewrite{
+	out.GetRoute().HostRewriteSpecifier = &envoyroutev3.RouteAction_AutoHostRewrite{
 		AutoHostRewrite: wrapperspb.Bool(true),
 	}
 
@@ -118,7 +119,7 @@ func PreprocessAIBackend(ctx context.Context, aiBackend *v1alpha1.AIBackend, ir 
 	}
 
 	if len(byType) != 1 {
-		return eris.Errorf("multiple AI backend types found for single ai route %+v", byType)
+		return fmt.Errorf("multiple AI backend types found for single ai route %+v", byType)
 	}
 
 	// This is only len(1)
@@ -129,13 +130,13 @@ func PreprocessAIBackend(ctx context.Context, aiBackend *v1alpha1.AIBackend, ir 
 
 	// We only want to add the transformation filter if we have a single AI backend
 	// Otherwise we already have the transformation filter added by the weighted destination.
-	transformation := createTransformationTemplate(ctx, aiBackend)
+	transformation := createTransformationTemplate(aiBackend)
 	routeTransformation := &envoytransformation.RouteTransformations_RouteTransformation{
 		Match: &envoytransformation.RouteTransformations_RouteTransformation_RequestMatch_{
 			RequestMatch: &envoytransformation.RouteTransformations_RouteTransformation_RequestMatch{
 				RequestTransformation: &envoytransformation.Transformation{
 					// Set this env var to true to log the request/response info for each transformation
-					LogRequestResponseInfo: wrapperspb.Bool(os.Getenv("AI_PLUGIN_DEBUG_TRANSFORMATIONS") == "true"),
+					LogRequestResponseInfo: wrapperspb.Bool(os.Getenv(trafficpolicy.AiDebugTransformations) == "true"),
 					TransformationType: &envoytransformation.Transformation_TransformationTemplate{
 						TransformationTemplate: transformation,
 					},
@@ -151,7 +152,7 @@ func PreprocessAIBackend(ctx context.Context, aiBackend *v1alpha1.AIBackend, ir 
 	ir.Transformation = transformations
 
 	extProcRouteSettings.GetOverrides().GrpcInitialMetadata = append(extProcRouteSettings.GetOverrides().GetGrpcInitialMetadata(),
-		&envoy_config_core_v3.HeaderValue{
+		&envoycorev3.HeaderValue{
 			Key:   "x-llm-provider",
 			Value: llmProvider,
 		},
@@ -160,7 +161,7 @@ func PreprocessAIBackend(ctx context.Context, aiBackend *v1alpha1.AIBackend, ir 
 	// TODO: add support for multi pool setting different models for different pools
 	if llmModel != "" {
 		extProcRouteSettings.GetOverrides().GrpcInitialMetadata = append(extProcRouteSettings.GetOverrides().GetGrpcInitialMetadata(),
-			&envoy_config_core_v3.HeaderValue{
+			&envoycorev3.HeaderValue{
 				Key:   "x-llm-model",
 				Value: llmModel,
 			})
@@ -170,7 +171,7 @@ func PreprocessAIBackend(ctx context.Context, aiBackend *v1alpha1.AIBackend, ir 
 	// This is an optimization to allow us to not have to wait for the headers request to
 	// Initialize our logger/handler classes.
 	extProcRouteSettings.GetOverrides().GrpcInitialMetadata = append(extProcRouteSettings.GetOverrides().GetGrpcInitialMetadata(),
-		&envoy_config_core_v3.HeaderValue{
+		&envoycorev3.HeaderValue{
 			Key:   "x-request-id",
 			Value: "%REQ(X-REQUEST-ID)%",
 		},

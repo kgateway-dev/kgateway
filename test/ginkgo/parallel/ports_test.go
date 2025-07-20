@@ -3,12 +3,12 @@
 package parallel_test
 
 import (
+	"fmt"
 	"net"
 
 	"github.com/avast/retry-go"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/rotisserie/eris"
 
 	"github.com/kgateway-dev/kgateway/v2/test/ginkgo/parallel"
 )
@@ -25,7 +25,7 @@ var _ = Describe("Ports", func() {
 			}
 
 			if _, ok := denyList[proposedPort]; ok {
-				return eris.Errorf("port %d is in use", proposedPort)
+				return fmt.Errorf("port %d is in use", proposedPort)
 			}
 			return nil
 		}
@@ -45,7 +45,7 @@ var _ = Describe("Ports", func() {
 			startingPort := uint32(10010)
 			selectedPort, err := parallel.AdvancePortSafe(&startingPort, func(proposedPort uint32) error {
 				// We always error here, to ensure that we continue to retry advancing the port
-				return eris.Errorf("Port invalid: %d", proposedPort)
+				return fmt.Errorf("Port invalid: %d", proposedPort)
 			}, retry.Delay(0))
 			Expect(err).To(HaveOccurred())
 			Expect(selectedPort).To(Equal(uint32(11015)), "should have exhausted 5 retries")

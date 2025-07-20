@@ -3,7 +3,7 @@ package downward
 import (
 	"io"
 
-	envoy_config_bootstrap "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
+	envoybootstrapv3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	// register all top level types used in the bootstrap config
@@ -14,7 +14,7 @@ func Transform(in io.Reader, out io.Writer) error {
 	return NewInterpolator().InterpolateIO(in, out, RetrieveDownwardAPI())
 }
 
-func TransformConfigTemplatesWithApi(bootstrap *envoy_config_bootstrap.Bootstrap, api DownwardAPI) error {
+func TransformConfigTemplatesWithApi(bootstrap *envoybootstrapv3.Bootstrap, api DownwardAPI) error {
 	interpolator := NewInterpolator()
 
 	var err error

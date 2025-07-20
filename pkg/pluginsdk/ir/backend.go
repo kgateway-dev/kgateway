@@ -14,6 +14,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwxv1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	pluginsdkreporter "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
 
@@ -67,19 +68,21 @@ const (
 	WebSocketAppProtocol AppProtocol = "ws"
 )
 
+// ParseAppProtocol takes an app protocol string provided on a Backend or Kubernetes Service, and maps it
+// to one of the app protocol types supported by kgateway (http2, websocket, or default).
 // Recognizes http2 app protocols defined by istio (https://istio.io/latest/docs/ops/configuration/traffic-management/protocol-selection/)
-// and GEP-1911 (https://gateway-api.sigs.k8s.io/geps/gep-1911/#api-semantics)
+// and GEP-1911 (https://gateway-api.sigs.k8s.io/geps/gep-1911/#api-semantics).
 func ParseAppProtocol(appProtocol *string) AppProtocol {
 	switch ptr.Deref(appProtocol, "") {
-	case "http2":
+	case string(v1alpha1.AppProtocolHttp2):
 		fallthrough
-	case "grpc":
+	case string(v1alpha1.AppProtocolGrpc):
 		fallthrough
-	case "grpc-web":
+	case string(v1alpha1.AppProtocolGrpcWeb):
 		fallthrough
-	case "kubernetes.io/h2c":
+	case string(v1alpha1.AppProtocolKubernetesH2C):
 		return HTTP2AppProtocol
-	case "kubernetes.io/ws":
+	case string(v1alpha1.AppProtocolKubernetesWs):
 		return WebSocketAppProtocol
 	default:
 		return DefaultAppProtocol
@@ -268,6 +271,8 @@ type Gateway struct {
 
 	AttachedListenerPolicies AttachedPolicies
 	AttachedHttpPolicies     AttachedPolicies
+
+	PerConnectionBufferLimitBytes *uint32
 }
 
 func (c Gateway) ResourceName() string {
@@ -275,7 +280,14 @@ func (c Gateway) ResourceName() string {
 }
 
 func (c Gateway) Equals(in Gateway) bool {
-	return c.ObjectSource.Equals(in.ObjectSource) && versionEquals(c.Obj, in.Obj) && c.AttachedListenerPolicies.Equals(in.AttachedListenerPolicies) && c.AttachedHttpPolicies.Equals(in.AttachedHttpPolicies) && c.AllowedListenerSets.Equals(in.AllowedListenerSets) && c.DeniedListenerSets.Equals(in.DeniedListenerSets)
+	return c.ObjectSource.Equals(in.ObjectSource) &&
+		ptrEquals(c.PerConnectionBufferLimitBytes, in.PerConnectionBufferLimitBytes) &&
+		versionEquals(c.Obj, in.Obj) &&
+		c.AttachedListenerPolicies.Equals(in.AttachedListenerPolicies) &&
+		c.AttachedHttpPolicies.Equals(in.AttachedHttpPolicies) &&
+		c.Listeners.Equals(in.Listeners) &&
+		c.AllowedListenerSets.Equals(in.AllowedListenerSets) &&
+		c.DeniedListenerSets.Equals(in.DeniedListenerSets)
 }
 
 // Equals returns true if the two BackendRefIR instances are equal in cluster name, weight, backend object equality, and error.

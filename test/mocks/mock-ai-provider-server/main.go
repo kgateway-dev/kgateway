@@ -14,6 +14,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -190,7 +191,7 @@ func main() {
 	})
 
 	// Gemini endpoints
-	r.POST("/v1beta/models/gemini-1.5-flash-001:action", func(c *gin.Context) {
+	r.POST("/v1beta/models/:modelaction", func(c *gin.Context) {
 		var requestData map[string]interface{}
 		if err := c.BindJSON(&requestData); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -203,10 +204,15 @@ func main() {
 			return
 		}
 
-		action := c.Param("action")
-		if action == ":generateContent" {
+		modelaction := c.Param("modelaction")
+		_, action, ok := strings.Cut(modelaction, ":")
+		if !ok {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Invalid action"})
+			return
+		}
+		if action == "generateContent" {
 			handleModelResponse(c, requestData, "gemini", false)
-		} else if action == ":streamGenerateContent" {
+		} else if action == "streamGenerateContent" {
 			handleModelResponse(c, requestData, "gemini", true)
 		} else {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Invalid action"})

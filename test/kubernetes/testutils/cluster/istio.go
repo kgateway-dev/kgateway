@@ -2,6 +2,7 @@ package cluster
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"log/slog"
@@ -10,8 +11,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
-
-	"github.com/rotisserie/eris"
 
 	glooruntime "github.com/kgateway-dev/kgateway/v2/test/kubernetes/testutils/runtime"
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
@@ -122,7 +121,7 @@ func downloadIstio(ctx context.Context, version string) (string, error) {
 		slog.Info("ISTIO_VERSION not specified, using istioctl from PATH")
 		binaryPath, err := exec.LookPath("istioctl")
 		if err != nil {
-			return "", eris.New("ISTIO_VERSION environment variable must be specified or istioctl must be installed")
+			return "", errors.New("ISTIO_VERSION environment variable must be specified or istioctl must be installed")
 		}
 
 		slog.Info("using istioctl", "path", binaryPath)
@@ -138,7 +137,7 @@ func downloadIstio(ctx context.Context, version string) (string, error) {
 		return binaryLocation, nil
 	}
 	if err := os.MkdirAll(binaryDir, 0o755); err != nil {
-		return "", eris.Wrap(err, "create directory")
+		return "", fmt.Errorf("create directory: %w", err)
 	}
 
 	if istioctlDownloadFrom := os.Getenv("ISTIOCTL_DOWNLOAD_FROM"); istioctlDownloadFrom != "" {
@@ -159,11 +158,11 @@ func downloadIstio(ctx context.Context, version string) (string, error) {
 		// Use curl and tar to download and extract the file
 		cmd := exec.Command("sh", "-c", fmt.Sprintf("curl -sSL %s | tar -xz -C %s", url, binaryDir))
 		if err := cmd.Run(); err != nil {
-			return "", eris.Wrapf(err, "download and extract istioctl, cmd: %s", cmd.Args)
+			return "", fmt.Errorf("download and extract istioctl, cmd: %s: %w", cmd.Args, err)
 		}
 		// Change permissions
 		if err := os.Chmod(binaryLocation, 0o755); err != nil {
-			return "", eris.Wrap(err, "change permissions")
+			return "", fmt.Errorf("change permissions: %w", err)
 		}
 		return binaryLocation, nil
 	}

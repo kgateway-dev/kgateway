@@ -7,5 +7,5 @@ Listeners:
     socketAddress:
       address: '::'
       ipv4Compat: true
-      portValue: 8443
+      portValue: 443
   name: listener~443

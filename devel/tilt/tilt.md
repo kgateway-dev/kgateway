@@ -31,7 +31,7 @@ kubectl cluster-info --context kind-kgateway
 
 When you switch branches, you'll need to rebuild the images (unless the changes are in the enabled providers list). Run
 ```bash
-VERSION=1.0.0-ci1 CLUSTER_NAME=kgateway IMAGE_VARIANT=standard make kind-build-and-load
+VERSION=1.0.0-ci1 CLUSTER_NAME=kgateway make kind-build-and-load
 ```
 
 ### Run tilt!

@@ -15,6 +15,7 @@ import (
 	"istio.io/istio/pkg/kube"
 	istiosets "istio.io/istio/pkg/util/sets"
 	rbacv1 "k8s.io/api/rbac/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/rest"
@@ -30,25 +31,28 @@ import (
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	infextv1a2 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
+	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/controller"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/deployer"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/registry"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/setup"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
+	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
+	"github.com/kgateway-dev/kgateway/v2/pkg/settings"
 )
 
 const (
-	gatewayClassName      = "clsname"
-	altGatewayClassName   = "clsname-alt"
-	gatewayControllerName = "kgateway.dev/kgateway"
-	defaultNamespace      = "default"
+	gatewayClassName            = "clsname"
+	altGatewayClassName         = "clsname-alt"
+	selfManagedGatewayClassName = "clsname-selfmanaged"
+	gatewayControllerName       = "kgateway.dev/kgateway"
+	defaultNamespace            = "default"
 )
 
 var (
@@ -58,7 +62,7 @@ var (
 	ctx          context.Context
 	cancel       context.CancelFunc
 	kubeconfig   string
-	gwClasses    = sets.New(gatewayClassName, altGatewayClassName)
+	gwClasses    = sets.New(gatewayClassName, altGatewayClassName, selfManagedGatewayClassName)
 	scheme       *runtime.Scheme
 	inferenceExt *deployer.InferenceExtInfo
 )
@@ -210,7 +214,19 @@ func createManager(
 		DiscoveryNamespaceFilter: fakeDiscoveryNamespaceFilter{},
 		CommonCollections:        newCommonCols(ctx, kubeClient),
 	}
-	if err := controller.NewBaseGatewayController(parentCtx, gwCfg); err != nil {
+	if err := controller.NewBaseGatewayController(parentCtx, gwCfg, nil); err != nil {
+		cancel()
+		return nil, err
+	}
+	if err := mgr.GetClient().Create(ctx, &v1alpha1.GatewayParameters{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      selfManagedGatewayClassName,
+			Namespace: "default",
+		},
+		Spec: v1alpha1.GatewayParametersSpec{
+			SelfManaged: &v1alpha1.SelfManagedGateway{},
+		},
+	}); client.IgnoreAlreadyExists(err) != nil {
 		cancel()
 		return nil, err
 	}
@@ -224,6 +240,15 @@ func createManager(
 		classConfigs[gatewayClassName] = &controller.ClassInfo{
 			Description: "default gateway class",
 		}
+		classConfigs[selfManagedGatewayClassName] = &controller.ClassInfo{
+			Description: "self managed gw",
+			ParametersRef: &apiv1.ParametersReference{
+				Group:     apiv1.Group(wellknown.GatewayParametersGVK.Group),
+				Kind:      apiv1.Kind(wellknown.GatewayParametersGVK.Kind),
+				Name:      selfManagedGatewayClassName,
+				Namespace: ptr.To(apiv1.Namespace("default")),
+			},
+		}
 	}
 
 	if err := controller.NewGatewayClassProvisioner(mgr, gatewayControllerName, classConfigs); err != nil {
@@ -236,7 +261,7 @@ func createManager(
 		ControllerName: gatewayControllerName,
 		InferenceExt:   inferenceExt,
 	}
-	if err := controller.NewBaseInferencePoolController(parentCtx, poolCfg, &gwCfg); err != nil {
+	if err := controller.NewBaseInferencePoolController(parentCtx, poolCfg, &gwCfg, nil); err != nil {
 		cancel()
 		return nil, err
 	}
@@ -265,16 +290,16 @@ func newCommonCols(ctx context.Context, kubeClient kube.Client) *collections.Com
 	if err != nil {
 		Expect(err).ToNot(HaveOccurred())
 	}
-	commoncol, err := collections.NewCommonCollections(ctx, krtopts, kubeClient, cli, nil, wellknown.GatewayControllerName, logr.Discard(), *settings)
+	commoncol, err := collections.NewCommonCollections(ctx, krtopts, kubeClient, cli, nil, gatewayControllerName, logr.Discard(), *settings)
 	if err != nil {
 		Expect(err).ToNot(HaveOccurred())
 	}
 
-	plugins := registry.Plugins(ctx, commoncol)
+	plugins := registry.Plugins(ctx, commoncol, wellknown.DefaultWaypointClassName)
 	plugins = append(plugins, krtcollections.NewBuiltinPlugin(ctx))
 	extensions := registry.MergePlugins(plugins...)
 
-	commoncol.InitPlugins(ctx, extensions)
+	commoncol.InitPlugins(ctx, extensions, *settings)
 	kubeClient.RunAndWait(ctx.Done())
 	return commoncol
 }

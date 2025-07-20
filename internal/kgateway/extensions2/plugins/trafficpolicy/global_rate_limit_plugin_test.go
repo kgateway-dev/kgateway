@@ -6,14 +6,15 @@ import (
 	"testing"
 	"time"
 
-	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	ratelimitv3 "github.com/envoyproxy/go-control-plane/envoy/config/ratelimit/v3"
-	routeconfv3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoyratelimitv3 "github.com/envoyproxy/go-control-plane/envoy/config/ratelimit/v3"
+	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	ratev3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ratelimit/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/durationpb"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/utils/ptr"
 	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
@@ -25,7 +26,7 @@ func TestCreateRateLimitActions(t *testing.T) {
 		name           string
 		descriptors    []v1alpha1.RateLimitDescriptor
 		expectedError  string
-		validateResult func(*testing.T, []*routeconfv3.RateLimit_Action)
+		validateResult func(*testing.T, []*envoyroutev3.RateLimit_Action)
 	}{
 		{
 			name: "with generic key descriptor",
@@ -42,7 +43,7 @@ func TestCreateRateLimitActions(t *testing.T) {
 					},
 				},
 			},
-			validateResult: func(t *testing.T, actions []*routeconfv3.RateLimit_Action) {
+			validateResult: func(t *testing.T, actions []*envoyroutev3.RateLimit_Action) {
 				require.Len(t, actions, 1)
 				genericKey := actions[0].GetGenericKey()
 				require.NotNil(t, genericKey)
@@ -57,12 +58,12 @@ func TestCreateRateLimitActions(t *testing.T) {
 					Entries: []v1alpha1.RateLimitDescriptorEntry{
 						{
 							Type:   v1alpha1.RateLimitDescriptorEntryTypeHeader,
-							Header: "X-User-ID",
+							Header: ptr.To("X-User-ID"),
 						},
 					},
 				},
 			},
-			validateResult: func(t *testing.T, actions []*routeconfv3.RateLimit_Action) {
+			validateResult: func(t *testing.T, actions []*envoyroutev3.RateLimit_Action) {
 				require.Len(t, actions, 1)
 				requestHeaders := actions[0].GetRequestHeaders()
 				require.NotNil(t, requestHeaders)
@@ -81,7 +82,7 @@ func TestCreateRateLimitActions(t *testing.T) {
 					},
 				},
 			},
-			validateResult: func(t *testing.T, actions []*routeconfv3.RateLimit_Action) {
+			validateResult: func(t *testing.T, actions []*envoyroutev3.RateLimit_Action) {
 				require.Len(t, actions, 1)
 				remoteAddress := actions[0].GetRemoteAddress()
 				require.NotNil(t, remoteAddress)
@@ -98,7 +99,7 @@ func TestCreateRateLimitActions(t *testing.T) {
 					},
 				},
 			},
-			validateResult: func(t *testing.T, actions []*routeconfv3.RateLimit_Action) {
+			validateResult: func(t *testing.T, actions []*envoyroutev3.RateLimit_Action) {
 				require.Len(t, actions, 1)
 				requestHeaders := actions[0].GetRequestHeaders()
 				require.NotNil(t, requestHeaders)
@@ -128,7 +129,7 @@ func TestCreateRateLimitActions(t *testing.T) {
 					},
 				},
 			},
-			validateResult: func(t *testing.T, actions []*routeconfv3.RateLimit_Action) {
+			validateResult: func(t *testing.T, actions []*envoyroutev3.RateLimit_Action) {
 				require.Len(t, actions, 2)
 				// First action is generic key
 				genericKey := actions[0].GetGenericKey()
@@ -155,12 +156,12 @@ func TestCreateRateLimitActions(t *testing.T) {
 						},
 						{
 							Type:   v1alpha1.RateLimitDescriptorEntryTypeHeader,
-							Header: "X-User-ID",
+							Header: ptr.To("X-User-ID"),
 						},
 					},
 				},
 			},
-			validateResult: func(t *testing.T, actions []*routeconfv3.RateLimit_Action) {
+			validateResult: func(t *testing.T, actions []*envoyroutev3.RateLimit_Action) {
 				require.Len(t, actions, 2)
 				// First action is generic key
 				genericKey := actions[0].GetGenericKey()
@@ -299,7 +300,7 @@ func TestToRateLimitFilterConfig(t *testing.T) {
 				require.NotNil(t, rl)
 				assert.Equal(t, "test-domain", rl.Domain)
 				assert.Equal(t, defaultClusterName, rl.RateLimitService.GrpcService.GetEnvoyGrpc().ClusterName)
-				assert.Equal(t, corev3.ApiVersion_V3, rl.RateLimitService.TransportApiVersion)
+				assert.Equal(t, envoycorev3.ApiVersion_V3, rl.RateLimitService.TransportApiVersion)
 				assert.Equal(t, ratev3.RateLimit_DRAFT_VERSION_03, rl.EnableXRatelimitHeaders)
 				assert.Equal(t, "both", rl.RequestType)
 				assert.Equal(t, rateLimitStatPrefix, rl.StatPrefix)
@@ -570,15 +571,15 @@ func TestToRateLimitFilterConfig(t *testing.T) {
 								Domain:          domain,
 								Timeout:         timeout,
 								FailureModeDeny: !extension.FailOpen,
-								RateLimitService: &ratelimitv3.RateLimitServiceConfig{
-									GrpcService: &corev3.GrpcService{
-										TargetSpecifier: &corev3.GrpcService_EnvoyGrpc_{
-											EnvoyGrpc: &corev3.GrpcService_EnvoyGrpc{
+								RateLimitService: &envoyratelimitv3.RateLimitServiceConfig{
+									GrpcService: &envoycorev3.GrpcService{
+										TargetSpecifier: &envoycorev3.GrpcService_EnvoyGrpc_{
+											EnvoyGrpc: &envoycorev3.GrpcService_EnvoyGrpc{
 												ClusterName: clusterName,
 											},
 										},
 									},
-									TransportApiVersion: corev3.ApiVersion_V3,
+									TransportApiVersion: envoycorev3.ApiVersion_V3,
 								},
 								Stage:                   0,
 								EnableXRatelimitHeaders: ratev3.RateLimit_DRAFT_VERSION_03,

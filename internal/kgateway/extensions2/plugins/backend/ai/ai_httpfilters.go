@@ -5,8 +5,8 @@ import (
 	"strings"
 	"time"
 
-	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
-	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_ext_proc_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_proc/v3"
 	envoy_upstream_codec "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/upstream_codec/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
@@ -26,7 +26,7 @@ const (
 	upstreamCodecFilterName = "envoy.filters.http.upstream_codec"
 )
 
-func AddUpstreamClusterHttpFilters(out *envoy_config_cluster_v3.Cluster) error {
+func AddUpstreamClusterHttpFilters(out *envoyclusterv3.Cluster) error {
 	transformationMsg, err := utils.MessageToAny(&envoytransformation.FilterTransformations{})
 	if err != nil {
 		return err
@@ -96,7 +96,7 @@ func AddUpstreamClusterHttpFilters(out *envoy_config_cluster_v3.Cluster) error {
 				},
 			}
 		}
-		opts.CommonHttpProtocolOptions = &envoy_config_core_v3.HttpProtocolOptions{
+		opts.CommonHttpProtocolOptions = &envoycorev3.HttpProtocolOptions{
 			IdleTimeout: &durationpb.Duration{
 				Seconds: 30,
 			},
@@ -115,11 +115,11 @@ func AddExtprocHTTPFilter() ([]plugins.StagedHttpFilter, error) {
 	// TODO: add ratelimit and jwt_authn if AI Backend is configured
 
 	extProcSettings := &envoy_ext_proc_v3.ExternalProcessor{
-		GrpcService: &envoy_config_core_v3.GrpcService{
+		GrpcService: &envoycorev3.GrpcService{
 			// Note: retries and timeouts are not set here currently since grpc retries are not useful if the
 			// request size is unknown. See: https://github.com/kgateway-dev/kgateway/issues/10739
-			TargetSpecifier: &envoy_config_core_v3.GrpcService_EnvoyGrpc_{
-				EnvoyGrpc: &envoy_config_core_v3.GrpcService_EnvoyGrpc{
+			TargetSpecifier: &envoycorev3.GrpcService_EnvoyGrpc_{
+				EnvoyGrpc: &envoycorev3.GrpcService_EnvoyGrpc{
 					ClusterName: extProcUDSClusterName,
 				},
 			},

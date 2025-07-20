@@ -9,14 +9,13 @@ import (
 	"github.com/onsi/gomega"
 	"github.com/onsi/gomega/gstruct"
 
-	// errors "github.com/rotisserie/eris"
-	// "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 	"github.com/kgateway-dev/kgateway/v2/test/helpers"
 )
@@ -423,4 +422,33 @@ func getListener(listeners []gwxv1a1.ListenerEntryStatus, name string) *gwxv1a1.
 		}
 	}
 	return nil
+}
+
+// EventuallyHTTPListenerPolicyCondition checks that provided HTTPListenerPolicy condition is set to expect.
+func (p *Provider) EventuallyHTTPListenerPolicyCondition(
+	ctx context.Context,
+	name string,
+	namespace string,
+	cond gwv1.GatewayConditionType,
+	expect metav1.ConditionStatus,
+	timeout ...time.Duration,
+) {
+	ginkgo.GinkgoHelper()
+	currentTimeout, pollingInterval := helpers.GetTimeouts(timeout...)
+	p.Gomega.Eventually(func(g gomega.Gomega) {
+		hlp := &v1alpha1.HTTPListenerPolicy{}
+		err := p.clusterContext.Client.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, hlp)
+		g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get HTTPListenerPolicy %s/%s", namespace, name)
+
+		var conditionFound bool
+		for _, parentStatus := range hlp.Status.Ancestors {
+			condition := getConditionByType(parentStatus.Conditions, string(cond))
+			if condition != nil && condition.Status == expect {
+				conditionFound = true
+				break
+			}
+		}
+		g.Expect(conditionFound).To(gomega.BeTrue(), fmt.Sprintf("%v condition is not %v for any parent of HTTPListenerPolicy %s/%s",
+			cond, expect, namespace, name))
+	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 }

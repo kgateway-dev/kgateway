@@ -2,6 +2,7 @@ package v1alpha1
 
 import (
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 )
@@ -28,13 +29,20 @@ type BackendConfigPolicyList struct {
 	Items           []BackendConfigPolicy `json:"items"`
 }
 
+// BackendConfigPolicySpec defines the desired state of BackendConfigPolicy.
+//
+// +kubebuilder:validation:AtMostOneOf=http1ProtocolOptions;http2ProtocolOptions
 type BackendConfigPolicySpec struct {
+	// TargetRefs specifies the target references to attach the policy to.
+	// +optional
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=16
+	// +kubebuilder:validation:XValidation:rule="self.all(r, (r.group == '' && r.kind == 'Service') || (r.group == 'gateway.kgateway.dev' && r.kind == 'Backend'))",message="TargetRefs must reference either a Kubernetes Service or a Backend API"
 	TargetRefs []LocalPolicyTargetReference `json:"targetRefs,omitempty"`
 
 	// TargetSelectors specifies the target selectors to select resources to attach the policy to.
 	// +optional
+	// +kubebuilder:validation:XValidation:rule="self.all(r, (r.group == '' && r.kind == 'Service') || (r.group == 'gateway.kgateway.dev' && r.kind == 'Backend'))",message="TargetSelectors must reference either a Kubernetes Service or a Backend API"
 	TargetSelectors []LocalPolicyTargetSelector `json:"targetSelectors,omitempty"`
 
 	// The timeout for new network connections to hosts in the cluster.
@@ -60,14 +68,24 @@ type BackendConfigPolicySpec struct {
 	// +optional
 	Http1ProtocolOptions *Http1ProtocolOptions `json:"http1ProtocolOptions,omitempty"`
 
-	// SSLConfig contains the options necessary to configure a backend to use TLS origination.
+	// Http2ProtocolOptions contains the options necessary to configure HTTP/2 backends.
+	// Note: Http2ProtocolOptions can only be applied to HTTP/2 backends.
 	// See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/transport_sockets/tls/v3/tls.proto#envoy-v3-api-msg-extensions-transport-sockets-tls-v3-sslconfig) for more details.
 	// +optional
-	SSLConfig *SSLConfig `json:"sslConfig,omitempty"`
+	Http2ProtocolOptions *Http2ProtocolOptions `json:"http2ProtocolOptions,omitempty"`
 
-	// LoadBalancerConfig contains the options necessary to configure the load balancer.
+	// TLS contains the options necessary to configure a backend to use TLS origination.
+	// See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/transport_sockets/tls/v3/tls.proto#envoy-v3-api-msg-extensions-transport-sockets-tls-v3-sslconfig) for more details.
 	// +optional
-	LoadBalancerConfig *LoadBalancerConfig `json:"loadBalancerConfig,omitempty"`
+	TLS *TLS `json:"tls,omitempty"`
+
+	// LoadBalancer contains the options necessary to configure the load balancer.
+	// +optional
+	LoadBalancer *LoadBalancer `json:"loadBalancer,omitempty"`
+
+	// HealthCheck contains the options necessary to configure the health check.
+	// +optional
+	HealthCheck *HealthCheck `json:"healthCheck,omitempty"`
 }
 
 // See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-msg-config-core-v3-http1protocoloptions) for more details.
@@ -126,33 +144,37 @@ type CommonHttpProtocolOptions struct {
 	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('0s')",message="maxStreamDuration must be a valid duration string"
 	MaxStreamDuration *metav1.Duration `json:"maxStreamDuration,omitempty"`
 
-	// Action to take when a client request with a header name containing underscore characters is received.
-	// If this setting is not specified, the value defaults to ALLOW.
-	// Note: upstream responses are not affected by this setting.
-	// +optional
-	HeadersWithUnderscoresAction *HeadersWithUnderscoresAction `json:"headersWithUnderscoresAction,omitempty"`
-
 	// Maximum requests for a single upstream connection.
 	// If set to 0 or unspecified, defaults to unlimited.
 	// +optional
 	MaxRequestsPerConnection *int `json:"maxRequestsPerConnection,omitempty"`
 }
+type Http2ProtocolOptions struct {
+	// InitialStreamWindowSize is the initial window size for the stream.
+	// Valid values range from 65535 (2^16 - 1, HTTP/2 default) to 2147483647 (2^31 - 1, HTTP/2 maximum).
+	// Defaults to 268435456 (256 * 1024 * 1024).
+	// Values can be specified with units like "64Ki".
+	// +optional
+	// +kubebuilder:validation:XValidation:message="InitialStreamWindowSize must be between 65535 and 2147483647 bytes (inclusive)",rule="quantity(self).isGreaterThan(quantity('65534')) && quantity(self).isLessThan(quantity('2147483648'))"
+	InitialStreamWindowSize *resource.Quantity `json:"initialStreamWindowSize,omitempty"`
 
-// +kubebuilder:validation:Enum=Allow;RejectRequest;DropHeader
-type HeadersWithUnderscoresAction string
+	// InitialConnectionWindowSize is similar to InitialStreamWindowSize, but for the connection level.
+	// Same range and default value as InitialStreamWindowSize.
+	// Values can be specified with units like "64Ki".
+	// +optional
+	// +kubebuilder:validation:XValidation:message="InitialConnectionWindowSize must be between 65535 and 2147483647 bytes (inclusive)",rule="quantity(self).isGreaterThan(quantity('65534')) && quantity(self).isLessThan(quantity('2147483648'))"
+	InitialConnectionWindowSize *resource.Quantity `json:"initialConnectionWindowSize,omitempty"`
 
-const (
-	// Allow headers with underscores. This is the default behavior.
-	HeadersWithUnderscoresActionAllow HeadersWithUnderscoresAction = "Allow"
-	// Reject client request. HTTP/1 requests are rejected with the 400 status. HTTP/2 requests
-	// end with the stream reset. The "httpN.requests_rejected_with_underscores_in_headers" counter
-	// is incremented for each rejected request.
-	HeadersWithUnderscoresActionRejectRequest HeadersWithUnderscoresAction = "RejectRequest"
-	// Drop the header with name containing underscores. The header is dropped before the filter chain is
-	// invoked and as such filters will not see dropped headers. The
-	// "httpN.dropped_headers_with_underscores" is incremented for each dropped header.
-	HeadersWithUnderscoresActionDropHeader HeadersWithUnderscoresAction = "DropHeader"
-)
+	// The maximum number of concurrent streams that the connection can have.
+	// +optional
+	MaxConcurrentStreams *int `json:"maxConcurrentStreams,omitempty"`
+
+	// Allows invalid HTTP messaging and headers. When disabled (default), then
+	// the whole HTTP/2 connection is terminated upon receiving invalid HEADERS frame.
+	// When enabled, only the offending stream is terminated.
+	// +optional
+	OverrideStreamErrorOnInvalidHttpMessage *bool `json:"overrideStreamErrorOnInvalidHttpMessage,omitempty"`
+}
 
 // See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/address.proto#envoy-v3-api-msg-config-core-v3-tcpkeepalive) for more details.
 type TCPKeepalive struct {
@@ -173,19 +195,20 @@ type TCPKeepalive struct {
 	KeepAliveInterval *metav1.Duration `json:"keepAliveInterval,omitempty"`
 }
 
-// +kubebuilder:validation:XValidation:rule="has(self.secretRef) != has(self.sslFiles)",message="Exactly one of secretRef or sslFiles must be set in SSLConfig"
-type SSLConfig struct {
+// +kubebuilder:validation:ExactlyOneOf=secretRef;tlsFiles
+type TLS struct {
 	// Reference to the TLS secret containing the certificate, key, and optionally the root CA.
 	// +optional
 	SecretRef *corev1.LocalObjectReference `json:"secretRef,omitempty"`
 
 	// File paths to certificates local to the proxy.
 	// +optional
-	SSLFiles *SSLFiles `json:"sslFiles,omitempty"`
+	TLSFiles *TLSFiles `json:"tlsFiles,omitempty"`
 
 	// The SNI domains that should be considered for TLS connection
 	// +optional
-	Sni string `json:"sni,omitempty"`
+	// +kubebuilder:validation:MinLength=1
+	Sni *string `json:"sni,omitempty"`
 
 	// Verify that the Subject Alternative Name in the peer certificate is one of the specified values.
 	// note that a root_ca must be provided if this option is used.
@@ -195,7 +218,7 @@ type SSLConfig struct {
 	// General TLS parameters. See the [envoy docs](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/transport_sockets/tls/v3/common.proto#extensions-transport-sockets-tls-v3-tlsparameters)
 	// for more information on the meaning of these values.
 	// +optional
-	SSLParameters *SSLParameters `json:"sslParameters,omitempty"`
+	Parameters *Parameters `json:"parameters,omitempty"`
 
 	// Set Application Level Protocol Negotiation
 	// If empty, defaults to ["h2", "http/1.1"].
@@ -207,7 +230,7 @@ type SSLConfig struct {
 	// +optional
 	AllowRenegotiation *bool `json:"allowRenegotiation,omitempty"`
 
-	// If the SSL config has the ca.crt (root CA) provided, kgateway uses it to perform mTLS by default.
+	// If the TLS config has the ca.crt (root CA) provided, kgateway uses it to perform mTLS by default.
 	// Set oneWayTls to true to disable mTLS in favor of server-only TLS (one-way TLS), even if kgateway has the root CA.
 	// If unset, defaults to false.
 	// +optional
@@ -226,7 +249,7 @@ const (
 	TLSVersion1_3  TLSVersion = "1.3"
 )
 
-type SSLParameters struct {
+type Parameters struct {
 	// Minimum TLS version.
 	// +optional
 	TLSMinVersion *TLSVersion `json:"tlsMinVersion,omitempty"`
@@ -242,20 +265,23 @@ type SSLParameters struct {
 	EcdhCurves []string `json:"ecdhCurves,omitempty"`
 }
 
-// +kubebuilder:validation:XValidation:rule="has(self.tlsCertificate) || has(self.tlsKey) || has(self.rootCA)",message="At least one of tlsCertificate, tlsKey, or rootCA must be set in SSLFiles"
-type SSLFiles struct {
+// +kubebuilder:validation:XValidation:rule="has(self.tlsCertificate) || has(self.tlsKey) || has(self.rootCA)",message="At least one of tlsCertificate, tlsKey, or rootCA must be set in TLSFiles"
+type TLSFiles struct {
 	// +optional
-	TLSCertificate string `json:"tlsCertificate,omitempty"`
+	// +kubebuilder:validation:MinLength=1
+	TLSCertificate *string `json:"tlsCertificate,omitempty"`
 
 	// +optional
-	TLSKey string `json:"tlsKey,omitempty"`
+	// +kubebuilder:validation:MinLength=1
+	TLSKey *string `json:"tlsKey,omitempty"`
 
 	// +optional
-	RootCA string `json:"rootCA,omitempty"`
+	// +kubebuilder:validation:MinLength=1
+	RootCA *string `json:"rootCA,omitempty"`
 }
 
-// +kubebuilder:validation:XValidation:rule="[has(self.leastRequest), has(self.roundRobin), has(self.ringHash), has(self.maglev), has(self.random)].filter(x, x).size() <= 1",message="only one of leastRequest, roundRobin, ringHash, maglev, or random can be set"
-type LoadBalancerConfig struct {
+// +kubebuilder:validation:AtMostOneOf=leastRequest;roundRobin;ringHash;maglev;random
+type LoadBalancer struct {
 	// HealthyPanicThreshold configures envoy's panic threshold percentage between 0-100. Once the number of non-healthy hosts
 	// reaches this percentage, envoy disregards health information.
 	// See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/load_balancing/panic_threshold.html).
@@ -291,11 +317,11 @@ type LoadBalancerConfig struct {
 	// +optional
 	Random *LoadBalancerRandomConfig `json:"random,omitempty"`
 
-	// LocalityConfigType specifies the locality config type to use.
+	// LocalityType specifies the locality config type to use.
 	// See https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/load_balancing_policies/common/v3/common.proto#envoy-v3-api-msg-extensions-load-balancing-policies-common-v3-localitylbconfig
 	// +optional
 	// +kubebuilder:validation:Enum=WeightedLb
-	LocalityConfigType *LocalityConfigType `json:"localityConfigType,omitempty"`
+	LocalityType *LocalityType `json:"localityType,omitempty"`
 
 	// UseHostnameForHashing specifies whether to use the hostname instead of the resolved IP address for hashing.
 	// Defaults to false.
@@ -326,16 +352,16 @@ type LoadBalancerLeastRequestConfig struct {
 	// +default=2
 	ChoiceCount uint32 `json:"choiceCount,omitempty"`
 
-	// SlowStartConfig configures the slow start configuration for the load balancer.
+	// SlowStart configures the slow start configuration for the load balancer.
 	// +optional
-	SlowStartConfig *SlowStartConfig `json:"slowStartConfig,omitempty"`
+	SlowStart *SlowStart `json:"slowStart,omitempty"`
 }
 
 // LoadBalancerRoundRobinConfig configures the round robin load balancer type.
 type LoadBalancerRoundRobinConfig struct {
-	// SlowStartConfig configures the slow start configuration for the load balancer.
+	// SlowStart configures the slow start configuration for the load balancer.
 	// +optional
-	SlowStartConfig *SlowStartConfig `json:"slowStartConfig,omitempty"`
+	SlowStart *SlowStart `json:"slowStart,omitempty"`
 }
 
 // LoadBalancerRingHashConfig configures the ring hash load balancer type.
@@ -349,10 +375,12 @@ type LoadBalancerRingHashConfig struct {
 	MaximumRingSize *uint64 `json:"maximumRingSize,omitempty"`
 }
 
-type LoadBalancerMaglevConfig struct{}
-type LoadBalancerRandomConfig struct{}
+type (
+	LoadBalancerMaglevConfig struct{}
+	LoadBalancerRandomConfig struct{}
+)
 
-type SlowStartConfig struct {
+type SlowStart struct {
 	// Represents the size of slow start window.
 	// If set, the newly created host remains in slow start mode starting from its creation time
 	// for the duration of slow start window.
@@ -373,19 +401,86 @@ type SlowStartConfig struct {
 	// As time progresses, more and more traffic would be sent to endpoint, which is in slow start window.
 	// Once host exits slow start, time_factor and aggression no longer affect its weight.
 	// +optional
-	// +kubebuilder:validation:XValidation:rule="self == \"\" || (self.matches('^-?(?:[0-9]+(?:\\\\.[0-9]*)?|\\\\.[0-9]+)$') && double(self) > 0.0)",message="Aggression, if specified, must be a string representing a number greater than 0.0"
-	Aggression string `json:"aggression,omitempty"`
+	// +kubebuilder:validation:XValidation:rule="(self.matches('^-?(?:[0-9]+(?:\\\\.[0-9]*)?|\\\\.[0-9]+)$') && double(self) > 0.0)",message="Aggression, if specified, must be a string representing a number greater than 0.0"
+	Aggression *string `json:"aggression,omitempty"`
 
 	// Minimum weight percentage of an endpoint during slow start.
 	// +optional
 	MinWeightPercent *uint32 `json:"minWeightPercent,omitempty"`
 }
 
-type LocalityConfigType string
+type LocalityType string
 
 const (
 	// https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/load_balancing/locality_weight#locality-weighted-load-balancing
 	// Locality weighted load balancing enables weighting assignments across different zones and geographical locations by using explicit weights.
 	// This field is required to enable locality weighted load balancing.
-	LocalityConfigTypeWeightedLb LocalityConfigType = "WeightedLb"
+	LocalityConfigTypeWeightedLb LocalityType = "WeightedLb"
 )
+
+// HealthCheck contains the options to configure the health check.
+// See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/health_check.proto) for more details.
+// +optional
+// +kubebuilder:validation:XValidation:rule="has(self.http) != has(self.grpc)",message="exactly one of http or grpc must be set"
+type HealthCheck struct {
+	// Timeout is time to wait for a health check response. If the timeout is reached the
+	// health check attempt will be considered a failure.
+	// +required
+	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('0s')",message="timeout must be a valid duration string"
+	Timeout *metav1.Duration `json:"timeout"`
+
+	// Interval is the time between health checks.
+	// +required
+	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('0s')",message="interval must be a valid duration string"
+	Interval *metav1.Duration `json:"interval"`
+
+	// UnhealthyThreshold is the number of consecutive failed health checks that will be considered
+	// unhealthy.
+	// Note that for HTTP health checks, if a host responds with a code not in ExpectedStatuses or RetriableStatuses,
+	// this threshold is ignored and the host is considered immediately unhealthy.
+	// +required
+	UnhealthyThreshold *uint32 `json:"unhealthyThreshold"`
+
+	// HealthyThreshold is the number of healthy health checks required before a host is marked
+	// healthy. Note that during startup, only a single successful health check is
+	// required to mark a host healthy.
+	// +required
+	HealthyThreshold *uint32 `json:"healthyThreshold"`
+
+	// Http contains the options to configure the HTTP health check.
+	// +optional
+	Http *HealthCheckHttp `json:"http,omitempty"`
+
+	// Grpc contains the options to configure the gRPC health check.
+	// +optional
+	Grpc *HealthCheckGrpc `json:"grpc,omitempty"`
+}
+type HealthCheckHttp struct {
+	// Host is the value of the host header in the HTTP health check request. If
+	// unset, the name of the cluster this health check is associated
+	// with will be used.
+	// +optional
+	Host *string `json:"host,omitempty"`
+
+	// Path is the HTTP path requested.
+	// +required
+	Path string `json:"path"`
+
+	// Method is the HTTP method to use.
+	// If unset, GET is used.
+	// +optional
+	// +kubebuilder:validation:Enum=GET;HEAD;POST;PUT;DELETE;OPTIONS;TRACE;PATCH
+	Method *string `json:"method,omitempty"`
+}
+
+type HealthCheckGrpc struct {
+	// ServiceName is the optional name of the service to check.
+	// +optional
+	ServiceName *string `json:"serviceName,omitempty"`
+
+	// Authority is the authority header used to make the gRPC health check request.
+	// If unset, the name of the cluster this health check is associated
+	// with will be used.
+	// +optional
+	Authority *string `json:"authority,omitempty"`
+}

@@ -24,8 +24,6 @@ import (
 	adminv3 "github.com/envoyproxy/go-control-plane/envoy/admin/v3"
 
 	"github.com/onsi/ginkgo/v2"
-
-	errors "github.com/rotisserie/eris"
 )
 
 const (
@@ -264,7 +262,7 @@ func (ei *Instance) runContainer(ctx context.Context) error {
 	cmd.Stdout = ginkgo.GinkgoWriter
 	cmd.Stderr = ginkgo.GinkgoWriter
 	if err := cmd.Start(); err != nil {
-		return errors.Wrap(err, "Unable to start envoy container")
+		return fmt.Errorf("Unable to start envoy container: %w", err)
 	}
 
 	// cmd.Run() is entering an infinite loop here (not sure why).
@@ -283,7 +281,7 @@ func (ei *Instance) waitForEnvoyToBeRunning() error {
 	for {
 		select {
 		case <-ctx.Done():
-			return errors.Errorf("timed out waiting for envoy on %s", pingEndpoint)
+			return fmt.Errorf("timed out waiting for envoy on %s", pingEndpoint)
 
 		case <-pingInterval:
 			conn, _ := net.Dial("tcp", pingEndpoint)
@@ -302,7 +300,7 @@ func (ei *Instance) Logs() (string, error) {
 		cmd := exec.Command("docker", logsArgs...)
 		byt, err := cmd.CombinedOutput()
 		if err != nil {
-			return "", errors.Wrap(err, "Unable to fetch logs from envoy container")
+			return "", fmt.Errorf("Unable to fetch logs from envoy container: %w", err)
 		}
 		return string(byt), nil
 	}

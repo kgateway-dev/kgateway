@@ -3,8 +3,8 @@ package proxy_syncer_test
 import (
 	"testing"
 
-	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	endpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	"github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 
@@ -22,11 +22,11 @@ func TestTranslatesDestrulesFailoverPriority(t *testing.T) {
 	}
 	efu := ir.NewEndpointsForBackend(us)
 	efu.Add(ir.PodLocality{Region: "R1"}, ir.EndpointWithMd{
-		LbEndpoint: &endpointv3.LbEndpoint{
-			HostIdentifier: &endpointv3.LbEndpoint_Endpoint{
-				Endpoint: &endpointv3.Endpoint{
-					Address: &corev3.Address{
-						Address: &corev3.Address_Pipe{Pipe: &corev3.Pipe{Path: "a"}},
+		LbEndpoint: &envoyendpointv3.LbEndpoint{
+			HostIdentifier: &envoyendpointv3.LbEndpoint_Endpoint{
+				Endpoint: &envoyendpointv3.Endpoint{
+					Address: &envoycorev3.Address{
+						Address: &envoycorev3.Address_Pipe{Pipe: &envoycorev3.Pipe{Path: "a"}},
 					},
 				},
 			},
@@ -36,11 +36,11 @@ func TestTranslatesDestrulesFailoverPriority(t *testing.T) {
 		},
 	})
 	efu.Add(ir.PodLocality{Region: "R2"}, ir.EndpointWithMd{
-		LbEndpoint: &endpointv3.LbEndpoint{
-			HostIdentifier: &endpointv3.LbEndpoint_Endpoint{
-				Endpoint: &endpointv3.Endpoint{
-					Address: &corev3.Address{
-						Address: &corev3.Address_Pipe{Pipe: &corev3.Pipe{Path: "b"}},
+		LbEndpoint: &envoyendpointv3.LbEndpoint{
+			HostIdentifier: &envoyendpointv3.LbEndpoint_Endpoint{
+				Endpoint: &envoyendpointv3.Endpoint{
+					Address: &envoycorev3.Address{
+						Address: &envoycorev3.Address_Pipe{Pipe: &envoycorev3.Pipe{Path: "b"}},
 					},
 				},
 			},
@@ -92,11 +92,11 @@ func TestTranslatesDestrulesFailover(t *testing.T) {
 	}
 	efu := ir.NewEndpointsForBackend(us)
 	efu.Add(ir.PodLocality{Region: "R1"}, ir.EndpointWithMd{
-		LbEndpoint: &endpointv3.LbEndpoint{
-			HostIdentifier: &endpointv3.LbEndpoint_Endpoint{
-				Endpoint: &endpointv3.Endpoint{
-					Address: &corev3.Address{
-						Address: &corev3.Address_Pipe{Pipe: &corev3.Pipe{Path: "a"}},
+		LbEndpoint: &envoyendpointv3.LbEndpoint{
+			HostIdentifier: &envoyendpointv3.LbEndpoint_Endpoint{
+				Endpoint: &envoyendpointv3.Endpoint{
+					Address: &envoycorev3.Address{
+						Address: &envoycorev3.Address_Pipe{Pipe: &envoycorev3.Pipe{Path: "a"}},
 					},
 				},
 			},
@@ -106,11 +106,11 @@ func TestTranslatesDestrulesFailover(t *testing.T) {
 		},
 	})
 	efu.Add(ir.PodLocality{Region: "R2"}, ir.EndpointWithMd{
-		LbEndpoint: &endpointv3.LbEndpoint{
-			HostIdentifier: &endpointv3.LbEndpoint_Endpoint{
-				Endpoint: &endpointv3.Endpoint{
-					Address: &corev3.Address{
-						Address: &corev3.Address_Pipe{Pipe: &corev3.Pipe{Path: "b"}},
+		LbEndpoint: &envoyendpointv3.LbEndpoint{
+			HostIdentifier: &envoyendpointv3.LbEndpoint_Endpoint{
+				Endpoint: &envoyendpointv3.Endpoint{
+					Address: &envoycorev3.Address{
+						Address: &envoycorev3.Address_Pipe{Pipe: &envoycorev3.Pipe{Path: "b"}},
 					},
 				},
 			},

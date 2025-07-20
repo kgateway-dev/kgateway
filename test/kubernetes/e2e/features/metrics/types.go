@@ -1,56 +1,57 @@
-//go:build ignore
-
 package metrics
 
 import (
 	"path/filepath"
 
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
+	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
-	gloov1 "github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/v1"
-	"github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/v1/options/kubernetes"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
-	testdefaults "github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/defaults"
+	e2edefaults "github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/defaults"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/tests/base"
 )
 
 var (
 	// manifests
-	exampleServiceManifest            = filepath.Join(fsutils.MustGetThisDir(), "testdata", "service.yaml")
-	gatewayAndRouteToServiceManifest  = filepath.Join(fsutils.MustGetThisDir(), "testdata", "gateway-and-route-to-service.yaml")
-	gatewayAndRouteToUpstreamManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "gateway-and-route-to-upstream.yaml")
+	setupManifest           = filepath.Join(fsutils.MustGetThisDir(), "testdata", "setup.yaml")
+	exampleRouteManifest    = filepath.Join(fsutils.MustGetThisDir(), "testdata", "example-route.yaml")
+	metricResourcesManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "metric-resources.yaml")
 
 	// objects
-	glooProxyObjectMeta = metav1.ObjectMeta{
-		Name:      "gw",
+	proxyObjectMeta = metav1.ObjectMeta{
+		Name:      "gw1",
 		Namespace: "default",
 	}
-	proxyDeployment = &appsv1.Deployment{ObjectMeta: glooProxyObjectMeta}
-	proxyService    = &corev1.Service{ObjectMeta: glooProxyObjectMeta}
+
+	proxyDeployment     = &appsv1.Deployment{ObjectMeta: proxyObjectMeta}
+	proxyService        = &corev1.Service{ObjectMeta: proxyObjectMeta}
+	proxyServiceAccount = &corev1.ServiceAccount{ObjectMeta: proxyObjectMeta}
+
+	kgatewayMetricsObjectMeta = metav1.ObjectMeta{
+		Name:      "kgateway-metrics",
+		Namespace: "kgateway-test",
+	}
+
+	kgatewayMetricsService = &corev1.Service{ObjectMeta: kgatewayMetricsObjectMeta}
 
 	exampleSvc = &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "example-svc",
 			Namespace: "default",
 		},
-		Spec: corev1.ServiceSpec{
-			Selector: map[string]string{
-				"app.kubernetes.io/name": "nginx",
-			},
-			Ports: []corev1.ServicePort{
-				{
-					Port:       8080,
-					Protocol:   corev1.ProtocolTCP,
-					TargetPort: intstr.FromString("http-web-svc"),
-				},
-			},
+	}
+
+	exampleRoute = &apiv1.HTTPRoute{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "example-route",
+			Namespace: "default",
 		},
 	}
+
 	nginxPod = &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "nginx",
@@ -58,32 +59,57 @@ var (
 		},
 	}
 
-	kubeUpstream = &gloov1.Upstream{
-		Metadata: &core.Metadata{
-			Name:      "example-upstream",
+	setup = base.SimpleTestCase{
+		Manifests: []string{setupManifest, e2edefaults.CurlPodManifest},
+		Resources: []client.Object{kgatewayMetricsService, exampleSvc, proxyDeployment, proxyService, proxyServiceAccount, nginxPod, e2edefaults.CurlPod},
+	}
+
+	gw2 = &apiv1.Gateway{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "gw2",
 			Namespace: "default",
-		},
-		UpstreamType: &gloov1.Upstream_Kube{
-			Kube: &kubernetes.UpstreamSpec{
-				ServiceName:      "example-svc",
-				ServiceNamespace: "default",
-				ServicePort:      8080,
-			},
 		},
 	}
 
-	// test cases
+	exampleRoute1 = &apiv1.HTTPRoute{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "example-route-1",
+			Namespace: "default",
+		},
+	}
+
+	exampleRoute2 = &apiv1.HTTPRoute{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "example-route-2",
+			Namespace: "default",
+		},
+	}
+
+	exampleRouteLs1 = &apiv1.HTTPRoute{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "example-route-ls1",
+			Namespace: "default",
+		},
+	}
+
+	listenerSet1 = &gwxv1a1.XListenerSet{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "ls1",
+			Namespace: "default",
+		},
+	}
+
 	testCases = map[string]*base.TestCase{
-		"TestKubeServiceSuccessStats": {
+		"TestMetrics": {
 			SimpleTestCase: base.SimpleTestCase{
-				Manifests: []string{testdefaults.CurlPodManifest, exampleServiceManifest, gatewayAndRouteToServiceManifest},
-				Resources: []client.Object{testdefaults.CurlPod, exampleSvc, nginxPod, proxyDeployment, proxyService},
+				Manifests: []string{exampleRouteManifest},
+				Resources: []client.Object{exampleRoute},
 			},
 		},
-		"TestKubeUpstreamSuccessStats": {
+		"TestResourceCountingMetrics": {
 			SimpleTestCase: base.SimpleTestCase{
-				Manifests: []string{testdefaults.CurlPodManifest, exampleServiceManifest, gatewayAndRouteToUpstreamManifest},
-				Resources: []client.Object{testdefaults.CurlPod, exampleSvc, nginxPod, proxyDeployment, proxyService},
+				Manifests: []string{metricResourcesManifest},
+				Resources: []client.Object{gw2, exampleRoute1, exampleRoute2, exampleRouteLs1, listenerSet1},
 			},
 		},
 	}

@@ -74,16 +74,18 @@ func (s *testingSuite) TestGatewayWithRoute() {
 	})
 
 	// Should have a successful response
-	s.testInstallation.Assertions.AssertEventualCurlResponse(
-		s.ctx,
-		testdefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
-			curl.WithHostHeader("example.com"),
-			curl.WithPort(8080),
-		},
-		&testmatchers.HttpResponse{
-			StatusCode: http.StatusOK,
-			Body:       gomega.ContainSubstring(testdefaults.NginxResponse),
-		})
+	for _, port := range []int{listenerHighPort, listenerLowPort} {
+		s.testInstallation.Assertions.AssertEventualCurlResponse(
+			s.ctx,
+			testdefaults.CurlPodExecOpt,
+			[]curl.Option{
+				curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
+				curl.WithHostHeader("example.com"),
+				curl.WithPort(port),
+			},
+			&testmatchers.HttpResponse{
+				StatusCode: http.StatusOK,
+				Body:       gomega.ContainSubstring(testdefaults.NginxResponse),
+			})
+	}
 }

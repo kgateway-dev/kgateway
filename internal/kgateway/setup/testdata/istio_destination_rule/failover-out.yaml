@@ -4,6 +4,7 @@ clusters:
     edsConfig:
       ads: {}
       resourceApiVersion: V3
+  ignoreHealthOnHostRemoval: true
   metadata: {}
   name: kube_default_kubernetes_443
   type: EDS
@@ -15,6 +16,7 @@ clusters:
     edsConfig:
       ads: {}
       resourceApiVersion: V3
+  ignoreHealthOnHostRemoval: true
   metadata: {}
   name: kube_gwtest_reviews_8080
   outlierDetection:
@@ -30,19 +32,6 @@ clusters:
 endpoints:
 - clusterName: kube_gwtest_reviews_8080
   endpoints:
-  - lbEndpoints:
-    - endpoint:
-        address:
-          socketAddress:
-            address: 10.244.4.4
-            portValue: 8080
-      loadBalancingWeight: 1
-    loadBalancingWeight: 1
-    locality:
-      region: r2
-      subZone: r2z1s1
-      zone: r2z1
-    priority: 3
   - lbEndpoints:
     - endpoint:
         address:
@@ -81,6 +70,19 @@ endpoints:
       subZone: r1z3s4
       zone: r1z3
     priority: 2
+  - lbEndpoints:
+    - endpoint:
+        address:
+          socketAddress:
+            address: 10.244.4.4
+            portValue: 8080
+      loadBalancingWeight: 1
+    loadBalancingWeight: 1
+    locality:
+      region: r2
+      subZone: r2z1s1
+      zone: r2z1
+    priority: 3
 listeners:
 - address:
     socketAddress:

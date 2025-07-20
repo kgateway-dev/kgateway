@@ -17,8 +17,6 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/test/services/envoy"
 
-	errors "github.com/rotisserie/eris"
-
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sts"
@@ -556,7 +554,7 @@ var _ = Describe("AWS Lambda", func() {
 			}
 			if res.StatusCode != http.StatusOK {
 				res.Body.Close()
-				return errors.New(fmt.Sprintf("%v is not OK", res.StatusCode))
+				return fmt.Errorf("%v is not OK", res.StatusCode)
 			}
 
 			defer res.Body.Close()

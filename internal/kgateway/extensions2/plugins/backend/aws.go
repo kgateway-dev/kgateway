@@ -1,15 +1,14 @@
 package backend
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"net/url"
 	"strconv"
 	"unicode/utf8"
 
-	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
-	envoy_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_aws_common_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/common/aws/v3"
 	envoy_lambda_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/aws_lambda/v3"
 	envoy_request_signing_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/aws_request_signing/v3"
@@ -51,7 +50,7 @@ const (
 type AwsIr struct {
 	lambdaFilters         *lambdaFilters
 	lambdaEndpoint        *lambdaEndpointConfig
-	lambdaTransportSocket *envoy_core_v3.TransportSocket
+	lambdaTransportSocket *envoycorev3.TransportSocket
 }
 
 // Equals checks if two AwsIr objects are equal.
@@ -81,14 +80,14 @@ func (u *AwsIr) Equals(other any) bool {
 }
 
 // processAws processes an AWS backend and returns an envoy cluster.
-func processAws(ctx context.Context, in *v1alpha1.AwsBackend, ir *AwsIr, out *envoy_config_cluster_v3.Cluster) error {
+func processAws(ir *AwsIr, out *envoyclusterv3.Cluster) error {
 	// defensive check; this should never happen with union types
 	if ir == nil {
 		return fmt.Errorf("aws ir is nil")
 	}
 
-	out.ClusterDiscoveryType = &envoy_config_cluster_v3.Cluster_Type{
-		Type: envoy_config_cluster_v3.Cluster_LOGICAL_DNS,
+	out.ClusterDiscoveryType = &envoyclusterv3.Cluster_Type{
+		Type: envoyclusterv3.Cluster_LOGICAL_DNS,
 	}
 	if ir.lambdaTransportSocket != nil {
 		out.TransportSocket = ir.lambdaTransportSocket
@@ -98,11 +97,11 @@ func processAws(ctx context.Context, in *v1alpha1.AwsBackend, ir *AwsIr, out *en
 		opts.UpstreamProtocolOptions = &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig_{
 			ExplicitHttpConfig: &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig{
 				ProtocolConfig: &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig_Http2ProtocolOptions{
-					Http2ProtocolOptions: &envoy_core_v3.Http2ProtocolOptions{},
+					Http2ProtocolOptions: &envoycorev3.Http2ProtocolOptions{},
 				},
 			},
 		}
-		opts.CommonHttpProtocolOptions = &envoy_core_v3.HttpProtocolOptions{
+		opts.CommonHttpProtocolOptions = &envoycorev3.HttpProtocolOptions{
 			IdleTimeout: &durationpb.Duration{
 				Seconds: 30,
 			},
@@ -245,8 +244,8 @@ func getRegion(in *v1alpha1.AwsBackend) string {
 // getLambdaHostname returns the hostname for the lambda function. When using a custom endpoint
 // has been specified, it will be returned. Otherwise, the default lambda hostname is returned.
 func getLambdaHostname(in *v1alpha1.AwsBackend) string {
-	if in.Lambda.EndpointURL != "" {
-		return in.Lambda.EndpointURL
+	if in.Lambda.EndpointURL != nil {
+		return *in.Lambda.EndpointURL
 	}
 	return fmt.Sprintf("lambda.%s.amazonaws.com", getRegion(in))
 }
@@ -261,15 +260,12 @@ func getLambdaInvocationMode(in *v1alpha1.AwsBackend) envoy_lambda_v3.Config_Inv
 }
 
 // buildLambdaARN attempts to build a fully qualified lambda arn from the given backend configuration.
-// If the qualifier is not specified, the $LATEST qualifier is used. An error is returned if the arn
-// is not a valid lambda arn.
+// CEL validation should reject invalid `qualifier` values and handle defaulting, so we can assume
+// the qualifier passed here is valid.
+// An error is returned if the arn is not a valid lambda arn.
 func buildLambdaARN(in *v1alpha1.AwsBackend, region string) (string, error) {
-	qualifier := "$LATEST"
-	if in.Lambda.Qualifier != "" {
-		qualifier = in.Lambda.Qualifier
-	}
 	// TODO(tim): url.QueryEscape(...)?
-	arnStr := fmt.Sprintf("arn:aws:lambda:%s:%s:function:%s:%s", region, in.AccountId, in.Lambda.FunctionName, qualifier)
+	arnStr := fmt.Sprintf("arn:aws:lambda:%s:%s:function:%s:%s", region, in.AccountId, in.Lambda.FunctionName, in.Lambda.Qualifier)
 	parsedARN, err := arnutils.Parse(arnStr)
 	if err != nil {
 		return "", fmt.Errorf("failed to parse lambda arn: %v", err)
@@ -296,12 +292,14 @@ func configureLambdaEndpoint(in *v1alpha1.AwsBackend) (*lambdaEndpointConfig, er
 		port:     443,
 		useTLS:   true,
 	}
-	if in.Lambda.EndpointURL == "" {
+
+	if in.Lambda.EndpointURL == nil {
 		// no custom endpoint specified, use the default lambda hostname.
 		return config, nil
 	}
 
-	parsedURL, err := url.Parse(in.Lambda.EndpointURL)
+	inUrl := *in.Lambda.EndpointURL
+	parsedURL, err := url.Parse(inUrl)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse endpoint URL: %v", err)
 	}

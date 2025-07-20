@@ -4,10 +4,13 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"strconv"
 
 	"istio.io/istio/pkg/config/labels"
+	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/ptr"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
@@ -20,11 +23,13 @@ import (
 	apiannotations "github.com/kgateway-dev/kgateway/v2/api/annotations"
 	apilabels "github.com/kgateway-dev/kgateway/v2/api/labels"
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/backendref"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
 	pluginsdkir "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
@@ -229,19 +234,24 @@ func (i *BackendIndex) getBackendFromRef(kctx krt.HandlerContext, localns string
 }
 
 func (i *BackendIndex) GetBackendFromRef(kctx krt.HandlerContext, src ir.ObjectSource, ref gwv1.BackendObjectReference) (*ir.BackendObjectIR, error) {
-	fromns := src.Namespace
-
-	fromgk := schema.GroupKind{
-		Group: src.Group,
-		Kind:  src.Kind,
-	}
-	to := toFromBackendRef(fromns, ref)
-
-	if i.refgrants.ReferenceAllowed(kctx, fromgk, fromns, to) {
-		return i.getBackendFromRef(kctx, src.Namespace, ref)
-	} else {
+	// Check if a ReferenceGrant allows the cross-namespace ref
+	fromNs := src.Namespace
+	fromGK := schema.GroupKind{Group: src.Group, Kind: src.Kind}
+	to := toFromBackendRef(fromNs, ref)
+	if !i.refgrants.ReferenceAllowed(kctx, fromGK, fromNs, to) {
 		return nil, ErrMissingReferenceGrant
 	}
+
+	// Ignore user’s port and always use poolIR.Port for InferencePool backends.
+	// TODO [danehans]: Add a warning message to HTTPRoute status the required change is made per
+	// discussion in github.com/kubernetes-sigs/gateway-api-inference-extension/discussions/918
+	if strOr(ref.Kind, string(wellknown.ServiceKind)) == wellknown.InferencePoolKind {
+		if err := i.normalizeInfPoolBackendPort(kctx, src.Namespace, &ref); err != nil {
+			return nil, err
+		}
+	}
+
+	return i.getBackendFromRef(kctx, src.Namespace, ref)
 }
 
 // Intentionally long name, to make sure the user doesn't use this by mistake.
@@ -283,7 +293,11 @@ func NewGatewayIndex(
 		}}
 	})
 
+	metricsRecorder := NewCollectionMetricsRecorder("Gateways")
+
 	h.Gateways = krt.NewCollection(gws, func(kctx krt.HandlerContext, i *gwv1.Gateway) *ir.Gateway {
+		defer metricsRecorder.TransformStart()(nil)
+
 		// only care about gateways use a class controlled by us
 		gwClass := ptr.Flatten(krt.FetchOne(kctx, gwClasses, krt.FilterKey(string(i.Spec.GatewayClassName))))
 		if gwClass == nil || controllerName != string(gwClass.Spec.ControllerName) {
@@ -299,6 +313,15 @@ func NewGatewayIndex(
 			},
 			Obj:       i,
 			Listeners: make([]ir.Listener, 0, len(i.Spec.Listeners)),
+		}
+
+		if i.Annotations[apiannotations.PerConnectionBufferLimit] != "" {
+			limit, err := resource.ParseQuantity(i.Annotations[apiannotations.PerConnectionBufferLimit])
+			if err != nil {
+				logger.Error("failed to parse per connection buffer limit", "error", err)
+			} else {
+				out.PerConnectionBufferLimitBytes = k8sptr.To(uint32(limit.Value()))
+			}
 		}
 
 		// TODO: http polic
@@ -364,7 +387,7 @@ func NewGatewayIndex(
 				})
 			}
 
-			allowedNs, err := allowedListenerSet(i, ls, namespaces)
+			allowedNs, err := allowedListenerSet(i, namespaces)
 			if err != nil {
 				out.DeniedListenerSets = append(out.DeniedListenerSets, lsIR)
 				continue
@@ -383,10 +406,38 @@ func NewGatewayIndex(
 
 		return &out
 	}, krtopts.ToOptions("gateways")...)
+
+	metrics.RegisterEvents(h.Gateways, func(o krt.Event[ir.Gateway]) {
+		switch o.Event {
+		case controllers.EventDelete:
+			metricsRecorder.SetResources(CollectionResourcesMetricLabels{
+				Namespace: o.Latest().Namespace,
+				Name:      o.Latest().Name,
+				Resource:  "Gateway",
+			}, 0)
+			metricsRecorder.SetResources(CollectionResourcesMetricLabels{
+				Namespace: o.Latest().Namespace,
+				Name:      o.Latest().Name,
+				Resource:  "Listeners",
+			}, 0)
+		case controllers.EventAdd, controllers.EventUpdate:
+			metricsRecorder.SetResources(CollectionResourcesMetricLabels{
+				Namespace: o.Latest().Namespace,
+				Name:      o.Latest().Name,
+				Resource:  "Gateway",
+			}, 1)
+			metricsRecorder.SetResources(CollectionResourcesMetricLabels{
+				Namespace: o.Latest().Namespace,
+				Name:      o.Latest().Name,
+				Resource:  "Listeners",
+			}, len(o.Latest().Obj.Spec.Listeners))
+		}
+	})
+
 	return h
 }
 
-func allowedListenerSet(gw *gwv1.Gateway, listenerSet *gwxv1a1.XListenerSet, namespaces krt.Collection[NamespaceMetadata]) (func(kctx krt.HandlerContext, namespace string) bool, error) {
+func allowedListenerSet(gw *gwv1.Gateway, namespaces krt.Collection[NamespaceMetadata]) (func(kctx krt.HandlerContext, namespace string) bool, error) {
 	// Default to None. Ref: https://gateway-api.sigs.k8s.io/geps/gep-1713/#gateway-listenerset-handshake
 	allowedNs := NoNamespace()
 
@@ -457,7 +508,8 @@ type policyAndIndex struct {
 	forBackends         bool
 }
 type PolicyIndex struct {
-	availablePolicies map[schema.GroupKind]policyAndIndex
+	globalPolicyNamespace string
+	availablePolicies     map[schema.GroupKind]policyAndIndex
 
 	policiesFetch  map[schema.GroupKind]func(n string, ns string) ir.PolicyIR
 	globalPolicies []globalPolicy
@@ -483,8 +535,16 @@ func (h *PolicyIndex) HasSynced() bool {
 	return true
 }
 
-func NewPolicyIndex(krtopts krtutil.KrtOptions, contributesPolicies extensionsplug.ContributesPolicies) *PolicyIndex {
-	index := &PolicyIndex{policiesFetch: policyFetcherMap{}, availablePolicies: map[schema.GroupKind]policyAndIndex{}}
+func NewPolicyIndex(
+	krtopts krtutil.KrtOptions,
+	contributesPolicies extensionsplug.ContributesPolicies,
+	globalSettings settings.Settings,
+) *PolicyIndex {
+	index := &PolicyIndex{
+		globalPolicyNamespace: globalSettings.GlobalPolicyNamespace,
+		policiesFetch:         policyFetcherMap{},
+		availablePolicies:     map[schema.GroupKind]policyAndIndex{},
+	}
 
 	for gk, plugin := range contributesPolicies {
 		if plugin.Policies != nil {
@@ -660,6 +720,15 @@ func (p *PolicyIndex) getTargetingPoliciesMaybeForBackends(
 		}
 		policiesByLabel := p.fetchByTargetRefLabels(kctx, refIndexKeyByNamespace, onlyBackends, targetLabels)
 		policies = append(policies, policiesByLabel...)
+
+		// Check if policies defined in the global policy namespace target this ref.
+		// `targetRef.Namespace != p.globalPolicyNamespace` ensures we avoid a duplicate lookup as done
+		// above when targetRef.Namespace is the same as globalPolicyNamespace
+		if p.globalPolicyNamespace != "" && targetRef.Namespace != p.globalPolicyNamespace {
+			refIndexKeyByNamespace.Namespace = p.globalPolicyNamespace
+			globalPolicies := p.fetchByTargetRefLabels(kctx, refIndexKeyByNamespace, onlyBackends, targetLabels)
+			policies = append(policies, globalPolicies...)
+		}
 	}
 
 	for _, p := range policies {
@@ -763,10 +832,7 @@ func (r *RefGrantIndex) ReferenceAllowed(kctx krt.HandlerContext, fromgk schema.
 	}
 	// try with name:
 	key.ToName = to.Name
-	if len(krt.Fetch(kctx, r.refgrants, krt.FilterIndex(r.refGrantIndex, key))) != 0 {
-		return true
-	}
-	return false
+	return len(krt.Fetch(kctx, r.refgrants, krt.FilterIndex(r.refGrantIndex, key))) != 0
 }
 
 type RouteWrapper struct {
@@ -810,10 +876,11 @@ func (c RouteWrapper) Equals(in RouteWrapper) bool {
 // MARK: RoutesIndex
 
 type RoutesIndex struct {
-	routes         krt.Collection[RouteWrapper]
-	httpRoutes     krt.Collection[ir.HttpRouteIR]
-	httpBySelector krt.Index[HTTPRouteSelector, ir.HttpRouteIR]
-	byParentRef    krt.Index[targetRefIndexKey, RouteWrapper]
+	routes                  krt.Collection[RouteWrapper]
+	httpRoutes              krt.Collection[ir.HttpRouteIR]
+	httpBySelector          krt.Index[HTTPRouteSelector, ir.HttpRouteIR]
+	byParentRef             krt.Index[targetRefIndexKey, RouteWrapper]
+	weightedRoutePrecedence bool
 
 	policies  *PolicyIndex
 	refgrants *RefGrantIndex
@@ -840,8 +907,9 @@ func NewRoutesIndex(
 	policies *PolicyIndex,
 	backends *BackendIndex,
 	refgrants *RefGrantIndex,
+	globalSettings settings.Settings,
 ) *RoutesIndex {
-	h := &RoutesIndex{policies: policies, refgrants: refgrants, backends: backends}
+	h := &RoutesIndex{policies: policies, refgrants: refgrants, backends: backends, weightedRoutePrecedence: globalSettings.WeightedRoutePrecedence}
 	h.hasSyncedFuncs = append(h.hasSyncedFuncs, httproutes.HasSynced, grpcroutes.HasSynced, tcproutes.HasSynced, tlsroutes.HasSynced)
 	h.httpRoutes = krt.NewCollection(httproutes, h.transformHttpRoute, krtopts.ToOptions("http-routes-with-policy")...)
 	httpRouteCollection := krt.NewCollection(h.httpRoutes, func(kctx krt.HandlerContext, i ir.HttpRouteIR) *RouteWrapper {
@@ -950,6 +1018,17 @@ func (h *RoutesIndex) FetchHttp(kctx krt.HandlerContext, ns, n string) *ir.HttpR
 	return route
 }
 
+// ListHTTPRoutesInNamespace returns all HTTPRouteIRs in the given namespace.
+func (h *RoutesIndex) ListHTTPRoutesInNamespace(ns string) []ir.HttpRouteIR {
+	var out []ir.HttpRouteIR
+	for _, rt := range h.httpRoutes.List() {
+		if rt.GetNamespace() == ns {
+			out = append(out, rt)
+		}
+	}
+	return out
+}
+
 func (h *RoutesIndex) Fetch(kctx krt.HandlerContext, gk schema.GroupKind, ns, n string) *RouteWrapper {
 	src := ir.ObjectSource{
 		Group:     gk.Group,
@@ -1009,7 +1088,16 @@ func (h *RoutesIndex) transformHttpRoute(kctx krt.HandlerContext, i *gwv1.HTTPRo
 		Name:      i.Name,
 	}
 
-	delegationInheritedPolicyPriority := apiannotations.DelegationInheritedPolicyPriorityValue(i.Annotations[apiannotations.DelegationInheritedPolicyPriority])
+	inheritedPolicyPriority := getInheritedPolicyPriority(i.Annotations)
+
+	var precedenceWeight int32
+	var err error
+	if h.weightedRoutePrecedence {
+		precedenceWeight, err = parseRoutePrecedenceWeight(i.Annotations)
+		if err != nil {
+			logger.Error("error parsing route weight; defaulting to 0", "resource_ref", src, "error", err)
+		}
+	}
 
 	return &ir.HttpRouteIR{
 		ObjectSource: src,
@@ -1017,11 +1105,12 @@ func (h *RoutesIndex) transformHttpRoute(kctx krt.HandlerContext, i *gwv1.HTTPRo
 		ParentRefs:   i.Spec.ParentRefs,
 		Hostnames:    tostr(i.Spec.Hostnames),
 		Rules: h.transformRules(
-			kctx, src, i.Spec.Rules, i.GetLabels(), ir.WithDelegationInheritedPolicyPriority(delegationInheritedPolicyPriority)),
+			kctx, src, i.Spec.Rules, i.GetLabels(), ir.WithInheritedPolicyPriority(inheritedPolicyPriority)),
 		AttachedPolicies: toAttachedPolicies(
 			h.policies.getTargetingPolicies(kctx, extensionsplug.RouteAttachmentPoint, src, "", i.GetLabels()),
-			ir.WithDelegationInheritedPolicyPriority(delegationInheritedPolicyPriority),
+			ir.WithInheritedPolicyPriority(inheritedPolicyPriority),
 		),
+		PrecedenceWeight: precedenceWeight,
 	}
 }
 
@@ -1034,12 +1123,12 @@ func (h *RoutesIndex) transformRules(
 ) []ir.HttpRouteRuleIR {
 	rules := make([]ir.HttpRouteRuleIR, 0, len(i))
 	for _, r := range i {
-		extensionRefs := h.getExtensionRefs(kctx, src.Namespace, r.Filters)
+		extensionRefs := h.getExtensionRefs(kctx, src.Namespace, r.Filters, opts...)
 		var policies ir.AttachedPolicies
 		if r.Name != nil {
 			policies = toAttachedPolicies(h.policies.getTargetingPolicies(kctx, extensionsplug.RouteAttachmentPoint, src, string(*r.Name), srcLabels), opts...)
 		}
-		rulePolicies := h.getBuiltInRulePolicies(r)
+		rulePolicies := h.getBuiltInRulePolicies(r, opts...)
 		policies.Append(rulePolicies)
 
 		rules = append(rules, ir.HttpRouteRuleIR{
@@ -1053,7 +1142,12 @@ func (h *RoutesIndex) transformRules(
 	return rules
 }
 
-func (h *RoutesIndex) getExtensionRefs(kctx krt.HandlerContext, ns string, r []gwv1.HTTPRouteFilter) ir.AttachedPolicies {
+func (h *RoutesIndex) getExtensionRefs(
+	kctx krt.HandlerContext,
+	ns string,
+	r []gwv1.HTTPRouteFilter,
+	opts ...ir.PolicyAttachmentOpts,
+) ir.AttachedPolicies {
 	ret := ir.AttachedPolicies{
 		Policies: map[schema.GroupKind][]ir.PolicyAtt{},
 	}
@@ -1061,11 +1155,15 @@ func (h *RoutesIndex) getExtensionRefs(kctx krt.HandlerContext, ns string, r []g
 		// TODO: propagate error if we can't find the extension
 		gk, policy, errs := h.resolveExtension(kctx, ns, ext)
 		if policy != nil {
-			ret.Policies[gk] = append(ret.Policies[gk], ir.PolicyAtt{
+			polAtt := ir.PolicyAtt{
 				// direct attachment - no target ref
 				PolicyIr: policy,
 				Errors:   errs,
-			})
+			}
+			for _, o := range opts {
+				o(&polAtt)
+			}
+			ret.Policies[gk] = append(ret.Policies[gk], polAtt)
 		} else if len(errs) > 0 {
 			logger.Error("unresolved HTTPRouteFilter", "error", errors.Join(errs...))
 		}
@@ -1073,13 +1171,20 @@ func (h *RoutesIndex) getExtensionRefs(kctx krt.HandlerContext, ns string, r []g
 	return ret
 }
 
-func (h *RoutesIndex) getBuiltInRulePolicies(rule gwv1.HTTPRouteRule) ir.AttachedPolicies {
+func (h *RoutesIndex) getBuiltInRulePolicies(
+	rule gwv1.HTTPRouteRule,
+	opts ...ir.PolicyAttachmentOpts,
+) ir.AttachedPolicies {
 	ret := ir.AttachedPolicies{
 		Policies: map[schema.GroupKind][]ir.PolicyAtt{},
 	}
 	policy := NewBuiltInRuleIr(rule)
 	if policy != nil {
-		ret.Policies[pluginsdkir.VirtualBuiltInGK] = append(ret.Policies[pluginsdkir.VirtualBuiltInGK], ir.PolicyAtt{PolicyIr: policy /*direct attachment - no target ref*/})
+		policyAtt := ir.PolicyAtt{PolicyIr: policy /*direct attachment - no target ref*/}
+		for _, o := range opts {
+			o(&policyAtt)
+		}
+		ret.Policies[pluginsdkir.VirtualBuiltInGK] = append(ret.Policies[pluginsdkir.VirtualBuiltInGK], policyAtt)
 	}
 	return ret
 }
@@ -1099,7 +1204,7 @@ func (h *RoutesIndex) resolveExtension(kctx krt.HandlerContext, ns string, ext g
 		}
 		policy := h.policies.fetchPolicy(kctx, key)
 		if policy == nil {
-			return schema.GroupKind{}, nil, []error{ErrPolicyNotFound}
+			return schema.GroupKind{}, nil, []error{fmt.Errorf("%s: %w", key, ErrPolicyNotFound)}
 		}
 
 		gk := schema.GroupKind{
@@ -1221,10 +1326,11 @@ func toAttachedPolicies(policies []ir.PolicyAtt, opts ...ir.PolicyAttachmentOpts
 		// Create a new PolicyAtt instead of using `p` because the PolicyAttchmentOpts are per-route
 		// and not encoded in `p`
 		polAtt := ir.PolicyAtt{
-			PolicyIr:  p.PolicyIr,
-			PolicyRef: p.PolicyRef,
-			GroupKind: gk,
-			Errors:    p.Errors,
+			PolicyIr:   p.PolicyIr,
+			PolicyRef:  p.PolicyRef,
+			GroupKind:  gk,
+			Errors:     p.Errors,
+			Generation: p.Generation,
 		}
 		for _, o := range opts {
 			o(&polAtt)
@@ -1257,4 +1363,78 @@ func emptyIfCore(s string) string {
 		return ""
 	}
 	return s
+}
+
+// normalizeInfPoolBackendPort looks up the InferencePool IR for the given BackendObjectReference,
+// logs a warning if the user-supplied port doesn’t match the pool’s targetPort, and then
+// mutates ref.Port to the correct pool port.
+func (i *BackendIndex) normalizeInfPoolBackendPort(
+	kctx krt.HandlerContext,
+	srcNamespace string,
+	ref *gwv1.BackendObjectReference,
+) error {
+	// Build an ObjectSource for the pool (ignoring any port for lookup)
+	poolSrc := toFromBackendRef(srcNamespace, *ref)
+	poolGK := poolSrc.GetGroupKind()
+
+	// Fetch the collection for that kind
+	col, exists := i.availableBackends[poolGK]
+	if !exists {
+		return &NotFoundError{NotFoundObj: poolSrc}
+	}
+
+	// Find matching pool IR(s) by name/namespace
+	matches := krt.Fetch(kctx, col, krt.FilterGeneric(func(obj any) bool {
+		b, ok := obj.(ir.BackendObjectIR)
+		return ok &&
+			b.ObjectSource.Name == poolSrc.Name &&
+			b.ObjectSource.Namespace == poolSrc.Namespace
+	}))
+	if len(matches) == 0 {
+		return &NotFoundError{NotFoundObj: poolSrc}
+	}
+	poolIR := &matches[0]
+
+	// If the user gave a port and it doesn’t match, warn
+	resolvedPort := poolIR.Port
+	if ref.Port != nil && int32(*ref.Port) != resolvedPort {
+		logger.Warn(
+			"backendRef.port does not match InferencePool targetPort; overriding",
+			"provided_port", *ref.Port,
+			"pool_port", resolvedPort,
+			"inference_pool", types.NamespacedName{Namespace: poolSrc.Namespace, Name: poolSrc.Name},
+		)
+	}
+
+	// Overwrite ref.Port so downstream lookup is correct
+	correct := gwv1.PortNumber(resolvedPort)
+	ref.Port = &correct
+	return nil
+}
+
+func parseRoutePrecedenceWeight(annotations map[string]string) (int32, error) {
+	val, ok := annotations[apiannotations.RoutePrecedenceWeight]
+	if !ok {
+		return 0, nil
+	}
+	weight, err := strconv.ParseInt(val, 10, 32)
+	if err != nil {
+		return 0, fmt.Errorf("invalid value for annotation %s: %s; must be a valid integer", apiannotations.RoutePrecedenceWeight, val)
+	}
+	return int32(weight), nil
+}
+
+func getInheritedPolicyPriority(annotations map[string]string) apiannotations.InheritedPolicyPriorityValue {
+	def := apiannotations.ShallowMergePreferChild
+	val, ok := annotations[apiannotations.InheritedPolicyPriority]
+	if !ok {
+		return def
+	}
+	switch v := apiannotations.InheritedPolicyPriorityValue(val); v {
+	case apiannotations.ShallowMergePreferChild, apiannotations.ShallowMergePreferParent, apiannotations.DeepMergePreferChild, apiannotations.DeepMergePreferParent:
+		return v
+	default:
+		logger.Error("invalid value for annotation", "annotation", apiannotations.InheritedPolicyPriority, "value", v)
+		return def
+	}
 }

@@ -28,16 +28,12 @@ type inferencePool struct {
 	// configRef is a reference to the extension configuration. A configRef is typically implemented
 	// as a Kubernetes Service resource.
 	configRef *service
+	// errors is a list of errors that occurred while processing the InferencePool.
+	errors []error
 }
 
 // newInferencePool returns the internal representation of the given pool.
 func newInferencePool(pool *infextv1a2.InferencePool) *inferencePool {
-	// TODO [danehans]: Track https://github.com/kubernetes-sigs/gateway-api-inference-extension/issues/507
-	// for possible changes.
-	if pool == nil || pool.Spec.ExtensionRef == nil {
-		return nil
-	}
-
 	port := servicePort{name: "grpc", portNum: (int32(grpcPort))}
 	if pool.Spec.ExtensionRef.PortNumber != nil {
 		port.portNum = int32(*pool.Spec.ExtensionRef.PortNumber)
