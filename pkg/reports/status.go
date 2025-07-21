@@ -73,6 +73,7 @@ func (r *ReportMap) BuildGWStatus(ctx context.Context, gw gwv1.Gateway) *gwv1.Ga
 	}
 
 	finalGwStatus := gwv1.GatewayStatus{}
+	finalGwStatus.Addresses = gw.Status.Addresses
 	finalGwStatus.Conditions = finalConditions
 	finalGwStatus.Listeners = finalListeners
 	return &finalGwStatus
