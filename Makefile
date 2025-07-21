@@ -141,10 +141,11 @@ GO_VERSION := $(shell cat go.mod | grep -E '^go' | awk '{print $$2}')
 GOTOOLCHAIN ?= go$(GO_VERSION)
 
 GOLANGCI_LINT ?= go tool golangci-lint
+CUSTOM_GOLANGCI_LINT_BIN ?= $(OUTPUT_DIR)/golangci-lint-custom
 ANALYZE_ARGS ?= --fix --verbose
 .PHONY: analyze
 analyze:  ## Run golangci-lint. Override options with ANALYZE_ARGS.
-	GOTOOLCHAIN=$(GOTOOLCHAIN) $(GOLANGCI_LINT) run $(ANALYZE_ARGS) ./...
+	GOTOOLCHAIN=$(GOTOOLCHAIN) $(GOLANGCI_LINT) custom && $(CUSTOM_GOLANGCI_LINT_BIN) run $(ANALYZE_ARGS) ./...
 
 #----------------------------------------------------------------------------
 # Info

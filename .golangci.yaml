@@ -18,6 +18,7 @@ linters:
     - gomodguard
     - importas
     - ineffassign
+    - kubeapilinter
     - misspell
     - nakedret
     - predeclared
@@ -103,6 +104,19 @@ linters:
         - level
         - msg
         - source
+    custom:
+      kubeapilinter:
+        type: module
+        description: Kube API LInter lints Kube like APIs based on API conventions and best practices.
+        settings:
+          linters:
+            disable:
+            - commentstart
+            - nomaps
+            - optionalorrequired
+            - ssatags
+            - integers
+          lintersConfig: {}
   exclusions:
     generated: lax
     presets:
@@ -116,6 +130,12 @@ linters:
       - third_party$
       - builtin$
       - examples$
+    rules:
+      # Only run kubeapilinter inside the 'api/' directory. This prevents running API-specific checks
+      # on unrelated packages like controllers or tests and producing false positives.
+      - path-except: "^api/"
+        linters:
+          - kubeapilinter
 issues:
   max-same-issues: 0
   uniq-by-line: true
