@@ -1,4 +1,7 @@
 apis:
+  adaptive_concurrency.options.gloo.solo.io.AdaptiveRequestConcurrencyPolicySpec:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/adaptive_concurrency/adaptive_concurrency.proto.sk/#AdaptiveRequestConcurrencyPolicySpec
+    package: adaptive_concurrency.options.gloo.solo.io
   advancedhttp.options.gloo.solo.io.JsonKey:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/advanced_http/advanced_http.proto.sk/#JsonKey
     package: advancedhttp.options.gloo.solo.io
@@ -781,9 +784,6 @@ apis:
     package: gcp.options.gloo.solo.io
   gloo.solo.io.AccountCredentialsSecret:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/secret.proto.sk/#AccountCredentialsSecret
-    package: gloo.solo.io
-  gloo.solo.io.AdaptiveRequestConcurrencyPolicySpec:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/adaptive_concurrency.proto.sk/#AdaptiveRequestConcurrencyPolicySpec
     package: gloo.solo.io
   gloo.solo.io.AggregateListener:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#AggregateListener
