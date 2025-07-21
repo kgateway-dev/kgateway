@@ -49,14 +49,16 @@ func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 }
 
 func translateAdaptiveConcurrency(in *v1.ListenerOptions) (*envoy_adaptive_concurrency_v3.AdaptiveConcurrency, error) {
+	// adaptiveConcurrency := in.GetAdaptiveConcurrency()
 
-	out := &envoy_adaptive_concurrency_v3.AdaptiveConcurrency{}
+	// if adaptiveConcurrency == nil {
+	// 	return nil, nil
+	// }
 
-	adaptiveConcurrency := in.GetAdaptiveConcurrency()
+	// out := &envoy_adaptive_concurrency_v3.AdaptiveConcurrency{}
+	// // Check required fields
 
-	if adaptiveConcurrency == nil {
-		return nil, nil
-	}
+	// //if
 
 	return &envoy_adaptive_concurrency_v3.AdaptiveConcurrency{
 		ConcurrencyControllerConfig: &envoy_adaptive_concurrency_v3.AdaptiveConcurrency_GradientControllerConfig{
@@ -76,5 +78,5 @@ func translateAdaptiveConcurrency(in *v1.ListenerOptions) (*envoy_adaptive_concu
 				},
 			},
 		},
-	}
+	}, nil
 }
