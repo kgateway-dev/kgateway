@@ -46,7 +46,7 @@ func (p *plugin) Name() string {
 func (p *plugin) Init(params plugins.InitParams) {}
 
 func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
-	fmt.Printf("GREPME Adaptive concurrency HttpFilters\n")
+	fmt.Printf("GREPME Adaptive concurrency HttpFilters, in: %v\n", listener)
 	in := listener.GetOptions()
 	adaptiveConcurrencyConfig, err := translateAdaptiveConcurrency(in)
 
@@ -64,6 +64,10 @@ func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 func translateAdaptiveConcurrency(in *v1.HttpListenerOptions) (*envoy_adaptive_concurrency_v3.AdaptiveConcurrency, error) {
 	fmt.Printf("GREPME Adaptive concurrency translateAdaptiveConcurrency\n")
 	adaptiveConcurrency := in.GetAdaptiveConcurrency()
+
+	if adaptiveConcurrency == nil {
+		return nil, nil
+	}
 
 	concurrencyLimitParams, err := translateConcurrencyLimitParams(adaptiveConcurrency)
 	if err != nil {
@@ -95,9 +99,7 @@ func translateConcurrencyLimitParams(in *adaptive_concurrency.AdaptiveRequestCon
 	}
 
 	out := &envoy_adaptive_concurrency_v3.GradientControllerConfig_ConcurrencyLimitCalculationParams{}
-	out.ConcurrencyUpdateInterval = &durationpb.Duration{
-		Seconds: int64(in.GetConcurrencyUpdateIntervalMillis()) * 1000,
-	}
+	out.ConcurrencyUpdateInterval = millisToDuration(in.GetConcurrencyUpdateIntervalMillis())
 
 	if in.GetMaxConcurrencyLimit() != nil {
 		out.MaxConcurrencyLimit = &wrapperspb.UInt32Value{Value: in.GetMaxConcurrencyLimit().GetValue()}
@@ -113,15 +115,14 @@ func translateMinRttCalcParams(in *adaptive_concurrency.AdaptiveRequestConcurren
 		return nil, ErrMinRttCalcParamsMissing()
 	}
 
-	if in.GetIntervalMillis() == 0 {
+	intervalMillis := in.GetIntervalMillis()
+	if intervalMillis == 0 {
 		fmt.Printf("GREPME Adaptive concurrency translateMinRttCalcParams interval_millis is required\n")
 		return nil, ErrIntervalMillisMissing()
 	}
 
 	out := &envoy_adaptive_concurrency_v3.GradientControllerConfig_MinimumRTTCalculationParams{
-		Interval: &durationpb.Duration{
-			Seconds: int64(in.GetIntervalMillis()) * 1000,
-		},
+		Interval: millisToDuration(intervalMillis),
 	}
 
 	if in.GetRequestCount() != nil {
@@ -133,4 +134,14 @@ func translateMinRttCalcParams(in *adaptive_concurrency.AdaptiveRequestConcurren
 	}
 
 	return out, nil
+}
+
+// Convert milliseconds to durationpb.Duration
+func millisToDuration(millis uint32) *durationpb.Duration {
+	nanos := millis % 1000 * 1000000
+	seconds := millis / 1000
+	return &durationpb.Duration{
+		Seconds: int64(seconds),
+		Nanos:   int32(nanos),
+	}
 }

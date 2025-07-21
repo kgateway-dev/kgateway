@@ -1,0 +1,10 @@
+apiVersion: gateway.solo.io/v1
+kind: HttpListenerOption
+metadata:
+  name: server-override-ls-1
+spec:
+  targetRefs:
+  - group: gateway.networking.x-k8s.io
+    kind: XListenerSet
+    name: gw-1
+  options: {}
