@@ -30,6 +30,7 @@ import "github.com/solo-io/gloo/projects/gloo/api/v1/options/router/router.proto
 import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/tap/tap.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/stateful_session/stateful_session.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/header_validation/header_validation.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/options/adaptive_concurrency/adaptive_concurrency.proto";
 
 import "google/protobuf/wrappers.proto";
 
@@ -143,5 +144,8 @@ message HttpListenerOptions {
     // determine whether requests should be rejected based on the contents of
     // the header.
     header_validation.options.gloo.solo.io.HeaderValidationSettings header_validation_settings = 36;
+
+    // Adaptive concurrency settings
+    adaptive_concurrency.options.gloo.solo.io.AdaptiveRequestConcurrencyPolicySpec adaptive_concurrency = 37;
 
 }

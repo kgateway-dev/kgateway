@@ -13,8 +13,6 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_adaptive_concurrency "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/adaptive_concurrency"
-
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_als "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/als"
 
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_proxy_protocol "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/proxy_protocol"
@@ -96,12 +94,6 @@ func (m *ListenerOptions) Clone() proto.Message {
 		target.TcpStats = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	} else {
 		target.TcpStats = proto.Clone(m.GetTcpStats()).(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
-	}
-
-	if h, ok := interface{}(m.GetAdaptiveConcurrency()).(clone.Cloner); ok {
-		target.AdaptiveConcurrency = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_adaptive_concurrency.AdaptiveRequestConcurrencyPolicySpec)
-	} else {
-		target.AdaptiveConcurrency = proto.Clone(m.GetAdaptiveConcurrency()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_adaptive_concurrency.AdaptiveRequestConcurrencyPolicySpec)
 	}
 
 	return target

@@ -35,6 +35,8 @@ import (
 
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_waf "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/waf"
 
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_adaptive_concurrency "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/adaptive_concurrency"
+
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_connection_limit "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/connection_limit"
 
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_dynamic_forward_proxy "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/dynamic_forward_proxy"
@@ -227,6 +229,12 @@ func (m *HttpListenerOptions) Clone() proto.Message {
 		target.HeaderValidationSettings = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_header_validation.HeaderValidationSettings)
 	} else {
 		target.HeaderValidationSettings = proto.Clone(m.GetHeaderValidationSettings()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_header_validation.HeaderValidationSettings)
+	}
+
+	if h, ok := interface{}(m.GetAdaptiveConcurrency()).(clone.Cloner); ok {
+		target.AdaptiveConcurrency = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_adaptive_concurrency.AdaptiveRequestConcurrencyPolicySpec)
+	} else {
+		target.AdaptiveConcurrency = proto.Clone(m.GetAdaptiveConcurrency()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_adaptive_concurrency.AdaptiveRequestConcurrencyPolicySpec)
 	}
 
 	switch m.ExtProcConfig.(type) {

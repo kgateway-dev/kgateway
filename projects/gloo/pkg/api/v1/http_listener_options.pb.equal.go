@@ -296,6 +296,16 @@ func (m *HttpListenerOptions) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetAdaptiveConcurrency()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetAdaptiveConcurrency()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetAdaptiveConcurrency(), target.GetAdaptiveConcurrency()) {
+			return false
+		}
+	}
+
 	switch m.ExtProcConfig.(type) {
 
 	case *HttpListenerOptions_DisableExtProc:

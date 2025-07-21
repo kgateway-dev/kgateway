@@ -13,7 +13,16 @@ import (
 )
 
 var (
-	pluginStage = plugins.DuringStage(plugins.RouteStage)
+	pluginStage                               = plugins.DuringStage(plugins.RouteStage)
+	ErrConcurrencyUpdateIntervalMillisMissing = func() error {
+		return fmt.Errorf("concurrency_update_interval_millis is required")
+	}
+	ErrMinRttCalcParamsMissing = func() error {
+		return fmt.Errorf("min_rtt_calc_params is required")
+	}
+	ErrIntervalMillisMissing = func() error {
+		return fmt.Errorf("interval_millis is required")
+	}
 )
 
 const (
@@ -37,7 +46,9 @@ func (p *plugin) Name() string {
 func (p *plugin) Init(params plugins.InitParams) {}
 
 func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
-	adaptiveConcurrencyConfig, err := translateAdaptiveConcurrency(&v1.ListenerOptions{})
+	fmt.Printf("GREPME Adaptive concurrency HttpFilters\n")
+	in := listener.GetOptions()
+	adaptiveConcurrencyConfig, err := translateAdaptiveConcurrency(in)
 
 	if err != nil {
 		return nil, err
@@ -50,7 +61,8 @@ func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 	return []plugins.StagedHttpFilter{plugins.MustNewStagedFilter(ExtensionName, adaptiveConcurrencyConfig, pluginStage)}, nil
 }
 
-func translateAdaptiveConcurrency(in *v1.ListenerOptions) (*envoy_adaptive_concurrency_v3.AdaptiveConcurrency, error) {
+func translateAdaptiveConcurrency(in *v1.HttpListenerOptions) (*envoy_adaptive_concurrency_v3.AdaptiveConcurrency, error) {
+	fmt.Printf("GREPME Adaptive concurrency translateAdaptiveConcurrency\n")
 	adaptiveConcurrency := in.GetAdaptiveConcurrency()
 
 	concurrencyLimitParams, err := translateConcurrencyLimitParams(adaptiveConcurrency)
@@ -73,35 +85,17 @@ func translateAdaptiveConcurrency(in *v1.ListenerOptions) (*envoy_adaptive_concu
 	}
 
 	return out, nil
-	// return &envoy_adaptive_concurrency_v3.AdaptiveConcurrency{
-	// 	ConcurrencyControllerConfig: &envoy_adaptive_concurrency_v3.AdaptiveConcurrency_GradientControllerConfig{
-	// 		GradientControllerConfig: &envoy_adaptive_concurrency_v3.GradientControllerConfig{
-	// 			ConcurrencyLimitParams: &envoy_adaptive_concurrency_v3.GradientControllerConfig_ConcurrencyLimitCalculationParams{
-	// 				MaxConcurrencyLimit: &wrapperspb.UInt32Value{Value: 100},
-	// 				ConcurrencyUpdateInterval: &durationpb.Duration{ // Required!
-	// 					Seconds: 10,
-	// 				},
-	// 			},
-	// 			MinRttCalcParams: &envoy_adaptive_concurrency_v3.GradientControllerConfig_MinimumRTTCalculationParams{
-	// 				MinConcurrency: &wrapperspb.UInt32Value{Value: 2},
-	// 				Interval: &durationpb.Duration{ // Required!
-	// 					Seconds: 60,
-	// 				},
-	// 				RequestCount: &wrapperspb.UInt32Value{Value: 3},
-	// 			},
-	// 		},
-	// 	},
-	// }, nil
 }
 
 func translateConcurrencyLimitParams(in *adaptive_concurrency.AdaptiveRequestConcurrencyPolicySpec) (*envoy_adaptive_concurrency_v3.GradientControllerConfig_ConcurrencyLimitCalculationParams, error) {
-
+	fmt.Printf("GREPME Adaptive concurrency translateConcurrencyLimitParams - in: %v\n", in)
 	if in.GetConcurrencyUpdateIntervalMillis() == 0 {
-		return nil, fmt.Errorf("concurrency_update_interval_millis is required")
+		fmt.Printf("GREPME Adaptive concurrency translateConcurrencyLimitParams concurrency_update_interval_millis is required\n")
+		return nil, ErrConcurrencyUpdateIntervalMillisMissing()
 	}
 
 	out := &envoy_adaptive_concurrency_v3.GradientControllerConfig_ConcurrencyLimitCalculationParams{}
-	out.ConcurrencyUpdateInterval = &durationpb.Duration{ // Required!
+	out.ConcurrencyUpdateInterval = &durationpb.Duration{
 		Seconds: int64(in.GetConcurrencyUpdateIntervalMillis()) * 1000,
 	}
 
@@ -113,12 +107,15 @@ func translateConcurrencyLimitParams(in *adaptive_concurrency.AdaptiveRequestCon
 }
 
 func translateMinRttCalcParams(in *adaptive_concurrency.AdaptiveRequestConcurrencyPolicySpec_MinRoundtripTimeCalculationParams) (*envoy_adaptive_concurrency_v3.GradientControllerConfig_MinimumRTTCalculationParams, error) {
+	fmt.Printf("GREPME Adaptive concurrency translateMinRttCalcParams - in: %v\n", in)
 	if in == nil {
-		return nil, fmt.Errorf("min_rtt_calc_params is required")
+		fmt.Printf("GREPME Adaptive concurrency translateMinRttCalcParams min_rtt_calc_params is required\n")
+		return nil, ErrMinRttCalcParamsMissing()
 	}
 
 	if in.GetIntervalMillis() == 0 {
-		return nil, fmt.Errorf("interval_millis is required")
+		fmt.Printf("GREPME Adaptive concurrency translateMinRttCalcParams interval_millis is required\n")
+		return nil, ErrIntervalMillisMissing()
 	}
 
 	out := &envoy_adaptive_concurrency_v3.GradientControllerConfig_MinimumRTTCalculationParams{
