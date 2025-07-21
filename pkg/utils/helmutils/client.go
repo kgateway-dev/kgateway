@@ -13,12 +13,14 @@ type Client struct {
 	receiver io.Writer
 
 	namespace string
+	helmPath  string
 }
 
 // NewClient returns an implementation of the helmutils.Client
 func NewClient() *Client {
 	return &Client{
 		receiver: io.Discard,
+		helmPath: "helm",
 	}
 }
 
@@ -32,6 +34,12 @@ func (c *Client) WithReceiver(receiver io.Writer) *Client {
 // WithNamespace sets the namespace that all commands will be invoked against
 func (c *Client) WithNamespace(ns string) *Client {
 	c.namespace = ns
+	return c
+}
+
+// WithHelmPath sets the path to the helm executable
+func (c *Client) WithHelmPath(path string) *Client {
+	c.helmPath = path
 	return c
 }
 
