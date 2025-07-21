@@ -55,7 +55,7 @@ func translateAdaptiveConcurrency(in *v1.ListenerOptions) (*envoy_adaptive_concu
 	adaptiveConcurrency := in.GetAdaptiveConcurrency()
 
 	if adaptiveConcurrency == nil {
-		return nil
+		return nil, nil
 	}
 
 	return &envoy_adaptive_concurrency_v3.AdaptiveConcurrency{
