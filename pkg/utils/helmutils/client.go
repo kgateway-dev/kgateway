@@ -50,7 +50,7 @@ func (c *Client) Command(ctx context.Context, args ...string) cmdutils.Cmd {
 		args = append([]string{"--namespace", c.namespace}, args...)
 	}
 
-	return cmdutils.Command(ctx, "helm", args...).
+	return cmdutils.Command(ctx, c.helmPath, args...).
 		// For convenience, we set the stdout and stderr to the receiver
 		// This can still be overwritten by consumers who use the commands
 		WithStdout(c.receiver).
