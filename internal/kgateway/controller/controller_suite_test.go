@@ -72,7 +72,7 @@ var _ = BeforeSuite(func() {
 	By("bootstrapping test environment")
 	// Create a scheme and add both Gateway and InferencePool types.
 	scheme = schemes.GatewayScheme()
-	err := infextv1a2.AddToScheme(scheme)
+	err := infextv1a2.Install(scheme)
 	Expect(err).NotTo(HaveOccurred())
 	// Required to deploy endpoint picker RBAC resources.
 	err = rbacv1.AddToScheme(scheme)
