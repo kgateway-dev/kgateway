@@ -938,6 +938,7 @@ var _ = DescribeTable("Route Replacement",
 				Expect(partiallyInvalid.Reason).To(Equal(string(gwv1.RouteReasonUnsupportedValue)))
 				Expect(partiallyInvalid.Message).To(ContainSubstring("Dropped Rule (0)"))
 				Expect(partiallyInvalid.Message).To(ContainSubstring("failed to create rate limit actions"))
+				Expect(partiallyInvalid.Message).To(ContainSubstring("header entry requires Header field to be set"))
 				Expect(partiallyInvalid.ObservedGeneration).To(Equal(int64(0)))
 			},
 		},

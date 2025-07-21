@@ -6,6 +6,7 @@ import (
 	envoy_dfp_cluster "github.com/envoyproxy/go-control-plane/envoy/extensions/clusters/dynamic_forward_proxy/v3"
 	envoydfp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/dynamic_forward_proxy/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
+	"k8s.io/utils/ptr"
 
 	eiutils "github.com/kgateway-dev/kgateway/v2/internal/envoyinit/pkg/utils"
 
@@ -41,7 +42,7 @@ func processDynamicForwardProxy(in *v1alpha1.DynamicForwardProxyBackend, out *en
 		},
 	}
 
-	if in.EnableTls {
+	if ptr.Deref(in.EnableTls, false) {
 		validationContext := &envoytlsv3.CertificateValidationContext{}
 		sdsValidationCtx := &envoytlsv3.SdsSecretConfig{
 			Name: eiutils.SystemCaSecretName,

@@ -33,6 +33,7 @@ spec:
             properties:
               body:
                 maxLength: 4096
+                minLength: 1
                 type: string
               status:
                 format: int32

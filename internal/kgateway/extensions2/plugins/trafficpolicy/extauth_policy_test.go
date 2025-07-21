@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/utils/ptr"
 
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_ext_authz_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_authz/v3"
@@ -181,7 +182,7 @@ func TestExtAuthPolicyPlugin(t *testing.T) {
 		policy := &TrafficPolicy{
 			spec: trafficPolicySpecIr{
 				extAuth: &extAuthIR{
-					enablement: v1alpha1.ExtAuthDisableAll,
+					enablement: ptr.To(v1alpha1.ExtAuthDisableAll),
 				},
 			},
 		}

@@ -87,7 +87,7 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 						Window: &metav1.Duration{
 							Duration: 10 * time.Second,
 						},
-						Aggression:       "1.1",
+						Aggression:       ptr.To("1.1"),
 						MinWeightPercent: ptr.To(uint32(10)),
 					},
 				},
@@ -141,7 +141,7 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 						Window: &metav1.Duration{
 							Duration: 10 * time.Second,
 						},
-						Aggression:       "1.1",
+						Aggression:       ptr.To("1.1"),
 						MinWeightPercent: ptr.To(uint32(10)),
 					},
 				},

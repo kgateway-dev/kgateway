@@ -717,10 +717,10 @@ type AiExtensionStats struct {
 	// Set of custom labels to be added to the request metrics.
 	// These will be added on each request which goes through the AI Extension.
 	// +optional
-	CustomLabels []*CustomLabel `json:"customLabels,omitempty"`
+	CustomLabels []CustomLabel `json:"customLabels,omitempty"`
 }
 
-func (in *AiExtensionStats) GetCustomLabels() []*CustomLabel {
+func (in *AiExtensionStats) GetCustomLabels() []CustomLabel {
 	if in == nil {
 		return nil
 	}

@@ -134,7 +134,23 @@ func defaultAgentGatewayParameters(imageInfo *ImageInfo) *v1alpha1.GatewayParame
 // set for the waypoint deployment.
 func defaultWaypointGatewayParameters(imageInfo *ImageInfo) *v1alpha1.GatewayParameters {
 	gwp := defaultGatewayParameters(imageInfo)
+
+	// Ensure Service is initialized before adding ports
+	if gwp.Spec.Kube.Service == nil {
+		gwp.Spec.Kube.Service = &v1alpha1.Service{}
+	}
+
 	gwp.Spec.Kube.Service.Type = ptr.To(corev1.ServiceTypeClusterIP)
+
+	if gwp.Spec.Kube.Service.Ports == nil {
+		gwp.Spec.Kube.Service.Ports = []v1alpha1.Port{}
+	}
+
+	// Similar to labeling in kubernetes, this is used to identify the service as a waypoint service.
+	meshPort := v1alpha1.Port{
+		Port: IstioWaypointPort,
+	}
+	gwp.Spec.Kube.Service.Ports = append(gwp.Spec.Kube.Service.Ports, meshPort)
 
 	if gwp.Spec.Kube.PodTemplate == nil {
 		gwp.Spec.Kube.PodTemplate = &v1alpha1.Pod{}
@@ -151,7 +167,6 @@ func defaultWaypointGatewayParameters(imageInfo *ImageInfo) *v1alpha1.GatewayPar
 		gwp.Spec.Kube.PodTemplate.ExtraAnnotations = make(map[string]string)
 	}
 	gwp.Spec.Kube.PodTemplate.ExtraAnnotations[annotation.AmbientDnsCapture.Name] = "false"
-
 	return gwp
 }
 

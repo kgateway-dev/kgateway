@@ -105,6 +105,22 @@ func (c PolicyAtt) TargetRef() *AttachedPolicyRef {
 }
 
 func (c PolicyAtt) Equals(in PolicyAtt) bool {
+	if !slices.EqualFunc(c.Errors, in.Errors, func(e1, e2 error) bool {
+		if e1 == nil && e2 != nil {
+			return false
+		}
+		if e1 != nil && e2 == nil {
+			return false
+		}
+		if (e1 != nil && e2 != nil) && e1.Error() != e2.Error() {
+			return false
+		}
+
+		return true
+	}) {
+		return false
+	}
+
 	return c.GroupKind == in.GroupKind && ptrEquals(c.PolicyRef, in.PolicyRef) && c.PolicyIr.Equals(in.PolicyIr)
 }
 

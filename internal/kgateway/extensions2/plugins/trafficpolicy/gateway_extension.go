@@ -49,15 +49,17 @@ func (e TrafficPolicyGatewayExtensionIR) Equals(other TrafficPolicyGatewayExtens
 		return false
 	}
 
-	// Compare providers
-	if e.Err == nil && other.Err == nil {
-		return true
+	if e.Err == nil && other.Err != nil {
+		return false
 	}
-	if e.Err == nil || other.Err == nil {
+	if e.Err != nil && other.Err == nil {
+		return false
+	}
+	if (e.Err != nil && other.Err != nil) && e.Err.Error() != other.Err.Error() {
 		return false
 	}
 
-	return e.Err.Error() == other.Err.Error()
+	return true
 }
 
 func TranslateGatewayExtensionBuilder(commoncol *common.CommonCollections) func(krtctx krt.HandlerContext, gExt ir.GatewayExtension) *TrafficPolicyGatewayExtensionIR {

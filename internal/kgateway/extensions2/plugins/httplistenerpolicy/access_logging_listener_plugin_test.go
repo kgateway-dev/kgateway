@@ -386,7 +386,7 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 									Timeout:                 &metav1.Duration{Duration: 10 * time.Second},
 									InitialMetadata: []v1alpha1.HeaderValue{{
 										Key:   "key",
-										Value: "value",
+										Value: ptr.To("value"),
 									}},
 									RetryPolicy: &v1alpha1.RetryPolicy{
 										RetryBackOff: &v1alpha1.BackoffStrategy{
