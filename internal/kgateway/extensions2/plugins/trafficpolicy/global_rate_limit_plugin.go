@@ -124,13 +124,13 @@ func createRateLimitActions(descriptors []v1alpha1.RateLimitDescriptor) ([]*envo
 					},
 				}
 			case v1alpha1.RateLimitDescriptorEntryTypeHeader:
-				if entry.Header == "" {
+				if entry.Header == nil {
 					return nil, fmt.Errorf("header entry requires Header field to be set")
 				}
 				action.ActionSpecifier = &envoyroutev3.RateLimit_Action_RequestHeaders_{
 					RequestHeaders: &envoyroutev3.RateLimit_Action_RequestHeaders{
-						HeaderName:    entry.Header,
-						DescriptorKey: entry.Header, // Use header name as key
+						HeaderName:    *entry.Header,
+						DescriptorKey: *entry.Header, // Use header name as key
 					},
 				}
 			case v1alpha1.RateLimitDescriptorEntryTypeRemoteAddress:

@@ -60,9 +60,9 @@ func translateTLSConfig(
 		rootCA = string(secret.Data["ca.crt"])
 		inlineDataSource = true
 	} else if tlsConfig.TLSFiles != nil {
-		certChain = tlsConfig.TLSFiles.TLSCertificate
-		privateKey = tlsConfig.TLSFiles.TLSKey
-		rootCA = tlsConfig.TLSFiles.RootCA
+		certChain = ptr.Deref(tlsConfig.TLSFiles.TLSCertificate, "")
+		privateKey = ptr.Deref(tlsConfig.TLSFiles.TLSKey, "")
+		rootCA = ptr.Deref(tlsConfig.TLSFiles.RootCA, "")
 	}
 
 	cleanedCertChain, err := cleanedSslKeyPair(certChain, privateKey, rootCA)
@@ -131,7 +131,7 @@ func translateTLSConfig(
 
 	return &envoytlsv3.UpstreamTlsContext{
 		CommonTlsContext:   tlsContext,
-		Sni:                tlsConfig.Sni,
+		Sni:                ptr.Deref(tlsConfig.Sni, ""),
 		AllowRenegotiation: ptr.Deref(tlsConfig.AllowRenegotiation, false),
 	}, nil
 }

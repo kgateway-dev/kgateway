@@ -3,6 +3,7 @@ package ir
 import (
 	"context"
 	"fmt"
+	"slices"
 	"time"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
@@ -24,6 +25,10 @@ import (
 
 var logger = logging.New("pluginsdk/ir")
 
+type GatewayContext struct {
+	GatewayClassName string
+}
+
 type ListenerContext struct {
 	Policy            PolicyIR
 	PolicyAncestorRef gwv1.ParentReference
@@ -33,12 +38,14 @@ type RouteConfigContext struct {
 	Policy            PolicyIR
 	FilterChainName   string
 	TypedFilterConfig TypedFilterConfigMap
+	GatewayContext    GatewayContext
 }
 
 type VirtualHostContext struct {
 	Policy            PolicyIR
 	FilterChainName   string
 	TypedFilterConfig TypedFilterConfigMap
+	GatewayContext    GatewayContext
 }
 
 type TypedFilterConfigMap map[string]proto.Message
@@ -79,6 +86,7 @@ func (r *TypedFilterConfigMap) ToAnyMap() map[string]*anypb.Any {
 }
 
 type RouteBackendContext struct {
+	GatewayContext  GatewayContext
 	FilterChainName string
 	Backend         *BackendObjectIR
 	// TypedFilterConfig will be output on the Route or WeightedCluster level after all plugins have run
@@ -92,6 +100,7 @@ type RouteBackendContext struct {
 type RouteContext struct {
 	FilterChainName string
 	Policy          PolicyIR
+	GatewayContext  GatewayContext
 	In              HttpRouteRuleMatchIR
 	// TypedFilterConfig will be output on the Route level after all plugins have run
 	TypedFilterConfig TypedFilterConfigMap
@@ -262,6 +271,22 @@ func versionEquals(a, b metav1.Object) bool {
 
 func (c PolicyWrapper) Equals(in PolicyWrapper) bool {
 	if c.ObjectSource != in.ObjectSource {
+		return false
+	}
+
+	if !slices.EqualFunc(c.Errors, in.Errors, func(e1, e2 error) bool {
+		if e1 == nil && e2 != nil {
+			return false
+		}
+		if e1 != nil && e2 == nil {
+			return false
+		}
+		if (e1 != nil && e2 != nil) && e1.Error() != e2.Error() {
+			return false
+		}
+
+		return true
+	}) {
 		return false
 	}
 

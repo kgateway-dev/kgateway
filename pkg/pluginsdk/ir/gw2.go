@@ -126,3 +126,9 @@ type GatewayIR struct {
 	// Applied to all listeners in the gateway.
 	PerConnectionBufferLimitBytes *uint32
 }
+
+// this assumes that GatewayIR was constructed correctly and SourceObject !nil and Obj contained within it is also !nil
+// might be good to assert this invariant (near the instantiation site?)
+func (g GatewayIR) GatewayClassName() string {
+	return string(g.SourceObject.Obj.Spec.GatewayClassName)
+}

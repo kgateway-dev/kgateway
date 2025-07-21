@@ -3,6 +3,7 @@ package httplistenerpolicy
 import (
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	"google.golang.org/protobuf/types/known/wrapperspb"
+	"k8s.io/utils/ptr"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
@@ -38,7 +39,7 @@ func ToEnvoyGrpc(in v1alpha1.CommonGrpcService, backend *ir.BackendObjectIR) (*e
 		for i, metadata := range in.InitialMetadata {
 			grpcService.GetInitialMetadata()[i] = &envoycorev3.HeaderValue{
 				Key:   metadata.Key,
-				Value: metadata.Value,
+				Value: ptr.Deref(metadata.Value, ""),
 			}
 		}
 	}
