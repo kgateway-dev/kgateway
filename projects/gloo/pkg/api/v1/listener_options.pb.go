@@ -11,6 +11,7 @@ import (
 	sync "sync"
 	unsafe "unsafe"
 
+	adaptive_concurrency "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/adaptive_concurrency"
 	als "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/als"
 	proxy_protocol "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/proxy_protocol"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
@@ -60,9 +61,11 @@ type ListenerOptions struct {
 	// If true, will wrap all filter chains in the listener with a TCP stats transport socket, which is a
 	// passthrough listener that can report low-level Linux TCP stats, useful for diagnosis
 	// and triage.
-	TcpStats      *wrapperspb.BoolValue `protobuf:"bytes,8,opt,name=tcp_stats,json=tcpStats,proto3" json:"tcp_stats,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	TcpStats *wrapperspb.BoolValue `protobuf:"bytes,8,opt,name=tcp_stats,json=tcpStats,proto3" json:"tcp_stats,omitempty"`
+	// Configuration for adaptive concurrency.
+	AdaptiveConcurrency *adaptive_concurrency.AdaptiveRequestConcurrencyPolicySpec `protobuf:"bytes,9,opt,name=adaptive_concurrency,json=adaptiveConcurrency,proto3" json:"adaptive_concurrency,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
 func (x *ListenerOptions) Reset() {
@@ -147,6 +150,13 @@ func (x *ListenerOptions) GetListenerAccessLoggingService() *als.AccessLoggingSe
 func (x *ListenerOptions) GetTcpStats() *wrapperspb.BoolValue {
 	if x != nil {
 		return x.TcpStats
+	}
+	return nil
+}
+
+func (x *ListenerOptions) GetAdaptiveConcurrency() *adaptive_concurrency.AdaptiveRequestConcurrencyPolicySpec {
+	if x != nil {
+		return x.AdaptiveConcurrency
 	}
 	return nil
 }
@@ -242,7 +252,7 @@ var File_github_com_solo_io_gloo_projects_gloo_api_v1_listener_options_proto pro
 
 const file_github_com_solo_io_gloo_projects_gloo_api_v1_listener_options_proto_rawDesc = "" +
 	"\n" +
-	"Cgithub.com/solo-io/gloo/projects/gloo/api/v1/listener_options.proto\x12\fgloo.solo.io\x1a\x12extproto/ext.proto\x1a=github.com/solo-io/gloo/projects/gloo/api/v1/extensions.proto\x1aNgithub.com/solo-io/solo-kit/api/external/envoy/api/v2/core/socket_option.proto\x1aXgithub.com/solo-io/gloo/projects/gloo/api/v1/options/proxy_protocol/proxy_protocol.proto\x1aBgithub.com/solo-io/gloo/projects/gloo/api/v1/options/als/als.proto\x1a\x1egoogle/protobuf/wrappers.proto\"\xd7\x05\n" +
+	"Cgithub.com/solo-io/gloo/projects/gloo/api/v1/listener_options.proto\x12\fgloo.solo.io\x1a\x12extproto/ext.proto\x1a=github.com/solo-io/gloo/projects/gloo/api/v1/extensions.proto\x1aNgithub.com/solo-io/solo-kit/api/external/envoy/api/v2/core/socket_option.proto\x1aXgithub.com/solo-io/gloo/projects/gloo/api/v1/options/proxy_protocol/proxy_protocol.proto\x1aBgithub.com/solo-io/gloo/projects/gloo/api/v1/options/als/als.proto\x1adgithub.com/solo-io/gloo/projects/gloo/api/v1/options/adaptive_concurrency/adaptive_concurrency.proto\x1a\x1egoogle/protobuf/wrappers.proto\"\xdc\x06\n" +
 	"\x0fListenerOptions\x12d\n" +
 	"\x16access_logging_service\x18\x01 \x01(\v2..als.options.gloo.solo.io.AccessLoggingServiceR\x14accessLoggingService\x128\n" +
 	"\n" +
@@ -253,7 +263,8 @@ const file_github_com_solo_io_gloo_projects_gloo_api_v1_listener_options_proto_r
 	"\x0eproxy_protocol\x18\x05 \x01(\v22.proxy_protocol.options.gloo.solo.io.ProxyProtocolR\rproxyProtocol\x12a\n" +
 	"\x19connection_balance_config\x18\x06 \x01(\v2%.gloo.solo.io.ConnectionBalanceConfigR\x17connectionBalanceConfig\x12u\n" +
 	"\x1flistener_access_logging_service\x18\a \x01(\v2..als.options.gloo.solo.io.AccessLoggingServiceR\x1clistenerAccessLoggingService\x127\n" +
-	"\ttcp_stats\x18\b \x01(\v2\x1a.google.protobuf.BoolValueR\btcpStats\"\x82\x01\n" +
+	"\ttcp_stats\x18\b \x01(\v2\x1a.google.protobuf.BoolValueR\btcpStats\x12\x82\x01\n" +
+	"\x14adaptive_concurrency\x18\t \x01(\v2O.adaptive_concurrency.options.gloo.solo.io.AdaptiveRequestConcurrencyPolicySpecR\x13adaptiveConcurrency\"\x82\x01\n" +
 	"\x17ConnectionBalanceConfig\x12W\n" +
 	"\rexact_balance\x18\x01 \x01(\v22.gloo.solo.io.ConnectionBalanceConfig.ExactBalanceR\fexactBalance\x1a\x0e\n" +
 	"\fExactBalanceB>\xb8\xf5\x04\x01\xc0\xf5\x04\x01\xd0\xf5\x04\x01Z0github.com/solo-io/gloo/projects/gloo/pkg/api/v1b\x06proto3"
@@ -272,31 +283,33 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_listener_options_proto_ra
 
 var file_github_com_solo_io_gloo_projects_gloo_api_v1_listener_options_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_github_com_solo_io_gloo_projects_gloo_api_v1_listener_options_proto_goTypes = []any{
-	(*ListenerOptions)(nil),                      // 0: gloo.solo.io.ListenerOptions
-	(*ConnectionBalanceConfig)(nil),              // 1: gloo.solo.io.ConnectionBalanceConfig
-	(*ConnectionBalanceConfig_ExactBalance)(nil), // 2: gloo.solo.io.ConnectionBalanceConfig.ExactBalance
-	(*als.AccessLoggingService)(nil),             // 3: als.options.gloo.solo.io.AccessLoggingService
-	(*Extensions)(nil),                           // 4: gloo.solo.io.Extensions
-	(*wrapperspb.UInt32Value)(nil),               // 5: google.protobuf.UInt32Value
-	(*core.SocketOption)(nil),                    // 6: solo.io.envoy.api.v2.core.SocketOption
-	(*proxy_protocol.ProxyProtocol)(nil),         // 7: proxy_protocol.options.gloo.solo.io.ProxyProtocol
-	(*wrapperspb.BoolValue)(nil),                 // 8: google.protobuf.BoolValue
+	(*ListenerOptions)(nil),                                           // 0: gloo.solo.io.ListenerOptions
+	(*ConnectionBalanceConfig)(nil),                                   // 1: gloo.solo.io.ConnectionBalanceConfig
+	(*ConnectionBalanceConfig_ExactBalance)(nil),                      // 2: gloo.solo.io.ConnectionBalanceConfig.ExactBalance
+	(*als.AccessLoggingService)(nil),                                  // 3: als.options.gloo.solo.io.AccessLoggingService
+	(*Extensions)(nil),                                                // 4: gloo.solo.io.Extensions
+	(*wrapperspb.UInt32Value)(nil),                                    // 5: google.protobuf.UInt32Value
+	(*core.SocketOption)(nil),                                         // 6: solo.io.envoy.api.v2.core.SocketOption
+	(*proxy_protocol.ProxyProtocol)(nil),                              // 7: proxy_protocol.options.gloo.solo.io.ProxyProtocol
+	(*wrapperspb.BoolValue)(nil),                                      // 8: google.protobuf.BoolValue
+	(*adaptive_concurrency.AdaptiveRequestConcurrencyPolicySpec)(nil), // 9: adaptive_concurrency.options.gloo.solo.io.AdaptiveRequestConcurrencyPolicySpec
 }
 var file_github_com_solo_io_gloo_projects_gloo_api_v1_listener_options_proto_depIdxs = []int32{
-	3, // 0: gloo.solo.io.ListenerOptions.access_logging_service:type_name -> als.options.gloo.solo.io.AccessLoggingService
-	4, // 1: gloo.solo.io.ListenerOptions.extensions:type_name -> gloo.solo.io.Extensions
-	5, // 2: gloo.solo.io.ListenerOptions.per_connection_buffer_limit_bytes:type_name -> google.protobuf.UInt32Value
-	6, // 3: gloo.solo.io.ListenerOptions.socket_options:type_name -> solo.io.envoy.api.v2.core.SocketOption
-	7, // 4: gloo.solo.io.ListenerOptions.proxy_protocol:type_name -> proxy_protocol.options.gloo.solo.io.ProxyProtocol
-	1, // 5: gloo.solo.io.ListenerOptions.connection_balance_config:type_name -> gloo.solo.io.ConnectionBalanceConfig
-	3, // 6: gloo.solo.io.ListenerOptions.listener_access_logging_service:type_name -> als.options.gloo.solo.io.AccessLoggingService
-	8, // 7: gloo.solo.io.ListenerOptions.tcp_stats:type_name -> google.protobuf.BoolValue
-	2, // 8: gloo.solo.io.ConnectionBalanceConfig.exact_balance:type_name -> gloo.solo.io.ConnectionBalanceConfig.ExactBalance
-	9, // [9:9] is the sub-list for method output_type
-	9, // [9:9] is the sub-list for method input_type
-	9, // [9:9] is the sub-list for extension type_name
-	9, // [9:9] is the sub-list for extension extendee
-	0, // [0:9] is the sub-list for field type_name
+	3,  // 0: gloo.solo.io.ListenerOptions.access_logging_service:type_name -> als.options.gloo.solo.io.AccessLoggingService
+	4,  // 1: gloo.solo.io.ListenerOptions.extensions:type_name -> gloo.solo.io.Extensions
+	5,  // 2: gloo.solo.io.ListenerOptions.per_connection_buffer_limit_bytes:type_name -> google.protobuf.UInt32Value
+	6,  // 3: gloo.solo.io.ListenerOptions.socket_options:type_name -> solo.io.envoy.api.v2.core.SocketOption
+	7,  // 4: gloo.solo.io.ListenerOptions.proxy_protocol:type_name -> proxy_protocol.options.gloo.solo.io.ProxyProtocol
+	1,  // 5: gloo.solo.io.ListenerOptions.connection_balance_config:type_name -> gloo.solo.io.ConnectionBalanceConfig
+	3,  // 6: gloo.solo.io.ListenerOptions.listener_access_logging_service:type_name -> als.options.gloo.solo.io.AccessLoggingService
+	8,  // 7: gloo.solo.io.ListenerOptions.tcp_stats:type_name -> google.protobuf.BoolValue
+	9,  // 8: gloo.solo.io.ListenerOptions.adaptive_concurrency:type_name -> adaptive_concurrency.options.gloo.solo.io.AdaptiveRequestConcurrencyPolicySpec
+	2,  // 9: gloo.solo.io.ConnectionBalanceConfig.exact_balance:type_name -> gloo.solo.io.ConnectionBalanceConfig.ExactBalance
+	10, // [10:10] is the sub-list for method output_type
+	10, // [10:10] is the sub-list for method input_type
+	10, // [10:10] is the sub-list for extension type_name
+	10, // [10:10] is the sub-list for extension extendee
+	0,  // [0:10] is the sub-list for field type_name
 }
 
 func init() { file_github_com_solo_io_gloo_projects_gloo_api_v1_listener_options_proto_init() }
