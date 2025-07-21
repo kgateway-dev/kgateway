@@ -217,7 +217,7 @@ func extractMetricInfo(call *ast.CallExpr, metricType string, constants map[stri
 								metric.Namespace = strings.Trim(lit.Value, `"`)
 							} else if ident, ok := kv.Value.(*ast.Ident); ok {
 								if val, exists := constants[ident.Name]; exists {
-									metric.Subsystem = val
+									metric.Namespace = val
 								}
 							}
 						case "Subsystem":
