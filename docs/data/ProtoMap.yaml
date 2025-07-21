@@ -782,6 +782,9 @@ apis:
   gloo.solo.io.AccountCredentialsSecret:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/secret.proto.sk/#AccountCredentialsSecret
     package: gloo.solo.io
+  gloo.solo.io.AdaptiveRequestConcurrencyPolicySpec:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/adaptive_concurrency.proto.sk/#AdaptiveRequestConcurrencyPolicySpec
+    package: gloo.solo.io
   gloo.solo.io.AggregateListener:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#AggregateListener
     package: gloo.solo.io

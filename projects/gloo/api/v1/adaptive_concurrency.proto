@@ -99,20 +99,3 @@ message AdaptiveRequestConcurrencyPolicySpec {
     }
 
 }
-
-// The status of the policy after it is applied to your Gloo environment.
-message AdaptiveRequestConcurrencyPolicyStatus {
-  // The state and workspace conditions of the applied resource.
-  .common.gloo.solo.io.Status common = 1;
-
-  // The number of destinations selected by this policy.
-  uint32 num_selected_destinations = 2;
-}
-
-message AdaptiveRequestConcurrencyPolicyReport {
-  // A list of workspaces in which the policy can apply to workloads.
-  map<string, .common.gloo.solo.io.Report> workspaces = 1;
-
-  // A list of destination selected by this policy.
-  repeated .common.gloo.solo.io.DestinationReference selected_destinations = 2;
-}
