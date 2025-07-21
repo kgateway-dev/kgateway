@@ -13,12 +13,14 @@ type Client struct {
 	receiver io.Writer
 
 	namespace string
+	helmPath  string
 }
 
 // NewClient returns an implementation of the helmutils.Client
 func NewClient() *Client {
 	return &Client{
 		receiver: io.Discard,
+		helmPath: "helm",
 	}
 }
 
@@ -35,6 +37,12 @@ func (c *Client) WithNamespace(ns string) *Client {
 	return c
 }
 
+// WithHelmPath sets the path to the helm executable
+func (c *Client) WithHelmPath(path string) *Client {
+	c.helmPath = path
+	return c
+}
+
 // Command returns a Cmd that executes kubectl command, including the --context if it is defined
 // The Cmd sets the Stdout and Stderr to the receiver of the Cli
 func (c *Client) Command(ctx context.Context, args ...string) cmdutils.Cmd {
@@ -42,7 +50,7 @@ func (c *Client) Command(ctx context.Context, args ...string) cmdutils.Cmd {
 		args = append([]string{"--namespace", c.namespace}, args...)
 	}
 
-	return cmdutils.Command(ctx, "helm", args...).
+	return cmdutils.Command(ctx, c.helmPath, args...).
 		// For convenience, we set the stdout and stderr to the receiver
 		// This can still be overwritten by consumers who use the commands
 		WithStdout(c.receiver).

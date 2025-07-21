@@ -6,12 +6,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"reflect"
 	"slices"
 
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/storage"
 	"helm.sh/helm/v3/pkg/storage/driver"
+	"k8s.io/apimachinery/pkg/api/equality"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -19,10 +22,12 @@ import (
 	"k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 )
+
+var logger = logging.New("deployer")
 
 type ControlPlaneInfo struct {
 	XdsHost string
@@ -130,8 +135,6 @@ func (d *Deployer) Render(name, ns string, vals map[string]any) ([]client.Object
 //
 //	a pointer to an InferencePool (https://github.com/kubernetes-sigs/gateway-api-inference-extension/blob/main/api/v1alpha2/inferencepool_types.go#L30)
 func (d *Deployer) GetObjsToDeploy(ctx context.Context, obj client.Object) ([]client.Object, error) {
-	logger := log.FromContext(ctx)
-
 	vals, err := d.helmValues.GetValues(ctx, obj)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get helm values %s.%s: %w", obj.GetNamespace(), obj.GetName(), err)
@@ -139,7 +142,7 @@ func (d *Deployer) GetObjsToDeploy(ctx context.Context, obj client.Object) ([]cl
 	if vals == nil {
 		return nil, nil
 	}
-	logger.V(1).Info("got deployer helm values",
+	logger.Debug("got deployer helm values",
 		"name", obj.GetName(),
 		"namespace", obj.GetNamespace(),
 		"gvk", obj.GetObjectKind().GroupVersionKind().String(),
@@ -185,9 +188,47 @@ func (d *Deployer) SetNamespaceAndOwner(owner client.Object, objs []client.Objec
 }
 
 func (d *Deployer) DeployObjs(ctx context.Context, objs []client.Object) error {
-	logger := log.FromContext(ctx)
 	for _, obj := range objs {
-		logger.V(1).Info("deploying object", "kind", obj.GetObjectKind(), "namespace", obj.GetNamespace(), "name", obj.GetName())
+		// Get the existing object from the cache to check if it needs to be updated
+		existing := obj.DeepCopyObject().(client.Object)
+		err := d.cli.Get(ctx, client.ObjectKey{Namespace: obj.GetNamespace(), Name: obj.GetName()}, existing)
+
+		// If the object doesn't exist or there's an error other than "not found", proceed with patching
+		switch {
+		case err == nil:
+			// zero out fields that api server changes
+			existing.SetResourceVersion("")
+			existing.SetGeneration(0)
+			existing.SetUID("")
+			existing.SetCreationTimestamp(metav1.Time{})
+			existing.SetDeletionTimestamp(nil)
+			existing.SetDeletionGracePeriodSeconds(nil)
+			existing.SetManagedFields(nil)
+			// clear the status from existing object using reflection
+			if statusField := reflect.ValueOf(existing).Elem().FieldByName("Status"); statusField.IsValid() && statusField.CanSet() {
+				statusField.Set(reflect.Zero(statusField.Type()))
+			}
+			// Check if the objects are equal - if they are, skip the patch
+			if equality.Semantic.DeepEqual(obj, existing) {
+				logger.Debug("object unchanged, skipping apply",
+					"kind", obj.GetObjectKind().GroupVersionKind().String(),
+					"namespace", obj.GetNamespace(),
+					"name", obj.GetName())
+				continue
+			}
+		case !apierrors.IsNotFound(err):
+			logger.Debug("error getting existing object, will apply anyway",
+				"kind", obj.GetObjectKind().GroupVersionKind().String(),
+				"namespace", obj.GetNamespace(),
+				"name", obj.GetName(),
+				"error", err)
+		default:
+			// do nothing - this is a non-existent object
+
+			// TODO: inc a metric when we add metrics.
+		}
+
+		logger.Info("deploying object", "kind", obj.GetObjectKind(), "namespace", obj.GetNamespace(), "name", obj.GetName())
 		if err := d.cli.Patch(ctx, obj, client.Apply, client.ForceOwnership, client.FieldOwner(d.controllerName)); err != nil {
 			return fmt.Errorf("failed to apply object %s %s: %w", obj.GetObjectKind().GroupVersionKind().String(), obj.GetName(), err)
 		}
@@ -228,7 +269,7 @@ func (d *Deployer) GetGvksToWatch(ctx context.Context, vals map[string]any) ([]s
 		}
 	}
 
-	log.FromContext(ctx).V(1).Info("watching GVKs", "GVKs", ret)
+	logger.Debug("watching GVKs", "gvks", ret)
 	return ret, nil
 }
 

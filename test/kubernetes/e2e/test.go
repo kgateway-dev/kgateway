@@ -153,7 +153,7 @@ func (i *TestInstallation) InstallKgatewayCRDsFromLocalChart(ctx context.Context
 	}
 
 	// install the CRD chart first
-	crdChartURI, err := helper.GetLocalChartPath(helmutils.CRDChartName)
+	crdChartURI, err := helper.GetLocalChartPath(helmutils.CRDChartName, "")
 	i.Assertions.Require.NoError(err)
 	err = i.Actions.Helm().WithReceiver(os.Stdout).Upgrade(
 		ctx,
@@ -172,7 +172,7 @@ func (i *TestInstallation) InstallKgatewayCoreFromLocalChart(ctx context.Context
 	}
 
 	// and then install the main chart
-	chartUri, err := helper.GetLocalChartPath(helmutils.ChartName)
+	chartUri, err := helper.GetLocalChartPath(helmutils.ChartName, "")
 	i.Assertions.Require.NoError(err)
 	err = i.Actions.Helm().WithReceiver(os.Stdout).Upgrade(
 		ctx,
