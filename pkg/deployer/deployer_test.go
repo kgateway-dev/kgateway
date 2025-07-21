@@ -2642,6 +2642,14 @@ var _ = Describe("DeployObjs", func() {
 		ctx  = context.Background()
 	)
 
+	var getDeployer = func(fc *fakeClient) *deployer.Deployer {
+		chart, err := internaldeployer.LoadGatewayChart()
+		Expect(err).ToNot(HaveOccurred())
+		return deployer.NewDeployer(wellknown.DefaultGatewayControllerName, fc, chart,
+			nil,
+			internaldeployer.GatewayReleaseNameAndNamespace)
+	}
+
 	It("skips patch if object is unchanged", func() {
 		patched := false
 		cm := &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: ns}, Data: map[string]string{"foo": "bar"}}
@@ -2652,10 +2660,30 @@ var _ = Describe("DeployObjs", func() {
 				return errors.New("should not be called")
 			},
 		}
-		d, err := deployer.NewDeployer(fc, &deployer.Inputs{ControllerName: "test"})
-		Expect(err).ToNot(HaveOccurred())
+		d := getDeployer(fc)
 
-		err = d.DeployObjs(ctx, []client.Object{cm})
+		err := d.DeployObjs(ctx, []client.Object{cm})
+		Expect(err).ToNot(HaveOccurred())
+		Expect(patched).To(BeFalse())
+	})
+
+	It("skips patch only changed is object status", func() {
+		patched := false
+		pod1 := &corev1.Pod{ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: ns}, Spec: corev1.PodSpec{Containers: []corev1.Container{{Name: "test", Image: "test:latest"}}}, Status: corev1.PodStatus{Phase: corev1.PodPending}}
+		pod2 := pod1.DeepCopy()
+
+		// obj to deploy won't have a status set.
+		pod2.Status = corev1.PodStatus{}
+		fc := &fakeClient{
+			Client: newFakeClientWithObjs(pod1.DeepCopy()),
+			patchFunc: func(_ context.Context, _ client.Object, _ client.Patch, _ ...client.PatchOption) error {
+				Fail("should not be called")
+				return errors.New("should not be called")
+			},
+		}
+		d := getDeployer(fc)
+
+		err := d.DeployObjs(ctx, []client.Object{pod2})
 		Expect(err).ToNot(HaveOccurred())
 		Expect(patched).To(BeFalse())
 	})
@@ -2671,9 +2699,8 @@ var _ = Describe("DeployObjs", func() {
 			},
 		}
 		cm.Data = map[string]string{"foo": "bar", "bar": "baz"}
-		d, err := deployer.NewDeployer(fc, &deployer.Inputs{ControllerName: "test"})
-		Expect(err).ToNot(HaveOccurred())
-		err = d.DeployObjs(ctx, []client.Object{cm})
+		d := getDeployer(fc)
+		err := d.DeployObjs(ctx, []client.Object{cm})
 		Expect(err).ToNot(HaveOccurred())
 		Expect(patched).To(BeTrue())
 	})
@@ -2688,9 +2715,8 @@ var _ = Describe("DeployObjs", func() {
 				return nil
 			},
 		}
-		d, err := deployer.NewDeployer(fc, &deployer.Inputs{ControllerName: "test"})
-		Expect(err).ToNot(HaveOccurred())
-		err = d.DeployObjs(ctx, []client.Object{cm})
+		d := getDeployer(fc)
+		err := d.DeployObjs(ctx, []client.Object{cm})
 		Expect(err).ToNot(HaveOccurred())
 		Expect(patched).To(BeTrue())
 	})
@@ -2708,9 +2734,8 @@ var _ = Describe("DeployObjs", func() {
 				return nil
 			},
 		}
-		d, err := deployer.NewDeployer(fc, &deployer.Inputs{ControllerName: "test"})
-		Expect(err).ToNot(HaveOccurred())
-		err = d.DeployObjs(ctx, []client.Object{cm})
+		d := getDeployer(fc)
+		err := d.DeployObjs(ctx, []client.Object{cm})
 		Expect(err).ToNot(HaveOccurred())
 		Expect(patched).To(BeTrue())
 	})
