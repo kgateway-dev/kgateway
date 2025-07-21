@@ -269,7 +269,7 @@ func (d *Deployer) GetGvksToWatch(ctx context.Context, vals map[string]any) ([]s
 		}
 	}
 
-	logger.Debug("watching GVKs", "GVKs", ret)
+	logger.Debug("watching GVKs", "gvks", ret)
 	return ret, nil
 }
 
