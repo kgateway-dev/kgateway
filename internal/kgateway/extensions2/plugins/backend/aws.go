@@ -171,15 +171,11 @@ type lambdaFilters struct {
 
 // Equals checks if two lambdaFilters objects are equal.
 func (u *lambdaFilters) Equals(other *lambdaFilters) bool {
-	if !cmputils.CompareWithNils(u, other, func(a, b *lambdaFilters) bool {
+	return cmputils.CompareWithNils(u, other, func(a, b *lambdaFilters) bool {
 		return proto.Equal(a.lambdaConfigAny, b.lambdaConfigAny) &&
 			proto.Equal(a.awsRequestSigningAny, b.awsRequestSigningAny) &&
 			proto.Equal(a.codecConfigAny, b.codecConfigAny)
-	}) {
-		return false
-	}
-
-	return true
+	})
 }
 
 // buildLambdaFilters configures cluster's upstream HTTP filters for the given backend.
