@@ -208,7 +208,7 @@ func newFakeClientWithObjs(objs ...client.Object) client.Client {
 	for _, obj := range objs {
 		gvk := obj.GetObjectKind().GroupVersionKind()
 		if gvk.Kind == wellknown.InferencePoolKind {
-			if err := infextv1a2.AddToScheme(scheme); err != nil {
+			if err := infextv1a2.Install(scheme); err != nil {
 				panic(fmt.Sprintf("failed to add InferenceExtension scheme: %v", err))
 			}
 			break

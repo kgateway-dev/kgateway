@@ -102,10 +102,10 @@ type Service struct {
 	// The actual port numbers are specified in the Gateway resource.
 	//
 	// +optional
-	Ports []*Port `json:"ports"`
+	Ports []Port `json:"ports,omitempty"`
 }
 
-func (in *Service) GetPorts() []*Port {
+func (in *Service) GetPorts() []Port {
 	if in == nil {
 		return nil
 	}

@@ -308,7 +308,7 @@ func (t *waypointTranslator) buildServiceChains(
 		// HTTPRoutes apply at the Service level, not the port
 		// level so we don't need to generate this multiple times
 		// TODO respect `port` on parentRef
-		httpRoutesVirtualHost := t.buildHTTPVirtualHost(ctx, baseReporter, gw, gwListener, svc, httpRoutes)
+		httpRoutesVirtualHost := t.buildHTTPVirtualHost(ctx, baseReporter, gwListener, svc, httpRoutes)
 
 		for _, svcPort := range svc.Ports {
 			filterChain, err := initServiceChain(svc, svcPort)
@@ -348,7 +348,7 @@ func (t *waypointTranslator) buildServiceChains(
 				}
 
 				// Apply TCP RBAC filters to this TCP filter chain
-				applyTCPRBACFilters(&tcpChain, tcpRBAC, svc)
+				applyTCPRBACFilters(&tcpChain, tcpRBAC)
 				tcpOut = append(tcpOut, tcpChain)
 			}
 		}
@@ -395,7 +395,6 @@ func initServiceChain(
 func (t *waypointTranslator) buildHTTPVirtualHost(
 	ctx context.Context,
 	baseReporter reports.Reporter,
-	gw *ir.Gateway,
 	gwListener *ir.Listener,
 	svc waypointquery.Service,
 	httpRoutes []*query.RouteInfo,

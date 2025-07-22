@@ -641,12 +641,15 @@ func (s *ProxySyncer) syncGatewayStatus(ctx context.Context, logger *slog.Logger
 				if !isGatewayStatusEqual(&gwStatusWithoutAddress, status) {
 					gw.Status = *status
 					if err := s.mgr.GetClient().Status().Patch(ctx, &gw, client.Merge); err != nil {
+						if apierrors.IsConflict(err) {
+							return err // Expected conflict, retry will handle.
+						}
 						logger.Error("error patching gateway status", "error", err, "gateway", gwnn.String())
 						return err
 					}
 					logger.Info("patched gw status", "gateway", gwnn.String())
 				} else {
-					logger.Info("skipping k8s gateway status update, status equal", "gateway", gwnn.String())
+					logger.Debug("skipping k8s gateway status update, status equal", "gateway", gwnn.String())
 				}
 			}
 		}
@@ -684,12 +687,15 @@ func (s *ProxySyncer) syncListenerSetStatus(ctx context.Context, logger *slog.Lo
 				if !isListenerSetStatusEqual(&lsStatus, status) {
 					ls.Status = *status
 					if err := s.mgr.GetClient().Status().Patch(ctx, &ls, client.Merge); err != nil {
+						if apierrors.IsConflict(err) {
+							return err // Expected conflict, retry will handle.
+						}
 						logger.Error("error patching listener set status", "error", err, "gateway", lsnn.String())
 						return err
 					}
 					logger.Info("patched ls status", "listenerset", lsnn.String())
 				} else {
-					logger.Info("skipping k8s ls status update, status equal", "listenerset", lsnn.String())
+					logger.Debug("skipping k8s ls status update, status equal", "listenerset", lsnn.String())
 				}
 			}
 		}

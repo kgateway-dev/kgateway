@@ -114,11 +114,7 @@ func csrfFilter() *envoy_csrf_v3.CsrfPolicy {
 	}
 }
 
-func toEnvoyStringMatcher(origin *v1alpha1.StringMatcher) *envoy_matcher_v3.StringMatcher {
-	if origin == nil {
-		return nil
-	}
-
+func toEnvoyStringMatcher(origin v1alpha1.StringMatcher) *envoy_matcher_v3.StringMatcher {
 	matcher := &envoy_matcher_v3.StringMatcher{
 		IgnoreCase: origin.IgnoreCase,
 	}

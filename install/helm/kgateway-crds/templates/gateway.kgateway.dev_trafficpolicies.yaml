@@ -562,6 +562,7 @@ spec:
                                     - value
                                     type: object
                                   header:
+                                    minLength: 1
                                     type: string
                                   type:
                                     enum:

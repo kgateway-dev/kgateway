@@ -3,6 +3,7 @@ package ir
 import (
 	"context"
 	"fmt"
+	"slices"
 	"time"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
@@ -270,6 +271,22 @@ func versionEquals(a, b metav1.Object) bool {
 
 func (c PolicyWrapper) Equals(in PolicyWrapper) bool {
 	if c.ObjectSource != in.ObjectSource {
+		return false
+	}
+
+	if !slices.EqualFunc(c.Errors, in.Errors, func(e1, e2 error) bool {
+		if e1 == nil && e2 != nil {
+			return false
+		}
+		if e1 != nil && e2 == nil {
+			return false
+		}
+		if (e1 != nil && e2 != nil) && e1.Error() != e2.Error() {
+			return false
+		}
+
+		return true
+	}) {
 		return false
 	}
 

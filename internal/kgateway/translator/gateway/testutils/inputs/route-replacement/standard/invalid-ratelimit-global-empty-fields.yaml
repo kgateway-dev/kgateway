@@ -75,7 +75,7 @@ spec:
       descriptors:
         - entries:
             - type: Header
-              header: ""  # Proto validation error: header name cannot be empty
+              # Proto validation error: header name cannot be empty
         - entries:
             - type: Generic
               generic:

@@ -45,6 +45,23 @@ spec:
 			wantError: "exactly one of the fields in [ai aws static dynamicForwardProxy] must be set",
 		},
 		{
+			name: "Backend: empty lambda qualifier does not match pattern",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: backend-empty-lambda-qualifier
+spec:
+  type: AWS
+  aws:
+    accountId: "000000000000"
+    lambda:
+      functionName: hello-function
+      qualifier: ""
+`,
+			wantError: "spec.aws.lambda.qualifier in body should match ",
+		},
+		{
 			name: "BackendConfigPolicy: enforce AtMostOneOf for HTTP protocol options",
 			input: `---
 apiVersion: gateway.kgateway.dev/v1alpha1
@@ -119,6 +136,27 @@ spec:
       app: myapp
 `,
 			wantError: "TargetSelectors must reference either a Kubernetes Service or a Backend API",
+		},
+		{
+			name: "BackendConfigPolicy: invalid aggression",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: backend-config-invalid-aggression
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: test-service
+  loadBalancer:
+    roundRobin:
+      slowStart:
+        window: 10s
+        aggression: ""
+        minWeightPercent: 10
+`,
+			wantError: "Aggression, if specified, must be a string representing a number greater than 0.0",
 		},
 		{
 			name: "TrafficPolicy: valid target references",
@@ -262,6 +300,19 @@ spec:
 `,
 			wantError: "targetRefs may only reference Gateway resources",
 		},
+		{
+			name: "DirectResponse: empty body not allowed",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: DirectResponse
+metadata:
+  name: directresponse
+spec:
+  status: 200
+  body: ""
+`,
+			wantError: "spec.body in body should be at least 1 chars long",
+		},
 	}
 
 	t.Cleanup(func() {
@@ -284,6 +335,8 @@ spec:
 			if tc.wantError != "" {
 				r.Error(err)
 				r.Contains(out.String(), tc.wantError)
+			} else {
+				r.NoError(err)
 			}
 		})
 	}

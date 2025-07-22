@@ -2,6 +2,7 @@ package deployer_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"slices"
 	"strings"
@@ -1980,7 +1981,7 @@ var _ = Describe("Deployer", func() {
 						Kube: &gw2_v1alpha1.KubernetesProxyConfig{
 							Service: &gw2_v1alpha1.Service{
 								Type: ptr.To(corev1.ServiceTypeNodePort),
-								Ports: []*gw2_v1alpha1.Port{
+								Ports: []gw2_v1alpha1.Port{
 									{
 										Port:     80,
 										NodePort: ptr.To(uint16(30000)),
@@ -2386,7 +2387,7 @@ func newFakeClientWithObjs(objs ...client.Object) client.Client {
 	for _, obj := range objs {
 		gvk := obj.GetObjectKind().GroupVersionKind()
 		if gvk.Kind == wellknown.InferencePoolKind {
-			if err := infextv1a2.AddToScheme(scheme); err != nil {
+			if err := infextv1a2.Install(scheme); err != nil {
 				panic(fmt.Sprintf("failed to add InferenceExtension scheme: %v", err))
 			}
 			break
@@ -2632,4 +2633,129 @@ func newCommonCols(t test.Failer, initObjs ...client.Object) *common.CommonColle
 
 	gateways.Gateways.WaitUntilSynced(ctx.Done())
 	return commonCols
+}
+
+var _ = Describe("DeployObjs", func() {
+	var (
+		ns   = "test-ns"
+		name = "test-obj"
+		ctx  = context.Background()
+	)
+
+	var getDeployer = func(fc *fakeClient) *deployer.Deployer {
+		chart, err := internaldeployer.LoadGatewayChart()
+		Expect(err).ToNot(HaveOccurred())
+		return deployer.NewDeployer(wellknown.DefaultGatewayControllerName, fc, chart,
+			nil,
+			internaldeployer.GatewayReleaseNameAndNamespace)
+	}
+
+	It("skips patch if object is unchanged", func() {
+		patched := false
+		cm := &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: ns}, Data: map[string]string{"foo": "bar"}}
+		fc := &fakeClient{
+			Client: newFakeClientWithObjs(cm.DeepCopy()),
+			patchFunc: func(_ context.Context, _ client.Object, _ client.Patch, _ ...client.PatchOption) error {
+				Fail("should not be called")
+				return errors.New("should not be called")
+			},
+		}
+		d := getDeployer(fc)
+
+		err := d.DeployObjs(ctx, []client.Object{cm})
+		Expect(err).ToNot(HaveOccurred())
+		Expect(patched).To(BeFalse())
+	})
+
+	It("skips patch only changed is object status", func() {
+		patched := false
+		pod1 := &corev1.Pod{ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: ns}, Spec: corev1.PodSpec{Containers: []corev1.Container{{Name: "test", Image: "test:latest"}}}, Status: corev1.PodStatus{Phase: corev1.PodPending}}
+		pod2 := pod1.DeepCopy()
+
+		// obj to deploy won't have a status set.
+		pod2.Status = corev1.PodStatus{}
+		fc := &fakeClient{
+			Client: newFakeClientWithObjs(pod1.DeepCopy()),
+			patchFunc: func(_ context.Context, _ client.Object, _ client.Patch, _ ...client.PatchOption) error {
+				Fail("should not be called")
+				return errors.New("should not be called")
+			},
+		}
+		d := getDeployer(fc)
+
+		err := d.DeployObjs(ctx, []client.Object{pod2})
+		Expect(err).ToNot(HaveOccurred())
+		Expect(patched).To(BeFalse())
+	})
+
+	It("patches if object is different", func() {
+		patched := false
+		cm := &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: ns}, Data: map[string]string{"foo": "bar"}}
+		fc := &fakeClient{
+			Client: newFakeClientWithObjs(cm.DeepCopy()),
+			patchFunc: func(_ context.Context, _ client.Object, _ client.Patch, _ ...client.PatchOption) error {
+				patched = true
+				return nil
+			},
+		}
+		cm.Data = map[string]string{"foo": "bar", "bar": "baz"}
+		d := getDeployer(fc)
+		err := d.DeployObjs(ctx, []client.Object{cm})
+		Expect(err).ToNot(HaveOccurred())
+		Expect(patched).To(BeTrue())
+	})
+
+	It("patches if object does not exist (IsNotFound)", func() {
+		patched := false
+		cm := &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: ns}}
+		fc := &fakeClient{
+			Client: newFakeClientWithObjs(),
+			patchFunc: func(_ context.Context, _ client.Object, _ client.Patch, _ ...client.PatchOption) error {
+				patched = true
+				return nil
+			},
+		}
+		d := getDeployer(fc)
+		err := d.DeployObjs(ctx, []client.Object{cm})
+		Expect(err).ToNot(HaveOccurred())
+		Expect(patched).To(BeTrue())
+	})
+
+	It("patches if Get returns a non-IsNotFound error", func() {
+		patched := false
+		cm := &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: ns}}
+		fc := &fakeClient{
+			Client: newFakeClientWithObjs(cm.DeepCopy()),
+			getFunc: func(_ context.Context, _ client.ObjectKey, _ client.Object) error {
+				return fmt.Errorf("some random error")
+			},
+			patchFunc: func(_ context.Context, _ client.Object, _ client.Patch, _ ...client.PatchOption) error {
+				patched = true
+				return nil
+			},
+		}
+		d := getDeployer(fc)
+		err := d.DeployObjs(ctx, []client.Object{cm})
+		Expect(err).ToNot(HaveOccurred())
+		Expect(patched).To(BeTrue())
+	})
+})
+
+type fakeClient struct {
+	client.Client
+	getFunc   func(ctx context.Context, key client.ObjectKey, obj client.Object) error
+	patchFunc func(ctx context.Context, obj client.Object, patch client.Patch, opts ...client.PatchOption) error
+}
+
+func (f *fakeClient) Get(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
+	if f.getFunc != nil {
+		return f.getFunc(ctx, key, obj)
+	}
+	return f.Client.Get(ctx, key, obj)
+}
+func (f *fakeClient) Patch(ctx context.Context, obj client.Object, patch client.Patch, opts ...client.PatchOption) error {
+	if f.patchFunc != nil {
+		return f.patchFunc(ctx, obj, patch, opts...)
+	}
+	return f.Client.Patch(ctx, obj, patch, opts...)
 }
