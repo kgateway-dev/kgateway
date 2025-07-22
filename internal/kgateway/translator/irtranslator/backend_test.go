@@ -24,7 +24,7 @@ func TestBackendTranslatorTranslatesAppProtocol(t *testing.T) {
 	var bt irtranslator.BackendTranslator
 	var ucc ir.UniqlyConnectedClient
 	var kctx krt.TestingDummyContext
-	backend := ir.BackendObjectIR{
+	backend := &ir.BackendObjectIR{
 		ObjectSource: ir.ObjectSource{
 			Group:     "group",
 			Kind:      "kind",
