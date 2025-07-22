@@ -46,7 +46,7 @@ func (s *serviceEntryPlugin) buildInlineEndpoints(ctx context.Context, be ir.Bac
 		}
 	}
 
-	endpointsForBackend := endpointsFromWorkloads(se, be, inlineWorkloads)
+	endpointsForBackend := endpointsFromWorkloads(se, be, inlineWorkloads, s.opts)
 	if endpointsForBackend == nil {
 		// this is pretty much impossible, but `ir.NewEndpointsForBackend(be)`
 		// returns a pointer, so this is for safety
@@ -62,6 +62,7 @@ func endpointsCollection(
 	SelectedWorkloads krt.Collection[selectedWorkload],
 	selectedWorkloadsIndex krt.Index[string, selectedWorkload],
 	krtOpts krtutil.KrtOptions,
+	opts Options,
 ) krt.Collection[ir.EndpointsForBackend] {
 	return krt.NewCollection(
 		Backends,
@@ -75,7 +76,7 @@ func endpointsCollection(
 			}
 			workloads := krt.Fetch(ctx, SelectedWorkloads, krt.FilterIndex(selectedWorkloadsIndex, serviceEntryKey(se)))
 
-			return endpointsFromWorkloads(se, be, workloads)
+			return endpointsFromWorkloads(se, be, workloads, opts)
 		},
 		krtOpts.ToOptions("ServiceEntryEndpoints")...,
 	)
@@ -90,6 +91,7 @@ func endpointsFromWorkloads(
 	se *networkingclient.ServiceEntry,
 	be ir.BackendObjectIR,
 	workloads []selectedWorkload,
+	opts Options,
 ) *ir.EndpointsForBackend {
 	if len(workloads) == 0 {
 		return ir.NewEndpointsForBackend(be)
@@ -126,8 +128,12 @@ func endpointsFromWorkloads(
 			}
 		}
 
-		// respect target ports on the WorkloadEntry
-		epPort := workload.mapPort(servicePort.GetName(), seTargetPort)
+		epPort := opts.PortMapper(servicePort.GetName(), workload.portMapping, seTargetPort, workload.LocalityPod.AugmentedLabels)
+
+		// Skip this endpoint as there is no port mapping for this service port
+		if epPort == -1 {
+			continue
+		}
 
 		// only MESH_INTERNAL can use auto mTLS
 		allowAutoMTLS := se.Spec.GetLocation() == networking.ServiceEntry_MESH_INTERNAL

@@ -83,16 +83,6 @@ type selectedWorkload struct {
 	weight uint32
 }
 
-func (sw selectedWorkload) mapPort(name string, defalutValue int32) int32 {
-	if sw.portMapping == nil {
-		return defalutValue
-	}
-	if override := sw.portMapping[name]; override > 0 {
-		return int32(override)
-	}
-	return defalutValue
-}
-
 func (sw selectedWorkload) Equals(o selectedWorkload) bool {
 	return o.network == sw.network &&
 		sw.LocalityPod.Equals(o.LocalityPod) &&
@@ -115,6 +105,9 @@ type serviceEntryPlugin struct {
 	// output collections
 	Backends  krt.Collection[ir.BackendObjectIR]
 	Endpoints krt.Collection[ir.EndpointsForBackend]
+
+	// configuration
+	opts Options
 }
 
 func initServiceEntryCollections(
@@ -143,7 +136,7 @@ func initServiceEntryCollections(
 
 	// init the outputs
 	Backends := backendsCollections(logger, commonCols.ServiceEntries, commonCols.KrtOpts, opts.Aliaser)
-	Endpoints := endpointsCollection(Backends, SelectedWorkloads, selectedWorkloadsIndex, commonCols.KrtOpts)
+	Endpoints := endpointsCollection(Backends, SelectedWorkloads, selectedWorkloadsIndex, commonCols.KrtOpts, opts)
 
 	return serviceEntryPlugin{
 		logger: logger,
@@ -157,6 +150,8 @@ func initServiceEntryCollections(
 
 		Backends:  Backends,
 		Endpoints: Endpoints,
+
+		opts: opts,
 	}
 }
 
