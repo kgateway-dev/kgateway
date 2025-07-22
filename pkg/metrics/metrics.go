@@ -303,6 +303,11 @@ func Registry() RegistererGatherer {
 	return registry
 }
 
+// NewRegistry creates a new metrics registry.
+func NewRegistry() RegistererGatherer {
+	return prometheus.NewRegistry()
+}
+
 // SetRegistry sets the global metrics registry.
 func SetRegistry(useBuiltinRegistry bool, r RegistererGatherer) {
 	registryLock.Lock()

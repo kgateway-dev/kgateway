@@ -12,7 +12,7 @@ import (
 )
 
 func setupTestRegistry() {
-	SetRegistry(false, prometheus.NewRegistry())
+	SetRegistry(false, NewRegistry())
 }
 
 func TestCounterInterface(t *testing.T) {
