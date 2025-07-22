@@ -36,18 +36,18 @@ func HostnameAliaser(se *networkingclient.ServiceEntry) []ir.ObjectSource {
 
 // PortMapper is a function that returns the port to be used for the endpoint.
 // It can be customized to support different port mapping strategies.
-type PortMapper = func(name string, portMapping map[string]uint32, defalutValue int32, labels map[string]string) int32
+type PortMapper = func(name string, portMapping map[string]uint32, defaultValue int32, labels map[string]string) int32
 
 // DefaultPortMapper will respect mapped ports if they are specified in the portMapping map.
 // If no target port is specified, it will return the default value.
-func DefaultPortMapper(name string, portMapping map[string]uint32, defalutValue int32, labels map[string]string) int32 {
+func DefaultPortMapper(name string, portMapping map[string]uint32, defaultValue int32, labels map[string]string) int32 {
 	if portMapping == nil {
-		return defalutValue
+		return defaultValue
 	}
 	if override := portMapping[name]; override > 0 {
 		return int32(override)
 	}
-	return defalutValue
+	return defaultValue
 }
 
 type Options struct {

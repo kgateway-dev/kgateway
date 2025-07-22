@@ -3,9 +3,9 @@ package serviceentrybase
 import "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/serviceentry"
 
 type (
-	Aliaser      = serviceentry.Aliaser
-	PortMapper   = serviceentry.PortMapper
-	Options      = serviceentry.Options
+	Aliaser    = serviceentry.Aliaser
+	PortMapper = serviceentry.PortMapper
+	Options    = serviceentry.Options
 )
 
 var (
