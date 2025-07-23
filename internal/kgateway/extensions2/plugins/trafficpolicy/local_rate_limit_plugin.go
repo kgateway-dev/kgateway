@@ -1,8 +1,6 @@
 package trafficpolicy
 
 import (
-	"time"
-
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	localratelimitv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/local_ratelimit/v3"
 	typev3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
@@ -49,11 +47,7 @@ func toLocalRateLimitFilterConfig(t *v1alpha1.LocalRateLimitPolicy) (*localratel
 
 	tokenBucket := &typev3.TokenBucket{}
 	if t.TokenBucket != nil {
-		fillInterval, err := time.ParseDuration(string(t.TokenBucket.FillInterval))
-		if err != nil {
-			return nil, err
-		}
-		tokenBucket.FillInterval = durationpb.New(fillInterval)
+		tokenBucket.FillInterval = durationpb.New(t.TokenBucket.FillInterval.Duration)
 		tokenBucket.MaxTokens = t.TokenBucket.MaxTokens
 		if t.TokenBucket.TokensPerFill != nil {
 			tokenBucket.TokensPerFill = wrapperspb.UInt32(*t.TokenBucket.TokensPerFill)

@@ -3,7 +3,6 @@ package trafficpolicy
 import (
 	"errors"
 	"fmt"
-	"time"
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyratelimitv3 "github.com/envoyproxy/go-control-plane/envoy/config/ratelimit/v3"
@@ -168,15 +167,9 @@ func resolveRateLimitService(grpcService *envoycorev3.GrpcService, rateLimit *v1
 		},
 	}
 
-	// Set timeout if specified
-	if rateLimit.Timeout != "" {
-		if duration, err := time.ParseDuration(string(rateLimit.Timeout)); err == nil {
-			envoyRateLimit.Timeout = durationpb.New(duration)
-		} else {
-			// CEL validation should catch this, so this should never happen. log it here just in case and don't error.
-			logger.Error("invalid timeout in rate limit provider", "error", err)
-		}
-	}
+	// Set timeout (we expect it always to have a valid value or default due to CRD validation)
+	envoyRateLimit.Timeout = durationpb.New(rateLimit.Timeout.Duration)
+
 	// Set defaults for other required fields
 	envoyRateLimit.StatPrefix = rateLimitStatPrefix
 	envoyRateLimit.EnableXRatelimitHeaders = ratev3.RateLimit_DRAFT_VERSION_03
