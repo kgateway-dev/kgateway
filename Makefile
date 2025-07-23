@@ -810,6 +810,43 @@ conformance-%: $(TEST_ASSET_DIR)/conformance/conformance_test.go
 	-run-test=$*
 
 #----------------------------------------------------------------------------------
+# Targets for running Gateway API Inference Extension conformance tests
+#----------------------------------------------------------------------------------
+
+# Where the inference extension module is checked out in our Go module cache.
+INFERENCE_CONFORMANCE_DIR := $(shell go list -m -f '{{.Dir}}' sigs.k8s.io/gateway-api-inference-extension)/conformance
+# Allow skipping known‐failing tests.
+INFERENCE_SKIP_TESTS ?= -skip-tests EppUnAvailableFailOpen
+# The Gateway API Inference Extension conformance suite requires a GatewayClass to be specified.
+GIE_CONFORMANCE_ARGS := -gateway-class=$(CONFORMANCE_GATEWAY_CLASS)
+
+.PHONY: gie-crds
+gie-crds: ## Install the Gateway API Inference Extension CRDs
+	kubectl apply --kustomize "https://github.com/kubernetes-sigs/gateway-api-inference-extension/config/crd/"
+
+.PHONY: gie-conformance
+gie-conformance: gie-crds ## Run the Gateway API Inference Extension conformance suite
+	go test -mod=mod -ldflags='$(LDFLAGS)' \
+	    -tags conformance \
+	    -timeout=25m \
+	    -v $(INFERENCE_CONFORMANCE_DIR) \
+	    -args $(GIE_CONFORMANCE_ARGS) $(INFERENCE_SKIP_TESTS)
+
+.PHONY: gie-conformance-%
+gie-conformance-%: gie-crds ## Run only the specified Gateway API Inference Extension conformance test by ShortName
+	go test -mod=mod -ldflags='$(LDFLAGS)' \
+	    -tags conformance \
+	    -timeout=25m \
+	    -v $(INFERENCE_CONFORMANCE_DIR) \
+	    -args $(CONFORMANCE_ARGS) $(INFERENCE_SKIP_TESTS) \
+	    -run-test=$*
+
+# An alias to run both Gateway API and Inference Extension conformance tests.
+.PHONY: all-conformance
+all-conformance: conformance gie-conformance ## Run both Gateway API and Inference Extension conformance
+	@echo "All conformance suites have completed."
+
+#----------------------------------------------------------------------------------
 # Third Party License Management
 #----------------------------------------------------------------------------------
 

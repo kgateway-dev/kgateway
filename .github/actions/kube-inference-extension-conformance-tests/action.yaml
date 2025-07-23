@@ -1,8 +1,8 @@
-name: Gateway API Conformance Tests
-description: run kubernetes gateway api conformance tests
+name: Gateway API Inference Extension Conformance Tests
+description: run kubernetes gateway api inference extension conformance tests
 inputs:
   api-version:
-    description: "Override of the sig Gateway API to test against."
+    description: "Override of the sig Gateway API inference extension to test against."
     required: false
 runs:
   using: "composite"
@@ -13,9 +13,6 @@ runs:
     id: kubectl
     with:
       version: ${{ matrix.kube-version.kubectl }}
-  - uses: azure/setup-helm@v4
-    with:
-      version: ${{ matrix.kube-version.helm }}
   - name: Set and retrieve environment variables
     shell: bash
     run: |
@@ -29,13 +26,11 @@ runs:
         echo "VERSION=${{ matrix.version }}" >> $GITHUB_ENV
         echo "SKIP_DOCKER=true" >> $GITHUB_ENV
       fi
-      echo "CONFORMANCE_VERSION=${{ inputs.API_VERSION }}" >> $GITHUB_ENV
 
   - name: Setup test env
     shell: bash
     env:
       CLUSTER_NODE_VERSION: ${{ matrix.kube-version.node }}
-      IMAGE_VARIANT: ${{ matrix.image-variant }}
       CONFORMANCE: "true"
       CONFORMANCE_VERSION: ${{ env.CONFORMANCE_VERSION }}
     run: ./hack/kind/setup-kind.sh
@@ -46,25 +41,30 @@ runs:
       if [[ -z "${{ matrix.version }}" ]]; then
         # If matrix.version is empty, use the local chart path specified in the Makefile.
           helm upgrade -i -n kgateway-system kgateway-crds ./install/helm/kgateway-crds/ \
-          --create-namespace
+          --create-namespace \
+          --set inferenceExtension.enabled=true
         helm upgrade -i -n kgateway-system kgateway ./install/helm/kgateway/ \
           --create-namespace \
-          --set image.tag=${VERSION} --set image.registry=ghcr.io/kgateway-dev
+          --set image.tag=${VERSION} \
+          --set image.registry=ghcr.io/kgateway-dev \
+          --set inferenceExtension.enabled=true
       else
         # TODO(tim): this will require changes once the new helm chart is integrated
         # and published with the release pipeline.
         # Else, use the provided version to install Gloo from the helm repository.
         helm upgrade -i -n kgateway-system kgateway-crds oci://${{ env.IMAGE_REGISTRY }}/charts/kgateway-crds \
           --version ${VERSION} \
-          --create-namespace
+          --create-namespace \
+          --set inferenceExtension.enabled=true
         helm upgrade -i -n kgateway-system kgateway oci://${{ env.IMAGE_REGISTRY }}/charts/kgateway \
           --version ${VERSION} \
           --create-namespace \
-          --set image.tag=${VERSION}
+          --set image.tag=${VERSION} \
+          --set inferenceExtension.enabled=true
       fi
-  - name: Run the kubernetes gateway API conformance tests
+  - name: Run the kubernetes gateway API inference extension conformance tests
     shell: bash
-    run: make conformance
+    run: make gie-conformance
   - name: Capture debug information when tests fail
     if: ${{ failure() }}
     shell: bash
@@ -75,14 +75,12 @@ runs:
       echo
       kubectl -n gateway-conformance-app-backend get events --sort-by='{.lastTimestamp}'
       echo
-      kubectl -n gateway-conformance-web-backend get events --sort-by='{.lastTimestamp}'
-      echo
-      kubectl -n kgateway-system logs deploy/gloo
+      kubectl -n kgateway-system logs deploy/kgateway
   - name: Upload reports
     if: ${{ failure() }}
-    uses: actions/upload-artifact@v4
+    uses: ./.github/actions/upload-artifact
     with:
       # Name of the path to upload. The VERSION variable refers to the Makefile
       # VERSION variable.
-      name: conformance-kgateway-gateway-report-attempt-${{ github.run_attempt }}@k8s${{ matrix.kube-version.kubectl }}
-      path: _test/conformance/${{ env.VERSION }}-report.yaml
+      name: conformance-kgateway-gateway-inference-extension-report@k8s${{ matrix.kube-version.kubectl }}
+      path: _test/conformance/${{ env.VERSION }}-inference-extension-report.yaml
