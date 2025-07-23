@@ -258,7 +258,7 @@ var schemaYAML = typed.YAMLObject(`types:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.OTelTracesSampler
     - name: timeout
       type:
-        scalar: string
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Duration
     - name: transportSecurity
       type:
         scalar: string
@@ -1886,7 +1886,7 @@ var schemaYAML = typed.YAMLObject(`types:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtGrpcService
     - name: timeout
       type:
-        scalar: string
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Duration
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Regex
   map:
     fields:
@@ -2190,8 +2190,7 @@ var schemaYAML = typed.YAMLObject(`types:
     fields:
     - name: fillInterval
       type:
-        scalar: string
-      default: ""
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Duration
     - name: maxTokens
       type:
         scalar: numeric

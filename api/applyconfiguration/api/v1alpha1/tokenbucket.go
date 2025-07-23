@@ -3,7 +3,7 @@
 package v1alpha1
 
 import (
-	v1 "sigs.k8s.io/gateway-api/apis/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // TokenBucketApplyConfiguration represents a declarative configuration of the TokenBucket type for use
