@@ -21,6 +21,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/metrics"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/settings"
 )
@@ -38,6 +39,12 @@ func (t *BackendTranslator) TranslateBackend(
 	ucc ir.UniqlyConnectedClient,
 	backend *ir.BackendObjectIR,
 ) (*envoyclusterv3.Cluster, error) {
+	var rErr error
+	finishMetrics := metrics.NewTranslatorMetricsRecorder("TranslateBackend").TranslationStart()
+	defer func() {
+		finishMetrics(rErr)
+	}()
+
 	gk := schema.GroupKind{
 		Group: backend.Group,
 		Kind:  backend.Kind,
@@ -59,7 +66,8 @@ func (t *BackendTranslator) TranslateBackend(
 		// this cluster will ultimately be dropped before it added to the xDS snapshot
 		// see: internal/kgateway/proxy_syncer/perclient.go
 		out := buildBlackholeCluster(backend)
-		return out, errors.Join(backend.Errors...)
+		rErr = errors.Join(backend.Errors...)
+		return out, rErr
 	}
 
 	out := initializeCluster(backend)

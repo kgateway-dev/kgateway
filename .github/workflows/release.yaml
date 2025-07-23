@@ -8,11 +8,10 @@ on:
         description: "Validate the release artifacts"
       version:
         type: string
-        required: false
+        required: true
         description: |
           Version override for the release (must start with 'v' followed by semantic version).
           Examples: v1.2.3, v2.0.0-alpha.1, v1.0.0-beta.2
-          If not provided, defaults to v0.0.0-manual-<git-sha>
   push:
     tags:
       - 'v*'
@@ -53,7 +52,7 @@ jobs:
           GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD | sed -e "s/\//-/g")
 
           # Validate version input for workflow_dispatch
-          if [[ ${{ github.event_name }} == 'workflow_dispatch' && -n "${{ inputs.version }}" ]]; then
+          if [[ ${{ github.event_name }} == 'workflow_dispatch' ]]; then
             VERSION="${{ inputs.version }}"
             # Validate semver format. Modified version from the recommended semver format.
             # See https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string.
@@ -61,9 +60,6 @@ jobs:
               echo "Error: Version '$VERSION' does not match required semver format (e.g., v1.2.3, v2.0.0-alpha.1)"
               exit 1
             fi
-            echo "goreleaser_args=--clean --skip=validate" >> $GITHUB_OUTPUT
-          elif [[ ${{ github.event_name }} == 'workflow_dispatch' ]]; then
-            VERSION="v0.0.0-manual-${GIT_SHA}"
             echo "goreleaser_args=--clean --skip=validate" >> $GITHUB_OUTPUT
           elif [[ $GITHUB_REF == refs/heads/main ]]; then
             VERSION="${MAIN_VERSION}"
@@ -97,10 +93,10 @@ jobs:
 
       - name: Push kgateway chart to registry
         if: ${{ github.event_name != 'pull_request' }}
-        run: |
-          # TODO(tim): Add Makefile target for this.
-          go tool helm push _test/kgateway-${{ needs.setup.outputs.version }}.tgz oci://${{ env.IMAGE_REGISTRY }}/charts
-          go tool helm push _test/kgateway-crds-${{ needs.setup.outputs.version }}.tgz oci://${{ env.IMAGE_REGISTRY }}/charts
+        run: make release-charts
+        env:
+          VERSION: ${{ needs.setup.outputs.version }}
+          IMAGE_REGISTRY: ${{ env.IMAGE_REGISTRY }}
   goreleaser:
     name: goreleaser
     needs: [setup, helm]

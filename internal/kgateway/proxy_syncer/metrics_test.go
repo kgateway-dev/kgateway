@@ -1,6 +1,7 @@
 package proxy_syncer
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -16,7 +17,7 @@ import (
 	"k8s.io/utils/ptr"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
+	tmetrics "github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/metrics"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics/metricstest"
@@ -24,22 +25,21 @@ import (
 
 func setupTest() {
 	ResetMetrics()
+	tmetrics.ResetMetrics()
 }
 
 func TestNewStatusSyncRecorder(t *testing.T) {
 	setupTest()
 
 	syncerName := "test-syncer"
-	m := NewStatusSyncMetricsRecorder(syncerName)
+	m := newStatusSyncMetricsRecorder(syncerName)
 
 	finishFunc := m.StatusSyncStart()
 	finishFunc(nil)
-	m.SetResources(StatusSyncResourcesMetricLabels{Namespace: "default", Name: "test", Resource: "route"}, 5)
 
 	expectedMetrics := []string{
 		"kgateway_status_syncer_status_syncs_total",
 		"kgateway_status_syncer_status_sync_duration_seconds",
-		"kgateway_status_syncer_resources",
 	}
 
 	currentMetrics := metricstest.MustGatherMetrics(t)
@@ -52,7 +52,7 @@ func TestNewStatusSyncRecorder(t *testing.T) {
 func TestStatusSyncStart_Success(t *testing.T) {
 	setupTest()
 
-	m := NewStatusSyncMetricsRecorder("test-syncer")
+	m := newStatusSyncMetricsRecorder("test-syncer")
 
 	finishFunc := m.StatusSyncStart()
 	time.Sleep(10 * time.Millisecond)
@@ -77,7 +77,7 @@ func TestStatusSyncStart_Success(t *testing.T) {
 func TesStatusSyncStart_Error(t *testing.T) {
 	setupTest()
 
-	m := NewStatusSyncMetricsRecorder("test-syncer")
+	m := newStatusSyncMetricsRecorder("test-syncer")
 
 	finishFunc := m.StatusSyncStart()
 	finishFunc(assert.AnError)
@@ -91,102 +91,6 @@ func TesStatusSyncStart_Error(t *testing.T) {
 		},
 		Value: 1,
 	})
-	currentMetrics.AssertMetricNotExists("kgateway_status_syncer_status_sync_duration_seconds")
-}
-
-func TestStatusSyncResources(t *testing.T) {
-	setupTest()
-
-	m := NewStatusSyncMetricsRecorder("test-statusSync")
-
-	// Test SetResources.
-	m.SetResources(StatusSyncResourcesMetricLabels{Namespace: "default", Name: "test", Resource: "route"}, 5)
-	m.SetResources(StatusSyncResourcesMetricLabels{Namespace: "kube-system", Name: "test", Resource: "gateway"}, 3)
-
-	expectedRouteLabels := []metrics.Label{
-		{Name: "name", Value: "test"},
-		{Name: "namespace", Value: "default"},
-		{Name: "resource", Value: "route"},
-		{Name: "syncer", Value: "test-statusSync"},
-	}
-	expectedGatewayLabels := []metrics.Label{
-		{Name: "name", Value: "test"},
-		{Name: "namespace", Value: "kube-system"},
-		{Name: "resource", Value: "gateway"},
-		{Name: "syncer", Value: "test-statusSync"},
-	}
-
-	currentMetrics := metricstest.MustGatherMetrics(t)
-
-	currentMetrics.AssertMetrics("kgateway_status_syncer_resources", []metricstest.ExpectMetric{
-		&metricstest.ExpectedMetric{
-			Labels: expectedRouteLabels,
-			Value:  5,
-		},
-		&metricstest.ExpectedMetric{
-			Labels: expectedGatewayLabels,
-			Value:  3,
-		},
-	})
-	// Test IncResources.
-	m.IncResources(StatusSyncResourcesMetricLabels{Namespace: "default", Name: "test", Resource: "route"})
-
-	currentMetrics = metricstest.MustGatherMetrics(t)
-	currentMetrics.AssertMetrics("kgateway_status_syncer_resources", []metricstest.ExpectMetric{
-		&metricstest.ExpectedMetric{
-			Labels: expectedRouteLabels,
-			Value:  6,
-		},
-		&metricstest.ExpectedMetric{
-			Labels: expectedGatewayLabels,
-			Value:  3,
-		},
-	})
-
-	// Test DecResources.
-	m.DecResources(StatusSyncResourcesMetricLabels{Namespace: "default", Name: "test", Resource: "route"})
-
-	currentMetrics = metricstest.MustGatherMetrics(t)
-	currentMetrics.AssertMetrics("kgateway_status_syncer_resources", []metricstest.ExpectMetric{
-		&metricstest.ExpectedMetric{
-			Labels: expectedRouteLabels,
-			Value:  5,
-		},
-		&metricstest.ExpectedMetric{
-			Labels: expectedGatewayLabels,
-			Value:  3,
-		},
-	})
-
-	// Test ResetResources.
-	m.ResetResources("route")
-
-	currentMetrics = metricstest.MustGatherMetrics(t)
-	currentMetrics.AssertMetrics("kgateway_status_syncer_resources", []metricstest.ExpectMetric{
-		&metricstest.ExpectedMetric{
-			Labels: expectedRouteLabels,
-			Value:  0,
-		},
-		&metricstest.ExpectedMetric{
-			Labels: expectedGatewayLabels,
-			Value:  3,
-		},
-	})
-}
-
-func TestStatusSyncMetricsNotActive(t *testing.T) {
-	metrics.SetActive(false)
-	defer metrics.SetActive(true)
-
-	m := NewStatusSyncMetricsRecorder("test-syncer")
-
-	finishFunc := m.StatusSyncStart()
-	time.Sleep(10 * time.Millisecond)
-	finishFunc(nil)
-
-	currentMetrics := metricstest.MustGatherMetrics(t)
-
-	currentMetrics.AssertMetricNotExists("kgateway_status_syncer_status_syncs_total")
 	currentMetrics.AssertMetricNotExists("kgateway_status_syncer_status_sync_duration_seconds")
 }
 
@@ -297,7 +201,7 @@ func TestXDSSnapshotsCollectionMetrics(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			ResetMetrics()
+			setupTest()
 
 			mock := krttest.NewMock(t, tc.inputs)
 			mockUcc := krttest.GetMockCollection[ir.UniqlyConnectedClient](mock)
@@ -317,31 +221,32 @@ func TestXDSSnapshotsCollectionMetrics(t *testing.T) {
 					index: krt.NewIndex(mockUccWithCluster, func(ucc uccWithCluster) []string {
 						return []string{ucc.Client.ResourceName()}
 					}),
-				},
-				krtcollections.NewCollectionMetricsRecorder("ClientXDSSnapshots"))
+				})
 
 			c.WaitUntilSynced(nil)
-			time.Sleep(5 * time.Millisecond) // Allow some time for events to process.
+			time.Sleep(5 * time.Millisecond) // Allow some time all for events to process.
 
 			gathered := metricstest.MustGatherMetrics(t)
 
-			gathered.AssertMetric("kgateway_collection_transforms_total", &metricstest.ExpectedMetric{
+			gathered.AssertMetric("kgateway_xds_snapshot_transforms_total", &metricstest.ExpectedMetric{
 				Labels: []metrics.Label{
-					{Name: "collection", Value: "ClientXDSSnapshots"},
+					{Name: "gateway", Value: "test"},
+					{Name: "namespace", Value: "ns"},
 					{Name: "result", Value: "success"},
 				},
 				Value: 1,
 			})
 
-			gathered.AssertMetricsLabels("kgateway_collection_transform_duration_seconds", [][]metrics.Label{{
-				{Name: "collection", Value: "ClientXDSSnapshots"},
+			gathered.AssertMetricsLabels("kgateway_xds_snapshot_transform_duration_seconds", [][]metrics.Label{{
+				{Name: "gateway", Value: "test"},
+				{Name: "namespace", Value: "ns"},
 			}})
+			gathered.AssertHistogramPopulated("kgateway_xds_snapshot_transform_duration_seconds")
 
-			gathered.AssertMetrics("kgateway_collection_resources", []metricstest.ExpectMetric{
+			gathered.AssertMetrics("kgateway_xds_snapshot_resources", []metricstest.ExpectMetric{
 				&metricstest.ExpectedMetric{
 					Labels: []metrics.Label{
-						{Name: "collection", Value: "ClientXDSSnapshots"},
-						{Name: "name", Value: "test"},
+						{Name: "gateway", Value: "test"},
 						{Name: "namespace", Value: "ns"},
 						{Name: "resource", Value: "Cluster"},
 					},
@@ -349,8 +254,7 @@ func TestXDSSnapshotsCollectionMetrics(t *testing.T) {
 				},
 				&metricstest.ExpectedMetric{
 					Labels: []metrics.Label{
-						{Name: "collection", Value: "ClientXDSSnapshots"},
-						{Name: "name", Value: "test"},
+						{Name: "gateway", Value: "test"},
 						{Name: "namespace", Value: "ns"},
 						{Name: "resource", Value: "Endpoint"},
 					},
@@ -358,8 +262,7 @@ func TestXDSSnapshotsCollectionMetrics(t *testing.T) {
 				},
 				&metricstest.ExpectedMetric{
 					Labels: []metrics.Label{
-						{Name: "collection", Value: "ClientXDSSnapshots"},
-						{Name: "name", Value: "test"},
+						{Name: "gateway", Value: "test"},
 						{Name: "namespace", Value: "ns"},
 						{Name: "resource", Value: "Listener"},
 					},
@@ -367,14 +270,115 @@ func TestXDSSnapshotsCollectionMetrics(t *testing.T) {
 				},
 				&metricstest.ExpectedMetric{
 					Labels: []metrics.Label{
-						{Name: "collection", Value: "ClientXDSSnapshots"},
-						{Name: "name", Value: "test"},
+						{Name: "gateway", Value: "test"},
 						{Name: "namespace", Value: "ns"},
 						{Name: "resource", Value: "Route"},
 					},
 					Value: 1,
 				},
 			})
+		})
+	}
+}
+
+func TestResourceSyncMetrics(t *testing.T) {
+	setupTest()
+
+	testNS := "test-namespace"
+	testName := "test-name"
+	testResource := "test-resource"
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	tmetrics.StartResourceSyncMetricsProcessing(ctx)
+
+	tmetrics.StartResourceSync(testName, tmetrics.ResourceMetricLabels{
+		Gateway:   testName,
+		Namespace: testNS,
+		Resource:  testResource,
+	})
+
+	tmetrics.EndResourceSync(tmetrics.ResourceSyncDetails{
+		Gateway:      testName,
+		Namespace:    testNS,
+		ResourceType: testResource,
+		ResourceName: testName,
+	}, false, resourcesXDSSyncsTotal, resourcesXDSyncDuration)
+
+	time.Sleep(50 * time.Millisecond) // Allow some time for metrics to be processed.
+
+	gathered := metricstest.MustGatherMetrics(t)
+
+	gathered.AssertMetric("kgateway_resources_syncs_started_total", &metricstest.ExpectedMetric{
+		Labels: []metrics.Label{
+			{Name: "gateway", Value: testName},
+			{Name: "namespace", Value: testNS},
+			{Name: "resource", Value: testResource},
+		},
+		Value: 1,
+	})
+
+	gathered.AssertMetric("kgateway_resources_xds_snapshot_syncs_total", &metricstest.ExpectedMetric{
+		Labels: []metrics.Label{
+			{Name: "gateway", Value: testName},
+			{Name: "namespace", Value: testNS},
+			{Name: "resource", Value: testResource},
+		},
+		Value: 1,
+	})
+
+	gathered.AssertMetricsLabels("kgateway_resources_xds_snapshot_sync_duration_seconds", [][]metrics.Label{{
+		{Name: "gateway", Value: testName},
+		{Name: "namespace", Value: testNS},
+		{Name: "resource", Value: testResource},
+	}})
+	gathered.AssertHistogramPopulated("kgateway_resources_xds_snapshot_sync_duration_seconds")
+}
+
+func TestGetDetailsFromXDSClientResourceName(t *testing.T) {
+	testCases := []struct {
+		name     string
+		resource string
+		expected struct {
+			role      string
+			gateway   string
+			namespace string
+		}
+	}{
+		{
+			name:     "Valid resource name",
+			resource: "kgateway-kube-gateway-api~ns~test",
+			expected: struct {
+				role      string
+				gateway   string
+				namespace string
+			}{
+				role:      "kgateway-kube-gateway-api",
+				gateway:   "test",
+				namespace: "ns",
+			},
+		},
+		{
+			name:     "Invalid resource name",
+			resource: "invalid-resource-name",
+			expected: struct {
+				role      string
+				gateway   string
+				namespace string
+			}{
+				role:      "unknown",
+				gateway:   "unknown",
+				namespace: "unknown",
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			cd := getDetailsFromXDSClientResourceName(tc.resource)
+			assert.Equal(t, tc.expected.gateway, cd.Gateway)
+			assert.Equal(t, tc.expected.namespace, cd.Namespace)
 		})
 	}
 }
