@@ -841,6 +841,14 @@ var _ = DescribeTable("Basic",
 			Name:      "example-gateway",
 		},
 	}),
+	Entry("Backend Config Policy with TLS and insecure skip verify", translatorTestCase{
+		inputFile:  "backendconfigpolicy/tls-insecureskipverify.yaml",
+		outputFile: "backendconfigpolicy/tls-insecureskipverify.yaml",
+		gwNN: types.NamespacedName{
+			Namespace: "default",
+			Name:      "example-gateway",
+		},
+	}),
 	Entry(
 		"TrafficPolicy with explicit generation",
 		translatorTestCase{

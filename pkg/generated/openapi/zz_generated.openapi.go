@@ -6541,6 +6541,13 @@ func schema_kgateway_v2_api_v1alpha1_TLS(ref common.ReferenceCallback) common.Op
 							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.TLSFiles"),
 						},
 					},
+					"insecureSkipVerify": {
+						SchemaProps: spec.SchemaProps{
+							Description: "InsecureSkipVerify skips verification of the server's certificate.",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
 					"sni": {
 						SchemaProps: spec.SchemaProps{
 							Description: "The SNI domains that should be considered for TLS connection",

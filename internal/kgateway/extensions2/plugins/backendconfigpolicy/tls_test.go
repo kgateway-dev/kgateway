@@ -304,6 +304,19 @@ func TestTranslateTLSConfig(t *testing.T) {
 				assert.Equal(t, "api.example.com", san2.Matcher.GetExact())
 			},
 		},
+		{
+			name: "TLS config with insecure skip verify",
+			tlsConfig: &v1alpha1.TLS{
+				InsecureSkipVerify: ptr.To(true),
+				Sni:                ptr.To("test.example.com"),
+			},
+			wantErr: false,
+			check: func(t *testing.T, result *envoytlsv3.UpstreamTlsContext) {
+				assert.NotNil(t, result)
+				assert.Equal(t, "test.example.com", result.Sni)
+				assert.Nil(t, result.CommonTlsContext.GetValidationContext())
+			},
+		},
 	}
 
 	for _, tt := range tests {

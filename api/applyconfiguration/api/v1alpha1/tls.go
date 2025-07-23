@@ -11,6 +11,7 @@ import (
 type TLSApplyConfiguration struct {
 	SecretRef            *v1.LocalObjectReference      `json:"secretRef,omitempty"`
 	TLSFiles             *TLSFilesApplyConfiguration   `json:"tlsFiles,omitempty"`
+	InsecureSkipVerify   *bool                         `json:"insecureSkipVerify,omitempty"`
 	Sni                  *string                       `json:"sni,omitempty"`
 	VerifySubjectAltName []string                      `json:"verifySubjectAltName,omitempty"`
 	Parameters           *ParametersApplyConfiguration `json:"parameters,omitempty"`
@@ -38,6 +39,14 @@ func (b *TLSApplyConfiguration) WithSecretRef(value v1.LocalObjectReference) *TL
 // If called multiple times, the TLSFiles field is set to the value of the last call.
 func (b *TLSApplyConfiguration) WithTLSFiles(value *TLSFilesApplyConfiguration) *TLSApplyConfiguration {
 	b.TLSFiles = value
+	return b
+}
+
+// WithInsecureSkipVerify sets the InsecureSkipVerify field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the InsecureSkipVerify field is set to the value of the last call.
+func (b *TLSApplyConfiguration) WithInsecureSkipVerify(value bool) *TLSApplyConfiguration {
+	b.InsecureSkipVerify = &value
 	return b
 }
 

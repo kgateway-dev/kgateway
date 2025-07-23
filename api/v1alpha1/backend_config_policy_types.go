@@ -195,7 +195,7 @@ type TCPKeepalive struct {
 	KeepAliveInterval *metav1.Duration `json:"keepAliveInterval,omitempty"`
 }
 
-// +kubebuilder:validation:ExactlyOneOf=secretRef;tlsFiles
+// +kubebuilder:validation:ExactlyOneOf=secretRef;tlsFiles;insecureSkipVerify
 type TLS struct {
 	// Reference to the TLS secret containing the certificate, key, and optionally the root CA.
 	// +optional
@@ -204,6 +204,10 @@ type TLS struct {
 	// File paths to certificates local to the proxy.
 	// +optional
 	TLSFiles *TLSFiles `json:"tlsFiles,omitempty"`
+
+	// InsecureSkipVerify skips verification of the server's certificate.
+	// +optional
+	InsecureSkipVerify *bool `json:"insecureSkipVerify,omitempty"`
 
 	// The SNI domains that should be considered for TLS connection
 	// +optional

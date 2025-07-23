@@ -128,8 +128,12 @@ func translateTLSConfig(
 		tlsContext.AlpnProtocols = tlsConfig.AlpnProtocols
 	}
 
-	if err := buildTLSContext(tlsConfig, secretGetter, namespace, tlsContext); err != nil {
-		return nil, err
+	if tlsConfig.InsecureSkipVerify != nil && *tlsConfig.InsecureSkipVerify {
+		tlsContext.ValidationContextType = &envoytlsv3.CommonTlsContext_ValidationContext{}
+	} else {
+		if err := buildTLSContext(tlsConfig, secretGetter, namespace, tlsContext); err != nil {
+			return nil, err
+		}
 	}
 
 	if tlsConfig.OneWayTLS != nil && *tlsConfig.OneWayTLS {
