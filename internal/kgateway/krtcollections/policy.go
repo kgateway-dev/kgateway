@@ -928,6 +928,11 @@ func (h *RoutesIndex) HasSynced() bool {
 	return h.httpRoutes.HasSynced() && h.routes.HasSynced() && h.policies.HasSynced() && h.backends.HasSynced() && h.refgrants.HasSynced()
 }
 
+// HTTPRoutes returns the raw krt collection that contains only the HTTPRouteIR.
+func (r *RoutesIndex) HTTPRoutes() krt.Collection[ir.HttpRouteIR] {
+	return r.httpRoutes
+}
+
 func NewRoutesIndex(
 	krtopts krtutil.KrtOptions,
 	httproutes krt.Collection[*gwv1.HTTPRoute],
