@@ -97,7 +97,7 @@ func NewPluginFromCollections(
 		errs := validatePool(pool, svcCol)
 		if errs != nil {
 			// If there are validation errors, add them to the IR.
-			irPool.errors = errs
+			irPool.setErrors(errs)
 		}
 
 		// Create a BackendObjectIR IR representation from the given InferencePool.
@@ -115,13 +115,22 @@ func NewPluginFromCollections(
 		}
 	}, commonCol.KrtOpts.ToOptions("InferencePoolIR")...)
 
+	// Create an index for each InferencePool backend keyed by namespace/name.
+	poolByNN := krt.NewIndex(backendCol, func(b ir.BackendObjectIR) []string {
+		src := b.ObjectSource
+		if wellknown.IsInferencePoolGK(src.Group, src.Kind) {
+			return []string{fmt.Sprintf("%s/%s", src.Namespace, src.Name)}
+		}
+		return nil
+	})
+
 	policyCol := krt.NewCollection(poolCol, func(kctx krt.HandlerContext, pool *infextv1a2.InferencePool) *ir.PolicyWrapper {
 		// Validate the InferencePool and create the associated IR.
 		irPool := newInferencePool(pool)
 		errs := validatePool(pool, svcCol)
 		if errs != nil {
 			// If there are validation errors, add them to the IR.
-			irPool.errors = errs
+			irPool.setErrors(errs)
 		}
 
 		// Create a PolicyWrapper IR representation from the given InferencePool.
@@ -155,7 +164,7 @@ func NewPluginFromCollections(
 			},
 		},
 		ContributesRegistration: map[schema.GroupKind]func(){
-			gk: buildRegisterCallback(ctx, commonCol, backendCol),
+			gk: buildRegisterCallback(ctx, commonCol, backendCol, poolByNN),
 		},
 	}
 }

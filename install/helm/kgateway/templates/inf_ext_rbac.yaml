@@ -15,7 +15,7 @@ rules:
   verbs: ["get", "watch", "list", "update"]
 - apiGroups: ["inference.networking.x-k8s.io"]
   resources: ["inferencepools/status"]
-  verbs: ["patch"]
+  verbs: ["update"]
 - apiGroups: ["discovery.k8s.io"]
   resources: ["endpointslices"]
   verbs: ["get", "watch", "list"]

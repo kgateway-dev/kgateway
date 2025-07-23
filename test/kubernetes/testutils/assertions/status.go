@@ -13,6 +13,7 @@ import (
 	// "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	infextv1a2 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
@@ -302,6 +303,43 @@ func (p *Provider) EventuallyTLSRouteCondition(
 		}
 		g.Expect(conditionFound).To(gomega.BeTrue(), fmt.Sprintf("%v condition is not %v for any parent of TLSRoute %s/%s",
 			cond, expect, routeNamespace, routeName))
+	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
+}
+
+// EventuallyInferencePoolCondition checks that the specified InferencePool condition
+// eventually has the desired status on any parent managed by Kgateway.
+func (p *Provider) EventuallyInferencePoolCondition(
+	ctx context.Context,
+	poolName string,
+	poolNamespace string,
+	cond infextv1a2.InferencePoolConditionType,
+	expect metav1.ConditionStatus,
+	timeout ...time.Duration,
+) {
+	ginkgo.GinkgoHelper()
+
+	currentTimeout, pollingInterval := helpers.GetTimeouts(timeout...)
+	p.Gomega.Eventually(func(g gomega.Gomega) {
+		pool := &infextv1a2.InferencePool{}
+		err := p.clusterContext.Client.Get(
+			ctx,
+			types.NamespacedName{Name: poolName, Namespace: poolNamespace},
+			pool,
+		)
+		g.Expect(err).NotTo(gomega.HaveOccurred(),
+			"failed to get InferencePool %s/%s", poolNamespace, poolName)
+
+		var conditionFound bool
+		for _, parent := range pool.Status.Parents {
+			// Look for the first matching condition on any parent.
+			if c := getConditionByType(parent.Conditions, string(cond)); c != nil && c.Status == expect {
+				conditionFound = true
+				break
+			}
+		}
+		g.Expect(conditionFound).To(gomega.BeTrue(),
+			fmt.Sprintf("%v condition is not %v for any parent of InferencePool %s/%s",
+				cond, expect, poolNamespace, poolName))
 	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 }
 
