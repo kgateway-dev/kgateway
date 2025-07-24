@@ -350,7 +350,7 @@ func (ml *MergedListener) TranslateListener(
 
 	// Translate HTTPS filter chains
 	for _, mfc := range ml.httpsFilterChains {
-		httpsFilterChain := mfc.translateHttpsFilterChain(
+		httpsFilterChain, err := mfc.translateHttpsFilterChain(
 			kctx,
 			ctx,
 			mfc.gatewayListenerName,
@@ -360,9 +360,9 @@ func (ml *MergedListener) TranslateListener(
 			reporter,
 			ml.listenerReporter,
 		)
-		if httpsFilterChain == nil {
+		if err != nil {
 			// Log and skip invalid HTTPS filter chains
-			logger.Error("failed to translate HTTPS filter chain for listener", "listener", ml.name)
+			logger.Error("failed to translate HTTPS filter chain for listener", "listener", ml.name, "error", err)
 			continue
 		}
 
@@ -686,7 +686,7 @@ func (httpsFilterChain *httpsFilterChain) translateHttpsFilterChain(
 	queries query.GatewayQueries,
 	reporter reports.Reporter,
 	listenerReporter reports.ListenerReporter,
-) *ir.HttpFilterChainIR {
+) (*ir.HttpFilterChainIR, error) {
 	// process routes first, so any route related errors are reported on the httproute.
 	routesByHost := map[string]routeutils.SortableRoutes{}
 	buildRoutesPerHost(
@@ -751,7 +751,7 @@ func (httpsFilterChain *httpsFilterChain) translateHttpsFilterChain(
 			Reason:  gwv1.ListenerReasonInvalid,
 			Message: message,
 		})
-		return nil
+		return nil, err
 	}
 	sort.Slice(virtualHosts, func(i, j int) bool {
 		return virtualHosts[i].Name < virtualHosts[j].Name
@@ -764,7 +764,7 @@ func (httpsFilterChain *httpsFilterChain) translateHttpsFilterChain(
 		},
 		AttachedPolicies: httpsFilterChain.attachedPolicies,
 		Vhosts:           virtualHosts,
-	}
+	}, nil
 }
 
 func buildRoutesPerHost(
