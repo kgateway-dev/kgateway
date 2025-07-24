@@ -71,11 +71,51 @@ var _ = DescribeTable("Basic",
 	Entry(
 		"https gateway with basic routing",
 		translatorTestCase{
-			inputFile:  "https-routing",
+			inputFile:  "https-routing/gateway.yaml",
 			outputFile: "https-routing-proxy.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
+			},
+		}),
+	Entry(
+		"https gateway with invalid certificate ref",
+		translatorTestCase{
+			inputFile:  "https-routing/invalid-cert.yaml",
+			outputFile: "https-invalid-cert-proxy.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
+				gateway := &gwv1.Gateway{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "example-gateway",
+						Namespace: "default",
+					},
+					Spec: gwv1.GatewaySpec{
+						Listeners: []gwv1.Listener{
+							{
+								Name: "https",
+							},
+						},
+					},
+				}
+				gatewayStatus := reportsMap.BuildGWStatus(context.Background(), *gateway)
+				Expect(gatewayStatus).NotTo(BeNil())
+				Expect(gatewayStatus.Listeners).To(HaveLen(1))
+				httpsListener := gatewayStatus.Listeners[0]
+				resolvedRefs := meta.FindStatusCondition(httpsListener.Conditions, string(gwv1.ListenerConditionResolvedRefs))
+				Expect(resolvedRefs).NotTo(BeNil())
+				Expect(resolvedRefs.Status).To(Equal(metav1.ConditionFalse))
+				Expect(resolvedRefs.Reason).To(Equal(string(gwv1.ListenerReasonInvalidCertificateRef)))
+				Expect(resolvedRefs.Message).To(Equal("Secret default/missing-cert not found."))
+
+				programmed := meta.FindStatusCondition(httpsListener.Conditions, string(gwv1.ListenerConditionProgrammed))
+				Expect(programmed).NotTo(BeNil())
+				Expect(programmed.Status).To(Equal(metav1.ConditionFalse))
+				Expect(programmed.Reason).To(Equal(string(gwv1.ListenerReasonInvalid)))
+				Expect(programmed.Message).To(Equal("Secret default/missing-cert not found."))
 			},
 		}),
 	Entry(
