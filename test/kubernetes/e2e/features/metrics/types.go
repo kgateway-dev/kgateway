@@ -17,9 +17,7 @@ import (
 
 var (
 	// manifests
-	setupManifest           = filepath.Join(fsutils.MustGetThisDir(), "testdata", "setup.yaml")
-	exampleRouteManifest    = filepath.Join(fsutils.MustGetThisDir(), "testdata", "example-route.yaml")
-	metricResourcesManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "metric-resources.yaml")
+	setupManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "setup.yaml")
 
 	// objects
 	proxyObjectMeta = metav1.ObjectMeta{
@@ -45,13 +43,6 @@ var (
 		},
 	}
 
-	exampleRoute = &apiv1.HTTPRoute{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "example-route",
-			Namespace: "default",
-		},
-	}
-
 	nginxPod = &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "nginx",
@@ -59,9 +50,8 @@ var (
 		},
 	}
 
-	setup = base.SimpleTestCase{
-		Manifests: []string{setupManifest, e2edefaults.CurlPodManifest},
-		Resources: []client.Object{kgatewayMetricsService, exampleSvc, proxyDeployment, proxyService, proxyServiceAccount, nginxPod, e2edefaults.CurlPod},
+	gw1 = &apiv1.Gateway{
+		ObjectMeta: proxyObjectMeta,
 	}
 
 	gw2 = &apiv1.Gateway{
@@ -99,18 +89,27 @@ var (
 		},
 	}
 
+	setup = base.SimpleTestCase{
+		Manifests: []string{setupManifest, e2edefaults.CurlPodManifest},
+		Resources: []client.Object{
+			kgatewayMetricsService,
+			exampleSvc,
+			proxyDeployment,
+			proxyService,
+			proxyServiceAccount,
+			gw1,
+			gw2,
+			exampleRoute1,
+			exampleRoute2,
+			exampleRouteLs1,
+			listenerSet1,
+			e2edefaults.CurlPod,
+		},
+	}
+
 	testCases = map[string]*base.TestCase{
 		"TestMetrics": {
-			SimpleTestCase: base.SimpleTestCase{
-				Manifests: []string{exampleRouteManifest},
-				Resources: []client.Object{exampleRoute},
-			},
-		},
-		"TestResourceCountingMetrics": {
-			SimpleTestCase: base.SimpleTestCase{
-				Manifests: []string{metricResourcesManifest},
-				Resources: []client.Object{gw2, exampleRoute1, exampleRoute2, exampleRouteLs1, listenerSet1},
-			},
+			SimpleTestCase: base.SimpleTestCase{},
 		},
 	}
 )

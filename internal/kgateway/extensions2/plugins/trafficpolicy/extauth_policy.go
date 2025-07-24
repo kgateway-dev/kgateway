@@ -13,6 +13,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/cmputils"
 )
 
 var (
@@ -70,10 +71,9 @@ func (e *extAuthIR) Equals(other *extAuthIR) bool {
 	}
 
 	// Compare providers
-	if (e.provider == nil) != (other.provider == nil) {
-		return false
-	}
-	if e.provider != nil && !e.provider.Equals(*other.provider) {
+	if !cmputils.CompareWithNils(e.provider, other.provider, func(a, b *TrafficPolicyGatewayExtensionIR) bool {
+		return a.Equals(*b)
+	}) {
 		return false
 	}
 	return true

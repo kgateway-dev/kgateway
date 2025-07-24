@@ -25,6 +25,7 @@ import (
 	translatorutils "github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/arnutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/cmputils"
 )
 
 const (
@@ -170,20 +171,11 @@ type lambdaFilters struct {
 
 // Equals checks if two lambdaFilters objects are equal.
 func (u *lambdaFilters) Equals(other *lambdaFilters) bool {
-	if u == nil && other != nil {
-		return false
-	}
-	if u != nil {
-		if other == nil {
-			return false
-		}
-		return proto.Equal(u.lambdaConfigAny, other.lambdaConfigAny) &&
-			proto.Equal(u.awsRequestSigningAny, other.awsRequestSigningAny) &&
-			proto.Equal(u.codecConfigAny, other.codecConfigAny)
-	}
-
-	// only if both are nil
-	return true
+	return cmputils.CompareWithNils(u, other, func(a, b *lambdaFilters) bool {
+		return proto.Equal(a.lambdaConfigAny, b.lambdaConfigAny) &&
+			proto.Equal(a.awsRequestSigningAny, b.awsRequestSigningAny) &&
+			proto.Equal(a.codecConfigAny, b.codecConfigAny)
+	})
 }
 
 // buildLambdaFilters configures cluster's upstream HTTP filters for the given backend.

@@ -8,6 +8,7 @@ import (
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoywellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	skubeclient "istio.io/istio/pkg/config/schema/kubeclient"
@@ -18,8 +19,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/watch"
 
-	"google.golang.org/protobuf/proto"
-
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
@@ -29,6 +28,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	pluginsdkutils "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/utils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/cmputils"
 )
 
 const PreserveCasePlugin = "envoy.http.stateful_header_formatters.preserve_case"
@@ -64,73 +64,37 @@ func (d *BackendConfigPolicyIR) Equals(other any) bool {
 		return false
 	}
 
-	if (d.connectTimeout == nil) != (d2.connectTimeout == nil) {
+	if !proto.Equal(d.connectTimeout, d2.connectTimeout) {
 		return false
-	}
-	if d.connectTimeout != nil && d2.connectTimeout != nil {
-		if !proto.Equal(d.connectTimeout, d2.connectTimeout) {
-			return false
-		}
 	}
 
-	if (d.perConnectionBufferLimitBytes == nil) != (d2.perConnectionBufferLimitBytes == nil) {
+	if !cmputils.PointerValsEqual(d.perConnectionBufferLimitBytes, d2.perConnectionBufferLimitBytes) {
 		return false
-	}
-	if d.perConnectionBufferLimitBytes != nil && d2.perConnectionBufferLimitBytes != nil {
-		if *d.perConnectionBufferLimitBytes != *d2.perConnectionBufferLimitBytes {
-			return false
-		}
 	}
 
-	if (d.tcpKeepalive == nil) != (d2.tcpKeepalive == nil) {
+	if !proto.Equal(d.tcpKeepalive, d2.tcpKeepalive) {
 		return false
-	}
-	if d.tcpKeepalive != nil && d2.tcpKeepalive != nil {
-		if !proto.Equal(d.tcpKeepalive, d2.tcpKeepalive) {
-			return false
-		}
 	}
 
-	if (d.commonHttpProtocolOptions == nil) != (d2.commonHttpProtocolOptions == nil) {
+	if !proto.Equal(d.commonHttpProtocolOptions, d2.commonHttpProtocolOptions) {
 		return false
-	}
-	if d.commonHttpProtocolOptions != nil && d2.commonHttpProtocolOptions != nil {
-		if !proto.Equal(d.commonHttpProtocolOptions, d2.commonHttpProtocolOptions) {
-			return false
-		}
 	}
 
-	if (d.http1ProtocolOptions == nil) != (d2.http1ProtocolOptions == nil) {
+	if !proto.Equal(d.http1ProtocolOptions, d2.http1ProtocolOptions) {
 		return false
-	}
-	if d.http1ProtocolOptions != nil && d2.http1ProtocolOptions != nil {
-		if !proto.Equal(d.http1ProtocolOptions, d2.http1ProtocolOptions) {
-			return false
-		}
 	}
 
-	if (d.http2ProtocolOptions == nil) != (d2.http2ProtocolOptions == nil) {
+	if !proto.Equal(d.http2ProtocolOptions, d2.http2ProtocolOptions) {
 		return false
-	}
-	if d.http2ProtocolOptions != nil && d2.http2ProtocolOptions != nil {
-		if !proto.Equal(d.http2ProtocolOptions, d2.http2ProtocolOptions) {
-			return false
-		}
 	}
 
-	if (d.tlsConfig == nil) != (d2.tlsConfig == nil) {
+	if !proto.Equal(d.tlsConfig, d2.tlsConfig) {
 		return false
-	}
-	if d.tlsConfig != nil && d2.tlsConfig != nil {
-		if !proto.Equal(d.tlsConfig, d2.tlsConfig) {
-			return false
-		}
 	}
 
-	if (d.loadBalancerConfig == nil) != (d2.loadBalancerConfig == nil) {
-		return false
-	}
-	if !d.loadBalancerConfig.Equals(d2.loadBalancerConfig) {
+	if !cmputils.CompareWithNils(d.loadBalancerConfig, d2.loadBalancerConfig, func(a, b *LoadBalancerConfigIR) bool {
+		return a.Equals(b)
+	}) {
 		return false
 	}
 

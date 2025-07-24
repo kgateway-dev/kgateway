@@ -3,6 +3,7 @@ package gateway_test
 import (
 	"context"
 	"path/filepath"
+	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -193,6 +194,37 @@ var _ = DescribeTable("Basic",
 				Expect(resolvedRefs.Status).To(Equal(metav1.ConditionFalse))
 				Expect(resolvedRefs.Message).To(Equal(`unknown backend kind`))
 				Expect(resolvedRefs.ObservedGeneration).To(Equal(int64(0)))
+			},
+		}),
+	Entry("TrafficPolicy with ai invalided default values",
+		translatorTestCase{
+			inputFile:  "traffic-policy/ai-invalid-default-value.yaml",
+			outputFile: "traffic-policy/ai-invalid-default-value.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "infra",
+				Name:      "example-gateway",
+			},
+			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
+				// we expect the httproute to reflect an invalid status
+				route := &gwv1.HTTPRoute{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "example-route",
+						Namespace: "infra",
+					},
+				}
+				routeStatus := reportsMap.BuildRouteStatus(context.Background(), route, wellknown.DefaultGatewayClassName)
+				Expect(routeStatus).NotTo(BeNil())
+				Expect(routeStatus.Parents).To(HaveLen(1))
+
+				partiallyInvalid := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionPartiallyInvalid))
+				Expect(partiallyInvalid).NotTo(BeNil())
+				Expect(partiallyInvalid.Status).To(Equal(metav1.ConditionTrue))
+				Expect(partiallyInvalid.Reason).To(Equal(string(gwv1.RouteReasonUnsupportedValue)))
+				Expect(strings.Count(partiallyInvalid.Message, `field invalid_object contains invalid JSON string: "model":"gpt-4"}`)).To(Equal(2),
+					"Expected 'invalid_object' message to appear exactly twice")
+				Expect(strings.Count(partiallyInvalid.Message, `field invalid_slices contains invalid JSON string: [1,2,3`)).To(Equal(2),
+					"Expected 'invalid_slices' message to appear exactly twice")
+				Expect(partiallyInvalid.ObservedGeneration).To(Equal(int64(0)))
 			},
 		}),
 	Entry(

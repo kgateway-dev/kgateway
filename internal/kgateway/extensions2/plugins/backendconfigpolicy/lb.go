@@ -12,6 +12,7 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/cmputils"
 )
 
 type LoadBalancerConfigIR struct {
@@ -230,16 +231,10 @@ func (a *LoadBalancerConfigIR) Equals(b *LoadBalancerConfigIR) bool {
 	if !proto.Equal(a.ringHashLbConfig, b.ringHashLbConfig) {
 		return false
 	}
-	if (a.slowStartConfigIR == nil) != (b.slowStartConfigIR == nil) {
+	if !cmputils.CompareWithNils(a.slowStartConfigIR, b.slowStartConfigIR, func(a, b *slowStartConfigIR) bool {
+		return proto.Equal(a.slowStartConfig, b.slowStartConfig) && a.aggression == b.aggression
+	}) {
 		return false
-	}
-	if a.slowStartConfigIR != nil && b.slowStartConfigIR != nil {
-		if !proto.Equal(a.slowStartConfigIR.slowStartConfig, b.slowStartConfigIR.slowStartConfig) {
-			return false
-		}
-		if a.slowStartConfigIR.aggression != b.slowStartConfigIR.aggression {
-			return false
-		}
 	}
 	return true
 }

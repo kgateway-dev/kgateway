@@ -478,8 +478,14 @@ spec:
                               properties:
                                 baseInterval:
                                   type: string
+                                  x-kubernetes-validations:
+                                  - message: invalid duration value
+                                    rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
                                 maxInterval:
                                   type: string
+                                  x-kubernetes-validations:
+                                  - message: invalid duration value
+                                    rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
                               required:
                               - baseInterval
                               type: object
@@ -488,6 +494,9 @@ spec:
                           type: boolean
                         timeout:
                           type: string
+                          x-kubernetes-validations:
+                          - message: invalid duration value
+                            rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
                       required:
                       - backendRef
                       - logName
@@ -595,8 +604,14 @@ spec:
                                   properties:
                                     baseInterval:
                                       type: string
+                                      x-kubernetes-validations:
+                                      - message: invalid duration value
+                                        rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
                                     maxInterval:
                                       type: string
+                                      x-kubernetes-validations:
+                                      - message: invalid duration value
+                                        rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
                                   required:
                                   - baseInterval
                                   type: object
@@ -605,6 +620,9 @@ spec:
                               type: boolean
                             timeout:
                               type: string
+                              x-kubernetes-validations:
+                              - message: invalid duration value
+                                rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
                           required:
                           - backendRef
                           - logName
@@ -632,6 +650,9 @@ spec:
                 type: string
               streamIdleTimeout:
                 type: string
+                x-kubernetes-validations:
+                - message: invalid duration value
+                  rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
               targetRefs:
                 items:
                   properties:
@@ -842,8 +863,14 @@ spec:
                                     properties:
                                       baseInterval:
                                         type: string
+                                        x-kubernetes-validations:
+                                        - message: invalid duration value
+                                          rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
                                       maxInterval:
                                         type: string
+                                        x-kubernetes-validations:
+                                        - message: invalid duration value
+                                          rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
                                     required:
                                     - baseInterval
                                     type: object
@@ -852,6 +879,9 @@ spec:
                                 type: boolean
                               timeout:
                                 type: string
+                                x-kubernetes-validations:
+                                - message: invalid duration value
+                                  rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
                             required:
                             - backendRef
                             type: object

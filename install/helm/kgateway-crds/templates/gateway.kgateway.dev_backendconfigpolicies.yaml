@@ -36,8 +36,8 @@ spec:
                   idleTimeout:
                     type: string
                     x-kubernetes-validations:
-                    - message: idleTimeout must be a valid duration string
-                      rule: duration(self) >= duration('0s')
+                    - message: invalid duration value
+                      rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
                   maxHeadersCount:
                     type: integer
                   maxRequestsPerConnection:
@@ -45,22 +45,14 @@ spec:
                   maxStreamDuration:
                     type: string
                     x-kubernetes-validations:
-                    - message: maxStreamDuration must be a valid duration string
-                      rule: duration(self) >= duration('0s')
+                    - message: invalid duration value
+                      rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
                 type: object
-                x-kubernetes-validations:
-                - message: idleTimeout must be a valid duration string (e.g. "1s",
-                    "500ms")
-                  rule: (!has(self.idleTimeout) || (has(self.idleTimeout) && self.idleTimeout.matches('^([0-9]{1,5}(h|m|s|ms)){1,4}$')))
-                - message: maxStreamDuration must be a valid duration string (e.g.
-                    "1s", "500ms")
-                  rule: (!has(self.maxStreamDuration) || (has(self.maxStreamDuration)
-                    && self.maxStreamDuration.matches('^([0-9]{1,5}(h|m|s|ms)){1,4}$')))
               connectTimeout:
                 type: string
                 x-kubernetes-validations:
-                - message: connectTimeout must be a valid duration string
-                  rule: duration(self) >= duration('0s')
+                - message: invalid duration value
+                  rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
               healthCheck:
                 properties:
                   grpc:
@@ -96,13 +88,13 @@ spec:
                   interval:
                     type: string
                     x-kubernetes-validations:
-                    - message: interval must be a valid duration string
-                      rule: duration(self) >= duration('0s')
+                    - message: invalid duration value
+                      rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
                   timeout:
                     type: string
                     x-kubernetes-validations:
-                    - message: timeout must be a valid duration string
-                      rule: duration(self) >= duration('0s')
+                    - message: invalid duration value
+                      rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
                   unhealthyThreshold:
                     format: int32
                     type: integer
@@ -184,8 +176,8 @@ spec:
                           window:
                             type: string
                             x-kubernetes-validations:
-                            - message: window must be a valid duration string
-                              rule: duration(self) >= duration('0s')
+                            - message: invalid duration value
+                              rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
                         type: object
                     type: object
                   localityType:
@@ -227,15 +219,15 @@ spec:
                           window:
                             type: string
                             x-kubernetes-validations:
-                            - message: window must be a valid duration string
-                              rule: duration(self) >= duration('0s')
+                            - message: invalid duration value
+                              rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
                         type: object
                     type: object
                   updateMergeWindow:
                     type: string
                     x-kubernetes-validations:
-                    - message: updateMergeWindow must be a valid duration string
-                      rule: duration(self) >= duration('0s')
+                    - message: invalid duration value
+                      rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
                 type: object
                 x-kubernetes-validations:
                 - message: at most one of the fields in [leastRequest roundRobin ringHash
@@ -305,8 +297,8 @@ spec:
                   keepAliveInterval:
                     type: string
                     x-kubernetes-validations:
-                    - message: keepAliveInterval must be a valid duration string
-                      rule: duration(self) >= duration('0s')
+                    - message: invalid duration value
+                      rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
                     - message: keepAliveInterval must be at least 1 second
                       rule: duration(self) >= duration('1s')
                   keepAliveProbes:
@@ -314,8 +306,8 @@ spec:
                   keepAliveTime:
                     type: string
                     x-kubernetes-validations:
-                    - message: keepAliveTime must be a valid duration string
-                      rule: duration(self) >= duration('0s')
+                    - message: invalid duration value
+                      rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
                     - message: keepAliveTime must be at least 1 second
                       rule: duration(self) >= duration('1s')
                 type: object

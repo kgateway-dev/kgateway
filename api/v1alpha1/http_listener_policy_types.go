@@ -87,6 +87,7 @@ type HTTPListenerPolicySpec struct {
 	// StreamIdleTimeout is the idle timeout for HTTP streams.
 	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-stream-idle-timeout
 	// +optional
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	StreamIdleTimeout *metav1.Duration `json:"streamIdleTimeout,omitempty"`
 
 	// HealthCheck configures [Envoy health checks](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/health_check/v3/health_check.proto)
@@ -172,6 +173,7 @@ type CommonGrpcService struct {
 
 	// The timeout for the gRPC request. This is the timeout for a specific request
 	// +optional
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	Timeout *metav1.Duration `json:"timeout,omitempty"`
 
 	// Additional metadata to include in streams initiated to the GrpcService.
@@ -215,10 +217,12 @@ type RetryPolicy struct {
 type BackoffStrategy struct {
 	// The base interval to be used for the next back off computation. It should be greater than zero and less than or equal to max_interval.
 	// +required
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	BaseInterval metav1.Duration `json:"baseInterval"`
 
 	// Specifies the maximum interval between retries. This parameter is optional, but must be greater than or equal to the base_interval if set. The default is 10 times the base_interval.
 	// +optional
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	MaxInterval *metav1.Duration `json:"maxInterval,omitempty"`
 }
 

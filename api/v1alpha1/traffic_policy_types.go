@@ -295,7 +295,8 @@ type TokenBucket struct {
 	// This value must be a valid duration string (e.g., "1s", "500ms").
 	// It determines the frequency of token replenishment.
 	// +required
-	FillInterval gwv1.Duration `json:"fillInterval"`
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+	FillInterval metav1.Duration `json:"fillInterval"`
 }
 
 // RateLimitPolicy defines a global rate limiting policy using an external service.
@@ -440,7 +441,7 @@ type Cookie struct {
 	// If specified, a cookie with the TTL will be generated if the cookie is not present.
 	// If the TTL is present and zero, the generated cookie will be a session cookie.
 	// +optional
-	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('0s')",message="ttl must be a valid duration string"
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	TTL *metav1.Duration `json:"ttl,omitempty"`
 
 	// Attributes are additional attributes for the cookie.

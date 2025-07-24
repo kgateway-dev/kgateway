@@ -515,8 +515,8 @@ spec:
                         ttl:
                           type: string
                           x-kubernetes-validations:
-                          - message: ttl must be a valid duration string
-                            rule: duration(self) >= duration('0s')
+                          - message: invalid duration value
+                            rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
                       required:
                       - name
                       type: object
@@ -606,8 +606,10 @@ spec:
                       tokenBucket:
                         properties:
                           fillInterval:
-                            pattern: ^([0-9]{1,5}(h|m|s|ms)){1,4}$
                             type: string
+                            x-kubernetes-validations:
+                            - message: invalid duration value
+                              rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
                           maxTokens:
                             format: int32
                             minimum: 1

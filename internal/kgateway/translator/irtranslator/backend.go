@@ -21,6 +21,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/metrics"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/settings"
 )
@@ -36,8 +37,14 @@ type BackendTranslator struct {
 func (t *BackendTranslator) TranslateBackend(
 	kctx krt.HandlerContext,
 	ucc ir.UniqlyConnectedClient,
-	backend ir.BackendObjectIR,
+	backend *ir.BackendObjectIR,
 ) (*envoyclusterv3.Cluster, error) {
+	var rErr error
+	finishMetrics := metrics.NewTranslatorMetricsRecorder("TranslateBackend").TranslationStart()
+	defer func() {
+		finishMetrics(rErr)
+	}()
+
 	gk := schema.GroupKind{
 		Group: backend.Group,
 		Kind:  backend.Kind,
@@ -58,12 +65,13 @@ func (t *BackendTranslator) TranslateBackend(
 		// from backend object translation.
 		// this cluster will ultimately be dropped before it added to the xDS snapshot
 		// see: internal/kgateway/proxy_syncer/perclient.go
-		out := buildBlackholeCluster(&backend)
-		return out, errors.Join(backend.Errors...)
+		out := buildBlackholeCluster(backend)
+		rErr = errors.Join(backend.Errors...)
+		return out, rErr
 	}
 
 	out := initializeCluster(backend)
-	inlineEps := process.InitBackend(context.TODO(), backend, out)
+	inlineEps := process.InitBackend(context.TODO(), *backend, out)
 	processDnsLookupFamily(out, t.CommonCols)
 
 	// now process backend policies
@@ -75,7 +83,7 @@ func (t *BackendTranslator) runPolicies(
 	kctx krt.HandlerContext,
 	ctx context.Context,
 	ucc ir.UniqlyConnectedClient,
-	backend ir.BackendObjectIR,
+	backend *ir.BackendObjectIR,
 	inlineEps *ir.EndpointsForBackend,
 	out *envoyclusterv3.Cluster,
 ) {
@@ -95,7 +103,7 @@ func (t *BackendTranslator) runPolicies(
 		// now, until we have more backend plugin examples to properly understand what it should look
 		// like.
 		if policyPlugin.PerClientProcessBackend != nil {
-			policyPlugin.PerClientProcessBackend(kctx, ctx, ucc, backend, out)
+			policyPlugin.PerClientProcessBackend(kctx, ctx, ucc, *backend, out)
 		}
 
 		// run endpoint plugins if we have endpoints to process
@@ -107,7 +115,7 @@ func (t *BackendTranslator) runPolicies(
 			continue
 		}
 		for _, polAttachment := range backend.AttachedPolicies.Policies[gk] {
-			policyPlugin.ProcessBackend(ctx, polAttachment.PolicyIr, backend, out)
+			policyPlugin.ProcessBackend(ctx, polAttachment.PolicyIr, *backend, out)
 		}
 	}
 
@@ -200,7 +208,7 @@ func translateAppProtocol(appProtocol ir.AppProtocol) map[string]*anypb.Any {
 
 // initializeCluster creates a default envoy cluster with minimal configuration,
 // that will then be augmented by various backend plugins
-func initializeCluster(b ir.BackendObjectIR) *envoyclusterv3.Cluster {
+func initializeCluster(b *ir.BackendObjectIR) *envoyclusterv3.Cluster {
 	// circuitBreakers := t.settings.GetGloo().GetCircuitBreakers()
 	out := &envoyclusterv3.Cluster{
 		Name:     b.ClusterName(),

@@ -28,7 +28,7 @@ func NewTranslator(queries query.GatewayQueries, settings TranslatorConfig) exte
 	return &translator{
 		queries:  queries,
 		settings: settings,
-		metrics:  metrics.NewTranslatorMetricsRecorder("TranslateGatewayProxy"),
+		metrics:  metrics.NewTranslatorMetricsRecorder("TranslateGateway"),
 	}
 }
 

@@ -26,6 +26,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	reports "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/cmputils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/stringutils"
 )
 
@@ -156,8 +157,7 @@ func (w *waypointTranslator) buildInboundListener(gw *ir.Gateway, reporter repor
 			// if no allowed kinds, just use all of our default supportedKinds
 			supportedKinds := slices.Filter(waypointSupportedKinds, func(s gwv1.RouteGroupKind) bool {
 				return l.AllowedRoutes == nil || nil != slices.FindFunc(l.AllowedRoutes.Kinds, func(lk gwv1.RouteGroupKind) bool {
-					groupEq := (lk.Group == nil && s.Group == nil) || (lk.Group != nil && s.Group != nil && *lk.Group == *s.Group)
-					return groupEq && lk.Kind == s.Kind
+					return cmputils.PointerValsEqual(lk.Group, s.Group) && lk.Kind == s.Kind
 				})
 			})
 			reporter.Listener(&l.Listener).SetSupportedKinds(supportedKinds)

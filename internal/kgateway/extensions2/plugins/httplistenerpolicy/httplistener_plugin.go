@@ -34,6 +34,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/policy"
 	pluginsdkutils "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/cmputils"
 )
 
 var logger = logging.New("plugin/httplistenerpolicy")
@@ -80,24 +81,12 @@ func (d *httpListenerPolicy) Equals(in any) bool {
 	}
 
 	// Check useRemoteAddress
-	if d.useRemoteAddress == nil && d2.useRemoteAddress != nil {
-		return false
-	}
-	if d.useRemoteAddress != nil && d2.useRemoteAddress == nil {
-		return false
-	}
-	if d.useRemoteAddress != nil && d2.useRemoteAddress != nil && *d.useRemoteAddress != *d2.useRemoteAddress {
+	if !cmputils.PointerValsEqual(d.useRemoteAddress, d2.useRemoteAddress) {
 		return false
 	}
 
 	// Check xffNumTrustedHops
-	if d.xffNumTrustedHops == nil && d2.xffNumTrustedHops != nil {
-		return false
-	}
-	if d.xffNumTrustedHops != nil && d2.xffNumTrustedHops == nil {
-		return false
-	}
-	if d.xffNumTrustedHops != nil && d2.xffNumTrustedHops != nil && *d.xffNumTrustedHops != *d2.xffNumTrustedHops {
+	if !cmputils.PointerValsEqual(d.xffNumTrustedHops, d2.xffNumTrustedHops) {
 		return false
 	}
 
@@ -107,13 +96,7 @@ func (d *httpListenerPolicy) Equals(in any) bool {
 	}
 
 	// Check streamIdleTimeout
-	if d.streamIdleTimeout == nil && d2.streamIdleTimeout != nil {
-		return false
-	}
-	if d.streamIdleTimeout != nil && d2.streamIdleTimeout == nil {
-		return false
-	}
-	if d.streamIdleTimeout != nil && d2.streamIdleTimeout != nil && *d.streamIdleTimeout != *d2.streamIdleTimeout {
+	if !cmputils.PointerValsEqual(d.streamIdleTimeout, d2.streamIdleTimeout) {
 		return false
 	}
 

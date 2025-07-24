@@ -95,7 +95,7 @@ func TestPolicyStatus(t *testing.T) {
 			},
 		},
 	}
-	backends := []ir.BackendObjectIR{backend1, backend2}
+	backends := []*ir.BackendObjectIR{&backend1, &backend2}
 
 	a := assert.New(t)
 	rm := generatePolicyReport(backends)

@@ -18,6 +18,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/query"
 	gwtranslator "github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/gateway"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/irtranslator"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/metrics"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
@@ -129,6 +130,12 @@ func (s *CombinedTranslator) GetUpstreamTranslator() *irtranslator.BackendTransl
 
 // ctx needed for logging; remove once we refactor logging.
 func (s *CombinedTranslator) TranslateGateway(kctx krt.HandlerContext, ctx context.Context, gw ir.Gateway) (*irtranslator.TranslationResult, reports.ReportMap) {
+	metrics.StartResourceSync(gw.Name, metrics.ResourceMetricLabels{
+		Gateway:   gw.Name,
+		Namespace: gw.Namespace,
+		Resource:  "Gateway",
+	})
+
 	rm := reports.NewReportMap()
 	r := reports.NewReporter(&rm)
 	logger.Debug("translating Gateway", "resource_ref", gw.ResourceName(), "resource_version", gw.Obj.GetResourceVersion())

@@ -2,236 +2,749 @@ package endpointpicker
 
 import (
 	"context"
-	"errors"
+	"fmt"
+	"reflect"
 	"testing"
+	"unsafe"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"istio.io/istio/pkg/kube/krt"
+	"istio.io/istio/pkg/kube/krt/krttest"
 	corev1 "k8s.io/api/core/v1"
+	meta "k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	infextv1a2 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
-
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
 )
 
-func TestAddAndFindGatewayParentRef(t *testing.T) {
-	status := &infextv1a2.InferencePoolStatus{}
-	// initially empty
-	assert.Equal(t, -1, findGatewayParentRef(status, "gw1"))
+func newFakeClient(t *testing.T, objs ...client.Object) client.Client {
+	// Create a new scheme and register the necessary types
+	sch := schemes.DefaultScheme()
+	require.NoError(t, corev1.AddToScheme(sch))
+	require.NoError(t, infextv1a2.AddToScheme(sch))
+	require.NoError(t, gwv1.Install(sch))
 
-	addGatewayParentRef(status, "gw1")
-	// now present at index 0
-	assert.Equal(t, 0, findGatewayParentRef(status, "gw1"))
-	assert.Len(t, status.Parents, 1)
+	// Create a fake client with the provided objects
+	b := fakeclient.NewClientBuilder().WithScheme(sch)
+	b = b.WithObjects(objs...)
 
-	// adding again should not duplicate
-	addGatewayParentRef(status, "gw1")
-	assert.Len(t, status.Parents, 1)
+	// Register status subresource for the InferencePool type
+	b = b.WithStatusSubresource(&infextv1a2.InferencePool{})
+
+	return b.Build()
 }
 
-func TestBuildAcceptedCondition(t *testing.T) {
-	cond := buildAcceptedCondition(42, "ctrl")
-	assert.Equal(t, string(infextv1a2.InferencePoolConditionAccepted), cond.Type)
-	assert.Equal(t, metav1.ConditionTrue, cond.Status)
-	assert.Equal(t, string(infextv1a2.InferencePoolReasonAccepted), cond.Reason)
-	assert.Contains(t, cond.Message, "controller ctrl")
-	assert.Equal(t, int64(42), cond.ObservedGeneration)
+func fakeRoutesIndex(col krt.Collection[ir.HttpRouteIR]) *krtcollections.RoutesIndex {
+	ri := &krtcollections.RoutesIndex{}
+
+	// Locate the unexported field.
+	v := reflect.ValueOf(ri).Elem().FieldByName("httpRoutes")
+
+	// Turn it into an addressable value and replace the contents.
+	ptr := unsafe.Pointer(v.UnsafeAddr()) // #nosec G103 – test-only
+	reflect.NewAt(v.Type(), ptr).Elem().Set(reflect.ValueOf(col))
+
+	return ri
 }
 
-func TestBuildResolvedRefsCondition_NoErrors(t *testing.T) {
-	cond := buildResolvedRefsCondition(7, nil)
-	assert.Equal(t, string(infextv1a2.InferencePoolConditionResolvedRefs), cond.Type)
-	assert.Equal(t, metav1.ConditionTrue, cond.Status)
-	assert.Equal(t, string(infextv1a2.InferencePoolReasonResolvedRefs), cond.Reason)
-	assert.Equal(t, "All InferencePool references have been resolved", cond.Message)
-	assert.Equal(t, int64(7), cond.ObservedGeneration)
-}
-
-func TestBuildResolvedRefsCondition_WithErrors(t *testing.T) {
-	err1 := errors.New("foo failed")
-	err2 := errors.New("bar crash")
-
-	cond1 := buildResolvedRefsCondition(1, []error{err1})
-	assert.Equal(t, metav1.ConditionFalse, cond1.Status)
-	assert.Equal(t, string(infextv1a2.InferencePoolReasonInvalidExtensionRef), cond1.Reason)
-	// single-error prefix is now just "error:"
-	assert.Contains(t, cond1.Message, "error:")
-	// no embedded quotes
-	assert.Contains(t, cond1.Message, "foo failed")
-
-	cond2 := buildResolvedRefsCondition(2, []error{err1, err2})
-	assert.Equal(t, metav1.ConditionFalse, cond2.Status)
-	assert.Equal(t, string(infextv1a2.InferencePoolReasonInvalidExtensionRef), cond2.Reason)
-	assert.Contains(t, cond2.Message, "InferencePool has 2 errors:")
-	// joined with "; "
-	assert.Contains(t, cond2.Message, "foo failed; bar crash")
-}
-
-func TestReferencesInferencePool(t *testing.T) {
-	p := &inferencePool{}
+func TestUpdatePoolStatus_NoReferences_NoErrors(t *testing.T) {
+	// Set up the context, controller name, namespace, and pool name
 	ctx := context.Background()
-	commonCol := &common.CommonCollections{ControllerName: "ctrl"}
-	poolNN := types.NamespacedName{Namespace: "ns", Name: "pool1"}
-
-	// No routes -> return empty
-	p.errors = nil
-	rs := p.referencedGateway(ctx, commonCol, nil, poolNN)
-	assert.Equal(t, "", rs)
-	assert.Len(t, p.errors, 0)
-
-	// Route with wrong SourceObject type
-	p.errors = nil
-	wrong := &corev1.Service{}
-	routes := []ir.HttpRouteIR{{SourceObject: wrong}}
-	rs = p.referencedGateway(ctx, commonCol, routes, poolNN)
-	assert.Equal(t, "", rs)
-	assert.Len(t, p.errors, 1)
-
-	// Route with no matching backend
-	p.errors = nil
-	r := &gwv1.HTTPRoute{}
-	r.Spec.Rules = []gwv1.HTTPRouteRule{{}}
-	routes = []ir.HttpRouteIR{{SourceObject: r}}
-	rs = p.referencedGateway(ctx, commonCol, routes, poolNN)
-	assert.Equal(t, "", rs)
-
-	// Route with matching backend but no parent with controllerName
-	p.errors = nil
-	r = &gwv1.HTTPRoute{}
-	r.Spec.Rules = []gwv1.HTTPRouteRule{{
-		BackendRefs: []gwv1.HTTPBackendRef{{
-			BackendRef: gwv1.BackendRef{BackendObjectReference: gwv1.BackendObjectReference{
-				Group: ptr.To(gwv1.Group(infextv1a2.GroupVersion.Group)),
-				Kind:  ptr.To(gwv1.Kind(wellknown.InferencePoolKind)),
-				Name:  gwv1.ObjectName(poolNN.Name),
-			}},
-		}},
-	}}
-	r.Status.Parents = []gwv1.RouteParentStatus{{
-		ParentRef:      gwv1.ParentReference{Name: "gw1"},
-		ControllerName: gwv1.GatewayController("other"),
-	}}
-	routes = []ir.HttpRouteIR{{SourceObject: r}}
-	rs = p.referencedGateway(ctx, commonCol, routes, poolNN)
-	assert.Equal(t, "", rs)
-
-	// Route with matching backend and matching parent
-	p.errors = nil
-	r.Status.Parents = []gwv1.RouteParentStatus{{
-		ParentRef:      gwv1.ParentReference{Name: "gw-ok"},
-		ControllerName: gwv1.GatewayController("ctrl"),
-	}}
-	routes = []ir.HttpRouteIR{{SourceObject: r}}
-	rs = p.referencedGateway(ctx, commonCol, routes, poolNN)
-	assert.Equal(t, "gw-ok", rs)
-}
-
-func TestRemoveGatewayParentRef(t *testing.T) {
-	ctx := context.Background()
-	nn := types.NamespacedName{Name: "pool1", Namespace: "ns1"}
-
-	// Setup a pool with two parents: one matching gateway, one not
+	controllerName := "test-controller"
+	ns := "default"
+	poolName := "my-pool"
+	poolNN := types.NamespacedName{Namespace: ns, Name: poolName}
 	pool := &infextv1a2.InferencePool{
-		ObjectMeta: metav1.ObjectMeta{Name: nn.Name, Namespace: nn.Namespace},
-		Status: infextv1a2.InferencePoolStatus{Parents: []infextv1a2.PoolStatus{
-			{
-				GatewayRef: infextv1a2.ParentGatewayReference{
-					Name: infextv1a2.ObjectName("kgtw"),
-				},
-			},
-			{
-				GatewayRef: infextv1a2.ParentGatewayReference{
-					Name: infextv1a2.ObjectName("gw-other"),
-				},
-			},
-		}},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:       poolName,
+			Namespace:  ns,
+			Generation: 1,
+		},
 	}
 
-	// Setup the scheme and client with initial inferencepool
-	scheme := schemes.DefaultScheme()
-	err := infextv1a2.Install(scheme)
-	assert.NoError(t, err, "Failed to add InferencePool scheme")
-	fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithStatusSubresource(pool).WithRuntimeObjects(pool).Build()
+	// Create a fake client with the InferencePool object
+	fakeClient := newFakeClient(t, pool)
+	mock := krttest.NewMock(t, []any{})
+	col := krttest.GetMockCollection[ir.HttpRouteIR](mock)
+	commonCol := &common.CommonCollections{
+		CrudClient:     fakeClient,
+		ControllerName: controllerName,
+		Routes:         fakeRoutesIndex(col),
+	}
+	beIR := ir.BackendObjectIR{
+		ObjectSource: ir.ObjectSource{
+			Group:     infextv1a2.GroupVersion.Group,
+			Kind:      wellknown.InferencePoolKind,
+			Namespace: poolNN.Namespace,
+			Name:      poolNN.Name,
+		},
+		ObjIr: &inferencePool{errors: nil},
+	}
 
-	// Use a fake krt.Collection[ir.Gateway]
-	ig := ir.Gateway{ObjectSource: ir.ObjectSource{Name: "kgtw", Namespace: "ns1"}}
-	fakeGwCol := fakeGatewayCollection{items: []ir.Gateway{ig}}
-	idx := &krtcollections.GatewayIndex{Gateways: fakeGwCol}
+	// Call the function to update the pool status
+	updatePoolStatus(ctx, commonCol, beIR, "", nil)
+	var updated infextv1a2.InferencePool
+	err := fakeClient.Get(ctx, poolNN, &updated)
 
-	// Remove the matching gateway parent reference
-	err = removeGatewayParentRef(ctx, fakeClient, pool, idx)
-	assert.NoError(t, err)
+	// Assert that there are no errors and the status is updated correctly
+	require.NoError(t, err)
+	assert.Empty(t, updated.Status.Parents)
+}
 
-	// Read back the pool to ensure status update
-	updated := &infextv1a2.InferencePool{}
-	err = fakeClient.Get(ctx, nn, updated)
-	assert.NoError(t, err)
+func TestUpdatePoolStatus_WithReference_NoErrors(t *testing.T) {
+	// Set up the context, controller name, namespace, pool name, and gateway name
+	ctx := context.Background()
+	controllerName := "test-controller"
+	ns := "default"
+	poolName := "my-pool"
+	poolNN := types.NamespacedName{Namespace: ns, Name: poolName}
+	gwName := "my-gateway"
 
-	// Expect one parent removed
-	expected := []infextv1a2.PoolStatus{
-		{
-			GatewayRef: infextv1a2.ParentGatewayReference{
-				Name: infextv1a2.ObjectName("gw-other"),
+	// Create a sample HTTPRoute with a reference to the InferencePool
+	route := &gwv1.HTTPRoute{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: ns,
+			Name:      "my-route",
+			UID:       "uid1",
+		},
+		Spec: gwv1.HTTPRouteSpec{
+			CommonRouteSpec: gwv1.CommonRouteSpec{
+				ParentRefs: []gwv1.ParentReference{
+					{
+						Group: ptr.To(gwv1.Group(gwv1.GroupName)),
+						Kind:  ptr.To(gwv1.Kind(wellknown.GatewayKind)),
+						Name:  gwv1.ObjectName(gwName),
+					},
+				},
+			},
+			Rules: []gwv1.HTTPRouteRule{
+				{
+					BackendRefs: []gwv1.HTTPBackendRef{
+						{
+							BackendRef: gwv1.BackendRef{
+								BackendObjectReference: gwv1.BackendObjectReference{
+									Group: ptr.To(gwv1.Group(infextv1a2.GroupVersion.Group)),
+									Kind:  ptr.To(gwv1.Kind(wellknown.InferencePoolKind)),
+									Name:  gwv1.ObjectName(poolName),
+								},
+							},
+						},
+					},
+				},
 			},
 		},
 	}
-	assert.Equal(t, expected, updated.Status.Parents)
+	pool := &infextv1a2.InferencePool{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:       poolName,
+			Namespace:  ns,
+			Generation: 1,
+		},
+	}
 
-	// Case: no matching gateway -> no status change
-	pool2 := &infextv1a2.InferencePool{
-		ObjectMeta: metav1.ObjectMeta{Name: nn.Name, Namespace: nn.Namespace},
-		Status: infextv1a2.InferencePoolStatus{Parents: []infextv1a2.PoolStatus{
-			{
-				GatewayRef: infextv1a2.ParentGatewayReference{
-					Name: infextv1a2.ObjectName("gw-none"),
+	// Create a fake client with the InferencePool object
+	fakeClient := newFakeClient(t, pool)
+	mock := krttest.NewMock(t, []any{
+		ir.HttpRouteIR{
+			ObjectSource: ir.ObjectSource{
+				Group:     gwv1.SchemeGroupVersion.Group,
+				Kind:      "HTTPRoute",
+				Namespace: ns,
+				Name:      "my-route",
+			},
+			SourceObject: route,
+		},
+	})
+
+	// Get the mock collection for HTTPRouteIR
+	col := krttest.GetMockCollection[ir.HttpRouteIR](mock)
+	commonCol := &common.CommonCollections{
+		CrudClient:     fakeClient,
+		ControllerName: controllerName,
+		Routes:         fakeRoutesIndex(col),
+	}
+	beIR := ir.BackendObjectIR{
+		ObjectSource: ir.ObjectSource{
+			Group:     infextv1a2.GroupVersion.Group,
+			Kind:      wellknown.InferencePoolKind,
+			Namespace: poolNN.Namespace,
+			Name:      poolNN.Name,
+		},
+		ObjIr: &inferencePool{errors: nil},
+	}
+
+	// Call the function to update the pool status
+	updatePoolStatus(ctx, commonCol, beIR, "", nil)
+	var updated infextv1a2.InferencePool
+	err := fakeClient.Get(ctx, poolNN, &updated)
+
+	// Assert that there are no errors and the status is updated correctly
+	require.NoError(t, err)
+	require.Len(t, updated.Status.Parents, 1)
+	p := updated.Status.Parents[0]
+	assert.Equal(t, infextv1a2.ParentGatewayReference{
+		Kind:      ptr.To(infextv1a2.Kind(wellknown.GatewayKind)),
+		Namespace: ptr.To(infextv1a2.Namespace(ns)),
+		Name:      infextv1a2.ObjectName(gwName),
+	}, p.GatewayRef)
+
+	// Check the accepted condition
+	accepted := meta.FindStatusCondition(p.Conditions, string(infextv1a2.InferencePoolConditionAccepted))
+	require.NotNil(t, accepted)
+	assert.Equal(t, metav1.ConditionTrue, accepted.Status)
+	assert.Equal(t, string(infextv1a2.InferencePoolReasonAccepted), accepted.Reason)
+	assert.Contains(t, accepted.Message, controllerName)
+	assert.Equal(t, int64(1), accepted.ObservedGeneration)
+	assert.NotZero(t, accepted.LastTransitionTime)
+
+	// Check the resolved references condition
+	resolved := meta.FindStatusCondition(p.Conditions, string(infextv1a2.InferencePoolConditionResolvedRefs))
+	require.NotNil(t, resolved)
+	assert.Equal(t, metav1.ConditionTrue, resolved.Status)
+	assert.Equal(t, string(infextv1a2.InferencePoolReasonResolvedRefs), resolved.Reason)
+	assert.Equal(t, "All InferencePool references have been resolved", resolved.Message)
+	assert.Equal(t, int64(1), resolved.ObservedGeneration)
+	assert.NotZero(t, resolved.LastTransitionTime)
+}
+
+func TestUpdatePoolStatus_WithReference_WithErrors(t *testing.T) {
+	// Set up the context, controller name, namespace, pool name, and gateway name
+	ctx := context.Background()
+	controllerName := "test-controller"
+	ns := "default"
+	poolName := "my-pool"
+	poolNN := types.NamespacedName{Namespace: ns, Name: poolName}
+	gwName := "my-gateway"
+
+	// Create a sample HTTPRoute with a reference to the InferencePool
+	route := &gwv1.HTTPRoute{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: ns,
+			Name:      "my-route",
+			UID:       "uid1",
+		},
+		Spec: gwv1.HTTPRouteSpec{
+			CommonRouteSpec: gwv1.CommonRouteSpec{
+				ParentRefs: []gwv1.ParentReference{
+					{
+						Group: ptr.To(gwv1.Group(gwv1.GroupName)),
+						Kind:  ptr.To(gwv1.Kind(wellknown.GatewayKind)),
+						Name:  gwv1.ObjectName(gwName),
+					},
 				},
 			},
-		}},
+			Rules: []gwv1.HTTPRouteRule{
+				{
+					BackendRefs: []gwv1.HTTPBackendRef{
+						{
+							BackendRef: gwv1.BackendRef{
+								BackendObjectReference: gwv1.BackendObjectReference{
+									Group: ptr.To(gwv1.Group(infextv1a2.GroupVersion.Group)),
+									Kind:  ptr.To(gwv1.Kind(wellknown.InferencePoolKind)),
+									Name:  gwv1.ObjectName(poolName),
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 	}
-	fakeClient2 := fake.NewClientBuilder().WithScheme(scheme).WithStatusSubresource(pool2).WithRuntimeObjects(pool2).Build()
-	err = removeGatewayParentRef(ctx, fakeClient2, pool2, idx)
-	assert.NoError(t, err)
+	pool := &infextv1a2.InferencePool{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:       poolName,
+			Namespace:  ns,
+			Generation: 1,
+		},
+	}
 
-	unchanged := &infextv1a2.InferencePool{}
-	err = fakeClient2.Get(ctx, nn, unchanged)
-	assert.NoError(t, err)
-	assert.Equal(t, pool2.Status.Parents, unchanged.Status.Parents)
+	fakeClient := newFakeClient(t, pool)
+	mock := krttest.NewMock(t, []any{
+		ir.HttpRouteIR{
+			ObjectSource: ir.ObjectSource{
+				Group:     gwv1.SchemeGroupVersion.Group,
+				Kind:      "HTTPRoute",
+				Namespace: ns,
+				Name:      "my-route",
+			},
+			SourceObject: route,
+		},
+	})
 
-	// Case: nil pool should return error
-	err = removeGatewayParentRef(ctx, fakeClient2, nil, idx)
-	assert.Error(t, err)
+	// Get the mock collection for HTTPRouteIR
+	col := krttest.GetMockCollection[ir.HttpRouteIR](mock)
+	commonCol := &common.CommonCollections{
+		CrudClient:     fakeClient,
+		ControllerName: controllerName,
+		Routes:         fakeRoutesIndex(col),
+	}
+	beIR := ir.BackendObjectIR{
+		ObjectSource: ir.ObjectSource{
+			Group:     infextv1a2.GroupVersion.Group,
+			Kind:      wellknown.InferencePoolKind,
+			Namespace: poolNN.Namespace,
+			Name:      poolNN.Name,
+		},
+		ObjIr: &inferencePool{errors: []error{fmt.Errorf("test error")}},
+	}
 
-	// Case: empty parents
-	pool3 := &infextv1a2.InferencePool{ObjectMeta: metav1.ObjectMeta{Name: nn.Name, Namespace: nn.Namespace}}
-	fakeClient3 := fake.NewClientBuilder().WithScheme(scheme).WithStatusSubresource(pool3).WithRuntimeObjects(pool3).Build()
-	err = removeGatewayParentRef(ctx, fakeClient3, pool3, idx)
-	assert.NoError(t, err)
+	// Call the function to update the pool status with errors
+	updatePoolStatus(ctx, commonCol, beIR, "", nil)
+	var updated infextv1a2.InferencePool
+	err := fakeClient.Get(ctx, poolNN, &updated)
 
-	// Case: no gateways in index
-	idxEmpty := &krtcollections.GatewayIndex{Gateways: fakeGatewayCollection{items: nil}}
-	err = removeGatewayParentRef(ctx, fakeClient, pool, idxEmpty)
-	assert.Error(t, err)
+	// Assert that there are no errors and the status is updated correctly
+	require.NoError(t, err)
+	require.Len(t, updated.Status.Parents, 2)
+
+	// Check the gateway parent status
+	var gwParent, defaultParent infextv1a2.PoolStatus
+	for _, p := range updated.Status.Parents {
+		if p.GatewayRef.Kind != nil && *p.GatewayRef.Kind == infextv1a2.Kind(wellknown.GatewayKind) {
+			gwParent = p
+		} else if p.GatewayRef.Kind != nil && *p.GatewayRef.Kind == infextv1a2.Kind(defaultInfPoolStatusKind) {
+			defaultParent = p
+		}
+	}
+	require.NotZero(t, gwParent)
+	assert.Equal(t, infextv1a2.ParentGatewayReference{
+		Kind:      ptr.To(infextv1a2.Kind(wellknown.GatewayKind)),
+		Namespace: ptr.To(infextv1a2.Namespace(ns)),
+		Name:      infextv1a2.ObjectName(gwName),
+	}, gwParent.GatewayRef)
+	accepted := meta.FindStatusCondition(gwParent.Conditions, string(infextv1a2.InferencePoolConditionAccepted))
+	require.NotNil(t, accepted)
+	assert.Equal(t, metav1.ConditionTrue, accepted.Status)
+	resolved := meta.FindStatusCondition(gwParent.Conditions, string(infextv1a2.InferencePoolConditionResolvedRefs))
+	require.NotNil(t, resolved)
+	assert.Equal(t, metav1.ConditionFalse, resolved.Status)
+	assert.Equal(t, string(infextv1a2.InferencePoolReasonInvalidExtensionRef), resolved.Reason)
+	assert.Equal(t, "error: test error", resolved.Message)
+
+	// Default parent
+	require.NotZero(t, defaultParent)
+	assert.Equal(t, infextv1a2.ParentGatewayReference{
+		Kind: ptr.To(infextv1a2.Kind(defaultInfPoolStatusKind)),
+		Name: infextv1a2.ObjectName(defaultInfPoolStatusName),
+	}, defaultParent.GatewayRef)
+	require.Len(t, defaultParent.Conditions, 1)
+	// Check the conditions for the default parent
+	resolved = meta.FindStatusCondition(defaultParent.Conditions, string(infextv1a2.InferencePoolConditionResolvedRefs))
+	require.NotNil(t, resolved)
+	assert.Equal(t, metav1.ConditionFalse, resolved.Status)
+	assert.Equal(t, string(infextv1a2.InferencePoolReasonInvalidExtensionRef), resolved.Reason)
+	assert.Equal(t, "error: test error", resolved.Message)
+	assert.Nil(t, meta.FindStatusCondition(defaultParent.Conditions, string(infextv1a2.InferencePoolConditionAccepted)))
 }
 
-// fakeGatewayCollection remains for gateway index listing
-type fakeGatewayCollection struct {
-	items []ir.Gateway
+func TestUpdatePoolStatus_DeleteRoute(t *testing.T) {
+	// Set up the context, controller name, namespace, pool name, and route UID
+	ctx := context.Background()
+	controllerName := "test-controller"
+	ns := "default"
+	poolName := "my-pool"
+	poolNN := types.NamespacedName{Namespace: ns, Name: poolName}
+	gwName := "my-gateway"
+	routeUID := types.UID("uid1")
+
+	// Create a sample HTTPRoute with a reference to the InferencePool
+	route := &gwv1.HTTPRoute{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: ns,
+			Name:      "my-route",
+			UID:       routeUID,
+		},
+		Spec: gwv1.HTTPRouteSpec{
+			CommonRouteSpec: gwv1.CommonRouteSpec{
+				ParentRefs: []gwv1.ParentReference{
+					{
+						Group: ptr.To(gwv1.Group(gwv1.GroupName)),
+						Kind:  ptr.To(gwv1.Kind(wellknown.GatewayKind)),
+						Name:  gwv1.ObjectName(gwName),
+					},
+				},
+			},
+			Rules: []gwv1.HTTPRouteRule{
+				{
+					BackendRefs: []gwv1.HTTPBackendRef{
+						{
+							BackendRef: gwv1.BackendRef{
+								BackendObjectReference: gwv1.BackendObjectReference{
+									Group: ptr.To(gwv1.Group(infextv1a2.GroupVersion.Group)),
+									Kind:  ptr.To(gwv1.Kind(wellknown.InferencePoolKind)),
+									Name:  gwv1.ObjectName(poolName),
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	pool := &infextv1a2.InferencePool{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:       poolName,
+			Namespace:  ns,
+			Generation: 1,
+		},
+	}
+
+	// Create a fake client with the InferencePool object
+	fakeClient := newFakeClient(t, pool)
+	mock := krttest.NewMock(t, []any{
+		ir.HttpRouteIR{
+			ObjectSource: ir.ObjectSource{
+				Group:     gwv1.SchemeGroupVersion.Group,
+				Kind:      "HTTPRoute",
+				Namespace: ns,
+				Name:      "my-route",
+			},
+			SourceObject: route,
+		},
+	})
+
+	// Get the mock collection for HTTPRouteIR
+	col := krttest.GetMockCollection[ir.HttpRouteIR](mock)
+	commonCol := &common.CommonCollections{
+		CrudClient:     fakeClient,
+		ControllerName: controllerName,
+		Routes:         fakeRoutesIndex(col),
+	}
+	beIR := ir.BackendObjectIR{
+		ObjectSource: ir.ObjectSource{
+			Group:     infextv1a2.GroupVersion.Group,
+			Kind:      wellknown.InferencePoolKind,
+			Namespace: poolNN.Namespace,
+			Name:      poolNN.Name,
+		},
+		ObjIr: &inferencePool{errors: nil},
+	}
+
+	// Call the function to update the pool status with the route
+	updatePoolStatus(ctx, commonCol, beIR, routeUID, nil)
+	var updated infextv1a2.InferencePool
+	err := fakeClient.Get(ctx, poolNN, &updated)
+
+	// Assert that there are no errors and the status is updated correctly
+	require.NoError(t, err)
+	assert.Empty(t, updated.Status.Parents)
 }
 
-func (f fakeGatewayCollection) List() []ir.Gateway                                      { return f.items }
-func (f fakeGatewayCollection) GetKey(_ string) *ir.Gateway                             { return nil }
-func (f fakeGatewayCollection) HasSynced() bool                                         { return true }
-func (f fakeGatewayCollection) WaitUntilSynced(stop <-chan struct{}) bool               { return true }
-func (f fakeGatewayCollection) Register(handler func(krt.Event[ir.Gateway])) krt.Syncer { return f }
-func (f fakeGatewayCollection) RegisterBatch(handler func([]krt.Event[ir.Gateway], bool), _ bool) krt.Syncer {
-	return f
+func TestUpdatePoolStatus_WithExtraGws(t *testing.T) {
+	// Set up the context, namespace, pool name, and extra gateway name
+	ctx := context.Background()
+	ns := "default"
+	poolName := "my-pool"
+	poolNN := types.NamespacedName{Namespace: ns, Name: poolName}
+	gwName := "extra-gw"
+
+	// Create a sample InferencePool object
+	pool := &infextv1a2.InferencePool{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:       poolName,
+			Namespace:  ns,
+			Generation: 1,
+		},
+	}
+
+	// Create a fake client with the InferencePool object
+	fakeClient := newFakeClient(t, pool)
+	mock := krttest.NewMock(t, []any{}) // no HTTPRouteIRs
+	col := krttest.GetMockCollection[ir.HttpRouteIR](mock)
+
+	// Create a CommonCollections instance with the fake client and routes index
+	commonCol := &common.CommonCollections{
+		CrudClient:     fakeClient,
+		ControllerName: "test-controller",
+		Routes:         fakeRoutesIndex(col),
+	}
+	beIR := ir.BackendObjectIR{
+		ObjectSource: ir.ObjectSource{
+			Group:     infextv1a2.GroupVersion.Group,
+			Kind:      wellknown.InferencePoolKind,
+			Namespace: ns,
+			Name:      poolName,
+		},
+		ObjIr: &inferencePool{errors: nil},
+	}
+
+	// Simulate controller knowing about a parent Gateway even if no HTTPRoute is present
+	extraGws := map[types.NamespacedName]struct{}{
+		{Namespace: ns, Name: gwName}: {},
+	}
+
+	// Call the function to update the pool status with the extra gateways
+	updatePoolStatus(ctx, commonCol, beIR, "", extraGws)
+
+	// Assert that the InferencePool status is updated correctly
+	var updated infextv1a2.InferencePool
+	err := fakeClient.Get(ctx, poolNN, &updated)
+	require.NoError(t, err)
+	require.Len(t, updated.Status.Parents, 1)
+
+	assert.Equal(t, infextv1a2.ParentGatewayReference{
+		Kind:      ptr.To(infextv1a2.Kind(wellknown.GatewayKind)),
+		Namespace: ptr.To(infextv1a2.Namespace(ns)),
+		Name:      infextv1a2.ObjectName(gwName),
+	}, updated.Status.Parents[0].GatewayRef)
+}
+
+func TestReferencedGateways(t *testing.T) {
+	// Set up the test with a namespace, pool name, and two gateways in different namespaces
+	ns := "default"
+	poolNN := types.NamespacedName{Namespace: ns, Name: "my-pool"}
+	gw1 := types.NamespacedName{Namespace: ns, Name: "gw1"}
+	gw2 := types.NamespacedName{Namespace: "other", Name: "gw2"}
+
+	// Create two gateways with different namespaces
+	route1 := ir.HttpRouteIR{
+		SourceObject: &gwv1.HTTPRoute{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: ns,
+			},
+			Spec: gwv1.HTTPRouteSpec{
+				CommonRouteSpec: gwv1.CommonRouteSpec{
+					ParentRefs: []gwv1.ParentReference{
+						{
+							Group: ptr.To(gwv1.Group(gwv1.GroupName)),
+							Kind:  ptr.To(gwv1.Kind(wellknown.GatewayKind)),
+							Name:  gwv1.ObjectName(gw1.Name),
+						},
+						{
+							Group:     ptr.To(gwv1.Group(gwv1.GroupName)),
+							Kind:      ptr.To(gwv1.Kind(wellknown.GatewayKind)),
+							Namespace: ptr.To(gwv1.Namespace(gw2.Namespace)),
+							Name:      gwv1.ObjectName(gw2.Name),
+						},
+					},
+				},
+				Rules: []gwv1.HTTPRouteRule{
+					{
+						BackendRefs: []gwv1.HTTPBackendRef{
+							{
+								BackendRef: gwv1.BackendRef{
+									BackendObjectReference: gwv1.BackendObjectReference{
+										Group: ptr.To(gwv1.Group(infextv1a2.GroupVersion.Group)),
+										Kind:  ptr.To(gwv1.Kind(wellknown.InferencePoolKind)),
+										Name:  gwv1.ObjectName(poolNN.Name),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	route2 := ir.HttpRouteIR{
+		SourceObject: &gwv1.HTTPRoute{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace:         ns,
+				DeletionTimestamp: ptr.To(metav1.Now()),
+			},
+			Spec: gwv1.HTTPRouteSpec{
+				CommonRouteSpec: gwv1.CommonRouteSpec{
+					ParentRefs: []gwv1.ParentReference{
+						{
+							Group: ptr.To(gwv1.Group(gwv1.GroupName)),
+							Kind:  ptr.To(gwv1.Kind(wellknown.GatewayKind)),
+							Name:  gwv1.ObjectName("deleted-gw"),
+						},
+					},
+				},
+				Rules: []gwv1.HTTPRouteRule{
+					{
+						BackendRefs: []gwv1.HTTPBackendRef{
+							{
+								BackendRef: gwv1.BackendRef{
+									BackendObjectReference: gwv1.BackendObjectReference{
+										Group: ptr.To(gwv1.Group(infextv1a2.GroupVersion.Group)),
+										Kind:  ptr.To(gwv1.Kind(wellknown.InferencePoolKind)),
+										Name:  gwv1.ObjectName(poolNN.Name),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	route3 := ir.HttpRouteIR{
+		SourceObject: &gwv1.HTTPRoute{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: ns,
+			},
+			Spec: gwv1.HTTPRouteSpec{
+				CommonRouteSpec: gwv1.CommonRouteSpec{
+					ParentRefs: []gwv1.ParentReference{
+						{
+							Group: ptr.To(gwv1.Group(gwv1.GroupName)),
+							Kind:  ptr.To(gwv1.Kind(wellknown.GatewayKind)),
+							Name:  gwv1.ObjectName("unrelated-gw"),
+						},
+					},
+				},
+				Rules: []gwv1.HTTPRouteRule{
+					{
+						BackendRefs: []gwv1.HTTPBackendRef{
+							{
+								BackendRef: gwv1.BackendRef{
+									BackendObjectReference: gwv1.BackendObjectReference{
+										Group: ptr.To(gwv1.Group(gwv1.GroupName)),
+										Kind:  ptr.To(gwv1.Kind(wellknown.ServiceKind)),
+										Name:  gwv1.ObjectName("unrelated"),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	gws := referencedGateways([]ir.HttpRouteIR{route1, route2, route3}, poolNN)
+	assert.Equal(t, map[types.NamespacedName]struct{}{
+		gw1: {},
+		gw2: {},
+	}, gws)
+}
+
+func TestIsPoolBackend(t *testing.T) {
+	group := gwv1.Group(infextv1a2.GroupVersion.Group)
+	kind := gwv1.Kind(wellknown.InferencePoolKind)
+	be := gwv1.HTTPBackendRef{
+		BackendRef: gwv1.BackendRef{
+			BackendObjectReference: gwv1.BackendObjectReference{
+				Group: &group,
+				Kind:  &kind,
+				Name:  "my-pool",
+			},
+		},
+	}
+	poolNN := types.NamespacedName{Name: "my-pool"}
+	// Default namespace (nil) – should match.
+	assert.True(t, isPoolBackend(be, poolNN))
+
+	// Wrong name
+	be.Name = "wrong"
+	assert.False(t, isPoolBackend(be, poolNN))
+
+	// Nil group/kind
+	be.Group = nil
+	assert.False(t, isPoolBackend(be, poolNN))
+	be.Group = &group
+	be.Kind = nil
+	assert.False(t, isPoolBackend(be, poolNN))
+
+	// Explicit different namespace – should NOT match
+	otherNS := gwv1.Namespace("other")
+	be.Namespace = &otherNS
+	be.Group = &group
+	be.Kind = &kind
+	be.Name = "my-pool"
+	assert.False(t, isPoolBackend(be, poolNN))
+
+	// Explicit matching namespace – should match
+	sameNS := gwv1.Namespace("")
+	sameNS = gwv1.Namespace(poolNN.Namespace) // assign route namespace
+	be.Namespace = &sameNS
+	assert.True(t, isPoolBackend(be, poolNN))
+
+	// Wrong group/kind
+	wrongGroup := gwv1.Group("wrong")
+	be.Group = &wrongGroup
+	assert.False(t, isPoolBackend(be, poolNN))
+}
+
+func TestParentsEqual(t *testing.T) {
+	a := []infextv1a2.PoolStatus{
+		{
+			GatewayRef: infextv1a2.ParentGatewayReference{
+				Kind:      ptr.To(infextv1a2.Kind(wellknown.GatewayKind)),
+				Namespace: ptr.To(infextv1a2.Namespace("ns")),
+				Name:      "gw1",
+			},
+		},
+		{
+			GatewayRef: infextv1a2.ParentGatewayReference{
+				Group: ptr.To(infextv1a2.Group(infextv1a2.GroupVersion.Group)),
+				Kind:  ptr.To(infextv1a2.Kind(defaultInfPoolStatusKind)),
+				Name:  defaultInfPoolStatusName,
+			},
+		},
+	}
+	b := []infextv1a2.PoolStatus{
+		{
+			GatewayRef: infextv1a2.ParentGatewayReference{
+				Kind: ptr.To(infextv1a2.Kind(defaultInfPoolStatusKind)),
+				Name: defaultInfPoolStatusName,
+			},
+		},
+		{
+			GatewayRef: infextv1a2.ParentGatewayReference{
+				Group:     ptr.To(infextv1a2.Group(infextv1a2.GroupVersion.Group)),
+				Kind:      ptr.To(infextv1a2.Kind(wellknown.GatewayKind)),
+				Namespace: ptr.To(infextv1a2.Namespace("ns")),
+				Name:      "gw1",
+			},
+		},
+	}
+	assert.True(t, parentsEqual(a, b))
+
+	// Different
+	b[0].GatewayRef.Name = "wrong"
+	assert.False(t, parentsEqual(a, b))
+
+	// Different length
+	b = append(b, a[0])
+	assert.False(t, parentsEqual(a, b))
+}
+
+func TestBuildAcceptedCondition(t *testing.T) {
+	gen := int64(1)
+	controllerName := "test-controller"
+	// Test the buildAcceptedCondition function
+	c := buildAcceptedCondition(gen, controllerName)
+	assert.Equal(t, string(infextv1a2.InferencePoolConditionAccepted), c.Type)
+	assert.Equal(t, metav1.ConditionTrue, c.Status)
+	assert.Equal(t, string(infextv1a2.InferencePoolReasonAccepted), c.Reason)
+	assert.Equal(t, fmt.Sprintf("InferencePool has been accepted by controller %s", controllerName), c.Message)
+	assert.Equal(t, gen, c.ObservedGeneration)
+	assert.NotZero(t, c.LastTransitionTime)
+}
+
+func TestBuildResolvedRefsCondition(t *testing.T) {
+	gen := int64(1)
+	// Test the buildResolvedRefsCondition function
+	c := buildResolvedRefsCondition(gen, nil)
+	assert.Equal(t, string(infextv1a2.InferencePoolConditionResolvedRefs), c.Type)
+	assert.Equal(t, metav1.ConditionTrue, c.Status)
+	assert.Equal(t, string(infextv1a2.InferencePoolReasonResolvedRefs), c.Reason)
+	assert.Equal(t, "All InferencePool references have been resolved", c.Message)
+	assert.Equal(t, gen, c.ObservedGeneration)
+	assert.NotZero(t, c.LastTransitionTime)
+
+	// With one error
+	errs := []error{fmt.Errorf("test error")}
+	c = buildResolvedRefsCondition(gen, errs)
+	assert.Equal(t, metav1.ConditionFalse, c.Status)
+	assert.Equal(t, string(infextv1a2.InferencePoolReasonInvalidExtensionRef), c.Reason)
+	assert.Equal(t, "error: test error", c.Message)
+
+	// With multiple errors
+	errs = append(errs, fmt.Errorf("another error"))
+	c = buildResolvedRefsCondition(gen, errs)
+	assert.Equal(t, "InferencePool has 2 errors: test error; another error", c.Message)
 }

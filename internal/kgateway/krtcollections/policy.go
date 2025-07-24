@@ -26,6 +26,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/backendref"
+	tmetrics "github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/metrics"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
@@ -60,7 +61,7 @@ type BackendIndex struct {
 
 	// availableBackendsWithPolicy is built from availableBackends, attaching policy to the given backends.
 	// BackendsWithPolicy is the public interface to access this.
-	availableBackendsWithPolicy []krt.Collection[ir.BackendObjectIR]
+	availableBackendsWithPolicy []krt.Collection[*ir.BackendObjectIR]
 
 	gkAliases map[schema.GroupKind][]schema.GroupKind
 
@@ -104,7 +105,7 @@ func (i *BackendIndex) HasSynced() bool {
 	return true
 }
 
-func (i *BackendIndex) BackendsWithPolicy() []krt.Collection[ir.BackendObjectIR] {
+func (i *BackendIndex) BackendsWithPolicy() []krt.Collection[*ir.BackendObjectIR] {
 	return i.availableBackendsWithPolicy
 }
 
@@ -114,7 +115,7 @@ func (i *BackendIndex) BackendsWithPolicy() []krt.Collection[ir.BackendObjectIR]
 // provied gk. I.e. for the provided gk, it will carry the collection of backends derived from it, with all
 // policies attached.
 func (i *BackendIndex) AddBackends(gk schema.GroupKind, col krt.Collection[ir.BackendObjectIR], aliasKinds ...schema.GroupKind) {
-	backendsWithPoliciesCol := krt.NewCollection(col, func(kctx krt.HandlerContext, backendObj ir.BackendObjectIR) *ir.BackendObjectIR {
+	backendsWithPoliciesCol := krt.NewCollection(col, func(kctx krt.HandlerContext, backendObj ir.BackendObjectIR) **ir.BackendObjectIR {
 		policies := i.policies.getTargetingPoliciesForBackends(kctx, extensionsplug.BackendAttachmentPoint, backendObj.ObjectSource, "", backendObj.GetObjectLabels(), false)
 		for _, aliasObjSrc := range backendObj.Aliases {
 			if aliasObjSrc.Namespace == "" {
@@ -126,7 +127,7 @@ func (i *BackendIndex) AddBackends(gk schema.GroupKind, col krt.Collection[ir.Ba
 			policies = append(policies, aliasPolicies...)
 		}
 		backendObj.AttachedPolicies = toAttachedPolicies(policies)
-		return &backendObj
+		return ptr.Of(&backendObj)
 	}, i.krtopts.ToOptions("")...)
 
 	idx := krt.NewIndex(col, func(backendObj ir.BackendObjectIR) (aliasKeys []backendKey) {
@@ -293,11 +294,7 @@ func NewGatewayIndex(
 		}}
 	})
 
-	metricsRecorder := NewCollectionMetricsRecorder("Gateways")
-
 	h.Gateways = krt.NewCollection(gws, func(kctx krt.HandlerContext, i *gwv1.Gateway) *ir.Gateway {
-		defer metricsRecorder.TransformStart()(nil)
-
 		// only care about gateways use a class controlled by us
 		gwClass := ptr.Flatten(krt.FetchOne(kctx, gwClasses, krt.FilterKey(string(i.Spec.GatewayClassName))))
 		if gwClass == nil || controllerName != string(gwClass.Spec.ControllerName) {
@@ -354,6 +351,17 @@ func NewGatewayIndex(
 			return a.GetCreationTimestamp().Compare(b.GetCreationTimestamp().Time)
 		})
 
+		// Start the resource sync metrics for all XListenerSets before they are processed,
+		// so they do not have staggered start times.
+		for _, ls := range listenerSets {
+			tmetrics.StartResourceSync(ls.Name,
+				tmetrics.ResourceMetricLabels{
+					Namespace: ls.Namespace,
+					Gateway:   i.GetName(),
+					Resource:  wellknown.XListenerSetKind,
+				})
+		}
+
 		for _, ls := range listenerSets {
 			lsIR := ir.ListenerSet{
 				ObjectSource: ir.ObjectSource{
@@ -406,33 +414,6 @@ func NewGatewayIndex(
 
 		return &out
 	}, krtopts.ToOptions("gateways")...)
-
-	metrics.RegisterEvents(h.Gateways, func(o krt.Event[ir.Gateway]) {
-		switch o.Event {
-		case controllers.EventDelete:
-			metricsRecorder.SetResources(CollectionResourcesMetricLabels{
-				Namespace: o.Latest().Namespace,
-				Name:      o.Latest().Name,
-				Resource:  "Gateway",
-			}, 0)
-			metricsRecorder.SetResources(CollectionResourcesMetricLabels{
-				Namespace: o.Latest().Namespace,
-				Name:      o.Latest().Name,
-				Resource:  "Listeners",
-			}, 0)
-		case controllers.EventAdd, controllers.EventUpdate:
-			metricsRecorder.SetResources(CollectionResourcesMetricLabels{
-				Namespace: o.Latest().Namespace,
-				Name:      o.Latest().Name,
-				Resource:  "Gateway",
-			}, 1)
-			metricsRecorder.SetResources(CollectionResourcesMetricLabels{
-				Namespace: o.Latest().Namespace,
-				Name:      o.Latest().Name,
-				Resource:  "Listeners",
-			}, len(o.Latest().Obj.Spec.Listeners))
-		}
-	})
 
 	return h
 }
@@ -556,6 +537,55 @@ func NewPolicyIndex(
 				}
 				return &a
 			}, krtopts.ToOptions(fmt.Sprintf("%s-policiesByTargetRef", gk.String()))...)
+
+			metrics.RegisterEvents(policiesByTargetRef, func(o krt.Event[ir.PolicyWrapper]) {
+				switch o.Event {
+				case controllers.EventAdd:
+					for _, ref := range o.Latest().TargetRefs {
+						if ref.Group == wellknown.GatewayGroup && ref.Kind == wellknown.GatewayKind {
+							resourcesManaged.Add(1, resourceMetricLabels{
+								Parent:    ref.Name,
+								Namespace: o.Latest().Namespace,
+								Resource:  o.Latest().Kind,
+							}.toMetricsLabels()...)
+						}
+					}
+				case controllers.EventUpdate:
+					if o.Old != nil {
+						// When updating an existing policy, decrement resource metrics with the old label
+						// values before incrementing with the changed label values.
+						for _, ref := range o.Old.TargetRefs {
+							if ref.Group == wellknown.GatewayGroup && ref.Kind == wellknown.GatewayKind {
+								resourcesManaged.Sub(1, resourceMetricLabels{
+									Parent:    ref.Name,
+									Namespace: o.Old.Namespace,
+									Resource:  o.Old.Kind,
+								}.toMetricsLabels()...)
+							}
+						}
+					}
+
+					for _, ref := range o.Latest().TargetRefs {
+						if ref.Group == wellknown.GatewayGroup && ref.Kind == wellknown.GatewayKind {
+							resourcesManaged.Add(1, resourceMetricLabels{
+								Parent:    ref.Name,
+								Namespace: o.Latest().Namespace,
+								Resource:  o.Latest().Kind,
+							}.toMetricsLabels()...)
+						}
+					}
+				case controllers.EventDelete:
+					for _, ref := range o.Latest().TargetRefs {
+						if ref.Group == wellknown.GatewayGroup && ref.Kind == wellknown.GatewayKind {
+							resourcesManaged.Sub(1, resourceMetricLabels{
+								Parent:    ref.Name,
+								Namespace: o.Latest().Namespace,
+								Resource:  o.Latest().Kind,
+							}.toMetricsLabels()...)
+						}
+					}
+				}
+			})
 
 			targetRefIndex := krt.NewIndex(policiesByTargetRef, func(p ir.PolicyWrapper) []targetRefIndexKey {
 				// Every policy is indexed by PolicyRef and PolicyRef without Name (by Group+Kind+Namespace)
@@ -896,6 +926,11 @@ func (h *RoutesIndex) HasSynced() bool {
 		}
 	}
 	return h.httpRoutes.HasSynced() && h.routes.HasSynced() && h.policies.HasSynced() && h.backends.HasSynced() && h.refgrants.HasSynced()
+}
+
+// HTTPRoutes returns the raw krt collection that contains only the HTTPRouteIR.
+func (r *RoutesIndex) HTTPRoutes() krt.Collection[ir.HttpRouteIR] {
+	return r.httpRoutes
 }
 
 func NewRoutesIndex(
