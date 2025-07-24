@@ -728,20 +728,28 @@ func (httpsFilterChain *httpsFilterChain) translateHttpsFilterChain(
 		queries,
 	)
 	if err != nil {
-		reason := gwv1.ListenerReasonRefNotPermitted
-		if !errors.Is(err, krtcollections.ErrMissingReferenceGrant) {
-			reason = gwv1.ListenerReasonInvalidCertificateRef
+		reason := gwv1.ListenerReasonInvalidCertificateRef
+		message := "Invalid certificate ref."
+		if errors.Is(err, krtcollections.ErrMissingReferenceGrant) {
+			reason = gwv1.ListenerReasonRefNotPermitted
+			message = "Reference not permitted by ReferenceGrant."
+		}
+		var notFoundErr *krtcollections.NotFoundError
+		if errors.As(err, &notFoundErr) {
+			message = fmt.Sprintf("Secret %s/%s not found.", notFoundErr.NotFoundObj.Namespace, notFoundErr.NotFoundObj.Name)
 		}
 		listenerReporter.SetCondition(reports.ListenerCondition{
-			Type:   gwv1.ListenerConditionResolvedRefs,
-			Status: metav1.ConditionFalse,
-			Reason: reason,
+			Type:    gwv1.ListenerConditionResolvedRefs,
+			Status:  metav1.ConditionFalse,
+			Reason:  reason,
+			Message: message,
 		})
 		// listener with no ssl is invalid. We return nil so set programmed to false
 		listenerReporter.SetCondition(reports.ListenerCondition{
-			Type:   gwv1.ListenerConditionProgrammed,
-			Status: metav1.ConditionFalse,
-			Reason: gwv1.ListenerReasonInvalid,
+			Type:    gwv1.ListenerConditionProgrammed,
+			Status:  metav1.ConditionFalse,
+			Reason:  gwv1.ListenerReasonInvalid,
+			Message: message,
 		})
 		return nil
 	}
