@@ -1,0 +1,24 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: balance-http-route
+spec:
+  parentRefs:
+  - group: ""
+    kind: Service
+    name: balance
+    port: 8080
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: svc-a
+      kind: Service
+      port: 8080
+      weight: 50
+    - name: svc-b
+      kind: Service
+      port: 8080
+      weight: 50

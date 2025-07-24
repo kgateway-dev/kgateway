@@ -2,6 +2,7 @@ package waypoint
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"knative.dev/pkg/network"
@@ -116,4 +117,47 @@ func (s *testingSuite) assertCurlGeneric(
 	expected matchers.HttpResponse,
 ) {
 	s.assertCurlInner(from, fqdn(svc, testNamespace), "", expected, "", method, path)
+}
+
+func (s *testingSuite) getCurlResponseBody(podExecOpts kubectl.PodExecOptions, toService, port string) (string, error) {
+	url := fmt.Sprintf("http://%s:%s", toService, port)
+
+	args := []string{
+		"exec", "-n", podExecOpts.Namespace,
+		"-c", podExecOpts.Container,
+		podExecOpts.Name, "--",
+		"curl", "-s", "--max-time", "5", "--connect-timeout", "3", url,
+	}
+
+	stdout, stderr, err := s.testInstallation.ClusterContext.Cli.Execute(s.ctx, args...)
+	if err != nil {
+		return "", fmt.Errorf("curl failed: %v\nstderr: %s", err, stderr)
+	}
+
+	return stdout, nil
+}
+
+func (s *testingSuite) runWeightedTest(serviceName string) {
+	svcAHit, svcBHit := false, false
+
+	s.assertCurlService(fromCurl, serviceName, testNamespace, hasEnvoy)
+
+	for i := 0; i < 10; i++ {
+		resp, err := s.getCurlResponseBody(fromCurl, serviceName, "8080")
+		s.Require().NoError(err)
+
+		if strings.Contains(resp, "Hello from svc-a!") {
+			svcAHit = true
+		}
+		if strings.Contains(resp, "Hello from svc-b!") {
+			svcBHit = true
+		}
+
+		if svcAHit && svcBHit {
+			break
+		}
+	}
+
+	s.Assert().True(svcAHit, "should hit svc-a at least once")
+	s.Assert().True(svcBHit, "should hit svc-b at least once")
 }

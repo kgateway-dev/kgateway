@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: balance-noname
+spec:
+  ports:
+    - port: 8080  # No name! Tests your protocol detection fix
+      targetPort: 8080

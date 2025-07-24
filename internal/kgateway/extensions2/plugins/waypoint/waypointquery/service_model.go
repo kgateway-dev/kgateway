@@ -251,6 +251,8 @@ func FromService(svc *corev1.Service) Service {
 				protocol = *p.AppProtocol
 			} else if p.Name != "" {
 				protocol = p.Name
+			} else if isCommonHTTPPort(p.Port) {
+				protocol = "http"
 			}
 			return ServicePort{
 				Port:       int32(p.Port),
@@ -381,4 +383,14 @@ func FromWorkloadEntry(we *networkingclient.WorkloadEntry) Workload {
 		Addresses: addrs,
 		ports:     we.Spec.GetPorts(),
 	}
+}
+
+func isCommonHTTPPort(port int32) bool {
+	httpPorts := []int32{80, 8080, 9080, 8000, 3000, 9000}
+	for _, p := range httpPorts {
+		if port == p {
+			return true
+		}
+	}
+	return false
 }

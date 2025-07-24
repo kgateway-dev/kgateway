@@ -61,3 +61,27 @@ func (s *testingSuite) TestGatewayHTTPRoute() {
 	s.assertCurlService(fromCurl, "svc-a", testNamespace, hasHTTPRoute)
 	s.assertCurlService(fromCurl, "svc-b", testNamespace, hasHTTPRoute)
 }
+
+func (s *testingSuite) TestHTTPRouteWeightedBackends() {
+	s.Run("weighted balancing with port names", func() {
+		// Test 1: Use existing svc-a and svc-b (with port names) + balance service with name
+		s.applyOrFail("weighted/balance-service-with-name.yaml", testNamespace)
+		s.applyOrFail("weighted/balance-httproute-existing-services.yaml", testNamespace)
+
+		s.useWaypointLabelForTest("svc", "balance", testNamespace)
+		s.runWeightedTest("balance")
+	})
+}
+
+func (s *testingSuite) TestHTTPRouteWeightedBackendsNoName() {
+	s.Run("weighted balancing without port names", func() {
+		// Test 2: Services without port names + balance service without name
+		s.applyOrFail("weighted/service-a-noname.yaml", testNamespace)
+		s.applyOrFail("weighted/service-b-noname.yaml", testNamespace)
+		s.applyOrFail("weighted/balance-service-noname.yaml", testNamespace)
+		s.applyOrFail("weighted/balance-httproute-noname-services.yaml", testNamespace)
+
+		s.useWaypointLabelForTest("svc", "balance-noname", testNamespace)
+		s.runWeightedTest("balance-noname")
+	})
+}
