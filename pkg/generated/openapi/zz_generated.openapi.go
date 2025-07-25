@@ -6543,7 +6543,7 @@ func schema_kgateway_v2_api_v1alpha1_TLS(ref common.ReferenceCallback) common.Op
 					},
 					"insecureSkipVerify": {
 						SchemaProps: spec.SchemaProps{
-							Description: "InsecureSkipVerify skips verification of the server's certificate.",
+							Description: "InsecureSkipVerify originates TLS but skips verification of the backend's certificate. WARNING: This is an insecure option that should only be used if the risks are understood.",
 							Type:        []string{"boolean"},
 							Format:      "",
 						},

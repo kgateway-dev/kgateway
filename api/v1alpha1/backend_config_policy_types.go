@@ -205,7 +205,8 @@ type TLS struct {
 	// +optional
 	TLSFiles *TLSFiles `json:"tlsFiles,omitempty"`
 
-	// InsecureSkipVerify skips verification of the server's certificate.
+	// InsecureSkipVerify originates TLS but skips verification of the backend's certificate.
+	// WARNING: This is an insecure option that should only be used if the risks are understood.
 	// +optional
 	InsecureSkipVerify *bool `json:"insecureSkipVerify,omitempty"`
 
