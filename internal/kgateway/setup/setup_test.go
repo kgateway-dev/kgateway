@@ -96,7 +96,7 @@ var (
 // on each test, set the *testing.T on the writer.
 func NewTestLogger() *zap.Logger {
 	var core zapcore.Core
-	// Only log controller-runtime and gRPC logs if DEBUG_LOGS=true, otherwise they are extremely noisy
+	// Only log controller-runtime and gRPC logs if LOG_LEVEL=debug, otherwise they are extremely noisy
 	level, err := zapcore.ParseLevel(envutils.GetOrDefault("LOG_LEVEL", "error", false))
 	if err != nil {
 		panic(fmt.Sprintf("failed to parse LOG_LEVEL: %v", err))

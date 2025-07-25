@@ -78,6 +78,7 @@ func reportPolicyAttachmentStatus(
 		if !mergeOrigins.IsSet() {
 			// Not a merged policy so this should be a direct attachment
 			r.SetAttachmentState(reporter.PolicyAttachmentStateAttached)
+			continue
 		}
 
 		switch mergeOrigins.GetRefCount(policy.PolicyRef) {

@@ -34,7 +34,8 @@ func (m MergeOrigins) Get(
 }
 
 // SetOne updates the policy refs for the field with the given ref or MergeOrigins
-// if the ref is nil
+// if the ref is nil.
+// This should be used with shallow merging.
 func (m MergeOrigins) SetOne(
 	field string,
 	policyRef *AttachedPolicyRef,
@@ -48,7 +49,8 @@ func (m MergeOrigins) SetOne(
 }
 
 // Append updates the policy refs for the field by appending the given ref or
-// MergeOrigins if the ref is nil
+// MergeOrigins if the ref is nil.
+// This should be used with deep merging.
 func (m MergeOrigins) Append(
 	field string,
 	policyRef *AttachedPolicyRef,
