@@ -10,8 +10,10 @@ import (
 )
 
 var (
+	ErrInvalidTlsSecret = errors.New("invalid TLS secret")
+
 	InvalidTlsSecretError = func(n, ns string, err error) error {
-		return fmt.Errorf("%v.%v is not a valid TLS secret: %w", ns, n, err)
+		return fmt.Errorf("%w %s/%s: %v", ErrInvalidTlsSecret, ns, n, err)
 	}
 
 	NoCertificateFoundError = errors.New("no certificate information found")

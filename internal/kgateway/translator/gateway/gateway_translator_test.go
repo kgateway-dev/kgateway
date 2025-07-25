@@ -98,12 +98,15 @@ var _ = DescribeTable("Basic",
 							{
 								Name: "https",
 							},
+							{
+								Name: "https2",
+							},
 						},
 					},
 				}
 				gatewayStatus := reportsMap.BuildGWStatus(context.Background(), *gateway)
 				Expect(gatewayStatus).NotTo(BeNil())
-				Expect(gatewayStatus.Listeners).To(HaveLen(1))
+				Expect(gatewayStatus.Listeners).To(HaveLen(2))
 				httpsListener := gatewayStatus.Listeners[0]
 				resolvedRefs := meta.FindStatusCondition(httpsListener.Conditions, string(gwv1.ListenerConditionResolvedRefs))
 				Expect(resolvedRefs).NotTo(BeNil())
@@ -116,6 +119,13 @@ var _ = DescribeTable("Basic",
 				Expect(programmed.Status).To(Equal(metav1.ConditionFalse))
 				Expect(programmed.Reason).To(Equal(string(gwv1.ListenerReasonInvalid)))
 				Expect(programmed.Message).To(Equal("Secret default/missing-cert not found."))
+
+				https2Listener := gatewayStatus.Listeners[1]
+				resolvedRefs = meta.FindStatusCondition(https2Listener.Conditions, string(gwv1.ListenerConditionResolvedRefs))
+				Expect(resolvedRefs).NotTo(BeNil())
+				Expect(resolvedRefs.Status).To(Equal(metav1.ConditionFalse))
+				Expect(resolvedRefs.Reason).To(Equal(string(gwv1.ListenerReasonInvalidCertificateRef)))
+				Expect(resolvedRefs.Message).To(Equal("invalid TLS secret default/invalid-cert: tls: failed to find any PEM data in key input"))
 			},
 		}),
 	Entry(

@@ -734,6 +734,9 @@ func (httpsFilterChain *httpsFilterChain) translateHttpsFilterChain(
 			reason = gwv1.ListenerReasonRefNotPermitted
 			message = "Reference not permitted by ReferenceGrant."
 		}
+		if errors.Is(err, sslutils.ErrInvalidTlsSecret) {
+			message = err.Error()
+		}
 		var notFoundErr *krtcollections.NotFoundError
 		if errors.As(err, &notFoundErr) {
 			message = fmt.Sprintf("Secret %s/%s not found.", notFoundErr.NotFoundObj.Namespace, notFoundErr.NotFoundObj.Name)
