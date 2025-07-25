@@ -24,6 +24,7 @@ const (
 type PolicyAttachmentState int
 
 const (
+	// PolicyAttachmentStatePending indicates that the policy is pending attachment
 	PolicyAttachmentStatePending PolicyAttachmentState = iota
 
 	// PolicyAttachmentStateSucceeded indicates that the full policy was successfully attached
@@ -40,12 +41,6 @@ const (
 // Has checks if the existing state has the given state
 func (a PolicyAttachmentState) Has(b PolicyAttachmentState) bool {
 	return a&b != 0
-}
-
-type PolicyAttachmentStats struct {
-	Success    uint16
-	Invalid    uint16
-	Conflicted uint16
 }
 
 type PolicyCondition struct {

@@ -298,9 +298,9 @@ func TestPolicyStatusReport(t *testing.T) {
 						Conditions: []metav1.Condition{
 							{
 								ObservedGeneration: 1,
-								Type:               string(gwv1alpha2.PolicyConditionAccepted),
+								Type:               string(v1alpha1.PolicyConditionAccepted),
 								Status:             metav1.ConditionFalse,
-								Reason:             string(gwv1alpha2.PolicyReasonAccepted),
+								Reason:             string(v1alpha1.PolicyReasonInvalid),
 							},
 						},
 					},

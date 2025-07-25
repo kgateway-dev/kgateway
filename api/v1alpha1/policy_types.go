@@ -52,7 +52,6 @@ const (
 	// with another policy of higher priority.
 	PolicyReasonDiscarded PolicyConditionReason = "Discarded"
 
-	// PolicyReasonPending is used with the "Accepted" or "Attached" condition when the policy is pending
-	// acceptance or attachment respectively.
+	// PolicyReasonPending is used with the "Accepted" or "Attached" condition when the policy has been referenced but not yet fully processed by the controller.
 	PolicyReasonPending PolicyConditionReason = "Pending"
 )
