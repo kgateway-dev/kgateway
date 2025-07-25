@@ -12,29 +12,12 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics/metricstest"
 )
 
+const (
+	testTranslatorName = "test-translator"
+)
+
 func setupTest() {
 	ResetMetrics()
-}
-
-func TestNewTranslatorRecorder(t *testing.T) {
-	setupTest()
-
-	translatorName := "test-translator"
-	m := NewTranslatorMetricsRecorder(translatorName)
-
-	finishFunc := m.TranslationStart()
-	finishFunc(nil)
-
-	expectedMetrics := []string{
-		"kgateway_translator_translations_total",
-		"kgateway_translator_translation_duration_seconds",
-		"kgateway_translator_translations_running",
-	}
-
-	currentMetrics := metricstest.MustGatherMetrics(t)
-	for _, expected := range expectedMetrics {
-		currentMetrics.AssertMetricExists(expected)
-	}
 }
 
 func assertTranslationsRunning(currentMetrics metricstest.GatheredMetrics, translatorName string, count int) {
@@ -46,65 +29,64 @@ func assertTranslationsRunning(currentMetrics metricstest.GatheredMetrics, trans
 	})
 }
 
-func TestTranslationStart_Success(t *testing.T) {
+func TestCollectTranslationMetrics_Success(t *testing.T) {
 	setupTest()
 
-	m := NewTranslatorMetricsRecorder("test-translator")
-
 	// Start translation
-	finishFunc := m.TranslationStart()
-	time.Sleep(10 * time.Millisecond)
+	finishFunc := CollectTranslationMetrics(testTranslatorName)
 
 	// Check that the translations_running metric is 1
 	currentMetrics := metricstest.MustGatherMetrics(t)
-	assertTranslationsRunning(currentMetrics, "test-translator", 1)
+	assertTranslationsRunning(currentMetrics, testTranslatorName, 1)
 
 	// Finish translation
 	finishFunc(nil)
-	time.Sleep(10 * time.Millisecond)
 	currentMetrics = metricstest.MustGatherMetrics(t)
 
 	// Check the translations_running metric
-	assertTranslationsRunning(currentMetrics, "test-translator", 0)
+	assertTranslationsRunning(currentMetrics, testTranslatorName, 0)
 
 	currentMetrics.AssertMetric("kgateway_translator_translations_total", &metricstest.ExpectedMetric{
 		Labels: []metrics.Label{
 			{Name: "result", Value: "success"},
-			{Name: "translator", Value: "test-translator"},
+			{Name: "translator", Value: testTranslatorName},
 		},
 		Value: 1,
 	})
 
 	// Check the translation_duration_seconds metric
 	currentMetrics.AssertMetricLabels("kgateway_translator_translation_duration_seconds", []metrics.Label{
-		{Name: "translator", Value: "test-translator"},
+		{Name: "translator", Value: testTranslatorName},
 	})
 	currentMetrics.AssertHistogramPopulated("kgateway_translator_translation_duration_seconds")
 }
 
-func TestTranslationStart_Error(t *testing.T) {
+func TestCollectTranslationMetrics_Error(t *testing.T) {
 	setupTest()
 
-	m := NewTranslatorMetricsRecorder("test-translator")
+	finishFunc := CollectTranslationMetrics(testTranslatorName)
 
-	finishFunc := m.TranslationStart()
 	currentMetrics := metricstest.MustGatherMetrics(t)
-	assertTranslationsRunning(currentMetrics, "test-translator", 1)
+	assertTranslationsRunning(currentMetrics, testTranslatorName, 1)
 
 	finishFunc(assert.AnError)
 	currentMetrics = metricstest.MustGatherMetrics(t)
-	assertTranslationsRunning(currentMetrics, "test-translator", 0)
+	assertTranslationsRunning(currentMetrics, testTranslatorName, 0)
 
 	currentMetrics.AssertMetric(
 		"kgateway_translator_translations_total",
 		&metricstest.ExpectedMetric{
 			Labels: []metrics.Label{
 				{Name: "result", Value: "error"},
-				{Name: "translator", Value: "test-translator"},
+				{Name: "translator", Value: testTranslatorName},
 			},
 			Value: 1,
 		},
 	)
+
+	currentMetrics.AssertMetricLabels("kgateway_translator_translation_duration_seconds", []metrics.Label{
+		{Name: "translator", Value: testTranslatorName},
+	})
 	currentMetrics.AssertHistogramPopulated("kgateway_translator_translation_duration_seconds")
 }
 
@@ -154,9 +136,11 @@ func TestResourceSync(t *testing.T) {
 
 	EndResourceSync(details, false, resourcesStatusSyncsCompletedTotal, resourcesStatusSyncDuration)
 
-	time.Sleep(50 * time.Millisecond) // Allow some time for metrics to be processed.
-
-	gathered := metricstest.MustGatherMetrics(t)
+	gathered := metricstest.MustGatherMetricsContext(ctx, t,
+		"kgateway_resources_syncs_started_total",
+		"kgateway_resources_status_syncs_completed_total",
+		"kgateway_resources_status_sync_duration_seconds",
+	)
 
 	gathered.AssertMetric("kgateway_resources_syncs_started_total", &metricstest.ExpectedMetric{
 		Labels: []metrics.Label{
@@ -206,9 +190,12 @@ func TestResourceSync(t *testing.T) {
 
 	EndResourceSync(details, true, resourcesXDSSyncsTotal, resourcesXDSyncDuration)
 
-	time.Sleep(50 * time.Millisecond) // Allow some time for metrics to be processed.
-
-	gathered = metricstest.MustGatherMetrics(t)
+	gathered = metricstest.MustGatherMetricsContext(ctx, t,
+		"kgateway_resources_syncs_started_total",
+		"kgateway_xds_snapshot_syncs_total",
+		"kgateway_resources_xds_snapshot_syncs_total",
+		"kgateway_resources_xds_snapshot_sync_duration_seconds",
+	)
 
 	gathered.AssertMetric("kgateway_resources_syncs_started_total", &metricstest.ExpectedMetric{
 		Labels: []metrics.Label{
@@ -247,10 +234,9 @@ func TestResourceSync(t *testing.T) {
 func TestSyncChannelFull(t *testing.T) {
 	setupTest()
 
-	m := NewTranslatorMetricsRecorder("test-translator")
-
 	// Start translation
-	m.TranslationStart()
+	finishFunc := CollectTranslationMetrics(testTranslatorName)
+	defer finishFunc(nil)
 
 	details := ResourceSyncDetails{
 		Gateway:      "test-gateway",
@@ -319,27 +305,17 @@ func TestTranslationMetricsNotActive(t *testing.T) {
 
 	assert.False(t, metrics.Active())
 
-	m := NewTranslatorMetricsRecorder("test-translator")
+	finishFunc := CollectTranslationMetrics("test-translator")
 
-	// Start translation
-	finishFunc := m.TranslationStart()
-	time.Sleep(10 * time.Millisecond)
-
-	// Check that the translations_running metric is 1
 	currentMetrics := metricstest.MustGatherMetrics(t)
+
 	currentMetrics.AssertMetricNotExists("kgateway_translator_translations_running")
 
-	// Finish translation
 	finishFunc(nil)
-	time.Sleep(10 * time.Millisecond)
+
 	currentMetrics = metricstest.MustGatherMetrics(t)
 
-	// Check the translations_running metric
 	currentMetrics.AssertMetricNotExists("kgateway_translator_translations_running")
-
-	// Check the translations_total metric
 	currentMetrics.AssertMetricNotExists("kgateway_translator_translations_total")
-
-	// Check the translation_duration_seconds metric
 	currentMetrics.AssertMetricNotExists("kgateway_translator_translation_duration_seconds")
 }

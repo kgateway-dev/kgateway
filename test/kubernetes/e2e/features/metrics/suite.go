@@ -71,9 +71,9 @@ func (s *testingSuite) TestMetrics() {
 		&testmatchers.HttpResponse{
 			StatusCode: http.StatusOK,
 			Body: gomega.And(
-				gomega.MatchRegexp(`kgateway_controller_reconcile_duration_seconds_count\{controller=\"gateway\"\} \d+`),
-				gomega.MatchRegexp(`kgateway_controller_reconciliations_total\{controller=\"gateway\",result=\"success\"\} \d+`),
-				gomega.MatchRegexp(`kgateway_controller_reconciliations_running\{controller=\"gateway\"} 0`),
+				gomega.MatchRegexp(`kgateway_controller_reconcile_duration_seconds_count\{controller=\"gateway\",namespace=\"default\"\} \d+`),
+				gomega.MatchRegexp(`kgateway_controller_reconciliations_total\{controller=\"gateway\",namespace=\"default\",result=\"success\"\} \d+`),
+				gomega.MatchRegexp(`kgateway_controller_reconciliations_running\{controller=\"gateway\",namespace=\"default\"\} 0`),
 				gomega.MatchRegexp(`kgateway_resources_managed\{namespace=\"default\",parent=\"gw1\",resource=\"Gateway\"} 1`),
 				gomega.MatchRegexp(`kgateway_resources_managed\{namespace=\"default\",parent=\"gw1\",resource=\"HTTPRoute\"} 2`),
 				gomega.MatchRegexp(`kgateway_resources_managed\{namespace=\"default\",parent=\"gw1\",resource=\"XListenerSet\"} 1`),

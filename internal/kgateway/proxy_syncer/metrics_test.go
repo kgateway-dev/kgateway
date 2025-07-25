@@ -27,34 +27,10 @@ func setupTest() {
 	tmetrics.ResetMetrics()
 }
 
-func TestNewStatusSyncRecorder(t *testing.T) {
+func TestCollectStatusSyncMetrics_Success(t *testing.T) {
 	setupTest()
 
-	syncerName := "test-syncer"
-	m := newStatusSyncMetricsRecorder(syncerName)
-
-	finishFunc := m.StatusSyncStart()
-	finishFunc(nil)
-
-	expectedMetrics := []string{
-		"kgateway_status_syncer_status_syncs_total",
-		"kgateway_status_syncer_status_sync_duration_seconds",
-	}
-
-	currentMetrics := metricstest.MustGatherMetrics(t)
-
-	for _, expected := range expectedMetrics {
-		currentMetrics.AssertMetricExists(expected)
-	}
-}
-
-func TestStatusSyncStart_Success(t *testing.T) {
-	setupTest()
-
-	m := newStatusSyncMetricsRecorder("test-syncer")
-
-	finishFunc := m.StatusSyncStart()
-	time.Sleep(10 * time.Millisecond)
+	finishFunc := collectStatusSyncMetrics("test-syncer")
 	finishFunc(nil)
 
 	currentMetrics := metricstest.MustGatherMetrics(t)
@@ -73,12 +49,10 @@ func TestStatusSyncStart_Success(t *testing.T) {
 	currentMetrics.AssertHistogramPopulated("kgateway_status_syncer_status_sync_duration_seconds")
 }
 
-func TesStatusSyncStart_Error(t *testing.T) {
+func TestCollectStatusSyncMetrics_Error(t *testing.T) {
 	setupTest()
 
-	m := newStatusSyncMetricsRecorder("test-syncer")
-
-	finishFunc := m.StatusSyncStart()
+	finishFunc := collectStatusSyncMetrics("test-syncer")
 	finishFunc(assert.AnError)
 
 	currentMetrics := metricstest.MustGatherMetrics(t)
@@ -90,7 +64,11 @@ func TesStatusSyncStart_Error(t *testing.T) {
 		},
 		Value: 1,
 	})
-	currentMetrics.AssertMetricNotExists("kgateway_status_syncer_status_sync_duration_seconds")
+
+	currentMetrics.AssertMetricLabels("kgateway_status_syncer_status_sync_duration_seconds", []metrics.Label{
+		{Name: "syncer", Value: "test-syncer"},
+	})
+	currentMetrics.AssertHistogramPopulated("kgateway_status_syncer_status_sync_duration_seconds")
 }
 
 func TestXDSSnapshotsCollectionMetrics(t *testing.T) {
@@ -223,9 +201,15 @@ func TestXDSSnapshotsCollectionMetrics(t *testing.T) {
 				})
 
 			c.WaitUntilSynced(nil)
-			time.Sleep(5 * time.Millisecond) // Allow some time all for events to process.
 
-			gathered := metricstest.MustGatherMetrics(t)
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+			defer cancel()
+
+			gathered := metricstest.MustGatherMetricsContext(ctx, t,
+				"kgateway_xds_snapshot_transforms_total",
+				"kgateway_xds_snapshot_transform_duration_seconds",
+				"kgateway_xds_snapshot_resources",
+			)
 
 			gathered.AssertMetric("kgateway_xds_snapshot_transforms_total", &metricstest.ExpectedMetric{
 				Labels: []metrics.Label{
@@ -305,9 +289,11 @@ func TestResourceSyncMetrics(t *testing.T) {
 		ResourceName: testName,
 	}, false, resourcesXDSSyncsTotal, resourcesXDSyncDuration)
 
-	time.Sleep(50 * time.Millisecond) // Allow some time for metrics to be processed.
-
-	gathered := metricstest.MustGatherMetrics(t)
+	gathered := metricstest.MustGatherMetricsContext(ctx, t,
+		"kgateway_resources_syncs_started_total",
+		"kgateway_resources_xds_snapshot_syncs_total",
+		"kgateway_resources_xds_snapshot_sync_duration_seconds",
+	)
 
 	gathered.AssertMetric("kgateway_resources_syncs_started_total", &metricstest.ExpectedMetric{
 		Labels: []metrics.Label{

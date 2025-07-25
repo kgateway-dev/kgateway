@@ -31,16 +31,15 @@ type gatewayReconciler struct {
 
 	scheme   *runtime.Scheme
 	deployer *deployer.Deployer
-	metrics  controllerMetricsRecorder
 }
 
 func (r *gatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.Result, rErr error) {
 	log := log.FromContext(ctx).WithValues("gw", req.NamespacedName)
 	log.V(1).Info("reconciling request", "req", req)
 
-	if r.metrics != nil {
-		defer r.metrics.reconcileStart()(rErr)
-	}
+	defer func() {
+		collectReconciliationMetrics("gateway", req)(rErr)
+	}()
 
 	// check if we need to auto deploy the gateway
 	ns := req.Namespace

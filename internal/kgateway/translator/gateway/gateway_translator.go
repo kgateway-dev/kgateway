@@ -28,14 +28,12 @@ func NewTranslator(queries query.GatewayQueries, settings TranslatorConfig) exte
 	return &translator{
 		queries:  queries,
 		settings: settings,
-		metrics:  metrics.NewTranslatorMetricsRecorder("TranslateGateway"),
 	}
 }
 
 type translator struct {
 	queries  query.GatewayQueries
 	settings TranslatorConfig
-	metrics  metrics.TranslatorMetricsRecorder
 }
 
 func (t *translator) Translate(
@@ -48,7 +46,7 @@ func (t *translator) Translate(
 	stopwatch.Start()
 	defer stopwatch.Stop(ctx)
 
-	defer t.metrics.TranslationStart()(nil)
+	defer metrics.CollectTranslationMetrics("TranslateGateway")(nil)
 
 	routesForGw, err := t.queries.GetRoutesForGateway(kctx, ctx, gateway)
 	if err != nil {
