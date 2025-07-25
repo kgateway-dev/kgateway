@@ -59,15 +59,6 @@ clusters:
             defaultValidationContext: {}
             validationContextSdsSecretConfig:
               name: SYSTEM_CA_CERT
-  - match:
-      tls: skipverification
-    name: tls
-    transportSocket:
-      name: envoy.transport_sockets.tls
-      typedConfig:
-        '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
-        autoHostSni: true
-        commonTlsContext: {}
   - match: {}
     name: plaintext
     transportSocket:
@@ -129,15 +120,6 @@ clusters:
             defaultValidationContext: {}
             validationContextSdsSecretConfig:
               name: SYSTEM_CA_CERT
-  - match:
-      tls: skipverification
-    name: tls
-    transportSocket:
-      name: envoy.transport_sockets.tls
-      typedConfig:
-        '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
-        autoHostSni: true
-        commonTlsContext: {}
   - match: {}
     name: plaintext
     transportSocket:

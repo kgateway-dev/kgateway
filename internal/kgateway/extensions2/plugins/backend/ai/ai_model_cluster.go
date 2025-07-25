@@ -165,34 +165,11 @@ func buildModelCluster(aiUs *v1alpha1.AIBackend, aiSecret *ir.Secret, multiSecre
 		Match: tlsMatch("default"),
 	}
 
-	// Skip verification if explicitly requested
-	// Note: We don't set ValidationContextType at all, which effectively disables verification
-	tlsContextSkipValidation := &envoytlsv3.UpstreamTlsContext{
-		CommonTlsContext: &envoytlsv3.CommonTlsContext{},
-		AutoHostSni:      true,
-	}
-	tlsCtxSkipValidationAny, err := utils.MessageToAny(tlsContextSkipValidation)
-	if err != nil {
-		return err
-	}
-	tsMatchSkipValidation := &envoyclusterv3.Cluster_TransportSocketMatch{
-		Name: "tls",
-		TransportSocket: &envoycorev3.TransportSocket{
-			Name: wellknown.TransportSocketTls,
-			ConfigType: &envoycorev3.TransportSocket_TypedConfig{
-				TypedConfig: tlsCtxSkipValidationAny,
-			},
-		},
-		Match: tlsMatch("skipverification"),
-	}
-
-	// First attempt to match tls or if skip verification is enabled. The default match is always plaintext
+	// First attempt to match tls. The default match is always plaintext
 	// append all transport socket matches
 	out.TransportSocketMatches = append(out.GetTransportSocketMatches(), []*envoyclusterv3.Cluster_TransportSocketMatch{
 		// attempt to match tls default if match is set
 		tlsMatchDefault,
-		// attempt to match tls skip validation if match is set and skip verification is true
-		tsMatchSkipValidation,
 		// add the plaintext default match
 		{
 			Name: "plaintext",
@@ -350,7 +327,6 @@ func buildLocalityLbEndpoint(
 	hostOverride *v1alpha1.Host,
 	metadata *envoycorev3.Metadata,
 ) *envoyendpointv3.LbEndpoint {
-	var insecureSkipVerify bool
 	if hostOverride != nil {
 		if hostOverride.Host != "" {
 			host = hostOverride.Host
@@ -358,25 +334,13 @@ func buildLocalityLbEndpoint(
 		if hostOverride.Port != 0 {
 			port = int32(hostOverride.Port)
 		}
-		if hostOverride.InsecureSkipVerify != nil {
-			insecureSkipVerify = *hostOverride.InsecureSkipVerify
-		}
 	}
 	if port == tlsPort {
-		if !insecureSkipVerify {
-			// Used for transport socket matching with validation
-			metadata.GetFilterMetadata()["envoy.transport_socket_match"] = &structpb.Struct{
-				Fields: map[string]*structpb.Value{
-					"tls": structpb.NewStringValue("default"),
-				},
-			}
-		} else {
-			// Used for transport socket matching with skipverification
-			metadata.GetFilterMetadata()["envoy.transport_socket_match"] = &structpb.Struct{
-				Fields: map[string]*structpb.Value{
-					"tls": structpb.NewStringValue("skipverification"),
-				},
-			}
+		// Used for transport socket matching with validation
+		metadata.GetFilterMetadata()["envoy.transport_socket_match"] = &structpb.Struct{
+			Fields: map[string]*structpb.Value{
+				"tls": structpb.NewStringValue("default"),
+			},
 		}
 	}
 

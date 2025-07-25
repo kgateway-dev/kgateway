@@ -4103,13 +4103,6 @@ func schema_kgateway_v2_api_v1alpha1_Host(ref common.ReferenceCallback) common.O
 							Format:      "int32",
 						},
 					},
-					"insecureSkipVerify": {
-						SchemaProps: spec.SchemaProps{
-							Description: "InsecureSkipVerify allows skipping ssl validation for custom hosts",
-							Type:        []string{"boolean"},
-							Format:      "",
-						},
-					},
 				},
 				Required: []string{"host", "port"},
 			},

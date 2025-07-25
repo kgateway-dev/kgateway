@@ -229,9 +229,6 @@ type Host struct {
 	// Port is the port to use for the backend.
 	// +required
 	Port gwv1.PortNumber `json:"port"`
-	// InsecureSkipVerify allows skipping ssl validation for custom hosts
-	// +optional
-	InsecureSkipVerify *bool `json:"insecureSkipVerify,omitempty"`
 }
 
 // BackendStatus defines the observed state of Backend.
