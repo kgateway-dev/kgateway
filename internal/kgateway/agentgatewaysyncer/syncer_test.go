@@ -7,12 +7,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
-
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
 )
 
 func TestBuildADPFilters(t *testing.T) {
@@ -174,14 +171,14 @@ func TestBuildADPFilters(t *testing.T) {
 func TestGetProtocolAndTLSConfig(t *testing.T) {
 	testCases := []struct {
 		name          string
-		gateway       Gateway
+		gateway       GatewayListener
 		expectedProto api.Protocol
 		expectedTLS   *api.TLSConfig
 		expectedOk    bool
 	}{
 		{
 			name: "HTTP protocol",
-			gateway: Gateway{
+			gateway: GatewayListener{
 				parentInfo: parentInfo{
 					Protocol: gwv1.HTTPProtocolType,
 				},
@@ -193,7 +190,7 @@ func TestGetProtocolAndTLSConfig(t *testing.T) {
 		},
 		{
 			name: "HTTPS protocol with TLS",
-			gateway: Gateway{
+			gateway: GatewayListener{
 				parentInfo: parentInfo{
 					Protocol: gwv1.HTTPSProtocolType,
 				},
@@ -211,7 +208,7 @@ func TestGetProtocolAndTLSConfig(t *testing.T) {
 		},
 		{
 			name: "HTTPS protocol without TLS (should fail)",
-			gateway: Gateway{
+			gateway: GatewayListener{
 				parentInfo: parentInfo{
 					Protocol: gwv1.HTTPSProtocolType,
 				},
@@ -223,7 +220,7 @@ func TestGetProtocolAndTLSConfig(t *testing.T) {
 		},
 		{
 			name: "TCP protocol",
-			gateway: Gateway{
+			gateway: GatewayListener{
 				parentInfo: parentInfo{
 					Protocol: gwv1.TCPProtocolType,
 				},
@@ -235,7 +232,7 @@ func TestGetProtocolAndTLSConfig(t *testing.T) {
 		},
 		{
 			name: "TLS protocol with TLS",
-			gateway: Gateway{
+			gateway: GatewayListener{
 				parentInfo: parentInfo{
 					Protocol: gwv1.TLSProtocolType,
 				},
@@ -274,365 +271,87 @@ func TestGetProtocolAndTLSConfig(t *testing.T) {
 	}
 }
 
-func TestADPResourceCreation(t *testing.T) {
-	testCases := []struct {
-		name                 string
-		expectedResource     *api.Resource
-		expectedResourceName string
-	}{
-		{
-			name: "Create ADPBind resource",
-			expectedResource: &api.Resource{
-				Kind: &api.Resource_Bind{
-					Bind: &api.Bind{
-						Key:  "8080/default/test-gateway",
-						Port: 8080,
-					},
-				},
-			},
-			expectedResourceName: "bind/8080/default/test-gateway",
-		},
-		{
-			name: "Create Listener resource",
-			expectedResource: &api.Resource{
-				Kind: &api.Resource_Listener{
-					Listener: &api.Listener{
-						Key:         "default/test-gateway",
-						Name:        "http",
-						BindKey:     "8080/default/test-gateway",
-						GatewayName: "default/test-gateway",
-						Protocol:    api.Protocol_HTTP,
-						Hostname:    "example.com",
-					},
-				},
-			},
-			expectedResourceName: "listener/default/test-gateway",
-		},
-		{
-			name: "Create Route resource",
-			expectedResource: &api.Resource{
-				Kind: &api.Resource_Route{
-					Route: &api.Route{
-						Key:         "default.test-route.0.0",
-						RouteName:   "default/test-route",
-						ListenerKey: "http",
-						Hostnames:   []string{"example.com"},
-						Matches: []*api.RouteMatch{
-							{
-								Path: &api.PathMatch{
-									Kind: &api.PathMatch_PathPrefix{
-										PathPrefix: "/api",
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			expectedResourceName: "route/default.test-route.0.0",
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			gateway := types.NamespacedName{
-				Name:      "test-gateway",
-				Namespace: "default",
-			}
-
-			adpResource := ADPResource{
-				Resource: tc.expectedResource,
-				Gateway:  gateway,
-			}
-
-			assert.Equal(t, tc.expectedResourceName, adpResource.ResourceName())
-
-			// Test that two identical resources are equal
-			adpResource2 := ADPResource{
-				Resource: tc.expectedResource,
-				Gateway:  gateway,
-			}
-			assert.True(t, adpResource.Equals(adpResource2))
-		})
-	}
-}
-
-func TestMergeProxyReports(t *testing.T) {
-	tests := []struct {
-		name     string
-		proxies  []agentGwXdsResources
-		expected reports.ReportMap
-	}{
-		{
-			name: "Merge HTTPRoute reports for different parents",
-			proxies: []agentGwXdsResources{
-				{
-					reports: reports.ReportMap{
-						HTTPRoutes: map[types.NamespacedName]*reports.RouteReport{
-							{Name: "route1", Namespace: "default"}: {
-								Parents: map[reports.ParentRefKey]*reports.ParentRefReport{
-									{NamespacedName: types.NamespacedName{Name: "gw-1", Namespace: "default"}}: {
-										Conditions: []metav1.Condition{
-											{
-												Type:   "Accepted",
-												Status: metav1.ConditionTrue,
-												Reason: "Accepted",
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-				{
-					reports: reports.ReportMap{
-						HTTPRoutes: map[types.NamespacedName]*reports.RouteReport{
-							{Name: "route1", Namespace: "default"}: {
-								Parents: map[reports.ParentRefKey]*reports.ParentRefReport{
-									{NamespacedName: types.NamespacedName{Name: "gw-2", Namespace: "default"}}: {
-										Conditions: []metav1.Condition{
-											{
-												Type:   "Accepted",
-												Status: metav1.ConditionTrue,
-												Reason: "Accepted",
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			expected: reports.ReportMap{
-				HTTPRoutes: map[types.NamespacedName]*reports.RouteReport{
-					{Name: "route1", Namespace: "default"}: {
-						Parents: map[reports.ParentRefKey]*reports.ParentRefReport{
-							{NamespacedName: types.NamespacedName{Name: "gw-1", Namespace: "default"}}: {
-								Conditions: []metav1.Condition{
-									{
-										Type:   "Accepted",
-										Status: metav1.ConditionTrue,
-										Reason: "Accepted",
-									},
-								},
-							},
-							{NamespacedName: types.NamespacedName{Name: "gw-2", Namespace: "default"}}: {
-								Conditions: []metav1.Condition{
-									{
-										Type:   "Accepted",
-										Status: metav1.ConditionTrue,
-										Reason: "Accepted",
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		{
-			name: "Merge TCPRoute reports for different parents",
-			proxies: []agentGwXdsResources{
-				{
-					reports: reports.ReportMap{
-						TCPRoutes: map[types.NamespacedName]*reports.RouteReport{
-							{Name: "route1", Namespace: "default"}: {
-								Parents: map[reports.ParentRefKey]*reports.ParentRefReport{
-									{NamespacedName: types.NamespacedName{Name: "gw-1", Namespace: "default"}}: {
-										Conditions: []metav1.Condition{
-											{
-												Type:   "Accepted",
-												Status: metav1.ConditionTrue,
-												Reason: "Accepted",
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-				{
-					reports: reports.ReportMap{
-						TCPRoutes: map[types.NamespacedName]*reports.RouteReport{
-							{Name: "route1", Namespace: "default"}: {
-								Parents: map[reports.ParentRefKey]*reports.ParentRefReport{
-									{NamespacedName: types.NamespacedName{Name: "gw-2", Namespace: "default"}}: {
-										Conditions: []metav1.Condition{
-											{
-												Type:   "Accepted",
-												Status: metav1.ConditionTrue,
-												Reason: "Accepted",
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			expected: reports.ReportMap{
-				TCPRoutes: map[types.NamespacedName]*reports.RouteReport{
-					{Name: "route1", Namespace: "default"}: {
-						Parents: map[reports.ParentRefKey]*reports.ParentRefReport{
-							{NamespacedName: types.NamespacedName{Name: "gw-1", Namespace: "default"}}: {
-								Conditions: []metav1.Condition{
-									{
-										Type:   "Accepted",
-										Status: metav1.ConditionTrue,
-										Reason: "Accepted",
-									},
-								},
-							},
-							{NamespacedName: types.NamespacedName{Name: "gw-2", Namespace: "default"}}: {
-								Conditions: []metav1.Condition{
-									{
-										Type:   "Accepted",
-										Status: metav1.ConditionTrue,
-										Reason: "Accepted",
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		{
-			name: "Merge Gateway reports from multiple proxies",
-			proxies: []agentGwXdsResources{
-				{
-					reports: reports.ReportMap{
-						Gateways: map[types.NamespacedName]*reports.GatewayReport{
-							{Name: "gw1", Namespace: "default"}: {},
-						},
-					},
-				},
-				{
-					reports: reports.ReportMap{
-						Gateways: map[types.NamespacedName]*reports.GatewayReport{
-							{Name: "gw2", Namespace: "default"}: {},
-						},
-					},
-				},
-			},
-			expected: reports.ReportMap{
-				Gateways: map[types.NamespacedName]*reports.GatewayReport{
-					{Name: "gw1", Namespace: "default"}: {},
-					{Name: "gw2", Namespace: "default"}: {},
-				},
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			a := assert.New(t)
-
-			actual := mergeProxyReports(tt.proxies)
-			if tt.expected.HTTPRoutes != nil {
-				a.Equal(tt.expected.HTTPRoutes, actual.HTTPRoutes)
-			}
-			if tt.expected.TCPRoutes != nil {
-				a.Equal(tt.expected.TCPRoutes, actual.TCPRoutes)
-			}
-			if tt.expected.TLSRoutes != nil {
-				a.Equal(tt.expected.TLSRoutes, actual.TLSRoutes)
-			}
-			if tt.expected.GRPCRoutes != nil {
-				a.Equal(tt.expected.GRPCRoutes, actual.GRPCRoutes)
-			}
-			if tt.expected.Gateways != nil {
-				a.Equal(tt.expected.Gateways, actual.Gateways)
-			}
-		})
-	}
-}
-
-func TestADPResourceEquals(t *testing.T) {
+func TestADPResourcesForGatewayEquals(t *testing.T) {
 	testCases := []struct {
 		name      string
-		resource1 ADPResource
-		resource2 ADPResource
+		resource1 ADPResourcesForGateway
+		resource2 ADPResourcesForGateway
 		expected  bool
 	}{
 		{
 			name: "Equal bind resources",
-			resource1: ADPResource{
-				Resource: &api.Resource{
+			resource1: ADPResourcesForGateway{
+				Resources: []*api.Resource{{
 					Kind: &api.Resource_Bind{
 						Bind: &api.Bind{
 							Key:  "test-key",
 							Port: 8080,
 						},
 					},
-				},
+				}},
 				Gateway: types.NamespacedName{Name: "test", Namespace: "default"},
 			},
-			resource2: ADPResource{
-				Resource: &api.Resource{
+			resource2: ADPResourcesForGateway{
+				Resources: []*api.Resource{{
 					Kind: &api.Resource_Bind{
 						Bind: &api.Bind{
 							Key:  "test-key",
 							Port: 8080,
 						},
 					},
-				},
+				}},
 				Gateway: types.NamespacedName{Name: "test", Namespace: "default"},
 			},
 			expected: true,
 		},
 		{
 			name: "Different gateway",
-			resource1: ADPResource{
-				Resource: &api.Resource{
+			resource1: ADPResourcesForGateway{
+				Resources: []*api.Resource{{
 					Kind: &api.Resource_Bind{
 						Bind: &api.Bind{
 							Key:  "test-key",
 							Port: 8080,
 						},
 					},
-				},
+				}},
 				Gateway: types.NamespacedName{Name: "test", Namespace: "default"},
 			},
-			resource2: ADPResource{
-				Resource: &api.Resource{
+			resource2: ADPResourcesForGateway{
+				Resources: []*api.Resource{{
 					Kind: &api.Resource_Bind{
 						Bind: &api.Bind{
 							Key:  "test-key",
 							Port: 8080,
 						},
 					},
-				},
+				}},
 				Gateway: types.NamespacedName{Name: "other", Namespace: "default"},
 			},
 			expected: false,
 		},
 		{
 			name: "Different resource port",
-			resource1: ADPResource{
-				Resource: &api.Resource{
+			resource1: ADPResourcesForGateway{
+				Resources: []*api.Resource{{
 					Kind: &api.Resource_Bind{
 						Bind: &api.Bind{
 							Key:  "test-key",
 							Port: 8080,
 						},
 					},
-				},
+				}},
 				Gateway: types.NamespacedName{Name: "test", Namespace: "default"},
 			},
-			resource2: ADPResource{
-				Resource: &api.Resource{
+			resource2: ADPResourcesForGateway{
+				Resources: []*api.Resource{{
 					Kind: &api.Resource_Bind{
 						Bind: &api.Bind{
 							Key:  "test-key",
 							Port: 9090,
 						},
 					},
-				},
+				}},
 				Gateway: types.NamespacedName{Name: "test", Namespace: "default"},
 			},
 			expected: false,
@@ -641,7 +360,7 @@ func TestADPResourceEquals(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			result := proto.Equal(tc.resource1.Resource, tc.resource2.Resource) && tc.resource1.Gateway == tc.resource2.Gateway
+			result := proto.Equal(tc.resource1.Resources[0], tc.resource2.Resources[0]) && tc.resource1.Gateway == tc.resource2.Gateway
 			assert.Equal(t, tc.expected, result)
 		})
 	}

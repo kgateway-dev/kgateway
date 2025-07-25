@@ -433,8 +433,6 @@ func buildADPDestination(
 				Status:  metav1.ConditionFalse,
 				Reason:  gwv1.RouteReasonBackendNotFound,
 				Message: fmt.Sprintf("backend(%s) not found", hostname)}
-		} else {
-			port = ptr.Of(gwv1.PortNumber(svc.Spec.TargetPortNumber))
 		}
 		rb.Kind = &api.RouteBackend_Service{Service: namespace + "/" + hostname}
 	case wellknown.ServiceGVK.GroupKind():
@@ -960,7 +958,7 @@ func buildListener(
 	}
 	server := &istio.Server{
 		Port: &istio.Port{
-			// Name is required. We only have one server per Gateway, so we can just name them all the same
+			// Name is required. We only have one server per GatewayListener, so we can just name them all the same
 			Name:     "default",
 			Number:   uint32(l.Port),
 			Protocol: protocol,

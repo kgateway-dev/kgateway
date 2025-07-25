@@ -1,6 +1,6 @@
 Name|Version|License
 ---|---|---
-[agentgateway/agentgateway](https://github.com/agentgateway/agentgateway)|v0.6.2-0.20250715223313-bb1fd20867d4|Apache License 2.0
+[agentgateway/agentgateway](https://github.com/agentgateway/agentgateway)|v0.6.2|Apache License 2.0
 [avast/retry-go](https://github.com/avast/retry-go)|v2.4.3+incompatible|MIT License
 [retry-go/v4](https://github.com/avast/retry-go)|v4.3.3|MIT License
 [xds/go](https://github.com/cncf/xds)|v0.0.0-20250121191232-2f005788dc42|Apache License 2.0

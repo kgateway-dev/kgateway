@@ -7,8 +7,8 @@ spec:
     agentGateway:
       enabled: true
       logLevel: trace
-      image:
-        tag: 114ed47
+#      image:
+#        tag: 114ed47
 ---
 kind: GatewayClass
 apiVersion: gateway.networking.k8s.io/v1
@@ -71,6 +71,7 @@ spec:
 #          port: 8000
 #          protocol: StreamableHTTP
 ---
+# curl localhost:8080/sse -v -H "host: www.example.com"
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: Backend
 metadata:

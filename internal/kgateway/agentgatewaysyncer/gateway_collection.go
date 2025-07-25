@@ -21,23 +21,38 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
 
-func toResourcepWithReports(gw types.NamespacedName, t any, reportMap reports.ReportMap) *ADPResource {
-	res := toResourceWithReports(gw, t, reportMap)
+func toResourcep(gw types.NamespacedName, resources []*api.Resource, rm reports.ReportMap) *ADPResourcesForGateway {
+	res := toResource(gw, resources, rm)
 	return &res
 }
 
-func toResourceWithReports(gw types.NamespacedName, t any, reportMap reports.ReportMap) ADPResource {
+func toADPResource(t any) *api.Resource {
 	switch tt := t.(type) {
 	case ADPBind:
-		return ADPResource{Resource: &api.Resource{Kind: &api.Resource_Bind{Bind: tt.Bind}}, Gateway: gw, reports: reportMap}
+		return &api.Resource{Kind: &api.Resource_Bind{Bind: tt.Bind}}
 	case ADPListener:
-		return ADPResource{Resource: &api.Resource{Kind: &api.Resource_Listener{Listener: tt.Listener}}, Gateway: gw, reports: reportMap}
-	case ADPBackend:
-		return ADPResource{Resource: &api.Resource{Kind: &api.Resource_Backend{Backend: tt.Backend}}, Gateway: gw, reports: reportMap}
+		return &api.Resource{Kind: &api.Resource_Listener{Listener: tt.Listener}}
 	case ADPRoute:
-		return ADPResource{Resource: &api.Resource{Kind: &api.Resource_Route{Route: tt.Route}}, Gateway: gw, reports: reportMap}
+		return &api.Resource{Kind: &api.Resource_Route{Route: tt.Route}}
 	}
 	panic("unknown resource kind")
+}
+
+func toResourceWithRoutes(gw types.NamespacedName, resources []*api.Resource, attachedRoutes map[string]uint, rm reports.ReportMap) ADPResourcesForGateway {
+	return ADPResourcesForGateway{
+		Resources:      resources,
+		Gateway:        gw,
+		report:         rm,
+		attachedRoutes: attachedRoutes,
+	}
+}
+
+func toResource(gw types.NamespacedName, resources []*api.Resource, rm reports.ReportMap) ADPResourcesForGateway {
+	return ADPResourcesForGateway{
+		Resources: resources,
+		Gateway:   gw,
+		report:    rm,
+	}
 }
 
 type ADPBind struct {
@@ -94,32 +109,36 @@ type TLSInfo struct {
 }
 
 type PortBindings struct {
-	Gateway
+	GatewayListener
 	Port string
 }
 
 func (g PortBindings) ResourceName() string {
-	return g.Gateway.Name
+	return g.GatewayListener.Name
 }
 
 func (g PortBindings) Equals(other PortBindings) bool {
-	return g.Gateway.Equals(other.Gateway) &&
+	return g.GatewayListener.Equals(other.GatewayListener) &&
 		g.Port == other.Port
 }
 
-type Gateway struct {
+// GatewayListener is a wrapper type that contains the listener on the gateway, as well as the status for the listener.
+// This allows binding to a specific listener.
+type GatewayListener struct {
 	*Config
 	parent     parentKey
 	parentInfo parentInfo
 	TLSInfo    *TLSInfo
 	Valid      bool
+	// status for the gateway listener
+	report reports.ReportMap
 }
 
-func (g Gateway) ResourceName() string {
+func (g GatewayListener) ResourceName() string {
 	return g.Config.Name
 }
 
-func (g Gateway) Equals(other Gateway) bool {
+func (g GatewayListener) Equals(other GatewayListener) bool {
 	// TODO: ok to ignore parent/parentInfo?
 	return g.Config.Equals(other.Config) &&
 		g.Valid == other.Valid
@@ -134,9 +153,10 @@ func GatewayCollection(
 	secrets krt.Collection[*corev1.Secret],
 	domainSuffix string,
 	krtopts krtutil.KrtOptions,
-	statusReporter reporter.Reporter,
-) krt.Collection[Gateway] {
-	gw := krt.NewManyCollection(gateways, func(ctx krt.HandlerContext, obj *gwv1.Gateway) []Gateway {
+) krt.Collection[GatewayListener] {
+	gw := krt.NewManyCollection(gateways, func(ctx krt.HandlerContext, obj *gwv1.Gateway) []GatewayListener {
+		rm := reports.NewReportMap()
+		statusReporter := reports.NewReporter(&rm)
 		gwReporter := statusReporter.Gateway(obj)
 		logger.Debug("translating Gateway", "gw_name", obj.GetName(), "resource_version", obj.GetResourceVersion())
 
@@ -144,7 +164,7 @@ func GatewayCollection(
 			return nil // ignore non agentgateway gws
 		}
 
-		var result []Gateway
+		var result []GatewayListener
 		kgw := obj.Spec
 		status := obj.Status.DeepCopy()
 		class := fetchClass(ctx, gatewayClasses, kgw.GatewayClassName)
@@ -190,7 +210,7 @@ func GatewayCollection(
 
 			servers = append(servers, server)
 			meta := parentMeta(obj, &l.Name)
-			// Each listener generates a Gateway with a single Server. This allows binding to a specific listener.
+			// Each listener generates a GatewayListener with a single Server. This allows binding to a specific listener.
 			gatewayConfig := Config{
 				Meta: Meta{
 					CreationTimestamp: obj.CreationTimestamp.Time,
@@ -220,21 +240,21 @@ func GatewayCollection(
 				Protocol:         l.Protocol,
 			}
 
-			res := Gateway{
+			res := GatewayListener{
 				Config:     &gatewayConfig,
 				Valid:      programmed,
 				TLSInfo:    tlsInfo,
 				parent:     ref,
 				parentInfo: pri,
+				report:     rm,
 			}
+			gwReporter.SetCondition(reporter.GatewayCondition{
+				Type:   gwv1.GatewayConditionAccepted,
+				Status: metav1.ConditionTrue,
+				Reason: gwv1.GatewayReasonAccepted,
+			})
 			result = append(result, res)
 		}
-
-		gwReporter.SetCondition(reporter.GatewayCondition{
-			Type:   gwv1.GatewayConditionAccepted,
-			Status: metav1.ConditionTrue,
-			Reason: gwv1.GatewayReasonAccepted,
-		})
 		return result
 	}, krtopts.ToOptions("KubernetesGateway")...)
 
@@ -243,20 +263,20 @@ func GatewayCollection(
 
 // RouteParents holds information about things routes can reference as parents.
 type RouteParents struct {
-	gateways     krt.Collection[Gateway]
-	gatewayIndex krt.Index[parentKey, Gateway]
+	gateways     krt.Collection[GatewayListener]
+	gatewayIndex krt.Index[parentKey, GatewayListener]
 }
 
 func (p RouteParents) fetch(ctx krt.HandlerContext, pk parentKey) []*parentInfo {
-	return slices.Map(krt.Fetch(ctx, p.gateways, krt.FilterIndex(p.gatewayIndex, pk)), func(gw Gateway) *parentInfo {
+	return slices.Map(krt.Fetch(ctx, p.gateways, krt.FilterIndex(p.gatewayIndex, pk)), func(gw GatewayListener) *parentInfo {
 		return &gw.parentInfo
 	})
 }
 
 func BuildRouteParents(
-	gateways krt.Collection[Gateway],
+	gateways krt.Collection[GatewayListener],
 ) RouteParents {
-	idx := krt.NewIndex(gateways, func(o Gateway) []parentKey {
+	idx := krt.NewIndex(gateways, func(o GatewayListener) []parentKey {
 		return []parentKey{o.parent}
 	})
 	return RouteParents{

@@ -7,8 +7,8 @@ spec:
     agentGateway:
       enabled: true
       logLevel: debug
-      image:
-        tag: bb1fd20
+#      image:
+#        tag: bb1fd20
 ---
 kind: GatewayClass
 apiVersion: gateway.networking.k8s.io/v1

@@ -85,6 +85,10 @@ func (r *ReportMap) Gateway(gateway *gwv1.Gateway) *GatewayReport {
 	return r.Gateways[key]
 }
 
+func (r *ReportMap) GatewayNamespaceName(key types.NamespacedName) *GatewayReport {
+	return r.Gateways[key]
+}
+
 func (r *ReportMap) newGatewayReport(gateway *gwv1.Gateway) *GatewayReport {
 	gr := &GatewayReport{}
 	gr.observedGeneration = gateway.Generation
@@ -295,6 +299,7 @@ func (r *reporter) Route(obj metav1.Object) pluginsdkreporter.RouteReporter {
 	if rr == nil {
 		rr = r.report.newRouteReport(obj)
 	}
+	rr.observedGeneration = obj.GetGeneration()
 	return rr
 }
 

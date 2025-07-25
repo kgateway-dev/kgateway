@@ -5,11 +5,11 @@ import (
 	"maps"
 	"reflect"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/agentgateway/agentgateway/go/api"
 	udpa "github.com/cncf/xds/go/udpa/type/v1"
-	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"istio.io/istio/pkg/config/schema/kind"
@@ -50,25 +50,6 @@ func (key ConfigKey) String() string {
 	return key.Kind.String() + "/" + key.Namespace + "/" + key.Name
 }
 
-type ADPCacheResource struct {
-	Gateway types.NamespacedName `json:"gateway"`
-	reports reports.ReportMap
-
-	Resources envoycache.Resources
-
-	VersionMap map[string]map[string]string
-}
-
-func (r ADPCacheResource) ResourceName() string {
-	return fmt.Sprintf("%s~%s", r.Gateway.Namespace, r.Gateway.Name)
-}
-
-func (r ADPCacheResource) Equals(in ADPCacheResource) bool {
-	return r.Gateway == in.Gateway &&
-		report{r.reports}.Equals(report{in.reports}) &&
-		r.Resources.Version == in.Resources.Version
-}
-
 type ADPCacheAddress struct {
 	NamespacedName types.NamespacedName
 
@@ -85,22 +66,39 @@ func (r ADPCacheAddress) ResourceName() string {
 }
 
 func (r ADPCacheAddress) Equals(in ADPCacheAddress) bool {
-	return report{r.reports}.Equals(report{in.reports}) &&
+	return report{reportMap: r.reports}.Equals(report{reportMap: in.reports}) &&
 		r.NamespacedName.Name == in.NamespacedName.Name && r.NamespacedName.Namespace == in.NamespacedName.Namespace &&
 		proto.Equal(r.Address, in.Address) &&
 		r.AddressVersion == in.AddressVersion &&
 		r.AddressResourceName == in.AddressResourceName
 }
 
-type ADPResource struct {
-	Resource *api.Resource        `json:"resource"`
-	Gateway  types.NamespacedName `json:"gateway"`
-
-	reports reports.ReportMap
+type ADPResourcesForGateway struct {
+	// agent gateway dataplane resources
+	Resources []*api.Resource
+	// gateway name
+	Gateway types.NamespacedName
+	// status for the gateway
+	report reports.ReportMap
+	// track which routes are attached to the gateway listener for each resource type (HTTPRoute, TCPRoute, etc)
+	attachedRoutes map[string]uint
 }
 
-func (g ADPResource) ResourceName() string {
-	switch t := g.Resource.GetKind().(type) {
+func getResourceListName(resources []*api.Resource) string {
+	names := make([]string, len(resources))
+	for i, res := range resources {
+		names[i] = getADPResourceName(res)
+	}
+	return strings.Join(names, ",")
+}
+
+func (g ADPResourcesForGateway) ResourceName() string {
+	// need a unique name per resource
+	return g.Gateway.String() + getResourceListName(g.Resources)
+}
+
+func getADPResourceName(r *api.Resource) string {
+	switch t := r.GetKind().(type) {
 	case *api.Resource_Bind:
 		return "bind/" + t.Bind.GetKey()
 	case *api.Resource_Listener:
@@ -110,12 +108,20 @@ func (g ADPResource) ResourceName() string {
 	case *api.Resource_Route:
 		return "route/" + t.Route.GetKey()
 	}
-	panic("unknown resource kind")
+	return "unknown/" + r.String()
 }
 
-func (g ADPResource) Equals(other ADPResource) bool {
+func (g ADPResourcesForGateway) Equals(other ADPResourcesForGateway) bool {
 	// Don't compare reports, as they are not part of the ADPResource equality and synced separately
-	return proto.Equal(g.Resource, other.Resource) && g.Gateway == other.Gateway
+	for i := range g.Resources {
+		if !proto.Equal(g.Resources[i], other.Resources[i]) {
+			return false
+		}
+	}
+	if !maps.Equal(g.attachedRoutes, other.attachedRoutes) {
+		return false
+	}
+	return g.Gateway == other.Gateway
 }
 
 // Meta is metadata attached to each configuration unit.

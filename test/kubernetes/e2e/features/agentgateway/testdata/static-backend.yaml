@@ -7,8 +7,8 @@ spec:
     agentGateway:
       enabled: true
       logLevel: trace
-      image:
-        tag: 8a6c09c-dirty
+#      image:
+#        tag: 8a6c09c-dirty
 ---
 kind: GatewayClass
 apiVersion: gateway.networking.k8s.io/v1
@@ -39,54 +39,26 @@ spec:
 apiVersion: gateway.networking.k8s.io/v1beta1
 kind: HTTPRoute
 metadata:
-  name: nginx-route
-spec:
-  parentRefs:
-    - name: gw
-  hostnames:
-    - "example.com"
-  rules:
-    - backendRefs:
-        - name: nginx
-          port: 8443
----
-apiVersion: gateway.networking.k8s.io/v1beta1
-kind: HTTPRoute
-metadata:
-  name: nginx2-route
-spec:
-  parentRefs:
-    - name: gw
-  hostnames:
-    - "example2.com"
-  rules:
-    - backendRefs:
-        - name: nginx2
-          port: 8443
----
-apiVersion: gateway.networking.k8s.io/v1beta1
-kind: HTTPRoute
-metadata:
   name: google-route
 spec:
   parentRefs:
     - name: gw
   hostnames:
-    - "foo.com"
+    - "jsonplaceholder.typicode.com"
   rules:
     - backendRefs:
-        - name: google
+        - name: json-backend
           kind: Backend
           group: gateway.kgateway.dev
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: Backend
 metadata:
-  name: google
+  name: json-backend
 spec:
   type: Static
   static:
     hosts:
-      - host: google.com
+      - host: jsonplaceholder.typicode.com
         port: 80
 ---

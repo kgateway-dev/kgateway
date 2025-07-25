@@ -51,8 +51,6 @@ import (
 	kgwversioned "github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
-	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
-	"k8s.io/apimachinery/pkg/util/sets"
 )
 
 var logger = logging.New("agentgateway/syncer")
@@ -97,7 +95,9 @@ type AgentGwSyncer struct {
 	xdsSnapshotsMetrics krtcollections.CollectionMetricsRecorder
 
 	// Status reporting
-	statusReport krt.Singleton[report]
+	gatewayReports     krt.Singleton[GatewayReports]
+	listenerSetReports krt.Singleton[ListenerSetReports]
+	routeReports       krt.Singleton[RouteReports]
 
 	// Synchronization
 	waitForSync []cache.InformerSynced
@@ -112,7 +112,8 @@ type agentGwXdsResources struct {
 	types.NamespacedName
 
 	// Status reports for this gateway
-	reports reports.ReportMap
+	reports        reports.ReportMap
+	attachedRoutes map[string]uint
 
 	// Resources config for gateway (Bind, Listener, Route)
 	ResourceConfig envoycache.Resources
@@ -128,9 +129,10 @@ func (r agentGwXdsResources) ResourceName() string {
 
 func (r agentGwXdsResources) Equals(in agentGwXdsResources) bool {
 	return r.NamespacedName == in.NamespacedName &&
-		report{r.reports}.Equals(report{in.reports}) &&
+		report{reportMap: r.reports, attachedRoutes: r.attachedRoutes}.Equals(report{reportMap: in.reports, attachedRoutes: in.attachedRoutes}) &&
 		r.ResourceConfig.Version == in.ResourceConfig.Version &&
-		r.AddressConfig.Version == in.AddressConfig.Version
+		r.AddressConfig.Version == in.AddressConfig.Version &&
+		maps.Equal(r.attachedRoutes, in.attachedRoutes)
 }
 
 func NewAgentGwSyncer(
@@ -185,7 +187,72 @@ var _ envoytypes.ResourceWithName = envoyResourceWithCustomName{}
 
 type report struct {
 	// lower case so krt doesn't error in debug handler
-	reportMap reports.ReportMap
+	reportMap      reports.ReportMap
+	attachedRoutes map[string]uint
+}
+
+// RouteReports contains all route-related reports
+type RouteReports struct {
+	HTTPRoutes map[types.NamespacedName]*reports.RouteReport
+	GRPCRoutes map[types.NamespacedName]*reports.RouteReport
+	TCPRoutes  map[types.NamespacedName]*reports.RouteReport
+	TLSRoutes  map[types.NamespacedName]*reports.RouteReport
+}
+
+func (r RouteReports) ResourceName() string {
+	return "route-reports"
+}
+
+func (r RouteReports) Equals(in RouteReports) bool {
+	return maps.Equal(r.HTTPRoutes, in.HTTPRoutes) &&
+		maps.Equal(r.GRPCRoutes, in.GRPCRoutes) &&
+		maps.Equal(r.TCPRoutes, in.TCPRoutes) &&
+		maps.Equal(r.TLSRoutes, in.TLSRoutes)
+}
+
+// ListenerSetReports contains all listener set reports
+type ListenerSetReports struct {
+	Reports map[types.NamespacedName]*reports.ListenerSetReport
+}
+
+func (l ListenerSetReports) ResourceName() string {
+	return "listenerset-reports"
+}
+
+func (l ListenerSetReports) Equals(in ListenerSetReports) bool {
+	return maps.Equal(l.Reports, in.Reports)
+}
+
+// GatewayReports contains gateway reports along with attached routes information
+type GatewayReports struct {
+	Reports        map[types.NamespacedName]*reports.GatewayReport
+	AttachedRoutes map[types.NamespacedName]map[string]uint
+}
+
+func (g GatewayReports) ResourceName() string {
+	return "gateway-reports"
+}
+
+func (g GatewayReports) Equals(in GatewayReports) bool {
+	if !maps.Equal(g.Reports, in.Reports) {
+		return false
+	}
+
+	// Compare AttachedRoutes manually since it contains nested maps
+	if len(g.AttachedRoutes) != len(in.AttachedRoutes) {
+		return false
+	}
+	for key, gRoutes := range g.AttachedRoutes {
+		inRoutes, exists := in.AttachedRoutes[key]
+		if !exists {
+			return false
+		}
+		if !maps.Equal(gRoutes, inRoutes) {
+			return false
+		}
+	}
+
+	return true
 }
 
 func (r report) ResourceName() string {
@@ -193,13 +260,28 @@ func (r report) ResourceName() string {
 }
 
 func (r report) Equals(in report) bool {
-	// Always return false to force status recalculation on every sync.
-	// This is safe because status includes observedGeneration, so any edit to the Gateway resource
-	// (e.g. changing the port) will eventually trigger a new status update.
-	// We currently rely on the translation process (not the status diff) to trigger reconciliation,
-	// so skipping deep equality here avoids brittle or unnecessary comparisons (e.g. map equality).
-	// If we find a case where this causes redundant updates or missed transitions, we can revisit this.
-	return false
+	if !maps.Equal(r.reportMap.Gateways, in.reportMap.Gateways) {
+		return false
+	}
+	if !maps.Equal(r.reportMap.ListenerSets, in.reportMap.ListenerSets) {
+		return false
+	}
+	if !maps.Equal(r.reportMap.HTTPRoutes, in.reportMap.HTTPRoutes) {
+		return false
+	}
+	if !maps.Equal(r.reportMap.TCPRoutes, in.reportMap.TCPRoutes) {
+		return false
+	}
+	if !maps.Equal(r.reportMap.TLSRoutes, in.reportMap.TLSRoutes) {
+		return false
+	}
+	if !maps.Equal(r.reportMap.Policies, in.reportMap.Policies) {
+		return false
+	}
+	if !maps.Equal(r.attachedRoutes, in.attachedRoutes) {
+		return false
+	}
+	return true
 }
 
 // Inputs holds all the input collections needed for the syncer
@@ -314,26 +396,23 @@ func (s *AgentGwSyncer) buildInputCollections(krtopts krtutil.KrtOptions) Inputs
 }
 
 func (s *AgentGwSyncer) buildResourceCollections(inputs Inputs, krtopts krtutil.KrtOptions) {
-	rm := reports.NewReportMap()
-	rep := reports.NewReporter(&rm)
-
 	// Build core collections for irs
 	gatewayClasses := GatewayClassesCollection(inputs.GatewayClasses, krtopts)
 	refGrants := BuildReferenceGrants(ReferenceGrantsCollection(inputs.ReferenceGrants, krtopts))
-	gateways := s.buildGatewayCollection(inputs, gatewayClasses, refGrants, krtopts, rep)
+	gateways := s.buildGatewayCollection(inputs, gatewayClasses, refGrants, krtopts)
 
-	// Build ADP resources
-	adpResources := s.buildADPResources(gateways, inputs, refGrants, krtopts, rep, rm)
+	// Build ADP resources for gateway
+	adpResources := s.buildADPResources(gateways, inputs, refGrants, krtopts)
 
 	// Build backend collections,
-	// this is done seperately from other resources because backends are not a per gateway resource
-	adpBackends := s.buildBackendCollections(inputs, krtopts, rm)
+	// this is done separately from other resources because backends are not a per gateway resource
+	adpBackends := s.buildBackendCollections(inputs, krtopts)
 
 	// Build address collections
 	addresses := s.buildAddressCollections(inputs, krtopts)
 
 	// Build XDS collection
-	s.buildXDSCollection(adpResources, adpBackends, addresses, krtopts, rm)
+	s.buildXDSCollection(inputs.Gateways, adpResources, adpBackends, addresses)
 
 	// Build status reporting
 	s.buildStatusReporting()
@@ -347,8 +426,7 @@ func (s *AgentGwSyncer) buildGatewayCollection(
 	gatewayClasses krt.Collection[GatewayClass],
 	refGrants ReferenceGrants,
 	krtopts krtutil.KrtOptions,
-	rep reporter.Reporter,
-) krt.Collection[Gateway] {
+) krt.Collection[GatewayListener] {
 	return GatewayCollection(
 		s.agentGatewayClassName,
 		inputs.Gateways,
@@ -358,53 +436,58 @@ func (s *AgentGwSyncer) buildGatewayCollection(
 		inputs.Secrets,
 		s.domainSuffix,
 		krtopts,
-		rep,
 	)
 }
 
 func (s *AgentGwSyncer) buildADPResources(
-	gateways krt.Collection[Gateway],
+	gateways krt.Collection[GatewayListener],
 	inputs Inputs,
 	refGrants ReferenceGrants,
 	krtopts krtutil.KrtOptions,
-	rep reporter.Reporter,
-	repMap reports.ReportMap,
-) krt.Collection[ADPResource] {
+) krt.Collection[ADPResourcesForGateway] {
 	// Build ports and binds
-	ports := krt.NewCollection(gateways, func(ctx krt.HandlerContext, obj Gateway) *IndexObject[string, Gateway] {
+	ports := krt.NewCollection(gateways, func(ctx krt.HandlerContext, obj GatewayListener) *IndexObject[string, GatewayListener] {
 		port := fmt.Sprint(obj.parentInfo.Port)
-		return &IndexObject[string, Gateway]{
+		return &IndexObject[string, GatewayListener]{
 			Key:     port,
-			Objects: []Gateway{obj},
+			Objects: []GatewayListener{obj},
 		}
 	}, krtopts.ToOptions("ports")...)
 
-	binds := krt.NewManyCollection(ports, func(ctx krt.HandlerContext, object IndexObject[string, Gateway]) []ADPResource {
+	binds := krt.NewManyCollection(ports, func(ctx krt.HandlerContext, object IndexObject[string, GatewayListener]) []ADPResourcesForGateway {
 		port, _ := strconv.Atoi(object.Key)
-		uniq := sets.New[types.NamespacedName]()
+		gwReports := make(map[types.NamespacedName]reports.ReportMap, 0)
 		for _, gw := range object.Objects {
-			uniq.Insert(types.NamespacedName{
+			key := types.NamespacedName{
 				Namespace: gw.parent.Namespace,
 				Name:      gw.parent.Name,
-			})
+			}
+			gwReports[key] = gw.report
 		}
-		var binds []ADPResource
-
-		for _, obj := range uniq.UnsortedList() {
+		var results []ADPResourcesForGateway
+		binds := make(map[types.NamespacedName][]*api.Resource)
+		for nsName := range gwReports {
 			bind := ADPBind{
 				Bind: &api.Bind{
-					Key:  object.Key + "/" + obj.String(),
+					Key:  object.Key + "/" + nsName.String(),
 					Port: uint32(port),
 				},
 			}
-			binds = append(binds, toResourceWithReports(obj, bind, repMap))
+			if binds[nsName] == nil {
+				binds[nsName] = make([]*api.Resource, 0)
+			}
+			binds[nsName] = append(binds[nsName], toADPResource(bind))
 		}
-		return binds
+		for gw, res := range binds {
+			repForGw := gwReports[gw]
+			results = append(results, toResourceWithRoutes(gw, res, nil, repForGw))
+		}
+		return results
 	}, krtopts.ToOptions("Binds")...)
 
 	// Build listeners
-	listeners := krt.NewCollection(gateways, func(ctx krt.HandlerContext, obj Gateway) *ADPResource {
-		return s.buildListenerFromGateway(ctx, obj, repMap)
+	listeners := krt.NewCollection(gateways, func(ctx krt.HandlerContext, obj GatewayListener) *ADPResourcesForGateway {
+		return s.buildListenerFromGateway(obj)
 	}, krtopts.ToOptions("Listeners")...)
 
 	// Build routes
@@ -419,19 +502,19 @@ func (s *AgentGwSyncer) buildADPResources(
 		Backends:       s.commonCols.BackendIndex,
 		Plugins:        s.plugins,
 	}
-	adpRoutes := ADPRouteCollection(inputs.HTTPRoutes, inputs.GRPCRoutes, inputs.TCPRoutes, inputs.TLSRoutes, gateways, inputs.Gateways, routeInputs, krtopts, repMap, rep, s.plugins)
+	httpRoutes, grpcRoutes, tcpRoutes, tlsRoutes := ADPRouteCollection(inputs.HTTPRoutes, inputs.GRPCRoutes, inputs.TCPRoutes, inputs.TLSRoutes, routeInputs, krtopts, s.plugins)
 
 	// Join all ADP resources
-	allADPResources := krt.JoinCollection([]krt.Collection[ADPResource]{binds, listeners, adpRoutes}, krtopts.ToOptions("ADPResources")...)
+	allADPResources := krt.JoinCollection([]krt.Collection[ADPResourcesForGateway]{binds, listeners, httpRoutes, grpcRoutes, tcpRoutes, tlsRoutes}, krtopts.ToOptions("ADPResources")...)
 
 	return allADPResources
 }
 
 // buildBackendCollections builds a collection of all backend resources
-func (s *AgentGwSyncer) buildBackendCollections(inputs Inputs, krtopts krtutil.KrtOptions, repMap reports.ReportMap) krt.Collection[*envoyResourceWithCustomName] {
+func (s *AgentGwSyncer) buildBackendCollections(inputs Inputs, krtopts krtutil.KrtOptions) krt.Collection[envoyResourceWithCustomName] {
 	// Build backends
-	backends := krt.NewManyCollection(inputs.BackendsTemp, func(ctx krt.HandlerContext, obj *v1alpha1.Backend) []*envoyResourceWithCustomName {
-		return s.buildBackendFromBackend(ctx, obj, inputs.Services, inputs.Namespaces, repMap)
+	backends := krt.NewManyCollection(inputs.BackendsTemp, func(ctx krt.HandlerContext, obj *v1alpha1.Backend) []envoyResourceWithCustomName {
+		return s.buildBackendFromBackend(ctx, obj, inputs.Services, inputs.Namespaces)
 	}, krtopts.ToOptions("ADPBackends")...)
 	logger.Debug("backends", "backends", backends)
 
@@ -439,7 +522,7 @@ func (s *AgentGwSyncer) buildBackendCollections(inputs Inputs, krtopts krtutil.K
 }
 
 // buildListenerFromGateway creates a listener resource from a gateway
-func (s *AgentGwSyncer) buildListenerFromGateway(ctx krt.HandlerContext, obj Gateway, repMap reports.ReportMap) *ADPResource {
+func (s *AgentGwSyncer) buildListenerFromGateway(obj GatewayListener) *ADPResourcesForGateway {
 	l := &api.Listener{
 		Key:         obj.ResourceName(),
 		Name:        string(obj.parentInfo.SectionName),
@@ -457,10 +540,11 @@ func (s *AgentGwSyncer) buildListenerFromGateway(ctx krt.HandlerContext, obj Gat
 	l.Protocol = protocol
 	l.Tls = tlsConfig
 
-	return toResourcepWithReports(types.NamespacedName{
+	resources := []*api.Resource{toADPResource(ADPListener{l})}
+	return toResourcep(types.NamespacedName{
 		Namespace: obj.parent.Namespace,
 		Name:      obj.parent.Name,
-	}, ADPListener{l}, repMap)
+	}, resources, obj.report)
 }
 
 const (
@@ -468,8 +552,8 @@ const (
 )
 
 // buildBackendFromBackend creates a backend resource
-func (s *AgentGwSyncer) buildBackendFromBackend(ctx krt.HandlerContext, obj *v1alpha1.Backend, svcCol krt.Collection[*corev1.Service], nsCol krt.Collection[*corev1.Namespace], repMap reports.ReportMap) []*envoyResourceWithCustomName {
-	var results []*envoyResourceWithCustomName
+func (s *AgentGwSyncer) buildBackendFromBackend(ctx krt.HandlerContext, obj *v1alpha1.Backend, svcCol krt.Collection[*corev1.Service], nsCol krt.Collection[*corev1.Namespace]) []envoyResourceWithCustomName {
+	var results []envoyResourceWithCustomName
 	// Translate the backend type from Kubernetes Backend to agentgateway API
 	// TODO (Jmcguire98): this should all be moved into the plugin system
 	// after we have validated the approach with static backends
@@ -507,7 +591,7 @@ func (s *AgentGwSyncer) buildBackendFromBackend(ctx krt.HandlerContext, obj *v1a
 				Backend: aiBackend,
 			},
 		}
-		results = append(results, &envoyResourceWithCustomName{
+		results = append(results, envoyResourceWithCustomName{
 			Message: resourceWrapper,
 			Name:    aiBackend.Name,
 			version: utils.HashProto(resourceWrapper),
@@ -530,7 +614,7 @@ func (s *AgentGwSyncer) buildBackendFromBackend(ctx krt.HandlerContext, obj *v1a
 				Backend: backend,
 			},
 		}
-		results = append(results, &envoyResourceWithCustomName{
+		results = append(results, envoyResourceWithCustomName{
 			Message: resourceWrapper,
 			Name:    backend.Name,
 			version: utils.HashProto(resourceWrapper),
@@ -558,7 +642,7 @@ func (s *AgentGwSyncer) buildBackendFromBackend(ctx krt.HandlerContext, obj *v1a
 							Backend: staticBackend,
 						},
 					}
-					results = append(results, &envoyResourceWithCustomName{
+					results = append(results, envoyResourceWithCustomName{
 						Message: resourceWrapper,
 						Name:    staticBackend.Name,
 						version: utils.HashProto(resourceWrapper),
@@ -677,7 +761,7 @@ func (s *AgentGwSyncer) buildBackendFromBackend(ctx krt.HandlerContext, obj *v1a
 				Backend: mcpBackend,
 			},
 		}
-		results = append(results, &envoyResourceWithCustomName{
+		results = append(results, envoyResourceWithCustomName{
 			Message: resourceWrapper,
 			Name:    mcpBackend.Name,
 			version: utils.HashProto(resourceWrapper),
@@ -756,7 +840,7 @@ func (s *AgentGwSyncer) buildAIBackendFromLLM(llm *v1alpha1.LLMProvider) *api.AI
 }
 
 // getProtocolAndTLSConfig extracts protocol and TLS configuration from a gateway
-func (s *AgentGwSyncer) getProtocolAndTLSConfig(obj Gateway) (api.Protocol, *api.TLSConfig, bool) {
+func (s *AgentGwSyncer) getProtocolAndTLSConfig(obj GatewayListener) (api.Protocol, *api.TLSConfig, bool) {
 	var tlsConfig *api.TLSConfig
 
 	// Build TLS config if needed
@@ -857,36 +941,72 @@ func (s *AgentGwSyncer) buildAddressCollections(inputs Inputs, krtopts krtutil.K
 	}, krtopts.ToOptions("XDSAddresses")...)
 }
 
-func (s *AgentGwSyncer) buildXDSCollection(adpResources krt.Collection[ADPResource], adpBackends krt.Collection[*envoyResourceWithCustomName], xdsAddresses krt.Collection[envoyResourceWithCustomName], krtopts krtutil.KrtOptions, rm reports.ReportMap) {
+func (s *AgentGwSyncer) buildXDSCollection(gateways krt.Collection[*gwv1.Gateway], adpResources krt.Collection[ADPResourcesForGateway], adpBackends krt.Collection[envoyResourceWithCustomName], xdsAddresses krt.Collection[envoyResourceWithCustomName]) {
 	// Create an index on adpResources by Gateway to avoid fetching all resources
-	adpResourcesByGateway := krt.NewIndex(adpResources, func(resource ADPResource) []types.NamespacedName {
+	adpResourcesByGateway := krt.NewIndex(adpResources, func(resource ADPResourcesForGateway) []types.NamespacedName {
 		return []types.NamespacedName{resource.Gateway}
 	})
 
-	s.xDS = krt.NewCollection(adpResources, func(kctx krt.HandlerContext, obj ADPResource) *agentGwXdsResources {
-		gwNamespacedName := obj.Gateway
+	s.xDS = krt.NewCollection(gateways, func(kctx krt.HandlerContext, obj *gwv1.Gateway) *agentGwXdsResources {
+		gwNamespacedName := types.NamespacedName{
+			Namespace: obj.GetNamespace(),
+			Name:      obj.GetName(),
+		}
 
 		cacheAddresses := krt.Fetch(kctx, xdsAddresses)
 		envoytypesAddresses := make([]envoytypes.Resource, 0, len(cacheAddresses))
 		for _, addr := range cacheAddresses {
-			envoytypesAddresses = append(envoytypesAddresses, addr)
+			envoytypesAddresses = append(envoytypesAddresses, &addr)
 		}
 
+		// Create a copy of the shared ReportMap to avoid concurrent modification
+		gwReports := reports.NewReportMap()
+
 		var cacheResources []envoytypes.Resource
+		attachedRoutes := make(map[string]uint)
 		// Use index to fetch only resources for this gateway instead of all resources
 		resourceList := krt.Fetch(kctx, adpResources, krt.FilterIndex(adpResourcesByGateway, gwNamespacedName))
 		for _, resource := range resourceList {
-			cacheResources = append(cacheResources, &envoyResourceWithCustomName{
-				Message: resource.Resource,
-				Name:    resource.ResourceName(),
-				version: utils.HashProto(resource.Resource),
-			})
+			// 1. merge GW Reports for all Proxies' status reports
+			maps.Copy(gwReports.Gateways, resource.report.Gateways)
+
+			// 2. merge LS Reports for all Proxies' status reports
+			maps.Copy(gwReports.ListenerSets, resource.report.ListenerSets)
+
+			// 3. merge route parentRefs into RouteReports for all route types
+			mergeRouteReports(gwReports.HTTPRoutes, resource.report.HTTPRoutes)
+			mergeRouteReports(gwReports.TCPRoutes, resource.report.TCPRoutes)
+			mergeRouteReports(gwReports.TLSRoutes, resource.report.TLSRoutes)
+			mergeRouteReports(gwReports.GRPCRoutes, resource.report.GRPCRoutes)
+
+			for key, rr := range resource.report.Policies {
+				// if we haven't encountered this policy, just copy it over completely
+				old := gwReports.Policies[key]
+				if old == nil {
+					gwReports.Policies[key] = rr
+					continue
+				}
+				// else, let's merge our parentRefs into the existing map
+				// obsGen will stay as-is...
+				maps.Copy(gwReports.Policies[key].Ancestors, rr.Ancestors)
+			}
+
+			for _, res := range resource.Resources {
+				cacheResources = append(cacheResources, &envoyResourceWithCustomName{
+					Message: res,
+					Name:    getADPResourceName(res),
+					version: utils.HashProto(res),
+				})
+				for listenerName, count := range resource.attachedRoutes {
+					attachedRoutes[listenerName] += count
+				}
+			}
 		}
 
 		// Fetch all backends and add them to the resources for every gateway
 		cachedBackends := krt.Fetch(kctx, adpBackends)
 		for _, backend := range cachedBackends {
-			cacheResources = append(cacheResources, backend)
+			cacheResources = append(cacheResources, &backend)
 		}
 
 		// Create the resource wrappers
@@ -902,7 +1022,8 @@ func (s *AgentGwSyncer) buildXDSCollection(adpResources krt.Collection[ADPResour
 
 		result := &agentGwXdsResources{
 			NamespacedName: gwNamespacedName,
-			reports:        rm,
+			reports:        gwReports,
+			attachedRoutes: attachedRoutes,
 			ResourceConfig: envoycache.NewResources(fmt.Sprintf("%d", resourceVersion), cacheResources),
 			AddressConfig:  envoycache.NewResources(fmt.Sprintf("%d", addrVersion), envoytypesAddresses),
 		}
@@ -912,16 +1033,74 @@ func (s *AgentGwSyncer) buildXDSCollection(adpResources krt.Collection[ADPResour
 }
 
 func (s *AgentGwSyncer) buildStatusReporting() {
-	// as proxies are created, they also contain a reportMap containing status for the Gateway and associated xRoutes (really parentRefs)
-	// here we will merge reports that are per-Proxy to a singleton Report used to persist to k8s on a timer
-	s.statusReport = krt.NewSingleton(func(kctx krt.HandlerContext) *report {
+	// TODO(npolshak): Move away from report map and separately fetch resource reports
+	// Create separate singleton collections for each resource type instead of merging everything
+	// This avoids the overhead of creating and processing a single large merged report
+	gatewayReports := krt.NewSingleton(func(kctx krt.HandlerContext) *GatewayReports {
 		proxies := krt.Fetch(kctx, s.xDS)
-		merged := mergeProxyReports(proxies)
-		return &report{merged}
+		merged := make(map[types.NamespacedName]*reports.GatewayReport)
+		attachedRoutes := make(map[types.NamespacedName]map[string]uint)
+
+		for _, p := range proxies {
+			// Merge GW Reports for all Proxies' status reports
+			maps.Copy(merged, p.reports.Gateways)
+
+			// Collect attached routes for each gateway
+			if attachedRoutes[p.NamespacedName] == nil {
+				attachedRoutes[p.NamespacedName] = make(map[string]uint)
+			}
+			for listener, counts := range p.attachedRoutes {
+				attachedRoutes[p.NamespacedName][listener] += counts
+			}
+		}
+
+		return &GatewayReports{
+			Reports:        merged,
+			AttachedRoutes: attachedRoutes,
+		}
 	})
+
+	listenerSetReports := krt.NewSingleton(func(kctx krt.HandlerContext) *ListenerSetReports {
+		proxies := krt.Fetch(kctx, s.xDS)
+		merged := make(map[types.NamespacedName]*reports.ListenerSetReport)
+
+		for _, p := range proxies {
+			// Merge LS Reports for all Proxies' status reports
+			maps.Copy(merged, p.reports.ListenerSets)
+		}
+
+		return &ListenerSetReports{
+			Reports: merged,
+		}
+	})
+
+	routeReports := krt.NewSingleton(func(kctx krt.HandlerContext) *RouteReports {
+		proxies := krt.Fetch(kctx, s.xDS)
+		merged := RouteReports{
+			HTTPRoutes: make(map[types.NamespacedName]*reports.RouteReport),
+			GRPCRoutes: make(map[types.NamespacedName]*reports.RouteReport),
+			TCPRoutes:  make(map[types.NamespacedName]*reports.RouteReport),
+			TLSRoutes:  make(map[types.NamespacedName]*reports.RouteReport),
+		}
+
+		for _, p := range proxies {
+			// Merge route parentRefs into RouteReports for all route types
+			mergeRouteReports(merged.HTTPRoutes, p.reports.HTTPRoutes)
+			mergeRouteReports(merged.GRPCRoutes, p.reports.GRPCRoutes)
+			mergeRouteReports(merged.TCPRoutes, p.reports.TCPRoutes)
+			mergeRouteReports(merged.TLSRoutes, p.reports.TLSRoutes)
+		}
+
+		return &merged
+	})
+
+	// Store references to the separate collections
+	s.gatewayReports = gatewayReports
+	s.listenerSetReports = listenerSetReports
+	s.routeReports = routeReports
 }
 
-func (s *AgentGwSyncer) setupSyncDependencies(gateways krt.Collection[Gateway], adpResources krt.Collection[ADPResource], adpBackends krt.Collection[*envoyResourceWithCustomName], addresses krt.Collection[envoyResourceWithCustomName], inputs Inputs) {
+func (s *AgentGwSyncer) setupSyncDependencies(gateways krt.Collection[GatewayListener], adpResources krt.Collection[ADPResourcesForGateway], adpBackends krt.Collection[envoyResourceWithCustomName], addresses krt.Collection[envoyResourceWithCustomName], inputs Inputs) {
 	s.waitForSync = []cache.InformerSynced{
 		s.commonCols.HasSynced,
 		gateways.HasSynced,
@@ -953,29 +1132,74 @@ func (s *AgentGwSyncer) Start(ctx context.Context) error {
 	}
 	logger.Info("caches warm!")
 
-	// latestReport will be constantly updated to contain the merged status report for Kube Gateway status
-	// when timer ticks, we will use the state of the mergedReports at that point in time to sync the status to k8s
-	latestReportQueue := utils.NewAsyncQueue[reports.ReportMap]()
-	s.statusReport.Register(func(o krt.Event[report]) {
+	// Create separate queues for each resource type to avoid processing the entire reportMap
+	gatewayReportQueue := utils.NewAsyncQueue[GatewayReports]()
+	listenerSetReportQueue := utils.NewAsyncQueue[ListenerSetReports]()
+	routeReportQueue := utils.NewAsyncQueue[RouteReports]()
+
+	// Register to separate singleton collections instead of a single merged report
+	s.gatewayReports.Register(func(o krt.Event[GatewayReports]) {
 		if o.Event == controllers.EventDelete {
 			// TODO: handle garbage collection
 			return
 		}
-		latestReportQueue.Enqueue(o.Latest().reportMap)
+		gatewayReportQueue.Enqueue(o.Latest())
 	})
+
+	s.listenerSetReports.Register(func(o krt.Event[ListenerSetReports]) {
+		if o.Event == controllers.EventDelete {
+			// TODO: handle garbage collection
+			return
+		}
+		listenerSetReportQueue.Enqueue(o.Latest())
+	})
+
+	s.routeReports.Register(func(o krt.Event[RouteReports]) {
+		if o.Event == controllers.EventDelete {
+			// TODO: handle garbage collection
+			return
+		}
+		routeReportQueue.Enqueue(o.Latest())
+	})
+
+	// Start separate goroutines for each status syncer
 	routeStatusLogger := logger.With("subcomponent", "routeStatusSyncer")
 	listenerSetStatusLogger := logger.With("subcomponent", "listenerSetStatusSyncer")
 	gatewayStatusLogger := logger.With("subcomponent", "gatewayStatusSyncer")
+
+	// Gateway status syncer
 	go func() {
 		for {
-			latestReport, err := latestReportQueue.Dequeue(ctx)
+			gatewayReports, err := gatewayReportQueue.Dequeue(ctx)
 			if err != nil {
-				logger.Error("failed to dequeue latest report", "error", err)
+				logger.Error("failed to dequeue gateway reports", "error", err)
 				return
 			}
-			s.syncGatewayStatus(ctx, gatewayStatusLogger, latestReport)
-			s.syncListenerSetStatus(ctx, listenerSetStatusLogger, latestReport)
-			s.syncRouteStatus(ctx, routeStatusLogger, latestReport)
+			s.syncGatewayStatus(ctx, gatewayStatusLogger, gatewayReports)
+		}
+	}()
+
+	// Listener set status syncer
+	go func() {
+		for {
+			listenerSetReports, err := listenerSetReportQueue.Dequeue(ctx)
+			if err != nil {
+				logger.Error("failed to dequeue listener set reports", "error", err)
+				return
+			}
+			s.syncListenerSetStatus(ctx, listenerSetStatusLogger, listenerSetReports)
+		}
+	}()
+
+	// Route status syncer
+	go func() {
+		for {
+			routeReports, err := routeReportQueue.Dequeue(ctx)
+			if err != nil {
+				logger.Error("failed to dequeue route reports", "error", err)
+				return
+			}
+			s.syncRouteStatus(ctx, routeStatusLogger, routeReports)
 		}
 	}()
 
@@ -1084,7 +1308,7 @@ func (m *agentGwSnapshot) GetVersionMap(typeURL string) map[string]string {
 
 var _ envoycache.ResourceSnapshot = &agentGwSnapshot{}
 
-func (s *AgentGwSyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger, rm reports.ReportMap) {
+func (s *AgentGwSyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger, routeReports RouteReports) {
 	stopwatch := utils.NewTranslatorStopWatch("RouteStatusSyncer")
 	stopwatch.Start()
 	defer stopwatch.Stop(ctx)
@@ -1121,6 +1345,14 @@ func (s *AgentGwSyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger
 			retry.Delay(retryDelay),
 			retry.DelayType(retry.BackOffDelay),
 		)
+	}
+
+	// Create a minimal ReportMap with just the route reports for BuildRouteStatus to work
+	rm := reports.ReportMap{
+		HTTPRoutes: routeReports.HTTPRoutes,
+		GRPCRoutes: routeReports.GRPCRoutes,
+		TCPRoutes:  routeReports.TCPRoutes,
+		TLSRoutes:  routeReports.TLSRoutes,
 	}
 
 	// Helper function to build route status and update if needed
@@ -1160,7 +1392,7 @@ func (s *AgentGwSyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger
 		return s.mgr.GetClient().Status().Update(ctx, route)
 	}
 
-	for rnn := range rm.HTTPRoutes {
+	for rnn := range routeReports.HTTPRoutes {
 		err := syncStatusWithRetry(
 			wellknown.HTTPRouteKind,
 			rnn,
@@ -1177,16 +1409,21 @@ func (s *AgentGwSyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger
 	}
 }
 
-// syncGatewayStatus will build and update status for all Gateways in a reportMap
-func (s *AgentGwSyncer) syncGatewayStatus(ctx context.Context, logger *slog.Logger, rm reports.ReportMap) {
+// syncGatewayStatus will build and update status for all Gateways in gateway reports
+func (s *AgentGwSyncer) syncGatewayStatus(ctx context.Context, logger *slog.Logger, gatewayReports GatewayReports) {
 	stopwatch := utils.NewTranslatorStopWatch("GatewayStatusSyncer")
 	stopwatch.Start()
 
 	// TODO: add gatewayStatusMetrics
 
+	// Create a minimal ReportMap with just the gateway reports for BuildGWStatus to work
+	rm := reports.ReportMap{
+		Gateways: gatewayReports.Reports,
+	}
+
 	// TODO: retry within loop per GW rather that as a full block
 	err := retry.Do(func() error {
-		for gwnn := range rm.Gateways {
+		for gwnn := range gatewayReports.Reports {
 			gw := gwv1.Gateway{}
 			err := s.mgr.GetClient().Get(ctx, gwnn, &gw)
 			if err != nil {
@@ -1230,19 +1467,24 @@ func (s *AgentGwSyncer) syncGatewayStatus(ctx context.Context, logger *slog.Logg
 		logger.Error("all attempts failed at updating gateway statuses", logKeyError, err)
 	}
 	duration := stopwatch.Stop(ctx)
-	logger.Debug("synced gw status for gateways", "count", len(rm.Gateways), "duration", duration)
+	logger.Debug("synced gw status for gateways", "count", len(gatewayReports.Reports), "duration", duration)
 }
 
-// syncListenerSetStatus will build and update status for all Listener Sets in a reportMap
-func (s *AgentGwSyncer) syncListenerSetStatus(ctx context.Context, logger *slog.Logger, rm reports.ReportMap) {
+// syncListenerSetStatus will build and update status for all Listener Sets in listener set reports
+func (s *AgentGwSyncer) syncListenerSetStatus(ctx context.Context, logger *slog.Logger, listenerSetReports ListenerSetReports) {
 	stopwatch := utils.NewTranslatorStopWatch("ListenerSetStatusSyncer")
 	stopwatch.Start()
 
 	// TODO: add listenerStatusMetrics
 
+	// Create a minimal ReportMap with just the listener set reports for BuildListenerSetStatus to work
+	rm := reports.ReportMap{
+		ListenerSets: listenerSetReports.Reports,
+	}
+
 	// TODO: retry within loop per LS rathen that as a full block
 	err := retry.Do(func() error {
-		for lsnn := range rm.ListenerSets {
+		for lsnn := range listenerSetReports.Reports {
 			ls := gwxv1a1.XListenerSet{}
 			err := s.mgr.GetClient().Get(ctx, lsnn, &ls)
 			if err != nil {
@@ -1278,7 +1520,7 @@ func (s *AgentGwSyncer) syncListenerSetStatus(ctx context.Context, logger *slog.
 		logger.Error("all attempts failed at updating listener set statuses", logKeyError, err)
 	}
 	duration := stopwatch.Stop(ctx)
-	logger.Debug("synced listener sets status for listener set", "count", len(rm.ListenerSets), "duration", duration.String())
+	logger.Debug("synced listener sets status for listener set", "count", len(listenerSetReports.Reports), "duration", duration.String())
 }
 
 // TODO: refactor proxy_syncer status syncing to use the same logic as agentgateway syncer
@@ -1299,37 +1541,8 @@ func isListenerSetStatusEqual(objA, objB *gwxv1a1.ListenerSetStatus) bool {
 	return cmp.Equal(objA, objB, opts)
 }
 
-func mergeProxyReports(proxies []agentGwXdsResources) reports.ReportMap {
-	merged := reports.NewReportMap()
-
-	for _, p := range proxies {
-		// 1. merge GW Reports for all Proxies' status reports
-		maps.Copy(merged.Gateways, p.reports.Gateways)
-
-		// 2. merge LS Reports for all Proxies' status reports
-		maps.Copy(merged.ListenerSets, p.reports.ListenerSets)
-
-		// 3. merge route parentRefs into RouteReports for all route types
-		mergeRouteReports(merged.HTTPRoutes, p.reports.HTTPRoutes)
-		mergeRouteReports(merged.TCPRoutes, p.reports.TCPRoutes)
-		mergeRouteReports(merged.TLSRoutes, p.reports.TLSRoutes)
-		mergeRouteReports(merged.GRPCRoutes, p.reports.GRPCRoutes)
-
-		// TODO: add back when policies are back
-		//for key, report := range p.reports.Policies {
-		//	// if we haven't encountered this policy, just copy it over completely
-		//	old := merged.Policies[key]
-		//	if old == nil {
-		//		merged.Policies[key] = report
-		//		continue
-		//	}
-		//	// else, let's merge our parentRefs into the existing map
-		//	// obsGen will stay as-is...
-		//	maps.Copy(merged.Policies[key].Ancestors, report.Ancestors)
-		//}
-	}
-
-	return merged
+func isGatewayStatusEqual(objA, objB *gwv1.GatewayStatus) bool {
+	return cmp.Equal(objA, objB, opts)
 }
 
 // mergeRouteReports is a helper function to merge route reports
@@ -1345,8 +1558,4 @@ func mergeRouteReports(merged map[types.NamespacedName]*reports.RouteReport, sou
 		// into the merged report
 		maps.Copy(merged[rnn].Parents, rr.Parents)
 	}
-}
-
-func isGatewayStatusEqual(objA, objB *gwv1.GatewayStatus) bool {
-	return cmp.Equal(objA, objB, opts)
 }

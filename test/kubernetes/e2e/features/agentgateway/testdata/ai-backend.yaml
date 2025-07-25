@@ -39,16 +39,40 @@ spec:
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
-  name: httpbin
+  name: openai
   labels:
-    example: httpbin-route
+    example: openai-route
 spec:
   parentRefs:
     - name: agent-gateway
       namespace: default
-  hostnames:
-    - "www.example.com"
   rules:
-    - backendRefs:
-        - name: httpbin
-          port: 8000
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /openai
+      backendRefs:
+        - name: openai
+          group: gateway.kgateway.dev
+          kind: Backend
+---
+#  kubectl create secret generic openai-secret \
+#  --from-literal="Authorization=Bearer $OPENAI_API_KEY" \
+#  --dry-run=client -oyaml | kubectl apply -f -
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  labels:
+    app: kgateway
+  name: openai
+spec:
+  type: AI
+  ai:
+    llm:
+      provider:
+        openai:
+          model: "gpt-4o-mini"
+          authToken:
+            kind: "SecretRef"
+            secretRef:
+              name: openai-secret
