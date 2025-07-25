@@ -12,7 +12,8 @@ import (
 
 var (
 	// manifests
-	setupManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "setup.yaml")
+	setupManifest       = filepath.Join(fsutils.MustGetThisDir(), "testdata", "setup.yaml")
+	tlsInsecureManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "tls-insecure.yaml")
 	// objects
 	proxyObjectMeta = metav1.ObjectMeta{
 		Name:      "gw",
