@@ -328,9 +328,10 @@ func NewGatewayIndex(
 		out.AttachedHttpPolicies = out.AttachedListenerPolicies // see if i can find a better way to segment the listener level and http level policies
 		for _, l := range i.Spec.Listeners {
 			out.Listeners = append(out.Listeners, ir.Listener{
-				Listener:         l,
-				Parent:           i,
-				AttachedPolicies: toAttachedPolicies(h.policies.getTargetingPolicies(kctx, extensionsplug.GatewayAttachmentPoint, out.ObjectSource, string(l.Name), i.GetLabels())),
+				Listener: l,
+				Parent:   i,
+				// TODO(https://github.com/kgateway-dev/kgateway/issues/11775): is RouteAttachmentPoint correct in all scenarios?
+				AttachedPolicies: toAttachedPolicies(h.policies.getTargetingPolicies(kctx, extensionsplug.RouteAttachmentPoint, out.ObjectSource, string(l.Name), i.GetLabels())),
 				PolicyAncestorRef: gwv1.ParentReference{
 					Group:     k8sptr.To(gwv1.Group(wellknown.GatewayGVK.Group)),
 					Kind:      k8sptr.To(gwv1.Kind(wellknown.GatewayGVK.Kind)),
@@ -376,7 +377,8 @@ func NewGatewayIndex(
 			listenerSetPolicies := h.policies.getTargetingPolicies(kctx, extensionsplug.GatewayAttachmentPoint, lsIR.ObjectSource, "", ls.GetLabels())
 
 			for _, l := range ls.Spec.Listeners {
-				listenerSpecificPolicies := h.policies.getTargetingPolicies(kctx, extensionsplug.GatewayAttachmentPoint, lsIR.ObjectSource, string(l.Name), ls.GetLabels())
+				// TODO(https://github.com/kgateway-dev/kgateway/issues/11775): is RouteAttachmentPoint correct in all scenarios?
+				listenerSpecificPolicies := h.policies.getTargetingPolicies(kctx, extensionsplug.RouteAttachmentPoint, lsIR.ObjectSource, string(l.Name), ls.GetLabels())
 				// The Gateway Polices applies to all listeners but we need to apply them to listeners within the LS.
 				// Since there is no LS equivalent in Envoy, apply them on each listener in the LS.
 				// Ensure the sectioned policies are first
