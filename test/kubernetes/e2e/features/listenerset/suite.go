@@ -49,7 +49,7 @@ func (s *testingSuite) TestValidListenerSet() {
 		defaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
-			curl.WithPort(8080),
+			curl.WithPort(gwListener1Port),
 			curl.WithHostHeader("example.com"),
 		},
 		expectOK)
@@ -60,7 +60,7 @@ func (s *testingSuite) TestValidListenerSet() {
 		defaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
-			curl.WithPort(8080),
+			curl.WithPort(gwListener1Port),
 			curl.WithHostHeader("listenerset.com"),
 		},
 		expectNotFound)
@@ -72,7 +72,7 @@ func (s *testingSuite) TestValidListenerSet() {
 		defaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
-			curl.WithPort(8090),
+			curl.WithPort(lsListener1Port),
 			curl.WithHostHeader("example.com"),
 		},
 		expectOK)
@@ -83,7 +83,7 @@ func (s *testingSuite) TestValidListenerSet() {
 		defaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
-			curl.WithPort(8090),
+			curl.WithPort(lsListener1Port),
 			curl.WithHostHeader("listenerset.com"),
 		},
 		expectOK)
@@ -94,7 +94,7 @@ func (s *testingSuite) TestValidListenerSet() {
 		defaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
-			curl.WithPort(8090),
+			curl.WithPort(lsListener1Port),
 			curl.WithHostHeader("listenerset-section.com"),
 		},
 		expectNotFound)
@@ -105,7 +105,7 @@ func (s *testingSuite) TestValidListenerSet() {
 		defaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
-			curl.WithPort(8091),
+			curl.WithPort(lsListener2Port),
 			curl.WithHostHeader("example.com"),
 		},
 		expectOK)
@@ -116,7 +116,7 @@ func (s *testingSuite) TestValidListenerSet() {
 		defaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
-			curl.WithPort(8091),
+			curl.WithPort(lsListener2Port),
 			curl.WithHostHeader("listenerset.com"),
 		},
 		expectOK)
@@ -127,7 +127,7 @@ func (s *testingSuite) TestValidListenerSet() {
 		defaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
-			curl.WithPort(8091),
+			curl.WithPort(lsListener2Port),
 			curl.WithHostHeader("listenerset-section.com"),
 		},
 		expectOK)
@@ -142,7 +142,7 @@ func (s *testingSuite) TestInvalidListenerSetNotAllowed() {
 		defaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
-			curl.WithPort(8080),
+			curl.WithPort(gwListener1Port),
 			curl.WithHostHeader("example.com"),
 		},
 		expectOK)
@@ -153,7 +153,7 @@ func (s *testingSuite) TestInvalidListenerSetNotAllowed() {
 		defaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
-			curl.WithPort(8090),
+			curl.WithPort(lsListener1Port),
 			curl.WithHostHeader("example.com"),
 		},
 		curlExitErrorCode)
@@ -168,7 +168,7 @@ func (s *testingSuite) TestInvalidListenerSetNonExistingGW() {
 		defaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
-			curl.WithPort(8080),
+			curl.WithPort(gwListener1Port),
 			curl.WithHostHeader("example.com"),
 		},
 		expectOK)
@@ -179,7 +179,7 @@ func (s *testingSuite) TestInvalidListenerSetNonExistingGW() {
 		defaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
-			curl.WithPort(8090),
+			curl.WithPort(lsListener1Port),
 			curl.WithHostHeader("example.com"),
 		},
 		curlExitErrorCode)
@@ -192,7 +192,7 @@ func (s *testingSuite) TestPolicies() {
 		defaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
-			curl.WithPort(8080),
+			curl.WithPort(gwListener1Port),
 			curl.WithHostHeader("example.com"),
 		},
 		expectOKWithCustomHeader("policy", "gateway"))
@@ -203,7 +203,7 @@ func (s *testingSuite) TestPolicies() {
 		defaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
-			curl.WithPort(8081),
+			curl.WithPort(gwListener2Port),
 			curl.WithHostHeader("example.com"),
 		},
 		expectOKWithCustomHeader("policy", "gateway-section"))
@@ -214,7 +214,7 @@ func (s *testingSuite) TestPolicies() {
 		defaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
-			curl.WithPort(8095),
+			curl.WithPort(lsInvalidPort),
 			curl.WithHostHeader("example.com"),
 		},
 		expectOKWithCustomHeader("policy", "gateway"))
@@ -225,7 +225,7 @@ func (s *testingSuite) TestPolicies() {
 		defaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
-			curl.WithPort(8090),
+			curl.WithPort(lsListener1Port),
 			curl.WithHostHeader("example.com"),
 		},
 		expectOKWithCustomHeader("policy", "listener-set"))
@@ -236,7 +236,7 @@ func (s *testingSuite) TestPolicies() {
 		defaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
-			curl.WithPort(8091),
+			curl.WithPort(lsListener2Port),
 			curl.WithHostHeader("example.com"),
 		},
 		expectOKWithCustomHeader("policy", "listener-set-section"))
@@ -262,7 +262,7 @@ func (s *testingSuite) expectListenerSetAccepted(obj client.Object) {
 			Listeners: []gwxv1a1.ListenerEntryStatus{
 				{
 					Name:           "http",
-					Port:           8090,
+					Port:           gwxv1a1.PortNumber(lsListener1Port),
 					AttachedRoutes: 2,
 					Conditions: []metav1.Condition{
 						{
@@ -289,7 +289,7 @@ func (s *testingSuite) expectListenerSetAccepted(obj client.Object) {
 				},
 				{
 					Name:           "http-2",
-					Port:           8091,
+					Port:           gwxv1a1.PortNumber(lsListener2Port),
 					AttachedRoutes: 3,
 					Conditions: []metav1.Condition{
 						{

@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	envoy_bootstrap "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
-	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoybootstrapv3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
+	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/google/go-cmp/cmp"
 )
@@ -15,13 +15,13 @@ func TestConfigBuilder_Build(t *testing.T) {
 	tests := []struct {
 		name          string
 		setup         func(*ConfigBuilder)
-		validate      func(*testing.T, *envoy_bootstrap.Bootstrap)
+		validate      func(*testing.T, *envoybootstrapv3.Bootstrap)
 		wantErrSubstr string
 	}{
 		{
 			name:  "empty builder",
 			setup: func(b *ConfigBuilder) {},
-			validate: func(t *testing.T, got *envoy_bootstrap.Bootstrap) {
+			validate: func(t *testing.T, got *envoybootstrapv3.Bootstrap) {
 				if got == nil {
 					t.Fatal("Build() returned nil bootstrap")
 				}
@@ -39,7 +39,7 @@ func TestConfigBuilder_Build(t *testing.T) {
 				// Add a dummy per-filter config
 				b.AddFilterConfig("test-filter", &envoy_hcm.HttpConnectionManager{StatPrefix: "dummy"})
 			},
-			validate: func(t *testing.T, got *envoy_bootstrap.Bootstrap) {
+			validate: func(t *testing.T, got *envoybootstrapv3.Bootstrap) {
 				hcm := unmarshalHCM(t, got)
 				vhosts := hcm.GetRouteConfig().GetVirtualHosts()
 				if len(vhosts) != 1 {
@@ -53,9 +53,9 @@ func TestConfigBuilder_Build(t *testing.T) {
 		{
 			name: "with clusters",
 			setup: func(b *ConfigBuilder) {
-				b.clusters = []*envoy_cluster.Cluster{{Name: "test_cluster"}}
+				b.clusters = []*envoyclusterv3.Cluster{{Name: "test_cluster"}}
 			},
-			validate: func(t *testing.T, got *envoy_bootstrap.Bootstrap) {
+			validate: func(t *testing.T, got *envoybootstrapv3.Bootstrap) {
 				want := 1
 				if diff := cmp.Diff(want, len(got.GetStaticResources().GetClusters())); diff != "" {
 					t.Fatalf("cluster count mismatch (-want +got):\n%s", diff)
@@ -85,7 +85,7 @@ func TestConfigBuilder_Build(t *testing.T) {
 }
 
 // unmarshalHCM pulls the first HCM filter out of the generated bootstrap for inspection.
-func unmarshalHCM(t *testing.T, bs *envoy_bootstrap.Bootstrap) *envoy_hcm.HttpConnectionManager {
+func unmarshalHCM(t *testing.T, bs *envoybootstrapv3.Bootstrap) *envoy_hcm.HttpConnectionManager {
 	t.Helper()
 
 	l := bs.GetStaticResources().GetListeners()[0]

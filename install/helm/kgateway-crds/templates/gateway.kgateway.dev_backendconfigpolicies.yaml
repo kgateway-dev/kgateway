@@ -7,6 +7,7 @@ metadata:
   labels:
     app: kgateway
     app.kubernetes.io/name: kgateway
+    gateway.networking.k8s.io/policy: Direct
   name: backendconfigpolicies.gateway.kgateway.dev
 spec:
   group: gateway.kgateway.dev
@@ -36,8 +37,8 @@ spec:
                   idleTimeout:
                     type: string
                     x-kubernetes-validations:
-                    - message: idleTimeout must be a valid duration string
-                      rule: duration(self) >= duration('0s')
+                    - message: invalid duration value
+                      rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
                   maxHeadersCount:
                     type: integer
                   maxRequestsPerConnection:
@@ -45,22 +46,14 @@ spec:
                   maxStreamDuration:
                     type: string
                     x-kubernetes-validations:
-                    - message: maxStreamDuration must be a valid duration string
-                      rule: duration(self) >= duration('0s')
+                    - message: invalid duration value
+                      rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
                 type: object
-                x-kubernetes-validations:
-                - message: idleTimeout must be a valid duration string (e.g. "1s",
-                    "500ms")
-                  rule: (!has(self.idleTimeout) || (has(self.idleTimeout) && self.idleTimeout.matches('^([0-9]{1,5}(h|m|s|ms)){1,4}$')))
-                - message: maxStreamDuration must be a valid duration string (e.g.
-                    "1s", "500ms")
-                  rule: (!has(self.maxStreamDuration) || (has(self.maxStreamDuration)
-                    && self.maxStreamDuration.matches('^([0-9]{1,5}(h|m|s|ms)){1,4}$')))
               connectTimeout:
                 type: string
                 x-kubernetes-validations:
-                - message: connectTimeout must be a valid duration string
-                  rule: duration(self) >= duration('0s')
+                - message: invalid duration value
+                  rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
               healthCheck:
                 properties:
                   grpc:
@@ -96,13 +89,13 @@ spec:
                   interval:
                     type: string
                     x-kubernetes-validations:
-                    - message: interval must be a valid duration string
-                      rule: duration(self) >= duration('0s')
+                    - message: invalid duration value
+                      rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
                   timeout:
                     type: string
                     x-kubernetes-validations:
-                    - message: timeout must be a valid duration string
-                      rule: duration(self) >= duration('0s')
+                    - message: invalid duration value
+                      rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
                   unhealthyThreshold:
                     format: int32
                     type: integer
@@ -138,7 +131,9 @@ spec:
                     x-kubernetes-validations:
                     - message: InitialConnectionWindowSize must be between 65535 and
                         2147483647 bytes (inclusive)
-                      rule: quantity(self).isGreaterThan(quantity('65534')) && quantity(self).isLessThan(quantity('2147483648'))
+                      rule: (type(self) == int && int(self) >= 65535 && int(self)
+                        <= 2147483647) || (type(self) == string && quantity(self).isGreaterThan(quantity('65534'))
+                        && quantity(self).isLessThan(quantity('2147483648')))
                   initialStreamWindowSize:
                     anyOf:
                     - type: integer
@@ -148,7 +143,9 @@ spec:
                     x-kubernetes-validations:
                     - message: InitialStreamWindowSize must be between 65535 and 2147483647
                         bytes (inclusive)
-                      rule: quantity(self).isGreaterThan(quantity('65534')) && quantity(self).isLessThan(quantity('2147483648'))
+                      rule: (type(self) == int && int(self) >= 65535 && int(self)
+                        <= 2147483647) || (type(self) == string && quantity(self).isGreaterThan(quantity('65534'))
+                        && quantity(self).isLessThan(quantity('2147483648')))
                   maxConcurrentStreams:
                     type: integer
                   overrideStreamErrorOnInvalidHttpMessage:
@@ -176,7 +173,7 @@ spec:
                             x-kubernetes-validations:
                             - message: Aggression, if specified, must be a string
                                 representing a number greater than 0.0
-                              rule: self == "" || (self.matches('^-?(?:[0-9]+(?:\\.[0-9]*)?|\\.[0-9]+)$')
+                              rule: (self.matches('^-?(?:[0-9]+(?:\\.[0-9]*)?|\\.[0-9]+)$')
                                 && double(self) > 0.0)
                           minWeightPercent:
                             format: int32
@@ -184,8 +181,8 @@ spec:
                           window:
                             type: string
                             x-kubernetes-validations:
-                            - message: window must be a valid duration string
-                              rule: duration(self) >= duration('0s')
+                            - message: invalid duration value
+                              rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
                         type: object
                     type: object
                   localityType:
@@ -193,6 +190,9 @@ spec:
                     - WeightedLb
                     type: string
                   maglev:
+                    properties:
+                      useHostnameForHashing:
+                        type: boolean
                     type: object
                   random:
                     type: object
@@ -204,6 +204,8 @@ spec:
                       minimumRingSize:
                         format: int64
                         type: integer
+                      useHostnameForHashing:
+                        type: boolean
                     type: object
                   roundRobin:
                     properties:
@@ -214,7 +216,7 @@ spec:
                             x-kubernetes-validations:
                             - message: Aggression, if specified, must be a string
                                 representing a number greater than 0.0
-                              rule: self == "" || (self.matches('^-?(?:[0-9]+(?:\\.[0-9]*)?|\\.[0-9]+)$')
+                              rule: (self.matches('^-?(?:[0-9]+(?:\\.[0-9]*)?|\\.[0-9]+)$')
                                 && double(self) > 0.0)
                           minWeightPercent:
                             format: int32
@@ -222,18 +224,15 @@ spec:
                           window:
                             type: string
                             x-kubernetes-validations:
-                            - message: window must be a valid duration string
-                              rule: duration(self) >= duration('0s')
+                            - message: invalid duration value
+                              rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
                         type: object
                     type: object
                   updateMergeWindow:
                     type: string
                     x-kubernetes-validations:
-                    - message: updateMergeWindow must be a valid duration string
-                      rule: duration(self) >= duration('0s')
-                  useHostnameForHashing:
-                    default: false
-                    type: boolean
+                    - message: invalid duration value
+                      rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
                 type: object
                 x-kubernetes-validations:
                 - message: at most one of the fields in [leastRequest roundRobin ringHash
@@ -303,8 +302,8 @@ spec:
                   keepAliveInterval:
                     type: string
                     x-kubernetes-validations:
-                    - message: keepAliveInterval must be a valid duration string
-                      rule: duration(self) >= duration('0s')
+                    - message: invalid duration value
+                      rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
                     - message: keepAliveInterval must be at least 1 second
                       rule: duration(self) >= duration('1s')
                   keepAliveProbes:
@@ -312,8 +311,8 @@ spec:
                   keepAliveTime:
                     type: string
                     x-kubernetes-validations:
-                    - message: keepAliveTime must be a valid duration string
-                      rule: duration(self) >= duration('0s')
+                    - message: invalid duration value
+                      rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
                     - message: keepAliveTime must be at least 1 second
                       rule: duration(self) >= duration('1s')
                 type: object
@@ -362,14 +361,18 @@ spec:
                     type: object
                     x-kubernetes-map-type: atomic
                   sni:
+                    minLength: 1
                     type: string
                   tlsFiles:
                     properties:
                       rootCA:
+                        minLength: 1
                         type: string
                       tlsCertificate:
+                        minLength: 1
                         type: string
                       tlsKey:
+                        minLength: 1
                         type: string
                     type: object
                     x-kubernetes-validations:

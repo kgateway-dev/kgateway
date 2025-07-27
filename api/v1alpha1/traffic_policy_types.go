@@ -36,6 +36,8 @@ type TrafficPolicyList struct {
 }
 
 // TrafficPolicySpec defines the desired state of a traffic policy.
+// +kubebuilder:validation:XValidation:rule="!has(self.hashPolicies) || ((has(self.targetRefs) && self.targetRefs.all(r, r.kind == 'HTTPRoute')) || (has(self.targetSelectors) && self.targetSelectors.all(r, r.kind == 'HTTPRoute')))",message="hash policies can only be used when targeting HTTPRoute resources"
+// +kubebuilder:validation:XValidation:rule="!has(self.autoHostRewrite) || ((has(self.targetRefs) && self.targetRefs.all(r, r.kind == 'HTTPRoute')) || (has(self.targetSelectors) && self.targetSelectors.all(r, r.kind == 'HTTPRoute')))",message="autoHostRewrite can only be used when targeting HTTPRoute resources"
 type TrafficPolicySpec struct {
 	// TargetRefs specifies the target resources by reference to attach the policy to.
 	// +optional
@@ -80,6 +82,21 @@ type TrafficPolicySpec struct {
 	// Csrf specifies the Cross-Site Request Forgery (CSRF) policy for this traffic policy.
 	// +optional
 	Csrf *CSRFPolicy `json:"csrf,omitempty"`
+
+	// HashPolicies specifies the hash policies for hashing load balancers (RingHash, Maglev).
+	// Should be used in conjunction with Load Balancer on the BackendConfigPolicy.
+	// Note: can only be used when targeting routes.
+	// +optional
+	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:MaxItems=16
+	HashPolicies []*HashPolicy `json:"hashPolicies,omitempty"`
+
+	// AutoHostRewrite rewrites the Host header to the DNS name of the selected upstream.
+	// NOTE: This field is only honoured for HTTPRoute targets.
+	// NOTE: If `autoHostRewrite` is set on a route that also has a [URLRewrite filter](https://gateway-api.sigs.k8s.io/reference/spec/#httpurlrewritefilter)
+	// configured to override the `hostname`, the `hostname` value will be used and `autoHostRewrite` will be ignored.
+	// +optional
+	AutoHostRewrite *bool `json:"autoHostRewrite,omitempty"`
 
 	// Buffer can be used to set the maximum request size that will be buffered.
 	// Requests exceeding this size will return a 413 response.
@@ -202,7 +219,7 @@ type ExtAuthPolicy struct {
 	// When set to "DisableAll", the filter is disabled for this route.
 	// When empty, the filter is enabled as long as it is not disabled by another policy.
 	// +optional
-	Enablement ExtAuthEnabled `json:"enablement,omitempty"`
+	Enablement *ExtAuthEnabled `json:"enablement,omitempty"`
 
 	// WithRequestBody allows the request body to be buffered and sent to the authorization service.
 	// Warning buffering has implications for streaming and therefore performance.
@@ -253,7 +270,7 @@ type LocalRateLimitPolicy struct {
 	// TokenBucket represents the configuration for a token bucket local rate-limiting mechanism.
 	// It defines the parameters for controlling the rate at which requests are allowed.
 	// +optional
-	TokenBucket *TokenBucket `json:"tokenBucket"`
+	TokenBucket *TokenBucket `json:"tokenBucket,omitempty"`
 }
 
 // TokenBucket defines the configuration for a token bucket rate-limiting mechanism.
@@ -278,7 +295,8 @@ type TokenBucket struct {
 	// This value must be a valid duration string (e.g., "1s", "500ms").
 	// It determines the frequency of token replenishment.
 	// +required
-	FillInterval gwv1.Duration `json:"fillInterval"`
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+	FillInterval metav1.Duration `json:"fillInterval"`
 }
 
 // RateLimitPolicy defines a global rate limiting policy using an external service.
@@ -339,7 +357,8 @@ type RateLimitDescriptorEntry struct {
 	// Header specifies a request header to extract the descriptor value from.
 	// This field must be specified when Type is Header.
 	// +optional
-	Header string `json:"header,omitempty"`
+	// +kubebuilder:validation:MinLength=1
+	Header *string `json:"header,omitempty"`
 }
 
 // RateLimitDescriptorEntryGeneric defines a generic key-value descriptor entry.
@@ -379,8 +398,60 @@ type CSRFPolicy struct {
 	// Specifies additional source origins that will be allowed in addition to the destination origin.
 	// +optional
 	// +kubebuilder:validation:MaxItems=16
-	AdditionalOrigins []*StringMatcher `json:"additionalOrigins,omitempty"`
+	AdditionalOrigins []StringMatcher `json:"additionalOrigins,omitempty"`
 }
+
+// +kubebuilder:validation:ExactlyOneOf=header;cookie;sourceIP
+type HashPolicy struct {
+	// Header specifies a header's value as a component of the hash key.
+	// +optional
+	Header *Header `json:"header,omitempty"`
+
+	// Cookie specifies a given cookie as a component of the hash key.
+	// +optional
+	Cookie *Cookie `json:"cookie,omitempty"`
+
+	// SourceIP specifies whether to use the request's source IP address as a component of the hash key.
+	// +optional
+	SourceIP *SourceIP `json:"sourceIP,omitempty"`
+
+	// Terminal, if set, and a hash key is available after evaluating this policy, will cause Envoy to skip the subsequent policies and
+	// use the key as it is.
+	// This is useful for defining "fallback" policies and limiting the time Envoy spends generating hash keys.
+	// +optional
+	Terminal *bool `json:"terminal,omitempty"`
+}
+
+type Header struct {
+	// Name is the name of the header to use as a component of the hash key.
+	// +kubebuilder:validation:MinLength=1
+	Name string `json:"name"`
+}
+
+type Cookie struct {
+	// Name of the cookie.
+	// +kubebuilder:validation:MinLength=1
+	Name string `json:"name"`
+
+	// Path is the name of the path for the cookie.
+	// +optional
+	Path *string `json:"path,omitempty"`
+
+	// TTL specifies the time to live of the cookie.
+	// If specified, a cookie with the TTL will be generated if the cookie is not present.
+	// If the TTL is present and zero, the generated cookie will be a session cookie.
+	// +optional
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+	TTL *metav1.Duration `json:"ttl,omitempty"`
+
+	// Attributes are additional attributes for the cookie.
+	// +optional
+	// +kubebuilder:validation:MinProperties=1
+	// +kubebuilder:validation:MaxProperties=10
+	Attributes map[string]string `json:"attributes,omitempty"`
+}
+
+type SourceIP struct{}
 
 type Buffer struct {
 	// MaxRequestSize sets the maximum size in bytes of a message body to buffer.

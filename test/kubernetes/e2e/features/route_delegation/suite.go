@@ -52,6 +52,7 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 			"TestUnresolvedChild":             {unresolvedChildManifest},
 			"TestMatcherInheritance":          {matcherInheritanceManifest},
 			"TestRouteWeight":                 {routeWeightManifest},
+			"TestPolicyMerging":               {policyMergingManifest},
 		},
 	}
 }
@@ -322,6 +323,68 @@ func (s *tsuite) TestRouteWeight() {
 			Body:       ContainSubstring(pathTeam2),
 			Headers: map[string]any{
 				"origin": "svc1",
+			},
+		})
+}
+
+func (s *tsuite) TestPolicyMerging() {
+	// Assert traffic to parent1.com/anything/team1 uses svc1's transformation policy
+	s.ti.Assertions.AssertEventuallyConsistentCurlResponse(s.ctx, defaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHostPort(proxyHostPort),
+			curl.WithPath(pathTeam1),
+			curl.WithHostHeader(routeParent1Host),
+		},
+		&testmatchers.HttpResponse{
+			StatusCode: http.StatusOK,
+			Body:       ContainSubstring(pathTeam1),
+			Headers: map[string]any{
+				"origin": "svc1",
+			},
+		})
+
+	// Assert traffic to parent1.com/anything/team2 uses svc2's transformation policy
+	s.ti.Assertions.AssertEventuallyConsistentCurlResponse(s.ctx, defaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHostPort(proxyHostPort),
+			curl.WithPath(pathTeam2),
+			curl.WithHostHeader(routeParent1Host),
+		},
+		&testmatchers.HttpResponse{
+			StatusCode: http.StatusOK,
+			Body:       ContainSubstring(pathTeam2),
+			Headers: map[string]any{
+				"origin": "svc2",
+			},
+		})
+
+	// Assert traffic to parent2.com/anything/team1 uses parent2's transformation policy
+	s.ti.Assertions.AssertEventuallyConsistentCurlResponse(s.ctx, defaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHostPort(proxyHostPort),
+			curl.WithPath(pathTeam1),
+			curl.WithHostHeader(routeParent2Host),
+		},
+		&testmatchers.HttpResponse{
+			StatusCode: http.StatusOK,
+			Body:       ContainSubstring(pathTeam1),
+			Headers: map[string]any{
+				"origin": "parent2",
+			},
+		})
+
+	// Assert traffic to parent2.com/anything/team2 uses parent2's transformation policy
+	s.ti.Assertions.AssertEventuallyConsistentCurlResponse(s.ctx, defaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHostPort(proxyHostPort),
+			curl.WithPath(pathTeam2),
+			curl.WithHostHeader(routeParent2Host),
+		},
+		&testmatchers.HttpResponse{
+			StatusCode: http.StatusOK,
+			Body:       ContainSubstring(pathTeam2),
+			Headers: map[string]any{
+				"origin": "parent2",
 			},
 		})
 }

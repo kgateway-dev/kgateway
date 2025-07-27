@@ -61,9 +61,19 @@ listeners:
         statPrefix: http
         useRemoteAddress: true
     name: listener~8080
+  metadata:
+    filterMetadata:
+      merge.TrafficPolicy.gateway.kgateway.dev:
+        transformation:
+        - gateway.kgateway.dev/TrafficPolicy/gwtest/transform-for-gateway
   name: listener~8080
 routes:
 - ignorePortInHostMatching: true
+  metadata:
+    filterMetadata:
+      merge.TrafficPolicy.gateway.kgateway.dev:
+        transformation:
+        - gateway.kgateway.dev/TrafficPolicy/gwtest/transform-for-gateway
   name: listener~8080
   typedPerFilterConfig:
     transformation:

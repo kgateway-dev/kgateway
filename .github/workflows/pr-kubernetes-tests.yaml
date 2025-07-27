@@ -33,7 +33,7 @@ jobs:
         # July 8, 2025: ~10 minutes
         - cluster-name: 'cluster-one'
           go-test-args: '-v -timeout=25m'
-          go-test-run-regex: '^TestKgateway$$/^BasicRouting$$|^TestKgateway$$/^PathMatching$$|^TestKgateway$$/^HTTPRouteServices$$|^TestKgateway$$/^TLSRouteServices$$|^TestKgateway$$/^GRPCRouteServices$$|^TestListenerSet$$'
+          go-test-run-regex: '^TestKgateway$$/^BasicRouting$$|^TestKgateway$$/^PathMatching$$|^TestKgateway$$/^HTTPRouteServices$$|^TestKgateway$$/^TLSRouteServices$$|^TestKgateway$$/^GRPCRouteServices$$|^TestListenerSet$$|^TestKgateway$$/^SessionPersistence$$'
           localstack: 'false'
         # July 8, 2025: ~13 minutes
         - cluster-name: 'cluster-two'
@@ -43,17 +43,22 @@ jobs:
         # July 8, 2025: ~11 minutes
         - cluster-name: 'cluster-three'
           go-test-args: '-v -timeout=25m'
-          go-test-run-regex: '^TestKgateway$$/^DynamicForwardProxy$$|^TestKgateway$$/^Deployer$$|^TestKgateway$$/^RouteDelegation$$|^TestKgateway$$/^Lambda$$|^TestKgateway$$/^AccessLog$$|^TestKgateway$$/^LocalRateLimit$$|^TestKgateway$$/^Cors$$|^TestKgateway$$/^BackendConfigPolicy$$|^TestKgateway$$/^Metrics$$|^TestKgateway$$/^HttpListenerPolicy$$|^TestKgateway$$/^Tracing$$|^TestKgateway$$/^DirectResponse$$'
+          go-test-run-regex: '^TestKgateway$$/^DynamicForwardProxy$$|^TestKgateway$$/^Deployer$$|^TestKgateway$$/^RouteDelegation$$|^TestKgateway$$/^Lambda$$|^TestKgateway$$/^AccessLog$$|^TestKgateway$$/^LocalRateLimit$$|^TestKgateway$$/^Cors$$|^TestKgateway$$/^BackendConfigPolicy$$|^TestKgateway$$/^HttpListenerPolicy$$|^TestKgateway$$/^Tracing$$|^TestKgateway$$/^DirectResponse$$'
           localstack: 'true'
         # July 8, 2025: ~9 minutes
         - cluster-name: 'cluster-four'
           go-test-args: '-v -timeout=25m'
-          go-test-run-regex: '^TestKgateway$$/^ExtProc$$|^TestKgateway$$/^ExtAuth$$|^TestKgateway$$/^TCPRouteServices$$|^TestKgateway$$/^PolicySelector$$|^TestKgateway$$/^Backends$$|^TestKgateway$$/^Transforms$$|^TestKgateway$$/^BackendTLSPolicies$$|^TestKgateway$$/^CSRF$$|^TestInferenceExtension$$'
+          go-test-run-regex: '^TestKgateway$$/^ExtProc$$|^TestKgateway$$/^ExtAuth$$|^TestKgateway$$/^TCPRouteServices$$|^TestKgateway$$/^PolicySelector$$|^TestKgateway$$/^Backends$$|^TestKgateway$$/^Transforms$$|^TestKgateway$$/^BackendTLSPolicies$$|^TestKgateway$$/^CSRF$$|^TestKgateway$$/^AutoHostRewrite$$|^TestInferenceExtension$$'
           localstack: 'false'
         # July 8, 2025: ~7 minutes
         - cluster-name: 'cluster-ai'
           go-test-args: '-v -timeout=25m'
           go-test-run-regex: '^TestAIExtension'
+          localstack: 'false'
+        # July 11, 2025: ~4 minutes
+        - cluster-name: 'cluster-metrics'
+          go-test-args: '-v -timeout=25m'
+          go-test-run-regex: '^TestKgatewayMetrics$$'
           localstack: 'false'
         # July 8, 2025: ~4 minutes
         - cluster-name: 'cluster-multi-install'

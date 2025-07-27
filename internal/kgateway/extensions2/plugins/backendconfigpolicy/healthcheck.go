@@ -1,19 +1,19 @@
 package backendconfigpolicy
 
 import (
-	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 )
 
-func translateHealthCheck(hc *v1alpha1.HealthCheck) *corev3.HealthCheck {
+func translateHealthCheck(hc *v1alpha1.HealthCheck) *envoycorev3.HealthCheck {
 	if hc == nil {
 		return nil
 	}
 
-	healthCheck := &corev3.HealthCheck{}
+	healthCheck := &envoycorev3.HealthCheck{}
 
 	if hc.Timeout != nil {
 		healthCheck.Timeout = durationpb.New(hc.Timeout.Duration)
@@ -29,21 +29,21 @@ func translateHealthCheck(hc *v1alpha1.HealthCheck) *corev3.HealthCheck {
 	}
 
 	if hc.Http != nil {
-		httpHealthCheck := &corev3.HealthCheck_HttpHealthCheck{
+		httpHealthCheck := &envoycorev3.HealthCheck_HttpHealthCheck{
 			Path: hc.Http.Path,
 		}
 		if hc.Http.Host != nil {
 			httpHealthCheck.Host = *hc.Http.Host
 		}
 		if hc.Http.Method != nil {
-			httpHealthCheck.Method = corev3.RequestMethod(corev3.RequestMethod_value[*hc.Http.Method])
+			httpHealthCheck.Method = envoycorev3.RequestMethod(envoycorev3.RequestMethod_value[*hc.Http.Method])
 		}
-		healthCheck.HealthChecker = &corev3.HealthCheck_HttpHealthCheck_{
+		healthCheck.HealthChecker = &envoycorev3.HealthCheck_HttpHealthCheck_{
 			HttpHealthCheck: httpHealthCheck,
 		}
 	} else if hc.Grpc != nil {
-		healthCheck.HealthChecker = &corev3.HealthCheck_GrpcHealthCheck_{
-			GrpcHealthCheck: &corev3.HealthCheck_GrpcHealthCheck{},
+		healthCheck.HealthChecker = &envoycorev3.HealthCheck_GrpcHealthCheck_{
+			GrpcHealthCheck: &envoycorev3.HealthCheck_GrpcHealthCheck{},
 		}
 		if hc.Grpc.ServiceName != nil {
 			healthCheck.GetGrpcHealthCheck().ServiceName = *hc.Grpc.ServiceName

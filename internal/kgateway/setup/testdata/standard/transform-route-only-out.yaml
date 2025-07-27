@@ -72,6 +72,11 @@ routes:
     routes:
     - match:
         prefix: /
+      metadata:
+        filterMetadata:
+          merge.TrafficPolicy.gateway.kgateway.dev:
+            transformation:
+            - gateway.kgateway.dev/TrafficPolicy/gwtest/transform-request-response-for-route
       name: listener~8080~www_example-request-response_com-route-0-httproute-happypath-request-response-gwtest-0-0-matcher-0
       route:
         cluster: kube_gwtest_reviews_8080
@@ -104,6 +109,11 @@ routes:
     routes:
     - match:
         prefix: /
+      metadata:
+        filterMetadata:
+          merge.TrafficPolicy.gateway.kgateway.dev:
+            transformation:
+            - gateway.kgateway.dev/TrafficPolicy/gwtest/transform-request-for-route
       name: listener~8080~www_example-request_com-route-0-httproute-happypath-request-gwtest-0-0-matcher-0
       route:
         cluster: kube_gwtest_reviews_8080
@@ -126,6 +136,11 @@ routes:
     routes:
     - match:
         prefix: /
+      metadata:
+        filterMetadata:
+          merge.TrafficPolicy.gateway.kgateway.dev:
+            transformation:
+            - gateway.kgateway.dev/TrafficPolicy/gwtest/transform-response-for-route
       name: listener~8080~www_example-response_com-route-0-httproute-happypath-response-gwtest-0-0-matcher-0
       route:
         cluster: kube_gwtest_reviews_8080

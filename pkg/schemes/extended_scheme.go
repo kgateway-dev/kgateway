@@ -45,8 +45,8 @@ func AddInferExtV1A2Scheme(restConfig *rest.Config, scheme *runtime.Scheme) (boo
 		if err := rbacv1.AddToScheme(scheme); err != nil {
 			return false, fmt.Errorf("error adding RBAC v1 to scheme: %w", err)
 		}
-		if err := infextv1a2.AddToScheme(scheme); err != nil {
-			return false, fmt.Errorf("error adding Gateway API Inference Extension v1alpha1 to scheme: %w", err)
+		if err := infextv1a2.Install(scheme); err != nil {
+			return false, fmt.Errorf("error adding Gateway API Inference Extension v1alpha2 to scheme: %w", err)
 		}
 	}
 

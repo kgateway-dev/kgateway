@@ -96,12 +96,17 @@ var _ = Describe("GwControllerMetrics", func() {
 	})
 
 	Context("when metrics are not active", func() {
+		var oldRegistry metrics.RegistererGatherer
+
 		BeforeEach(func() {
 			metrics.SetActive(false)
+			oldRegistry = metrics.Registry()
+			metrics.SetRegistry(false, metrics.NewRegistry())
 		})
 
 		AfterEach(func() {
 			metrics.SetActive(true)
+			metrics.SetRegistry(false, oldRegistry)
 		})
 
 		It("should not record metrics if metrics are not active", func() {

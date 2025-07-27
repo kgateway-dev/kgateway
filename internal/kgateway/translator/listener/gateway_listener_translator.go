@@ -17,7 +17,6 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ports"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/query"
 	route "github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/httproute"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/routeutils"
@@ -113,6 +112,10 @@ func (ml *MergedListeners) AppendListener(
 	return nil
 }
 
+func getListenerPortNumber(listener ir.Listener) gwv1.PortNumber {
+	return gwv1.PortNumber(listener.Port)
+}
+
 func (ml *MergedListeners) appendHttpListener(
 	listener ir.Listener,
 	routesWithHosts []*query.RouteInfo,
@@ -129,7 +132,7 @@ func (ml *MergedListeners) appendHttpListener(
 		parents: []httpFilterChainParent{parent},
 	}
 	listenerName := GenerateListenerName(listener)
-	finalPort := gwv1.PortNumber(ports.TranslatePort(uint16(listener.Port)))
+	finalPort := getListenerPortNumber(listener)
 
 	for _, lis := range ml.Listeners {
 		if lis.port == finalPort {
@@ -173,7 +176,7 @@ func (ml *MergedListeners) appendHttpsListener(
 
 	// Perform the port transformation away from privileged ports only once to use
 	// during both lookup and when appending the listener.
-	finalPort := gwv1.PortNumber(ports.TranslatePort(uint16(listener.Port)))
+	finalPort := getListenerPortNumber(listener)
 
 	listenerName := GenerateListenerName(listener)
 	for _, lis := range ml.Listeners {
@@ -199,38 +202,16 @@ func (ml *MergedListeners) AppendTcpListener(
 	routeInfos []*query.RouteInfo,
 	reporter reports.ListenerReporter,
 ) {
-	var validRouteInfos []*query.RouteInfo
-
-	for _, routeInfo := range routeInfos {
-		tRoute, ok := routeInfo.Object.(*ir.TcpRouteIR)
-		if !ok {
-			continue
-		}
-
-		if len(tRoute.ParentRefs) == 0 {
-			logger.Warn("no parent references found for TCPRoute", "resource_ref", tRoute.ResourceName())
-			continue
-		}
-
-		validRouteInfos = append(validRouteInfos, routeInfo)
-	}
-
-	// If no valid routes are found, do not create a listener
-	if len(validRouteInfos) == 0 {
-		logger.Error("no valid routes found for listener", "listener", listener.Name)
-		return
-	}
-
 	parent := tcpFilterChainParent{
 		gatewayListenerName: query.GenerateRouteKey(listener.Parent, string(listener.Name)),
-		routesWithHosts:     validRouteInfos,
+		routesWithHosts:     routeInfos,
 	}
 
 	fc := tcpFilterChain{
 		parents: parent,
 	}
 	listenerName := GenerateListenerName(listener)
-	finalPort := gwv1.PortNumber(ports.TranslatePort(uint16(listener.Port)))
+	finalPort := getListenerPortNumber(listener)
 
 	for _, lis := range ml.Listeners {
 		if lis.port == finalPort {
@@ -257,31 +238,9 @@ func (ml *MergedListeners) AppendTlsListener(
 	routeInfos []*query.RouteInfo,
 	reporter reports.ListenerReporter,
 ) {
-	var validRouteInfos []*query.RouteInfo
-
-	for _, routeInfo := range routeInfos {
-		tRoute, ok := routeInfo.Object.(*ir.TlsRouteIR)
-		if !ok {
-			continue
-		}
-
-		if len(tRoute.ParentRefs) == 0 {
-			logger.Warn("no parent references found for TLSRoute", "resource_ref", tRoute.ResourceName())
-			continue
-		}
-
-		validRouteInfos = append(validRouteInfos, routeInfo)
-	}
-
-	// If no valid routes are found, do not create a listener
-	if len(validRouteInfos) == 0 {
-		logger.Error("no valid routes found for listener", "listener", listener.Name)
-		return
-	}
-
 	parent := tcpFilterChainParent{
 		gatewayListenerName: query.GenerateRouteKey(listener.Parent, string(listener.Name)),
-		routesWithHosts:     validRouteInfos,
+		routesWithHosts:     routeInfos,
 	}
 
 	fc := tcpFilterChain{
@@ -291,7 +250,7 @@ func (ml *MergedListeners) AppendTlsListener(
 	}
 
 	listenerName := GenerateListenerName(listener)
-	finalPort := gwv1.PortNumber(ports.TranslatePort(uint16(listener.Port)))
+	finalPort := getListenerPortNumber(listener)
 
 	for _, lis := range ml.Listeners {
 		if lis.port == finalPort {
@@ -378,7 +337,7 @@ func (ml *MergedListener) TranslateListener(
 
 	// Translate HTTPS filter chains
 	for _, mfc := range ml.httpsFilterChains {
-		httpsFilterChain := mfc.translateHttpsFilterChain(
+		httpsFilterChain, err := mfc.translateHttpsFilterChain(
 			kctx,
 			ctx,
 			mfc.gatewayListenerName,
@@ -388,9 +347,9 @@ func (ml *MergedListener) TranslateListener(
 			reporter,
 			ml.listenerReporter,
 		)
-		if httpsFilterChain == nil {
+		if err != nil {
 			// Log and skip invalid HTTPS filter chains
-			logger.Error("failed to translate HTTPS filter chain for listener", "listener", ml.name)
+			logger.Error("failed to translate HTTPS filter chain for listener", "listener", ml.name, "error", err)
 			continue
 		}
 
@@ -714,7 +673,7 @@ func (httpsFilterChain *httpsFilterChain) translateHttpsFilterChain(
 	queries query.GatewayQueries,
 	reporter reports.Reporter,
 	listenerReporter reports.ListenerReporter,
-) *ir.HttpFilterChainIR {
+) (*ir.HttpFilterChainIR, error) {
 	// process routes first, so any route related errors are reported on the httproute.
 	routesByHost := map[string]routeutils.SortableRoutes{}
 	buildRoutesPerHost(
@@ -756,22 +715,33 @@ func (httpsFilterChain *httpsFilterChain) translateHttpsFilterChain(
 		queries,
 	)
 	if err != nil {
-		reason := gwv1.ListenerReasonRefNotPermitted
-		if !errors.Is(err, krtcollections.ErrMissingReferenceGrant) {
-			reason = gwv1.ListenerReasonInvalidCertificateRef
+		reason := gwv1.ListenerReasonInvalidCertificateRef
+		message := "Invalid certificate ref."
+		if errors.Is(err, krtcollections.ErrMissingReferenceGrant) {
+			reason = gwv1.ListenerReasonRefNotPermitted
+			message = "Reference not permitted by ReferenceGrant."
+		}
+		if errors.Is(err, sslutils.ErrInvalidTlsSecret) {
+			message = err.Error()
+		}
+		var notFoundErr *krtcollections.NotFoundError
+		if errors.As(err, &notFoundErr) {
+			message = fmt.Sprintf("Secret %s/%s not found.", notFoundErr.NotFoundObj.Namespace, notFoundErr.NotFoundObj.Name)
 		}
 		listenerReporter.SetCondition(reports.ListenerCondition{
-			Type:   gwv1.ListenerConditionResolvedRefs,
-			Status: metav1.ConditionFalse,
-			Reason: reason,
+			Type:    gwv1.ListenerConditionResolvedRefs,
+			Status:  metav1.ConditionFalse,
+			Reason:  reason,
+			Message: message,
 		})
 		// listener with no ssl is invalid. We return nil so set programmed to false
 		listenerReporter.SetCondition(reports.ListenerCondition{
-			Type:   gwv1.ListenerConditionProgrammed,
-			Status: metav1.ConditionFalse,
-			Reason: gwv1.ListenerReasonInvalid,
+			Type:    gwv1.ListenerConditionProgrammed,
+			Status:  metav1.ConditionFalse,
+			Reason:  gwv1.ListenerReasonInvalid,
+			Message: message,
 		})
-		return nil
+		return nil, err
 	}
 	sort.Slice(virtualHosts, func(i, j int) bool {
 		return virtualHosts[i].Name < virtualHosts[j].Name
@@ -784,7 +754,7 @@ func (httpsFilterChain *httpsFilterChain) translateHttpsFilterChain(
 		},
 		AttachedPolicies: httpsFilterChain.attachedPolicies,
 		Vhosts:           virtualHosts,
-	}
+	}, nil
 }
 
 func buildRoutesPerHost(

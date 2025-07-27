@@ -7,7 +7,7 @@ import (
 	"slices"
 	"strings"
 
-	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
@@ -25,7 +25,7 @@ type BackendInit struct {
 	// based prioritization applied, as well as endpoint plugins applied.
 	// This will never override a ClusterLoadAssignment that is set inside of an InitBackend implementation.
 	// The CLA is only added if the Cluster has a compatible type (EDS, LOGICAL_DNS, STRICT_DNS).
-	InitBackend func(ctx context.Context, in BackendObjectIR, out *envoy_config_cluster_v3.Cluster) *EndpointsForBackend
+	InitBackend func(ctx context.Context, in BackendObjectIR, out *envoyclusterv3.Cluster) *EndpointsForBackend
 }
 
 type PolicyRef struct {
@@ -66,9 +66,9 @@ type PolicyAtt struct {
 
 	// MergeOrigins maps field names in the PolicyIr to their original source in the merged PolicyAtt.
 	// It can be used to determine which PolicyAtt a merged field came from.
-	MergeOrigins map[string]*AttachedPolicyRef
+	MergeOrigins MergeOrigins
 
-	DelegationInheritedPolicyPriority apiannotations.DelegationInheritedPolicyPriorityValue
+	InheritedPolicyPriority apiannotations.InheritedPolicyPriorityValue
 
 	// HierarchicalPriority is the priority of the policy in an inheritance hierarchy.
 	// A higher value means higher priority. It is used to accurately merge policies
@@ -85,14 +85,19 @@ func (c PolicyAtt) FormatErrors() string {
 	for i, err := range c.Errors {
 		errs[i] = err.Error()
 	}
-	return strings.Join(errs, "; ")
+
+	errsStr := strings.Join(errs, "; ")
+	if c.MergeOrigins.IsSet() {
+		return "Merged policy: " + errsStr
+	}
+	return errsStr
 }
 
 type PolicyAttachmentOpts func(*PolicyAtt)
 
-func WithDelegationInheritedPolicyPriority(priority apiannotations.DelegationInheritedPolicyPriorityValue) PolicyAttachmentOpts {
+func WithInheritedPolicyPriority(priority apiannotations.InheritedPolicyPriorityValue) PolicyAttachmentOpts {
 	return func(p *PolicyAtt) {
-		p.DelegationInheritedPolicyPriority = priority
+		p.InheritedPolicyPriority = priority
 	}
 }
 
@@ -105,6 +110,22 @@ func (c PolicyAtt) TargetRef() *AttachedPolicyRef {
 }
 
 func (c PolicyAtt) Equals(in PolicyAtt) bool {
+	if !slices.EqualFunc(c.Errors, in.Errors, func(e1, e2 error) bool {
+		if e1 == nil && e2 != nil {
+			return false
+		}
+		if e1 != nil && e2 == nil {
+			return false
+		}
+		if (e1 != nil && e2 != nil) && e1.Error() != e2.Error() {
+			return false
+		}
+
+		return true
+	}) {
+		return false
+	}
+
 	return c.GroupKind == in.GroupKind && ptrEquals(c.PolicyRef, in.PolicyRef) && c.PolicyIr.Equals(in.PolicyIr)
 }
 
@@ -123,18 +144,18 @@ type AttachedPolicies struct {
 }
 
 // ApplyOrderedGroupKinds returns a list of GroupKinds sorted by their application order
-// such that subsequent policies can override previous ones.
-// Built-in policies are applied last so that they can override policies from other GroupKinds
-// since they are considered more specific than other policy attachments.
+// from highest to lowest priority.
+// Built-in policies are applied first as they are of highest priority relative to other GroupKinds
+// as they are considered more specific than other policy attachments.
 func (a AttachedPolicies) ApplyOrderedGroupKinds() []schema.GroupKind {
 	return slices.SortedStableFunc(maps.Keys(a.Policies), func(a, b schema.GroupKind) int {
 		switch {
 		case a.Group == VirtualBuiltInGK.Group:
-			// If a is builtin, it should come after b
-			return 1
-		case b.Group == VirtualBuiltInGK.Group:
-			// If b is builtin, a should come before b
+			// If a is builtin, a should come before b
 			return -1
+		case b.Group == VirtualBuiltInGK.Group:
+			// If b is builtin, a should come after b
+			return 1
 		default:
 			// neither is builtin, preserve relative order
 			return 0
@@ -175,6 +196,21 @@ func (a *AttachedPolicies) Append(l ...AttachedPolicies) {
 	}
 }
 
+// Append appends the policies in l in the given order to the policies in a.
+func (a *AttachedPolicies) AppendWithPriority(HierarchicalPriority int, l ...AttachedPolicies) {
+	if a.Policies == nil {
+		a.Policies = make(map[schema.GroupKind][]PolicyAtt)
+	}
+	for _, l := range l {
+		for k, v := range l.Policies {
+			for j := range v {
+				v[j].HierarchicalPriority = HierarchicalPriority
+			}
+			a.Policies[k] = append(a.Policies[k], v...)
+		}
+	}
+}
+
 // Prepend prepends the policies in l in the given to the policies in a.
 func (a *AttachedPolicies) Prepend(hierarchicalPriority int, l ...AttachedPolicies) {
 	if a.Policies == nil {
@@ -183,9 +219,6 @@ func (a *AttachedPolicies) Prepend(hierarchicalPriority int, l ...AttachedPolici
 	// iterate in the reverse order so that the input order in l is preserved at the end
 	for i := len(l) - 1; i >= 0; i-- {
 		for k, v := range l[i].Policies {
-			if a.Policies == nil {
-				a.Policies = make(map[schema.GroupKind][]PolicyAtt)
-			}
 			for j := range v {
 				v[j].HierarchicalPriority = hierarchicalPriority
 			}

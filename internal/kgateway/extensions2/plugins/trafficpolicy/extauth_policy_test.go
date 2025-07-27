@@ -5,8 +5,9 @@ import (
 	"testing"
 
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/utils/ptr"
 
-	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_ext_authz_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_authz/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -66,7 +67,7 @@ func TestApplyForRoute(t *testing.T) {
 		pCtx := &ir.RouteContext{
 			Policy: policy,
 		}
-		outputRoute := &envoy_config_route_v3.Route{}
+		outputRoute := &envoyroutev3.Route{}
 
 		// Execute
 		err := plugin.ApplyForRoute(ctx, pCtx, outputRoute)
@@ -91,7 +92,7 @@ func TestApplyForRoute(t *testing.T) {
 		pCtx := &ir.RouteContext{
 			Policy: policy,
 		}
-		outputRoute := &envoy_config_route_v3.Route{}
+		outputRoute := &envoyroutev3.Route{}
 
 		// Execute
 		err := plugin.ApplyForRoute(ctx, pCtx, outputRoute)
@@ -160,7 +161,7 @@ func TestExtAuthPolicyPlugin(t *testing.T) {
 		pCtx := &ir.RouteContext{
 			Policy: policy,
 		}
-		outputRoute := &envoy_config_route_v3.Route{}
+		outputRoute := &envoyroutev3.Route{}
 
 		// Execute
 		err := plugin.ApplyForRoute(ctx, pCtx, outputRoute)
@@ -181,14 +182,14 @@ func TestExtAuthPolicyPlugin(t *testing.T) {
 		policy := &TrafficPolicy{
 			spec: trafficPolicySpecIr{
 				extAuth: &extAuthIR{
-					enablement: v1alpha1.ExtAuthDisableAll,
+					enablement: ptr.To(v1alpha1.ExtAuthDisableAll),
 				},
 			},
 		}
 		pCtx := &ir.RouteContext{
 			Policy: policy,
 		}
-		outputRoute := &envoy_config_route_v3.Route{}
+		outputRoute := &envoyroutev3.Route{}
 
 		// Execute
 		err := plugin.ApplyForRoute(ctx, pCtx, outputRoute)

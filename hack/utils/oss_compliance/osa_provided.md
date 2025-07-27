@@ -3,20 +3,20 @@ Name|Version|License
 [agentgateway/agentgateway](https://github.com/agentgateway/agentgateway)|v0.4.31-0.20250519135723-61536c2b3fa0|Apache License 2.0
 [avast/retry-go](https://github.com/avast/retry-go)|v2.4.3+incompatible|MIT License
 [retry-go/v4](https://github.com/avast/retry-go)|v4.3.3|MIT License
-[xds/go](https://github.com/cncf/xds)|v0.0.0-20250121191232-2f005788dc42|Apache License 2.0
+[xds/go](https://github.com/cncf/xds)|v0.0.0-20250326154945-ae57f3c0d45f|Apache License 2.0
 [envoyproxy/go-control-plane](https://github.com/envoyproxy/go-control-plane)|v0.13.5-0.20250507123352-93990c5ec02f|Apache License 2.0
 [go-control-plane/contrib](https://github.com/envoyproxy/go-control-plane)|v1.32.5-0.20250507123352-93990c5ec02f|Apache License 2.0
 [go-control-plane/envoy](https://github.com/envoyproxy/go-control-plane)|v1.32.5-0.20250507123352-93990c5ec02f|Apache License 2.0
 [go-control-plane/ratelimit](https://github.com/envoyproxy/go-control-plane)|v0.1.1-0.20250507123352-93990c5ec02f|Apache License 2.0
 [fsnotify/fsnotify](https://github.com/fsnotify/fsnotify)|v1.9.0|BSD 3-clause "New" or "Revised" License
 [ghodss/yaml](https://github.com/ghodss/yaml)|v1.0.1-0.20190212211648-25d852aebe32|MIT License
-[go-logr/logr](https://github.com/go-logr/logr)|v1.4.2|Apache License 2.0
+[go-logr/logr](https://github.com/go-logr/logr)|v1.4.3|Apache License 2.0
 [go-logr/zapr](https://github.com/go-logr/zapr)|v1.3.0|Apache License 2.0
 [google/go-cmp](https://github.com/google/go-cmp)|v0.7.0|BSD 3-clause "New" or "Revised" License
 [grpc-ecosystem/go-grpc-middleware](https://github.com/grpc-ecosystem/go-grpc-middleware)|v1.4.0|Apache License 2.0
 [kelseyhightower/envconfig](https://github.com/kelseyhightower/envconfig)|v1.4.0|MIT License
 [mitchellh/hashstructure](https://github.com/mitchellh/hashstructure)|v1.0.0|MIT License
-[ginkgo/v2](https://github.com/onsi/ginkgo)|v2.23.3|MIT License
+[ginkgo/v2](https://github.com/onsi/ginkgo)|v2.23.4|MIT License
 [onsi/gomega](https://github.com/onsi/gomega)|v1.37.0|MIT License
 [prometheus/client_golang](https://github.com/prometheus/client_golang)|v1.22.0|Apache License 2.0
 [prometheus/client_model](https://github.com/prometheus/client_model)|v0.6.2|Apache License 2.0
@@ -28,7 +28,7 @@ Name|Version|License
 [go.uber.org/zap](https://go.uber.org/zap)|v1.27.0|MIT License
 [x/exp](https://golang.org/x/exp)|v0.0.0-20241215155358-4a5509556b9e|BSD 3-clause "New" or "Revised" License
 [x/net](https://golang.org/x/net)|v0.41.0|BSD 3-clause "New" or "Revised" License
-[google.golang.org/grpc](https://google.golang.org/grpc)|v1.72.0|Apache License 2.0
+[google.golang.org/grpc](https://google.golang.org/grpc)|v1.73.0|Apache License 2.0
 [google.golang.org/protobuf](https://google.golang.org/protobuf)|v1.36.6|BSD 3-clause "New" or "Revised" License
 [helm/v3](https://helm.sh/helm/v3)|v3.17.3|Apache License 2.0
 [istio.io/api](https://istio.io/api)|v1.25.0-alpha.0.0.20250210220544-0b64afd2de85|Apache License 2.0
@@ -42,11 +42,11 @@ Name|Version|License
 [k8s.io/kube-openapi](https://k8s.io/kube-openapi)|v0.0.0-20250318190949-c8a335a9a2ff|Apache License 2.0
 [k8s.io/utils](https://k8s.io/utils)|v0.0.0-20241210054802-24370beab758|Apache License 2.0
 [knative.dev/pkg](https://knative.dev/pkg)|v0.0.0-20211206113427-18589ac7627e|Apache License 2.0
-[sigs.k8s.io/controller-runtime](https://sigs.k8s.io/controller-runtime)|v0.20.4|Apache License 2.0
+[sigs.k8s.io/controller-runtime](https://sigs.k8s.io/controller-runtime)|v0.21.0|Apache License 2.0
 [sigs.k8s.io/gateway-api](https://sigs.k8s.io/gateway-api)|v1.3.0|Apache License 2.0
-[sigs.k8s.io/gateway-api-inference-extension](https://sigs.k8s.io/gateway-api-inference-extension)|v0.2.0|Apache License 2.0
+[sigs.k8s.io/gateway-api-inference-extension](https://sigs.k8s.io/gateway-api-inference-extension)|v0.5.0-rc.2|Apache License 2.0
 [structured-merge-diff/v4](https://sigs.k8s.io/structured-merge-diff/v4)|v4.7.0|Apache License 2.0
-[sigs.k8s.io/yaml](https://sigs.k8s.io/yaml)|v1.4.0|MIT License
+[sigs.k8s.io/yaml](https://sigs.k8s.io/yaml)|v1.5.0|MIT License
 [cmd/goimports](https://golang.org/x/tools/cmd/goimports)|latest|MIT License
 [gogo/protobuf](https://github.com/gogo/protobuf)|latest|MIT License
 [envoyproxy/envoy](https://github.com/envoyproxy/envoy)|latest|Apache License 2.0

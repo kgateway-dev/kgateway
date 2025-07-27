@@ -7,6 +7,7 @@ import (
 
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	infextv1a2 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
@@ -57,11 +58,11 @@ func (s *testingSuite) TestHTTPRouteWithInferencePool() {
 		testName: {
 			clientManifest,
 			vllmManifest,
-			modelsManifest,
-			routeManifest,
+			gtwManifest,
 			poolManifest,
 			eppManifest,
-			gtwManifest,
+			modelsManifest,
+			routeManifest,
 		},
 	}
 
@@ -105,7 +106,21 @@ func (s *testingSuite) TestHTTPRouteWithInferencePool() {
 		)
 	}
 
-	// TODO [danehans]: Assert InferencePool status when https://github.com/kgateway-dev/kgateway/pull/11230 merges
+	s.testInstallation.Assertions.EventuallyInferencePoolCondition(
+		s.ctx,
+		vllmDeployName,
+		testNS,
+		infextv1a2.InferencePoolConditionAccepted,
+		metav1.ConditionTrue,
+	)
+
+	s.testInstallation.Assertions.EventuallyInferencePoolCondition(
+		s.ctx,
+		vllmDeployName,
+		testNS,
+		infextv1a2.InferencePoolConditionResolvedRefs,
+		metav1.ConditionTrue,
+	)
 
 	// Exercise OpenAI API endpoint test cases
 	type apiTest struct {

@@ -79,6 +79,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.CommonGrpcServiceApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("CommonHttpProtocolOptions"):
 		return &apiv1alpha1.CommonHttpProtocolOptionsApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("Cookie"):
+		return &apiv1alpha1.CookieApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("CorsPolicy"):
 		return &apiv1alpha1.CorsPolicyApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("CSRFPolicy"):
@@ -109,6 +111,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.EnvoyBootstrapApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("EnvoyContainer"):
 		return &apiv1alpha1.EnvoyContainerApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("EnvoyHealthCheck"):
+		return &apiv1alpha1.EnvoyHealthCheckApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("ExtAuthPolicy"):
 		return &apiv1alpha1.ExtAuthPolicyApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("ExtAuthProvider"):
@@ -141,6 +145,10 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.GracefulShutdownSpecApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("GrpcStatusFilter"):
 		return &apiv1alpha1.GrpcStatusFilterApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("HashPolicy"):
+		return &apiv1alpha1.HashPolicyApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("Header"):
+		return &apiv1alpha1.HeaderApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("HeaderFilter"):
 		return &apiv1alpha1.HeaderFilterApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("HeaderTransformation"):
@@ -181,6 +189,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.LoadBalancerApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("LoadBalancerLeastRequestConfig"):
 		return &apiv1alpha1.LoadBalancerLeastRequestConfigApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("LoadBalancerMaglevConfig"):
+		return &apiv1alpha1.LoadBalancerMaglevConfigApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("LoadBalancerRingHashConfig"):
 		return &apiv1alpha1.LoadBalancerRingHashConfigApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("LoadBalancerRoundRobinConfig"):

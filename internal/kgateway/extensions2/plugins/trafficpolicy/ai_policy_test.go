@@ -1,10 +1,12 @@
 package trafficpolicy
 
 import (
+	"errors"
 	"os"
+	"strconv"
 	"testing"
 
-	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_ext_proc_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_proc/v3"
 	envoytransformation "github.com/solo-io/envoy-gloo/go/config/filter/http/transformation/v2"
 	"github.com/stretchr/testify/assert"
@@ -22,7 +24,7 @@ func TestProcessAITrafficPolicy(t *testing.T) {
 	backendExtprocSettings := &envoy_ext_proc_v3.ExtProcPerRoute{
 		Override: &envoy_ext_proc_v3.ExtProcPerRoute_Overrides{
 			Overrides: &envoy_ext_proc_v3.ExtProcOverrides{
-				GrpcInitialMetadata: []*envoy_config_core_v3.HeaderValue{},
+				GrpcInitialMetadata: []*envoycorev3.HeaderValue{},
 			},
 		},
 	}
@@ -236,6 +238,160 @@ func TestProcessAITrafficPolicy(t *testing.T) {
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "OpenAI moderation config must be set")
 	})
+}
+
+func TestDefault(t *testing.T) {
+	tests := []struct {
+		name     string
+		aiConfig *v1alpha1.AIPolicy
+		err      error
+	}{
+		{
+			name: "defaults value contains object and slices",
+			aiConfig: &v1alpha1.AIPolicy{
+				Defaults: []v1alpha1.FieldDefault{
+					{
+						Field: "ids",
+						Value: "[1,2,3]",
+					},
+					{
+						Field: "object",
+						Value: `{"model":"gpt-4"}`,
+					},
+					{
+						Field: "model",
+						Value: "gpt-4",
+					},
+					{
+						Field: "id",
+						Value: strconv.Itoa(1),
+					},
+					{
+						Field: "price",
+						Value: strconv.FormatFloat(1.0, 'f', -1, 64),
+					},
+					{
+						Field: "enabled",
+						Value: strconv.FormatBool(true),
+					},
+				},
+			},
+			err: nil,
+		},
+		{
+			name: "override defaults value",
+			aiConfig: &v1alpha1.AIPolicy{
+				Defaults: []v1alpha1.FieldDefault{
+					{
+						Field:    "ids",
+						Value:    "[1,2,3]",
+						Override: ptr.To(true),
+					},
+					{
+						Field:    "object",
+						Value:    `{"model":"gpt-4"}`,
+						Override: ptr.To(true),
+					},
+					{
+						Field:    "model",
+						Value:    "gpt-4",
+						Override: ptr.To(true),
+					},
+					{
+						Field:    "model",
+						Value:    "gpt-4",
+						Override: ptr.To(true),
+					},
+					{
+						Field:    "id",
+						Value:    strconv.Itoa(1),
+						Override: ptr.To(true),
+					},
+					{
+						Field:    "price",
+						Value:    strconv.FormatFloat(1.0, 'f', -1, 64),
+						Override: ptr.To(true),
+					},
+					{
+						Field:    "enabled",
+						Value:    strconv.FormatBool(true),
+						Override: ptr.To(true),
+					},
+				},
+			},
+			err: nil,
+		},
+		{
+			name: "error with invalid slices",
+			aiConfig: &v1alpha1.AIPolicy{
+				Defaults: []v1alpha1.FieldDefault{
+					{
+						Field: "bad slices",
+						Value: "[1,2,3",
+					},
+				},
+			},
+			err: errors.New("field bad slices contains invalid JSON string: [1,2,3"),
+		},
+		{
+			name: "error with invalid object",
+			aiConfig: &v1alpha1.AIPolicy{
+				Defaults: []v1alpha1.FieldDefault{
+					{
+						Field: "bad object",
+						Value: `"model":"gpt-4"}`,
+					},
+				},
+			},
+			err: errors.New("field bad object contains invalid JSON string: model\":\"gpt-4\"}"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// extproc config from backend plugin
+			backendExtprocSettings := &envoy_ext_proc_v3.ExtProcPerRoute{
+				Override: &envoy_ext_proc_v3.ExtProcPerRoute_Overrides{
+					Overrides: &envoy_ext_proc_v3.ExtProcOverrides{
+						GrpcInitialMetadata: []*envoycorev3.HeaderValue{},
+					},
+				},
+			}
+
+			typedFilterConfig := ir.TypedFilterConfigMap(map[string]proto.Message{
+				wellknown.AIExtProcFilterName: backendExtprocSettings,
+			})
+
+			plugin := &trafficPolicyPluginGwPass{}
+			aiSecret := &ir.Secret{}
+			aiIR := &AIPolicyIR{
+				AISecret: aiSecret,
+			}
+			// Execute
+			err := preProcessAITrafficPolicy(tt.aiConfig, aiIR)
+			if tt.err != nil {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+
+				plugin.processAITrafficPolicy(&typedFilterConfig, aiIR)
+
+				routeTransformations, ok := typedFilterConfig.GetTypedConfig(wellknown.AIPolicyTransformationFilterName).(*envoytransformation.RouteTransformations)
+				assert.True(t, ok)
+				assert.True(t, len(routeTransformations.Transformations) == 1)
+				transformation := routeTransformations.Transformations[0]
+
+				for i := range tt.aiConfig.Defaults {
+					jsonKey := tt.aiConfig.Defaults[i].Field
+					template := transformation.GetRequestMatch().GetRequestTransformation().GetTransformationTemplate().GetMergeJsonKeys().GetJsonKeys()[jsonKey]
+					assert.NotNil(t, template)
+
+					jsonValue := tt.aiConfig.Defaults[i].Value
+					assert.Contains(t, template.GetTmpl().GetText(), jsonValue)
+				}
+			}
+		})
+	}
 }
 
 // Mock implementation of RouteBackendContext for testing

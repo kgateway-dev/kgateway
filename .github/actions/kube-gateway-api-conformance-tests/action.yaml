@@ -1,4 +1,4 @@
-name: Conformance Tests
+name: Gateway API Conformance Tests
 description: run kubernetes gateway api conformance tests
 inputs:
   api-version:

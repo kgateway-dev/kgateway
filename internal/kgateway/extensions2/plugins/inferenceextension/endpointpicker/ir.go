@@ -3,6 +3,7 @@ package endpointpicker
 import (
 	"encoding/json"
 	"maps"
+	"sync"
 	"time"
 
 	"istio.io/istio/pkg/kube/krt"
@@ -28,6 +29,8 @@ type inferencePool struct {
 	// configRef is a reference to the extension configuration. A configRef is typically implemented
 	// as a Kubernetes Service resource.
 	configRef *service
+	// mu is a mutex to protect access to the errors list.
+	mu sync.Mutex
 	// errors is a list of errors that occurred while processing the InferencePool.
 	errors []error
 }
@@ -78,6 +81,29 @@ func (ir *inferencePool) Equals(other any) bool {
 	return maps.EqualFunc(ir.Selector(), otherPool.Selector(), func(a, b string) bool {
 		return a == b
 	})
+}
+
+// setErrors atomically replaces p.errors under lock.
+func (p *inferencePool) setErrors(errs []error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.errors = errs
+}
+
+// snapshotErrors returns a copy of p.errors under lock.
+func (p *inferencePool) snapshotErrors() []error {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	out := make([]error, len(p.errors))
+	copy(out, p.errors)
+	return out
+}
+
+// hasErrors checks if the inferencePool has any errors.
+func (p *inferencePool) hasErrors() bool {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return len(p.errors) > 0
 }
 
 func convertSelector(selector map[infextv1a2.LabelKey]infextv1a2.LabelValue) map[string]string {

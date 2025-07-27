@@ -244,7 +244,7 @@ func (g *prometheusGatheredMetrics) AssertMetrics(name string, expectedMetrics [
 
 	for _, m := range g.metrics[name] {
 		matchedExpectedMetric := g.findMetricObj(m, expectedMetrics)
-		assert.NotNil(g.t, matchedExpectedMetric, "Metric %s with labels %v not found", name, m.GetLabel())
+		require.NotNil(g.t, matchedExpectedMetric, "Metric %s with labels %v not found", name, m.GetLabel())
 		assert.True(g.t, matchedExpectedMetric.Match(g.t, g.mustGetMetricValue(m)), "Metric %s value mismatch -  value is %f", name, g.mustGetMetricValue(m))
 	}
 }

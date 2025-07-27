@@ -27,8 +27,8 @@ import (
 
 	"github.com/golang/protobuf/ptypes/wrappers"
 
-	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
-	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	"github.com/golang/protobuf/ptypes/duration"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -121,13 +121,13 @@ var _ = Describe("Health Checks", func() {
 
 		tests := []struct {
 			Name  string
-			Check *envoy_config_core_v3.HealthCheck
+			Check *envoycorev3.HealthCheck
 		}{
 			{
 				Name: "http",
-				Check: &envoy_config_core_v3.HealthCheck{
-					HealthChecker: &envoy_config_core_v3.HealthCheck_HttpHealthCheck_{
-						HttpHealthCheck: &envoy_config_core_v3.HealthCheck_HttpHealthCheck{
+				Check: &envoycorev3.HealthCheck{
+					HealthChecker: &envoycorev3.HealthCheck_HttpHealthCheck_{
+						HttpHealthCheck: &envoycorev3.HealthCheck_HttpHealthCheck{
 							Path: "xyz",
 						},
 					},
@@ -135,17 +135,17 @@ var _ = Describe("Health Checks", func() {
 			},
 			{
 				Name: "tcp",
-				Check: &envoy_config_core_v3.HealthCheck{
-					HealthChecker: &envoy_config_core_v3.HealthCheck_TcpHealthCheck_{
-						TcpHealthCheck: &envoy_config_core_v3.HealthCheck_TcpHealthCheck{
-							Send: &envoy_config_core_v3.HealthCheck_Payload{
-								Payload: &envoy_config_core_v3.HealthCheck_Payload_Text{
+				Check: &envoycorev3.HealthCheck{
+					HealthChecker: &envoycorev3.HealthCheck_TcpHealthCheck_{
+						TcpHealthCheck: &envoycorev3.HealthCheck_TcpHealthCheck{
+							Send: &envoycorev3.HealthCheck_Payload{
+								Payload: &envoycorev3.HealthCheck_Payload_Text{
 									Text: "AAAA",
 								},
 							},
-							Receive: []*envoy_config_core_v3.HealthCheck_Payload{
+							Receive: []*envoycorev3.HealthCheck_Payload{
 								{
-									Payload: &envoy_config_core_v3.HealthCheck_Payload_Text{
+									Payload: &envoycorev3.HealthCheck_Payload_Text{
 										Text: "AAAA",
 									},
 								},
@@ -175,7 +175,7 @@ var _ = Describe("Health Checks", func() {
 				envoyHealthCheckTest.Check.UnhealthyThreshold = translator.DefaultThreshold
 
 				// persist the health check configuration
-				us.HealthChecks, err = api_conversion.ToGlooHealthCheckList([]*envoy_config_core_v3.HealthCheck{envoyHealthCheckTest.Check})
+				us.HealthChecks, err = api_conversion.ToGlooHealthCheckList([]*envoycorev3.HealthCheck{envoyHealthCheckTest.Check})
 				Expect(err).NotTo(HaveOccurred())
 
 				_, err = testClients.UpstreamClient.Write(us, clients.WriteOpts{OverwriteExisting: true})
@@ -198,7 +198,7 @@ var _ = Describe("Health Checks", func() {
 		It("outlier detection", func() {
 			us, err := testClients.UpstreamClient.Read(tu.Upstream.Metadata.Namespace, tu.Upstream.Metadata.Name, clients.ReadOpts{})
 			Expect(err).NotTo(HaveOccurred())
-			us.OutlierDetection = api_conversion.ToGlooOutlierDetection(&envoy_config_cluster_v3.OutlierDetection{
+			us.OutlierDetection = api_conversion.ToGlooOutlierDetection(&envoyclusterv3.OutlierDetection{
 				Interval: &duration.Duration{Seconds: 1},
 			})
 
@@ -225,24 +225,24 @@ var _ = Describe("Health Checks", func() {
 
 	// This test can be run locally by setting INVALID_TEST_REQS=run, to bypass this ValidateRequirements method in the BeforeEach
 	Context("translates and persists health checkers", func() {
-		var healthCheck *envoy_config_core_v3.HealthCheck
+		var healthCheck *envoycorev3.HealthCheck
 
 		getUpstreamWithMethod := func(method v3.RequestMethod) *v1helpers.TestUpstream {
 			upstream := v1helpers.NewTestHttpUpstream(ctx, envoyInstance.LocalAddr())
-			healthCheck = &envoy_config_core_v3.HealthCheck{
+			healthCheck = &envoycorev3.HealthCheck{
 				Timeout:            translator.DefaultHealthCheckTimeout,
 				Interval:           translator.DefaultHealthCheckInterval,
 				HealthyThreshold:   translator.DefaultThreshold,
 				UnhealthyThreshold: translator.DefaultThreshold,
-				HealthChecker: &envoy_config_core_v3.HealthCheck_HttpHealthCheck_{
-					HttpHealthCheck: &envoy_config_core_v3.HealthCheck_HttpHealthCheck{
+				HealthChecker: &envoycorev3.HealthCheck_HttpHealthCheck_{
+					HttpHealthCheck: &envoycorev3.HealthCheck_HttpHealthCheck{
 						Path:   "health",
-						Method: envoy_config_core_v3.RequestMethod(method),
+						Method: envoycorev3.RequestMethod(method),
 					},
 				},
 			}
 			var err error
-			upstream.Upstream.HealthChecks, err = api_conversion.ToGlooHealthCheckList([]*envoy_config_core_v3.HealthCheck{healthCheck})
+			upstream.Upstream.HealthChecks, err = api_conversion.ToGlooHealthCheckList([]*envoycorev3.HealthCheck{healthCheck})
 			Expect(err).To(Not(HaveOccurred()))
 			return upstream
 		}
@@ -307,14 +307,14 @@ var _ = Describe("Health Checks", func() {
 			us, err := testClients.UpstreamClient.Read(tu.Upstream.Metadata.Namespace, tu.Upstream.Metadata.Name, clients.ReadOpts{})
 			Expect(err).NotTo(HaveOccurred())
 
-			us.HealthChecks, err = api_conversion.ToGlooHealthCheckList([]*envoy_config_core_v3.HealthCheck{
+			us.HealthChecks, err = api_conversion.ToGlooHealthCheckList([]*envoycorev3.HealthCheck{
 				{
 					Timeout:            translator.DefaultHealthCheckTimeout,
 					Interval:           translator.DefaultHealthCheckInterval,
 					UnhealthyThreshold: translator.DefaultThreshold,
 					HealthyThreshold:   translator.DefaultThreshold,
-					HealthChecker: &envoy_config_core_v3.HealthCheck_GrpcHealthCheck_{
-						GrpcHealthCheck: &envoy_config_core_v3.HealthCheck_GrpcHealthCheck{
+					HealthChecker: &envoycorev3.HealthCheck_GrpcHealthCheck_{
+						GrpcHealthCheck: &envoycorev3.HealthCheck_GrpcHealthCheck{
 							ServiceName: "TestService",
 						},
 					},

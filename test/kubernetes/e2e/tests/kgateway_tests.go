@@ -3,6 +3,7 @@ package tests
 import (
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/accesslog"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/auto_host_rewrite"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/backendconfigpolicy"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/backends"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/backendtls"
@@ -17,7 +18,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/http_listener_policy"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/lambda"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/local_rate_limit"
-	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/metrics"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/path_matching"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/policyselector"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/rate_limit"
@@ -26,6 +26,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/services/httproute"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/services/tcproute"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/services/tlsroute"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/session_persistence"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/tracing"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/transformation"
 	// "github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/admin_server"
@@ -52,6 +53,7 @@ func KubeGatewaySuiteRunner() e2e.SuiteRunner {
 	kubeGatewaySuiteRunner.Register("HttpListenerPolicy", http_listener_policy.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("Lambda", lambda.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("RouteDelegation", route_delegation.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("SessionPersistence", session_persistence.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("TCPRouteServices", tcproute.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("TLSRouteServices", tlsroute.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("GRPCRouteServices", grpcroute.NewTestingSuite)
@@ -62,8 +64,8 @@ func KubeGatewaySuiteRunner() e2e.SuiteRunner {
 	kubeGatewaySuiteRunner.Register("PolicySelector", policyselector.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("Cors", cors.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("BackendConfigPolicy", backendconfigpolicy.NewTestingSuite)
-	kubeGatewaySuiteRunner.Register("Metrics", metrics.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("CSRF", csrf.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("AutoHostRewrite", auto_host_rewrite.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("Tracing", tracing.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("DirectResponse", directresponse.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("PathMatching", path_matching.NewTestingSuite)

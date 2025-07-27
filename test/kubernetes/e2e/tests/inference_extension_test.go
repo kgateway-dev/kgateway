@@ -6,9 +6,12 @@ import (
 	"testing"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/crds"
+	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
 	. "github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/tests"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/testutils/cluster"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/testutils/install"
+	testruntime "github.com/kgateway-dev/kgateway/v2/test/kubernetes/testutils/runtime"
 )
 
 var (
@@ -22,13 +25,21 @@ var (
 // TestInferenceExtension tests Inference Extension functionality
 func TestInferenceExtension(t *testing.T) {
 	ctx := context.Background()
-	testInstallation := e2e.CreateTestInstallation(
+
+	runtimeContext := testruntime.NewContext()
+	clusterContext := cluster.MustKindContextWithScheme(runtimeContext.ClusterName, schemes.InferExtScheme())
+
+	installContext := &install.Context{
+		InstallNamespace:          infExtNs,
+		ProfileValuesManifestFile: e2e.ManifestPath("inference-extension-helm.yaml"),
+		ValuesManifestFile:        e2e.EmptyValuesManifestPath,
+	}
+
+	testInstallation := e2e.CreateTestInstallationForCluster(
 		t,
-		&install.Context{
-			InstallNamespace:          infExtNs,
-			ProfileValuesManifestFile: e2e.ManifestPath("inference-extension-helm.yaml"),
-			ValuesManifestFile:        e2e.EmptyValuesManifestPath,
-		},
+		runtimeContext,
+		clusterContext,
+		installContext,
 	)
 
 	// We register the cleanup function _before_ we actually perform the installation.

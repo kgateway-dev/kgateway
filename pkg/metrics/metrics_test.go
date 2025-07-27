@@ -12,7 +12,7 @@ import (
 )
 
 func setupTestRegistry() {
-	SetRegistry(false, prometheus.NewRegistry())
+	SetRegistry(false, NewRegistry())
 }
 
 func TestCounterInterface(t *testing.T) {
@@ -171,9 +171,8 @@ func TestHistogramPartialLabels(t *testing.T) {
 	setupTestRegistry()
 
 	opts := HistogramOpts{
-		Name:    "test_duration_seconds_partial",
-		Help:    "A test histogram metric with partial labels",
-		Buckets: prometheus.DefBuckets,
+		Name: "test_duration_seconds_partial",
+		Help: "A test histogram metric with partial labels",
 	}
 
 	histogram := NewHistogram(opts, []string{"label1", "label2", "label3"})
@@ -197,9 +196,8 @@ func TestHistogramNoLabels(t *testing.T) {
 	setupTestRegistry()
 
 	opts := HistogramOpts{
-		Name:    "test_duration_seconds_no_labels",
-		Help:    "A test histogram metric with no labels",
-		Buckets: []float64{0.1, 0.5, 1.0, 2.5, 5.0, 10.0},
+		Name: "test_duration_seconds_no_labels",
+		Help: "A test histogram metric with no labels",
 	}
 
 	histogram := NewHistogram(opts, []string{})
@@ -219,9 +217,8 @@ func TestHistogramRegistrationPanic(t *testing.T) {
 	setupTestRegistry()
 
 	opts := HistogramOpts{
-		Name:    "test_duration_seconds_duplicate",
-		Help:    "A test histogram metric",
-		Buckets: prometheus.DefBuckets,
+		Name: "test_duration_seconds_duplicate",
+		Help: "A test histogram metric",
 	}
 
 	NewHistogram(opts, []string{})
@@ -348,9 +345,8 @@ func TestGetPromCollector(t *testing.T) {
 	assert.IsType(t, &prometheus.CounterVec{}, counterCollector)
 
 	histogramOpts := HistogramOpts{
-		Name:    "test_collector_duration_seconds",
-		Help:    "A test histogram for collector testing",
-		Buckets: prometheus.DefBuckets,
+		Name: "test_collector_duration_seconds",
+		Help: "A test histogram for collector testing",
 	}
 	histogram := NewHistogram(histogramOpts, []string{})
 	histogramCollector := GetPromCollector(histogram)
@@ -400,6 +396,8 @@ func TestValidateLabelsOrder(t *testing.T) {
 }
 
 func TestLabelsWithEmptyValues(t *testing.T) {
+	setupTestRegistry()
+
 	opts := CounterOpts{
 		Name: "test_empty_labels_total",
 		Help: "A test counter for empty label testing",
@@ -425,6 +423,8 @@ func TestLabelsWithEmptyValues(t *testing.T) {
 }
 
 func TestActiveMetrics(t *testing.T) {
+	setupTestRegistry()
+
 	// Ensure metrics are active by default.
 	assert.True(t, Active())
 

@@ -10,6 +10,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/policy"
 )
 
 func TestMergePoliciesPreservesErrors(t *testing.T) {
@@ -31,7 +32,7 @@ func TestMergePoliciesPreservesErrors(t *testing.T) {
 		Errors:    []error{err2},
 	}
 
-	merged := mergePolicies([]ir.PolicyAtt{p1, p2})
+	merged := policy.MergePolicies([]ir.PolicyAtt{p1, p2}, MergeTrafficPolicies)
 	require.Len(t, merged.Errors, 2)
 	assert.Contains(t, merged.Errors, err1)
 	assert.Contains(t, merged.Errors, err2)

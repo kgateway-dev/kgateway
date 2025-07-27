@@ -16,7 +16,7 @@ Listeners:
     socketAddress:
       address: '::'
       ipv4Compat: true
-      portValue: 8443
+      portValue: 443
   filterChains:
   - filters:
     - name: envoy.filters.network.http_connection_manager

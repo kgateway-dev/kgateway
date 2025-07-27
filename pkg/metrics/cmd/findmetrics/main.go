@@ -4,12 +4,14 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"go/ast"
 	"go/parser"
 	"go/token"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 )
 
@@ -42,17 +44,36 @@ func (m metricInfo) fullName() string {
 }
 
 func main() {
-	if len(os.Args) < 2 {
+	outputMarkdown := flag.Bool("markdown", false, "Generate markdown output")
+
+	flag.Parse()
+
+	if len(flag.Args()) < 1 {
 		fmt.Fprintf(os.Stderr, "Usage: %s <file_or_directory>\n", os.Args[0])
 		os.Exit(1)
 	}
 
-	target := os.Args[1]
+	target := flag.Args()[0]
 
 	metrics, err := findMetrics(target)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
+	}
+
+	sort.Slice(metrics, func(i, j int) bool {
+		return metrics[i].fullName() < metrics[j].fullName()
+	})
+
+	if outputMarkdown != nil && *outputMarkdown {
+		fmt.Println("Name|Type|Labels|Help")
+		fmt.Println("--|--|--|--")
+		for _, metric := range metrics {
+			labelsStr := strings.Join(metric.Labels, ", ")
+			fmt.Println(metric.fullName() + "|" + metric.Type + "|" + labelsStr + "|" + metric.Help)
+		}
+
+		return
 	}
 
 	for _, metric := range metrics {
@@ -196,7 +217,7 @@ func extractMetricInfo(call *ast.CallExpr, metricType string, constants map[stri
 								metric.Namespace = strings.Trim(lit.Value, `"`)
 							} else if ident, ok := kv.Value.(*ast.Ident); ok {
 								if val, exists := constants[ident.Name]; exists {
-									metric.Subsystem = val
+									metric.Namespace = val
 								}
 							}
 						case "Subsystem":

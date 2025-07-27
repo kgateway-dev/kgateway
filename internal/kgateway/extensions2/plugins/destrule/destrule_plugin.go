@@ -8,8 +8,8 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
-	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_type_v3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"istio.io/api/networking/v1alpha3"
 	"istio.io/istio/pkg/config/schema/gvr"
@@ -80,20 +80,20 @@ func (d *destrulePlugin) processEndpoints(
 	return hasher.Sum64()
 }
 
-func (d *destrulePlugin) processBackend(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniqlyConnectedClient, in ir.BackendObjectIR, outCluster *envoy_config_cluster_v3.Cluster) {
+func (d *destrulePlugin) processBackend(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniqlyConnectedClient, in ir.BackendObjectIR, outCluster *envoyclusterv3.Cluster) {
 	destrule := d.destinationRulesIndex.FetchDestRulesFor(kctx, ucc.Namespace, in.CanonicalHostname, ucc.Labels)
 	if destrule != nil {
 		trafficPolicy := getTrafficPolicy(destrule, uint32(in.Port))
 		if outlier := trafficPolicy.GetOutlierDetection(); outlier != nil {
 			if getLocalityLbSetting(trafficPolicy) != nil {
 				if outCluster.GetCommonLbConfig() == nil {
-					outCluster.CommonLbConfig = &envoy_config_cluster_v3.Cluster_CommonLbConfig{}
+					outCluster.CommonLbConfig = &envoyclusterv3.Cluster_CommonLbConfig{}
 				}
-				outCluster.GetCommonLbConfig().LocalityConfigSpecifier = &envoy_config_cluster_v3.Cluster_CommonLbConfig_LocalityWeightedLbConfig_{
-					LocalityWeightedLbConfig: &envoy_config_cluster_v3.Cluster_CommonLbConfig_LocalityWeightedLbConfig{},
+				outCluster.GetCommonLbConfig().LocalityConfigSpecifier = &envoyclusterv3.Cluster_CommonLbConfig_LocalityWeightedLbConfig_{
+					LocalityWeightedLbConfig: &envoyclusterv3.Cluster_CommonLbConfig_LocalityWeightedLbConfig{},
 				}
 			}
-			out := &envoy_config_cluster_v3.OutlierDetection{
+			out := &envoyclusterv3.OutlierDetection{
 				Consecutive_5Xx:  outlier.GetConsecutive_5XxErrors(),
 				Interval:         outlier.GetInterval(),
 				BaseEjectionTime: outlier.GetBaseEjectionTime(),
@@ -121,7 +121,7 @@ func (d *destrulePlugin) processBackend(kctx krt.HandlerContext, ctx context.Con
 			minHealthPercent := outlier.GetMinHealthPercent()
 			if minHealthPercent >= 0 {
 				if outCluster.GetCommonLbConfig() == nil {
-					outCluster.CommonLbConfig = &envoy_config_cluster_v3.Cluster_CommonLbConfig{}
+					outCluster.CommonLbConfig = &envoyclusterv3.Cluster_CommonLbConfig{}
 				}
 				outCluster.GetCommonLbConfig().HealthyPanicThreshold = &envoy_type_v3.Percent{Value: float64(minHealthPercent)}
 			}
@@ -132,10 +132,10 @@ func (d *destrulePlugin) processBackend(kctx krt.HandlerContext, ctx context.Con
 			if tcpSettings := trafficPolicy.GetConnectionPool().GetTcp(); tcpSettings != nil {
 				if tcpKeepalive := tcpSettings.GetTcpKeepalive(); tcpKeepalive != nil {
 					if outCluster.GetUpstreamConnectionOptions() == nil {
-						outCluster.UpstreamConnectionOptions = &envoy_config_cluster_v3.UpstreamConnectionOptions{}
+						outCluster.UpstreamConnectionOptions = &envoyclusterv3.UpstreamConnectionOptions{}
 					}
 					if outCluster.GetUpstreamConnectionOptions().GetTcpKeepalive() == nil {
-						outCluster.GetUpstreamConnectionOptions().TcpKeepalive = &envoy_config_core_v3.TcpKeepalive{}
+						outCluster.GetUpstreamConnectionOptions().TcpKeepalive = &envoycorev3.TcpKeepalive{}
 					}
 					if tcpKeepalive.GetTime() != nil {
 						outCluster.GetUpstreamConnectionOptions().GetTcpKeepalive().KeepaliveTime = &wrapperspb.UInt32Value{Value: uint32(tcpKeepalive.GetTime().GetSeconds())}
