@@ -33,7 +33,7 @@ type ListenerTranslatorConfig struct {
 	ListenerBindIpv6 bool
 }
 
-// TranslateListeners translates the set of gloo listeners required to produce a full output proxy (either form one Gateway or multiple merged Gateways)
+// TranslateListeners translates the set of ListenerIRs required to produce a full output proxy (either form one Gateway or multiple merged Gateways)
 func TranslateListeners(
 	kctx krt.HandlerContext,
 	ctx context.Context,
@@ -321,19 +321,6 @@ func (ml *MergedListeners) translateListeners(
 	var listeners []ir.ListenerIR
 	for _, mergedListener := range ml.Listeners {
 		listener := mergedListener.TranslateListener(kctx, ctx, queries, reporter)
-
-		// run listener plugins
-		//		panic("TODO: handle listener policy attachment")
-		// for _, listenerPlugin := range pluginRegistry.GetListenerPlugins() {
-		// err := listenerPlugin.ApplyListenerPlugin(ctx, &plugins.ListenerContext{
-		// 	Gateway:    &ml.parentGw,
-		// 	GwListener: &mergedListener.listener,
-		// }, listener)
-		// if err != nil {
-		// 	contextutils.LoggerFrom(ctx).Errorf("error in ListenerPlugin: %v", err)
-		// }
-		// }
-
 		listeners = append(listeners, listener)
 	}
 	return listeners
