@@ -32,7 +32,7 @@ type ListenerTranslatorConfig struct {
 	ListenerBindIpv6 bool
 }
 
-// TranslateListeners translates the set of ListenerIRs required to produce a full output proxy (either form one Gateway or multiple merged Gateways)
+// TranslateListeners translates the set of ListenerIRs required to produce a full output proxy (either from one Gateway or multiple merged Gateways)
 func TranslateListeners(
 	kctx krt.HandlerContext,
 	ctx context.Context,
