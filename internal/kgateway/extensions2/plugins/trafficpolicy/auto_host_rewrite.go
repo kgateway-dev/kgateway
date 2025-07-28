@@ -7,11 +7,11 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 )
 
-type AutoHostRewriteIR struct {
+type autoHostRewriteIR struct {
 	enabled *wrapperspb.BoolValue
 }
 
-func (a *AutoHostRewriteIR) Equals(other *AutoHostRewriteIR) bool {
+func (a *autoHostRewriteIR) Equals(other *autoHostRewriteIR) bool {
 	if a == nil && other == nil {
 		return true
 	}
@@ -26,7 +26,7 @@ func applyAutoHostRewrite(spec v1alpha1.TrafficPolicySpec, out *trafficPolicySpe
 	if spec.AutoHostRewrite == nil {
 		return
 	}
-	out.autoHostRewrite = &AutoHostRewriteIR{
+	out.autoHostRewrite = &autoHostRewriteIR{
 		enabled: wrapperspb.Bool(*spec.AutoHostRewrite),
 	}
 }

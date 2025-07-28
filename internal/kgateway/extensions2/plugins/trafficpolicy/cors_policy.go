@@ -10,12 +10,12 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 )
 
-type CorsIR struct {
+type corsIR struct {
 	// policy is the envoy cors policy
 	policy *corsv3.CorsPolicy
 }
 
-func (c *CorsIR) Equals(other *CorsIR) bool {
+func (c *corsIR) Equals(other *corsIR) bool {
 	if c == nil && other == nil {
 		return true
 	}
@@ -30,13 +30,13 @@ func applyCORS(in *v1alpha1.TrafficPolicy, out *trafficPolicySpecIr) error {
 	if in.Spec.Cors == nil {
 		return nil
 	}
-	out.cors = &CorsIR{
+	out.cors = &corsIR{
 		policy: utils.ToEnvoyCorsPolicy(in.Spec.Cors.HTTPCORSFilter),
 	}
 	return nil
 }
 
-func (p *trafficPolicyPluginGwPass) handleCors(fcn string, pCtxTypedFilterConfig *ir.TypedFilterConfigMap, cors *CorsIR) {
+func (p *trafficPolicyPluginGwPass) handleCors(fcn string, pCtxTypedFilterConfig *ir.TypedFilterConfigMap, cors *corsIR) {
 	if cors == nil || cors.policy == nil {
 		return
 	}

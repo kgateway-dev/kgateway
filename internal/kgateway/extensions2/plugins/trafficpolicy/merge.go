@@ -77,7 +77,7 @@ func mergeTransformation(
 	switch opts.Strategy {
 	case policy.AugmentedShallowMerge, policy.OverridableShallowMerge:
 		if p1.spec.transformation == nil {
-			p1.spec.transformation = &TransformationIR{config: &transformationpb.RouteTransformations{}}
+			p1.spec.transformation = &transformationIR{config: &transformationpb.RouteTransformations{}}
 		}
 		// Always clone so that the original policy in p2 is not modified when
 		// the merge is invoked multiple times
@@ -86,7 +86,7 @@ func mergeTransformation(
 
 	case policy.AugmentedDeepMerge:
 		if p1.spec.transformation == nil {
-			p1.spec.transformation = &TransformationIR{config: &transformationpb.RouteTransformations{}}
+			p1.spec.transformation = &transformationIR{config: &transformationpb.RouteTransformations{}}
 		}
 		// Always Concat so that the original policy in p1 is not modified when
 		// the merge is invoked multiple times
@@ -95,7 +95,7 @@ func mergeTransformation(
 
 	case policy.OverridableDeepMerge:
 		if p1.spec.transformation == nil {
-			p1.spec.transformation = &TransformationIR{config: &transformationpb.RouteTransformations{}}
+			p1.spec.transformation = &transformationIR{config: &transformationpb.RouteTransformations{}}
 		}
 		// Always Concat so that the original policy in p1/p2 is not modified when
 		// the merge is invoked multiple times

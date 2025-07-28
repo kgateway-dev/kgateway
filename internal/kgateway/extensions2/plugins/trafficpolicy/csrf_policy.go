@@ -17,11 +17,11 @@ const (
 	csrfShadowEnabledKey    = "envoy.csrf.shadow_enabled"
 )
 
-type CsrfIR struct {
+type csrfIR struct {
 	policy *envoy_csrf_v3.CsrfPolicy
 }
 
-func (c *CsrfIR) Equals(other *CsrfIR) bool {
+func (c *csrfIR) Equals(other *csrfIR) bool {
 	if c == nil && other == nil {
 		return true
 	}
@@ -33,7 +33,7 @@ func (c *CsrfIR) Equals(other *CsrfIR) bool {
 }
 
 // handleCsrf adds CSRF configuration to routes
-func (p *trafficPolicyPluginGwPass) handleCsrf(fcn string, typedFilterConfig *ir.TypedFilterConfigMap, ir *CsrfIR) {
+func (p *trafficPolicyPluginGwPass) handleCsrf(fcn string, typedFilterConfig *ir.TypedFilterConfigMap, ir *csrfIR) {
 	if typedFilterConfig == nil || ir == nil {
 		return
 	}
@@ -95,7 +95,7 @@ func applyCSRF(spec v1alpha1.TrafficPolicySpec, out *trafficPolicySpecIr) error 
 		}
 	}
 
-	out.csrf = &CsrfIR{
+	out.csrf = &csrfIR{
 		policy: csrfPolicy,
 	}
 	return nil

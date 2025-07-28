@@ -11,11 +11,11 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 )
 
-type HashPolicyIR struct {
+type hashPolicyIR struct {
 	policies []*envoyroutev3.RouteAction_HashPolicy
 }
 
-func (h *HashPolicyIR) Equals(other *HashPolicyIR) bool {
+func (h *hashPolicyIR) Equals(other *hashPolicyIR) bool {
 	if h == nil && other == nil {
 		return true
 	}
@@ -90,7 +90,7 @@ func applyHashPolicy(spec v1alpha1.TrafficPolicySpec, outSpec *trafficPolicySpec
 		}
 		policies = append(policies, policy)
 	}
-	outSpec.hashPolicies = &HashPolicyIR{
+	outSpec.hashPolicies = &hashPolicyIR{
 		policies: policies,
 	}
 }

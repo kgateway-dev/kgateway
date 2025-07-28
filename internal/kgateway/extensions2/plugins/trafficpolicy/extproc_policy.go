@@ -13,12 +13,12 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/cmputils"
 )
 
-type ExtprocIR struct {
+type extprocIR struct {
 	provider *TrafficPolicyGatewayExtensionIR
 	perRoute *envoy_ext_proc_v3.ExtProcPerRoute
 }
 
-func (e *ExtprocIR) Equals(other *ExtprocIR) bool {
+func (e *extprocIR) Equals(other *extprocIR) bool {
 	if e == nil && other == nil {
 		return true
 	}
@@ -54,7 +54,7 @@ func applyExtProc(
 	if gatewayExtension.ExtType != v1alpha1.GatewayExtensionTypeExtProc || gatewayExtension.ExtProc == nil {
 		return pluginutils.ErrInvalidExtensionType(v1alpha1.GatewayExtensionTypeExtAuth, gatewayExtension.ExtType)
 	}
-	out.extProc = &ExtprocIR{
+	out.extProc = &extprocIR{
 		provider: gatewayExtension,
 		perRoute: translateExtProcPerFilterConfig(in.Spec.ExtProc),
 	}
@@ -132,7 +132,7 @@ func extProcFilterName(name string) string {
 	return fmt.Sprintf("%s/%s", "ext_proc", name)
 }
 
-func (p *trafficPolicyPluginGwPass) handleExtProc(fcn string, pCtxTypedFilterConfig *ir.TypedFilterConfigMap, extProc *ExtprocIR) {
+func (p *trafficPolicyPluginGwPass) handleExtProc(fcn string, pCtxTypedFilterConfig *ir.TypedFilterConfigMap, extProc *extprocIR) {
 	if extProc == nil || extProc.provider == nil {
 		return
 	}

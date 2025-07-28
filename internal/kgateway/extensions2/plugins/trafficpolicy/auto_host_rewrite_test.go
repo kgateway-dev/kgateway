@@ -19,7 +19,7 @@ func TestApplyForRoute_SetsRouteActionFlag(t *testing.T) {
 	t.Run("autoHostRewrite true → RouteAction flag set", func(t *testing.T) {
 		policy := &TrafficPolicy{
 			spec: trafficPolicySpecIr{
-				autoHostRewrite: &AutoHostRewriteIR{
+				autoHostRewrite: &autoHostRewriteIR{
 					enabled: wrapperspb.Bool(true),
 				},
 			},

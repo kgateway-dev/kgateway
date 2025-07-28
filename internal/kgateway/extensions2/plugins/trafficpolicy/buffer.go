@@ -12,11 +12,11 @@ import (
 
 const bufferFilterName = "envoy.filters.http.buffer"
 
-type BufferIR struct {
+type bufferIR struct {
 	maxRequestBytes uint32
 }
 
-func (b *BufferIR) Equals(other *BufferIR) bool {
+func (b *bufferIR) Equals(other *bufferIR) bool {
 	if b == nil && other == nil {
 		return true
 	}
@@ -33,12 +33,12 @@ func applyBuffer(spec v1alpha1.TrafficPolicySpec, out *trafficPolicySpecIr) {
 		return
 	}
 
-	out.buffer = &BufferIR{
+	out.buffer = &bufferIR{
 		maxRequestBytes: uint32(spec.Buffer.MaxRequestSize.Value()),
 	}
 }
 
-func (p *trafficPolicyPluginGwPass) handleBuffer(fcn string, pCtxTypedFilterConfig *ir.TypedFilterConfigMap, buffer *BufferIR) {
+func (p *trafficPolicyPluginGwPass) handleBuffer(fcn string, pCtxTypedFilterConfig *ir.TypedFilterConfigMap, buffer *bufferIR) {
 	if buffer == nil {
 		return
 	}

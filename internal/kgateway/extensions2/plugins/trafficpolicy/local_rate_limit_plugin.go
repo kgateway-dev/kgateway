@@ -18,11 +18,11 @@ const (
 	localRatelimitFilterDisabledRuntimeKey = "local_rate_limit_disabled"
 )
 
-type LocalRateLimitIR struct {
+type localRateLimitIR struct {
 	config *localratelimitv3.LocalRateLimit
 }
 
-func (l *LocalRateLimitIR) Equals(other *LocalRateLimitIR) bool {
+func (l *localRateLimitIR) Equals(other *localRateLimitIR) bool {
 	if l == nil && other == nil {
 		return true
 	}
@@ -41,7 +41,7 @@ func applyLocalRateLimit(in *v1alpha1.TrafficPolicy, out *trafficPolicySpecIr) e
 	if err != nil {
 		return err
 	}
-	out.localRateLimit = &LocalRateLimitIR{
+	out.localRateLimit = &localRateLimitIR{
 		config: localRateLimit,
 	}
 	return nil
@@ -112,7 +112,7 @@ func createDisabledRateLimit() *localratelimitv3.LocalRateLimit {
 	}
 }
 
-func (p *trafficPolicyPluginGwPass) handleLocalRateLimit(fcn string, typedFilterConfig *ir.TypedFilterConfigMap, localRateLimit *LocalRateLimitIR) {
+func (p *trafficPolicyPluginGwPass) handleLocalRateLimit(fcn string, typedFilterConfig *ir.TypedFilterConfigMap, localRateLimit *localRateLimitIR) {
 	if localRateLimit == nil {
 		return
 	}

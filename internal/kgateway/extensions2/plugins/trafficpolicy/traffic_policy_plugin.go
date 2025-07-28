@@ -73,18 +73,18 @@ type TrafficPolicy struct {
 }
 
 type trafficPolicySpecIr struct {
-	ai              *AIPolicyIR
-	buffer          *BufferIR
-	extProc         *ExtprocIR
-	transformation  *TransformationIR
-	rustformation   *RustformationIR
-	extAuth         *ExtAuthIR
-	localRateLimit  *LocalRateLimitIR
-	globalRateLimit *GlobalRateLimitIR
-	cors            *CorsIR
-	csrf            *CsrfIR
-	hashPolicies    *HashPolicyIR
-	autoHostRewrite *AutoHostRewriteIR
+	ai              *aiPolicyIR
+	buffer          *bufferIR
+	extProc         *extprocIR
+	transformation  *transformationIR
+	rustformation   *rustformationIR
+	extAuth         *extAuthIR
+	localRateLimit  *localRateLimitIR
+	globalRateLimit *globalRateLimitIR
+	cors            *corsIR
+	csrf            *csrfIR
+	hashPolicies    *hashPolicyIR
+	autoHostRewrite *autoHostRewriteIR
 }
 
 func (d *TrafficPolicy) CreationTime() time.Time {

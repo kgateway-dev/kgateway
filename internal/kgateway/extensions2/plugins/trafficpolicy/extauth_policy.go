@@ -46,14 +46,14 @@ var (
 	}
 )
 
-type ExtAuthIR struct {
+type extAuthIR struct {
 	provider   *TrafficPolicyGatewayExtensionIR
 	enablement *v1alpha1.ExtAuthEnabled
 	perRoute   *envoy_ext_authz_v3.ExtAuthzPerRoute
 }
 
 // Equals compares two ExtAuthIR instances for equality
-func (e *ExtAuthIR) Equals(other *ExtAuthIR) bool {
+func (e *extAuthIR) Equals(other *extAuthIR) bool {
 	if e == nil && other == nil {
 		return true
 	}
@@ -89,7 +89,7 @@ func applyExtAuth(
 	}
 	spec := in.Spec.ExtAuth
 	if spec.Enablement != nil && *spec.Enablement == v1alpha1.ExtAuthDisableAll {
-		out.extAuth = &ExtAuthIR{
+		out.extAuth = &extAuthIR{
 			provider:   nil,
 			enablement: spec.Enablement,
 			perRoute:   translatePerFilterConfig(spec),
@@ -103,7 +103,7 @@ func applyExtAuth(
 	if provider.ExtType != v1alpha1.GatewayExtensionTypeExtAuth || provider.ExtAuth == nil {
 		return pluginutils.ErrInvalidExtensionType(v1alpha1.GatewayExtensionTypeExtAuth, provider.ExtType)
 	}
-	out.extAuth = &ExtAuthIR{
+	out.extAuth = &extAuthIR{
 		provider:   provider,
 		enablement: in.Spec.ExtAuth.Enablement,
 		perRoute:   translatePerFilterConfig(in.Spec.ExtAuth),
@@ -146,7 +146,7 @@ func extAuthFilterName(name string) string {
 	return fmt.Sprintf("%s/%s", extauthFilterNamePrefix, name)
 }
 
-func (p *trafficPolicyPluginGwPass) handleExtAuth(fcn string, pCtxTypedFilterConfig *ir.TypedFilterConfigMap, extAuth *ExtAuthIR) {
+func (p *trafficPolicyPluginGwPass) handleExtAuth(fcn string, pCtxTypedFilterConfig *ir.TypedFilterConfigMap, extAuth *extAuthIR) {
 	if extAuth == nil {
 		return
 	}

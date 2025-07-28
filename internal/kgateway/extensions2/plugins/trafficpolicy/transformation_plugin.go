@@ -15,11 +15,11 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 )
 
-type TransformationIR struct {
+type transformationIR struct {
 	config *transformationpb.RouteTransformations
 }
 
-func (t *TransformationIR) Equals(other *TransformationIR) bool {
+func (t *transformationIR) Equals(other *transformationIR) bool {
 	if t == nil && other == nil {
 		return true
 	}
@@ -38,7 +38,7 @@ func applyTransformation(in *v1alpha1.TrafficPolicy, out *trafficPolicySpecIr) e
 	if err != nil {
 		return err
 	}
-	out.transformation = &TransformationIR{
+	out.transformation = &transformationIR{
 		config: transformation,
 	}
 	return nil
@@ -154,12 +154,12 @@ func toTransformFilterConfig(t *v1alpha1.TransformationPolicy) (*transformationp
 	return envoyT, nil
 }
 
-type RustformationIR struct {
+type rustformationIR struct {
 	config  *dynamicmodulesv3.DynamicModuleFilter
 	toStash string
 }
 
-func (r *RustformationIR) Equals(other *RustformationIR) bool {
+func (r *rustformationIR) Equals(other *rustformationIR) bool {
 	if r == nil && other == nil {
 		return true
 	}
@@ -177,7 +177,7 @@ func applyRustformation(in *v1alpha1.TrafficPolicy, out *trafficPolicySpecIr) er
 	if err != nil {
 		return err
 	}
-	out.rustformation = &RustformationIR{
+	out.rustformation = &rustformationIR{
 		config:  rustformation,
 		toStash: toStash,
 	}
@@ -298,7 +298,7 @@ func convertClassicRouteToListener(
 	listenerFilter.Transformations = append(listenerFilter.GetTransformations(), &transform)
 }
 
-func (p *trafficPolicyPluginGwPass) handleTransformation(fcn string, typedFilterConfig *ir.TypedFilterConfigMap, transform *TransformationIR) {
+func (p *trafficPolicyPluginGwPass) handleTransformation(fcn string, typedFilterConfig *ir.TypedFilterConfigMap, transform *transformationIR) {
 	if transform == nil {
 		return
 	}

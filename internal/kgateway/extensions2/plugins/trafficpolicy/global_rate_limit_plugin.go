@@ -20,14 +20,14 @@ const (
 	rateLimitStatPrefix = "http_rate_limit"
 )
 
-// GlobalRateLimitIR represents the intermediate representation for a global rate limit policy.
-type GlobalRateLimitIR struct {
+// globalRateLimitIR represents the intermediate representation for a global rate limit policy.
+type globalRateLimitIR struct {
 	provider         *TrafficPolicyGatewayExtensionIR
 	rateLimitActions []*envoyroutev3.RateLimit
 }
 
-// Equals checks if two GlobalRateLimitIR instances are equal.
-func (r *GlobalRateLimitIR) Equals(other *GlobalRateLimitIR) bool {
+// Equals checks if two globalRateLimitIR instances are equal.
+func (r *globalRateLimitIR) Equals(other *globalRateLimitIR) bool {
 	if r == nil && other == nil {
 		return true
 	}
@@ -77,7 +77,7 @@ func applyGlobalRateLimit(
 		return pluginutils.ErrInvalidExtensionType(v1alpha1.GatewayExtensionTypeExtAuth, gwExtIR.ExtType)
 	}
 	// Create route rate limits and store in the RateLimitIR struct
-	out.globalRateLimit = &GlobalRateLimitIR{
+	out.globalRateLimit = &globalRateLimitIR{
 		provider: gwExtIR,
 		rateLimitActions: []*envoyroutev3.RateLimit{
 			{
@@ -168,22 +168,22 @@ func getRateLimitFilterName(name string) string {
 }
 
 // handleGlobalRateLimit adds rate limit configurations to routes
-func (p *trafficPolicyPluginGwPass) handleGlobalRateLimit(fcn string, typedFilterConfig *ir.TypedFilterConfigMap, rateLimit *GlobalRateLimitIR) {
-	if rateLimit == nil {
+func (p *trafficPolicyPluginGwPass) handleGlobalRateLimit(fcn string, typedFilterConfig *ir.TypedFilterConfigMap, globalRateLimit *globalRateLimitIR) {
+	if globalRateLimit == nil {
 		return
 	}
-	if rateLimit.rateLimitActions == nil {
+	if globalRateLimit.rateLimitActions == nil {
 		return
 	}
 
-	providerName := rateLimit.provider.ResourceName()
+	providerName := globalRateLimit.provider.ResourceName()
 
 	// Initialize the map if it doesn't exist yet
-	p.rateLimitPerProvider.Add(fcn, providerName, rateLimit.provider)
+	p.rateLimitPerProvider.Add(fcn, providerName, globalRateLimit.provider)
 
 	// Configure rate limit per route - enabling it for this specific route
 	rateLimitPerRoute := &ratev3.RateLimitPerRoute{
-		RateLimits: rateLimit.rateLimitActions,
+		RateLimits: globalRateLimit.rateLimitActions,
 	}
 	typedFilterConfig.AddTypedConfig(getRateLimitFilterName(providerName), rateLimitPerRoute)
 }
