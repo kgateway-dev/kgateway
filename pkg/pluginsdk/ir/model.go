@@ -99,6 +99,8 @@ type EndpointsForBackend struct {
 	UpstreamResourceName string
 	Port                 uint32
 	Hostname             string
+	// Inherited from the backend object
+	TrafficDistribution string
 
 	LbEpsEqualityHash uint64
 	upstreamHash      uint64
@@ -139,6 +141,7 @@ func NewEndpointsForBackend(us BackendObjectIR) *EndpointsForBackend {
 		Hostname:             us.CanonicalHostname,
 		LbEpsEqualityHash:    upstreamHash,
 		upstreamHash:         upstreamHash,
+		TrafficDistribution:  us.TrafficDistribution,
 	}
 }
 

@@ -5,12 +5,15 @@ import (
 	"log/slog"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 
 	networking "istio.io/api/networking/v1alpha3"
 	networkingclient "istio.io/client-go/pkg/apis/networking/v1"
 	"istio.io/istio/pkg/config/schema/gvk"
 	"istio.io/istio/pkg/kube/krt"
+
+	corev1 "k8s.io/api/core/v1"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -41,6 +44,16 @@ func (s *serviceEntryPlugin) initServiceEntryBackend(ctx context.Context, in ir.
 	case networking.ServiceEntry_DNS_ROUND_ROBIN:
 		out.ClusterDiscoveryType = &envoyclusterv3.Cluster_Type{
 			Type: envoyclusterv3.Cluster_LOGICAL_DNS,
+		}
+	}
+
+	// If the service entry has a prefer close traffic distribution, we need to use locality weighted lb
+	// The endpoints will be prioritized based on the locality of the workload entries or the inlined endpoints
+	if in.TrafficDistribution == corev1.ServiceTrafficDistributionPreferClose {
+		out.CommonLbConfig = &envoyclusterv3.Cluster_CommonLbConfig{
+			LocalityConfigSpecifier: &envoyclusterv3.Cluster_CommonLbConfig_LocalityWeightedLbConfig_{
+				LocalityWeightedLbConfig: &envoyclusterv3.Cluster_CommonLbConfig_LocalityWeightedLbConfig{},
+			},
 		}
 	}
 
@@ -127,6 +140,11 @@ func BuildServiceEntryBackendObjectIR(
 	backend.Aliases = []ir.ObjectSource{objSrc}
 	if aliaser != nil {
 		backend.Aliases = append(backend.Aliases, aliaser(se)...)
+	}
+
+	// We support specifying the traffic distribution in the annotations of the service entry
+	if val, ok := se.Annotations[wellknown.IstioTrafficDistributionAnnotation]; ok {
+		backend.TrafficDistribution = val
 	}
 
 	backend.AttachedPolicies = ir.AttachedPolicies{}

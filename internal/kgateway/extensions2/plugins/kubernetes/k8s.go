@@ -84,6 +84,19 @@ func BuildServiceBackendObjectIR(svc *corev1.Service, svcPort int32, svcProtocol
 	backend.GvPrefix = BackendClusterPrefix
 	// TODO: reevaluate knative dep, dedupe with pkg/utils/kubeutils/dns.go
 	backend.CanonicalHostname = fmt.Sprintf("%s.%s.svc.%s", svc.Name, svc.Namespace, network.GetClusterDomainName())
+
+	// We support specifying the Istio traffic distribution annotation in older k8s versions
+	if val, ok := svc.Annotations[wellknown.IstioTrafficDistributionAnnotation]; ok {
+		backend.TrafficDistribution = val
+	}
+
+	// If the traffic distribution is specified in the spec, use that
+	// If both annotations and spec are specified, the spec takes precedence
+	// The field was added as beta in Kubernetes 1.31
+	if svc.Spec.TrafficDistribution != nil {
+		backend.TrafficDistribution = *svc.Spec.TrafficDistribution
+	}
+
 	return backend
 }
 
@@ -98,6 +111,13 @@ func processBackend(ctx context.Context, in ir.BackendObjectIR, out *envoycluste
 				Ads: &envoycorev3.AggregatedConfigSource{},
 			},
 		},
+	}
+	if in.TrafficDistribution == corev1.ServiceTrafficDistributionPreferClose {
+		out.CommonLbConfig = &envoyclusterv3.Cluster_CommonLbConfig{
+			LocalityConfigSpecifier: &envoyclusterv3.Cluster_CommonLbConfig_LocalityWeightedLbConfig_{
+				LocalityWeightedLbConfig: &envoyclusterv3.Cluster_CommonLbConfig_LocalityWeightedLbConfig{},
+			},
+		}
 	}
 	out.IgnoreHealthOnHostRemoval = true
 	return nil

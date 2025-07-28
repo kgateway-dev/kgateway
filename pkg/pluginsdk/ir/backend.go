@@ -128,6 +128,11 @@ type BackendObjectIR struct {
 
 	// Name is the pre-calculated resource name. used as the krt resource name.
 	resourceName string
+
+	// TrafficDistribution is the desired traffic distribution for the backend.
+	// Values are defined by the k8s Service spec and currently only PreferClose is available.
+	// https://kubernetes.io/docs/concepts/services-networking/service/#traffic-distribution
+	TrafficDistribution string
 }
 
 // NewBackendObjectIR creates a new BackendObjectIR with pre-calculated resource name

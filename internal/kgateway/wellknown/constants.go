@@ -20,6 +20,9 @@ const (
 	// IngressUseWaypointLabel is a Service/ServiceEntry label to ask the ingress to use
 	// a waypoint for ingress traffic.
 	IngressUseWaypointLabel = "istio.io/ingress-use-waypoint"
+
+	// IstioTrafficDistributionAnnotation is the annotation that specifies the traffic distribution for a service or service entry
+	IstioTrafficDistributionAnnotation = "networking.istio.io/traffic-distribution"
 )
 
 const (

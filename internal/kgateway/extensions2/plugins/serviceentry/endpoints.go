@@ -54,6 +54,9 @@ func (s *serviceEntryPlugin) buildInlineEndpoints(ctx context.Context, be ir.Bac
 		return nil
 	}
 
+	// Set the traffic distribution for the endpoints based on the one specified in the backend
+	endpointsForBackend.TrafficDistribution = be.TrafficDistribution
+
 	return endpointsForBackend
 }
 

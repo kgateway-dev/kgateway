@@ -1,0 +1,79 @@
+---
+# The Namespace capture should apply to all the Services in the namespace
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: infra
+  labels:
+    istio.io/use-waypoint: example-waypoint
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: example-waypoint
+  namespace: infra
+spec:
+  gatewayClassName: kgateway-waypoint
+  listeners:
+  - name: proxy
+    port: 15088
+    protocol: istio.io/PROXY
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: waypoint-route
+  namespace: infra
+spec:
+  parentRefs:
+  - name: svc-a
+    namespace: infra
+    group: ""
+    kind: Service
+  - name: svc-b
+    namespace: infra
+    group: ""
+    kind: Service
+  rules:
+  - backendRefs:
+    - name: svc-a
+      port: 5000
+    filters:
+    - type: ResponseHeaderModifier
+      responseHeaderModifier:
+        add:
+        - name: "traversed-waypoint"
+          value: "kgateway-waypoint"
+---
+# As there is a PreferClose traffic distribution, we expect the cluster
+# to have localityWeightedLbConfig
+apiVersion: v1
+kind: Service
+metadata:
+  name: svc-a
+  namespace: infra
+spec:
+  clusterIP: 1.1.1.1
+  ports:
+  - port: 5000
+    name: http
+  selector:
+    app: svc-a
+  trafficDistribution: PreferClose
+---
+# We don't expect to see localityWeightedLbConfig for this cluster
+apiVersion: v1
+kind: Service
+metadata:
+  name: svc-b
+  namespace: infra
+  annotations:
+    networking.istio.io/traffic-distribution: PreferClose
+spec:
+  clusterIP: 2.2.2.2
+  ports:
+  - port: 9000
+    name: http
+  selector:
+    app: svc-b
+---
