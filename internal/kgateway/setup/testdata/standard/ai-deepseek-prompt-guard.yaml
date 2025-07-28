@@ -27,13 +27,25 @@ spec:
       hostOverride:
         host: ollama-deepseek-r1.ollama.svc.cluster.local
         port: 11434
-        insecureSkipVerify: true
       provider:
         openai:
           authToken:
             kind: "SecretRef"
             secretRef:
               name: deepseek-secret
+---
+kind: BackendConfigPolicy
+apiVersion: gateway.kgateway.dev/v1alpha1
+metadata:
+  name: backend-policy-deepseek
+  namespace: gwtest
+spec:
+  targetRefs:
+    - name: deepseek
+      kind: Backend
+      group: gateway.kgateway.dev
+  tls:
+    insecureSkipVerify: true
 ---
 apiVersion: v1
 kind: Secret

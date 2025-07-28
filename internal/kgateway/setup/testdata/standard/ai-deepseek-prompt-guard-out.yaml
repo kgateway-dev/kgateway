@@ -41,6 +41,12 @@ clusters:
               auth_token: mysecretkey
   metadata: {}
   name: backend_gwtest_deepseek_0
+  transportSocket:
+    name: envoy.transport_sockets.tls
+    typedConfig:
+      '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+      commonTlsContext:
+        validationContext: {}
   transportSocketMatches:
   - match:
       tls: default
