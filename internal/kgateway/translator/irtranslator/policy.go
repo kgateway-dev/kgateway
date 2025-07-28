@@ -83,7 +83,7 @@ func reportPolicyAttachmentStatus(
 
 		switch mergeOrigins.GetRefCount(policy.PolicyRef) {
 		case ir.MergeOriginsRefCountNone:
-			r.SetAttachmentState(reporter.PolicyAttachmentStateDiscarded)
+			r.SetAttachmentState(reporter.PolicyAttachmentStateOverridden)
 
 		case ir.MergeOriginsRefCountPartial:
 			r.SetAttachmentState(reporter.PolicyAttachmentStateMerged)
