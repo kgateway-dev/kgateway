@@ -353,14 +353,14 @@ func (p *trafficPolicyPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.
 	}
 
 	if policy.spec.hashPolicies != nil {
-		outputRoute.GetRoute().HashPolicy = policy.spec.hashPolicies.HashPolicies()
+		outputRoute.GetRoute().HashPolicy = policy.spec.hashPolicies.policies
 	}
 
-	if policy.spec.autoHostRewrite != nil && policy.spec.autoHostRewrite.AutoHostRewrite() != nil && policy.spec.autoHostRewrite.AutoHostRewrite().GetValue() {
+	if policy.spec.autoHostRewrite != nil && policy.spec.autoHostRewrite.enabled != nil && policy.spec.autoHostRewrite.enabled.GetValue() {
 		// Only apply TrafficPolicy's AutoHostRewrite if built-in policy's AutoHostRewrite is not already set
 		if ra := outputRoute.GetRoute(); ra != nil && ra.GetHostRewriteSpecifier() == nil {
 			ra.HostRewriteSpecifier = &envoyroutev3.RouteAction_AutoHostRewrite{
-				AutoHostRewrite: policy.spec.autoHostRewrite.AutoHostRewrite(),
+				AutoHostRewrite: policy.spec.autoHostRewrite.enabled,
 			}
 		}
 	}

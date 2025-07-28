@@ -34,13 +34,6 @@ func (h *HashPolicyIR) Equals(other *HashPolicyIR) bool {
 	return true
 }
 
-func (h *HashPolicyIR) HashPolicies() []*envoyroutev3.RouteAction_HashPolicy {
-	if h == nil {
-		return nil
-	}
-	return h.policies
-}
-
 func hashPolicyForSpec(spec v1alpha1.TrafficPolicySpec, outSpec *trafficPolicySpecIr) {
 	if len(spec.HashPolicies) == 0 {
 		return

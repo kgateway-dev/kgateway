@@ -229,7 +229,7 @@ func TestHashPolicyForSpec(t *testing.T) {
 
 			var actual []*envoyroutev3.RouteAction_HashPolicy
 			if outSpec.hashPolicies != nil {
-				actual = outSpec.hashPolicies.HashPolicies()
+				actual = outSpec.hashPolicies.policies
 			}
 			assert.Equal(t, tt.expected, actual)
 		})
