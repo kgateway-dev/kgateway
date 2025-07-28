@@ -4,10 +4,11 @@ import (
 	"context"
 	"time"
 
-	clusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
-	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
+	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoywellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	skubeclient "istio.io/istio/pkg/config/schema/kubeclient"
@@ -18,8 +19,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/watch"
 
-	"google.golang.org/protobuf/proto"
-
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
@@ -29,6 +28,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	pluginsdkutils "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/utils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/cmputils"
 )
 
 const PreserveCasePlugin = "envoy.http.stateful_header_formatters.preserve_case"
@@ -37,13 +37,13 @@ type BackendConfigPolicyIR struct {
 	ct                            time.Time
 	connectTimeout                *durationpb.Duration
 	perConnectionBufferLimitBytes *int
-	tcpKeepalive                  *corev3.TcpKeepalive
-	commonHttpProtocolOptions     *corev3.HttpProtocolOptions
-	http1ProtocolOptions          *corev3.Http1ProtocolOptions
-	http2ProtocolOptions          *corev3.Http2ProtocolOptions
-	tlsConfig                     *envoyauth.UpstreamTlsContext
+	tcpKeepalive                  *envoycorev3.TcpKeepalive
+	commonHttpProtocolOptions     *envoycorev3.HttpProtocolOptions
+	http1ProtocolOptions          *envoycorev3.Http1ProtocolOptions
+	http2ProtocolOptions          *envoycorev3.Http2ProtocolOptions
+	tlsConfig                     *envoytlsv3.UpstreamTlsContext
 	loadBalancerConfig            *LoadBalancerConfigIR
-	healthCheck                   *corev3.HealthCheck
+	healthCheck                   *envoycorev3.HealthCheck
 }
 
 var logger = logging.New("backendconfigpolicy")
@@ -64,73 +64,37 @@ func (d *BackendConfigPolicyIR) Equals(other any) bool {
 		return false
 	}
 
-	if (d.connectTimeout == nil) != (d2.connectTimeout == nil) {
+	if !proto.Equal(d.connectTimeout, d2.connectTimeout) {
 		return false
-	}
-	if d.connectTimeout != nil && d2.connectTimeout != nil {
-		if !proto.Equal(d.connectTimeout, d2.connectTimeout) {
-			return false
-		}
 	}
 
-	if (d.perConnectionBufferLimitBytes == nil) != (d2.perConnectionBufferLimitBytes == nil) {
+	if !cmputils.PointerValsEqual(d.perConnectionBufferLimitBytes, d2.perConnectionBufferLimitBytes) {
 		return false
-	}
-	if d.perConnectionBufferLimitBytes != nil && d2.perConnectionBufferLimitBytes != nil {
-		if *d.perConnectionBufferLimitBytes != *d2.perConnectionBufferLimitBytes {
-			return false
-		}
 	}
 
-	if (d.tcpKeepalive == nil) != (d2.tcpKeepalive == nil) {
+	if !proto.Equal(d.tcpKeepalive, d2.tcpKeepalive) {
 		return false
-	}
-	if d.tcpKeepalive != nil && d2.tcpKeepalive != nil {
-		if !proto.Equal(d.tcpKeepalive, d2.tcpKeepalive) {
-			return false
-		}
 	}
 
-	if (d.commonHttpProtocolOptions == nil) != (d2.commonHttpProtocolOptions == nil) {
+	if !proto.Equal(d.commonHttpProtocolOptions, d2.commonHttpProtocolOptions) {
 		return false
-	}
-	if d.commonHttpProtocolOptions != nil && d2.commonHttpProtocolOptions != nil {
-		if !proto.Equal(d.commonHttpProtocolOptions, d2.commonHttpProtocolOptions) {
-			return false
-		}
 	}
 
-	if (d.http1ProtocolOptions == nil) != (d2.http1ProtocolOptions == nil) {
+	if !proto.Equal(d.http1ProtocolOptions, d2.http1ProtocolOptions) {
 		return false
-	}
-	if d.http1ProtocolOptions != nil && d2.http1ProtocolOptions != nil {
-		if !proto.Equal(d.http1ProtocolOptions, d2.http1ProtocolOptions) {
-			return false
-		}
 	}
 
-	if (d.http2ProtocolOptions == nil) != (d2.http2ProtocolOptions == nil) {
+	if !proto.Equal(d.http2ProtocolOptions, d2.http2ProtocolOptions) {
 		return false
-	}
-	if d.http2ProtocolOptions != nil && d2.http2ProtocolOptions != nil {
-		if !proto.Equal(d.http2ProtocolOptions, d2.http2ProtocolOptions) {
-			return false
-		}
 	}
 
-	if (d.tlsConfig == nil) != (d2.tlsConfig == nil) {
+	if !proto.Equal(d.tlsConfig, d2.tlsConfig) {
 		return false
-	}
-	if d.tlsConfig != nil && d2.tlsConfig != nil {
-		if !proto.Equal(d.tlsConfig, d2.tlsConfig) {
-			return false
-		}
 	}
 
-	if (d.loadBalancerConfig == nil) != (d2.loadBalancerConfig == nil) {
-		return false
-	}
-	if !d.loadBalancerConfig.Equals(d2.loadBalancerConfig) {
+	if !cmputils.CompareWithNils(d.loadBalancerConfig, d2.loadBalancerConfig, func(a, b *LoadBalancerConfigIR) bool {
+		return a.Equals(b)
+	}) {
 		return false
 	}
 
@@ -194,7 +158,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 	}
 }
 
-func processBackend(_ context.Context, polir ir.PolicyIR, backend ir.BackendObjectIR, out *clusterv3.Cluster) {
+func processBackend(_ context.Context, polir ir.PolicyIR, backend ir.BackendObjectIR, out *envoyclusterv3.Cluster) {
 	pol := polir.(*BackendConfigPolicyIR)
 	if pol.connectTimeout != nil {
 		out.ConnectTimeout = pol.connectTimeout
@@ -205,7 +169,7 @@ func processBackend(_ context.Context, polir ir.PolicyIR, backend ir.BackendObje
 	}
 
 	if pol.tcpKeepalive != nil {
-		out.UpstreamConnectionOptions = &clusterv3.UpstreamConnectionOptions{
+		out.UpstreamConnectionOptions = &envoyclusterv3.UpstreamConnectionOptions{
 			TcpKeepalive: pol.tcpKeepalive,
 		}
 	}
@@ -220,9 +184,9 @@ func processBackend(_ context.Context, polir ir.PolicyIR, backend ir.BackendObje
 			logger.Error("failed to convert tls config to any", "error", err)
 			return
 		}
-		out.TransportSocket = &corev3.TransportSocket{
+		out.TransportSocket = &envoycorev3.TransportSocket{
 			Name: envoywellknown.TransportSocketTls,
-			ConfigType: &corev3.TransportSocket_TypedConfig{
+			ConfigType: &envoycorev3.TransportSocket_TypedConfig{
 				TypedConfig: typedConfig,
 			},
 		}
@@ -231,7 +195,7 @@ func processBackend(_ context.Context, polir ir.PolicyIR, backend ir.BackendObje
 	applyLoadBalancerConfig(pol.loadBalancerConfig, out)
 
 	if pol.healthCheck != nil {
-		out.HealthChecks = []*corev3.HealthCheck{pol.healthCheck}
+		out.HealthChecks = []*envoycorev3.HealthCheck{pol.healthCheck}
 	}
 }
 
@@ -285,8 +249,8 @@ func translate(commoncol *common.CommonCollections, krtctx krt.HandlerContext, p
 	return &ir, nil
 }
 
-func translateTCPKeepalive(tcpKeepalive *v1alpha1.TCPKeepalive) *corev3.TcpKeepalive {
-	out := &corev3.TcpKeepalive{}
+func translateTCPKeepalive(tcpKeepalive *v1alpha1.TCPKeepalive) *envoycorev3.TcpKeepalive {
+	out := &envoycorev3.TcpKeepalive{}
 	if tcpKeepalive.KeepAliveProbes != nil {
 		out.KeepaliveProbes = &wrapperspb.UInt32Value{Value: uint32(*tcpKeepalive.KeepAliveProbes)}
 	}

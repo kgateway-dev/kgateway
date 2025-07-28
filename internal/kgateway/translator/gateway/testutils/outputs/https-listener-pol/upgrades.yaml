@@ -38,9 +38,19 @@ Listeners:
         - upgradeType: websocket
         useRemoteAddress: true
     name: listener~80
+  metadata:
+    filterMetadata:
+      merge.HTTPListenerPolicy.gateway.kgateway.dev:
+        upgradeConfig:
+        - gateway.kgateway.dev/HTTPListenerPolicy/default/upgrades
   name: listener~80
 Routes:
 - ignorePortInHostMatching: true
+  metadata:
+    filterMetadata:
+      merge.HTTPListenerPolicy.gateway.kgateway.dev:
+        upgradeConfig:
+        - gateway.kgateway.dev/HTTPListenerPolicy/default/upgrades
   name: listener~80
   virtualHosts:
   - domains:

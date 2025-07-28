@@ -107,6 +107,19 @@ func (s *testingSuite) TestHttpListenerPolicyAllFields() {
 			StatusCode: http.StatusOK,
 			Body:       gomega.ContainSubstring("Welcome to nginx!"),
 		})
+
+	// Check the health check path is working
+	s.testInstallation.Assertions.AssertEventualCurlResponse(
+		s.ctx,
+		testdefaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
+			curl.WithPath("/health_check"),
+		},
+		&matchers.HttpResponse{
+			StatusCode: http.StatusOK,
+			Body:       gomega.BeEmpty(),
+		})
 }
 
 func (s *testingSuite) TestHttpListenerPolicyServerHeader() {

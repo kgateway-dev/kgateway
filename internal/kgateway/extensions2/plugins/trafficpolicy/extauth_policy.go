@@ -13,6 +13,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/cmputils"
 )
 
 var (
@@ -47,7 +48,7 @@ var (
 
 type extAuthIR struct {
 	provider        *TrafficPolicyGatewayExtensionIR
-	enablement      v1alpha1.ExtAuthEnabled
+	enablement      *v1alpha1.ExtAuthEnabled
 	extauthPerRoute *envoy_ext_authz_v3.ExtAuthzPerRoute
 }
 
@@ -70,10 +71,9 @@ func (e *extAuthIR) Equals(other *extAuthIR) bool {
 	}
 
 	// Compare providers
-	if (e.provider == nil) != (other.provider == nil) {
-		return false
-	}
-	if e.provider != nil && !e.provider.Equals(*other.provider) {
+	if !cmputils.CompareWithNils(e.provider, other.provider, func(a, b *TrafficPolicyGatewayExtensionIR) bool {
+		return a.Equals(*b)
+	}) {
 		return false
 	}
 	return true
@@ -93,10 +93,10 @@ func (b *TrafficPolicyBuilder) extAuthForSpec(
 	}
 	spec := policySpec.ExtAuth
 
-	if spec.Enablement == v1alpha1.ExtAuthDisableAll {
+	if spec.Enablement != nil && *spec.Enablement == v1alpha1.ExtAuthDisableAll {
 		out.extAuth = &extAuthIR{
 			provider:        nil,
-			enablement:      v1alpha1.ExtAuthDisableAll,
+			enablement:      spec.Enablement,
 			extauthPerRoute: translatePerFilterConfig(spec),
 		}
 		return nil
@@ -159,7 +159,7 @@ func (p *trafficPolicyPluginGwPass) handleExtAuth(fcn string, pCtxTypedFilterCon
 	}
 
 	// Handle the enablement state
-	if extAuth.enablement == v1alpha1.ExtAuthDisableAll {
+	if extAuth.enablement != nil && *extAuth.enablement == v1alpha1.ExtAuthDisableAll {
 		// Disable the filter under all providers via the metadata match
 		// we have to use the metadata as we dont know what other configurations may have extauth
 		pCtxTypedFilterConfig.AddTypedConfig(extAuthGlobalDisableFilterName, EnableFilterPerRoute)

@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
-	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
@@ -30,7 +30,7 @@ func (a AttachmentPoints) Has(p AttachmentPoints) bool {
 
 type (
 	EndpointsInputs = endpoints.EndpointsInputs
-	ProcessBackend  func(ctx context.Context, pol ir.PolicyIR, in ir.BackendObjectIR, out *envoy_config_cluster_v3.Cluster)
+	ProcessBackend  func(ctx context.Context, pol ir.PolicyIR, in ir.BackendObjectIR, out *envoyclusterv3.Cluster)
 	EndpointPlugin  func(
 		kctx krt.HandlerContext,
 		ctx context.Context,
@@ -48,7 +48,7 @@ type PerClientProcessBackend func(
 	ctx context.Context,
 	ucc ir.UniqlyConnectedClient,
 	in ir.BackendObjectIR,
-	out *envoy_config_cluster_v3.Cluster,
+	out *envoyclusterv3.Cluster,
 )
 
 type (

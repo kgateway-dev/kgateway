@@ -26,6 +26,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	reports "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/cmputils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/stringutils"
 )
 
@@ -156,8 +157,7 @@ func (w *waypointTranslator) buildInboundListener(gw *ir.Gateway, reporter repor
 			// if no allowed kinds, just use all of our default supportedKinds
 			supportedKinds := slices.Filter(waypointSupportedKinds, func(s gwv1.RouteGroupKind) bool {
 				return l.AllowedRoutes == nil || nil != slices.FindFunc(l.AllowedRoutes.Kinds, func(lk gwv1.RouteGroupKind) bool {
-					groupEq := (lk.Group == nil && s.Group == nil) || (lk.Group != nil && s.Group != nil && *lk.Group == *s.Group)
-					return groupEq && lk.Kind == s.Kind
+					return cmputils.PointerValsEqual(lk.Group, s.Group) && lk.Kind == s.Kind
 				})
 			})
 			reporter.Listener(&l.Listener).SetSupportedKinds(supportedKinds)
@@ -308,7 +308,7 @@ func (t *waypointTranslator) buildServiceChains(
 		// HTTPRoutes apply at the Service level, not the port
 		// level so we don't need to generate this multiple times
 		// TODO respect `port` on parentRef
-		httpRoutesVirtualHost := t.buildHTTPVirtualHost(ctx, baseReporter, gw, gwListener, svc, httpRoutes)
+		httpRoutesVirtualHost := t.buildHTTPVirtualHost(ctx, baseReporter, gwListener, svc, httpRoutes)
 
 		for _, svcPort := range svc.Ports {
 			filterChain, err := initServiceChain(svc, svcPort)
@@ -348,7 +348,7 @@ func (t *waypointTranslator) buildServiceChains(
 				}
 
 				// Apply TCP RBAC filters to this TCP filter chain
-				applyTCPRBACFilters(&tcpChain, tcpRBAC, svc)
+				applyTCPRBACFilters(&tcpChain, tcpRBAC)
 				tcpOut = append(tcpOut, tcpChain)
 			}
 		}
@@ -395,7 +395,6 @@ func initServiceChain(
 func (t *waypointTranslator) buildHTTPVirtualHost(
 	ctx context.Context,
 	baseReporter reports.Reporter,
-	gw *ir.Gateway,
 	gwListener *ir.Listener,
 	svc waypointquery.Service,
 	httpRoutes []*query.RouteInfo,

@@ -1,9 +1,7 @@
 package trafficpolicy
 
 import (
-	"time"
-
-	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	localratelimitv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/local_ratelimit/v3"
 	typev3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"google.golang.org/protobuf/types/known/durationpb"
@@ -49,11 +47,7 @@ func toLocalRateLimitFilterConfig(t *v1alpha1.LocalRateLimitPolicy) (*localratel
 
 	tokenBucket := &typev3.TokenBucket{}
 	if t.TokenBucket != nil {
-		fillInterval, err := time.ParseDuration(string(t.TokenBucket.FillInterval))
-		if err != nil {
-			return nil, err
-		}
-		tokenBucket.FillInterval = durationpb.New(fillInterval)
+		tokenBucket.FillInterval = durationpb.New(t.TokenBucket.FillInterval.Duration)
 		tokenBucket.MaxTokens = t.TokenBucket.MaxTokens
 		if t.TokenBucket.TokensPerFill != nil {
 			tokenBucket.TokensPerFill = wrapperspb.UInt32(*t.TokenBucket.TokensPerFill)
@@ -65,7 +59,7 @@ func toLocalRateLimitFilterConfig(t *v1alpha1.LocalRateLimitPolicy) (*localratel
 		TokenBucket: tokenBucket,
 		// By default filter is enabled for 0% of the requests. We enable it for all requests.
 		// TODO: Make this configurable in the rate limit policy API.
-		FilterEnabled: &corev3.RuntimeFractionalPercent{
+		FilterEnabled: &envoycorev3.RuntimeFractionalPercent{
 			RuntimeKey: localRatelimitFilterEnabledRuntimeKey,
 			DefaultValue: &typev3.FractionalPercent{
 				Numerator:   100,
@@ -75,7 +69,7 @@ func toLocalRateLimitFilterConfig(t *v1alpha1.LocalRateLimitPolicy) (*localratel
 		// By default filter is enforced for 0% of the requests (out of the enabled fraction).
 		// We enable it for all requests.
 		// TODO: Make this configurable in the rate limit policy API.
-		FilterEnforced: &corev3.RuntimeFractionalPercent{
+		FilterEnforced: &envoycorev3.RuntimeFractionalPercent{
 			RuntimeKey: localRatelimitFilterEnforcedRuntimeKey,
 			DefaultValue: &typev3.FractionalPercent{
 				Numerator:   100,
@@ -98,7 +92,7 @@ func createDisabledRateLimit() *localratelimitv3.LocalRateLimit {
 			FillInterval: durationpb.New(1),
 		},
 		// Set filter enabled to 0% to effectively disable rate limiting
-		FilterEnabled: &corev3.RuntimeFractionalPercent{
+		FilterEnabled: &envoycorev3.RuntimeFractionalPercent{
 			RuntimeKey:   localRatelimitFilterDisabledRuntimeKey,
 			DefaultValue: &typev3.FractionalPercent{},
 		},

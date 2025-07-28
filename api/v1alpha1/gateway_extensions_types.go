@@ -81,8 +81,9 @@ type RateLimitProvider struct {
 
 	// Timeout for requests to the rate limit service.
 	// +optional
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	// +kubebuilder:default="20ms"
-	Timeout gwv1.Duration `json:"timeout,omitempty"`
+	Timeout metav1.Duration `json:"timeout,omitempty"`
 }
 
 // GatewayExtensionSpec defines the desired state of GatewayExtension.

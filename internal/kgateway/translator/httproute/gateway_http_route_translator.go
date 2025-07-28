@@ -8,6 +8,8 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/metrics"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/query"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
@@ -58,6 +60,19 @@ func translateGatewayHTTPRouteRulesUtil(
 	route, ok := routeInfo.Object.(*ir.HttpRouteIR)
 	if !ok {
 		return
+	}
+
+	metricsRecorder := metrics.NewTranslatorMetricsRecorder("TranslateHTTPRoute")
+	defer metricsRecorder.TranslationStart()(nil)
+
+	// This function is called multiple times during translation of resources, and it is
+	// only required to start the resource metrics tracking when the parent is a Gateway.
+	if routeInfo.ParentRef.Kind != nil && *routeInfo.ParentRef.Kind == wellknown.GatewayKind {
+		metrics.StartResourceSync(routeInfo.GetName(), metrics.ResourceMetricLabels{
+			Gateway:   string(routeInfo.ParentRef.Name),
+			Namespace: routeInfo.GetNamespace(),
+			Resource:  routeInfo.GetKind(),
+		})
 	}
 
 	for ruleIdx, rule := range route.Rules {

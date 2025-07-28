@@ -10,6 +10,7 @@ import (
 	"golang.org/x/exp/slices"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/utils/ptr"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
@@ -28,11 +29,31 @@ var ComponentLogLevelEmptyError = func(key string, value string) error {
 // 2. the ports exposed on the proxy service
 func GetPortsValues(gw *ir.Gateway, gwp *v1alpha1.GatewayParameters) []HelmPort {
 	gwPorts := []HelmPort{}
+
+	// Add ports from Gateway listeners
 	for _, l := range gw.Listeners {
 		listenerPort := uint16(l.Port)
 		portName := listener.GenerateListenerName(l)
 		gwPorts = AppendPortValue(gwPorts, listenerPort, portName, gwp)
 	}
+
+	// Add ports from GatewayParameters.Service.Ports
+	// Merge user-defined service ports with auto-generated listener ports
+	// Without this, user-specified ports would be ignored, causing service connectivity issues
+	if gwp != nil && gwp.Spec.GetKube() != nil && gwp.Spec.GetKube().GetService() != nil {
+		servicePorts := gwp.Spec.GetKube().GetService().GetPorts()
+		for _, servicePort := range servicePorts {
+			portValue := servicePort.GetPort()
+			l := ir.Listener{
+				Listener: gwv1.Listener{
+					Port: gwv1.PortNumber(portValue),
+				},
+			}
+			portName := listener.GenerateListenerName(l)
+			gwPorts = AppendPortValue(gwPorts, portValue, portName, gwp)
+		}
+	}
+
 	return gwPorts
 }
 
@@ -62,7 +83,7 @@ func AppendPortValue(gwPorts []HelmPort, port uint16, name string, gwp *v1alpha1
 	// If not found the default value of `nil` will not render anything.
 	var nodePort *uint16 = nil
 	if gwp.Spec.GetKube().GetService().GetType() != nil && *(gwp.Spec.GetKube().GetService().GetType()) == corev1.ServiceTypeNodePort {
-		if idx := slices.IndexFunc(gwp.Spec.GetKube().GetService().GetPorts(), func(p *v1alpha1.Port) bool {
+		if idx := slices.IndexFunc(gwp.Spec.GetKube().GetService().GetPorts(), func(p v1alpha1.Port) bool {
 			return p.GetPort() == uint16(port)
 		}); idx != -1 {
 			nodePort = ptr.To(uint16(*gwp.Spec.GetKube().GetService().GetPorts()[idx].GetNodePort()))

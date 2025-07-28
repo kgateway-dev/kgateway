@@ -3,6 +3,7 @@
 package v1alpha1
 
 import (
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	apiv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
@@ -13,7 +14,7 @@ import (
 type AiExtensionTraceApplyConfiguration struct {
 	EndPoint          *v1.AbsoluteURI                        `json:"endpoint,omitempty"`
 	Sampler           *OTelTracesSamplerApplyConfiguration   `json:"sampler,omitempty"`
-	Timeout           *v1.Duration                           `json:"timeout,omitempty"`
+	Timeout           *metav1.Duration                       `json:"timeout,omitempty"`
 	Protocol          *apiv1alpha1.OTLPTracesProtocolType    `json:"protocol,omitempty"`
 	TransportSecurity *apiv1alpha1.OTLPTransportSecurityMode `json:"transportSecurity,omitempty"`
 }
@@ -43,7 +44,7 @@ func (b *AiExtensionTraceApplyConfiguration) WithSampler(value *OTelTracesSample
 // WithTimeout sets the Timeout field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Timeout field is set to the value of the last call.
-func (b *AiExtensionTraceApplyConfiguration) WithTimeout(value v1.Duration) *AiExtensionTraceApplyConfiguration {
+func (b *AiExtensionTraceApplyConfiguration) WithTimeout(value metav1.Duration) *AiExtensionTraceApplyConfiguration {
 	b.Timeout = &value
 	return b
 }

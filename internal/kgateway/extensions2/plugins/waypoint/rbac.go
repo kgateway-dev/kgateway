@@ -81,7 +81,7 @@ func applyHTTPRBACFilters(httpChain *ir.HttpFilterChainIR, httpRBAC []*ir.Custom
 	}
 }
 
-func applyTCPRBACFilters(tcpChain *ir.TcpIR, tcpRBAC []*ir.CustomEnvoyFilter, svc waypointquery.Service) {
+func applyTCPRBACFilters(tcpChain *ir.TcpIR, tcpRBAC []*ir.CustomEnvoyFilter) {
 	if len(tcpRBAC) == 0 {
 		return
 	}

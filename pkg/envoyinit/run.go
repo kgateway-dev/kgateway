@@ -11,9 +11,9 @@ import (
 	"syscall"
 	"time"
 
-	envoy_config_bootstrap "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
-	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	tlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
+	envoybootstrapv3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/envoyinit/pkg/downward"
 	"github.com/kgateway-dev/kgateway/v2/internal/envoyinit/pkg/utils"
@@ -74,17 +74,17 @@ func RunEnvoy(envoyExecutable, inputPath, outputPath string) {
 	if caPath != "" {
 		log.Printf("Using OS CA certificate for proxy: %s", caPath)
 		//If the CA cert path is set, we need to set the CA cert path in the bootstrap config
-		var bootstrap envoy_config_bootstrap.Bootstrap
+		var bootstrap envoybootstrapv3.Bootstrap
 		err := protoutils.UnmarshalYaml([]byte(bootstrapConfig), &bootstrap)
 		if err != nil {
 			log.Fatalf("failed to unmarshal bootstrap config: %v", err)
 		}
-		bootstrap.GetStaticResources().Secrets = append(bootstrap.GetStaticResources().GetSecrets(), &tlsv3.Secret{
+		bootstrap.GetStaticResources().Secrets = append(bootstrap.GetStaticResources().GetSecrets(), &envoytlsv3.Secret{
 			Name: utils.SystemCaSecretName,
-			Type: &tlsv3.Secret_ValidationContext{
-				ValidationContext: &tlsv3.CertificateValidationContext{
-					TrustedCa: &corev3.DataSource{
-						Specifier: &corev3.DataSource_Filename{
+			Type: &envoytlsv3.Secret_ValidationContext{
+				ValidationContext: &envoytlsv3.CertificateValidationContext{
+					TrustedCa: &envoycorev3.DataSource{
+						Specifier: &envoycorev3.DataSource_Filename{
 							Filename: caPath,
 						},
 					},

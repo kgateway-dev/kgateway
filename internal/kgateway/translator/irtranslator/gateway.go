@@ -4,9 +4,9 @@ import (
 	"sort"
 	"strconv"
 
-	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
-	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
-	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"golang.org/x/net/context"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/slices"
@@ -17,11 +17,9 @@ import (
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/query"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/metrics"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
-	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
-	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
+	sdkreporter "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/settings"
 )
 
@@ -30,25 +28,18 @@ var logger = logging.New("translator/ir")
 type Translator struct {
 	ContributedPolicies  map[schema.GroupKind]extensionsplug.PolicyPlugin
 	RouteReplacementMode settings.RouteReplacementMode
-	metrics              metrics.TranslatorMetricsRecorder
 }
 
 type TranslationPassPlugins map[schema.GroupKind]*TranslationPass
 
 type TranslationResult struct {
-	Routes        []*envoy_config_route_v3.RouteConfiguration
-	Listeners     []*envoy_config_listener_v3.Listener
-	ExtraClusters []*envoy_config_cluster_v3.Cluster
+	Routes        []*envoyroutev3.RouteConfiguration
+	Listeners     []*envoylistenerv3.Listener
+	ExtraClusters []*envoyclusterv3.Cluster
 }
 
 // Translate IR to gateway. IR is self contained, so no need for krt context
-func (t *Translator) Translate(gw ir.GatewayIR, reporter reports.Reporter) TranslationResult {
-	if t.metrics == nil {
-		t.metrics = metrics.NewTranslatorMetricsRecorder("TranslateGatewayIR")
-	}
-
-	defer t.metrics.TranslationStart()(nil)
-
+func (t *Translator) Translate(gw ir.GatewayIR, reporter sdkreporter.Reporter) TranslationResult {
 	pass := t.newPass(reporter)
 	var res TranslationResult
 
@@ -69,7 +60,7 @@ func (t *Translator) Translate(gw ir.GatewayIR, reporter reports.Reporter) Trans
 	return res
 }
 
-func getReporterForFilterChain(gw ir.GatewayIR, reporter reports.Reporter, filterChainName string) reporter.ListenerReporter {
+func getReporterForFilterChain(gw ir.GatewayIR, reporter sdkreporter.Reporter, filterChainName string) sdkreporter.ListenerReporter {
 	listener := slices.FindFunc(gw.SourceObject.Listeners, func(l ir.Listener) bool {
 		return filterChainName == query.GenerateRouteKey(l.Parent, string(l.Name))
 	})
@@ -85,25 +76,26 @@ func (t *Translator) ComputeListener(
 	pass TranslationPassPlugins,
 	gw ir.GatewayIR,
 	lis ir.ListenerIR,
-	reporter reports.Reporter,
-) (*envoy_config_listener_v3.Listener, []*envoy_config_route_v3.RouteConfiguration) {
+	reporter sdkreporter.Reporter,
+) (*envoylistenerv3.Listener, []*envoyroutev3.RouteConfiguration) {
 	hasTls := false
 	gwreporter := reporter.Gateway(gw.SourceObject.Obj)
-	var routes []*envoy_config_route_v3.RouteConfiguration
-	ret := &envoy_config_listener_v3.Listener{
+	var routes []*envoyroutev3.RouteConfiguration
+	ret := &envoylistenerv3.Listener{
 		Name:    lis.Name,
 		Address: computeListenerAddress(lis.BindAddress, lis.BindPort, gwreporter),
 	}
 	if gw.PerConnectionBufferLimitBytes != nil {
 		ret.PerConnectionBufferLimitBytes = &wrapperspb.UInt32Value{Value: *gw.PerConnectionBufferLimitBytes}
 	}
-	t.runListenerPlugins(ctx, pass, gw, lis, ret)
+	t.runListenerPlugins(ctx, pass, gw, lis, reporter, ret)
 
 	for _, hfc := range lis.HttpFilterChain {
 		fct := filterChainTranslator{
 			listener:        lis,
 			gateway:         gw,
 			routeConfigName: hfc.FilterChainName,
+			reporter:        reporter,
 			PluginPass:      pass,
 		}
 
@@ -177,8 +169,16 @@ func (t *Translator) ComputeListener(
 	return ret, routes
 }
 
-func (t *Translator) runListenerPlugins(ctx context.Context, pass TranslationPassPlugins, gw ir.GatewayIR, l ir.ListenerIR, out *envoy_config_listener_v3.Listener) {
+func (t *Translator) runListenerPlugins(
+	ctx context.Context,
+	pass TranslationPassPlugins,
+	gw ir.GatewayIR,
+	l ir.ListenerIR,
+	reporter sdkreporter.Reporter,
+	out *envoylistenerv3.Listener,
+) {
 	var attachedPolicies ir.AttachedPolicies
+	// Listener policies take precedence over gateway policies, so they are ordered first
 	attachedPolicies.Append(l.AttachedPolicies, gw.AttachedHttpPolicies)
 	for _, gk := range attachedPolicies.ApplyOrderedGroupKinds() {
 		pols := attachedPolicies.Policies[gk]
@@ -187,7 +187,9 @@ func (t *Translator) runListenerPlugins(ctx context.Context, pass TranslationPas
 			// TODO: report user error - they attached a non http policy
 			continue
 		}
-		for _, pol := range pols {
+		reportPolicyAcceptanceStatus(reporter, l.PolicyAncestorRef, pols...)
+		policies, mergeOrigins := mergePolicies(pass, pols)
+		for _, pol := range policies {
 			pctx := &ir.ListenerContext{
 				Policy: pol.PolicyIr,
 				PolicyAncestorRef: gwv1.ParentReference{
@@ -198,17 +200,19 @@ func (t *Translator) runListenerPlugins(ctx context.Context, pass TranslationPas
 				},
 			}
 			pass.ApplyListenerPlugin(ctx, pctx, out)
-			// TODO: check return value, if error returned, log error and report condition
 		}
+		out.Metadata = addMergeOriginsToFilterMetadata(gk, mergeOrigins, out.GetMetadata())
+		reportPolicyAttachmentStatus(reporter, l.PolicyAncestorRef, mergeOrigins, pols...)
 	}
 }
 
-func (t *Translator) newPass(reporter reports.Reporter) TranslationPassPlugins {
+func (t *Translator) newPass(reporter sdkreporter.Reporter) TranslationPassPlugins {
 	ret := TranslationPassPlugins{}
 	for k, v := range t.ContributedPolicies {
 		if v.NewGatewayTranslationPass == nil {
 			continue
 		}
+
 		tp := v.NewGatewayTranslationPass(context.TODO(), ir.GwTranslationCtx{}, reporter)
 		if tp != nil {
 			ret[k] = &TranslationPass{

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
+	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoymatcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -98,7 +98,7 @@ func TestTranslateTLSConfig(t *testing.T) {
 		tlsConfig *v1alpha1.TLS
 		secret    *ir.Secret
 		wantErr   bool
-		check     func(t *testing.T, result *envoyauth.UpstreamTlsContext)
+		check     func(t *testing.T, result *envoytlsv3.UpstreamTlsContext)
 	}{
 		{
 			name: "secret-based TLS config",
@@ -106,7 +106,7 @@ func TestTranslateTLSConfig(t *testing.T) {
 				SecretRef: &corev1.LocalObjectReference{
 					Name: "test-secret",
 				},
-				Sni:                "test.example.com",
+				Sni:                ptr.To("test.example.com"),
 				AllowRenegotiation: ptr.To(true),
 				AlpnProtocols:      []string{"h2", "http/1.1"},
 			},
@@ -125,7 +125,7 @@ func TestTranslateTLSConfig(t *testing.T) {
 				},
 			},
 			wantErr: false,
-			check: func(t *testing.T, result *envoyauth.UpstreamTlsContext) {
+			check: func(t *testing.T, result *envoytlsv3.UpstreamTlsContext) {
 				assert.NotNil(t, result)
 				assert.Equal(t, "test.example.com", result.Sni)
 				assert.True(t, result.AllowRenegotiation)
@@ -139,15 +139,15 @@ func TestTranslateTLSConfig(t *testing.T) {
 			name: "file-based TLS config",
 			tlsConfig: &v1alpha1.TLS{
 				TLSFiles: &v1alpha1.TLSFiles{
-					TLSCertificate: CACert,
-					TLSKey:         TLSKey,
-					RootCA:         CACert,
+					TLSCertificate: ptr.To(CACert),
+					TLSKey:         ptr.To(TLSKey),
+					RootCA:         ptr.To(CACert),
 				},
-				Sni:                "test.example.com",
+				Sni:                ptr.To("test.example.com"),
 				AllowRenegotiation: ptr.To(true),
 			},
 			wantErr: false,
-			check: func(t *testing.T, result *envoyauth.UpstreamTlsContext) {
+			check: func(t *testing.T, result *envoytlsv3.UpstreamTlsContext) {
 				assert.NotNil(t, result)
 				assert.Equal(t, "test.example.com", result.Sni)
 				assert.True(t, result.AllowRenegotiation)
@@ -160,8 +160,8 @@ func TestTranslateTLSConfig(t *testing.T) {
 			name: "TLS config with parameters",
 			tlsConfig: &v1alpha1.TLS{
 				TLSFiles: &v1alpha1.TLSFiles{
-					TLSCertificate: CACert,
-					TLSKey:         TLSKey,
+					TLSCertificate: ptr.To(CACert),
+					TLSKey:         ptr.To(TLSKey),
 				},
 				Parameters: &v1alpha1.Parameters{
 					TLSMinVersion: ptr.To(v1alpha1.TLSVersion1_2),
@@ -172,11 +172,11 @@ func TestTranslateTLSConfig(t *testing.T) {
 				AllowRenegotiation: ptr.To(true),
 			},
 			wantErr: false,
-			check: func(t *testing.T, result *envoyauth.UpstreamTlsContext) {
+			check: func(t *testing.T, result *envoytlsv3.UpstreamTlsContext) {
 				assert.NotNil(t, result)
 				assert.NotNil(t, result.CommonTlsContext.TlsParams)
-				assert.Equal(t, envoyauth.TlsParameters_TLSv1_2, result.CommonTlsContext.TlsParams.TlsMinimumProtocolVersion)
-				assert.Equal(t, envoyauth.TlsParameters_TLSv1_3, result.CommonTlsContext.TlsParams.TlsMaximumProtocolVersion)
+				assert.Equal(t, envoytlsv3.TlsParameters_TLSv1_2, result.CommonTlsContext.TlsParams.TlsMinimumProtocolVersion)
+				assert.Equal(t, envoytlsv3.TlsParameters_TLSv1_3, result.CommonTlsContext.TlsParams.TlsMaximumProtocolVersion)
 				assert.Equal(t, []string{"TLS_AES_128_GCM_SHA256"}, result.CommonTlsContext.TlsParams.CipherSuites)
 				assert.Equal(t, []string{"X25519"}, result.CommonTlsContext.TlsParams.EcdhCurves)
 			},
@@ -202,11 +202,11 @@ func TestTranslateTLSConfig(t *testing.T) {
 			name: "should not error with only rootca",
 			tlsConfig: &v1alpha1.TLS{
 				TLSFiles: &v1alpha1.TLSFiles{
-					RootCA: CACert,
+					RootCA: ptr.To(CACert),
 				},
 			},
 			wantErr: false,
-			check: func(t *testing.T, result *envoyauth.UpstreamTlsContext) {
+			check: func(t *testing.T, result *envoytlsv3.UpstreamTlsContext) {
 				assert.NotNil(t, result)
 			},
 		},
@@ -214,8 +214,8 @@ func TestTranslateTLSConfig(t *testing.T) {
 			name: "should error with san and no rootca",
 			tlsConfig: &v1alpha1.TLS{
 				TLSFiles: &v1alpha1.TLSFiles{
-					TLSCertificate: CACert,
-					TLSKey:         TLSKey,
+					TLSCertificate: ptr.To(CACert),
+					TLSKey:         ptr.To(TLSKey),
 				},
 				VerifySubjectAltName: []string{"test.example.com"},
 			},
@@ -225,7 +225,7 @@ func TestTranslateTLSConfig(t *testing.T) {
 			name: "should error with only cert and no key",
 			tlsConfig: &v1alpha1.TLS{
 				TLSFiles: &v1alpha1.TLSFiles{
-					TLSCertificate: CACert,
+					TLSCertificate: ptr.To(CACert),
 				},
 			},
 			wantErr: true,
@@ -234,14 +234,14 @@ func TestTranslateTLSConfig(t *testing.T) {
 			name: "should not have validation context if one way tls",
 			tlsConfig: &v1alpha1.TLS{
 				TLSFiles: &v1alpha1.TLSFiles{
-					TLSCertificate: CACert,
-					TLSKey:         TLSKey,
-					RootCA:         CACert,
+					TLSCertificate: ptr.To(CACert),
+					TLSKey:         ptr.To(TLSKey),
+					RootCA:         ptr.To(CACert),
 				},
 				OneWayTLS: ptr.To(true),
 			},
 			wantErr: false,
-			check: func(t *testing.T, result *envoyauth.UpstreamTlsContext) {
+			check: func(t *testing.T, result *envoytlsv3.UpstreamTlsContext) {
 				assert.NotNil(t, result)
 				assert.Nil(t, result.CommonTlsContext.GetValidationContext())
 			},
@@ -267,7 +267,7 @@ func TestTranslateTLSConfig(t *testing.T) {
 				},
 			},
 			wantErr: false,
-			check: func(t *testing.T, result *envoyauth.UpstreamTlsContext) {
+			check: func(t *testing.T, result *envoytlsv3.UpstreamTlsContext) {
 				assert.NotNil(t, result)
 				assert.Nil(t, result.CommonTlsContext.GetValidationContext())
 			},
@@ -276,15 +276,15 @@ func TestTranslateTLSConfig(t *testing.T) {
 			name: "TLS config with SAN verification",
 			tlsConfig: &v1alpha1.TLS{
 				TLSFiles: &v1alpha1.TLSFiles{
-					TLSCertificate: CACert,
-					TLSKey:         TLSKey,
-					RootCA:         CACert,
+					TLSCertificate: ptr.To(CACert),
+					TLSKey:         ptr.To(TLSKey),
+					RootCA:         ptr.To(CACert),
 				},
 				VerifySubjectAltName: []string{"test.example.com", "api.example.com"},
-				Sni:                  "test.example.com",
+				Sni:                  ptr.To("test.example.com"),
 			},
 			wantErr: false,
-			check: func(t *testing.T, result *envoyauth.UpstreamTlsContext) {
+			check: func(t *testing.T, result *envoytlsv3.UpstreamTlsContext) {
 				assert.NotNil(t, result)
 				assert.Equal(t, "test.example.com", result.Sni)
 				assert.NotNil(t, result.CommonTlsContext)
@@ -296,11 +296,11 @@ func TestTranslateTLSConfig(t *testing.T) {
 				assert.Len(t, validationCtx.MatchTypedSubjectAltNames, 2)
 
 				san1 := validationCtx.MatchTypedSubjectAltNames[0]
-				assert.Equal(t, envoyauth.SubjectAltNameMatcher_DNS, san1.SanType)
+				assert.Equal(t, envoytlsv3.SubjectAltNameMatcher_DNS, san1.SanType)
 				assert.Equal(t, "test.example.com", san1.Matcher.GetExact())
 
 				san2 := validationCtx.MatchTypedSubjectAltNames[1]
-				assert.Equal(t, envoyauth.SubjectAltNameMatcher_DNS, san2.SanType)
+				assert.Equal(t, envoytlsv3.SubjectAltNameMatcher_DNS, san2.SanType)
 				assert.Equal(t, "api.example.com", san2.Matcher.GetExact())
 			},
 		},
@@ -333,7 +333,7 @@ func TestTranslateTLSConfig(t *testing.T) {
 	}
 }
 
-func validateCommonTlsContextInline(t *testing.T, result *envoyauth.UpstreamTlsContext) {
+func validateCommonTlsContextInline(t *testing.T, result *envoytlsv3.UpstreamTlsContext) {
 	assert.NotNil(t, result)
 	assert.NotNil(t, result.CommonTlsContext)
 	assert.Len(t, result.CommonTlsContext.TlsCertificates, 1)
@@ -345,7 +345,7 @@ func validateCommonTlsContextInline(t *testing.T, result *envoyauth.UpstreamTlsC
 	assert.Equal(t, TLSKey, result.CommonTlsContext.TlsCertificates[0].GetPrivateKey().GetInlineString())
 }
 
-func validateCommonTlsContextFiles(t *testing.T, result *envoyauth.UpstreamTlsContext) {
+func validateCommonTlsContextFiles(t *testing.T, result *envoytlsv3.UpstreamTlsContext) {
 	assert.NotNil(t, result)
 	assert.NotNil(t, result.CommonTlsContext)
 	assert.Len(t, result.CommonTlsContext.TlsCertificates, 1)
@@ -361,19 +361,19 @@ func TestVerifySanListToTypedMatchSanList(t *testing.T) {
 	tests := []struct {
 		name     string
 		sanList  []string
-		expected []*envoyauth.SubjectAltNameMatcher
+		expected []*envoytlsv3.SubjectAltNameMatcher
 	}{
 		{
 			name:     "empty SAN list",
 			sanList:  []string{},
-			expected: []*envoyauth.SubjectAltNameMatcher{},
+			expected: []*envoytlsv3.SubjectAltNameMatcher{},
 		},
 		{
 			name:    "single SAN",
 			sanList: []string{"example.com"},
-			expected: []*envoyauth.SubjectAltNameMatcher{
+			expected: []*envoytlsv3.SubjectAltNameMatcher{
 				{
-					SanType: envoyauth.SubjectAltNameMatcher_DNS,
+					SanType: envoytlsv3.SubjectAltNameMatcher_DNS,
 					Matcher: &envoymatcher.StringMatcher{
 						MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: "example.com"},
 					},
@@ -383,21 +383,21 @@ func TestVerifySanListToTypedMatchSanList(t *testing.T) {
 		{
 			name:    "multiple SANs",
 			sanList: []string{"example.com", "api.example.com", "www.example.com"},
-			expected: []*envoyauth.SubjectAltNameMatcher{
+			expected: []*envoytlsv3.SubjectAltNameMatcher{
 				{
-					SanType: envoyauth.SubjectAltNameMatcher_DNS,
+					SanType: envoytlsv3.SubjectAltNameMatcher_DNS,
 					Matcher: &envoymatcher.StringMatcher{
 						MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: "example.com"},
 					},
 				},
 				{
-					SanType: envoyauth.SubjectAltNameMatcher_DNS,
+					SanType: envoytlsv3.SubjectAltNameMatcher_DNS,
 					Matcher: &envoymatcher.StringMatcher{
 						MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: "api.example.com"},
 					},
 				},
 				{
-					SanType: envoyauth.SubjectAltNameMatcher_DNS,
+					SanType: envoytlsv3.SubjectAltNameMatcher_DNS,
 					Matcher: &envoymatcher.StringMatcher{
 						MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: "www.example.com"},
 					},

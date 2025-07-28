@@ -1,25 +1,15 @@
-vendor*
-.vendor-new
 _output
-_local
 _test
-_artifacts
 .idea
 .vscode
-site
-.firebase
 *.code-workspace
 .venv
 
 # ignore local pollution from kind setup script
 docker-local
 
-themes
-install/gloo.yaml
-
 # OSX files
 .DS_Store
-docs/helm-values.md
 
 # ignore intermediate files that gomock sometimes generates
 **/gomock_reflect*

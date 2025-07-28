@@ -3,7 +3,6 @@ package collections
 import (
 	"context"
 
-	"github.com/go-logr/logr"
 	"istio.io/istio/pkg/config/schema/gvr"
 	"istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/kclient"
@@ -45,6 +44,8 @@ type CommonCollections struct {
 	RefGrants  *krtcollections.RefGrantIndex
 	ConfigMaps krt.Collection[*corev1.ConfigMap]
 
+	DiscoveryNamespacesFilter kubetypes.DynamicObjectFilter
+
 	// static set of global Settings, non-krt based for dev speed
 	// TODO: this should be refactored to a more correct location,
 	// or even better, be removed entirely and done per Gateway (maybe in GwParams)
@@ -77,7 +78,6 @@ func NewCommonCollections(
 	ourClient versioned.Interface,
 	cl client.Client,
 	controllerName string,
-	logger logr.Logger,
 	settings settings.Settings,
 ) (*CommonCollections, error) {
 	// Namespace collection must be initialized first to enable discovery namespace
@@ -153,6 +153,8 @@ func NewCommonCollections(
 		ServiceEntries:    serviceEntries,
 		ConfigMaps:        cfgmaps,
 		GatewayExtensions: gwExts,
+
+		DiscoveryNamespacesFilter: discoveryNamespacesFilter,
 
 		ControllerName: controllerName,
 	}, nil

@@ -19,9 +19,9 @@ func TestAPIValidation(t *testing.T) {
 	})
 
 	tests := []struct {
-		name      string
-		input     string
-		wantError string
+		name       string
+		input      string
+		wantErrors []string
 	}{
 		{
 			name: "Backend: enforce ExactlyOneOf for backend type",
@@ -42,7 +42,24 @@ spec:
     - host: example.com
       port: 80
 `,
-			wantError: "exactly one of the fields in [ai aws static dynamicForwardProxy] must be set",
+			wantErrors: []string{"exactly one of the fields in [ai aws static dynamicForwardProxy] must be set"},
+		},
+		{
+			name: "Backend: empty lambda qualifier does not match pattern",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: backend-empty-lambda-qualifier
+spec:
+  type: AWS
+  aws:
+    accountId: "000000000000"
+    lambda:
+      functionName: hello-function
+      qualifier: ""
+`,
+			wantErrors: []string{"spec.aws.lambda.qualifier in body should match "},
 		},
 		{
 			name: "BackendConfigPolicy: enforce AtMostOneOf for HTTP protocol options",
@@ -63,7 +80,61 @@ spec:
     maxConcurrentStreams: 100
     overrideStreamErrorOnInvalidHttpMessage: true
 `,
-			wantError: "at most one of the fields in [http1ProtocolOptions http2ProtocolOptions] may be set",
+			wantErrors: []string{"at most one of the fields in [http1ProtocolOptions http2ProtocolOptions] may be set"},
+		},
+		{
+			name: "BackendConfigPolicy: HTTP2 protocol options with integer values",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: backend-config-http2-integers
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: test-service
+  http2ProtocolOptions:
+    initialConnectionWindowSize: 65535
+    initialStreamWindowSize: 2147483647
+    maxConcurrentStreams: 100
+`,
+		},
+		{
+			name: "BackendConfigPolicy: HTTP2 protocol options with string values",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: backend-config-http2-strings
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: test-service
+  http2ProtocolOptions:
+    initialConnectionWindowSize: "65535"
+    initialStreamWindowSize: "2147483647"
+    maxConcurrentStreams: 100
+`,
+		},
+		{
+			name: "BackendConfigPolicy: HTTP2 protocol options with invalid integer values",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: backend-config-http2-invalid-integers
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: test-service
+  http2ProtocolOptions:
+    initialConnectionWindowSize: 1000
+    initialStreamWindowSize: 2147483648
+`,
+			wantErrors: []string{"InitialConnectionWindowSize must be between 65535 and 2147483647 bytes (inclusive)"},
 		},
 		{
 			name: "BackendConfigPolicy: valid target references",
@@ -102,7 +173,7 @@ spec:
     kind: Deployment
     name: test-deployment
 `,
-			wantError: "TargetRefs must reference either a Kubernetes Service or a Backend API",
+			wantErrors: []string{"TargetRefs must reference either a Kubernetes Service or a Backend API"},
 		},
 		{
 			name: "BackendConfigPolicy: invalid target selector",
@@ -118,7 +189,70 @@ spec:
     matchLabels:
       app: myapp
 `,
-			wantError: "TargetSelectors must reference either a Kubernetes Service or a Backend API",
+			wantErrors: []string{"TargetSelectors must reference either a Kubernetes Service or a Backend API"},
+		},
+		{
+			name: "BackendConfigPolicy: invalid aggression",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: backend-config-invalid-aggression
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: test-service
+  loadBalancer:
+    roundRobin:
+      slowStart:
+        window: 10s
+        aggression: ""
+        minWeightPercent: 10
+`,
+			wantErrors: []string{"Aggression, if specified, must be a string representing a number greater than 0.0"},
+		},
+		{
+			name: "BackendConfigPolicy: invalid durations",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: backend-config-invalid-duration
+spec:
+  connectTimeout: -1s
+  commonHttpProtocolOptions:
+    idleTimeout: 1x
+    maxStreamDuration: abc
+  tcpKeepalive:
+    keepAliveTime: 0s
+    keepAliveInterval: "0"
+  healthCheck:
+    timeout: a
+    interval: b
+    unhealthyThreshold: 3
+    healthyThreshold: 2
+    http:
+      path: /healthz
+      host: example.com
+      method: HEAD
+  loadBalancer:
+    updateMergeWindow: z
+    roundRobin:
+      slowStart:
+        window: 10s
+`,
+			wantErrors: []string{
+				"spec.commonHttpProtocolOptions.idleTimeout: Invalid value: \"string\": invalid duration value",
+				"spec.commonHttpProtocolOptions.maxStreamDuration: Invalid value: \"string\": invalid duration value",
+				"spec.connectTimeout: Invalid value: \"string\": invalid duration value",
+				"spec.healthCheck.interval: Invalid value: \"string\": invalid duration value",
+				"spec.healthCheck.timeout: Invalid value: \"string\": invalid duration value",
+				"spec.loadBalancer.updateMergeWindow: Invalid value: \"string\": invalid duration value",
+				"spec.tcpKeepalive.keepAliveInterval: Invalid value: \"string\": invalid duration value",
+				"spec.tcpKeepalive.keepAliveInterval: Invalid value: \"string\": keepAliveInterval must be at least 1 second",
+				"spec.tcpKeepalive.keepAliveTime: Invalid value: \"string\": keepAliveTime must be at least 1 second",
+			},
 		},
 		{
 			name: "TrafficPolicy: valid target references",
@@ -158,7 +292,60 @@ spec:
     kind: Deployment
     name: test-deployment
 `,
-			wantError: "targetRefs may only reference Gateway, HTTPRoute, or XListenerSet resources",
+			wantErrors: []string{"targetRefs may only reference Gateway, HTTPRoute, or XListenerSet resources"},
+		},
+		{
+			name: "TrafficPolicy: invalid target ref for hash policy",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: traffic-policy-invalid-hash-policy
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: test-gateway
+  hashPolicies:
+  - header:
+      name: "x-user-id"
+    terminal: true
+`,
+			wantErrors: []string{"hash policies can only be used when targeting HTTPRoute resources"},
+		},
+		{
+			name: "TrafficPolicy: valid target ref for hash policy",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: traffic-policy-valid-hash-policy
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: test-route
+  hashPolicies:
+  - header:
+      name: "x-user-id"
+    terminal: true
+`,
+		},
+		{
+			name: "TrafficPolicy: policy with autoHostRewrite can only target HTTPRoute",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: traffic-policy-ahr-invalid-target
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: test-gateway
+  autoHostRewrite: true
+`,
+			wantErrors: []string{"autoHostRewrite can only be used when targeting HTTPRoute resources"},
 		},
 		{
 			name: "HTTPListenerPolicy: valid target references",
@@ -192,7 +379,7 @@ spec:
     kind: HTTPRoute
     name: test-route
 `,
-			wantError: "targetRefs may only reference Gateway resources",
+			wantErrors: []string{"targetRefs may only reference Gateway resources"},
 		},
 		{
 			name: "HTTPListenerPolicy: invalid target reference - wrong resource type",
@@ -207,7 +394,20 @@ spec:
     kind: XListenerSet
     name: test-listener
 `,
-			wantError: "targetRefs may only reference Gateway resources",
+			wantErrors: []string{"targetRefs may only reference Gateway resources"},
+		},
+		{
+			name: "DirectResponse: empty body not allowed",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: DirectResponse
+metadata:
+  name: directresponse
+spec:
+  status: 200
+  body: ""
+`,
+			wantErrors: []string{"spec.body in body should be at least 1 chars long"},
 		},
 	}
 
@@ -228,9 +428,16 @@ spec:
 			out := new(bytes.Buffer)
 
 			err := ti.Actions.Kubectl().WithReceiver(out).Apply(ctx, []byte(tc.input))
-			if tc.wantError != "" {
+			if len(tc.wantErrors) > 0 {
 				r.Error(err)
-				r.Contains(out.String(), tc.wantError)
+				for _, wantErr := range tc.wantErrors {
+					r.Contains(out.String(), wantErr)
+				}
+			} else {
+				if err != nil {
+					t.Errorf("kubectl apply failed with output: %s", out.String())
+				}
+				r.NoError(err)
 			}
 		})
 	}

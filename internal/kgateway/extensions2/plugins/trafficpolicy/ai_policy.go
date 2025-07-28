@@ -10,7 +10,7 @@ import (
 	"reflect"
 	"strings"
 
-	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_ext_proc_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_proc/v3"
 	"github.com/mitchellh/hashstructure"
 	envoytransformation "github.com/solo-io/envoy-gloo/go/config/filter/http/transformation/v2"
@@ -77,7 +77,7 @@ func preProcessAITrafficPolicy(
 	// If the route options specify this as a chat streaming route, add a header to the ext-proc request
 	if aiConfig.RouteType != nil && *aiConfig.RouteType == v1alpha1.CHAT_STREAMING {
 		// append streaming header if it's a streaming route
-		extprocSettings.GetOverrides().GrpcInitialMetadata = append(extprocSettings.GetOverrides().GetGrpcInitialMetadata(), &envoy_config_core_v3.HeaderValue{
+		extprocSettings.GetOverrides().GrpcInitialMetadata = append(extprocSettings.GetOverrides().GetGrpcInitialMetadata(), &envoycorev3.HeaderValue{
 			Key:   "x-chat-streaming",
 			Value: "true",
 		})
@@ -161,12 +161,34 @@ func applyDefaults(
 		if err != nil {
 			return err
 		}
+
+		value := strings.TrimSpace(field.Value)
+
+		// Inja template cannot recognize if a JSON string is valid, so we need to pre-validate based on JSON object/array format
+		// Valid object: {"model":"gpt4"}
+		// Valid array: [1,2,3]
+		// Invalid formats: {"model":"gpt4", "model2":}, [1,2,3, [1,2,3
+		if hasJsonPrefix(value) || hasJsonSuffix(value) {
+			if !json.Valid([]byte(field.Value)) {
+				return fmt.Errorf("field %s contains invalid JSON string: %s", field.Field, field.Value)
+			}
+		}
+		// When field.Value is a primitive type, deserialization from byte array works normally, tmpl value is: tmpl = string(marshalled)
+		// When field.Value is an object/array, deserialization treats it as a plain string, tmpl value should use the original value: tmpl = field.Value
 		var tmpl string
 		if field.Override != nil && *field.Override {
-			tmpl = string(marshalled)
+			if hasJsonPrefix(value) {
+				tmpl = field.Value
+			} else {
+				tmpl = string(marshalled)
+			}
 		} else {
 			// Inja default function will use the default value if the field provided is falsey
-			tmpl = fmt.Sprintf("{{ default(%s, %s) }}", field.Field, string(marshalled))
+			if hasJsonPrefix(value) {
+				tmpl = fmt.Sprintf("{{ default(%s, %s) }}", field.Field, field.Value)
+			} else {
+				tmpl = fmt.Sprintf("{{ default(%s, %s) }}", field.Field, string(marshalled))
+			}
 		}
 		if transformation.GetMergeJsonKeys().GetJsonKeys() == nil {
 			transformation.GetMergeJsonKeys().JsonKeys = make(map[string]*envoytransformation.MergeJsonKeys_OverridableTemplate)
@@ -181,6 +203,16 @@ func applyDefaults(
 		}
 	}
 	return nil
+}
+
+// hasJsonPrefix checks if the given JSON string contains object/array opening symbols
+func hasJsonPrefix(value string) bool {
+	return strings.HasPrefix(value, "{") || strings.HasPrefix(value, "[")
+}
+
+// hasJsonSuffix checks if the given JSON string contains object/array closing symbols
+func hasJsonSuffix(value string) bool {
+	return strings.HasSuffix(value, "}") || strings.HasSuffix(value, "]")
 }
 
 func applyPromptEnrichment(
@@ -274,7 +306,7 @@ func applyPromptGuard(pg *v1alpha1.AIPromptGuard, extProcRouteSettings *envoy_ex
 			return err
 		}
 		extProcRouteSettings.GetOverrides().GrpcInitialMetadata = append(extProcRouteSettings.GetOverrides().GetGrpcInitialMetadata(),
-			&envoy_config_core_v3.HeaderValue{
+			&envoycorev3.HeaderValue{
 				Key:   "x-req-guardrails-config",
 				Value: string(bin),
 			},
@@ -283,7 +315,7 @@ func applyPromptGuard(pg *v1alpha1.AIPromptGuard, extProcRouteSettings *envoy_ex
 		// Better to do it here because we have generated functions
 		reqHash, _ := hashUnique(req, nil)
 		extProcRouteSettings.GetOverrides().GrpcInitialMetadata = append(extProcRouteSettings.GetOverrides().GetGrpcInitialMetadata(),
-			&envoy_config_core_v3.HeaderValue{
+			&envoycorev3.HeaderValue{
 				Key:   "x-req-guardrails-config-hash",
 				Value: fmt.Sprint(reqHash),
 			},
@@ -297,7 +329,7 @@ func applyPromptGuard(pg *v1alpha1.AIPromptGuard, extProcRouteSettings *envoy_ex
 			return err
 		}
 		extProcRouteSettings.GetOverrides().GrpcInitialMetadata = append(extProcRouteSettings.GetOverrides().GetGrpcInitialMetadata(),
-			&envoy_config_core_v3.HeaderValue{
+			&envoycorev3.HeaderValue{
 				Key:   "x-resp-guardrails-config",
 				Value: string(bin),
 			},
@@ -306,7 +338,7 @@ func applyPromptGuard(pg *v1alpha1.AIPromptGuard, extProcRouteSettings *envoy_ex
 		// Better to do it here because we have generated functions
 		respHash, _ := hashUnique(resp, nil)
 		extProcRouteSettings.GetOverrides().GrpcInitialMetadata = append(extProcRouteSettings.GetOverrides().GetGrpcInitialMetadata(),
-			&envoy_config_core_v3.HeaderValue{
+			&envoycorev3.HeaderValue{
 				Key:   "x-resp-guardrails-config-hash",
 				Value: fmt.Sprint(respHash),
 			},

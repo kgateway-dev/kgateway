@@ -717,10 +717,10 @@ type AiExtensionStats struct {
 	// Set of custom labels to be added to the request metrics.
 	// These will be added on each request which goes through the AI Extension.
 	// +optional
-	CustomLabels []*CustomLabel `json:"customLabels,omitempty"`
+	CustomLabels []CustomLabel `json:"customLabels,omitempty"`
 }
 
-func (in *AiExtensionStats) GetCustomLabels() []*CustomLabel {
+func (in *AiExtensionStats) GetCustomLabels() []CustomLabel {
 	if in == nil {
 		return nil
 	}
@@ -806,7 +806,8 @@ type AiExtensionTrace struct {
 	// https://opentelemetry.io/docs/languages/sdk-configuration/otlp-exporter/#otel_exporter_otlp_traces_timeout
 	//
 	// +optional
-	Timeout *gwv1.Duration `json:"timeout,omitempty"`
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+	Timeout *metav1.Duration `json:"timeout,omitempty"`
 
 	// OTLPProtocol specifies the protocol to be used for OTLP exports.
 	// This determines how tracing data is serialized and transported (e.g., gRPC, HTTP/Protobuf).
@@ -824,7 +825,7 @@ type AiExtensionTrace struct {
 	TransportSecurity *OTLPTransportSecurityMode `json:"transportSecurity,omitempty"`
 }
 
-func (in *AiExtensionTrace) GetTimeout() *gwv1.Duration {
+func (in *AiExtensionTrace) GetTimeout() *metav1.Duration {
 	if in == nil {
 		return nil
 	}

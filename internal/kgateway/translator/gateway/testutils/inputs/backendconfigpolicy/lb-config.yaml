@@ -55,7 +55,6 @@ spec:
     ringHash:
       minimumRingSize: 1024
       maximumRingSize: 2048
-    useHostnameForHashing: true
     closeConnectionsOnHostSetChange: true
 ---
 apiVersion: v1

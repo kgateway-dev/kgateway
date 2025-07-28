@@ -88,7 +88,7 @@ type DynamicForwardProxyBackend struct {
 	// EnableTls enables TLS. When true, the backend will be configured to use TLS. System CA will be used for validation.
 	// The hostname will be used for SNI and auto SAN validation.
 	// +optional
-	EnableTls bool `json:"enableTls,omitempty"`
+	EnableTls *bool `json:"enableTls,omitempty"`
 }
 
 // AwsBackend is the AWS backend configuration.
@@ -165,7 +165,7 @@ type AwsLambda struct {
 	// +optional
 	// +kubebuilder:validation:Pattern="^https?://[-a-zA-Z0-9@:%.+~#?&/=]+$"
 	// +kubebuilder:validation:MaxLength=2048
-	EndpointURL string `json:"endpointURL,omitempty"`
+	EndpointURL *string `json:"endpointURL,omitempty"`
 	// FunctionName is the name of the Lambda function to invoke.
 	// +required
 	// +kubebuilder:validation:Pattern="^[A-Za-z0-9-_]{1,140}$"
@@ -181,6 +181,7 @@ type AwsLambda struct {
 	// (alphanumeric plus "-" or "_"), or the special literal "$LATEST".
 	// +optional
 	// +kubebuilder:validation:Pattern="^(\\$LATEST|[0-9]+|[A-Za-z0-9-_]{1,128})$"
+	// +kubebuilder:default=$LATEST
 	Qualifier string `json:"qualifier,omitempty"`
 	// PayloadTransformation specifies payload transformation mode before it is sent to the Lambda function.
 	// Defaults to Envoy.
@@ -217,7 +218,6 @@ type StaticBackend struct {
 
 	// AppProtocol is the application protocol to use when communicating with the backend.
 	// +optional
-	// +kubebuilder:validation:Optional
 	AppProtocol *AppProtocol `json:"appProtocol,omitempty"`
 }
 

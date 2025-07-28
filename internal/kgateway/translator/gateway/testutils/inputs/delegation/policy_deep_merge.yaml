@@ -1,0 +1,162 @@
+# Expected output routes:
+# - /a/1 -> a/svc-a, has response transformation inherited from parent
+# - /* -> infra/example-svc, has (same) response transformation
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: example
+  namespace: infra
+  annotations:
+    kgateway.dev/inherited-policy-priority: DeepMergePreferParent
+spec:
+  parentRefs:
+  - name: example-gateway
+  hostnames:
+  - "example.com"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /a
+    backendRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: "*"
+      namespace: a
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: foo
+  namespace: infra
+  annotations:
+    kgateway.dev/inherited-policy-priority: DeepMergePreferChild
+spec:
+  parentRefs:
+  - name: example-gateway
+  hostnames:
+  - "foo.com"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /b
+    backendRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: "*"
+      namespace: b
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: a
+  namespace: a
+spec:
+  rules:
+  - name: rule0
+    matches:
+    - path:
+        type: PathPrefix
+        value: /a/1
+    backendRefs:
+    - name: svc-a
+      port: 8080
+  - name: rule1
+    matches:
+    - path:
+        type: PathPrefix
+        value: /a/2
+    backendRefs:
+    - name: svc-a
+      port: 8080
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: b
+  namespace: b
+spec:
+  rules:
+  - name: rule0
+    matches:
+    - path:
+        type: PathPrefix
+        value: /b/1
+    backendRefs:
+    - name: svc-b
+      port: 8080
+  - name: rule1
+    matches:
+    - path:
+        type: PathPrefix
+        value: /b/2
+    backendRefs:
+    - name: svc-b
+      port: 8080
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: example
+  namespace: infra
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: example
+  transformation:
+    response:
+      add:
+      - name: source
+        value: example
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: foo
+  namespace: infra
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: foo
+  transformation:
+    response:
+      add:
+      - name: source
+        value: foo
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: a
+  namespace: a
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: a
+    sectionName: rule0
+  transformation:
+    response:
+      add:
+      - name: source
+        value: a
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: b
+  namespace: b
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: b
+    sectionName: rule0
+  transformation:
+    response:
+      add:
+      - name: source
+        value: b

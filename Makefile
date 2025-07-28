@@ -123,8 +123,13 @@ fmt-changed:  ## Format the code with goimports
 mod-download:  ## Download the dependencies
 	go mod download all
 
+.PHONY: mod-tidy-nested
+mod-tidy-nested:  ## Tidy go mod files in nested modules
+	@echo "Tidying hack/utils/applier..." && cd hack/utils/applier && go mod tidy
+	@echo "Tidying test/mocks/mock-ai-provider-server..." && cd test/mocks/mock-ai-provider-server && go mod tidy
+
 .PHONY: mod-tidy
-mod-tidy: mod-download  ## Tidy the go mod file
+mod-tidy: mod-download mod-tidy-nested ## Tidy the go mod file
 	go mod tidy
 
 #----------------------------------------------------------------------------
@@ -159,6 +164,7 @@ envoyversion:
 FLAKE_ATTEMPTS ?= 3
 GINKGO_VERSION ?= $(shell echo $(shell go list -m github.com/onsi/ginkgo/v2) | cut -d' ' -f2)
 GINKGO_ENV ?= ACK_GINKGO_RC=true ACK_GINKGO_DEPRECATIONS=$(GINKGO_VERSION)
+
 GINKGO_FLAGS ?= -tags=purego --trace -progress -race --fail-fast -fail-on-pending --randomize-all --compilers=5 --flake-attempts=$(FLAKE_ATTEMPTS)
 GINKGO_REPORT_FLAGS ?= --json-report=test-report.json --junit-report=junit.xml -output-dir=$(OUTPUT_DIR)
 GINKGO_COVERAGE_FLAGS ?= --cover --covermode=atomic --coverprofile=coverage.cov
@@ -437,6 +443,11 @@ package-kgateway-crd-chart: ## Package the kgateway crd chart
 	$(HELM) package $(HELM_PACKAGE_ARGS) --destination $(TEST_ASSET_DIR) $(HELM_CHART_DIR_CRD); \
 	$(HELM) repo index $(TEST_ASSET_DIR);
 
+.PHONY: release-charts
+release-charts: package-kgateway-charts ## Release the kgateway charts
+	$(HELM) push $(TEST_ASSET_DIR)/kgateway-$(VERSION).tgz oci://$(IMAGE_REGISTRY)/charts
+	$(HELM) push $(TEST_ASSET_DIR)/kgateway-crds-$(VERSION).tgz oci://$(IMAGE_REGISTRY)/charts
+
 .PHONY: deploy-kgateway-crd-chart
 deploy-kgateway-crd-chart: ## Deploy the kgateway crd chart
 	$(HELM) upgrade --install kgateway-crds $(TEST_ASSET_DIR)/kgateway-crds-$(VERSION).tgz --namespace kgateway-system --create-namespace
@@ -486,6 +497,10 @@ CONFORMANCE_VERSION ?= v1.3.0
 gw-api-crds: ## Install the Gateway API CRDs
 	kubectl apply --kustomize "https://github.com/kubernetes-sigs/gateway-api/config/crd/$(CONFORMANCE_CHANNEL)?ref=$(CONFORMANCE_VERSION)"
 
+.PHONY: gie-crds
+gie-crds: gw-api-crds ## Install the Gateway API Inference Extension CRDs
+	kubectl apply --kustomize "https://github.com/kubernetes-sigs/gateway-api-inference-extension/config/crd/"
+
 .PHONY: kind-metallb
 metallb: ## Install the MetalLB load balancer
 	./hack/kind/setup-metalllb-on-kind.sh
@@ -494,7 +509,7 @@ metallb: ## Install the MetalLB load balancer
 deploy-kgateway: package-kgateway-charts deploy-kgateway-crd-chart deploy-kgateway-chart ## Deploy the kgateway chart and CRDs
 
 .PHONY: setup
-setup: kind-create kind-build-and-load gw-api-crds metallb package-kgateway-charts ## Set up basic infrastructure (kind cluster, images, CRDs, MetalLB)
+setup: kind-create kind-build-and-load gw-api-crds gie-crds metallb package-kgateway-charts ## Set up basic infrastructure (kind cluster, images, CRDs, MetalLB)
 
 .PHONY: run
 run: setup deploy-kgateway  ## Set up complete development environment
@@ -592,6 +607,39 @@ conformance: $(TEST_ASSET_DIR)/conformance/conformance_test.go
 conformance-%: $(TEST_ASSET_DIR)/conformance/conformance_test.go
 	go test -mod=mod -ldflags='$(LDFLAGS)' -tags conformance -test.v $(TEST_ASSET_DIR)/conformance/... -args $(CONFORMANCE_ARGS) \
 	-run-test=$*
+
+#----------------------------------------------------------------------------------
+# Targets for running Gateway API Inference Extension conformance tests
+#----------------------------------------------------------------------------------
+
+# Where the inference extension module is checked out in our Go module cache.
+INFERENCE_CONFORMANCE_DIR := $(shell go list -m -f '{{.Dir}}' sigs.k8s.io/gateway-api-inference-extension)/conformance
+# Allow skipping known‐failing tests.
+INFERENCE_SKIP_TESTS ?= -skip-tests EppUnAvailableFailOpen
+# The Gateway API Inference Extension conformance suite requires a GatewayClass to be specified.
+GIE_CONFORMANCE_ARGS := -gateway-class=$(CONFORMANCE_GATEWAY_CLASS)
+
+.PHONY: gie-conformance
+gie-conformance: gie-crds ## Run the Gateway API Inference Extension conformance suite
+	go test -mod=mod -ldflags='$(LDFLAGS)' \
+	    -tags conformance \
+	    -timeout=25m \
+	    -v $(INFERENCE_CONFORMANCE_DIR) \
+	    -args $(GIE_CONFORMANCE_ARGS) $(INFERENCE_SKIP_TESTS)
+
+.PHONY: gie-conformance-%
+gie-conformance-%: gie-crds ## Run only the specified Gateway API Inference Extension conformance test by ShortName
+	go test -mod=mod -ldflags='$(LDFLAGS)' \
+	    -tags conformance \
+	    -timeout=25m \
+	    -v $(INFERENCE_CONFORMANCE_DIR) \
+	    -args $(CONFORMANCE_ARGS) $(INFERENCE_SKIP_TESTS) \
+	    -run-test=$*
+
+# An alias to run both Gateway API and Inference Extension conformance tests.
+.PHONY: all-conformance
+all-conformance: conformance gie-conformance ## Run both Gateway API and Inference Extension conformance
+	@echo "All conformance suites have completed."
 
 #----------------------------------------------------------------------------------
 # Printing makefile variables utility

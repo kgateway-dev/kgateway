@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strings"
 
-	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
@@ -134,11 +134,11 @@ func (s StagedFilterList[WellKnown, FilterType]) Swap(i, j int) {
 }
 
 type StagedHttpFilter = StagedFilter[WellKnownFilterStage, *envoyhttp.HttpFilter]
-type StagedNetworkFilter = StagedFilter[WellKnownFilterStage, *envoy_config_listener_v3.Filter]
+type StagedNetworkFilter = StagedFilter[WellKnownFilterStage, *envoylistenerv3.Filter]
 type StagedUpstreamHttpFilter = StagedFilter[WellKnownUpstreamHTTPFilterStage, *envoyhttp.HttpFilter]
 
 type StagedHttpFilterList = StagedFilterList[WellKnownFilterStage, *envoyhttp.HttpFilter]
-type StagedNetworkFilterList = StagedFilterList[WellKnownFilterStage, *envoy_config_listener_v3.Filter]
+type StagedNetworkFilterList = StagedFilterList[WellKnownFilterStage, *envoylistenerv3.Filter]
 type StagedUpstreamHttpFilterList = StagedFilterList[WellKnownUpstreamHTTPFilterStage, *envoyhttp.HttpFilter]
 
 // MustNewStagedFilter creates an instance of the named filter with the desired stage.

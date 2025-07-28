@@ -1,6 +1,5 @@
 Clusters:
-- commonLbConfig:
-    consistentHashingLbConfig: {}
+- commonLbConfig: {}
   connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
@@ -13,8 +12,7 @@ Clusters:
   metadata: {}
   name: kube_default_httpbin-lr_8080
   type: EDS
-- commonLbConfig:
-    consistentHashingLbConfig: {}
+- commonLbConfig: {}
   connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
@@ -25,8 +23,7 @@ Clusters:
   metadata: {}
   name: kube_default_httpbin-maglev_8080
   type: EDS
-- commonLbConfig:
-    consistentHashingLbConfig: {}
+- commonLbConfig: {}
   connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
@@ -37,8 +34,7 @@ Clusters:
   metadata: {}
   name: kube_default_httpbin-random_8080
   type: EDS
-- commonLbConfig:
-    consistentHashingLbConfig: {}
+- commonLbConfig: {}
   connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
@@ -51,8 +47,7 @@ Clusters:
   ringHashLbConfig:
     minimumRingSize: "1024"
   type: EDS
-- commonLbConfig:
-    consistentHashingLbConfig: {}
+- commonLbConfig: {}
   connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
@@ -71,7 +66,6 @@ Clusters:
       slowStartWindow: 10s
   type: EDS
 - commonLbConfig:
-    consistentHashingLbConfig: {}
     localityWeightedLbConfig: {}
   connectTimeout: 5s
   edsClusterConfig:
@@ -84,8 +78,6 @@ Clusters:
   type: EDS
 - commonLbConfig:
     closeConnectionsOnHostSetChange: true
-    consistentHashingLbConfig:
-      useHostnameForHashing: true
   connectTimeout: 5s
   edsClusterConfig:
     edsConfig:

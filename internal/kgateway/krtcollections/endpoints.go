@@ -2,26 +2,23 @@ package krtcollections
 
 import (
 	"context"
-	"strings"
 
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/krt"
 	corev1 "k8s.io/api/core/v1"
 	discoveryv1 "k8s.io/api/discovery/v1"
 	"k8s.io/apimachinery/pkg/types"
 
-	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
-	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
 )
 
 type EndpointsSettings struct {
@@ -87,54 +84,16 @@ func NewGlooK8sEndpointInputs(
 }
 
 func NewK8sEndpoints(ctx context.Context, inputs EndpointsInputs) krt.Collection[ir.EndpointsForBackend] {
-	metricsRecorder := NewCollectionMetricsRecorder("K8sEndpoints")
-
-	c := krt.NewCollection(inputs.Backends, transformK8sEndpoints(inputs, metricsRecorder), inputs.KrtOpts.ToOptions("K8sEndpoints")...)
-
-	metrics.RegisterEvents(c, func(o krt.Event[ir.EndpointsForBackend]) {
-		namespace := o.Latest().ClusterName
-
-		cns := strings.SplitN(namespace, "_", 3)
-		if len(cns) > 1 {
-			namespace = cns[1]
-		}
-
-		name := o.Latest().Hostname
-
-		hns := strings.SplitN(name, ".", 2)
-		if len(hns) > 0 {
-			name = hns[0]
-		}
-
-		switch o.Event {
-		case controllers.EventDelete:
-			metricsRecorder.SetResources(CollectionResourcesMetricLabels{
-				Namespace: namespace,
-				Name:      name,
-				Resource:  "Endpoints",
-			}, 0)
-		case controllers.EventAdd, controllers.EventUpdate:
-			metricsRecorder.SetResources(CollectionResourcesMetricLabels{
-				Namespace: namespace,
-				Name:      name,
-				Resource:  "Endpoints",
-			}, len(o.Latest().LbEps))
-		}
-	})
+	c := krt.NewCollection(inputs.Backends, transformK8sEndpoints(inputs), inputs.KrtOpts.ToOptions("K8sEndpoints")...)
 
 	return c
 }
 
 func transformK8sEndpoints(inputs EndpointsInputs,
-	metricsRecorder CollectionMetricsRecorder,
 ) func(kctx krt.HandlerContext, backend ir.BackendObjectIR) *ir.EndpointsForBackend {
 	augmentedPods := inputs.Pods
 
 	return func(kctx krt.HandlerContext, backend ir.BackendObjectIR) *ir.EndpointsForBackend {
-		if metricsRecorder != nil {
-			defer metricsRecorder.TransformStart()(nil)
-		}
-
 		var warnsToLog []string
 		defer func() {
 			for _, warn := range warnsToLog {
@@ -254,11 +213,11 @@ func transformK8sEndpoints(inputs EndpointsInputs,
 	}
 }
 
-func CreateLBEndpoint(address string, port uint32, podLabels map[string]string, enableAutoMtls bool) *envoy_config_endpoint_v3.LbEndpoint {
+func CreateLBEndpoint(address string, port uint32, podLabels map[string]string, enableAutoMtls bool) *envoyendpointv3.LbEndpoint {
 	// Don't get the metadata labels and filter metadata for the envoy load balancer based on the backend, as this is not used
 	// metadata := getLbMetadata(upstream, labels, "")
 	// Get the metadata labels for the transport socket match if Istio auto mtls is enabled
-	metadata := &envoy_config_core_v3.Metadata{
+	metadata := &envoycorev3.Metadata{
 		FilterMetadata: map[string]*structpb.Struct{},
 	}
 	metadata = addIstioAutomtlsMetadata(metadata, podLabels, enableAutoMtls)
@@ -269,17 +228,17 @@ func CreateLBEndpoint(address string, port uint32, podLabels map[string]string, 
 		metadata = nil
 	}
 
-	return &envoy_config_endpoint_v3.LbEndpoint{
+	return &envoyendpointv3.LbEndpoint{
 		Metadata:            metadata,
 		LoadBalancingWeight: wrapperspb.UInt32(1),
-		HostIdentifier: &envoy_config_endpoint_v3.LbEndpoint_Endpoint{
-			Endpoint: &envoy_config_endpoint_v3.Endpoint{
-				Address: &envoy_config_core_v3.Address{
-					Address: &envoy_config_core_v3.Address_SocketAddress{
-						SocketAddress: &envoy_config_core_v3.SocketAddress{
-							Protocol: envoy_config_core_v3.SocketAddress_TCP,
+		HostIdentifier: &envoyendpointv3.LbEndpoint_Endpoint{
+			Endpoint: &envoyendpointv3.Endpoint{
+				Address: &envoycorev3.Address{
+					Address: &envoycorev3.Address_SocketAddress{
+						SocketAddress: &envoycorev3.SocketAddress{
+							Protocol: envoycorev3.SocketAddress_TCP,
 							Address:  address,
-							PortSpecifier: &envoy_config_core_v3.SocketAddress_PortValue{
+							PortSpecifier: &envoycorev3.SocketAddress_PortValue{
 								PortValue: port,
 							},
 						},
@@ -290,7 +249,7 @@ func CreateLBEndpoint(address string, port uint32, podLabels map[string]string, 
 	}
 }
 
-func addIstioAutomtlsMetadata(metadata *envoy_config_core_v3.Metadata, labels map[string]string, enableAutoMtls bool) *envoy_config_core_v3.Metadata {
+func addIstioAutomtlsMetadata(metadata *envoycorev3.Metadata, labels map[string]string, enableAutoMtls bool) *envoycorev3.Metadata {
 	const EnvoyTransportSocketMatch = "envoy.transport_socket_match"
 	if enableAutoMtls {
 		if _, ok := labels[wellknown.IstioTlsModeLabel]; ok {

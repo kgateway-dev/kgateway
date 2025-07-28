@@ -9,7 +9,7 @@ import (
 	"sync"
 	"sync/atomic"
 
-	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_service_discovery_v3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	xdsserver "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -97,7 +97,7 @@ func buildCollection(callbacks *callbacks) UniquelyConnectedClientsBulider {
 }
 
 // OnStreamClosed is called immediately prior to closing an xDS stream with a stream ID.
-func (x *callbacks) OnStreamClosed(sid int64, node *envoy_config_core_v3.Node) {
+func (x *callbacks) OnStreamClosed(sid int64, node *envoycorev3.Node) {
 	if x.extraXDSCallbacks != nil {
 		x.extraXDSCallbacks.OnStreamClosed(sid, node)
 	}
@@ -294,7 +294,7 @@ func (x *callbacksCollection) fetchRequest(_ context.Context, r *envoy_service_d
 	return nil
 }
 
-func getRef(node *envoy_config_core_v3.Node) types.NamespacedName {
+func getRef(node *envoycorev3.Node) types.NamespacedName {
 	nns := node.GetId()
 	split := strings.SplitN(nns, ".", 2)
 	if len(split) != 2 {

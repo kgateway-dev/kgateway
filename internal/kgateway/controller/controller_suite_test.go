@@ -9,7 +9,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"istio.io/istio/pkg/kube"
@@ -87,7 +86,7 @@ var _ = BeforeSuite(func() {
 	By("bootstrapping test environment")
 	// Create a scheme and add both Gateway and InferencePool types.
 	scheme = schemes.GatewayScheme()
-	err := infextv1a2.AddToScheme(scheme)
+	err := infextv1a2.Install(scheme)
 	Expect(err).NotTo(HaveOccurred())
 	// Required to deploy endpoint picker RBAC resources.
 	err = rbacv1.AddToScheme(scheme)
@@ -218,15 +217,18 @@ func createManager(
 		cancel()
 		return nil, err
 	}
-	mgr.GetClient().Create(ctx, &v1alpha1.GatewayParameters{
+	if err := mgr.GetClient().Create(ctx, &v1alpha1.GatewayParameters{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      selfManagedGatewayClassName,
-			Namespace: "kgateway-system",
+			Namespace: "default",
 		},
 		Spec: v1alpha1.GatewayParametersSpec{
 			SelfManaged: &v1alpha1.SelfManagedGateway{},
 		},
-	})
+	}); client.IgnoreAlreadyExists(err) != nil {
+		cancel()
+		return nil, err
+	}
 
 	// Use the default & alt GCs when no class configs are provided.
 	if classConfigs == nil {
@@ -240,9 +242,10 @@ func createManager(
 		classConfigs[selfManagedGatewayClassName] = &controller.ClassInfo{
 			Description: "self managed gw",
 			ParametersRef: &apiv1.ParametersReference{
-				Group: apiv1.Group(wellknown.GatewayParametersGVK.Group),
-				Kind:  apiv1.Kind(wellknown.GatewayParametersGVK.Kind),
-				Name:  selfManagedGatewayClassName,
+				Group:     apiv1.Group(wellknown.GatewayParametersGVK.Group),
+				Kind:      apiv1.Kind(wellknown.GatewayParametersGVK.Kind),
+				Name:      selfManagedGatewayClassName,
+				Namespace: ptr.To(apiv1.Namespace("default")),
 			},
 		}
 	}
@@ -286,7 +289,7 @@ func newCommonCols(ctx context.Context, kubeClient kube.Client) *collections.Com
 	if err != nil {
 		Expect(err).ToNot(HaveOccurred())
 	}
-	commoncol, err := collections.NewCommonCollections(ctx, krtopts, kubeClient, cli, nil, gatewayControllerName, logr.Discard(), *settings)
+	commoncol, err := collections.NewCommonCollections(ctx, krtopts, kubeClient, cli, nil, gatewayControllerName, *settings)
 	if err != nil {
 		Expect(err).ToNot(HaveOccurred())
 	}

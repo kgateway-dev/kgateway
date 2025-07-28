@@ -2,6 +2,7 @@ package run_test
 
 import (
 	"context"
+	"log/slog"
 	"os"
 	"path"
 	"time"
@@ -34,6 +35,7 @@ var _ = Describe("SDS Server E2E Test", Serial, func() {
 		secret                                                          server.Secret
 		testServerAddress                                               = "127.0.0.1:8236"
 		sdsClient                                                       = "test-client"
+		logger                                                          = slog.New(slog.DiscardHandler)
 	)
 
 	BeforeEach(func() {
@@ -95,7 +97,7 @@ var _ = Describe("SDS Server E2E Test", Serial, func() {
 		go func() {
 			defer GinkgoRecover()
 
-			if err := run.Run(ctx, []server.Secret{secret}, sdsClient, testServerAddress); err != nil {
+			if err := run.Run(ctx, []server.Secret{secret}, sdsClient, testServerAddress, logger); err != nil {
 				Expect(err).NotTo(HaveOccurred())
 			}
 		}()
@@ -131,8 +133,9 @@ var _ = Describe("SDS Server E2E Test", Serial, func() {
 			if useOcsp {
 				ocsp = ocspName
 			}
+
 			secret.SslOcspFile = ocsp
-			_ = run.Run(ctx, []server.Secret{secret}, sdsClient, testServerAddress)
+			_ = run.Run(ctx, []server.Secret{secret}, sdsClient, testServerAddress, logger)
 		}()
 
 		// Give it a second to spin up + read the files

@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	"istio.io/istio/pkg/kube/krt"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
@@ -15,7 +15,7 @@ import (
 
 type uccWithCluster struct {
 	Client         ir.UniqlyConnectedClient
-	Cluster        *envoy_config_cluster_v3.Cluster
+	Cluster        *envoyclusterv3.Cluster
 	ClusterVersion uint64
 	Name           string
 	Error          error
@@ -42,10 +42,10 @@ func NewPerClientEnvoyClusters(
 	ctx context.Context,
 	krtopts krtutil.KrtOptions,
 	translator *irtranslator.BackendTranslator,
-	finalBackends krt.Collection[ir.BackendObjectIR],
+	finalBackends krt.Collection[*ir.BackendObjectIR],
 	uccs krt.Collection[ir.UniqlyConnectedClient],
 ) PerClientEnvoyClusters {
-	clusters := krt.NewManyCollection(finalBackends, func(kctx krt.HandlerContext, backendObj ir.BackendObjectIR) []uccWithCluster {
+	clusters := krt.NewManyCollection(finalBackends, func(kctx krt.HandlerContext, backendObj *ir.BackendObjectIR) []uccWithCluster {
 		backendLogger := logger.With("backend", backendObj)
 		uccs := krt.Fetch(kctx, uccs)
 		uccWithClusterRet := make([]uccWithCluster, 0, len(uccs))

@@ -5,8 +5,9 @@ package v1alpha1
 // LoadBalancerRingHashConfigApplyConfiguration represents a declarative configuration of the LoadBalancerRingHashConfig type for use
 // with apply.
 type LoadBalancerRingHashConfigApplyConfiguration struct {
-	MinimumRingSize *uint64 `json:"minimumRingSize,omitempty"`
-	MaximumRingSize *uint64 `json:"maximumRingSize,omitempty"`
+	MinimumRingSize       *uint64 `json:"minimumRingSize,omitempty"`
+	MaximumRingSize       *uint64 `json:"maximumRingSize,omitempty"`
+	UseHostnameForHashing *bool   `json:"useHostnameForHashing,omitempty"`
 }
 
 // LoadBalancerRingHashConfigApplyConfiguration constructs a declarative configuration of the LoadBalancerRingHashConfig type for use with
@@ -28,5 +29,13 @@ func (b *LoadBalancerRingHashConfigApplyConfiguration) WithMinimumRingSize(value
 // If called multiple times, the MaximumRingSize field is set to the value of the last call.
 func (b *LoadBalancerRingHashConfigApplyConfiguration) WithMaximumRingSize(value uint64) *LoadBalancerRingHashConfigApplyConfiguration {
 	b.MaximumRingSize = &value
+	return b
+}
+
+// WithUseHostnameForHashing sets the UseHostnameForHashing field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the UseHostnameForHashing field is set to the value of the last call.
+func (b *LoadBalancerRingHashConfigApplyConfiguration) WithUseHostnameForHashing(value bool) *LoadBalancerRingHashConfigApplyConfiguration {
+	b.UseHostnameForHashing = &value
 	return b
 }

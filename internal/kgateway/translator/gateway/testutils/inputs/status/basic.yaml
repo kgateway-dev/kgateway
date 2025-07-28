@@ -1,0 +1,169 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: example-gateway
+spec:
+  gatewayClassName: example-gateway-class
+  listeners:
+  - name: http
+    protocol: HTTP
+    port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: route-1
+spec:
+  parentRefs:
+  - name: example-gateway
+  hostnames:
+  - "example.com"
+  rules:
+  - name: rule0
+    backendRefs:
+    - name: example-svc
+      port: 80
+    filters:
+    - type: ExtensionRef
+      extensionRef:
+        group: gateway.kgateway.dev
+        kind: TrafficPolicy
+        name: extensionref-policy
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: route-2
+spec:
+  parentRefs:
+  - name: example-gateway
+  hostnames:
+  - "example2.com"
+  rules:
+  - name: rule0
+    backendRefs:
+    - name: example-svc
+      port: 80
+    filters:
+    - type: ExtensionRef
+      extensionRef:
+        group: gateway.kgateway.dev
+        kind: TrafficPolicy
+        name: policy-no-merge        
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: extensionref-policy
+  generation: 1
+spec:
+  cors:
+    allowOrigins:
+    - "https://example.com"
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: policy-with-section-name
+  generation: 2
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: route-1
+    sectionName: rule0
+  # cors will be ignored in favor of extensionref-policy
+  cors:
+    allowOrigins:
+    - "https://ignored.com"
+  transformation:
+    response:
+      add:
+      - name: abc
+        value: custom-value-abc
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: policy-without-section-name
+  generation: 3
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: route-1
+  rateLimit:
+    local:
+      tokenBucket:
+        maxTokens: 99
+        tokensPerFill: 1
+        fillInterval: 33s
+  # transformation will be ignored in favor of policy-with-section-name
+  transformation:
+    response:
+      add:
+      - name: ignored
+        value: ignored
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: fully-ignored
+  generation: 4
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: route-1
+  # transformation will be ignored in favor of policy-with-section-name
+  transformation:
+    response:
+      add:
+      - name: ignored
+        value: ignored       
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: policy-no-merge
+  generation: 1
+spec:
+  cors:
+    allowOrigins:
+    - "https://example.com"        
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: HTTPListenerPolicy
+metadata:
+  name: policy-1
+  generation: 1
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: example-gateway
+  xffNumTrustedHops: 2      
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: HTTPListenerPolicy
+metadata:
+  name: policy-2
+  generation: 2
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: example-gateway
+  streamIdleTimeout: 30s 
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: example-svc
+spec:
+  selector:
+    test: test
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: test
