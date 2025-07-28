@@ -25,7 +25,6 @@ on:
         type: boolean
         default: false
 
-
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref_name }}
   cancel-in-progress: true
@@ -48,5 +47,3 @@ jobs:
       with:
         ref: main
     - uses: ./.github/actions/kube-gateway-api-conformance-tests
-
- 
