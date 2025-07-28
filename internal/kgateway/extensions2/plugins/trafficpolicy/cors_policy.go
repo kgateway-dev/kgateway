@@ -25,8 +25,8 @@ func (c *CorsIR) Equals(other *CorsIR) bool {
 	return proto.Equal(c.policy, other.policy)
 }
 
-// corsForSpec translates the cors spec into an envoy cors policy and stores it in the traffic policy IR
-func corsForSpec(in *v1alpha1.TrafficPolicy, out *trafficPolicySpecIr) error {
+// applyCORS translates the cors spec into an envoy cors policy and stores it in the traffic policy IR.
+func applyCORS(in *v1alpha1.TrafficPolicy, out *trafficPolicySpecIr) error {
 	if in.Spec.Cors == nil {
 		return nil
 	}

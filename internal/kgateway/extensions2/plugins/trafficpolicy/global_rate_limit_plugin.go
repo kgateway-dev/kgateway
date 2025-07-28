@@ -52,12 +52,12 @@ func (r *GlobalRateLimitIR) Equals(other *GlobalRateLimitIR) bool {
 	return true
 }
 
-// globalRateLimitForSpec translates the global rate limit spec into and onto the IR policy.
-func globalRateLimitForSpec(
+// applyGlobalRateLimit translates the global rate limit spec into and onto the IR policy.
+func applyGlobalRateLimit(
 	krtctx krt.HandlerContext,
 	in *v1alpha1.TrafficPolicy,
-	out *trafficPolicySpecIr,
 	fetchGatewayExtension FetchGatewayExtensionFunc,
+	out *trafficPolicySpecIr,
 ) error {
 	if in.Spec.RateLimit == nil || in.Spec.RateLimit.Global == nil {
 		return nil

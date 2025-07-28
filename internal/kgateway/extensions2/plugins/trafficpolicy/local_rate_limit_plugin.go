@@ -32,7 +32,8 @@ func (l *LocalRateLimitIR) Equals(other *LocalRateLimitIR) bool {
 	return proto.Equal(l.config, other.config)
 }
 
-func localRateLimitForSpec(in *v1alpha1.TrafficPolicy, out *trafficPolicySpecIr) error {
+// applyLocalRateLimit converts the local rate limit policy spec to the IR.
+func applyLocalRateLimit(in *v1alpha1.TrafficPolicy, out *trafficPolicySpecIr) error {
 	if in.Spec.RateLimit == nil || in.Spec.RateLimit.Local == nil {
 		return nil
 	}

@@ -50,8 +50,8 @@ func (p *trafficPolicyPluginGwPass) handleCsrf(fcn string, typedFilterConfig *ir
 	}
 }
 
-// csrfForSpec translates the CSRF spec into and onto the IR policy
-func csrfForSpec(spec v1alpha1.TrafficPolicySpec, out *trafficPolicySpecIr) error {
+// applyCSRF translates the CSRF spec into and onto the IR policy.
+func applyCSRF(spec v1alpha1.TrafficPolicySpec, out *trafficPolicySpecIr) error {
 	if spec.Csrf == nil {
 		return nil
 	}

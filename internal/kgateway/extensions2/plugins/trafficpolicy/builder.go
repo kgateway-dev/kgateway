@@ -49,50 +49,48 @@ func (b *TrafficPolicyBuilder) Translate(
 
 	var errors []error
 	// Apply AI specific translation
-	if err := aiForSpec(krtctx, policyCR, &outSpec, b.commoncol.Secrets); err != nil {
+	if err := applyAI(krtctx, policyCR, b.commoncol.Secrets, &outSpec); err != nil {
 		errors = append(errors, err)
 	}
 	// Apply transformation specific translation
-	if err := transformationForSpec(policyCR, &outSpec); err != nil {
+	if err := applyTransformation(policyCR, &outSpec); err != nil {
 		errors = append(errors, err)
 	}
 	// Apply rustformation specific translation
-	if err := rustformationForSpec(policyCR, &outSpec); err != nil {
+	if err := applyRustformation(policyCR, &outSpec); err != nil {
 		errors = append(errors, err)
 	}
 	// Apply extproc specific translation
-	if err := extProcForSpec(krtctx, policyCR, &outSpec, b.FetchGatewayExtension); err != nil {
+	if err := applyExtProc(krtctx, policyCR, b.FetchGatewayExtension, &outSpec); err != nil {
 		errors = append(errors, err)
 	}
 	// Apply extauth specific translation
-	if err := extAuthForSpec(krtctx, policyCR, &outSpec, b.FetchGatewayExtension); err != nil {
+	if err := applyExtAuth(krtctx, policyCR, b.FetchGatewayExtension, &outSpec); err != nil {
 		errors = append(errors, err)
 	}
 	// Apply local rate limit specific translation
-	if err := localRateLimitForSpec(policyCR, &outSpec); err != nil {
+	if err := applyLocalRateLimit(policyCR, &outSpec); err != nil {
 		errors = append(errors, err)
 	}
 	// Apply global rate limit specific translation
-	if err := globalRateLimitForSpec(krtctx, policyCR, &outSpec, b.FetchGatewayExtension); err != nil {
+	if err := applyGlobalRateLimit(krtctx, policyCR, b.FetchGatewayExtension, &outSpec); err != nil {
 		errors = append(errors, err)
 	}
 	// Apply cors specific translation
-	if err := corsForSpec(policyCR, &outSpec); err != nil {
+	if err := applyCORS(policyCR, &outSpec); err != nil {
 		errors = append(errors, err)
 	}
-
 	// Apply csrf specific translation
-	err := csrfForSpec(policyCR.Spec, &outSpec)
-	if err != nil {
+	if err := applyCSRF(policyCR.Spec, &outSpec); err != nil {
 		errors = append(errors, err)
 	}
 
-	hashPolicyForSpec(policyCR.Spec, &outSpec)
-
+	// Apply hash policy specific translation
+	applyHashPolicy(policyCR.Spec, &outSpec)
 	// Apply auto host rewrite specific translation
-	autoHostRewriteForSpec(policyCR.Spec, &outSpec)
-
-	bufferForSpec(policyCR.Spec, &outSpec)
+	applyAutoHostRewrite(policyCR.Spec, &outSpec)
+	// Apply buffer specific translation
+	applyBuffer(policyCR.Spec, &outSpec)
 
 	for _, err := range errors {
 		logger.Error("error translating gateway extension", "namespace", policyCR.GetNamespace(), "name", policyCR.GetName(), "error", err)

@@ -37,12 +37,12 @@ func (e *ExtprocIR) Equals(other *ExtprocIR) bool {
 	return true
 }
 
-// toEnvoyExtProc converts an ExtProcPolicy to an ExternalProcessor
-func extProcForSpec(
+// applyExtProc converts the extproc policy spec to the IR.
+func applyExtProc(
 	krtctx krt.HandlerContext,
 	in *v1alpha1.TrafficPolicy,
-	out *trafficPolicySpecIr,
 	fetchGatewayExtension FetchGatewayExtensionFunc,
+	out *trafficPolicySpecIr,
 ) error {
 	if in.Spec.ExtProc == nil {
 		return nil

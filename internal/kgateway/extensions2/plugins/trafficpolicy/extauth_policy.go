@@ -77,12 +77,12 @@ func (e *ExtAuthIR) Equals(other *ExtAuthIR) bool {
 	return true
 }
 
-// extAuthForSpec translates the ExtAuthz spec into the Envoy configuration
-func extAuthForSpec(
+// applyExtAuth converts the extauth policy spec to the IR.
+func applyExtAuth(
 	krtctx krt.HandlerContext,
 	in *v1alpha1.TrafficPolicy,
-	out *trafficPolicySpecIr,
 	fetchGatewayExtension FetchGatewayExtensionFunc,
+	out *trafficPolicySpecIr,
 ) error {
 	if in.Spec.ExtAuth == nil {
 		return nil

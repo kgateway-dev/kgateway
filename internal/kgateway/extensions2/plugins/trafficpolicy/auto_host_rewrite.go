@@ -21,8 +21,8 @@ func (a *AutoHostRewriteIR) Equals(other *AutoHostRewriteIR) bool {
 	return proto.Equal(a.enabled, other.enabled)
 }
 
-// autoHostRewriteForSpec translates the auto host rewrite spec into an envoy auto host rewrite policy and stores it in the traffic policy IR
-func autoHostRewriteForSpec(spec v1alpha1.TrafficPolicySpec, out *trafficPolicySpecIr) {
+// applyAutoHostRewrite translates the auto host rewrite spec into an envoy auto host rewrite policy and stores it in the traffic policy IR
+func applyAutoHostRewrite(spec v1alpha1.TrafficPolicySpec, out *trafficPolicySpecIr) {
 	if spec.AutoHostRewrite == nil {
 		return
 	}

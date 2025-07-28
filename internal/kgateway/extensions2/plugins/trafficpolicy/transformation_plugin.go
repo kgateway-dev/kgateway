@@ -29,7 +29,8 @@ func (t *TransformationIR) Equals(other *TransformationIR) bool {
 	return proto.Equal(t.config, other.config)
 }
 
-func transformationForSpec(in *v1alpha1.TrafficPolicy, out *trafficPolicySpecIr) error {
+// applyTransformation converts the transformation policy spec to the IR.
+func applyTransformation(in *v1alpha1.TrafficPolicy, out *trafficPolicySpecIr) error {
 	if in.Spec.Transformation == nil && !useRustformations {
 		return nil
 	}
@@ -168,7 +169,7 @@ func (r *RustformationIR) Equals(other *RustformationIR) bool {
 	return proto.Equal(r.config, other.config) && r.toStash == other.toStash
 }
 
-func rustformationForSpec(in *v1alpha1.TrafficPolicy, out *trafficPolicySpecIr) error {
+func applyRustformation(in *v1alpha1.TrafficPolicy, out *trafficPolicySpecIr) error {
 	if in.Spec.Transformation == nil || !useRustformations {
 		return nil
 	}

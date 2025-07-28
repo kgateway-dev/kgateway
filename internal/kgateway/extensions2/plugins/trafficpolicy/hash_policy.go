@@ -34,7 +34,8 @@ func (h *HashPolicyIR) Equals(other *HashPolicyIR) bool {
 	return true
 }
 
-func hashPolicyForSpec(spec v1alpha1.TrafficPolicySpec, outSpec *trafficPolicySpecIr) {
+// applyHashPolicy converts the hash policy spec to the IR.
+func applyHashPolicy(spec v1alpha1.TrafficPolicySpec, outSpec *trafficPolicySpecIr) {
 	if len(spec.HashPolicies) == 0 {
 		return
 	}

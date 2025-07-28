@@ -27,8 +27,8 @@ func (b *BufferIR) Equals(other *BufferIR) bool {
 	return b.maxRequestBytes == other.maxRequestBytes
 }
 
-// bufferForSpec translates the buffer spec into an envoy buffer policy and stores it in the traffic policy IR
-func bufferForSpec(spec v1alpha1.TrafficPolicySpec, out *trafficPolicySpecIr) {
+// applyBuffer translates the buffer spec into an envoy buffer policy and stores it in the traffic policy IR.
+func applyBuffer(spec v1alpha1.TrafficPolicySpec, out *trafficPolicySpecIr) {
 	if spec.Buffer == nil {
 		return
 	}

@@ -78,12 +78,12 @@ func (a *AIPolicyIR) Equals(in *AIPolicyIR) bool {
 	return true
 }
 
-// aiForSpec processes the AI policy specification and sets the corresponding IR in the output spec
-func aiForSpec(
+// applyAI processes the AI policy specification and sets the corresponding IR in the output spec
+func applyAI(
 	krtctx krt.HandlerContext,
 	policyCR *v1alpha1.TrafficPolicy,
-	out *trafficPolicySpecIr,
 	secrets *krtcollections.SecretIndex,
+	out *trafficPolicySpecIr,
 ) error {
 	if policyCR.Spec.AI == nil {
 		return nil
