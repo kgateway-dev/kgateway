@@ -18,7 +18,7 @@ const (
 )
 
 type CsrfIR struct {
-	csrfPolicy *envoy_csrf_v3.CsrfPolicy
+	policy *envoy_csrf_v3.CsrfPolicy
 }
 
 func (c *CsrfIR) Equals(other *CsrfIR) bool {
@@ -29,7 +29,7 @@ func (c *CsrfIR) Equals(other *CsrfIR) bool {
 		return false
 	}
 
-	return proto.Equal(c.csrfPolicy, other.csrfPolicy)
+	return proto.Equal(c.policy, other.policy)
 }
 
 // handleCsrf adds CSRF configuration to routes
@@ -37,7 +37,7 @@ func (p *trafficPolicyPluginGwPass) handleCsrf(fcn string, typedFilterConfig *ir
 	if typedFilterConfig == nil || ir == nil {
 		return
 	}
-	typedFilterConfig.AddTypedConfig(csrfExtensionFilterName, ir.csrfPolicy)
+	typedFilterConfig.AddTypedConfig(csrfExtensionFilterName, ir.policy)
 
 	// Add a filter to the chain. When having a csrf for a route we need to also have a
 	// globally disabled csrf filter in the chain otherwise it will be ignored.
@@ -96,7 +96,7 @@ func csrfForSpec(spec v1alpha1.TrafficPolicySpec, out *trafficPolicySpecIr) erro
 	}
 
 	out.csrf = &CsrfIR{
-		csrfPolicy: csrfPolicy,
+		policy: csrfPolicy,
 	}
 	return nil
 }

@@ -19,7 +19,7 @@ const (
 )
 
 type LocalRateLimitIR struct {
-	localRateLimit *localratelimitv3.LocalRateLimit
+	config *localratelimitv3.LocalRateLimit
 }
 
 func (l *LocalRateLimitIR) Equals(other *LocalRateLimitIR) bool {
@@ -29,7 +29,7 @@ func (l *LocalRateLimitIR) Equals(other *LocalRateLimitIR) bool {
 	if l == nil || other == nil {
 		return false
 	}
-	return proto.Equal(l.localRateLimit, other.localRateLimit)
+	return proto.Equal(l.config, other.config)
 }
 
 func localRateLimitForSpec(in *v1alpha1.TrafficPolicy, out *trafficPolicySpecIr) error {
@@ -41,7 +41,7 @@ func localRateLimitForSpec(in *v1alpha1.TrafficPolicy, out *trafficPolicySpecIr)
 		return err
 	}
 	out.localRateLimit = &LocalRateLimitIR{
-		localRateLimit: localRateLimit,
+		config: localRateLimit,
 	}
 	return nil
 }
@@ -115,7 +115,7 @@ func (p *trafficPolicyPluginGwPass) handleLocalRateLimit(fcn string, typedFilter
 	if localRateLimit == nil {
 		return
 	}
-	typedFilterConfig.AddTypedConfig(localRateLimitFilterNamePrefix, localRateLimit.localRateLimit)
+	typedFilterConfig.AddTypedConfig(localRateLimitFilterNamePrefix, localRateLimit.config)
 
 	// Add a filter to the chain. When having a rate limit for a route we need to also have a
 	// globally disabled rate limit filter in the chain otherwise it will be ignored.

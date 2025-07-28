@@ -77,41 +77,41 @@ func mergeTransformation(
 	switch opts.Strategy {
 	case policy.AugmentedShallowMerge, policy.OverridableShallowMerge:
 		if p1.spec.transformation == nil {
-			p1.spec.transformation = &TransformationIR{transformation: &transformationpb.RouteTransformations{}}
+			p1.spec.transformation = &TransformationIR{config: &transformationpb.RouteTransformations{}}
 		}
-		if p2.spec.transformation != nil && p2.spec.transformation.transformation != nil {
+		if p2.spec.transformation != nil && p2.spec.transformation.config != nil {
 			// Always clone so that the original policy in p2 is not modified when
 			// the merge is invoked multiple times
-			p1.spec.transformation.transformation.Transformations = slices.Clone(p2.spec.transformation.transformation.GetTransformations())
+			p1.spec.transformation.config.Transformations = slices.Clone(p2.spec.transformation.config.GetTransformations())
 		}
 		// Always clone so that the original policy in p2 is not modified when
 		// the merge is invoked multiple times
-		p1.spec.transformation.transformation.Transformations = slices.Clone(p2.spec.transformation.transformation.GetTransformations())
+		p1.spec.transformation.config.Transformations = slices.Clone(p2.spec.transformation.config.GetTransformations())
 		mergeOrigins.SetOne("transformation", p2Ref, p2MergeOrigins)
 
 	case policy.AugmentedDeepMerge:
 		if p1.spec.transformation == nil {
-			p1.spec.transformation = &TransformationIR{transformation: &transformationpb.RouteTransformations{}}
+			p1.spec.transformation = &TransformationIR{config: &transformationpb.RouteTransformations{}}
 		}
-		if p2.spec.transformation != nil && p2.spec.transformation.transformation != nil {
+		if p2.spec.transformation != nil && p2.spec.transformation.config != nil {
 			// Always Concat so that the original policy in p1 is not modified when
 			// the merge is invoked multiple times
-			existing := p1.spec.transformation.transformation.GetTransformations()
-			additional := p2.spec.transformation.transformation.GetTransformations()
-			p1.spec.transformation.transformation.Transformations = slices.Concat(existing, additional)
+			existing := p1.spec.transformation.config.GetTransformations()
+			additional := p2.spec.transformation.config.GetTransformations()
+			p1.spec.transformation.config.Transformations = slices.Concat(existing, additional)
 		}
 		// Always Concat so that the original policy in p1 is not modified when
 		// the merge is invoked multiple times
-		p1.spec.transformation.transformation.Transformations = slices.Concat(p1.spec.transformation.transformation.GetTransformations(), p2.spec.transformation.transformation.GetTransformations())
+		p1.spec.transformation.config.Transformations = slices.Concat(p1.spec.transformation.config.GetTransformations(), p2.spec.transformation.config.GetTransformations())
 		mergeOrigins.Append("transformation", p2Ref, p2MergeOrigins)
 
 	case policy.OverridableDeepMerge:
 		if p1.spec.transformation == nil {
-			p1.spec.transformation = &TransformationIR{transformation: &transformationpb.RouteTransformations{}}
+			p1.spec.transformation = &TransformationIR{config: &transformationpb.RouteTransformations{}}
 		}
 		// Always Concat so that the original policy in p1/p2 is not modified when
 		// the merge is invoked multiple times
-		p1.spec.transformation.transformation.Transformations = slices.Concat(p2.spec.transformation.transformation.GetTransformations(), p1.spec.transformation.transformation.GetTransformations())
+		p1.spec.transformation.config.Transformations = slices.Concat(p2.spec.transformation.config.GetTransformations(), p1.spec.transformation.config.GetTransformations())
 		mergeOrigins.Append("transformation", p2Ref, p2MergeOrigins)
 
 	default:

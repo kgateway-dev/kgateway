@@ -47,9 +47,9 @@ var (
 )
 
 type ExtAuthIR struct {
-	provider        *TrafficPolicyGatewayExtensionIR
-	enablement      *v1alpha1.ExtAuthEnabled
-	extauthPerRoute *envoy_ext_authz_v3.ExtAuthzPerRoute
+	provider   *TrafficPolicyGatewayExtensionIR
+	enablement *v1alpha1.ExtAuthEnabled
+	perRoute   *envoy_ext_authz_v3.ExtAuthzPerRoute
 }
 
 // Equals compares two ExtAuthIR instances for equality
@@ -65,7 +65,7 @@ func (e *ExtAuthIR) Equals(other *ExtAuthIR) bool {
 	if e.enablement != other.enablement {
 		return false
 	}
-	if !proto.Equal(e.extauthPerRoute, other.extauthPerRoute) {
+	if !proto.Equal(e.perRoute, other.perRoute) {
 		return false
 	}
 	// Compare providers
@@ -90,9 +90,9 @@ func extAuthForSpec(
 	spec := in.Spec.ExtAuth
 	if spec.Enablement != nil && *spec.Enablement == v1alpha1.ExtAuthDisableAll {
 		out.extAuth = &ExtAuthIR{
-			provider:        nil,
-			enablement:      spec.Enablement,
-			extauthPerRoute: translatePerFilterConfig(spec),
+			provider:   nil,
+			enablement: spec.Enablement,
+			perRoute:   translatePerFilterConfig(spec),
 		}
 		return nil
 	}
@@ -104,9 +104,9 @@ func extAuthForSpec(
 		return pluginutils.ErrInvalidExtensionType(v1alpha1.GatewayExtensionTypeExtAuth, provider.ExtType)
 	}
 	out.extAuth = &ExtAuthIR{
-		provider:        provider,
-		enablement:      in.Spec.ExtAuth.Enablement,
-		extauthPerRoute: translatePerFilterConfig(in.Spec.ExtAuth),
+		provider:   provider,
+		enablement: in.Spec.ExtAuth.Enablement,
+		perRoute:   translatePerFilterConfig(in.Spec.ExtAuth),
 	}
 	return nil
 }
@@ -158,9 +158,9 @@ func (p *trafficPolicyPluginGwPass) handleExtAuth(fcn string, pCtxTypedFilterCon
 		pCtxTypedFilterConfig.AddTypedConfig(extAuthGlobalDisableFilterName, EnableFilterPerRoute)
 	} else {
 		providerName := extAuth.provider.ResourceName()
-		if extAuth.extauthPerRoute != nil {
+		if extAuth.perRoute != nil {
 			pCtxTypedFilterConfig.AddTypedConfig(extAuthFilterName(providerName),
-				extAuth.extauthPerRoute,
+				extAuth.perRoute,
 			)
 		} else {
 			// if you are on a route and not trying to disable it then we need to override the top level disable on the filter chain

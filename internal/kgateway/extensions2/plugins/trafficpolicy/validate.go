@@ -51,11 +51,11 @@ func (p *TrafficPolicy) validateProto() error {
 			validators = append(validators, p.spec.ai.Extproc.Validate)
 		}
 	}
-	if p.spec.transformation != nil && p.spec.transformation.transformation != nil {
-		validators = append(validators, p.spec.transformation.transformation.Validate)
+	if p.spec.transformation != nil && p.spec.transformation.config != nil {
+		validators = append(validators, p.spec.transformation.config.Validate)
 	}
-	if p.spec.localRateLimit != nil && p.spec.localRateLimit.localRateLimit != nil {
-		validators = append(validators, p.spec.localRateLimit.localRateLimit.Validate)
+	if p.spec.localRateLimit != nil && p.spec.localRateLimit.config != nil {
+		validators = append(validators, p.spec.localRateLimit.config.Validate)
 	}
 	if p.spec.globalRateLimit != nil {
 		for _, rateLimit := range p.spec.globalRateLimit.rateLimitActions {
@@ -68,12 +68,12 @@ func (p *TrafficPolicy) validateProto() error {
 		}
 	}
 	if p.spec.extAuth != nil {
-		if p.spec.extAuth.extauthPerRoute != nil {
-			validators = append(validators, p.spec.extAuth.extauthPerRoute.Validate)
+		if p.spec.extAuth.perRoute != nil {
+			validators = append(validators, p.spec.extAuth.perRoute.Validate)
 		}
 	}
 	if p.spec.csrf != nil {
-		validators = append(validators, p.spec.csrf.csrfPolicy.Validate)
+		validators = append(validators, p.spec.csrf.policy.Validate)
 	}
 	for _, validator := range validators {
 		if err := validator(); err != nil {

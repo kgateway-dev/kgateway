@@ -12,7 +12,7 @@ import (
 )
 
 type HashPolicyIR struct {
-	hashPolicies []*envoyroutev3.RouteAction_HashPolicy
+	policies []*envoyroutev3.RouteAction_HashPolicy
 }
 
 func (h *HashPolicyIR) Equals(other *HashPolicyIR) bool {
@@ -23,11 +23,11 @@ func (h *HashPolicyIR) Equals(other *HashPolicyIR) bool {
 		return false
 	}
 
-	if len(h.hashPolicies) != len(other.hashPolicies) {
+	if len(h.policies) != len(other.policies) {
 		return false
 	}
-	for i, policy := range h.hashPolicies {
-		if !proto.Equal(policy, other.hashPolicies[i]) {
+	for i, policy := range h.policies {
+		if !proto.Equal(policy, other.policies[i]) {
 			return false
 		}
 	}
@@ -38,7 +38,7 @@ func (h *HashPolicyIR) HashPolicies() []*envoyroutev3.RouteAction_HashPolicy {
 	if h == nil {
 		return nil
 	}
-	return h.hashPolicies
+	return h.policies
 }
 
 func hashPolicyForSpec(spec v1alpha1.TrafficPolicySpec, outSpec *trafficPolicySpecIr) {
@@ -97,6 +97,6 @@ func hashPolicyForSpec(spec v1alpha1.TrafficPolicySpec, outSpec *trafficPolicySp
 		policies = append(policies, policy)
 	}
 	outSpec.hashPolicies = &HashPolicyIR{
-		hashPolicies: policies,
+		policies: policies,
 	}
 }

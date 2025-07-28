@@ -16,7 +16,7 @@ import (
 )
 
 type TransformationIR struct {
-	transformation *transformationpb.RouteTransformations
+	config *transformationpb.RouteTransformations
 }
 
 func (t *TransformationIR) Equals(other *TransformationIR) bool {
@@ -26,7 +26,7 @@ func (t *TransformationIR) Equals(other *TransformationIR) bool {
 	if t == nil || other == nil {
 		return false
 	}
-	return proto.Equal(t.transformation, other.transformation)
+	return proto.Equal(t.config, other.config)
 }
 
 func transformationForSpec(in *v1alpha1.TrafficPolicy, out *trafficPolicySpecIr) error {
@@ -38,7 +38,7 @@ func transformationForSpec(in *v1alpha1.TrafficPolicy, out *trafficPolicySpecIr)
 		return err
 	}
 	out.transformation = &TransformationIR{
-		transformation: transformation,
+		config: transformation,
 	}
 	return nil
 }
@@ -154,8 +154,8 @@ func toTransformFilterConfig(t *v1alpha1.TransformationPolicy) (*transformationp
 }
 
 type RustformationIR struct {
-	rustformation *dynamicmodulesv3.DynamicModuleFilter
-	toStash       string
+	config  *dynamicmodulesv3.DynamicModuleFilter
+	toStash string
 }
 
 func (r *RustformationIR) Equals(other *RustformationIR) bool {
@@ -165,7 +165,7 @@ func (r *RustformationIR) Equals(other *RustformationIR) bool {
 	if r == nil || other == nil {
 		return false
 	}
-	return proto.Equal(r.rustformation, other.rustformation) && r.toStash == other.toStash
+	return proto.Equal(r.config, other.config) && r.toStash == other.toStash
 }
 
 func rustformationForSpec(in *v1alpha1.TrafficPolicy, out *trafficPolicySpecIr) error {
@@ -177,8 +177,8 @@ func rustformationForSpec(in *v1alpha1.TrafficPolicy, out *trafficPolicySpecIr) 
 		return err
 	}
 	out.rustformation = &RustformationIR{
-		rustformation: rustformation,
-		toStash:       toStash,
+		config:  rustformation,
+		toStash: toStash,
 	}
 	return nil
 }
@@ -301,8 +301,8 @@ func (p *trafficPolicyPluginGwPass) handleTransformation(fcn string, typedFilter
 	if transform == nil {
 		return
 	}
-	if transform.transformation != nil {
-		typedFilterConfig.AddTypedConfig(transformationFilterNamePrefix, transform.transformation)
+	if transform.config != nil {
+		typedFilterConfig.AddTypedConfig(transformationFilterNamePrefix, transform.config)
 		p.setTransformationInChain[fcn] = true
 	}
 }

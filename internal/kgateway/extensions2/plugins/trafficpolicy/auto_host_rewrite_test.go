@@ -20,7 +20,7 @@ func TestApplyForRoute_SetsRouteActionFlag(t *testing.T) {
 		policy := &TrafficPolicy{
 			spec: trafficPolicySpecIr{
 				autoHostRewrite: &AutoHostRewriteIR{
-					autoHostRewrite: wrapperspb.Bool(true),
+					enabled: wrapperspb.Bool(true),
 				},
 			},
 		}
