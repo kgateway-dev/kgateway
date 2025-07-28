@@ -34,19 +34,6 @@ spec:
       namespaces:
         from: All
 ---
-kind: BackendConfigPolicy
-apiVersion: gateway.kgateway.dev/v1alpha1
-metadata:
-  name: backend-tls-policy-ai-test
-  namespace: ai-test
-spec:
-  targetRefs:
-    - name: test-ai-provider
-      kind: Service
-      group: ""
-  tls:
-    insecureSkipVerify: true
----
 # Turn on envoy accesslog for debugging when tests fail
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: HTTPListenerPolicy

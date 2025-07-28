@@ -165,7 +165,21 @@ spec:
   ports:
     - port: 443
       targetPort: 443
-  type: ClusterIP`, namespace, image, namespace)
+  type: ClusterIP
+---
+kind: BackendConfigPolicy
+apiVersion: gateway.kgateway.dev/v1alpha1
+metadata:
+  name: backendconfigpolicy-test-ai-provider	
+  namespace: %s
+spec:
+  targetRefs:
+    - name: test-ai-provider
+      kind: Service
+      group: ""
+  tls:
+    insecureSkipVerify: true
+  `, namespace, image, namespace, namespace)
 }
 
 func cleanupMockProvider(ctx context.Context, testInstallation *e2e.TestInstallation, namespace string) {
