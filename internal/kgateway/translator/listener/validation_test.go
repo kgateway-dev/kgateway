@@ -230,7 +230,7 @@ func TestSimpleListenerWithInvalidRouteKind(t *testing.T) {
 					Type:    string(gwv1.ListenerConditionResolvedRefs),
 					Status:  metav1.ConditionFalse,
 					Reason:  string(gwv1.ListenerReasonInvalidRouteKinds),
-					Message: "Found invalid route kinds: [BustedRouteKind]. Supported route kinds: [HTTPRoute, GRPCRoute].",
+					Message: "Found invalid route kinds: [BustedRouteKind]",
 				},
 			},
 		},

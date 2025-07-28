@@ -119,19 +119,11 @@ func validateSupportedRoutes(listeners []ir.Listener, reporter reports.Reporter)
 				invalidKinds = append(invalidKinds, string(rgk.Kind))
 			}
 
-			supportedKinds := make([]string, 0, len(supportedRouteKindsForProtocol))
-			for _, kinds := range supportedRouteKindsForProtocol {
-				supportedKinds = append(supportedKinds, kinds...)
-			}
-
 			parentReporter.ListenerName(string(listener.Name)).SetCondition(reports.ListenerCondition{
-				Type:   gwv1.ListenerConditionResolvedRefs,
-				Status: metav1.ConditionFalse,
-				Reason: gwv1.ListenerReasonInvalidRouteKinds,
-				Message: fmt.Sprintf("Found invalid route kinds: [%s]. Supported route kinds: [%s].",
-					strings.Join(invalidKinds, ", "),
-					strings.Join(supportedKinds, ", "),
-				),
+				Type:    gwv1.ListenerConditionResolvedRefs,
+				Status:  metav1.ConditionFalse,
+				Reason:  gwv1.ListenerReasonInvalidRouteKinds,
+				Message: fmt.Sprintf("Found invalid route kinds: [%s]", strings.Join(invalidKinds, ", ")),
 			})
 		} else {
 			validListeners = append(validListeners, listener)
