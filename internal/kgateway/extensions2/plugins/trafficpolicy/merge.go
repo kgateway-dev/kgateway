@@ -79,11 +79,6 @@ func mergeTransformation(
 		if p1.spec.transformation == nil {
 			p1.spec.transformation = &TransformationIR{config: &transformationpb.RouteTransformations{}}
 		}
-		if p2.spec.transformation != nil && p2.spec.transformation.config != nil {
-			// Always clone so that the original policy in p2 is not modified when
-			// the merge is invoked multiple times
-			p1.spec.transformation.config.Transformations = slices.Clone(p2.spec.transformation.config.GetTransformations())
-		}
 		// Always clone so that the original policy in p2 is not modified when
 		// the merge is invoked multiple times
 		p1.spec.transformation.config.Transformations = slices.Clone(p2.spec.transformation.config.GetTransformations())
@@ -92,13 +87,6 @@ func mergeTransformation(
 	case policy.AugmentedDeepMerge:
 		if p1.spec.transformation == nil {
 			p1.spec.transformation = &TransformationIR{config: &transformationpb.RouteTransformations{}}
-		}
-		if p2.spec.transformation != nil && p2.spec.transformation.config != nil {
-			// Always Concat so that the original policy in p1 is not modified when
-			// the merge is invoked multiple times
-			existing := p1.spec.transformation.config.GetTransformations()
-			additional := p2.spec.transformation.config.GetTransformations()
-			p1.spec.transformation.config.Transformations = slices.Concat(existing, additional)
 		}
 		// Always Concat so that the original policy in p1 is not modified when
 		// the merge is invoked multiple times
