@@ -22,7 +22,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
-	reports "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
+	sdkreporter "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
 
 const (
@@ -34,15 +34,16 @@ type filterChainTranslator struct {
 	listener        ir.ListenerIR
 	gateway         ir.GatewayIR
 	routeConfigName string
+	reporter        sdkreporter.Reporter
 
 	PluginPass TranslationPassPlugins
 }
 
-func computeListenerAddress(bindAddress string, port uint32, reporter reports.GatewayReporter) *envoycorev3.Address {
+func computeListenerAddress(bindAddress string, port uint32, reporter sdkreporter.GatewayReporter) *envoycorev3.Address {
 	_, isIpv4Address, err := utils.IsIpv4Address(bindAddress)
 	if err != nil {
 		// TODO: return error ????
-		reporter.SetCondition(reports.GatewayCondition{
+		reporter.SetCondition(sdkreporter.GatewayCondition{
 			Type:    gwv1.GatewayConditionProgrammed,
 			Reason:  gwv1.GatewayReasonInvalid,
 			Status:  metav1.ConditionFalse,
@@ -78,7 +79,7 @@ func tlsInspectorFilter() *envoylistenerv3.ListenerFilter {
 	}
 }
 
-func (h *filterChainTranslator) initFilterChain(ctx context.Context, fcc ir.FilterChainCommon, reporter reports.ListenerReporter) *envoylistenerv3.FilterChain {
+func (h *filterChainTranslator) initFilterChain(ctx context.Context, fcc ir.FilterChainCommon, reporter sdkreporter.ListenerReporter) *envoylistenerv3.FilterChain {
 	info := &FilterChainInfo{
 		Match: fcc.Matcher,
 		TLS:   fcc.TLS,
@@ -93,7 +94,7 @@ func (h *filterChainTranslator) initFilterChain(ctx context.Context, fcc ir.Filt
 	return fc
 }
 
-func (h *filterChainTranslator) computeHttpFilters(ctx context.Context, l ir.HttpFilterChainIR, reporter reports.ListenerReporter) []*envoylistenerv3.Filter {
+func (h *filterChainTranslator) computeHttpFilters(ctx context.Context, l ir.HttpFilterChainIR, reporter sdkreporter.ListenerReporter) []*envoylistenerv3.Filter {
 	// 1. Generate all the network filters (including the HttpConnectionManager)
 	networkFilters, err := h.computeNetworkFiltersForHttp(ctx, l, reporter)
 	if err != nil {
@@ -108,14 +109,16 @@ func (h *filterChainTranslator) computeHttpFilters(ctx context.Context, l ir.Htt
 	return networkFilters
 }
 
-func (n *filterChainTranslator) computeNetworkFiltersForHttp(ctx context.Context, l ir.HttpFilterChainIR, reporter reports.ListenerReporter) ([]*envoylistenerv3.Filter, error) {
+func (n *filterChainTranslator) computeNetworkFiltersForHttp(ctx context.Context, l ir.HttpFilterChainIR, listenerReporter sdkreporter.ListenerReporter) ([]*envoylistenerv3.Filter, error) {
 	hcm := hcmNetworkFilterTranslator{
-		routeConfigName: n.routeConfigName,
-		PluginPass:      n.PluginPass,
-		reporter:        reporter,
-		gateway:         n.gateway, // corresponds to Gateway API listener
+		routeConfigName:   n.routeConfigName,
+		PluginPass:        n.PluginPass,
+		listenerReporter:  listenerReporter,
+		reporter:          n.reporter,
+		gateway:           n.gateway, // corresponds to Gateway API listener
+		policyAncestorRef: n.listener.PolicyAncestorRef,
 	}
-	networkFilters := sortNetworkFilters(n.computeCustomFilters(ctx, l.CustomNetworkFilters, reporter))
+	networkFilters := sortNetworkFilters(n.computeCustomFilters(ctx, l.CustomNetworkFilters, listenerReporter))
 	networkFilter, err := hcm.computeNetworkFilters(ctx, l)
 	if err != nil {
 		return nil, err
@@ -130,14 +133,14 @@ func (n *filterChainTranslator) computeNetworkFiltersForHttp(ctx context.Context
 func (n *filterChainTranslator) computeCustomFilters(
 	ctx context.Context,
 	customNetworkFilters []ir.CustomEnvoyFilter,
-	reporter reports.ListenerReporter,
+	listenerReporter sdkreporter.ListenerReporter,
 ) []plugins.StagedNetworkFilter {
 	var networkFilters []plugins.StagedNetworkFilter
 	// Process the network filters.
 	for _, plug := range n.PluginPass {
 		stagedFilters, err := plug.NetworkFilters(ctx)
 		if err != nil {
-			reporter.SetCondition(reports.ListenerCondition{
+			listenerReporter.SetCondition(sdkreporter.ListenerCondition{
 				Type:    gwv1.ListenerConditionProgrammed,
 				Reason:  gwv1.ListenerReasonInvalid,
 				Status:  metav1.ConditionFalse,
@@ -183,11 +186,13 @@ func sortNetworkFilters(filters plugins.StagedNetworkFilterList) []*envoylistene
 }
 
 type hcmNetworkFilterTranslator struct {
-	routeConfigName string
-	PluginPass      TranslationPassPlugins
-	reporter        reports.ListenerReporter
-	listener        ir.HttpFilterChainIR // policies attached to listener
-	gateway         ir.GatewayIR         // policies attached to gateway
+	routeConfigName   string
+	PluginPass        TranslationPassPlugins
+	listenerReporter  sdkreporter.ListenerReporter
+	reporter          sdkreporter.Reporter
+	listener          ir.HttpFilterChainIR // policies attached to listener
+	gateway           ir.GatewayIR         // policies attached to gateway
+	policyAncestorRef gwv1.ParentReference
 }
 
 func (h *hcmNetworkFilterTranslator) computeNetworkFilters(ctx context.Context, l ir.HttpFilterChainIR) (*envoylistenerv3.Filter, error) {
@@ -211,12 +216,14 @@ func (h *hcmNetworkFilterTranslator) computeNetworkFilters(ctx context.Context, 
 			// TODO: report user error - they attached a non http policy
 			continue
 		}
-		for _, pol := range mergePolicies(pass, pols) {
+		reportPolicyAcceptanceStatus(h.reporter, h.policyAncestorRef, pols...)
+		policies, mergeOrigins := mergePolicies(pass, pols)
+		for _, pol := range policies {
 			pctx := &ir.HcmContext{
 				Policy: pol.PolicyIr,
 			}
 			if err := pass.ApplyHCM(ctx, pctx, httpConnectionManager); err != nil {
-				h.reporter.SetCondition(reports.ListenerCondition{
+				h.listenerReporter.SetCondition(sdkreporter.ListenerCondition{
 					Type:    gwv1.ListenerConditionProgrammed,
 					Reason:  gwv1.ListenerReasonInvalid,
 					Status:  metav1.ConditionFalse,
@@ -224,6 +231,7 @@ func (h *hcmNetworkFilterTranslator) computeNetworkFilters(ctx context.Context, 
 				})
 			}
 		}
+		reportPolicyAttachmentStatus(h.reporter, h.policyAncestorRef, mergeOrigins, pols...)
 	}
 
 	// TODO: should we enable websockets by default?
@@ -272,7 +280,7 @@ func (h *hcmNetworkFilterTranslator) computeHttpFilters(ctx context.Context, l i
 		stagedFilters, err := plug.HttpFilters(ctx, l.FilterChainCommon)
 		if err != nil {
 			// what to do with errors here? ignore the listener??
-			h.reporter.SetCondition(reports.ListenerCondition{
+			h.listenerReporter.SetCondition(sdkreporter.ListenerCondition{
 				Type:    gwv1.ListenerConditionProgrammed,
 				Reason:  gwv1.ListenerReasonInvalid,
 				Status:  metav1.ConditionFalse,
@@ -317,7 +325,7 @@ func (h *hcmNetworkFilterTranslator) computeHttpFilters(ctx context.Context, l i
 		plugins.AfterStage(plugins.RouteStage),
 	)
 	if err != nil {
-		h.reporter.SetCondition(reports.ListenerCondition{
+		h.listenerReporter.SetCondition(sdkreporter.ListenerCondition{
 			Type:    gwv1.ListenerConditionProgrammed,
 			Reason:  gwv1.ListenerReasonInvalid,
 			Status:  metav1.ConditionFalse,
@@ -361,7 +369,7 @@ func sortHttpFilters(filters plugins.StagedHttpFilterList) []*envoyhttp.HttpFilt
 	return sortedFilters
 }
 
-func (h *filterChainTranslator) computeTcpFilters(ctx context.Context, l ir.TcpIR, reporter reports.ListenerReporter) []*envoylistenerv3.Filter {
+func (h *filterChainTranslator) computeTcpFilters(ctx context.Context, l ir.TcpIR, reporter sdkreporter.ListenerReporter) []*envoylistenerv3.Filter {
 	networkFilters := sortNetworkFilters(h.computeCustomFilters(ctx, l.CustomNetworkFilters, reporter))
 
 	cfg := &envoytcp.TcpProxy{

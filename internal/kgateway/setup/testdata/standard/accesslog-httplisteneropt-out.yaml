@@ -83,6 +83,11 @@ listeners:
         statPrefix: http
         useRemoteAddress: true
     name: listener~8080
+  metadata:
+    filterMetadata:
+      merge.HTTPListenerPolicy.gateway.kgateway.dev:
+        accessLog:
+        - gateway.kgateway.dev/HTTPListenerPolicy/gwtest/accesslog
   name: listener~8080
 - address:
     socketAddress:
@@ -138,9 +143,19 @@ listeners:
         statPrefix: http
         useRemoteAddress: true
     name: listener~8081
+  metadata:
+    filterMetadata:
+      merge.HTTPListenerPolicy.gateway.kgateway.dev:
+        accessLog:
+        - gateway.kgateway.dev/HTTPListenerPolicy/gwtest/accesslog
   name: listener~8081
 routes:
 - ignorePortInHostMatching: true
+  metadata:
+    filterMetadata:
+      merge.HTTPListenerPolicy.gateway.kgateway.dev:
+        accessLog:
+        - gateway.kgateway.dev/HTTPListenerPolicy/gwtest/accesslog
   name: listener~8080
   virtualHosts:
   - domains:
@@ -154,6 +169,11 @@ routes:
         cluster: kube_gwtest_reviews_8080
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
 - ignorePortInHostMatching: true
+  metadata:
+    filterMetadata:
+      merge.HTTPListenerPolicy.gateway.kgateway.dev:
+        accessLog:
+        - gateway.kgateway.dev/HTTPListenerPolicy/gwtest/accesslog
   name: listener~8081
   virtualHosts:
   - domains:

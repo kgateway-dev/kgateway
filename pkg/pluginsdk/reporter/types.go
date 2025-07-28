@@ -3,20 +3,50 @@ package reporter
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
-	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwxv1alpha1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 )
 
 const (
 	PolicyAcceptedMsg = "Policy accepted"
 
-	PolicyAcceptedAndAttachedMsg = "Policy accepted and attached"
+	PolicyInvalidMsg = "Policy is invalid"
+
+	PolicyConflictWithHigherPriorityMsg = "Policy conflicts with higher priority policy"
+
+	PolicyAttachedMsg = "Attached to all targets"
+
+	PolicyMergedMsg = "Merged with other policies in target(s) and attached"
+
+	PolicyOverriddenMsg = "Overridden due to conflict with higher priority policy in target(s)"
 )
 
+// PolicyAttachmentState represents the state of a policy attachment
+type PolicyAttachmentState int
+
+const (
+	// PolicyAttachmentStatePending indicates that the policy is pending attachment
+	PolicyAttachmentStatePending PolicyAttachmentState = iota
+
+	// PolicyAttachmentStateSucceeded indicates that the full policy was successfully attached
+	PolicyAttachmentStateAttached PolicyAttachmentState = 1 << iota
+
+	// PolicyAttachmentStateMerged indicates that the policy was merged with other policies and attached
+	PolicyAttachmentStateMerged
+
+	// PolicyAttachmentStateOverridden indicates that the policy conflicts with higher priority policies
+	// and was fully overridden
+	PolicyAttachmentStateOverridden
+)
+
+// Has checks if the existing state has the given state
+func (a PolicyAttachmentState) Has(b PolicyAttachmentState) bool {
+	return a&b != 0
+}
+
 type PolicyCondition struct {
-	Type               gwv1alpha2.PolicyConditionType
+	Type               string
 	Status             metav1.ConditionStatus
-	Reason             gwv1alpha2.PolicyConditionReason
+	Reason             string
 	Message            string
 	ObservedGeneration int64
 }
@@ -26,6 +56,10 @@ type PolicyKey struct {
 	Kind      string
 	Namespace string
 	Name      string
+}
+
+func (p PolicyKey) DisplayString() string {
+	return p.Kind + "/" + p.Namespace + "/" + p.Name
 }
 
 type GatewayCondition struct {
@@ -51,6 +85,9 @@ type RouteCondition struct {
 
 type AncestorRefReporter interface {
 	SetCondition(condition PolicyCondition)
+	SetAttachmentState(
+		state PolicyAttachmentState,
+	)
 }
 
 type PolicyReporter interface {

@@ -9,7 +9,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"istio.io/istio/pkg/kube"
@@ -290,7 +289,7 @@ func newCommonCols(ctx context.Context, kubeClient kube.Client) *collections.Com
 	if err != nil {
 		Expect(err).ToNot(HaveOccurred())
 	}
-	commoncol, err := collections.NewCommonCollections(ctx, krtopts, kubeClient, cli, nil, gatewayControllerName, logr.Discard(), *settings)
+	commoncol, err := collections.NewCommonCollections(ctx, krtopts, kubeClient, cli, nil, gatewayControllerName, *settings)
 	if err != nil {
 		Expect(err).ToNot(HaveOccurred())
 	}

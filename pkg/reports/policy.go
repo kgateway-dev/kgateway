@@ -13,11 +13,13 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
-	pluginsdkreporter "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
 
 type AncestorRefReport struct {
-	Conditions []metav1.Condition
+	Conditions      []metav1.Condition
+	AttachmentState reporter.PolicyAttachmentState
 }
 
 type PolicyReport struct {
@@ -25,21 +27,27 @@ type PolicyReport struct {
 	observedGeneration int64
 }
 
-func (r *PolicyReport) AncestorRef(ref gwv1.ParentReference) pluginsdkreporter.AncestorRefReporter {
+func (r *PolicyReport) AncestorRef(ref gwv1.ParentReference) reporter.AncestorRefReporter {
 	return r.ancestorRef(ref)
 }
 
-func (prr *AncestorRefReport) SetCondition(c pluginsdkreporter.PolicyCondition) {
+func (prr *AncestorRefReport) SetCondition(c reporter.PolicyCondition) {
 	condition := metav1.Condition{
-		Type:    string(c.Type),
+		Type:    c.Type,
 		Status:  c.Status,
-		Reason:  string(c.Reason),
+		Reason:  c.Reason,
 		Message: c.Message,
 	}
 	meta.SetStatusCondition(&prr.Conditions, condition)
 }
 
-func (r *reporter) Policy(key PolicyKey, observedGeneration int64) pluginsdkreporter.PolicyReporter {
+func (prr *AncestorRefReport) SetAttachmentState(
+	state reporter.PolicyAttachmentState,
+) {
+	prr.AttachmentState |= state
+}
+
+func (r *statusReporter) Policy(key PolicyKey, observedGeneration int64) reporter.PolicyReporter {
 	pr := r.report.policy(key)
 	if pr == nil {
 		pr = r.report.newPolicyReport(key, observedGeneration)
@@ -126,8 +134,11 @@ func (r *ReportMap) BuildPolicyStatus(
 			currentParentRefConditions = currentStatus.Ancestors[currentParentRefIdx].Conditions
 		}
 
-		finalConditions := make([]metav1.Condition, 0, len(parentStatusReport.Conditions))
-		for _, pCondition := range parentStatusReport.Conditions {
+		// Build and append the Attached Condition.Type
+		existingConditions := addAttachmentCondition(parentStatusReport)
+
+		finalConditions := make([]metav1.Condition, 0, len(existingConditions))
+		for _, pCondition := range existingConditions {
 			pCondition.ObservedGeneration = report.observedGeneration
 
 			// Copy old condition to preserve LastTransitionTime, if it exists
@@ -202,15 +213,60 @@ func (r *PolicyReport) getAncestorRefOrNil(parentRef *gwv1.ParentReference) *Anc
 	return r.Ancestors[key]
 }
 
-// Reports will initially only contain negative conditions found during translation,
-// so all missing conditions are assumed to be positive. Here we will add all missing conditions
-// to a given report, i.e. set healthy conditions
+// addMissingAncestorRefConditions initializes the AncestorRefReport with a default Pending
+// condition reason for the Accepted and Attached conditions.
+// Positive conditions will be added when the policy is processed and attached to targeted resources.
 func addMissingAncestorRefConditions(report *AncestorRefReport) {
-	if cond := meta.FindStatusCondition(report.Conditions, string(gwv1alpha2.PolicyConditionAccepted)); cond == nil {
+	if cond := meta.FindStatusCondition(report.Conditions, string(v1alpha1.PolicyConditionAccepted)); cond == nil {
 		meta.SetStatusCondition(&report.Conditions, metav1.Condition{
-			Type:   string(gwv1alpha2.PolicyConditionAccepted),
-			Status: metav1.ConditionTrue,
-			Reason: string(gwv1alpha2.PolicyReasonAccepted),
+			Type:   string(v1alpha1.PolicyConditionAccepted),
+			Status: metav1.ConditionFalse,
+			Reason: string(v1alpha1.PolicyReasonPending),
 		})
 	}
+	if cond := meta.FindStatusCondition(report.Conditions, string(v1alpha1.PolicyConditionAttached)); cond == nil {
+		meta.SetStatusCondition(&report.Conditions, metav1.Condition{
+			Type:   string(v1alpha1.PolicyConditionAttached),
+			Status: metav1.ConditionFalse,
+			Reason: string(v1alpha1.PolicyReasonPending),
+		})
+	}
+}
+
+func addAttachmentCondition(report *AncestorRefReport) []metav1.Condition {
+	if report.AttachmentState == reporter.PolicyAttachmentStatePending {
+		// no attachment state set, return the conditions as is
+		return report.Conditions
+	}
+
+	// avoid modifying the existing Conditions on the report
+	existing := slices.Clone(report.Conditions)
+
+	switch {
+	case report.AttachmentState.Has(reporter.PolicyAttachmentStateOverridden):
+		meta.SetStatusCondition(&existing, metav1.Condition{
+			Type:    string(v1alpha1.PolicyConditionAttached),
+			Status:  metav1.ConditionFalse,
+			Reason:  string(v1alpha1.PolicyReasonOverridden),
+			Message: reporter.PolicyOverriddenMsg,
+		})
+
+	case report.AttachmentState.Has(reporter.PolicyAttachmentStateMerged):
+		meta.SetStatusCondition(&existing, metav1.Condition{
+			Type:    string(v1alpha1.PolicyConditionAttached),
+			Status:  metav1.ConditionTrue,
+			Reason:  string(v1alpha1.PolicyReasonMerged),
+			Message: reporter.PolicyMergedMsg,
+		})
+
+	case report.AttachmentState.Has(reporter.PolicyAttachmentStateAttached):
+		meta.SetStatusCondition(&existing, metav1.Condition{
+			Type:    string(v1alpha1.PolicyConditionAttached),
+			Status:  metav1.ConditionTrue,
+			Reason:  string(v1alpha1.PolicyReasonAttached),
+			Message: reporter.PolicyAttachedMsg,
+		})
+	}
+
+	return existing
 }

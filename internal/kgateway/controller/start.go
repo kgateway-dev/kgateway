@@ -12,13 +12,10 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 	istiolog "istio.io/istio/pkg/log"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
-	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/config"
-	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
 	infextv1a2 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer"
@@ -31,7 +28,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/proxy_syncer"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/metrics"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
-	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
@@ -64,6 +60,7 @@ type SetupOpts struct {
 var setupLog = ctrl.Log.WithName("setup")
 
 type StartConfig struct {
+	Manager                  manager.Manager
 	ControllerName           string
 	GatewayClassName         string
 	WaypointGatewayClassName string
@@ -76,12 +73,11 @@ type StartConfig struct {
 	// This is responsible for producing the extension points that this controller requires
 	ExtraPlugins           func(ctx context.Context, commoncol *common.CommonCollections) []sdk.Plugin
 	ExtraGatewayParameters func(cli client.Client, inputs *deployer.Inputs) []deployer.ExtraGatewayParameters
-	// kgateway default scheme will be extended with these schemes
-	AddToScheme func(s *runtime.Scheme) error
-	Client      istiokube.Client
+	Client                 istiokube.Client
 
-	AugmentedPods krt.Collection[krtcollections.LocalityPod]
-	UniqueClients krt.Collection[ir.UniqlyConnectedClient]
+	CommonCollections *common.CommonCollections
+	AugmentedPods     krt.Collection[krtcollections.LocalityPod]
+	UniqueClients     krt.Collection[ir.UniqlyConnectedClient]
 
 	KrtOptions krtutil.KrtOptions
 }
@@ -109,47 +105,10 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 	}
 	istiolog.Configure(loggingOptions)
 
-	scheme := DefaultScheme()
-
-	// Extend the scheme if the TCPRoute CRD exists.
-	if err := kgtwschemes.AddGatewayV1A2Scheme(cfg.RestConfig, scheme); err != nil {
-		return nil, err
-	}
-
-	if cfg.AddToScheme != nil {
-		setupLog.Info("extending scheme")
-		if err := cfg.AddToScheme(scheme); err != nil {
-			return nil, err
-		}
-	}
-
-	mgrOpts := ctrl.Options{
-		BaseContext:      func() context.Context { return ctx },
-		Scheme:           scheme,
-		PprofBindAddress: cfg.SetupOpts.PprofBindAddress,
-		// if you change the port here, also change the port "health" in the helmchart.
-		HealthProbeBindAddress: cfg.SetupOpts.HealthProbeBindAddress,
-		Metrics: metricsserver.Options{
-			BindAddress: cfg.SetupOpts.MetricsBindAddress,
-		},
-		Controller: config.Controller{
-			// see https://github.com/kubernetes-sigs/controller-runtime/issues/2937
-			// in short, our tests reuse the same name (reasonably so) and the controller-runtime
-			// package does not reset the stack of controller names between tests, so we disable
-			// the name validation here.
-			SkipNameValidation: ptr.To(true),
-		},
-	}
-	mgr, err := ctrl.NewManager(cfg.RestConfig, mgrOpts)
-	if err != nil {
-		setupLog.Error(err, "unable to start manager")
-		return nil, err
-	}
-
 	setupLog.Info("initializing kgateway extensions")
 	// Extend the scheme and add the EPP plugin if the inference extension is enabled and the InferencePool CRD exists.
 	if cfg.SetupOpts.GlobalSettings.EnableInferExt {
-		exists, err := kgtwschemes.AddInferExtV1A2Scheme(cfg.RestConfig, scheme)
+		exists, err := kgtwschemes.AddInferExtV1A2Scheme(cfg.RestConfig, cfg.Manager.GetScheme())
 		switch {
 		case err != nil:
 			return nil, err
@@ -175,27 +134,9 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 		}
 	}
 
-	cli, err := versioned.NewForConfig(cfg.RestConfig)
-	if err != nil {
-		return nil, err
-	}
-
 	globalSettings := *cfg.SetupOpts.GlobalSettings
-	commoncol, err := common.NewCommonCollections(
-		ctx,
-		cfg.KrtOptions,
-		cfg.Client,
-		cli,
-		mgr.GetClient(),
-		cfg.ControllerName,
-		setupLog,
-		globalSettings,
-	)
-	if err != nil {
-		return nil, err
-	}
-	mergedPlugins := pluginFactoryWithBuiltin(cfg)(ctx, commoncol)
-	commoncol.InitPlugins(ctx, mergedPlugins, globalSettings)
+	mergedPlugins := pluginFactoryWithBuiltin(cfg)(ctx, cfg.CommonCollections)
+	cfg.CommonCollections.InitPlugins(ctx, mergedPlugins, globalSettings)
 
 	// Begin background processing of resource sync metrics.
 	// This only effects metrics in the resources subsystem and is not required for other metrics.
@@ -206,11 +147,11 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 	proxySyncer := proxy_syncer.NewProxySyncer(
 		ctx,
 		cfg.ControllerName,
-		mgr,
+		cfg.Manager,
 		cfg.Client,
 		cfg.UniqueClients,
 		mergedPlugins,
-		commoncol,
+		cfg.CommonCollections,
 		cfg.SetupOpts.Cache,
 		cfg.AgentGatewayClassName,
 	)
@@ -221,20 +162,20 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 			ctx,
 			cfg.ControllerName,
 			cfg.AgentGatewayClassName,
-			mgr,
+			cfg.Manager,
 			cfg.Client,
-			commoncol,
+			cfg.CommonCollections,
 			cfg.SetupOpts.Cache,
 		)
 		agentGatewaySyncer.Init(cfg.KrtOptions)
 
-		if err := mgr.Add(agentGatewaySyncer); err != nil {
+		if err := cfg.Manager.Add(agentGatewaySyncer); err != nil {
 			setupLog.Error(err, "unable to add agentGatewaySyncer runnable")
 			return nil, err
 		}
 	}
 
-	if err := mgr.Add(proxySyncer); err != nil {
+	if err := cfg.Manager.Add(proxySyncer); err != nil {
 		setupLog.Error(err, "unable to add proxySyncer runnable")
 		return nil, err
 	}
@@ -243,13 +184,13 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 	cb := &ControllerBuilder{
 		proxySyncer: proxySyncer,
 		cfg:         cfg,
-		mgr:         mgr,
-		commoncol:   commoncol,
+		mgr:         cfg.Manager,
+		commoncol:   cfg.CommonCollections,
 	}
 
 	// wait for the ControllerBuilder to Start
 	// as well as its subcomponents (mainly ProxySyncer) before marking ready
-	if err := mgr.AddReadyzCheck("ready-ping", func(_ *http.Request) error {
+	if err := cfg.Manager.AddReadyzCheck("ready-ping", func(_ *http.Request) error {
 		if !cb.HasSynced() {
 			return errors.New("not synced")
 		}
@@ -272,8 +213,8 @@ func pluginFactoryWithBuiltin(cfg StartConfig) extensions2.K8sGatewayExtensionsF
 	}
 }
 
-func (c *ControllerBuilder) Start(ctx context.Context) error {
-	slog.Info("starting gateway controller")
+func (c *ControllerBuilder) Build(ctx context.Context) error {
+	slog.Info("creating gateway controllers")
 
 	globalSettings := c.cfg.SetupOpts.GlobalSettings
 
@@ -342,12 +283,11 @@ func (c *ControllerBuilder) Start(ctx context.Context) error {
 		}
 	}
 
+	// TODO (dmitri-d) don't think c.ready field is used anywhere and can be removed
 	// mgr WaitForCacheSync is part of proxySyncer's HasSynced
 	// so we can mark ready here before we call mgr.Start
 	c.ready.Store(true)
-
-	setupLog.Info("starting manager")
-	return c.mgr.Start(ctx)
+	return nil
 }
 
 func (c *ControllerBuilder) HasSynced() bool {

@@ -14,7 +14,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	reports "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
@@ -94,9 +93,9 @@ func (s *testingSuite) SetupSuite() {
 	})
 
 	s.assertStatus(metav1.Condition{
-		Type:               string(gwv1alpha2.PolicyConditionAccepted),
+		Type:               string(v1alpha1.PolicyConditionAccepted),
 		Status:             metav1.ConditionTrue,
-		Reason:             string(gwv1alpha2.PolicyReasonAccepted),
+		Reason:             string(v1alpha1.PolicyReasonValid),
 		Message:            reports.PolicyAcceptedMsg,
 		ObservedGeneration: routeForHeaders.Generation,
 	})

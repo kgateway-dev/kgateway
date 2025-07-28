@@ -81,6 +81,11 @@ routes:
     routes:
     - match:
         pathSeparatedPrefix: /headers-override
+      metadata:
+        filterMetadata:
+          merge.TrafficPolicy.gateway.kgateway.dev:
+            autoHostRewrite:
+            - gateway.kgateway.dev/TrafficPolicy/gwtest/route-auto-hostrewrite-policy
       name: listener~8080~www_example_com-route-0-httproute-my-route-gwtest-0-0-matcher-0
       route:
         cluster: backend_gwtest_httpbin-static_0
@@ -97,6 +102,11 @@ routes:
           disabled: true
     - match:
         prefix: /
+      metadata:
+        filterMetadata:
+          merge.TrafficPolicy.gateway.kgateway.dev:
+            autoHostRewrite:
+            - gateway.kgateway.dev/TrafficPolicy/gwtest/route-auto-hostrewrite-policy
       name: listener~8080~www_example_com-route-1-httproute-my-route-gwtest-1-0-matcher-0
       route:
         autoHostRewrite: true

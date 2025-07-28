@@ -32,9 +32,19 @@ Listeners:
         statPrefix: http
         useRemoteAddress: true
     name: listener~8080
+  metadata:
+    filterMetadata:
+      merge.TrafficPolicy.gateway.kgateway.dev:
+        buffer:
+        - gateway.kgateway.dev/TrafficPolicy/default/buffer-policy
   name: listener~8080
 Routes:
 - ignorePortInHostMatching: true
+  metadata:
+    filterMetadata:
+      merge.TrafficPolicy.gateway.kgateway.dev:
+        buffer:
+        - gateway.kgateway.dev/TrafficPolicy/default/buffer-policy
   name: listener~8080
   typedPerFilterConfig:
     envoy.filters.http.buffer:

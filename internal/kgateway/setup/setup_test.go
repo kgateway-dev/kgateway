@@ -51,6 +51,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/proxy_syncer"
 	"github.com/kgateway-dev/kgateway/v2/pkg/settings"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
 	"github.com/kgateway-dev/kgateway/v2/test/envtestutil"
 )
 
@@ -94,12 +95,18 @@ var (
 // NewTestLogger creates a zap.Logger which can be used to write to *testing.T
 // on each test, set the *testing.T on the writer.
 func NewTestLogger() *zap.Logger {
-	core := zapcore.NewCore(
+	var core zapcore.Core
+	// Only log controller-runtime and gRPC logs if LOG_LEVEL=debug, otherwise they are extremely noisy
+	level, err := zapcore.ParseLevel(envutils.GetOrDefault("LOG_LEVEL", "error", false))
+	if err != nil {
+		panic(fmt.Sprintf("failed to parse LOG_LEVEL: %v", err))
+	}
+	core = zapcore.NewCore(
 		zapcore.NewConsoleEncoder(zap.NewDevelopmentEncoderConfig()),
 		zapcore.AddSync(writer),
 		// Adjust log level as needed
 		// if a test assertion fails and logs or too noisy, change to zapcore.FatalLevel
-		zapcore.DebugLevel,
+		level,
 	)
 
 	return zap.New(core, zap.AddCaller())
@@ -107,7 +114,10 @@ func NewTestLogger() *zap.Logger {
 
 func init() {
 	log.SetLogger(zapr.NewLogger(logger))
-	grpclog.SetLoggerV2(grpclog.NewLoggerV2WithVerbosity(writer, writer, writer, 100))
+	// Use GRPC_GO_LOG_SEVERITY_LEVEL and GRPC_GO_LOG_VERBOSITY_LEVEL env vars to control gRPC logging
+	if logger.Level() == zapcore.DebugLevel {
+		grpclog.SetLoggerV2(grpclog.NewLoggerV2WithVerbosity(writer, writer, writer, 100))
+	}
 }
 
 func TestServiceEntry(t *testing.T) {
@@ -340,8 +350,8 @@ func setupEnvTestAndRun(t *testing.T, globalSettings *settings.Settings, run fun
 	envtestutil.RunController(t, logger, globalSettings, testEnv,
 		nil,
 		[][]string{
-			[]string{"default", "testdata/setup_yaml/setup.yaml"},
-			[]string{"gwtest", "testdata/setup_yaml/pods.yaml"},
+			{"default", "testdata/setup_yaml/setup.yaml"},
+			{"gwtest", "testdata/setup_yaml/pods.yaml"},
 		},
 		run)
 }

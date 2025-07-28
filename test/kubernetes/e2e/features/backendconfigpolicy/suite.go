@@ -148,3 +148,46 @@ func (s *testingSuite) TestBackendConfigPolicy() {
 		s.Assert().Equal(uint32(101), http1ProtocolOptions.CommonHttpProtocolOptions.MaxRequestsPerConnection.Value)
 	})
 }
+
+func (s *testingSuite) TestBackendConfigPolicyTLSInsecureSkipVerify() {
+	manifests := []string{
+		testdefaults.CurlPodManifest,
+		tlsInsecureManifest,
+	}
+	manifestObjects := []client.Object{
+		testdefaults.CurlPod,                               // curl
+		proxyService, proxyServiceAccount, proxyDeployment, // proxy
+	}
+
+	s.T().Cleanup(func() {
+		for _, manifest := range manifests {
+			err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, manifest)
+			s.Require().NoError(err)
+		}
+		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, manifestObjects...)
+	})
+
+	for _, manifest := range manifests {
+		err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, manifest)
+		s.Require().NoError(err)
+	}
+	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, manifestObjects...)
+
+	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, testdefaults.CurlPod.GetNamespace(), metav1.ListOptions{
+		LabelSelector: testdefaults.CurlPodLabelSelector,
+	})
+
+	s.testInstallation.Assertions.AssertEventualCurlResponse(
+		s.ctx,
+		testdefaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
+			curl.WithPath("/"),
+			curl.WithPort(8080),
+			curl.WithHeadersOnly(),
+		},
+		&testmatchers.HttpResponse{
+			StatusCode: http.StatusOK,
+		},
+	)
+}

@@ -12,7 +12,7 @@ import (
 
 // +genclient
 // +kubebuilder:object:root=true
-// +kubebuilder:metadata:labels={app=kgateway,app.kubernetes.io/name=kgateway}
+// +kubebuilder:metadata:labels={app=kgateway,app.kubernetes.io/name=kgateway,gateway.networking.k8s.io/policy=Direct}
 // +kubebuilder:resource:categories=kgateway
 // +kubebuilder:subresource:status
 type BackendConfigPolicy struct {
@@ -193,7 +193,7 @@ type TCPKeepalive struct {
 	KeepAliveInterval *metav1.Duration `json:"keepAliveInterval,omitempty"`
 }
 
-// +kubebuilder:validation:ExactlyOneOf=secretRef;tlsFiles
+// +kubebuilder:validation:ExactlyOneOf=secretRef;tlsFiles;insecureSkipVerify
 type TLS struct {
 	// Reference to the TLS secret containing the certificate, key, and optionally the root CA.
 	// +optional
@@ -202,6 +202,11 @@ type TLS struct {
 	// File paths to certificates local to the proxy.
 	// +optional
 	TLSFiles *TLSFiles `json:"tlsFiles,omitempty"`
+
+	// InsecureSkipVerify originates TLS but skips verification of the backend's certificate.
+	// WARNING: This is an insecure option that should only be used if the risks are understood.
+	// +optional
+	InsecureSkipVerify *bool `json:"insecureSkipVerify,omitempty"`
 
 	// The SNI domains that should be considered for TLS connection
 	// +optional

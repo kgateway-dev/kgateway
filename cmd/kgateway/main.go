@@ -22,7 +22,10 @@ func main() {
 				return nil
 			}
 			probes.StartLivenessProbeServer(cmd.Context())
-			s := setup.New()
+			s, err := setup.New()
+			if err != nil {
+				return fmt.Errorf("error setting up kgateway: %w", err)
+			}
 			if err := s.Start(cmd.Context()); err != nil {
 				return fmt.Errorf("err in main: %w", err)
 			}

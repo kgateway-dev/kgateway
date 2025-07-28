@@ -7,6 +7,7 @@ metadata:
   labels:
     app: kgateway
     app.kubernetes.io/name: kgateway
+    gateway.networking.k8s.io/policy: Direct
   name: backendconfigpolicies.gateway.kgateway.dev
 spec:
   group: gateway.kgateway.dev
@@ -323,6 +324,8 @@ spec:
                     items:
                       type: string
                     type: array
+                  insecureSkipVerify:
+                    type: boolean
                   oneWayTLS:
                     type: boolean
                   parameters:
@@ -384,9 +387,9 @@ spec:
                     type: array
                 type: object
                 x-kubernetes-validations:
-                - message: exactly one of the fields in [secretRef tlsFiles] must
-                    be set
-                  rule: '[has(self.secretRef),has(self.tlsFiles)].filter(x,x==true).size()
+                - message: exactly one of the fields in [secretRef tlsFiles insecureSkipVerify]
+                    must be set
+                  rule: '[has(self.secretRef),has(self.tlsFiles),has(self.insecureSkipVerify)].filter(x,x==true).size()
                     == 1'
             type: object
             x-kubernetes-validations:

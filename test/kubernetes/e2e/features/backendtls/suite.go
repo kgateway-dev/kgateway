@@ -24,6 +24,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/helpers"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/defaults"
 
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
@@ -154,10 +155,17 @@ func (s *clientTlsTestingSuite) TestBackendTLSPolicyAndStatus() {
 	)
 
 	s.assertPolicyStatus(metav1.Condition{
-		Type:               string(gwv1a2.PolicyConditionAccepted),
+		Type:               string(v1alpha1.PolicyConditionAccepted),
 		Status:             metav1.ConditionTrue,
-		Reason:             string(gwv1a2.PolicyReasonAccepted),
-		Message:            reports.PolicyAcceptedAndAttachedMsg,
+		Reason:             string(v1alpha1.PolicyReasonValid),
+		Message:            reports.PolicyAcceptedMsg,
+		ObservedGeneration: backendTlsPolicy.Generation,
+	})
+	s.assertPolicyStatus(metav1.Condition{
+		Type:               string(v1alpha1.PolicyConditionAttached),
+		Status:             metav1.ConditionTrue,
+		Reason:             string(v1alpha1.PolicyReasonAttached),
+		Message:            reports.PolicyAttachedMsg,
 		ObservedGeneration: backendTlsPolicy.Generation,
 	})
 
@@ -204,7 +212,7 @@ func (s *clientTlsTestingSuite) assertPolicyStatus(inCondition metav1.Condition)
 			expectedRef := expectedAncestorRefs[i]
 			g.Expect(ancestor.AncestorRef).To(gomega.BeEquivalentTo(expectedRef))
 
-			g.Expect(ancestor.Conditions).To(gomega.HaveLen(1), "ancestors conditions wasn't length of 1")
+			g.Expect(ancestor.Conditions).To(gomega.HaveLen(2), "ancestors conditions wasn't length of 2")
 			cond := meta.FindStatusCondition(ancestor.Conditions, inCondition.Type)
 			g.Expect(cond).NotTo(gomega.BeNil(), "policy should have accepted condition")
 			g.Expect(cond.Status).To(gomega.Equal(inCondition.Status), "policy accepted condition should be true")

@@ -434,6 +434,9 @@ spec:
 					r.Contains(out.String(), wantErr)
 				}
 			} else {
+				if err != nil {
+					t.Errorf("kubectl apply failed with output: %s", out.String())
+				}
 				r.NoError(err)
 			}
 		})

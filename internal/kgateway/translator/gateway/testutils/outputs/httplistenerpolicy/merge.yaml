@@ -88,7 +88,45 @@ Listeners:
         useRemoteAddress: false
         xffNumTrustedHops: 2
     name: listener~8080
+  metadata:
+    filterMetadata:
+      merge.HTTPListenerPolicy.gateway.kgateway.dev:
+        accessLog:
+        - gateway.kgateway.dev/HTTPListenerPolicy/default/access-log
+        healthCheckPolicy:
+        - gateway.kgateway.dev/HTTPListenerPolicy/default/misc
+        mergeStreamIdleTimeout:
+        - gateway.kgateway.dev/HTTPListenerPolicy/default/misc
+        serverHeaderTransformation:
+        - gateway.kgateway.dev/HTTPListenerPolicy/default/misc
+        tracing:
+        - gateway.kgateway.dev/HTTPListenerPolicy/default/tracing
+        upgradeConfig:
+        - gateway.kgateway.dev/HTTPListenerPolicy/default/misc
+        useRemoteAddress:
+        - gateway.kgateway.dev/HTTPListenerPolicy/default/misc
+        xffNumTrustedHops:
+        - gateway.kgateway.dev/HTTPListenerPolicy/default/misc
   name: listener~8080
 Routes:
 - ignorePortInHostMatching: true
+  metadata:
+    filterMetadata:
+      merge.HTTPListenerPolicy.gateway.kgateway.dev:
+        accessLog:
+        - gateway.kgateway.dev/HTTPListenerPolicy/default/access-log
+        healthCheckPolicy:
+        - gateway.kgateway.dev/HTTPListenerPolicy/default/misc
+        mergeStreamIdleTimeout:
+        - gateway.kgateway.dev/HTTPListenerPolicy/default/misc
+        serverHeaderTransformation:
+        - gateway.kgateway.dev/HTTPListenerPolicy/default/misc
+        tracing:
+        - gateway.kgateway.dev/HTTPListenerPolicy/default/tracing
+        upgradeConfig:
+        - gateway.kgateway.dev/HTTPListenerPolicy/default/misc
+        useRemoteAddress:
+        - gateway.kgateway.dev/HTTPListenerPolicy/default/misc
+        xffNumTrustedHops:
+        - gateway.kgateway.dev/HTTPListenerPolicy/default/misc
   name: listener~8080

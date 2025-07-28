@@ -93,9 +93,19 @@ listeners:
         statPrefix: http
         useRemoteAddress: true
     name: listener~8080
+  metadata:
+    filterMetadata:
+      merge.TrafficPolicy.gateway.kgateway.dev:
+        extAuth:
+        - gateway.kgateway.dev/TrafficPolicy/gwtest/extauth-for-gateway
   name: listener~8080
 routes:
 - ignorePortInHostMatching: true
+  metadata:
+    filterMetadata:
+      merge.TrafficPolicy.gateway.kgateway.dev:
+        extAuth:
+        - gateway.kgateway.dev/TrafficPolicy/gwtest/extauth-for-gateway
   name: listener~8080
   typedPerFilterConfig:
     ext_auth/gwtest/basic-extauth:

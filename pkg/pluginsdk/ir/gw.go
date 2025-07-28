@@ -85,7 +85,12 @@ func (c PolicyAtt) FormatErrors() string {
 	for i, err := range c.Errors {
 		errs[i] = err.Error()
 	}
-	return strings.Join(errs, "; ")
+
+	errsStr := strings.Join(errs, "; ")
+	if c.MergeOrigins.IsSet() {
+		return "Merged policy: " + errsStr
+	}
+	return errsStr
 }
 
 type PolicyAttachmentOpts func(*PolicyAtt)
@@ -254,29 +259,4 @@ type HttpRouteRuleIR struct {
 	Backends         []HttpBackendOrDelegate
 	Matches          []gwv1.HTTPRouteMatch
 	Name             string
-}
-
-type MergeOrigins map[string][]*AttachedPolicyRef
-
-func (m MergeOrigins) Append(
-	field string,
-	policyRef *AttachedPolicyRef,
-) {
-	if _, ok := m[field]; !ok {
-		m[field] = []*AttachedPolicyRef{}
-	}
-	m[field] = append(m[field], policyRef)
-}
-
-func (m MergeOrigins) Get(
-	field string,
-) []*AttachedPolicyRef {
-	return m[field]
-}
-
-func (m MergeOrigins) SetOne(
-	field string,
-	policyRef *AttachedPolicyRef,
-) {
-	m[field] = []*AttachedPolicyRef{policyRef}
 }

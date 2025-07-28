@@ -7,19 +7,19 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
-	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
-	pluginsdkreporter "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
 
-func TestPolicyStatus(t *testing.T) {
+func TestBackendPolicyStatus(t *testing.T) {
 	connPolGK := schema.GroupKind{
 		Group: "test",
 		Kind:  "ConnectionPolicy",
@@ -98,7 +98,7 @@ func TestPolicyStatus(t *testing.T) {
 	backends := []*ir.BackendObjectIR{&backend1, &backend2}
 
 	a := assert.New(t)
-	rm := generatePolicyReport(backends)
+	rm := generateBackendPolicyReport(backends)
 
 	// assert 3 unique policies: conn-policy-1, conn-policy-2, tls-policy
 	a.Len(rm.Policies, 3)
@@ -121,10 +121,16 @@ func TestPolicyStatus(t *testing.T) {
 		ancestor1ConnPolicy1Report.Conditions,
 		[]metav1.Condition{
 			{
-				Type:    string(gwv1alpha2.PolicyConditionAccepted),
+				Type:    string(v1alpha1.PolicyConditionAccepted),
 				Status:  metav1.ConditionTrue,
-				Reason:  string(gwv1alpha2.PolicyReasonAccepted),
-				Message: pluginsdkreporter.PolicyAcceptedAndAttachedMsg,
+				Reason:  string(v1alpha1.PolicyReasonValid),
+				Message: reporter.PolicyAcceptedMsg,
+			},
+			{
+				Type:    string(v1alpha1.PolicyConditionAttached),
+				Status:  metav1.ConditionTrue,
+				Reason:  string(v1alpha1.PolicyReasonAttached),
+				Message: reporter.PolicyAttachedMsg,
 			},
 		},
 		cmpopts.IgnoreFields(metav1.Condition{}, "LastTransitionTime"),
@@ -132,7 +138,7 @@ func TestPolicyStatus(t *testing.T) {
 	a.Empty(diff)
 
 	// assert conn-policy-2 report
-	connpolicy2report := rm.Policies[pluginsdkreporter.PolicyKey{
+	connpolicy2report := rm.Policies[reporter.PolicyKey{
 		Group:     connPolicy2Att.PolicyRef.Group,
 		Kind:      connPolicy2Att.PolicyRef.Kind,
 		Namespace: connPolicy2Att.PolicyRef.Namespace,
@@ -149,9 +155,9 @@ func TestPolicyStatus(t *testing.T) {
 		ancestor1ConnPolicy2Report.Conditions,
 		[]metav1.Condition{
 			{
-				Type:    string(gwv1alpha2.PolicyConditionAccepted),
+				Type:    string(v1alpha1.PolicyConditionAccepted),
 				Status:  metav1.ConditionFalse,
-				Reason:  string(gwv1alpha2.PolicyReasonInvalid),
+				Reason:  string(v1alpha1.PolicyReasonInvalid),
 				Message: "conn-policy-2 error",
 			},
 		},
@@ -177,9 +183,9 @@ func TestPolicyStatus(t *testing.T) {
 		ancestor1TLSPolicyreport.Conditions,
 		[]metav1.Condition{
 			{
-				Type:    string(gwv1alpha2.PolicyConditionAccepted),
+				Type:    string(v1alpha1.PolicyConditionAccepted),
 				Status:  metav1.ConditionFalse,
-				Reason:  string(gwv1alpha2.PolicyReasonInvalid),
+				Reason:  string(v1alpha1.PolicyReasonInvalid),
 				Message: "tls-policy error",
 			},
 		},
@@ -196,9 +202,9 @@ func TestPolicyStatus(t *testing.T) {
 		ancestor2TLSPolicyreport.Conditions,
 		[]metav1.Condition{
 			{
-				Type:    string(gwv1alpha2.PolicyConditionAccepted),
+				Type:    string(v1alpha1.PolicyConditionAccepted),
 				Status:  metav1.ConditionFalse,
-				Reason:  string(gwv1alpha2.PolicyReasonInvalid),
+				Reason:  string(v1alpha1.PolicyReasonInvalid),
 				Message: "tls-policy error",
 			},
 		},

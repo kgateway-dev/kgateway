@@ -4,8 +4,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
-	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	reportssdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
@@ -18,7 +18,7 @@ type ObjWithAttachedPolicies interface {
 
 var _ ObjWithAttachedPolicies = ir.BackendObjectIR{}
 
-func generatePolicyReport(in []*ir.BackendObjectIR) reports.ReportMap {
+func generateBackendPolicyReport(in []*ir.BackendObjectIR) reports.ReportMap {
 	merged := reports.NewReportMap()
 	reporter := reports.NewReporter(&merged)
 
@@ -46,24 +46,29 @@ func generatePolicyReport(in []*ir.BackendObjectIR) reports.ReportMap {
 					Namespace: ptr.To(gwv1.Namespace(obj.GetObjectSource().Namespace)),
 					Name:      gwv1.ObjectName(obj.GetObjectSource().Name),
 				}
-				// Update the initial status
 				r := reporter.Policy(key, polAtt.Generation).AncestorRef(ancestorRef)
-
 				if len(polAtt.Errors) > 0 {
 					r.SetCondition(reportssdk.PolicyCondition{
-						Type:    gwv1alpha2.PolicyConditionAccepted,
+						Type:    string(v1alpha1.PolicyConditionAccepted),
 						Status:  metav1.ConditionFalse,
-						Reason:  gwv1alpha2.PolicyReasonInvalid,
+						Reason:  string(v1alpha1.PolicyReasonInvalid),
 						Message: polAtt.FormatErrors(),
 					})
-				} else {
-					r.SetCondition(reportssdk.PolicyCondition{
-						Type:    gwv1alpha2.PolicyConditionAccepted,
-						Status:  metav1.ConditionTrue,
-						Reason:  gwv1alpha2.PolicyReasonAccepted,
-						Message: reportssdk.PolicyAcceptedAndAttachedMsg,
-					})
+					continue
 				}
+
+				r.SetCondition(reportssdk.PolicyCondition{
+					Type:    string(v1alpha1.PolicyConditionAccepted),
+					Status:  metav1.ConditionTrue,
+					Reason:  string(v1alpha1.PolicyReasonValid),
+					Message: reportssdk.PolicyAcceptedMsg,
+				})
+				r.SetCondition(reportssdk.PolicyCondition{
+					Type:    string(v1alpha1.PolicyConditionAttached),
+					Status:  metav1.ConditionTrue,
+					Reason:  string(v1alpha1.PolicyReasonAttached),
+					Message: reportssdk.PolicyAttachedMsg,
+				})
 			}
 		}
 	}

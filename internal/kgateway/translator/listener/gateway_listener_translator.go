@@ -32,7 +32,7 @@ type ListenerTranslatorConfig struct {
 	ListenerBindIpv6 bool
 }
 
-// TranslateListeners translates the set of gloo listeners required to produce a full output proxy (either form one Gateway or multiple merged Gateways)
+// TranslateListeners translates the set of ListenerIRs required to produce a full output proxy (either from one Gateway or multiple merged Gateways)
 func TranslateListeners(
 	kctx krt.HandlerContext,
 	ctx context.Context,
@@ -280,19 +280,6 @@ func (ml *MergedListeners) translateListeners(
 	var listeners []ir.ListenerIR
 	for _, mergedListener := range ml.Listeners {
 		listener := mergedListener.TranslateListener(kctx, ctx, queries, reporter)
-
-		// run listener plugins
-		//		panic("TODO: handle listener policy attachment")
-		// for _, listenerPlugin := range pluginRegistry.GetListenerPlugins() {
-		// err := listenerPlugin.ApplyListenerPlugin(ctx, &plugins.ListenerContext{
-		// 	Gateway:    &ml.parentGw,
-		// 	GwListener: &mergedListener.listener,
-		// }, listener)
-		// if err != nil {
-		// 	contextutils.LoggerFrom(ctx).Errorf("error in ListenerPlugin: %v", err)
-		// }
-		// }
-
 		listeners = append(listeners, listener)
 	}
 	return listeners
@@ -350,7 +337,7 @@ func (ml *MergedListener) TranslateListener(
 
 	// Translate HTTPS filter chains
 	for _, mfc := range ml.httpsFilterChains {
-		httpsFilterChain := mfc.translateHttpsFilterChain(
+		httpsFilterChain, err := mfc.translateHttpsFilterChain(
 			kctx,
 			ctx,
 			mfc.gatewayListenerName,
@@ -360,9 +347,9 @@ func (ml *MergedListener) TranslateListener(
 			reporter,
 			ml.listenerReporter,
 		)
-		if httpsFilterChain == nil {
+		if err != nil {
 			// Log and skip invalid HTTPS filter chains
-			logger.Error("failed to translate HTTPS filter chain for listener", "listener", ml.name)
+			logger.Error("failed to translate HTTPS filter chain for listener", "listener", ml.name, "error", err)
 			continue
 		}
 
@@ -686,7 +673,7 @@ func (httpsFilterChain *httpsFilterChain) translateHttpsFilterChain(
 	queries query.GatewayQueries,
 	reporter reports.Reporter,
 	listenerReporter reports.ListenerReporter,
-) *ir.HttpFilterChainIR {
+) (*ir.HttpFilterChainIR, error) {
 	// process routes first, so any route related errors are reported on the httproute.
 	routesByHost := map[string]routeutils.SortableRoutes{}
 	buildRoutesPerHost(
@@ -728,22 +715,33 @@ func (httpsFilterChain *httpsFilterChain) translateHttpsFilterChain(
 		queries,
 	)
 	if err != nil {
-		reason := gwv1.ListenerReasonRefNotPermitted
-		if !errors.Is(err, krtcollections.ErrMissingReferenceGrant) {
-			reason = gwv1.ListenerReasonInvalidCertificateRef
+		reason := gwv1.ListenerReasonInvalidCertificateRef
+		message := "Invalid certificate ref."
+		if errors.Is(err, krtcollections.ErrMissingReferenceGrant) {
+			reason = gwv1.ListenerReasonRefNotPermitted
+			message = "Reference not permitted by ReferenceGrant."
+		}
+		if errors.Is(err, sslutils.ErrInvalidTlsSecret) {
+			message = err.Error()
+		}
+		var notFoundErr *krtcollections.NotFoundError
+		if errors.As(err, &notFoundErr) {
+			message = fmt.Sprintf("Secret %s/%s not found.", notFoundErr.NotFoundObj.Namespace, notFoundErr.NotFoundObj.Name)
 		}
 		listenerReporter.SetCondition(reports.ListenerCondition{
-			Type:   gwv1.ListenerConditionResolvedRefs,
-			Status: metav1.ConditionFalse,
-			Reason: reason,
+			Type:    gwv1.ListenerConditionResolvedRefs,
+			Status:  metav1.ConditionFalse,
+			Reason:  reason,
+			Message: message,
 		})
 		// listener with no ssl is invalid. We return nil so set programmed to false
 		listenerReporter.SetCondition(reports.ListenerCondition{
-			Type:   gwv1.ListenerConditionProgrammed,
-			Status: metav1.ConditionFalse,
-			Reason: gwv1.ListenerReasonInvalid,
+			Type:    gwv1.ListenerConditionProgrammed,
+			Status:  metav1.ConditionFalse,
+			Reason:  gwv1.ListenerReasonInvalid,
+			Message: message,
 		})
-		return nil
+		return nil, err
 	}
 	sort.Slice(virtualHosts, func(i, j int) bool {
 		return virtualHosts[i].Name < virtualHosts[j].Name
@@ -756,7 +754,7 @@ func (httpsFilterChain *httpsFilterChain) translateHttpsFilterChain(
 		},
 		AttachedPolicies: httpsFilterChain.attachedPolicies,
 		Vhosts:           virtualHosts,
-	}
+	}, nil
 }
 
 func buildRoutesPerHost(

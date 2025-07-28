@@ -328,8 +328,9 @@ func NewGatewayIndex(
 		out.AttachedHttpPolicies = out.AttachedListenerPolicies // see if i can find a better way to segment the listener level and http level policies
 		for _, l := range i.Spec.Listeners {
 			out.Listeners = append(out.Listeners, ir.Listener{
-				Listener:         l,
-				Parent:           i,
+				Listener: l,
+				Parent:   i,
+				// TODO(https://github.com/kgateway-dev/kgateway/issues/11775): is RouteAttachmentPoint correct in all scenarios?
 				AttachedPolicies: toAttachedPolicies(h.policies.getTargetingPolicies(kctx, extensionsplug.RouteAttachmentPoint, out.ObjectSource, string(l.Name), i.GetLabels())),
 				PolicyAncestorRef: gwv1.ParentReference{
 					Group:     k8sptr.To(gwv1.Group(wellknown.GatewayGVK.Group)),
@@ -376,6 +377,7 @@ func NewGatewayIndex(
 			listenerSetPolicies := h.policies.getTargetingPolicies(kctx, extensionsplug.GatewayAttachmentPoint, lsIR.ObjectSource, "", ls.GetLabels())
 
 			for _, l := range ls.Spec.Listeners {
+				// TODO(https://github.com/kgateway-dev/kgateway/issues/11775): is RouteAttachmentPoint correct in all scenarios?
 				listenerSpecificPolicies := h.policies.getTargetingPolicies(kctx, extensionsplug.RouteAttachmentPoint, lsIR.ObjectSource, string(l.Name), ls.GetLabels())
 				// The Gateway Polices applies to all listeners but we need to apply them to listeners within the LS.
 				// Since there is no LS equivalent in Envoy, apply them on each listener in the LS.
@@ -944,16 +946,24 @@ func NewRoutesIndex(
 	refgrants *RefGrantIndex,
 	globalSettings settings.Settings,
 ) *RoutesIndex {
-	h := &RoutesIndex{policies: policies, refgrants: refgrants, backends: backends, weightedRoutePrecedence: globalSettings.WeightedRoutePrecedence}
+	h := &RoutesIndex{
+		policies:                policies,
+		refgrants:               refgrants,
+		backends:                backends,
+		weightedRoutePrecedence: globalSettings.WeightedRoutePrecedence,
+	}
 	h.hasSyncedFuncs = append(h.hasSyncedFuncs, httproutes.HasSynced, grpcroutes.HasSynced, tcproutes.HasSynced, tlsroutes.HasSynced)
+
 	h.httpRoutes = krt.NewCollection(httproutes, h.transformHttpRoute, krtopts.ToOptions("http-routes-with-policy")...)
 	httpRouteCollection := krt.NewCollection(h.httpRoutes, func(kctx krt.HandlerContext, i ir.HttpRouteIR) *RouteWrapper {
 		return &RouteWrapper{Route: &i}
 	}, krtopts.ToOptions("routes-http-routes-with-policy")...)
+
 	tcpRoutesCollection := krt.NewCollection(tcproutes, func(kctx krt.HandlerContext, i *gwv1a2.TCPRoute) *RouteWrapper {
 		t := h.transformTcpRoute(kctx, i)
 		return &RouteWrapper{Route: t}
 	}, krtopts.ToOptions("routes-tcp-routes-with-policy")...)
+
 	tlsRoutesCollection := krt.NewCollection(tlsroutes, func(kctx krt.HandlerContext, i *gwv1a2.TLSRoute) *RouteWrapper {
 		t := h.transformTlsRoute(kctx, i)
 		return &RouteWrapper{Route: t}
@@ -1188,17 +1198,12 @@ func (h *RoutesIndex) getExtensionRefs(
 	}
 	for _, ext := range r {
 		// TODO: propagate error if we can't find the extension
-		gk, policy, errs := h.resolveExtension(kctx, ns, ext)
-		if policy != nil {
-			polAtt := ir.PolicyAtt{
-				// direct attachment - no target ref
-				PolicyIr: policy,
-				Errors:   errs,
-			}
+		policyAtt, errs := h.resolveExtension(kctx, ns, ext)
+		if policyAtt != nil {
 			for _, o := range opts {
-				o(&polAtt)
+				o(policyAtt)
 			}
-			ret.Policies[gk] = append(ret.Policies[gk], polAtt)
+			ret.Policies[policyAtt.GroupKind] = append(ret.Policies[policyAtt.GroupKind], *policyAtt)
 		} else if len(errs) > 0 {
 			logger.Error("unresolved HTTPRouteFilter", "error", errors.Join(errs...))
 		}
@@ -1224,11 +1229,11 @@ func (h *RoutesIndex) getBuiltInRulePolicies(
 	return ret
 }
 
-func (h *RoutesIndex) resolveExtension(kctx krt.HandlerContext, ns string, ext gwv1.HTTPRouteFilter) (schema.GroupKind, ir.PolicyIR, []error) {
+func (h *RoutesIndex) resolveExtension(kctx krt.HandlerContext, ns string, ext gwv1.HTTPRouteFilter) (*ir.PolicyAtt, []error) {
 	if ext.Type == gwv1.HTTPRouteFilterExtensionRef {
 		if ext.ExtensionRef == nil {
 			// TODO: report error!!
-			return schema.GroupKind{}, nil, nil
+			return nil, nil
 		}
 		ref := *ext.ExtensionRef
 		key := ir.ObjectSource{
@@ -1239,14 +1244,27 @@ func (h *RoutesIndex) resolveExtension(kctx krt.HandlerContext, ns string, ext g
 		}
 		policy := h.policies.fetchPolicy(kctx, key)
 		if policy == nil {
-			return schema.GroupKind{}, nil, []error{fmt.Errorf("%s: %w", key, ErrPolicyNotFound)}
+			return nil, []error{fmt.Errorf("%s: %w", key, ErrPolicyNotFound)}
 		}
 
 		gk := schema.GroupKind{
 			Group: string(ref.Group),
 			Kind:  string(ref.Kind),
 		}
-		return gk, policy.PolicyIR, policy.Errors
+		policyRef := &ir.AttachedPolicyRef{
+			Group:     gk.Group,
+			Kind:      gk.Kind,
+			Name:      string(ref.Name),
+			Namespace: ns,
+		}
+		policyAtt := &ir.PolicyAtt{
+			Generation: policy.Policy.GetGeneration(),
+			GroupKind:  gk,
+			PolicyIr:   policy.PolicyIR,
+			PolicyRef:  policyRef,
+			Errors:     policy.Errors,
+		}
+		return policyAtt, policy.Errors
 	}
 
 	fromGK := schema.GroupKind{
@@ -1255,7 +1273,11 @@ func (h *RoutesIndex) resolveExtension(kctx krt.HandlerContext, ns string, ext g
 	}
 
 	builtinIR := NewBuiltInIr(kctx, ext, fromGK, ns, h.refgrants, h.backends)
-	return pluginsdkir.VirtualBuiltInGK, builtinIR, nil
+	policyAtt := &ir.PolicyAtt{
+		GroupKind: pluginsdkir.VirtualBuiltInGK,
+		PolicyIr:  builtinIR,
+	}
+	return policyAtt, nil
 }
 
 func toFromBackendRef(fromns string, ref gwv1.BackendObjectReference) ir.ObjectSource {
