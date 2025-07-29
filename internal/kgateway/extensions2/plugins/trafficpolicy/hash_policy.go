@@ -15,23 +15,40 @@ type hashPolicyIR struct {
 	policies []*envoyroutev3.RouteAction_HashPolicy
 }
 
-func (h *hashPolicyIR) Equals(other *hashPolicyIR) bool {
-	if h == nil && other == nil {
-		return true
-	}
-	if h == nil || other == nil {
+var _ PolicySubIR = &hashPolicyIR{}
+
+func (h *hashPolicyIR) Equals(other PolicySubIR) bool {
+	otherHashPolicy, ok := other.(*hashPolicyIR)
+	if !ok {
 		return false
 	}
-
-	if len(h.policies) != len(other.policies) {
+	if h == nil && otherHashPolicy == nil {
+		return true
+	}
+	if h == nil || otherHashPolicy == nil {
+		return false
+	}
+	if len(h.policies) != len(otherHashPolicy.policies) {
 		return false
 	}
 	for i, policy := range h.policies {
-		if !proto.Equal(policy, other.policies[i]) {
+		if !proto.Equal(policy, otherHashPolicy.policies[i]) {
 			return false
 		}
 	}
 	return true
+}
+
+func (h *hashPolicyIR) Validate() error {
+	if h == nil {
+		return nil
+	}
+	for _, policy := range h.policies {
+		if err := policy.ValidateAll(); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // applyHashPolicy converts the hash policy spec to the IR.

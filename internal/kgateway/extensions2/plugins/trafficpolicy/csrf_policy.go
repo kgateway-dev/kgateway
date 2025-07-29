@@ -21,15 +21,27 @@ type csrfIR struct {
 	policy *envoy_csrf_v3.CsrfPolicy
 }
 
-func (c *csrfIR) Equals(other *csrfIR) bool {
-	if c == nil && other == nil {
-		return true
-	}
-	if c == nil || other == nil {
+var _ PolicySubIR = &csrfIR{}
+
+func (c *csrfIR) Equals(other PolicySubIR) bool {
+	otherCsrf, ok := other.(*csrfIR)
+	if !ok {
 		return false
 	}
+	if c == nil && otherCsrf == nil {
+		return true
+	}
+	if c == nil || otherCsrf == nil {
+		return false
+	}
+	return proto.Equal(c.policy, otherCsrf.policy)
+}
 
-	return proto.Equal(c.policy, other.policy)
+func (c *csrfIR) Validate() error {
+	if c == nil || c.policy == nil {
+		return nil
+	}
+	return c.policy.Validate()
 }
 
 // handleCsrf adds CSRF configuration to routes

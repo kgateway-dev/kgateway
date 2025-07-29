@@ -19,14 +19,27 @@ type transformationIR struct {
 	config *transformationpb.RouteTransformations
 }
 
-func (t *transformationIR) Equals(other *transformationIR) bool {
-	if t == nil && other == nil {
-		return true
-	}
-	if t == nil || other == nil {
+var _ PolicySubIR = &transformationIR{}
+
+func (t *transformationIR) Equals(other PolicySubIR) bool {
+	otherTransformation, ok := other.(*transformationIR)
+	if !ok {
 		return false
 	}
-	return proto.Equal(t.config, other.config)
+	if t == nil && otherTransformation == nil {
+		return true
+	}
+	if t == nil || otherTransformation == nil {
+		return false
+	}
+	return proto.Equal(t.config, otherTransformation.config)
+}
+
+func (t *transformationIR) Validate() error {
+	if t == nil || t.config == nil {
+		return nil
+	}
+	return t.config.ValidateAll()
 }
 
 // applyTransformation converts the transformation policy spec to the IR.
@@ -159,14 +172,27 @@ type rustformationIR struct {
 	toStash string
 }
 
-func (r *rustformationIR) Equals(other *rustformationIR) bool {
-	if r == nil && other == nil {
-		return true
-	}
-	if r == nil || other == nil {
+var _ PolicySubIR = &rustformationIR{}
+
+func (r *rustformationIR) Equals(other PolicySubIR) bool {
+	otherRustformation, ok := other.(*rustformationIR)
+	if !ok {
 		return false
 	}
-	return proto.Equal(r.config, other.config) && r.toStash == other.toStash
+	if r == nil && otherRustformation == nil {
+		return true
+	}
+	if r == nil || otherRustformation == nil {
+		return false
+	}
+	return proto.Equal(r.config, otherRustformation.config) && r.toStash == otherRustformation.toStash
+}
+
+func (r *rustformationIR) Validate() error {
+	if r == nil || r.config == nil {
+		return nil
+	}
+	return r.config.ValidateAll()
 }
 
 func applyRustformation(in *v1alpha1.TrafficPolicy, out *trafficPolicySpecIr) error {

@@ -61,6 +61,30 @@ func (e TrafficPolicyGatewayExtensionIR) Equals(other TrafficPolicyGatewayExtens
 	return true
 }
 
+// Validate performs PGV-based validation on the gateway extension components
+func (e TrafficPolicyGatewayExtensionIR) Validate() error {
+	if e.Err != nil {
+		// If there's an error in the IR, validation doesn't make sense.
+		return nil
+	}
+	if e.ExtAuth != nil {
+		if err := e.ExtAuth.ValidateAll(); err != nil {
+			return err
+		}
+	}
+	if e.ExtProc != nil {
+		if err := e.ExtProc.ValidateAll(); err != nil {
+			return err
+		}
+	}
+	if e.RateLimit != nil {
+		if err := e.RateLimit.ValidateAll(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func TranslateGatewayExtensionBuilder(commoncol *common.CommonCollections) func(krtctx krt.HandlerContext, gExt ir.GatewayExtension) *TrafficPolicyGatewayExtensionIR {
 	return func(krtctx krt.HandlerContext, gExt ir.GatewayExtension) *TrafficPolicyGatewayExtensionIR {
 		p := &TrafficPolicyGatewayExtensionIR{

@@ -13,6 +13,127 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 )
 
+func TestHashPolicyIREquals(t *testing.T) {
+	createSimpleHashPolicies := func(headerName string) []*envoyroutev3.RouteAction_HashPolicy {
+		return []*envoyroutev3.RouteAction_HashPolicy{
+			{
+				PolicySpecifier: &envoyroutev3.RouteAction_HashPolicy_Header_{
+					Header: &envoyroutev3.RouteAction_HashPolicy_Header{
+						HeaderName: headerName,
+					},
+				},
+				Terminal: false,
+			},
+		}
+	}
+	createHashPoliciesWithTerminal := func(terminal bool) []*envoyroutev3.RouteAction_HashPolicy {
+		return []*envoyroutev3.RouteAction_HashPolicy{
+			{
+				PolicySpecifier: &envoyroutev3.RouteAction_HashPolicy_Header_{
+					Header: &envoyroutev3.RouteAction_HashPolicy_Header{
+						HeaderName: "x-user-id",
+					},
+				},
+				Terminal: terminal,
+			},
+		}
+	}
+
+	tests := []struct {
+		name     string
+		hash1    *hashPolicyIR
+		hash2    *hashPolicyIR
+		expected bool
+	}{
+		{
+			name:     "both nil are equal",
+			hash1:    nil,
+			hash2:    nil,
+			expected: true,
+		},
+		{
+			name:     "nil vs non-nil are not equal",
+			hash1:    nil,
+			hash2:    &hashPolicyIR{policies: createSimpleHashPolicies("x-user-id")},
+			expected: false,
+		},
+		{
+			name:     "non-nil vs nil are not equal",
+			hash1:    &hashPolicyIR{policies: createSimpleHashPolicies("x-user-id")},
+			hash2:    nil,
+			expected: false,
+		},
+		{
+			name:     "same instance is equal",
+			hash1:    &hashPolicyIR{policies: createSimpleHashPolicies("x-user-id")},
+			hash2:    &hashPolicyIR{policies: createSimpleHashPolicies("x-user-id")},
+			expected: true,
+		},
+		{
+			name:     "different header names are not equal",
+			hash1:    &hashPolicyIR{policies: createSimpleHashPolicies("x-user-id")},
+			hash2:    &hashPolicyIR{policies: createSimpleHashPolicies("x-session-id")},
+			expected: false,
+		},
+		{
+			name:     "different terminal settings are not equal",
+			hash1:    &hashPolicyIR{policies: createHashPoliciesWithTerminal(true)},
+			hash2:    &hashPolicyIR{policies: createHashPoliciesWithTerminal(false)},
+			expected: false,
+		},
+		{
+			name:     "same terminal settings are equal",
+			hash1:    &hashPolicyIR{policies: createHashPoliciesWithTerminal(true)},
+			hash2:    &hashPolicyIR{policies: createHashPoliciesWithTerminal(true)},
+			expected: true,
+		},
+		{
+			name:     "nil hash policy fields are equal",
+			hash1:    &hashPolicyIR{policies: nil},
+			hash2:    &hashPolicyIR{policies: nil},
+			expected: true,
+		},
+		{
+			name:     "nil vs non-nil hash policy fields are not equal",
+			hash1:    &hashPolicyIR{policies: nil},
+			hash2:    &hashPolicyIR{policies: createSimpleHashPolicies("x-test")},
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := tt.hash1.Equals(tt.hash2)
+			assert.Equal(t, tt.expected, result)
+
+			// Test symmetry: a.Equals(b) should equal b.Equals(a)
+			reverseResult := tt.hash2.Equals(tt.hash1)
+			assert.Equal(t, result, reverseResult, "Equals should be symmetric")
+		})
+	}
+
+	// Test reflexivity: x.Equals(x) should always be true for non-nil values
+	t.Run("reflexivity", func(t *testing.T) {
+		hash := &hashPolicyIR{policies: createSimpleHashPolicies("x-test")}
+		assert.True(t, hash.Equals(hash), "hash should equal itself")
+	})
+
+	// Test transitivity: if a.Equals(b) && b.Equals(c), then a.Equals(c)
+	t.Run("transitivity", func(t *testing.T) {
+		createSameHash := func() *hashPolicyIR {
+			return &hashPolicyIR{policies: createHashPoliciesWithTerminal(false)}
+		}
+
+		a := createSameHash()
+		b := createSameHash()
+		c := createSameHash()
+
+		assert.True(t, a.Equals(b), "a should equal b")
+		assert.True(t, b.Equals(c), "b should equal c")
+		assert.True(t, a.Equals(c), "a should equal c (transitivity)")
+	})
+}
+
 func TestHashPolicyForSpec(t *testing.T) {
 	tests := []struct {
 		name     string

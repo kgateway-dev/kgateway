@@ -26,30 +26,55 @@ type globalRateLimitIR struct {
 	rateLimitActions []*envoyroutev3.RateLimit
 }
 
+var _ PolicySubIR = &globalRateLimitIR{}
+
 // Equals checks if two globalRateLimitIR instances are equal.
-func (r *globalRateLimitIR) Equals(other *globalRateLimitIR) bool {
-	if r == nil && other == nil {
+func (r *globalRateLimitIR) Equals(other PolicySubIR) bool {
+	otherGlobalRateLimit, ok := other.(*globalRateLimitIR)
+	if !ok {
+		return false
+	}
+	if r == nil && otherGlobalRateLimit == nil {
 		return true
 	}
-	if r == nil || other == nil {
+	if r == nil || otherGlobalRateLimit == nil {
 		return false
 	}
 
-	if len(r.rateLimitActions) != len(other.rateLimitActions) {
+	if len(r.rateLimitActions) != len(otherGlobalRateLimit.rateLimitActions) {
 		return false
 	}
 	for i, action := range r.rateLimitActions {
-		if !proto.Equal(action, other.rateLimitActions[i]) {
+		if !proto.Equal(action, otherGlobalRateLimit.rateLimitActions[i]) {
 			return false
 		}
 	}
-	if !cmputils.CompareWithNils(r.provider, other.provider, func(a, b *TrafficPolicyGatewayExtensionIR) bool {
+	if !cmputils.CompareWithNils(r.provider, otherGlobalRateLimit.provider, func(a, b *TrafficPolicyGatewayExtensionIR) bool {
 		return a.Equals(*b)
 	}) {
 		return false
 	}
 
 	return true
+}
+
+func (r *globalRateLimitIR) Validate() error {
+	if r == nil {
+		return nil
+	}
+	for _, rateLimit := range r.rateLimitActions {
+		if rateLimit != nil {
+			if err := rateLimit.ValidateAll(); err != nil {
+				return err
+			}
+		}
+	}
+	if r.provider != nil {
+		if err := r.provider.Validate(); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // applyGlobalRateLimit translates the global rate limit spec into and onto the IR policy.

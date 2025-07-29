@@ -22,14 +22,27 @@ type localRateLimitIR struct {
 	config *localratelimitv3.LocalRateLimit
 }
 
-func (l *localRateLimitIR) Equals(other *localRateLimitIR) bool {
-	if l == nil && other == nil {
-		return true
-	}
-	if l == nil || other == nil {
+var _ PolicySubIR = &localRateLimitIR{}
+
+func (l *localRateLimitIR) Equals(other PolicySubIR) bool {
+	otherLocalRateLimit, ok := other.(*localRateLimitIR)
+	if !ok {
 		return false
 	}
-	return proto.Equal(l.config, other.config)
+	if l == nil && otherLocalRateLimit == nil {
+		return true
+	}
+	if l == nil || otherLocalRateLimit == nil {
+		return false
+	}
+	return proto.Equal(l.config, otherLocalRateLimit.config)
+}
+
+func (l *localRateLimitIR) Validate() error {
+	if l == nil || l.config == nil {
+		return nil
+	}
+	return l.config.ValidateAll()
 }
 
 // applyLocalRateLimit converts the local rate limit policy spec to the IR.
