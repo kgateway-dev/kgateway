@@ -1155,13 +1155,6 @@ func schema_kgateway_v2_api_v1alpha1_AiExtensionTrace(ref common.ReferenceCallba
 							Format:      "",
 						},
 					},
-					"transportSecurity": {
-						SchemaProps: spec.SchemaProps{
-							Description: "TransportSecurity controls the TLS (Transport Layer Security) settings when connecting to the tracing server. It determines whether certificate verification should be skipped.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
 				},
 				Required: []string{"endpoint"},
 			},

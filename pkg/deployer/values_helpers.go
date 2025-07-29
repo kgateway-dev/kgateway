@@ -1,6 +1,7 @@
 package deployer
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"regexp"
@@ -237,9 +238,8 @@ func getTracingValues(tracingConfig *v1alpha1.AiExtensionTrace) *helmAITracing {
 			SamplerType: tracingConfig.GetSamplerType(),
 			SamplerArg:  tracingConfig.GetSamplerArg(),
 		},
-		Timeout:           tracingConfig.GetTimeout(),
-		Protocol:          tracingConfig.GetOTLPProtocolType(),
-		TransportSecurity: tracingConfig.GetTransportSecurityMode(),
+		Timeout:  tracingConfig.GetTimeout(),
+		Protocol: tracingConfig.GetOTLPProtocolType(),
 	}
 }
 
@@ -280,6 +280,19 @@ func GetAIExtensionValues(config *v1alpha1.AiExtension) (*HelmAIExtension, error
 		}
 	}
 
+	// Handle Tracing with base64 encoding
+	var tracingBase64 string
+	if config.Tracing != nil {
+		// Convert tracing config to JSON
+		tracingJSON, err := json.Marshal(getTracingValues(config.Tracing))
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal tracing config: %w", err)
+		}
+
+		// Encode JSON to base64
+		tracingBase64 = base64.StdEncoding.EncodeToString(tracingJSON)
+	}
+
 	return &HelmAIExtension{
 		Enabled:         *config.GetEnabled(),
 		Image:           GetImageValues(config.GetImage()),
@@ -288,7 +301,7 @@ func GetAIExtensionValues(config *v1alpha1.AiExtension) (*HelmAIExtension, error
 		Env:             config.GetEnv(),
 		Ports:           config.GetPorts(),
 		Stats:           byt,
-		Tracing:         getTracingValues(config.Tracing),
+		Tracing:         tracingBase64,
 	}, nil
 }
 

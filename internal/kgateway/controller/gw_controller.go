@@ -2,12 +2,15 @@ package controller
 
 import (
 	"context"
+	"fmt"
 	"slices"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
+	utilretry "k8s.io/client-go/util/retry"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -139,16 +142,8 @@ func updateStatus(ctx context.Context, cli client.Client, gw *api.Gateway, svcmd
 
 	// update gateway addresses in the status
 	desiredAddresses := getDesiredAddresses(gw, svc)
-	actualAddresses := gw.Status.Addresses
-	if slices.Equal(desiredAddresses, actualAddresses) {
-		return nil
-	}
 
-	gw.Status.Addresses = desiredAddresses
-	if err := cli.Status().Patch(ctx, gw, client.Merge); err != nil {
-		return err
-	}
-	return nil
+	return updateGatewayAddresses(ctx, cli, client.ObjectKeyFromObject(gw), desiredAddresses)
 }
 
 func getDesiredAddresses(gw *api.Gateway, svc *corev1.Service) []api.GatewayStatusAddress {
@@ -195,6 +190,40 @@ func getDesiredAddresses(gw *api.Gateway, svc *corev1.Service) []api.GatewayStat
 	}
 
 	return ret
+}
+
+// updateGatewayAddresses updates the addresses of a Gateway resource.
+func updateGatewayAddresses(
+	ctx context.Context,
+	cli client.Client,
+	gwNN types.NamespacedName,
+	desired []api.GatewayStatusAddress,
+) error {
+	err := utilretry.RetryOnConflict(utilretry.DefaultRetry, func() error {
+		// Get the latest Gateway
+		var gw api.Gateway
+		if err := cli.Get(ctx, gwNN, &gw); err != nil {
+			return err
+		}
+
+		// Check if an update is needed
+		if slices.Equal(desired, gw.Status.Addresses) {
+			return nil
+		}
+
+		// Prepare a three-way merge patch
+		original := gw.DeepCopy()
+		gw.Status.Addresses = desired
+
+		// Patch only the status subresource
+		return cli.Status().Patch(ctx, &gw, client.MergeFrom(original))
+	})
+
+	if err != nil {
+		return fmt.Errorf("failed to update gateway addresses after retries: %w", err)
+	}
+
+	return nil
 }
 
 func convertIngressAddr(ing corev1.LoadBalancerIngress) (api.GatewayStatusAddress, bool) {
