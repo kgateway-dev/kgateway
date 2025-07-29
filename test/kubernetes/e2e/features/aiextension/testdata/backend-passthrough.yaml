@@ -12,7 +12,6 @@ spec:
       hostOverride:
         host: test-ai-provider.ai-test.svc.cluster.local
         port: 443
-        insecureSkipVerify: true
       pathOverride:
         fullPath: "/api/v1/chat/completions"
       provider:
@@ -34,7 +33,6 @@ spec:
       hostOverride:
         host: test-ai-provider.ai-test.svc.cluster.local
         port: 443
-        insecureSkipVerify: true
       provider:
         openai:
           authToken:
@@ -54,7 +52,6 @@ spec:
       hostOverride:
         host: test-ai-provider.ai-test.svc.cluster.local
         port: 443
-        insecureSkipVerify: true
       provider:
         azureopenai:
           endpoint: ai-gateway.openai.azure.com
@@ -77,7 +74,6 @@ spec:
       hostOverride:
         host: test-ai-provider.ai-test.svc.cluster.local
         port: 443
-        insecureSkipVerify: true
       provider:
         gemini:
           model: "gemini-1.5-flash-001"
@@ -99,7 +95,6 @@ spec:
       hostOverride:
         host: test-ai-provider.ai-test.svc.cluster.local
         port: 443
-        insecureSkipVerify: true
       provider:
         vertexai:
           model: gemini-1.5-flash-001

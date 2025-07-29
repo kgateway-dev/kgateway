@@ -1270,9 +1270,6 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         scalar: string
       default: ""
-    - name: insecureSkipVerify
-      type:
-        scalar: boolean
     - name: port
       type:
         scalar: numeric
