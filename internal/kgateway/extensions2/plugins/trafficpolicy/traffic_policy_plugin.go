@@ -384,7 +384,7 @@ func (p *trafficPolicyPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.
 		}
 	}
 
-	if policy.spec.hashPolicies != nil {
+	if policy.spec.hashPolicies != nil && outputRoute.GetRoute() != nil {
 		outputRoute.GetRoute().HashPolicy = policy.spec.hashPolicies
 	}
 
