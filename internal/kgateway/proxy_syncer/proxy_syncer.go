@@ -445,19 +445,18 @@ func (s *ProxySyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger, 
 	stopwatch.Start()
 	defer stopwatch.Stop(ctx)
 
-	var rErr error
-
-	defer func() {
-		collectStatusSyncMetrics("RouteStatusSyncer")(rErr)
-	}()
-
 	// Helper function to sync route status with retry
 	syncStatusWithRetry := func(
 		routeType string,
 		routeKey client.ObjectKey,
 		getRouteFunc func() client.Object,
 		statusUpdater func(route client.Object) error,
-	) error {
+	) (rErr error) {
+		finishMetrics := collectStatusSyncMetrics("RouteStatusSyncer")
+		defer func() {
+			finishMetrics(rErr)
+		}()
+
 		return retry.Do(
 			func() error {
 				route := getRouteFunc()
@@ -569,7 +568,6 @@ func (s *ProxySyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger, 
 			},
 		)
 		if err != nil {
-			rErr = err
 			logger.Error("all attempts failed at updating HTTPRoute status", "error", err, "route", rnn)
 		}
 	}
@@ -580,7 +578,6 @@ func (s *ProxySyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger, 
 			return buildAndUpdateStatus(route, wellknown.TCPRouteKind)
 		})
 		if err != nil {
-			rErr = err
 			logger.Error("all attempts failed at updating TCPRoute status", "error", err, "route", rnn)
 		}
 	}
@@ -591,7 +588,6 @@ func (s *ProxySyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger, 
 			return buildAndUpdateStatus(route, wellknown.TLSRouteKind)
 		})
 		if err != nil {
-			rErr = err
 			logger.Error("all attempts failed at updating TLSRoute status", "error", err, "route", rnn)
 		}
 	}
@@ -602,7 +598,6 @@ func (s *ProxySyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger, 
 			return buildAndUpdateStatus(route, wellknown.GRPCRouteKind)
 		})
 		if err != nil {
-			rErr = err
 			logger.Error("all attempts failed at updating GRPCRoute status", "error", err, "route", rnn)
 		}
 	}
@@ -613,7 +608,12 @@ func (s *ProxySyncer) syncGatewayStatus(ctx context.Context, logger *slog.Logger
 	stopwatch := utils.NewTranslatorStopWatch("GatewayStatusSyncer")
 	stopwatch.Start()
 
-	defer collectStatusSyncMetrics("GatewayStatusSyncer")(nil)
+	var rErr error
+
+	finishMetrics := collectStatusSyncMetrics("GatewayStatusSyncer")
+	defer func() {
+		finishMetrics(rErr)
+	}()
 
 	for gwnn := range rm.Gateways {
 		err := utilretry.RetryOnConflict(utilretry.DefaultRetry, func() error {
@@ -655,6 +655,7 @@ func (s *ProxySyncer) syncGatewayStatus(ctx context.Context, logger *slog.Logger
 		})
 		if err != nil {
 			logger.Error("failed to update gateway status after retries", "error", err, "gateway", gwnn.String())
+			rErr = err
 		}
 
 		// Record metrics for this gateway
@@ -663,7 +664,7 @@ func (s *ProxySyncer) syncGatewayStatus(ctx context.Context, logger *slog.Logger
 			Gateway:      gwnn.Name,
 			ResourceType: wellknown.GatewayKind,
 			ResourceName: gwnn.Name,
-		}, err != nil, resourcesStatusSyncsCompletedTotal, resourcesStatusSyncDuration)
+		}, false, resourcesStatusSyncsCompletedTotal, resourcesStatusSyncDuration)
 	}
 
 	duration := stopwatch.Stop(ctx)
@@ -675,9 +676,14 @@ func (s *ProxySyncer) syncListenerSetStatus(ctx context.Context, logger *slog.Lo
 	stopwatch := utils.NewTranslatorStopWatch("ListenerSetStatusSyncer")
 	stopwatch.Start()
 
-	defer collectStatusSyncMetrics("ListenerSetStatusSyncer")(nil)
+	var rErr error
 
-	// TODO: retry within loop per LS rathen that as a full block
+	finishMetrics := collectStatusSyncMetrics("ListenerSetStatusSyncer")
+	defer func() {
+		finishMetrics(rErr)
+	}()
+
+	// TODO: retry within loop per LS rather than as a full block
 	err := retry.Do(func() error {
 		for lsnn := range rm.ListenerSets {
 			ls := gwxv1a1.XListenerSet{}
@@ -718,6 +724,7 @@ func (s *ProxySyncer) syncListenerSetStatus(ctx context.Context, logger *slog.Lo
 	)
 	if err != nil {
 		logger.Error("all attempts failed at updating listener set statuses", "error", err)
+		rErr = err
 	}
 	duration := stopwatch.Stop(ctx)
 	logger.Debug("synced listener sets status for listener set", "count", len(rm.ListenerSets), "duration", duration.String())
@@ -727,8 +734,6 @@ func (s *ProxySyncer) syncPolicyStatus(ctx context.Context, rm reports.ReportMap
 	stopwatch := utils.NewTranslatorStopWatch("RouteStatusSyncer")
 	stopwatch.Start()
 	defer stopwatch.Stop(ctx)
-
-	defer collectStatusSyncMetrics("PolicyStatusSyncer")(nil)
 
 	// Sync Policy statuses
 	for key := range rm.Policies {
@@ -757,6 +762,9 @@ func (s *ProxySyncer) syncPolicyStatus(ctx context.Context, rm reports.ReportMap
 		if status == nil {
 			continue
 		}
+
+		finishMetrics := collectStatusSyncMetrics("PolicyStatusSyncer")
+
 		err = retry.Do(
 			func() error {
 				return plugin.PatchPolicyStatus(ctx, nsName, *status)
@@ -767,6 +775,8 @@ func (s *ProxySyncer) syncPolicyStatus(ctx context.Context, rm reports.ReportMap
 		)
 		if err != nil {
 			logger.Error("error updating policy status", "error", err, "group_kind", gk, "resource_ref", nsName)
+			finishMetrics(err)
+			continue
 		}
 
 		for _, ancestor := range status.Ancestors {
@@ -784,6 +794,8 @@ func (s *ProxySyncer) syncPolicyStatus(ctx context.Context, rm reports.ReportMap
 				}, false, resourcesStatusSyncsCompletedTotal, resourcesStatusSyncDuration)
 			}
 		}
+
+		finishMetrics(nil)
 	}
 }
 

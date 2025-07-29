@@ -502,8 +502,9 @@ type controllerReconciler struct {
 func (r *controllerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.Result, rErr error) {
 	log := log.FromContext(ctx).WithValues("gwclass", req.NamespacedName)
 
+	finishMetrics := collectReconciliationMetrics(r.metricsName, req)
 	defer func() {
-		collectReconciliationMetrics(r.metricsName, req)(rErr)
+		finishMetrics(rErr)
 	}()
 
 	gwclass := &apiv1.GatewayClass{}

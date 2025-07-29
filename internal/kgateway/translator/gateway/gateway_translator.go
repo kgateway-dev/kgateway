@@ -46,7 +46,7 @@ func (t *translator) Translate(
 	stopwatch.Start()
 	defer stopwatch.Stop(ctx)
 
-	defer metrics.CollectTranslationMetrics("TranslateGateway")(nil)
+	defer (metrics.CollectTranslationMetrics("TranslateGateway"))(nil)
 
 	routesForGw, err := t.queries.GetRoutesForGateway(kctx, ctx, gateway)
 	if err != nil {

@@ -27,8 +27,9 @@ func (r *inferencePoolReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	log := log.FromContext(ctx).WithValues("inferencepool", req.NamespacedName)
 	log.V(1).Info("reconciling request", "request", req)
 
+	finishMetrics := collectReconciliationMetrics("gateway-inferencepool", req)
 	defer func() {
-		collectReconciliationMetrics("gateway-inferencepool", req)(rErr)
+		finishMetrics(rErr)
 	}()
 
 	pool := new(infextv1a2.InferencePool)

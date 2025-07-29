@@ -41,8 +41,9 @@ func (t *BackendTranslator) TranslateBackend(
 ) (*envoyclusterv3.Cluster, error) {
 	var rErr error
 
+	finishMetrics := metrics.CollectTranslationMetrics("TranslateBackend")
 	defer func() {
-		metrics.CollectTranslationMetrics("TranslateBackend")(rErr)
+		finishMetrics(rErr)
 	}()
 
 	gk := schema.GroupKind{

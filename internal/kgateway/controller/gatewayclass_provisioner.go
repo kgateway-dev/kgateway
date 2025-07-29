@@ -83,8 +83,9 @@ func (r *gatewayClassProvisioner) Reconcile(ctx context.Context, req ctrl.Reques
 	log.Info("reconciling GatewayClasses", "controllerName", "gatewayclass-provisioner")
 	defer log.Info("finished reconciling GatewayClasses", "controllerName", "gatewayclass-provisioner")
 
+	finishMetrics := collectReconciliationMetrics("gatewayclass-provisioner", req)
 	defer func() {
-		collectReconciliationMetrics("gatewayclass-provisioner", req)(rErr)
+		finishMetrics(rErr)
 	}()
 
 	var errs []error

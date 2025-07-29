@@ -62,7 +62,7 @@ func translateGatewayHTTPRouteRulesUtil(
 		return
 	}
 
-	defer metrics.CollectTranslationMetrics("TranslateHTTPRoute")(nil)
+	defer (metrics.CollectTranslationMetrics("TranslateHTTPRoute"))(nil)
 
 	// This function is called multiple times during translation of resources, and it is
 	// only required to start the resource metrics tracking when the parent is a Gateway.

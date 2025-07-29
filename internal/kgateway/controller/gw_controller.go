@@ -37,8 +37,9 @@ func (r *gatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (re
 	log := log.FromContext(ctx).WithValues("gw", req.NamespacedName)
 	log.V(1).Info("reconciling request", "req", req)
 
+	finishMetrics := collectReconciliationMetrics("gateway", req)
 	defer func() {
-		collectReconciliationMetrics("gateway", req)(rErr)
+		finishMetrics(rErr)
 	}()
 
 	// check if we need to auto deploy the gateway
