@@ -177,9 +177,9 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(
 	}
 
 	// run plugins here that may set action
-	err := h.runRoutePlugins(ctx, routeReport, in, out, backendConfigCtx.typedPerFilterConfigRoute)
-	if err == nil {
-		err = validateEnvoyRoute(out)
+	routeProcessingErr := h.runRoutePlugins(ctx, in, out, backendConfigCtx.typedPerFilterConfigRoute)
+	if routeProcessingErr == nil {
+		routeProcessingErr = validateEnvoyRoute(out)
 	}
 
 	// apply typed per filter config from translating route action and route plugins
@@ -194,22 +194,39 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(
 		}
 	}
 
-	if err == nil && out.GetAction() == nil {
-		if in.Delegates && in.Error == nil {
-			return nil
-		} else {
-			err = errors.New("no action specified")
-		}
+	// If routeProcessingErr is nil, check if the route has an action for non-delegating routes
+	// to treat this as an error that should result in route replacement.
+	// A delegating(parent) route does not need to have an output Action on itself,
+	// so do not treat it as an error
+	if routeProcessingErr == nil && out.GetAction() == nil && !in.Delegates {
+		routeProcessingErr = errors.New("no action specified")
 	}
-	if err != nil {
-		h.logger.Debug("invalid route", "error", err)
-		// TODO: we may want to aggregate all these errors per http route object and report one message?
-		routeReport.SetCondition(reportssdk.RouteCondition{
-			Type:    gwv1.RouteConditionPartiallyInvalid,
-			Status:  metav1.ConditionTrue,
-			Reason:  gwv1.RouteReasonUnsupportedValue,
-			Message: fmt.Sprintf("Dropped Rule (%d): %v", in.MatchIndex, err),
-		})
+
+	// routeAcceptanceErr is used to set the Accepted=false,Reason=RouteRuleDropped condition on the route
+	routeAcceptanceErr := errors.Join(routeProcessingErr, in.RouteAcceptanceError)
+
+	// routeReplacementErr is used to replace the route with a direct response
+	routeReplacementErr := errors.Join(routeProcessingErr, in.RouteReplacementError, routeAcceptanceErr)
+
+	// If this is a delegating(parent) route rule and it has no other errors
+	// return a nil route since delegating parent route rules are expected to have no action set
+	if in.Delegates && routeAcceptanceErr == nil && routeReplacementErr == nil {
+		return nil
+	}
+
+	// If routeReplacementErr is set, we need to replace the route with a direct response
+	if routeReplacementErr != nil {
+		h.logger.Debug("invalid route", "error", routeReplacementErr)
+
+		// If routeAcceptanceErr is set, report Accepted=False with Reason=RouteRuleDropped
+		if routeAcceptanceErr != nil {
+			routeReport.SetCondition(reportssdk.RouteCondition{
+				Type:    gwv1.RouteConditionAccepted,
+				Status:  metav1.ConditionFalse,
+				Reason:  gwv1.RouteConditionReason(reportssdk.RouteRuleDroppedReason),
+				Message: fmt.Sprintf("Dropped Rule (%d): %v", in.MatchIndex, routeAcceptanceErr),
+			})
+		}
 
 		switch h.routeReplacementMode {
 		case settings.RouteReplacementStandard, settings.RouteReplacementStrict:
@@ -279,7 +296,6 @@ func (h *httpRouteConfigurationTranslator) runVhostPlugins(
 
 func (h *httpRouteConfigurationTranslator) runRoutePlugins(
 	ctx context.Context,
-	routeReport reportssdk.ParentRefReporter,
 	in ir.HttpRouteRuleMatchIR,
 	out *envoyroutev3.Route,
 	typedPerFilterConfig ir.TypedFilterConfigMap,
@@ -354,17 +370,8 @@ func (h *httpRouteConfigurationTranslator) runRoutePlugins(
 		out.Metadata = addMergeOriginsToFilterMetadata(gk, mergeOrigins, out.GetMetadata())
 		reportPolicyAttachmentStatus(h.reporter, h.listener.PolicyAncestorRef, mergeOrigins, pols...)
 	}
-	err := errors.Join(errs...)
-	if err != nil {
-		routeReport.SetCondition(reportssdk.RouteCondition{
-			Type:    gwv1.RouteConditionAccepted,
-			Status:  metav1.ConditionFalse,
-			Reason:  gwv1.RouteReasonIncompatibleFilters,
-			Message: err.Error(),
-		})
-	}
 
-	return err
+	return errors.Join(errs...)
 }
 
 func mergePolicies(pass *TranslationPass, policies []ir.PolicyAtt) ([]ir.PolicyAtt, ir.MergeOrigins) {

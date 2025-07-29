@@ -267,15 +267,15 @@ var _ = DescribeTable("Basic",
 				Expect(routeStatus).NotTo(BeNil())
 				Expect(routeStatus.Parents).To(HaveLen(1))
 
-				partiallyInvalid := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionPartiallyInvalid))
-				Expect(partiallyInvalid).NotTo(BeNil())
-				Expect(partiallyInvalid.Status).To(Equal(metav1.ConditionTrue))
-				Expect(partiallyInvalid.Reason).To(Equal(string(gwv1.RouteReasonUnsupportedValue)))
-				Expect(strings.Count(partiallyInvalid.Message, `field invalid_object contains invalid JSON string: "model":"gpt-4"}`)).To(Equal(2),
+				acceptedCond := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionAccepted))
+				Expect(acceptedCond).NotTo(BeNil())
+				Expect(acceptedCond.Status).To(Equal(metav1.ConditionFalse))
+				Expect(acceptedCond.Reason).To(Equal(reporter.RouteRuleDroppedReason))
+				Expect(strings.Count(acceptedCond.Message, `field invalid_object contains invalid JSON string: "model":"gpt-4"}`)).To(Equal(2),
 					"Expected 'invalid_object' message to appear exactly twice")
-				Expect(strings.Count(partiallyInvalid.Message, `field invalid_slices contains invalid JSON string: [1,2,3`)).To(Equal(2),
+				Expect(strings.Count(acceptedCond.Message, `field invalid_slices contains invalid JSON string: [1,2,3`)).To(Equal(2),
 					"Expected 'invalid_slices' message to appear exactly twice")
-				Expect(partiallyInvalid.ObservedGeneration).To(Equal(int64(0)))
+				Expect(acceptedCond.ObservedGeneration).To(Equal(int64(0)))
 			},
 		}),
 	Entry(
@@ -342,6 +342,16 @@ var _ = DescribeTable("Basic",
 			gwNN: types.NamespacedName{
 				Namespace: "infra",
 				Name:      "example-gateway",
+			},
+			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
+				expectedPolicies := []reports.PolicyKey{
+					{Group: "gateway.kgateway.dev", Kind: "TrafficPolicy", Namespace: "infra", Name: "extauth-for-gateway-section-name"},
+					{Group: "gateway.kgateway.dev", Kind: "TrafficPolicy", Namespace: "infra", Name: "extauth-for-gateway"},
+					{Group: "gateway.kgateway.dev", Kind: "TrafficPolicy", Namespace: "infra", Name: "extauth-for-http-route"},
+					{Group: "gateway.kgateway.dev", Kind: "TrafficPolicy", Namespace: "infra", Name: "extauth-for-extension-ref"},
+					{Group: "gateway.kgateway.dev", Kind: "TrafficPolicy", Namespace: "infra", Name: "extauth-for-route-section-name"},
+				}
+				assertAcceptedPolicyStatus(reportsMap, expectedPolicies)
 			},
 		}),
 	Entry(
@@ -717,12 +727,12 @@ var _ = DescribeTable("Basic",
 			Expect(resolvedRefs.Status).To(Equal(metav1.ConditionTrue))
 			Expect(resolvedRefs.Reason).To(Equal(string(gwv1.RouteReasonResolvedRefs)))
 
-			// Check if there's a PartiallyInvalid condition that reports the missing DirectResponse
-			partiallyInvalid := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionPartiallyInvalid))
-			Expect(partiallyInvalid).NotTo(BeNil())
-			Expect(partiallyInvalid.Status).To(Equal(metav1.ConditionTrue))
-			Expect(partiallyInvalid.Message).To(ContainSubstring("Dropped Rule"))
-			Expect(partiallyInvalid.Message).To(ContainSubstring("no action specified"))
+			// Assert Accepted=False reports the missing DirectResponse
+			acceptedCond := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionAccepted))
+			Expect(acceptedCond).NotTo(BeNil())
+			Expect(acceptedCond.Status).To(Equal(metav1.ConditionFalse))
+			Expect(acceptedCond.Message).To(ContainSubstring("Dropped Rule"))
+			Expect(acceptedCond.Message).To(ContainSubstring("no action specified"))
 		},
 	}),
 	Entry("DirectResponse with overlapping filters reports correctly", translatorTestCase{
@@ -743,12 +753,12 @@ var _ = DescribeTable("Basic",
 			Expect(routeStatus).NotTo(BeNil())
 			Expect(routeStatus.Parents).To(HaveLen(1))
 
-			// Check for PartiallyInvalid condition due to overlapping filters
-			partiallyInvalid := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionPartiallyInvalid))
-			Expect(partiallyInvalid).NotTo(BeNil())
-			Expect(partiallyInvalid.Status).To(Equal(metav1.ConditionTrue))
-			Expect(partiallyInvalid.Reason).To(Equal(string(gwv1.RouteReasonUnsupportedValue)))
-			Expect(partiallyInvalid.Message).To(ContainSubstring("cannot be applied to route with existing action"))
+			// Check for Accepted condition due to overlapping filters
+			acceptedCond := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionAccepted))
+			Expect(acceptedCond).NotTo(BeNil())
+			Expect(acceptedCond.Status).To(Equal(metav1.ConditionFalse))
+			Expect(acceptedCond.Reason).To(Equal(reporter.RouteRuleDroppedReason))
+			Expect(acceptedCond.Message).To(ContainSubstring("cannot be applied to route with existing action"))
 		},
 	}),
 	Entry("DirectResponse with invalid backendRef filter reports correctly", translatorTestCase{
@@ -999,13 +1009,13 @@ var _ = DescribeTable("Route Replacement",
 				Expect(routeStatus).NotTo(BeNil())
 				Expect(routeStatus.Parents).To(HaveLen(1))
 
-				partiallyInvalid := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionPartiallyInvalid))
-				Expect(partiallyInvalid).NotTo(BeNil())
-				Expect(partiallyInvalid.Status).To(Equal(metav1.ConditionTrue))
-				Expect(partiallyInvalid.Reason).To(Equal(string(gwv1.RouteReasonUnsupportedValue)))
-				Expect(partiallyInvalid.Message).To(ContainSubstring("Dropped Rule (0)"))
-				Expect(partiallyInvalid.Message).To(ContainSubstring("the rewrite /new//../path is invalid"))
-				Expect(partiallyInvalid.ObservedGeneration).To(Equal(int64(1)))
+				acceptedCond := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionAccepted))
+				Expect(acceptedCond).NotTo(BeNil())
+				Expect(acceptedCond.Status).To(Equal(metav1.ConditionFalse))
+				Expect(acceptedCond.Reason).To(Equal(reporter.RouteRuleDroppedReason))
+				Expect(acceptedCond.Message).To(ContainSubstring("Dropped Rule (0)"))
+				Expect(acceptedCond.Message).To(ContainSubstring("the rewrite /new//../path is invalid"))
+				Expect(acceptedCond.ObservedGeneration).To(Equal(int64(1)))
 			},
 		},
 		func(s *settings.Settings) {
@@ -1031,14 +1041,14 @@ var _ = DescribeTable("Route Replacement",
 				Expect(routeStatus).NotTo(BeNil())
 				Expect(routeStatus.Parents).To(HaveLen(1))
 
-				partiallyInvalid := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionPartiallyInvalid))
-				Expect(partiallyInvalid).NotTo(BeNil())
-				Expect(partiallyInvalid.Status).To(Equal(metav1.ConditionTrue))
-				Expect(partiallyInvalid.Reason).To(Equal(string(gwv1.RouteReasonUnsupportedValue)))
-				Expect(partiallyInvalid.Message).To(ContainSubstring("Dropped Rule (0)"))
-				Expect(partiallyInvalid.Message).To(ContainSubstring("failed to create rate limit actions"))
-				Expect(partiallyInvalid.Message).To(ContainSubstring("header entry requires Header field to be set"))
-				Expect(partiallyInvalid.ObservedGeneration).To(Equal(int64(0)))
+				acceptedCond := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionAccepted))
+				Expect(acceptedCond).NotTo(BeNil())
+				Expect(acceptedCond.Status).To(Equal(metav1.ConditionFalse))
+				Expect(acceptedCond.Reason).To(Equal(reporter.RouteRuleDroppedReason))
+				Expect(acceptedCond.Message).To(ContainSubstring("Dropped Rule (0)"))
+				Expect(acceptedCond.Message).To(ContainSubstring("failed to create rate limit actions"))
+				Expect(acceptedCond.Message).To(ContainSubstring("header entry requires Header field to be set"))
+				Expect(acceptedCond.ObservedGeneration).To(Equal(int64(0)))
 			},
 		},
 		func(s *settings.Settings) {
@@ -1073,9 +1083,10 @@ var _ = DescribeTable("Route Replacement",
 				Expect(accepted.Message).To(Equal("Route is accepted"))
 				Expect(accepted.ObservedGeneration).To(Equal(int64(0)))
 
-				// Expect no PartiallyInvalid condition since template validation is skipped in standard mode
-				partiallyInvalid := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionPartiallyInvalid))
-				Expect(partiallyInvalid).To(BeNil())
+				// Expect Accepted=True condition since template validation is skipped in standard mode
+				acceptedCond := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionAccepted))
+				Expect(acceptedCond).ToNot(BeNil())
+				Expect(acceptedCond.Status).To(Equal(metav1.ConditionTrue))
 			},
 		},
 		func(s *settings.Settings) {
@@ -1110,9 +1121,10 @@ var _ = DescribeTable("Route Replacement",
 				Expect(accepted.Message).To(Equal("Route is accepted"))
 				Expect(accepted.ObservedGeneration).To(Equal(int64(0)))
 
-				// Expect no PartiallyInvalid condition since template validation is skipped in standard mode
-				partiallyInvalid := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionPartiallyInvalid))
-				Expect(partiallyInvalid).To(BeNil())
+				// Expect Accepted=True condition since template validation is skipped in standard mode
+				acceptedCond := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionAccepted))
+				Expect(acceptedCond).ToNot(BeNil())
+				Expect(acceptedCond.Status).To(Equal(metav1.ConditionTrue))
 			},
 		},
 		func(s *settings.Settings) {
@@ -1146,9 +1158,10 @@ var _ = DescribeTable("Route Replacement",
 				Expect(accepted.Message).To(Equal("Route is accepted"))
 				Expect(accepted.ObservedGeneration).To(Equal(int64(0)))
 
-				// Expect no PartiallyInvalid condition since template validation is skipped in standard mode
-				partiallyInvalid := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionPartiallyInvalid))
-				Expect(partiallyInvalid).To(BeNil())
+				// Expect no Accepted=False condition since template validation is skipped in standard mode
+				acceptedCond := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionAccepted))
+				Expect(acceptedCond).ToNot(BeNil())
+				Expect(acceptedCond.Status).To(Equal(metav1.ConditionTrue))
 			},
 		},
 		func(s *settings.Settings) {
@@ -1173,13 +1186,13 @@ var _ = DescribeTable("Route Replacement",
 				Expect(routeStatus).NotTo(BeNil())
 				Expect(routeStatus.Parents).To(HaveLen(1))
 
-				partiallyInvalid := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionPartiallyInvalid))
-				Expect(partiallyInvalid).NotTo(BeNil())
-				Expect(partiallyInvalid.Status).To(Equal(metav1.ConditionTrue))
-				Expect(partiallyInvalid.Reason).To(Equal(string(gwv1.RouteReasonUnsupportedValue)))
-				Expect(partiallyInvalid.Message).To(ContainSubstring("Dropped Rule (0)"))
-				Expect(partiallyInvalid.Message).To(ContainSubstring("invalid xds configuration"))
-				Expect(partiallyInvalid.ObservedGeneration).To(Equal(int64(0)))
+				acceptedCond := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionAccepted))
+				Expect(acceptedCond).NotTo(BeNil())
+				Expect(acceptedCond.Status).To(Equal(metav1.ConditionFalse))
+				Expect(acceptedCond.Reason).To(Equal(reporter.RouteRuleDroppedReason))
+				Expect(acceptedCond.Message).To(ContainSubstring("Dropped Rule (0)"))
+				Expect(acceptedCond.Message).To(ContainSubstring("invalid xds configuration"))
+				Expect(acceptedCond.ObservedGeneration).To(Equal(int64(0)))
 			},
 		},
 		func(s *settings.Settings) {
@@ -1204,13 +1217,13 @@ var _ = DescribeTable("Route Replacement",
 				Expect(routeStatus).NotTo(BeNil())
 				Expect(routeStatus.Parents).To(HaveLen(1))
 
-				partiallyInvalid := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionPartiallyInvalid))
-				Expect(partiallyInvalid).NotTo(BeNil())
-				Expect(partiallyInvalid.Status).To(Equal(metav1.ConditionTrue))
-				Expect(partiallyInvalid.Reason).To(Equal(string(gwv1.RouteReasonUnsupportedValue)))
-				Expect(partiallyInvalid.Message).To(ContainSubstring("Dropped Rule (0)"))
-				Expect(partiallyInvalid.Message).To(ContainSubstring("extauthz: extension not found"))
-				Expect(partiallyInvalid.ObservedGeneration).To(Equal(int64(0)))
+				acceptedCond := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionAccepted))
+				Expect(acceptedCond).NotTo(BeNil())
+				Expect(acceptedCond.Status).To(Equal(metav1.ConditionFalse))
+				Expect(acceptedCond.Reason).To(Equal(reporter.RouteRuleDroppedReason))
+				Expect(acceptedCond.Message).To(ContainSubstring("Dropped Rule (0)"))
+				Expect(acceptedCond.Message).To(ContainSubstring("extauthz: extension not found"))
+				Expect(acceptedCond.ObservedGeneration).To(Equal(int64(0)))
 			},
 		},
 		func(s *settings.Settings) {
@@ -1235,13 +1248,13 @@ var _ = DescribeTable("Route Replacement",
 				Expect(routeStatus).NotTo(BeNil())
 				Expect(routeStatus.Parents).To(HaveLen(1))
 
-				partiallyInvalid := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionPartiallyInvalid))
-				Expect(partiallyInvalid).NotTo(BeNil())
-				Expect(partiallyInvalid.Status).To(Equal(metav1.ConditionTrue))
-				Expect(partiallyInvalid.Reason).To(Equal(string(gwv1.RouteReasonUnsupportedValue)))
-				Expect(partiallyInvalid.Message).To(ContainSubstring("Dropped Rule (0)"))
-				Expect(partiallyInvalid.Message).To(ContainSubstring("invalid xds configuration"))
-				Expect(partiallyInvalid.ObservedGeneration).To(Equal(int64(0)))
+				acceptedCond := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionAccepted))
+				Expect(acceptedCond).NotTo(BeNil())
+				Expect(acceptedCond.Status).To(Equal(metav1.ConditionFalse))
+				Expect(acceptedCond.Reason).To(Equal(reporter.RouteRuleDroppedReason))
+				Expect(acceptedCond.Message).To(ContainSubstring("Dropped Rule (0)"))
+				Expect(acceptedCond.Message).To(ContainSubstring("invalid xds configuration"))
+				Expect(acceptedCond.ObservedGeneration).To(Equal(int64(0)))
 			},
 		},
 		func(s *settings.Settings) {
@@ -1266,13 +1279,13 @@ var _ = DescribeTable("Route Replacement",
 				Expect(routeStatus).NotTo(BeNil())
 				Expect(routeStatus.Parents).To(HaveLen(1))
 
-				partiallyInvalid := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionPartiallyInvalid))
-				Expect(partiallyInvalid).NotTo(BeNil())
-				Expect(partiallyInvalid.Status).To(Equal(metav1.ConditionTrue))
-				Expect(partiallyInvalid.Reason).To(Equal(string(gwv1.RouteReasonUnsupportedValue)))
-				Expect(partiallyInvalid.Message).To(ContainSubstring("Dropped Rule (0)"))
-				Expect(partiallyInvalid.Message).To(ContainSubstring("invalid xds configuration"))
-				Expect(partiallyInvalid.ObservedGeneration).To(Equal(int64(0)))
+				acceptedCond := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionAccepted))
+				Expect(acceptedCond).NotTo(BeNil())
+				Expect(acceptedCond.Status).To(Equal(metav1.ConditionFalse))
+				Expect(acceptedCond.Reason).To(Equal(reporter.RouteRuleDroppedReason))
+				Expect(acceptedCond.Message).To(ContainSubstring("Dropped Rule (0)"))
+				Expect(acceptedCond.Message).To(ContainSubstring("invalid xds configuration"))
+				Expect(acceptedCond.ObservedGeneration).To(Equal(int64(0)))
 			},
 		},
 		func(s *settings.Settings) {
@@ -1297,13 +1310,13 @@ var _ = DescribeTable("Route Replacement",
 				Expect(routeStatus).NotTo(BeNil())
 				Expect(routeStatus.Parents).To(HaveLen(1))
 
-				partiallyInvalid := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionPartiallyInvalid))
-				Expect(partiallyInvalid).NotTo(BeNil())
-				Expect(partiallyInvalid.Status).To(Equal(metav1.ConditionTrue))
-				Expect(partiallyInvalid.Reason).To(Equal(string(gwv1.RouteReasonUnsupportedValue)))
-				Expect(partiallyInvalid.Message).To(ContainSubstring("Dropped Rule (0)"))
-				Expect(partiallyInvalid.Message).To(ContainSubstring("invalid xds configuration"))
-				Expect(partiallyInvalid.ObservedGeneration).To(Equal(int64(0)))
+				acceptedCond := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionAccepted))
+				Expect(acceptedCond).NotTo(BeNil())
+				Expect(acceptedCond.Status).To(Equal(metav1.ConditionFalse))
+				Expect(acceptedCond.Reason).To(Equal(reporter.RouteRuleDroppedReason))
+				Expect(acceptedCond.Message).To(ContainSubstring("Dropped Rule (0)"))
+				Expect(acceptedCond.Message).To(ContainSubstring("invalid xds configuration"))
+				Expect(acceptedCond.ObservedGeneration).To(Equal(int64(0)))
 			},
 		},
 		func(s *settings.Settings) {
@@ -1330,15 +1343,12 @@ var _ = DescribeTable("Route Replacement",
 
 				accepted := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionAccepted))
 				Expect(accepted).NotTo(BeNil())
+				// Template is structurally valid (passes xDS validation) but would fail at runtime
+				// Accepted=true condition should be set since it passes validation
 				Expect(accepted.Status).To(Equal(metav1.ConditionTrue))
 				Expect(accepted.Reason).To(Equal(string(gwv1.RouteReasonAccepted)))
 				Expect(accepted.Message).To(Equal("Route is accepted"))
 				Expect(accepted.ObservedGeneration).To(Equal(int64(0)))
-
-				// Template is structurally valid (passes xDS validation) but would fail at runtime
-				// No PartiallyInvalid condition should be set since it passes validation
-				partiallyInvalid := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionPartiallyInvalid))
-				Expect(partiallyInvalid).To(BeNil())
 			},
 		},
 		func(s *settings.Settings) {
@@ -1347,6 +1357,7 @@ var _ = DescribeTable("Route Replacement",
 )
 
 var _ = DescribeTable("Route Delegation",
+	// wantStatusErrors is an optional list of route,policy errors in that order
 	func(inputFile string, wantHTTPRouteErrors map[types.NamespacedName]string) {
 		dir := fsutils.MustGetThisDir()
 		test(
@@ -1361,8 +1372,8 @@ var _ = DescribeTable("Route Delegation",
 			},
 			func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
 				if wantHTTPRouteErrors == nil {
-					Expect(translatortest.AreReportsSuccess(gwNN, reportsMap)).NotTo(HaveOccurred())
-					return
+					// validate status on all routes
+					Expect(translatortest.GetHTTPRouteStatusError(reportsMap, nil)).NotTo(HaveOccurred())
 				}
 				for route, err := range wantHTTPRouteErrors {
 					Expect(translatortest.GetHTTPRouteStatusError(reportsMap, &route)).To(MatchError(ContainSubstring(err)))

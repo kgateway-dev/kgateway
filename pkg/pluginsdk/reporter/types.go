@@ -18,6 +18,9 @@ const (
 	PolicyMergedMsg = "Merged with other policies in target(s) and attached"
 
 	PolicyOverriddenMsg = "Overridden due to conflict with higher priority policy in target(s)"
+
+	// RouteRuleDroppedReason is used with the Accepted=False condition when the route rule is dropped
+	RouteRuleDroppedReason = "RouteRuleDropped"
 )
 
 // PolicyAttachmentState represents the state of a policy attachment
