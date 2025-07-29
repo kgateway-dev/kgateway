@@ -224,10 +224,13 @@ func TestHashPolicyForSpec(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			outSpec := &trafficPolicySpecIr{}
+			applyHashPolicy(tt.spec, outSpec)
 
-			hashPolicyForSpec(tt.spec, outSpec)
-
-			assert.Equal(t, tt.expected, outSpec.hashPolicies)
+			var actual []*envoyroutev3.RouteAction_HashPolicy
+			if outSpec.hashPolicies != nil {
+				actual = outSpec.hashPolicies.policies
+			}
+			assert.Equal(t, tt.expected, actual)
 		})
 	}
 }

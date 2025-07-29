@@ -43,37 +43,37 @@ func (p *TrafficPolicy) validateProto() error {
 	// TODO: rustformations, and ext auth/rate limit provider validation
 	// Note: no need for buffer validation as it's a single int field, right?
 	var validators []func() error
-	if p.spec.AI != nil {
-		if p.spec.AI.Transformation != nil {
-			validators = append(validators, p.spec.AI.Transformation.Validate)
+	if p.spec.ai != nil {
+		if p.spec.ai.Transformation != nil {
+			validators = append(validators, p.spec.ai.Transformation.Validate)
 		}
-		if p.spec.AI.Extproc != nil {
-			validators = append(validators, p.spec.AI.Extproc.Validate)
+		if p.spec.ai.Extproc != nil {
+			validators = append(validators, p.spec.ai.Extproc.Validate)
 		}
 	}
-	if p.spec.transform != nil {
-		validators = append(validators, p.spec.transform.Validate)
+	if p.spec.transformation != nil && p.spec.transformation.config != nil {
+		validators = append(validators, p.spec.transformation.config.Validate)
 	}
-	if p.spec.localRateLimit != nil {
-		validators = append(validators, p.spec.localRateLimit.Validate)
+	if p.spec.localRateLimit != nil && p.spec.localRateLimit.config != nil {
+		validators = append(validators, p.spec.localRateLimit.config.Validate)
 	}
-	if p.spec.rateLimit != nil {
-		for _, rateLimit := range p.spec.rateLimit.rateLimitActions {
+	if p.spec.globalRateLimit != nil {
+		for _, rateLimit := range p.spec.globalRateLimit.rateLimitActions {
 			validators = append(validators, rateLimit.Validate)
 		}
 	}
-	if p.spec.ExtProc != nil {
-		if p.spec.ExtProc.ExtProcPerRoute != nil {
-			validators = append(validators, p.spec.ExtProc.ExtProcPerRoute.Validate)
+	if p.spec.extProc != nil {
+		if p.spec.extProc.perRoute != nil {
+			validators = append(validators, p.spec.extProc.perRoute.Validate)
 		}
 	}
 	if p.spec.extAuth != nil {
-		if p.spec.extAuth.extauthPerRoute != nil {
-			validators = append(validators, p.spec.extAuth.extauthPerRoute.Validate)
+		if p.spec.extAuth.perRoute != nil {
+			validators = append(validators, p.spec.extAuth.perRoute.Validate)
 		}
 	}
 	if p.spec.csrf != nil {
-		validators = append(validators, p.spec.csrf.csrfPolicy.Validate)
+		validators = append(validators, p.spec.csrf.policy.Validate)
 	}
 	for _, validator := range validators {
 		if err := validator(); err != nil {

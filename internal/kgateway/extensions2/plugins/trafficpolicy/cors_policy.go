@@ -10,41 +10,40 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 )
 
-type CorsIR struct {
-	// corsConfig is the envoy cors policy
-	corsConfig *corsv3.CorsPolicy
+type corsIR struct {
+	// policy is the envoy cors policy
+	policy *corsv3.CorsPolicy
 }
 
-func (c *CorsIR) Equals(other *CorsIR) bool {
+func (c *corsIR) Equals(other *corsIR) bool {
 	if c == nil && other == nil {
 		return true
 	}
 	if c == nil || other == nil {
 		return false
 	}
-
-	return proto.Equal(c.corsConfig, other.corsConfig)
+	return proto.Equal(c.policy, other.policy)
 }
 
-// corsForSpec translates the cors spec into an envoy cors policy and stores it in the traffic policy IR
-func corsForSpec(spec v1alpha1.TrafficPolicySpec, out *trafficPolicySpecIr) error {
-	if spec.Cors == nil {
+// applyCORS translates the cors spec into an envoy cors policy and stores it in the traffic policy IR.
+func applyCORS(in *v1alpha1.TrafficPolicy, out *trafficPolicySpecIr) error {
+	if in.Spec.Cors == nil {
 		return nil
 	}
-	out.cors = &CorsIR{
-		corsConfig: utils.ToEnvoyCorsPolicy(spec.Cors.HTTPCORSFilter),
+	out.cors = &corsIR{
+		policy: utils.ToEnvoyCorsPolicy(in.Spec.Cors.HTTPCORSFilter),
 	}
 	return nil
 }
 
-func (p *trafficPolicyPluginGwPass) handleCors(fcn string, pCtxTypedFilterConfig *ir.TypedFilterConfigMap, cors *CorsIR) {
-	if cors == nil || cors.corsConfig == nil {
+func (p *trafficPolicyPluginGwPass) handleCors(fcn string, pCtxTypedFilterConfig *ir.TypedFilterConfigMap, cors *corsIR) {
+	if cors == nil || cors.policy == nil {
 		return
 	}
 
 	// Adds the CorsPolicy to the typed_per_filter_config.
 	// Also requires Cors http_filter to be added to the filter chain.
-	pCtxTypedFilterConfig.AddTypedConfig(envoy_wellknown.CORS, cors.corsConfig)
+	pCtxTypedFilterConfig.AddTypedConfig(envoy_wellknown.CORS, cors.policy)
 
 	// Add a filter to the chain. When having a cors policy for a route we need to also have a
 	// globally cors http filter in the chain otherwise it will be ignored.

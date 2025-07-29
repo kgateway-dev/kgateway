@@ -14,7 +14,7 @@ func TestBufferForSpec(t *testing.T) {
 	tests := []struct {
 		name     string
 		spec     v1alpha1.TrafficPolicySpec
-		expected *BufferIR
+		expected *bufferIR
 	}{
 		{
 			name:     "nil buffer spec",
@@ -28,7 +28,7 @@ func TestBufferForSpec(t *testing.T) {
 					MaxRequestSize: ptr.To(resource.MustParse("1Ki")),
 				},
 			},
-			expected: &BufferIR{
+			expected: &bufferIR{
 				maxRequestBytes: 1024,
 			},
 		},
@@ -37,7 +37,7 @@ func TestBufferForSpec(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			out := &trafficPolicySpecIr{}
-			bufferForSpec(tt.spec, out)
+			applyBuffer(tt.spec, out)
 
 			if tt.expected == nil {
 				assert.Nil(t, out.buffer)
@@ -52,8 +52,8 @@ func TestBufferForSpec(t *testing.T) {
 func TestBufferIREquals(t *testing.T) {
 	tests := []struct {
 		name     string
-		b1       *BufferIR
-		b2       *BufferIR
+		b1       *bufferIR
+		b2       *bufferIR
 		expected bool
 	}{
 		{
@@ -65,27 +65,27 @@ func TestBufferIREquals(t *testing.T) {
 		{
 			name: "one nil",
 			b1:   nil,
-			b2: &BufferIR{
+			b2: &bufferIR{
 				maxRequestBytes: 1024,
 			},
 			expected: false,
 		},
 		{
 			name: "equal buffers",
-			b1: &BufferIR{
+			b1: &bufferIR{
 				maxRequestBytes: 1024,
 			},
-			b2: &BufferIR{
+			b2: &bufferIR{
 				maxRequestBytes: 1024,
 			},
 			expected: true,
 		},
 		{
 			name: "different max request bytes",
-			b1: &BufferIR{
+			b1: &bufferIR{
 				maxRequestBytes: 1024,
 			},
-			b2: &BufferIR{
+			b2: &bufferIR{
 				maxRequestBytes: 2048,
 			},
 			expected: false,

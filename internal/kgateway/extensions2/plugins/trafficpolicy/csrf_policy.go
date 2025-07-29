@@ -17,11 +17,11 @@ const (
 	csrfShadowEnabledKey    = "envoy.csrf.shadow_enabled"
 )
 
-type CsrfIR struct {
-	csrfPolicy *envoy_csrf_v3.CsrfPolicy
+type csrfIR struct {
+	policy *envoy_csrf_v3.CsrfPolicy
 }
 
-func (c *CsrfIR) Equals(other *CsrfIR) bool {
+func (c *csrfIR) Equals(other *csrfIR) bool {
 	if c == nil && other == nil {
 		return true
 	}
@@ -29,15 +29,15 @@ func (c *CsrfIR) Equals(other *CsrfIR) bool {
 		return false
 	}
 
-	return proto.Equal(c.csrfPolicy, other.csrfPolicy)
+	return proto.Equal(c.policy, other.policy)
 }
 
 // handleCsrf adds CSRF configuration to routes
-func (p *trafficPolicyPluginGwPass) handleCsrf(fcn string, typedFilterConfig *ir.TypedFilterConfigMap, ir *CsrfIR) {
+func (p *trafficPolicyPluginGwPass) handleCsrf(fcn string, typedFilterConfig *ir.TypedFilterConfigMap, ir *csrfIR) {
 	if typedFilterConfig == nil || ir == nil {
 		return
 	}
-	typedFilterConfig.AddTypedConfig(csrfExtensionFilterName, ir.csrfPolicy)
+	typedFilterConfig.AddTypedConfig(csrfExtensionFilterName, ir.policy)
 
 	// Add a filter to the chain. When having a csrf for a route we need to also have a
 	// globally disabled csrf filter in the chain otherwise it will be ignored.
@@ -50,8 +50,8 @@ func (p *trafficPolicyPluginGwPass) handleCsrf(fcn string, typedFilterConfig *ir
 	}
 }
 
-// csrfForSpec translates the CSRF spec into and onto the IR policy
-func csrfForSpec(spec v1alpha1.TrafficPolicySpec, out *trafficPolicySpecIr) error {
+// applyCSRF translates the CSRF spec into and onto the IR policy.
+func applyCSRF(spec v1alpha1.TrafficPolicySpec, out *trafficPolicySpecIr) error {
 	if spec.Csrf == nil {
 		return nil
 	}
@@ -95,8 +95,8 @@ func csrfForSpec(spec v1alpha1.TrafficPolicySpec, out *trafficPolicySpecIr) erro
 		}
 	}
 
-	out.csrf = &CsrfIR{
-		csrfPolicy: csrfPolicy,
+	out.csrf = &csrfIR{
+		policy: csrfPolicy,
 	}
 	return nil
 }

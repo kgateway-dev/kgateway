@@ -4,6 +4,7 @@ import (
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	localratelimitv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/local_ratelimit/v3"
 	typev3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
@@ -17,19 +18,31 @@ const (
 	localRatelimitFilterDisabledRuntimeKey = "local_rate_limit_disabled"
 )
 
-func localRateLimitForSpec(spec v1alpha1.TrafficPolicySpec, out *trafficPolicySpecIr) error {
-	if spec.RateLimit == nil || spec.RateLimit.Local == nil {
+type localRateLimitIR struct {
+	config *localratelimitv3.LocalRateLimit
+}
+
+func (l *localRateLimitIR) Equals(other *localRateLimitIR) bool {
+	if l == nil && other == nil {
+		return true
+	}
+	if l == nil || other == nil {
+		return false
+	}
+	return proto.Equal(l.config, other.config)
+}
+
+// applyLocalRateLimit converts the local rate limit policy spec to the IR.
+func applyLocalRateLimit(in *v1alpha1.TrafficPolicy, out *trafficPolicySpecIr) error {
+	if in.Spec.RateLimit == nil || in.Spec.RateLimit.Local == nil {
 		return nil
 	}
-
-	var err error
-	if spec.RateLimit.Local != nil {
-		out.localRateLimit, err = toLocalRateLimitFilterConfig(spec.RateLimit.Local)
-		if err != nil {
-			// In case of an error with translating the local rate limit configuration,
-			// the route will be dropped
-			return err
-		}
+	localRateLimit, err := toLocalRateLimitFilterConfig(in.Spec.RateLimit.Local)
+	if err != nil {
+		return err
+	}
+	out.localRateLimit = &localRateLimitIR{
+		config: localRateLimit,
 	}
 	return nil
 }
@@ -99,11 +112,11 @@ func createDisabledRateLimit() *localratelimitv3.LocalRateLimit {
 	}
 }
 
-func (p *trafficPolicyPluginGwPass) handleLocalRateLimit(fcn string, typedFilterConfig *ir.TypedFilterConfigMap, localRateLimit *localratelimitv3.LocalRateLimit) {
+func (p *trafficPolicyPluginGwPass) handleLocalRateLimit(fcn string, typedFilterConfig *ir.TypedFilterConfigMap, localRateLimit *localRateLimitIR) {
 	if localRateLimit == nil {
 		return
 	}
-	typedFilterConfig.AddTypedConfig(localRateLimitFilterNamePrefix, localRateLimit)
+	typedFilterConfig.AddTypedConfig(localRateLimitFilterNamePrefix, localRateLimit.config)
 
 	// Add a filter to the chain. When having a rate limit for a route we need to also have a
 	// globally disabled rate limit filter in the chain otherwise it will be ignored.

@@ -3,6 +3,7 @@ package trafficpolicy
 import (
 	"sort"
 
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
 
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
@@ -10,7 +11,31 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 )
 
-func hashPolicyForSpec(spec v1alpha1.TrafficPolicySpec, outSpec *trafficPolicySpecIr) {
+type hashPolicyIR struct {
+	policies []*envoyroutev3.RouteAction_HashPolicy
+}
+
+func (h *hashPolicyIR) Equals(other *hashPolicyIR) bool {
+	if h == nil && other == nil {
+		return true
+	}
+	if h == nil || other == nil {
+		return false
+	}
+
+	if len(h.policies) != len(other.policies) {
+		return false
+	}
+	for i, policy := range h.policies {
+		if !proto.Equal(policy, other.policies[i]) {
+			return false
+		}
+	}
+	return true
+}
+
+// applyHashPolicy converts the hash policy spec to the IR.
+func applyHashPolicy(spec v1alpha1.TrafficPolicySpec, outSpec *trafficPolicySpecIr) {
 	if len(spec.HashPolicies) == 0 {
 		return
 	}
@@ -65,5 +90,7 @@ func hashPolicyForSpec(spec v1alpha1.TrafficPolicySpec, outSpec *trafficPolicySp
 		}
 		policies = append(policies, policy)
 	}
-	outSpec.hashPolicies = policies
+	outSpec.hashPolicies = &hashPolicyIR{
+		policies: policies,
+	}
 }
