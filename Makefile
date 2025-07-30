@@ -707,6 +707,30 @@ agw-conformance-%: $(TEST_ASSET_DIR)/conformance/conformance_test.go
 	-run-test=$*
 
 #----------------------------------------------------------------------------------
+# Dependency Bumping
+#----------------------------------------------------------------------------------
+
+.PHONY: bump-gtw
+bump-gtw: ## Bump Gateway API deps to $DEP_VERSION
+ifndef DEP_VERSION
+	$(error DEP_VERSION is not set, e.g. make bump-gtw DEP_VERSION=v1.3.0)
+endif
+	@echo "Bumping Gateway API to $(DEP_VERSION)"
+	@$(SHELL) hack/bump_deps.sh gtw $(DEP_VERSION)
+	@echo "Updating licensing..."
+	@$(MAKE) generate-licenses
+
+.PHONY: bump-gie
+bump-gie: ## Bump Gateway API Inference Extension to $DEP_VERSION
+ifndef DEP_VERSION
+	$(error DEP_VERSION is not set, e.g. make bump-gie DEP_VERSION=v0.5.0)
+endif
+	@echo ">>> Bumping Gateway API Inference Extension to $(DEP_VERSION)"
+	@$(SHELL) hack/bump_deps.sh gie $(DEP_VERSION)
+	@echo "Updating licensing..."
+	@$(MAKE) generate-licenses
+
+#----------------------------------------------------------------------------------
 # Printing makefile variables utility
 #----------------------------------------------------------------------------------
 
