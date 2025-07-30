@@ -134,6 +134,12 @@ func InitCollections(
 	namespaces, _ := NewNamespaceCollection(ctx, istioClient, krtopts)
 
 	policies := NewPolicyIndex(krtopts, plugins.ContributesPolicies, globalSettings)
+	for _, plugin := range plugins.ContributesPolicies {
+		if plugin.Policies != nil {
+			metrics.RegisterEvents(plugin.Policies, GetResourceMetricEventHandler[ir.PolicyWrapper]())
+		}
+	}
+
 	backendIndex := NewBackendIndex(krtopts, policies, refgrants)
 	initBackends(plugins, backendIndex)
 	endpointIRs := initEndpoints(plugins, krtopts)
