@@ -75,7 +75,6 @@ spec:
     name: test-service
   http1ProtocolOptions:
     enableTrailers: true
-    headerFormat: ProperCaseHeaderKeyFormat
   http2ProtocolOptions:
     maxConcurrentStreams: 100
     overrideStreamErrorOnInvalidHttpMessage: true
