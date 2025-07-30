@@ -36,7 +36,7 @@ func (b *bufferIR) Equals(other PolicySubIR) bool {
 // Note: buffer validation is not needed as it's a single uint32 field
 func (b *bufferIR) Validate() error { return nil }
 
-// constructBuffer translates the buffer spec into an envoy buffer policy and stores it in the traffic policy IR.
+// constructBuffer constructs the buffer policy IR from the policy specification.
 func constructBuffer(spec v1alpha1.TrafficPolicySpec, out *trafficPolicySpecIr) {
 	if spec.Buffer == nil {
 		return

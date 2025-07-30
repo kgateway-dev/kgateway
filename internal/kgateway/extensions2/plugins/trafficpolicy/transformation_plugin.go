@@ -42,7 +42,7 @@ func (t *transformationIR) Validate() error {
 	return t.config.ValidateAll()
 }
 
-// constructTransformation converts the transformation policy spec to the IR.
+// constructTransformation constructs the transformation policy IR from the policy specification.
 func constructTransformation(in *v1alpha1.TrafficPolicy, out *trafficPolicySpecIr) error {
 	if in.Spec.Transformation == nil && !useRustformations {
 		return nil
@@ -195,6 +195,7 @@ func (r *rustformationIR) Validate() error {
 	return r.config.ValidateAll()
 }
 
+// constructRustformation constructs the rustformation policy IR from the policy specification.
 func constructRustformation(in *v1alpha1.TrafficPolicy, out *trafficPolicySpecIr) error {
 	if in.Spec.Transformation == nil || !useRustformations {
 		return nil

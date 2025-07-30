@@ -51,7 +51,7 @@ func (h *hashPolicyIR) Validate() error {
 	return nil
 }
 
-// constructHashPolicy converts the hash policy spec to the IR.
+// constructHashPolicy constructs the hash policy IR from the policy specification.
 func constructHashPolicy(spec v1alpha1.TrafficPolicySpec, outSpec *trafficPolicySpecIr) {
 	if len(spec.HashPolicies) == 0 {
 		return

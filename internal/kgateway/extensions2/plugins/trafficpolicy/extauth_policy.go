@@ -98,7 +98,7 @@ func (e *extAuthIR) Validate() error {
 	return nil
 }
 
-// constructExtAuth converts the extauth policy spec to the IR.
+// constructExtAuth constructs the external authentication policy IR from the policy specification.
 func constructExtAuth(
 	krtctx krt.HandlerContext,
 	in *v1alpha1.TrafficPolicy,

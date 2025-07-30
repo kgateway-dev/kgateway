@@ -59,7 +59,7 @@ func (e *extprocIR) Validate() error {
 	return nil
 }
 
-// constructExtProc converts the extproc policy spec to the IR.
+// constructExtProc constructs the external processing policy IR from the policy specification.
 func constructExtProc(
 	krtctx krt.HandlerContext,
 	in *v1alpha1.TrafficPolicy,

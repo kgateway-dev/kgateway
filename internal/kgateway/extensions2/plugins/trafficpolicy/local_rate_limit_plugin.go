@@ -45,7 +45,7 @@ func (l *localRateLimitIR) Validate() error {
 	return l.config.ValidateAll()
 }
 
-// constructLocalRateLimit converts the local rate limit policy spec to the IR.
+// constructLocalRateLimit constructs the local rate limit policy IR from the policy specification.
 func constructLocalRateLimit(in *v1alpha1.TrafficPolicy, out *trafficPolicySpecIr) error {
 	if in.Spec.RateLimit == nil || in.Spec.RateLimit.Local == nil {
 		return nil
