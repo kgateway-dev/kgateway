@@ -18,23 +18,45 @@ type extprocIR struct {
 	perRoute *envoy_ext_proc_v3.ExtProcPerRoute
 }
 
-func (e *extprocIR) Equals(other *extprocIR) bool {
-	if e == nil && other == nil {
+var _ PolicySubIR = &extprocIR{}
+
+func (e *extprocIR) Equals(other PolicySubIR) bool {
+	otherExtProc, ok := other.(*extprocIR)
+	if !ok {
+		return false
+	}
+	if e == nil && otherExtProc == nil {
 		return true
 	}
-	if e == nil || other == nil {
+	if e == nil || otherExtProc == nil {
 		return false
 	}
-
-	if !proto.Equal(e.perRoute, other.perRoute) {
+	if !proto.Equal(e.perRoute, otherExtProc.perRoute) {
 		return false
 	}
-	if !cmputils.CompareWithNils(e.provider, other.provider, func(a, b *TrafficPolicyGatewayExtensionIR) bool {
+	if !cmputils.CompareWithNils(e.provider, otherExtProc.provider, func(a, b *TrafficPolicyGatewayExtensionIR) bool {
 		return a.Equals(*b)
 	}) {
 		return false
 	}
 	return true
+}
+
+func (e *extprocIR) Validate() error {
+	if e == nil {
+		return nil
+	}
+	if e.perRoute != nil {
+		if err := e.perRoute.ValidateAll(); err != nil {
+			return err
+		}
+	}
+	if e.provider != nil {
+		if err := e.provider.Validate(); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // applyExtProc converts the extproc policy spec to the IR.

@@ -15,14 +15,27 @@ type corsIR struct {
 	policy *corsv3.CorsPolicy
 }
 
-func (c *corsIR) Equals(other *corsIR) bool {
-	if c == nil && other == nil {
-		return true
-	}
-	if c == nil || other == nil {
+var _ PolicySubIR = &corsIR{}
+
+func (c *corsIR) Equals(other PolicySubIR) bool {
+	otherCors, ok := other.(*corsIR)
+	if !ok {
 		return false
 	}
-	return proto.Equal(c.policy, other.policy)
+	if c == nil && otherCors == nil {
+		return true
+	}
+	if c == nil || otherCors == nil {
+		return false
+	}
+	return proto.Equal(c.policy, otherCors.policy)
+}
+
+func (c *corsIR) Validate() error {
+	if c == nil || c.policy == nil {
+		return nil
+	}
+	return c.policy.Validate()
 }
 
 // applyCORS translates the cors spec into an envoy cors policy and stores it in the traffic policy IR.

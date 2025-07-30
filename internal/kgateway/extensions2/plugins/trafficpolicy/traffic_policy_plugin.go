@@ -67,6 +67,17 @@ var (
 	EnableFilterPerRoute = &envoyroutev3.FilterConfig{Config: &anypb.Any{}}
 )
 
+// PolicySubIR documents the expected interface that all policy sub-IRs should implement.
+type PolicySubIR interface {
+	// Equals compares this policy with another policy
+	Equals(other PolicySubIR) bool
+
+	// Validate performs PGV validation on the policy
+	Validate() error
+
+	// TODO: Merge. Just awkward as we won't be using the actual method type.
+}
+
 type TrafficPolicy struct {
 	ct   time.Time
 	spec trafficPolicySpecIr
@@ -136,8 +147,32 @@ func (d *TrafficPolicy) Equals(in any) bool {
 	if !d.spec.hashPolicies.Equals(d2.spec.hashPolicies) {
 		return false
 	}
-
 	return true
+}
+
+// Validate performs PGV (protobuf-generated validation) validation by delegating
+// to each policy sub-IR's Validate() method. This follows the exact same pattern as the Equals() method.
+// PGV validation is always performed regardless of route replacement mode.
+func (p *TrafficPolicy) Validate() error {
+	var validators []func() error
+	validators = append(validators, p.spec.ai.Validate)
+	validators = append(validators, p.spec.transformation.Validate)
+	validators = append(validators, p.spec.rustformation.Validate)
+	validators = append(validators, p.spec.localRateLimit.Validate)
+	validators = append(validators, p.spec.globalRateLimit.Validate)
+	validators = append(validators, p.spec.extProc.Validate)
+	validators = append(validators, p.spec.extAuth.Validate)
+	validators = append(validators, p.spec.csrf.Validate)
+	validators = append(validators, p.spec.cors.Validate)
+	validators = append(validators, p.spec.buffer.Validate)
+	validators = append(validators, p.spec.hashPolicies.Validate)
+	validators = append(validators, p.spec.autoHostRewrite.Validate)
+	for _, validator := range validators {
+		if err := validator(); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 type trafficPolicyPluginGwPass struct {
@@ -198,7 +233,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 		}
 
 		policyIR, errors := translator.Translate(krtctx, policyCR)
-		if err := policyIR.Validate(ctx, v, commoncol.Settings.RouteReplacementMode); err != nil {
+		if err := validateWithRouteReplacementMode(ctx, policyIR, v, commoncol.Settings.RouteReplacementMode); err != nil {
 			logger.Error("validation failed", "policy", policyCR.Name, "error", err)
 			errors = append(errors, err)
 		}

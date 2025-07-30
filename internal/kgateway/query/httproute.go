@@ -2,7 +2,6 @@ package query
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 
@@ -304,7 +303,7 @@ func (r *gatewayQueries) fetchRoutesByRef(
 			// Lookup a specific child route by its name
 			route := r.collections.Routes.FetchHttp(kctx, delegatedNs, string(backendRef.Name))
 			if route == nil {
-				return nil, errors.New("not found")
+				return nil, ErrUnresolvedReference
 			}
 			refChildren = append(refChildren, *route)
 		}

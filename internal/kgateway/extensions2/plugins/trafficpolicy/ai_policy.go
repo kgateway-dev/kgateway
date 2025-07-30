@@ -49,33 +49,57 @@ type aiPolicyIR struct {
 	Transformation *envoytransformation.RouteTransformations
 }
 
+var _ PolicySubIR = &aiPolicyIR{}
+
 // Equals checks if two aiPolicyIR instances are equal.
-func (a *aiPolicyIR) Equals(in *aiPolicyIR) bool {
-	if a == nil && in == nil {
+func (a *aiPolicyIR) Equals(in PolicySubIR) bool {
+	inAI, ok := in.(*aiPolicyIR)
+	if !ok {
+		return false
+	}
+	if a == nil && inAI == nil {
 		return true
 	}
-	if a == nil || in == nil {
+	if a == nil || inAI == nil {
 		return false
 	}
 
 	// Check AISecret equality
-	if a.AISecret != nil && in.AISecret != nil {
-		if !a.AISecret.Equals(*in.AISecret) {
+	if a.AISecret != nil && inAI.AISecret != nil {
+		if !a.AISecret.Equals(*inAI.AISecret) {
 			return false
 		}
-	} else if (a.AISecret != nil) != (in.AISecret != nil) {
+	} else if (a.AISecret != nil) != (inAI.AISecret != nil) {
 		return false
 	}
 	// Check Extproc equality
-	if !proto.Equal(a.Extproc, in.Extproc) {
+	if !proto.Equal(a.Extproc, inAI.Extproc) {
 		return false
 	}
 	// Check Transformation equality
-	if !proto.Equal(a.Transformation, in.Transformation) {
+	if !proto.Equal(a.Transformation, inAI.Transformation) {
 		return false
 	}
 
 	return true
+}
+
+// Validate performs PGV-based validation on the AI policy components
+func (a *aiPolicyIR) Validate() error {
+	if a == nil {
+		return nil
+	}
+	if a.Transformation != nil {
+		if err := a.Transformation.Validate(); err != nil {
+			return err
+		}
+	}
+	if a.Extproc != nil {
+		if err := a.Extproc.Validate(); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // applyAI processes the AI policy specification and sets the corresponding IR in the output spec

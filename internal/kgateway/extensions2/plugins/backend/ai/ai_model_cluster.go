@@ -13,8 +13,6 @@ import (
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	eiutils "github.com/kgateway-dev/kgateway/v2/internal/envoyinit/pkg/utils"
-
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	aiutils "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
@@ -30,10 +28,10 @@ const (
 	AnthropicHost = "api.anthropic.com"
 )
 
-func tlsMatch(matchStr string) *structpb.Struct {
+func tlsMatch() *structpb.Struct {
 	return &structpb.Struct{
 		Fields: map[string]*structpb.Value{
-			"tls": structpb.NewStringValue(matchStr),
+			"tls": structpb.NewStringValue("true"),
 		},
 	}
 }
@@ -133,67 +131,27 @@ func buildModelCluster(aiUs *v1alpha1.AIBackend, aiSecret *ir.Secret, multiSecre
 		}
 	}
 
-	// Add proper certificate validation
-	validationContext := &envoytlsv3.CertificateValidationContext{}
-	sdsValidationCtx := &envoytlsv3.SdsSecretConfig{
-		Name: eiutils.SystemCaSecretName,
-	}
-
-	tlsContextDefault := &envoytlsv3.UpstreamTlsContext{
-		CommonTlsContext: &envoytlsv3.CommonTlsContext{
-			ValidationContextType: &envoytlsv3.CommonTlsContext_CombinedValidationContext{
-				CombinedValidationContext: &envoytlsv3.CommonTlsContext_CombinedCertificateValidationContext{
-					DefaultValidationContext:         validationContext,
-					ValidationContextSdsSecretConfig: sdsValidationCtx,
-				},
-			},
-		},
-		AutoHostSni: true,
-	}
-	tlsCtxDefaultAny, err := utils.MessageToAny(tlsContextDefault)
-	if err != nil {
-		return err
-	}
-	tlsMatchDefault := &envoyclusterv3.Cluster_TransportSocketMatch{
-		Name: "tls",
-		TransportSocket: &envoycorev3.TransportSocket{
-			Name: wellknown.TransportSocketTls,
-			ConfigType: &envoycorev3.TransportSocket_TypedConfig{
-				TypedConfig: tlsCtxDefaultAny,
-			},
-		},
-		Match: tlsMatch("default"),
-	}
-
-	// Skip verification if explicitly requested
-	// Note: We don't set ValidationContextType at all, which effectively disables verification
-	tlsContextSkipValidation := &envoytlsv3.UpstreamTlsContext{
+	// TODO: ssl validation https://github.com/kgateway-dev/kgateway/issues/10719
+	// attempt to match tls, the default match is always plaintext
+	tlsCtx := &envoytlsv3.UpstreamTlsContext{
 		CommonTlsContext: &envoytlsv3.CommonTlsContext{},
 		AutoHostSni:      true,
 	}
-	tlsCtxSkipValidationAny, err := utils.MessageToAny(tlsContextSkipValidation)
+	tlsCtxAny, err := utils.MessageToAny(tlsCtx)
 	if err != nil {
 		return err
 	}
-	tsMatchSkipValidation := &envoyclusterv3.Cluster_TransportSocketMatch{
-		Name: "tls",
-		TransportSocket: &envoycorev3.TransportSocket{
-			Name: wellknown.TransportSocketTls,
-			ConfigType: &envoycorev3.TransportSocket_TypedConfig{
-				TypedConfig: tlsCtxSkipValidationAny,
-			},
-		},
-		Match: tlsMatch("skipverification"),
-	}
-
-	// First attempt to match tls or if skip verification is enabled. The default match is always plaintext
-	// append all transport socket matches
 	out.TransportSocketMatches = append(out.GetTransportSocketMatches(), []*envoyclusterv3.Cluster_TransportSocketMatch{
-		// attempt to match tls default if match is set
-		tlsMatchDefault,
-		// attempt to match tls skip validation if match is set and skip verification is true
-		tsMatchSkipValidation,
-		// add the plaintext default match
+		{
+			Name: "tls",
+			TransportSocket: &envoycorev3.TransportSocket{
+				Name: wellknown.TransportSocketTls,
+				ConfigType: &envoycorev3.TransportSocket_TypedConfig{
+					TypedConfig: tlsCtxAny,
+				},
+			},
+			Match: tlsMatch(),
+		},
 		{
 			Name: "plaintext",
 			TransportSocket: &envoycorev3.TransportSocket{
@@ -350,7 +308,6 @@ func buildLocalityLbEndpoint(
 	hostOverride *v1alpha1.Host,
 	metadata *envoycorev3.Metadata,
 ) *envoyendpointv3.LbEndpoint {
-	var insecureSkipVerify bool
 	if hostOverride != nil {
 		if hostOverride.Host != "" {
 			host = hostOverride.Host
@@ -358,26 +315,10 @@ func buildLocalityLbEndpoint(
 		if hostOverride.Port != 0 {
 			port = int32(hostOverride.Port)
 		}
-		if hostOverride.InsecureSkipVerify != nil {
-			insecureSkipVerify = *hostOverride.InsecureSkipVerify
-		}
 	}
 	if port == tlsPort {
-		if !insecureSkipVerify {
-			// Used for transport socket matching with validation
-			metadata.GetFilterMetadata()["envoy.transport_socket_match"] = &structpb.Struct{
-				Fields: map[string]*structpb.Value{
-					"tls": structpb.NewStringValue("default"),
-				},
-			}
-		} else {
-			// Used for transport socket matching with skipverification
-			metadata.GetFilterMetadata()["envoy.transport_socket_match"] = &structpb.Struct{
-				Fields: map[string]*structpb.Value{
-					"tls": structpb.NewStringValue("skipverification"),
-				},
-			}
-		}
+		// Used for transport socket matching
+		metadata.GetFilterMetadata()["envoy.transport_socket_match"] = tlsMatch()
 	}
 
 	return &envoyendpointv3.LbEndpoint{
