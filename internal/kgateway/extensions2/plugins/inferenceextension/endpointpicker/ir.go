@@ -2,6 +2,7 @@ package endpointpicker
 
 import (
 	"encoding/json"
+	"fmt"
 	"maps"
 	"sync"
 	"time"
@@ -21,7 +22,8 @@ const (
 
 // inferencePool defines the internal representation of an inferencePool resource.
 type inferencePool struct {
-	objMeta metav1.ObjectMeta
+	// obj is the original object. Opaque to us other than metadata.
+	obj metav1.Object
 	// podSelector is a label selector to select Pods that are members of the InferencePool.
 	podSelector map[string]string
 	// targetPort is the port number that should be targeted for Pods selected by Selector.
@@ -33,10 +35,12 @@ type inferencePool struct {
 	mu sync.Mutex
 	// errors is a list of errors that occurred while processing the InferencePool.
 	errors []error
+	// endpoints define the list of endpoints resolved by the podSelector.
+	endpoints endpoints
 }
 
 // newInferencePool returns the internal representation of the given pool.
-func newInferencePool(pool *infextv1a2.InferencePool) *inferencePool {
+func newInferencePool(pool *infextv1a2.InferencePool, eps []endpoint) *inferencePool {
 	port := servicePort{name: "grpc", portNum: (int32(grpcPort))}
 	if pool.Spec.ExtensionRef.PortNumber != nil {
 		port.portNum = int32(*pool.Spec.ExtensionRef.PortNumber)
@@ -54,16 +58,17 @@ func newInferencePool(pool *infextv1a2.InferencePool) *inferencePool {
 	}
 
 	return &inferencePool{
-		objMeta:     pool.ObjectMeta,
+		obj:         pool,
 		podSelector: convertSelector(pool.Spec.Selector),
 		targetPort:  int32(pool.Spec.TargetPortNumber),
 		configRef:   svcIR,
+		endpoints:   eps,
 	}
 }
 
 // In case multiple pools attached to the same resource, we sort by creation time.
 func (ir *inferencePool) CreationTime() time.Time {
-	return ir.objMeta.CreationTimestamp.Time
+	return ir.obj.GetCreationTimestamp().Time
 }
 
 func (ir *inferencePool) Selector() map[string]string {
@@ -78,32 +83,70 @@ func (ir *inferencePool) Equals(other any) bool {
 	if !ok {
 		return false
 	}
-	return maps.EqualFunc(ir.Selector(), otherPool.Selector(), func(a, b string) bool {
-		return a == b
-	})
+	// Compare pod selector
+	if !maps.Equal(ir.Selector(), otherPool.Selector()) {
+		return false
+	}
+	// Compare error presence (we only need the boolean)
+	if ir.hasErrors() != otherPool.hasErrors() {
+		return false
+	}
+	// Compare endpoint set (order‑insensitive)
+	if len(ir.endpoints) != len(otherPool.endpoints) {
+		return false
+	}
+	seen := make(map[string]struct{}, len(ir.endpoints))
+	for _, ep := range ir.endpoints {
+		seen[ep.string()] = struct{}{}
+	}
+	for _, ep := range otherPool.endpoints {
+		if _, ok := seen[ep.string()]; !ok {
+			return false
+		}
+	}
+	// Compare target port
+	if ir.targetPort != otherPool.targetPort {
+		return false
+	}
+	// Compare configRef
+	if !ir.configRefEquals(otherPool) {
+		return false
+	}
+	return true
+}
+
+// configRefEquals checks whether two pools refer to the same extension config service.
+func (ir *inferencePool) configRefEquals(other *inferencePool) bool {
+	if ir.configRef == nil && other.configRef == nil {
+		return true
+	}
+	if (ir.configRef == nil) != (other.configRef == nil) {
+		return false
+	}
+	return ir.configRef.Equals(*other.configRef)
 }
 
 // setErrors atomically replaces p.errors under lock.
-func (p *inferencePool) setErrors(errs []error) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	p.errors = errs
+func (ir *inferencePool) setErrors(errs []error) {
+	ir.mu.Lock()
+	defer ir.mu.Unlock()
+	ir.errors = errs
 }
 
 // snapshotErrors returns a copy of p.errors under lock.
-func (p *inferencePool) snapshotErrors() []error {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	out := make([]error, len(p.errors))
-	copy(out, p.errors)
+func (ir *inferencePool) snapshotErrors() []error {
+	ir.mu.Lock()
+	defer ir.mu.Unlock()
+	out := make([]error, len(ir.errors))
+	copy(out, ir.errors)
 	return out
 }
 
 // hasErrors checks if the inferencePool has any errors.
-func (p *inferencePool) hasErrors() bool {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	return len(p.errors) > 0
+func (ir *inferencePool) hasErrors() bool {
+	ir.mu.Lock()
+	defer ir.mu.Unlock()
+	return len(ir.errors) > 0
 }
 
 func convertSelector(selector map[infextv1a2.LabelKey]infextv1a2.LabelValue) map[string]string {
@@ -162,6 +205,21 @@ func (s service) MarshalJSON() ([]byte, error) {
 		Ports:     s.ports,
 	})
 }
+
+// endpoint defines the internal representation of an endpoint.
+type endpoint struct {
+	// address is the IP address address of the endpoint.
+	address string
+	// port is the port exposed by the endpoint.
+	port int32
+}
+
+func (e endpoint) string() string {
+	return fmt.Sprintf("%s:%d", e.address, e.port)
+}
+
+// endpoints is a named slice of endpoint.
+type endpoints []endpoint
 
 func versionEquals(a, b metav1.Object) bool {
 	var versionEquals bool
