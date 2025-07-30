@@ -365,10 +365,12 @@ type RateLimitDescriptorEntry struct {
 type RateLimitDescriptorEntryGeneric struct {
 	// Key is the name of this descriptor entry.
 	// +required
+	// +kubebuilder:validation:MinLength=1
 	Key string `json:"key"`
 
 	// Value is the static value for this descriptor entry.
 	// +required
+	// +kubebuilder:validation:MinLength=1
 	Value string `json:"value"`
 }
 

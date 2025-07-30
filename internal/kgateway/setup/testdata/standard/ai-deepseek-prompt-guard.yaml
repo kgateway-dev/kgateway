@@ -27,7 +27,6 @@ spec:
       hostOverride:
         host: ollama-deepseek-r1.ollama.svc.cluster.local
         port: 11434
-        insecureSkipVerify: true
       provider:
         openai:
           authToken:

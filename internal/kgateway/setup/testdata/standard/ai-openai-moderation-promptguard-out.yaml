@@ -38,7 +38,7 @@ clusters:
         metadata:
           filterMetadata:
             envoy.transport_socket_match:
-              tls: default
+              tls: "true"
             io.solo.transformation:
               auth_token: mysecretkey
               model: gpt-4o
@@ -52,7 +52,7 @@ clusters:
         metadata:
           filterMetadata:
             envoy.transport_socket_match:
-              tls: default
+              tls: "true"
             io.solo.transformation:
               auth_token: mysecretkey
               model: gpt-4.0-turbo
@@ -61,20 +61,7 @@ clusters:
   name: backend_gwtest_openai_0
   transportSocketMatches:
   - match:
-      tls: default
-    name: tls
-    transportSocket:
-      name: envoy.transport_sockets.tls
-      typedConfig:
-        '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
-        autoHostSni: true
-        commonTlsContext:
-          combinedValidationContext:
-            defaultValidationContext: {}
-            validationContextSdsSecretConfig:
-              name: SYSTEM_CA_CERT
-  - match:
-      tls: skipverification
+      tls: "true"
     name: tls
     transportSocket:
       name: envoy.transport_sockets.tls
