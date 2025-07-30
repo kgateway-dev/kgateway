@@ -345,7 +345,7 @@ func TestHashPolicyForSpec(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			outSpec := &trafficPolicySpecIr{}
-			applyHashPolicy(tt.spec, outSpec)
+			constructHashPolicy(tt.spec, outSpec)
 
 			var actual []*envoyroutev3.RouteAction_HashPolicy
 			if outSpec.hashPolicies != nil {

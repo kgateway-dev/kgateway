@@ -38,8 +38,8 @@ func (c *corsIR) Validate() error {
 	return c.policy.Validate()
 }
 
-// applyCORS translates the cors spec into an envoy cors policy and stores it in the traffic policy IR.
-func applyCORS(in *v1alpha1.TrafficPolicy, out *trafficPolicySpecIr) error {
+// constructCORS translates the cors spec into an envoy cors policy and stores it in the traffic policy IR.
+func constructCORS(in *v1alpha1.TrafficPolicy, out *trafficPolicySpecIr) error {
 	if in.Spec.Cors == nil {
 		return nil
 	}

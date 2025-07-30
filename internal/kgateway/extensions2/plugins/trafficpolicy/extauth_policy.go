@@ -98,8 +98,8 @@ func (e *extAuthIR) Validate() error {
 	return nil
 }
 
-// applyExtAuth converts the extauth policy spec to the IR.
-func applyExtAuth(
+// constructExtAuth converts the extauth policy spec to the IR.
+func constructExtAuth(
 	krtctx krt.HandlerContext,
 	in *v1alpha1.TrafficPolicy,
 	fetchGatewayExtension FetchGatewayExtensionFunc,

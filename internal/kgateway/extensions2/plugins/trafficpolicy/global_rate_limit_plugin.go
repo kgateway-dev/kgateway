@@ -77,8 +77,8 @@ func (r *globalRateLimitIR) Validate() error {
 	return nil
 }
 
-// applyGlobalRateLimit translates the global rate limit spec into and onto the IR policy.
-func applyGlobalRateLimit(
+// constructGlobalRateLimit translates the global rate limit spec into and onto the IR policy.
+func constructGlobalRateLimit(
 	krtctx krt.HandlerContext,
 	in *v1alpha1.TrafficPolicy,
 	fetchGatewayExtension FetchGatewayExtensionFunc,

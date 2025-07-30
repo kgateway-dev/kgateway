@@ -18,7 +18,7 @@ import (
 
 type (
 	TrafficPolicy                   = trafficpolicy.TrafficPolicy
-	TrafficPolicyBuilder            = trafficpolicy.TrafficPolicyBuilder
+	TrafficPolicyConstructor        = trafficpolicy.TrafficPolicyConstructor
 	ProviderNeededMap               = trafficpolicy.ProviderNeededMap
 	TrafficPolicyGatewayExtensionIR = trafficpolicy.TrafficPolicyGatewayExtensionIR
 )
@@ -29,12 +29,12 @@ var (
 	MergeTrafficPolicies           = trafficpolicy.MergeTrafficPolicies
 )
 
-// Create a traffic policy builder. This converts a traffic policy into its IR form.
-func NewTrafficPolicyBuilder(
+// Create a traffic policy constructor. This converts a traffic policy into its IR form.
+func NewTrafficPolicyConstructor(
 	ctx context.Context,
 	commoncol *common.CommonCollections,
-) *trafficpolicy.TrafficPolicyBuilder {
-	return trafficpolicy.NewTrafficPolicyBuilder(ctx, commoncol)
+) *trafficpolicy.TrafficPolicyConstructor {
+	return trafficpolicy.NewTrafficPolicyConstructor(ctx, commoncol)
 }
 
 func NewGatewayTranslationPass(ctx context.Context, tctx ir.GwTranslationCtx, reporter reports.Reporter) ir.ProxyTranslationPass {

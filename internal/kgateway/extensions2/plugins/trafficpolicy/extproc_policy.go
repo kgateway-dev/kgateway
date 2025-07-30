@@ -59,8 +59,8 @@ func (e *extprocIR) Validate() error {
 	return nil
 }
 
-// applyExtProc converts the extproc policy spec to the IR.
-func applyExtProc(
+// constructExtProc converts the extproc policy spec to the IR.
+func constructExtProc(
 	krtctx krt.HandlerContext,
 	in *v1alpha1.TrafficPolicy,
 	fetchGatewayExtension FetchGatewayExtensionFunc,
