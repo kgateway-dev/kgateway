@@ -64,6 +64,7 @@ var _ = Describe("GwControllerMetrics", func() {
 				Labels: []metrics.Label{
 					{Name: "controller", Value: "gateway"},
 					{Name: "namespace", Value: defaultNamespace},
+					{Name: "name", Value: "gw-" + gatewayClassName + "-metrics"},
 					{Name: "result", Value: "success"},
 				},
 				Test: metricstest.Between(1, 20),
@@ -72,6 +73,7 @@ var _ = Describe("GwControllerMetrics", func() {
 				Labels: []metrics.Label{
 					{Name: "controller", Value: "gatewayclass"},
 					{Name: "namespace", Value: defaultNamespace},
+					{Name: "name", Value: "gw-" + gatewayClassName + "-metrics"},
 					{Name: "result", Value: "success"},
 				},
 				Test: metricstest.Between(1, 20),
@@ -80,6 +82,7 @@ var _ = Describe("GwControllerMetrics", func() {
 				Labels: []metrics.Label{
 					{Name: "controller", Value: "gatewayclass-provisioner"},
 					{Name: "namespace", Value: defaultNamespace},
+					{Name: "name", Value: "gw-" + gatewayClassName + "-metrics"},
 					{Name: "result", Value: "success"},
 				},
 				Test: metricstest.Between(1, 10),
@@ -90,6 +93,7 @@ var _ = Describe("GwControllerMetrics", func() {
 			&metricstest.ExpectedMetricValueTest{
 				Labels: []metrics.Label{
 					{Name: "controller", Value: "gateway"},
+					{Name: "name", Value: "gw-" + gatewayClassName + "-metrics"},
 					{Name: "namespace", Value: defaultNamespace},
 				},
 				Test: metricstest.Between(0, 1),
@@ -97,6 +101,7 @@ var _ = Describe("GwControllerMetrics", func() {
 			&metricstest.ExpectedMetricValueTest{
 				Labels: []metrics.Label{
 					{Name: "controller", Value: "gatewayclass"},
+					{Name: "name", Value: "gw-" + gatewayClassName + "-metrics"},
 					{Name: "namespace", Value: defaultNamespace},
 				},
 				Test: metricstest.Between(0, 1),
@@ -104,6 +109,7 @@ var _ = Describe("GwControllerMetrics", func() {
 			&metricstest.ExpectedMetricValueTest{
 				Labels: []metrics.Label{
 					{Name: "controller", Value: "gatewayclass-provisioner"},
+					{Name: "name", Value: "gw-" + gatewayClassName + "-metrics"},
 					{Name: "namespace", Value: defaultNamespace},
 				},
 				Test: metricstest.Between(0, 1),
@@ -112,6 +118,7 @@ var _ = Describe("GwControllerMetrics", func() {
 
 		gathered.AssertMetricsLabelsInclude("kgateway_controller_reconcile_duration_seconds", [][]metrics.Label{{
 			{Name: "controller", Value: "gateway"},
+			{Name: "name", Value: "gw-" + gatewayClassName + "-metrics"},
 			{Name: "namespace", Value: defaultNamespace},
 		}})
 	})

@@ -41,7 +41,11 @@ func (t *BackendTranslator) TranslateBackend(
 ) (*envoyclusterv3.Cluster, error) {
 	var rErr error
 
-	finishMetrics := metrics.CollectTranslationMetrics("TranslateBackend")
+	finishMetrics := metrics.CollectTranslationMetrics(metrics.TranslatorMetricLabels{
+		Name:       backend.Name,
+		Namespace:  backend.Namespace,
+		Translator: "TranslateBackend",
+	})
 	defer func() {
 		finishMetrics(rErr)
 	}()

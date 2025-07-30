@@ -16,6 +16,7 @@ const (
 	snapshotSubsystem   = "xds_snapshot"
 	translatorNameLabel = "translator"
 	gatewayLabel        = "gateway"
+	nameLabel           = "name"
 	namespaceLabel      = "namespace"
 	resultLabel         = "result"
 	resourceLabel       = "resource"
@@ -31,7 +32,7 @@ var (
 			Name:      "translations_total",
 			Help:      "Total number of translations",
 		},
-		[]string{translatorNameLabel, resultLabel},
+		[]string{nameLabel, namespaceLabel, translatorNameLabel, resultLabel},
 	)
 	translationDuration = metrics.NewHistogram(
 		metrics.HistogramOpts{
@@ -43,7 +44,7 @@ var (
 			NativeHistogramMaxBucketNumber:  100,
 			NativeHistogramMinResetDuration: time.Hour,
 		},
-		[]string{translatorNameLabel},
+		[]string{nameLabel, namespaceLabel, translatorNameLabel},
 	)
 	translationsRunning = metrics.NewGauge(
 		metrics.GaugeOpts{
@@ -51,7 +52,7 @@ var (
 			Name:      "translations_running",
 			Help:      "Current number of translations running",
 		},
-		[]string{translatorNameLabel},
+		[]string{nameLabel, namespaceLabel, translatorNameLabel},
 	)
 
 	xdsSnapshotSyncsTotal = metrics.NewCounter(metrics.CounterOpts{
@@ -88,37 +89,47 @@ func (r ResourceMetricLabels) toMetricsLabels() []metrics.Label {
 	}
 }
 
+type TranslatorMetricLabels struct {
+	Name       string
+	Namespace  string
+	Translator string
+}
+
+func (t TranslatorMetricLabels) toMetricsLabels() []metrics.Label {
+	return []metrics.Label{
+		{Name: nameLabel, Value: t.Name},
+		{Name: namespaceLabel, Value: t.Namespace},
+		{Name: translatorNameLabel, Value: t.Translator},
+	}
+}
+
 // CollectTranslationMetrics is called at the start of a translation function to
 // begin metrics collection and returns a function called at the end to complete
 // metrics recording.
-func CollectTranslationMetrics(translatorName string) func(error) {
+func CollectTranslationMetrics(labels TranslatorMetricLabels) func(error) {
 	if !metrics.Active() {
 		return func(err error) {}
 	}
 
 	start := time.Now()
 
-	translationsRunning.Add(1,
-		metrics.Label{Name: translatorNameLabel, Value: translatorName})
+	translationsRunning.Add(1, labels.toMetricsLabels()...)
 
 	return func(err error) {
 		duration := time.Since(start)
 
-		translationDuration.Observe(duration.Seconds(),
-			metrics.Label{Name: translatorNameLabel, Value: translatorName})
+		translationDuration.Observe(duration.Seconds(), labels.toMetricsLabels()...)
 
 		result := "success"
 		if err != nil {
 			result = "error"
 		}
 
-		translationsTotal.Inc([]metrics.Label{
-			{Name: translatorNameLabel, Value: translatorName},
-			{Name: resultLabel, Value: result},
-		}...)
+		translationsTotal.Inc(append(labels.toMetricsLabels(),
+			metrics.Label{Name: resultLabel, Value: result},
+		)...)
 
-		translationsRunning.Sub(1,
-			metrics.Label{Name: translatorNameLabel, Value: translatorName})
+		translationsRunning.Sub(1, labels.toMetricsLabels()...)
 	}
 }
 

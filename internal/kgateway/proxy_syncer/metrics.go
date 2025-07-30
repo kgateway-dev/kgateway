@@ -13,6 +13,7 @@ const (
 	resourcesSubsystem = "resources"
 	syncerNameLabel    = "syncer"
 	gatewayLabel       = "gateway"
+	nameLabel          = "name"
 	namespaceLabel     = "namespace"
 	resultLabel        = "result"
 	resourceLabel      = "resource"
@@ -26,7 +27,7 @@ var (
 			Name:      "status_syncs_total",
 			Help:      "Total number of status syncs",
 		},
-		[]string{syncerNameLabel, resultLabel},
+		[]string{nameLabel, namespaceLabel, syncerNameLabel, resultLabel},
 	)
 	statusSyncDuration = metrics.NewHistogram(
 		metrics.HistogramOpts{
@@ -38,7 +39,7 @@ var (
 			NativeHistogramMaxBucketNumber:  100,
 			NativeHistogramMinResetDuration: time.Hour,
 		},
-		[]string{syncerNameLabel},
+		[]string{nameLabel, namespaceLabel, syncerNameLabel},
 	)
 
 	transformsHistogramBuckets = []float64{0.0005, 0.001, 0.0025, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5}
@@ -127,10 +128,25 @@ func (r snapshotResourcesMetricLabels) toMetricsLabels() []metrics.Label {
 	}
 }
 
+// statusSyncMetricLabels defines the labels for status sync metrics.
+type statusSyncMetricLabels struct {
+	Name      string
+	Namespace string
+	Syncer    string
+}
+
+func (s statusSyncMetricLabels) toMetricsLabels() []metrics.Label {
+	return []metrics.Label{
+		{Name: nameLabel, Value: s.Name},
+		{Name: namespaceLabel, Value: s.Namespace},
+		{Name: syncerNameLabel, Value: s.Syncer},
+	}
+}
+
 // collectStatusSyncMetrics is called at the start of a status sync function to
 // begin metrics collection and returns a function called at the end to complete
 // metrics recording.
-func collectStatusSyncMetrics(syncerName string) func(error) {
+func collectStatusSyncMetrics(labels statusSyncMetricLabels) func(error) {
 	if !metrics.Active() {
 		return func(err error) {}
 	}
@@ -140,18 +156,16 @@ func collectStatusSyncMetrics(syncerName string) func(error) {
 	return func(err error) {
 		duration := time.Since(start)
 
-		statusSyncDuration.Observe(duration.Seconds(),
-			metrics.Label{Name: syncerNameLabel, Value: syncerName})
+		statusSyncDuration.Observe(duration.Seconds(), labels.toMetricsLabels()...)
 
 		result := "success"
 		if err != nil {
 			result = "error"
 		}
 
-		statusSyncsTotal.Inc([]metrics.Label{
-			{Name: syncerNameLabel, Value: syncerName},
-			{Name: resultLabel, Value: result},
-		}...)
+		statusSyncsTotal.Inc(append(labels.toMetricsLabels(),
+			metrics.Label{Name: resultLabel, Value: result},
+		)...)
 	}
 }
 

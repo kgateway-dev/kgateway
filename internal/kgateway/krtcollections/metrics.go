@@ -138,7 +138,12 @@ func GetResourceMetricEventHandler[T any]() func(krt.Event[T]) {
 				gatewayNamesOld = []string{string(clientObjectOld.(*gwxv1a1.XListenerSet).Spec.ParentRef.Name)}
 			}
 		default:
-			return
+			resourceType = clientObject.(client.Object).GetObjectKind().GroupVersionKind().Kind
+			gatewayNames = []string{clientObject.(client.Object).GetName()}
+
+			if clientObjectOld != nil {
+				gatewayNamesOld = []string{clientObjectOld.(client.Object).GetName()}
+			}
 		}
 
 		switch eventType {

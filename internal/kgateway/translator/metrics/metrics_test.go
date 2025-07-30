@@ -13,7 +13,9 @@ import (
 )
 
 const (
-	testTranslatorName = "test-translator"
+	testTranslatorName string = "test-translator"
+	testGatewayName    string = "test-gateway"
+	testNamespace      string = "test-namespace"
 )
 
 func setupTest() {
@@ -23,6 +25,8 @@ func setupTest() {
 func assertTranslationsRunning(currentMetrics metricstest.GatheredMetrics, translatorName string, count int) {
 	currentMetrics.AssertMetric("kgateway_translator_translations_running", &metricstest.ExpectedMetric{
 		Labels: []metrics.Label{
+			{Name: "name", Value: testGatewayName},
+			{Name: "namespace", Value: testNamespace},
 			{Name: "translator", Value: translatorName},
 		},
 		Value: float64(count),
@@ -33,7 +37,11 @@ func TestCollectTranslationMetrics_Success(t *testing.T) {
 	setupTest()
 
 	// Start translation
-	finishFunc := CollectTranslationMetrics(testTranslatorName)
+	finishFunc := CollectTranslationMetrics(TranslatorMetricLabels{
+		Name:       testGatewayName,
+		Namespace:  testNamespace,
+		Translator: testTranslatorName,
+	})
 
 	// Check that the translations_running metric is 1
 	currentMetrics := metricstest.MustGatherMetrics(t)
@@ -48,6 +56,8 @@ func TestCollectTranslationMetrics_Success(t *testing.T) {
 
 	currentMetrics.AssertMetric("kgateway_translator_translations_total", &metricstest.ExpectedMetric{
 		Labels: []metrics.Label{
+			{Name: "name", Value: testGatewayName},
+			{Name: "namespace", Value: testNamespace},
 			{Name: "result", Value: "success"},
 			{Name: "translator", Value: testTranslatorName},
 		},
@@ -56,6 +66,8 @@ func TestCollectTranslationMetrics_Success(t *testing.T) {
 
 	// Check the translation_duration_seconds metric
 	currentMetrics.AssertMetricLabels("kgateway_translator_translation_duration_seconds", []metrics.Label{
+		{Name: "name", Value: testGatewayName},
+		{Name: "namespace", Value: testNamespace},
 		{Name: "translator", Value: testTranslatorName},
 	})
 	currentMetrics.AssertHistogramPopulated("kgateway_translator_translation_duration_seconds")
@@ -64,7 +76,11 @@ func TestCollectTranslationMetrics_Success(t *testing.T) {
 func TestCollectTranslationMetrics_Error(t *testing.T) {
 	setupTest()
 
-	finishFunc := CollectTranslationMetrics(testTranslatorName)
+	finishFunc := CollectTranslationMetrics(TranslatorMetricLabels{
+		Name:       testGatewayName,
+		Namespace:  testNamespace,
+		Translator: testTranslatorName,
+	})
 
 	currentMetrics := metricstest.MustGatherMetrics(t)
 	assertTranslationsRunning(currentMetrics, testTranslatorName, 1)
@@ -77,6 +93,8 @@ func TestCollectTranslationMetrics_Error(t *testing.T) {
 		"kgateway_translator_translations_total",
 		&metricstest.ExpectedMetric{
 			Labels: []metrics.Label{
+				{Name: "name", Value: testGatewayName},
+				{Name: "namespace", Value: testNamespace},
 				{Name: "result", Value: "error"},
 				{Name: "translator", Value: testTranslatorName},
 			},
@@ -85,6 +103,8 @@ func TestCollectTranslationMetrics_Error(t *testing.T) {
 	)
 
 	currentMetrics.AssertMetricLabels("kgateway_translator_translation_duration_seconds", []metrics.Label{
+		{Name: "name", Value: testGatewayName},
+		{Name: "namespace", Value: testNamespace},
 		{Name: "translator", Value: testTranslatorName},
 	})
 	currentMetrics.AssertHistogramPopulated("kgateway_translator_translation_duration_seconds")
@@ -235,7 +255,11 @@ func TestSyncChannelFull(t *testing.T) {
 	setupTest()
 
 	// Start translation
-	finishFunc := CollectTranslationMetrics(testTranslatorName)
+	finishFunc := CollectTranslationMetrics(TranslatorMetricLabels{
+		Name:       testGatewayName,
+		Namespace:  testNamespace,
+		Translator: testTranslatorName,
+	})
 	defer finishFunc(nil)
 
 	details := ResourceSyncDetails{
@@ -305,7 +329,11 @@ func TestTranslationMetricsNotActive(t *testing.T) {
 
 	assert.False(t, metrics.Active())
 
-	finishFunc := CollectTranslationMetrics("test-translator")
+	finishFunc := CollectTranslationMetrics(TranslatorMetricLabels{
+		Name:       testGatewayName,
+		Namespace:  testNamespace,
+		Translator: testTranslatorName,
+	})
 
 	currentMetrics := metricstest.MustGatherMetrics(t)
 

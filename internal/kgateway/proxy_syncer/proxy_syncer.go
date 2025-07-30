@@ -451,27 +451,10 @@ func (s *ProxySyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger, 
 		routeKey client.ObjectKey,
 		getRouteFunc func() client.Object,
 		statusUpdater func(route client.Object) error,
-	) (rErr error) {
-		finishMetrics := collectStatusSyncMetrics("RouteStatusSyncer")
-		defer func() {
-			finishMetrics(rErr)
-		}()
-
+	) error {
 		return retry.Do(
-			func() error {
+			func() (rErr error) {
 				route := getRouteFunc()
-				gatewayNames := []string{}
-
-				defer func() {
-					for _, gatewayName := range gatewayNames {
-						tmetrics.EndResourceSync(tmetrics.ResourceSyncDetails{
-							Namespace:    routeKey.Namespace,
-							Gateway:      gatewayName,
-							ResourceType: routeType,
-							ResourceName: routeKey.Name,
-						}, false, resourcesStatusSyncsCompletedTotal, resourcesStatusSyncDuration)
-					}
-				}()
 
 				err := s.mgr.GetClient().Get(ctx, routeKey, route)
 				if err != nil {
@@ -483,6 +466,8 @@ func (s *ProxySyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger, 
 					logger.Error("error getting route", "error", err, "resource_ref", routeKey, "route_type", routeType)
 					return err
 				}
+
+				gatewayNames := []string{}
 
 				switch r := route.(type) {
 				case *gwv1.HTTPRoute:
@@ -505,6 +490,31 @@ func (s *ProxySyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger, 
 					logger.Warn("unknown route type during status sync", "route_type",
 						routeType, "resource_ref", client.ObjectKeyFromObject(route))
 				}
+
+				finishMetrics := make([]func(error), 0, len(gatewayNames))
+
+				for _, gatewayName := range gatewayNames {
+					finishMetrics = append(finishMetrics, collectStatusSyncMetrics(statusSyncMetricLabels{
+						Name:      gatewayName,
+						Namespace: routeKey.Namespace,
+						Syncer:    "RouteStatusSyncer",
+					}))
+				}
+
+				defer func() {
+					for _, gatewayName := range gatewayNames {
+						tmetrics.EndResourceSync(tmetrics.ResourceSyncDetails{
+							Namespace:    routeKey.Namespace,
+							Gateway:      gatewayName,
+							ResourceType: routeType,
+							ResourceName: routeKey.Name,
+						}, false, resourcesStatusSyncsCompletedTotal, resourcesStatusSyncDuration)
+					}
+
+					for _, finish := range finishMetrics {
+						finish(rErr)
+					}
+				}()
 
 				if err := statusUpdater(route); err != nil {
 					logger.Debug("error updating status for route", "error", err, "resource_ref", routeKey, "route_type", routeType)
@@ -608,14 +618,13 @@ func (s *ProxySyncer) syncGatewayStatus(ctx context.Context, logger *slog.Logger
 	stopwatch := utils.NewTranslatorStopWatch("GatewayStatusSyncer")
 	stopwatch.Start()
 
-	var rErr error
-
-	finishMetrics := collectStatusSyncMetrics("GatewayStatusSyncer")
-	defer func() {
-		finishMetrics(rErr)
-	}()
-
 	for gwnn := range rm.Gateways {
+		finishMetrics := collectStatusSyncMetrics(statusSyncMetricLabels{
+			Name:      gwnn.Name,
+			Namespace: gwnn.Namespace,
+			Syncer:    "GatewayStatusSyncer",
+		})
+
 		err := utilretry.RetryOnConflict(utilretry.DefaultRetry, func() error {
 			// Fetch the latest Gateway
 			var gw gwv1.Gateway
@@ -655,7 +664,6 @@ func (s *ProxySyncer) syncGatewayStatus(ctx context.Context, logger *slog.Logger
 		})
 		if err != nil {
 			logger.Error("failed to update gateway status after retries", "error", err, "gateway", gwnn.String())
-			rErr = err
 		}
 
 		// Record metrics for this gateway
@@ -665,6 +673,8 @@ func (s *ProxySyncer) syncGatewayStatus(ctx context.Context, logger *slog.Logger
 			ResourceType: wellknown.GatewayKind,
 			ResourceName: gwnn.Name,
 		}, false, resourcesStatusSyncsCompletedTotal, resourcesStatusSyncDuration)
+
+		finishMetrics(err)
 	}
 
 	duration := stopwatch.Stop(ctx)
@@ -676,15 +686,8 @@ func (s *ProxySyncer) syncListenerSetStatus(ctx context.Context, logger *slog.Lo
 	stopwatch := utils.NewTranslatorStopWatch("ListenerSetStatusSyncer")
 	stopwatch.Start()
 
-	var rErr error
-
-	finishMetrics := collectStatusSyncMetrics("ListenerSetStatusSyncer")
-	defer func() {
-		finishMetrics(rErr)
-	}()
-
 	// TODO: retry within loop per LS rather than as a full block
-	err := retry.Do(func() error {
+	err := retry.Do(func() (rErr error) {
 		for lsnn := range rm.ListenerSets {
 			ls := gwxv1a1.XListenerSet{}
 			err := s.mgr.GetClient().Get(ctx, lsnn, &ls)
@@ -692,6 +695,16 @@ func (s *ProxySyncer) syncListenerSetStatus(ctx context.Context, logger *slog.Lo
 				logger.Info("error getting ls", "erro", err.Error())
 				return err
 			}
+
+			finishMetrics := collectStatusSyncMetrics(statusSyncMetricLabels{
+				Name:      string(ls.Spec.ParentRef.Name),
+				Namespace: lsnn.Namespace,
+				Syncer:    "ListenerSetStatusSyncer",
+			})
+			defer func() {
+				finishMetrics(rErr)
+			}()
+
 			lsStatus := ls.Status
 			if status := rm.BuildListenerSetStatus(ctx, ls); status != nil {
 				if !isListenerSetStatusEqual(&lsStatus, status) {
@@ -724,7 +737,6 @@ func (s *ProxySyncer) syncListenerSetStatus(ctx context.Context, logger *slog.Lo
 	)
 	if err != nil {
 		logger.Error("all attempts failed at updating listener set statuses", "error", err)
-		rErr = err
 	}
 	duration := stopwatch.Stop(ctx)
 	logger.Debug("synced listener sets status for listener set", "count", len(rm.ListenerSets), "duration", duration.String())
@@ -763,7 +775,11 @@ func (s *ProxySyncer) syncPolicyStatus(ctx context.Context, rm reports.ReportMap
 			continue
 		}
 
-		finishMetrics := collectStatusSyncMetrics("PolicyStatusSyncer")
+		finishMetrics := collectStatusSyncMetrics(statusSyncMetricLabels{
+			Name:      nsName.Name,
+			Namespace: nsName.Namespace,
+			Syncer:    "PolicyStatusSyncer",
+		})
 
 		err = retry.Do(
 			func() error {

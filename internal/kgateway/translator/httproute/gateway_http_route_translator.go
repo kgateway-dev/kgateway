@@ -62,11 +62,15 @@ func translateGatewayHTTPRouteRulesUtil(
 		return
 	}
 
-	defer (metrics.CollectTranslationMetrics("TranslateHTTPRoute"))(nil)
-
 	// This function is called multiple times during translation of resources, and it is
 	// only required to start the resource metrics tracking when the parent is a Gateway.
 	if routeInfo.ParentRef.Kind != nil && *routeInfo.ParentRef.Kind == wellknown.GatewayKind {
+		defer (metrics.CollectTranslationMetrics(metrics.TranslatorMetricLabels{
+			Name:       string(routeInfo.ParentRef.Name),
+			Namespace:  routeInfo.GetNamespace(),
+			Translator: "TranslateHTTPRoute",
+		}))(nil)
+
 		metrics.StartResourceSync(routeInfo.GetName(), metrics.ResourceMetricLabels{
 			Gateway:   string(routeInfo.ParentRef.Name),
 			Namespace: routeInfo.GetNamespace(),

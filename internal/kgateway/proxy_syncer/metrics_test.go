@@ -22,6 +22,12 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics/metricstest"
 )
 
+const (
+	testSyncerName  = "test-syncer"
+	testGatewayName = "test-gateway"
+	testNamespace   = "test-namespace"
+)
+
 func setupTest() {
 	ResetMetrics()
 	tmetrics.ResetMetrics()
@@ -30,13 +36,19 @@ func setupTest() {
 func TestCollectStatusSyncMetrics_Success(t *testing.T) {
 	setupTest()
 
-	finishFunc := collectStatusSyncMetrics("test-syncer")
+	finishFunc := collectStatusSyncMetrics(statusSyncMetricLabels{
+		Name:      testGatewayName,
+		Namespace: testNamespace,
+		Syncer:    testSyncerName,
+	})
 	finishFunc(nil)
 
 	currentMetrics := metricstest.MustGatherMetrics(t)
 
 	currentMetrics.AssertMetric("kgateway_status_syncer_status_syncs_total", &metricstest.ExpectedMetric{
 		Labels: []metrics.Label{
+			{Name: "name", Value: testGatewayName},
+			{Name: "namespace", Value: testNamespace},
 			{Name: "result", Value: "success"},
 			{Name: "syncer", Value: "test-syncer"},
 		},
@@ -44,6 +56,8 @@ func TestCollectStatusSyncMetrics_Success(t *testing.T) {
 	})
 
 	currentMetrics.AssertMetricLabels("kgateway_status_syncer_status_sync_duration_seconds", []metrics.Label{
+		{Name: "name", Value: testGatewayName},
+		{Name: "namespace", Value: testNamespace},
 		{Name: "syncer", Value: "test-syncer"},
 	})
 	currentMetrics.AssertHistogramPopulated("kgateway_status_syncer_status_sync_duration_seconds")
@@ -52,13 +66,19 @@ func TestCollectStatusSyncMetrics_Success(t *testing.T) {
 func TestCollectStatusSyncMetrics_Error(t *testing.T) {
 	setupTest()
 
-	finishFunc := collectStatusSyncMetrics("test-syncer")
+	finishFunc := collectStatusSyncMetrics(statusSyncMetricLabels{
+		Name:      testGatewayName,
+		Namespace: testNamespace,
+		Syncer:    testSyncerName,
+	})
 	finishFunc(assert.AnError)
 
 	currentMetrics := metricstest.MustGatherMetrics(t)
 
 	currentMetrics.AssertMetric("kgateway_status_syncer_status_syncs_total", &metricstest.ExpectedMetric{
 		Labels: []metrics.Label{
+			{Name: "name", Value: testGatewayName},
+			{Name: "namespace", Value: testNamespace},
 			{Name: "result", Value: "error"},
 			{Name: "syncer", Value: "test-syncer"},
 		},
@@ -66,6 +86,8 @@ func TestCollectStatusSyncMetrics_Error(t *testing.T) {
 	})
 
 	currentMetrics.AssertMetricLabels("kgateway_status_syncer_status_sync_duration_seconds", []metrics.Label{
+		{Name: "name", Value: testGatewayName},
+		{Name: "namespace", Value: testNamespace},
 		{Name: "syncer", Value: "test-syncer"},
 	})
 	currentMetrics.AssertHistogramPopulated("kgateway_status_syncer_status_sync_duration_seconds")

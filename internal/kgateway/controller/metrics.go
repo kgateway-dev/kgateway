@@ -12,6 +12,7 @@ const (
 	controllerSubsystem = "controller"
 	controllerNameLabel = "controller"
 	namespaceLabel      = "namespace"
+	nameLabel           = "name"
 	resultLabel         = "result"
 )
 
@@ -23,7 +24,7 @@ var (
 			Name:      "reconciliations_total",
 			Help:      "Total number of controller reconciliations",
 		},
-		[]string{controllerNameLabel, namespaceLabel, resultLabel},
+		[]string{controllerNameLabel, nameLabel, namespaceLabel, resultLabel},
 	)
 	reconcileDuration = metrics.NewHistogram(
 		metrics.HistogramOpts{
@@ -35,7 +36,7 @@ var (
 			NativeHistogramMaxBucketNumber:  100,
 			NativeHistogramMinResetDuration: time.Hour,
 		},
-		[]string{controllerNameLabel, namespaceLabel},
+		[]string{controllerNameLabel, nameLabel, namespaceLabel},
 	)
 	reconciliationsRunning = metrics.NewGauge(
 		metrics.GaugeOpts{
@@ -43,7 +44,7 @@ var (
 			Name:      "reconciliations_running",
 			Help:      "Number of reconciliations currently running",
 		},
-		[]string{controllerNameLabel, namespaceLabel},
+		[]string{controllerNameLabel, nameLabel, namespaceLabel},
 	)
 )
 
@@ -60,6 +61,7 @@ func collectReconciliationMetrics(controllerName string, req ctrl.Request) func(
 	reconciliationsRunning.Add(1,
 		[]metrics.Label{
 			{Name: controllerNameLabel, Value: controllerName},
+			{Name: nameLabel, Value: req.Name},
 			{Name: namespaceLabel, Value: req.Namespace},
 		}...)
 
@@ -69,6 +71,7 @@ func collectReconciliationMetrics(controllerName string, req ctrl.Request) func(
 		reconcileDuration.Observe(duration.Seconds(),
 			[]metrics.Label{
 				{Name: controllerNameLabel, Value: controllerName},
+				{Name: nameLabel, Value: req.Name},
 				{Name: namespaceLabel, Value: req.Namespace},
 			}...)
 
@@ -79,6 +82,7 @@ func collectReconciliationMetrics(controllerName string, req ctrl.Request) func(
 
 		reconciliationsTotal.Inc([]metrics.Label{
 			{Name: controllerNameLabel, Value: controllerName},
+			{Name: nameLabel, Value: req.Name},
 			{Name: namespaceLabel, Value: req.Namespace},
 			{Name: resultLabel, Value: result},
 		}...)
@@ -86,6 +90,7 @@ func collectReconciliationMetrics(controllerName string, req ctrl.Request) func(
 		reconciliationsRunning.Sub(1,
 			[]metrics.Label{
 				{Name: controllerNameLabel, Value: controllerName},
+				{Name: nameLabel, Value: req.Name},
 				{Name: namespaceLabel, Value: req.Namespace},
 			}...)
 	}
