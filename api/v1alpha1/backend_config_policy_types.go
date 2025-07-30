@@ -95,11 +95,6 @@ type Http1ProtocolOptions struct {
 	// +optional
 	EnableTrailers *bool `json:"enableTrailers,omitempty"`
 
-	// The format of the header key.
-	// +optional
-	// +kubebuilder:validation:Enum=ProperCaseHeaderKeyFormat;PreserveCaseHeaderKeyFormat
-	HeaderFormat *HeaderFormat `json:"headerFormat,omitempty"`
-
 	// Allows invalid HTTP messaging. When this option is false, then Envoy will terminate
 	// HTTP/1.1 connections upon receiving an invalid HTTP message. However,
 	// when this option is true, then Envoy will leave the HTTP/1.1 connection
@@ -107,13 +102,6 @@ type Http1ProtocolOptions struct {
 	// +optional
 	OverrideStreamErrorOnInvalidHttpMessage *bool `json:"overrideStreamErrorOnInvalidHttpMessage,omitempty"`
 }
-
-const (
-	ProperCaseHeaderKeyFormat   HeaderFormat = "ProperCaseHeaderKeyFormat"
-	PreserveCaseHeaderKeyFormat HeaderFormat = "PreserveCaseHeaderKeyFormat"
-)
-
-type HeaderFormat string
 
 // CommonHttpProtocolOptions are options that are applicable to both HTTP1 and HTTP2 requests.
 // See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-msg-config-core-v3-httpprotocoloptions) for more details.

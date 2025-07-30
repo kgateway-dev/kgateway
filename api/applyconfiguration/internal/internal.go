@@ -1142,6 +1142,9 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: healthCheck
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.EnvoyHealthCheck
+    - name: preserveHttp1HeaderCase
+      type:
+        scalar: boolean
     - name: serverHeaderTransformation
       type:
         scalar: string
@@ -1283,9 +1286,6 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: enableTrailers
       type:
         scalar: boolean
-    - name: headerFormat
-      type:
-        scalar: string
     - name: overrideStreamErrorOnInvalidHttpMessage
       type:
         scalar: boolean

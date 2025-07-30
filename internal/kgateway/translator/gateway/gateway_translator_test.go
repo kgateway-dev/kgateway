@@ -820,6 +820,14 @@ var _ = DescribeTable("Basic",
 			Name:      "example-gateway",
 		},
 	}),
+	Entry("HTTPListenerPolicy with preserveHttp1HeaderCase", translatorTestCase{
+		inputFile:  "httplistenerpolicy/preserve-http1-header-case.yaml",
+		outputFile: "httplistenerpolicy/preserve-http1-header-case.yaml",
+		gwNN: types.NamespacedName{
+			Namespace: "default",
+			Name:      "example-gateway",
+		},
+	}),
 	Entry("HTTPListenerPolicy merging", translatorTestCase{
 		inputFile:  "httplistenerpolicy/merge.yaml",
 		outputFile: "httplistenerpolicy/merge.yaml",
