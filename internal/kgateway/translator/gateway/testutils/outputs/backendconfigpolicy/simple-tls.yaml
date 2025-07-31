@@ -1,0 +1,88 @@
+Clusters:
+- connectTimeout: 5s
+  edsClusterConfig:
+    edsConfig:
+      ads: {}
+      resourceApiVersion: V3
+  ignoreHealthOnHostRemoval: true
+  metadata: {}
+  name: kube_default_backend-service_443
+  transportSocket:
+    name: envoy.transport_sockets.tls
+    typedConfig:
+      '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+      commonTlsContext:
+        validationContext:
+          matchTypedSubjectAltNames:
+          - matcher:
+              exact: test.example.com
+            sanType: DNS
+          - matcher:
+              exact: api.example.com
+            sanType: DNS
+          trustedCa:
+            inlineString: |
+              -----BEGIN CERTIFICATE-----
+              MIIDFzCCAf+gAwIBAgIUUP+jhPkrikdqW87lHMDpW3wY13wwDQYJKoZIhvcNAQEL
+              BQAwGzEZMBcGA1UEAwwQdGVzdC5leGFtcGxlLmNvbTAeFw0yNTA3MDIxMjM0MjRa
+              Fw0yNjA3MDIxMjM0MjRaMBsxGTAXBgNVBAMMEHRlc3QuZXhhbXBsZS5jb20wggEi
+              MA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQC2xPi+xL+5M9e6uJb4B9f9Ds2z
+              1Mqeq2OmEaPAwg1BOaRpg9pZ5X9jaj/LGkJ8X7BR6DfMOEvxEBu2ugvO/zlNVd23
+              uWcxdSMjRB52mGZDNycsSCKSJ71EeaWjhI7+IGdJJ2rzaw2NZwiCfcjVgkH7Gfxf
+              OYc7mm18wif9YxVJi87IF8aBJE6u7aKhnQT+SgD2w91+OZNFVBdFEIcqjRH1WMOF
+              KkCY8ejr0aiBWimQVk41iLj1/F/bSqhdadMlBRc3ToLFXOY39HlU7Dq7cf2QfVwf
+              zkUViFwpzvPETX/WVO9IiVExD3cpC3zUjDukjSAd26QS4xP4mvnjo3pymNTnAgMB
+              AAGjUzBRMB0GA1UdDgQWBBSk3FlWiH9236y5hhj7ItT/efSsVjAfBgNVHSMEGDAW
+              gBSk3FlWiH9236y5hhj7ItT/efSsVjAPBgNVHRMBAf8EBTADAQH/MA0GCSqGSIb3
+              DQEBCwUAA4IBAQB/j8eD4TfUuCPPCp37Pd/YiWUFa0pZWD1rJcwZtmZFW2E7/86T
+              l0yBEcgbKIsZmUT2rnJG4zcCumAxpzP5LuoO9Wu5RUgqFbM+nGnQ39w53mVC3CV4
+              hcZxSNizMicSwmA01M4HTdv9P7tj/7m9tTb8VQ/TywI3kdMajOPDI+GtrE76m+pP
+              sozQotvRMRmona9+496LBFsStBaP8NiAqZfuleNj0hD1oAdL3ekQ+HZ1b1ABfa6D
+              BxIrQCVvyC4Jl0zLmnEDPIBvsroCVivq4C/MKXbXsn/bDrhMHd5yqDv1/mmvGRSn
+              2b5vNa1aVtIqWJGKpuI2rKzd7LSIQv+kuFF3
+              -----END CERTIFICATE-----
+      sni: test.example.com
+  type: EDS
+- connectTimeout: 5s
+  metadata: {}
+  name: test-backend-plugin_default_example-svc_80
+Listeners:
+- address:
+    socketAddress:
+      address: '::'
+      ipv4Compat: true
+      portValue: 8080
+  filterChains:
+  - filters:
+    - name: envoy.filters.network.http_connection_manager
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+        httpFilters:
+        - name: envoy.filters.http.router
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+        mergeSlashes: true
+        normalizePath: true
+        rds:
+          configSource:
+            ads: {}
+            resourceApiVersion: V3
+          routeConfigName: listener~8080
+        statPrefix: http
+        useRemoteAddress: true
+    name: listener~8080
+  name: listener~8080
+Routes:
+- ignorePortInHostMatching: true
+  name: listener~8080
+  virtualHosts:
+  - domains:
+    - example.com
+    name: listener~8080~example_com
+    routes:
+    - match:
+        prefix: /
+      name: listener~8080~example_com-route-0-httproute-backend-route-default-0-0-matcher-0
+      route:
+        cluster: kube_default_backend-service_443
+        clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR

@@ -958,6 +958,14 @@ var _ = DescribeTable("Basic",
 			Name:      "example-gateway",
 		},
 	}),
+	Entry("Backend Config Policy with simple TLS", translatorTestCase{
+		inputFile:  "backendconfigpolicy/simple-tls.yaml",
+		outputFile: "backendconfigpolicy/simple-tls.yaml",
+		gwNN: types.NamespacedName{
+			Namespace: "default",
+			Name:      "example-gateway",
+		},
+	}),
 	Entry(
 		"TrafficPolicy with explicit generation",
 		translatorTestCase{
