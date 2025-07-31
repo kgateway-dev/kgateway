@@ -51,11 +51,12 @@ func (ref *AttachedPolicyRef) ID() string {
 }
 
 type PolicyAtt struct {
+	// GroupKind is the GK of the original policy object
+	GroupKind schema.GroupKind
+
 	// Generation of the Policy CR contributing to this attachment
 	Generation int64
 
-	// GroupKind is the GK of the original policy object
-	GroupKind schema.GroupKind
 	// original object. ideally with structural errors removed.
 	// Opaque to us other than metadata.
 	PolicyIr PolicyIR
@@ -64,20 +65,24 @@ type PolicyAtt struct {
 	// nil if the attachment was done via extension ref or if PolicyAtt is the result of MergePolicies(...)
 	PolicyRef *AttachedPolicyRef
 
-	// MergeOrigins maps field names in the PolicyIr to their original source in the merged PolicyAtt.
-	// It can be used to determine which PolicyAtt a merged field came from.
-	MergeOrigins MergeOrigins
-
+	// InheritedPolicyPriority is the priority of the policy when it is inherited by a child resource
+	// of the resource this policy is attached to
 	InheritedPolicyPriority apiannotations.InheritedPolicyPriorityValue
+
+	// Errors should be formatted for users, so do not include internal lib errors.
+	// Instead use a well defined error such as ErrInvalidConfig
+	Errors []error
 
 	// HierarchicalPriority is the priority of the policy in an inheritance hierarchy.
 	// A higher value means higher priority. It is used to accurately merge policies
 	// that are at different levels in the config tree hierarchy.
 	HierarchicalPriority int
 
-	// Errors should be formatted for users, so do not include internal lib errors.
-	// Instead use a well defined error such as ErrInvalidConfig
-	Errors []error
+	// MergeOrigins maps field names in the PolicyIr to their original source in the merged PolicyAtt.
+	// It can be used to determine which PolicyAtt a merged field came from.
+	// Only relevant to policy merging and does not contribute to KRT events
+	// +noKrtEquals
+	MergeOrigins MergeOrigins
 }
 
 func (c PolicyAtt) FormatErrors() string {
@@ -126,7 +131,12 @@ func (c PolicyAtt) Equals(in PolicyAtt) bool {
 		return false
 	}
 
-	return c.GroupKind == in.GroupKind && ptrEquals(c.PolicyRef, in.PolicyRef) && c.PolicyIr.Equals(in.PolicyIr)
+	return c.GroupKind == in.GroupKind &&
+		c.Generation == in.Generation &&
+		c.PolicyIr.Equals(in.PolicyIr) &&
+		ptrEquals(c.PolicyRef, in.PolicyRef) &&
+		c.InheritedPolicyPriority == in.InheritedPolicyPriority &&
+		c.HierarchicalPriority == in.HierarchicalPriority
 }
 
 func ptrEquals[T comparable](a, b *T) bool {

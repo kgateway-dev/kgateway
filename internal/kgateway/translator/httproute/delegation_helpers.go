@@ -56,7 +56,7 @@ func filterDelegatedChildren(
 		child.Rules = make([]ir.HttpRouteRuleIR, len(origChild.Rules))
 		copy(child.Rules, origChild.Rules)
 
-		inheritMatcher := delegationutils.ShouldInheritParentMatcher(child.SourceObject.GetAnnotations())
+		inheritMatcher := child.DelegationInheritParentMatcher
 
 		// We use validRules to store the rules in the child route that are valid
 		// (matches in the rule match the parent route matcher). If a specific rule
