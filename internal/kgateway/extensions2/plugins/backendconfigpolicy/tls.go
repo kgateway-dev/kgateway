@@ -49,8 +49,8 @@ func buildTLSContext(tlsConfig *v1alpha1.TLS, secretGetter SecretGetter, namespa
 		return fmt.Errorf("failed to extract TLS data: %w", err)
 	}
 
-	// Skip client certificate processing for one-way TLS
-	if tlsConfig.OneWayTLS != nil && *tlsConfig.OneWayTLS {
+	// Skip client certificate processing for simple TLS
+	if tlsConfig.SimpleTLS != nil && *tlsConfig.SimpleTLS {
 		return buildValidationContext(tlsData, tlsConfig, tlsContext)
 	}
 

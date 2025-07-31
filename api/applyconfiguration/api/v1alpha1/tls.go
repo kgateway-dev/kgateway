@@ -17,7 +17,7 @@ type TLSApplyConfiguration struct {
 	Parameters           *ParametersApplyConfiguration `json:"parameters,omitempty"`
 	AlpnProtocols        []string                      `json:"alpnProtocols,omitempty"`
 	AllowRenegotiation   *bool                         `json:"allowRenegotiation,omitempty"`
-	OneWayTLS            *bool                         `json:"oneWayTLS,omitempty"`
+	SimpleTLS            *bool                         `json:"simpleTLS,omitempty"`
 }
 
 // TLSApplyConfiguration constructs a declarative configuration of the TLS type for use with
@@ -94,10 +94,10 @@ func (b *TLSApplyConfiguration) WithAllowRenegotiation(value bool) *TLSApplyConf
 	return b
 }
 
-// WithOneWayTLS sets the OneWayTLS field in the declarative configuration to the given value
+// WithSimpleTLS sets the SimpleTLS field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the OneWayTLS field is set to the value of the last call.
-func (b *TLSApplyConfiguration) WithOneWayTLS(value bool) *TLSApplyConfiguration {
-	b.OneWayTLS = &value
+// If called multiple times, the SimpleTLS field is set to the value of the last call.
+func (b *TLSApplyConfiguration) WithSimpleTLS(value bool) *TLSApplyConfiguration {
+	b.SimpleTLS = &value
 	return b
 }

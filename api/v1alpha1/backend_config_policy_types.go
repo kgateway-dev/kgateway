@@ -222,10 +222,10 @@ type TLS struct {
 	AllowRenegotiation *bool `json:"allowRenegotiation,omitempty"`
 
 	// If the TLS config has the tls cert and key provided, kgateway uses it to perform mTLS by default.
-	// Set oneWayTls to true to disable mTLS in favor of client-only TLS (one-way TLS), even if kgateway has the client cert.
+	// Set simpleTLS to true to disable mTLS in favor of client-only TLS (one-way TLS), even if kgateway has the client cert.
 	// If unset, defaults to false.
 	// +optional
-	OneWayTLS *bool `json:"oneWayTLS,omitempty"`
+	SimpleTLS *bool `json:"simpleTLS,omitempty"`
 }
 
 // TLSVersion defines the TLS version.

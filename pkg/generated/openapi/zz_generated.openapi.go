@@ -6590,9 +6590,9 @@ func schema_kgateway_v2_api_v1alpha1_TLS(ref common.ReferenceCallback) common.Op
 							Format:      "",
 						},
 					},
-					"oneWayTLS": {
+					"simpleTLS": {
 						SchemaProps: spec.SchemaProps{
-							Description: "If the TLS config has the tls cert and key provided, kgateway uses it to perform mTLS by default. Set oneWayTls to true to disable mTLS in favor of client-only TLS (one-way TLS), even if kgateway has the client cert. If unset, defaults to false.",
+							Description: "If the TLS config has the tls cert and key provided, kgateway uses it to perform mTLS by default. Set simpleTLS to true to disable mTLS in favor of client-only TLS (one-way TLS), even if kgateway has the client cert. If unset, defaults to false.",
 							Type:        []string{"boolean"},
 							Format:      "",
 						},

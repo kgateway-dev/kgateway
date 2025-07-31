@@ -238,7 +238,7 @@ func TestTranslateTLSConfig(t *testing.T) {
 					TLSKey:         ptr.To(TLSKey),
 					RootCA:         ptr.To(CACert),
 				},
-				OneWayTLS: ptr.To(true),
+				SimpleTLS: ptr.To(true),
 			},
 			wantErr: false,
 			check: func(t *testing.T, result *envoytlsv3.UpstreamTlsContext) {

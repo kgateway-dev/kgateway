@@ -2142,15 +2142,15 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: insecureSkipVerify
       type:
         scalar: boolean
-    - name: oneWayTLS
-      type:
-        scalar: boolean
     - name: parameters
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Parameters
     - name: secretRef
       type:
         namedType: io.k8s.api.core.v1.LocalObjectReference
+    - name: simpleTLS
+      type:
+        scalar: boolean
     - name: sni
       type:
         scalar: string
