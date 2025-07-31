@@ -387,22 +387,31 @@ func (p *trafficPolicyPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.
 		}
 	}
 
-	if policy.spec.hashPolicies != nil {
-		outputRoute.GetRoute().HashPolicy = policy.spec.hashPolicies.policies
-	}
-
-	if policy.spec.autoHostRewrite != nil && policy.spec.autoHostRewrite.enabled != nil && policy.spec.autoHostRewrite.enabled.GetValue() {
-		// Only apply TrafficPolicy's AutoHostRewrite if built-in policy's AutoHostRewrite is not already set
-		if ra := outputRoute.GetRoute(); ra != nil && ra.GetHostRewriteSpecifier() == nil {
-			ra.HostRewriteSpecifier = &envoyroutev3.RouteAction_AutoHostRewrite{
-				AutoHostRewrite: policy.spec.autoHostRewrite.enabled,
-			}
-		}
-	}
+	handleRoutePolicies(outputRoute.GetRoute(), policy.spec)
 
 	p.handlePolicies(pCtx.FilterChainName, &pCtx.TypedFilterConfig, policy.spec)
 
 	return nil
+}
+
+func handleRoutePolicies(routeAction *envoyroutev3.RouteAction, spec trafficPolicySpecIr) {
+	// A parent route rule with a delegated backend will not have RouteAction set
+	if routeAction == nil {
+		return
+	}
+
+	if spec.hashPolicies != nil {
+		routeAction.HashPolicy = spec.hashPolicies.policies
+	}
+
+	if spec.autoHostRewrite != nil && spec.autoHostRewrite.enabled != nil && spec.autoHostRewrite.enabled.GetValue() {
+		// Only apply TrafficPolicy's AutoHostRewrite if built-in policy's AutoHostRewrite is not already set
+		if routeAction.GetHostRewriteSpecifier() == nil {
+			routeAction.HostRewriteSpecifier = &envoyroutev3.RouteAction_AutoHostRewrite{
+				AutoHostRewrite: spec.autoHostRewrite.enabled,
+			}
+		}
+	}
 }
 
 func (p *trafficPolicyPluginGwPass) ApplyForRouteBackend(

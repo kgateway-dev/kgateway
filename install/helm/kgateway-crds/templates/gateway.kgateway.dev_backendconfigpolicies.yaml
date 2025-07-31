@@ -112,11 +112,6 @@ spec:
                 properties:
                   enableTrailers:
                     type: boolean
-                  headerFormat:
-                    enum:
-                    - ProperCaseHeaderKeyFormat
-                    - PreserveCaseHeaderKeyFormat
-                    type: string
                   overrideStreamErrorOnInvalidHttpMessage:
                     type: boolean
                 type: object

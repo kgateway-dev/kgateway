@@ -27,6 +27,7 @@ func mergePolicies(
 		mergeServerHeaderTransformation,
 		mergeStreamIdleTimeout,
 		mergeHealthCheckPolicy,
+		mergePreserveHttp1HeaderCase,
 	}
 
 	for _, mergeFunc := range mergeFuncs {
@@ -92,6 +93,21 @@ func mergeUseRemoteAddress(
 
 	p1.useRemoteAddress = p2.useRemoteAddress
 	mergeOrigins.SetOne("useRemoteAddress", p2Ref, p2MergeOrigins)
+}
+
+func mergePreserveHttp1HeaderCase(
+	p1, p2 *httpListenerPolicy,
+	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins ir.MergeOrigins,
+	opts policy.MergeOptions,
+	mergeOrigins ir.MergeOrigins,
+) {
+	if !policy.IsMergeable(p1.preserveHttp1HeaderCase, p2.preserveHttp1HeaderCase, opts) {
+		return
+	}
+
+	p1.preserveHttp1HeaderCase = p2.preserveHttp1HeaderCase
+	mergeOrigins.SetOne("preserveHttp1HeaderCase", p2Ref, p2MergeOrigins)
 }
 
 func mergeXffNumTrustedHops(

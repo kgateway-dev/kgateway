@@ -7,7 +7,6 @@ import (
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	preserve_case_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/http/header_formatters/preserve_case/v3"
 	envoy_upstreams_http_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -53,7 +52,6 @@ func TestBackendConfigPolicyFlow(t *testing.T) {
 					},
 					Http1ProtocolOptions: &v1alpha1.Http1ProtocolOptions{
 						EnableTrailers:                          ptr.To(true),
-						HeaderFormat:                            ptr.To(v1alpha1.PreserveCaseHeaderKeyFormat),
 						OverrideStreamErrorOnInvalidHttpMessage: ptr.To(true),
 					},
 				},
@@ -82,14 +80,6 @@ func TestBackendConfigPolicyFlow(t *testing.T) {
 									HttpProtocolOptions: &envoycorev3.Http1ProtocolOptions{
 										EnableTrailers:                          true,
 										OverrideStreamErrorOnInvalidHttpMessage: &wrapperspb.BoolValue{Value: true},
-										HeaderKeyFormat: &envoycorev3.Http1ProtocolOptions_HeaderKeyFormat{
-											HeaderFormat: &envoycorev3.Http1ProtocolOptions_HeaderKeyFormat_StatefulFormatter{
-												StatefulFormatter: &envoycorev3.TypedExtensionConfig{
-													Name:        PreserveCasePlugin,
-													TypedConfig: mustMessageToAny(t, &preserve_case_v3.PreserveCaseFormatterConfig{}),
-												},
-											},
-										},
 									},
 								},
 							},

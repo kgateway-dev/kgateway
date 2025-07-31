@@ -50,8 +50,9 @@ func (s *testingSuite) SetupSuite() {
 
 	// include gateway manifests for the tests, so we recreate it for each test run
 	s.manifests = map[string][]string{
-		"TestHttpListenerPolicyAllFields":    {gatewayManifest, httpRouteManifest, httpListenerPolicyAllFieldsManifest},
-		"TestHttpListenerPolicyServerHeader": {gatewayManifest, httpRouteManifest, httpListenerPolicyServerHeaderManifest},
+		"TestHttpListenerPolicyAllFields":    {gatewayManifest, httpRouteManifest, allFieldsManifest},
+		"TestHttpListenerPolicyServerHeader": {gatewayManifest, httpRouteManifest, serverHeaderManifest},
+		"TestPreserveHttp1HeaderCase":        {gatewayManifest, preserveHttp1HeaderCaseManifest},
 	}
 }
 
@@ -141,4 +142,25 @@ func (s *testingSuite) TestHttpListenerPolicyServerHeader() {
 				"server": "nginx/1.28.0", // Should be the backend server header, not "envoy"
 			},
 		})
+}
+
+func (s *testingSuite) TestPreserveHttp1HeaderCase() {
+	// The test verifies that the HTTP1 headers are preserved as expected
+	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, echoService, echoDeployment)
+	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, echoDeployment.ObjectMeta.GetNamespace(), metav1.ListOptions{
+		LabelSelector: "app=raw-header-echo",
+	})
+	s.testInstallation.Assertions.AssertEventualCurlResponse(
+		s.ctx,
+		testdefaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
+			curl.WithHostHeader("example.com"),
+			curl.WithHeader("X-CaSeD-HeAdEr", "test"),
+		},
+		&matchers.HttpResponse{
+			StatusCode: http.StatusOK,
+			Body:       gomega.ContainSubstring("X-CaSeD-HeAdEr"),
+		},
+	)
 }

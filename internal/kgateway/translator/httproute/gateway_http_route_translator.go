@@ -209,7 +209,7 @@ func setRouteAction(
 			)
 			if err != nil {
 				query.ProcessBackendError(err, reporter)
-				outputRoute.Error = err
+				outputRoute.RouteReplacementError = err
 			}
 			continue
 		}
