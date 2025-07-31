@@ -130,7 +130,7 @@ func (i *BackendIndex) AddBackends(gk schema.GroupKind, col krt.Collection[ir.Ba
 		return ptr.Of(&backendObj)
 	}, i.krtopts.ToOptions("")...)
 
-	idx := krt.NewIndex(col, func(backendObj ir.BackendObjectIR) (aliasKeys []backendKey) {
+	idx := krtutil.UnnamedIndex(col, func(backendObj ir.BackendObjectIR) (aliasKeys []backendKey) {
 		for _, alias := range backendObj.Aliases {
 			aliasKeys = append(aliasKeys, backendKey{ObjectSource: alias, port: backendObj.Port})
 		}
@@ -278,7 +278,7 @@ func NewGatewayIndex(
 ) *GatewayIndex {
 	h := &GatewayIndex{policies: policies}
 
-	byParentRefIndex := krt.NewIndex(lss, func(in *gwxv1a1.XListenerSet) []targetRefIndexKey {
+	byParentRefIndex := krtutil.UnnamedIndex(lss, func(in *gwxv1a1.XListenerSet) []targetRefIndexKey {
 		pRef := in.Spec.ParentRef
 		ns := strOr(pRef.Namespace, "")
 		if ns == "" {
@@ -589,7 +589,7 @@ func NewPolicyIndex(
 				}
 			})
 
-			targetRefIndex := krt.NewIndex(policiesByTargetRef, func(p ir.PolicyWrapper) []targetRefIndexKey {
+			targetRefIndex := krtutil.UnnamedIndex(policiesByTargetRef, func(p ir.PolicyWrapper) []targetRefIndexKey {
 				// Every policy is indexed by PolicyRef and PolicyRef without Name (by Group+Kind+Namespace)
 				ret := make([]targetRefIndexKey, len(p.TargetRefs)*2)
 				for i, tr := range p.TargetRefs {
@@ -822,7 +822,7 @@ func (h *RefGrantIndex) HasSynced() bool {
 }
 
 func NewRefGrantIndex(refgrants krt.Collection[*gwv1beta1.ReferenceGrant]) *RefGrantIndex {
-	refGrantIndex := krt.NewIndex(refgrants, func(p *gwv1beta1.ReferenceGrant) []refGrantIndexKey {
+	refGrantIndex := krtutil.UnnamedIndex(refgrants, func(p *gwv1beta1.ReferenceGrant) []refGrantIndexKey {
 		ret := make([]refGrantIndexKey, 0, len(p.Spec.To)*len(p.Spec.From))
 		for _, from := range p.Spec.From {
 			for _, to := range p.Spec.To {
@@ -946,16 +946,24 @@ func NewRoutesIndex(
 	refgrants *RefGrantIndex,
 	globalSettings settings.Settings,
 ) *RoutesIndex {
-	h := &RoutesIndex{policies: policies, refgrants: refgrants, backends: backends, weightedRoutePrecedence: globalSettings.WeightedRoutePrecedence}
+	h := &RoutesIndex{
+		policies:                policies,
+		refgrants:               refgrants,
+		backends:                backends,
+		weightedRoutePrecedence: globalSettings.WeightedRoutePrecedence,
+	}
 	h.hasSyncedFuncs = append(h.hasSyncedFuncs, httproutes.HasSynced, grpcroutes.HasSynced, tcproutes.HasSynced, tlsroutes.HasSynced)
+
 	h.httpRoutes = krt.NewCollection(httproutes, h.transformHttpRoute, krtopts.ToOptions("http-routes-with-policy")...)
 	httpRouteCollection := krt.NewCollection(h.httpRoutes, func(kctx krt.HandlerContext, i ir.HttpRouteIR) *RouteWrapper {
 		return &RouteWrapper{Route: &i}
 	}, krtopts.ToOptions("routes-http-routes-with-policy")...)
+
 	tcpRoutesCollection := krt.NewCollection(tcproutes, func(kctx krt.HandlerContext, i *gwv1a2.TCPRoute) *RouteWrapper {
 		t := h.transformTcpRoute(kctx, i)
 		return &RouteWrapper{Route: t}
 	}, krtopts.ToOptions("routes-tcp-routes-with-policy")...)
+
 	tlsRoutesCollection := krt.NewCollection(tlsroutes, func(kctx krt.HandlerContext, i *gwv1a2.TLSRoute) *RouteWrapper {
 		t := h.transformTlsRoute(kctx, i)
 		return &RouteWrapper{Route: t}
@@ -966,7 +974,7 @@ func NewRoutesIndex(
 	}, krtopts.ToOptions("routes-grpc-routes-with-policy")...)
 	h.routes = krt.JoinCollection([]krt.Collection[RouteWrapper]{httpRouteCollection, grpcRoutesCollection, tcpRoutesCollection, tlsRoutesCollection}, krtopts.ToOptions("all-routes-with-policy")...)
 
-	httpBySelector := krt.NewIndex(h.httpRoutes, func(i ir.HttpRouteIR) []HTTPRouteSelector {
+	httpBySelector := krtutil.UnnamedIndex(h.httpRoutes, func(i ir.HttpRouteIR) []HTTPRouteSelector {
 		value, ok := i.SourceObject.GetLabels()[apilabels.DelegationLabelSelector]
 		if !ok {
 			return []HTTPRouteSelector{
@@ -985,7 +993,7 @@ func NewRoutesIndex(
 	})
 	h.httpBySelector = httpBySelector
 
-	byParentRef := krt.NewIndex(h.routes, func(in RouteWrapper) []targetRefIndexKey {
+	byParentRef := krtutil.UnnamedIndex(h.routes, func(in RouteWrapper) []targetRefIndexKey {
 		parentRefs := in.Route.GetParentRefs()
 		ret := make([]targetRefIndexKey, len(parentRefs))
 		for i, pRef := range parentRefs {

@@ -19,6 +19,154 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
 
+func TestAIPolicyIREquals(t *testing.T) {
+	// Create shared secret instances to avoid complex initialization issues
+	secret1 := &ir.Secret{}
+	secret2 := &ir.Secret{}
+
+	createSimpleSecret := func(name string) *ir.Secret {
+		if name == "secret1" {
+			return secret1
+		}
+		return secret2
+	}
+	createSimpleExtproc := func(metadataKey string) *envoy_ext_proc_v3.ExtProcPerRoute {
+		return &envoy_ext_proc_v3.ExtProcPerRoute{
+			Override: &envoy_ext_proc_v3.ExtProcPerRoute_Overrides{
+				Overrides: &envoy_ext_proc_v3.ExtProcOverrides{
+					GrpcInitialMetadata: []*envoycorev3.HeaderValue{
+						{
+							Key:   metadataKey,
+							Value: "test-value",
+						},
+					},
+				},
+			},
+		}
+	}
+	createSimpleTransformation := func(headerName string) *envoytransformation.RouteTransformations {
+		return &envoytransformation.RouteTransformations{
+			Transformations: []*envoytransformation.RouteTransformations_RouteTransformation{
+				{
+					Match: &envoytransformation.RouteTransformations_RouteTransformation_RequestMatch_{
+						RequestMatch: &envoytransformation.RouteTransformations_RouteTransformation_RequestMatch{
+							RequestTransformation: &envoytransformation.Transformation{
+								TransformationType: &envoytransformation.Transformation_TransformationTemplate{
+									TransformationTemplate: &envoytransformation.TransformationTemplate{
+										Headers: map[string]*envoytransformation.InjaTemplate{
+											headerName: {Text: "test-value"},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+	}
+
+	tests := []struct {
+		name     string
+		ai1      *aiPolicyIR
+		ai2      *aiPolicyIR
+		expected bool
+	}{
+		{
+			name:     "both nil are equal",
+			ai1:      nil,
+			ai2:      nil,
+			expected: true,
+		},
+		{
+			name:     "nil vs non-nil are not equal",
+			ai1:      nil,
+			ai2:      &aiPolicyIR{AISecret: createSimpleSecret("secret1")},
+			expected: false,
+		},
+		{
+			name:     "non-nil vs nil are not equal",
+			ai1:      &aiPolicyIR{AISecret: createSimpleSecret("secret1")},
+			ai2:      nil,
+			expected: false,
+		},
+		{
+			name:     "same instance without secrets is equal",
+			ai1:      &aiPolicyIR{AISecret: nil},
+			ai2:      &aiPolicyIR{AISecret: nil},
+			expected: true,
+		},
+		{
+			name:     "one with secret, one without are not equal",
+			ai1:      &aiPolicyIR{AISecret: secret1},
+			ai2:      &aiPolicyIR{AISecret: nil},
+			expected: false,
+		},
+		{
+			name:     "different extproc configs are not equal",
+			ai1:      &aiPolicyIR{Extproc: createSimpleExtproc("key1")},
+			ai2:      &aiPolicyIR{Extproc: createSimpleExtproc("key2")},
+			expected: false,
+		},
+		{
+			name:     "same extproc configs are equal",
+			ai1:      &aiPolicyIR{Extproc: createSimpleExtproc("key1")},
+			ai2:      &aiPolicyIR{Extproc: createSimpleExtproc("key1")},
+			expected: true,
+		},
+		{
+			name:     "different transformations are not equal",
+			ai1:      &aiPolicyIR{Transformation: createSimpleTransformation("header1")},
+			ai2:      &aiPolicyIR{Transformation: createSimpleTransformation("header2")},
+			expected: false,
+		},
+		{
+			name:     "same transformations are equal",
+			ai1:      &aiPolicyIR{Transformation: createSimpleTransformation("header1")},
+			ai2:      &aiPolicyIR{Transformation: createSimpleTransformation("header1")},
+			expected: true,
+		},
+		{
+			name:     "nil fields are equal",
+			ai1:      &aiPolicyIR{AISecret: nil, Extproc: nil, Transformation: nil},
+			ai2:      &aiPolicyIR{AISecret: nil, Extproc: nil, Transformation: nil},
+			expected: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := tt.ai1.Equals(tt.ai2)
+			assert.Equal(t, tt.expected, result)
+
+			// Test symmetry: a.Equals(b) should equal b.Equals(a)
+			reverseResult := tt.ai2.Equals(tt.ai1)
+			assert.Equal(t, result, reverseResult, "Equals should be symmetric")
+		})
+	}
+
+	// Test reflexivity: x.Equals(x) should always be true for non-nil values
+	t.Run("reflexivity", func(t *testing.T) {
+		ai := &aiPolicyIR{AISecret: nil} // Use nil to avoid secret equality issues
+		assert.True(t, ai.Equals(ai), "ai should equal itself")
+	})
+
+	// Test transitivity: if a.Equals(b) && b.Equals(c), then a.Equals(c)
+	t.Run("transitivity", func(t *testing.T) {
+		createSameAI := func() *aiPolicyIR {
+			return &aiPolicyIR{AISecret: nil} // Use nil to avoid secret equality issues
+		}
+
+		a := createSameAI()
+		b := createSameAI()
+		c := createSameAI()
+
+		assert.True(t, a.Equals(b), "a should equal b")
+		assert.True(t, b.Equals(c), "b should equal c")
+		assert.True(t, a.Equals(c), "a should equal c (transitivity)")
+	})
+}
+
 func TestProcessAITrafficPolicy(t *testing.T) {
 	// extproc config from backend plugin
 	backendExtprocSettings := &envoy_ext_proc_v3.ExtProcPerRoute{
@@ -41,7 +189,7 @@ func TestProcessAITrafficPolicy(t *testing.T) {
 		}
 		// extproc and transformation will be set by preProcessAITrafficPolicy
 		aiSecret := &ir.Secret{}
-		aiIR := &AIPolicyIR{
+		aiIR := &aiPolicyIR{
 			AISecret: aiSecret,
 		}
 
@@ -73,7 +221,7 @@ func TestProcessAITrafficPolicy(t *testing.T) {
 		aiConfig := &v1alpha1.AIPolicy{}
 		// extproc and transformation will be set by preProcessAITrafficPolicy
 		aiSecret := &ir.Secret{}
-		aiIR := &AIPolicyIR{
+		aiIR := &aiPolicyIR{
 			AISecret: aiSecret,
 		}
 
@@ -117,7 +265,7 @@ func TestProcessAITrafficPolicy(t *testing.T) {
 		}
 		// extproc and transformation will be set by preProcessAITrafficPolicy
 		aiSecret := &ir.Secret{}
-		aiIR := &AIPolicyIR{
+		aiIR := &aiPolicyIR{
 			AISecret: aiSecret,
 		}
 		// Execute
@@ -166,7 +314,7 @@ func TestProcessAITrafficPolicy(t *testing.T) {
 		}
 		// extproc and transformation will be set by preProcessAITrafficPolicy
 		aiSecret := &ir.Secret{}
-		aiIR := &AIPolicyIR{
+		aiIR := &aiPolicyIR{
 			AISecret: aiSecret,
 		}
 
@@ -227,7 +375,7 @@ func TestProcessAITrafficPolicy(t *testing.T) {
 		}
 		// extproc and transformation will be set by preProcessAITrafficPolicy
 		aiSecret := &ir.Secret{}
-		aiIR := &AIPolicyIR{
+		aiIR := &aiPolicyIR{
 			AISecret: aiSecret,
 		}
 
@@ -364,7 +512,7 @@ func TestDefault(t *testing.T) {
 
 			plugin := &trafficPolicyPluginGwPass{}
 			aiSecret := &ir.Secret{}
-			aiIR := &AIPolicyIR{
+			aiIR := &aiPolicyIR{
 				AISecret: aiSecret,
 			}
 			// Execute

@@ -68,7 +68,7 @@ func NewPerClientEnvoyClusters(
 		}
 		return uccWithClusterRet
 	}, krtopts.ToOptions("PerClientEnvoyClusters")...)
-	idx := krt.NewIndex(clusters, func(ucc uccWithCluster) []string {
+	idx := krtutil.UnnamedIndex(clusters, func(ucc uccWithCluster) []string {
 		return []string{ucc.Client.ResourceName()}
 	})
 

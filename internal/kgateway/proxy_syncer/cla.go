@@ -55,7 +55,7 @@ func NewPerClientEnvoyEndpoints(
 		}
 		return uccWithEndpointsRet
 	}, krtopts.ToOptions("PerClientEnvoyEndpoints")...)
-	idx := krt.NewIndex(eps, func(ucc UccWithEndpoints) []string {
+	idx := krtutil.UnnamedIndex(eps, func(ucc UccWithEndpoints) []string {
 		return []string{ucc.Client.ResourceName()}
 	})
 

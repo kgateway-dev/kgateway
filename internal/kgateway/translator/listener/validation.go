@@ -3,6 +3,7 @@ package listener
 import (
 	"fmt"
 	"slices"
+	"strings"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -113,10 +114,16 @@ func validateSupportedRoutes(listeners []ir.Listener, reporter reports.Reporter)
 
 		parentReporter.ListenerName(string(listener.Name)).SetSupportedKinds(foundSupportedRouteKinds)
 		if len(foundInvalidRouteKinds) > 0 {
+			invalidKinds := make([]string, 0, len(foundInvalidRouteKinds))
+			for _, rgk := range foundInvalidRouteKinds {
+				invalidKinds = append(invalidKinds, string(rgk.Kind))
+			}
+
 			parentReporter.ListenerName(string(listener.Name)).SetCondition(reports.ListenerCondition{
-				Type:   gwv1.ListenerConditionResolvedRefs,
-				Status: metav1.ConditionFalse,
-				Reason: gwv1.ListenerReasonInvalidRouteKinds,
+				Type:    gwv1.ListenerConditionResolvedRefs,
+				Status:  metav1.ConditionFalse,
+				Reason:  gwv1.ListenerReasonInvalidRouteKinds,
+				Message: fmt.Sprintf("Found invalid route kinds: [%s]", strings.Join(invalidKinds, ", ")),
 			})
 		} else {
 			validListeners = append(validListeners, listener)

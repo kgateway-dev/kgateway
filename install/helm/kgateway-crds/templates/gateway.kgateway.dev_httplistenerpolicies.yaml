@@ -642,6 +642,8 @@ spec:
                 required:
                 - path
                 type: object
+              preserveHttp1HeaderCase:
+                type: boolean
               serverHeaderTransformation:
                 enum:
                 - Overwrite

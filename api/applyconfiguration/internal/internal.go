@@ -259,9 +259,6 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: timeout
       type:
         namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Duration
-    - name: transportSecurity
-      type:
-        scalar: string
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AlwaysOnConfig
   map:
     elementType:
@@ -1145,6 +1142,9 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: healthCheck
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.EnvoyHealthCheck
+    - name: preserveHttp1HeaderCase
+      type:
+        scalar: boolean
     - name: serverHeaderTransformation
       type:
         scalar: string
@@ -1273,9 +1273,6 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         scalar: string
       default: ""
-    - name: insecureSkipVerify
-      type:
-        scalar: boolean
     - name: port
       type:
         scalar: numeric
@@ -1286,9 +1283,6 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: enableTrailers
       type:
         scalar: boolean
-    - name: headerFormat
-      type:
-        scalar: string
     - name: overrideStreamErrorOnInvalidHttpMessage
       type:
         scalar: boolean
@@ -2145,6 +2139,9 @@ var schemaYAML = typed.YAMLObject(`types:
           elementType:
             scalar: string
           elementRelationship: atomic
+    - name: insecureSkipVerify
+      type:
+        scalar: boolean
     - name: oneWayTLS
       type:
         scalar: boolean

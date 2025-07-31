@@ -113,21 +113,22 @@ func RunController(t *testing.T, logger *zap.Logger, globalSettings *settings.Se
 		setup.WithKrtDebugger(krtDbg),
 		setup.WithXDSListener(l),
 		setup.WithControllerManagerOptions(
-			&ctrl.Options{
-				BaseContext:      func() context.Context { return ctx },
-				Scheme:           runtime.NewScheme(),
-				PprofBindAddress: "127.0.0.1:9099",
-				// if you change the port here, also change the port "health" in the helmchart.
-				HealthProbeBindAddress: ":9093",
-				Controller: config.Controller{
-					// 	// see https://github.com/kubernetes-sigs/controller-runtime/issues/2937
-					// 	// in short, our tests reuse the same name (reasonably so) and the controller-runtime
-					// 	// package does not reset the stack of controller names between tests, so we disable
-					// 	// the name validation here.
-					SkipNameValidation: ptr.To(true),
-				},
-			},
-		),
+			func(ctx context.Context) *ctrl.Options {
+				return &ctrl.Options{
+					BaseContext:      func() context.Context { return ctx },
+					Scheme:           runtime.NewScheme(),
+					PprofBindAddress: "127.0.0.1:9099",
+					// if you change the port here, also change the port "health" in the helmchart.
+					HealthProbeBindAddress: ":9093",
+					Controller: config.Controller{
+						// 	// see https://github.com/kubernetes-sigs/controller-runtime/issues/2937
+						// 	// in short, our tests reuse the same name (reasonably so) and the controller-runtime
+						// 	// package does not reset the stack of controller names between tests, so we disable
+						// 	// the name validation here.
+						SkipNameValidation: ptr.To(true),
+					},
+				}
+			}),
 		setup.WithExtraManagerConfig([]func(ctx context.Context, mgr manager.Manager, objectFilter kubetypes.DynamicObjectFilter) error{
 			func(ctx context.Context, mgr manager.Manager, objectFilter kubetypes.DynamicObjectFilter) error {
 				return controller.AddToScheme(mgr.GetScheme())

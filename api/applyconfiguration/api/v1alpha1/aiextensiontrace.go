@@ -12,11 +12,10 @@ import (
 // AiExtensionTraceApplyConfiguration represents a declarative configuration of the AiExtensionTrace type for use
 // with apply.
 type AiExtensionTraceApplyConfiguration struct {
-	EndPoint          *v1.AbsoluteURI                        `json:"endpoint,omitempty"`
-	Sampler           *OTelTracesSamplerApplyConfiguration   `json:"sampler,omitempty"`
-	Timeout           *metav1.Duration                       `json:"timeout,omitempty"`
-	Protocol          *apiv1alpha1.OTLPTracesProtocolType    `json:"protocol,omitempty"`
-	TransportSecurity *apiv1alpha1.OTLPTransportSecurityMode `json:"transportSecurity,omitempty"`
+	EndPoint *v1.AbsoluteURI                      `json:"endpoint,omitempty"`
+	Sampler  *OTelTracesSamplerApplyConfiguration `json:"sampler,omitempty"`
+	Timeout  *metav1.Duration                     `json:"timeout,omitempty"`
+	Protocol *apiv1alpha1.OTLPTracesProtocolType  `json:"protocol,omitempty"`
 }
 
 // AiExtensionTraceApplyConfiguration constructs a declarative configuration of the AiExtensionTrace type for use with
@@ -54,13 +53,5 @@ func (b *AiExtensionTraceApplyConfiguration) WithTimeout(value metav1.Duration) 
 // If called multiple times, the Protocol field is set to the value of the last call.
 func (b *AiExtensionTraceApplyConfiguration) WithProtocol(value apiv1alpha1.OTLPTracesProtocolType) *AiExtensionTraceApplyConfiguration {
 	b.Protocol = &value
-	return b
-}
-
-// WithTransportSecurity sets the TransportSecurity field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the TransportSecurity field is set to the value of the last call.
-func (b *AiExtensionTraceApplyConfiguration) WithTransportSecurity(value apiv1alpha1.OTLPTransportSecurityMode) *AiExtensionTraceApplyConfiguration {
-	b.TransportSecurity = &value
 	return b
 }

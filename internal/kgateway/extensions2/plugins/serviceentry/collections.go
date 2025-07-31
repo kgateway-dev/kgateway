@@ -16,6 +16,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 
 	networking "istio.io/api/networking/v1alpha3"
 	networkingclient "istio.io/client-go/pkg/apis/networking/v1"
@@ -185,7 +186,7 @@ func selectedWorkloads(
 	krt.Collection[selectedWorkload],
 	krt.Index[string, selectedWorkload],
 ) {
-	seNsIndex := krt.NewIndex(ServiceEntries, func(o seSelector) []string {
+	seNsIndex := krtutil.UnnamedIndex(ServiceEntries, func(o seSelector) []string {
 		namespaces := sets.New(o.GetNamespace())
 		if aliaser != nil {
 			for _, alias := range aliaser(o.ServiceEntry) {
@@ -243,7 +244,7 @@ func selectedWorkloads(
 
 	// consolidate Pods and WorkloadEntries
 	allWorkloads := krt.JoinCollection([]krt.Collection[selectedWorkload]{selectedPods, selectedWorkloadEntries}, krt.WithName("ServiceEntrySelectWorkloads"))
-	workloadsByServiceEntry := krt.NewIndex(allWorkloads, func(o selectedWorkload) []string {
+	workloadsByServiceEntry := krtutil.UnnamedIndex(allWorkloads, func(o selectedWorkload) []string {
 		return slices.Map(o.selectedBy, func(n krt.Named) string {
 			return n.ResourceName()
 		})

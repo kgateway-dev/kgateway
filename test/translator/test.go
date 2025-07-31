@@ -10,7 +10,6 @@ import (
 	"reflect"
 	"sort"
 	"strings"
-	"time"
 
 	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
@@ -32,6 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 
@@ -354,11 +354,19 @@ func GetHTTPRouteStatusError(
 	reportsMap reports.ReportMap,
 	route *types.NamespacedName,
 ) error {
-	for nns, routeReport := range reportsMap.HTTPRoutes {
+	for nns := range reportsMap.HTTPRoutes {
 		if route != nil && nns != *route {
 			continue
 		}
-		for ref, parentRefReport := range routeReport.Parents {
+		r := gwv1.HTTPRoute{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      nns.Name,
+				Namespace: nns.Namespace,
+			},
+		}
+		status := reportsMap.BuildRouteStatus(context.Background(), &r, wellknown.DefaultGatewayClassName)
+
+		for ref, parentRefReport := range status.Parents {
 			for _, c := range parentRefReport.Conditions {
 				// most route conditions true is good, except RouteConditionPartiallyInvalid
 				if c.Type == string(gwv1.RouteConditionPartiallyInvalid) && c.Status != metav1.ConditionFalse {
@@ -376,14 +384,15 @@ func GetPolicyStatusError(
 	reportsMap reports.ReportMap,
 	policy *reporter.PolicyKey,
 ) error {
-	for key, policyReport := range reportsMap.Policies {
+	for key := range reportsMap.Policies {
 		if policy != nil && *policy != key {
 			continue
 		}
-		for ancestor, report := range policyReport.Ancestors {
+		status := reportsMap.BuildPolicyStatus(context.Background(), key, wellknown.DefaultGatewayControllerName, gwv1a2.PolicyStatus{})
+		for ancestor, report := range status.Ancestors {
 			for _, c := range report.Conditions {
 				if c.Status != metav1.ConditionTrue {
-					return fmt.Errorf("condition error for policy: %v, ancestor ref: %v, condition: %v", policy, ancestor, c)
+					return fmt.Errorf("condition error for policy: %v, ancestor ref: %v, condition: %v", key, ancestor, c)
 				}
 			}
 		}
@@ -397,8 +406,16 @@ func AreReportsSuccess(gwNN types.NamespacedName, reportsMap reports.ReportMap) 
 		return err
 	}
 
-	for nns, routeReport := range reportsMap.TCPRoutes {
-		for ref, parentRefReport := range routeReport.Parents {
+	for nns := range reportsMap.TCPRoutes {
+		r := gwv1a2.TCPRoute{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      nns.Name,
+				Namespace: nns.Namespace,
+			},
+		}
+		status := reportsMap.BuildRouteStatus(context.Background(), &r, wellknown.DefaultGatewayClassName)
+
+		for ref, parentRefReport := range status.Parents {
 			for _, c := range parentRefReport.Conditions {
 				// most route conditions true is good, except RouteConditionPartiallyInvalid
 				if c.Type == string(gwv1.RouteConditionPartiallyInvalid) && c.Status != metav1.ConditionFalse {
@@ -410,8 +427,16 @@ func AreReportsSuccess(gwNN types.NamespacedName, reportsMap reports.ReportMap) 
 		}
 	}
 
-	for nns, routeReport := range reportsMap.TLSRoutes {
-		for ref, parentRefReport := range routeReport.Parents {
+	for nns := range reportsMap.TLSRoutes {
+		r := gwv1a2.TLSRoute{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      nns.Name,
+				Namespace: nns.Namespace,
+			},
+		}
+		status := reportsMap.BuildRouteStatus(context.Background(), &r, wellknown.DefaultGatewayClassName)
+
+		for ref, parentRefReport := range status.Parents {
 			for _, c := range parentRefReport.Conditions {
 				// most route conditions true is good, except RouteConditionPartiallyInvalid
 				if c.Type == string(gwv1.RouteConditionPartiallyInvalid) && c.Status != metav1.ConditionFalse {
@@ -423,8 +448,16 @@ func AreReportsSuccess(gwNN types.NamespacedName, reportsMap reports.ReportMap) 
 		}
 	}
 
-	for nns, routeReport := range reportsMap.GRPCRoutes {
-		for ref, parentRefReport := range routeReport.Parents {
+	for nns := range reportsMap.GRPCRoutes {
+		r := gwv1.GRPCRoute{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      nns.Name,
+				Namespace: nns.Namespace,
+			},
+		}
+		status := reportsMap.BuildRouteStatus(context.Background(), &r, wellknown.DefaultGatewayClassName)
+
+		for ref, parentRefReport := range status.Parents {
 			for _, c := range parentRefReport.Conditions {
 				// most route conditions true is good, except RouteConditionPartiallyInvalid
 				if c.Type == string(gwv1.RouteConditionPartiallyInvalid) && c.Status != metav1.ConditionFalse {
@@ -436,8 +469,15 @@ func AreReportsSuccess(gwNN types.NamespacedName, reportsMap reports.ReportMap) 
 		}
 	}
 
-	for nns, gwReport := range reportsMap.Gateways {
-		for _, c := range gwReport.GetConditions() {
+	for nns := range reportsMap.Gateways {
+		g := gwv1.Gateway{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      nns.Name,
+				Namespace: nns.Namespace,
+			},
+		}
+		status := reportsMap.BuildGWStatus(context.Background(), g)
+		for _, c := range status.Conditions {
 			if c.Type == listener.AttachedListenerSetsConditionType {
 				// A gateway might or might not have AttachedListenerSets so skip this condition
 				continue
@@ -592,7 +632,7 @@ func (tc TestCase) Run(
 		Name:      "example-svc",
 	}, 80, "")
 	extensions.ContributesBackends[gk] = extensionsplug.BackendPlugin{
-		Backends: krt.NewStaticCollection([]ir.BackendObjectIR{
+		Backends: krt.NewStaticCollection(nil, []ir.BackendObjectIR{
 			testBackend,
 		}),
 		BackendInit: ir.BackendInit{
@@ -619,8 +659,6 @@ func (tc TestCase) Run(
 	for i, plug := range extraPlugs {
 		kubeclient.WaitForCacheSync(fmt.Sprintf("extra-%d", i), ctx.Done(), plug.HasSynced)
 	}
-
-	time.Sleep(1 * time.Second)
 
 	results := make(map[types.NamespacedName]ActualTestResult)
 

@@ -227,9 +227,10 @@ func TestSimpleListenerWithInvalidRouteKind(t *testing.T) {
 			SupportedKinds: []gwv1.RouteGroupKind{},
 			Conditions: []metav1.Condition{
 				{
-					Type:   string(gwv1.ListenerConditionResolvedRefs),
-					Status: metav1.ConditionFalse,
-					Reason: string(gwv1.ListenerReasonInvalidRouteKinds),
+					Type:    string(gwv1.ListenerConditionResolvedRefs),
+					Status:  metav1.ConditionFalse,
+					Reason:  string(gwv1.ListenerReasonInvalidRouteKinds),
+					Message: "Found invalid route kinds: [BustedRouteKind]",
 				},
 			},
 		},
@@ -1307,6 +1308,9 @@ func assertExpectedListenerStatuses(
 				if eCond.Type == aCond.Type {
 					g.Expect(aCond.Status).To(Equal(eCond.Status))
 					g.Expect(aCond.Reason).To(Equal(eCond.Reason))
+					if eCond.Message != "" {
+						g.Expect(aCond.Message).To(Equal(eCond.Message))
+					}
 				}
 			}
 		}

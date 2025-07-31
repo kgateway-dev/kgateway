@@ -61,7 +61,6 @@ spec:
   http1ProtocolOptions:
     enableTrailers: true
     overrideStreamErrorOnInvalidHttpMessage: true
-    headerFormat: PreserveCaseHeaderKeyFormat
 ---
 apiVersion: v1
 kind: Pod

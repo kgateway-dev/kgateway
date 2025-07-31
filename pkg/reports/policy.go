@@ -243,12 +243,12 @@ func addAttachmentCondition(report *AncestorRefReport) []metav1.Condition {
 	existing := slices.Clone(report.Conditions)
 
 	switch {
-	case report.AttachmentState.Has(reporter.PolicyAttachmentStateDiscarded):
+	case report.AttachmentState.Has(reporter.PolicyAttachmentStateOverridden):
 		meta.SetStatusCondition(&existing, metav1.Condition{
 			Type:    string(v1alpha1.PolicyConditionAttached),
 			Status:  metav1.ConditionFalse,
-			Reason:  string(v1alpha1.PolicyReasonDiscarded),
-			Message: reporter.PolicyDiscardedMsg,
+			Reason:  string(v1alpha1.PolicyReasonOverridden),
+			Message: reporter.PolicyOverriddenMsg,
 		})
 
 	case report.AttachmentState.Has(reporter.PolicyAttachmentStateMerged):

@@ -21,6 +21,7 @@ type HTTPListenerPolicySpecApplyConfiguration struct {
 	ServerHeaderTransformation *apiv1alpha1.ServerHeaderTransformation        `json:"serverHeaderTransformation,omitempty"`
 	StreamIdleTimeout          *v1.Duration                                   `json:"streamIdleTimeout,omitempty"`
 	HealthCheck                *EnvoyHealthCheckApplyConfiguration            `json:"healthCheck,omitempty"`
+	PreserveHttp1HeaderCase    *bool                                          `json:"preserveHttp1HeaderCase,omitempty"`
 }
 
 // HTTPListenerPolicySpecApplyConfiguration constructs a declarative configuration of the HTTPListenerPolicySpec type for use with
@@ -121,5 +122,13 @@ func (b *HTTPListenerPolicySpecApplyConfiguration) WithStreamIdleTimeout(value v
 // If called multiple times, the HealthCheck field is set to the value of the last call.
 func (b *HTTPListenerPolicySpecApplyConfiguration) WithHealthCheck(value *EnvoyHealthCheckApplyConfiguration) *HTTPListenerPolicySpecApplyConfiguration {
 	b.HealthCheck = value
+	return b
+}
+
+// WithPreserveHttp1HeaderCase sets the PreserveHttp1HeaderCase field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the PreserveHttp1HeaderCase field is set to the value of the last call.
+func (b *HTTPListenerPolicySpecApplyConfiguration) WithPreserveHttp1HeaderCase(value bool) *HTTPListenerPolicySpecApplyConfiguration {
+	b.PreserveHttp1HeaderCase = &value
 	return b
 }

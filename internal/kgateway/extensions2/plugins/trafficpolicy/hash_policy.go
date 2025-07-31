@@ -3,6 +3,7 @@ package trafficpolicy
 import (
 	"sort"
 
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
 
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
@@ -10,7 +11,48 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 )
 
-func hashPolicyForSpec(spec v1alpha1.TrafficPolicySpec, outSpec *trafficPolicySpecIr) {
+type hashPolicyIR struct {
+	policies []*envoyroutev3.RouteAction_HashPolicy
+}
+
+var _ PolicySubIR = &hashPolicyIR{}
+
+func (h *hashPolicyIR) Equals(other PolicySubIR) bool {
+	otherHashPolicy, ok := other.(*hashPolicyIR)
+	if !ok {
+		return false
+	}
+	if h == nil && otherHashPolicy == nil {
+		return true
+	}
+	if h == nil || otherHashPolicy == nil {
+		return false
+	}
+	if len(h.policies) != len(otherHashPolicy.policies) {
+		return false
+	}
+	for i, policy := range h.policies {
+		if !proto.Equal(policy, otherHashPolicy.policies[i]) {
+			return false
+		}
+	}
+	return true
+}
+
+func (h *hashPolicyIR) Validate() error {
+	if h == nil {
+		return nil
+	}
+	for _, policy := range h.policies {
+		if err := policy.ValidateAll(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// applyHashPolicy converts the hash policy spec to the IR.
+func applyHashPolicy(spec v1alpha1.TrafficPolicySpec, outSpec *trafficPolicySpecIr) {
 	if len(spec.HashPolicies) == 0 {
 		return
 	}
@@ -65,5 +107,7 @@ func hashPolicyForSpec(spec v1alpha1.TrafficPolicySpec, outSpec *trafficPolicySp
 		}
 		policies = append(policies, policy)
 	}
-	outSpec.hashPolicies = policies
+	outSpec.hashPolicies = &hashPolicyIR{
+		policies: policies,
+	}
 }

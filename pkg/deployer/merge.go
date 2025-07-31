@@ -734,7 +734,6 @@ func deepMergeAIExtensionTracing(dst, src *v1alpha1.AiExtensionTrace) *v1alpha1.
 	dst.Sampler = MergePointers(dst.Sampler, src.Sampler)
 	dst.Timeout = MergePointers(dst.Timeout, src.Timeout)
 	dst.Protocol = MergePointers(dst.Protocol, src.Protocol)
-	dst.TransportSecurity = MergePointers(dst.TransportSecurity, src.TransportSecurity)
 	return dst
 }
 

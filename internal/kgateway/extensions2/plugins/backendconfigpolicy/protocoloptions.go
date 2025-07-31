@@ -3,7 +3,6 @@ package backendconfigpolicy
 import (
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	preserve_case_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/http/header_formatters/preserve_case/v3"
 	envoy_upstreams_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -11,7 +10,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	translatorutils "github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/utils"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 )
 
 func translateCommonHttpProtocolOptions(commonHttpProtocolOptions *v1alpha1.CommonHttpProtocolOptions) *envoycorev3.HttpProtocolOptions {
@@ -44,29 +42,6 @@ func translateHttp1ProtocolOptions(http1ProtocolOptions *v1alpha1.Http1ProtocolO
 		out.OverrideStreamErrorOnInvalidHttpMessage = &wrapperspb.BoolValue{Value: *http1ProtocolOptions.OverrideStreamErrorOnInvalidHttpMessage}
 	}
 
-	if http1ProtocolOptions.HeaderFormat != nil {
-		switch *http1ProtocolOptions.HeaderFormat {
-		case v1alpha1.ProperCaseHeaderKeyFormat:
-			out.HeaderKeyFormat = &envoycorev3.Http1ProtocolOptions_HeaderKeyFormat{
-				HeaderFormat: &envoycorev3.Http1ProtocolOptions_HeaderKeyFormat_ProperCaseWords_{
-					ProperCaseWords: &envoycorev3.Http1ProtocolOptions_HeaderKeyFormat_ProperCaseWords{},
-				},
-			}
-		case v1alpha1.PreserveCaseHeaderKeyFormat:
-			typedConfig, err := utils.MessageToAny(&preserve_case_v3.PreserveCaseFormatterConfig{})
-			if err != nil {
-				return nil, err
-			}
-			out.HeaderKeyFormat = &envoycorev3.Http1ProtocolOptions_HeaderKeyFormat{
-				HeaderFormat: &envoycorev3.Http1ProtocolOptions_HeaderKeyFormat_StatefulFormatter{
-					StatefulFormatter: &envoycorev3.TypedExtensionConfig{
-						Name:        PreserveCasePlugin,
-						TypedConfig: typedConfig,
-					},
-				},
-			}
-		}
-	}
 	return out, nil
 }
 

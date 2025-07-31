@@ -47,31 +47,35 @@ var (
 )
 
 type extAuthIR struct {
-	provider        *TrafficPolicyGatewayExtensionIR
-	enablement      *v1alpha1.ExtAuthEnabled
-	extauthPerRoute *envoy_ext_authz_v3.ExtAuthzPerRoute
+	provider   *TrafficPolicyGatewayExtensionIR
+	enablement *v1alpha1.ExtAuthEnabled
+	perRoute   *envoy_ext_authz_v3.ExtAuthzPerRoute
 }
 
-// Equals compares two extAuthIR instances for equality
-func (e *extAuthIR) Equals(other *extAuthIR) bool {
-	if e == nil && other == nil {
+var _ PolicySubIR = &extAuthIR{}
+
+// Equals compares two ExtAuthIR instances for equality
+func (e *extAuthIR) Equals(other PolicySubIR) bool {
+	otherExtAuth, ok := other.(*extAuthIR)
+	if !ok {
+		return false
+	}
+	if e == nil && otherExtAuth == nil {
 		return true
 	}
-	if e == nil || other == nil {
+	if e == nil || otherExtAuth == nil {
 		return false
 	}
 
 	// Compare enablement
-	if e.enablement != other.enablement {
+	if e.enablement != otherExtAuth.enablement {
 		return false
 	}
-
-	if !proto.Equal(e.extauthPerRoute, other.extauthPerRoute) {
+	if !proto.Equal(e.perRoute, otherExtAuth.perRoute) {
 		return false
 	}
-
 	// Compare providers
-	if !cmputils.CompareWithNils(e.provider, other.provider, func(a, b *TrafficPolicyGatewayExtensionIR) bool {
+	if !cmputils.CompareWithNils(e.provider, otherExtAuth.provider, func(a, b *TrafficPolicyGatewayExtensionIR) bool {
 		return a.Equals(*b)
 	}) {
 		return false
@@ -79,41 +83,51 @@ func (e *extAuthIR) Equals(other *extAuthIR) bool {
 	return true
 }
 
-// extAuthForSpec translates the ExtAuthz spec into the Envoy configuration
-
-func (b *TrafficPolicyBuilder) extAuthForSpec(
-	krtctx krt.HandlerContext,
-	trafficPolicy *v1alpha1.TrafficPolicy,
-	out *trafficPolicySpecIr,
-) error {
-	policySpec := &trafficPolicy.Spec
-
-	if policySpec.ExtAuth == nil {
+func (e *extAuthIR) Validate() error {
+	if e == nil {
 		return nil
 	}
-	spec := policySpec.ExtAuth
+	if e.perRoute != nil {
+		if err := e.perRoute.ValidateAll(); err != nil {
+			return err
+		}
+	}
+	if e.provider != nil {
+		return e.provider.Validate()
+	}
+	return nil
+}
 
+// applyExtAuth converts the extauth policy spec to the IR.
+func applyExtAuth(
+	krtctx krt.HandlerContext,
+	in *v1alpha1.TrafficPolicy,
+	fetchGatewayExtension FetchGatewayExtensionFunc,
+	out *trafficPolicySpecIr,
+) error {
+	if in.Spec.ExtAuth == nil {
+		return nil
+	}
+	spec := in.Spec.ExtAuth
 	if spec.Enablement != nil && *spec.Enablement == v1alpha1.ExtAuthDisableAll {
 		out.extAuth = &extAuthIR{
-			provider:        nil,
-			enablement:      spec.Enablement,
-			extauthPerRoute: translatePerFilterConfig(spec),
+			provider:   nil,
+			enablement: spec.Enablement,
+			perRoute:   translatePerFilterConfig(spec),
 		}
 		return nil
 	}
-
-	provider, err := b.FetchGatewayExtension(krtctx, spec.ExtensionRef, trafficPolicy.GetNamespace())
+	provider, err := fetchGatewayExtension(krtctx, in.Spec.ExtAuth.ExtensionRef, in.GetNamespace())
 	if err != nil {
 		return fmt.Errorf("extauthz: %w", err)
 	}
 	if provider.ExtType != v1alpha1.GatewayExtensionTypeExtAuth || provider.ExtAuth == nil {
 		return pluginutils.ErrInvalidExtensionType(v1alpha1.GatewayExtensionTypeExtAuth, provider.ExtType)
 	}
-
 	out.extAuth = &extAuthIR{
-		provider:        provider,
-		enablement:      spec.Enablement,
-		extauthPerRoute: translatePerFilterConfig(spec),
+		provider:   provider,
+		enablement: in.Spec.ExtAuth.Enablement,
+		perRoute:   translatePerFilterConfig(in.Spec.ExtAuth),
 	}
 	return nil
 }
@@ -165,9 +179,9 @@ func (p *trafficPolicyPluginGwPass) handleExtAuth(fcn string, pCtxTypedFilterCon
 		pCtxTypedFilterConfig.AddTypedConfig(extAuthGlobalDisableFilterName, EnableFilterPerRoute)
 	} else {
 		providerName := extAuth.provider.ResourceName()
-		if extAuth.extauthPerRoute != nil {
+		if extAuth.perRoute != nil {
 			pCtxTypedFilterConfig.AddTypedConfig(extAuthFilterName(providerName),
-				extAuth.extauthPerRoute,
+				extAuth.perRoute,
 			)
 		} else {
 			// if you are on a route and not trying to disable it then we need to override the top level disable on the filter chain

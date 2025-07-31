@@ -62,7 +62,7 @@ func NewGlooK8sEndpointInputs(
 	}
 
 	// Create index on EndpointSlices by service name and endpointslice namespace
-	endpointSlicesByService := krt.NewIndex(endpointSlices, func(es *discoveryv1.EndpointSlice) []types.NamespacedName {
+	endpointSlicesByService := krtutil.UnnamedIndex(endpointSlices, func(es *discoveryv1.EndpointSlice) []types.NamespacedName {
 		svcName, ok := es.Labels[discoveryv1.LabelServiceName]
 		if !ok {
 			return nil

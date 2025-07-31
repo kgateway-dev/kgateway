@@ -816,13 +816,6 @@ type AiExtensionTrace struct {
 	// +optional
 	// +kubebuilder:validation:Enum=grpc;http/protobuf;http/json
 	Protocol *OTLPTracesProtocolType `json:"protocol,omitempty"`
-
-	// TransportSecurity controls the TLS (Transport Layer Security) settings when connecting
-	// to the tracing server. It determines whether certificate verification should be skipped.
-	//
-	// +optional
-	// +kubebuilder:validation:Enum=secure;insecure
-	TransportSecurity *OTLPTransportSecurityMode `json:"transportSecurity,omitempty"`
 }
 
 func (in *AiExtensionTrace) GetTimeout() *metav1.Duration {
@@ -982,14 +975,6 @@ func (otelTransportSecurityMode OTLPTransportSecurityMode) String() string {
 	default:
 		return ""
 	}
-}
-
-func (in *AiExtensionTrace) GetTransportSecurityMode() *string {
-	if in == nil || in.TransportSecurity == nil {
-		return nil
-	}
-	value := in.TransportSecurity.String()
-	return &value
 }
 
 // AgentGateway configures the AgentGateway integration. If AgentGateway is enabled, Envoy

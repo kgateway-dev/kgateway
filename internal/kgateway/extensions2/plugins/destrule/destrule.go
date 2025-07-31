@@ -71,18 +71,10 @@ func NewDestRuleIndex(istioClient kube.Client, krtopts *krtutil.KrtOptions) Dest
 	}
 }
 
-func NewEmptyDestRuleIndex() DestinationRuleIndex {
-	destrules := krt.NewStaticCollection[DestinationRuleWrapper](nil)
-	return DestinationRuleIndex{
-		Destrules:  destrules,
-		ByHostname: newDestruleIndex(destrules),
-	}
-}
-
 const exportAllNs = "*"
 
 func newDestruleIndex(destRuleCollection krt.Collection[DestinationRuleWrapper]) krt.Index[NsWithHostname, DestinationRuleWrapper] {
-	idx := krt.NewIndex(destRuleCollection, func(d DestinationRuleWrapper) []NsWithHostname {
+	idx := krtutil.UnnamedIndex(destRuleCollection, func(d DestinationRuleWrapper) []NsWithHostname {
 		exportTo := d.Spec.GetExportTo()
 		if len(exportTo) == 0 {
 			return []NsWithHostname{{

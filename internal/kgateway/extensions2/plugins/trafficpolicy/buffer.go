@@ -12,33 +12,42 @@ import (
 
 const bufferFilterName = "envoy.filters.http.buffer"
 
-type BufferIR struct {
+type bufferIR struct {
 	maxRequestBytes uint32
 }
 
-func (b *BufferIR) Equals(other *BufferIR) bool {
-	if b == nil && other == nil {
-		return true
-	}
-	if b == nil || other == nil {
+var _ PolicySubIR = &bufferIR{}
+
+func (b *bufferIR) Equals(other PolicySubIR) bool {
+	otherBuffer, ok := other.(*bufferIR)
+	if !ok {
 		return false
 	}
-
-	return b.maxRequestBytes == other.maxRequestBytes
+	if b == nil && otherBuffer == nil {
+		return true
+	}
+	if b == nil || otherBuffer == nil {
+		return false
+	}
+	return b.maxRequestBytes == otherBuffer.maxRequestBytes
 }
 
-// bufferForSpec translates the buffer spec into an envoy buffer policy and stores it in the traffic policy IR
-func bufferForSpec(spec v1alpha1.TrafficPolicySpec, out *trafficPolicySpecIr) {
+// Validate performs validation on the buffer component
+// Note: buffer validation is not needed as it's a single uint32 field
+func (b *bufferIR) Validate() error { return nil }
+
+// applyBuffer translates the buffer spec into an envoy buffer policy and stores it in the traffic policy IR.
+func applyBuffer(spec v1alpha1.TrafficPolicySpec, out *trafficPolicySpecIr) {
 	if spec.Buffer == nil {
 		return
 	}
 
-	out.buffer = &BufferIR{
+	out.buffer = &bufferIR{
 		maxRequestBytes: uint32(spec.Buffer.MaxRequestSize.Value()),
 	}
 }
 
-func (p *trafficPolicyPluginGwPass) handleBuffer(fcn string, pCtxTypedFilterConfig *ir.TypedFilterConfigMap, buffer *BufferIR) {
+func (p *trafficPolicyPluginGwPass) handleBuffer(fcn string, pCtxTypedFilterConfig *ir.TypedFilterConfigMap, buffer *bufferIR) {
 	if buffer == nil {
 		return
 	}

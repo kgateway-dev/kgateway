@@ -7,10 +7,12 @@ import (
 	"time"
 
 	envoyaccesslogv3 "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	healthcheckv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/health_check/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	preserve_case_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/http/header_formatters/preserve_case/v3"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -27,6 +29,7 @@ import (
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
@@ -49,6 +52,7 @@ type httpListenerPolicy struct {
 	serverHeaderTransformation *envoy_hcm.HttpConnectionManager_ServerHeaderTransformation
 	streamIdleTimeout          *time.Duration
 	healthCheckPolicy          *healthcheckv3.HealthCheck
+	preserveHttp1HeaderCase    *bool
 }
 
 func (d *httpListenerPolicy) CreationTime() time.Time {
@@ -113,6 +117,10 @@ func (d *httpListenerPolicy) Equals(in any) bool {
 
 	// Check healthCheckPolicy
 	if !proto.Equal(d.healthCheckPolicy, d2.healthCheckPolicy) {
+		return false
+	}
+
+	if !cmputils.PointerValsEqual(d.preserveHttp1HeaderCase, d2.preserveHttp1HeaderCase) {
 		return false
 	}
 
@@ -194,6 +202,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 				serverHeaderTransformation: serverHeaderTransformation,
 				streamIdleTimeout:          streamIdleTimeout,
 				healthCheckPolicy:          healthCheckPolicy,
+				preserveHttp1HeaderCase:    i.Spec.PreserveHttp1HeaderCase,
 			},
 			TargetRefs: pluginsdkutils.TargetRefsToPolicyRefs(i.Spec.TargetRefs, i.Spec.TargetSelectors),
 			Errors:     errs,
@@ -267,6 +276,24 @@ func (p *httpListenerPolicyPluginGwPass) ApplyHCM(
 	// translate streamIdleTimeout
 	if policy.streamIdleTimeout != nil {
 		out.StreamIdleTimeout = durationpb.New(*policy.streamIdleTimeout)
+	}
+
+	if policy.preserveHttp1HeaderCase != nil && *policy.preserveHttp1HeaderCase {
+		out.HttpProtocolOptions = &envoycorev3.Http1ProtocolOptions{}
+		preservecaseAny, err := utils.MessageToAny(&preserve_case_v3.PreserveCaseFormatterConfig{})
+		if err != nil {
+			// shouldn't happen
+			logger.Error("error translating preserveHttp1HeaderCase", "error", err)
+			return nil
+		}
+		out.GetHttpProtocolOptions().HeaderKeyFormat = &envoycorev3.Http1ProtocolOptions_HeaderKeyFormat{
+			HeaderFormat: &envoycorev3.Http1ProtocolOptions_HeaderKeyFormat_StatefulFormatter{
+				StatefulFormatter: &envoycorev3.TypedExtensionConfig{
+					Name:        "envoy.http.stateful_header_formatters.preserve_case",
+					TypedConfig: preservecaseAny,
+				},
+			},
+		}
 	}
 
 	return nil

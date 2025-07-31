@@ -26,7 +26,7 @@ type Options struct {
 	ExtraGatewayParameters   func(cli client.Client, inputs *deployer.Inputs) []deployer.ExtraGatewayParameters
 	ExtraXDSCallbacks        xdsserver.Callbacks
 	RestConfig               *rest.Config
-	CtrlMgrOptions           *ctrl.Options
+	CtrlMgrOptions           func(context.Context) *ctrl.Options
 	// extra controller manager config, like registering additional controllers
 	ExtraManagerConfig []func(ctx context.Context, mgr manager.Manager, objectFilter kubetypes.DynamicObjectFilter) error
 }

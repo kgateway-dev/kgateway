@@ -27,7 +27,7 @@ const (
 	//
 	// Possible reasons for this condition to be False are:
 	// * Pending
-	// * Discarded
+	// * Overridden
 	//
 	PolicyConditionAttached PolicyConditionType = "Attached"
 
@@ -47,10 +47,10 @@ const (
 	// policy has been merged with other policies and attached to the targeted resources.
 	PolicyReasonMerged PolicyConditionReason = "Merged"
 
-	// PolicyReasonDiscarded is used with the "Attached" condition when the
-	// policy is fully discarded on any targeted resource due to a conflict
+	// PolicyReasonOverridden is used with the "Attached" condition when the
+	// policy is fully overridden on any targeted resource due to a conflict
 	// with another policy of higher priority.
-	PolicyReasonDiscarded PolicyConditionReason = "Discarded"
+	PolicyReasonOverridden PolicyConditionReason = "Overridden"
 
 	// PolicyReasonPending is used with the "Accepted" or "Attached" condition when the policy has been referenced but not yet fully processed by the controller.
 	PolicyReasonPending PolicyConditionReason = "Pending"

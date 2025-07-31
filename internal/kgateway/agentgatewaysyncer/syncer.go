@@ -324,7 +324,7 @@ func (s *AgentGwSyncer) Start(ctx context.Context) error {
 		return fmt.Errorf("agentgateway syncer waiting for cache to sync failed")
 	}
 
-	s.xDS.RegisterBatch(func(events []krt.Event[agentGwXdsResources], _ bool) {
+	s.xDS.RegisterBatch(func(events []krt.Event[agentGwXdsResources]) {
 		for _, e := range events {
 			r := e.Latest()
 			if e.Event == controllers.EventDelete {

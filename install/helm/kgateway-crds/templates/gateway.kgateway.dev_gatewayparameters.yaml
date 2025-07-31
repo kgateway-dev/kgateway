@@ -489,11 +489,6 @@ spec:
                             x-kubernetes-validations:
                             - message: invalid duration value
                               rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
-                          transportSecurity:
-                            enum:
-                            - secure
-                            - insecure
-                            type: string
                         required:
                         - endpoint
                         type: object

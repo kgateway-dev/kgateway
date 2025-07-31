@@ -44,8 +44,12 @@ type HttpRouteRuleMatchIR struct {
 	// Higher weight means higher priority, and are evaluated before routes with lower weight
 	PrecedenceWeight int32
 
-	// Error encountered during translation
-	Error error
+	// RouteReplacementError is an error that results in the route being replaced
+	RouteReplacementError error
+
+	// RouteAcceptanceError is an error that results in the route being replaced and a status
+	// condition with Accepted=false,Reason=RouteRuleDropped
+	RouteAcceptanceError error
 }
 
 type ListenerIR struct {

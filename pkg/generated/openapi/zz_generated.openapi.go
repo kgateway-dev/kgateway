@@ -1155,13 +1155,6 @@ func schema_kgateway_v2_api_v1alpha1_AiExtensionTrace(ref common.ReferenceCallba
 							Format:      "",
 						},
 					},
-					"transportSecurity": {
-						SchemaProps: spec.SchemaProps{
-							Description: "TransportSecurity controls the TLS (Transport Layer Security) settings when connecting to the tracing server. It determines whether certificate verification should be skipped.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
 				},
 				Required: []string{"endpoint"},
 			},
@@ -3819,6 +3812,13 @@ func schema_kgateway_v2_api_v1alpha1_HTTPListenerPolicySpec(ref common.Reference
 							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.EnvoyHealthCheck"),
 						},
 					},
+					"preserveHttp1HeaderCase": {
+						SchemaProps: spec.SchemaProps{
+							Description: "PreserveHttp1HeaderCase determines whether to preserve the case of HTTP1 headers. See here for more information: https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_conn_man/header_casing",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
 				},
 			},
 		},
@@ -4103,13 +4103,6 @@ func schema_kgateway_v2_api_v1alpha1_Host(ref common.ReferenceCallback) common.O
 							Format:      "int32",
 						},
 					},
-					"insecureSkipVerify": {
-						SchemaProps: spec.SchemaProps{
-							Description: "InsecureSkipVerify allows skipping ssl validation for custom hosts",
-							Type:        []string{"boolean"},
-							Format:      "",
-						},
-					},
 				},
 				Required: []string{"host", "port"},
 			},
@@ -4128,13 +4121,6 @@ func schema_kgateway_v2_api_v1alpha1_Http1ProtocolOptions(ref common.ReferenceCa
 						SchemaProps: spec.SchemaProps{
 							Description: "Enables trailers for HTTP/1. By default the HTTP/1 codec drops proxied trailers. Note: Trailers must also be enabled at the gateway level in order for this option to take effect",
 							Type:        []string{"boolean"},
-							Format:      "",
-						},
-					},
-					"headerFormat": {
-						SchemaProps: spec.SchemaProps{
-							Description: "The format of the header key.",
-							Type:        []string{"string"},
 							Format:      "",
 						},
 					},
@@ -6545,6 +6531,13 @@ func schema_kgateway_v2_api_v1alpha1_TLS(ref common.ReferenceCallback) common.Op
 						SchemaProps: spec.SchemaProps{
 							Description: "File paths to certificates local to the proxy.",
 							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.TLSFiles"),
+						},
+					},
+					"insecureSkipVerify": {
+						SchemaProps: spec.SchemaProps{
+							Description: "InsecureSkipVerify originates TLS but skips verification of the backend's certificate. WARNING: This is an insecure option that should only be used if the risks are understood.",
+							Type:        []string{"boolean"},
+							Format:      "",
 						},
 					},
 					"sni": {

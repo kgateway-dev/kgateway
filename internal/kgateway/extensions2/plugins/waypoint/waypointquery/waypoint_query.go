@@ -22,6 +22,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/query"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 
 	networkingclient "istio.io/client-go/pkg/apis/networking/v1"
@@ -71,7 +72,7 @@ func NewQueries(
 		kclient.Filter{ObjectFilter: commonCols.Client.ObjectFilter()},
 	)
 	authzPolicies := krt.WrapClient(authzInformer, commonCols.KrtOpts.ToOptions("AuthorizationPolicies")...)
-	byNamespace := krt.NewIndex(authzPolicies, func(p *authcr.AuthorizationPolicy) []string {
+	byNamespace := krtutil.UnnamedIndex(authzPolicies, func(p *authcr.AuthorizationPolicy) []string {
 		return []string{p.GetNamespace()}
 	})
 	// Build Authz policies targetRefKey index
@@ -319,11 +320,11 @@ func waypointAttachmentIndex(
 	)
 
 	// enable lookup by gateway
-	byWaypointGateway := krt.NewIndex(waypointServiceAttachments, func(o WaypointedService) []types.NamespacedName {
+	byWaypointGateway := krtutil.UnnamedIndex(waypointServiceAttachments, func(o WaypointedService) []types.NamespacedName {
 		return []types.NamespacedName{o.Waypoint}
 	})
 
-	waypointAttachmentsByService := krt.NewIndex(waypointServiceAttachments, func(o WaypointedService) []string {
+	waypointAttachmentsByService := krtutil.UnnamedIndex(waypointServiceAttachments, func(o WaypointedService) []string {
 		return []string{o.Service.String()}
 	})
 

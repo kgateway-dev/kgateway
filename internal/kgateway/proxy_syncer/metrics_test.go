@@ -11,7 +11,6 @@ import (
 	envoycachetypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"github.com/stretchr/testify/assert"
-	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/kube/krt/krttest"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
@@ -212,13 +211,13 @@ func TestXDSSnapshotsCollectionMetrics(t *testing.T) {
 			c := snapshotPerClient(krtutil.KrtOptions{}, mockUcc, mockGatewayXDSResorces,
 				PerClientEnvoyEndpoints{
 					endpoints: mockUccWithEndpoints,
-					index: krt.NewIndex(mockUccWithEndpoints, func(ucc UccWithEndpoints) []string {
+					index: krtutil.UnnamedIndex(mockUccWithEndpoints, func(ucc UccWithEndpoints) []string {
 						return []string{ucc.Client.ResourceName()}
 					}),
 				},
 				PerClientEnvoyClusters{
 					clusters: mockUccWithCluster,
-					index: krt.NewIndex(mockUccWithCluster, func(ucc uccWithCluster) []string {
+					index: krtutil.UnnamedIndex(mockUccWithCluster, func(ucc uccWithCluster) []string {
 						return []string{ucc.Client.ResourceName()}
 					}),
 				})

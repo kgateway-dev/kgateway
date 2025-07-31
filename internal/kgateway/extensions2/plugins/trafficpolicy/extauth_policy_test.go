@@ -7,6 +7,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/utils/ptr"
 
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_ext_authz_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_authz/v3"
 	"github.com/stretchr/testify/assert"
@@ -16,6 +17,149 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
 )
+
+func TestExtAuthIREquals(t *testing.T) {
+	// Helper to create simple extauth configurations for testing
+	createSimpleExtAuth := func(disabled bool) *envoy_ext_authz_v3.ExtAuthzPerRoute {
+		return &envoy_ext_authz_v3.ExtAuthzPerRoute{
+			Override: &envoy_ext_authz_v3.ExtAuthzPerRoute_Disabled{
+				Disabled: disabled,
+			},
+		}
+	}
+	createProvider := func(name string) *TrafficPolicyGatewayExtensionIR {
+		return &TrafficPolicyGatewayExtensionIR{
+			Name: name,
+			ExtAuth: &envoy_ext_authz_v3.ExtAuthz{
+				Services: &envoy_ext_authz_v3.ExtAuthz_GrpcService{
+					GrpcService: &envoycorev3.GrpcService{
+						TargetSpecifier: &envoycorev3.GrpcService_EnvoyGrpc_{
+							EnvoyGrpc: &envoycorev3.GrpcService_EnvoyGrpc{
+								ClusterName: name,
+							},
+						},
+					},
+				},
+			},
+		}
+	}
+
+	createEnablement := func(disableAll bool) *v1alpha1.ExtAuthEnabled {
+		if disableAll {
+			return ptr.To(v1alpha1.ExtAuthDisableAll)
+		}
+		return nil // No specific enablement setting
+	}
+
+	// Shared enablement for testing pointer equality
+	sharedEnablementTrue := createEnablement(true)
+
+	tests := []struct {
+		name     string
+		extauth1 *extAuthIR
+		extauth2 *extAuthIR
+		expected bool
+	}{
+		{
+			name:     "both nil are equal",
+			extauth1: nil,
+			extauth2: nil,
+			expected: true,
+		},
+		{
+			name:     "nil vs non-nil are not equal",
+			extauth1: nil,
+			extauth2: &extAuthIR{perRoute: createSimpleExtAuth(false)},
+			expected: false,
+		},
+		{
+			name:     "non-nil vs nil are not equal",
+			extauth1: &extAuthIR{perRoute: createSimpleExtAuth(false)},
+			extauth2: nil,
+			expected: false,
+		},
+		{
+			name:     "same instance is equal",
+			extauth1: &extAuthIR{perRoute: createSimpleExtAuth(false)},
+			extauth2: &extAuthIR{perRoute: createSimpleExtAuth(false)},
+			expected: true,
+		},
+		{
+			name:     "different disabled settings are not equal",
+			extauth1: &extAuthIR{perRoute: createSimpleExtAuth(true)},
+			extauth2: &extAuthIR{perRoute: createSimpleExtAuth(false)},
+			expected: false,
+		},
+		{
+			name:     "different providers are not equal",
+			extauth1: &extAuthIR{provider: createProvider("service1")},
+			extauth2: &extAuthIR{provider: createProvider("service2")},
+			expected: false,
+		},
+		{
+			name:     "same providers are equal",
+			extauth1: &extAuthIR{provider: createProvider("service1")},
+			extauth2: &extAuthIR{provider: createProvider("service1")},
+			expected: true,
+		},
+		{
+			name:     "different enablement settings are not equal",
+			extauth1: &extAuthIR{enablement: createEnablement(true)},
+			extauth2: &extAuthIR{enablement: createEnablement(false)},
+			expected: false,
+		},
+		{
+			name:     "same enablement settings are equal",
+			extauth1: &extAuthIR{enablement: sharedEnablementTrue},
+			extauth2: &extAuthIR{enablement: sharedEnablementTrue},
+			expected: true,
+		},
+		{
+			name:     "nil extauth fields are equal",
+			extauth1: &extAuthIR{perRoute: nil},
+			extauth2: &extAuthIR{perRoute: nil},
+			expected: true,
+		},
+		{
+			name:     "nil vs non-nil extauth fields are not equal",
+			extauth1: &extAuthIR{perRoute: nil},
+			extauth2: &extAuthIR{perRoute: createSimpleExtAuth(false)},
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := tt.extauth1.Equals(tt.extauth2)
+			assert.Equal(t, tt.expected, result)
+
+			// Test symmetry: a.Equals(b) should equal b.Equals(a)
+			reverseResult := tt.extauth2.Equals(tt.extauth1)
+			assert.Equal(t, result, reverseResult, "Equals should be symmetric")
+		})
+	}
+
+	// Test reflexivity: x.Equals(x) should always be true for non-nil values
+	t.Run("reflexivity", func(t *testing.T) {
+		extauth := &extAuthIR{perRoute: createSimpleExtAuth(false)}
+		assert.True(t, extauth.Equals(extauth), "extauth should equal itself")
+	})
+
+	// Test transitivity: if a.Equals(b) && b.Equals(c), then a.Equals(c)
+	t.Run("transitivity", func(t *testing.T) {
+		createSameExtAuth := func() *extAuthIR {
+			return &extAuthIR{perRoute: createSimpleExtAuth(true)}
+		}
+
+		a := createSameExtAuth()
+		b := createSameExtAuth()
+		c := createSameExtAuth()
+
+		assert.True(t, a.Equals(b), "a should equal b")
+		assert.True(t, b.Equals(c), "b should equal c")
+		assert.True(t, a.Equals(c), "a should equal c (transitivity)")
+	})
+}
 
 func TestExtAuthForSpec(t *testing.T) {
 	t.Run("configures request body settings", func(t *testing.T) {

@@ -41,11 +41,7 @@ func (g *DefaultSecretGetter) GetSecret(name, namespace string) (*ir.Secret, err
 	return pluginutils.GetSecretIr(g.secrets, g.krtctx, name, namespace)
 }
 
-func translateTLSConfig(
-	secretGetter SecretGetter,
-	tlsConfig *v1alpha1.TLS,
-	namespace string,
-) (*envoytlsv3.UpstreamTlsContext, error) {
+func buildTLSContext(tlsConfig *v1alpha1.TLS, secretGetter SecretGetter, namespace string, tlsContext *envoytlsv3.CommonTlsContext) error {
 	var (
 		certChain, privateKey, rootCA string
 		inlineDataSource              bool
@@ -53,7 +49,7 @@ func translateTLSConfig(
 	if tlsConfig.SecretRef != nil {
 		secret, err := secretGetter.GetSecret(tlsConfig.SecretRef.Name, namespace)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		certChain = string(secret.Data["tls.crt"])
 		privateKey = string(secret.Data["tls.key"])
@@ -67,7 +63,7 @@ func translateTLSConfig(
 
 	cleanedCertChain, err := cleanedSslKeyPair(certChain, privateKey, rootCA)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	dataSource := stringDataSourceGenerator(inlineDataSource)
@@ -83,11 +79,6 @@ func translateTLSConfig(
 		rootCaData = dataSource(rootCA)
 	}
 
-	tlsContext := &envoytlsv3.CommonTlsContext{
-		// default params
-		TlsParams: &envoytlsv3.TlsParameters{},
-	}
-
 	if certChainData != nil && privateKeyData != nil {
 		tlsContext.TlsCertificates = []*envoytlsv3.TlsCertificate{
 			{
@@ -96,7 +87,7 @@ func translateTLSConfig(
 			},
 		}
 	} else if certChainData != nil || privateKeyData != nil {
-		return nil, errors.New("invalid TLS config: certChain and privateKey must both be provided")
+		return errors.New("invalid TLS config: certChain and privateKey must both be provided")
 	}
 
 	sanMatchers := verifySanListToTypedMatchSanList(tlsConfig.VerifySubjectAltName)
@@ -112,7 +103,19 @@ func translateTLSConfig(
 		}
 		tlsContext.ValidationContextType = validationCtx
 	} else if len(sanMatchers) != 0 {
-		return nil, errors.New("a root_ca must be provided if verify_subject_alt_name is not empty")
+		return errors.New("a root_ca must be provided if verify_subject_alt_name is not empty")
+	}
+
+	return nil
+}
+
+func translateTLSConfig(
+	secretGetter SecretGetter,
+	tlsConfig *v1alpha1.TLS,
+	namespace string,
+) (*envoytlsv3.UpstreamTlsContext, error) {
+	tlsContext := &envoytlsv3.CommonTlsContext{
+		TlsParams: &envoytlsv3.TlsParameters{}, // default params
 	}
 
 	tlsParams, err := parseTLSParameters(tlsConfig.Parameters)
@@ -121,12 +124,20 @@ func translateTLSConfig(
 	}
 	tlsContext.TlsParams = tlsParams
 
-	if tlsConfig.OneWayTLS != nil && *tlsConfig.OneWayTLS {
-		tlsContext.ValidationContextType = nil
-	}
-
 	if tlsConfig.AlpnProtocols != nil {
 		tlsContext.AlpnProtocols = tlsConfig.AlpnProtocols
+	}
+
+	if tlsConfig.InsecureSkipVerify != nil && *tlsConfig.InsecureSkipVerify {
+		tlsContext.ValidationContextType = &envoytlsv3.CommonTlsContext_ValidationContext{}
+	} else {
+		if err := buildTLSContext(tlsConfig, secretGetter, namespace, tlsContext); err != nil {
+			return nil, err
+		}
+	}
+
+	if tlsConfig.OneWayTLS != nil && *tlsConfig.OneWayTLS {
+		tlsContext.ValidationContextType = nil
 	}
 
 	return &envoytlsv3.UpstreamTlsContext{

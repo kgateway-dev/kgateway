@@ -13,6 +13,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
+	utilretry "k8s.io/client-go/util/retry"
 
 	"istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/controllers"
@@ -425,7 +426,7 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 		}
 	}
 
-	s.perclientSnapCollection.RegisterBatch(func(o []krt.Event[XdsSnapWrapper], initialSync bool) {
+	s.perclientSnapCollection.RegisterBatch(func(o []krt.Event[XdsSnapWrapper]) {
 		for _, e := range o {
 			if e.Event != controllers.EventDelete {
 				snapWrap := e.Latest()
@@ -616,56 +617,58 @@ func (s *ProxySyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger, 
 }
 
 // syncGatewayStatus will build and update status for all Gateways in a reportMap
+// syncGatewayStatus will build and update status for all Gateways in a reportMap
 func (s *ProxySyncer) syncGatewayStatus(ctx context.Context, logger *slog.Logger, rm reports.ReportMap) {
 	stopwatch := utils.NewTranslatorStopWatch("GatewayStatusSyncer")
 	stopwatch.Start()
-
 	defer s.gatewayStatusMetrics.StatusSyncStart()(nil)
 
-	// TODO: retry within loop per GW rather that as a full block
-	err := retry.Do(func() error {
-		for gwnn := range rm.Gateways {
-			gw := gwv1.Gateway{}
-			err := s.mgr.GetClient().Get(ctx, gwnn, &gw)
-			if err != nil {
-				logger.Info("error getting gw", "error", err, "gateway", gwnn.String())
+	for gwnn := range rm.Gateways {
+		err := utilretry.RetryOnConflict(utilretry.DefaultRetry, func() error {
+			// Fetch the latest Gateway
+			var gw gwv1.Gateway
+			if err := s.mgr.GetClient().Get(ctx, gwnn, &gw); err != nil {
+				logger.Info("error getting gateway", "error", err, "gateway", gwnn.String())
 				return err
 			}
 
-			gwStatusWithoutAddress := gw.Status
-			gwStatusWithoutAddress.Addresses = nil
-			if status := rm.BuildGWStatus(ctx, gw); status != nil {
-				if !isGatewayStatusEqual(&gwStatusWithoutAddress, status) {
-					gw.Status = *status
-					if err := s.mgr.GetClient().Status().Patch(ctx, &gw, client.Merge); err != nil {
-						if apierrors.IsConflict(err) {
-							return err // Expected conflict, retry will handle.
-						}
-						logger.Error("error patching gateway status", "error", err, "gateway", gwnn.String())
-						return err
-					}
-					logger.Info("patched gw status", "gateway", gwnn.String())
-				} else {
-					logger.Debug("skipping k8s gateway status update, status equal", "gateway", gwnn.String())
-				}
-
-				tmetrics.EndResourceSync(tmetrics.ResourceSyncDetails{
-					Namespace:    gwnn.Namespace,
-					Gateway:      gwnn.Name,
-					ResourceType: "Gateway",
-					ResourceName: gwnn.Name,
-				}, false, resourcesStatusSyncsCompletedTotal, resourcesStatusSyncDuration)
+			// Build the desired status
+			newStatus := rm.BuildGWStatus(ctx, gw)
+			if newStatus == nil {
+				return nil
 			}
+
+			// Skip if status hasn’t changed (ignoring Addresses)
+			old := gw.Status
+			old.Addresses = nil
+			if isGatewayStatusEqual(&old, newStatus) {
+				logger.Debug("gateway status is equal; skipping status update", "gateway", gwnn.String())
+				return nil
+			}
+
+			// Prepare and apply the status patch
+			original := gw.DeepCopy()
+			gw.Status = *newStatus
+			if err := s.mgr.GetClient().Status().Patch(ctx, &gw, client.MergeFrom(original)); err != nil {
+				logger.Error("error patching gateway status", "error", err, "gateway", gwnn.String())
+				return err
+			}
+			logger.Info("patched gateway status", "gateway", gwnn.String())
+			return nil
+		})
+		if err != nil {
+			logger.Error("failed to update gateway status after retries", "error", err, "gateway", gwnn.String())
 		}
-		return nil
-	},
-		retry.Attempts(5),
-		retry.Delay(100*time.Millisecond),
-		retry.DelayType(retry.BackOffDelay),
-	)
-	if err != nil {
-		logger.Error("all attempts failed at updating gateway statuses", "error", err)
+
+		// Record metrics for this gateway
+		tmetrics.EndResourceSync(tmetrics.ResourceSyncDetails{
+			Namespace:    gwnn.Namespace,
+			Gateway:      gwnn.Name,
+			ResourceType: wellknown.GatewayKind,
+			ResourceName: gwnn.Name,
+		}, err != nil, resourcesStatusSyncsCompletedTotal, resourcesStatusSyncDuration)
 	}
+
 	duration := stopwatch.Stop(ctx)
 	logger.Debug("synced gw status for gateways", "count", len(rm.Gateways), "duration", duration)
 }
