@@ -32,6 +32,7 @@ import (
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator"
@@ -450,7 +451,7 @@ func (s *ProxySyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger, 
 		routeType string,
 		routeKey client.ObjectKey,
 		getRouteFunc func() client.Object,
-		statusUpdater func(route client.Object) error,
+		statusUpdater func(route client.Object) (*gwv1.RouteStatus, error),
 	) error {
 		return retry.Do(
 			func() (rErr error) {
@@ -491,14 +492,21 @@ func (s *ProxySyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger, 
 						routeType, "resource_ref", client.ObjectKeyFromObject(route))
 				}
 
-				finishMetrics := make([]func(error), 0, len(gatewayNames))
+				type finishMetricsErrors struct {
+					finishFunc  func(error)
+					statusError error
+				}
+
+				finishMetrics := make(map[string]finishMetricsErrors, len(gatewayNames))
 
 				for _, gatewayName := range gatewayNames {
-					finishMetrics = append(finishMetrics, collectStatusSyncMetrics(statusSyncMetricLabels{
-						Name:      gatewayName,
-						Namespace: routeKey.Namespace,
-						Syncer:    "RouteStatusSyncer",
-					}))
+					finishMetrics[gatewayName] = finishMetricsErrors{
+						finishFunc: collectStatusSyncMetrics(statusSyncMetricLabels{
+							Name:      gatewayName,
+							Namespace: routeKey.Namespace,
+							Syncer:    "RouteStatusSyncer",
+						}),
+					}
 				}
 
 				defer func() {
@@ -512,14 +520,47 @@ func (s *ProxySyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger, 
 					}
 
 					for _, finish := range finishMetrics {
-						finish(rErr)
+						finish.finishFunc(errors.Join(rErr, finish.statusError))
 					}
 				}()
 
-				if err := statusUpdater(route); err != nil {
+				if status, err := statusUpdater(route); err != nil {
 					logger.Debug("error updating status for route", "error", err, "resource_ref", routeKey, "route_type", routeType)
 					return err
+				} else if status != nil {
+					// Update metrics status if the conditions indicate an error.
+					for _, ps := range status.Parents {
+						for _, cond := range ps.Conditions {
+							if cond.Type == string(gwv1.RouteConditionPartiallyInvalid) && cond.Status == metav1.ConditionTrue {
+								if finish, exists := finishMetrics[string(ps.ParentRef.Name)]; exists {
+									finishMetrics[string(ps.ParentRef.Name)] = finishMetricsErrors{
+										finishFunc:  finish.finishFunc,
+										statusError: fmt.Errorf("partially invalid route condition"),
+									}
+
+									break
+								}
+							}
+
+							if cond.Type != string(gwv1.RouteConditionAccepted) {
+								continue
+							}
+
+							if cond.Reason != string(gwv1.RouteReasonAccepted) &&
+								cond.Reason != string(gwv1.RouteReasonPending) {
+								if finish, exists := finishMetrics[string(ps.ParentRef.Name)]; exists {
+									finishMetrics[string(ps.ParentRef.Name)] = finishMetricsErrors{
+										finishFunc:  finish.finishFunc,
+										statusError: fmt.Errorf("invalid route condition"),
+									}
+
+									break
+								}
+							}
+						}
+					}
 				}
+
 				return nil
 			},
 			retry.Attempts(5),
@@ -529,40 +570,40 @@ func (s *ProxySyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger, 
 	}
 
 	// Helper function to build route status and update if needed
-	buildAndUpdateStatus := func(route client.Object, routeType string) error {
+	buildAndUpdateStatus := func(route client.Object, routeType string) (*gwv1.RouteStatus, error) {
 		var status *gwv1.RouteStatus
 		switch r := route.(type) {
 		case *gwv1.HTTPRoute:
 			status = rm.BuildRouteStatus(ctx, r, s.controllerName)
 			if status == nil || isRouteStatusEqual(&r.Status.RouteStatus, status) {
-				return nil
+				return nil, nil
 			}
 			r.Status.RouteStatus = *status
 		case *gwv1a2.TCPRoute:
 			status = rm.BuildRouteStatus(ctx, r, s.controllerName)
 			if status == nil || isRouteStatusEqual(&r.Status.RouteStatus, status) {
-				return nil
+				return nil, nil
 			}
 			r.Status.RouteStatus = *status
 		case *gwv1a2.TLSRoute:
 			status = rm.BuildRouteStatus(ctx, r, s.controllerName)
 			if status == nil || isRouteStatusEqual(&r.Status.RouteStatus, status) {
-				return nil
+				return nil, nil
 			}
 			r.Status.RouteStatus = *status
 		case *gwv1.GRPCRoute:
 			status = rm.BuildRouteStatus(ctx, r, s.controllerName)
 			if status == nil || isRouteStatusEqual(&r.Status.RouteStatus, status) {
-				return nil
+				return nil, nil
 			}
 			r.Status.RouteStatus = *status
 		default:
 			logger.Warn("unsupported route type", "route_type", routeType, "resource_ref", client.ObjectKeyFromObject(route))
-			return nil
+			return nil, nil
 		}
 
 		// Update the status
-		return s.mgr.GetClient().Status().Update(ctx, route)
+		return status, s.mgr.GetClient().Status().Update(ctx, route)
 	}
 
 	// Sync HTTPRoute statuses
@@ -573,7 +614,7 @@ func (s *ProxySyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger, 
 			func() client.Object {
 				return new(gwv1.HTTPRoute)
 			},
-			func(route client.Object) error {
+			func(route client.Object) (*gwv1.RouteStatus, error) {
 				return buildAndUpdateStatus(route, wellknown.HTTPRouteKind)
 			},
 		)
@@ -584,7 +625,7 @@ func (s *ProxySyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger, 
 
 	// Sync TCPRoute statuses
 	for rnn := range rm.TCPRoutes {
-		err := syncStatusWithRetry(wellknown.TCPRouteKind, rnn, func() client.Object { return new(gwv1a2.TCPRoute) }, func(route client.Object) error {
+		err := syncStatusWithRetry(wellknown.TCPRouteKind, rnn, func() client.Object { return new(gwv1a2.TCPRoute) }, func(route client.Object) (*gwv1.RouteStatus, error) {
 			return buildAndUpdateStatus(route, wellknown.TCPRouteKind)
 		})
 		if err != nil {
@@ -594,7 +635,7 @@ func (s *ProxySyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger, 
 
 	// Sync TLSRoute statuses
 	for rnn := range rm.TLSRoutes {
-		err := syncStatusWithRetry(wellknown.TLSRouteKind, rnn, func() client.Object { return new(gwv1a2.TLSRoute) }, func(route client.Object) error {
+		err := syncStatusWithRetry(wellknown.TLSRouteKind, rnn, func() client.Object { return new(gwv1a2.TLSRoute) }, func(route client.Object) (*gwv1.RouteStatus, error) {
 			return buildAndUpdateStatus(route, wellknown.TLSRouteKind)
 		})
 		if err != nil {
@@ -604,7 +645,7 @@ func (s *ProxySyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger, 
 
 	// Sync GRPCRoute statuses
 	for rnn := range rm.GRPCRoutes {
-		err := syncStatusWithRetry(wellknown.GRPCRouteKind, rnn, func() client.Object { return new(gwv1.GRPCRoute) }, func(route client.Object) error {
+		err := syncStatusWithRetry(wellknown.GRPCRouteKind, rnn, func() client.Object { return new(gwv1.GRPCRoute) }, func(route client.Object) (*gwv1.RouteStatus, error) {
 			return buildAndUpdateStatus(route, wellknown.GRPCRouteKind)
 		})
 		if err != nil {
@@ -624,6 +665,8 @@ func (s *ProxySyncer) syncGatewayStatus(ctx context.Context, logger *slog.Logger
 			Namespace: gwnn.Namespace,
 			Syncer:    "GatewayStatusSyncer",
 		})
+
+		var statusErr error
 
 		err := utilretry.RetryOnConflict(utilretry.DefaultRetry, func() error {
 			// Fetch the latest Gateway
@@ -660,6 +703,22 @@ func (s *ProxySyncer) syncGatewayStatus(ctx context.Context, logger *slog.Logger
 				return err
 			}
 			logger.Info("patched gateway status", "gateway", gwnn.String())
+
+			for _, cond := range gw.Status.Conditions {
+				if cond.Type != string(gwv1.GatewayConditionAccepted) &&
+					cond.Type != string(gwv1.GatewayConditionProgrammed) {
+					continue
+				}
+
+				if cond.Reason != string(gwv1.GatewayReasonAccepted) &&
+					cond.Reason != string(gwv1.GatewayReasonProgrammed) &&
+					cond.Reason != string(gwv1.GatewayReasonPending) {
+					statusErr = fmt.Errorf("invalid gateway condition")
+
+					break
+				}
+			}
+
 			return nil
 		})
 		if err != nil {
@@ -674,7 +733,7 @@ func (s *ProxySyncer) syncGatewayStatus(ctx context.Context, logger *slog.Logger
 			ResourceName: gwnn.Name,
 		}, false, resourcesStatusSyncsCompletedTotal, resourcesStatusSyncDuration)
 
-		finishMetrics(err)
+		finishMetrics(errors.Join(err, statusErr))
 	}
 
 	duration := stopwatch.Stop(ctx)
@@ -696,13 +755,15 @@ func (s *ProxySyncer) syncListenerSetStatus(ctx context.Context, logger *slog.Lo
 				return err
 			}
 
+			var statusErr error
+
 			finishMetrics := collectStatusSyncMetrics(statusSyncMetricLabels{
 				Name:      string(ls.Spec.ParentRef.Name),
 				Namespace: lsnn.Namespace,
 				Syncer:    "ListenerSetStatusSyncer",
 			})
 			defer func() {
-				finishMetrics(rErr)
+				finishMetrics(errors.Join(rErr, statusErr))
 			}()
 
 			lsStatus := ls.Status
@@ -717,6 +778,21 @@ func (s *ProxySyncer) syncListenerSetStatus(ctx context.Context, logger *slog.Lo
 						return err
 					}
 					logger.Info("patched ls status", "listenerset", lsnn.String())
+
+					for _, cond := range status.Conditions {
+						if cond.Type != string(gwxv1a1.ListenerSetConditionAccepted) &&
+							cond.Type != string(gwxv1a1.ListenerSetConditionProgrammed) {
+							continue
+						}
+
+						if cond.Reason != string(gwxv1a1.ListenerSetReasonAccepted) &&
+							cond.Reason != string(gwxv1a1.ListenerSetReasonProgrammed) &&
+							cond.Reason != string(gwxv1a1.ListenerSetReasonPending) {
+							statusErr = fmt.Errorf("invalid listener condition")
+
+							break
+						}
+					}
 				} else {
 					logger.Debug("skipping k8s ls status update, status equal", "listenerset", lsnn.String())
 				}
@@ -775,6 +851,27 @@ func (s *ProxySyncer) syncPolicyStatus(ctx context.Context, rm reports.ReportMap
 			continue
 		}
 
+		var statusErr error
+
+		for _, ancestor := range status.Ancestors {
+			for _, cond := range ancestor.Conditions {
+				if cond.Type != string(v1alpha1.PolicyConditionAccepted) {
+					continue
+				}
+
+				if cond.Reason != string(v1alpha1.PolicyReasonValid) &&
+					cond.Reason != string(v1alpha1.PolicyReasonPending) {
+					statusErr = fmt.Errorf("invalid policy condition")
+
+					break
+				}
+			}
+
+			if statusErr != nil {
+				break
+			}
+		}
+
 		finishMetrics := collectStatusSyncMetrics(statusSyncMetricLabels{
 			Name:      gk.Kind,
 			Namespace: nsName.Namespace,
@@ -791,7 +888,7 @@ func (s *ProxySyncer) syncPolicyStatus(ctx context.Context, rm reports.ReportMap
 		)
 		if err != nil {
 			logger.Error("error updating policy status", "error", err, "group_kind", gk, "resource_ref", nsName)
-			finishMetrics(err)
+			finishMetrics(errors.Join(err, statusErr))
 			continue
 		}
 
@@ -811,7 +908,7 @@ func (s *ProxySyncer) syncPolicyStatus(ctx context.Context, rm reports.ReportMap
 			}
 		}
 
-		finishMetrics(nil)
+		finishMetrics(statusErr)
 	}
 }
 

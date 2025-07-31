@@ -94,12 +94,6 @@ func GetResourceMetricEventHandler[T any]() func(krt.Event[T]) {
 					}
 				}
 			}
-
-			for _, ref := range obj.TargetRefs {
-				if ref.Group == wellknown.GatewayGroup && ref.Kind == wellknown.GatewayKind {
-					names = append(names, ref.Name)
-				}
-			}
 		case *gwv1.HTTPRoute:
 			resourceType = "HTTPRoute"
 			namespace = obj.Namespace
