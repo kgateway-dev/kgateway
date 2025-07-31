@@ -37,7 +37,7 @@ func TestBufferForSpec(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			out := &trafficPolicySpecIr{}
-			applyBuffer(tt.spec, out)
+			constructBuffer(tt.spec, out)
 
 			if tt.expected == nil {
 				assert.Nil(t, out.buffer)

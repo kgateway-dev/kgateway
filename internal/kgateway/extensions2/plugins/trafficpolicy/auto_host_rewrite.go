@@ -31,8 +31,8 @@ func (a *autoHostRewriteIR) Equals(other PolicySubIR) bool {
 // needed as it's a single bool field.
 func (a *autoHostRewriteIR) Validate() error { return nil }
 
-// applyAutoHostRewrite translates the auto host rewrite spec into an envoy auto host rewrite policy and stores it in the traffic policy IR
-func applyAutoHostRewrite(spec v1alpha1.TrafficPolicySpec, out *trafficPolicySpecIr) {
+// constructAutoHostRewrite constructs the auto host rewrite policy IR from the policy specification.
+func constructAutoHostRewrite(spec v1alpha1.TrafficPolicySpec, out *trafficPolicySpecIr) {
 	if spec.AutoHostRewrite == nil {
 		return
 	}
