@@ -102,8 +102,8 @@ func (a *aiPolicyIR) Validate() error {
 	return nil
 }
 
-// applyAI processes the AI policy specification and sets the corresponding IR in the output spec
-func applyAI(
+// constructAI constructs the AI policy IR from the policy specification.
+func constructAI(
 	krtctx krt.HandlerContext,
 	policyCR *v1alpha1.TrafficPolicy,
 	secrets *krtcollections.SecretIndex,

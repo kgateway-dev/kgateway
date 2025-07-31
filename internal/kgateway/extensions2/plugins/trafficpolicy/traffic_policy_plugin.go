@@ -220,7 +220,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 	), commoncol.KrtOpts.ToOptions("TrafficPolicy")...)
 	gk := wellknown.TrafficPolicyGVK.GroupKind()
 
-	translator := NewTrafficPolicyBuilder(ctx, commoncol)
+	translator := NewTrafficPolicyConstructor(ctx, commoncol)
 	v := validator.New()
 
 	// TrafficPolicy IR will have TypedConfig -> implement backendroute method to add prompt guard, etc.
@@ -232,7 +232,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 			Name:      policyCR.Name,
 		}
 
-		policyIR, errors := translator.Translate(krtctx, policyCR)
+		policyIR, errors := translator.ConstructIR(krtctx, policyCR)
 		if err := validateWithRouteReplacementMode(ctx, policyIR, v, commoncol.Settings.RouteReplacementMode); err != nil {
 			logger.Error("validation failed", "policy", policyCR.Name, "error", err)
 			errors = append(errors, err)

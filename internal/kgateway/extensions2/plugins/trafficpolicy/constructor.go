@@ -16,29 +16,29 @@ import (
 // FetchGatewayExtensionFunc defines the signature for fetching gateway extensions
 type FetchGatewayExtensionFunc func(krtctx krt.HandlerContext, extensionRef *corev1.LocalObjectReference, ns string) (*TrafficPolicyGatewayExtensionIR, error)
 
-type TrafficPolicyBuilder struct {
+type TrafficPolicyConstructor struct {
 	commoncol         *common.CommonCollections
 	gatewayExtensions krt.Collection[TrafficPolicyGatewayExtensionIR]
 	extBuilder        func(krtctx krt.HandlerContext, gExt ir.GatewayExtension) *TrafficPolicyGatewayExtensionIR
 }
 
-func NewTrafficPolicyBuilder(
+func NewTrafficPolicyConstructor(
 	ctx context.Context,
 	commoncol *common.CommonCollections,
-) *TrafficPolicyBuilder {
+) *TrafficPolicyConstructor {
 	extBuilder := TranslateGatewayExtensionBuilder(commoncol)
 	defaultExtBuilder := func(krtctx krt.HandlerContext, gExt ir.GatewayExtension) *TrafficPolicyGatewayExtensionIR {
 		return extBuilder(krtctx, gExt)
 	}
 	gatewayExtensions := krt.NewCollection(commoncol.GatewayExtensions, defaultExtBuilder)
-	return &TrafficPolicyBuilder{
+	return &TrafficPolicyConstructor{
 		commoncol:         commoncol,
 		gatewayExtensions: gatewayExtensions,
 		extBuilder:        extBuilder,
 	}
 }
 
-func (b *TrafficPolicyBuilder) Translate(
+func (c *TrafficPolicyConstructor) ConstructIR(
 	krtctx krt.HandlerContext,
 	policyCR *v1alpha1.TrafficPolicy,
 ) (*TrafficPolicy, []error) {
@@ -48,49 +48,49 @@ func (b *TrafficPolicyBuilder) Translate(
 	outSpec := trafficPolicySpecIr{}
 
 	var errors []error
-	// Apply AI specific translation
-	if err := applyAI(krtctx, policyCR, b.commoncol.Secrets, &outSpec); err != nil {
+	// Construct AI specific IR
+	if err := constructAI(krtctx, policyCR, c.commoncol.Secrets, &outSpec); err != nil {
 		errors = append(errors, err)
 	}
-	// Apply transformation specific translation
-	if err := applyTransformation(policyCR, &outSpec); err != nil {
+	// Construct transformation specific IR
+	if err := constructTransformation(policyCR, &outSpec); err != nil {
 		errors = append(errors, err)
 	}
-	// Apply rustformation specific translation
-	if err := applyRustformation(policyCR, &outSpec); err != nil {
+	// Construct rustformation specific IR
+	if err := constructRustformation(policyCR, &outSpec); err != nil {
 		errors = append(errors, err)
 	}
-	// Apply extproc specific translation
-	if err := applyExtProc(krtctx, policyCR, b.FetchGatewayExtension, &outSpec); err != nil {
+	// Construct extproc specific IR
+	if err := constructExtProc(krtctx, policyCR, c.FetchGatewayExtension, &outSpec); err != nil {
 		errors = append(errors, err)
 	}
-	// Apply extauth specific translation
-	if err := applyExtAuth(krtctx, policyCR, b.FetchGatewayExtension, &outSpec); err != nil {
+	// Construct extauth specific IR
+	if err := constructExtAuth(krtctx, policyCR, c.FetchGatewayExtension, &outSpec); err != nil {
 		errors = append(errors, err)
 	}
-	// Apply local rate limit specific translation
-	if err := applyLocalRateLimit(policyCR, &outSpec); err != nil {
+	// Construct local rate limit specific IR
+	if err := constructLocalRateLimit(policyCR, &outSpec); err != nil {
 		errors = append(errors, err)
 	}
-	// Apply global rate limit specific translation
-	if err := applyGlobalRateLimit(krtctx, policyCR, b.FetchGatewayExtension, &outSpec); err != nil {
+	// Construct global rate limit specific IR
+	if err := constructGlobalRateLimit(krtctx, policyCR, c.FetchGatewayExtension, &outSpec); err != nil {
 		errors = append(errors, err)
 	}
-	// Apply cors specific translation
-	if err := applyCORS(policyCR, &outSpec); err != nil {
+	// Construct cors specific IR
+	if err := constructCORS(policyCR, &outSpec); err != nil {
 		errors = append(errors, err)
 	}
-	// Apply csrf specific translation
-	if err := applyCSRF(policyCR.Spec, &outSpec); err != nil {
+	// Construct csrf specific IR
+	if err := constructCSRF(policyCR.Spec, &outSpec); err != nil {
 		errors = append(errors, err)
 	}
 
-	// Apply hash policy specific translation
-	applyHashPolicy(policyCR.Spec, &outSpec)
-	// Apply auto host rewrite specific translation
-	applyAutoHostRewrite(policyCR.Spec, &outSpec)
-	// Apply buffer specific translation
-	applyBuffer(policyCR.Spec, &outSpec)
+	// Construct hash policy specific IR
+	constructHashPolicy(policyCR.Spec, &outSpec)
+	// Construct auto host rewrite specific IR
+	constructAutoHostRewrite(policyCR.Spec, &outSpec)
+	// Construct buffer specific IR
+	constructBuffer(policyCR.Spec, &outSpec)
 
 	for _, err := range errors {
 		logger.Error("error translating gateway extension", "namespace", policyCR.GetNamespace(), "name", policyCR.GetName(), "error", err)
@@ -100,11 +100,11 @@ func (b *TrafficPolicyBuilder) Translate(
 	return &policyIr, errors
 }
 
-func (b *TrafficPolicyBuilder) FetchGatewayExtension(krtctx krt.HandlerContext, extensionRef *corev1.LocalObjectReference, ns string) (*TrafficPolicyGatewayExtensionIR, error) {
+func (c *TrafficPolicyConstructor) FetchGatewayExtension(krtctx krt.HandlerContext, extensionRef *corev1.LocalObjectReference, ns string) (*TrafficPolicyGatewayExtensionIR, error) {
 	var gatewayExtension *TrafficPolicyGatewayExtensionIR
 	if extensionRef != nil {
 		gwExtName := types.NamespacedName{Name: extensionRef.Name, Namespace: ns}
-		gatewayExtension = krt.FetchOne(krtctx, b.gatewayExtensions, krt.FilterObjectName(gwExtName))
+		gatewayExtension = krt.FetchOne(krtctx, c.gatewayExtensions, krt.FilterObjectName(gwExtName))
 	}
 	if gatewayExtension == nil {
 		return nil, fmt.Errorf("extension not found")
@@ -115,6 +115,6 @@ func (b *TrafficPolicyBuilder) FetchGatewayExtension(krtctx krt.HandlerContext, 
 	return gatewayExtension, nil
 }
 
-func (b *TrafficPolicyBuilder) HasSynced() bool {
-	return b.gatewayExtensions.HasSynced()
+func (c *TrafficPolicyConstructor) HasSynced() bool {
+	return c.gatewayExtensions.HasSynced()
 }
