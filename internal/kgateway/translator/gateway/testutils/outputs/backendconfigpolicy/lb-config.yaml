@@ -103,6 +103,11 @@ Clusters:
       explicitHttpConfig:
         httpProtocolOptions:
           enableTrailers: true
+          headerKeyFormat:
+            statefulFormatter:
+              name: envoy.http.stateful_header_formatters.preserve_case
+              typedConfig:
+                '@type': type.googleapis.com/envoy.extensions.http.header_formatters.preserve_case.v3.PreserveCaseFormatterConfig
           overrideStreamErrorOnInvalidHttpMessage: true
   upstreamConnectionOptions:
     tcpKeepalive:

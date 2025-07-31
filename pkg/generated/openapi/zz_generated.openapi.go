@@ -3814,7 +3814,7 @@ func schema_kgateway_v2_api_v1alpha1_HTTPListenerPolicySpec(ref common.Reference
 					},
 					"preserveHttp1HeaderCase": {
 						SchemaProps: spec.SchemaProps{
-							Description: "PreserveHttp1HeaderCase determines whether to preserve the case of HTTP1 headers. See here for more information: https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_conn_man/header_casing",
+							Description: "PreserveHttp1HeaderCase determines whether to preserve the case of HTTP1 headers in the response. See here for more information: https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_conn_man/header_casing",
 							Type:        []string{"boolean"},
 							Format:      "",
 						},
@@ -4120,6 +4120,13 @@ func schema_kgateway_v2_api_v1alpha1_Http1ProtocolOptions(ref common.ReferenceCa
 					"enableTrailers": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Enables trailers for HTTP/1. By default the HTTP/1 codec drops proxied trailers. Note: Trailers must also be enabled at the gateway level in order for this option to take effect",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
+					"preserveHttp1HeaderCase": {
+						SchemaProps: spec.SchemaProps{
+							Description: "PreserveHttp1HeaderCase determines whether to preserve the case of HTTP1 headers in the response. See here for more information: https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_conn_man/header_casing",
 							Type:        []string{"boolean"},
 							Format:      "",
 						},
