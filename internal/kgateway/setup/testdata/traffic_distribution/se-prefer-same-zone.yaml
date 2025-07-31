@@ -45,7 +45,7 @@ metadata:
   name: inlined-se
   namespace: gwtest
   annotations:
-    networking.istio.io/traffic-distribution: PreferClose
+    networking.istio.io/traffic-distribution: PreferSameZone
 spec:
   hosts:
   - se-a.example.com
@@ -69,7 +69,7 @@ metadata:
   name: workloads-se
   namespace: gwtest
   annotations:
-    networking.istio.io/traffic-distribution: PreferClose
+    networking.istio.io/traffic-distribution: PreferClose # Alias for PreferSameZone
 spec:
   hosts:
   - se-b.example.com

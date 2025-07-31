@@ -14,7 +14,6 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 	"istio.io/istio/pkg/kube/krt"
 
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/sets"
 
@@ -94,11 +93,6 @@ func (t *BackendTranslator) runPolicies(
 	if inlineEps != nil {
 		endpointInputs = &endpoints.EndpointsInputs{
 			EndpointsForBackend: *inlineEps,
-		}
-		// If the endpoints have a prefer close traffic distribution, we set a priority info
-		// to prioritize the endpoints based on the locality of the inlined endpoints
-		if inlineEps.TrafficDistribution == corev1.ServiceTrafficDistributionPreferClose {
-			endpointInputs.PriorityInfo = &endpoints.PriorityInfo{}
 		}
 	}
 

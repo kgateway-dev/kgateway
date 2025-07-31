@@ -11,6 +11,7 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
 
 const KeyDelimiter = "~"
@@ -100,7 +101,7 @@ type EndpointsForBackend struct {
 	Port                 uint32
 	Hostname             string
 	// Inherited from the backend object
-	TrafficDistribution string
+	TrafficDistribution wellknown.TrafficDistribution
 
 	LbEpsEqualityHash uint64
 	upstreamHash      uint64

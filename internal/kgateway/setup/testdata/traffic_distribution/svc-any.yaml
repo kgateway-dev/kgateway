@@ -1,3 +1,4 @@
+# This test is a reference output test for the traffic distributions for services.
 kind: Gateway
 apiVersion: gateway.networking.k8s.io/v1
 metadata:
@@ -21,11 +22,7 @@ metadata:
   labels:
     app: reviews
     service: reviews
-  annotations:
-    networking.istio.io/traffic-distribution: PreferClose
 spec:
-  # Envtest is currently using  k8s 1.23, which does not support the Service trafficDistribution field
-  # trafficDistribution: PreferClose
   ports:
     - name: http
       port: 8080

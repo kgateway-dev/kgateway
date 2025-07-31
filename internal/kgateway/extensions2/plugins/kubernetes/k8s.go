@@ -9,6 +9,7 @@ import (
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	"istio.io/api/annotation"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/ptr"
@@ -86,15 +87,13 @@ func BuildServiceBackendObjectIR(svc *corev1.Service, svcPort int32, svcProtocol
 	backend.CanonicalHostname = fmt.Sprintf("%s.%s.svc.%s", svc.Name, svc.Namespace, network.GetClusterDomainName())
 
 	// We support specifying the Istio traffic distribution annotation in older k8s versions
-	if val, ok := svc.Annotations[wellknown.IstioTrafficDistributionAnnotation]; ok {
-		backend.TrafficDistribution = val
-	}
+	backend.TrafficDistribution = wellknown.ParseTrafficDistribution(svc.Annotations[annotation.NetworkingTrafficDistribution.Name])
 
-	// If the traffic distribution is specified in the spec, use that
-	// If both annotations and spec are specified, the spec takes precedence
+	// If the traffiDistribution is specified in the spec, use that.
+	// If both annotations and spec are specified, the spec takes precedence.
 	// The field was added as beta in Kubernetes 1.31
 	if svc.Spec.TrafficDistribution != nil {
-		backend.TrafficDistribution = *svc.Spec.TrafficDistribution
+		backend.TrafficDistribution = wellknown.ParseTrafficDistribution(*svc.Spec.TrafficDistribution)
 	}
 
 	return backend
@@ -112,7 +111,7 @@ func processBackend(ctx context.Context, in ir.BackendObjectIR, out *envoycluste
 			},
 		},
 	}
-	if in.TrafficDistribution == corev1.ServiceTrafficDistributionPreferClose {
+	if in.TrafficDistribution != wellknown.TrafficDistributionAny {
 		out.CommonLbConfig = &envoyclusterv3.Cluster_CommonLbConfig{
 			LocalityConfigSpecifier: &envoyclusterv3.Cluster_CommonLbConfig_LocalityWeightedLbConfig_{
 				LocalityWeightedLbConfig: &envoyclusterv3.Cluster_CommonLbConfig_LocalityWeightedLbConfig{},

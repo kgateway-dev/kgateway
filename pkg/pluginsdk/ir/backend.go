@@ -15,6 +15,7 @@ import (
 	gwxv1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	pluginsdkreporter "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
 
@@ -130,9 +131,8 @@ type BackendObjectIR struct {
 	resourceName string
 
 	// TrafficDistribution is the desired traffic distribution for the backend.
-	// Values are defined by the k8s Service spec and currently only PreferClose is available.
-	// https://kubernetes.io/docs/concepts/services-networking/service/#traffic-distribution
-	TrafficDistribution string
+	// Default is any (no priority).
+	TrafficDistribution wellknown.TrafficDistribution
 }
 
 // NewBackendObjectIR creates a new BackendObjectIR with pre-calculated resource name

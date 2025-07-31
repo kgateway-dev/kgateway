@@ -4,7 +4,6 @@ import (
 	"context"
 	"log/slog"
 
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/tools/cache"
 
@@ -155,11 +154,6 @@ func (s *CombinedTranslator) TranslateGateway(kctx krt.HandlerContext, ctx conte
 func (s *CombinedTranslator) TranslateEndpoints(kctx krt.HandlerContext, ucc ir.UniqlyConnectedClient, ep ir.EndpointsForBackend) (*envoyendpointv3.ClusterLoadAssignment, uint64) {
 	epInputs := endpoints.EndpointsInputs{
 		EndpointsForBackend: ep,
-	}
-	// If the endpoints have a prefer close traffic distribution, we set a priority info
-	// to prioritize the endpoints based on the locality of the endpoints
-	if ep.TrafficDistribution == corev1.ServiceTrafficDistributionPreferClose {
-		epInputs.PriorityInfo = &endpoints.PriorityInfo{}
 	}
 	var hash uint64
 	for _, processEndpoints := range s.endpointPlugins {
