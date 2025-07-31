@@ -3814,7 +3814,7 @@ func schema_kgateway_v2_api_v1alpha1_HTTPListenerPolicySpec(ref common.Reference
 					},
 					"preserveHttp1HeaderCase": {
 						SchemaProps: spec.SchemaProps{
-							Description: "PreserveHttp1HeaderCase determines whether to preserve the case of HTTP1 headers in the response. See here for more information: https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_conn_man/header_casing",
+							Description: "PreserveHttp1HeaderCase determines whether to preserve the case of HTTP1 headers in the request. See here for more information: https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_conn_man/header_casing",
 							Type:        []string{"boolean"},
 							Format:      "",
 						},
