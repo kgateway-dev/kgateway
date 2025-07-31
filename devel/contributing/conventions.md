@@ -1,4 +1,5 @@
 # Contribution Conventions
+
 ## Coding Conventions
 - Bash
     - [Shell Style Guide](https://google.github.io/styleguide/shellguide.html)
@@ -10,6 +11,10 @@
     - Errors:
         - Error variables with a fixed string should start with `Err` - [Examples from `io/fs`](https://pkg.go.dev/io/fs#pkg-variables)
         - Error types should be descriptive and end with `Error` - [PathError example from `io/fs`](https://pkg.go.dev/io/fs#PathError)
+
+### IR Conventions
+- IRs that are outputs of a KRT collection must implement the `Equals` method.
+- Generally, all fields in the IR must be compared in the `Equals` method. If a field is explicitly omitted, it must have the `+noKrtEquals` marker in the last line of its leading comments. Currently, `+noKrtEquals` is only used for documentation but may be used by a tool in the future to detect fields unintentionally omitted in the `Equals` method.
 
 ## Testing conventions
 See [writing tests](/devel/testing/writing-tests.md) for more details about writing tests.
