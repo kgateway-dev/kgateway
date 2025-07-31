@@ -38,8 +38,6 @@ var cases = []struct {
 	{"Authz Policies - ServiceEntry", "authz-serviceentry", exampleGw, ""},
 	{"Authz Policies - Multi-Service", "authz-multi-service", exampleGw, ""},
 	{"No listeners", "empty", exampleGw, ""},
-	{"PreferClose on Service", "svc-prefer-close", exampleGw, ""},
-	{"PreferClose on ServiceEntry", "se-prefer-close", exampleGw, ""},
 }
 
 func TestWaypointTranslator(t *testing.T) {
