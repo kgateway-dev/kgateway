@@ -231,7 +231,7 @@ func TestTranslateTLSConfig(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "should not have validation context if one way tls",
+			name: "should only have validation context if one way tls",
 			tlsConfig: &v1alpha1.TLS{
 				TLSFiles: &v1alpha1.TLSFiles{
 					TLSCertificate: ptr.To(CACert),
@@ -243,7 +243,8 @@ func TestTranslateTLSConfig(t *testing.T) {
 			wantErr: false,
 			check: func(t *testing.T, result *envoytlsv3.UpstreamTlsContext) {
 				assert.NotNil(t, result)
-				assert.Nil(t, result.CommonTlsContext.GetValidationContext())
+				assert.NotNil(t, result.CommonTlsContext.GetValidationContext())
+				assert.Nil(t, result.CommonTlsContext.GetTlsCertificates())
 			},
 		},
 		{
