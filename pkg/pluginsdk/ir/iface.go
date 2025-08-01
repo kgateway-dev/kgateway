@@ -132,11 +132,7 @@ type ProxyTranslationPass interface {
 		pCtx *RouteConfigContext,
 		out *envoyroutev3.RouteConfiguration,
 	)
-	ApplyVhostPlugin(
-		ctx context.Context,
-		pCtx *VirtualHostContext,
-		out *envoyroutev3.VirtualHost,
-	)
+
 	// no policy applied - this is called for every backend in a route.
 	// For this to work the backend needs to register itself as a policy. TODO: rethink this.
 	// Note: TypedFilterConfig should be applied in the pCtx and is shared between ApplyForRoute, ApplyForBackend
@@ -147,6 +143,7 @@ type ProxyTranslationPass interface {
 		in HttpBackend,
 		out *envoyroutev3.Route,
 	) error
+
 	// Applies a policy attached to a specific Backend (via extensionRef on the BackendRef).
 	// Note: TypedFilterConfig should be applied in the pCtx and is shared between ApplyForRoute, ApplyForBackend
 	// and ApplyForRouteBackend
@@ -155,6 +152,7 @@ type ProxyTranslationPass interface {
 		policy PolicyIR,
 		pCtx *RouteBackendContext,
 	) error
+
 	// called once per route rule if SupportsPolicyMerge returns false, otherwise this is called only
 	// once on the value returned by MergePolicies.
 	// Applies policy for an HTTPRoute that has a policy attached via a targetRef.
@@ -166,6 +164,12 @@ type ProxyTranslationPass interface {
 		pCtx *RouteContext,
 		out *envoyroutev3.Route,
 	) error
+
+	ApplyVhostPlugin(
+		ctx context.Context,
+		pCtx *VirtualHostContext,
+		out *envoyroutev3.VirtualHost,
+	)
 
 	NetworkFilters(ctx context.Context) ([]plugins.StagedNetworkFilter, error)
 

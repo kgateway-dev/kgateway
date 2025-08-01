@@ -530,6 +530,9 @@ var schemaYAML = typed.YAMLObject(`types:
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Buffer
   map:
     fields:
+    - name: disable
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.PolicyDisable
     - name: maxRequestSize
       type:
         namedType: io.k8s.apimachinery.pkg.api.resource.Quantity
@@ -683,6 +686,9 @@ var schemaYAML = typed.YAMLObject(`types:
           elementType:
             scalar: string
           elementRelationship: associative
+    - name: disable
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.PolicyDisable
     - name: exposeHeaders
       type:
         list:
@@ -895,9 +901,9 @@ var schemaYAML = typed.YAMLObject(`types:
         map:
           elementType:
             scalar: string
-    - name: enablement
+    - name: disable
       type:
-        scalar: string
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.PolicyDisable
     - name: extensionRef
       type:
         namedType: io.k8s.api.core.v1.LocalObjectReference
@@ -922,6 +928,9 @@ var schemaYAML = typed.YAMLObject(`types:
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtProcPolicy
   map:
     fields:
+    - name: disable
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.PolicyDisable
     - name: extensionRef
       type:
         namedType: io.k8s.api.core.v1.LocalObjectReference
@@ -1791,6 +1800,18 @@ var schemaYAML = typed.YAMLObject(`types:
           elementType:
             namedType: io.k8s.api.core.v1.Toleration
           elementRelationship: atomic
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.PolicyDisable
+  map:
+    elementType:
+      scalar: untyped
+      list:
+        elementType:
+          namedType: __untyped_atomic_
+        elementRelationship: atomic
+      map:
+        elementType:
+          namedType: __untyped_deduced_
+        elementRelationship: separable
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Port
   map:
     fields:

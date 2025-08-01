@@ -26,7 +26,7 @@ spec:
     kind: HTTPRoute
     name: route-example-disableall
   extAuth:
-    enablement: DisableAll 
+    disable: {} 
 ---
 ## On a route that is not part of the gw gateway opt in
 apiVersion: gateway.kgateway.dev/v1alpha1

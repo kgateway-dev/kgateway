@@ -79,7 +79,7 @@ listeners:
             metadata:
             - metadataNamespace: dev.kgateway.disable_ext_auth
               value:
-                extauth_disable: true
+                disable: true
         - disabled: true
           name: ext_auth/gwtest/app-team-extauth
           typedConfig:
@@ -88,7 +88,7 @@ listeners:
               filter: dev.kgateway.disable_ext_auth
               invert: true
               path:
-              - key: extauth_disable
+              - key: disable
               value:
                 boolMatch: true
             grpcService:
@@ -102,7 +102,7 @@ listeners:
               filter: dev.kgateway.disable_ext_auth
               invert: true
               path:
-              - key: extauth_disable
+              - key: disable
               value:
                 boolMatch: true
             grpcService:

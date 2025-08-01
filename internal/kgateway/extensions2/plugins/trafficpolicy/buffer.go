@@ -4,6 +4,7 @@ import (
 	"math"
 
 	bufferv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/buffer/v3"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
@@ -13,7 +14,7 @@ import (
 const bufferFilterName = "envoy.filters.http.buffer"
 
 type bufferIR struct {
-	maxRequestBytes uint32
+	perRoute *bufferv3.BufferPerRoute
 }
 
 var _ PolicySubIR = &bufferIR{}
@@ -23,13 +24,10 @@ func (b *bufferIR) Equals(other PolicySubIR) bool {
 	if !ok {
 		return false
 	}
-	if b == nil && otherBuffer == nil {
-		return true
+	if b == nil || other == nil {
+		return b == nil && otherBuffer == nil
 	}
-	if b == nil || otherBuffer == nil {
-		return false
-	}
-	return b.maxRequestBytes == otherBuffer.maxRequestBytes
+	return proto.Equal(b.perRoute, otherBuffer.perRoute)
 }
 
 // Validate performs validation on the buffer component
@@ -42,8 +40,22 @@ func constructBuffer(spec v1alpha1.TrafficPolicySpec, out *trafficPolicySpecIr) 
 		return
 	}
 
+	perRoute := &bufferv3.BufferPerRoute{}
+
+	if spec.Buffer.Disable != nil {
+		// Disable the filter
+		perRoute.Override = &bufferv3.BufferPerRoute_Disabled{
+			Disabled: true,
+		}
+	} else {
+		perRoute.Override = &bufferv3.BufferPerRoute_Buffer{
+			Buffer: &bufferv3.Buffer{
+				MaxRequestBytes: &wrapperspb.UInt32Value{Value: uint32(spec.Buffer.MaxRequestSize.Value())},
+			},
+		}
+	}
 	out.buffer = &bufferIR{
-		maxRequestBytes: uint32(spec.Buffer.MaxRequestSize.Value()),
+		perRoute: perRoute,
 	}
 }
 
@@ -53,14 +65,7 @@ func (p *trafficPolicyPluginGwPass) handleBuffer(fcn string, pCtxTypedFilterConf
 	}
 
 	// Add buffer configuration to the typed_per_filter_config for route-level override
-	bufferPerRoute := &bufferv3.BufferPerRoute{
-		Override: &bufferv3.BufferPerRoute_Buffer{
-			Buffer: &bufferv3.Buffer{
-				MaxRequestBytes: &wrapperspb.UInt32Value{Value: buffer.maxRequestBytes},
-			},
-		},
-	}
-	pCtxTypedFilterConfig.AddTypedConfig(bufferFilterName, bufferPerRoute)
+	pCtxTypedFilterConfig.AddTypedConfig(bufferFilterName, buffer.perRoute)
 
 	// Add a filter to the chain. When having a buffer policy for a route we need to also have a
 	// globally disabled buffer filter in the chain otherwise it will be ignored.

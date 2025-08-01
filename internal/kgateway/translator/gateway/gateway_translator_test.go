@@ -335,7 +335,7 @@ var _ = DescribeTable("Basic",
 		},
 	),
 	Entry(
-		"TrafficPolicy edge cases",
+		"TrafficPolicy ExtAuth different attachment points",
 		translatorTestCase{
 			inputFile:  "traffic-policy/extauth.yaml",
 			outputFile: "traffic-policy/extauth.yaml",
@@ -352,6 +352,16 @@ var _ = DescribeTable("Basic",
 					{Group: "gateway.kgateway.dev", Kind: "TrafficPolicy", Namespace: "infra", Name: "extauth-for-route-section-name"},
 				}
 				assertAcceptedPolicyStatus(reportsMap, expectedPolicies)
+			},
+		}),
+	Entry(
+		"TrafficPolicy ExtProc different attachment points",
+		translatorTestCase{
+			inputFile:  "traffic-policy/extproc.yaml",
+			outputFile: "traffic-policy/extproc.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "test",
 			},
 		}),
 	Entry(

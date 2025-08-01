@@ -278,6 +278,8 @@ spec:
                 type: boolean
               buffer:
                 properties:
+                  disable:
+                    type: object
                   maxRequestSize:
                     anyOf:
                     - type: integer
@@ -288,9 +290,12 @@ spec:
                     - message: maxRequestSize must be greater than 0 and less than
                         4Gi
                       rule: quantity(self).isGreaterThan(quantity('0')) && quantity(self).isLessThan(quantity('4Gi'))
-                required:
-                - maxRequestSize
                 type: object
+                x-kubernetes-validations:
+                - message: exactly one of the fields in [maxRequestSize disable] must
+                    be set
+                  rule: '[has(self.maxRequestSize),has(self.disable)].filter(x,x==true).size()
+                    == 1'
               cors:
                 properties:
                   allowCredentials:
@@ -335,6 +340,8 @@ spec:
                     maxItems: 64
                     type: array
                     x-kubernetes-list-type: set
+                  disable:
+                    type: object
                   exposeHeaders:
                     items:
                       maxLength: 256
@@ -401,10 +408,8 @@ spec:
                     additionalProperties:
                       type: string
                     type: object
-                  enablement:
-                    enum:
-                    - DisableAll
-                    type: string
+                  disable:
+                    type: object
                   extensionRef:
                     properties:
                       name:
@@ -427,12 +432,14 @@ spec:
                     type: object
                 type: object
                 x-kubernetes-validations:
-                - message: exactly one of the fields in [extensionRef enablement]
-                    must be set
-                  rule: '[has(self.extensionRef),has(self.enablement)].filter(x,x==true).size()
+                - message: exactly one of the fields in [extensionRef disable] must
+                    be set
+                  rule: '[has(self.extensionRef),has(self.disable)].filter(x,x==true).size()
                     == 1'
               extProc:
                 properties:
+                  disable:
+                    type: object
                   extensionRef:
                     properties:
                       name:
@@ -489,9 +496,12 @@ spec:
                         - SKIP
                         type: string
                     type: object
-                required:
-                - extensionRef
                 type: object
+                x-kubernetes-validations:
+                - message: exactly one of the fields in [extensionRef disable] must
+                    be set
+                  rule: '[has(self.extensionRef),has(self.disable)].filter(x,x==true).size()
+                    == 1'
               hashPolicies:
                 items:
                   properties:

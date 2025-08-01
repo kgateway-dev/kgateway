@@ -4,11 +4,18 @@ import (
 	"errors"
 	"fmt"
 
+	xdscorev3 "github.com/cncf/xds/go/xds/core/v3"
+	xdsmatcherv3 "github.com/cncf/xds/go/xds/type/matcher/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyratelimitv3 "github.com/envoyproxy/go-control-plane/envoy/config/ratelimit/v3"
+	envoymatchingv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/common/matching/v3"
+	envoycompositev3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/composite/v3"
 	envoy_ext_authz_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_authz/v3"
-	envoy_ext_proc_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_proc/v3"
+	envoyextprocv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_proc/v3"
 	ratev3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ratelimit/v3"
+	envoynetworkv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/matching/common_inputs/network/v3"
+	envoymetadatav3 "github.com/envoyproxy/go-control-plane/envoy/extensions/matching/input_matchers/metadata/v3"
+	envoymatcherv3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"istio.io/istio/pkg/kube/krt"
@@ -17,13 +24,14 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 )
 
 type TrafficPolicyGatewayExtensionIR struct {
 	Name      string
 	ExtType   v1alpha1.GatewayExtensionType
 	ExtAuth   *envoy_ext_authz_v3.ExtAuthz
-	ExtProc   *envoy_ext_proc_v3.ExternalProcessor
+	ExtProc   *envoymatchingv3.ExtensionWithMatcher
 	RateLimit *ratev3.RateLimit
 	Err       error
 }
@@ -115,9 +123,10 @@ func TranslateGatewayExtensionBuilder(commoncol *common.CommonCollections) func(
 				return p
 			}
 
-			p.ExtProc = &envoy_ext_proc_v3.ExternalProcessor{
-				GrpcService: envoyGrpcService,
-			}
+			p.ExtProc = buildCompositeExtProcFilter(envoyGrpcService)
+			// p.ExtProc = &envoy_ext_proc_v3.ExternalProcessor{
+			// 	GrpcService: envoyGrpcService,
+			// }
 
 		case v1alpha1.GatewayExtensionTypeRateLimit:
 			if gExt.RateLimit == nil {
@@ -200,4 +209,72 @@ func resolveRateLimitService(grpcService *envoycorev3.GrpcService, rateLimit *v1
 	envoyRateLimit.RequestType = "both"
 
 	return envoyRateLimit
+}
+
+func buildCompositeExtProcFilter(envoyGrpcService *envoycorev3.GrpcService) *envoymatchingv3.ExtensionWithMatcher {
+	return &envoymatchingv3.ExtensionWithMatcher{
+		ExtensionConfig: &envoycorev3.TypedExtensionConfig{
+			Name:        "composite_ext_proc",
+			TypedConfig: utils.MustMessageToAny(&envoycompositev3.Composite{}),
+		},
+		XdsMatcher: &xdsmatcherv3.Matcher{
+			MatcherType: &xdsmatcherv3.Matcher_MatcherList_{
+				MatcherList: &xdsmatcherv3.Matcher_MatcherList{
+					Matchers: []*xdsmatcherv3.Matcher_MatcherList_FieldMatcher{
+						{
+							Predicate: &xdsmatcherv3.Matcher_MatcherList_Predicate{
+								MatchType: &xdsmatcherv3.Matcher_MatcherList_Predicate_SinglePredicate_{
+									SinglePredicate: &xdsmatcherv3.Matcher_MatcherList_Predicate_SinglePredicate{
+										Input: &xdscorev3.TypedExtensionConfig{
+											Name: globalFilterDisableMetadataKey,
+											TypedConfig: utils.MustMessageToAny(&envoynetworkv3.DynamicMetadataInput{
+												Filter: extProcGlobalDisableFilterMetadataNamespace,
+												Path: []*envoynetworkv3.DynamicMetadataInput_PathSegment{
+													{
+														Segment: &envoynetworkv3.DynamicMetadataInput_PathSegment_Key{
+															Key: globalFilterDisableMetadataKey,
+														},
+													},
+												},
+											}),
+										},
+										// This matcher succeeds when disable=true is not found in the dynamic metadata
+										// for the extProcGlobalDisableFilterMetadataNamespace
+										Matcher: &xdsmatcherv3.Matcher_MatcherList_Predicate_SinglePredicate_CustomMatch{
+											CustomMatch: &xdscorev3.TypedExtensionConfig{
+												Name: "envoy.matching.matchers.metadata_matcher",
+												TypedConfig: utils.MustMessageToAny(&envoymetadatav3.Metadata{
+													Value: &envoymatcherv3.ValueMatcher{
+														MatchPattern: &envoymatcherv3.ValueMatcher_BoolMatch{
+															BoolMatch: true,
+														},
+													},
+													Invert: true,
+												}),
+											},
+										},
+									},
+								},
+							},
+							OnMatch: &xdsmatcherv3.Matcher_OnMatch{
+								OnMatch: &xdsmatcherv3.Matcher_OnMatch_Action{
+									Action: &xdscorev3.TypedExtensionConfig{
+										Name: "composite-action",
+										TypedConfig: utils.MustMessageToAny(&envoycompositev3.ExecuteFilterAction{
+											TypedConfig: &envoycorev3.TypedExtensionConfig{
+												Name: "envoy.filters.http.ext_proc",
+												TypedConfig: utils.MustMessageToAny(&envoyextprocv3.ExternalProcessor{
+													GrpcService: envoyGrpcService,
+												}),
+											},
+										}),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
 }

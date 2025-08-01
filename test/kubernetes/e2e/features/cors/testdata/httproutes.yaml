@@ -26,10 +26,19 @@ spec:
   hostnames:
     - "example.com"
   rules:
-    - backendRefs:
-        - name: simple-svc
-          port: 8080
+    - name: rule0
       matches:
       - path:
           type: PathPrefix
-          value: /path2
+          value: /path2    
+      backendRefs:
+        - name: simple-svc
+          port: 8080
+    - name: rule1
+      matches:
+      - path:
+          type: PathPrefix
+          value: /cors-disabled    
+      backendRefs:
+        - name: simple-svc
+          port: 8080

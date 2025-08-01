@@ -138,6 +138,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.PathOverride":                              schema_kgateway_v2_api_v1alpha1_PathOverride(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Pod":                                       schema_kgateway_v2_api_v1alpha1_Pod(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.PolicyAncestorStatus":                      schema_kgateway_v2_api_v1alpha1_PolicyAncestorStatus(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.PolicyDisable":                             schema_kgateway_v2_api_v1alpha1_PolicyDisable(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.PolicyStatus":                              schema_kgateway_v2_api_v1alpha1_PolicyStatus(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Port":                                      schema_kgateway_v2_api_v1alpha1_Port(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Priority":                                  schema_kgateway_v2_api_v1alpha1_Priority(ref),
@@ -1925,12 +1926,17 @@ func schema_kgateway_v2_api_v1alpha1_Buffer(ref common.ReferenceCallback) common
 							Ref:         ref("k8s.io/apimachinery/pkg/api/resource.Quantity"),
 						},
 					},
+					"disable": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Disable the buffer filter. Can be used to disable buffer policies applied at a higher level in the config hierarchy.",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.PolicyDisable"),
+						},
+					},
 				},
-				Required: []string{"maxRequestSize"},
 			},
 		},
 		Dependencies: []string{
-			"k8s.io/apimachinery/pkg/api/resource.Quantity"},
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.PolicyDisable", "k8s.io/apimachinery/pkg/api/resource.Quantity"},
 	}
 }
 
@@ -2401,9 +2407,17 @@ func schema_kgateway_v2_api_v1alpha1_CorsPolicy(ref common.ReferenceCallback) co
 							Format:      "int32",
 						},
 					},
+					"disable": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Disable the CORS filter. Can be used to disable CORS policies applied at a higher level in the config hierarchy.",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.PolicyDisable"),
+						},
+					},
 				},
 			},
 		},
+		Dependencies: []string{
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.PolicyDisable"},
 	}
 }
 
@@ -2960,13 +2974,6 @@ func schema_kgateway_v2_api_v1alpha1_ExtAuthPolicy(ref common.ReferenceCallback)
 							Ref:         ref("k8s.io/api/core/v1.LocalObjectReference"),
 						},
 					},
-					"enablement": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Enablement determines the enabled state of the ExtAuth filter. When set to \"DisableAll\", the filter is disabled for this route. When empty, the filter is enabled as long as it is not disabled by another policy.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
 					"withRequestBody": {
 						SchemaProps: spec.SchemaProps{
 							Description: "WithRequestBody allows the request body to be buffered and sent to the authorization service. Warning buffering has implications for streaming and therefore performance.",
@@ -2989,11 +2996,17 @@ func schema_kgateway_v2_api_v1alpha1_ExtAuthPolicy(ref common.ReferenceCallback)
 							},
 						},
 					},
+					"disable": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Disable all external authorization filters. Can be used to disable external authorization policies applied at a higher level in the config hierarchy.",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.PolicyDisable"),
+						},
+					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.BufferSettings", "k8s.io/api/core/v1.LocalObjectReference"},
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.BufferSettings", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.PolicyDisable", "k8s.io/api/core/v1.LocalObjectReference"},
 	}
 }
 
@@ -3067,12 +3080,17 @@ func schema_kgateway_v2_api_v1alpha1_ExtProcPolicy(ref common.ReferenceCallback)
 							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ProcessingMode"),
 						},
 					},
+					"disable": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Disable all external processing filters. Can be used to disable external processing policies applied at a higher level in the config hierarchy.",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.PolicyDisable"),
+						},
+					},
 				},
-				Required: []string{"extensionRef"},
 			},
 		},
 		Dependencies: []string{
-			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ProcessingMode", "k8s.io/api/core/v1.LocalObjectReference"},
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.PolicyDisable", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ProcessingMode", "k8s.io/api/core/v1.LocalObjectReference"},
 	}
 }
 
@@ -5537,6 +5555,17 @@ func schema_kgateway_v2_api_v1alpha1_PolicyAncestorStatus(ref common.ReferenceCa
 		},
 		Dependencies: []string{
 			"k8s.io/apimachinery/pkg/apis/meta/v1.Condition", "sigs.k8s.io/gateway-api/apis/v1.ParentReference"},
+	}
+}
+
+func schema_kgateway_v2_api_v1alpha1_PolicyDisable(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "PolicyDisable is used to disable a policy.",
+				Type:        []string{"object"},
+			},
+		},
 	}
 }
 
