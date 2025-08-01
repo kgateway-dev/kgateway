@@ -86,7 +86,7 @@ func NewPlugin(ctx context.Context, commonCols *common.CommonCollections) *extpl
 				commonCols,
 				p.backendsCtl,
 				p.poolIndex,
-				commonCols.Pods,
+				commonCols.LocalityPods,
 			),
 		},
 	}

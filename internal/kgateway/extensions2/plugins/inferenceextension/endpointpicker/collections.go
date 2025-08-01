@@ -81,7 +81,7 @@ func initInferencePoolCollections(
 
 	// Create a krt index of pods whose labels match the InferencePool's selector
 	podIdx := krtutil.UnnamedIndex(
-		commonCol.Pods,
+		commonCol.LocalityPods,
 		func(p krtcollections.LocalityPod) []string {
 			var keys []string
 			for _, pool := range poolCol.List() {
@@ -96,7 +96,7 @@ func initInferencePoolCollections(
 		})
 
 	poolPodsCol := krt.NewCollection(
-		commonCol.Pods,
+		commonCol.LocalityPods,
 		func(_ krt.HandlerContext, pod krtcollections.LocalityPod) *poolPods {
 			for _, pool := range poolCol.List() {
 				sel := labels.SelectorFromSet(convertSelector(pool.Spec.Selector))
