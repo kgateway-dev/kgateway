@@ -46,16 +46,6 @@ func (s *serviceEntryPlugin) initServiceEntryBackend(ctx context.Context, in ir.
 		}
 	}
 
-	// If the service entry has a prefer close traffic distribution, we need to use locality weighted lb
-	// The endpoints will be prioritized based on the locality of the workload entries or the inlined endpoints
-	if in.TrafficDistribution != wellknown.TrafficDistributionAny {
-		out.CommonLbConfig = &envoyclusterv3.Cluster_CommonLbConfig{
-			LocalityConfigSpecifier: &envoyclusterv3.Cluster_CommonLbConfig_LocalityWeightedLbConfig_{
-				LocalityWeightedLbConfig: &envoyclusterv3.Cluster_CommonLbConfig_LocalityWeightedLbConfig{},
-			},
-		}
-	}
-
 	var staticEps *ir.EndpointsForBackend
 	if isEDSServiceEntry(se) {
 		out.ClusterDiscoveryType = &envoyclusterv3.Cluster_Type{

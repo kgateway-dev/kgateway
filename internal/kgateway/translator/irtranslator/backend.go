@@ -23,6 +23,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/metrics"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/settings"
 )
 
@@ -222,7 +223,7 @@ func initializeCluster(b *ir.BackendObjectIR) *envoyclusterv3.Cluster {
 		// this field can be overridden by plugins
 		ConnectTimeout:                durationpb.New(ClusterConnectionTimeout),
 		TypedExtensionProtocolOptions: translateAppProtocol(b.AppProtocol),
-
+		CommonLbConfig:                createCommonLbConfig(b),
 		// Http2ProtocolOptions:      getHttp2options(upstream),
 		// IgnoreHealthOnHostRemoval: upstream.GetIgnoreHealthOnHostRemoval().GetValue(),
 		//	RespectDnsTtl:             upstream.GetRespectDnsTtl().GetValue(),
@@ -258,4 +259,15 @@ func buildBlackholeCluster(b *ir.BackendObjectIR) *envoyclusterv3.Cluster {
 		},
 	}
 	return out
+}
+
+func createCommonLbConfig(b *ir.BackendObjectIR) *envoyclusterv3.Cluster_CommonLbConfig {
+	if b.TrafficDistribution != wellknown.TrafficDistributionAny {
+		return &envoyclusterv3.Cluster_CommonLbConfig{
+			LocalityConfigSpecifier: &envoyclusterv3.Cluster_CommonLbConfig_LocalityWeightedLbConfig_{
+				LocalityWeightedLbConfig: &envoyclusterv3.Cluster_CommonLbConfig_LocalityWeightedLbConfig{},
+			},
+		}
+	}
+	return nil
 }

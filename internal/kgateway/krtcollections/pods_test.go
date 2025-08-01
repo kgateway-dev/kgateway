@@ -44,7 +44,6 @@ func TestPods(t *testing.T) {
 						Labels: map[string]string{
 							corev1.LabelTopologyRegion: "region",
 							corev1.LabelTopologyZone:   "zone",
-							corev1.LabelHostname:       "node",
 						},
 					},
 				},
@@ -95,7 +94,6 @@ func TestPods(t *testing.T) {
 						Labels: map[string]string{
 							corev1.LabelTopologyRegion: "region",
 							corev1.LabelTopologyZone:   "zone",
-							corev1.LabelHostname:       "node",
 						},
 					},
 				},
@@ -139,7 +137,6 @@ func TestPods(t *testing.T) {
 						Labels: map[string]string{
 							corev1.LabelTopologyRegion: "region",
 							corev1.LabelTopologyZone:   "zone",
-							corev1.LabelHostname:       "node",
 						},
 					},
 				},

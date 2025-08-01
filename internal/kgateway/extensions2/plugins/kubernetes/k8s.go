@@ -111,13 +111,6 @@ func processBackend(ctx context.Context, in ir.BackendObjectIR, out *envoycluste
 			},
 		},
 	}
-	if in.TrafficDistribution != wellknown.TrafficDistributionAny {
-		out.CommonLbConfig = &envoyclusterv3.Cluster_CommonLbConfig{
-			LocalityConfigSpecifier: &envoyclusterv3.Cluster_CommonLbConfig_LocalityWeightedLbConfig_{
-				LocalityWeightedLbConfig: &envoyclusterv3.Cluster_CommonLbConfig_LocalityWeightedLbConfig{},
-			},
-		}
-	}
 	out.IgnoreHealthOnHostRemoval = true
 	return nil
 }
