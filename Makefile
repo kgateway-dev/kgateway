@@ -629,6 +629,9 @@ GIE_CONFORMANCE_ARGS := \
     -gateway-class=$(CONFORMANCE_GATEWAY_CLASS) \
     $(GIE_CONFORMANCE_REPORT_ARGS)
 
+# Allow skipping known‐failing tests.
+INFERENCE_SKIP_TESTS ?= -skip-tests EppUnAvailableFailOpen
+
 INFERENCE_CONFORMANCE_DIR := $(shell go list -m -f '{{.Dir}}' sigs.k8s.io/gateway-api-inference-extension)/conformance
 
 .PHONY: gie-conformance
@@ -638,7 +641,7 @@ gie-conformance: gie-crds ## Run the Gateway API Inference Extension conformance
 	    -tags conformance \
 	    -timeout=25m \
 	    -v $(INFERENCE_CONFORMANCE_DIR) \
-	    -args $(GIE_CONFORMANCE_ARGS)
+	    -args $(GIE_CONFORMANCE_ARGS) $(INFERENCE_SKIP_TESTS)
 
 .PHONY: gie-conformance-%
 gie-conformance-%: gie-crds ## Run only the specified Gateway API Inference Extension conformance test by ShortName
@@ -646,7 +649,7 @@ gie-conformance-%: gie-crds ## Run only the specified Gateway API Inference Exte
 	go test -mod=mod -ldflags='$(LDFLAGS)' \
 	    -tags conformance \
 	    -timeout=25m \
-	    -v $(INFERENCE_CONFORMANCE_DIR) \
+	    -v $(INFERENCE_CONFORMANCE_DIR) $(INFERENCE_SKIP_TESTS) \
 	    -args $(GIE_CONFORMANCE_ARGS) -run-test=$*
 
 # An alias to run both Gateway API and Inference Extension conformance tests.

@@ -311,7 +311,7 @@ func (p *endpointPickerPass) HttpFilters(ctx context.Context, fc ir.FilterChainC
 		},
 		MessageTimeout: durationpb.New(5 * time.Second),
 		// TODO [danehans]: Add failure mode config support.
-		FailureModeAllow: true,
+		FailureModeAllow: false,
 		MetadataOptions: &extprocv3.MetadataOptions{
 			ForwardingNamespaces: &extprocv3.MetadataOptions_MetadataNamespaces{
 				Untyped: []string{envoySubsetKey},
