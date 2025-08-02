@@ -37,6 +37,15 @@ type inferencePool struct {
 	errors []error
 	// endpoints define the list of endpoints resolved by the podSelector.
 	endpoints endpoints
+	// failOpen configures how the proxy handles traffic when the EPP extension is
+	// non-responsive. When set to `false` and the gRPC stream cannot be established, or if
+	// it is closed prematurely with an error, the request will fail. When set to `true` and
+	// the gRPC stream cannot be established, the request is forwarded based on the cluster
+	// load balancing configuration.
+	//
+	// Defaults to `false`.
+	//
+	failOpen bool
 }
 
 // newInferencePool returns the internal representation of the given pool.
@@ -63,6 +72,7 @@ func newInferencePool(pool *infextv1a2.InferencePool, eps []endpoint) *inference
 		targetPort:  int32(pool.Spec.TargetPortNumber),
 		configRef:   svcIR,
 		endpoints:   eps,
+		failOpen:    isFailOpen(pool),
 	}
 }
 
@@ -112,6 +122,10 @@ func (ir *inferencePool) Equals(other any) bool {
 	if !ir.configRefEquals(otherPool) {
 		return false
 	}
+	// Compare failure mode
+	if !ir.failOpenEqual(otherPool) {
+		return false
+	}
 	return true
 }
 
@@ -147,6 +161,10 @@ func (ir *inferencePool) hasErrors() bool {
 	ir.mu.Lock()
 	defer ir.mu.Unlock()
 	return len(ir.errors) > 0
+}
+
+func (ir *inferencePool) failOpenEqual(other *inferencePool) bool {
+	return ir.failOpen == other.failOpen
 }
 
 func convertSelector(selector map[infextv1a2.LabelKey]infextv1a2.LabelValue) map[string]string {
@@ -229,4 +247,18 @@ func versionEquals(a, b metav1.Object) bool {
 		versionEquals = a.GetResourceVersion() == b.GetResourceVersion()
 	}
 	return versionEquals && a.GetUID() == b.GetUID()
+}
+
+func isFailOpen(pool *infextv1a2.InferencePool) bool {
+	if pool == nil ||
+		pool.Spec.EndpointPickerConfig.ExtensionRef == nil {
+		return false
+	}
+
+	if pool.Spec.EndpointPickerConfig.ExtensionRef.ExtensionConnection.FailureMode == nil ||
+		*pool.Spec.EndpointPickerConfig.ExtensionRef.ExtensionConnection.FailureMode == infextv1a2.FailClose {
+		return false
+	}
+
+	return true
 }

@@ -55,7 +55,7 @@ metadata:
   namespace: gwtest
 spec:
   extensionRef:
-    failureMode: FailClose
+    failureMode: FailOpen
     group: ""
     kind: Service
     name: gateway-pool-endpoint-picker

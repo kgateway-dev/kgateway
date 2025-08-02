@@ -16,6 +16,7 @@ import (
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/structpb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/kube/krt"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -246,6 +247,7 @@ func (p *endpointPickerPass) ApplyForBackend(
 	override := &extprocv3.ExtProcPerRoute{
 		Override: &extprocv3.ExtProcPerRoute_Overrides{
 			Overrides: &extprocv3.ExtProcOverrides{
+				FailureModeAllow: wrapperspb.Bool(irPool.failOpen),
 				GrpcService: &envoycorev3.GrpcService{
 					Timeout: durationpb.New(10 * time.Second),
 					TargetSpecifier: &envoycorev3.GrpcService_EnvoyGrpc_{
@@ -309,8 +311,7 @@ func (p *endpointPickerPass) HttpFilters(ctx context.Context, fc ir.FilterChainC
 			ResponseHeaderMode:  extprocv3.ProcessingMode_SEND,
 			ResponseTrailerMode: extprocv3.ProcessingMode_SEND,
 		},
-		MessageTimeout: durationpb.New(5 * time.Second),
-		// TODO [danehans]: Add failure mode config support.
+		MessageTimeout:   durationpb.New(5 * time.Second),
 		FailureModeAllow: false,
 		MetadataOptions: &extprocv3.MetadataOptions{
 			ForwardingNamespaces: &extprocv3.MetadataOptions_MetadataNamespaces{
