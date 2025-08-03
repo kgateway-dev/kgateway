@@ -497,9 +497,10 @@ CONFORMANCE_VERSION ?= v1.3.0
 gw-api-crds: ## Install the Gateway API CRDs
 	kubectl apply --kustomize "https://github.com/kubernetes-sigs/gateway-api/config/crd/$(CONFORMANCE_CHANNEL)?ref=$(CONFORMANCE_VERSION)"
 
+GIE_VERSION ?= v0.5.1
 .PHONY: gie-crds
 gie-crds: gw-api-crds ## Install the Gateway API Inference Extension CRDs
-	kubectl apply --kustomize "https://github.com/kubernetes-sigs/gateway-api-inference-extension/config/crd/"
+	kubectl apply --kustomize "https://github.com/kubernetes-sigs/gateway-api-inference-extension/config/crd?ref=$(GIE_VERSION)"
 
 .PHONY: kind-metallb
 metallb: ## Install the MetalLB load balancer
