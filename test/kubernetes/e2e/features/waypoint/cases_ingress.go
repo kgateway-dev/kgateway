@@ -67,8 +67,9 @@ func (s *testingSuite) TestIngressHTTPRouteNamespaceLabel() {
 	// verifying the ingress traffic goes through waypoint
 	expected := hasHTTPRoute
 	if !s.ingressUseWaypoint {
-		// Just verifying that if the KGW_INGRESS_USE_WAYPOINTS isn't set in the controller deployment,
-		// the ingress traffic doesn't go through waypoint
+		// Verifying that if the IngressUseWaypoints is disabled in the settings,
+		// the ingress traffic doesn't go through waypoint although labeled with
+		// istio.io/ingress-use-waypoint=true
 		expected = noHTTPRoute
 	}
 	s.assertCurlInner(fromCurl, kubeutils.ServiceFQDN(metav1.ObjectMeta{
