@@ -12,6 +12,7 @@ import (
 	infextv1a2 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
 
@@ -36,7 +37,7 @@ type inferencePool struct {
 	// errors is a list of errors that occurred while processing the InferencePool.
 	errors []error
 	// endpoints define the list of endpoints resolved by the podSelector.
-	endpoints endpoints
+	endpoints []endpoint
 	// failOpen configures how the proxy handles traffic when the EPP extension is
 	// non-responsive. When set to `false` and the gRPC stream cannot be established, or if
 	// it is closed prematurely with an error, the request will fail. When set to `true` and
@@ -49,7 +50,7 @@ type inferencePool struct {
 }
 
 // newInferencePool returns the internal representation of the given pool.
-func newInferencePool(pool *infextv1a2.InferencePool, eps []endpoint) *inferencePool {
+func newInferencePool(pool *infextv1a2.InferencePool) *inferencePool {
 	port := servicePort{name: "grpc", portNum: (int32(grpcPort))}
 	if pool.Spec.ExtensionRef.PortNumber != nil {
 		port.portNum = int32(*pool.Spec.ExtensionRef.PortNumber)
@@ -71,9 +72,30 @@ func newInferencePool(pool *infextv1a2.InferencePool, eps []endpoint) *inference
 		podSelector: convertSelector(pool.Spec.Selector),
 		targetPort:  int32(pool.Spec.TargetPortNumber),
 		configRef:   svcIR,
-		endpoints:   eps,
+		endpoints:   []endpoint{},
 		failOpen:    isFailOpen(pool),
 	}
+}
+
+func (ir *inferencePool) setEndpoints(eps []endpoint) {
+	ir.endpoints = eps
+}
+
+// resolvePoolEndpoints returns the slice of <IP:Port> for the given pool
+// by looking up only the pods that index to it.
+func (ir *inferencePool) resolvePoolEndpoints(
+	idx krt.Index[string, krtcollections.LocalityPod],
+) []endpoint {
+	key := fmt.Sprintf("%s/%s", ir.obj.GetNamespace(), ir.obj.GetName())
+
+	var eps []endpoint
+	for _, p := range idx.Lookup(key) {
+		if ip := p.Address(); ip != "" {
+			eps = append(eps, endpoint{address: ip, port: ir.targetPort})
+		}
+	}
+
+	return eps
 }
 
 // In case multiple pools attached to the same resource, we sort by creation time.
@@ -235,9 +257,6 @@ type endpoint struct {
 func (e endpoint) string() string {
 	return fmt.Sprintf("%s:%d", e.address, e.port)
 }
-
-// endpoints is a named slice of endpoint.
-type endpoints []endpoint
 
 func versionEquals(a, b metav1.Object) bool {
 	var versionEquals bool

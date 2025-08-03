@@ -6,7 +6,6 @@ clusters:
       maxRequests: 40000
   connectTimeout: 5s
   dnsLookupFamily: V4_PREFERRED
-  ignoreHealthOnHostRemoval: true
   lbSubsetConfig:
     fallbackPolicy: ANY_ENDPOINT
     subsetSelectors:

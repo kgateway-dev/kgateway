@@ -38,12 +38,12 @@ type inferencePoolPlugin struct {
 }
 
 type poolPods struct {
-	Pool *infv1a2.InferencePool
-	Pod  krtcollections.LocalityPod
+	pool *inferencePool
+	pod  krtcollections.LocalityPod
 }
 
 func (pp poolPods) ResourceName() string {
-	return fmt.Sprintf("%s/%s", pp.Pool.Namespace, pp.Pool.Name)
+	return fmt.Sprintf("%s/%s", pp.pool.obj.GetNamespace(), pp.pool.obj.GetName())
 }
 
 func registerTypes(cli versioned.Interface) {
@@ -99,9 +99,10 @@ func initInferencePoolCollections(
 		commonCol.LocalityPods,
 		func(_ krt.HandlerContext, pod krtcollections.LocalityPod) *poolPods {
 			for _, pool := range poolCol.List() {
-				sel := labels.SelectorFromSet(convertSelector(pool.Spec.Selector))
+				irPool := newInferencePool(pool)
+				sel := labels.SelectorFromSet(irPool.podSelector)
 				if pod.Namespace == pool.Namespace && sel.Matches(labels.Set(pod.AugmentedLabels)) {
-					return &poolPods{Pool: pool, Pod: pod}
+					return &poolPods{pool: irPool, pod: pod}
 				}
 			}
 			return nil
@@ -113,7 +114,7 @@ func initInferencePoolCollections(
 	backendsCtl := krt.NewCollection(
 		poolCol,
 		func(_ krt.HandlerContext, p *infv1a2.InferencePool) *ir.BackendObjectIR {
-			irPool := newInferencePool(p, nil)
+			irPool := newInferencePool(p)
 			if errs := validatePool(p, commonCol.Services); len(errs) > 0 {
 				irPool.setErrors(errs)
 			}
@@ -122,32 +123,23 @@ func initInferencePoolCollections(
 		commonCol.KrtOpts.ToOptions("InferencePoolBackendsCtl")...,
 	)
 
-	// Index pools by NamespacedName for status management & policy wiring
-	poolIdx := krtutil.UnnamedIndex(backendsCtl, func(be ir.BackendObjectIR) []string {
-		return []string{fmt.Sprintf("%s/%s", be.Namespace, be.Name)}
-	})
-
 	// Data‑plane backends – rebuilt on any pod change to update LB endpoints
 	backendsDP := krt.NewCollection(
 		poolPodsCol,
 		func(_ krt.HandlerContext, pp poolPods) *ir.BackendObjectIR {
-			p := pp.Pool
-			eps := resolvePoolEndpoints(p, podIdx)
-
-			irPool := newInferencePool(p, eps)
-			if errs := validatePool(p, commonCol.Services); len(errs) > 0 {
-				irPool.setErrors(errs)
-			}
+			irPool := pp.pool
+			eps := irPool.resolvePoolEndpoints(podIdx)
+			irPool.setEndpoints(eps)
 			return buildBackendObjIrFromPool(irPool)
 		},
 		commonCol.KrtOpts.ToOptions("InferencePoolBackendsDP")...,
 	)
 
-	// Build a static + subset‑LB cluster per pool
+	// Build a static + subset LB cluster per InferencePool
 	endpoints := krt.NewCollection(
 		poolPodsCol,
 		func(_ krt.HandlerContext, pp poolPods) *ir.EndpointsForBackend {
-			be := backendsDP.GetKey(pp.Pool.Namespace + "/" + pp.Pool.Name)
+			be := backendsDP.GetKey(pp.ResourceName())
 			if be == nil {
 				return nil
 			}
@@ -155,6 +147,11 @@ func initInferencePoolCollections(
 			return processPoolBackendObjIR(ctx, *be, stub, podIdx)
 		},
 	)
+
+	// Index pools by NamespacedName for status management & policy wiring
+	poolIdx := krtutil.UnnamedIndex(backendsCtl, func(be ir.BackendObjectIR) []string {
+		return []string{be.ResourceName()}
+	})
 
 	// Build a PolicyWrapper collection for the per-route metadata filter
 	// and ext-proc overrides.

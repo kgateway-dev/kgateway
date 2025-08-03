@@ -32,7 +32,7 @@ func makeBackendIR(pool *infv1a2.InferencePool) *ir.BackendObjectIR {
 	be.Obj = pool
 
 	// Wrap the same pool in our internal IR so we can inject errors
-	irp := newInferencePool(pool, nil)
+	irp := newInferencePool(pool)
 	be.ObjIr = irp
 
 	return &be
@@ -71,7 +71,7 @@ func TestProcessPoolBackendObjIR_BuildsLoadAssignment(t *testing.T) {
 	mock := krttest.NewMock(t, []any{fakeLP})
 	podCol := krttest.GetMockCollection[krtcollections.LocalityPod](mock)
 
-	// Index pods
+	// Index the pods
 	poolKey := fmt.Sprintf("%s/%s", pool.Namespace, pool.Name)
 	podIdx := krtutil.UnnamedIndex(podCol, func(p krtcollections.LocalityPod) []string {
 		return []string{poolKey}
@@ -95,7 +95,7 @@ func TestProcessPoolBackendObjIR_BuildsLoadAssignment(t *testing.T) {
 	assert.Equal(t, "10.0.0.1", sa.Address)
 	assert.Equal(t, uint32(9000), sa.GetPortValue())
 
-	// Check the subset-metadata key
+	// Check the subset metadata key
 	md := lbs[0].Metadata.FilterMetadata[envoyLbNamespace]
 	val := md.Fields[dstEndpointKey]
 	expected := structpb.NewStringValue("10.0.0.1:9000")

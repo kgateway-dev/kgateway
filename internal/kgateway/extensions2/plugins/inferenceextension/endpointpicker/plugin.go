@@ -209,16 +209,12 @@ func (p *endpointPickerPass) ApplyForBackend(
 		ra.MetadataMatch.FilterMetadata = make(map[string]*structpb.Struct)
 	}
 
-	// Cast the backend IR object to an InferencePool.
-	pool, ok := irPool.obj.(*infv1a2.InferencePool)
-	if pool == nil || !ok {
-		return nil
-	}
-
 	// Ensure we are working with the latest set of endpoints for the pool.
-	eps := resolvePoolEndpoints(pool, p.podIdx)
+	eps := irPool.resolvePoolEndpoints(p.podIdx)
 	if len(eps) == 0 {
-		return fmt.Errorf("no endpoints found for InferencePool %s/%s", pool.Namespace, pool.Name)
+		return fmt.Errorf("no endpoints found for InferencePool %s/%s",
+			irPool.obj.GetNamespace(),
+			irPool.obj.GetName())
 	}
 	irPool.endpoints = eps
 

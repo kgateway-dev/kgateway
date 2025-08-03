@@ -12,7 +12,6 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/kube/krt"
-	infv1a2 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
@@ -26,10 +25,25 @@ func processPoolBackendObjIR(
 	podIdx krt.Index[string, krtcollections.LocalityPod],
 ) *ir.EndpointsForBackend {
 	// Build an endpoint list
-	pool := in.Obj.(*infv1a2.InferencePool)
-	poolEps := resolvePoolEndpoints(pool, podIdx)
+	irPool := in.ObjIr.(*inferencePool)
+	poolEps := irPool.resolvePoolEndpoints(podIdx)
 	if len(poolEps) == 0 {
-		logger.Warn("no endpoints resolved for InferencePool", "namespace", pool.Namespace, "name", pool.Name)
+		logger.Warn("no endpoints resolved for InferencePool",
+			"namespace", irPool.obj.GetNamespace(),
+			"name", irPool.obj.GetName())
+	}
+
+	// If the pool has errors, create an empty LoadAssignment to return a 503
+	if irPool.hasErrors() {
+		logger.Debug("skipping endpoints due to InferencePool errors",
+			"pool", in.ResourceName(),
+			"errors", irPool.errors,
+		)
+		out.LoadAssignment = &envoyendpointv3.ClusterLoadAssignment{
+			ClusterName: out.Name,
+			Endpoints:   []*envoyendpointv3.LocalityLbEndpoints{{}},
+		}
+		return nil
 	}
 
 	// Static cluster with subset lb config
@@ -43,20 +57,9 @@ func processPoolBackendObjIR(
 		FallbackPolicy: envoyclusterv3.Cluster_LbSubsetConfig_ANY_ENDPOINT,
 	}
 
-	// TODO [danehans]: Set H1/H2 app protocol programmatically
+	// TODO [danehans]: Set H1/H2 app protocol programmatically:
+	// https://github.com/kubernetes-sigs/gateway-api-inference-extension/issues/1273
 	addHTTP1(out)
-	out.IgnoreHealthOnHostRemoval = true
-
-	// If the pool has errors, create an empty LoadAssignment to return a 503
-	irPool := in.ObjIr.(*inferencePool)
-	if irPool.hasErrors() {
-		logger.Debug("skipping endpoints due to InferencePool errors", "pool", pool.Name, "errors", irPool.errors)
-		out.LoadAssignment = &envoyendpointv3.ClusterLoadAssignment{
-			ClusterName: out.Name,
-			Endpoints:   []*envoyendpointv3.LocalityLbEndpoints{{}},
-		}
-		return nil
-	}
 
 	// Build the static LoadAssignment
 	lbEndpoints := make([]*envoyendpointv3.LbEndpoint, 0, len(poolEps))
