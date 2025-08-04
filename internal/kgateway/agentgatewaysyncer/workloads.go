@@ -587,7 +587,7 @@ func (a *index) endpointSlicesBuilder(
 				Name:      es.Name,
 				Namespace: es.Namespace,
 				Addresses: addresses,
-				Hostname:  kubeutils.ServiceFQDN(metav1.ObjectMeta{Name: serviceName, Namespace: es.Namespace}),
+				Hostname:  "", // Hostname is never used for Pods, so we set it to empty here
 				//Network:     a.Network(ctx).String(),
 				Services:  services,
 				Status:    health,
