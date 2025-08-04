@@ -105,6 +105,15 @@ type BackendObjectIR struct {
 	Errors []error
 }
 
+// NewBackendObjectIR creates a new BackendObjectIR with pre-calculated resource name
+func NewBackendObjectIR(objSource ObjectSource, port int32, extraKey string) BackendObjectIR {
+	return BackendObjectIR{
+		ObjectSource: objSource,
+		Port:         port,
+		ExtraKey:     extraKey,
+	}
+}
+
 func (c BackendObjectIR) ResourceName() string {
 	return BackendResourceName(c.ObjectSource, c.Port, c.ExtraKey)
 }
