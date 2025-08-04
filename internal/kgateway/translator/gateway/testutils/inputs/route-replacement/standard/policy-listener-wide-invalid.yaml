@@ -13,6 +13,13 @@ spec:
     allowedRoutes:
       namespaces:
         from: All
+  - name: https
+    port: 8443
+    protocol: HTTPS
+    hostname: secure.example.com
+    allowedRoutes:
+      namespaces:
+        from: All
 ---
 apiVersion: v1
 kind: Service
@@ -41,49 +48,22 @@ spec:
       port: 80
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
-kind: GatewayExtension
-metadata:
-  name: test-ratelimit
-  namespace: gwtest
-spec:
-  type: RateLimit
-  rateLimit:
-    domain: test-domain
-    grpcService:
-      backendRef:
-        name: test-service
-        port: 8081
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: test-service
-  namespace: gwtest
-spec:
-  ports:
-    - name: grpc
-      port: 8081
-      targetPort: 8081
-      appProtocol: h2c
-  selector:
-    app: test-service
----
-apiVersion: gateway.kgateway.dev/v1alpha1
 kind: TrafficPolicy
 metadata:
-  name: gateway-level-policy
+  name: listener-level-invalid-policy
   namespace: gwtest
 spec:
   targetRefs:
   - group: gateway.networking.k8s.io
     kind: Gateway
     name: example-gateway
-  rateLimit:
-    global:
-      extensionRef:
-        name: test-ratelimit
-      # Invalid rate limit config - empty fields should fail proto validation
-      descriptors:
-      - entries:
-        - key: ""
-          value: ""
+    sectionName: http
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: example-gateway
+    sectionName: https
+  transformation:
+    request:
+      body:
+        parseAs: AsJson
+        value: "{{ invalid_template }"  ## Verify that STRICT mode doesn't catch higher-level attachment errors.

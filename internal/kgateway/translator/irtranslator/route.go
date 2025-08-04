@@ -24,6 +24,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 	"github.com/kgateway-dev/kgateway/v2/pkg/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/regexutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 )
 
 type httpRouteConfigurationTranslator struct {
@@ -38,6 +39,7 @@ type httpRouteConfigurationTranslator struct {
 	PluginPass               TranslationPassPlugins
 	logger                   *slog.Logger
 	routeReplacementMode     settings.RouteReplacementMode
+	validator                validator.Validator
 }
 
 const WebSocketUpgradeType = "websocket"
@@ -168,11 +170,8 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(
 		out.Action = h.translateRouteAction(ctx, in, out, nil)
 	}
 
-	// run plugins here that may set action
+	// run plugins here that may set action. handle the routeProcessingErr error later.
 	routeProcessingErr := h.runRoutePlugins(ctx, in, out, backendConfigCtx.typedPerFilterConfigRoute)
-	if routeProcessingErr == nil {
-		routeProcessingErr = validateEnvoyRoute(out)
-	}
 
 	// apply typed per filter config from translating route action and route plugins
 	typedPerFilterConfig := backendConfigCtx.typedPerFilterConfigRoute.ToAnyMap()
@@ -186,12 +185,23 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(
 		}
 	}
 
+	// and then apply the headers to the route
+	out.RequestHeadersToAdd = append(out.GetRequestHeadersToAdd(), backendConfigCtx.RequestHeadersToAdd...)
+	out.RequestHeadersToRemove = append(out.GetRequestHeadersToRemove(), backendConfigCtx.RequestHeadersToRemove...)
+	out.ResponseHeadersToAdd = append(out.GetResponseHeadersToAdd(), backendConfigCtx.ResponseHeadersToAdd...)
+	out.ResponseHeadersToRemove = append(out.GetResponseHeadersToRemove(), backendConfigCtx.ResponseHeadersToRemove...)
+
 	// If routeProcessingErr is nil, check if the route has an action for non-delegating routes
 	// to treat this as an error that should result in route replacement.
 	// A delegating(parent) route does not need to have an output Action on itself,
 	// so do not treat it as an error
 	if routeProcessingErr == nil && out.GetAction() == nil && !in.Delegates {
 		routeProcessingErr = errors.New("no action specified")
+	}
+
+	// If there are no errors, validate the route will not be rejected by the xDS server.
+	if routeProcessingErr == nil {
+		routeProcessingErr = validateRoute(ctx, out, h.validator, h.routeReplacementMode)
 	}
 
 	// routeAcceptanceErr is used to set the Accepted=false,Reason=RouteRuleDropped condition on the route
@@ -210,7 +220,19 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(
 	if routeReplacementErr != nil {
 		h.logger.Debug("invalid route", "error", routeReplacementErr)
 
-		// If routeAcceptanceErr is set, report Accepted=False with Reason=RouteRuleDropped
+		// for invalid matchers, we drop the route entirely instead of replacing it with a synthetic matcher.
+		if errors.Is(routeReplacementErr, ErrInvalidMatcher) {
+			h.logger.Info("invalid matcher", "error", routeReplacementErr)
+			routeReport.SetCondition(reportssdk.RouteCondition{
+				Type:    gwv1.RouteConditionAccepted,
+				Status:  metav1.ConditionFalse,
+				Reason:  gwv1.RouteConditionReason(reportssdk.RouteRuleDroppedReason),
+				Message: fmt.Sprintf("Dropped Rule (%d): %v", in.MatchIndex, routeReplacementErr),
+			})
+			return nil
+		}
+
+		// If routeAcceptanceErr is set, report Accepted=False with Reason=RouteRuleReplaced
 		if routeAcceptanceErr != nil {
 			routeReport.SetCondition(reportssdk.RouteCondition{
 				Type:    gwv1.RouteConditionAccepted,
@@ -222,8 +244,12 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(
 
 		switch h.routeReplacementMode {
 		case settings.RouteReplacementStandard, settings.RouteReplacementStrict:
-			// Unset the TypedPerFilterConfig when the route is replaced with a direct response
+			// Clear all headers and filter configs when the route is replaced with a direct response
 			out.TypedPerFilterConfig = nil
+			out.RequestHeadersToAdd = nil
+			out.RequestHeadersToRemove = nil
+			out.ResponseHeadersToAdd = nil
+			out.ResponseHeadersToRemove = nil
 			// Replace invalid route with a direct response
 			out.Action = &envoyroutev3.Route_DirectResponse{
 				DirectResponse: &envoyroutev3.DirectResponseAction{
@@ -241,11 +267,6 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(
 			return nil
 		}
 	}
-
-	out.RequestHeadersToAdd = append(out.GetRequestHeadersToAdd(), backendConfigCtx.RequestHeadersToAdd...)
-	out.RequestHeadersToRemove = append(out.GetRequestHeadersToRemove(), backendConfigCtx.RequestHeadersToRemove...)
-	out.ResponseHeadersToAdd = append(out.GetResponseHeadersToAdd(), backendConfigCtx.ResponseHeadersToAdd...)
-	out.ResponseHeadersToRemove = append(out.GetResponseHeadersToRemove(), backendConfigCtx.ResponseHeadersToRemove...)
 
 	return out
 }
@@ -511,58 +532,11 @@ func (h *httpRouteConfigurationTranslator) translateRouteAction(
 	return routeAction
 }
 
-func validateEnvoyRoute(r *envoyroutev3.Route) error {
-	var errs []error
-	match := r.GetMatch()
-	route := r.GetRoute()
-	re := r.GetRedirect()
-	validatePath(match.GetPath(), &errs)
-	validatePath(match.GetPrefix(), &errs)
-	validatePath(match.GetPathSeparatedPrefix(), &errs)
-	validatePath(re.GetPathRedirect(), &errs)
-	validatePath(re.GetHostRedirect(), &errs)
-	validatePath(re.GetSchemeRedirect(), &errs)
-	validatePrefixRewrite(route.GetPrefixRewrite(), &errs)
-	validatePrefixRewrite(re.GetPrefixRewrite(), &errs)
-	validateWeightedClusters(route.GetWeightedClusters().GetClusters(), &errs)
-	if len(errs) == 0 {
-		return nil
-	}
-	return fmt.Errorf("error %s: %w", r.GetName(), errors.Join(errs...))
-}
-
-func validateWeightedClusters(clusters []*envoyroutev3.WeightedCluster_ClusterWeight, errs *[]error) {
-	if len(clusters) == 0 {
-		return
-	}
-
-	allZeroWeight := true
-	for _, cluster := range clusters {
-		if cluster.GetWeight().GetValue() > 0 {
-			allZeroWeight = false
-			break
-		}
-	}
-	if allZeroWeight {
-		*errs = append(*errs, errors.New("All backend weights are 0. At least one backendRef in the HTTPRoute rule must specify a non-zero weight"))
-	}
-}
-
 // creates Envoy routes for each matcher provided on our Gateway route
 func (h *httpRouteConfigurationTranslator) initRoutes(
 	in ir.HttpRouteRuleMatchIR,
 	generatedName string,
 ) *envoyroutev3.Route {
-	//	if len(in.Matches) == 0 {
-	//		return []*envoyroutev3.Route{
-	//			{
-	//				Match: &envoyroutev3.RouteMatch{
-	//					PathSpecifier: &envoyroutev3.RouteMatch_Prefix{Prefix: "/"},
-	//				},
-	//			},
-	//		}
-	//	}
-
 	out := &envoyroutev3.Route{
 		Match: translateMatcher(in.Match),
 	}

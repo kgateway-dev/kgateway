@@ -1120,269 +1120,454 @@ func TestRouteReplacement(t *testing.T) {
 		translatortest.TestTranslation(t, ctx, inputFiles, expectedProxyFile, in.gwNN, in.assertReports, settingOpts...)
 	}
 
-	t.Run("Standard Mode - Invalid HTTPRoute Prefix Match", func(t *testing.T) {
+	t.Run("Standard/Matcher/Path Prefix Invalid", func(t *testing.T) {
 		test(t, translatorTestCase{
-			inputFile:  "route-replacement/standard/invalid-httproute-prefix-match.yaml",
-			outputFile: "route-replacement/standard/invalid-httproute-prefix-match-out.yaml",
+			inputFile:  "route-replacement/standard/matcher-path-prefix-invalid.yaml",
+			outputFile: "route-replacement/standard/matcher-path-prefix-invalid-out.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "gwtest",
 				Name:      "example-gateway",
 			},
-			assertReports: translatortest.AssertRouteInvalidDropped(t, "invalid-traffic-policy-route", "gwtest", "the rewrite /new//../path is invalid"),
+			assertReports: translatortest.AssertRouteInvalidDropped(
+				t,
+				"invalid-traffic-policy-route",
+				"gwtest",
+				"the rewrite /new//../path is invalid",
+			),
 		}, func(s *settings.Settings) {
 			s.RouteReplacementMode = settings.RouteReplacementStandard
 		})
 	})
 
-	t.Run("Standard Mode - HTTPRoute extensionRef to missing policy", func(t *testing.T) {
+	t.Run("Standard/Matcher/Regex RE2 Unsupported", func(t *testing.T) {
 		test(t, translatorTestCase{
-			inputFile:  "route-replacement/standard/httproute-with-missing-extension-ref.yaml",
-			outputFile: "route-replacement/standard/httproute-with-missing-extension-ref-out.yaml",
+			inputFile:  "route-replacement/standard/matcher-regex-re2-unsupported.yaml",
+			outputFile: "route-replacement/standard/matcher-regex-re2-unsupported-out.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "gwtest",
+				Name:      "example-gateway",
+			},
+		}, func(s *settings.Settings) {
+			s.RouteReplacementMode = settings.RouteReplacementStandard
+		})
+	})
+
+	t.Run("Standard/Matcher/Path Regex Invalid", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "route-replacement/standard/matcher-path-regex-invalid.yaml",
+			outputFile: "route-replacement/standard/matcher-path-regex-invalid-out.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "gwtest",
+				Name:      "example-gateway",
+			},
+		}, func(s *settings.Settings) {
+			s.RouteReplacementMode = settings.RouteReplacementStandard
+		})
+	})
+
+	t.Run("Standard/Matcher/Path Regex Test", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "route-replacement/standard/matcher-path-regex-test.yaml",
+			outputFile: "route-replacement/standard/matcher-path-regex-test-out.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "gwtest",
+				Name:      "example-gateway",
+			},
+		}, func(s *settings.Settings) {
+			s.RouteReplacementMode = settings.RouteReplacementStandard
+		})
+	})
+
+	t.Run("Standard/Matcher/Header Regex Invalid", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "route-replacement/standard/matcher-header-regex-invalid.yaml",
+			outputFile: "route-replacement/standard/matcher-header-regex-invalid-out.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "gwtest",
+				Name:      "example-gateway",
+			},
+		}, func(s *settings.Settings) {
+			s.RouteReplacementMode = settings.RouteReplacementStandard
+		})
+	})
+
+	t.Run("Standard/Policy/Extension Ref Invalid", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "route-replacement/standard/policy-extension-ref-invalid.yaml",
+			outputFile: "route-replacement/standard/policy-extension-ref-invalid-out.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "gwtest",
+				Name:      "example-gateway",
+			},
+			assertReports: translatortest.AssertRouteInvalidDropped(
+				t,
+				"test-route",
+				"gwtest",
+				"gateway.kgateway.dev/TrafficPolicy/gwtest/my-tp-that-doesnt-exist: policy not found",
+			),
+		}, func(s *settings.Settings) {
+			s.RouteReplacementMode = settings.RouteReplacementStandard
+		})
+	})
+
+	t.Run("Standard/Policy/Gateway Wide Invalid Attachment", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "route-replacement/standard/policy-gateway-wide-invalid.yaml",
+			outputFile: "route-replacement/standard/policy-gateway-wide-invalid-out.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "gwtest",
 				Name:      "example-gateway",
 			},
 			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
-				a := assert.New(t)
-				route := &gwv1.HTTPRoute{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "test-route",
-						Namespace: "gwtest",
-					},
-				}
-				routeStatus := reportsMap.BuildRouteStatus(context.Background(), route, wellknown.DefaultGatewayClassName)
-				a.NotNil(routeStatus)
-				a.Len(routeStatus.Parents, 1)
-
-				acceptedCond := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionAccepted))
-				a.NotNil(acceptedCond)
-				a.Equal(metav1.ConditionFalse, acceptedCond.Status)
-				a.Equal(reporter.RouteRuleDroppedReason, acceptedCond.Reason)
-				a.Contains(acceptedCond.Message, "Dropped Rule (0)")
-				a.Contains(acceptedCond.Message, "gateway.kgateway.dev/TrafficPolicy/gwtest/my-tp-that-doesnt-exist: policy not found")
+				translatortest.AssertAcceptedPolicyStatus(t, reportsMap, []reports.PolicyKey{
+					{Group: "gateway.kgateway.dev", Kind: "TrafficPolicy", Namespace: "gwtest", Name: "gateway-level-invalid-policy"},
+				})
 			},
 		}, func(s *settings.Settings) {
 			s.RouteReplacementMode = settings.RouteReplacementStandard
 		})
 	})
 
-	t.Run("Standard Mode - Invalid Rate Limit Global Fields", func(t *testing.T) {
+	t.Run("Standard/Policy/Listener Wide Invalid Attachment", func(t *testing.T) {
 		test(t, translatorTestCase{
-			inputFile:  "route-replacement/standard/invalid-ratelimit-global-empty-fields.yaml",
-			outputFile: "route-replacement/standard/invalid-ratelimit-global-empty-fields-out.yaml",
-			gwNN: types.NamespacedName{
-				Namespace: "gwtest",
-				Name:      "example-gateway",
-			},
-			assertReports: translatortest.AssertRouteInvalidDropped(t, "test-route", "gwtest", "failed to create rate limit actions", "header entry requires Header field to be set"),
-		}, func(s *settings.Settings) {
-			s.RouteReplacementMode = settings.RouteReplacementStandard
-		})
-	})
-
-	t.Run("Standard Mode - Gateway Level Policy Invalid Rate Limit (Not Validated)", func(t *testing.T) {
-		test(t, translatorTestCase{
-			inputFile:  "route-replacement/standard/gateway-level-policy-validation.yaml",
-			outputFile: "route-replacement/standard/gateway-level-policy-validation-out.yaml",
+			inputFile:  "route-replacement/standard/policy-listener-wide-invalid.yaml",
+			outputFile: "route-replacement/standard/policy-listener-wide-invalid-out.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "gwtest",
 				Name:      "example-gateway",
 			},
 			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
-				a := assert.New(t)
-				// Verify that despite the invalid rate limit config, attaching the policy to the gateway
-				// does not cause the route to be invalidated as the route translator does not currently
-				// handle IR errors outside of the envoyRoutes method. This will be fixed in the future.
-				route := &gwv1.HTTPRoute{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "test-route",
-						Namespace: "gwtest",
-					},
-				}
-				routeStatus := reportsMap.BuildRouteStatus(context.Background(), route, wellknown.DefaultGatewayClassName)
-				a.NotNil(routeStatus)
-				a.Len(routeStatus.Parents, 1)
-
-				accepted := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionAccepted))
-				a.NotNil(accepted)
-				a.Equal(metav1.ConditionTrue, accepted.Status)
-				a.Equal(string(gwv1.RouteReasonAccepted), accepted.Reason)
-				a.Equal("Route is accepted", accepted.Message)
-				a.Equal(int64(0), accepted.ObservedGeneration)
+				translatortest.AssertAcceptedPolicyStatus(t, reportsMap, []reports.PolicyKey{
+					{Group: "gateway.kgateway.dev", Kind: "TrafficPolicy", Namespace: "gwtest", Name: "listener-level-invalid-policy"},
+				})
 			},
 		}, func(s *settings.Settings) {
 			s.RouteReplacementMode = settings.RouteReplacementStandard
 		})
 	})
 
-	t.Run("Standard Mode - Gateway Listener Policy Invalid Rate Limit (Not Validated)", func(t *testing.T) {
+	t.Run("Standard/Policy/HTTPRoute Wide Invalid Attachment", func(t *testing.T) {
 		test(t, translatorTestCase{
-			inputFile:  "route-replacement/standard/gateway-listener-policy-validation.yaml",
-			outputFile: "route-replacement/standard/gateway-listener-policy-validation-out.yaml",
+			inputFile:  "route-replacement/standard/policy-httproute-wide-invalid.yaml",
+			outputFile: "route-replacement/standard/policy-httproute-wide-invalid-out.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "gwtest",
 				Name:      "example-gateway",
 			},
 			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
-				a := assert.New(t)
-				// Verify that despite the invalid rate limit config, attaching the policy to a specific listener
-				// does not cause the route to be invalidated as the route translator does not currently
-				// handle IR errors outside of the envoyRoutes method. This will be fixed in the future.
-				route := &gwv1.HTTPRoute{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "test-route",
-						Namespace: "gwtest",
-					},
-				}
-				routeStatus := reportsMap.BuildRouteStatus(context.Background(), route, wellknown.DefaultGatewayClassName)
-				a.NotNil(routeStatus)
-				a.Len(routeStatus.Parents, 1)
-
-				accepted := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionAccepted))
-				a.NotNil(accepted)
-				a.Equal(metav1.ConditionTrue, accepted.Status)
-				a.Equal(string(gwv1.RouteReasonAccepted), accepted.Reason)
-				a.Equal("Route is accepted", accepted.Message)
-				a.Equal(int64(0), accepted.ObservedGeneration)
+				translatortest.AssertAcceptedPolicyStatus(t, reportsMap, []reports.PolicyKey{
+					{Group: "gateway.kgateway.dev", Kind: "TrafficPolicy", Namespace: "gwtest", Name: "invalid-traffic-policy"},
+				})
 			},
 		}, func(s *settings.Settings) {
 			s.RouteReplacementMode = settings.RouteReplacementStandard
 		})
 	})
 
-	t.Run("Standard Mode - Invalid Transformation Template (Not Validated)", func(t *testing.T) {
+	t.Run("Standard/Built-in/URLRewrite Invalid", func(t *testing.T) {
 		test(t, translatorTestCase{
-			inputFile:  "route-replacement/standard/transformation-template-not-validated.yaml",
-			outputFile: "route-replacement/standard/transformation-template-not-validated-out.yaml",
+			inputFile:  "route-replacement/standard/builtin-filter-urlrewrite-invalid.yaml",
+			outputFile: "route-replacement/standard/builtin-filter-urlrewrite-invalid-out.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "gwtest",
 				Name:      "example-gateway",
 			},
-			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
-				a := assert.New(t)
-				// Verify that in standard mode, invalid transformation templates are not validated
-				// and thus no route replacement occurs
-				route := &gwv1.HTTPRoute{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "invalid-traffic-policy-route",
-						Namespace: "gwtest",
-					},
-				}
-				routeStatus := reportsMap.BuildRouteStatus(context.Background(), route, wellknown.DefaultGatewayClassName)
-				a.NotNil(routeStatus)
-				a.Len(routeStatus.Parents, 1)
-
-				accepted := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionAccepted))
-				a.NotNil(accepted)
-				a.Equal(metav1.ConditionTrue, accepted.Status)
-				a.Equal(string(gwv1.RouteReasonAccepted), accepted.Reason)
-				a.Equal("Route is accepted", accepted.Message)
-				a.Equal(int64(0), accepted.ObservedGeneration)
-			},
+			assertReports: translatortest.AssertRouteInvalidDropped(
+				t,
+				"invalid-builtin-filter-route",
+				"gwtest",
+				"must only contain valid characters matching pattern",
+			),
 		}, func(s *settings.Settings) {
 			s.RouteReplacementMode = settings.RouteReplacementStandard
 		})
 	})
 
-	t.Run("Strict Mode - Invalid CSRF Regex Configuration", func(t *testing.T) {
+	t.Run("Strict/Policy/CSRF Regex Invalid", func(t *testing.T) {
 		test(t, translatorTestCase{
-			inputFile:  "route-replacement/strict/invalid-csrf-regex-config.yaml",
-			outputFile: "route-replacement/strict/invalid-csrf-regex-config-out.yaml",
+			inputFile:  "route-replacement/strict/policy-csrf-regex-invalid.yaml",
+			outputFile: "route-replacement/strict/policy-csrf-regex-invalid-out.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "gwtest",
 				Name:      "example-gateway",
 			},
-			assertReports: translatortest.AssertRouteInvalidDropped(t, "test-route", "gwtest", "invalid xds configuration"),
+			assertReports: translatortest.AssertRouteInvalidDropped(
+				t,
+				"test-route",
+				"gwtest",
+				"invalid xds configuration",
+			),
 		}, func(s *settings.Settings) {
 			s.RouteReplacementMode = settings.RouteReplacementStrict
 		})
 	})
 
-	t.Run("Strict Mode - Invalid ExtAuth Extension Reference (Referential Error)", func(t *testing.T) {
+	t.Run("Strict/Policy/ExtAuth Extension Ref Invalid", func(t *testing.T) {
 		test(t, translatorTestCase{
-			inputFile:  "route-replacement/strict/invalid-extauth-extension-ref.yaml",
-			outputFile: "route-replacement/strict/invalid-extauth-extension-ref-out.yaml",
+			inputFile:  "route-replacement/strict/policy-extauth-extension-ref-invalid.yaml",
+			outputFile: "route-replacement/strict/policy-extauth-extension-ref-invalid-out.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "gwtest",
 				Name:      "example-gateway",
 			},
-			assertReports: translatortest.AssertRouteInvalidDropped(t, "invalid-traffic-policy-route", "gwtest", "extauthz: gateway extension gwtest/non-existent-auth-extension not found"),
+			assertReports: translatortest.AssertRouteInvalidDropped(
+				t,
+				"invalid-traffic-policy-route",
+				"gwtest",
+				"extauthz: gateway extension gwtest/non-existent-auth-extension not found",
+			),
 		}, func(s *settings.Settings) {
 			s.RouteReplacementMode = settings.RouteReplacementStrict
 		})
 	})
 
-	t.Run("Strict Mode - Invalid Transformation Body Template", func(t *testing.T) {
+	t.Run("Strict/Policy/Transformation Body Template Invalid", func(t *testing.T) {
 		test(t, translatorTestCase{
-			inputFile:  "route-replacement/strict/invalid-transformation-body-template.yaml",
-			outputFile: "route-replacement/strict/invalid-transformation-body-template-out.yaml",
+			inputFile:  "route-replacement/strict/policy-transformation-body-template-invalid.yaml",
+			outputFile: "route-replacement/strict/policy-transformation-body-template-invalid-out.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "gwtest",
 				Name:      "example-gateway",
 			},
-			assertReports: translatortest.AssertRouteInvalidDropped(t, "invalid-traffic-policy-route", "gwtest", "invalid xds configuration"),
+			assertReports: translatortest.AssertRouteInvalidDropped(
+				t,
+				"invalid-traffic-policy-route",
+				"gwtest",
+				"invalid xds configuration",
+			),
 		}, func(s *settings.Settings) {
 			s.RouteReplacementMode = settings.RouteReplacementStrict
 		})
 	})
 
-	t.Run("Strict Mode - Invalid Transformation Header Template", func(t *testing.T) {
+	t.Run("Strict/Policy/Transformation Header Template Invalid", func(t *testing.T) {
 		test(t, translatorTestCase{
-			inputFile:  "route-replacement/strict/invalid-transformation-header-template.yaml",
-			outputFile: "route-replacement/strict/invalid-transformation-header-template-out.yaml",
+			inputFile:  "route-replacement/strict/policy-transformation-header-template-invalid.yaml",
+			outputFile: "route-replacement/strict/policy-transformation-header-template-invalid-out.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "gwtest",
 				Name:      "example-gateway",
 			},
-			assertReports: translatortest.AssertRouteInvalidDropped(t, "invalid-traffic-policy-route", "gwtest", "invalid xds configuration"),
+			assertReports: translatortest.AssertRouteInvalidDropped(
+				t,
+				"invalid-traffic-policy-route",
+				"gwtest",
+				"invalid xds configuration",
+			),
 		}, func(s *settings.Settings) {
 			s.RouteReplacementMode = settings.RouteReplacementStrict
 		})
 	})
 
-	t.Run("Strict Mode - Invalid Transformation Malformed Template", func(t *testing.T) {
+	t.Run("Strict/Policy/Transformation Malformed Template Invalid", func(t *testing.T) {
 		test(t, translatorTestCase{
-			inputFile:  "route-replacement/strict/invalid-transformation-malformed-template.yaml",
-			outputFile: "route-replacement/strict/invalid-transformation-malformed-template-out.yaml",
+			inputFile:  "route-replacement/strict/policy-transformation-malformed-template-invalid.yaml",
+			outputFile: "route-replacement/strict/policy-transformation-malformed-template-invalid-out.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "gwtest",
 				Name:      "example-gateway",
 			},
-			assertReports: translatortest.AssertRouteInvalidDropped(t, "invalid-traffic-policy-route", "gwtest", "invalid xds configuration"),
+			assertReports: translatortest.AssertRouteInvalidDropped(
+				t,
+				"invalid-traffic-policy-route",
+				"gwtest",
+				"invalid xds configuration",
+			),
 		}, func(s *settings.Settings) {
 			s.RouteReplacementMode = settings.RouteReplacementStrict
 		})
 	})
 
-	t.Run("Strict Mode - Valid Structure Invalid Template (Runtime Error)", func(t *testing.T) {
+	t.Run("Strict/Policy/Template Structure Invalid", func(t *testing.T) {
 		test(t, translatorTestCase{
-			inputFile:  "route-replacement/strict/valid-structure-invalid-template-policy.yaml",
-			outputFile: "route-replacement/strict/valid-structure-invalid-template-policy-out.yaml",
+			inputFile:  "route-replacement/strict/policy-template-structure-invalid.yaml",
+			outputFile: "route-replacement/strict/policy-template-structure-invalid-out.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "gwtest",
 				Name:      "example-gateway",
 			},
-			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
-				a := assert.New(t)
-				route := &gwv1.HTTPRoute{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "invalid-traffic-policy-route",
-						Namespace: "gwtest",
-					},
-				}
-				routeStatus := reportsMap.BuildRouteStatus(context.Background(), route, wellknown.DefaultGatewayClassName)
-				a.NotNil(routeStatus)
-				a.Len(routeStatus.Parents, 1)
+		}, func(s *settings.Settings) {
+			s.RouteReplacementMode = settings.RouteReplacementStrict
+		})
+	})
 
-				accepted := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionAccepted))
-				a.NotNil(accepted)
-				// Template is structurally valid (passes xDS validation) but would fail at runtime
-				// Accepted=true condition should be set since it passes validation
-				a.Equal(metav1.ConditionTrue, accepted.Status)
-				a.Equal(string(gwv1.RouteReasonAccepted), accepted.Reason)
-				a.Equal("Route is accepted", accepted.Message)
-				a.Equal(int64(0), accepted.ObservedGeneration)
+	t.Run("Strict/Policy/Gateway Wide Invalid Attachment", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "route-replacement/strict/policy-gateway-wide-invalid.yaml",
+			outputFile: "route-replacement/strict/policy-gateway-wide-invalid-out.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "gwtest",
+				Name:      "example-gateway",
 			},
+			assertReports: translatortest.AssertPolicyNotAccepted(t, "gateway-level-invalid-policy", "test-route"),
+		}, func(s *settings.Settings) {
+			s.RouteReplacementMode = settings.RouteReplacementStrict
+		})
+	})
+
+	t.Run("Strict/Policy/Listener Wide Invalid Attachment", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "route-replacement/strict/policy-listener-wide-invalid.yaml",
+			outputFile: "route-replacement/strict/policy-listener-wide-invalid-out.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "gwtest",
+				Name:      "example-gateway",
+			},
+			assertReports: translatortest.AssertPolicyNotAccepted(t, "listener-level-invalid-policy", "test-route"),
+		}, func(s *settings.Settings) {
+			s.RouteReplacementMode = settings.RouteReplacementStrict
+		})
+	})
+
+	t.Run("Strict/Policy/Header Template Invalid", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "route-replacement/strict/policy-header-template-invalid.yaml",
+			outputFile: "route-replacement/strict/policy-header-template-invalid-out.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "gwtest",
+				Name:      "example-gateway",
+			},
+			assertReports: translatortest.AssertRouteInvalidDropped(
+				t,
+				"invalid-header-template-route",
+				"gwtest",
+				"invalid xds configuration",
+			),
+		}, func(s *settings.Settings) {
+			s.RouteReplacementMode = settings.RouteReplacementStrict
+		})
+	})
+
+	// Matcher Tests
+	t.Run("Strict/Matcher/Header Regex Invalid", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "route-replacement/strict/matcher-header-regex-invalid.yaml",
+			outputFile: "route-replacement/strict/matcher-header-regex-invalid-out.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "gwtest",
+				Name:      "example-gateway",
+			},
+			assertReports: translatortest.AssertRouteInvalidDropped(
+				t,
+				"invalid-regex-route",
+				"gwtest",
+				"error initializing configuration '': missing ]: [invalid-regex",
+			),
+		}, func(s *settings.Settings) {
+			s.RouteReplacementMode = settings.RouteReplacementStrict
+		})
+	})
+
+	t.Run("Strict/Matcher/Query Regex Invalid", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "route-replacement/strict/matcher-query-regex-invalid.yaml",
+			outputFile: "route-replacement/strict/matcher-query-regex-invalid-out.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "gwtest",
+				Name:      "example-gateway",
+			},
+			assertReports: translatortest.AssertRouteInvalidDropped(
+				t,
+				"invalid-route-matcher-query-params",
+				"gwtest",
+				"invalid matcher configuration",
+			),
+		}, func(s *settings.Settings) {
+			s.RouteReplacementMode = settings.RouteReplacementStrict
+		})
+	})
+
+	t.Run("Strict/Matcher/Path Regex Invalid", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "route-replacement/strict/matcher-path-regex-invalid.yaml",
+			outputFile: "route-replacement/strict/matcher-path-regex-invalid-out.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "gwtest",
+				Name:      "example-gateway",
+			},
+			assertReports: translatortest.AssertRouteInvalidDropped(
+				t,
+				"invalid-regex-path-comprehensive-route",
+				"gwtest",
+				"bad repetition operator",
+			),
+		}, func(s *settings.Settings) {
+			s.RouteReplacementMode = settings.RouteReplacementStrict
+		})
+	})
+
+	t.Run("Strict/Matcher/Regex RE2 Unsupported", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "route-replacement/strict/matcher-regex-re2-unsupported.yaml",
+			outputFile: "route-replacement/strict/matcher-regex-re2-unsupported-out.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "gwtest",
+				Name:      "example-gateway",
+			},
+			assertReports: translatortest.AssertRouteInvalidDropped(
+				t,
+				"invalid-rds-route",
+				"gwtest",
+				"invalid named capture group",
+			),
+		}, func(s *settings.Settings) {
+			s.RouteReplacementMode = settings.RouteReplacementStrict
+		})
+	})
+
+	// Built-in Filter Tests
+	t.Run("Strict/Built-in/Request Header Modifier Invalid", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "route-replacement/strict/builtin-filter-request-header-modifier-invalid.yaml",
+			outputFile: "route-replacement/strict/builtin-filter-request-header-modifier-invalid-out.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "gwtest",
+				Name:      "example-gateway",
+			},
+			assertReports: translatortest.AssertRouteInvalidDropped(
+				t,
+				"invalid-request-header-modifier-route",
+				"gwtest",
+				"invalid route configuration",
+			),
+		}, func(s *settings.Settings) {
+			s.RouteReplacementMode = settings.RouteReplacementStrict
+		})
+	})
+
+	t.Run("Strict/Built-in/Response Header Modifier Invalid", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "route-replacement/strict/builtin-filter-response-header-modifier-invalid.yaml",
+			outputFile: "route-replacement/strict/builtin-filter-response-header-modifier-invalid-out.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "gwtest",
+				Name:      "example-gateway",
+			},
+			assertReports: translatortest.AssertRouteInvalidDropped(
+				t,
+				"invalid-response-header-modifier-route",
+				"gwtest",
+				"Incorrect configuration: %RESPONSE(Invalid-Variable",
+			),
+		}, func(s *settings.Settings) {
+			s.RouteReplacementMode = settings.RouteReplacementStrict
+		})
+	})
+
+	t.Run("Strict/Built-in/URLRewrite Invalid", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "route-replacement/strict/builtin-filter-urlrewrite-invalid.yaml",
+			outputFile: "route-replacement/strict/builtin-filter-urlrewrite-invalid-out.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "gwtest",
+				Name:      "example-gateway",
+			},
+			assertReports: translatortest.AssertRouteInvalidDropped(
+				t,
+				"invalid-builtin-filter-route",
+				"gwtest",
+				"must only contain valid characters matching pattern",
+			),
 		}, func(s *settings.Settings) {
 			s.RouteReplacementMode = settings.RouteReplacementStrict
 		})

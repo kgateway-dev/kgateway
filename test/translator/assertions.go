@@ -73,3 +73,45 @@ func AssertRouteInvalidDropped(t *testing.T, routeName, namespace string, expect
 		a.Equal(int64(0), accepted.ObservedGeneration, "Accepted ObservedGeneration mismatch")
 	}
 }
+
+// AssertPolicyNotAccepted is a helper for asserting that a policy has Accepted=false due to validation
+// but the associated route remains Accepted=true (not dropped).
+func AssertPolicyNotAccepted(t *testing.T, policyName, routeName string) AssertReports {
+	return func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
+		a := assert.New(t)
+
+		// Check that the TrafficPolicy has Accepted=false due to invalid configuration
+		policy := reports.PolicyKey{
+			Group:     "gateway.kgateway.dev",
+			Kind:      "TrafficPolicy",
+			Namespace: "gwtest",
+			Name:      policyName,
+		}
+		policyStatus := reportsMap.BuildPolicyStatus(context.Background(), policy, wellknown.DefaultGatewayControllerName, gwv1alpha2.PolicyStatus{})
+		a.NotNil(policyStatus, "Policy status should not be nil")
+		a.Len(policyStatus.Ancestors, 1, "Policy should have one ancestor")
+
+		acceptedCondition := meta.FindStatusCondition(policyStatus.Ancestors[0].Conditions, string(v1alpha1.PolicyConditionAccepted))
+		a.NotNil(acceptedCondition, "Accepted condition should not be nil")
+		a.Equal(metav1.ConditionFalse, acceptedCondition.Status, "Policy should have Accepted=false")
+		a.Equal(string(v1alpha1.PolicyReasonInvalid), acceptedCondition.Reason, "Policy should have Invalid reason")
+		a.Contains(acceptedCondition.Message, "invalid xds configuration", "Policy message should contain validation error")
+
+		// Check that the HTTPRoute is still accepted despite invalid policy attachment
+		// (Current implementation ignores invalid policies but keeps routes functional)
+		route := &gwv1.HTTPRoute{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      routeName,
+				Namespace: "gwtest",
+			},
+		}
+		routeStatus := reportsMap.BuildRouteStatus(context.Background(), route, wellknown.DefaultGatewayClassName)
+		a.NotNil(routeStatus, "Route status should not be nil")
+		a.Len(routeStatus.Parents, 1, "Route should have one parent")
+
+		accepted := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionAccepted))
+		a.NotNil(accepted, "Accepted condition should not be nil")
+		a.Equal(metav1.ConditionTrue, accepted.Status, "Route should have Accepted=true")
+		a.Equal(string(gwv1.RouteReasonAccepted), accepted.Reason, "Route should have Accepted reason")
+	}
+}
