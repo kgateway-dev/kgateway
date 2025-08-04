@@ -15,6 +15,8 @@ var (
 	EmptyValuesManifestPath = ManifestPath("empty-values.yaml")
 
 	AIValuesManifestPath = ManifestPath("ai-extension-helm.yaml")
+
+	InfExtValuesManifestPath = ManifestPath("inference-extension-helm.yaml")
 )
 
 // ManifestPath returns the absolute path to a manifest file.
