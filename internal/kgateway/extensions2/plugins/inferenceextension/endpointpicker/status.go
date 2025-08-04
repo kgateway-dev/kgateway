@@ -21,6 +21,7 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
 
@@ -40,6 +41,7 @@ func buildRegisterCallback(
 	commonCol *common.CommonCollections,
 	bcol krt.Collection[ir.BackendObjectIR],
 	poolIdx krt.Index[string, ir.BackendObjectIR],
+	pods krt.Collection[krtcollections.LocalityPod],
 ) func() {
 	return func() {
 		registerRouteHandlers(ctx, commonCol, bcol, poolIdx)
@@ -61,6 +63,10 @@ func registerPoolHandlers(
 		}
 		updatePoolStatus(ctx, commonCol, ev.Latest(), "", nil)
 	})
+
+	for _, be := range bcol.List() {
+		updatePoolStatus(ctx, commonCol, be, "", nil)
+	}
 }
 
 // registerRouteHandlers sets up handlers for HTTPRoute events that affect InferencePools.
@@ -71,11 +77,23 @@ func registerRouteHandlers(
 	poolIdx krt.Index[string, ir.BackendObjectIR],
 ) {
 	// Watch add/update HTTPRoute events and trigger reconciliation for referenced pools.
-	commonCol.Routes.HTTPRoutes().Register(
-		func(ev krt.Event[ir.HttpRouteIR]) {
-			reconcilePoolsForRoute(ctx, commonCol, bcol, poolIdx, ev)
-		},
-	)
+	commonCol.Routes.HTTPRoutes().Register(func(ev krt.Event[ir.HttpRouteIR]) {
+		reconcilePoolsForRoute(ctx, commonCol, bcol, poolIdx, ev)
+	})
+
+	// Initial sweep – process routes that already existed
+	for _, rt := range commonCol.Routes.HTTPRoutes().List() {
+		reconcilePoolsForRoute(
+			ctx,
+			commonCol,
+			bcol,
+			poolIdx,
+			krt.Event[ir.HttpRouteIR]{
+				Event: controllers.EventAdd,
+				New:   &rt,
+			},
+		)
+	}
 }
 
 // reconcilePoolsForRoute handles an HTTPRoute event, extracting all referenced InferencePools
@@ -142,7 +160,7 @@ func registerServiceHandlers(
 	commonCol *common.CommonCollections,
 	bcol krt.Collection[ir.BackendObjectIR],
 ) {
-	// Watch add/update Service events and trigger reconciliation for referent pools.
+	// Watch Service events and trigger reconciliation for referent InferencePools.
 	commonCol.Services.Register(func(ev krt.Event[*corev1.Service]) {
 		reconcilePoolsForService(ctx, commonCol, bcol, ev)
 	})
