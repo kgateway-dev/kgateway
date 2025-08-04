@@ -173,6 +173,8 @@ var syncCh = make(chan *syncStartInfo, 1024)
 
 // StartResourceSyncMetricsProcessing starts a goroutine that processes resource sync metrics.
 func StartResourceSyncMetricsProcessing(ctx context.Context) {
+	resourcesUpdatesDroppedTotal.Add(0) // Initialize the counter to 0.
+
 	go func() {
 		for {
 			select {

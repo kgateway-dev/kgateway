@@ -517,10 +517,10 @@ func (s *ProxySyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger, 
 							ResourceType: routeType,
 							ResourceName: routeKey.Name,
 						}, false, resourcesStatusSyncsCompletedTotal, resourcesStatusSyncDuration)
-					}
 
-					for _, finish := range finishMetrics {
-						finish.finishFunc(errors.Join(rErr, finish.statusError))
+						if finish, exists := finishMetrics[gatewayName]; exists {
+							finish.finishFunc(errors.Join(rErr, finish.statusError))
+						}
 					}
 				}()
 
@@ -611,9 +611,7 @@ func (s *ProxySyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger, 
 		err := syncStatusWithRetry(
 			wellknown.HTTPRouteKind,
 			rnn,
-			func() client.Object {
-				return new(gwv1.HTTPRoute)
-			},
+			func() client.Object { return new(gwv1.HTTPRoute) },
 			func(route client.Object) (*gwv1.RouteStatus, error) {
 				return buildAndUpdateStatus(route, wellknown.HTTPRouteKind)
 			},
@@ -625,9 +623,11 @@ func (s *ProxySyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger, 
 
 	// Sync TCPRoute statuses
 	for rnn := range rm.TCPRoutes {
-		err := syncStatusWithRetry(wellknown.TCPRouteKind, rnn, func() client.Object { return new(gwv1a2.TCPRoute) }, func(route client.Object) (*gwv1.RouteStatus, error) {
-			return buildAndUpdateStatus(route, wellknown.TCPRouteKind)
-		})
+		err := syncStatusWithRetry(wellknown.TCPRouteKind, rnn,
+			func() client.Object { return new(gwv1a2.TCPRoute) },
+			func(route client.Object) (*gwv1.RouteStatus, error) {
+				return buildAndUpdateStatus(route, wellknown.TCPRouteKind)
+			})
 		if err != nil {
 			logger.Error("all attempts failed at updating TCPRoute status", "error", err, "route", rnn)
 		}
@@ -635,9 +635,11 @@ func (s *ProxySyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger, 
 
 	// Sync TLSRoute statuses
 	for rnn := range rm.TLSRoutes {
-		err := syncStatusWithRetry(wellknown.TLSRouteKind, rnn, func() client.Object { return new(gwv1a2.TLSRoute) }, func(route client.Object) (*gwv1.RouteStatus, error) {
-			return buildAndUpdateStatus(route, wellknown.TLSRouteKind)
-		})
+		err := syncStatusWithRetry(wellknown.TLSRouteKind, rnn,
+			func() client.Object { return new(gwv1a2.TLSRoute) },
+			func(route client.Object) (*gwv1.RouteStatus, error) {
+				return buildAndUpdateStatus(route, wellknown.TLSRouteKind)
+			})
 		if err != nil {
 			logger.Error("all attempts failed at updating TLSRoute status", "error", err, "route", rnn)
 		}
@@ -645,9 +647,11 @@ func (s *ProxySyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger, 
 
 	// Sync GRPCRoute statuses
 	for rnn := range rm.GRPCRoutes {
-		err := syncStatusWithRetry(wellknown.GRPCRouteKind, rnn, func() client.Object { return new(gwv1.GRPCRoute) }, func(route client.Object) (*gwv1.RouteStatus, error) {
-			return buildAndUpdateStatus(route, wellknown.GRPCRouteKind)
-		})
+		err := syncStatusWithRetry(wellknown.GRPCRouteKind, rnn,
+			func() client.Object { return new(gwv1.GRPCRoute) },
+			func(route client.Object) (*gwv1.RouteStatus, error) {
+				return buildAndUpdateStatus(route, wellknown.GRPCRouteKind)
+			})
 		if err != nil {
 			logger.Error("all attempts failed at updating GRPCRoute status", "error", err, "route", rnn)
 		}
