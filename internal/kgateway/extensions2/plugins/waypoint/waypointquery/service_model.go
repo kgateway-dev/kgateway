@@ -9,7 +9,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"knative.dev/pkg/network"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -24,6 +23,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/serviceentry"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/stringutils"
 )
 
@@ -232,8 +232,7 @@ func (sp ServicePort) IsHTTP() bool {
 }
 
 func fqdn(name, ns string) string {
-	// TODO: reevaluate knative dep, dedupe with pkg/utils/kubeutils/dns.go
-	clusterDomain := network.GetClusterDomainName()
+	clusterDomain := kubeutils.GetClusterDomainName()
 	return fmt.Sprintf("%s.%s.svc.%s", name, ns, clusterDomain)
 }
 
