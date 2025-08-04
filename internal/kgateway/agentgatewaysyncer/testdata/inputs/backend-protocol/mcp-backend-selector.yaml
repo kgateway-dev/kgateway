@@ -1,0 +1,54 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: example-gateway
+spec:
+  gatewayClassName: agentgateway
+  listeners:
+    - name: http
+      protocol: HTTP
+      port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: example-route
+spec:
+  parentRefs:
+    - name: example-gateway
+  hostnames:
+    - "example.com"
+  rules:
+    - backendRefs:
+        - group: gateway.kgateway.dev
+          kind: Backend
+          name: mcp-backend
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: example-svc
+  labels:
+    app: mcp-app
+spec:
+  selector:
+    test: test
+  ports:
+    - protocol: TCP
+      appProtocol: kgateway.dev/mcp
+      port: 80
+      targetPort: test
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: mcp-backend
+spec:
+  type: MCP
+  mcp:
+    name: mcp-server
+    targets:
+      - selectors:
+          serviceSelector:
+            matchLabels:
+              app: mcp-app

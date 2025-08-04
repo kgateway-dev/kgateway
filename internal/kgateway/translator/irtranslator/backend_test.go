@@ -35,7 +35,7 @@ func TestBackendTranslatorTranslatesAppProtocol(t *testing.T) {
 	}
 	bt.ContributedBackends = map[schema.GroupKind]ir.BackendInit{
 		{Group: "group", Kind: "kind"}: {
-			InitBackend: testInitBackend,
+			InitEnvoyBackend: testInitBackend,
 		},
 	}
 

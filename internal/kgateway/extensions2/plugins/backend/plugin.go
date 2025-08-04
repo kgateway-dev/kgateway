@@ -3,7 +3,9 @@ package backend
 import (
 	"context"
 	"errors"
+	"fmt"
 
+	"github.com/agentgateway/agentgateway/go/api"
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
@@ -115,7 +117,8 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 		ContributesBackends: map[schema.GroupKind]extensionsplug.BackendPlugin{
 			gk: {
 				BackendInit: ir.BackendInit{
-					InitBackend: processBackend,
+					InitEnvoyBackend: processBackendForEnvoy,
+					InitAgentBackend: processBackendForAgentGateway,
 				},
 				Endpoints: endpoints,
 				Backends:  bcol,
@@ -251,7 +254,7 @@ func getAISecretRef(llm v1alpha1.SupportedLLMProvider) *corev1.LocalObjectRefere
 	return secretRef
 }
 
-func processBackend(ctx context.Context, in ir.BackendObjectIR, out *envoyclusterv3.Cluster) *ir.EndpointsForBackend {
+func processBackendForEnvoy(ctx context.Context, in ir.BackendObjectIR, out *envoyclusterv3.Cluster) *ir.EndpointsForBackend {
 	be, ok := in.Obj.(*v1alpha1.Backend)
 	if !ok {
 		logger.Error("failed to cast backend object")
@@ -268,7 +271,7 @@ func processBackend(ctx context.Context, in ir.BackendObjectIR, out *envoycluste
 	spec := be.Spec
 	switch spec.Type {
 	case v1alpha1.BackendTypeStatic:
-		if err := processStatic(spec.Static, out); err != nil {
+		if err := processStaticBackendForEnvoy(spec.Static, out); err != nil {
 			logger.Error("failed to process static backend", "error", err)
 		}
 	case v1alpha1.BackendTypeAWS:
@@ -290,6 +293,24 @@ func processBackend(ctx context.Context, in ir.BackendObjectIR, out *envoycluste
 		}
 	}
 	return nil
+}
+
+func processBackendForAgentGateway(ctx krt.HandlerContext,
+	nsCol krt.Collection[*corev1.Namespace],
+	svcCol krt.Collection[*corev1.Service],
+	secrets krt.Collection[*corev1.Secret],
+	be *v1alpha1.Backend) ([]*api.Backend, []*api.Policy, error) {
+	spec := be.Spec
+	switch spec.Type {
+	case v1alpha1.BackendTypeStatic:
+		return processStaticBackendForAgentGateway(be)
+	case v1alpha1.BackendTypeAI:
+		return ai.ProcessAIBackendForAgentGateway(ctx, be, secrets)
+	case v1alpha1.BackendTypeMCP:
+		return processMCPBackendForAgentGateway(ctx, nsCol, svcCol, be)
+	default:
+		return nil, nil, fmt.Errorf("backend of type %s is not supported for agent gateway", spec.Type)
+	}
 }
 
 func parseAppProtocol(b *v1alpha1.Backend) ir.AppProtocol {

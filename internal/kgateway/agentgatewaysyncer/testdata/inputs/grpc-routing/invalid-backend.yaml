@@ -1,0 +1,37 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: example-gateway
+spec:
+  gatewayClassName: agentgateway
+  listeners:
+  - name: grpc
+    port: 8090
+    protocol: HTTP
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: GRPCRoute
+metadata:
+  name: example-grpc-route
+spec:
+  parentRefs:
+  - name: example-gateway
+  rules:
+  - matches:
+    - method:
+        service: "example.grpc.Service"
+        method: "ExampleMethod"
+    backendRefs:
+    - name: example-configmap # Referencing a ConfigMap, which is invalid
+      kind: ConfigMap
+      group: ""
+      port: 9000
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: example-configmap
+  namespace: default
+data:
+  key: value
+ 

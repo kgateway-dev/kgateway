@@ -1,0 +1,73 @@
+kind: GatewayParameters
+apiVersion: gateway.kgateway.dev/v1alpha1
+metadata:
+  name: kgateway
+spec:
+  kube:
+    agentGateway:
+      enabled: true
+      logLevel: trace
+#      image:
+#        tag: 2c48676
+---
+kind: GatewayClass
+apiVersion: gateway.networking.k8s.io/v1
+metadata:
+  name: agentgateway
+spec:
+  controllerName: kgateway.dev/kgateway
+  parametersRef:
+    group: gateway.kgateway.dev
+    kind: GatewayParameters
+    name: kgateway
+    namespace: default
+---
+kind: Gateway
+apiVersion: gateway.networking.k8s.io/v1
+metadata:
+  name: agent-gateway
+spec:
+  gatewayClassName: agentgateway
+  listeners:
+    - protocol: HTTP
+      port: 8080
+      name: http
+      allowedRoutes:
+        namespaces:
+          from: All
+---
+# curl -X POST http://localhost:8080/ \
+#-H "Content-Type: application/json" \
+#  -v \
+#  -d '{
+#"jsonrpc": "2.0",
+#"id": "1",
+#"method": "tasks/send",
+#"params": {
+#  "id": "1",
+#  "message": {
+#    "role": "user",
+#    "parts": [
+#      {
+#        "type": "text",
+#        "text": "hello gateway!"
+#      }
+#    ]
+#  }
+#}
+#}'
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: a2a
+  labels:
+    example: a2a-route
+spec:
+  parentRefs:
+    - name: agent-gateway
+      namespace: default
+  rules:
+    - backendRefs:
+        - name: a2a-agent
+          port: 9090
+---

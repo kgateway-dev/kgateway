@@ -155,7 +155,7 @@ func NewPluginFromCollections(
 			gk: {
 				Backends: backendCol,
 				BackendInit: ir.BackendInit{
-					InitBackend: processBackendObjectIR,
+					InitEnvoyBackend: processBackendObjectIR,
 				},
 			},
 		},

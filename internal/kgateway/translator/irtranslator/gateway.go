@@ -212,7 +212,6 @@ func (t *Translator) newPass(reporter sdkreporter.Reporter) TranslationPassPlugi
 		if v.NewGatewayTranslationPass == nil {
 			continue
 		}
-
 		tp := v.NewGatewayTranslationPass(context.TODO(), ir.GwTranslationCtx{}, reporter)
 		if tp != nil {
 			ret[k] = &TranslationPass{

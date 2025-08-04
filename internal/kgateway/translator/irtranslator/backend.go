@@ -55,7 +55,7 @@ func (t *BackendTranslator) TranslateBackend(
 		return nil, errors.New("no backend translator found for " + gk.String())
 	}
 
-	if process.InitBackend == nil {
+	if process.InitEnvoyBackend == nil {
 		return nil, errors.New("no backend plugin found for " + gk.String())
 	}
 
@@ -72,7 +72,7 @@ func (t *BackendTranslator) TranslateBackend(
 	}
 
 	out := initializeCluster(backend)
-	inlineEps := process.InitBackend(context.TODO(), *backend, out)
+	inlineEps := process.InitEnvoyBackend(context.TODO(), *backend, out)
 	processDnsLookupFamily(out, t.CommonCols)
 
 	// now process backend policies

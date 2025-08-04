@@ -6,6 +6,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	infextv1a2 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
 	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
+	apiv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	apiv1alpha3 "sigs.k8s.io/gateway-api/apis/v1alpha3"
 	apiv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 	apixv1alpha1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
@@ -58,6 +59,16 @@ var (
 		Group:   GatewayGroup,
 		Version: apiv1.GroupVersion.Version,
 		Kind:    HTTPRouteKind,
+	}
+	TLSRouteGVK = schema.GroupVersionKind{
+		Group:   GatewayGroup,
+		Version: apiv1alpha2.GroupVersion.Version,
+		Kind:    TLSRouteKind,
+	}
+	TCPRouteGVK = schema.GroupVersionKind{
+		Group:   GatewayGroup,
+		Version: apiv1alpha2.GroupVersion.Version,
+		Kind:    TCPRouteKind,
 	}
 	GRPCRouteGVK = schema.GroupVersionKind{
 		Group:   GatewayGroup,

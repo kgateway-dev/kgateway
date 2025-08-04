@@ -40,9 +40,10 @@ type CommonCollections struct {
 	Services          krt.Collection[*corev1.Service]
 	ServiceEntries    krt.Collection[*networkingclient.ServiceEntry]
 
-	Pods       krt.Collection[krtcollections.LocalityPod]
-	RefGrants  *krtcollections.RefGrantIndex
-	ConfigMaps krt.Collection[*corev1.ConfigMap]
+	WrappedPods  krt.Collection[krtcollections.WrappedPod]
+	LocalityPods krt.Collection[krtcollections.LocalityPod]
+	RefGrants    *krtcollections.RefGrantIndex
+	ConfigMaps   krt.Collection[*corev1.ConfigMap]
 
 	DiscoveryNamespacesFilter kubetypes.DynamicObjectFilter
 
@@ -59,7 +60,8 @@ func (c *CommonCollections) HasSynced() bool {
 	return c.Secrets != nil && c.Secrets.HasSynced() &&
 		c.BackendIndex != nil && c.BackendIndex.HasSynced() &&
 		c.Routes != nil && c.Routes.HasSynced() &&
-		c.Pods != nil && c.Pods.HasSynced() &&
+		c.WrappedPods != nil && c.WrappedPods.HasSynced() &&
+		c.LocalityPods != nil && c.LocalityPods.HasSynced() &&
 		c.RefGrants != nil && c.RefGrants.HasSynced() &&
 		c.ConfigMaps != nil && c.ConfigMaps.HasSynced() &&
 		c.GatewayExtensions != nil && c.GatewayExtensions.HasSynced() &&
@@ -139,13 +141,16 @@ func NewCommonCollections(
 
 	gwExts := krtcollections.NewGatewayExtensionsCollection(ctx, client, ourClient, krtOptions)
 
+	localityPods, wrappedPods := krtcollections.NewPodsCollection(client, krtOptions)
+
 	return &CommonCollections{
 		OurClient:         ourClient,
 		Client:            client,
 		CrudClient:        cl,
 		KrtOpts:           krtOptions,
 		Secrets:           krtcollections.NewSecretIndex(secrets, refgrants),
-		Pods:              krtcollections.NewPodsCollection(client, krtOptions),
+		LocalityPods:      localityPods,
+		WrappedPods:       wrappedPods,
 		RefGrants:         refgrants,
 		Settings:          settings,
 		Namespaces:        namespaces,

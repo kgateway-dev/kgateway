@@ -15,10 +15,10 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
-	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/defaults"
+	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
 var (
@@ -57,9 +57,9 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 func (s *testingSuite) SetupSuite() {
 	s.manifests = map[string][]string{
 		"TestAgentGatewayDeployment": {
-			deployAgentGatewayManifest,
-			a2aAgentManifest,
+			defaults.HttpbinManifest,
 			defaults.CurlPodManifest,
+			deployAgentGatewayManifest,
 		},
 	}
 }
@@ -100,51 +100,18 @@ func (s *testingSuite) TestAgentGatewayDeployment() {
 		LabelSelector: "app.kubernetes.io/name=agent-gateway",
 	}, time.Minute*2)
 
-	s.testA2ARouting()
-}
-
-func (s *testingSuite) testA2ARouting() {
-	// Check agentgateway, a2a-agent and mcp-tool are running
-	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, "default", metav1.ListOptions{
-		LabelSelector: "app=a2a-agent",
-	}, time.Minute*2)
-
-	// Check A2A Agent endpoint is reachable through the agentgateway
-	/*
-		curl -X POST http://localhost:9090/default-a2a-agent \
-		  -H "Content-Type: application/json" \
-		  -v \
-		  -d '{
-		    "jsonrpc": "2.0",
-		    "id": "1",
-		    "method": "tasks/send",
-		    "params": {
-		      "id": "1",
-		      "message": {
-		        "role": "user",
-		        "parts": [
-		          {
-		            "type": "text",
-		            "text": "hello gateway!"
-		          }
-		        ]
-		      }
-		    }
-		  }'
-	*/
-	data := `{"jsonrpc":"2.0","id":"1","method":"tasks/send","params":{"id":"1","message":{"role":"user","parts":[{"type":"text","text":"hello gateway!"}]}}}`
 	s.testInstallation.Assertions.AssertEventualCurlResponse(
 		s.ctx,
 		defaults.CurlPodExecOpt,
 		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
-			curl.WithPort(a2aPort),
-			curl.WithPath("/default-a2a-agent"),
-			curl.WithContentType("application/json"),
-			curl.WithMethod(http.MethodPost),
-			curl.WithBody(data),
+			curl.WithHost(kubeutils.ServiceFQDN(gatewayService.ObjectMeta)),
+			curl.VerboseOutput(),
+			curl.WithHostHeader("www.example.com"),
+			curl.WithPath("/status/200"),
+			curl.WithPort(8080),
 		},
 		&matchers.HttpResponse{
 			StatusCode: http.StatusOK,
-		}, time.Minute*2)
+		},
+	)
 }

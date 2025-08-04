@@ -617,7 +617,6 @@ func (s *ProxySyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger, 
 }
 
 // syncGatewayStatus will build and update status for all Gateways in a reportMap
-// syncGatewayStatus will build and update status for all Gateways in a reportMap
 func (s *ProxySyncer) syncGatewayStatus(ctx context.Context, logger *slog.Logger, rm reports.ReportMap) {
 	stopwatch := utils.NewTranslatorStopWatch("GatewayStatusSyncer")
 	stopwatch.Start()
@@ -630,6 +629,11 @@ func (s *ProxySyncer) syncGatewayStatus(ctx context.Context, logger *slog.Logger
 			if err := s.mgr.GetClient().Get(ctx, gwnn, &gw); err != nil {
 				logger.Info("error getting gateway", "error", err, "gateway", gwnn.String())
 				return err
+			}
+
+			// Skip agentgateway classes, they are handled by agentgateway syncer
+			if string(gw.Spec.GatewayClassName) == s.agentGatewayClassName {
+				logger.Debug("skipping status sync for agentgateway", "gateway", gwnn.String())
 			}
 
 			// Build the desired status
