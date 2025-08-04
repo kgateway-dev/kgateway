@@ -242,11 +242,9 @@ make run HELM_ADDITIONAL_VALUES=test/kubernetes/e2e/tests/manifests/agent-gatewa
 
 Set up a kind cluster and install kgateway with the kubernetes Gateway APIs:
 ```shell
-kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.3.0/experimental-install.yaml
-
-helm upgrade -i -n kgateway-system kgateway-crds ./_test/kgateway-crds-1.0.0-ci1.tgz --create-namespace
-
-helm upgrade -i -n kgateway-system kgateway ./_test/kgateway-1.0.0-ci1.tgz --create-namespace --values test/kubernetes/e2e/tests/manifests/agent-gateway-integration.yaml
+kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.3.0/standard-install.yaml
+helm upgrade -i --create-namespace --namespace kgateway-system --version v2.1.0-main kgateway-crds oci://cr.kgateway.dev/kgateway-dev/charts/kgateway-crds
+helm upgrade -i --namespace kgateway-system --version v2.1.0-main kgateway oci://cr.kgateway.dev/kgateway-dev/charts/kgateway --set agentGateway.enabled=true --set agentGateway.enableAlphaAPIs=true --set inferenceExtension.enabled=true
 ```
 
 #### HTTPRoute
