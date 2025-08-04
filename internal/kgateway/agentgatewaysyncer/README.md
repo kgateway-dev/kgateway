@@ -412,30 +412,6 @@ grpcurl \
 Apply the following config to set up the TCPRoute attached to the agentgateway Gateway:
 ```shell
 kubectl apply -f- <<EOF
-kind: GatewayParameters
-apiVersion: gateway.kgateway.dev/v1alpha1
-metadata:
-  name: kgateway
-spec:
-  kube:
-    agentGateway:
-      enabled: true
-      logLevel: trace
-      image:
-        tag: 500e47189-dirty
----
-kind: GatewayClass
-apiVersion: gateway.networking.k8s.io/v1
-metadata:
-  name: agentgateway
-spec:
-  controllerName: kgateway.dev/kgateway
-  parametersRef:
-    group: gateway.kgateway.dev
-    kind: GatewayParameters
-    name: kgateway
-    namespace: default
----
 kind: Gateway
 apiVersion: gateway.networking.k8s.io/v1
 metadata:

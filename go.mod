@@ -155,7 +155,7 @@ require (
 	github.com/OpenPeeDeeP/depguard/v2 v2.2.1 // indirect
 	github.com/ProtonMail/go-crypto v1.3.0 // indirect
 	// TODO: pin to release version
-	github.com/agentgateway/agentgateway v0.7.1-0.20250801150758-c9dbdb00bf97
+	github.com/agentgateway/agentgateway v0.7.1
 	github.com/alecthomas/go-check-sumtype v0.3.1 // indirect
 	github.com/alexkohler/nakedret/v2 v2.0.6 // indirect
 	github.com/alexkohler/prealloc v1.0.0 // indirect
