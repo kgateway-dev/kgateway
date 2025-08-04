@@ -22,7 +22,8 @@ func processMCPBackendForAgentGateway(
 	ctx krt.HandlerContext,
 	nsCol krt.Collection[*corev1.Namespace],
 	svcCol krt.Collection[*corev1.Service],
-	be *v1alpha1.Backend) ([]*api.Backend, []*api.Policy, error) {
+	be *v1alpha1.Backend,
+) ([]*api.Backend, []*api.Policy, error) {
 	// Convert Kubernetes MCP targets to agentgateway format
 	var mcpTargets []*api.MCPTarget
 	var backends []*api.Backend
