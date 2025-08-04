@@ -81,7 +81,6 @@ func BuildServiceBackendObjectIR(svc *corev1.Service, svcPort int32, svcProtocol
 	backend.Obj = svc
 	backend.AppProtocol = ir.ParseAppProtocol(&svcProtocol)
 	backend.GvPrefix = BackendClusterPrefix
-	// TODO: reevaluate knative dep, dedupe with pkg/utils/kubeutils/dns.go
 	backend.CanonicalHostname = fmt.Sprintf("%s.%s.svc.%s", svc.Name, svc.Namespace, kubeutils.GetClusterDomainName())
 	return backend
 }

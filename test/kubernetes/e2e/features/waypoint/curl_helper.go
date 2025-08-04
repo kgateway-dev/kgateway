@@ -37,7 +37,6 @@ func (s *testingSuite) assertCurlServicePost(
 }
 
 func fqdn(name, ns string) string {
-	// TODO: reevaluate knative dep, dedupe with pkg/utils/kubeutils/dns.go
 	return fmt.Sprintf("%s.%s.svc.%s", name, ns, kubeutils.GetClusterDomainName())
 }
 
