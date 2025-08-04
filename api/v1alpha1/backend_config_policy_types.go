@@ -95,7 +95,7 @@ type Http1ProtocolOptions struct {
 	// +optional
 	EnableTrailers *bool `json:"enableTrailers,omitempty"`
 
-	// PreserveHttp1HeaderCase determines whether to preserve the case of HTTP1 headers in the response.
+	// PreserveHttp1HeaderCase determines whether to preserve the case of HTTP1 response headers.
 	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_conn_man/header_casing
 	// +optional
 	PreserveHttp1HeaderCase *bool `json:"preserveHttp1HeaderCase,omitempty"`
