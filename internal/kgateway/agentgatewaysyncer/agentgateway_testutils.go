@@ -635,7 +635,6 @@ func (tc TestCase) Run(
 		commoncol,
 		extensions,
 		nil, // xdsCache not needed for test
-		"cluster.local",
 		"istio-system",
 		"Kubernetes",
 		true, // enableInferExt

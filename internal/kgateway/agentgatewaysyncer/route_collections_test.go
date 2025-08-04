@@ -839,7 +839,6 @@ func TestADPRouteCollection(t *testing.T) {
 			routeInputs := RouteContextInputs{
 				Grants:         refGrants,
 				RouteParents:   routeParents,
-				DomainSuffix:   "cluster.local",
 				Services:       services,
 				Namespaces:     namespaces,
 				ServiceEntries: serviceEntries,
@@ -1448,7 +1447,6 @@ func TestADPRouteCollectionGRPC(t *testing.T) {
 			routeInputs := RouteContextInputs{
 				Grants:         refGrants,
 				RouteParents:   routeParents,
-				DomainSuffix:   "cluster.local",
 				Services:       services,
 				Namespaces:     namespaces,
 				ServiceEntries: serviceEntries,
@@ -1818,7 +1816,6 @@ func TestADPRouteCollectionWithFilters(t *testing.T) {
 			routeInputs := RouteContextInputs{
 				Grants:         refGrants,
 				RouteParents:   routeParents,
-				DomainSuffix:   "cluster.local",
 				Services:       services,
 				Namespaces:     namespaces,
 				ServiceEntries: serviceEntries,

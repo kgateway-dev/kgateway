@@ -9,7 +9,6 @@ import (
 	apiv1 "istio.io/api/networking/v1"
 	networkingclient "istio.io/client-go/pkg/apis/networking/v1"
 	"istio.io/istio/pilot/pkg/features"
-	"istio.io/istio/pilot/pkg/serviceregistry/kube"
 	"istio.io/istio/pilot/pkg/util/protoconv"
 	"istio.io/istio/pkg/config"
 	"istio.io/istio/pkg/config/constants"
@@ -24,7 +23,10 @@ import (
 	"istio.io/istio/pkg/util/sets"
 	corev1 "k8s.io/api/core/v1"
 	discovery "k8s.io/api/discovery/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
@@ -45,7 +47,6 @@ type index struct {
 	namespaces krt.Collection[krtcollections.NamespaceMetadata]
 
 	SystemNamespace string
-	DomainSuffix    string
 	ClusterID       string
 }
 
@@ -222,7 +223,7 @@ func (a *index) matchingServicesWithoutSelectors(
 			// Not for a service; we don't care about it.
 			continue
 		}
-		hostname := string(kube.ServiceHostname(serviceName, es.Namespace, a.DomainSuffix))
+		hostname := kubeutils.ServiceFQDN(metav1.ObjectMeta{Name: serviceName, Namespace: es.Namespace})
 		if seen.Contains(hostname) {
 			// We already know about this service
 			continue
@@ -501,7 +502,7 @@ func (a *index) endpointSlicesBuilder(
 		seen := sets.New[string]()
 
 		// The slice must be for a single service, based on the label above.
-		serviceKey := es.Namespace + "/" + string(kube.ServiceHostname(serviceName, es.Namespace, a.DomainSuffix))
+		serviceKey := es.Namespace + "/" + kubeutils.ServiceFQDN(metav1.ObjectMeta{Name: serviceName, Namespace: es.Namespace})
 		svcs := krt.Fetch(ctx, workloadServices, krt.FilterKey(serviceKey), krt.FilterGeneric(func(a any) bool {
 			// Only find Service, not Service Entry
 			return a.(ServiceInfo).Source.Kind == kind.Service.String()
@@ -586,11 +587,11 @@ func (a *index) endpointSlicesBuilder(
 				Name:      es.Name,
 				Namespace: es.Namespace,
 				Addresses: addresses,
-				Hostname:  "",
+				Hostname:  kubeutils.ServiceFQDN(es.ObjectMeta),
 				//Network:     a.Network(ctx).String(),
 				Services:  services,
 				Status:    health,
-				ClusterId: string(a.ClusterID),
+				ClusterId: a.ClusterID,
 				// For opaque endpoints, we do not know anything about them. They could be overlapping with other IPs, so treat it
 				// as a shared address rather than a unique one.
 				NetworkMode:           api.NetworkMode_HOST_NETWORK,

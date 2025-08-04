@@ -11,6 +11,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
 
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
+
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 )
 
@@ -18,7 +20,9 @@ const (
 	a2aProtocol = "kgateway.dev/a2a"
 )
 
-func ADPPolicyCollection(inputs Inputs, binds krt.Collection[ADPResourcesForGateway], domainSuffix string, krtopts krtutil.KrtOptions) krt.Collection[ADPResourcesForGateway] {
+func ADPPolicyCollection(inputs Inputs, binds krt.Collection[ADPResourcesForGateway], krtopts krtutil.KrtOptions) krt.Collection[ADPResourcesForGateway] {
+	domainSuffix := kubeutils.GetClusterDomainName()
+
 	inference := krt.NewManyCollection(inputs.InferencePools, func(ctx krt.HandlerContext, i *inf.InferencePool) []ADPPolicy {
 		// 'service/{namespace}/{hostname}:{port}'
 		svc := fmt.Sprintf("service/%v/%v.%v.inference.%v:%v", i.Namespace, i.Name, i.Namespace, domainSuffix, i.Spec.TargetPortNumber)

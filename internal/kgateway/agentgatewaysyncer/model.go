@@ -143,10 +143,6 @@ type Meta struct {
 	// (security domains, fault domains, organizational domains)
 	Namespace string `json:"namespace,omitempty"`
 
-	// Domain defines the suffix of the fully qualified name past the namespace.
-	// Domain is not a part of the unique key unlike name and namespace.
-	Domain string `json:"domain,omitempty"`
-
 	// Map of string keys and values that can be used to organize and categorize
 	// (scope and select) objects.
 	Labels map[string]string `json:"labels,omitempty"`
@@ -215,9 +211,6 @@ func (c *Config) Equals(other *Config) bool {
 		return false
 	}
 	if am.Namespace != bm.Namespace {
-		return false
-	}
-	if am.Domain != bm.Domain {
 		return false
 	}
 	if !maps.Equal(am.Labels, bm.Labels) {

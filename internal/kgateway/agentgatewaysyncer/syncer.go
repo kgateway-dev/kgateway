@@ -85,7 +85,6 @@ type AgentGwSyncer struct {
 	// Configuration
 	controllerName        string
 	agentGatewayClassName string
-	domainSuffix          string
 	systemNamespace       string
 	clusterID             string
 
@@ -141,7 +140,6 @@ func NewAgentGwSyncer(
 	commonCols *common.CommonCollections,
 	plugins pluginsdk.Plugin,
 	xdsCache envoycache.SnapshotCache,
-	domainSuffix string,
 	systemNamespace string,
 	clusterID string,
 	enableInferExt bool,
@@ -154,7 +152,6 @@ func NewAgentGwSyncer(
 		xdsCache:              xdsCache,
 		client:                client,
 		mgr:                   mgr,
-		domainSuffix:          domainSuffix,
 		systemNamespace:       systemNamespace,
 		clusterID:             clusterID,
 		EnableInferExt:        enableInferExt,
@@ -429,7 +426,6 @@ func (s *AgentGwSyncer) buildGatewayCollection(
 		inputs.Namespaces,
 		refGrants,
 		inputs.Secrets,
-		s.domainSuffix,
 		krtopts,
 	)
 }
@@ -486,7 +482,6 @@ func (s *AgentGwSyncer) buildADPResources(
 	routeInputs := RouteContextInputs{
 		Grants:         refGrants,
 		RouteParents:   routeParents,
-		DomainSuffix:   s.domainSuffix,
 		Services:       inputs.Services,
 		Namespaces:     inputs.Namespaces,
 		InferencePools: inputs.InferencePools,
@@ -495,7 +490,7 @@ func (s *AgentGwSyncer) buildADPResources(
 	}
 	adpRoutes := ADPRouteCollection(inputs.HTTPRoutes, inputs.GRPCRoutes, inputs.TCPRoutes, inputs.TLSRoutes, routeInputs, krtopts, s.plugins)
 
-	adpPolicies := ADPPolicyCollection(inputs, binds, s.domainSuffix, krtopts)
+	adpPolicies := ADPPolicyCollection(inputs, binds, krtopts)
 
 	// Join all ADP resources
 	allADPResources := krt.JoinCollection([]krt.Collection[ADPResourcesForGateway]{binds, listeners, adpRoutes, adpPolicies}, krtopts.ToOptions("ADPResources")...)
@@ -636,7 +631,6 @@ func (s *AgentGwSyncer) buildAddressCollections(inputs Inputs, krtopts krtutil.K
 		namespaces:      s.commonCols.Namespaces,
 		SystemNamespace: s.systemNamespace,
 		ClusterID:       s.clusterID,
-		DomainSuffix:    s.domainSuffix,
 	}
 
 	// Build service and workload collections
