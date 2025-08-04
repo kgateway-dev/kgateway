@@ -341,6 +341,8 @@ func setupEnvTestAndRun(t *testing.T, globalSettings *settings.Settings, run fun
 		ErrorIfCRDPathMissing: true,
 		// set assets dir so we can run without the makefile
 		BinaryAssetsDirectory: getAssetsDir(t),
+		// This often hangs (for unknown reasons); we don't need cleanup so just kill it almost instantly
+		ControlPlaneStopTimeout: time.Millisecond,
 		// web hook to add cluster ips to services
 	}
 	envtestutil.RunController(t, logger, globalSettings, testEnv,
@@ -414,10 +416,6 @@ func testScenario(
 	}
 	t.Log("applied yamls", t.Name())
 
-	// wait at least a second before the first check
-	// to give the CP time to process
-	time.Sleep(time.Second)
-
 	t.Cleanup(func() {
 		if t.Failed() {
 			logKrtState(t, fmt.Sprintf("krt state for failed test: %s", t.Name()), kdbg)
@@ -447,7 +445,7 @@ func testScenario(
 			return fmt.Errorf("wrote out file - nothing to test")
 		}
 		return dump.Compare(expectedXdsDump)
-	}, retry.Converge(2), retry.BackoffDelay(2*time.Second), retry.Timeout(10*time.Second))
+	}, retry.Converge(2), retry.Timeout(10*time.Second))
 	t.Logf("%s finished", t.Name())
 }
 

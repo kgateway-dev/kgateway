@@ -10,7 +10,6 @@ import (
 	"path/filepath"
 	"sync"
 	"testing"
-	"time"
 
 	"github.com/solo-io/go-utils/contextutils"
 	"go.uber.org/zap"
@@ -38,6 +37,8 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/settings"
 )
 
+var setupLogging = sync.Once{}
+
 func RunController(t *testing.T, logger *zap.Logger, globalSettings *settings.Settings, testEnv *envtest.Environment,
 	postStart func(t *testing.T, ctx context.Context, client istiokube.CLIClient) func(ctx context.Context, commoncol *common.CommonCollections) []pluginsdk.Plugin,
 	yamlFilesToApply [][]string,
@@ -54,6 +55,12 @@ func RunController(t *testing.T, logger *zap.Logger, globalSettings *settings.Se
 		}
 		globalSettings = st
 	}
+	// Always set once instead of each time to avoid races
+	logLevel := globalSettings.LogLevel
+	globalSettings.LogLevel = ""
+	setupLogging.Do(func() {
+		setup.SetupLogging(logLevel)
+	})
 
 	// Enable this if you want api server logs and audit logs.
 	if os.Getenv("DEBUG_APISERVER") == "true" {
@@ -147,11 +154,6 @@ func RunController(t *testing.T, logger *zap.Logger, globalSettings *settings.Se
 			log.Fatalf("error starting kgateway %v", err)
 		}
 	}()
-
-	// give kgateway time to initialize so we don't get
-	// "kgateway not initialized" error
-	// this means that it attaches the pod collection to the unique client set collection.
-	time.Sleep(time.Second)
 
 	xdsPort := l.Addr().(*net.TCPAddr).Port
 	t.Log("running tests, xds port:", xdsPort)

@@ -194,7 +194,7 @@ func New(opts ...func(*setup)) (*setup, error) {
 func (s *setup) Start(ctx context.Context) error {
 	slog.Info("starting kgateway")
 
-	setupLogging(s.globalSettings.LogLevel)
+	SetupLogging(s.globalSettings.LogLevel)
 
 	mgrOpts := s.ctrlMgrOptionsInitFunc(ctx)
 
@@ -325,8 +325,8 @@ func BuildKgatewayWithConfig(
 	return c.Build(ctx)
 }
 
-// setupLogging configures the global slog logger
-func setupLogging(levelStr string) {
+// SetupLogging configures the global slog logger
+func SetupLogging(levelStr string) {
 	if levelStr == "" {
 		return
 	}
