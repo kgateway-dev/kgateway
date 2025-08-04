@@ -21,7 +21,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
-	"knative.dev/pkg/network"
 	infv1a2 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
@@ -33,6 +32,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 )
 
 const (
@@ -130,8 +130,7 @@ func buildBackendObjIrFromPool(pool *inferencePool) *ir.BackendObjectIR {
 	backend.Obj = pool.obj
 	backend.ObjIr = pool
 	// TODO [danehans]: Look into using backend.AppProtocol to set H1/H2 for the static cluster.
-	// TODO [danehans]: Reevaluate knative dep, dedupe with pkg/utils/kubeutils/dns.go.
-	backend.CanonicalHostname = fmt.Sprintf("%s.%s.svc.%s", objSrc.Name, objSrc.Namespace, network.GetClusterDomainName())
+	backend.CanonicalHostname = kubeutils.GetServiceHostname(objSrc.Name, objSrc.Namespace)
 	return &backend
 }
 
