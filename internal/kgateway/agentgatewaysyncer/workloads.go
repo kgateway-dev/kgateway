@@ -23,7 +23,6 @@ import (
 	"istio.io/istio/pkg/util/sets"
 	corev1 "k8s.io/api/core/v1"
 	discovery "k8s.io/api/discovery/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
@@ -223,7 +222,7 @@ func (a *index) matchingServicesWithoutSelectors(
 			// Not for a service; we don't care about it.
 			continue
 		}
-		hostname := kubeutils.ServiceFQDN(metav1.ObjectMeta{Name: serviceName, Namespace: es.Namespace})
+		hostname := kubeutils.GetServiceHostname(serviceName, es.Namespace)
 		if seen.Contains(hostname) {
 			// We already know about this service
 			continue
@@ -502,7 +501,7 @@ func (a *index) endpointSlicesBuilder(
 		seen := sets.New[string]()
 
 		// The slice must be for a single service, based on the label above.
-		serviceKey := es.Namespace + "/" + kubeutils.ServiceFQDN(metav1.ObjectMeta{Name: serviceName, Namespace: es.Namespace})
+		serviceKey := es.Namespace + "/" + kubeutils.GetServiceHostname(serviceName, es.Namespace)
 		svcs := krt.Fetch(ctx, workloadServices, krt.FilterKey(serviceKey), krt.FilterGeneric(func(a any) bool {
 			// Only find Service, not Service Entry
 			return a.(ServiceInfo).Source.Kind == kind.Service.String()
