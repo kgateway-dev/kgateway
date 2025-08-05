@@ -106,7 +106,6 @@ func translateGatewayHTTPRouteRulesUtil(
 	}
 }
 
-// MARK: translate rules
 func translateGatewayHTTPRouteRule(
 	ctx context.Context,
 	gwroute *query.RouteInfo,
@@ -129,17 +128,18 @@ func translateGatewayHTTPRouteRule(
 		uniqueRouteName := gwroute.UniqueRouteName(ruleIdx, idx, rule.Name)
 
 		outputRoute := ir.HttpRouteRuleMatchIR{
-			ExtensionRefs:     rule.ExtensionRefs,
-			AttachedPolicies:  rule.AttachedPolicies,
-			Parent:            parent,
-			ListenerParentRef: gwroute.ListenerParentRef,
-			ParentRef:         gwroute.ParentRef,
-			Name:              uniqueRouteName,
-			Backends:          nil,
-			MatchIndex:        idx,
-			Match:             match,
-			DelegatingParent:  delegatingParent,
-			PrecedenceWeight:  parent.PrecedenceWeight,
+			ExtensionRefs:        rule.ExtensionRefs,
+			AttachedPolicies:     rule.AttachedPolicies,
+			Parent:               parent,
+			ListenerParentRef:    gwroute.ListenerParentRef,
+			ParentRef:            gwroute.ParentRef,
+			Name:                 uniqueRouteName,
+			Backends:             nil,
+			MatchIndex:           idx,
+			Match:                match,
+			DelegatingParent:     delegatingParent,
+			PrecedenceWeight:     parent.PrecedenceWeight,
+			RouteAcceptanceError: rule.Err,
 		}
 
 		if len(rule.Backends) > 0 {
