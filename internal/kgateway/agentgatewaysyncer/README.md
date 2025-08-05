@@ -242,11 +242,9 @@ make run HELM_ADDITIONAL_VALUES=test/kubernetes/e2e/tests/manifests/agent-gatewa
 
 Set up a kind cluster and install kgateway with the kubernetes Gateway APIs:
 ```shell
-kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.3.0/experimental-install.yaml
-
-helm upgrade -i -n kgateway-system kgateway-crds ./_test/kgateway-crds-1.0.0-ci1.tgz --create-namespace
-
-helm upgrade -i -n kgateway-system kgateway ./_test/kgateway-1.0.0-ci1.tgz --create-namespace --values test/kubernetes/e2e/tests/manifests/agent-gateway-integration.yaml
+kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.3.0/standard-install.yaml
+helm upgrade -i --create-namespace --namespace kgateway-system --version v2.1.0-main kgateway-crds oci://cr.kgateway.dev/kgateway-dev/charts/kgateway-crds
+helm upgrade -i --namespace kgateway-system --version v2.1.0-main kgateway oci://cr.kgateway.dev/kgateway-dev/charts/kgateway --set agentGateway.enabled=true --set agentGateway.enableAlphaAPIs=true --set inferenceExtension.enabled=true
 ```
 
 #### HTTPRoute
@@ -434,7 +432,8 @@ spec:
   parentRefs:
     - name: tcp-gw-for-test
   rules:
-    - backendRefs:
+    - name: test
+      backendRefs:
         - name: tcp-backend
           port: 3001
 ---
@@ -653,8 +652,6 @@ spec:
   parentRefs:
     - name: agent-gateway
       namespace: default
-  hostnames:
-    - "www.example.com"
   rules:
     - backendRefs:
         - name: mcp-backend
@@ -670,21 +667,119 @@ metadata:
 spec:
   type: MCP
   mcp:
-    name: mcp-server
+    name: mcp-virtual-server
     targets:
       - selectors:
           serviceSelector:
             matchLabels:
-              app: mcp-website-fetcher
+              app: mcp-server
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mcp-server
+  labels:
+    app: mcp-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mcp-server
+  template:
+    metadata:
+      labels:
+        app: mcp-server
+    spec:
+      containers:
+        - name: mcp-server
+          image: node:20-alpine
+          command: ["npx"]
+          args: ["-y", "@modelcontextprotocol/server-everything", "streamableHttp"]
+          ports:
+            - containerPort: 3001
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mcp-server
+  labels:
+    app: mcp-server
+spec:
+  selector:
+    app: mcp-server
+  ports:
+    - protocol: TCP
+      port: 3001
+      targetPort: 3001
+      appProtocol: kgateway.dev/mcp
+  type: ClusterIP
+EOF
+```
+
+Note: Only streamable HTTP is currently supported for label selectors. 
+
+Port-forward, and send a request through the gateway to start a session:
+```shell
+curl localhost:8080/sse -v
+```
+
+You should see a response with the session id:
+```shell
+event: endpoint
+data: ?sessionId=c1a54dcb-be11-4f91-91b5-a1abf67deca2
+
+```
+
+Then you can send a request using the sessionId to initialize the connection:
+```shell
+curl "http://localhost:8080/mcp" -v \
+  -H "Accept: text/event-stream,application/json" \
+  --json '{"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{"roots":{}},"clientInfo":{"name":"claude-code","version":"1.0.60"}},"jsonrpc":"2.0","id":0}'
+```
+
+Or inspect the mcp tool with [MCP Inspector](https://github.com/modelcontextprotocol/inspector):
+```shell
+npx @modelcontextprotocol/inspector
+```
+
+You can also use static targets. This will create two backends 1) static backend for the target, 2) mcp backend.
+
+Apply the following config to set up the HTTPRoute pointing to the MCP Backend with a static target:
+```shell
+kubectl apply -f- <<EOF
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: mcp
+spec:
+  parentRefs:
+  - name: agent-gateway
+  rules:
+    - backendRefs:
+      - name: mcp-backend
+        group: gateway.kgateway.dev
+        kind: Backend
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: mcp-backend
+spec:
+  type: MCP
+  mcp:
+    name: mcp-server
+    targets:
+    - static:
+        name: mcp-target
+        host: mcp-website-fetcher.default.svc.cluster.local
+        port: 80
+        protocol: SSE
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: mcp-website-fetcher
-  labels:
-    app: mcp-website-fetcher
 spec:
-  replicas: 1
   selector:
     matchLabels:
       app: mcp-website-fetcher
@@ -694,24 +789,9 @@ spec:
         app: mcp-website-fetcher
     spec:
       containers:
-        - name: mcp-website-fetcher
-          image: ghcr.io/peterj/mcp-website-fetcher:main
-          imagePullPolicy: Always
-          ports:
-            - containerPort: 8000
-          resources:
-            limits:
-              cpu: "500m"
-              memory: "256Mi"
-            requests:
-              cpu: "100m"
-              memory: "128Mi"
-          livenessProbe:
-            httpGet:
-              path: /sse
-              port: 8000
-            initialDelaySeconds: 10
-            periodSeconds: 30
+      - name: mcp-website-fetcher
+        image: ghcr.io/peterj/mcp-website-fetcher:main
+        imagePullPolicy: Always
 ---
 apiVersion: v1
 kind: Service
@@ -723,39 +803,9 @@ spec:
   selector:
     app: mcp-website-fetcher
   ports:
-    - port: 80
-      targetPort: 8000
-      appProtocol: kgateway.dev/mcp
-  type: ClusterIP
-EOF
-```
-
-Port-forward, and send a request through the gateway:
-```shell
-curl localhost:8080/sse -v -H "host: www.example.com"
-```
-
-You can also use static targets. This will create two backends 1) static backend for the target, 2) mcp backend.
-
-Apply the following config to set up the HTTPRoute pointing to the MCP Backend with a static target:
-```shell
-kubectl apply -f- <<EOF
-apiVersion: gateway.kgateway.dev/v1alpha1
-kind: Backend
-metadata:
-  labels:
-    app: kgateway
-  name: mcp-backend
-spec:
-  type: MCP
-  mcp:
-    name: mcp-server
-    targets:
-      - static:
-          name: mcp-target
-          host: mcp-website-fetcher.default.svc.cluster.local
-          port: 8000
-          protocol: StreamableHTTP
+  - port: 80
+    targetPort: 8000
+    appProtocol: kgateway.dev/mcp
 EOF
 ```
 

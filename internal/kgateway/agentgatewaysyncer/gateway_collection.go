@@ -35,6 +35,8 @@ func toADPResource(t any) *api.Resource {
 		return &api.Resource{Kind: &api.Resource_Listener{Listener: tt.Listener}}
 	case ADPRoute:
 		return &api.Resource{Kind: &api.Resource_Route{Route: tt.Route}}
+	case ADPTCPRoute:
+		return &api.Resource{Kind: &api.Resource_TcpRoute{TcpRoute: tt.TCPRoute}}
 	case ADPPolicy:
 		return &api.Resource{Kind: &api.Resource_Policy{Policy: tt.Policy}}
 	}
@@ -115,6 +117,18 @@ func (g ADPRoute) ResourceName() string {
 }
 
 func (g ADPRoute) Equals(other ADPRoute) bool {
+	return protoconv.Equals(g, other)
+}
+
+type ADPTCPRoute struct {
+	*api.TCPRoute
+}
+
+func (g ADPTCPRoute) ResourceName() string {
+	return g.Key
+}
+
+func (g ADPTCPRoute) Equals(other ADPTCPRoute) bool {
 	return protoconv.Equals(g, other)
 }
 

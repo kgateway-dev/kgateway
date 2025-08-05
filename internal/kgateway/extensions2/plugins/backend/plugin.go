@@ -299,7 +299,8 @@ func processBackendForAgentGateway(ctx krt.HandlerContext,
 	nsCol krt.Collection[*corev1.Namespace],
 	svcCol krt.Collection[*corev1.Service],
 	secrets krt.Collection[*corev1.Secret],
-	be *v1alpha1.Backend) ([]*api.Backend, []*api.Policy, error) {
+	be *v1alpha1.Backend,
+) ([]*api.Backend, []*api.Policy, error) {
 	spec := be.Spec
 	switch spec.Type {
 	case v1alpha1.BackendTypeStatic:

@@ -6,6 +6,7 @@ package v1alpha1
 // with apply.
 type Http1ProtocolOptionsApplyConfiguration struct {
 	EnableTrailers                          *bool `json:"enableTrailers,omitempty"`
+	PreserveHttp1HeaderCase                 *bool `json:"preserveHttp1HeaderCase,omitempty"`
 	OverrideStreamErrorOnInvalidHttpMessage *bool `json:"overrideStreamErrorOnInvalidHttpMessage,omitempty"`
 }
 
@@ -20,6 +21,14 @@ func Http1ProtocolOptions() *Http1ProtocolOptionsApplyConfiguration {
 // If called multiple times, the EnableTrailers field is set to the value of the last call.
 func (b *Http1ProtocolOptionsApplyConfiguration) WithEnableTrailers(value bool) *Http1ProtocolOptionsApplyConfiguration {
 	b.EnableTrailers = &value
+	return b
+}
+
+// WithPreserveHttp1HeaderCase sets the PreserveHttp1HeaderCase field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the PreserveHttp1HeaderCase field is set to the value of the last call.
+func (b *Http1ProtocolOptionsApplyConfiguration) WithPreserveHttp1HeaderCase(value bool) *Http1ProtocolOptionsApplyConfiguration {
+	b.PreserveHttp1HeaderCase = &value
 	return b
 }
 

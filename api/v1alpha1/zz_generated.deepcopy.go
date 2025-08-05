@@ -2333,6 +2333,11 @@ func (in *Http1ProtocolOptions) DeepCopyInto(out *Http1ProtocolOptions) {
 		*out = new(bool)
 		**out = **in
 	}
+	if in.PreserveHttp1HeaderCase != nil {
+		in, out := &in.PreserveHttp1HeaderCase, &out.PreserveHttp1HeaderCase
+		*out = new(bool)
+		**out = **in
+	}
 	if in.OverrideStreamErrorOnInvalidHttpMessage != nil {
 		in, out := &in.OverrideStreamErrorOnInvalidHttpMessage, &out.OverrideStreamErrorOnInvalidHttpMessage
 		*out = new(bool)

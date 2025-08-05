@@ -95,6 +95,11 @@ type Http1ProtocolOptions struct {
 	// +optional
 	EnableTrailers *bool `json:"enableTrailers,omitempty"`
 
+	// PreserveHttp1HeaderCase determines whether to preserve the case of HTTP1 response headers.
+	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_conn_man/header_casing
+	// +optional
+	PreserveHttp1HeaderCase *bool `json:"preserveHttp1HeaderCase,omitempty"`
+
 	// Allows invalid HTTP messaging. When this option is false, then Envoy will terminate
 	// HTTP/1.1 connections upon receiving an invalid HTTP message. However,
 	// when this option is true, then Envoy will leave the HTTP/1.1 connection

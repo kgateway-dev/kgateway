@@ -157,7 +157,7 @@ func testAgentGatewayScenario(
 		t.Logf("Total resources: %d", len(dump.Resources))
 
 		// Count different types of resources
-		var bindCount, listenerCount, routeCount, policyCount, worklodCount, serviceCount int
+		var bindCount, listenerCount, routeCount, tcpCount, policyCount, worklodCount, serviceCount int
 		for _, resource := range dump.Resources {
 			switch resource.GetKind().(type) {
 			case *api.Resource_Bind:
@@ -169,12 +169,15 @@ func testAgentGatewayScenario(
 			case *api.Resource_Route:
 				routeCount++
 				t.Logf("Route resource: %+v", resource.GetRoute())
+			case *api.Resource_TcpRoute:
+				tcpCount++
+				t.Logf("TcpRoute resource: %+v", resource.GetTcpRoute())
 			case *api.Resource_Policy:
 				policyCount++
 				t.Logf("Policy resource: %+v", resource.GetPolicy())
 			}
 		}
-		t.Logf("Resource counts - Binds: %d, Listeners: %d, Routes: %d, Policy: %d", bindCount, listenerCount, routeCount, policyCount)
+		t.Logf("Resource counts - Binds: %d, Listeners: %d, Routes: %d, TcpRoutes: %d, Policy: %d", bindCount, listenerCount, routeCount, tcpCount, policyCount)
 
 		for _, resource := range dump.Addresses {
 			switch resource.GetType().(type) {
@@ -288,6 +291,8 @@ func getResourceType(resource *api.Resource) string {
 		return "listener"
 	case *api.Resource_Route:
 		return "route"
+	case *api.Resource_TcpRoute:
+		return "tcproute"
 	case *api.Resource_Policy:
 		return "policy"
 	default:
@@ -304,6 +309,8 @@ func getResourceKey(resource *api.Resource) string {
 		return x.Listener.GetKey()
 	case *api.Resource_Route:
 		return x.Route.GetKey()
+	case *api.Resource_TcpRoute:
+		return x.TcpRoute.GetKey()
 	case *api.Resource_Policy:
 		return x.Policy.GetName()
 	default:
@@ -399,6 +406,18 @@ func readExpectedDump(t *testing.T, filename string) (agentGwDump, error) {
 							continue
 						}
 						resource.Kind = &api.Resource_Route{Route: route}
+					} else if tcprouteData, ok := kindData["TcpRoute"].(map[string]interface{}); ok {
+						tcprouteJSON, err := json.Marshal(tcprouteData)
+						if err != nil {
+							t.Logf("failed to marshal tcp route data: %v", err)
+							continue
+						}
+						tcproute := &api.TCPRoute{}
+						if err := unmarshaler.Unmarshal(tcprouteJSON, tcproute); err != nil {
+							t.Logf("failed to unmarshal route: %v", err)
+							continue
+						}
+						resource.Kind = &api.Resource_TcpRoute{TcpRoute: tcproute}
 					} else if policyData, ok := kindData["Policy"].(map[string]interface{}); ok {
 						policyJSON, err := json.Marshal(policyData)
 						if err != nil {

@@ -103,6 +103,11 @@ func (i *BackendIndex) HasSynced() bool {
 			return false
 		}
 	}
+	for _, col := range i.availableBackendsWithPolicy {
+		if !col.HasSynced() {
+			return false
+		}
+	}
 	return true
 }
 

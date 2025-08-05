@@ -3,6 +3,7 @@ package backendconfigpolicy
 import (
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	preserve_case_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/http/header_formatters/preserve_case/v3"
 	envoy_upstreams_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -10,6 +11,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	translatorutils "github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/utils"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 )
 
 func translateCommonHttpProtocolOptions(commonHttpProtocolOptions *v1alpha1.CommonHttpProtocolOptions) *envoycorev3.HttpProtocolOptions {
@@ -36,6 +38,21 @@ func translateHttp1ProtocolOptions(http1ProtocolOptions *v1alpha1.Http1ProtocolO
 	out := &envoycorev3.Http1ProtocolOptions{}
 	if http1ProtocolOptions.EnableTrailers != nil {
 		out.EnableTrailers = *http1ProtocolOptions.EnableTrailers
+	}
+
+	if http1ProtocolOptions.PreserveHttp1HeaderCase != nil && *http1ProtocolOptions.PreserveHttp1HeaderCase {
+		typedConfig, err := utils.MessageToAny(&preserve_case_v3.PreserveCaseFormatterConfig{})
+		if err != nil {
+			return nil, err
+		}
+		out.HeaderKeyFormat = &envoycorev3.Http1ProtocolOptions_HeaderKeyFormat{
+			HeaderFormat: &envoycorev3.Http1ProtocolOptions_HeaderKeyFormat_StatefulFormatter{
+				StatefulFormatter: &envoycorev3.TypedExtensionConfig{
+					Name:        PreserveCasePlugin,
+					TypedConfig: typedConfig,
+				},
+			},
+		}
 	}
 
 	if http1ProtocolOptions.OverrideStreamErrorOnInvalidHttpMessage != nil {
