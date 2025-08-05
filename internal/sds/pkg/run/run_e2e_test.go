@@ -11,6 +11,7 @@ import (
 	envoy_service_secret_v3 "github.com/envoyproxy/go-control-plane/envoy/service/secret/v3"
 	"github.com/spf13/afero"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/sds/pkg/run"
 	"github.com/kgateway-dev/kgateway/v2/internal/sds/pkg/server"
@@ -112,8 +113,8 @@ var _ = Describe("SDS Server E2E Test", Serial, func() {
 		// Check that we get a good response
 		Eventually(func() bool {
 			_, err = client.FetchSecrets(ctx, &envoy_service_discovery_v3.DiscoveryRequest{})
-			return err != nil
-		}, "5s", "1s").Should(BeTrue())
+			return err == nil
+		}, "15s", "1s").Should(BeTrue())
 
 		// Cancel the context in order to stop the gRPC server
 		cancel()
@@ -122,7 +123,7 @@ var _ = Describe("SDS Server E2E Test", Serial, func() {
 		Eventually(func() bool {
 			_, err = client.FetchSecrets(ctx, &envoy_service_discovery_v3.DiscoveryRequest{})
 			return err != nil
-		}, "5s", "1s").Should(BeTrue())
+		}, "15s", "1s").Should(BeTrue())
 
 	})
 
@@ -143,7 +144,7 @@ var _ = Describe("SDS Server E2E Test", Serial, func() {
 
 		// Connect with the server
 		var conn *grpc.ClientConn
-		conn, err = grpc.Dial(testServerAddress, grpc.WithInsecure())
+		conn, err = grpc.NewClient(testServerAddress, grpc.WithTransportCredentials(insecure.NewCredentials()))
 		Expect(err).NotTo(HaveOccurred())
 		defer conn.Close()
 		client := envoy_service_secret_v3.NewSecretDiscoveryServiceClient(conn)
