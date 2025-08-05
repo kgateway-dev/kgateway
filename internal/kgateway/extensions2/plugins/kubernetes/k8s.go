@@ -2,7 +2,6 @@ package kubernetes
 
 import (
 	"context"
-	"fmt"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -81,7 +80,7 @@ func BuildServiceBackendObjectIR(svc *corev1.Service, svcPort int32, svcProtocol
 	backend.Obj = svc
 	backend.AppProtocol = ir.ParseAppProtocol(&svcProtocol)
 	backend.GvPrefix = BackendClusterPrefix
-	backend.CanonicalHostname = fmt.Sprintf("%s.%s.svc.%s", svc.Name, svc.Namespace, kubeutils.GetClusterDomainName())
+	backend.CanonicalHostname = kubeutils.GetServiceHostname(svc.Name, svc.Namespace)
 	return backend
 }
 

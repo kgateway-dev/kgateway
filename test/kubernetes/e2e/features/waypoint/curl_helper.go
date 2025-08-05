@@ -1,7 +1,6 @@
 package waypoint
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
@@ -37,7 +36,7 @@ func (s *testingSuite) assertCurlServicePost(
 }
 
 func fqdn(name, ns string) string {
-	return fmt.Sprintf("%s.%s.svc.%s", name, ns, kubeutils.GetClusterDomainName())
+	return kubeutils.GetServiceHostname(name, ns)
 }
 
 func (s *testingSuite) assertCurlHost(
