@@ -28,7 +28,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
@@ -141,8 +140,6 @@ type endpointPickerPass struct {
 	// usedPools defines a map of IR inferencePools keyed by NamespacedName.
 	usedPools map[types.NamespacedName]*inferencePool
 	ir.UnimplementedProxyTranslationPass
-
-	reporter reports.Reporter
 }
 
 var _ ir.ProxyTranslationPass = &endpointPickerPass{}
