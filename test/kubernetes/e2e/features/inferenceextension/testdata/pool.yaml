@@ -8,4 +8,5 @@ spec:
   selector:
     app: vllm-llama3-8b-instruct
   extensionRef:
+    failureMode: FailOpen
     name: vllm-llama3-8b-instruct-epp

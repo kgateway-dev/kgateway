@@ -34,7 +34,7 @@ spec:
       terminationGracePeriodSeconds: 130
       containers:
       - name: epp
-        image: us-central1-docker.pkg.dev/k8s-staging-images/gateway-api-inference-extension/epp:v0.5.0
+        image: us-central1-docker.pkg.dev/k8s-staging-images/gateway-api-inference-extension/epp:v0.5.1
         imagePullPolicy: Always
         args:
         - -poolName

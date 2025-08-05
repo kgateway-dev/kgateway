@@ -30,5 +30,5 @@ Backends:
       targets:
         - name: example-svc-80
           backend:
-            service: default/example-svc
+            service: default/example-svc.default.svc.cluster.local
             port: 80

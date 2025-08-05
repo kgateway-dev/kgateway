@@ -53,6 +53,7 @@ type AssertReports func(gwNN types.NamespacedName, reportsMap reports.ReportMap)
 
 type translationResult struct {
 	Routes    []*api.Route
+	TCPRoutes []*api.TCPRoute
 	Listeners []*api.Listener
 	Binds     []*api.Bind
 	Backends  []*api.Backend
@@ -75,6 +76,14 @@ func (tr *translationResult) MarshalJSON() ([]byte, error) {
 			return nil, err
 		}
 		result["Routes"] = routes
+	}
+
+	if len(tr.TCPRoutes) > 0 {
+		tcproutes, err := marshalProtoMessages(tr.TCPRoutes, m)
+		if err != nil {
+			return nil, err
+		}
+		result["TCPRoutes"] = tcproutes
 	}
 
 	if len(tr.Listeners) > 0 {
@@ -129,6 +138,21 @@ func (tr *translationResult) UnmarshalJSON(data []byte) error {
 				return err
 			}
 			tr.Routes[i] = route
+		}
+	}
+
+	if tcpRoutesData, ok := result["TCPRoutes"]; ok {
+		var tcproutes []json.RawMessage
+		if err := json.Unmarshal(tcpRoutesData, &tcproutes); err != nil {
+			return err
+		}
+		tr.TCPRoutes = make([]*api.TCPRoute, len(tcproutes))
+		for i, tcprouteData := range tcproutes {
+			tcproute := &api.TCPRoute{}
+			if err := m.Unmarshal(tcprouteData, tcproute); err != nil {
+				return err
+			}
+			tr.TCPRoutes[i] = tcproute
 		}
 	}
 
@@ -276,6 +300,7 @@ func TestTranslationWithExtraPlugins(
 
 	// sort the output and print it
 	var routes []*api.Route
+	var tcproutes []*api.TCPRoute
 	var listeners []*api.Listener
 	var binds []*api.Bind
 	var backends []*api.Backend
@@ -290,6 +315,8 @@ func TestTranslationWithExtraPlugins(
 			switch r := res.Kind.(type) {
 			case *api.Resource_Route:
 				routes = append(routes, r.Route)
+			case *api.Resource_TcpRoute:
+				tcproutes = append(tcproutes, r.TcpRoute)
 			case *api.Resource_Listener:
 				listeners = append(listeners, r.Listener)
 			case *api.Resource_Bind:
@@ -309,6 +336,7 @@ func TestTranslationWithExtraPlugins(
 
 	output := &translationResult{
 		Routes:    routes,
+		TCPRoutes: tcproutes,
 		Listeners: listeners,
 		Binds:     binds,
 		Backends:  backends,
@@ -363,6 +391,9 @@ func sortTranslationResult(tr *translationResult) *translationResult {
 	// Sort routes by name
 	sort.Slice(tr.Routes, func(i, j int) bool {
 		return tr.Routes[i].GetKey() < tr.Routes[j].GetKey()
+	})
+	sort.Slice(tr.TCPRoutes, func(i, j int) bool {
+		return tr.TCPRoutes[i].GetKey() < tr.TCPRoutes[j].GetKey()
 	})
 
 	// Sort listeners by name

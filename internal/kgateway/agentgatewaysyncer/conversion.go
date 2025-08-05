@@ -114,18 +114,13 @@ func convertHTTPRouteToADP(ctx RouteContext, r gwv1.HTTPRouteRule,
 
 func convertTCPRouteToADP(ctx RouteContext, r gwv1alpha2.TCPRouteRule,
 	obj *gwv1alpha2.TCPRoute, pos int,
-) (*api.Route, *reporter.RouteCondition) {
-	res := &api.Route{
+) (*api.TCPRoute, *reporter.RouteCondition) {
+	res := &api.TCPRoute{
 		Key:         obj.Namespace + "." + obj.Name + "." + strconv.Itoa(pos),
 		RouteName:   obj.Namespace + "/" + obj.Name,
 		ListenerKey: "",
 		RuleName:    defaultString(r.Name, ""),
 	}
-
-	res.Matches = []*api.RouteMatch{{
-		// TCP doesn't have path, headers, method, or query params
-		// This is essentially a catch-all match for TCP traffic
-	}}
 
 	// Build TCP destinations
 	route, backendErr, err := buildADPTCPDestination(ctx, r.BackendRefs, obj.Namespace)
@@ -199,20 +194,13 @@ func convertGRPCRouteToADP(ctx RouteContext, r gwv1.GRPCRouteRule,
 
 func convertTLSRouteToADP(ctx RouteContext, r gwv1alpha2.TLSRouteRule,
 	obj *gwv1alpha2.TLSRoute, pos int,
-) (*api.Route, *reporter.RouteCondition) {
-	res := &api.Route{
+) (*api.TCPRoute, *reporter.RouteCondition) {
+	res := &api.TCPRoute{
 		Key:         obj.Namespace + "." + obj.Name + "." + strconv.Itoa(pos),
 		RouteName:   obj.Namespace + "/" + obj.Name,
 		ListenerKey: "",
 		RuleName:    defaultString(r.Name, ""),
 	}
-
-	// TLS routes match on SNI hostnames, but ADP RouteMatch doesn't have direct SNI support
-	// For TLS, we create a basic match that accepts all traffic (SNI matching happens at listener level)
-	res.Matches = []*api.RouteMatch{{
-		// TLS doesn't have path, headers, method, or query params
-		// SNI matching is handled at the listener/gateway level
-	}}
 
 	// Build TLS destinations
 	route, backendErr, err := buildADPTLSDestination(ctx, r.BackendRefs, obj.Namespace)

@@ -79,28 +79,28 @@ func ADPRouteCollection(
 			}
 		})
 
-	tcpRoutes := createRouteCollection(tcpRouteCol, inputs, krtopts, plugins, "ADPTCPRoutes",
-		func(ctx RouteContext, obj *gwv1alpha2.TCPRoute, rep reporter.Reporter) (RouteContext, iter.Seq2[ADPRoute, *reporter.RouteCondition]) {
+	tcpRoutes := createTCPRouteCollection(tcpRouteCol, inputs, krtopts, plugins, "ADPTCPRoutes",
+		func(ctx RouteContext, obj *gwv1alpha2.TCPRoute, rep reporter.Reporter) (RouteContext, iter.Seq2[ADPTCPRoute, *reporter.RouteCondition]) {
 			route := obj.Spec
-			return ctx, func(yield func(ADPRoute, *reporter.RouteCondition) bool) {
+			return ctx, func(yield func(ADPTCPRoute, *reporter.RouteCondition) bool) {
 				for n, r := range route.Rules {
 					// Convert the entire rule with all matches at once
 					res, err := convertTCPRouteToADP(ctx, r, obj, n)
-					if !yield(ADPRoute{Route: res}, err) {
+					if !yield(ADPTCPRoute{TCPRoute: res}, err) {
 						return
 					}
 				}
 			}
 		})
 
-	tlsRoutes := createRouteCollection(tlsRouteCol, inputs, krtopts, plugins, "ADPTLSRoutes",
-		func(ctx RouteContext, obj *gwv1alpha2.TLSRoute, rep reporter.Reporter) (RouteContext, iter.Seq2[ADPRoute, *reporter.RouteCondition]) {
+	tlsRoutes := createTCPRouteCollection(tlsRouteCol, inputs, krtopts, plugins, "ADPTLSRoutes",
+		func(ctx RouteContext, obj *gwv1alpha2.TLSRoute, rep reporter.Reporter) (RouteContext, iter.Seq2[ADPTCPRoute, *reporter.RouteCondition]) {
 			route := obj.Spec
-			return ctx, func(yield func(ADPRoute, *reporter.RouteCondition) bool) {
+			return ctx, func(yield func(ADPTCPRoute, *reporter.RouteCondition) bool) {
 				for n, r := range route.Rules {
 					// Convert the entire rule with all matches at once
 					res, err := convertTLSRouteToADP(ctx, r, obj, n)
-					if !yield(ADPRoute{Route: res}, err) {
+					if !yield(ADPTCPRoute{TCPRoute: res}, err) {
 						return
 					}
 				}
@@ -112,8 +112,65 @@ func ADPRouteCollection(
 	return routes
 }
 
+// buildAttachedRoutesMap builds a map of gateway -> section name -> route count
+func buildAttachedRoutesMap(parentRefs []routeParentReference) map[types.NamespacedName]map[string]uint {
+	attachedRoutes := make(map[types.NamespacedName]map[string]uint)
+	for _, parent := range filteredReferences(parentRefs) {
+		if parent.ParentKey.Kind != wellknown.GatewayGVK {
+			continue
+		}
+		parentGw := types.NamespacedName{
+			Namespace: parent.ParentKey.Namespace,
+			Name:      parent.ParentKey.Name,
+		}
+		if attachedRoutes[parentGw] == nil {
+			attachedRoutes[parentGw] = make(map[string]uint)
+		}
+		attachedRoutes[parentGw][string(parent.ParentSection)]++
+	}
+	return attachedRoutes
+}
+
+// processParentReferences processes filtered parent references and builds resources per gateway
+func processParentReferences[T any](
+	parentRefs []routeParentReference,
+	gwResult conversionResult[T],
+	objName string,
+	routeReporter reporter.RouteReporter,
+	resourceMapper func(T, routeParentReference) *api.Resource,
+) map[types.NamespacedName][]*api.Resource {
+	resourcesPerGateway := make(map[types.NamespacedName][]*api.Resource)
+
+	for _, parent := range filteredReferences(parentRefs) {
+		// Always create a route reporter entry for the parent ref
+		parentRefReporter := routeReporter.ParentRef(&parent.OriginalReference)
+
+		// for gwv1beta1 routes, build one VS per gwv1beta1+host
+		routes := gwResult.routes
+		if len(routes) == 0 {
+			logger.Debug("no routes for parent", "route_name", objName, "parent", parent.ParentKey)
+			continue
+		}
+		if gwResult.error != nil {
+			parentRefReporter.SetCondition(*gwResult.error)
+		}
+
+		gw := types.NamespacedName{
+			Namespace: parent.ParentKey.Namespace,
+			Name:      parent.ParentKey.Name,
+		}
+		if resourcesPerGateway[gw] == nil {
+			resourcesPerGateway[gw] = make([]*api.Resource, 0)
+		}
+		resourcesPerGateway[gw] = append(resourcesPerGateway[gw], slices.Map(routes, func(e T) *api.Resource {
+			return resourceMapper(e, parent)
+		})...)
+	}
+	return resourcesPerGateway
+}
+
 // createRouteCollection is a generic helper function that creates a KRT collection for any route type
-// by extracting the common logic shared between HTTP, GRPC, TCP, and TLS route collections
+// by extracting the common logic shared between HTTP and GRPC route collections
 func createRouteCollection[T controllers.Object](
 	routeCol krt.Collection[T],
 	inputs RouteContextInputs,
@@ -138,51 +195,76 @@ func createRouteCollection[T controllers.Object](
 		})
 
 		// gateway -> section name -> route count
-		attachedRoutes := make(map[types.NamespacedName]map[string]uint)
-		for _, parent := range filteredReferences(parentRefs) {
-			if parent.ParentKey.Kind != wellknown.GatewayGVK {
-				continue
-			}
-			parentGw := types.NamespacedName{
-				Namespace: parent.ParentKey.Namespace,
-				Name:      parent.ParentKey.Name,
-			}
-			if attachedRoutes[parentGw] == nil {
-				attachedRoutes[parentGw] = make(map[string]uint)
-			}
-			attachedRoutes[parentGw][string(parent.ParentSection)]++
-		}
+		attachedRoutes := buildAttachedRoutesMap(parentRefs)
 
-		resourcesPerGateway := make(map[types.NamespacedName][]*api.Resource)
-		for _, parent := range filteredReferences(parentRefs) {
-			// Always create a route reporter entry for the parent ref
-			parentRefReporter := routeReporter.ParentRef(&parent.OriginalReference)
-
-			// for gwv1beta1 routes, build one VS per gwv1beta1+host
-			routes := gwResult.routes
-			if len(routes) == 0 {
-				logger.Debug("no routes for parent", "route_name", obj.GetName(), "parent", parent.ParentKey)
-				continue
-			}
-			if gwResult.error != nil {
-				parentRefReporter.SetCondition(*gwResult.error)
-			}
-
-			gw := types.NamespacedName{
-				Namespace: parent.ParentKey.Namespace,
-				Name:      parent.ParentKey.Name,
-			}
-			if resourcesPerGateway[gw] == nil {
-				resourcesPerGateway[gw] = make([]*api.Resource, 0)
-			}
-			resourcesPerGateway[gw] = append(resourcesPerGateway[gw], slices.Map(routes, func(e ADPRoute) *api.Resource {
+		resourcesPerGateway := processParentReferences(
+			parentRefs,
+			gwResult,
+			obj.GetName(),
+			routeReporter,
+			func(e ADPRoute, parent routeParentReference) *api.Resource {
 				inner := protomarshal.Clone(e.Route)
 				_, name, _ := strings.Cut(parent.InternalName, "/")
 				inner.ListenerKey = name
 				inner.Key = inner.GetKey() + "." + string(parent.ParentSection)
 				return toADPResource(ADPRoute{Route: inner})
-			})...)
+			},
+		)
+
+		var results []ADPResourcesForGateway
+		for gw, res := range resourcesPerGateway {
+			var attachedRoutesForGw map[string]uint
+			if attachedRoutes[gw] != nil {
+				attachedRoutesForGw = attachedRoutes[gw]
+			}
+			results = append(results, toResourceWithRoutes(gw, res, attachedRoutesForGw, rm))
 		}
+		return results
+	}, krtopts.ToOptions(collectionName)...)
+}
+
+// createTCPRouteCollection is a generic helper function that creates a KRT collection for any route type
+// by extracting the common logic shared between TCP and TLS route collections
+func createTCPRouteCollection[T controllers.Object](
+	routeCol krt.Collection[T],
+	inputs RouteContextInputs,
+	krtopts krtutil.KrtOptions,
+	plugins pluginsdk.Plugin,
+	collectionName string,
+	translator func(ctx RouteContext, obj T, rep reporter.Reporter) (RouteContext, iter.Seq2[ADPTCPRoute, *reporter.RouteCondition]),
+) krt.Collection[ADPResourcesForGateway] {
+	return krt.NewManyCollection(routeCol, func(krtctx krt.HandlerContext, obj T) []ADPResourcesForGateway {
+		logger.Debug("translating route", "route_name", obj.GetName(), "resource_version", obj.GetResourceVersion())
+
+		ctx := inputs.WithCtx(krtctx)
+		rm := reports.NewReportMap()
+		rep := reports.NewReporter(&rm)
+		routeReporter := rep.Route(obj)
+
+		// Apply route-specific preprocessing and get the translator
+		ctx, translatorSeq := translator(ctx, obj, rep)
+
+		parentRefs, gwResult := computeRoute(ctx, obj, func(obj T) iter.Seq2[ADPTCPRoute, *reporter.RouteCondition] {
+			return translatorSeq
+		})
+
+		// gateway -> section name -> route count
+		attachedRoutes := buildAttachedRoutesMap(parentRefs)
+
+		resourcesPerGateway := processParentReferences(
+			parentRefs,
+			gwResult,
+			obj.GetName(),
+			routeReporter,
+			func(e ADPTCPRoute, parent routeParentReference) *api.Resource {
+				inner := protomarshal.Clone(e.TCPRoute)
+				_, name, _ := strings.Cut(parent.InternalName, "/")
+				inner.ListenerKey = name
+				inner.Key = inner.GetKey() + "." + string(parent.ParentSection)
+				return toADPResource(ADPTCPRoute{TCPRoute: inner})
+			},
+		)
+
 		var results []ADPResourcesForGateway
 		for gw, res := range resourcesPerGateway {
 			var attachedRoutesForGw map[string]uint

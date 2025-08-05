@@ -9,6 +9,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
+
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 )
 
@@ -16,7 +18,12 @@ const (
 	mcpProtocol = "kgateway.dev/mcp"
 )
 
-func processMCPBackendForAgentGateway(ctx krt.HandlerContext, nsCol krt.Collection[*corev1.Namespace], svcCol krt.Collection[*corev1.Service], be *v1alpha1.Backend) ([]*api.Backend, []*api.Policy, error) {
+func processMCPBackendForAgentGateway(
+	ctx krt.HandlerContext,
+	nsCol krt.Collection[*corev1.Namespace],
+	svcCol krt.Collection[*corev1.Service],
+	be *v1alpha1.Backend,
+) ([]*api.Backend, []*api.Policy, error) {
 	// Convert Kubernetes MCP targets to agentgateway format
 	var mcpTargets []*api.MCPTarget
 	var backends []*api.Backend
@@ -125,10 +132,11 @@ func processMCPBackendForAgentGateway(ctx krt.HandlerContext, nsCol krt.Collecti
 							targetName = service.Name + "-" + port.Name
 						}
 						// For each mcp port on the service, create an MCP target
+						svcHostname := kubeutils.ServiceFQDN(service.ObjectMeta)
 						mcpTarget := &api.MCPTarget{
 							Name: targetName,
 							Backend: &api.BackendReference{
-								Kind: &api.BackendReference_Service{Service: service.Namespace + "/" + service.Name},
+								Kind: &api.BackendReference_Service{Service: service.Namespace + "/" + svcHostname},
 								Port: uint32(port.Port),
 							},
 						}
