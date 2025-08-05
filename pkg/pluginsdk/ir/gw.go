@@ -278,4 +278,8 @@ type HttpRouteRuleIR struct {
 	Backends         []HttpBackendOrDelegate
 	Matches          []gwv1.HTTPRouteMatch
 	Name             string
+
+	// Err contains any error encountered during the construction of this HttpRouteRuleIR
+	// that should be propagated through to translation to any derived ir.HttpRouteRuleMatchIRs
+	Err error
 }

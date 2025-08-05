@@ -79,6 +79,7 @@ func (c HttpRouteIR) Equals(in HttpRouteIR) bool {
 func (c HttpRouteIR) rulesEqual(in HttpRouteIR) bool {
 	// we don't need to check the rules themselves as this is covered by versionEquals.
 	// we do need to check backends and policies
+	// we also need to check the error on rule
 	if len(c.Rules) != len(in.Rules) {
 		return false
 	}
@@ -112,6 +113,17 @@ func (c HttpRouteIR) rulesEqual(in HttpRouteIR) bool {
 			} else {
 				return false
 			}
+		}
+		e1 := rule.Err
+		e2 := in.Rules[i].Err
+		if e1 == nil && e2 != nil {
+			return false
+		}
+		if e1 != nil && e2 == nil {
+			return false
+		}
+		if (e1 != nil && e2 != nil) && e1.Error() != e2.Error() {
+			return false
 		}
 	}
 	return true
