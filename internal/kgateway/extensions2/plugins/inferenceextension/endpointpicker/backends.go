@@ -43,7 +43,7 @@ func processPoolBackendObjIR(
 			"errors", irPool.errors,
 		)
 		out.LoadAssignment = &envoyendpointv3.ClusterLoadAssignment{
-			ClusterName: out.Name,
+			ClusterName: out.GetName(),
 			Endpoints:   []*envoyendpointv3.LocalityLbEndpoints{{}},
 		}
 		return nil
@@ -107,7 +107,7 @@ func processPoolBackendObjIR(
 
 	// Attach the endpoints to the cluster load assignment
 	out.LoadAssignment = &envoyendpointv3.ClusterLoadAssignment{
-		ClusterName: out.Name,
+		ClusterName: out.GetName(),
 		Endpoints: []*envoyendpointv3.LocalityLbEndpoints{{
 			LbEndpoints: lbEndpoints,
 		}},

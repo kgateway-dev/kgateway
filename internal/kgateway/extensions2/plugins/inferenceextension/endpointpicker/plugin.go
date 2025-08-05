@@ -200,8 +200,8 @@ func (p *endpointPickerPass) ApplyForBackend(
 	if ra.GetMetadataMatch() == nil {
 		ra.MetadataMatch = &envoycorev3.Metadata{}
 	}
-	if ra.MetadataMatch.FilterMetadata == nil {
-		ra.MetadataMatch.FilterMetadata = make(map[string]*structpb.Struct)
+	if ra.GetMetadataMatch().GetFilterMetadata() == nil {
+		ra.GetMetadataMatch().FilterMetadata = make(map[string]*structpb.Struct)
 	}
 
 	// Ensure we are working with the latest set of endpoints for the pool.
@@ -227,12 +227,12 @@ func (p *endpointPickerPass) ApplyForBackend(
 	}
 
 	// Set the subset hint (sent to EPP as filter_metadata).
-	if ra.MetadataMatch == nil {
+	if ra.GetMetadataMatch() == nil {
 		ra.MetadataMatch = &envoycorev3.Metadata{
 			FilterMetadata: make(map[string]*structpb.Struct),
 		}
 	}
-	ra.MetadataMatch.FilterMetadata[envoySubsetKey] = hintStruct
+	ra.GetMetadataMatch().GetFilterMetadata()[envoySubsetKey] = hintStruct
 
 	// Build the route-level ext_proc override that points to this pool's ext_proc cluster.
 	override := &extprocv3.ExtProcPerRoute{
