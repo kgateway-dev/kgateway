@@ -2,10 +2,6 @@ package kubernetes
 
 import (
 	"context"
-	"fmt"
-
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"knative.dev/pkg/network"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -14,6 +10,7 @@ import (
 	"istio.io/istio/pkg/ptr"
 	corev1 "k8s.io/api/core/v1"
 	discoveryv1 "k8s.io/api/discovery/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
@@ -22,6 +19,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 )
 
 const BackendClusterPrefix = "kube"
@@ -82,8 +80,7 @@ func BuildServiceBackendObjectIR(svc *corev1.Service, svcPort int32, svcProtocol
 	backend.Obj = svc
 	backend.AppProtocol = ir.ParseAppProtocol(&svcProtocol)
 	backend.GvPrefix = BackendClusterPrefix
-	// TODO: reevaluate knative dep, dedupe with pkg/utils/kubeutils/dns.go
-	backend.CanonicalHostname = fmt.Sprintf("%s.%s.svc.%s", svc.Name, svc.Namespace, network.GetClusterDomainName())
+	backend.CanonicalHostname = kubeutils.GetServiceHostname(svc.Name, svc.Namespace)
 	return backend
 }
 

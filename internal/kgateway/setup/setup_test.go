@@ -13,7 +13,7 @@ import (
 	"slices"
 	"sort"
 	"strings"
-	"sync/atomic"
+	"sync"
 	"testing"
 	"time"
 
@@ -67,11 +67,15 @@ func getAssetsDir(t *testing.T) string {
 
 // testingWriter is a WriteSyncer that writes logs to testing.T.
 type testingWriter struct {
-	t atomic.Value
+	sync.RWMutex
+	t *testing.T
 }
 
 func (w *testingWriter) Write(p []byte) (n int, err error) {
-	w.t.Load().(*testing.T).Log(string(p)) // Write the log to testing.T
+	w.RLock()
+	defer w.RUnlock()
+
+	w.t.Log(string(p)) // Write the log to testing.T
 	return len(p), nil
 }
 
@@ -80,7 +84,10 @@ func (w *testingWriter) Sync() error {
 }
 
 func (w *testingWriter) set(t *testing.T) {
-	w.t.Store(t)
+	w.Lock()
+	defer w.Unlock()
+
+	w.t = t
 }
 
 var (

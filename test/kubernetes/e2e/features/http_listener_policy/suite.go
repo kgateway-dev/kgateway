@@ -145,7 +145,9 @@ func (s *testingSuite) TestHttpListenerPolicyServerHeader() {
 }
 
 func (s *testingSuite) TestPreserveHttp1HeaderCase() {
-	// The test verifies that the HTTP1 headers are preserved as expected
+	// The test verifies that the HTTP1 headers are preserved as expected in the request and response
+	// The HTTPListenerPolicy ensures that the header is preserved in the request,
+	// and the BackendConfigPolicy ensures that the header is preserved in the response.
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, echoService, echoDeployment)
 	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, echoDeployment.ObjectMeta.GetNamespace(), metav1.ListOptions{
 		LabelSelector: "app=raw-header-echo",
@@ -161,6 +163,9 @@ func (s *testingSuite) TestPreserveHttp1HeaderCase() {
 		&matchers.HttpResponse{
 			StatusCode: http.StatusOK,
 			Body:       gomega.ContainSubstring("X-CaSeD-HeAdEr"),
+			Headers: map[string]any{
+				"ReSpOnSe-miXed-CaSe-hEaDeR": "Foo",
+			},
 		},
 	)
 }

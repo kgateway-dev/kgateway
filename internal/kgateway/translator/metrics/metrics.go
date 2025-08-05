@@ -12,9 +12,14 @@ import (
 
 const (
 	translatorSubsystem = "translator"
-	translatorNameLabel = "translator"
 	resourcesSubsystem  = "resources"
 	snapshotSubsystem   = "xds_snapshot"
+	translatorNameLabel = "translator"
+	gatewayLabel        = "gateway"
+	nameLabel           = "name"
+	namespaceLabel      = "namespace"
+	resultLabel         = "result"
+	resourceLabel       = "resource"
 )
 
 var logger = logging.New("translator.metrics")
@@ -27,7 +32,7 @@ var (
 			Name:      "translations_total",
 			Help:      "Total number of translations",
 		},
-		[]string{translatorNameLabel, "result"},
+		[]string{nameLabel, namespaceLabel, translatorNameLabel, resultLabel},
 	)
 	translationDuration = metrics.NewHistogram(
 		metrics.HistogramOpts{
@@ -39,7 +44,7 @@ var (
 			NativeHistogramMaxBucketNumber:  100,
 			NativeHistogramMinResetDuration: time.Hour,
 		},
-		[]string{translatorNameLabel},
+		[]string{nameLabel, namespaceLabel, translatorNameLabel},
 	)
 	translationsRunning = metrics.NewGauge(
 		metrics.GaugeOpts{
@@ -47,7 +52,7 @@ var (
 			Name:      "translations_running",
 			Help:      "Current number of translations running",
 		},
-		[]string{translatorNameLabel},
+		[]string{nameLabel, namespaceLabel, translatorNameLabel},
 	)
 
 	xdsSnapshotSyncsTotal = metrics.NewCounter(metrics.CounterOpts{
@@ -55,14 +60,14 @@ var (
 		Name:      "syncs_total",
 		Help:      "Total number of XDS snapshot syncs",
 	},
-		[]string{"gateway", "namespace"})
+		[]string{gatewayLabel, namespaceLabel})
 
 	resourcesSyncsStartedTotal = metrics.NewCounter(metrics.CounterOpts{
 		Subsystem: resourcesSubsystem,
 		Name:      "syncs_started_total",
 		Help:      "Total number of syncs started",
 	},
-		[]string{"gateway", "namespace", "resource"})
+		[]string{gatewayLabel, namespaceLabel, resourceLabel})
 	resourcesUpdatesDroppedTotal = metrics.NewCounter(metrics.CounterOpts{
 		Subsystem: resourcesSubsystem,
 		Name:      "updates_dropped_total",
@@ -78,76 +83,54 @@ type ResourceMetricLabels struct {
 
 func (r ResourceMetricLabels) toMetricsLabels() []metrics.Label {
 	return []metrics.Label{
-		{Name: "gateway", Value: r.Gateway},
-		{Name: "namespace", Value: r.Namespace},
-		{Name: "resource", Value: r.Resource},
+		{Name: gatewayLabel, Value: r.Gateway},
+		{Name: namespaceLabel, Value: r.Namespace},
+		{Name: resourceLabel, Value: r.Resource},
 	}
 }
 
-// TranslatorMetricsRecorder defines the interface for recording translator metrics.
-type TranslatorMetricsRecorder interface {
-	TranslationStart() func(error)
+type TranslatorMetricLabels struct {
+	Name       string
+	Namespace  string
+	Translator string
 }
 
-// translatorMetrics records metrics for translator operations.
-type translatorMetrics struct {
-	translatorName      string
-	translationsTotal   metrics.Counter
-	translationDuration metrics.Histogram
-	translationsRunning metrics.Gauge
+func (t TranslatorMetricLabels) toMetricsLabels() []metrics.Label {
+	return []metrics.Label{
+		{Name: nameLabel, Value: t.Name},
+		{Name: namespaceLabel, Value: t.Namespace},
+		{Name: translatorNameLabel, Value: t.Translator},
+	}
 }
 
-// NewTranslatorMetricsRecorder creates a new recorder for translator metrics.
-func NewTranslatorMetricsRecorder(translatorName string) TranslatorMetricsRecorder {
+// CollectTranslationMetrics is called at the start of a translation function to
+// begin metrics collection and returns a function called at the end to complete
+// metrics recording.
+func CollectTranslationMetrics(labels TranslatorMetricLabels) func(error) {
 	if !metrics.Active() {
-		return &nullTranslatorMetricsRecorder{}
+		return func(err error) {}
 	}
 
-	m := &translatorMetrics{
-		translatorName:      translatorName,
-		translationsTotal:   translationsTotal,
-		translationDuration: translationDuration,
-		translationsRunning: translationsRunning,
-	}
-
-	return m
-}
-
-// TranslationStart is called at the start of a translation function to begin metrics
-// collection and returns a function called at the end to complete metrics recording.
-func (m *translatorMetrics) TranslationStart() func(error) {
 	start := time.Now()
 
-	m.translationsRunning.Add(1,
-		metrics.Label{Name: translatorNameLabel, Value: m.translatorName})
+	translationsRunning.Add(1, labels.toMetricsLabels()...)
 
 	return func(err error) {
 		duration := time.Since(start)
 
-		m.translationDuration.Observe(duration.Seconds(),
-			metrics.Label{Name: translatorNameLabel, Value: m.translatorName})
+		translationDuration.Observe(duration.Seconds(), labels.toMetricsLabels()...)
 
 		result := "success"
 		if err != nil {
 			result = "error"
 		}
 
-		m.translationsTotal.Inc([]metrics.Label{
-			{Name: translatorNameLabel, Value: m.translatorName},
-			{Name: "result", Value: result},
-		}...)
+		translationsTotal.Inc(append(labels.toMetricsLabels(),
+			metrics.Label{Name: resultLabel, Value: result},
+		)...)
 
-		m.translationsRunning.Sub(1,
-			metrics.Label{Name: translatorNameLabel, Value: m.translatorName})
+		translationsRunning.Sub(1, labels.toMetricsLabels()...)
 	}
-}
-
-var _ TranslatorMetricsRecorder = &translatorMetrics{}
-
-type nullTranslatorMetricsRecorder struct{}
-
-func (m *nullTranslatorMetricsRecorder) TranslationStart() func(error) {
-	return func(err error) {}
 }
 
 // ResourceSyncStartTime represents the start time of a resource sync.
@@ -190,6 +173,8 @@ var syncCh = make(chan *syncStartInfo, 1024)
 
 // StartResourceSyncMetricsProcessing starts a goroutine that processes resource sync metrics.
 func StartResourceSyncMetricsProcessing(ctx context.Context) {
+	resourcesUpdatesDroppedTotal.Add(0) // Initialize the counter to 0.
+
 	go func() {
 		for {
 			select {
@@ -213,8 +198,8 @@ func IncXDSSnapshotSync(gateway, namespace string) {
 	}
 
 	xdsSnapshotSyncsTotal.Inc([]metrics.Label{
-		{Name: "gateway", Value: gateway},
-		{Name: "namespace", Value: namespace},
+		{Name: gatewayLabel, Value: gateway},
+		{Name: namespaceLabel, Value: namespace},
 	}...)
 }
 
@@ -350,15 +335,15 @@ func endResourceSync(syncInfo *syncStartInfo) {
 		for _, namespaceStartTimes := range resourceTypeStartTimes {
 			for resourceName, st := range namespaceStartTimes {
 				syncInfo.totalCounter.Inc([]metrics.Label{
-					{Name: "gateway", Value: st.Gateway},
-					{Name: "namespace", Value: st.Namespace},
-					{Name: "resource", Value: st.ResourceType},
+					{Name: gatewayLabel, Value: st.Gateway},
+					{Name: namespaceLabel, Value: st.Namespace},
+					{Name: resourceLabel, Value: st.ResourceType},
 				}...)
 
 				syncInfo.durationHistogram.Observe(syncInfo.endTime.Sub(st.Time).Seconds(), []metrics.Label{
-					{Name: "gateway", Value: st.Gateway},
-					{Name: "namespace", Value: st.Namespace},
-					{Name: "resource", Value: st.ResourceType},
+					{Name: gatewayLabel, Value: st.Gateway},
+					{Name: namespaceLabel, Value: st.Namespace},
+					{Name: resourceLabel, Value: st.ResourceType},
 				}...)
 
 				if deleteResources[st.Namespace] == nil {
@@ -404,15 +389,15 @@ func endResourceSync(syncInfo *syncStartInfo) {
 	}
 
 	syncInfo.totalCounter.Inc([]metrics.Label{
-		{Name: "gateway", Value: st.Gateway},
-		{Name: "namespace", Value: st.Namespace},
-		{Name: "resource", Value: st.ResourceType},
+		{Name: gatewayLabel, Value: st.Gateway},
+		{Name: namespaceLabel, Value: st.Namespace},
+		{Name: resourceLabel, Value: st.ResourceType},
 	}...)
 
 	syncInfo.durationHistogram.Observe(syncInfo.endTime.Sub(st.Time).Seconds(), []metrics.Label{
-		{Name: "gateway", Value: st.Gateway},
-		{Name: "namespace", Value: st.Namespace},
-		{Name: "resource", Value: st.ResourceType},
+		{Name: gatewayLabel, Value: st.Gateway},
+		{Name: namespaceLabel, Value: st.Namespace},
+		{Name: resourceLabel, Value: st.ResourceType},
 	}...)
 
 	delete(startTimes.times[syncInfo.details.Gateway][rt][syncInfo.details.Namespace], rn)

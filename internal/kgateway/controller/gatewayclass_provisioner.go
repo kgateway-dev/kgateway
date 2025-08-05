@@ -33,7 +33,6 @@ type gatewayClassProvisioner struct {
 	// initialReconcileCh is a channel that is used to trigger initial reconciliation when
 	// no GatewayClass objects exist in the cluster.
 	initialReconcileCh chan event.TypedGenericEvent[client.Object]
-	metrics            controllerMetricsRecorder
 }
 
 var _ reconcile.TypedReconciler[reconcile.Request] = &gatewayClassProvisioner{}
@@ -52,7 +51,6 @@ func NewGatewayClassProvisioner(mgr ctrl.Manager, controllerName string, classCo
 		controllerName:     controllerName,
 		classConfigs:       classConfigs,
 		initialReconcileCh: initialReconcileCh,
-		metrics:            newControllerMetricsRecorder("gatewayclass-provisioner"),
 	}
 	if err := provisioner.SetupWithManager(mgr); err != nil {
 		return err
@@ -85,9 +83,10 @@ func (r *gatewayClassProvisioner) Reconcile(ctx context.Context, req ctrl.Reques
 	log.Info("reconciling GatewayClasses", "controllerName", "gatewayclass-provisioner")
 	defer log.Info("finished reconciling GatewayClasses", "controllerName", "gatewayclass-provisioner")
 
-	if r.metrics != nil {
-		defer r.metrics.reconcileStart()(rErr)
-	}
+	finishMetrics := collectReconciliationMetrics("gatewayclass-provisioner", req)
+	defer func() {
+		finishMetrics(rErr)
+	}()
 
 	var errs []error
 	for name, config := range r.classConfigs {

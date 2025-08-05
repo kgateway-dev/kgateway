@@ -3,12 +3,17 @@ package controller
 import (
 	"time"
 
+	ctrl "sigs.k8s.io/controller-runtime"
+
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
 )
 
 const (
 	controllerSubsystem = "controller"
 	controllerNameLabel = "controller"
+	namespaceLabel      = "namespace"
+	nameLabel           = "name"
+	resultLabel         = "result"
 )
 
 var (
@@ -19,7 +24,7 @@ var (
 			Name:      "reconciliations_total",
 			Help:      "Total number of controller reconciliations",
 		},
-		[]string{controllerNameLabel, "result"},
+		[]string{controllerNameLabel, nameLabel, namespaceLabel, resultLabel},
 	)
 	reconcileDuration = metrics.NewHistogram(
 		metrics.HistogramOpts{
@@ -31,7 +36,7 @@ var (
 			NativeHistogramMaxBucketNumber:  100,
 			NativeHistogramMinResetDuration: time.Hour,
 		},
-		[]string{controllerNameLabel},
+		[]string{controllerNameLabel, nameLabel, namespaceLabel},
 	)
 	reconciliationsRunning = metrics.NewGauge(
 		metrics.GaugeOpts{
@@ -39,78 +44,57 @@ var (
 			Name:      "reconciliations_running",
 			Help:      "Number of reconciliations currently running",
 		},
-		[]string{controllerNameLabel},
+		[]string{controllerNameLabel, nameLabel, namespaceLabel},
 	)
 )
 
-// controllerMetricsRecorder defines the interface for recording controller metrics.
-type controllerMetricsRecorder interface {
-	reconcileStart() func(error)
-}
-
-// controllerMetrics provides metrics for controller operations.
-type controllerMetrics struct {
-	controllerName         string
-	reconciliationsTotal   metrics.Counter
-	reconcileDuration      metrics.Histogram
-	reconciliationsRunning metrics.Gauge
-}
-
-var _ controllerMetricsRecorder = &controllerMetrics{}
-
-// newControllerMetricsRecorder creates a new ControllerMetrics instance.
-func newControllerMetricsRecorder(controllerName string) controllerMetricsRecorder {
-	if !metrics.Active() {
-		return &nullControllerMetricsRecorder{}
-	}
-
-	m := &controllerMetrics{
-		controllerName:         controllerName,
-		reconciliationsTotal:   reconciliationsTotal,
-		reconcileDuration:      reconcileDuration,
-		reconciliationsRunning: reconciliationsRunning,
-	}
-
-	return m
-}
-
-// reconcileStart is called at the start of a controller reconciliation function
-// to begin metrics collection and returns a function called at the end to
+// collectReconciliationMetrics is called at the start of a controller reconciliation
+// function to begin metrics collection and returns a function called at the end to
 // complete metrics recording.
-func (m *controllerMetrics) reconcileStart() func(error) {
+func collectReconciliationMetrics(controllerName string, req ctrl.Request) func(error) {
+	if !metrics.Active() {
+		return func(err error) {}
+	}
+
 	start := time.Now()
 
-	m.reconciliationsRunning.Add(1,
-		metrics.Label{Name: controllerNameLabel, Value: m.controllerName})
+	reconciliationsRunning.Add(1,
+		[]metrics.Label{
+			{Name: controllerNameLabel, Value: controllerName},
+			{Name: nameLabel, Value: req.Name},
+			{Name: namespaceLabel, Value: req.Namespace},
+		}...)
 
 	return func(err error) {
 		duration := time.Since(start)
 
-		m.reconcileDuration.Observe(duration.Seconds(),
-			metrics.Label{Name: controllerNameLabel, Value: m.controllerName})
+		reconcileDuration.Observe(duration.Seconds(),
+			[]metrics.Label{
+				{Name: controllerNameLabel, Value: controllerName},
+				{Name: nameLabel, Value: req.Name},
+				{Name: namespaceLabel, Value: req.Namespace},
+			}...)
 
 		result := "success"
 		if err != nil {
 			result = "error"
 		}
 
-		m.reconciliationsTotal.Inc([]metrics.Label{
-			{Name: controllerNameLabel, Value: m.controllerName},
-			{Name: "result", Value: result},
+		reconciliationsTotal.Inc([]metrics.Label{
+			{Name: controllerNameLabel, Value: controllerName},
+			{Name: nameLabel, Value: req.Name},
+			{Name: namespaceLabel, Value: req.Namespace},
+			{Name: resultLabel, Value: result},
 		}...)
 
-		m.reconciliationsRunning.Sub(1,
-			metrics.Label{Name: controllerNameLabel, Value: m.controllerName})
+		reconciliationsRunning.Sub(1,
+			[]metrics.Label{
+				{Name: controllerNameLabel, Value: controllerName},
+				{Name: nameLabel, Value: req.Name},
+				{Name: namespaceLabel, Value: req.Namespace},
+			}...)
 	}
 }
-
-type nullControllerMetricsRecorder struct{}
-
-func (m *nullControllerMetricsRecorder) reconcileStart() func(error) {
-	return func(err error) {}
-}
-
-var _ controllerMetricsRecorder = &nullControllerMetricsRecorder{}
 
 // ResetMetrics resets the metrics from this package.
 // This is provided for testing purposes only.

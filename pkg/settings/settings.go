@@ -125,9 +125,10 @@ type Settings struct {
 	WaypointLocalBinding bool `split_words:"true" default:"false"`
 
 	// IngressUseWaypoints enables the waypoint feature for ingress traffic.
-	// When enabled, backends with the ambient.istio.io/redirection=enabled annotation
-	// will be redirected through a waypoint proxy.
-	IngressUseWaypoints bool `split_words:"true" default:"false"`
+	// When enabled, backends with the ambient.istio.io/redirection=enabled annotation and
+	// istio.io/ingress-use-waypoint=true label will be redirected through a waypoint proxy.
+	// The feature is enabled by default and can be disabled by setting this to false.
+	IngressUseWaypoints bool `split_words:"true" default:"true"`
 
 	// LogLevel specifies the logging level (e.g., "trace", "debug", "info", "warn", "error").
 	// Defaults to "info" if not set.

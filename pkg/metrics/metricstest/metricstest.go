@@ -2,6 +2,7 @@
 package metricstest
 
 import (
+	"context"
 	"fmt"
 	"io"
 
@@ -73,8 +74,9 @@ var _ ExpectMetric = &ExpectedMetricValueTest{}
 
 // Gathered metrics interface.
 type GatheredMetrics interface {
-	AssertMetricsLabels(name string, expectedLabels [][]metrics.Label)
 	AssertMetricLabels(name string, expectedLabels []metrics.Label)
+	AssertMetricsLabels(name string, expectedLabels [][]metrics.Label)
+	AssertMetricsLabelsInclude(name string, expectedLabels [][]metrics.Label)
 	AssertMetricHistogramValue(name string, expectedValue HistogramMetricOutput)
 	AssertHistogramPopulated(name string)
 	AssertHistogramBuckets(name string, expectedBuckets []float64)
@@ -82,6 +84,9 @@ type GatheredMetrics interface {
 	AssertMetricNotExists(name string)
 	AssertMetric(name string, expectedMetric ExpectMetric)
 	AssertMetrics(name string, expectedMetrics []ExpectMetric)
+	AssertMetricsInclude(name string, expectedMetrics []ExpectMetric)
+	Length() int
+	MetricLength(name string) int
 }
 
 // MustGatherMetrics gathers metrics and returns them as GatheredMetrics.
@@ -96,6 +101,52 @@ type prometheusGatheredMetrics struct {
 }
 
 var _ GatheredMetrics = &prometheusGatheredMetrics{}
+
+// Length returns the number of different metric names gathered.
+func (g *prometheusGatheredMetrics) Length() int {
+	return len(g.metrics)
+}
+
+// MetricLength returns the number of metrics for a given name.
+func (g *prometheusGatheredMetrics) MetricLength(name string) int {
+	if metrics, ok := g.metrics[name]; ok {
+		return len(metrics)
+	}
+
+	return 0
+}
+
+// MustGatherMetricsContext gathers metrics and returns them as GatheredMetrics.
+// It will block and attempt to gather metrics until either the context is done,
+// an attempt to gather metrics results in an error, or the metrics are gathered.
+// If the context completes before metrics are gathered, it will fail the test.
+// If no names are provided, it will return upon gathering any metrics.
+func MustGatherMetricsContext(ctx context.Context, t require.TestingT, names ...string) GatheredMetrics {
+Loop:
+	for {
+		select {
+		case <-ctx.Done():
+			require.Fail(t, "Context done before gathering metrics", "names", names)
+
+			return nil
+		default:
+		}
+
+		gathered := MustGatherPrometheusMetrics(t)
+
+		if gathered == nil || gathered.Length() == 0 {
+			continue Loop
+		}
+
+		for _, name := range names {
+			if gathered.MetricLength(name) == 0 {
+				continue Loop
+			}
+		}
+
+		return gathered
+	}
+}
 
 // MustGatherPrometheusMetrics gathers metrics from the registry and returns them.
 func MustGatherPrometheusMetrics(t require.TestingT) GatheredMetrics {
@@ -123,11 +174,11 @@ func (g *prometheusGatheredMetrics) MustGetMetric(name string) *dto.Metric {
 	return m[0]
 }
 
-// MustGetMetrics retrieves multiple metrics by name, ensuring they exist and have the expected count.
+// MustGetMetrics retrieves multiple metrics by name, ensuring they exist and have at least the expected count.
 func (g *prometheusGatheredMetrics) MustGetMetrics(name string, expectedCount int) []*dto.Metric {
 	m, ok := g.metrics[name]
 	require.True(g.t, ok, "Metric %s not found", name)
-	require.Equal(g.t, expectedCount, len(m), "Expected %d metrics for %s", expectedCount, name)
+	require.LessOrEqual(g.t, expectedCount, len(m), "Expected %d metrics for %s", expectedCount, name)
 	return m
 }
 
@@ -180,11 +231,49 @@ func (g *prometheusGatheredMetrics) AssertMetricLabels(name string, expectedLabe
 	g.assertMetricObjLabels(metric, expectedLabels)
 }
 
-// AssertMetricsLabels asserts that multiple metrics have the expected labels.
+// AssertMetricsLabels asserts that multiple metrics of the same name exactly match the expected labels.
 func (g *prometheusGatheredMetrics) AssertMetricsLabels(name string, expectedLabels [][]metrics.Label) {
 	metrics := g.MustGetMetrics(name, len(expectedLabels))
 	for i, m := range metrics {
 		g.assertMetricObjLabels(m, expectedLabels[i])
+	}
+}
+
+// AssertMetricsLabelsInclude asserts that multiple metrics of the same name include at least the expected labels.
+func (g *prometheusGatheredMetrics) AssertMetricsLabelsInclude(name string, expectedLabels [][]metrics.Label) {
+	metrics := g.MustGetMetrics(name, len(expectedLabels))
+
+	matched := make([]bool, len(expectedLabels))
+
+	for _, m := range metrics {
+		for i, labels := range expectedLabels {
+			if matched[i] {
+				continue
+			}
+
+			err := g.metricObjLabelsMatch(m, labels)
+			if err == nil {
+				matched[i] = true
+
+				break
+			}
+		}
+	}
+
+	allMatched := true
+
+	for _, v := range matched {
+		if !v {
+			allMatched = false
+
+			break
+		}
+	}
+
+	if !allMatched {
+		assert.Fail(g.t, "Not all expected labels were found within the metrics",
+			"Expected metrics with labels %v for %s: %v",
+			expectedLabels, name, metrics)
 	}
 }
 
@@ -234,17 +323,33 @@ func (g *prometheusGatheredMetrics) AssertMetricNotExists(name string) {
 	assert.False(g.t, ok, "Metric %s found", name)
 }
 
+// AssertMetric asserts that a metric with the given name matches the expected metric.
 // Works for counters and gauges, but not histograms or summaries.
 func (g *prometheusGatheredMetrics) AssertMetric(name string, expected ExpectMetric) {
 	g.AssertMetrics(name, []ExpectMetric{expected})
 }
 
+// AssertMetrics asserts that all metrics with the given name exactly match the expected metrics.
 func (g *prometheusGatheredMetrics) AssertMetrics(name string, expectedMetrics []ExpectMetric) {
 	require.NotEmpty(g.t, g.metrics[name], "Expected metrics %s not found", name)
 
 	for _, m := range g.metrics[name] {
 		matchedExpectedMetric := g.findMetricObj(m, expectedMetrics)
 		require.NotNil(g.t, matchedExpectedMetric, "Metric %s with labels %v not found", name, m.GetLabel())
+		assert.True(g.t, matchedExpectedMetric.Match(g.t, g.mustGetMetricValue(m)), "Metric %s value mismatch -  value is %f", name, g.mustGetMetricValue(m))
+	}
+}
+
+// AssertMetricsInclude asserts that all metrics with the given name include at least all of the expected metrics.
+func (g *prometheusGatheredMetrics) AssertMetricsInclude(name string, expectedMetrics []ExpectMetric) {
+	require.NotEmpty(g.t, g.metrics[name], "Expected metrics %s not found", name)
+
+	for _, m := range g.metrics[name] {
+		matchedExpectedMetric := g.findMetricObj(m, expectedMetrics)
+		if matchedExpectedMetric == nil {
+			continue
+		}
+
 		assert.True(g.t, matchedExpectedMetric.Match(g.t, g.mustGetMetricValue(m)), "Metric %s value mismatch -  value is %f", name, g.mustGetMetricValue(m))
 	}
 }

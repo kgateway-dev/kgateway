@@ -180,7 +180,6 @@ func GatewayCollection(
 	namespaces krt.Collection[*corev1.Namespace],
 	grants ReferenceGrants,
 	secrets krt.Collection[*corev1.Secret],
-	domainSuffix string,
 	krtopts krtutil.KrtOptions,
 ) krt.Collection[GatewayListener] {
 	gw := krt.NewManyCollection(gateways, func(ctx krt.HandlerContext, obj *gwv1.Gateway) []GatewayListener {
@@ -204,7 +203,7 @@ func GatewayCollection(
 		var servers []*istio.Server
 
 		// Extract the addresses. A gwv1 will bind to a specific Service
-		gatewayServices, err := extractGatewayServices(domainSuffix, obj)
+		gatewayServices, err := extractGatewayServices(obj)
 		if len(gatewayServices) == 0 && err != nil {
 			// Short circuit if it's a hard failure
 			logger.Error("failed to translate gwv1", "name", obj.GetName(), "namespace", obj.GetNamespace(), "err", err.Message)
@@ -247,7 +246,6 @@ func GatewayCollection(
 					Name:              InternalGatewayName(obj.Name, string(l.Name)),
 					Annotations:       meta,
 					Namespace:         obj.Namespace,
-					Domain:            domainSuffix,
 				},
 				// TODO: clean up and move away from istio gwv1 ir
 				Spec: &istio.Gateway{

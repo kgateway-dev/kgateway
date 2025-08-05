@@ -42,7 +42,6 @@ Name|Version|License
 [klog/v2](https://k8s.io/klog/v2)|v2.130.1|Apache License 2.0
 [k8s.io/kube-openapi](https://k8s.io/kube-openapi)|v0.0.0-20250318190949-c8a335a9a2ff|Apache License 2.0
 [k8s.io/utils](https://k8s.io/utils)|v0.0.0-20250502105355-0f33e8f1c979|Apache License 2.0
-[knative.dev/pkg](https://knative.dev/pkg)|v0.0.0-20211206113427-18589ac7627e|Apache License 2.0
 [sigs.k8s.io/controller-runtime](https://sigs.k8s.io/controller-runtime)|v0.21.0|Apache License 2.0
 [sigs.k8s.io/gateway-api](https://sigs.k8s.io/gateway-api)|v1.3.0|Apache License 2.0
 [sigs.k8s.io/gateway-api-inference-extension](https://sigs.k8s.io/gateway-api-inference-extension)|v0.5.1|Apache License 2.0

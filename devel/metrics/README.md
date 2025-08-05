@@ -35,16 +35,16 @@ Several packages have interfaces created to standardize collection of metrics ar
 
 Objects returned from these constructors will be unique, but the underlying metrics will be shared.
 
-These objects all support a `Start` method, that can be placed at the beginning of processing an event:
+These objects all support a "CollectMetrics()" method, that can be called at the beginning of processing an event, and which returns a finish function called at the end of event processing, which also optionally records if an error occurred:
 ```go
-	var rErr error
-	metricsRecorder := NewTranslatorMetricsRecorder("TranslateGateway")
-	finishFunc := metricsRecorder.TranslationStart()
-	defer func() {
-		finishFunc(rErr)
-	}()
+var rErr error
 
-	rErr := DoSomeWork()
+finishMetrics := metrics.CollectTranslationMetrics("TranslateGateway")
+defer func() {
+  finishMetrics(rErr)
+}()
+
+rErr := DoSomeTranslation()
 ```
 
 These `Start` methods return a function to be defered to run on completion of the event handling, allowing collection of timing and other metrics. If the `Start` method is not called, those metrics will not be collected, but there will be no failures.

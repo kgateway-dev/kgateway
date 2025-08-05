@@ -19,6 +19,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/query"
 	route "github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/httproute"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/metrics"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/routeutils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/sslutils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
@@ -42,6 +43,12 @@ func TranslateListeners(
 	reporter reports.Reporter,
 	settings ListenerTranslatorConfig,
 ) []ir.ListenerIR {
+	defer metrics.CollectTranslationMetrics(metrics.TranslatorMetricLabels{
+		Name:       gateway.Name,
+		Namespace:  gateway.Namespace,
+		Translator: "TranslateListeners",
+	})(nil)
+
 	validatedListeners := validateGateway(gateway, reporter)
 
 	mergedListeners := mergeGWListeners(queries, gateway.Namespace, validatedListeners, *gateway, routesForGw, reporter, settings)

@@ -28,14 +28,12 @@ func NewTranslator(queries query.GatewayQueries, settings TranslatorConfig) exte
 	return &translator{
 		queries:  queries,
 		settings: settings,
-		metrics:  metrics.NewTranslatorMetricsRecorder("TranslateGateway"),
 	}
 }
 
 type translator struct {
 	queries  query.GatewayQueries
 	settings TranslatorConfig
-	metrics  metrics.TranslatorMetricsRecorder
 }
 
 func (t *translator) Translate(
@@ -48,13 +46,24 @@ func (t *translator) Translate(
 	stopwatch.Start()
 	defer stopwatch.Stop(ctx)
 
-	defer t.metrics.TranslationStart()(nil)
+	var rErr error
+
+	finishMetrics := metrics.CollectTranslationMetrics(metrics.TranslatorMetricLabels{
+		Name:       gateway.Name,
+		Namespace:  gateway.Namespace,
+		Translator: "TranslateGateway",
+	})
+	defer func() {
+		finishMetrics(rErr)
+	}()
 
 	routesForGw, err := t.queries.GetRoutesForGateway(kctx, ctx, gateway)
 	if err != nil {
 		logger.Error("failed to get routes for gateway", "namespace", gateway.Namespace, "name", gateway.Name, "error", err)
 		// TODO: decide how/if to report this error on Gateway
 		// reporter.Gateway(gateway).Err(err.Error())
+		rErr = err
+
 		return nil
 	}
 

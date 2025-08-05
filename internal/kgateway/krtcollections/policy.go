@@ -7,7 +7,6 @@ import (
 	"strconv"
 
 	"istio.io/istio/pkg/config/labels"
-	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/ptr"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -31,7 +30,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/delegation"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
-	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
 	pluginsdkir "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
@@ -545,55 +543,6 @@ func NewPolicyIndex(
 				}
 				return &a
 			}, krtopts.ToOptions(fmt.Sprintf("%s-policiesByTargetRef", gk.String()))...)
-
-			metrics.RegisterEvents(policiesByTargetRef, func(o krt.Event[ir.PolicyWrapper]) {
-				switch o.Event {
-				case controllers.EventAdd:
-					for _, ref := range o.Latest().TargetRefs {
-						if ref.Group == wellknown.GatewayGroup && ref.Kind == wellknown.GatewayKind {
-							resourcesManaged.Add(1, resourceMetricLabels{
-								Parent:    ref.Name,
-								Namespace: o.Latest().Namespace,
-								Resource:  o.Latest().Kind,
-							}.toMetricsLabels()...)
-						}
-					}
-				case controllers.EventUpdate:
-					if o.Old != nil {
-						// When updating an existing policy, decrement resource metrics with the old label
-						// values before incrementing with the changed label values.
-						for _, ref := range o.Old.TargetRefs {
-							if ref.Group == wellknown.GatewayGroup && ref.Kind == wellknown.GatewayKind {
-								resourcesManaged.Sub(1, resourceMetricLabels{
-									Parent:    ref.Name,
-									Namespace: o.Old.Namespace,
-									Resource:  o.Old.Kind,
-								}.toMetricsLabels()...)
-							}
-						}
-					}
-
-					for _, ref := range o.Latest().TargetRefs {
-						if ref.Group == wellknown.GatewayGroup && ref.Kind == wellknown.GatewayKind {
-							resourcesManaged.Add(1, resourceMetricLabels{
-								Parent:    ref.Name,
-								Namespace: o.Latest().Namespace,
-								Resource:  o.Latest().Kind,
-							}.toMetricsLabels()...)
-						}
-					}
-				case controllers.EventDelete:
-					for _, ref := range o.Latest().TargetRefs {
-						if ref.Group == wellknown.GatewayGroup && ref.Kind == wellknown.GatewayKind {
-							resourcesManaged.Sub(1, resourceMetricLabels{
-								Parent:    ref.Name,
-								Namespace: o.Latest().Namespace,
-								Resource:  o.Latest().Kind,
-							}.toMetricsLabels()...)
-						}
-					}
-				}
-			})
 
 			targetRefIndex := krtutil.UnnamedIndex(policiesByTargetRef, func(p ir.PolicyWrapper) []targetRefIndexKey {
 				// Every policy is indexed by PolicyRef and PolicyRef without Name (by Group+Kind+Namespace)
