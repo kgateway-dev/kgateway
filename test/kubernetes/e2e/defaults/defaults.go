@@ -37,6 +37,17 @@ var (
 
 	HttpEchoPodManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "http_echo.yaml")
 
+	HttpBinLabelSelector = "app=httpbin"
+
+	HttpBinPod = &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "httpbin",
+			Namespace: "default",
+		},
+	}
+
+	HttpBinManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "httpbin.yaml")
+
 	TcpEchoPod = &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "tcp-echo",

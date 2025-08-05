@@ -1,3 +1,4 @@
+---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -36,6 +37,7 @@ spec:
         app: httpbin
         version: v1
     spec:
+      terminationGracePeriodSeconds: 0
       serviceAccountName: httpbin
       containers:
         - image: docker.io/mccutchen/go-httpbin:v2.6.0
