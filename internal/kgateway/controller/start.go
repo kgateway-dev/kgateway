@@ -19,6 +19,7 @@ import (
 	infextv1a2 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer"
+	agwbuiltin "github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer/plugins/builtin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/inferenceextension/endpointpicker"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/registry"
@@ -87,6 +88,7 @@ type StartConfig struct {
 // context is cancelled
 type ControllerBuilder struct {
 	proxySyncer *proxy_syncer.ProxySyncer
+	agwSyncer   *agentgatewaysyncer.AgentGwSyncer
 	cfg         StartConfig
 	mgr         ctrl.Manager
 	commoncol   *common.CommonCollections
@@ -157,15 +159,22 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 	)
 	proxySyncer.Init(ctx, cfg.KrtOptions)
 
+	var agentGatewaySyncer *agentgatewaysyncer.AgentGwSyncer
 	if cfg.SetupOpts.GlobalSettings.EnableAgentGateway {
-		agentGatewaySyncer := agentgatewaysyncer.NewAgentGwSyncer(
-			ctx,
+		// TODO(npolshak): don't hard code https://github.com/kgateway-dev/kgateway/issues/11840
+		domainSuffix := "cluster.local"
+		agentGatewaySyncer = agentgatewaysyncer.NewAgentGwSyncer(
 			cfg.ControllerName,
 			cfg.AgentGatewayClassName,
-			cfg.Manager,
 			cfg.Client,
+			cfg.Manager,
 			cfg.CommonCollections,
+			mergedPlugins,
 			cfg.SetupOpts.Cache,
+			domainSuffix,
+			namespaces.GetPodNamespace(),
+			cfg.Client.ClusterID().String(),
+			cfg.SetupOpts.GlobalSettings.EnableInferExt,
 		)
 		agentGatewaySyncer.Init(cfg.KrtOptions)
 
@@ -183,6 +192,7 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 	setupLog.Info("starting controller builder")
 	cb := &ControllerBuilder{
 		proxySyncer: proxySyncer,
+		agwSyncer:   agentGatewaySyncer,
 		cfg:         cfg,
 		mgr:         cfg.Manager,
 		commoncol:   cfg.CommonCollections,
@@ -206,6 +216,9 @@ func pluginFactoryWithBuiltin(cfg StartConfig) extensions2.K8sGatewayExtensionsF
 	return func(ctx context.Context, commoncol *common.CommonCollections) sdk.Plugin {
 		plugins := registry.Plugins(ctx, commoncol, cfg.WaypointGatewayClassName)
 		plugins = append(plugins, krtcollections.NewBuiltinPlugin(ctx))
+		if cfg.SetupOpts.GlobalSettings.EnableAgentGateway {
+			plugins = append(plugins, agwbuiltin.NewBuiltinPlugin())
+		}
 		if cfg.ExtraPlugins != nil {
 			plugins = append(plugins, cfg.ExtraPlugins(ctx, commoncol)...)
 		}
@@ -291,7 +304,13 @@ func (c *ControllerBuilder) Build(ctx context.Context) error {
 }
 
 func (c *ControllerBuilder) HasSynced() bool {
-	return c.proxySyncer.HasSynced()
+	var hasSynced bool
+	if c.agwSyncer != nil {
+		hasSynced = c.proxySyncer.HasSynced() && c.agwSyncer.HasSynced()
+	} else {
+		hasSynced = c.proxySyncer.HasSynced()
+	}
+	return hasSynced
 }
 
 // GetDefaultClassInfo returns the default GatewayClass for the kgateway controller.

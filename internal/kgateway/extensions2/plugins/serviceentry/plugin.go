@@ -57,7 +57,7 @@ func NewPluginWithOpts(
 		ContributesBackends: map[schema.GroupKind]extensionsplug.BackendPlugin{
 			wellknown.ServiceEntryGVK.GroupKind(): {
 				BackendInit: ir.BackendInit{
-					InitBackend: seCollections.initServiceEntryBackend,
+					InitEnvoyBackend: seCollections.initServiceEntryBackend,
 				},
 				Backends: seCollections.Backends,
 

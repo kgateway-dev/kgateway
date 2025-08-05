@@ -1,0 +1,51 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: example-gateway
+spec:
+  gatewayClassName: agentgateway
+  listeners:
+    - name: http
+      protocol: HTTP
+      port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: example-route
+spec:
+  parentRefs:
+    - name: example-gateway
+  hostnames:
+    - "example.com"
+  rules:
+    - backendRefs:
+        - group: gateway.kgateway.dev
+          kind: Backend
+          name: openai
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  labels:
+    app: kgateway
+  name: openai
+spec:
+  type: AI
+  ai:
+    llm:
+      provider:
+        openai:
+          model: "gpt-4o-mini"
+          authToken:
+            kind: "SecretRef"
+            secretRef:
+              name: openai-secret
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: openai-secret
+type: Opaque
+data:
+  Authorization: bXlzZWNyZXRrZXk=

@@ -1,0 +1,132 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: example-gateway
+spec:
+  gatewayClassName: agentgateway
+  listeners:
+    - name: http
+      protocol: HTTP
+      port: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: example-svc
+spec:
+  selector:
+    test: test
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: test
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: example-route-timeout
+spec:
+  parentRefs:
+    - name: example-gateway
+  hostnames:
+    - "example.com"
+  rules:
+    - backendRefs:
+        - name: example-svc
+          port: 80
+      timeouts:
+        request: 9s
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: example-route-backend-request-timeout
+spec:
+  parentRefs:
+    - name: example-gateway
+  hostnames:
+    - "example-backend-request-timeout.com"
+  rules:
+    - backendRefs:
+        - name: example-svc
+          port: 80
+      timeouts:
+        backendRequest: 7s
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: example-route-backend-request-both-timeout
+spec:
+  parentRefs:
+    - name: example-gateway
+  hostnames:
+    - "example-backend-request-both-timeout.com"
+  rules:
+    - backendRefs:
+        - name: example-svc
+          port: 80
+      timeouts:
+        request: 10s
+        backendRequest: 9s # prefer this timeout
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: example-route-retry
+spec:
+  parentRefs:
+    - name: example-gateway
+  hostnames:
+    - "example-retry.com"
+  rules:
+    - backendRefs:
+        - name: example-svc
+          port: 80
+      retry:
+        attempts: 2
+        codes:
+          - 503
+        backoff: 1s
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: example-route-retry-backend-request
+spec:
+  parentRefs:
+    - name: example-gateway
+  hostnames:
+    - "example-retry-backend-request.com"
+  rules:
+    - backendRefs:
+        - name: example-svc
+          port: 80
+      timeouts:
+        backendRequest: 9s
+      retry:
+        attempts: 2
+        codes:
+          - 500
+          - 503
+        backoff: 1s
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: example-route-retry-both-timeouts
+spec:
+  parentRefs:
+    - name: example-gateway
+  hostnames:
+    - "example-retry-both-timeouts.com"
+  rules:
+    - backendRefs:
+        - name: example-svc
+          port: 80
+      timeouts:
+        request: 10s
+        backendRequest: 5s
+      retry:
+        attempts: 3
+---

@@ -85,6 +85,10 @@ func (r *ReportMap) Gateway(gateway *gwv1.Gateway) *GatewayReport {
 	return r.Gateways[key]
 }
 
+func (r *ReportMap) GatewayNamespaceName(key types.NamespacedName) *GatewayReport {
+	return r.Gateways[key]
+}
+
 func (r *ReportMap) newGatewayReport(gateway *gwv1.Gateway) *GatewayReport {
 	gr := &GatewayReport{}
 	gr.observedGeneration = gateway.Generation
@@ -249,6 +253,7 @@ func NewListenerReport(name string) *ListenerReport {
 	// without it, it will fail to set status
 	lr.Status.SupportedKinds = []gwv1.RouteGroupKind{}
 	lr.Status.Name = gwv1.SectionName(name)
+	lr.Status.SupportedKinds = []gwv1.RouteGroupKind{} // Initialize with empty slice
 	return &lr
 }
 
@@ -279,6 +284,7 @@ func (r *statusReporter) Gateway(gateway *gwv1.Gateway) pluginsdkreporter.Gatewa
 	if gr == nil {
 		gr = r.report.newGatewayReport(gateway)
 	}
+	gr.observedGeneration = gateway.Generation
 	return gr
 }
 
@@ -287,6 +293,7 @@ func (r *statusReporter) ListenerSet(listenerSet *gwxv1alpha1.XListenerSet) plug
 	if lsr == nil {
 		lsr = r.report.newListenerSetReport(listenerSet)
 	}
+	lsr.observedGeneration = listenerSet.Generation
 	return lsr
 }
 
@@ -295,6 +302,7 @@ func (r *statusReporter) Route(obj metav1.Object) pluginsdkreporter.RouteReporte
 	if rr == nil {
 		rr = r.report.newRouteReport(obj)
 	}
+	rr.observedGeneration = obj.GetGeneration()
 	return rr
 }
 

@@ -31,16 +31,17 @@ type (
 	ProxyTranslationPass              = ir.ProxyTranslationPass
 	UnimplementedProxyTranslationPass = ir.UnimplementedProxyTranslationPass
 
-	Gateway             = ir.Gateway
-	ListenerSet         = ir.ListenerSet
-	HcmContext          = ir.HcmContext
-	HttpBackend         = ir.HttpBackend
-	HttpRouteIR         = ir.HttpRouteIR
-	Route               = ir.Route
-	RouteBackendContext = ir.RouteBackendContext
-	RouteContext        = ir.RouteContext
-	Secret              = ir.Secret
-	VirtualHostContext  = ir.VirtualHostContext
+	Gateway                  = ir.Gateway
+	ListenerSet              = ir.ListenerSet
+	HcmContext               = ir.HcmContext
+	HttpBackend              = ir.HttpBackend
+	HttpRouteIR              = ir.HttpRouteIR
+	Route                    = ir.Route
+	RouteBackendContext      = ir.RouteBackendContext
+	RouteContext             = ir.RouteContext
+	AgentGatewayRouteContext = ir.AgentGatewayRouteContext
+	Secret                   = ir.Secret
+	VirtualHostContext       = ir.VirtualHostContext
 
 	EndpointMetadata  = ir.EndpointMetadata
 	FilterChainCommon = ir.FilterChainCommon

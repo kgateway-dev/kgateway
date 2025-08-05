@@ -1,0 +1,119 @@
+---
+kind: Gateway
+apiVersion: gateway.networking.k8s.io/v1
+metadata:
+  name: http-gw-for-test
+  namespace: gwtest
+spec:
+  gatewayClassName: agentgateway
+  listeners:
+    - name: foo
+      protocol: TCP
+      port: 8088
+      allowedRoutes:
+        kinds:
+          - kind: TCPRoute
+    - name: bar
+      protocol: TCP
+      port: 8089
+      allowedRoutes:
+        kinds:
+          - kind: TCPRoute
+---
+apiVersion: v1
+kind: Endpoints
+metadata:
+  labels:
+    app: foo
+  name: foo
+  namespace: gwtest
+subsets:
+  - addresses:
+      - ip: 10.244.0.6
+        nodeName: worker
+        targetRef:
+          kind: Pod
+          name: foo
+          namespace: default
+    ports:
+      - name: http
+        port: 3000
+        protocol: TCP
+---
+apiVersion: v1
+kind: Endpoints
+metadata:
+  labels:
+    app: bar
+  name: bar
+  namespace: gwtest
+subsets:
+  - addresses:
+      - ip: 10.244.0.7
+        nodeName: worker
+        targetRef:
+          kind: Pod
+          name: bar
+          namespace: default
+    ports:
+      - name: http
+        port: 3001
+        protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: foo
+  namespace: gwtest
+  labels:
+    app: foo
+spec:
+  ports:
+    - name: http
+      port: 3001
+      targetPort: 3000
+  selector:
+    app: foo
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: bar
+  namespace: gwtest
+  labels:
+    app: bar
+spec:
+  ports:
+    - name: http
+      port: 3002
+      targetPort: 3000
+  selector:
+    app: bar
+---
+apiVersion: gateway.networking.k8s.io/v1alpha2
+kind: TCPRoute
+metadata:
+  name: tcp-app-1
+  namespace: gwtest
+spec:
+  parentRefs:
+    - name: http-gw-for-test
+      sectionName: foo
+  rules:
+    - backendRefs:
+        - name: foo
+          port: 3001
+---
+apiVersion: gateway.networking.k8s.io/v1alpha2
+kind: TCPRoute
+metadata:
+  name: tcp-app-2
+  namespace: gwtest
+spec:
+  parentRefs:
+    - name: http-gw-for-test
+      sectionName: bar
+  rules:
+    - backendRefs:
+        - name: bar
+          port: 3002

@@ -12,7 +12,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 )
 
-func processStatic(in *v1alpha1.StaticBackend, out *envoyclusterv3.Cluster) error {
+func processStaticBackendForEnvoy(in *v1alpha1.StaticBackend, out *envoyclusterv3.Cluster) error {
 	var hostname string
 	out.ClusterDiscoveryType = &envoyclusterv3.Cluster_Type{
 		Type: envoyclusterv3.Cluster_STATIC,

@@ -103,6 +103,11 @@ func (i *BackendIndex) HasSynced() bool {
 			return false
 		}
 	}
+	for _, col := range i.availableBackendsWithPolicy {
+		if !col.HasSynced() {
+			return false
+		}
+	}
 	return true
 }
 
@@ -797,6 +802,22 @@ func (p *PolicyIndex) fetchPolicy(kctx krt.HandlerContext, policyRef ir.ObjectSo
 		return krt.FetchOne(kctx, pi.policies, krt.FilterKey(policyRef.ResourceName()))
 	}
 	return nil
+}
+
+// LookupTargetingPolicies returns the policies targeting the given object.
+func (p *PolicyIndex) LookupTargetingPolicies(
+	kctx krt.HandlerContext,
+	pnt extensionsplug.AttachmentPoints,
+	targetRef ir.ObjectSource,
+	sectionName string,
+	targetLabels map[string]string,
+) []ir.PolicyAtt {
+	return p.getTargetingPolicies(kctx, pnt, targetRef, sectionName, targetLabels)
+}
+
+// PolicyIndex returns the underlying PolicyIndex reference.
+func (i *BackendIndex) PolicyIndex() *PolicyIndex {
+	return i.policies
 }
 
 type refGrantIndexKey struct {

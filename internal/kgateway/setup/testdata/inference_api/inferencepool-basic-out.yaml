@@ -1,4 +1,28 @@
 clusters:
+- circuitBreakers:
+    thresholds:
+    - maxConnections: 40000
+      maxPendingRequests: 40000
+      maxRequests: 40000
+  connectTimeout: 5s
+  dnsLookupFamily: V4_PREFERRED
+  lbSubsetConfig:
+    fallbackPolicy: ANY_ENDPOINT
+    subsetSelectors:
+    - keys:
+      - x-gateway-destination-endpoint
+  loadAssignment:
+    clusterName: endpoint-picker_gwtest_gateway-pool_8080
+    endpoints:
+    - {}
+  metadata: {}
+  name: endpoint-picker_gwtest_gateway-pool_8080
+  type: STATIC
+  typedExtensionProtocolOptions:
+    envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+      '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+      explicitHttpConfig:
+        httpProtocolOptions: {}
 - connectTimeout: 10s
   lbPolicy: LEAST_REQUEST
   loadAssignment:
@@ -24,19 +48,6 @@ clusters:
       '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
       explicitHttpConfig:
         http2ProtocolOptions: {}
-- circuitBreakers:
-    thresholds:
-    - maxConnections: 40000
-      maxPendingRequests: 40000
-      maxRequests: 40000
-  connectTimeout: 1000s
-  lbPolicy: CLUSTER_PROVIDED
-  metadata: {}
-  name: endpointpicker_gateway-pool_gwtest_original_dst
-  originalDstLbConfig:
-    httpHeaderName: x-gateway-destination-endpoint
-    useHttpHeader: true
-  type: ORIGINAL_DST
 - connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
@@ -89,6 +100,13 @@ listeners:
                 authority: placeholder-service.placeholder-namespace.svc:9002
                 clusterName: endpointpicker_placeholder-pool_placeholder-namespace_ext_proc
             messageTimeout: 5s
+            metadataOptions:
+              forwardingNamespaces:
+                untyped:
+                - envoy.lb.subset_hint
+              receivingNamespaces:
+                untyped:
+                - envoy.lb
             processingMode:
               requestBodyMode: FULL_DUPLEX_STREAMED
               requestHeaderMode: SEND
@@ -96,6 +114,14 @@ listeners:
               responseBodyMode: FULL_DUPLEX_STREAMED
               responseHeaderMode: SEND
               responseTrailerMode: SEND
+        - name: envoy.filters.http.header_to_metadata
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.header_to_metadata.v3.Config
+            requestRules:
+            - header: x-gateway-destination-endpoint
+              onHeaderPresent:
+                key: x-gateway-destination-endpoint
+                metadataNamespace: envoy.lb
         - name: envoy.filters.http.router
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -122,13 +148,5 @@ routes:
         prefix: /
       name: listener~8080~www_example_com-route-0-httproute-gateway-route-gwtest-0-0-matcher-0
       route:
-        cluster: endpointpicker_gateway-pool_gwtest_original_dst
-      typedPerFilterConfig:
-        inferencepool.backend.transformation.kgateway.io:
-          '@type': type.googleapis.com/envoy.extensions.filters.http.ext_proc.v3.ExtProcPerRoute
-          overrides:
-            grpcService:
-              envoyGrpc:
-                authority: gateway-pool-endpoint-picker.gwtest.svc:9002
-                clusterName: endpointpicker_gateway-pool_gwtest_ext_proc
-              timeout: 10s
+        cluster: endpoint-picker_gwtest_gateway-pool_8080
+        metadataMatch: {}

@@ -1,6 +1,6 @@
 {{- $gateway := .Values.gateway }}
 {{- if $gateway.agentGateway.enabled }}
-
+# TODO(npolshak): look into having agentgateway as a separate helm chart https://github.com/kgateway-dev/kgateway/issues/11240
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -27,6 +27,10 @@ spec:
         {{- toYaml . | nindent 8 }}
         {{- end }}
     spec:
+      securityContext:
+        sysctls:
+          - name: net.ipv4.ip_unprivileged_port_start
+            value: "0"
       containers:
         - name: agent-gateway
           image: "{{ template "kgateway.gateway.image" $gateway.image }}"
@@ -40,7 +44,8 @@ spec:
             {{- toYaml $gateway.resources | nindent 12 }}
           {{- end }} {{/* if $gateway.resources */}}
           args:
-            - --file=/config/config.json
+            - -f
+            - /config/config.json
           env:
             - name: NODE_NAME
               valueFrom:
@@ -60,6 +65,16 @@ spec:
               value: "1"
             - name: RUST_LOG
               value: {{ $gateway.agentGateway.logLevel }}
+            - name: XDS_ADDRESS
+              value: "http://{{ $gateway.xds.host }}:{{ $gateway.xds.port }}"
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: GATEWAY
+              value: {{ include "kgateway.gateway.fullname" . }}
+{{/*            - name: LOCAL_XDS_PATH*/}}
+{{/*              value: /config/config.json*/}}
             {{- if $gateway.env }}
             {{- toYaml $gateway.env | nindent 12 }}
             {{- end }} {{/* if $gateway.env */}}
@@ -94,7 +109,7 @@ spec:
   {{- range $p := $gateway.ports }}
     - name: {{ $p.name }}
       protocol: {{ $p.protocol }}
-      targetPort: {{ $p.targetPort }}
+      targetPort: {{ $p.port }}
       port: {{ $p.port }}
     {{- if $p.nodePort }}
       nodePort: {{ $p.nodePort }}
@@ -114,11 +129,7 @@ metadata:
 data:
   config.json: |
     {
-      "type": "xds",
-      "xds_address": "http://{{ $gateway.xds.host }}:{{ $gateway.xds.port }}",
-      "metadata": {},
-      "alt_xds_hostname": "{{ $gateway.gatewayName | default (include "kgateway.gateway.fullname" .) }}.{{ $gateway.gatewayNamespace }}.svc.cluster.local",
-      "listeners": []
+      "config": {}
     }
 
 {{- end }} {{/* if $gateway.agentGateway.enabled */}}

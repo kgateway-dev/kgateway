@@ -7,11 +7,15 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/agentgateway/agentgateway/go/api"
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	"istio.io/istio/pkg/kube/krt"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	apiannotations "github.com/kgateway-dev/kgateway/v2/api/annotations"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 )
 
 var VirtualBuiltInGK = schema.GroupKind{
@@ -20,12 +24,17 @@ var VirtualBuiltInGK = schema.GroupKind{
 }
 
 type BackendInit struct {
-	// InitBackend optionally returns an `*ir.EndpointsForBackend` that can be used
+	// InitEnvoyBackend optionally returns an `*ir.EndpointsForBackend` that can be used
 	// to initialize a ClusterLoadAssignment inline on the Cluster, with proper locality
 	// based prioritization applied, as well as endpoint plugins applied.
-	// This will never override a ClusterLoadAssignment that is set inside of an InitBackend implementation.
+	// This will never override a ClusterLoadAssignment that is set inside of an InitEnvoyBackend implementation.
 	// The CLA is only added if the Cluster has a compatible type (EDS, LOGICAL_DNS, STRICT_DNS).
-	InitBackend func(ctx context.Context, in BackendObjectIR, out *envoyclusterv3.Cluster) *EndpointsForBackend
+	InitEnvoyBackend func(ctx context.Context, in BackendObjectIR, out *envoyclusterv3.Cluster) *EndpointsForBackend
+
+	// AgentBackendInit defines the translation hook for agentgateway backends. Implementations
+	// should translate the provided backend object into one or more api.Backend objects
+	// understood by the agentgateway data-plane.
+	InitAgentBackend func(ctx krt.HandlerContext, nsCol krt.Collection[*corev1.Namespace], svcCol krt.Collection[*corev1.Service], secrets krt.Collection[*corev1.Secret], be *v1alpha1.Backend) ([]*api.Backend, []*api.Policy, error)
 }
 
 type PolicyRef struct {

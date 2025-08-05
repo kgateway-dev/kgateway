@@ -6,6 +6,7 @@ import (
 	"slices"
 	"time"
 
+	"github.com/agentgateway/agentgateway/go/api"
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
@@ -112,7 +113,7 @@ type HcmContext struct {
 	Policy PolicyIR
 }
 
-// ProxyTranslationPass represents a single translation pass for a gateway. It can hold state
+// ProxyTranslationPass represents a single translation pass for a gateway using envoy. It can hold state
 // for the duration of the translation.
 // Each of the functions here will be called in the order they appear in the interface.
 type ProxyTranslationPass interface {
@@ -180,6 +181,14 @@ type ProxyTranslationPass interface {
 
 	// called 1 time (per envoy proxy). replaces GeneratedResources and allows adding clusters to the envoy.
 	ResourcesToAdd(ctx context.Context) Resources
+}
+
+type AgentGatewayRouteContext struct {
+	Rule *gwv1.HTTPRouteRule
+}
+
+type AgentGatewayTranslationPass interface {
+	ApplyForRoute(pCtx *AgentGatewayRouteContext, out *api.Route) error
 }
 
 type UnimplementedProxyTranslationPass struct{}

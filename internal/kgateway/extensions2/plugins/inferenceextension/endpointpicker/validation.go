@@ -15,7 +15,7 @@ import (
 // InferencePool EPP extension reference.
 const defaultInfPoolExtRefPort = 9002
 
-// validatePool validates the given InferencePool and returns a slice of errors.
+// validatePool verifies that the given InferencePool is valid.
 func validatePool(pool *infextv1a2.InferencePool, svcCol krt.Collection[*corev1.Service]) []error {
 	var errs []error
 
@@ -51,7 +51,6 @@ func validatePool(pool *infextv1a2.InferencePool, svcCol krt.Collection[*corev1.
 			fmt.Errorf("invalid extensionRef: PortNumber %d is out of range", port))
 	}
 
-	// Referenced Service must exist in the same namespace
 	svcNN := types.NamespacedName{Namespace: pool.Namespace, Name: string(ext.Name)}
 	svcPtr := svcCol.GetKey(svcNN.String())
 	if svcPtr == nil {
@@ -66,7 +65,6 @@ func validatePool(pool *infextv1a2.InferencePool, svcCol krt.Collection[*corev1.
 	if svc.Spec.Type == corev1.ServiceTypeExternalName {
 		errs = append(errs,
 			fmt.Errorf("invalid extensionRef: must use any Service type other than ExternalName"))
-		return errs
 	}
 
 	// Service must expose the requested TCP port

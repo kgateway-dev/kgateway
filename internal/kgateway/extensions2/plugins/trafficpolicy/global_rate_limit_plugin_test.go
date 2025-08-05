@@ -630,43 +630,38 @@ func TestToRateLimitFilterConfig(t *testing.T) {
 					// Create a timeout based on the timeout from extension
 					timeout := durationpb.New(extension.Timeout.Duration)
 
-					if err == nil {
-						// Use the domain from the extension
-						domain := extension.Domain
+					// Use the domain from the extension
+					domain := extension.Domain
 
-						// Construct cluster name from the backendRef
-						clusterName := ""
-						if extension.GrpcService != nil && extension.GrpcService.BackendRef != nil {
-							clusterName = fmt.Sprintf("%s.%s.svc.cluster.local:%d",
-								extension.GrpcService.BackendRef.Name,
-								tt.gatewayExtension.Namespace,
-								*extension.GrpcService.BackendRef.Port)
-						} else {
-							err = fmt.Errorf("backend not provided in grpc service")
-						}
+					// Construct cluster name from the backendRef
+					if extension.GrpcService != nil && extension.GrpcService.BackendRef != nil {
+						clusterName := fmt.Sprintf("%s.%s.svc.cluster.local:%d",
+							extension.GrpcService.BackendRef.Name,
+							tt.gatewayExtension.Namespace,
+							*extension.GrpcService.BackendRef.Port)
 
-						if err == nil {
-							// Create a rate limit configuration
-							rl = &ratev3.RateLimit{
-								Domain:          domain,
-								Timeout:         timeout,
-								FailureModeDeny: !extension.FailOpen,
-								RateLimitService: &envoyratelimitv3.RateLimitServiceConfig{
-									GrpcService: &envoycorev3.GrpcService{
-										TargetSpecifier: &envoycorev3.GrpcService_EnvoyGrpc_{
-											EnvoyGrpc: &envoycorev3.GrpcService_EnvoyGrpc{
-												ClusterName: clusterName,
-											},
+						// Create a rate limit configuration
+						rl = &ratev3.RateLimit{
+							Domain:          domain,
+							Timeout:         timeout,
+							FailureModeDeny: !extension.FailOpen,
+							RateLimitService: &envoyratelimitv3.RateLimitServiceConfig{
+								GrpcService: &envoycorev3.GrpcService{
+									TargetSpecifier: &envoycorev3.GrpcService_EnvoyGrpc_{
+										EnvoyGrpc: &envoycorev3.GrpcService_EnvoyGrpc{
+											ClusterName: clusterName,
 										},
 									},
-									TransportApiVersion: envoycorev3.ApiVersion_V3,
 								},
-								Stage:                   0,
-								EnableXRatelimitHeaders: ratev3.RateLimit_DRAFT_VERSION_03,
-								RequestType:             "both",
-								StatPrefix:              rateLimitStatPrefix,
-							}
+								TransportApiVersion: envoycorev3.ApiVersion_V3,
+							},
+							Stage:                   0,
+							EnableXRatelimitHeaders: ratev3.RateLimit_DRAFT_VERSION_03,
+							RequestType:             "both",
+							StatPrefix:              rateLimitStatPrefix,
 						}
+					} else {
+						err = fmt.Errorf("backend not provided in grpc service")
 					}
 				}
 			}
