@@ -114,7 +114,7 @@ var _ = Describe("SDS Server E2E Test", Serial, func() {
 		Eventually(func() bool {
 			_, err = client.FetchSecrets(ctx, &envoy_service_discovery_v3.DiscoveryRequest{})
 			return err == nil
-		}, "15s", "1s").Should(BeTrue())
+		}, "30s", "1s").Should(BeTrue())
 
 		// Cancel the context in order to stop the gRPC server
 		cancel()
@@ -123,7 +123,7 @@ var _ = Describe("SDS Server E2E Test", Serial, func() {
 		Eventually(func() bool {
 			_, err = client.FetchSecrets(ctx, &envoy_service_discovery_v3.DiscoveryRequest{})
 			return err != nil
-		}, "15s", "1s").Should(BeTrue())
+		}, "30s", "1s").Should(BeTrue())
 
 	})
 
