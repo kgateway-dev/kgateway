@@ -218,35 +218,6 @@ func (p *Provider) EventuallyGatewayListenerAttachedRoutes(
 	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 }
 
-// EventuallyHTTPRouteCondition checks that provided HTTPRoute condition is set to expect.
-func (p *Provider) EventuallyHTTPRouteCondition(
-	ctx context.Context,
-	routeName string,
-	routeNamespace string,
-	cond gwv1.RouteConditionType,
-	expect metav1.ConditionStatus,
-	timeout ...time.Duration,
-) {
-	ginkgo.GinkgoHelper()
-	currentTimeout, pollingInterval := helpers.GetTimeouts(timeout...)
-	p.Gomega.Eventually(func(g gomega.Gomega) {
-		route := &gwv1.HTTPRoute{}
-		err := p.clusterContext.Client.Get(ctx, types.NamespacedName{Name: routeName, Namespace: routeNamespace}, route)
-		g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get HTTPRoute %s/%s", routeNamespace, routeName)
-
-		var conditionFound bool
-		for _, parentStatus := range route.Status.Parents {
-			condition := getConditionByType(parentStatus.Conditions, string(cond))
-			if condition != nil && condition.Status == expect {
-				conditionFound = true
-				break
-			}
-		}
-		g.Expect(conditionFound).To(gomega.BeTrue(), fmt.Sprintf("%v condition is not %v for any parent of HTTPRoute %s/%s",
-			cond, expect, routeNamespace, routeName))
-	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
-}
-
 // EventuallyTCPRouteCondition checks that provided TCPRoute condition is set to expect.
 func (p *Provider) EventuallyTCPRouteCondition(
 	ctx context.Context,
