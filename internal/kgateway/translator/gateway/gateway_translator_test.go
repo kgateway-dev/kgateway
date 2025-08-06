@@ -703,7 +703,7 @@ var _ = DescribeTable("Basic",
 			Name:      "example-gateway",
 		},
 	}),
-	Entry("DirectResponse with missing reference reports correctly", translatorTestCase{
+	Entry("DirectResponse with non-existent ExtensionRef", translatorTestCase{
 		inputFile:  "directresponse/missing-ref.yaml",
 		outputFile: "directresponse/missing-ref.yaml",
 		gwNN: types.NamespacedName{
@@ -731,8 +731,10 @@ var _ = DescribeTable("Basic",
 			acceptedCond := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionAccepted))
 			Expect(acceptedCond).NotTo(BeNil())
 			Expect(acceptedCond.Status).To(Equal(metav1.ConditionFalse))
-			Expect(acceptedCond.Message).To(ContainSubstring("Dropped Rule"))
+			Expect(acceptedCond.Reason).To(Equal(reporter.RouteRuleDroppedReason))
+			Expect(acceptedCond.Message).To(ContainSubstring("Dropped Rule (0)"))
 			Expect(acceptedCond.Message).To(ContainSubstring("no action specified"))
+			Expect(acceptedCond.Message).To(ContainSubstring("policy not found"))
 		},
 	}),
 	Entry("DirectResponse with overlapping filters reports correctly", translatorTestCase{
@@ -1121,11 +1123,6 @@ var _ = DescribeTable("Route Replacement",
 				Expect(accepted.Reason).To(Equal(string(gwv1.RouteReasonAccepted)))
 				Expect(accepted.Message).To(Equal("Route is accepted"))
 				Expect(accepted.ObservedGeneration).To(Equal(int64(0)))
-
-				// Expect Accepted=True condition since template validation is skipped in standard mode
-				acceptedCond := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionAccepted))
-				Expect(acceptedCond).ToNot(BeNil())
-				Expect(acceptedCond.Status).To(Equal(metav1.ConditionTrue))
 			},
 		},
 		func(s *settings.Settings) {
@@ -1159,11 +1156,6 @@ var _ = DescribeTable("Route Replacement",
 				Expect(accepted.Reason).To(Equal(string(gwv1.RouteReasonAccepted)))
 				Expect(accepted.Message).To(Equal("Route is accepted"))
 				Expect(accepted.ObservedGeneration).To(Equal(int64(0)))
-
-				// Expect Accepted=True condition since template validation is skipped in standard mode
-				acceptedCond := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionAccepted))
-				Expect(acceptedCond).ToNot(BeNil())
-				Expect(acceptedCond.Status).To(Equal(metav1.ConditionTrue))
 			},
 		},
 		func(s *settings.Settings) {
@@ -1196,11 +1188,6 @@ var _ = DescribeTable("Route Replacement",
 				Expect(accepted.Reason).To(Equal(string(gwv1.RouteReasonAccepted)))
 				Expect(accepted.Message).To(Equal("Route is accepted"))
 				Expect(accepted.ObservedGeneration).To(Equal(int64(0)))
-
-				// Expect no Accepted=False condition since template validation is skipped in standard mode
-				acceptedCond := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionAccepted))
-				Expect(acceptedCond).ToNot(BeNil())
-				Expect(acceptedCond.Status).To(Equal(metav1.ConditionTrue))
 			},
 		},
 		func(s *settings.Settings) {
