@@ -335,13 +335,7 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 		buildr.Owns(clientObj, opts...)
 	}
 
-	return buildr.Complete(&gatewayReconciler{
-		cli:            c.cfg.Mgr.GetClient(),
-		scheme:         c.cfg.Mgr.GetScheme(),
-		controllerName: c.cfg.ControllerName,
-		autoProvision:  c.cfg.AutoProvision,
-		deployer:       d,
-	})
+	return buildr.Complete(NewGatewayReconciler(ctx, c.cfg, d))
 }
 
 func (c *controllerBuilder) addHTTPRouteIndexes(ctx context.Context) error {

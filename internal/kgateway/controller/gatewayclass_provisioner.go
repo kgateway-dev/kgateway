@@ -36,7 +36,7 @@ type gatewayClassProvisioner struct {
 }
 
 var _ reconcile.TypedReconciler[reconcile.Request] = &gatewayClassProvisioner{}
-var _ manager.Runnable = &gatewayClassProvisioner{}
+var _ manager.LeaderElectionRunnable = &gatewayClassProvisioner{}
 
 // NewGatewayClassProvisioner creates a new GatewayClassProvisioner. It will
 // watch for kick events on the channel for initial reconciliation and delete
@@ -169,4 +169,9 @@ func (r *gatewayClassProvisioner) Start(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+// NeedLeaderElection returns true to ensure that the gatewayClassProvisioner runs only on the leader
+func (r *gatewayClassProvisioner) NeedLeaderElection() bool {
+	return true
 }
