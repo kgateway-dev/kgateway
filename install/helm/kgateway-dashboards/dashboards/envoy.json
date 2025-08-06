@@ -1449,6 +1449,10 @@
           "text": "Prometheus",
           "value": "prometheus"
         },
+        "datasource": {
+            "type": "prometheus",
+            "uid": "Prometheus"
+        },
         "hide": 0,
         "includeAll": false,
         "label": "Datasource",
@@ -1467,6 +1471,10 @@
           "selected": true,
           "text": [],
           "value": []
+        },
+        "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
         },
         "definition": "label_values(envoy_cluster_upstream_rq_total,envoy_response_code)",
         "description": "",
@@ -1488,18 +1496,12 @@
         "type": "query"
       },
       {
-        "current": {
-          "selected": false,
-          "text": [
-            "All"
-          ],
-          "value": [
-            "$__all"
-          ]
+        "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
         },
         "definition": "label_values(envoy_cluster_name)",
         "hide": 0,
-        "includeAll": true,
         "label": "Envoy cluster",
         "multi": true,
         "name": "cluster",
