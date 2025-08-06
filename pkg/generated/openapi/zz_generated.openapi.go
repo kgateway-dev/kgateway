@@ -1044,6 +1044,13 @@ func schema_kgateway_v2_api_v1alpha1_AgentGateway(ref common.ReferenceCallback) 
 							},
 						},
 					},
+					"customConfigMapName": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Name of the custom configmap to use instead of the default generated one. When set, the agent gateway will use this configmap instead of creating the default one. The configmap must contain a 'config.json' key with the agent gateway configuration.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 				},
 			},
 		},

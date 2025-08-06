@@ -7,6 +7,7 @@ spec:
     agentGateway:
       enabled: true
       logLevel: trace
+      customConfigMapName: agent-gateway-config
 #      image:
 #        tag: b1b9c00
 ---
@@ -52,3 +53,45 @@ spec:
     - backendRefs:
         - name: httpbin
           port: 8000
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: agent-gateway-config
+  namespace: default
+data:
+  config.json: |
+    {
+      "policies": [
+        {
+          "name": "default/transformation-policy",
+          "target": {
+            "gateway": "agent-gateway"
+          },
+          "spec": {
+            "transformations": {
+              "request": {
+                "add": {
+                  "x-transformed": "true"
+                },
+                "set": {
+                  "content-type": "application/json"
+                },
+                "remove": ["x-unwanted"],
+                "body": "request.body | .metadata.timestamp = now"
+              },
+              "response": {
+                "add": {
+                  "x-processed": "true"
+                },
+                "set": {
+                  "cache-control": "max-age=3600"
+                },
+                "remove": ["x-internal"],
+                "body": "response.body | .processed_at = now"
+              }
+            }
+          }
+        }
+      ]
+    }
