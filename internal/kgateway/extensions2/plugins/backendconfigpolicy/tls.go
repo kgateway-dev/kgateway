@@ -54,7 +54,7 @@ func buildTLSContext(tlsConfig *v1alpha1.TLS, secretGetter SecretGetter, namespa
 		return buildValidationContext(tlsData, tlsConfig, tlsContext)
 	}
 
-	// Process client certificate for mutual TLS
+	// Process client certificate for mutual TLS, if provided
 	if err := buildCertificateContext(tlsData, tlsContext); err != nil {
 		return err
 	}
@@ -115,7 +115,7 @@ func buildCertificateContext(tlsData *tlsData, tlsContext *envoytlsv3.CommonTlsC
 
 	// If one is provided without the other, it's a configuration error.
 	if tlsData.certChain == "" || tlsData.privateKey == "" {
-		return errors.New("invalid TLS config: for mTLS, both certChain and privateKey must be provided")
+		return errors.New("invalid TLS config: for if providing a client certificate, both certChain and privateKey must be provided")
 	}
 
 	// Validate the certificate and key pair, and get a sanitized version of the certificate chain.

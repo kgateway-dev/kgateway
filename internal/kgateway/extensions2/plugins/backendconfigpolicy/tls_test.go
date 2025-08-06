@@ -270,6 +270,7 @@ func TestTranslateTLSConfig(t *testing.T) {
 			wantErr: false,
 			check: func(t *testing.T, result *envoytlsv3.UpstreamTlsContext) {
 				assert.NotNil(t, result)
+				assert.NotNil(t, result.CommonTlsContext.GetTlsCertificates())
 				assert.Nil(t, result.CommonTlsContext.GetValidationContext())
 			},
 		},
