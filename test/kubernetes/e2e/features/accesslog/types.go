@@ -59,30 +59,24 @@ var (
 		},
 	}
 
-	setup = base.SimpleTestCase{
+	setup = base.TestCase{
 		Manifests: []string{e2edefaults.CurlPodManifest, setupManifest},
 		Resources: []client.Object{e2edefaults.CurlPod, httpbinDeployment, gatewayService, gatewayDeployment},
 	}
 
 	// test cases
-	testCases = map[string]*base.TestCase{
-		"TestAccessLogWithFileSink": {
-			SimpleTestCase: base.SimpleTestCase{
-				Manifests: []string{fileSinkManifest},
-				Resources: []client.Object{fileSinkConfig},
-			},
+	testCases = map[string]base.TestCase{
+		"TestAccessLogWithFileSink": base.TestCase{
+			Manifests: []string{fileSinkManifest},
+			Resources: []client.Object{fileSinkConfig},
 		},
-		"TestAccessLogWithGrpcSink": {
-			SimpleTestCase: base.SimpleTestCase{
-				Manifests: []string{grpcServiceManifest},
-				Resources: []client.Object{accessLoggerService, accessLoggerDeployment},
-			},
+		"TestAccessLogWithGrpcSink": base.TestCase{
+			Manifests: []string{grpcServiceManifest},
+			Resources: []client.Object{accessLoggerService, accessLoggerDeployment},
 		},
-		"TestAccessLogWithOTelSink": {
-			SimpleTestCase: base.SimpleTestCase{
-				Manifests: []string{oTelManifest},
-				Resources: []client.Object{otelCollectorPod},
-			},
+		"TestAccessLogWithOTelSink": base.TestCase{
+			Manifests: []string{oTelManifest},
+			Resources: []client.Object{otelCollectorPod},
 		},
 	}
 )
