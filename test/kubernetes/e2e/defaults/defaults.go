@@ -109,4 +109,7 @@ Commercial support is available at
 	}
 
 	WellKnownAppLabel = "app.kubernetes.io/name"
+
+	KGatewayDeployment = "deploy/kgateway"
+	KGatewayPodLabel   = "kgateway=kgateway"
 )
