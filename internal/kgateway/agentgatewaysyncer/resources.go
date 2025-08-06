@@ -5,10 +5,11 @@ import (
 
 	envoytypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
-	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 	"google.golang.org/protobuf/proto"
 	"istio.io/istio/pkg/maps"
 	"k8s.io/apimachinery/pkg/types"
+
+	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
 
 // agentGwXdsResources represents XDS resources for a single agent gateway

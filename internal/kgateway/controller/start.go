@@ -206,7 +206,6 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 			setupLog.Error(err, "unable to add agentGatewayStatusSyncer runnable")
 			return nil, err
 		}
-
 	}
 
 	if err := cfg.Manager.Add(proxySyncer); err != nil {
