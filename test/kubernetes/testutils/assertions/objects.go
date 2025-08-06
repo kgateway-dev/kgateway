@@ -88,11 +88,9 @@ func (p *Provider) EventuallyNamespaceExists(ctx context.Context, ns string) {
 // we expect the application to fail, with an expected error substring supplied as `expectedOutput`
 func (p *Provider) ExpectObjectAdmitted(manifest string, err error, actualOutput, expectedOutput string) {
 	p.Assert.NoError(err, "can apply "+manifest)
-	return
 }
 
 // TODO clean this up as the validation webhook has been removed
 func (p *Provider) ExpectObjectDeleted(manifest string, err error, actualOutput string) {
 	p.Assert.NoError(err, "can delete "+manifest)
-	return
 }
