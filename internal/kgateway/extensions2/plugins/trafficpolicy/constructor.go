@@ -101,13 +101,14 @@ func (c *TrafficPolicyConstructor) ConstructIR(
 }
 
 func (c *TrafficPolicyConstructor) FetchGatewayExtension(krtctx krt.HandlerContext, extensionRef *corev1.LocalObjectReference, ns string) (*TrafficPolicyGatewayExtensionIR, error) {
-	var gatewayExtension *TrafficPolicyGatewayExtensionIR
-	if extensionRef != nil {
-		gwExtName := types.NamespacedName{Name: extensionRef.Name, Namespace: ns}
-		gatewayExtension = krt.FetchOne(krtctx, c.gatewayExtensions, krt.FilterObjectName(gwExtName))
+	if extensionRef == nil {
+		return nil, fmt.Errorf("gateway extension ref is nil")
 	}
+
+	gwExtNN := types.NamespacedName{Name: extensionRef.Name, Namespace: ns}
+	gatewayExtension := krt.FetchOne(krtctx, c.gatewayExtensions, krt.FilterObjectName(gwExtNN))
 	if gatewayExtension == nil {
-		return nil, fmt.Errorf("extension not found")
+		return nil, fmt.Errorf("gateway extension %s not found", gwExtNN.String())
 	}
 	if gatewayExtension.Err != nil {
 		return gatewayExtension, gatewayExtension.Err
