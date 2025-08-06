@@ -130,7 +130,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 				NewGatewayTranslationPass: newPlug,
 			},
 		},
-		ContributesRegistration: map[schema.GroupKind]func(){
+		ContributesLeaderAction: map[schema.GroupKind]func(){
 			wellknown.BackendGVK.GroupKind(): buildRegisterCallback(ctx, commoncol.CrudClient, bcol),
 		},
 	}
