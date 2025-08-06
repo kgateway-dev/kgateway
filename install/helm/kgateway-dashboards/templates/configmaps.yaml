@@ -1,0 +1,29 @@
+{{- if .Values.dashboards.enabled }}
+{{- range $path, $_ := .Files.Glob "dashboards/*.json" }}
+{{- $dashboardName := base $path | replace ".json" "" }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $.Values.namePrefix }}{{ $dashboardName }}
+  namespace: {{ $.Values.namespace }}
+  labels:
+    {{- with $.Values.grafanaLabels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+    {{- with $.Values.additionalLabels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+    app.kubernetes.io/name: {{ include "dashboards.name" $ }}
+    app.kubernetes.io/instance: {{ $.Release.Name }}
+    app.kubernetes.io/version: {{ $.Chart.AppVersion | quote }}
+    app.kubernetes.io/managed-by: {{ $.Release.Service }}
+  {{- with $.Values.additionalAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+data:
+  {{ $dashboardName }}.json: |
+{{ $.Files.Get $path | indent 4 }}
+{{- end }}
+{{- end }}

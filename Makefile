@@ -427,9 +427,10 @@ HELM ?= go tool helm
 HELM_PACKAGE_ARGS ?= --version $(VERSION)
 HELM_CHART_DIR=install/helm/kgateway
 HELM_CHART_DIR_CRD=install/helm/kgateway-crds
+HELM_CHART_DIR_DASHBOARDS=install/helm/kgateway-dashboards
 
 .PHONY: package-kgateway-charts
-package-kgateway-charts: package-kgateway-chart package-kgateway-crd-chart ## Package the kgateway charts
+package-kgateway-charts: package-kgateway-chart package-kgateway-crd-chart package-kgateway-dashboards-chart ## Package the kgateway charts
 
 .PHONY: package-kgateway-chart
 package-kgateway-chart: ## Package the kgateway charts
@@ -443,10 +444,21 @@ package-kgateway-crd-chart: ## Package the kgateway crd chart
 	$(HELM) package $(HELM_PACKAGE_ARGS) --destination $(TEST_ASSET_DIR) $(HELM_CHART_DIR_CRD); \
 	$(HELM) repo index $(TEST_ASSET_DIR);
 
+.PHONY: package-kgateway-dashboards-chart
+package-kgateway-dashboards-chart: ## Package the kgateway dashboards chart
+	mkdir -p $(TEST_ASSET_DIR); \
+	$(HELM) package $(HELM_PACKAGE_ARGS) --destination $(TEST_ASSET_DIR) $(HELM_CHART_DIR_DASHBOARDS); \
+	$(HELM) repo index $(TEST_ASSET_DIR);
+
 .PHONY: release-charts
 release-charts: package-kgateway-charts ## Release the kgateway charts
 	$(HELM) push $(TEST_ASSET_DIR)/kgateway-$(VERSION).tgz oci://$(IMAGE_REGISTRY)/charts
 	$(HELM) push $(TEST_ASSET_DIR)/kgateway-crds-$(VERSION).tgz oci://$(IMAGE_REGISTRY)/charts
+	$(HELM) push $(TEST_ASSET_DIR)/kgateway-dashboards-$(VERSION).tgz oci://$(IMAGE_REGISTRY)/charts
+
+.PHONY: deploy-kgateway-dashboards-chart
+deploy-kgateway-dashboards-chart: ## Deploy the kgateway dashboards chart
+	$(HELM) upgrade --install kgateway-dashboards $(TEST_ASSET_DIR)/kgateway-dashboards-$(VERSION).tgz --namespace kgateway-system --create-namespace
 
 .PHONY: deploy-kgateway-crd-chart
 deploy-kgateway-crd-chart: ## Deploy the kgateway crd chart
@@ -465,6 +477,7 @@ deploy-kgateway-chart: ## Deploy the kgateway chart
 lint-kgateway-charts: ## Lint the kgateway charts
 	$(HELM) lint $(HELM_CHART_DIR)
 	$(HELM) lint $(HELM_CHART_DIR_CRD)
+	$(HELM) lint $(HELM_CHART_DIR_DASHBOARDS)
 
 #----------------------------------------------------------------------------------
 # Release

@@ -1,0 +1,25 @@
+# Default values for dashboards chart
+
+# Namespace where ConfigMaps will be created
+namespace: telemetry
+
+# Labels for kube-prometheus-stack auto-discovery
+grafanaLabels:
+  grafana_dashboard: "1"
+
+# Additional labels to apply to all ConfigMaps
+additionalLabels: {}
+
+# Additional annotations to apply to all ConfigMaps
+additionalAnnotations: {}
+
+# Dashboard configuration
+dashboards:
+  # Set to true to create ConfigMaps for dashboards
+  enabled: true
+  
+  # Folder name in Grafana where dashboards will be placed
+  folderName: "kgateway"
+
+# ConfigMap naming
+namePrefix: "kgateway-dashboard-"
