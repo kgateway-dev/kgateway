@@ -19,7 +19,6 @@ import (
 	testmatchers "github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 	"github.com/kgateway-dev/kgateway/v2/test/helpers"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
-	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/defaults"
 	testdefaults "github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/defaults"
 )
 
@@ -286,7 +285,7 @@ func (s *testingSuite) patchDeploymentWithMode(mode settings.RouteReplacementMod
 		Namespace: s.testInstallation.Metadata.InstallNamespace,
 	}, gomega.Equal(1))
 	s.testInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
-		out, err := s.testInstallation.Actions.Kubectl().GetContainerLogs(s.ctx, s.testInstallation.Metadata.InstallNamespace, defaults.KGatewayDeployment)
+		out, err := s.testInstallation.Actions.Kubectl().GetContainerLogs(s.ctx, s.testInstallation.Metadata.InstallNamespace, testdefaults.KGatewayDeployment)
 		g.Expect(err).NotTo(gomega.HaveOccurred(), "Failed to get pod logs")
 		g.Expect(out).To(gomega.ContainSubstring("successfully acquired lease"))
 	}, "60s", "10s").Should(gomega.Succeed())

@@ -150,9 +150,6 @@ func (s *testingSuite) TestLeaderDeploysProxy() {
 }
 
 func (s *testingSuite) waitUntilStartsLeading() {
-	// Initially sleep as the new deployment might be rolling out
-	time.Sleep(leaseRenewPeriod)
-
 	s.TestInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
 		out, err := s.TestInstallation.Actions.Kubectl().GetContainerLogs(s.Ctx, s.TestInstallation.Metadata.InstallNamespace, defaults.KGatewayDeployment)
 		g.Expect(err).NotTo(gomega.HaveOccurred(), "Failed to get pod logs")
