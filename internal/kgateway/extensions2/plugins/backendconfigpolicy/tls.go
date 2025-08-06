@@ -142,30 +142,28 @@ func buildCertificateContext(tlsData *tlsData, tlsContext *envoytlsv3.CommonTlsC
 func buildValidationContext(tlsData *tlsData, tlsConfig *v1alpha1.TLS, tlsContext *envoytlsv3.CommonTlsContext) error {
 	sanMatchers := verifySanListToTypedMatchSanList(tlsConfig.VerifySubjectAltName)
 
-	// If no root CA and no SAN verification, no validation context needed
-	if tlsData.rootCA == "" && len(sanMatchers) == 0 {
-		return nil
-	}
-
-	// Root CA is required if SAN verification is specified
-	if tlsData.rootCA == "" && len(sanMatchers) > 0 {
+	if tlsData.rootCA == "" {
+		// If no root CA and no SAN verification, no validation context needed
+		if len(sanMatchers) == 0 {
+			return nil
+		}
+		// Root CA is required if SAN verification is specified
 		return errors.New("a root_ca must be provided if verify_subject_alt_name is not empty")
 	}
 
-	if tlsData.rootCA != "" {
-		dataSource := stringDataSourceGenerator(tlsData.inlineDataSource)
-		rootCaData := dataSource(tlsData.rootCA)
+	// If root CA is provided, build a validation context
+	dataSource := stringDataSourceGenerator(tlsData.inlineDataSource)
+	rootCaData := dataSource(tlsData.rootCA)
 
-		validationCtx := &envoytlsv3.CommonTlsContext_ValidationContext{
-			ValidationContext: &envoytlsv3.CertificateValidationContext{
-				TrustedCa: rootCaData,
-			},
-		}
-		if len(sanMatchers) > 0 {
-			validationCtx.ValidationContext.MatchTypedSubjectAltNames = sanMatchers
-		}
-		tlsContext.ValidationContextType = validationCtx
+	validationCtx := &envoytlsv3.CommonTlsContext_ValidationContext{
+		ValidationContext: &envoytlsv3.CertificateValidationContext{
+			TrustedCa: rootCaData,
+		},
 	}
+	if len(sanMatchers) > 0 {
+		validationCtx.ValidationContext.MatchTypedSubjectAltNames = sanMatchers
+	}
+	tlsContext.ValidationContextType = validationCtx
 
 	return nil
 }
