@@ -146,6 +146,7 @@ func (s *BaseTestingSuite) GetKubectlOutput(command ...string) string {
 // 	s.TestInstallation.Assertions.Require.NoError(err)
 // }
 
+// ApplyManifests applies the manifests and waits until the resources are created and ready.
 func (s *BaseTestingSuite) ApplyManifests(testCase TestCase) {
 	// apply the manifests
 	for _, manifest := range testCase.Manifests {
@@ -155,24 +156,30 @@ func (s *BaseTestingSuite) ApplyManifests(testCase TestCase) {
 		}, 10*time.Second, 1*time.Second).Should(gomega.Succeed(), "can apply "+manifest)
 	}
 
-	// wait until the resources are created and ready
+	// wait until the resources are created
 	s.TestInstallation.Assertions.EventuallyObjectsExist(s.Ctx, testCase.Resources...)
 
+	// wait until pods are ready; this assumes that pods use a well-known label
+	// app.kubernetes.io/name=<name>
 	for _, resource := range testCase.Resources {
+		var ns, name string
 		if pod, ok := resource.(*corev1.Pod); ok {
-			s.TestInstallation.Assertions.EventuallyPodsRunning(s.Ctx, pod.Namespace, metav1.ListOptions{
-				LabelSelector: fmt.Sprintf("app.kubernetes.io/name=%s", pod.Name),
-				// Provide a longer timeout as the pod needs to be pulled and pass HCs
-			}, time.Second*60, time.Second*2)
+			ns = pod.Namespace
+			name = pod.Name
 		} else if deployment, ok := resource.(*appsv1.Deployment); ok {
-			s.TestInstallation.Assertions.EventuallyPodsRunning(s.Ctx, deployment.Namespace, metav1.ListOptions{
-				LabelSelector: fmt.Sprintf("%s=%s", defaults.WellKnownAppLabel, deployment.Name),
-				// Provide a longer timeout as the pod needs to be pulled and pass HCs
-			}, time.Second*60, time.Second*2)
+			ns = deployment.Namespace
+			name = deployment.Name
+		} else {
+			continue
 		}
+		s.TestInstallation.Assertions.EventuallyPodsRunning(s.Ctx, ns, metav1.ListOptions{
+			LabelSelector: fmt.Sprintf("%s=%s", defaults.WellKnownAppLabel, name),
+			// Provide a longer timeout as the pod needs to be pulled and pass HCs
+		}, time.Second*60, time.Second*2)
 	}
 }
 
+// DeleteManifests deletes the manifests and waits until the resources are deleted.
 func (s *BaseTestingSuite) DeleteManifests(testCase TestCase) {
 	for _, manifest := range testCase.Manifests {
 		gomega.Eventually(func() error {
