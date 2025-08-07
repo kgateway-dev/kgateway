@@ -1,8 +1,5 @@
 # Default values for dashboards chart
 
-# Namespace where ConfigMaps will be created
-namespace: telemetry
-
 # Labels for kube-prometheus-stack auto-discovery
 grafanaLabels:
   grafana_dashboard: "1"
