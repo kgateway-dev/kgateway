@@ -25,8 +25,8 @@ import (
 
 var _ manager.LeaderElectionRunnable = &AgentGwStatusSyncer{}
 
-// AgentGwSyncer synchronizes Kubernetes Gateway API resources with xDS for agentgateway proxies.
-// It watches Gateway resources with the agentgateway class and translates them to agentgateway configuration.
+// AgentGwStatusSyncer runs only on the leader and syncs the status of agent gateway resources.
+// It subscribes to the report queues, parses and updates the resource status.
 type AgentGwStatusSyncer struct {
 	// Core collections and dependencies
 	mgr    manager.Manager
@@ -36,6 +36,7 @@ type AgentGwStatusSyncer struct {
 	controllerName        string
 	agentGatewayClassName string
 
+	// Report queues
 	gatewayReportQueue     utils.AsyncQueue[GatewayReports]
 	listenerSetReportQueue utils.AsyncQueue[ListenerSetReports]
 	routeReportQueue       utils.AsyncQueue[RouteReports]
