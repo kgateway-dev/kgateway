@@ -10,6 +10,7 @@ import (
 	envoymatcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 
 	"istio.io/istio/pkg/kube/krt"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/util/cert"
 	"k8s.io/utils/ptr"
 
@@ -42,69 +43,127 @@ func (g *DefaultSecretGetter) GetSecret(name, namespace string) (*ir.Secret, err
 }
 
 func buildTLSContext(tlsConfig *v1alpha1.TLS, secretGetter SecretGetter, namespace string, tlsContext *envoytlsv3.CommonTlsContext) error {
-	var (
-		certChain, privateKey, rootCA string
-		inlineDataSource              bool
-	)
-	if tlsConfig.SecretRef != nil {
-		secret, err := secretGetter.GetSecret(tlsConfig.SecretRef.Name, namespace)
-		if err != nil {
-			return err
-		}
-		certChain = string(secret.Data["tls.crt"])
-		privateKey = string(secret.Data["tls.key"])
-		rootCA = string(secret.Data["ca.crt"])
-		inlineDataSource = true
-	} else if tlsConfig.TLSFiles != nil {
-		certChain = ptr.Deref(tlsConfig.TLSFiles.TLSCertificate, "")
-		privateKey = ptr.Deref(tlsConfig.TLSFiles.TLSKey, "")
-		rootCA = ptr.Deref(tlsConfig.TLSFiles.RootCA, "")
+	// Extract TLS data from config
+	tlsData, err := extractTLSData(tlsConfig, secretGetter, namespace)
+	if err != nil {
+		return fmt.Errorf("failed to extract TLS data: %w", err)
 	}
 
-	cleanedCertChain, err := cleanedSslKeyPair(certChain, privateKey, rootCA)
-	if err != nil {
+	// Skip client certificate processing for simple TLS
+	if tlsConfig.SimpleTLS != nil && *tlsConfig.SimpleTLS {
+		return buildValidationContext(tlsData, tlsConfig, tlsContext)
+	}
+
+	// Process client certificate for mutual TLS, if provided
+	if err := buildCertificateContext(tlsData, tlsContext); err != nil {
 		return err
 	}
 
-	dataSource := stringDataSourceGenerator(inlineDataSource)
+	return buildValidationContext(tlsData, tlsConfig, tlsContext)
+}
 
-	var certChainData, privateKeyData, rootCaData *envoycorev3.DataSource
-	if cleanedCertChain != "" {
-		certChainData = dataSource(cleanedCertChain)
-	}
-	if privateKey != "" {
-		privateKeyData = dataSource(privateKey)
-	}
-	if rootCA != "" {
-		rootCaData = dataSource(rootCA)
-	}
+type tlsData struct {
+	certChain        string
+	privateKey       string
+	rootCA           string
+	inlineDataSource bool
+}
 
-	if certChainData != nil && privateKeyData != nil {
-		tlsContext.TlsCertificates = []*envoytlsv3.TlsCertificate{
-			{
-				CertificateChain: certChainData,
-				PrivateKey:       privateKeyData,
-			},
+func extractTLSData(tlsConfig *v1alpha1.TLS, secretGetter SecretGetter, namespace string) (*tlsData, error) {
+	data := &tlsData{}
+
+	if tlsConfig.SecretRef != nil {
+		if err := extractFromSecret(tlsConfig.SecretRef, secretGetter, namespace, data); err != nil {
+			return nil, err
 		}
-	} else if certChainData != nil || privateKeyData != nil {
-		return errors.New("invalid TLS config: certChain and privateKey must both be provided")
+	} else if tlsConfig.TLSFiles != nil {
+		extractFromFiles(tlsConfig.TLSFiles, data)
+	} else {
+		return nil, errors.New("either SecretRef or TLSFiles must be provided")
 	}
 
+	return data, nil
+}
+
+func extractFromSecret(secretRef *corev1.LocalObjectReference, secretGetter SecretGetter, namespace string, data *tlsData) error {
+	secret, err := secretGetter.GetSecret(secretRef.Name, namespace)
+	if err != nil {
+		return fmt.Errorf("failed to get secret %s: %w", secretRef.Name, err)
+	}
+
+	data.certChain = string(secret.Data["tls.crt"])
+	data.privateKey = string(secret.Data["tls.key"])
+	data.rootCA = string(secret.Data["ca.crt"])
+	data.inlineDataSource = true
+
+	return nil
+}
+
+func extractFromFiles(tlsFiles *v1alpha1.TLSFiles, data *tlsData) {
+	data.certChain = ptr.Deref(tlsFiles.TLSCertificate, "")
+	data.privateKey = ptr.Deref(tlsFiles.TLSKey, "")
+	data.rootCA = ptr.Deref(tlsFiles.RootCA, "")
+	data.inlineDataSource = false
+}
+
+func buildCertificateContext(tlsData *tlsData, tlsContext *envoytlsv3.CommonTlsContext) error {
+	// For mTLS, both the certificate chain and the private key are required.
+	// If neither is provided, we assume mTLS is not intended, so we can exit early.
+	if tlsData.certChain == "" && tlsData.privateKey == "" {
+		return nil
+	}
+
+	// If one is provided without the other, it's a configuration error.
+	if tlsData.certChain == "" || tlsData.privateKey == "" {
+		return errors.New("invalid TLS config: for if providing a client certificate, both certChain and privateKey must be provided")
+	}
+
+	// Validate the certificate and key pair, and get a sanitized version of the certificate chain.
+	cleanedCertChain, err := cleanedSslKeyPair(tlsData.certChain, tlsData.privateKey)
+	if err != nil {
+		return fmt.Errorf("invalid certificate and key pair: %w", err)
+	}
+
+	dataSource := stringDataSourceGenerator(tlsData.inlineDataSource)
+
+	certChainData := dataSource(cleanedCertChain)
+	privateKeyData := dataSource(tlsData.privateKey)
+
+	tlsContext.TlsCertificates = []*envoytlsv3.TlsCertificate{
+		{
+			CertificateChain: certChainData,
+			PrivateKey:       privateKeyData,
+		},
+	}
+
+	return nil
+}
+
+func buildValidationContext(tlsData *tlsData, tlsConfig *v1alpha1.TLS, tlsContext *envoytlsv3.CommonTlsContext) error {
 	sanMatchers := verifySanListToTypedMatchSanList(tlsConfig.VerifySubjectAltName)
 
-	if rootCaData != nil {
-		validationCtx := &envoytlsv3.CommonTlsContext_ValidationContext{
-			ValidationContext: &envoytlsv3.CertificateValidationContext{
-				TrustedCa: rootCaData,
-			},
+	if tlsData.rootCA == "" {
+		// If no root CA and no SAN verification, no validation context needed
+		if len(sanMatchers) == 0 {
+			return nil
 		}
-		if len(sanMatchers) != 0 {
-			validationCtx.ValidationContext.MatchTypedSubjectAltNames = sanMatchers
-		}
-		tlsContext.ValidationContextType = validationCtx
-	} else if len(sanMatchers) != 0 {
+		// Root CA is required if SAN verification is specified
 		return errors.New("a root_ca must be provided if verify_subject_alt_name is not empty")
 	}
+
+	// If root CA is provided, build a validation context
+	dataSource := stringDataSourceGenerator(tlsData.inlineDataSource)
+	rootCaData := dataSource(tlsData.rootCA)
+
+	validationCtx := &envoytlsv3.CommonTlsContext_ValidationContext{
+		ValidationContext: &envoytlsv3.CertificateValidationContext{
+			TrustedCa: rootCaData,
+		},
+	}
+	if len(sanMatchers) > 0 {
+		validationCtx.ValidationContext.MatchTypedSubjectAltNames = sanMatchers
+	}
+	tlsContext.ValidationContextType = validationCtx
 
 	return nil
 }
@@ -134,10 +193,6 @@ func translateTLSConfig(
 		if err := buildTLSContext(tlsConfig, secretGetter, namespace, tlsContext); err != nil {
 			return nil, err
 		}
-	}
-
-	if tlsConfig.OneWayTLS != nil && *tlsConfig.OneWayTLS {
-		tlsContext.ValidationContextType = nil
 	}
 
 	return &envoytlsv3.UpstreamTlsContext{
@@ -186,12 +241,7 @@ func parseTLSVersion(tlsVersion *v1alpha1.TLSVersion) (envoytlsv3.TlsParameters_
 	}
 }
 
-func cleanedSslKeyPair(certChain, privateKey, rootCa string) (cleanedChain string, err error) {
-	// in the case where we _only_ provide a rootCa, we do not want to validate tls.key+tls.cert
-	if (certChain == "") && (privateKey == "") && (rootCa != "") {
-		return certChain, nil
-	}
-
+func cleanedSslKeyPair(certChain, privateKey string) (cleanedChain string, err error) {
 	// validate that the cert and key are a valid pair
 	_, err = tls.X509KeyPair([]byte(certChain), []byte(privateKey))
 	if err != nil {

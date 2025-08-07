@@ -6,7 +6,7 @@ Clusters:
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
   metadata: {}
-  name: kube_a_extproc_9091
+  name: kube_default_extproc_9091
   type: EDS
   typedExtensionProtocolOptions:
     envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
@@ -20,16 +20,7 @@ Clusters:
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
   metadata: {}
-  name: kube_a_svc-a_8080
-  type: EDS
-- connectTimeout: 5s
-  edsClusterConfig:
-    edsConfig:
-      ads: {}
-      resourceApiVersion: V3
-  ignoreHealthOnHostRemoval: true
-  metadata: {}
-  name: kube_b_extproc_9091
+  name: kube_default_extproc_9092
   type: EDS
   typedExtensionProtocolOptions:
     envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
@@ -43,8 +34,13 @@ Clusters:
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
   metadata: {}
-  name: kube_b_svc-b_8080
+  name: kube_default_extproc_9093
   type: EDS
+  typedExtensionProtocolOptions:
+    envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+      '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+      explicitHttpConfig:
+        http2ProtocolOptions: {}
 - connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
@@ -52,7 +48,7 @@ Clusters:
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
   metadata: {}
-  name: kube_infra_example-svc_80
+  name: kube_default_test_80
   type: EDS
 - connectTimeout: 5s
   metadata: {}
@@ -62,7 +58,7 @@ Listeners:
     socketAddress:
       address: '::'
       ipv4Compat: true
-      portValue: 80
+      portValue: 8080
   filterChains:
   - filters:
     - name: envoy.filters.network.http_connection_manager
@@ -78,7 +74,7 @@ Listeners:
               value:
                 disable: true
         - disabled: true
-          name: ext_proc/a/extproc-ext
+          name: ext_proc/default/extproc-gateway
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.common.matching.v3.ExtensionWithMatcher
             extensionConfig:
@@ -99,7 +95,7 @@ Listeners:
                             '@type': type.googleapis.com/envoy.extensions.filters.http.ext_proc.v3.ExternalProcessor
                             grpcService:
                               envoyGrpc:
-                                clusterName: kube_a_extproc_9091
+                                clusterName: kube_default_extproc_9091
                   predicate:
                     singlePredicate:
                       customMatch:
@@ -117,7 +113,7 @@ Listeners:
                           path:
                           - key: disable
         - disabled: true
-          name: ext_proc/b/extproc-ext
+          name: ext_proc/default/extproc-listener
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.common.matching.v3.ExtensionWithMatcher
             extensionConfig:
@@ -138,7 +134,7 @@ Listeners:
                             '@type': type.googleapis.com/envoy.extensions.filters.http.ext_proc.v3.ExternalProcessor
                             grpcService:
                               envoyGrpc:
-                                clusterName: kube_b_extproc_9091
+                                clusterName: kube_default_extproc_9092
                   predicate:
                     singlePredicate:
                       customMatch:
@@ -156,14 +152,44 @@ Listeners:
                           path:
                           - key: disable
         - disabled: true
-          name: ratelimit/local
+          name: ext_proc/default/extproc-route
           typedConfig:
-            '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
-            statPrefix: http_local_rate_limiter
-        - disabled: true
-          name: transformation
-          typedConfig:
-            '@type': type.googleapis.com/envoy.api.v2.filter.http.FilterTransformations
+            '@type': type.googleapis.com/envoy.extensions.common.matching.v3.ExtensionWithMatcher
+            extensionConfig:
+              name: composite_ext_proc
+              typedConfig:
+                '@type': type.googleapis.com/envoy.extensions.filters.http.composite.v3.Composite
+            xdsMatcher:
+              matcherList:
+                matchers:
+                - onMatch:
+                    action:
+                      name: composite-action
+                      typedConfig:
+                        '@type': type.googleapis.com/envoy.extensions.filters.http.composite.v3.ExecuteFilterAction
+                        typedConfig:
+                          name: envoy.filters.http.ext_proc
+                          typedConfig:
+                            '@type': type.googleapis.com/envoy.extensions.filters.http.ext_proc.v3.ExternalProcessor
+                            grpcService:
+                              envoyGrpc:
+                                clusterName: kube_default_extproc_9093
+                  predicate:
+                    singlePredicate:
+                      customMatch:
+                        name: envoy.matching.matchers.metadata_matcher
+                        typedConfig:
+                          '@type': type.googleapis.com/envoy.extensions.matching.input_matchers.metadata.v3.Metadata
+                          invert: true
+                          value:
+                            boolMatch: true
+                      input:
+                        name: disable
+                        typedConfig:
+                          '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.network.v3.DynamicMetadataInput
+                          filter: dev.kgateway.disable_ext_proc
+                          path:
+                          - key: disable
         - name: envoy.filters.http.router
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -173,149 +199,75 @@ Listeners:
           configSource:
             ads: {}
             resourceApiVersion: V3
-          routeConfigName: listener~80
+          routeConfigName: listener~8080
         statPrefix: http
         useRemoteAddress: true
-    name: listener~80
-  name: listener~80
+    name: listener~8080
+  metadata:
+    filterMetadata:
+      merge.TrafficPolicy.gateway.kgateway.dev:
+        extProc:
+        - gateway.kgateway.dev/TrafficPolicy/default/gateway-attachment
+  name: listener~8080
 Routes:
 - ignorePortInHostMatching: true
-  name: listener~80
+  metadata:
+    filterMetadata:
+      merge.TrafficPolicy.gateway.kgateway.dev:
+        extProc:
+        - gateway.kgateway.dev/TrafficPolicy/default/gateway-attachment
+  name: listener~8080
+  typedPerFilterConfig:
+    ext_proc/default/extproc-gateway:
+      '@type': type.googleapis.com/envoy.extensions.filters.http.ext_proc.v3.ExtProcPerRoute
+      overrides: {}
   virtualHosts:
   - domains:
-    - example.com
-    name: listener~80~example_com
+    - test.com
+    metadata:
+      filterMetadata:
+        merge.TrafficPolicy.gateway.kgateway.dev:
+          extProc:
+          - gateway.kgateway.dev/TrafficPolicy/default/listener-attachment
+    name: listener~8080~test_com
     routes:
     - match:
-        pathSeparatedPrefix: /mid/a/1
+        pathSeparatedPrefix: /route-0
       metadata:
         filterMetadata:
           merge.TrafficPolicy.gateway.kgateway.dev:
             extProc:
-            - gateway.kgateway.dev/TrafficPolicy/a/a1
-            rateLimit.local:
-            - gateway.kgateway.dev/TrafficPolicy/a/a1
-            transformation:
-            - gateway.kgateway.dev/TrafficPolicy/a/a1
-      name: listener~80~example_com-route-0-httproute-a1-a-0-0-matcher-0
+            - gateway.kgateway.dev/TrafficPolicy/default/route-attachment
+      name: listener~8080~test_com-route-0-httproute-test-default-0-0-rule0-matcher-0
       route:
-        cluster: kube_a_svc-a_8080
+        cluster: kube_default_test_80
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
       typedPerFilterConfig:
-        ext_proc/a/extproc-ext:
+        ext_proc/default/extproc-route:
           '@type': type.googleapis.com/envoy.extensions.filters.http.ext_proc.v3.ExtProcPerRoute
           overrides: {}
-        ratelimit/local:
-          '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
-          filterEnabled:
-            defaultValue:
-              numerator: 100
-            runtimeKey: local_rate_limit_enabled
-          filterEnforced:
-            defaultValue:
-              numerator: 100
-            runtimeKey: local_rate_limit_enforced
-          statPrefix: http_local_rate_limiter
-          tokenBucket:
-            fillInterval: 3s
-            maxTokens: 3
-            tokensPerFill: 3
-        transformation:
-          '@type': type.googleapis.com/envoy.api.v2.filter.http.RouteTransformations
-          transformations:
-          - requestMatch:
-              responseTransformation:
-                transformationTemplate:
-                  headersToAppend:
-                  - key: a1
-                    value:
-                      text: a1
-                  parseBodyBehavior: DontParse
-                  passthrough: {}
     - match:
-        pathSeparatedPrefix: /mid/b/1
+        pathSeparatedPrefix: /route-1
       metadata:
         filterMetadata:
           merge.TrafficPolicy.gateway.kgateway.dev:
             extProc:
-            - gateway.kgateway.dev/TrafficPolicy/b/b1
-            rateLimit.local:
-            - gateway.kgateway.dev/TrafficPolicy/mid/mid
-            transformation:
-            - gateway.kgateway.dev/TrafficPolicy/mid/mid
-      name: listener~80~example_com-route-1-httproute-b1-b-0-0-matcher-0
+            - gateway.kgateway.dev/TrafficPolicy/default/route-disable
+      name: listener~8080~test_com-route-1-httproute-test-default-1-0-rule1-matcher-0
       route:
-        cluster: kube_b_svc-b_8080
+        cluster: kube_default_test_80
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
       typedPerFilterConfig:
-        ext_proc/b/extproc-ext:
-          '@type': type.googleapis.com/envoy.extensions.filters.http.ext_proc.v3.ExtProcPerRoute
-          overrides: {}
-        ratelimit/local:
-          '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
-          filterEnabled:
-            defaultValue:
-              numerator: 100
-            runtimeKey: local_rate_limit_enabled
-          filterEnforced:
-            defaultValue:
-              numerator: 100
-            runtimeKey: local_rate_limit_enforced
-          statPrefix: http_local_rate_limiter
-          tokenBucket:
-            fillInterval: 2s
-            maxTokens: 2
-            tokensPerFill: 2
-        transformation:
-          '@type': type.googleapis.com/envoy.api.v2.filter.http.RouteTransformations
-          transformations:
-          - requestMatch:
-              responseTransformation:
-                transformationTemplate:
-                  headersToAppend:
-                  - key: mid
-                    value:
-                      text: mid
-                  parseBodyBehavior: DontParse
-                  passthrough: {}
+        global_disable/ext_proc:
+          '@type': type.googleapis.com/envoy.config.route.v3.FilterConfig
+          config: {}
     - match:
-        prefix: /
-      metadata:
-        filterMetadata:
-          merge.TrafficPolicy.gateway.kgateway.dev:
-            rateLimit.local:
-            - gateway.kgateway.dev/TrafficPolicy/infra/example-policy
-            transformation:
-            - gateway.kgateway.dev/TrafficPolicy/infra/example-policy
-      name: listener~80~example_com-route-5-httproute-example-route-infra-0-0-matcher-0
+        pathSeparatedPrefix: /route-2
+      name: listener~8080~test_com-route-2-httproute-test-default-2-0-rule2-matcher-0
       route:
-        cluster: kube_infra_example-svc_80
+        cluster: kube_default_test_80
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
-      typedPerFilterConfig:
-        ratelimit/local:
-          '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
-          filterEnabled:
-            defaultValue:
-              numerator: 100
-            runtimeKey: local_rate_limit_enabled
-          filterEnforced:
-            defaultValue:
-              numerator: 100
-            runtimeKey: local_rate_limit_enforced
-          statPrefix: http_local_rate_limiter
-          tokenBucket:
-            fillInterval: 1s
-            maxTokens: 1
-            tokensPerFill: 1
-        transformation:
-          '@type': type.googleapis.com/envoy.api.v2.filter.http.RouteTransformations
-          transformations:
-          - requestMatch:
-              responseTransformation:
-                transformationTemplate:
-                  headersToAppend:
-                  - key: example
-                    value:
-                      text: example
-                  parseBodyBehavior: DontParse
-                  passthrough: {}
+    typedPerFilterConfig:
+      ext_proc/default/extproc-listener:
+        '@type': type.googleapis.com/envoy.extensions.filters.http.ext_proc.v3.ExtProcPerRoute
+        overrides: {}

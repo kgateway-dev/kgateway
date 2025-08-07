@@ -62,6 +62,11 @@ Listeners:
       typedConfig:
         '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
         httpFilters:
+        - disabled: true
+          name: envoy.filters.http.buffer
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.buffer.v3.Buffer
+            maxRequestBytes: 4294967295
         - name: envoy.filters.http.router
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -108,8 +113,23 @@ Routes:
     name: listener~8081~www_test_com
     routes:
     - match:
+        pathSeparatedPrefix: /buffer-disabled
+      metadata:
+        filterMetadata:
+          merge.TrafficPolicy.gateway.kgateway.dev:
+            buffer:
+            - gateway.kgateway.dev/TrafficPolicy/default/disable-buffer
+      name: listener~8081~www_test_com-route-0-httproute-example-route-2-default-1-0-rule1-matcher-0
+      route:
+        cluster: kube_default_example-svc-2_3000
+        clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+      typedPerFilterConfig:
+        envoy.filters.http.buffer:
+          '@type': type.googleapis.com/envoy.extensions.filters.http.buffer.v3.BufferPerRoute
+          disabled: true
+    - match:
         prefix: /
-      name: listener~8081~www_test_com-route-0-httproute-example-route-2-default-0-0-matcher-0
+      name: listener~8081~www_test_com-route-1-httproute-example-route-2-default-0-0-rule0-matcher-0
       route:
         cluster: kube_default_example-svc-2_3000
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR

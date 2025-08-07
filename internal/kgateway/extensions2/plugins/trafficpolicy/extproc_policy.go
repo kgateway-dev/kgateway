@@ -13,9 +13,21 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/cmputils"
 )
 
+const (
+	// extProcFilterPrefix is the prefix for the ExtProc filter name
+	extProcFilterPrefix = "ext_proc/"
+
+	// extProcGlobalDisableFilterName is the name of the filter for ExtProc that disables all ExtProc providers
+	extProcGlobalDisableFilterName = "global_disable/ext_proc"
+
+	// extProcGlobalDisableFilterMetadataNamespace is the metadata namespace for the global disable ExtProc filter
+	extProcGlobalDisableFilterMetadataNamespace = "dev.kgateway.disable_ext_proc"
+)
+
 type extprocIR struct {
-	provider *TrafficPolicyGatewayExtensionIR
-	perRoute *envoy_ext_proc_v3.ExtProcPerRoute
+	provider            *TrafficPolicyGatewayExtensionIR
+	perRoute            *envoy_ext_proc_v3.ExtProcPerRoute
+	disableAllProviders bool
 }
 
 var _ PolicySubIR = &extprocIR{}
@@ -25,10 +37,10 @@ func (e *extprocIR) Equals(other PolicySubIR) bool {
 	if !ok {
 		return false
 	}
-	if e == nil && otherExtProc == nil {
-		return true
-	}
 	if e == nil || otherExtProc == nil {
+		return e == nil && otherExtProc == nil
+	}
+	if e.disableAllProviders != otherExtProc.disableAllProviders {
 		return false
 	}
 	if !proto.Equal(e.perRoute, otherExtProc.perRoute) {
@@ -66,10 +78,19 @@ func constructExtProc(
 	fetchGatewayExtension FetchGatewayExtensionFunc,
 	out *trafficPolicySpecIr,
 ) error {
-	if in.Spec.ExtProc == nil {
+	spec := in.Spec.ExtProc
+	if spec == nil {
 		return nil
 	}
-	gatewayExtension, err := fetchGatewayExtension(krtctx, in.Spec.ExtProc.ExtensionRef, in.GetNamespace())
+
+	if spec.Disable != nil {
+		out.extProc = &extprocIR{
+			disableAllProviders: true,
+		}
+		return nil
+	}
+
+	gatewayExtension, err := fetchGatewayExtension(krtctx, spec.ExtensionRef, in.GetNamespace())
 	if err != nil {
 		return fmt.Errorf("extproc: %w", err)
 	}
@@ -78,12 +99,14 @@ func constructExtProc(
 	}
 	out.extProc = &extprocIR{
 		provider: gatewayExtension,
-		perRoute: translateExtProcPerFilterConfig(in.Spec.ExtProc),
+		perRoute: translateExtProcPerFilterConfig(spec),
 	}
 	return nil
 }
 
-func translateExtProcPerFilterConfig(extProc *v1alpha1.ExtProcPolicy) *envoy_ext_proc_v3.ExtProcPerRoute {
+func translateExtProcPerFilterConfig(
+	extProc *v1alpha1.ExtProcPolicy,
+) *envoy_ext_proc_v3.ExtProcPerRoute {
 	overrides := &envoy_ext_proc_v3.ExtProcOverrides{}
 	if extProc.ProcessingMode != nil {
 		overrides.ProcessingMode = toEnvoyProcessingMode(extProc.ProcessingMode)
@@ -146,30 +169,25 @@ func toEnvoyProcessingMode(p *v1alpha1.ProcessingMode) *envoy_ext_proc_v3.Proces
 	}
 }
 
-// FIXME: Using the wrong filter name prefix when the name is empty?
 func extProcFilterName(name string) string {
 	if name == "" {
-		return extauthFilterNamePrefix
+		return extProcFilterPrefix
 	}
-	return fmt.Sprintf("%s/%s", "ext_proc", name)
+	return extProcFilterPrefix + name
 }
 
-func (p *trafficPolicyPluginGwPass) handleExtProc(fcn string, pCtxTypedFilterConfig *ir.TypedFilterConfigMap, extProc *extprocIR) {
-	if extProc == nil || extProc.provider == nil {
+func (p *trafficPolicyPluginGwPass) handleExtProc(filterChain string, pCtxTypedFilterConfig *ir.TypedFilterConfigMap, extProc *extprocIR) {
+	if extProc == nil {
 		return
 	}
-	providerName := extProc.provider.ResourceName()
-	// Handle the enablement state
 
-	if extProc.perRoute != nil {
-		pCtxTypedFilterConfig.AddTypedConfig(extProcFilterName(providerName),
-			extProc.perRoute,
-		)
-	} else {
-		// if you are on a route and not trying to disable it then we need to override the top level disable on the filter chain
-		pCtxTypedFilterConfig.AddTypedConfig(extProcFilterName(providerName),
-			&envoy_ext_proc_v3.ExtProcPerRoute{Override: &envoy_ext_proc_v3.ExtProcPerRoute_Overrides{Overrides: &envoy_ext_proc_v3.ExtProcOverrides{}}},
-		)
+	// Add the global disable all filter if all providers are disabled
+	if extProc.disableAllProviders {
+		pCtxTypedFilterConfig.AddTypedConfig(extProcGlobalDisableFilterName, EnableFilterPerRoute)
+		return
 	}
-	p.extProcPerProvider.Add(fcn, providerName, extProc.provider)
+
+	providerName := extProc.provider.ResourceName()
+	p.extProcPerProvider.Add(filterChain, providerName, extProc.provider)
+	pCtxTypedFilterConfig.AddTypedConfig(extProcFilterName(providerName), extProc.perRoute)
 }

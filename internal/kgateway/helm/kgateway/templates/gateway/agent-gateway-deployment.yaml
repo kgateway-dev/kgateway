@@ -81,10 +81,15 @@ spec:
           volumeMounts:
             - name: config-volume
               mountPath: /config
+            # Make /tmp writeable, needed for pprof
+            - name: tmp
+              mountPath: /tmp
       volumes:
         - name: config-volume
           configMap:
             name: {{ include "kgateway.gateway.fullname" . }}
+        - name: tmp
+          emptyDir: {}
 ---
 apiVersion: v1
 kind: Service

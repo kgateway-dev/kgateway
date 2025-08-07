@@ -1140,21 +1140,27 @@ func (h *RoutesIndex) transformRules(
 ) []ir.HttpRouteRuleIR {
 	rules := make([]ir.HttpRouteRuleIR, 0, len(i))
 	for _, r := range i {
-		extensionRefs := h.getExtensionRefs(kctx, src.Namespace, r.Filters, opts...)
+		extensionRefs, err := h.getExtensionRefs(kctx, src.Namespace, r.Filters, opts...)
+
 		var policies ir.AttachedPolicies
 		if r.Name != nil {
 			policies = toAttachedPolicies(h.policies.getTargetingPolicies(kctx, extensionsplug.RouteAttachmentPoint, src, string(*r.Name), srcLabels), opts...)
 		}
+
 		rulePolicies := h.getBuiltInRulePolicies(r, opts...)
 		policies.Append(rulePolicies)
 
-		rules = append(rules, ir.HttpRouteRuleIR{
+		ruleOut := ir.HttpRouteRuleIR{
 			ExtensionRefs:    extensionRefs,
 			AttachedPolicies: policies,
 			Backends:         h.getBackends(kctx, src, r.BackendRefs),
 			Matches:          r.Matches,
 			Name:             emptyIfNil(r.Name),
-		})
+		}
+		if err != nil {
+			ruleOut.Err = err
+		}
+		rules = append(rules, ruleOut)
 	}
 	return rules
 }
@@ -1164,23 +1170,24 @@ func (h *RoutesIndex) getExtensionRefs(
 	ns string,
 	r []gwv1.HTTPRouteFilter,
 	opts ...ir.PolicyAttachmentOpts,
-) ir.AttachedPolicies {
+) (ir.AttachedPolicies, error) {
 	ret := ir.AttachedPolicies{
 		Policies: map[schema.GroupKind][]ir.PolicyAtt{},
 	}
+	var errs []error
 	for _, ext := range r {
-		// TODO: propagate error if we can't find the extension
-		policyAtt, errs := h.resolveExtension(kctx, ns, ext)
+		policyAtt, err := h.resolveExtension(kctx, ns, ext)
 		if policyAtt != nil {
 			for _, o := range opts {
 				o(policyAtt)
 			}
 			ret.Policies[policyAtt.GroupKind] = append(ret.Policies[policyAtt.GroupKind], *policyAtt)
-		} else if len(errs) > 0 {
-			logger.Error("unresolved HTTPRouteFilter", "error", errors.Join(errs...))
+		} else if err != nil {
+			errs = append(errs, err)
+			logger.Error("unresolved HTTPRouteFilter", "error", err)
 		}
 	}
-	return ret
+	return ret, errors.Join(errs...)
 }
 
 func (h *RoutesIndex) getBuiltInRulePolicies(
@@ -1201,7 +1208,7 @@ func (h *RoutesIndex) getBuiltInRulePolicies(
 	return ret
 }
 
-func (h *RoutesIndex) resolveExtension(kctx krt.HandlerContext, ns string, ext gwv1.HTTPRouteFilter) (*ir.PolicyAtt, []error) {
+func (h *RoutesIndex) resolveExtension(kctx krt.HandlerContext, ns string, ext gwv1.HTTPRouteFilter) (*ir.PolicyAtt, error) {
 	if ext.Type == gwv1.HTTPRouteFilterExtensionRef {
 		if ext.ExtensionRef == nil {
 			// TODO: report error!!
@@ -1216,7 +1223,7 @@ func (h *RoutesIndex) resolveExtension(kctx krt.HandlerContext, ns string, ext g
 		}
 		policy := h.policies.fetchPolicy(kctx, key)
 		if policy == nil {
-			return nil, []error{fmt.Errorf("%s: %w", key, ErrPolicyNotFound)}
+			return nil, fmt.Errorf("%s: %w", key, ErrPolicyNotFound)
 		}
 
 		gk := schema.GroupKind{
@@ -1236,7 +1243,7 @@ func (h *RoutesIndex) resolveExtension(kctx krt.HandlerContext, ns string, ext g
 			PolicyRef:  policyRef,
 			Errors:     policy.Errors,
 		}
-		return policyAtt, policy.Errors
+		return policyAtt, nil
 	}
 
 	fromGK := schema.GroupKind{
@@ -1272,7 +1279,9 @@ func toFromBackendRef(fromns string, ref gwv1.BackendObjectReference) ir.ObjectS
 func (h *RoutesIndex) getBackends(kctx krt.HandlerContext, src ir.ObjectSource, backendRefs []gwv1.HTTPBackendRef) []ir.HttpBackendOrDelegate {
 	backends := make([]ir.HttpBackendOrDelegate, 0, len(backendRefs))
 	for _, ref := range backendRefs {
-		extensionRefs := h.getExtensionRefs(kctx, src.Namespace, ref.Filters)
+		// ignore errs as invalid/missing policy for backendRef filters is undefined currently
+		// see: https://github.com/kgateway-dev/kgateway/issues/11897
+		extensionRefs, _ := h.getExtensionRefs(kctx, src.Namespace, ref.Filters)
 		fromns := src.Namespace
 
 		to := toFromBackendRef(fromns, ref.BackendObjectReference)

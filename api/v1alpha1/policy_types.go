@@ -55,3 +55,6 @@ const (
 	// PolicyReasonPending is used with the "Accepted" or "Attached" condition when the policy has been referenced but not yet fully processed by the controller.
 	PolicyReasonPending PolicyConditionReason = "Pending"
 )
+
+// PolicyDisable is used to disable a policy.
+type PolicyDisable struct{}

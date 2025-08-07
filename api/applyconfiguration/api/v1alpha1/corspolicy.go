@@ -4,16 +4,27 @@ package v1alpha1
 
 import (
 	v1 "sigs.k8s.io/gateway-api/apis/v1"
+
+	apiv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 )
 
 // CorsPolicyApplyConfiguration represents a declarative configuration of the CorsPolicy type for use
 // with apply.
 type CorsPolicyApplyConfiguration struct {
 	v1.HTTPCORSFilter `json:",inline"`
+	Disable           *apiv1alpha1.PolicyDisable `json:"disable,omitempty"`
 }
 
 // CorsPolicyApplyConfiguration constructs a declarative configuration of the CorsPolicy type for use with
 // apply.
 func CorsPolicy() *CorsPolicyApplyConfiguration {
 	return &CorsPolicyApplyConfiguration{}
+}
+
+// WithDisable sets the Disable field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Disable field is set to the value of the last call.
+func (b *CorsPolicyApplyConfiguration) WithDisable(value apiv1alpha1.PolicyDisable) *CorsPolicyApplyConfiguration {
+	b.Disable = &value
+	return b
 }

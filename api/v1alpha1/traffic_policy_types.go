@@ -191,35 +191,17 @@ type BodyTransformation struct {
 	Value *InjaTemplate `json:"value,omitempty"`
 }
 
-// ExtAuthEnabled determines the enabled state of the ExtAuth filter.
-// +kubebuilder:validation:Enum=DisableAll
-type ExtAuthEnabled string
-
-// When we add a new field here we have to be specific around which extensions are enabled/disabled
-// and how these can be overridden by other policies.
-const (
-	// ExtAuthDisableAll disables all instances of the ExtAuth filter for this route.
-	// This is to enable a global disable such as for a health check route.
-	ExtAuthDisableAll ExtAuthEnabled = "DisableAll"
-)
-
 // ExtAuthPolicy configures external authentication for a route.
 // This policy will determine the ext auth server to use and how to  talk to it.
 // Note that most of these fields are passed along as is to Envoy.
 // For more details on particular fields please see the Envoy ExtAuth documentation.
 // https://raw.githubusercontent.com/envoyproxy/envoy/f910f4abea24904aff04ec33a00147184ea7cffa/api/envoy/extensions/filters/http/ext_authz/v3/ext_authz.proto
 //
-// +kubebuilder:validation:ExactlyOneOf=extensionRef;enablement
+// +kubebuilder:validation:ExactlyOneOf=extensionRef;disable
 type ExtAuthPolicy struct {
 	// ExtensionRef references the ExternalExtension that should be used for authentication.
 	// +optional
 	ExtensionRef *corev1.LocalObjectReference `json:"extensionRef,omitempty"`
-
-	// Enablement determines the enabled state of the ExtAuth filter.
-	// When set to "DisableAll", the filter is disabled for this route.
-	// When empty, the filter is enabled as long as it is not disabled by another policy.
-	// +optional
-	Enablement *ExtAuthEnabled `json:"enablement,omitempty"`
 
 	// WithRequestBody allows the request body to be buffered and sent to the authorization service.
 	// Warning buffering has implications for streaming and therefore performance.
@@ -229,6 +211,11 @@ type ExtAuthPolicy struct {
 	// Additional context for the authorization service.
 	// +optional
 	ContextExtensions map[string]string `json:"contextExtensions,omitempty"`
+
+	// Disable all external authorization filters.
+	// Can be used to disable external authorization policies applied at a higher level in the config hierarchy.
+	// +optional
+	Disable *PolicyDisable `json:"disable,omitempty"`
 }
 
 // BufferSettings configures how the request body should be buffered.
@@ -377,6 +364,11 @@ type RateLimitDescriptorEntryGeneric struct {
 type CorsPolicy struct {
 	// +kubebuilder:pruning:PreserveUnknownFields
 	*gwv1.HTTPCORSFilter `json:",inline"`
+
+	// Disable the CORS filter.
+	// Can be used to disable CORS policies applied at a higher level in the config hierarchy.
+	// +optional
+	Disable *PolicyDisable `json:"disable,omitempty"`
 }
 
 // CSRFPolicy can be used to set percent of requests for which the CSRF filter is enabled,
@@ -455,11 +447,17 @@ type Cookie struct {
 
 type SourceIP struct{}
 
+// +kubebuilder:validation:ExactlyOneOf=maxRequestSize;disable
 type Buffer struct {
 	// MaxRequestSize sets the maximum size in bytes of a message body to buffer.
 	// Requests exceeding this size will receive HTTP 413.
 	// Example format: "1Mi", "512Ki", "1Gi"
-	// +required
+	// +optional
 	// +kubebuilder:validation:XValidation:message="maxRequestSize must be greater than 0 and less than 4Gi",rule="quantity(self).isGreaterThan(quantity('0')) && quantity(self).isLessThan(quantity('4Gi'))"
-	MaxRequestSize *resource.Quantity `json:"maxRequestSize"`
+	MaxRequestSize *resource.Quantity `json:"maxRequestSize,omitempty"`
+
+	// Disable the buffer filter.
+	// Can be used to disable buffer policies applied at a higher level in the config hierarchy.
+	// +optional
+	Disable *PolicyDisable `json:"disable,omitempty"`
 }

@@ -34,14 +34,20 @@ type testingSuite struct {
 	testInstallation *e2e.TestInstallation
 
 	// Track active manifests and objects for cleanup
-	activeManifests []string
-	activeObjects   []client.Object
+	testManifests map[string][]string
+	activeObjects []client.Object
 }
 
 func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
 	return &testingSuite{
 		ctx:              ctx,
 		testInstallation: testInst,
+		testManifests: map[string][]string{
+			"TestExtProcWithGatewayTargetRef":   {gatewayTargetRefManifest},
+			"TestExtProcWithHTTPRouteTargetRef": {httpRouteTargetRefManifest},
+			"TestExtProcWithSingleRoute":        {singleRouteManifest},
+			"TestExtProcWithBackendFilter":      {backendFilterManifest},
+		},
 	}
 }
 
@@ -89,24 +95,22 @@ func (s *testingSuite) TearDownSuite() {
 	s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, s.activeObjects...)
 }
 
-// SetupTest runs before each test
-func (s *testingSuite) SetupTest() {
-	// Reset active manifests tracking
-	s.activeManifests = nil
+func (s *testingSuite) BeforeTest(suiteName, testName string) {
+	for _, manifest := range s.testManifests[testName] {
+		err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, manifest)
+		s.Require().NoError(err)
+	}
 }
 
-// TearDownTest runs after each test
-func (s *testingSuite) TearDownTest() {
-	// Clean up any test-specific manifests
-	for _, manifest := range s.activeManifests {
+func (s *testingSuite) AfterTest(suiteName, testName string) {
+	for _, manifest := range s.testManifests[testName] {
 		err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, manifest)
-		s.Require().NoError(err)
+		s.NoError(err)
 	}
 }
 
 // TestExtProcWithGatewayTargetRef tests ExtProc with targetRef to Gateway
 func (s *testingSuite) TestExtProcWithGatewayTargetRef() {
-	s.activeManifests = []string{gatewayTargetRefManifest}
 	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, gatewayTargetRefManifest)
 	s.Require().NoError(err)
 
@@ -133,7 +137,7 @@ func (s *testingSuite) TestExtProcWithGatewayTargetRef() {
 			),
 		})
 
-	// Second route - should also have ExtProc applied
+	// Second route rule0 - should also have ExtProc applied
 	s.testInstallation.Assertions.AssertEventualCurlResponse(
 		s.ctx,
 		testdefaults.CurlPodExecOpt,
@@ -155,11 +159,33 @@ func (s *testingSuite) TestExtProcWithGatewayTargetRef() {
 				),
 			),
 		})
+
+	// Second route rule1 - should not have ExtProc applied since it has a disable policy applied
+	s.testInstallation.Assertions.AssertEventualCurlResponse(
+		s.ctx,
+		testdefaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(gatewayService.ObjectMeta)),
+			curl.VerboseOutput(),
+			curl.WithHostHeader("www.example.com"),
+			curl.WithPath("/extproc-disabled"),
+			curl.WithPort(8080),
+			curl.WithHeader("instructions", getInstructionsJson(instructions{
+				AddHeaders: map[string]string{"extproctest": "true"},
+			})),
+		},
+		&testmatchers.HttpResponse{
+			StatusCode: http.StatusOK,
+			Body: gomega.WithTransform(transforms.WithJsonBody(),
+				gomega.And(
+					gomega.HaveKeyWithValue("headers", gomega.Not(gomega.HaveKey("Extproctest"))),
+				),
+			),
+		})
 }
 
 // TestExtProcWithHTTPRouteTargetRef tests ExtProc with targetRef to HTTPRoute
 func (s *testingSuite) TestExtProcWithHTTPRouteTargetRef() {
-	s.activeManifests = []string{httpRouteTargetRefManifest}
 	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, httpRouteTargetRefManifest)
 	s.Require().NoError(err)
 
@@ -211,7 +237,6 @@ func (s *testingSuite) TestExtProcWithHTTPRouteTargetRef() {
 
 // TestExtProcWithSingleRoute tests ExtProc applied to a specific rule within a route
 func (s *testingSuite) TestExtProcWithSingleRoute() {
-	s.activeManifests = []string{singleRouteManifest}
 	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, singleRouteManifest)
 	s.Require().NoError(err)
 
@@ -266,7 +291,6 @@ func (s *testingSuite) TestExtProcWithSingleRoute() {
 // TestExtProcWithBackendFilter tests backend-level ExtProc filtering
 func (s *testingSuite) TestExtProcWithBackendFilter() {
 	// Apply the backend filter test manifests
-	s.activeManifests = []string{backendFilterManifest}
 	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, backendFilterManifest)
 	s.Require().NoError(err)
 

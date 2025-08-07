@@ -192,7 +192,7 @@ func (s *testingSuite) setupTest(manifests []string, resources []client.Object) 
 }
 
 func (s *testingSuite) assertResponse(path string, expectedStatus int) {
-	resp := s.testInstallation.Assertions.AssertCurlReturnResponse(
+	s.testInstallation.Assertions.AssertEventualCurlResponse(
 		s.ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -204,7 +204,6 @@ func (s *testingSuite) assertResponse(path string, expectedStatus int) {
 		&testmatchers.HttpResponse{
 			StatusCode: expectedStatus,
 		})
-	defer resp.Body.Close()
 }
 
 func (s *testingSuite) assertConsistentResponse(path string, expectedStatus int) {
