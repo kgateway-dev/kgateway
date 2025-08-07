@@ -49,6 +49,13 @@ var (
 		},
 	}
 
+	HttpbinService = &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "httpbin",
+			Namespace: "httpbin",
+		},
+	}
+
 	TcpEchoPod = &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "tcp-echo",
