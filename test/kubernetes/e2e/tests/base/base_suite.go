@@ -183,7 +183,7 @@ func (s *BaseTestingSuite) ApplyManifests(testCase TestCase) {
 func (s *BaseTestingSuite) DeleteManifests(testCase TestCase) {
 	for _, manifest := range testCase.Manifests {
 		gomega.Eventually(func() error {
-			err := s.TestInstallation.Actions.Kubectl().DeleteFile(s.Ctx, manifest)
+			err := s.TestInstallation.Actions.Kubectl().DeleteFileSafe(s.Ctx, manifest)
 			return err
 		}, 10*time.Second, 1*time.Second).Should(gomega.Succeed(), "can delete "+manifest)
 	}
