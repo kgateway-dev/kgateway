@@ -305,7 +305,7 @@ func TestExtAuthPolicyPlugin(t *testing.T) {
 		extAuthConfig, ok := pCtx.TypedFilterConfig[extAuthFilterName("test-auth-extension")]
 		assert.True(t, ok)
 		assert.NotNil(t, extAuthConfig)
-		assert.Empty(t, pCtx.TypedFilterConfig[extAuthGlobalDisableFilterName])
+		assert.Empty(t, pCtx.TypedFilterConfig[ExtAuthGlobalDisableFilterName])
 	})
 
 	t.Run("handles disabled ext auth configuration", func(t *testing.T) {
@@ -331,6 +331,6 @@ func TestExtAuthPolicyPlugin(t *testing.T) {
 		require.NoError(t, err)
 		// assert.NotNil(t, )
 		assert.NotNil(t, pCtx.TypedFilterConfig, pCtx)
-		assert.NotEmpty(t, pCtx.TypedFilterConfig[extAuthGlobalDisableFilterName])
+		assert.NotEmpty(t, pCtx.TypedFilterConfig[ExtAuthGlobalDisableFilterName])
 	})
 }
