@@ -10,6 +10,18 @@ spec:
     name: gw
   preserveHttp1HeaderCase: true
 ---
+kind: BackendConfigPolicy
+apiVersion: gateway.kgateway.dev/v1alpha1
+metadata:
+  name: preserve-http1-header-case
+spec:
+  targetRefs:
+    - name: raw-header-echo
+      group: ""
+      kind: Service
+  http1ProtocolOptions:
+    preserveHttp1HeaderCase: true
+---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
@@ -94,8 +106,14 @@ data:
       }
 
       body := strings.Join(headers, "\n")
-      resp := fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s", len(body), body)
-      conn.Write([]byte(resp))
+      response := "HTTP/1.1 200 OK\r\n" +
+        "Content-Type: text/plain\r\n" +
+        fmt.Sprintf("Content-Length: %d\r\n", len(body)) +
+        "ReSpOnSe-miXed-CaSe-hEaDeR: Foo\r\n" +
+        "\r\n" +
+        body
+
+      conn.Write([]byte(response))
     }
 ---
 apiVersion: v1

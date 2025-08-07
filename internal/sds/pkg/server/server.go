@@ -79,18 +79,32 @@ func (s *Server) Run(ctx context.Context) (<-chan struct{}, error) {
 		return nil, err
 	}
 	slog.Info("sds server listening", "address", s.address)
+
+	// Create channels for synchronization
+	serveStarted := make(chan struct{})
+	serverStopped := make(chan struct{})
+
+	// Start the server in a goroutine
 	go func() {
+		// Signal that Serve is about to be called
+		close(serveStarted)
 		if err = s.grpcServer.Serve(lis); err != nil {
 			log.Fatalf("fatal error in gRPC server: address=%s error=%v", s.address, err)
 		}
 	}()
-	serverStopped := make(chan struct{})
+
+	// Wait for Serve to start before setting up shutdown handler
 	go func() {
+		// Wait for Serve to be called
+		<-serveStarted
+
+		// Now wait for context cancellation
 		<-ctx.Done()
 		slog.Info("stopping sds server", "address", s.address)
 		s.grpcServer.GracefulStop()
 		serverStopped <- struct{}{}
 	}()
+
 	return serverStopped, nil
 }
 

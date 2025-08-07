@@ -13,7 +13,6 @@ import (
 	"istio.io/api/annotation"
 	istio "istio.io/api/networking/v1alpha3"
 	kubecreds "istio.io/istio/pilot/pkg/credentials/kube"
-	"istio.io/istio/pilot/pkg/model"
 	creds "istio.io/istio/pilot/pkg/model/credentials"
 	"istio.io/istio/pilot/pkg/model/kstatus"
 	"istio.io/istio/pilot/pkg/serviceregistry/kube"
@@ -34,6 +33,8 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
+
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
@@ -431,7 +432,7 @@ func buildADPDestination(
 				Reason:  gwv1.RouteReasonUnsupportedValue,
 				Message: "service name invalid; the name of the Service must be used, not the hostname."}
 		}
-		hostname = fmt.Sprintf("%s.%s.inference.%s", to.Name, namespace, ctx.DomainSuffix)
+		hostname = kubeutils.GetServiceHostname(string(to.Name), namespace)
 		key := namespace + "/" + string(to.Name)
 		svc := ptr.Flatten(krt.FetchOne(ctx.Krt, ctx.InferencePools, krt.FilterKey(key)))
 		logger.Debug("found pull pool for service", "svc", svc, "key", key)
@@ -458,7 +459,7 @@ func buildADPDestination(
 				Reason:  gwv1.RouteReasonUnsupportedValue,
 				Message: "service name invalid; the name of the Service must be used, not the hostname."}
 		}
-		hostname = fmt.Sprintf("%s.%s.svc.%s", to.Name, namespace, ctx.DomainSuffix)
+		hostname = kubeutils.GetServiceHostname(string(to.Name), namespace)
 		key := namespace + "/" + string(to.Name)
 		svc := ptr.Flatten(krt.FetchOne(ctx.Krt, ctx.Services, krt.FilterKey(key)))
 		if svc == nil {
@@ -839,10 +840,6 @@ func filteredReferences(parents []routeParentReference) []routeParentReference {
 	return ret
 }
 
-func getDefaultName(name string, kgw *gwv1.GatewaySpec) string {
-	return fmt.Sprintf("%v-%v", name, kgw.GatewayClassName)
-}
-
 // IsManaged checks if a Gateway is managed (ie we create the Deployment and Service) or unmanaged.
 // This is based on the address field of the spec. If address is set with a Hostname type, it should point to an existing
 // Service that handles the gateway traffic. If it is not set, or refers to only a single IP, we will consider it managed and provision the Service.
@@ -880,10 +877,9 @@ func IsManaged(gw *gwv1.GatewaySpec) bool {
 	return false
 }
 
-func extractGatewayServices(domainSuffix string, kgw *gwv1.Gateway) ([]string, *reporter.RouteCondition) {
+func extractGatewayServices(kgw *gwv1.Gateway) ([]string, *reporter.RouteCondition) {
 	if IsManaged(&kgw.Spec) {
-		name := model.GetOrDefault(kgw.Annotations[annotation.GatewayNameOverride.Name], getDefaultName(kgw.Name, &kgw.Spec))
-		return []string{fmt.Sprintf("%s.%s.svc.%v", name, kgw.Namespace, domainSuffix)}, nil
+		return []string{kubeutils.ServiceFQDN(kgw.ObjectMeta)}, nil
 	}
 	gatewayServices := []string{}
 	skippedAddresses := []string{}
@@ -899,7 +895,7 @@ func extractGatewayServices(domainSuffix string, kgw *gwv1.Gateway) ([]string, *
 		fqdn := addr.Value
 		if !strings.Contains(fqdn, ".") {
 			// Short name, expand it
-			fqdn = fmt.Sprintf("%s.%s.svc.%s", fqdn, kgw.Namespace, domainSuffix)
+			fqdn = kubeutils.ServiceFQDN(kgw.ObjectMeta)
 		}
 		gatewayServices = append(gatewayServices, fqdn)
 	}

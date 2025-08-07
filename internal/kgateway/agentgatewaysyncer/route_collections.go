@@ -351,7 +351,6 @@ type RouteContext struct {
 type RouteContextInputs struct {
 	Grants         ReferenceGrants
 	RouteParents   RouteParents
-	DomainSuffix   string
 	Services       krt.Collection[*corev1.Service]
 	InferencePools krt.Collection[*inf.InferencePool]
 	Namespaces     krt.Collection[*corev1.Namespace]

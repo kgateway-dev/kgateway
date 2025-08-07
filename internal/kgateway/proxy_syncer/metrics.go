@@ -9,9 +9,14 @@ import (
 
 const (
 	statusSubsystem    = "status_syncer"
-	syncerNameLabel    = "syncer"
 	snapshotSubsystem  = "xds_snapshot"
 	resourcesSubsystem = "resources"
+	syncerNameLabel    = "syncer"
+	gatewayLabel       = "gateway"
+	nameLabel          = "name"
+	namespaceLabel     = "namespace"
+	resultLabel        = "result"
+	resourceLabel      = "resource"
 )
 
 var (
@@ -22,7 +27,7 @@ var (
 			Name:      "status_syncs_total",
 			Help:      "Total number of status syncs",
 		},
-		[]string{syncerNameLabel, "result"},
+		[]string{nameLabel, namespaceLabel, syncerNameLabel, resultLabel},
 	)
 	statusSyncDuration = metrics.NewHistogram(
 		metrics.HistogramOpts{
@@ -34,7 +39,7 @@ var (
 			NativeHistogramMaxBucketNumber:  100,
 			NativeHistogramMinResetDuration: time.Hour,
 		},
-		[]string{syncerNameLabel},
+		[]string{nameLabel, namespaceLabel, syncerNameLabel},
 	)
 
 	transformsHistogramBuckets = []float64{0.0005, 0.001, 0.0025, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5}
@@ -44,7 +49,7 @@ var (
 			Name:      "transforms_total",
 			Help:      "Total number of XDS snapshot transforms",
 		},
-		[]string{"gateway", "namespace", "result"},
+		[]string{gatewayLabel, namespaceLabel, resultLabel},
 	)
 	snapshotTransformDuration = metrics.NewHistogram(
 		metrics.HistogramOpts{
@@ -56,7 +61,7 @@ var (
 			NativeHistogramMaxBucketNumber:  100,
 			NativeHistogramMinResetDuration: time.Hour,
 		},
-		[]string{"gateway", "namespace"},
+		[]string{gatewayLabel, namespaceLabel},
 	)
 	snapshotResources = metrics.NewGauge(
 		metrics.GaugeOpts{
@@ -64,7 +69,7 @@ var (
 			Name:      "resources",
 			Help:      "Current number of resources in XDS snapshot",
 		},
-		[]string{"gateway", "namespace", "resource"},
+		[]string{gatewayLabel, namespaceLabel, resourceLabel},
 	)
 
 	resourcesHistogramBuckets          = []float64{0.1, 0.5, 1, 2.5, 5, 10, 30, 60, 120, 300, 600, 1200, 1800}
@@ -74,7 +79,7 @@ var (
 			Name:      "status_syncs_completed_total",
 			Help:      "Total number of status syncs completed for resources",
 		},
-		[]string{"gateway", "namespace", "resource"})
+		[]string{gatewayLabel, namespaceLabel, resourceLabel})
 	resourcesStatusSyncDuration = metrics.NewHistogram(
 		metrics.HistogramOpts{
 			Subsystem:                       resourcesSubsystem,
@@ -85,7 +90,7 @@ var (
 			NativeHistogramMaxBucketNumber:  100,
 			NativeHistogramMinResetDuration: time.Hour,
 		},
-		[]string{"gateway", "namespace", "resource"},
+		[]string{gatewayLabel, namespaceLabel, resourceLabel},
 	)
 	resourcesXDSSyncsTotal = metrics.NewCounter(
 		metrics.CounterOpts{
@@ -93,7 +98,7 @@ var (
 			Name:      "xds_snapshot_syncs_total",
 			Help:      "Total number of XDS snapshot syncs for resources",
 		},
-		[]string{"gateway", "namespace", "resource"})
+		[]string{gatewayLabel, namespaceLabel, resourceLabel})
 	resourcesXDSyncDuration = metrics.NewHistogram(
 		metrics.HistogramOpts{
 			Subsystem:                       resourcesSubsystem,
@@ -104,7 +109,7 @@ var (
 			NativeHistogramMaxBucketNumber:  100,
 			NativeHistogramMinResetDuration: time.Hour,
 		},
-		[]string{"gateway", "namespace", "resource"},
+		[]string{gatewayLabel, namespaceLabel, resourceLabel},
 	)
 )
 
@@ -117,98 +122,61 @@ type snapshotResourcesMetricLabels struct {
 
 func (r snapshotResourcesMetricLabels) toMetricsLabels() []metrics.Label {
 	return []metrics.Label{
-		{Name: "gateway", Value: r.Gateway},
-		{Name: "namespace", Value: r.Namespace},
-		{Name: "resource", Value: r.Resource},
+		{Name: gatewayLabel, Value: r.Gateway},
+		{Name: namespaceLabel, Value: r.Namespace},
+		{Name: resourceLabel, Value: r.Resource},
 	}
 }
 
-// statusSyncMetricsRecorder defines the interface for recording status syncer metrics.
-type statusSyncMetricsRecorder interface {
-	StatusSyncStart() func(error)
+// statusSyncMetricLabels defines the labels for status sync metrics.
+type statusSyncMetricLabels struct {
+	Name      string
+	Namespace string
+	Syncer    string
 }
 
-// statusSyncMetrics records metrics for status syncer operations.
-type statusSyncMetrics struct {
-	syncerName         string
-	statusSyncsTotal   metrics.Counter
-	statusSyncDuration metrics.Histogram
+func (s statusSyncMetricLabels) toMetricsLabels() []metrics.Label {
+	return []metrics.Label{
+		{Name: nameLabel, Value: s.Name},
+		{Name: namespaceLabel, Value: s.Namespace},
+		{Name: syncerNameLabel, Value: s.Syncer},
+	}
 }
 
-// newStatusSyncMetricsRecorder creates a new recorder for status syncer metrics.
-func newStatusSyncMetricsRecorder(syncerName string) statusSyncMetricsRecorder {
+// collectStatusSyncMetrics is called at the start of a status sync function to
+// begin metrics collection and returns a function called at the end to complete
+// metrics recording.
+func collectStatusSyncMetrics(labels statusSyncMetricLabels) func(error) {
 	if !metrics.Active() {
-		return &nullStatusSyncMetricsRecorder{}
+		return func(err error) {}
 	}
 
-	m := &statusSyncMetrics{
-		syncerName:         syncerName,
-		statusSyncsTotal:   statusSyncsTotal,
-		statusSyncDuration: statusSyncDuration,
-	}
-
-	return m
-}
-
-type nullStatusSyncMetricsRecorder struct{}
-
-func (m *nullStatusSyncMetricsRecorder) StatusSyncStart() func(error) {
-	return func(err error) {}
-}
-
-// StatusSyncStart is called at the start of a status sync function to begin metrics
-// collection and returns a function called at the end to complete metrics recording.
-func (m *statusSyncMetrics) StatusSyncStart() func(error) {
 	start := time.Now()
 
 	return func(err error) {
 		duration := time.Since(start)
 
-		m.statusSyncDuration.Observe(duration.Seconds(),
-			metrics.Label{Name: syncerNameLabel, Value: m.syncerName})
+		statusSyncDuration.Observe(duration.Seconds(), labels.toMetricsLabels()...)
 
 		result := "success"
 		if err != nil {
 			result = "error"
 		}
 
-		m.statusSyncsTotal.Inc([]metrics.Label{
-			{Name: syncerNameLabel, Value: m.syncerName},
-			{Name: "result", Value: result},
-		}...)
+		statusSyncsTotal.Inc(append(labels.toMetricsLabels(),
+			metrics.Label{Name: resultLabel, Value: result},
+		)...)
 	}
 }
 
-// snapshotMetricsRecorder defines the interface for recording XDS snapshot metrics.
-type snapshotMetricsRecorder interface {
-	transformStart(string) func(error)
-}
-
-// snapshotMetrics records metrics for collection operations.
-type snapshotMetrics struct {
-	transformsTotal   metrics.Counter
-	transformDuration metrics.Histogram
-}
-
-var _ snapshotMetricsRecorder = &snapshotMetrics{}
-
-// newSnapshotMetricsRecorder creates a new recorder for XDS snapshot metrics.
-func newSnapshotMetricsRecorder() snapshotMetricsRecorder {
+// collectXDSTransformMetrics is called at the start of a transform function to
+// begin metrics collection and returns a function called at the end to complete
+// metrics recording.
+func collectXDSTransformMetrics(clientKey string) func(error) {
 	if !metrics.Active() {
-		return &nullSnapshotMetricsRecorder{}
+		return func(err error) {}
 	}
 
-	m := &snapshotMetrics{
-		transformsTotal:   snapshotTransformsTotal,
-		transformDuration: snapshotTransformDuration,
-	}
-
-	return m
-}
-
-// transformStart is called at the start of a transform function to begin metrics
-// collection and returns a function called at the end to complete metrics recording.
-func (m *snapshotMetrics) transformStart(clientKey string) func(error) {
 	start := time.Now()
 
 	cd := getDetailsFromXDSClientResourceName(clientKey)
@@ -218,25 +186,19 @@ func (m *snapshotMetrics) transformStart(clientKey string) func(error) {
 			result = "error"
 		}
 
-		m.transformsTotal.Inc([]metrics.Label{
-			{Name: "gateway", Value: cd.Gateway},
-			{Name: "namespace", Value: cd.Namespace},
-			{Name: "result", Value: result},
+		snapshotTransformsTotal.Inc([]metrics.Label{
+			{Name: gatewayLabel, Value: cd.Gateway},
+			{Name: namespaceLabel, Value: cd.Namespace},
+			{Name: resultLabel, Value: result},
 		}...)
 
 		duration := time.Since(start)
 
-		m.transformDuration.Observe(duration.Seconds(), []metrics.Label{
-			{Name: "gateway", Value: cd.Gateway},
-			{Name: "namespace", Value: cd.Namespace},
+		snapshotTransformDuration.Observe(duration.Seconds(), []metrics.Label{
+			{Name: gatewayLabel, Value: cd.Gateway},
+			{Name: namespaceLabel, Value: cd.Namespace},
 		}...)
 	}
-}
-
-type nullSnapshotMetricsRecorder struct{}
-
-func (m *nullSnapshotMetricsRecorder) transformStart(string) func(error) {
-	return func(err error) {}
 }
 
 type resourceNameDetails struct {

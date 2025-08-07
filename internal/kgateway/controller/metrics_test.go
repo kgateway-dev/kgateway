@@ -54,44 +54,72 @@ var _ = Describe("GwControllerMetrics", func() {
 		setupGateway(ctx)
 		defer deleteGateway(ctx)
 
-		gathered := metricstest.MustGatherMetrics(GinkgoT())
+		gathered := metricstest.MustGatherMetricsContext(ctx, GinkgoT(),
+			"kgateway_controller_reconciliations_total",
+			"kgateway_controller_reconciliations_running",
+			"kgateway_controller_reconcile_duration_seconds")
 
-		gathered.AssertMetrics("kgateway_controller_reconciliations_total", []metricstest.ExpectMetric{
+		gathered.AssertMetricsInclude("kgateway_controller_reconciliations_total", []metricstest.ExpectMetric{
 			&metricstest.ExpectedMetricValueTest{
-				Labels: []metrics.Label{{Name: "controller", Value: "gateway"}, {Name: "result", Value: "success"}},
-				Test:   metricstest.Between(1, 20),
+				Labels: []metrics.Label{
+					{Name: "controller", Value: "gateway"},
+					{Name: "namespace", Value: defaultNamespace},
+					{Name: "name", Value: "gw-" + gatewayClassName + "-metrics"},
+					{Name: "result", Value: "success"},
+				},
+				Test: metricstest.Between(1, 20),
 			},
 			&metricstest.ExpectedMetricValueTest{
-				Labels: []metrics.Label{{Name: "controller", Value: "gatewayclass"}, {Name: "result", Value: "success"}},
-				Test:   metricstest.Between(1, 20),
+				Labels: []metrics.Label{
+					{Name: "controller", Value: "gatewayclass"},
+					{Name: "namespace", Value: defaultNamespace},
+					{Name: "name", Value: "gw-" + gatewayClassName + "-metrics"},
+					{Name: "result", Value: "success"},
+				},
+				Test: metricstest.Between(1, 20),
 			},
 			&metricstest.ExpectedMetricValueTest{
-				Labels: []metrics.Label{{Name: "controller", Value: "gatewayclass-provisioner"}, {Name: "result", Value: "success"}},
-				Test:   metricstest.Between(1, 10),
+				Labels: []metrics.Label{
+					{Name: "controller", Value: "gatewayclass-provisioner"},
+					{Name: "namespace", Value: defaultNamespace},
+					{Name: "name", Value: "gw-" + gatewayClassName + "-metrics"},
+					{Name: "result", Value: "success"},
+				},
+				Test: metricstest.Between(1, 10),
 			},
 		})
 
-		gathered.AssertMetrics("kgateway_controller_reconciliations_running", []metricstest.ExpectMetric{
+		gathered.AssertMetricsInclude("kgateway_controller_reconciliations_running", []metricstest.ExpectMetric{
 			&metricstest.ExpectedMetricValueTest{
-				Labels: []metrics.Label{{Name: "controller", Value: "gateway"}},
-				Test:   metricstest.Between(0, 1),
+				Labels: []metrics.Label{
+					{Name: "controller", Value: "gateway"},
+					{Name: "name", Value: "gw-" + gatewayClassName + "-metrics"},
+					{Name: "namespace", Value: defaultNamespace},
+				},
+				Test: metricstest.Between(0, 1),
 			},
 			&metricstest.ExpectedMetricValueTest{
-				Labels: []metrics.Label{{Name: "controller", Value: "gatewayclass"}},
-				Test:   metricstest.Between(0, 1),
+				Labels: []metrics.Label{
+					{Name: "controller", Value: "gatewayclass"},
+					{Name: "name", Value: "gw-" + gatewayClassName + "-metrics"},
+					{Name: "namespace", Value: defaultNamespace},
+				},
+				Test: metricstest.Between(0, 1),
 			},
 			&metricstest.ExpectedMetricValueTest{
-				Labels: []metrics.Label{{Name: "controller", Value: "gatewayclass-provisioner"}},
-				Test:   metricstest.Between(0, 1),
+				Labels: []metrics.Label{
+					{Name: "controller", Value: "gatewayclass-provisioner"},
+					{Name: "name", Value: "gw-" + gatewayClassName + "-metrics"},
+					{Name: "namespace", Value: defaultNamespace},
+				},
+				Test: metricstest.Between(0, 1),
 			},
 		})
 
-		gathered.AssertMetricsLabels("kgateway_controller_reconcile_duration_seconds", [][]metrics.Label{{
+		gathered.AssertMetricsLabelsInclude("kgateway_controller_reconcile_duration_seconds", [][]metrics.Label{{
 			{Name: "controller", Value: "gateway"},
-		}, {
-			{Name: "controller", Value: "gatewayclass"},
-		}, {
-			{Name: "controller", Value: "gatewayclass-provisioner"},
+			{Name: "name", Value: "gw-" + gatewayClassName + "-metrics"},
+			{Name: "namespace", Value: defaultNamespace},
 		}})
 	})
 

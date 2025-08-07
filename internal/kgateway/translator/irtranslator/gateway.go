@@ -90,6 +90,8 @@ func (t *Translator) ComputeListener(
 	}
 	t.runListenerPlugins(ctx, pass, gw, lis, reporter, ret)
 
+	domains := map[string]struct{}{}
+
 	for _, hfc := range lis.HttpFilterChain {
 		fct := filterChainTranslator{
 			listener:        lis,
@@ -118,17 +120,12 @@ func (t *Translator) ComputeListener(
 
 			// Record metrics for the number of domains per listener.
 			// Only one domain per virtual host is supported currently, but that may change in the future,
-			// so loop through the virtual hosts and count the domains.
-			domainsOnListener := 0
-			for _, vhost := range rc.GetVirtualHosts() {
-				domainsOnListener += len(vhost.GetDomains())
+			// so loop through the virtual hosts and count the unique domains.
+			for _, vhost := range rc.VirtualHosts {
+				for _, domain := range vhost.Domains {
+					domains[domain] = struct{}{}
+				}
 			}
-
-			setDomainsPerListener(domainsPerListenerMetricLabels{
-				Namespace:   hr.gw.SourceObject.GetNamespace(),
-				GatewayName: hr.gw.SourceObject.GetName(),
-				Port:        strconv.Itoa(int(lis.BindPort)),
-			}, domainsOnListener)
 		}
 
 		// compute chains
@@ -142,6 +139,13 @@ func (t *Translator) ComputeListener(
 			hasTls = true
 		}
 	}
+
+	// Update the domains per listener metric with number of domains found.
+	setDomainsPerListener(domainsPerListenerMetricLabels{
+		Namespace:   gw.SourceObject.GetNamespace(),
+		GatewayName: gw.SourceObject.GetName(),
+		Port:        strconv.Itoa(int(lis.BindPort)),
+	}, len(domains))
 
 	fct := filterChainTranslator{
 		listener:   lis,

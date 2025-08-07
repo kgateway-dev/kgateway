@@ -114,6 +114,8 @@ spec:
                     type: boolean
                   overrideStreamErrorOnInvalidHttpMessage:
                     type: boolean
+                  preserveHttp1HeaderCase:
+                    type: boolean
                 type: object
               http2ProtocolOptions:
                 properties:

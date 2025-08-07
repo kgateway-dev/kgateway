@@ -1291,6 +1291,9 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: overrideStreamErrorOnInvalidHttpMessage
       type:
         scalar: boolean
+    - name: preserveHttp1HeaderCase
+      type:
+        scalar: boolean
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Http2ProtocolOptions
   map:
     fields:

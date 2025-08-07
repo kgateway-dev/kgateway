@@ -17,7 +17,6 @@ import (
 	"istio.io/api/label"
 	networkingclient "istio.io/client-go/pkg/apis/networking/v1"
 	"istio.io/istio/pilot/pkg/features"
-	"istio.io/istio/pilot/pkg/serviceregistry/kube"
 	"istio.io/istio/pilot/pkg/serviceregistry/provider"
 	"istio.io/istio/pilot/pkg/util/protoconv"
 	"istio.io/istio/pkg/cluster"
@@ -36,6 +35,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
+
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 )
@@ -97,6 +98,7 @@ func InferenceHostname(name, namespace, domainSuffix string) host.Name {
 func (a *index) inferencePoolBuilder(
 	namespaces krt.Collection[*corev1.Namespace],
 ) krt.TransformationSingle[*inf.InferencePool, ServiceInfo] {
+	domainSuffix := kubeutils.GetClusterDomainName()
 	return func(ctx krt.HandlerContext, s *inf.InferencePool) *ServiceInfo {
 		portNames := map[int32]ServicePortName{}
 		ports := []*api.Port{{
@@ -109,7 +111,7 @@ func (a *index) inferencePoolBuilder(
 		svc := &api.Service{
 			Name:      s.Name,
 			Namespace: s.Namespace,
-			Hostname:  string(InferenceHostname(s.Name, s.Namespace, a.DomainSuffix)),
+			Hostname:  string(InferenceHostname(s.Name, s.Namespace, domainSuffix)),
 			Ports:     ports,
 		}
 
@@ -215,7 +217,7 @@ func (a *index) constructService(ctx krt.HandlerContext, svc *corev1.Service) *a
 	return &api.Service{
 		Name:          svc.Name,
 		Namespace:     svc.Namespace,
-		Hostname:      string(kube.ServiceHostname(svc.Name, svc.Namespace, a.DomainSuffix)),
+		Hostname:      kubeutils.ServiceFQDN(svc.ObjectMeta),
 		Addresses:     addresses,
 		Ports:         ports,
 		LoadBalancing: lb,

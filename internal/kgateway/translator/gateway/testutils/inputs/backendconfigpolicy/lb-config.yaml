@@ -50,6 +50,7 @@ spec:
   http1ProtocolOptions:
     enableTrailers: true
     overrideStreamErrorOnInvalidHttpMessage: true
+    preserveHttp1HeaderCase: true
   loadBalancer:
     ringHash:
       minimumRingSize: 1024
