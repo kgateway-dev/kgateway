@@ -52,7 +52,7 @@ var (
 	HttpbinService = &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "httpbin",
-			Namespace: "httpbin",
+			Namespace: "default",
 		},
 	}
 
