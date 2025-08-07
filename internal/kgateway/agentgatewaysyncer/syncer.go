@@ -793,6 +793,7 @@ func (s *AgentGwSyncer) buildStatusReporting() {
 			}
 			for listener, counts := range p.attachedRoutes {
 				attachedRoutes[p.NamespacedName][listener] += counts
+				p.reports.Gateways[p.NamespacedName].ListenerName(listener).SetAttachedRoutes(counts)
 			}
 		}
 
