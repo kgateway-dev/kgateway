@@ -1186,7 +1186,7 @@ func (h *RoutesIndex) transformRules(
 ) []ir.HttpRouteRuleIR {
 	rules := make([]ir.HttpRouteRuleIR, 0, len(i))
 	for _, r := range i {
-		extensionRefs, errs := h.getExtensionRefs(kctx, src.Namespace, r.Filters, opts...)
+		extensionRefs, err := h.getExtensionRefs(kctx, src.Namespace, r.Filters, opts...)
 
 		var policies ir.AttachedPolicies
 		if r.Name != nil {
@@ -1203,8 +1203,8 @@ func (h *RoutesIndex) transformRules(
 			Matches:          r.Matches,
 			Name:             emptyIfNil(r.Name),
 		}
-		if errs != nil {
-			ruleOut.Err = errors.Join(errs...)
+		if err != nil {
+			ruleOut.Err = err
 		}
 		rules = append(rules, ruleOut)
 	}
@@ -1216,7 +1216,7 @@ func (h *RoutesIndex) getExtensionRefs(
 	ns string,
 	r []gwv1.HTTPRouteFilter,
 	opts ...ir.PolicyAttachmentOpts,
-) (ir.AttachedPolicies, []error) {
+) (ir.AttachedPolicies, error) {
 	ret := ir.AttachedPolicies{
 		Policies: map[schema.GroupKind][]ir.PolicyAtt{},
 	}
@@ -1233,7 +1233,7 @@ func (h *RoutesIndex) getExtensionRefs(
 			logger.Error("unresolved HTTPRouteFilter", "error", err)
 		}
 	}
-	return ret, errs
+	return ret, errors.Join(errs...)
 }
 
 func (h *RoutesIndex) getBuiltInRulePolicies(
