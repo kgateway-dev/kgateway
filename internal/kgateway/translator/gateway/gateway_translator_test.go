@@ -1048,6 +1048,37 @@ var _ = DescribeTable("Route Replacement",
 			s.RouteReplacementMode = settings.RouteReplacementStandard
 		}),
 
+	Entry("Standard Mode - HTTPRoute extensionRef to missing policy",
+		translatorTestCase{
+			inputFile:  "route-replacement/standard/httproute-with-missing-extension-ref.yaml",
+			outputFile: "route-replacement/standard/httproute-with-missing-extension-ref-out.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "gwtest",
+				Name:      "example-gateway",
+			},
+			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
+				route := &gwv1.HTTPRoute{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test-route",
+						Namespace: "gwtest",
+					},
+				}
+				routeStatus := reportsMap.BuildRouteStatus(context.Background(), route, wellknown.DefaultGatewayClassName)
+				Expect(routeStatus).NotTo(BeNil())
+				Expect(routeStatus.Parents).To(HaveLen(1))
+
+				acceptedCond := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionAccepted))
+				Expect(acceptedCond).NotTo(BeNil())
+				Expect(acceptedCond.Status).To(Equal(metav1.ConditionFalse))
+				Expect(acceptedCond.Reason).To(Equal(reporter.RouteRuleDroppedReason))
+				Expect(acceptedCond.Message).To(ContainSubstring("Dropped Rule (0)"))
+				Expect(acceptedCond.Message).To(ContainSubstring("gateway.kgateway.dev/TrafficPolicy/gwtest/my-tp-that-doesnt-exist: policy not found"))
+			},
+		},
+		func(s *settings.Settings) {
+			s.RouteReplacementMode = settings.RouteReplacementStandard
+		}),
+
 	Entry("Standard Mode - Invalid Rate Limit Global Fields",
 		translatorTestCase{
 			inputFile:  "route-replacement/standard/invalid-ratelimit-global-empty-fields.yaml",

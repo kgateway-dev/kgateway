@@ -15,14 +15,14 @@ import (
 )
 
 const (
-	extAuthGlobalDisableFilterName              = "global_disable/ext_auth"
-	extAuthGlobalDisableFilterMetadataNamespace = "dev.kgateway.disable_ext_auth"
+	ExtAuthGlobalDisableFilterName              = "global_disable/ext_auth"
+	ExtAuthGlobalDisableFilterMetadataNamespace = "dev.kgateway.disable_ext_auth"
 	globalFilterDisableMetadataKey              = "disable"
 	extauthFilterNamePrefix                     = "ext_auth"
 )
 
 var ExtAuthzEnabledMetadataMatcher = &envoy_matcher_v3.MetadataMatcher{
-	Filter: extAuthGlobalDisableFilterMetadataNamespace,
+	Filter: ExtAuthGlobalDisableFilterMetadataNamespace,
 	Invert: true,
 	Path: []*envoy_matcher_v3.MetadataMatcher_PathSegment{
 		{
@@ -165,7 +165,7 @@ func (p *trafficPolicyPluginGwPass) handleExtAuth(fcn string, pCtxTypedFilterCon
 
 	// Add the global disable all filter if all providers are disabled
 	if extAuth.disableAllProviders {
-		pCtxTypedFilterConfig.AddTypedConfig(extAuthGlobalDisableFilterName, EnableFilterPerRoute)
+		pCtxTypedFilterConfig.AddTypedConfig(ExtAuthGlobalDisableFilterName, EnableFilterPerRoute)
 		return
 	}
 

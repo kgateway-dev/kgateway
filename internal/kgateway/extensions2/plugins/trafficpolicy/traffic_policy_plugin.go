@@ -527,7 +527,7 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.Filt
 	// Add global ExtAuth disable filter when there are providers
 	if len(p.extAuthPerProvider.Providers[fcc.FilterChainName]) > 0 {
 		// register the filter that sets metadata so that it can have overrides on the route level
-		filters = AddDisableFilterIfNeeded(filters, extAuthGlobalDisableFilterName, extAuthGlobalDisableFilterMetadataNamespace)
+		filters = AddDisableFilterIfNeeded(filters, ExtAuthGlobalDisableFilterName, ExtAuthGlobalDisableFilterMetadataNamespace)
 	}
 	// Add Ext_authz filter for listener
 	for providerName, provider := range p.extAuthPerProvider.Providers[fcc.FilterChainName] {

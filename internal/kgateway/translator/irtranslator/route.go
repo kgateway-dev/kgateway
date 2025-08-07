@@ -17,7 +17,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/metrics"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/routeutils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -63,13 +62,6 @@ func (h *httpRouteConfigurationTranslator) ComputeRouteConfiguration(ctx context
 		reportPolicyAcceptanceStatus(h.reporter, h.listener.PolicyAncestorRef, pols...)
 		policies, mergeOrigins := mergePolicies(pass, pols)
 		for _, pol := range policies {
-			if pol.PolicyRef != nil {
-				metrics.StartResourceSync(pol.PolicyRef.Name, metrics.ResourceMetricLabels{
-					Gateway:   h.gw.SourceObject.Name,
-					Namespace: h.gw.SourceObject.Namespace,
-					Resource:  gk.Kind,
-				})
-			}
 			pass.ApplyRouteConfigPlugin(ctx, &ir.RouteConfigContext{
 				FilterChainName:   h.fc.FilterChainName,
 				TypedFilterConfig: typedPerFilterConfigRoute,
@@ -274,13 +266,6 @@ func (h *httpRouteConfigurationTranslator) runVhostPlugins(
 		reportPolicyAcceptanceStatus(h.reporter, h.listener.PolicyAncestorRef, pols...)
 		policies, mergeOrigins := mergePolicies(pass, pols)
 		for _, pol := range policies {
-			if pol.PolicyRef != nil {
-				metrics.StartResourceSync(pol.PolicyRef.Name, metrics.ResourceMetricLabels{
-					Gateway:   h.gw.SourceObject.Name,
-					Namespace: h.gw.SourceObject.Namespace,
-					Resource:  gk.Kind,
-				})
-			}
 			pctx := &ir.VirtualHostContext{
 				Policy:            pol.PolicyIr,
 				TypedFilterConfig: typedPerFilterConfig,
@@ -353,14 +338,6 @@ func (h *httpRouteConfigurationTranslator) runRoutePlugins(
 				continue
 			}
 
-			if pol.PolicyRef != nil {
-				metrics.StartResourceSync(pol.PolicyRef.Name, metrics.ResourceMetricLabels{
-					Gateway:   h.gw.SourceObject.Name,
-					Namespace: h.gw.SourceObject.Namespace,
-					Resource:  gk.Kind,
-				})
-			}
-
 			pctx.Policy = pol.PolicyIr
 			err := pass.ApplyForRoute(ctx, pctx, out)
 			if err != nil {
@@ -396,13 +373,6 @@ func (h *httpRouteConfigurationTranslator) runBackendPolicies(ctx context.Contex
 		reportPolicyAcceptanceStatus(h.reporter, h.listener.PolicyAncestorRef, pols...)
 		policies, _ := mergePolicies(pass, pols)
 		for _, pol := range policies {
-			if pol.PolicyRef != nil {
-				metrics.StartResourceSync(pol.PolicyRef.Name, metrics.ResourceMetricLabels{
-					Gateway:   h.gw.SourceObject.Name,
-					Namespace: h.gw.SourceObject.Namespace,
-					Resource:  gk.Kind,
-				})
-			}
 			// Policy on extension ref
 			err := pass.ApplyForRouteBackend(ctx, pol.PolicyIr, pCtx)
 			if err != nil {

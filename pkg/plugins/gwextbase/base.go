@@ -15,6 +15,11 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
 
+const (
+	ExtAuthGlobalDisableFilterName              = trafficpolicy.ExtAuthGlobalDisableFilterName
+	ExtAuthGlobalDisableFilterMetadataNamespace = trafficpolicy.ExtAuthGlobalDisableFilterMetadataNamespace
+)
+
 type (
 	TrafficPolicy                   = trafficpolicy.TrafficPolicy
 	TrafficPolicyConstructor        = trafficpolicy.TrafficPolicyConstructor
