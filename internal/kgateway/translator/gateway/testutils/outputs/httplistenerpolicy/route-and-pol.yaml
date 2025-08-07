@@ -27,8 +27,9 @@ Listeners:
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.health_check.v3.HealthCheck
             headers:
-            - exactMatch: /health_check
-              name: :path
+            - name: :path
+              stringMatch:
+                exact: /health_check
             passThroughMode: false
         - name: envoy.filters.http.router
           typedConfig:
