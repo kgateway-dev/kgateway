@@ -57,24 +57,20 @@ var (
 		},
 	}
 
-	setup = base.SimpleTestCase{
+	setup = base.TestCase{
 		Manifests: []string{e2edefaults.CurlPodManifest, setupManifest},
 		Resources: []client.Object{e2edefaults.CurlPod, proxyDeployment, proxyService, httpbinSvc, httpbinDeployment},
 	}
 
 	// test cases
-	testCases = map[string]*base.TestCase{
-		"TestOTelTracing": {
-			SimpleTestCase: base.SimpleTestCase{
-				Manifests: []string{otelCollectorManifest, policyManifest},
-				Resources: []client.Object{otelCollectorPod, tracingPolicy},
-			},
+	testCases = map[string]base.TestCase{
+		"TestOTelTracing": base.TestCase{
+			Manifests: []string{otelCollectorManifest, policyManifest},
+			Resources: []client.Object{otelCollectorPod, tracingPolicy},
 		},
-		"TestOTelTracingSecure": {
-			SimpleTestCase: base.SimpleTestCase{
-				Manifests: []string{otelCollectorSecureManifest, policyManifest},
-				Resources: []client.Object{otelCollectorPod, tracingPolicy},
-			},
+		"TestOTelTracingSecure": base.TestCase{
+			Manifests: []string{otelCollectorSecureManifest, policyManifest},
+			Resources: []client.Object{otelCollectorPod, tracingPolicy},
 		},
 	}
 )

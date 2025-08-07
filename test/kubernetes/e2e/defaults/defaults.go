@@ -3,6 +3,7 @@ package defaults
 import (
 	"path/filepath"
 
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -37,16 +38,16 @@ var (
 
 	HttpEchoPodManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "http_echo.yaml")
 
-	HttpBinLabelSelector = "app=httpbin"
+	HttpbinManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "httpbin.yaml")
 
-	HttpBinPod = &corev1.Pod{
+	HttpbinLabelSelector = "app.kubernetes.io/name=httpbin"
+
+	HttpbinDeployment = &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "httpbin",
 			Namespace: "default",
 		},
 	}
-
-	HttpBinManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "httpbin.yaml")
 
 	TcpEchoPod = &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -96,17 +97,6 @@ Commercial support is available at
 <p><em>Thank you for using nginx.</em></p>
 </body>
 </html>`
-
-	HttpbinManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "httpbin.yaml")
-
-	HttpbinLabelSelector = "app=httpbin"
-
-	HttpbinPod = &corev1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "httpbin", // FIXME: this is incorrect, pod name is ~generated
-			Namespace: "default",
-		},
-	}
 
 	WellKnownAppLabel = "app.kubernetes.io/name"
 )

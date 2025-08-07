@@ -184,13 +184,12 @@ impl<EHF: EnvoyHttpFilter> HttpFilter<EHF> for Filter {
                 "kgateway",
                 "route",
             );
-            if route_name_data_option.is_some() {
-                let route_name_data = route_name_data_option.unwrap();
+            if let Some(route_name_data) = route_name_data_option {
                 // if its there then we should be able to pull the data name
                 let route_name = std::str::from_utf8(route_name_data.as_slice()).unwrap();
                 let route_config = self.route_specific.get(route_name);
-                if route_config.is_some() {
-                    setters = route_config.unwrap().request_headers_setter.clone();
+                if let Some(route_config_val) = route_config {
+                    setters = route_config_val.request_headers_setter.clone();
                 }
             }
         }
@@ -212,8 +211,8 @@ impl<EHF: EnvoyHttpFilter> HttpFilter<EHF> for Filter {
             let tmpl = env.get_template("temp").unwrap();
             let rendered = tmpl.render(context!(headers => headers));
             let mut rendered_str = "".to_string();
-            if rendered.is_ok() {
-                rendered_str = rendered.unwrap();
+            if let Ok(rendered_val) = rendered {
+                rendered_str = rendered_val;
             } else {
                 eprintln!("Error rendering template: {}", rendered.err().unwrap());
             }
@@ -257,13 +256,12 @@ impl<EHF: EnvoyHttpFilter> HttpFilter<EHF> for Filter {
                 "kgateway",
                 "route",
             );
-            if route_name_data_option.is_some() {
-                let route_name_data = route_name_data_option.unwrap();
+            if let Some(route_name_data) = route_name_data_option {
                 // if its there then we should be able to pull the data name
                 let route_name = std::str::from_utf8(route_name_data.as_slice()).unwrap();
                 let route_config = self.route_specific.get(route_name);
-                if route_config.is_some() {
-                    setters = route_config.unwrap().response_headers_setter.clone();
+                if let Some(route_config_val) = route_config {
+                    setters = route_config_val.response_headers_setter.clone();
                 }
             }
         }
@@ -275,8 +273,8 @@ impl<EHF: EnvoyHttpFilter> HttpFilter<EHF> for Filter {
             let rendered =
                 tmpl.render(context!(headers => headers, request_headers => request_headers));
             let mut rendered_str = "".to_string();
-            if rendered.is_ok() {
-                rendered_str = rendered.unwrap();
+            if let Ok(rendered_val) = rendered {
+                rendered_str = rendered_val;
             } else {
                 eprintln!("Error rendering template: {}", rendered.err().unwrap());
             }
