@@ -13,6 +13,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/defaults"
 )
 
 // TestCase defines the manifests and resources used by a test or test suite.
@@ -163,20 +164,11 @@ func (s *BaseTestingSuite) ApplyManifests(testCase TestCase) {
 				LabelSelector: fmt.Sprintf("app.kubernetes.io/name=%s", pod.Name),
 				// Provide a longer timeout as the pod needs to be pulled and pass HCs
 			}, time.Second*60, time.Second*2)
-		}
-		if deployment, ok := resource.(*appsv1.Deployment); ok {
-			if len(deployment.Labels) != 0 {
-				// TODO clean up
-				s.TestInstallation.Assertions.EventuallyPodsRunning(s.Ctx, deployment.Namespace, metav1.ListOptions{
-					LabelSelector: fmt.Sprintf("app=%s", deployment.Name),
-					// Provide a longer timeout as the pod needs to be pulled and pass HCs
-				}, time.Second*60, time.Second*2)
-			} else {
-				s.TestInstallation.Assertions.EventuallyPodsRunning(s.Ctx, deployment.Namespace, metav1.ListOptions{
-					LabelSelector: fmt.Sprintf("app.kubernetes.io/name=%s", deployment.Name),
-					// Provide a longer timeout as the pod needs to be pulled and pass HCs
-				}, time.Second*60, time.Second*2)
-			}
+		} else if deployment, ok := resource.(*appsv1.Deployment); ok {
+			s.TestInstallation.Assertions.EventuallyPodsRunning(s.Ctx, deployment.Namespace, metav1.ListOptions{
+				LabelSelector: fmt.Sprintf("%s=%s", defaults.WellKnownAppLabel, deployment.Name),
+				// Provide a longer timeout as the pod needs to be pulled and pass HCs
+			}, time.Second*60, time.Second*2)
 		}
 	}
 }
