@@ -114,6 +114,5 @@ the new release (not required for a patch release):
   **Note** The [getting started](https://gateway-api-inference-extension.sigs.k8s.io/guides/) guide should be tested with the new Kgateway
   version before submitting the PR.
 
-- Create an issue and submit a pull request to [llm-d-deployer](https://github.com/llm-d/llm-d-deployer) to bump the Kgateway version.
-  See [PR 352](https://github.com/llm-d/llm-d-deployer/issues/352) as an example. **Note** The [quickstart](https://github.com/llm-d/llm-d-deployer/tree/main/quickstart)
-  guide should be tested with the new Kgateway version before submitting the PR.
+- Create an issue and submit a pull request to [llm-d-infra](https://github.com/llm-d-incubation/llm-d-infra) to bump the Kgateway version.
+  See [PR 146](https://github.com/llm-d-incubation/llm-d-infra/pull/146) as an example. **Note** The [quickstart](https://github.com/llm-d-incubation/llm-d-infra/tree/main/quickstart) guide should be tested with the new Kgateway version before submitting the PR.

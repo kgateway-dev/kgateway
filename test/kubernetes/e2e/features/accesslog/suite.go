@@ -65,7 +65,7 @@ func (s *testingSuite) TestAccessLogWithFileSink() {
 
 // TestAccessLogWithGrpcSink tests access log with grpc sink
 func (s *testingSuite) TestAccessLogWithGrpcSink() {
-	pods := s.getPods("kgateway=gateway-proxy-access-logger")
+	pods := s.getPods("app.kubernetes.io/name=gateway-proxy-access-logger")
 	s.sendTestRequest()
 
 	s.Require().EventuallyWithT(func(c *assert.CollectT) {

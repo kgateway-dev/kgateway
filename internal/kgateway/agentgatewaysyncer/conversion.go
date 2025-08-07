@@ -432,7 +432,7 @@ func buildADPDestination(
 				Reason:  gwv1.RouteReasonUnsupportedValue,
 				Message: "service name invalid; the name of the Service must be used, not the hostname."}
 		}
-		hostname = kubeutils.GetServiceHostname(string(to.Name), namespace)
+		hostname = kubeutils.GetInferenceServiceHostname(string(to.Name), namespace)
 		key := namespace + "/" + string(to.Name)
 		svc := ptr.Flatten(krt.FetchOne(ctx.Krt, ctx.InferencePools, krt.FilterKey(key)))
 		logger.Debug("found pull pool for service", "svc", svc, "key", key)

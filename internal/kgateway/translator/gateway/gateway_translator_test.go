@@ -1230,7 +1230,7 @@ var _ = DescribeTable("Route Replacement",
 				Expect(acceptedCond.Status).To(Equal(metav1.ConditionFalse))
 				Expect(acceptedCond.Reason).To(Equal(reporter.RouteRuleDroppedReason))
 				Expect(acceptedCond.Message).To(ContainSubstring("Dropped Rule (0)"))
-				Expect(acceptedCond.Message).To(ContainSubstring("extauthz: extension not found"))
+				Expect(acceptedCond.Message).To(ContainSubstring("extauthz: gateway extension gwtest/non-existent-auth-extension not found"))
 				Expect(acceptedCond.ObservedGeneration).To(Equal(int64(0)))
 			},
 		},
