@@ -67,7 +67,7 @@ func (s *testingSuite) TestLeaderAndFollowerAction() {
 
 	s.assertCurlResponseCode(200)
 	s.assertRouteHasNoStatus()
-	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(s.Ctx, "httpbin", "httpbin", gwv1.RouteConditionAccepted, metav1.ConditionTrue)
+	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(s.Ctx, routeObjectMeta.Name, routeObjectMeta.Namespace, gwv1.RouteConditionAccepted, metav1.ConditionTrue)
 
 	// Verify that a new leader was elected
 	s.NotNil(s.getLeader(), "no leader found")
@@ -223,7 +223,7 @@ func (s *testingSuite) assertCurlResponseCode(code int) {
 func (s *testingSuite) assertRouteHasNoStatus() {
 	s.TestInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
 		route := &gwv1.HTTPRoute{}
-		err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, types.NamespacedName{Name: "httpbin", Namespace: "httpbin"}, route)
+		err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, types.NamespacedName{Name: routeObjectMeta.Name, Namespace: routeObjectMeta.Namespace}, route)
 		g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get HTTPRoute")
 		g.Expect(route.Status.Parents).To(gomega.BeEmpty())
 	}, "120s", "1s").Should(gomega.Succeed())
@@ -233,7 +233,7 @@ func (s *testingSuite) assertBackendHasNoStatus() {
 	s.TestInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
 		backend := &v1alpha1.Backend{}
 		err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, types.NamespacedName{Name: "httpbin-static", Namespace: "default"}, backend)
-		g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get HTTPRoute")
+		g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get Backend")
 		g.Expect(backend.Status.Conditions).To(gomega.BeEmpty())
 	}, "120s", "1s").Should(gomega.Succeed())
 }

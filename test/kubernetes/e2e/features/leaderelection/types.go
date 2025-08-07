@@ -30,6 +30,11 @@ var (
 	proxyDeployment = &appsv1.Deployment{ObjectMeta: proxyObjectMeta}
 	proxyService    = &corev1.Service{ObjectMeta: proxyObjectMeta}
 
+	routeObjectMeta = metav1.ObjectMeta{
+		Name:      "httpbin",
+		Namespace: "default",
+	}
+
 	setup = base.TestCase{
 		Manifests: []string{e2edefaults.CurlPodManifest, e2edefaults.HttpbinManifest},
 		Resources: []client.Object{e2edefaults.CurlPod, e2edefaults.HttpbinDeployment, e2edefaults.HttpbinService},
