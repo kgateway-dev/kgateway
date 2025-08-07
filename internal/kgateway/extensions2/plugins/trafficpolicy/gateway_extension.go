@@ -122,11 +122,7 @@ func TranslateGatewayExtensionBuilder(commoncol *common.CommonCollections) func(
 				p.Err = fmt.Errorf("failed to resolve ExtProc backend: %w", err)
 				return p
 			}
-
 			p.ExtProc = buildCompositeExtProcFilter(envoyGrpcService)
-			// p.ExtProc = &envoy_ext_proc_v3.ExternalProcessor{
-			// 	GrpcService: envoyGrpcService,
-			// }
 
 		case v1alpha1.GatewayExtensionTypeRateLimit:
 			if gExt.RateLimit == nil {
@@ -211,6 +207,8 @@ func resolveRateLimitService(grpcService *envoycorev3.GrpcService, rateLimit *v1
 	return envoyRateLimit
 }
 
+// buildCompositeExtProcFilter builds a composite filter for external processing so that
+// the filter can be conditionally disabled with the global_disable/ext_proc filter is enabled
 func buildCompositeExtProcFilter(envoyGrpcService *envoycorev3.GrpcService) *envoymatchingv3.ExtensionWithMatcher {
 	return &envoymatchingv3.ExtensionWithMatcher{
 		ExtensionConfig: &envoycorev3.TypedExtensionConfig{
