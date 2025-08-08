@@ -323,8 +323,6 @@ spec:
                     type: array
                   insecureSkipVerify:
                     type: boolean
-                  oneWayTLS:
-                    type: boolean
                   parameters:
                     properties:
                       cipherSuites:
@@ -359,6 +357,8 @@ spec:
                         type: string
                     type: object
                     x-kubernetes-map-type: atomic
+                  simpleTLS:
+                    type: boolean
                   sni:
                     minLength: 1
                     type: string

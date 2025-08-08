@@ -41,6 +41,11 @@ func GetServiceHostname(name, namespace string) string {
 	return fmt.Sprintf("%s.%s.svc.%s", name, namespace, GetClusterDomainName())
 }
 
+// GetInferenceServiceHostname returns the fully qualified service hostname for InferencePools
+func GetInferenceServiceHostname(name, namespace string) string {
+	return fmt.Sprintf("%s.%s.inference.%s", name, namespace, GetClusterDomainName())
+}
+
 // GetClusterDomainName returns cluster's domain name or an error
 // Closes issue: https://github.com/knative/eventing/issues/714
 func GetClusterDomainName() string {

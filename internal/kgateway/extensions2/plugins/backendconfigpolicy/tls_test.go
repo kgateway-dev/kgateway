@@ -208,6 +208,7 @@ func TestTranslateTLSConfig(t *testing.T) {
 			wantErr: false,
 			check: func(t *testing.T, result *envoytlsv3.UpstreamTlsContext) {
 				assert.NotNil(t, result)
+				assert.NotNil(t, result.CommonTlsContext.GetValidationContext())
 			},
 		},
 		{
@@ -231,19 +232,52 @@ func TestTranslateTLSConfig(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "should not have validation context if one way tls",
+			name: "TLS config with only private key provided",
+			tlsConfig: &v1alpha1.TLS{
+				TLSFiles: &v1alpha1.TLSFiles{
+					TLSKey: ptr.To(TLSKey),
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "SimpleTLS with SAN verification and root CA",
 			tlsConfig: &v1alpha1.TLS{
 				TLSFiles: &v1alpha1.TLSFiles{
 					TLSCertificate: ptr.To(CACert),
 					TLSKey:         ptr.To(TLSKey),
 					RootCA:         ptr.To(CACert),
 				},
-				OneWayTLS: ptr.To(true),
+				SimpleTLS:            ptr.To(true),
+				VerifySubjectAltName: []string{"test.example.com"},
 			},
 			wantErr: false,
 			check: func(t *testing.T, result *envoytlsv3.UpstreamTlsContext) {
 				assert.NotNil(t, result)
-				assert.Nil(t, result.CommonTlsContext.GetValidationContext())
+				// With SimpleTLS, no client certificates should be set
+				assert.Nil(t, result.CommonTlsContext.GetTlsCertificates())
+				// But validation context should be present with SAN matching
+				validationCtx := result.CommonTlsContext.GetValidationContext()
+				assert.NotNil(t, validationCtx)
+				assert.Len(t, validationCtx.MatchTypedSubjectAltNames, 1)
+				assert.Equal(t, "test.example.com", validationCtx.MatchTypedSubjectAltNames[0].Matcher.GetExact())
+			},
+		},
+		{
+			name: "should only have validation context if simple tls",
+			tlsConfig: &v1alpha1.TLS{
+				TLSFiles: &v1alpha1.TLSFiles{
+					TLSCertificate: ptr.To(CACert),
+					TLSKey:         ptr.To(TLSKey),
+					RootCA:         ptr.To(CACert),
+				},
+				SimpleTLS: ptr.To(true),
+			},
+			wantErr: false,
+			check: func(t *testing.T, result *envoytlsv3.UpstreamTlsContext) {
+				assert.NotNil(t, result)
+				assert.NotNil(t, result.CommonTlsContext.GetValidationContext())
+				assert.Nil(t, result.CommonTlsContext.GetTlsCertificates())
 			},
 		},
 		{
@@ -269,6 +303,7 @@ func TestTranslateTLSConfig(t *testing.T) {
 			wantErr: false,
 			check: func(t *testing.T, result *envoytlsv3.UpstreamTlsContext) {
 				assert.NotNil(t, result)
+				assert.NotNil(t, result.CommonTlsContext.GetTlsCertificates())
 				assert.Nil(t, result.CommonTlsContext.GetValidationContext())
 			},
 		},

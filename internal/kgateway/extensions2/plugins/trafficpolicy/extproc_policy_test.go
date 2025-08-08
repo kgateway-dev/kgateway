@@ -28,15 +28,13 @@ func TestExtprocIREquals(t *testing.T) {
 	createProvider := func(name string) *TrafficPolicyGatewayExtensionIR {
 		return &TrafficPolicyGatewayExtensionIR{
 			Name: name,
-			ExtProc: &envoy_ext_proc_v3.ExternalProcessor{
-				GrpcService: &envoycorev3.GrpcService{
-					TargetSpecifier: &envoycorev3.GrpcService_EnvoyGrpc_{
-						EnvoyGrpc: &envoycorev3.GrpcService_EnvoyGrpc{
-							ClusterName: name,
-						},
+			ExtProc: buildCompositeExtProcFilter(&envoycorev3.GrpcService{
+				TargetSpecifier: &envoycorev3.GrpcService_EnvoyGrpc_{
+					EnvoyGrpc: &envoycorev3.GrpcService_EnvoyGrpc{
+						ClusterName: name,
 					},
 				},
-			},
+			}),
 		}
 	}
 
@@ -226,7 +224,7 @@ func TestBuildEnvoyExtProc(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			result := translateExtProcPerFilterConfig(tt.extprocConfig)
 
-			//require.NoError(t, err)
+			// require.NoError(t, err)
 			require.NotNil(t, result)
 			tt.validateResult(t, result)
 		})

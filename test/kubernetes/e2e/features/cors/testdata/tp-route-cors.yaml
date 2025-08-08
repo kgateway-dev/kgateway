@@ -18,3 +18,16 @@ spec:
       - DELETE
     allowHeaders:
       - x-custom-header
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: disable-cors
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: svc-route-2
+    sectionName: rule1
+  cors:
+    disable: {}  

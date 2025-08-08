@@ -45,16 +45,12 @@ import (
 )
 
 const (
-	transformationFilterNamePrefix              = "transformation"
-	extAuthGlobalDisableFilterName              = "global_disable/ext_auth"
-	extAuthGlobalDisableFilterMetadataNamespace = "dev.kgateway.disable_ext_auth"
-	extAuthGlobalDisableKey                     = "extauth_disable"
-	rustformationFilterNamePrefix               = "dynamic_modules/simple_mutations"
-	metadataRouteTransformation                 = "transformation/helper"
-	extauthFilterNamePrefix                     = "ext_auth"
-	localRateLimitFilterNamePrefix              = "ratelimit/local"
-	localRateLimitStatPrefix                    = "http_local_rate_limiter"
-	rateLimitFilterNamePrefix                   = "ratelimit"
+	transformationFilterNamePrefix = "transformation"
+	rustformationFilterNamePrefix  = "dynamic_modules/simple_mutations"
+	metadataRouteTransformation    = "transformation/helper"
+	localRateLimitFilterNamePrefix = "ratelimit/local"
+	localRateLimitStatPrefix       = "http_local_rate_limiter"
+	rateLimitFilterNamePrefix      = "ratelimit"
 )
 
 var (
@@ -439,7 +435,12 @@ func (p *trafficPolicyPluginGwPass) ApplyForRouteBackend(
 func (p *trafficPolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.FilterChainCommon) ([]plugins.StagedHttpFilter, error) {
 	filters := []plugins.StagedHttpFilter{}
 
-	// Add Ext_proc filters for listener
+	// Add global ExtProc disable filter when there are providers
+	if len(p.extProcPerProvider.Providers[fcc.FilterChainName]) > 0 {
+		// register the filter that sets metadata so that it can have overrides on the route level
+		filters = AddDisableFilterIfNeeded(filters, extProcGlobalDisableFilterName, extProcGlobalDisableFilterMetadataNamespace)
+	}
+	// Add ExtProc filters for listener
 	for providerName, provider := range p.extProcPerProvider.Providers[fcc.FilterChainName] {
 		extProcFilter := provider.ExtProc
 		if extProcFilter == nil {
@@ -523,12 +524,11 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.Filt
 		))
 	}
 
-	// register the transformation work once
-	if len(p.extAuthPerProvider.Providers[fcc.FilterChainName]) != 0 {
+	// Add global ExtAuth disable filter when there are providers
+	if len(p.extAuthPerProvider.Providers[fcc.FilterChainName]) > 0 {
 		// register the filter that sets metadata so that it can have overrides on the route level
-		filters = AddDisableFilterIfNeeded(filters)
+		filters = AddDisableFilterIfNeeded(filters, ExtAuthGlobalDisableFilterName, ExtAuthGlobalDisableFilterMetadataNamespace)
 	}
-
 	// Add Ext_authz filter for listener
 	for providerName, provider := range p.extAuthPerProvider.Providers[fcc.FilterChainName] {
 		extAuthFilter := provider.ExtAuth

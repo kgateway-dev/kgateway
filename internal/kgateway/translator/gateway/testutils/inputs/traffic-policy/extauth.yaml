@@ -83,7 +83,7 @@ metadata:
   namespace: infra
 spec:
   parentRefs:
-  - name: example-gateway  
+  - name: example-gateway
   hostnames:
   - "example.com"
   rules:
@@ -94,6 +94,34 @@ spec:
     - path:
         type: PathPrefix
         value: /example-route
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: route-2
+  namespace: infra
+spec:
+  parentRefs:
+  - name: example-gateway
+  hostnames:
+  - "example.com"
+  rules:
+  - name: rule0
+    backendRefs:
+    - name: example-svc
+      port: 80
+    matches:
+    - path:
+        type: PathPrefix
+        value: /route-2-0
+  - name: rule1
+    backendRefs:
+    - name: example-svc
+      port: 80
+    matches:
+    - path:
+        type: PathPrefix
+        value: /route-2-1
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
@@ -160,7 +188,7 @@ metadata:
   namespace: infra
 spec:
   parentRefs:
-  - name: example-gateway  
+  - name: example-gateway
   hostnames:
   - "tls.example.com"
   rules:
@@ -193,7 +221,7 @@ metadata:
   namespace: infra
 spec:
   parentRefs:
-  - name: example-gateway  
+  - name: example-gateway
   hostnames:
   - "no-auth-tls.example.com"
   rules:
@@ -255,7 +283,7 @@ spec:
     kind: HTTPRoute
     name: example-tls-route
   extAuth:
-    extensionRef: 
+    extensionRef:
       name: basic-extauth
 ---
 # this will be attached via an extensionRef, so no need for a targetRef.
@@ -266,7 +294,7 @@ metadata:
   namespace: infra
 spec:
   extAuth:
-    extensionRef: 
+    extensionRef:
       name: basic-extauth
 ---
 # this will be attached via an extensionRef, so no need for a targetRef.
@@ -282,8 +310,39 @@ spec:
     name: example-tls-route-extension-ref
     sectionName: route-name
   extAuth:
-    extensionRef: 
+    extensionRef:
       name: basic-extauth
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: extauth-for-route-2-0
+  namespace: infra
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: route-2
+    sectionName: rule0
+  extAuth:
+    extensionRef:
+      name: basic-extauth
+    withRequestBody:
+      maxRequestBytes: 128
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: disable-all-extauth-for-route-2-1
+  namespace: infra
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: route-2
+    sectionName: rule1
+  extAuth:
+    disable: {} 
 ---
 # A test and ext-authz services
 apiVersion: v1

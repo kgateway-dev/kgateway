@@ -22,11 +22,8 @@ func (c *corsIR) Equals(other PolicySubIR) bool {
 	if !ok {
 		return false
 	}
-	if c == nil && otherCors == nil {
-		return true
-	}
 	if c == nil || otherCors == nil {
-		return false
+		return c == nil && otherCors == nil
 	}
 	return proto.Equal(c.policy, otherCors.policy)
 }
@@ -40,11 +37,12 @@ func (c *corsIR) Validate() error {
 
 // constructCORS constructs the CORS policy IR from the policy specification.
 func constructCORS(in *v1alpha1.TrafficPolicy, out *trafficPolicySpecIr) error {
-	if in.Spec.Cors == nil {
+	spec := in.Spec.Cors
+	if spec == nil {
 		return nil
 	}
 	out.cors = &corsIR{
-		policy: utils.ToEnvoyCorsPolicy(in.Spec.Cors.HTTPCORSFilter),
+		policy: utils.ToEnvoyCorsPolicy(spec.HTTPCORSFilter, spec.Disable != nil),
 	}
 	return nil
 }

@@ -335,7 +335,7 @@ var _ = DescribeTable("Basic",
 		},
 	),
 	Entry(
-		"TrafficPolicy edge cases",
+		"TrafficPolicy ExtAuth different attachment points",
 		translatorTestCase{
 			inputFile:  "traffic-policy/extauth.yaml",
 			outputFile: "traffic-policy/extauth.yaml",
@@ -352,6 +352,16 @@ var _ = DescribeTable("Basic",
 					{Group: "gateway.kgateway.dev", Kind: "TrafficPolicy", Namespace: "infra", Name: "extauth-for-route-section-name"},
 				}
 				assertAcceptedPolicyStatus(reportsMap, expectedPolicies)
+			},
+		}),
+	Entry(
+		"TrafficPolicy ExtProc different attachment points",
+		translatorTestCase{
+			inputFile:  "traffic-policy/extproc.yaml",
+			outputFile: "traffic-policy/extproc.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "test",
 			},
 		}),
 	Entry(
@@ -958,6 +968,14 @@ var _ = DescribeTable("Basic",
 			Name:      "example-gateway",
 		},
 	}),
+	Entry("Backend Config Policy with simple TLS", translatorTestCase{
+		inputFile:  "backendconfigpolicy/simple-tls.yaml",
+		outputFile: "backendconfigpolicy/simple-tls.yaml",
+		gwNN: types.NamespacedName{
+			Namespace: "default",
+			Name:      "example-gateway",
+		},
+	}),
 	Entry(
 		"TrafficPolicy with explicit generation",
 		translatorTestCase{
@@ -1024,6 +1042,37 @@ var _ = DescribeTable("Route Replacement",
 				Expect(acceptedCond.Message).To(ContainSubstring("Dropped Rule (0)"))
 				Expect(acceptedCond.Message).To(ContainSubstring("the rewrite /new//../path is invalid"))
 				Expect(acceptedCond.ObservedGeneration).To(Equal(int64(1)))
+			},
+		},
+		func(s *settings.Settings) {
+			s.RouteReplacementMode = settings.RouteReplacementStandard
+		}),
+
+	Entry("Standard Mode - HTTPRoute extensionRef to missing policy",
+		translatorTestCase{
+			inputFile:  "route-replacement/standard/httproute-with-missing-extension-ref.yaml",
+			outputFile: "route-replacement/standard/httproute-with-missing-extension-ref-out.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "gwtest",
+				Name:      "example-gateway",
+			},
+			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
+				route := &gwv1.HTTPRoute{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test-route",
+						Namespace: "gwtest",
+					},
+				}
+				routeStatus := reportsMap.BuildRouteStatus(context.Background(), route, wellknown.DefaultGatewayClassName)
+				Expect(routeStatus).NotTo(BeNil())
+				Expect(routeStatus.Parents).To(HaveLen(1))
+
+				acceptedCond := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionAccepted))
+				Expect(acceptedCond).NotTo(BeNil())
+				Expect(acceptedCond.Status).To(Equal(metav1.ConditionFalse))
+				Expect(acceptedCond.Reason).To(Equal(reporter.RouteRuleDroppedReason))
+				Expect(acceptedCond.Message).To(ContainSubstring("Dropped Rule (0)"))
+				Expect(acceptedCond.Message).To(ContainSubstring("gateway.kgateway.dev/TrafficPolicy/gwtest/my-tp-that-doesnt-exist: policy not found"))
 			},
 		},
 		func(s *settings.Settings) {
@@ -1230,7 +1279,7 @@ var _ = DescribeTable("Route Replacement",
 				Expect(acceptedCond.Status).To(Equal(metav1.ConditionFalse))
 				Expect(acceptedCond.Reason).To(Equal(reporter.RouteRuleDroppedReason))
 				Expect(acceptedCond.Message).To(ContainSubstring("Dropped Rule (0)"))
-				Expect(acceptedCond.Message).To(ContainSubstring("extauthz: extension not found"))
+				Expect(acceptedCond.Message).To(ContainSubstring("extauthz: gateway extension gwtest/non-existent-auth-extension not found"))
 				Expect(acceptedCond.ObservedGeneration).To(Equal(int64(0)))
 			},
 		},

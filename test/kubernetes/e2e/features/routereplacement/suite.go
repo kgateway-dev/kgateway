@@ -57,7 +57,7 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 		testInstallation: testInst,
 		setupManifests: []string{
 			testdefaults.CurlPodManifest,
-			testdefaults.HttpBinManifest,
+			testdefaults.HttpbinManifest,
 			setupManifest,
 		},
 		testManifests: map[string]testConfig{
@@ -90,8 +90,8 @@ func (s *testingSuite) SetupSuite() {
 	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, testdefaults.CurlPod.GetNamespace(), metav1.ListOptions{
 		LabelSelector: testdefaults.CurlPodLabelSelector,
 	})
-	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, testdefaults.HttpBinPod.GetNamespace(), metav1.ListOptions{
-		LabelSelector: testdefaults.HttpBinLabelSelector,
+	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, testdefaults.HttpbinDeployment.GetNamespace(), metav1.ListOptions{
+		LabelSelector: testdefaults.HttpbinLabelSelector,
 	})
 	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, proxyObjectMeta.GetNamespace(), metav1.ListOptions{
 		LabelSelector: fmt.Sprintf("app.kubernetes.io/name=%s", proxyObjectMeta.GetName()),
@@ -124,8 +124,8 @@ func (s *testingSuite) TearDownSuite() {
 	s.testInstallation.Assertions.EventuallyPodsNotExist(s.ctx, testdefaults.CurlPod.GetNamespace(), metav1.ListOptions{
 		LabelSelector: testdefaults.CurlPodLabelSelector,
 	})
-	s.testInstallation.Assertions.EventuallyPodsNotExist(s.ctx, testdefaults.HttpBinPod.GetNamespace(), metav1.ListOptions{
-		LabelSelector: testdefaults.HttpBinLabelSelector,
+	s.testInstallation.Assertions.EventuallyPodsNotExist(s.ctx, testdefaults.HttpbinDeployment.GetNamespace(), metav1.ListOptions{
+		LabelSelector: testdefaults.HttpbinLabelSelector,
 	})
 	s.testInstallation.Assertions.EventuallyPodsNotExist(s.ctx, proxyObjectMeta.GetNamespace(), metav1.ListOptions{
 		LabelSelector: fmt.Sprintf("app.kubernetes.io/name=%s", proxyObjectMeta.GetName()),

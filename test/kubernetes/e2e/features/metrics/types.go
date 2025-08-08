@@ -10,6 +10,7 @@ import (
 	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
+	v1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
 	e2edefaults "github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/defaults"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/tests/base"
@@ -89,7 +90,14 @@ var (
 		},
 	}
 
-	setup = base.SimpleTestCase{
+	httpListenerPolicy1 = &v1alpha1.HTTPListenerPolicy{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "http-listener-policy-all-fields",
+			Namespace: "default",
+		},
+	}
+
+	setup = base.TestCase{
 		Manifests: []string{setupManifest, e2edefaults.CurlPodManifest},
 		Resources: []client.Object{
 			kgatewayMetricsService,
@@ -103,13 +111,12 @@ var (
 			exampleRoute2,
 			exampleRouteLs1,
 			listenerSet1,
+			httpListenerPolicy1,
 			e2edefaults.CurlPod,
 		},
 	}
 
-	testCases = map[string]*base.TestCase{
-		"TestMetrics": {
-			SimpleTestCase: base.SimpleTestCase{},
-		},
+	testCases = map[string]base.TestCase{
+		"TestMetrics": base.TestCase{},
 	}
 )

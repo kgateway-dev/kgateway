@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/utils/ptr"
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
@@ -43,16 +42,6 @@ func TestExtAuthIREquals(t *testing.T) {
 			},
 		}
 	}
-
-	createEnablement := func(disableAll bool) *v1alpha1.ExtAuthEnabled {
-		if disableAll {
-			return ptr.To(v1alpha1.ExtAuthDisableAll)
-		}
-		return nil // No specific enablement setting
-	}
-
-	// Shared enablement for testing pointer equality
-	sharedEnablementTrue := createEnablement(true)
 
 	tests := []struct {
 		name     string
@@ -103,15 +92,15 @@ func TestExtAuthIREquals(t *testing.T) {
 			expected: true,
 		},
 		{
-			name:     "different enablement settings are not equal",
-			extauth1: &extAuthIR{enablement: createEnablement(true)},
-			extauth2: &extAuthIR{enablement: createEnablement(false)},
+			name:     "different disablement settings are not equal",
+			extauth1: &extAuthIR{disableAllProviders: true},
+			extauth2: &extAuthIR{disableAllProviders: false},
 			expected: false,
 		},
 		{
-			name:     "same enablement settings are equal",
-			extauth1: &extAuthIR{enablement: sharedEnablementTrue},
-			extauth2: &extAuthIR{enablement: sharedEnablementTrue},
+			name:     "same disablement settings are equal",
+			extauth1: &extAuthIR{disableAllProviders: true},
+			extauth2: &extAuthIR{disableAllProviders: true},
 			expected: true,
 		},
 		{
@@ -179,7 +168,7 @@ func TestExtAuthForSpec(t *testing.T) {
 		}}
 
 		// Execute
-		extauthPerRoute := translatePerFilterConfig(spec.Spec.ExtAuth)
+		extauthPerRoute := buildExtAuthPerRouteFilterConfig(spec.Spec.ExtAuth)
 
 		// Verify
 		require.NotNil(t, extauthPerRoute)
@@ -316,7 +305,7 @@ func TestExtAuthPolicyPlugin(t *testing.T) {
 		extAuthConfig, ok := pCtx.TypedFilterConfig[extAuthFilterName("test-auth-extension")]
 		assert.True(t, ok)
 		assert.NotNil(t, extAuthConfig)
-		assert.Empty(t, pCtx.TypedFilterConfig[extAuthGlobalDisableFilterName])
+		assert.Empty(t, pCtx.TypedFilterConfig[ExtAuthGlobalDisableFilterName])
 	})
 
 	t.Run("handles disabled ext auth configuration", func(t *testing.T) {
@@ -326,7 +315,7 @@ func TestExtAuthPolicyPlugin(t *testing.T) {
 		policy := &TrafficPolicy{
 			spec: trafficPolicySpecIr{
 				extAuth: &extAuthIR{
-					enablement: ptr.To(v1alpha1.ExtAuthDisableAll),
+					disableAllProviders: true,
 				},
 			},
 		}
@@ -342,6 +331,6 @@ func TestExtAuthPolicyPlugin(t *testing.T) {
 		require.NoError(t, err)
 		// assert.NotNil(t, )
 		assert.NotNil(t, pCtx.TypedFilterConfig, pCtx)
-		assert.NotEmpty(t, pCtx.TypedFilterConfig[extAuthGlobalDisableFilterName])
+		assert.NotEmpty(t, pCtx.TypedFilterConfig[ExtAuthGlobalDisableFilterName])
 	})
 }

@@ -6,22 +6,42 @@ import (
 	"regexp"
 	"strings"
 
-	corsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/cors/v3"
-	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoycorsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/cors/v3"
+	envoymatcherv3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
+	envoytypev3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/regexutils"
 )
 
+const (
+	corsFilterEnabledKey = "envoy.cors.filter_enabled"
+)
+
 // ToEnvoyCorsPolicy converts a Gateway API CORS filter to an Envoy CORS policy
-func ToEnvoyCorsPolicy(f *gwv1.HTTPCORSFilter) *corsv3.CorsPolicy {
-	if f == nil {
+func ToEnvoyCorsPolicy(
+	f *gwv1.HTTPCORSFilter,
+	disable bool,
+) *envoycorsv3.CorsPolicy {
+	if disable {
+		return &envoycorsv3.CorsPolicy{
+			FilterEnabled: &envoycorev3.RuntimeFractionalPercent{
+				DefaultValue: &envoytypev3.FractionalPercent{
+					Numerator:   0,
+					Denominator: envoytypev3.FractionalPercent_HUNDRED,
+				},
+				RuntimeKey: corsFilterEnabledKey,
+			},
+		}
+	} else if f == nil {
 		return nil
 	}
-	corsPolicy := &corsv3.CorsPolicy{}
+
+	corsPolicy := &envoycorsv3.CorsPolicy{}
 	if len(f.AllowOrigins) > 0 {
-		origins := make([]*envoy_type_matcher_v3.StringMatcher, 0, len(f.AllowOrigins))
+		origins := make([]*envoymatcherv3.StringMatcher, 0, len(f.AllowOrigins))
 		for _, origin := range f.AllowOrigins {
 			matcher := ConvertOriginToEnvoyStringMatcher(string(origin))
 			if matcher != nil {
@@ -85,12 +105,12 @@ func ToEnvoyCorsPolicy(f *gwv1.HTTPCORSFilter) *corsv3.CorsPolicy {
 // - "https://*" -> Prefix match: "https://"
 // - "https://sub.*.example.com" -> Regex match: ^https://sub\..*\.example\.com$
 // - "https://example.*:8080" -> Regex match: ^https://example\..*:8080$
-func ConvertOriginToEnvoyStringMatcher(origin string) *envoy_type_matcher_v3.StringMatcher {
+func ConvertOriginToEnvoyStringMatcher(origin string) *envoymatcherv3.StringMatcher {
 	// Check if the origin contains wildcards
 	if !strings.Contains(origin, "*") {
 		// No wildcards, use exact match
-		return &envoy_type_matcher_v3.StringMatcher{
-			MatchPattern: &envoy_type_matcher_v3.StringMatcher_Exact{
+		return &envoymatcherv3.StringMatcher{
+			MatchPattern: &envoymatcherv3.StringMatcher_Exact{
 				Exact: origin,
 			},
 		}
@@ -101,8 +121,8 @@ func ConvertOriginToEnvoyStringMatcher(origin string) *envoy_type_matcher_v3.Str
 	if strings.Count(origin, "*") == 1 && strings.HasSuffix(origin, "*") {
 		// Extract the prefix before the wildcard
 		prefix := strings.TrimSuffix(origin, "*")
-		return &envoy_type_matcher_v3.StringMatcher{
-			MatchPattern: &envoy_type_matcher_v3.StringMatcher_Prefix{
+		return &envoymatcherv3.StringMatcher{
+			MatchPattern: &envoymatcherv3.StringMatcher_Prefix{
 				Prefix: prefix,
 			},
 		}
@@ -122,11 +142,11 @@ func ConvertOriginToEnvoyStringMatcher(origin string) *envoy_type_matcher_v3.Str
 		return nil
 	}
 
-	return &envoy_type_matcher_v3.StringMatcher{
-		MatchPattern: &envoy_type_matcher_v3.StringMatcher_SafeRegex{
-			SafeRegex: &envoy_type_matcher_v3.RegexMatcher{
-				EngineType: &envoy_type_matcher_v3.RegexMatcher_GoogleRe2{
-					GoogleRe2: &envoy_type_matcher_v3.RegexMatcher_GoogleRE2{},
+	return &envoymatcherv3.StringMatcher{
+		MatchPattern: &envoymatcherv3.StringMatcher_SafeRegex{
+			SafeRegex: &envoymatcherv3.RegexMatcher{
+				EngineType: &envoymatcherv3.RegexMatcher_GoogleRe2{
+					GoogleRe2: &envoymatcherv3.RegexMatcher_GoogleRE2{},
 				},
 				Regex: "^" + regexPattern + "$",
 			},

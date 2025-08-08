@@ -142,7 +142,8 @@ func (s *testingSuite) TestTrafficPolicyCorsForRoute() {
 
 			// Verify that the route without cors is not affected by the cors traffic policy (i.e. no cors headers are returned)
 			s.assertResponse("/path2", http.StatusOK, requestHeaders, nil, []string{
-				"Access-Control-Allow-Origin", "Access-Control-Allow-Methods", "Access-Control-Allow-Headers"})
+				"Access-Control-Allow-Origin", "Access-Control-Allow-Methods", "Access-Control-Allow-Headers",
+			})
 		})
 	}
 
@@ -191,11 +192,13 @@ func (s *testingSuite) TestTrafficPolicyCorsForRoute() {
 			// For negative cases, we expect no CORS headers to be returned
 			// since the origin doesn't match any of the allowed patterns
 			s.assertResponse("/path1", http.StatusOK, requestHeaders, nil, []string{
-				"Access-Control-Allow-Origin", "Access-Control-Allow-Methods", "Access-Control-Allow-Headers"})
+				"Access-Control-Allow-Origin", "Access-Control-Allow-Methods", "Access-Control-Allow-Headers",
+			})
 
 			// Verify that the route without cors is also not affected
 			s.assertResponse("/path2", http.StatusOK, requestHeaders, nil, []string{
-				"Access-Control-Allow-Origin", "Access-Control-Allow-Methods", "Access-Control-Allow-Headers"})
+				"Access-Control-Allow-Origin", "Access-Control-Allow-Methods", "Access-Control-Allow-Headers",
+			})
 		})
 	}
 }
@@ -243,6 +246,10 @@ func (s *testingSuite) TestTrafficPolicyRouteCorsOverrideGwCors() {
 
 	s.assertResponse("/path1", http.StatusOK, requestHeaders, expectedHeadersPath1, []string{})
 	s.assertResponse("/path2", http.StatusOK, requestHeaders, expectedHeadersPath2, []string{})
+
+	// Assert that the route with CORS disabled does not return CORS headers
+	s.assertResponse("/cors-disabled", http.StatusOK, requestHeaders, nil,
+		[]string{"Access-Control-Allow-Origin", "Access-Control-Allow-Methods", "Access-Control-Allow-Headers"})
 }
 
 // Test cors in route rules of a HTTPRoute
@@ -337,11 +344,13 @@ func (s *testingSuite) TestHttpRouteCorsInRouteRules() {
 			// For negative cases, we expect no CORS headers to be returned
 			// since the origin doesn't match any of the allowed patterns
 			s.assertResponse("/path1", http.StatusOK, requestHeaders, nil, []string{
-				"Access-Control-Allow-Origin", "Access-Control-Allow-Methods", "Access-Control-Allow-Headers"})
+				"Access-Control-Allow-Origin", "Access-Control-Allow-Methods", "Access-Control-Allow-Headers",
+			})
 
 			// Verify that the route without cors is also not affected
 			s.assertResponse("/path2", http.StatusOK, requestHeaders, nil, []string{
-				"Access-Control-Allow-Origin", "Access-Control-Allow-Methods", "Access-Control-Allow-Headers"})
+				"Access-Control-Allow-Origin", "Access-Control-Allow-Methods", "Access-Control-Allow-Headers",
+			})
 		})
 	}
 }
@@ -395,7 +404,7 @@ func (s *testingSuite) setupTest(manifests []string, resources []client.Object) 
 }
 
 func (s *testingSuite) assertResponse(path string, expectedStatus int, requestHeaders map[string]string, expectedHeaders map[string]any, notExpectedHeaders []string) {
-	resp := s.testInstallation.Assertions.AssertCurlReturnResponse(
+	s.testInstallation.Assertions.AssertEventualCurlResponse(
 		s.ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -411,5 +420,4 @@ func (s *testingSuite) assertResponse(path string, expectedStatus int, requestHe
 			Headers:    expectedHeaders,
 			NotHeaders: notExpectedHeaders,
 		})
-	defer resp.Body.Close()
 }

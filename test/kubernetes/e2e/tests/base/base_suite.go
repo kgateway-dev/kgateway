@@ -3,7 +3,6 @@ package base
 import (
 	"context"
 	"fmt"
-	"slices"
 	"time"
 
 	"github.com/onsi/gomega"
@@ -14,22 +13,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/defaults"
 )
 
-// This defines a test case used by the BaseTestingSuite
+// TestCase defines the manifests and resources used by a test or test suite.
 type TestCase struct {
-	// SimpleTestCase defines the resources used by a specific test
-	SimpleTestCase
-	// SubTestCases contains a map for hierarchial tests within the current test
-	// Eg: TestRateLimit
-	//      |- OnVhost
-	//      |- OnRoute
-	SubTestCases map[string]*TestCase
-}
-
-// SimpleTestCase defines the resources used by a specific test
-type SimpleTestCase struct {
-	// manifest files
+	// Manifest files
 	Manifests []string
 	// Resources expected to be created by manifest
 	Resources []client.Object
@@ -37,15 +26,15 @@ type SimpleTestCase struct {
 	// UpgradeValues string
 	// Rollback method to be called during cleanup.
 	// Do not provide this. Calling an upgrade returns this method which we save
-	Rollback func() error
+	//Rollback func() error
 }
 
 type BaseTestingSuite struct {
 	suite.Suite
 	Ctx              context.Context
 	TestInstallation *e2e.TestInstallation
-	TestCase         map[string]*TestCase
-	Setup            SimpleTestCase
+	TestCases        map[string]TestCase
+	Setup            TestCase
 }
 
 // NewBaseTestingSuite returns a BaseTestingSuite that performs all the pre-requisites of upgrading helm installations,
@@ -53,46 +42,28 @@ type BaseTestingSuite struct {
 // The pre-requisites for the suite are defined in the setup parameter and for each test in the individual testCase.
 // Currently, tests that require upgrades (eg: to change settings) can not be run in Enterprise. To do so,
 // the test must be written without upgrades and call the `NewBaseTestingSuiteWithoutUpgrades` constructor.
-func NewBaseTestingSuite(ctx context.Context, testInst *e2e.TestInstallation, setup SimpleTestCase, testCase map[string]*TestCase) *BaseTestingSuite {
+func NewBaseTestingSuite(ctx context.Context, testInst *e2e.TestInstallation, setupTestCase TestCase, testCases map[string]TestCase) *BaseTestingSuite {
 	return &BaseTestingSuite{
 		Ctx:              ctx,
 		TestInstallation: testInst,
-		TestCase:         testCase,
-		Setup:            setup,
+		TestCases:        testCases,
+		Setup:            setupTestCase,
 	}
 }
 
 // NewBaseTestingSuiteWithoutUpgrades returns a BaseTestingSuite without allowing upgrades and reverts before the suite and tests.
 // This is useful when creating tests that need to run in Enterprise since the helm values change between OSS and Enterprise installations.
-func NewBaseTestingSuiteWithoutUpgrades(ctx context.Context, testInst *e2e.TestInstallation, setup SimpleTestCase, testCase map[string]*TestCase) *BaseTestingSuite {
+func NewBaseTestingSuiteWithoutUpgrades(ctx context.Context, testInst *e2e.TestInstallation, setupTestCase TestCase, testCases map[string]TestCase) *BaseTestingSuite {
 	return &BaseTestingSuite{
 		Ctx:              ctx,
 		TestInstallation: testInst,
-		TestCase:         testCase,
-		Setup:            setup,
+		TestCases:        testCases,
+		Setup:            setupTestCase,
 	}
 }
 
 func (s *BaseTestingSuite) SetupSuite() {
-	for _, manifest := range s.Setup.Manifests {
-		gomega.Eventually(func() error {
-			err := s.TestInstallation.Actions.Kubectl().ApplyFile(s.Ctx, manifest)
-			return err
-		}, 10*time.Second, 1*time.Second).Should(gomega.Succeed(), "can apply "+manifest)
-	}
-
-	// Ensure the resources exist
-	if s.Setup.Resources != nil {
-		s.TestInstallation.Assertions.EventuallyObjectsExist(s.Ctx, s.Setup.Resources...)
-
-		for _, resource := range s.Setup.Resources {
-			if pod, ok := resource.(*corev1.Pod); ok {
-				s.TestInstallation.Assertions.EventuallyPodsRunning(s.Ctx, pod.Namespace, metav1.ListOptions{
-					LabelSelector: fmt.Sprintf("app.kubernetes.io/name=%s", pod.Name),
-				})
-			}
-		}
-	}
+	s.ApplyManifests(s.Setup)
 
 	// TODO handle upgrades https://github.com/kgateway-dev/kgateway/issues/10609
 	// if s.Setup.UpgradeValues != "" {
@@ -116,30 +87,12 @@ func (s *BaseTestingSuite) TearDownSuite() {
 	// 	s.TestInstallation.Assertions.Require.NoError(err)
 	// }
 
-	// Delete the setup manifest
-	if s.Setup.Manifests != nil {
-		manifests := slices.Clone(s.Setup.Manifests)
-		slices.Reverse(manifests)
-		for _, manifest := range manifests {
-			gomega.Eventually(func() error {
-				err := s.TestInstallation.Actions.Kubectl().DeleteFile(s.Ctx, manifest)
-				return err
-			}, 10*time.Second, 1*time.Second).Should(gomega.Succeed(), "can delete "+manifest)
-		}
-
-		if s.Setup.Resources != nil {
-			s.TestInstallation.Assertions.EventuallyObjectsNotExist(s.Ctx, s.Setup.Resources...)
-		}
-	}
+	s.DeleteManifests(s.Setup)
 }
 
 func (s *BaseTestingSuite) BeforeTest(suiteName, testName string) {
 	// apply test-specific manifests
-	if s.TestCase == nil {
-		return
-	}
-
-	testCase, ok := s.TestCase[testName]
+	testCase, ok := s.TestCases[testName]
 	if !ok {
 		return
 	}
@@ -156,44 +109,12 @@ func (s *BaseTestingSuite) BeforeTest(suiteName, testName string) {
 	// 	s.TestInstallation.Assertions.Require.NoError(err)
 	// }
 
-	for _, manifest := range testCase.Manifests {
-		gomega.Eventually(func() error {
-			err := s.TestInstallation.Actions.Kubectl().ApplyFile(s.Ctx, manifest)
-			return err
-		}, 10*time.Second, 1*time.Second).Should(gomega.Succeed(), "can apply "+manifest)
-	}
-	s.TestInstallation.Assertions.EventuallyObjectsExist(s.Ctx, testCase.Resources...)
-
-	for _, resource := range testCase.Resources {
-		if pod, ok := resource.(*corev1.Pod); ok {
-			s.TestInstallation.Assertions.EventuallyPodsRunning(s.Ctx, pod.Namespace, metav1.ListOptions{
-				LabelSelector: fmt.Sprintf("app.kubernetes.io/name=%s", pod.Name),
-				// Provide a longer timeout as the pod needs to be pulled and pass HCs
-			}, time.Second*60, time.Second*2)
-		}
-		if deployment, ok := resource.(*appsv1.Deployment); ok {
-			if len(deployment.Labels) != 0 {
-				s.TestInstallation.Assertions.EventuallyPodsRunning(s.Ctx, deployment.Namespace, metav1.ListOptions{
-					LabelSelector: fmt.Sprintf("app=%s", deployment.Name),
-					// Provide a longer timeout as the pod needs to be pulled and pass HCs
-				}, time.Second*60, time.Second*2)
-			} else {
-				s.TestInstallation.Assertions.EventuallyPodsRunning(s.Ctx, deployment.Namespace, metav1.ListOptions{
-					LabelSelector: fmt.Sprintf("app.kubernetes.io/name=%s", deployment.Name),
-					// Provide a longer timeout as the pod needs to be pulled and pass HCs
-				}, time.Second*60, time.Second*2)
-			}
-		}
-	}
+	s.ApplyManifests(testCase)
 }
 
 func (s *BaseTestingSuite) AfterTest(suiteName, testName string) {
-	if s.TestCase == nil {
-		return
-	}
-
 	// Delete test-specific manifests
-	testCase, ok := s.TestCase[testName]
+	testCase, ok := s.TestCases[testName]
 	if !ok {
 		return
 	}
@@ -206,19 +127,7 @@ func (s *BaseTestingSuite) AfterTest(suiteName, testName string) {
 	// 	s.TestInstallation.Assertions.Require.NoError(err)
 	// }
 
-	// Delete them in reverse to avoid validation issues
-	if testCase.Manifests != nil {
-		manifests := slices.Clone(testCase.Manifests)
-		slices.Reverse(manifests)
-		for _, manifest := range manifests {
-			gomega.Eventually(func() error {
-				err := s.TestInstallation.Actions.Kubectl().DeleteFile(s.Ctx, manifest)
-				return err
-			}, 10*time.Second, 1*time.Second).Should(gomega.Succeed(), "can delete "+manifest)
-		}
-	}
-
-	s.TestInstallation.Assertions.EventuallyObjectsNotExist(s.Ctx, testCase.Resources...)
+	s.DeleteManifests(testCase)
 }
 
 func (s *BaseTestingSuite) GetKubectlOutput(command ...string) string {
@@ -236,3 +145,48 @@ func (s *BaseTestingSuite) GetKubectlOutput(command ...string) string {
 // 	}...))
 // 	s.TestInstallation.Assertions.Require.NoError(err)
 // }
+
+// ApplyManifests applies the manifests and waits until the resources are created and ready.
+func (s *BaseTestingSuite) ApplyManifests(testCase TestCase) {
+	// apply the manifests
+	for _, manifest := range testCase.Manifests {
+		gomega.Eventually(func() error {
+			err := s.TestInstallation.Actions.Kubectl().ApplyFile(s.Ctx, manifest)
+			return err
+		}, 10*time.Second, 1*time.Second).Should(gomega.Succeed(), "can apply "+manifest)
+	}
+
+	// wait until the resources are created
+	s.TestInstallation.Assertions.EventuallyObjectsExist(s.Ctx, testCase.Resources...)
+
+	// wait until pods are ready; this assumes that pods use a well-known label
+	// app.kubernetes.io/name=<name>
+	for _, resource := range testCase.Resources {
+		var ns, name string
+		if pod, ok := resource.(*corev1.Pod); ok {
+			ns = pod.Namespace
+			name = pod.Name
+		} else if deployment, ok := resource.(*appsv1.Deployment); ok {
+			ns = deployment.Namespace
+			name = deployment.Name
+		} else {
+			continue
+		}
+		s.TestInstallation.Assertions.EventuallyPodsRunning(s.Ctx, ns, metav1.ListOptions{
+			LabelSelector: fmt.Sprintf("%s=%s", defaults.WellKnownAppLabel, name),
+			// Provide a longer timeout as the pod needs to be pulled and pass HCs
+		}, time.Second*60, time.Second*2)
+	}
+}
+
+// DeleteManifests deletes the manifests and waits until the resources are deleted.
+func (s *BaseTestingSuite) DeleteManifests(testCase TestCase) {
+	for _, manifest := range testCase.Manifests {
+		gomega.Eventually(func() error {
+			err := s.TestInstallation.Actions.Kubectl().DeleteFileSafe(s.Ctx, manifest)
+			return err
+		}, 10*time.Second, 1*time.Second).Should(gomega.Succeed(), "can delete "+manifest)
+	}
+
+	s.TestInstallation.Assertions.EventuallyObjectsNotExist(s.Ctx, testCase.Resources...)
+}

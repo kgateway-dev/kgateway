@@ -1,0 +1,152 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: route
+spec:
+  parentRefs:
+  - name: gw
+  rules:
+  - backendRefs:
+    - name: nginx
+      port: 8443
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: gw
+spec:
+  gatewayClassName: kgateway
+  listeners:
+  - name: http
+    protocol: HTTP
+    port: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx
+spec:
+  selector:
+    app.kubernetes.io/name: nginx
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: http-web-svc
+      name: http
+    - protocol: TCP
+      port: 8443
+      targetPort: https-web-svc
+      name: https
+---
+# nginx cert and key generated via:
+# openssl req -x509 -out ex.crt -keyout ex.key \
+#   -newkey rsa:2048 -days 365 -nodes -sha256 \
+#   -subj '/CN=example.com' -extensions EXT -config <( \
+#    printf "[dn]\nCN=example.com\n[req]\ndistinguished_name = dn\n[EXT]\nsubjectAltName=DNS:example.com\nkeyUsage=digitalSignature\nextendedKeyUsage=serverAuth")
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-conf
+data:
+  nginx.conf: |
+    user nginx;
+    worker_processes  1;
+    events {
+      worker_connections  10240;
+    }
+    http {
+      server {
+          listen              80;
+          listen              443 ssl;
+          server_name         example.com;
+          ssl_certificate     /etc/nginx/example.crt;
+          ssl_certificate_key /etc/nginx/example.key;
+
+          location / {
+            root   /usr/share/nginx/html;
+            index  index.html index.htm;
+        }
+      }
+    }
+  example.crt: |
+    -----BEGIN CERTIFICATE-----
+    MIIDFTCCAf2gAwIBAgIUG9Mdv3nOQ2i7v68OgjArU4lhBikwDQYJKoZIhvcNAQEL
+    BQAwFjEUMBIGA1UEAwwLZXhhbXBsZS5jb20wHhcNMjUwNzA3MTA0MDQwWhcNMjYw
+    NzA3MTA0MDQwWjAWMRQwEgYDVQQDDAtleGFtcGxlLmNvbTCCASIwDQYJKoZIhvcN
+    AQEBBQADggEPADCCAQoCggEBANueqwfAApjTfg+nxIoKVK4sK/YlNICvdoEq1UEL
+    StE9wfTv0J27uNIsfpMqCx0Ni9Rjt1hzjunc8HUJDeobMNxGaZmryQofrdJWJ7Uu
+    t5jeLW/w0MelPOfFLsDiM5REy4WuPm2X6v1Z1N3N5GR3UNDOtDtsbjS1momvooLO
+    9WxPIr2cfmPqr81fyyD2ReZsMC/8lVs0PkA9XBplMzpSU53DWl5/Nyh2d1W5ENK0
+    Zw1l5Ze4UGUeohQMa5cD5hmZcBjOeJF8MuSTi3167KSopoqfgHTvC5IsBeWXAyZF
+    81ihFYAq+SbhUZeUlsxc1wveuAdBRzafcYkK47gYmbq1K60CAwEAAaNbMFkwFgYD
+    VR0RBA8wDYILZXhhbXBsZS5jb20wCwYDVR0PBAQDAgeAMBMGA1UdJQQMMAoGCCsG
+    AQUFBwMBMB0GA1UdDgQWBBSoa1Zu2o+pQ6sq2HcOjAglZkp01zANBgkqhkiG9w0B
+    AQsFAAOCAQEADZq1EMw/jMl0z2LpPh8cXbP09BnfXhoFbpL4cFrcBNEyig0oPO0j
+    YN1e4bfURNduFVnC/FDnZhR3FlAt8a6ozJAwmJp+nQCYFoDQwotSx12y5Bc9IXwd
+    BRZaLgHYy2NjGp2UgAya2z23BkUnwOJwJNMCzuGw3pOsmDQY0diR8ZWmEYYEPheW
+    6BVkrikzUNXv3tB8LmWzxV9V3eN71fnP5u39IM/UQsOZGRUow/8tvN2/d0W4dHky
+    t/kdgLKhf4gU2wXq/WbeqxlDSpjo7q/emNl59v1FHeR3eITSSjESU+dQgRsYaGEn
+    SWP+58ApfCcURLpMxUmxkO1ayfecNJbmSQ==
+    -----END CERTIFICATE-----
+
+  example.key: |
+    -----BEGIN PRIVATE KEY-----
+    MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDbnqsHwAKY034P
+    p8SKClSuLCv2JTSAr3aBKtVBC0rRPcH079Cdu7jSLH6TKgsdDYvUY7dYc47p3PB1
+    CQ3qGzDcRmmZq8kKH63SVie1LreY3i1v8NDHpTznxS7A4jOURMuFrj5tl+r9WdTd
+    zeRkd1DQzrQ7bG40tZqJr6KCzvVsTyK9nH5j6q/NX8sg9kXmbDAv/JVbND5APVwa
+    ZTM6UlOdw1pefzcodndVuRDStGcNZeWXuFBlHqIUDGuXA+YZmXAYzniRfDLkk4t9
+    euykqKaKn4B07wuSLAXllwMmRfNYoRWAKvkm4VGXlJbMXNcL3rgHQUc2n3GJCuO4
+    GJm6tSutAgMBAAECggEACHMi3nH3R5z/gSexyqPaHTdq25YT3o2hsBePS+jc0I8h
+    OsTNUHxMAJ4gopXgBpaiViIeCEOt8HaFM+OMywCP0THOV1DCM+cDH5AcB/8LplCK
+    DAAGcF/9p2cxRM+PL3m0IOkS0tGhA21k4MHOs0TZ8aa6TXz/An0oPHrq9EB1Nd0F
+    V5ZDnk818uNolViDHpA4wTz49f81dUvSbWBM3WE4t+0wZM0LKgyYO/w/DRv7xyS2
+    hItA6dcFjniy6CuFQcgteY659qOMHwq46imIKHJGFimQ6+O16OInRzsiLQmGsnYi
+    eWTf0u9pP/uZ+92aH7EmoMc6Nwqq03AxSED1jamQewKBgQDyYp3ZAA2wBLlvigOD
+    tlZE4JPn4LJBL1JJFvuh+1O7NfaI7vpAg24SAiZzAcYTS7JfwmV/9P1g9RCeXAbW
+    5Jyp6MxNRv+veJvGcdrDLxjhWSkMt72A+FDHHQTKVLtsuD3PE31UIoYN2TPthHRz
+    et87ZGriWwhX8+PQ9/t2tfyr+wKBgQDn9LIS7hwFaJGzLnepJ17VfGm5NT/MLi4p
+    LUTkRtqlFM+t2foHCCXCUSNW3Q9VuTmFmqoHtbuv8DRdT3QbaQbMnFE0pSYWbHDL
+    TRCsBmWIIZvoMeKf6X9y0+Z/qrzCBV+TbgN2o3nbLodyqatfUrvwYkfz1L/GXuJ4
+    LmXzfdSOdwKBgArTSrd5YCMfYuTPZi7IwvuaiCCQEYYFxggLpbtrTScMVvFwsu6U
+    sCLPw8XZK26LL/FE7mGToIlnCJH6DDgmx7Ry+ETvSdYdbd+kECAth0/xOnsd7bHH
+    5VuvORqMRD6rz97iwPM0A4a0z7Po+YZ602OErZ1kcW/0LZWUrb90i09nAoGAcqCv
+    O8Gl4Vpa3mSxR8uoBvJzwM461+lecITpjbIiLQCK3UxiTgVNu6ijQTL/eAqQDaFw
+    M10xAnI/PnmcVEtjy8vYKZ8Ponc2ipFsEscad9q8FFRKvWID1Lg5KZAzteI36ECu
+    v3tsJc/pqdWFVhcpv1KiYjIaD6smWeP8CAd/+mMCgYEA7vZGKGnppmY2yFofukla
+    S0kgtXgeJrdwHf0X5c6pW+iveTUNj7zX0mdUhC0V4GXkbCXoWrLJc/dA/HW2D18Q
+    fcaJ8lpO3/VNiPx0mhGgCRVX2gRnz1qZ9EekIw1+TCqNSMVr04nQej6e24nUtNCO
+    tok7r0XhLeoEMoxJZwlanJk=
+    -----END PRIVATE KEY-----
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx
+  labels:
+    app.kubernetes.io/name: nginx
+spec:
+  terminationGracePeriodSeconds: 0
+  containers:
+  - name: nginx
+    image: nginx:stable
+    ports:
+    - containerPort: 80
+      name: http-web-svc
+    - containerPort: 443
+      name: https-web-svc
+    volumeMounts:
+    - name: nginx-conf
+      mountPath: /etc/nginx/
+      readOnly: true
+  volumes:
+  - name: nginx-conf
+    configMap:
+      name: nginx-conf
+      items:
+      - key: nginx.conf
+        path: nginx.conf
+      - key: example.crt
+        path: example.crt
+      - key: example.key
+        path: example.key

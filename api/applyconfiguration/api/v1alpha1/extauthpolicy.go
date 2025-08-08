@@ -12,9 +12,9 @@ import (
 // with apply.
 type ExtAuthPolicyApplyConfiguration struct {
 	ExtensionRef      *v1.LocalObjectReference          `json:"extensionRef,omitempty"`
-	Enablement        *apiv1alpha1.ExtAuthEnabled       `json:"enablement,omitempty"`
 	WithRequestBody   *BufferSettingsApplyConfiguration `json:"withRequestBody,omitempty"`
 	ContextExtensions map[string]string                 `json:"contextExtensions,omitempty"`
+	Disable           *apiv1alpha1.PolicyDisable        `json:"disable,omitempty"`
 }
 
 // ExtAuthPolicyApplyConfiguration constructs a declarative configuration of the ExtAuthPolicy type for use with
@@ -28,14 +28,6 @@ func ExtAuthPolicy() *ExtAuthPolicyApplyConfiguration {
 // If called multiple times, the ExtensionRef field is set to the value of the last call.
 func (b *ExtAuthPolicyApplyConfiguration) WithExtensionRef(value v1.LocalObjectReference) *ExtAuthPolicyApplyConfiguration {
 	b.ExtensionRef = &value
-	return b
-}
-
-// WithEnablement sets the Enablement field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the Enablement field is set to the value of the last call.
-func (b *ExtAuthPolicyApplyConfiguration) WithEnablement(value apiv1alpha1.ExtAuthEnabled) *ExtAuthPolicyApplyConfiguration {
-	b.Enablement = &value
 	return b
 }
 
@@ -58,5 +50,13 @@ func (b *ExtAuthPolicyApplyConfiguration) WithContextExtensions(entries map[stri
 	for k, v := range entries {
 		b.ContextExtensions[k] = v
 	}
+	return b
+}
+
+// WithDisable sets the Disable field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Disable field is set to the value of the last call.
+func (b *ExtAuthPolicyApplyConfiguration) WithDisable(value apiv1alpha1.PolicyDisable) *ExtAuthPolicyApplyConfiguration {
+	b.Disable = &value
 	return b
 }

@@ -60,7 +60,7 @@ func (s *tsuite) SetupSuite() {
 	s.ti.Assertions.EventuallyPodsRunning(s.ctx, defaults.CurlPod.Namespace, metav1.ListOptions{
 		LabelSelector: defaults.CurlPodLabelSelector,
 	})
-	s.ti.Assertions.EventuallyPodsRunning(s.ctx, defaults.HttpbinPod.Namespace, metav1.ListOptions{
+	s.ti.Assertions.EventuallyPodsRunning(s.ctx, defaults.HttpbinDeployment.Namespace, metav1.ListOptions{
 		LabelSelector: defaults.HttpbinLabelSelector,
 	})
 	s.ti.Assertions.EventuallyPodsRunning(s.ctx, gateway.Namespace, metav1.ListOptions{
