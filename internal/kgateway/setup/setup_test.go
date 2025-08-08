@@ -143,6 +143,17 @@ func TestDestinationRule(t *testing.T) {
 	runScenario(t, "testdata/istio_destination_rule", st)
 }
 
+func TestTrafficDistribution(t *testing.T) {
+	st, err := settings.BuildSettings()
+	if err != nil {
+		t.Fatalf("can't get settings %v", err)
+	}
+	st.EnableIstioIntegration = true
+
+	// these exercise applying a DR to a ServiceEntry
+	runScenario(t, "testdata/traffic_distribution", st)
+}
+
 func TestWithStandardSettings(t *testing.T) {
 	st, err := settings.BuildSettings()
 	if err != nil {
