@@ -191,13 +191,41 @@ type AgentGatewayRouteContext struct {
 	Rule *gwv1.HTTPRouteRule
 }
 
+type AgentGatewayTranslationBackendContext struct {
+	Backend        *BackendObjectIR
+	GatewayContext GatewayContext
+}
+
 type AgentGatewayTranslationPass interface {
+	// ApplyForRoute processes route-level configuration
 	ApplyForRoute(pCtx *AgentGatewayRouteContext, out *api.Route) error
+
+	// ApplyForBackend processes backend-level configuration for each backend referenced in routes
+	ApplyForBackend(pCtx *AgentGatewayTranslationBackendContext, out *api.Backend) error
+
+	// ApplyForRouteBackend processes route-specific backend configuration
+	ApplyForRouteBackend(policy PolicyIR, pCtx *AgentGatewayTranslationBackendContext) error
 }
 
 type UnimplementedProxyTranslationPass struct{}
 
 var _ ProxyTranslationPass = UnimplementedProxyTranslationPass{}
+
+type UnimplementedAgentGatewayTranslationPass struct{}
+
+var _ AgentGatewayTranslationPass = UnimplementedAgentGatewayTranslationPass{}
+
+func (s UnimplementedAgentGatewayTranslationPass) ApplyForRoute(pCtx *AgentGatewayRouteContext, out *api.Route) error {
+	return nil
+}
+
+func (s UnimplementedAgentGatewayTranslationPass) ApplyForBackend(pCtx *AgentGatewayTranslationBackendContext, out *api.Backend) error {
+	return nil
+}
+
+func (s UnimplementedAgentGatewayTranslationPass) ApplyForRouteBackend(policy PolicyIR, pCtx *AgentGatewayTranslationBackendContext) error {
+	return nil
+}
 
 func (s UnimplementedProxyTranslationPass) ApplyListenerPlugin(ctx context.Context, pCtx *ListenerContext, out *envoylistenerv3.Listener) {
 }

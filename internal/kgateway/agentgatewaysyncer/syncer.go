@@ -47,9 +47,11 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/translator"
 	kgwversioned "github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
 
@@ -81,6 +83,7 @@ type AgentGwSyncer struct {
 	mgr        manager.Manager
 	client     kube.Client
 	plugins    pluginsdk.Plugin
+	translator *translator.AgentGatewayTranslator
 
 	// Configuration
 	controllerName        string
@@ -149,6 +152,7 @@ func NewAgentGwSyncer(
 		controllerName:        controllerName,
 		agentGatewayClassName: agentGatewayClassName,
 		plugins:               plugins,
+		translator:            translator.NewAgentGatewayTranslator(commonCols, plugins),
 		xdsCache:              xdsCache,
 		client:                client,
 		mgr:                   mgr,
@@ -299,17 +303,22 @@ type Inputs struct {
 
 	// kgateway resources
 	Backends *krtcollections.BackendIndex
-	// TODO(npolshak): Update to use BackendIndex directly: https://github.com/kgateway-dev/kgateway/issues/11838
-	BackendsTemp krt.Collection[*v1alpha1.Backend]
 }
 
 func (s *AgentGwSyncer) Init(krtopts krtutil.KrtOptions) {
 	logger.Debug("init agentgateway Syncer", "controllername", s.controllerName)
 
+	s.translator.Init()
+
+	inputs := s.buildInputCollections(krtopts)
+
 	s.setupkgwResources(s.commonCols.OurClient)
 	s.setupInferenceExtensionClient()
-	inputs := s.buildInputCollections(krtopts)
-	s.buildResourceCollections(inputs, krtopts)
+
+	finalBackends, _ := s.buildBackendCollections(inputs, krtopts)
+
+	// Pass finalBackends into buildResourceCollections instead of storing on syncer
+	s.buildResourceCollections(inputs, finalBackends, krtopts)
 }
 
 func (s *AgentGwSyncer) setupkgwResources(kgwClient kgwversioned.Interface) {
@@ -375,8 +384,7 @@ func (s *AgentGwSyncer) buildInputCollections(krtopts krtutil.KrtOptions) Inputs
 		InferencePools: krt.NewStaticCollection[*inf.InferencePool](nil, nil, krtopts.ToOptions("disable/inferencepools")...),
 
 		// kgateway resources
-		Backends:     s.commonCols.BackendIndex,
-		BackendsTemp: krt.NewInformer[*v1alpha1.Backend](s.client),
+		Backends: s.commonCols.BackendIndex,
 	}
 
 	if s.EnableInferExt {
@@ -387,7 +395,7 @@ func (s *AgentGwSyncer) buildInputCollections(krtopts krtutil.KrtOptions) Inputs
 	return inputs
 }
 
-func (s *AgentGwSyncer) buildResourceCollections(inputs Inputs, krtopts krtutil.KrtOptions) {
+func (s *AgentGwSyncer) buildResourceCollections(inputs Inputs, finalBackends krt.Collection[ir.BackendObjectIR], krtopts krtutil.KrtOptions) {
 	// Build core collections for irs
 	gatewayClasses := GatewayClassesCollection(inputs.GatewayClasses, krtopts)
 	refGrants := BuildReferenceGrants(ReferenceGrantsCollection(inputs.ReferenceGrants, krtopts))
@@ -396,9 +404,8 @@ func (s *AgentGwSyncer) buildResourceCollections(inputs Inputs, krtopts krtutil.
 	// Build ADP resources for gateway
 	adpResources := s.buildADPResources(gateways, inputs, refGrants, krtopts)
 
-	// Build backend collections,
-	// this is done separately from other resources because backends are not a per gateway resource
-	adpBackends := s.buildBackendCollections(inputs, krtopts)
+	// Create ADP backend collection from finalBackends
+	adpBackends := s.newADPBackendCollection(inputs, finalBackends, krtopts)
 
 	// Build address collections
 	addresses := s.buildAddressCollections(inputs, krtopts)
@@ -498,17 +505,6 @@ func (s *AgentGwSyncer) buildADPResources(
 	return allADPResources
 }
 
-// buildBackendCollections builds a collection of all backend resources
-func (s *AgentGwSyncer) buildBackendCollections(inputs Inputs, krtopts krtutil.KrtOptions) krt.Collection[envoyResourceWithCustomName] {
-	// Build backends
-	backends := krt.NewManyCollection(inputs.BackendsTemp, func(ctx krt.HandlerContext, obj *v1alpha1.Backend) []envoyResourceWithCustomName {
-		return s.buildBackendFromBackend(ctx, obj, inputs.Services, inputs.Secrets, inputs.Namespaces)
-	}, krtopts.ToOptions("ADPBackends")...)
-	logger.Debug("backends", "backends", backends)
-
-	return backends
-}
-
 // buildListenerFromGateway creates a listener resource from a gateway
 func (s *AgentGwSyncer) buildListenerFromGateway(obj GatewayListener) *ADPResourcesForGateway {
 	l := &api.Listener{
@@ -535,20 +531,13 @@ func (s *AgentGwSyncer) buildListenerFromGateway(obj GatewayListener) *ADPResour
 	}, resources, obj.report)
 }
 
-// buildBackendFromBackend creates a backend resource
-func (s *AgentGwSyncer) buildBackendFromBackend(ctx krt.HandlerContext, obj *v1alpha1.Backend, svcCol krt.Collection[*corev1.Service], secretsCol krt.Collection[*corev1.Secret], nsCol krt.Collection[*corev1.Namespace]) []envoyResourceWithCustomName {
+// buildBackendFromBackendIR creates a backend resource from BackendObjectIR
+func (s *AgentGwSyncer) buildBackendFromBackendIR(ctx krt.HandlerContext, backendIR *ir.BackendObjectIR, svcCol krt.Collection[*corev1.Service], secretsCol krt.Collection[*corev1.Secret], nsCol krt.Collection[*corev1.Namespace]) []envoyResourceWithCustomName {
 	var results []envoyResourceWithCustomName
-	// Translate the backend type from Kubernetes Backend to agentgateway API
-	var backends []*api.Backend
-	var backendPolicies []*api.Policy
-	var err error
-	if plug, ok := s.plugins.ContributesBackends[wellknown.BackendGVK.GroupKind()]; ok && plug.BackendInit.InitAgentBackend != nil {
-		backends, backendPolicies, err = plug.BackendInit.InitAgentBackend(ctx, nsCol, svcCol, secretsCol, obj)
-		if err != nil {
-			// TODO(jmcguire98): should we report an error here instead of just logging it
-			logger.Error("failed to translate backend", "error", err, "backend", obj.Name)
-			return results
-		}
+	backends, backendPolicies, err := s.translator.BackendTranslator().TranslateBackend(ctx, backendIR, svcCol, secretsCol, nsCol)
+	if err != nil {
+		logger.Error("failed to translate backend", "backend", backendIR.Name, "namespace", backendIR.Namespace, "error", err)
+		return results
 	}
 	// handle all backends created as an MCP backend may create multiple backends
 	for _, backend := range backends {
@@ -578,6 +567,39 @@ func (s *AgentGwSyncer) buildBackendFromBackend(ctx krt.HandlerContext, obj *v1a
 		})
 	}
 	return results
+}
+
+// newADPBackendCollection creates the ADP backend collection for agent gateway resources
+func (s *AgentGwSyncer) newADPBackendCollection(inputs Inputs, finalBackends krt.Collection[ir.BackendObjectIR], krtopts krtutil.KrtOptions) krt.Collection[envoyResourceWithCustomName] {
+	backends := krt.NewManyCollection(finalBackends, func(ctx krt.HandlerContext, backendIR ir.BackendObjectIR) []envoyResourceWithCustomName {
+		if backendIR.Group == wellknown.ServiceGVK.Group && backendIR.Kind == wellknown.ServiceGVK.Kind {
+			return nil
+		}
+		return s.buildBackendFromBackendIR(ctx, &backendIR, inputs.Services, inputs.Secrets, inputs.Namespaces)
+	}, krtopts.ToOptions("ADPBackends")...)
+
+	return backends
+}
+
+// buildBackendCollections builds the filtered backend IR collection and the corresponding ADP backend collection
+func (s *AgentGwSyncer) buildBackendCollections(
+	inputs Inputs,
+	krtopts krtutil.KrtOptions,
+) (krt.Collection[ir.BackendObjectIR], krt.Collection[envoyResourceWithCustomName]) {
+	// Get all backends with attached policies, filtering out Service backends
+	// Agent gateway handles Service references directly in routes and doesn't need separate backend objects
+	allBackends := krt.JoinCollection(s.commonCols.BackendIndex.BackendsWithPolicy(),
+		append(krtopts.ToOptions("AllBackends"), krt.WithJoinUnchecked())...)
+
+	finalBackends := krt.NewCollection(allBackends, func(kctx krt.HandlerContext, backend *ir.BackendObjectIR) *ir.BackendObjectIR {
+		if backend.Group == wellknown.ServiceGVK.Group && backend.Kind == wellknown.ServiceGVK.Kind {
+			return nil
+		}
+		return backend
+	}, krtopts.ToOptions("FinalBackends")...)
+
+	adpBackends := s.newADPBackendCollection(inputs, finalBackends, krtopts)
+	return finalBackends, adpBackends
 }
 
 // getProtocolAndTLSConfig extracts protocol and TLS configuration from a gateway

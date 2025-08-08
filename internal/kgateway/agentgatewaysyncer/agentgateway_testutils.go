@@ -657,7 +657,8 @@ func (tc TestCase) Run(
 
 	results := make(map[types.NamespacedName]ActualTestResult)
 
-	// Create and initialize AgentGwSyncer for testing
+	// Instead of calling full Init(), manually initialize just what we need for testing
+	// to avoid race conditions with XDS collection building
 	agentGwSyncer := NewAgentGwSyncer(
 		wellknown.DefaultGatewayControllerName,
 		wellknown.DefaultAgentGatewayClassName,
@@ -670,18 +671,19 @@ func (tc TestCase) Run(
 		"Kubernetes",
 		true, // enableInferExt
 	)
+	agentGwSyncer.translator.Init()
 
-	// Build input collections for agentgateway syncer
 	inputs := agentGwSyncer.buildInputCollections(krtOpts)
 
-	// Build core collections
+	_, adpBackendsCollection := agentGwSyncer.buildBackendCollections(inputs, krtOpts)
+
 	gatewayClasses := GatewayClassesCollection(inputs.GatewayClasses, krtOpts)
 	refGrants := BuildReferenceGrants(ReferenceGrantsCollection(inputs.ReferenceGrants, krtOpts))
 	gateways := agentGwSyncer.buildGatewayCollection(inputs, gatewayClasses, refGrants, krtOpts)
 
-	// Build ADP resources, backends, and addresses collections
+	// Build ADP resources and addresses collections
 	adpResourcesCollection := agentGwSyncer.buildADPResources(gateways, inputs, refGrants, krtOpts)
-	adpBackendsCollection := agentGwSyncer.buildBackendCollections(inputs, krtOpts)
+
 	addressesCollection := agentGwSyncer.buildAddressCollections(inputs, krtOpts)
 
 	// Wait for collections to sync
