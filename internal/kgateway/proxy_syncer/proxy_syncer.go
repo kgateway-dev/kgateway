@@ -16,10 +16,7 @@ import (
 
 	envoycachetypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
-	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 	"google.golang.org/protobuf/proto"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
@@ -432,13 +429,6 @@ func (s *ProxySyncer) BackendPolicyReportQueue() utils.AsyncQueue[reports.Report
 // It must be called only after `Init()`.
 func (s *ProxySyncer) CacheSyncs() []cache.InformerSynced {
 	return s.waitForSync
-}
-
-var opts = cmp.Options{
-	cmpopts.IgnoreFields(metav1.Condition{}, "LastTransitionTime"),
-	cmpopts.IgnoreMapEntries(func(k string, _ any) bool {
-		return k == "lastTransitionTime"
-	}),
 }
 
 type resourcesStringer envoycache.Resources

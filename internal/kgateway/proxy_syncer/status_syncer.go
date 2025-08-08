@@ -22,6 +22,7 @@ import (
 
 	"github.com/avast/retry-go"
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
@@ -601,6 +602,13 @@ func (s *StatusSyncer) syncPolicyStatus(ctx context.Context, rm reports.ReportMa
 // NeedLeaderElection returns true to ensure that the StatusSyncer runs only on the leader
 func (r *StatusSyncer) NeedLeaderElection() bool {
 	return true
+}
+
+var opts = cmp.Options{
+	cmpopts.IgnoreFields(metav1.Condition{}, "LastTransitionTime"),
+	cmpopts.IgnoreMapEntries(func(k string, _ any) bool {
+		return k == "lastTransitionTime"
+	}),
 }
 
 func isGatewayStatusEqual(objA, objB *gwv1.GatewayStatus) bool {
