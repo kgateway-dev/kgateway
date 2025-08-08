@@ -19,7 +19,7 @@ See the [developer e2e testing guide](/devel/testing/e2e-tests.md) for more info
         - 
 ## Local Development
 ### Setup
-For these tests to run, we require that our gateway-proxy component be previously built as a docker image.
+For these tests to run, we require that our gateway-proxy component be previously built as a docker image. Additionally, when running on apple silicon architectures, uncheck `Use Rosetta for x86_64/amd64 emulation on Apple Silicon` in your docker settings.
 
 If you have not made local changes to the component, you can rely on a previously published image and no setup is required.
 
