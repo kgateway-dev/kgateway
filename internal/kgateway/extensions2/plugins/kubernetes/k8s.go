@@ -83,14 +83,14 @@ func BuildServiceBackendObjectIR(svc *corev1.Service, svcPort int32, svcProtocol
 	backend.GvPrefix = BackendClusterPrefix
 	backend.CanonicalHostname = kubeutils.GetServiceHostname(svc.Name, svc.Namespace)
 
-	// We support specifying the Istio traffic distribution annotation in older k8s versions
-	backend.TrafficDistribution = wellknown.ParseTrafficDistribution(svc.Annotations[annotation.NetworkingTrafficDistribution.Name])
-
-	// If the traffiDistribution is specified in the spec, use that.
+	// If the trafficDistribution is specified in the spec, use that.
 	// If both annotations and spec are specified, the spec takes precedence.
 	// The field was added as beta in Kubernetes 1.31
 	if svc.Spec.TrafficDistribution != nil {
 		backend.TrafficDistribution = wellknown.ParseTrafficDistribution(*svc.Spec.TrafficDistribution)
+	} else if val, ok := svc.Annotations[annotation.NetworkingTrafficDistribution.Name]; ok {
+		// We support specifying the Istio traffic distribution annotation in older k8s versions
+		backend.TrafficDistribution = wellknown.ParseTrafficDistribution(val)
 	}
 
 	return backend
