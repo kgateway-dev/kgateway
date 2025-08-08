@@ -66,6 +66,10 @@ func (u *BackendIr) Equals(other any) bool {
 	if !u.AwsIr.Equals(otherBackend.AwsIr) {
 		return false
 	}
+	// Agent Gateway
+	if !u.AgentGatewayIr.Equals(otherBackend.AgentGatewayIr) {
+		return false
+	}
 	return true
 }
 
