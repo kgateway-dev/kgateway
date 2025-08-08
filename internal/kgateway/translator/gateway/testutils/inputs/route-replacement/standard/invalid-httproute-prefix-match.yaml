@@ -33,7 +33,6 @@ kind: HTTPRoute
 metadata:
   name: invalid-traffic-policy-route
   namespace: gwtest
-  generation: 1
 spec:
   parentRefs:
   - name: example-gateway

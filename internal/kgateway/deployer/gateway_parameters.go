@@ -316,6 +316,7 @@ func (k *kGatewayParameters) getValues(gw *api.Gateway, gwParam *v1alpha1.Gatewa
 	gateway.LivenessProbe = podConfig.GetLivenessProbe()
 	gateway.GracefulShutdown = podConfig.GetGracefulShutdown()
 	gateway.TerminationGracePeriodSeconds = podConfig.GetTerminationGracePeriodSeconds()
+	gateway.TopologySpreadConstraints = podConfig.GetTopologySpreadConstraints()
 
 	// envoy container values
 	logLevel := envoyContainerConfig.GetBootstrap().GetLogLevel()

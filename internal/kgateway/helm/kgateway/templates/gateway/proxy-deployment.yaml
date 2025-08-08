@@ -316,6 +316,10 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      {{- with $gateway.topologySpreadConstraints }}
+      topologySpreadConstraints:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       {{- if $gateway.terminationGracePeriodSeconds }}
       terminationGracePeriodSeconds: {{ $gateway.terminationGracePeriodSeconds }}
       {{- end }}
