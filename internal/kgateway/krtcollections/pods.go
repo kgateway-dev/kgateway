@@ -271,7 +271,7 @@ func augmentPodLabels(nodes krt.Collection[NodeMetadata]) func(kctx krt.HandlerC
 				AugmentLabels(l, labels)
 
 				//	labels[label.TopologyCluster.Name] = clusterID.String()
-				//	labels[LabelHostname] = k8sNode
+				labels[corev1.LabelHostname] = nodeName
 				//	labels[label.TopologyNetwork.Name] = networkID.String()
 			}
 		}

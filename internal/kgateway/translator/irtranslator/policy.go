@@ -8,6 +8,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/metrics"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
@@ -24,6 +25,13 @@ func reportPolicyAcceptanceStatus(
 			// Not a policy associated with a CR, can't report status on it
 			continue
 		}
+
+		// Start the resource sync metrics for the policy.
+		metrics.StartResourceSync(policy.PolicyRef.Name, metrics.ResourceMetricLabels{
+			Gateway:   string(ancestorRef.Name),
+			Namespace: policy.PolicyRef.Namespace,
+			Resource:  policy.PolicyRef.Kind,
+		})
 
 		key := reporter.PolicyKey{
 			Group:     policy.PolicyRef.Group,

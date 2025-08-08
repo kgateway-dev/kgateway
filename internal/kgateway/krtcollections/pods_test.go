@@ -61,6 +61,7 @@ func TestPods(t *testing.T) {
 				AugmentedLabels: map[string]string{
 					corev1.LabelTopologyRegion: "region",
 					corev1.LabelTopologyZone:   "zone",
+					corev1.LabelHostname:       "node",
 					"a":                        "b",
 				},
 				Addresses: []string{"1.2.3.4"},
@@ -110,6 +111,7 @@ func TestPods(t *testing.T) {
 				AugmentedLabels: map[string]string{
 					corev1.LabelTopologyRegion: "region",
 					corev1.LabelTopologyZone:   "zone",
+					corev1.LabelHostname:       "node",
 					"a":                        "b",
 				},
 				Addresses: []string{"1.2.3.4", "2001:db8::1"},
@@ -152,6 +154,7 @@ func TestPods(t *testing.T) {
 				AugmentedLabels: map[string]string{
 					corev1.LabelTopologyRegion: "region",
 					corev1.LabelTopologyZone:   "zone",
+					corev1.LabelHostname:       "node",
 					"a":                        "b",
 				},
 			},

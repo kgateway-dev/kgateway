@@ -5,10 +5,14 @@ import (
 	"sort"
 	"strings"
 
+	"istio.io/api/label"
 	"istio.io/api/networking/v1alpha3"
 	"istio.io/istio/pkg/slices"
 
+	corev1 "k8s.io/api/core/v1"
+
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
@@ -29,9 +33,14 @@ func PrioritizeEndpoints(
 	inputs EndpointsInputs,
 ) *envoyendpointv3.ClusterLoadAssignment {
 	lbInfo := LoadBalancingInfo{
-		PodLabels:    ucc.Labels,
-		PodLocality:  ucc.Locality,
-		PriorityInfo: inputs.PriorityInfo,
+		PodLabels:   ucc.Labels,
+		PodLocality: ucc.Locality,
+	}
+
+	if inputs.PriorityInfo == nil {
+		lbInfo.PriorityInfo = priorityInfoFromTrafficDistribution(inputs.EndpointsForBackend.TrafficDistribution)
+	} else {
+		lbInfo.PriorityInfo = inputs.PriorityInfo
 	}
 
 	return prioritizeWithLbInfo(logger, inputs.EndpointsForBackend, lbInfo)
@@ -290,4 +299,37 @@ func LbPriority(proxyLocality, endpointsLocality *envoycorev3.Locality) int {
 		return 2
 	}
 	return 3
+}
+
+// priorityInfoFromTrafficDistribution provides PriorityInfo with failover priorities based on the provided
+// traffic distribution.
+// If the traffic distribution is Any, the returned PriorityInfo is nil.
+func priorityInfoFromTrafficDistribution(trafficDistribution wellknown.TrafficDistribution) *PriorityInfo {
+	var priorities *Prioritizer
+	switch trafficDistribution {
+	case wellknown.TrafficDistributionPreferSameZone:
+		priorities = NewPriorities([]string{
+			label.TopologyNetwork.Name,
+			corev1.LabelZoneRegion,
+			corev1.LabelTopologyZone,
+		})
+	case wellknown.TrafficDistributionPreferSameNode:
+		priorities = NewPriorities([]string{
+			label.TopologyNetwork.Name,
+			corev1.LabelZoneRegion,
+			corev1.LabelTopologyZone,
+			label.TopologySubzone.Name,
+			corev1.LabelHostname,
+		})
+	case wellknown.TrafficDistributionPreferSameNetwork:
+		priorities = NewPriorities([]string{
+			label.TopologyNetwork.Name,
+		})
+	}
+	if priorities != nil {
+		return &PriorityInfo{
+			FailoverPriority: priorities,
+		}
+	}
+	return nil
 }

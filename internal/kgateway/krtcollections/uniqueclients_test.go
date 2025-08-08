@@ -71,6 +71,7 @@ func TestUniqueClients(t *testing.T) {
 				fmt.Sprintf("kgateway-kube-gateway-api~best-proxy-role~%d~ns", utils.HashLabels(map[string]string{
 					corev1.LabelTopologyRegion: "region",
 					corev1.LabelTopologyZone:   "zone",
+					corev1.LabelHostname:       "node",
 					"a":                        "b",
 				})),
 			),
@@ -145,10 +146,12 @@ func TestUniqueClients(t *testing.T) {
 				fmt.Sprintf("kgateway-kube-gateway-api~best-proxy-role~%d~ns", utils.HashLabels(map[string]string{
 					corev1.LabelTopologyRegion: "region",
 					corev1.LabelTopologyZone:   "zone",
+					corev1.LabelHostname:       "node",
 					"a":                        "b",
 				})), fmt.Sprintf("kgateway-kube-gateway-api~best-proxy-role~%d~ns", utils.HashLabels(map[string]string{
 					corev1.LabelTopologyRegion: "region2",
 					corev1.LabelTopologyZone:   "zone2",
+					corev1.LabelHostname:       "node2",
 					"a":                        "b",
 				})),
 			),
