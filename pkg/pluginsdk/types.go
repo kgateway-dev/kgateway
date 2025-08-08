@@ -88,9 +88,6 @@ type BackendPlugin struct {
 	AliasKinds []schema.GroupKind
 	Backends   krt.Collection[ir.BackendObjectIR]
 	Endpoints  krt.Collection[ir.EndpointsForBackend]
-
-	NewEnvoyTranslationPass        func(ctx context.Context, reporter reports.Reporter) ir.ProxyTranslationPass
-	NewAgentGatewayTranslationPass func(ctx context.Context, reporter reports.Reporter) agwir.AgentGatewayTranslationPass
 }
 
 type KGwTranslator interface {
