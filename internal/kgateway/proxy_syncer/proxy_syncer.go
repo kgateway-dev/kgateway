@@ -418,8 +418,8 @@ func (s *ProxySyncer) ReportQueue() utils.AsyncQueue[reports.ReportMap] {
 	return s.reportQueue
 }
 
-// BackendPolicyReportQueue returns the queue that contains the latest backend policy status reports.
-// It will be constantly updated to contain the merged status report for the backend policies.
+// BackendPolicyReportQueue returns the queue that contains the latest status reports for all backend policies.
+// It will be constantly updated to contain the merged status report for backend policies.
 func (s *ProxySyncer) BackendPolicyReportQueue() utils.AsyncQueue[reports.ReportMap] {
 	return s.backendPolicyReportQueue
 }
