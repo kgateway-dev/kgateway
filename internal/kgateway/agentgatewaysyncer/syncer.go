@@ -740,14 +740,14 @@ func (s *AgentGwSyncer) Start(ctx context.Context) error {
 	// wait for krt collections to sync
 	logger.Info("waiting for cache to sync")
 	s.client.WaitForCacheSync(
-		"kube gw proxy syncer",
+		"agent gateway status syncer",
 		ctx.Done(),
 		s.waitForSync...,
 	)
 
 	// wait for ctrl-rtime caches to sync before accepting events
 	if !s.mgr.GetCache().WaitForCacheSync(ctx) {
-		return fmt.Errorf("kube gateway sync loop waiting for all caches to sync failed")
+		return fmt.Errorf("agent gateway sync loop waiting for all caches to sync failed")
 	}
 	logger.Info("caches warm!")
 

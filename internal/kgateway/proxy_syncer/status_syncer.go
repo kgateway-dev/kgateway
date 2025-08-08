@@ -76,14 +76,14 @@ func (s *StatusSyncer) Start(ctx context.Context) error {
 	// wait for krt collections to sync
 	logger.Info("waiting for cache to sync")
 	s.istioClient.WaitForCacheSync(
-		"kube gw proxy syncer",
+		"kube gw status syncer",
 		ctx.Done(),
 		s.cacheSyncs...,
 	)
 
 	// wait for ctrl-rtime caches to sync before accepting events
 	if !s.mgr.GetCache().WaitForCacheSync(ctx) {
-		return errors.New("kube gateway sync loop waiting for all caches to sync failed")
+		return errors.New("kube gateway status syncer sync loop waiting for all caches to sync failed")
 	}
 	logger.Info("caches warm!")
 

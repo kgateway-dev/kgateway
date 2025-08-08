@@ -364,7 +364,7 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 
 	// wait for ctrl-rtime caches to sync before accepting events
 	if !s.mgr.GetCache().WaitForCacheSync(ctx) {
-		return errors.New("kube gateway sync loop waiting for all caches to sync failed")
+		return errors.New("kube gateway proxy syncer sync loop waiting for all caches to sync failed")
 	}
 	logger.Info("caches warm!")
 
