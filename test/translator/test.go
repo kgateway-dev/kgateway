@@ -10,14 +10,14 @@ import (
 	"reflect"
 	"sort"
 	"strings"
+	"testing"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/testing/protocmp"
@@ -25,7 +25,6 @@ import (
 	kubeclient "istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/kclient/clienttest"
 	"istio.io/istio/pkg/kube/krt"
-	"istio.io/istio/pkg/test"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -210,7 +209,7 @@ func NewScheme(extraSchemes runtime.SchemeBuilder) *runtime.Scheme {
 }
 
 func TestTranslation(
-	t test.Failer,
+	t *testing.T,
 	ctx context.Context,
 	inputFiles []string,
 	outputFile string,
@@ -222,7 +221,7 @@ func TestTranslation(
 }
 
 func TestTranslationWithExtraPlugins(
-	t test.Failer,
+	t *testing.T,
 	ctx context.Context,
 	inputFiles []string,
 	outputFile string,
@@ -234,14 +233,14 @@ func TestTranslationWithExtraPlugins(
 	settingsOpts ...SettingsOpts,
 ) {
 	scheme := NewScheme(extraSchemes)
+	r := require.New(t)
 
 	results, err := TestCase{
 		InputFiles: inputFiles,
 	}.Run(t, ctx, scheme, extraPluginsFn, extraGroups, settingsOpts...)
-	Expect(err).NotTo(HaveOccurred())
-	// TODO allow expecting multiple gateways in the output (map nns -> outputFile?)
-	Expect(results).To(HaveLen(1))
-	Expect(results).To(HaveKey(gwNN))
+	r.NoError(err, "error running test case")
+	r.Len(results, 1, "expected exactly one gateway in the results")
+	r.Contains(results, gwNN)
 	result := results[gwNN]
 
 	//// do a json round trip to normalize the output (i.e. things like omit empty)
@@ -259,25 +258,29 @@ func TestTranslationWithExtraPlugins(
 		Clusters:      result.Clusters,
 	}
 	outputYaml, err := MarshalAnyYaml(output)
-	fmt.Fprintf(ginkgo.GinkgoWriter, "actual result:\n %s \nerror: %v", outputYaml, err)
-	Expect(err).NotTo(HaveOccurred())
+	r.NoErrorf(err, "error marshaling output to YAML; actual result: %s", outputYaml)
 
 	if envutils.IsEnvTruthy("REFRESH_GOLDEN") {
 		// create parent directory if it doesn't exist
 		dir := filepath.Dir(outputFile)
 		if err := os.MkdirAll(dir, 0o755); err != nil {
-			Expect(err).NotTo(HaveOccurred())
+			r.NoErrorf(err, "error creating directory %s", dir)
 		}
 		os.WriteFile(outputFile, outputYaml, 0o644)
 	}
 
-	Expect(compareProxy(outputFile, result.Proxy)).To(BeEmpty())
-	Expect(compareClusters(outputFile, result.Clusters)).To(BeEmpty())
+	gotProxy, err := compareProxy(outputFile, result.Proxy)
+	r.Emptyf(gotProxy, "unexpected diff in proxy output; actual result: %s", outputYaml)
+	r.NoError(err, "error comparing proxy output")
+
+	gotClusters, err := compareClusters(outputFile, result.Clusters)
+	r.Emptyf(gotClusters, "unexpected diff in clusters output; actual result: %s", outputYaml)
+	r.NoError(err, "error comparing clusters output")
 
 	if assertReports != nil {
 		assertReports(gwNN, result.ReportsMap)
 	} else {
-		Expect(AreReportsSuccess(gwNN, result.ReportsMap)).NotTo(HaveOccurred())
+		r.NoError(AreReportsSuccess(gwNN, result.ReportsMap), "expected status reports to not have errors")
 	}
 }
 
@@ -497,7 +500,7 @@ func AreReportsSuccess(gwNN types.NamespacedName, reportsMap reports.ReportMap) 
 type SettingsOpts func(*settings.Settings)
 
 func (tc TestCase) Run(
-	t test.Failer,
+	t *testing.T,
 	ctx context.Context,
 	scheme *runtime.Scheme,
 	extraPluginsFn ExtraPluginsFn,
@@ -508,6 +511,8 @@ func (tc TestCase) Run(
 		anyObjs []runtime.Object
 		ourObjs []runtime.Object
 	)
+	r := require.New(t)
+
 	for _, file := range tc.InputFiles {
 		objs, err := LoadFromFiles(ctx, file, scheme)
 		if err != nil {
@@ -679,7 +684,7 @@ func (tc TestCase) Run(
 		for _, col := range commoncol.BackendIndex.BackendsWithPolicy() {
 			for _, backend := range col.List() {
 				cluster, err := translator.GetUpstreamTranslator().TranslateBackend(krt.TestingDummyContext{}, ucc, backend)
-				Expect(err).NotTo(HaveOccurred())
+				r.NoErrorf(err, "error translating backend %s", backend.GetName())
 				clusters = append(clusters, cluster)
 			}
 		}
