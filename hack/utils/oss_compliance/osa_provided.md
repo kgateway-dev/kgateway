@@ -35,10 +35,10 @@ Name|Version|License
 [istio.io/api](https://istio.io/api)|v1.26.0-alpha.0.0.20250708022530-f8c0a53baaf9|Apache License 2.0
 [istio.io/client-go](https://istio.io/client-go)|v1.26.0-alpha.0.0.20250708023131-44cd7c661bad|Apache License 2.0
 [istio.io/istio](https://istio.io/istio)|v0.0.0-20250728092114-6111de93199e|Apache License 2.0
-[k8s.io/api](https://k8s.io/api)|v0.33.2|Apache License 2.0
-[k8s.io/apiextensions-apiserver](https://k8s.io/apiextensions-apiserver)|v0.33.2|Apache License 2.0
-[k8s.io/apimachinery](https://k8s.io/apimachinery)|v0.33.2|Apache License 2.0
-[k8s.io/client-go](https://k8s.io/client-go)|v0.33.2|Apache License 2.0
+[k8s.io/api](https://k8s.io/api)|v0.33.3|Apache License 2.0
+[k8s.io/apiextensions-apiserver](https://k8s.io/apiextensions-apiserver)|v0.33.3|Apache License 2.0
+[k8s.io/apimachinery](https://k8s.io/apimachinery)|v0.33.3|Apache License 2.0
+[k8s.io/client-go](https://k8s.io/client-go)|v0.33.3|Apache License 2.0
 [klog/v2](https://k8s.io/klog/v2)|v2.130.1|Apache License 2.0
 [k8s.io/kube-openapi](https://k8s.io/kube-openapi)|v0.0.0-20250318190949-c8a335a9a2ff|Apache License 2.0
 [k8s.io/utils](https://k8s.io/utils)|v0.0.0-20250502105355-0f33e8f1c979|Apache License 2.0
