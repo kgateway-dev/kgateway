@@ -42,7 +42,7 @@ func (s *testingSuite) TestAgentGatewayDeployment() {
 		gwv1.GatewayConditionAccepted,
 		metav1.ConditionTrue,
 	)
-	// TODO: Add this once the regression has been fixed
+	// TODO: Add this once https://github.com/kgateway-dev/kgateway/issues/11929 has been resolved
 	// s.TestInstallation.Assertions.EventuallyGatewayListenerAttachedRoutes(
 	// 	s.Ctx,
 	// 	gatewayObjectMeta.Name,
