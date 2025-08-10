@@ -104,7 +104,6 @@ var _ = Describe("SDS Server E2E Test", Serial, func() {
 		}()
 
 		// Connect with the server
-		var conn *grpc.ClientConn
 		conn, err := grpc.NewClient(testServerAddress, grpc.WithTransportCredentials(insecure.NewCredentials()))
 		Expect(err).NotTo(HaveOccurred())
 		defer conn.Close()
@@ -144,8 +143,7 @@ var _ = Describe("SDS Server E2E Test", Serial, func() {
 		time.Sleep(1 * time.Second)
 
 		// Connect with the server
-		var conn *grpc.ClientConn
-		conn, err = grpc.NewClient(testServerAddress, grpc.WithTransportCredentials(insecure.NewCredentials()))
+		conn, err := grpc.NewClient(testServerAddress, grpc.WithTransportCredentials(insecure.NewCredentials()))
 		Expect(err).NotTo(HaveOccurred())
 		defer conn.Close()
 		client := envoy_service_secret_v3.NewSecretDiscoveryServiceClient(conn)
