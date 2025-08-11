@@ -21,6 +21,8 @@ type TrafficPolicySpecApplyConfiguration struct {
 	HashPolicies    []*apiv1alpha1.HashPolicy                                     `json:"hashPolicies,omitempty"`
 	AutoHostRewrite *bool                                                         `json:"autoHostRewrite,omitempty"`
 	Buffer          *BufferApplyConfiguration                                     `json:"buffer,omitempty"`
+	Timeouts        *TimeoutsApplyConfiguration                                   `json:"timeouts,omitempty"`
+	Retry           *RetryApplyConfiguration                                      `json:"retry,omitempty"`
 }
 
 // TrafficPolicySpecApplyConfiguration constructs a declarative configuration of the TrafficPolicySpec type for use with
@@ -137,5 +139,21 @@ func (b *TrafficPolicySpecApplyConfiguration) WithAutoHostRewrite(value bool) *T
 // If called multiple times, the Buffer field is set to the value of the last call.
 func (b *TrafficPolicySpecApplyConfiguration) WithBuffer(value *BufferApplyConfiguration) *TrafficPolicySpecApplyConfiguration {
 	b.Buffer = value
+	return b
+}
+
+// WithTimeouts sets the Timeouts field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Timeouts field is set to the value of the last call.
+func (b *TrafficPolicySpecApplyConfiguration) WithTimeouts(value *TimeoutsApplyConfiguration) *TrafficPolicySpecApplyConfiguration {
+	b.Timeouts = value
+	return b
+}
+
+// WithRetry sets the Retry field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Retry field is set to the value of the last call.
+func (b *TrafficPolicySpecApplyConfiguration) WithRetry(value *RetryApplyConfiguration) *TrafficPolicySpecApplyConfiguration {
+	b.Retry = value
 	return b
 }

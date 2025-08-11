@@ -13,7 +13,6 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/durationpb"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/ptr"
@@ -24,8 +23,10 @@ import (
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	envoytype "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	v1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
@@ -57,19 +58,19 @@ type timeouts struct {
 	backendRequestTimeout *durationpb.Duration
 }
 
-type ruleIr struct {
-	retry              *envoyroutev3.RetryPolicy
+type ruleIR struct {
 	timeouts           *timeouts
-	sessionPersistence *anypb.Any
+	retry              *envoyroutev3.RetryPolicy
+	sessionPersistence *stateful_sessionv3.StatefulSessionPerRoute
 }
 
-type filterIr struct {
+type filterIR struct {
 	filterType gwv1.HTTPRouteFilterType
 
 	policy applyToRoute
 }
 
-func (f *filterIr) apply(
+func (f *filterIR) apply(
 	outputRoute *envoyroutev3.Route,
 	mergeOpts policy.MergeOptions,
 ) {
@@ -80,8 +81,8 @@ func (f *filterIr) apply(
 }
 
 type builtinPlugin struct {
-	filter  *filterIr
-	rule    ruleIr
+	filter  *filterIR
+	rule    ruleIR
 	hasCors bool
 }
 
@@ -121,7 +122,7 @@ func NewBuiltInIr(kctx krt.HandlerContext, f gwv1.HTTPRouteFilter, fromgk schema
 
 	return &builtinPlugin{
 		hasCors: cors != nil,
-		filter:  convertFilterIr(kctx, f, fromgk, fromns, refgrants, ups),
+		filter:  convertfilterIR(kctx, f, fromgk, fromns, refgrants, ups),
 	}
 }
 
@@ -131,7 +132,7 @@ func NewBuiltInRuleIr(rule gwv1.HTTPRouteRule) ir.PolicyIR {
 		return nil
 	}
 	return &builtinPlugin{
-		rule: convertRule(rule),
+		rule: buildHTTPRouteRulePolicy(rule),
 	}
 }
 
@@ -146,31 +147,39 @@ func NewBuiltinPlugin(ctx context.Context) extensionsplug.Plugin {
 	}
 }
 
-func convertRule(rule gwv1.HTTPRouteRule) ruleIr {
-	return ruleIr{
+func buildHTTPRouteRulePolicy(rule gwv1.HTTPRouteRule) ruleIR {
+	return ruleIR{
 		retry:              convertRetry(rule.Retry, rule.Timeouts),
 		timeouts:           convertTimeouts(rule.Timeouts),
 		sessionPersistence: convertSessionPersistence(rule.SessionPersistence),
 	}
 }
 
-func (r ruleIr) apply(
-	outputRoute *envoyroutev3.Route,
+func (p *builtinPluginGwPass) applyRulePolicy(
+	pCtx *ir.RouteContext,
+	r ruleIR,
 	mergeOpts policy.MergeOptions,
+	outputRoute *envoyroutev3.Route,
 ) error {
 	// A parent route rule with a delegated backend will not have outputRoute.RouteAction set
 	// but the plugin will be invoked on the rule, so treat this as a no-op call
 	if outputRoute == nil || outputRoute.GetRoute() == nil {
 		return nil
 	}
-	r.applyTimeouts(outputRoute, r.retry != nil, mergeOpts)
-	r.applyRetry(outputRoute, mergeOpts)
+	r.applyTimeouts(outputRoute.GetRoute(), r.retry != nil, mergeOpts)
+	r.applyRetry(outputRoute.GetRoute(), mergeOpts)
 
 	if r.sessionPersistence != nil && policy.IsSettable(outputRoute.GetTypedPerFilterConfig()[statefulSessionFilterName], mergeOpts) {
 		if outputRoute.GetTypedPerFilterConfig() == nil {
 			outputRoute.TypedPerFilterConfig = map[string]*anypb.Any{}
 		}
-		outputRoute.GetTypedPerFilterConfig()[statefulSessionFilterName] = r.sessionPersistence
+		anyMsg, err := utils.MessageToAny(r.sessionPersistence)
+		if err != nil {
+			logger.Error("error marshalling SessionPersistence", "error", err)
+			return err
+		}
+		outputRoute.GetTypedPerFilterConfig()[statefulSessionFilterName] = anyMsg
+		p.needStatefulSession[pCtx.FilterChainName] = true
 	}
 	return nil
 }
@@ -200,14 +209,14 @@ func convertTimeouts(timeout *gwv1.HTTPRouteTimeouts) *timeouts {
 	}
 }
 
-func (r ruleIr) applyTimeouts(
-	route *envoyroutev3.Route,
+func (r ruleIR) applyTimeouts(
+	action *envoyroutev3.RouteAction,
 	hasRetry bool,
 	mergeOpts policy.MergeOptions,
 ) {
 	timeouts := r.timeouts
 	if timeouts == nil || timeouts.backendRequestTimeout == nil && timeouts.requestTimeout == nil ||
-		!policy.IsSettable(route.GetRoute().GetTimeout(), mergeOpts) {
+		!policy.IsSettable(action.GetTimeout(), mergeOpts) {
 		return
 	}
 
@@ -234,7 +243,7 @@ func (r ruleIr) applyTimeouts(
 		return
 	}
 
-	route.GetRoute().Timeout = timeout
+	action.Timeout = timeout
 }
 
 func convertRetry(
@@ -245,31 +254,25 @@ func convertRetry(
 		return nil
 	}
 
-	retryPolicy := &envoyroutev3.RetryPolicy{
-		NumRetries: &wrapperspb.UInt32Value{Value: 1},
-		RetryOn:    "cancelled,connect-failure,refused-stream,retriable-headers,retriable-status-codes,unavailable",
+	in := &v1alpha1.Retry{
+		Attempts: 1,
+		RetryOn: []v1alpha1.RetryOnCondition{
+			"cancelled", "connect-failure", "refused-stream", "retriable-headers", "retriable-status-codes", "unavailable",
+		},
+		StatusCodes: retry.Codes,
 	}
 
 	if retry.Attempts != nil {
-		retryPolicy.NumRetries = &wrapperspb.UInt32Value{Value: uint32(*retry.Attempts)}
-	}
-
-	if len(retry.Codes) > 0 {
-		retryPolicy.RetriableStatusCodes = make([]uint32, len(retry.Codes))
-		for i, c := range retry.Codes {
-			retryPolicy.GetRetriableStatusCodes()[i] = uint32(c)
-		}
+		in.Attempts = int32(*retry.Attempts)
 	}
 
 	if retry.Backoff != nil {
-		backoff, err := time.ParseDuration(string(*retry.Backoff))
+		duration, err := time.ParseDuration(string(*retry.Backoff))
 		if err != nil {
 			// duration fields are cel validated, so this should never happen
 			logger.Error("invalid HTTPRoute retry backoff", "backoff", string(*retry.Backoff), "error", err)
 		} else {
-			retryPolicy.RetryBackOff = &envoyroutev3.RetryPolicy_RetryBackOff{
-				BaseInterval: durationpb.New(backoff),
-			}
+			in.BackoffBaseInterval = &metav1.Duration{Duration: duration}
 		}
 	}
 
@@ -277,29 +280,29 @@ func convertRetry(
 	// Otherwise, Envoy will by default use the global route timeout
 	// Refer to https://gateway-api.sigs.k8s.io/geps/gep-1742/
 	if timeout != nil && timeout.BackendRequest != nil {
-		timeoutDuration, err := time.ParseDuration(string(*timeout.BackendRequest))
+		duration, err := time.ParseDuration(string(*timeout.BackendRequest))
 		if err != nil {
 			// duration fields are cel validated, so this should never happen
 			logger.Error("invalid HTTPRoute backend request timeout", "timeout", string(*timeout.BackendRequest), "error", err)
 		} else {
-			retryPolicy.PerTryTimeout = durationpb.New(timeoutDuration)
+			in.PerTryTimeout = &metav1.Duration{Duration: duration}
 		}
 	}
 
-	return retryPolicy
+	return policy.BuildRetryPolicy(in)
 }
 
-func (r ruleIr) applyRetry(
-	route *envoyroutev3.Route,
+func (r ruleIR) applyRetry(
+	action *envoyroutev3.RouteAction,
 	mergeOpts policy.MergeOptions,
 ) {
-	if r.retry == nil || !policy.IsSettable(route.GetRoute().GetRetryPolicy(), mergeOpts) {
+	if r.retry == nil || !policy.IsSettable(action.GetRetryPolicy(), mergeOpts) {
 		return
 	}
-	route.GetRoute().RetryPolicy = r.retry
+	action.RetryPolicy = r.retry
 }
 
-func convertSessionPersistence(sessionPersistence *gwv1.SessionPersistence) *anypb.Any {
+func convertSessionPersistence(sessionPersistence *gwv1.SessionPersistence) *stateful_sessionv3.StatefulSessionPerRoute {
 	if sessionPersistence == nil {
 		return nil
 	}
@@ -355,17 +358,11 @@ func convertSessionPersistence(sessionPersistence *gwv1.SessionPersistence) *any
 			TypedConfig: sessionStateAny,
 		},
 	}
-	perRoute := &stateful_sessionv3.StatefulSessionPerRoute{
+	return &stateful_sessionv3.StatefulSessionPerRoute{
 		Override: &stateful_sessionv3.StatefulSessionPerRoute_StatefulSession{
 			StatefulSession: statefulSession,
 		},
 	}
-	typedConfig, err := utils.MessageToAny(perRoute)
-	if err != nil {
-		logger.Error("failed to create session state: %v", "error", err)
-		return nil
-	}
-	return typedConfig
 }
 
 func translatePathRewrite(outputRoute *envoyroutev3.RedirectAction, pathRewrite *gwv1.HTTPPathModifier) {
@@ -600,11 +597,7 @@ func (p *builtinPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.RouteC
 		pol.filter.apply(outputRoute, mergeOpts)
 	}
 
-	pol.rule.apply(outputRoute, mergeOpts)
-	if outputRoute.GetTypedPerFilterConfig()[statefulSessionFilterName] != nil {
-		p.needStatefulSession[pCtx.FilterChainName] = true
-	}
-
+	p.applyRulePolicy(pCtx, pol.rule, mergeOpts, outputRoute)
 	if pol.hasCors {
 		p.hasCorsPolicy[pCtx.FilterChainName] = true
 	}
@@ -666,8 +659,8 @@ func (p *builtinPluginGwPass) HttpFilters(ctx context.Context, fcc ir.FilterChai
 	return builtinStaged, nil
 }
 
-// New helper to create filterIr
-func convertFilterIr(kctx krt.HandlerContext, f gwv1.HTTPRouteFilter, fromgk schema.GroupKind, fromns string, refgrants *RefGrantIndex, ups *BackendIndex) *filterIr {
+// New helper to create filterIR
+func convertfilterIR(kctx krt.HandlerContext, f gwv1.HTTPRouteFilter, fromgk schema.GroupKind, fromns string, refgrants *RefGrantIndex, ups *BackendIndex) *filterIR {
 	var policy applyToRoute
 	switch f.Type {
 	case gwv1.HTTPRouteFilterRequestMirror:
@@ -704,7 +697,7 @@ func convertFilterIr(kctx krt.HandlerContext, f gwv1.HTTPRouteFilter, fromgk sch
 	if policy == nil {
 		return nil
 	}
-	return &filterIr{
+	return &filterIR{
 		filterType: f.Type,
 		policy:     policy,
 	}
@@ -850,7 +843,7 @@ func convertCORSIR(_ krt.HandlerContext, f *gwv1.HTTPCORSFilter) *corsIr {
 	if f == nil {
 		return nil
 	}
-	corsPolicyAny, err := utils.MessageToAny(utils.ToEnvoyCorsPolicy(f, false))
+	corsPolicyAny, err := utils.MessageToAny(policy.BuildCorsPolicy(f, false))
 	if err != nil {
 		// this should never happen.
 		logger.Error("failed to convert CORS policy to Any", "error", err)

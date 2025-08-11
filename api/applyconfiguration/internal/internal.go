@@ -2027,6 +2027,30 @@ var schemaYAML = typed.YAMLObject(`types:
           elementType:
             scalar: string
           elementRelationship: atomic
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Retry
+  map:
+    fields:
+    - name: attempts
+      type:
+        scalar: numeric
+    - name: backoffBaseInterval
+      type:
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Duration
+    - name: perTryTimeout
+      type:
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Duration
+    - name: retryOn
+      type:
+        list:
+          elementType:
+            scalar: string
+          elementRelationship: atomic
+    - name: statusCodes
+      type:
+        list:
+          elementType:
+            scalar: numeric
+          elementRelationship: atomic
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.RetryPolicy
   map:
     fields:
@@ -2289,6 +2313,15 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: tlsKey
       type:
         scalar: string
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Timeouts
+  map:
+    fields:
+    - name: request
+      type:
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Duration
+    - name: streamIdle
+      type:
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Duration
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.TokenBucket
   map:
     fields:
@@ -2393,6 +2426,9 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: rateLimit
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.RateLimit
+    - name: retry
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Retry
     - name: targetRefs
       type:
         list:
@@ -2405,6 +2441,9 @@ var schemaYAML = typed.YAMLObject(`types:
           elementType:
             namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LocalPolicyTargetSelector
           elementRelationship: atomic
+    - name: timeouts
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Timeouts
     - name: transformation
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.TransformationPolicy

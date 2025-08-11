@@ -838,10 +838,21 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
-	t.Run("HTTPRoutes with timeout and retry", func(t *testing.T) {
+	t.Run("HTTPRoutes with builtin timeout and retry", func(t *testing.T) {
 		test(t, translatorTestCase{
-			inputFile:  "httproute-timeout-retry/manifest.yaml",
+			inputFile:  "httproute-timeout-retry/builtin.yaml",
 			outputFile: "httproute-timeout-retry-proxy.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy timeout and retry", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/timeout-retry.yaml",
+			outputFile: "traffic-policy/timeout-retry.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
