@@ -529,7 +529,7 @@ func (tc TestCase) Run(
 		ourObjs []runtime.Object
 	)
 	for _, file := range tc.InputFiles {
-		objs, err := translator.LoadFromFiles(ctx, file, scheme)
+		objs, err := translator.LoadFromFiles(file, scheme)
 		if err != nil {
 			return nil, err
 		}

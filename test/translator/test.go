@@ -266,6 +266,7 @@ func TestTranslationWithExtraPlugins(
 		if err := os.MkdirAll(dir, 0o755); err != nil {
 			r.NoErrorf(err, "error creating directory %s", dir)
 		}
+		t.Log("REFRESH_GOLDEN is set, writing output file", outputFile)
 		os.WriteFile(outputFile, outputYaml, 0o644)
 	}
 
@@ -514,7 +515,7 @@ func (tc TestCase) Run(
 	r := require.New(t)
 
 	for _, file := range tc.InputFiles {
-		objs, err := LoadFromFiles(ctx, file, scheme)
+		objs, err := LoadFromFiles(file, scheme)
 		if err != nil {
 			return nil, err
 		}
