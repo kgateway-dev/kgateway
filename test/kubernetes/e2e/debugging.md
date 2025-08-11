@@ -25,6 +25,7 @@ For these tests to run, we require the following conditions:
 The default settings should be sufficient for a working local environment.
 However, the setup script accepts a number of environment variables to control the creation of a kind cluster and deployment of kgateway resources.
 Please refer to the script itself to see what variables are available if you need customization.
+Additionally, when running on apple silicon architectures, uncheck `Use Rosetta for x86_64/amd64 emulation on Apple Silicon` in your docker settings.
 
 Basic Example:
 ```bash
