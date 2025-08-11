@@ -19,11 +19,13 @@ import (
 
 // AssertAcceptedPolicyStatus is a helper function to verify policy status conditions
 func AssertAcceptedPolicyStatus(t *testing.T, reportsMap reports.ReportMap, policies []reports.PolicyKey) {
+	t.Helper()
 	AssertPolicyStatusWithGeneration(t, reportsMap, policies, 0)
 }
 
 // AssertPolicyStatusWithGeneration is a helper function to verify policy status conditions with a specific generation
 func AssertPolicyStatusWithGeneration(t *testing.T, reportsMap reports.ReportMap, policies []reports.PolicyKey, expectedGeneration int64) {
+	t.Helper()
 	var currentStatus gwv1alpha2.PolicyStatus
 
 	a := assert.New(t)
@@ -46,6 +48,7 @@ func AssertPolicyStatusWithGeneration(t *testing.T, reportsMap reports.ReportMap
 // for dropped rules with variadic expected message substrings.
 func AssertRouteInvalidDropped(t *testing.T, routeName, namespace string, expectedMsgSubstrings ...string) AssertReports {
 	return func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
+		t.Helper()
 		a := assert.New(t)
 		route := &gwv1.HTTPRoute{
 			ObjectMeta: metav1.ObjectMeta{
@@ -78,9 +81,9 @@ func AssertRouteInvalidDropped(t *testing.T, routeName, namespace string, expect
 // but the associated route remains Accepted=true (not dropped).
 func AssertPolicyNotAccepted(t *testing.T, policyName, routeName string) AssertReports {
 	return func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
+		t.Helper()
 		a := assert.New(t)
 
-		// Check that the TrafficPolicy has Accepted=false due to invalid configuration
 		policy := reports.PolicyKey{
 			Group:     "gateway.kgateway.dev",
 			Kind:      "TrafficPolicy",
@@ -97,8 +100,6 @@ func AssertPolicyNotAccepted(t *testing.T, policyName, routeName string) AssertR
 		a.Equal(string(v1alpha1.PolicyReasonInvalid), acceptedCondition.Reason, "Policy should have Invalid reason")
 		a.Contains(acceptedCondition.Message, "invalid xds configuration", "Policy message should contain validation error")
 
-		// Check that the HTTPRoute is still accepted despite invalid policy attachment
-		// (Current implementation ignores invalid policies but keeps routes functional)
 		route := &gwv1.HTTPRoute{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      routeName,

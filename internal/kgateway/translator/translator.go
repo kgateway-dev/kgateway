@@ -68,7 +68,6 @@ func (s *CombinedTranslator) Init(ctx context.Context) {
 	listenerTranslatorConfig := gwtranslator.TranslatorConfig{}
 	listenerTranslatorConfig.ListenerTranslatorConfig.ListenerBindIpv6 = s.commonCols.Settings.ListenerBindIpv6
 
-	logger.Info("initializing translator", "route_replacement_mode", s.commonCols.Settings.RouteReplacementMode)
 	s.gwtranslator = gwtranslator.NewTranslator(queries, listenerTranslatorConfig)
 	s.irtranslator = &irtranslator.Translator{
 		ContributedPolicies:  s.extensions.ContributesPolicies,

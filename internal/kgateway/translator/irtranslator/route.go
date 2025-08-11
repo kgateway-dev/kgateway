@@ -162,7 +162,7 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(
 
 	backendConfigCtx := backendConfigContext{typedPerFilterConfigRoute: ir.TypedFilterConfigMap(map[string]proto.Message{})}
 	if len(in.Backends) == 1 {
-		// if there's only one backend, we need to reuse typedPerFilterConfigRoute in both translateRouteAction and runRoutePlugins
+		// If there's only one backend, we need to reuse typedPerFilterConfigRoute in both translateRouteAction and runRoutePlugins
 		out.Action = h.translateRouteAction(ctx, in, out, &backendConfigCtx)
 	} else if len(in.Backends) > 0 {
 		// If there is more than one backend, we translate the backends as WeightedClusters and each weighted cluster
@@ -170,10 +170,10 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(
 		out.Action = h.translateRouteAction(ctx, in, out, nil)
 	}
 
-	// run plugins here that may set action. handle the routeProcessingErr error later.
+	// Run plugins here that may set action. Handle the routeProcessingErr error later.
 	routeProcessingErr := h.runRoutePlugins(ctx, in, out, backendConfigCtx.typedPerFilterConfigRoute)
 
-	// apply typed per filter config from translating route action and route plugins
+	// Apply typed per filter config from translating route action and route plugins
 	typedPerFilterConfig := backendConfigCtx.typedPerFilterConfigRoute.ToAnyMap()
 	if out.GetTypedPerFilterConfig() == nil {
 		out.TypedPerFilterConfig = typedPerFilterConfig
@@ -185,7 +185,7 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(
 		}
 	}
 
-	// and then apply the headers to the route
+	// Apply the headers to the route
 	out.RequestHeadersToAdd = append(out.GetRequestHeadersToAdd(), backendConfigCtx.RequestHeadersToAdd...)
 	out.RequestHeadersToRemove = append(out.GetRequestHeadersToRemove(), backendConfigCtx.RequestHeadersToRemove...)
 	out.ResponseHeadersToAdd = append(out.GetResponseHeadersToAdd(), backendConfigCtx.ResponseHeadersToAdd...)
@@ -220,7 +220,8 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(
 	if routeReplacementErr != nil {
 		h.logger.Debug("invalid route", "error", routeReplacementErr)
 
-		// for invalid matchers, we drop the route entirely instead of replacing it with a synthetic matcher.
+		// For invalid matchers, we drop the route entirely instead of replacing it with a synthetic matcher.
+		// TODO(tim): Extract this logic outside of the routeReplacementErr check.
 		if errors.Is(routeReplacementErr, ErrInvalidMatcher) {
 			h.logger.Info("invalid matcher", "error", routeReplacementErr)
 			routeReport.SetCondition(reportssdk.RouteCondition{
