@@ -420,52 +420,6 @@ func TestBuildAIBackendIr(t *testing.T) {
 			},
 		},
 		{
-			name: "Valid Bedrock backend with default region",
-			backend: &v1alpha1.Backend{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "bedrock-backend",
-					Namespace: "test-ns",
-				},
-				Spec: v1alpha1.BackendSpec{
-					Type: v1alpha1.BackendTypeAI,
-					AI: &v1alpha1.AIBackend{
-						LLM: &v1alpha1.LLMProvider{
-							Provider: v1alpha1.SupportedLLMProvider{
-								Bedrock: &v1alpha1.BedrockConfig{
-									Model: "anthropic.claude-3-sonnet-20240229-v1:0",
-									Auth: &v1alpha1.AwsAuth{
-										Type: v1alpha1.AwsAuthTypeSecret,
-										SecretRef: &corev1.LocalObjectReference{
-											Name: "aws-secret",
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			secrets: createMockSecretIndex(t, "test-ns", "aws-secret", map[string]string{
-				"accessKey": "AKIATEST",
-				"secretKey": "secret123",
-			}),
-			expectError: false,
-			validate: func(aiIr *AIIr) bool {
-				return aiIr != nil &&
-					aiIr.Name == "test-ns/bedrock-backend" &&
-					aiIr.Backend != nil &&
-					aiIr.Backend.GetBedrock() != nil &&
-					aiIr.Backend.GetBedrock().Model != nil &&
-					aiIr.Backend.GetBedrock().Model.Value == "anthropic.claude-3-sonnet-20240229-v1:0" &&
-					aiIr.Backend.GetBedrock().Region == "us-east-1" && // default region
-					aiIr.AuthPolicy != nil &&
-					aiIr.AuthPolicy.GetAws() != nil &&
-					aiIr.AuthPolicy.GetAws().GetExplicitConfig() != nil &&
-					aiIr.AuthPolicy.GetAws().GetExplicitConfig().AccessKeyId == "AKIATEST" &&
-					aiIr.AuthPolicy.GetAws().GetExplicitConfig().SecretAccessKey == "secret123"
-			},
-		},
-		{
 			name: "Valid Bedrock backend with custom region and guardrail",
 			backend: &v1alpha1.Backend{
 				ObjectMeta: metav1.ObjectMeta{
@@ -479,7 +433,7 @@ func TestBuildAIBackendIr(t *testing.T) {
 							Provider: v1alpha1.SupportedLLMProvider{
 								Bedrock: &v1alpha1.BedrockConfig{
 									Model:  "anthropic.claude-3-haiku-20240307-v1:0",
-									Region: stringPtr("eu-west-1"),
+									Region: "eu-west-1",
 									Guardrail: &v1alpha1.AWSGuardrailConfig{
 										GuardrailIdentifier: "test-guardrail",
 										GuardrailVersion:    "1.0",

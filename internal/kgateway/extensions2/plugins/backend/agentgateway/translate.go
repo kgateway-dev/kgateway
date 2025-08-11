@@ -150,10 +150,7 @@ func buildAIIr(krtctx krt.HandlerContext, be *v1alpha1.Backend, secrets *krtcoll
 		model := &wrappers.StringValue{
 			Value: llm.Provider.Bedrock.Model,
 		}
-		region := wellknown.DefaultAWSRegion
-		if llm.Provider.Bedrock.Region != nil {
-			region = *llm.Provider.Bedrock.Region
-		}
+		region := llm.Provider.Bedrock.Region
 		var guardrailIdentifier, guardrailVersion *wrappers.StringValue
 		if llm.Provider.Bedrock.Guardrail != nil {
 			guardrailIdentifier = &wrappers.StringValue{
@@ -422,9 +419,18 @@ func getSecretValue(secret *ir.Secret, key string) (string, bool) {
 func buildBedrockAuthPolicy(krtctx krt.HandlerContext, region string, auth *v1alpha1.AwsAuth, secrets *krtcollections.SecretIndex, namespace string) (*api.BackendAuthPolicy, error) {
 	var errs []error
 	if auth == nil {
-		return nil, nil
+		logger.Warn("using implicit AWS auth for AI backend")
+		return &api.BackendAuthPolicy{
+			Kind: &api.BackendAuthPolicy_Aws{
+				Aws: &api.Aws{
+					Kind: &api.Aws_Implicit{
+						Implicit: &api.AwsImplicit{},
+					},
+				},
+			},
+		}, nil
 	}
-
+	
 	switch auth.Type {
 	case v1alpha1.AwsAuthTypeSecret:
 		if auth.SecretRef == nil {
