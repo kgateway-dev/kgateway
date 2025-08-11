@@ -201,6 +201,7 @@ func buildTranslatedAuthPolicy(krtctx krt.HandlerContext, authToken *v1alpha1.Si
 		secret, err := pluginutils.GetSecretIr(secrets, krtctx, authToken.SecretRef.Name, namespace)
 		if err != nil {
 			// Return nil auth policy if secret not found - this will be handled upstream
+			// TODO(npolshak): Add backend status errors https://github.com/kgateway-dev/kgateway/issues/11966
 			return nil
 		}
 
@@ -430,7 +431,7 @@ func buildBedrockAuthPolicy(krtctx krt.HandlerContext, region string, auth *v1al
 			},
 		}, nil
 	}
-	
+
 	switch auth.Type {
 	case v1alpha1.AwsAuthTypeSecret:
 		if auth.SecretRef == nil {
@@ -441,6 +442,7 @@ func buildBedrockAuthPolicy(krtctx krt.HandlerContext, region string, auth *v1al
 		secret, err := pluginutils.GetSecretIr(secrets, krtctx, auth.SecretRef.Name, namespace)
 		if err != nil {
 			// Return nil auth policy if secret not found - this will be handled upstream
+			// TODO(npolshak): Add backend status errors https://github.com/kgateway-dev/kgateway/issues/11966
 			return nil, err
 		}
 

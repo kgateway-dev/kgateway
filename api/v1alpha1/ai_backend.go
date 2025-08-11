@@ -240,6 +240,7 @@ type BedrockConfig struct {
 	Auth *AwsAuth `json:"auth,omitempty"`
 
 	// The model field is the supported model id published by AWS. See <https://docs.aws.amazon.com/bedrock/latest/userguide/models-supported.html>
+	// +kubebuilder:validation:MinLength=1
 	Model string `json:"model"`
 
 	// Region is the AWS region to use for the backend.
@@ -259,9 +260,11 @@ type BedrockConfig struct {
 
 type AWSGuardrailConfig struct {
 	// GuardrailIdentifier is the identifier of the Guardrail policy to use for the backend.
+	// +kubebuilder:validation:MinLength=1
 	GuardrailIdentifier string `json:"identifier"`
 
 	// GuardrailVersion is the version of the Guardrail policy to use for the backend.
+	// +kubebuilder:validation:MinLength=1
 	GuardrailVersion string `json:"version"`
 }
 

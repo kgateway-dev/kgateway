@@ -183,14 +183,17 @@ spec:
                               guardrail:
                                 properties:
                                   identifier:
+                                    minLength: 1
                                     type: string
                                   version:
+                                    minLength: 1
                                     type: string
                                 required:
                                 - identifier
                                 - version
                                 type: object
                               model:
+                                minLength: 1
                                 type: string
                               region:
                                 default: us-east-1
@@ -473,14 +476,17 @@ spec:
                                           guardrail:
                                             properties:
                                               identifier:
+                                                minLength: 1
                                                 type: string
                                               version:
+                                                minLength: 1
                                                 type: string
                                             required:
                                             - identifier
                                             - version
                                             type: object
                                           model:
+                                            minLength: 1
                                             type: string
                                           region:
                                             default: us-east-1
