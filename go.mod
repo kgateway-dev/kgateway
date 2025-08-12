@@ -1,6 +1,6 @@
 module github.com/kgateway-dev/kgateway/v2
 
-go 1.24.4
+go 1.24.6
 
 require (
 	github.com/agentgateway/agentgateway v0.7.3
