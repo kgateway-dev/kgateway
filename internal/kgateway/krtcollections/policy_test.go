@@ -27,7 +27,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/settings"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
+	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
@@ -689,7 +689,7 @@ func preRouteIndex(t test.Failer, inputs []any) *RoutesIndex {
 	policyCol := krttest.GetMockCollection[ir.PolicyWrapper](mock)
 
 	policies := NewPolicyIndex(
-		krtutil.KrtOptions{},
+		krtinternal.KrtOptions{},
 		extensionsplug.ContributesPolicies{
 			wellknown.TrafficPolicyGVK.GroupKind(): {
 				Policies: policyCol,
@@ -698,7 +698,7 @@ func preRouteIndex(t test.Failer, inputs []any) *RoutesIndex {
 		settings.Settings{},
 	)
 	refgrants := NewRefGrantIndex(krttest.GetMockCollection[*gwv1beta1.ReferenceGrant](mock))
-	upstreams := NewBackendIndex(krtutil.KrtOptions{}, policies, refgrants)
+	upstreams := NewBackendIndex(krtinternal.KrtOptions{}, policies, refgrants)
 	upstreams.AddBackends(svcGk, k8sSvcUpstreams(services))
 	pools := krttest.GetMockCollection[*infextv1a2.InferencePool](mock)
 	upstreams.AddBackends(infPoolGk, infPoolUpstreams(pools))
@@ -707,7 +707,7 @@ func preRouteIndex(t test.Failer, inputs []any) *RoutesIndex {
 	tcpproutes := krttest.GetMockCollection[*gwv1a2.TCPRoute](mock)
 	tlsroutes := krttest.GetMockCollection[*gwv1a2.TLSRoute](mock)
 	grpcroutes := krttest.GetMockCollection[*gwv1.GRPCRoute](mock)
-	rtidx := NewRoutesIndex(krtutil.KrtOptions{}, httproutes, grpcroutes, tcpproutes, tlsroutes, policies, upstreams, refgrants, settings.Settings{})
+	rtidx := NewRoutesIndex(krtinternal.KrtOptions{}, httproutes, grpcroutes, tcpproutes, tlsroutes, policies, upstreams, refgrants, settings.Settings{})
 	services.WaitUntilSynced(nil)
 	policyCol.WaitUntilSynced(nil)
 	for !rtidx.HasSynced() || !refgrants.HasSynced() || !policyCol.HasSynced() {

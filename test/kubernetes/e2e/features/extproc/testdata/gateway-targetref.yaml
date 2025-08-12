@@ -27,13 +27,22 @@ spec:
   hostnames:
     - "www.example.com"
   rules:
-    - matches:
+    - name: rule0
+      matches:
         - path:
             type: PathPrefix
             value: /myapp
       backendRefs:
         - name: backend
           port: 3000
+    - name: rule1
+      matches:
+        - path:
+            type: PathPrefix
+            value: /extproc-disabled
+      backendRefs:
+        - name: backend
+          port: 3000          
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: TrafficPolicy
@@ -47,3 +56,16 @@ spec:
   extProc:
     extensionRef:
       name: ext-proc-extension
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: disable-extproc
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: route-2
+      sectionName: rule1
+  extProc:
+    disable: {}

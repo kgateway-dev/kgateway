@@ -10,7 +10,8 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/irtranslator"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
+	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
+	krtpkg "github.com/kgateway-dev/kgateway/v2/pkg/utils/krtutil"
 )
 
 type uccWithCluster struct {
@@ -40,7 +41,7 @@ func (iu *PerClientEnvoyClusters) FetchClustersForClient(kctx krt.HandlerContext
 
 func NewPerClientEnvoyClusters(
 	ctx context.Context,
-	krtopts krtutil.KrtOptions,
+	krtopts krtinternal.KrtOptions,
 	translator *irtranslator.BackendTranslator,
 	finalBackends krt.Collection[*ir.BackendObjectIR],
 	uccs krt.Collection[ir.UniqlyConnectedClient],
@@ -68,7 +69,7 @@ func NewPerClientEnvoyClusters(
 		}
 		return uccWithClusterRet
 	}, krtopts.ToOptions("PerClientEnvoyClusters")...)
-	idx := krtutil.UnnamedIndex(clusters, func(ucc uccWithCluster) []string {
+	idx := krtpkg.UnnamedIndex(clusters, func(ucc uccWithCluster) []string {
 		return []string{ucc.Client.ResourceName()}
 	})
 

@@ -26,4 +26,4 @@ spec:
     kind: HTTPRoute
     name: route-example-insecure
   extAuth:
-    enablement: DisableAll 
+    disable: {} 

@@ -18,8 +18,8 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	krtpkg "github.com/kgateway-dev/kgateway/v2/pkg/utils/krtutil"
 )
 
 var (
@@ -80,7 +80,7 @@ func initInferencePoolCollections(
 	), commonCol.KrtOpts.ToOptions("InferencePool")...)
 
 	// Create a krt index of pods whose labels match the InferencePool's selector
-	podIdx := krtutil.UnnamedIndex(
+	podIdx := krtpkg.UnnamedIndex(
 		commonCol.LocalityPods,
 		func(p krtcollections.LocalityPod) []string {
 			var keys []string
@@ -149,7 +149,7 @@ func initInferencePoolCollections(
 	)
 
 	// Index pools by NamespacedName for status management & policy wiring
-	poolIdx := krtutil.UnnamedIndex(backendsCtl, func(be ir.BackendObjectIR) []string {
+	poolIdx := krtpkg.UnnamedIndex(backendsCtl, func(be ir.BackendObjectIR) []string {
 		return []string{be.ResourceName()}
 	})
 

@@ -82,7 +82,7 @@ func (p *Provider) AssertEventualCurlResponse(
 	resp.Body.Close()
 }
 
-func (p *Provider) AssertCurlReturnResponse(
+func (p *Provider) assertCurlReturnResponse(
 	ctx context.Context,
 	podOpts kubectl.PodExecOptions,
 	curlOptions []curl.Option,
@@ -117,13 +117,13 @@ func (p *Provider) AssertCurlReturnResponse(
 	return curlHttpResponse
 }
 
-func (p *Provider) AssertCurlResponse(
+func (p *Provider) assertCurlResponse(
 	ctx context.Context,
 	podOpts kubectl.PodExecOptions,
 	curlOptions []curl.Option,
 	expectedResponse *matchers.HttpResponse,
 ) {
-	resp := p.AssertCurlReturnResponse(ctx, podOpts, curlOptions, expectedResponse)
+	resp := p.assertCurlReturnResponse(ctx, podOpts, curlOptions, expectedResponse)
 	resp.Body.Close()
 }
 
@@ -224,7 +224,7 @@ func (p *Provider) AssertEventualCurlError(
 }
 
 func (p *Provider) generateCurlOpts(host string) []curl.Option {
-	var curlOpts = []curl.Option{
+	curlOpts := []curl.Option{
 		curl.WithHost(kubeutils.ServiceFQDN(metav1.ObjectMeta{Name: GatewayProxyName, Namespace: p.installContext.InstallNamespace})),
 		curl.WithPort(80),
 		curl.Silent(),
@@ -294,7 +294,7 @@ func (p *Provider) CurlEventuallyRespondsWithStatus(ctx context.Context, host st
 func (p *Provider) CurlRespondsWithStatus(ctx context.Context, host string, status int) {
 	curlOptsHeader := p.generateCurlOpts(host)
 
-	p.AssertCurlResponse(
+	p.assertCurlResponse(
 		ctx,
 		e2edefaults.CurlPodExecOpt,
 		curlOptsHeader,
@@ -329,7 +329,7 @@ func (p *Provider) CurlWithHeadersEventuallyRespondsWithStatus(ctx context.Conte
 func (p *Provider) CurlWithHeadersRespondsWithStatus(ctx context.Context, host string, headers map[string]string, status int) {
 	curlOptsHeader := p.generateCurlOptsWithHeaders(host, headers)
 
-	p.AssertCurlResponse(
+	p.assertCurlResponse(
 		ctx,
 		e2edefaults.CurlPodExecOpt,
 		curlOptsHeader,

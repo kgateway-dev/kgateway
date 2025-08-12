@@ -16,9 +16,9 @@ import (
 	infv1a2 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
+	krtpkg "github.com/kgateway-dev/kgateway/v2/pkg/utils/krtutil"
 )
 
 func makeBackendIR(pool *infv1a2.InferencePool) *ir.BackendObjectIR {
@@ -73,7 +73,7 @@ func TestProcessPoolBackendObjIR_BuildsLoadAssignment(t *testing.T) {
 
 	// Index the pods
 	poolKey := fmt.Sprintf("%s/%s", pool.Namespace, pool.Name)
-	podIdx := krtutil.UnnamedIndex(podCol, func(p krtcollections.LocalityPod) []string {
+	podIdx := krtpkg.UnnamedIndex(podCol, func(p krtcollections.LocalityPod) []string {
 		return []string{poolKey}
 	})
 
@@ -122,7 +122,7 @@ func TestProcessPoolBackendObjIR_SkipsOnErrors(t *testing.T) {
 	// Empty pod index
 	mock := krttest.NewMock(t, []any{})
 	podCol := krttest.GetMockCollection[krtcollections.LocalityPod](mock)
-	podIdx := krtutil.UnnamedIndex(podCol, func(krtcollections.LocalityPod) []string { return nil })
+	podIdx := krtpkg.UnnamedIndex(podCol, func(krtcollections.LocalityPod) []string { return nil })
 
 	cluster := &envoyclusterv3.Cluster{}
 	ret := processPoolBackendObjIR(context.Background(), *beIR, cluster, podIdx)

@@ -8,6 +8,7 @@ kind: Pod
 metadata:
   labels:
     app: gateway
+    topology.istio.io/network: n1
   name: gateway
 spec:
   containers:
@@ -82,6 +83,7 @@ kind: Pod
 metadata:
   labels:
     app: reviews
+    topology.istio.io/network: n1
   name: reviews-1
 spec:
   containers:
@@ -101,6 +103,7 @@ kind: Pod
 metadata:
   labels:
     app: reviews
+    topology.istio.io/network: n1
   name: reviews-2
 spec:
   containers:
@@ -159,6 +162,7 @@ kind: Pod
 metadata:
   labels:
     app: reviews
+    topology.istio.io/network: n2
   name: reviews-4
 spec:
   containers:

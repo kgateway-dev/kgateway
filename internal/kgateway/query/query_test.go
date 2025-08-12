@@ -25,7 +25,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/query"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
+	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
 
@@ -1131,15 +1131,15 @@ func newQueries(t test.Failer, initObjs ...client.Object) query.GatewayQueries {
 	services := krttest.GetMockCollection[*corev1.Service](mock)
 	refgrants := krtcollections.NewRefGrantIndex(krttest.GetMockCollection[*gwv1beta1.ReferenceGrant](mock))
 
-	policies := krtcollections.NewPolicyIndex(krtutil.KrtOptions{}, extensionsplug.ContributesPolicies{}, settings.Settings{})
-	upstreams := krtcollections.NewBackendIndex(krtutil.KrtOptions{}, policies, refgrants)
+	policies := krtcollections.NewPolicyIndex(krtinternal.KrtOptions{}, extensionsplug.ContributesPolicies{}, settings.Settings{})
+	upstreams := krtcollections.NewBackendIndex(krtinternal.KrtOptions{}, policies, refgrants)
 	upstreams.AddBackends(SvcGk, k8sUpstreams(services))
 
 	httproutes := krttest.GetMockCollection[*gwv1.HTTPRoute](mock)
 	tcpproutes := krttest.GetMockCollection[*gwv1a2.TCPRoute](mock)
 	tlsroutes := krttest.GetMockCollection[*gwv1a2.TLSRoute](mock)
 	grpcroutes := krttest.GetMockCollection[*gwv1.GRPCRoute](mock)
-	rtidx := krtcollections.NewRoutesIndex(krtutil.KrtOptions{}, httproutes, grpcroutes, tcpproutes, tlsroutes, policies, upstreams, refgrants, settings.Settings{})
+	rtidx := krtcollections.NewRoutesIndex(krtinternal.KrtOptions{}, httproutes, grpcroutes, tcpproutes, tlsroutes, policies, upstreams, refgrants, settings.Settings{})
 	services.WaitUntilSynced(nil)
 
 	secretsCol := map[schema.GroupKind]krt.Collection[ir.Secret]{
@@ -1158,7 +1158,7 @@ func newQueries(t test.Failer, initObjs ...client.Object) query.GatewayQueries {
 		}),
 	}
 	secrets := krtcollections.NewSecretIndex(secretsCol, refgrants)
-	nsCol := krtcollections.NewNamespaceCollectionFromCol(context.Background(), krttest.GetMockCollection[*corev1.Namespace](mock), krtutil.KrtOptions{})
+	nsCol := krtcollections.NewNamespaceCollectionFromCol(context.Background(), krttest.GetMockCollection[*corev1.Namespace](mock), krtinternal.KrtOptions{})
 
 	commonCols := &common.CommonCollections{
 		Routes: rtidx, Secrets: secrets, Namespaces: nsCol,

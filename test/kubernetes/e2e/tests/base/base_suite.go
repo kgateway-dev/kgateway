@@ -18,9 +18,9 @@ import (
 
 // TestCase defines the manifests and resources used by a test or test suite.
 type TestCase struct {
-	// Manifest files
+	// Manifests contains a list of manifest filenames.
 	Manifests []string
-	// Resources expected to be created by manifest
+	// Resources contains a list of objects that are expected to be created by the manifest files.
 	Resources []client.Object
 	// values file passed during an upgrade
 	// UpgradeValues string
@@ -189,4 +189,14 @@ func (s *BaseTestingSuite) DeleteManifests(testCase TestCase) {
 	}
 
 	s.TestInstallation.Assertions.EventuallyObjectsNotExist(s.Ctx, testCase.Resources...)
+
+	// wait until pods created by deployments are deleted; this assumes that pods use a well-known label
+	// app.kubernetes.io/name=<name>
+	for _, resource := range testCase.Resources {
+		if deployment, ok := resource.(*appsv1.Deployment); ok {
+			s.TestInstallation.Assertions.EventuallyPodsNotExist(s.Ctx, deployment.Namespace, metav1.ListOptions{
+				LabelSelector: fmt.Sprintf("%s=%s", defaults.WellKnownAppLabel, deployment.Name),
+			}, time.Second*120, time.Second*2)
+		}
+	}
 }

@@ -38,7 +38,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/registry"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/listener"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
+	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned/fake"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
@@ -529,7 +529,7 @@ func (tc TestCase) Run(
 		ourObjs []runtime.Object
 	)
 	for _, file := range tc.InputFiles {
-		objs, err := translator.LoadFromFiles(ctx, file, scheme)
+		objs, err := translator.LoadFromFiles(file, scheme)
 		if err != nil {
 			return nil, err
 		}
@@ -599,7 +599,7 @@ func (tc TestCase) Run(
 		}, metav1.CreateOptions{})
 	}
 
-	krtOpts := krtutil.KrtOptions{
+	krtOpts := krtinternal.KrtOptions{
 		Stop: ctx.Done(),
 	}
 
@@ -657,7 +657,8 @@ func (tc TestCase) Run(
 
 	results := make(map[types.NamespacedName]ActualTestResult)
 
-	// Create and initialize AgentGwSyncer for testing
+	// Instead of calling full Init(), manually initialize just what we need for testing
+	// to avoid race conditions with XDS collection building
 	agentGwSyncer := NewAgentGwSyncer(
 		wellknown.DefaultGatewayControllerName,
 		wellknown.DefaultAgentGatewayClassName,
@@ -670,18 +671,19 @@ func (tc TestCase) Run(
 		"Kubernetes",
 		true, // enableInferExt
 	)
+	agentGwSyncer.translator.Init()
 
-	// Build input collections for agentgateway syncer
 	inputs := agentGwSyncer.buildInputCollections(krtOpts)
 
-	// Build core collections
+	_, adpBackendsCollection := agentGwSyncer.buildBackendCollections(inputs, krtOpts)
+
 	gatewayClasses := GatewayClassesCollection(inputs.GatewayClasses, krtOpts)
 	refGrants := BuildReferenceGrants(ReferenceGrantsCollection(inputs.ReferenceGrants, krtOpts))
 	gateways := agentGwSyncer.buildGatewayCollection(inputs, gatewayClasses, refGrants, krtOpts)
 
-	// Build ADP resources, backends, and addresses collections
+	// Build ADP resources and addresses collections
 	adpResourcesCollection := agentGwSyncer.buildADPResources(gateways, inputs, refGrants, krtOpts)
-	adpBackendsCollection := agentGwSyncer.buildBackendCollections(inputs, krtOpts)
+
 	addressesCollection := agentGwSyncer.buildAddressCollections(inputs, krtOpts)
 
 	// Wait for collections to sync

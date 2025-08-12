@@ -34,6 +34,7 @@ import (
 	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
+	agwir "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
@@ -86,7 +87,7 @@ func convertHTTPRouteToADP(ctx RouteContext, r gwv1.HTTPRouteRule,
 	}
 	res.Filters = filters
 
-	agentGatewayRouteContext := ir.AgentGatewayRouteContext{
+	agentGatewayRouteContext := agwir.AgentGatewayRouteContext{
 		Rule: &r,
 	}
 
@@ -396,9 +397,10 @@ func buildADPDestination(
 	k schema.GroupVersionKind,
 	backendCol *krtcollections.BackendIndex,
 ) (*api.RouteBackend, *reporter.RouteCondition) {
+	ref := normalizeReference(to.Group, to.Kind, wellknown.ServiceGVK)
 	// check if the reference is allowed
 	if toNs := to.Namespace; toNs != nil && string(*toNs) != ns {
-		if !ctx.Grants.BackendAllowed(ctx.Krt, k, to.Name, *toNs, ns) {
+		if !ctx.Grants.BackendAllowed(ctx.Krt, k, to.Name, *toNs, ns, ref) {
 			return nil, &reporter.RouteCondition{
 				Type:    gwv1.RouteConditionResolvedRefs,
 				Status:  metav1.ConditionFalse,
@@ -422,7 +424,7 @@ func buildADPDestination(
 		Weight: weight,
 	}
 	var port *gwv1.PortNumber
-	ref := normalizeReference(to.Group, to.Kind, wellknown.ServiceGVK)
+
 	switch ref.GroupKind() {
 	case wellknown.InferencePoolGVK.GroupKind():
 		if strings.Contains(string(to.Name), ".") {
@@ -441,7 +443,7 @@ func buildADPDestination(
 				Type:    gwv1.RouteConditionResolvedRefs,
 				Status:  metav1.ConditionFalse,
 				Reason:  gwv1.RouteReasonBackendNotFound,
-				Message: fmt.Sprintf("backend(%s) not found", hostname)}
+				Message: fmt.Sprintf("backendRef(%s) not found", hostname)}
 		} else {
 			rb.Backend = &api.BackendReference{
 				Kind: &api.BackendReference_Service{

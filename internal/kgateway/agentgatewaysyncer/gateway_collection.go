@@ -17,7 +17,7 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
+	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
@@ -180,7 +180,7 @@ func GatewayCollection(
 	namespaces krt.Collection[*corev1.Namespace],
 	grants ReferenceGrants,
 	secrets krt.Collection[*corev1.Secret],
-	krtopts krtutil.KrtOptions,
+	krtopts krtinternal.KrtOptions,
 ) krt.Collection[GatewayListener] {
 	gw := krt.NewManyCollection(gateways, func(ctx krt.HandlerContext, obj *gwv1.Gateway) []GatewayListener {
 		rm := reports.NewReportMap()

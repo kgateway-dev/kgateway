@@ -70,19 +70,91 @@ Listeners:
         '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
         httpFilters:
         - disabled: true
+          name: global_disable/ext_proc
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.set_metadata.v3.Config
+            metadata:
+            - metadataNamespace: dev.kgateway.disable_ext_proc
+              value:
+                disable: true
+        - disabled: true
           name: ext_proc/a/extproc-ext
           typedConfig:
-            '@type': type.googleapis.com/envoy.extensions.filters.http.ext_proc.v3.ExternalProcessor
-            grpcService:
-              envoyGrpc:
-                clusterName: kube_a_extproc_9091
+            '@type': type.googleapis.com/envoy.extensions.common.matching.v3.ExtensionWithMatcher
+            extensionConfig:
+              name: composite_ext_proc
+              typedConfig:
+                '@type': type.googleapis.com/envoy.extensions.filters.http.composite.v3.Composite
+            xdsMatcher:
+              matcherList:
+                matchers:
+                - onMatch:
+                    action:
+                      name: composite-action
+                      typedConfig:
+                        '@type': type.googleapis.com/envoy.extensions.filters.http.composite.v3.ExecuteFilterAction
+                        typedConfig:
+                          name: envoy.filters.http.ext_proc
+                          typedConfig:
+                            '@type': type.googleapis.com/envoy.extensions.filters.http.ext_proc.v3.ExternalProcessor
+                            grpcService:
+                              envoyGrpc:
+                                clusterName: kube_a_extproc_9091
+                  predicate:
+                    singlePredicate:
+                      customMatch:
+                        name: envoy.matching.matchers.metadata_matcher
+                        typedConfig:
+                          '@type': type.googleapis.com/envoy.extensions.matching.input_matchers.metadata.v3.Metadata
+                          invert: true
+                          value:
+                            boolMatch: true
+                      input:
+                        name: disable
+                        typedConfig:
+                          '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.network.v3.DynamicMetadataInput
+                          filter: dev.kgateway.disable_ext_proc
+                          path:
+                          - key: disable
         - disabled: true
           name: ext_proc/b/extproc-ext
           typedConfig:
-            '@type': type.googleapis.com/envoy.extensions.filters.http.ext_proc.v3.ExternalProcessor
-            grpcService:
-              envoyGrpc:
-                clusterName: kube_b_extproc_9091
+            '@type': type.googleapis.com/envoy.extensions.common.matching.v3.ExtensionWithMatcher
+            extensionConfig:
+              name: composite_ext_proc
+              typedConfig:
+                '@type': type.googleapis.com/envoy.extensions.filters.http.composite.v3.Composite
+            xdsMatcher:
+              matcherList:
+                matchers:
+                - onMatch:
+                    action:
+                      name: composite-action
+                      typedConfig:
+                        '@type': type.googleapis.com/envoy.extensions.filters.http.composite.v3.ExecuteFilterAction
+                        typedConfig:
+                          name: envoy.filters.http.ext_proc
+                          typedConfig:
+                            '@type': type.googleapis.com/envoy.extensions.filters.http.ext_proc.v3.ExternalProcessor
+                            grpcService:
+                              envoyGrpc:
+                                clusterName: kube_b_extproc_9091
+                  predicate:
+                    singlePredicate:
+                      customMatch:
+                        name: envoy.matching.matchers.metadata_matcher
+                        typedConfig:
+                          '@type': type.googleapis.com/envoy.extensions.matching.input_matchers.metadata.v3.Metadata
+                          invert: true
+                          value:
+                            boolMatch: true
+                      input:
+                        name: disable
+                        typedConfig:
+                          '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.network.v3.DynamicMetadataInput
+                          filter: dev.kgateway.disable_ext_proc
+                          path:
+                          - key: disable
         - disabled: true
           name: ratelimit/local
           typedConfig:

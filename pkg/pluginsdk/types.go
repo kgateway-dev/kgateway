@@ -12,6 +12,7 @@ import (
 	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/endpoints"
+	agwir "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
@@ -61,11 +62,15 @@ type (
 type PolicyPlugin struct {
 	Name                      string
 	NewGatewayTranslationPass func(ctx context.Context, tctx ir.GwTranslationCtx, reporter reports.Reporter) ir.ProxyTranslationPass
-	NewAgentGatewayPass       func(reporter reports.Reporter) ir.AgentGatewayTranslationPass
+	NewAgentGatewayPass       func(reporter reports.Reporter) agwir.AgentGatewayTranslationPass
 
+	// Backend processing for envoy proxy
 	ProcessBackend            ProcessBackend
 	PerClientProcessBackend   PerClientProcessBackend
 	PerClientProcessEndpoints EndpointPlugin
+
+	// Backend processing for agent gateway
+	ProcessAgentBackend func(pol ir.PolicyIR, in ir.BackendObjectIR) error
 
 	Policies       krt.Collection[ir.PolicyWrapper]
 	GlobalPolicies func(krt.HandlerContext, AttachmentPoints) ir.PolicyIR
@@ -130,14 +135,11 @@ func (p PolicyReport) MarshalJSON() ([]byte, error) {
 
 func (p PolicyPlugin) AttachmentPoints() AttachmentPoints {
 	var ret AttachmentPoints
-	if p.ProcessBackend != nil {
+	if p.ProcessBackend != nil || p.ProcessAgentBackend != nil {
 		ret = ret | BackendAttachmentPoint
 	}
-	if p.NewGatewayTranslationPass != nil {
+	if p.NewGatewayTranslationPass != nil || p.NewAgentGatewayPass != nil {
 		ret = ret | GatewayAttachmentPoint
-	}
-	if p.NewAgentGatewayPass != nil {
-		ret = ret | RouteAttachmentPoint
 	}
 	return ret
 }

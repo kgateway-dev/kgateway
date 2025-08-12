@@ -90,6 +90,12 @@ spec:
             name: {{ include "kgateway.gateway.fullname" . }}
         - name: tmp
           emptyDir: {}
+     
+      {{- if $gateway.tolerations }}
+      tolerations:
+        {{- toYaml $gateway.tolerations | nindent 8 }}
+      {{- end }}
+
 ---
 apiVersion: v1
 kind: Service

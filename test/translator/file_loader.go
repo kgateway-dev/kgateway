@@ -2,7 +2,6 @@ package translator
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -25,9 +24,9 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
-var NoFilesFound = errors.New("no k8s files found")
+var ErrNoFilesFound = errors.New("no k8s files found")
 
-func LoadFromFiles(ctx context.Context, filename string, scheme *runtime.Scheme) ([]client.Object, error) {
+func LoadFromFiles(filename string, scheme *runtime.Scheme) ([]client.Object, error) {
 	fileOrDir, err := os.Stat(filename)
 	if err != nil {
 		return nil, err
@@ -50,7 +49,7 @@ func LoadFromFiles(ctx context.Context, filename string, scheme *runtime.Scheme)
 	}
 
 	if len(yamlFiles) == 0 {
-		return nil, NoFilesFound
+		return nil, ErrNoFilesFound
 	}
 
 	slog.Info("user configuration YAML files found", "files", yamlFiles)

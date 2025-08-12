@@ -4,9 +4,11 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
+	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 
+	"istio.io/api/annotation"
 	networking "istio.io/api/networking/v1alpha3"
 	networkingclient "istio.io/client-go/pkg/apis/networking/v1"
 	"istio.io/istio/pkg/config/schema/gvk"
@@ -71,7 +73,7 @@ func (s *serviceEntryPlugin) initServiceEntryBackend(ctx context.Context, in ir.
 func backendsCollections(
 	logger *slog.Logger,
 	ServiceEntries krt.Collection[*networkingclient.ServiceEntry],
-	krtOpts krtutil.KrtOptions,
+	krtOpts krtinternal.KrtOptions,
 	aliaser Aliaser,
 ) krt.Collection[ir.BackendObjectIR] {
 	return krt.NewManyCollection(ServiceEntries, func(ctx krt.HandlerContext, se *networkingclient.ServiceEntry) []ir.BackendObjectIR {
@@ -127,6 +129,11 @@ func BuildServiceEntryBackendObjectIR(
 	backend.Aliases = []ir.ObjectSource{objSrc}
 	if aliaser != nil {
 		backend.Aliases = append(backend.Aliases, aliaser(se)...)
+	}
+
+	// We support specifying the Istio traffic distribution in the annotations of the ServicEntry.
+	if val, ok := se.Annotations[annotation.NetworkingTrafficDistribution.Name]; ok {
+		backend.TrafficDistribution = wellknown.ParseTrafficDistribution(val)
 	}
 
 	backend.AttachedPolicies = ir.AttachedPolicies{}

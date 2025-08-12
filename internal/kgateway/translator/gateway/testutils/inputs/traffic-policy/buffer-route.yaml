@@ -38,7 +38,20 @@ spec:
   hostnames:
     - "www.test.com"
   rules:
-    - backendRefs:
+    - name: rule0
+      matches:
+      - path:
+          type: PathPrefix
+          value: /
+      backendRefs:
+        - name: example-svc-2
+          port: 3000
+    - name: rule1
+      matches:
+      - path:
+          type: PathPrefix
+          value: /buffer-disabled
+      backendRefs:
         - name: example-svc-2
           port: 3000
 ---
@@ -53,6 +66,19 @@ spec:
       name: example-route
   buffer:
     maxRequestSize: "65536"
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: disable-buffer
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: example-route-2
+      sectionName: rule1
+  buffer:
+    disable: {}
 ---
 apiVersion: v1
 kind: Service

@@ -28,7 +28,7 @@ spec:
             value: /test
       backendRefs:
         - name: test-service
-          port: 80
+          port: 8081
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: GatewayExtension

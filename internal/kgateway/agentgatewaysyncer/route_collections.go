@@ -19,8 +19,9 @@ import (
 	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
+	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	agwir "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	pluginsdkir "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
@@ -34,7 +35,7 @@ func ADPRouteCollection(
 	tcpRouteCol krt.Collection[*gwv1alpha2.TCPRoute],
 	tlsRouteCol krt.Collection[*gwv1alpha2.TLSRoute],
 	inputs RouteContextInputs,
-	krtopts krtutil.KrtOptions,
+	krtopts krtinternal.KrtOptions,
 	plugins pluginsdk.Plugin,
 ) krt.Collection[ADPResourcesForGateway] {
 	// TODO(npolshak): look into using RouteIndex instead of raw collections to support targetRefs: https://github.com/kgateway-dev/kgateway/issues/11838
@@ -174,7 +175,7 @@ func processParentReferences[T any](
 func createRouteCollection[T controllers.Object](
 	routeCol krt.Collection[T],
 	inputs RouteContextInputs,
-	krtopts krtutil.KrtOptions,
+	krtopts krtinternal.KrtOptions,
 	plugins pluginsdk.Plugin,
 	collectionName string,
 	translator func(ctx RouteContext, obj T, rep reporter.Reporter) (RouteContext, iter.Seq2[ADPRoute, *reporter.RouteCondition]),
@@ -228,7 +229,7 @@ func createRouteCollection[T controllers.Object](
 func createTCPRouteCollection[T controllers.Object](
 	routeCol krt.Collection[T],
 	inputs RouteContextInputs,
-	krtopts krtutil.KrtOptions,
+	krtopts krtinternal.KrtOptions,
 	plugins pluginsdk.Plugin,
 	collectionName string,
 	translator func(ctx RouteContext, obj T, rep reporter.Reporter) (RouteContext, iter.Seq2[ADPTCPRoute, *reporter.RouteCondition]),
@@ -290,8 +291,8 @@ func IsNil[O comparable](o O) bool {
 
 func newAgentGatewayPasses(plugs pluginsdk.Plugin,
 	rep reporter.Reporter,
-	aps pluginsdkir.AttachedPolicies) []pluginsdkir.AgentGatewayTranslationPass {
-	var out []pluginsdkir.AgentGatewayTranslationPass
+	aps pluginsdkir.AttachedPolicies) []agwir.AgentGatewayTranslationPass {
+	var out []agwir.AgentGatewayTranslationPass
 	if len(aps.Policies) == 0 {
 		return out
 	}
@@ -345,7 +346,7 @@ type RouteContext struct {
 	Krt krt.HandlerContext
 	RouteContextInputs
 	AttachedPolicies pluginsdkir.AttachedPolicies
-	pluginPasses     []pluginsdkir.AgentGatewayTranslationPass
+	pluginPasses     []agwir.AgentGatewayTranslationPass
 }
 
 type RouteContextInputs struct {

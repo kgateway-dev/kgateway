@@ -28,9 +28,10 @@ import (
 	tmetrics "github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/metrics"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/delegation"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
+	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	pluginsdkir "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
+	krtpkg "github.com/kgateway-dev/kgateway/v2/pkg/utils/krtutil"
 )
 
 var (
@@ -66,7 +67,7 @@ type BackendIndex struct {
 
 	policies  *PolicyIndex
 	refgrants *RefGrantIndex
-	krtopts   krtutil.KrtOptions
+	krtopts   krtinternal.KrtOptions
 }
 
 type backendKey struct {
@@ -75,7 +76,7 @@ type backendKey struct {
 }
 
 func NewBackendIndex(
-	krtopts krtutil.KrtOptions,
+	krtopts krtinternal.KrtOptions,
 	policies *PolicyIndex,
 	refgrants *RefGrantIndex,
 ) *BackendIndex {
@@ -134,7 +135,7 @@ func (i *BackendIndex) AddBackends(gk schema.GroupKind, col krt.Collection[ir.Ba
 		return ptr.Of(&backendObj)
 	}, i.krtopts.ToOptions("")...)
 
-	idx := krtutil.UnnamedIndex(col, func(backendObj ir.BackendObjectIR) (aliasKeys []backendKey) {
+	idx := krtpkg.UnnamedIndex(col, func(backendObj ir.BackendObjectIR) (aliasKeys []backendKey) {
 		for _, alias := range backendObj.Aliases {
 			aliasKeys = append(aliasKeys, backendKey{ObjectSource: alias, port: backendObj.Port})
 		}
@@ -272,7 +273,7 @@ type GatewayIndex struct {
 }
 
 func NewGatewayIndex(
-	krtopts krtutil.KrtOptions,
+	krtopts krtinternal.KrtOptions,
 	controllerName string,
 	policies *PolicyIndex,
 	gws krt.Collection[*gwv1.Gateway],
@@ -282,7 +283,7 @@ func NewGatewayIndex(
 ) *GatewayIndex {
 	h := &GatewayIndex{policies: policies}
 
-	byParentRefIndex := krtutil.UnnamedIndex(lss, func(in *gwxv1a1.XListenerSet) []targetRefIndexKey {
+	byParentRefIndex := krtpkg.UnnamedIndex(lss, func(in *gwxv1a1.XListenerSet) []targetRefIndexKey {
 		pRef := in.Spec.ParentRef
 		ns := strOr(pRef.Namespace, "")
 		if ns == "" {
@@ -523,7 +524,7 @@ func (h *PolicyIndex) HasSynced() bool {
 }
 
 func NewPolicyIndex(
-	krtopts krtutil.KrtOptions,
+	krtopts krtinternal.KrtOptions,
 	contributesPolicies extensionsplug.ContributesPolicies,
 	globalSettings settings.Settings,
 ) *PolicyIndex {
@@ -544,7 +545,7 @@ func NewPolicyIndex(
 				return &a
 			}, krtopts.ToOptions(fmt.Sprintf("%s-policiesByTargetRef", gk.String()))...)
 
-			targetRefIndex := krtutil.UnnamedIndex(policiesByTargetRef, func(p ir.PolicyWrapper) []targetRefIndexKey {
+			targetRefIndex := krtpkg.UnnamedIndex(policiesByTargetRef, func(p ir.PolicyWrapper) []targetRefIndexKey {
 				// Every policy is indexed by PolicyRef and PolicyRef without Name (by Group+Kind+Namespace)
 				ret := make([]targetRefIndexKey, len(p.TargetRefs)*2)
 				for i, tr := range p.TargetRefs {
@@ -793,7 +794,7 @@ func (h *RefGrantIndex) HasSynced() bool {
 }
 
 func NewRefGrantIndex(refgrants krt.Collection[*gwv1beta1.ReferenceGrant]) *RefGrantIndex {
-	refGrantIndex := krtutil.UnnamedIndex(refgrants, func(p *gwv1beta1.ReferenceGrant) []refGrantIndexKey {
+	refGrantIndex := krtpkg.UnnamedIndex(refgrants, func(p *gwv1beta1.ReferenceGrant) []refGrantIndexKey {
 		ret := make([]refGrantIndexKey, 0, len(p.Spec.To)*len(p.Spec.From))
 		for _, from := range p.Spec.From {
 			for _, to := range p.Spec.To {
@@ -907,7 +908,7 @@ func (r *RoutesIndex) HTTPRoutes() krt.Collection[ir.HttpRouteIR] {
 }
 
 func NewRoutesIndex(
-	krtopts krtutil.KrtOptions,
+	krtopts krtinternal.KrtOptions,
 	httproutes krt.Collection[*gwv1.HTTPRoute],
 	grpcroutes krt.Collection[*gwv1.GRPCRoute],
 	tcproutes krt.Collection[*gwv1a2.TCPRoute],
@@ -945,7 +946,7 @@ func NewRoutesIndex(
 	}, krtopts.ToOptions("routes-grpc-routes-with-policy")...)
 	h.routes = krt.JoinCollection([]krt.Collection[RouteWrapper]{httpRouteCollection, grpcRoutesCollection, tcpRoutesCollection, tlsRoutesCollection}, krtopts.ToOptions("all-routes-with-policy")...)
 
-	httpBySelector := krtutil.UnnamedIndex(h.httpRoutes, func(i ir.HttpRouteIR) []HTTPRouteSelector {
+	httpBySelector := krtpkg.UnnamedIndex(h.httpRoutes, func(i ir.HttpRouteIR) []HTTPRouteSelector {
 		value, ok := i.SourceObject.GetLabels()[apilabels.DelegationLabelSelector]
 		if !ok {
 			return []HTTPRouteSelector{
@@ -964,7 +965,7 @@ func NewRoutesIndex(
 	})
 	h.httpBySelector = httpBySelector
 
-	byParentRef := krtutil.UnnamedIndex(h.routes, func(in RouteWrapper) []targetRefIndexKey {
+	byParentRef := krtpkg.UnnamedIndex(h.routes, func(in RouteWrapper) []targetRefIndexKey {
 		parentRefs := in.Route.GetParentRefs()
 		ret := make([]targetRefIndexKey, len(parentRefs))
 		for i, pRef := range parentRefs {
@@ -1140,21 +1141,27 @@ func (h *RoutesIndex) transformRules(
 ) []ir.HttpRouteRuleIR {
 	rules := make([]ir.HttpRouteRuleIR, 0, len(i))
 	for _, r := range i {
-		extensionRefs := h.getExtensionRefs(kctx, src.Namespace, r.Filters, opts...)
+		extensionRefs, err := h.getExtensionRefs(kctx, src.Namespace, r.Filters, opts...)
+
 		var policies ir.AttachedPolicies
 		if r.Name != nil {
 			policies = toAttachedPolicies(h.policies.getTargetingPolicies(kctx, extensionsplug.RouteAttachmentPoint, src, string(*r.Name), srcLabels), opts...)
 		}
+
 		rulePolicies := h.getBuiltInRulePolicies(r, opts...)
 		policies.Append(rulePolicies)
 
-		rules = append(rules, ir.HttpRouteRuleIR{
+		ruleOut := ir.HttpRouteRuleIR{
 			ExtensionRefs:    extensionRefs,
 			AttachedPolicies: policies,
 			Backends:         h.getBackends(kctx, src, r.BackendRefs),
 			Matches:          r.Matches,
 			Name:             emptyIfNil(r.Name),
-		})
+		}
+		if err != nil {
+			ruleOut.Err = err
+		}
+		rules = append(rules, ruleOut)
 	}
 	return rules
 }
@@ -1164,23 +1171,24 @@ func (h *RoutesIndex) getExtensionRefs(
 	ns string,
 	r []gwv1.HTTPRouteFilter,
 	opts ...ir.PolicyAttachmentOpts,
-) ir.AttachedPolicies {
+) (ir.AttachedPolicies, error) {
 	ret := ir.AttachedPolicies{
 		Policies: map[schema.GroupKind][]ir.PolicyAtt{},
 	}
+	var errs []error
 	for _, ext := range r {
-		// TODO: propagate error if we can't find the extension
-		policyAtt, errs := h.resolveExtension(kctx, ns, ext)
+		policyAtt, err := h.resolveExtension(kctx, ns, ext)
 		if policyAtt != nil {
 			for _, o := range opts {
 				o(policyAtt)
 			}
 			ret.Policies[policyAtt.GroupKind] = append(ret.Policies[policyAtt.GroupKind], *policyAtt)
-		} else if len(errs) > 0 {
-			logger.Error("unresolved HTTPRouteFilter", "error", errors.Join(errs...))
+		} else if err != nil {
+			errs = append(errs, err)
+			logger.Error("unresolved HTTPRouteFilter", "error", err)
 		}
 	}
-	return ret
+	return ret, errors.Join(errs...)
 }
 
 func (h *RoutesIndex) getBuiltInRulePolicies(
@@ -1201,7 +1209,7 @@ func (h *RoutesIndex) getBuiltInRulePolicies(
 	return ret
 }
 
-func (h *RoutesIndex) resolveExtension(kctx krt.HandlerContext, ns string, ext gwv1.HTTPRouteFilter) (*ir.PolicyAtt, []error) {
+func (h *RoutesIndex) resolveExtension(kctx krt.HandlerContext, ns string, ext gwv1.HTTPRouteFilter) (*ir.PolicyAtt, error) {
 	if ext.Type == gwv1.HTTPRouteFilterExtensionRef {
 		if ext.ExtensionRef == nil {
 			// TODO: report error!!
@@ -1216,7 +1224,7 @@ func (h *RoutesIndex) resolveExtension(kctx krt.HandlerContext, ns string, ext g
 		}
 		policy := h.policies.fetchPolicy(kctx, key)
 		if policy == nil {
-			return nil, []error{fmt.Errorf("%s: %w", key, ErrPolicyNotFound)}
+			return nil, fmt.Errorf("%s: %w", key, ErrPolicyNotFound)
 		}
 
 		gk := schema.GroupKind{
@@ -1236,7 +1244,7 @@ func (h *RoutesIndex) resolveExtension(kctx krt.HandlerContext, ns string, ext g
 			PolicyRef:  policyRef,
 			Errors:     policy.Errors,
 		}
-		return policyAtt, policy.Errors
+		return policyAtt, nil
 	}
 
 	fromGK := schema.GroupKind{
@@ -1272,7 +1280,9 @@ func toFromBackendRef(fromns string, ref gwv1.BackendObjectReference) ir.ObjectS
 func (h *RoutesIndex) getBackends(kctx krt.HandlerContext, src ir.ObjectSource, backendRefs []gwv1.HTTPBackendRef) []ir.HttpBackendOrDelegate {
 	backends := make([]ir.HttpBackendOrDelegate, 0, len(backendRefs))
 	for _, ref := range backendRefs {
-		extensionRefs := h.getExtensionRefs(kctx, src.Namespace, ref.Filters)
+		// ignore errs as invalid/missing policy for backendRef filters is undefined currently
+		// see: https://github.com/kgateway-dev/kgateway/issues/11897
+		extensionRefs, _ := h.getExtensionRefs(kctx, src.Namespace, ref.Filters)
 		fromns := src.Namespace
 
 		to := toFromBackendRef(fromns, ref.BackendObjectReference)

@@ -16,6 +16,14 @@ func MessageToAny(msg proto.Message) (*anypb.Any, error) {
 	return anyPb, err
 }
 
+func MustMessageToAny(msg proto.Message) *anypb.Any {
+	anyPb, err := MessageToAny(msg)
+	if err != nil {
+		panic(err)
+	}
+	return anyPb
+}
+
 func AnyToMessage(a *anypb.Any) (proto.Message, error) {
 	return anypb.UnmarshalNew(a, proto.UnmarshalOptions{})
 }

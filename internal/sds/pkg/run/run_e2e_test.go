@@ -104,8 +104,7 @@ var _ = Describe("SDS Server E2E Test", Serial, func() {
 		}()
 
 		// Connect with the server
-		var conn *grpc.ClientConn
-		conn, err := grpc.Dial(testServerAddress, grpc.WithInsecure())
+		conn, err := grpc.NewClient(testServerAddress, grpc.WithTransportCredentials(insecure.NewCredentials()))
 		Expect(err).NotTo(HaveOccurred())
 		defer conn.Close()
 		client := envoy_service_secret_v3.NewSecretDiscoveryServiceClient(conn)
@@ -136,15 +135,15 @@ var _ = Describe("SDS Server E2E Test", Serial, func() {
 			}
 
 			secret.SslOcspFile = ocsp
-			_ = run.Run(ctx, []server.Secret{secret}, sdsClient, testServerAddress, logger)
+			err := run.Run(ctx, []server.Secret{secret}, sdsClient, testServerAddress, logger)
+			Expect(err).NotTo(HaveOccurred())
 		}()
 
 		// Give it a second to spin up + read the files
 		time.Sleep(1 * time.Second)
 
 		// Connect with the server
-		var conn *grpc.ClientConn
-		conn, err = grpc.NewClient(testServerAddress, grpc.WithTransportCredentials(insecure.NewCredentials()))
+		conn, err := grpc.NewClient(testServerAddress, grpc.WithTransportCredentials(insecure.NewCredentials()))
 		Expect(err).NotTo(HaveOccurred())
 		defer conn.Close()
 		client := envoy_service_secret_v3.NewSecretDiscoveryServiceClient(conn)

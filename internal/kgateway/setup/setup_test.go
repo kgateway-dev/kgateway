@@ -73,9 +73,15 @@ type testingWriter struct {
 
 func (w *testingWriter) Write(p []byte) (n int, err error) {
 	w.RLock()
-	defer w.RUnlock()
+	t := w.t // Capture the test context under lock
+	w.RUnlock()
 
-	w.t.Log(string(p)) // Write the log to testing.T
+	// Check if we have a valid test context before trying to log
+	// This prevents races when controller goroutines outlive the test
+	if t != nil {
+		t.Log(string(p)) // Write the log to testing.T
+	}
+	// Always return success to avoid breaking the logging chain
 	return len(p), nil
 }
 
@@ -141,6 +147,17 @@ func TestDestinationRule(t *testing.T) {
 		t.Fatalf("can't get settings %v", err)
 	}
 	runScenario(t, "testdata/istio_destination_rule", st)
+}
+
+func TestTrafficDistribution(t *testing.T) {
+	st, err := settings.BuildSettings()
+	if err != nil {
+		t.Fatalf("can't get settings %v", err)
+	}
+	st.EnableIstioIntegration = true
+
+	// these exercise applying a DR to a ServiceEntry
+	runScenario(t, "testdata/traffic_distribution", st)
 }
 
 func TestWithStandardSettings(t *testing.T) {
@@ -307,7 +324,6 @@ func runScenario(t *testing.T, scenarioDir string, globalSettings *settings.Sett
 		}
 		for _, f := range files {
 			// run tests with the yaml files (but not -out.yaml files)/s
-			parentT := t
 			if strings.HasSuffix(f.Name(), ".yaml") && !strings.HasSuffix(f.Name(), "-out.yaml") {
 				if os.Getenv("TEST_PREFIX") != "" && !strings.HasPrefix(f.Name(), os.Getenv("TEST_PREFIX")) {
 					continue
@@ -316,7 +332,7 @@ func runScenario(t *testing.T, scenarioDir string, globalSettings *settings.Sett
 				t.Run(strings.TrimSuffix(f.Name(), ".yaml"), func(t *testing.T) {
 					writer.set(t)
 					t.Cleanup(func() {
-						writer.set(parentT)
+						writer.set(nil)
 					})
 					// sadly tests can't run yet in parallel, as kgateway will add all the k8s services as clusters. this means
 					// that we get test pollution.

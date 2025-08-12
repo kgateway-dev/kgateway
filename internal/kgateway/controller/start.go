@@ -28,7 +28,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/proxy_syncer"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/metrics"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
+	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
@@ -80,7 +80,7 @@ type StartConfig struct {
 	AugmentedPods     krt.Collection[krtcollections.LocalityPod]
 	UniqueClients     krt.Collection[ir.UniqlyConnectedClient]
 
-	KrtOptions krtutil.KrtOptions
+	KrtOptions krtinternal.KrtOptions
 }
 
 // Start runs the controllers responsible for processing the K8s Gateway API objects

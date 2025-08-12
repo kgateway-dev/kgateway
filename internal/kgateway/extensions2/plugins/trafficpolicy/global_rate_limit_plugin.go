@@ -16,7 +16,6 @@ import (
 )
 
 const (
-	rateLimitFilterName = "envoy.filters.http.ratelimit"
 	rateLimitStatPrefix = "http_rate_limit"
 )
 

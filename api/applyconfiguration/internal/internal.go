@@ -74,6 +74,17 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: response
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.PromptguardResponse
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AWSGuardrailConfig
+  map:
+    fields:
+    - name: identifier
+      type:
+        scalar: string
+      default: ""
+    - name: version
+      type:
+        scalar: string
+      default: ""
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AccessLog
   map:
     fields:
@@ -517,6 +528,22 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: maxInterval
       type:
         namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Duration
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.BedrockConfig
+  map:
+    fields:
+    - name: auth
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AwsAuth
+    - name: guardrail
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AWSGuardrailConfig
+    - name: model
+      type:
+        scalar: string
+      default: ""
+    - name: region
+      type:
+        scalar: string
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.BodyTransformation
   map:
     fields:
@@ -530,6 +557,9 @@ var schemaYAML = typed.YAMLObject(`types:
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Buffer
   map:
     fields:
+    - name: disable
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.PolicyDisable
     - name: maxRequestSize
       type:
         namedType: io.k8s.apimachinery.pkg.api.resource.Quantity
@@ -683,6 +713,9 @@ var schemaYAML = typed.YAMLObject(`types:
           elementType:
             scalar: string
           elementRelationship: associative
+    - name: disable
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.PolicyDisable
     - name: exposeHeaders
       type:
         list:
@@ -895,9 +928,9 @@ var schemaYAML = typed.YAMLObject(`types:
         map:
           elementType:
             scalar: string
-    - name: enablement
+    - name: disable
       type:
-        scalar: string
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.PolicyDisable
     - name: extensionRef
       type:
         namedType: io.k8s.api.core.v1.LocalObjectReference
@@ -922,6 +955,9 @@ var schemaYAML = typed.YAMLObject(`types:
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtProcPolicy
   map:
     fields:
+    - name: disable
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.PolicyDisable
     - name: extensionRef
       type:
         namedType: io.k8s.api.core.v1.LocalObjectReference
@@ -1791,6 +1827,24 @@ var schemaYAML = typed.YAMLObject(`types:
           elementType:
             namedType: io.k8s.api.core.v1.Toleration
           elementRelationship: atomic
+    - name: topologySpreadConstraints
+      type:
+        list:
+          elementType:
+            namedType: io.k8s.api.core.v1.TopologySpreadConstraint
+          elementRelationship: atomic
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.PolicyDisable
+  map:
+    elementType:
+      scalar: untyped
+      list:
+        elementType:
+          namedType: __untyped_atomic_
+        elementRelationship: atomic
+      map:
+        elementType:
+          namedType: __untyped_deduced_
+        elementRelationship: separable
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Port
   map:
     fields:
@@ -2163,6 +2217,9 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: azureopenai
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AzureOpenAIConfig
+    - name: bedrock
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.BedrockConfig
     - name: gemini
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.GeminiConfig
@@ -2199,15 +2256,15 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: insecureSkipVerify
       type:
         scalar: boolean
-    - name: oneWayTLS
-      type:
-        scalar: boolean
     - name: parameters
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Parameters
     - name: secretRef
       type:
         namedType: io.k8s.api.core.v1.LocalObjectReference
+    - name: simpleTLS
+      type:
+        scalar: boolean
     - name: sni
       type:
         scalar: string
@@ -3178,6 +3235,39 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: value
       type:
         scalar: string
+- name: io.k8s.api.core.v1.TopologySpreadConstraint
+  map:
+    fields:
+    - name: labelSelector
+      type:
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.LabelSelector
+    - name: matchLabelKeys
+      type:
+        list:
+          elementType:
+            scalar: string
+          elementRelationship: atomic
+    - name: maxSkew
+      type:
+        scalar: numeric
+      default: 0
+    - name: minDomains
+      type:
+        scalar: numeric
+    - name: nodeAffinityPolicy
+      type:
+        scalar: string
+    - name: nodeTaintsPolicy
+      type:
+        scalar: string
+    - name: topologyKey
+      type:
+        scalar: string
+      default: ""
+    - name: whenUnsatisfiable
+      type:
+        scalar: string
+      default: ""
 - name: io.k8s.api.core.v1.VolumeDevice
   map:
     fields:

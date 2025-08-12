@@ -1617,6 +1617,14 @@ var _ = Describe("Deployer", func() {
 			Expect(objs.findDeployment(defaultNamespace, defaultDeploymentName).Spec.Template.Spec.Containers[0].Args).To(ContainElements(
 				argsMatchers...,
 			))
+
+			deployment := objs.findDeployment(defaultNamespace, defaultDeploymentName)
+
+			Expect(deployment.Spec.Template.Spec.TopologySpreadConstraints).To(Equal(expectedGwp.PodTemplate.TopologySpreadConstraints))
+			Expect(deployment.Spec.Template.Spec.Tolerations).To(Equal(expectedGwp.PodTemplate.Tolerations))
+			Expect(deployment.Spec.Template.Spec.Affinity).To(Equal(expectedGwp.PodTemplate.Affinity))
+			Expect(deployment.Spec.Template.Spec.NodeSelector).To(Equal(expectedGwp.PodTemplate.NodeSelector))
+
 			return nil
 		}
 
@@ -2502,6 +2510,12 @@ func fullyDefinedGatewayParameters(name, namespace string) *gw2_v1alpha1.Gateway
 						Value:             "pod-toleration-value",
 						Effect:            "pod-toleration-effect",
 						TolerationSeconds: ptr.To(int64(1)),
+					}},
+					TopologySpreadConstraints: []corev1.TopologySpreadConstraint{{
+						MaxSkew:           1,
+						TopologyKey:       "pod-topology-spread-constraint-topology-key",
+						WhenUnsatisfiable: "pod-topology-spread-constraint-when-unsatisfiable",
+						LabelSelector:     &metav1.LabelSelector{MatchLabels: map[string]string{"pod-topology-spread-constraint-label-selector": "foo"}},
 					}},
 				},
 				Service: &gw2_v1alpha1.Service{

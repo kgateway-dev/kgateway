@@ -269,6 +269,13 @@ type Pod struct {
 	//
 	// +optional
 	LivenessProbe *corev1.Probe `json:"livenessProbe,omitempty"`
+
+	// If specified, the pod's topology spread constraints. See
+	// https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#topologyspreadconstraint-v1-core
+	// for details.
+	//
+	// +optional
+	TopologySpreadConstraints []corev1.TopologySpreadConstraint `json:"topologySpreadConstraints,omitempty"`
 }
 
 func (in *Pod) GetExtraLabels() map[string]string {
@@ -346,6 +353,13 @@ func (in *Pod) GetLivenessProbe() *corev1.Probe {
 		return nil
 	}
 	return in.LivenessProbe
+}
+
+func (in *Pod) GetTopologySpreadConstraints() []corev1.TopologySpreadConstraint {
+	if in == nil {
+		return nil
+	}
+	return in.TopologySpreadConstraints
 }
 
 type GracefulShutdownSpec struct {

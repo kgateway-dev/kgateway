@@ -20,6 +20,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AIPolicy":                                  schema_kgateway_v2_api_v1alpha1_AIPolicy(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AIPromptEnrichment":                        schema_kgateway_v2_api_v1alpha1_AIPromptEnrichment(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AIPromptGuard":                             schema_kgateway_v2_api_v1alpha1_AIPromptGuard(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AWSGuardrailConfig":                        schema_kgateway_v2_api_v1alpha1_AWSGuardrailConfig(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AccessLog":                                 schema_kgateway_v2_api_v1alpha1_AccessLog(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AccessLogFilter":                           schema_kgateway_v2_api_v1alpha1_AccessLogFilter(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AccessLogGrpcService":                      schema_kgateway_v2_api_v1alpha1_AccessLogGrpcService(ref),
@@ -43,6 +44,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.BackendSpec":                               schema_kgateway_v2_api_v1alpha1_BackendSpec(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.BackendStatus":                             schema_kgateway_v2_api_v1alpha1_BackendStatus(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.BackoffStrategy":                           schema_kgateway_v2_api_v1alpha1_BackoffStrategy(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.BedrockConfig":                             schema_kgateway_v2_api_v1alpha1_BedrockConfig(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.BodyTransformation":                        schema_kgateway_v2_api_v1alpha1_BodyTransformation(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Buffer":                                    schema_kgateway_v2_api_v1alpha1_Buffer(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.BufferSettings":                            schema_kgateway_v2_api_v1alpha1_BufferSettings(ref),
@@ -138,6 +140,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.PathOverride":                              schema_kgateway_v2_api_v1alpha1_PathOverride(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Pod":                                       schema_kgateway_v2_api_v1alpha1_Pod(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.PolicyAncestorStatus":                      schema_kgateway_v2_api_v1alpha1_PolicyAncestorStatus(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.PolicyDisable":                             schema_kgateway_v2_api_v1alpha1_PolicyDisable(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.PolicyStatus":                              schema_kgateway_v2_api_v1alpha1_PolicyStatus(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Port":                                      schema_kgateway_v2_api_v1alpha1_Port(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Priority":                                  schema_kgateway_v2_api_v1alpha1_Priority(ref),
@@ -705,6 +708,35 @@ func schema_kgateway_v2_api_v1alpha1_AIPromptGuard(ref common.ReferenceCallback)
 		},
 		Dependencies: []string{
 			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.PromptguardRequest", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.PromptguardResponse"},
+	}
+}
+
+func schema_kgateway_v2_api_v1alpha1_AWSGuardrailConfig(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"identifier": {
+						SchemaProps: spec.SchemaProps{
+							Description: "GuardrailIdentifier is the identifier of the Guardrail policy to use for the backend.",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"version": {
+						SchemaProps: spec.SchemaProps{
+							Description: "GuardrailVersion is the version of the Guardrail policy to use for the backend.",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+				},
+				Required: []string{"identifier", "version"},
+			},
+		},
 	}
 }
 
@@ -1884,6 +1916,48 @@ func schema_kgateway_v2_api_v1alpha1_BackoffStrategy(ref common.ReferenceCallbac
 	}
 }
 
+func schema_kgateway_v2_api_v1alpha1_BedrockConfig(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"auth": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Auth specifies an explicit AWS authentication method for the backend. When omitted, the following credential providers are tried in order, stopping when one of them returns an access key ID and a secret access key (the session token is optional): 1. Environment variables: when the environment variables AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, and AWS_SESSION_TOKEN are set. 2. AssumeRoleWithWebIdentity API call: when the environment variables AWS_WEB_IDENTITY_TOKEN_FILE and AWS_ROLE_ARN are set. 3. EKS Pod Identity: when the environment variable AWS_CONTAINER_AUTHORIZATION_TOKEN_FILE is set.\n\nSee the Envoy docs for more info: https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/aws_request_signing_filter#credentials",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AwsAuth"),
+						},
+					},
+					"model": {
+						SchemaProps: spec.SchemaProps{
+							Description: "The model field is the supported model id published by AWS. See <https://docs.aws.amazon.com/bedrock/latest/userguide/models-supported.html>",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"region": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Region is the AWS region to use for the backend. Defaults to us-east-1 if not specified.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"guardrail": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Guardrail configures the Guardrail policy to use for the backend. See <https://docs.aws.amazon.com/bedrock/latest/userguide/guardrails.html> If not specified, the AWS Guardrail policy will not be used.",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AWSGuardrailConfig"),
+						},
+					},
+				},
+				Required: []string{"model"},
+			},
+		},
+		Dependencies: []string{
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AWSGuardrailConfig", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AwsAuth"},
+	}
+}
+
 func schema_kgateway_v2_api_v1alpha1_BodyTransformation(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -1925,12 +1999,17 @@ func schema_kgateway_v2_api_v1alpha1_Buffer(ref common.ReferenceCallback) common
 							Ref:         ref("k8s.io/apimachinery/pkg/api/resource.Quantity"),
 						},
 					},
+					"disable": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Disable the buffer filter. Can be used to disable buffer policies applied at a higher level in the config hierarchy.",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.PolicyDisable"),
+						},
+					},
 				},
-				Required: []string{"maxRequestSize"},
 			},
 		},
 		Dependencies: []string{
-			"k8s.io/apimachinery/pkg/api/resource.Quantity"},
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.PolicyDisable", "k8s.io/apimachinery/pkg/api/resource.Quantity"},
 	}
 }
 
@@ -2401,9 +2480,17 @@ func schema_kgateway_v2_api_v1alpha1_CorsPolicy(ref common.ReferenceCallback) co
 							Format:      "int32",
 						},
 					},
+					"disable": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Disable the CORS filter. Can be used to disable CORS policies applied at a higher level in the config hierarchy.",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.PolicyDisable"),
+						},
+					},
 				},
 			},
 		},
+		Dependencies: []string{
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.PolicyDisable"},
 	}
 }
 
@@ -2960,13 +3047,6 @@ func schema_kgateway_v2_api_v1alpha1_ExtAuthPolicy(ref common.ReferenceCallback)
 							Ref:         ref("k8s.io/api/core/v1.LocalObjectReference"),
 						},
 					},
-					"enablement": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Enablement determines the enabled state of the ExtAuth filter. When set to \"DisableAll\", the filter is disabled for this route. When empty, the filter is enabled as long as it is not disabled by another policy.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
 					"withRequestBody": {
 						SchemaProps: spec.SchemaProps{
 							Description: "WithRequestBody allows the request body to be buffered and sent to the authorization service. Warning buffering has implications for streaming and therefore performance.",
@@ -2989,11 +3069,17 @@ func schema_kgateway_v2_api_v1alpha1_ExtAuthPolicy(ref common.ReferenceCallback)
 							},
 						},
 					},
+					"disable": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Disable all external authorization filters. Can be used to disable external authorization policies applied at a higher level in the config hierarchy.",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.PolicyDisable"),
+						},
+					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.BufferSettings", "k8s.io/api/core/v1.LocalObjectReference"},
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.BufferSettings", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.PolicyDisable", "k8s.io/api/core/v1.LocalObjectReference"},
 	}
 }
 
@@ -3067,12 +3153,17 @@ func schema_kgateway_v2_api_v1alpha1_ExtProcPolicy(ref common.ReferenceCallback)
 							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ProcessingMode"),
 						},
 					},
+					"disable": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Disable all external processing filters. Can be used to disable external processing policies applied at a higher level in the config hierarchy.",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.PolicyDisable"),
+						},
+					},
 				},
-				Required: []string{"extensionRef"},
 			},
 		},
 		Dependencies: []string{
-			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ProcessingMode", "k8s.io/api/core/v1.LocalObjectReference"},
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.PolicyDisable", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ProcessingMode", "k8s.io/api/core/v1.LocalObjectReference"},
 	}
 }
 
@@ -3639,7 +3730,8 @@ func schema_kgateway_v2_api_v1alpha1_HTTPListenerPolicy(ref common.ReferenceCall
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
+				Description: "HTTPListenerPolicy is intended to be used for configuring the Envoy `HttpConnectionManager` and any other config or policy that should map 1-to-1 with a given HTTP listener, such as the Envoy health check HTTP filter. Currently these policies can only be applied per `Gateway` but support for `Listener` attachment may be added in the future. See https://github.com/kgateway-dev/kgateway/issues/11786 for more details.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"kind": {
 						SchemaProps: spec.SchemaProps{
@@ -4486,7 +4578,8 @@ func schema_kgateway_v2_api_v1alpha1_LLMProvider(ref common.ReferenceCallback) c
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
+				Description: "LLMProvider specifies the target large language model provider that the backend should route requests to.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"provider": {
 						SchemaProps: spec.SchemaProps{
@@ -5480,11 +5573,25 @@ func schema_kgateway_v2_api_v1alpha1_Pod(ref common.ReferenceCallback) common.Op
 							Ref:         ref("k8s.io/api/core/v1.Probe"),
 						},
 					},
+					"topologySpreadConstraints": {
+						SchemaProps: spec.SchemaProps{
+							Description: "If specified, the pod's topology spread constraints. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#topologyspreadconstraint-v1-core for details.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("k8s.io/api/core/v1.TopologySpreadConstraint"),
+									},
+								},
+							},
+						},
+					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.GracefulShutdownSpec", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.LocalObjectReference", "k8s.io/api/core/v1.PodSecurityContext", "k8s.io/api/core/v1.Probe", "k8s.io/api/core/v1.Toleration"},
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.GracefulShutdownSpec", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.LocalObjectReference", "k8s.io/api/core/v1.PodSecurityContext", "k8s.io/api/core/v1.Probe", "k8s.io/api/core/v1.Toleration", "k8s.io/api/core/v1.TopologySpreadConstraint"},
 	}
 }
 
@@ -5537,6 +5644,17 @@ func schema_kgateway_v2_api_v1alpha1_PolicyAncestorStatus(ref common.ReferenceCa
 		},
 		Dependencies: []string{
 			"k8s.io/apimachinery/pkg/apis/meta/v1.Condition", "sigs.k8s.io/gateway-api/apis/v1.ParentReference"},
+	}
+}
+
+func schema_kgateway_v2_api_v1alpha1_PolicyDisable(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "PolicyDisable is used to disable a policy.",
+				Type:        []string{"object"},
+			},
+		},
 	}
 }
 
@@ -6628,11 +6746,16 @@ func schema_kgateway_v2_api_v1alpha1_SupportedLLMProvider(ref common.ReferenceCa
 							Ref: ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.VertexAIConfig"),
 						},
 					},
+					"bedrock": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.BedrockConfig"),
+						},
+					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AnthropicConfig", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AzureOpenAIConfig", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.GeminiConfig", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.OpenAIConfig", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.VertexAIConfig"},
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AnthropicConfig", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AzureOpenAIConfig", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.BedrockConfig", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.GeminiConfig", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.OpenAIConfig", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.VertexAIConfig"},
 	}
 }
 
@@ -6745,9 +6868,9 @@ func schema_kgateway_v2_api_v1alpha1_TLS(ref common.ReferenceCallback) common.Op
 							Format:      "",
 						},
 					},
-					"oneWayTLS": {
+					"simpleTLS": {
 						SchemaProps: spec.SchemaProps{
-							Description: "If the TLS config has the ca.crt (root CA) provided, kgateway uses it to perform mTLS by default. Set oneWayTls to true to disable mTLS in favor of server-only TLS (one-way TLS), even if kgateway has the root CA. If unset, defaults to false.",
+							Description: "If the TLS config has the tls cert and key provided, kgateway uses it to perform mTLS by default. Set simpleTLS to true to disable mTLS in favor of server-only TLS (one-way TLS), even if kgateway has the client cert. If unset, defaults to false.",
 							Type:        []string{"boolean"},
 							Format:      "",
 						},

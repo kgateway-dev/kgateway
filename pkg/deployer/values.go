@@ -33,17 +33,18 @@ type HelmGateway struct {
 	ServiceAccount *HelmServiceAccount `json:"serviceAccount,omitempty"`
 
 	// pod template values
-	ExtraPodAnnotations           map[string]string              `json:"extraPodAnnotations,omitempty"`
-	ExtraPodLabels                map[string]string              `json:"extraPodLabels,omitempty"`
-	ImagePullSecrets              []corev1.LocalObjectReference  `json:"imagePullSecrets,omitempty"`
-	PodSecurityContext            *corev1.PodSecurityContext     `json:"podSecurityContext,omitempty"`
-	NodeSelector                  map[string]string              `json:"nodeSelector,omitempty"`
-	Affinity                      *corev1.Affinity               `json:"affinity,omitempty"`
-	Tolerations                   []corev1.Toleration            `json:"tolerations,omitempty"`
-	ReadinessProbe                *corev1.Probe                  `json:"readinessProbe,omitempty"`
-	LivenessProbe                 *corev1.Probe                  `json:"livenessProbe,omitempty"`
-	GracefulShutdown              *v1alpha1.GracefulShutdownSpec `json:"gracefulShutdown,omitempty"`
-	TerminationGracePeriodSeconds *int                           `json:"terminationGracePeriodSeconds,omitempty"`
+	ExtraPodAnnotations           map[string]string                 `json:"extraPodAnnotations,omitempty"`
+	ExtraPodLabels                map[string]string                 `json:"extraPodLabels,omitempty"`
+	ImagePullSecrets              []corev1.LocalObjectReference     `json:"imagePullSecrets,omitempty"`
+	PodSecurityContext            *corev1.PodSecurityContext        `json:"podSecurityContext,omitempty"`
+	NodeSelector                  map[string]string                 `json:"nodeSelector,omitempty"`
+	Affinity                      *corev1.Affinity                  `json:"affinity,omitempty"`
+	Tolerations                   []corev1.Toleration               `json:"tolerations,omitempty"`
+	ReadinessProbe                *corev1.Probe                     `json:"readinessProbe,omitempty"`
+	LivenessProbe                 *corev1.Probe                     `json:"livenessProbe,omitempty"`
+	GracefulShutdown              *v1alpha1.GracefulShutdownSpec    `json:"gracefulShutdown,omitempty"`
+	TerminationGracePeriodSeconds *int                              `json:"terminationGracePeriodSeconds,omitempty"`
+	TopologySpreadConstraints     []corev1.TopologySpreadConstraint `json:"topologySpreadConstraints,omitempty"`
 
 	// sds container values
 	SdsContainer *HelmSdsContainer `json:"sdsContainer,omitempty"`

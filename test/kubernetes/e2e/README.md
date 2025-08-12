@@ -19,6 +19,7 @@ We try to define a single `TestInstallation` per file in a `TestCluster`. This w
 ## Features
 
 We define all tests in the [features](./features) package. This is done for a variety of reasons:
+
 1. We group the tests by feature, so it's easy to identify which behaviors we assert for a given feature.
 2. We can invoke that same test against different `TestInstallation`s. This means we can test a feature against a variety of installation values, or even against OSS and Enterprise installations.
 
@@ -43,7 +44,7 @@ e.g. In order to add a feature suite to be run with the test installation define
 
 ## Adding Tests to CI
 
-When writing new tests, they should be added to the the [`Kubernetes Tests` that run on all PRs](/.github/workflows/pr-kubernetes-tests.yaml_noop) if they are not already covered by an existing regex. This way we ensure parity between PR runs and nightlies.
+When writing new tests, they should be added to the the [`Kubernetes Tests` that run on all PRs](/.github/workflows/pr-kubernetes-tests.yaml) if they are not already covered by an existing regex. This way we ensure parity between PR runs and nightlies.
 
 When adding it to the list, ensure that the tests are load balanced to allow quick iteration on PRs and update the date and the duration of corresponding test.
 The only exception to this is the Upgrade tests that are not run on the main branch but all LTS branches.
@@ -73,13 +74,16 @@ Refer to the [Debugging guide](./debugging.md) for more information on how to de
 ### Inspiration
 
 This framework was inspired by the following projects:
+
 - [Kubernetes Gateway API](https://github.com/kubernetes-sigs/gateway-api/tree/main/conformance)
 
 ### Areas of Improvement
+>
 > **Help Wanted:**
 > This framework is not feature complete, and we welcome any improvements to it.
 
 Below are a set of known areas of improvement. The goal is to provide a starting point for developers looking to contribute. There are likely other improvements that are not currently captured, so please add/remove entries to this list as you see fit:
+
 - **Debug Improvements**: On test failure, we should emit a report about the entire state of the cluster. This should be a CLI utility as well.
 - **Curl assertion**: We need a re-usable way to execute Curl requests against a Pod, and assert properties of the response.
 - **Cluster provisioning**: We rely on the [setup-kind](/hack/kind/setup-kind.sh) script to provision a cluster. We should make this more flexible by providing a configurable, declarative way to do this.

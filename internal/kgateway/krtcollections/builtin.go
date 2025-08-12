@@ -850,7 +850,7 @@ func convertCORSIR(_ krt.HandlerContext, f *gwv1.HTTPCORSFilter) *corsIr {
 	if f == nil {
 		return nil
 	}
-	corsPolicyAny, err := utils.MessageToAny(utils.ToEnvoyCorsPolicy(f))
+	corsPolicyAny, err := utils.MessageToAny(utils.ToEnvoyCorsPolicy(f, false))
 	if err != nil {
 		// this should never happen.
 		logger.Error("failed to convert CORS policy to Any", "error", err)

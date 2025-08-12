@@ -13,6 +13,7 @@ import (
 	healthcheckv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/health_check/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	preserve_case_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/http/header_formatters/preserve_case/v3"
+	envoymatcherv3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -371,8 +372,12 @@ func convertHealthCheckPolicy(policy *v1alpha1.HTTPListenerPolicy) *healthcheckv
 			PassThroughMode: wrapperspb.Bool(false),
 			Headers: []*envoyroutev3.HeaderMatcher{{
 				Name: ":path",
-				HeaderMatchSpecifier: &envoyroutev3.HeaderMatcher_ExactMatch{
-					ExactMatch: policy.Spec.HealthCheck.Path,
+				HeaderMatchSpecifier: &envoyroutev3.HeaderMatcher_StringMatch{
+					StringMatch: &envoymatcherv3.StringMatcher{
+						MatchPattern: &envoymatcherv3.StringMatcher_Exact{
+							Exact: policy.Spec.HealthCheck.Path,
+						},
+					},
 				},
 			}},
 		}

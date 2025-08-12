@@ -5,6 +5,7 @@ import (
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	"istio.io/api/annotation"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/ptr"
@@ -16,7 +17,7 @@ import (
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
+	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
@@ -35,7 +36,7 @@ func NewPlugin(ctx context.Context, commonCol *common.CommonCollections) extensi
 
 func NewPluginFromCollections(
 	ctx context.Context,
-	krtOpts krtutil.KrtOptions,
+	krtOpts krtinternal.KrtOptions,
 	pods krt.Collection[krtcollections.LocalityPod],
 	services krt.Collection[*corev1.Service],
 	endpointSlices krt.Collection[*discoveryv1.EndpointSlice],
@@ -81,6 +82,17 @@ func BuildServiceBackendObjectIR(svc *corev1.Service, svcPort int32, svcProtocol
 	backend.AppProtocol = ir.ParseAppProtocol(&svcProtocol)
 	backend.GvPrefix = BackendClusterPrefix
 	backend.CanonicalHostname = kubeutils.GetServiceHostname(svc.Name, svc.Namespace)
+
+	// If the trafficDistribution is specified in the spec, use that.
+	// If both annotations and spec are specified, the spec takes precedence.
+	// The field was added as beta in Kubernetes 1.31
+	if svc.Spec.TrafficDistribution != nil {
+		backend.TrafficDistribution = wellknown.ParseTrafficDistribution(*svc.Spec.TrafficDistribution)
+	} else if val, ok := svc.Annotations[annotation.NetworkingTrafficDistribution.Name]; ok {
+		// We support specifying the Istio traffic distribution annotation in older k8s versions
+		backend.TrafficDistribution = wellknown.ParseTrafficDistribution(val)
+	}
+
 	return backend
 }
 

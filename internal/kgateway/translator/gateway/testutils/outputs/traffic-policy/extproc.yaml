@@ -1,0 +1,273 @@
+Clusters:
+- connectTimeout: 5s
+  edsClusterConfig:
+    edsConfig:
+      ads: {}
+      resourceApiVersion: V3
+  ignoreHealthOnHostRemoval: true
+  metadata: {}
+  name: kube_default_extproc_9091
+  type: EDS
+  typedExtensionProtocolOptions:
+    envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+      '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+      explicitHttpConfig:
+        http2ProtocolOptions: {}
+- connectTimeout: 5s
+  edsClusterConfig:
+    edsConfig:
+      ads: {}
+      resourceApiVersion: V3
+  ignoreHealthOnHostRemoval: true
+  metadata: {}
+  name: kube_default_extproc_9092
+  type: EDS
+  typedExtensionProtocolOptions:
+    envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+      '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+      explicitHttpConfig:
+        http2ProtocolOptions: {}
+- connectTimeout: 5s
+  edsClusterConfig:
+    edsConfig:
+      ads: {}
+      resourceApiVersion: V3
+  ignoreHealthOnHostRemoval: true
+  metadata: {}
+  name: kube_default_extproc_9093
+  type: EDS
+  typedExtensionProtocolOptions:
+    envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+      '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+      explicitHttpConfig:
+        http2ProtocolOptions: {}
+- connectTimeout: 5s
+  edsClusterConfig:
+    edsConfig:
+      ads: {}
+      resourceApiVersion: V3
+  ignoreHealthOnHostRemoval: true
+  metadata: {}
+  name: kube_default_test_80
+  type: EDS
+- connectTimeout: 5s
+  metadata: {}
+  name: test-backend-plugin_default_example-svc_80
+Listeners:
+- address:
+    socketAddress:
+      address: '::'
+      ipv4Compat: true
+      portValue: 8080
+  filterChains:
+  - filters:
+    - name: envoy.filters.network.http_connection_manager
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+        httpFilters:
+        - disabled: true
+          name: global_disable/ext_proc
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.set_metadata.v3.Config
+            metadata:
+            - metadataNamespace: dev.kgateway.disable_ext_proc
+              value:
+                disable: true
+        - disabled: true
+          name: ext_proc/default/extproc-gateway
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.common.matching.v3.ExtensionWithMatcher
+            extensionConfig:
+              name: composite_ext_proc
+              typedConfig:
+                '@type': type.googleapis.com/envoy.extensions.filters.http.composite.v3.Composite
+            xdsMatcher:
+              matcherList:
+                matchers:
+                - onMatch:
+                    action:
+                      name: composite-action
+                      typedConfig:
+                        '@type': type.googleapis.com/envoy.extensions.filters.http.composite.v3.ExecuteFilterAction
+                        typedConfig:
+                          name: envoy.filters.http.ext_proc
+                          typedConfig:
+                            '@type': type.googleapis.com/envoy.extensions.filters.http.ext_proc.v3.ExternalProcessor
+                            grpcService:
+                              envoyGrpc:
+                                clusterName: kube_default_extproc_9091
+                  predicate:
+                    singlePredicate:
+                      customMatch:
+                        name: envoy.matching.matchers.metadata_matcher
+                        typedConfig:
+                          '@type': type.googleapis.com/envoy.extensions.matching.input_matchers.metadata.v3.Metadata
+                          invert: true
+                          value:
+                            boolMatch: true
+                      input:
+                        name: disable
+                        typedConfig:
+                          '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.network.v3.DynamicMetadataInput
+                          filter: dev.kgateway.disable_ext_proc
+                          path:
+                          - key: disable
+        - disabled: true
+          name: ext_proc/default/extproc-listener
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.common.matching.v3.ExtensionWithMatcher
+            extensionConfig:
+              name: composite_ext_proc
+              typedConfig:
+                '@type': type.googleapis.com/envoy.extensions.filters.http.composite.v3.Composite
+            xdsMatcher:
+              matcherList:
+                matchers:
+                - onMatch:
+                    action:
+                      name: composite-action
+                      typedConfig:
+                        '@type': type.googleapis.com/envoy.extensions.filters.http.composite.v3.ExecuteFilterAction
+                        typedConfig:
+                          name: envoy.filters.http.ext_proc
+                          typedConfig:
+                            '@type': type.googleapis.com/envoy.extensions.filters.http.ext_proc.v3.ExternalProcessor
+                            grpcService:
+                              envoyGrpc:
+                                clusterName: kube_default_extproc_9092
+                  predicate:
+                    singlePredicate:
+                      customMatch:
+                        name: envoy.matching.matchers.metadata_matcher
+                        typedConfig:
+                          '@type': type.googleapis.com/envoy.extensions.matching.input_matchers.metadata.v3.Metadata
+                          invert: true
+                          value:
+                            boolMatch: true
+                      input:
+                        name: disable
+                        typedConfig:
+                          '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.network.v3.DynamicMetadataInput
+                          filter: dev.kgateway.disable_ext_proc
+                          path:
+                          - key: disable
+        - disabled: true
+          name: ext_proc/default/extproc-route
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.common.matching.v3.ExtensionWithMatcher
+            extensionConfig:
+              name: composite_ext_proc
+              typedConfig:
+                '@type': type.googleapis.com/envoy.extensions.filters.http.composite.v3.Composite
+            xdsMatcher:
+              matcherList:
+                matchers:
+                - onMatch:
+                    action:
+                      name: composite-action
+                      typedConfig:
+                        '@type': type.googleapis.com/envoy.extensions.filters.http.composite.v3.ExecuteFilterAction
+                        typedConfig:
+                          name: envoy.filters.http.ext_proc
+                          typedConfig:
+                            '@type': type.googleapis.com/envoy.extensions.filters.http.ext_proc.v3.ExternalProcessor
+                            grpcService:
+                              envoyGrpc:
+                                clusterName: kube_default_extproc_9093
+                  predicate:
+                    singlePredicate:
+                      customMatch:
+                        name: envoy.matching.matchers.metadata_matcher
+                        typedConfig:
+                          '@type': type.googleapis.com/envoy.extensions.matching.input_matchers.metadata.v3.Metadata
+                          invert: true
+                          value:
+                            boolMatch: true
+                      input:
+                        name: disable
+                        typedConfig:
+                          '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.network.v3.DynamicMetadataInput
+                          filter: dev.kgateway.disable_ext_proc
+                          path:
+                          - key: disable
+        - name: envoy.filters.http.router
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+        mergeSlashes: true
+        normalizePath: true
+        rds:
+          configSource:
+            ads: {}
+            resourceApiVersion: V3
+          routeConfigName: listener~8080
+        statPrefix: http
+        useRemoteAddress: true
+    name: listener~8080
+  metadata:
+    filterMetadata:
+      merge.TrafficPolicy.gateway.kgateway.dev:
+        extProc:
+        - gateway.kgateway.dev/TrafficPolicy/default/gateway-attachment
+  name: listener~8080
+Routes:
+- ignorePortInHostMatching: true
+  metadata:
+    filterMetadata:
+      merge.TrafficPolicy.gateway.kgateway.dev:
+        extProc:
+        - gateway.kgateway.dev/TrafficPolicy/default/gateway-attachment
+  name: listener~8080
+  typedPerFilterConfig:
+    ext_proc/default/extproc-gateway:
+      '@type': type.googleapis.com/envoy.extensions.filters.http.ext_proc.v3.ExtProcPerRoute
+      overrides: {}
+  virtualHosts:
+  - domains:
+    - test.com
+    metadata:
+      filterMetadata:
+        merge.TrafficPolicy.gateway.kgateway.dev:
+          extProc:
+          - gateway.kgateway.dev/TrafficPolicy/default/listener-attachment
+    name: listener~8080~test_com
+    routes:
+    - match:
+        pathSeparatedPrefix: /route-0
+      metadata:
+        filterMetadata:
+          merge.TrafficPolicy.gateway.kgateway.dev:
+            extProc:
+            - gateway.kgateway.dev/TrafficPolicy/default/route-attachment
+      name: listener~8080~test_com-route-0-httproute-test-default-0-0-rule0-matcher-0
+      route:
+        cluster: kube_default_test_80
+        clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+      typedPerFilterConfig:
+        ext_proc/default/extproc-route:
+          '@type': type.googleapis.com/envoy.extensions.filters.http.ext_proc.v3.ExtProcPerRoute
+          overrides: {}
+    - match:
+        pathSeparatedPrefix: /route-1
+      metadata:
+        filterMetadata:
+          merge.TrafficPolicy.gateway.kgateway.dev:
+            extProc:
+            - gateway.kgateway.dev/TrafficPolicy/default/route-disable
+      name: listener~8080~test_com-route-1-httproute-test-default-1-0-rule1-matcher-0
+      route:
+        cluster: kube_default_test_80
+        clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+      typedPerFilterConfig:
+        global_disable/ext_proc:
+          '@type': type.googleapis.com/envoy.config.route.v3.FilterConfig
+          config: {}
+    - match:
+        pathSeparatedPrefix: /route-2
+      name: listener~8080~test_com-route-2-httproute-test-default-2-0-rule2-matcher-0
+      route:
+        cluster: kube_default_test_80
+        clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+    typedPerFilterConfig:
+      ext_proc/default/extproc-listener:
+        '@type': type.googleapis.com/envoy.extensions.filters.http.ext_proc.v3.ExtProcPerRoute
+        overrides: {}
