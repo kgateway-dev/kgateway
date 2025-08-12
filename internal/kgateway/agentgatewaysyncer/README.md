@@ -625,27 +625,34 @@ curl localhost:8080/openai -H content-type:application/json -v -d'{
 
 With agentgateway, you get a unified API to send requests to different providers in the same format. 
 
-Remove the `openai` HTTPRoute:
-```shell
-kubectl delete HTTPRoute openai
-```
-
-Then apply config for another provider:
+Modify the HTTPRoute config to add another provider:
 
 ```shell
 kubectl apply -f- <<EOF
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
-  name: bedrock
+  name: openai
   labels:
-    example: bedrock-route
+    example: openai-route
 spec:
   parentRefs:
     - name: agent-gateway
       namespace: default
   rules:
-    - backendRefs:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /openai
+      backendRefs:
+        - name: openai
+          group: gateway.kgateway.dev
+          kind: Backend
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /bedrock
+      backendRefs:
         - group: gateway.kgateway.dev
           kind: Backend
           name: bedrock
