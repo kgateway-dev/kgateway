@@ -792,7 +792,7 @@ func TestBasic(t *testing.T) {
 				Namespace: "default",
 				Name:      "example-gateway",
 			},
-			assertReports: translatortest.AssertRouteInvalidDropped(t, "example-route", "default", "no action specified"),
+			assertReports: translatortest.AssertRouteInvalidReplaced(t, "example-route", "default", "no action specified"),
 		})
 	})
 
@@ -804,7 +804,7 @@ func TestBasic(t *testing.T) {
 				Namespace: "default",
 				Name:      "example-gateway",
 			},
-			assertReports: translatortest.AssertRouteInvalidDropped(t, "example-route", "default", "cannot be applied to route with existing action"),
+			assertReports: translatortest.AssertRouteInvalidReplaced(t, "example-route", "default", "cannot be applied to route with existing action"),
 		})
 	})
 
@@ -1127,7 +1127,7 @@ func TestRouteReplacement(t *testing.T) {
 			inputFile: "matcher-path-prefix-invalid.yaml",
 			minMode:   settings.RouteReplacementStandard,
 			assertStandard: func(t *testing.T) translatortest.AssertReports {
-				return translatortest.AssertRouteInvalidDropped(
+				return translatortest.AssertRouteInvalidReplaced(
 					t,
 					"invalid-traffic-policy-route",
 					"gwtest",
@@ -1135,7 +1135,7 @@ func TestRouteReplacement(t *testing.T) {
 				)
 			},
 			assertStrict: func(t *testing.T) translatortest.AssertReports {
-				return translatortest.AssertRouteInvalidDropped(
+				return translatortest.AssertRouteInvalidReplaced(
 					t,
 					"invalid-traffic-policy-route",
 					"gwtest",
@@ -1194,7 +1194,7 @@ func TestRouteReplacement(t *testing.T) {
 			inputFile: "policy-extension-ref-invalid.yaml",
 			minMode:   settings.RouteReplacementStandard,
 			assertStandard: func(t *testing.T) translatortest.AssertReports {
-				return translatortest.AssertRouteInvalidDropped(
+				return translatortest.AssertRouteInvalidReplaced(
 					t,
 					"test-route",
 					"gwtest",
@@ -1202,7 +1202,7 @@ func TestRouteReplacement(t *testing.T) {
 				)
 			},
 			assertStrict: func(t *testing.T) translatortest.AssertReports {
-				return translatortest.AssertRouteInvalidDropped(
+				return translatortest.AssertRouteInvalidReplaced(
 					t,
 					"test-route",
 					"gwtest",
@@ -1266,7 +1266,7 @@ func TestRouteReplacement(t *testing.T) {
 			inputFile: "urlrewrite-invalid.yaml",
 			minMode:   settings.RouteReplacementStandard,
 			assertStandard: func(t *testing.T) translatortest.AssertReports {
-				return translatortest.AssertRouteInvalidDropped(
+				return translatortest.AssertRouteInvalidReplaced(
 					t,
 					"invalid-builtin-filter-route",
 					"gwtest",
@@ -1274,7 +1274,7 @@ func TestRouteReplacement(t *testing.T) {
 				)
 			},
 			assertStrict: func(t *testing.T) translatortest.AssertReports {
-				return translatortest.AssertRouteInvalidDropped(
+				return translatortest.AssertRouteInvalidReplaced(
 					t,
 					"invalid-builtin-filter-route",
 					"gwtest",
@@ -1302,7 +1302,7 @@ func TestRouteReplacement(t *testing.T) {
 			inputFile: "policy-csrf-regex-invalid.yaml",
 			minMode:   settings.RouteReplacementStrict,
 			assertStrict: func(t *testing.T) translatortest.AssertReports {
-				return translatortest.AssertRouteInvalidDropped(
+				return translatortest.AssertRouteInvalidReplaced(
 					t,
 					"test-route",
 					"gwtest",
@@ -1316,7 +1316,7 @@ func TestRouteReplacement(t *testing.T) {
 			inputFile: "policy-extauth-extension-ref-invalid.yaml",
 			minMode:   settings.RouteReplacementStrict,
 			assertStrict: func(t *testing.T) translatortest.AssertReports {
-				return translatortest.AssertRouteInvalidDropped(
+				return translatortest.AssertRouteInvalidReplaced(
 					t,
 					"invalid-traffic-policy-route",
 					"gwtest",
@@ -1330,7 +1330,7 @@ func TestRouteReplacement(t *testing.T) {
 			inputFile: "policy-transformation-body-template-invalid.yaml",
 			minMode:   settings.RouteReplacementStrict,
 			assertStrict: func(t *testing.T) translatortest.AssertReports {
-				return translatortest.AssertRouteInvalidDropped(
+				return translatortest.AssertRouteInvalidReplaced(
 					t,
 					"invalid-traffic-policy-route",
 					"gwtest",
@@ -1344,7 +1344,7 @@ func TestRouteReplacement(t *testing.T) {
 			inputFile: "policy-transformation-header-template-invalid.yaml",
 			minMode:   settings.RouteReplacementStrict,
 			assertStrict: func(t *testing.T) translatortest.AssertReports {
-				return translatortest.AssertRouteInvalidDropped(
+				return translatortest.AssertRouteInvalidReplaced(
 					t,
 					"invalid-traffic-policy-route",
 					"gwtest",
@@ -1358,7 +1358,7 @@ func TestRouteReplacement(t *testing.T) {
 			inputFile: "policy-transformation-malformed-template-invalid.yaml",
 			minMode:   settings.RouteReplacementStrict,
 			assertStrict: func(t *testing.T) translatortest.AssertReports {
-				return translatortest.AssertRouteInvalidDropped(
+				return translatortest.AssertRouteInvalidReplaced(
 					t,
 					"invalid-traffic-policy-route",
 					"gwtest",
@@ -1367,11 +1367,10 @@ func TestRouteReplacement(t *testing.T) {
 			},
 		},
 		{
-			name:         "Template Structure Invalid",
-			category:     "policy",
-			inputFile:    "policy-template-structure-invalid.yaml",
-			minMode:      settings.RouteReplacementStrict,
-			assertStrict: nil,
+			name:      "Template Structure Invalid",
+			category:  "policy",
+			inputFile: "policy-template-structure-invalid.yaml",
+			minMode:   settings.RouteReplacementStrict,
 		},
 		{
 			name:      "Header Template Invalid",
@@ -1379,7 +1378,7 @@ func TestRouteReplacement(t *testing.T) {
 			inputFile: "policy-header-template-invalid.yaml",
 			minMode:   settings.RouteReplacementStrict,
 			assertStrict: func(t *testing.T) translatortest.AssertReports {
-				return translatortest.AssertRouteInvalidDropped(
+				return translatortest.AssertRouteInvalidReplaced(
 					t,
 					"invalid-header-template-route",
 					"gwtest",
@@ -1393,7 +1392,7 @@ func TestRouteReplacement(t *testing.T) {
 			inputFile: "request-header-modifier-invalid.yaml",
 			minMode:   settings.RouteReplacementStrict,
 			assertStrict: func(t *testing.T) translatortest.AssertReports {
-				return translatortest.AssertRouteInvalidDropped(
+				return translatortest.AssertRouteInvalidReplaced(
 					t,
 					"invalid-request-header-modifier-route",
 					"gwtest",
@@ -1407,7 +1406,7 @@ func TestRouteReplacement(t *testing.T) {
 			inputFile: "response-header-modifier-invalid.yaml",
 			minMode:   settings.RouteReplacementStrict,
 			assertStrict: func(t *testing.T) translatortest.AssertReports {
-				return translatortest.AssertRouteInvalidDropped(
+				return translatortest.AssertRouteInvalidReplaced(
 					t,
 					"invalid-response-header-modifier-route",
 					"gwtest",
