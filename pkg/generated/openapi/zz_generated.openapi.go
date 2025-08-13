@@ -7395,13 +7395,13 @@ func schema_kgateway_v2_api_v1alpha1_TrafficPolicySpec(ref common.ReferenceCallb
 					},
 					"timeouts": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Timeouts defines the timeouts for requests It is applicable to HTTPRoutes and GRPCRoutes, and are ignored for other targeted kinds.",
+							Description: "Timeouts defines the timeouts for requests It is applicable to HTTPRoutes and ignored for other targeted kinds.",
 							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Timeouts"),
 						},
 					},
 					"retry": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Retry defines the policy for retrying requests. It is applicable to HTTPRoutes, GRPCRoutes, and Gateway listeners, and are ignored for other targeted kinds.",
+							Description: "Retry defines the policy for retrying requests. It is applicable to HTTPRoutes, Gateway listeners and XListenerSets, and ignored for other targeted kinds.",
 							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Retry"),
 						},
 					},

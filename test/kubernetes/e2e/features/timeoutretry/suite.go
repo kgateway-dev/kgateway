@@ -22,7 +22,6 @@ const (
 	upstreamReqTimeout = "upstream request timeout"
 )
 
-// testingSuite is a suite of Lambda backend routing tests
 type testingSuite struct {
 	suite.Suite
 	ctx             context.Context

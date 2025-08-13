@@ -107,12 +107,12 @@ type TrafficPolicySpec struct {
 	Buffer *Buffer `json:"buffer,omitempty"`
 
 	// Timeouts defines the timeouts for requests
-	// It is applicable to HTTPRoutes and GRPCRoutes, and are ignored for other targeted kinds.
+	// It is applicable to HTTPRoutes and ignored for other targeted kinds.
 	// +optional
 	Timeouts *Timeouts `json:"timeouts,omitempty"`
 
 	// Retry defines the policy for retrying requests.
-	// It is applicable to HTTPRoutes, GRPCRoutes, and Gateway listeners, and are ignored for other targeted kinds.
+	// It is applicable to HTTPRoutes, Gateway listeners and XListenerSets, and ignored for other targeted kinds.
 	// +optional
 	Retry *Retry `json:"retry,omitempty"`
 }
