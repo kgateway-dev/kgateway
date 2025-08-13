@@ -122,6 +122,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LocalPolicyTargetReference":                schema_kgateway_v2_api_v1alpha1_LocalPolicyTargetReference(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LocalPolicyTargetReferenceWithSectionName": schema_kgateway_v2_api_v1alpha1_LocalPolicyTargetReferenceWithSectionName(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LocalPolicyTargetSelector":                 schema_kgateway_v2_api_v1alpha1_LocalPolicyTargetSelector(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LocalPolicyTargetSelectorWithSectionName":  schema_kgateway_v2_api_v1alpha1_LocalPolicyTargetSelectorWithSectionName(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LocalRateLimitPolicy":                      schema_kgateway_v2_api_v1alpha1_LocalRateLimitPolicy(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.MCP":                                       schema_kgateway_v2_api_v1alpha1_MCP(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.McpSelector":                               schema_kgateway_v2_api_v1alpha1_McpSelector(ref),
@@ -4888,7 +4889,7 @@ func schema_kgateway_v2_api_v1alpha1_LocalPolicyTargetSelector(ref common.Refere
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "Select the object to attach the policy by Group, Kind, and its labels. The object must be in the same namespace as the policy and match the specified labels.",
+				Description: "LocalPolicyTargetSelector selects the object to attach the policy by Group, Kind, and MatchLabels. The object must be in the same namespace as the policy and match the specified labels.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"group": {
@@ -4921,6 +4922,59 @@ func schema_kgateway_v2_api_v1alpha1_LocalPolicyTargetSelector(ref common.Refere
 									},
 								},
 							},
+						},
+					},
+				},
+				Required: []string{"group", "kind", "matchLabels"},
+			},
+		},
+	}
+}
+
+func schema_kgateway_v2_api_v1alpha1_LocalPolicyTargetSelectorWithSectionName(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "LocalPolicyTargetSelectorWithSectionName the object to attach the policy by Group, Kind, MatchLabels, and optionally SectionName. The object must be in the same namespace as the policy and match the specified labels.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"group": {
+						SchemaProps: spec.SchemaProps{
+							Description: "The API group of the target resource. For Kubernetes Gateway API resources, the group is `gateway.networking.k8s.io`.",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"kind": {
+						SchemaProps: spec.SchemaProps{
+							Description: "The API kind of the target resource, such as Gateway or HTTPRoute.",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"matchLabels": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Label selector to select the target resource.",
+							Type:        []string{"object"},
+							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
+									},
+								},
+							},
+						},
+					},
+					"sectionName": {
+						SchemaProps: spec.SchemaProps{
+							Description: "The section name of the target resource.",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 				},
@@ -7265,7 +7319,7 @@ func schema_kgateway_v2_api_v1alpha1_TrafficPolicySpec(ref common.ReferenceCallb
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LocalPolicyTargetSelector"),
+										Ref:     ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LocalPolicyTargetSelectorWithSectionName"),
 									},
 								},
 							},
@@ -7355,7 +7409,7 @@ func schema_kgateway_v2_api_v1alpha1_TrafficPolicySpec(ref common.ReferenceCallb
 			},
 		},
 		Dependencies: []string{
-			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AIPolicy", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Buffer", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CSRFPolicy", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CorsPolicy", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtAuthPolicy", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtProcPolicy", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.HashPolicy", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LocalPolicyTargetReferenceWithSectionName", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LocalPolicyTargetSelector", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.RateLimit", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Retry", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Timeouts", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.TransformationPolicy"},
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AIPolicy", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Buffer", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CSRFPolicy", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CorsPolicy", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtAuthPolicy", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtProcPolicy", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.HashPolicy", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LocalPolicyTargetReferenceWithSectionName", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LocalPolicyTargetSelectorWithSectionName", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.RateLimit", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Retry", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Timeouts", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.TransformationPolicy"},
 	}
 }
 

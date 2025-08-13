@@ -32,7 +32,7 @@ type LocalPolicyTargetReferenceWithSectionName struct {
 	SectionName *gwv1.SectionName `json:"sectionName,omitempty"`
 }
 
-// Select the object to attach the policy by Group, Kind, and its labels.
+// LocalPolicyTargetSelector selects the object to attach the policy by Group, Kind, and MatchLabels.
 // The object must be in the same namespace as the policy and match the
 // specified labels.
 type LocalPolicyTargetSelector struct {
@@ -46,6 +46,17 @@ type LocalPolicyTargetSelector struct {
 
 	// Label selector to select the target resource.
 	MatchLabels map[string]string `json:"matchLabels"`
+}
+
+// LocalPolicyTargetSelectorWithSectionName the object to attach the policy by Group, Kind, MatchLabels, and optionally SectionName.
+// The object must be in the same namespace as the policy and match the
+// specified labels.
+type LocalPolicyTargetSelectorWithSectionName struct {
+	LocalPolicyTargetSelector `json:",inline"`
+
+	// The section name of the target resource.
+	// +optional
+	SectionName *gwv1.SectionName `json:"sectionName,omitempty"`
 }
 
 type PolicyStatus struct {

@@ -16,6 +16,7 @@ func TestAPIValidation(t *testing.T) {
 	ti := e2e.CreateTestInstallation(t, &install.Context{
 		ValuesManifestFile:        e2e.EmptyValuesManifestPath,
 		ProfileValuesManifestFile: e2e.CommonRecommendationManifest,
+		InstallNamespace:          "kgateway-system",
 	})
 
 	tests := []struct {
@@ -528,6 +529,47 @@ spec:
 			wantErrors: []string{
 				"spec.retry.perTryTimeout: Invalid value: \"string\": invalid duration value",
 				"spec.retry.perTryTimeout: Invalid value: \"string\": type conversion error from 'string' to 'google.protobuf.Duration' evaluating rule: retry.perTryTimeout must be at least 1ms",
+			},
+		},
+		{
+			name: "TrafficPolicy: targetRefs[].sectionName must be set when targeting Gateway resources with retry policy",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: test
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: test
+  retry:
+    retryOn:
+    - gateway-error
+`,
+			wantErrors: []string{
+				"targetRefs[].sectionName must be set when targeting Gateway resources with retry policy",
+			},
+		},
+		{
+			name: "TrafficPolicy: targetSelectors[].sectionName must be set when targeting Gateway resources with retry policy",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: test
+spec:
+  targetSelectors:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    matchLabels:
+      foo: bar
+  retry:
+    retryOn:
+    - gateway-error
+`,
+			wantErrors: []string{
+				"targetSelectors[].sectionName must be set when targeting Gateway resources with retry policy",
 			},
 		},
 		{

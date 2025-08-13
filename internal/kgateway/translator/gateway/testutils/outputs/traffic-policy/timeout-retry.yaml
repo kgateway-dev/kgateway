@@ -153,7 +153,7 @@ Routes:
           merge.TrafficPolicy.gateway.kgateway.dev:
             retry:
             - gateway.kgateway.dev/TrafficPolicy/default/example-route-retry
-      name: listener~80~example-retry_com-route-0-httproute-example-route-retry-default-0-0-matcher-0
+      name: listener~80~example-retry_com-route-0-httproute-example-route-retry-default-0-0-rule0-matcher-0
       route:
         cluster: kube_default_example-svc_80
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR

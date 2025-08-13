@@ -1596,6 +1596,25 @@ var schemaYAML = typed.YAMLObject(`types:
         map:
           elementType:
             scalar: string
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LocalPolicyTargetSelectorWithSectionName
+  map:
+    fields:
+    - name: group
+      type:
+        scalar: string
+      default: ""
+    - name: kind
+      type:
+        scalar: string
+      default: ""
+    - name: matchLabels
+      type:
+        map:
+          elementType:
+            scalar: string
+    - name: sectionName
+      type:
+        scalar: string
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LocalRateLimitPolicy
   map:
     fields:
@@ -2439,7 +2458,7 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         list:
           elementType:
-            namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LocalPolicyTargetSelector
+            namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LocalPolicyTargetSelectorWithSectionName
           elementRelationship: atomic
     - name: timeouts
       type:

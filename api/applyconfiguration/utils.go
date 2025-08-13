@@ -205,6 +205,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.LocalPolicyTargetReferenceWithSectionNameApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("LocalPolicyTargetSelector"):
 		return &apiv1alpha1.LocalPolicyTargetSelectorApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("LocalPolicyTargetSelectorWithSectionName"):
+		return &apiv1alpha1.LocalPolicyTargetSelectorWithSectionNameApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("LocalRateLimitPolicy"):
 		return &apiv1alpha1.LocalRateLimitPolicyApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("MCP"):

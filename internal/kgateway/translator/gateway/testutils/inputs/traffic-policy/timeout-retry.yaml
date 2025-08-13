@@ -52,13 +52,16 @@ apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
   name: example-route-retry
+  labels:
+    name: example-route-retry
 spec:
   parentRefs:
   - name: example-gateway
   hostnames:
   - "example-retry.com"
   rules:
-  - backendRefs:
+  - name: rule0
+    backendRefs:
     - name: example-svc
       port: 80
 ---
@@ -67,10 +70,12 @@ kind: TrafficPolicy
 metadata:
   name: example-route-retry
 spec:
-  targetRefs:
+  targetSelectors:
   - group: gateway.networking.k8s.io
     kind: HTTPRoute
-    name: example-route-retry
+    matchLabels:
+      name: example-route-retry
+    sectionName: rule0
   retry:
     retryOn:
     - gateway-error

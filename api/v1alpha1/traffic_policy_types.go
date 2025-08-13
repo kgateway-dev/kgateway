@@ -39,6 +39,8 @@ type TrafficPolicyList struct {
 // +kubebuilder:validation:XValidation:rule="!has(self.hashPolicies) || ((has(self.targetRefs) && self.targetRefs.all(r, r.kind == 'HTTPRoute')) || (has(self.targetSelectors) && self.targetSelectors.all(r, r.kind == 'HTTPRoute')))",message="hash policies can only be used when targeting HTTPRoute resources"
 // +kubebuilder:validation:XValidation:rule="!has(self.autoHostRewrite) || ((has(self.targetRefs) && self.targetRefs.all(r, r.kind == 'HTTPRoute')) || (has(self.targetSelectors) && self.targetSelectors.all(r, r.kind == 'HTTPRoute')))",message="autoHostRewrite can only be used when targeting HTTPRoute resources"
 // +kubebuilder:validation:XValidation:rule="has(self.retry) && has(self.timeouts) ? (has(self.retry.perTryTimeout) && has(self.timeouts.request) ? duration(self.retry.perTryTimeout) < duration(self.timeouts.request) : true) : true",message="retry.perTryTimeout must be lesser than timeouts.request"
+// +kubebuilder:validation:XValidation:rule="has(self.retry) && has(self.targetRefs) ? self.targetRefs.all(r, (r.kind == 'Gateway' ? has(r.sectionName) : true )) : true",message="targetRefs[].sectionName must be set when targeting Gateway resources with retry policy"
+// +kubebuilder:validation:XValidation:rule="has(self.retry) && has(self.targetSelectors) ? self.targetSelectors.all(r, (r.kind == 'Gateway' ? has(r.sectionName) : true )) : true",message="targetSelectors[].sectionName must be set when targeting Gateway resources with retry policy"
 type TrafficPolicySpec struct {
 	// TargetRefs specifies the target resources by reference to attach the policy to.
 	// +optional
@@ -51,7 +53,7 @@ type TrafficPolicySpec struct {
 	// TargetSelectors specifies the target selectors to select resources to attach the policy to.
 	// +optional
 	// +kubebuilder:validation:XValidation:rule="self.all(r, (r.kind == 'Gateway' || r.kind == 'HTTPRoute' || (r.kind == 'XListenerSet' && r.group == 'gateway.networking.x-k8s.io')) && (!has(r.group) || r.group == 'gateway.networking.k8s.io' || r.group == 'gateway.networking.x-k8s.io'))",message="targetSelectors may only reference Gateway, HTTPRoute, or XListenerSet resources"
-	TargetSelectors []LocalPolicyTargetSelector `json:"targetSelectors,omitempty"`
+	TargetSelectors []LocalPolicyTargetSelectorWithSectionName `json:"targetSelectors,omitempty"`
 
 	// AI is used to configure AI-based policies for the policy.
 	// +optional

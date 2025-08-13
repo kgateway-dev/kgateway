@@ -10,7 +10,7 @@ import (
 // with apply.
 type TrafficPolicySpecApplyConfiguration struct {
 	TargetRefs      []LocalPolicyTargetReferenceWithSectionNameApplyConfiguration `json:"targetRefs,omitempty"`
-	TargetSelectors []LocalPolicyTargetSelectorApplyConfiguration                 `json:"targetSelectors,omitempty"`
+	TargetSelectors []LocalPolicyTargetSelectorWithSectionNameApplyConfiguration  `json:"targetSelectors,omitempty"`
 	AI              *AIPolicyApplyConfiguration                                   `json:"ai,omitempty"`
 	Transformation  *TransformationPolicyApplyConfiguration                       `json:"transformation,omitempty"`
 	ExtProc         *ExtProcPolicyApplyConfiguration                              `json:"extProc,omitempty"`
@@ -47,7 +47,7 @@ func (b *TrafficPolicySpecApplyConfiguration) WithTargetRefs(values ...*LocalPol
 // WithTargetSelectors adds the given value to the TargetSelectors field in the declarative configuration
 // and returns the receiver, so that objects can be build by chaining "With" function invocations.
 // If called multiple times, values provided by each call will be appended to the TargetSelectors field.
-func (b *TrafficPolicySpecApplyConfiguration) WithTargetSelectors(values ...*LocalPolicyTargetSelectorApplyConfiguration) *TrafficPolicySpecApplyConfiguration {
+func (b *TrafficPolicySpecApplyConfiguration) WithTargetSelectors(values ...*LocalPolicyTargetSelectorWithSectionNameApplyConfiguration) *TrafficPolicySpecApplyConfiguration {
 	for i := range values {
 		if values[i] == nil {
 			panic("nil value passed to WithTargetSelectors")
