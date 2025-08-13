@@ -18,6 +18,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
@@ -350,15 +351,16 @@ type RouteContext struct {
 }
 
 type RouteContextInputs struct {
-	Grants         ReferenceGrants
-	RouteParents   RouteParents
-	Services       krt.Collection[*corev1.Service]
-	InferencePools krt.Collection[*inf.InferencePool]
-	Namespaces     krt.Collection[*corev1.Namespace]
-	ServiceEntries krt.Collection[*networkingclient.ServiceEntry]
-	Backends       *krtcollections.BackendIndex
-	Policies       *krtcollections.PolicyIndex
-	Plugins        pluginsdk.Plugin
+	Grants          ReferenceGrants
+	RouteParents    RouteParents
+	Services        krt.Collection[*corev1.Service]
+	InferencePools  krt.Collection[*inf.InferencePool]
+	Namespaces      krt.Collection[*corev1.Namespace]
+	ServiceEntries  krt.Collection[*networkingclient.ServiceEntry]
+	Backends        *krtcollections.BackendIndex
+	Policies        *krtcollections.PolicyIndex
+	Plugins         pluginsdk.Plugin
+	DirectResponses krt.Collection[*v1alpha1.DirectResponse]
 }
 
 func (i RouteContextInputs) WithCtx(krtctx krt.HandlerContext) RouteContext {
