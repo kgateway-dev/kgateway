@@ -26,6 +26,6 @@ const (
 	// they are associated with.
 	GatewayNameLabel = "gateway.networking.k8s.io/gateway-name"
 
-	// ElectionID is the name of the lease that leader election will use for holding the leader lock.
-	ElectionID = "kgateway"
+	// LeaderElectionID is the name of the lease that leader election will use for holding the leader lock.
+	LeaderElectionID = "kgateway"
 )
