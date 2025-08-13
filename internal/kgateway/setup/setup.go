@@ -71,7 +71,7 @@ func WithExtraPlugins(extraPlugins func(ctx context.Context, commoncol *common.C
 // WithLeaderElectionID sets the LeaderElectionID for the leader lease.
 func WithLeaderElectionID(id string) func(*setup) {
 	return func(s *setup) {
-		s.agentGatewayClassName = id
+		s.leaderElectionID = id
 	}
 }
 
