@@ -233,26 +233,15 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(
 			return nil
 		}
 
-		// If routeAcceptanceErr is set, report Accepted=False with Reason=RouteRuleReplaced.
-		// For legacy behavior, we may report Accepted=False with Reason=RouteRuleDropped.
-		var (
-			reason  gwv1.RouteConditionReason
-			message string
-		)
-		switch h.routeReplacementMode {
-		case settings.RouteReplacementStandard, settings.RouteReplacementStrict:
-			reason = gwv1.RouteConditionReason(reportssdk.RouteRuleReplacedReason)
-			message = fmt.Sprintf("Replaced Rule (%d): %v", in.MatchIndex, routeAcceptanceErr)
-		default:
-			reason = gwv1.RouteConditionReason(reportssdk.RouteRuleDroppedReason)
-			message = fmt.Sprintf("Dropped Rule (%d): %v", in.MatchIndex, routeAcceptanceErr)
+		// If routeAcceptanceErr is set, report Accepted=False with Reason=RouteRuleReplaced
+		if routeAcceptanceErr != nil {
+			routeReport.SetCondition(reportssdk.RouteCondition{
+				Type:    gwv1.RouteConditionAccepted,
+				Status:  metav1.ConditionFalse,
+				Reason:  gwv1.RouteConditionReason(reportssdk.RouteRuleReplacedReason),
+				Message: fmt.Sprintf("Replaced Rule (%d): %v", in.MatchIndex, routeAcceptanceErr),
+			})
 		}
-		routeReport.SetCondition(reportssdk.RouteCondition{
-			Type:    gwv1.RouteConditionAccepted,
-			Status:  metav1.ConditionFalse,
-			Reason:  reason,
-			Message: message,
-		})
 
 		if h.routeReplacementMode == settings.RouteReplacementStandard || h.routeReplacementMode == settings.RouteReplacementStrict {
 			// Clear all headers and filter configs when the route is replaced with a direct response
@@ -274,8 +263,6 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(
 			}
 			return out
 		}
-		// Drop the route entirely (legacy behavior, will be removed in the future)
-		return nil
 	}
 
 	return out
