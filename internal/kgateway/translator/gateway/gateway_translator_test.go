@@ -274,9 +274,8 @@ func TestBasic(t *testing.T) {
 			assertReports: translatortest.AssertRouteInvalid(
 				t,
 				"example-route",
-				"default",
-				reporter.RouteRuleReplacedReason,
 				"infra",
+				reporter.RouteRuleReplacedReason,
 				`field invalid_object contains invalid JSON string: "model":"gpt-4"`,
 				`field invalid_slices contains invalid JSON string: [1,2,3`,
 			),
