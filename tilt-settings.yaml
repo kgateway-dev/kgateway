@@ -10,20 +10,31 @@ enabled_providers:
 metal_lb: false
 
 providers:
+  # Service name
   kgateway:
+    # The output dir of the binary
     context: _output/internal/kgateway
+    # Image name of the container in the deployment
     image: ghcr.io/kgateway-dev/kgateway
+    # Files / folders to watch. Changes here will trigger a rebuild and reload
     live_reload_deps:
       - pkg
       - internal
+    # The service name
     label: kgateway
-#    build_binary: GCFLAGS='all="-N -l"' make -B kgateway
+    # Command to build the binary
+    #build_binary: GCFLAGS='all="-N -l"' make -B kgateway
     build_binary:  make -B kgateway
+    # Name of the binary file when built
     binary_name: kgateway-linux-$ARCH
-    # debug_port: 50100
+    # A custom docker file. This might be required when the base image is different or managing an external project such as envoy
+    #dockerfile_contents: ...
+    # To enable debugging, just add the `debug_port` param to a provider (provided it supports debugging)
+    #debug_port: 50100
     links:
       - http://localhost:9092/metrics
+    # Custom port forwarding. This can include non debug ports such as the envoy admin port
     port_forwards:
       - 9092
       - 9097
-    #  - 50100
+      #- 50100

@@ -63,18 +63,4 @@ The following configuration can then can be added to `launch.json` in VSCode to 
 
 The list of enabled providers is specified in the `enabled_providers` array in `tilt-settings.yaml`
 
-The providers have the following format :
-```yaml
-  gloo:                                          # Service name
-    context: _output/projects/gloo               # The output dir of the binary
-    image: quay.io/solo-io/gloo                  # Image name of the container in the deployment
-    live_reload_deps:                            # files / folders to watch. Changes here will trigger a rebuild and reload
-    - projects/gloo
-    label: gloo                                  # The service name
-    build_binary: make -B gloo                   # Command to build the binary
-    binary_name: gloo-linux-arm64                # Name of the binary file when built
-    dockerfile_contents: ...                     # A custom docker file. This might be required when the base image is different or managing an external project such as envoy
-    debug_port: 50100                            # To enable debugging, just add the `debug_port` param to a provider (provided it supports debugging)
-    port_forwards":                              # Custom port forwarding. This can include non debug ports such as the envoy admin port
-      - 50100
-```
+See [tilt-settings.yaml](/tilt-settings.yaml) for an explanation of the providers config format.
