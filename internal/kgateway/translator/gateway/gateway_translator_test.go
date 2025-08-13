@@ -15,7 +15,6 @@ import (
 	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
-	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 	"github.com/kgateway-dev/kgateway/v2/pkg/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
@@ -263,7 +262,7 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
-	t.Run("TrafficPolicy with ai invalided default values", func(t *testing.T) {
+	t.Run("TrafficPolicy with AI invalided default values", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "traffic-policy/ai-invalid-default-value.yaml",
 			outputFile: "traffic-policy/ai-invalid-default-value.yaml",
@@ -271,29 +270,13 @@ func TestBasic(t *testing.T) {
 				Namespace: "infra",
 				Name:      "example-gateway",
 			},
-			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
-				a := assert.New(t)
-				// we expect the httproute to reflect an invalid status
-				route := &gwv1.HTTPRoute{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "example-route",
-						Namespace: "infra",
-					},
-				}
-				routeStatus := reportsMap.BuildRouteStatus(context.Background(), route, wellknown.DefaultGatewayClassName)
-				a.NotNil(routeStatus)
-				a.Len(routeStatus.Parents, 1)
-
-				acceptedCond := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionAccepted))
-				a.NotNil(acceptedCond)
-				a.Equal(metav1.ConditionFalse, acceptedCond.Status)
-				a.Equal(reporter.RouteRuleDroppedReason, acceptedCond.Reason)
-				a.Equal(2, strings.Count(acceptedCond.Message, `field invalid_object contains invalid JSON string: "model":"gpt-4"}`),
-					"Expected 'invalid_object' message to appear exactly twice")
-				a.Equal(2, strings.Count(acceptedCond.Message, `field invalid_slices contains invalid JSON string: [1,2,3`),
-					"Expected 'invalid_slices' message to appear exactly twice")
-				a.Equal(int64(0), acceptedCond.ObservedGeneration)
-			},
+			assertReports: translatortest.AssertRouteInvalidReplaced(
+				t,
+				"example-route",
+				"infra",
+				`field invalid_object contains invalid JSON string: "model":"gpt-4"`,
+				`field invalid_slices contains invalid JSON string: [1,2,3`,
+			),
 		})
 	})
 
