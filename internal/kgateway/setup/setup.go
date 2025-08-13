@@ -172,7 +172,7 @@ func New(opts ...func(*setup)) (*setup, error) {
 					BindAddress: ":9092",
 				},
 				LeaderElection:   !s.globalSettings.DisableLeaderElection,
-				LeaderElectionID: wellknown.DefaultGatewayClassName,
+				LeaderElectionID: wellknown.ElectionID,
 			}
 		}
 	}

@@ -165,6 +165,10 @@ func (s *testingSuite) getLeader() string {
 
 func (s *testingSuite) getLeaderFromPods(pods ...string) string {
 	var leader string
+	// Use a simple approach to get the leader by parsing the pod logs.
+	// Another approach would be to fetch the underlying lease and comparing it with the existing pods
+	// While this is more accurate, it would require keeping track of the existing pods and wait until the lease matches
+	// the existing pods (since we roll pods in the test), which would be a more complex sequence of steps
 	s.TestInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
 		for _, pod := range pods {
 			out, err := s.TestInstallation.Actions.Kubectl().GetContainerLogs(s.Ctx, s.TestInstallation.Metadata.InstallNamespace, pod)
