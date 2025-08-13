@@ -19,7 +19,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	. "github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
+	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/xds"
 )
@@ -183,13 +183,13 @@ func TestUniqueClients(t *testing.T) {
 			if tc.inputs != nil {
 				mock := krttest.NewMock(t, tc.inputs)
 				nodes := NewNodeMetadataCollection(krttest.GetMockCollection[*corev1.Node](mock))
-				pods = NewLocalityPodsCollection(nodes, krttest.GetMockCollection[*corev1.Pod](mock), krtutil.KrtOptions{})
+				pods = NewLocalityPodsCollection(nodes, krttest.GetMockCollection[*corev1.Pod](mock), krtinternal.KrtOptions{})
 				nodes.WaitUntilSynced(context.Background().Done())
 				pods.WaitUntilSynced(context.Background().Done())
 			}
 
 			cb, uccBuilder := NewUniquelyConnectedClients(nil)
-			ucc := uccBuilder(context.Background(), krtutil.KrtOptions{}, pods)
+			ucc := uccBuilder(context.Background(), krtinternal.KrtOptions{}, pods)
 			ucc.WaitUntilSynced(context.Background().Done())
 
 			// check fetch as well

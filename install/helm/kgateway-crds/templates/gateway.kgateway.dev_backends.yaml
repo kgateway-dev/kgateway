@@ -155,6 +155,55 @@ spec:
                             - deploymentName
                             - endpoint
                             type: object
+                          bedrock:
+                            properties:
+                              auth:
+                                properties:
+                                  secretRef:
+                                    properties:
+                                      name:
+                                        default: ""
+                                        type: string
+                                    type: object
+                                    x-kubernetes-map-type: atomic
+                                  type:
+                                    enum:
+                                    - Secret
+                                    type: string
+                                required:
+                                - type
+                                type: object
+                                x-kubernetes-validations:
+                                - message: secretRef must be nil if the type is not
+                                    'Secret'
+                                  rule: '!(has(self.secretRef) && self.type != ''Secret'')'
+                                - message: secretRef must be specified when type is
+                                    'Secret'
+                                  rule: '!(!has(self.secretRef) && self.type == ''Secret'')'
+                              guardrail:
+                                properties:
+                                  identifier:
+                                    minLength: 1
+                                    type: string
+                                  version:
+                                    minLength: 1
+                                    type: string
+                                required:
+                                - identifier
+                                - version
+                                type: object
+                              model:
+                                minLength: 1
+                                type: string
+                              region:
+                                default: us-east-1
+                                maxLength: 63
+                                minLength: 1
+                                pattern: ^[a-z0-9-]+$
+                                type: string
+                            required:
+                            - model
+                            type: object
                           gemini:
                             properties:
                               apiVersion:
@@ -396,6 +445,57 @@ spec:
                                         - authToken
                                         - deploymentName
                                         - endpoint
+                                        type: object
+                                      bedrock:
+                                        properties:
+                                          auth:
+                                            properties:
+                                              secretRef:
+                                                properties:
+                                                  name:
+                                                    default: ""
+                                                    type: string
+                                                type: object
+                                                x-kubernetes-map-type: atomic
+                                              type:
+                                                enum:
+                                                - Secret
+                                                type: string
+                                            required:
+                                            - type
+                                            type: object
+                                            x-kubernetes-validations:
+                                            - message: secretRef must be nil if the
+                                                type is not 'Secret'
+                                              rule: '!(has(self.secretRef) && self.type
+                                                != ''Secret'')'
+                                            - message: secretRef must be specified
+                                                when type is 'Secret'
+                                              rule: '!(!has(self.secretRef) && self.type
+                                                == ''Secret'')'
+                                          guardrail:
+                                            properties:
+                                              identifier:
+                                                minLength: 1
+                                                type: string
+                                              version:
+                                                minLength: 1
+                                                type: string
+                                            required:
+                                            - identifier
+                                            - version
+                                            type: object
+                                          model:
+                                            minLength: 1
+                                            type: string
+                                          region:
+                                            default: us-east-1
+                                            maxLength: 63
+                                            minLength: 1
+                                            pattern: ^[a-z0-9-]+$
+                                            type: string
+                                        required:
+                                        - model
                                         type: object
                                       gemini:
                                         properties:

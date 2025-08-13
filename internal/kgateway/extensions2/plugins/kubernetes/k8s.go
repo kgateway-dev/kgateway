@@ -17,7 +17,7 @@ import (
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
+	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
@@ -36,7 +36,7 @@ func NewPlugin(ctx context.Context, commonCol *common.CommonCollections) extensi
 
 func NewPluginFromCollections(
 	ctx context.Context,
-	krtOpts krtutil.KrtOptions,
+	krtOpts krtinternal.KrtOptions,
 	pods krt.Collection[krtcollections.LocalityPod],
 	services krt.Collection[*corev1.Service],
 	endpointSlices krt.Collection[*discoveryv1.EndpointSlice],

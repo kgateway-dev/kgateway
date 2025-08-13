@@ -17,9 +17,10 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	tmetrics "github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/metrics"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
+	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics/metricstest"
+	krtpkg "github.com/kgateway-dev/kgateway/v2/pkg/utils/krtutil"
 )
 
 const (
@@ -208,16 +209,16 @@ func TestXDSSnapshotsCollectionMetrics(t *testing.T) {
 			mockUccWithEndpoints := krttest.GetMockCollection[UccWithEndpoints](mock)
 			mockUccWithCluster := krttest.GetMockCollection[uccWithCluster](mock)
 
-			c := snapshotPerClient(krtutil.KrtOptions{}, mockUcc, mockGatewayXDSResorces,
+			c := snapshotPerClient(krtinternal.KrtOptions{}, mockUcc, mockGatewayXDSResorces,
 				PerClientEnvoyEndpoints{
 					endpoints: mockUccWithEndpoints,
-					index: krtutil.UnnamedIndex(mockUccWithEndpoints, func(ucc UccWithEndpoints) []string {
+					index: krtpkg.UnnamedIndex(mockUccWithEndpoints, func(ucc UccWithEndpoints) []string {
 						return []string{ucc.Client.ResourceName()}
 					}),
 				},
 				PerClientEnvoyClusters{
 					clusters: mockUccWithCluster,
-					index: krtutil.UnnamedIndex(mockUccWithCluster, func(ucc uccWithCluster) []string {
+					index: krtpkg.UnnamedIndex(mockUccWithCluster, func(ucc uccWithCluster) []string {
 						return []string{ucc.Client.ResourceName()}
 					}),
 				})

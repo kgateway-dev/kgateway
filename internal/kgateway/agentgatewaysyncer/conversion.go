@@ -397,9 +397,10 @@ func buildADPDestination(
 	k schema.GroupVersionKind,
 	backendCol *krtcollections.BackendIndex,
 ) (*api.RouteBackend, *reporter.RouteCondition) {
+	ref := normalizeReference(to.Group, to.Kind, wellknown.ServiceGVK)
 	// check if the reference is allowed
 	if toNs := to.Namespace; toNs != nil && string(*toNs) != ns {
-		if !ctx.Grants.BackendAllowed(ctx.Krt, k, to.Name, *toNs, ns) {
+		if !ctx.Grants.BackendAllowed(ctx.Krt, k, to.Name, *toNs, ns, ref) {
 			return nil, &reporter.RouteCondition{
 				Type:    gwv1.RouteConditionResolvedRefs,
 				Status:  metav1.ConditionFalse,
@@ -423,7 +424,7 @@ func buildADPDestination(
 		Weight: weight,
 	}
 	var port *gwv1.PortNumber
-	ref := normalizeReference(to.Group, to.Kind, wellknown.ServiceGVK)
+
 	switch ref.GroupKind() {
 	case wellknown.InferencePoolGVK.GroupKind():
 		if strings.Contains(string(to.Name), ".") {

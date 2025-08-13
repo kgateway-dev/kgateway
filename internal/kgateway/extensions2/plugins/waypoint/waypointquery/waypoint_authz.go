@@ -9,9 +9,9 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	gwapi "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
+	krtpkg "github.com/kgateway-dev/kgateway/v2/pkg/utils/krtutil"
 )
 
 // getRootNamespace sets the RootNamespace from settings.
@@ -36,7 +36,7 @@ func getRootNamespace(settingRootNamespace string) string {
 // kind: ServiceEntry with group: networking.istio.io in the same namespace.
 
 func buildAuthzTargetIndex(policies krt.Collection[*authcr.AuthorizationPolicy], rootNamespace string) krt.Index[ir.ObjectSource, *authcr.AuthorizationPolicy] {
-	return krtutil.UnnamedIndex(policies, func(p *authcr.AuthorizationPolicy) []ir.ObjectSource {
+	return krtpkg.UnnamedIndex(policies, func(p *authcr.AuthorizationPolicy) []ir.ObjectSource {
 		var keys []ir.ObjectSource
 		for _, targetRef := range p.Spec.GetTargetRefs() {
 			if (targetRef.GetKind() == "Service" && (targetRef.GetGroup() == "" || targetRef.GetGroup() == "core")) ||

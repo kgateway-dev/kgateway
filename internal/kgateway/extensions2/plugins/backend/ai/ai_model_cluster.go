@@ -109,6 +109,9 @@ func buildModelCluster(aiUs *v1alpha1.AIBackend, aiSecret *ir.Secret, multiSecre
 						secretForMultiPool = multiSecrets[GetMultiPoolSecretKey(idx, jdx, secretRef.Name)]
 					}
 					result, err = buildVertexAIEndpoint(ep.Provider.VertexAI, ep.HostOverride, secretForMultiPool)
+				} else if ep.Provider.Bedrock != nil {
+					// currently only supported in agentgateway
+					slog.Error("bedrock on the AI backend are not supported yet, switch to agentgateway class")
 				}
 				if err != nil {
 					return err

@@ -18,7 +18,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
+	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 )
@@ -846,7 +846,7 @@ func TestADPRouteCollection(t *testing.T) {
 			}
 
 			// Create KRT options
-			krtopts := krtutil.KrtOptions{}
+			krtopts := krtinternal.KrtOptions{}
 
 			// Call ADPRouteCollection
 			adpRoutes := ADPRouteCollection(httpRoutes, grpcRoutes, tcpRoutes, tlsRoutes, routeInputs, krtopts, pluginsdk.Plugin{})
@@ -1454,7 +1454,7 @@ func TestADPRouteCollectionGRPC(t *testing.T) {
 			}
 
 			// Create KRT options
-			krtopts := krtutil.KrtOptions{}
+			krtopts := krtinternal.KrtOptions{}
 
 			// Call ADPRouteCollection
 			adpRoutes := ADPRouteCollection(httpRoutes, grpcRoutes, tcpRoutes, tlsRoutes, routeInputs, krtopts, pluginsdk.Plugin{})
@@ -1823,7 +1823,7 @@ func TestADPRouteCollectionWithFilters(t *testing.T) {
 			}
 
 			// Create KRT options
-			krtopts := krtutil.KrtOptions{}
+			krtopts := krtinternal.KrtOptions{}
 
 			// Call ADPRouteCollection
 			adpRoutes := ADPRouteCollection(httpRoutes, grpcRoutes, tcpRoutes, tlsRoutes, routeInputs, krtopts, pluginsdk.Plugin{})

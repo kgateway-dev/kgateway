@@ -4,13 +4,13 @@ This document describes workflows that may be useful when debugging e2e tests wi
 
 ## Overview
 
-The entry point for an e2e test is a Go test function of the form `func TestXyz(t *testing.T)` which represents a top level suite against an installation mode of Gloo. For example, the `TestKgateway` function in [kgateway_test.go](/test/kubernetes/e2e/tests/kgateway_test.go) is a top-level suite comprising multiple feature specific suites that are invoked as subtests.
+The entry point for an e2e test is a Go test function of the form `func TestXyz(t *testing.T)` which represents a top level suite against an installation mode of kgateway. For example, the `TestKgateway` function in [kgateway_test.go](/test/kubernetes/e2e/tests/kgateway_test.go) is a top-level suite comprising multiple feature specific suites that are invoked as subtests.
 
 Each feature suite is invoked as a subtest of the top level suite. The subtests use [testify](https://github.com/stretchr/testify) to structure the tests in the feature's test suite and make use of the library's assertions.
 
 ## Step 1: Setting Up A Cluster
 ### Using a previously released version
-It is possible to run these tests against a previously released version of Gloo Gateway. This is useful for testing a release candidate, or a nightly build.
+It is possible to run these tests against a previously released version of kgateway. This is useful for testing a release candidate, or a nightly build.
 
 There is no setup required for this option, as the test suite will download the helm chart archive and `glooctl` binary from the specified release. You will use the `RELEASED_VERSION` environment variable when running the tests. See the [variable definition](/test/testutils/env.go) for more details.
 
@@ -25,6 +25,7 @@ For these tests to run, we require the following conditions:
 The default settings should be sufficient for a working local environment.
 However, the setup script accepts a number of environment variables to control the creation of a kind cluster and deployment of kgateway resources.
 Please refer to the script itself to see what variables are available if you need customization.
+Additionally, when running on apple silicon architectures, uncheck `Use Rosetta for x86_64/amd64 emulation on Apple Silicon` in your docker settings.
 
 Basic Example:
 ```bash
@@ -77,7 +78,7 @@ For more detailed instructions on using Tilt, see [devel/tilt/tilt.md](/devel/ti
 
 ## Step 2: Running Tests
 _To run the regression tests, your kubeconfig file must point to a running Kubernetes cluster:_
-```
+```bash
 kubectl config current-context
 ```
 _should run `kind-<CLUSTER_NAME>`_
@@ -113,7 +114,7 @@ For a complete list of available environment variables that can be used to confi
 #### VSCode
 You can use a custom debugger launch config that sets the `test.run` flag to run a specific test:
 
-```
+```json
 {
   "name": "e2e",
   "type": "go",
@@ -152,7 +153,7 @@ SKIP_INSTALL=true CLUSTER_NAME=kind INSTALL_NAMESPACE=kgateway-system go test -v
 ```
 
 Alternatively, with VSCode you can use a custom debugger launch config that sets the `test.run` flag to run a specific test:
-```
+```json
 {
   "name": "e2e",
   "type": "go",
@@ -182,7 +183,7 @@ is also the case for other env variables that are required for the test to run (
 
 If there are multiple tests in a feature suite, you can run a single test by adding the test name to the `-run` flag in the run configuration:
 
-```
+```bash
 -test.run="^TestKgateway$/^RouteOptions$/^TestConfigureRouteOptionsWithTargetRef$"
 ```
 
@@ -190,12 +191,12 @@ If there are multiple tests in a feature suite, you can run a single test by add
 ### Running the same tests as our CI pipeline
 We [load balance tests](./load_balancing_tests.md) across different clusters when executing them in CI. If you would like to replicate the exact set of tests that are run for a given cluster, you should:
 1. Inspect the `go-test-run-regex` defined in the [test matrix](/.github/workflows/pr-kubernetes-tests.yaml)
-```
+```bash
 go-test-run-regex: '(^TestKgateway$$)'
 ```
 _NOTE: There is `$$` in the GitHub action definition, since a single `$` is expanded_
 2. Inspect the `go-test-args` defined in the [test matrix](/.github/workflows/pr-kubernetes-tests.yaml)
-```
+```bash
 go-test-args: '-v -timeout=25m'
 ```
 3. Combine these arguments when invoking go test:

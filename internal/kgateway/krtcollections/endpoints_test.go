@@ -17,8 +17,10 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/ptr"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
+	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
+	krtpkg "github.com/kgateway-dev/kgateway/v2/pkg/utils/krtutil"
 )
 
 func newBackendObjectIR(in ir.BackendObjectIR) ir.BackendObjectIR {
@@ -280,6 +282,119 @@ func TestEndpointsForUpstreamWithDifferentNameButSameEndpoints(t *testing.T) {
 	h2 := result3.LbEpsEqualityHash ^ result4.LbEpsEqualityHash
 
 	g.Expect(h1).NotTo(Equal(h2), "not expected %v, got %v", h1, h2)
+}
+
+func TestEndpointsForUpstreamWithDifferentTrafficDistributionButSameEndpoints(t *testing.T) {
+	g := NewWithT(t)
+
+	// Create base backend object
+	baseObj := ir.BackendObjectIR{
+		ObjectSource: ir.ObjectSource{
+			Namespace: "ns",
+			Name:      "svc",
+			Group:     "",
+			Kind:      "Service",
+		},
+		Port: 8080,
+		Obj: &corev1.Service{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "svc",
+				Namespace: "ns",
+			},
+			Spec: corev1.ServiceSpec{
+				Ports: []corev1.ServicePort{
+					{
+						Name: "http",
+						Port: 8080,
+					},
+				},
+			},
+		},
+	}
+
+	// Create two backends with different traffic distributions
+	us1 := newBackendObjectIR(baseObj)
+	us1.TrafficDistribution = wellknown.TrafficDistributionAny
+
+	us2 := newBackendObjectIR(baseObj)
+	us2.TrafficDistribution = wellknown.TrafficDistributionPreferSameZone
+
+	// Create endpoints with same metadata
+	emd := ir.EndpointWithMd{
+		LbEndpoint: &envoyendpointv3.LbEndpoint{
+			HostIdentifier: &envoyendpointv3.LbEndpoint_Endpoint{
+				Endpoint: &envoyendpointv3.Endpoint{
+					Address: &envoycorev3.Address{
+						Address: &envoycorev3.Address_SocketAddress{
+							SocketAddress: &envoycorev3.SocketAddress{
+								Address: "1.2.3.4",
+								PortSpecifier: &envoycorev3.SocketAddress_PortValue{
+									PortValue: 8080,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		EndpointMd: ir.EndpointMetadata{
+			Labels: map[string]string{
+				corev1.LabelTopologyRegion: "region",
+				corev1.LabelTopologyZone:   "zone",
+			},
+		},
+	}
+
+	// Create EndpointsForBackend from both backends with same endpoints
+	result1 := ir.NewEndpointsForBackend(us1)
+	result1.Add(ir.PodLocality{
+		Region: "region",
+		Zone:   "zone",
+	}, emd)
+
+	result2 := ir.NewEndpointsForBackend(us2)
+	result2.Add(ir.PodLocality{
+		Region: "region",
+		Zone:   "zone",
+	}, emd)
+
+	// Verify that the hashes are different due to different traffic distribution
+	g.Expect(result1.LbEpsEqualityHash).NotTo(Equal(result2.LbEpsEqualityHash),
+		"Hash should be different when traffic distribution changes")
+
+	// Test with more traffic distribution values
+	us3 := newBackendObjectIR(baseObj)
+	us3.TrafficDistribution = wellknown.TrafficDistributionPreferSameNode
+
+	us4 := newBackendObjectIR(baseObj)
+	us4.TrafficDistribution = wellknown.TrafficDistributionPreferSameNetwork
+
+	result3 := ir.NewEndpointsForBackend(us3)
+	result3.Add(ir.PodLocality{
+		Region: "region",
+		Zone:   "zone",
+	}, emd)
+
+	result4 := ir.NewEndpointsForBackend(us4)
+	result4.Add(ir.PodLocality{
+		Region: "region",
+		Zone:   "zone",
+	}, emd)
+
+	// All hashes should be different
+	hashes := []uint64{
+		result1.LbEpsEqualityHash,
+		result2.LbEpsEqualityHash,
+		result3.LbEpsEqualityHash,
+		result4.LbEpsEqualityHash,
+	}
+
+	// Check that all hashes are unique
+	hashMap := make(map[uint64]bool)
+	for _, hash := range hashes {
+		g.Expect(hashMap[hash]).To(BeFalse(), "Hash should be unique for each traffic distribution")
+		hashMap[hash] = true
+	}
 }
 
 func TestEndpoints(t *testing.T) {
@@ -1094,7 +1209,7 @@ func TestEndpoints(t *testing.T) {
 			g := NewWithT(t)
 			mock := krttest.NewMock(t, tc.inputs)
 			nodes := NewNodeMetadataCollection(krttest.GetMockCollection[*corev1.Node](mock))
-			pods := NewLocalityPodsCollection(nodes, krttest.GetMockCollection[*corev1.Pod](mock), krtutil.KrtOptions{})
+			pods := NewLocalityPodsCollection(nodes, krttest.GetMockCollection[*corev1.Pod](mock), krtinternal.KrtOptions{})
 			pods.WaitUntilSynced(context.Background().Done())
 			endpointSettings := EndpointsSettings{
 				EnableAutoMtls: false,
@@ -1104,7 +1219,7 @@ func TestEndpoints(t *testing.T) {
 			endpointSlices := krttest.GetMockCollection[*discoveryv1.EndpointSlice](mock)
 
 			// Initialize the EndpointSlicesByService index
-			endpointSlicesByService := krtutil.UnnamedIndex(endpointSlices, func(es *discoveryv1.EndpointSlice) []types.NamespacedName {
+			endpointSlicesByService := krtpkg.UnnamedIndex(endpointSlices, func(es *discoveryv1.EndpointSlice) []types.NamespacedName {
 				svcName, ok := es.Labels[discoveryv1.LabelServiceName]
 				if !ok {
 					return nil

@@ -10,7 +10,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	gwv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
+	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
 
@@ -37,7 +37,7 @@ type ReferenceGrants struct {
 	index      krt.Index[ReferencePair, ReferenceGrant]
 }
 
-func ReferenceGrantsCollection(referenceGrants krt.Collection[*gwv1beta1.ReferenceGrant], krtopts krtutil.KrtOptions) krt.Collection[ReferenceGrant] {
+func ReferenceGrantsCollection(referenceGrants krt.Collection[*gwv1beta1.ReferenceGrant], krtopts krtinternal.KrtOptions) krt.Collection[ReferenceGrant] {
 	return krt.NewManyCollection(referenceGrants, func(ctx krt.HandlerContext, obj *gwv1beta1.ReferenceGrant) []ReferenceGrant {
 		rp := obj.Spec
 		results := make([]ReferenceGrant, 0, len(rp.From)*len(rp.To))
@@ -133,14 +133,16 @@ func (refs ReferenceGrants) SecretAllowed(ctx krt.HandlerContext, resourceName s
 	return false
 }
 
-func (refs ReferenceGrants) BackendAllowed(ctx krt.HandlerContext,
+func (refs ReferenceGrants) BackendAllowed(
+	ctx krt.HandlerContext,
 	k schema.GroupVersionKind,
 	backendName gwv1beta1.ObjectName,
 	backendNamespace gwv1beta1.Namespace,
 	routeNamespace string,
+	refKind schema.GroupVersionKind,
 ) bool {
 	from := Reference{Kind: k, Namespace: gwv1beta1.Namespace(routeNamespace)}
-	to := Reference{Kind: wellknown.SecretGVK, Namespace: backendNamespace}
+	to := Reference{Kind: refKind, Namespace: backendNamespace}
 	pair := ReferencePair{From: from, To: to}
 	grants := krt.Fetch(ctx, refs.collection, krt.FilterIndex(refs.index, pair))
 	for _, g := range grants {

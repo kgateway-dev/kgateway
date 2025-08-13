@@ -10,6 +10,7 @@ type SupportedLLMProviderApplyConfiguration struct {
 	Anthropic   *AnthropicConfigApplyConfiguration   `json:"anthropic,omitempty"`
 	Gemini      *GeminiConfigApplyConfiguration      `json:"gemini,omitempty"`
 	VertexAI    *VertexAIConfigApplyConfiguration    `json:"vertexai,omitempty"`
+	Bedrock     *BedrockConfigApplyConfiguration     `json:"bedrock,omitempty"`
 }
 
 // SupportedLLMProviderApplyConfiguration constructs a declarative configuration of the SupportedLLMProvider type for use with
@@ -55,5 +56,13 @@ func (b *SupportedLLMProviderApplyConfiguration) WithGemini(value *GeminiConfigA
 // If called multiple times, the VertexAI field is set to the value of the last call.
 func (b *SupportedLLMProviderApplyConfiguration) WithVertexAI(value *VertexAIConfigApplyConfiguration) *SupportedLLMProviderApplyConfiguration {
 	b.VertexAI = value
+	return b
+}
+
+// WithBedrock sets the Bedrock field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Bedrock field is set to the value of the last call.
+func (b *SupportedLLMProviderApplyConfiguration) WithBedrock(value *BedrockConfigApplyConfiguration) *SupportedLLMProviderApplyConfiguration {
+	b.Bedrock = value
 	return b
 }

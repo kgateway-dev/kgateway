@@ -131,6 +131,8 @@ func NewEndpointsForBackend(us BackendObjectIR) *EndpointsForBackend {
 		h.Write([]byte{0})
 		h.Write([]byte(k + "=" + v))
 	}
+	h.Write([]byte{0})
+	h.Write([]byte{byte(us.TrafficDistribution)})
 	upstreamHash := h.Sum64()
 
 	return &EndpointsForBackend{

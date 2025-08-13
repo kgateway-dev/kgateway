@@ -22,6 +22,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
+	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 )
 
 var logger = logging.New("translator")
@@ -71,6 +72,7 @@ func (s *CombinedTranslator) Init(ctx context.Context) {
 	s.irtranslator = &irtranslator.Translator{
 		ContributedPolicies:  s.extensions.ContributesPolicies,
 		RouteReplacementMode: s.commonCols.Settings.RouteReplacementMode,
+		Validator:            validator.New(), // TODO: define this once for RDS and TP plugin.
 	}
 	s.backendTranslator = &irtranslator.BackendTranslator{
 		ContributedBackends: make(map[schema.GroupKind]ir.BackendInit),

@@ -14,7 +14,7 @@ import (
 	infv1a2 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
+	krtpkg "github.com/kgateway-dev/kgateway/v2/pkg/utils/krtutil"
 )
 
 func makePool(opts ...func(*infv1a2.InferencePool)) *inferencePool {
@@ -97,7 +97,7 @@ func TestResolvePoolEndpoints_Indexing(t *testing.T) {
 
 	// Create the LocalityPod index
 	key := fmt.Sprintf("ns/p")
-	idx := krtutil.UnnamedIndex(col, func(p krtcollections.LocalityPod) []string {
+	idx := krtpkg.UnnamedIndex(col, func(p krtcollections.LocalityPod) []string {
 		return []string{key}
 	})
 

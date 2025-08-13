@@ -69,6 +69,14 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 				manifest: standardModeInvalidPolicyManifest,
 				mode:     settings.RouteReplacementStandard,
 			},
+			"TestStrictModeInvalidMatcherDropsRoute": {
+				manifest: strictModeInvalidMatcherManifest,
+				mode:     settings.RouteReplacementStrict,
+			},
+			"TestStrictModeInvalidRouteReplacement": {
+				manifest: strictModeInvalidRouteManifest,
+				mode:     settings.RouteReplacementStrict,
+			},
 		},
 	}
 }
@@ -215,6 +223,64 @@ func (s *testingSuite) TestStandardModeInvalidPolicyReplacement() {
 		},
 		&testmatchers.HttpResponse{
 			StatusCode: http.StatusOK,
+		},
+	)
+}
+
+// TestStrictModeInvalidMatcherDropsRoute tests that in STRICT mode,
+// routes with invalid matchers are dropped entirely
+func (s *testingSuite) TestStrictModeInvalidMatcherDropsRoute() {
+	// Verify route status shows Accepted=False with RouteRuleDropped reason
+	s.testInstallation.Assertions.EventuallyHTTPRouteCondition(
+		s.ctx,
+		invalidMatcherRoute.Name,
+		invalidMatcherRoute.Namespace,
+		gwv1.RouteConditionAccepted,
+		metav1.ConditionFalse,
+	)
+
+	// Verify that the route was dropped (no route should exist, so we should get 404)
+	s.testInstallation.Assertions.AssertEventualCurlResponse(
+		s.ctx,
+		testdefaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
+			curl.WithHostHeader("invalid-matcher.example.com"),
+			curl.WithPort(gatewayPort),
+			curl.WithPath("/headers"),
+			curl.WithHeader("x-test-header", "some-value"),
+		},
+		&testmatchers.HttpResponse{
+			StatusCode: http.StatusNotFound,
+		},
+	)
+}
+
+// TestStrictModeInvalidRouteReplacement tests that in STRICT mode,
+// routes with invalid built-in policies are replaced with direct responses
+func (s *testingSuite) TestStrictModeInvalidRouteReplacement() {
+	// Verify route status shows Accepted=False with RouteRuleDropped reason (for replacement)
+	s.testInstallation.Assertions.EventuallyHTTPRouteCondition(
+		s.ctx,
+		invalidConfigRoute.Name,
+		invalidConfigRoute.Namespace,
+		gwv1.RouteConditionAccepted,
+		metav1.ConditionFalse,
+	)
+
+	// Verify that a route with an invalid built-in policy is replaced with a 500 direct response
+	s.testInstallation.Assertions.AssertEventualCurlResponse(
+		s.ctx,
+		testdefaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
+			curl.WithHostHeader("invalid-config.example.com"),
+			curl.WithPort(gatewayPort),
+			curl.WithPath("/headers"),
+		},
+		&testmatchers.HttpResponse{
+			StatusCode: http.StatusInternalServerError,
+			Body:       gomega.ContainSubstring(`invalid route configuration detected and replaced with a direct response.`),
 		},
 	)
 }

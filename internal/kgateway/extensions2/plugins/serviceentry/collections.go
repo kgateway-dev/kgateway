@@ -13,14 +13,14 @@ import (
 	"istio.io/istio/pkg/kube/kubetypes"
 	"istio.io/istio/pkg/slices"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
-
 	networking "istio.io/api/networking/v1alpha3"
 	networkingclient "istio.io/client-go/pkg/apis/networking/v1"
 	"istio.io/istio/pkg/maps"
+
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
+	krtpkg "github.com/kgateway-dev/kgateway/v2/pkg/utils/krtutil"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -186,7 +186,7 @@ func selectedWorkloads(
 	krt.Collection[selectedWorkload],
 	krt.Index[string, selectedWorkload],
 ) {
-	seNsIndex := krtutil.UnnamedIndex(ServiceEntries, func(o seSelector) []string {
+	seNsIndex := krtpkg.UnnamedIndex(ServiceEntries, func(o seSelector) []string {
 		namespaces := sets.New(o.GetNamespace())
 		if aliaser != nil {
 			for _, alias := range aliaser(o.ServiceEntry) {
@@ -244,7 +244,7 @@ func selectedWorkloads(
 
 	// consolidate Pods and WorkloadEntries
 	allWorkloads := krt.JoinCollection([]krt.Collection[selectedWorkload]{selectedPods, selectedWorkloadEntries}, krt.WithName("ServiceEntrySelectWorkloads"))
-	workloadsByServiceEntry := krtutil.UnnamedIndex(allWorkloads, func(o selectedWorkload) []string {
+	workloadsByServiceEntry := krtpkg.UnnamedIndex(allWorkloads, func(o selectedWorkload) []string {
 		return slices.Map(o.selectedBy, func(n krt.Named) string {
 			return n.ResourceName()
 		})

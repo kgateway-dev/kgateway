@@ -221,7 +221,7 @@ envtest-path: ## Set the envtest path
 #----------------------------------------------------------------------------------
 
 GO_TEST_ENV ?=
-# Testings flags: https://pkg.go.dev/cmd/go#hdr-Testing_flags
+# Testing flags: https://pkg.go.dev/cmd/go#hdr-Testing_flags
 # The default timeout for a suite is 10 minutes, but this can be overridden by setting the -timeout flag. Currently set
 # to 25 minutes based on the time it takes to run the longest test setup (kgateway_test).
 GO_TEST_ARGS ?= -timeout=25m -cpu=4 -race -outputdir=$(OUTPUT_DIR)

@@ -38,7 +38,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/registry"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/listener"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
+	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned/fake"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
@@ -529,7 +529,7 @@ func (tc TestCase) Run(
 		ourObjs []runtime.Object
 	)
 	for _, file := range tc.InputFiles {
-		objs, err := translator.LoadFromFiles(ctx, file, scheme)
+		objs, err := translator.LoadFromFiles(file, scheme)
 		if err != nil {
 			return nil, err
 		}
@@ -599,7 +599,7 @@ func (tc TestCase) Run(
 		}, metav1.CreateOptions{})
 	}
 
-	krtOpts := krtutil.KrtOptions{
+	krtOpts := krtinternal.KrtOptions{
 		Stop: ctx.Done(),
 	}
 

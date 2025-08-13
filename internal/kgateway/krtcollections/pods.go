@@ -14,7 +14,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
+	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 )
 
 type NodeMetadata struct {
@@ -142,7 +142,7 @@ func (c LocalityPod) Equals(in LocalityPod) bool {
 		slices.Equal(c.Addresses, in.Addresses)
 }
 
-func newNodeCollection(istioClient kube.Client, krtOptions krtutil.KrtOptions) krt.Collection[NodeMetadata] {
+func newNodeCollection(istioClient kube.Client, krtOptions krtinternal.KrtOptions) krt.Collection[NodeMetadata] {
 	nodeClient := kclient.NewFiltered[*corev1.Node](
 		istioClient,
 		kclient.Filter{ObjectFilter: istioClient.ObjectFilter()},
@@ -160,7 +160,7 @@ func NewNodeMetadataCollection(nodes krt.Collection[*corev1.Node]) krt.Collectio
 	})
 }
 
-func NewPodsCollection(istioClient kube.Client, krtOptions krtutil.KrtOptions) (krt.Collection[LocalityPod], krt.Collection[WrappedPod]) {
+func NewPodsCollection(istioClient kube.Client, krtOptions krtinternal.KrtOptions) (krt.Collection[LocalityPod], krt.Collection[WrappedPod]) {
 	podClient := kclient.NewFiltered[*corev1.Pod](istioClient, kclient.Filter{
 		ObjectTransform: kube.StripPodUnusedFields,
 		ObjectFilter:    istioClient.ObjectFilter(),
@@ -170,11 +170,11 @@ func NewPodsCollection(istioClient kube.Client, krtOptions krtutil.KrtOptions) (
 	return NewLocalityPodsCollection(nodes, pods, krtOptions), NewPodWrapperCollection(pods, krtOptions)
 }
 
-func NewLocalityPodsCollection(nodes krt.Collection[NodeMetadata], pods krt.Collection[*corev1.Pod], krtOptions krtutil.KrtOptions) krt.Collection[LocalityPod] {
+func NewLocalityPodsCollection(nodes krt.Collection[NodeMetadata], pods krt.Collection[*corev1.Pod], krtOptions krtinternal.KrtOptions) krt.Collection[LocalityPod] {
 	return krt.NewCollection(pods, augmentPodLabels(nodes), krtOptions.ToOptions("AugmentPod")...)
 }
 
-func NewPodWrapperCollection(pods krt.Collection[*corev1.Pod], krtOptions krtutil.KrtOptions) krt.Collection[WrappedPod] {
+func NewPodWrapperCollection(pods krt.Collection[*corev1.Pod], krtOptions krtinternal.KrtOptions) krt.Collection[WrappedPod] {
 	return krt.NewCollection(pods, func(ctx krt.HandlerContext, obj *corev1.Pod) *WrappedPod {
 		objMeta, _ := kube.GetWorkloadMetaFromPod(obj)
 		containerPorts := map[string][]corev1.ContainerPort{}
