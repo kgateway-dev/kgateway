@@ -7,7 +7,6 @@ spec:
     agentGateway:
       enabled: true
       logLevel: trace
-      customConfigMapName: agent-gateway-config
 #      image:
 #        tag: b1b9c00
 ---
