@@ -25,11 +25,17 @@ spec:
   transformation:
     request:
       set:
+# in request header context, both header() and request_header() refer to the same set of headers
         - name: x-foo-bar
           value: "foolen_{{header(\"content-length\")}}"
+        - name: x-foo-bar2
+          value: "foolen_{{request_header(\"content-length\")}}"
         - name: ":method"
           value: "pseudo-not-rejected!"
     response:
       set:
+# in response header context, header() refers to response headers and request_header() refer to request headers
         - name: x-foo-response
           value: "{%- if request_header(\"x-add-bar\") != \"\" -%}supersuper{{request_header(\"x-add-bar\")}}{% else %}notsuper{% endif %}"
+        - name: x-foo-response-status
+          value: "{{header(\":status\")}}"

@@ -1,8 +1,7 @@
-//go:build ignore
-
 package matchers
 
 import (
+	"fmt"
 	"net/http"
 	"net/textproto"
 
@@ -21,10 +20,36 @@ func ContainHeaders(headers http.Header) types.GomegaMatcher {
 		// If we do not this we will create an And matcher for 0 objects, which leads to a panic
 		return gstruct.Ignore()
 	}
+
+	// generic transform: extract http.Header no matter if it's a *http.Request or *http.Response
+	headerExtractor := func(actual interface{}) (http.Header, error) {
+		switch v := actual.(type) {
+		case *http.Response:
+			return v.Header, nil
+		case *http.Request:
+			return v.Header, nil
+		case http.Header:
+			return v, nil
+		case *http.Header:
+			return *v, nil
+		default:
+			return nil, fmt.Errorf("ContainHeaders: unsupported type %T, must be *http.Response, *http.Request, http.Header, or *http.Header", actual)
+		}
+	}
+
 	headerMatchers := make([]types.GomegaMatcher, 0, len(headers))
 	for k, v := range headers {
 		//nolint:bodyclose // The caller of this matcher constructor should be responsible for ensuring the body close
-		headerMatchers = append(headerMatchers, gomega.WithTransform(transforms.WithHeaderValues(k), gomega.ContainElements(v)))
+		headerMatchers = append(headerMatchers,
+			gomega.WithTransform(func(actual interface{}) []string {
+				hdr, err := headerExtractor(actual)
+				if err != nil {
+					// cause the matcher to fail fast if unexpected type
+					panic(err)
+				}
+				return hdr.Values(k)
+			}, gomega.ContainElements(v)),
+		)
 	}
 	return gomega.And(headerMatchers...)
 }
