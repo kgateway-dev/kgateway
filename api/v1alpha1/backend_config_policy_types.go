@@ -276,7 +276,7 @@ type TLSFiles struct {
 	RootCA *string `json:"rootCA,omitempty"`
 }
 
-// +kubebuilder:validation:AtMostOneOf=leastRequest;roundRobin;ringHash;maglev;random
+// +kubebuilder:validation:ExactlyOneOf=leastRequest;roundRobin;ringHash;maglev;random
 type LoadBalancer struct {
 	// HealthyPanicThreshold configures envoy's panic threshold percentage between 0-100. Once the number of non-healthy hosts
 	// reaches this percentage, envoy disregards health information.
