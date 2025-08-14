@@ -698,8 +698,10 @@ func createMockSecretIndex(t test.Failer, namespace, name string, data map[strin
 	mockRefGrantCollection := krttest.GetMockCollection[*gwv1beta1.ReferenceGrant](mock)
 
 	// Wait for the mock collections to sync
-	mockSecretCollection.WaitUntilSynced(context.Background().Done())
-	mockRefGrantCollection.WaitUntilSynced(context.Background().Done())
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second) // long timeout - just in case. we should never reach it.
+	defer cancel()
+	mockSecretCollection.WaitUntilSynced(ctx.Done())
+	mockRefGrantCollection.WaitUntilSynced(ctx.Done())
 
 	// Create the secret collection
 	secretsCol := map[schema.GroupKind]krt.Collection[ir.Secret]{
@@ -726,7 +728,7 @@ func createMockSecretIndex(t test.Failer, namespace, name string, data map[strin
 
 	// Wait for the transformed secret collection to sync
 	secretCollection := secretsCol[corev1.SchemeGroupVersion.WithKind("Secret").GroupKind()]
-	secretCollection.WaitUntilSynced(context.Background().Done())
+	secretCollection.WaitUntilSynced(ctx.Done())
 
 	// Create the SecretIndex
 	index := krtcollections.NewSecretIndex(secretsCol, refgrants)
