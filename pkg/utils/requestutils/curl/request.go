@@ -27,7 +27,7 @@ func BuildArgs(options ...Option) []string {
 		method:            "",
 		host:              "127.0.0.1",
 		port:              8080,
-		headers:           make(map[string]string),
+		headers:           make(map[string][]string),
 		scheme:            "http", // https://github.com/golang/go/issues/40587
 		sni:               "",
 		caFile:            "",
@@ -60,7 +60,7 @@ type requestConfig struct {
 	method            string
 	host              string
 	port              int
-	headers           map[string]string
+	headers           map[string][]string
 	body              string
 	sni               string
 	caFile            string
@@ -106,8 +106,10 @@ func (c *requestConfig) generateArgs() []string {
 		args = append(args, "--request", c.method)
 	}
 
-	for h, v := range c.headers {
-		args = append(args, "-H", fmt.Sprintf("%v: %v", h, v))
+	for h, values := range c.headers {
+		for _, v := range values {
+			args = append(args, "-H", fmt.Sprintf("%v: %v", h, v))
+		}
 	}
 	if c.caFile != "" {
 		args = append(args, "--cacert", c.caFile)

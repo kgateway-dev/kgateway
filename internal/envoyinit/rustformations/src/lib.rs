@@ -43,7 +43,7 @@ fn new_http_filter_config_fn<EC: EnvoyHttpFilterConfig, EHF: EnvoyHttpFilter>(
         }
     };
     match filter_name {
-        "http_simple_mutations" => http_simple_mutations::FilterConfig::new(filter_config)
+        "http_simple_mutations" => http_simple_mutations::LocalFilterConfig::new(filter_config)
             .map(|config| Box::new(config) as Box<dyn HttpFilterConfig<EHF>>),
         _ => panic!(
             "Unknown filter name: {}, known filters are {}",
@@ -61,7 +61,7 @@ fn new_http_filter_per_route_config_fn(name: &str, config: &[u8]) -> Option<Box<
         }
     };
     match name {
-        "http_simple_mutations" => http_simple_mutations::PerRouteConfig::new(per_route_config)
+        "http_simple_mutations" => transformations::PerRouteConfig::new(per_route_config)
             .map(|config| Box::new(config) as Box<dyn Any>),
         _ => panic!(
             "Unknown filter name: {}, known filters are {}",

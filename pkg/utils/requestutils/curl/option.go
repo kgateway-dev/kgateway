@@ -2,7 +2,6 @@ package curl
 
 import (
 	"encoding/base64"
-	"maps"
 	"net/http"
 	"strconv"
 	"strings"
@@ -196,7 +195,7 @@ func WithBasicAuth(username string, password string) Option {
 // https://curl.se/docs/manpage.html#-H
 func WithHeader(key, value string) Option {
 	return func(config *requestConfig) {
-		config.headers[key] = value
+		config.headers[key] = []string{value}
 	}
 }
 
@@ -204,9 +203,19 @@ func WithHeader(key, value string) Option {
 func WithHeaders(headers map[string]string) Option {
 	return func(config *requestConfig) {
 		if config.headers == nil {
-			config.headers = make(map[string]string)
+			config.headers = make(map[string][]string)
 		}
-		maps.Copy(config.headers, headers)
+		for h, v := range headers {
+			config.headers[h] = []string{v}
+		}
+	}
+}
+
+// WithMultiHeaders returns the Option to configure multi headers with the same key but
+// different values for the curl request
+func WithMultiHeader(key string, values []string) Option {
+	return func(config *requestConfig) {
+		config.headers[key] = values
 	}
 }
 

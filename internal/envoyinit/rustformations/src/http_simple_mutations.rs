@@ -1,164 +1,41 @@
 use envoy_proxy_dynamic_modules_rust_sdk::*;
-use minijinja::value::Rest;
-use minijinja::{context, Environment, State};
 
 #[cfg(test)]
 use mockall::*;
 
-use serde::{Deserialize, Serialize};
+use lazy_static::lazy_static;
 use std::collections::HashMap;
 
-#[derive(Serialize, Deserialize, Clone)]
-pub struct PerRouteConfig {
-    #[serde(default)]
-    request_headers_setter: Vec<(String, String)>,
-    #[serde(default)]
-    response_headers_setter: Vec<(String, String)>,
+lazy_static! {
+    static ref EMPTY_MAP: HashMap<String, String> = HashMap::new();
 }
 
-impl PerRouteConfig {
-    pub fn new(config: &str) -> Option<Self> {
-        let per_route_config: PerRouteConfig = match serde_json::from_str(config) {
-            Ok(cfg) => cfg,
-            Err(err) => {
-                eprintln!("Error parsing per route config: {config} {err}");
-                return None;
-            }
-        };
-        Some(per_route_config)
-    }
-}
+use transformations::{FilterConfig, PerRouteConfig};
 
-/// This implements the [`envoy_proxy_dynamic_modules_rust_sdk::HttpFilterConfig`] trait.
-///
-/// The trait corresponds to a Envoy filter chain configuration.
-
-#[derive(Serialize, Deserialize)]
-pub struct FilterConfig {
-    #[serde(default)]
-    request_headers_setter: Vec<(String, String)>,
-    #[serde(default)]
-    response_headers_setter: Vec<(String, String)>,
-}
-
-impl FilterConfig {
-    /// This is the constructor for the [`FilterConfig`].
-    ///
-    /// filter_config is the filter config from the Envoy config here:
-    /// https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/dynamic_modules/v3/dynamic_modules.proto#envoy-v3-api-msg-extensions-dynamic-modules-v3-dynamicmoduleconfig
+pub struct LocalFilterConfig(pub FilterConfig);
+impl LocalFilterConfig {
     pub fn new(filter_config: &str) -> Option<Self> {
-        let filter_config: FilterConfig = match serde_json::from_str(filter_config) {
-            // TODO(nfuden): Handle optional configuration entries more clenaly. Currently all values are required to be present
-            Ok(cfg) => cfg,
-            Err(err) => {
-                // TODO(nfuden): Dont panic if there is incorrect configuration
-                eprintln!("Error parsing filter config: {filter_config} {err}");
-                return None;
-            }
-        };
-        Some(filter_config)
+        Some(Self(FilterConfig::new(filter_config)?))
     }
 }
 
-impl<EHF: EnvoyHttpFilter> HttpFilterConfig<EHF> for FilterConfig {
+impl<EHF: EnvoyHttpFilter> HttpFilterConfig<EHF> for LocalFilterConfig {
     /// This is called for each new HTTP filter.
     fn new_http_filter(&mut self, _envoy: &mut EHF) -> Box<dyn HttpFilter<EHF>> {
-        let mut env = Environment::new();
-
-        // could add in line like this if we wanted to
-        // env.add_function("substring", |input: &str, args: Rest<String>| {
-
-        env.add_function("substring", substring);
-
-        // !! Standard string manipulation
-        // env.add_function("trim", trim);
-        // env.add_function("base64_encode", base64_encode);
-        // env.add_function("base64url_encode", base64url_encode);
-        // env.add_function("base64_decode", base64_decode);
-        // env.add_function("base64url_decode", base64url_decode);
-        // env.add_function("replace_with_random", replace_with_random);
-        // env.add_function("raw_string", raw_string);
-        //        env.add_function("word_count", word_count);
-
-        // !! Envoy context accessors
-        env.add_function("header", header);
-        env.add_function("request_header", request_header);
-        // env.add_function("extraction", extraction);
-        // env.add_function("body", body);
-        // env.add_function("dynamic_metadata", dynamic_metadata);
-
-        // !! Datasource Puller needed
-        // env.add_function("data_source", data_source);
-
-        // !! Requires being in an upstream filter
-        // env.add_function("host_metadata", host_metadata);
-        // env.add_function("cluster_metadata", cluster_metadata);
-
-        // !! Possibly not relevant old inja internal debug stuff
-        // env.add_function("context", context);
-        // env.add_function("env", env);
-
-        // specific.extend(self.route_specific.into_iter());
-
         Box::new(Filter {
-            request_headers_setter: self.request_headers_setter.clone(),
-            // request_headers_extractions: self.request_headers_extractions.clone(),
-            response_headers_setter: self.response_headers_setter.clone(),
+            filter_config: self.0.clone(),
             per_route_config: None,
-            env,
+            env: transformations::jinja::new_jinja_env(),
+            request_headers_map: None,
         })
     }
 }
 
-// substring can be called with either two or three arguments --
-// the first argument is the string to be modified, the second is the start position
-// of the substring, and the optional third argument is the length of the substring.
-// If the third argument is not provided, the substring will extend to the end of the string.
-fn substring(input: &str, args: Rest<String>) -> String {
-    if args.is_empty() || args.len() > 2 {
-        return input.to_string();
-    }
-    let start: usize = args[0].parse::<usize>().unwrap_or(0);
-    let end = if args.len() == 2 {
-        args[1].parse::<usize>().unwrap_or(input.len())
-    } else {
-        input.len()
-    };
-
-    input[start..end].to_string()
-}
-
-fn header(state: &State, key: &str) -> String {
-    let headers = state.lookup("headers");
-    let Some(headers) = headers else {
-        return "".to_string();
-    };
-
-    let Some(header_map) = <HashMap<String, String>>::deserialize(headers.clone()).ok() else {
-        return "".to_string();
-    };
-    header_map.get(key).cloned().unwrap_or_default()
-}
-
-fn request_header(state: &State, key: &str) -> String {
-    let headers = state.lookup("request_headers");
-    let Some(headers) = headers else {
-        return "".to_string();
-    };
-
-    let Some(header_map) = <HashMap<String, String>>::deserialize(headers.clone()).ok() else {
-        return "".to_string();
-    };
-    header_map.get(key).cloned().unwrap_or_default()
-}
-
-/// This sets the request and response headers to the values specified in the filter config.
 pub struct Filter {
-    request_headers_setter: Vec<(String, String)>,
-    // request_headers_extractions: Vec<(String, String)>,
-    response_headers_setter: Vec<(String, String)>,
+    filter_config: FilterConfig,
     per_route_config: Option<Box<PerRouteConfig>>,
-    env: Environment<'static>,
+    env: minijinja::Environment<'static>,
+    request_headers_map: Option<HashMap<String, String>>,
 }
 
 impl Filter {
@@ -184,36 +61,76 @@ impl Filter {
         self.per_route_config.as_deref()
     }
 
-    fn transform_request_headers<EHF: EnvoyHttpFilter>(&self, envoy_filter: &mut EHF) {
-        let setters = match self.get_per_route_config() {
-            Some(config) => &config.request_headers_setter,
-            None => &self.request_headers_setter,
-        };
-
-        // TODO(nfuden): find someone who knows rust to see if we really need this Hash map for serialization
-        let mut headers = HashMap::new();
-        for (key, val) in envoy_filter.get_request_headers() {
+    fn create_headers_map(
+        &self,
+        headers: Vec<(EnvoyBuffer, EnvoyBuffer)>,
+    ) -> HashMap<String, String> {
+        let mut headers_map = HashMap::new();
+        for (key, val) in headers {
             let Some(key) = std::str::from_utf8(key.as_slice()).ok() else {
                 continue;
             };
             let value = std::str::from_utf8(val.as_slice()).unwrap().to_string();
 
-            headers.insert(key.to_string(), value);
+            headers_map.insert(key.to_string(), value);
         }
 
-        for (key, value) in setters {
-            let mut env = self.env.clone();
-            env.add_template("temp", value).unwrap();
-            let tmpl = env.get_template("temp").unwrap();
-            let rendered = tmpl.render(context!(headers => headers, request_headers => headers));
-            let mut rendered_str = "".to_string();
-            if let Ok(rendered_val) = rendered {
-                rendered_str = rendered_val;
-            } else {
-                eprintln!("Error rendering template: {}", rendered.err().unwrap());
+        headers_map
+    }
+
+    // This function is used to populate the self.request_headers_map so we only ever
+    // do it once while we might need the request headers in either on_request_headers() or
+    // on_response_headers().
+    fn populate_request_headers_map(&mut self, headers: Vec<(EnvoyBuffer, EnvoyBuffer)>) {
+        if self.request_headers_map.is_none() {
+            let mut request_headers_map = HashMap::new();
+            for (key, val) in headers {
+                let Some(key) = std::str::from_utf8(key.as_slice()).ok() else {
+                    continue;
+                };
+                let value = std::str::from_utf8(val.as_slice()).unwrap().to_string();
+
+                request_headers_map.insert(key.to_string(), value);
             }
-            envoy_filter.set_request_header(key, rendered_str.as_bytes());
+
+            self.request_headers_map = Some(request_headers_map);
         }
+    }
+
+    fn get_request_headers_map(&self) -> &HashMap<String, String> {
+        self.request_headers_map.as_ref().unwrap_or(&EMPTY_MAP)
+    }
+
+    fn transform_request_headers<EHF: EnvoyHttpFilter>(&self, envoy_filter: &mut EHF) {
+        let setters = match self.get_per_route_config() {
+            Some(config) => &config.request_headers_setter,
+            None => &self.filter_config.request_headers_setter,
+        };
+
+        transformations::jinja::transform_request_headers(
+            setters,
+            &self.env,
+            self.get_request_headers_map(),
+            |key, value| envoy_filter.set_request_header(key, value),
+        );
+    }
+
+    fn transform_response_headers<EHF: EnvoyHttpFilter>(&self, envoy_filter: &mut EHF) {
+        let setters = match self.get_per_route_config() {
+            Some(config) => &config.response_headers_setter,
+            None => &self.filter_config.response_headers_setter,
+        };
+
+        // TODO(nfuden): find someone who knows rust to see if we really need this Hash map for serialization
+        let response_headers_map = self.create_headers_map(envoy_filter.get_response_headers());
+
+        transformations::jinja::transform_response_headers(
+            setters,
+            &self.env,
+            self.get_request_headers_map(),
+            &response_headers_map,
+            |key, value| envoy_filter.set_response_header(key, value),
+        );
     }
 }
 
@@ -233,6 +150,8 @@ impl<EHF: EnvoyHttpFilter> HttpFilter<EHF> for Filter {
         }
 
         self.set_per_route_config(envoy_filter);
+        // TODO(nfuden): find someone who knows rust to see if we really need this Hash map for serialization
+        self.populate_request_headers_map(envoy_filter.get_request_headers());
         self.transform_request_headers(envoy_filter);
         abi::envoy_dynamic_module_type_on_http_filter_request_headers_status::Continue
     }
@@ -253,6 +172,8 @@ impl<EHF: EnvoyHttpFilter> HttpFilter<EHF> for Filter {
         }
 
         self.set_per_route_config(envoy_filter);
+        // TODO(nfuden): find someone who knows rust to see if we really need this Hash map for serialization
+        self.populate_request_headers_map(envoy_filter.get_request_headers());
         self.transform_request_headers(envoy_filter);
         abi::envoy_dynamic_module_type_on_http_filter_request_body_status::Continue
     }
@@ -262,47 +183,10 @@ impl<EHF: EnvoyHttpFilter> HttpFilter<EHF> for Filter {
         envoy_filter: &mut EHF,
         _end_of_stream: bool,
     ) -> abi::envoy_dynamic_module_type_on_http_filter_response_headers_status {
-        // TODO(nfuden): find someone who knows rust to see if we really need this Hash map for serialization
-        let mut headers = HashMap::new();
-        for (key, val) in envoy_filter.get_response_headers() {
-            let Some(key) = std::str::from_utf8(key.as_slice()).ok() else {
-                continue;
-            };
-            let value = std::str::from_utf8(val.as_slice()).unwrap().to_string();
-
-            headers.insert(key.to_string(), value);
-        }
-
-        let mut request_headers = HashMap::new();
-        for (key, val) in envoy_filter.get_request_headers() {
-            let Some(key) = std::str::from_utf8(key.as_slice()).ok() else {
-                continue;
-            };
-            let value = std::str::from_utf8(val.as_slice()).unwrap().to_string();
-
-            request_headers.insert(key.to_string(), value);
-        }
-
         self.set_per_route_config(envoy_filter);
-        let setters = match self.get_per_route_config() {
-            Some(config) => &config.response_headers_setter,
-            None => &self.response_headers_setter,
-        };
-
-        for (key, value) in setters {
-            let mut env = self.env.clone();
-            env.add_template("temp", value).unwrap();
-            let tmpl = env.get_template("temp").unwrap();
-            let rendered =
-                tmpl.render(context!(headers => headers, request_headers => request_headers));
-            let mut rendered_str = "".to_string();
-            if let Ok(rendered_val) = rendered {
-                rendered_str = rendered_val;
-            } else {
-                eprintln!("Error rendering template: {}", rendered.err().unwrap());
-            }
-            envoy_filter.set_response_header(key, rendered_str.as_bytes());
-        }
+        // TODO(nfuden): find someone who knows rust to see if we really need this Hash map for serialization
+        self.populate_request_headers_map(envoy_filter.get_request_headers());
+        self.transform_response_headers(envoy_filter);
         abi::envoy_dynamic_module_type_on_http_filter_response_headers_status::Continue
     }
 }
@@ -318,7 +202,7 @@ mod tests {
         // construct the filter config
         // most upstream tests start with the filter itself but we are tryign to add heavier logic
         // to the config factory strat rather than running it on header calls
-        let mut filter_conf = FilterConfig {
+        let mut filter_conf = LocalFilterConfig {
             request_headers_setter: vec![
                 (
                     "X-substring".to_string(),
@@ -429,9 +313,9 @@ mod tests {
         let mut envoy_filter = envoy_proxy_dynamic_modules_rust_sdk::MockEnvoyHttpFilter::default();
 
         // construct the filter config
-        // most upstream tests start with the filter itself but we are trying to add heavier logic
-        // to the config factory start rather than running it on header calls
-        let mut filter_conf = FilterConfig {
+        // most upstream tests start with the filter itself but we are tryign to add heavier logic
+        // to the config factory strat rather than running it on header calls
+        let mut filter_conf = LocalFilterConfig {
             request_headers_setter: vec![(
                 "X-if-truth".to_string(),
                 "{%- if true -%}supersuper{% endif %}".to_string(),

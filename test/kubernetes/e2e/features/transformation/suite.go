@@ -147,6 +147,40 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 				},
 			},
 			{
+				name:      "set headers with headers already exists multiple times",
+				routeName: "headers",
+				opts: []curl.Option{
+					curl.WithBody("hello"),
+					// The 2 x-foo-bar headers will be replaced with a single one when we set the header
+					// to a value using transformation
+					curl.WithMultiHeader("x-foo-bar", []string{"original_1", "original_2"}),
+				},
+				resp: &testmatchers.HttpResponse{
+					StatusCode: http.StatusOK,
+					Headers: map[string]interface{}{
+						"x-foo-response":        "notsuper",
+						"x-foo-response-status": "200",
+					},
+					NotHeaders: []string{
+						"response-gateway",
+					},
+				},
+				req: &testmatchers.HttpRequest{
+					Headers: map[string]interface{}{
+						"x-foo-bar":  "foolen_5",
+						"x-foo-bar2": "foolen_5",
+					},
+					NotHeaders: []string{
+						// looks like the way we set up transformation targeting gateway, we are
+						// also using RouteTransformation instead of FilterTransformation and it's
+						// set , so it's set at the route table level and if there is a more specific
+						// transformation (eg in vhost or prefix match), the gateway attached transformation
+						// will not apply. Make sure it's not there.
+						"request-gateway",
+					},
+				},
+			},
+			{
 				name:      "conditional set by request header", // inja and the request_header function in use
 				routeName: "headers",
 				opts: []curl.Option{
