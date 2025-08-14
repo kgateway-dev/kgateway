@@ -293,9 +293,6 @@ func (s *tsuite) TestUnresolvedChild() {
 }
 
 func (s *tsuite) TestMatcherInheritance() {
-	// Wait for all routes to be created
-	s.ti.Assertions.EventuallyObjectsExist(s.ctx, routeParent1, routeParent2, routeTeam1)
-
 	// Wait for both parent routes to be accepted before sending traffic
 	s.ti.Assertions.EventuallyHTTPRouteStatusContainsReason(s.ctx, routeParent1.Name, routeParent1.Namespace,
 		string(gwv1.RouteReasonAccepted), 10*time.Second, 1*time.Second)
