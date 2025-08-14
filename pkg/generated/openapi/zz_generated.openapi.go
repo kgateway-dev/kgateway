@@ -4030,18 +4030,18 @@ func schema_kgateway_v2_api_v1alpha1_HeaderModifiersPolicy(ref common.ReferenceC
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "HeaderModifiersPolicy can be used to define filters that modify request or response headers.",
+				Description: "HeaderModifiersPolicy can be used to define the policy to modify request and response headers.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"requestHeaderModifier": {
 						SchemaProps: spec.SchemaProps{
-							Description: "RequestHeaderModifier defines filters that modify request headers.",
+							Description: "RequestHeaderModifier modifies request headers.",
 							Ref:         ref("sigs.k8s.io/gateway-api/apis/v1.HTTPHeaderFilter"),
 						},
 					},
 					"responseHeaderModifier": {
 						SchemaProps: spec.SchemaProps{
-							Description: "ResponseHeaderModifier defines filters that modify response headers.",
+							Description: "ResponseHeaderModifier modifies response headers.",
 							Ref:         ref("sigs.k8s.io/gateway-api/apis/v1.HTTPHeaderFilter"),
 						},
 					},
@@ -7472,7 +7472,7 @@ func schema_kgateway_v2_api_v1alpha1_TrafficPolicySpec(ref common.ReferenceCallb
 					},
 					"headerModifiers": {
 						SchemaProps: spec.SchemaProps{
-							Description: "HeaderModifiers define filters that modify request or response headers.",
+							Description: "HeaderModifiers defines the policy to modify request and response headers.",
 							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.HeaderModifiersPolicy"),
 						},
 					},

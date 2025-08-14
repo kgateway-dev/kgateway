@@ -84,7 +84,7 @@ type TrafficPolicySpec struct {
 	// +optional
 	Csrf *CSRFPolicy `json:"csrf,omitempty"`
 
-	// HeaderModifiers define filters that modify request or response headers.
+	// HeaderModifiers defines the policy to modify request and response headers.
 	// +optional
 	HeaderModifiers *HeaderModifiersPolicy `json:"headerModifiers,omitempty"`
 
@@ -410,14 +410,14 @@ type CSRFPolicy struct {
 	AdditionalOrigins []StringMatcher `json:"additionalOrigins,omitempty"`
 }
 
-// HeaderModifiersPolicy can be used to define filters that modify request or response headers.
+// HeaderModifiersPolicy can be used to define the policy to modify request and response headers.
 // +kubebuilder:validation:XValidation:rule="has(self.requestHeaderModifier) || has(self.responseHeaderModifier)",message="At least one of requestHeaderModifier or responseHeaderModifier must be provided."
 type HeaderModifiersPolicy struct {
-	// RequestHeaderModifier defines filters that modify request headers.
+	// RequestHeaderModifier modifies request headers.
 	// +optional
 	RequestHeaderModifier *gwv1.HTTPHeaderFilter `json:"requestHeaderModifier,omitempty"`
 
-	// ResponseHeaderModifier defines filters that modify response headers.
+	// ResponseHeaderModifier modifies response headers.
 	// +optional
 	ResponseHeaderModifier *gwv1.HTTPHeaderFilter `json:"responseHeaderModifier,omitempty"`
 }
