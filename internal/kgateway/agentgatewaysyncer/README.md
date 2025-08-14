@@ -244,7 +244,7 @@ Set up a kind cluster and install kgateway with the kubernetes Gateway APIs:
 ```shell
 kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.3.0/standard-install.yaml
 helm upgrade -i --create-namespace --namespace kgateway-system --version v2.1.0-main kgateway-crds oci://cr.kgateway.dev/kgateway-dev/charts/kgateway-crds
-helm upgrade -i --namespace kgateway-system --version v2.1.0-main kgateway oci://cr.kgateway.dev/kgateway-dev/charts/kgateway --set agentGateway.enabled=true --set agentGateway.enableAlphaAPIs=true --set inferenceExtension.enabled=true
+helm upgrade -i --namespace kgateway-system --version v2.1.0-main kgateway oci://cr.kgateway.dev/kgateway-dev/charts/kgateway --set agentGateway.enabled=true --set inferenceExtension.enabled=true
 ```
 
 #### HTTPRoute
@@ -615,6 +615,94 @@ Port-forward, and send a request through the gateway:
 ```shell
 curl localhost:8080/openai -H content-type:application/json -v -d'{
 "model": "gpt-3.5-turbo",
+"messages": [
+  {
+    "role": "user",
+    "content": "Whats your favorite poem?"
+  }
+]}'
+```
+
+With agentgateway, you get a unified API to send requests to different providers in the same format. 
+
+Modify the HTTPRoute config to add another provider:
+
+```shell
+kubectl apply -f- <<EOF
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: openai
+  labels:
+    example: openai-route
+spec:
+  parentRefs:
+    - name: agent-gateway
+      namespace: default
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /openai
+      backendRefs:
+        - name: openai
+          group: gateway.kgateway.dev
+          kind: Backend
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /bedrock
+      backendRefs:
+        - group: gateway.kgateway.dev
+          kind: Backend
+          name: bedrock
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: bedrock
+spec:
+  type: AI
+  ai:
+    llm:
+      provider:
+        bedrock:
+          model: anthropic.claude-3-5-haiku-20241022-v1:0
+          region: us-west-2
+          auth:
+            type: Secret
+            secretRef:
+              name: bedrock-secret
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: bedrock-secret
+stringData:
+  accessKey: ${AWS_ACCESS_KEY_ID}
+  secretKey: ${AWS_SECRET_ACCESS_KEY}
+  sessionToken: ${AWS_SESSION_TOKEN}
+type: Opaque
+EOF
+```
+The request you send can be formatted in the same Open AI format:
+
+```shell
+curl localhost:8080/ -H content-type:application/json -v -d'{
+"model": "anthropic.claude-3-5-haiku-20241022-v1:0",
+"messages": [
+  {
+    "role": "user",
+    "content": "Whats your favorite poem?"
+  }
+]}'
+```
+
+You can send streaming requests using the Open AI format as well:
+```shell
+curl localhost:8080/ -H content-type:application/json -v -d'{
+"model": "anthropic.claude-3-5-haiku-20241022-v1:0",
+"stream": true,
 "messages": [
   {
     "role": "user",

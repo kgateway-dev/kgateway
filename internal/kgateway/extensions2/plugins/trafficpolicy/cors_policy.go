@@ -7,7 +7,7 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/policy"
 )
 
 type corsIR struct {
@@ -42,7 +42,7 @@ func constructCORS(in *v1alpha1.TrafficPolicy, out *trafficPolicySpecIr) error {
 		return nil
 	}
 	out.cors = &corsIR{
-		policy: utils.ToEnvoyCorsPolicy(spec.HTTPCORSFilter, spec.Disable != nil),
+		policy: policy.BuildCorsPolicy(spec.HTTPCORSFilter, spec.Disable != nil),
 	}
 	return nil
 }

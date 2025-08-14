@@ -44,9 +44,9 @@ func AssertPolicyStatusWithGeneration(t *testing.T, reportsMap reports.ReportMap
 	}
 }
 
-// AssertRouteInvalidDropped is a helper for asserting that a route has the Accepted=false status condition
-// for dropped rules with variadic expected message substrings.
-func AssertRouteInvalidDropped(t *testing.T, routeName, namespace string, expectedMsgSubstrings ...string) AssertReports {
+// AssertRouteInvalid is a helper for asserting that a route has the Accepted=false status condition
+// with the specified reason and variadic expected message substrings.
+func AssertRouteInvalid(t *testing.T, routeName, namespace, expectedReason string, expectedMsgSubstrings ...string) AssertReports {
 	return func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
 		t.Helper()
 		a := assert.New(t)
@@ -69,7 +69,7 @@ func AssertRouteInvalidDropped(t *testing.T, routeName, namespace string, expect
 		accepted := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionAccepted))
 		a.NotNil(accepted, "Accepted condition should not be nil")
 		a.Equal(metav1.ConditionFalse, accepted.Status, "Accepted Status mismatch")
-		a.Equal(string(reporter.RouteRuleDroppedReason), accepted.Reason, "Accepted Reason mismatch")
+		a.Equal(expectedReason, accepted.Reason, "Accepted Reason mismatch")
 		for _, msgSubstring := range expectedMsgSubstrings {
 			a.Contains(accepted.Message, msgSubstring, "Accepted Message mismatch")
 		}

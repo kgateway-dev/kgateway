@@ -1,0 +1,97 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: test
+spec:
+  gatewayClassName: kgateway
+  listeners:
+  - protocol: HTTP
+    port: 8080
+    name: http
+    allowedRoutes:
+      namespaces:
+        from: All
+---
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: HTTPRoute
+metadata:
+  name: test
+spec:
+  parentRefs:
+    - name: test
+  rules:
+    - name: timeout
+      matches:
+      - path:
+          type: PathPrefix
+          value: /delay/1
+      backendRefs:
+        - name: httpbin
+          port: 8000
+    - name: retry
+      matches:
+      - path:
+          type: PathPrefix
+          value: /status
+      - path:
+          type: PathPrefix
+          value: /delay/2
+      backendRefs:
+        - name: httpbin
+          port: 8000
+    - name: inherit-gateway
+      matches:
+      - path:
+          type: PathPrefix
+          value: /status/517
+      backendRefs:
+        - name: httpbin
+          port: 8000
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: timeout
+spec:
+  targetRefs:
+  - kind: HTTPRoute
+    group: gateway.networking.k8s.io
+    name: test
+    sectionName: timeout
+  timeouts:
+    request: 1ms
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: retry
+spec:
+  targetRefs:
+  - kind: HTTPRoute
+    group: gateway.networking.k8s.io
+    name: test
+    sectionName: retry
+  retry:
+    attempts: 2
+    perTryTimeout: 1ms
+    retryOn:
+    - 5xx # required for retries when the upstream does not respond in time
+    # statusCodes automatically configures retryOn with retriable-status-codes
+    statusCodes:
+    - 490
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: retry-listener
+spec:
+  targetRefs:
+  - kind: Gateway
+    group: gateway.networking.k8s.io
+    name: test
+    sectionName: http
+  retry:
+    attempts: 2
+    perTryTimeout: 2ms
+    statusCodes:
+    - 517
