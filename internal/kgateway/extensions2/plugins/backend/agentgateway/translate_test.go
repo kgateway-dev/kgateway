@@ -735,7 +735,7 @@ func createMockSecretIndex(t test.Failer, namespace, name string, data map[strin
 
 	// Ensure the index is fully synced before returning
 	for !index.HasSynced() {
-		time.Sleep(time.Second * 2)
+		time.Sleep(50 * time.Millisecond)
 	}
 
 	return index
@@ -988,7 +988,10 @@ func createMockServiceCollectionWithMCPService(t test.Failer, namespace, service
 
 	mock := krttest.NewMock(t, []any{mockService})
 	mockCol := krttest.GetMockCollection[*corev1.Service](mock)
-	mockCol.HasSynced()
+	// Ensure the index is fully synced before returning
+	for !mockCol.HasSynced() {
+		time.Sleep(50 * time.Millisecond)
+	}
 	return mockCol
 }
 
@@ -1058,7 +1061,10 @@ func createMockServiceCollectionMultiNamespace(t test.Failer) krt.Collection[*co
 
 	mock := krttest.NewMock(t, inputs)
 	mockCol := krttest.GetMockCollection[*corev1.Service](mock)
-	mockCol.HasSynced()
+	// Ensure the index is fully synced before returning
+	for !mockCol.HasSynced() {
+		time.Sleep(50 * time.Millisecond)
+	}
 	return mockCol
 }
 
@@ -1092,6 +1098,9 @@ func createMockNamespaceCollectionWithLabels(t test.Failer) krt.Collection[krtco
 
 	mock := krttest.NewMock(t, inputs)
 	mockCol := krttest.GetMockCollection[krtcollections.NamespaceMetadata](mock)
-	mockCol.HasSynced()
+	// Ensure the index is fully synced before returning
+	for !mockCol.HasSynced() {
+		time.Sleep(50 * time.Millisecond)
+	}
 	return mockCol
 }
