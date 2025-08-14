@@ -36,6 +36,16 @@ func (b *ConfigBuilder) AddFilterConfig(name string, config proto.Message) {
 	b.filterConfigs.AddTypedConfig(name, config)
 }
 
+// AddRoute adds a route to the builder.
+func (b *ConfigBuilder) AddRoute(route *envoyroutev3.Route) {
+	b.routes = append(b.routes, route)
+}
+
+// AddCluster adds a cluster to the builder.
+func (b *ConfigBuilder) AddCluster(cluster *envoyclusterv3.Cluster) {
+	b.clusters = append(b.clusters, cluster)
+}
+
 // Build creates a partial bootstrap config suitable for validation.
 func (b *ConfigBuilder) Build() (*envoybootstrapv3.Bootstrap, error) {
 	vhost := &envoyroutev3.VirtualHost{

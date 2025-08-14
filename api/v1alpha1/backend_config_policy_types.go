@@ -377,35 +377,37 @@ type LoadBalancerMaglevConfig struct {
 	UseHostnameForHashing *bool `json:"useHostnameForHashing,omitempty"`
 }
 
-type LoadBalancerRandomConfig struct{}
-type SlowStart struct {
-	// Represents the size of slow start window.
-	// If set, the newly created host remains in slow start mode starting from its creation time
-	// for the duration of slow start window.
-	// +optional
-	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
-	Window *metav1.Duration `json:"window,omitempty"`
+type (
+	LoadBalancerRandomConfig struct{}
+	SlowStart                struct {
+		// Represents the size of slow start window.
+		// If set, the newly created host remains in slow start mode starting from its creation time
+		// for the duration of slow start window.
+		// +optional
+		// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+		Window *metav1.Duration `json:"window,omitempty"`
 
-	// This parameter controls the speed of traffic increase over the slow start window. Defaults to 1.0,
-	// so that endpoint would get linearly increasing amount of traffic.
-	// When increasing the value for this parameter, the speed of traffic ramp-up increases non-linearly.
-	// The value of aggression parameter should be greater than 0.0.
-	// By tuning the parameter, is possible to achieve polynomial or exponential shape of ramp-up curve.
-	//
-	// During slow start window, effective weight of an endpoint would be scaled with time factor and aggression:
-	// `new_weight = weight * max(min_weight_percent, time_factor ^ (1 / aggression))`,
-	// where `time_factor=(time_since_start_seconds / slow_start_time_seconds)`.
-	//
-	// As time progresses, more and more traffic would be sent to endpoint, which is in slow start window.
-	// Once host exits slow start, time_factor and aggression no longer affect its weight.
-	// +optional
-	// +kubebuilder:validation:XValidation:rule="(self.matches('^-?(?:[0-9]+(?:\\\\.[0-9]*)?|\\\\.[0-9]+)$') && double(self) > 0.0)",message="Aggression, if specified, must be a string representing a number greater than 0.0"
-	Aggression *string `json:"aggression,omitempty"`
+		// This parameter controls the speed of traffic increase over the slow start window. Defaults to 1.0,
+		// so that endpoint would get linearly increasing amount of traffic.
+		// When increasing the value for this parameter, the speed of traffic ramp-up increases non-linearly.
+		// The value of aggression parameter should be greater than 0.0.
+		// By tuning the parameter, is possible to achieve polynomial or exponential shape of ramp-up curve.
+		//
+		// During slow start window, effective weight of an endpoint would be scaled with time factor and aggression:
+		// `new_weight = weight * max(min_weight_percent, time_factor ^ (1 / aggression))`,
+		// where `time_factor=(time_since_start_seconds / slow_start_time_seconds)`.
+		//
+		// As time progresses, more and more traffic would be sent to endpoint, which is in slow start window.
+		// Once host exits slow start, time_factor and aggression no longer affect its weight.
+		// +optional
+		// +kubebuilder:validation:XValidation:rule="(self.matches('^-?(?:[0-9]+(?:\\\\.[0-9]*)?|\\\\.[0-9]+)$') && double(self) > 0.0)",message="Aggression, if specified, must be a string representing a number greater than 0.0"
+		Aggression *string `json:"aggression,omitempty"`
 
-	// Minimum weight percentage of an endpoint during slow start.
-	// +optional
-	MinWeightPercent *uint32 `json:"minWeightPercent,omitempty"`
-}
+		// Minimum weight percentage of an endpoint during slow start.
+		// +optional
+		MinWeightPercent *uint32 `json:"minWeightPercent,omitempty"`
+	}
+)
 
 type LocalityType string
 

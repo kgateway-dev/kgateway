@@ -8,7 +8,7 @@
           "hostname": "gateway-pool-endpoint-picker.gwtest.svc.cluster.local",
           "addresses": [
             {
-              "address": "CgAAWQ=="
+              "address": "CgAALA=="
             }
           ],
           "ports": [
@@ -41,12 +41,33 @@
     {
       "Type": {
         "Service": {
+          "name": "http-direct-response",
+          "namespace": "gwtest",
+          "hostname": "http-direct-response.gwtest.svc.cluster.local",
+          "addresses": [
+            {
+              "address": "CgAAZw=="
+            }
+          ],
+          "ports": [
+            {
+              "service_port": 8080,
+              "target_port": 8080
+            }
+          ],
+          "ip_families": 1
+        }
+      }
+    },
+    {
+      "Type": {
+        "Service": {
           "name": "http-grpcroute",
           "namespace": "gwtest",
           "hostname": "http-grpcroute.gwtest.svc.cluster.local",
           "addresses": [
             {
-              "address": "CgAA2w=="
+              "address": "CgAAJA=="
             }
           ],
           "ports": [
@@ -67,7 +88,7 @@
           "hostname": "http-httproute.gwtest.svc.cluster.local",
           "addresses": [
             {
-              "address": "CgAA1A=="
+              "address": "CgAAng=="
             }
           ],
           "ports": [
@@ -88,7 +109,7 @@
           "hostname": "http-inferencepool.gwtest.svc.cluster.local",
           "addresses": [
             {
-              "address": "CgAA0g=="
+              "address": "CgAAQg=="
             }
           ],
           "ports": [
@@ -115,7 +136,7 @@
           "ports": [
             {
               "service_port": 443,
-              "target_port": 61842
+              "target_port": 44805
             }
           ],
           "ip_families": 1
@@ -287,7 +308,7 @@
             {
               "backend": {
                 "Kind": {
-                  "Service": "gwtest/gateway-pool.gwtest.inference.cluster.local"
+                  "Service": "gwtest/gateway-pool.gwtest.svc.cluster.local"
                 },
                 "port": 8080
               },

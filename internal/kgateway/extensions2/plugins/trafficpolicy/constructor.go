@@ -91,6 +91,8 @@ func (c *TrafficPolicyConstructor) ConstructIR(
 	constructAutoHostRewrite(policyCR.Spec, &outSpec)
 	// Construct buffer specific IR
 	constructBuffer(policyCR.Spec, &outSpec)
+	// Construct timeout and retry specific IR
+	constructTimeoutRetry(policyCR.Spec, &outSpec)
 
 	for _, err := range errors {
 		logger.Error("error translating traffic policy", "namespace", policyCR.GetNamespace(), "name", policyCR.GetName(), "error", err)

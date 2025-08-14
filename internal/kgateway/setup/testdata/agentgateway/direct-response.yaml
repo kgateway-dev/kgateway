@@ -1,0 +1,55 @@
+---
+kind: Gateway
+apiVersion: gateway.networking.k8s.io/v1
+metadata:
+  name: http-gw-for-test
+  namespace: gwtest
+spec:
+  gatewayClassName: agentgateway
+  listeners:
+  - protocol: HTTP
+    port: 8080
+    name: http
+    allowedRoutes:
+      namespaces:
+        from: All
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: httpbin
+  namespace: gwtest
+  labels:
+    app: httpbin
+spec:
+  hostnames:
+  - "www.example.com"
+  parentRefs:
+  - name: http-gw-for-test
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: "/"
+    backendRefs:
+    - name: httpbin
+      port: 8000
+  - matches:
+    - path:
+        type: Exact
+        value: /robots.txt
+    filters:
+    - type: ExtensionRef
+      extensionRef:
+        name: robots-txt
+        group: gateway.kgateway.dev
+        kind: DirectResponse
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: DirectResponse
+metadata:
+  name: robots-txt
+  namespace: gwtest
+spec:
+  status: 200
+  body: "User-agent: *\nDisallow: /custom\n"

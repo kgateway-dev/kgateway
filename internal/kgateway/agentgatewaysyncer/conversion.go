@@ -2,6 +2,7 @@ package agentgatewaysyncer
 
 import (
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"log"
 	"sort"
@@ -37,6 +38,7 @@ import (
 	agwir "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
@@ -81,10 +83,7 @@ func convertHTTPRouteToADP(ctx RouteContext, r gwv1.HTTPRouteRule,
 			QueryParams: query,
 		})
 	}
-	filters, err := buildADPFilters(ctx, obj.Namespace, r.Filters)
-	if err != nil {
-		return nil, err
-	}
+	filters, filterError := buildADPFilters(ctx, obj.Namespace, r.Filters)
 	res.Filters = filters
 
 	agentGatewayRouteContext := agwir.AgentGatewayRouteContext{
@@ -111,7 +110,28 @@ func convertHTTPRouteToADP(ctx RouteContext, r gwv1.HTTPRouteRule,
 	res.Hostnames = slices.Map(obj.Spec.Hostnames, func(e gwv1.Hostname) string {
 		return string(e)
 	})
-	return res, backendErr
+	// Return filter error if present, otherwise return backend error
+	var errs []error
+	var errorReason gwv1.RouteConditionReason = gwv1.RouteReasonBackendNotFound
+	if filterError != nil {
+		errs = append(errs, fmt.Errorf("%s", filterError.Message))
+		errorReason = filterError.Reason
+	}
+	if backendErr != nil {
+		errs = append(errs, fmt.Errorf("backend error: %s", backendErr.Message))
+		if filterError == nil {
+			errorReason = backendErr.Reason
+		}
+	}
+	if len(errs) > 0 {
+		return res, &reporter.RouteCondition{
+			Type:    gwv1.RouteConditionAccepted,
+			Status:  metav1.ConditionFalse,
+			Reason:  errorReason,
+			Message: errors.Join(errs...).Error(),
+		}
+	}
+	return res, nil
 }
 
 func convertTCPRouteToADP(ctx RouteContext, r gwv1alpha2.TCPRouteRule,
@@ -280,13 +300,21 @@ func buildADPTLSDestination(
 	return res, invalidBackendErr, nil
 }
 
+// terminalFilterCombinationError creates a standardized error message for when multiple terminal filters are used together
+func terminalFilterCombinationError(existingFilter, newFilter string) string {
+	return fmt.Sprintf("Cannot combine multiple terminal filters: %s and %s are mutually exclusive. Only one terminal filter is allowed per route rule.", existingFilter, newFilter)
+}
+
 func buildADPFilters(
 	ctx RouteContext,
 	ns string,
 	inputFilters []gwv1.HTTPRouteFilter,
 ) ([]*api.RouteFilter, *reporter.RouteCondition) {
 	var filters []*api.RouteFilter
-	var mirrorBackendErr *reporter.RouteCondition
+	var hasTerminalFilter bool
+	var terminalFilterType string
+
+	var filterError *reporter.RouteCondition
 	for _, filter := range inputFilters {
 		switch filter.Type {
 		case gwv1.HTTPRouteFilterRequestHeaderModifier:
@@ -302,15 +330,28 @@ func buildADPFilters(
 			}
 			filters = append(filters, h)
 		case gwv1.HTTPRouteFilterRequestRedirect:
+			if hasTerminalFilter {
+				filterError = &reporter.RouteCondition{
+					Type:    gwv1.RouteConditionAccepted,
+					Status:  metav1.ConditionFalse,
+					Reason:  gwv1.RouteReasonIncompatibleFilters,
+					Message: terminalFilterCombinationError(terminalFilterType, "RequestRedirect"),
+				}
+				continue
+			}
 			h := createADPRedirectFilter(filter.RequestRedirect)
 			if h == nil {
 				continue
 			}
 			filters = append(filters, h)
+			hasTerminalFilter = true
+			terminalFilterType = "RequestRedirect"
 		case gwv1.HTTPRouteFilterRequestMirror:
 			h, err := createADPMirrorFilter(ctx, filter.RequestMirror, ns, wellknown.HTTPRouteGVK)
 			if err != nil {
-				mirrorBackendErr = err
+				if filterError == nil {
+					filterError = err
+				}
 			} else {
 				filters = append(filters, h)
 			}
@@ -326,6 +367,30 @@ func buildADPFilters(
 				continue
 			}
 			filters = append(filters, h)
+		case gwv1.HTTPRouteFilterExtensionRef:
+			h, err := createADPExtensionRefFilter(ctx, filter.ExtensionRef, ns)
+			if err != nil {
+				if filterError == nil {
+					filterError = err
+				}
+				continue
+			}
+			if h != nil {
+				if _, ok := h.Kind.(*api.RouteFilter_DirectResponse); ok {
+					if hasTerminalFilter {
+						filterError = &reporter.RouteCondition{
+							Type:    gwv1.RouteConditionAccepted,
+							Status:  metav1.ConditionFalse,
+							Reason:  gwv1.RouteReasonIncompatibleFilters,
+							Message: terminalFilterCombinationError(terminalFilterType, "DirectResponse"),
+						}
+						continue
+					}
+					hasTerminalFilter = true
+					terminalFilterType = "DirectResponse"
+				}
+				filters = append(filters, h)
+			}
 		default:
 			return nil, &reporter.RouteCondition{
 				Type:    gwv1.RouteConditionAccepted,
@@ -335,7 +400,7 @@ func buildADPFilters(
 			}
 		}
 	}
-	return filters, mirrorBackendErr
+	return filters, filterError
 }
 
 func createADPCorsFilter(cors *gwv1.HTTPCORSFilter) *api.RouteFilter {
@@ -1244,6 +1309,69 @@ func defaultString[T ~string](s *T, def string) string {
 
 func toRouteKind(g schema.GroupVersionKind) gwv1.RouteGroupKind {
 	return gwv1.RouteGroupKind{Group: (*gwv1.Group)(&g.Group), Kind: gwv1.Kind(g.Kind)}
+}
+
+// createADPExtensionRefFilter creates ADP filter from Gateway API ExtensionRef filter
+func createADPExtensionRefFilter(
+	ctx RouteContext,
+	extensionRef *gwv1.LocalObjectReference,
+	ns string,
+) (*api.RouteFilter, *reporter.RouteCondition) {
+	if extensionRef == nil {
+		return nil, nil
+	}
+
+	// Check if it's a DirectResponse reference
+	if string(extensionRef.Group) == wellknown.DirectResponseGVK.Group && string(extensionRef.Kind) == wellknown.DirectResponseGVK.Kind {
+		// Look up the DirectResponse resource
+		directResponse := findDirectResponse(ctx, string(extensionRef.Name), ns)
+		if directResponse == nil {
+			return nil, &reporter.RouteCondition{
+				Type:    gwv1.RouteConditionAccepted,
+				Status:  metav1.ConditionFalse,
+				Reason:  gwv1.RouteReasonBackendNotFound,
+				Message: fmt.Sprintf("DirectResponse %s/%s not found", ns, extensionRef.Name),
+			}
+		}
+
+		// Convert to ADP DirectResponse filter
+		filter := &api.RouteFilter{
+			Kind: &api.RouteFilter_DirectResponse{
+				DirectResponse: &api.DirectResponse{
+					Status: directResponse.Spec.StatusCode,
+				},
+			},
+		}
+
+		// Add body if specified
+		if directResponse.Spec.Body != nil {
+			filter.GetDirectResponse().Body = []byte(*directResponse.Spec.Body)
+		}
+
+		return filter, nil
+	}
+
+	// Unsupported ExtensionRef
+	return nil, &reporter.RouteCondition{
+		Type:    gwv1.RouteConditionAccepted,
+		Status:  metav1.ConditionFalse,
+		Reason:  gwv1.RouteReasonIncompatibleFilters,
+		Message: fmt.Sprintf("unsupported ExtensionRef: %s/%s", extensionRef.Group, extensionRef.Kind),
+	}
+}
+
+// findDirectResponse looks up a DirectResponse resource by name and namespace
+func findDirectResponse(ctx RouteContext, name, namespace string) *v1alpha1.DirectResponse {
+	if ctx.DirectResponses == nil {
+		return nil
+	}
+	directResponses := krt.Fetch(ctx.Krt, ctx.DirectResponses)
+	for _, dr := range directResponses {
+		if dr.Name == name && dr.Namespace == namespace {
+			return dr
+		}
+	}
+	return nil
 }
 
 func routeGroupKindEqual(rgk1, rgk2 gwv1.RouteGroupKind) bool {

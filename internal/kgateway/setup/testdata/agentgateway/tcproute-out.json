@@ -8,7 +8,7 @@
           "hostname": "bar.gwtest.svc.cluster.local",
           "addresses": [
             {
-              "address": "CgAArQ=="
+              "address": "CgAAxQ=="
             }
           ],
           "ports": [
@@ -30,7 +30,7 @@
           "hostname": "foo.gwtest.svc.cluster.local",
           "addresses": [
             {
-              "address": "CgAAQQ=="
+              "address": "CgAAfw=="
             }
           ],
           "ports": [
@@ -47,12 +47,33 @@
     {
       "Type": {
         "Service": {
+          "name": "http-direct-response",
+          "namespace": "gwtest",
+          "hostname": "http-direct-response.gwtest.svc.cluster.local",
+          "addresses": [
+            {
+              "address": "CgAAZw=="
+            }
+          ],
+          "ports": [
+            {
+              "service_port": 8080,
+              "target_port": 8080
+            }
+          ],
+          "ip_families": 1
+        }
+      }
+    },
+    {
+      "Type": {
+        "Service": {
           "name": "http-grpcroute",
           "namespace": "gwtest",
           "hostname": "http-grpcroute.gwtest.svc.cluster.local",
           "addresses": [
             {
-              "address": "CgAAZA=="
+              "address": "CgAAJA=="
             }
           ],
           "ports": [
@@ -73,7 +94,7 @@
           "hostname": "http-httproute.gwtest.svc.cluster.local",
           "addresses": [
             {
-              "address": "CgAAPg=="
+              "address": "CgAAng=="
             }
           ],
           "ports": [
@@ -94,7 +115,7 @@
           "hostname": "http-inferencepool.gwtest.svc.cluster.local",
           "addresses": [
             {
-              "address": "CgAA9g=="
+              "address": "CgAAQg=="
             }
           ],
           "ports": [
@@ -115,7 +136,7 @@
           "hostname": "http-tcproute.gwtest.svc.cluster.local",
           "addresses": [
             {
-              "address": "CgAAig=="
+              "address": "CgAAOQ=="
             }
           ],
           "ports": [
@@ -146,7 +167,7 @@
           "ports": [
             {
               "service_port": 443,
-              "target_port": 53678
+              "target_port": 44805
             }
           ],
           "ip_families": 1

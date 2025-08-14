@@ -303,7 +303,9 @@ type Inputs struct {
 	InferencePools krt.Collection[*inf.InferencePool]
 
 	// kgateway resources
-	Backends *krtcollections.BackendIndex
+	Backends        *krtcollections.BackendIndex
+	BackendsTemp    krt.Collection[*v1alpha1.Backend]
+	DirectResponses krt.Collection[*v1alpha1.DirectResponse]
 }
 
 func (s *AgentGwSyncer) Init(krtopts krtinternal.KrtOptions) {
@@ -331,6 +333,16 @@ func (s *AgentGwSyncer) setupkgwResources(kgwClient kgwversioned.Interface) {
 		},
 		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
 			return kgwClient.GatewayV1alpha1().Backends(namespace).Watch(context.Background(), o)
+		},
+	)
+	kubeclient.Register[*v1alpha1.DirectResponse](
+		wellknown.DirectResponseGVR,
+		wellknown.DirectResponseGVK,
+		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (runtime.Object, error) {
+			return kgwClient.GatewayV1alpha1().DirectResponses(namespace).List(context.Background(), o)
+		},
+		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
+			return kgwClient.GatewayV1alpha1().DirectResponses(namespace).Watch(context.Background(), o)
 		},
 	)
 }
@@ -385,7 +397,9 @@ func (s *AgentGwSyncer) buildInputCollections(krtopts krtinternal.KrtOptions) In
 		InferencePools: krt.NewStaticCollection[*inf.InferencePool](nil, nil, krtopts.ToOptions("disable/inferencepools")...),
 
 		// kgateway resources
-		Backends: s.commonCols.BackendIndex,
+		Backends:        s.commonCols.BackendIndex,
+		BackendsTemp:    krt.NewInformer[*v1alpha1.Backend](s.client),
+		DirectResponses: krt.NewInformer[*v1alpha1.DirectResponse](s.client),
 	}
 
 	if s.EnableInferExt {
@@ -488,13 +502,14 @@ func (s *AgentGwSyncer) buildADPResources(
 	// Build routes
 	routeParents := BuildRouteParents(gateways)
 	routeInputs := RouteContextInputs{
-		Grants:         refGrants,
-		RouteParents:   routeParents,
-		Services:       inputs.Services,
-		Namespaces:     inputs.Namespaces,
-		InferencePools: inputs.InferencePools,
-		Backends:       s.commonCols.BackendIndex,
-		Plugins:        s.plugins,
+		Grants:          refGrants,
+		RouteParents:    routeParents,
+		Services:        inputs.Services,
+		Namespaces:      inputs.Namespaces,
+		InferencePools:  inputs.InferencePools,
+		Backends:        s.commonCols.BackendIndex,
+		Plugins:         s.plugins,
+		DirectResponses: inputs.DirectResponses,
 	}
 	adpRoutes := ADPRouteCollection(inputs.HTTPRoutes, inputs.GRPCRoutes, inputs.TCPRoutes, inputs.TLSRoutes, routeInputs, krtopts, s.plugins)
 

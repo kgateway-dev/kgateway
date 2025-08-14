@@ -16,24 +16,11 @@ func mergeAI(
 	opts policy.MergeOptions,
 	mergeOrigins pluginsdkir.MergeOrigins,
 ) {
-	if !policy.IsMergeable(p1.spec.ai, p2.spec.ai, opts) {
-		return
+	accessor := fieldAccessor[aiPolicyIR]{
+		Get: func(spec *trafficPolicySpecIr) *aiPolicyIR { return spec.ai },
+		Set: func(spec *trafficPolicySpecIr, val *aiPolicyIR) { spec.ai = val },
 	}
-
-	switch opts.Strategy {
-	case policy.AugmentedDeepMerge, policy.OverridableDeepMerge:
-		if p1.spec.ai != nil {
-			return
-		}
-		fallthrough // can override p1 if it is unset
-
-	case policy.AugmentedShallowMerge, policy.OverridableShallowMerge:
-		p1.spec.ai = p2.spec.ai
-		mergeOrigins.SetOne("ai", p2Ref, p2MergeOrigins)
-
-	default:
-		logger.Warn("unsupported merge strategy for ai policy", "strategy", opts.Strategy, "policy", p2Ref)
-	}
+	defaultMerge(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, accessor, "ai")
 }
 
 func mergeExtProc(
@@ -43,24 +30,11 @@ func mergeExtProc(
 	opts policy.MergeOptions,
 	mergeOrigins pluginsdkir.MergeOrigins,
 ) {
-	if !policy.IsMergeable(p1.spec.extProc, p2.spec.extProc, opts) {
-		return
+	accessor := fieldAccessor[extprocIR]{
+		Get: func(spec *trafficPolicySpecIr) *extprocIR { return spec.extProc },
+		Set: func(spec *trafficPolicySpecIr, val *extprocIR) { spec.extProc = val },
 	}
-
-	switch opts.Strategy {
-	case policy.AugmentedDeepMerge, policy.OverridableDeepMerge:
-		if p1.spec.extProc != nil {
-			return
-		}
-		fallthrough // can override p1 if it is unset
-
-	case policy.AugmentedShallowMerge, policy.OverridableShallowMerge:
-		p1.spec.extProc = p2.spec.extProc
-		mergeOrigins.SetOne("extProc", p2Ref, p2MergeOrigins)
-
-	default:
-		logger.Warn("unsupported merge strategy for extProc policy", "strategy", opts.Strategy, "policy", p2Ref)
-	}
+	defaultMerge(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, accessor, "extProc")
 }
 
 func mergeTransformation(
@@ -114,24 +88,11 @@ func mergeRustformation(
 	opts policy.MergeOptions,
 	mergeOrigins pluginsdkir.MergeOrigins,
 ) {
-	if !policy.IsMergeable(p1.spec.rustformation, p2.spec.rustformation, opts) {
-		return
+	accessor := fieldAccessor[rustformationIR]{
+		Get: func(spec *trafficPolicySpecIr) *rustformationIR { return spec.rustformation },
+		Set: func(spec *trafficPolicySpecIr, val *rustformationIR) { spec.rustformation = val },
 	}
-
-	switch opts.Strategy {
-	case policy.AugmentedDeepMerge, policy.OverridableDeepMerge:
-		if p1.spec.rustformation != nil {
-			return
-		}
-		fallthrough // can override p1 if it is unset
-
-	case policy.AugmentedShallowMerge, policy.OverridableShallowMerge:
-		p1.spec.rustformation = p2.spec.rustformation
-		mergeOrigins.SetOne("rustformation", p2Ref, p2MergeOrigins)
-
-	default:
-		logger.Warn("unsupported merge strategy for rustformation policy", "strategy", opts.Strategy, "policy", p2Ref)
-	}
+	defaultMerge(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, accessor, "rustformation")
 }
 
 func mergeExtAuth(
@@ -141,24 +102,11 @@ func mergeExtAuth(
 	opts policy.MergeOptions,
 	mergeOrigins pluginsdkir.MergeOrigins,
 ) {
-	if !policy.IsMergeable(p1.spec.extAuth, p2.spec.extAuth, opts) {
-		return
+	accessor := fieldAccessor[extAuthIR]{
+		Get: func(spec *trafficPolicySpecIr) *extAuthIR { return spec.extAuth },
+		Set: func(spec *trafficPolicySpecIr, val *extAuthIR) { spec.extAuth = val },
 	}
-
-	switch opts.Strategy {
-	case policy.AugmentedDeepMerge, policy.OverridableDeepMerge:
-		if p1.spec.extAuth != nil {
-			return
-		}
-		fallthrough // can override p1 if it is unset
-
-	case policy.AugmentedShallowMerge, policy.OverridableShallowMerge:
-		p1.spec.extAuth = p2.spec.extAuth
-		mergeOrigins.SetOne("extAuth", p2Ref, p2MergeOrigins)
-
-	default:
-		logger.Warn("unsupported merge strategy for extAuth policy", "strategy", opts.Strategy, "policy", p2Ref)
-	}
+	defaultMerge(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, accessor, "extAuth")
 }
 
 func mergeLocalRateLimit(
@@ -168,24 +116,11 @@ func mergeLocalRateLimit(
 	opts policy.MergeOptions,
 	mergeOrigins pluginsdkir.MergeOrigins,
 ) {
-	if !policy.IsMergeable(p1.spec.localRateLimit, p2.spec.localRateLimit, opts) {
-		return
+	accessor := fieldAccessor[localRateLimitIR]{
+		Get: func(spec *trafficPolicySpecIr) *localRateLimitIR { return spec.localRateLimit },
+		Set: func(spec *trafficPolicySpecIr, val *localRateLimitIR) { spec.localRateLimit = val },
 	}
-
-	switch opts.Strategy {
-	case policy.AugmentedDeepMerge, policy.OverridableDeepMerge:
-		if p1.spec.localRateLimit != nil {
-			return
-		}
-		fallthrough // can override p1 if it is unset
-
-	case policy.AugmentedShallowMerge, policy.OverridableShallowMerge:
-		p1.spec.localRateLimit = p2.spec.localRateLimit
-		mergeOrigins.SetOne("rateLimit.local", p2Ref, p2MergeOrigins)
-
-	default:
-		logger.Warn("unsupported merge strategy for localRateLimit policy", "strategy", opts.Strategy, "policy", p2Ref)
-	}
+	defaultMerge(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, accessor, "rateLimit.local")
 }
 
 func mergeGlobalRateLimit(
@@ -195,24 +130,11 @@ func mergeGlobalRateLimit(
 	opts policy.MergeOptions,
 	mergeOrigins pluginsdkir.MergeOrigins,
 ) {
-	if !policy.IsMergeable(p1.spec.globalRateLimit, p2.spec.globalRateLimit, opts) {
-		return
+	accessor := fieldAccessor[globalRateLimitIR]{
+		Get: func(spec *trafficPolicySpecIr) *globalRateLimitIR { return spec.globalRateLimit },
+		Set: func(spec *trafficPolicySpecIr, val *globalRateLimitIR) { spec.globalRateLimit = val },
 	}
-
-	switch opts.Strategy {
-	case policy.AugmentedDeepMerge, policy.OverridableDeepMerge:
-		if p1.spec.globalRateLimit != nil {
-			return
-		}
-		fallthrough // can override p1 if it is unset
-
-	case policy.AugmentedShallowMerge, policy.OverridableShallowMerge:
-		p1.spec.globalRateLimit = p2.spec.globalRateLimit
-		mergeOrigins.SetOne("rateLimit.global", p2Ref, p2MergeOrigins)
-
-	default:
-		logger.Warn("unsupported merge strategy for rateLimit policy", "strategy", opts.Strategy, "policy", p2Ref)
-	}
+	defaultMerge(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, accessor, "rateLimit.global")
 }
 
 func mergeCORS(
@@ -222,24 +144,11 @@ func mergeCORS(
 	opts policy.MergeOptions,
 	mergeOrigins pluginsdkir.MergeOrigins,
 ) {
-	if !policy.IsMergeable(p1.spec.cors, p2.spec.cors, opts) {
-		return
+	accessor := fieldAccessor[corsIR]{
+		Get: func(spec *trafficPolicySpecIr) *corsIR { return spec.cors },
+		Set: func(spec *trafficPolicySpecIr, val *corsIR) { spec.cors = val },
 	}
-
-	switch opts.Strategy {
-	case policy.AugmentedDeepMerge, policy.OverridableDeepMerge:
-		if p1.spec.cors != nil {
-			return
-		}
-		fallthrough // can override p1 if it is unset
-
-	case policy.AugmentedShallowMerge, policy.OverridableShallowMerge:
-		p1.spec.cors = p2.spec.cors
-		mergeOrigins.SetOne("cors", p2Ref, p2MergeOrigins)
-
-	default:
-		logger.Warn("unsupported merge strategy for cors policy", "strategy", opts.Strategy, "policy", p2Ref)
-	}
+	defaultMerge(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, accessor, "cors")
 }
 
 func mergeCSRF(
@@ -249,24 +158,11 @@ func mergeCSRF(
 	opts policy.MergeOptions,
 	mergeOrigins pluginsdkir.MergeOrigins,
 ) {
-	if !policy.IsMergeable(p1.spec.csrf, p2.spec.csrf, opts) {
-		return
+	accessor := fieldAccessor[csrfIR]{
+		Get: func(spec *trafficPolicySpecIr) *csrfIR { return spec.csrf },
+		Set: func(spec *trafficPolicySpecIr, val *csrfIR) { spec.csrf = val },
 	}
-
-	switch opts.Strategy {
-	case policy.AugmentedDeepMerge, policy.OverridableDeepMerge:
-		if p1.spec.csrf != nil {
-			return
-		}
-		fallthrough // can override p1 if it is unset
-
-	case policy.AugmentedShallowMerge, policy.OverridableShallowMerge:
-		p1.spec.csrf = p2.spec.csrf
-		mergeOrigins.SetOne("csrf", p2Ref, p2MergeOrigins)
-
-	default:
-		logger.Warn("unsupported merge strategy for csrf policy", "strategy", opts.Strategy, "policy", p2Ref)
-	}
+	defaultMerge(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, accessor, "csrf")
 }
 
 func mergeBuffer(
@@ -276,24 +172,11 @@ func mergeBuffer(
 	opts policy.MergeOptions,
 	mergeOrigins pluginsdkir.MergeOrigins,
 ) {
-	if !policy.IsMergeable(p1.spec.buffer, p2.spec.buffer, opts) {
-		return
+	accessor := fieldAccessor[bufferIR]{
+		Get: func(spec *trafficPolicySpecIr) *bufferIR { return spec.buffer },
+		Set: func(spec *trafficPolicySpecIr, val *bufferIR) { spec.buffer = val },
 	}
-
-	switch opts.Strategy {
-	case policy.AugmentedDeepMerge, policy.OverridableDeepMerge:
-		if p1.spec.buffer != nil {
-			return
-		}
-		fallthrough // can override p1 if it is unset
-
-	case policy.AugmentedShallowMerge, policy.OverridableShallowMerge:
-		p1.spec.buffer = p2.spec.buffer
-		mergeOrigins.SetOne("buffer", p2Ref, p2MergeOrigins)
-
-	default:
-		logger.Warn("unsupported merge strategy for buffer policy", "strategy", opts.Strategy, "policy", p2Ref)
-	}
+	defaultMerge(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, accessor, "buffer")
 }
 
 func mergeAutoHostRewrite(
@@ -303,24 +186,11 @@ func mergeAutoHostRewrite(
 	opts policy.MergeOptions,
 	mergeOrigins pluginsdkir.MergeOrigins,
 ) {
-	if !policy.IsMergeable(p1.spec.autoHostRewrite, p2.spec.autoHostRewrite, opts) {
-		return
+	accessor := fieldAccessor[autoHostRewriteIR]{
+		Get: func(spec *trafficPolicySpecIr) *autoHostRewriteIR { return spec.autoHostRewrite },
+		Set: func(spec *trafficPolicySpecIr, val *autoHostRewriteIR) { spec.autoHostRewrite = val },
 	}
-
-	switch opts.Strategy {
-	case policy.AugmentedDeepMerge, policy.OverridableDeepMerge:
-		if p1.spec.autoHostRewrite != nil {
-			return
-		}
-		fallthrough // can override p1 if it is unset
-
-	case policy.AugmentedShallowMerge, policy.OverridableShallowMerge:
-		p1.spec.autoHostRewrite = p2.spec.autoHostRewrite
-		mergeOrigins.SetOne("autoHostRewrite", p2Ref, p2MergeOrigins)
-
-	default:
-		logger.Warn("unsupported merge strategy for AutoHostRewrite policy", "strategy", opts.Strategy, "policy", p2Ref)
-	}
+	defaultMerge(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, accessor, "autoHostRewrite")
 }
 
 func mergeHashPolicies(
@@ -330,22 +200,77 @@ func mergeHashPolicies(
 	opts policy.MergeOptions,
 	mergeOrigins pluginsdkir.MergeOrigins,
 ) {
-	if !policy.IsMergeable(p1.spec.hashPolicies, p2.spec.hashPolicies, opts) {
+	accessor := fieldAccessor[hashPolicyIR]{
+		Get: func(spec *trafficPolicySpecIr) *hashPolicyIR { return spec.hashPolicies },
+		Set: func(spec *trafficPolicySpecIr, val *hashPolicyIR) { spec.hashPolicies = val },
+	}
+	defaultMerge(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, accessor, "hashPolicies")
+}
+
+func mergeTimeouts(
+	p1, p2 *TrafficPolicy,
+	p2Ref *pluginsdkir.AttachedPolicyRef,
+	p2MergeOrigins pluginsdkir.MergeOrigins,
+	opts policy.MergeOptions,
+	mergeOrigins pluginsdkir.MergeOrigins,
+) {
+	accessor := fieldAccessor[timeoutsIR]{
+		Get: func(spec *trafficPolicySpecIr) *timeoutsIR { return spec.timeouts },
+		Set: func(spec *trafficPolicySpecIr, val *timeoutsIR) { spec.timeouts = val },
+	}
+	defaultMerge(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, accessor, "timeouts")
+}
+
+func mergeRetry(
+	p1, p2 *TrafficPolicy,
+	p2Ref *pluginsdkir.AttachedPolicyRef,
+	p2MergeOrigins pluginsdkir.MergeOrigins,
+	opts policy.MergeOptions,
+	mergeOrigins pluginsdkir.MergeOrigins,
+) {
+	accessor := fieldAccessor[retryIR]{
+		Get: func(spec *trafficPolicySpecIr) *retryIR { return spec.retry },
+		Set: func(spec *trafficPolicySpecIr, val *retryIR) { spec.retry = val },
+	}
+	defaultMerge(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, accessor, "retry")
+}
+
+// fieldAccessor defines how to access and set a field on trafficPolicySpecIr
+type fieldAccessor[T any] struct {
+	Get func(*trafficPolicySpecIr) *T
+	Set func(*trafficPolicySpecIr, *T)
+}
+
+// defaultMerge is a generic merge function that can handle any field on TrafficPolicy.spec.
+// It should be used when the policy being merged does not support deep merging or custom merge logic.
+func defaultMerge[T any](
+	p1, p2 *TrafficPolicy,
+	p2Ref *pluginsdkir.AttachedPolicyRef,
+	p2MergeOrigins pluginsdkir.MergeOrigins,
+	opts policy.MergeOptions,
+	mergeOrigins pluginsdkir.MergeOrigins,
+	accessor fieldAccessor[T],
+	fieldName string,
+) {
+	p1Field := accessor.Get(&p1.spec)
+	p2Field := accessor.Get(&p2.spec)
+
+	if !policy.IsMergeable(p1Field, p2Field, opts) {
 		return
 	}
 
 	switch opts.Strategy {
 	case policy.AugmentedDeepMerge, policy.OverridableDeepMerge:
-		if p1.spec.hashPolicies != nil {
+		if p1Field != nil {
 			return
 		}
 		fallthrough // can override p1 if it is unset
 
 	case policy.AugmentedShallowMerge, policy.OverridableShallowMerge:
-		p1.spec.hashPolicies = p2.spec.hashPolicies
-		mergeOrigins.SetOne("hashPolicies", p2Ref, p2MergeOrigins)
+		accessor.Set(&p1.spec, p2Field)
+		mergeOrigins.SetOne(fieldName, p2Ref, p2MergeOrigins)
 
 	default:
-		logger.Warn("unsupported merge strategy for hashPolicies policy", "strategy", opts.Strategy, "policy", p2Ref)
+		logger.Warn("unsupported merge strategy for policy", "strategy", opts.Strategy, "policy", p2Ref, "field", fieldName)
 	}
 }

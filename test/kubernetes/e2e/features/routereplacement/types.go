@@ -15,6 +15,8 @@ var (
 	setupManifest                     = filepath.Join(fsutils.MustGetThisDir(), "testdata", "setup.yaml")
 	strictModeInvalidPolicyManifest   = filepath.Join(fsutils.MustGetThisDir(), "testdata", "strict-mode-invalid-policy.yaml")
 	standardModeInvalidPolicyManifest = strictModeInvalidPolicyManifest
+	strictModeInvalidMatcherManifest  = filepath.Join(fsutils.MustGetThisDir(), "testdata", "strict-mode-invalid-matcher.yaml")
+	strictModeInvalidRouteManifest    = filepath.Join(fsutils.MustGetThisDir(), "testdata", "strict-mode-invalid-route.yaml")
 
 	// proxy objects (gateway deployment)
 	proxyObjectMeta = metav1.ObjectMeta{
@@ -39,6 +41,20 @@ var (
 	invalidPolicyRoute = &gwv1.HTTPRoute{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "invalid-policy-route",
+			Namespace: "default",
+		},
+	}
+
+	invalidMatcherRoute = &gwv1.HTTPRoute{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "invalid-matcher-route",
+			Namespace: "default",
+		},
+	}
+
+	invalidConfigRoute = &gwv1.HTTPRoute{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "invalid-config-route",
 			Namespace: "default",
 		},
 	}

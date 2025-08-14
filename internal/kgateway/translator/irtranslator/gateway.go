@@ -21,6 +21,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	sdkreporter "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/settings"
+	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 )
 
 var logger = logging.New("translator/ir")
@@ -28,6 +29,7 @@ var logger = logging.New("translator/ir")
 type Translator struct {
 	ContributedPolicies  map[schema.GroupKind]extensionsplug.PolicyPlugin
 	RouteReplacementMode settings.RouteReplacementMode
+	Validator            validator.Validator
 }
 
 type TranslationPassPlugins map[schema.GroupKind]*TranslationPass
@@ -113,6 +115,7 @@ func (t *Translator) ComputeListener(
 			PluginPass:               pass,
 			logger:                   logger.With("route_config_name", hfc.FilterChainName),
 			routeReplacementMode:     t.RouteReplacementMode,
+			validator:                t.Validator,
 		}
 		rc := hr.ComputeRouteConfiguration(ctx, hfc.Vhosts)
 		if rc != nil {

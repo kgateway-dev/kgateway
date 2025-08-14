@@ -8,7 +8,7 @@
           "hostname": "grpc-echo-svc.gwtest.svc.cluster.local",
           "addresses": [
             {
-              "address": "CgAAvg=="
+              "address": "CgAAiw=="
             }
           ],
           "ports": [
@@ -25,12 +25,33 @@
     {
       "Type": {
         "Service": {
+          "name": "http-direct-response",
+          "namespace": "gwtest",
+          "hostname": "http-direct-response.gwtest.svc.cluster.local",
+          "addresses": [
+            {
+              "address": "CgAAZw=="
+            }
+          ],
+          "ports": [
+            {
+              "service_port": 8080,
+              "target_port": 8080
+            }
+          ],
+          "ip_families": 1
+        }
+      }
+    },
+    {
+      "Type": {
+        "Service": {
           "name": "http-grpcroute",
           "namespace": "gwtest",
           "hostname": "http-grpcroute.gwtest.svc.cluster.local",
           "addresses": [
             {
-              "address": "CgAA+g=="
+              "address": "CgAAJA=="
             }
           ],
           "ports": [
@@ -57,7 +78,7 @@
           "ports": [
             {
               "service_port": 443,
-              "target_port": 62051
+              "target_port": 44805
             }
           ],
           "ip_families": 1
@@ -188,11 +209,13 @@
           ],
           "backends": [
             {
-              "Kind": {
-                "Service": "gwtest/grpc-echo-svc.gwtest.svc.cluster.local"
+              "backend": {
+                "Kind": {
+                  "Service": "gwtest/grpc-echo-svc.gwtest.svc.cluster.local"
+                },
+                "port": 3000
               },
-              "weight": 1,
-              "port": 3000
+              "weight": 1
             }
           ]
         }

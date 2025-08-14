@@ -18,6 +18,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
@@ -1730,6 +1731,65 @@ func TestADPRouteCollectionWithFilters(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "Route with DirectResponse ExtensionRef filter",
+			httpRoute: &gwv1.HTTPRoute{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "direct-response-route",
+					Namespace: "default",
+				},
+				Spec: gwv1.HTTPRouteSpec{
+					CommonRouteSpec: gwv1.CommonRouteSpec{
+						ParentRefs: []gwv1.ParentReference{
+							{
+								Name: "test-gateway",
+							},
+						},
+					},
+					Hostnames: []gwv1.Hostname{"example.com"},
+					Rules: []gwv1.HTTPRouteRule{
+						{
+							Matches: []gwv1.HTTPRouteMatch{
+								{
+									Path: &gwv1.HTTPPathMatch{
+										Type:  ptr.To(gwv1.PathMatchPathPrefix),
+										Value: ptr.To("/robots.txt"),
+									},
+								},
+							},
+							Filters: []gwv1.HTTPRouteFilter{
+								{
+									Type: gwv1.HTTPRouteFilterExtensionRef,
+									ExtensionRef: &gwv1.LocalObjectReference{
+										Group: "gateway.kgateway.dev",
+										Kind:  "DirectResponse",
+										Name:  "robots-response",
+									},
+								},
+							},
+							BackendRefs: []gwv1.HTTPBackendRef{
+								{
+									BackendRef: gwv1.BackendRef{
+										BackendObjectReference: gwv1.BackendObjectReference{
+											Name: "test-service",
+											Port: ptr.To(gwv1.PortNumber(80)),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedFilter: &api.RouteFilter{
+				Kind: &api.RouteFilter_DirectResponse{
+					DirectResponse: &api.DirectResponse{
+						Status: 200,
+						Body:   []byte("User-agent: *\nDisallow: /admin\nAllow: /"),
+					},
+				},
+			},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -1784,7 +1844,23 @@ func TestADPRouteCollectionWithFilters(t *testing.T) {
 
 			refGrant := ReferenceGrant{}
 
-			inputs := []any{tc.httpRoute, service, namespace, gateway, refGrant}
+			var inputs []any
+			inputs = []any{tc.httpRoute, service, namespace, gateway, refGrant}
+
+			// Add DirectResponse resources for the DirectResponse filter tests
+			if tc.name == "Route with DirectResponse ExtensionRef filter" {
+				directResponse := &v1alpha1.DirectResponse{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "robots-response",
+						Namespace: "default",
+					},
+					Spec: v1alpha1.DirectResponseSpec{
+						StatusCode: 200,
+						Body:       ptr.To("User-agent: *\nDisallow: /admin\nAllow: /"),
+					},
+				}
+				inputs = append(inputs, directResponse)
+			}
 
 			// Create mock collections
 			mock := krttest.NewMock(t, inputs)
@@ -1799,6 +1875,7 @@ func TestADPRouteCollectionWithFilters(t *testing.T) {
 			namespaces := krttest.GetMockCollection[*corev1.Namespace](mock)
 			serviceEntries := krttest.GetMockCollection[*networkingclient.ServiceEntry](mock)
 			inferencePools := krttest.GetMockCollection[*inf.InferencePool](mock)
+			directResponses := krttest.GetMockCollection[*v1alpha1.DirectResponse](mock)
 
 			// Wait for collections to sync
 			gatewayObjs.WaitUntilSynced(context.Background().Done())
@@ -1814,12 +1891,13 @@ func TestADPRouteCollectionWithFilters(t *testing.T) {
 			refGrants := BuildReferenceGrants(refGrantsCollection)
 			// Create route context inputs
 			routeInputs := RouteContextInputs{
-				Grants:         refGrants,
-				RouteParents:   routeParents,
-				Services:       services,
-				Namespaces:     namespaces,
-				ServiceEntries: serviceEntries,
-				InferencePools: inferencePools,
+				Grants:          refGrants,
+				RouteParents:    routeParents,
+				Services:        services,
+				Namespaces:      namespaces,
+				ServiceEntries:  serviceEntries,
+				InferencePools:  inferencePools,
+				DirectResponses: directResponses,
 			}
 
 			// Create KRT options
@@ -1885,6 +1963,22 @@ func TestADPRouteCollectionWithFilters(t *testing.T) {
 				assert.Equal(t, expectedCors.GetAllowOrigins(), actualCors.GetAllowOrigins(), "CORS AllowOrigins mismatch")
 				assert.Equal(t, expectedCors.GetExposeHeaders(), actualCors.GetExposeHeaders(), "CORS ExposeHeaders mismatch")
 				assert.Equal(t, expectedCors.GetMaxAge().GetSeconds(), actualCors.GetMaxAge().GetSeconds(), "CORS MaxAge mismatch")
+			case *api.RouteFilter_DirectResponse:
+				actualKind, ok := actualFilter.GetKind().(*api.RouteFilter_DirectResponse)
+				require.True(t, ok, "Expected DirectResponse filter")
+
+				expectedDirect := expectedKind.DirectResponse
+				actualDirect := actualKind.DirectResponse
+
+				assert.Equal(t, expectedDirect.GetStatus(), actualDirect.GetStatus(), "DirectResponse status mismatch")
+
+				// Verify body if it exists
+				if expectedDirect.GetBody() != nil {
+					require.NotNil(t, actualDirect.GetBody(), "Expected DirectResponse to have body")
+					assert.Equal(t, string(expectedDirect.GetBody()), string(actualDirect.GetBody()), "DirectResponse body mismatch")
+				} else {
+					assert.Nil(t, actualDirect.GetBody(), "Expected DirectResponse to have no body")
+				}
 			}
 		})
 	}
