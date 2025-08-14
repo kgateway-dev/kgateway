@@ -7632,7 +7632,7 @@ func schema_kgateway_v2_api_v1alpha1_Webhook(ref common.ReferenceCallback) commo
 				Properties: map[string]spec.Schema{
 					"host": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Host to send the traffic to. Note: TLS is not currently supported for webhook.",
+							Description: "Host to send the traffic to. Note: TLS is not currently supported for webhook. Example: ```yaml host:\n  host: example.com  #The host name of the webhook endpoint.\n  port: 443 \t        #The port number on which the webhook is listening.\n```",
 							Default:     map[string]interface{}{},
 							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Host"),
 						},

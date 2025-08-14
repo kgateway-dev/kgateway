@@ -61,13 +61,13 @@ class Regex:
 
 
 @dataclass
-class Host:
+class Endpoint:
     host: str
     port: int
 
     @staticmethod
-    def from_json(data: dict) -> "Host":
-        return Host(host=data.get("host", ""), port=data.get("port", 0))
+    def from_json(data: dict) -> "Endpoint":
+        return Endpoint(host=data.get("host", ""), port=data.get("port", 0))
 
 
 class Type(Enum):
@@ -90,16 +90,16 @@ class HTTPHeaderMatch:
 
 @dataclass
 class Webhook:
-    host: Host
+    endpoint: Endpoint
     forwardHeaders: Optional[List[HTTPHeaderMatch]] = field(default_factory=list)
 
     @staticmethod
     def from_json(data: dict) -> "Webhook":
-        host = Host.from_json(data["host"])
+        endpoint = Endpoint.from_json(data["endpoint"])
         forward_headers = [
             HTTPHeaderMatch.from_json(h) for h in data.get("forwardHeaders", [])
         ]
-        return Webhook(host=host, forwardHeaders=forward_headers)
+        return Webhook(endpoint=endpoint, forwardHeaders=forward_headers)
 
 
 @dataclass
