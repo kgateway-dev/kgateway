@@ -53,7 +53,7 @@ jobs:
         # August 6, 2025: ~10 minutes
         - cluster-name: 'cluster-five'
           go-test-args: '-v -timeout=10m'
-          go-test-run-regex: '^TestKgateway$$/^TimeoutRetry$$'
+          go-test-run-regex: '^TestKgateway$$/^TimeoutRetry$$|^TestKgateway$$/^HeaderModifiers$$'
           localstack: 'false'
         # July 8, 2025: ~7 minutes
         - cluster-name: 'cluster-ai'

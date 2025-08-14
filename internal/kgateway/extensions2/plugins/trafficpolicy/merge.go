@@ -165,6 +165,31 @@ func mergeCSRF(
 	defaultMerge(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, accessor, "csrf")
 }
 
+func mergeHeaderModifiers(
+	p1, p2 *TrafficPolicy,
+	p2Ref *pluginsdkir.AttachedPolicyRef,
+	p2MergeOrigins pluginsdkir.MergeOrigins,
+	opts policy.MergeOptions,
+	mergeOrigins pluginsdkir.MergeOrigins,
+) {
+	if !policy.IsMergeable(p1.spec.headerModifiers, p2.spec.headerModifiers, opts) {
+		return
+	}
+
+	switch opts.Strategy {
+	case policy.AugmentedDeepMerge, policy.OverridableDeepMerge:
+		if p1.spec.headerModifiers != nil {
+			return
+		}
+		fallthrough // can override p1 if it is unset
+	case policy.AugmentedShallowMerge, policy.OverridableShallowMerge:
+		p1.spec.headerModifiers = p2.spec.headerModifiers
+		mergeOrigins.SetOne("headerModifiers", p2Ref, p2MergeOrigins)
+	default:
+		logger.Warn("unsupported merge strategy for headerModifiers policy", "strategy", opts.Strategy, "policy", p2Ref)
+	}
+}
+
 func mergeBuffer(
 	p1, p2 *TrafficPolicy,
 	p2Ref *pluginsdkir.AttachedPolicyRef,
