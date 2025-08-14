@@ -17,7 +17,7 @@ spec:
   terminationGracePeriodSeconds: 0
   containers:
     - name: curl
-      image: curlimages/curl:7.83.1
+      image: us-docker.pkg.dev/developers-369321/solo-tools/curl:7.83.1
       imagePullPolicy: IfNotPresent
       command:
         - "tail"
