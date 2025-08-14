@@ -385,10 +385,10 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
-	t.Run("Load balancer with hash policies, route level", func(t *testing.T) {
+	t.Run("Load balancer with hash policies", func(t *testing.T) {
 		test(t, translatorTestCase{
-			inputFile:  "loadbalancer/route.yaml",
-			outputFile: "loadbalancer/route.yaml",
+			inputFile:  "loadbalancer/hash-policies.yaml",
+			outputFile: "loadbalancer/hash-policies.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",

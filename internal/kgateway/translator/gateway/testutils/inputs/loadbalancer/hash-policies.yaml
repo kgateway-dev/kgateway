@@ -40,6 +40,13 @@ spec:
     ringHash:
       minimumRingSize: 1024
       maximumRingSize: 2048
+      hashPolicies:
+      - header:
+          name: "x-user-id"
+        terminal: true
+      - header:
+          name: "x-session-id"
+        terminal: false
     closeConnectionsOnHostSetChange: true
 ---
 apiVersion: v1
@@ -67,46 +74,19 @@ spec:
       group: ""
       kind: Service
   loadBalancer:
-    maglev: {}
----
-kind: TrafficPolicy
-apiVersion: gateway.kgateway.dev/v1alpha1
-metadata:
-  name: header-hash-policy
-spec:
-  targetRefs:
-    - name: example-route-ringhash
-      group: gateway.networking.k8s.io
-      kind: HTTPRoute
-  hashPolicies:
-    - header:
-        name: "x-user-id"
-      terminal: true
-    - header:
-        name: "x-session-id"
-      terminal: false
----
-kind: TrafficPolicy
-apiVersion: gateway.kgateway.dev/v1alpha1
-metadata:
-  name: cookie-sourceip-hash-policy
-spec:
-  targetRefs:
-    - name: example-route-maglev
-      group: gateway.networking.k8s.io
-      kind: HTTPRoute
-  hashPolicies:
-    - cookie:
-        name: "session-id"
-        path: "/api"
-        ttl: 30m
-        attributes:
-          httpOnly: "true"
-          secure: "true"
-          sameSite: "Strict"
-      terminal: true
-    - sourceIP: {}
-      terminal: false
+    maglev:
+      hashPolicies:
+      - cookie:
+          name: "session-id"
+          path: "/api"
+          ttl: 30m
+          attributes:
+            httpOnly: "true"
+            secure: "true"
+            sameSite: "Strict"
+        terminal: true
+      - sourceIP: {}
+        terminal: false
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute

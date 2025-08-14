@@ -90,7 +90,6 @@ type trafficPolicySpecIr struct {
 	globalRateLimit *globalRateLimitIR
 	cors            *corsIR
 	csrf            *csrfIR
-	hashPolicies    *hashPolicyIR
 	autoHostRewrite *autoHostRewriteIR
 }
 
@@ -140,9 +139,6 @@ func (d *TrafficPolicy) Equals(in any) bool {
 	if !d.spec.buffer.Equals(d2.spec.buffer) {
 		return false
 	}
-	if !d.spec.hashPolicies.Equals(d2.spec.hashPolicies) {
-		return false
-	}
 	return true
 }
 
@@ -161,7 +157,6 @@ func (p *TrafficPolicy) Validate() error {
 	validators = append(validators, p.spec.csrf.Validate)
 	validators = append(validators, p.spec.cors.Validate)
 	validators = append(validators, p.spec.buffer.Validate)
-	validators = append(validators, p.spec.hashPolicies.Validate)
 	validators = append(validators, p.spec.autoHostRewrite.Validate)
 	for _, validator := range validators {
 		if err := validator(); err != nil {
@@ -394,10 +389,6 @@ func handleRoutePolicies(routeAction *envoyroutev3.RouteAction, spec trafficPoli
 	// A parent route rule with a delegated backend will not have RouteAction set
 	if routeAction == nil {
 		return
-	}
-
-	if spec.hashPolicies != nil {
-		routeAction.HashPolicy = spec.hashPolicies.policies
 	}
 
 	if spec.autoHostRewrite != nil && spec.autoHostRewrite.enabled != nil && spec.autoHostRewrite.enabled.GetValue() {
@@ -654,7 +645,6 @@ func MergeTrafficPolicies(
 		mergeCSRF,
 		mergeBuffer,
 		mergeAutoHostRewrite,
-		mergeHashPolicies,
 	}
 
 	for _, mergeFunc := range mergeFuncs {
