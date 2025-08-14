@@ -1027,7 +1027,7 @@ type AgentGateway struct {
 
 	// Name of the custom configmap to use instead of the default generated one.
 	// When set, the agent gateway will use this configmap instead of creating the default one.
-	// The configmap must contain a 'config.json' key with the agent gateway configuration.
+	// The configmap must contain a 'config.yaml' key with the agent gateway configuration.
 	//
 	// +optional
 	CustomConfigMapName *string `json:"customConfigMapName,omitempty"`
