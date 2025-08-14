@@ -1,7 +1,9 @@
 package agentgatewaybackend
 
 import (
+	"context"
 	"testing"
+	"time"
 
 	"github.com/agentgateway/agentgateway/go/api"
 	"istio.io/istio/pkg/kube/krt"
@@ -691,10 +693,18 @@ func createMockSecretIndex(t test.Failer, namespace, name string, data map[strin
 
 	mock := krttest.NewMock(t, inputs)
 
+	// Get the underlying mock collections
+	mockSecretCollection := krttest.GetMockCollection[*corev1.Secret](mock)
+	mockRefGrantCollection := krttest.GetMockCollection[*gwv1beta1.ReferenceGrant](mock)
+
+	// Wait for the mock collections to sync
+	mockSecretCollection.WaitUntilSynced(context.Background().Done())
+	mockRefGrantCollection.WaitUntilSynced(context.Background().Done())
+
 	// Create the secret collection
 	secretsCol := map[schema.GroupKind]krt.Collection[ir.Secret]{
 		corev1.SchemeGroupVersion.WithKind("Secret").GroupKind(): krt.NewCollection(
-			krttest.GetMockCollection[*corev1.Secret](mock),
+			mockSecretCollection,
 			func(kctx krt.HandlerContext, i *corev1.Secret) *ir.Secret {
 				res := ir.Secret{
 					ObjectSource: ir.ObjectSource{
@@ -712,11 +722,20 @@ func createMockSecretIndex(t test.Failer, namespace, name string, data map[strin
 	}
 
 	// Create a minimal RefGrantIndex for the SecretIndex
-	refgrants := krtcollections.NewRefGrantIndex(krttest.GetMockCollection[*gwv1beta1.ReferenceGrant](mock))
+	refgrants := krtcollections.NewRefGrantIndex(mockRefGrantCollection)
+
+	// Wait for the transformed secret collection to sync
+	secretCollection := secretsCol[corev1.SchemeGroupVersion.WithKind("Secret").GroupKind()]
+	secretCollection.WaitUntilSynced(context.Background().Done())
 
 	// Create the SecretIndex
 	index := krtcollections.NewSecretIndex(secretsCol, refgrants)
-	index.HasSynced()
+
+	// Ensure the index is fully synced before returning
+	for !index.HasSynced() {
+		time.Sleep(time.Second * 2)
+	}
+
 	return index
 }
 
