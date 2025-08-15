@@ -98,6 +98,8 @@ listeners:
       merge.HTTPListenerPolicy.gateway.kgateway.dev:
         accessLog:
         - gateway.kgateway.dev/HTTPListenerPolicy/gwtest/accesslog
+        accessLogConfig:
+        - gateway.kgateway.dev/HTTPListenerPolicy/gwtest/accesslog
   name: listener~8080
 - address:
     socketAddress:
@@ -144,6 +146,8 @@ listeners:
       merge.HTTPListenerPolicy.gateway.kgateway.dev:
         accessLog:
         - gateway.kgateway.dev/HTTPListenerPolicy/gwtest/accesslog
+        accessLogConfig:
+        - gateway.kgateway.dev/HTTPListenerPolicy/gwtest/accesslog
   name: listener~8081
 routes:
 - ignorePortInHostMatching: true
@@ -151,6 +155,8 @@ routes:
     filterMetadata:
       merge.HTTPListenerPolicy.gateway.kgateway.dev:
         accessLog:
+        - gateway.kgateway.dev/HTTPListenerPolicy/gwtest/accesslog
+        accessLogConfig:
         - gateway.kgateway.dev/HTTPListenerPolicy/gwtest/accesslog
   name: listener~8080
   virtualHosts:
@@ -169,6 +175,8 @@ routes:
     filterMetadata:
       merge.HTTPListenerPolicy.gateway.kgateway.dev:
         accessLog:
+        - gateway.kgateway.dev/HTTPListenerPolicy/gwtest/accesslog
+        accessLogConfig:
         - gateway.kgateway.dev/HTTPListenerPolicy/gwtest/accesslog
   name: listener~8081
   virtualHosts:
