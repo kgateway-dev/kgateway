@@ -172,22 +172,12 @@ func mergeHeaderModifiers(
 	opts policy.MergeOptions,
 	mergeOrigins pluginsdkir.MergeOrigins,
 ) {
-	if !policy.IsMergeable(p1.spec.headerModifiers, p2.spec.headerModifiers, opts) {
-		return
+	accessor := fieldAccessor[headerModifiersIR]{
+		Get: func(spec *trafficPolicySpecIr) *headerModifiersIR { return spec.headerModifiers },
+		Set: func(spec *trafficPolicySpecIr, val *headerModifiersIR) { spec.headerModifiers = val },
 	}
 
-	switch opts.Strategy {
-	case policy.AugmentedDeepMerge, policy.OverridableDeepMerge:
-		if p1.spec.headerModifiers != nil {
-			return
-		}
-		fallthrough // can override p1 if it is unset
-	case policy.AugmentedShallowMerge, policy.OverridableShallowMerge:
-		p1.spec.headerModifiers = p2.spec.headerModifiers
-		mergeOrigins.SetOne("headerModifiers", p2Ref, p2MergeOrigins)
-	default:
-		logger.Warn("unsupported merge strategy for headerModifiers policy", "strategy", opts.Strategy, "policy", p2Ref)
-	}
+	defaultMerge(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, accessor, "headerModifiers")
 }
 
 func mergeBuffer(

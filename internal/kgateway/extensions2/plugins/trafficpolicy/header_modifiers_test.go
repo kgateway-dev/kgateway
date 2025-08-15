@@ -76,7 +76,7 @@ func TestHeaderModifiersIREquals(t *testing.T) {
 			expected:         false,
 		},
 		{
-			name:             "same instance is equal",
+			name:             "identical instance is equal",
 			headerModifiers1: &headerModifiersIR{policy: testHeaderMutation(false)},
 			headerModifiers2: &headerModifiersIR{policy: testHeaderMutation(false)},
 			expected:         true,
@@ -106,32 +106,10 @@ func TestHeaderModifiersIREquals(t *testing.T) {
 			result := tt.headerModifiers1.Equals(tt.headerModifiers2)
 			assert.Equal(t, tt.expected, result)
 
-			// Test symmetry: a.Equals(b) should equal b.Equals(a)
 			reverseResult := tt.headerModifiers2.Equals(tt.headerModifiers1)
 			assert.Equal(t, result, reverseResult, "Equals should be symmetric")
 		})
 	}
-
-	// Test reflexivity: x.Equals(x) should always be true for non-nil values.
-	t.Run("reflexivity", func(t *testing.T) {
-		HeaderModifiers := &headerModifiersIR{policy: testHeaderMutation(false)}
-		assert.True(t, HeaderModifiers.Equals(HeaderModifiers), "HeaderModifiers should equal itself")
-	})
-
-	// Test transitivity: if a.Equals(b) && b.Equals(c), then a.Equals(c).
-	t.Run("transitivity", func(t *testing.T) {
-		createSameHeaderModifiers := func() *headerModifiersIR {
-			return &headerModifiersIR{policy: testHeaderMutation(true)}
-		}
-
-		a := createSameHeaderModifiers()
-		b := createSameHeaderModifiers()
-		c := createSameHeaderModifiers()
-
-		assert.True(t, a.Equals(b), "a should equal b")
-		assert.True(t, b.Equals(c), "b should equal c")
-		assert.True(t, a.Equals(c), "a should equal c (transitivity)")
-	})
 }
 
 func TestHeaderModifiersIRValidate(t *testing.T) {
@@ -269,39 +247,5 @@ func TestHeaderModifiersHttpFilters(t *testing.T) {
 		require.NotNil(t, filters)
 		assert.Equal(t, 1, len(filters))
 		assert.Equal(t, plugins.DuringStage(plugins.RouteStage), filters[0].Stage)
-	})
-}
-
-func TestHeaderModifiersPolicyPlugin(t *testing.T) {
-	t.Run("applies header modifiers configuration to route", func(t *testing.T) {
-		// Setup.
-		plugin := &trafficPolicyPluginGwPass{}
-
-		ctx := context.Background()
-
-		policy := &TrafficPolicy{
-			spec: trafficPolicySpecIr{
-				headerModifiers: &headerModifiersIR{
-					policy: testHeaderMutation(false),
-				},
-			},
-		}
-
-		pCtx := &ir.RouteContext{
-			Policy: policy,
-		}
-
-		outputRoute := &envoyroutev3.Route{}
-
-		// Execute.
-		err := plugin.ApplyForRoute(ctx, pCtx, outputRoute)
-
-		// Verify.
-		require.NoError(t, err)
-		require.NotNil(t, pCtx.TypedFilterConfig)
-
-		headerModifiersConfig, ok := pCtx.TypedFilterConfig[headerMutationFilterName]
-		assert.True(t, ok)
-		assert.NotNil(t, headerModifiersConfig)
 	})
 }

@@ -1250,7 +1250,7 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         namedType: io.k8s.sigs.gateway-api.apis.v1.HTTPHeaderMatch
       default: {}
-- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.HeaderModifiersPolicy
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.HeaderModifiers
   map:
     fields:
     - name: requestHeaderModifier
@@ -2483,7 +2483,7 @@ var schemaYAML = typed.YAMLObject(`types:
           elementRelationship: atomic
     - name: headerModifiers
       type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.HeaderModifiersPolicy
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.HeaderModifiers
     - name: rateLimit
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.RateLimit

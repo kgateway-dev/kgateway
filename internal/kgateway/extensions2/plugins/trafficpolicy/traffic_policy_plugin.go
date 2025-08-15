@@ -576,6 +576,7 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.Filt
 	// Add header mutation filter.
 	if f := p.headerMutationInChain[fcc.FilterChainName]; f != nil {
 		filter := plugins.MustNewStagedFilter(headerMutationFilterName, f, plugins.DuringStage(plugins.RouteStage))
+		filter.Filter.Disabled = true
 		filters = append(filters, filter)
 	}
 

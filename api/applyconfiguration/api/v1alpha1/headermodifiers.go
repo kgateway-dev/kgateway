@@ -6,23 +6,23 @@ import (
 	v1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
-// HeaderModifiersPolicyApplyConfiguration represents a declarative configuration of the HeaderModifiersPolicy type for use
+// HeaderModifiersApplyConfiguration represents a declarative configuration of the HeaderModifiers type for use
 // with apply.
-type HeaderModifiersPolicyApplyConfiguration struct {
+type HeaderModifiersApplyConfiguration struct {
 	RequestHeaderModifier  *v1.HTTPHeaderFilter `json:"requestHeaderModifier,omitempty"`
 	ResponseHeaderModifier *v1.HTTPHeaderFilter `json:"responseHeaderModifier,omitempty"`
 }
 
-// HeaderModifiersPolicyApplyConfiguration constructs a declarative configuration of the HeaderModifiersPolicy type for use with
+// HeaderModifiersApplyConfiguration constructs a declarative configuration of the HeaderModifiers type for use with
 // apply.
-func HeaderModifiersPolicy() *HeaderModifiersPolicyApplyConfiguration {
-	return &HeaderModifiersPolicyApplyConfiguration{}
+func HeaderModifiers() *HeaderModifiersApplyConfiguration {
+	return &HeaderModifiersApplyConfiguration{}
 }
 
 // WithRequestHeaderModifier sets the RequestHeaderModifier field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the RequestHeaderModifier field is set to the value of the last call.
-func (b *HeaderModifiersPolicyApplyConfiguration) WithRequestHeaderModifier(value v1.HTTPHeaderFilter) *HeaderModifiersPolicyApplyConfiguration {
+func (b *HeaderModifiersApplyConfiguration) WithRequestHeaderModifier(value v1.HTTPHeaderFilter) *HeaderModifiersApplyConfiguration {
 	b.RequestHeaderModifier = &value
 	return b
 }
@@ -30,7 +30,7 @@ func (b *HeaderModifiersPolicyApplyConfiguration) WithRequestHeaderModifier(valu
 // WithResponseHeaderModifier sets the ResponseHeaderModifier field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the ResponseHeaderModifier field is set to the value of the last call.
-func (b *HeaderModifiersPolicyApplyConfiguration) WithResponseHeaderModifier(value v1.HTTPHeaderFilter) *HeaderModifiersPolicyApplyConfiguration {
+func (b *HeaderModifiersApplyConfiguration) WithResponseHeaderModifier(value v1.HTTPHeaderFilter) *HeaderModifiersApplyConfiguration {
 	b.ResponseHeaderModifier = &value
 	return b
 }
