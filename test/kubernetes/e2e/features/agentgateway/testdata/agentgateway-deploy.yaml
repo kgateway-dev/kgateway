@@ -52,4 +52,3 @@ spec:
     - backendRefs:
         - name: httpbin
           port: 8000
-          
