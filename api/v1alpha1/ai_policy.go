@@ -142,6 +142,12 @@ type Regex struct {
 type Webhook struct {
 	// Host to send the traffic to.
 	// Note: TLS is not currently supported for webhook.
+	// Example:
+	// ```yaml
+	// host:
+	//   host: example.com  #The host name of the webhook endpoint.
+	//   port: 443 	        #The port number on which the webhook is listening.
+	// ```
 	// +required
 	Host Host `json:"host"`
 

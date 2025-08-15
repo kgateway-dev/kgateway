@@ -11,6 +11,8 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/gleak"
+	"github.com/onsi/gomega/types"
 	"istio.io/istio/pkg/kube"
 	istiosets "istio.io/istio/pkg/util/sets"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -44,6 +46,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
 	"github.com/kgateway-dev/kgateway/v2/pkg/settings"
+	"github.com/kgateway-dev/kgateway/v2/test/gomega/assertions"
 )
 
 const (
@@ -301,4 +304,18 @@ func newCommonCols(ctx context.Context, kubeClient kube.Client) *collections.Com
 	commoncol.InitPlugins(ctx, extensions, *settings)
 	kubeClient.RunAndWait(ctx.Done())
 	return commoncol
+}
+
+// Controller routines all in waiting state
+var allowedRunningGoroutines = []types.GomegaMatcher{
+	gleak.IgnoringTopFunction("sync.runtime_notifyListWait [sync.Cond.Wait]"),
+	gleak.IgnoringTopFunction("istio.io/istio/pkg/kube/krt.(*processorListener[...]).run [select]"),
+	gleak.IgnoringTopFunction("istio.io/istio/pkg/kube/krt.(*processorListener[...]).pop [select]"),
+	gleak.IgnoringTopFunction(`istio.io/istio/pkg/queue.(*queueImpl).Run.func2 [chan receive]`),
+}
+
+func waitForGoroutinesToFinish(monitor *assertions.GoRoutineMonitor) {
+	monitor.AssertNoLeaks(&assertions.AssertNoLeaksArgs{
+		AllowedRoutines: allowedRunningGoroutines,
+	})
 }

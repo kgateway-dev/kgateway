@@ -158,6 +158,26 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 		cfg.AgentGatewayClassName,
 	)
 	proxySyncer.Init(ctx, cfg.KrtOptions)
+	if err := cfg.Manager.Add(proxySyncer); err != nil {
+		setupLog.Error(err, "unable to add proxySyncer runnable")
+		return nil, err
+	}
+
+	statusSyncer := proxy_syncer.NewStatusSyncer(
+		cfg.Manager,
+		mergedPlugins,
+		cfg.ControllerName,
+		cfg.AgentGatewayClassName,
+		cfg.Client,
+		cfg.CommonCollections,
+		proxySyncer.ReportQueue(),
+		proxySyncer.BackendPolicyReportQueue(),
+		proxySyncer.CacheSyncs(),
+	)
+	if err := cfg.Manager.Add(statusSyncer); err != nil {
+		setupLog.Error(err, "unable to add statusSyncer runnable")
+		return nil, err
+	}
 
 	var agentGatewaySyncer *agentgatewaysyncer.AgentGwSyncer
 	if cfg.SetupOpts.GlobalSettings.EnableAgentGateway {
@@ -179,11 +199,21 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 			setupLog.Error(err, "unable to add agentGatewaySyncer runnable")
 			return nil, err
 		}
-	}
 
-	if err := cfg.Manager.Add(proxySyncer); err != nil {
-		setupLog.Error(err, "unable to add proxySyncer runnable")
-		return nil, err
+		agentGatewayStatusSyncer := agentgatewaysyncer.NewAgentGwStatusSyncer(
+			cfg.ControllerName,
+			cfg.AgentGatewayClassName,
+			cfg.Client,
+			cfg.Manager,
+			agentGatewaySyncer.GatewayReportQueue(),
+			agentGatewaySyncer.ListenerSetReportQueue(),
+			agentGatewaySyncer.RouteReportQueue(),
+			agentGatewaySyncer.CacheSyncs(),
+		)
+		if err := cfg.Manager.Add(agentGatewayStatusSyncer); err != nil {
+			setupLog.Error(err, "unable to add agentGatewayStatusSyncer runnable")
+			return nil, err
+		}
 	}
 
 	setupLog.Info("starting controller builder")

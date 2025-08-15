@@ -81,7 +81,7 @@ func NewPlugin(ctx context.Context, commonCols *common.CommonCollections) *extpl
 				},
 			},
 		},
-		ContributesRegistration: map[schema.GroupKind]func(){
+		ContributesLeaderAction: map[schema.GroupKind]func(){
 			wellknown.InferencePoolGVK.GroupKind(): buildRegisterCallback(
 				ctx,
 				commonCols,

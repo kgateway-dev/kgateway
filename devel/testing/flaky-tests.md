@@ -1,6 +1,6 @@
 # Test Flakes
 
-Tests must account for the eventually consistent nature of Gloo Gateway. Writing deterministic end-to-end tests can be challenging, and at times a test will fail in our CI pipeline non-deterministically. We refer to these failures as flakes. We have found the most common flakes occur as a result of:
+Tests must account for the eventually consistent nature of kgateway. Writing deterministic end-to-end tests can be challenging, and at times a test will fail in our CI pipeline non-deterministically. We refer to these failures as flakes. We have found the most common flakes occur as a result of:
 1. **Test pollution**: another test in the same suite does not clean up resources
 2. **Eventual consistency**: the test does not wait long enough for resources to be applied and processed correctly
 
@@ -16,8 +16,8 @@ An additional suggestion is to add highly verbose, even excessive, debug logging
 
 ### 2. Triage the flake
 If a test failure is deemed to be a flake, we take the following steps:
-1. Determine if there is a [GitHub issue](https://github.com/solo-io/gloo/labels/Type%3A%20CI%20Test%20Flake) tracking the existence of that test flake
+1. Determine if there is a [GitHub issue](https://github.com/kgateway-dev/kgateway/labels/Type%3A%20CI%20Test%20Flake) tracking the existence of that test flake
 1. Investigate the flake, timeboxing to a reasonable amount of time (an hour is suggested). Flakes impact the developer experience, and we want to resolve them as soon as they are identified
 1. If a solution can not be determined within the timebox, create a GitHub issue to track it
-1. If no issue exists, create one and include the `Type: CI Test Flake` [label](https://github.com/solo-io/gloo/labels/Type%3A%20CI%20Test%20Flake). If an issue already exists, add a comment with the logs for the failed run. We use comment frequency as a mechanism for determining frequency of flakes
+1. If no issue exists, create one and include the `Type: CI Test Flake` [label](https://github.com/kgateway-dev/kgateway/labels/Type%3A%20CI%20Test%20Flake). If an issue already exists, add a comment with the logs for the failed run. We use comment frequency as a mechanism for determining frequency of flakes
 1. Retry the test (specific steps can be found in a README of each test suite) and comment on the Pull Request with a link to the GitHub issue tracking the flake

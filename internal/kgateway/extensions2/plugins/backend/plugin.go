@@ -137,7 +137,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 				NewAgentGatewayPass:       agwbackend.NewAgentGatewayPlug,
 			},
 		},
-		ContributesRegistration: map[schema.GroupKind]func(){
+		ContributesLeaderAction: map[schema.GroupKind]func(){
 			wellknown.BackendGVK.GroupKind(): buildRegisterCallback(ctx, commoncol.CrudClient, bcol),
 		},
 	}

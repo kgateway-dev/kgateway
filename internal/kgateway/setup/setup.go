@@ -68,6 +68,13 @@ func WithExtraPlugins(extraPlugins func(ctx context.Context, commoncol *common.C
 	}
 }
 
+// WithLeaderElectionID sets the LeaderElectionID for the leader lease.
+func WithLeaderElectionID(id string) func(*setup) {
+	return func(s *setup) {
+		s.leaderElectionID = id
+	}
+}
+
 func ExtraGatewayParameters(extraGatewayParameters func(cli client.Client, inputs *deployer.Inputs) []deployer.ExtraGatewayParameters) func(*setup) {
 	return func(s *setup) {
 		s.extraGatewayParameters = extraGatewayParameters
@@ -132,6 +139,7 @@ type setup struct {
 	extraManagerConfig []func(ctx context.Context, mgr manager.Manager, objectFilter kubetypes.DynamicObjectFilter) error
 	krtDebugger        *krt.DebugHandler
 	globalSettings     *settings.Settings
+	leaderElectionID   string
 }
 
 var _ Server = &setup{}
@@ -142,6 +150,7 @@ func New(opts ...func(*setup)) (*setup, error) {
 		gatewayClassName:      wellknown.DefaultGatewayClassName,
 		waypointClassName:     wellknown.DefaultWaypointClassName,
 		agentGatewayClassName: wellknown.DefaultAgentGatewayClassName,
+		leaderElectionID:      wellknown.LeaderElectionID,
 	}
 	for _, opt := range opts {
 		opt(s)
@@ -171,6 +180,8 @@ func New(opts ...func(*setup)) (*setup, error) {
 				Metrics: metricsserver.Options{
 					BindAddress: ":9092",
 				},
+				LeaderElection:   !s.globalSettings.DisableLeaderElection,
+				LeaderElectionID: s.leaderElectionID,
 			}
 		}
 	}

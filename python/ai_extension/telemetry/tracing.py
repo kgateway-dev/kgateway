@@ -23,6 +23,17 @@ logger: logging.Logger = logging.getLogger().getChild(
 )
 
 
+class WebhookResult:
+    REJECTED = "rejected"
+    PASSED = "passed"
+    MODIFIED = "modified"
+
+
+class RejectResult:
+    REJECTED = "rejected"
+    PASSED = "passed"
+
+
 class Sampler(BaseModel):
     type: str | None = Field(default=None)
     arg: Union[float, str] | None = Field(default=None)
