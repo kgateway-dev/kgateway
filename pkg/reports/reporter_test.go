@@ -36,7 +36,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 			// initialize GatewayReporter to mimic translation loop (i.e. report gets initialized for all GWs)
 			reporter.Gateway(gw)
 
-			status := rm.BuildGWStatus(context.Background(), *gw)
+			status := rm.BuildGWStatus(context.Background(), *gw, nil)
 
 			Expect(status).NotTo(BeNil())
 			Expect(status.Conditions).To(HaveLen(2))
@@ -56,7 +56,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 			// initialize GatewayReporter to mimic translation loop (i.e. report gets initialized for all GWs)
 			reporter.Gateway(gw)
 
-			status := rm.BuildGWStatus(context.Background(), *gw)
+			status := rm.BuildGWStatus(context.Background(), *gw, nil)
 
 			Expect(status).NotTo(BeNil())
 			Expect(status.Conditions).To(HaveLen(3)) // 2 from the report, 1 from the original status
@@ -73,7 +73,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 				Status: metav1.ConditionFalse,
 				Reason: gwv1.GatewayReasonAddressNotUsable,
 			})
-			status := rm.BuildGWStatus(context.Background(), *gw)
+			status := rm.BuildGWStatus(context.Background(), *gw, nil)
 
 			Expect(status).NotTo(BeNil())
 			Expect(status.Conditions).To(HaveLen(2))
@@ -93,7 +93,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 				Status: metav1.ConditionFalse,
 				Reason: gwv1.ListenerReasonInvalidRouteKinds,
 			})
-			status := rm.BuildGWStatus(context.Background(), *gw)
+			status := rm.BuildGWStatus(context.Background(), *gw, nil)
 
 			Expect(status).NotTo(BeNil())
 			Expect(status.Conditions).To(HaveLen(2))
@@ -112,7 +112,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 			// initialize GatewayReporter to mimic translation loop (i.e. report gets initialized for all GWs)
 			reporter.Gateway(gw)
 
-			status := rm.BuildGWStatus(context.Background(), *gw)
+			status := rm.BuildGWStatus(context.Background(), *gw, nil)
 
 			Expect(status).NotTo(BeNil())
 			Expect(status.Conditions).To(HaveLen(2))
@@ -123,7 +123,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 			oldTransitionTime := acceptedCond.LastTransitionTime
 
 			gw.Status = *status
-			status = rm.BuildGWStatus(context.Background(), *gw)
+			status = rm.BuildGWStatus(context.Background(), *gw, nil)
 
 			Expect(status).NotTo(BeNil())
 			Expect(status.Conditions).To(HaveLen(2))

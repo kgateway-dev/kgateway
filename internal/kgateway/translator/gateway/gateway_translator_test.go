@@ -110,7 +110,7 @@ func TestBasic(t *testing.T) {
 						},
 					},
 				}
-				gatewayStatus := reportsMap.BuildGWStatus(context.Background(), *gateway)
+				gatewayStatus := reportsMap.BuildGWStatus(context.Background(), *gateway, nil)
 				a.NotNil(gatewayStatus)
 				a.Len(gatewayStatus.Listeners, 2)
 				httpsListener := gatewayStatus.Listeners[0]

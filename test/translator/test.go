@@ -478,7 +478,7 @@ func AreReportsSuccess(gwNN types.NamespacedName, reportsMap reports.ReportMap) 
 				Namespace: nns.Namespace,
 			},
 		}
-		status := reportsMap.BuildGWStatus(context.Background(), g)
+		status := reportsMap.BuildGWStatus(context.Background(), g, nil)
 		for _, c := range status.Conditions {
 			if c.Type == listener.AttachedListenerSetsConditionType {
 				// A gateway might or might not have AttachedListenerSets so skip this condition
