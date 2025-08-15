@@ -1,5 +1,3 @@
-//go:build ignore
-
 package assertions_test
 
 import (
@@ -17,7 +15,7 @@ var _ = Describe("GoRoutineMonitor", func() {
 
 	It("succeeds when there are no new go routines", func() {
 		monitor := assertions.NewGoRoutineMonitor()
-		monitor.ExpectNoLeaks(&assertions.ExpectNoLeaksArgs{})
+		monitor.AssertNoLeaks(&assertions.AssertNoLeaksArgs{})
 	})
 
 	It("fails when there are new go routines", func() {
@@ -28,7 +26,7 @@ var _ = Describe("GoRoutineMonitor", func() {
 			<-ctx.Done()
 		}()
 
-		failures := InterceptGomegaFailures(func() { monitor.ExpectNoLeaks(&assertions.ExpectNoLeaksArgs{}) })
+		failures := InterceptGomegaFailures(func() { monitor.AssertNoLeaks(&assertions.AssertNoLeaksArgs{}) })
 		Expect(failures).NotTo(BeEmpty())
 	})
 
@@ -40,7 +38,7 @@ var _ = Describe("GoRoutineMonitor", func() {
 			<-ctx.Done()
 		}()
 
-		monitor.ExpectNoLeaks(&assertions.ExpectNoLeaksArgs{
+		monitor.AssertNoLeaks(&assertions.AssertNoLeaksArgs{
 			AllowedRoutines: []types.GomegaMatcher{
 				gleak.IgnoringInBacktrace("github.com/kgateway-dev/kgateway/v2/test/gomega/assertions_test.init"),
 			},

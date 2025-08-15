@@ -187,6 +187,7 @@ type HelmEndpointPickerExtension struct {
 }
 
 type HelmAgentGateway struct {
-	Enabled  bool   `json:"enabled,omitempty"`
-	LogLevel string `json:"logLevel,omitempty"`
+	Enabled             bool   `json:"enabled,omitempty"`
+	LogLevel            string `json:"logLevel,omitempty"`
+	CustomConfigMapName string `json:"customConfigMapName,omitempty"`
 }

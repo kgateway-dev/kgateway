@@ -191,6 +191,9 @@ var schemaYAML = typed.YAMLObject(`types:
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AgentGateway
   map:
     fields:
+    - name: customConfigMapName
+      type:
+        scalar: string
     - name: enabled
       type:
         scalar: boolean
