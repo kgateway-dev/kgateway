@@ -270,7 +270,7 @@ func (s *AgentGwStatusSyncer) syncGatewayStatus(ctx context.Context, logger *slo
 			if gatewayReports.AttachedRoutes != nil {
 				attachedRoutesForGw = gatewayReports.AttachedRoutes[gwnn]
 			}
-			
+
 			if status := rm.BuildGWStatus(ctx, gw, attachedRoutesForGw); status != nil {
 				if !isGatewayStatusEqual(&gwStatusWithoutAddress, status) {
 					gw.Status = *status
