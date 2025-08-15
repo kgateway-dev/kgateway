@@ -33,6 +33,8 @@ import (
 
 var ErrUnresolvedBackendRef = errors.New("unresolved backend reference")
 
+const serviceNameKey = "service.name"
+
 // convertAccessLogConfig transforms a list of AccessLog configurations into Envoy AccessLog configurations
 func convertAccessLogConfig(
 	ctx context.Context,
@@ -453,6 +455,9 @@ func copyOTelSettings(cfg *envoy_open_telemetry.OpenTelemetryAccessLogConfig, ot
 				StringValue: *otelService.Body,
 			},
 		}
+	}
+	if otelService.ResourceAttributes != nil {
+		cfg.ResourceAttributes = ToOTelKeyValueList(otelService.ResourceAttributes)
 	}
 	if otelService.DisableBuiltinLabels != nil {
 		cfg.DisableBuiltinLabels = *otelService.DisableBuiltinLabels

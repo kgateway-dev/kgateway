@@ -253,6 +253,10 @@ type OpenTelemetryAccessLogService struct {
 	// Additional attributes that describe the specific event occurrence.
 	// +optional
 	Attributes *KeyAnyValueList `json:"attributes,omitempty"`
+
+	// Additional resource attributes that describe the resource.
+	// +optional
+	ResourceAttributes *KeyAnyValueList `json:"resourceAttributes,omitempty"`
 }
 
 // A list of key-value pair that is used to store Span attributes, Link attributes, etc.
