@@ -18,8 +18,56 @@ const (
 	testNamespace      string = "test-namespace"
 )
 
+// Test metrics used by resource metrics tests.
+// The actual versions of these are defined in proxy_syncer and not exported.
+var (
+	resourcesStatusSyncsCompletedTotal = metrics.NewCounter(
+		metrics.CounterOpts{
+			Subsystem: "resources_test",
+			Name:      "status_syncs_completed_total",
+			Help:      "Total number of status syncs completed for resources",
+		},
+		[]string{"gateway", "namespace", "resource"})
+	resourcesStatusSyncDuration = metrics.NewHistogram(
+		metrics.HistogramOpts{
+			Subsystem:                       "resources_test",
+			Name:                            "status_sync_duration_seconds",
+			Help:                            "Initial resource update until status sync duration",
+			Buckets:                         metrics.DefaultBuckets,
+			NativeHistogramBucketFactor:     1.1,
+			NativeHistogramMaxBucketNumber:  100,
+			NativeHistogramMinResetDuration: time.Hour,
+		},
+		[]string{"gateway", "namespace", "resource"},
+	)
+	resourcesXDSSyncsTotal = metrics.NewCounter(
+		metrics.CounterOpts{
+			Subsystem: "resources_test",
+			Name:      "xds_snapshot_syncs_total",
+			Help:      "Total number of XDS snapshot syncs for resources",
+		},
+		[]string{"gateway", "namespace", "resource"})
+	resourcesXDSyncDuration = metrics.NewHistogram(
+		metrics.HistogramOpts{
+			Subsystem:                       "resources_test",
+			Name:                            "xds_snapshot_sync_duration_seconds",
+			Help:                            "Initial resource update until XDS snapshot sync duration",
+			Buckets:                         metrics.DefaultBuckets,
+			NativeHistogramBucketFactor:     1.1,
+			NativeHistogramMaxBucketNumber:  100,
+			NativeHistogramMinResetDuration: time.Hour,
+		},
+		[]string{"gateway", "namespace", "resource"},
+	)
+)
+
 func setupTest() {
 	ResetMetrics()
+
+	resourcesStatusSyncsCompletedTotal.Reset()
+	resourcesStatusSyncDuration.Reset()
+	resourcesXDSSyncsTotal.Reset()
+	resourcesXDSyncDuration.Reset()
 }
 
 func assertTranslationsRunning(currentMetrics metricstest.GatheredMetrics, translatorName string, count int) {
@@ -125,27 +173,7 @@ func TestResourceSync(t *testing.T) {
 
 	StartResourceSyncMetricsProcessing(ctx)
 
-	// Test for status sync metrics.
-	resourcesStatusSyncsCompletedTotal := metrics.NewCounter(
-		metrics.CounterOpts{
-			Subsystem: "resources",
-			Name:      "status_syncs_completed_total",
-			Help:      "Total number of status syncs completed for resources",
-		},
-		[]string{"gateway", "namespace", "resource"})
-	resourcesStatusSyncDuration := metrics.NewHistogram(
-		metrics.HistogramOpts{
-			Subsystem:                       "resources",
-			Name:                            "status_sync_duration_seconds",
-			Help:                            "Initial resource update until status sync duration",
-			Buckets:                         metrics.DefaultBuckets,
-			NativeHistogramBucketFactor:     1.1,
-			NativeHistogramMaxBucketNumber:  100,
-			NativeHistogramMinResetDuration: time.Hour,
-		},
-		[]string{"gateway", "namespace", "resource"},
-	)
-
+	// Test for resource status sync metrics.
 	StartResourceSync(details.ResourceName, ResourceMetricLabels{
 		Gateway:   details.Gateway,
 		Namespace: details.Namespace,
@@ -158,8 +186,8 @@ func TestResourceSync(t *testing.T) {
 
 	gathered := metricstest.MustGatherMetricsContext(ctx, t,
 		"kgateway_resources_syncs_started_total",
-		"kgateway_resources_status_syncs_completed_total",
-		"kgateway_resources_status_sync_duration_seconds",
+		"kgateway_resources_test_status_syncs_completed_total",
+		"kgateway_resources_test_status_sync_duration_seconds",
 	)
 
 	gathered.AssertMetric("kgateway_resources_syncs_started_total", &metricstest.ExpectedMetric{
@@ -171,7 +199,7 @@ func TestResourceSync(t *testing.T) {
 		Value: 1,
 	})
 
-	gathered.AssertMetric("kgateway_resources_status_syncs_completed_total", &metricstest.ExpectedMetric{
+	gathered.AssertMetric("kgateway_resources_test_status_syncs_completed_total", &metricstest.ExpectedMetric{
 		Labels: []metrics.Label{
 			{Name: "gateway", Value: details.Gateway},
 			{Name: "namespace", Value: details.Namespace},
@@ -180,41 +208,21 @@ func TestResourceSync(t *testing.T) {
 		Value: 1,
 	})
 
-	gathered.AssertMetricsLabels("kgateway_resources_status_sync_duration_seconds", [][]metrics.Label{{
+	gathered.AssertMetricsLabels("kgateway_resources_test_status_sync_duration_seconds", [][]metrics.Label{{
 		{Name: "gateway", Value: details.Gateway},
 		{Name: "namespace", Value: details.Namespace},
 		{Name: "resource", Value: details.ResourceType},
 	}})
-	gathered.AssertHistogramPopulated("kgateway_resources_status_sync_duration_seconds")
+	gathered.AssertHistogramPopulated("kgateway_resources_test_status_sync_duration_seconds")
 
-	// Test for XDS snapshot sync metrics.
-	resourcesXDSSyncsTotal := metrics.NewCounter(
-		metrics.CounterOpts{
-			Subsystem: "resources",
-			Name:      "xds_snapshot_syncs_total",
-			Help:      "Total number of XDS snapshot syncs for resources",
-		},
-		[]string{"gateway", "namespace", "resource"})
-	resourcesXDSyncDuration := metrics.NewHistogram(
-		metrics.HistogramOpts{
-			Subsystem:                       "resources",
-			Name:                            "xds_snapshot_sync_duration_seconds",
-			Help:                            "Initial resource update until XDS snapshot sync duration",
-			Buckets:                         metrics.DefaultBuckets,
-			NativeHistogramBucketFactor:     1.1,
-			NativeHistogramMaxBucketNumber:  100,
-			NativeHistogramMinResetDuration: time.Hour,
-		},
-		[]string{"gateway", "namespace", "resource"},
-	)
-
+	// Test for resource XDS snapshot sync metrics.
 	EndResourceSync(details, true, resourcesXDSSyncsTotal, resourcesXDSyncDuration)
 
 	gathered = metricstest.MustGatherMetricsContext(ctx, t,
 		"kgateway_resources_syncs_started_total",
 		"kgateway_xds_snapshot_syncs_total",
-		"kgateway_resources_xds_snapshot_syncs_total",
-		"kgateway_resources_xds_snapshot_sync_duration_seconds",
+		"kgateway_resources_test_xds_snapshot_syncs_total",
+		"kgateway_resources_test_xds_snapshot_sync_duration_seconds",
 	)
 
 	gathered.AssertMetric("kgateway_resources_syncs_started_total", &metricstest.ExpectedMetric{
@@ -234,7 +242,7 @@ func TestResourceSync(t *testing.T) {
 		Value: 1,
 	})
 
-	gathered.AssertMetric("kgateway_resources_xds_snapshot_syncs_total", &metricstest.ExpectedMetric{
+	gathered.AssertMetric("kgateway_resources_test_xds_snapshot_syncs_total", &metricstest.ExpectedMetric{
 		Labels: []metrics.Label{
 			{Name: "gateway", Value: details.Gateway},
 			{Name: "namespace", Value: details.Namespace},
@@ -243,24 +251,16 @@ func TestResourceSync(t *testing.T) {
 		Value: 1,
 	})
 
-	gathered.AssertMetricsLabels("kgateway_resources_xds_snapshot_sync_duration_seconds", [][]metrics.Label{{
+	gathered.AssertMetricsLabels("kgateway_resources_test_xds_snapshot_sync_duration_seconds", [][]metrics.Label{{
 		{Name: "gateway", Value: details.Gateway},
 		{Name: "namespace", Value: details.Namespace},
 		{Name: "resource", Value: details.ResourceType},
 	}})
-	gathered.AssertHistogramPopulated("kgateway_resources_xds_snapshot_sync_duration_seconds")
+	gathered.AssertHistogramPopulated("kgateway_resources_test_xds_snapshot_sync_duration_seconds")
 }
 
 func TestSyncChannelFull(t *testing.T) {
 	setupTest()
-
-	// Start translation
-	finishFunc := CollectTranslationMetrics(TranslatorMetricLabels{
-		Name:       testGatewayName,
-		Namespace:  testNamespace,
-		Translator: testTranslatorName,
-	})
-	defer finishFunc(nil)
 
 	details := ResourceSyncDetails{
 		Gateway:      "test-gateway",
@@ -269,25 +269,8 @@ func TestSyncChannelFull(t *testing.T) {
 		ResourceName: "test-resource",
 	}
 
-	resourcesXDSSyncsCompletedTotal := metrics.NewCounter(
-		metrics.CounterOpts{
-			Subsystem: "resources",
-			Name:      "xds_snapshot_syncs_channel_full_total",
-			Help:      "Total number of XDS snapshot syncs",
-		},
-		[]string{"gateway", "namespace", "resource"})
-
-	resourcesXDSyncDuration := metrics.NewHistogram(
-		metrics.HistogramOpts{
-			Subsystem: "resources",
-			Name:      "xds_snapshot_sync_duration_channel_full",
-			Help:      "XDS snapshot sync duration",
-		},
-		[]string{"gateway", "namespace", "resource"},
-	)
-
 	for i := 0; i < 1024; i++ {
-		success := EndResourceSync(details, false, resourcesXDSSyncsCompletedTotal, resourcesXDSyncDuration)
+		success := EndResourceSync(details, false, resourcesXDSSyncsTotal, resourcesXDSyncDuration)
 		assert.True(t, success)
 	}
 
@@ -300,7 +283,7 @@ func TestSyncChannelFull(t *testing.T) {
 
 	for overflowCount < numOverflows {
 		go func() {
-			success := EndResourceSync(details, false, resourcesXDSSyncsCompletedTotal, resourcesXDSyncDuration)
+			success := EndResourceSync(details, false, resourcesXDSSyncsTotal, resourcesXDSyncDuration)
 			assert.False(t, success)
 			c <- struct{}{}
 		}()

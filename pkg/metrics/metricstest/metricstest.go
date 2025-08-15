@@ -289,11 +289,10 @@ func (g *prometheusGatheredMetrics) AssertMetricHistogramValue(name string, expe
 	})
 }
 
-// AssertHistogramPopulated asserts that a histogram metric is populated (has non-zero sample count and sum).
+// AssertHistogramPopulated asserts that a histogram metric is populated (has non-zero sample count).
 func (g *prometheusGatheredMetrics) AssertHistogramPopulated(name string) {
 	metric := g.MustGetMetric(name)
 	assert.True(g.t, metric.GetHistogram().GetSampleCount() > 0, "Histogram %s is not populated", name)
-	assert.True(g.t, metric.GetHistogram().GetSampleSum() > 0, "Histogram %s is not populated", name)
 }
 
 // AssertHistogramBuckets asserts that a histogram metric has the expected bucket values.

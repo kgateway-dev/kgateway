@@ -170,6 +170,7 @@ type syncStartInfo struct {
 // The buffer size is assumed to be sufficient for any reasonable load.
 // But, this may need to be configurable in the future, if needed for very high load.
 var syncCh = make(chan *syncStartInfo, 1024)
+var syncChLock sync.RWMutex
 
 // StartResourceSyncMetricsProcessing starts a goroutine that processes resource sync metrics.
 func StartResourceSyncMetricsProcessing(ctx context.Context) {
@@ -177,14 +178,20 @@ func StartResourceSyncMetricsProcessing(ctx context.Context) {
 
 	go func() {
 		for {
+			syncChLock.RLock()
 			select {
 			case <-ctx.Done():
+				syncChLock.RUnlock()
+
 				return
 			case syncInfo, ok := <-syncCh:
 				if !ok || syncInfo == nil {
+					syncChLock.RUnlock()
+
 					return
 				}
 
+				syncChLock.RUnlock()
 				endResourceSync(syncInfo)
 			}
 		}
@@ -285,6 +292,7 @@ func EndResourceSync(
 	// If the channel is full, something is probably wrong, but translations shouldn't stop because of a metrics processing issue.
 	// In that case, updating the metrics will be dropped, and translations will continue processing.
 	// This will cause the metrics to become invalid, so an error is logged to call attention to the issue.
+	syncChLock.RLock()
 	select {
 	case syncCh <- &syncStartInfo{
 		endTime:           time.Now(),
@@ -293,8 +301,12 @@ func EndResourceSync(
 		totalCounter:      totalCounter,
 		durationHistogram: durationHistogram,
 	}:
+		syncChLock.RUnlock()
+
 		return true
 	default:
+		syncChLock.RUnlock()
+
 		logger.Log(context.Background(), slog.LevelError,
 			"resource metrics sync channel is full, dropping end sync metrics update",
 			"gateway", details.Gateway,
@@ -428,4 +440,8 @@ func ResetMetrics() {
 	startTimes.Lock()
 	defer startTimes.Unlock()
 	startTimes.times = make(map[string]map[string]map[string]map[string]ResourceSyncStartTime)
+
+	syncChLock.Lock()
+	syncCh = make(chan *syncStartInfo, 1024)
+	syncChLock.Unlock()
 }
