@@ -1,6 +1,6 @@
 # APIs for kgateway
 
-This directory contains Go types for kgateway APIs & custom resources. 
+This directory contains Go types for kgateway APIs & custom resources.
 
 ## Adding a new API / CRD
 
@@ -29,3 +29,11 @@ These are the steps required to add a new CRD to be used in the Kubernetes Gatew
 - If a field is not marked as optional, then it is implicitly required.
 - Avoid using slices with pointers (e.g. use `[]string` instead of `[]*string`). See: https://github.com/kubernetes/code-generator/issues/166
 - For time duration fields, use the `metav1.Duration` type and use CEL validation rules to ensure it is within the correct range.
+
+### Replicating Gateway API policies in TrafficPolicy API
+
+Gateway API policies may be replicated as a part of the TrafficPolicy API to enable policy attachment at different levels in the config hierarchy, such as at the Gateway, Gateway's listener, or route level. The following guidelines should be considered when doing so:
+- When the Gateway API types are considered sufficient to meet the requirements, they can be embedded as is in the TrafficPolicy API. TrafficPolicy's `cors` is an example where the Gateway API type `HTTPCORSFilter` is embedded directly.
+- When embedding the Gateway API type, it is important to consider whether the type is marked as `<gateway:experimental>`, as experimental types may introduce breaking changes and should be noted similarly in the TrafficPolicy API. It is discouraged to embed experimental types in the TrafficPolicy API. However, if there is a breaking change in the Gateway API type, it is recommended to replicate the previous version of that type into the TrafficPolicy API and not propagate the breaking change to the TrafficPolicy API.
+- When the Gateway API types are not sufficient and a more advanced API is required, a new type should be created in the TrafficPolicy API instead of embedding the Gateway API type. TrafficPolicy's `retry` and `timeouts` are examples that define new types instead of reusing the `HTTPRouteRetry` and `HTTPRouteTimeouts` types from the Gateway API.
+
