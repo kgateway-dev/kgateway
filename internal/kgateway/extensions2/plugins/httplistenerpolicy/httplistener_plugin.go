@@ -10,6 +10,7 @@ import (
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoytracev3 "github.com/envoyproxy/go-control-plane/envoy/config/trace/v3"
 	healthcheckv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/health_check/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	preserve_case_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/http/header_formatters/preserve_case/v3"
@@ -46,7 +47,6 @@ var logger = logging.New("plugin/httplistenerpolicy")
 type httpListenerPolicy struct {
 	ct                         time.Time
 	accessLog                  []*envoyaccesslogv3.AccessLog
-	tracing                    *envoy_hcm.HttpConnectionManager_Tracing
 	upgradeConfigs             []*envoy_hcm.HttpConnectionManager_UpgradeConfig
 	useRemoteAddress           *bool
 	xffNumTrustedHops          *uint32
@@ -54,6 +54,12 @@ type httpListenerPolicy struct {
 	streamIdleTimeout          *time.Duration
 	healthCheckPolicy          *healthcheckv3.HealthCheck
 	preserveHttp1HeaderCase    *bool
+	// For a better UX, the default serviceName for tracing is set to `<gateway-name>.<gateway-namespace>`
+	// Since the gateway name can only be determined during translation, the tracing config is split into the provider
+	// and the actual config. During translation, the default serviceName is set if not already provided
+	// and the final config is then marshalled.
+	tracingProvider *envoytracev3.OpenTelemetryConfig
+	tracingConfig   *envoy_hcm.HttpConnectionManager_Tracing
 }
 
 func (d *httpListenerPolicy) CreationTime() time.Time {
@@ -74,7 +80,10 @@ func (d *httpListenerPolicy) Equals(in any) bool {
 	}
 
 	// Check tracing
-	if !proto.Equal(d.tracing, d2.tracing) {
+	if !proto.Equal(d.tracingProvider, d2.tracingProvider) {
+		return false
+	}
+	if !proto.Equal(d.tracingConfig, d2.tracingConfig) {
 		return false
 	}
 
@@ -172,7 +181,8 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 			logger.Error("error translating access log", "error", err)
 			errs = append(errs, err)
 		}
-		tracing, err := convertTracingConfig(ctx, i, commoncol, krtctx, objSrc)
+
+		tracingProvider, tracingConfig, err := convertTracingConfig(ctx, i, commoncol, krtctx, objSrc)
 		if err != nil {
 			logger.Error("error translating tracing", "error", err)
 			errs = append(errs, err)
@@ -196,7 +206,8 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 			PolicyIR: &httpListenerPolicy{
 				ct:                         i.CreationTimestamp.Time,
 				accessLog:                  accessLog,
-				tracing:                    tracing,
+				tracingProvider:            tracingProvider,
+				tracingConfig:              tracingConfig,
 				upgradeConfigs:             upgradeConfigs,
 				useRemoteAddress:           i.Spec.UseRemoteAddress,
 				xffNumTrustedHops:          i.Spec.XffNumTrustedHops,
@@ -252,7 +263,8 @@ func (p *httpListenerPolicyPluginGwPass) ApplyHCM(
 	out.AccessLog = append(out.GetAccessLog(), policy.accessLog...)
 
 	// translate tracing configuration
-	out.Tracing = policy.tracing
+	updateTracingConfig(pCtx, policy.tracingProvider, policy.tracingConfig)
+	out.Tracing = policy.tracingConfig
 
 	// translate upgrade configuration
 	if policy.upgradeConfigs != nil {

@@ -571,8 +571,9 @@ type OpenTelemetryTracingConfig struct {
 	GrpcService CommonGrpcService `json:"grpcService"`
 
 	// The name for the service. This will be populated in the ResourceSpan Resource attributes
-	// +required
-	ServiceName string `json:"serviceName"`
+	// Defaults to `<gateway-name>.<gateway-namespace>`
+	// +optional
+	ServiceName *string `json:"serviceName"`
 
 	// An ordered list of resource detectors. Currently supported values are `EnvironmentResourceDetector`
 	// +optional

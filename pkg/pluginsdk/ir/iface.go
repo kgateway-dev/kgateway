@@ -110,7 +110,8 @@ type RouteContext struct {
 }
 
 type HcmContext struct {
-	Policy PolicyIR
+	Policy  PolicyIR
+	Gateway GatewayIR
 }
 
 // ProxyTranslationPass represents a single translation pass for a gateway using envoy. It can hold state

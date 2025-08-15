@@ -1770,7 +1770,6 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: serviceName
       type:
         scalar: string
-      default: ""
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Parameters
   map:
     fields:

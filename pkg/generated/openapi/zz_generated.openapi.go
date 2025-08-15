@@ -5399,8 +5399,7 @@ func schema_kgateway_v2_api_v1alpha1_OpenTelemetryTracingConfig(ref common.Refer
 					},
 					"serviceName": {
 						SchemaProps: spec.SchemaProps{
-							Description: "The name for the service. This will be populated in the ResourceSpan Resource attributes",
-							Default:     "",
+							Description: "The name for the service. This will be populated in the ResourceSpan Resource attributes Defaults to `<gateway-name>.<gateway-namespace>`",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -5426,7 +5425,7 @@ func schema_kgateway_v2_api_v1alpha1_OpenTelemetryTracingConfig(ref common.Refer
 						},
 					},
 				},
-				Required: []string{"grpcService", "serviceName"},
+				Required: []string{"grpcService"},
 			},
 		},
 		Dependencies: []string{

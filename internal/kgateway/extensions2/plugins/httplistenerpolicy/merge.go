@@ -57,11 +57,15 @@ func mergeTracing(
 	opts policy.MergeOptions,
 	mergeOrigins ir.MergeOrigins,
 ) {
-	if !policy.IsMergeable(p1.tracing, p2.tracing, opts) {
+	if !policy.IsMergeable(p1.tracingProvider, p2.tracingProvider, opts) {
+		return
+	}
+	if !policy.IsMergeable(p1.tracingConfig, p2.tracingConfig, opts) {
 		return
 	}
 
-	p1.tracing = p2.tracing
+	p1.tracingProvider = p2.tracingProvider
+	p1.tracingConfig = p2.tracingConfig
 	mergeOrigins.SetOne("tracing", p2Ref, p2MergeOrigins)
 }
 

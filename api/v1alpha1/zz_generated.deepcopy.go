@@ -3225,6 +3225,11 @@ func (in *OpenTelemetryAccessLogService) DeepCopy() *OpenTelemetryAccessLogServi
 func (in *OpenTelemetryTracingConfig) DeepCopyInto(out *OpenTelemetryTracingConfig) {
 	*out = *in
 	in.GrpcService.DeepCopyInto(&out.GrpcService)
+	if in.ServiceName != nil {
+		in, out := &in.ServiceName, &out.ServiceName
+		*out = new(string)
+		**out = **in
+	}
 	if in.ResourceDetectors != nil {
 		in, out := &in.ResourceDetectors, &out.ResourceDetectors
 		*out = make([]ResourceDetector, len(*in))
