@@ -45,7 +45,7 @@ spec:
           {{- end }} {{/* if $gateway.resources */}}
           args:
             - -f
-            - /config/config.json
+            - /config/config.yaml
           env:
             - name: NODE_NAME
               valueFrom:
@@ -74,7 +74,7 @@ spec:
             - name: GATEWAY
               value: {{ include "kgateway.gateway.fullname" . }}
 {{/*            - name: LOCAL_XDS_PATH*/}}
-{{/*              value: /config/config.json*/}}
+{{/*              value: /config/config.yaml*/}}
             {{- if $gateway.env }}
             {{- toYaml $gateway.env | nindent 12 }}
             {{- end }} {{/* if $gateway.env */}}
@@ -87,10 +87,14 @@ spec:
       volumes:
         - name: config-volume
           configMap:
+            {{- if $gateway.agentGateway.customConfigMapName }}
+            name: {{ $gateway.agentGateway.customConfigMapName }}
+            {{- else }}
             name: {{ include "kgateway.gateway.fullname" . }}
+            {{- end }}
         - name: tmp
           emptyDir: {}
-     
+
       {{- if $gateway.tolerations }}
       tolerations:
         {{- toYaml $gateway.tolerations | nindent 8 }}
@@ -129,6 +133,7 @@ spec:
   selector:
     {{- include "kgateway.gateway.selectorLabels" . | nindent 4 }}
 
+{{- if not $gateway.agentGateway.customConfigMapName }}
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -138,9 +143,8 @@ metadata:
     {{- include "kgateway.gateway.constLabels" . | nindent 4 }}
     {{- include "kgateway.gateway.labels" . | nindent 4 }}
 data:
-  config.json: |
-    {
-      "config": {}
-    }
+  config.yaml: |
+    config: {}
+{{- end }}
 
 {{- end }} {{/* if $gateway.agentGateway.enabled */}}
