@@ -80,6 +80,8 @@ Listeners:
       merge.HTTPListenerPolicy.gateway.kgateway.dev:
         accessLog:
         - gateway.kgateway.dev/HTTPListenerPolicy/infra/accesslog
+        accessLogConfig:
+        - gateway.kgateway.dev/HTTPListenerPolicy/infra/accesslog
   name: listener~80
 Routes:
 - ignorePortInHostMatching: true
@@ -87,6 +89,8 @@ Routes:
     filterMetadata:
       merge.HTTPListenerPolicy.gateway.kgateway.dev:
         accessLog:
+        - gateway.kgateway.dev/HTTPListenerPolicy/infra/accesslog
+        accessLogConfig:
         - gateway.kgateway.dev/HTTPListenerPolicy/infra/accesslog
   name: listener~80
   virtualHosts:

@@ -40,6 +40,11 @@ Listeners:
                   clusterName: kube_default_opentelemetry-collector_4317
               logName: otel-accesslog-service
               transportApiVersion: V3
+            resourceAttributes:
+              values:
+              - key: service.name
+                value:
+                  stringValue: example-gateway.default
         httpFilters:
         - name: envoy.filters.http.health_check
           typedConfig:
@@ -94,6 +99,8 @@ Listeners:
       merge.HTTPListenerPolicy.gateway.kgateway.dev:
         accessLog:
         - gateway.kgateway.dev/HTTPListenerPolicy/default/access-log
+        accessLogConfig:
+        - gateway.kgateway.dev/HTTPListenerPolicy/default/access-log
         healthCheckPolicy:
         - gateway.kgateway.dev/HTTPListenerPolicy/default/misc
         mergeStreamIdleTimeout:
@@ -115,6 +122,8 @@ Routes:
     filterMetadata:
       merge.HTTPListenerPolicy.gateway.kgateway.dev:
         accessLog:
+        - gateway.kgateway.dev/HTTPListenerPolicy/default/access-log
+        accessLogConfig:
         - gateway.kgateway.dev/HTTPListenerPolicy/default/access-log
         healthCheckPolicy:
         - gateway.kgateway.dev/HTTPListenerPolicy/default/misc
