@@ -343,6 +343,18 @@ func (s *testingSuite) patchDeploymentWithMode(mode settings.RouteReplacementMod
 	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, controllerNamespace, metav1.ListOptions{
 		LabelSelector: "app.kubernetes.io/name=kgateway",
 	})
+
+	// Wait until there is only one pod. This way the new pod with the updated env var becomes the leader
+	// and can write the correct status.
+	s.testInstallation.Assertions.EventuallyReadyReplicas(s.ctx, metav1.ObjectMeta{
+		Name:      "kgateway",
+		Namespace: s.testInstallation.Metadata.InstallNamespace,
+	}, gomega.Equal(1))
+	s.testInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
+		out, err := s.testInstallation.Actions.Kubectl().GetContainerLogs(s.ctx, s.testInstallation.Metadata.InstallNamespace, testdefaults.KGatewayDeployment)
+		g.Expect(err).NotTo(gomega.HaveOccurred(), "Failed to get pod logs")
+		g.Expect(out).To(gomega.ContainSubstring("successfully acquired lease"))
+	}, "60s", "10s").Should(gomega.Succeed())
 }
 
 func (s *testingSuite) restoreOriginalDeployment() {

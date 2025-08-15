@@ -12,9 +12,11 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -335,13 +337,16 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 		buildr.Owns(clientObj, opts...)
 	}
 
-	return buildr.Complete(&gatewayReconciler{
-		cli:            c.cfg.Mgr.GetClient(),
-		scheme:         c.cfg.Mgr.GetScheme(),
-		controllerName: c.cfg.ControllerName,
-		autoProvision:  c.cfg.AutoProvision,
-		deployer:       d,
+	// The controller should only run on the leader as the gatewayReconciler manages reconciliation.
+	// It deploys and manages the relevant resources (deployment, service, etc.) and should run only on the leader.
+	// This is the default behaviour. Ref: https://github.com/kubernetes-sigs/controller-runtime/blob/682465344b9b74efad4657016668e62438000541/pkg/internal/controller/controller.go#L223
+	// but calling it out explicitly here as the gatewayReconciler is not directly added
+	// as a runnable to the manager and can not be static typed as a manager.LeaderElectionRunnable
+	// Translation is managed by the proxySyncer and runs on all pods (leader and follower)
+	buildr.WithOptions(controller.TypedOptions[reconcile.Request]{
+		NeedLeaderElection: ptr.To(true),
 	})
+	return buildr.Complete(NewGatewayReconciler(ctx, c.cfg, d))
 }
 
 func (c *controllerBuilder) addHTTPRouteIndexes(ctx context.Context) error {
@@ -462,6 +467,16 @@ func (c *controllerBuilder) watchInferencePool(ctx context.Context) error {
 			scheme:   c.cfg.Mgr.GetScheme(),
 			deployer: d,
 		}
+
+		// The controller should only run on the leader as the inferencePoolReconciler manages reconciliation.
+		// It deploys and manages the relevant resources (deployment, service, etc.) and should run only on the leader.
+		// This is the default behaviour. Ref: https://github.com/kubernetes-sigs/controller-runtime/blob/682465344b9b74efad4657016668e62438000541/pkg/internal/controller/controller.go#L223
+		// but calling it out explicitly here as the inferencePoolReconciler is not directly added
+		// as a runnable to the manager and can not be static typed as a manager.LeaderElectionRunnable
+		// Translation is managed by the proxySyncer and runs on all pods (leader and follower)
+		buildr.WithOptions(controller.TypedOptions[reconcile.Request]{
+			NeedLeaderElection: ptr.To(true),
+		})
 		if err := buildr.Complete(r); err != nil {
 			return err
 		}

@@ -49,6 +49,13 @@ var (
 		},
 	}
 
+	HttpbinService = &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "httpbin",
+			Namespace: "default",
+		},
+	}
+
 	TcpEchoPod = &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "tcp-echo",
@@ -99,4 +106,7 @@ Commercial support is available at
 </html>`
 
 	WellKnownAppLabel = "app.kubernetes.io/name"
+
+	KGatewayDeployment = "deploy/kgateway"
+	KGatewayPodLabel   = "kgateway=kgateway"
 )

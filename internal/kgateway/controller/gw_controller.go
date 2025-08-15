@@ -33,6 +33,16 @@ type gatewayReconciler struct {
 	deployer *deployer.Deployer
 }
 
+func NewGatewayReconciler(ctx context.Context, cfg GatewayConfig, deployer *deployer.Deployer) *gatewayReconciler {
+	return &gatewayReconciler{
+		cli:            cfg.Mgr.GetClient(),
+		scheme:         cfg.Mgr.GetScheme(),
+		controllerName: cfg.ControllerName,
+		autoProvision:  cfg.AutoProvision,
+		deployer:       deployer,
+	}
+}
+
 func (r *gatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.Result, rErr error) {
 	log := log.FromContext(ctx).WithValues("gw", req.NamespacedName)
 	log.V(1).Info("reconciling request", "req", req)
