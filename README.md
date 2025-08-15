@@ -33,9 +33,7 @@ The project was previously known as Gloo, and has been [production-ready since 2
 - Follow us on [X](https://x.com/kgatewaydev), [Bluesky](https://bsky.app/profile/kgateway.dev), [Mastodon](https://mastodon.social/@kgateway) or [LinkedIn](https://www.linkedin.com/company/kgateway/)
 
 ## Contributing to kgateway
-Please refer to the [contributing guide](https://github.com/kgateway-dev/community/blob/main/CONTRIBUTING.md) in the community repo.
-
-The [devel](devel) folder should be the starting point for understanding the code, and contributing to the product.
+Please refer to [devel/contributing/README.md](/devel/contributing/README.md) as a starting point for contributing to the project.
 
 ## Thanks
 Kgateway would not be possible without the valuable open source work of projects in the community. We would like to extend a special thank-you to [Envoy](https://www.envoyproxy.io), upon whose shoulders we stand.
