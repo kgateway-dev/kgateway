@@ -2,10 +2,10 @@ package controller_test
 
 import (
 	"fmt"
-	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
@@ -14,15 +14,21 @@ import (
 	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
+	"github.com/kgateway-dev/kgateway/v2/test/gomega/assertions"
 )
 
 var _ = Describe("InferencePool controller", func() {
+	var (
+		goroutineMonitor *assertions.GoRoutineMonitor
+	)
+
+	BeforeEach(func() {
+		goroutineMonitor = assertions.NewGoRoutineMonitor()
+	})
+
 	AfterEach(func() {
-		if cancel != nil {
-			cancel()
-		}
-		// ensure goroutines cleanup
-		Eventually(func() bool { return true }).WithTimeout(3 * time.Second).Should(BeTrue())
+		cancel()
+		waitForGoroutinesToFinish(goroutineMonitor)
 	})
 
 	Context("when Inference Extension deployer is enabled", func() {

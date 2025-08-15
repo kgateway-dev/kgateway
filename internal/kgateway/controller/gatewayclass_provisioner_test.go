@@ -12,6 +12,7 @@ import (
 	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/controller"
+	"github.com/kgateway-dev/kgateway/v2/test/gomega/assertions"
 )
 
 const (
@@ -21,20 +22,19 @@ const (
 
 var _ = Describe("GatewayClassProvisioner", func() {
 	var (
-		ctx    context.Context
-		cancel context.CancelFunc
+		ctx              context.Context
+		cancel           context.CancelFunc
+		goroutineMonitor *assertions.GoRoutineMonitor
 	)
 
 	BeforeEach(func() {
 		ctx, cancel = context.WithCancel(context.Background())
+		goroutineMonitor = assertions.NewGoRoutineMonitor()
 	})
 
 	AfterEach(func() {
-		if cancel != nil {
-			cancel()
-		}
-		// ensure goroutines cleanup
-		Eventually(func() bool { return true }).WithTimeout(3 * time.Second).Should(BeTrue())
+		cancel()
+		waitForGoroutinesToFinish(goroutineMonitor)
 	})
 
 	When("no GatewayClasses exist on the cluster", func() {
