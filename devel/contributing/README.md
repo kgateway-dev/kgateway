@@ -4,7 +4,6 @@ We are glad you are interested in contributing to kgateway! Before proceeding, p
 - [Kgateway community contributing guide](https://github.com/kgateway-dev/community/blob/main/CONTRIBUTING.md)
 - [Kgateway community code of conduct](https://github.com/kgateway-dev/community/blob/main/CODE-OF-CONDUCT.md)
 
-
 Please visit the pages below for details on specific topics:
 
 - [Pull Requests](pull-requests.md) - Best practices for creating pull requests
