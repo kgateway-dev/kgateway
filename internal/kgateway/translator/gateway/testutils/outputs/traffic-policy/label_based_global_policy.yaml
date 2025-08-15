@@ -53,7 +53,8 @@ Listeners:
               logName: test-accesslog-service
               transportApiVersion: V3
         httpFilters:
-        - name: envoy.filters.http.cors
+        - disabled: true
+          name: envoy.filters.http.cors
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.cors.v3.Cors
         - disabled: true

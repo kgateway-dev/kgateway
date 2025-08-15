@@ -444,7 +444,6 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.Filt
 
 		// handle the case where route level only should be fired
 		stagedExtProcFilter.Filter.Disabled = true
-
 		filters = append(filters, stagedExtProcFilter)
 	}
 
@@ -460,7 +459,6 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.Filt
 			plugins.BeforeStage(plugins.AcceptedStage),
 		)
 		filter.Filter.Disabled = true
-
 		filters = append(filters, filter)
 	}
 	if p.setTransformationInChain[fcc.FilterChainName] && useRustformations {
@@ -532,7 +530,6 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.Filt
 		)
 
 		stagedExtAuthFilter.Filter.Disabled = true
-
 		filters = append(filters, stagedExtAuthFilter)
 	}
 
@@ -555,7 +552,7 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.Filt
 			rateLimitFilter,
 			plugins.DuringStage(plugins.RateLimitStage),
 		)
-
+		stagedRateLimitFilter.Filter.Disabled = true
 		filters = append(filters, stagedRateLimitFilter)
 	}
 
@@ -563,12 +560,14 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.Filt
 	// Requires the cors policy to be set as typed_per_filter_config.
 	if f := p.corsInChain[fcc.FilterChainName]; f != nil {
 		filter := plugins.MustNewStagedFilter(envoy_wellknown.CORS, f, plugins.DuringStage(plugins.CorsStage))
+		filter.Filter.Disabled = true
 		filters = append(filters, filter)
 	}
 
 	// Add global CSRF http filter
 	if f := p.csrfInChain[fcc.FilterChainName]; f != nil {
 		filter := plugins.MustNewStagedFilter(csrfExtensionFilterName, f, plugins.DuringStage(plugins.RouteStage))
+		filter.Filter.Disabled = true
 		filters = append(filters, filter)
 	}
 
