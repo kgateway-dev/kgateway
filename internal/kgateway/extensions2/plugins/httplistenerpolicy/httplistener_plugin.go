@@ -6,7 +6,6 @@ import (
 	"slices"
 	"time"
 
-	envoyaccesslogv3 "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
@@ -46,7 +45,6 @@ var logger = logging.New("plugin/httplistenerpolicy")
 
 type httpListenerPolicy struct {
 	ct                         time.Time
-	accessLog                  []*envoyaccesslogv3.AccessLog
 	upgradeConfigs             []*envoy_hcm.HttpConnectionManager_UpgradeConfig
 	useRemoteAddress           *bool
 	xffNumTrustedHops          *uint32
@@ -54,7 +52,13 @@ type httpListenerPolicy struct {
 	streamIdleTimeout          *time.Duration
 	healthCheckPolicy          *healthcheckv3.HealthCheck
 	preserveHttp1HeaderCase    *bool
-	// For a better UX, the default serviceName for tracing is set to `<gateway-name>.<gateway-namespace>`
+	// For a better UX, we set the default serviceName for access logs to the envoy cluster name (`<gateway-name>.<gateway-namespace>`).
+	// Since the gateway name can only be determined during translation, the access log configs and policies
+	// are stored so that during translation, the default serviceName is set if not already provided
+	// and the final config is then marshalled.
+	accessLogConfig   []proto.Message
+	accessLogPolicies []v1alpha1.AccessLog
+	// For a better UX, the default serviceName for tracing is set to the envoy cluster name (`<gateway-name>.<gateway-namespace>`).
 	// Since the gateway name can only be determined during translation, the tracing config is split into the provider
 	// and the actual config. During translation, the default serviceName is set if not already provided
 	// and the final config is then marshalled.
@@ -73,7 +77,7 @@ func (d *httpListenerPolicy) Equals(in any) bool {
 	}
 
 	// Check the AccessLog slice
-	if !slices.EqualFunc(d.accessLog, d2.accessLog, func(log *envoyaccesslogv3.AccessLog, log2 *envoyaccesslogv3.AccessLog) bool {
+	if !slices.EqualFunc(d.accessLogConfig, d2.accessLogConfig, func(log proto.Message, log2 proto.Message) bool {
 		return proto.Equal(log, log2)
 	}) {
 		return false
@@ -205,7 +209,8 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 			Policy:       i,
 			PolicyIR: &httpListenerPolicy{
 				ct:                         i.CreationTimestamp.Time,
-				accessLog:                  accessLog,
+				accessLogConfig:            accessLog,
+				accessLogPolicies:          i.Spec.AccessLog,
 				tracingProvider:            tracingProvider,
 				tracingConfig:              tracingConfig,
 				upgradeConfigs:             upgradeConfigs,
@@ -260,7 +265,11 @@ func (p *httpListenerPolicyPluginGwPass) ApplyHCM(
 	}
 
 	// translate access logging configuration
-	out.AccessLog = append(out.GetAccessLog(), policy.accessLog...)
+	accessLogs, err := generateAccessLogConfig(pCtx, policy.accessLogPolicies, policy.accessLogConfig)
+	if err != nil {
+		return err
+	}
+	out.AccessLog = append(out.GetAccessLog(), accessLogs...)
 
 	// translate tracing configuration
 	updateTracingConfig(pCtx, policy.tracingProvider, policy.tracingConfig)

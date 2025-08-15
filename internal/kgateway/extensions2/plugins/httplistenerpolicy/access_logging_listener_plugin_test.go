@@ -33,6 +33,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	pluginsdkir "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
 func TestConvertJsonFormat_EdgeCases(t *testing.T) {
@@ -791,6 +792,18 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 									},
 									TransportApiVersion: envoycorev3.ApiVersion_V3,
 								},
+								ResourceAttributes: &otelv1.KeyValueList{
+									Values: []*otelv1.KeyValue{
+										{
+											Key: "service.name",
+											Value: &otelv1.AnyValue{
+												Value: &otelv1.AnyValue_StringValue{
+													StringValue: "gw.default",
+												},
+											},
+										},
+									},
+								},
 							}),
 						},
 					},
@@ -819,6 +832,12 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 										Key: "ra-string-key-1",
 										Value: v1alpha1.AnyValue{
 											StringValue: pointer.String("ra-string-value-1"),
+										},
+									},
+									{
+										Key: "service.name",
+										Value: v1alpha1.AnyValue{
+											StringValue: pointer.String("my:service"),
 										},
 									},
 									{
@@ -989,6 +1008,14 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 											Value: &otelv1.AnyValue{
 												Value: &otelv1.AnyValue_StringValue{
 													StringValue: "ra-string-value-1",
+												},
+											},
+										},
+										{
+											Key: "service.name",
+											Value: &otelv1.AnyValue{
+												Value: &otelv1.AnyValue_StringValue{
+													StringValue: "my:service",
 												},
 											},
 										},
@@ -1193,7 +1220,7 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 			t.Cleanup(cancel)
 
 			t.Run(tc.name, func(t *testing.T) {
-				result, err := translateAccessLogs(
+				configs, err := translateAccessLogs(
 					tc.config,
 					// Example grpcBackends map for upstreams
 					map[string]*ir.BackendObjectIR{
@@ -1213,6 +1240,17 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 						},
 					},
 				)
+				require.NoError(t, err, "failed to convert access log config")
+				result, err := generateAccessLogConfig(&ir.HcmContext{
+					Gateway: pluginsdkir.GatewayIR{
+						SourceObject: &pluginsdkir.Gateway{
+							ObjectSource: pluginsdkir.ObjectSource{
+								Namespace: "default",
+								Name:      "gw",
+							},
+						},
+					},
+				}, tc.config, configs)
 				require.NoError(t, err, "failed to convert access log config")
 				// Perform deep equality check
 				assert.Equal(t, len(tc.expected), len(result), "expected length mismatch")

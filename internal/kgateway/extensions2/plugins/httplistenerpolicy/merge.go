@@ -42,11 +42,16 @@ func mergeAccessLog(
 	opts policy.MergeOptions,
 	mergeOrigins ir.MergeOrigins,
 ) {
-	if !policy.IsMergeable(p1.accessLog, p2.accessLog, opts) {
+	if !policy.IsMergeable(p1.accessLogConfig, p2.accessLogConfig, opts) {
+		return
+	}
+	if !policy.IsMergeable(p1.accessLogPolicies, p2.accessLogPolicies, opts) {
 		return
 	}
 
-	p1.accessLog = slices.Clone(p2.accessLog)
+	p1.accessLogConfig = slices.Clone(p2.accessLogConfig)
+	mergeOrigins.SetOne("accessLogConfig", p2Ref, p2MergeOrigins)
+	p1.accessLogPolicies = slices.Clone(p2.accessLogPolicies)
 	mergeOrigins.SetOne("accessLog", p2Ref, p2MergeOrigins)
 }
 
