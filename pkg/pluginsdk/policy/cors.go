@@ -1,4 +1,4 @@
-package utils
+package policy
 
 import (
 	"fmt"
@@ -20,8 +20,8 @@ const (
 	corsFilterEnabledKey = "envoy.cors.filter_enabled"
 )
 
-// ToEnvoyCorsPolicy converts a Gateway API CORS filter to an Envoy CORS policy
-func ToEnvoyCorsPolicy(
+// BuildCorsPolicy converts a Gateway API CORS filter to an Envoy CORS policy
+func BuildCorsPolicy(
 	f *gwv1.HTTPCORSFilter,
 	disable bool,
 ) *envoycorsv3.CorsPolicy {

@@ -1,7 +1,9 @@
 package agentgatewaybackend
 
 import (
+	"context"
 	"testing"
+	"time"
 
 	"github.com/agentgateway/agentgateway/go/api"
 	"istio.io/istio/pkg/kube/krt"
@@ -691,10 +693,20 @@ func createMockSecretIndex(t test.Failer, namespace, name string, data map[strin
 
 	mock := krttest.NewMock(t, inputs)
 
+	// Get the underlying mock collections
+	mockSecretCollection := krttest.GetMockCollection[*corev1.Secret](mock)
+	mockRefGrantCollection := krttest.GetMockCollection[*gwv1beta1.ReferenceGrant](mock)
+
+	// Wait for the mock collections to sync
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second) // long timeout - just in case. we should never reach it.
+	defer cancel()
+	mockSecretCollection.WaitUntilSynced(ctx.Done())
+	mockRefGrantCollection.WaitUntilSynced(ctx.Done())
+
 	// Create the secret collection
 	secretsCol := map[schema.GroupKind]krt.Collection[ir.Secret]{
 		corev1.SchemeGroupVersion.WithKind("Secret").GroupKind(): krt.NewCollection(
-			krttest.GetMockCollection[*corev1.Secret](mock),
+			mockSecretCollection,
 			func(kctx krt.HandlerContext, i *corev1.Secret) *ir.Secret {
 				res := ir.Secret{
 					ObjectSource: ir.ObjectSource{
@@ -712,11 +724,20 @@ func createMockSecretIndex(t test.Failer, namespace, name string, data map[strin
 	}
 
 	// Create a minimal RefGrantIndex for the SecretIndex
-	refgrants := krtcollections.NewRefGrantIndex(krttest.GetMockCollection[*gwv1beta1.ReferenceGrant](mock))
+	refgrants := krtcollections.NewRefGrantIndex(mockRefGrantCollection)
+
+	// Wait for the transformed secret collection to sync
+	secretCollection := secretsCol[corev1.SchemeGroupVersion.WithKind("Secret").GroupKind()]
+	secretCollection.WaitUntilSynced(ctx.Done())
 
 	// Create the SecretIndex
 	index := krtcollections.NewSecretIndex(secretsCol, refgrants)
-	index.HasSynced()
+
+	// Ensure the index is fully synced before returning
+	for !index.HasSynced() {
+		time.Sleep(50 * time.Millisecond)
+	}
+
 	return index
 }
 
@@ -967,7 +988,10 @@ func createMockServiceCollectionWithMCPService(t test.Failer, namespace, service
 
 	mock := krttest.NewMock(t, []any{mockService})
 	mockCol := krttest.GetMockCollection[*corev1.Service](mock)
-	mockCol.HasSynced()
+	// Ensure the index is fully synced before returning
+	for !mockCol.HasSynced() {
+		time.Sleep(50 * time.Millisecond)
+	}
 	return mockCol
 }
 
@@ -1037,7 +1061,10 @@ func createMockServiceCollectionMultiNamespace(t test.Failer) krt.Collection[*co
 
 	mock := krttest.NewMock(t, inputs)
 	mockCol := krttest.GetMockCollection[*corev1.Service](mock)
-	mockCol.HasSynced()
+	// Ensure the index is fully synced before returning
+	for !mockCol.HasSynced() {
+		time.Sleep(50 * time.Millisecond)
+	}
 	return mockCol
 }
 
@@ -1071,6 +1098,9 @@ func createMockNamespaceCollectionWithLabels(t test.Failer) krt.Collection[krtco
 
 	mock := krttest.NewMock(t, inputs)
 	mockCol := krttest.GetMockCollection[krtcollections.NamespaceMetadata](mock)
-	mockCol.HasSynced()
+	// Ensure the index is fully synced before returning
+	for !mockCol.HasSynced() {
+		time.Sleep(50 * time.Millisecond)
+	}
 	return mockCol
 }

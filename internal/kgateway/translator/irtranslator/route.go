@@ -238,13 +238,12 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(
 			routeReport.SetCondition(reportssdk.RouteCondition{
 				Type:    gwv1.RouteConditionAccepted,
 				Status:  metav1.ConditionFalse,
-				Reason:  gwv1.RouteConditionReason(reportssdk.RouteRuleDroppedReason),
-				Message: fmt.Sprintf("Dropped Rule (%d): %v", in.MatchIndex, routeAcceptanceErr),
+				Reason:  gwv1.RouteConditionReason(reportssdk.RouteRuleReplacedReason),
+				Message: fmt.Sprintf("Replaced Rule (%d): %v", in.MatchIndex, routeAcceptanceErr),
 			})
 		}
 
-		switch h.routeReplacementMode {
-		case settings.RouteReplacementStandard, settings.RouteReplacementStrict:
+		if h.routeReplacementMode == settings.RouteReplacementStandard || h.routeReplacementMode == settings.RouteReplacementStrict {
 			// Clear all headers and filter configs when the route is replaced with a direct response
 			out.TypedPerFilterConfig = nil
 			out.RequestHeadersToAdd = nil
@@ -263,9 +262,6 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(
 				},
 			}
 			return out
-		default:
-			// Drop the route entirely (legacy behavior, will be removed in the future)
-			return nil
 		}
 	}
 

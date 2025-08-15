@@ -301,7 +301,16 @@ func buildMCPIr(krtctx krt.HandlerContext, be *v1alpha1.Backend, services krt.Co
 		// Handle service selectors
 		if targetSelector.Selectors != nil {
 			// Build filters for service discovery
-			var filters []krt.FetchOption
+			// Krt only allows 1 filter per type, so we build a composite filter here
+			generic := func(svc any) bool {
+				return true
+			}
+			addFilter := func(nf func(svc any) bool) {
+				og := generic
+				generic = func(svc any) bool {
+					return nf(svc) && og(svc)
+				}
+			}
 
 			// Apply service label selector
 			if targetSelector.Selectors.ServiceSelector != nil {
@@ -310,10 +319,10 @@ func buildMCPIr(krtctx krt.HandlerContext, be *v1alpha1.Backend, services krt.Co
 					return nil, fmt.Errorf("invalid service selector: %w", err)
 				}
 				if !serviceSelector.Empty() {
-					filters = append(filters, krt.FilterGeneric(func(obj any) bool {
+					addFilter(func(obj any) bool {
 						service := obj.(*corev1.Service)
 						return serviceSelector.Matches(labels.Set(service.Labels))
-					}))
+					})
 				}
 			}
 
@@ -333,21 +342,21 @@ func buildMCPIr(krtctx krt.HandlerContext, be *v1alpha1.Backend, services krt.Co
 						}
 					}
 					// Filter services to only those in matching namespaces
-					filters = append(filters, krt.FilterGeneric(func(obj any) bool {
+					addFilter(func(obj any) bool {
 						service := obj.(*corev1.Service)
 						return matchingNamespaces[service.Namespace]
-					}))
+					})
 				}
 			} else {
 				// If no namespace selector, limit to same namespace as backend
-				filters = append(filters, krt.FilterGeneric(func(obj any) bool {
+				addFilter(func(obj any) bool {
 					service := obj.(*corev1.Service)
 					return service.Namespace == be.Namespace
-				}))
+				})
 			}
 
 			// Fetch matching services
-			matchingServices := krt.Fetch(krtctx, services, filters...)
+			matchingServices := krt.Fetch(krtctx, services, krt.FilterGeneric(generic))
 
 			// Create MCP targets for each matching service
 			for _, service := range matchingServices {

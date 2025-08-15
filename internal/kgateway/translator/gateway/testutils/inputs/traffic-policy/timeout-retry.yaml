@@ -1,0 +1,204 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: example-gateway
+spec:
+  gatewayClassName: example-gateway-class
+  listeners:
+  - name: http
+    protocol: HTTP
+    port: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: example-svc
+spec:
+  selector:
+    test: test
+  ports:
+    - protocol: HTTP
+      port: 80
+      targetPort: test
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: example-route-timeout
+spec:
+  parentRefs:
+  - name: example-gateway
+  hostnames:
+  - "example.com"
+  rules:
+  - backendRefs:
+    - name: example-svc
+      port: 80
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: example-route-timeout
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: example-route-timeout
+  timeouts:
+    request: 9s
+    streamIdle: 5s
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: example-route-retry
+  labels:
+    name: example-route-retry
+spec:
+  parentRefs:
+  - name: example-gateway
+  hostnames:
+  - "example-retry.com"
+  rules:
+  - name: rule0
+    backendRefs:
+    - name: example-svc
+      port: 80
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: example-route-retry
+spec:
+  targetSelectors:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    matchLabels:
+      name: example-route-retry
+    sectionName: rule0
+  retry:
+    retryOn:
+    - gateway-error
+    - connect-failure
+    - reset
+    attempts: 2
+    perTryTimeout: 500ms
+    statusCodes:
+    - 401
+    - 402
+    backoffBaseInterval: 50ms
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: example-route-retry-and-timeouts
+spec:
+  parentRefs:
+  - name: example-gateway
+  hostnames:
+  - "example-retry-and-timeouts.com"
+  rules:
+  - backendRefs:
+    - name: example-svc
+      port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: GRPCRoute
+metadata:
+  name: example-grpc-route
+spec:
+  parentRefs:
+  - name: example-gateway
+  hostnames:
+  - "example-retry-and-timeouts.com"
+  rules:
+  - matches:
+    - method:
+        type: Exact
+        method: foo
+    backendRefs:
+    - name: example-svc
+      port: 80      
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: example-route-retry-and-timeouts
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: example-route-retry-and-timeouts
+  - group: gateway.networking.k8s.io
+    kind: GRPCRoute
+    name: example-grpc-route
+  retry:
+    retryOn:
+    - gateway-error
+    - reset
+    attempts: 5
+    perTryTimeout: 1s
+    statusCodes:
+    - 409
+    backoffBaseInterval: 10ms
+  timeouts:
+    request: 10s
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: example-gateway-retry-and-timeout
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: example-gateway
+    sectionName: http
+  retry:
+    attempts: 3
+    retryOn:
+    - gateway-error 
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: route-builtin-policies
+spec:
+  parentRefs:
+  - name: example-gateway
+  hostnames:
+  - "builtin.com"
+  rules:
+  - backendRefs:
+    - name: example-svc
+      port: 80    
+    timeouts:
+      backendRequest: 5ms
+      request: 5s
+    retry:
+      attempts: 5
+      codes:
+        - 500
+        - 503
+      backoff: 5s      
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: overridden-by-builtin-policies
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: route-builtin-policies
+  retry:
+    retryOn:
+    - gateway-error
+    - reset
+    attempts: 2
+    perTryTimeout: 2ms
+    statusCodes:
+    - 409
+    backoffBaseInterval: 2s
+  timeouts:
+    request: 2s      
