@@ -40,7 +40,8 @@ listeners:
       typedConfig:
         '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
         httpFilters:
-        - name: envoy.filters.http.cors
+        - disabled: true
+          name: envoy.filters.http.cors
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.cors.v3.Cors
         - name: envoy.filters.http.router

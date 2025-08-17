@@ -3,7 +3,6 @@ package controller_test
 import (
 	"context"
 	"fmt"
-	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -14,6 +13,7 @@ import (
 	. "github.com/kgateway-dev/kgateway/v2/internal/kgateway/controller"
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics/metricstest"
+	"github.com/kgateway-dev/kgateway/v2/test/gomega/assertions"
 )
 
 type GinkgoTestReporter struct{}
@@ -28,9 +28,14 @@ func (g GinkgoTestReporter) Fatalf(format string, args ...interface{}) {
 
 var _ = Describe("GwControllerMetrics", func() {
 	var (
-		ctx    context.Context
-		cancel context.CancelFunc
+		ctx              context.Context
+		cancel           context.CancelFunc
+		goroutineMonitor *assertions.GoRoutineMonitor
 	)
+
+	BeforeEach(func() {
+		goroutineMonitor = assertions.NewGoRoutineMonitor()
+	})
 
 	JustBeforeEach(func() {
 		ctx, cancel = context.WithCancel(context.Background())
@@ -45,9 +50,7 @@ var _ = Describe("GwControllerMetrics", func() {
 
 	AfterEach(func() {
 		cancel()
-
-		// ensure goroutines cleanup
-		Eventually(func() bool { return true }).WithTimeout(3 * time.Second).Should(BeTrue())
+		waitForGoroutinesToFinish(goroutineMonitor)
 	})
 
 	It("should generate gateway controller metrics", func() {

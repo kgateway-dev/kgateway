@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
@@ -76,6 +77,52 @@ func (s *testingSuite) SetupSuite() {
 	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, proxyObjectMeta.GetNamespace(), metav1.ListOptions{
 		LabelSelector: fmt.Sprintf("app.kubernetes.io/name=%s", proxyObjectMeta.GetName()),
 	})
+
+	// Wait for Gateway to be accepted and programmed
+	s.testInstallation.Assertions.EventuallyGatewayCondition(
+		s.ctx,
+		gateway.GetName(),
+		gateway.GetNamespace(),
+		gwv1.GatewayConditionAccepted,
+		metav1.ConditionTrue,
+	)
+	s.testInstallation.Assertions.EventuallyGatewayCondition(
+		s.ctx,
+		gateway.GetName(),
+		gateway.GetNamespace(),
+		gwv1.GatewayConditionProgrammed,
+		metav1.ConditionTrue,
+	)
+
+	// Wait for HTTPRoutes to be accepted and have resolved references
+	s.testInstallation.Assertions.EventuallyHTTPRouteCondition(
+		s.ctx,
+		route.GetName(),
+		route.GetNamespace(),
+		gwv1.RouteConditionAccepted,
+		metav1.ConditionTrue,
+	)
+	s.testInstallation.Assertions.EventuallyHTTPRouteCondition(
+		s.ctx,
+		route.GetName(),
+		route.GetNamespace(),
+		gwv1.RouteConditionResolvedRefs,
+		metav1.ConditionTrue,
+	)
+	s.testInstallation.Assertions.EventuallyHTTPRouteCondition(
+		s.ctx,
+		route2.GetName(),
+		route2.GetNamespace(),
+		gwv1.RouteConditionAccepted,
+		metav1.ConditionTrue,
+	)
+	s.testInstallation.Assertions.EventuallyHTTPRouteCondition(
+		s.ctx,
+		route2.GetName(),
+		route2.GetNamespace(),
+		gwv1.RouteConditionResolvedRefs,
+		metav1.ConditionTrue,
+	)
 }
 
 func (s *testingSuite) TearDownSuite() {

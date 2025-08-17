@@ -160,6 +160,9 @@ type Settings struct {
 	// GlobalPolicyNamespace is the namespace where policies that can attach to resources
 	// in any namespace are defined.
 	GlobalPolicyNamespace string `split_words:"true"`
+
+	// Controls if leader election is disabled. Defaults to false.
+	DisableLeaderElection bool `split_words:"true" default:"false"`
 }
 
 // BuildSettings returns a zero-valued Settings obj if error is encountered when parsing env

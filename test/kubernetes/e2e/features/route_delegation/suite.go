@@ -293,6 +293,14 @@ func (s *tsuite) TestUnresolvedChild() {
 }
 
 func (s *tsuite) TestMatcherInheritance() {
+	// Wait for both parent routes to be accepted before sending traffic
+	s.ti.Assertions.EventuallyHTTPRouteStatusContainsReason(s.ctx, routeParent1.Name, routeParent1.Namespace,
+		string(gwv1.RouteReasonAccepted), 10*time.Second, 1*time.Second)
+	s.ti.Assertions.EventuallyHTTPRouteStatusContainsReason(s.ctx, routeParent2.Name, routeParent2.Namespace,
+		string(gwv1.RouteReasonAccepted), 10*time.Second, 1*time.Second)
+	s.ti.Assertions.EventuallyHTTPRouteStatusContainsReason(s.ctx, routeTeam1.Name, routeTeam1.Namespace,
+		string(gwv1.RouteReasonAccepted), 10*time.Second, 1*time.Second)
+
 	// Assert traffic on parent1's prefix
 	s.ti.Assertions.AssertEventuallyConsistentCurlResponse(s.ctx, defaults.CurlPodExecOpt,
 		[]curl.Option{curl.WithHostPort(proxyHostPort), curl.WithPath("/anything/foo/child")},

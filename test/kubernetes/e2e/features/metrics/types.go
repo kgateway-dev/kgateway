@@ -117,6 +117,6 @@ var (
 	}
 
 	testCases = map[string]base.TestCase{
-		"TestMetrics": base.TestCase{},
+		"TestMetrics": {},
 	}
 )

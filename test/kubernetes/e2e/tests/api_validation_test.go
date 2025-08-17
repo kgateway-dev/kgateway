@@ -16,6 +16,7 @@ func TestAPIValidation(t *testing.T) {
 	ti := e2e.CreateTestInstallation(t, &install.Context{
 		ValuesManifestFile:        e2e.EmptyValuesManifestPath,
 		ProfileValuesManifestFile: e2e.CommonRecommendationManifest,
+		InstallNamespace:          "kgateway-system",
 	})
 
 	tests := []struct {
@@ -434,6 +435,171 @@ spec:
 			wantErrors: []string{
 				"spec.rateLimit.global.descriptors[0].entries[0].generic.key in body should be at least 1 chars long",
 				"spec.rateLimit.global.descriptors[0].entries[0].generic.value in body should be at least 1 chars long",
+			},
+		},
+		{
+			name: "TrafficPolicy: valid retry and timeouts",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: test
+spec:
+  retry:
+    retryOn:
+    - gateway-error
+    - connect-failure
+    - reset
+    attempts: 2
+    perTryTimeout: 2s
+    backoffBaseInterval: 50ms
+  timeouts:
+    request: 5s
+    streamIdle: 60s
+`,
+		},
+		{
+			name: "TrafficPolicy: retry.retryOn unset",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: test
+spec:
+  retry:
+    attempts: 2
+    perTryTimeout: 2s
+`,
+			wantErrors: []string{"retryOn or statusCodes must be set"},
+		},
+		{
+			name: "TrafficPolicy: retry.perTryTimeout must be lesser than timeouts.request",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: test
+spec:
+  retry:
+    retryOn:
+    - gateway-error
+    - connect-failure
+    - reset
+    attempts: 2
+    perTryTimeout: 6s
+  timeouts:
+    request: 5s
+    streamIdle: 60s
+`,
+			wantErrors: []string{"retry.perTryTimeout must be lesser than timeouts.request"},
+		},
+		{
+			name: "TrafficPolicy: retry.perTryTimeout must be at least 1ms",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: test
+spec:
+  retry:
+    retryOn:
+    - gateway-error
+    - connect-failure
+    - reset
+    attempts: 2
+    perTryTimeout: 0.1ms
+`,
+			wantErrors: []string{"perTryTimeout must be at least 1ms"},
+		},
+		{
+			name: "TrafficPolicy: retry.perTryTimeout must be a valid duration value",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: test
+spec:
+  retry:
+    retryOn:
+    - gateway-error
+    - connect-failure
+    - reset
+    perTryTimeout: 1f
+`,
+			wantErrors: []string{
+				"spec.retry.perTryTimeout: Invalid value: \"string\": invalid duration value",
+				"spec.retry.perTryTimeout: Invalid value: \"string\": type conversion error from 'string' to 'google.protobuf.Duration' evaluating rule: retry.perTryTimeout must be at least 1ms",
+			},
+		},
+		{
+			name: "TrafficPolicy: targetRefs[].sectionName must be set when targeting Gateway resources with retry policy",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: test
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: test
+  retry:
+    retryOn:
+    - gateway-error
+`,
+			wantErrors: []string{
+				"targetRefs[].sectionName must be set when targeting Gateway resources with retry policy",
+			},
+		},
+		{
+			name: "TrafficPolicy: targetSelectors[].sectionName must be set when targeting Gateway resources with retry policy",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: test
+spec:
+  targetSelectors:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    matchLabels:
+      foo: bar
+  retry:
+    retryOn:
+    - gateway-error
+`,
+			wantErrors: []string{
+				"targetSelectors[].sectionName must be set when targeting Gateway resources with retry policy",
+			},
+		},
+		{
+			name: "TrafficPolicy: timeouts.request must be a valid duration value",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: test
+spec:
+  timeouts:
+    request: foo
+`,
+			wantErrors: []string{
+				"spec.timeouts.request: Invalid value: \"string\": invalid duration value",
+			},
+		},
+		{
+			name: "TrafficPolicy: timeouts.streamIdle must be a valid duration value",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: test
+spec:
+  timeouts:
+    streamIdle: -1s
+`,
+			wantErrors: []string{
+				"spec.timeouts.streamIdle: Invalid value: \"string\": invalid duration value",
 			},
 		},
 	}

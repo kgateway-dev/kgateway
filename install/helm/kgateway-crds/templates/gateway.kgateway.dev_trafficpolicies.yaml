@@ -633,6 +633,60 @@ spec:
                         type: object
                     type: object
                 type: object
+              retry:
+                properties:
+                  attempts:
+                    default: 1
+                    format: int32
+                    minimum: 0
+                    type: integer
+                  backoffBaseInterval:
+                    default: 25ms
+                    type: string
+                    x-kubernetes-validations:
+                    - message: invalid duration value
+                      rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                    - message: retry.backoffBaseInterval must be at least 1ms.
+                      rule: duration(self) >= duration('1ms')
+                  perTryTimeout:
+                    type: string
+                    x-kubernetes-validations:
+                    - message: invalid duration value
+                      rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                    - message: retry.perTryTimeout must be at least 1ms.
+                      rule: duration(self) >= duration('1ms')
+                  retryOn:
+                    items:
+                      enum:
+                      - 5xx
+                      - gateway-error
+                      - reset
+                      - reset-before-request
+                      - connect-failure
+                      - envoy-ratelimited
+                      - retriable-4xx
+                      - refused-stream
+                      - retriable-status-codes
+                      - http3-post-connect-failure
+                      - cancelled
+                      - deadline-exceeded
+                      - internal
+                      - resource-exhausted
+                      - unavailable
+                      type: string
+                    minItems: 1
+                    type: array
+                  statusCodes:
+                    items:
+                      maximum: 599
+                      minimum: 400
+                      type: integer
+                    minItems: 1
+                    type: array
+                type: object
+                x-kubernetes-validations:
+                - message: retryOn or statusCodes must be set.
+                  rule: has(self.retryOn) || has(self.statusCodes)
               targetRefs:
                 items:
                   properties:
@@ -685,6 +739,11 @@ spec:
                       additionalProperties:
                         type: string
                       type: object
+                    sectionName:
+                      maxLength: 253
+                      minLength: 1
+                      pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                      type: string
                   required:
                   - group
                   - kind
@@ -698,6 +757,19 @@ spec:
                     || (r.kind == 'XListenerSet' && r.group == 'gateway.networking.x-k8s.io'))
                     && (!has(r.group) || r.group == 'gateway.networking.k8s.io' ||
                     r.group == 'gateway.networking.x-k8s.io'))
+              timeouts:
+                properties:
+                  request:
+                    type: string
+                    x-kubernetes-validations:
+                    - message: invalid duration value
+                      rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                  streamIdle:
+                    type: string
+                    x-kubernetes-validations:
+                    - message: invalid duration value
+                      rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                type: object
               transformation:
                 properties:
                   request:
@@ -815,6 +887,18 @@ spec:
               rule: '!has(self.autoHostRewrite) || ((has(self.targetRefs) && self.targetRefs.all(r,
                 r.kind == ''HTTPRoute'')) || (has(self.targetSelectors) && self.targetSelectors.all(r,
                 r.kind == ''HTTPRoute'')))'
+            - message: retry.perTryTimeout must be lesser than timeouts.request
+              rule: 'has(self.retry) && has(self.timeouts) ? (has(self.retry.perTryTimeout)
+                && has(self.timeouts.request) ? duration(self.retry.perTryTimeout)
+                < duration(self.timeouts.request) : true) : true'
+            - message: targetRefs[].sectionName must be set when targeting Gateway
+                resources with retry policy
+              rule: 'has(self.retry) && has(self.targetRefs) ? self.targetRefs.all(r,
+                (r.kind == ''Gateway'' ? has(r.sectionName) : true )) : true'
+            - message: targetSelectors[].sectionName must be set when targeting Gateway
+                resources with retry policy
+              rule: 'has(self.retry) && has(self.targetSelectors) ? self.targetSelectors.all(r,
+                (r.kind == ''Gateway'' ? has(r.sectionName) : true )) : true'
           status:
             properties:
               ancestors:

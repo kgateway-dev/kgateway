@@ -1,0 +1,10 @@
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: httpbin-static
+spec:
+  type: Static
+  static:
+    hosts:
+      - host: httpbin.httpbin.svc # static reference to k8s service name
+        port: 8080

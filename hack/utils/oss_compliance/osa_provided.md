@@ -18,7 +18,7 @@ Name|Version|License
 [kelseyhightower/envconfig](https://github.com/kelseyhightower/envconfig)|v1.4.0|MIT License
 [mitchellh/hashstructure](https://github.com/mitchellh/hashstructure)|v1.0.0|MIT License
 [ginkgo/v2](https://github.com/onsi/ginkgo)|v2.23.4|MIT License
-[onsi/gomega](https://github.com/onsi/gomega)|v1.37.0|MIT License
+[onsi/gomega](https://github.com/onsi/gomega)|v1.38.0|MIT License
 [prometheus/client_golang](https://github.com/prometheus/client_golang)|v1.22.0|Apache License 2.0
 [prometheus/client_model](https://github.com/prometheus/client_model)|v0.6.2|Apache License 2.0
 [spf13/afero](https://github.com/spf13/afero)|v1.14.0|Apache License 2.0

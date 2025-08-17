@@ -769,6 +769,7 @@ func deepMergeAgentGateway(dst, src *v1alpha1.AgentGateway) *v1alpha1.AgentGatew
 	dst.SecurityContext = deepMergeSecurityContext(dst.GetSecurityContext(), src.GetSecurityContext())
 	dst.Resources = DeepMergeResourceRequirements(dst.GetResources(), src.GetResources())
 	dst.Env = DeepMergeSlices(dst.GetEnv(), src.GetEnv())
+	dst.CustomConfigMapName = MergePointers(dst.GetCustomConfigMapName(), src.GetCustomConfigMapName())
 
 	return dst
 }

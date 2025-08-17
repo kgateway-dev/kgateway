@@ -21,12 +21,19 @@ func TargetRefsToPolicyRefs(
 			SectionName:                nil,
 		})
 	}
-	return TargetRefsToPolicyRefsWithSectionName(targetRefsWithSectionName, targetSelectors)
+	targetSelectorsWithSectionName := make([]v1alpha1.LocalPolicyTargetSelectorWithSectionName, 0, len(targetSelectors))
+	for _, targetSelector := range targetSelectors {
+		targetSelectorsWithSectionName = append(targetSelectorsWithSectionName, v1alpha1.LocalPolicyTargetSelectorWithSectionName{
+			LocalPolicyTargetSelector: targetSelector,
+			SectionName:               nil,
+		})
+	}
+	return TargetRefsToPolicyRefsWithSectionName(targetRefsWithSectionName, targetSelectorsWithSectionName)
 }
 
 func TargetRefsToPolicyRefsWithSectionName(
 	targetRefs []v1alpha1.LocalPolicyTargetReferenceWithSectionName,
-	targetSelectors []v1alpha1.LocalPolicyTargetSelector,
+	targetSelectors []v1alpha1.LocalPolicyTargetSelectorWithSectionName,
 ) []ir.PolicyRef {
 	refs := make([]ir.PolicyRef, 0, len(targetRefs)+len(targetSelectors))
 	for _, targetRef := range targetRefs {
@@ -43,6 +50,7 @@ func TargetRefsToPolicyRefsWithSectionName(
 			Kind:  string(targetSelector.Kind),
 			// Clone to avoid mutating the original map
 			MatchLabels: maps.Clone(targetSelector.MatchLabels),
+			SectionName: string(ptr.Deref(targetSelector.SectionName, "")),
 		})
 	}
 	return refs
