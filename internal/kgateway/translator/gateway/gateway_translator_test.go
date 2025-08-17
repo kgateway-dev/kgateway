@@ -1174,7 +1174,6 @@ func TestBasic(t *testing.T) {
 			},
 		})
 	})
-
 }
 
 func TestRouteReplacement(t *testing.T) {
