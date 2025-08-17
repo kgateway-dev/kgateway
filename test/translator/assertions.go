@@ -10,6 +10,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
+	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
@@ -115,4 +116,24 @@ func AssertPolicyNotAccepted(t *testing.T, policyName, routeName string) AssertR
 		a.Equal(metav1.ConditionTrue, accepted.Status, "Route should have Accepted=true")
 		a.Equal(string(gwv1.RouteReasonAccepted), accepted.Reason, "Route should have Accepted reason")
 	}
+}
+
+// AssertListenerSetCondition is a helper function to verify ListenerSet status conditions
+func AssertListenerSetCondition(
+	t *testing.T,
+	reportsMap reports.ReportMap,
+	ls gwxv1a1.XListenerSet,
+	c metav1.Condition,
+) {
+	t.Helper()
+	a := assert.New(t)
+
+	status := reportsMap.BuildListenerSetStatus(context.Background(), ls)
+	a.NotNilf(status, "status missing for ListenerSet %v", ls)
+
+	acceptedCondition := meta.FindStatusCondition(status.Conditions, string(gwxv1a1.ListenerSetConditionAccepted))
+	a.NotNilf(acceptedCondition, "Accepted condition missing for ListenerSet %v", ls)
+	a.Equalf(c.Status, acceptedCondition.Status, "Accepted condition Status mismatch for ListenerSet %v", ls)
+	a.Equalf(c.Reason, acceptedCondition.Reason, "Accepted condition Reason mismatch for ListenerSet %v", ls)
+	a.Equalf(c.Message, acceptedCondition.Message, "Accepted condition Message mismatch for ListenerSet %v", ls)
 }
