@@ -348,7 +348,7 @@ func (c ListenerSet) Equals(in ListenerSet) bool {
 	return c.ObjectSource.Equals(in.ObjectSource) &&
 		versionEquals(c.Obj, in.Obj) &&
 		c.Listeners.Equals(in.Listeners) &&
-		c.Err.Error() == in.Err.Error()
+		errorsEqual(c.Err, in.Err)
 }
 
 type ListenerSets []ListenerSet

@@ -1127,17 +1127,6 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
-	t.Run("TrafficPolicy: rate limit", func(t *testing.T) {
-		test(t, translatorTestCase{
-			inputFile:  "traffic-policy/rate-limit.yaml",
-			outputFile: "traffic-policy/rate-limit.yaml",
-			gwNN: types.NamespacedName{
-				Namespace: "default",
-				Name:      "example-gateway",
-			},
-		})
-	})
-
 	t.Run("basic listener set", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "listener-sets/basic.yaml",
@@ -1174,6 +1163,18 @@ func TestBasic(t *testing.T) {
 			},
 		})
 	})
+
+	t.Run("TrafficPolicy: rate limit", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/rate-limit.yaml",
+			outputFile: "traffic-policy/rate-limit.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 }
 
 func TestRouteReplacement(t *testing.T) {
