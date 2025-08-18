@@ -10,8 +10,11 @@ Merging a pull request requires the following steps to be completed before the p
     - Running `make init-git-hooks` which will configure your repo to use the version-controlled [Git hooks](/.githooks) from this repo (preferred)
     - Manually copying the [.githooks/prepare-commit-msg](/.githooks/prepare-commit-msg) file to `.git/hooks/prepare-commit-msg` in your copy of this repo
     - Making sure to use the `-s` / `--signoff` [flag](https://git-scm.com/docs/git-commit#Documentation/git-commit.txt--s) on each commit
+- Before opening a PR, it is recommended to run the following commands and fix any errors reported:
+    - `make verify -B`: This will run codegen and return an error if it results in any local diffs. See more details in [Code Generation](./code-generation.md).
+    - `make analyze -B`: This will run a linter and return any errors.
 - [Open a pull request](https://help.github.com/articles/about-pull-requests/)
-- Pass all [automated tests](automation.md)
+- Pass all [automated tests](/.github/workflows/README.md)
 - Get all necessary approvals from reviewers and code owners
 
 ## Best Practices for Pull Requests
@@ -55,4 +58,4 @@ The PR body is generally the first place reviewers will look to gather context o
 - Enumerate all changes, even/especially minor ones, so the reviewer knows they are intentional
 - Link any relevant Slack conversations or design documents in the PR body so that they are not lost
 
-When a PR merges into the target branch in Gloo Gateway, the changes are squashed into a single commit, whose message is the PR title. As such, it is important to have a clear title that describes the change
+When a PR merges into the target branch in kgateway, the changes are squashed into a single commit, whose message is the PR title. As such, it is important to have a clear title that describes the change.

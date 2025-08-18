@@ -70,6 +70,8 @@ type HTTPListenerPolicySpec struct {
 	UpgradeConfig *UpgradeConfig `json:"upgradeConfig,omitempty"`
 
 	// UseRemoteAddress determines whether to use the remote address for the original client.
+	// Note: If this field is omitted, it will fallback to the default value of 'true', which we set for all Envoy HCMs.
+	// Thus, setting this explicitly to true is unnecessary (but will not cause any harm).
 	// When true, Envoy will use the remote address of the connection as the client address.
 	// When false, Envoy will use the X-Forwarded-For header to determine the client address.
 	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-use-remote-address

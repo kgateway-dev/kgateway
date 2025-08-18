@@ -149,7 +149,7 @@ spec:
                   domain:
                     type: string
                   failOpen:
-                    default: false
+                    default: true
                     type: boolean
                   grpcService:
                     properties:
@@ -199,7 +199,7 @@ spec:
                     - backendRef
                     type: object
                   timeout:
-                    default: 20ms
+                    default: 100ms
                     type: string
                     x-kubernetes-validations:
                     - message: invalid duration value

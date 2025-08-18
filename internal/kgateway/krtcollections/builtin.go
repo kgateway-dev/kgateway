@@ -644,6 +644,7 @@ func (p *builtinPluginGwPass) HttpFilters(ctx context.Context, fcc ir.FilterChai
 		if err != nil {
 			return nil, err
 		}
+		stagedFilter.Filter.Disabled = true
 		builtinStaged = append(builtinStaged, stagedFilter)
 	}
 

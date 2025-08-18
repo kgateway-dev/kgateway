@@ -9,12 +9,13 @@ import (
 // AgentGatewayApplyConfiguration represents a declarative configuration of the AgentGateway type for use
 // with apply.
 type AgentGatewayApplyConfiguration struct {
-	Enabled         *bool                    `json:"enabled,omitempty"`
-	LogLevel        *string                  `json:"logLevel,omitempty"`
-	Image           *ImageApplyConfiguration `json:"image,omitempty"`
-	SecurityContext *v1.SecurityContext      `json:"securityContext,omitempty"`
-	Resources       *v1.ResourceRequirements `json:"resources,omitempty"`
-	Env             []v1.EnvVar              `json:"env,omitempty"`
+	Enabled             *bool                    `json:"enabled,omitempty"`
+	LogLevel            *string                  `json:"logLevel,omitempty"`
+	Image               *ImageApplyConfiguration `json:"image,omitempty"`
+	SecurityContext     *v1.SecurityContext      `json:"securityContext,omitempty"`
+	Resources           *v1.ResourceRequirements `json:"resources,omitempty"`
+	Env                 []v1.EnvVar              `json:"env,omitempty"`
+	CustomConfigMapName *string                  `json:"customConfigMapName,omitempty"`
 }
 
 // AgentGatewayApplyConfiguration constructs a declarative configuration of the AgentGateway type for use with
@@ -70,5 +71,13 @@ func (b *AgentGatewayApplyConfiguration) WithEnv(values ...v1.EnvVar) *AgentGate
 	for i := range values {
 		b.Env = append(b.Env, values[i])
 	}
+	return b
+}
+
+// WithCustomConfigMapName sets the CustomConfigMapName field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the CustomConfigMapName field is set to the value of the last call.
+func (b *AgentGatewayApplyConfiguration) WithCustomConfigMapName(value string) *AgentGatewayApplyConfiguration {
+	b.CustomConfigMapName = &value
 	return b
 }

@@ -50,14 +50,14 @@ func MergePlugins(plug ...sdk.Plugin) sdk.Plugin {
 	ret := sdk.Plugin{
 		ContributesPolicies:     make(map[schema.GroupKind]sdk.PolicyPlugin),
 		ContributesBackends:     make(map[schema.GroupKind]sdk.BackendPlugin),
-		ContributesRegistration: make(map[schema.GroupKind]func()),
+		ContributesLeaderAction: make(map[schema.GroupKind]func()),
 	}
 	var funcs []sdk.GwTranslatorFactory
 	var hasSynced []func() bool
 	for _, p := range plug {
 		maps.Copy(ret.ContributesPolicies, p.ContributesPolicies)
 		maps.Copy(ret.ContributesBackends, p.ContributesBackends)
-		maps.Copy(ret.ContributesRegistration, p.ContributesRegistration)
+		maps.Copy(ret.ContributesLeaderAction, p.ContributesLeaderAction)
 		if p.ContributesGwTranslator != nil {
 			funcs = append(funcs, p.ContributesGwTranslator)
 		}

@@ -490,3 +490,31 @@ func (p *Provider) EventuallyHTTPListenerPolicyCondition(
 			cond, expect, namespace, name))
 	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 }
+
+// EventuallyBackendCondition checks that provided Backend condition is set to expect.
+func (p *Provider) EventuallyBackendCondition(
+	ctx context.Context,
+	name string,
+	namespace string,
+	condition string,
+	expect metav1.ConditionStatus,
+	timeout ...time.Duration,
+) {
+	ginkgo.GinkgoHelper()
+	currentTimeout, pollingInterval := helpers.GetTimeouts(timeout...)
+	p.Gomega.Eventually(func(g gomega.Gomega) {
+		backend := &v1alpha1.Backend{}
+		err := p.clusterContext.Client.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, backend)
+		g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get Backend %s/%s", namespace, name)
+
+		var conditionFound bool
+		for _, cond := range backend.Status.Conditions {
+			if cond.Type == condition && cond.Status == expect {
+				conditionFound = true
+				break
+			}
+		}
+		g.Expect(conditionFound).To(gomega.BeTrue(), fmt.Sprintf("%v condition is not %v for Backend %s/%s",
+			condition, expect, namespace, name))
+	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
+}

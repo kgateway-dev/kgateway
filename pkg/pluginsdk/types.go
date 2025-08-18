@@ -108,10 +108,11 @@ type Plugin struct {
 	ContributesPolicies     ContributesPolicies
 	ContributesBackends     map[schema.GroupKind]BackendPlugin
 	ContributesGwTranslator GwTranslatorFactory
-	// ContributesRegistration is a lifecycle hook called after all collections are synced
+	// ContributesLeaderAction is a lifecycle hook called after all collections are synced
 	// allowing Plugins to register handlers against collections, e.g. for status reporting
-	ContributesRegistration map[schema.GroupKind]func()
-	// extra has sync beyong primary resources in the collections above
+	// This is executed only on a leader pod.
+	ContributesLeaderAction map[schema.GroupKind]func()
+	// extra has sync beyond primary resources in the collections above
 	ExtraHasSynced func() bool
 }
 

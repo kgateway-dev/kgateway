@@ -11,6 +11,8 @@ import (
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	api "sigs.k8s.io/gateway-api/apis/v1"
+
+	"github.com/kgateway-dev/kgateway/v2/test/gomega/assertions"
 )
 
 var _ = Describe("GwController", func() {
@@ -20,11 +22,13 @@ var _ = Describe("GwController", func() {
 	)
 
 	var (
-		ctx    context.Context
-		cancel context.CancelFunc
+		ctx              context.Context
+		cancel           context.CancelFunc
+		goroutineMonitor *assertions.GoRoutineMonitor
 	)
 
 	BeforeEach(func() {
+		goroutineMonitor = assertions.NewGoRoutineMonitor()
 		ctx, cancel = context.WithCancel(context.Background())
 
 		var err error
@@ -33,11 +37,8 @@ var _ = Describe("GwController", func() {
 	})
 
 	AfterEach(func() {
-		if cancel != nil {
-			cancel()
-		}
-		// ensure goroutines cleanup
-		Eventually(func() bool { return true }).WithTimeout(3 * time.Second).Should(BeTrue())
+		cancel()
+		waitForGoroutinesToFinish(goroutineMonitor)
 	})
 
 	DescribeTable(
