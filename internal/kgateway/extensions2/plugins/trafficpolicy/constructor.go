@@ -100,8 +100,11 @@ func (c *TrafficPolicyConstructor) ConstructIR(
 	constructAutoHostRewrite(policyCR.Spec, &outSpec)
 	// Construct buffer specific IR
 	constructBuffer(policyCR.Spec, &outSpec)
-	// Construct timeout and retry specific IR
-	constructTimeoutRetry(policyCR.Spec, &outSpec)
+
+	// Construct rbac specific IR
+	if err := constructRbac(policyCR, &outSpec); err != nil {
+		errors = append(errors, err)
+	}
 
 	// Construct rbac specific IR
 	if err := constructRBAC(policyCR, &outSpec); err != nil {
