@@ -193,20 +193,6 @@ func mergeAutoHostRewrite(
 	defaultMerge(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, accessor, "autoHostRewrite")
 }
 
-func mergeHashPolicies(
-	p1, p2 *TrafficPolicy,
-	p2Ref *pluginsdkir.AttachedPolicyRef,
-	p2MergeOrigins pluginsdkir.MergeOrigins,
-	opts policy.MergeOptions,
-	mergeOrigins pluginsdkir.MergeOrigins,
-) {
-	accessor := fieldAccessor[hashPolicyIR]{
-		Get: func(spec *trafficPolicySpecIr) *hashPolicyIR { return spec.hashPolicies },
-		Set: func(spec *trafficPolicySpecIr, val *hashPolicyIR) { spec.hashPolicies = val },
-	}
-	defaultMerge(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, accessor, "hashPolicies")
-}
-
 func mergeTimeouts(
 	p1, p2 *TrafficPolicy,
 	p2Ref *pluginsdkir.AttachedPolicyRef,

@@ -6,6 +6,7 @@ import (
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoycommonv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/load_balancing_policies/common/v3"
 	leastrequestv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/load_balancing_policies/least_request/v3"
 	maglevv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/load_balancing_policies/maglev/v3"
@@ -13,6 +14,7 @@ import (
 	ringhashv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/load_balancing_policies/ring_hash/v3"
 	roundrobinv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/load_balancing_policies/round_robin/v3"
 	typev3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
+	"github.com/stretchr/testify/assert"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -254,6 +256,104 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 			}(),
 		},
 		{
+			name: "RingHash with hash policies",
+			config: &v1alpha1.LoadBalancer{
+				RingHash: &v1alpha1.LoadBalancerRingHashConfig{
+					HashPolicies: []*v1alpha1.HashPolicy{
+						{
+							Header: &v1alpha1.Header{
+								Name: "x-user-id",
+							},
+						},
+						{
+							Cookie: &v1alpha1.Cookie{
+								Name: "session-id",
+							},
+						},
+					},
+				},
+			},
+			expected: func() *envoyclusterv3.Cluster {
+				msg, _ := utils.MessageToAny(&ringhashv3.RingHash{
+					ConsistentHashingLbConfig: &envoycommonv3.ConsistentHashingLbConfig{
+						HashPolicy: constructHashPolicy([]*v1alpha1.HashPolicy{
+							{
+								Header: &v1alpha1.Header{
+									Name: "x-user-id",
+								},
+							},
+							{
+								Cookie: &v1alpha1.Cookie{
+									Name: "session-id",
+								},
+							},
+						}),
+					},
+				})
+				return &envoyclusterv3.Cluster{
+					Name: "test",
+					LoadBalancingPolicy: &envoyclusterv3.LoadBalancingPolicy{
+						Policies: []*envoyclusterv3.LoadBalancingPolicy_Policy{{
+							TypedExtensionConfig: &envoycorev3.TypedExtensionConfig{
+								Name:        "envoy.load_balancing_policies.ring_hash",
+								TypedConfig: msg,
+							},
+						}},
+					},
+					CommonLbConfig: &envoyclusterv3.Cluster_CommonLbConfig{},
+				}
+			}(),
+		},
+		{
+			name: "Maglev with hash policies",
+			config: &v1alpha1.LoadBalancer{
+				Maglev: &v1alpha1.LoadBalancerMaglevConfig{
+					HashPolicies: []*v1alpha1.HashPolicy{
+						{
+							Header: &v1alpha1.Header{
+								Name: "x-user-id",
+							},
+						},
+						{
+							Cookie: &v1alpha1.Cookie{
+								Name: "session-id",
+							},
+						},
+					},
+				},
+			},
+			expected: func() *envoyclusterv3.Cluster {
+				msg, _ := utils.MessageToAny(&maglevv3.Maglev{
+					ConsistentHashingLbConfig: &envoycommonv3.ConsistentHashingLbConfig{
+						HashPolicy: constructHashPolicy([]*v1alpha1.HashPolicy{
+							{
+								Header: &v1alpha1.Header{
+									Name: "x-user-id",
+								},
+							},
+							{
+								Cookie: &v1alpha1.Cookie{
+									Name: "session-id",
+								},
+							},
+						}),
+					},
+				})
+				return &envoyclusterv3.Cluster{
+					Name: "test",
+					LoadBalancingPolicy: &envoyclusterv3.LoadBalancingPolicy{
+						Policies: []*envoyclusterv3.LoadBalancingPolicy_Policy{{
+							TypedExtensionConfig: &envoycorev3.TypedExtensionConfig{
+								Name:        "envoy.load_balancing_policies.maglev",
+								TypedConfig: msg,
+							},
+						}},
+					},
+					CommonLbConfig: &envoyclusterv3.Cluster_CommonLbConfig{},
+				}
+			}(),
+		},
+		{
 			name: "Maglev",
 			config: &v1alpha1.LoadBalancer{
 				Maglev: &v1alpha1.LoadBalancerMaglevConfig{},
@@ -369,6 +469,206 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 			if !proto.Equal(cluster, test.expected) {
 				t.Errorf("expected %v, got %v", test.expected, cluster)
 			}
+		})
+	}
+}
+
+func TestConstructHashPolicy(t *testing.T) {
+	tests := []struct {
+		name         string
+		hashPolicies []*v1alpha1.HashPolicy
+		expected     []*envoyroutev3.RouteAction_HashPolicy
+	}{
+		{
+			name:         "nil hash policies",
+			hashPolicies: nil,
+			expected:     nil,
+		},
+		{
+			name:         "empty hash policies",
+			hashPolicies: []*v1alpha1.HashPolicy{},
+			expected:     nil,
+		},
+		{
+			name: "header hash policy",
+			hashPolicies: []*v1alpha1.HashPolicy{
+				{
+					Header: &v1alpha1.Header{
+						Name: "x-user-id",
+					},
+					Terminal: ptr.To(true),
+				},
+			},
+			expected: []*envoyroutev3.RouteAction_HashPolicy{
+				{
+					Terminal: true,
+					PolicySpecifier: &envoyroutev3.RouteAction_HashPolicy_Header_{
+						Header: &envoyroutev3.RouteAction_HashPolicy_Header{
+							HeaderName: "x-user-id",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "cookie hash policy without TTL and path",
+			hashPolicies: []*v1alpha1.HashPolicy{
+				{
+					Cookie: &v1alpha1.Cookie{
+						Name: "session-id",
+					},
+				},
+			},
+			expected: []*envoyroutev3.RouteAction_HashPolicy{
+				{
+					Terminal: false,
+					PolicySpecifier: &envoyroutev3.RouteAction_HashPolicy_Cookie_{
+						Cookie: &envoyroutev3.RouteAction_HashPolicy_Cookie{
+							Name: "session-id",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "cookie hash policy with TTL and path",
+			hashPolicies: []*v1alpha1.HashPolicy{
+				{
+					Cookie: &v1alpha1.Cookie{
+						Name: "session-id",
+						TTL: &metav1.Duration{
+							Duration: 30 * time.Minute,
+						},
+						Path: ptr.To("/api"),
+						Attributes: map[string]string{
+							"domain": "example.com",
+							"secure": "true",
+						},
+					},
+					Terminal: ptr.To(true),
+				},
+			},
+			expected: []*envoyroutev3.RouteAction_HashPolicy{
+				{
+					Terminal: true,
+					PolicySpecifier: &envoyroutev3.RouteAction_HashPolicy_Cookie_{
+						Cookie: &envoyroutev3.RouteAction_HashPolicy_Cookie{
+							Name: "session-id",
+							Ttl:  durationpb.New(30 * time.Minute),
+							Path: "/api",
+							Attributes: []*envoyroutev3.RouteAction_HashPolicy_CookieAttribute{
+								{
+									Name:  "domain",
+									Value: "example.com",
+								},
+								{
+									Name:  "secure",
+									Value: "true",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "source IP hash policy",
+			hashPolicies: []*v1alpha1.HashPolicy{
+				{
+					SourceIP: &v1alpha1.SourceIP{},
+					Terminal: ptr.To(false),
+				},
+			},
+			expected: []*envoyroutev3.RouteAction_HashPolicy{
+				{
+					Terminal: false,
+					PolicySpecifier: &envoyroutev3.RouteAction_HashPolicy_ConnectionProperties_{
+						ConnectionProperties: &envoyroutev3.RouteAction_HashPolicy_ConnectionProperties{
+							SourceIp: true,
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "multiple hash policies",
+			hashPolicies: []*v1alpha1.HashPolicy{
+				{
+					Header: &v1alpha1.Header{
+						Name: "x-user-id",
+					},
+					Terminal: ptr.To(true),
+				},
+				{
+					Cookie: &v1alpha1.Cookie{
+						Name: "session-id",
+						TTL: &metav1.Duration{
+							Duration: 1 * time.Hour,
+						},
+					},
+				},
+				{
+					SourceIP: &v1alpha1.SourceIP{},
+				},
+			},
+			expected: []*envoyroutev3.RouteAction_HashPolicy{
+				{
+					Terminal: true,
+					PolicySpecifier: &envoyroutev3.RouteAction_HashPolicy_Header_{
+						Header: &envoyroutev3.RouteAction_HashPolicy_Header{
+							HeaderName: "x-user-id",
+						},
+					},
+				},
+				{
+					Terminal: false,
+					PolicySpecifier: &envoyroutev3.RouteAction_HashPolicy_Cookie_{
+						Cookie: &envoyroutev3.RouteAction_HashPolicy_Cookie{
+							Name: "session-id",
+							Ttl:  durationpb.New(1 * time.Hour),
+						},
+					},
+				},
+				{
+					Terminal: false,
+					PolicySpecifier: &envoyroutev3.RouteAction_HashPolicy_ConnectionProperties_{
+						ConnectionProperties: &envoyroutev3.RouteAction_HashPolicy_ConnectionProperties{
+							SourceIp: true,
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "cookie hash policy with nil TTL",
+			hashPolicies: []*v1alpha1.HashPolicy{
+				{
+					Cookie: &v1alpha1.Cookie{
+						Name: "session-id",
+						TTL:  nil,
+						Path: ptr.To("/api"),
+					},
+					Terminal: ptr.To(false),
+				},
+			},
+			expected: []*envoyroutev3.RouteAction_HashPolicy{
+				{
+					Terminal: false,
+					PolicySpecifier: &envoyroutev3.RouteAction_HashPolicy_Cookie_{
+						Cookie: &envoyroutev3.RouteAction_HashPolicy_Cookie{
+							Name: "session-id",
+							Path: "/api",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual := constructHashPolicy(tt.hashPolicies)
+			assert.Equal(t, tt.expected, actual)
 		})
 	}
 }
