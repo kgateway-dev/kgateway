@@ -61,7 +61,8 @@ spec:
         name: ratelimit
         port: 8081
     domain: "api-gateway"
-    timeout: "100ms"
+    timeout: "50ms"
+    failOpen: true
 ---
 apiVersion: v1
 kind: Service

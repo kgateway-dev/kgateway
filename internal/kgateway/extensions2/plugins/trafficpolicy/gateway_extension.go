@@ -199,11 +199,6 @@ func resolveRateLimitService(grpcService *envoycorev3.GrpcService, rateLimit *v1
 	// Set timeout (we expect it always to have a valid value or default due to CRD validation)
 	envoyRateLimit.Timeout = durationpb.New(rateLimit.Timeout.Duration)
 
-	// Set defaults for other required fields
-	envoyRateLimit.StatPrefix = rateLimitStatPrefix
-	envoyRateLimit.EnableXRatelimitHeaders = ratev3.RateLimit_DRAFT_VERSION_03
-	envoyRateLimit.RequestType = "both"
-
 	return envoyRateLimit
 }
 

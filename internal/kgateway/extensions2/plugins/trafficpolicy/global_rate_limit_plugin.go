@@ -15,10 +15,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/cmputils"
 )
 
-const (
-	rateLimitStatPrefix = "http_rate_limit"
-)
-
 // globalRateLimitIR represents the intermediate representation for a global rate limit policy.
 type globalRateLimitIR struct {
 	provider         *TrafficPolicyGatewayExtensionIR
