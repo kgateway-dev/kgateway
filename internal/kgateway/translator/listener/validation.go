@@ -16,7 +16,6 @@ import (
 
 const NormalizedHTTPSTLSType = "HTTPS/TLS"
 const DefaultHostname = "*"
-const AttachedListenerSetsConditionType = "AttachedListenerSets"
 
 type portProtocol struct {
 	hostnames map[gwv1.Hostname]int
@@ -189,12 +188,14 @@ func validateListeners(gw *ir.Gateway, reporter reports.Reporter) []ir.Listener 
 			parentReporter := listener.GetParentReporter(reporter)
 
 			if protocolConflict {
+				message := "Found conflicting protocols on listeners, a single port can only contain listeners with compatible protocols"
 				parentReporter.ListenerName(string(listener.Name)).SetCondition(reports.ListenerCondition{
 					Type:    gwv1.ListenerConditionConflicted,
 					Status:  metav1.ConditionTrue,
 					Reason:  gwv1.ListenerReasonProtocolConflict,
-					Message: "Found conflicting protocols on listeners, a single port can only contain listeners with compatible protocols",
+					Message: message,
 				})
+				rejectListener(parentReporter, listener, gwv1.ListenerReasonProtocolConflict, message)
 
 				// continue as protocolConflict will take precedence over hostname conflicts
 				continue
@@ -207,12 +208,14 @@ func validateListeners(gw *ir.Gateway, reporter reports.Reporter) []ir.Listener 
 				hostname = *listener.Hostname
 			}
 			if count := pp.hostnames[hostname]; count > 1 {
+				message := "Found conflicting hostnames on listeners, all listeners on a single port must have unique hostnames"
 				parentReporter.ListenerName(string(listener.Name)).SetCondition(reports.ListenerCondition{
 					Type:    gwv1.ListenerConditionConflicted,
 					Status:  metav1.ConditionTrue,
 					Reason:  gwv1.ListenerReasonHostnameConflict,
-					Message: "Found conflicting hostnames on listeners, all listeners on a single port must have unique hostnames",
+					Message: message,
 				})
+				rejectListener(parentReporter, listener, gwv1.ListenerReasonHostnameConflict, message)
 			} else {
 				// TODO should check this is exactly 1?
 				validListeners = append(validListeners, listener)
@@ -221,12 +224,13 @@ func validateListeners(gw *ir.Gateway, reporter reports.Reporter) []ir.Listener 
 	}
 
 	// Add the final conditions on the Gateway
-	if gw.AllowedListenerSets == nil {
+	if gw.Obj.Spec.AllowedListeners == nil {
 		reporter.Gateway(gw.Obj).SetCondition(reports.GatewayCondition{
-			Type:   AttachedListenerSetsConditionType,
+			Type:   GatewayConditionAttachedListenerSets,
 			Status: metav1.ConditionUnknown,
-			Reason: gwv1.GatewayReasonNoResources,
+			Reason: GatewayReasonListenerSetsNotAllowed,
 		})
+		return validListeners
 	}
 
 	if len(validListeners) == 0 {
@@ -253,13 +257,13 @@ func validateListeners(gw *ir.Gateway, reporter reports.Reporter) []ir.Listener 
 
 	if listenerSetListenerExists {
 		reporter.Gateway(gw.Obj).SetCondition(reports.GatewayCondition{
-			Type:   AttachedListenerSetsConditionType,
+			Type:   GatewayConditionAttachedListenerSets,
 			Status: metav1.ConditionTrue,
-			Reason: gwv1.GatewayReasonAccepted,
+			Reason: GatewayReasonListenerSetsAttached,
 		})
 	} else {
 		reporter.Gateway(gw.Obj).SetCondition(reports.GatewayCondition{
-			Type:   AttachedListenerSetsConditionType,
+			Type:   GatewayConditionAttachedListenerSets,
 			Status: metav1.ConditionFalse,
 			Reason: gwv1.GatewayReasonNoResources,
 		})
@@ -295,4 +299,31 @@ func rejectListenerSet(ls ir.ListenerSet, reporter reports.GatewayReporter) {
 func getGroupName() *gwv1.Group {
 	g := gwv1.Group(gwv1.GroupName)
 	return &g
+}
+
+func rejectListener(parentReporter reports.GatewayReporter, listener ir.Listener, reason gwv1.ListenerConditionReason, message string) {
+	// Set the accepted and programmed condition now since the right reason is needed.
+	// If the gateway is eventually rejected, the condition will be overwritten
+	parentReporter.SetCondition(reports.GatewayCondition{
+		Type:   gwv1.GatewayConditionAccepted,
+		Status: metav1.ConditionTrue,
+		Reason: gwv1.GatewayConditionReason(gwxv1a1.ListenerSetReasonListenersNotValid),
+	})
+	parentReporter.SetCondition(reports.GatewayCondition{
+		Type:   gwv1.GatewayConditionProgrammed,
+		Status: metav1.ConditionTrue,
+		Reason: gwv1.GatewayConditionReason(gwxv1a1.ListenerSetReasonListenersNotValid),
+	})
+	parentReporter.ListenerName(string(listener.Name)).SetCondition(reports.ListenerCondition{
+		Type:    gwv1.ListenerConditionAccepted,
+		Status:  metav1.ConditionFalse,
+		Reason:  reason,
+		Message: message,
+	})
+	parentReporter.ListenerName(string(listener.Name)).SetCondition(reports.ListenerCondition{
+		Type:    gwv1.ListenerConditionProgrammed,
+		Status:  metav1.ConditionFalse,
+		Reason:  reason,
+		Message: message,
+	})
 }
