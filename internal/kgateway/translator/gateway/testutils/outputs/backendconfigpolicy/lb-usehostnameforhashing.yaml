@@ -1,10 +1,7 @@
 Clusters:
-- commonLbConfig:
-    consistentHashingLbConfig:
-      useHostnameForHashing: true
+- commonLbConfig: {}
   connectTimeout: 5s
   dnsLookupFamily: V4_PREFERRED
-  lbPolicy: RING_HASH
   loadAssignment:
     clusterName: backend_default_example-backend_0
     endpoints:
@@ -17,11 +14,18 @@ Clusters:
           healthCheckConfig:
             hostname: example.com
           hostname: example.com
+  loadBalancingPolicy:
+    policies:
+    - typedExtensionConfig:
+        name: envoy.load_balancing_policies.ring_hash
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.load_balancing_policies.ring_hash.v3.RingHash
+          consistentHashingLbConfig:
+            useHostnameForHashing: true
+          maximumRingSize: "2048"
+          minimumRingSize: "1024"
   metadata: {}
   name: backend_default_example-backend_0
-  ringHashLbConfig:
-    maximumRingSize: "2048"
-    minimumRingSize: "1024"
   type: STRICT_DNS
 - commonLbConfig: {}
   connectTimeout: 5s
@@ -30,12 +34,17 @@ Clusters:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
-  lbPolicy: RING_HASH
+  loadBalancingPolicy:
+    policies:
+    - typedExtensionConfig:
+        name: envoy.load_balancing_policies.ring_hash
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.load_balancing_policies.ring_hash.v3.RingHash
+          consistentHashingLbConfig: {}
+          maximumRingSize: "2048"
+          minimumRingSize: "1024"
   metadata: {}
   name: kube_default_httpbin_8080
-  ringHashLbConfig:
-    maximumRingSize: "2048"
-    minimumRingSize: "1024"
   type: EDS
 - connectTimeout: 5s
   metadata: {}

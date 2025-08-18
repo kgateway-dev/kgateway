@@ -6,9 +6,13 @@ Clusters:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
-  lbPolicy: LEAST_REQUEST
-  leastRequestLbConfig:
-    choiceCount: 3
+  loadBalancingPolicy:
+    policies:
+    - typedExtensionConfig:
+        name: envoy.load_balancing_policies.least_request
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.load_balancing_policies.least_request.v3.LeastRequest
+          choiceCount: 3
   metadata: {}
   name: kube_default_httpbin-lr_8080
   type: EDS
@@ -19,7 +23,12 @@ Clusters:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
-  lbPolicy: MAGLEV
+  loadBalancingPolicy:
+    policies:
+    - typedExtensionConfig:
+        name: envoy.load_balancing_policies.maglev
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.load_balancing_policies.maglev.v3.Maglev
   metadata: {}
   name: kube_default_httpbin-maglev_8080
   type: EDS
@@ -30,7 +39,12 @@ Clusters:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
-  lbPolicy: RANDOM
+  loadBalancingPolicy:
+    policies:
+    - typedExtensionConfig:
+        name: envoy.load_balancing_policies.random
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.load_balancing_policies.random.v3.Random
   metadata: {}
   name: kube_default_httpbin-random_8080
   type: EDS
@@ -41,11 +55,15 @@ Clusters:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
-  lbPolicy: RING_HASH
+  loadBalancingPolicy:
+    policies:
+    - typedExtensionConfig:
+        name: envoy.load_balancing_policies.ring_hash
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.load_balancing_policies.ring_hash.v3.RingHash
+          minimumRingSize: "1024"
   metadata: {}
   name: kube_default_httpbin-rh_8080
-  ringHashLbConfig:
-    minimumRingSize: "1024"
   type: EDS
 - commonLbConfig: {}
   connectTimeout: 5s
@@ -54,25 +72,37 @@ Clusters:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
+  loadBalancingPolicy:
+    policies:
+    - typedExtensionConfig:
+        name: envoy.load_balancing_policies.round_robin
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.load_balancing_policies.round_robin.v3.RoundRobin
+          slowStartConfig:
+            aggression:
+              defaultValue: 1.5
+              runtimeKey: httpbin-rr-policy.default.slowStart.aggression
+            minWeightPercent:
+              value: 10
+            slowStartWindow: 10s
   metadata: {}
   name: kube_default_httpbin-rr_8080
-  roundRobinLbConfig:
-    slowStartConfig:
-      aggression:
-        defaultValue: 1.5
-        runtimeKey: upstream.kube_default_httpbin-rr_8080.slowStart.aggression
-      minWeightPercent:
-        value: 10
-      slowStartWindow: 10s
   type: EDS
-- commonLbConfig:
-    localityWeightedLbConfig: {}
+- commonLbConfig: {}
   connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
+  loadBalancingPolicy:
+    policies:
+    - typedExtensionConfig:
+        name: envoy.load_balancing_policies.round_robin
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.load_balancing_policies.round_robin.v3.RoundRobin
+          localityLbConfig:
+            localityWeightedLbConfig: {}
   metadata: {}
   name: kube_default_httpbin-weighted_8080
   type: EDS
@@ -84,13 +114,17 @@ Clusters:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
-  lbPolicy: RING_HASH
+  loadBalancingPolicy:
+    policies:
+    - typedExtensionConfig:
+        name: envoy.load_balancing_policies.ring_hash
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.load_balancing_policies.ring_hash.v3.RingHash
+          maximumRingSize: "2048"
+          minimumRingSize: "1024"
   metadata: {}
   name: kube_default_httpbin_8080
   perConnectionBufferLimitBytes: 1024
-  ringHashLbConfig:
-    maximumRingSize: "2048"
-    minimumRingSize: "1024"
   type: EDS
   typedExtensionProtocolOptions:
     envoy.extensions.upstreams.http.v3.HttpProtocolOptions:

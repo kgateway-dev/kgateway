@@ -275,21 +275,25 @@ func validateGateway(consolidatedGateway *ir.Gateway, reporter reports.Reporter)
 
 func rejectDeniedListenerSets(consolidatedGateway *ir.Gateway, reporter reports.Reporter) {
 	for _, ls := range consolidatedGateway.DeniedListenerSets {
-		rejectListenerSet(ls, reporter.ListenerSet(ls.Obj))
+		acceptedCond := reports.GatewayCondition{
+			Type:   gwv1.GatewayConditionType(gwxv1a1.ListenerSetConditionAccepted),
+			Status: metav1.ConditionFalse,
+			Reason: gwv1.GatewayConditionReason(gwxv1a1.ListenerSetReasonNotAllowed),
+		}
+		if ls.Err != nil {
+			acceptedCond.Message = ls.Err.Error()
+		}
+		reporter.ListenerSet(ls.Obj).SetCondition(acceptedCond)
+		programmedCond := reports.GatewayCondition{
+			Type:   gwv1.GatewayConditionType(gwxv1a1.ListenerSetConditionProgrammed),
+			Status: metav1.ConditionFalse,
+			Reason: gwv1.GatewayConditionReason(gwxv1a1.ListenerSetReasonNotAllowed),
+		}
+		if ls.Err != nil {
+			programmedCond.Message = ls.Err.Error()
+		}
+		reporter.ListenerSet(ls.Obj).SetCondition(programmedCond)
 	}
-}
-
-func rejectListenerSet(ls ir.ListenerSet, reporter reports.GatewayReporter) {
-	reporter.SetCondition(reports.GatewayCondition{
-		Type:   gwv1.GatewayConditionAccepted,
-		Status: metav1.ConditionFalse,
-		Reason: gwv1.GatewayConditionReason(gwxv1a1.ListenerSetReasonNotAllowed),
-	})
-	reporter.SetCondition(reports.GatewayCondition{
-		Type:   gwv1.GatewayConditionProgrammed,
-		Status: metav1.ConditionFalse,
-		Reason: gwv1.GatewayConditionReason(gwxv1a1.ListenerSetReasonNotAllowed),
-	})
 }
 
 func getGroupName() *gwv1.Group {

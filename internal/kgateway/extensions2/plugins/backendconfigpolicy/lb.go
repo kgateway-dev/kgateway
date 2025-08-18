@@ -6,30 +6,28 @@ import (
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoycommonv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/load_balancing_policies/common/v3"
+	envoyleastrequestv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/load_balancing_policies/least_request/v3"
+	envoymaglevv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/load_balancing_policies/maglev/v3"
+	envoyrandomv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/load_balancing_policies/random/v3"
+	envoyringhashv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/load_balancing_policies/ring_hash/v3"
+	envoyroundrobinv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/load_balancing_policies/round_robin/v3"
 	typev3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/cmputils"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 )
 
 type LoadBalancerConfigIR struct {
-	commonLbConfig       *envoyclusterv3.Cluster_CommonLbConfig
-	lbPolicy             envoyclusterv3.Cluster_LbPolicy
-	roundRobinLbConfig   *envoyclusterv3.Cluster_RoundRobinLbConfig
-	leastRequestLbConfig *envoyclusterv3.Cluster_LeastRequestLbConfig
-	ringHashLbConfig     *envoyclusterv3.Cluster_RingHashLbConfig
-	slowStartConfigIR    *slowStartConfigIR
+	commonLbConfig        *envoyclusterv3.Cluster_CommonLbConfig
+	loadBalancingPolicy   *envoyclusterv3.LoadBalancingPolicy
+	useHostnameForHashing bool
 }
 
-type slowStartConfigIR struct {
-	slowStartConfig *envoyclusterv3.Cluster_SlowStartConfig
-	aggression      *string
-}
-
-func translateLoadBalancerConfig(config *v1alpha1.LoadBalancer) *LoadBalancerConfigIR {
+func translateLoadBalancerConfig(config *v1alpha1.LoadBalancer, policyName, policyNamespace string) (*LoadBalancerConfigIR, error) {
 	out := &LoadBalancerConfigIR{}
 
 	out.commonLbConfig = &envoyclusterv3.Cluster_CommonLbConfig{}
@@ -44,59 +42,139 @@ func translateLoadBalancerConfig(config *v1alpha1.LoadBalancer) *LoadBalancerCon
 		out.commonLbConfig.UpdateMergeWindow = durationpb.New(config.UpdateMergeWindow.Duration)
 	}
 
-	if config.LocalityType != nil {
-		switch *config.LocalityType {
-		case v1alpha1.LocalityConfigTypeWeightedLb:
-			out.commonLbConfig.LocalityConfigSpecifier = &envoyclusterv3.Cluster_CommonLbConfig_LocalityWeightedLbConfig_{
-				LocalityWeightedLbConfig: &envoyclusterv3.Cluster_CommonLbConfig_LocalityWeightedLbConfig{},
-			}
-		}
-	}
-
 	if config.CloseConnectionsOnHostSetChange != nil {
 		out.commonLbConfig.CloseConnectionsOnHostSetChange = *config.CloseConnectionsOnHostSetChange
 	}
 
 	if config.LeastRequest != nil {
-		out.lbPolicy = envoyclusterv3.Cluster_LEAST_REQUEST
-		out.leastRequestLbConfig = &envoyclusterv3.Cluster_LeastRequestLbConfig{}
-		out.leastRequestLbConfig.ChoiceCount = &wrapperspb.UInt32Value{
-			Value: config.LeastRequest.ChoiceCount,
+		leastRequest := &envoyleastrequestv3.LeastRequest{
+			ChoiceCount: &wrapperspb.UInt32Value{
+				Value: config.LeastRequest.ChoiceCount,
+			},
+			SlowStartConfig: toSlowStartConfig(config.LeastRequest.SlowStart, policyName, policyNamespace),
 		}
-		out.slowStartConfigIR = toSlowStartConfigIR(config.LeastRequest.SlowStart)
+		if config.LocalityType != nil {
+			leastRequest.LocalityLbConfig = &envoycommonv3.LocalityLbConfig{
+				LocalityConfigSpecifier: &envoycommonv3.LocalityLbConfig_LocalityWeightedLbConfig_{
+					LocalityWeightedLbConfig: &envoycommonv3.LocalityLbConfig_LocalityWeightedLbConfig{},
+				},
+			}
+		}
+		leastRequestAny, err := utils.MessageToAny(leastRequest)
+		if err != nil {
+			return nil, err
+		}
+		out.loadBalancingPolicy = &envoyclusterv3.LoadBalancingPolicy{
+			Policies: []*envoyclusterv3.LoadBalancingPolicy_Policy{{
+				TypedExtensionConfig: &envoycorev3.TypedExtensionConfig{
+					Name:        "envoy.load_balancing_policies.least_request",
+					TypedConfig: leastRequestAny,
+				},
+			}},
+		}
 	} else if config.RoundRobin != nil {
-		out.lbPolicy = envoyclusterv3.Cluster_ROUND_ROBIN
-		out.slowStartConfigIR = toSlowStartConfigIR(config.RoundRobin.SlowStart)
+		roundRobin := &envoyroundrobinv3.RoundRobin{
+			SlowStartConfig: toSlowStartConfig(config.RoundRobin.SlowStart, policyName, policyNamespace),
+		}
+		if config.LocalityType != nil {
+			roundRobin.LocalityLbConfig = &envoycommonv3.LocalityLbConfig{
+				LocalityConfigSpecifier: &envoycommonv3.LocalityLbConfig_LocalityWeightedLbConfig_{
+					LocalityWeightedLbConfig: &envoycommonv3.LocalityLbConfig_LocalityWeightedLbConfig{},
+				},
+			}
+		}
+		roundRobinAny, err := utils.MessageToAny(roundRobin)
+		if err != nil {
+			return nil, err
+		}
+		out.loadBalancingPolicy = &envoyclusterv3.LoadBalancingPolicy{
+			Policies: []*envoyclusterv3.LoadBalancingPolicy_Policy{{
+				TypedExtensionConfig: &envoycorev3.TypedExtensionConfig{
+					Name:        "envoy.load_balancing_policies.round_robin",
+					TypedConfig: roundRobinAny,
+				},
+			}},
+		}
 	} else if config.RingHash != nil {
-		out.lbPolicy = envoyclusterv3.Cluster_RING_HASH
-		out.ringHashLbConfig = &envoyclusterv3.Cluster_RingHashLbConfig{}
+		ringHash := &envoyringhashv3.RingHash{}
 		if config.RingHash.MinimumRingSize != nil {
-			out.ringHashLbConfig.MinimumRingSize = &wrapperspb.UInt64Value{
+			ringHash.MinimumRingSize = &wrapperspb.UInt64Value{
 				Value: *config.RingHash.MinimumRingSize,
 			}
 		}
 		if config.RingHash.MaximumRingSize != nil {
-			out.ringHashLbConfig.MaximumRingSize = &wrapperspb.UInt64Value{
+			ringHash.MaximumRingSize = &wrapperspb.UInt64Value{
 				Value: *config.RingHash.MaximumRingSize,
 			}
 		}
 		if config.RingHash.UseHostnameForHashing != nil {
-			out.commonLbConfig.ConsistentHashingLbConfig = &envoyclusterv3.Cluster_CommonLbConfig_ConsistentHashingLbConfig{
+			out.useHostnameForHashing = *config.RingHash.UseHostnameForHashing
+			ringHash.ConsistentHashingLbConfig = &envoycommonv3.ConsistentHashingLbConfig{
 				UseHostnameForHashing: *config.RingHash.UseHostnameForHashing,
 			}
 		}
+		if config.LocalityType != nil {
+			ringHash.LocalityWeightedLbConfig = &envoycommonv3.LocalityLbConfig_LocalityWeightedLbConfig{}
+		}
+		ringHashAny, err := utils.MessageToAny(ringHash)
+		if err != nil {
+			return nil, err
+		}
+		out.loadBalancingPolicy = &envoyclusterv3.LoadBalancingPolicy{
+			Policies: []*envoyclusterv3.LoadBalancingPolicy_Policy{{
+				TypedExtensionConfig: &envoycorev3.TypedExtensionConfig{
+					Name:        "envoy.load_balancing_policies.ring_hash",
+					TypedConfig: ringHashAny,
+				},
+			}},
+		}
 	} else if config.Maglev != nil {
-		out.lbPolicy = envoyclusterv3.Cluster_MAGLEV
+		maglev := &envoymaglevv3.Maglev{}
 		if config.Maglev.UseHostnameForHashing != nil {
-			out.commonLbConfig.ConsistentHashingLbConfig = &envoyclusterv3.Cluster_CommonLbConfig_ConsistentHashingLbConfig{
+			out.useHostnameForHashing = *config.Maglev.UseHostnameForHashing
+			maglev.ConsistentHashingLbConfig = &envoycommonv3.ConsistentHashingLbConfig{
 				UseHostnameForHashing: *config.Maglev.UseHostnameForHashing,
 			}
 		}
+		if config.LocalityType != nil {
+			maglev.LocalityWeightedLbConfig = &envoycommonv3.LocalityLbConfig_LocalityWeightedLbConfig{}
+		}
+		maglevAny, err := utils.MessageToAny(maglev)
+		if err != nil {
+			return nil, err
+		}
+		out.loadBalancingPolicy = &envoyclusterv3.LoadBalancingPolicy{
+			Policies: []*envoyclusterv3.LoadBalancingPolicy_Policy{{
+				TypedExtensionConfig: &envoycorev3.TypedExtensionConfig{
+					Name:        "envoy.load_balancing_policies.maglev",
+					TypedConfig: maglevAny,
+				},
+			}},
+		}
 	} else if config.Random != nil {
-		out.lbPolicy = envoyclusterv3.Cluster_RANDOM
+		random := &envoyrandomv3.Random{}
+		if config.LocalityType != nil {
+			random.LocalityLbConfig = &envoycommonv3.LocalityLbConfig{
+				LocalityConfigSpecifier: &envoycommonv3.LocalityLbConfig_LocalityWeightedLbConfig_{
+					LocalityWeightedLbConfig: &envoycommonv3.LocalityLbConfig_LocalityWeightedLbConfig{},
+				},
+			}
+		}
+		randomAny, err := utils.MessageToAny(random)
+		if err != nil {
+			return nil, err
+		}
+		out.loadBalancingPolicy = &envoyclusterv3.LoadBalancingPolicy{
+			Policies: []*envoyclusterv3.LoadBalancingPolicy_Policy{{
+				TypedExtensionConfig: &envoycorev3.TypedExtensionConfig{
+					Name:        "envoy.load_balancing_policies.random",
+					TypedConfig: randomAny,
+				},
+			}},
+		}
 	}
 
-	return out
+	return out, nil
 }
 
 func applyLoadBalancerConfig(config *LoadBalancerConfigIR, out *envoyclusterv3.Cluster) {
@@ -104,102 +182,77 @@ func applyLoadBalancerConfig(config *LoadBalancerConfigIR, out *envoyclusterv3.C
 		return
 	}
 
-	if config.commonLbConfig != nil && config.commonLbConfig.ConsistentHashingLbConfig != nil &&
-		config.commonLbConfig.ConsistentHashingLbConfig.UseHostnameForHashing {
-		if out.GetType() != envoyclusterv3.Cluster_STRICT_DNS {
-			logger.Error("useHostnameForHashing is only supported for STRICT_DNS clusters. Ignoring useHostnameForHashing.", "cluster", out.GetName())
-			config.commonLbConfig.ConsistentHashingLbConfig = nil
+	if config.useHostnameForHashing && out.GetType() != envoyclusterv3.Cluster_STRICT_DNS {
+		logger.Error("useHostnameForHashing is only supported for STRICT_DNS clusters. Ignoring useHostnameForHashing.", "cluster", out.GetName())
+		if config.loadBalancingPolicy != nil && len(config.loadBalancingPolicy.Policies) > 0 {
+			typedCfg := config.loadBalancingPolicy.Policies[0].GetTypedExtensionConfig()
+			disableUseHostnameForHashingIfPresent(typedCfg)
 		}
 	}
 
 	out.CommonLbConfig = config.commonLbConfig
-	out.LbPolicy = config.lbPolicy
-	switch config.lbPolicy {
-	case envoyclusterv3.Cluster_ROUND_ROBIN:
-		configureRoundRobinLb(out, config)
-	case envoyclusterv3.Cluster_LEAST_REQUEST:
-		configureLeastRequestLb(out, config)
-	case envoyclusterv3.Cluster_RING_HASH:
-		out.LbConfig = &envoyclusterv3.Cluster_RingHashLbConfig_{
-			RingHashLbConfig: config.ringHashLbConfig,
-		}
-	}
+	out.LoadBalancingPolicy = config.loadBalancingPolicy
 }
 
-func configureRoundRobinLb(out *envoyclusterv3.Cluster, cfg *LoadBalancerConfigIR) {
-	if cfg == nil {
+// disableUseHostnameForHashingIfPresent ensures that if a load balancing policy
+// contains a ConsistentHashingLbConfig with UseHostnameForHashing set, it is
+// disabled and the typed config is re-packed. This is used when the cluster
+// type does not support hostname hashing.
+func disableUseHostnameForHashingIfPresent(typedCfg *envoycorev3.TypedExtensionConfig) {
+	if typedCfg == nil || typedCfg.TypedConfig == nil {
 		return
 	}
-	slowStartConfig := toSlowStartConfig(cfg.slowStartConfigIR, out.GetName())
-	if slowStartConfig != nil {
-		out.LbConfig = &envoyclusterv3.Cluster_RoundRobinLbConfig_{
-			RoundRobinLbConfig: &envoyclusterv3.Cluster_RoundRobinLbConfig{
-				SlowStartConfig: slowStartConfig,
-			},
-		}
-	}
-}
-
-func configureLeastRequestLb(out *envoyclusterv3.Cluster, cfg *LoadBalancerConfigIR) {
-	out.LbPolicy = envoyclusterv3.Cluster_LEAST_REQUEST
-
-	if cfg == nil {
+	msg, err := utils.AnyToMessage(typedCfg.TypedConfig)
+	if err != nil {
+		logger.Error("failed to unpack typed extension config", "error", err)
 		return
 	}
-
-	var choiceCount *wrapperspb.UInt32Value
-	if cfg.leastRequestLbConfig != nil && cfg.leastRequestLbConfig.GetChoiceCount() != nil {
-		choiceCount = cfg.leastRequestLbConfig.GetChoiceCount()
-	}
-
-	slowStartConfig := toSlowStartConfig(cfg.slowStartConfigIR, out.GetName())
-	if choiceCount != nil || slowStartConfig != nil {
-		out.LbConfig = &envoyclusterv3.Cluster_LeastRequestLbConfig_{
-			LeastRequestLbConfig: &envoyclusterv3.Cluster_LeastRequestLbConfig{
-				ChoiceCount:     choiceCount,
-				SlowStartConfig: slowStartConfig,
-			},
+	switch m := msg.(type) {
+	case *envoyringhashv3.RingHash:
+		if m.ConsistentHashingLbConfig != nil && m.ConsistentHashingLbConfig.UseHostnameForHashing {
+			m.ConsistentHashingLbConfig.UseHostnameForHashing = false
+			if anyMsg, err := utils.MessageToAny(m); err == nil {
+				typedCfg.TypedConfig = anyMsg
+			} else {
+				logger.Error("failed to re-pack RingHash after mutating ConsistentHashingLbConfig", "error", err)
+			}
+		}
+	case *envoymaglevv3.Maglev:
+		if m.ConsistentHashingLbConfig != nil && m.ConsistentHashingLbConfig.UseHostnameForHashing {
+			m.ConsistentHashingLbConfig.UseHostnameForHashing = false
+			if anyMsg, err := utils.MessageToAny(m); err == nil {
+				typedCfg.TypedConfig = anyMsg
+			} else {
+				logger.Error("failed to re-pack Maglev after mutating ConsistentHashingLbConfig", "error", err)
+			}
 		}
 	}
 }
 
-func toSlowStartConfigIR(cfg *v1alpha1.SlowStart) *slowStartConfigIR {
+func toSlowStartConfig(cfg *v1alpha1.SlowStart, name, namespace string) *envoycommonv3.SlowStartConfig {
 	if cfg == nil {
 		return nil
 	}
-	slowStart := envoyclusterv3.Cluster_SlowStartConfig{
-		SlowStartWindow: durationpb.New(cfg.Window.Duration),
+	out := &envoycommonv3.SlowStartConfig{}
+	if cfg.Window != nil {
+		out.SlowStartWindow = durationpb.New(cfg.Window.Duration)
 	}
 	if cfg.MinWeightPercent != nil {
-		slowStart.MinWeightPercent = &typev3.Percent{
+		out.MinWeightPercent = &typev3.Percent{
 			Value: float64(*cfg.MinWeightPercent),
 		}
 	}
-	return &slowStartConfigIR{
-		slowStartConfig: &slowStart,
-		aggression:      cfg.Aggression,
-	}
-}
-
-func toSlowStartConfig(ir *slowStartConfigIR, clusterName string) *envoyclusterv3.Cluster_SlowStartConfig {
-	if ir == nil {
-		return nil
-	}
-	out := ir.slowStartConfig
-	if ir.aggression != nil {
-		aggressionValue, err := strconv.ParseFloat(*ir.aggression, 64)
+	if cfg.Aggression != nil {
+		aggressionValue, err := strconv.ParseFloat(*cfg.Aggression, 64)
 		if err != nil {
 			// This should ideally not happen due to CRD validation
-			logger.Error("error parsing slowStartConfig.aggression", "error", err, "cluster", clusterName)
+			logger.Error("error parsing slowStartConfig.aggression", "error", err, "policy", name, "namespace", namespace)
 			return nil
 		}
 		// Envoy requires runtime key for RuntimeDouble types,
-		// so use a cluster-specific runtime key.
+		// so use a policy-specific runtime key.
 		// See https://github.com/kgateway-dev/kgateway/pull/9031
-		runtimeKeyPrefix := "upstream"
-		if clusterName != "" {
-			runtimeKeyPrefix = fmt.Sprintf("%s.%s", runtimeKeyPrefix, clusterName)
-		}
+		runtimeKeyPrefix := fmt.Sprintf("%s.%s", name, namespace)
 
 		out.Aggression = &envoycorev3.RuntimeDouble{
 			DefaultValue: aggressionValue,
@@ -219,22 +272,13 @@ func (a *LoadBalancerConfigIR) Equals(b *LoadBalancerConfigIR) bool {
 	if !proto.Equal(a.commonLbConfig, b.commonLbConfig) {
 		return false
 	}
-	if a.lbPolicy != b.lbPolicy {
+
+	if a.useHostnameForHashing != b.useHostnameForHashing {
 		return false
 	}
-	if !proto.Equal(a.roundRobinLbConfig, b.roundRobinLbConfig) {
+	if !proto.Equal(a.loadBalancingPolicy, b.loadBalancingPolicy) {
 		return false
 	}
-	if !proto.Equal(a.leastRequestLbConfig, b.leastRequestLbConfig) {
-		return false
-	}
-	if !proto.Equal(a.ringHashLbConfig, b.ringHashLbConfig) {
-		return false
-	}
-	if !cmputils.CompareWithNils(a.slowStartConfigIR, b.slowStartConfigIR, func(a, b *slowStartConfigIR) bool {
-		return proto.Equal(a.slowStartConfig, b.slowStartConfig) && a.aggression == b.aggression
-	}) {
-		return false
-	}
+
 	return true
 }

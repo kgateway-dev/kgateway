@@ -13,6 +13,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
+	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
@@ -1126,14 +1127,39 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
-	t.Run("listener sets", func(t *testing.T) {
-		t.Skip("TODO: Add this once istio adds support for listener sets")
+	t.Run("basic listener set", func(t *testing.T) {
 		test(t, translatorTestCase{
-			inputFile:  "listener-sets/manifest.yaml",
-			outputFile: "listener-sets-proxy.yaml",
+			inputFile:  "listener-sets/basic.yaml",
+			outputFile: "listener-sets/basic.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("listener set and gateway with no allowed listeners", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-sets/no-allowed-lis.yaml",
+			outputFile: "listener-sets/no-allowed-lis.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
+				expectedLS := gwxv1a1.XListenerSet{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "foo-listenerset",
+						Namespace: "default",
+					},
+				}
+				expectedAccepted := metav1.Condition{
+					Type:    string(gwxv1a1.ListenerSetConditionAccepted),
+					Status:  metav1.ConditionFalse,
+					Reason:  string(gwxv1a1.ListenerSetReasonNotAllowed),
+					Message: "Unable to attach to parent, gateway has not enabled allowedListeners",
+				}
+				translatortest.AssertListenerSetCondition(t, reportsMap, expectedLS, expectedAccepted)
 			},
 		})
 	})

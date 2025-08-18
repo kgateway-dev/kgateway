@@ -246,6 +246,7 @@ func (l Secret) MarshalJSON() ([]byte, error) {
 	})
 }
 
+// TODO: why is this in backend.go?
 type Listener struct {
 	gwv1.Listener
 	Parent            client.Object
@@ -263,6 +264,7 @@ func (listener Listener) GetParentReporter(reporter pluginsdkreporter.Reporter) 
 	panic("Unknown parent type")
 }
 
+// TODO: need to reevaluate DeepEqual usage
 func (c Listener) Equals(in Listener) bool {
 	return reflect.DeepEqual(c, in)
 }
@@ -326,12 +328,16 @@ func errorsEqual(a, b error) bool {
 	return a.Error() == b.Error()
 }
 
+// TODO: why is this in backend.go?
 type ListenerSet struct {
 	ObjectSource `json:",inline"`
 	Listeners    Listeners
 	Obj          *gwxv1.XListenerSet
 	// ListenerSet polices are attached to the individual listeners in addition
 	// to their specific policies
+
+	// Err contains any error encountered during ListenerSet construction to be used for status reporting
+	Err error
 }
 
 func (c ListenerSet) ResourceName() string {
@@ -339,7 +345,10 @@ func (c ListenerSet) ResourceName() string {
 }
 
 func (c ListenerSet) Equals(in ListenerSet) bool {
-	return c.ObjectSource.Equals(in.ObjectSource) && versionEquals(c.Obj, in.Obj) && c.Listeners.Equals(in.Listeners)
+	return c.ObjectSource.Equals(in.ObjectSource) &&
+		versionEquals(c.Obj, in.Obj) &&
+		c.Listeners.Equals(in.Listeners) &&
+		errorsEqual(c.Err, in.Err)
 }
 
 type ListenerSets []ListenerSet

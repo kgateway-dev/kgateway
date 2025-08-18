@@ -76,13 +76,13 @@ type RateLimitProvider struct {
 	// FailOpen determines if requests are limited when the rate limit service is unavailable.
 	// When true, requests are not limited if the rate limit service is unavailable.
 	// +optional
-	// +kubebuilder:default=false
+	// +kubebuilder:default=true
 	FailOpen bool `json:"failOpen,omitempty"`
 
 	// Timeout for requests to the rate limit service.
 	// +optional
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
-	// +kubebuilder:default="20ms"
+	// +kubebuilder:default="100ms"
 	Timeout metav1.Duration `json:"timeout,omitempty"`
 }
 
