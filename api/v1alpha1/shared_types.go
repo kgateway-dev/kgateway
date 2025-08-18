@@ -37,7 +37,7 @@ type LocalPolicyTargetReferenceWithSectionName struct {
 // specified labels.
 // Do not use targetSelectors when reconciliation times are critical, especially if you
 // have a large number of policies that target the same resource.
-// Instead, use targetRefs to attach the policy. 
+// Instead, use targetRefs to attach the policy.
 type LocalPolicyTargetSelector struct {
 	// The API group of the target resource.
 	// For Kubernetes Gateway API resources, the group is `gateway.networking.k8s.io`.
