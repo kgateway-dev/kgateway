@@ -33,15 +33,11 @@ func (r *ReportMap) BuildGWStatus(ctx context.Context, gw gwv1.Gateway, attached
 		lisReport := gwReport.listener(string(lis.Name))
 		addMissingListenerConditions(lisReport)
 		// Get attached routes for this listener
-		attachedCount := int32(0)
 		if attachedRoutes != nil {
 			if count, exists := attachedRoutes[string(lis.Name)]; exists {
-				attachedCount = int32(count)
+				lisReport.Status.AttachedRoutes = int32(count)
 			}
 		}
-
-		// Set the attached routes count
-		lisReport.Status.AttachedRoutes = attachedCount
 
 		finalConditions := make([]metav1.Condition, 0, len(lisReport.Status.Conditions))
 		oldLisStatusIndex := slices.IndexFunc(gw.Status.Listeners, func(l gwv1.ListenerStatus) bool {
