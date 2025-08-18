@@ -54,6 +54,9 @@ type LocalPolicyTargetSelector struct {
 // LocalPolicyTargetSelectorWithSectionName the object to attach the policy by Group, Kind, MatchLabels, and optionally SectionName.
 // The object must be in the same namespace as the policy and match the
 // specified labels.
+// Do not use targetSelectors when reconciliation times are critical, especially if you
+// have a large number of policies that target the same resource.
+// Instead, use targetRefs to attach the policy.
 type LocalPolicyTargetSelectorWithSectionName struct {
 	LocalPolicyTargetSelector `json:",inline"`
 
