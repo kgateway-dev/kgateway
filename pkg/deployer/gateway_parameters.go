@@ -178,8 +178,8 @@ func defaultGatewayParameters(imageInfo *ImageInfo) *v1alpha1.GatewayParameters 
 			SelfManaged: nil,
 			Kube: &v1alpha1.KubernetesProxyConfig{
 				Deployment: &v1alpha1.ProxyDeployment{
-					Replicas:  ptr.To[uint32](1),
-					EnableHPA: ptr.To(false),
+					Replicas:        ptr.To[uint32](1),
+					DisableReplicas: ptr.To(false),
 				},
 				Service: &v1alpha1.Service{
 					Type: (*corev1.ServiceType)(ptr.To(string(corev1.ServiceTypeLoadBalancer))),

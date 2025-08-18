@@ -2184,7 +2184,7 @@ var _ = Describe("Deployer", func() {
 					return nil
 				},
 			}),
-			Entry("HPA enabled", &input{
+			Entry("DisableReplicas is true", &input{
 				dInputs: defaultDeployerInputs(),
 				gw:      defaultGateway(),
 				defaultGwp: &gw2_v1alpha1.GatewayParameters{
@@ -2200,8 +2200,8 @@ var _ = Describe("Deployer", func() {
 					Spec: gw2_v1alpha1.GatewayParametersSpec{
 						Kube: &gw2_v1alpha1.KubernetesProxyConfig{
 							Deployment: &gw2_v1alpha1.ProxyDeployment{
-								Replicas:  ptr.To(uint32(3)),
-								EnableHPA: ptr.To(true),
+								Replicas:        ptr.To(uint32(3)),
+								DisableReplicas: ptr.To(true),
 							},
 						},
 					},
@@ -2215,7 +2215,7 @@ var _ = Describe("Deployer", func() {
 					return nil
 				},
 			}),
-			Entry("have replicas and enableHPA false", &input{
+			Entry("have replicas and disableReplicas false", &input{
 				dInputs: defaultDeployerInputs(),
 				gw:      defaultGateway(),
 				defaultGwp: &gw2_v1alpha1.GatewayParameters{
@@ -2231,8 +2231,8 @@ var _ = Describe("Deployer", func() {
 					Spec: gw2_v1alpha1.GatewayParametersSpec{
 						Kube: &gw2_v1alpha1.KubernetesProxyConfig{
 							Deployment: &gw2_v1alpha1.ProxyDeployment{
-								Replicas:  ptr.To(uint32(3)),
-								EnableHPA: ptr.To(false),
+								Replicas:        ptr.To(uint32(3)),
+								DisableReplicas: ptr.To(false),
 							},
 						},
 					},
@@ -2246,7 +2246,7 @@ var _ = Describe("Deployer", func() {
 					return nil
 				},
 			}),
-			Entry("replicas and enableHPA aren't set", &input{
+			Entry("replicas and disableReplicas aren't set", &input{
 				dInputs: defaultDeployerInputs(),
 				gw:      defaultGateway(),
 				defaultGwp: &gw2_v1alpha1.GatewayParameters{

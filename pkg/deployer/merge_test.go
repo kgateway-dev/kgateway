@@ -68,13 +68,13 @@ func TestDeepMergeGatewayParameters(t *testing.T) {
 			},
 		},
 		{
-			name: "should override kube deployment enableHPA",
+			name: "should override kube deployment disableReplicas",
 			dst: &gw2_v1alpha1.GatewayParameters{
 				Spec: gw2_v1alpha1.GatewayParametersSpec{
 					Kube: &gw2_v1alpha1.KubernetesProxyConfig{
 						Deployment: &gw2_v1alpha1.ProxyDeployment{
-							Replicas:  ptr.To[uint32](2),
-							EnableHPA: ptr.To(false),
+							Replicas:        ptr.To[uint32](2),
+							DisableReplicas: ptr.To(false),
 						},
 					},
 				},
@@ -83,7 +83,7 @@ func TestDeepMergeGatewayParameters(t *testing.T) {
 				Spec: gw2_v1alpha1.GatewayParametersSpec{
 					Kube: &gw2_v1alpha1.KubernetesProxyConfig{
 						Deployment: &gw2_v1alpha1.ProxyDeployment{
-							EnableHPA: ptr.To(true),
+							DisableReplicas: ptr.To(true),
 						},
 					},
 				},
@@ -92,8 +92,8 @@ func TestDeepMergeGatewayParameters(t *testing.T) {
 				Spec: gw2_v1alpha1.GatewayParametersSpec{
 					Kube: &gw2_v1alpha1.KubernetesProxyConfig{
 						Deployment: &gw2_v1alpha1.ProxyDeployment{
-							Replicas:  ptr.To[uint32](2),
-							EnableHPA: ptr.To(true),
+							Replicas:        ptr.To[uint32](2),
+							DisableReplicas: ptr.To(true),
 						},
 					},
 				},

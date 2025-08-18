@@ -5,8 +5,8 @@ package v1alpha1
 // ProxyDeploymentApplyConfiguration represents a declarative configuration of the ProxyDeployment type for use
 // with apply.
 type ProxyDeploymentApplyConfiguration struct {
-	Replicas  *uint32 `json:"replicas,omitempty"`
-	EnableHPA *bool   `json:"enableHPA,omitempty"`
+	Replicas        *uint32 `json:"replicas,omitempty"`
+	DisableReplicas *bool   `json:"disableReplicas,omitempty"`
 }
 
 // ProxyDeploymentApplyConfiguration constructs a declarative configuration of the ProxyDeployment type for use with
@@ -23,10 +23,10 @@ func (b *ProxyDeploymentApplyConfiguration) WithReplicas(value uint32) *ProxyDep
 	return b
 }
 
-// WithEnableHPA sets the EnableHPA field in the declarative configuration to the given value
+// WithDisableReplicas sets the DisableReplicas field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the EnableHPA field is set to the value of the last call.
-func (b *ProxyDeploymentApplyConfiguration) WithEnableHPA(value bool) *ProxyDeploymentApplyConfiguration {
-	b.EnableHPA = &value
+// If called multiple times, the DisableReplicas field is set to the value of the last call.
+func (b *ProxyDeploymentApplyConfiguration) WithDisableReplicas(value bool) *ProxyDeploymentApplyConfiguration {
+	b.DisableReplicas = &value
 	return b
 }

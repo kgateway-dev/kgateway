@@ -3616,8 +3616,8 @@ func (in *ProxyDeployment) DeepCopyInto(out *ProxyDeployment) {
 		*out = new(uint32)
 		**out = **in
 	}
-	if in.EnableHPA != nil {
-		in, out := &in.EnableHPA, &out.EnableHPA
+	if in.DisableReplicas != nil {
+		in, out := &in.DisableReplicas, &out.DisableReplicas
 		*out = new(bool)
 		**out = **in
 	}

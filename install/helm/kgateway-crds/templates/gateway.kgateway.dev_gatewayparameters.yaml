@@ -497,7 +497,7 @@ spec:
                     type: object
                   deployment:
                     properties:
-                      enableHPA:
+                      disableReplicas:
                         type: boolean
                       replicas:
                         format: int32

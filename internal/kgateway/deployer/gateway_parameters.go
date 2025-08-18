@@ -298,7 +298,7 @@ func (k *kGatewayParameters) getValues(gw *api.Gateway, gwParam *v1alpha1.Gatewa
 
 	gateway := vals.Gateway
 	// deployment values
-	if deployConfig.GetEnableHPA() != nil && *deployConfig.GetEnableHPA() {
+	if deployConfig.GetDisableReplicas() != nil && *deployConfig.GetDisableReplicas() {
 		// Don't set replica count - let HPA (if applied) handle it
 		gateway.ReplicaCount = nil
 	} else {
