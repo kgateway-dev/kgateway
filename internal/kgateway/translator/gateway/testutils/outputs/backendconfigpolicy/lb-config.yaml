@@ -6,7 +6,6 @@ Clusters:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
-  lbPolicy: LEAST_REQUEST
   loadBalancingPolicy:
     policies:
     - typedExtensionConfig:
@@ -24,7 +23,6 @@ Clusters:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
-  lbPolicy: MAGLEV
   loadBalancingPolicy:
     policies:
     - typedExtensionConfig:
@@ -41,7 +39,6 @@ Clusters:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
-  lbPolicy: RANDOM
   loadBalancingPolicy:
     policies:
     - typedExtensionConfig:
@@ -58,7 +55,6 @@ Clusters:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
-  lbPolicy: RING_HASH
   loadBalancingPolicy:
     policies:
     - typedExtensionConfig:
@@ -118,7 +114,6 @@ Clusters:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
-  lbPolicy: RING_HASH
   loadBalancingPolicy:
     policies:
     - typedExtensionConfig:

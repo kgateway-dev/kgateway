@@ -67,8 +67,7 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 			expected: func() *envoyclusterv3.Cluster {
 				msg, _ := utils.MessageToAny(&randomv3.Random{})
 				return &envoyclusterv3.Cluster{
-					Name:     "test",
-					LbPolicy: envoyclusterv3.Cluster_RANDOM,
+					Name: "test",
 					LoadBalancingPolicy: &envoyclusterv3.LoadBalancingPolicy{
 						Policies: []*envoyclusterv3.LoadBalancingPolicy_Policy{{
 							TypedExtensionConfig: &envoycorev3.TypedExtensionConfig{
@@ -89,8 +88,7 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 			expected: func() *envoyclusterv3.Cluster {
 				msg, _ := utils.MessageToAny(&roundrobinv3.RoundRobin{})
 				return &envoyclusterv3.Cluster{
-					Name:     "test",
-					LbPolicy: envoyclusterv3.Cluster_ROUND_ROBIN,
+					Name: "test",
 					LoadBalancingPolicy: &envoyclusterv3.LoadBalancingPolicy{
 						Policies: []*envoyclusterv3.LoadBalancingPolicy_Policy{{
 							TypedExtensionConfig: &envoycorev3.TypedExtensionConfig{
@@ -129,8 +127,7 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 				}
 				msg, _ := utils.MessageToAny(rr)
 				return &envoyclusterv3.Cluster{
-					Name:     "test",
-					LbPolicy: envoyclusterv3.Cluster_ROUND_ROBIN,
+					Name: "test",
 					LoadBalancingPolicy: &envoyclusterv3.LoadBalancingPolicy{
 						Policies: []*envoyclusterv3.LoadBalancingPolicy_Policy{{
 							TypedExtensionConfig: &envoycorev3.TypedExtensionConfig{
@@ -156,8 +153,7 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 				}
 				msg, _ := utils.MessageToAny(lr)
 				return &envoyclusterv3.Cluster{
-					Name:     "test",
-					LbPolicy: envoyclusterv3.Cluster_LEAST_REQUEST,
+					Name: "test",
 					LoadBalancingPolicy: &envoyclusterv3.LoadBalancingPolicy{
 						Policies: []*envoyclusterv3.LoadBalancingPolicy_Policy{{
 							TypedExtensionConfig: &envoycorev3.TypedExtensionConfig{
@@ -195,8 +191,7 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 				}
 				msg, _ := utils.MessageToAny(lr)
 				return &envoyclusterv3.Cluster{
-					Name:     "test",
-					LbPolicy: envoyclusterv3.Cluster_LEAST_REQUEST,
+					Name: "test",
 					LoadBalancingPolicy: &envoyclusterv3.LoadBalancingPolicy{
 						Policies: []*envoyclusterv3.LoadBalancingPolicy_Policy{{
 							TypedExtensionConfig: &envoycorev3.TypedExtensionConfig{
@@ -217,8 +212,7 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 			expected: func() *envoyclusterv3.Cluster {
 				msg, _ := utils.MessageToAny(&ringhashv3.RingHash{})
 				return &envoyclusterv3.Cluster{
-					Name:     "test",
-					LbPolicy: envoyclusterv3.Cluster_RING_HASH,
+					Name: "test",
 					LoadBalancingPolicy: &envoyclusterv3.LoadBalancingPolicy{
 						Policies: []*envoyclusterv3.LoadBalancingPolicy_Policy{{
 							TypedExtensionConfig: &envoycorev3.TypedExtensionConfig{
@@ -246,8 +240,7 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 				}
 				msg, _ := utils.MessageToAny(rh)
 				return &envoyclusterv3.Cluster{
-					Name:     "test",
-					LbPolicy: envoyclusterv3.Cluster_RING_HASH,
+					Name: "test",
 					LoadBalancingPolicy: &envoyclusterv3.LoadBalancingPolicy{
 						Policies: []*envoyclusterv3.LoadBalancingPolicy_Policy{{
 							TypedExtensionConfig: &envoycorev3.TypedExtensionConfig{
@@ -268,8 +261,7 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 			expected: func() *envoyclusterv3.Cluster {
 				msg, _ := utils.MessageToAny(&maglevv3.Maglev{})
 				return &envoyclusterv3.Cluster{
-					Name:     "test",
-					LbPolicy: envoyclusterv3.Cluster_MAGLEV,
+					Name: "test",
 					LoadBalancingPolicy: &envoyclusterv3.LoadBalancingPolicy{
 						Policies: []*envoyclusterv3.LoadBalancingPolicy_Policy{{
 							TypedExtensionConfig: &envoycorev3.TypedExtensionConfig{
@@ -315,7 +307,6 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 				return &envoyclusterv3.Cluster{
 					Name:                 "test",
 					ClusterDiscoveryType: &envoyclusterv3.Cluster_Type{Type: envoyclusterv3.Cluster_STRICT_DNS},
-					LbPolicy:             envoyclusterv3.Cluster_RING_HASH,
 					LoadBalancingPolicy: &envoyclusterv3.LoadBalancingPolicy{
 						Policies: []*envoyclusterv3.LoadBalancingPolicy_Policy{{
 							TypedExtensionConfig: &envoycorev3.TypedExtensionConfig{
@@ -349,7 +340,6 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 				return &envoyclusterv3.Cluster{
 					Name:                 "test",
 					ClusterDiscoveryType: &envoyclusterv3.Cluster_Type{Type: envoyclusterv3.Cluster_EDS},
-					LbPolicy:             envoyclusterv3.Cluster_RING_HASH,
 					LoadBalancingPolicy: &envoyclusterv3.LoadBalancingPolicy{
 						Policies: []*envoyclusterv3.LoadBalancingPolicy_Policy{{
 							TypedExtensionConfig: &envoycorev3.TypedExtensionConfig{

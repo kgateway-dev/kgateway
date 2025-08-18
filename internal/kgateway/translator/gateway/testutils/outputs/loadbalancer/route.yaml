@@ -6,7 +6,6 @@ Clusters:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
-  lbPolicy: MAGLEV
   loadBalancingPolicy:
     policies:
     - typedExtensionConfig:
@@ -24,7 +23,6 @@ Clusters:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
-  lbPolicy: RING_HASH
   loadBalancingPolicy:
     policies:
     - typedExtensionConfig:

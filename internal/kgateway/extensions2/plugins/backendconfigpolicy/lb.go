@@ -23,7 +23,6 @@ import (
 
 type LoadBalancerConfigIR struct {
 	commonLbConfig        *envoyclusterv3.Cluster_CommonLbConfig
-	lbPolicy              envoyclusterv3.Cluster_LbPolicy
 	loadBalancingPolicy   *envoyclusterv3.LoadBalancingPolicy
 	useHostnameForHashing bool
 }
@@ -48,8 +47,6 @@ func translateLoadBalancerConfig(config *v1alpha1.LoadBalancer, policyName, poli
 	}
 
 	if config.LeastRequest != nil {
-		out.lbPolicy = envoyclusterv3.Cluster_LEAST_REQUEST
-
 		leastRequest := &envoyleastrequestv3.LeastRequest{
 			ChoiceCount: &wrapperspb.UInt32Value{
 				Value: config.LeastRequest.ChoiceCount,
@@ -76,7 +73,6 @@ func translateLoadBalancerConfig(config *v1alpha1.LoadBalancer, policyName, poli
 			}},
 		}
 	} else if config.RoundRobin != nil {
-		out.lbPolicy = envoyclusterv3.Cluster_ROUND_ROBIN
 		roundRobin := &envoyroundrobinv3.RoundRobin{
 			SlowStartConfig: toSlowStartConfig(config.RoundRobin.SlowStart, policyName, policyNamespace),
 		}
@@ -100,7 +96,6 @@ func translateLoadBalancerConfig(config *v1alpha1.LoadBalancer, policyName, poli
 			}},
 		}
 	} else if config.RingHash != nil {
-		out.lbPolicy = envoyclusterv3.Cluster_RING_HASH
 		ringHash := &envoyringhashv3.RingHash{}
 		if config.RingHash.MinimumRingSize != nil {
 			ringHash.MinimumRingSize = &wrapperspb.UInt64Value{
@@ -134,7 +129,6 @@ func translateLoadBalancerConfig(config *v1alpha1.LoadBalancer, policyName, poli
 			}},
 		}
 	} else if config.Maglev != nil {
-		out.lbPolicy = envoyclusterv3.Cluster_MAGLEV
 		maglev := &envoymaglevv3.Maglev{}
 		if config.Maglev.UseHostnameForHashing != nil {
 			out.useHostnameForHashing = *config.Maglev.UseHostnameForHashing
@@ -158,7 +152,6 @@ func translateLoadBalancerConfig(config *v1alpha1.LoadBalancer, policyName, poli
 			}},
 		}
 	} else if config.Random != nil {
-		out.lbPolicy = envoyclusterv3.Cluster_RANDOM
 		random := &envoyrandomv3.Random{}
 		if config.LocalityType != nil {
 			random.LocalityLbConfig = &envoycommonv3.LocalityLbConfig{
@@ -198,7 +191,6 @@ func applyLoadBalancerConfig(config *LoadBalancerConfigIR, out *envoyclusterv3.C
 	}
 
 	out.CommonLbConfig = config.commonLbConfig
-	out.LbPolicy = config.lbPolicy
 	out.LoadBalancingPolicy = config.loadBalancingPolicy
 }
 
@@ -278,9 +270,6 @@ func (a *LoadBalancerConfigIR) Equals(b *LoadBalancerConfigIR) bool {
 		return false
 	}
 	if !proto.Equal(a.commonLbConfig, b.commonLbConfig) {
-		return false
-	}
-	if a.lbPolicy != b.lbPolicy {
 		return false
 	}
 
