@@ -698,6 +698,7 @@ func deepMergeDeployment(dst, src *v1alpha1.ProxyDeployment) *v1alpha1.ProxyDepl
 	}
 
 	dst.Replicas = MergePointers(dst.GetReplicas(), src.GetReplicas())
+	dst.EnableHPA = MergePointers(dst.GetEnableHPA(), src.GetEnableHPA())
 
 	return dst
 }

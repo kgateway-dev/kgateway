@@ -1934,6 +1934,9 @@ var schemaYAML = typed.YAMLObject(`types:
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ProxyDeployment
   map:
     fields:
+    - name: enableHPA
+      type:
+        scalar: boolean
     - name: replicas
       type:
         scalar: numeric

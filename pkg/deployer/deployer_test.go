@@ -2184,6 +2184,68 @@ var _ = Describe("Deployer", func() {
 					return nil
 				},
 			}),
+			Entry("HPA enabled", &input{
+				dInputs: defaultDeployerInputs(),
+				gw:      defaultGateway(),
+				defaultGwp: &gw2_v1alpha1.GatewayParameters{
+					TypeMeta: metav1.TypeMeta{
+						Kind:       wellknown.GatewayParametersGVK.Kind,
+						APIVersion: gw2_v1alpha1.GroupVersion.String(),
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      wellknown.DefaultGatewayParametersName,
+						Namespace: defaultNamespace,
+						UID:       "1237",
+					},
+					Spec: gw2_v1alpha1.GatewayParametersSpec{
+						Kube: &gw2_v1alpha1.KubernetesProxyConfig{
+							Deployment: &gw2_v1alpha1.ProxyDeployment{
+								Replicas:  ptr.To(uint32(3)),
+								EnableHPA: ptr.To(true),
+							},
+						},
+					},
+				},
+				overrideGwp: &gw2_v1alpha1.GatewayParameters{},
+			}, &expectedOutput{
+				validationFunc: func(objs clientObjects, inp *input) error {
+					deployment := objs.findDeployment(defaultNamespace, defaultServiceName)
+					Expect(deployment).NotTo(BeNil())
+					Expect(deployment.Spec.Replicas).To(BeNil())
+					return nil
+				},
+			}),
+			Entry("have replicas and enableHPA false", &input{
+				dInputs: defaultDeployerInputs(),
+				gw:      defaultGateway(),
+				defaultGwp: &gw2_v1alpha1.GatewayParameters{
+					TypeMeta: metav1.TypeMeta{
+						Kind:       wellknown.GatewayParametersGVK.Kind,
+						APIVersion: gw2_v1alpha1.GroupVersion.String(),
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      wellknown.DefaultGatewayParametersName,
+						Namespace: defaultNamespace,
+						UID:       "1237",
+					},
+					Spec: gw2_v1alpha1.GatewayParametersSpec{
+						Kube: &gw2_v1alpha1.KubernetesProxyConfig{
+							Deployment: &gw2_v1alpha1.ProxyDeployment{
+								Replicas:  ptr.To(uint32(3)),
+								EnableHPA: ptr.To(false),
+							},
+						},
+					},
+				},
+				overrideGwp: &gw2_v1alpha1.GatewayParameters{},
+			}, &expectedOutput{
+				validationFunc: func(objs clientObjects, inp *input) error {
+					deployment := objs.findDeployment(defaultNamespace, defaultServiceName)
+					Expect(deployment).NotTo(BeNil())
+					Expect(*deployment.Spec.Replicas).To(Equal(int32(3)))
+					return nil
+				},
+			}),
 		)
 	})
 

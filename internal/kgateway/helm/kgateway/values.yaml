@@ -14,9 +14,6 @@ gateway:
     host: ""
     port: 8080
 
-  # actual default set in default GatewayParam proxyDeployment.replicas
-  replicaCount: 1
-
   # actual default set in default GatewayParam service.type
   service:
     type: LoadBalancer

@@ -213,6 +213,10 @@ type ProxyDeployment struct {
 	//
 	// +optional
 	Replicas *uint32 `json:"replicas,omitempty"`
+
+	// If true, replicas will not be set in the deployment (allowing HPA to control scaling)
+	// +optional
+	EnableHPA *bool `json:"enableHPA,omitempty"`
 }
 
 func (in *ProxyDeployment) GetReplicas() *uint32 {
@@ -220,6 +224,13 @@ func (in *ProxyDeployment) GetReplicas() *uint32 {
 		return nil
 	}
 	return in.Replicas
+}
+
+func (in *ProxyDeployment) GetEnableHPA() *bool {
+	if in == nil {
+		return nil
+	}
+	return in.EnableHPA
 }
 
 // EnvoyContainer configures the container running Envoy.
