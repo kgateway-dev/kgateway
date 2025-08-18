@@ -437,6 +437,12 @@ func testScenario(
 	if err != nil {
 		t.Fatalf("failed to apply yaml: %v", err)
 	}
+
+	err = envtestutil.ApplyPodStatusFromFile(ctx, client, "", yamlfile)
+	if err != nil {
+		t.Fatalf("failed to apply pod status: %v", err)
+	}
+
 	t.Log("applied yamls", t.Name())
 
 	t.Cleanup(func() {

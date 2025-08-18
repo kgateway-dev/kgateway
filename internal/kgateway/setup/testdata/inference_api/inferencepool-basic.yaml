@@ -79,3 +79,5 @@ spec:
       ports:
         - containerPort: 8080
         - containerPort: 9002
+status:
+  podIP: "10.0.0.5"
