@@ -15,8 +15,8 @@ func BuildHeaderModifiersPolicy(
 	policy := &header_mutationv3.HeaderMutationPerRoute{}
 	policy.Mutations = &header_mutationv3.Mutations{}
 
-	if spec.RequestHeaderModifier != nil {
-		for _, h := range spec.RequestHeaderModifier.Add {
+	if spec.Request != nil {
+		for _, h := range spec.Request.Add {
 			policy.Mutations.RequestMutations = append(policy.Mutations.RequestMutations, &mutation_rulesv3.HeaderMutation{
 				Action: &mutation_rulesv3.HeaderMutation_Append{
 					Append: &envoycorev3.HeaderValueOption{
@@ -30,7 +30,7 @@ func BuildHeaderModifiersPolicy(
 			})
 		}
 
-		for _, h := range spec.RequestHeaderModifier.Set {
+		for _, h := range spec.Request.Set {
 			policy.Mutations.RequestMutations = append(policy.Mutations.RequestMutations, &mutation_rulesv3.HeaderMutation{
 				Action: &mutation_rulesv3.HeaderMutation_Append{
 					Append: &envoycorev3.HeaderValueOption{
@@ -44,7 +44,7 @@ func BuildHeaderModifiersPolicy(
 			})
 		}
 
-		for _, h := range spec.RequestHeaderModifier.Remove {
+		for _, h := range spec.Request.Remove {
 			policy.Mutations.RequestMutations = append(policy.Mutations.RequestMutations, &mutation_rulesv3.HeaderMutation{
 				Action: &mutation_rulesv3.HeaderMutation_Remove{
 					Remove: h,
@@ -53,8 +53,8 @@ func BuildHeaderModifiersPolicy(
 		}
 	}
 
-	if spec.ResponseHeaderModifier != nil {
-		for _, h := range spec.ResponseHeaderModifier.Add {
+	if spec.Response != nil {
+		for _, h := range spec.Response.Add {
 			policy.Mutations.ResponseMutations = append(policy.Mutations.ResponseMutations, &mutation_rulesv3.HeaderMutation{
 				Action: &mutation_rulesv3.HeaderMutation_Append{
 					Append: &envoycorev3.HeaderValueOption{
@@ -68,7 +68,7 @@ func BuildHeaderModifiersPolicy(
 			})
 		}
 
-		for _, h := range spec.ResponseHeaderModifier.Set {
+		for _, h := range spec.Response.Set {
 			policy.Mutations.ResponseMutations = append(policy.Mutations.ResponseMutations, &mutation_rulesv3.HeaderMutation{
 				Action: &mutation_rulesv3.HeaderMutation_Append{
 					Append: &envoycorev3.HeaderValueOption{
@@ -82,7 +82,7 @@ func BuildHeaderModifiersPolicy(
 			})
 		}
 
-		for _, h := range spec.ResponseHeaderModifier.Remove {
+		for _, h := range spec.Response.Remove {
 			policy.Mutations.ResponseMutations = append(policy.Mutations.ResponseMutations, &mutation_rulesv3.HeaderMutation{
 				Action: &mutation_rulesv3.HeaderMutation_Remove{
 					Remove: h,

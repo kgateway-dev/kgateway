@@ -563,7 +563,7 @@ spec:
                 type: array
               headerModifiers:
                 properties:
-                  requestHeaderModifier:
+                  request:
                     properties:
                       add:
                         items:
@@ -614,7 +614,7 @@ spec:
                         - name
                         x-kubernetes-list-type: map
                     type: object
-                  responseHeaderModifier:
+                  response:
                     properties:
                       add:
                         items:
@@ -667,9 +667,8 @@ spec:
                     type: object
                 type: object
                 x-kubernetes-validations:
-                - message: At least one of requestHeaderModifier or responseHeaderModifier
-                    must be provided.
-                  rule: has(self.requestHeaderModifier) || has(self.responseHeaderModifier)
+                - message: At least one of request or response must be provided.
+                  rule: has(self.request) || has(self.response)
               rateLimit:
                 properties:
                   global:

@@ -411,15 +411,15 @@ type CSRFPolicy struct {
 }
 
 // HeaderModifiers can be used to define the policy to modify request and response headers.
-// +kubebuilder:validation:XValidation:rule="has(self.requestHeaderModifier) || has(self.responseHeaderModifier)",message="At least one of requestHeaderModifier or responseHeaderModifier must be provided."
+// +kubebuilder:validation:XValidation:rule="has(self.request) || has(self.response)",message="At least one of request or response must be provided."
 type HeaderModifiers struct {
-	// RequestHeaderModifier modifies request headers.
+	// Request modifies request headers.
 	// +optional
-	RequestHeaderModifier *gwv1.HTTPHeaderFilter `json:"requestHeaderModifier,omitempty"`
+	Request *gwv1.HTTPHeaderFilter `json:"request,omitempty"`
 
-	// ResponseHeaderModifier modifies response headers.
+	// Response modifies response headers.
 	// +optional
-	ResponseHeaderModifier *gwv1.HTTPHeaderFilter `json:"responseHeaderModifier,omitempty"`
+	Response *gwv1.HTTPHeaderFilter `json:"response,omitempty"`
 }
 
 // +kubebuilder:validation:ExactlyOneOf=header;cookie;sourceIP

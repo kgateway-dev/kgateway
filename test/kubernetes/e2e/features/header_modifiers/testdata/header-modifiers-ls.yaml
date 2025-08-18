@@ -8,7 +8,7 @@ spec:
     kind: XListenerSet
     name: ls
   headerModifiers:
-    requestHeaderModifier:
+    request:
       add:
         - name: X-Custom-Request-Header
           value: custom-request-value-ls
@@ -17,7 +17,7 @@ spec:
           value: custom-request-value-ls
       remove:
         - X-Request-Id
-    responseHeaderModifier:
+    response:
       add:
         - name: X-Custom-Response-Header
           value: custom-response-value-ls

@@ -28,7 +28,7 @@ func TestBuildHeaderModifiersPolicy(t *testing.T) {
 		{
 			name: "request add header modifier only",
 			input: &v1alpha1.HeaderModifiers{
-				RequestHeaderModifier: &gwv1.HTTPHeaderFilter{
+				Request: &gwv1.HTTPHeaderFilter{
 					Add: []gwv1.HTTPHeader{{
 						Name:  "x-request-id",
 						Value: "test-request-id",
@@ -54,7 +54,7 @@ func TestBuildHeaderModifiersPolicy(t *testing.T) {
 		{
 			name: "response add header modifier only",
 			input: &v1alpha1.HeaderModifiers{
-				ResponseHeaderModifier: &gwv1.HTTPHeaderFilter{
+				Response: &gwv1.HTTPHeaderFilter{
 					Add: []gwv1.HTTPHeader{{
 						Name:  "x-response-id",
 						Value: "test-response-id",
@@ -80,13 +80,13 @@ func TestBuildHeaderModifiersPolicy(t *testing.T) {
 		{
 			name: "request and response add header modifiers",
 			input: &v1alpha1.HeaderModifiers{
-				RequestHeaderModifier: &gwv1.HTTPHeaderFilter{
+				Request: &gwv1.HTTPHeaderFilter{
 					Add: []gwv1.HTTPHeader{{
 						Name:  "x-request-id",
 						Value: "test-request-id",
 					}},
 				},
-				ResponseHeaderModifier: &gwv1.HTTPHeaderFilter{
+				Response: &gwv1.HTTPHeaderFilter{
 					Add: []gwv1.HTTPHeader{{
 						Name:  "x-response-id",
 						Value: "test-response-id",
@@ -123,10 +123,10 @@ func TestBuildHeaderModifiersPolicy(t *testing.T) {
 		{
 			name: "request and response remove header modifiers",
 			input: &v1alpha1.HeaderModifiers{
-				RequestHeaderModifier: &gwv1.HTTPHeaderFilter{
+				Request: &gwv1.HTTPHeaderFilter{
 					Remove: []string{"x-request-id"},
 				},
-				ResponseHeaderModifier: &gwv1.HTTPHeaderFilter{
+				Response: &gwv1.HTTPHeaderFilter{
 					Remove: []string{"x-response-id"},
 				},
 			},
@@ -148,13 +148,13 @@ func TestBuildHeaderModifiersPolicy(t *testing.T) {
 		{
 			name: "request and response set header modifiers",
 			input: &v1alpha1.HeaderModifiers{
-				RequestHeaderModifier: &gwv1.HTTPHeaderFilter{
+				Request: &gwv1.HTTPHeaderFilter{
 					Set: []gwv1.HTTPHeader{{
 						Name:  "x-request-id",
 						Value: "test-request-id",
 					}},
 				},
-				ResponseHeaderModifier: &gwv1.HTTPHeaderFilter{
+				Response: &gwv1.HTTPHeaderFilter{
 					Set: []gwv1.HTTPHeader{{
 						Name:  "x-response-id",
 						Value: "test-response-id",

@@ -4033,15 +4033,15 @@ func schema_kgateway_v2_api_v1alpha1_HeaderModifiers(ref common.ReferenceCallbac
 				Description: "HeaderModifiers can be used to define the policy to modify request and response headers.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
-					"requestHeaderModifier": {
+					"request": {
 						SchemaProps: spec.SchemaProps{
-							Description: "RequestHeaderModifier modifies request headers.",
+							Description: "Request modifies request headers.",
 							Ref:         ref("sigs.k8s.io/gateway-api/apis/v1.HTTPHeaderFilter"),
 						},
 					},
-					"responseHeaderModifier": {
+					"response": {
 						SchemaProps: spec.SchemaProps{
-							Description: "ResponseHeaderModifier modifies response headers.",
+							Description: "Response modifies response headers.",
 							Ref:         ref("sigs.k8s.io/gateway-api/apis/v1.HTTPHeaderFilter"),
 						},
 					},

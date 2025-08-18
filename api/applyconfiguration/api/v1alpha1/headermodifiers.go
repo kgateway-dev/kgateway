@@ -9,8 +9,8 @@ import (
 // HeaderModifiersApplyConfiguration represents a declarative configuration of the HeaderModifiers type for use
 // with apply.
 type HeaderModifiersApplyConfiguration struct {
-	RequestHeaderModifier  *v1.HTTPHeaderFilter `json:"requestHeaderModifier,omitempty"`
-	ResponseHeaderModifier *v1.HTTPHeaderFilter `json:"responseHeaderModifier,omitempty"`
+	Request  *v1.HTTPHeaderFilter `json:"request,omitempty"`
+	Response *v1.HTTPHeaderFilter `json:"response,omitempty"`
 }
 
 // HeaderModifiersApplyConfiguration constructs a declarative configuration of the HeaderModifiers type for use with
@@ -19,18 +19,18 @@ func HeaderModifiers() *HeaderModifiersApplyConfiguration {
 	return &HeaderModifiersApplyConfiguration{}
 }
 
-// WithRequestHeaderModifier sets the RequestHeaderModifier field in the declarative configuration to the given value
+// WithRequest sets the Request field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the RequestHeaderModifier field is set to the value of the last call.
-func (b *HeaderModifiersApplyConfiguration) WithRequestHeaderModifier(value v1.HTTPHeaderFilter) *HeaderModifiersApplyConfiguration {
-	b.RequestHeaderModifier = &value
+// If called multiple times, the Request field is set to the value of the last call.
+func (b *HeaderModifiersApplyConfiguration) WithRequest(value v1.HTTPHeaderFilter) *HeaderModifiersApplyConfiguration {
+	b.Request = &value
 	return b
 }
 
-// WithResponseHeaderModifier sets the ResponseHeaderModifier field in the declarative configuration to the given value
+// WithResponse sets the Response field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the ResponseHeaderModifier field is set to the value of the last call.
-func (b *HeaderModifiersApplyConfiguration) WithResponseHeaderModifier(value v1.HTTPHeaderFilter) *HeaderModifiersApplyConfiguration {
-	b.ResponseHeaderModifier = &value
+// If called multiple times, the Response field is set to the value of the last call.
+func (b *HeaderModifiersApplyConfiguration) WithResponse(value v1.HTTPHeaderFilter) *HeaderModifiersApplyConfiguration {
+	b.Response = &value
 	return b
 }

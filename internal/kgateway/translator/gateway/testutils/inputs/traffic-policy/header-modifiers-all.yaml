@@ -84,7 +84,7 @@ spec:
     kind: Gateway
     name: example-gateway
   headerModifiers:
-    requestHeaderModifier:
+    request:
       add:
         - name: X-Custom-Request-Header
           value: custom-request-value-gw
@@ -93,7 +93,7 @@ spec:
           value: custom-request-value-gw
       remove:
         - X-Request-Id
-    responseHeaderModifier:
+    response:
       add:
         - name: X-Custom-Response-Header
           value: custom-response-value-gw
@@ -113,7 +113,7 @@ spec:
     kind: XListenerSet
     name: ls
   headerModifiers:
-    requestHeaderModifier:
+    request:
       add:
         - name: X-Custom-Request-Header
           value: custom-request-value-ls
@@ -122,7 +122,7 @@ spec:
           value: custom-request-value-ls
       remove:
         - X-Request-Id
-    responseHeaderModifier:
+    response:
       add:
         - name: X-Custom-Response-Header
           value: custom-response-value-ls
@@ -142,7 +142,7 @@ spec:
     kind: HTTPRoute
     name: svc-route-1
   headerModifiers:
-    requestHeaderModifier:
+    request:
       add:
         - name: X-Custom-Request-Header
           value: custom-request-value-route
@@ -151,7 +151,7 @@ spec:
           value: custom-request-value-route
       remove:
         - X-Request-Id
-    responseHeaderModifier:
+    response:
       add:
         - name: X-Custom-Response-Header
           value: custom-response-value-route
@@ -171,7 +171,7 @@ spec:
     kind: HTTPRoute
     name: svc-route-2
   headerModifiers:
-    requestHeaderModifier:
+    request:
       add:
         - name: X-Custom-Request-Header
           value: custom-request-value-route
@@ -180,7 +180,7 @@ spec:
           value: custom-request-value-route
       remove:
         - X-Request-Id
-    responseHeaderModifier:
+    response:
       add:
         - name: X-Custom-Response-Header
           value: custom-response-value-route

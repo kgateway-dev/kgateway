@@ -84,7 +84,7 @@ spec:
     kind: HTTPRoute
     name: svc-route-1
   headerModifiers:
-    requestHeaderModifier:
+    request:
       add:
         - name: X-Custom-Request-Header
           value: custom-request-value-route
@@ -93,7 +93,7 @@ spec:
           value: custom-request-value-route
       remove:
         - X-Request-Id
-    responseHeaderModifier:
+    response:
       add:
         - name: X-Custom-Response-Header
           value: custom-response-value-route
@@ -113,7 +113,7 @@ spec:
     kind: HTTPRoute
     name: svc-route-2
   headerModifiers:
-    requestHeaderModifier:
+    request:
       add:
         - name: X-Custom-Request-Header
           value: custom-request-value-route
@@ -122,7 +122,7 @@ spec:
           value: custom-request-value-route
       remove:
         - X-Request-Id
-    responseHeaderModifier:
+    response:
       add:
         - name: X-Custom-Response-Header
           value: custom-response-value-route

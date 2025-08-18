@@ -1253,10 +1253,10 @@ var schemaYAML = typed.YAMLObject(`types:
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.HeaderModifiers
   map:
     fields:
-    - name: requestHeaderModifier
+    - name: request
       type:
         namedType: io.k8s.sigs.gateway-api.apis.v1.HTTPHeaderFilter
-    - name: responseHeaderModifier
+    - name: response
       type:
         namedType: io.k8s.sigs.gateway-api.apis.v1.HTTPHeaderFilter
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.HeaderTransformation
