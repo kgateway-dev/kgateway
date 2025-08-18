@@ -232,10 +232,10 @@ spec:
                       rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
                 type: object
                 x-kubernetes-validations:
-                - message: at most one of the fields in [leastRequest roundRobin ringHash
-                    maglev random] may be set
+                - message: exactly one of the fields in [leastRequest roundRobin ringHash
+                    maglev random] must be set
                   rule: '[has(self.leastRequest),has(self.roundRobin),has(self.ringHash),has(self.maglev),has(self.random)].filter(x,x==true).size()
-                    <= 1'
+                    == 1'
               perConnectionBufferLimitBytes:
                 type: integer
               targetRefs:

@@ -765,8 +765,7 @@ func (x *xdsDump) Compare(other xdsDump) error {
 
 		// Ignore VirtualHost ordering
 		vhostFn := func(x, y *envoyroutev3.VirtualHost) bool { return x.Name < y.Name }
-		if diff := cmp.Diff(c, otherc, protocmp.Transform(),
-			protocmp.SortRepeated(vhostFn)); diff != "" {
+		if diff := cmp.Diff(c, otherc, protocmp.Transform(), protocmp.SortRepeated(vhostFn)); diff != "" {
 			errs = errors.Join(errs, fmt.Errorf("route %v not equal!\ndiff:\b%s\n", c.Name, diff))
 		}
 	}

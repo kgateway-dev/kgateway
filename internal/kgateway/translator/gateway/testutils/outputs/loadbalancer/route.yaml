@@ -6,7 +6,12 @@ Clusters:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
-  lbPolicy: MAGLEV
+  loadBalancingPolicy:
+    policies:
+    - typedExtensionConfig:
+        name: envoy.load_balancing_policies.maglev
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.load_balancing_policies.maglev.v3.Maglev
   metadata: {}
   name: kube_default_httpbin-maglev_8080
   type: EDS
@@ -18,12 +23,16 @@ Clusters:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
-  lbPolicy: RING_HASH
+  loadBalancingPolicy:
+    policies:
+    - typedExtensionConfig:
+        name: envoy.load_balancing_policies.ring_hash
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.load_balancing_policies.ring_hash.v3.RingHash
+          maximumRingSize: "2048"
+          minimumRingSize: "1024"
   metadata: {}
   name: kube_default_httpbin-ringhash_8080
-  ringHashLbConfig:
-    maximumRingSize: "2048"
-    minimumRingSize: "1024"
   type: EDS
 - connectTimeout: 5s
   metadata: {}

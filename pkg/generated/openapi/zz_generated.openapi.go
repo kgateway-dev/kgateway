@@ -4896,7 +4896,7 @@ func schema_kgateway_v2_api_v1alpha1_LocalPolicyTargetSelector(ref common.Refere
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "LocalPolicyTargetSelector selects the object to attach the policy by Group, Kind, and MatchLabels. The object must be in the same namespace as the policy and match the specified labels.",
+				Description: "LocalPolicyTargetSelector selects the object to attach the policy by Group, Kind, and MatchLabels. The object must be in the same namespace as the policy and match the specified labels. Do not use targetSelectors when reconciliation times are critical, especially if you have a large number of policies that target the same resource. Instead, use targetRefs to attach the policy.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"group": {
@@ -4942,7 +4942,7 @@ func schema_kgateway_v2_api_v1alpha1_LocalPolicyTargetSelectorWithSectionName(re
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "LocalPolicyTargetSelectorWithSectionName the object to attach the policy by Group, Kind, MatchLabels, and optionally SectionName. The object must be in the same namespace as the policy and match the specified labels.",
+				Description: "LocalPolicyTargetSelectorWithSectionName the object to attach the policy by Group, Kind, MatchLabels, and optionally SectionName. The object must be in the same namespace as the policy and match the specified labels. Do not use targetSelectors when reconciliation times are critical, especially if you have a large number of policies that target the same resource. Instead, use targetRefs to attach the policy.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"group": {

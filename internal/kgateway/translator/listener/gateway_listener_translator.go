@@ -323,8 +323,6 @@ func (ml *MergedListener) TranslateListener(
 		httpFilterChain := ml.httpFilterChain.translateHttpFilterChain(
 			ctx,
 			ml.name,
-			ml.listener,
-			ml.gateway,
 			reporter,
 		)
 		httpFilterChains = append(httpFilterChains, httpFilterChain)
@@ -349,7 +347,6 @@ func (ml *MergedListener) TranslateListener(
 			ctx,
 			mfc.gatewayListenerName,
 			ml.gatewayNamespace,
-			ml.listener,
 			queries,
 			reporter,
 			ml.listenerReporter,
@@ -375,7 +372,7 @@ func (ml *MergedListener) TranslateListener(
 
 	// Translate TCP listeners (if any exist)
 	for _, tfc := range ml.TcpFilterChains {
-		if tcpListener := tfc.translateTcpFilterChain(ml.listener, ml.name, reporter); tcpListener != nil {
+		if tcpListener := tfc.translateTcpFilterChain(ml.name, reporter); tcpListener != nil {
 			matchedTcpListeners = append(matchedTcpListeners, *tcpListener)
 		}
 	}
@@ -412,7 +409,7 @@ type tcpFilterChainParent struct {
 	routesWithHosts     []*query.RouteInfo
 }
 
-func (tc *tcpFilterChain) translateTcpFilterChain(listener ir.Listener, parentName string, reporter reports.Reporter) *ir.TcpIR {
+func (tc *tcpFilterChain) translateTcpFilterChain(parentName string, reporter reports.Reporter) *ir.TcpIR {
 	parent := tc.parents
 	if len(parent.routesWithHosts) == 0 {
 		return nil
@@ -592,8 +589,6 @@ type httpFilterChainParent struct {
 func (httpFilterChain *httpFilterChain) translateHttpFilterChain(
 	ctx context.Context,
 	parentName string,
-	listener ir.Listener,
-	gw ir.Gateway,
 	reporter reports.Reporter,
 ) ir.HttpFilterChainIR {
 	routesByHost := map[string]routeutils.SortableRoutes{}
@@ -602,7 +597,6 @@ func (httpFilterChain *httpFilterChain) translateHttpFilterChain(
 			ctx,
 			routesByHost,
 			parent.routesWithHosts,
-			listener,
 			reporter,
 		)
 	}
@@ -676,7 +670,6 @@ func (httpsFilterChain *httpsFilterChain) translateHttpsFilterChain(
 	ctx context.Context,
 	parentName string,
 	gatewayNamespace string,
-	listener ir.Listener,
 	queries query.GatewayQueries,
 	reporter reports.Reporter,
 	listenerReporter reports.ListenerReporter,
@@ -687,7 +680,6 @@ func (httpsFilterChain *httpsFilterChain) translateHttpsFilterChain(
 		ctx,
 		routesByHost,
 		httpsFilterChain.routesWithHosts,
-		listener,
 		reporter,
 	)
 
@@ -768,7 +760,6 @@ func buildRoutesPerHost(
 	ctx context.Context,
 	routesByHost map[string]routeutils.SortableRoutes,
 	routes []*query.RouteInfo,
-	gwListener ir.Listener,
 	reporter reports.Reporter,
 ) {
 	// func() { panic("TODO: handle policy attachment") }()
