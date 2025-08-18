@@ -172,12 +172,15 @@ func (s *testingSuite) getLeaderFromPods(pods ...string) string {
 	s.TestInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
 		for _, pod := range pods {
 			out, err := s.TestInstallation.Actions.Kubectl().GetContainerLogs(s.Ctx, s.TestInstallation.Metadata.InstallNamespace, pod)
-			g.Expect(err).NotTo(gomega.HaveOccurred(), "Failed to get pod logs")
+			if err != nil {
+				// Ignore the error as the pod might be starting up
+				continue
+			}
 			if strings.Contains(out, "successfully acquired lease") {
 				leader = pod
 			}
-			g.Expect(leader).ToNot(gomega.BeNil())
 		}
+		g.Expect(leader).ToNot(gomega.BeNil())
 	}, "30s", "10s").Should(gomega.Succeed())
 	return leader
 }
