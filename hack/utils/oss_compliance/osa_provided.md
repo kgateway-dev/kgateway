@@ -4,9 +4,9 @@ Name|Version|License
 [avast/retry-go](https://github.com/avast/retry-go)|v2.4.3+incompatible|MIT License
 [retry-go/v4](https://github.com/avast/retry-go)|v4.3.3|MIT License
 [xds/go](https://github.com/cncf/xds)|v0.0.0-20250501225837-2ac532fd4443|Apache License 2.0
-[envoyproxy/go-control-plane](https://github.com/envoyproxy/go-control-plane)|v0.13.5-0.20250724022422-2c98449a79c3|Apache License 2.0
+[envoyproxy/go-control-plane](https://github.com/envoyproxy/go-control-plane)|v0.13.5-0.20250811224534-421509affe26|Apache License 2.0
 [go-control-plane/contrib](https://github.com/envoyproxy/go-control-plane)|v1.32.5-0.20250627145903-197b96a9c7f8|Apache License 2.0
-[go-control-plane/envoy](https://github.com/envoyproxy/go-control-plane)|v1.32.5-0.20250627145903-197b96a9c7f8|Apache License 2.0
+[go-control-plane/envoy](https://github.com/envoyproxy/go-control-plane)|v1.32.5-0.20250811224534-421509affe26|Apache License 2.0
 [go-control-plane/ratelimit](https://github.com/envoyproxy/go-control-plane)|v0.1.1-0.20250507123352-93990c5ec02f|Apache License 2.0
 [fsnotify/fsnotify](https://github.com/fsnotify/fsnotify)|v1.9.0|BSD 3-clause "New" or "Revised" License
 [ghodss/yaml](https://github.com/ghodss/yaml)|v1.0.1-0.20190212211648-25d852aebe32|MIT License
@@ -25,11 +25,11 @@ Name|Version|License
 [spf13/cobra](https://github.com/spf13/cobra)|v1.9.1|Apache License 2.0
 [stretchr/testify](https://github.com/stretchr/testify)|v1.10.0|MIT License
 [go.opencensus.io](https://go.opencensus.io)|v0.24.0|Apache License 2.0
-[proto/otlp](https://go.opentelemetry.io/proto/otlp)|v1.7.0|Apache License 2.0
+[proto/otlp](https://go.opentelemetry.io/proto/otlp)|v1.7.1|Apache License 2.0
 [go.uber.org/zap](https://go.uber.org/zap)|v1.27.0|MIT License
 [x/exp](https://golang.org/x/exp)|v0.0.0-20250506013437-ce4c2cf36ca6|BSD 3-clause "New" or "Revised" License
 [x/net](https://golang.org/x/net)|v0.42.0|BSD 3-clause "New" or "Revised" License
-[google.golang.org/grpc](https://google.golang.org/grpc)|v1.73.0|Apache License 2.0
+[google.golang.org/grpc](https://google.golang.org/grpc)|v1.74.2|Apache License 2.0
 [google.golang.org/protobuf](https://google.golang.org/protobuf)|v1.36.6|BSD 3-clause "New" or "Revised" License
 [helm/v3](https://helm.sh/helm/v3)|v3.18.4|Apache License 2.0
 [istio.io/api](https://istio.io/api)|v1.26.0-alpha.0.0.20250708022530-f8c0a53baaf9|Apache License 2.0

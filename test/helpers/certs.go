@@ -21,10 +21,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	corev1 "k8s.io/api/core/v1"
-
-	v1 "github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/v1"
 
 	"golang.org/x/crypto/ocsp"
 
@@ -234,21 +231,6 @@ func GetKubeSecret(name, namespace string) *corev1.Secret {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
-		},
-	}
-}
-
-func GetTlsSecret(name, namespace string) *v1.Secret {
-	return &v1.Secret{
-		Metadata: &core.Metadata{
-			Namespace: namespace,
-			Name:      name,
-		},
-		Kind: &v1.Secret_Tls{
-			Tls: &v1.TlsSecret{
-				PrivateKey: PrivateKey(),
-				CertChain:  Certificate(),
-			},
 		},
 	}
 }

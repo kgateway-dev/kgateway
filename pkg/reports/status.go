@@ -22,7 +22,7 @@ import (
 
 // TODO: refactor this struct + methods to better reflect the usage now in proxy_syncer
 
-func (r *ReportMap) BuildGWStatus(ctx context.Context, gw gwv1.Gateway) *gwv1.GatewayStatus {
+func (r *ReportMap) BuildGWStatus(ctx context.Context, gw gwv1.Gateway, attachedRoutes map[string]uint) *gwv1.GatewayStatus {
 	gwReport := r.Gateway(&gw)
 	if gwReport == nil {
 		return nil
@@ -32,6 +32,12 @@ func (r *ReportMap) BuildGWStatus(ctx context.Context, gw gwv1.Gateway) *gwv1.Ga
 	for _, lis := range gw.Spec.Listeners {
 		lisReport := gwReport.listener(string(lis.Name))
 		addMissingListenerConditions(lisReport)
+		// Get attached routes for this listener
+		if attachedRoutes != nil {
+			if count, exists := attachedRoutes[string(lis.Name)]; exists {
+				lisReport.Status.AttachedRoutes = int32(count)
+			}
+		}
 
 		finalConditions := make([]metav1.Condition, 0, len(lisReport.Status.Conditions))
 		oldLisStatusIndex := slices.IndexFunc(gw.Status.Listeners, func(l gwv1.ListenerStatus) bool {

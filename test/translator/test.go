@@ -31,6 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
+	gwxv1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
@@ -50,6 +51,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
 	"github.com/kgateway-dev/kgateway/v2/pkg/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
+	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
 type AssertReports func(gwNN types.NamespacedName, reportsMap reports.ReportMap)
@@ -217,7 +219,7 @@ func TestTranslation(
 	assertReports AssertReports,
 	settingsOpts ...SettingsOpts,
 ) {
-	TestTranslationWithExtraPlugins(t, ctx, inputFiles, outputFile, gwNN, assertReports, nil, nil, nil, settingsOpts...)
+	TestTranslationWithExtraPlugins(t, ctx, inputFiles, outputFile, gwNN, assertReports, nil, nil, nil, "", settingsOpts...)
 }
 
 func TestTranslationWithExtraPlugins(
@@ -230,6 +232,7 @@ func TestTranslationWithExtraPlugins(
 	extraPluginsFn ExtraPluginsFn,
 	extraSchemes runtime.SchemeBuilder,
 	extraGroups []string,
+	crdDir string,
 	settingsOpts ...SettingsOpts,
 ) {
 	scheme := NewScheme(extraSchemes)
@@ -237,7 +240,7 @@ func TestTranslationWithExtraPlugins(
 
 	results, err := TestCase{
 		InputFiles: inputFiles,
-	}.Run(t, ctx, scheme, extraPluginsFn, extraGroups, settingsOpts...)
+	}.Run(t, ctx, scheme, extraPluginsFn, extraGroups, crdDir, settingsOpts...)
 	r.NoError(err, "error running test case")
 	r.Len(results, 1, "expected exactly one gateway in the results")
 	r.Contains(results, gwNN)
@@ -478,7 +481,7 @@ func AreReportsSuccess(gwNN types.NamespacedName, reportsMap reports.ReportMap) 
 				Namespace: nns.Namespace,
 			},
 		}
-		status := reportsMap.BuildGWStatus(context.Background(), g)
+		status := reportsMap.BuildGWStatus(context.Background(), g, nil)
 		for _, c := range status.Conditions {
 			if c.Type == listener.AttachedListenerSetsConditionType {
 				// A gateway might or might not have AttachedListenerSets so skip this condition
@@ -486,6 +489,21 @@ func AreReportsSuccess(gwNN types.NamespacedName, reportsMap reports.ReportMap) 
 			}
 			if c.Status != metav1.ConditionTrue {
 				return fmt.Errorf("condition not accepted for gw %v condition: %v", nns, c)
+			}
+		}
+	}
+
+	for ls := range reportsMap.ListenerSets {
+		l := gwxv1.XListenerSet{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      ls.Name,
+				Namespace: ls.Namespace,
+			},
+		}
+		status := reportsMap.BuildListenerSetStatus(context.Background(), l)
+		for _, c := range status.Conditions {
+			if c.Status != metav1.ConditionTrue {
+				return fmt.Errorf("condition not accepted for listenerSet %s condition: %v", ls, c)
 			}
 		}
 	}
@@ -506,6 +524,7 @@ func (tc TestCase) Run(
 	scheme *runtime.Scheme,
 	extraPluginsFn ExtraPluginsFn,
 	extraGroups []string,
+	crdDir string,
 	settingsOpts ...SettingsOpts,
 ) (map[types.NamespacedName]ActualTestResult, error) {
 	var (
@@ -513,9 +532,15 @@ func (tc TestCase) Run(
 		ourObjs []runtime.Object
 	)
 	r := require.New(t)
+	if crdDir == "" {
+		crdDir = filepath.Join(testutils.GitRootDirectory(), CRDPath)
+	}
+
+	gvkToStructuralSchema, err := GetStructuralSchemas(crdDir)
+	r.NoError(err, "error getting structural schemas")
 
 	for _, file := range tc.InputFiles {
-		objs, err := LoadFromFiles(file, scheme)
+		objs, err := LoadFromFiles(file, scheme, gvkToStructuralSchema)
 		if err != nil {
 			return nil, err
 		}

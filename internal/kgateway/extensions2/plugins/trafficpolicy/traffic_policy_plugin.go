@@ -90,7 +90,6 @@ type trafficPolicySpecIr struct {
 	globalRateLimit *globalRateLimitIR
 	cors            *corsIR
 	csrf            *csrfIR
-	hashPolicies    *hashPolicyIR
 	autoHostRewrite *autoHostRewriteIR
 	retry           *retryIR
 	timeouts        *timeoutsIR
@@ -142,9 +141,6 @@ func (d *TrafficPolicy) Equals(in any) bool {
 	if !d.spec.buffer.Equals(d2.spec.buffer) {
 		return false
 	}
-	if !d.spec.hashPolicies.Equals(d2.spec.hashPolicies) {
-		return false
-	}
 	if !d.spec.retry.Equals(d2.spec.retry) {
 		return false
 	}
@@ -169,7 +165,6 @@ func (p *TrafficPolicy) Validate() error {
 	validators = append(validators, p.spec.csrf.Validate)
 	validators = append(validators, p.spec.cors.Validate)
 	validators = append(validators, p.spec.buffer.Validate)
-	validators = append(validators, p.spec.hashPolicies.Validate)
 	validators = append(validators, p.spec.autoHostRewrite.Validate)
 	for _, validator := range validators {
 		if err := validator(); err != nil {
@@ -617,10 +612,6 @@ func (p *trafficPolicyPluginGwPass) handlePerRoutePolicies(
 
 	action := out.GetRoute()
 
-	if spec.hashPolicies != nil {
-		action.HashPolicy = spec.hashPolicies.policies
-	}
-
 	if spec.autoHostRewrite != nil && spec.autoHostRewrite.enabled != nil && spec.autoHostRewrite.enabled.GetValue() {
 		// Only apply TrafficPolicy's AutoHostRewrite if built-in policy's AutoHostRewrite is not already set
 		if action.GetHostRewriteSpecifier() == nil {
@@ -685,7 +676,6 @@ func MergeTrafficPolicies(
 		mergeCSRF,
 		mergeBuffer,
 		mergeAutoHostRewrite,
-		mergeHashPolicies,
 		mergeTimeouts,
 		mergeRetry,
 	}

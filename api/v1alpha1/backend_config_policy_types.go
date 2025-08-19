@@ -276,7 +276,7 @@ type TLSFiles struct {
 	RootCA *string `json:"rootCA,omitempty"`
 }
 
-// +kubebuilder:validation:AtMostOneOf=leastRequest;roundRobin;ringHash;maglev;random
+// +kubebuilder:validation:ExactlyOneOf=leastRequest;roundRobin;ringHash;maglev;random
 type LoadBalancer struct {
 	// HealthyPanicThreshold configures envoy's panic threshold percentage between 0-100. Once the number of non-healthy hosts
 	// reaches this percentage, envoy disregards health information.
@@ -368,6 +368,12 @@ type LoadBalancerRingHashConfig struct {
 	// Defaults to false.
 	// +optional
 	UseHostnameForHashing *bool `json:"useHostnameForHashing,omitempty"`
+
+	// HashPolicies specifies the hash policies for hashing load balancers (RingHash, Maglev).
+	// +optional
+	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:MaxItems=16
+	HashPolicies []*HashPolicy `json:"hashPolicies,omitempty"`
 }
 
 type LoadBalancerMaglevConfig struct {
@@ -375,6 +381,12 @@ type LoadBalancerMaglevConfig struct {
 	// Defaults to false.
 	// +optional
 	UseHostnameForHashing *bool `json:"useHostnameForHashing,omitempty"`
+
+	// HashPolicies specifies the hash policies for hashing load balancers (RingHash, Maglev).
+	// +optional
+	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:MaxItems=16
+	HashPolicies []*HashPolicy `json:"hashPolicies,omitempty"`
 }
 
 type (
@@ -484,3 +496,55 @@ type HealthCheckGrpc struct {
 	// +optional
 	Authority *string `json:"authority,omitempty"`
 }
+
+// +kubebuilder:validation:ExactlyOneOf=header;cookie;sourceIP
+type HashPolicy struct {
+	// Header specifies a header's value as a component of the hash key.
+	// +optional
+	Header *Header `json:"header,omitempty"`
+
+	// Cookie specifies a given cookie as a component of the hash key.
+	// +optional
+	Cookie *Cookie `json:"cookie,omitempty"`
+
+	// SourceIP specifies whether to use the request's source IP address as a component of the hash key.
+	// +optional
+	SourceIP *SourceIP `json:"sourceIP,omitempty"`
+
+	// Terminal, if set, and a hash key is available after evaluating this policy, will cause Envoy to skip the subsequent policies and
+	// use the key as it is.
+	// This is useful for defining "fallback" policies and limiting the time Envoy spends generating hash keys.
+	// +optional
+	Terminal *bool `json:"terminal,omitempty"`
+}
+
+type Header struct {
+	// Name is the name of the header to use as a component of the hash key.
+	// +kubebuilder:validation:MinLength=1
+	Name string `json:"name"`
+}
+
+type Cookie struct {
+	// Name of the cookie.
+	// +kubebuilder:validation:MinLength=1
+	Name string `json:"name"`
+
+	// Path is the name of the path for the cookie.
+	// +optional
+	Path *string `json:"path,omitempty"`
+
+	// TTL specifies the time to live of the cookie.
+	// If specified, a cookie with the TTL will be generated if the cookie is not present.
+	// If the TTL is present and zero, the generated cookie will be a session cookie.
+	// +optional
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+	TTL *metav1.Duration `json:"ttl,omitempty"`
+
+	// Attributes are additional attributes for the cookie.
+	// +optional
+	// +kubebuilder:validation:MinProperties=1
+	// +kubebuilder:validation:MaxProperties=10
+	Attributes map[string]string `json:"attributes,omitempty"`
+}
+
+type SourceIP struct{}
