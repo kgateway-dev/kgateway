@@ -1,7 +1,6 @@
 package v1alpha1
 
 import (
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -203,9 +202,9 @@ type BodyTransformation struct {
 //
 // +kubebuilder:validation:ExactlyOneOf=extensionRef;disable
 type ExtAuthPolicy struct {
-	// ExtensionRef references the ExternalExtension that should be used for authentication.
+	// ExtensionRef references the GatewayExtension that should be used for authentication.
 	// +optional
-	ExtensionRef *corev1.LocalObjectReference `json:"extensionRef,omitempty"`
+	ExtensionRef NamespacedObjectReference `json:"extensionRef,omitempty"`
 
 	// WithRequestBody allows the request body to be buffered and sent to the authorization service.
 	// Warning buffering has implications for streaming and therefore performance.
@@ -301,7 +300,7 @@ type RateLimitPolicy struct {
 
 	// ExtensionRef references a GatewayExtension that provides the global rate limit service.
 	// +required
-	ExtensionRef *corev1.LocalObjectReference `json:"extensionRef"`
+	ExtensionRef NamespacedObjectReference `json:"extensionRef"`
 }
 
 // RateLimitDescriptor defines a descriptor for rate limiting.

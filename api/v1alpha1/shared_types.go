@@ -5,6 +5,18 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
+// Select the object by Name and Namespace.
+// You can target only one object at a time.
+type NamespacedObjectReference struct {
+	// The name of the target resource.
+	Name gwv1.ObjectName `json:"name"`
+
+	// The namespace of the target resource.
+	// If not set, defaults to the namespace of the parent object.
+	// +optional
+	Namespace *gwv1.Namespace `json:"namespace,omitempty"`
+}
+
 // Select the object to attach the policy by Group, Kind, and Name.
 // The object must be in the same namespace as the policy.
 // You can target only one object at a time.
