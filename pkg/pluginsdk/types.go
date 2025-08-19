@@ -17,18 +17,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
 
-type AttachmentPoints uint
-
-const (
-	BackendAttachmentPoint AttachmentPoints = 1 << iota
-	GatewayAttachmentPoint
-	RouteAttachmentPoint
-)
-
-func (a AttachmentPoints) Has(p AttachmentPoints) bool {
-	return a&p != 0
-}
-
 type (
 	EndpointsInputs = endpoints.EndpointsInputs
 	ProcessBackend  func(ctx context.Context, pol ir.PolicyIR, in ir.BackendObjectIR, out *envoyclusterv3.Cluster)
@@ -73,7 +61,7 @@ type PolicyPlugin struct {
 	ProcessAgentBackend func(pol ir.PolicyIR, in ir.BackendObjectIR) error
 
 	Policies       krt.Collection[ir.PolicyWrapper]
-	GlobalPolicies func(krt.HandlerContext, AttachmentPoints) ir.PolicyIR
+	GlobalPolicies func(krt.HandlerContext) ir.PolicyIR
 	// PoliciesFetch can optionally be set if the plugin needs a custom mechanism for fetching the policy IR,
 	// rather than the default behavior of fetching by name from the aggregated policy KRT collection
 	PoliciesFetch func(n, ns string) ir.PolicyIR
@@ -132,17 +120,6 @@ func (p PolicyReport) MarshalJSON() ([]byte, error) {
 		m[key.ID()] = objErrMap
 	}
 	return json.Marshal(m)
-}
-
-func (p PolicyPlugin) AttachmentPoints() AttachmentPoints {
-	var ret AttachmentPoints
-	if p.ProcessBackend != nil || p.ProcessAgentBackend != nil {
-		ret = ret | BackendAttachmentPoint
-	}
-	if p.NewGatewayTranslationPass != nil || p.NewAgentGatewayPass != nil {
-		ret = ret | GatewayAttachmentPoint
-	}
-	return ret
 }
 
 func (p Plugin) HasSynced() bool {

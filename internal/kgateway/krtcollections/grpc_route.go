@@ -7,7 +7,6 @@ import (
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
@@ -26,7 +25,7 @@ func (h *RoutesIndex) transformGRPCRoute(kctx krt.HandlerContext, i *gwv1.GRPCRo
 		ParentRefs:       i.Spec.ParentRefs,
 		Hostnames:        tostr(i.Spec.Hostnames),
 		Rules:            h.transformGRPCRulesToHttp(kctx, src, i.GetLabels(), i.Spec.Rules),
-		AttachedPolicies: toAttachedPolicies(h.policies.getTargetingPolicies(kctx, extensionsplug.RouteAttachmentPoint, src, "", i.GetLabels())),
+		AttachedPolicies: toAttachedPolicies(h.policies.getTargetingPolicies(kctx, src, "", i.GetLabels())),
 		// IsHTTP2: true
 	}
 }
@@ -48,7 +47,7 @@ func (h *RoutesIndex) transformGRPCRulesToHttp(
 		extensionRefs, _ := h.getExtensionRefs(kctx, src.Namespace, convertFiltersToHTTP(r.Filters))
 		var policies ir.AttachedPolicies
 		if r.Name != nil {
-			policies = toAttachedPolicies(h.policies.getTargetingPolicies(kctx, extensionsplug.RouteAttachmentPoint, src, string(*r.Name), srcLabels), opts...)
+			policies = toAttachedPolicies(h.policies.getTargetingPolicies(kctx, src, string(*r.Name), srcLabels), opts...)
 		}
 		rulePolicies := h.getBuiltInRulePolicies(convertRulesToHTTP(r))
 		policies.Append(rulePolicies)

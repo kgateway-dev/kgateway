@@ -292,7 +292,8 @@ func IsNil[O comparable](o O) bool {
 
 func newAgentGatewayPasses(plugs pluginsdk.Plugin,
 	rep reporter.Reporter,
-	aps pluginsdkir.AttachedPolicies) []agwir.AgentGatewayTranslationPass {
+	aps pluginsdkir.AttachedPolicies,
+) []agwir.AgentGatewayTranslationPass {
 	var out []agwir.AgentGatewayTranslationPass
 	if len(aps.Policies) == 0 {
 		return out
@@ -408,7 +409,6 @@ func attachRoutePolicies(ctx *RouteContext, route *gwv1.HTTPRoute) {
 	}
 
 	pols := pi.LookupTargetingPolicies(ctx.Krt,
-		pluginsdk.RouteAttachmentPoint,
 		target,
 		"", // route-level
 		route.GetLabels())
