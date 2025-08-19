@@ -37,7 +37,7 @@ func NewTrafficPlugin(agw *AgwCollections) AgentgatewayPlugin {
 			},
 		},
 		ExtraHasSynced: func() bool {
-			return policyCol.HasSynced() && agw.TrafficPolicies.HasSynced()
+			return policyCol.HasSynced()
 		},
 	}
 }

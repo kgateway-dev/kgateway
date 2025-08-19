@@ -27,6 +27,6 @@ Routes:
 Policies:
   - name: a2a/default/a2a-agent/9090
     target:
-      backend: default/a2a-agent
+      backend: default/a2a-agent:9090
     spec:
       a2a: {}

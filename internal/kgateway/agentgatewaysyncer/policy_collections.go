@@ -10,7 +10,9 @@ import (
 
 func ADPPolicyCollection(binds krt.Collection[ADPResourcesForGateway], agwPlugins plugins.AgentgatewayPlugin) krt.Collection[ADPResourcesForGateway] {
 	var allPolicies []krt.Collection[plugins.ADPPolicy]
-	// Generate all policies from all registered plugins using contributed policies
+	// Collect all policies from registered plugins.
+	// Note: Only one plugin should be used per source GVK.
+	// Avoid joining collections per-GVK before passing them to a plugin.
 	for _, plugin := range agwPlugins.ContributesPolicies {
 		allPolicies = append(allPolicies, plugin.ApplyPolicies())
 	}

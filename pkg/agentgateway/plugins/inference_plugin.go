@@ -29,7 +29,7 @@ func NewInferencePlugin(agw *AgwCollections) AgentgatewayPlugin {
 			},
 		},
 		ExtraHasSynced: func() bool {
-			return policyCol.HasSynced() && agw.InferencePools.HasSynced()
+			return policyCol.HasSynced()
 		},
 	}
 }

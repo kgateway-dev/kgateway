@@ -28,7 +28,7 @@ func NewA2APlugin(agw *AgwCollections) AgentgatewayPlugin {
 			},
 		},
 		ExtraHasSynced: func() bool {
-			return policyCol.HasSynced() && agw.Services.HasSynced()
+			return policyCol.HasSynced()
 		},
 	}
 }
@@ -42,7 +42,7 @@ func translatePoliciesForService(svc *corev1.Service) []ADPPolicy {
 		if port.AppProtocol != nil && *port.AppProtocol == a2aProtocol {
 			logger.Debug("found A2A service", "service", svc.Name, "namespace", svc.Namespace, "port", port.Port)
 
-			svcRef := fmt.Sprintf("%v/%v", svc.Namespace, svc.Name)
+			svcRef := fmt.Sprintf("%v/%v:%d", svc.Namespace, svc.Name, port.Port)
 			policy := &api.Policy{
 				Name:   fmt.Sprintf("a2a/%s/%s/%d", svc.Namespace, svc.Name, port.Port),
 				Target: &api.PolicyTarget{Kind: &api.PolicyTarget_Backend{Backend: svcRef}},
