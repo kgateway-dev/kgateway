@@ -63,6 +63,8 @@ import (
 	_ "github.com/kgateway-dev/kgateway/v2/pkg/utils/filter_types"
 )
 
+const envoyDataKey = "envoy.yaml"
+
 func unmarshalYaml(data []byte, into proto.Message) error {
 	jsn, err := yaml.YAMLToJSON(data)
 	if err != nil {
@@ -123,7 +125,7 @@ func (objs *clientObjects) findConfigMap(namespace, name string) *corev1.ConfigM
 func (objs *clientObjects) getEnvoyConfig(namespace, name string) *envoybootstrapv3.Bootstrap {
 	cm := objs.findConfigMap(namespace, name).Data
 	var bootstrapCfg envoybootstrapv3.Bootstrap
-	err := unmarshalYaml([]byte(cm["envoy.yaml"]), &bootstrapCfg)
+	err := unmarshalYaml([]byte(cm[envoyDataKey]), &bootstrapCfg)
 	ExpectWithOffset(1, err).ToNot(HaveOccurred())
 	return &bootstrapCfg
 }
@@ -1454,7 +1456,7 @@ var _ = Describe("Deployer", func() {
 				cm := objs.findConfigMap(defaultNamespace, defaultConfigMapName)
 				Expect(cm).ToNot(BeNil())
 				// This verifies that the cluster name provided to envoy matches the service name used when generating OTel stats
-				Expect(cm.Data["envoy.yaml"]).To(ContainSubstring(fmt.Sprintf("cluster: %s", httplistenerpolicy.GenerateDefaultServiceName(dep.Name, dep.Namespace))))
+				Expect(cm.Data[envoyDataKey]).To(ContainSubstring(fmt.Sprintf("cluster: %s", httplistenerpolicy.GenerateDefaultServiceName(dep.Name, dep.Namespace))))
 
 				logLevelsMap := expectedGwp.EnvoyContainer.Bootstrap.ComponentLogLevels
 				levels := []types.GomegaMatcher{}
@@ -2083,7 +2085,7 @@ var _ = Describe("Deployer", func() {
 					cm := objs.findConfigMap(defaultNamespace, defaultConfigMapName)
 					Expect(cm).NotTo(BeNil())
 
-					envoyYaml := cm.Data["envoy.yaml"]
+					envoyYaml := cm.Data[envoyDataKey]
 					Expect(envoyYaml).NotTo(BeEmpty())
 
 					// make sure it's valid yaml
@@ -2128,7 +2130,7 @@ var _ = Describe("Deployer", func() {
 					cm := objs.findConfigMap(defaultNamespace, defaultConfigMapName)
 					Expect(cm).NotTo(BeNil())
 
-					envoyYaml := cm.Data["envoy.yaml"]
+					envoyYaml := cm.Data[envoyDataKey]
 					Expect(envoyYaml).NotTo(BeEmpty())
 
 					// make sure it's valid yaml
