@@ -2,6 +2,7 @@ package plugins
 
 import (
 	"fmt"
+
 	"github.com/agentgateway/agentgateway/go/api"
 	"istio.io/istio/pkg/kube/krt"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
