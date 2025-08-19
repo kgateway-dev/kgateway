@@ -25,7 +25,6 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/deployer"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
@@ -37,11 +36,6 @@ var ErrUnresolvedBackendRef = errors.New("unresolved backend reference")
 const serviceNameKey = "service.name"
 
 // convertAccessLogConfig transforms a list of AccessLog configurations into Envoy AccessLog configurations
-// These access log configs can be either FileAccessLog, HttpGrpcAccessLogConfig or OpenTelemetryAccessLogConfig.
-// The default service name needs to be set to the cluster name in the OpenTelemetryAccessLogConfig.
-// Since the cluster name can only be determined during translation (when the specific gateway is passed),
-// we return partially translated configs. As these configs are of different types, we return an list of interfaces
-// that is stored in the IR to be fully translated during translation.
 func convertAccessLogConfig(
 	ctx context.Context,
 	policy *v1alpha1.HTTPListenerPolicy,
@@ -124,7 +118,8 @@ func translateAccessLog(logConfig v1alpha1.AccessLog, grpcBackends map[string]*i
 		return nil, err
 	}
 
-	// generateAccessLogConfig() adds the log filter during translation once the config is marshalled.
+	// Add the filter during translation once the config is marshalled.
+	// See generateAccessLogConfig()
 	return accessLogCfg, nil
 }
 
@@ -643,7 +638,7 @@ func addDefaultResourceAttributes(pCtx *ir.HcmContext, config *envoy_open_teleme
 				Key: serviceNameKey,
 				Value: &otelv1.AnyValue{
 					Value: &otelv1.AnyValue_StringValue{
-						StringValue: deployer.GenerateDefaultServiceNode(pCtx.Gateway.SourceObject.GetName(), pCtx.Gateway.SourceObject.GetNamespace()),
+						StringValue: generateDefaultServiceName(pCtx),
 					},
 				}},
 			},
@@ -660,7 +655,7 @@ func addDefaultResourceAttributes(pCtx *ir.HcmContext, config *envoy_open_teleme
 		Key: serviceNameKey,
 		Value: &otelv1.AnyValue{
 			Value: &otelv1.AnyValue_StringValue{
-				StringValue: deployer.GenerateDefaultServiceNode(pCtx.Gateway.SourceObject.GetName(), pCtx.Gateway.SourceObject.GetNamespace()),
+				StringValue: generateDefaultServiceName(pCtx),
 			},
 		},
 	})

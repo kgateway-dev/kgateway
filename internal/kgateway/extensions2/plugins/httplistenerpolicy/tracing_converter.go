@@ -16,7 +16,6 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/deployer"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
@@ -256,7 +255,7 @@ func updateTracingConfig(pCtx *ir.HcmContext, tracingProvider *envoytracev3.Open
 		return
 	}
 	if tracingProvider.ServiceName == "" {
-		tracingProvider.ServiceName = deployer.GenerateDefaultServiceNode(pCtx.Gateway.SourceObject.GetName(), pCtx.Gateway.SourceObject.GetNamespace())
+		tracingProvider.ServiceName = generateDefaultServiceName(pCtx)
 	}
 	otelCfg := utils.MustMessageToAny(tracingProvider)
 
@@ -266,4 +265,10 @@ func updateTracingConfig(pCtx *ir.HcmContext, tracingProvider *envoytracev3.Open
 			TypedConfig: otelCfg,
 		},
 	}
+}
+
+// generateDefaultServiceName returns the default service name that matches the cluster name
+// Ie: `<gateway-name>.<gateway-namespace>`
+func generateDefaultServiceName(pCtx *ir.HcmContext) string {
+	return fmt.Sprintf("%s.%s", pCtx.Gateway.SourceObject.GetName(), pCtx.Gateway.SourceObject.GetNamespace())
 }
