@@ -71,6 +71,6 @@ spec:
       group: gateway.networking.k8s.io
       sectionName: httpbin-get
   rbac:
-    policies:
-      - matchExpressions:
+    policy:
+      matchExpressions:
           - "request.headers['x-my-header'] == 'cool-beans'"

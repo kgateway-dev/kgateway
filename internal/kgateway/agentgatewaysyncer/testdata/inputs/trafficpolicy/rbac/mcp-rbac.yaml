@@ -63,8 +63,8 @@ spec:
       kind: Backend
       group: gateway.networking.k8s.io
   rbac:
-    policies:
-      - matchExpressions:
+    policy:
+      matchExpressions:
           - 'mcp.tool.name == "echo"'
           - 'jwt.sub == "test-user" && mcp.tool.name == "add"'
           - 'mcp.tool.name == "printEnv" && jwt.nested.key == "value"'

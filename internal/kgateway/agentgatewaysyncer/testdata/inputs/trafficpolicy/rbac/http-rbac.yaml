@@ -45,6 +45,6 @@ spec:
       kind: HTTPRoute
       group: gateway.networking.k8s.io
   rbac:
-    policies:
-      - matchExpressions:
-          - "request.headers['x-my-header'] == 'cool-beans'"
+    policy:
+      matchExpressions:
+      - "request.headers['x-my-header'] == 'cool-beans'"
