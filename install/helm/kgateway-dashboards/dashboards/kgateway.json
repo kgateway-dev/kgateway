@@ -18,7 +18,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 29,
+  "id": 31,
   "links": [],
   "panels": [
     {
@@ -1478,7 +1478,7 @@
         "x": 0,
         "y": 33
       },
-      "id": 14,
+      "id": 23,
       "options": {
         "legend": {
           "calcs": [],
@@ -1500,15 +1500,41 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.99, sum(rate(kgateway_resources_xds_snapshot_sync_duration_seconds[5m])) by (le, resource)) OR histogram_quantile(0.99, sum by (le, resource) (rate(kgateway_resources_xds_snapshot_sync_duration_seconds[5m])))",
+          "expr": "histogram_quantile(0.99, sum(rate(kgateway_xds_snapshot_sync_duration_seconds[5m])))",
           "hide": false,
           "instant": false,
-          "legendFormat": "p99 - {{resource}}",
+          "legendFormat": "p99",
           "range": true,
           "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "histogram_quantile(0.90, sum(rate(kgateway_xds_snapshot_sync_duration_seconds[5m])))",
+          "hide": false,
+          "instant": false,
+          "legendFormat": "p90",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "histogram_quantile(0.70, sum(rate(kgateway_xds_snapshot_sync_duration_seconds[5m])))",
+          "hide": false,
+          "instant": false,
+          "legendFormat": "p70",
+          "range": true,
+          "refId": "C"
         }
       ],
-      "title": "p99 XDS Snapshot Sync Latencies by Resources",
+      "title": "XDS Snapshot Sync Latency",
       "type": "timeseries"
     },
     {
@@ -1567,9 +1593,34 @@
               }
             ]
           },
-          "unit": "s"
+          "unit": "sishort"
         },
-        "overrides": []
+        "overrides": [
+          {
+            "__systemRef": "hideSeriesFrom",
+            "matcher": {
+              "id": "byNames",
+              "options": {
+                "mode": "exclude",
+                "names": [
+                  "histogram_count(sum(kgateway_resources_xds_snapshot_sync_duration_seconds{gateway=~\"(http|metrics-test-gateway)\"}))"
+                ],
+                "prefix": "All except:",
+                "readOnly": true
+              }
+            },
+            "properties": [
+              {
+                "id": "custom.hideFrom",
+                "value": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": true
+                }
+              }
+            ]
+          }
+        ]
       },
       "gridPos": {
         "h": 8,
@@ -1577,7 +1628,7 @@
         "x": 8,
         "y": 33
       },
-      "id": 15,
+      "id": 20,
       "options": {
         "legend": {
           "calcs": [],
@@ -1598,16 +1649,21 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
+          "disableTextWrap": false,
           "editorMode": "code",
-          "expr": "histogram_quantile(0.99, sum(rate(kgateway_controller_reconcile_duration_seconds{controller=~\"$controller\"}[5m])) by (le, controller)) OR histogram_quantile(0.99, sum by (le, controller) (rate(kgateway_controller_reconcile_duration_seconds{controller=~\"$controller\"}[5m])))",
-          "hide": false,
+          "exemplar": false,
+          "expr": "sum by(gateway) (kgateway_xds_snapshot_syncs_total{gateway=~\"$gateway\"})",
+          "format": "time_series",
+          "fullMetaSearch": false,
+          "includeNullMetadata": true,
           "instant": false,
-          "legendFormat": "p99 - {{controller}}",
+          "interval": "",
+          "legendFormat": "__auto",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "p99 Reconciliation Latency per Controllers",
+      "title": "XDS Snapshot Syncs Total",
       "type": "timeseries"
     },
     {
@@ -1734,256 +1790,6 @@
       ],
       "title": "Resource Status Sync Latency",
       "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "barWidthFactor": 0.6,
-            "drawStyle": "line",
-            "fillOpacity": 9,
-            "gradientMode": "opacity",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green"
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          },
-          "unit": "sishort"
-        },
-        "overrides": [
-          {
-            "__systemRef": "hideSeriesFrom",
-            "matcher": {
-              "id": "byNames",
-              "options": {
-                "mode": "exclude",
-                "names": [
-                  "histogram_count(sum(kgateway_resources_xds_snapshot_sync_duration_seconds{gateway=~\"(http|metrics-test-gateway)\"}))"
-                ],
-                "prefix": "All except:",
-                "readOnly": true
-              }
-            },
-            "properties": [
-              {
-                "id": "custom.hideFrom",
-                "value": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": true
-                }
-              }
-            ]
-          }
-        ]
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 8,
-        "x": 0,
-        "y": 41
-      },
-      "id": 20,
-      "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "hideZeros": false,
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "pluginVersion": "12.0.2",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "editorMode": "code",
-          "exemplar": false,
-          "expr": "histogram_avg(kgateway_resources_xds_snapshot_sync_duration_seconds)",
-          "format": "time_series",
-          "interval": "",
-          "legendFormat": "{{gateway}}-{{resource}}",
-          "range": true,
-          "refId": "A"
-        }
-      ],
-      "title": "XDS Snapshot Syncs",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "barWidthFactor": 0.6,
-            "drawStyle": "line",
-            "fillOpacity": 9,
-            "gradientMode": "opacity",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green"
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          },
-          "unit": "s"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 8,
-        "x": 16,
-        "y": 41
-      },
-      "id": 23,
-      "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "hideZeros": false,
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "pluginVersion": "12.0.2",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "editorMode": "code",
-          "expr": "histogram_quantile(0.99, sum(rate(kgateway_resources_xds_snapshot_sync_duration_seconds[5m])))",
-          "hide": false,
-          "instant": false,
-          "legendFormat": "p99",
-          "range": true,
-          "refId": "B"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "editorMode": "code",
-          "expr": "histogram_quantile(0.90, sum(rate(kgateway_resources_xds_snapshot_sync_duration_seconds[5m])))",
-          "hide": false,
-          "instant": false,
-          "legendFormat": "p90",
-          "range": true,
-          "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "editorMode": "code",
-          "expr": "histogram_quantile(0.70, sum(rate(kgateway_resources_xds_snapshot_sync_duration_seconds[5m])))",
-          "hide": false,
-          "instant": false,
-          "legendFormat": "p70",
-          "range": true,
-          "refId": "C"
-        }
-      ],
-      "title": "Resource XDS Snapshot Sync Latency",
-      "type": "timeseries"
     }
   ],
   "preload": false,
@@ -2100,6 +1906,10 @@
         "type": "query"
       }
     ]
+  },
+  "time": {
+    "from": "now-1h",
+    "to": "now"
   },
   "timepicker": {},
   "timezone": "browser",
