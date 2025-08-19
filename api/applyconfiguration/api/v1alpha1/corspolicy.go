@@ -3,9 +3,8 @@
 package v1alpha1
 
 import (
-	v1 "sigs.k8s.io/gateway-api/apis/v1"
-
 	apiv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	v1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
 // CorsPolicyApplyConfiguration represents a declarative configuration of the CorsPolicy type for use

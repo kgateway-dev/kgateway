@@ -3,9 +3,8 @@
 package v1alpha1
 
 import (
-	resource "k8s.io/apimachinery/pkg/api/resource"
-
 	apiv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	resource "k8s.io/apimachinery/pkg/api/resource"
 )
 
 // BufferApplyConfiguration represents a declarative configuration of the Buffer type for use

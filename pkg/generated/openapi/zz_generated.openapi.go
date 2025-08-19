@@ -6590,6 +6590,13 @@ func schema_kgateway_v2_api_v1alpha1_ServiceAccount(ref common.ReferenceCallback
 			SchemaProps: spec.SchemaProps{
 				Type: []string{"object"},
 				Properties: map[string]spec.Schema{
+					"serviceAccountName": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ServiceAccountName is the name of the ServiceAccount to use. If not set, a ServiceAccount will be created.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 					"extraLabels": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Additional labels to add to the ServiceAccount object metadata.",

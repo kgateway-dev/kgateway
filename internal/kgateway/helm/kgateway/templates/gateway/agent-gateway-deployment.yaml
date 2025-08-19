@@ -27,10 +27,24 @@ spec:
         {{- toYaml . | nindent 8 }}
         {{- end }}
     spec:
+      {{- with $gateway.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if $gateway.serviceAccount.serviceAccountName }}
+      serviceAccountName: {{ $gateway.serviceAccount.serviceAccountName }}
+      {{- else }}
+      serviceAccountName: {{ include "kgateway.gateway.fullname" . }}
+      {{- end }}
+      {{- if $gateway.agentGateway.podSecurityContext }}
+      securityContext:
+        {{- toYaml $gateway.agentGateway.podSecurityContext | nindent 8 }}
+      {{- else }}
       securityContext:
         sysctls:
           - name: net.ipv4.ip_unprivileged_port_start
             value: "0"
+      {{- end }}
       containers:
         - name: agent-gateway
           image: "{{ template "kgateway.gateway.image" $gateway.image }}"
@@ -100,6 +114,24 @@ spec:
         {{- toYaml $gateway.tolerations | nindent 8 }}
       {{- end }}
 
+---
+{{- if not $gateway.serviceAccount.serviceAccountName }}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "kgateway.gateway.fullname" . }}
+  {{- with (($gateway.serviceAccount).extraAnnotations) }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  labels:
+    {{- include "kgateway.gateway.constLabels" . | nindent 4 }}
+    {{- include "kgateway.gateway.labels" . | nindent 4 }}
+    {{- with (($gateway.serviceAccount).extraLabels) }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+automountServiceAccountToken: false
+{{- end }} {{/* if not $gateway.agentGateway.serviceAccountName */}}
 ---
 apiVersion: v1
 kind: Service

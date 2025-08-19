@@ -5,14 +5,23 @@ package v1alpha1
 // ServiceAccountApplyConfiguration represents a declarative configuration of the ServiceAccount type for use
 // with apply.
 type ServiceAccountApplyConfiguration struct {
-	ExtraLabels      map[string]string `json:"extraLabels,omitempty"`
-	ExtraAnnotations map[string]string `json:"extraAnnotations,omitempty"`
+	ServiceAccountName *string           `json:"serviceAccountName,omitempty"`
+	ExtraLabels        map[string]string `json:"extraLabels,omitempty"`
+	ExtraAnnotations   map[string]string `json:"extraAnnotations,omitempty"`
 }
 
 // ServiceAccountApplyConfiguration constructs a declarative configuration of the ServiceAccount type for use with
 // apply.
 func ServiceAccount() *ServiceAccountApplyConfiguration {
 	return &ServiceAccountApplyConfiguration{}
+}
+
+// WithServiceAccountName sets the ServiceAccountName field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the ServiceAccountName field is set to the value of the last call.
+func (b *ServiceAccountApplyConfiguration) WithServiceAccountName(value string) *ServiceAccountApplyConfiguration {
+	b.ServiceAccountName = &value
+	return b
 }
 
 // WithExtraLabels puts the entries into the ExtraLabels field in the declarative configuration

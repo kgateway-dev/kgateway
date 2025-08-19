@@ -3,11 +3,10 @@
 package fake
 
 import (
-	gentype "k8s.io/client-go/gentype"
-
 	apiv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/applyconfiguration/api/v1alpha1"
 	v1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	typedapiv1alpha1 "github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned/typed/api/v1alpha1"
+	gentype "k8s.io/client-go/gentype"
 )
 
 // fakeBackends implements BackendInterface

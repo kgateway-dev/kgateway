@@ -2463,6 +2463,8 @@ spec:
                         additionalProperties:
                           type: string
                         type: object
+                      serviceAccountName:
+                        type: string
                     type: object
                   stats:
                     properties:

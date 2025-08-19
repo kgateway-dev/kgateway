@@ -3,10 +3,9 @@
 package v1alpha1
 
 import (
+	apiv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apisv1 "sigs.k8s.io/gateway-api/apis/v1"
-
-	apiv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 )
 
 // RetryApplyConfiguration represents a declarative configuration of the Retry type for use

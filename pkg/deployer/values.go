@@ -101,8 +101,9 @@ type HelmService struct {
 }
 
 type HelmServiceAccount struct {
-	ExtraAnnotations map[string]string `json:"extraAnnotations,omitempty"`
-	ExtraLabels      map[string]string `json:"extraLabels,omitempty"`
+	ServiceAccountName *string           `json:"serviceAccountName,omitempty"`
+	ExtraAnnotations   map[string]string `json:"extraAnnotations,omitempty"`
+	ExtraLabels        map[string]string `json:"extraLabels,omitempty"`
 }
 
 // helmXds represents the xds host and port to which envoy will connect

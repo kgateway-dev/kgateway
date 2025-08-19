@@ -168,6 +168,11 @@ func (in *Service) GetExtraAnnotations() map[string]string {
 }
 
 type ServiceAccount struct {
+	// ServiceAccountName is the name of the ServiceAccount to use. If not set, a ServiceAccount will be created.
+	//
+	// +optional
+	ServiceAccountName *string `json:"serviceAccountName,omitempty"`
+
 	// Additional labels to add to the ServiceAccount object metadata.
 	//
 	// +optional
@@ -191,6 +196,13 @@ func (in *ServiceAccount) GetExtraAnnotations() map[string]string {
 		return nil
 	}
 	return in.ExtraAnnotations
+}
+
+func (in *ServiceAccount) GetServiceAccountName() *string {
+	if in == nil {
+		return nil
+	}
+	return in.ServiceAccountName
 }
 
 // Configuration for a Kubernetes Pod template.

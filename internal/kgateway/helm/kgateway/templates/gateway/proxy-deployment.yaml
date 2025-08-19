@@ -42,7 +42,11 @@ spec:
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      {{- if $gateway.serviceAccount.serviceAccountName }}
+      serviceAccountName: {{ $gateway.serviceAccount.serviceAccountName }}
+      {{- else }}
       serviceAccountName: {{ include "kgateway.gateway.fullname" . }}
+      {{- end }}
       {{- if $gateway.podSecurityContext }}
       securityContext:
         {{- toYaml $gateway.podSecurityContext | nindent 8 }}
@@ -361,6 +365,7 @@ spec:
         emptyDir: {}
 {{- end }} {{/* if $gateway.istio.enabled */}}
 ---
+{{- if not $gateway.serviceAccount.serviceAccountName }}
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -376,6 +381,7 @@ metadata:
     {{- toYaml . | nindent 4 }}
     {{- end }}
 automountServiceAccountToken: false
+{{- end }}
 ---
 apiVersion: v1
 kind: Service

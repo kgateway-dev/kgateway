@@ -139,8 +139,9 @@ func GetServiceValues(svcConfig *v1alpha1.Service) *HelmService {
 // Convert service account values from GatewayParameters into helm values to be used by the deployer.
 func GetServiceAccountValues(svcAccountConfig *v1alpha1.ServiceAccount) *HelmServiceAccount {
 	return &HelmServiceAccount{
-		ExtraAnnotations: svcAccountConfig.GetExtraAnnotations(),
-		ExtraLabels:      svcAccountConfig.GetExtraLabels(),
+		ServiceAccountName: svcAccountConfig.GetServiceAccountName(),
+		ExtraAnnotations:   svcAccountConfig.GetExtraAnnotations(),
+		ExtraLabels:        svcAccountConfig.GetExtraLabels(),
 	}
 }
 
