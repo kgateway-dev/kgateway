@@ -24,6 +24,7 @@ Listeners:
               '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
               httpFilters:
                 - name: envoy.filters.http.rbac
+                  disabled: true
                   typedConfig:
                     '@type': type.googleapis.com/envoy.extensions.filters.http.rbac.v3.RBAC
                 - name: envoy.filters.http.router

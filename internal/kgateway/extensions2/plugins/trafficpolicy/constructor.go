@@ -102,7 +102,7 @@ func (c *TrafficPolicyConstructor) ConstructIR(
 	constructBuffer(policyCR.Spec, &outSpec)
 
 	// Construct rbac specific IR
-	if err := constructRbac(policyCR, &outSpec); err != nil {
+	if err := constructRBAC(policyCR, &outSpec); err != nil {
 		errors = append(errors, err)
 	}
 

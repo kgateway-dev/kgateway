@@ -600,8 +600,6 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.Filt
 		filters = append(filters, filter)
 	}
 
-	// Add the RBAC filter to enable RBAC for the listener.
-	// Requires the RBAC policy to be set as typed_per_filter_config.
 	if f := p.rbacInChain[fcc.FilterChainName]; f != nil {
 		filter := plugins.MustNewStagedFilter(rbacFilterNamePrefix,
 			p.rbacInChain[fcc.FilterChainName],
