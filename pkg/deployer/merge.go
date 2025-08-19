@@ -697,8 +697,18 @@ func deepMergeDeployment(dst, src *v1alpha1.ProxyDeployment) *v1alpha1.ProxyDepl
 		return src
 	}
 
-	dst.Replicas = MergePointers(dst.GetReplicas(), src.GetReplicas())
-	dst.DisableReplicas = MergePointers(dst.GetDisableReplicas(), src.GetDisableReplicas())
+	// Handle AtMostOneOf constraint for replicas and disableReplicas
+	// If src has either field set, it takes precedence and we clear the other field
+	if src.GetReplicas() != nil {
+		dst.Replicas = src.GetReplicas()
+		dst.DisableReplicas = nil // Clear disableReplicas when replicas is set
+	} else if src.GetDisableReplicas() != nil {
+		dst.DisableReplicas = src.GetDisableReplicas()
+		dst.Replicas = nil // Clear replicas when disableReplicas is set
+	} else {
+		// src has neither field set, keep dst as is
+		// (dst.Replicas and dst.DisableReplicas remain unchanged)
+	}
 
 	return dst
 }

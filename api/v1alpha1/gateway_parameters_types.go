@@ -208,6 +208,7 @@ func (in *KubernetesProxyConfig) GetFloatingUserId() *bool {
 }
 
 // ProxyDeployment configures the Proxy deployment in Kubernetes.
+// +kubebuilder:validation:AtMostOneOf=replicas;disableReplicas
 type ProxyDeployment struct {
 	// The number of desired pods. Defaults to 1.
 	//

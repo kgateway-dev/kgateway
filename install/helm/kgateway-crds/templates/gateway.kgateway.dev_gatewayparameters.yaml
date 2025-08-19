@@ -503,6 +503,11 @@ spec:
                         format: int32
                         type: integer
                     type: object
+                    x-kubernetes-validations:
+                    - message: at most one of the fields in [replicas disableReplicas]
+                        may be set
+                      rule: '[has(self.replicas),has(self.disableReplicas)].filter(x,x==true).size()
+                        <= 1'
                   envoyContainer:
                     properties:
                       bootstrap:
