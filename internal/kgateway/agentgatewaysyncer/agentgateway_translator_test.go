@@ -380,4 +380,24 @@ func TestBasic(t *testing.T) {
 			},
 		})
 	})
+	t.Run("TrafficPolicy with rbac on http route", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "trafficpolicy/rbac/http-rbac.yaml",
+			outputFile: "trafficpolicy/rbac/http-rbac.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+	t.Run("TrafficPolicy with rbac on http route", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "trafficpolicy/rbac/mcp-rbac.yaml",
+			outputFile: "trafficpolicy/rbac/mcp-rbac.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
 }
