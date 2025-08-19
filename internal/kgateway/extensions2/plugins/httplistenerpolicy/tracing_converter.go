@@ -255,7 +255,7 @@ func updateTracingConfig(pCtx *ir.HcmContext, tracingProvider *envoytracev3.Open
 		return
 	}
 	if tracingProvider.ServiceName == "" {
-		tracingProvider.ServiceName = generateDefaultServiceName(pCtx)
+		tracingProvider.ServiceName = GenerateDefaultServiceName(pCtx.Gateway.SourceObject.GetName(), pCtx.Gateway.SourceObject.GetNamespace())
 	}
 	otelCfg := utils.MustMessageToAny(tracingProvider)
 
@@ -267,8 +267,9 @@ func updateTracingConfig(pCtx *ir.HcmContext, tracingProvider *envoytracev3.Open
 	}
 }
 
-// generateDefaultServiceName returns the default service name that matches the cluster name
+// GenerateDefaultServiceName returns the default service name that matches the cluster name
+// specified in the envoy bootstrap config
 // Ie: `<gateway-name>.<gateway-namespace>`
-func generateDefaultServiceName(pCtx *ir.HcmContext) string {
-	return fmt.Sprintf("%s.%s", pCtx.Gateway.SourceObject.GetName(), pCtx.Gateway.SourceObject.GetNamespace())
+func GenerateDefaultServiceName(name, namespace string) string {
+	return fmt.Sprintf("%s.%s", name, namespace)
 }

@@ -37,6 +37,7 @@ import (
 	internaldeployer "github.com/kgateway-dev/kgateway/v2/internal/kgateway/deployer"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/httplistenerpolicy"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/xds"
@@ -1452,6 +1453,8 @@ var _ = Describe("Deployer", func() {
 
 				cm := objs.findConfigMap(defaultNamespace, defaultConfigMapName)
 				Expect(cm).ToNot(BeNil())
+				// This verifies that the cluster name provided to envoy matches the service name used when generating OTel stats
+				Expect(cm.Data["envoy.yaml"]).To(ContainSubstring(fmt.Sprintf("cluster: %s", httplistenerpolicy.GenerateDefaultServiceName(dep.Name, dep.Namespace))))
 
 				logLevelsMap := expectedGwp.EnvoyContainer.Bootstrap.ComponentLogLevels
 				levels := []types.GomegaMatcher{}

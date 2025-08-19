@@ -3,6 +3,7 @@ package httplistenerpolicy
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"slices"
 	"time"
 
@@ -79,6 +80,11 @@ func (d *httpListenerPolicy) Equals(in any) bool {
 	// Check the AccessLog slice
 	if !slices.EqualFunc(d.accessLogConfig, d2.accessLogConfig, func(log proto.Message, log2 proto.Message) bool {
 		return proto.Equal(log, log2)
+	}) {
+		return false
+	}
+	if !slices.EqualFunc(d.accessLogPolicies, d2.accessLogPolicies, func(log v1alpha1.AccessLog, log2 v1alpha1.AccessLog) bool {
+		return reflect.DeepEqual(log, log2)
 	}) {
 		return false
 	}
