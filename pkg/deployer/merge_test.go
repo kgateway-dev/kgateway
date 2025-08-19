@@ -73,7 +73,7 @@ func TestDeepMergeGatewayParameters(t *testing.T) {
 				Spec: gw2_v1alpha1.GatewayParametersSpec{
 					Kube: &gw2_v1alpha1.KubernetesProxyConfig{
 						Deployment: &gw2_v1alpha1.ProxyDeployment{
-							Replicas:        ptr.To[uint32](2),
+							Replicas: ptr.To[uint32](2),
 						},
 					},
 				},
