@@ -343,6 +343,7 @@ func buildADPGRPCFilters(
 			} else {
 				filters = append(filters, h)
 			}
+		// TODO(npolshak): add ExtensionRef support for TrafficPolicy https://github.com/kgateway-dev/kgateway/issues/12037
 		default:
 			return nil, &reporter.RouteCondition{
 				Type:    gwv1.RouteConditionAccepted,

@@ -2,10 +2,12 @@ package backendconfigpolicy
 
 import (
 	"fmt"
+	"sort"
 	"strconv"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoycommonv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/load_balancing_policies/common/v3"
 	envoyleastrequestv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/load_balancing_policies/least_request/v3"
 	envoymaglevv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/load_balancing_policies/maglev/v3"
@@ -107,12 +109,16 @@ func translateLoadBalancerConfig(config *v1alpha1.LoadBalancer, policyName, poli
 				Value: *config.RingHash.MaximumRingSize,
 			}
 		}
-		if config.RingHash.UseHostnameForHashing != nil {
-			out.useHostnameForHashing = *config.RingHash.UseHostnameForHashing
-			ringHash.ConsistentHashingLbConfig = &envoycommonv3.ConsistentHashingLbConfig{
-				UseHostnameForHashing: *config.RingHash.UseHostnameForHashing,
+		if config.RingHash.UseHostnameForHashing != nil || len(config.RingHash.HashPolicies) > 0 {
+			hashingLBConfig := &envoycommonv3.ConsistentHashingLbConfig{}
+			if config.RingHash.UseHostnameForHashing != nil {
+				out.useHostnameForHashing = *config.RingHash.UseHostnameForHashing
+				hashingLBConfig.UseHostnameForHashing = *config.RingHash.UseHostnameForHashing
 			}
+			hashingLBConfig.HashPolicy = constructHashPolicy(config.RingHash.HashPolicies)
+			ringHash.ConsistentHashingLbConfig = hashingLBConfig
 		}
+
 		if config.LocalityType != nil {
 			ringHash.LocalityWeightedLbConfig = &envoycommonv3.LocalityLbConfig_LocalityWeightedLbConfig{}
 		}
@@ -130,11 +136,14 @@ func translateLoadBalancerConfig(config *v1alpha1.LoadBalancer, policyName, poli
 		}
 	} else if config.Maglev != nil {
 		maglev := &envoymaglevv3.Maglev{}
-		if config.Maglev.UseHostnameForHashing != nil {
-			out.useHostnameForHashing = *config.Maglev.UseHostnameForHashing
-			maglev.ConsistentHashingLbConfig = &envoycommonv3.ConsistentHashingLbConfig{
-				UseHostnameForHashing: *config.Maglev.UseHostnameForHashing,
+		if config.Maglev.UseHostnameForHashing != nil || len(config.Maglev.HashPolicies) > 0 {
+			hashingLBConfig := &envoycommonv3.ConsistentHashingLbConfig{}
+			if config.Maglev.UseHostnameForHashing != nil {
+				out.useHostnameForHashing = *config.Maglev.UseHostnameForHashing
+				hashingLBConfig.UseHostnameForHashing = *config.Maglev.UseHostnameForHashing
 			}
+			hashingLBConfig.HashPolicy = constructHashPolicy(config.Maglev.HashPolicies)
+			maglev.ConsistentHashingLbConfig = hashingLBConfig
 		}
 		if config.LocalityType != nil {
 			maglev.LocalityWeightedLbConfig = &envoycommonv3.LocalityLbConfig_LocalityWeightedLbConfig{}
@@ -281,4 +290,63 @@ func (a *LoadBalancerConfigIR) Equals(b *LoadBalancerConfigIR) bool {
 	}
 
 	return true
+}
+
+// constructHashPolicy constructs the hash policies from the policy specification.
+func constructHashPolicy(hashPolicies []*v1alpha1.HashPolicy) []*envoyroutev3.RouteAction_HashPolicy {
+	if len(hashPolicies) == 0 {
+		return nil
+	}
+	policies := make([]*envoyroutev3.RouteAction_HashPolicy, 0, len(hashPolicies))
+	for _, hashPolicy := range hashPolicies {
+		policy := &envoyroutev3.RouteAction_HashPolicy{}
+		if hashPolicy.Terminal != nil {
+			policy.Terminal = *hashPolicy.Terminal
+		}
+		switch {
+		case hashPolicy.Header != nil:
+			policy.PolicySpecifier = &envoyroutev3.RouteAction_HashPolicy_Header_{
+				Header: &envoyroutev3.RouteAction_HashPolicy_Header{
+					HeaderName: hashPolicy.Header.Name,
+				},
+			}
+		case hashPolicy.Cookie != nil:
+			policy.PolicySpecifier = &envoyroutev3.RouteAction_HashPolicy_Cookie_{
+				Cookie: &envoyroutev3.RouteAction_HashPolicy_Cookie{
+					Name: hashPolicy.Cookie.Name,
+				},
+			}
+			if hashPolicy.Cookie.TTL != nil {
+				policy.GetCookie().Ttl = durationpb.New(hashPolicy.Cookie.TTL.Duration)
+			}
+			if hashPolicy.Cookie.Path != nil {
+				policy.GetCookie().Path = *hashPolicy.Cookie.Path
+			}
+			if hashPolicy.Cookie.Attributes != nil {
+				// Get all attribute names and sort them for consistent ordering
+				names := make([]string, 0, len(hashPolicy.Cookie.Attributes))
+				for name := range hashPolicy.Cookie.Attributes {
+					names = append(names, name)
+				}
+				sort.Strings(names)
+
+				attributes := make([]*envoyroutev3.RouteAction_HashPolicy_CookieAttribute, 0, len(hashPolicy.Cookie.Attributes))
+				for _, name := range names {
+					attributes = append(attributes, &envoyroutev3.RouteAction_HashPolicy_CookieAttribute{
+						Name:  name,
+						Value: hashPolicy.Cookie.Attributes[name],
+					})
+				}
+				policy.GetCookie().Attributes = attributes
+			}
+		case hashPolicy.SourceIP != nil:
+			policy.PolicySpecifier = &envoyroutev3.RouteAction_HashPolicy_ConnectionProperties_{
+				ConnectionProperties: &envoyroutev3.RouteAction_HashPolicy_ConnectionProperties{
+					SourceIp: true,
+				},
+			}
+		}
+		policies = append(policies, policy)
+	}
+	return policies
 }

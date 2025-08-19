@@ -116,7 +116,7 @@ func setConditions(generation int64, existingConditions []metav1.Condition, cond
 }
 
 func reportListenerCondition(index int, l gwv1.Listener, obj *gwv1.Gateway,
-	gs *gwv1.GatewayStatus, conditions map[string]*condition,
+	gs *gwv1.GatewayStatus, conditions map[string]*condition, attachedRoutes int32,
 ) {
 	for index >= len(gs.Listeners) {
 		gs.Listeners = append(gs.Listeners, gwv1.ListenerStatus{})
@@ -132,7 +132,7 @@ func reportListenerCondition(index int, l gwv1.Listener, obj *gwv1.Gateway,
 	}
 	gs.Listeners[index] = gwv1.ListenerStatus{
 		Name:           l.Name,
-		AttachedRoutes: 0, // this will be reported later
+		AttachedRoutes: attachedRoutes,
 		SupportedKinds: supported,
 		Conditions:     setConditions(obj.Generation, cond, conditions),
 	}

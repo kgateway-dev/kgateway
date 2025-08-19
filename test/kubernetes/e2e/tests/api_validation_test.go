@@ -295,43 +295,6 @@ spec:
 			wantErrors: []string{"targetRefs may only reference Gateway, HTTPRoute, or XListenerSet resources"},
 		},
 		{
-			name: "TrafficPolicy: invalid target ref for hash policy",
-			input: `---
-apiVersion: gateway.kgateway.dev/v1alpha1
-kind: TrafficPolicy
-metadata:
-  name: traffic-policy-invalid-hash-policy
-spec:
-  targetRefs:
-  - group: gateway.networking.k8s.io
-    kind: Gateway
-    name: test-gateway
-  hashPolicies:
-  - header:
-      name: "x-user-id"
-    terminal: true
-`,
-			wantErrors: []string{"hash policies can only be used when targeting HTTPRoute resources"},
-		},
-		{
-			name: "TrafficPolicy: valid target ref for hash policy",
-			input: `---
-apiVersion: gateway.kgateway.dev/v1alpha1
-kind: TrafficPolicy
-metadata:
-  name: traffic-policy-valid-hash-policy
-spec:
-  targetRefs:
-  - group: gateway.networking.k8s.io
-    kind: HTTPRoute
-    name: test-route
-  hashPolicies:
-  - header:
-      name: "x-user-id"
-    terminal: true
-`,
-		},
-		{
 			name: "TrafficPolicy: policy with autoHostRewrite can only target HTTPRoute",
 			input: `---
 apiVersion: gateway.kgateway.dev/v1alpha1

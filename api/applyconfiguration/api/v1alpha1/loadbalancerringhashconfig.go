@@ -2,12 +2,17 @@
 
 package v1alpha1
 
+import (
+	apiv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+)
+
 // LoadBalancerRingHashConfigApplyConfiguration represents a declarative configuration of the LoadBalancerRingHashConfig type for use
 // with apply.
 type LoadBalancerRingHashConfigApplyConfiguration struct {
-	MinimumRingSize       *uint64 `json:"minimumRingSize,omitempty"`
-	MaximumRingSize       *uint64 `json:"maximumRingSize,omitempty"`
-	UseHostnameForHashing *bool   `json:"useHostnameForHashing,omitempty"`
+	MinimumRingSize       *uint64                   `json:"minimumRingSize,omitempty"`
+	MaximumRingSize       *uint64                   `json:"maximumRingSize,omitempty"`
+	UseHostnameForHashing *bool                     `json:"useHostnameForHashing,omitempty"`
+	HashPolicies          []*apiv1alpha1.HashPolicy `json:"hashPolicies,omitempty"`
 }
 
 // LoadBalancerRingHashConfigApplyConfiguration constructs a declarative configuration of the LoadBalancerRingHashConfig type for use with
@@ -37,5 +42,18 @@ func (b *LoadBalancerRingHashConfigApplyConfiguration) WithMaximumRingSize(value
 // If called multiple times, the UseHostnameForHashing field is set to the value of the last call.
 func (b *LoadBalancerRingHashConfigApplyConfiguration) WithUseHostnameForHashing(value bool) *LoadBalancerRingHashConfigApplyConfiguration {
 	b.UseHostnameForHashing = &value
+	return b
+}
+
+// WithHashPolicies adds the given value to the HashPolicies field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the HashPolicies field.
+func (b *LoadBalancerRingHashConfigApplyConfiguration) WithHashPolicies(values ...**apiv1alpha1.HashPolicy) *LoadBalancerRingHashConfigApplyConfiguration {
+	for i := range values {
+		if values[i] == nil {
+			panic("nil value passed to WithHashPolicies")
+		}
+		b.HashPolicies = append(b.HashPolicies, *values[i])
+	}
 	return b
 }

@@ -8,7 +8,8 @@ import (
 
 // AgentGatewayRouteContext provides context for route-level translations
 type AgentGatewayRouteContext struct {
-	Rule *gwv1.HTTPRouteRule
+	Rule             *gwv1.HTTPRouteRule
+	AttachedPolicies ir.AttachedPolicies
 }
 
 // AgentGatewayTranslationBackendContext provides context for backend translations

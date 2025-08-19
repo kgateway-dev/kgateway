@@ -51,6 +51,8 @@ Routes:
     name: listener~80~builtin_com
     retryPolicy:
       numRetries: 3
+      retryBackOff:
+        baseInterval: 0.025s
       retryOn: gateway-error
     routes:
     - match:
@@ -86,6 +88,8 @@ Routes:
     name: listener~80~example-retry-and-timeouts_com
     retryPolicy:
       numRetries: 3
+      retryBackOff:
+        baseInterval: 0.025s
       retryOn: gateway-error
     routes:
     - match:
@@ -144,6 +148,8 @@ Routes:
     name: listener~80~example-retry_com
     retryPolicy:
       numRetries: 3
+      retryBackOff:
+        baseInterval: 0.025s
       retryOn: gateway-error
     routes:
     - match:
@@ -176,6 +182,8 @@ Routes:
     name: listener~80~example_com
     retryPolicy:
       numRetries: 3
+      retryBackOff:
+        baseInterval: 0.025s
       retryOn: gateway-error
     routes:
     - match:

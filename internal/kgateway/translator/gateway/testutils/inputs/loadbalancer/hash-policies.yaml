@@ -1,0 +1,125 @@
+kind: Gateway
+apiVersion: gateway.networking.k8s.io/v1
+metadata:
+  name: example-gateway
+spec:
+  gatewayClassName: kgateway
+  listeners:
+  - protocol: HTTP
+    port: 8080
+    name: http
+    allowedRoutes:
+      namespaces:
+        from: All
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: httpbin-ringhash
+  labels:
+    app: httpbin-ringhash
+    service: httpbin-ringhash
+spec:
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+  selector:
+    app: httpbin-ringhash
+---
+kind: BackendConfigPolicy
+apiVersion: gateway.kgateway.dev/v1alpha1
+metadata:
+  name: httpbin-ringhash-policy
+spec:
+  targetRefs:
+    - name: httpbin-ringhash
+      group: ""
+      kind: Service
+  loadBalancer:
+    ringHash:
+      minimumRingSize: 1024
+      maximumRingSize: 2048
+      hashPolicies:
+      - header:
+          name: "x-user-id"
+        terminal: true
+      - header:
+          name: "x-session-id"
+        terminal: false
+    closeConnectionsOnHostSetChange: true
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: httpbin-maglev
+  labels:
+    app: httpbin-maglev
+    service: httpbin-maglev
+spec:
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+  selector:
+    app: httpbin-maglev
+---
+kind: BackendConfigPolicy
+apiVersion: gateway.kgateway.dev/v1alpha1
+metadata:
+  name: httpbin-maglev-policy
+spec:
+  targetRefs:
+    - name: httpbin-maglev
+      group: ""
+      kind: Service
+  loadBalancer:
+    maglev:
+      hashPolicies:
+      - cookie:
+          name: "session-id"
+          path: "/api"
+          ttl: 30m
+          attributes:
+            httpOnly: "true"
+            secure: "true"
+            sameSite: "Strict"
+        terminal: true
+      - sourceIP: {}
+        terminal: false
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: example-route-ringhash
+spec:
+  parentRefs:
+  - name: example-gateway
+  hostnames:
+  - "example.com"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /ringhash
+    backendRefs:
+    - name: httpbin-ringhash
+      port: 8080
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: example-route-maglev
+spec:
+  parentRefs:
+  - name: example-gateway
+  hostnames:
+  - "example.com"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /maglev
+    backendRefs:
+    - name: httpbin-maglev
+      port: 8080 
