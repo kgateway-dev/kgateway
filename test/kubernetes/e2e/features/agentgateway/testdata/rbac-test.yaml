@@ -8,7 +8,19 @@ spec:
       enabled: true
       logLevel: trace
       image:
-        tag: 0abe6bae9-dirty
+        tag: 0eddffa61-dirty
+---
+kind: GatewayClass
+apiVersion: gateway.networking.k8s.io/v1
+metadata:
+  name: agentgateway
+spec:
+  controllerName: kgateway.dev/kgateway
+  parametersRef:
+    group: gateway.kgateway.dev
+    kind: GatewayParameters
+    name: kgateway
+    namespace: default
 ---
 kind: Gateway
 apiVersion: gateway.networking.k8s.io/v1
@@ -69,7 +81,6 @@ spec:
     - name: httpbin-route
       kind: HTTPRoute
       group: gateway.networking.k8s.io
-      sectionName: httpbin-get
   rbac:
     policy:
       matchExpressions:

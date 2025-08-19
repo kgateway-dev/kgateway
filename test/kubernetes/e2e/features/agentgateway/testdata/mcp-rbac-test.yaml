@@ -1,0 +1,87 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mcp-website-fetcher
+spec:
+  selector:
+    matchLabels:
+      app: mcp-website-fetcher
+  template:
+    metadata:
+      labels:
+        app: mcp-website-fetcher
+    spec:
+      containers:
+        - name: mcp-website-fetcher
+          image: ghcr.io/peterj/mcp-website-fetcher:main
+          imagePullPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mcp-website-fetcher
+  labels:
+    app: mcp-website-fetcher
+spec:
+  selector:
+    app: mcp-website-fetcher
+  ports:
+    - port: 80
+      targetPort: 8000
+      appProtocol: kgateway.dev/mcp
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: mcp-backend
+spec:
+  type: MCP
+  mcp:
+    name: mcp-server
+    targets:
+      - static:
+          name: mcp-target
+          host: mcp-website-fetcher.default.svc.cluster.local
+          port: 80
+          protocol: SSE
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: agentgateway
+spec:
+  gatewayClassName: agentgateway
+  listeners:
+    - protocol: HTTP
+      port: 8080
+      name: http
+      allowedRoutes:
+        namespaces:
+          from: All
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: mcp
+spec:
+  parentRefs:
+    - name: agentgateway
+  rules:
+      backendRefs:
+        - name: mcp-backend
+          group: gateway.kgateway.dev
+          kind: Backend
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: cel-rbac-policy
+spec:
+  targetRefs:
+    - name: mcp-backend
+      kind: Backend
+      group: gateway.kgateway.dev
+  rbac:
+    policy:
+      matchExpressions:
+        - "mcp.tool.name == 'fetch' && request.headers['x-my-header'] == 'cool-beans'"
