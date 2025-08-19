@@ -17,7 +17,16 @@ Routes:
     key: default.example-route.0.0.http
     listenerKey: default/example-gateway/http
     routeName: default/example-route
+Backends:
+  - name: default/example-backend
+    static:
+      host: example.com
+      port: 8080
 Policies:
-  - name: trafficpolicy/default/cel-rbac-policy/mcp-backend:rbac
+  - name: trafficpolicy/default/cel-rbac-policy/example-route:rbac
     target:
-      backend: default/mcp-backend
+      backend: default/example-route
+    spec:
+      authorization:
+        allow:
+            - "request.headers['x-my-header'] == 'cool-beans'"
