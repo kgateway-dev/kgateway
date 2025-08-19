@@ -4735,17 +4735,6 @@ func (in *TrafficPolicySpec) DeepCopyInto(out *TrafficPolicySpec) {
 		*out = new(HeaderModifiers)
 		(*in).DeepCopyInto(*out)
 	}
-	if in.HashPolicies != nil {
-		in, out := &in.HashPolicies, &out.HashPolicies
-		*out = make([]*HashPolicy, len(*in))
-		for i := range *in {
-			if (*in)[i] != nil {
-				in, out := &(*in)[i], &(*out)[i]
-				*out = new(HashPolicy)
-				(*in).DeepCopyInto(*out)
-			}
-		}
-	}
 	if in.AutoHostRewrite != nil {
 		in, out := &in.AutoHostRewrite, &out.AutoHostRewrite
 		*out = new(bool)

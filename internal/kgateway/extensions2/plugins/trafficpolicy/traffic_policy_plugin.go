@@ -92,7 +92,6 @@ type trafficPolicySpecIr struct {
 	cors            *corsIR
 	csrf            *csrfIR
 	headerModifiers *headerModifiersIR
-	hashPolicies    *hashPolicyIR
 	autoHostRewrite *autoHostRewriteIR
 	retry           *retryIR
 	timeouts        *timeoutsIR

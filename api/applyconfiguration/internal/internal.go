@@ -2475,12 +2475,6 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: extProc
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtProcPolicy
-    - name: hashPolicies
-      type:
-        list:
-          elementType:
-            namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.HashPolicy
-          elementRelationship: atomic
     - name: headerModifiers
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.HeaderModifiers

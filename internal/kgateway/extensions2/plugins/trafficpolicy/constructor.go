@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"gorm.io/gorm/logger"
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
@@ -97,8 +96,6 @@ func (c *TrafficPolicyConstructor) ConstructIR(
 		errors = append(errors, err)
 	}
 
-	// Construct hash policy specific IR
-	constructHashPolicy(policyCR.Spec, &outSpec)
 	// Construct auto host rewrite specific IR
 	constructAutoHostRewrite(policyCR.Spec, &outSpec)
 	// Construct buffer specific IR
