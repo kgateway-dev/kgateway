@@ -18,3 +18,4 @@ spec:
         - type: RemoteAddress
       extensionRef:
         name: global-ratelimit
+        namespace: kgateway-test-extensions
