@@ -35,6 +35,8 @@ spec:
                 properties:
                   agentGateway:
                     properties:
+                      customConfigMapName:
+                        type: string
                       enabled:
                         type: boolean
                       env:

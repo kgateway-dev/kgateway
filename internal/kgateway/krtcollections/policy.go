@@ -299,49 +299,49 @@ func NewGatewayIndex(
 		}}
 	})
 
-	h.Gateways = krt.NewCollection(gws, func(kctx krt.HandlerContext, i *gwv1.Gateway) *ir.Gateway {
+	h.Gateways = krt.NewCollection(gws, func(kctx krt.HandlerContext, gw *gwv1.Gateway) *ir.Gateway {
 		// only care about gateways use a class controlled by us
-		gwClass := ptr.Flatten(krt.FetchOne(kctx, gwClasses, krt.FilterKey(string(i.Spec.GatewayClassName))))
+		gwClass := ptr.Flatten(krt.FetchOne(kctx, gwClasses, krt.FilterKey(string(gw.Spec.GatewayClassName))))
 		if gwClass == nil || controllerName != string(gwClass.Spec.ControllerName) {
 			return nil
 		}
 
-		out := ir.Gateway{
+		gwIR := ir.Gateway{
 			ObjectSource: ir.ObjectSource{
 				Group:     gwv1.SchemeGroupVersion.Group,
 				Kind:      wellknown.GatewayKind,
-				Namespace: i.Namespace,
-				Name:      i.Name,
+				Namespace: gw.Namespace,
+				Name:      gw.Name,
 			},
-			Obj:       i,
-			Listeners: make([]ir.Listener, 0, len(i.Spec.Listeners)),
+			Obj:       gw,
+			Listeners: make([]ir.Listener, 0, len(gw.Spec.Listeners)),
 		}
 
-		if i.Annotations[apiannotations.PerConnectionBufferLimit] != "" {
-			limit, err := resource.ParseQuantity(i.Annotations[apiannotations.PerConnectionBufferLimit])
+		if gw.Annotations[apiannotations.PerConnectionBufferLimit] != "" {
+			limit, err := resource.ParseQuantity(gw.Annotations[apiannotations.PerConnectionBufferLimit])
 			if err != nil {
 				logger.Error("failed to parse per connection buffer limit", "error", err)
 			} else {
-				out.PerConnectionBufferLimitBytes = k8sptr.To(uint32(limit.Value()))
+				gwIR.PerConnectionBufferLimitBytes = k8sptr.To(uint32(limit.Value()))
 			}
 		}
 
 		// TODO: http polic
 		//		panic("TODO: implement http policies not just listener")
-		out.AttachedListenerPolicies = toAttachedPolicies(
-			h.policies.getTargetingPolicies(kctx, extensionsplug.GatewayAttachmentPoint, out.ObjectSource, "", i.GetLabels()))
-		out.AttachedHttpPolicies = out.AttachedListenerPolicies // see if i can find a better way to segment the listener level and http level policies
-		for _, l := range i.Spec.Listeners {
-			out.Listeners = append(out.Listeners, ir.Listener{
+		gwIR.AttachedListenerPolicies = toAttachedPolicies(
+			h.policies.getTargetingPolicies(kctx, extensionsplug.GatewayAttachmentPoint, gwIR.ObjectSource, "", gw.GetLabels()))
+		gwIR.AttachedHttpPolicies = gwIR.AttachedListenerPolicies // see if i can find a better way to segment the listener level and http level policies
+		for _, l := range gw.Spec.Listeners {
+			gwIR.Listeners = append(gwIR.Listeners, ir.Listener{
 				Listener: l,
-				Parent:   i,
+				Parent:   gw,
 				// TODO(https://github.com/kgateway-dev/kgateway/issues/11775): is RouteAttachmentPoint correct in all scenarios?
-				AttachedPolicies: toAttachedPolicies(h.policies.getTargetingPolicies(kctx, extensionsplug.RouteAttachmentPoint, out.ObjectSource, string(l.Name), i.GetLabels())),
+				AttachedPolicies: toAttachedPolicies(h.policies.getTargetingPolicies(kctx, extensionsplug.RouteAttachmentPoint, gwIR.ObjectSource, string(l.Name), gw.GetLabels())),
 				PolicyAncestorRef: gwv1.ParentReference{
 					Group:     k8sptr.To(gwv1.Group(wellknown.GatewayGVK.Group)),
 					Kind:      k8sptr.To(gwv1.Kind(wellknown.GatewayGVK.Kind)),
-					Name:      gwv1.ObjectName(i.Name),
-					Namespace: k8sptr.To(gwv1.Namespace(i.Namespace)),
+					Name:      gwv1.ObjectName(gw.Name),
+					Namespace: k8sptr.To(gwv1.Namespace(gw.Namespace)),
 				},
 			})
 		}
@@ -349,8 +349,8 @@ func NewGatewayIndex(
 		listenerSets := krt.Fetch(kctx, lss, krt.FilterIndex(byParentRefIndex, targetRefIndexKey{
 			Group:     wellknown.GatewayGroup,
 			Kind:      wellknown.GatewayKind,
-			Name:      i.GetName(),
-			Namespace: i.GetNamespace(),
+			Name:      gw.GetName(),
+			Namespace: gw.GetNamespace(),
 		}))
 
 		slices.SortFunc(listenerSets, func(a, b *gwxv1a1.XListenerSet) int {
@@ -363,7 +363,7 @@ func NewGatewayIndex(
 			tmetrics.StartResourceSync(ls.Name,
 				tmetrics.ResourceMetricLabels{
 					Namespace: ls.Namespace,
-					Gateway:   i.GetName(),
+					Gateway:   gw.GetName(),
 					Resource:  wellknown.XListenerSetKind,
 				})
 		}
@@ -402,24 +402,34 @@ func NewGatewayIndex(
 				})
 			}
 
-			allowedNs, err := allowedListenerSet(i, namespaces)
+			if gw.Spec.AllowedListeners == nil {
+				lsIR.Err = errors.New("Unable to attach to parent, gateway has not enabled allowedListeners")
+				gwIR.DeniedListenerSets = append(gwIR.DeniedListenerSets, lsIR)
+				continue
+			}
+
+			// TODO: this logic should be done once for the Gateway, not per ListenerSet
+			// also means that we should report on the Gateway not any ListenerSet
+			allowedNs, err := allowedListenerSet(gw, namespaces)
 			if err != nil {
-				out.DeniedListenerSets = append(out.DeniedListenerSets, lsIR)
+				lsIR.Err = errors.New("Unable to parse allowedListeners")
+				gwIR.DeniedListenerSets = append(gwIR.DeniedListenerSets, lsIR)
 				continue
 			}
 
 			// Check if the namespace of the listenerSet is allowed by the gateway
 			// We return the denied list of ls to have their status set to rejected during validation
 			if !allowedNs(kctx, ls.GetNamespace()) {
-				out.DeniedListenerSets = append(out.DeniedListenerSets, lsIR)
+				lsIR.Err = errors.New("Attachment not allowed")
+				gwIR.DeniedListenerSets = append(gwIR.DeniedListenerSets, lsIR)
 				continue
 			}
 
-			out.AllowedListenerSets = append(out.AllowedListenerSets, lsIR)
-			out.Listeners = append(out.Listeners, lsIR.Listeners...)
+			gwIR.AllowedListenerSets = append(gwIR.AllowedListenerSets, lsIR)
+			gwIR.Listeners = append(gwIR.Listeners, lsIR.Listeners...)
 		}
 
-		return &out
+		return &gwIR
 	}, krtopts.ToOptions("gateways")...)
 
 	return h

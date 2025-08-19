@@ -1,0 +1,102 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: example-gateway
+spec:
+  gatewayClassName: agentgateway
+  listeners:
+    - name: foo
+      protocol: HTTP
+      port: 80
+    - name: bar
+      protocol: HTTP
+      port: 90
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: example-svc
+spec:
+  selector:
+    test: test
+  ports:
+    - protocol: TCP
+      appProtocol: anything
+      port: 80
+      targetPort: test
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: secure-route-policy
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: example-gateway
+      sectionName: foo
+  extAuth:
+    extensionRef:
+      name: basic-extauth
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ext-authz
+  labels:
+    app: ext-authz
+spec:
+  ports:
+    - port: 4444
+      targetPort: 9000
+      protocol: TCP
+      appProtocol: kubernetes.io/h2c
+  selector:
+    app: ext-authz
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ext-authz
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ext-authz
+  template:
+    metadata:
+      labels:
+        app: ext-authz
+        app.kubernetes.io/name: ext-authz
+    spec:
+      containers:
+        - image: gcr.io/istio-testing/ext-authz:1.25-dev
+          name: ext-authz
+          ports:
+            - containerPort: 9000
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: basic-extauth
+spec:
+  type: ExtAuth
+  extAuth:
+    grpcService:
+      backendRef:
+        name: ext-authz
+        port: 4444
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: example-route
+spec:
+  parentRefs:
+    - name: example-gateway
+  hostnames:
+    - "example.com"
+  rules:
+    - backendRefs:
+        - name: example-svc
+          port: 80

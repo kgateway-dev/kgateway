@@ -1024,6 +1024,13 @@ type AgentGateway struct {
 	//
 	// +optional
 	Env []corev1.EnvVar `json:"env,omitempty"`
+
+	// Name of the custom configmap to use instead of the default generated one.
+	// When set, the agent gateway will use this configmap instead of creating the default one.
+	// The configmap must contain a 'config.yaml' key with the agent gateway configuration.
+	//
+	// +optional
+	CustomConfigMapName *string `json:"customConfigMapName,omitempty"`
 }
 
 func (in *AgentGateway) GetEnabled() *bool {
@@ -1066,4 +1073,11 @@ func (in *AgentGateway) GetEnv() []corev1.EnvVar {
 		return nil
 	}
 	return in.Env
+}
+
+func (in *AgentGateway) GetCustomConfigMapName() *string {
+	if in == nil {
+		return nil
+	}
+	return in.CustomConfigMapName
 }

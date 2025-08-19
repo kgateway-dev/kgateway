@@ -191,6 +191,9 @@ var schemaYAML = typed.YAMLObject(`types:
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AgentGateway
   map:
     fields:
+    - name: customConfigMapName
+      type:
+        scalar: string
     - name: enabled
       type:
         scalar: boolean
@@ -1514,6 +1517,12 @@ var schemaYAML = typed.YAMLObject(`types:
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LoadBalancerMaglevConfig
   map:
     fields:
+    - name: hashPolicies
+      type:
+        list:
+          elementType:
+            namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.HashPolicy
+          elementRelationship: atomic
     - name: useHostnameForHashing
       type:
         scalar: boolean
@@ -1532,6 +1541,12 @@ var schemaYAML = typed.YAMLObject(`types:
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LoadBalancerRingHashConfig
   map:
     fields:
+    - name: hashPolicies
+      type:
+        list:
+          elementType:
+            namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.HashPolicy
+          elementRelationship: atomic
     - name: maximumRingSize
       type:
         scalar: numeric
@@ -2438,12 +2453,6 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: extProc
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtProcPolicy
-    - name: hashPolicies
-      type:
-        list:
-          elementType:
-            namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.HashPolicy
-          elementRelationship: atomic
     - name: rateLimit
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.RateLimit

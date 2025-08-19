@@ -35,14 +35,13 @@ import (
 	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
-	agwir "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/ir"
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
-
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	agwir "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 )
 
 const (
@@ -52,8 +51,14 @@ const (
 func convertHTTPRouteToADP(ctx RouteContext, r gwv1.HTTPRouteRule,
 	obj *gwv1.HTTPRoute, pos int, matchPos int,
 ) (*api.Route, *reporter.RouteCondition) {
+	routeKey := getRouteKeyPosition(obj.ObjectMeta, pos) + "." + strconv.Itoa(matchPos)
+	// TODO(npolshak): Set both routeKey and RuleName once agentgateway is bumped to pick up fix in https://github.com/agentgateway/agentgateway/pull/323
+	if r.Name != nil {
+		// use the user provided name. this will be used to attach policies
+		routeKey = getRouteKeySectionName(obj.ObjectMeta, string(*r.Name))
+	}
 	res := &api.Route{
-		Key:         obj.Namespace + "." + obj.Name + "." + strconv.Itoa(pos) + "." + strconv.Itoa(matchPos),
+		Key:         routeKey,
 		RouteName:   obj.Namespace + "/" + obj.Name,
 		ListenerKey: "",
 		RuleName:    defaultString(r.Name, ""),
@@ -110,6 +115,7 @@ func convertHTTPRouteToADP(ctx RouteContext, r gwv1.HTTPRouteRule,
 	res.Hostnames = slices.Map(obj.Spec.Hostnames, func(e gwv1.Hostname) string {
 		return string(e)
 	})
+
 	// Return filter error if present, otherwise return backend error
 	var errs []error
 	var errorReason gwv1.RouteConditionReason = gwv1.RouteReasonBackendNotFound
@@ -131,14 +137,19 @@ func convertHTTPRouteToADP(ctx RouteContext, r gwv1.HTTPRouteRule,
 			Message: errors.Join(errs...).Error(),
 		}
 	}
-	return res, nil
+	return res, backendErr
 }
 
 func convertTCPRouteToADP(ctx RouteContext, r gwv1alpha2.TCPRouteRule,
 	obj *gwv1alpha2.TCPRoute, pos int,
 ) (*api.TCPRoute, *reporter.RouteCondition) {
+	routeKey := getRouteKeyPosition(obj.ObjectMeta, pos)
+	if r.Name != nil {
+		// use the user provided name. this will be used to attach policies
+		routeKey = getRouteKeySectionName(obj.ObjectMeta, string(*r.Name))
+	}
 	res := &api.TCPRoute{
-		Key:         obj.Namespace + "." + obj.Name + "." + strconv.Itoa(pos),
+		Key:         routeKey,
 		RouteName:   obj.Namespace + "/" + obj.Name,
 		ListenerKey: "",
 		RuleName:    defaultString(r.Name, ""),
@@ -158,8 +169,13 @@ func convertTCPRouteToADP(ctx RouteContext, r gwv1alpha2.TCPRouteRule,
 func convertGRPCRouteToADP(ctx RouteContext, r gwv1.GRPCRouteRule,
 	obj *gwv1.GRPCRoute, pos int,
 ) (*api.Route, *reporter.RouteCondition) {
+	routeKey := getRouteKeyPosition(obj.ObjectMeta, pos)
+	if r.Name != nil {
+		// use the user provided name. this will be used to attach policies
+		routeKey = getRouteKeySectionName(obj.ObjectMeta, string(*r.Name))
+	}
 	res := &api.Route{
-		Key:         obj.Namespace + "." + obj.Name + "." + strconv.Itoa(pos),
+		Key:         routeKey,
 		RouteName:   obj.Namespace + "/" + obj.Name,
 		ListenerKey: "",
 		RuleName:    defaultString(r.Name, ""),
@@ -217,8 +233,13 @@ func convertGRPCRouteToADP(ctx RouteContext, r gwv1.GRPCRouteRule,
 func convertTLSRouteToADP(ctx RouteContext, r gwv1alpha2.TLSRouteRule,
 	obj *gwv1alpha2.TLSRoute, pos int,
 ) (*api.TCPRoute, *reporter.RouteCondition) {
+	routeKey := getRouteKeyPosition(obj.ObjectMeta, pos)
+	if r.Name != nil {
+		// use the user provided name. this will be used to attach policies
+		routeKey = getRouteKeySectionName(obj.ObjectMeta, string(*r.Name))
+	}
 	res := &api.TCPRoute{
-		Key:         obj.Namespace + "." + obj.Name + "." + strconv.Itoa(pos),
+		Key:         routeKey,
 		RouteName:   obj.Namespace + "/" + obj.Name,
 		ListenerKey: "",
 		RuleName:    defaultString(r.Name, ""),
@@ -998,6 +1019,7 @@ func buildListener(
 	l gwv1.Listener,
 	listenerIndex int,
 	controllerName gwv1.GatewayController,
+	attachedRoutes int32,
 ) (*istio.Server, *TLSInfo, bool) {
 	listenerConditions := map[string]*condition{
 		string(gwv1.ListenerConditionAccepted): {
@@ -1050,7 +1072,7 @@ func buildListener(
 		Tls:   tls,
 	}
 
-	reportListenerCondition(listenerIndex, l, obj, status, listenerConditions)
+	reportListenerCondition(listenerIndex, l, obj, status, listenerConditions, attachedRoutes)
 	return server, tlsInfo, ok
 }
 
@@ -1380,4 +1402,12 @@ func routeGroupKindEqual(rgk1, rgk2 gwv1.RouteGroupKind) bool {
 
 func getGroup(rgk gwv1.RouteGroupKind) gwv1.Group {
 	return ptr.OrDefault(rgk.Group, wellknown.GatewayGroup)
+}
+
+func getRouteKeyPosition(obj metav1.ObjectMeta, pos int) string {
+	return obj.GetNamespace() + "." + obj.GetName() + "." + strconv.Itoa(pos)
+}
+
+func getRouteKeySectionName(obj metav1.ObjectMeta, sectionName string) string {
+	return obj.GetNamespace() + "/" + obj.GetName() + "/" + sectionName
 }

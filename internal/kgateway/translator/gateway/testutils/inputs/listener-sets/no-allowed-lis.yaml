@@ -1,0 +1,60 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: example-gateway
+spec:
+  gatewayClassName: example-gateway-class
+  listeners:
+  - name: http-8080
+    protocol: HTTP
+    port: 8080
+---
+apiVersion: gateway.networking.x-k8s.io/v1alpha1
+kind: XListenerSet
+metadata:
+  name: foo-listenerset
+spec:
+  parentRef:
+    name: example-gateway
+    kind: Gateway
+    group: gateway.networking.k8s.io
+  listeners:
+  - name: http-9090
+    protocol: HTTP
+    port: 9090
+    allowedRoutes:
+      namespaces:
+        from: All
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: foo-route
+spec:
+  parentRefs:
+  - name: foo-listenerset
+    group: gateway.networking.x-k8s.io
+    kind: XListenerSet
+  hostnames:
+  - "foo.example.com"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: foo-svc
+      port: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: foo-svc
+spec:
+  selector:
+    test: test
+  ports:
+    - protocol: HTTP
+      port: 8080
+      targetPort: test
+

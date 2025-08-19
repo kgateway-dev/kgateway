@@ -26,10 +26,7 @@ spec:
         from: Same
   allowedListeners:
     namespaces:
-      from: Selector
-      selector:
-        matchLabels:
-          allowed: ns
+      from: All
 ---
 apiVersion: v1
 kind: Pod

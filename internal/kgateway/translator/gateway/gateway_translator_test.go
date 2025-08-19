@@ -13,6 +13,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
+	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
@@ -110,7 +111,7 @@ func TestBasic(t *testing.T) {
 						},
 					},
 				}
-				gatewayStatus := reportsMap.BuildGWStatus(context.Background(), *gateway)
+				gatewayStatus := reportsMap.BuildGWStatus(context.Background(), *gateway, nil)
 				a.NotNil(gatewayStatus)
 				a.Len(gatewayStatus.Listeners, 2)
 				httpsListener := gatewayStatus.Listeners[0]
@@ -371,10 +372,10 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
-	t.Run("Load balancer with hash policies, route level", func(t *testing.T) {
+	t.Run("Load balancer with hash policies", func(t *testing.T) {
 		test(t, translatorTestCase{
-			inputFile:  "loadbalancer/route.yaml",
-			outputFile: "loadbalancer/route.yaml",
+			inputFile:  "loadbalancer/hash-policies.yaml",
+			outputFile: "loadbalancer/hash-policies.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
@@ -900,6 +901,39 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("HTTPListenerPolicy with useRemoteAddress absent", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "httplistenerpolicy/use-remote-addr-absent.yaml",
+			outputFile: "httplistenerpolicy/use-remote-addr-absent.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("HTTPListenerPolicy with useRemoteAddress true", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "httplistenerpolicy/use-remote-addr-true.yaml",
+			outputFile: "httplistenerpolicy/use-remote-addr-true.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("HTTPListenerPolicy with useRemoteAddress false", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "httplistenerpolicy/use-remote-addr-false.yaml",
+			outputFile: "httplistenerpolicy/use-remote-addr-false.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("HTTPListenerPolicy merging", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "httplistenerpolicy/merge.yaml",
@@ -1093,11 +1127,47 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
-	t.Run("listener sets", func(t *testing.T) {
-		t.Skip("TODO: Add this once istio adds support for listener sets")
+	t.Run("basic listener set", func(t *testing.T) {
 		test(t, translatorTestCase{
-			inputFile:  "listener-sets/manifest.yaml",
-			outputFile: "listener-sets-proxy.yaml",
+			inputFile:  "listener-sets/basic.yaml",
+			outputFile: "listener-sets/basic.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("listener set and gateway with no allowed listeners", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-sets/no-allowed-lis.yaml",
+			outputFile: "listener-sets/no-allowed-lis.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
+				expectedLS := gwxv1a1.XListenerSet{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "foo-listenerset",
+						Namespace: "default",
+					},
+				}
+				expectedAccepted := metav1.Condition{
+					Type:    string(gwxv1a1.ListenerSetConditionAccepted),
+					Status:  metav1.ConditionFalse,
+					Reason:  string(gwxv1a1.ListenerSetReasonNotAllowed),
+					Message: "Unable to attach to parent, gateway has not enabled allowedListeners",
+				}
+				translatortest.AssertListenerSetCondition(t, reportsMap, expectedLS, expectedAccepted)
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy: rate limit", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/rate-limit.yaml",
+			outputFile: "traffic-policy/rate-limit.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",

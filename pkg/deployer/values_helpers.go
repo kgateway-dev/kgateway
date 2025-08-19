@@ -315,8 +315,14 @@ func GetAgentGatewayValues(config *v1alpha1.AgentGateway) (*HelmAgentGateway, er
 		logLevel = *config.GetLogLevel()
 	}
 
+	var customConfigMapName string
+	if config.GetCustomConfigMapName() != nil {
+		customConfigMapName = *config.GetCustomConfigMapName()
+	}
+
 	return &HelmAgentGateway{
-		Enabled:  *config.GetEnabled(),
-		LogLevel: logLevel,
+		Enabled:             *config.GetEnabled(),
+		LogLevel:            logLevel,
+		CustomConfigMapName: customConfigMapName,
 	}, nil
 }

@@ -90,7 +90,6 @@ type trafficPolicySpecIr struct {
 	globalRateLimit *globalRateLimitIR
 	cors            *corsIR
 	csrf            *csrfIR
-	hashPolicies    *hashPolicyIR
 	autoHostRewrite *autoHostRewriteIR
 	retry           *retryIR
 	timeouts        *timeoutsIR
@@ -142,9 +141,6 @@ func (d *TrafficPolicy) Equals(in any) bool {
 	if !d.spec.buffer.Equals(d2.spec.buffer) {
 		return false
 	}
-	if !d.spec.hashPolicies.Equals(d2.spec.hashPolicies) {
-		return false
-	}
 	if !d.spec.retry.Equals(d2.spec.retry) {
 		return false
 	}
@@ -169,7 +165,6 @@ func (p *TrafficPolicy) Validate() error {
 	validators = append(validators, p.spec.csrf.Validate)
 	validators = append(validators, p.spec.cors.Validate)
 	validators = append(validators, p.spec.buffer.Validate)
-	validators = append(validators, p.spec.hashPolicies.Validate)
 	validators = append(validators, p.spec.autoHostRewrite.Validate)
 	for _, validator := range validators {
 		if err := validator(); err != nil {
@@ -444,7 +439,6 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.Filt
 
 		// handle the case where route level only should be fired
 		stagedExtProcFilter.Filter.Disabled = true
-
 		filters = append(filters, stagedExtProcFilter)
 	}
 
@@ -460,7 +454,6 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.Filt
 			plugins.BeforeStage(plugins.AcceptedStage),
 		)
 		filter.Filter.Disabled = true
-
 		filters = append(filters, filter)
 	}
 	if p.setTransformationInChain[fcc.FilterChainName] && useRustformations {
@@ -532,7 +525,6 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.Filt
 		)
 
 		stagedExtAuthFilter.Filter.Disabled = true
-
 		filters = append(filters, stagedExtAuthFilter)
 	}
 
@@ -555,7 +547,7 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.Filt
 			rateLimitFilter,
 			plugins.DuringStage(plugins.RateLimitStage),
 		)
-
+		stagedRateLimitFilter.Filter.Disabled = true
 		filters = append(filters, stagedRateLimitFilter)
 	}
 
@@ -563,12 +555,14 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.Filt
 	// Requires the cors policy to be set as typed_per_filter_config.
 	if f := p.corsInChain[fcc.FilterChainName]; f != nil {
 		filter := plugins.MustNewStagedFilter(envoy_wellknown.CORS, f, plugins.DuringStage(plugins.CorsStage))
+		filter.Filter.Disabled = true
 		filters = append(filters, filter)
 	}
 
 	// Add global CSRF http filter
 	if f := p.csrfInChain[fcc.FilterChainName]; f != nil {
 		filter := plugins.MustNewStagedFilter(csrfExtensionFilterName, f, plugins.DuringStage(plugins.RouteStage))
+		filter.Filter.Disabled = true
 		filters = append(filters, filter)
 	}
 
@@ -617,10 +611,6 @@ func (p *trafficPolicyPluginGwPass) handlePerRoutePolicies(
 	}
 
 	action := out.GetRoute()
-
-	if spec.hashPolicies != nil {
-		action.HashPolicy = spec.hashPolicies.policies
-	}
 
 	if spec.autoHostRewrite != nil && spec.autoHostRewrite.enabled != nil && spec.autoHostRewrite.enabled.GetValue() {
 		// Only apply TrafficPolicy's AutoHostRewrite if built-in policy's AutoHostRewrite is not already set
@@ -686,7 +676,6 @@ func MergeTrafficPolicies(
 		mergeCSRF,
 		mergeBuffer,
 		mergeAutoHostRewrite,
-		mergeHashPolicies,
 		mergeTimeouts,
 		mergeRetry,
 	}

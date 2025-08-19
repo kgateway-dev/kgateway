@@ -1,25 +1,25 @@
 package translator
 
 import (
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
+	agentgatewayplugins "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
 )
 
 // AgentGatewayTranslator coordinates translation of resources for agent gateway
 type AgentGatewayTranslator struct {
-	commonCols        *common.CommonCollections
+	agwCollection     *agentgatewayplugins.AgwCollections
 	extensions        extensionsplug.Plugin
 	backendTranslator *AgentGatewayBackendTranslator
 }
 
 // NewAgentGatewayTranslator creates a new AgentGatewayTranslator
 func NewAgentGatewayTranslator(
-	commonCols *common.CommonCollections,
+	agwCollection *agentgatewayplugins.AgwCollections,
 	extensions extensionsplug.Plugin,
 ) *AgentGatewayTranslator {
 	return &AgentGatewayTranslator{
-		commonCols: commonCols,
-		extensions: extensions,
+		agwCollection: agwCollection,
+		extensions:    extensions,
 	}
 }
 

@@ -43,13 +43,13 @@ func (s *testingSuite) TestAgentGatewayDeployment() {
 		metav1.ConditionTrue,
 	)
 	// TODO: Add this once https://github.com/kgateway-dev/kgateway/issues/11929 has been resolved
-	// s.TestInstallation.Assertions.EventuallyGatewayListenerAttachedRoutes(
-	// 	s.Ctx,
-	// 	gatewayObjectMeta.Name,
-	// 	gatewayObjectMeta.Namespace,
-	// 	"http",
-	// 	1,
-	// )
+	s.TestInstallation.Assertions.EventuallyGatewayListenerAttachedRoutes(
+		s.Ctx,
+		gatewayObjectMeta.Name,
+		gatewayObjectMeta.Namespace,
+		"http",
+		1,
+	)
 
 	s.TestInstallation.Assertions.AssertEventualCurlResponse(
 		s.Ctx,

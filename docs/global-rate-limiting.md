@@ -127,7 +127,7 @@ spec:
 | grpcService | Configuration for connecting to the gRPC rate limit service | Yes |
 | domain | Domain identity for the rate limit service | Yes |
 | timeout | Timeout for rate limit service calls (e.g., "100ms") | No |
-| failOpen | When true, requests continue if the rate limit service is unavailable | No (defaults to false) |
+| failOpen | When true, requests continue if the rate limit service is unavailable | No (defaults to true) |
 
 ### Rate Limit Descriptors
 

@@ -85,8 +85,6 @@ func (c *TrafficPolicyConstructor) ConstructIR(
 		errors = append(errors, err)
 	}
 
-	// Construct hash policy specific IR
-	constructHashPolicy(policyCR.Spec, &outSpec)
 	// Construct auto host rewrite specific IR
 	constructAutoHostRewrite(policyCR.Spec, &outSpec)
 	// Construct buffer specific IR
