@@ -413,10 +413,17 @@ spec:
                   extensionRef:
                     properties:
                       name:
-                        default: ""
+                        maxLength: 253
+                        minLength: 1
                         type: string
+                      namespace:
+                        maxLength: 63
+                        minLength: 1
+                        pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                        type: string
+                    required:
+                    - name
                     type: object
-                    x-kubernetes-map-type: atomic
                   withRequestBody:
                     properties:
                       allowPartialMessage:
@@ -443,10 +450,17 @@ spec:
                   extensionRef:
                     properties:
                       name:
-                        default: ""
+                        maxLength: 253
+                        minLength: 1
                         type: string
+                      namespace:
+                        maxLength: 63
+                        minLength: 1
+                        pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                        type: string
+                    required:
+                    - name
                     type: object
-                    x-kubernetes-map-type: atomic
                   processingMode:
                     properties:
                       requestBodyMode:
@@ -556,10 +570,17 @@ spec:
                       extensionRef:
                         properties:
                           name:
-                            default: ""
+                            maxLength: 253
+                            minLength: 1
                             type: string
+                          namespace:
+                            maxLength: 63
+                            minLength: 1
+                            pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                            type: string
+                        required:
+                        - name
                         type: object
-                        x-kubernetes-map-type: atomic
                     required:
                     - descriptors
                     - extensionRef

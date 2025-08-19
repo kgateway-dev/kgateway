@@ -3,18 +3,16 @@
 package v1alpha1
 
 import (
-	v1 "k8s.io/api/core/v1"
-
 	apiv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 )
 
 // ExtAuthPolicyApplyConfiguration represents a declarative configuration of the ExtAuthPolicy type for use
 // with apply.
 type ExtAuthPolicyApplyConfiguration struct {
-	ExtensionRef      *v1.LocalObjectReference          `json:"extensionRef,omitempty"`
-	WithRequestBody   *BufferSettingsApplyConfiguration `json:"withRequestBody,omitempty"`
-	ContextExtensions map[string]string                 `json:"contextExtensions,omitempty"`
-	Disable           *apiv1alpha1.PolicyDisable        `json:"disable,omitempty"`
+	ExtensionRef      *NamespacedObjectReferenceApplyConfiguration `json:"extensionRef,omitempty"`
+	WithRequestBody   *BufferSettingsApplyConfiguration            `json:"withRequestBody,omitempty"`
+	ContextExtensions map[string]string                            `json:"contextExtensions,omitempty"`
+	Disable           *apiv1alpha1.PolicyDisable                   `json:"disable,omitempty"`
 }
 
 // ExtAuthPolicyApplyConfiguration constructs a declarative configuration of the ExtAuthPolicy type for use with
@@ -26,8 +24,8 @@ func ExtAuthPolicy() *ExtAuthPolicyApplyConfiguration {
 // WithExtensionRef sets the ExtensionRef field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the ExtensionRef field is set to the value of the last call.
-func (b *ExtAuthPolicyApplyConfiguration) WithExtensionRef(value v1.LocalObjectReference) *ExtAuthPolicyApplyConfiguration {
-	b.ExtensionRef = &value
+func (b *ExtAuthPolicyApplyConfiguration) WithExtensionRef(value *NamespacedObjectReferenceApplyConfiguration) *ExtAuthPolicyApplyConfiguration {
+	b.ExtensionRef = value
 	return b
 }
 
