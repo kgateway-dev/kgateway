@@ -164,7 +164,7 @@ type (
 	HeaderTransformation struct {
 		// Name is the name of the header to interact with.
 		// +required
-		Name HeaderName `json:"name,omitempty"`
+		Name HeaderName `json:"name"`
 		// Value is the template to apply to generate the output value for the header.
 		Value InjaTemplate `json:"value,omitempty"`
 	}
@@ -204,7 +204,7 @@ type BodyTransformation struct {
 type ExtAuthPolicy struct {
 	// ExtensionRef references the GatewayExtension that should be used for authentication.
 	// +optional
-	ExtensionRef NamespacedObjectReference `json:"extensionRef,omitempty"`
+	ExtensionRef *NamespacedObjectReference `json:"extensionRef,omitempty"`
 
 	// WithRequestBody allows the request body to be buffered and sent to the authorization service.
 	// Warning buffering has implications for streaming and therefore performance.

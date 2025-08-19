@@ -6,7 +6,7 @@ package v1alpha1
 type ExtProcPolicy struct {
 	// ExtensionRef references the GatewayExtension that should be used for external processing.
 	// +optional
-	ExtensionRef NamespacedObjectReference `json:"extensionRef,omitempty"`
+	ExtensionRef *NamespacedObjectReference `json:"extensionRef,omitempty"`
 
 	// ProcessingMode defines how the filter should interact with the request/response streams
 	// +optional

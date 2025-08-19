@@ -340,7 +340,7 @@ type LoadBalancerLeastRequestConfig struct {
 	// Defaults to 2.
 	// +optional
 	// +default=2
-	ChoiceCount uint32 `json:"choiceCount,omitempty"`
+	ChoiceCount *uint32 `json:"choiceCount,omitempty"`
 
 	// SlowStart configures the slow start configuration for the load balancer.
 	// +optional
@@ -439,25 +439,25 @@ type HealthCheck struct {
 	// health check attempt will be considered a failure.
 	// +required
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
-	Timeout *metav1.Duration `json:"timeout"`
+	Timeout metav1.Duration `json:"timeout"`
 
 	// Interval is the time between health checks.
 	// +required
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
-	Interval *metav1.Duration `json:"interval"`
+	Interval metav1.Duration `json:"interval"`
 
 	// UnhealthyThreshold is the number of consecutive failed health checks that will be considered
 	// unhealthy.
 	// Note that for HTTP health checks, if a host responds with a code not in ExpectedStatuses or RetriableStatuses,
 	// this threshold is ignored and the host is considered immediately unhealthy.
 	// +required
-	UnhealthyThreshold *uint32 `json:"unhealthyThreshold"`
+	UnhealthyThreshold uint32 `json:"unhealthyThreshold"`
 
 	// HealthyThreshold is the number of healthy health checks required before a host is marked
 	// healthy. Note that during startup, only a single successful health check is
 	// required to mark a host healthy.
 	// +required
-	HealthyThreshold *uint32 `json:"healthyThreshold"`
+	HealthyThreshold uint32 `json:"healthyThreshold"`
 
 	// Http contains the options to configure the HTTP health check.
 	// +optional

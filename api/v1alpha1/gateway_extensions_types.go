@@ -40,21 +40,21 @@ const (
 type ExtAuthProvider struct {
 	// GrpcService is the GRPC service that will handle the authentication.
 	// +required
-	GrpcService *ExtGrpcService `json:"grpcService"`
+	GrpcService ExtGrpcService `json:"grpcService"`
 }
 
 // ExtProcProvider defines the configuration for an ExtProc provider.
 type ExtProcProvider struct {
 	// GrpcService is the GRPC service that will handle the processing.
 	// +required
-	GrpcService *ExtGrpcService `json:"grpcService"`
+	GrpcService ExtGrpcService `json:"grpcService"`
 }
 
 // ExtGrpcService defines the GRPC service that will handle the processing.
 type ExtGrpcService struct {
 	// BackendRef references the backend GRPC service.
 	// +required
-	BackendRef *gwv1.BackendRef `json:"backendRef"`
+	BackendRef gwv1.BackendRef `json:"backendRef"`
 
 	// Authority is the authority header to use for the GRPC service.
 	// +optional
@@ -65,7 +65,7 @@ type ExtGrpcService struct {
 type RateLimitProvider struct {
 	// GrpcService is the GRPC service that will handle the rate limiting.
 	// +required
-	GrpcService *ExtGrpcService `json:"grpcService"`
+	GrpcService ExtGrpcService `json:"grpcService"`
 
 	// Domain identifies a rate limiting configuration for the rate limit service.
 	// All rate limit requests must specify a domain, which enables the configuration
@@ -77,13 +77,13 @@ type RateLimitProvider struct {
 	// When true, requests are not limited if the rate limit service is unavailable.
 	// +optional
 	// +kubebuilder:default=true
-	FailOpen bool `json:"failOpen,omitempty"`
+	FailOpen *bool `json:"failOpen,omitempty"`
 
 	// Timeout for requests to the rate limit service.
 	// +optional
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	// +kubebuilder:default="100ms"
-	Timeout metav1.Duration `json:"timeout,omitempty"`
+	Timeout *metav1.Duration `json:"timeout,omitempty"`
 }
 
 // GatewayExtensionSpec defines the desired state of GatewayExtension.
@@ -123,7 +123,9 @@ type GatewayExtensionStatus struct {
 	// +listType=map
 	// +listMapKey=type
 	// +kubebuilder:validation:MaxItems=8
-	Conditions []metav1.Condition `json:"conditions,omitempty"`
+	// +patchStrategy=merge
+	// +patchMergeKey=type
+	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
 }
 
 // +kubebuilder:object:root=true

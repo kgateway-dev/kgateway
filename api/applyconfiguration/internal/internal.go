@@ -166,6 +166,7 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: backendRef
       type:
         namedType: io.k8s.sigs.gateway-api.apis.v1.BackendRef
+      default: {}
     - name: initialMetadata
       type:
         list:
@@ -610,6 +611,7 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: backendRef
       type:
         namedType: io.k8s.sigs.gateway-api.apis.v1.BackendRef
+      default: {}
     - name: initialMetadata
       type:
         list:
@@ -641,6 +643,7 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: backendRef
       type:
         namedType: io.k8s.sigs.gateway-api.apis.v1.BackendRef
+      default: {}
     - name: initialMetadata
       type:
         list:
@@ -863,6 +866,7 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: op
       type:
         scalar: string
+      default: ""
     - name: value
       type:
         scalar: numeric
@@ -937,7 +941,6 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: extensionRef
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.NamespacedObjectReference
-      default: {}
     - name: withRequestBody
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.BufferSettings
@@ -947,6 +950,7 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: grpcService
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtGrpcService
+      default: {}
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtGrpcService
   map:
     fields:
@@ -956,6 +960,7 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: backendRef
       type:
         namedType: io.k8s.sigs.gateway-api.apis.v1.BackendRef
+      default: {}
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtProcPolicy
   map:
     fields:
@@ -965,7 +970,6 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: extensionRef
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.NamespacedObjectReference
-      default: {}
     - name: processingMode
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ProcessingMode
@@ -975,6 +979,7 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: grpcService
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtGrpcService
+      default: {}
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.FieldDefault
   map:
     fields:
@@ -1256,6 +1261,7 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: name
       type:
         scalar: string
+      default: ""
     - name: value
       type:
         scalar: string
@@ -1278,6 +1284,7 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: healthyThreshold
       type:
         scalar: numeric
+      default: 0
     - name: http
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.HealthCheckHttp
@@ -1290,6 +1297,7 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: unhealthyThreshold
       type:
         scalar: numeric
+      default: 0
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.HealthCheckGrpc
   map:
     fields:
@@ -2031,6 +2039,7 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: grpcService
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtGrpcService
+      default: {}
     - name: timeout
       type:
         namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Duration
@@ -2256,6 +2265,7 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: op
       type:
         scalar: string
+      default: ""
     - name: value
       type:
         scalar: numeric

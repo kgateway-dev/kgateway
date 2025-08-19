@@ -62,7 +62,7 @@ type McpTarget struct {
 	// Protocol is the protocol to use for the connection to the MCP target.
 	// +optional
 	// +kubebuilder:validation:Enum=Undefined;SSE;StreamableHTTP
-	Protocol MCPProtocol `json:"protocol,omitempty"`
+	Protocol *MCPProtocol `json:"protocol,omitempty"`
 }
 
 type MCPProtocol string

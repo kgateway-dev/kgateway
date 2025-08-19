@@ -83,13 +83,26 @@ type PolicyStatus struct {
 	// +listType=map
 	// +listMapKey=type
 	// +kubebuilder:validation:MaxItems=8
-	Conditions []metav1.Condition `json:"conditions,omitempty"`
+	// +patchStrategy=merge
+	// +patchMergeKey=type
+	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
 
 	// +kubebuilder:validation:MaxItems=16
 	Ancestors []PolicyAncestorStatus `json:"ancestors"`
 }
 
 type PolicyAncestorStatus struct {
+	// Conditions describes the status of the Policy with respect to the given Ancestor.
+	//
+	// +listType=map
+	// +listMapKey=type
+	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:MaxItems=8
+	// +patchStrategy=merge
+	// +patchMergeKey=type
+	// +optional
+	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
+
 	// AncestorRef corresponds with a ParentRef in the spec that this
 	// PolicyAncestorStatus struct describes the status of.
 	AncestorRef gwv1.ParentReference `json:"ancestorRef"`
@@ -108,14 +121,6 @@ type PolicyAncestorStatus struct {
 	// entries to status populated with their ControllerName are cleaned up when they are no
 	// longer necessary.
 	ControllerName string `json:"controllerName"`
-
-	// Conditions describes the status of the Policy with respect to the given Ancestor.
-	//
-	// +listType=map
-	// +listMapKey=type
-	// +kubebuilder:validation:MinItems=1
-	// +kubebuilder:validation:MaxItems=8
-	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
 
 // Specifies the way to match a string.

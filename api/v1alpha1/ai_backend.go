@@ -250,7 +250,7 @@ type BedrockConfig struct {
 	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:MaxLength=63
 	// +kubebuilder:validation:Pattern="^[a-z0-9-]+$"
-	Region string `json:"region,omitempty"`
+	Region *string `json:"region,omitempty"`
 
 	// Guardrail configures the Guardrail policy to use for the backend. See <https://docs.aws.amazon.com/bedrock/latest/userguide/guardrails.html>
 	// If not specified, the AWS Guardrail policy will not be used.
@@ -314,5 +314,5 @@ type MultiPoolConfig struct {
 	// +required
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=20
-	Priorities []Priority `json:"priorities,omitempty"`
+	Priorities []Priority `json:"priorities"`
 }

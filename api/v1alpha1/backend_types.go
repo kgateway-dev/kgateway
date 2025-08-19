@@ -182,19 +182,19 @@ type AwsLambda struct {
 	// +optional
 	// +kubebuilder:validation:Enum=Sync;Async
 	// +kubebuilder:default=Sync
-	InvocationMode string `json:"invocationMode,omitempty"`
+	InvocationMode *string `json:"invocationMode,omitempty"`
 	// Qualifier is the alias or version for the Lambda function.
 	// Valid values include a numeric version (e.g. "1"), an alias name
 	// (alphanumeric plus "-" or "_"), or the special literal "$LATEST".
 	// +optional
 	// +kubebuilder:validation:Pattern="^(\\$LATEST|[0-9]+|[A-Za-z0-9-_]{1,128})$"
 	// +kubebuilder:default=$LATEST
-	Qualifier string `json:"qualifier,omitempty"`
+	Qualifier *string `json:"qualifier,omitempty"`
 	// PayloadTransformation specifies payload transformation mode before it is sent to the Lambda function.
 	// Defaults to Envoy.
 	// +optional
 	// +kubebuilder:default=Envoy
-	PayloadTransformMode AWSLambdaPayloadTransformMode `json:"payloadTransformMode,omitempty"`
+	PayloadTransformMode *AWSLambdaPayloadTransformMode `json:"payloadTransformMode,omitempty"`
 }
 
 // AWSLambdaPayloadTransformMode defines the transformation mode for the payload in the request
@@ -221,7 +221,7 @@ type StaticBackend struct {
 	// Hosts is a list of hosts to use for the backend.
 	// +required
 	// +kubebuilder:validation:MinItems=1
-	Hosts []Host `json:"hosts,omitempty"`
+	Hosts []Host `json:"hosts"`
 
 	// AppProtocol is the application protocol to use when communicating with the backend.
 	// +optional
@@ -245,7 +245,9 @@ type BackendStatus struct {
 	// +listType=map
 	// +listMapKey=type
 	// +kubebuilder:validation:MaxItems=8
-	Conditions []metav1.Condition `json:"conditions,omitempty"`
+	// +patchStrategy=merge
+	// +patchMergeKey=type
+	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
 }
 
 // +kubebuilder:object:root=true
