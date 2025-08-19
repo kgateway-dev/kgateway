@@ -146,7 +146,7 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 			name: "LeastRequest basic config",
 			config: &v1alpha1.LoadBalancer{
 				LeastRequest: &v1alpha1.LoadBalancerLeastRequestConfig{
-					ChoiceCount: 3,
+					ChoiceCount: ptr.To(uint32(3)),
 				},
 			},
 			expected: func() *envoyclusterv3.Cluster {
@@ -172,7 +172,7 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 			name: "LeastRequest full config",
 			config: &v1alpha1.LoadBalancer{
 				LeastRequest: &v1alpha1.LoadBalancerLeastRequestConfig{
-					ChoiceCount: 10,
+					ChoiceCount: ptr.To(uint32(10)),
 					SlowStart: &v1alpha1.SlowStart{
 						Window: &metav1.Duration{
 							Duration: 10 * time.Second,

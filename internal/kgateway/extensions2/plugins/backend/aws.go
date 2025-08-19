@@ -18,6 +18,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/durationpb"
+	"k8s.io/utils/ptr"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/pluginutils"
@@ -38,6 +39,8 @@ const (
 	awsRequestSigningFilterName = "envoy.filters.http.aws_request_signing"
 	// upstreamCodecFilterName is the name of the upstream codec filter.
 	upstreamCodecFilterName = "envoy.filters.http.upstream_codec"
+	// defaultLambdaQualifier is the default qualifier for the lambda function.
+	defaultLambdaQualifier = "$LATEST"
 )
 
 // AwsIr is the internal representation of an AWS backend.
@@ -238,7 +241,7 @@ func getLambdaHostname(in *v1alpha1.AwsBackend) string {
 // getLambdaInvocationMode returns the Lambda invocation mode. Default is synchronous.
 func getLambdaInvocationMode(in *v1alpha1.AwsBackend) envoy_lambda_v3.Config_InvocationMode {
 	invokeMode := envoy_lambda_v3.Config_SYNCHRONOUS
-	if in.Lambda.InvocationMode == v1alpha1.AwsLambdaInvocationModeAsynchronous {
+	if in.Lambda.InvocationMode != nil && *in.Lambda.InvocationMode == v1alpha1.AwsLambdaInvocationModeAsynchronous {
 		invokeMode = envoy_lambda_v3.Config_ASYNCHRONOUS
 	}
 	return invokeMode
@@ -250,7 +253,12 @@ func getLambdaInvocationMode(in *v1alpha1.AwsBackend) envoy_lambda_v3.Config_Inv
 // An error is returned if the arn is not a valid lambda arn.
 func buildLambdaARN(in *v1alpha1.AwsBackend, region string) (string, error) {
 	// TODO(tim): url.QueryEscape(...)?
-	arnStr := fmt.Sprintf("arn:aws:lambda:%s:%s:function:%s:%s", region, in.AccountId, in.Lambda.FunctionName, in.Lambda.Qualifier)
+	arnStr := fmt.Sprintf("arn:aws:lambda:%s:%s:function:%s:%s",
+		region,
+		in.AccountId,
+		in.Lambda.FunctionName,
+		ptr.Deref(in.Lambda.Qualifier, defaultLambdaQualifier),
+	)
 	parsedARN, err := arnutils.Parse(arnStr)
 	if err != nil {
 		return "", fmt.Errorf("failed to parse lambda arn: %v", err)

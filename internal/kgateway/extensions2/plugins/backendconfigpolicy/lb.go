@@ -51,7 +51,7 @@ func translateLoadBalancerConfig(config *v1alpha1.LoadBalancer, policyName, poli
 	if config.LeastRequest != nil {
 		leastRequest := &envoyleastrequestv3.LeastRequest{
 			ChoiceCount: &wrapperspb.UInt32Value{
-				Value: config.LeastRequest.ChoiceCount,
+				Value: *config.LeastRequest.ChoiceCount,
 			},
 			SlowStartConfig: toSlowStartConfig(config.LeastRequest.SlowStart, policyName, policyNamespace),
 		}

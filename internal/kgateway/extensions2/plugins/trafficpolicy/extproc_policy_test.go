@@ -145,7 +145,7 @@ func TestBuildEnvoyExtProc(t *testing.T) {
 			name: "with all processing modes",
 			gatewayExt: &ir.GatewayExtension{
 				ExtProc: &v1alpha1.ExtProcProvider{
-					GrpcService: &v1alpha1.ExtGrpcService{},
+					GrpcService: v1alpha1.ExtGrpcService{},
 				},
 			},
 			extprocConfig: &v1alpha1.ExtProcPolicy{
@@ -173,7 +173,7 @@ func TestBuildEnvoyExtProc(t *testing.T) {
 			name: "with default processing modes",
 			gatewayExt: &ir.GatewayExtension{
 				ExtProc: &v1alpha1.ExtProcProvider{
-					GrpcService: &v1alpha1.ExtGrpcService{},
+					GrpcService: v1alpha1.ExtGrpcService{},
 				},
 			},
 			extprocConfig: &v1alpha1.ExtProcPolicy{
@@ -194,7 +194,7 @@ func TestBuildEnvoyExtProc(t *testing.T) {
 			name: "with invalid processing modes",
 			gatewayExt: &ir.GatewayExtension{
 				ExtProc: &v1alpha1.ExtProcProvider{
-					GrpcService: &v1alpha1.ExtGrpcService{},
+					GrpcService: v1alpha1.ExtGrpcService{},
 				},
 			},
 			extprocConfig: &v1alpha1.ExtProcPolicy{

@@ -47,7 +47,7 @@ func TestBuildMCPIr(t *testing.T) {
 									Name:     "static-target",
 									Host:     "mcp-server.example.com",
 									Port:     8080,
-									Protocol: v1alpha1.MCPProtocolSSE,
+									Protocol: ptr.To(v1alpha1.MCPProtocolSSE),
 								},
 							},
 						},
@@ -435,7 +435,7 @@ func TestBuildAIBackendIr(t *testing.T) {
 							Provider: v1alpha1.SupportedLLMProvider{
 								Bedrock: &v1alpha1.BedrockConfig{
 									Model:  "anthropic.claude-3-haiku-20240307-v1:0",
-									Region: "eu-west-1",
+									Region: ptr.To("eu-west-1"),
 									Guardrail: &v1alpha1.AWSGuardrailConfig{
 										GuardrailIdentifier: "test-guardrail",
 										GuardrailVersion:    "1.0",

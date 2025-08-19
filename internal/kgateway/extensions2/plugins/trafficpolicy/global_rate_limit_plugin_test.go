@@ -397,8 +397,8 @@ func TestToRateLimitFilterConfig(t *testing.T) {
 				Type: v1alpha1.GatewayExtensionTypeRateLimit,
 				RateLimit: &v1alpha1.RateLimitProvider{
 					Domain: "test-domain",
-					GrpcService: &v1alpha1.ExtGrpcService{
-						BackendRef: &gwv1alpha2.BackendRef{
+					GrpcService: v1alpha1.ExtGrpcService{
+						BackendRef: gwv1.BackendRef{
 							BackendObjectReference: createBackendRef(),
 						},
 					},
@@ -447,12 +447,12 @@ func TestToRateLimitFilterConfig(t *testing.T) {
 				Type: v1alpha1.GatewayExtensionTypeRateLimit,
 				RateLimit: &v1alpha1.RateLimitProvider{
 					Domain: "test-domain",
-					GrpcService: &v1alpha1.ExtGrpcService{
-						BackendRef: &gwv1alpha2.BackendRef{
+					GrpcService: v1alpha1.ExtGrpcService{
+						BackendRef: gwv1.BackendRef{
 							BackendObjectReference: createBackendRef(),
 						},
 					},
-					Timeout: metav1.Duration{Duration: 5 * time.Second},
+					Timeout: &metav1.Duration{Duration: 5 * time.Second},
 				},
 				ObjectSource: ir.ObjectSource{
 					Name:      defaultExtensionName,
@@ -489,12 +489,12 @@ func TestToRateLimitFilterConfig(t *testing.T) {
 				Type: v1alpha1.GatewayExtensionTypeRateLimit,
 				RateLimit: &v1alpha1.RateLimitProvider{
 					Domain: "test-domain",
-					GrpcService: &v1alpha1.ExtGrpcService{
-						BackendRef: &gwv1alpha2.BackendRef{
+					GrpcService: v1alpha1.ExtGrpcService{
+						BackendRef: gwv1.BackendRef{
 							BackendObjectReference: createBackendRef(),
 						},
 					},
-					FailOpen: true,
+					FailOpen: ptr.To(true),
 				},
 				ObjectSource: ir.ObjectSource{
 					Name:      defaultExtensionName,
@@ -531,7 +531,7 @@ func TestToRateLimitFilterConfig(t *testing.T) {
 				Type: v1alpha1.GatewayExtensionTypeRateLimit,
 				RateLimit: &v1alpha1.RateLimitProvider{
 					Domain:      "test-domain",
-					GrpcService: &v1alpha1.ExtGrpcService{},
+					GrpcService: v1alpha1.ExtGrpcService{},
 				},
 				ObjectSource: ir.ObjectSource{
 					Name:      defaultExtensionName,
@@ -636,17 +636,21 @@ func TestToRateLimitFilterConfig(t *testing.T) {
 					domain := extension.Domain
 
 					// Construct cluster name from the backendRef
-					if extension.GrpcService != nil && extension.GrpcService.BackendRef != nil {
+					if extension.GrpcService.BackendRef.Name != "" {
 						clusterName := fmt.Sprintf("%s.%s.svc.cluster.local:%d",
 							extension.GrpcService.BackendRef.Name,
 							tt.gatewayExtension.Namespace,
 							*extension.GrpcService.BackendRef.Port)
 
 						// Create a rate limit configuration
+						failOpen := true // default value
+						if extension.FailOpen != nil {
+							failOpen = *extension.FailOpen
+						}
 						rl = &ratev3.RateLimit{
 							Domain:          domain,
 							Timeout:         timeout,
-							FailureModeDeny: !extension.FailOpen,
+							FailureModeDeny: !failOpen,
 							RateLimitService: &envoyratelimitv3.RateLimitServiceConfig{
 								GrpcService: &envoycorev3.GrpcService{
 									TargetSpecifier: &envoycorev3.GrpcService_EnvoyGrpc_{

@@ -42,7 +42,7 @@ func TestTracingConverter(t *testing.T) {
 					Provider: v1alpha1.TracingProvider{
 						OpenTelemetry: &v1alpha1.OpenTelemetryTracingConfig{
 							GrpcService: v1alpha1.CommonGrpcService{
-								BackendRef: &gwv1.BackendRef{
+								BackendRef: gwv1.BackendRef{
 									BackendObjectReference: gwv1.BackendObjectReference{
 										Name: "test-service",
 									},
@@ -75,7 +75,7 @@ func TestTracingConverter(t *testing.T) {
 					Provider: v1alpha1.TracingProvider{
 						OpenTelemetry: &v1alpha1.OpenTelemetryTracingConfig{
 							GrpcService: v1alpha1.CommonGrpcService{
-								BackendRef: &gwv1.BackendRef{
+								BackendRef: gwv1.BackendRef{
 									BackendObjectReference: gwv1.BackendObjectReference{
 										Name: "test-service",
 									},
@@ -109,7 +109,7 @@ func TestTracingConverter(t *testing.T) {
 					Provider: v1alpha1.TracingProvider{
 						OpenTelemetry: &v1alpha1.OpenTelemetryTracingConfig{
 							GrpcService: v1alpha1.CommonGrpcService{
-								BackendRef: &gwv1.BackendRef{
+								BackendRef: gwv1.BackendRef{
 									BackendObjectReference: gwv1.BackendObjectReference{
 										Name: "test-service",
 									},
@@ -144,7 +144,7 @@ func TestTracingConverter(t *testing.T) {
 					Provider: v1alpha1.TracingProvider{
 						OpenTelemetry: &v1alpha1.OpenTelemetryTracingConfig{
 							GrpcService: v1alpha1.CommonGrpcService{
-								BackendRef: &gwv1.BackendRef{
+								BackendRef: gwv1.BackendRef{
 									BackendObjectReference: gwv1.BackendObjectReference{
 										Name: "test-service",
 									},

@@ -29,10 +29,10 @@ func TestTranslateHealthCheck(t *testing.T) {
 		{
 			name: "basic health check config",
 			config: &v1alpha1.HealthCheck{
-				Timeout:            &metav1.Duration{Duration: 5 * time.Second},
-				Interval:           &metav1.Duration{Duration: 10 * time.Second},
-				UnhealthyThreshold: ptr.To(uint32(3)),
-				HealthyThreshold:   ptr.To(uint32(2)),
+				Timeout:            metav1.Duration{Duration: 5 * time.Second},
+				Interval:           metav1.Duration{Duration: 10 * time.Second},
+				UnhealthyThreshold: uint32(3),
+				HealthyThreshold:   uint32(2),
 				Http: &v1alpha1.HealthCheckHttp{
 					Path: "/health",
 				},
@@ -52,8 +52,8 @@ func TestTranslateHealthCheck(t *testing.T) {
 		{
 			name: "HTTP health check",
 			config: &v1alpha1.HealthCheck{
-				Timeout:  &metav1.Duration{Duration: 5 * time.Second},
-				Interval: &metav1.Duration{Duration: 10 * time.Second},
+				Timeout:  metav1.Duration{Duration: 5 * time.Second},
+				Interval: metav1.Duration{Duration: 10 * time.Second},
 				Http: &v1alpha1.HealthCheckHttp{
 					Host:   ptr.To("example.com"),
 					Path:   "/health",
@@ -75,8 +75,8 @@ func TestTranslateHealthCheck(t *testing.T) {
 		{
 			name: "gRPC health check",
 			config: &v1alpha1.HealthCheck{
-				Timeout:  &metav1.Duration{Duration: 5 * time.Second},
-				Interval: &metav1.Duration{Duration: 10 * time.Second},
+				Timeout:  metav1.Duration{Duration: 5 * time.Second},
+				Interval: metav1.Duration{Duration: 10 * time.Second},
 				Grpc: &v1alpha1.HealthCheckGrpc{
 					ServiceName: ptr.To("grpc.health.v1.Health"),
 					Authority:   ptr.To("example.com"),
@@ -96,8 +96,8 @@ func TestTranslateHealthCheck(t *testing.T) {
 		{
 			name: "HTTP health check with multiple status ranges",
 			config: &v1alpha1.HealthCheck{
-				Timeout:  &metav1.Duration{Duration: 5 * time.Second},
-				Interval: &metav1.Duration{Duration: 10 * time.Second},
+				Timeout:  metav1.Duration{Duration: 5 * time.Second},
+				Interval: metav1.Duration{Duration: 10 * time.Second},
 				Http: &v1alpha1.HealthCheckHttp{
 					Host: ptr.To("example.com"),
 					Path: "/health",

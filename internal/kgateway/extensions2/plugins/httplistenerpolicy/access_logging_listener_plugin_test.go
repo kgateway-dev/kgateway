@@ -112,7 +112,7 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 						GrpcService: &v1alpha1.AccessLogGrpcService{
 							CommonAccessLogGrpcService: v1alpha1.CommonAccessLogGrpcService{
 								CommonGrpcService: v1alpha1.CommonGrpcService{
-									BackendRef: &gwv1.BackendRef{
+									BackendRef: gwv1.BackendRef{
 										BackendObjectReference: gwv1.BackendObjectReference{
 											Name: "test-service",
 										},
@@ -287,7 +287,7 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 						GrpcService: &v1alpha1.AccessLogGrpcService{
 							CommonAccessLogGrpcService: v1alpha1.CommonAccessLogGrpcService{
 								CommonGrpcService: v1alpha1.CommonGrpcService{
-									BackendRef: &gwv1.BackendRef{
+									BackendRef: gwv1.BackendRef{
 										BackendObjectReference: gwv1.BackendObjectReference{
 											Name: "test-service",
 										},
@@ -326,7 +326,7 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 						GrpcService: &v1alpha1.AccessLogGrpcService{
 							CommonAccessLogGrpcService: v1alpha1.CommonAccessLogGrpcService{
 								CommonGrpcService: v1alpha1.CommonGrpcService{
-									BackendRef: &gwv1.BackendRef{
+									BackendRef: gwv1.BackendRef{
 										BackendObjectReference: gwv1.BackendObjectReference{
 											Name: "test-service",
 										},
@@ -376,7 +376,7 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 						GrpcService: &v1alpha1.AccessLogGrpcService{
 							CommonAccessLogGrpcService: v1alpha1.CommonAccessLogGrpcService{
 								CommonGrpcService: v1alpha1.CommonGrpcService{
-									BackendRef: &gwv1.BackendRef{
+									BackendRef: gwv1.BackendRef{
 										BackendObjectReference: gwv1.BackendObjectReference{
 											Name: "test-service",
 										},
@@ -765,7 +765,7 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 						OpenTelemetry: &v1alpha1.OpenTelemetryAccessLogService{
 							GrpcService: v1alpha1.CommonAccessLogGrpcService{
 								CommonGrpcService: v1alpha1.CommonGrpcService{
-									BackendRef: &gwv1.BackendRef{
+									BackendRef: gwv1.BackendRef{
 										BackendObjectReference: gwv1.BackendObjectReference{
 											Name: "test-service",
 										},
@@ -816,7 +816,7 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 						OpenTelemetry: &v1alpha1.OpenTelemetryAccessLogService{
 							GrpcService: v1alpha1.CommonAccessLogGrpcService{
 								CommonGrpcService: v1alpha1.CommonGrpcService{
-									BackendRef: &gwv1.BackendRef{
+									BackendRef: gwv1.BackendRef{
 										BackendObjectReference: gwv1.BackendObjectReference{
 											Name: "test-service",
 										},

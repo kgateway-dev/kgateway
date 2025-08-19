@@ -171,8 +171,8 @@ func (p *TrafficPlugin) processExtAuthPolicy(ctx krt.HandlerContext, gatewayExte
 
 	// Extract service target from GatewayExtension's ExtAuth configuration
 	var extauthSvcTarget *api.BackendReference
-	if extAuth.GrpcService != nil && extAuth.GrpcService.BackendRef != nil {
-		backendRef := extAuth.GrpcService.BackendRef
+	if extAuth != nil {
+		backendRef := &extAuth.GrpcService.BackendRef
 		serviceName := string(backendRef.Name)
 		port := uint32(80) // default port
 		if backendRef.Port != nil {

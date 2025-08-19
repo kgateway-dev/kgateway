@@ -150,7 +150,12 @@ func buildAIIr(krtctx krt.HandlerContext, be *v1alpha1.Backend, secrets *krtcoll
 		model := &wrappers.StringValue{
 			Value: llm.Provider.Bedrock.Model,
 		}
-		region := llm.Provider.Bedrock.Region
+		var region string
+		if llm.Provider.Bedrock.Region != nil {
+			// Note: this should always be set as we default to us-east-1 if not specified
+			// in the spec.
+			region = *llm.Provider.Bedrock.Region
+		}
 		var guardrailIdentifier, guardrailVersion *wrappers.StringValue
 		if llm.Provider.Bedrock.Guardrail != nil {
 			guardrailIdentifier = &wrappers.StringValue{
@@ -278,15 +283,19 @@ func buildMCPIr(krtctx krt.HandlerContext, be *v1alpha1.Backend, services krt.Co
 				},
 			}
 
-			// Convert protocol if specified
-			switch targetSelector.StaticTarget.Protocol {
-			case v1alpha1.MCPProtocolSSE:
-				mcpTarget.Protocol = api.MCPTarget_SSE
-			case v1alpha1.MCPProtocolStreamableHTTP:
-				mcpTarget.Protocol = api.MCPTarget_STREAMABLE_HTTP
-			default:
-				mcpTarget.Protocol = api.MCPTarget_UNDEFINED
+			// Convert protocol if specified.
+			protocol := api.MCPTarget_UNDEFINED
+			if targetSelector.StaticTarget.Protocol != nil {
+				switch *targetSelector.StaticTarget.Protocol {
+				case v1alpha1.MCPProtocolSSE:
+					protocol = api.MCPTarget_SSE
+				case v1alpha1.MCPProtocolStreamableHTTP:
+					protocol = api.MCPTarget_STREAMABLE_HTTP
+				default:
+					protocol = api.MCPTarget_UNDEFINED
+				}
 			}
+			mcpTarget.Protocol = protocol
 
 			mcpTargets = append(mcpTargets, mcpTarget)
 

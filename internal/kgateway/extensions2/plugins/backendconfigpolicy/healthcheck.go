@@ -15,18 +15,11 @@ func translateHealthCheck(hc *v1alpha1.HealthCheck) *envoycorev3.HealthCheck {
 
 	healthCheck := &envoycorev3.HealthCheck{}
 
-	if hc.Timeout != nil {
-		healthCheck.Timeout = durationpb.New(hc.Timeout.Duration)
-	}
-	if hc.Interval != nil {
-		healthCheck.Interval = durationpb.New(hc.Interval.Duration)
-	}
-	if hc.UnhealthyThreshold != nil {
-		healthCheck.UnhealthyThreshold = &wrapperspb.UInt32Value{Value: *hc.UnhealthyThreshold}
-	}
-	if hc.HealthyThreshold != nil {
-		healthCheck.HealthyThreshold = &wrapperspb.UInt32Value{Value: *hc.HealthyThreshold}
-	}
+	// These are required fields, so no need to check for nil
+	healthCheck.Timeout = durationpb.New(hc.Timeout.Duration)
+	healthCheck.Interval = durationpb.New(hc.Interval.Duration)
+	healthCheck.UnhealthyThreshold = &wrapperspb.UInt32Value{Value: hc.UnhealthyThreshold}
+	healthCheck.HealthyThreshold = &wrapperspb.UInt32Value{Value: hc.HealthyThreshold}
 
 	if hc.Http != nil {
 		httpHealthCheck := &envoycorev3.HealthCheck_HttpHealthCheck{

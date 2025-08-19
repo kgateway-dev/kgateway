@@ -90,7 +90,7 @@ func constructExtProc(
 		return nil
 	}
 
-	gatewayExtension, err := fetchGatewayExtension(krtctx, spec.ExtensionRef, in.GetNamespace())
+	gatewayExtension, err := fetchGatewayExtension(krtctx, *spec.ExtensionRef, in.GetNamespace())
 	if err != nil {
 		return fmt.Errorf("extproc: %w", err)
 	}

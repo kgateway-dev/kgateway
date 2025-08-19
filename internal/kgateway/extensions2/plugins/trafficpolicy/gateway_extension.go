@@ -102,7 +102,7 @@ func TranslateGatewayExtensionBuilder(commoncol *common.CommonCollections) func(
 
 		switch gExt.Type {
 		case v1alpha1.GatewayExtensionTypeExtAuth:
-			envoyGrpcService, err := ResolveExtGrpcService(krtctx, commoncol.BackendIndex, false, gExt.ObjectSource, gExt.ExtAuth.GrpcService)
+			envoyGrpcService, err := ResolveExtGrpcService(krtctx, commoncol.BackendIndex, false, gExt.ObjectSource, &gExt.ExtAuth.GrpcService)
 			if err != nil {
 				// TODO: should this be a warning, and set cluster to blackhole?
 				p.Err = fmt.Errorf("failed to resolve ExtAuth backend: %w", err)
@@ -117,7 +117,7 @@ func TranslateGatewayExtensionBuilder(commoncol *common.CommonCollections) func(
 			}
 
 		case v1alpha1.GatewayExtensionTypeExtProc:
-			envoyGrpcService, err := ResolveExtGrpcService(krtctx, commoncol.BackendIndex, false, gExt.ObjectSource, gExt.ExtProc.GrpcService)
+			envoyGrpcService, err := ResolveExtGrpcService(krtctx, commoncol.BackendIndex, false, gExt.ObjectSource, &gExt.ExtProc.GrpcService)
 			if err != nil {
 				p.Err = fmt.Errorf("failed to resolve ExtProc backend: %w", err)
 				return p
@@ -130,7 +130,7 @@ func TranslateGatewayExtensionBuilder(commoncol *common.CommonCollections) func(
 				return p
 			}
 
-			grpcService, err := ResolveExtGrpcService(krtctx, commoncol.BackendIndex, false, gExt.ObjectSource, gExt.RateLimit.GrpcService)
+			grpcService, err := ResolveExtGrpcService(krtctx, commoncol.BackendIndex, false, gExt.ObjectSource, &gExt.RateLimit.GrpcService)
 			if err != nil {
 				p.Err = fmt.Errorf("ratelimit: %w", err)
 				return p
@@ -149,9 +149,6 @@ func ResolveExtGrpcService(krtctx krt.HandlerContext, backends *krtcollections.B
 	var clusterName string
 	var authority string
 	if grpcService != nil {
-		if grpcService.BackendRef == nil {
-			return nil, errors.New("backend not provided")
-		}
 		backendRef := grpcService.BackendRef.BackendObjectReference
 
 		var backend *ir.BackendObjectIR
@@ -187,9 +184,13 @@ func ResolveExtGrpcService(krtctx krt.HandlerContext, backends *krtcollections.B
 
 // FIXME: Should this live here instead of the global rate limit plugin?
 func resolveRateLimitService(grpcService *envoycorev3.GrpcService, rateLimit *v1alpha1.RateLimitProvider) *ratev3.RateLimit {
+	failOpen := true // default value
+	if rateLimit.FailOpen != nil {
+		failOpen = *rateLimit.FailOpen
+	}
 	envoyRateLimit := &ratev3.RateLimit{
 		Domain:          rateLimit.Domain,
-		FailureModeDeny: !rateLimit.FailOpen,
+		FailureModeDeny: !failOpen,
 		RateLimitService: &envoyratelimitv3.RateLimitServiceConfig{
 			GrpcService:         grpcService,
 			TransportApiVersion: envoycorev3.ApiVersion_V3,

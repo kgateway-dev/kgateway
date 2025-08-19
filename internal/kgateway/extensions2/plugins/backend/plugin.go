@@ -195,8 +195,12 @@ func buildTranslateFunc(
 				}
 			}
 
+			payloadTransformMode := v1alpha1.AWSLambdaPayloadTransformEnvoy
+			if i.Spec.Aws.Lambda.PayloadTransformMode != nil {
+				payloadTransformMode = *i.Spec.Aws.Lambda.PayloadTransformMode
+			}
 			lambdaFilters, err := buildLambdaFilters(
-				lambdaArn, region, secret, invokeMode, i.Spec.Aws.Lambda.PayloadTransformMode)
+				lambdaArn, region, secret, invokeMode, payloadTransformMode)
 			if err != nil {
 				backendIr.Errors = append(backendIr.Errors, err)
 			}
