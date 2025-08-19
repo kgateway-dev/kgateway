@@ -2366,20 +2366,25 @@ func schema_kgateway_v2_api_v1alpha1_Cookie(ref common.ReferenceCallback) common
 							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Duration"),
 						},
 					},
-					"attributes": {
+					"secure": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Attributes are additional attributes for the cookie.",
-							Type:        []string{"object"},
-							AdditionalProperties: &spec.SchemaOrBool{
-								Allows: true,
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: "",
-										Type:    []string{"string"},
-										Format:  "",
-									},
-								},
-							},
+							Description: "Secure specifies whether the cookie is secure. If true, the cookie will only be sent over HTTPS.",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
+					"httpOnly": {
+						SchemaProps: spec.SchemaProps{
+							Description: "HttpOnly specifies whether the cookie is HTTP only, i.e. not accessible to JavaScript.",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
+					"sameSite": {
+						SchemaProps: spec.SchemaProps{
+							Description: "SameSite controls cross-site sending of cookies. Supported values are Strict, Lax, and None.",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 				},

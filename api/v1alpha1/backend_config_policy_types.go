@@ -540,11 +540,20 @@ type Cookie struct {
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	TTL *metav1.Duration `json:"ttl,omitempty"`
 
-	// Attributes are additional attributes for the cookie.
+	// Secure specifies whether the cookie is secure.
+	// If true, the cookie will only be sent over HTTPS.
 	// +optional
-	// +kubebuilder:validation:MinProperties=1
-	// +kubebuilder:validation:MaxProperties=10
-	Attributes map[string]string `json:"attributes,omitempty"`
+	Secure *bool `json:"secure,omitempty"`
+
+	// HttpOnly specifies whether the cookie is HTTP only, i.e. not accessible to JavaScript.
+	// +optional
+	HttpOnly *bool `json:"httpOnly,omitempty"`
+
+	// SameSite controls cross-site sending of cookies.
+	// Supported values are Strict, Lax, and None.
+	// +optional
+	// +kubebuilder:validation:Enum=Strict;Lax;None
+	SameSite *string `json:"sameSite,omitempty"`
 }
 
 type SourceIP struct{}

@@ -16,12 +16,12 @@ Clusters:
             hashPolicy:
             - cookie:
                 attributes:
-                - name: httpOnly
+                - name: Secure
                   value: "true"
-                - name: sameSite
+                - name: HttpOnly
+                  value: "true"
+                - name: SameSite
                   value: Strict
-                - name: secure
-                  value: "true"
                 name: session-id
                 path: /api
                 ttl: 1800s

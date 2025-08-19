@@ -1120,12 +1120,20 @@ func (in *Cookie) DeepCopyInto(out *Cookie) {
 		*out = new(metav1.Duration)
 		**out = **in
 	}
-	if in.Attributes != nil {
-		in, out := &in.Attributes, &out.Attributes
-		*out = make(map[string]string, len(*in))
-		for key, val := range *in {
-			(*out)[key] = val
-		}
+	if in.Secure != nil {
+		in, out := &in.Secure, &out.Secure
+		*out = new(bool)
+		**out = **in
+	}
+	if in.HttpOnly != nil {
+		in, out := &in.HttpOnly, &out.HttpOnly
+		*out = new(bool)
+		**out = **in
+	}
+	if in.SameSite != nil {
+		in, out := &in.SameSite, &out.SameSite
+		*out = new(string)
+		**out = **in
 	}
 }
 

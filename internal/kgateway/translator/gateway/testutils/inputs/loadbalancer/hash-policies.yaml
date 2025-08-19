@@ -80,10 +80,9 @@ spec:
           name: "session-id"
           path: "/api"
           ttl: 30m
-          attributes:
-            httpOnly: "true"
-            secure: "true"
-            sameSite: "Strict"
+          httpOnly: true
+          secure: true
+          sameSite: Strict
         terminal: true
       - sourceIP: {}
         terminal: false

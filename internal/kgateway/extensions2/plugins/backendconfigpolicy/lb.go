@@ -2,7 +2,6 @@ package backendconfigpolicy
 
 import (
 	"fmt"
-	"sort"
 	"strconv"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
@@ -21,6 +20,13 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
+)
+
+const (
+	cookieAttributeSecure   = "Secure"
+	cookieAttributeHttpOnly = "HttpOnly"
+	cookieAttributeSameSite = "SameSite"
+	cookieValueTrue         = "true"
 )
 
 type LoadBalancerConfigIR struct {
@@ -322,21 +328,27 @@ func constructHashPolicy(hashPolicies []*v1alpha1.HashPolicy) []*envoyroutev3.Ro
 			if hashPolicy.Cookie.Path != nil {
 				policy.GetCookie().Path = *hashPolicy.Cookie.Path
 			}
-			if hashPolicy.Cookie.Attributes != nil {
-				// Get all attribute names and sort them for consistent ordering
-				names := make([]string, 0, len(hashPolicy.Cookie.Attributes))
-				for name := range hashPolicy.Cookie.Attributes {
-					names = append(names, name)
-				}
-				sort.Strings(names)
 
-				attributes := make([]*envoyroutev3.RouteAction_HashPolicy_CookieAttribute, 0, len(hashPolicy.Cookie.Attributes))
-				for _, name := range names {
-					attributes = append(attributes, &envoyroutev3.RouteAction_HashPolicy_CookieAttribute{
-						Name:  name,
-						Value: hashPolicy.Cookie.Attributes[name],
-					})
-				}
+			attributes := make([]*envoyroutev3.RouteAction_HashPolicy_CookieAttribute, 0, 3)
+			if hashPolicy.Cookie.Secure != nil && *hashPolicy.Cookie.Secure {
+				attributes = append(attributes, &envoyroutev3.RouteAction_HashPolicy_CookieAttribute{
+					Name:  cookieAttributeSecure,
+					Value: cookieValueTrue,
+				})
+			}
+			if hashPolicy.Cookie.HttpOnly != nil && *hashPolicy.Cookie.HttpOnly {
+				attributes = append(attributes, &envoyroutev3.RouteAction_HashPolicy_CookieAttribute{
+					Name:  cookieAttributeHttpOnly,
+					Value: cookieValueTrue,
+				})
+			}
+			if hashPolicy.Cookie.SameSite != nil {
+				attributes = append(attributes, &envoyroutev3.RouteAction_HashPolicy_CookieAttribute{
+					Name:  cookieAttributeSameSite,
+					Value: *hashPolicy.Cookie.SameSite,
+				})
+			}
+			if len(attributes) > 0 {
 				policy.GetCookie().Attributes = attributes
 			}
 		case hashPolicy.SourceIP != nil:

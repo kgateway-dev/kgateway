@@ -193,17 +193,21 @@ spec:
                           properties:
                             cookie:
                               properties:
-                                attributes:
-                                  additionalProperties:
-                                    type: string
-                                  maxProperties: 10
-                                  minProperties: 1
-                                  type: object
+                                httpOnly:
+                                  type: boolean
                                 name:
                                   minLength: 1
                                   type: string
                                 path:
                                   type: string
+                                sameSite:
+                                  enum:
+                                  - Strict
+                                  - Lax
+                                  - None
+                                  type: string
+                                secure:
+                                  type: boolean
                                 ttl:
                                   type: string
                                   x-kubernetes-validations:
@@ -245,17 +249,21 @@ spec:
                           properties:
                             cookie:
                               properties:
-                                attributes:
-                                  additionalProperties:
-                                    type: string
-                                  maxProperties: 10
-                                  minProperties: 1
-                                  type: object
+                                httpOnly:
+                                  type: boolean
                                 name:
                                   minLength: 1
                                   type: string
                                 path:
                                   type: string
+                                sameSite:
+                                  enum:
+                                  - Strict
+                                  - Lax
+                                  - None
+                                  type: string
+                                secure:
+                                  type: boolean
                                 ttl:
                                   type: string
                                   x-kubernetes-validations:
