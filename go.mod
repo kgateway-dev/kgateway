@@ -3,7 +3,7 @@ module github.com/kgateway-dev/kgateway/v2
 go 1.24.6
 
 require (
-	github.com/agentgateway/agentgateway v0.7.3
+	github.com/agentgateway/agentgateway v0.7.5
 	github.com/avast/retry-go v2.4.3+incompatible
 	github.com/avast/retry-go/v4 v4.3.3
 	github.com/cncf/xds/go v0.0.0-20250501225837-2ac532fd4443

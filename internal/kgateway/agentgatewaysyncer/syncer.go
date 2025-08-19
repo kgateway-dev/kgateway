@@ -63,7 +63,7 @@ type AgentGwSyncer struct {
 	mgr            manager.Manager
 	client         kube.Client
 	plugins        pluginsdk.Plugin
-	policyManager  *plugins.DefaultPolicyManager
+	agwPlugins     plugins.AgentgatewayPlugin
 	translator     *translator.AgentGatewayTranslator
 
 	// Configuration
@@ -99,7 +99,7 @@ func NewAgentGwSyncer(
 	mgr manager.Manager,
 	agwCollections *plugins.AgwCollections,
 	plugins pluginsdk.Plugin,
-	policyManager *plugins.DefaultPolicyManager,
+	agwPlugins plugins.AgentgatewayPlugin,
 	xdsCache envoycache.SnapshotCache,
 	systemNamespace string,
 	clusterID string,
@@ -110,7 +110,7 @@ func NewAgentGwSyncer(
 		controllerName:         controllerName,
 		agentGatewayClassName:  agentGatewayClassName,
 		plugins:                plugins,
-		policyManager:          policyManager,
+		agwPlugins:             agwPlugins,
 		translator:             translator.NewAgentGatewayTranslator(agwCollections, plugins),
 		xdsCache:               xdsCache,
 		client:                 client,
@@ -236,7 +236,7 @@ func (s *AgentGwSyncer) buildADPResources(
 	}
 	adpRoutes := ADPRouteCollection(s.agwCollections.HTTPRoutes, s.agwCollections.GRPCRoutes, s.agwCollections.TCPRoutes, s.agwCollections.TLSRoutes, routeInputs, krtopts, s.plugins)
 
-	adpPolicies := ADPPolicyCollection(s.agwCollections, binds, krtopts, s.policyManager)
+	adpPolicies := ADPPolicyCollection(binds, s.agwPlugins)
 
 	// Join all ADP resources
 	allADPResources := krt.JoinCollection([]krt.Collection[ADPResourcesForGateway]{binds, listeners, adpRoutes, adpPolicies}, krtopts.ToOptions("ADPResources")...)
@@ -590,6 +590,7 @@ func (s *AgentGwSyncer) buildStatusReporting() {
 func (s *AgentGwSyncer) setupSyncDependencies(gateways krt.Collection[GatewayListener], adpResources krt.Collection[ADPResourcesForGateway], adpBackends krt.Collection[envoyResourceWithCustomName], addresses krt.Collection[envoyResourceWithCustomName]) {
 	s.waitForSync = []cache.InformerSynced{
 		s.agwCollections.HasSynced,
+		s.agwPlugins.HasSynced,
 		gateways.HasSynced,
 		// resources
 		adpResources.HasSynced,
@@ -597,7 +598,6 @@ func (s *AgentGwSyncer) setupSyncDependencies(gateways krt.Collection[GatewayLis
 		s.xDS.HasSynced,
 		// addresses
 		addresses.HasSynced,
-		s.agwCollections.Namespaces.HasSynced,
 	}
 }
 

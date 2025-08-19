@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/agentgateway/agentgateway/go/api"
+	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -16,66 +17,33 @@ import (
 )
 
 const (
-	trafficPluginName = "traffic-policy-plugin"
-
 	extauthPolicySuffix = ":extauth"
 )
 
-// TrafficPlugin converts a TrafficPolicy to an agentgateway policy
-type TrafficPlugin struct{}
-
 // NewTrafficPlugin creates a new TrafficPolicy plugin
-func NewTrafficPlugin() *TrafficPlugin {
-	return &TrafficPlugin{}
-}
+func NewTrafficPlugin(agw *AgwCollections) AgentgatewayPlugin {
+	col := krt.WrapClient(kclient.NewFiltered[*v1alpha1.TrafficPolicy](
+		agw.Client,
+		kclient.Filter{ObjectFilter: agw.Client.ObjectFilter()},
+	), agw.KrtOpts.ToOptions("TrafficPolicy")...)
+	policyCol := krt.NewManyCollection(col, func(krtctx krt.HandlerContext, policyCR *v1alpha1.TrafficPolicy) []ADPPolicy {
+		return translateTrafficPolicy(krtctx, agw.GatewayExtensions, policyCR)
+	})
 
-// GroupKind returns the GroupKind of the policy this plugin handles
-func (p *TrafficPlugin) GroupKind() schema.GroupKind {
-	return schema.GroupKind{
-		Group: wellknown.TrafficPolicyGVK.GroupKind().Group,
-		Kind:  wellknown.TrafficPolicyGVK.GroupKind().Kind,
+	return AgentgatewayPlugin{
+		ContributesPolicies: map[schema.GroupKind]PolicyPlugin{
+			wellknown.TrafficPolicyGVK.GroupKind(): {
+				Policies: policyCol,
+			},
+		},
+		ExtraHasSynced: func() bool {
+			return policyCol.HasSynced() && agw.TrafficPolicies.HasSynced()
+		},
 	}
 }
 
-// Name returns the name of this plugin
-func (p *TrafficPlugin) Name() string {
-	return trafficPluginName
-}
-
-// GeneratePolicies generates agentgateway policies from TrafficPolicy resources
-func (p *TrafficPlugin) GeneratePolicies(ctx krt.HandlerContext, agw *AgwCollections) ([]ADPPolicy, error) {
-	logger := logging.New("agentgateway/plugins/traffic")
-
-	trafficPolicies := agw.TrafficPolicies
-	if trafficPolicies == nil {
-		logger.Debug("traffic policies collection is nil, skipping traffic policy generation")
-		return nil, nil
-	}
-
-	return p.GenerateTrafficPolicies(ctx, trafficPolicies, agw.GatewayExtensions)
-}
-
-// GenerateTrafficPolicies generates policies for traffic policies
-func (p *TrafficPlugin) GenerateTrafficPolicies(ctx krt.HandlerContext, trafficPolicies krt.Collection[*v1alpha1.TrafficPolicy], gatewayExtensions krt.Collection[*v1alpha1.GatewayExtension]) ([]ADPPolicy, error) {
-	logger := logging.New("agentgateway/plugins/traffic")
-	logger.Debug("generating traffic policies")
-
-	var trafficPoliciesResult []ADPPolicy
-
-	// Fetch all traffic policies and process them
-	allTrafficPolicies := krt.Fetch(ctx, trafficPolicies)
-
-	for _, trafficPolicy := range allTrafficPolicies {
-		policies := p.generatePoliciesForTrafficPolicy(ctx, gatewayExtensions, trafficPolicy)
-		trafficPoliciesResult = append(trafficPoliciesResult, policies...)
-	}
-
-	logger.Debug("generated traffic policies", "count", len(trafficPoliciesResult))
-	return trafficPoliciesResult, nil
-}
-
-// generatePoliciesForTrafficPolicy generates policies for a single traffic policy
-func (p *TrafficPlugin) generatePoliciesForTrafficPolicy(ctx krt.HandlerContext, gatewayExtensions krt.Collection[*v1alpha1.GatewayExtension], trafficPolicy *v1alpha1.TrafficPolicy) []ADPPolicy {
+// translateTrafficPolicy generates policies for a single traffic policy
+func translateTrafficPolicy(ctx krt.HandlerContext, gatewayExtensions krt.Collection[*v1alpha1.GatewayExtension], trafficPolicy *v1alpha1.TrafficPolicy) []ADPPolicy {
 	logger := logging.New("agentgateway/plugins/traffic")
 	var adpPolicies []ADPPolicy
 
@@ -119,7 +87,7 @@ func (p *TrafficPlugin) generatePoliciesForTrafficPolicy(ctx krt.HandlerContext,
 		}
 
 		if policyTarget != nil {
-			translatedPolicies := p.translateTrafficPolicyToADP(ctx, gatewayExtensions, trafficPolicy, string(target.Name), policyTarget)
+			translatedPolicies := translateTrafficPolicyToADP(ctx, gatewayExtensions, trafficPolicy, string(target.Name), policyTarget)
 			adpPolicies = append(adpPolicies, translatedPolicies...)
 		}
 	}
@@ -127,8 +95,8 @@ func (p *TrafficPlugin) generatePoliciesForTrafficPolicy(ctx krt.HandlerContext,
 	return adpPolicies
 }
 
-// translateTrafficPolicyToADP converts a TrafficPolicy to ADP Policy resources
-func (p *TrafficPlugin) translateTrafficPolicyToADP(ctx krt.HandlerContext, gatewayExtensions krt.Collection[*v1alpha1.GatewayExtension], trafficPolicy *v1alpha1.TrafficPolicy, policyTargetName string, policyTarget *api.PolicyTarget) []ADPPolicy {
+// translateTrafficPolicyToADP converts a TrafficPolicy to agentgateway Policy resources
+func translateTrafficPolicyToADP(ctx krt.HandlerContext, gatewayExtensions krt.Collection[*v1alpha1.GatewayExtension], trafficPolicy *v1alpha1.TrafficPolicy, policyTargetName string, policyTarget *api.PolicyTarget) []ADPPolicy {
 	adpPolicies := make([]ADPPolicy, 0)
 
 	// Generate a base policy name from the TrafficPolicy reference
@@ -136,7 +104,7 @@ func (p *TrafficPlugin) translateTrafficPolicyToADP(ctx krt.HandlerContext, gate
 
 	// Convert ExtAuth policy if present
 	if trafficPolicy.Spec.ExtAuth != nil && trafficPolicy.Spec.ExtAuth.ExtensionRef.Name != "" {
-		extAuthPolicies := p.processExtAuthPolicy(ctx, gatewayExtensions, trafficPolicy, policyName, policyTarget)
+		extAuthPolicies := processExtAuthPolicy(ctx, gatewayExtensions, trafficPolicy, policyName, policyTarget)
 		adpPolicies = append(adpPolicies, extAuthPolicies...)
 	}
 
@@ -150,8 +118,8 @@ func (p *TrafficPlugin) translateTrafficPolicyToADP(ctx krt.HandlerContext, gate
 	return adpPolicies
 }
 
-// processExtAuthPolicy processes ExtAuth configuration and creates corresponding ADP policies
-func (p *TrafficPlugin) processExtAuthPolicy(ctx krt.HandlerContext, gatewayExtensions krt.Collection[*v1alpha1.GatewayExtension], trafficPolicy *v1alpha1.TrafficPolicy, policyName string, policyTarget *api.PolicyTarget) []ADPPolicy {
+// processExtAuthPolicy processes ExtAuth configuration and creates corresponding agentgateway policies
+func processExtAuthPolicy(ctx krt.HandlerContext, gatewayExtensions krt.Collection[*v1alpha1.GatewayExtension], trafficPolicy *v1alpha1.TrafficPolicy, policyName string, policyTarget *api.PolicyTarget) []ADPPolicy {
 	logger := logging.New("agentgateway/plugins/traffic")
 
 	// Look up the GatewayExtension referenced by the ExtAuth policy
@@ -215,6 +183,3 @@ func (p *TrafficPlugin) processExtAuthPolicy(ctx krt.HandlerContext, gatewayExte
 
 	return []ADPPolicy{{Policy: extauthPolicy}}
 }
-
-// Verify that TrafficPlugin implements the required interfaces
-var _ PolicyPlugin = (*TrafficPlugin)(nil)

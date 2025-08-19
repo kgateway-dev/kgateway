@@ -1,51 +1,61 @@
 package plugins
 
 import (
-	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-// CreateDefaultPolicyManager creates a new policy manager with all default plugins registered
-func CreateDefaultPolicyManager() *DefaultPolicyManager {
-	manager := NewPolicyManager()
-
-	// Register all built-in plugins
-	RegisterBuiltinPlugins(manager)
-
-	return manager
+type AgentgatewayPlugin struct {
+	ContributesPolicies map[schema.GroupKind]PolicyPlugin
+	// extra has sync beyond primary resources in the collections above
+	ExtraHasSynced func() bool
 }
 
-// RegisterBuiltinPlugins registers all built-in policy plugins
-func RegisterBuiltinPlugins(manager PolicyManager) error {
-	// Create plugins directly to avoid import cycle
-	plugins := []PolicyPlugin{
-		NewTrafficPlugin(),
-		NewInferencePlugin(),
-		NewA2APlugin(),
+func MergePlugins(plug ...AgentgatewayPlugin) AgentgatewayPlugin {
+	ret := AgentgatewayPlugin{
+		ContributesPolicies: make(map[schema.GroupKind]PolicyPlugin),
 	}
-
-	registryLogger := logging.New("agentgateway/plugins/registry")
-	var allErrors []error
-	for _, plugin := range plugins {
-		if err := manager.RegisterPlugin(plugin); err != nil {
-			registryLogger.Error("failed to register plugin", "plugin", plugin.Name(), "error", err)
-			allErrors = append(allErrors, err)
+	var hasSynced []func() bool
+	for _, p := range plug {
+		// Merge contributed policies
+		for gk, policy := range p.ContributesPolicies {
+			ret.ContributesPolicies[gk] = policy
+		}
+		if p.ExtraHasSynced != nil {
+			hasSynced = append(hasSynced, p.ExtraHasSynced)
 		}
 	}
-
-	if len(allErrors) > 0 {
-		registryLogger.Error("some plugins failed to register", "count", len(allErrors))
-		// Don't fail completely, just log errors
-	}
-
-	registryLogger.Info("registered builtin plugins", "count", len(plugins), "errors", len(allErrors))
-	return nil
+	ret.ExtraHasSynced = mergeSynced(hasSynced)
+	return ret
 }
 
-// GetDefaultPlugins returns a list of all default policy plugins without registering them
-func GetDefaultPlugins() []PolicyPlugin {
-	return []PolicyPlugin{
-		NewTrafficPlugin(),
-		NewInferencePlugin(),
-		NewA2APlugin(),
+func mergeSynced(funcs []func() bool) func() bool {
+	return func() bool {
+		for _, f := range funcs {
+			if !f() {
+				return false
+			}
+		}
+		return true
 	}
+}
+
+// Plugins registers all built-in policy plugins
+func Plugins(agw *AgwCollections) []AgentgatewayPlugin {
+	return []AgentgatewayPlugin{
+		NewTrafficPlugin(agw),
+		NewInferencePlugin(agw),
+		NewA2APlugin(agw),
+	}
+}
+
+func (p AgentgatewayPlugin) HasSynced() bool {
+	for _, pol := range p.ContributesPolicies {
+		if pol.Policies != nil && !pol.Policies.HasSynced() {
+			return false
+		}
+	}
+	if p.ExtraHasSynced != nil && !p.ExtraHasSynced() {
+		return false
+	}
+	return true
 }

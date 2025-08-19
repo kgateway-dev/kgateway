@@ -393,6 +393,7 @@ func sortTranslationResult(tr *translationResult) *translationResult {
 	sort.Slice(tr.Routes, func(i, j int) bool {
 		return tr.Routes[i].GetKey() < tr.Routes[j].GetKey()
 	})
+
 	sort.Slice(tr.TCPRoutes, func(i, j int) bool {
 		return tr.TCPRoutes[i].GetKey() < tr.TCPRoutes[j].GetKey()
 	})
@@ -645,7 +646,6 @@ func (tc TestCase) Run(
 	}
 	plugins = append(plugins, extraPlugs...)
 	extensions := registry.MergePlugins(plugins...)
-	agentgatewayExtensions := agentgatewayplugins.CreateDefaultPolicyManager()
 
 	commoncol.InitPlugins(ctx, extensions, *settings)
 
@@ -661,8 +661,6 @@ func (tc TestCase) Run(
 		kubeclient.WaitForCacheSync(fmt.Sprintf("extra-%d", i), ctx.Done(), plug.HasSynced)
 	}
 
-	time.Sleep(1 * time.Second)
-
 	results := make(map[types.NamespacedName]ActualTestResult)
 
 	// Create AgwCollections with the necessary input collections
@@ -671,6 +669,13 @@ func (tc TestCase) Run(
 	)
 	if err != nil {
 		return nil, err
+	}
+	agwPlugins := agentgatewayplugins.Plugins(agwCollections)
+	agwExtensions := agentgatewayplugins.MergePlugins(agwPlugins...)
+	kubeclient.WaitForCacheSync("trafficpolicies", ctx.Done(), agwCollections.TrafficPolicies.HasSynced)
+	kubeclient.WaitForCacheSync("infpool", ctx.Done(), agwCollections.InferencePools.HasSynced)
+	for i, plug := range agwPlugins {
+		kubeclient.WaitForCacheSync(fmt.Sprintf("plugin-%d", i), ctx.Done(), plug.HasSynced)
 	}
 
 	// Instead of calling full Init(), manually initialize just what we need for testing
@@ -682,7 +687,7 @@ func (tc TestCase) Run(
 		nil, // mgr not needed for test
 		agwCollections,
 		extensions,
-		agentgatewayExtensions,
+		agwExtensions,
 		nil, // xdsCache not needed for test
 		"istio-system",
 		"Kubernetes",

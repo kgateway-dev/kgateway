@@ -184,7 +184,7 @@ var _ = DescribeTable("Basic agentgateway Tests",
 			Name:      "example-gateway",
 		},
 	}),
-	Entry("AI Backend with a2a provider", translatorTestCase{
+	Entry("Backend with a2a provider", translatorTestCase{
 		inputFile:  "backend-protocol/a2a-backend.yaml",
 		outputFile: "backend-protocol/a2a-backend.yaml",
 		gwNN: types.NamespacedName{
