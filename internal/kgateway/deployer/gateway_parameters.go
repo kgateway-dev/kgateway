@@ -252,6 +252,7 @@ func (k *kGatewayParameters) getValues(gw *api.Gateway, gwParam *v1alpha1.Gatewa
 	irGW := deployer.GetGatewayIR(gw, k.inputs.CommonCollections)
 
 	// construct the default values
+	serviceNode := GenerateDefaultServiceNode(gw.Name, gw.Namespace)
 	vals := &deployer.HelmConfig{
 		Gateway: &deployer.HelmGateway{
 			Name:             &gw.Name,
@@ -264,6 +265,7 @@ func (k *kGatewayParameters) getValues(gw *api.Gateway, gwParam *v1alpha1.Gatewa
 				Host: &k.inputs.ControlPlane.XdsHost,
 				Port: &k.inputs.ControlPlane.XdsPort,
 			},
+			ServiceNode: &serviceNode,
 		},
 	}
 
@@ -379,4 +381,12 @@ func getGatewayClassFromGateway(ctx context.Context, cli client.Client, gw *api.
 	}
 
 	return gwc, nil
+}
+
+// GenerateDefaultServiceNode returns the default value (passed via --service-node) when the proxy comes up
+// Ie: `<gateway-name>.<gateway-namespace>`
+// Since It is used as the cluster-name when plugins such as tracing are enabled, it is generated for consistency in stats reporting.
+// Ref: https://www.envoyproxy.io/docs/envoy/latest/operations/cli#cmdoption-service-node
+func GenerateDefaultServiceNode(name, namespace string) string {
+	return fmt.Sprintf("%s.%s", name, namespace)
 }

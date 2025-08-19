@@ -1530,6 +1530,7 @@ var _ = Describe("Deployer", func() {
 			Expect(envoyContainer.ImagePullPolicy).To(Equal(*expectedGwp.EnvoyContainer.Image.PullPolicy))
 			Expect(envoyContainer.Resources.Limits.Cpu()).To(Equal(expectedGwp.EnvoyContainer.Resources.Limits.Cpu()))
 			Expect(envoyContainer.Resources.Requests.Cpu()).To(Equal(expectedGwp.EnvoyContainer.Resources.Requests.Cpu()))
+			Expect(envoyContainer.Args).To(ContainElement(internaldeployer.GenerateDefaultServiceNode(inp.gw.Name, inp.gw.Namespace)))
 
 			// assert sds container
 			expectedSdsImage := fmt.Sprintf("%s/%s",

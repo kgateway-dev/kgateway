@@ -56,7 +56,11 @@ spec:
         args:
         - "--disable-hot-restart"
         - "--service-node"
+        {{- if $gateway.serviceNode }}
+        - {{ $gateway.serviceNode }}
+        {{- else }}
         - $(POD_NAME).$(POD_NAMESPACE)
+        {{- end }}
         {{- with $gateway.logLevel }}
         - "--log-level"
         - "{{ . }}"

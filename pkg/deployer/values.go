@@ -21,6 +21,9 @@ type HelmGateway struct {
 	GatewayNamespace *string `json:"gatewayNamespace,omitempty"`
 	NameOverride     *string `json:"nameOverride,omitempty"`
 	FullnameOverride *string `json:"fullnameOverride,omitempty"`
+	// The ServiceNode should not be configurable by the user. Since the value is used in
+	// OTel access logs and tracing, it is generated for consistency in stats reporting.
+	ServiceNode *string `json:"serviceNode,omitempty"`
 
 	// deployment/service values
 	ReplicaCount   *uint32          `json:"replicaCount,omitempty"`
