@@ -1,0 +1,264 @@
+Clusters:
+- connectTimeout: 5s
+  edsClusterConfig:
+    edsConfig:
+      ads: {}
+      resourceApiVersion: V3
+  ignoreHealthOnHostRemoval: true
+  metadata: {}
+  name: kube_default_example-svc_8000
+  type: EDS
+- connectTimeout: 5s
+  metadata: {}
+  name: test-backend-plugin_default_example-svc_80
+Listeners:
+- address:
+    socketAddress:
+      address: '::'
+      ipv4Compat: true
+      portValue: 8080
+  filterChains:
+  - filters:
+    - name: envoy.filters.network.http_connection_manager
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+        httpFilters:
+        - disabled: true
+          name: envoy.extensions.filters.http.header_mutation
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.header_mutation.v3.HeaderMutationPerRoute
+        - name: envoy.filters.http.router
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+        mergeSlashes: true
+        normalizePath: true
+        rds:
+          configSource:
+            ads: {}
+            resourceApiVersion: V3
+          routeConfigName: listener~8080
+        statPrefix: http
+        useRemoteAddress: true
+    name: listener~8080
+  metadata:
+    filterMetadata:
+      merge.TrafficPolicy.gateway.kgateway.dev:
+        headerModifiers:
+        - gateway.kgateway.dev/TrafficPolicy/default/header-modifiers-gw-policy
+  name: listener~8080
+- address:
+    socketAddress:
+      address: '::'
+      ipv4Compat: true
+      portValue: 8081
+  filterChains:
+  - filters:
+    - name: envoy.filters.network.http_connection_manager
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+        httpFilters:
+        - disabled: true
+          name: envoy.extensions.filters.http.header_mutation
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.header_mutation.v3.HeaderMutationPerRoute
+        - name: envoy.filters.http.router
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+        mergeSlashes: true
+        normalizePath: true
+        rds:
+          configSource:
+            ads: {}
+            resourceApiVersion: V3
+          routeConfigName: listener~8081
+        statPrefix: http
+        useRemoteAddress: true
+    name: listener~8081
+  metadata:
+    filterMetadata:
+      merge.TrafficPolicy.gateway.kgateway.dev:
+        headerModifiers:
+        - gateway.kgateway.dev/TrafficPolicy/default/header-modifiers-gw-policy
+  name: listener~8081
+Routes:
+- ignorePortInHostMatching: true
+  metadata:
+    filterMetadata:
+      merge.TrafficPolicy.gateway.kgateway.dev:
+        headerModifiers:
+        - gateway.kgateway.dev/TrafficPolicy/default/header-modifiers-gw-policy
+  name: listener~8080
+  typedPerFilterConfig:
+    envoy.extensions.filters.http.header_mutation:
+      '@type': type.googleapis.com/envoy.extensions.filters.http.header_mutation.v3.HeaderMutationPerRoute
+      mutations:
+        requestMutations:
+        - append:
+            header:
+              key: X-Custom-Request-Header
+              value: custom-request-value-gw
+        - append:
+            appendAction: OVERWRITE_IF_EXISTS_OR_ADD
+            header:
+              key: X-Custom-Request-Header-Set
+              value: custom-request-value-gw
+        - remove: X-Request-Id
+        responseMutations:
+        - append:
+            header:
+              key: X-Custom-Response-Header
+              value: custom-response-value-gw
+        - append:
+            appendAction: OVERWRITE_IF_EXISTS_OR_ADD
+            header:
+              key: X-Custom-Response-Header-Set
+              value: custom-response-value-gw
+        - remove: X-Envoy-Upstream-Service-Time
+  virtualHosts:
+  - domains:
+    - example.com
+    name: listener~8080~example_com
+    routes:
+    - match:
+        prefix: /
+      metadata:
+        filterMetadata:
+          merge.TrafficPolicy.gateway.kgateway.dev:
+            headerModifiers:
+            - gateway.kgateway.dev/TrafficPolicy/default/header-modifiers-route-policy-1
+      name: listener~8080~example_com-route-0-httproute-svc-route-1-default-0-0-matcher-0
+      route:
+        cluster: kube_default_example-svc_8000
+        clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+      typedPerFilterConfig:
+        envoy.extensions.filters.http.header_mutation:
+          '@type': type.googleapis.com/envoy.extensions.filters.http.header_mutation.v3.HeaderMutationPerRoute
+          mutations:
+            requestMutations:
+            - append:
+                header:
+                  key: X-Custom-Request-Header
+                  value: custom-request-value-route
+            - append:
+                appendAction: OVERWRITE_IF_EXISTS_OR_ADD
+                header:
+                  key: X-Custom-Request-Header-Set
+                  value: custom-request-value-route
+            - remove: X-Request-Id
+            responseMutations:
+            - append:
+                header:
+                  key: X-Custom-Response-Header
+                  value: custom-response-value-route
+            - append:
+                appendAction: OVERWRITE_IF_EXISTS_OR_ADD
+                header:
+                  key: X-Custom-Response-Header-Set
+                  value: custom-response-value-route
+            - remove: X-Envoy-Upstream-Service-Time
+- ignorePortInHostMatching: true
+  metadata:
+    filterMetadata:
+      merge.TrafficPolicy.gateway.kgateway.dev:
+        headerModifiers:
+        - gateway.kgateway.dev/TrafficPolicy/default/header-modifiers-gw-policy
+  name: listener~8081
+  typedPerFilterConfig:
+    envoy.extensions.filters.http.header_mutation:
+      '@type': type.googleapis.com/envoy.extensions.filters.http.header_mutation.v3.HeaderMutationPerRoute
+      mutations:
+        requestMutations:
+        - append:
+            header:
+              key: X-Custom-Request-Header
+              value: custom-request-value-gw
+        - append:
+            appendAction: OVERWRITE_IF_EXISTS_OR_ADD
+            header:
+              key: X-Custom-Request-Header-Set
+              value: custom-request-value-gw
+        - remove: X-Request-Id
+        responseMutations:
+        - append:
+            header:
+              key: X-Custom-Response-Header
+              value: custom-response-value-gw
+        - append:
+            appendAction: OVERWRITE_IF_EXISTS_OR_ADD
+            header:
+              key: X-Custom-Response-Header-Set
+              value: custom-response-value-gw
+        - remove: X-Envoy-Upstream-Service-Time
+  virtualHosts:
+  - domains:
+    - example.com
+    metadata:
+      filterMetadata:
+        merge.TrafficPolicy.gateway.kgateway.dev:
+          headerModifiers:
+          - gateway.kgateway.dev/TrafficPolicy/default/header-modifiers-ls-policy
+    name: listener~8081~example_com
+    routes:
+    - match:
+        prefix: /
+      metadata:
+        filterMetadata:
+          merge.TrafficPolicy.gateway.kgateway.dev:
+            headerModifiers:
+            - gateway.kgateway.dev/TrafficPolicy/default/header-modifiers-route-policy-1
+      name: listener~8081~example_com-route-0-httproute-svc-route-1-default-0-0-matcher-0
+      route:
+        cluster: kube_default_example-svc_8000
+        clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+      typedPerFilterConfig:
+        envoy.extensions.filters.http.header_mutation:
+          '@type': type.googleapis.com/envoy.extensions.filters.http.header_mutation.v3.HeaderMutationPerRoute
+          mutations:
+            requestMutations:
+            - append:
+                header:
+                  key: X-Custom-Request-Header
+                  value: custom-request-value-route
+            - append:
+                appendAction: OVERWRITE_IF_EXISTS_OR_ADD
+                header:
+                  key: X-Custom-Request-Header-Set
+                  value: custom-request-value-route
+            - remove: X-Request-Id
+            responseMutations:
+            - append:
+                header:
+                  key: X-Custom-Response-Header
+                  value: custom-response-value-route
+            - append:
+                appendAction: OVERWRITE_IF_EXISTS_OR_ADD
+                header:
+                  key: X-Custom-Response-Header-Set
+                  value: custom-response-value-route
+            - remove: X-Envoy-Upstream-Service-Time
+    typedPerFilterConfig:
+      envoy.extensions.filters.http.header_mutation:
+        '@type': type.googleapis.com/envoy.extensions.filters.http.header_mutation.v3.HeaderMutationPerRoute
+        mutations:
+          requestMutations:
+          - append:
+              header:
+                key: X-Custom-Request-Header
+                value: custom-request-value-ls
+          - append:
+              appendAction: OVERWRITE_IF_EXISTS_OR_ADD
+              header:
+                key: X-Custom-Request-Header-Set
+                value: custom-request-value-ls
+          - remove: X-Request-Id
+          responseMutations:
+          - append:
+              header:
+                key: X-Custom-Response-Header
+                value: custom-response-value-ls
+          - append:
+              appendAction: OVERWRITE_IF_EXISTS_OR_ADD
+              header:
+                key: X-Custom-Response-Header-Set
+                value: custom-response-value-ls
+          - remove: X-Envoy-Upstream-Service-Time

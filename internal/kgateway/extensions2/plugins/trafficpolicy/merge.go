@@ -165,6 +165,21 @@ func mergeCSRF(
 	defaultMerge(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, accessor, "csrf")
 }
 
+func mergeHeaderModifiers(
+	p1, p2 *TrafficPolicy,
+	p2Ref *pluginsdkir.AttachedPolicyRef,
+	p2MergeOrigins pluginsdkir.MergeOrigins,
+	opts policy.MergeOptions,
+	mergeOrigins pluginsdkir.MergeOrigins,
+) {
+	accessor := fieldAccessor[headerModifiersIR]{
+		Get: func(spec *trafficPolicySpecIr) *headerModifiersIR { return spec.headerModifiers },
+		Set: func(spec *trafficPolicySpecIr, val *headerModifiersIR) { spec.headerModifiers = val },
+	}
+
+	defaultMerge(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, accessor, "headerModifiers")
+}
+
 func mergeBuffer(
 	p1, p2 *TrafficPolicy,
 	p2Ref *pluginsdkir.AttachedPolicyRef,

@@ -14,6 +14,7 @@ type TrafficPolicySpecApplyConfiguration struct {
 	RateLimit       *RateLimitApplyConfiguration                                  `json:"rateLimit,omitempty"`
 	Cors            *CorsPolicyApplyConfiguration                                 `json:"cors,omitempty"`
 	Csrf            *CSRFPolicyApplyConfiguration                                 `json:"csrf,omitempty"`
+	HeaderModifiers *HeaderModifiersApplyConfiguration                            `json:"headerModifiers,omitempty"`
 	AutoHostRewrite *bool                                                         `json:"autoHostRewrite,omitempty"`
 	Buffer          *BufferApplyConfiguration                                     `json:"buffer,omitempty"`
 	Timeouts        *TimeoutsApplyConfiguration                                   `json:"timeouts,omitempty"`
@@ -105,6 +106,14 @@ func (b *TrafficPolicySpecApplyConfiguration) WithCors(value *CorsPolicyApplyCon
 // If called multiple times, the Csrf field is set to the value of the last call.
 func (b *TrafficPolicySpecApplyConfiguration) WithCsrf(value *CSRFPolicyApplyConfiguration) *TrafficPolicySpecApplyConfiguration {
 	b.Csrf = value
+	return b
+}
+
+// WithHeaderModifiers sets the HeaderModifiers field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the HeaderModifiers field is set to the value of the last call.
+func (b *TrafficPolicySpecApplyConfiguration) WithHeaderModifiers(value *HeaderModifiersApplyConfiguration) *TrafficPolicySpecApplyConfiguration {
+	b.HeaderModifiers = value
 	return b
 }
 

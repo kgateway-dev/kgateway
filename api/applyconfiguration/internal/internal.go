@@ -1250,6 +1250,15 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         namedType: io.k8s.sigs.gateway-api.apis.v1.HTTPHeaderMatch
       default: {}
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.HeaderModifiers
+  map:
+    fields:
+    - name: request
+      type:
+        namedType: io.k8s.sigs.gateway-api.apis.v1.HTTPHeaderFilter
+    - name: response
+      type:
+        namedType: io.k8s.sigs.gateway-api.apis.v1.HTTPHeaderFilter
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.HeaderTransformation
   map:
     fields:
@@ -2466,6 +2475,9 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: extProc
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtProcPolicy
+    - name: headerModifiers
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.HeaderModifiers
     - name: rateLimit
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.RateLimit
@@ -3637,6 +3649,42 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: weight
       type:
         scalar: numeric
+- name: io.k8s.sigs.gateway-api.apis.v1.HTTPHeader
+  map:
+    fields:
+    - name: name
+      type:
+        scalar: string
+      default: ""
+    - name: value
+      type:
+        scalar: string
+      default: ""
+- name: io.k8s.sigs.gateway-api.apis.v1.HTTPHeaderFilter
+  map:
+    fields:
+    - name: add
+      type:
+        list:
+          elementType:
+            namedType: io.k8s.sigs.gateway-api.apis.v1.HTTPHeader
+          elementRelationship: associative
+          keys:
+          - name
+    - name: remove
+      type:
+        list:
+          elementType:
+            scalar: string
+          elementRelationship: associative
+    - name: set
+      type:
+        list:
+          elementType:
+            namedType: io.k8s.sigs.gateway-api.apis.v1.HTTPHeader
+          elementRelationship: associative
+          keys:
+          - name
 - name: io.k8s.sigs.gateway-api.apis.v1.HTTPHeaderMatch
   map:
     fields:

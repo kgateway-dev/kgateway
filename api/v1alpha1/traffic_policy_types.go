@@ -84,6 +84,10 @@ type TrafficPolicySpec struct {
 	// +optional
 	Csrf *CSRFPolicy `json:"csrf,omitempty"`
 
+	// HeaderModifiers defines the policy to modify request and response headers.
+	// +optional
+	HeaderModifiers *HeaderModifiers `json:"headerModifiers,omitempty"`
+
 	// AutoHostRewrite rewrites the Host header to the DNS name of the selected upstream.
 	// NOTE: This field is only honoured for HTTPRoute targets.
 	// NOTE: If `autoHostRewrite` is set on a route that also has a [URLRewrite filter](https://gateway-api.sigs.k8s.io/reference/spec/#httpurlrewritefilter)
@@ -396,6 +400,18 @@ type CSRFPolicy struct {
 	// +optional
 	// +kubebuilder:validation:MaxItems=16
 	AdditionalOrigins []StringMatcher `json:"additionalOrigins,omitempty"`
+}
+
+// HeaderModifiers can be used to define the policy to modify request and response headers.
+// +kubebuilder:validation:XValidation:rule="has(self.request) || has(self.response)",message="At least one of request or response must be provided."
+type HeaderModifiers struct {
+	// Request modifies request headers.
+	// +optional
+	Request *gwv1.HTTPHeaderFilter `json:"request,omitempty"`
+
+	// Response modifies response headers.
+	// +optional
+	Response *gwv1.HTTPHeaderFilter `json:"response,omitempty"`
 }
 
 // +kubebuilder:validation:ExactlyOneOf=maxRequestSize;disable

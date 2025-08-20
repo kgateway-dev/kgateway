@@ -98,6 +98,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.HashPolicy":                                schema_kgateway_v2_api_v1alpha1_HashPolicy(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Header":                                    schema_kgateway_v2_api_v1alpha1_Header(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.HeaderFilter":                              schema_kgateway_v2_api_v1alpha1_HeaderFilter(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.HeaderModifiers":                           schema_kgateway_v2_api_v1alpha1_HeaderModifiers(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.HeaderTransformation":                      schema_kgateway_v2_api_v1alpha1_HeaderTransformation(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.HeaderValue":                               schema_kgateway_v2_api_v1alpha1_HeaderValue(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.HealthCheck":                               schema_kgateway_v2_api_v1alpha1_HealthCheck(ref),
@@ -4025,6 +4026,33 @@ func schema_kgateway_v2_api_v1alpha1_HeaderFilter(ref common.ReferenceCallback) 
 	}
 }
 
+func schema_kgateway_v2_api_v1alpha1_HeaderModifiers(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "HeaderModifiers can be used to define the policy to modify request and response headers.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"request": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Request modifies request headers.",
+							Ref:         ref("sigs.k8s.io/gateway-api/apis/v1.HTTPHeaderFilter"),
+						},
+					},
+					"response": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Response modifies response headers.",
+							Ref:         ref("sigs.k8s.io/gateway-api/apis/v1.HTTPHeaderFilter"),
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"sigs.k8s.io/gateway-api/apis/v1.HTTPHeaderFilter"},
+	}
+}
+
 func schema_kgateway_v2_api_v1alpha1_HeaderTransformation(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -7442,6 +7470,12 @@ func schema_kgateway_v2_api_v1alpha1_TrafficPolicySpec(ref common.ReferenceCallb
 							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CSRFPolicy"),
 						},
 					},
+					"headerModifiers": {
+						SchemaProps: spec.SchemaProps{
+							Description: "HeaderModifiers defines the policy to modify request and response headers.",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.HeaderModifiers"),
+						},
+					},
 					"autoHostRewrite": {
 						SchemaProps: spec.SchemaProps{
 							Description: "AutoHostRewrite rewrites the Host header to the DNS name of the selected upstream. NOTE: This field is only honoured for HTTPRoute targets. NOTE: If `autoHostRewrite` is set on a route that also has a [URLRewrite filter](https://gateway-api.sigs.k8s.io/reference/spec/#httpurlrewritefilter) configured to override the `hostname`, the `hostname` value will be used and `autoHostRewrite` will be ignored.",
@@ -7471,7 +7505,7 @@ func schema_kgateway_v2_api_v1alpha1_TrafficPolicySpec(ref common.ReferenceCallb
 			},
 		},
 		Dependencies: []string{
-			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AIPolicy", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Buffer", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CSRFPolicy", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CorsPolicy", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtAuthPolicy", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtProcPolicy", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LocalPolicyTargetReferenceWithSectionName", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LocalPolicyTargetSelectorWithSectionName", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.RateLimit", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Retry", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Timeouts", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.TransformationPolicy"},
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AIPolicy", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Buffer", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CSRFPolicy", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CorsPolicy", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtAuthPolicy", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtProcPolicy", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.HeaderModifiers", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LocalPolicyTargetReferenceWithSectionName", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LocalPolicyTargetSelectorWithSectionName", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.RateLimit", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Retry", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Timeouts", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.TransformationPolicy"},
 	}
 }
 

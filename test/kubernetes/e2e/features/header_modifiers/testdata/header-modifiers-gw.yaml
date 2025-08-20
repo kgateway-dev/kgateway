@@ -1,0 +1,28 @@
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: header-modifiers-gw-policy
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: gw
+  headerModifiers:
+    request:
+      add:
+        - name: X-Custom-Request-Header
+          value: custom-request-value-gw
+      set:
+        - name: X-Custom-Request-Header-Set
+          value: custom-request-value-gw
+      remove:
+        - X-Request-Id
+    response:
+      add:
+        - name: X-Custom-Response-Header
+          value: custom-response-value-gw
+      set:
+        - name: X-Custom-Response-Header-Set
+          value: custom-response-value-gw
+      remove:
+        - X-Envoy-Upstream-Service-Time
