@@ -141,21 +141,20 @@ func (s *testingSuite) TestLeaderDeploysProxy() {
 }
 
 func (s *testingSuite) getLeader() string {
-	var holder string
-	var err error
+	var leaderPodName string
 	s.Require().EventuallyWithT(func(c *assert.CollectT) {
-		holder, err = s.TestInstallation.Actions.Kubectl().GetLeaseHolder(s.Ctx, s.TestInstallation.Metadata.InstallNamespace, wellknown.LeaderElectionID)
+		holder, err := s.TestInstallation.Actions.Kubectl().GetLeaseHolder(s.Ctx, s.TestInstallation.Metadata.InstallNamespace, wellknown.LeaderElectionID)
 		assert.NoError(c, err, "failed to get lease")
 		// Get the name of the pod that holds the lease
 		// kgateway-6bb7674b97-cn6dd_f14c6a7e-ba31-40a7-95fb-806111275cd3 -> kgateway-6bb7674b97-cn6dd
-		holder = strings.Split(holder, "_")[0]
+		leaderPodName = strings.Split(holder, "_")[0]
 
 		// Ensure the lease holder is in the list of running pods. This prevents fetching a stale lease when the leader changes
 		pods, err := s.TestInstallation.Actions.Kubectl().GetPodsInNsWithLabel(s.Ctx, s.TestInstallation.Metadata.InstallNamespace, defaults.KGatewayPodLabel)
 		assert.NoError(c, err, "failed to get lease")
-		assert.Contains(c, pods, holder)
+		assert.Contains(c, pods, leaderPodName)
 	}, 120*time.Second, 10*time.Second)
-	return holder
+	return leaderPodName
 }
 
 func (s *testingSuite) leadershipChanges(oldLeader string) string {
