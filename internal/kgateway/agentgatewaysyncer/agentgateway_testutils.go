@@ -636,30 +636,17 @@ func (tc TestCase) Run(
 		return nil, err
 	}
 
-	plugins := registry.Plugins(ctx, commoncol, wellknown.DefaultAgentGatewayClassName)
-	plugins = append(plugins, agwbuiltin.NewBuiltinPlugin())
-
-	var extraPlugs []pluginsdk.Plugin
-	if extraPluginsFn != nil {
-		extraPlugins := extraPluginsFn(ctx, commoncol)
-		extraPlugs = append(extraPlugs, extraPlugins...)
-	}
-	plugins = append(plugins, extraPlugs...)
-	extensions := registry.MergePlugins(plugins...)
-
-	commoncol.InitPlugins(ctx, extensions, *settings)
+	proxySyncerPlugins := proxySyncerPluginFactory(ctx, commoncol, wellknown.DefaultAgentGatewayClassName, extraPluginsFn)
+	commoncol.InitPlugins(ctx, proxySyncerPlugins, *settings)
 
 	cli.RunAndWait(ctx.Done())
 	commoncol.GatewayIndex.Gateways.WaitUntilSynced(ctx.Done())
 
 	kubeclient.WaitForCacheSync("routes", ctx.Done(), commoncol.Routes.HasSynced)
-	kubeclient.WaitForCacheSync("extensions", ctx.Done(), extensions.HasSynced)
+	kubeclient.WaitForCacheSync("extensions", ctx.Done(), proxySyncerPlugins.HasSynced)
 	kubeclient.WaitForCacheSync("commoncol", ctx.Done(), commoncol.HasSynced)
 	kubeclient.WaitForCacheSync("backends", ctx.Done(), commoncol.BackendIndex.HasSynced)
 	kubeclient.WaitForCacheSync("endpoints", ctx.Done(), commoncol.Endpoints.HasSynced)
-	for i, plug := range extraPlugs {
-		kubeclient.WaitForCacheSync(fmt.Sprintf("extra-%d", i), ctx.Done(), plug.HasSynced)
-	}
 
 	results := make(map[types.NamespacedName]ActualTestResult)
 
@@ -670,13 +657,9 @@ func (tc TestCase) Run(
 	if err != nil {
 		return nil, err
 	}
-	agwPlugins := agentgatewayplugins.Plugins(agwCollections)
-	agwExtensions := agentgatewayplugins.MergePlugins(agwPlugins...)
+	agwMergedPlugins := agentGatewayPluginFactory(ctx, agwCollections)
 	kubeclient.WaitForCacheSync("trafficpolicies", ctx.Done(), agwCollections.TrafficPolicies.HasSynced)
 	kubeclient.WaitForCacheSync("infpool", ctx.Done(), agwCollections.InferencePools.HasSynced)
-	for i, plug := range agwPlugins {
-		kubeclient.WaitForCacheSync(fmt.Sprintf("plugin-%d", i), ctx.Done(), plug.HasSynced)
-	}
 
 	// Instead of calling full Init(), manually initialize just what we need for testing
 	// to avoid race conditions with XDS collection building
@@ -686,8 +669,8 @@ func (tc TestCase) Run(
 		cli,
 		nil, // mgr not needed for test
 		agwCollections,
-		extensions,
-		agwExtensions,
+		proxySyncerPlugins,
+		agwMergedPlugins,
 		nil, // xdsCache not needed for test
 		"istio-system",
 		"Kubernetes",
@@ -769,4 +752,32 @@ func (tc TestCase) Run(
 	}
 
 	return results, nil
+}
+
+func proxySyncerPluginFactory(ctx context.Context, commoncol *collections.CommonCollections, name string, extraPluginsFn ExtraPluginsFn) pluginsdk.Plugin {
+	plugins := registry.Plugins(ctx, commoncol, wellknown.DefaultAgentGatewayClassName)
+	plugins = append(plugins, agwbuiltin.NewBuiltinPlugin())
+
+	var extraPlugs []pluginsdk.Plugin
+	if extraPluginsFn != nil {
+		extraPlugins := extraPluginsFn(ctx, commoncol)
+		extraPlugs = append(extraPlugs, extraPlugins...)
+	}
+	plugins = append(plugins, extraPlugs...)
+	mergedPlugins := registry.MergePlugins(plugins...)
+	for i, plug := range extraPlugs {
+		kubeclient.WaitForCacheSync(fmt.Sprintf("extra-%d", i), ctx.Done(), plug.HasSynced)
+	}
+	return mergedPlugins
+}
+
+// agentGatewayPluginFactory is a factory function that returns the agent gateway plugins
+// It is based on agentGatewayPluginFactory(cfg)(ctx, cfg.AgwCollections) in start.go
+func agentGatewayPluginFactory(ctx context.Context, agwCollections *agentgatewayplugins.AgwCollections) agentgatewayplugins.AgentgatewayPlugin {
+	agwPlugins := agentgatewayplugins.Plugins(agwCollections)
+	mergedPlugins := agentgatewayplugins.MergePlugins(agwPlugins...)
+	for i, plug := range agwPlugins {
+		kubeclient.WaitForCacheSync(fmt.Sprintf("plugin-%d", i), ctx.Done(), plug.HasSynced)
+	}
+	return mergedPlugins
 }
