@@ -2,7 +2,6 @@ package leaderelection
 
 import (
 	"context"
-	"slices"
 	"strings"
 	"time"
 
@@ -13,6 +12,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
@@ -34,7 +34,6 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 }
 
 func (s *testingSuite) TestLeaderAndFollowerAction() {
-	s.waitUntilStartsLeading()
 	leader := s.getLeader()
 
 	// Scale the deployment to 2 replicas so the other can take over when the leader is killed
@@ -44,9 +43,6 @@ func (s *testingSuite) TestLeaderAndFollowerAction() {
 		err = s.TestInstallation.Actions.Kubectl().Scale(s.Ctx, s.TestInstallation.Metadata.InstallNamespace, defaults.KGatewayDeployment, 1)
 		s.NoError(err)
 	}()
-
-	// Verify that the other pod is the follower
-	s.getFollower()
 
 	// Kill the leader. Translation should still occur but the  should not be written while a new leader is elected.
 	s.killLeader(leader)
@@ -70,13 +66,12 @@ func (s *testingSuite) TestLeaderAndFollowerAction() {
 	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(s.Ctx, routeObjectMeta.Name, routeObjectMeta.Namespace, gwv1.RouteConditionAccepted, metav1.ConditionTrue)
 
 	// Verify that a new leader was elected
-	s.NotNil(s.getLeader(), "no leader found")
+	s.leadershipChanges(leader)
 }
 
 // Certain CRs such as backends have their status written in an event handler rather than through translation.
 // This test verifies that status writing for such resources is handled by the leader.
 func (s *testingSuite) TestLeaderWritesBackendStatus() {
-	s.waitUntilStartsLeading()
 	leader := s.getLeader()
 
 	// Scale the deployment to 2 replicas so the other can take over when the leader is killed
@@ -86,9 +81,6 @@ func (s *testingSuite) TestLeaderWritesBackendStatus() {
 		err = s.TestInstallation.Actions.Kubectl().Scale(s.Ctx, s.TestInstallation.Metadata.InstallNamespace, defaults.KGatewayDeployment, 1)
 		s.NoError(err)
 	}()
-
-	// Verify that the other pod is the follower
-	s.getFollower()
 
 	// Kill the leader. No status should be written until a new leader has been elected.
 	s.killLeader(leader)
@@ -110,10 +102,12 @@ func (s *testingSuite) TestLeaderWritesBackendStatus() {
 
 	// The time to deploy the write the status is greater than the lease renewal period.
 	s.Greater(diff, leaseRenewPeriod)
+
+	// Verify that a new leader was elected
+	s.leadershipChanges(leader)
 }
 
 func (s *testingSuite) TestLeaderDeploysProxy() {
-	s.waitUntilStartsLeading()
 	leader := s.getLeader()
 
 	// Scale the deployment to 2 replicas so the other can take over when the leader is killed
@@ -123,9 +117,6 @@ func (s *testingSuite) TestLeaderDeploysProxy() {
 		err = s.TestInstallation.Actions.Kubectl().Scale(s.Ctx, s.TestInstallation.Metadata.InstallNamespace, defaults.KGatewayDeployment, 1)
 		s.NoError(err)
 	}()
-
-	// Verify that the other pod is the follower
-	s.getFollower()
 
 	// Kill the leader. When a gateway is created, it should not be deployed until a new leader is elected.
 	s.killLeader(leader)
@@ -146,58 +137,33 @@ func (s *testingSuite) TestLeaderDeploysProxy() {
 	s.Greater(diff, leaseRenewPeriod)
 
 	// Verify that a new leader was elected
-	s.NotNil(s.getLeader(), "no leader found")
-}
-
-func (s *testingSuite) waitUntilStartsLeading() {
-	s.TestInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
-		out, err := s.TestInstallation.Actions.Kubectl().GetContainerLogs(s.Ctx, s.TestInstallation.Metadata.InstallNamespace, defaults.KGatewayDeployment)
-		g.Expect(err).NotTo(gomega.HaveOccurred(), "Failed to get pod logs")
-		g.Expect(out).To(gomega.ContainSubstring("successfully acquired lease"))
-	}, "60s", "10s").Should(gomega.Succeed())
+	s.leadershipChanges(leader)
 }
 
 func (s *testingSuite) getLeader() string {
-	pods, err := s.TestInstallation.Actions.Kubectl().GetPodsInNsWithLabel(s.Ctx, s.TestInstallation.Metadata.InstallNamespace, defaults.KGatewayPodLabel)
-	s.NoError(err)
-	return s.getLeaderFromPods(pods...)
-}
-
-func (s *testingSuite) getLeaderFromPods(pods ...string) string {
-	var leader string
-	// Use a simple approach to get the leader by parsing the pod logs.
-	// Another approach would be to fetch the underlying lease and comparing it with the existing pods
-	// While this is more accurate, it would require keeping track of the existing pods and wait until the lease matches
-	// the existing pods (since we roll pods in the test), which would be a more complex sequence of steps
+	var holder string
+	var err error
 	s.TestInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
-		for _, pod := range pods {
-			out, err := s.TestInstallation.Actions.Kubectl().GetContainerLogs(s.Ctx, s.TestInstallation.Metadata.InstallNamespace, pod)
-			if err != nil {
-				// Ignore the error as the pod might be starting up
-				continue
-			}
-			if strings.Contains(out, "successfully acquired lease") {
-				leader = pod
-			}
-		}
-		g.Expect(leader).ToNot(gomega.BeNil())
+		holder, err = s.TestInstallation.Actions.Kubectl().GetLeaseHolder(s.Ctx, s.TestInstallation.Metadata.InstallNamespace, wellknown.LeaderElectionID)
+		g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get lease")
+		// This is the name of the pod that holds the lease
+		holder = strings.Split(holder, "_")[0]
+
+		// Ensure the lease holder is in the list of running pods. This prevents fetching a stale lease when the leader changes
+		pods, err := s.TestInstallation.Actions.Kubectl().GetPodsInNsWithLabel(s.Ctx, s.TestInstallation.Metadata.InstallNamespace, defaults.KGatewayPodLabel)
+		g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to pods")
+		g.Expect(pods).To(gomega.ContainElement(holder))
 	}, "30s", "10s").Should(gomega.Succeed())
-	return leader
+	return holder
 }
 
-func (s *testingSuite) getFollower() string {
-	pods, err := s.TestInstallation.Actions.Kubectl().GetPodsInNsWithLabel(s.Ctx, s.TestInstallation.Metadata.InstallNamespace, defaults.KGatewayPodLabel)
-	s.NoError(err)
-	return s.getFollowerFromPods(pods...)
-}
-
-func (s *testingSuite) getFollowerFromPods(pods ...string) string {
-	// Since only the absence of a log line indicates that the pod is a follower,
-	// we return the non-leader pod
-	leader := s.getLeaderFromPods(pods...)
-	return slices.DeleteFunc(pods, func(pod string) bool {
-		return pod == leader
-	})[0]
+func (s *testingSuite) leadershipChanges(oldLeader string) string {
+	var holder string
+	s.TestInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
+		holder = s.getLeader()
+		g.Expect(holder).ToNot(gomega.Equal(oldLeader))
+	}, "30s", "10s").Should(gomega.Succeed())
+	return holder
 }
 
 func (s *testingSuite) killLeader(leader string) {
