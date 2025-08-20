@@ -407,9 +407,9 @@ func (c *Cli) GetPodsInNsWithLabel(ctx context.Context, namespace string, label 
 	return glooPodNames, nil
 }
 
-func (c *Cli) GetLeaseHolder(ctx context.Context, namespace string, name string) (string, error) {
+func (c *Cli) GetLeaseHolder(ctx context.Context, namespace string, leaderElectionID string) (string, error) {
 	stdout, stderr, err := c.Execute(ctx, "get", "leases", "-n", namespace,
-		name, "--output", "jsonpath='{.spec.holderIdentity}'")
+		leaderElectionID, "--output", "jsonpath='{.spec.holderIdentity}'")
 	stdout = strings.Trim(stdout, "'")
 	return stdout + stderr, err
 }

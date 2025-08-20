@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/onsi/gomega"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -143,26 +143,27 @@ func (s *testingSuite) TestLeaderDeploysProxy() {
 func (s *testingSuite) getLeader() string {
 	var holder string
 	var err error
-	s.TestInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
+	s.Require().EventuallyWithT(func(c *assert.CollectT) {
 		holder, err = s.TestInstallation.Actions.Kubectl().GetLeaseHolder(s.Ctx, s.TestInstallation.Metadata.InstallNamespace, wellknown.LeaderElectionID)
-		g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get lease")
-		// This is the name of the pod that holds the lease
+		assert.NoError(s.T(), err, "failed to get lease")
+		// Get the name of the pod that holds the lease
+		// kgateway-6bb7674b97-cn6dd_f14c6a7e-ba31-40a7-95fb-806111275cd3 -> kgateway-6bb7674b97-cn6dd
 		holder = strings.Split(holder, "_")[0]
 
 		// Ensure the lease holder is in the list of running pods. This prevents fetching a stale lease when the leader changes
 		pods, err := s.TestInstallation.Actions.Kubectl().GetPodsInNsWithLabel(s.Ctx, s.TestInstallation.Metadata.InstallNamespace, defaults.KGatewayPodLabel)
-		g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to pods")
-		g.Expect(pods).To(gomega.ContainElement(holder))
-	}, "30s", "10s").Should(gomega.Succeed())
+		assert.NoError(s.T(), err, "failed to get lease")
+		assert.Contains(s.T(), pods, holder)
+	}, 30*time.Second, 10*time.Second)
 	return holder
 }
 
 func (s *testingSuite) leadershipChanges(oldLeader string) string {
 	var holder string
-	s.TestInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
+	s.Require().EventuallyWithT(func(c *assert.CollectT) {
 		holder = s.getLeader()
-		g.Expect(holder).ToNot(gomega.Equal(oldLeader))
-	}, "30s", "10s").Should(gomega.Succeed())
+		assert.NotEqual(s.T(), holder, oldLeader, "leadership did not change")
+	}, 30*time.Second, 10*time.Second)
 	return holder
 }
 
@@ -170,10 +171,10 @@ func (s *testingSuite) killLeader(leader string) {
 	// Kill the leader so another pod can assume leadership
 	_, _, err := s.TestInstallation.Actions.Kubectl().Execute(s.Ctx, "delete", "pod", "-n", s.TestInstallation.Metadata.InstallNamespace, leader)
 	s.NoError(err)
-	s.TestInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
+	s.Require().EventuallyWithT(func(c *assert.CollectT) {
 		_, _, err := s.TestInstallation.Actions.Kubectl().Execute(s.Ctx, "get", "pod", "-n", s.TestInstallation.Metadata.InstallNamespace, leader)
-		g.Expect(err).To(gomega.HaveOccurred(), "Failed to delete leader")
-	}, "120s", "1s").Should(gomega.Succeed())
+		assert.NoError(s.T(), err, "Failed to delete leader")
+	}, 120*time.Second, 1*time.Second)
 }
 
 func (s *testingSuite) assertCurlResponseCode(code int) {
@@ -194,19 +195,19 @@ func (s *testingSuite) assertCurlResponseCode(code int) {
 }
 
 func (s *testingSuite) assertRouteHasNoStatus() {
-	s.TestInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
+	s.Require().EventuallyWithT(func(c *assert.CollectT) {
 		route := &gwv1.HTTPRoute{}
 		err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, types.NamespacedName{Name: routeObjectMeta.Name, Namespace: routeObjectMeta.Namespace}, route)
-		g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get HTTPRoute")
-		g.Expect(route.Status.Parents).To(gomega.BeEmpty())
-	}, "120s", "1s").Should(gomega.Succeed())
+		assert.NoError(s.T(), err, "failed to get HTTPRoute")
+		assert.Empty(s.T(), route.Status.Parents)
+	}, 120*time.Second, 1*time.Second)
 }
 
 func (s *testingSuite) assertBackendHasNoStatus() {
-	s.TestInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
+	s.Require().EventuallyWithT(func(c *assert.CollectT) {
 		backend := &v1alpha1.Backend{}
 		err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, types.NamespacedName{Name: "httpbin-static", Namespace: "default"}, backend)
-		g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get Backend")
-		g.Expect(backend.Status.Conditions).To(gomega.BeEmpty())
-	}, "120s", "1s").Should(gomega.Succeed())
+		assert.NoError(s.T(), err, "failed to get Backend")
+		assert.Empty(s.T(), backend.Status.Conditions)
+	}, 120*time.Second, 1*time.Second)
 }
