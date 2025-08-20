@@ -99,7 +99,7 @@ var (
 			Help:      "Total number of XDS snapshot syncs for resources",
 		},
 		[]string{gatewayLabel, namespaceLabel, resourceLabel})
-	resourcesXDSyncDuration = metrics.NewHistogram(
+	resourcesXDSSyncDuration = metrics.NewHistogram(
 		metrics.HistogramOpts{
 			Subsystem:                       resourcesSubsystem,
 			Name:                            "xds_snapshot_sync_duration_seconds",
@@ -241,4 +241,7 @@ func ResetMetrics() {
 	snapshotTransformDuration.Reset()
 	snapshotResources.Reset()
 	resourcesStatusSyncsCompletedTotal.Reset()
+	resourcesStatusSyncDuration.Reset()
+	resourcesXDSSyncsTotal.Reset()
+	resourcesXDSSyncDuration.Reset()
 }
