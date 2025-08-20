@@ -24,12 +24,10 @@ import (
 	ourwellknown "github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
 
-var (
-	VirtualIstioGK = schema.GroupKind{
-		Group: "istioplugin",
-		Kind:  "istioplugin",
-	}
-)
+var VirtualIstioGK = schema.GroupKind{
+	Group: "istioplugin",
+	Kind:  "istioplugin",
+}
 
 type IstioSettings struct {
 	EnableAutoMtls bool
@@ -70,7 +68,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 			VirtualIstioGK: {
 				Name:           "istio",
 				ProcessBackend: p.processBackend,
-				GlobalPolicies: func(_ krt.HandlerContext, _ extensionsplug.AttachmentPoints) ir.PolicyIR {
+				GlobalPolicies: func(_ krt.HandlerContext) ir.PolicyIR {
 					// return static settings which do not change post istioPlugin creation
 					return istioSettings
 				},

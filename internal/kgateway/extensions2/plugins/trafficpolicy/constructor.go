@@ -5,8 +5,9 @@ import (
 	"fmt"
 
 	"istio.io/istio/pkg/kube/krt"
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/utils/ptr"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
@@ -14,7 +15,7 @@ import (
 )
 
 // FetchGatewayExtensionFunc defines the signature for fetching gateway extensions
-type FetchGatewayExtensionFunc func(krtctx krt.HandlerContext, extensionRef *corev1.LocalObjectReference, ns string) (*TrafficPolicyGatewayExtensionIR, error)
+type FetchGatewayExtensionFunc func(krtctx krt.HandlerContext, extensionRef v1alpha1.NamespacedObjectReference, ns string) (*TrafficPolicyGatewayExtensionIR, error)
 
 type TrafficPolicyConstructor struct {
 	commoncol         *common.CommonCollections
@@ -100,12 +101,13 @@ func (c *TrafficPolicyConstructor) ConstructIR(
 	return &policyIr, errors
 }
 
-func (c *TrafficPolicyConstructor) FetchGatewayExtension(krtctx krt.HandlerContext, extensionRef *corev1.LocalObjectReference, ns string) (*TrafficPolicyGatewayExtensionIR, error) {
-	if extensionRef == nil {
-		return nil, fmt.Errorf("gateway extension ref is nil")
+func (c *TrafficPolicyConstructor) FetchGatewayExtension(krtctx krt.HandlerContext, extensionRef v1alpha1.NamespacedObjectReference, ns string) (*TrafficPolicyGatewayExtensionIR, error) {
+	namespace := ptr.Deref(extensionRef.Namespace, "")
+	if namespace == "" {
+		namespace = gwv1.Namespace(ns)
 	}
 
-	gwExtNN := types.NamespacedName{Name: extensionRef.Name, Namespace: ns}
+	gwExtNN := types.NamespacedName{Name: string(extensionRef.Name), Namespace: string(namespace)}
 	gatewayExtension := krt.FetchOne(krtctx, c.gatewayExtensions, krt.FilterObjectName(gwExtNN))
 	if gatewayExtension == nil {
 		return nil, fmt.Errorf("gateway extension %s not found", gwExtNN.String())

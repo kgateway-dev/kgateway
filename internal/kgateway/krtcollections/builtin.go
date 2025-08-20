@@ -140,7 +140,6 @@ func NewBuiltinPlugin(ctx context.Context) extensionsplug.Plugin {
 	return extensionsplug.Plugin{
 		ContributesPolicies: map[schema.GroupKind]extensionsplug.PolicyPlugin{
 			pluginsdkir.VirtualBuiltInGK: {
-				// AttachmentPoints: []ir.AttachmentPoints{ir.HttpAttachmentPoint},
 				NewGatewayTranslationPass: NewGatewayTranslationPass,
 			},
 		},

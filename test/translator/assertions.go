@@ -2,6 +2,7 @@ package translator
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -72,7 +73,9 @@ func AssertRouteInvalid(t *testing.T, routeName, namespace, expectedReason strin
 		a.Equal(metav1.ConditionFalse, accepted.Status, "Accepted Status mismatch")
 		a.Equal(expectedReason, accepted.Reason, "Accepted Reason mismatch")
 		for _, msgSubstring := range expectedMsgSubstrings {
-			a.Contains(accepted.Message, msgSubstring, "Accepted Message mismatch")
+			a.Equal(1, strings.Count(accepted.Message, msgSubstring),
+				"Expected message substring %q to appear exactly once in Accepted Message: %q",
+				msgSubstring, accepted.Message)
 		}
 		a.Equal(int64(0), accepted.ObservedGeneration, "Accepted ObservedGeneration mismatch")
 	}

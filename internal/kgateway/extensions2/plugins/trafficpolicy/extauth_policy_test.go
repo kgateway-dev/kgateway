@@ -4,8 +4,6 @@ import (
 	"context"
 	"testing"
 
-	corev1 "k8s.io/api/core/v1"
-
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_ext_authz_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_authz/v3"
@@ -156,7 +154,7 @@ func TestExtAuthForSpec(t *testing.T) {
 		// Setup
 		spec := &v1alpha1.TrafficPolicy{Spec: v1alpha1.TrafficPolicySpec{
 			ExtAuth: &v1alpha1.ExtAuthPolicy{
-				ExtensionRef: &corev1.LocalObjectReference{
+				ExtensionRef: v1alpha1.NamespacedObjectReference{
 					Name: "test-extension",
 				},
 				WithRequestBody: &v1alpha1.BufferSettings{

@@ -2,7 +2,7 @@ apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:
   name: example-gateway
-  namespace: infra
+  namespace: gwtest
 spec:
   gatewayClassName: kgateway
   listeners:
@@ -16,8 +16,8 @@ spec:
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
-  name: example-route
-  namespace: infra
+  name: conflict-route
+  namespace: gwtest
 spec:
   parentRefs:
     - name: example-gateway
@@ -34,7 +34,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: example-svc
-  namespace: infra
+  namespace: gwtest
 spec:
   selector:
     test: test
@@ -46,61 +46,46 @@ spec:
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: TrafficPolicy
 metadata:
-  name: default-value-validation-invalid-slices-test
-  namespace: infra
+  name: invalid-transformation-policy
+  namespace: gwtest
 spec:
   targetRefs:
     - group: gateway.networking.k8s.io
       kind: HTTPRoute
-      name: example-route
-  ai:
-    defaults:
-      - field: "invalid_slices"
-        value: "[1,2,3"
+      name: conflict-route
+  transformation:
+    request:
+      headerTransformations:
+        add:
+          x-invalid-header: "{{ invalid_template_var"
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: TrafficPolicy
 metadata:
-  name: default-value-validation-invalid-object-test
-  namespace: infra
+  name: invalid-ai-policy
+  namespace: gwtest
 spec:
   targetRefs:
     - group: gateway.networking.k8s.io
       kind: HTTPRoute
-      name: example-route
+      name: conflict-route
   ai:
     defaults:
-      - field: "invalid_object"
-        value: "\"model\":\"gpt-4\"}"
+      - field: "config"
+        value: "{\"incomplete\": true"
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: TrafficPolicy
 metadata:
-  name: override-default-value-validation-invalid-slices-test
-  namespace: infra
+  name: invalid-header-template-policy
+  namespace: gwtest
 spec:
   targetRefs:
     - group: gateway.networking.k8s.io
       kind: HTTPRoute
-      name: example-route
-  ai:
-    defaults:
-      - field: "invalid_slices"
-        value: "[1,2,3"
-        override: true
----
-apiVersion: gateway.kgateway.dev/v1alpha1
-kind: TrafficPolicy
-metadata:
-  name: override-default-value-validation-invalid-object-test
-  namespace: infra
-spec:
-  targetRefs:
-    - group: gateway.networking.k8s.io
-      kind: HTTPRoute
-      name: example-route
-  ai:
-    defaults:
-      - field: "invalid_object"
-        value: "\"model\":\"gpt-4\"}"
-        override: true
+      name: conflict-route
+  transformation:
+    request:
+      headerTransformations:
+        add:
+          x-template-header: "{{ REQUEST(invalid-variable) }}"

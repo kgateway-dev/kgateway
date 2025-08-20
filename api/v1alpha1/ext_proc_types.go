@@ -1,16 +1,12 @@
 package v1alpha1
 
-import (
-	corev1 "k8s.io/api/core/v1"
-)
-
 // ExtProcPolicy defines the configuration for the Envoy External Processing filter.
 //
 // +kubebuilder:validation:ExactlyOneOf=extensionRef;disable
 type ExtProcPolicy struct {
 	// ExtensionRef references the GatewayExtension that should be used for external processing.
 	// +optional
-	ExtensionRef *corev1.LocalObjectReference `json:"extensionRef,omitempty"`
+	ExtensionRef NamespacedObjectReference `json:"extensionRef,omitempty"`
 
 	// ProcessingMode defines how the filter should interact with the request/response streams
 	// +optional

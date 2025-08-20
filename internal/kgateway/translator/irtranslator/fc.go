@@ -220,7 +220,8 @@ func (h *hcmNetworkFilterTranslator) computeNetworkFilters(ctx context.Context, 
 		policies, mergeOrigins := mergePolicies(pass, pols)
 		for _, pol := range policies {
 			pctx := &ir.HcmContext{
-				Policy: pol.PolicyIr,
+				Policy:  pol.PolicyIr,
+				Gateway: h.gateway,
 			}
 			if err := pass.ApplyHCM(ctx, pctx, httpConnectionManager); err != nil {
 				h.listenerReporter.SetCondition(sdkreporter.ListenerCondition{

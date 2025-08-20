@@ -15,6 +15,8 @@ import (
 const (
 	// test namespace for proxy resources
 	namespace = "kgateway-test"
+	// test namespace for ratelimit resources
+	extensionsNamespace = "kgateway-test-extensions"
 	// test service name
 	serviceName = "backend-0"
 )
@@ -67,7 +69,7 @@ var (
 	}
 
 	// metadata for rate limit service
-	rateLimitObjectMeta = metav1.ObjectMeta{Name: "ratelimit", Namespace: namespace}
+	rateLimitObjectMeta = metav1.ObjectMeta{Name: "ratelimit", Namespace: extensionsNamespace}
 
 	rateLimitDeployment = &appsv1.Deployment{
 		ObjectMeta: rateLimitObjectMeta,
@@ -76,7 +78,7 @@ var (
 		ObjectMeta: rateLimitObjectMeta,
 	}
 	rateLimitConfigMap = &corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{Name: "ratelimit-config", Namespace: namespace},
+		ObjectMeta: metav1.ObjectMeta{Name: "ratelimit-config", Namespace: extensionsNamespace},
 	}
 
 	// metadata for httproutes
@@ -97,7 +99,7 @@ var (
 	// Gateway Extension for rate limit service
 	gatewayExtension = &v1alpha1.GatewayExtension{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace: namespace,
+			Namespace: extensionsNamespace,
 			Name:      "global-ratelimit",
 		},
 	}

@@ -121,14 +121,14 @@ func (i *BackendIndex) BackendsWithPolicy() []krt.Collection[*ir.BackendObjectIR
 // policies attached.
 func (i *BackendIndex) AddBackends(gk schema.GroupKind, col krt.Collection[ir.BackendObjectIR], aliasKinds ...schema.GroupKind) {
 	backendsWithPoliciesCol := krt.NewCollection(col, func(kctx krt.HandlerContext, backendObj ir.BackendObjectIR) **ir.BackendObjectIR {
-		policies := i.policies.getTargetingPoliciesForBackends(kctx, extensionsplug.BackendAttachmentPoint, backendObj.ObjectSource, "", backendObj.GetObjectLabels(), false)
+		policies := i.policies.getTargetingPoliciesForBackends(kctx, backendObj.ObjectSource, "", backendObj.GetObjectLabels(), false)
 		for _, aliasObjSrc := range backendObj.Aliases {
 			if aliasObjSrc.Namespace == "" {
 				// targeting policies must be namespace local
 				// some aliases might be "global" but for policy purposes, give them the src namespace
 				aliasObjSrc.Namespace = backendObj.GetNamespace()
 			}
-			aliasPolicies := i.policies.getTargetingPoliciesForBackends(kctx, extensionsplug.BackendAttachmentPoint, aliasObjSrc, "", backendObj.GetObjectLabels(), true)
+			aliasPolicies := i.policies.getTargetingPoliciesForBackends(kctx, aliasObjSrc, "", backendObj.GetObjectLabels(), true)
 			policies = append(policies, aliasPolicies...)
 		}
 		backendObj.AttachedPolicies = toAttachedPolicies(policies)
@@ -329,14 +329,13 @@ func NewGatewayIndex(
 		// TODO: http polic
 		//		panic("TODO: implement http policies not just listener")
 		gwIR.AttachedListenerPolicies = toAttachedPolicies(
-			h.policies.getTargetingPolicies(kctx, extensionsplug.GatewayAttachmentPoint, gwIR.ObjectSource, "", gw.GetLabels()))
+			h.policies.getTargetingPolicies(kctx, gwIR.ObjectSource, "", gw.GetLabels()))
 		gwIR.AttachedHttpPolicies = gwIR.AttachedListenerPolicies // see if i can find a better way to segment the listener level and http level policies
 		for _, l := range gw.Spec.Listeners {
 			gwIR.Listeners = append(gwIR.Listeners, ir.Listener{
-				Listener: l,
-				Parent:   gw,
-				// TODO(https://github.com/kgateway-dev/kgateway/issues/11775): is RouteAttachmentPoint correct in all scenarios?
-				AttachedPolicies: toAttachedPolicies(h.policies.getTargetingPolicies(kctx, extensionsplug.RouteAttachmentPoint, gwIR.ObjectSource, string(l.Name), gw.GetLabels())),
+				Listener:         l,
+				Parent:           gw,
+				AttachedPolicies: toAttachedPolicies(h.policies.getTargetingPolicies(kctx, gwIR.ObjectSource, string(l.Name), gw.GetLabels())),
 				PolicyAncestorRef: gwv1.ParentReference{
 					Group:     k8sptr.To(gwv1.Group(wellknown.GatewayGVK.Group)),
 					Kind:      k8sptr.To(gwv1.Kind(wellknown.GatewayGVK.Kind)),
@@ -379,11 +378,10 @@ func NewGatewayIndex(
 				Obj:       ls,
 				Listeners: make([]ir.Listener, 0),
 			}
-			listenerSetPolicies := h.policies.getTargetingPolicies(kctx, extensionsplug.GatewayAttachmentPoint, lsIR.ObjectSource, "", ls.GetLabels())
+			listenerSetPolicies := h.policies.getTargetingPolicies(kctx, lsIR.ObjectSource, "", ls.GetLabels())
 
 			for _, l := range ls.Spec.Listeners {
-				// TODO(https://github.com/kgateway-dev/kgateway/issues/11775): is RouteAttachmentPoint correct in all scenarios?
-				listenerSpecificPolicies := h.policies.getTargetingPolicies(kctx, extensionsplug.RouteAttachmentPoint, lsIR.ObjectSource, string(l.Name), ls.GetLabels())
+				listenerSpecificPolicies := h.policies.getTargetingPolicies(kctx, lsIR.ObjectSource, string(l.Name), ls.GetLabels())
 				// The Gateway Polices applies to all listeners but we need to apply them to listeners within the LS.
 				// Since there is no LS equivalent in Envoy, apply them on each listener in the LS.
 				// Ensure the sectioned policies are first
@@ -494,8 +492,7 @@ func (k HTTPRouteSelector) String() string {
 
 type globalPolicy struct {
 	schema.GroupKind
-	ir     func(krt.HandlerContext, extensionsplug.AttachmentPoints) ir.PolicyIR
-	points extensionsplug.AttachmentPoints
+	ir func(krt.HandlerContext) ir.PolicyIR
 }
 
 // MARK: PolicyIndex
@@ -593,7 +590,6 @@ func NewPolicyIndex(
 			index.globalPolicies = append(index.globalPolicies, globalPolicy{
 				GroupKind: gk,
 				ir:        plugin.GlobalPolicies,
-				points:    plugin.AttachmentPoints(),
 			})
 		}
 	}
@@ -655,28 +651,25 @@ func (p *PolicyIndex) fetchByTargetRefLabels(
 
 func (p *PolicyIndex) getTargetingPoliciesForBackends(
 	kctx krt.HandlerContext,
-	pnt extensionsplug.AttachmentPoints,
 	targetRef ir.ObjectSource,
 	sectionName string,
 	targetLabels map[string]string,
 	excludeGlobal bool,
 ) []ir.PolicyAtt {
-	return p.getTargetingPoliciesMaybeForBackends(kctx, pnt, targetRef, sectionName, true, excludeGlobal, targetLabels)
+	return p.getTargetingPoliciesMaybeForBackends(kctx, targetRef, sectionName, true, excludeGlobal, targetLabels)
 }
 
 func (p *PolicyIndex) getTargetingPolicies(
 	kctx krt.HandlerContext,
-	pnt extensionsplug.AttachmentPoints,
 	targetRef ir.ObjectSource,
 	sectionName string,
 	targetLabels map[string]string,
 ) []ir.PolicyAtt {
-	return p.getTargetingPoliciesMaybeForBackends(kctx, pnt, targetRef, sectionName, false, false, targetLabels)
+	return p.getTargetingPoliciesMaybeForBackends(kctx, targetRef, sectionName, false, false, targetLabels)
 }
 
 func (p *PolicyIndex) getTargetingPoliciesMaybeForBackends(
 	kctx krt.HandlerContext,
-	pnt extensionsplug.AttachmentPoints,
 	targetRef ir.ObjectSource,
 	sectionName string,
 	onlyBackends bool,
@@ -686,14 +679,12 @@ func (p *PolicyIndex) getTargetingPoliciesMaybeForBackends(
 	var ret []ir.PolicyAtt
 	if !excludeGlobal {
 		for _, gp := range p.globalPolicies {
-			if gp.points.Has(pnt) {
-				if p := gp.ir(kctx, pnt); p != nil {
-					gpAtt := ir.PolicyAtt{
-						PolicyIr:  p,
-						GroupKind: gp.GroupKind,
-					}
-					ret = append(ret, gpAtt)
+			if p := gp.ir(kctx); p != nil {
+				gpAtt := ir.PolicyAtt{
+					PolicyIr:  p,
+					GroupKind: gp.GroupKind,
 				}
+				ret = append(ret, gpAtt)
 			}
 		}
 	}
@@ -767,12 +758,11 @@ func (p *PolicyIndex) fetchPolicy(kctx krt.HandlerContext, policyRef ir.ObjectSo
 // LookupTargetingPolicies returns the policies targeting the given object.
 func (p *PolicyIndex) LookupTargetingPolicies(
 	kctx krt.HandlerContext,
-	pnt extensionsplug.AttachmentPoints,
 	targetRef ir.ObjectSource,
 	sectionName string,
 	targetLabels map[string]string,
 ) []ir.PolicyAtt {
-	return p.getTargetingPolicies(kctx, pnt, targetRef, sectionName, targetLabels)
+	return p.getTargetingPolicies(kctx, targetRef, sectionName, targetLabels)
 }
 
 // PolicyIndex returns the underlying PolicyIndex reference.
@@ -1082,7 +1072,7 @@ func (h *RoutesIndex) transformTcpRoute(kctx krt.HandlerContext, i *gwv1a2.TCPRo
 		SourceObject:     i,
 		ParentRefs:       i.Spec.ParentRefs,
 		Backends:         h.getTcpBackends(kctx, src, backends),
-		AttachedPolicies: toAttachedPolicies(h.policies.getTargetingPolicies(kctx, extensionsplug.RouteAttachmentPoint, src, "", i.GetLabels())),
+		AttachedPolicies: toAttachedPolicies(h.policies.getTargetingPolicies(kctx, src, "", i.GetLabels())),
 	}
 }
 
@@ -1103,7 +1093,7 @@ func (h *RoutesIndex) transformTlsRoute(kctx krt.HandlerContext, i *gwv1a2.TLSRo
 		ParentRefs:       i.Spec.ParentRefs,
 		Backends:         h.getTcpBackends(kctx, src, backends),
 		Hostnames:        tostr(i.Spec.Hostnames),
-		AttachedPolicies: toAttachedPolicies(h.policies.getTargetingPolicies(kctx, extensionsplug.RouteAttachmentPoint, src, "", i.GetLabels())),
+		AttachedPolicies: toAttachedPolicies(h.policies.getTargetingPolicies(kctx, src, "", i.GetLabels())),
 	}
 }
 
@@ -1134,7 +1124,7 @@ func (h *RoutesIndex) transformHttpRoute(kctx krt.HandlerContext, i *gwv1.HTTPRo
 		Rules: h.transformRules(
 			kctx, src, i.Spec.Rules, i.GetLabels(), ir.WithInheritedPolicyPriority(inheritedPolicyPriority)),
 		AttachedPolicies: toAttachedPolicies(
-			h.policies.getTargetingPolicies(kctx, extensionsplug.RouteAttachmentPoint, src, "", i.GetLabels()),
+			h.policies.getTargetingPolicies(kctx, src, "", i.GetLabels()),
 			ir.WithInheritedPolicyPriority(inheritedPolicyPriority),
 		),
 		PrecedenceWeight:               precedenceWeight,
@@ -1155,7 +1145,7 @@ func (h *RoutesIndex) transformRules(
 
 		var policies ir.AttachedPolicies
 		if r.Name != nil {
-			policies = toAttachedPolicies(h.policies.getTargetingPolicies(kctx, extensionsplug.RouteAttachmentPoint, src, string(*r.Name), srcLabels), opts...)
+			policies = toAttachedPolicies(h.policies.getTargetingPolicies(kctx, src, string(*r.Name), srcLabels), opts...)
 		}
 
 		rulePolicies := h.getBuiltInRulePolicies(r, opts...)

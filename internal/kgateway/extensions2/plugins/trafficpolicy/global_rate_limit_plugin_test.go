@@ -13,9 +13,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/durationpb"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
@@ -409,8 +409,8 @@ func TestToRateLimitFilterConfig(t *testing.T) {
 				},
 			},
 			policy: &v1alpha1.RateLimitPolicy{
-				ExtensionRef: &corev1.LocalObjectReference{
-					Name: defaultExtensionName,
+				ExtensionRef: v1alpha1.NamespacedObjectReference{
+					Name: gwv1.ObjectName(defaultExtensionName),
 				},
 				Descriptors: []v1alpha1.RateLimitDescriptor{
 					{
@@ -460,8 +460,8 @@ func TestToRateLimitFilterConfig(t *testing.T) {
 				},
 			},
 			policy: &v1alpha1.RateLimitPolicy{
-				ExtensionRef: &corev1.LocalObjectReference{
-					Name: defaultExtensionName,
+				ExtensionRef: v1alpha1.NamespacedObjectReference{
+					Name: gwv1.ObjectName(defaultExtensionName),
 				},
 				Descriptors: []v1alpha1.RateLimitDescriptor{
 					{
@@ -502,8 +502,8 @@ func TestToRateLimitFilterConfig(t *testing.T) {
 				},
 			},
 			policy: &v1alpha1.RateLimitPolicy{
-				ExtensionRef: &corev1.LocalObjectReference{
-					Name: defaultExtensionName,
+				ExtensionRef: v1alpha1.NamespacedObjectReference{
+					Name: gwv1.ObjectName(defaultExtensionName),
 				},
 				Descriptors: []v1alpha1.RateLimitDescriptor{
 					{
@@ -539,8 +539,8 @@ func TestToRateLimitFilterConfig(t *testing.T) {
 				},
 			},
 			policy: &v1alpha1.RateLimitPolicy{
-				ExtensionRef: &corev1.LocalObjectReference{
-					Name: defaultExtensionName,
+				ExtensionRef: v1alpha1.NamespacedObjectReference{
+					Name: gwv1.ObjectName(defaultExtensionName),
 				},
 				Descriptors: []v1alpha1.RateLimitDescriptor{
 					{
@@ -569,8 +569,8 @@ func TestToRateLimitFilterConfig(t *testing.T) {
 				},
 			},
 			policy: &v1alpha1.RateLimitPolicy{
-				ExtensionRef: &corev1.LocalObjectReference{
-					Name: defaultExtensionName,
+				ExtensionRef: v1alpha1.NamespacedObjectReference{
+					Name: gwv1.ObjectName(defaultExtensionName),
 				},
 				Descriptors: []v1alpha1.RateLimitDescriptor{
 					{
@@ -616,7 +616,7 @@ func TestToRateLimitFilterConfig(t *testing.T) {
 			var rl *ratev3.RateLimit
 			var err error
 
-			if tt.policy == nil || tt.policy.ExtensionRef == nil {
+			if tt.policy == nil || tt.policy.ExtensionRef.Name == "" {
 				err = errors.New("extensionRef is required")
 			} else if tt.gatewayExtension == nil {
 				err = fmt.Errorf("failed to get referenced GatewayExtension")

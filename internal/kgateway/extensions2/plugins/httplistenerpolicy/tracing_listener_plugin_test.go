@@ -21,6 +21,7 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
+	pluginsdkir "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
 func TestTracingConverter(t *testing.T) {
@@ -47,7 +48,6 @@ func TestTracingConverter(t *testing.T) {
 									},
 								},
 							},
-							ServiceName: "my:service",
 						},
 					},
 				},
@@ -63,7 +63,7 @@ func TestTracingConverter(t *testing.T) {
 										},
 									},
 								},
-								ServiceName: "my:service",
+								ServiceName: "gw.default",
 							}),
 						},
 					},
@@ -81,7 +81,6 @@ func TestTracingConverter(t *testing.T) {
 									},
 								},
 							},
-							ServiceName: "my:service",
 						},
 					},
 					Attributes: nil,
@@ -98,7 +97,7 @@ func TestTracingConverter(t *testing.T) {
 										},
 									},
 								},
-								ServiceName: "my:service",
+								ServiceName: "gw.default",
 							}),
 						},
 					},
@@ -116,7 +115,6 @@ func TestTracingConverter(t *testing.T) {
 									},
 								},
 							},
-							ServiceName: "my:service",
 						},
 					},
 					Attributes: []v1alpha1.CustomAttribute{},
@@ -133,7 +131,7 @@ func TestTracingConverter(t *testing.T) {
 										},
 									},
 								},
-								ServiceName: "my:service",
+								ServiceName: "gw.default",
 							}),
 						},
 					},
@@ -152,7 +150,7 @@ func TestTracingConverter(t *testing.T) {
 									},
 								},
 							},
-							ServiceName: "my:service",
+							ServiceName: pointer.String("my:service"),
 							ResourceDetectors: []v1alpha1.ResourceDetector{{
 								EnvironmentResourceDetector: &v1alpha1.EnvironmentResourceDetectorConfig{},
 							}},
@@ -389,7 +387,7 @@ func TestTracingConverter(t *testing.T) {
 			t.Cleanup(cancel)
 
 			t.Run(tc.name, func(t *testing.T) {
-				result, err := translateTracing(
+				provider, config, err := translateTracing(
 					tc.config,
 					&ir.BackendObjectIR{
 						ObjectSource: ir.ObjectSource{
@@ -399,10 +397,20 @@ func TestTracingConverter(t *testing.T) {
 						},
 					},
 				)
+				updateTracingConfig(&ir.HcmContext{
+					Gateway: pluginsdkir.GatewayIR{
+						SourceObject: &pluginsdkir.Gateway{
+							ObjectSource: pluginsdkir.ObjectSource{
+								Namespace: "default",
+								Name:      "gw",
+							},
+						},
+					},
+				}, provider, config)
 				require.NoError(t, err, "failed to convert access log config")
 				if tc.expected != nil {
-					assert.True(t, proto.Equal(tc.expected, result),
-						"Tracing config mismatch\n %v\n %v\n", tc.expected, result)
+					assert.True(t, proto.Equal(tc.expected, config),
+						"Tracing config mismatch\n %v\n %v\n", tc.expected, config)
 				}
 			})
 		}
