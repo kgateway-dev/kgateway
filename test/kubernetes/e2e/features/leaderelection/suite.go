@@ -145,16 +145,16 @@ func (s *testingSuite) getLeader() string {
 	var err error
 	s.Require().EventuallyWithT(func(c *assert.CollectT) {
 		holder, err = s.TestInstallation.Actions.Kubectl().GetLeaseHolder(s.Ctx, s.TestInstallation.Metadata.InstallNamespace, wellknown.LeaderElectionID)
-		assert.NoError(s.T(), err, "failed to get lease")
+		assert.NoError(c, err, "failed to get lease")
 		// Get the name of the pod that holds the lease
 		// kgateway-6bb7674b97-cn6dd_f14c6a7e-ba31-40a7-95fb-806111275cd3 -> kgateway-6bb7674b97-cn6dd
 		holder = strings.Split(holder, "_")[0]
 
 		// Ensure the lease holder is in the list of running pods. This prevents fetching a stale lease when the leader changes
 		pods, err := s.TestInstallation.Actions.Kubectl().GetPodsInNsWithLabel(s.Ctx, s.TestInstallation.Metadata.InstallNamespace, defaults.KGatewayPodLabel)
-		assert.NoError(s.T(), err, "failed to get lease")
-		assert.Contains(s.T(), pods, holder)
-	}, 30*time.Second, 10*time.Second)
+		assert.NoError(c, err, "failed to get lease")
+		assert.Contains(c, pods, holder)
+	}, 120*time.Second, 10*time.Second)
 	return holder
 }
 
@@ -162,7 +162,7 @@ func (s *testingSuite) leadershipChanges(oldLeader string) string {
 	var holder string
 	s.Require().EventuallyWithT(func(c *assert.CollectT) {
 		holder = s.getLeader()
-		assert.NotEqual(s.T(), holder, oldLeader, "leadership did not change")
+		assert.NotEqual(c, holder, oldLeader, "leadership did not change")
 	}, 30*time.Second, 10*time.Second)
 	return holder
 }
@@ -173,7 +173,7 @@ func (s *testingSuite) killLeader(leader string) {
 	s.NoError(err)
 	s.Require().EventuallyWithT(func(c *assert.CollectT) {
 		_, _, err := s.TestInstallation.Actions.Kubectl().Execute(s.Ctx, "get", "pod", "-n", s.TestInstallation.Metadata.InstallNamespace, leader)
-		assert.Error(s.T(), err, "Failed to delete leader")
+		assert.Error(c, err, "Failed to delete leader")
 	}, 120*time.Second, 1*time.Second)
 }
 
@@ -198,8 +198,8 @@ func (s *testingSuite) assertRouteHasNoStatus() {
 	s.Require().EventuallyWithT(func(c *assert.CollectT) {
 		route := &gwv1.HTTPRoute{}
 		err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, types.NamespacedName{Name: routeObjectMeta.Name, Namespace: routeObjectMeta.Namespace}, route)
-		assert.NoError(s.T(), err, "failed to get HTTPRoute")
-		assert.Empty(s.T(), route.Status.Parents)
+		assert.NoError(c, err, "failed to get HTTPRoute")
+		assert.Empty(c, route.Status.Parents)
 	}, 120*time.Second, 1*time.Second)
 }
 
@@ -207,7 +207,7 @@ func (s *testingSuite) assertBackendHasNoStatus() {
 	s.Require().EventuallyWithT(func(c *assert.CollectT) {
 		backend := &v1alpha1.Backend{}
 		err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, types.NamespacedName{Name: "httpbin-static", Namespace: "default"}, backend)
-		assert.NoError(s.T(), err, "failed to get Backend")
-		assert.Empty(s.T(), backend.Status.Conditions)
+		assert.NoError(c, err, "failed to get Backend")
+		assert.Empty(c, backend.Status.Conditions)
 	}, 120*time.Second, 1*time.Second)
 }

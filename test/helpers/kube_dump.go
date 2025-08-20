@@ -26,14 +26,12 @@ import (
 // StandardKgatewayDumpOnFail creates a dump of the kubernetes state and certain envoy data from
 // the admin interface when a test fails.
 // Look at `KubeDumpOnFail` && `EnvoyDumpOnFail` for more details
-func StandardKgatewayDumpOnFail(outLog io.Writer, outDir string, namespaces []string) func() {
+func StandardKgatewayDumpOnFail(outLog io.Writer, kubectlCli *kubectl.Cli, outDir string, namespaces []string) func() {
 	return func() {
 		fmt.Printf("Test failed. Dumping state from %s...\n", strings.Join(namespaces, ", "))
 
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 		defer cancel()
-
-		kubectlCli := kubectl.NewCli()
 
 		// only wipe at the start of the dump
 		wipeOutDir(outDir)
@@ -111,7 +109,7 @@ func recordKubeState(ctx context.Context, kubectlCli *kubectl.Cli, f *os.File) {
 	defer f.Close()
 	kubeState, err := kubectlCli.RunCommandWithOutput(ctx, "get", "all", "-A", "-o", "wide")
 	if err != nil {
-		f.WriteString("*** Unable to get kube state ***\n")
+		f.WriteString(fmt.Sprintf("*** Unable to get kube state ***\nStdout: %s\nReason: %v", err, kubeState))
 		return
 	}
 
