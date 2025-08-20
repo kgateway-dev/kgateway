@@ -9,7 +9,7 @@ metadata:
     {{- include "kgateway.gateway.constLabels" . | nindent 4 }}
     {{- include "kgateway.gateway.labels" . | nindent 4 }}
 spec:
-  {{- if and (not $gateway.autoscaling.enabled) $gateway.replicaCount }}
+  {{- if $gateway.replicaCount }}
   replicas: {{ $gateway.replicaCount }}
   {{- end }}
   selector:

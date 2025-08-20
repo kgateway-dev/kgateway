@@ -31,15 +31,6 @@ gateway:
     protocol: TCP
     name: http
 
-  # leftover autoscaling config; not actually wired up for public use yet
-  # see: https://github.com/kgateway-dev/kgateway/issues/10697
-  autoscaling:
-    enabled: false
-    minReplicas: 1
-    maxReplicas: 100
-    targetCPUUtilizationPercentage: 80
-    # targetMemoryUtilizationPercentage: 80
-
   agentGateway:
     enabled: false
     logLevel: info
