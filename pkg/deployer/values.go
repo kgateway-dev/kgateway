@@ -23,10 +23,10 @@ type HelmGateway struct {
 	FullnameOverride *string `json:"fullnameOverride,omitempty"`
 
 	// deployment/service values
-	ReplicaCount   *uint32          `json:"replicaCount,omitempty"`
-	Ports          []HelmPort       `json:"ports,omitempty"`
-	Service        *HelmService     `json:"service,omitempty"`
-	FloatingUserId *bool            `json:"floatingUserId,omitempty"`
+	ReplicaCount   *uint32      `json:"replicaCount,omitempty"`
+	Ports          []HelmPort   `json:"ports,omitempty"`
+	Service        *HelmService `json:"service,omitempty"`
+	FloatingUserId *bool        `json:"floatingUserId,omitempty"`
 
 	// serviceaccount values
 	ServiceAccount *HelmServiceAccount `json:"serviceAccount,omitempty"`
