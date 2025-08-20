@@ -173,7 +173,7 @@ func (s *testingSuite) killLeader(leader string) {
 	s.NoError(err)
 	s.Require().EventuallyWithT(func(c *assert.CollectT) {
 		_, _, err := s.TestInstallation.Actions.Kubectl().Execute(s.Ctx, "get", "pod", "-n", s.TestInstallation.Metadata.InstallNamespace, leader)
-		assert.NoError(s.T(), err, "Failed to delete leader")
+		assert.Error(s.T(), err, "Failed to delete leader")
 	}, 120*time.Second, 1*time.Second)
 }
 
