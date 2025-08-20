@@ -3638,8 +3638,8 @@ func (in *ProxyDeployment) DeepCopyInto(out *ProxyDeployment) {
 		*out = new(uint32)
 		**out = **in
 	}
-	if in.DisableReplicas != nil {
-		in, out := &in.DisableReplicas, &out.DisableReplicas
+	if in.OmitReplicas != nil {
+		in, out := &in.OmitReplicas, &out.OmitReplicas
 		*out = new(bool)
 		**out = **in
 	}

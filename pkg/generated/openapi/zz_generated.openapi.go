@@ -5992,7 +5992,7 @@ func schema_kgateway_v2_api_v1alpha1_ProxyDeployment(ref common.ReferenceCallbac
 							Format:      "int64",
 						},
 					},
-					"disableReplicas": {
+					"omitReplicas": {
 						SchemaProps: spec.SchemaProps{
 							Description: "If true, replicas will not be set in the deployment (allowing HPA to control scaling)",
 							Type:        []string{"boolean"},

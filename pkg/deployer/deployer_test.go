@@ -2184,7 +2184,7 @@ var _ = Describe("Deployer", func() {
 					return nil
 				},
 			}),
-			Entry("DisableReplicas is true", &input{
+			Entry("OmitReplicas is true", &input{
 				dInputs: defaultDeployerInputs(),
 				gw:      defaultGateway(),
 				defaultGwp: &gw2_v1alpha1.GatewayParameters{
@@ -2200,7 +2200,7 @@ var _ = Describe("Deployer", func() {
 					Spec: gw2_v1alpha1.GatewayParametersSpec{
 						Kube: &gw2_v1alpha1.KubernetesProxyConfig{
 							Deployment: &gw2_v1alpha1.ProxyDeployment{
-								DisableReplicas: ptr.To(true),
+								OmitReplicas: ptr.To(true),
 							},
 						},
 					},
@@ -2244,7 +2244,7 @@ var _ = Describe("Deployer", func() {
 					return nil
 				},
 			}),
-			Entry("replicas and disableReplicas aren't set (default)", &input{
+			Entry("replicas and omitReplicas aren't set (default)", &input{
 				dInputs: defaultDeployerInputs(),
 				gw:      defaultGateway(),
 				defaultGwp: &gw2_v1alpha1.GatewayParameters{

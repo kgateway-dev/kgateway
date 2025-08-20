@@ -208,7 +208,7 @@ func (in *KubernetesProxyConfig) GetFloatingUserId() *bool {
 }
 
 // ProxyDeployment configures the Proxy deployment in Kubernetes.
-// +kubebuilder:validation:AtMostOneOf=replicas;disableReplicas
+// +kubebuilder:validation:AtMostOneOf=replicas;omitReplicas
 type ProxyDeployment struct {
 	// The number of desired pods. Defaults to 1.
 	//
@@ -217,7 +217,7 @@ type ProxyDeployment struct {
 
 	// If true, replicas will not be set in the deployment (allowing HPA to control scaling)
 	// +optional
-	DisableReplicas *bool `json:"disableReplicas,omitempty"`
+	OmitReplicas *bool `json:"omitReplicas,omitempty"`
 }
 
 func (in *ProxyDeployment) GetReplicas() *uint32 {
@@ -227,11 +227,11 @@ func (in *ProxyDeployment) GetReplicas() *uint32 {
 	return in.Replicas
 }
 
-func (in *ProxyDeployment) GetDisableReplicas() *bool {
+func (in *ProxyDeployment) GetOmitReplicas() *bool {
 	if in == nil {
 		return nil
 	}
-	return in.DisableReplicas
+	return in.OmitReplicas
 }
 
 // EnvoyContainer configures the container running Envoy.

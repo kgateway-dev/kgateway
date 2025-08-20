@@ -1946,7 +1946,7 @@ var schemaYAML = typed.YAMLObject(`types:
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ProxyDeployment
   map:
     fields:
-    - name: disableReplicas
+    - name: omitReplicas
       type:
         scalar: boolean
     - name: replicas

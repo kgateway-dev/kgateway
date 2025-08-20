@@ -566,7 +566,7 @@ spec:
 			},
 		},
 		{
-			name: "ProxyDeployment: enforce ExactlyOneOf for replicas and disableReplicas",
+			name: "ProxyDeployment: enforce ExactlyOneOf for replicas and omitReplicas",
 			input: `---
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: GatewayParameters
@@ -576,12 +576,12 @@ spec:
   kube:
     deployment:
       replicas: 3
-      disableReplicas: true
+      omitReplicas: true
 `,
-			wantErrors: []string{"at most one of the fields in [replicas disableReplicas] may be set"},
+			wantErrors: []string{"at most one of the fields in [replicas omitReplicas] may be set"},
 		},
 		{
-			name: "ProxyDeployment: neither replicas nor disableReplicas set (should pass)",
+			name: "ProxyDeployment: neither replicas nor omitReplicas set (should pass)",
 			input: `---
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: GatewayParameters
@@ -608,16 +608,16 @@ spec:
 			wantErrors: []string{},
 		},
 		{
-			name: "ProxyDeployment: only disableReplicas set (should pass)",
+			name: "ProxyDeployment: only omitReplicas set (should pass)",
 			input: `---
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: GatewayParameters
 metadata:
-  name: test-proxy-deployment-disable-only
+  name: test-proxy-deployment-omit-only
 spec:
   kube:
     deployment:
-      disableReplicas: true
+      omitReplicas: true
 `,
 			wantErrors: []string{},
 		},

@@ -68,7 +68,7 @@ func TestDeepMergeGatewayParameters(t *testing.T) {
 			},
 		},
 		{
-			name: "should override kube deployment disableReplicas",
+			name: "should override kube deployment omitReplicas",
 			dst: &gw2_v1alpha1.GatewayParameters{
 				Spec: gw2_v1alpha1.GatewayParametersSpec{
 					Kube: &gw2_v1alpha1.KubernetesProxyConfig{
@@ -82,7 +82,7 @@ func TestDeepMergeGatewayParameters(t *testing.T) {
 				Spec: gw2_v1alpha1.GatewayParametersSpec{
 					Kube: &gw2_v1alpha1.KubernetesProxyConfig{
 						Deployment: &gw2_v1alpha1.ProxyDeployment{
-							DisableReplicas: ptr.To(true),
+							OmitReplicas: ptr.To(true),
 						},
 					},
 				},
@@ -91,7 +91,7 @@ func TestDeepMergeGatewayParameters(t *testing.T) {
 				Spec: gw2_v1alpha1.GatewayParametersSpec{
 					Kube: &gw2_v1alpha1.KubernetesProxyConfig{
 						Deployment: &gw2_v1alpha1.ProxyDeployment{
-							DisableReplicas: ptr.To(true),
+							OmitReplicas: ptr.To(true),
 						},
 					},
 				},
