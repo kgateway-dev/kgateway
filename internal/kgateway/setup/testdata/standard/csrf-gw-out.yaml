@@ -81,7 +81,6 @@ routes:
       - prefix: pref
       - suffix: suff
       - safeRegex:
-          googleRe2: {}
           regex: a.b
       filterEnabled:
         defaultValue:

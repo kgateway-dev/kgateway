@@ -85,7 +85,6 @@ routes:
           allowOriginStringMatch:
           - exact: https://example.com
           - safeRegex:
-              googleRe2: {}
               regex: ^https://.*\.notexample\.com$
           - prefix: https://a.b
           - prefix: http://

@@ -22,6 +22,8 @@ type HTTPListenerPolicySpecApplyConfiguration struct {
 	StreamIdleTimeout          *v1.Duration                                   `json:"streamIdleTimeout,omitempty"`
 	HealthCheck                *EnvoyHealthCheckApplyConfiguration            `json:"healthCheck,omitempty"`
 	PreserveHttp1HeaderCase    *bool                                          `json:"preserveHttp1HeaderCase,omitempty"`
+	AcceptHttp10               *bool                                          `json:"acceptHttp10,omitempty"`
+	DefaultHostForHttp10       *string                                        `json:"defaultHostForHttp10,omitempty"`
 }
 
 // HTTPListenerPolicySpecApplyConfiguration constructs a declarative configuration of the HTTPListenerPolicySpec type for use with
@@ -130,5 +132,21 @@ func (b *HTTPListenerPolicySpecApplyConfiguration) WithHealthCheck(value *EnvoyH
 // If called multiple times, the PreserveHttp1HeaderCase field is set to the value of the last call.
 func (b *HTTPListenerPolicySpecApplyConfiguration) WithPreserveHttp1HeaderCase(value bool) *HTTPListenerPolicySpecApplyConfiguration {
 	b.PreserveHttp1HeaderCase = &value
+	return b
+}
+
+// WithAcceptHttp10 sets the AcceptHttp10 field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the AcceptHttp10 field is set to the value of the last call.
+func (b *HTTPListenerPolicySpecApplyConfiguration) WithAcceptHttp10(value bool) *HTTPListenerPolicySpecApplyConfiguration {
+	b.AcceptHttp10 = &value
+	return b
+}
+
+// WithDefaultHostForHttp10 sets the DefaultHostForHttp10 field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the DefaultHostForHttp10 field is set to the value of the last call.
+func (b *HTTPListenerPolicySpecApplyConfiguration) WithDefaultHostForHttp10(value string) *HTTPListenerPolicySpecApplyConfiguration {
+	b.DefaultHostForHttp10 = &value
 	return b
 }

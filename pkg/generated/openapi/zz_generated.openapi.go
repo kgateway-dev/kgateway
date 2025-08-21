@@ -3948,6 +3948,20 @@ func schema_kgateway_v2_api_v1alpha1_HTTPListenerPolicySpec(ref common.Reference
 							Format:      "",
 						},
 					},
+					"acceptHttp10": {
+						SchemaProps: spec.SchemaProps{
+							Description: "AcceptHTTP10 determines whether to accept incoming HTTP/1.0 and HTTP 0.9 requests. See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#config-core-v3-http1protocoloptions",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
+					"defaultHostForHttp10": {
+						SchemaProps: spec.SchemaProps{
+							Description: "DefaultHostForHttp10 specifies a default host for HTTP/1.0 requests. This is highly suggested if acceptHttp10 is true and a no-op if acceptHttp10 is false. See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#config-core-v3-http1protocoloptions",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 				},
 			},
 		},

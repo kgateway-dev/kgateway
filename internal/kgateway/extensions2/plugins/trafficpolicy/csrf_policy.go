@@ -146,9 +146,6 @@ func toEnvoyStringMatcher(origin v1alpha1.StringMatcher) *envoy_matcher_v3.Strin
 	case origin.SafeRegex != nil:
 		matcher.MatchPattern = &envoy_matcher_v3.StringMatcher_SafeRegex{
 			SafeRegex: &envoy_matcher_v3.RegexMatcher{
-				EngineType: &envoy_matcher_v3.RegexMatcher_GoogleRe2{
-					GoogleRe2: &envoy_matcher_v3.RegexMatcher_GoogleRE2{},
-				},
 				Regex: *origin.SafeRegex,
 			},
 		}

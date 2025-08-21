@@ -97,7 +97,6 @@ routes:
           allowMethods: POST
           allowOriginStringMatch:
           - safeRegex:
-              googleRe2: {}
               regex: ^https://.*\.notexample\.com$
           - prefix: https://a.b
           - exact: https://exact.domain.com

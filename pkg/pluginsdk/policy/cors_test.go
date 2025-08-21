@@ -47,9 +47,6 @@ func TestConvertOriginToEnvoyStringMatcher(t *testing.T) {
 			expected: &envoy_type_matcher_v3.StringMatcher{
 				MatchPattern: &envoy_type_matcher_v3.StringMatcher_SafeRegex{
 					SafeRegex: &envoy_type_matcher_v3.RegexMatcher{
-						EngineType: &envoy_type_matcher_v3.RegexMatcher_GoogleRe2{
-							GoogleRe2: &envoy_type_matcher_v3.RegexMatcher_GoogleRE2{},
-						},
 						Regex: "^https://.*\\.example\\.com$",
 					},
 				},
@@ -61,9 +58,6 @@ func TestConvertOriginToEnvoyStringMatcher(t *testing.T) {
 			expected: &envoy_type_matcher_v3.StringMatcher{
 				MatchPattern: &envoy_type_matcher_v3.StringMatcher_SafeRegex{
 					SafeRegex: &envoy_type_matcher_v3.RegexMatcher{
-						EngineType: &envoy_type_matcher_v3.RegexMatcher_GoogleRe2{
-							GoogleRe2: &envoy_type_matcher_v3.RegexMatcher_GoogleRE2{},
-						},
 						Regex: "^https://.*\\.example\\.com:8080$",
 					},
 				},
@@ -75,9 +69,6 @@ func TestConvertOriginToEnvoyStringMatcher(t *testing.T) {
 			expected: &envoy_type_matcher_v3.StringMatcher{
 				MatchPattern: &envoy_type_matcher_v3.StringMatcher_SafeRegex{
 					SafeRegex: &envoy_type_matcher_v3.RegexMatcher{
-						EngineType: &envoy_type_matcher_v3.RegexMatcher_GoogleRe2{
-							GoogleRe2: &envoy_type_matcher_v3.RegexMatcher_GoogleRE2{},
-						},
 						Regex: "^https://.*\\.sub\\.example\\.com$",
 					},
 				},
@@ -89,9 +80,6 @@ func TestConvertOriginToEnvoyStringMatcher(t *testing.T) {
 			expected: &envoy_type_matcher_v3.StringMatcher{
 				MatchPattern: &envoy_type_matcher_v3.StringMatcher_SafeRegex{
 					SafeRegex: &envoy_type_matcher_v3.RegexMatcher{
-						EngineType: &envoy_type_matcher_v3.RegexMatcher_GoogleRe2{
-							GoogleRe2: &envoy_type_matcher_v3.RegexMatcher_GoogleRE2{},
-						},
 						Regex: "^https://sub\\..*\\.example\\.com$",
 					},
 				},
@@ -103,9 +91,6 @@ func TestConvertOriginToEnvoyStringMatcher(t *testing.T) {
 			expected: &envoy_type_matcher_v3.StringMatcher{
 				MatchPattern: &envoy_type_matcher_v3.StringMatcher_SafeRegex{
 					SafeRegex: &envoy_type_matcher_v3.RegexMatcher{
-						EngineType: &envoy_type_matcher_v3.RegexMatcher_GoogleRe2{
-							GoogleRe2: &envoy_type_matcher_v3.RegexMatcher_GoogleRE2{},
-						},
 						Regex: "^https://.*\\.sub\\..*\\.example\\.com$",
 					},
 				},
@@ -126,9 +111,6 @@ func TestConvertOriginToEnvoyStringMatcher(t *testing.T) {
 			expected: &envoy_type_matcher_v3.StringMatcher{
 				MatchPattern: &envoy_type_matcher_v3.StringMatcher_SafeRegex{
 					SafeRegex: &envoy_type_matcher_v3.RegexMatcher{
-						EngineType: &envoy_type_matcher_v3.RegexMatcher_GoogleRe2{
-							GoogleRe2: &envoy_type_matcher_v3.RegexMatcher_GoogleRE2{},
-						},
 						Regex: "^https://example\\..*:8080$",
 					},
 				},
@@ -140,9 +122,6 @@ func TestConvertOriginToEnvoyStringMatcher(t *testing.T) {
 			expected: &envoy_type_matcher_v3.StringMatcher{
 				MatchPattern: &envoy_type_matcher_v3.StringMatcher_SafeRegex{
 					SafeRegex: &envoy_type_matcher_v3.RegexMatcher{
-						EngineType: &envoy_type_matcher_v3.RegexMatcher_GoogleRe2{
-							GoogleRe2: &envoy_type_matcher_v3.RegexMatcher_GoogleRE2{},
-						},
 						Regex: "^https://api\\..*\\.example\\.com$",
 					},
 				},
@@ -154,9 +133,6 @@ func TestConvertOriginToEnvoyStringMatcher(t *testing.T) {
 			expected: &envoy_type_matcher_v3.StringMatcher{
 				MatchPattern: &envoy_type_matcher_v3.StringMatcher_SafeRegex{
 					SafeRegex: &envoy_type_matcher_v3.RegexMatcher{
-						EngineType: &envoy_type_matcher_v3.RegexMatcher_GoogleRe2{
-							GoogleRe2: &envoy_type_matcher_v3.RegexMatcher_GoogleRE2{},
-						},
 						Regex: "^https://.*\\.example\\.com$",
 					},
 				},

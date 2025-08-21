@@ -80,7 +80,6 @@ Routes:
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
         regexRewrite:
           pattern:
-            googleRe2: {}
             regex: ^/api1\/*
           substitution: /
     - match:
@@ -91,6 +90,5 @@ Routes:
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
         regexRewrite:
           pattern:
-            googleRe2: {}
             regex: ^/api2\/*
           substitution: /

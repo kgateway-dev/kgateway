@@ -89,7 +89,6 @@ routes:
           - suffix: suff
           - contains: cont
           - safeRegex:
-              googleRe2: {}
               regex: a.b
           filterEnabled:
             defaultValue:

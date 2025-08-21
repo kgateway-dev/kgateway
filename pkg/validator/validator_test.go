@@ -281,7 +281,6 @@ static_resources:
                       routes:
                         - match:
                             safe_regex:
-                              google_re2: {}
                               regex: "[[invalid.regex"  # Invalid regex pattern
                           route:
                             cluster: service_foo

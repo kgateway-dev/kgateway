@@ -104,6 +104,17 @@ type HTTPListenerPolicySpec struct {
 	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_conn_man/header_casing
 	// +optional
 	PreserveHttp1HeaderCase *bool `json:"preserveHttp1HeaderCase,omitempty"`
+
+	// AcceptHTTP10 determines whether to accept incoming HTTP/1.0 and HTTP 0.9 requests.
+	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#config-core-v3-http1protocoloptions
+	// +optional
+	AcceptHttp10 *bool `json:"acceptHttp10,omitempty"`
+
+	// DefaultHostForHttp10 specifies a default host for HTTP/1.0 requests. This is highly suggested if acceptHttp10 is true and a no-op if acceptHttp10 is false.
+	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#config-core-v3-http1protocoloptions
+	// +optional
+	// +kubebuilder:validation:MinLength=1
+	DefaultHostForHttp10 *string `json:"defaultHostForHttp10,omitempty"`
 }
 
 // AccessLog represents the top-level access log configuration.

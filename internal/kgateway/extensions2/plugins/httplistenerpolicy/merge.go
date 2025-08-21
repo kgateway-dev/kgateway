@@ -28,6 +28,8 @@ func mergePolicies(
 		mergeStreamIdleTimeout,
 		mergeHealthCheckPolicy,
 		mergePreserveHttp1HeaderCase,
+		mergeAcceptHttp10,
+		mergeDefaultHostForHttp10,
 	}
 
 	for _, mergeFunc := range mergeFuncs {
@@ -117,6 +119,36 @@ func mergePreserveHttp1HeaderCase(
 
 	p1.preserveHttp1HeaderCase = p2.preserveHttp1HeaderCase
 	mergeOrigins.SetOne("preserveHttp1HeaderCase", p2Ref, p2MergeOrigins)
+}
+
+func mergeAcceptHttp10(
+	p1, p2 *httpListenerPolicy,
+	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins ir.MergeOrigins,
+	opts policy.MergeOptions,
+	mergeOrigins ir.MergeOrigins,
+) {
+	if !policy.IsMergeable(p1.acceptHttp10, p2.acceptHttp10, opts) {
+		return
+	}
+
+	p1.acceptHttp10 = p2.acceptHttp10
+	mergeOrigins.SetOne("acceptHttp10", p2Ref, p2MergeOrigins)
+}
+
+func mergeDefaultHostForHttp10(
+	p1, p2 *httpListenerPolicy,
+	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins ir.MergeOrigins,
+	opts policy.MergeOptions,
+	mergeOrigins ir.MergeOrigins,
+) {
+	if !policy.IsMergeable(p1.defaultHostForHttp10, p2.defaultHostForHttp10, opts) {
+		return
+	}
+
+	p1.defaultHostForHttp10 = p2.defaultHostForHttp10
+	mergeOrigins.SetOne("defaultHostForHttp10", p2Ref, p2MergeOrigins)
 }
 
 func mergeXffNumTrustedHops(
