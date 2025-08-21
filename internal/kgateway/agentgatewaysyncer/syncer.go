@@ -11,36 +11,20 @@ import (
 	"github.com/agentgateway/agentgateway/go/api"
 	envoytypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
-	networkingclient "istio.io/client-go/pkg/apis/networking/v1"
-	"istio.io/istio/pkg/config/schema/gvr"
-	"istio.io/istio/pkg/config/schema/kubeclient"
 	"istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/controllers"
-	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
-	"istio.io/istio/pkg/kube/kubetypes"
 	corev1 "k8s.io/api/core/v1"
-	discoveryv1 "k8s.io/api/discovery/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/tools/cache"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
-	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
-	"sigs.k8s.io/gateway-api-inference-extension/client-go/clientset/versioned"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
-	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
-	gwv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/translator"
-	kgwversioned "github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -75,11 +59,12 @@ const (
 // It watches Gateway resources with the agentgateway class and translates them to agentgateway configuration.
 type AgentGwSyncer struct {
 	// Core collections and dependencies
-	commonCols *common.CommonCollections
-	mgr        manager.Manager
-	client     kube.Client
-	plugins    pluginsdk.Plugin
-	translator *translator.AgentGatewayTranslator
+	agwCollections *plugins.AgwCollections
+	mgr            manager.Manager
+	client         kube.Client
+	plugins        pluginsdk.Plugin
+	agwPlugins     plugins.AgentgatewayPlugin
+	translator     *translator.AgentGatewayTranslator
 
 	// Configuration
 	controllerName        string
@@ -112,19 +97,21 @@ func NewAgentGwSyncer(
 	agentGatewayClassName string,
 	client kube.Client,
 	mgr manager.Manager,
-	commonCols *common.CommonCollections,
+	agwCollections *plugins.AgwCollections,
 	plugins pluginsdk.Plugin,
+	agwPlugins plugins.AgentgatewayPlugin,
 	xdsCache envoycache.SnapshotCache,
 	systemNamespace string,
 	clusterID string,
 	enableInferExt bool,
 ) *AgentGwSyncer {
 	return &AgentGwSyncer{
-		commonCols:             commonCols,
+		agwCollections:         agwCollections,
 		controllerName:         controllerName,
 		agentGatewayClassName:  agentGatewayClassName,
 		plugins:                plugins,
-		translator:             translator.NewAgentGatewayTranslator(commonCols, plugins),
+		agwPlugins:             agwPlugins,
+		translator:             translator.NewAgentGatewayTranslator(agwCollections, plugins),
 		xdsCache:               xdsCache,
 		client:                 client,
 		mgr:                    mgr,
@@ -137,148 +124,31 @@ func NewAgentGwSyncer(
 	}
 }
 
-// Inputs holds all the input collections needed for the syncer
-type Inputs struct {
-	// Core Kubernetes resources
-	Namespaces krt.Collection[*corev1.Namespace]
-	Services   krt.Collection[*corev1.Service]
-	Secrets    krt.Collection[*corev1.Secret]
-
-	// Gateway API resources
-	GatewayClasses  krt.Collection[*gwv1.GatewayClass]
-	Gateways        krt.Collection[*gwv1.Gateway]
-	HTTPRoutes      krt.Collection[*gwv1.HTTPRoute]
-	GRPCRoutes      krt.Collection[*gwv1.GRPCRoute]
-	TCPRoutes       krt.Collection[*gwv1alpha2.TCPRoute]
-	TLSRoutes       krt.Collection[*gwv1alpha2.TLSRoute]
-	ReferenceGrants krt.Collection[*gwv1beta1.ReferenceGrant]
-
-	// Extended resources
-	ServiceEntries krt.Collection[*networkingclient.ServiceEntry]
-	InferencePools krt.Collection[*inf.InferencePool]
-
-	// kgateway resources
-	Backends        *krtcollections.BackendIndex
-	BackendsTemp    krt.Collection[*v1alpha1.Backend]
-	DirectResponses krt.Collection[*v1alpha1.DirectResponse]
-}
-
 func (s *AgentGwSyncer) Init(krtopts krtinternal.KrtOptions) {
 	logger.Debug("init agentgateway Syncer", "controllername", s.controllerName)
 
 	s.translator.Init()
 
-	inputs := s.buildInputCollections(krtopts)
-
-	s.setupkgwResources(s.commonCols.OurClient)
-	s.setupInferenceExtensionClient()
-
-	finalBackends, _ := s.buildBackendCollections(inputs, krtopts)
+	finalBackends, _ := s.buildBackendCollections(krtopts)
 
 	// Pass finalBackends into buildResourceCollections instead of storing on syncer
-	s.buildResourceCollections(inputs, finalBackends, krtopts)
+	s.buildResourceCollections(finalBackends, krtopts)
 }
 
-func (s *AgentGwSyncer) setupkgwResources(kgwClient kgwversioned.Interface) {
-	kubeclient.Register[*v1alpha1.Backend](
-		wellknown.BackendGVR,
-		wellknown.BackendGVK,
-		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (runtime.Object, error) {
-			return kgwClient.GatewayV1alpha1().Backends(namespace).List(context.Background(), o)
-		},
-		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
-			return kgwClient.GatewayV1alpha1().Backends(namespace).Watch(context.Background(), o)
-		},
-	)
-	kubeclient.Register[*v1alpha1.DirectResponse](
-		wellknown.DirectResponseGVR,
-		wellknown.DirectResponseGVK,
-		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (runtime.Object, error) {
-			return kgwClient.GatewayV1alpha1().DirectResponses(namespace).List(context.Background(), o)
-		},
-		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
-			return kgwClient.GatewayV1alpha1().DirectResponses(namespace).Watch(context.Background(), o)
-		},
-	)
-}
-
-func (s *AgentGwSyncer) setupInferenceExtensionClient() {
-	// TODO: share this in a common spot with the inference extension plugin
-	// Create the inference extension clientset.
-	inferencePoolGVR := wellknown.InferencePoolGVK.GroupVersion().WithResource("inferencepools")
-	infCli, err := versioned.NewForConfig(s.commonCols.Client.RESTConfig())
-	if err != nil {
-		logger.Error("failed to create inference extension client", "error", err)
-	} else {
-		kubeclient.Register[*inf.InferencePool](
-			inferencePoolGVR,
-			wellknown.InferencePoolGVK,
-			func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (runtime.Object, error) {
-				return infCli.InferenceV1alpha2().InferencePools(namespace).List(context.Background(), o)
-			},
-			func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
-				return infCli.InferenceV1alpha2().InferencePools(namespace).Watch(context.Background(), o)
-			},
-		)
-	}
-}
-
-func (s *AgentGwSyncer) buildInputCollections(krtopts krtinternal.KrtOptions) Inputs {
-	inputs := Inputs{
-		Namespaces: krt.NewInformer[*corev1.Namespace](s.client),
-		Secrets: krt.WrapClient[*corev1.Secret](
-			kclient.NewFiltered[*corev1.Secret](s.client, kubetypes.Filter{
-				//FieldSelector: kubesecrets.SecretsFieldSelector,
-				ObjectFilter: s.client.ObjectFilter(),
-			}),
-		),
-		Services: krt.WrapClient[*corev1.Service](
-			kclient.NewFiltered[*corev1.Service](s.client, kubetypes.Filter{ObjectFilter: s.client.ObjectFilter()}),
-			krtopts.ToOptions("informer/Services")...),
-
-		GatewayClasses: krt.WrapClient(kclient.NewFiltered[*gwv1.GatewayClass](s.client, kubetypes.Filter{ObjectFilter: s.client.ObjectFilter()}), krtopts.ToOptions("informer/GatewayClasses")...),
-		Gateways:       krt.WrapClient(kclient.NewFiltered[*gwv1.Gateway](s.client, kubetypes.Filter{ObjectFilter: s.client.ObjectFilter()}), krtopts.ToOptions("informer/Gateways")...),
-		HTTPRoutes:     krt.WrapClient(kclient.NewFiltered[*gwv1.HTTPRoute](s.client, kubetypes.Filter{ObjectFilter: s.client.ObjectFilter()}), krtopts.ToOptions("informer/HTTPRoutes")...),
-		GRPCRoutes:     krt.WrapClient(kclient.NewFiltered[*gwv1.GRPCRoute](s.client, kubetypes.Filter{ObjectFilter: s.client.ObjectFilter()}), krtopts.ToOptions("informer/GRPCRoutes")...),
-
-		ReferenceGrants: krt.WrapClient(kclient.NewFiltered[*gwv1beta1.ReferenceGrant](s.client, kubetypes.Filter{ObjectFilter: s.client.ObjectFilter()}), krtopts.ToOptions("informer/ReferenceGrants")...),
-		//ServiceEntries:  krt.WrapClient(kclient.New[*networkingclient.ServiceEntry](s.client), krtopts.ToOptions("informer/ServiceEntries")...),
-
-		// kubernetes gateway alpha apis
-		TCPRoutes: krt.WrapClient(kclient.NewDelayedInformer[*gwv1alpha2.TCPRoute](s.client, gvr.TCPRoute, kubetypes.StandardInformer, kubetypes.Filter{ObjectFilter: s.client.ObjectFilter()}), krtopts.ToOptions("informer/TCPRoutes")...),
-		TLSRoutes: krt.WrapClient(kclient.NewDelayedInformer[*gwv1alpha2.TLSRoute](s.client, gvr.TLSRoute, kubetypes.StandardInformer, kubetypes.Filter{ObjectFilter: s.client.ObjectFilter()}), krtopts.ToOptions("informer/TLSRoutes")...),
-
-		// inference extensions need to be enabled so control plane has permissions to watch resource. Disable by default
-		InferencePools: krt.NewStaticCollection[*inf.InferencePool](nil, nil, krtopts.ToOptions("disable/inferencepools")...),
-
-		// kgateway resources
-		Backends:        s.commonCols.BackendIndex,
-		BackendsTemp:    krt.NewInformer[*v1alpha1.Backend](s.client),
-		DirectResponses: krt.NewInformer[*v1alpha1.DirectResponse](s.client),
-	}
-
-	if s.EnableInferExt {
-		// inference extensions cluster watch permissions are controlled by enabling EnableInferExt
-		inputs.InferencePools = krt.WrapClient(kclient.NewDelayedInformer[*inf.InferencePool](s.client, gvr.InferencePool, kubetypes.StandardInformer, kclient.Filter{ObjectFilter: s.commonCols.Client.ObjectFilter()}), krtopts.ToOptions("informer/InferencePools")...)
-	}
-
-	return inputs
-}
-
-func (s *AgentGwSyncer) buildResourceCollections(inputs Inputs, finalBackends krt.Collection[ir.BackendObjectIR], krtopts krtinternal.KrtOptions) {
+func (s *AgentGwSyncer) buildResourceCollections(finalBackends krt.Collection[ir.BackendObjectIR], krtopts krtinternal.KrtOptions) {
 	// Build core collections for irs
-	gatewayClasses := GatewayClassesCollection(inputs.GatewayClasses, krtopts)
-	refGrants := BuildReferenceGrants(ReferenceGrantsCollection(inputs.ReferenceGrants, krtopts))
-	gateways := s.buildGatewayCollection(inputs, gatewayClasses, refGrants, krtopts)
+	gatewayClasses := GatewayClassesCollection(s.agwCollections.GatewayClasses, krtopts)
+	refGrants := BuildReferenceGrants(ReferenceGrantsCollection(s.agwCollections.ReferenceGrants, krtopts))
+	gateways := s.buildGatewayCollection(gatewayClasses, refGrants, krtopts)
 
 	// Build ADP resources for gateway
-	adpResources := s.buildADPResources(gateways, inputs, refGrants, krtopts)
+	adpResources := s.buildADPResources(gateways, refGrants, krtopts)
 
 	// Create ADP backend collection from finalBackends
-	adpBackends := s.newADPBackendCollection(inputs, finalBackends, krtopts)
+	adpBackends := s.newADPBackendCollection(finalBackends, krtopts)
 
 	// Build address collections
-	addresses := s.buildAddressCollections(inputs, krtopts)
+	addresses := s.buildAddressCollections(krtopts)
 
 	// Build XDS collection
 	s.buildXDSCollection(adpResources, adpBackends, addresses, krtopts)
@@ -287,29 +157,27 @@ func (s *AgentGwSyncer) buildResourceCollections(inputs Inputs, finalBackends kr
 	s.buildStatusReporting()
 
 	// Set up sync dependencies
-	s.setupSyncDependencies(gateways, adpResources, adpBackends, addresses, inputs)
+	s.setupSyncDependencies(gateways, adpResources, adpBackends, addresses)
 }
 
 func (s *AgentGwSyncer) buildGatewayCollection(
-	inputs Inputs,
 	gatewayClasses krt.Collection[GatewayClass],
 	refGrants ReferenceGrants,
 	krtopts krtinternal.KrtOptions,
 ) krt.Collection[GatewayListener] {
 	return GatewayCollection(
 		s.agentGatewayClassName,
-		inputs.Gateways,
+		s.agwCollections.Gateways,
 		gatewayClasses,
-		inputs.Namespaces,
+		s.agwCollections.Namespaces,
 		refGrants,
-		inputs.Secrets,
+		s.agwCollections.Secrets,
 		krtopts,
 	)
 }
 
 func (s *AgentGwSyncer) buildADPResources(
 	gateways krt.Collection[GatewayListener],
-	inputs Inputs,
 	refGrants ReferenceGrants,
 	krtopts krtinternal.KrtOptions,
 ) krt.Collection[ADPResourcesForGateway] {
@@ -359,16 +227,16 @@ func (s *AgentGwSyncer) buildADPResources(
 	routeInputs := RouteContextInputs{
 		Grants:          refGrants,
 		RouteParents:    routeParents,
-		Services:        inputs.Services,
-		Namespaces:      inputs.Namespaces,
-		InferencePools:  inputs.InferencePools,
-		Backends:        s.commonCols.BackendIndex,
+		Services:        s.agwCollections.Services,
+		Namespaces:      s.agwCollections.Namespaces,
+		InferencePools:  s.agwCollections.InferencePools,
+		Backends:        s.agwCollections.BackendIndex,
 		Plugins:         s.plugins,
-		DirectResponses: inputs.DirectResponses,
+		DirectResponses: s.agwCollections.DirectResponses,
 	}
-	adpRoutes := ADPRouteCollection(inputs.HTTPRoutes, inputs.GRPCRoutes, inputs.TCPRoutes, inputs.TLSRoutes, routeInputs, krtopts, s.plugins)
+	adpRoutes := ADPRouteCollection(s.agwCollections.HTTPRoutes, s.agwCollections.GRPCRoutes, s.agwCollections.TCPRoutes, s.agwCollections.TLSRoutes, routeInputs, krtopts, s.plugins)
 
-	adpPolicies := ADPPolicyCollection(inputs, binds, krtopts)
+	adpPolicies := ADPPolicyCollection(binds, s.agwPlugins)
 
 	// Join all ADP resources
 	allADPResources := krt.JoinCollection([]krt.Collection[ADPResourcesForGateway]{binds, listeners, adpRoutes, adpPolicies}, krtopts.ToOptions("ADPResources")...)
@@ -441,12 +309,12 @@ func (s *AgentGwSyncer) buildBackendFromBackendIR(ctx krt.HandlerContext, backen
 }
 
 // newADPBackendCollection creates the ADP backend collection for agent gateway resources
-func (s *AgentGwSyncer) newADPBackendCollection(inputs Inputs, finalBackends krt.Collection[ir.BackendObjectIR], krtopts krtinternal.KrtOptions) krt.Collection[envoyResourceWithCustomName] {
+func (s *AgentGwSyncer) newADPBackendCollection(finalBackends krt.Collection[ir.BackendObjectIR], krtopts krtinternal.KrtOptions) krt.Collection[envoyResourceWithCustomName] {
 	backends := krt.NewManyCollection(finalBackends, func(ctx krt.HandlerContext, backendIR ir.BackendObjectIR) []envoyResourceWithCustomName {
 		if backendIR.Group == wellknown.ServiceGVK.Group && backendIR.Kind == wellknown.ServiceGVK.Kind {
 			return nil
 		}
-		return s.buildBackendFromBackendIR(ctx, &backendIR, inputs.Services, inputs.Secrets, inputs.Namespaces)
+		return s.buildBackendFromBackendIR(ctx, &backendIR, s.agwCollections.Services, s.agwCollections.Secrets, s.agwCollections.Namespaces)
 	}, krtopts.ToOptions("ADPBackends")...)
 
 	return backends
@@ -454,12 +322,11 @@ func (s *AgentGwSyncer) newADPBackendCollection(inputs Inputs, finalBackends krt
 
 // buildBackendCollections builds the filtered backend IR collection and the corresponding ADP backend collection
 func (s *AgentGwSyncer) buildBackendCollections(
-	inputs Inputs,
 	krtopts krtinternal.KrtOptions,
 ) (krt.Collection[ir.BackendObjectIR], krt.Collection[envoyResourceWithCustomName]) {
 	// Get all backends with attached policies, filtering out Service backends
 	// Agent gateway handles Service references directly in routes and doesn't need separate backend objects
-	allBackends := krt.JoinCollection(s.commonCols.BackendIndex.BackendsWithPolicy(),
+	allBackends := krt.JoinCollection(s.agwCollections.BackendIndex.BackendsWithPolicy(),
 		append(krtopts.ToOptions("AllBackends"), krt.WithJoinUnchecked())...)
 
 	finalBackends := krt.NewCollection(allBackends, func(kctx krt.HandlerContext, backend *ir.BackendObjectIR) *ir.BackendObjectIR {
@@ -469,7 +336,7 @@ func (s *AgentGwSyncer) buildBackendCollections(
 		return backend
 	}, krtopts.ToOptions("FinalBackends")...)
 
-	adpBackends := s.newADPBackendCollection(inputs, finalBackends, krtopts)
+	adpBackends := s.newADPBackendCollection(finalBackends, krtopts)
 	return finalBackends, adpBackends
 }
 
@@ -505,35 +372,20 @@ func (s *AgentGwSyncer) getProtocolAndTLSConfig(obj GatewayListener) (api.Protoc
 	}
 }
 
-func (s *AgentGwSyncer) buildAddressCollections(inputs Inputs, krtopts krtinternal.KrtOptions) krt.Collection[envoyResourceWithCustomName] {
-	// Build endpoint slices and namespaces
-	epSliceClient := kclient.NewFiltered[*discoveryv1.EndpointSlice](
-		s.commonCols.Client,
-		kclient.Filter{ObjectFilter: s.commonCols.Client.ObjectFilter()},
-	)
-	endpointSlices := krt.WrapClient(epSliceClient, s.commonCols.KrtOpts.ToOptions("informer/EndpointSlices")...)
-
-	nsClient := kclient.NewFiltered[*corev1.Namespace](
-		s.commonCols.Client,
-		kclient.Filter{ObjectFilter: s.commonCols.Client.ObjectFilter()},
-	)
-	namespaces := krt.WrapClient(nsClient, s.commonCols.KrtOpts.ToOptions("informer/Namespaces")...)
-
+func (s *AgentGwSyncer) buildAddressCollections(krtopts krtinternal.KrtOptions) krt.Collection[envoyResourceWithCustomName] {
 	// Build workload index
 	workloadIndex := index{
-		namespaces:      s.commonCols.Namespaces,
+		namespaces:      s.agwCollections.Namespaces,
 		SystemNamespace: s.systemNamespace,
 		ClusterID:       s.clusterID,
 	}
 
 	// Build service and workload collections
-	workloadServices := workloadIndex.ServicesCollection(inputs.Services, nil, inputs.InferencePools, namespaces, krtopts)
+	workloadServices := workloadIndex.ServicesCollection(s.agwCollections.Services, nil, s.agwCollections.InferencePools, s.agwCollections.Namespaces, krtopts)
 	workloads := workloadIndex.WorkloadsCollection(
-		s.commonCols.WrappedPods,
+		s.agwCollections.WrappedPods,
 		workloadServices,
-		nil, // serviceEntries,
-		endpointSlices,
-		namespaces,
+		s.agwCollections.EndpointSlices,
 		krtopts,
 	)
 
@@ -735,9 +587,10 @@ func (s *AgentGwSyncer) buildStatusReporting() {
 	s.routeReports = routeReports
 }
 
-func (s *AgentGwSyncer) setupSyncDependencies(gateways krt.Collection[GatewayListener], adpResources krt.Collection[ADPResourcesForGateway], adpBackends krt.Collection[envoyResourceWithCustomName], addresses krt.Collection[envoyResourceWithCustomName], inputs Inputs) {
+func (s *AgentGwSyncer) setupSyncDependencies(gateways krt.Collection[GatewayListener], adpResources krt.Collection[ADPResourcesForGateway], adpBackends krt.Collection[envoyResourceWithCustomName], addresses krt.Collection[envoyResourceWithCustomName]) {
 	s.waitForSync = []cache.InformerSynced{
-		s.commonCols.HasSynced,
+		s.agwCollections.HasSynced,
+		s.agwPlugins.HasSynced,
 		gateways.HasSynced,
 		// resources
 		adpResources.HasSynced,
@@ -745,7 +598,6 @@ func (s *AgentGwSyncer) setupSyncDependencies(gateways krt.Collection[GatewayLis
 		s.xDS.HasSynced,
 		// addresses
 		addresses.HasSynced,
-		inputs.Namespaces.HasSynced,
 	}
 }
 

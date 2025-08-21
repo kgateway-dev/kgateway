@@ -1,0 +1,44 @@
+Addresses:
+  - service:
+      hostname: example-svc.default.svc.cluster.local
+      name: example-svc
+      namespace: default
+      ports:
+        - servicePort: 80
+  - service:
+      hostname: ext-authz.default.svc.cluster.local
+      name: ext-authz
+      namespace: default
+      ports:
+        - appProtocol: HTTP2
+          servicePort: 4444
+          targetPort: 9000
+Binds:
+  - key: 80/default/example-gateway
+    port: 80
+Listeners:
+  - bindKey: 80/default/example-gateway
+    gatewayName: default/example-gateway
+    key: default/example-gateway/http
+    name: http
+    protocol: HTTP
+Routes:
+  - backends:
+      - backend:
+          port: 80
+          service: default/example-svc.default.svc.cluster.local
+        weight: 1
+    hostnames:
+      - example.com
+    key: default.example-route.0.0.http
+    listenerKey: default/example-gateway/http
+    routeName: default/example-route
+Policies:
+  - name: trafficpolicy/default/secure-route-policy/example-gateway:extauth
+    target:
+      gateway: default/example-gateway
+    spec:
+      ext_authz:
+        target:
+          service: default/ext-authz.default.svc.cluster.local
+          port: 4444

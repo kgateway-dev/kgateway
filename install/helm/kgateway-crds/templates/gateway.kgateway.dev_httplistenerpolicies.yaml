@@ -627,6 +627,34 @@ spec:
                           - backendRef
                           - logName
                           type: object
+                        resourceAttributes:
+                          properties:
+                            values:
+                              items:
+                                properties:
+                                  key:
+                                    type: string
+                                  value:
+                                    maxProperties: 1
+                                    minProperties: 1
+                                    properties:
+                                      arrayValue:
+                                        items:
+                                          type: object
+                                          x-kubernetes-preserve-unknown-fields: true
+                                        type: array
+                                      kvListValue:
+                                        type: object
+                                        x-kubernetes-preserve-unknown-fields: true
+                                      stringValue:
+                                        type: string
+                                    type: object
+                                required:
+                                - key
+                                - value
+                                type: object
+                              type: array
+                          type: object
                       required:
                       - grpcService
                       type: object
@@ -907,7 +935,6 @@ spec:
                             type: string
                         required:
                         - grpcService
-                        - serviceName
                         type: object
                     type: object
                   randomSampling:

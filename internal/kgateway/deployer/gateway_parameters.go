@@ -298,7 +298,13 @@ func (k *kGatewayParameters) getValues(gw *api.Gateway, gwParam *v1alpha1.Gatewa
 
 	gateway := vals.Gateway
 	// deployment values
-	gateway.ReplicaCount = deployConfig.GetReplicas()
+	if deployConfig.GetOmitReplicas() != nil && *deployConfig.GetOmitReplicas() {
+		// Don't set replica count - let HPA (if applied) handle it
+		gateway.ReplicaCount = nil
+	} else {
+		// Use the specified replica count
+		gateway.ReplicaCount = deployConfig.GetReplicas()
+	}
 
 	// service values
 	gateway.Service = deployer.GetServiceValues(svcConfig)

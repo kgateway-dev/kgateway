@@ -406,3 +406,10 @@ func (c *Cli) GetPodsInNsWithLabel(ctx context.Context, namespace string, label 
 	glooPodNames := strings.Fields(glooPodNamesString)
 	return glooPodNames, nil
 }
+
+func (c *Cli) GetLeaseHolder(ctx context.Context, namespace string, leaderElectionID string) (string, error) {
+	stdout, stderr, err := c.Execute(ctx, "get", "leases", "-n", namespace,
+		leaderElectionID, "--output", "jsonpath='{.spec.holderIdentity}'")
+	stdout = strings.Trim(stdout, "'")
+	return stdout + stderr, err
+}

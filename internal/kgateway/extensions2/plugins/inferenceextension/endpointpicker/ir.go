@@ -78,7 +78,15 @@ func newInferencePool(pool *infextv1a2.InferencePool) *inferencePool {
 }
 
 func (ir *inferencePool) setEndpoints(eps []endpoint) {
+	ir.mu.Lock()
+	defer ir.mu.Unlock()
 	ir.endpoints = eps
+}
+
+func (ir *inferencePool) getEndpoints() []endpoint {
+	ir.mu.Lock()
+	defer ir.mu.Unlock()
+	return ir.endpoints
 }
 
 // resolvePoolEndpoints returns the slice of <IP:Port> for the given pool
@@ -124,6 +132,10 @@ func (ir *inferencePool) Equals(other any) bool {
 		return false
 	}
 	// Compare endpoint set (order‑insensitive)
+	ir.mu.Lock()
+	otherPool.mu.Lock()
+	defer ir.mu.Unlock()
+	defer otherPool.mu.Unlock()
 	if len(ir.endpoints) != len(otherPool.endpoints) {
 		return false
 	}

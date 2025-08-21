@@ -17,6 +17,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/protoutils"
 
 	"github.com/ghodss/yaml"
+	apiserverschema "k8s.io/apiextensions-apiserver/pkg/apiserver/schema"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -26,7 +27,11 @@ import (
 
 var ErrNoFilesFound = errors.New("no k8s files found")
 
-func LoadFromFiles(filename string, scheme *runtime.Scheme) ([]client.Object, error) {
+func LoadFromFiles(
+	filename string,
+	scheme *runtime.Scheme,
+	gvkToStructuralSchema map[schema.GroupVersionKind]*apiserverschema.Structural,
+) ([]client.Object, error) {
 	fileOrDir, err := os.Stat(filename)
 	if err != nil {
 		return nil, err
@@ -56,11 +61,10 @@ func LoadFromFiles(filename string, scheme *runtime.Scheme) ([]client.Object, er
 
 	var resources []client.Object
 	for _, file := range yamlFiles {
-		objs, err := parseFile(file, scheme)
+		objs, err := parseFile(file, scheme, gvkToStructuralSchema)
 		if err != nil {
 			return nil, err
 		}
-
 		for _, obj := range objs {
 			clientObj, ok := obj.(client.Object)
 			if !ok {
@@ -79,7 +83,11 @@ func LoadFromFiles(filename string, scheme *runtime.Scheme) ([]client.Object, er
 	return resources, nil
 }
 
-func parseFile(filename string, scheme *runtime.Scheme) ([]runtime.Object, error) {
+func parseFile(
+	filename string,
+	scheme *runtime.Scheme,
+	gvkToStructuralSchema map[schema.GroupVersionKind]*apiserverschema.Structural,
+) ([]runtime.Object, error) {
 	file, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, err
@@ -120,6 +128,7 @@ func parseFile(filename string, scheme *runtime.Scheme) ([]runtime.Object, error
 			)
 			continue
 		}
+
 		if err := yaml.Unmarshal(objYaml, obj); err != nil {
 			slog.Warn("failed to parse resource YAML",
 				"error", err,
@@ -129,6 +138,17 @@ func parseFile(filename string, scheme *runtime.Scheme) ([]runtime.Object, error
 				"data", truncateString(string(objYaml), 100),
 			)
 			continue
+		}
+
+		if structuralSchema, ok := gvkToStructuralSchema[gvk]; ok {
+			objYamlWithDefaults, err := applyDefaults(obj, structuralSchema)
+			if err != nil {
+				return nil, fmt.Errorf("failed to apply defaults for %s: %w", gvk, err)
+			}
+			err = yaml.Unmarshal(objYamlWithDefaults, obj)
+			if err != nil {
+				return nil, fmt.Errorf("failed to unmarshal object with defaults for %s: %w", gvk, err)
+			}
 		}
 
 		genericResources = append(genericResources, obj)

@@ -1,7 +1,6 @@
 package v1alpha1
 
 import (
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -36,7 +35,6 @@ type TrafficPolicyList struct {
 }
 
 // TrafficPolicySpec defines the desired state of a traffic policy.
-// +kubebuilder:validation:XValidation:rule="!has(self.hashPolicies) || ((has(self.targetRefs) && self.targetRefs.all(r, r.kind == 'HTTPRoute')) || (has(self.targetSelectors) && self.targetSelectors.all(r, r.kind == 'HTTPRoute')))",message="hash policies can only be used when targeting HTTPRoute resources"
 // +kubebuilder:validation:XValidation:rule="!has(self.autoHostRewrite) || ((has(self.targetRefs) && self.targetRefs.all(r, r.kind == 'HTTPRoute')) || (has(self.targetSelectors) && self.targetSelectors.all(r, r.kind == 'HTTPRoute')))",message="autoHostRewrite can only be used when targeting HTTPRoute resources"
 // +kubebuilder:validation:XValidation:rule="has(self.retry) && has(self.timeouts) ? (has(self.retry.perTryTimeout) && has(self.timeouts.request) ? duration(self.retry.perTryTimeout) < duration(self.timeouts.request) : true) : true",message="retry.perTryTimeout must be lesser than timeouts.request"
 // +kubebuilder:validation:XValidation:rule="has(self.retry) && has(self.targetRefs) ? self.targetRefs.all(r, (r.kind == 'Gateway' ? has(r.sectionName) : true )) : true",message="targetRefs[].sectionName must be set when targeting Gateway resources with retry policy"
@@ -86,13 +84,9 @@ type TrafficPolicySpec struct {
 	// +optional
 	Csrf *CSRFPolicy `json:"csrf,omitempty"`
 
-	// HashPolicies specifies the hash policies for hashing load balancers (RingHash, Maglev).
-	// Should be used in conjunction with Load Balancer on the BackendConfigPolicy.
-	// Note: can only be used when targeting routes.
+	// HeaderModifiers defines the policy to modify request and response headers.
 	// +optional
-	// +kubebuilder:validation:MinItems=1
-	// +kubebuilder:validation:MaxItems=16
-	HashPolicies []*HashPolicy `json:"hashPolicies,omitempty"`
+	HeaderModifiers *HeaderModifiers `json:"headerModifiers,omitempty"`
 
 	// AutoHostRewrite rewrites the Host header to the DNS name of the selected upstream.
 	// NOTE: This field is only honoured for HTTPRoute targets.
@@ -212,9 +206,9 @@ type BodyTransformation struct {
 //
 // +kubebuilder:validation:ExactlyOneOf=extensionRef;disable
 type ExtAuthPolicy struct {
-	// ExtensionRef references the ExternalExtension that should be used for authentication.
+	// ExtensionRef references the GatewayExtension that should be used for authentication.
 	// +optional
-	ExtensionRef *corev1.LocalObjectReference `json:"extensionRef,omitempty"`
+	ExtensionRef NamespacedObjectReference `json:"extensionRef,omitempty"`
 
 	// WithRequestBody allows the request body to be buffered and sent to the authorization service.
 	// Warning buffering has implications for streaming and therefore performance.
@@ -310,7 +304,7 @@ type RateLimitPolicy struct {
 
 	// ExtensionRef references a GatewayExtension that provides the global rate limit service.
 	// +required
-	ExtensionRef *corev1.LocalObjectReference `json:"extensionRef"`
+	ExtensionRef NamespacedObjectReference `json:"extensionRef"`
 }
 
 // RateLimitDescriptor defines a descriptor for rate limiting.
@@ -408,57 +402,17 @@ type CSRFPolicy struct {
 	AdditionalOrigins []StringMatcher `json:"additionalOrigins,omitempty"`
 }
 
-// +kubebuilder:validation:ExactlyOneOf=header;cookie;sourceIP
-type HashPolicy struct {
-	// Header specifies a header's value as a component of the hash key.
+// HeaderModifiers can be used to define the policy to modify request and response headers.
+// +kubebuilder:validation:XValidation:rule="has(self.request) || has(self.response)",message="At least one of request or response must be provided."
+type HeaderModifiers struct {
+	// Request modifies request headers.
 	// +optional
-	Header *Header `json:"header,omitempty"`
+	Request *gwv1.HTTPHeaderFilter `json:"request,omitempty"`
 
-	// Cookie specifies a given cookie as a component of the hash key.
+	// Response modifies response headers.
 	// +optional
-	Cookie *Cookie `json:"cookie,omitempty"`
-
-	// SourceIP specifies whether to use the request's source IP address as a component of the hash key.
-	// +optional
-	SourceIP *SourceIP `json:"sourceIP,omitempty"`
-
-	// Terminal, if set, and a hash key is available after evaluating this policy, will cause Envoy to skip the subsequent policies and
-	// use the key as it is.
-	// This is useful for defining "fallback" policies and limiting the time Envoy spends generating hash keys.
-	// +optional
-	Terminal *bool `json:"terminal,omitempty"`
+	Response *gwv1.HTTPHeaderFilter `json:"response,omitempty"`
 }
-
-type Header struct {
-	// Name is the name of the header to use as a component of the hash key.
-	// +kubebuilder:validation:MinLength=1
-	Name string `json:"name"`
-}
-
-type Cookie struct {
-	// Name of the cookie.
-	// +kubebuilder:validation:MinLength=1
-	Name string `json:"name"`
-
-	// Path is the name of the path for the cookie.
-	// +optional
-	Path *string `json:"path,omitempty"`
-
-	// TTL specifies the time to live of the cookie.
-	// If specified, a cookie with the TTL will be generated if the cookie is not present.
-	// If the TTL is present and zero, the generated cookie will be a session cookie.
-	// +optional
-	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
-	TTL *metav1.Duration `json:"ttl,omitempty"`
-
-	// Attributes are additional attributes for the cookie.
-	// +optional
-	// +kubebuilder:validation:MinProperties=1
-	// +kubebuilder:validation:MaxProperties=10
-	Attributes map[string]string `json:"attributes,omitempty"`
-}
-
-type SourceIP struct{}
 
 // +kubebuilder:validation:ExactlyOneOf=maxRequestSize;disable
 type Buffer struct {

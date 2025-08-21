@@ -9,10 +9,12 @@ import (
 // CookieApplyConfiguration represents a declarative configuration of the Cookie type for use
 // with apply.
 type CookieApplyConfiguration struct {
-	Name       *string           `json:"name,omitempty"`
-	Path       *string           `json:"path,omitempty"`
-	TTL        *v1.Duration      `json:"ttl,omitempty"`
-	Attributes map[string]string `json:"attributes,omitempty"`
+	Name     *string      `json:"name,omitempty"`
+	Path     *string      `json:"path,omitempty"`
+	TTL      *v1.Duration `json:"ttl,omitempty"`
+	Secure   *bool        `json:"secure,omitempty"`
+	HttpOnly *bool        `json:"httpOnly,omitempty"`
+	SameSite *string      `json:"sameSite,omitempty"`
 }
 
 // CookieApplyConfiguration constructs a declarative configuration of the Cookie type for use with
@@ -45,16 +47,26 @@ func (b *CookieApplyConfiguration) WithTTL(value v1.Duration) *CookieApplyConfig
 	return b
 }
 
-// WithAttributes puts the entries into the Attributes field in the declarative configuration
-// and returns the receiver, so that objects can be build by chaining "With" function invocations.
-// If called multiple times, the entries provided by each call will be put on the Attributes field,
-// overwriting an existing map entries in Attributes field with the same key.
-func (b *CookieApplyConfiguration) WithAttributes(entries map[string]string) *CookieApplyConfiguration {
-	if b.Attributes == nil && len(entries) > 0 {
-		b.Attributes = make(map[string]string, len(entries))
-	}
-	for k, v := range entries {
-		b.Attributes[k] = v
-	}
+// WithSecure sets the Secure field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Secure field is set to the value of the last call.
+func (b *CookieApplyConfiguration) WithSecure(value bool) *CookieApplyConfiguration {
+	b.Secure = &value
+	return b
+}
+
+// WithHttpOnly sets the HttpOnly field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the HttpOnly field is set to the value of the last call.
+func (b *CookieApplyConfiguration) WithHttpOnly(value bool) *CookieApplyConfiguration {
+	b.HttpOnly = &value
+	return b
+}
+
+// WithSameSite sets the SameSite field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the SameSite field is set to the value of the last call.
+func (b *CookieApplyConfiguration) WithSameSite(value string) *CookieApplyConfiguration {
+	b.SameSite = &value
 	return b
 }

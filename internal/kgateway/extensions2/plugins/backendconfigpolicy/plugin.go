@@ -44,6 +44,7 @@ type BackendConfigPolicyIR struct {
 	tlsConfig                     *envoytlsv3.UpstreamTlsContext
 	loadBalancerConfig            *LoadBalancerConfigIR
 	healthCheck                   *envoycorev3.HealthCheck
+	outlierDetection              *envoyclusterv3.OutlierDetection
 }
 
 var logger = logging.New("backendconfigpolicy")
@@ -99,6 +100,10 @@ func (d *BackendConfigPolicyIR) Equals(other any) bool {
 	}
 
 	if !proto.Equal(d.healthCheck, d2.healthCheck) {
+		return false
+	}
+
+	if !proto.Equal(d.outlierDetection, d2.outlierDetection) {
 		return false
 	}
 
@@ -197,6 +202,10 @@ func processBackend(_ context.Context, polir ir.PolicyIR, backend ir.BackendObje
 	if pol.healthCheck != nil {
 		out.HealthChecks = []*envoycorev3.HealthCheck{pol.healthCheck}
 	}
+
+	if pol.outlierDetection != nil {
+		out.OutlierDetection = pol.outlierDetection
+	}
 }
 
 func translate(commoncol *common.CommonCollections, krtctx krt.HandlerContext, pol *v1alpha1.BackendConfigPolicy) (*BackendConfigPolicyIR, error) {
@@ -239,11 +248,19 @@ func translate(commoncol *common.CommonCollections, krtctx krt.HandlerContext, p
 	}
 
 	if pol.Spec.LoadBalancer != nil {
-		ir.loadBalancerConfig = translateLoadBalancerConfig(pol.Spec.LoadBalancer)
+		loadBalancerConfig, err := translateLoadBalancerConfig(pol.Spec.LoadBalancer, pol.Name, pol.Namespace)
+		if err != nil {
+			return &ir, err
+		}
+		ir.loadBalancerConfig = loadBalancerConfig
 	}
 
 	if pol.Spec.HealthCheck != nil {
 		ir.healthCheck = translateHealthCheck(pol.Spec.HealthCheck)
+	}
+
+	if pol.Spec.OutlierDetection != nil {
+		ir.outlierDetection = translateOutlierDetection(pol.Spec.OutlierDetection)
 	}
 
 	return &ir, nil

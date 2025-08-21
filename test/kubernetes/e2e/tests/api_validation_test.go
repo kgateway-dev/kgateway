@@ -295,43 +295,6 @@ spec:
 			wantErrors: []string{"targetRefs may only reference Gateway, HTTPRoute, or XListenerSet resources"},
 		},
 		{
-			name: "TrafficPolicy: invalid target ref for hash policy",
-			input: `---
-apiVersion: gateway.kgateway.dev/v1alpha1
-kind: TrafficPolicy
-metadata:
-  name: traffic-policy-invalid-hash-policy
-spec:
-  targetRefs:
-  - group: gateway.networking.k8s.io
-    kind: Gateway
-    name: test-gateway
-  hashPolicies:
-  - header:
-      name: "x-user-id"
-    terminal: true
-`,
-			wantErrors: []string{"hash policies can only be used when targeting HTTPRoute resources"},
-		},
-		{
-			name: "TrafficPolicy: valid target ref for hash policy",
-			input: `---
-apiVersion: gateway.kgateway.dev/v1alpha1
-kind: TrafficPolicy
-metadata:
-  name: traffic-policy-valid-hash-policy
-spec:
-  targetRefs:
-  - group: gateway.networking.k8s.io
-    kind: HTTPRoute
-    name: test-route
-  hashPolicies:
-  - header:
-      name: "x-user-id"
-    terminal: true
-`,
-		},
-		{
 			name: "TrafficPolicy: policy with autoHostRewrite can only target HTTPRoute",
 			input: `---
 apiVersion: gateway.kgateway.dev/v1alpha1
@@ -601,6 +564,62 @@ spec:
 			wantErrors: []string{
 				"spec.timeouts.streamIdle: Invalid value: \"string\": invalid duration value",
 			},
+		},
+		{
+			name: "ProxyDeployment: enforce ExactlyOneOf for replicas and omitReplicas",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayParameters
+metadata:
+  name: test-proxy-deployment
+spec:
+  kube:
+    deployment:
+      replicas: 3
+      omitReplicas: true
+`,
+			wantErrors: []string{"at most one of the fields in [replicas omitReplicas] may be set"},
+		},
+		{
+			name: "ProxyDeployment: neither replicas nor omitReplicas set (should pass)",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayParameters
+metadata:
+  name: test-proxy-deployment-empty
+spec:
+  kube:
+    deployment: {}
+`,
+			wantErrors: []string{},
+		},
+		{
+			name: "ProxyDeployment: only replicas set (should pass)",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayParameters
+metadata:
+  name: test-proxy-deployment-replicas-only
+spec:
+  kube:
+    deployment:
+      replicas: 3
+`,
+			wantErrors: []string{},
+		},
+		{
+			name: "ProxyDeployment: only omitReplicas set (should pass)",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayParameters
+metadata:
+  name: test-proxy-deployment-omit-only
+spec:
+  kube:
+    deployment:
+      omitReplicas: true
+`,
+			wantErrors: []string{},
 		},
 	}
 

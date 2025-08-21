@@ -29,6 +29,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/proxy_syncer"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/metrics"
 	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
+	agentgatewayplugins "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
@@ -72,10 +73,12 @@ type StartConfig struct {
 	RestConfig *rest.Config
 	// ExtensionsFactory is the factory function which will return an extensions.K8sGatewayExtensions
 	// This is responsible for producing the extension points that this controller requires
-	ExtraPlugins           func(ctx context.Context, commoncol *common.CommonCollections) []sdk.Plugin
-	ExtraGatewayParameters func(cli client.Client, inputs *deployer.Inputs) []deployer.ExtraGatewayParameters
-	Client                 istiokube.Client
+	ExtraPlugins             func(ctx context.Context, commoncol *common.CommonCollections) []sdk.Plugin
+	ExtraAgentgatewayPlugins func(ctx context.Context, agw *agentgatewayplugins.AgwCollections) []agentgatewayplugins.AgentgatewayPlugin
+	ExtraGatewayParameters   func(cli client.Client, inputs *deployer.Inputs) []deployer.ExtraGatewayParameters
+	Client                   istiokube.Client
 
+	AgwCollections    *agentgatewayplugins.AgwCollections
 	CommonCollections *common.CommonCollections
 	AugmentedPods     krt.Collection[krtcollections.LocalityPod]
 	UniqueClients     krt.Collection[ir.UniqlyConnectedClient]
@@ -181,13 +184,18 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 
 	var agentGatewaySyncer *agentgatewaysyncer.AgentGwSyncer
 	if cfg.SetupOpts.GlobalSettings.EnableAgentGateway {
+		agentgatewayMergedPlugins := agentGatewayPluginFactory(cfg)(ctx, cfg.AgwCollections)
+		cfg.AgwCollections.InitPlugins(ctx, mergedPlugins, globalSettings)
+
 		agentGatewaySyncer = agentgatewaysyncer.NewAgentGwSyncer(
 			cfg.ControllerName,
 			cfg.AgentGatewayClassName,
 			cfg.Client,
 			cfg.Manager,
-			cfg.CommonCollections,
+			cfg.AgwCollections,
+			// TODO(npolshak): move away from shared mergedPlugins to agentGatewayPlugins https://github.com/kgateway-dev/kgateway/issues/12052
 			mergedPlugins,
+			agentgatewayMergedPlugins,
 			cfg.SetupOpts.Cache,
 			namespaces.GetPodNamespace(),
 			cfg.Client.ClusterID().String(),
@@ -250,6 +258,16 @@ func pluginFactoryWithBuiltin(cfg StartConfig) extensions2.K8sGatewayExtensionsF
 			plugins = append(plugins, cfg.ExtraPlugins(ctx, commoncol)...)
 		}
 		return registry.MergePlugins(plugins...)
+	}
+}
+
+func agentGatewayPluginFactory(cfg StartConfig) func(ctx context.Context, agw *agentgatewayplugins.AgwCollections) agentgatewayplugins.AgentgatewayPlugin {
+	return func(ctx context.Context, agw *agentgatewayplugins.AgwCollections) agentgatewayplugins.AgentgatewayPlugin {
+		plugins := agentgatewayplugins.Plugins(agw)
+		if cfg.ExtraAgentgatewayPlugins != nil {
+			plugins = append(plugins, cfg.ExtraAgentgatewayPlugins(ctx, agw)...)
+		}
+		return agentgatewayplugins.MergePlugins(plugins...)
 	}
 }
 

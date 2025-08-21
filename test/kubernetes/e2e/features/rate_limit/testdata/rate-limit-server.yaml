@@ -1,15 +1,21 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kgateway-test-extensions
+spec: {}
+---
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: GatewayExtension
 metadata:
   name: global-ratelimit
-  namespace: kgateway-test
+  namespace: kgateway-test-extensions
 spec:
   type: RateLimit
   rateLimit:
     grpcService:
       backendRef:
         name: ratelimit
-        namespace: kgateway-test
+        namespace: kgateway-test-extensions
         port: 8081
     domain: "api-gateway"
     timeout: "100ms"
@@ -18,7 +24,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: ratelimit-config
-  namespace: kgateway-test
+  namespace: kgateway-test-extensions
 immutable: true
 data:
   config.yaml: |
@@ -57,7 +63,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: redis
-  namespace: kgateway-test
+  namespace: kgateway-test-extensions
 spec:
   selector:
     app: redis
@@ -69,7 +75,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: redis
-  namespace: kgateway-test
+  namespace: kgateway-test-extensions
 spec:
   replicas: 1
   selector:
@@ -90,7 +96,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: ratelimit
-  namespace: kgateway-test
+  namespace: kgateway-test-extensions
 spec:
   ports:
   - port: 8081
@@ -104,7 +110,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: ratelimit
-  namespace: kgateway-test
+  namespace: kgateway-test-extensions
 spec:
   replicas: 1
   selector:

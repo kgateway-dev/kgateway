@@ -37,6 +37,7 @@ import (
 	internaldeployer "github.com/kgateway-dev/kgateway/v2/internal/kgateway/deployer"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/httplistenerpolicy"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/xds"
@@ -61,6 +62,8 @@ import (
 	// is currently broken. see: https://github.com/kgateway-dev/kgateway/issues/10491
 	_ "github.com/kgateway-dev/kgateway/v2/pkg/utils/filter_types"
 )
+
+const envoyDataKey = "envoy.yaml"
 
 func unmarshalYaml(data []byte, into proto.Message) error {
 	jsn, err := yaml.YAMLToJSON(data)
@@ -122,7 +125,7 @@ func (objs *clientObjects) findConfigMap(namespace, name string) *corev1.ConfigM
 func (objs *clientObjects) getEnvoyConfig(namespace, name string) *envoybootstrapv3.Bootstrap {
 	cm := objs.findConfigMap(namespace, name).Data
 	var bootstrapCfg envoybootstrapv3.Bootstrap
-	err := unmarshalYaml([]byte(cm["envoy.yaml"]), &bootstrapCfg)
+	err := unmarshalYaml([]byte(cm[envoyDataKey]), &bootstrapCfg)
 	ExpectWithOffset(1, err).ToNot(HaveOccurred())
 	return &bootstrapCfg
 }
@@ -1452,6 +1455,8 @@ var _ = Describe("Deployer", func() {
 
 				cm := objs.findConfigMap(defaultNamespace, defaultConfigMapName)
 				Expect(cm).ToNot(BeNil())
+				// This verifies that the cluster name provided to envoy matches the service name used when generating OTel stats
+				Expect(cm.Data[envoyDataKey]).To(ContainSubstring(fmt.Sprintf("cluster: %s", httplistenerpolicy.GenerateDefaultServiceName(dep.Name, dep.Namespace))))
 
 				logLevelsMap := expectedGwp.EnvoyContainer.Bootstrap.ComponentLogLevels
 				levels := []types.GomegaMatcher{}
@@ -2080,7 +2085,7 @@ var _ = Describe("Deployer", func() {
 					cm := objs.findConfigMap(defaultNamespace, defaultConfigMapName)
 					Expect(cm).NotTo(BeNil())
 
-					envoyYaml := cm.Data["envoy.yaml"]
+					envoyYaml := cm.Data[envoyDataKey]
 					Expect(envoyYaml).NotTo(BeEmpty())
 
 					// make sure it's valid yaml
@@ -2125,7 +2130,7 @@ var _ = Describe("Deployer", func() {
 					cm := objs.findConfigMap(defaultNamespace, defaultConfigMapName)
 					Expect(cm).NotTo(BeNil())
 
-					envoyYaml := cm.Data["envoy.yaml"]
+					envoyYaml := cm.Data[envoyDataKey]
 					Expect(envoyYaml).NotTo(BeEmpty())
 
 					// make sure it's valid yaml
@@ -2181,6 +2186,94 @@ var _ = Describe("Deployer", func() {
 			}, &expectedOutput{
 				validationFunc: func(objs clientObjects, inp *input) error {
 					Expect(objs).To(BeEmpty())
+					return nil
+				},
+			}),
+			Entry("OmitReplicas is true", &input{
+				dInputs: defaultDeployerInputs(),
+				gw:      defaultGateway(),
+				defaultGwp: &gw2_v1alpha1.GatewayParameters{
+					TypeMeta: metav1.TypeMeta{
+						Kind:       wellknown.GatewayParametersGVK.Kind,
+						APIVersion: gw2_v1alpha1.GroupVersion.String(),
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      wellknown.DefaultGatewayParametersName,
+						Namespace: defaultNamespace,
+						UID:       "1237",
+					},
+					Spec: gw2_v1alpha1.GatewayParametersSpec{
+						Kube: &gw2_v1alpha1.KubernetesProxyConfig{
+							Deployment: &gw2_v1alpha1.ProxyDeployment{
+								OmitReplicas: ptr.To(true),
+							},
+						},
+					},
+				},
+				overrideGwp: &gw2_v1alpha1.GatewayParameters{},
+			}, &expectedOutput{
+				validationFunc: func(objs clientObjects, inp *input) error {
+					deployment := objs.findDeployment(defaultNamespace, defaultServiceName)
+					Expect(deployment).NotTo(BeNil())
+					Expect(deployment.Spec.Replicas).To(BeNil())
+					return nil
+				},
+			}),
+			Entry("have replicas set", &input{
+				dInputs: defaultDeployerInputs(),
+				gw:      defaultGateway(),
+				defaultGwp: &gw2_v1alpha1.GatewayParameters{
+					TypeMeta: metav1.TypeMeta{
+						Kind:       wellknown.GatewayParametersGVK.Kind,
+						APIVersion: gw2_v1alpha1.GroupVersion.String(),
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      wellknown.DefaultGatewayParametersName,
+						Namespace: defaultNamespace,
+						UID:       "1237",
+					},
+					Spec: gw2_v1alpha1.GatewayParametersSpec{
+						Kube: &gw2_v1alpha1.KubernetesProxyConfig{
+							Deployment: &gw2_v1alpha1.ProxyDeployment{
+								Replicas: ptr.To(uint32(3)),
+							},
+						},
+					},
+				},
+				overrideGwp: &gw2_v1alpha1.GatewayParameters{},
+			}, &expectedOutput{
+				validationFunc: func(objs clientObjects, inp *input) error {
+					deployment := objs.findDeployment(defaultNamespace, defaultServiceName)
+					Expect(deployment).NotTo(BeNil())
+					Expect(*deployment.Spec.Replicas).To(Equal(int32(3)))
+					return nil
+				},
+			}),
+			Entry("replicas and omitReplicas aren't set (default)", &input{
+				dInputs: defaultDeployerInputs(),
+				gw:      defaultGateway(),
+				defaultGwp: &gw2_v1alpha1.GatewayParameters{
+					TypeMeta: metav1.TypeMeta{
+						Kind:       wellknown.GatewayParametersGVK.Kind,
+						APIVersion: gw2_v1alpha1.GroupVersion.String(),
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      wellknown.DefaultGatewayParametersName,
+						Namespace: defaultNamespace,
+						UID:       "1237",
+					},
+					Spec: gw2_v1alpha1.GatewayParametersSpec{
+						Kube: &gw2_v1alpha1.KubernetesProxyConfig{
+							Deployment: &gw2_v1alpha1.ProxyDeployment{},
+						},
+					},
+				},
+				overrideGwp: &gw2_v1alpha1.GatewayParameters{},
+			}, &expectedOutput{
+				validationFunc: func(objs clientObjects, inp *input) error {
+					deployment := objs.findDeployment(defaultNamespace, defaultServiceName)
+					Expect(deployment).NotTo(BeNil())
+					Expect(*deployment.Spec.Replicas).To(Equal(int32(1))) // default replicas is 1
 					return nil
 				},
 			}),

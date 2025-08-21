@@ -255,6 +255,12 @@ type OpenTelemetryAccessLogService struct {
 	// Additional attributes that describe the specific event occurrence.
 	// +optional
 	Attributes *KeyAnyValueList `json:"attributes,omitempty"`
+
+	// Additional resource attributes that describe the resource.
+	// If the `service.name` resource attribute is not specified, it adds it with the default value
+	// of the envoy cluster name, ie: `<gateway-name>.<gateway-namespace>`
+	// +optional
+	ResourceAttributes *KeyAnyValueList `json:"resourceAttributes,omitempty"`
 }
 
 // A list of key-value pair that is used to store Span attributes, Link attributes, etc.
@@ -573,8 +579,9 @@ type OpenTelemetryTracingConfig struct {
 	GrpcService CommonGrpcService `json:"grpcService"`
 
 	// The name for the service. This will be populated in the ResourceSpan Resource attributes
-	// +required
-	ServiceName string `json:"serviceName"`
+	// Defaults to the envoy cluster name. Ie: `<gateway-name>.<gateway-namespace>`
+	// +optional
+	ServiceName *string `json:"serviceName"`
 
 	// An ordered list of resource detectors. Currently supported values are `EnvironmentResourceDetector`
 	// +optional

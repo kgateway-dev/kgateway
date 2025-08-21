@@ -13,6 +13,7 @@ import (
 	corsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/cors/v3"
 	envoy_csrf_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/csrf/v3"
 	dynamicmodulesv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/dynamic_modules/v3"
+	header_mutationv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/header_mutation/v3"
 	localratelimitv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/local_ratelimit/v3"
 	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"google.golang.org/protobuf/types/known/anypb"
@@ -90,7 +91,7 @@ type trafficPolicySpecIr struct {
 	globalRateLimit *globalRateLimitIR
 	cors            *corsIR
 	csrf            *csrfIR
-	hashPolicies    *hashPolicyIR
+	headerModifiers *headerModifiersIR
 	autoHostRewrite *autoHostRewriteIR
 	retry           *retryIR
 	timeouts        *timeoutsIR
@@ -136,13 +137,13 @@ func (d *TrafficPolicy) Equals(in any) bool {
 	if !d.spec.csrf.Equals(d2.spec.csrf) {
 		return false
 	}
+	if !d.spec.headerModifiers.Equals(d2.spec.headerModifiers) {
+		return false
+	}
 	if !d.spec.autoHostRewrite.Equals(d2.spec.autoHostRewrite) {
 		return false
 	}
 	if !d.spec.buffer.Equals(d2.spec.buffer) {
-		return false
-	}
-	if !d.spec.hashPolicies.Equals(d2.spec.hashPolicies) {
 		return false
 	}
 	if !d.spec.retry.Equals(d2.spec.retry) {
@@ -168,8 +169,8 @@ func (p *TrafficPolicy) Validate() error {
 	validators = append(validators, p.spec.extAuth.Validate)
 	validators = append(validators, p.spec.csrf.Validate)
 	validators = append(validators, p.spec.cors.Validate)
+	validators = append(validators, p.spec.headerModifiers.Validate)
 	validators = append(validators, p.spec.buffer.Validate)
-	validators = append(validators, p.spec.hashPolicies.Validate)
 	validators = append(validators, p.spec.autoHostRewrite.Validate)
 	for _, validator := range validators {
 		if err := validator(); err != nil {
@@ -193,6 +194,7 @@ type trafficPolicyPluginGwPass struct {
 	rateLimitPerProvider  ProviderNeededMap
 	corsInChain           map[string]*corsv3.Cors
 	csrfInChain           map[string]*envoy_csrf_v3.CsrfPolicy
+	headerMutationInChain map[string]*header_mutationv3.HeaderMutationPerRoute
 	bufferInChain         map[string]*bufferv3.Buffer
 }
 
@@ -254,7 +256,6 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 	return extensionsplug.Plugin{
 		ContributesPolicies: map[schema.GroupKind]extensionsplug.PolicyPlugin{
 			wellknown.TrafficPolicyGVK.GroupKind(): {
-				// AttachmentPoints: []ir.AttachmentPoints{ir.HttpAttachmentPoint},
 				NewGatewayTranslationPass: NewGatewayTranslationPass,
 				Policies:                  policyCol,
 				MergePolicies: func(pols []ir.PolicyAtt) ir.PolicyAtt {
@@ -571,6 +572,13 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.Filt
 		filters = append(filters, filter)
 	}
 
+	// Add header mutation filter.
+	if f := p.headerMutationInChain[fcc.FilterChainName]; f != nil {
+		filter := plugins.MustNewStagedFilter(headerMutationFilterName, f, plugins.DuringStage(plugins.RouteStage))
+		filter.Filter.Disabled = true
+		filters = append(filters, filter)
+	}
+
 	// Add Buffer filter to enable buffer for the listener.
 	// Requires the buffer policy to be set as typed_per_filter_config.
 	if f := p.bufferInChain[fcc.FilterChainName]; f != nil {
@@ -602,6 +610,7 @@ func (p *trafficPolicyPluginGwPass) handlePolicies(
 	p.handleLocalRateLimit(fcn, typedFilterConfig, spec.localRateLimit)
 	p.handleCors(fcn, typedFilterConfig, spec.cors)
 	p.handleCsrf(fcn, typedFilterConfig, spec.csrf)
+	p.handleHeaderModifiers(fcn, typedFilterConfig, spec.headerModifiers)
 	p.handleBuffer(fcn, typedFilterConfig, spec.buffer)
 }
 
@@ -616,10 +625,6 @@ func (p *trafficPolicyPluginGwPass) handlePerRoutePolicies(
 	}
 
 	action := out.GetRoute()
-
-	if spec.hashPolicies != nil {
-		action.HashPolicy = spec.hashPolicies.policies
-	}
 
 	if spec.autoHostRewrite != nil && spec.autoHostRewrite.enabled != nil && spec.autoHostRewrite.enabled.GetValue() {
 		// Only apply TrafficPolicy's AutoHostRewrite if built-in policy's AutoHostRewrite is not already set
@@ -683,9 +688,9 @@ func MergeTrafficPolicies(
 		mergeGlobalRateLimit,
 		mergeCORS,
 		mergeCSRF,
+		mergeHeaderModifiers,
 		mergeBuffer,
 		mergeAutoHostRewrite,
-		mergeHashPolicies,
 		mergeTimeouts,
 		mergeRetry,
 	}

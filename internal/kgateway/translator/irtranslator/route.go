@@ -216,22 +216,21 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(
 		return nil
 	}
 
+	// For invalid matchers, we drop the route entirely instead of replacing it with a synthetic matcher.
+	if routeAcceptanceErr != nil && errors.Is(routeAcceptanceErr, ErrInvalidMatcher) {
+		h.logger.Info("invalid matcher", "error", routeAcceptanceErr)
+		routeReport.SetCondition(reportssdk.RouteCondition{
+			Type:    gwv1.RouteConditionAccepted,
+			Status:  metav1.ConditionFalse,
+			Reason:  gwv1.RouteConditionReason(reportssdk.RouteRuleDroppedReason),
+			Message: fmt.Sprintf("Dropped Rule (%d): %v", in.MatchIndex, routeAcceptanceErr),
+		})
+		return nil
+	}
+
 	// If routeReplacementErr is set, we need to replace the route with a direct response
 	if routeReplacementErr != nil {
 		h.logger.Debug("invalid route", "error", routeReplacementErr)
-
-		// For invalid matchers, we drop the route entirely instead of replacing it with a synthetic matcher.
-		// TODO(tim): Extract this logic outside of the routeReplacementErr check.
-		if errors.Is(routeReplacementErr, ErrInvalidMatcher) {
-			h.logger.Info("invalid matcher", "error", routeReplacementErr)
-			routeReport.SetCondition(reportssdk.RouteCondition{
-				Type:    gwv1.RouteConditionAccepted,
-				Status:  metav1.ConditionFalse,
-				Reason:  gwv1.RouteConditionReason(reportssdk.RouteRuleDroppedReason),
-				Message: fmt.Sprintf("Dropped Rule (%d): %v", in.MatchIndex, routeReplacementErr),
-			})
-			return nil
-		}
 
 		// If routeAcceptanceErr is set, report Accepted=False with Reason=RouteRuleReplaced
 		if routeAcceptanceErr != nil {

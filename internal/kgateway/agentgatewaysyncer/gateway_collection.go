@@ -15,11 +15,10 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
-
 	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
+	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
 
 func toResourcep(gw types.NamespacedName, resources []*api.Resource, rm reports.ReportMap) *ADPResourcesForGateway {
@@ -217,7 +216,12 @@ func GatewayCollection(
 		}
 
 		for i, l := range kgw.Listeners {
-			server, tlsInfo, programmed := buildListener(ctx, secrets, grants, namespaces, obj, status, l, i, controllerName)
+			// Attached routes count starts at 0 and gets updated later in the status syncer
+			// when the real count is available after route processing
+			attachedCount := int32(0) // Default to 0 if not found
+
+			server, tlsInfo, programmed := buildListener(ctx, secrets, grants, namespaces, obj, status, l, i, controllerName, attachedCount)
+
 			lstatus := status.Listeners[i]
 
 			// Generate supported kinds for the listener
@@ -243,7 +247,7 @@ func GatewayCollection(
 				Meta: Meta{
 					CreationTimestamp: obj.CreationTimestamp.Time,
 					GroupVersionKind:  schema.GroupVersionKind{Group: wellknown.GatewayGroup, Kind: wellknown.GatewayKind},
-					Name:              InternalGatewayName(obj.Name, string(l.Name)),
+					Name:              internalGatewayName(obj.Namespace, obj.Name, string(l.Name)),
 					Annotations:       meta,
 					Namespace:         obj.Namespace,
 				},
@@ -312,8 +316,8 @@ func BuildRouteParents(
 	}
 }
 
-// InternalGatewayName returns the name of the internal Istio Gateway corresponding to the
+// internalGatewayName returns the name of the internal Istio Gateway corresponding to the
 // specified gwv1-api gwv1 and listener.
-func InternalGatewayName(gwName, lName string) string {
-	return fmt.Sprintf("%s-%s-%s", gwName, AgentgatewayName, lName)
+func internalGatewayName(gwNamespace, gwName, lName string) string {
+	return fmt.Sprintf("%s/%s/%s", gwNamespace, gwName, lName)
 }

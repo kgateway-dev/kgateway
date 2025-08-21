@@ -88,8 +88,8 @@ func (s *testingSuite) TestAccessLogWithOTelSink() {
 		s.Require().NoError(err)
 
 		// Example log line for the access log
-		// {"level":"info","ts":"2025-06-20T18:22:57.716Z","msg":"ResourceLog #0\nResource SchemaURL: \nResource attributes:\n     -> log_name: Str(test-otel-accesslog-service)\n     -> zone_name: Str()\n     -> cluster_name: Str(gw.default)\n     -> node_name: Str(gw-69c5b8cd88-ln44n.default)\nScopeLogs #0\nScopeLogs SchemaURL: \nInstrumentationScope  \nLogRecord #0\nObservedTimestamp: 1970-01-01 00:00:00 +0000 UTC\nTimestamp: 2025-06-20 18:22:56.807883 +0000 UTC\nSeverityText: \nSeverityNumber: Unspecified(0)\nBody: Str(\"GET /get 200 \"www.example.com\" \"kube_httpbin_httpbin_8000\"\\n')\nAttributes:\n     -> custom: Str(string)\n     -> kvlist: Map({\"key-1\":\"value-1\",\"key-2\":\"value-2\"})\nTrace ID: \nSpan ID: \nFlags: 0\n","kind":"exporter","data_type":"logs","name":"debug"}
-		assert.Contains(c, logs, `-> log_name: Str(test-otel-accesslog-service)`)
+		// {"level":"info","ts":"2025-06-20T18:22:57.716Z","msg":"ResourceLog #0\nResource SchemaURL: \nResource attributes:\n     -> log_name: Str(test-otel-accesslog-service)\n     -> zone_name: Str()\n     -> cluster_name: Str(gw.default)\n     -> node_name: Str(gw-69c5b8cd88-ln44n.default)\n     -> service.name: Str(gw.default)\nScopeLogs #0\nScopeLogs SchemaURL: \nInstrumentationScope  \nLogRecord #0\nObservedTimestamp: 1970-01-01 00:00:00 +0000 UTC\nTimestamp: 2025-06-20 18:22:56.807883 +0000 UTC\nSeverityText: \nSeverityNumber: Unspecified(0)\nBody: Str(\"GET /get 200 \"www.example.com\" \"kube_httpbin_httpbin_8000\"\\n')\nAttributes:\n     -> custom: Str(string)\n     -> kvlist: Map({\"key-1\":\"value-1\",\"key-2\":\"value-2\"})\nTrace ID: \nSpan ID: \nFlags: 0\n","kind":"exporter","data_type":"logs","name":"debug"}		assert.Contains(c, logs, `-> log_name: Str(test-otel-accesslog-service)`)
+		assert.Contains(c, logs, `-> service.name: Str(gw.default)`)
 		assert.Contains(c, logs, `GET /status/200 200`)
 		assert.Contains(c, logs, `www.example.com`)
 		assert.Contains(c, logs, `kube_httpbin_httpbin_8000`)

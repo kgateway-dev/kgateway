@@ -99,27 +99,6 @@ func AppendPortValue(gwPorts []HelmPort, port uint16, name string, gwp *v1alpha1
 	})
 }
 
-// TODO: Removing until autoscaling is re-added.
-// See: https://github.com/solo-io/solo-projects/issues/5948
-// Convert autoscaling values from GatewayParameters into helm values to be used by the deployer.
-// func getAutoscalingValues(autoscaling *v1.Autoscaling) *helmAutoscaling {
-// 	hpaConfig := autoscaling.HorizontalPodAutoscaler
-// 	if hpaConfig == nil {
-// 		return nil
-// 	}
-
-// 	trueVal := true
-// 	autoscalingVals := &helmAutoscaling{
-// 		Enabled: &trueVal,
-// 	}
-// 	autoscalingVals.MinReplicas = hpaConfig.MinReplicas
-// 	autoscalingVals.MaxReplicas = hpaConfig.MaxReplicas
-// 	autoscalingVals.TargetCPUUtilizationPercentage = hpaConfig.TargetCpuUtilizationPercentage
-// 	autoscalingVals.TargetMemoryUtilizationPercentage = hpaConfig.TargetMemoryUtilizationPercentage
-
-// 	return autoscalingVals
-// }
-
 // Convert service values from GatewayParameters into helm values to be used by the deployer.
 func GetServiceValues(svcConfig *v1alpha1.Service) *HelmService {
 	// convert the service type enum to its string representation;

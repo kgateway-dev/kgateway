@@ -497,10 +497,17 @@ spec:
                     type: object
                   deployment:
                     properties:
+                      omitReplicas:
+                        type: boolean
                       replicas:
                         format: int32
                         type: integer
                     type: object
+                    x-kubernetes-validations:
+                    - message: at most one of the fields in [replicas omitReplicas]
+                        may be set
+                      rule: '[has(self.replicas),has(self.omitReplicas)].filter(x,x==true).size()
+                        <= 1'
                   envoyContainer:
                     properties:
                       bootstrap:

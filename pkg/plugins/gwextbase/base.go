@@ -34,7 +34,7 @@ var (
 	AddDisableFilterIfNeeded       = trafficpolicy.AddDisableFilterIfNeeded
 )
 
-// Create a traffic policy constructor. This converts a traffic policy into its IR form.
+// NewTrafficPolicyConstructor creates a traffic policy constructor. This converts a traffic policy into its IR form.
 func NewTrafficPolicyConstructor(
 	ctx context.Context,
 	commoncol *common.CommonCollections,

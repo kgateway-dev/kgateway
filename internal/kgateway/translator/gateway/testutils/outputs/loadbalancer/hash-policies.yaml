@@ -1,0 +1,108 @@
+Clusters:
+- commonLbConfig: {}
+  connectTimeout: 5s
+  edsClusterConfig:
+    edsConfig:
+      ads: {}
+      resourceApiVersion: V3
+  ignoreHealthOnHostRemoval: true
+  loadBalancingPolicy:
+    policies:
+    - typedExtensionConfig:
+        name: envoy.load_balancing_policies.maglev
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.load_balancing_policies.maglev.v3.Maglev
+          consistentHashingLbConfig:
+            hashPolicy:
+            - cookie:
+                attributes:
+                - name: Secure
+                  value: "true"
+                - name: HttpOnly
+                  value: "true"
+                - name: SameSite
+                  value: Strict
+                name: session-id
+                path: /api
+                ttl: 1800s
+              terminal: true
+            - connectionProperties:
+                sourceIp: true
+  metadata: {}
+  name: kube_default_httpbin-maglev_8080
+  type: EDS
+- commonLbConfig:
+    closeConnectionsOnHostSetChange: true
+  connectTimeout: 5s
+  edsClusterConfig:
+    edsConfig:
+      ads: {}
+      resourceApiVersion: V3
+  ignoreHealthOnHostRemoval: true
+  loadBalancingPolicy:
+    policies:
+    - typedExtensionConfig:
+        name: envoy.load_balancing_policies.ring_hash
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.load_balancing_policies.ring_hash.v3.RingHash
+          consistentHashingLbConfig:
+            hashPolicy:
+            - header:
+                headerName: x-user-id
+              terminal: true
+            - header:
+                headerName: x-session-id
+          maximumRingSize: "2048"
+          minimumRingSize: "1024"
+  metadata: {}
+  name: kube_default_httpbin-ringhash_8080
+  type: EDS
+- connectTimeout: 5s
+  metadata: {}
+  name: test-backend-plugin_default_example-svc_80
+Listeners:
+- address:
+    socketAddress:
+      address: '::'
+      ipv4Compat: true
+      portValue: 8080
+  filterChains:
+  - filters:
+    - name: envoy.filters.network.http_connection_manager
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+        httpFilters:
+        - name: envoy.filters.http.router
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+        mergeSlashes: true
+        normalizePath: true
+        rds:
+          configSource:
+            ads: {}
+            resourceApiVersion: V3
+          routeConfigName: listener~8080
+        statPrefix: http
+        useRemoteAddress: true
+    name: listener~8080
+  name: listener~8080
+Routes:
+- ignorePortInHostMatching: true
+  name: listener~8080
+  virtualHosts:
+  - domains:
+    - example.com
+    name: listener~8080~example_com
+    routes:
+    - match:
+        pathSeparatedPrefix: /ringhash
+      name: listener~8080~example_com-route-0-httproute-example-route-ringhash-default-0-0-matcher-0
+      route:
+        cluster: kube_default_httpbin-ringhash_8080
+        clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+    - match:
+        pathSeparatedPrefix: /maglev
+      name: listener~8080~example_com-route-1-httproute-example-route-maglev-default-0-0-matcher-0
+      route:
+        cluster: kube_default_httpbin-maglev_8080
+        clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR

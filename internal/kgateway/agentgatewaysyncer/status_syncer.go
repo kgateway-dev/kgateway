@@ -266,7 +266,12 @@ func (s *AgentGwStatusSyncer) syncGatewayStatus(ctx context.Context, logger *slo
 
 			gwStatusWithoutAddress := gw.Status
 			gwStatusWithoutAddress.Addresses = nil
-			if status := rm.BuildGWStatus(ctx, gw); status != nil {
+			var attachedRoutesForGw map[string]uint
+			if gatewayReports.AttachedRoutes != nil {
+				attachedRoutesForGw = gatewayReports.AttachedRoutes[gwnn]
+			}
+
+			if status := rm.BuildGWStatus(ctx, gw, attachedRoutesForGw); status != nil {
 				if !isGatewayStatusEqual(&gwStatusWithoutAddress, status) {
 					gw.Status = *status
 					if err := s.mgr.GetClient().Status().Patch(ctx, &gw, client.Merge); err != nil {

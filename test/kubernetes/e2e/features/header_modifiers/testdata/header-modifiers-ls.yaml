@@ -1,0 +1,28 @@
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: header-modifiers-ls-policy
+spec:
+  targetRefs:
+  - group: gateway.networking.x-k8s.io
+    kind: XListenerSet
+    name: ls
+  headerModifiers:
+    request:
+      add:
+        - name: X-Custom-Request-Header
+          value: custom-request-value-ls
+      set:
+        - name: X-Custom-Request-Header-Set
+          value: custom-request-value-ls
+      remove:
+        - X-Request-Id
+    response:
+      add:
+        - name: X-Custom-Response-Header
+          value: custom-response-value-ls
+      set:
+        - name: X-Custom-Response-Header-Set
+          value: custom-response-value-ls
+      remove:
+        - X-Envoy-Upstream-Service-Time

@@ -91,10 +91,8 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 	return extensionplug.Plugin{
 		ContributesPolicies: map[schema.GroupKind]extensionplug.PolicyPlugin{
 			wellknown.DirectResponseGVK.GroupKind(): {
-				Name: "directresponse",
-				//	AttachmentPoints: []ir.AttachmentPoints{ir.HttpAttachmentPoint},
-				Policies: policyCol,
-				//				AttachmentPoints:          []ir.AttachmentPoints{ir.HttpAttachmentPoint},
+				Name:                      "directresponse",
+				Policies:                  policyCol,
 				NewGatewayTranslationPass: NewGatewayTranslationPass,
 			},
 		},

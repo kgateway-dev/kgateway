@@ -86,6 +86,10 @@ type BackendConfigPolicySpec struct {
 	// HealthCheck contains the options necessary to configure the health check.
 	// +optional
 	HealthCheck *HealthCheck `json:"healthCheck,omitempty"`
+
+	// OutlierDetection contains the options necessary to configure passive health checking.
+	// +optional
+	OutlierDetection *OutlierDetection `json:"outlierDetection,omitempty"`
 }
 
 // See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-msg-config-core-v3-http1protocoloptions) for more details.
@@ -276,7 +280,7 @@ type TLSFiles struct {
 	RootCA *string `json:"rootCA,omitempty"`
 }
 
-// +kubebuilder:validation:AtMostOneOf=leastRequest;roundRobin;ringHash;maglev;random
+// +kubebuilder:validation:ExactlyOneOf=leastRequest;roundRobin;ringHash;maglev;random
 type LoadBalancer struct {
 	// HealthyPanicThreshold configures envoy's panic threshold percentage between 0-100. Once the number of non-healthy hosts
 	// reaches this percentage, envoy disregards health information.
@@ -368,6 +372,12 @@ type LoadBalancerRingHashConfig struct {
 	// Defaults to false.
 	// +optional
 	UseHostnameForHashing *bool `json:"useHostnameForHashing,omitempty"`
+
+	// HashPolicies specifies the hash policies for hashing load balancers (RingHash, Maglev).
+	// +optional
+	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:MaxItems=16
+	HashPolicies []*HashPolicy `json:"hashPolicies,omitempty"`
 }
 
 type LoadBalancerMaglevConfig struct {
@@ -375,6 +385,12 @@ type LoadBalancerMaglevConfig struct {
 	// Defaults to false.
 	// +optional
 	UseHostnameForHashing *bool `json:"useHostnameForHashing,omitempty"`
+
+	// HashPolicies specifies the hash policies for hashing load balancers (RingHash, Maglev).
+	// +optional
+	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:MaxItems=16
+	HashPolicies []*HashPolicy `json:"hashPolicies,omitempty"`
 }
 
 type (
@@ -484,3 +500,102 @@ type HealthCheckGrpc struct {
 	// +optional
 	Authority *string `json:"authority,omitempty"`
 }
+
+// OutlierDetection contains the options to configure passive health checks.
+// See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/outlier#outlier-detection) for more details.
+// +optional
+type OutlierDetection struct {
+	// The number of consecutive server-side error responses (for HTTP traffic,
+	// 5xx responses; for TCP traffic, connection failures; etc.) before an
+	// ejection occurs. Defaults to 5. If this is zero, consecutive 5xx passive
+	// health checks will be disabled. In the future, other types of passive
+	// health checking might be added, but none will be enabled by default.
+	// +optional
+	// +kubebuilder:default=5
+	Consecutive5xx *uint32 `json:"consecutive5xx,omitempty"`
+
+	// The time interval between ejection analysis sweeps. This can result in
+	// both new ejections as well as hosts being returned to service. Defaults
+	// to 10s.
+	// +optional
+	// +kubebuilder:default="10s"
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+	Interval *metav1.Duration `json:"interval,omitempty"`
+
+	// The base time that a host is ejected for. The real time is equal to the
+	// base time multiplied by the number of times the host has been ejected.
+	// Defaults to 30s.
+	// +optional
+	// +kubebuilder:default="30s"
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+	BaseEjectionTime *metav1.Duration `json:"baseEjectionTime,omitempty"`
+
+	// The maximum % of an upstream cluster that can be ejected due to outlier
+	// detection. Defaults to 10%.
+	// +optional
+	// +kubebuilder:default=10
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=100
+	MaxEjectionPercent *uint32 `json:"maxEjectionPercent,omitempty"`
+}
+
+// +kubebuilder:validation:ExactlyOneOf=header;cookie;sourceIP
+type HashPolicy struct {
+	// Header specifies a header's value as a component of the hash key.
+	// +optional
+	Header *Header `json:"header,omitempty"`
+
+	// Cookie specifies a given cookie as a component of the hash key.
+	// +optional
+	Cookie *Cookie `json:"cookie,omitempty"`
+
+	// SourceIP specifies whether to use the request's source IP address as a component of the hash key.
+	// +optional
+	SourceIP *SourceIP `json:"sourceIP,omitempty"`
+
+	// Terminal, if set, and a hash key is available after evaluating this policy, will cause Envoy to skip the subsequent policies and
+	// use the key as it is.
+	// This is useful for defining "fallback" policies and limiting the time Envoy spends generating hash keys.
+	// +optional
+	Terminal *bool `json:"terminal,omitempty"`
+}
+
+type Header struct {
+	// Name is the name of the header to use as a component of the hash key.
+	// +kubebuilder:validation:MinLength=1
+	Name string `json:"name"`
+}
+
+type Cookie struct {
+	// Name of the cookie.
+	// +kubebuilder:validation:MinLength=1
+	Name string `json:"name"`
+
+	// Path is the name of the path for the cookie.
+	// +optional
+	Path *string `json:"path,omitempty"`
+
+	// TTL specifies the time to live of the cookie.
+	// If specified, a cookie with the TTL will be generated if the cookie is not present.
+	// If the TTL is present and zero, the generated cookie will be a session cookie.
+	// +optional
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+	TTL *metav1.Duration `json:"ttl,omitempty"`
+
+	// Secure specifies whether the cookie is secure.
+	// If true, the cookie will only be sent over HTTPS.
+	// +optional
+	Secure *bool `json:"secure,omitempty"`
+
+	// HttpOnly specifies whether the cookie is HTTP only, i.e. not accessible to JavaScript.
+	// +optional
+	HttpOnly *bool `json:"httpOnly,omitempty"`
+
+	// SameSite controls cross-site sending of cookies.
+	// Supported values are Strict, Lax, and None.
+	// +optional
+	// +kubebuilder:validation:Enum=Strict;Lax;None
+	SameSite *string `json:"sameSite,omitempty"`
+}
+
+type SourceIP struct{}

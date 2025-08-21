@@ -184,7 +184,7 @@ var _ = DescribeTable("Basic agentgateway Tests",
 			Name:      "example-gateway",
 		},
 	}),
-	Entry("AI Backend with a2a provider", translatorTestCase{
+	Entry("Backend with a2a provider", translatorTestCase{
 		inputFile:  "backend-protocol/a2a-backend.yaml",
 		outputFile: "backend-protocol/a2a-backend.yaml",
 		gwNN: types.NamespacedName{
@@ -297,4 +297,29 @@ var _ = DescribeTable("Basic agentgateway Tests",
 			Expect(resolvedRefs.Status).To(Equal(metav1.ConditionTrue))
 		},
 	}),
+	Entry("TrafficPolicy with extauth on route", translatorTestCase{
+		inputFile:  "trafficpolicy/extauth-route.yaml",
+		outputFile: "trafficpolicy/extauth-route.yaml",
+		gwNN: types.NamespacedName{
+			Namespace: "default",
+			Name:      "example-gateway",
+		},
+	}),
+	Entry("TrafficPolicy with extauth on gateway", translatorTestCase{
+		inputFile:  "trafficpolicy/extauth-gateway.yaml",
+		outputFile: "trafficpolicy/extauth-gateway.yaml",
+		gwNN: types.NamespacedName{
+			Namespace: "default",
+			Name:      "example-gateway",
+		},
+	}),
+	// TODO(npolshak): re-enable once listener policies are supported once https://github.com/agentgateway/agentgateway/pull/323 goes in
+	//Entry("TrafficPolicy with extauth on listener", translatorTestCase{
+	//	inputFile:  "trafficpolicy/extauth-listener.yaml",
+	//	outputFile: "trafficpolicy/extauth-listener.yaml",
+	//	gwNN: types.NamespacedName{
+	//		Namespace: "default",
+	//		Name:      "example-gateway",
+	//	},
+	//}),
 )

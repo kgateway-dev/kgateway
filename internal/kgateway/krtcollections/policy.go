@@ -122,14 +122,14 @@ func (i *BackendIndex) BackendsWithPolicy() []krt.Collection[*ir.BackendObjectIR
 // policies attached.
 func (i *BackendIndex) AddBackends(gk schema.GroupKind, col krt.Collection[ir.BackendObjectIR], aliasKinds ...schema.GroupKind) {
 	backendsWithPoliciesCol := krt.NewCollection(col, func(kctx krt.HandlerContext, backendObj ir.BackendObjectIR) **ir.BackendObjectIR {
-		policies := i.policies.getTargetingPoliciesForBackends(kctx, extensionsplug.BackendAttachmentPoint, backendObj.ObjectSource, "", backendObj.GetObjectLabels(), false)
+		policies := i.policies.getTargetingPoliciesForBackends(kctx, backendObj.ObjectSource, "", backendObj.GetObjectLabels(), false)
 		for _, aliasObjSrc := range backendObj.Aliases {
 			if aliasObjSrc.Namespace == "" {
 				// targeting policies must be namespace local
 				// some aliases might be "global" but for policy purposes, give them the src namespace
 				aliasObjSrc.Namespace = backendObj.GetNamespace()
 			}
-			aliasPolicies := i.policies.getTargetingPoliciesForBackends(kctx, extensionsplug.BackendAttachmentPoint, aliasObjSrc, "", backendObj.GetObjectLabels(), true)
+			aliasPolicies := i.policies.getTargetingPoliciesForBackends(kctx, aliasObjSrc, "", backendObj.GetObjectLabels(), true)
 			policies = append(policies, aliasPolicies...)
 		}
 		backendObj.AttachedPolicies = toAttachedPolicies(policies)
@@ -300,49 +300,48 @@ func NewGatewayIndex(
 		}}
 	})
 
-	h.Gateways = krt.NewCollection(gws, func(kctx krt.HandlerContext, i *gwv1.Gateway) *ir.Gateway {
+	h.Gateways = krt.NewCollection(gws, func(kctx krt.HandlerContext, gw *gwv1.Gateway) *ir.Gateway {
 		// only care about gateways use a class controlled by us
-		gwClass := ptr.Flatten(krt.FetchOne(kctx, gwClasses, krt.FilterKey(string(i.Spec.GatewayClassName))))
+		gwClass := ptr.Flatten(krt.FetchOne(kctx, gwClasses, krt.FilterKey(string(gw.Spec.GatewayClassName))))
 		if gwClass == nil || controllerName != string(gwClass.Spec.ControllerName) {
 			return nil
 		}
 
-		out := ir.Gateway{
+		gwIR := ir.Gateway{
 			ObjectSource: ir.ObjectSource{
 				Group:     gwv1.SchemeGroupVersion.Group,
 				Kind:      wellknown.GatewayKind,
-				Namespace: i.Namespace,
-				Name:      i.Name,
+				Namespace: gw.Namespace,
+				Name:      gw.Name,
 			},
-			Obj:       i,
-			Listeners: make([]ir.Listener, 0, len(i.Spec.Listeners)),
+			Obj:       gw,
+			Listeners: make([]ir.Listener, 0, len(gw.Spec.Listeners)),
 		}
 
-		if i.Annotations[apiannotations.PerConnectionBufferLimit] != "" {
-			limit, err := resource.ParseQuantity(i.Annotations[apiannotations.PerConnectionBufferLimit])
+		if gw.Annotations[apiannotations.PerConnectionBufferLimit] != "" {
+			limit, err := resource.ParseQuantity(gw.Annotations[apiannotations.PerConnectionBufferLimit])
 			if err != nil {
 				logger.Error("failed to parse per connection buffer limit", "error", err)
 			} else {
-				out.PerConnectionBufferLimitBytes = k8sptr.To(uint32(limit.Value()))
+				gwIR.PerConnectionBufferLimitBytes = k8sptr.To(uint32(limit.Value()))
 			}
 		}
 
 		// TODO: http polic
 		//		panic("TODO: implement http policies not just listener")
-		out.AttachedListenerPolicies = toAttachedPolicies(
-			h.policies.getTargetingPolicies(kctx, extensionsplug.GatewayAttachmentPoint, out.ObjectSource, "", i.GetLabels()))
-		out.AttachedHttpPolicies = out.AttachedListenerPolicies // see if i can find a better way to segment the listener level and http level policies
-		for _, l := range i.Spec.Listeners {
-			out.Listeners = append(out.Listeners, ir.Listener{
-				Listener: l,
-				Parent:   i,
-				// TODO(https://github.com/kgateway-dev/kgateway/issues/11775): is RouteAttachmentPoint correct in all scenarios?
-				AttachedPolicies: toAttachedPolicies(h.policies.getTargetingPolicies(kctx, extensionsplug.RouteAttachmentPoint, out.ObjectSource, string(l.Name), i.GetLabels())),
+		gwIR.AttachedListenerPolicies = toAttachedPolicies(
+			h.policies.getTargetingPolicies(kctx, gwIR.ObjectSource, "", gw.GetLabels()))
+		gwIR.AttachedHttpPolicies = gwIR.AttachedListenerPolicies // see if i can find a better way to segment the listener level and http level policies
+		for _, l := range gw.Spec.Listeners {
+			gwIR.Listeners = append(gwIR.Listeners, ir.Listener{
+				Listener:         l,
+				Parent:           gw,
+				AttachedPolicies: toAttachedPolicies(h.policies.getTargetingPolicies(kctx, gwIR.ObjectSource, string(l.Name), gw.GetLabels())),
 				PolicyAncestorRef: gwv1.ParentReference{
 					Group:     k8sptr.To(gwv1.Group(wellknown.GatewayGVK.Group)),
 					Kind:      k8sptr.To(gwv1.Kind(wellknown.GatewayGVK.Kind)),
-					Name:      gwv1.ObjectName(i.Name),
-					Namespace: k8sptr.To(gwv1.Namespace(i.Namespace)),
+					Name:      gwv1.ObjectName(gw.Name),
+					Namespace: k8sptr.To(gwv1.Namespace(gw.Namespace)),
 				},
 			})
 		}
@@ -350,8 +349,8 @@ func NewGatewayIndex(
 		listenerSets := krt.Fetch(kctx, lss, krt.FilterIndex(byParentRefIndex, targetRefIndexKey{
 			Group:     wellknown.GatewayGroup,
 			Kind:      wellknown.GatewayKind,
-			Name:      i.GetName(),
-			Namespace: i.GetNamespace(),
+			Name:      gw.GetName(),
+			Namespace: gw.GetNamespace(),
 		}))
 
 		slices.SortFunc(listenerSets, func(a, b *gwxv1a1.XListenerSet) int {
@@ -371,7 +370,7 @@ func NewGatewayIndex(
 			tmetrics.StartResourceSync(ls.Name,
 				tmetrics.ResourceMetricLabels{
 					Namespace: ls.Namespace,
-					Gateway:   i.GetName(),
+					Gateway:   gw.GetName(),
 					Resource:  wellknown.XListenerSetKind,
 				})
 		}
@@ -387,11 +386,10 @@ func NewGatewayIndex(
 				Obj:       ls,
 				Listeners: make([]ir.Listener, 0),
 			}
-			listenerSetPolicies := h.policies.getTargetingPolicies(kctx, extensionsplug.GatewayAttachmentPoint, lsIR.ObjectSource, "", ls.GetLabels())
+			listenerSetPolicies := h.policies.getTargetingPolicies(kctx, lsIR.ObjectSource, "", ls.GetLabels())
 
 			for _, l := range ls.Spec.Listeners {
-				// TODO(https://github.com/kgateway-dev/kgateway/issues/11775): is RouteAttachmentPoint correct in all scenarios?
-				listenerSpecificPolicies := h.policies.getTargetingPolicies(kctx, extensionsplug.RouteAttachmentPoint, lsIR.ObjectSource, string(l.Name), ls.GetLabels())
+				listenerSpecificPolicies := h.policies.getTargetingPolicies(kctx, lsIR.ObjectSource, string(l.Name), ls.GetLabels())
 				// The Gateway Polices applies to all listeners but we need to apply them to listeners within the LS.
 				// Since there is no LS equivalent in Envoy, apply them on each listener in the LS.
 				// Ensure the sectioned policies are first
@@ -410,24 +408,34 @@ func NewGatewayIndex(
 				})
 			}
 
-			allowedNs, err := allowedListenerSet(i, namespaces)
+			if gw.Spec.AllowedListeners == nil {
+				lsIR.Err = errors.New("Unable to attach to parent, gateway has not enabled allowedListeners")
+				gwIR.DeniedListenerSets = append(gwIR.DeniedListenerSets, lsIR)
+				continue
+			}
+
+			// TODO: this logic should be done once for the Gateway, not per ListenerSet
+			// also means that we should report on the Gateway not any ListenerSet
+			allowedNs, err := allowedListenerSet(gw, namespaces)
 			if err != nil {
-				out.DeniedListenerSets = append(out.DeniedListenerSets, lsIR)
+				lsIR.Err = errors.New("Unable to parse allowedListeners")
+				gwIR.DeniedListenerSets = append(gwIR.DeniedListenerSets, lsIR)
 				continue
 			}
 
 			// Check if the namespace of the listenerSet is allowed by the gateway
 			// We return the denied list of ls to have their status set to rejected during validation
 			if !allowedNs(kctx, ls.GetNamespace()) {
-				out.DeniedListenerSets = append(out.DeniedListenerSets, lsIR)
+				lsIR.Err = errors.New("Attachment not allowed")
+				gwIR.DeniedListenerSets = append(gwIR.DeniedListenerSets, lsIR)
 				continue
 			}
 
-			out.AllowedListenerSets = append(out.AllowedListenerSets, lsIR)
-			out.Listeners = append(out.Listeners, lsIR.Listeners...)
+			gwIR.AllowedListenerSets = append(gwIR.AllowedListenerSets, lsIR)
+			gwIR.Listeners = append(gwIR.Listeners, lsIR.Listeners...)
 		}
 
-		return &out
+		return &gwIR
 	}, krtopts.ToOptions("gateways")...)
 
 	return h
@@ -492,8 +500,7 @@ func (k HTTPRouteSelector) String() string {
 
 type globalPolicy struct {
 	schema.GroupKind
-	ir     func(krt.HandlerContext, extensionsplug.AttachmentPoints) ir.PolicyIR
-	points extensionsplug.AttachmentPoints
+	ir func(krt.HandlerContext) ir.PolicyIR
 }
 
 // MARK: PolicyIndex
@@ -591,7 +598,6 @@ func NewPolicyIndex(
 			index.globalPolicies = append(index.globalPolicies, globalPolicy{
 				GroupKind: gk,
 				ir:        plugin.GlobalPolicies,
-				points:    plugin.AttachmentPoints(),
 			})
 		}
 	}
@@ -653,28 +659,25 @@ func (p *PolicyIndex) fetchByTargetRefLabels(
 
 func (p *PolicyIndex) getTargetingPoliciesForBackends(
 	kctx krt.HandlerContext,
-	pnt extensionsplug.AttachmentPoints,
 	targetRef ir.ObjectSource,
 	sectionName string,
 	targetLabels map[string]string,
 	excludeGlobal bool,
 ) []ir.PolicyAtt {
-	return p.getTargetingPoliciesMaybeForBackends(kctx, pnt, targetRef, sectionName, true, excludeGlobal, targetLabels)
+	return p.getTargetingPoliciesMaybeForBackends(kctx, targetRef, sectionName, true, excludeGlobal, targetLabels)
 }
 
 func (p *PolicyIndex) getTargetingPolicies(
 	kctx krt.HandlerContext,
-	pnt extensionsplug.AttachmentPoints,
 	targetRef ir.ObjectSource,
 	sectionName string,
 	targetLabels map[string]string,
 ) []ir.PolicyAtt {
-	return p.getTargetingPoliciesMaybeForBackends(kctx, pnt, targetRef, sectionName, false, false, targetLabels)
+	return p.getTargetingPoliciesMaybeForBackends(kctx, targetRef, sectionName, false, false, targetLabels)
 }
 
 func (p *PolicyIndex) getTargetingPoliciesMaybeForBackends(
 	kctx krt.HandlerContext,
-	pnt extensionsplug.AttachmentPoints,
 	targetRef ir.ObjectSource,
 	sectionName string,
 	onlyBackends bool,
@@ -684,14 +687,12 @@ func (p *PolicyIndex) getTargetingPoliciesMaybeForBackends(
 	var ret []ir.PolicyAtt
 	if !excludeGlobal {
 		for _, gp := range p.globalPolicies {
-			if gp.points.Has(pnt) {
-				if p := gp.ir(kctx, pnt); p != nil {
-					gpAtt := ir.PolicyAtt{
-						PolicyIr:  p,
-						GroupKind: gp.GroupKind,
-					}
-					ret = append(ret, gpAtt)
+			if p := gp.ir(kctx); p != nil {
+				gpAtt := ir.PolicyAtt{
+					PolicyIr:  p,
+					GroupKind: gp.GroupKind,
 				}
+				ret = append(ret, gpAtt)
 			}
 		}
 	}
@@ -765,12 +766,11 @@ func (p *PolicyIndex) fetchPolicy(kctx krt.HandlerContext, policyRef ir.ObjectSo
 // LookupTargetingPolicies returns the policies targeting the given object.
 func (p *PolicyIndex) LookupTargetingPolicies(
 	kctx krt.HandlerContext,
-	pnt extensionsplug.AttachmentPoints,
 	targetRef ir.ObjectSource,
 	sectionName string,
 	targetLabels map[string]string,
 ) []ir.PolicyAtt {
-	return p.getTargetingPolicies(kctx, pnt, targetRef, sectionName, targetLabels)
+	return p.getTargetingPolicies(kctx, targetRef, sectionName, targetLabels)
 }
 
 // PolicyIndex returns the underlying PolicyIndex reference.
@@ -1080,7 +1080,7 @@ func (h *RoutesIndex) transformTcpRoute(kctx krt.HandlerContext, i *gwv1a2.TCPRo
 		SourceObject:     i,
 		ParentRefs:       i.Spec.ParentRefs,
 		Backends:         h.getTcpBackends(kctx, src, backends),
-		AttachedPolicies: toAttachedPolicies(h.policies.getTargetingPolicies(kctx, extensionsplug.RouteAttachmentPoint, src, "", i.GetLabels())),
+		AttachedPolicies: toAttachedPolicies(h.policies.getTargetingPolicies(kctx, src, "", i.GetLabels())),
 	}
 }
 
@@ -1101,7 +1101,7 @@ func (h *RoutesIndex) transformTlsRoute(kctx krt.HandlerContext, i *gwv1a2.TLSRo
 		ParentRefs:       i.Spec.ParentRefs,
 		Backends:         h.getTcpBackends(kctx, src, backends),
 		Hostnames:        tostr(i.Spec.Hostnames),
-		AttachedPolicies: toAttachedPolicies(h.policies.getTargetingPolicies(kctx, extensionsplug.RouteAttachmentPoint, src, "", i.GetLabels())),
+		AttachedPolicies: toAttachedPolicies(h.policies.getTargetingPolicies(kctx, src, "", i.GetLabels())),
 	}
 }
 
@@ -1132,7 +1132,7 @@ func (h *RoutesIndex) transformHttpRoute(kctx krt.HandlerContext, i *gwv1.HTTPRo
 		Rules: h.transformRules(
 			kctx, src, i.Spec.Rules, i.GetLabels(), ir.WithInheritedPolicyPriority(inheritedPolicyPriority)),
 		AttachedPolicies: toAttachedPolicies(
-			h.policies.getTargetingPolicies(kctx, extensionsplug.RouteAttachmentPoint, src, "", i.GetLabels()),
+			h.policies.getTargetingPolicies(kctx, src, "", i.GetLabels()),
 			ir.WithInheritedPolicyPriority(inheritedPolicyPriority),
 		),
 		PrecedenceWeight:               precedenceWeight,
@@ -1153,7 +1153,7 @@ func (h *RoutesIndex) transformRules(
 
 		var policies ir.AttachedPolicies
 		if r.Name != nil {
-			policies = toAttachedPolicies(h.policies.getTargetingPolicies(kctx, extensionsplug.RouteAttachmentPoint, src, string(*r.Name), srcLabels), opts...)
+			policies = toAttachedPolicies(h.policies.getTargetingPolicies(kctx, src, string(*r.Name), srcLabels), opts...)
 		}
 
 		rulePolicies := h.getBuiltInRulePolicies(r, opts...)

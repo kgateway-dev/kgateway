@@ -100,7 +100,7 @@ func RunController(t *testing.T, logger *zap.Logger, globalSettings *settings.Se
 		if err != nil {
 			t.Fatalf("failed to apply yaml: %v", err)
 		}
-		err = applyPodStatusFromFile(ctx, client, ns, yamlFile)
+		err = ApplyPodStatusFromFile(ctx, client, ns, yamlFile)
 		if err != nil {
 			t.Fatalf("failed to apply pod status: %v", err)
 		}
@@ -223,11 +223,11 @@ func addApiServerLogs(t *testing.T, testEnv *envtest.Environment) {
 	})
 }
 
-// applyPodStatusFromFile reads a YAML file, looks for Pod resources with a Status set,
+// ApplyPodStatusFromFile reads a YAML file, looks for Pod resources with a Status set,
 // and patches their status into the cluster. Skips any Pods not found or lacking a status.
 // This is needed because the other places that apply yaml will only apply spec.
 // We now have tests (ServiceEntry) that rely on IPs from Pod status instead of EndpointSlice.
-func applyPodStatusFromFile(ctx context.Context, c istiokube.CLIClient, defaultNs, filePath string) error {
+func ApplyPodStatusFromFile(ctx context.Context, c istiokube.CLIClient, defaultNs, filePath string) error {
 	data, err := os.ReadFile(filePath)
 	if err != nil {
 		return fmt.Errorf("reading YAML file %q: %w", filePath, err)

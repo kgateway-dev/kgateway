@@ -369,7 +369,7 @@ func (s *StatusSyncer) syncGatewayStatus(ctx context.Context, logger *slog.Logge
 			}
 
 			// Build the desired status
-			newStatus := rm.BuildGWStatus(ctx, gw)
+			newStatus := rm.BuildGWStatus(ctx, gw, nil)
 			if newStatus == nil {
 				return nil
 			}

@@ -413,10 +413,17 @@ spec:
                   extensionRef:
                     properties:
                       name:
-                        default: ""
+                        maxLength: 253
+                        minLength: 1
                         type: string
+                      namespace:
+                        maxLength: 63
+                        minLength: 1
+                        pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                        type: string
+                    required:
+                    - name
                     type: object
-                    x-kubernetes-map-type: atomic
                   withRequestBody:
                     properties:
                       allowPartialMessage:
@@ -443,10 +450,17 @@ spec:
                   extensionRef:
                     properties:
                       name:
-                        default: ""
+                        maxLength: 253
+                        minLength: 1
                         type: string
+                      namespace:
+                        maxLength: 63
+                        minLength: 1
+                        pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                        type: string
+                    required:
+                    - name
                     type: object
-                    x-kubernetes-map-type: atomic
                   processingMode:
                     properties:
                       requestBodyMode:
@@ -502,51 +516,114 @@ spec:
                     be set
                   rule: '[has(self.extensionRef),has(self.disable)].filter(x,x==true).size()
                     == 1'
-              hashPolicies:
-                items:
-                  properties:
-                    cookie:
-                      properties:
-                        attributes:
-                          additionalProperties:
-                            type: string
-                          maxProperties: 10
-                          minProperties: 1
+              headerModifiers:
+                properties:
+                  request:
+                    properties:
+                      add:
+                        items:
+                          properties:
+                            name:
+                              maxLength: 256
+                              minLength: 1
+                              pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
+                              type: string
+                            value:
+                              maxLength: 4096
+                              minLength: 1
+                              type: string
+                          required:
+                          - name
+                          - value
                           type: object
-                        name:
-                          minLength: 1
+                        maxItems: 16
+                        type: array
+                        x-kubernetes-list-map-keys:
+                        - name
+                        x-kubernetes-list-type: map
+                      remove:
+                        items:
                           type: string
-                        path:
+                        maxItems: 16
+                        type: array
+                        x-kubernetes-list-type: set
+                      set:
+                        items:
+                          properties:
+                            name:
+                              maxLength: 256
+                              minLength: 1
+                              pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
+                              type: string
+                            value:
+                              maxLength: 4096
+                              minLength: 1
+                              type: string
+                          required:
+                          - name
+                          - value
+                          type: object
+                        maxItems: 16
+                        type: array
+                        x-kubernetes-list-map-keys:
+                        - name
+                        x-kubernetes-list-type: map
+                    type: object
+                  response:
+                    properties:
+                      add:
+                        items:
+                          properties:
+                            name:
+                              maxLength: 256
+                              minLength: 1
+                              pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
+                              type: string
+                            value:
+                              maxLength: 4096
+                              minLength: 1
+                              type: string
+                          required:
+                          - name
+                          - value
+                          type: object
+                        maxItems: 16
+                        type: array
+                        x-kubernetes-list-map-keys:
+                        - name
+                        x-kubernetes-list-type: map
+                      remove:
+                        items:
                           type: string
-                        ttl:
-                          type: string
-                          x-kubernetes-validations:
-                          - message: invalid duration value
-                            rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
-                      required:
-                      - name
-                      type: object
-                    header:
-                      properties:
-                        name:
-                          minLength: 1
-                          type: string
-                      required:
-                      - name
-                      type: object
-                    sourceIP:
-                      type: object
-                    terminal:
-                      type: boolean
-                  type: object
-                  x-kubernetes-validations:
-                  - message: exactly one of the fields in [header cookie sourceIP]
-                      must be set
-                    rule: '[has(self.header),has(self.cookie),has(self.sourceIP)].filter(x,x==true).size()
-                      == 1'
-                maxItems: 16
-                minItems: 1
-                type: array
+                        maxItems: 16
+                        type: array
+                        x-kubernetes-list-type: set
+                      set:
+                        items:
+                          properties:
+                            name:
+                              maxLength: 256
+                              minLength: 1
+                              pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
+                              type: string
+                            value:
+                              maxLength: 4096
+                              minLength: 1
+                              type: string
+                          required:
+                          - name
+                          - value
+                          type: object
+                        maxItems: 16
+                        type: array
+                        x-kubernetes-list-map-keys:
+                        - name
+                        x-kubernetes-list-type: map
+                    type: object
+                type: object
+                x-kubernetes-validations:
+                - message: At least one of request or response must be provided.
+                  rule: has(self.request) || has(self.response)
               rateLimit:
                 properties:
                   global:
@@ -601,10 +678,17 @@ spec:
                       extensionRef:
                         properties:
                           name:
-                            default: ""
+                            maxLength: 253
+                            minLength: 1
                             type: string
+                          namespace:
+                            maxLength: 63
+                            minLength: 1
+                            pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                            type: string
+                        required:
+                        - name
                         type: object
-                        x-kubernetes-map-type: atomic
                     required:
                     - descriptors
                     - extensionRef
@@ -879,10 +963,6 @@ spec:
                 type: object
             type: object
             x-kubernetes-validations:
-            - message: hash policies can only be used when targeting HTTPRoute resources
-              rule: '!has(self.hashPolicies) || ((has(self.targetRefs) && self.targetRefs.all(r,
-                r.kind == ''HTTPRoute'')) || (has(self.targetSelectors) && self.targetSelectors.all(r,
-                r.kind == ''HTTPRoute'')))'
             - message: autoHostRewrite can only be used when targeting HTTPRoute resources
               rule: '!has(self.autoHostRewrite) || ((has(self.targetRefs) && self.targetRefs.all(r,
                 r.kind == ''HTTPRoute'')) || (has(self.targetSelectors) && self.targetSelectors.all(r,

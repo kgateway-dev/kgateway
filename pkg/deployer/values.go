@@ -23,11 +23,10 @@ type HelmGateway struct {
 	FullnameOverride *string `json:"fullnameOverride,omitempty"`
 
 	// deployment/service values
-	ReplicaCount   *uint32          `json:"replicaCount,omitempty"`
-	Autoscaling    *HelmAutoscaling `json:"autoscaling,omitempty"`
-	Ports          []HelmPort       `json:"ports,omitempty"`
-	Service        *HelmService     `json:"service,omitempty"`
-	FloatingUserId *bool            `json:"floatingUserId,omitempty"`
+	ReplicaCount   *uint32      `json:"replicaCount,omitempty"`
+	Ports          []HelmPort   `json:"ports,omitempty"`
+	Service        *HelmService `json:"service,omitempty"`
+	FloatingUserId *bool        `json:"floatingUserId,omitempty"`
 
 	// serviceaccount values
 	ServiceAccount *HelmServiceAccount `json:"serviceAccount,omitempty"`
@@ -110,14 +109,6 @@ type HelmServiceAccount struct {
 type HelmXds struct {
 	Host *string `json:"host,omitempty"`
 	Port *uint32 `json:"port,omitempty"`
-}
-
-type HelmAutoscaling struct {
-	Enabled                           *bool   `json:"enabled,omitempty"`
-	MinReplicas                       *uint32 `json:"minReplicas,omitempty"`
-	MaxReplicas                       *uint32 `json:"maxReplicas,omitempty"`
-	TargetCPUUtilizationPercentage    *uint32 `json:"targetCPUUtilizationPercentage,omitempty"`
-	TargetMemoryUtilizationPercentage *uint32 `json:"targetMemoryUtilizationPercentage,omitempty"`
 }
 
 type HelmIstio struct {

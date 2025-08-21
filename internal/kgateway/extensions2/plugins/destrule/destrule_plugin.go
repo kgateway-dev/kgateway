@@ -93,6 +93,7 @@ func (d *destrulePlugin) processBackend(kctx krt.HandlerContext, ctx context.Con
 					LocalityWeightedLbConfig: &envoyclusterv3.Cluster_CommonLbConfig_LocalityWeightedLbConfig{},
 				}
 			}
+
 			out := &envoyclusterv3.OutlierDetection{
 				Consecutive_5Xx:  outlier.GetConsecutive_5XxErrors(),
 				Interval:         outlier.GetInterval(),

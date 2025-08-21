@@ -84,6 +84,8 @@ Listeners:
       merge.HTTPListenerPolicy.gateway.kgateway.dev:
         accessLog:
         - gateway.kgateway.dev/HTTPListenerPolicy/infra/accesslog
+        accessLogConfig:
+        - gateway.kgateway.dev/HTTPListenerPolicy/infra/accesslog
   name: listener~80
 Routes:
 - ignorePortInHostMatching: true
@@ -91,6 +93,8 @@ Routes:
     filterMetadata:
       merge.HTTPListenerPolicy.gateway.kgateway.dev:
         accessLog:
+        - gateway.kgateway.dev/HTTPListenerPolicy/infra/accesslog
+        accessLogConfig:
         - gateway.kgateway.dev/HTTPListenerPolicy/infra/accesslog
   name: listener~80
   virtualHosts:
@@ -118,6 +122,7 @@ Routes:
           '@type': type.googleapis.com/envoy.extensions.filters.http.cors.v3.CorsPolicy
           allowOriginStringMatch:
           - exact: https://example.com
+          maxAge: "5"
         ratelimit/local:
           '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
           filterEnabled:

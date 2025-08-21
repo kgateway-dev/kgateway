@@ -188,6 +188,55 @@ spec:
                     type: string
                   maglev:
                     properties:
+                      hashPolicies:
+                        items:
+                          properties:
+                            cookie:
+                              properties:
+                                httpOnly:
+                                  type: boolean
+                                name:
+                                  minLength: 1
+                                  type: string
+                                path:
+                                  type: string
+                                sameSite:
+                                  enum:
+                                  - Strict
+                                  - Lax
+                                  - None
+                                  type: string
+                                secure:
+                                  type: boolean
+                                ttl:
+                                  type: string
+                                  x-kubernetes-validations:
+                                  - message: invalid duration value
+                                    rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                              required:
+                              - name
+                              type: object
+                            header:
+                              properties:
+                                name:
+                                  minLength: 1
+                                  type: string
+                              required:
+                              - name
+                              type: object
+                            sourceIP:
+                              type: object
+                            terminal:
+                              type: boolean
+                          type: object
+                          x-kubernetes-validations:
+                          - message: exactly one of the fields in [header cookie sourceIP]
+                              must be set
+                            rule: '[has(self.header),has(self.cookie),has(self.sourceIP)].filter(x,x==true).size()
+                              == 1'
+                        maxItems: 16
+                        minItems: 1
+                        type: array
                       useHostnameForHashing:
                         type: boolean
                     type: object
@@ -195,6 +244,55 @@ spec:
                     type: object
                   ringHash:
                     properties:
+                      hashPolicies:
+                        items:
+                          properties:
+                            cookie:
+                              properties:
+                                httpOnly:
+                                  type: boolean
+                                name:
+                                  minLength: 1
+                                  type: string
+                                path:
+                                  type: string
+                                sameSite:
+                                  enum:
+                                  - Strict
+                                  - Lax
+                                  - None
+                                  type: string
+                                secure:
+                                  type: boolean
+                                ttl:
+                                  type: string
+                                  x-kubernetes-validations:
+                                  - message: invalid duration value
+                                    rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                              required:
+                              - name
+                              type: object
+                            header:
+                              properties:
+                                name:
+                                  minLength: 1
+                                  type: string
+                              required:
+                              - name
+                              type: object
+                            sourceIP:
+                              type: object
+                            terminal:
+                              type: boolean
+                          type: object
+                          x-kubernetes-validations:
+                          - message: exactly one of the fields in [header cookie sourceIP]
+                              must be set
+                            rule: '[has(self.header),has(self.cookie),has(self.sourceIP)].filter(x,x==true).size()
+                              == 1'
+                        maxItems: 16
+                        minItems: 1
+                        type: array
                       maximumRingSize:
                         format: int64
                         type: integer
@@ -232,10 +330,35 @@ spec:
                       rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
                 type: object
                 x-kubernetes-validations:
-                - message: at most one of the fields in [leastRequest roundRobin ringHash
-                    maglev random] may be set
+                - message: exactly one of the fields in [leastRequest roundRobin ringHash
+                    maglev random] must be set
                   rule: '[has(self.leastRequest),has(self.roundRobin),has(self.ringHash),has(self.maglev),has(self.random)].filter(x,x==true).size()
-                    <= 1'
+                    == 1'
+              outlierDetection:
+                properties:
+                  baseEjectionTime:
+                    default: 30s
+                    type: string
+                    x-kubernetes-validations:
+                    - message: invalid duration value
+                      rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                  consecutive5xx:
+                    default: 5
+                    format: int32
+                    type: integer
+                  interval:
+                    default: 10s
+                    type: string
+                    x-kubernetes-validations:
+                    - message: invalid duration value
+                      rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                  maxEjectionPercent:
+                    default: 10
+                    format: int32
+                    maximum: 100
+                    minimum: 0
+                    type: integer
+                type: object
               perConnectionBufferLimitBytes:
                 type: integer
               targetRefs:

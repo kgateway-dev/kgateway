@@ -2,10 +2,6 @@
 
 package v1alpha1
 
-import (
-	apiv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-)
-
 // TrafficPolicySpecApplyConfiguration represents a declarative configuration of the TrafficPolicySpec type for use
 // with apply.
 type TrafficPolicySpecApplyConfiguration struct {
@@ -18,7 +14,7 @@ type TrafficPolicySpecApplyConfiguration struct {
 	RateLimit       *RateLimitApplyConfiguration                                  `json:"rateLimit,omitempty"`
 	Cors            *CorsPolicyApplyConfiguration                                 `json:"cors,omitempty"`
 	Csrf            *CSRFPolicyApplyConfiguration                                 `json:"csrf,omitempty"`
-	HashPolicies    []*apiv1alpha1.HashPolicy                                     `json:"hashPolicies,omitempty"`
+	HeaderModifiers *HeaderModifiersApplyConfiguration                            `json:"headerModifiers,omitempty"`
 	AutoHostRewrite *bool                                                         `json:"autoHostRewrite,omitempty"`
 	Buffer          *BufferApplyConfiguration                                     `json:"buffer,omitempty"`
 	Timeouts        *TimeoutsApplyConfiguration                                   `json:"timeouts,omitempty"`
@@ -113,16 +109,11 @@ func (b *TrafficPolicySpecApplyConfiguration) WithCsrf(value *CSRFPolicyApplyCon
 	return b
 }
 
-// WithHashPolicies adds the given value to the HashPolicies field in the declarative configuration
-// and returns the receiver, so that objects can be build by chaining "With" function invocations.
-// If called multiple times, values provided by each call will be appended to the HashPolicies field.
-func (b *TrafficPolicySpecApplyConfiguration) WithHashPolicies(values ...**apiv1alpha1.HashPolicy) *TrafficPolicySpecApplyConfiguration {
-	for i := range values {
-		if values[i] == nil {
-			panic("nil value passed to WithHashPolicies")
-		}
-		b.HashPolicies = append(b.HashPolicies, *values[i])
-	}
+// WithHeaderModifiers sets the HeaderModifiers field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the HeaderModifiers field is set to the value of the last call.
+func (b *TrafficPolicySpecApplyConfiguration) WithHeaderModifiers(value *HeaderModifiersApplyConfiguration) *TrafficPolicySpecApplyConfiguration {
+	b.HeaderModifiers = value
 	return b
 }
 
