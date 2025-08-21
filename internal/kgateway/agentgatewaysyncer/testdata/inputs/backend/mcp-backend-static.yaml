@@ -31,11 +31,10 @@ metadata:
 spec:
   type: MCP
   mcp:
-    name: mcp-server
     targets:
-      - static:
-          name: mcp-target
-          host: mcp-app.default.svc.cluster.local
-          port: 8000
-          path: override-sse
-          protocol: StreamableHTTP
+    - name: mcp-target
+      static:
+        host: mcp-app.default.svc.cluster.local
+        port: 8000
+        protocol: StreamableHTTP
+        path: override-sse

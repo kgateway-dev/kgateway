@@ -9,8 +9,8 @@ import (
 // McpSelectorApplyConfiguration represents a declarative configuration of the McpSelector type for use
 // with apply.
 type McpSelectorApplyConfiguration struct {
-	NamespaceSelector *v1.LabelSelectorApplyConfiguration `json:"namespaceSelector,omitempty"`
-	ServiceSelector   *v1.LabelSelectorApplyConfiguration `json:"serviceSelector,omitempty"`
+	Namespace *v1.LabelSelectorApplyConfiguration `json:"namespace,omitempty"`
+	Service   *v1.LabelSelectorApplyConfiguration `json:"service,omitempty"`
 }
 
 // McpSelectorApplyConfiguration constructs a declarative configuration of the McpSelector type for use with
@@ -19,18 +19,18 @@ func McpSelector() *McpSelectorApplyConfiguration {
 	return &McpSelectorApplyConfiguration{}
 }
 
-// WithNamespaceSelector sets the NamespaceSelector field in the declarative configuration to the given value
+// WithNamespace sets the Namespace field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the NamespaceSelector field is set to the value of the last call.
-func (b *McpSelectorApplyConfiguration) WithNamespaceSelector(value *v1.LabelSelectorApplyConfiguration) *McpSelectorApplyConfiguration {
-	b.NamespaceSelector = value
+// If called multiple times, the Namespace field is set to the value of the last call.
+func (b *McpSelectorApplyConfiguration) WithNamespace(value *v1.LabelSelectorApplyConfiguration) *McpSelectorApplyConfiguration {
+	b.Namespace = value
 	return b
 }
 
-// WithServiceSelector sets the ServiceSelector field in the declarative configuration to the given value
+// WithService sets the Service field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the ServiceSelector field is set to the value of the last call.
-func (b *McpSelectorApplyConfiguration) WithServiceSelector(value *v1.LabelSelectorApplyConfiguration) *McpSelectorApplyConfiguration {
-	b.ServiceSelector = value
+// If called multiple times, the Service field is set to the value of the last call.
+func (b *McpSelectorApplyConfiguration) WithService(value *v1.LabelSelectorApplyConfiguration) *McpSelectorApplyConfiguration {
+	b.Service = value
 	return b
 }
