@@ -187,21 +187,21 @@ func validateListeners(gw *ir.Gateway, reporter reports.Reporter) []ir.Listener 
 		for idx, listener := range pp.listeners {
 			parentReporter := listener.GetParentReporter(reporter)
 
+			// There should be no need to check for port / protocol / hostname conflicts on gateway listeners
+			// as that is handled by kube validation
 			if protocolConflict {
-				message := "Found conflicting protocols on listeners, a single port can only contain listeners with compatible protocols"
-
 				// Accept the first conflicted listener - they have already been sorted by timestamp and namespace/name
 				// TODO(davidjumani): Link to GEP when https://github.com/kubernetes-sigs/gateway-api/pull/3978 merges
 				if idx == 0 {
 					logger.Info("accepted listener with protocol conflict as per listener precedence", "name", listener.Name, "parent", listener.Parent.GetName())
 					// Reporting the listener accepted based on Listener Precedence might change based on https://github.com/kubernetes-sigs/gateway-api/pull/3978
-					reportListenerAsConflicted(parentReporter, listener, gwv1.ListenerReasonProtocolConflict, message)
+					reportListenerAsConflicted(parentReporter, listener, gwv1.ListenerReasonProtocolConflict, ListenerMessageProtocolConflict)
 					validListeners = append(validListeners, listener)
 					continue
 				}
 
 				logger.Info("rejected listener with protocol conflict as per listener precedence", "name", listener.Name, "parent", listener.Parent.GetName())
-				rejectConflictedListener(parentReporter, listener, gwv1.ListenerReasonProtocolConflict, message)
+				rejectConflictedListener(parentReporter, listener, gwv1.ListenerReasonProtocolConflict, ListenerMessageProtocolConflict)
 
 				// continue as protocolConflict will take precedence over hostname conflicts
 				continue
@@ -214,20 +214,18 @@ func validateListeners(gw *ir.Gateway, reporter reports.Reporter) []ir.Listener 
 				hostname = *listener.Hostname
 			}
 			if count := pp.hostnames[hostname]; count > 1 {
-				message := "Found conflicting hostnames on listeners, all listeners on a single port must have unique hostnames"
-
 				// Accept the first conflicted listener - they have already been sorted by timestamp and namespace/name
 				// TODO(davidjumani): Link to GEP when https://github.com/kubernetes-sigs/gateway-api/pull/3978 merges
 				if idx == 0 {
 					logger.Info("accepted listener with hostname conflict as per listener precedence", "name", listener.Name, "parent", listener.Parent.GetName())
 					// Reporting the listener accepted based on Listener Precedence might change based on https://github.com/kubernetes-sigs/gateway-api/pull/3978
-					reportListenerAsConflicted(parentReporter, listener, gwv1.ListenerReasonHostnameConflict, message)
+					reportListenerAsConflicted(parentReporter, listener, gwv1.ListenerReasonHostnameConflict, ListenerMessageHostnameConflict)
 					validListeners = append(validListeners, listener)
 					continue
 				}
 
 				logger.Info("rejected listener with hostname conflict as per listener precedence", "name", listener.Name, "parent", listener.Parent.GetName())
-				rejectConflictedListener(parentReporter, listener, gwv1.ListenerReasonHostnameConflict, message)
+				rejectConflictedListener(parentReporter, listener, gwv1.ListenerReasonHostnameConflict, ListenerMessageHostnameConflict)
 			} else {
 				// TODO should check this is exactly 1?
 				validListeners = append(validListeners, listener)
@@ -320,18 +318,6 @@ func getGroupName() *gwv1.Group {
 func reportListenerAsConflicted(parentReporter reports.GatewayReporter, listener ir.Listener, reason gwv1.ListenerConditionReason, message string) {
 	parentReporter.ListenerName(string(listener.Name)).SetCondition(reports.ListenerCondition{
 		Type:    gwv1.ListenerConditionConflicted,
-		Status:  metav1.ConditionTrue,
-		Reason:  reason,
-		Message: message,
-	})
-	parentReporter.ListenerName(string(listener.Name)).SetCondition(reports.ListenerCondition{
-		Type:    gwv1.ListenerConditionAccepted,
-		Status:  metav1.ConditionTrue,
-		Reason:  reason,
-		Message: message,
-	})
-	parentReporter.ListenerName(string(listener.Name)).SetCondition(reports.ListenerCondition{
-		Type:    gwv1.ListenerConditionProgrammed,
 		Status:  metav1.ConditionTrue,
 		Reason:  reason,
 		Message: message,

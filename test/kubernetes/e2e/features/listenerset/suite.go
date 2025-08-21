@@ -466,12 +466,12 @@ func (s *testingSuite) expectGatewayConflicted(obj client.Object) {
 						{
 							Type:   string(gwxv1a1.ListenerEntryConditionAccepted),
 							Status: metav1.ConditionTrue,
-							Reason: string(gwv1.ListenerReasonHostnameConflict),
+							Reason: string(gwxv1a1.ListenerEntryReasonAccepted),
 						},
 						{
 							Type:   string(gwxv1a1.ListenerEntryConditionProgrammed),
 							Status: metav1.ConditionTrue,
-							Reason: string(gwv1.ListenerReasonHostnameConflict),
+							Reason: string(gwxv1a1.ListenerEntryReasonProgrammed),
 						},
 						{
 							Type:   string(gwxv1a1.ListenerEntryConditionConflicted),
@@ -542,7 +542,7 @@ func (s *testingSuite) expectValidListenerSetConflicted(obj client.Object) {
 						{
 							Type:   string(gwxv1a1.ListenerEntryConditionAccepted),
 							Status: metav1.ConditionTrue,
-							Reason: string(gwv1.ListenerReasonProtocolConflict),
+							Reason: string(gwxv1a1.ListenerEntryReasonAccepted),
 						},
 						{
 							Type:   string(gwxv1a1.ListenerEntryConditionConflicted),
@@ -557,7 +557,7 @@ func (s *testingSuite) expectValidListenerSetConflicted(obj client.Object) {
 						{
 							Type:   string(gwxv1a1.ListenerEntryConditionProgrammed),
 							Status: metav1.ConditionTrue,
-							Reason: string(gwv1.ListenerReasonProtocolConflict),
+							Reason: string(gwxv1a1.ListenerEntryReasonProgrammed),
 						},
 					},
 				},
