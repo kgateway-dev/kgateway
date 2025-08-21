@@ -2,10 +2,12 @@ package trafficpolicy
 
 import (
 	"fmt"
+	"slices"
 
 	envoy_ext_proc_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_proc/v3"
 	"google.golang.org/protobuf/proto"
 	"istio.io/istio/pkg/kube/krt"
+	"k8s.io/apimachinery/pkg/util/sets"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/pluginutils"
@@ -25,9 +27,17 @@ const (
 )
 
 type extprocIR struct {
-	provider            *TrafficPolicyGatewayExtensionIR
-	perRoute            *envoy_ext_proc_v3.ExtProcPerRoute
+	perProviderConfig   []*perProviderExtProcConfig
 	disableAllProviders bool
+	// providerNames is used to track duplicates during policy merging,
+	// and has no relevance to the policy config, so it can be excluded from Equals
+	// +noKrtEquals
+	providerNames sets.Set[string]
+}
+
+type perProviderExtProcConfig struct {
+	provider       *TrafficPolicyGatewayExtensionIR
+	perRouteConfig *envoy_ext_proc_v3.ExtProcPerRoute
 }
 
 var _ PolicySubIR = &extprocIR{}
@@ -43,14 +53,17 @@ func (e *extprocIR) Equals(other PolicySubIR) bool {
 	if e.disableAllProviders != otherExtProc.disableAllProviders {
 		return false
 	}
-	if !proto.Equal(e.perRoute, otherExtProc.perRoute) {
-		return false
-	}
-	if !cmputils.CompareWithNils(e.provider, otherExtProc.provider, func(a, b *TrafficPolicyGatewayExtensionIR) bool {
-		return a.Equals(*b)
+	if !slices.EqualFunc(e.perProviderConfig, otherExtProc.perProviderConfig, func(a, b *perProviderExtProcConfig) bool {
+		// compare perRouteConfig
+		return proto.Equal(a.perRouteConfig, b.perRouteConfig) &&
+			// compare provider config
+			cmputils.CompareWithNils(a.provider, b.provider, func(a, b *TrafficPolicyGatewayExtensionIR) bool {
+				return a.Equals(*b)
+			})
 	}) {
 		return false
 	}
+
 	return true
 }
 
@@ -58,14 +71,17 @@ func (e *extprocIR) Validate() error {
 	if e == nil {
 		return nil
 	}
-	if e.perRoute != nil {
-		if err := e.perRoute.ValidateAll(); err != nil {
-			return err
+
+	for _, p := range e.perProviderConfig {
+		if p.perRouteConfig != nil {
+			if err := p.perRouteConfig.ValidateAll(); err != nil {
+				return err
+			}
 		}
-	}
-	if e.provider != nil {
-		if err := e.provider.Validate(); err != nil {
-			return err
+		if p.provider != nil {
+			if err := p.provider.Validate(); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -99,8 +115,13 @@ func constructExtProc(
 		return pluginutils.ErrInvalidExtensionType(v1alpha1.GatewayExtensionTypeExtAuth, gatewayExtension.ExtType)
 	}
 	out.extProc = &extprocIR{
-		provider: gatewayExtension,
-		perRoute: translateExtProcPerFilterConfig(spec),
+		perProviderConfig: []*perProviderExtProcConfig{
+			{
+				provider:       gatewayExtension,
+				perRouteConfig: translateExtProcPerFilterConfig(spec),
+			},
+		},
+		providerNames: sets.New(providerName(gatewayExtension)),
 	}
 	return nil
 }
@@ -177,18 +198,27 @@ func extProcFilterName(name string) string {
 	return extProcFilterPrefix + name
 }
 
-func (p *trafficPolicyPluginGwPass) handleExtProc(filterChain string, pCtxTypedFilterConfig *ir.TypedFilterConfigMap, extProc *extprocIR) {
-	if extProc == nil {
+func (p *trafficPolicyPluginGwPass) handleExtProc(filterChain string, pCtxTypedFilterConfig *ir.TypedFilterConfigMap, in *extprocIR) {
+	if in == nil {
 		return
 	}
 
 	// Add the global disable all filter if all providers are disabled
-	if extProc.disableAllProviders {
+	if in.disableAllProviders {
 		pCtxTypedFilterConfig.AddTypedConfig(extProcGlobalDisableFilterName, EnableFilterPerRoute)
 		return
 	}
 
-	providerName := extProc.provider.ResourceName()
-	p.extProcPerProvider.Add(filterChain, providerName, extProc.provider)
-	pCtxTypedFilterConfig.AddTypedConfig(extProcFilterName(providerName), extProc.perRoute)
+	for _, cfg := range in.perProviderConfig {
+		providerName := providerName(cfg.provider)
+		p.extProcPerProvider.Add(filterChain, providerName, cfg.provider)
+		pCtxTypedFilterConfig.AddTypedConfig(extProcFilterName(providerName), cfg.perRouteConfig)
+	}
+}
+
+func providerName(provider *TrafficPolicyGatewayExtensionIR) string {
+	if provider == nil {
+		return ""
+	}
+	return provider.ResourceName()
 }

@@ -353,6 +353,48 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("TrafficPolicy ExtAuth deep merge", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/extauth-deep-merge.yaml",
+			outputFile: "traffic-policy/extauth-deep-merge.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "test",
+			},
+		},
+			func(s *settings.Settings) {
+				s.PolicyMerge = `{"trafficPolicy":{"extAuth":"DeepMerge"}}`
+			})
+	})
+
+	t.Run("TrafficPolicy ExtProc deep merge", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/extproc-deep-merge.yaml",
+			outputFile: "traffic-policy/extproc-deep-merge.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "test",
+			},
+		},
+			func(s *settings.Settings) {
+				s.PolicyMerge = `{"trafficPolicy":{"extProc":"DeepMerge"}}`
+			})
+	})
+
+	t.Run("TrafficPolicy Transformation deep merge", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/transformation-deep-merge.yaml",
+			outputFile: "traffic-policy/transformation-deep-merge.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "test",
+			},
+		},
+			func(s *settings.Settings) {
+				s.PolicyMerge = `{"trafficPolicy":{"transformation":"DeepMerge"}}`
+			})
+	})
+
 	t.Run("Load balancer with hash policies", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "loadbalancer/hash-policies.yaml",

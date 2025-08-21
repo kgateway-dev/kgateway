@@ -635,7 +635,7 @@ func (tc TestCase) Run(
 		return nil, err
 	}
 
-	plugins := registry.Plugins(ctx, commoncol, wellknown.DefaultWaypointClassName)
+	plugins := registry.Plugins(ctx, commoncol, wellknown.DefaultWaypointClassName, *settings)
 	// TODO: consider moving the common code to a util that both proxy syncer and this test call
 	plugins = append(plugins, krtcollections.NewBuiltinPlugin(ctx))
 

@@ -28,12 +28,13 @@ import (
 )
 
 type TrafficPolicyGatewayExtensionIR struct {
-	Name      string
-	ExtType   v1alpha1.GatewayExtensionType
-	ExtAuth   *envoy_ext_authz_v3.ExtAuthz
-	ExtProc   *envoymatchingv3.ExtensionWithMatcher
-	RateLimit *ratev3.RateLimit
-	Err       error
+	Name             string
+	ExtType          v1alpha1.GatewayExtensionType
+	ExtAuth          *envoy_ext_authz_v3.ExtAuthz
+	ExtProc          *envoymatchingv3.ExtensionWithMatcher
+	RateLimit        *ratev3.RateLimit
+	PrecedenceWeight int32
+	Err              error
 }
 
 // ResourceName returns the unique name for this extension.
@@ -53,6 +54,9 @@ func (e TrafficPolicyGatewayExtensionIR) Equals(other TrafficPolicyGatewayExtens
 		return false
 	}
 	if !proto.Equal(e.RateLimit, other.RateLimit) {
+		return false
+	}
+	if e.PrecedenceWeight != other.PrecedenceWeight {
 		return false
 	}
 
@@ -96,8 +100,9 @@ func (e TrafficPolicyGatewayExtensionIR) Validate() error {
 func TranslateGatewayExtensionBuilder(commoncol *common.CommonCollections) func(krtctx krt.HandlerContext, gExt ir.GatewayExtension) *TrafficPolicyGatewayExtensionIR {
 	return func(krtctx krt.HandlerContext, gExt ir.GatewayExtension) *TrafficPolicyGatewayExtensionIR {
 		p := &TrafficPolicyGatewayExtensionIR{
-			Name:    krt.Named{Name: gExt.Name, Namespace: gExt.Namespace}.ResourceName(),
-			ExtType: gExt.Type,
+			Name:             krt.Named{Name: gExt.Name, Namespace: gExt.Namespace}.ResourceName(),
+			ExtType:          gExt.Type,
+			PrecedenceWeight: gExt.PrecedenceWeight,
 		}
 
 		switch gExt.Type {

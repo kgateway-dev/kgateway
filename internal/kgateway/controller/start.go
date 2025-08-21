@@ -248,7 +248,7 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 
 func pluginFactoryWithBuiltin(cfg StartConfig) extensions2.K8sGatewayExtensionsFactory {
 	return func(ctx context.Context, commoncol *common.CommonCollections) sdk.Plugin {
-		plugins := registry.Plugins(ctx, commoncol, cfg.WaypointGatewayClassName)
+		plugins := registry.Plugins(ctx, commoncol, cfg.WaypointGatewayClassName, *cfg.SetupOpts.GlobalSettings)
 		plugins = append(plugins, krtcollections.NewBuiltinPlugin(ctx))
 		if cfg.SetupOpts.GlobalSettings.EnableAgentGateway {
 			plugins = append(plugins, agwbuiltin.NewBuiltinPlugin())

@@ -295,6 +295,11 @@ type PolicyWrapper struct {
 
 	// Where to attach the policy. This usually comes from the policy CRD.
 	TargetRefs []PolicyRef
+
+	// PrecedenceWeight specifies the weight of the policy as an integer value (negative values are allowed).
+	// Policies with higher weight implies higher priority, and are evaluated before policies with lower weight.
+	// By default, policies have a weight of 0.
+	PrecedenceWeight int32
 }
 
 func (c PolicyWrapper) ResourceName() string {
@@ -332,7 +337,7 @@ func (c PolicyWrapper) Equals(in PolicyWrapper) bool {
 		return false
 	}
 
-	return versionEquals(c.Policy, in.Policy) && c.PolicyIR.Equals(in.PolicyIR)
+	return versionEquals(c.Policy, in.Policy) && c.PolicyIR.Equals(in.PolicyIR) && c.PrecedenceWeight == in.PrecedenceWeight
 }
 
 var ErrNotAttachable = fmt.Errorf("policy is not attachable to this object")

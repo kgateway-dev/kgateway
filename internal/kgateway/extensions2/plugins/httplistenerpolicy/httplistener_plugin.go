@@ -254,7 +254,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 				GetPolicyStatus:           getPolicyStatusFn(commoncol.CrudClient),
 				PatchPolicyStatus:         patchPolicyStatusFn(commoncol.CrudClient),
 				MergePolicies: func(pols []ir.PolicyAtt) ir.PolicyAtt {
-					return policy.MergePolicies(pols, mergePolicies)
+					return policy.MergePolicies(pols, mergePolicies, "" /*no merge settings*/)
 				},
 			},
 		},
