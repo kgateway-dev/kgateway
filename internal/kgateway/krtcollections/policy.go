@@ -353,6 +353,10 @@ func NewGatewayIndex(
 			Namespace: gw.GetNamespace(),
 		}))
 
+		// Sort by listener precedence
+		// Ref: https://gateway-api.sigs.k8s.io/geps/gep-1713/#listener-precedence
+		// - ListenerSet ordered by creation time (oldest first)
+		// - ListenerSet ordered alphabetically by “{namespace}/{name}”
 		slices.SortFunc(listenerSets, func(a, b *gwxv1a1.XListenerSet) int {
 			ret := a.GetCreationTimestamp().Compare(b.GetCreationTimestamp().Time)
 			if ret == 0 {
