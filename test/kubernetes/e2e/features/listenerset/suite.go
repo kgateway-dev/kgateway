@@ -40,7 +40,7 @@ func (s *testingSuite) SetupSuite() {
 }
 
 func (s *testingSuite) TestValidListenerSet() {
-	s.expectListenerSetAccepted(validListenerSet)
+	s.expectValidListenerSetAccepted(validListenerSet)
 
 	// Gateway Listener
 	// The route attached to the gateway should work on the listener defined on the gateway
@@ -134,7 +134,7 @@ func (s *testingSuite) TestValidListenerSet() {
 }
 
 func (s *testingSuite) TestInvalidListenerSetNotAllowed() {
-	s.expectListenerSetNotAllowed(invalidListenerSetNotAllowed)
+	s.expectInvalidListenerSetNotAllowed(invalidListenerSetNotAllowed)
 
 	// The route attached to the gateway should work on the listener defined on the gateway
 	s.TestInstallation.Assertions.AssertEventualCurlResponse(
@@ -160,7 +160,7 @@ func (s *testingSuite) TestInvalidListenerSetNotAllowed() {
 }
 
 func (s *testingSuite) TestInvalidListenerSetNonExistingGW() {
-	s.expectListenerSetUnknown(invalidListenerSetNonExistingGW)
+	s.expectInvalidListenerSetUnknown(invalidListenerSetNonExistingGW)
 
 	// The route attached to the gateway should work on the listener defined on the gateway
 	s.TestInstallation.Assertions.AssertEventualCurlResponse(
@@ -183,6 +183,67 @@ func (s *testingSuite) TestInvalidListenerSetNonExistingGW() {
 			curl.WithHostHeader("example.com"),
 		},
 		curlExitErrorCode)
+}
+
+func (s *testingSuite) TestConflictedListenerSet() {
+	s.expectGatewayConflicted(proxyService)
+	s.expectValidListenerSetConflicted(validListenerSet)
+	s.expectConflictedListenerSetConflicted(conflictedListenerSet)
+
+	// The first listener with hostname conflict should work based on listener precedence
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
+		defaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
+			curl.WithPort(gwListener1Port),
+			curl.WithHostHeader("example.com"),
+		},
+		expectOK)
+
+	// The other listener with hostname conflict should not work based on listener precedence
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
+		defaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
+			curl.WithPort(gwListener1Port),
+			curl.WithHostHeader("conflicted-listenerset.com"),
+		},
+		expectNotFound)
+
+	// The first listener with protocol conflict should work based on listener precedence
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
+		defaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
+			curl.WithPort(lsListener1Port),
+			curl.WithHostHeader("listenerset.com"),
+		},
+		expectOK)
+
+	// The other listener with protocol conflict should not work based on listener precedence
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
+		defaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
+			curl.WithPort(lsListener1Port),
+			curl.WithHostHeader("conflicted-listenerset.com"),
+		},
+		expectNotFound)
+
+	// The listener without any conflict defined on the listenerset should work
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
+		defaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
+			curl.WithPort(lsListener3Port),
+			curl.WithHostHeader("conflicted-listenerset.com"),
+		},
+		expectOK)
 }
 
 func (s *testingSuite) TestPolicies() {
@@ -242,8 +303,8 @@ func (s *testingSuite) TestPolicies() {
 		expectOKWithCustomHeader("policy", "listener-set-section"))
 }
 
-func (s *testingSuite) expectListenerSetAccepted(obj client.Object) {
-	s.TestInstallation.Assertions.EventuallyGatewayCondition(s.Ctx, proxyObjectMeta.Name, proxyObjectMeta.Namespace, listener.AttachedListenerSetsConditionType, metav1.ConditionTrue)
+func (s *testingSuite) expectValidListenerSetAccepted(obj client.Object) {
+	s.TestInstallation.Assertions.EventuallyGatewayCondition(s.Ctx, proxyObjectMeta.Name, proxyObjectMeta.Namespace, listener.GatewayConditionAttachedListenerSets, metav1.ConditionTrue)
 
 	s.TestInstallation.Assertions.EventuallyListenerSetStatus(s.Ctx, obj.GetName(), obj.GetNamespace(),
 		gwxv1a1.ListenerSetStatus{
@@ -318,8 +379,8 @@ func (s *testingSuite) expectListenerSetAccepted(obj client.Object) {
 		})
 }
 
-func (s *testingSuite) expectListenerSetNotAllowed(obj client.Object) {
-	s.TestInstallation.Assertions.EventuallyGatewayCondition(s.Ctx, proxyObjectMeta.Name, proxyObjectMeta.Namespace, listener.AttachedListenerSetsConditionType, metav1.ConditionFalse)
+func (s *testingSuite) expectInvalidListenerSetNotAllowed(obj client.Object) {
+	s.TestInstallation.Assertions.EventuallyGatewayCondition(s.Ctx, proxyObjectMeta.Name, proxyObjectMeta.Namespace, listener.GatewayConditionAttachedListenerSets, metav1.ConditionFalse)
 
 	s.TestInstallation.Assertions.EventuallyListenerSetStatus(s.Ctx, obj.GetName(), obj.GetNamespace(),
 		gwxv1a1.ListenerSetStatus{
@@ -338,8 +399,8 @@ func (s *testingSuite) expectListenerSetNotAllowed(obj client.Object) {
 		})
 }
 
-func (s *testingSuite) expectListenerSetUnknown(obj client.Object) {
-	s.TestInstallation.Assertions.EventuallyGatewayCondition(s.Ctx, proxyObjectMeta.Name, proxyObjectMeta.Namespace, listener.AttachedListenerSetsConditionType, metav1.ConditionFalse)
+func (s *testingSuite) expectInvalidListenerSetUnknown(obj client.Object) {
+	s.TestInstallation.Assertions.EventuallyGatewayCondition(s.Ctx, proxyObjectMeta.Name, proxyObjectMeta.Namespace, listener.GatewayConditionAttachedListenerSets, metav1.ConditionFalse)
 
 	s.TestInstallation.Assertions.EventuallyListenerSetStatus(s.Ctx, obj.GetName(), obj.GetNamespace(),
 		gwxv1a1.ListenerSetStatus{
@@ -351,6 +412,257 @@ func (s *testingSuite) expectListenerSetUnknown(obj client.Object) {
 				{
 					Type:   string(gwxv1a1.ListenerSetConditionProgrammed),
 					Status: metav1.ConditionUnknown,
+				},
+			},
+		})
+}
+
+func (s *testingSuite) expectGatewayConflicted(obj client.Object) {
+	s.TestInstallation.Assertions.EventuallyGatewayStatus(s.Ctx, obj.GetName(), obj.GetNamespace(),
+		gwv1.GatewayStatus{
+			Conditions: []metav1.Condition{
+				{
+					Type:   string(gwv1.GatewayConditionAccepted),
+					Status: metav1.ConditionTrue,
+					Reason: string(gwv1.GatewayReasonAccepted),
+				},
+				{
+					Type:   string(gwv1.GatewayConditionProgrammed),
+					Status: metav1.ConditionTrue,
+					Reason: string(gwv1.GatewayReasonProgrammed),
+				},
+			},
+			Listeners: []gwv1.ListenerStatus{
+				{
+					Name:           "http",
+					AttachedRoutes: 1,
+					Conditions: []metav1.Condition{
+						{
+							Type:   string(gwxv1a1.ListenerEntryConditionAccepted),
+							Status: metav1.ConditionTrue,
+							Reason: string(gwxv1a1.ListenerEntryReasonAccepted),
+						},
+						{
+							Type:   string(gwxv1a1.ListenerEntryConditionConflicted),
+							Status: metav1.ConditionFalse,
+							Reason: string(gwv1.ListenerReasonNoConflicts),
+						},
+						{
+							Type:   string(gwxv1a1.ListenerEntryConditionResolvedRefs),
+							Status: metav1.ConditionTrue,
+							Reason: string(gwxv1a1.ListenerEntryReasonResolvedRefs),
+						},
+						{
+							Type:   string(gwxv1a1.ListenerEntryConditionProgrammed),
+							Status: metav1.ConditionTrue,
+							Reason: string(gwxv1a1.ListenerEntryReasonProgrammed),
+						},
+					},
+				},
+				{
+					Name:           "http-2",
+					AttachedRoutes: 1,
+					Conditions: []metav1.Condition{
+						{
+							Type:   string(gwxv1a1.ListenerEntryConditionAccepted),
+							Status: metav1.ConditionTrue,
+							Reason: string(gwv1.ListenerReasonHostnameConflict),
+						},
+						{
+							Type:   string(gwxv1a1.ListenerEntryConditionProgrammed),
+							Status: metav1.ConditionTrue,
+							Reason: string(gwv1.ListenerReasonHostnameConflict),
+						},
+						{
+							Type:   string(gwxv1a1.ListenerEntryConditionConflicted),
+							Status: metav1.ConditionTrue,
+							Reason: string(gwv1.ListenerReasonHostnameConflict),
+						},
+						{
+							Type:   string(gwxv1a1.ListenerEntryConditionResolvedRefs),
+							Status: metav1.ConditionTrue,
+							Reason: string(gwxv1a1.ListenerEntryReasonResolvedRefs),
+						},
+					},
+				},
+			},
+		})
+}
+
+func (s *testingSuite) expectValidListenerSetConflicted(obj client.Object) {
+	s.TestInstallation.Assertions.EventuallyGatewayCondition(s.Ctx, proxyObjectMeta.Name, proxyObjectMeta.Namespace, listener.GatewayConditionAttachedListenerSets, metav1.ConditionTrue)
+
+	s.TestInstallation.Assertions.EventuallyListenerSetStatus(s.Ctx, obj.GetName(), obj.GetNamespace(),
+		gwxv1a1.ListenerSetStatus{
+			Conditions: []metav1.Condition{
+				{
+					Type:   string(gwxv1a1.ListenerSetConditionAccepted),
+					Status: metav1.ConditionTrue,
+					Reason: string(gwv1.GatewayReasonAccepted),
+				},
+				{
+					Type:   string(gwxv1a1.ListenerSetConditionProgrammed),
+					Status: metav1.ConditionTrue,
+					Reason: string(gwv1.GatewayReasonProgrammed),
+				},
+			},
+			Listeners: []gwxv1a1.ListenerEntryStatus{
+				{
+					Name:           "http",
+					Port:           gwxv1a1.PortNumber(lsListener1Port),
+					AttachedRoutes: 2,
+					Conditions: []metav1.Condition{
+						{
+							Type:   string(gwxv1a1.ListenerEntryConditionAccepted),
+							Status: metav1.ConditionTrue,
+							Reason: string(gwxv1a1.ListenerEntryReasonAccepted),
+						},
+						{
+							Type:   string(gwxv1a1.ListenerEntryConditionConflicted),
+							Status: metav1.ConditionFalse,
+							Reason: string(gwv1.ListenerReasonNoConflicts),
+						},
+						{
+							Type:   string(gwxv1a1.ListenerEntryConditionResolvedRefs),
+							Status: metav1.ConditionTrue,
+							Reason: string(gwxv1a1.ListenerEntryReasonResolvedRefs),
+						},
+						{
+							Type:   string(gwxv1a1.ListenerEntryConditionProgrammed),
+							Status: metav1.ConditionTrue,
+							Reason: string(gwxv1a1.ListenerEntryReasonProgrammed),
+						},
+					},
+				},
+				{
+					Name:           "http-2",
+					Port:           gwxv1a1.PortNumber(lsListener2Port),
+					AttachedRoutes: 3,
+					Conditions: []metav1.Condition{
+						{
+							Type:   string(gwxv1a1.ListenerEntryConditionAccepted),
+							Status: metav1.ConditionTrue,
+							Reason: string(gwv1.ListenerReasonProtocolConflict),
+						},
+						{
+							Type:   string(gwxv1a1.ListenerEntryConditionConflicted),
+							Status: metav1.ConditionTrue,
+							Reason: string(gwv1.ListenerReasonProtocolConflict),
+						},
+						{
+							Type:   string(gwxv1a1.ListenerEntryConditionResolvedRefs),
+							Status: metav1.ConditionTrue,
+							Reason: string(gwxv1a1.ListenerEntryReasonResolvedRefs),
+						},
+						{
+							Type:   string(gwxv1a1.ListenerEntryConditionProgrammed),
+							Status: metav1.ConditionTrue,
+							Reason: string(gwv1.ListenerReasonProtocolConflict),
+						},
+					},
+				},
+			},
+		})
+}
+
+func (s *testingSuite) expectConflictedListenerSetConflicted(obj client.Object) {
+	s.TestInstallation.Assertions.EventuallyGatewayCondition(s.Ctx, proxyObjectMeta.Name, proxyObjectMeta.Namespace, listener.GatewayConditionAttachedListenerSets, metav1.ConditionTrue)
+
+	s.TestInstallation.Assertions.EventuallyListenerSetStatus(s.Ctx, obj.GetName(), obj.GetNamespace(),
+		gwxv1a1.ListenerSetStatus{
+			Conditions: []metav1.Condition{
+				{
+					Type:   string(gwxv1a1.ListenerSetConditionAccepted),
+					Status: metav1.ConditionTrue,
+					Reason: string(gwv1.GatewayReasonListenersNotValid),
+				},
+				{
+					Type:   string(gwxv1a1.ListenerSetConditionProgrammed),
+					Status: metav1.ConditionTrue,
+					Reason: string(gwv1.GatewayReasonListenersNotValid),
+				},
+			},
+			Listeners: []gwxv1a1.ListenerEntryStatus{
+				{
+					Name:           "gw-listener-hostname-conflict",
+					Port:           gwxv1a1.PortNumber(gwListener2Port),
+					AttachedRoutes: 2,
+					Conditions: []metav1.Condition{
+						{
+							Type:   string(gwxv1a1.ListenerEntryConditionAccepted),
+							Status: metav1.ConditionFalse,
+							Reason: string(gwv1.ListenerReasonHostnameConflict),
+						},
+						{
+							Type:   string(gwxv1a1.ListenerEntryConditionProgrammed),
+							Status: metav1.ConditionFalse,
+							Reason: string(gwv1.ListenerReasonHostnameConflict),
+						},
+						{
+							Type:   string(gwxv1a1.ListenerEntryConditionConflicted),
+							Status: metav1.ConditionTrue,
+							Reason: string(gwv1.ListenerReasonHostnameConflict),
+						},
+						{
+							Type:   string(gwxv1a1.ListenerEntryConditionResolvedRefs),
+							Status: metav1.ConditionTrue,
+							Reason: string(gwxv1a1.ListenerEntryReasonResolvedRefs),
+						},
+					},
+				},
+				{
+					Name:           "ls-listener-protocol-conflict",
+					Port:           gwxv1a1.PortNumber(lsListener2Port),
+					AttachedRoutes: 0,
+					Conditions: []metav1.Condition{
+						{
+							Type:   string(gwxv1a1.ListenerEntryConditionAccepted),
+							Status: metav1.ConditionFalse,
+							Reason: string(gwv1.ListenerReasonProtocolConflict),
+						},
+						{
+							Type:   string(gwxv1a1.ListenerEntryConditionProgrammed),
+							Status: metav1.ConditionFalse,
+							Reason: string(gwv1.ListenerReasonProtocolConflict),
+						},
+						{
+							Type:   string(gwxv1a1.ListenerEntryConditionConflicted),
+							Status: metav1.ConditionTrue,
+							Reason: string(gwv1.ListenerReasonProtocolConflict),
+						},
+						{
+							Type:   string(gwxv1a1.ListenerEntryConditionResolvedRefs),
+							Status: metav1.ConditionTrue,
+							Reason: string(gwxv1a1.ListenerEntryReasonResolvedRefs),
+						},
+					},
+				},
+				{
+					Name:           "http",
+					Port:           gwxv1a1.PortNumber(lsListener3Port),
+					AttachedRoutes: 2,
+					Conditions: []metav1.Condition{
+						{
+							Type:   string(gwxv1a1.ListenerEntryConditionAccepted),
+							Status: metav1.ConditionTrue,
+							Reason: string(gwxv1a1.ListenerEntryReasonAccepted),
+						},
+						{
+							Type:   string(gwxv1a1.ListenerEntryConditionConflicted),
+							Status: metav1.ConditionFalse,
+							Reason: string(gwv1.ListenerReasonNoConflicts),
+						},
+						{
+							Type:   string(gwxv1a1.ListenerEntryConditionResolvedRefs),
+							Status: metav1.ConditionTrue,
+							Reason: string(gwxv1a1.ListenerEntryReasonResolvedRefs),
+						},
+						{
+							Type:   string(gwxv1a1.ListenerEntryConditionProgrammed),
+							Status: metav1.ConditionTrue,
+							Reason: string(gwxv1a1.ListenerEntryReasonProgrammed),
+						},
+					},
 				},
 			},
 		})
