@@ -27,6 +27,11 @@ spec:
         {{- toYaml . | nindent 8 }}
         {{- end }}
     spec:
+      {{- with $gateway.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "kgateway.gateway.fullname" . }}
       securityContext:
         sysctls:
           - name: net.ipv4.ip_unprivileged_port_start
@@ -99,7 +104,22 @@ spec:
       tolerations:
         {{- toYaml $gateway.tolerations | nindent 8 }}
       {{- end }}
-
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "kgateway.gateway.fullname" . }}
+  {{- with (($gateway.serviceAccount).extraAnnotations) }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  labels:
+    {{- include "kgateway.gateway.constLabels" . | nindent 4 }}
+    {{- include "kgateway.gateway.labels" . | nindent 4 }}
+    {{- with (($gateway.serviceAccount).extraLabels) }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+automountServiceAccountToken: false
 ---
 apiVersion: v1
 kind: Service
@@ -117,6 +137,9 @@ metadata:
     {{- end }}
 spec:
   type: {{ $gateway.service.type }}
+  {{- if $gateway.service.externalTrafficPolicy }}
+  externalTrafficPolicy: {{ $gateway.service.externalTrafficPolicy }}
+  {{- end }}
   {{- with $gateway.service.clusterIP }}
   clusterIP: {{ . }}
   {{- end }}

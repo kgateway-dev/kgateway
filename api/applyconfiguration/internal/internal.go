@@ -2166,6 +2166,9 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: clusterIP
       type:
         scalar: string
+    - name: externalTrafficPolicy
+      type:
+        scalar: string
     - name: extraAnnotations
       type:
         map:
