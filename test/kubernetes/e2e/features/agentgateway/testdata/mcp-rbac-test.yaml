@@ -7,8 +7,6 @@ spec:
     agentGateway:
       enabled: true
       logLevel: trace
-      image:
-        tag: 0eddffa61-dirty
 ---
 kind: GatewayClass
 apiVersion: gateway.networking.k8s.io/v1
