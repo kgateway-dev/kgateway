@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"slices"
 	"strconv"
+	"strings"
 
 	"istio.io/istio/pkg/config/labels"
 	"istio.io/istio/pkg/kube/krt"
@@ -354,7 +355,14 @@ func NewGatewayIndex(
 		}))
 
 		slices.SortFunc(listenerSets, func(a, b *gwxv1a1.XListenerSet) int {
-			return a.GetCreationTimestamp().Compare(b.GetCreationTimestamp().Time)
+			ret := a.GetCreationTimestamp().Compare(b.GetCreationTimestamp().Time)
+			if ret == 0 {
+				nnsString := func(ls *gwxv1a1.XListenerSet) string {
+					return fmt.Sprintf("%s/%s", ls.Name, ls.Namespace)
+				}
+				ret = strings.Compare(nnsString(a), nnsString(b))
+			}
+			return ret
 		})
 
 		// Start the resource sync metrics for all XListenerSets before they are processed,
