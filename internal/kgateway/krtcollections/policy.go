@@ -361,7 +361,7 @@ func NewGatewayIndex(
 			ret := a.GetCreationTimestamp().Compare(b.GetCreationTimestamp().Time)
 			if ret == 0 {
 				nnsString := func(ls *gwxv1a1.XListenerSet) string {
-					return fmt.Sprintf("%s/%s", ls.Name, ls.Namespace)
+					return fmt.Sprintf("%s/%s", ls.Namespace, ls.Name)
 				}
 				ret = strings.Compare(nnsString(a), nnsString(b))
 			}
