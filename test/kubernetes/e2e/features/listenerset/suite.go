@@ -443,6 +443,11 @@ func (s *testingSuite) expectGatewayConflicted(obj client.Object) {
 							Reason: string(gwxv1a1.ListenerEntryReasonAccepted),
 						},
 						{
+							Type:   string(gwxv1a1.ListenerEntryConditionProgrammed),
+							Status: metav1.ConditionTrue,
+							Reason: string(gwxv1a1.ListenerEntryReasonProgrammed),
+						},
+						{
 							Type:   string(gwxv1a1.ListenerEntryConditionConflicted),
 							Status: metav1.ConditionFalse,
 							Reason: string(gwv1.ListenerReasonNoConflicts),
@@ -452,17 +457,13 @@ func (s *testingSuite) expectGatewayConflicted(obj client.Object) {
 							Status: metav1.ConditionTrue,
 							Reason: string(gwxv1a1.ListenerEntryReasonResolvedRefs),
 						},
-						{
-							Type:   string(gwxv1a1.ListenerEntryConditionProgrammed),
-							Status: metav1.ConditionTrue,
-							Reason: string(gwxv1a1.ListenerEntryReasonProgrammed),
-						},
 					},
 				},
 				{
 					Name:           "http-2",
 					AttachedRoutes: 1,
 					Conditions: []metav1.Condition{
+						// The first conflicted listener should be accepted based on listener precedence
 						{
 							Type:   string(gwxv1a1.ListenerEntryConditionAccepted),
 							Status: metav1.ConditionTrue,
@@ -475,8 +476,8 @@ func (s *testingSuite) expectGatewayConflicted(obj client.Object) {
 						},
 						{
 							Type:   string(gwxv1a1.ListenerEntryConditionConflicted),
-							Status: metav1.ConditionTrue,
-							Reason: string(gwv1.ListenerReasonHostnameConflict),
+							Status: metav1.ConditionFalse,
+							Reason: string(gwv1.ListenerReasonNoConflicts),
 						},
 						{
 							Type:   string(gwxv1a1.ListenerEntryConditionResolvedRefs),
@@ -518,6 +519,11 @@ func (s *testingSuite) expectValidListenerSetConflicted(obj client.Object) {
 							Reason: string(gwxv1a1.ListenerEntryReasonAccepted),
 						},
 						{
+							Type:   string(gwxv1a1.ListenerEntryConditionProgrammed),
+							Status: metav1.ConditionTrue,
+							Reason: string(gwxv1a1.ListenerEntryReasonProgrammed),
+						},
+						{
 							Type:   string(gwxv1a1.ListenerEntryConditionConflicted),
 							Status: metav1.ConditionFalse,
 							Reason: string(gwv1.ListenerReasonNoConflicts),
@@ -527,11 +533,6 @@ func (s *testingSuite) expectValidListenerSetConflicted(obj client.Object) {
 							Status: metav1.ConditionTrue,
 							Reason: string(gwxv1a1.ListenerEntryReasonResolvedRefs),
 						},
-						{
-							Type:   string(gwxv1a1.ListenerEntryConditionProgrammed),
-							Status: metav1.ConditionTrue,
-							Reason: string(gwxv1a1.ListenerEntryReasonProgrammed),
-						},
 					},
 				},
 				{
@@ -539,25 +540,26 @@ func (s *testingSuite) expectValidListenerSetConflicted(obj client.Object) {
 					Port:           gwxv1a1.PortNumber(lsListener2Port),
 					AttachedRoutes: 3,
 					Conditions: []metav1.Condition{
+						// The first conflicted listener should be accepted based on listener precedence
 						{
 							Type:   string(gwxv1a1.ListenerEntryConditionAccepted),
 							Status: metav1.ConditionTrue,
 							Reason: string(gwxv1a1.ListenerEntryReasonAccepted),
 						},
 						{
-							Type:   string(gwxv1a1.ListenerEntryConditionConflicted),
+							Type:   string(gwxv1a1.ListenerEntryConditionProgrammed),
 							Status: metav1.ConditionTrue,
-							Reason: string(gwv1.ListenerReasonProtocolConflict),
+							Reason: string(gwxv1a1.ListenerEntryReasonProgrammed),
+						},
+						{
+							Type:   string(gwxv1a1.ListenerEntryConditionConflicted),
+							Status: metav1.ConditionFalse,
+							Reason: string(gwv1.ListenerReasonNoConflicts),
 						},
 						{
 							Type:   string(gwxv1a1.ListenerEntryConditionResolvedRefs),
 							Status: metav1.ConditionTrue,
 							Reason: string(gwxv1a1.ListenerEntryReasonResolvedRefs),
-						},
-						{
-							Type:   string(gwxv1a1.ListenerEntryConditionProgrammed),
-							Status: metav1.ConditionTrue,
-							Reason: string(gwxv1a1.ListenerEntryReasonProgrammed),
 						},
 					},
 				},
