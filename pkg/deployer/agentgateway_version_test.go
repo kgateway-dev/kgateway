@@ -138,6 +138,23 @@ func TestGetAgentgatewayVersion(t *testing.T) {
 	g := NewWithT(t)
 	version := GetAgentgatewayVersion()
 	g.Expect(version).NotTo(BeEmpty())
-	// Should return the actual version from go.mod (0.7.5)
 	g.Expect(version).To(Equal("0.7.5"))
+}
+
+func TestGetAgentgatewayVersionFallback(t *testing.T) {
+	g := NewWithT(t)
+
+	originalWd, err := os.Getwd()
+	g.Expect(err).NotTo(HaveOccurred())
+
+	tmpDir, err := os.MkdirTemp("", "nogomod-test-*")
+	g.Expect(err).NotTo(HaveOccurred())
+	defer os.RemoveAll(tmpDir)
+
+	err = os.Chdir(tmpDir)
+	g.Expect(err).NotTo(HaveOccurred())
+	defer os.Chdir(originalWd)
+
+	version := GetAgentgatewayVersion()
+	g.Expect(version).To(Equal(AgentgatewayDefaultTag))
 }
