@@ -208,7 +208,7 @@ type BodyTransformation struct {
 type ExtAuthPolicy struct {
 	// ExtensionRef references the GatewayExtension that should be used for authentication.
 	// +optional
-	ExtensionRef NamespacedObjectReference `json:"extensionRef,omitempty"`
+	ExtensionRef *NamespacedObjectReference `json:"extensionRef,omitempty"`
 
 	// WithRequestBody allows the request body to be buffered and sent to the authorization service.
 	// Warning buffering has implications for streaming and therefore performance.

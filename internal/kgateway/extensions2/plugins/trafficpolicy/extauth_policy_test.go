@@ -154,7 +154,7 @@ func TestExtAuthForSpec(t *testing.T) {
 		// Setup
 		spec := &v1alpha1.TrafficPolicy{Spec: v1alpha1.TrafficPolicySpec{
 			ExtAuth: &v1alpha1.ExtAuthPolicy{
-				ExtensionRef: v1alpha1.NamespacedObjectReference{
+				ExtensionRef: &v1alpha1.NamespacedObjectReference{
 					Name: "test-extension",
 				},
 				WithRequestBody: &v1alpha1.BufferSettings{
