@@ -358,14 +358,15 @@ func NewGatewayIndex(
 		// - ListenerSet ordered by creation time (oldest first)
 		// - ListenerSet ordered alphabetically by “{namespace}/{name}”
 		slices.SortFunc(listenerSets, func(a, b *gwxv1a1.XListenerSet) int {
-			ret := a.GetCreationTimestamp().Compare(b.GetCreationTimestamp().Time)
-			if ret == 0 {
-				nnsString := func(ls *gwxv1a1.XListenerSet) string {
-					return fmt.Sprintf("%s/%s", ls.Namespace, ls.Name)
-				}
-				ret = strings.Compare(nnsString(a), nnsString(b))
+			// primary sort: creation timestamp (oldest first)
+			if cmp := a.GetCreationTimestamp().Compare(b.GetCreationTimestamp().Time); cmp != 0 {
+				return cmp
 			}
-			return ret
+			// secondary sort: alphabetically by "{namespace}/{name}"
+			nnsString := func(ls *gwxv1a1.XListenerSet) string {
+				return fmt.Sprintf("%s/%s", ls.Namespace, ls.Name)
+			}
+			return strings.Compare(nnsString(a), nnsString(b))
 		})
 
 		// Start the resource sync metrics for all XListenerSets before they are processed,
