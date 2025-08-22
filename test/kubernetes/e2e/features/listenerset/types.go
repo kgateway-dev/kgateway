@@ -28,12 +28,12 @@ var (
 	conflictedListenerSetManifest           = filepath.Join(fsutils.MustGetThisDir(), "testdata", "conflicted-listenerset.yaml")
 	policyManifest                          = filepath.Join(fsutils.MustGetThisDir(), "testdata", "policies.yaml")
 
-	gwListener1Port = 80
-	gwListener2Port = 8081
-	lsListener1Port = 90
-	lsListener2Port = 8091
-	lsListener3Port = 88
-	lsInvalidPort   = 8095
+	gwListener1Port  = 80
+	gwListener2Port  = 8081
+	ls1Listener1Port = 90
+	ls1Listener2Port = 8091
+	ls2Listener1Port = 8095
+	ls3Listener1Port = 88
 
 	proxyObjectMeta = metav1.ObjectMeta{
 		Name:      "gw",

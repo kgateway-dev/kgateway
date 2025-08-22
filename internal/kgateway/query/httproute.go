@@ -327,12 +327,9 @@ func (r *gatewayQueries) GetRoutesForResource(kctx krt.HandlerContext, ctx conte
 	ret := NewRoutesForGwResult()
 
 	var routes []ir.Route
-	switch t := resource.(type) {
+	switch resource.(type) {
 	case *gwxv1a1.XListenerSet:
-		// If a listenerset, initially populate it with the list of routes attached to the parent gateway
-		parentRef := getParentGatewayRef(t)
-		routes = r.collections.Routes.RoutesForGateway(kctx, *parentRef)
-		routes = append(routes, r.collections.Routes.RoutesForListenerSet(kctx, nns)...)
+		routes = r.collections.Routes.RoutesForListenerSet(kctx, nns)
 	default:
 		routes = r.collections.Routes.RoutesForGateway(kctx, nns)
 	}
