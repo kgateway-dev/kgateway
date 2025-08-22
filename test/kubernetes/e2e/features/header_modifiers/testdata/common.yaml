@@ -53,7 +53,9 @@ metadata:
   name: svc-route-2
 spec:
   parentRefs:
-    - name: ls
+    - kind: XListenerSet
+      group: gateway.networking.x-k8s.io
+      name: ls
       namespace: default
   hostnames:
     - "example.com"
