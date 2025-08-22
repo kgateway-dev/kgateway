@@ -37,6 +37,9 @@ func setupTest() {
 func TestCollectStatusSyncMetrics_Success(t *testing.T) {
 	setupTest()
 
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
 	finishFunc := collectStatusSyncMetrics(statusSyncMetricLabels{
 		Name:      testGatewayName,
 		Namespace: testNamespace,
@@ -44,7 +47,10 @@ func TestCollectStatusSyncMetrics_Success(t *testing.T) {
 	})
 	finishFunc(nil)
 
-	currentMetrics := metricstest.MustGatherMetrics(t)
+	currentMetrics := metricstest.MustGatherMetricsContext(ctx, t,
+		"kgateway_status_syncer_status_syncs_total",
+		"kgateway_status_syncer_status_sync_duration_seconds",
+	)
 
 	currentMetrics.AssertMetric("kgateway_status_syncer_status_syncs_total", &metricstest.ExpectedMetric{
 		Labels: []metrics.Label{
@@ -67,6 +73,9 @@ func TestCollectStatusSyncMetrics_Success(t *testing.T) {
 func TestCollectStatusSyncMetrics_Error(t *testing.T) {
 	setupTest()
 
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
 	finishFunc := collectStatusSyncMetrics(statusSyncMetricLabels{
 		Name:      testGatewayName,
 		Namespace: testNamespace,
@@ -74,7 +83,10 @@ func TestCollectStatusSyncMetrics_Error(t *testing.T) {
 	})
 	finishFunc(assert.AnError)
 
-	currentMetrics := metricstest.MustGatherMetrics(t)
+	currentMetrics := metricstest.MustGatherMetricsContext(ctx, t,
+		"kgateway_status_syncer_status_syncs_total",
+		"kgateway_status_syncer_status_sync_duration_seconds",
+	)
 
 	currentMetrics.AssertMetric("kgateway_status_syncer_status_syncs_total", &metricstest.ExpectedMetric{
 		Labels: []metrics.Label{
@@ -310,7 +322,7 @@ func TestResourceSyncMetrics(t *testing.T) {
 		Namespace:    testNS,
 		ResourceType: testResource,
 		ResourceName: testName,
-	}, false, resourcesXDSSyncsTotal, resourcesXDSyncDuration)
+	}, false, resourcesXDSSyncsTotal, resourcesXDSSyncDuration)
 
 	gathered := metricstest.MustGatherMetricsContext(ctx, t,
 		"kgateway_resources_syncs_started_total",
