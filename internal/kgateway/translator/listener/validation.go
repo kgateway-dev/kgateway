@@ -220,7 +220,7 @@ func validateListeners(gw *ir.Gateway, reporter reports.Reporter) []ir.Listener 
 					continue
 				}
 
-				logger.Info("rejected listener with hostname conflict as per listener precedence", "name", listener.Name, "parent", listener.Parent.GetName())
+				logger.Error("rejected listener with hostname conflict as per listener precedence", "name", listener.Name, "parent", listener.Parent.GetName())
 				rejectConflictedListener(parentReporter, listener, gwv1.ListenerReasonHostnameConflict, ListenerMessageHostnameConflict)
 			} else {
 				// TODO should check this is exactly 1?
