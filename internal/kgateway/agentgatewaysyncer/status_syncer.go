@@ -179,47 +179,56 @@ func (s *AgentGwStatusSyncer) syncRouteStatus(ctx context.Context, logger *slog.
 
 	// Helper function to build route status and update if needed
 	buildAndUpdateStatus := func(route client.Object, routeType string) error {
-		var status *gwv1.RouteStatus
+		// Get parentRefs based on route type and ensure namespaces are set
+		var parentRefs []gwv1.ParentReference
 		switch r := route.(type) {
 		case *gwv1.HTTPRoute:
-			status = rm.BuildRouteStatus(ctx, r, s.controllerName)
-			if status == nil {
-				return nil
-			}
-			if isRouteStatusEqual(&r.Status.RouteStatus, status) {
-				return nil
-			}
-			r.Status.RouteStatus = *status
+			parentRefs = r.Spec.ParentRefs
 		case *gwv1alpha2.TCPRoute:
-			status = rm.BuildRouteStatus(ctx, r, s.controllerName)
-			if status == nil {
-				return nil
-			}
-			if isRouteStatusEqual(&r.Status.RouteStatus, status) {
-				return nil
-			}
-			r.Status.RouteStatus = *status
+			parentRefs = r.Spec.ParentRefs
 		case *gwv1alpha2.TLSRoute:
-			status = rm.BuildRouteStatus(ctx, r, s.controllerName)
-			if status == nil {
-				return nil
-			}
-			if isRouteStatusEqual(&r.Status.RouteStatus, status) {
-				return nil
-			}
-			r.Status.RouteStatus = *status
+			parentRefs = r.Spec.ParentRefs
 		case *gwv1.GRPCRoute:
-			status = rm.BuildRouteStatus(ctx, r, s.controllerName)
-			if status == nil {
-				return nil
-			}
-			if isRouteStatusEqual(&r.Status.RouteStatus, status) {
-				return nil
-			}
-			r.Status.RouteStatus = *status
+			parentRefs = r.Spec.ParentRefs
 		default:
 			logger.Warn("unsupported route type", logKeyRouteType, routeType, logKeyResourceRef, client.ObjectKeyFromObject(route))
 			return nil
+		}
+
+		// Common processing for all route types
+		ensureParentRefNamespaces(parentRefs, route.GetNamespace())
+		status := rm.BuildRouteStatus(ctx, route, s.controllerName)
+		if status == nil {
+			return nil
+		}
+
+		// Get existing status based on route type
+		var existingStatus *gwv1.RouteStatus
+		switch r := route.(type) {
+		case *gwv1.HTTPRoute:
+			existingStatus = &r.Status.RouteStatus
+		case *gwv1alpha2.TCPRoute:
+			existingStatus = &r.Status.RouteStatus
+		case *gwv1alpha2.TLSRoute:
+			existingStatus = &r.Status.RouteStatus
+		case *gwv1.GRPCRoute:
+			existingStatus = &r.Status.RouteStatus
+		}
+
+		if isRouteStatusEqual(existingStatus, status) {
+			return nil
+		}
+
+		// Update status based on route type
+		switch r := route.(type) {
+		case *gwv1.HTTPRoute:
+			r.Status.RouteStatus = *status
+		case *gwv1alpha2.TCPRoute:
+			r.Status.RouteStatus = *status
+		case *gwv1alpha2.TLSRoute:
+			r.Status.RouteStatus = *status
+		case *gwv1.GRPCRoute:
+			r.Status.RouteStatus = *status
 		}
 
 		// Update the status
@@ -322,6 +331,11 @@ func (s *AgentGwStatusSyncer) syncGatewayStatus(ctx context.Context, logger *slo
 			if gatewayReports.AttachedRoutes != nil {
 				attachedRoutesForGw = gatewayReports.AttachedRoutes[gwnn]
 			}
+			gwReporter := rm.Gateway(&gw)
+			for _, listener := range gw.Spec.Listeners {
+				supportedKinds := calculateSupportedKinds(listener)
+				gwReporter.Listener(&listener).SetSupportedKinds(supportedKinds)
+			}
 
 			if status := rm.BuildGWStatus(ctx, gw, attachedRoutesForGw); status != nil {
 				// normalize per-listener AttachedRoutes, defaulting to 0 where absent.
@@ -404,7 +418,7 @@ func (s *AgentGwStatusSyncer) syncListenerSetStatus(ctx context.Context, logger 
 		ListenerSets: listenerSetReports.Reports,
 	}
 
-	// TODO: retry within loop per LS rathen that as a full block
+	// TODO: retry within loop per LS rather than as a full block
 	err := retry.Do(func() error {
 		for lsnn := range listenerSetReports.Reports {
 			ls := gwxv1a1.XListenerSet{}
@@ -481,6 +495,45 @@ func setObservedGen(gw *gwv1.Gateway, st *gwv1.GatewayStatus) {
 	for li := range st.Listeners {
 		for ci := range st.Listeners[li].Conditions {
 			st.Listeners[li].Conditions[ci].ObservedGeneration = gw.Generation
+		}
+	}
+}
+
+func calculateSupportedKinds(listener gwv1.Listener) []gwv1.RouteGroupKind {
+	gatewayGroup := gwv1.Group("gateway.networking.k8s.io")
+	allSupportedKinds := []gwv1.RouteGroupKind{
+		{Group: &gatewayGroup, Kind: "HTTPRoute"},
+		{Group: &gatewayGroup, Kind: "GRPCRoute"},
+		{Group: &gatewayGroup, Kind: "TCPRoute"},
+		{Group: &gatewayGroup, Kind: "TLSRoute"},
+	}
+
+	if listener.AllowedRoutes == nil || len(listener.AllowedRoutes.Kinds) == 0 {
+		return allSupportedKinds
+	}
+
+	// Initialize with empty slice, not nil - Kubernetes API requires non-nil slice
+	supportedKinds := make([]gwv1.RouteGroupKind, 0)
+
+	for _, allowedKind := range listener.AllowedRoutes.Kinds {
+		for _, supportedKind := range allSupportedKinds {
+			if allowedKind.Kind == supportedKind.Kind {
+				if allowedKind.Group == nil || supportedKind.Group == nil ||
+					*allowedKind.Group == *supportedKind.Group {
+					supportedKinds = append(supportedKinds, supportedKind)
+					break
+				}
+			}
+		}
+	}
+	return supportedKinds
+}
+
+func ensureParentRefNamespaces(parentRefs []gwv1.ParentReference, routeNamespace string) {
+	for i := range parentRefs {
+		if parentRefs[i].Namespace == nil {
+			routeNs := gwv1.Namespace(routeNamespace)
+			parentRefs[i].Namespace = &routeNs
 		}
 	}
 }
