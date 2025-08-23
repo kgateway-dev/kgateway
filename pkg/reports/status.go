@@ -20,6 +20,43 @@ import (
 	pluginsdkreporter "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
 
+func getAllSupportedRouteKinds() []gwv1.RouteGroupKind {
+	gatewayGroup := gwv1.Group("gateway.networking.k8s.io")
+	return []gwv1.RouteGroupKind{
+		{Group: &gatewayGroup, Kind: "HTTPRoute"},
+		{Group: &gatewayGroup, Kind: "GRPCRoute"},
+		{Group: &gatewayGroup, Kind: "TCPRoute"},
+		{Group: &gatewayGroup, Kind: "TLSRoute"},
+	}
+}
+
+// getSupportedKindsForListener returns only the kinds that are both:
+// 1. Supported by the controller
+// 2. Allowed by the listener (if specified)
+func getSupportedKindsForListener(listener gwv1.Listener) []gwv1.RouteGroupKind {
+	allSupportedKinds := getAllSupportedRouteKinds()
+	// If no allowedRoutes.kinds specified, return all supported kinds
+	if listener.AllowedRoutes == nil || len(listener.AllowedRoutes.Kinds) == 0 {
+		return allSupportedKinds
+	}
+
+	// Return intersection: only kinds that are both allowed and supported
+	var supportedKinds []gwv1.RouteGroupKind
+	for _, allowedKind := range listener.AllowedRoutes.Kinds {
+		for _, supportedKind := range allSupportedKinds {
+			if allowedKind.Kind == supportedKind.Kind {
+				// Also check group if specified
+				if allowedKind.Group == nil || supportedKind.Group == nil ||
+					*allowedKind.Group == *supportedKind.Group {
+					supportedKinds = append(supportedKinds, supportedKind)
+					break
+				}
+			}
+		}
+	}
+	return supportedKinds
+}
+
 // TODO: refactor this struct + methods to better reflect the usage now in proxy_syncer
 
 func (r *ReportMap) BuildGWStatus(ctx context.Context, gw gwv1.Gateway, attachedRoutes map[string]uint) *gwv1.GatewayStatus {
@@ -31,14 +68,29 @@ func (r *ReportMap) BuildGWStatus(ctx context.Context, gw gwv1.Gateway, attached
 	finalListeners := make([]gwv1.ListenerStatus, 0, len(gw.Spec.Listeners))
 	for _, lis := range gw.Spec.Listeners {
 		lisReport := gwReport.listener(string(lis.Name))
+		supportedKinds := getSupportedKindsForListener(lis)
+		// Check for invalid route kinds
+		if len(supportedKinds) == 0 && lis.AllowedRoutes != nil && len(lis.AllowedRoutes.Kinds) > 0 {
+			// Listener specifies route kinds but none are supported
+			lisReport.SetCondition(pluginsdkreporter.ListenerCondition{
+				Type:    gwv1.ListenerConditionResolvedRefs,
+				Status:  metav1.ConditionFalse,
+				Reason:  gwv1.ListenerReasonInvalidRouteKinds,
+				Message: "Listener does not support any of the specified route kinds",
+			})
+		}
+
 		addMissingListenerConditions(lisReport)
-		// Get attached routes for this listener
 		if attachedRoutes != nil {
 			if count, exists := attachedRoutes[string(lis.Name)]; exists {
 				lisReport.Status.AttachedRoutes = int32(count)
 			}
 		}
-
+		// Set supportedKinds to the intersection (could be empty!)
+		if supportedKinds == nil {
+			supportedKinds = []gwv1.RouteGroupKind{}
+		}
+		lisReport.Status.SupportedKinds = supportedKinds
 		finalConditions := make([]metav1.Condition, 0, len(lisReport.Status.Conditions))
 		oldLisStatusIndex := slices.IndexFunc(gw.Status.Listeners, func(l gwv1.ListenerStatus) bool {
 			return l.Name == lis.Name
@@ -218,10 +270,13 @@ func (r *ReportMap) BuildRouteStatus(
 		slog.Error("unsupported route type for status reporting", "route_type", fmt.Sprintf("%T", obj))
 		return nil
 	}
-
 	newStatus := gwv1.RouteStatus{}
 	// Process the parent references to build the RouteParentStatus
 	for _, parentRef := range parentRefs {
+		if parentRef.Namespace == nil {
+			routeNs := gwv1.Namespace(obj.GetNamespace())
+			parentRef.Namespace = &routeNs
+		}
 		parentStatusReport := routeReport.getParentRefOrNil(&parentRef)
 		if parentStatusReport == nil {
 			// report doesn't have an entry for this parentRef, meaning we didn't translate it
