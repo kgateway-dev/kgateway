@@ -85,16 +85,19 @@ func TestValidate(t *testing.T) {
 
 	assertExpectedListenerStatuses(t, g, report.Gateway(gateway), gateway.Spec.Listeners, expectedStatuses)
 	assertExpectedListenerStatuses(t, g, report.ListenerSet(listenerSet), utils.ToListenerSlice(listenerSet.Spec.Listeners), expectedStatuses)
+	actualConditions := report.ListenerSet(deniedListenerSet).GetConditions()
 	g.Expect(report.ListenerSet(deniedListenerSet).GetConditions()).To(Equal([]metav1.Condition{
 		{
-			Type:   string(gwv1.GatewayConditionAccepted),
-			Status: metav1.ConditionFalse,
-			Reason: string(gwv1.GatewayConditionReason(gwxv1a1.ListenerSetReasonNotAllowed)),
+			Type:               string(gwv1.GatewayConditionAccepted),
+			Status:             metav1.ConditionFalse,
+			Reason:             string(gwv1.GatewayConditionReason(gwxv1a1.ListenerSetReasonNotAllowed)),
+			LastTransitionTime: actualConditions[0].LastTransitionTime,
 		},
 		{
-			Type:   string(gwv1.GatewayConditionProgrammed),
-			Status: metav1.ConditionFalse,
-			Reason: string(gwv1.GatewayConditionReason(gwxv1a1.ListenerSetReasonNotAllowed)),
+			Type:               string(gwv1.GatewayConditionProgrammed),
+			Status:             metav1.ConditionFalse,
+			Reason:             string(gwv1.GatewayConditionReason(gwxv1a1.ListenerSetReasonNotAllowed)),
+			LastTransitionTime: actualConditions[1].LastTransitionTime,
 		},
 	}))
 }
@@ -136,7 +139,7 @@ func TestSimpleGWDuplicateNoHostname(t *testing.T) {
 
 	validListeners := validateGateway(gwToIr(gateway, listenerSet, nil), reporter)
 	g := NewWithT(t)
-	g.Expect(validListeners).To(BeEmpty())
+	g.Expect(validListeners).To(HaveLen(1))
 
 	expectedGwStatuses := map[string]gwv1.ListenerStatus{
 		"http": {
@@ -151,13 +154,8 @@ func TestSimpleGWDuplicateNoHostname(t *testing.T) {
 					Kind:  "GRPCRoute",
 				},
 			},
-			Conditions: []metav1.Condition{
-				{
-					Type:   string(gwv1.ListenerConditionConflicted),
-					Status: metav1.ConditionTrue,
-					Reason: string(gwv1.ListenerReasonHostnameConflict),
-				},
-			},
+			// The first conflicted listener should be accepted based on listener precedence
+			Conditions: []metav1.Condition{},
 		},
 	}
 	expectedLsStatuses := map[string]gwv1.ListenerStatus{
@@ -178,6 +176,18 @@ func TestSimpleGWDuplicateNoHostname(t *testing.T) {
 					Type:   string(gwv1.ListenerConditionConflicted),
 					Status: metav1.ConditionTrue,
 					Reason: string(gwv1.ListenerReasonHostnameConflict),
+				},
+				{
+					Type:    string(gwv1.ListenerConditionAccepted),
+					Status:  metav1.ConditionFalse,
+					Reason:  string(gwv1.ListenerReasonHostnameConflict),
+					Message: ListenerMessageHostnameConflict,
+				},
+				{
+					Type:    string(gwv1.ListenerConditionProgrammed),
+					Status:  metav1.ConditionFalse,
+					Reason:  string(gwv1.ListenerReasonHostnameConflict),
+					Message: ListenerMessageHostnameConflict,
 				},
 			},
 		},
@@ -389,7 +399,7 @@ func TestProtocolConflict(t *testing.T) {
 
 	validListeners := validateGateway(gwToIr(gateway, listenerSet, nil), reporter)
 	g := NewWithT(t)
-	g.Expect(validListeners).To(BeEmpty())
+	g.Expect(validListeners).To(HaveLen(1))
 
 	expectedGwStatuses := map[string]gwv1.ListenerStatus{
 		"http": {
@@ -404,13 +414,8 @@ func TestProtocolConflict(t *testing.T) {
 					Kind:  "GRPCRoute",
 				},
 			},
-			Conditions: []metav1.Condition{
-				{
-					Type:   string(gwv1.ListenerConditionConflicted),
-					Status: metav1.ConditionTrue,
-					Reason: string(gwv1.ListenerReasonProtocolConflict),
-				},
-			},
+			// The first conflicted listener should be accepted based on listener precedence
+			Conditions: []metav1.Condition{},
 		},
 	}
 	expectedLsStatuses := map[string]gwv1.ListenerStatus{
@@ -424,9 +429,22 @@ func TestProtocolConflict(t *testing.T) {
 			},
 			Conditions: []metav1.Condition{
 				{
-					Type:   string(gwv1.ListenerConditionConflicted),
-					Status: metav1.ConditionTrue,
-					Reason: string(gwv1.ListenerReasonProtocolConflict),
+					Type:    string(gwv1.ListenerConditionConflicted),
+					Status:  metav1.ConditionTrue,
+					Reason:  string(gwv1.ListenerReasonProtocolConflict),
+					Message: ListenerMessageProtocolConflict,
+				},
+				{
+					Type:    string(gwv1.ListenerConditionAccepted),
+					Status:  metav1.ConditionFalse,
+					Reason:  string(gwv1.ListenerReasonProtocolConflict),
+					Message: ListenerMessageProtocolConflict,
+				},
+				{
+					Type:    string(gwv1.ListenerConditionProgrammed),
+					Status:  metav1.ConditionFalse,
+					Reason:  string(gwv1.ListenerReasonProtocolConflict),
+					Message: ListenerMessageProtocolConflict,
 				},
 			},
 		},
@@ -481,7 +499,7 @@ func TestActualProtocolConflictInvalidRoutes(t *testing.T) {
 
 	validListeners := validateGateway(gwToIr(gateway, listenerSet, nil), reporter)
 	g := NewWithT(t)
-	g.Expect(validListeners).To(BeEmpty())
+	g.Expect(validListeners).To(HaveLen(1))
 
 	expectedGwStatuses := map[string]gwv1.ListenerStatus{
 		"http-with-invalid-route": {
@@ -503,13 +521,8 @@ func TestActualProtocolConflictInvalidRoutes(t *testing.T) {
 					Kind:  "HTTPRoute",
 				},
 			},
-			Conditions: []metav1.Condition{
-				{
-					Type:   string(gwv1.ListenerConditionConflicted),
-					Status: metav1.ConditionTrue,
-					Reason: string(gwv1.ListenerReasonProtocolConflict),
-				},
-			},
+			// The first conflicted listener should be accepted based on listener precedence
+			Conditions: []metav1.Condition{},
 		},
 	}
 	expectedLsStatuses := map[string]gwv1.ListenerStatus{
@@ -527,6 +540,16 @@ func TestActualProtocolConflictInvalidRoutes(t *testing.T) {
 					Status: metav1.ConditionTrue,
 					Reason: string(gwv1.ListenerReasonProtocolConflict),
 				},
+				{
+					Type:   string(gwv1.ListenerConditionAccepted),
+					Status: metav1.ConditionFalse,
+					Reason: string(gwv1.ListenerReasonProtocolConflict),
+				},
+				{
+					Type:   string(gwv1.ListenerConditionProgrammed),
+					Status: metav1.ConditionFalse,
+					Reason: string(gwv1.ListenerReasonProtocolConflict),
+				},
 			},
 		},
 	}
@@ -542,7 +565,7 @@ func TestHostnameConflict(t *testing.T) {
 
 	validListeners := validateGateway(gwToIr(gateway, listenerSet, nil), reporter)
 	g := NewWithT(t)
-	g.Expect(validListeners).To(BeEmpty())
+	g.Expect(validListeners).To(HaveLen(1))
 
 	expectedGwStatuses := map[string]gwv1.ListenerStatus{
 		"http": {
@@ -557,13 +580,8 @@ func TestHostnameConflict(t *testing.T) {
 					Kind:  "GRPCRoute",
 				},
 			},
-			Conditions: []metav1.Condition{
-				{
-					Type:   string(gwv1.ListenerConditionConflicted),
-					Status: metav1.ConditionTrue,
-					Reason: string(gwv1.ListenerReasonHostnameConflict),
-				},
-			},
+			// The first conflicted listener should be accepted based on listener precedence
+			Conditions: []metav1.Condition{},
 		},
 	}
 	expectedLsStatuses := map[string]gwv1.ListenerStatus{
@@ -583,6 +601,16 @@ func TestHostnameConflict(t *testing.T) {
 				{
 					Type:   string(gwv1.ListenerConditionConflicted),
 					Status: metav1.ConditionTrue,
+					Reason: string(gwv1.ListenerReasonHostnameConflict),
+				},
+				{
+					Type:   string(gwv1.ListenerConditionAccepted),
+					Status: metav1.ConditionFalse,
+					Reason: string(gwv1.ListenerReasonHostnameConflict),
+				},
+				{
+					Type:   string(gwv1.ListenerConditionProgrammed),
+					Status: metav1.ConditionFalse,
 					Reason: string(gwv1.ListenerReasonHostnameConflict),
 				},
 			},
@@ -642,7 +670,7 @@ func TestActualHostnameConflictWithInvalidRoute(t *testing.T) {
 
 	validListeners := validateGateway(gwToIr(gateway, listenerSet, nil), reporter)
 	g := NewWithT(t)
-	g.Expect(validListeners).To(BeEmpty())
+	g.Expect(validListeners).To(HaveLen(1))
 
 	expectedGwStatuses := map[string]gwv1.ListenerStatus{
 		"http-with-invalid-route": {
@@ -664,13 +692,8 @@ func TestActualHostnameConflictWithInvalidRoute(t *testing.T) {
 					Kind:  "HTTPRoute",
 				},
 			},
-			Conditions: []metav1.Condition{
-				{
-					Type:   string(gwv1.ListenerConditionConflicted),
-					Status: metav1.ConditionTrue,
-					Reason: string(gwv1.ListenerReasonHostnameConflict),
-				},
-			},
+			// The first conflicted listener should be accepted based on listener precedence
+			Conditions: []metav1.Condition{},
 		},
 	}
 	expectedLsStatuses := map[string]gwv1.ListenerStatus{
@@ -692,6 +715,16 @@ func TestActualHostnameConflictWithInvalidRoute(t *testing.T) {
 					Status: metav1.ConditionTrue,
 					Reason: string(gwv1.ListenerReasonHostnameConflict),
 				},
+				{
+					Type:   string(gwv1.ListenerConditionAccepted),
+					Status: metav1.ConditionFalse,
+					Reason: string(gwv1.ListenerReasonHostnameConflict),
+				},
+				{
+					Type:   string(gwv1.ListenerConditionProgrammed),
+					Status: metav1.ConditionFalse,
+					Reason: string(gwv1.ListenerReasonHostnameConflict),
+				},
 			},
 		},
 	}
@@ -707,7 +740,7 @@ func TestHostnameConflictWithExtraGoodListener(t *testing.T) {
 
 	validListeners := validateGateway(gwToIr(gateway, listenerSet, nil), reporter)
 	g := NewWithT(t)
-	g.Expect(validListeners).To(HaveLen(2))
+	g.Expect(validListeners).To(HaveLen(3))
 
 	expectedGwStatuses := map[string]gwv1.ListenerStatus{
 		"http": {
@@ -722,13 +755,8 @@ func TestHostnameConflictWithExtraGoodListener(t *testing.T) {
 					Kind:  "GRPCRoute",
 				},
 			},
-			Conditions: []metav1.Condition{
-				{
-					Type:   string(gwv1.ListenerConditionConflicted),
-					Status: metav1.ConditionTrue,
-					Reason: string(gwv1.ListenerReasonHostnameConflict),
-				},
-			},
+			// The first conflicted listener should be accepted based on listener precedence
+			Conditions: []metav1.Condition{},
 		},
 		"http3": {
 			Name: "http3",
@@ -761,6 +789,16 @@ func TestHostnameConflictWithExtraGoodListener(t *testing.T) {
 				{
 					Type:   string(gwv1.ListenerConditionConflicted),
 					Status: metav1.ConditionTrue,
+					Reason: string(gwv1.ListenerReasonHostnameConflict),
+				},
+				{
+					Type:   string(gwv1.ListenerConditionAccepted),
+					Status: metav1.ConditionFalse,
+					Reason: string(gwv1.ListenerReasonHostnameConflict),
+				},
+				{
+					Type:   string(gwv1.ListenerConditionProgrammed),
+					Status: metav1.ConditionFalse,
 					Reason: string(gwv1.ListenerReasonHostnameConflict),
 				},
 			},
@@ -843,7 +881,7 @@ func TestTCPProtocolConflict(t *testing.T) {
 
 	validListeners := validateGateway(gwToIr(gateway, listenerSet, nil), reporter)
 	g := NewWithT(t)
-	g.Expect(validListeners).To(BeEmpty())
+	g.Expect(validListeners).To(HaveLen(1))
 
 	expectedGwStatuses := map[string]gwv1.ListenerStatus{
 		"tcp": {
@@ -854,13 +892,8 @@ func TestTCPProtocolConflict(t *testing.T) {
 					Kind:  "TCPRoute",
 				},
 			},
-			Conditions: []metav1.Condition{
-				{
-					Type:   string(gwv1.ListenerConditionConflicted),
-					Status: metav1.ConditionTrue,
-					Reason: string(gwv1.ListenerReasonProtocolConflict),
-				},
-			},
+			// The first conflicted listener should be accepted based on listener precedence
+			Conditions: []metav1.Condition{},
 		},
 	}
 	expectedLsStatuses := map[string]gwv1.ListenerStatus{
@@ -882,6 +915,16 @@ func TestTCPProtocolConflict(t *testing.T) {
 					Status: metav1.ConditionTrue,
 					Reason: string(gwv1.ListenerReasonProtocolConflict),
 				},
+				{
+					Type:   string(gwv1.ListenerConditionAccepted),
+					Status: metav1.ConditionFalse,
+					Reason: string(gwv1.ListenerReasonProtocolConflict),
+				},
+				{
+					Type:   string(gwv1.ListenerConditionProgrammed),
+					Status: metav1.ConditionFalse,
+					Reason: string(gwv1.ListenerReasonProtocolConflict),
+				},
 			},
 		},
 	}
@@ -897,7 +940,7 @@ func TestTCPHostnameConflict(t *testing.T) {
 
 	validListeners := validateGateway(gwToIr(gateway, listenerSet, nil), reporter)
 	g := NewWithT(t)
-	g.Expect(validListeners).To(BeEmpty())
+	g.Expect(validListeners).To(HaveLen(1))
 
 	expectedGwStatuses := map[string]gwv1.ListenerStatus{
 		"tcp": {
@@ -908,13 +951,8 @@ func TestTCPHostnameConflict(t *testing.T) {
 					Kind:  "TCPRoute",
 				},
 			},
-			Conditions: []metav1.Condition{
-				{
-					Type:   string(gwv1.ListenerConditionConflicted),
-					Status: metav1.ConditionTrue,
-					Reason: string(gwv1.ListenerReasonHostnameConflict),
-				},
-			},
+			// The first conflicted listener should be accepted based on listener precedence
+			Conditions: []metav1.Condition{},
 		},
 	}
 	expectedLsStatuses := map[string]gwv1.ListenerStatus{
@@ -930,6 +968,16 @@ func TestTCPHostnameConflict(t *testing.T) {
 				{
 					Type:   string(gwv1.ListenerConditionConflicted),
 					Status: metav1.ConditionTrue,
+					Reason: string(gwv1.ListenerReasonHostnameConflict),
+				},
+				{
+					Type:   string(gwv1.ListenerConditionAccepted),
+					Status: metav1.ConditionFalse,
+					Reason: string(gwv1.ListenerReasonHostnameConflict),
+				},
+				{
+					Type:   string(gwv1.ListenerConditionProgrammed),
+					Status: metav1.ConditionFalse,
 					Reason: string(gwv1.ListenerReasonHostnameConflict),
 				},
 			},

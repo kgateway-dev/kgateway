@@ -503,7 +503,7 @@ func AreReportsSuccess(reportsMap reports.ReportMap) error {
 
 	for nns, gwReport := range reportsMap.Gateways {
 		for _, c := range gwReport.GetConditions() {
-			if c.Type == listener.AttachedListenerSetsConditionType {
+			if c.Type == listener.GatewayConditionAttachedListenerSets {
 				// A gateway might or might not have AttachedListenerSets so skip this condition
 				continue
 			}

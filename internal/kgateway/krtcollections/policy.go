@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"slices"
 	"strconv"
+	"strings"
 
 	"istio.io/istio/pkg/config/labels"
 	"istio.io/istio/pkg/kube/krt"
@@ -352,8 +353,20 @@ func NewGatewayIndex(
 			Namespace: gw.GetNamespace(),
 		}))
 
+		// Sort by listener precedence
+		// Ref: https://gateway-api.sigs.k8s.io/geps/gep-1713/#listener-precedence
+		// - ListenerSet ordered by creation time (oldest first)
+		// - ListenerSet ordered alphabetically by “{namespace}/{name}”
 		slices.SortFunc(listenerSets, func(a, b *gwxv1a1.XListenerSet) int {
-			return a.GetCreationTimestamp().Compare(b.GetCreationTimestamp().Time)
+			// primary sort: creation timestamp (oldest first)
+			if cmp := a.GetCreationTimestamp().Compare(b.GetCreationTimestamp().Time); cmp != 0 {
+				return cmp
+			}
+			// secondary sort: alphabetically by "{namespace}/{name}"
+			nnsString := func(ls *gwxv1a1.XListenerSet) string {
+				return fmt.Sprintf("%s/%s", ls.Namespace, ls.Name)
+			}
+			return strings.Compare(nnsString(a), nnsString(b))
 		})
 
 		// Start the resource sync metrics for all XListenerSets before they are processed,

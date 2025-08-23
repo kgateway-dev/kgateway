@@ -25,13 +25,15 @@ var (
 	validListenerSetManifest2               = filepath.Join(fsutils.MustGetThisDir(), "testdata", "valid-listenerset-2.yaml")
 	invalidListenerSetNotAllowedManifest    = filepath.Join(fsutils.MustGetThisDir(), "testdata", "invalid-listenerset-not-allowed.yaml")
 	invalidListenerSetNonExistingGWManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "invalid-listenerset-non-existing-gw.yaml")
+	conflictedListenerSetManifest           = filepath.Join(fsutils.MustGetThisDir(), "testdata", "conflicted-listenerset.yaml")
 	policyManifest                          = filepath.Join(fsutils.MustGetThisDir(), "testdata", "policies.yaml")
 
-	gwListener1Port = 80
-	gwListener2Port = 8081
-	lsListener1Port = 90
-	lsListener2Port = 8091
-	lsInvalidPort   = 8095
+	gwListener1Port  = 80
+	gwListener2Port  = 8081
+	ls1Listener1Port = 90
+	ls1Listener2Port = 8091
+	ls2Listener1Port = 8095
+	ls3Listener1Port = 88
 
 	proxyObjectMeta = metav1.ObjectMeta{
 		Name:      "gw",
@@ -103,6 +105,14 @@ var (
 		},
 	}
 
+	// TestConflictedListenerSet
+	conflictedListenerSet = &gwxv1a1.XListenerSet{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "z-conflicted-listenerset",
+			Namespace: "allowed-ns",
+		},
+	}
+
 	expectOK = &testmatchers.HttpResponse{
 		StatusCode: http.StatusOK,
 		Body:       gstruct.Ignore(),
@@ -132,21 +142,25 @@ var (
 
 	// test cases
 	testCases = map[string]base.TestCase{
-		"TestValidListenerSet": base.TestCase{
+		"TestValidListenerSet": {
 			Manifests: []string{validListenerSetManifest},
 			Resources: []client.Object{validListenerSet},
 		},
-		"TestInvalidListenerSetNotAllowed": base.TestCase{
+		"TestInvalidListenerSetNotAllowed": {
 			Manifests: []string{invalidListenerSetNotAllowedManifest},
 			Resources: []client.Object{invalidListenerSetNotAllowed},
 		},
-		"TestInvalidListenerSetNonExistingGW": base.TestCase{
+		"TestInvalidListenerSetNonExistingGW": {
 			Manifests: []string{invalidListenerSetNonExistingGWManifest},
 			Resources: []client.Object{invalidListenerSetNonExistingGW},
 		},
-		"TestPolicies": base.TestCase{
+		"TestPolicies": {
 			Manifests: []string{validListenerSetManifest, validListenerSetManifest2, policyManifest},
 			Resources: []client.Object{validListenerSet, validListenerSet2},
+		},
+		"TestConflictedListenerSet": {
+			Manifests: []string{validListenerSetManifest, conflictedListenerSetManifest},
+			Resources: []client.Object{validListenerSet, conflictedListenerSet},
 		},
 	}
 )
