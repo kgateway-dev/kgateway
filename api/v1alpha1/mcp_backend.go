@@ -53,6 +53,11 @@ type McpTarget struct {
 	// +kubebuilder:validation:MinLength=1
 	Host string `json:"host"`
 
+	// Path is the URL path of the MCP target endpoint.
+	// Defaults to "/sse" for SSE protocol or "/mcp" for StreamableHTTP protocol if not specified.
+	// +optional
+	Path string `json:"path"`
+
 	// Port is the port number of the MCP target.
 	// +required
 	// +kubebuilder:validation:Minimum=1

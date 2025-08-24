@@ -783,6 +783,8 @@ spec:
                             name:
                               minLength: 1
                               type: string
+                            path:
+                              type: string
                             port:
                               format: int32
                               maximum: 65535
