@@ -246,6 +246,12 @@ func processParentReferences[T any](
 				return metav1.ConditionFalse
 			}(),
 			Reason: resolvedReason,
+			Message: func() string {
+				if gwResult.error != nil {
+					return gwResult.error.Message
+				}
+				return ""
+			}(),
 		})
 	}
 	return resourcesPerGateway
