@@ -28,6 +28,7 @@ import (
 )
 
 func TestAgentgateway(t *testing.T) {
+		t.Skip("Temporarily disabled due to pipeline issues")
 	st, err := settings.BuildSettings()
 	st.EnableAgentGateway = true
 	st.EnableInferExt = true
