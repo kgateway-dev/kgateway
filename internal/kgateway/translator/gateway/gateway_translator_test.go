@@ -1417,9 +1417,9 @@ func TestRouteReplacement(t *testing.T) {
 			},
 		},
 		{
-			name:      "Gateway Wide Invalid Attachment",
-			category:  "policy",
-			inputFile: "policy-gateway-wide-invalid.yaml",
+			name:      "Gateway",
+			category:  "attachment",
+			inputFile: "gateway-invalid.yaml",
 			minMode:   settings.RouteReplacementStandard,
 			assertStandard: func(t *testing.T) translatortest.AssertReports {
 				return func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
@@ -1433,9 +1433,9 @@ func TestRouteReplacement(t *testing.T) {
 			},
 		},
 		{
-			name:      "Listener Wide Invalid Attachment",
-			category:  "policy",
-			inputFile: "policy-listener-wide-invalid.yaml",
+			name:      "Listener",
+			category:  "attachment",
+			inputFile: "listener-invalid.yaml",
 			minMode:   settings.RouteReplacementStandard,
 			assertStandard: func(t *testing.T) translatortest.AssertReports {
 				return func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
@@ -1449,9 +1449,25 @@ func TestRouteReplacement(t *testing.T) {
 			},
 		},
 		{
-			name:      "HTTPRoute Wide Invalid Attachment",
-			category:  "policy",
-			inputFile: "policy-httproute-wide-invalid.yaml",
+			name:      "XListenerSet",
+			category:  "attachment",
+			inputFile: "xlistenerset-invalid.yaml",
+			minMode:   settings.RouteReplacementStandard,
+			assertStandard: func(t *testing.T) translatortest.AssertReports {
+				return func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
+					translatortest.AssertAcceptedPolicyStatus(t, reportsMap, []reports.PolicyKey{
+						{Group: "gateway.kgateway.dev", Kind: "TrafficPolicy", Namespace: "gwtest", Name: "invalid-traffic-policy"},
+					})
+				}
+			},
+			assertStrict: func(t *testing.T) translatortest.AssertReports {
+				return translatortest.AssertPolicyNotAccepted(t, "invalid-traffic-policy", "test-route")
+			},
+		},
+		{
+			name:      "HTTPRoute",
+			category:  "attachment",
+			inputFile: "httproute-invalid.yaml",
 			minMode:   settings.RouteReplacementStandard,
 			assertStandard: func(t *testing.T) translatortest.AssertReports {
 				return func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
