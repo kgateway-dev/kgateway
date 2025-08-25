@@ -50,8 +50,7 @@ func (p *trafficPolicyPluginGwPass) handleRBAC(fcn string, pCtxTypedFilterConfig
 		return
 	}
 
-	// Add a filter to the chain. When having a jwt policy for a route we need to also have a
-	// global rbac http filter in the chain otherwise it will be ignored.
+	// Add rbac filter to the chain if configured
 	if p.rbacInChain == nil {
 		p.rbacInChain = make(map[string]*envoyauthz.RBAC)
 	}
@@ -123,7 +122,7 @@ func translateRBAC(rbac *v1alpha1.RBAC) (*envoyauthz.RBACPerRoute, error) {
 	}
 
 	if len(errs) > 0 {
-		return res, fmt.Errorf("CEL matcher errors: %v", errs)
+		return res, fmt.Errorf("RBAC policy encountered CEL matcher errors: %v", errs)
 	}
 	return res, nil
 }

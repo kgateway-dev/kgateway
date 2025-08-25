@@ -596,9 +596,7 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.Filt
 	}
 
 	if f := p.rbacInChain[fcc.FilterChainName]; f != nil {
-		filter := plugins.MustNewStagedFilter(rbacFilterNamePrefix,
-			p.rbacInChain[fcc.FilterChainName],
-			plugins.DuringStage(plugins.AuthZStage))
+		filter := plugins.MustNewStagedFilter(rbacFilterNamePrefix, f, plugins.DuringStage(plugins.AuthZStage))
 		filters = append(filters, filter)
 	}
 
