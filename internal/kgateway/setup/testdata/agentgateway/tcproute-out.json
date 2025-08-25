@@ -8,7 +8,7 @@
           "hostname": "bar.gwtest.svc.cluster.local",
           "addresses": [
             {
-              "address": "CgAAxQ=="
+              "address": "CgAAFQ=="
             }
           ],
           "ports": [
@@ -30,7 +30,7 @@
           "hostname": "foo.gwtest.svc.cluster.local",
           "addresses": [
             {
-              "address": "CgAAfw=="
+              "address": "CgAAuA=="
             }
           ],
           "ports": [
@@ -47,96 +47,12 @@
     {
       "Type": {
         "Service": {
-          "name": "http-direct-response",
-          "namespace": "gwtest",
-          "hostname": "http-direct-response.gwtest.svc.cluster.local",
-          "addresses": [
-            {
-              "address": "CgAAZw=="
-            }
-          ],
-          "ports": [
-            {
-              "service_port": 8080,
-              "target_port": 8080
-            }
-          ],
-          "ip_families": 1
-        }
-      }
-    },
-    {
-      "Type": {
-        "Service": {
-          "name": "http-grpcroute",
-          "namespace": "gwtest",
-          "hostname": "http-grpcroute.gwtest.svc.cluster.local",
-          "addresses": [
-            {
-              "address": "CgAAJA=="
-            }
-          ],
-          "ports": [
-            {
-              "service_port": 8080,
-              "target_port": 8080
-            }
-          ],
-          "ip_families": 1
-        }
-      }
-    },
-    {
-      "Type": {
-        "Service": {
-          "name": "http-httproute",
-          "namespace": "gwtest",
-          "hostname": "http-httproute.gwtest.svc.cluster.local",
-          "addresses": [
-            {
-              "address": "CgAAng=="
-            }
-          ],
-          "ports": [
-            {
-              "service_port": 8080,
-              "target_port": 8080
-            }
-          ],
-          "ip_families": 1
-        }
-      }
-    },
-    {
-      "Type": {
-        "Service": {
-          "name": "http-inferencepool",
-          "namespace": "gwtest",
-          "hostname": "http-inferencepool.gwtest.svc.cluster.local",
-          "addresses": [
-            {
-              "address": "CgAAQg=="
-            }
-          ],
-          "ports": [
-            {
-              "service_port": 8080,
-              "target_port": 8080
-            }
-          ],
-          "ip_families": 1
-        }
-      }
-    },
-    {
-      "Type": {
-        "Service": {
           "name": "http-tcproute",
           "namespace": "gwtest",
           "hostname": "http-tcproute.gwtest.svc.cluster.local",
           "addresses": [
             {
-              "address": "CgAAOQ=="
+              "address": "CgAAKw=="
             }
           ],
           "ports": [
@@ -167,7 +83,7 @@
           "ports": [
             {
               "service_port": 443,
-              "target_port": 44805
+              "target_port": 37763
             }
           ],
           "ip_families": 1
@@ -186,7 +102,7 @@
           "service_account": "default",
           "node": "worker",
           "canonical_name": "reviews",
-          "canonical_revision": "latest",
+          "canonical_revision": "v1",
           "workload_type": 2,
           "workload_name": "reviews-1",
           "status": 1
@@ -205,7 +121,7 @@
           "service_account": "default",
           "node": "worker2",
           "canonical_name": "reviews",
-          "canonical_revision": "latest",
+          "canonical_revision": "v2",
           "workload_type": 2,
           "workload_name": "reviews-2",
           "status": 1
@@ -243,7 +159,7 @@
           "service_account": "default",
           "node": "worker4",
           "canonical_name": "reviews",
-          "canonical_revision": "latest",
+          "canonical_revision": "v1",
           "workload_type": 2,
           "workload_name": "reviews-4",
           "status": 1
@@ -293,8 +209,7 @@
     {
       "Kind": {
         "TcpRoute": {
-          "key": "gwtest.tcp-app-1.0.foo",
-          "listener_key": "gwtest/http-tcproute/foo",
+          "key": "gwtest.tcp-app-1.0",
           "route_name": "gwtest/tcp-app-1",
           "backends": [
             {
@@ -313,8 +228,7 @@
     {
       "Kind": {
         "TcpRoute": {
-          "key": "gwtest.tcp-app-2.0.bar",
-          "listener_key": "gwtest/http-tcproute/bar",
+          "key": "gwtest.tcp-app-2.0",
           "route_name": "gwtest/tcp-app-2",
           "backends": [
             {
