@@ -298,9 +298,7 @@
           "backends": [
             {
               "backend": {
-                "Kind": {
-                  "Service": "gwtest/foo.gwtest.svc.cluster.local"
-                },
+                "service": "gwtest/foo.gwtest.svc.cluster.local",
                 "port": 3001
               },
               "weight": 1
@@ -317,9 +315,7 @@
           "backends": [
             {
               "backend": {
-                "Kind": {
-                  "Service": "gwtest/bar.gwtest.svc.cluster.local"
-                },
+                "service": "gwtest/bar.gwtest.svc.cluster.local",
                 "port": 3002
               },
               "weight": 1
