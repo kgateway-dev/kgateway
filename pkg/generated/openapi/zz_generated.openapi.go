@@ -5190,7 +5190,6 @@ func schema_kgateway_v2_api_v1alpha1_McpTarget(ref common.ReferenceCallback) com
 					"path": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Path is the URL path of the MCP target endpoint. Defaults to \"/sse\" for SSE protocol or \"/mcp\" for StreamableHTTP protocol if not specified.",
-							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},

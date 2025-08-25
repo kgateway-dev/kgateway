@@ -270,13 +270,15 @@ func buildMCPIr(krtctx krt.HandlerContext, be *v1alpha1.Backend, services krt.Co
 
 			mcpTarget := &api.MCPTarget{
 				Name: targetSelector.StaticTarget.Name,
-				Path: targetSelector.StaticTarget.Path,
 				Backend: &api.BackendReference{
 					Kind: &api.BackendReference_Backend{
 						Backend: staticBackendRef,
 					},
 					Port: uint32(targetSelector.StaticTarget.Port),
 				},
+			}
+			if targetSelector.StaticTarget.Path != nil {
+				mcpTarget.Path = *targetSelector.StaticTarget.Path
 			}
 
 			// Convert protocol if specified

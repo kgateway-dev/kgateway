@@ -47,7 +47,7 @@ func TestBuildMCPIr(t *testing.T) {
 									Name:     "static-target",
 									Host:     "mcp-server.example.com",
 									Port:     8080,
-									Path:     "override-sse",
+									Path:     stringPtr("override-sse"),
 									Protocol: v1alpha1.MCPProtocolSSE,
 								},
 							},

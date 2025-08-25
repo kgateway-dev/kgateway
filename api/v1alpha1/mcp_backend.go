@@ -56,7 +56,7 @@ type McpTarget struct {
 	// Path is the URL path of the MCP target endpoint.
 	// Defaults to "/sse" for SSE protocol or "/mcp" for StreamableHTTP protocol if not specified.
 	// +optional
-	Path string `json:"path"`
+	Path *string `json:"path"`
 
 	// Port is the port number of the MCP target.
 	// +required

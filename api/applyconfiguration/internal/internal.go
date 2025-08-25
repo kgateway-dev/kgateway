@@ -1694,7 +1694,6 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: path
       type:
         scalar: string
-      default: ""
     - name: port
       type:
         scalar: numeric
