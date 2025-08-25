@@ -380,7 +380,6 @@ func compareProxy(expectedFile string, actualProxy *translationResult) (string, 
 	if err := ReadYamlFile(expectedFile, expectedOutput); err != nil {
 		return "", err
 	}
-
 	return cmp.Diff(sortTranslationResult(expectedOutput), sortTranslationResult(actualProxy), protocmp.Transform(), cmpopts.EquateNaNs()), nil
 }
 
