@@ -22,6 +22,18 @@ jobs:
     timeout-minutes: 25
     steps:
     - uses: actions/checkout@v4
+    - name: Debug - Check what we actually have
+      run: |
+        echo "=== DEBUG INFO ==="
+        echo "Current commit: $(git rev-parse HEAD)"
+        echo "Current branch: $(git branch --show-current)"
+        echo "Remote origin: $(git remote get-url origin)"
+        echo "=== TEST DATA FILES ==="
+        ls -la internal/kgateway/setup/testdata/agentgateway/
+        echo "=== TCPROUTE-OUT.JSON CONTENT ==="
+        cat internal/kgateway/setup/testdata/agentgateway/tcproute-out.json
+        echo "=== GIT LOG ==="
+        git log --oneline -5
     - name: Setup Go
       uses: actions/setup-go@v5
       with:

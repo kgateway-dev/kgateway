@@ -489,7 +489,6 @@ func (a *index) endpointSlicesBuilder(
 		if !f {
 			return nil
 		}
-		serviceKey := es.Namespace + "/" + kubeutils.GetServiceHostname(serviceName, es.Namespace)
 		if es.AddressType == discovery.AddressTypeFQDN {
 			// Currently we do not support FQDN. In theory, we could, but its' support in Kubernetes entirely is questionable and
 			// may be removed in the near future.
@@ -497,7 +496,7 @@ func (a *index) endpointSlicesBuilder(
 		}
 		var res []WorkloadInfo
 		seen := sets.New[string]()
-
+		serviceKey := es.Namespace + "/" + kubeutils.GetServiceHostname(serviceName, es.Namespace)
 		svcs := krt.Fetch(ctx, workloadServices, krt.FilterKey(serviceKey), krt.FilterGeneric(func(a any) bool {
 			// Only find Service, not Service Entry
 			return a.(ServiceInfo).Source.Kind == kind.Service.String()
@@ -526,10 +525,10 @@ func (a *index) endpointSlicesBuilder(
 			// Endpoint slice port has name (service port name, not containerPort) and port (targetPort)
 			// We need to join with the Service port list to translate the port name to
 			for _, svcPort := range svc.Service.Ports {
-				portName := svc.PortNames[int32(svcPort.ServicePort)]
 				if p.Name == nil {
 					continue
 				}
+				portName := svc.PortNames[int32(svcPort.ServicePort)]
 				if portName.PortName != *p.Name {
 					continue
 				}
