@@ -717,6 +717,25 @@ spec:
                         type: object
                     type: object
                 type: object
+              rbac:
+                properties:
+                  action:
+                    default: Allow
+                    enum:
+                    - Allow
+                    - Deny
+                    type: string
+                  policy:
+                    properties:
+                      matchExpressions:
+                        items:
+                          type: string
+                        minItems: 1
+                        type: array
+                    type: object
+                required:
+                - policy
+                type: object
               retry:
                 properties:
                   attempts:

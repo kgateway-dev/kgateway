@@ -1,32 +1,32 @@
-Binds:
-  - key: 80/default/example-gateway
-    port: 80
-Listeners:
-  - bindKey: 80/default/example-gateway
-    gatewayName: default/example-gateway
-    key: default/example-gateway/http
-    name: http
-    protocol: HTTP
-Routes:
-  - backends:
-      - backend:
-          backend: default/openai
-        weight: 1
-    hostnames:
-      - example.com
-    key: default.example-route.0.0.http
-    listenerKey: default/example-gateway/http
-    routeName: default/example-route
 Backends:
-  - name: default/openai
-    ai:
-      openai:
-        model: gpt-4o-mini
+- ai:
+    openai:
+      model: gpt-4o-mini
+  name: default/openai
+Binds:
+- key: 80/default/example-gateway
+  port: 80
+Listeners:
+- bindKey: 80/default/example-gateway
+  gatewayName: default/example-gateway
+  key: default/example-gateway/http
+  name: http
+  protocol: HTTP
 Policies:
-  - name: auth-default/openai
-    target:
+- name: auth-default/openai
+  spec:
+    auth:
+      key:
+        secret: mysecretkey
+  target:
+    backend: default/openai
+Routes:
+- backends:
+  - backend:
       backend: default/openai
-    spec:
-      auth:
-        key:
-          secret: mysecretkey
+    weight: 1
+  hostnames:
+  - example.com
+  key: default.example-route.0.0.http
+  listenerKey: default/example-gateway/http
+  routeName: default/example-route

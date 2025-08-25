@@ -1,42 +1,42 @@
 Addresses:
-  - service:
-      hostname: grpc-svc-1.default.svc.cluster.local
-      name: grpc-svc-1
-      namespace: default
-      ports:
-        - appProtocol: HTTP2
-          servicePort: 9001
-          targetPort: 9001
-  - service:
-      hostname: grpc-svc-2.default.svc.cluster.local
-      name: grpc-svc-2
-      namespace: default
-      ports:
-        - appProtocol: HTTP2
-          servicePort: 9002
-          targetPort: 9002
+- service:
+    hostname: grpc-svc-1.default.svc.cluster.local
+    name: grpc-svc-1
+    namespace: default
+    ports:
+    - appProtocol: HTTP2
+      servicePort: 9001
+      targetPort: 9001
+- service:
+    hostname: grpc-svc-2.default.svc.cluster.local
+    name: grpc-svc-2
+    namespace: default
+    ports:
+    - appProtocol: HTTP2
+      servicePort: 9002
+      targetPort: 9002
 Binds:
-  - key: 8090/default/example-grpc-gateway
-    port: 8090
+- key: 8090/default/example-grpc-gateway
+  port: 8090
 Listeners:
-  - bindKey: 8090/default/example-grpc-gateway
-    gatewayName: default/example-grpc-gateway
-    key: default/example-grpc-gateway/grpc
-    name: grpc
-    protocol: HTTP
+- bindKey: 8090/default/example-grpc-gateway
+  gatewayName: default/example-grpc-gateway
+  key: default/example-grpc-gateway/grpc
+  name: grpc
+  protocol: HTTP
 Routes:
-  - backends:
-      - backend:
-          port: 9001
-          service: default/grpc-svc-1.default.svc.cluster.local
-        weight: 50
-      - backend:
-          port: 9002
-          service: default/grpc-svc-2.default.svc.cluster.local
-        weight: 50
-    key: default.example-grpc-multi-backend-route.0.grpc
-    listenerKey: default/example-grpc-gateway/grpc
-    matches:
-      - path:
-          exact: /example.multi.Service/MultiMethod
-    routeName: default/example-grpc-multi-backend-route
+- backends:
+  - backend:
+      port: 9001
+      service: default/grpc-svc-1.default.svc.cluster.local
+    weight: 50
+  - backend:
+      port: 9002
+      service: default/grpc-svc-2.default.svc.cluster.local
+    weight: 50
+  key: default.example-grpc-multi-backend-route.0.grpc
+  listenerKey: default/example-grpc-gateway/grpc
+  matches:
+  - path:
+      exact: /example.multi.Service/MultiMethod
+  routeName: default/example-grpc-multi-backend-route

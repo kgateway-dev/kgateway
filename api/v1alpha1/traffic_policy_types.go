@@ -109,6 +109,11 @@ type TrafficPolicySpec struct {
 	// It is applicable to HTTPRoutes, Gateway listeners and XListenerSets, and ignored for other targeted kinds.
 	// +optional
 	Retry *Retry `json:"retry,omitempty"`
+
+	// RBAC specifies the role-based access control configuration for the policy.
+	// This defines the rules for authorization based on roles and permissions.
+	// +optional
+	RBAC *RBAC `json:"rbac,omitempty"`
 }
 
 // TransformationPolicy config is used to modify envoy behavior at a route level.

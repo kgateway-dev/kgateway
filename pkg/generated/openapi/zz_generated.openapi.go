@@ -152,6 +152,8 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.PromptguardRequest":                        schema_kgateway_v2_api_v1alpha1_PromptguardRequest(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.PromptguardResponse":                       schema_kgateway_v2_api_v1alpha1_PromptguardResponse(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ProxyDeployment":                           schema_kgateway_v2_api_v1alpha1_ProxyDeployment(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.RBAC":                                      schema_kgateway_v2_api_v1alpha1_RBAC(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.RBACPolicy":                                schema_kgateway_v2_api_v1alpha1_RBACPolicy(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.RateLimit":                                 schema_kgateway_v2_api_v1alpha1_RateLimit(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.RateLimitDescriptor":                       schema_kgateway_v2_api_v1alpha1_RateLimitDescriptor(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.RateLimitDescriptorEntry":                  schema_kgateway_v2_api_v1alpha1_RateLimitDescriptorEntry(ref),
@@ -6135,6 +6137,64 @@ func schema_kgateway_v2_api_v1alpha1_ProxyDeployment(ref common.ReferenceCallbac
 	}
 }
 
+func schema_kgateway_v2_api_v1alpha1_RBAC(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "RBAC defines the configuration for role-based access control.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"policy": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Policy specifies the RBAC rule to evaluate. A policy matches only **all** the conditions evaluates to true.",
+							Default:     map[string]interface{}{},
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.RBACPolicy"),
+						},
+					},
+					"action": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Action defines whether the rule allows or denies the request if matched. If unspecified, the default is \"Allow\".",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+				},
+				Required: []string{"policy"},
+			},
+		},
+		Dependencies: []string{
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.RBACPolicy"},
+	}
+}
+
+func schema_kgateway_v2_api_v1alpha1_RBACPolicy(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "RBACPolicy defines a single RBAC rule.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"matchExpressions": {
+						SchemaProps: spec.SchemaProps{
+							Description: "MatchExpressions defines a set of conditions that must be satisfied for the rule to match. These expression should be in the form of a Common Expression Language (CEL) expression. See: https://www.envoyproxy.io/docs/envoy/latest/xds/type/matcher/v3/cel.proto",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
 func schema_kgateway_v2_api_v1alpha1_RateLimit(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -7580,11 +7640,17 @@ func schema_kgateway_v2_api_v1alpha1_TrafficPolicySpec(ref common.ReferenceCallb
 							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Retry"),
 						},
 					},
+					"rbac": {
+						SchemaProps: spec.SchemaProps{
+							Description: "RBAC specifies the role-based access control configuration for the policy. This defines the rules for authorization based on roles and permissions.",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.RBAC"),
+						},
+					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AIPolicy", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Buffer", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CSRFPolicy", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CorsPolicy", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtAuthPolicy", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtProcPolicy", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.HeaderModifiers", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LocalPolicyTargetReferenceWithSectionName", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LocalPolicyTargetSelectorWithSectionName", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.RateLimit", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Retry", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Timeouts", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.TransformationPolicy"},
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AIPolicy", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Buffer", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CSRFPolicy", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CorsPolicy", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtAuthPolicy", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtProcPolicy", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.HeaderModifiers", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LocalPolicyTargetReferenceWithSectionName", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LocalPolicyTargetSelectorWithSectionName", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.RBAC", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.RateLimit", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Retry", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Timeouts", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.TransformationPolicy"},
 	}
 }
 

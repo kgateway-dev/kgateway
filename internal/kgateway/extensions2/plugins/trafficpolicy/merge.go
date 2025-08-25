@@ -222,6 +222,20 @@ func mergeTimeouts(
 	defaultMerge(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, accessor, "timeouts")
 }
 
+func mergeRBAC(
+	p1, p2 *TrafficPolicy,
+	p2Ref *pluginsdkir.AttachedPolicyRef,
+	p2MergeOrigins pluginsdkir.MergeOrigins,
+	opts policy.MergeOptions,
+	mergeOrigins pluginsdkir.MergeOrigins,
+) {
+	accessor := fieldAccessor[rbacIR]{
+		Get: func(spec *trafficPolicySpecIr) *rbacIR { return spec.rbac },
+		Set: func(spec *trafficPolicySpecIr, val *rbacIR) { spec.rbac = val },
+	}
+	defaultMerge(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, accessor, "rbac")
+}
+
 func mergeRetry(
 	p1, p2 *TrafficPolicy,
 	p2Ref *pluginsdkir.AttachedPolicyRef,
