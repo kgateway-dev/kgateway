@@ -12,7 +12,7 @@ Each feature suite is invoked as a subtest of the top level suite. The subtests 
 ### Using a previously released version
 It is possible to run these tests against a previously released version of kgateway. This is useful for testing a release candidate, or a nightly build.
 
-There is no setup required for this option, as the test suite will download the helm chart archive and `glooctl` binary from the specified release. You will use the `RELEASED_VERSION` environment variable when running the tests. See the [variable definition](/test/testutils/env.go) for more details.
+There is no setup required for this option, as the test suite will download the helm chart archive from the specified release. You will use the `RELEASED_VERSION` environment variable when running the tests. See the [variable definition](/test/testutils/env.go) for more details.
 
 ### Using a locally built version
 For these tests to run, we require the following conditions:

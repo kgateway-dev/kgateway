@@ -16,7 +16,6 @@ import (
 
 const NormalizedHTTPSTLSType = "HTTPS/TLS"
 const DefaultHostname = "*"
-const AttachedListenerSetsConditionType = "AttachedListenerSets"
 
 type portProtocol struct {
 	hostnames map[gwv1.Hostname]int
@@ -185,16 +184,22 @@ func validateListeners(gw *ir.Gateway, reporter reports.Reporter) []ir.Listener 
 			protocolConflict = true
 		}
 
-		for _, listener := range pp.listeners {
+		for idx, listener := range pp.listeners {
 			parentReporter := listener.GetParentReporter(reporter)
 
+			// There should be no need to check for port / protocol / hostname conflicts on gateway listeners
+			// as that is handled by kube validation
 			if protocolConflict {
-				parentReporter.ListenerName(string(listener.Name)).SetCondition(reports.ListenerCondition{
-					Type:    gwv1.ListenerConditionConflicted,
-					Status:  metav1.ConditionTrue,
-					Reason:  gwv1.ListenerReasonProtocolConflict,
-					Message: "Found conflicting protocols on listeners, a single port can only contain listeners with compatible protocols",
-				})
+				// Accept the first conflicted listener - they have already been sorted by listener precedence
+				// TODO(davidjumani): Link to GEP when https://github.com/kubernetes-sigs/gateway-api/pull/3978 merges
+				if idx == 0 {
+					logger.Info("accepted listener with protocol conflict as per listener precedence", "name", listener.Name, "parent", listener.Parent.GetName())
+					validListeners = append(validListeners, listener)
+					continue
+				}
+
+				logger.Error("rejected listener with protocol conflict as per listener precedence", "name", listener.Name, "parent", listener.Parent.GetName())
+				rejectConflictedListener(parentReporter, listener, gwv1.ListenerReasonProtocolConflict, ListenerMessageProtocolConflict)
 
 				// continue as protocolConflict will take precedence over hostname conflicts
 				continue
@@ -207,12 +212,16 @@ func validateListeners(gw *ir.Gateway, reporter reports.Reporter) []ir.Listener 
 				hostname = *listener.Hostname
 			}
 			if count := pp.hostnames[hostname]; count > 1 {
-				parentReporter.ListenerName(string(listener.Name)).SetCondition(reports.ListenerCondition{
-					Type:    gwv1.ListenerConditionConflicted,
-					Status:  metav1.ConditionTrue,
-					Reason:  gwv1.ListenerReasonHostnameConflict,
-					Message: "Found conflicting hostnames on listeners, all listeners on a single port must have unique hostnames",
-				})
+				// Accept the first conflicted listener - they have already been sorted by listener precedence
+				// TODO(davidjumani): Link to GEP when https://github.com/kubernetes-sigs/gateway-api/pull/3978 merges
+				if idx == 0 {
+					logger.Info("accepted listener with hostname conflict as per listener precedence", "name", listener.Name, "parent", listener.Parent.GetName())
+					validListeners = append(validListeners, listener)
+					continue
+				}
+
+				logger.Error("rejected listener with hostname conflict as per listener precedence", "name", listener.Name, "parent", listener.Parent.GetName())
+				rejectConflictedListener(parentReporter, listener, gwv1.ListenerReasonHostnameConflict, ListenerMessageHostnameConflict)
 			} else {
 				// TODO should check this is exactly 1?
 				validListeners = append(validListeners, listener)
@@ -221,12 +230,13 @@ func validateListeners(gw *ir.Gateway, reporter reports.Reporter) []ir.Listener 
 	}
 
 	// Add the final conditions on the Gateway
-	if gw.AllowedListenerSets == nil {
+	if gw.Obj.Spec.AllowedListeners == nil {
 		reporter.Gateway(gw.Obj).SetCondition(reports.GatewayCondition{
-			Type:   AttachedListenerSetsConditionType,
+			Type:   GatewayConditionAttachedListenerSets,
 			Status: metav1.ConditionUnknown,
-			Reason: gwv1.GatewayReasonNoResources,
+			Reason: GatewayReasonListenerSetsNotAllowed,
 		})
+		return validListeners
 	}
 
 	if len(validListeners) == 0 {
@@ -253,13 +263,13 @@ func validateListeners(gw *ir.Gateway, reporter reports.Reporter) []ir.Listener 
 
 	if listenerSetListenerExists {
 		reporter.Gateway(gw.Obj).SetCondition(reports.GatewayCondition{
-			Type:   AttachedListenerSetsConditionType,
+			Type:   GatewayConditionAttachedListenerSets,
 			Status: metav1.ConditionTrue,
-			Reason: gwv1.GatewayReasonAccepted,
+			Reason: GatewayReasonListenerSetsAttached,
 		})
 	} else {
 		reporter.Gateway(gw.Obj).SetCondition(reports.GatewayCondition{
-			Type:   AttachedListenerSetsConditionType,
+			Type:   GatewayConditionAttachedListenerSets,
 			Status: metav1.ConditionFalse,
 			Reason: gwv1.GatewayReasonNoResources,
 		})
@@ -299,4 +309,37 @@ func rejectDeniedListenerSets(consolidatedGateway *ir.Gateway, reporter reports.
 func getGroupName() *gwv1.Group {
 	g := gwv1.Group(gwv1.GroupName)
 	return &g
+}
+
+func rejectConflictedListener(parentReporter reports.GatewayReporter, listener ir.Listener, reason gwv1.ListenerConditionReason, message string) {
+	parentReporter.ListenerName(string(listener.Name)).SetCondition(reports.ListenerCondition{
+		Type:    gwv1.ListenerConditionConflicted,
+		Status:  metav1.ConditionTrue,
+		Reason:  reason,
+		Message: message,
+	})
+	parentReporter.ListenerName(string(listener.Name)).SetCondition(reports.ListenerCondition{
+		Type:    gwv1.ListenerConditionAccepted,
+		Status:  metav1.ConditionFalse,
+		Reason:  reason,
+		Message: message,
+	})
+	parentReporter.ListenerName(string(listener.Name)).SetCondition(reports.ListenerCondition{
+		Type:    gwv1.ListenerConditionProgrammed,
+		Status:  metav1.ConditionFalse,
+		Reason:  reason,
+		Message: message,
+	})
+	// Set the accepted and programmed condition now since the right reason is needed.
+	// If the gateway is eventually rejected, the condition will be overwritten
+	parentReporter.SetCondition(reports.GatewayCondition{
+		Type:   gwv1.GatewayConditionAccepted,
+		Status: metav1.ConditionTrue,
+		Reason: gwv1.GatewayConditionReason(gwxv1a1.ListenerSetReasonListenersNotValid),
+	})
+	parentReporter.SetCondition(reports.GatewayCondition{
+		Type:   gwv1.GatewayConditionProgrammed,
+		Status: metav1.ConditionTrue,
+		Reason: gwv1.GatewayConditionReason(gwxv1a1.ListenerSetReasonListenersNotValid),
+	})
 }

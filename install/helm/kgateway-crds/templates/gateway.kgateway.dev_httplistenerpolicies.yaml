@@ -32,6 +32,8 @@ spec:
             type: object
           spec:
             properties:
+              acceptHttp10:
+                type: boolean
               accessLog:
                 items:
                   properties:
@@ -661,6 +663,9 @@ spec:
                   type: object
                 maxItems: 16
                 type: array
+              defaultHostForHttp10:
+                minLength: 1
+                type: string
               healthCheck:
                 properties:
                   path:

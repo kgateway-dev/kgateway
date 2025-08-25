@@ -205,8 +205,8 @@ Routes:
         filterMetadata:
           merge.TrafficPolicy.gateway.kgateway.dev:
             headerModifiers:
-            - gateway.kgateway.dev/TrafficPolicy/default/header-modifiers-route-policy-1
-      name: listener~8081~example_com-route-0-httproute-svc-route-1-default-0-0-matcher-0
+            - gateway.kgateway.dev/TrafficPolicy/default/header-modifiers-route-policy-2
+      name: listener~8081~example_com-route-0-httproute-svc-route-2-default-0-0-matcher-0
       route:
         cluster: kube_default_example-svc_8000
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR

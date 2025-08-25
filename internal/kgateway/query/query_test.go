@@ -1010,11 +1010,8 @@ var _ = Describe("Query", func() {
 		Expect(routes.GetListenerResult(gwWithListener, "foo").Error).NotTo(HaveOccurred())
 		Expect(routes.GetListenerResult(gwWithListener, "foo").Routes).To(HaveLen(1))
 		Expect(routes.GetListenerResult(lsWithListener, "bar").Error).NotTo(HaveOccurred())
-		Expect(routes.GetListenerResult(lsWithListener, "bar").Routes).To(HaveLen(2))
-		// The first route should be the route mapped to the parent gateway
-		Expect(routes.GetListenerResult(lsWithListener, string(lsWithListener.Spec.Listeners[0].Name)).Routes[0].GetName()).To(Equal("test"))
-		// The second should be the route mapped to the listener set
-		Expect(routes.GetListenerResult(lsWithListener, string(lsWithListener.Spec.Listeners[0].Name)).Routes[1].GetName()).To(Equal("ls-route"))
+		Expect(routes.GetListenerResult(lsWithListener, "bar").Routes).To(HaveLen(1))
+		Expect(routes.GetListenerResult(lsWithListener, string(lsWithListener.Spec.Listeners[0].Name)).Routes[0].GetName()).To(Equal("ls-route"))
 	})
 })
 

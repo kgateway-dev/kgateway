@@ -12,5 +12,6 @@ spec:
   xffNumTrustedHops: 2
   serverHeaderTransformation: AppendIfAbsent
   streamIdleTimeout: 30s
+  acceptHttp10: true
   healthCheck:
     path: "/health_check"

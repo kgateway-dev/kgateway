@@ -12,10 +12,11 @@ import (
 
 var (
 	// manifests
-	setupManifest       = filepath.Join(fsutils.MustGetThisDir(), "testdata", "setup.yaml")
-	nginxManifest       = filepath.Join(fsutils.MustGetThisDir(), "testdata", "nginx.yaml")
-	tlsInsecureManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "tls-insecure.yaml")
-	simpleTLSManifest   = filepath.Join(fsutils.MustGetThisDir(), "testdata", "simple-tls.yaml")
+	setupManifest            = filepath.Join(fsutils.MustGetThisDir(), "testdata", "setup.yaml")
+	nginxManifest            = filepath.Join(fsutils.MustGetThisDir(), "testdata", "nginx.yaml")
+	tlsInsecureManifest      = filepath.Join(fsutils.MustGetThisDir(), "testdata", "tls-insecure.yaml")
+	simpleTLSManifest        = filepath.Join(fsutils.MustGetThisDir(), "testdata", "simple-tls.yaml")
+	outlierDetectionManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "outlierdetection.yaml")
 	// objects
 	proxyObjectMeta = metav1.ObjectMeta{
 		Name:      "gw",
@@ -37,4 +38,9 @@ var (
 			Namespace: "default",
 		},
 	}
+	httpbinMeta = metav1.ObjectMeta{
+		Name:      "httpbin",
+		Namespace: "default",
+	}
+	httpbinDeployment = &appsv1.Deployment{ObjectMeta: httpbinMeta}
 )

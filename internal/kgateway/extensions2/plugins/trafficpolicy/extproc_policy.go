@@ -90,7 +90,8 @@ func constructExtProc(
 		return nil
 	}
 
-	gatewayExtension, err := fetchGatewayExtension(krtctx, spec.ExtensionRef, in.GetNamespace())
+	// kubebuilder validation ensures the extensionRef is not nil, since disable is nil
+	gatewayExtension, err := fetchGatewayExtension(krtctx, *spec.ExtensionRef, in.GetNamespace())
 	if err != nil {
 		return fmt.Errorf("extproc: %w", err)
 	}

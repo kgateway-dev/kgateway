@@ -239,6 +239,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.OpenTelemetryTracingConfigApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("OTelTracesSampler"):
 		return &apiv1alpha1.OTelTracesSamplerApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("OutlierDetection"):
+		return &apiv1alpha1.OutlierDetectionApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("Parameters"):
 		return &apiv1alpha1.ParametersApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("PathOverride"):

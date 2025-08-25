@@ -540,10 +540,6 @@ func TestConstructHashPolicy(t *testing.T) {
 							Duration: 30 * time.Minute,
 						},
 						Path: ptr.To("/api"),
-						Attributes: map[string]string{
-							"domain": "example.com",
-							"secure": "true",
-						},
 					},
 					Terminal: ptr.To(true),
 				},
@@ -556,15 +552,33 @@ func TestConstructHashPolicy(t *testing.T) {
 							Name: "session-id",
 							Ttl:  durationpb.New(30 * time.Minute),
 							Path: "/api",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "cookie hash policy with all attributes",
+			hashPolicies: []*v1alpha1.HashPolicy{
+				{
+					Cookie: &v1alpha1.Cookie{
+						Name:     "session-id",
+						Secure:   ptr.To(true),
+						HttpOnly: ptr.To(true),
+						SameSite: ptr.To("Strict"),
+					},
+				},
+			},
+			expected: []*envoyroutev3.RouteAction_HashPolicy{
+				{
+					Terminal: false,
+					PolicySpecifier: &envoyroutev3.RouteAction_HashPolicy_Cookie_{
+						Cookie: &envoyroutev3.RouteAction_HashPolicy_Cookie{
+							Name: "session-id",
 							Attributes: []*envoyroutev3.RouteAction_HashPolicy_CookieAttribute{
-								{
-									Name:  "domain",
-									Value: "example.com",
-								},
-								{
-									Name:  "secure",
-									Value: "true",
-								},
+								{Name: "Secure", Value: "true"},
+								{Name: "HttpOnly", Value: "true"},
+								{Name: "SameSite", Value: "Strict"},
 							},
 						},
 					},

@@ -145,9 +145,6 @@ func ConvertOriginToEnvoyStringMatcher(origin string) *envoymatcherv3.StringMatc
 	return &envoymatcherv3.StringMatcher{
 		MatchPattern: &envoymatcherv3.StringMatcher_SafeRegex{
 			SafeRegex: &envoymatcherv3.RegexMatcher{
-				EngineType: &envoymatcherv3.RegexMatcher_GoogleRe2{
-					GoogleRe2: &envoymatcherv3.RegexMatcher_GoogleRE2{},
-				},
 				Regex: "^" + regexPattern + "$",
 			},
 		},
