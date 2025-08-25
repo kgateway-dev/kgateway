@@ -491,7 +491,8 @@ func aiSecretForSpec(
 	if policyCR.Spec.AI == nil ||
 		policyCR.Spec.AI.PromptGuard == nil ||
 		policyCR.Spec.AI.PromptGuard.Request == nil ||
-		policyCR.Spec.AI.PromptGuard.Request.Moderation == nil {
+		policyCR.Spec.AI.PromptGuard.Request.Moderation == nil ||
+		policyCR.Spec.AI.PromptGuard.Request.Moderation.OpenAIModeration == nil {
 		return nil, nil
 	}
 

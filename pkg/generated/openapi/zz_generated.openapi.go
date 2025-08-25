@@ -636,7 +636,7 @@ func schema_kgateway_v2_api_v1alpha1_AIPolicy(ref common.ReferenceCallback) comm
 					},
 					"routeType": {
 						SchemaProps: spec.SchemaProps{
-							Description: "The type of route to the LLM provider API. Currently, `CHAT` and `CHAT_STREAMING` are supported.",
+							Description: "The type of route to the LLM provider API. Currently, `CHAT` and `CHAT_STREAMING` are supported. Note: This field is not applicable when using agentgateway",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -6087,7 +6087,7 @@ func schema_kgateway_v2_api_v1alpha1_PromptguardResponse(ref common.ReferenceCal
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "PromptguardResponse configures the response that the prompt guard applies to responses returned by the LLM provider. Both webhook and regex can be set, they will be executed in the following order: webhook → regex, where each step can reject the request and stop further processing.",
+				Description: "PromptguardResponse configures the response that the prompt guard applies to responses returned by the LLM provider. Both webhook and regex can be set, they will be executed in the following order: webhook → regex, where each step can reject the request and stop further processing. Note: This is not yet supported for agentgateway.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"regex": {
@@ -7880,7 +7880,7 @@ func schema_kgateway_v2_api_v1alpha1_Webhook(ref common.ReferenceCallback) commo
 					},
 					"forwardHeaders": {
 						SchemaProps: spec.SchemaProps{
-							Description: "ForwardHeaders define headers to forward with the request to the webhook.",
+							Description: "ForwardHeaders define headers to forward with the request to the webhook. Note: This is not yet supported for agentgateway.",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{

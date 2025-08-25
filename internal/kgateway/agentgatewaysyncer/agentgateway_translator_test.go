@@ -325,4 +325,12 @@ var _ = DescribeTable("Basic agentgateway Tests",
 	//		Name:      "example-gateway",
 	//	},
 	//}),
+	Entry("AI TrafficPolicy on route level", translatorTestCase{
+		inputFile:  "trafficpolicy/ai/route-level.yaml",
+		outputFile: "trafficpolicy/ai/route-level.yaml",
+		gwNN: types.NamespacedName{
+			Namespace: "default",
+			Name:      "example-gateway",
+		},
+	}),
 )

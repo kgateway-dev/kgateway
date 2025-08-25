@@ -1,0 +1,96 @@
+Backends:
+  - ai:
+      openai:
+        model: gpt-4o-mini
+    name: default/openai
+Binds:
+  - key: 8080/default/example-gateway
+    port: 8080
+Listeners:
+  - bindKey: 8080/default/example-gateway
+    gatewayName: default/example-gateway
+    key: default/example-gateway/http
+    name: http
+    protocol: HTTP
+Policies:
+  - name: trafficpolicy/default/ai-policy/openai-test:ai
+    spec:
+      ai:
+        defaults:
+          frequency_penalty: "0.1"
+          presence_penalty: "0.1"
+          top_p: "0.95"
+        overrides:
+          max_tokens: "2000"
+          temperature: "0.5"
+        promptGuard:
+          request:
+            openaiModeration:
+              auth:
+                key:
+                  secret: mysecretkey
+              model: text-moderation-latest
+            regex:
+              action:
+                kind: REJECT
+                rejectResponse:
+                  body: WW91ciByZXF1ZXN0IHdhcyByZWplY3RlZCBkdWUgdG8gaW5hcHByb3ByaWF0ZSBjb250ZW50
+                  status: 403
+              rules:
+              - regex:
+                  name: harmful-content
+                  pattern: (?i)(hate|kill|harm)
+              - regex:
+                  name: profanity
+                  pattern: (?i)(bad|words)
+            rejection:
+              body: WW91ciByZXF1ZXN0IHdhcyByZWplY3RlZCBkdWUgdG8gaW5hcHByb3ByaWF0ZSBjb250ZW50
+              status: 403
+            webhook:
+              host: prompt-guard.example.com
+              port: 8443
+          response:
+            regex:
+              action:
+                kind: MASK
+              rules:
+              - regex:
+                  name: mask-numbers
+                  pattern: \b\d{4}\b
+              - regex:
+                  name: mask-sensitive
+                  pattern: (?i)(password|secret)
+              - builtin: EMAIL
+              - builtin: PHONE_NUMBER
+            webhook:
+              host: response-guard.example.com
+              port: 8444
+        prompts:
+          append:
+          - content: Please provide a concise response.
+            role: user
+          prepend:
+          - content: You are a helpful assistant. Always be polite and professional.
+            role: system
+          - content: Remember to follow company guidelines.
+            role: system
+    target:
+      route: default/openai-test
+  - name: auth-default/openai
+    spec:
+      auth:
+        key:
+          secret: mysecretkey
+    target:
+      backend: default/openai
+Routes:
+  - backends:
+    - backend:
+        backend: default/openai
+      weight: 1
+    key: default.openai-test.0.0.http
+    listenerKey: default/example-gateway/http
+    matches:
+    - path:
+        pathPrefix: /v1/chat/completions
+    routeName: default/openai-test
