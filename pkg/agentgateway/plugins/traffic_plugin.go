@@ -103,13 +103,17 @@ func translateTrafficPolicy(
 			backendSpec := (*backend).Spec
 			if backendSpec.Type == v1alpha1.BackendTypeMCP {
 				isMcpTarget = true
-			}
-			policyTarget = &api.PolicyTarget{
-				Kind: &api.PolicyTarget_Backend{
-					Backend: trafficPolicy.Namespace + "/" + string(target.Name),
-				},
+				policyTarget = &api.PolicyTarget{
+					Kind: &api.PolicyTarget_Backend{
+						Backend: trafficPolicy.Namespace + "/" + string(target.Name),
+					},
+				}
+			} else {
+				logger.Warn("unsupported target kind. only MCP backends are supported", "kind", target.Kind, "policy", trafficPolicy.Name)
+				continue
 			}
 		default:
+			// TODO(npolshak): support attaching policies to k8s services, serviceentries, and other backends
 			logger.Warn("unsupported target kind", "kind", target.Kind, "policy", trafficPolicy.Name)
 			continue
 		}
