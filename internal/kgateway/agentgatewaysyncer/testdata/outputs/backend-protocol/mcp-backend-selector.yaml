@@ -5,6 +5,7 @@ Addresses:
     namespace: default
     ports:
     - servicePort: 80
+    - servicePort: 90
 Backends:
 - mcp:
     targets:
@@ -12,6 +13,12 @@ Backends:
         port: 80
         service: default/example-svc.default.svc.cluster.local
       name: example-svc-80
+      protocol: STREAMABLE_HTTP
+    - backend:
+        port: 90
+        service: default/example-svc.default.svc.cluster.local
+      name: example-svc-90
+      protocol: SSE
   name: default/mcp-backend
 Binds:
 - key: 80/default/example-gateway
