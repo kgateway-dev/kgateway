@@ -40,7 +40,7 @@ var (
 	}
 	expectRBACDenied = &matchers.HttpResponse{
 		StatusCode: http.StatusForbidden,
-		Body:       gomega.ContainSubstring("RBAC: access denied"),
+		Body:       gomega.ContainSubstring("authorization failed"),
 	}
 
 	// Base test setup - common infrastructure for all tests
