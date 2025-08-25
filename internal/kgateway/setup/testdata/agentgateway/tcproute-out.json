@@ -293,14 +293,12 @@
     {
       "Kind": {
         "TcpRoute": {
-          "key": "gwtest.tcp-app-1.0",
+          "key": "gwtest.tcp-app-1.0.foo",
+          "listener_key": "gwtest/http-tcproute/foo",
           "route_name": "gwtest/tcp-app-1",
           "backends": [
             {
               "backend": {
-                "Kind": {
-                  "Service": "gwtest/foo.gwtest.svc.cluster.local"
-                },
                 "port": 3001
               },
               "weight": 1
@@ -312,14 +310,12 @@
     {
       "Kind": {
         "TcpRoute": {
-          "key": "gwtest.tcp-app-2.0",
+          "key": "gwtest.tcp-app-2.0.bar",
+          "listener_key": "gwtest/http-tcproute/bar",
           "route_name": "gwtest/tcp-app-2",
           "backends": [
             {
               "backend": {
-                "Kind": {
-                  "Service": "gwtest/bar.gwtest.svc.cluster.local"
-                },
                 "port": 3002
               },
               "weight": 1
