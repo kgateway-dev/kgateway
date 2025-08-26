@@ -295,7 +295,7 @@ func TestBasic(t *testing.T) {
 				routeStatus := reportsMap.BuildRouteStatus(context.Background(), route, wellknown.DefaultGatewayClassName)
 				assert.NotNil(t, routeStatus)
 				assert.Len(t, routeStatus.Parents, 1)
-        
+
 				// Adjust expectations based on what your implementation actually does
 				// You'll need to check what status conditions your implementation sets for overlapping filters
 				acceptedCond := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionAccepted))
@@ -307,7 +307,7 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
-  t.Run("DirectResponse with invalid backendRef filter reports correctly", func(t *testing.T) {
+	t.Run("DirectResponse with invalid backendRef filter reports correctly", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "direct-response/invalid-backendref-filter.yaml",
 			outputFile: "direct-response/invalid-backendref-filter.yaml",
