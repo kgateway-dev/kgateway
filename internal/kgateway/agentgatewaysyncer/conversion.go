@@ -597,7 +597,8 @@ func buildADPDestination(
 				Kind: &api.BackendReference_Service{
 					Service: namespace + "/" + hostname,
 				},
-				Port: uint32(svc.Spec.TargetPortNumber),
+				// InferencePool only supports single port
+				Port: uint32(svc.Spec.TargetPorts[0].Number),
 			}
 		}
 	case wellknown.ServiceGVK.GroupKind():

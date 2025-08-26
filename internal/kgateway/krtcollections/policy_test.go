@@ -15,7 +15,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/ptr"
 
-	infextv1a2 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
+	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
@@ -37,7 +37,7 @@ var (
 		Kind:  "Service",
 	}
 	infPoolGk = schema.GroupKind{
-		Group: infextv1a2.GroupVersion.Group,
+		Group: inf.GroupVersion.Group,
 		Kind:  wellknown.InferencePoolKind,
 	}
 )
@@ -256,7 +256,7 @@ func TestInferencePoolBackendSameNamespace(t *testing.T) {
 	if backends[0].BackendObject.Namespace != "default" {
 		t.Fatalf("backend incorrect ns")
 	}
-	if backends[0].BackendObject.Group != infextv1a2.GroupVersion.Group {
+	if backends[0].BackendObject.Group != inf.GroupVersion.Group {
 		t.Fatalf("backend incorrect group")
 	}
 	if backends[0].BackendObject.Kind != wellknown.InferencePoolKind {
@@ -289,7 +289,7 @@ func TestInferencePoolDiffNsBackend(t *testing.T) {
 	if backends[0].BackendObject.Namespace != "default2" {
 		t.Fatalf("backend incorrect ns")
 	}
-	if backends[0].BackendObject.Group != infextv1a2.GroupVersion.Group {
+	if backends[0].BackendObject.Group != inf.GroupVersion.Group {
 		t.Fatalf("backend incorrect group")
 	}
 	if backends[0].BackendObject.Kind != wellknown.InferencePoolKind {
@@ -396,7 +396,7 @@ func TestInferencePoolPortOverride(t *testing.T) {
 						BackendRefs: []gwv1.HTTPBackendRef{{
 							BackendRef: gwv1.BackendRef{
 								BackendObjectReference: gwv1.BackendObjectReference{
-									Group:     ptr.To(gwv1.Group(infextv1a2.GroupVersion.Group)),
+									Group:     ptr.To(gwv1.Group(inf.GroupVersion.Group)),
 									Kind:      ptr.To(gwv1.Kind(wellknown.InferencePoolKind)),
 									Name:      gwv1.ObjectName("foo"),
 									Namespace: ptrToNamespace(ns),
@@ -453,27 +453,25 @@ func svc(ns string) *corev1.Service {
 	}
 }
 
-func infPool(ns string) *infextv1a2.InferencePool {
+func infPool(ns string) *inf.InferencePool {
 	if ns == "" {
 		ns = "default"
 	}
-	return &infextv1a2.InferencePool{
+	return &inf.InferencePool{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "foo",
 			Namespace: ns,
 		},
-		Spec: infextv1a2.InferencePoolSpec{
-			Selector:         map[infextv1a2.LabelKey]infextv1a2.LabelValue{},
-			TargetPortNumber: int32(8080),
-			EndpointPickerConfig: infextv1a2.EndpointPickerConfig{
-				ExtensionRef: &infextv1a2.Extension{
-					ExtensionReference: infextv1a2.ExtensionReference{
-						Group:      ptr.To(infextv1a2.Group("")),
-						Kind:       ptr.To(infextv1a2.Kind(wellknown.ServiceKind)),
-						Name:       "fake",
-						PortNumber: ptr.To(infextv1a2.PortNumber(9002)),
-					},
-				},
+		Spec: inf.InferencePoolSpec{
+			Selector: inf.LabelSelector{
+				MatchLabels: map[inf.LabelKey]inf.LabelValue{},
+			},
+			TargetPorts: []inf.Port{{Number: 8080}},
+			EndpointPickerRef: inf.EndpointPickerRef{
+				Group: ptr.To(inf.Group("")),
+				Kind:  inf.Kind(wellknown.ServiceKind),
+				Name:  "fake",
+				// Port defaults to 9002 unless overridden
 			},
 		},
 	}
@@ -504,7 +502,7 @@ func refGrant() *gwv1beta1.ReferenceGrant {
 					Kind:  gwv1.Kind("Service"),
 				},
 				{
-					Group: gwv1.Group(infextv1a2.GroupVersion.Group),
+					Group: gwv1.Group(inf.GroupVersion.Group),
 					Kind:  gwv1.Kind(wellknown.InferencePoolKind),
 				},
 			},
@@ -540,15 +538,15 @@ func k8sSvcUpstreams(services krt.Collection[*corev1.Service]) krt.Collection[ir
 	})
 }
 
-func infPoolUpstreams(poolCol krt.Collection[*infextv1a2.InferencePool]) krt.Collection[ir.BackendObjectIR] {
-	return krt.NewCollection(poolCol, func(kctx krt.HandlerContext, pool *infextv1a2.InferencePool) *ir.BackendObjectIR {
+func infPoolUpstreams(poolCol krt.Collection[*inf.InferencePool]) krt.Collection[ir.BackendObjectIR] {
+	return krt.NewCollection(poolCol, func(kctx krt.HandlerContext, pool *inf.InferencePool) *ir.BackendObjectIR {
 		// Create a BackendObjectIR IR representation from the given InferencePool.
 		backend := ir.NewBackendObjectIR(ir.ObjectSource{
 			Kind:      infPoolGk.Kind,
 			Group:     infPoolGk.Group,
 			Namespace: pool.Namespace,
 			Name:      pool.Name,
-		}, pool.Spec.TargetPortNumber, "")
+		}, int32(pool.Spec.TargetPorts[0].Number), "")
 		backend.Obj = pool
 		backend.GvPrefix = "endpoint-picker"
 		backend.CanonicalHostname = ""
@@ -607,7 +605,7 @@ func httpRouteWithInfPoolBackendRef(refN, refNs string) *gwv1.HTTPRoute {
 						{
 							BackendRef: gwv1.BackendRef{
 								BackendObjectReference: gwv1.BackendObjectReference{
-									Group:     ptr.To(gwv1.Group(infextv1a2.GroupVersion.Group)),
+									Group:     ptr.To(gwv1.Group(inf.GroupVersion.Group)),
 									Kind:      ptr.To(gwv1.Kind(wellknown.InferencePoolKind)),
 									Name:      gwv1.ObjectName(refN),
 									Namespace: ns,
@@ -669,7 +667,7 @@ func httpRouteWithInfPoolBackendRefWithPort(refN, refNs string, port gwv1.PortNu
 				BackendRefs: []gwv1.HTTPBackendRef{{
 					BackendRef: gwv1.BackendRef{
 						BackendObjectReference: gwv1.BackendObjectReference{
-							Group:     ptr.To(gwv1.Group(infextv1a2.GroupVersion.Group)),
+							Group:     ptr.To(gwv1.Group(inf.GroupVersion.Group)),
 							Kind:      ptr.To(gwv1.Kind(wellknown.InferencePoolKind)),
 							Name:      gwv1.ObjectName(refN),
 							Namespace: ns,
@@ -699,7 +697,7 @@ func preRouteIndex(t test.Failer, inputs []any) *RoutesIndex {
 	refgrants := NewRefGrantIndex(krttest.GetMockCollection[*gwv1beta1.ReferenceGrant](mock))
 	upstreams := NewBackendIndex(krtinternal.KrtOptions{}, policies, refgrants)
 	upstreams.AddBackends(svcGk, k8sSvcUpstreams(services))
-	pools := krttest.GetMockCollection[*infextv1a2.InferencePool](mock)
+	pools := krttest.GetMockCollection[*inf.InferencePool](mock)
 	upstreams.AddBackends(infPoolGk, infPoolUpstreams(pools))
 
 	httproutes := krttest.GetMockCollection[*gwv1.HTTPRoute](mock)
@@ -743,7 +741,7 @@ func translateRoute(t *testing.T, inputs []any) ir.Route {
 	}
 
 	/*poolGk := schema.GroupKind{
-		Group: infextv1a1.GroupVersion.Group,
+		Group: inf.GroupVersion.Group,
 		Kind:  wellknown.InferencePoolKind,
 	}
 	if t := rtidx.Fetch(krt.TestingDummyContext{}, poolGk, "default", "inferencepool"); t != nil {

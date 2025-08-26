@@ -34,7 +34,7 @@ import (
 	"istio.io/istio/pkg/util/sets"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
-	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
+	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 
 	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
@@ -104,8 +104,8 @@ func (a *index) inferencePoolBuilder() krt.TransformationSingle[*inf.InferencePo
 	return func(ctx krt.HandlerContext, s *inf.InferencePool) *ServiceInfo {
 		portNames := map[int32]ServicePortName{}
 		ports := []*api.Port{{
-			ServicePort: uint32(s.Spec.TargetPortNumber),
-			TargetPort:  uint32(s.Spec.TargetPortNumber),
+			ServicePort: uint32(s.Spec.TargetPorts[0].Number), // InferencePool v1 only supports single port
+			TargetPort:  uint32(s.Spec.TargetPorts[0].Number), // InferencePool v1 only supports single port
 			AppProtocol: api.AppProtocol_HTTP11,
 		}}
 
@@ -117,8 +117,8 @@ func (a *index) inferencePoolBuilder() krt.TransformationSingle[*inf.InferencePo
 			Ports:     ports,
 		}
 
-		selector := make(map[string]string, len(s.Spec.Selector))
-		for k, v := range s.Spec.Selector {
+		selector := make(map[string]string, len(s.Spec.Selector.MatchLabels))
+		for k, v := range s.Spec.Selector.MatchLabels {
 			selector[string(k)] = string(v)
 		}
 		return precomputeServicePtr(&ServiceInfo{
@@ -132,7 +132,7 @@ func (a *index) inferencePoolBuilder() krt.TransformationSingle[*inf.InferencePo
 				},
 				Kind: "InferencePool", // TODO: get wellknown kind
 			},
-			HasSelector: len(s.Spec.Selector) > 0,
+			HasSelector: len(s.Spec.Selector.MatchLabels) > 0,
 		})
 	}
 }

@@ -7,7 +7,7 @@ import (
 
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	infextv1a2 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
+	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
@@ -61,7 +61,6 @@ func (s *testingSuite) TestHTTPRouteWithInferencePool() {
 			gtwManifest,
 			poolManifest,
 			eppManifest,
-			modelsManifest,
 			routeManifest,
 		},
 	}
@@ -110,7 +109,7 @@ func (s *testingSuite) TestHTTPRouteWithInferencePool() {
 		s.ctx,
 		vllmDeployName,
 		testNS,
-		infextv1a2.InferencePoolConditionAccepted,
+		inf.InferencePoolConditionAccepted,
 		metav1.ConditionTrue,
 	)
 
@@ -118,7 +117,7 @@ func (s *testingSuite) TestHTTPRouteWithInferencePool() {
 		s.ctx,
 		vllmDeployName,
 		testNS,
-		infextv1a2.InferencePoolConditionResolvedRefs,
+		inf.InferencePoolConditionResolvedRefs,
 		metav1.ConditionTrue,
 	)
 
@@ -164,7 +163,7 @@ func (s *testingSuite) TestHTTPRouteWithInferencePool() {
 			// Inject that field into the rest of the body template
 			body := fmt.Sprintf(
 				`{"model":"%s",%s,"max_tokens":100,"temperature":0}`,
-				baseModelName,
+				targetModelName,
 				fieldJSON,
 			)
 

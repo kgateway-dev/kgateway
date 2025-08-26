@@ -16,7 +16,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
-	infextv1a2 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
+	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer"
 	agwbuiltin "github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer/plugins/builtin"
@@ -112,7 +112,7 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 	setupLog.Info("initializing kgateway extensions")
 	// Extend the scheme and add the EPP plugin if the inference extension is enabled and the InferencePool CRD exists.
 	if cfg.SetupOpts.GlobalSettings.EnableInferExt {
-		exists, err := kgtwschemes.AddInferExtV1A2Scheme(cfg.RestConfig, cfg.Manager.GetScheme())
+		exists, err := kgtwschemes.AddInferExtV1Scheme(cfg.RestConfig, cfg.Manager.GetScheme())
 		switch {
 		case err != nil:
 			return nil, err
@@ -324,7 +324,7 @@ func (c *ControllerBuilder) Build(ctx context.Context) error {
 	setupLog.Info("creating inferencepool controller")
 	// Create the InferencePool controller if the inference extension feature is enabled and the API group is registered.
 	if globalSettings.EnableInferExt &&
-		c.mgr.GetScheme().IsGroupRegistered(infextv1a2.GroupVersion.Group) {
+		c.mgr.GetScheme().IsGroupRegistered(inf.GroupVersion.Group) {
 		poolCfg := &InferencePoolConfig{
 			Mgr: c.mgr,
 			// TODO read this from globalSettings
