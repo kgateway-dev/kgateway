@@ -8,7 +8,7 @@
           "hostname": "bar.gwtest.svc.cluster.local",
           "addresses": [
             {
-              "address": "CgAAFQ=="
+              "address": "CgAA1Q=="
             }
           ],
           "ports": [
@@ -30,7 +30,7 @@
           "hostname": "foo.gwtest.svc.cluster.local",
           "addresses": [
             {
-              "address": "CgAAuA=="
+              "address": "CgAAFw=="
             }
           ],
           "ports": [
@@ -47,12 +47,96 @@
     {
       "Type": {
         "Service": {
+          "name": "http-direct-response",
+          "namespace": "gwtest",
+          "hostname": "http-direct-response.gwtest.svc.cluster.local",
+          "addresses": [
+            {
+              "address": "CgAAUg=="
+            }
+          ],
+          "ports": [
+            {
+              "service_port": 8080,
+              "target_port": 8080
+            }
+          ],
+          "ip_families": 1
+        }
+      }
+    },
+    {
+      "Type": {
+        "Service": {
+          "name": "http-grpcroute",
+          "namespace": "gwtest",
+          "hostname": "http-grpcroute.gwtest.svc.cluster.local",
+          "addresses": [
+            {
+              "address": "CgAAcA=="
+            }
+          ],
+          "ports": [
+            {
+              "service_port": 8080,
+              "target_port": 8080
+            }
+          ],
+          "ip_families": 1
+        }
+      }
+    },
+    {
+      "Type": {
+        "Service": {
+          "name": "http-httproute",
+          "namespace": "gwtest",
+          "hostname": "http-httproute.gwtest.svc.cluster.local",
+          "addresses": [
+            {
+              "address": "CgAAsA=="
+            }
+          ],
+          "ports": [
+            {
+              "service_port": 8080,
+              "target_port": 8080
+            }
+          ],
+          "ip_families": 1
+        }
+      }
+    },
+    {
+      "Type": {
+        "Service": {
+          "name": "http-inferencepool",
+          "namespace": "gwtest",
+          "hostname": "http-inferencepool.gwtest.svc.cluster.local",
+          "addresses": [
+            {
+              "address": "CgAAWw=="
+            }
+          ],
+          "ports": [
+            {
+              "service_port": 8080,
+              "target_port": 8080
+            }
+          ],
+          "ip_families": 1
+        }
+      }
+    },
+    {
+      "Type": {
+        "Service": {
           "name": "http-tcproute",
           "namespace": "gwtest",
           "hostname": "http-tcproute.gwtest.svc.cluster.local",
           "addresses": [
             {
-              "address": "CgAAKw=="
+              "address": "CgAAnQ=="
             }
           ],
           "ports": [
@@ -83,7 +167,7 @@
           "ports": [
             {
               "service_port": 443,
-              "target_port": 37763
+              "target_port": 39789
             }
           ],
           "ip_families": 1
@@ -214,9 +298,7 @@
           "backends": [
             {
               "backend": {
-                "Kind": {
-                  "Service": "gwtest/foo.gwtest.svc.cluster.local"
-                },
+                "service": "gwtest/foo.gwtest.svc.cluster.local",
                 "port": 3001
               },
               "weight": 1
@@ -233,9 +315,7 @@
           "backends": [
             {
               "backend": {
-                "Kind": {
-                  "Service": "gwtest/bar.gwtest.svc.cluster.local"
-                },
+                "service": "gwtest/bar.gwtest.svc.cluster.local",
                 "port": 3002
               },
               "weight": 1
