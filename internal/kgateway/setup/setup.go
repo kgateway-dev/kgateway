@@ -18,6 +18,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/namespaces"
+
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/admin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/controller"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
@@ -268,6 +270,8 @@ func (s *setup) Start(ctx context.Context) error {
 
 	agwCollections, err := agentgatewayplugins.NewAgwCollections(
 		commoncol,
+		namespaces.GetPodNamespace(),
+		istioClient.ClusterID().String(),
 	)
 	if err != nil {
 		slog.Error("error creating agw common collections", "error", err)

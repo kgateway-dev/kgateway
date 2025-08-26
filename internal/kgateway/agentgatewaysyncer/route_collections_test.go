@@ -18,6 +18,8 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
+	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
+
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
@@ -2006,7 +2008,7 @@ func TestADPRouteCollectionEquals(t *testing.T) {
 		Namespace: "default",
 	}
 
-	adpResource1 := ADPResourcesForGateway{
+	adpResource1 := plugins.ADPResourcesForGateway{
 		Resources: []*api.Resource{
 			{
 				Kind: &api.Resource_Route{
@@ -2017,7 +2019,7 @@ func TestADPRouteCollectionEquals(t *testing.T) {
 		Gateway: gateway,
 	}
 
-	adpResource2 := ADPResourcesForGateway{
+	adpResource2 := plugins.ADPResourcesForGateway{
 		Resources: []*api.Resource{
 			{
 				Kind: &api.Resource_Route{
@@ -2028,7 +2030,7 @@ func TestADPRouteCollectionEquals(t *testing.T) {
 		Gateway: gateway,
 	}
 
-	adpResource3 := ADPResourcesForGateway{
+	adpResource3 := plugins.ADPResourcesForGateway{
 		Resources: []*api.Resource{
 			{
 				Kind: &api.Resource_Route{

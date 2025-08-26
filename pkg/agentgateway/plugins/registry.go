@@ -5,6 +5,7 @@ import (
 )
 
 type AgentgatewayPlugin struct {
+	AdditionalResources *AddResourcesPlugin
 	ContributesPolicies map[schema.GroupKind]PolicyPlugin
 	// extra has sync beyond primary resources in the collections above
 	ExtraHasSynced func() bool
@@ -19,6 +20,20 @@ func MergePlugins(plug ...AgentgatewayPlugin) AgentgatewayPlugin {
 		// Merge contributed policies
 		for gk, policy := range p.ContributesPolicies {
 			ret.ContributesPolicies[gk] = policy
+		}
+		if p.AdditionalResources != nil {
+			if ret.AdditionalResources.AdditionalBinds == nil {
+				ret.AdditionalResources.AdditionalBinds = p.AdditionalResources.AdditionalBinds
+			}
+			if p.AdditionalResources.AdditionalListeners != nil {
+				ret.AdditionalResources.AdditionalListeners = p.AdditionalResources.AdditionalListeners
+			}
+			if p.AdditionalResources.AdditionalRoutes != nil {
+				ret.AdditionalResources.AdditionalRoutes = p.AdditionalResources.AdditionalRoutes
+			}
+			if p.AdditionalResources.AdditionalWorkloads != nil {
+				ret.AdditionalResources.AdditionalWorkloads = p.AdditionalResources.AdditionalWorkloads
+			}
 		}
 		if p.ExtraHasSynced != nil {
 			hasSynced = append(hasSynced, p.ExtraHasSynced)

@@ -195,8 +195,6 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 			mergedPlugins,
 			agentgatewayMergedPlugins,
 			cfg.SetupOpts.Cache,
-			namespaces.GetPodNamespace(),
-			cfg.Client.ClusterID().String(),
 			cfg.SetupOpts.GlobalSettings.EnableInferExt,
 		)
 		agentGatewaySyncer.Init(cfg.KrtOptions)

@@ -25,6 +25,7 @@ import (
 	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	agwir "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/ir"
+	agwplugins "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	pluginsdkir "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
@@ -40,7 +41,7 @@ func ADPRouteCollection(
 	inputs RouteContextInputs,
 	krtopts krtinternal.KrtOptions,
 	plugins pluginsdk.Plugin,
-) krt.Collection[ADPResourcesForGateway] {
+) krt.Collection[agwplugins.ADPResourcesForGateway] {
 	httpRoutes := createRouteCollection(httpRouteCol, inputs, krtopts, "ADPHTTPRoutes",
 		func(ctx RouteContext, obj *gwv1.HTTPRoute, rep reporter.Reporter) (RouteContext, iter.Seq2[ADPRoute, *reporter.RouteCondition]) {
 			// HTTP-specific preprocessing: attach policies and setup plugins
@@ -110,7 +111,7 @@ func ADPRouteCollection(
 			}
 		})
 
-	routes := krt.JoinCollection([]krt.Collection[ADPResourcesForGateway]{httpRoutes, grpcRoutes, tcpRoutes, tlsRoutes}, krtopts.ToOptions("ADPRoutes")...)
+	routes := krt.JoinCollection([]krt.Collection[agwplugins.ADPResourcesForGateway]{httpRoutes, grpcRoutes, tcpRoutes, tlsRoutes}, krtopts.ToOptions("ADPRoutes")...)
 
 	return routes
 }
@@ -311,8 +312,8 @@ func createRouteCollectionGeneric[T controllers.Object, R comparable](
 	collectionName string,
 	translator func(ctx RouteContext, obj T, rep reporter.Reporter) (RouteContext, iter.Seq2[R, *reporter.RouteCondition]),
 	resourceTransformer func(route R, parent routeParentReference) *api.Resource,
-) krt.Collection[ADPResourcesForGateway] {
-	return krt.NewManyCollection(routeCol, func(krtctx krt.HandlerContext, obj T) []ADPResourcesForGateway {
+) krt.Collection[agwplugins.ADPResourcesForGateway] {
+	return krt.NewManyCollection(routeCol, func(krtctx krt.HandlerContext, obj T) []agwplugins.ADPResourcesForGateway {
 		logger.Debug("translating route", "route_name", obj.GetName(), "resource_version", obj.GetResourceVersion())
 
 		ctx := inputs.WithCtx(krtctx)
@@ -342,7 +343,7 @@ func createRouteCollectionGeneric[T controllers.Object, R comparable](
 			resourceTransformer,
 		)
 
-		var results []ADPResourcesForGateway
+		var results []agwplugins.ADPResourcesForGateway
 		allRelevantGateways := make(map[types.NamespacedName]struct{})
 
 		// Collect all relevant gateways
@@ -377,7 +378,7 @@ func createRouteCollection[T controllers.Object](
 	krtopts krtinternal.KrtOptions,
 	collectionName string,
 	translator func(ctx RouteContext, obj T, rep reporter.Reporter) (RouteContext, iter.Seq2[ADPRoute, *reporter.RouteCondition]),
-) krt.Collection[ADPResourcesForGateway] {
+) krt.Collection[agwplugins.ADPResourcesForGateway] {
 	return createRouteCollectionGeneric(
 		routeCol,
 		inputs,
@@ -405,7 +406,7 @@ func createTCPRouteCollection[T controllers.Object](
 	krtopts krtinternal.KrtOptions,
 	collectionName string,
 	translator func(ctx RouteContext, obj T, rep reporter.Reporter) (RouteContext, iter.Seq2[ADPTCPRoute, *reporter.RouteCondition]),
-) krt.Collection[ADPResourcesForGateway] {
+) krt.Collection[agwplugins.ADPResourcesForGateway] {
 	return createRouteCollectionGeneric(
 		routeCol,
 		inputs,
