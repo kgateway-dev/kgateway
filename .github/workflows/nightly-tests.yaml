@@ -24,6 +24,10 @@ on:
         description: "Run conformance tests"
         type: boolean
         default: false
+      run-load-tests:
+        description: "Run load testing suite"
+        type: boolean
+        default: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref_name }}
@@ -47,3 +51,19 @@ jobs:
       with:
         ref: main
     - uses: ./.github/actions/kube-gateway-api-conformance-tests
+
+  kube_gateway_api_load_tests:
+    name: Load Tests (branch=main, type=Kubernetes Gateway API, version=${{matrix.kube-version.node}} )
+    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-load-tests && inputs.branch == 'main') || github.event.schedule == '0 5 * * *' }}
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        kube-version: [ { node: 'v1.30.13@sha256:397209b3d947d154f6641f2d0ce8d473732bd91c87d9575ade99049aa33cd648', kubectl: 'v1.30.14', kind: 'v0.29.0' },
+                        { node: 'v1.33.1@sha256:050072256b9a903bd914c0b2866828150cb229cea0efe5892e2b644d5dd3b34f', kubectl: 'v1.33.2', kind: 'v0.29.0' }]
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        ref: main
+    - uses: ./.github/actions/kube-gateway-api-load-tests

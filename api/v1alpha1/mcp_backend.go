@@ -61,14 +61,18 @@ type McpTarget struct {
 
 	// Protocol is the protocol to use for the connection to the MCP target.
 	// +optional
-	// +kubebuilder:validation:Enum=Undefined;SSE;StreamableHTTP
+	// +kubebuilder:validation:Enum=StreamableHTTP;SSE
 	Protocol MCPProtocol `json:"protocol,omitempty"`
 }
 
+// MCPProtocol defines the protocol to use for the MCP target
 type MCPProtocol string
 
 const (
-	MCPProtocolUndefined      MCPProtocol = "Undefined"
-	MCPProtocolSSE            MCPProtocol = "SSE"
+
+	// MCPProtocolStreamableHTTP specifies Streamable HTTP must be used as the protocol
 	MCPProtocolStreamableHTTP MCPProtocol = "StreamableHTTP"
+
+	// MCPProtocolSSE specifies Server-Sent Events (SSE) must be used as the protocol
+	MCPProtocolSSE MCPProtocol = "SSE"
 )
