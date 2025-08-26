@@ -23,6 +23,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	agwir "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/translator"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
@@ -174,13 +175,13 @@ func (s *AgentGwSyncer) buildADPResources(
 	gateways krt.Collection[GatewayListener],
 	refGrants ReferenceGrants,
 	krtopts krtinternal.KrtOptions,
-) krt.Collection[plugins.ADPResourcesForGateway] {
+) krt.Collection[agwir.ADPResourcesForGateway] {
 	// Build ports and binds
 	ports := krtpkg.UnnamedIndex(gateways, func(l GatewayListener) []string {
 		return []string{fmt.Sprint(l.parentInfo.Port)}
 	}).AsCollection(krtopts.ToOptions("PortBindings")...)
 
-	binds := krt.NewManyCollection(ports, func(ctx krt.HandlerContext, object krt.IndexObject[string, GatewayListener]) []plugins.ADPResourcesForGateway {
+	binds := krt.NewManyCollection(ports, func(ctx krt.HandlerContext, object krt.IndexObject[string, GatewayListener]) []agwir.ADPResourcesForGateway {
 		port, _ := strconv.Atoi(object.Key)
 		gwReports := make(map[types.NamespacedName]reports.ReportMap, 0)
 		for _, gw := range object.Objects {
@@ -190,7 +191,7 @@ func (s *AgentGwSyncer) buildADPResources(
 			}
 			gwReports[key] = gw.report
 		}
-		var results []plugins.ADPResourcesForGateway
+		var results []agwir.ADPResourcesForGateway
 		binds := make(map[types.NamespacedName][]*api.Resource)
 		for nsName := range gwReports {
 			bind := ADPBind{
@@ -211,15 +212,15 @@ func (s *AgentGwSyncer) buildADPResources(
 		return results
 	}, krtopts.ToOptions("Binds")...)
 	if s.agwPlugins.AdditionalResources != nil && s.agwPlugins.AdditionalResources.AdditionalBinds != nil {
-		binds = krt.JoinCollection([]krt.Collection[plugins.ADPResourcesForGateway]{binds, s.agwPlugins.AdditionalResources.AdditionalBinds})
+		binds = krt.JoinCollection([]krt.Collection[agwir.ADPResourcesForGateway]{binds, s.agwPlugins.AdditionalResources.AdditionalBinds})
 	}
 
 	// Build listeners
-	listeners := krt.NewCollection(gateways, func(ctx krt.HandlerContext, obj GatewayListener) *plugins.ADPResourcesForGateway {
+	listeners := krt.NewCollection(gateways, func(ctx krt.HandlerContext, obj GatewayListener) *agwir.ADPResourcesForGateway {
 		return s.buildListenerFromGateway(obj)
 	}, krtopts.ToOptions("Listeners")...)
 	if s.agwPlugins.AdditionalResources != nil && s.agwPlugins.AdditionalResources.AdditionalListeners != nil {
-		listeners = krt.JoinCollection([]krt.Collection[plugins.ADPResourcesForGateway]{listeners, s.agwPlugins.AdditionalResources.AdditionalListeners})
+		listeners = krt.JoinCollection([]krt.Collection[agwir.ADPResourcesForGateway]{listeners, s.agwPlugins.AdditionalResources.AdditionalListeners})
 	}
 
 	// Build routes
@@ -236,24 +237,19 @@ func (s *AgentGwSyncer) buildADPResources(
 	}
 	adpRoutes := ADPRouteCollection(s.agwCollections.HTTPRoutes, s.agwCollections.GRPCRoutes, s.agwCollections.TCPRoutes, s.agwCollections.TLSRoutes, routeInputs, krtopts, s.plugins)
 	if s.agwPlugins.AdditionalResources != nil && s.agwPlugins.AdditionalResources.AdditionalRoutes != nil {
-		listeners = krt.JoinCollection([]krt.Collection[plugins.ADPResourcesForGateway]{adpRoutes, s.agwPlugins.AdditionalResources.AdditionalRoutes})
+		listeners = krt.JoinCollection([]krt.Collection[agwir.ADPResourcesForGateway]{adpRoutes, s.agwPlugins.AdditionalResources.AdditionalRoutes})
 	}
 
 	adpPolicies := ADPPolicyCollection(binds, s.agwPlugins)
 
-	var allADPResources krt.Collection[plugins.ADPResourcesForGateway]
 	// Join all ADP resources
-	if s.agwPlugins.AdditionalResources != nil && s.agwPlugins.AdditionalResources.AdditionalWorkloads != nil {
-		allADPResources = krt.JoinCollection([]krt.Collection[plugins.ADPResourcesForGateway]{binds, listeners, adpRoutes, adpPolicies, s.agwPlugins.AdditionalResources.AdditionalWorkloads}, krtopts.ToOptions("ADPResources")...)
-	} else {
-		allADPResources = krt.JoinCollection([]krt.Collection[plugins.ADPResourcesForGateway]{binds, listeners, adpRoutes, adpPolicies}, krtopts.ToOptions("ADPResources")...)
-	}
+	allADPResources := krt.JoinCollection([]krt.Collection[agwir.ADPResourcesForGateway]{binds, listeners, adpRoutes, adpPolicies}, krtopts.ToOptions("ADPResources")...)
 
 	return allADPResources
 }
 
 // buildListenerFromGateway creates a listener resource from a gateway
-func (s *AgentGwSyncer) buildListenerFromGateway(obj GatewayListener) *plugins.ADPResourcesForGateway {
+func (s *AgentGwSyncer) buildListenerFromGateway(obj GatewayListener) *agwir.ADPResourcesForGateway {
 	l := &api.Listener{
 		Key:         obj.ResourceName(),
 		Name:        string(obj.parentInfo.SectionName),
@@ -408,10 +404,10 @@ func (s *AgentGwSyncer) buildAddressCollections(krtopts krtinternal.KrtOptions) 
 	)
 
 	// Build address collections
-	svcAddresses := krt.NewCollection(workloadServices, func(ctx krt.HandlerContext, obj ServiceInfo) *ADPCacheAddress {
+	svcAddresses := krt.NewCollection(workloadServices, func(ctx krt.HandlerContext, obj ServiceInfo) *agwir.ADPCacheAddress {
 		addrMessage := obj.AsAddress.Address
 		resourceVersion := utils.HashProto(addrMessage)
-		result := &ADPCacheAddress{
+		result := &agwir.ADPCacheAddress{
 			NamespacedName:      types.NamespacedName{Name: obj.Service.GetName(), Namespace: obj.Service.GetNamespace()},
 			ResourceNames:       obj.ResourceName(),
 			Address:             addrMessage,
@@ -422,10 +418,10 @@ func (s *AgentGwSyncer) buildAddressCollections(krtopts krtinternal.KrtOptions) 
 		return result
 	})
 
-	workloadAddresses := krt.NewCollection(workloads, func(ctx krt.HandlerContext, obj WorkloadInfo) *ADPCacheAddress {
+	workloadAddresses := krt.NewCollection(workloads, func(ctx krt.HandlerContext, obj WorkloadInfo) *agwir.ADPCacheAddress {
 		addrMessage := obj.AsAddress.Address
 		resourceVersion := utils.HashProto(addrMessage)
-		result := &ADPCacheAddress{
+		result := &agwir.ADPCacheAddress{
 			NamespacedName:      types.NamespacedName{Name: obj.Workload.GetName(), Namespace: obj.Workload.GetNamespace()},
 			ResourceNames:       obj.ResourceName(),
 			Address:             addrMessage,
@@ -436,8 +432,14 @@ func (s *AgentGwSyncer) buildAddressCollections(krtopts krtinternal.KrtOptions) 
 		return result
 	})
 
-	adpAddresses := krt.JoinCollection([]krt.Collection[ADPCacheAddress]{svcAddresses, workloadAddresses}, krtopts.ToOptions("ADPAddresses")...)
-	return krt.NewCollection(adpAddresses, func(kctx krt.HandlerContext, obj ADPCacheAddress) *envoyResourceWithCustomName {
+	var adpAddresses krt.Collection[agwir.ADPCacheAddress]
+	if s.agwPlugins.AdditionalResources != nil && s.agwPlugins.AdditionalResources.AdditionalWorkloads != nil {
+		adpAddresses = krt.JoinCollection([]krt.Collection[agwir.ADPCacheAddress]{svcAddresses, workloadAddresses, s.agwPlugins.AdditionalResources.AdditionalWorkloads}, krtopts.ToOptions("ADPAddresses")...)
+	} else {
+		adpAddresses = krt.JoinCollection([]krt.Collection[agwir.ADPCacheAddress]{svcAddresses, workloadAddresses}, krtopts.ToOptions("ADPAddresses")...)
+
+	}
+	return krt.NewCollection(adpAddresses, func(kctx krt.HandlerContext, obj agwir.ADPCacheAddress) *envoyResourceWithCustomName {
 		return &envoyResourceWithCustomName{
 			Message: obj.Address,
 			Name:    obj.AddressResourceName,
@@ -447,16 +449,16 @@ func (s *AgentGwSyncer) buildAddressCollections(krtopts krtinternal.KrtOptions) 
 }
 
 func (s *AgentGwSyncer) buildXDSCollection(
-	adpResources krt.Collection[plugins.ADPResourcesForGateway],
+	adpResources krt.Collection[agwir.ADPResourcesForGateway],
 	adpBackends krt.Collection[envoyResourceWithCustomName],
 	xdsAddresses krt.Collection[envoyResourceWithCustomName],
 	krtopts krtinternal.KrtOptions,
 ) {
 	// Create an index on adpResources by Gateway to avoid fetching all resources
-	adpResourcesByGateway := krt.NewIndex(adpResources, "gateway", func(resource plugins.ADPResourcesForGateway) []types.NamespacedName {
+	adpResourcesByGateway := krt.NewIndex(adpResources, "gateway", func(resource agwir.ADPResourcesForGateway) []types.NamespacedName {
 		return []types.NamespacedName{resource.Gateway}
 	})
-	s.xDS = krt.NewCollection(adpResources, func(kctx krt.HandlerContext, obj plugins.ADPResourcesForGateway) *agentGwXdsResources {
+	s.xDS = krt.NewCollection(adpResources, func(kctx krt.HandlerContext, obj agwir.ADPResourcesForGateway) *agentGwXdsResources {
 		gwNamespacedName := obj.Gateway
 
 		cacheAddresses := krt.Fetch(kctx, xdsAddresses)
@@ -500,7 +502,7 @@ func (s *AgentGwSyncer) buildXDSCollection(
 			for _, res := range resource.Resources {
 				cacheResources = append(cacheResources, &envoyResourceWithCustomName{
 					Message: res,
-					Name:    plugins.GetADPResourceName(res),
+					Name:    agwir.GetADPResourceName(res),
 					version: utils.HashProto(res),
 				})
 				for listenerName, count := range resource.AttachedRoutes {
@@ -608,7 +610,7 @@ func (s *AgentGwSyncer) buildStatusReporting() {
 	s.routeReports = routeReports
 }
 
-func (s *AgentGwSyncer) setupSyncDependencies(gateways krt.Collection[GatewayListener], adpResources krt.Collection[plugins.ADPResourcesForGateway], adpBackends krt.Collection[envoyResourceWithCustomName], addresses krt.Collection[envoyResourceWithCustomName]) {
+func (s *AgentGwSyncer) setupSyncDependencies(gateways krt.Collection[GatewayListener], adpResources krt.Collection[agwir.ADPResourcesForGateway], adpBackends krt.Collection[envoyResourceWithCustomName], addresses krt.Collection[envoyResourceWithCustomName]) {
 	s.waitForSync = []cache.InformerSynced{
 		s.agwCollections.HasSynced,
 		s.agwPlugins.HasSynced,

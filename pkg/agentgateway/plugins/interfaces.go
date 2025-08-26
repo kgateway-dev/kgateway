@@ -1,95 +1,12 @@
 package plugins
 
 import (
-	"maps"
-	"strings"
-
 	"github.com/agentgateway/agentgateway/go/api"
-	"google.golang.org/protobuf/proto"
 	"istio.io/istio/pilot/pkg/util/protoconv"
 	"istio.io/istio/pkg/kube/krt"
-	"k8s.io/apimachinery/pkg/types"
 
-	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
+	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/ir"
 )
-
-type ADPResourcesForGateway struct {
-	// agent gateway dataplane resources
-	Resources []*api.Resource
-	// gateway name
-	Gateway types.NamespacedName
-	// status for the gateway
-	Report reports.ReportMap
-	// track which routes are attached to the gateway listener for each resource type (HTTPRoute, TCPRoute, etc)
-	AttachedRoutes map[string]uint
-}
-
-func (g ADPResourcesForGateway) ResourceName() string {
-	// need a unique name per resource
-	return g.Gateway.String() + getResourceListName(g.Resources)
-}
-
-func getResourceListName(resources []*api.Resource) string {
-	names := make([]string, len(resources))
-	for i, res := range resources {
-		names[i] = GetADPResourceName(res)
-	}
-	return strings.Join(names, ",")
-}
-
-func GetADPResourceName(r *api.Resource) string {
-	switch t := r.GetKind().(type) {
-	case *api.Resource_Bind:
-		return "bind/" + t.Bind.GetKey()
-	case *api.Resource_Listener:
-		return "listener/" + t.Listener.GetKey()
-	case *api.Resource_Backend:
-		return "backend/" + t.Backend.GetName()
-	case *api.Resource_Route:
-		return "route/" + t.Route.GetKey()
-	}
-	return "unknown/" + r.String()
-}
-
-func (g ADPResourcesForGateway) Equals(other ADPResourcesForGateway) bool {
-	// Don't compare reports, as they are not part of the ADPResource equality and synced separately
-	for i := range g.Resources {
-		if !proto.Equal(g.Resources[i], other.Resources[i]) {
-			return false
-		}
-	}
-	if !maps.Equal(g.AttachedRoutes, other.AttachedRoutes) {
-		return false
-	}
-	return g.Gateway == other.Gateway
-}
-
-type AddResourcesPlugin struct {
-	AdditionalBinds     krt.Collection[ADPResourcesForGateway]
-	AdditionalListeners krt.Collection[ADPResourcesForGateway]
-	AdditionalWorkloads krt.Collection[ADPResourcesForGateway]
-	AdditionalRoutes    krt.Collection[ADPResourcesForGateway]
-}
-
-// AddBinds extracts all bind resources from the collection
-func (p *AddResourcesPlugin) AddBinds() krt.Collection[ADPResourcesForGateway] {
-	return p.AdditionalBinds
-}
-
-// AddListeners extracts all routes resources from the collection
-func (p *AddResourcesPlugin) AddListeners() krt.Collection[ADPResourcesForGateway] {
-	return p.AdditionalListeners
-}
-
-// AddWorkloads extracts all workloads resources from the collection
-func (p *AddResourcesPlugin) AddWorkloads() krt.Collection[ADPResourcesForGateway] {
-	return p.AdditionalWorkloads
-}
-
-// AddRoutes extracts all routes resources from the collection
-func (p *AddResourcesPlugin) AddRoutes() krt.Collection[ADPResourcesForGateway] {
-	return p.AdditionalRoutes
-}
 
 type PolicyPlugin struct {
 	Policies krt.Collection[ADPPolicy]
@@ -132,4 +49,31 @@ func attachmentName(target *api.PolicyTarget) string {
 	default:
 		return ""
 	}
+}
+
+type AddResourcesPlugin struct {
+	AdditionalBinds     krt.Collection[ir.ADPResourcesForGateway]
+	AdditionalListeners krt.Collection[ir.ADPResourcesForGateway]
+	AdditionalRoutes    krt.Collection[ir.ADPResourcesForGateway]
+	AdditionalWorkloads krt.Collection[ir.ADPCacheAddress]
+}
+
+// AddBinds extracts all bind resources from the collection
+func (p *AddResourcesPlugin) AddBinds() krt.Collection[ir.ADPResourcesForGateway] {
+	return p.AdditionalBinds
+}
+
+// AddListeners extracts all routes resources from the collection
+func (p *AddResourcesPlugin) AddListeners() krt.Collection[ir.ADPResourcesForGateway] {
+	return p.AdditionalListeners
+}
+
+// AddWorkloads extracts all workloads resources from the collection
+func (p *AddResourcesPlugin) AddWorkloads() krt.Collection[ir.ADPCacheAddress] {
+	return p.AdditionalWorkloads
+}
+
+// AddRoutes extracts all routes resources from the collection
+func (p *AddResourcesPlugin) AddRoutes() krt.Collection[ir.ADPResourcesForGateway] {
+	return p.AdditionalRoutes
 }

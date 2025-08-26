@@ -11,7 +11,7 @@ import (
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
+	agwir "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/ir"
 )
 
 func TestBuildADPFilters(t *testing.T) {
@@ -276,13 +276,13 @@ func TestGetProtocolAndTLSConfig(t *testing.T) {
 func TestADPResourcesForGatewayEquals(t *testing.T) {
 	testCases := []struct {
 		name      string
-		resource1 plugins.ADPResourcesForGateway
-		resource2 plugins.ADPResourcesForGateway
+		resource1 agwir.ADPResourcesForGateway
+		resource2 agwir.ADPResourcesForGateway
 		expected  bool
 	}{
 		{
 			name: "Equal bind resources",
-			resource1: plugins.ADPResourcesForGateway{
+			resource1: agwir.ADPResourcesForGateway{
 				Resources: []*api.Resource{{
 					Kind: &api.Resource_Bind{
 						Bind: &api.Bind{
@@ -293,7 +293,7 @@ func TestADPResourcesForGatewayEquals(t *testing.T) {
 				}},
 				Gateway: types.NamespacedName{Name: "test", Namespace: "default"},
 			},
-			resource2: plugins.ADPResourcesForGateway{
+			resource2: agwir.ADPResourcesForGateway{
 				Resources: []*api.Resource{{
 					Kind: &api.Resource_Bind{
 						Bind: &api.Bind{
@@ -308,7 +308,7 @@ func TestADPResourcesForGatewayEquals(t *testing.T) {
 		},
 		{
 			name: "Different gateway",
-			resource1: plugins.ADPResourcesForGateway{
+			resource1: agwir.ADPResourcesForGateway{
 				Resources: []*api.Resource{{
 					Kind: &api.Resource_Bind{
 						Bind: &api.Bind{
@@ -319,7 +319,7 @@ func TestADPResourcesForGatewayEquals(t *testing.T) {
 				}},
 				Gateway: types.NamespacedName{Name: "test", Namespace: "default"},
 			},
-			resource2: plugins.ADPResourcesForGateway{
+			resource2: agwir.ADPResourcesForGateway{
 				Resources: []*api.Resource{{
 					Kind: &api.Resource_Bind{
 						Bind: &api.Bind{
@@ -334,7 +334,7 @@ func TestADPResourcesForGatewayEquals(t *testing.T) {
 		},
 		{
 			name: "Different resource port",
-			resource1: plugins.ADPResourcesForGateway{
+			resource1: agwir.ADPResourcesForGateway{
 				Resources: []*api.Resource{{
 					Kind: &api.Resource_Bind{
 						Bind: &api.Bind{
@@ -345,7 +345,7 @@ func TestADPResourcesForGatewayEquals(t *testing.T) {
 				}},
 				Gateway: types.NamespacedName{Name: "test", Namespace: "default"},
 			},
-			resource2: plugins.ADPResourcesForGateway{
+			resource2: agwir.ADPResourcesForGateway{
 				Resources: []*api.Resource{{
 					Kind: &api.Resource_Bind{
 						Bind: &api.Bind{

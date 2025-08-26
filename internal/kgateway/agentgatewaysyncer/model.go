@@ -16,8 +16,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
-
-	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
 
 // Statically link protobuf descriptors from UDPA
@@ -46,30 +44,6 @@ func (key ConfigKey) HashCode() ConfigHash {
 
 func (key ConfigKey) String() string {
 	return key.Kind.String() + "/" + key.Namespace + "/" + key.Name
-}
-
-type ADPCacheAddress struct {
-	NamespacedName types.NamespacedName
-	ResourceNames  string
-
-	Address             proto.Message
-	AddressResourceName string
-	AddressVersion      uint64
-
-	reports    reports.ReportMap
-	VersionMap map[string]map[string]string
-}
-
-func (r ADPCacheAddress) ResourceName() string {
-	return r.ResourceNames
-}
-
-func (r ADPCacheAddress) Equals(in ADPCacheAddress) bool {
-	return report{reportMap: r.reports}.Equals(report{reportMap: in.reports}) &&
-		r.NamespacedName.Name == in.NamespacedName.Name && r.NamespacedName.Namespace == in.NamespacedName.Namespace &&
-		proto.Equal(r.Address, in.Address) &&
-		r.AddressVersion == in.AddressVersion &&
-		r.AddressResourceName == in.AddressResourceName
 }
 
 // Meta is metadata attached to each configuration unit.
