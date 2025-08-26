@@ -219,6 +219,51 @@ func (p *Provider) EventuallyGatewayListenerAttachedRoutes(
 	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 }
 
+func (p *Provider) EventuallyGatewayStatus(
+	ctx context.Context,
+	name string,
+	namespace string,
+	status gwv1.GatewayStatus,
+	timeout ...time.Duration,
+) {
+	ginkgo.GinkgoHelper()
+	currentTimeout, pollingInterval := helpers.GetTimeouts(timeout...)
+	p.Gomega.Eventually(func(g gomega.Gomega) {
+		gw := &gwv1.Gateway{}
+		err := p.clusterContext.Client.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, gw)
+		g.Expect(err).NotTo(gomega.HaveOccurred(), fmt.Sprintf("failed to get gateway %s/%s", namespace, name))
+
+		for _, expected := range status.Conditions {
+			condition := getConditionByType(gw.Status.Conditions, expected.Type)
+			g.Expect(condition).NotTo(gomega.BeNil(), fmt.Sprintf("%v condition not found for gateway %s/%s", expected.Type, namespace, name))
+			g.Expect(condition.Status).To(gomega.Equal(expected.Status), fmt.Sprintf("%v status is not %v for gateway %s/%s", expected, expected.Status, namespace, name))
+			if expected.Reason != "" {
+				g.Expect(condition.Reason).To(gomega.Equal(expected.Reason), fmt.Sprintf("%v reason is not %v for gateway %s/%s", expected, expected.Reason, namespace, name))
+			}
+		}
+
+		for _, expectedListener := range status.Listeners {
+			listenerStatus := getListenerStatus(gw.Status.Listeners, string(expectedListener.Name))
+			g.Expect(listenerStatus).NotTo(gomega.BeNil(), fmt.Sprintf("%v listener status not found for listener %s", expectedListener.Name, expectedListener.Name))
+			if expectedListener.AttachedRoutes != 0 {
+				g.Expect(listenerStatus.AttachedRoutes).To(gomega.Equal(expectedListener.AttachedRoutes), fmt.Sprintf("%v condition is not %v for listener %s", expectedListener, expectedListener.AttachedRoutes, expectedListener.Name))
+			}
+			if expectedListener.SupportedKinds != nil {
+				g.Expect(listenerStatus.SupportedKinds).To(gomega.ContainElements(expectedListener.SupportedKinds), fmt.Sprintf("%v condition is not %v for listener %s", expectedListener, expectedListener.SupportedKinds, expectedListener.Name))
+			}
+
+			for _, expected := range expectedListener.Conditions {
+				condition := getConditionByType(listenerStatus.Conditions, expected.Type)
+				g.Expect(condition).NotTo(gomega.BeNil(), fmt.Sprintf("%v condition not found for listener %s", expected, expectedListener.Name))
+				g.Expect(condition.Status).To(gomega.Equal(expected.Status), fmt.Sprintf("%v condition is not %v for listener %s", expected, expected.Status, expectedListener.Name))
+				if expected.Reason != "" {
+					g.Expect(condition.Reason).To(gomega.Equal(expected.Reason), fmt.Sprintf("%v condition is not %v for listener %s", expected, expected.Reason, expectedListener.Name))
+				}
+			}
+		}
+	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
+}
+
 // EventuallyHTTPRouteCondition checks that provided HTTPRoute condition is set to expect.
 func (p *Provider) EventuallyHTTPRouteCondition(
 	ctx context.Context,
@@ -406,7 +451,7 @@ func (p *Provider) EventuallyListenerSetStatus(
 		}
 
 		for _, expectedListener := range status.Listeners {
-			listenerStatus := getListener(ls.Status.Listeners, string(expectedListener.Name))
+			listenerStatus := getListenerEntryStatus(ls.Status.Listeners, string(expectedListener.Name))
 			g.Expect(listenerStatus).NotTo(gomega.BeNil(), fmt.Sprintf("%v listener status not found for listener %s", expectedListener.Name, expectedListener.Name))
 			if expectedListener.Port != 0 {
 				g.Expect(listenerStatus.Port).To(gomega.Equal(expectedListener.Port), fmt.Sprintf("%v listener condition is not %v for listener %s", expectedListener, expectedListener.Port, expectedListener.Name))
@@ -415,7 +460,7 @@ func (p *Provider) EventuallyListenerSetStatus(
 				g.Expect(listenerStatus.AttachedRoutes).To(gomega.Equal(expectedListener.AttachedRoutes), fmt.Sprintf("%v condition is not %v for listener %s", expectedListener, expectedListener.AttachedRoutes, expectedListener.Name))
 			}
 			if expectedListener.SupportedKinds != nil {
-				g.Expect(listenerStatus.SupportedKinds).To(gomega.ContainElements(expectedListener.SupportedKinds), fmt.Sprintf("%v condition is not %v for listener %s", expectedListener, expectedListener.Port, expectedListener.Name))
+				g.Expect(listenerStatus.SupportedKinds).To(gomega.ContainElements(expectedListener.SupportedKinds), fmt.Sprintf("%v condition is not %v for listener %s", expectedListener, expectedListener.SupportedKinds, expectedListener.Name))
 			}
 
 			for _, expected := range expectedListener.Conditions {
@@ -446,14 +491,23 @@ func (p *Provider) EventuallyListenerSetAttachedRoutes(
 		g.Expect(err).NotTo(gomega.HaveOccurred(), fmt.Sprintf("failed to get listenerset %s/%s", namespace, name))
 
 		for _, expectedListener := range ls.Status.Listeners {
-			listenerStatus := getListener(ls.Status.Listeners, string(expectedListener.Name))
+			listenerStatus := getListenerEntryStatus(ls.Status.Listeners, string(expectedListener.Name))
 			g.Expect(listenerStatus).NotTo(gomega.BeNil(), fmt.Sprintf("%v listener status not found for listener %s", expectedListener.Name, expectedListener.Name))
 			g.Expect(listenerStatus.AttachedRoutes).To(gomega.Equal(expectedListener.AttachedRoutes), fmt.Sprintf("%v AttachedRoutes is not %v for listener %s", expectedListener, expectedListener.AttachedRoutes, expectedListener.Name))
 		}
 	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 }
 
-func getListener(listeners []gwxv1a1.ListenerEntryStatus, name string) *gwxv1a1.ListenerEntryStatus {
+func getListenerEntryStatus(listeners []gwxv1a1.ListenerEntryStatus, name string) *gwxv1a1.ListenerEntryStatus {
+	for _, listener := range listeners {
+		if string(listener.Name) == name {
+			return &listener
+		}
+	}
+	return nil
+}
+
+func getListenerStatus(listeners []gwv1.ListenerStatus, name string) *gwv1.ListenerStatus {
 	for _, listener := range listeners {
 		if string(listener.Name) == name {
 			return &listener

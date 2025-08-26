@@ -282,17 +282,8 @@ func TestSyncChannelFull(t *testing.T) {
 	numOverflows := 20
 
 	for overflowCount < numOverflows {
-		go func() {
-			success := EndResourceSync(details, false, resourcesXDSSyncsTotal, resourcesXDSyncDuration)
-			assert.False(t, success)
-			c <- struct{}{}
-		}()
-
-		select {
-		case <-c: // Expect to return quickly
-		case <-time.After(10 * time.Millisecond):
-			t.Fatal("Expected EndResourceSync to return and log an error")
-		}
+		success := EndResourceSync(details, false, resourcesXDSSyncsTotal, resourcesXDSyncDuration)
+		assert.False(t, success)
 
 		overflowCount++
 

@@ -25,7 +25,7 @@ from openai.resources import AsyncModerations
 from openai import AsyncOpenAI
 from opentelemetry import trace
 from opentelemetry.semconv._incubating.attributes import gen_ai_attributes
-from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace import TracerProvider, Span
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 from opentelemetry.trace import set_tracer_provider
@@ -361,6 +361,7 @@ def stream_handler(metadict: dict) -> StreamHandler:
 
 
 class TestInstrumentation:
+    # TODO(zhengke): Refactor the test fixture to simplify testing for multiple providers,just like provider_response_test_data
     @pytest.fixture(scope="class")
     def request_body_content(self):
         """Fixture for common OpenAI request body content."""
@@ -389,32 +390,127 @@ class TestInstrumentation:
         }
 
     @pytest.fixture(scope="class")
-    def response_body_content(self):
-        """Fixture for common OpenAI response body content."""
-        return """{
-              "id": "fake",
-              "object": "chat.completion",
-              "created": 1722966273,
-              "model": "gpt-4o-mini-2024-07-18",
-              "choices": [
-                  {
-                      "index": 0,
-                      "message": {
-                          "role": "assistant",
-                          "content": "Say hello to the world!",
-                          "refusal": null
-                      },
-                      "logprobs": null,
-                      "finish_reason": "stop"
-                  }
-              ],
-              "usage": {
-                  "prompt_tokens": 11,
-                  "completion_tokens": 310,
-                  "total_tokens": 321
-              },
-              "system_fingerprint": "fp_48196bc67a"
-          }"""
+    def provider_response_test_data(self):
+        """
+        Unified provider test data for table-driven testing.
+
+        This fixture contains response body examples and expected OTel attributes
+        for each supported AI provider (OpenAI, Gemini, Anthropic). Each provider entry
+        includes:
+        - response_body: A realistic JSON response from the provider's API
+        - expected_attributes: The corresponding OTel attributes that should
+          be extracted from the response body
+
+        This approach enables parameterized testing across multiple providers while
+        maintaining consistency in test structure and validation logic.
+        """
+        return {
+            "openai": {
+                "response_body": """{
+                        "id": "fake",
+                        "object": "chat.completion",
+                        "created": 1722966273,
+                        "model": "gpt-4o-mini-2024-07-18",
+                        "choices": [
+                            {
+                                "index": 0,
+                                "message": {
+                                "role": "assistant",
+                                "content": "Say hello to the world!",
+                                "refusal": null
+                            },
+                            "logprobs": null,
+                            "finish_reason": "stop"
+                            }
+                        ],
+                        "usage": {
+                            "prompt_tokens": 11,
+                            "completion_tokens": 310,
+                            "total_tokens": 321
+                        },
+                        "system_fingerprint": "fp_48196bc67a"
+                    }""",
+                "expected_attributes": {
+                    gen_ai_attributes.GEN_AI_OPERATION_NAME: "chat",
+                    gen_ai_attributes.GEN_AI_SYSTEM: "openai",
+                    gen_ai_attributes.GEN_AI_RESPONSE_ID: "fake",
+                    gen_ai_attributes.GEN_AI_RESPONSE_MODEL: "gpt-4o-mini-2024-07-18",
+                    gen_ai_attributes.GEN_AI_RESPONSE_FINISH_REASONS: "stop",
+                    gen_ai_attributes.GEN_AI_USAGE_INPUT_TOKENS: 11,
+                    gen_ai_attributes.GEN_AI_USAGE_OUTPUT_TOKENS: 310,
+                },
+            },
+            "gemini": {
+                "response_body": """{
+                        "candidates": [
+                            {
+                                "content": {
+                                    "parts": [
+                                        {
+                                            "text": "hello, world"
+                                        }
+                                    ],
+                                    "role": "model"
+                                },
+                                "finishReason": "STOP",
+                                "index": 0
+                            }
+                        ],
+                        "usageMetadata": {
+                            "promptTokenCount": 5,
+                            "candidatesTokenCount": 1298,
+                            "totalTokenCount": 2356,
+                            "promptTokensDetails": [
+                                {
+                                    "modality": "TEXT",
+                                    "tokenCount": 5
+                                }
+                            ],
+                            "thoughtsTokenCount": 1053
+                        },
+                        "modelVersion": "gemini-2.5-flash",
+                        "responseId": "tYmZaMTQLcayqtsP_rq7gQs"
+                    }""",
+                "expected_attributes": {
+                    gen_ai_attributes.GEN_AI_OPERATION_NAME: "generate_content",
+                    gen_ai_attributes.GEN_AI_SYSTEM: "gcp.gemini",
+                    gen_ai_attributes.GEN_AI_RESPONSE_ID: "tYmZaMTQLcayqtsP_rq7gQs",
+                    gen_ai_attributes.GEN_AI_RESPONSE_MODEL: "gemini-2.5-flash",
+                    gen_ai_attributes.GEN_AI_RESPONSE_FINISH_REASONS: "STOP",
+                    gen_ai_attributes.GEN_AI_USAGE_INPUT_TOKENS: 5,
+                    gen_ai_attributes.GEN_AI_USAGE_OUTPUT_TOKENS: 1298,
+                },
+            },
+            "anthropic": {
+                "response_body": """{
+                        "id": "msg_01XFDUDYJgAACzvnptvVoYEL",
+                        "type": "message",
+                        "role": "assistant",
+                        "content": [
+                            {
+                              "type": "text",
+                              "text": "Hello!"
+                            }
+                        ],
+                        "model": "claude-opus-4-1-20250805",
+                        "stop_reason": "end_turn",
+                        "stop_sequence": null,
+                        "usage": {
+                            "input_tokens": 12,
+                            "output_tokens": 6
+                        }
+                    }""",
+                "expected_attributes": {
+                    gen_ai_attributes.GEN_AI_OPERATION_NAME: "generate_content",
+                    gen_ai_attributes.GEN_AI_SYSTEM: "anthropic",
+                    gen_ai_attributes.GEN_AI_RESPONSE_ID: "msg_01XFDUDYJgAACzvnptvVoYEL",
+                    gen_ai_attributes.GEN_AI_RESPONSE_MODEL: "claude-opus-4-1-20250805",
+                    gen_ai_attributes.GEN_AI_RESPONSE_FINISH_REASONS: "end_turn",
+                    gen_ai_attributes.GEN_AI_USAGE_INPUT_TOKENS: 12,
+                    gen_ai_attributes.GEN_AI_USAGE_OUTPUT_TOKENS: 6,
+                },
+            },
+        }
 
     @pytest.fixture
     def base_handler(self):
@@ -483,7 +579,7 @@ class TestInstrumentation:
             "Response should be ProcessingResponse instance"
         )
 
-    def _find_span_by_name_prefix(self, spans: list, name_prefix: str):
+    def _find_span_by_name_prefix(self, spans: list, name_prefix: str) -> Span:
         """Find span by name prefix"""
         span = next((s for s in spans if s.name.startswith(name_prefix)), None)
         assert span is not None, f"Expected a {name_prefix} span to be created"
@@ -498,9 +594,7 @@ class TestInstrumentation:
         )
         return memory_exporter
 
-    def _create_webhook_config(
-        self, host: str = "example.com", port: int = 443
-    ):
+    def _create_webhook_config(self, host: str = "example.com", port: int = 443):
         """Create webhook config"""
         return prompt_guard.Webhook.from_json(
             {
@@ -803,50 +897,6 @@ class TestInstrumentation:
         assert attributes.get(ai_attributes.AI_MODERATION_MODEL) == model
         assert attributes.get(ai_attributes.AI_MODERATION_FLAGGED) == flagged
 
-    def test_handle_response_body(
-        self, setup_in_memory_tracer, response_body_content, base_handler
-    ):
-        """Test basic response body handling with instrumentation."""
-        memory_exporter, test_tracer = setup_in_memory_tracer
-        self._verify_tracer_setup(test_tracer, setup_in_memory_tracer)
-
-        base_handler.resp_webhook = None
-        resp_body = self._create_response_body(response_body_content)
-
-        response = self._execute_response_body_test(
-            test_tracer, resp_body, base_handler
-        )
-        self._verify_basic_response(response)
-
-        spans = memory_exporter.get_finished_spans()
-        gen_ai_response = self._find_span_by_name_prefix(spans, "gen_ai.response")
-
-        self._verify_response_attributes(gen_ai_response, base_handler)
-
-    def _verify_response_attributes(self, span, handler):
-        """Verify response attributes"""
-        attributes = span.attributes
-        assert attributes.get(gen_ai_attributes.GEN_AI_OPERATION_NAME) == "chat"
-        assert (
-            attributes.get(gen_ai_attributes.GEN_AI_SYSTEM) == handler.get_ai_system()
-        )
-        assert attributes.get(gen_ai_attributes.GEN_AI_RESPONSE_ID) == "fake"
-        assert (
-            attributes.get(gen_ai_attributes.GEN_AI_RESPONSE_MODEL)
-            == handler.get_response_model()
-        )
-        assert (
-            attributes.get(gen_ai_attributes.GEN_AI_RESPONSE_FINISH_REASONS) == "stop"
-        )
-        assert (
-            attributes.get(gen_ai_attributes.GEN_AI_USAGE_INPUT_TOKENS)
-            == handler.get_tokens().prompt
-        )
-        assert (
-            attributes.get(gen_ai_attributes.GEN_AI_USAGE_OUTPUT_TOKENS)
-            == handler.get_tokens().completion
-        )
-
     @pytest.mark.parametrize(
         "webhook_response,expected_result",
         [
@@ -875,7 +925,7 @@ class TestInstrumentation:
         self,
         setup_in_memory_tracer,
         httpx_mock,
-        response_body_content,
+        provider_response_test_data,
         base_handler,
         webhook_response,
         expected_result,
@@ -892,7 +942,8 @@ class TestInstrumentation:
             status_code=200,
         )
 
-        resp_body = self._create_response_body(response_body_content)
+        test_data = provider_response_test_data["openai"]
+        resp_body = self._create_response_body(test_data["response_body"])
         base_handler.resp_webhook = self._create_webhook_config()
 
         response = self._execute_response_body_test(
@@ -916,3 +967,59 @@ class TestInstrumentation:
             handler.resp_webhook.endpoint
         )
         assert attributes.get(ai_attributes.AI_WEBHOOK_RESULT) == expected_result
+
+    @pytest.mark.parametrize(
+        "provider,path",
+        [
+            ("openai", "/chat/completions"),
+            ("gemini", "/v1beta/models/gemini-2.5-flash:generateContent"),
+            ("anthropic", "api.anthropic.com/v1/messages"),
+        ],
+        ids=["openai", "gemini", "anthropic"],
+    )
+    def test_handle_response(
+        self, setup_in_memory_tracer, provider_response_test_data, provider, path
+    ):
+        """Test response body handling for all providers"""
+        memory_exporter, test_tracer = setup_in_memory_tracer
+
+        metadict = {"x-llm-provider": provider}
+        handler = stream_handler(metadict)
+        handler.req.path = path
+        handler.resp_webhook = None
+
+        test_data = provider_response_test_data[provider]
+        resp_body = self._create_response_body(test_data["response_body"])
+
+        response = self._execute_response_body_test(test_tracer, resp_body, handler)
+        self._verify_basic_response(response)
+
+        spans = memory_exporter.get_finished_spans()
+        gen_ai_response_span = self._find_span_by_name_prefix(spans, "gen_ai.response")
+
+        self._verify_provider_response_attributes(
+            gen_ai_response_span.attributes, test_data["expected_attributes"]
+        )
+
+    def _verify_provider_response_attributes(self, actual_attrs, expected_attrs):
+        assert actual_attrs.get(
+            gen_ai_attributes.GEN_AI_OPERATION_NAME
+        ) == expected_attrs.get(gen_ai_attributes.GEN_AI_OPERATION_NAME)
+        assert actual_attrs.get(gen_ai_attributes.GEN_AI_SYSTEM) == expected_attrs.get(
+            gen_ai_attributes.GEN_AI_SYSTEM
+        )
+        assert actual_attrs.get(
+            gen_ai_attributes.GEN_AI_RESPONSE_ID
+        ) == expected_attrs.get(gen_ai_attributes.GEN_AI_RESPONSE_ID)
+        assert actual_attrs.get(
+            gen_ai_attributes.GEN_AI_RESPONSE_MODEL
+        ) == expected_attrs.get(gen_ai_attributes.GEN_AI_RESPONSE_MODEL)
+        assert actual_attrs.get(
+            gen_ai_attributes.GEN_AI_RESPONSE_FINISH_REASONS
+        ) == expected_attrs.get(gen_ai_attributes.GEN_AI_RESPONSE_FINISH_REASONS)
+        assert actual_attrs.get(
+            gen_ai_attributes.GEN_AI_USAGE_INPUT_TOKENS
+        ) == expected_attrs.get(gen_ai_attributes.GEN_AI_USAGE_INPUT_TOKENS)
+        assert actual_attrs.get(
+            gen_ai_attributes.GEN_AI_USAGE_OUTPUT_TOKENS
+        ) == expected_attrs.get(gen_ai_attributes.GEN_AI_USAGE_OUTPUT_TOKENS)

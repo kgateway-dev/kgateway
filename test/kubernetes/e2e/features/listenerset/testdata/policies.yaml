@@ -44,7 +44,6 @@ spec:
       set:
         - name: policy
           value: listener-set
-
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: TrafficPolicy

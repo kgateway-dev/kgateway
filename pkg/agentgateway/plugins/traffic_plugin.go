@@ -2,8 +2,10 @@ package plugins
 
 import (
 	"fmt"
+	"log/slog"
 
 	"github.com/agentgateway/agentgateway/go/api"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -18,6 +20,7 @@ import (
 
 const (
 	extauthPolicySuffix = ":extauth"
+	aiPolicySuffix      = ":ai"
 )
 
 // NewTrafficPlugin creates a new TrafficPolicy plugin
@@ -103,17 +106,16 @@ func translateTrafficPolicyToADP(ctx krt.HandlerContext, gatewayExtensions krt.C
 	policyName := fmt.Sprintf("trafficpolicy/%s/%s/%s", trafficPolicy.Namespace, trafficPolicy.Name, policyTargetName)
 
 	// Convert ExtAuth policy if present
-	if trafficPolicy.Spec.ExtAuth != nil && trafficPolicy.Spec.ExtAuth.ExtensionRef.Name != "" {
+	if trafficPolicy.Spec.ExtAuth != nil && trafficPolicy.Spec.ExtAuth.ExtensionRef != nil {
 		extAuthPolicies := processExtAuthPolicy(ctx, gatewayExtensions, trafficPolicy, policyName, policyTarget)
 		adpPolicies = append(adpPolicies, extAuthPolicies...)
 	}
 
-	// TODO: Add support for other policy types as needed:
-	// - RateLimit
-	// - Transformation
-	// - ExtProc
-	// - AI policies
-	// etc.
+	// Process AI policies if present
+	if trafficPolicy.Spec.AI != nil {
+		aiPolicies := processAIPolicy(ctx, trafficPolicy, policyName, policyTarget)
+		adpPolicies = append(adpPolicies, aiPolicies...)
+	}
 
 	return adpPolicies
 }
@@ -182,4 +184,258 @@ func processExtAuthPolicy(ctx krt.HandlerContext, gatewayExtensions krt.Collecti
 		"target", extauthSvcTarget)
 
 	return []ADPPolicy{{Policy: extauthPolicy}}
+}
+
+// processAIPolicy processes AI configuration and creates corresponding ADP policies
+func processAIPolicy(ctx krt.HandlerContext, trafficPolicy *v1alpha1.TrafficPolicy, policyName string, policyTarget *api.PolicyTarget) []ADPPolicy {
+	logger := logging.New("agentgateway/plugins/traffic")
+
+	aiSpec := trafficPolicy.Spec.AI
+
+	aiPolicy := &api.Policy{
+		Name:   policyName + aiPolicySuffix,
+		Target: policyTarget,
+		Spec: &api.PolicySpec{
+			Kind: &api.PolicySpec_Ai_{
+				Ai: &api.PolicySpec_Ai{},
+			},
+		},
+	}
+
+	if aiSpec.PromptEnrichment != nil {
+		aiPolicy.GetSpec().GetAi().Prompts = processPromptEnrichment(aiSpec.PromptEnrichment)
+	}
+
+	if len(aiSpec.Defaults) > 0 {
+		for _, def := range aiSpec.Defaults {
+			if def.Override != nil && *def.Override {
+				if aiPolicy.GetSpec().GetAi().Overrides == nil {
+					aiPolicy.GetSpec().GetAi().Overrides = make(map[string]string)
+				}
+				aiPolicy.GetSpec().GetAi().Overrides[def.Field] = def.Value
+			} else {
+				if aiPolicy.GetSpec().GetAi().Defaults == nil {
+					aiPolicy.GetSpec().GetAi().Defaults = make(map[string]string)
+				}
+				aiPolicy.GetSpec().GetAi().Defaults[def.Field] = def.Value
+			}
+		}
+	}
+
+	if aiSpec.PromptGuard != nil {
+		if aiPolicy.GetSpec().GetAi().PromptGuard == nil {
+			aiPolicy.GetSpec().GetAi().PromptGuard = &api.PolicySpec_Ai_PromptGuard{}
+		}
+		if aiSpec.PromptGuard.Request != nil {
+			aiPolicy.GetSpec().GetAi().PromptGuard.Request = processRequestGuard(aiSpec.PromptGuard.Request, logger)
+		}
+
+		if aiSpec.PromptGuard.Response != nil {
+			aiPolicy.GetSpec().GetAi().PromptGuard.Response = processResponseGuard(aiSpec.PromptGuard.Response, logger)
+		}
+	}
+
+	logger.Debug("generated AI policy",
+		"policy", trafficPolicy.Name,
+		"agentgateway_policy", aiPolicy.Name)
+
+	return []ADPPolicy{{Policy: aiPolicy}}
+}
+
+func processRequestGuard(req *v1alpha1.PromptguardRequest, logger *slog.Logger) *api.PolicySpec_Ai_RequestGuard {
+	if req == nil {
+		return nil
+	}
+
+	pgReq := &api.PolicySpec_Ai_RequestGuard{}
+
+	if req.CustomResponse != nil {
+		pgReq.Rejection = &api.PolicySpec_Ai_RequestRejection{
+			Body:   []byte(*req.CustomResponse.Message),
+			Status: *req.CustomResponse.StatusCode,
+		}
+	}
+
+	if req.Webhook != nil {
+		pgReq.Webhook = processWebhook(req.Webhook)
+	}
+
+	if req.Regex != nil {
+		pgReq.Regex = processRegex(req.Regex, req.CustomResponse, logger)
+	}
+
+	if req.Moderation != nil {
+		pgReq.OpenaiModeration = processModeration(req.Moderation)
+	}
+
+	return pgReq
+}
+
+func processResponseGuard(resp *v1alpha1.PromptguardResponse, logger *slog.Logger) *api.PolicySpec_Ai_ResponseGuard {
+	pgResp := &api.PolicySpec_Ai_ResponseGuard{}
+
+	if resp.Webhook != nil {
+		pgResp.Webhook = processWebhook(resp.Webhook)
+	}
+
+	if resp.Regex != nil {
+		pgResp.Regex = processRegex(resp.Regex, nil, logger)
+	}
+
+	return pgResp
+}
+
+func processPromptEnrichment(enrichment *v1alpha1.AIPromptEnrichment) *api.PolicySpec_Ai_PromptEnrichment {
+	pgPromptEnrichment := &api.PolicySpec_Ai_PromptEnrichment{}
+
+	// Add prepend messages
+	for _, msg := range enrichment.Prepend {
+		pgPromptEnrichment.Prepend = append(pgPromptEnrichment.Prepend, &api.PolicySpec_Ai_Message{
+			Role:    msg.Role,
+			Content: msg.Content,
+		})
+	}
+
+	// Add append messages
+	for _, msg := range enrichment.Append {
+		pgPromptEnrichment.Append = append(pgPromptEnrichment.Append, &api.PolicySpec_Ai_Message{
+			Role:    msg.Role,
+			Content: msg.Content,
+		})
+	}
+
+	return pgPromptEnrichment
+}
+
+func processWebhook(webhook *v1alpha1.Webhook) *api.PolicySpec_Ai_Webhook {
+	if webhook == nil {
+		return nil
+	}
+	return &api.PolicySpec_Ai_Webhook{
+		Host: webhook.Host.Host,
+		Port: uint32(webhook.Host.Port),
+	}
+}
+
+func processBuiltinRegexRule(builtin v1alpha1.BuiltIn, logger *slog.Logger) *api.PolicySpec_Ai_RegexRule {
+	builtinValue, ok := api.PolicySpec_Ai_BuiltinRegexRule_value[string(builtin)]
+	if !ok {
+		logger.Warn("unknown builtin regex rule", "builtin", builtin)
+		builtinValue = int32(api.PolicySpec_Ai_BUILTIN_UNSPECIFIED)
+	}
+	return &api.PolicySpec_Ai_RegexRule{
+		Kind: &api.PolicySpec_Ai_RegexRule_Builtin{
+			Builtin: api.PolicySpec_Ai_BuiltinRegexRule(builtinValue),
+		},
+	}
+}
+
+func processNamedRegexRule(pattern, name string) *api.PolicySpec_Ai_RegexRule {
+	return &api.PolicySpec_Ai_RegexRule{
+		Kind: &api.PolicySpec_Ai_RegexRule_Regex{
+			Regex: &api.PolicySpec_Ai_NamedRegex{
+				Pattern: pattern,
+				Name:    name,
+			},
+		},
+	}
+}
+
+func processRegex(regex *v1alpha1.Regex, customResponse *v1alpha1.CustomResponse, logger *slog.Logger) *api.PolicySpec_Ai_RegexRules {
+	if regex == nil {
+		return nil
+	}
+
+	rules := &api.PolicySpec_Ai_RegexRules{}
+	if regex.Action != nil {
+		rules.Action = &api.PolicySpec_Ai_Action{}
+		if *regex.Action == v1alpha1.MASK {
+			rules.Action.Kind = api.PolicySpec_Ai_MASK
+		} else if *regex.Action == v1alpha1.REJECT {
+			rules.Action.Kind = api.PolicySpec_Ai_REJECT
+			rules.Action.RejectResponse = &api.PolicySpec_Ai_RequestRejection{}
+			if customResponse != nil {
+				if customResponse.Message != nil {
+					rules.Action.RejectResponse.Body = []byte(*customResponse.Message)
+				}
+				if customResponse.StatusCode != nil {
+					rules.Action.RejectResponse.Status = *customResponse.StatusCode
+				}
+			}
+		} else {
+			logger.Warn("unsupported regex action", "action", *regex.Action)
+			rules.Action.Kind = api.PolicySpec_Ai_ACTION_UNSPECIFIED
+		}
+	}
+
+	for _, match := range regex.Matches {
+		// TODO(jmcguire98): should we really allow empty patterns on regex matches?
+		// I see the CRD is omitempty, but I don't get why
+		// for now i'm just dropping them on the floor
+		if match.Pattern == nil {
+			continue
+		}
+
+		// we should probably not pass an empty name to the dataplane even if none was provided,
+		// since the name is what will be used for masking
+		// if the action is mask
+		name := ""
+		if match.Name != nil {
+			name = *match.Name
+		}
+
+		rules.Rules = append(rules.Rules, processNamedRegexRule(*match.Pattern, name))
+	}
+
+	for _, builtin := range regex.Builtins {
+		rules.Rules = append(rules.Rules, processBuiltinRegexRule(builtin, logger))
+	}
+
+	return rules
+}
+
+func processModeration(moderation *v1alpha1.Moderation) *api.PolicySpec_Ai_Moderation {
+	// right now we only support OpenAI moderation, so we can return nil if the moderation is nil or the OpenAIModeration is nil
+	if moderation == nil || moderation.OpenAIModeration == nil {
+		return nil
+	}
+
+	pgModeration := &api.PolicySpec_Ai_Moderation{}
+
+	if moderation.OpenAIModeration.Model != nil {
+		pgModeration.Model = &wrapperspb.StringValue{
+			Value: *moderation.OpenAIModeration.Model,
+		}
+	}
+
+	switch moderation.OpenAIModeration.AuthToken.Kind {
+	case v1alpha1.Inline:
+		if moderation.OpenAIModeration.AuthToken.Inline != nil {
+			pgModeration.Auth = &api.BackendAuthPolicy{
+				Kind: &api.BackendAuthPolicy_Key{
+					Key: &api.Key{
+						Secret: *moderation.OpenAIModeration.AuthToken.Inline,
+					},
+				},
+			}
+		}
+	case v1alpha1.SecretRef:
+		if moderation.OpenAIModeration.AuthToken.SecretRef != nil {
+			pgModeration.Auth = &api.BackendAuthPolicy{
+				Kind: &api.BackendAuthPolicy_Key{
+					Key: &api.Key{
+						Secret: moderation.OpenAIModeration.AuthToken.SecretRef.Name,
+					},
+				},
+			}
+		}
+	case v1alpha1.Passthrough:
+		pgModeration.Auth = &api.BackendAuthPolicy{
+			Kind: &api.BackendAuthPolicy_Passthrough{
+				Passthrough: &api.Passthrough{},
+			},
+		}
+	}
+
+	return pgModeration
 }

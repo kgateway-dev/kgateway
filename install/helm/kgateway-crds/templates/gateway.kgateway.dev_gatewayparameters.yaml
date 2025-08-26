@@ -2433,6 +2433,8 @@ spec:
                     properties:
                       clusterIP:
                         type: string
+                      externalTrafficPolicy:
+                        type: string
                       extraAnnotations:
                         additionalProperties:
                           type: string

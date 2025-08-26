@@ -1,6 +1,7 @@
 Name|Version|License
 ---|---|---
-[agentgateway/agentgateway](https://github.com/agentgateway/agentgateway)|v0.7.5|Apache License 2.0
+[cel.dev/expr](https://cel.dev/expr)|v0.24.0|Apache License 2.0
+[agentgateway/agentgateway](https://github.com/agentgateway/agentgateway)|v0.7.6|Apache License 2.0
 [avast/retry-go](https://github.com/avast/retry-go)|v2.4.3+incompatible|MIT License
 [retry-go/v4](https://github.com/avast/retry-go)|v4.3.3|MIT License
 [xds/go](https://github.com/cncf/xds)|v0.0.0-20250501225837-2ac532fd4443|Apache License 2.0
@@ -13,6 +14,7 @@ Name|Version|License
 [go-logr/logr](https://github.com/go-logr/logr)|v1.4.3|Apache License 2.0
 [go-logr/zapr](https://github.com/go-logr/zapr)|v1.3.0|Apache License 2.0
 [golang/protobuf](https://github.com/golang/protobuf)|v1.5.4|BSD 3-clause "New" or "Revised" License
+[google/cel-go](https://github.com/google/cel-go)|v0.26.0|Apache License 2.0
 [google/go-cmp](https://github.com/google/go-cmp)|v0.7.0|BSD 3-clause "New" or "Revised" License
 [grpc-ecosystem/go-grpc-middleware](https://github.com/grpc-ecosystem/go-grpc-middleware)|v1.4.0|Apache License 2.0
 [kelseyhightower/envconfig](https://github.com/kelseyhightower/envconfig)|v1.4.0|MIT License

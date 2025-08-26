@@ -1185,6 +1185,39 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("RBAC Policy at route level", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "rbac/route-cel-rbac.yaml",
+			outputFile: "rbac/route-cel-rbac.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("RBAC Policy at httproute level", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "rbac/httproute-cel-rbac.yaml",
+			outputFile: "rbac/httproute-cel-rbac.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("RBAC Policy at gateway level", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "rbac/gateway-cel-rbac.yaml",
+			outputFile: "rbac/gateway-cel-rbac.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("basic listener set", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "listener-sets/basic.yaml",

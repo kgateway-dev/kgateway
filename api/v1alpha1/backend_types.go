@@ -70,6 +70,7 @@ type BackendSpec struct {
 	// +optional
 	DynamicForwardProxy *DynamicForwardProxyBackend `json:"dynamicForwardProxy,omitempty"`
 	// MCP is the mcp backend configuration. The MCP backend type is only supported with agentgateway.
+	// +optional
 	MCP *MCP `json:"mcp,omitempty"`
 }
 

@@ -1,103 +1,103 @@
 Addresses:
-  - service:
-      hostname: example-svc.default.svc.cluster.local
-      name: example-svc
-      namespace: default
-      ports:
-        - servicePort: 80
+- service:
+    hostname: example-svc.default.svc.cluster.local
+    name: example-svc
+    namespace: default
+    ports:
+    - servicePort: 80
 Binds:
-  - key: 80/default/example-gateway
-    port: 80
+- key: 80/default/example-gateway
+  port: 80
 Listeners:
-  - bindKey: 80/default/example-gateway
-    gatewayName: default/example-gateway
-    key: default/example-gateway/http
-    name: http
-    protocol: HTTP
+- bindKey: 80/default/example-gateway
+  gatewayName: default/example-gateway
+  key: default/example-gateway/http
+  name: http
+  protocol: HTTP
 Routes:
-  - backends:
-      - backend:
-          port: 80
-          service: default/example-svc.default.svc.cluster.local
-        weight: 1
-    hostnames:
-      - example-retry-backend-request.com
-    key: default.example-route-retry-backend-request.0.0.http
-    listenerKey: default/example-gateway/http
-    routeName: default/example-route-retry-backend-request
-    trafficPolicy:
-      backendRequestTimeout: 9s
-      retry:
-        attempts: 2
-        backoff: 1s
-        retryStatusCodes:
-          - 500
-          - 503
-  - backends:
-      - backend:
-          port: 80
-          service: default/example-svc.default.svc.cluster.local
-        weight: 1
-    hostnames:
-      - example-retry-both-timeouts.com
-    key: default.example-route-retry-both-timeouts.0.0.http
-    listenerKey: default/example-gateway/http
-    routeName: default/example-route-retry-both-timeouts
-    trafficPolicy:
-      backendRequestTimeout: 5s
-      requestTimeout: 10s
-      retry:
-        attempts: 3
-  - backends:
-      - backend:
-          port: 80
-          service: default/example-svc.default.svc.cluster.local
-        weight: 1
-    hostnames:
-      - example.com
-    key: default.example-route-timeout.0.0.http
-    listenerKey: default/example-gateway/http
-    routeName: default/example-route-timeout
-    trafficPolicy:
-      requestTimeout: 9s
-  - backends:
-      - backend:
-          port: 80
-          service: default/example-svc.default.svc.cluster.local
-        weight: 1
-    hostnames:
-      - example-backend-request-both-timeout.com
-    key: default.example-route-backend-request-both-timeout.0.0.http
-    listenerKey: default/example-gateway/http
-    routeName: default/example-route-backend-request-both-timeout
-    trafficPolicy:
-      backendRequestTimeout: 9s
-      requestTimeout: 10s
-  - backends:
-      - backend:
-          port: 80
-          service: default/example-svc.default.svc.cluster.local
-        weight: 1
-    hostnames:
-      - example-backend-request-timeout.com
-    key: default.example-route-backend-request-timeout.0.0.http
-    listenerKey: default/example-gateway/http
-    routeName: default/example-route-backend-request-timeout
-    trafficPolicy:
-      backendRequestTimeout: 7s
-  - backends:
-      - backend:
-          port: 80
-          service: default/example-svc.default.svc.cluster.local
-        weight: 1
-    hostnames:
-      - example-retry.com
-    key: default.example-route-retry.0.0.http
-    listenerKey: default/example-gateway/http
-    routeName: default/example-route-retry
-    trafficPolicy:
-      retry:
-        attempts: 2
-        backoff: 1s
-        retryStatusCodes:
-          - 503
+- backends:
+  - backend:
+      port: 80
+      service: default/example-svc.default.svc.cluster.local
+    weight: 1
+  hostnames:
+  - example.com
+  key: default.example-route-timeout.0.0.http
+  listenerKey: default/example-gateway/http
+  routeName: default/example-route-timeout
+  trafficPolicy:
+    requestTimeout: 9s
+- backends:
+  - backend:
+      port: 80
+      service: default/example-svc.default.svc.cluster.local
+    weight: 1
+  hostnames:
+  - example-backend-request-both-timeout.com
+  key: default.example-route-backend-request-both-timeout.0.0.http
+  listenerKey: default/example-gateway/http
+  routeName: default/example-route-backend-request-both-timeout
+  trafficPolicy:
+    backendRequestTimeout: 9s
+    requestTimeout: 10s
+- backends:
+  - backend:
+      port: 80
+      service: default/example-svc.default.svc.cluster.local
+    weight: 1
+  hostnames:
+  - example-backend-request-timeout.com
+  key: default.example-route-backend-request-timeout.0.0.http
+  listenerKey: default/example-gateway/http
+  routeName: default/example-route-backend-request-timeout
+  trafficPolicy:
+    backendRequestTimeout: 7s
+- backends:
+  - backend:
+      port: 80
+      service: default/example-svc.default.svc.cluster.local
+    weight: 1
+  hostnames:
+  - example-retry.com
+  key: default.example-route-retry.0.0.http
+  listenerKey: default/example-gateway/http
+  routeName: default/example-route-retry
+  trafficPolicy:
+    retry:
+      attempts: 2
+      backoff: 1s
+      retryStatusCodes:
+      - 503
+- backends:
+  - backend:
+      port: 80
+      service: default/example-svc.default.svc.cluster.local
+    weight: 1
+  hostnames:
+  - example-retry-backend-request.com
+  key: default.example-route-retry-backend-request.0.0.http
+  listenerKey: default/example-gateway/http
+  routeName: default/example-route-retry-backend-request
+  trafficPolicy:
+    backendRequestTimeout: 9s
+    retry:
+      attempts: 2
+      backoff: 1s
+      retryStatusCodes:
+      - 500
+      - 503
+- backends:
+  - backend:
+      port: 80
+      service: default/example-svc.default.svc.cluster.local
+    weight: 1
+  hostnames:
+  - example-retry-both-timeouts.com
+  key: default.example-route-retry-both-timeouts.0.0.http
+  listenerKey: default/example-gateway/http
+  routeName: default/example-route-retry-both-timeouts
+  trafficPolicy:
+    backendRequestTimeout: 5s
+    requestTimeout: 10s
+    retry:
+      attempts: 3

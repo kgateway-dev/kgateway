@@ -109,6 +109,11 @@ type TrafficPolicySpec struct {
 	// It is applicable to HTTPRoutes, Gateway listeners and XListenerSets, and ignored for other targeted kinds.
 	// +optional
 	Retry *Retry `json:"retry,omitempty"`
+
+	// RBAC specifies the role-based access control configuration for the policy.
+	// This defines the rules for authorization based on roles and permissions.
+	// +optional
+	RBAC *RBAC `json:"rbac,omitempty"`
 }
 
 // TransformationPolicy config is used to modify envoy behavior at a route level.
@@ -208,7 +213,7 @@ type BodyTransformation struct {
 type ExtAuthPolicy struct {
 	// ExtensionRef references the GatewayExtension that should be used for authentication.
 	// +optional
-	ExtensionRef NamespacedObjectReference `json:"extensionRef,omitempty"`
+	ExtensionRef *NamespacedObjectReference `json:"extensionRef,omitempty"`
 
 	// WithRequestBody allows the request body to be buffered and sent to the authorization service.
 	// Warning buffering has implications for streaming and therefore performance.

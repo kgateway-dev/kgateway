@@ -103,6 +103,12 @@ type Service struct {
 	//
 	// +optional
 	Ports []Port `json:"ports,omitempty"`
+
+	// ExternalTrafficPolicy defines the external traffic policy for the service.
+	// Valid values are Cluster and Local. Default value is Cluster.
+	//
+	// +optional
+	ExternalTrafficPolicy *string `json:"externalTrafficPolicy,omitempty"`
 }
 
 func (in *Service) GetPorts() []Port {
@@ -165,6 +171,13 @@ func (in *Service) GetExtraAnnotations() map[string]string {
 		return nil
 	}
 	return in.ExtraAnnotations
+}
+
+func (in *Service) GetExternalTrafficPolicy() *string {
+	if in == nil {
+		return nil
+	}
+	return in.ExternalTrafficPolicy
 }
 
 type ServiceAccount struct {

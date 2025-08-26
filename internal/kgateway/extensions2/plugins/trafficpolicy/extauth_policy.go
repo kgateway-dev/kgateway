@@ -106,7 +106,8 @@ func constructExtAuth(
 
 	perRouteCfg := buildExtAuthPerRouteFilterConfig(spec)
 
-	provider, err := fetchGatewayExtension(krtctx, spec.ExtensionRef, in.GetNamespace())
+	// kubebuilder validation ensures the extensionRef is not nil, since disable is nil
+	provider, err := fetchGatewayExtension(krtctx, *spec.ExtensionRef, in.GetNamespace())
 	if err != nil {
 		return fmt.Errorf("extauthz: %w", err)
 	}

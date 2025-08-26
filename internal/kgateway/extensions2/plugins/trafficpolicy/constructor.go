@@ -103,6 +103,11 @@ func (c *TrafficPolicyConstructor) ConstructIR(
 	// Construct timeout and retry specific IR
 	constructTimeoutRetry(policyCR.Spec, &outSpec)
 
+	// Construct rbac specific IR
+	if err := constructRBAC(policyCR, &outSpec); err != nil {
+		errors = append(errors, err)
+	}
+
 	for _, err := range errors {
 		logger.Error("error translating traffic policy", "namespace", policyCR.GetNamespace(), "name", policyCR.GetName(), "error", err)
 	}

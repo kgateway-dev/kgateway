@@ -271,6 +271,10 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.RateLimitPolicyApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("RateLimitProvider"):
 		return &apiv1alpha1.RateLimitProviderApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("RBAC"):
+		return &apiv1alpha1.RBACApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("RBACPolicy"):
+		return &apiv1alpha1.RBACPolicyApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("Regex"):
 		return &apiv1alpha1.RegexApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("RegexMatch"):
