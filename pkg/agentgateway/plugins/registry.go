@@ -22,6 +22,9 @@ func MergePlugins(plug ...AgentgatewayPlugin) AgentgatewayPlugin {
 			ret.ContributesPolicies[gk] = policy
 		}
 		if p.AdditionalResources != nil {
+			if ret.AdditionalResources == nil {
+				ret.AdditionalResources = &AddResourcesPlugin{}
+			}
 			if ret.AdditionalResources.AdditionalBinds == nil {
 				ret.AdditionalResources.AdditionalBinds = p.AdditionalResources.AdditionalBinds
 			}
