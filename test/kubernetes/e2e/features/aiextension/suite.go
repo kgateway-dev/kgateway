@@ -131,8 +131,7 @@ func (s *tsuite) TestTracing() {
 
 	s.waitForOTelCollectorReady()
 
-	// Run OTel tracing span validation test
-	s.testOTelSpan()
+	s.testRouteSpan()
 }
 
 func (s *tsuite) waitForOTelCollectorReady() {
@@ -183,7 +182,7 @@ func (s *tsuite) waitForOTelCollectorReady() {
 	}, 60*time.Second, 5*time.Second)
 }
 
-func (s *tsuite) testOTelSpan() {
+func (s *tsuite) testRouteSpan() {
 	// Wait until the tracing policy is accepted by the Gateway
 	s.testInst.Assertions.EventuallyHTTPListenerPolicyCondition(s.ctx, "tracing-policy", s.installNamespace, gwv1.GatewayConditionAccepted, metav1.ConditionTrue)
 
@@ -224,6 +223,7 @@ func (s *tsuite) testOTelSpan() {
 		},
 		{
 			name: "route request to gemini provider",
+			// TODO(zhengke): we only support OpenAI-compatible requests now.
 			exceptedLogs: [][]string{
 				{
 					`gen_ai.request generate_content gemini-2.5-flash`,
@@ -244,12 +244,19 @@ func (s *tsuite) testOTelSpan() {
 					`gen_ai.response`,
 					`-> gen_ai.system: Str(gcp.gemini)`,
 					`-> gen_ai.operation.name: Str(generate_content)`,
-					// `-> gen_ai.response.model: Str(gemini-2.5-flash)`,
-					// `-> gen_ai.response.id: Str(tYmZaMTQLcayqtsP_rq7gQs)`,
-					// `-> gen_ai.response.finish_reasons: Str(STOP)`,
-					// `-> gen_ai.usage.input_tokens: Int(23)`,
-					// `-> gen_ai.usage.output_tokens: Int(1147)`,
+					`-> gen_ai.response.model: Str(gemini-2.5-flash)`,
+					`-> gen_ai.response.id: Str(36upaPXnGuemmtkPs4jh0A4)`,
+					`-> gen_ai.response.finish_reasons: Str(STOP)`,
+					`-> gen_ai.usage.input_tokens: Int(23)`,
+					`-> gen_ai.usage.output_tokens: Int(1147)`,
 				},
+			},
+		},
+		{
+
+			name: "route request to anthropic provider",
+			exceptedLogs: [][]string{
+				{},
 			},
 		},
 	}
@@ -257,7 +264,7 @@ func (s *tsuite) testOTelSpan() {
 	for _, provider := range mockLLMProviders {
 		// Send a test request to the AI gateway and verify HTTP response.
 		// This triggers the OTel span generation in the backend.
-		s.invokePytest("tracing.py")
+		s.invokePytest("routing.py")
 
 		// Periodically fetch OTel collector pod logs and check for expected span logs.
 		// This ensures that the spans are actually exported and visible in the logs.

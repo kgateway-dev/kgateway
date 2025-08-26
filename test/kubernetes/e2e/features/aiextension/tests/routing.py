@@ -13,6 +13,8 @@ from tenacity import (
     wait_exponential,
     retry_if_exception_type,
 )
+
+from google.generativeai.types import generation_types
 from google.generativeai.types import helper_types
 from google.generativeai.types.answer_types import FinishReason as GeminiFinishReason
 from vertexai.generative_models import FinishReason as VertexFinishReason
@@ -25,7 +27,7 @@ logger.setLevel(logging.DEBUG)
 
 class TestRouting(LLMClient):
     def test_openai_completion(self):
-        resp = self.openai_chat_completion(
+        resp = self.openai_client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
                 {
@@ -37,6 +39,15 @@ class TestRouting(LLMClient):
                     "content": "Compose a poem that explains the concept of recursion in programming.",
                 },
             ],
+            response_format={"type": "text"},
+            n=2,
+            seed=12345,
+            frequency_penalty=0.5,
+            max_tokens=150,
+            presence_penalty=0.3,
+            stop=["\n\n", "END"],
+            temperature=0.7,
+            top_p=0.9,
         )
         logger.debug(f"openai routing response:\n{resp}")
         assert (
@@ -86,11 +97,16 @@ class TestRouting(LLMClient):
     )
     def test_gemini_completion(self):
         resp = self.gemini_client.generate_content(
-            "Compose a poem that explains the concept of recursion in programming.",
-            request_options=helper_types.RequestOptions(
-                retry=google_retry.Retry(
-                    initial=10, multiplier=2, maximum=60, timeout=300
-                )
+            contents="Write a short story about a detective and a mysterious case.",
+            generation_config=generation_types.GenerationConfig(
+                stop_sequences=["THE END", "end of story."],
+                candidate_count=1,
+                max_output_tokens=5000,
+                temperature=0.9,
+                top_p=0.95,
+                top_k=40,
+                frequency_penalty=0.5,
+                presence_penalty=0.3,
             ),
         )
         assert resp is not None
