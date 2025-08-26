@@ -8,7 +8,7 @@
           "hostname": "bar.gwtest.svc.cluster.local",
           "addresses": [
             {
-              "address": "CgAA-"
+              "address": "CgAA1Q=="
             }
           ],
           "ports": [
@@ -30,7 +30,7 @@
           "hostname": "foo.gwtest.svc.cluster.local",
           "addresses": [
             {
-              "address": "CgAAb9"
+              "address": "CgAAFw=="
             }
           ],
           "ports": [
@@ -52,7 +52,7 @@
           "hostname": "http-direct-response.gwtest.svc.cluster.local",
           "addresses": [
             {
-              "address": "CgAAdb"
+              "address": "CgAAUg=="
             }
           ],
           "ports": [
@@ -73,7 +73,7 @@
           "hostname": "http-grpcroute.gwtest.svc.cluster.local",
           "addresses": [
             {
-              "address": "CgAAJQ"
+              "address": "CgAAcA=="
             }
           ],
           "ports": [
@@ -94,7 +94,7 @@
           "hostname": "http-httproute.gwtest.svc.cluster.local",
           "addresses": [
             {
-              "address": "CgAAYg"
+              "address": "CgAAsA=="
             }
           ],
           "ports": [
@@ -115,7 +115,7 @@
           "hostname": "http-inferencepool.gwtest.svc.cluster.local",
           "addresses": [
             {
-              "address": "CgAAdw"
+              "address": "CgAAWw=="
             }
           ],
           "ports": [
@@ -136,7 +136,7 @@
           "hostname": "http-tcproute.gwtest.svc.cluster.local",
           "addresses": [
             {
-              "address": "CgAAbQ"
+              "address": "CgAAnQ=="
             }
           ],
           "ports": [
@@ -161,13 +161,13 @@
           "hostname": "kubernetes.default.svc.cluster.local",
           "addresses": [
             {
-              "address": "CgAAAQ"
+              "address": "CgAAAQ=="
             }
           ],
           "ports": [
             {
               "service_port": 443,
-              "target_port": 44879
+              "target_port": 39789
             }
           ],
           "ip_families": 1
@@ -181,7 +181,7 @@
           "name": "reviews-1",
           "namespace": "gwtest",
           "addresses": [
-            "CvQBCw"
+            "CvQBCw=="
           ],
           "service_account": "default",
           "node": "worker",
@@ -200,7 +200,7 @@
           "name": "reviews-2",
           "namespace": "gwtest",
           "addresses": [
-            "CvQCDg"
+            "CvQCDg=="
           ],
           "service_account": "default",
           "node": "worker2",
@@ -219,7 +219,7 @@
           "name": "reviews-3",
           "namespace": "gwtest",
           "addresses": [
-            "CvQDAw"
+            "CvQDAw=="
           ],
           "service_account": "default",
           "node": "worker3",
@@ -238,7 +238,7 @@
           "name": "reviews-4",
           "namespace": "gwtest",
           "addresses": [
-            "CvQEBA"
+            "CvQEBA=="
           ],
           "service_account": "default",
           "node": "worker4",
@@ -274,7 +274,7 @@
           "key": "gwtest/http-tcproute/bar",
           "name": "bar",
           "bind_key": "8089/gwtest/http-tcproute",
-          "gateway_name": "http-tcproute",
+          "gateway_name": "gwtest/http-tcproute",
           "protocol": 4
         }
       }
@@ -285,7 +285,7 @@
           "key": "gwtest/http-tcproute/foo",
           "name": "foo",
           "bind_key": "8088/gwtest/http-tcproute",
-          "gateway_name": "http-tcproute",
+          "gateway_name": "gwtest/http-tcproute",
           "protocol": 4
         }
       }
