@@ -29,6 +29,7 @@ Backends:
     mcp:
       targets:
         - name: example-svc-80
+          protocol: STREAMABLE_HTTP
           backend:
             service: default/example-svc.default.svc.cluster.local
             port: 80

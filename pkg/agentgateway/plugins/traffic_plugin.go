@@ -11,6 +11,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/ptr"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
@@ -94,10 +95,12 @@ func translateTrafficPolicy(
 			// kgateway backend kind (MCP, AI, etc.)
 
 			// Look up the Backend referenced by the policy
-			backendKey := fmt.Sprintf("%s/%s", trafficPolicy.Namespace, target.Name)
+			backendKey := getBackendKey(trafficPolicy.Namespace, string(target.Name))
 			backend := krt.FetchOne(ctx, backends, krt.FilterKey(backendKey))
 			if backend == nil {
-				logger.Error("backend not found", "name", target.Name, "namespace", trafficPolicy.Namespace)
+				logger.Error("backend not found",
+					"target", target.Name,
+					"policy", client.ObjectKeyFromObject(trafficPolicy))
 				return nil
 			}
 			backendSpec := (*backend).Spec
@@ -109,7 +112,9 @@ func translateTrafficPolicy(
 					},
 				}
 			} else {
-				logger.Warn("unsupported target kind. only MCP backends are supported", "kind", target.Kind, "policy", trafficPolicy.Name)
+				logger.Warn("unsupported target kind. only MCP backends are supported",
+					"kind", target.Kind,
+					"policy", client.ObjectKeyFromObject(trafficPolicy))
 				continue
 			}
 		default:
@@ -139,7 +144,7 @@ func translateTrafficPolicyToADP(
 	adpPolicies := make([]ADPPolicy, 0)
 
 	// Generate a base policy name from the TrafficPolicy reference
-	policyName := fmt.Sprintf("trafficpolicy/%s/%s/%s", trafficPolicy.Namespace, trafficPolicy.Name, policyTargetName)
+	policyName := getTrafficPolicyName(trafficPolicy.Namespace, trafficPolicy.Name, policyTargetName)
 
 	// Convert ExtAuth policy if present
 	if trafficPolicy.Spec.ExtAuth != nil && trafficPolicy.Spec.ExtAuth.ExtensionRef != nil {
@@ -172,7 +177,7 @@ func processExtAuthPolicy(ctx krt.HandlerContext, gatewayExtensions krt.Collecti
 	if extensionNamespace == "" {
 		extensionNamespace = trafficPolicy.Namespace
 	}
-	gwExtKey := fmt.Sprintf("%s/%s", extensionNamespace, extensionName)
+	gwExtKey := getGatewayExtensionKey(extensionNamespace, string(extensionName))
 	gwExt := krt.FetchOne(ctx, gatewayExtensions, krt.FilterKey(gwExtKey))
 
 	if gwExt == nil || (*gwExt).Spec.Type != v1alpha1.GatewayExtensionTypeExtAuth || (*gwExt).Spec.ExtAuth == nil {
@@ -533,4 +538,16 @@ func processRBACPolicy(
 		"target", policyTarget)
 
 	return []ADPPolicy{{Policy: rbacPolicy}}
+}
+
+func getTrafficPolicyName(trafficPolicyNs, trafficPolicyName, policyTargetName string) string {
+	return fmt.Sprintf("trafficpolicy/%s/%s/%s", trafficPolicyNs, trafficPolicyName, policyTargetName)
+}
+
+func getBackendKey(targetPolicyNs, targetName string) string {
+	return fmt.Sprintf("%s/%s", targetPolicyNs, targetName)
+}
+
+func getGatewayExtensionKey(extensionNamespace, extensionName string) string {
+	return fmt.Sprintf("%s/%s", extensionNamespace, extensionName)
 }
