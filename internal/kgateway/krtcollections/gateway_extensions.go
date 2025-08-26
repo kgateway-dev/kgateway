@@ -10,6 +10,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
+	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
 
 	apiannotations "github.com/kgateway-dev/kgateway/v2/api/annotations"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
@@ -44,7 +45,7 @@ func NewGatewayExtensionsCollection(
 	gwExtCol := krt.NewCollection(rawGwExts, func(krtctx krt.HandlerContext, cr *v1alpha1.GatewayExtension) *ir.GatewayExtension {
 		weight, err := pluginsdkutils.ParsePrecedenceWeightAnnotation(cr.Annotations, apiannotations.PolicyPrecedenceWeight)
 		if err != nil {
-			logger.Error("error parsing precedence weight annotation; will default to 0", "error", err)
+			logger.Error("error parsing precedence weight annotation; will default to 0", "resource_ref", ctrlclient.ObjectKeyFromObject(cr), "error", err)
 		}
 		gwExt := &ir.GatewayExtension{
 			ObjectSource: ir.ObjectSource{

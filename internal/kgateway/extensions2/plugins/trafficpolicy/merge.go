@@ -197,9 +197,10 @@ func mergeExtAuth(
 		if p1.spec.extAuth == nil {
 			p1.spec.extAuth = &extAuthIR{}
 		}
-		// p2 will always have just 1 item in its providerNames, and if p1 contains that then
-		// it implies that this provider was already considered from a higher priority policy,
-		// so ignore it
+		// as p2 is not a merged policy, it will always have just 1 item in its providerNames
+		// as each extauth policy can only reference a single provider.
+		// If p1 contains the singular provider in p2 then it implies that this provider
+		// was already considered from a higher priority policy, so ignore it
 		if p2.spec.extAuth.providerNames.Len() > 0 && !p1.spec.extAuth.providerNames.IsSuperset(p2.spec.extAuth.providerNames) {
 			// Always Concat so that the original slice in the IR is never modified
 			// Note: p1 is preferred over p2 (slice order)

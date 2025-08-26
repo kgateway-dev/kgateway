@@ -41,6 +41,9 @@ var ExtAuthzEnabledMetadataMatcher = &envoy_matcher_v3.MetadataMatcher{
 }
 
 type extAuthIR struct {
+	// perProviderConfig is a list of ExtAuth providers that may be the result of a
+	// merge between policy IRs attached to the same resource or just a single IR
+	// when representing a singular policy before a merge
 	perProviderConfig   []*perProviderExtAuthConfig
 	disableAllProviders bool
 	// providerNames is used to track duplicates during policy merging,

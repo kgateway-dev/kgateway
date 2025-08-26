@@ -11,7 +11,7 @@ const (
 	// By default, policies have a weight of 0.
 	// The policy's weight is relevant to policy prioritization during policy merging, such that higher priority
 	// policies are preferred during a merge conflict or when ordering policies during a merge.
-	// Note: for policies that are implemented using GatewayExtensions, the weight specified on the GatewayExtension
+	// Note: for policies that are implemented using GatewayExtensions (such as extAuth, etcProc), the weight specified on the GatewayExtension
 	// will be used instead.
 	PolicyPrecedenceWeight = "kgateway.dev/policy-weight"
 )

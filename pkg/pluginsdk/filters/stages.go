@@ -74,10 +74,11 @@ func AfterStage[WellKnown ~int](wellKnown WellKnown) FilterStage[WellKnown] {
 	return RelativeToStage(wellKnown, 1)
 }
 
-func RelativeToStage[WellKnown ~int](wellKnown WellKnown, weight int) FilterStage[WellKnown] {
+// RelativeToStage creates a FilterStage that is relative to a well-known stage by a given weight
+func RelativeToStage[WellKnown ~int](wellKnown WellKnown, relativeWeight int) FilterStage[WellKnown] {
 	return FilterStage[WellKnown]{
 		RelativeTo:     wellKnown,
-		RelativeWeight: weight,
+		RelativeWeight: relativeWeight,
 	}
 }
 
