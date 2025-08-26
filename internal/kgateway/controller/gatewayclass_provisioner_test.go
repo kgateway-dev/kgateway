@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -217,10 +218,10 @@ var _ = Describe("GatewayClassProvisioner", func() {
 	})
 
 	When("custom GatewayClass configurations are provided", func() {
-		var customClassConfigs map[string]*controller.ClassInfo
+		var customClassConfigs map[string]*deployer.ClassInfo
 
 		BeforeEach(func() {
-			customClassConfigs = map[string]*controller.ClassInfo{
+			customClassConfigs = map[string]*deployer.ClassInfo{
 				"custom-class": {
 					Description: "custom gateway class",
 					Labels: map[string]string{

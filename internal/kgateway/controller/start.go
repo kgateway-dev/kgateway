@@ -66,6 +66,7 @@ type StartConfig struct {
 	GatewayClassName         string
 	WaypointGatewayClassName string
 	AgentGatewayClassName    string
+	AdditionalGatewayClasses map[string]*deployer.ClassInfo
 
 	Dev        bool
 	SetupOpts  *SetupOpts
@@ -304,7 +305,7 @@ func (c *ControllerBuilder) Build(ctx context.Context) error {
 	}
 
 	setupLog.Info("creating gateway class provisioner")
-	if err := NewGatewayClassProvisioner(c.mgr, c.cfg.ControllerName, GetDefaultClassInfo(globalSettings, c.cfg.GatewayClassName, c.cfg.WaypointGatewayClassName, c.cfg.AgentGatewayClassName)); err != nil {
+	if err := NewGatewayClassProvisioner(c.mgr, c.cfg.ControllerName, GetDefaultClassInfo(globalSettings, c.cfg.GatewayClassName, c.cfg.WaypointGatewayClassName, c.cfg.AgentGatewayClassName, c.cfg.AdditionalGatewayClasses)); err != nil {
 		setupLog.Error(err, "unable to create gateway class provisioner")
 		return err
 	}
@@ -353,8 +354,10 @@ func (c *ControllerBuilder) HasSynced() bool {
 
 // GetDefaultClassInfo returns the default GatewayClass for the kgateway controller.
 // Exported for testing.
-func GetDefaultClassInfo(globalSettings *settings.Settings, gatewayClassName string, waypointGatewayClassName string, agentGatewayClassName string) map[string]*ClassInfo {
-	classInfos := map[string]*ClassInfo{
+func GetDefaultClassInfo(globalSettings *settings.Settings,
+	gatewayClassName, waypointGatewayClassName, agentGatewayClassName string,
+	additionalClassInfos map[string]*deployer.ClassInfo) map[string]*deployer.ClassInfo {
+	classInfos := map[string]*deployer.ClassInfo{
 		gatewayClassName: {
 			Description: "Standard class for managing Gateway API ingress traffic.",
 			Labels:      map[string]string{},
@@ -370,11 +373,14 @@ func GetDefaultClassInfo(globalSettings *settings.Settings, gatewayClassName str
 	}
 	// Only enable agentgateway gateway class if it's enabled in the settings
 	if globalSettings.EnableAgentGateway {
-		classInfos[agentGatewayClassName] = &ClassInfo{
+		classInfos[agentGatewayClassName] = &deployer.ClassInfo{
 			Description: "Specialized class for agentgateway.",
 			Labels:      map[string]string{},
 			Annotations: map[string]string{},
 		}
+	}
+	for class, classInfo := range additionalClassInfos {
+		classInfos[class] = classInfo
 	}
 	return classInfos
 }

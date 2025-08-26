@@ -65,6 +65,12 @@ func WithAgentGatewayClassName(name string) func(*setup) {
 	}
 }
 
+func WithAdditionalGatewayClasses(classes map[string]*deployer.ClassInfo) func(*setup) {
+	return func(s *setup) {
+		s.additionalGatewayClasses = classes
+	}
+}
+
 func WithExtraPlugins(extraPlugins func(ctx context.Context, commoncol *common.CommonCollections, mergeSettingsJSON string) []sdk.Plugin) func(*setup) {
 	return func(s *setup) {
 		s.extraPlugins = extraPlugins
@@ -138,6 +144,7 @@ type setup struct {
 	gatewayClassName         string
 	waypointClassName        string
 	agentGatewayClassName    string
+	additionalGatewayClasses map[string]*deployer.ClassInfo
 	extraPlugins             func(ctx context.Context, commoncol *common.CommonCollections, mergeSettingsJSON string) []sdk.Plugin
 	extraAgentgatewayPlugins func(ctx context.Context, agw *agentgatewayplugins.AgwCollections) []agentgatewayplugins.AgentgatewayPlugin
 	extraGatewayParameters   func(cli client.Client, inputs *deployer.Inputs) []deployer.ExtraGatewayParameters
@@ -287,7 +294,7 @@ func (s *setup) Start(ctx context.Context) error {
 
 	BuildKgatewayWithConfig(
 		ctx, mgr, s.gatewayControllerName, s.gatewayClassName, s.waypointClassName,
-		s.agentGatewayClassName, setupOpts, s.restConfig, istioClient, commoncol, agwCollections, uccBuilder, s.extraPlugins, s.extraAgentgatewayPlugins, s.extraGatewayParameters)
+		s.agentGatewayClassName, s.additionalGatewayClasses, setupOpts, s.restConfig, istioClient, commoncol, agwCollections, uccBuilder, s.extraPlugins, s.extraAgentgatewayPlugins, s.extraGatewayParameters)
 
 	slog.Info("starting admin server")
 	go admin.RunAdminServer(ctx, setupOpts)
@@ -308,6 +315,7 @@ func BuildKgatewayWithConfig(
 	gatewayClassName string,
 	waypointClassName string,
 	agentGatewayClassName string,
+	additionalGatewayClasses map[string]*deployer.ClassInfo,
 	setupOpts *controller.SetupOpts,
 	restConfig *rest.Config,
 	kubeClient istiokube.Client,
@@ -336,6 +344,7 @@ func BuildKgatewayWithConfig(
 		GatewayClassName:         gatewayClassName,
 		WaypointGatewayClassName: waypointClassName,
 		AgentGatewayClassName:    agentGatewayClassName,
+		AdditionalGatewayClasses: additionalGatewayClasses,
 		ExtraPlugins:             extraPlugins,
 		ExtraAgentgatewayPlugins: extraAgentgatewayPlugins,
 		ExtraGatewayParameters:   extraGatewayParameters,
