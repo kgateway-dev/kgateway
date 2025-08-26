@@ -373,7 +373,9 @@ func TestTranslationWithExtraPlugins(
 		os.WriteFile(outputFile, outputYaml, 0o644)
 	}
 
-	r.Empty(compareProxy(outputFile, output))
+	diff, err := compareProxy(outputFile, output)
+	r.Empty(diff)
+	r.NoError(err)
 
 	if assertReports != nil {
 		assertReports(gwNN, result.ReportsMap)
