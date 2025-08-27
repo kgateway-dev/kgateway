@@ -95,7 +95,8 @@ type dockerValidator struct {
 var _ Validator = &dockerValidator{}
 
 func (d *dockerValidator) Validate(ctx context.Context, yaml string) error {
-	cmd := exec.CommandContext(ctx,
+	cmd := exec.CommandContext(
+		ctx,
 		"docker", "run",
 		"--rm",
 		"-i",
@@ -117,10 +118,12 @@ func (d *dockerValidator) Validate(ctx context.Context, yaml string) error {
 		return nil
 	}
 
-	// TODO(tim): Just return first match from "error initializing configuration"?
 	rawErr := strings.TrimSpace(stderr.String())
-	rawErr = stripDockerWarn(rawErr)
 	if _, ok := err.(*exec.ExitError); ok {
+		// Extract just the envoy error message, ignoring Docker pull output
+		if envoyErr := extractEnvoyError(rawErr); envoyErr != "" {
+			return fmt.Errorf("%w: %s", ErrInvalidXDS, envoyErr)
+		}
 		if rawErr == "" {
 			rawErr = err.Error()
 		}
@@ -129,14 +132,27 @@ func (d *dockerValidator) Validate(ctx context.Context, yaml string) error {
 	return fmt.Errorf("envoy validate invocation failed: %v", err)
 }
 
-// stripDockerWarn removes the platform-mismatch warning Docker prints on ARM hosts.
-func stripDockerWarn(s string) string {
-	lines := strings.Split(s, "\n")
-	cleaned := make([]string, 0, len(lines))
-	for _, line := range lines {
-		if !strings.HasPrefix(line, "WARNING: The requested image's platform") {
-			cleaned = append(cleaned, line)
+// extractEnvoyError extracts the actual Envoy validation error from stderr output,
+// ignoring Docker pull progress and other noise that comes before the error.
+func extractEnvoyError(stderr string) string {
+	lines := strings.Split(stderr, "\n")
+	for i, line := range lines {
+		line = strings.TrimSpace(line)
+		// skip lines that don't contain the well known error message from
+		// envoy validate mode output to reduce noise. see:
+		// https://github.com/envoyproxy/envoy/blob/d552b66f5d70ddd9e13c68c40f70729a45fb24e0/source/server/config_validation/server.cc#L75
+		if !strings.Contains(line, "error initializing configuration") {
+			continue
 		}
+		// extract all remaining lines that are relevant error context
+		remainingLines := make([]string, 0, len(lines)-i)
+		remainingLines = append(remainingLines, line)
+		for j := i + 1; j < len(lines); j++ {
+			if nextLine := strings.TrimSpace(lines[j]); nextLine != "" {
+				remainingLines = append(remainingLines, nextLine)
+			}
+		}
+		return strings.Join(remainingLines, " ")
 	}
-	return strings.TrimSpace(strings.Join(cleaned, "\n"))
+	return ""
 }
