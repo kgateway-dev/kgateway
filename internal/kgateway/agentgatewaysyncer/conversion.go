@@ -52,12 +52,10 @@ func convertHTTPRouteToADP(ctx RouteContext, r gwv1.HTTPRouteRule,
 	obj *gwv1.HTTPRoute, pos int, matchPos int,
 ) (*api.Route, *reporter.RouteCondition) {
 	routeRuleKey := strconv.Itoa(pos) + "." + strconv.Itoa(matchPos)
+	var ruleName string
 	if r.Name != nil {
 		// use the user provided name. this will be used to attach policies
 		routeRuleKey = string(*r.Name)
-	}
-	var ruleName string
-	if r.Name != nil {
 		ruleName = utils.InternalRouteRuleName(obj.Namespace, obj.Name, string(*r.Name))
 	}
 	res := &api.Route{
@@ -232,12 +230,10 @@ func convertTCPRouteToADP(ctx RouteContext, r gwv1alpha2.TCPRouteRule,
 	obj *gwv1alpha2.TCPRoute, pos int,
 ) (*api.TCPRoute, *reporter.RouteCondition) {
 	routeRuleKey := strconv.Itoa(pos)
+	var ruleName string
 	if r.Name != nil {
 		// use the user provided name. this will be used to attach policies
 		routeRuleKey = getRouteKeySectionName(obj.ObjectMeta, string(*r.Name))
-	}
-	var ruleName string
-	if r.Name != nil {
 		ruleName = utils.InternalRouteRuleName(obj.Namespace, obj.Name, string(*r.Name))
 	}
 	res := &api.TCPRoute{
@@ -264,12 +260,10 @@ func convertGRPCRouteToADP(ctx RouteContext, r gwv1.GRPCRouteRule,
 	obj *gwv1.GRPCRoute, pos int,
 ) (*api.Route, *reporter.RouteCondition) {
 	routeRuleKey := strconv.Itoa(pos)
+	var ruleName string
 	if r.Name != nil {
 		// use the user provided name. this will be used to attach policies
 		routeRuleKey = getRouteKeySectionName(obj.ObjectMeta, string(*r.Name))
-	}
-	var ruleName string
-	if r.Name != nil {
 		ruleName = utils.InternalRouteRuleName(obj.Namespace, obj.Name, string(*r.Name))
 	}
 	res := &api.Route{
@@ -334,12 +328,10 @@ func convertTLSRouteToADP(ctx RouteContext, r gwv1alpha2.TLSRouteRule,
 	obj *gwv1alpha2.TLSRoute, pos int,
 ) (*api.TCPRoute, *reporter.RouteCondition) {
 	routeRuleKey := strconv.Itoa(pos)
+	var ruleName string
 	if r.Name != nil {
 		// use the user provided name. this will be used to attach policies
 		routeRuleKey = getRouteKeySectionName(obj.ObjectMeta, string(*r.Name))
-	}
-	var ruleName string
-	if r.Name != nil {
 		ruleName = utils.InternalRouteRuleName(obj.Namespace, obj.Name, string(*r.Name))
 	}
 	res := &api.TCPRoute{
