@@ -12,11 +12,12 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/ptr"
 
+	"google.golang.org/protobuf/types/known/durationpb"
+
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
-	"google.golang.org/protobuf/types/known/durationpb"
 )
 
 const (
@@ -127,9 +128,9 @@ func translateTrafficPolicyToADP(ctx krt.HandlerContext, gatewayExtensions krt.C
 	// Debug: Log all policies being returned
 	logger := logging.New("agentgateway/plugins/traffic")
 	logger.Debug("returning traffic policy policies",
-		"trafficPolicy", trafficPolicy.Name,
-		"totalPolicies", len(adpPolicies),
-		"policyNames", func() []string {
+		"traffic_policy", trafficPolicy.Name,
+		"total_policies", len(adpPolicies),
+		"policy_names", func() []string {
 			names := make([]string, len(adpPolicies))
 			for i, p := range adpPolicies {
 				names[i] = p.Policy.Name
@@ -473,13 +474,13 @@ func processRateLimitPolicy(trafficPolicy *v1alpha1.TrafficPolicy, policyName st
 	// Process local rate limiting if present
 	if trafficPolicy.Spec.RateLimit.Local != nil {
 		logger.Debug("found local rate limit configuration",
-			"localRateLimit", trafficPolicy.Spec.RateLimit.Local)
+			"local_rate_limit", trafficPolicy.Spec.RateLimit.Local)
 
 		localPolicy := processLocalRateLimitPolicy(trafficPolicy, policyName, policyTarget)
 		if localPolicy != nil {
 			logger.Debug("successfully created local rate limit policy",
-				"policyName", localPolicy.Policy.Name,
-				"policyTarget", localPolicy.Policy.Target)
+				"policy_name", localPolicy.Policy.Name,
+				"policy_target", localPolicy.Policy.Target)
 			adpPolicies = append(adpPolicies, *localPolicy)
 		} else {
 			logger.Warn("failed to create local rate limit policy")
@@ -489,7 +490,7 @@ func processRateLimitPolicy(trafficPolicy *v1alpha1.TrafficPolicy, policyName st
 	}
 
 	logger.Debug("finished processing rate limit policy",
-		"totalPolicies", len(adpPolicies))
+		"total_policies", len(adpPolicies))
 
 	return adpPolicies
 }
@@ -512,10 +513,10 @@ func processLocalRateLimitPolicy(trafficPolicy *v1alpha1.TrafficPolicy, policyNa
 	}
 
 	logger.Debug("token bucket configuration",
-		"maxTokens", tokenBucket.MaxTokens,
-		"tokensPerFill", ptr.Deref(tokenBucket.TokensPerFill, 1),
-		"fillInterval", tokenBucket.FillInterval.Duration,
-		"fillIntervalSeconds", fillIntervalSeconds)
+		"max_tokens", tokenBucket.MaxTokens,
+		"tokens_per_fill", ptr.Deref(tokenBucket.TokensPerFill, 1),
+		"fill_interval", tokenBucket.FillInterval.Duration,
+		"fill_interval_seconds", fillIntervalSeconds)
 
 	// Create local rate limit policy using the proper agentgateway API
 	// Try to structure it more like the working extAuth policy
@@ -535,17 +536,17 @@ func processLocalRateLimitPolicy(trafficPolicy *v1alpha1.TrafficPolicy, policyNa
 	}
 
 	logger.Debug("created local rate limit policy",
-		"policyName", localRateLimitPolicy.Name,
-		"policyTarget", localRateLimitPolicy.Target,
-		"policySpecKind", fmt.Sprintf("%T", localRateLimitPolicy.Spec.Kind),
-		"localRateLimitSpec", localRateLimitPolicy.Spec.GetLocalRateLimit())
+		"policy_name", localRateLimitPolicy.Name,
+		"policy_target", localRateLimitPolicy.Target,
+		"policy_spec_kind", fmt.Sprintf("%T", localRateLimitPolicy.Spec.Kind),
+		"local_rate_limit_spec", localRateLimitPolicy.Spec.GetLocalRateLimit())
 
 	// Log the actual values being set
 	if lrl := localRateLimitPolicy.Spec.GetLocalRateLimit(); lrl != nil {
 		logger.Debug("local rate limit spec details",
-			"maxTokens", lrl.MaxTokens,
-			"tokensPerFill", lrl.TokensPerFill,
-			"fillIntervalSeconds", lrl.FillInterval.GetSeconds(),
+			"max_tokens", lrl.MaxTokens,
+			"tokens_per_fill", lrl.TokensPerFill,
+			"fill_interval_seconds", lrl.FillInterval.GetSeconds(),
 			"type", lrl.Type)
 	} else {
 		logger.Error("failed to get local rate limit spec from policy")
