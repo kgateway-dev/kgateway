@@ -53,3 +53,49 @@ Routes:
       match:
         prefix: /
       name: listener~8080~www_example_com-route-0-httproute-invalid-response-header-modifier-route-gwtest-0-0-matcher-0
+Statuses:
+  gateways:
+    gwtest/example-gateway:
+      conditions:
+      - lastTransitionTime: null
+        message: ""
+        observedGeneration: 1
+        reason: ListenerSetsNotAllowed
+        status: Unknown
+        type: AttachedListenerSets
+      - lastTransitionTime: null
+        message: Gateway is accepted
+        observedGeneration: 1
+        reason: Accepted
+        status: "True"
+        type: Accepted
+      - lastTransitionTime: null
+        message: Gateway is programmed
+        observedGeneration: 1
+        reason: Programmed
+        status: "True"
+        type: Programmed
+  httpRoutes:
+    gwtest/invalid-response-header-modifier-route:
+      parents:
+      - conditions:
+        - lastTransitionTime: null
+          message: 'Replaced Rule (0): invalid route configuration: validation failed:
+            invalid xds configuration: error initializing configuration '''': Incorrect
+            configuration: %RESPONSE(Invalid-Variable). Couldn''t find valid command
+            at position 0'
+          observedGeneration: 1
+          reason: RouteRuleReplaced
+          status: "False"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Route has valid refs
+          observedGeneration: 1
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
+        controllerName: kgateway
+        parentRef:
+          group: ""
+          kind: ""
+          name: example-gateway
