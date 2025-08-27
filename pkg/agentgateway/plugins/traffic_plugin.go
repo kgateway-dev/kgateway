@@ -11,6 +11,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/ptr"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"google.golang.org/protobuf/types/known/durationpb"
 
@@ -21,9 +22,9 @@ import (
 )
 
 const (
-	extauthPolicySuffix   = ":extauth"
-	aiPolicySuffix        = ":ai"
-	rateLimitPolicySuffix = ":ratelimit"
+	extauthPolicySuffix = ":extauth"
+	aiPolicySuffix      = ":ai"
+	rbacPolicySuffix    = ":rbac"
 )
 
 // NewTrafficPlugin creates a new TrafficPolicy plugin
@@ -33,7 +34,7 @@ func NewTrafficPlugin(agw *AgwCollections) AgentgatewayPlugin {
 		kclient.Filter{ObjectFilter: agw.Client.ObjectFilter()},
 	), agw.KrtOpts.ToOptions("TrafficPolicy")...)
 	policyCol := krt.NewManyCollection(col, func(krtctx krt.HandlerContext, policyCR *v1alpha1.TrafficPolicy) []ADPPolicy {
-		return translateTrafficPolicy(krtctx, agw.GatewayExtensions, policyCR)
+		return translateTrafficPolicy(krtctx, agw.GatewayExtensions, agw.Backends, policyCR)
 	})
 
 	return AgentgatewayPlugin{
@@ -49,10 +50,15 @@ func NewTrafficPlugin(agw *AgwCollections) AgentgatewayPlugin {
 }
 
 // translateTrafficPolicy generates policies for a single traffic policy
-func translateTrafficPolicy(ctx krt.HandlerContext, gatewayExtensions krt.Collection[*v1alpha1.GatewayExtension], trafficPolicy *v1alpha1.TrafficPolicy) []ADPPolicy {
+func translateTrafficPolicy(
+	ctx krt.HandlerContext,
+	gatewayExtensions krt.Collection[*v1alpha1.GatewayExtension],
+	backends krt.Collection[*v1alpha1.Backend],
+	trafficPolicy *v1alpha1.TrafficPolicy) []ADPPolicy {
 	logger := logging.New("agentgateway/plugins/traffic")
 	var adpPolicies []ADPPolicy
 
+	isMcpTarget := false
 	for _, target := range trafficPolicy.Spec.TargetRefs {
 		var policyTarget *api.PolicyTarget
 
@@ -87,13 +93,40 @@ func translateTrafficPolicy(ctx krt.HandlerContext, gatewayExtensions krt.Collec
 			//	}
 			//}
 
+		case wellknown.BackendGVK.Kind:
+			// kgateway backend kind (MCP, AI, etc.)
+
+			// Look up the Backend referenced by the policy
+			backendKey := getBackendKey(trafficPolicy.Namespace, string(target.Name))
+			backend := krt.FetchOne(ctx, backends, krt.FilterKey(backendKey))
+			if backend == nil {
+				logger.Error("backend not found",
+					"target", target.Name,
+					"policy", client.ObjectKeyFromObject(trafficPolicy))
+				return nil
+			}
+			backendSpec := (*backend).Spec
+			if backendSpec.Type == v1alpha1.BackendTypeMCP {
+				isMcpTarget = true
+				policyTarget = &api.PolicyTarget{
+					Kind: &api.PolicyTarget_Backend{
+						Backend: trafficPolicy.Namespace + "/" + string(target.Name),
+					},
+				}
+			} else {
+				logger.Warn("unsupported target kind. only MCP backends are supported",
+					"kind", target.Kind,
+					"policy", client.ObjectKeyFromObject(trafficPolicy))
+				continue
+			}
 		default:
+			// TODO(npolshak): support attaching policies to k8s services, serviceentries, and other backends
 			logger.Warn("unsupported target kind", "kind", target.Kind, "policy", trafficPolicy.Name)
 			continue
 		}
 
 		if policyTarget != nil {
-			translatedPolicies := translateTrafficPolicyToADP(ctx, gatewayExtensions, trafficPolicy, string(target.Name), policyTarget)
+			translatedPolicies := translateTrafficPolicyToADP(ctx, gatewayExtensions, trafficPolicy, string(target.Name), policyTarget, isMcpTarget)
 			adpPolicies = append(adpPolicies, translatedPolicies...)
 		}
 	}
@@ -102,11 +135,18 @@ func translateTrafficPolicy(ctx krt.HandlerContext, gatewayExtensions krt.Collec
 }
 
 // translateTrafficPolicyToADP converts a TrafficPolicy to agentgateway Policy resources
-func translateTrafficPolicyToADP(ctx krt.HandlerContext, gatewayExtensions krt.Collection[*v1alpha1.GatewayExtension], trafficPolicy *v1alpha1.TrafficPolicy, policyTargetName string, policyTarget *api.PolicyTarget) []ADPPolicy {
+func translateTrafficPolicyToADP(
+	ctx krt.HandlerContext,
+	gatewayExtensions krt.Collection[*v1alpha1.GatewayExtension],
+	trafficPolicy *v1alpha1.TrafficPolicy,
+	policyTargetName string,
+	policyTarget *api.PolicyTarget,
+	isMcpTarget bool,
+) []ADPPolicy {
 	adpPolicies := make([]ADPPolicy, 0)
 
 	// Generate a base policy name from the TrafficPolicy reference
-	policyName := fmt.Sprintf("trafficpolicy/%s/%s/%s", trafficPolicy.Namespace, trafficPolicy.Name, policyTargetName)
+	policyName := getTrafficPolicyName(trafficPolicy.Namespace, trafficPolicy.Name, policyTargetName)
 
 	// Convert ExtAuth policy if present
 	if trafficPolicy.Spec.ExtAuth != nil && trafficPolicy.Spec.ExtAuth.ExtensionRef != nil {
@@ -114,29 +154,23 @@ func translateTrafficPolicyToADP(ctx krt.HandlerContext, gatewayExtensions krt.C
 		adpPolicies = append(adpPolicies, extAuthPolicies...)
 	}
 
+	// Conver RBAC policy if present
+	if trafficPolicy.Spec.RBAC != nil {
+		rbacPolicies := processRBACPolicy(trafficPolicy, policyName, policyTarget, isMcpTarget)
+		adpPolicies = append(adpPolicies, rbacPolicies...)
+	}
+
 	// Process AI policies if present
 	if trafficPolicy.Spec.AI != nil {
 		aiPolicies := processAIPolicy(ctx, trafficPolicy, policyName, policyTarget)
 		adpPolicies = append(adpPolicies, aiPolicies...)
 	}
+
 	// Process RateLimit policies if present
 	if trafficPolicy.Spec.RateLimit != nil {
 		rateLimitPolicies := processRateLimitPolicy(trafficPolicy, policyName, policyTarget)
 		adpPolicies = append(adpPolicies, rateLimitPolicies...)
 	}
-
-	// Debug: Log all policies being returned
-	logger := logging.New("agentgateway/plugins/traffic")
-	logger.Debug("returning traffic policy policies",
-		"traffic_policy", trafficPolicy.Name,
-		"total_policies", len(adpPolicies),
-		"policy_names", func() []string {
-			names := make([]string, len(adpPolicies))
-			for i, p := range adpPolicies {
-				names[i] = p.Policy.Name
-			}
-			return names
-		}())
 
 	return adpPolicies
 }
@@ -151,7 +185,7 @@ func processExtAuthPolicy(ctx krt.HandlerContext, gatewayExtensions krt.Collecti
 	if extensionNamespace == "" {
 		extensionNamespace = trafficPolicy.Namespace
 	}
-	gwExtKey := fmt.Sprintf("%s/%s", extensionNamespace, extensionName)
+	gwExtKey := getGatewayExtensionKey(extensionNamespace, string(extensionName))
 	gwExt := krt.FetchOne(ctx, gatewayExtensions, krt.FilterKey(gwExtKey))
 
 	if gwExt == nil || (*gwExt).Spec.Type != v1alpha1.GatewayExtensionTypeExtAuth || (*gwExt).Spec.ExtAuth == nil {
@@ -461,46 +495,89 @@ func processModeration(moderation *v1alpha1.Moderation) *api.PolicySpec_Ai_Moder
 	return pgModeration
 }
 
+// processRBACPolicy processes RBAC configuration and creates corresponding ADP policies
+func processRBACPolicy(
+	trafficPolicy *v1alpha1.TrafficPolicy,
+	policyName string,
+	policyTarget *api.PolicyTarget,
+	isMCP bool,
+) []ADPPolicy {
+	logger := logging.New("agentgateway/plugins/traffic/rbac")
+
+	var allowPolicies, denyPolicies []string
+	if trafficPolicy.Spec.RBAC.Action == v1alpha1.AuthorizationPolicyActionDeny {
+		denyPolicies = append(denyPolicies, trafficPolicy.Spec.RBAC.Policy.MatchExpressions...)
+	} else {
+		allowPolicies = append(allowPolicies, trafficPolicy.Spec.RBAC.Policy.MatchExpressions...)
+	}
+
+	var rbacPolicy *api.Policy
+	if isMCP {
+		rbacPolicy = &api.Policy{
+			Name:   policyName + rbacPolicySuffix,
+			Target: policyTarget,
+			Spec: &api.PolicySpec{
+				Kind: &api.PolicySpec_McpAuthorization{
+					McpAuthorization: &api.PolicySpec_RBAC{
+						Allow: allowPolicies,
+						Deny:  denyPolicies,
+					},
+				},
+			},
+		}
+	} else {
+		rbacPolicy = &api.Policy{
+			Name:   policyName + rbacPolicySuffix,
+			Target: policyTarget,
+			Spec: &api.PolicySpec{
+				Kind: &api.PolicySpec_Authorization{
+					Authorization: &api.PolicySpec_RBAC{
+						Allow: allowPolicies,
+						Deny:  denyPolicies,
+					},
+				},
+			},
+		}
+	}
+
+	logger.Debug("generated RBAC policy",
+		"policy", trafficPolicy.Name,
+		"agentgateway_policy", rbacPolicy.Name,
+		"target", policyTarget)
+
+	return []ADPPolicy{{Policy: rbacPolicy}}
+}
+
+func getTrafficPolicyName(trafficPolicyNs, trafficPolicyName, policyTargetName string) string {
+	return fmt.Sprintf("trafficpolicy/%s/%s/%s", trafficPolicyNs, trafficPolicyName, policyTargetName)
+}
+
+func getBackendKey(targetPolicyNs, targetName string) string {
+	return fmt.Sprintf("%s/%s", targetPolicyNs, targetName)
+}
+
+func getGatewayExtensionKey(extensionNamespace, extensionName string) string {
+	return fmt.Sprintf("%s/%s", extensionNamespace, extensionName)
+}
+
 // processRateLimitPolicy processes RateLimit configuration and creates corresponding agentgateway policies
 func processRateLimitPolicy(trafficPolicy *v1alpha1.TrafficPolicy, policyName string, policyTarget *api.PolicyTarget) []ADPPolicy {
-	logger := logging.New("agentgateway/plugins/traffic")
 	var adpPolicies []ADPPolicy
-
-	logger.Debug("processing rate limit policy",
-		"policy", trafficPolicy.Name,
-		"namespace", trafficPolicy.Namespace,
-		"hasLocalRateLimit", trafficPolicy.Spec.RateLimit != nil && trafficPolicy.Spec.RateLimit.Local != nil)
 
 	// Process local rate limiting if present
 	if trafficPolicy.Spec.RateLimit.Local != nil {
-		logger.Debug("found local rate limit configuration",
-			"local_rate_limit", trafficPolicy.Spec.RateLimit.Local)
-
 		localPolicy := processLocalRateLimitPolicy(trafficPolicy, policyName, policyTarget)
 		if localPolicy != nil {
-			logger.Debug("successfully created local rate limit policy",
-				"policy_name", localPolicy.Policy.Name,
-				"policy_target", localPolicy.Policy.Target)
 			adpPolicies = append(adpPolicies, *localPolicy)
-		} else {
-			logger.Warn("failed to create local rate limit policy")
 		}
-	} else {
-		logger.Debug("no local rate limit configuration found")
 	}
-
-	logger.Debug("finished processing rate limit policy",
-		"total_policies", len(adpPolicies))
 
 	return adpPolicies
 }
 
 // processLocalRateLimitPolicy processes local rate limiting configuration
 func processLocalRateLimitPolicy(trafficPolicy *v1alpha1.TrafficPolicy, policyName string, policyTarget *api.PolicyTarget) *ADPPolicy {
-	logger := logging.New("agentgateway/plugins/traffic")
-
 	if trafficPolicy.Spec.RateLimit.Local.TokenBucket == nil {
-		logger.Warn("token bucket configuration is nil")
 		return nil
 	}
 
@@ -512,16 +589,9 @@ func processLocalRateLimitPolicy(trafficPolicy *v1alpha1.TrafficPolicy, policyNa
 		fillIntervalSeconds = 1 // minimum 1 second
 	}
 
-	logger.Debug("token bucket configuration",
-		"max_tokens", tokenBucket.MaxTokens,
-		"tokens_per_fill", ptr.Deref(tokenBucket.TokensPerFill, 1),
-		"fill_interval", tokenBucket.FillInterval.Duration,
-		"fill_interval_seconds", fillIntervalSeconds)
-
 	// Create local rate limit policy using the proper agentgateway API
-	// Try to structure it more like the working extAuth policy
 	localRateLimitPolicy := &api.Policy{
-		Name:   policyName + rateLimitPolicySuffix + ":local",
+		Name:   policyName + ":local",
 		Target: policyTarget,
 		Spec: &api.PolicySpec{
 			Kind: &api.PolicySpec_LocalRateLimit_{
@@ -533,23 +603,6 @@ func processLocalRateLimitPolicy(trafficPolicy *v1alpha1.TrafficPolicy, policyNa
 				},
 			},
 		},
-	}
-
-	logger.Debug("created local rate limit policy",
-		"policy_name", localRateLimitPolicy.Name,
-		"policy_target", localRateLimitPolicy.Target,
-		"policy_spec_kind", fmt.Sprintf("%T", localRateLimitPolicy.Spec.Kind),
-		"local_rate_limit_spec", localRateLimitPolicy.Spec.GetLocalRateLimit())
-
-	// Log the actual values being set
-	if lrl := localRateLimitPolicy.Spec.GetLocalRateLimit(); lrl != nil {
-		logger.Debug("local rate limit spec details",
-			"max_tokens", lrl.MaxTokens,
-			"tokens_per_fill", lrl.TokensPerFill,
-			"fill_interval_seconds", lrl.FillInterval.GetSeconds(),
-			"type", lrl.Type)
-	} else {
-		logger.Error("failed to get local rate limit spec from policy")
 	}
 
 	return &ADPPolicy{Policy: localRateLimitPolicy}
