@@ -26,9 +26,9 @@ type MockResponse struct {
 }
 
 var mockData = map[string]MockResponse{
-	// Tracing:
+	// Tracing: used by full configuartion requset: top_k tok_p, max_token etc.
 	"3d18473ed73d4debe50f5e02fe5441f95387a92af63184ad552dc378e3f02487": {FilePath: "mocks/routing/openai_non_streaming.txt.gz", IsGzip: true},
-	"785357921ca1a35d110976419907b077601f796d662210d7edaff133b6872ced": {FilePath: "mocks/routing/gemini_non_streaming.json", IsGzip: false}, // Tracing gemini test
+	"785357921ca1a35d110976419907b077601f796d662210d7edaff133b6872ced": {FilePath: "mocks/routing/gemini_non_streaming.json", IsGzip: false},
 	// Non streaming:
 	"793764f12a5e331ae08cecab749a022c23867d03c9db18cf00fc4dd1dc89f132": {FilePath: "mocks/routing/azure_non_streaming.json", IsGzip: false},
 	"dfb4094b64f15e250490d4f6f8a3163c840b4cff09f0c282d41765f0a1d8a7f5": {FilePath: "mocks/routing/openai_non_streaming.txt.gz", IsGzip: true},

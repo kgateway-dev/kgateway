@@ -57,7 +57,9 @@ func NewSuite(
 
 func (s *tsuite) SetupSuite() {
 	s.manifests = map[string][]string{
-		"TestTracing":                 {otelCollectorManifest, tracingManifest, backendManifest, routesBasicManifest},
+		"TestTracingConfig":           {tracingManifest},
+		"TestRotingTracing":           {otelCollectorManifest, tracingManifest, backendManifest, routesBasicManifest},
+		"TestPromptGuardTracing":      {otelCollectorManifest, tracingManifest, backendManifest, routesBasicManifest, promptGuardManifest},
 		"TestRouting":                 {commonManifest, backendManifest, routesBasicManifest},
 		"TestRoutingPassthrough":      {commonManifest, backendPassthroughManifest, routesBasicManifest},
 		"TestRoutingOverrideProvider": {commonManifest, backendPassthroughManifest, routesBasicManifest},
@@ -110,7 +112,7 @@ func (s *tsuite) AfterTest(suiteName, testName string) {
 	}
 }
 
-func (s *tsuite) TestTracing() {
+func (s *tsuite) TestTracingConfig() {
 	tracingConfig := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "ai-gateway",
@@ -128,10 +130,16 @@ func (s *tsuite) TestTracing() {
 		)
 		assert.NoErrorf(c, err, "failed to get configMap %s/%s", tracingConfig.Namespace, tracingConfig.Name)
 	}, 30*time.Second, 1*time.Second)
+}
 
+func (s *tsuite) TestRotingTracing() {
 	s.waitForOTelCollectorReady()
-
 	s.testRouteSpan()
+}
+
+func (s *tsuite) TestPromptGuardTracing() {
+	s.waitForOTelCollectorReady()
+	s.testPromptGuardSpan()
 }
 
 func (s *tsuite) waitForOTelCollectorReady() {
@@ -182,14 +190,51 @@ func (s *tsuite) waitForOTelCollectorReady() {
 	}, 60*time.Second, 5*time.Second)
 }
 
-func (s *tsuite) testRouteSpan() {
+// testProvider defines a test case for OTel span verification
+type testProvider struct {
+	name         string
+	exceptedLogs [][]string
+}
+
+// testSpanWithProviders is a generic function to test OTel spans for different test scenarios
+func (s *tsuite) testSpanWithProviders(pytestFile string, providers []testProvider) {
 	// Wait until the tracing policy is accepted by the Gateway
 	s.testInst.Assertions.EventuallyHTTPListenerPolicyCondition(s.ctx, "tracing-policy", s.installNamespace, gwv1.GatewayConditionAccepted, metav1.ConditionTrue)
 
-	var mockLLMProviders = []struct {
-		name         string
-		exceptedLogs [][]string
-	}{
+	for _, provider := range providers {
+		// Send a test request to the AI gateway and verify HTTP response.
+		// This triggers the OTel span generation in the backend.
+		s.invokePytest(pytestFile)
+
+		// Periodically fetch OTel collector pod logs and check for expected span logs.
+		// This ensures that the spans are actually exported and visible in the logs.
+		s.Require().EventuallyWithT(func(c *assert.CollectT) {
+			logs, err := s.testInst.Actions.Kubectl().GetContainerLogs(s.ctx, s.testInst.Metadata.InstallNamespace, "otel-collector")
+			s.Require().NoError(err)
+			for _, expectedSpan := range provider.exceptedLogs {
+				s.assertSpanLogsPresent(logs, expectedSpan)
+			}
+		}, 60*time.Second, 15*time.Second)
+	}
+}
+
+// assertSpanLogsPresent checks if all expected span log entries are present in the OTel collector logs.
+// If any expected log is missing, the test will fail and print the missing entries.
+func (s *tsuite) assertSpanLogsPresent(otelLogs string, expectedSpanEntries []string) {
+	allPresent := true
+	var missingEntries []string
+	for _, entry := range expectedSpanEntries {
+		if !strings.Contains(otelLogs, entry) {
+			allPresent = false
+			missingEntries = append(missingEntries, entry)
+		}
+	}
+	// Fail the test if any expected log entry is missing, and print missing entries for debugging
+	s.Assertions.True(allPresent, fmt.Sprintf("OTel span logs missing: %v, actual logs: %v", missingEntries, otelLogs))
+}
+
+func (s *tsuite) testRouteSpan() {
+	providers := []testProvider{
 		{
 			name: "route request to openai provider",
 			exceptedLogs: [][]string{
@@ -253,7 +298,6 @@ func (s *tsuite) testRouteSpan() {
 			},
 		},
 		{
-
 			name: "route request to anthropic provider",
 			exceptedLogs: [][]string{
 				{},
@@ -261,36 +305,28 @@ func (s *tsuite) testRouteSpan() {
 		},
 	}
 
-	for _, provider := range mockLLMProviders {
-		// Send a test request to the AI gateway and verify HTTP response.
-		// This triggers the OTel span generation in the backend.
-		s.invokePytest("routing.py")
-
-		// Periodically fetch OTel collector pod logs and check for expected span logs.
-		// This ensures that the spans are actually exported and visible in the logs.
-		s.Require().EventuallyWithT(func(c *assert.CollectT) {
-			logs, err := s.testInst.Actions.Kubectl().GetContainerLogs(s.ctx, s.testInst.Metadata.InstallNamespace, "otel-collector")
-			s.Require().NoError(err)
-			for _, expectedSpan := range provider.exceptedLogs {
-				s.assertSpanLogsPresent(logs, expectedSpan)
-			}
-		}, 60*time.Second, 15*time.Second)
-	}
+	s.testSpanWithProviders("routing.py", providers)
 }
 
-// assertSpanLogsPresent checks if all expected span log entries are present in the OTel collector logs.
-// If any expected log is missing, the test will fail and print the missing entries.
-func (s *tsuite) assertSpanLogsPresent(otelLogs string, expectedSpanEntries []string) {
-	allPresent := true
-	var missingEntries []string
-	for _, entry := range expectedSpanEntries {
-		if !strings.Contains(otelLogs, entry) {
-			allPresent = false
-			missingEntries = append(missingEntries, entry)
-		}
+func (s *tsuite) testPromptGuardSpan() {
+	providers := []testProvider{
+		{
+			name: "prompt reject",
+			exceptedLogs: [][]string{
+				{
+					`handle_request_body_req_regex`,
+					`-> ai.regex.action: Str(REJECT)`,
+					`-> ai.regex.result: Str(passed)`,
+					`-> ai.regex.result: Str(rejected)`,
+				},
+				{
+					`handle_response_body_resp_regex`,
+				},
+			},
+		},
 	}
-	// Fail the test if any expected log entry is missing, and print missing entries for debugging
-	s.Assertions.True(allPresent, fmt.Sprintf("OTel span logs missing: %v", missingEntries))
+
+	s.testSpanWithProviders("prompt_guard.py", providers)
 }
 
 func (s *tsuite) TestRouting() {
