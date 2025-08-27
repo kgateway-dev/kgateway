@@ -31,12 +31,13 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
-	gwxv1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
+	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/registry"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/proxy_syncer"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/irtranslator"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/listener"
@@ -61,6 +62,7 @@ type translationResult struct {
 	Listeners     []*envoylistenerv3.Listener
 	ExtraClusters []*envoyclusterv3.Cluster
 	Clusters      []*envoyclusterv3.Cluster
+	Statuses      *Statuses
 }
 
 func (tr *translationResult) MarshalJSON() ([]byte, error) {
@@ -69,7 +71,7 @@ func (tr *translationResult) MarshalJSON() ([]byte, error) {
 	}
 
 	// Create a map to hold the marshaled fields
-	result := make(map[string]interface{})
+	result := make(map[string]any)
 
 	// Marshal each field using protojson
 	if len(tr.Routes) > 0 {
@@ -102,6 +104,11 @@ func (tr *translationResult) MarshalJSON() ([]byte, error) {
 			return nil, err
 		}
 		result["Clusters"] = clusters
+	}
+
+	// Add statuses if they exist
+	if tr.Statuses != nil {
+		result["Statuses"] = tr.Statuses
 	}
 
 	// Marshal the result map to JSON
@@ -180,17 +187,25 @@ func (tr *translationResult) UnmarshalJSON(data []byte) error {
 		}
 	}
 
+	// Unmarshal statuses if they exist
+	if statusesData, ok := result["Statuses"]; ok {
+		tr.Statuses = &Statuses{}
+		if err := json.Unmarshal(statusesData, tr.Statuses); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
-func marshalProtoMessages[T proto.Message](messages []T, m protojson.MarshalOptions) ([]interface{}, error) {
-	var result []interface{}
+func marshalProtoMessages[T proto.Message](messages []T, m protojson.MarshalOptions) ([]any, error) {
+	var result []any
 	for _, msg := range messages {
 		data, err := m.Marshal(msg)
 		if err != nil {
 			return nil, err
 		}
-		var jsonObj interface{}
+		var jsonObj any
 		if err := json.Unmarshal(data, &jsonObj); err != nil {
 			return nil, err
 		}
@@ -259,6 +274,7 @@ func TestTranslationWithExtraPlugins(
 		Listeners:     result.Proxy.Listeners,
 		ExtraClusters: result.Proxy.ExtraClusters,
 		Clusters:      result.Clusters,
+		Statuses:      buildStatusesFromReports(result.ReportsMap),
 	}
 	outputYaml, err := MarshalAnyYaml(output)
 	r.NoErrorf(err, "error marshaling output to YAML; actual result: %s", outputYaml)
@@ -280,6 +296,10 @@ func TestTranslationWithExtraPlugins(
 	gotClusters, err := compareClusters(outputFile, result.Clusters)
 	r.Emptyf(gotClusters, "unexpected diff in clusters output; actual result: %s", outputYaml)
 	r.NoError(err, "error comparing clusters output")
+
+	gotStatuses, err := compareStatuses(outputFile, output.Statuses)
+	r.Emptyf(gotStatuses, "unexpected diff in statuses output; actual result: %s", outputYaml)
+	r.NoError(err, "error comparing statuses output")
 
 	if assertReports != nil {
 		assertReports(gwNN, result.ReportsMap)
@@ -494,7 +514,7 @@ func AreReportsSuccess(gwNN types.NamespacedName, reportsMap reports.ReportMap) 
 	}
 
 	for ls := range reportsMap.ListenerSets {
-		l := gwxv1.XListenerSet{
+		l := gwxv1a1.XListenerSet{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      ls.Name,
 				Namespace: ls.Namespace,
@@ -699,9 +719,26 @@ func (tc TestCase) Run(
 
 		xdsSnap, reportsMap := translator.TranslateGateway(krt.TestingDummyContext{}, ctx, gw)
 
+		// Backend policies (e.g. BackendConfigPolicy) use a different reporting pipeline than gateway policies.
+		// Gateway policies (HTTPListenerPolicy, TrafficPolicy) are reported during gateway translation via the
+		// standard reporter mechanism. Backend policies are processed differently - they don't use the reporter
+		// during translation, instead their reports are generated separately by GenerateBackendPolicyReport().
+		// We need to merge both report types to capture all policy statuses for golden file testing.
+		var backendIRs []*ir.BackendObjectIR
+		for _, col := range commoncol.BackendIndex.BackendsWithPolicy() {
+			backendIRs = append(backendIRs, col.List()...)
+		}
+		backendPolicyReports := proxy_syncer.GenerateBackendPolicyReport(backendIRs)
+
+		// Merge gateway reports with backend policy reports
+		mergedReports := reportsMap
+		for policyKey, policyReport := range backendPolicyReports.Policies {
+			mergedReports.Policies[policyKey] = policyReport
+		}
+
 		actual := ActualTestResult{
 			Proxy:      xdsSnap,
-			ReportsMap: reportsMap,
+			ReportsMap: mergedReports,
 		}
 		results[gwNN] = actual
 
