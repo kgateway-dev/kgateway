@@ -360,17 +360,16 @@ func TestBasic(t *testing.T) {
 			},
 		})
 	})
-
-	// TODO(npolshak): re-enable once listener policies are supported once https://github.com/agentgateway/agentgateway/pull/323 goes in
-	// t.Run("TrafficPolicy with extauth on listener", func(t *testing.T) {
-	//	test(t, translatorTestCase{
-	//		inputFile:  "trafficpolicy/extauth-listener.yaml",
-	//		outputFile: "trafficpolicy/extauth-listener.yaml",
-	//		gwNN: types.NamespacedName{
-	//			Namespace: "default",
-	//			Name:      "example-gateway",
-	//		},
-	//	})
+	t.Run("TrafficPolicy with extauth on listener", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "trafficpolicy/extauth-listener.yaml",
+			outputFile: "trafficpolicy/extauth-listener.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
 	t.Run("AI TrafficPolicy on route level", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "trafficpolicy/ai/route-level.yaml",

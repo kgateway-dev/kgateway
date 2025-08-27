@@ -1,8 +1,6 @@
 package agentgatewaysyncer
 
 import (
-	"fmt"
-
 	"github.com/agentgateway/agentgateway/go/api"
 	istio "istio.io/api/networking/v1alpha3"
 	"istio.io/istio/pilot/pkg/util/protoconv"
@@ -14,6 +12,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+
+	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/utils"
 
 	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
@@ -247,7 +247,7 @@ func GatewayCollection(
 				Meta: Meta{
 					CreationTimestamp: obj.CreationTimestamp.Time,
 					GroupVersionKind:  schema.GroupVersionKind{Group: wellknown.GatewayGroup, Kind: wellknown.GatewayKind},
-					Name:              internalGatewayName(obj.Namespace, obj.Name, string(l.Name)),
+					Name:              utils.InternalGatewayName(obj.Namespace, obj.Name, string(l.Name)),
 					Annotations:       meta,
 					Namespace:         obj.Namespace,
 				},
@@ -262,7 +262,7 @@ func GatewayCollection(
 				Namespace: obj.Namespace,
 			}
 			pri := parentInfo{
-				InternalName:     obj.Namespace + "/" + gatewayConfig.Name,
+				InternalName:     utils.InternalGatewayName(obj.Namespace, gatewayConfig.Name, ""),
 				AllowedKinds:     allowed,
 				Hostnames:        server.GetHosts(),
 				OriginalHostname: string(ptr.OrEmpty(l.Hostname)),
@@ -314,10 +314,4 @@ func BuildRouteParents(
 		gateways:     gateways,
 		gatewayIndex: idx,
 	}
-}
-
-// internalGatewayName returns the name of the internal Istio Gateway corresponding to the
-// specified gwv1-api gwv1 and listener.
-func internalGatewayName(gwNamespace, gwName, lName string) string {
-	return fmt.Sprintf("%s/%s/%s", gwNamespace, gwName, lName)
 }

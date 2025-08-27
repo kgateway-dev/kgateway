@@ -4,7 +4,7 @@ Binds:
 Listeners:
 - bindKey: 8080/default/example-gateway
   gatewayName: default/example-gateway
-  key: default/example-gateway/http
+  key: default/example-gateway.http
   name: http
   protocol: HTTP
 Routes:
@@ -14,6 +14,6 @@ Routes:
       status: 510
   hostnames:
   - example.com
-  key: default.example.0.0.http
-  listenerKey: default/example-gateway/http
+  key: default/example.0.0.http
+  listenerKey: default/example-gateway.http
   routeName: default/example

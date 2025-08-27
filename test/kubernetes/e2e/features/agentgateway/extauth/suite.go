@@ -154,13 +154,12 @@ func (s *testingSuite) TestRouteTargetedExtAuthPolicy() {
 		expectedStatus               int
 		expectedUpstreamBodyContents string
 	}{
-		// TODO(npolshak): re-enable once add route rule support once agentgateway release with https://github.com/agentgateway/agentgateway/pull/323 is pulled in
-		//{
-		//	name:           "request allowed by default",
-		//	headers:        map[string]string{},
-		//	hostname:       "example.com",
-		//	expectedStatus: http.StatusOK,
-		//},
+		{
+			name:           "request allowed by default",
+			headers:        map[string]string{},
+			hostname:       "example.com",
+			expectedStatus: http.StatusOK,
+		},
 		// TODO(npolshak): re-enable once we can disable filters on agentgateway: https://github.com/agentgateway/agentgateway/issues/330
 		//{
 		//	name:           "request allowed on insecure route",

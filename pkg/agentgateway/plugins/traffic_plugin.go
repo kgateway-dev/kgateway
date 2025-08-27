@@ -13,6 +13,8 @@ import (
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/utils"
+
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
@@ -64,32 +66,30 @@ func translateTrafficPolicy(
 		case wellknown.GatewayKind:
 			policyTarget = &api.PolicyTarget{
 				Kind: &api.PolicyTarget_Gateway{
-					Gateway: trafficPolicy.Namespace + "/" + string(target.Name),
+					Gateway: utils.InternalGatewayName(trafficPolicy.Namespace, string(target.Name), ""),
 				},
 			}
-			// TODO(npolshak): add listener support once https://github.com/agentgateway/agentgateway/pull/323 goes in
-			//if target.SectionName != nil {
-			//	policyTarget = &api.PolicyTarget{
-			//		Kind: &api.PolicyTarget_Listener{
-			//			Listener: InternalGatewayName(trafficPolicy.Namespace, string(target.Name), string(*target.SectionName)),
-			//		},
-			//	}
-			//}
+			if target.SectionName != nil {
+				policyTarget = &api.PolicyTarget{
+					Kind: &api.PolicyTarget_Listener{
+						Listener: utils.InternalGatewayName(trafficPolicy.Namespace, string(target.Name), string(*target.SectionName)),
+					},
+				}
+			}
 
 		case wellknown.HTTPRouteKind:
 			policyTarget = &api.PolicyTarget{
 				Kind: &api.PolicyTarget_Route{
-					Route: trafficPolicy.Namespace + "/" + string(target.Name),
+					Route: utils.InternalRouteRuleName(trafficPolicy.Namespace, string(target.Name), ""),
 				},
 			}
-			// TODO(npolshak): add route rule support once https://github.com/agentgateway/agentgateway/pull/323 goes in
-			//if target.SectionName != nil {
-			//	policyTarget = &api.PolicyTarget{
-			//		Kind: &api.PolicyTarget_RouteRule{
-			//			RouteRule: trafficPolicy.Namespace + "/" + string(target.Name) + "/" + string(*target.SectionName),
-			//		},
-			//	}
-			//}
+			if target.SectionName != nil {
+				policyTarget = &api.PolicyTarget{
+					Kind: &api.PolicyTarget_RouteRule{
+						RouteRule: utils.InternalRouteRuleName(trafficPolicy.Namespace, string(target.Name), string(*target.SectionName)),
+					},
+				}
+			}
 
 		case wellknown.BackendGVK.Kind:
 			// kgateway backend kind (MCP, AI, etc.)

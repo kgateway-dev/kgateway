@@ -271,7 +271,7 @@
     {
       "Kind": {
         "Listener": {
-          "key": "gwtest/http-tcproute/bar",
+          "key": "gwtest/http-tcproute.bar",
           "name": "bar",
           "bind_key": "8089/gwtest/http-tcproute",
           "gateway_name": "gwtest/http-tcproute",
@@ -282,7 +282,7 @@
     {
       "Kind": {
         "Listener": {
-          "key": "gwtest/http-tcproute/foo",
+          "key": "gwtest/http-tcproute.foo",
           "name": "foo",
           "bind_key": "8088/gwtest/http-tcproute",
           "gateway_name": "gwtest/http-tcproute",
@@ -293,7 +293,7 @@
     {
       "Kind": {
         "TcpRoute": {
-          "key": "gwtest.tcp-app-1.0",
+          "key": "gwtest/tcp-app-1.0",
           "route_name": "gwtest/tcp-app-1",
           "backends": [
             {
@@ -310,7 +310,7 @@
     {
       "Kind": {
         "TcpRoute": {
-          "key": "gwtest.tcp-app-2.0",
+          "key": "gwtest/tcp-app-2.0",
           "route_name": "gwtest/tcp-app-2",
           "backends": [
             {

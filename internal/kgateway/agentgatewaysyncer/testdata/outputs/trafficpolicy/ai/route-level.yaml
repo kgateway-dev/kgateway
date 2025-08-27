@@ -9,7 +9,7 @@ Binds:
 Listeners:
   - bindKey: 8080/default/example-gateway
     gatewayName: default/example-gateway
-    key: default/example-gateway/http
+    key: default/example-gateway.http
     name: http
     protocol: HTTP
 Policies:
@@ -88,8 +88,8 @@ Routes:
     - backend:
         backend: default/openai
       weight: 1
-    key: default.openai-test.0.0.http
-    listenerKey: default/example-gateway/http
+    key: default/openai-test.0.0.http
+    listenerKey: default/example-gateway.http
     matches:
     - path:
         pathPrefix: /v1/chat/completions
