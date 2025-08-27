@@ -24,8 +24,8 @@ import (
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections/metrics"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/backendref"
-	tmetrics "github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/metrics"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/delegation"
 	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
@@ -372,12 +372,12 @@ func NewGatewayIndex(
 		// Start the resource sync metrics for all XListenerSets before they are processed,
 		// so they do not have staggered start times.
 		for _, ls := range listenerSets {
-			tmetrics.StartResourceSync(ls.Name,
-				tmetrics.ResourceMetricLabels{
-					Namespace: ls.Namespace,
-					Gateway:   gw.GetName(),
-					Resource:  wellknown.XListenerSetKind,
-				})
+			metrics.StartResourceStatusSync(metrics.ResourceSyncDetails{
+				Namespace:    ls.Namespace,
+				Gateway:      gw.GetName(),
+				ResourceType: wellknown.XListenerSetKind,
+				ResourceName: ls.Name,
+			})
 		}
 
 		for _, ls := range listenerSets {
