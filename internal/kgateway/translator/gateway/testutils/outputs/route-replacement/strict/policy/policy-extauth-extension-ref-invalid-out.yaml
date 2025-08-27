@@ -59,19 +59,16 @@ Statuses:
       conditions:
       - lastTransitionTime: null
         message: ""
-        observedGeneration: 1
         reason: ListenerSetsNotAllowed
         status: Unknown
         type: AttachedListenerSets
       - lastTransitionTime: null
         message: Gateway is accepted
-        observedGeneration: 1
         reason: Accepted
         status: "True"
         type: Accepted
       - lastTransitionTime: null
         message: Gateway is programmed
-        observedGeneration: 1
         reason: Programmed
         status: "True"
         type: Programmed
@@ -82,13 +79,11 @@ Statuses:
         - lastTransitionTime: null
           message: 'Replaced Rule (0): extauthz: gateway extension gwtest/non-existent-auth-extension
             not found'
-          observedGeneration: 1
           reason: RouteRuleReplaced
           status: "False"
           type: Accepted
         - lastTransitionTime: null
           message: Route has valid refs
-          observedGeneration: 1
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
@@ -109,13 +104,11 @@ Statuses:
         - lastTransitionTime: null
           message: 'extauthz: gateway extension gwtest/non-existent-auth-extension
             not found'
-          observedGeneration: 1
           reason: Invalid
           status: "False"
           type: Accepted
         - lastTransitionTime: null
           message: Attached to all targets
-          observedGeneration: 1
           reason: Attached
           status: "True"
           type: Attached

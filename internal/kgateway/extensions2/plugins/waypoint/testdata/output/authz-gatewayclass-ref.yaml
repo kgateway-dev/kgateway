@@ -262,13 +262,11 @@ Statuses:
       conditions:
       - lastTransitionTime: null
         message: Gateway is accepted
-        observedGeneration: 1
         reason: Accepted
         status: "True"
         type: Accepted
       - lastTransitionTime: null
         message: Gateway is programmed
-        observedGeneration: 1
         reason: Programmed
         status: "True"
         type: Programmed

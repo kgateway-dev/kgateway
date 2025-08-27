@@ -50,19 +50,16 @@ Statuses:
       conditions:
       - lastTransitionTime: null
         message: ""
-        observedGeneration: 1
         reason: ListenerSetsNotAllowed
         status: Unknown
         type: AttachedListenerSets
       - lastTransitionTime: null
         message: Gateway is accepted
-        observedGeneration: 1
         reason: Accepted
         status: "True"
         type: Accepted
       - lastTransitionTime: null
         message: Gateway is programmed
-        observedGeneration: 1
         reason: Programmed
         status: "True"
         type: Programmed
@@ -74,13 +71,11 @@ Statuses:
           message: 'Dropped Rule (0): invalid matcher configuration: validation failed:
             invalid xds configuration: error initializing configuration '''': invalid
             named capture group: (?<=foo)bar'
-          observedGeneration: 1
           reason: RouteRuleDropped
           status: "False"
           type: Accepted
         - lastTransitionTime: null
           message: Route has valid refs
-          observedGeneration: 1
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs

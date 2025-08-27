@@ -89,19 +89,16 @@ Statuses:
       conditions:
       - lastTransitionTime: null
         message: ""
-        observedGeneration: 1
         reason: ListenerSetsNotAllowed
         status: Unknown
         type: AttachedListenerSets
       - lastTransitionTime: null
         message: Gateway is accepted
-        observedGeneration: 1
         reason: Accepted
         status: "True"
         type: Accepted
       - lastTransitionTime: null
         message: Gateway is programmed
-        observedGeneration: 1
         reason: Programmed
         status: "True"
         type: Programmed
@@ -113,13 +110,11 @@ Statuses:
           message: 'gateway.networking.k8s.io/HTTPRoute/a/*: ignoring child route
             a/route-a for parent a-b/route-a-b: cyclic reference detected while evaluating
             delegated routes'
-          observedGeneration: 1
           reason: RefNotPermitted
           status: "False"
           type: ResolvedRefs
         - lastTransitionTime: null
           message: Route is accepted
-          observedGeneration: 1
           reason: Accepted
           status: "True"
           type: Accepted
@@ -134,13 +129,11 @@ Statuses:
       - conditions:
         - lastTransitionTime: null
           message: Route is accepted
-          observedGeneration: 1
           reason: Accepted
           status: "True"
           type: Accepted
         - lastTransitionTime: null
           message: Route has valid refs
-          observedGeneration: 1
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
@@ -155,13 +148,11 @@ Statuses:
       - conditions:
         - lastTransitionTime: null
           message: Route is accepted
-          observedGeneration: 1
           reason: Accepted
           status: "True"
           type: Accepted
         - lastTransitionTime: null
           message: Route has valid refs
-          observedGeneration: 1
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs

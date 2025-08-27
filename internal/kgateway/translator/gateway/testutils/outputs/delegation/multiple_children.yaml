@@ -89,19 +89,16 @@ Statuses:
       conditions:
       - lastTransitionTime: null
         message: ""
-        observedGeneration: 1
         reason: ListenerSetsNotAllowed
         status: Unknown
         type: AttachedListenerSets
       - lastTransitionTime: null
         message: Gateway is accepted
-        observedGeneration: 1
         reason: Accepted
         status: "True"
         type: Accepted
       - lastTransitionTime: null
         message: Gateway is programmed
-        observedGeneration: 1
         reason: Programmed
         status: "True"
         type: Programmed
@@ -111,13 +108,11 @@ Statuses:
       - conditions:
         - lastTransitionTime: null
           message: Route is accepted
-          observedGeneration: 1
           reason: Accepted
           status: "True"
           type: Accepted
         - lastTransitionTime: null
           message: Route has valid refs
-          observedGeneration: 1
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
@@ -132,13 +127,11 @@ Statuses:
       - conditions:
         - lastTransitionTime: null
           message: Route is accepted
-          observedGeneration: 1
           reason: Accepted
           status: "True"
           type: Accepted
         - lastTransitionTime: null
           message: Route has valid refs
-          observedGeneration: 1
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
@@ -153,13 +146,11 @@ Statuses:
       - conditions:
         - lastTransitionTime: null
           message: Route is accepted
-          observedGeneration: 1
           reason: Accepted
           status: "True"
           type: Accepted
         - lastTransitionTime: null
           message: Route has valid refs
-          observedGeneration: 1
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
