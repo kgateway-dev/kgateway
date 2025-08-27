@@ -32,7 +32,6 @@ func buildStatusesFromReports(reportsMap reports.ReportMap) *Statuses {
 	// for consistency and to avoid confusion about the significance of a
 	// specific date.
 	fixedTime := metav1.Time{Time: time.Time{}}
-	fixedObservedGeneration := int64(1)
 
 	statuses := &Statuses{
 		Gateways:   make(map[string]*gwv1.GatewayStatus),
@@ -52,7 +51,7 @@ func buildStatusesFromReports(reportsMap reports.ReportMap) *Statuses {
 			},
 		}
 		if status := reportsMap.BuildGWStatus(ctx, gw, nil); status != nil {
-			normalizeStatus(status, fixedTime, fixedObservedGeneration)
+			normalizeStatus(status, fixedTime)
 			statuses.Gateways[gwNN.String()] = status
 		}
 	}
@@ -66,7 +65,7 @@ func buildStatusesFromReports(reportsMap reports.ReportMap) *Statuses {
 			},
 		}
 		if status := reportsMap.BuildRouteStatus(ctx, &route, wellknown.DefaultGatewayClassName); status != nil {
-			normalizeRouteStatus(status, fixedTime, fixedObservedGeneration)
+			normalizeRouteStatus(status, fixedTime)
 			statuses.HTTPRoutes[routeNN.String()] = status
 		}
 	}
@@ -80,7 +79,7 @@ func buildStatusesFromReports(reportsMap reports.ReportMap) *Statuses {
 			},
 		}
 		if status := reportsMap.BuildRouteStatus(ctx, &route, wellknown.DefaultGatewayClassName); status != nil {
-			normalizeRouteStatus(status, fixedTime, fixedObservedGeneration)
+			normalizeRouteStatus(status, fixedTime)
 			statuses.TCPRoutes[routeNN.String()] = status
 		}
 	}
@@ -94,7 +93,7 @@ func buildStatusesFromReports(reportsMap reports.ReportMap) *Statuses {
 			},
 		}
 		if status := reportsMap.BuildRouteStatus(ctx, &route, wellknown.DefaultGatewayClassName); status != nil {
-			normalizeRouteStatus(status, fixedTime, fixedObservedGeneration)
+			normalizeRouteStatus(status, fixedTime)
 			statuses.TLSRoutes[routeNN.String()] = status
 		}
 	}
@@ -108,7 +107,7 @@ func buildStatusesFromReports(reportsMap reports.ReportMap) *Statuses {
 			},
 		}
 		if status := reportsMap.BuildRouteStatus(ctx, &route, wellknown.DefaultGatewayClassName); status != nil {
-			normalizeRouteStatus(status, fixedTime, fixedObservedGeneration)
+			normalizeRouteStatus(status, fixedTime)
 			statuses.GRPCRoutes[routeNN.String()] = status
 		}
 	}
@@ -117,7 +116,7 @@ func buildStatusesFromReports(reportsMap reports.ReportMap) *Statuses {
 	for policyKey := range reportsMap.Policies {
 		policyKeyStr := fmt.Sprintf("%s/%s/%s", policyKey.Kind, policyKey.Namespace, policyKey.Name)
 		if status := reportsMap.BuildPolicyStatus(ctx, policyKey, wellknown.DefaultGatewayControllerName, gwv1a2.PolicyStatus{}); status != nil {
-			normalizePolicyStatus(status, fixedTime, fixedObservedGeneration)
+			normalizePolicyStatus(status, fixedTime)
 			statuses.Policies[policyKeyStr] = status
 		}
 	}
@@ -125,36 +124,32 @@ func buildStatusesFromReports(reportsMap reports.ReportMap) *Statuses {
 	return statuses
 }
 
-// normalizeStatus sets all fields (e.g. LastTransitionTime and ObservedGeneration) to fixed values for deterministic testing
-func normalizeStatus(status *gwv1.GatewayStatus, time metav1.Time, gen int64) {
+// normalizeStatus sets all fields (e.g. LastTransitionTime) to fixed values for deterministic testing
+func normalizeStatus(status *gwv1.GatewayStatus, time metav1.Time) {
 	for i := range status.Conditions {
 		status.Conditions[i].LastTransitionTime = time
-		status.Conditions[i].ObservedGeneration = gen
 	}
 	for i := range status.Listeners {
 		for j := range status.Listeners[i].Conditions {
 			status.Listeners[i].Conditions[j].LastTransitionTime = time
-			status.Listeners[i].Conditions[j].ObservedGeneration = gen
 		}
 	}
 }
 
-// normalizeRouteStatus sets all fields (e.g. LastTransitionTime and ObservedGeneration) to fixed values for deterministic testing
-func normalizeRouteStatus(status *gwv1.RouteStatus, time metav1.Time, gen int64) {
+// normalizeRouteStatus sets all fields (e.g. LastTransitionTime) to fixed values for deterministic testing
+func normalizeRouteStatus(status *gwv1.RouteStatus, time metav1.Time) {
 	for i := range status.Parents {
 		for j := range status.Parents[i].Conditions {
 			status.Parents[i].Conditions[j].LastTransitionTime = time
-			status.Parents[i].Conditions[j].ObservedGeneration = gen
 		}
 	}
 }
 
-// normalizePolicyStatus sets all fields (e.g. LastTransitionTime and ObservedGeneration) to fixed values for deterministic testing
-func normalizePolicyStatus(status *gwv1a2.PolicyStatus, time metav1.Time, gen int64) {
+// normalizePolicyStatus sets all fields (e.g. LastTransitionTime) to fixed values for deterministic testing
+func normalizePolicyStatus(status *gwv1a2.PolicyStatus, time metav1.Time) {
 	for i := range status.Ancestors {
 		for j := range status.Ancestors[i].Conditions {
 			status.Ancestors[i].Conditions[j].LastTransitionTime = time
-			status.Ancestors[i].Conditions[j].ObservedGeneration = gen
 		}
 	}
 }

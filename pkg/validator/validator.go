@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os/exec"
+	"slices"
 	"strings"
 )
 
@@ -136,23 +137,20 @@ func (d *dockerValidator) Validate(ctx context.Context, yaml string) error {
 // ignoring Docker pull progress and other noise that comes before the error.
 func extractEnvoyError(stderr string) string {
 	lines := strings.Split(stderr, "\n")
-	for i, line := range lines {
-		line = strings.TrimSpace(line)
-		// skip lines that don't contain the well known error message from
-		// envoy validate mode output to reduce noise. see:
-		// https://github.com/envoyproxy/envoy/blob/d552b66f5d70ddd9e13c68c40f70729a45fb24e0/source/server/config_validation/server.cc#L75
-		if !strings.Contains(line, "error initializing configuration") {
-			continue
-		}
-		// extract all remaining lines that are relevant error context
-		remainingLines := make([]string, 0, len(lines)-i)
-		remainingLines = append(remainingLines, line)
-		for j := i + 1; j < len(lines); j++ {
-			if nextLine := strings.TrimSpace(lines[j]); nextLine != "" {
-				remainingLines = append(remainingLines, nextLine)
-			}
-		}
-		return strings.Join(remainingLines, " ")
+	// find the first line containing the Envoy error message. see:
+	// https://github.com/envoyproxy/envoy/blob/d552b66f5d70ddd9e13c68c40f70729a45fb24e0/source/server/config_validation/server.cc#L75
+	errorIndex := slices.IndexFunc(lines, func(line string) bool {
+		return strings.Contains(strings.TrimSpace(line), "error initializing configuration")
+	})
+	if errorIndex == -1 {
+		return ""
 	}
-	return ""
+	// extract all remaining lines that are relevant error context
+	remainingLines := make([]string, 0, len(lines)-errorIndex)
+	for i := errorIndex; i < len(lines); i++ {
+		if trimmed := strings.TrimSpace(lines[i]); trimmed != "" {
+			remainingLines = append(remainingLines, trimmed)
+		}
+	}
+	return strings.Join(remainingLines, " ")
 }

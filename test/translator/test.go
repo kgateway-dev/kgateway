@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"maps"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -732,9 +733,7 @@ func (tc TestCase) Run(
 
 		// Merge gateway reports with backend policy reports
 		mergedReports := reportsMap
-		for policyKey, policyReport := range backendPolicyReports.Policies {
-			mergedReports.Policies[policyKey] = policyReport
-		}
+		maps.Copy(mergedReports.Policies, backendPolicyReports.Policies)
 
 		actual := ActualTestResult{
 			Proxy:      xdsSnap,
