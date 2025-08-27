@@ -37,7 +37,7 @@ require (
 	helm.sh/helm/v3 v3.18.5
 	istio.io/api v1.26.0-alpha.0.0.20250820113222-47f832b86cdd
 	istio.io/client-go v1.26.0-alpha.0.0.20250820113822-8b883d128bac
-	istio.io/istio v0.0.0-20250728092114-6111de93199e
+	istio.io/istio v0.0.0-20250826222905-45e4f30947d5
 	k8s.io/api v0.33.4
 	k8s.io/apiextensions-apiserver v0.33.4
 	k8s.io/apimachinery v0.33.4
@@ -648,5 +648,3 @@ tool (
 	sigs.k8s.io/controller-tools/cmd/controller-gen
 	sigs.k8s.io/kind
 )
-
-replace istio.io/istio => github.com/danehans/istio v0.0.0-20250826180013-b3d3b41bf98a

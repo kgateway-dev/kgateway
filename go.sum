@@ -476,8 +476,6 @@ github.com/cyphar/filepath-securejoin v0.4.1 h1:JyxxyPEaktOD+GAnqIqTf9A8tHyAG22r
 github.com/cyphar/filepath-securejoin v0.4.1/go.mod h1:Sdj7gXlvMcPZsbhwhQ33GguGLDGQL7h7bg04C/+u9jI=
 github.com/daixiang0/gci v0.13.6 h1:RKuEOSkGpSadkGbvZ6hJ4ddItT3cVZ9Vn9Rybk6xjl8=
 github.com/daixiang0/gci v0.13.6/go.mod h1:12etP2OniiIdP4q+kjUGrC/rUagga7ODbqsom5Eo5Yk=
-github.com/danehans/istio v0.0.0-20250826180013-b3d3b41bf98a h1:LoOn+61fDCdNjayi5nmDNiRma+eUblS4pQyGqHjfG50=
-github.com/danehans/istio v0.0.0-20250826180013-b3d3b41bf98a/go.mod h1:mE4i7bZJ7jrhIGaT49ngJmiRlvROTPtAixvaUy+fbL4=
 github.com/danieljoos/wincred v1.2.2 h1:774zMFJrqaeYCK2W57BgAem/MLi6mtSE47MB6BOJ0i0=
 github.com/danieljoos/wincred v1.2.2/go.mod h1:w7w4Utbrz8lqeMbDAK0lkNJUv5sAOkFi7nd/ogr0Uh8=
 github.com/dave/dst v0.27.3 h1:P1HPoMza3cMEquVf9kKy8yXsFirry4zEnWOdYPOoIzY=
@@ -2336,6 +2334,8 @@ istio.io/api v1.26.0-alpha.0.0.20250820113222-47f832b86cdd h1:rXbbklkrc68YSkBExY
 istio.io/api v1.26.0-alpha.0.0.20250820113222-47f832b86cdd/go.mod h1:BD3qv/ekm16kvSgvSpuiDawgKhEwG97wx849CednJSg=
 istio.io/client-go v1.26.0-alpha.0.0.20250820113822-8b883d128bac h1:cig/XcnMBOfb88t1qbtnGEbHLffLnv3xQGPDYson1kI=
 istio.io/client-go v1.26.0-alpha.0.0.20250820113822-8b883d128bac/go.mod h1:0XgBG5O4fXCea2bhGlxz9/tcVZvE5tegmn7ST6/hUeQ=
+istio.io/istio v0.0.0-20250826222905-45e4f30947d5 h1:7su4YSxyYudo2qgN8k9iWl2aDQgvzyCepPw9xH7MKWs=
+istio.io/istio v0.0.0-20250826222905-45e4f30947d5/go.mod h1:mE4i7bZJ7jrhIGaT49ngJmiRlvROTPtAixvaUy+fbL4=
 k8s.io/api v0.33.4 h1:oTzrFVNPXBjMu0IlpA2eDDIU49jsuEorGHB4cvKupkk=
 k8s.io/api v0.33.4/go.mod h1:VHQZ4cuxQ9sCUMESJV5+Fe8bGnqAARZ08tSTdHWfeAc=
 k8s.io/apiextensions-apiserver v0.33.4 h1:rtq5SeXiDbXmSwxsF0MLe2Mtv3SwprA6wp+5qh/CrOU=
