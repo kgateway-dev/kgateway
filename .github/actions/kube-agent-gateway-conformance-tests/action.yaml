@@ -68,13 +68,13 @@ runs:
           ${ADDITIONAL_VALUES}
       fi
 
-  - name: Create GatewayClass for agentgateway
+  - name: Wait for GatewayClass to be created
     shell: bash
     run: |
-      echo "Creating GatewayClass for agentgateway..."
-      kubectl apply -f test/kubernetes/e2e/tests/manifests/agent-gateway-gatewayclass.yaml
-      echo "Waiting for GatewayClass to be ready..."
-      kubectl wait --for=condition=Accepted gatewayclass/agentgateway --timeout=60s
+      # Wait for the agentgateway GatewayClass to be created by the controller
+      echo "Waiting for agentgateway GatewayClass to be created..."
+      kubectl wait --for=condition=Accepted gatewayclass/agentgateway --timeout=120s
+      echo "GatewayClass agentgateway is ready"
 
   - name: Run the kubernetes gateway API conformance tests
     shell: bash
@@ -105,7 +105,5 @@ runs:
     if: ${{ failure() }}
     uses: ./.github/actions/upload-artifact
     with:
-      # Name of the path to upload. The VERSION variable refers to the Makefile
-      # VERSION variable.
-      name: conformance-kgateway-gateway-report@k8s${{ matrix.kube-version.kubectl }}
+      name: conformance-kgateway-agentgateway-report@k8s${{ matrix.kube-version.kubectl }}
       path: _test/conformance/${{ env.VERSION }}-report.yaml
