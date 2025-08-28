@@ -138,7 +138,7 @@ func TestGetAgentgatewayVersion(t *testing.T) {
 	g := NewWithT(t)
 	version := GetAgentgatewayVersion()
 	g.Expect(version).NotTo(BeEmpty())
-	g.Expect(version).To(Equal("0.7.5"))
+	g.Expect(version).To(Equal("0.7.8"))
 }
 
 func TestGetAgentgatewayVersionFallback(t *testing.T) {
