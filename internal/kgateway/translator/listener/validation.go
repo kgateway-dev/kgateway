@@ -18,7 +18,7 @@ const NormalizedHTTPSTLSType = "HTTPS/TLS"
 const DefaultHostname = "*"
 
 type portProtocol struct {
-	hostnames map[gwv1.Hostname]int
+	hostnames map[gwv1.Hostname][]ir.Listener
 	protocol  map[gwv1.ProtocolType]bool
 	// needed for getting reporter? doesn't seem great
 	listeners []ir.Listener
@@ -140,21 +140,65 @@ func validateListeners(gw *ir.Gateway, reporter reports.Reporter) []ir.Listener 
 	validListeners := validateSupportedRoutes(gw.Listeners, reporter)
 
 	portListeners := map[gwv1.PortNumber]*portProtocol{}
+	// The listeners are already sorted based on listener precedence
+	// The following loop groups listeners based on (i) Port (ii) Hostname
+	// The resulting map will then be used to reject listeners that have protocol and hostname conflicts
+	// Listeners on different ports don't need to be validated for a conflict so the example shown is only for a single port
+	// Given a set of listeners :
+	// 		- name: gateway-listener
+	// 		  port: 80
+	// 		  protocol: HTTP
+	// 		  hostname: gateway-listener.com
+	// 		- name: gateway-domain-name-conflict-listener
+	// 		  port: 80
+	// 		  protocol: HTTP
+	// 		  hostname: domain-name-conflict-listener.com
+	// 		- name: gateway-protocol-conflict-listener
+	// 		  port: 80
+	// 		  protocol: HTTP
+	// 		  hostname: protocol-conflict-listener.com
+	// 		- name: listenerset-listener
+	// 		  port: 80
+	// 		  protocol: HTTP
+	// 		  hostname: listenerset-listener.com
+	// 		- name: listenerset-domain-name-conflict-listener
+	// 		  port: 80
+	// 		  protocol: HTTP
+	// 		  hostname: domain-name-conflict-listener.com
+	// 		- name: listenerset-protocol-conflict-listener
+	// 		  port: 80
+	// 		  protocol: HTTP
+	// 		  hostname: protocol-conflict-listener.com
+	// This is the resulting map :
+	//		[80] : {
+	//		Protocol: {
+	//			"TCP": true
+	//			"UDP": true
+	//		},
+	//		Hostnames: {
+	//			"gateway-listener.com": [gateway-listener],
+	//			"domain-name-conflict-listener.com": [gateway-domain-name-conflict-listener,
+	// 										listenerset-domain-name-conflict-listener]
+	//			"protocol-conflict-listener.com": [gateway-protocol-conflict-listener, listenerset-protocol-conflict-listener]
+	//			"listenerset-1-listener.com": [listenerset-listener]
+	//		},
+	//      Listeners: [gateway-listener, gateway-domain-name-conflict-listener,gateway-protocol-conflict-listener,
+	// 					listenerset-listener, listenerset-domain-name-conflict-listener, listenerset-protocol-conflict-listener]
+	//	}
 	for _, listener := range validListeners {
 		protocol := listener.Protocol
 		if protocol == gwv1.HTTPSProtocolType || protocol == gwv1.TLSProtocolType {
 			protocol = NormalizedHTTPSTLSType
 		}
 
-		// TODO: Keep the first listener in case of a conflict
 		if existingListener, ok := portListeners[listener.Port]; ok {
 			existingListener.protocol[protocol] = true
 			existingListener.listeners = append(existingListener.listeners, listener)
 			//TODO(Law): handle validation that hostname empty for udp/tcp
 			if listener.Hostname != nil {
-				existingListener.hostnames[*listener.Hostname]++
+				existingListener.hostnames[*listener.Hostname] = append(existingListener.hostnames[*listener.Hostname], listener)
 			} else {
-				existingListener.hostnames[DefaultHostname]++
+				existingListener.hostnames[DefaultHostname] = append(existingListener.hostnames[DefaultHostname], listener)
 			}
 		} else {
 			var hostname gwv1.Hostname
@@ -164,8 +208,8 @@ func validateListeners(gw *ir.Gateway, reporter reports.Reporter) []ir.Listener 
 				hostname = *listener.Hostname
 			}
 			pp := portProtocol{
-				hostnames: map[gwv1.Hostname]int{
-					hostname: 1,
+				hostnames: map[gwv1.Hostname][]ir.Listener{
+					hostname: []ir.Listener{listener},
 				},
 				protocol: map[gwv1.ProtocolType]bool{
 					protocol: true,
@@ -178,53 +222,48 @@ func validateListeners(gw *ir.Gateway, reporter reports.Reporter) []ir.Listener 
 
 	// reset valid listeners
 	validListeners = []ir.Listener{}
+
+	// This loop validates listeners based on any port / protocol / hostname conflict
+	// Based on the example, the list of validListeners will as follows
+	// 		- name: gateway-listener
+	// 		  port: 80
+	// 		  protocol: HTTP
+	// 		  hostname: gateway-listener.com
+	// 		- name: gateway-domain-name-conflict-listener
+	// 		  port: 80
+	// 		  protocol: HTTP
+	// 		  hostname: domain-name-conflict-listener.com
+	// 		- name: gateway-protocol-conflict-listener
+	// 		  port: 80
+	// 		  protocol: HTTP
+	// 		  hostname: protocol-conflict-listener.com
+	// 		- name: listenerset-listener
+	// 		  port: 80
+	// 		  protocol: HTTP
+	// 		  hostname: listenerset-listener.com
+	// The following listeners are rejected :
+	// 		- name: listenerset-domain-name-conflict-listener	<----- conflicts with gateway-domain-name-conflict-listener
+	// 		  port: 80
+	// 		  protocol: HTTP
+	// 		  hostname: domain-name-conflict-listener.com
+	// 		- name: listenerset-protocol-conflict-listener		<----- conflicts with gateway-protocol-conflict-listener
+	// 		  port: 80
+	// 		  protocol: HTTP
+	// 		  hostname: protocol-conflict-listener.com
+
 	for _, pp := range portListeners {
-		protocolConflict := false
-		if len(pp.protocol) > 1 {
-			protocolConflict = true
-		}
-
-		for idx, listener := range pp.listeners {
+		for _, listener := range pp.listeners {
 			parentReporter := listener.GetParentReporter(reporter)
-
-			// There should be no need to check for port / protocol / hostname conflicts on gateway listeners
-			// as that is handled by kube validation
-			if protocolConflict {
-				// Accept the first conflicted listener - they have already been sorted by listener precedence
-				// TODO(davidjumani): Link to GEP when https://github.com/kubernetes-sigs/gateway-api/pull/3978 merges
-				if idx == 0 {
-					logger.Info("accepted listener with protocol conflict as per listener precedence", "name", listener.Name, "parent", listener.Parent.GetName())
+			if validateProtocolConflict(*pp, listener) {
+				// If a listener does not have a protocol conflict with one listener,
+				// it could still have a hostname conflict with another listener
+				if validateHostNameConflict(*pp, listener) {
 					validListeners = append(validListeners, listener)
-					continue
+				} else {
+					rejectConflictedListener(parentReporter, listener, gwv1.ListenerReasonHostnameConflict, ListenerMessageHostnameConflict)
 				}
-
-				logger.Error("rejected listener with protocol conflict as per listener precedence", "name", listener.Name, "parent", listener.Parent.GetName())
+			} else {
 				rejectConflictedListener(parentReporter, listener, gwv1.ListenerReasonProtocolConflict, ListenerMessageProtocolConflict)
-
-				// continue as protocolConflict will take precedence over hostname conflicts
-				continue
-			}
-
-			var hostname gwv1.Hostname
-			if listener.Hostname == nil {
-				hostname = DefaultHostname
-			} else {
-				hostname = *listener.Hostname
-			}
-			if count := pp.hostnames[hostname]; count > 1 {
-				// Accept the first conflicted listener - they have already been sorted by listener precedence
-				// TODO(davidjumani): Link to GEP when https://github.com/kubernetes-sigs/gateway-api/pull/3978 merges
-				if idx == 0 {
-					logger.Info("accepted listener with hostname conflict as per listener precedence", "name", listener.Name, "parent", listener.Parent.GetName())
-					validListeners = append(validListeners, listener)
-					continue
-				}
-
-				logger.Error("rejected listener with hostname conflict as per listener precedence", "name", listener.Name, "parent", listener.Parent.GetName())
-				rejectConflictedListener(parentReporter, listener, gwv1.ListenerReasonHostnameConflict, ListenerMessageHostnameConflict)
-			} else {
-				// TODO should check this is exactly 1?
-				validListeners = append(validListeners, listener)
 			}
 		}
 	}
@@ -283,6 +322,89 @@ func validateGateway(consolidatedGateway *ir.Gateway, reporter reports.Reporter)
 	return validatedListeners
 }
 
+func validateHostNameConflict(portProtocol portProtocol, listener ir.Listener) bool {
+	// An example of the portProtocol passed to this method :
+	//	{
+	//		Protocol: {
+	//			"TCP": true
+	//			"UDP": true
+	//		},
+	//		Hostnames: {
+	//			"gateway-listener.com": {gateway-listener},
+	//			"domain-name-conflict-listener.com": {gateway-domain-name-conflict-listener, listenerset-domain-name-conflict-listener}
+	//			"protocol-conflict-listener.com": {gateway-protocol-conflict-listener, listenerset-protocol-conflict-listener}
+	//			"listenerset-1-listener.com": {listenerset-listener}
+	//		},
+	//      Listeners: [gateway-listener, gateway-domain-name-conflict-listener,gateway-protocol-conflict-listener,
+	// 					listenerset-listener, listenerset-domain-name-conflict-listener, listenerset-protocol-conflict-listener]
+	//	}
+	var hostname gwv1.Hostname
+	if listener.Hostname == nil {
+		hostname = DefaultHostname
+	} else {
+		hostname = *listener.Hostname
+	}
+	if count := len(portProtocol.hostnames[hostname]); count > 1 {
+		// The first listener in the list of sorted listeners is always accepted - based on listener precedence
+		// The listeners with protocol conflicts have already been removed at this point
+		// Accept only the first listener with a unique hostname
+		// Based on the example, the following listeners will be accepted :
+		// "gateway-listener.com": {gateway-listener},
+		// "domain-name-conflict-listener.com": {gateway-domain-name-conflict-listener}
+		// "protocol-conflict-listener.com": {gateway-protocol-conflict-listener}
+		// "listenerset-1-listener.com": {listenerset-listener}
+		if listener.Equals(portProtocol.hostnames[hostname][0]) {
+			logger.Info("accepted listener with hostname conflict as per listener precedence", "name", listener.Name, "parent", listener.Parent.GetName())
+			return true
+		}
+		// Based on the example, the following listeners will be rejected :
+		// "domain-name-conflict-listener.com": {listenerset-domain-name-conflict-listener}
+		// "protocol-conflict-listener.com": {listenerset-protocol-conflict-listener}
+		logger.Error("rejected listener with hostname conflict as per listener precedence", "name", listener.Name, "parent", listener.Parent.GetName())
+		return false
+	} else {
+		return true
+	}
+}
+
+func validateProtocolConflict(portProtocol portProtocol, listener ir.Listener) bool {
+	// An example of the portProtocol passed to this method :
+	//	{
+	//		Protocol: {
+	//			"TCP": true
+	//			"UDP": true
+	//		},
+	//		Hostnames: {
+	//			"gateway-listener.com": {gateway-listener},
+	//			"domain-name-conflict-listener.com": {gateway-domain-name-conflict-listener, listenerset-domain-name-conflict-listener}
+	//			"protocol-conflict-listener.com": {gateway-protocol-conflict-listener, listenerset-protocol-conflict-listener}
+	//			"listenerset-1-listener.com": {listenerset-listener}
+	//		},
+	//      Listeners: [gateway-listener, gateway-domain-name-conflict-listener,gateway-protocol-conflict-listener,
+	// 					listenerset-listener, listenerset-domain-name-conflict-listener, listenerset-protocol-conflict-listener]
+	//	}
+	protocolConflict := false
+	if len(portProtocol.protocol) > 1 {
+		protocolConflict = true
+	}
+	// In this example, protocolConflict = true
+	if protocolConflict {
+		// The first listener in the list of sorted listeners is always accepted - based on listener precedence
+		// Accept all listeners with the same protocol as the first listener (gateway-listener). If not, only the `gateway-listener` will be accepted and all other TCP listeners will be rejected.
+		// This can lead to a situation where one UDP listener on the same port takes down all but the first TCP listener
+		// Listeners [gateway-domain-name-conflict-listener, listenerset-listener, listenerset-domain-name-conflict-listener] are accepted - hostname validation will happen later
+		if listener.Protocol == portProtocol.listeners[0].Protocol {
+			logger.Info("accepted listener with protocol conflict as per listener precedence", "name", listener.Name, "parent", listener.Parent.GetName())
+			return true
+		}
+		// Listeners with protocols that do not match the first listener are rejected
+		// Listeners [listenerset-protocol-conflict-listener] are rejected
+		logger.Error("rejected listener with protocol conflict as per listener precedence", "name", listener.Name, "parent", listener.Parent.GetName())
+		return false
+	}
+	return true
+}
+
 func rejectDeniedListenerSets(consolidatedGateway *ir.Gateway, reporter reports.Reporter) {
 	for _, ls := range consolidatedGateway.DeniedListenerSets {
 		acceptedCond := reports.GatewayCondition{
@@ -332,6 +454,7 @@ func rejectConflictedListener(parentReporter reports.GatewayReporter, listener i
 	})
 	// Set the accepted and programmed condition now since the right reason is needed.
 	// If the gateway is eventually rejected, the condition will be overwritten
+	// TODO: Link to gep
 	parentReporter.SetCondition(reports.GatewayCondition{
 		Type:   gwv1.GatewayConditionAccepted,
 		Status: metav1.ConditionTrue,
