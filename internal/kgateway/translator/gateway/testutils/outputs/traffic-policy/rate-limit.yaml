@@ -130,6 +130,35 @@ Statuses:
         reason: Programmed
         status: "True"
         type: Programmed
+      listeners:
+      - attachedRoutes: 1
+        conditions:
+        - lastTransitionTime: null
+          message: Listener is accepted
+          reason: Accepted
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Listener does not have conflicts
+          reason: NoConflicts
+          status: "False"
+          type: Conflicted
+        - lastTransitionTime: null
+          message: Listener has valid refs
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Listener is programmed
+          reason: Programmed
+          status: "True"
+          type: Programmed
+        name: http
+        supportedKinds:
+        - group: gateway.networking.k8s.io
+          kind: HTTPRoute
+        - group: gateway.networking.k8s.io
+          kind: GRPCRoute
   httpRoutes:
     default/example-route:
       parents:

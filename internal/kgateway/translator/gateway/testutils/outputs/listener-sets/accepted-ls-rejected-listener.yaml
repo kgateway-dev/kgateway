@@ -6,34 +6,7 @@ Clusters:
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
   metadata: {}
-  name: kube_a-b_svc-a-b_8080
-  type: EDS
-- connectTimeout: 5s
-  edsClusterConfig:
-    edsConfig:
-      ads: {}
-      resourceApiVersion: V3
-  ignoreHealthOnHostRemoval: true
-  metadata: {}
-  name: kube_a_svc-a_8080
-  type: EDS
-- connectTimeout: 5s
-  edsClusterConfig:
-    edsConfig:
-      ads: {}
-      resourceApiVersion: V3
-  ignoreHealthOnHostRemoval: true
-  metadata: {}
-  name: kube_b_svc-b_8080
-  type: EDS
-- connectTimeout: 5s
-  edsClusterConfig:
-    edsConfig:
-      ads: {}
-      resourceApiVersion: V3
-  ignoreHealthOnHostRemoval: true
-  metadata: {}
-  name: kube_infra_example-svc_80
+  name: kube_default_foo-svc_8080
   type: EDS
 - connectTimeout: 5s
   metadata: {}
@@ -43,7 +16,7 @@ Listeners:
     socketAddress:
       address: '::'
       ipv4Compat: true
-      portValue: 80
+      portValue: 8080
   filterChains:
   - filters:
     - name: envoy.filters.network.http_connection_manager
@@ -59,45 +32,60 @@ Listeners:
           configSource:
             ads: {}
             resourceApiVersion: V3
-          routeConfigName: listener~80
+          routeConfigName: listener~8080
         statPrefix: http
         useRemoteAddress: true
-    name: listener~80
-  name: listener~80
+    name: listener~8080
+  name: listener~8080
+- address:
+    socketAddress:
+      address: '::'
+      ipv4Compat: true
+      portValue: 9090
+  filterChains:
+  - filters:
+    - name: envoy.filters.network.http_connection_manager
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+        httpFilters:
+        - name: envoy.filters.http.router
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+        mergeSlashes: true
+        normalizePath: true
+        rds:
+          configSource:
+            ads: {}
+            resourceApiVersion: V3
+          routeConfigName: listener~9090
+        statPrefix: http
+        useRemoteAddress: true
+    name: listener~9090
+  name: listener~9090
 Routes:
 - ignorePortInHostMatching: true
-  name: listener~80
+  name: listener~8080
+- ignorePortInHostMatching: true
+  name: listener~9090
   virtualHosts:
   - domains:
-    - example.com
-    name: listener~80~example_com
+    - foo.example.com
+    name: listener~9090~foo_example_com
     routes:
     - match:
-        pathSeparatedPrefix: /a/b/1
-      name: listener~80~example_com-route-0-httproute-route-a-b-a-b-0-0-matcher-0
-      route:
-        cluster: kube_a-b_svc-a-b_8080
-        clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
-    - match:
-        pathSeparatedPrefix: /a/1
-      name: listener~80~example_com-route-1-httproute-route-a-a-0-0-matcher-0
-      route:
-        cluster: kube_a_svc-a_8080
-        clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
-    - match:
         prefix: /
-      name: listener~80~example_com-route-4-httproute-example-route-infra-0-0-matcher-0
+      name: listener~9090~foo_example_com-route-0-httproute-foo-route-default-0-0-matcher-0
       route:
-        cluster: kube_infra_example-svc_80
+        cluster: kube_default_foo-svc_8080
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
 Statuses:
   gateways:
-    infra/example-gateway:
+    default/example-gateway:
       conditions:
       - lastTransitionTime: null
         message: ""
-        reason: ListenerSetsNotAllowed
-        status: Unknown
+        reason: ListenerSetsAttached
+        status: "True"
         type: AttachedListenerSets
       - lastTransitionTime: null
         message: Gateway is accepted
@@ -106,6 +94,67 @@ Statuses:
         type: Accepted
       - lastTransitionTime: null
         message: Gateway is programmed
+        reason: Programmed
+        status: "True"
+        type: Programmed
+      listeners:
+      - attachedRoutes: 0
+        conditions:
+        - lastTransitionTime: null
+          message: Listener is accepted
+          reason: Accepted
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Listener does not have conflicts
+          reason: NoConflicts
+          status: "False"
+          type: Conflicted
+        - lastTransitionTime: null
+          message: Listener has valid refs
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Listener is programmed
+          reason: Programmed
+          status: "True"
+          type: Programmed
+        name: http-8080
+        supportedKinds:
+        - group: gateway.networking.k8s.io
+          kind: HTTPRoute
+        - group: gateway.networking.k8s.io
+          kind: GRPCRoute
+  httpRoutes:
+    default/foo-route:
+      parents:
+      - conditions:
+        - lastTransitionTime: null
+          message: Route is accepted
+          reason: Accepted
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Route has valid refs
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
+        controllerName: kgateway
+        parentRef:
+          group: gateway.networking.x-k8s.io
+          kind: XListenerSet
+          name: foo-listenerset
+  listenerSets:
+    default/foo-listenerset:
+      conditions:
+      - lastTransitionTime: null
+        message: ListenerSet is accepted
+        reason: Accepted
+        status: "True"
+        type: Accepted
+      - lastTransitionTime: null
+        message: ListenerSet is programmed
         reason: Programmed
         status: "True"
         type: Programmed
@@ -132,66 +181,35 @@ Statuses:
           reason: Programmed
           status: "True"
           type: Programmed
-        name: http
+        name: http-9090
+        port: 9090
         supportedKinds:
         - group: gateway.networking.k8s.io
           kind: HTTPRoute
         - group: gateway.networking.k8s.io
           kind: GRPCRoute
-  httpRoutes:
-    a-b/route-a-b:
-      parents:
-      - conditions:
+      - attachedRoutes: 0
+        conditions:
         - lastTransitionTime: null
-          message: Route is accepted
-          reason: Accepted
-          status: "True"
+          message: Protocol UDP is unsupported.
+          reason: UnsupportedProtocol
+          status: "False"
           type: Accepted
         - lastTransitionTime: null
-          message: Route has valid refs
+          message: Listener does not have conflicts
+          reason: NoConflicts
+          status: "False"
+          type: Conflicted
+        - lastTransitionTime: null
+          message: Listener has valid refs
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
-        controllerName: kgateway
-        parentRef:
-          group: gateway.networking.k8s.io
-          kind: HTTPRoute
-          name: route-a
-          namespace: a
-    a/route-a:
-      parents:
-      - conditions:
         - lastTransitionTime: null
-          message: Route is accepted
-          reason: Accepted
+          message: Listener is programmed
+          reason: Programmed
           status: "True"
-          type: Accepted
-        - lastTransitionTime: null
-          message: Route has valid refs
-          reason: ResolvedRefs
-          status: "True"
-          type: ResolvedRefs
-        controllerName: kgateway
-        parentRef:
-          group: gateway.networking.k8s.io
-          kind: HTTPRoute
-          name: example-route
-          namespace: infra
-    infra/example-route:
-      parents:
-      - conditions:
-        - lastTransitionTime: null
-          message: Route is accepted
-          reason: Accepted
-          status: "True"
-          type: Accepted
-        - lastTransitionTime: null
-          message: Route has valid refs
-          reason: ResolvedRefs
-          status: "True"
-          type: ResolvedRefs
-        controllerName: kgateway
-        parentRef:
-          group: ""
-          kind: ""
-          name: example-gateway
+          type: Programmed
+        name: udp-9091
+        port: 9091
+        supportedKinds: []

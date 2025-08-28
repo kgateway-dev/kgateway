@@ -28,3 +28,56 @@ Statuses:
         reason: Programmed
         status: "True"
         type: Programmed
+      listeners:
+      - attachedRoutes: 0
+        conditions:
+        - lastTransitionTime: null
+          message: Secret default/bookinfo-tls-secret not found.
+          reason: InvalidCertificateRef
+          status: "False"
+          type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Secret default/bookinfo-tls-secret not found.
+          reason: Invalid
+          status: "False"
+          type: Programmed
+        - lastTransitionTime: null
+          message: Listener is accepted
+          reason: Accepted
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Listener does not have conflicts
+          reason: NoConflicts
+          status: "False"
+          type: Conflicted
+        name: https-httpbin
+        supportedKinds:
+        - group: gateway.networking.k8s.io
+          kind: HTTPRoute
+      - attachedRoutes: 0
+        conditions:
+        - lastTransitionTime: null
+          message: Listener is accepted
+          reason: Accepted
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Listener does not have conflicts
+          reason: NoConflicts
+          status: "False"
+          type: Conflicted
+        - lastTransitionTime: null
+          message: Listener has valid refs
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Listener is programmed
+          reason: Programmed
+          status: "True"
+          type: Programmed
+        name: https-bookinfo
+        supportedKinds:
+        - group: gateway.networking.k8s.io
+          kind: HTTPRoute
