@@ -8,6 +8,9 @@ spec:
   - name: http-8080
     protocol: HTTP
     port: 8080
+  allowedListeners:
+    namespaces:
+      from: All
 ---
 apiVersion: gateway.networking.x-k8s.io/v1alpha1
 kind: XListenerSet
@@ -22,6 +25,12 @@ spec:
   - name: http-9090
     protocol: HTTP
     port: 9090
+    allowedRoutes:
+      namespaces:
+        from: All
+  - name: udp-9091
+    protocol: UDP  # This should trigger unsupported protocol rejection
+    port: 9091
     allowedRoutes:
       namespaces:
         from: All
@@ -54,6 +63,6 @@ spec:
   selector:
     test: test
   ports:
-    - protocol: HTTP
+    - protocol: TCP
       port: 8080
       targetPort: test
