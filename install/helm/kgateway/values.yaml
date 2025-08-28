@@ -92,6 +92,13 @@ discoveryNamespaceSelectors: []
 agentGateway:
   enabled: false
 
+# -- Policy merging settings. Currently, TrafficPolicy's extAuth, extProc, and transformation policies support deep merging.
+# E.g., to enable deep merging of extProc policy in TrafficPolicy:
+# policyMerge:
+#   trafficPolicy:
+#     extProc: DeepMerge
+policyMerge: {}
+
 serviceMonitor:
   # -- Enable this if you're using https://github.com/coreos/prometheus-operator
   enabled: false

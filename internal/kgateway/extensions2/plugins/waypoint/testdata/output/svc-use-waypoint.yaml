@@ -83,3 +83,17 @@ Routes:
       route:
         cluster: kube_infra_helloworld_5000
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+Statuses:
+  gateways:
+    infra/example-waypoint:
+      conditions:
+      - lastTransitionTime: null
+        message: Gateway is accepted
+        reason: Accepted
+        status: "True"
+        type: Accepted
+      - lastTransitionTime: null
+        message: Gateway is programmed
+        reason: Programmed
+        status: "True"
+        type: Programmed

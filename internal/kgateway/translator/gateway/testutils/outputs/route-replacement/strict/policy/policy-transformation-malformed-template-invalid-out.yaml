@@ -53,3 +53,65 @@ Routes:
       match:
         prefix: /
       name: listener~8080~www_example_com-route-0-httproute-invalid-traffic-policy-route-gwtest-0-0-matcher-0
+Statuses:
+  gateways:
+    gwtest/example-gateway:
+      conditions:
+      - lastTransitionTime: null
+        message: ""
+        reason: ListenerSetsNotAllowed
+        status: Unknown
+        type: AttachedListenerSets
+      - lastTransitionTime: null
+        message: Gateway is accepted
+        reason: Accepted
+        status: "True"
+        type: Accepted
+      - lastTransitionTime: null
+        message: Gateway is programmed
+        reason: Programmed
+        status: "True"
+        type: Programmed
+  httpRoutes:
+    gwtest/invalid-traffic-policy-route:
+      parents:
+      - conditions:
+        - lastTransitionTime: null
+          message: 'Replaced Rule (0): invalid xds configuration: error initializing
+            configuration '''': Failed to parse request template: Failed to parse
+            body template [inja.exception.parser_error] (at 1:21) unexpected ''}'''
+          reason: RouteRuleReplaced
+          status: "False"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Route has valid refs
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
+        controllerName: kgateway
+        parentRef:
+          group: ""
+          kind: ""
+          name: example-gateway
+  policies:
+    TrafficPolicy/gwtest/invalid-traffic-policy:
+      ancestors:
+      - ancestorRef:
+          group: gateway.networking.k8s.io
+          kind: Gateway
+          name: example-gateway
+          namespace: gwtest
+        conditions:
+        - lastTransitionTime: null
+          message: 'invalid xds configuration: error initializing configuration '''':
+            Failed to parse request template: Failed to parse body template [inja.exception.parser_error]
+            (at 1:21) unexpected ''}'''
+          reason: Invalid
+          status: "False"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Attached to all targets
+          reason: Attached
+          status: "True"
+          type: Attached
+        controllerName: kgateway.dev/kgateway

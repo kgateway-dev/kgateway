@@ -585,6 +585,29 @@ test-ai-provider-docker:
 		-t $(IMAGE_REGISTRY)/test-ai-provider:$(VERSION)
 
 #----------------------------------------------------------------------------------
+# Load Testing
+#----------------------------------------------------------------------------------
+
+# Default values that match setup-kind.sh defaults
+CLUSTER_NAME ?= kind
+INSTALL_NAMESPACE ?= kgateway-system
+
+.PHONY: run-load-tests
+run-load-tests: ## Run KGateway load testing suite (requires existing cluster and installation)
+	SKIP_INSTALL=true CLUSTER_NAME=$(CLUSTER_NAME) INSTALL_NAMESPACE=$(INSTALL_NAMESPACE) \
+	go test -v ./test/kubernetes/e2e/tests -run "^TestKgateway$$/^AttachedRoutes$$"
+
+.PHONY: run-load-tests-baseline
+run-load-tests-baseline: ## Run baseline load tests (1000 routes)
+	SKIP_INSTALL=true CLUSTER_NAME=$(CLUSTER_NAME) INSTALL_NAMESPACE=$(INSTALL_NAMESPACE) \
+	go test -v ./test/kubernetes/e2e/tests -run "^TestKgateway$$/^AttachedRoutes$$/^TestAttachedRoutesBaseline$$"
+
+.PHONY: run-load-tests-production
+run-load-tests-production: ## Run production load tests (5000 routes)
+	SKIP_INSTALL=true CLUSTER_NAME=$(CLUSTER_NAME) INSTALL_NAMESPACE=$(INSTALL_NAMESPACE) \
+	go test -v ./test/kubernetes/e2e/tests -run "^TestKgateway$$/^AttachedRoutes$$/^TestAttachedRoutesProduction$$"
+
+#----------------------------------------------------------------------------------
 # Targets for running Kubernetes Gateway API conformance tests
 #----------------------------------------------------------------------------------
 
@@ -634,6 +657,7 @@ INFERENCE_SKIP_TESTS ?= -skip-tests EppUnAvailableFailOpen
 
 INFERENCE_CONFORMANCE_DIR := $(shell go list -m -f '{{.Dir}}' sigs.k8s.io/gateway-api-inference-extension)/conformance
 
+# TODO [danehans]: Remove `kubectl wait` when gateway-api-inference-extension/issues/1315 is fixed.
 .PHONY: gie-conformance
 gie-conformance: gie-crds ## Run the Gateway API Inference Extension conformance suite
 	@mkdir -p $(TEST_ASSET_DIR)/conformance
@@ -642,7 +666,10 @@ gie-conformance: gie-crds ## Run the Gateway API Inference Extension conformance
 	    -timeout=25m \
 	    -v $(INFERENCE_CONFORMANCE_DIR) \
 	    -args $(GIE_CONFORMANCE_ARGS) $(INFERENCE_SKIP_TESTS)
+	@echo "Waiting for gateway-conformance-infra namespace to terminate..."
+	kubectl wait ns gateway-conformance-infra --for=delete --timeout=2m || true
 
+# TODO [danehans]: Remove `kubectl wait` when gateway-api-inference-extension/issues/1315 is fixed.
 .PHONY: gie-conformance-%
 gie-conformance-%: gie-crds ## Run only the specified Gateway API Inference Extension conformance test by ShortName
 	@mkdir -p $(TEST_ASSET_DIR)/conformance
@@ -651,6 +678,8 @@ gie-conformance-%: gie-crds ## Run only the specified Gateway API Inference Exte
 	    -timeout=25m \
 	    -v $(INFERENCE_CONFORMANCE_DIR) $(INFERENCE_SKIP_TESTS) \
 	    -args $(GIE_CONFORMANCE_ARGS) -run-test=$*
+	@echo "Waiting for gateway-conformance-infra namespace to terminate..."
+	kubectl wait ns gateway-conformance-infra --for=delete --timeout=2m || true
 
 # An alias to run both Gateway API and Inference Extension conformance tests.
 .PHONY: all-conformance

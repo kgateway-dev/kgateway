@@ -44,3 +44,43 @@ Routes:
       match:
         path: /non-existent
       name: listener~8080~www_example_com-route-0-httproute-example-route-default-0-0-matcher-0
+Statuses:
+  gateways:
+    default/example-gateway:
+      conditions:
+      - lastTransitionTime: null
+        message: ""
+        reason: ListenerSetsNotAllowed
+        status: Unknown
+        type: AttachedListenerSets
+      - lastTransitionTime: null
+        message: Gateway is accepted
+        reason: Accepted
+        status: "True"
+        type: Accepted
+      - lastTransitionTime: null
+        message: Gateway is programmed
+        reason: Programmed
+        status: "True"
+        type: Programmed
+  httpRoutes:
+    default/example-route:
+      parents:
+      - conditions:
+        - lastTransitionTime: null
+          message: |-
+            Replaced Rule (0): no action specified
+            gateway.kgateway.dev/DirectResponse/default/non-existent-ref: policy not found
+          reason: RouteRuleReplaced
+          status: "False"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Route has valid refs
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
+        controllerName: kgateway
+        parentRef:
+          group: ""
+          kind: ""
+          name: example-gateway

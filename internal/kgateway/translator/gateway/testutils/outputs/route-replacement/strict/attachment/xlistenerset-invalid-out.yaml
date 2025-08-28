@@ -1,0 +1,178 @@
+Clusters:
+- connectTimeout: 5s
+  edsClusterConfig:
+    edsConfig:
+      ads: {}
+      resourceApiVersion: V3
+  ignoreHealthOnHostRemoval: true
+  metadata: {}
+  name: kube_gwtest_example-svc_80
+  type: EDS
+- connectTimeout: 5s
+  metadata: {}
+  name: test-backend-plugin_default_example-svc_80
+Listeners:
+- address:
+    socketAddress:
+      address: '::'
+      ipv4Compat: true
+      portValue: 8080
+  filterChains:
+  - filters:
+    - name: envoy.filters.network.http_connection_manager
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+        httpFilters:
+        - name: envoy.filters.http.router
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+        mergeSlashes: true
+        normalizePath: true
+        rds:
+          configSource:
+            ads: {}
+            resourceApiVersion: V3
+          routeConfigName: listener~8080
+        statPrefix: http
+        useRemoteAddress: true
+    name: listener~8080
+  name: listener~8080
+- address:
+    socketAddress:
+      address: '::'
+      ipv4Compat: true
+      portValue: 8443
+  filterChains:
+  - filters:
+    - name: envoy.filters.network.http_connection_manager
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+        httpFilters:
+        - name: envoy.filters.http.router
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+        mergeSlashes: true
+        normalizePath: true
+        rds:
+          configSource:
+            ads: {}
+            resourceApiVersion: V3
+          routeConfigName: gwtest/test-listenerset/https-8443
+        statPrefix: http
+        useRemoteAddress: true
+    name: gwtest/test-listenerset/https-8443
+  name: listener~8443
+- address:
+    socketAddress:
+      address: '::'
+      ipv4Compat: true
+      portValue: 9090
+  filterChains:
+  - filters:
+    - name: envoy.filters.network.http_connection_manager
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+        httpFilters:
+        - name: envoy.filters.http.router
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+        mergeSlashes: true
+        normalizePath: true
+        rds:
+          configSource:
+            ads: {}
+            resourceApiVersion: V3
+          routeConfigName: listener~9090
+        statPrefix: http
+        useRemoteAddress: true
+    name: listener~9090
+  name: listener~9090
+Routes:
+- ignorePortInHostMatching: true
+  name: gwtest/test-listenerset/https-8443
+  virtualHosts:
+  - domains:
+    - www.example.com
+    name: gwtest/test-listenerset/https-8443~www_example_com
+    routes:
+    - match:
+        prefix: /
+      name: gwtest/test-listenerset/https-8443~www_example_com-route-0-httproute-test-route-gwtest-0-0-matcher-0
+      route:
+        cluster: kube_gwtest_example-svc_80
+        clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+- ignorePortInHostMatching: true
+  name: listener~8080
+- ignorePortInHostMatching: true
+  name: listener~9090
+  virtualHosts:
+  - domains:
+    - www.example.com
+    name: listener~9090~www_example_com
+    routes:
+    - match:
+        prefix: /
+      name: listener~9090~www_example_com-route-0-httproute-test-route-gwtest-0-0-matcher-0
+      route:
+        cluster: kube_gwtest_example-svc_80
+        clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+Statuses:
+  gateways:
+    gwtest/example-gateway:
+      conditions:
+      - lastTransitionTime: null
+        message: ""
+        reason: ListenerSetsAttached
+        status: "True"
+        type: AttachedListenerSets
+      - lastTransitionTime: null
+        message: Gateway is accepted
+        reason: Accepted
+        status: "True"
+        type: Accepted
+      - lastTransitionTime: null
+        message: Gateway is programmed
+        reason: Programmed
+        status: "True"
+        type: Programmed
+  httpRoutes:
+    gwtest/test-route:
+      parents:
+      - conditions:
+        - lastTransitionTime: null
+          message: Route is accepted
+          reason: Accepted
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Route has valid refs
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
+        controllerName: kgateway
+        parentRef:
+          group: gateway.networking.x-k8s.io
+          kind: XListenerSet
+          name: test-listenerset
+  policies:
+    TrafficPolicy/gwtest/invalid-traffic-policy:
+      ancestors:
+      - ancestorRef:
+          group: gateway.networking.x-k8s.io
+          kind: XListenerSet
+          name: test-listenerset
+          namespace: gwtest
+        conditions:
+        - lastTransitionTime: null
+          message: 'invalid xds configuration: error initializing configuration '''':
+            Failed to parse request template: Failed to parse body template [inja.exception.parser_error]
+            (at 1:21) unexpected ''}'''
+          reason: Invalid
+          status: "False"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Attached to all targets
+          reason: Attached
+          status: "True"
+          type: Attached
+        controllerName: kgateway.dev/kgateway

@@ -8,18 +8,23 @@ import (
 )
 
 type ProviderNeededMap struct {
-	// map filter_chain name -> provider name -> provider
-	Providers map[string]map[string]*TrafficPolicyGatewayExtensionIR
+	// map filter_chain name -> providers
+	Providers map[string][]Provider
+}
+
+type Provider struct {
+	Name      string
+	Extension *TrafficPolicyGatewayExtensionIR
 }
 
 func (p *ProviderNeededMap) Add(filterChain, providerName string, provider *TrafficPolicyGatewayExtensionIR) {
 	if p.Providers == nil {
-		p.Providers = make(map[string]map[string]*TrafficPolicyGatewayExtensionIR)
+		p.Providers = make(map[string][]Provider)
 	}
-	if p.Providers[filterChain] == nil {
-		p.Providers[filterChain] = make(map[string]*TrafficPolicyGatewayExtensionIR)
-	}
-	p.Providers[filterChain][providerName] = provider
+	p.Providers[filterChain] = append(p.Providers[filterChain], Provider{
+		Name:      providerName,
+		Extension: provider,
+	})
 }
 
 func AddDisableFilterIfNeeded(

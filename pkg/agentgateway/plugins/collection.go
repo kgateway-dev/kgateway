@@ -17,7 +17,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
+	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 	infversioned "sigs.k8s.io/gateway-api-inference-extension/client-go/clientset/versioned"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
@@ -64,7 +64,9 @@ type AgwCollections struct {
 	RefGrants   *krtcollections.RefGrantIndex
 
 	// kgateway resources
+	// TODO(npolshak): remove backendindex as part of https://github.com/kgateway-dev/kgateway/issues/12052
 	BackendIndex      *krtcollections.BackendIndex
+	Backends          krt.Collection[*v1alpha1.Backend]
 	TrafficPolicies   krt.Collection[*v1alpha1.TrafficPolicy]
 	DirectResponses   krt.Collection[*v1alpha1.DirectResponse]
 	GatewayExtensions krt.Collection[*v1alpha1.GatewayExtension]
@@ -195,10 +197,10 @@ func registerInferenceExtensionTypes(client istiokube.Client) {
 			inferencePoolGVR,
 			wellknown.InferencePoolGVK,
 			func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (runtime.Object, error) {
-				return infCli.InferenceV1alpha2().InferencePools(namespace).List(context.Background(), o)
+				return infCli.InferenceV1().InferencePools(namespace).List(context.Background(), o)
 			},
 			func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
-				return infCli.InferenceV1alpha2().InferencePools(namespace).Watch(context.Background(), o)
+				return infCli.InferenceV1().InferencePools(namespace).Watch(context.Background(), o)
 			},
 		)
 	}
@@ -221,6 +223,7 @@ func (c *AgwCollections) HasSynced() bool {
 		c.WrappedPods != nil && c.WrappedPods.HasSynced() &&
 		c.RefGrants != nil && c.RefGrants.HasSynced() &&
 		c.BackendIndex != nil && c.BackendIndex.HasSynced() &&
+		c.Backends != nil && c.Backends.HasSynced() &&
 		c.TrafficPolicies != nil && c.TrafficPolicies.HasSynced() &&
 		c.DirectResponses != nil && c.DirectResponses.HasSynced() &&
 		c.GatewayExtensions != nil && c.GatewayExtensions.HasSynced() &&
@@ -281,6 +284,7 @@ func NewAgwCollections(
 		DirectResponses:   krt.NewInformer[*v1alpha1.DirectResponse](commoncol.Client),
 		TrafficPolicies:   krt.NewInformer[*v1alpha1.TrafficPolicy](commoncol.Client),
 		GatewayExtensions: krt.NewInformer[*v1alpha1.GatewayExtension](commoncol.Client),
+		Backends:          krt.NewInformer[*v1alpha1.Backend](commoncol.Client),
 		BackendIndex:      commoncol.BackendIndex,
 	}
 

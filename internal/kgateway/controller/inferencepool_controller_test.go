@@ -10,7 +10,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	infextv1a2 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
+	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
@@ -73,7 +73,7 @@ var _ = Describe("InferencePool controller", func() {
 								{
 									BackendRef: apiv1.BackendRef{
 										BackendObjectReference: apiv1.BackendObjectReference{
-											Group: ptr.To(apiv1.Group(infextv1a2.GroupVersion.Group)),
+											Group: ptr.To(apiv1.Group(inf.GroupVersion.Group)),
 											Kind:  ptr.To(apiv1.Kind("InferencePool")),
 											Name:  "pool1",
 										},
@@ -108,25 +108,23 @@ var _ = Describe("InferencePool controller", func() {
 			}, "10s", "1s").Should(Succeed())
 
 			// Create an InferencePool resource that is referenced by the HTTPRoute.
-			pool := &infextv1a2.InferencePool{
+			pool := &inf.InferencePool{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       "InferencePool",
-					APIVersion: infextv1a2.GroupVersion.String(),
+					APIVersion: inf.GroupVersion.String(),
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "pool1",
 					Namespace: defaultNamespace,
 					UID:       "pool-uid",
 				},
-				Spec: infextv1a2.InferencePoolSpec{
-					Selector:         map[infextv1a2.LabelKey]infextv1a2.LabelValue{},
-					TargetPortNumber: 1234,
-					EndpointPickerConfig: infextv1a2.EndpointPickerConfig{
-						ExtensionRef: &infextv1a2.Extension{
-							ExtensionReference: infextv1a2.ExtensionReference{
-								Name: "doesnt-matter",
-							},
-						},
+				Spec: inf.InferencePoolSpec{
+					Selector: inf.LabelSelector{
+						MatchLabels: map[inf.LabelKey]inf.LabelValue{"app": "x"},
+					},
+					TargetPorts: []inf.Port{{Number: 1234}},
+					EndpointPickerRef: inf.EndpointPickerRef{
+						Name: "doesnt-matter",
 					},
 				},
 			}
@@ -144,25 +142,23 @@ var _ = Describe("InferencePool controller", func() {
 
 		It("should ignore an InferencePool not referenced by any HTTPRoute and not deploy the endpoint picker", func() {
 			// Create an InferencePool that is not referenced by any HTTPRoute.
-			pool := &infextv1a2.InferencePool{
+			pool := &inf.InferencePool{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       "InferencePool",
-					APIVersion: infextv1a2.GroupVersion.String(),
+					APIVersion: inf.GroupVersion.String(),
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "pool2",
 					Namespace: defaultNamespace,
 					UID:       "pool2-uid",
 				},
-				Spec: infextv1a2.InferencePoolSpec{
-					Selector:         map[infextv1a2.LabelKey]infextv1a2.LabelValue{},
-					TargetPortNumber: 1234,
-					EndpointPickerConfig: infextv1a2.EndpointPickerConfig{
-						ExtensionRef: &infextv1a2.Extension{
-							ExtensionReference: infextv1a2.ExtensionReference{
-								Name: "doesnt-matter",
-							},
-						},
+				Spec: inf.InferencePoolSpec{
+					Selector: inf.LabelSelector{
+						MatchLabels: map[inf.LabelKey]inf.LabelValue{"app": "x"},
+					},
+					TargetPorts: []inf.Port{{Number: 1234}},
+					EndpointPickerRef: inf.EndpointPickerRef{
+						Name: "doesnt-matter",
 					},
 				},
 			}
@@ -196,7 +192,7 @@ var _ = Describe("InferencePool controller", func() {
 						BackendRefs: []apiv1.HTTPBackendRef{{
 							BackendRef: apiv1.BackendRef{
 								BackendObjectReference: apiv1.BackendObjectReference{
-									Group: ptr.To(apiv1.Group(infextv1a2.GroupVersion.Group)),
+									Group: ptr.To(apiv1.Group(inf.GroupVersion.Group)),
 									Kind:  ptr.To(apiv1.Kind("InferencePool")),
 									Name:  "pool-disabled",
 								},
@@ -207,18 +203,18 @@ var _ = Describe("InferencePool controller", func() {
 			}
 			Expect(k8sClient.Create(ctx, httpRoute)).To(Succeed())
 
-			pool := &infextv1a2.InferencePool{
+			pool := &inf.InferencePool{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "pool-disabled",
 					Namespace: defaultNamespace,
 				},
-				Spec: infextv1a2.InferencePoolSpec{
-					Selector:         map[infextv1a2.LabelKey]infextv1a2.LabelValue{},
-					TargetPortNumber: 1234,
-					EndpointPickerConfig: infextv1a2.EndpointPickerConfig{
-						ExtensionRef: &infextv1a2.Extension{
-							ExtensionReference: infextv1a2.ExtensionReference{Name: "doesnt-matter"},
-						},
+				Spec: inf.InferencePoolSpec{
+					Selector: inf.LabelSelector{
+						MatchLabels: map[inf.LabelKey]inf.LabelValue{"app": "x"},
+					},
+					TargetPorts: []inf.Port{{Number: 1234}},
+					EndpointPickerRef: inf.EndpointPickerRef{
+						Name: "doesnt-matter",
 					},
 				},
 			}

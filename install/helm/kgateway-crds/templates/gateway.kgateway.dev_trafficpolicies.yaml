@@ -717,6 +717,25 @@ spec:
                         type: object
                     type: object
                 type: object
+              rbac:
+                properties:
+                  action:
+                    default: Allow
+                    enum:
+                    - Allow
+                    - Deny
+                    type: string
+                  policy:
+                    properties:
+                      matchExpressions:
+                        items:
+                          type: string
+                        minItems: 1
+                        type: array
+                    type: object
+                required:
+                - policy
+                type: object
               retry:
                 properties:
                   attempts:
@@ -801,12 +820,13 @@ spec:
                 minItems: 1
                 type: array
                 x-kubernetes-validations:
-                - message: targetRefs may only reference Gateway, HTTPRoute, or XListenerSet
-                    resources
-                  rule: self.all(r, (r.kind == 'Gateway' || r.kind == 'HTTPRoute'
-                    || (r.kind == 'XListenerSet' && r.group == 'gateway.networking.x-k8s.io'))
-                    && (!has(r.group) || r.group == 'gateway.networking.k8s.io' ||
-                    r.group == 'gateway.networking.x-k8s.io'))
+                - message: targetRefs may only reference Gateway, HTTPRoute, XListenerSet,
+                    or Backend resources
+                  rule: self.all(r, (r.kind == 'Backend' || r.kind == 'Gateway' ||
+                    r.kind == 'HTTPRoute' || (r.kind == 'XListenerSet' && r.group
+                    == 'gateway.networking.x-k8s.io')) && (!has(r.group) || r.group
+                    == 'gateway.networking.k8s.io' || r.group == 'gateway.networking.x-k8s.io'
+                    || r.group == 'gateway.kgateway.dev' ))
               targetSelectors:
                 items:
                   properties:

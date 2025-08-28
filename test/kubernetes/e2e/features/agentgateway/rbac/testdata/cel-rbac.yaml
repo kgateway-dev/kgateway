@@ -1,0 +1,50 @@
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: httpbin-route
+  namespace: default
+spec:
+  hostnames:
+    - httpbin
+  parentRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: gw
+      namespace: default
+  rules:
+    - backendRefs:
+        - group: ""
+          kind: Service
+          name: httpbin
+          port: 8000
+          weight: 1
+      matches:
+        - path:
+            type: PathPrefix
+            value: /status/200
+    - backendRefs:
+        - group: ""
+          kind: Service
+          name: httpbin
+          port: 8000
+          weight: 1
+      name: httpbin-get
+      matches:
+        - path:
+            type: PathPrefix
+            value: /get
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: cel-rbac-policy
+spec:
+  targetRefs:
+    - name: httpbin-route
+      kind: HTTPRoute
+      group: gateway.networking.k8s.io
+  rbac:
+    policy:
+      matchExpressions:
+          - "request.headers['x-my-header'] == 'cool-beans'"

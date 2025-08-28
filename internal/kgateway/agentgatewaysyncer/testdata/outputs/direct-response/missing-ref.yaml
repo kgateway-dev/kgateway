@@ -8,7 +8,11 @@ Listeners:
   name: http
   protocol: HTTP
 Routes:
-- hostnames:
+- filters:
+  - directResponse:
+      status: 500
+      body: RGlyZWN0UmVzcG9uc2UgZGVmYXVsdC9ub24tZXhpc3RlbnQtcmVmIG5vdCBmb3VuZA==
+  hostnames:
   - www.example.com
   key: default.example-route.0.0.http
   listenerKey: default/example-gateway/http

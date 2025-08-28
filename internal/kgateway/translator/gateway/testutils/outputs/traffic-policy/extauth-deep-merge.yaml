@@ -1,0 +1,425 @@
+Clusters:
+- connectTimeout: 5s
+  edsClusterConfig:
+    edsConfig:
+      ads: {}
+      resourceApiVersion: V3
+  ignoreHealthOnHostRemoval: true
+  metadata: {}
+  name: kube_default_extauth_9091
+  type: EDS
+  typedExtensionProtocolOptions:
+    envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+      '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+      explicitHttpConfig:
+        http2ProtocolOptions: {}
+- connectTimeout: 5s
+  edsClusterConfig:
+    edsConfig:
+      ads: {}
+      resourceApiVersion: V3
+  ignoreHealthOnHostRemoval: true
+  metadata: {}
+  name: kube_default_extauth_9092
+  type: EDS
+  typedExtensionProtocolOptions:
+    envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+      '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+      explicitHttpConfig:
+        http2ProtocolOptions: {}
+- connectTimeout: 5s
+  edsClusterConfig:
+    edsConfig:
+      ads: {}
+      resourceApiVersion: V3
+  ignoreHealthOnHostRemoval: true
+  metadata: {}
+  name: kube_default_extauth_9093
+  type: EDS
+  typedExtensionProtocolOptions:
+    envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+      '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+      explicitHttpConfig:
+        http2ProtocolOptions: {}
+- connectTimeout: 5s
+  edsClusterConfig:
+    edsConfig:
+      ads: {}
+      resourceApiVersion: V3
+  ignoreHealthOnHostRemoval: true
+  metadata: {}
+  name: kube_default_test_80
+  type: EDS
+- connectTimeout: 5s
+  metadata: {}
+  name: test-backend-plugin_default_example-svc_80
+Listeners:
+- address:
+    socketAddress:
+      address: '::'
+      ipv4Compat: true
+      portValue: 8080
+  filterChains:
+  - filters:
+    - name: envoy.filters.network.http_connection_manager
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+        httpFilters:
+        - disabled: true
+          name: global_disable/ext_auth
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.set_metadata.v3.Config
+            metadata:
+            - metadataNamespace: dev.kgateway.disable_ext_auth
+              value:
+                disable: true
+        - disabled: true
+          name: ext_auth/default/extauth-gateway-2
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthz
+            filterEnabledMetadata:
+              filter: dev.kgateway.disable_ext_auth
+              invert: true
+              path:
+              - key: disable
+              value:
+                boolMatch: true
+            grpcService:
+              envoyGrpc:
+                clusterName: kube_default_extauth_9091
+        - disabled: true
+          name: ext_auth/default/extauth-gateway-1
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthz
+            filterEnabledMetadata:
+              filter: dev.kgateway.disable_ext_auth
+              invert: true
+              path:
+              - key: disable
+              value:
+                boolMatch: true
+            grpcService:
+              envoyGrpc:
+                clusterName: kube_default_extauth_9091
+        - disabled: true
+          name: ext_auth/default/extauth-listener-2
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthz
+            filterEnabledMetadata:
+              filter: dev.kgateway.disable_ext_auth
+              invert: true
+              path:
+              - key: disable
+              value:
+                boolMatch: true
+            grpcService:
+              envoyGrpc:
+                clusterName: kube_default_extauth_9092
+        - disabled: true
+          name: ext_auth/default/extauth-route-1
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthz
+            filterEnabledMetadata:
+              filter: dev.kgateway.disable_ext_auth
+              invert: true
+              path:
+              - key: disable
+              value:
+                boolMatch: true
+            grpcService:
+              envoyGrpc:
+                clusterName: kube_default_extauth_9093
+        - disabled: true
+          name: ext_auth/default/extauth-route-2
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthz
+            filterEnabledMetadata:
+              filter: dev.kgateway.disable_ext_auth
+              invert: true
+              path:
+              - key: disable
+              value:
+                boolMatch: true
+            grpcService:
+              envoyGrpc:
+                clusterName: kube_default_extauth_9093
+        - disabled: true
+          name: ext_auth/default/extauth-listener-1
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthz
+            filterEnabledMetadata:
+              filter: dev.kgateway.disable_ext_auth
+              invert: true
+              path:
+              - key: disable
+              value:
+                boolMatch: true
+            grpcService:
+              envoyGrpc:
+                clusterName: kube_default_extauth_9092
+        - name: envoy.filters.http.router
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+        mergeSlashes: true
+        normalizePath: true
+        rds:
+          configSource:
+            ads: {}
+            resourceApiVersion: V3
+          routeConfigName: listener~8080
+        statPrefix: http
+        useRemoteAddress: true
+    name: listener~8080
+  metadata:
+    filterMetadata:
+      merge.TrafficPolicy.gateway.kgateway.dev:
+        extAuth:
+        - gateway.kgateway.dev/TrafficPolicy/default/gateway-attachment-1
+        - gateway.kgateway.dev/TrafficPolicy/default/gateway-attachment-2
+  name: listener~8080
+Routes:
+- ignorePortInHostMatching: true
+  metadata:
+    filterMetadata:
+      merge.TrafficPolicy.gateway.kgateway.dev:
+        extAuth:
+        - gateway.kgateway.dev/TrafficPolicy/default/gateway-attachment-1
+        - gateway.kgateway.dev/TrafficPolicy/default/gateway-attachment-2
+  name: listener~8080
+  typedPerFilterConfig:
+    ext_auth/default/extauth-gateway-1:
+      '@type': type.googleapis.com/envoy.config.route.v3.FilterConfig
+      config: {}
+    ext_auth/default/extauth-gateway-2:
+      '@type': type.googleapis.com/envoy.config.route.v3.FilterConfig
+      config: {}
+  virtualHosts:
+  - domains:
+    - test.com
+    metadata:
+      filterMetadata:
+        merge.TrafficPolicy.gateway.kgateway.dev:
+          extAuth:
+          - gateway.kgateway.dev/TrafficPolicy/default/listener-attachment-1
+          - gateway.kgateway.dev/TrafficPolicy/default/listener-attachment-2
+    name: listener~8080~test_com
+    routes:
+    - match:
+        pathSeparatedPrefix: /route-0
+      metadata:
+        filterMetadata:
+          merge.TrafficPolicy.gateway.kgateway.dev:
+            extAuth:
+            - gateway.kgateway.dev/TrafficPolicy/default/route-attachment-1
+            - gateway.kgateway.dev/TrafficPolicy/default/route-attachment-2
+      name: listener~8080~test_com-route-0-httproute-test-default-0-0-rule0-matcher-0
+      route:
+        cluster: kube_default_test_80
+        clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+      typedPerFilterConfig:
+        ext_auth/default/extauth-route-1:
+          '@type': type.googleapis.com/envoy.config.route.v3.FilterConfig
+          config: {}
+        ext_auth/default/extauth-route-2:
+          '@type': type.googleapis.com/envoy.config.route.v3.FilterConfig
+          config: {}
+    - match:
+        pathSeparatedPrefix: /route-1
+      metadata:
+        filterMetadata:
+          merge.TrafficPolicy.gateway.kgateway.dev:
+            extAuth:
+            - gateway.kgateway.dev/TrafficPolicy/default/route-disable
+      name: listener~8080~test_com-route-1-httproute-test-default-1-0-rule1-matcher-0
+      route:
+        cluster: kube_default_test_80
+        clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+      typedPerFilterConfig:
+        global_disable/ext_auth:
+          '@type': type.googleapis.com/envoy.config.route.v3.FilterConfig
+          config: {}
+    - match:
+        pathSeparatedPrefix: /route-2
+      name: listener~8080~test_com-route-2-httproute-test-default-2-0-rule2-matcher-0
+      route:
+        cluster: kube_default_test_80
+        clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+    typedPerFilterConfig:
+      ext_auth/default/extauth-listener-1:
+        '@type': type.googleapis.com/envoy.config.route.v3.FilterConfig
+        config: {}
+      ext_auth/default/extauth-listener-2:
+        '@type': type.googleapis.com/envoy.config.route.v3.FilterConfig
+        config: {}
+Statuses:
+  gateways:
+    default/test:
+      conditions:
+      - lastTransitionTime: null
+        message: ""
+        reason: ListenerSetsNotAllowed
+        status: Unknown
+        type: AttachedListenerSets
+      - lastTransitionTime: null
+        message: Gateway is accepted
+        reason: Accepted
+        status: "True"
+        type: Accepted
+      - lastTransitionTime: null
+        message: Gateway is programmed
+        reason: Programmed
+        status: "True"
+        type: Programmed
+  httpRoutes:
+    default/test:
+      parents:
+      - conditions:
+        - lastTransitionTime: null
+          message: Route is accepted
+          reason: Accepted
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Route has valid refs
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
+        controllerName: kgateway
+        parentRef:
+          group: ""
+          kind: ""
+          name: test
+  policies:
+    TrafficPolicy/default/gateway-attachment-1:
+      ancestors:
+      - ancestorRef:
+          group: gateway.networking.k8s.io
+          kind: Gateway
+          name: test
+          namespace: default
+        conditions:
+        - lastTransitionTime: null
+          message: Policy accepted
+          reason: Valid
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Attached to all targets
+          reason: Attached
+          status: "True"
+          type: Attached
+        controllerName: kgateway.dev/kgateway
+    TrafficPolicy/default/gateway-attachment-2:
+      ancestors:
+      - ancestorRef:
+          group: gateway.networking.k8s.io
+          kind: Gateway
+          name: test
+          namespace: default
+        conditions:
+        - lastTransitionTime: null
+          message: Policy accepted
+          reason: Valid
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Attached to all targets
+          reason: Attached
+          status: "True"
+          type: Attached
+        controllerName: kgateway.dev/kgateway
+    TrafficPolicy/default/listener-attachment-1:
+      ancestors:
+      - ancestorRef:
+          group: gateway.networking.k8s.io
+          kind: Gateway
+          name: test
+          namespace: default
+        conditions:
+        - lastTransitionTime: null
+          message: Policy accepted
+          reason: Valid
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Attached to all targets
+          reason: Attached
+          status: "True"
+          type: Attached
+        controllerName: kgateway.dev/kgateway
+    TrafficPolicy/default/listener-attachment-2:
+      ancestors:
+      - ancestorRef:
+          group: gateway.networking.k8s.io
+          kind: Gateway
+          name: test
+          namespace: default
+        conditions:
+        - lastTransitionTime: null
+          message: Policy accepted
+          reason: Valid
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Attached to all targets
+          reason: Attached
+          status: "True"
+          type: Attached
+        controllerName: kgateway.dev/kgateway
+    TrafficPolicy/default/route-attachment-1:
+      ancestors:
+      - ancestorRef:
+          group: gateway.networking.k8s.io
+          kind: Gateway
+          name: test
+          namespace: default
+        conditions:
+        - lastTransitionTime: null
+          message: Policy accepted
+          reason: Valid
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Attached to all targets
+          reason: Attached
+          status: "True"
+          type: Attached
+        controllerName: kgateway.dev/kgateway
+    TrafficPolicy/default/route-attachment-2:
+      ancestors:
+      - ancestorRef:
+          group: gateway.networking.k8s.io
+          kind: Gateway
+          name: test
+          namespace: default
+        conditions:
+        - lastTransitionTime: null
+          message: Policy accepted
+          reason: Valid
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Attached to all targets
+          reason: Attached
+          status: "True"
+          type: Attached
+        controllerName: kgateway.dev/kgateway
+    TrafficPolicy/default/route-disable:
+      ancestors:
+      - ancestorRef:
+          group: gateway.networking.k8s.io
+          kind: Gateway
+          name: test
+          namespace: default
+        conditions:
+        - lastTransitionTime: null
+          message: Policy accepted
+          reason: Valid
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Attached to all targets
+          reason: Attached
+          status: "True"
+          type: Attached
+        controllerName: kgateway.dev/kgateway

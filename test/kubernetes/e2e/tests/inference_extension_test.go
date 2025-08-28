@@ -15,9 +15,11 @@ import (
 )
 
 var (
-	// Inference Extension CRDs.
-	poolCrdManifest  = filepath.Join(crds.AbsPathToCrd("inferencepools.yaml"))
-	modelCrdManifest = filepath.Join(crds.AbsPathToCrd("inferencemodels.yaml"))
+	// poolCrdManifest defines the manifest file containing Inference Extension CRDs.
+	// Created using command:
+	//   kubectl kustomize "https://github.com/kubernetes-sigs/gateway-api-inference-extension/config/crd/?ref=$COMMIT_SHA" \
+	//   > internal/kgateway/crds/inference-crds.yaml
+	poolCrdManifest = filepath.Join(crds.AbsPathToCrd("inference-crds.yaml"))
 	// infExtNs is the namespace to install kgateway
 	infExtNs = "inf-ext-e2e"
 )
@@ -51,18 +53,14 @@ func TestInferenceExtension(t *testing.T) {
 
 		testInstallation.UninstallKgateway(ctx)
 
-		// Uninstall CRDs
-		for _, m := range []string{poolCrdManifest, modelCrdManifest} {
-			err := testInstallation.Actions.Kubectl().DeleteFile(ctx, m)
-			testInstallation.Assertions.Require.NoError(err, "can delete manifest %s", m)
-		}
+		// Uninstall InferencePool v1 CRD
+		err := testInstallation.Actions.Kubectl().DeleteFile(ctx, poolCrdManifest)
+		testInstallation.Assertions.Require.NoError(err, "can delete manifest %s", poolCrdManifest)
 	})
 
-	// Install CRDs
-	for _, m := range []string{poolCrdManifest, modelCrdManifest} {
-		err := testInstallation.Actions.Kubectl().ApplyFile(ctx, m)
-		testInstallation.Assertions.Require.NoError(err, "can apply manifest %s", m)
-	}
+	// Install InferencePool v1 CRD
+	err := testInstallation.Actions.Kubectl().ApplyFile(ctx, poolCrdManifest)
+	testInstallation.Assertions.Require.NoError(err, "can apply manifest %s", poolCrdManifest)
 
 	// Install kgateway
 	testInstallation.InstallKgatewayFromLocalChart(ctx)

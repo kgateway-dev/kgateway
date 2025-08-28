@@ -44,3 +44,43 @@ Routes:
   - domains:
     - www.example.com
     name: listener~8080~www_example_com
+Statuses:
+  gateways:
+    gwtest/example-gateway:
+      conditions:
+      - lastTransitionTime: null
+        message: ""
+        reason: ListenerSetsNotAllowed
+        status: Unknown
+        type: AttachedListenerSets
+      - lastTransitionTime: null
+        message: Gateway is accepted
+        reason: Accepted
+        status: "True"
+        type: Accepted
+      - lastTransitionTime: null
+        message: Gateway is programmed
+        reason: Programmed
+        status: "True"
+        type: Programmed
+  httpRoutes:
+    gwtest/invalid-route-matcher-query-params:
+      parents:
+      - conditions:
+        - lastTransitionTime: null
+          message: 'Dropped Rule (0): invalid matcher configuration: validation failed:
+            invalid xds configuration: error initializing configuration '''': missing
+            ]: [invalid-regex'
+          reason: RouteRuleDropped
+          status: "False"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Route has valid refs
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
+        controllerName: kgateway
+        parentRef:
+          group: ""
+          kind: ""
+          name: example-gateway

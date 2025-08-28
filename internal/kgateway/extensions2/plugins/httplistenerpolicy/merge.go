@@ -13,6 +13,7 @@ func mergePolicies(
 	p2MergeOrigins ir.MergeOrigins,
 	mergeOpts policy.MergeOptions,
 	mergeOrigins ir.MergeOrigins,
+	_ string, // no merge settings
 ) {
 	if p1 == nil || p2 == nil {
 		return

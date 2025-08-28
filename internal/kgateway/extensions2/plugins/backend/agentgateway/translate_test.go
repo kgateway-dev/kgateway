@@ -47,6 +47,7 @@ func TestBuildMCPIr(t *testing.T) {
 									Name:     "static-target",
 									Host:     "mcp-server.example.com",
 									Port:     8080,
+									Path:     stringPtr("override-sse"),
 									Protocol: v1alpha1.MCPProtocolSSE,
 								},
 							},
@@ -71,6 +72,7 @@ func TestBuildMCPIr(t *testing.T) {
 						if !(target.Name == "static-target" &&
 							target.Backend.Port == 8080 &&
 							target.Protocol == api.MCPTarget_SSE &&
+							target.Path == "override-sse" &&
 							target.Backend.GetBackend() == "test-ns/static-target") {
 							return false
 						}

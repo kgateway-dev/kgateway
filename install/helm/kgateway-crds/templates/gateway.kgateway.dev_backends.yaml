@@ -24,6 +24,10 @@ spec:
       jsonPath: .spec.type
       name: Type
       type: string
+    - description: Backend configuration acceptance status
+      jsonPath: .status.conditions[?(@.type=='Accepted')].status
+      name: Accepted
+      type: string
     - description: The age of the backend.
       jsonPath: .metadata.creationTimestamp
       name: Age
@@ -783,6 +787,8 @@ spec:
                             name:
                               minLength: 1
                               type: string
+                            path:
+                              type: string
                             port:
                               format: int32
                               maximum: 65535
@@ -790,9 +796,8 @@ spec:
                               type: integer
                             protocol:
                               enum:
-                              - Undefined
-                              - SSE
                               - StreamableHTTP
+                              - SSE
                               type: string
                           required:
                           - host

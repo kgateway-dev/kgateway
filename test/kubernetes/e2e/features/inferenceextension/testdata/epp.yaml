@@ -13,6 +13,12 @@ spec:
       appProtocol: http2
   type: ClusterIP
 ---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: vllm-llama3-8b-instruct-epp
+  namespace: inf-ext-e2e
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -30,26 +36,27 @@ spec:
       labels:
         app: vllm-llama3-8b-instruct-epp
     spec:
+      serviceAccountName: vllm-llama3-8b-instruct-epp
       # Conservatively, this timeout should mirror the longest grace period of the pods within the pool
       terminationGracePeriodSeconds: 130
       containers:
       - name: epp
-        image: us-central1-docker.pkg.dev/k8s-staging-images/gateway-api-inference-extension/epp:v0.5.1
+        image: us-central1-docker.pkg.dev/k8s-staging-images/gateway-api-inference-extension/epp:v1.0.0-rc.1
         imagePullPolicy: Always
         args:
-        - -poolName
+        - -pool-name
         - vllm-llama3-8b-instruct
-        - -poolNamespace
+        - -pool-namespace
         - inf-ext-e2e
         - -v
         - "4"
-        - --zap-encoder
+        - -zap-encoder
         - json
-        - -grpcPort
+        - -grpc-port
         - "9002"
-        - -grpcHealthPort
+        - -grpc-health-port
         - "9003"
-        - "-configFile"
+        - -config-file
         - "/config/default-plugins.yaml"
         ports:
         - containerPort: 9002
@@ -86,92 +93,51 @@ data:
     apiVersion: inference.networking.x-k8s.io/v1alpha1
     kind: EndpointPickerConfig
     plugins:
-    - type: low-queue-filter
-      parameters:
-        threshold: 128
-    - type: lora-affinity-filter
-      parameters:
-        threshold: 0.999
-    - type: least-queue-filter
-    - type: least-kv-cache-filter
-    - type: decision-tree-filter
-      name: low-latency-filter
-      parameters:
-        current:
-          pluginRef: low-queue-filter
-        nextOnSuccess:
-          decisionTree:
-            current:
-              pluginRef: lora-affinity-filter
-            nextOnSuccessOrFailure:
-              decisionTree:
-                current:
-                  pluginRef: least-queue-filter
-                nextOnSuccessOrFailure:
-                  decisionTree:
-                    current:
-                      pluginRef: least-kv-cache-filter
-        nextOnFailure:
-          decisionTree:
-            current:
-              pluginRef: least-queue-filter
-            nextOnSuccessOrFailure:
-              decisionTree:
-                current:
-                  pluginRef: lora-affinity-filter
-                nextOnSuccessOrFailure:
-                  decisionTree:
-                    current:
-                      pluginRef: least-kv-cache-filter
-    - type: random-picker
-      parameters:
-        maxNumOfEndpoints: 1
-    - type: single-profile-handler
-    schedulingProfiles:
-    - name: default
-      plugins:
-      - pluginRef: low-latency-filter
-      - pluginRef: random-picker
-  plugins-v2.yaml: |
-    apiVersion: inference.networking.x-k8s.io/v1alpha1
-    kind: EndpointPickerConfig
-    plugins:
     - type: queue-scorer
-    - type: kv-cache-scorer
+    - type: kv-cache-utilization-scorer
     - type: prefix-cache-scorer
-      parameters:
-        hashBlockSize: 64
-        maxPrefixBlocksToMatch: 256
-        lruCapacityPerServer: 31250
-    - type: max-score-picker
-      parameters:
-        maxNumOfEndpoints: 1
-    - type: single-profile-handler
     schedulingProfiles:
     - name: default
       plugins:
       - pluginRef: queue-scorer
-        weight: 1
-      - pluginRef: kv-cache-scorer
-        weight: 1
+      - pluginRef: kv-cache-utilization-scorer
       - pluginRef: prefix-cache-scorer
-        weight: 1
-      - pluginRef: max-score-picker
+---
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: pod-read
+  namespace: inf-ext-e2e
+rules:
+- apiGroups: [ "inference.networking.x-k8s.io" ]
+  resources: [ "inferenceobjectives" ]
+  verbs: [ "get", "watch", "list" ]
+- apiGroups: [ "inference.networking.k8s.io" ]
+  resources: [ "inferencepools" ]
+  verbs: [ "get", "watch", "list" ]
+- apiGroups: [ "" ]
+  resources: [ "pods" ]
+  verbs: [ "get", "watch", "list" ]
+---
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: pod-read-binding
+  namespace: inf-ext-e2e
+subjects:
+- kind: ServiceAccount
+  name: vllm-llama3-8b-instruct-epp
+  namespace: inf-ext-e2e
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: pod-read
 ---
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: pod-read
+  name: auth-reviewer
 rules:
-- apiGroups: ["inference.networking.x-k8s.io"]
-  resources: ["inferencepools"]
-  verbs: ["get", "watch", "list"]
-- apiGroups: ["inference.networking.x-k8s.io"]
-  resources: ["inferencemodels"]
-  verbs: ["get", "watch", "list"]
-- apiGroups: [""]
-  resources: ["pods"]
-  verbs: ["get", "watch", "list"]
 - apiGroups:
   - authentication.k8s.io
   resources:
@@ -184,15 +150,16 @@ rules:
   - subjectaccessreviews
   verbs:
   - create
---- 
+---
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: pod-read-binding
+  name: auth-reviewer-binding
 subjects:
 - kind: ServiceAccount
-  name: default
+  name: vllm-llama3-8b-instruct-epp
   namespace: inf-ext-e2e
 roleRef:
+  apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: pod-read
+  name: auth-reviewer

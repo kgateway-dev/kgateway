@@ -10,13 +10,14 @@ import (
 	"reflect"
 	"sort"
 	"strings"
+	"testing"
 	"time"
 
 	"github.com/agentgateway/agentgateway/go/api"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/testing/protocmp"
@@ -32,7 +33,6 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	agwbuiltin "github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer/plugins/builtin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/registry"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/listener"
@@ -110,7 +110,21 @@ func (tr *translationResult) MarshalJSON() ([]byte, error) {
 		}
 		result["Addresses"] = addresses
 	}
+	if len(tr.Backends) > 0 {
+		backends, err := marshalProtoMessages(tr.Backends, m)
+		if err != nil {
+			return nil, err
+		}
+		result["Backends"] = backends
+	}
 
+	if len(tr.Policies) > 0 {
+		policies, err := marshalProtoMessages(tr.Policies, m)
+		if err != nil {
+			return nil, err
+		}
+		result["Policies"] = policies
+	}
 	// Marshal the result map to JSON
 	return json.Marshal(result)
 }
@@ -263,7 +277,7 @@ func NewScheme(extraSchemes runtime.SchemeBuilder) *runtime.Scheme {
 }
 
 func TestTranslation(
-	t test.Failer,
+	t *testing.T,
 	ctx context.Context,
 	inputFiles []string,
 	outputFile string,
@@ -275,7 +289,7 @@ func TestTranslation(
 }
 
 func TestTranslationWithExtraPlugins(
-	t test.Failer,
+	t *testing.T,
 	ctx context.Context,
 	inputFiles []string,
 	outputFile string,
@@ -287,14 +301,15 @@ func TestTranslationWithExtraPlugins(
 	settingsOpts ...SettingsOpts,
 ) {
 	scheme := NewScheme(extraSchemes)
+	r := require.New(t)
 
 	results, err := TestCase{
 		InputFiles: inputFiles,
 	}.Run(t, ctx, scheme, extraPluginsFn, extraGroups, settingsOpts...)
-	Expect(err).NotTo(HaveOccurred())
+	r.NoError(err)
 	// TODO allow expecting multiple gateways in the output (map nns -> outputFile?)
-	Expect(results).To(HaveLen(1))
-	Expect(results).To(HaveKey(gwNN))
+	r.Len(results, 1)
+	r.Contains(results, gwNN)
 	result := results[gwNN]
 
 	// TODO: do a json round trip to normalize the output (i.e. things like omit empty)
@@ -346,23 +361,25 @@ func TestTranslationWithExtraPlugins(
 	}
 	outputYaml, err := translator.MarshalAnyYaml(output)
 	fmt.Fprintf(ginkgo.GinkgoWriter, "actual result:\n %s \nerror: %v", outputYaml, err)
-	Expect(err).NotTo(HaveOccurred())
+	r.NoError(err)
 
 	if envutils.IsEnvTruthy("REFRESH_GOLDEN") {
 		// create parent directory if it doesn't exist
 		dir := filepath.Dir(outputFile)
 		if err := os.MkdirAll(dir, 0o755); err != nil {
-			Expect(err).NotTo(HaveOccurred())
+			r.NoError(err)
 		}
 		os.WriteFile(outputFile, outputYaml, 0o644)
 	}
 
-	Expect(compareProxy(outputFile, output)).To(BeEmpty())
+	diff, err := compareProxy(outputFile, output)
+	r.Empty(diff)
+	r.NoError(err)
 
 	if assertReports != nil {
 		assertReports(gwNN, result.ReportsMap)
 	} else {
-		Expect(AreReportsSuccess(result.ReportsMap)).NotTo(HaveOccurred())
+		r.NoError(AreReportsSuccess(result.ReportsMap))
 	}
 }
 
@@ -636,7 +653,7 @@ func (tc TestCase) Run(
 		return nil, err
 	}
 
-	proxySyncerPlugins := proxySyncerPluginFactory(ctx, commoncol, wellknown.DefaultAgentGatewayClassName, extraPluginsFn)
+	proxySyncerPlugins := proxySyncerPluginFactory(ctx, commoncol, wellknown.DefaultAgentGatewayClassName, extraPluginsFn, *settings)
 	commoncol.InitPlugins(ctx, proxySyncerPlugins, *settings)
 
 	cli.RunAndWait(ctx.Done())
@@ -754,9 +771,8 @@ func (tc TestCase) Run(
 	return results, nil
 }
 
-func proxySyncerPluginFactory(ctx context.Context, commoncol *collections.CommonCollections, name string, extraPluginsFn ExtraPluginsFn) pluginsdk.Plugin {
-	plugins := registry.Plugins(ctx, commoncol, wellknown.DefaultAgentGatewayClassName)
-	plugins = append(plugins, agwbuiltin.NewBuiltinPlugin())
+func proxySyncerPluginFactory(ctx context.Context, commoncol *collections.CommonCollections, name string, extraPluginsFn ExtraPluginsFn, globalSettings settings.Settings) pluginsdk.Plugin {
+	plugins := registry.Plugins(ctx, commoncol, wellknown.DefaultAgentGatewayClassName, globalSettings)
 
 	var extraPlugs []pluginsdk.Plugin
 	if extraPluginsFn != nil {

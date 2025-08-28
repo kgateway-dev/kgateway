@@ -1691,6 +1691,9 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         scalar: string
       default: ""
+    - name: path
+      type:
+        scalar: string
     - name: port
       type:
         scalar: numeric
@@ -2001,6 +2004,25 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: replicas
       type:
         scalar: numeric
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.RBAC
+  map:
+    fields:
+    - name: action
+      type:
+        scalar: string
+    - name: policy
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.RBACPolicy
+      default: {}
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.RBACPolicy
+  map:
+    fields:
+    - name: matchExpressions
+      type:
+        list:
+          elementType:
+            scalar: string
+          elementRelationship: atomic
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.RateLimit
   map:
     fields:
@@ -2513,6 +2535,9 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: rateLimit
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.RateLimit
+    - name: rbac
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.RBAC
     - name: retry
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Retry

@@ -11,3 +11,17 @@ Clusters:
 - connectTimeout: 5s
   metadata: {}
   name: test-backend-plugin_default_example-svc_80
+Statuses:
+  gateways:
+    infra/example-waypoint:
+      conditions:
+      - lastTransitionTime: null
+        message: Gateway is accepted
+        reason: Accepted
+        status: "True"
+        type: Accepted
+      - lastTransitionTime: null
+        message: Gateway is programmed
+        reason: Programmed
+        status: "True"
+        type: Programmed

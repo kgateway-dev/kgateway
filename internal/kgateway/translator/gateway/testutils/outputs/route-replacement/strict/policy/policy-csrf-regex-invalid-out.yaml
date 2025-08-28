@@ -53,3 +53,63 @@ Routes:
       match:
         pathSeparatedPrefix: /test
       name: listener~80~*-route-0-httproute-test-route-gwtest-0-0-matcher-0
+Statuses:
+  gateways:
+    gwtest/example-gateway:
+      conditions:
+      - lastTransitionTime: null
+        message: ""
+        reason: ListenerSetsNotAllowed
+        status: Unknown
+        type: AttachedListenerSets
+      - lastTransitionTime: null
+        message: Gateway is accepted
+        reason: Accepted
+        status: "True"
+        type: Accepted
+      - lastTransitionTime: null
+        message: Gateway is programmed
+        reason: Programmed
+        status: "True"
+        type: Programmed
+  httpRoutes:
+    gwtest/test-route:
+      parents:
+      - conditions:
+        - lastTransitionTime: null
+          message: 'Replaced Rule (0): invalid xds configuration: error initializing
+            configuration '''': missing ]: ['
+          reason: RouteRuleReplaced
+          status: "False"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Route has valid refs
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
+        controllerName: kgateway
+        parentRef:
+          group: ""
+          kind: ""
+          name: example-gateway
+  policies:
+    TrafficPolicy/gwtest/invalid-csrf-policy:
+      ancestors:
+      - ancestorRef:
+          group: gateway.networking.k8s.io
+          kind: Gateway
+          name: example-gateway
+          namespace: gwtest
+        conditions:
+        - lastTransitionTime: null
+          message: 'invalid xds configuration: error initializing configuration '''':
+            missing ]: ['
+          reason: Invalid
+          status: "False"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Attached to all targets
+          reason: Attached
+          status: "True"
+          type: Attached
+        controllerName: kgateway.dev/kgateway

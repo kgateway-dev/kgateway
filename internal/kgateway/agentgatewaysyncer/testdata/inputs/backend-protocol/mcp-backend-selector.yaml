@@ -38,6 +38,10 @@ spec:
       appProtocol: kgateway.dev/mcp
       port: 80
       targetPort: test
+    - protocol: TCP
+      appProtocol: kgateway.dev/mcp-sse
+      port: 90
+      targetPort: test-2
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: Backend

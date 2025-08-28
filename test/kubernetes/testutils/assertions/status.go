@@ -11,7 +11,7 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	infextv1a2 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
+	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
@@ -386,7 +386,7 @@ func (p *Provider) EventuallyInferencePoolCondition(
 	ctx context.Context,
 	poolName string,
 	poolNamespace string,
-	cond infextv1a2.InferencePoolConditionType,
+	cond inf.InferencePoolConditionType,
 	expect metav1.ConditionStatus,
 	timeout ...time.Duration,
 ) {
@@ -394,7 +394,7 @@ func (p *Provider) EventuallyInferencePoolCondition(
 
 	currentTimeout, pollingInterval := helpers.GetTimeouts(timeout...)
 	p.Gomega.Eventually(func(g gomega.Gomega) {
-		pool := &infextv1a2.InferencePool{}
+		pool := &inf.InferencePool{}
 		err := p.clusterContext.Client.Get(
 			ctx,
 			types.NamespacedName{Name: poolName, Namespace: poolNamespace},

@@ -15,6 +15,7 @@ import (
 	dynamicmodulesv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/dynamic_modules/v3"
 	header_mutationv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/header_mutation/v3"
 	localratelimitv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/local_ratelimit/v3"
+	envoyrbacv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/rbac/v3"
 	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -29,6 +30,7 @@ import (
 	// TODO(nfuden): remove once rustformations are able to be used in a production environment
 	transformationpb "github.com/solo-io/envoy-gloo/go/config/filter/http/transformation/v2"
 
+	apiannotations "github.com/kgateway-dev/kgateway/v2/api/annotations"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
@@ -38,6 +40,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
+	sdkfilters "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/filters"
 	pluginsdkir "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/policy"
 	pluginsdkutils "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/utils"
@@ -52,6 +55,7 @@ const (
 	localRateLimitFilterNamePrefix = "ratelimit/local"
 	localRateLimitStatPrefix       = "http_local_rate_limiter"
 	rateLimitFilterNamePrefix      = "ratelimit"
+	rbacFilterNamePrefix           = "envoy.filters.http.rbac"
 )
 
 var (
@@ -95,6 +99,7 @@ type trafficPolicySpecIr struct {
 	autoHostRewrite *autoHostRewriteIR
 	retry           *retryIR
 	timeouts        *timeoutsIR
+	rbac            *rbacIR
 }
 
 func (d *TrafficPolicy) CreationTime() time.Time {
@@ -152,6 +157,9 @@ func (d *TrafficPolicy) Equals(in any) bool {
 	if !d.spec.timeouts.Equals(d2.spec.timeouts) {
 		return false
 	}
+	if !d.spec.rbac.Equals(d2.spec.rbac) {
+		return false
+	}
 	return true
 }
 
@@ -172,6 +180,7 @@ func (p *TrafficPolicy) Validate() error {
 	validators = append(validators, p.spec.headerModifiers.Validate)
 	validators = append(validators, p.spec.buffer.Validate)
 	validators = append(validators, p.spec.autoHostRewrite.Validate)
+	validators = append(validators, p.spec.rbac.Validate)
 	for _, validator := range validators {
 		if err := validator(); err != nil {
 			return err
@@ -192,6 +201,7 @@ type trafficPolicyPluginGwPass struct {
 	extAuthPerProvider    ProviderNeededMap
 	extProcPerProvider    ProviderNeededMap
 	rateLimitPerProvider  ProviderNeededMap
+	rbacInChain           map[string]*envoyrbacv3.RBAC
 	corsInChain           map[string]*corsv3.Cors
 	csrfInChain           map[string]*envoy_csrf_v3.CsrfPolicy
 	headerMutationInChain map[string]*header_mutationv3.HeaderMutationPerRoute
@@ -215,7 +225,7 @@ func registerTypes(ourCli versioned.Interface) {
 	)
 }
 
-func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensionsplug.Plugin {
+func NewPlugin(ctx context.Context, commoncol *common.CommonCollections, mergeSettings string) extensionsplug.Plugin {
 	registerTypes(commoncol.OurClient)
 
 	useRustformations = commoncol.Settings.UseRustFormations // stash the state of the env setup for rustformation usage
@@ -243,12 +253,18 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 			logger.Error("validation failed", "policy", policyCR.Name, "error", err)
 			errors = append(errors, err)
 		}
+		precedenceWeight, err := pluginsdkutils.ParsePrecedenceWeightAnnotation(policyCR.Annotations, apiannotations.PolicyPrecedenceWeight)
+		if err != nil {
+			errors = append(errors, err)
+		}
+
 		pol := &ir.PolicyWrapper{
-			ObjectSource: objSrc,
-			Policy:       policyCR,
-			PolicyIR:     policyIR,
-			TargetRefs:   pluginsdkutils.TargetRefsToPolicyRefsWithSectionName(policyCR.Spec.TargetRefs, policyCR.Spec.TargetSelectors),
-			Errors:       errors,
+			ObjectSource:     objSrc,
+			Policy:           policyCR,
+			PolicyIR:         policyIR,
+			TargetRefs:       pluginsdkutils.TargetRefsToPolicyRefsWithSectionName(policyCR.Spec.TargetRefs, policyCR.Spec.TargetSelectors),
+			Errors:           errors,
+			PrecedenceWeight: precedenceWeight,
 		}
 		return pol
 	})
@@ -259,7 +275,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 				NewGatewayTranslationPass: NewGatewayTranslationPass,
 				Policies:                  policyCol,
 				MergePolicies: func(pols []ir.PolicyAtt) ir.PolicyAtt {
-					return policy.MergePolicies(pols, MergeTrafficPolicies)
+					return policy.MergePolicies(pols, MergeTrafficPolicies, mergeSettings)
 				},
 				GetPolicyStatus:   getPolicyStatusFn(commoncol.CrudClient),
 				PatchPolicyStatus: patchPolicyStatusFn(commoncol.CrudClient),
@@ -430,17 +446,18 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.Filt
 		filters = AddDisableFilterIfNeeded(filters, extProcGlobalDisableFilterName, extProcGlobalDisableFilterMetadataNamespace)
 	}
 	// Add ExtProc filters for listener
-	for providerName, provider := range p.extProcPerProvider.Providers[fcc.FilterChainName] {
-		extProcFilter := provider.ExtProc
+	for _, provider := range p.extProcPerProvider.Providers[fcc.FilterChainName] {
+		extProcFilter := provider.Extension.ExtProc
 		if extProcFilter == nil {
 			continue
 		}
 
 		// add the specific auth filter
-		extProcName := extProcFilterName(providerName)
-		stagedExtProcFilter := plugins.MustNewStagedFilter(extProcName,
+		extProcName := extProcFilterName(provider.Name)
+		stagedExtProcFilter := sdkfilters.MustNewStagedFilterWithWeight(extProcName,
 			extProcFilter,
 			plugins.AfterStage(plugins.WellKnownFilterStage(plugins.AuthZStage)),
+			provider.Extension.PrecedenceWeight,
 		)
 
 		// handle the case where route level only should be fired
@@ -455,7 +472,7 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.Filt
 		if p.listenerTransform != nil {
 			convertClassicRouteToListener(&transformationCfg, p.listenerTransform)
 		}
-		filter := plugins.MustNewStagedFilter(transformationFilterNamePrefix,
+		filter := sdkfilters.MustNewStagedFilter(transformationFilterNamePrefix,
 			&transformationCfg,
 			plugins.BeforeStage(plugins.AcceptedStage),
 		)
@@ -498,14 +515,14 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.Filt
 			FilterConfig: msg,
 		}
 
-		filters = append(filters, plugins.MustNewStagedFilter(rustformationFilterNamePrefix,
+		filters = append(filters, sdkfilters.MustNewStagedFilter(rustformationFilterNamePrefix,
 			&rustCfg,
 			plugins.BeforeStage(plugins.AcceptedStage),
 		))
 
-		// filters = append(filters, plugins.MustNewStagedFilter(setFilterStateFilterName,
+		// filters = append(filters, sdkfilters.MustNewStagedFilter(setFilterStateFilterName,
 		// 	&set_filter_statev3.Config{}, plugins.AfterStage(plugins.FaultStage)))
-		filters = append(filters, plugins.MustNewStagedFilter(metadataRouteTransformation,
+		filters = append(filters, sdkfilters.MustNewStagedFilter(metadataRouteTransformation,
 			&transformationpb.FilterTransformations{},
 			plugins.AfterStage(plugins.FaultStage),
 		))
@@ -517,17 +534,18 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.Filt
 		filters = AddDisableFilterIfNeeded(filters, ExtAuthGlobalDisableFilterName, ExtAuthGlobalDisableFilterMetadataNamespace)
 	}
 	// Add Ext_authz filter for listener
-	for providerName, provider := range p.extAuthPerProvider.Providers[fcc.FilterChainName] {
-		extAuthFilter := provider.ExtAuth
+	for _, provider := range p.extAuthPerProvider.Providers[fcc.FilterChainName] {
+		extAuthFilter := provider.Extension.ExtAuth
 		if extAuthFilter == nil {
 			continue
 		}
 
 		// add the specific auth filter
-		extauthName := extAuthFilterName(providerName)
-		stagedExtAuthFilter := plugins.MustNewStagedFilter(extauthName,
+		extauthName := extAuthFilterName(provider.Name)
+		stagedExtAuthFilter := sdkfilters.MustNewStagedFilterWithWeight(extauthName,
 			extAuthFilter,
 			plugins.DuringStage(plugins.AuthZStage),
+			provider.Extension.PrecedenceWeight,
 		)
 
 		stagedExtAuthFilter.Filter.Disabled = true
@@ -535,21 +553,21 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.Filt
 	}
 
 	if f := p.localRateLimitInChain[fcc.FilterChainName]; f != nil {
-		filter := plugins.MustNewStagedFilter(localRateLimitFilterNamePrefix, f, plugins.BeforeStage(plugins.AcceptedStage))
+		filter := sdkfilters.MustNewStagedFilter(localRateLimitFilterNamePrefix, f, plugins.BeforeStage(plugins.AcceptedStage))
 		filter.Filter.Disabled = true
 		filters = append(filters, filter)
 	}
 
 	// Add global rate limit filters from providers
-	for providerName, provider := range p.rateLimitPerProvider.Providers[fcc.FilterChainName] {
-		rateLimitFilter := provider.RateLimit
+	for _, provider := range p.rateLimitPerProvider.Providers[fcc.FilterChainName] {
+		rateLimitFilter := provider.Extension.RateLimit
 		if rateLimitFilter == nil {
 			continue
 		}
 
 		// add the specific rate limit filter with a unique name
-		rateLimitName := getRateLimitFilterName(providerName)
-		stagedRateLimitFilter := plugins.MustNewStagedFilter(rateLimitName,
+		rateLimitName := getRateLimitFilterName(provider.Name)
+		stagedRateLimitFilter := sdkfilters.MustNewStagedFilter(rateLimitName,
 			rateLimitFilter,
 			plugins.DuringStage(plugins.RateLimitStage),
 		)
@@ -560,14 +578,14 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.Filt
 	// Add Cors filter to enable cors for the listener.
 	// Requires the cors policy to be set as typed_per_filter_config.
 	if f := p.corsInChain[fcc.FilterChainName]; f != nil {
-		filter := plugins.MustNewStagedFilter(envoy_wellknown.CORS, f, plugins.DuringStage(plugins.CorsStage))
+		filter := sdkfilters.MustNewStagedFilter(envoy_wellknown.CORS, f, plugins.DuringStage(plugins.CorsStage))
 		filter.Filter.Disabled = true
 		filters = append(filters, filter)
 	}
 
 	// Add global CSRF http filter
 	if f := p.csrfInChain[fcc.FilterChainName]; f != nil {
-		filter := plugins.MustNewStagedFilter(csrfExtensionFilterName, f, plugins.DuringStage(plugins.RouteStage))
+		filter := sdkfilters.MustNewStagedFilter(csrfExtensionFilterName, f, plugins.DuringStage(plugins.RouteStage))
 		filter.Filter.Disabled = true
 		filters = append(filters, filter)
 	}
@@ -582,8 +600,13 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.Filt
 	// Add Buffer filter to enable buffer for the listener.
 	// Requires the buffer policy to be set as typed_per_filter_config.
 	if f := p.bufferInChain[fcc.FilterChainName]; f != nil {
-		filter := plugins.MustNewStagedFilter(bufferFilterName, f, plugins.DuringStage(plugins.RouteStage))
+		filter := sdkfilters.MustNewStagedFilter(bufferFilterName, f, plugins.DuringStage(plugins.RouteStage))
 		filter.Filter.Disabled = true
+		filters = append(filters, filter)
+	}
+
+	if f := p.rbacInChain[fcc.FilterChainName]; f != nil {
+		filter := plugins.MustNewStagedFilter(rbacFilterNamePrefix, f, plugins.DuringStage(plugins.AuthZStage))
 		filters = append(filters, filter)
 	}
 
@@ -612,6 +635,7 @@ func (p *trafficPolicyPluginGwPass) handlePolicies(
 	p.handleCsrf(fcn, typedFilterConfig, spec.csrf)
 	p.handleHeaderModifiers(fcn, typedFilterConfig, spec.headerModifiers)
 	p.handleBuffer(fcn, typedFilterConfig, spec.buffer)
+	p.handleRBAC(fcn, typedFilterConfig, spec.rbac)
 }
 
 // handlePerRoutePolicies handles policies that are meant to be processed at the route level
@@ -671,14 +695,24 @@ func MergeTrafficPolicies(
 	p1, p2 *TrafficPolicy,
 	p2Ref *ir.AttachedPolicyRef,
 	p2MergeOrigins pluginsdkir.MergeOrigins,
-	mergeOpts policy.MergeOptions,
+	opts policy.MergeOptions,
 	mergeOrigins pluginsdkir.MergeOrigins,
+	mergeSettingsJSON string,
 ) {
 	if p1 == nil || p2 == nil {
 		return
 	}
 
-	mergeFuncs := []func(*TrafficPolicy, *TrafficPolicy, *ir.AttachedPolicyRef, pluginsdkir.MergeOrigins, policy.MergeOptions, pluginsdkir.MergeOrigins){
+	var polMergeOpts mergeOpts
+	if mergeSettingsJSON != "" {
+		err := json.Unmarshal([]byte(mergeSettingsJSON), &polMergeOpts)
+		if err != nil {
+			logger.Error("error parsing merge settings; skipping merge", "value", mergeSettingsJSON, "error", err)
+			return
+		}
+	}
+
+	mergeFuncs := []func(*TrafficPolicy, *TrafficPolicy, *ir.AttachedPolicyRef, pluginsdkir.MergeOrigins, policy.MergeOptions, pluginsdkir.MergeOrigins, trafficPolicyMergeOpts){
 		mergeAI,
 		mergeExtProc,
 		mergeTransformation,
@@ -693,9 +727,10 @@ func MergeTrafficPolicies(
 		mergeAutoHostRewrite,
 		mergeTimeouts,
 		mergeRetry,
+		mergeRBAC,
 	}
 
 	for _, mergeFunc := range mergeFuncs {
-		mergeFunc(p1, p2, p2Ref, p2MergeOrigins, mergeOpts, mergeOrigins)
+		mergeFunc(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, polMergeOpts.TrafficPolicy)
 	}
 }

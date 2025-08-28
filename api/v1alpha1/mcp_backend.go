@@ -53,6 +53,11 @@ type McpTarget struct {
 	// +kubebuilder:validation:MinLength=1
 	Host string `json:"host"`
 
+	// Path is the URL path of the MCP target endpoint.
+	// Defaults to "/sse" for SSE protocol or "/mcp" for StreamableHTTP protocol if not specified.
+	// +optional
+	Path *string `json:"path"`
+
 	// Port is the port number of the MCP target.
 	// +required
 	// +kubebuilder:validation:Minimum=1
@@ -61,14 +66,18 @@ type McpTarget struct {
 
 	// Protocol is the protocol to use for the connection to the MCP target.
 	// +optional
-	// +kubebuilder:validation:Enum=Undefined;SSE;StreamableHTTP
+	// +kubebuilder:validation:Enum=StreamableHTTP;SSE
 	Protocol MCPProtocol `json:"protocol,omitempty"`
 }
 
+// MCPProtocol defines the protocol to use for the MCP target
 type MCPProtocol string
 
 const (
-	MCPProtocolUndefined      MCPProtocol = "Undefined"
-	MCPProtocolSSE            MCPProtocol = "SSE"
+
+	// MCPProtocolStreamableHTTP specifies Streamable HTTP must be used as the protocol
 	MCPProtocolStreamableHTTP MCPProtocol = "StreamableHTTP"
+
+	// MCPProtocolSSE specifies Server-Sent Events (SSE) must be used as the protocol
+	MCPProtocolSSE MCPProtocol = "SSE"
 )

@@ -1,39 +1,39 @@
-Binds:
-  - key: 80/default/example-gateway
-    port: 80
-Listeners:
-  - bindKey: 80/default/example-gateway
-    gatewayName: default/example-gateway
-    key: default/example-gateway/http
-    name: http
-    protocol: HTTP
-Routes:
-  - backends:
-      - backend:
-          backend: default/bedrock
-        weight: 1
-    hostnames:
-      - example.com
-    key: default.example-route.0.0.http
-    listenerKey: default/example-gateway/http
-    routeName: default/example-route
 Backends:
-  - name: default/bedrock
-    ai:
-      bedrock:
-        model: anthropic.claude-3-5-haiku-20241022-v1:0
-        region: us-west-2
-        guardrail_identifier: guardrail-policy-id
-        guardrail_version: guardrail-policy-version
+- ai:
+    bedrock:
+      guardrailIdentifier: guardrail-policy-id
+      guardrailVersion: guardrail-policy-version
+      model: anthropic.claude-3-5-haiku-20241022-v1:0
+      region: us-west-2
+  name: default/bedrock
+Binds:
+- key: 80/default/example-gateway
+  port: 80
+Listeners:
+- bindKey: 80/default/example-gateway
+  gatewayName: default/example-gateway
+  key: default/example-gateway/http
+  name: http
+  protocol: HTTP
 Policies:
-  - name: auth-default/bedrock
-    target:
-      backend: "default/bedrock"
-    spec:
-      auth:
-        aws:
-          explicitConfig:
-            region: us-west-2
-            sessionToken: ""
-            accessKeyId: "fakeAccessKeyId"
-            secretAccessKey: "fakeSecretKeyString"
+- name: auth-default/bedrock
+  spec:
+    auth:
+      aws:
+        explicitConfig:
+          accessKeyId: fakeAccessKeyId
+          region: us-west-2
+          secretAccessKey: fakeSecretKeyString
+          sessionToken: ""
+  target:
+    backend: default/bedrock
+Routes:
+- backends:
+  - backend:
+      backend: default/bedrock
+    weight: 1
+  hostnames:
+  - example.com
+  key: default.example-route.0.0.http
+  listenerKey: default/example-gateway/http
+  routeName: default/example-route

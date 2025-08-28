@@ -1,0 +1,43 @@
+name: 'KGateway Load Tests'
+description: 'Run KGateway load testing suite'
+
+runs:
+  using: "composite"
+  steps:
+    - name: Prep Go Runner
+      uses: ./.github/actions/prep-go-runner
+
+    - name: Download module dependencies
+      shell: bash
+      run: make mod-download
+
+    - name: Setup kind cluster
+      shell: bash
+      run: ./hack/kind/setup-kind.sh
+      env:
+        SKIP_DOCKER: "false"
+        CONFORMANCE: "true"
+
+    - name: Install KGateway via Helm
+      shell: bash
+      run: |
+        # Install using local chart paths (development/testing scenario)
+        go tool helm upgrade --install kgateway-crds ./install/helm/kgateway-crds/ \
+          --namespace kgateway-system --create-namespace \
+          --wait --timeout 5m
+        
+        go tool helm upgrade --install kgateway ./install/helm/kgateway/ \
+          --namespace kgateway-system --create-namespace \
+          --set image.tag=${VERSION:-1.0.0-ci1} \
+          --set image.registry=ghcr.io/kgateway-dev \
+          --set inferenceExtension.enabled=true \
+          --wait --timeout 5m
+
+    - name: Wait for KGateway deployment to be ready
+      shell: bash
+      run: |
+        kubectl wait --for=condition=available --timeout=5m deployment/kgateway -n kgateway-system
+
+    - name: Run load tests
+      shell: bash
+      run: make run-load-tests

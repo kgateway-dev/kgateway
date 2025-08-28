@@ -59,40 +59,37 @@ func collectReconciliationMetrics(controllerName string, req ctrl.Request) func(
 	start := time.Now()
 
 	reconciliationsRunning.Add(1,
-		[]metrics.Label{
-			{Name: controllerNameLabel, Value: controllerName},
-			{Name: nameLabel, Value: req.Name},
-			{Name: namespaceLabel, Value: req.Namespace},
-		}...)
+		metrics.Label{Name: controllerNameLabel, Value: controllerName},
+		metrics.Label{Name: nameLabel, Value: req.Name},
+		metrics.Label{Name: namespaceLabel, Value: req.Namespace},
+	)
 
 	return func(err error) {
 		duration := time.Since(start)
 
 		reconcileDuration.Observe(duration.Seconds(),
-			[]metrics.Label{
-				{Name: controllerNameLabel, Value: controllerName},
-				{Name: nameLabel, Value: req.Name},
-				{Name: namespaceLabel, Value: req.Namespace},
-			}...)
+			metrics.Label{Name: controllerNameLabel, Value: controllerName},
+			metrics.Label{Name: nameLabel, Value: req.Name},
+			metrics.Label{Name: namespaceLabel, Value: req.Namespace},
+		)
 
 		result := "success"
 		if err != nil {
 			result = "error"
 		}
 
-		reconciliationsTotal.Inc([]metrics.Label{
-			{Name: controllerNameLabel, Value: controllerName},
-			{Name: nameLabel, Value: req.Name},
-			{Name: namespaceLabel, Value: req.Namespace},
-			{Name: resultLabel, Value: result},
-		}...)
+		reconciliationsTotal.Inc(
+			metrics.Label{Name: controllerNameLabel, Value: controllerName},
+			metrics.Label{Name: nameLabel, Value: req.Name},
+			metrics.Label{Name: namespaceLabel, Value: req.Namespace},
+			metrics.Label{Name: resultLabel, Value: result},
+		)
 
 		reconciliationsRunning.Sub(1,
-			[]metrics.Label{
-				{Name: controllerNameLabel, Value: controllerName},
-				{Name: nameLabel, Value: req.Name},
-				{Name: namespaceLabel, Value: req.Namespace},
-			}...)
+			metrics.Label{Name: controllerNameLabel, Value: controllerName},
+			metrics.Label{Name: nameLabel, Value: req.Name},
+			metrics.Label{Name: namespaceLabel, Value: req.Namespace},
+		)
 	}
 }
 

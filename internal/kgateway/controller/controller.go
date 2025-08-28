@@ -24,7 +24,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
-	infextv1a2 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
+	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	internaldeployer "github.com/kgateway-dev/kgateway/v2/internal/kgateway/deployer"
@@ -388,7 +388,7 @@ func (c *controllerBuilder) watchInferencePool(ctx context.Context) error {
 
 	buildr := ctrl.NewControllerManagedBy(c.cfg.Mgr).
 		WithEventFilter(discoveryNamespaceFilterPredicate).
-		For(&infextv1a2.InferencePool{}, builder.WithPredicates(
+		For(&inf.InferencePool{}, builder.WithPredicates(
 			predicate.Or(
 				predicate.AnnotationChangedPredicate{},
 				predicate.GenerationChangedPredicate{},

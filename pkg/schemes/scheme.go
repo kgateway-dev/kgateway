@@ -11,7 +11,7 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	infextv1a2 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
+	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwv1a3 "sigs.k8s.io/gateway-api/apis/v1alpha3"
@@ -94,7 +94,7 @@ func InferExtScheme() *runtime.Scheme {
 	if err := rbacv1.AddToScheme(s); err != nil {
 		panic(fmt.Sprintf("Failed to add RBAC v1 scheme: %v", err))
 	}
-	if err := infextv1a2.AddToScheme(s); err != nil {
+	if err := inf.AddToScheme(s); err != nil {
 		panic(fmt.Sprintf("Failed to add Gateway API Inference Extension v1alpha2 scheme: %v", err))
 	}
 	return s

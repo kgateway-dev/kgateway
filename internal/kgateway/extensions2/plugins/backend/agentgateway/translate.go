@@ -277,6 +277,9 @@ func buildMCPIr(krtctx krt.HandlerContext, be *v1alpha1.Backend, services krt.Co
 					Port: uint32(targetSelector.StaticTarget.Port),
 				},
 			}
+			if targetSelector.StaticTarget.Path != nil {
+				mcpTarget.Path = *targetSelector.StaticTarget.Path
+			}
 
 			// Convert protocol if specified
 			switch targetSelector.StaticTarget.Protocol {
@@ -361,7 +364,9 @@ func buildMCPIr(krtctx krt.HandlerContext, be *v1alpha1.Backend, services krt.Co
 			// Create MCP targets for each matching service
 			for _, service := range matchingServices {
 				for _, port := range service.Spec.Ports {
-					if port.AppProtocol == nil || *port.AppProtocol != mcpProtocol {
+					appProtocol := ptr.Deref(port.AppProtocol, "")
+					if appProtocol != mcpProtocol && appProtocol != mcpProtocolSSE {
+						// not a valid MCP protocol
 						continue
 					}
 					targetName := service.Name + fmt.Sprintf("-%d", port.Port)
@@ -379,9 +384,7 @@ func buildMCPIr(krtctx krt.HandlerContext, be *v1alpha1.Backend, services krt.Co
 							},
 							Port: uint32(port.Port),
 						},
-						// TODO: Determine protocol from service annotations or other metadata
-						// For now, default to undefined protocol
-						Protocol: api.MCPTarget_UNDEFINED,
+						Protocol: toMCPProtocol(appProtocol),
 					}
 
 					mcpTargets = append(mcpTargets, mcpTarget)
@@ -414,6 +417,20 @@ func buildMCPIr(krtctx krt.HandlerContext, be *v1alpha1.Backend, services krt.Co
 		Backends:         backends,
 		ServiceEndpoints: serviceEndpoints,
 	}, nil
+}
+
+func toMCPProtocol(appProtocol string) api.MCPTarget_Protocol {
+	switch appProtocol {
+	case mcpProtocol:
+		return api.MCPTarget_STREAMABLE_HTTP
+
+	case mcpProtocolSSE:
+		return api.MCPTarget_SSE
+
+	default:
+		// should never happen since this function is only invoked for valid MCP protocols
+		return api.MCPTarget_UNDEFINED
+	}
 }
 
 // getSecretValue extracts a value from a Kubernetes secret, handling both Data and StringData fields.

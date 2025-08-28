@@ -31,7 +31,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
-	infextv1a2 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
+	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
@@ -89,7 +89,7 @@ var _ = BeforeSuite(func() {
 	By("bootstrapping test environment")
 	// Create a scheme and add both Gateway and InferencePool types.
 	scheme = schemes.GatewayScheme()
-	err := infextv1a2.Install(scheme)
+	err := inf.Install(scheme)
 	Expect(err).NotTo(HaveOccurred())
 	// Required to deploy endpoint picker RBAC resources.
 	err = rbacv1.AddToScheme(scheme)
@@ -297,7 +297,7 @@ func newCommonCols(ctx context.Context, kubeClient kube.Client) *collections.Com
 		Expect(err).ToNot(HaveOccurred())
 	}
 
-	plugins := registry.Plugins(ctx, commoncol, wellknown.DefaultWaypointClassName)
+	plugins := registry.Plugins(ctx, commoncol, wellknown.DefaultWaypointClassName, *settings)
 	plugins = append(plugins, krtcollections.NewBuiltinPlugin(ctx))
 	extensions := registry.MergePlugins(plugins...)
 
