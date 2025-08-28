@@ -9,23 +9,30 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
+	gwxv1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
 
 type Statuses struct {
-	Gateways   map[string]*gwv1.GatewayStatus  `json:"gateways,omitempty"`
-	HTTPRoutes map[string]*gwv1.RouteStatus    `json:"httpRoutes,omitempty"`
-	TCPRoutes  map[string]*gwv1.RouteStatus    `json:"tcpRoutes,omitempty"`
-	TLSRoutes  map[string]*gwv1.RouteStatus    `json:"tlsRoutes,omitempty"`
-	GRPCRoutes map[string]*gwv1.RouteStatus    `json:"grpcRoutes,omitempty"`
-	Policies   map[string]*gwv1a2.PolicyStatus `json:"policies,omitempty"`
+	Gateways     map[string]*gwv1.GatewayStatus      `json:"gateways,omitempty"`
+	ListenerSets map[string]*gwxv1.ListenerSetStatus `json:"listenerSets,omitempty"`
+	HTTPRoutes   map[string]*gwv1.RouteStatus        `json:"httpRoutes,omitempty"`
+	TCPRoutes    map[string]*gwv1.RouteStatus        `json:"tcpRoutes,omitempty"`
+	TLSRoutes    map[string]*gwv1.RouteStatus        `json:"tlsRoutes,omitempty"`
+	GRPCRoutes   map[string]*gwv1.RouteStatus        `json:"grpcRoutes,omitempty"`
+	Policies     map[string]*gwv1a2.PolicyStatus     `json:"policies,omitempty"`
 }
 
-func buildStatusesFromReports(reportsMap reports.ReportMap) *Statuses {
+func buildStatusesFromReports(
+	reportsMap reports.ReportMap,
+	gateways map[types.NamespacedName]*gwv1.Gateway,
+	listenerSets map[types.NamespacedName]*gwxv1.XListenerSet,
+) *Statuses {
 	ctx := context.Background()
 
 	// Fixed values for deterministic golden file tests. Use the zero time
@@ -34,25 +41,54 @@ func buildStatusesFromReports(reportsMap reports.ReportMap) *Statuses {
 	fixedTime := metav1.Time{Time: time.Time{}}
 
 	statuses := &Statuses{
-		Gateways:   make(map[string]*gwv1.GatewayStatus),
-		HTTPRoutes: make(map[string]*gwv1.RouteStatus),
-		TCPRoutes:  make(map[string]*gwv1.RouteStatus),
-		TLSRoutes:  make(map[string]*gwv1.RouteStatus),
-		GRPCRoutes: make(map[string]*gwv1.RouteStatus),
-		Policies:   make(map[string]*gwv1a2.PolicyStatus),
+		Gateways:     make(map[string]*gwv1.GatewayStatus),
+		ListenerSets: make(map[string]*gwxv1.ListenerSetStatus),
+		HTTPRoutes:   make(map[string]*gwv1.RouteStatus),
+		TCPRoutes:    make(map[string]*gwv1.RouteStatus),
+		TLSRoutes:    make(map[string]*gwv1.RouteStatus),
+		GRPCRoutes:   make(map[string]*gwv1.RouteStatus),
+		Policies:     make(map[string]*gwv1a2.PolicyStatus),
 	}
 
-	// Build Gateway statuses
+	// Build Gateway statuses. We need to use the actual Gateway object to make sure that
+	// status.listeners are correctly populated instead of using the object metadata.
 	for gwNN := range reportsMap.Gateways {
-		gw := gwv1.Gateway{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      gwNN.Name,
-				Namespace: gwNN.Namespace,
-			},
+		// Use the actual Gateway object from the input if available, otherwise create empty one
+		var gw gwv1.Gateway
+		if actualGw, exists := gateways[gwNN]; exists && actualGw != nil {
+			gw = *actualGw
+		} else {
+			gw = gwv1.Gateway{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      gwNN.Name,
+					Namespace: gwNN.Namespace,
+				},
+			}
 		}
 		if status := reportsMap.BuildGWStatus(ctx, gw, nil); status != nil {
 			normalizeStatus(status, fixedTime)
 			statuses.Gateways[gwNN.String()] = status
+		}
+	}
+
+	// Build ListenerSet statuses. We need to use the actual XListenerSet object to make sure that
+	// status.listeners are correctly populated instead of using the object metadata.
+	for listenerSetNN := range reportsMap.ListenerSets {
+		// Use the actual XListenerSet object from the input if available, otherwise create empty one
+		var listenerSet gwxv1.XListenerSet
+		if actualLS, exists := listenerSets[listenerSetNN]; exists && actualLS != nil {
+			listenerSet = *actualLS
+		} else {
+			listenerSet = gwxv1.XListenerSet{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      listenerSetNN.Name,
+					Namespace: listenerSetNN.Namespace,
+				},
+			}
+		}
+		if status := reportsMap.BuildListenerSetStatus(ctx, listenerSet); status != nil {
+			normalizeListenerSetStatus(status, fixedTime)
+			statuses.ListenerSets[listenerSetNN.String()] = status
 		}
 	}
 
@@ -128,10 +164,22 @@ func buildStatusesFromReports(reportsMap reports.ReportMap) *Statuses {
 func normalizeStatus(status *gwv1.GatewayStatus, time metav1.Time) {
 	for i := range status.Conditions {
 		status.Conditions[i].LastTransitionTime = time
+		for _, listener := range status.Listeners {
+			for j := range listener.Conditions {
+				listener.Conditions[j].LastTransitionTime = time
+			}
+		}
 	}
-	for i := range status.Listeners {
-		for j := range status.Listeners[i].Conditions {
-			status.Listeners[i].Conditions[j].LastTransitionTime = time
+}
+
+// normalizeListenerSetStatus sets all fields (e.g. LastTransitionTime) to fixed values for deterministic testing
+func normalizeListenerSetStatus(status *gwxv1.ListenerSetStatus, time metav1.Time) {
+	for i := range status.Conditions {
+		status.Conditions[i].LastTransitionTime = time
+		for _, listener := range status.Listeners {
+			for j := range listener.Conditions {
+				listener.Conditions[j].LastTransitionTime = time
+			}
 		}
 	}
 }
@@ -190,12 +238,13 @@ func sortStatuses(statuses *Statuses) *Statuses {
 	}
 
 	sorted := &Statuses{
-		Gateways:   make(map[string]*gwv1.GatewayStatus),
-		HTTPRoutes: make(map[string]*gwv1.RouteStatus),
-		TCPRoutes:  make(map[string]*gwv1.RouteStatus),
-		TLSRoutes:  make(map[string]*gwv1.RouteStatus),
-		GRPCRoutes: make(map[string]*gwv1.RouteStatus),
-		Policies:   make(map[string]*gwv1a2.PolicyStatus),
+		Gateways:     make(map[string]*gwv1.GatewayStatus),
+		ListenerSets: make(map[string]*gwxv1.ListenerSetStatus),
+		HTTPRoutes:   make(map[string]*gwv1.RouteStatus),
+		TCPRoutes:    make(map[string]*gwv1.RouteStatus),
+		TLSRoutes:    make(map[string]*gwv1.RouteStatus),
+		GRPCRoutes:   make(map[string]*gwv1.RouteStatus),
+		Policies:     make(map[string]*gwv1a2.PolicyStatus),
 	}
 
 	// Sort gateways
@@ -206,6 +255,16 @@ func sortStatuses(statuses *Statuses) *Statuses {
 	sort.Strings(gatewayKeys)
 	for _, k := range gatewayKeys {
 		sorted.Gateways[k] = statuses.Gateways[k]
+	}
+
+	// Sort listener sets
+	listenerSetKeys := make([]string, 0, len(statuses.ListenerSets))
+	for k := range statuses.ListenerSets {
+		listenerSetKeys = append(listenerSetKeys, k)
+	}
+	sort.Strings(listenerSetKeys)
+	for _, k := range listenerSetKeys {
+		sorted.ListenerSets[k] = statuses.ListenerSets[k]
 	}
 
 	// Sort HTTP routes

@@ -30,6 +30,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
@@ -254,9 +255,10 @@ func TestTranslationWithExtraPlugins(
 	scheme := NewScheme(extraSchemes)
 	r := require.New(t)
 
-	results, err := TestCase{
+	tc := TestCase{
 		InputFiles: inputFiles,
-	}.Run(t, ctx, scheme, extraPluginsFn, extraGroups, crdDir, settingsOpts...)
+	}
+	results, err := tc.Run(t, ctx, scheme, extraPluginsFn, extraGroups, crdDir, settingsOpts...)
 	r.NoError(err, "error running test case")
 	r.Len(results, 1, "expected exactly one gateway in the results")
 	r.Contains(results, gwNN)
@@ -275,7 +277,7 @@ func TestTranslationWithExtraPlugins(
 		Listeners:     result.Proxy.Listeners,
 		ExtraClusters: result.Proxy.ExtraClusters,
 		Clusters:      result.Clusters,
-		Statuses:      buildStatusesFromReports(result.ReportsMap),
+		Statuses:      buildStatusesFromReports(result.ReportsMap, result.Gateways, result.ListenerSets),
 	}
 	outputYaml, err := MarshalAnyYaml(output)
 	r.NoErrorf(err, "error marshaling output to YAML; actual result: %s", outputYaml)
@@ -314,9 +316,11 @@ type TestCase struct {
 }
 
 type ActualTestResult struct {
-	Proxy      *irtranslator.TranslationResult
-	Clusters   []*envoyclusterv3.Cluster
-	ReportsMap reports.ReportMap
+	Proxy        *irtranslator.TranslationResult
+	ReportsMap   reports.ReportMap
+	Gateways     map[types.NamespacedName]*gwv1.Gateway
+	ListenerSets map[types.NamespacedName]*gwxv1a1.XListenerSet
+	Clusters     []*envoyclusterv3.Cluster
 }
 
 func compareProxy(expectedFile string, actualProxy *irtranslator.TranslationResult) (string, error) {
@@ -360,11 +364,9 @@ func sortClusters(clusters []*envoyclusterv3.Cluster) []*envoyclusterv3.Cluster 
 	if len(clusters) == 0 {
 		return clusters
 	}
-
 	sort.Slice(clusters, func(i, j int) bool {
 		return clusters[i].GetName() < clusters[j].GetName()
 	})
-
 	return clusters
 }
 
@@ -712,12 +714,27 @@ func (tc TestCase) Run(
 
 	results := make(map[types.NamespacedName]ActualTestResult)
 
+	// Build a map of all gateways by NamespacedName for status building
+	gatewayMap := make(map[types.NamespacedName]*gwv1.Gateway)
 	for _, gw := range commoncol.GatewayIndex.Gateways.List() {
 		gwNN := types.NamespacedName{
 			Namespace: gw.Namespace,
 			Name:      gw.Name,
 		}
+		gatewayMap[gwNN] = gw.Obj
+	}
 
+	// Build a map of all XListenerSets by nn for status building. We extract these
+	// from the loaded input objects since they're not directly available via InitCollections()
+	// (i.e. no dedicated KRT collection).
+	listenerSetMap := make(map[types.NamespacedName]*gwxv1a1.XListenerSet)
+	for _, obj := range anyObjs {
+		if ls, ok := obj.(*gwxv1a1.XListenerSet); ok {
+			listenerSetMap[client.ObjectKeyFromObject(ls)] = ls
+		}
+	}
+
+	for _, gw := range commoncol.GatewayIndex.Gateways.List() {
 		xdsSnap, reportsMap := translator.TranslateGateway(krt.TestingDummyContext{}, ctx, gw)
 
 		// Backend policies (e.g. BackendConfigPolicy) use a different reporting pipeline than gateway policies.
@@ -735,9 +752,15 @@ func (tc TestCase) Run(
 		mergedReports := reportsMap
 		maps.Copy(mergedReports.Policies, backendPolicyReports.Policies)
 
+		gwNN := types.NamespacedName{
+			Namespace: gw.Namespace,
+			Name:      gw.Name,
+		}
 		actual := ActualTestResult{
-			Proxy:      xdsSnap,
-			ReportsMap: mergedReports,
+			Proxy:        xdsSnap,
+			ReportsMap:   mergedReports,
+			Gateways:     gatewayMap,
+			ListenerSets: listenerSetMap,
 		}
 		results[gwNN] = actual
 
