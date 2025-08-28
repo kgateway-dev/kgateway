@@ -4,7 +4,7 @@ import "fmt"
 
 // InternalGatewayName returns the name of the internal Gateway corresponding to the
 // specified gwv1-api gwv1 and listener. If the listener is not specified, returns internal name without listener.
-// Format: gwNs/gwName/listener
+// Format: gwNs/gwName.listener
 func InternalGatewayName(gwNamespace, gwName, lName string) string {
 	if lName == "" {
 		return fmt.Sprintf("%s/%s", gwNamespace, gwName)
