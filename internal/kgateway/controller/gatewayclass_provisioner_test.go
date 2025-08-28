@@ -4,7 +4,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -12,7 +11,8 @@ import (
 	"k8s.io/utils/ptr"
 	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/controller"
+	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
+
 	"github.com/kgateway-dev/kgateway/v2/test/gomega/assertions"
 )
 
