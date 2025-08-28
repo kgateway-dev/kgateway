@@ -318,35 +318,86 @@ static_resources:
 	}
 }
 
-func TestStripDockerWarn(t *testing.T) {
+func TestExtractEnvoyError(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    string
 		expected string
 	}{
 		{
-			name:     "no warning",
-			input:    "normal error message",
-			expected: "normal error message",
+			name:     "no error message",
+			input:    "some random output\nno errors here",
+			expected: "",
 		},
 		{
-			name: "with platform warning",
-			input: `WARNING: The requested image's platform (linux/amd64) does not match the detected host platform
-Error in configuration`,
-			expected: "Error in configuration",
+			name:     "simple error message",
+			input:    "error initializing configuration '': invalid named capture group: (?<=foo)bar",
+			expected: "error initializing configuration '': invalid named capture group: (?<=foo)bar",
 		},
 		{
-			name: "multiple lines with warning",
+			name: "error message with context",
+			input: `error initializing configuration '': missing ]:
+  in regex filter at line 42
+  validation context: http_connection_manager`,
+			expected: "error initializing configuration '': missing ]: in regex filter at line 42 validation context: http_connection_manager",
+		},
+		{
+			name: "docker pull logs present",
+			input: `Unable to find image 'quay.io/solo-io/envoy-gloo:1.34.1-patch3' locally
+1.34.1-patch3: Pulling from solo-io/envoy-gloo
+f90c8eb4724c: Pulling fs layer
+9f37c34398c2: Pulling fs layer
+1cc4dfe322cb: Pulling fs layer
+e800bbdc2f77: Pulling fs layer
+e800bbdc2f77: Waiting
+1cc4dfe322cb: Download complete
+9f37c34398c2: Verifying Checksum
+9f37c34398c2: Download complete
+f90c8eb4724c: Verifying Checksum
+f90c8eb4724c: Download complete
+e800bbdc2f77: Verifying Checksum
+e800bbdc2f77: Download complete
+f90c8eb4724c: Pull complete
+9f37c34398c2: Pull complete
+1cc4dfe322cb: Pull complete
+e800bbdc2f77: Pull complete
+Digest: sha256:98c645568997299a1c4301e6077a1d2f566bb20828c0739e6c4177a821524dad
+Status: Downloaded newer image for quay.io/solo-io/envoy-gloo:1.34.1-patch3
+error initializing configuration '': invalid named capture group: (?<=foo)bar`,
+			expected: "error initializing configuration '': invalid named capture group: (?<=foo)bar",
+		},
+		{
+			name: "docker pull logs with multi-line error",
+			input: `Unable to find image 'quay.io/solo-io/envoy-gloo:1.34.1-patch3' locally
+1.34.1-patch3: Pulling from solo-io/envoy-gloo
+f90c8eb4724c: Pull complete
+Status: Downloaded newer image for quay.io/solo-io/envoy-gloo:1.34.1-patch3
+error initializing configuration '': missing ]:
+  at line 42 in filter configuration
+  regex validation failed`,
+			expected: "error initializing configuration '': missing ]: at line 42 in filter configuration regex validation failed",
+		},
+		{
+			name: "platform warning with error",
 			input: `WARNING: The requested image's platform (linux/amd64) does not match the detected host platform
-Error line 1
-Error line 2`,
-			expected: "Error line 1\nError line 2",
+error initializing configuration '': listener validation failed
+  invalid port configuration`,
+			expected: "error initializing configuration '': listener validation failed invalid port configuration",
+		},
+		{
+			name: "error with empty lines",
+			input: `error initializing configuration '': validation error
+
+additional context here
+
+more details`,
+			expected: "error initializing configuration '': validation error additional context here more details",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := stripDockerWarn(tt.input)
+			result := extractEnvoyError(tt.input)
 			assert.Equal(t, tt.expected, result)
 		})
 	}

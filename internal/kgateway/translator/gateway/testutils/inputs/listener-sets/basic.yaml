@@ -3,7 +3,7 @@ kind: Gateway
 metadata:
   name: example-gateway
 spec:
-  gatewayClassName: example-gateway-class
+  gatewayClassName: kgateway
   listeners:
   - name: http-8080
     protocol: HTTP
@@ -60,4 +60,3 @@ spec:
     - protocol: HTTP
       port: 8080
       targetPort: test
-

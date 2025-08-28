@@ -11,7 +11,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
-	infextv1a2 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
+	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
@@ -41,7 +41,7 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 		backingSvc *corev1.Service
 
 		// Inferencepool backing for routes
-		backingPool *infextv1a2.InferencePool
+		backingPool *inf.InferencePool
 	)
 	BeforeEach(func() {
 		ctrl = gomock.NewController(GinkgoT())
@@ -272,17 +272,17 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 
 	Context("HTTPRoute resource routing with InferencePool backendRef", func() {
 		BeforeEach(func() {
-			backingPool = &infextv1a2.InferencePool{
+			backingPool = &inf.InferencePool{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       wellknown.InferencePoolKind,
-					APIVersion: infextv1a2.GroupVersion.String(),
+					APIVersion: inf.GroupVersion.String(),
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "my-inferencepool",
 					Namespace: "bar",
 				},
-				Spec: infextv1a2.InferencePoolSpec{
-					TargetPortNumber: int32(8000),
+				Spec: inf.InferencePoolSpec{
+					TargetPorts: []inf.Port{{Number: 8000}},
 				},
 			}
 		})
@@ -306,7 +306,7 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 										Name:      gwv1.ObjectName(backingPool.Name),
 										Namespace: ptr.To(gwv1.Namespace(backingPool.Namespace)),
 										Kind:      ptr.To(gwv1.Kind(wellknown.InferencePoolKind)),
-										Group:     ptr.To(gwv1.Group(infextv1a2.GroupVersion.Group)),
+										Group:     ptr.To(gwv1.Group(inf.GroupVersion.Group)),
 									},
 								},
 							},
@@ -326,7 +326,7 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 											Namespace: backingPool.Namespace,
 											Name:      backingPool.Name,
 											Kind:      wellknown.InferencePoolKind,
-											Group:     infextv1a2.GroupVersion.Group,
+											Group:     inf.GroupVersion.Group,
 										},
 										Port: 8000,
 										Obj:  backingPool,
@@ -385,7 +385,7 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 									Name:      "missing-inferencepool",
 									Namespace: ptr.To(gwv1.Namespace(backingPool.Namespace)),
 									Kind:      ptr.To(gwv1.Kind(wellknown.InferencePoolKind)),
-									Group:     ptr.To(gwv1.Group(infextv1a2.GroupVersion.Group)),
+									Group:     ptr.To(gwv1.Group(inf.GroupVersion.Group)),
 									Port:      ptr.To(gwv1.PortNumber(9002)),
 								},
 							},
@@ -404,7 +404,7 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 											Namespace: backingPool.Namespace,
 											Name:      "missing-inferencepool",
 											Kind:      wellknown.InferencePoolKind,
-											Group:     infextv1a2.GroupVersion.Group,
+											Group:     inf.GroupVersion.Group,
 										},
 										Port: 9002,
 									},

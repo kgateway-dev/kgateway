@@ -8,7 +8,7 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/ptr"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
+	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 
@@ -41,34 +41,29 @@ func translatePoliciesForInferencePool(pool *inf.InferencePool, domainSuffix str
 
 	// 'service/{namespace}/{hostname}:{port}'
 	svc := fmt.Sprintf("service/%v/%v.%v.inference.%v:%v",
-		pool.Namespace, pool.Name, pool.Namespace, domainSuffix, pool.Spec.TargetPortNumber)
+		// Note: InferencePool v1 only supports a single target port
+		pool.Namespace, pool.Name, pool.Namespace, domainSuffix, pool.Spec.TargetPorts[0].Number)
 
-	er := pool.Spec.ExtensionRef
-	if er == nil {
-		logger.Warn("inference pool has no extension ref", "pool", pool.Name)
+	epr := pool.Spec.EndpointPickerRef
+	if epr.Group != nil && *epr.Group != "" {
+		logger.Warn("inference pool endpoint picker ref has non-empty group, skipping", "pool", pool.Name, "group", *epr.Group)
 		return nil
 	}
 
-	erf := er.ExtensionReference
-	if erf.Group != nil && *erf.Group != "" {
-		logger.Warn("inference pool extension ref has non-empty group, skipping", "pool", pool.Name, "group", *erf.Group)
+	if epr.Kind != wellknown.ServiceKind {
+		logger.Warn("inference pool extension ref is not a Service, skipping", "pool", pool.Name, "kind", epr.Kind)
 		return nil
 	}
 
-	if erf.Kind != nil && *erf.Kind != "Service" {
-		logger.Warn("inference pool extension ref is not a Service, skipping", "pool", pool.Name, "kind", *erf.Kind)
-		return nil
-	}
-
-	eppPort := ptr.OrDefault(erf.PortNumber, 9002)
+	eppPort := ptr.OrDefault(epr.PortNumber, 9002)
 
 	eppSvc := fmt.Sprintf("%v/%v.%v.svc.%v",
-		pool.Namespace, erf.Name, pool.Namespace, domainSuffix)
+		pool.Namespace, epr.Name, pool.Namespace, domainSuffix)
 	eppPolicyTarget := fmt.Sprintf("service/%v:%v",
 		eppSvc, eppPort)
 
 	failureMode := api.PolicySpec_InferenceRouting_FAIL_CLOSED
-	if er.FailureMode == nil || *er.FailureMode == inf.FailOpen {
+	if epr.FailureMode == inf.EndpointPickerFailOpen {
 		failureMode = api.PolicySpec_InferenceRouting_FAIL_OPEN
 	}
 

@@ -11,7 +11,7 @@ Binds:
 Listeners:
 - bindKey: 80/default/example-gateway
   gatewayName: default/example-gateway
-  key: default/example-gateway/http
+  key: default/example-gateway.http
   name: http
   protocol: HTTP
 Routes:
@@ -22,8 +22,8 @@ Routes:
     weight: 1
   hostnames:
   - example.com
-  key: default.example-route-timeout.0.0.http
-  listenerKey: default/example-gateway/http
+  key: default/example-route-timeout.0.0.http
+  listenerKey: default/example-gateway.http
   routeName: default/example-route-timeout
   trafficPolicy:
     requestTimeout: 9s
@@ -34,8 +34,8 @@ Routes:
     weight: 1
   hostnames:
   - example-backend-request-both-timeout.com
-  key: default.example-route-backend-request-both-timeout.0.0.http
-  listenerKey: default/example-gateway/http
+  key: default/example-route-backend-request-both-timeout.0.0.http
+  listenerKey: default/example-gateway.http
   routeName: default/example-route-backend-request-both-timeout
   trafficPolicy:
     backendRequestTimeout: 9s
@@ -47,8 +47,8 @@ Routes:
     weight: 1
   hostnames:
   - example-backend-request-timeout.com
-  key: default.example-route-backend-request-timeout.0.0.http
-  listenerKey: default/example-gateway/http
+  key: default/example-route-backend-request-timeout.0.0.http
+  listenerKey: default/example-gateway.http
   routeName: default/example-route-backend-request-timeout
   trafficPolicy:
     backendRequestTimeout: 7s
@@ -59,8 +59,8 @@ Routes:
     weight: 1
   hostnames:
   - example-retry.com
-  key: default.example-route-retry.0.0.http
-  listenerKey: default/example-gateway/http
+  key: default/example-route-retry.0.0.http
+  listenerKey: default/example-gateway.http
   routeName: default/example-route-retry
   trafficPolicy:
     retry:
@@ -75,8 +75,8 @@ Routes:
     weight: 1
   hostnames:
   - example-retry-backend-request.com
-  key: default.example-route-retry-backend-request.0.0.http
-  listenerKey: default/example-gateway/http
+  key: default/example-route-retry-backend-request.0.0.http
+  listenerKey: default/example-gateway.http
   routeName: default/example-route-retry-backend-request
   trafficPolicy:
     backendRequestTimeout: 9s
@@ -93,8 +93,8 @@ Routes:
     weight: 1
   hostnames:
   - example-retry-both-timeouts.com
-  key: default.example-route-retry-both-timeouts.0.0.http
-  listenerKey: default/example-gateway/http
+  key: default/example-route-retry-both-timeouts.0.0.http
+  listenerKey: default/example-gateway.http
   routeName: default/example-route-retry-both-timeouts
   trafficPolicy:
     backendRequestTimeout: 5s

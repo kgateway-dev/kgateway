@@ -108,6 +108,21 @@ func buildAIIr(krtctx krt.HandlerContext, be *v1alpha1.Backend, secrets *krtcoll
 	aiBackend := &api.AIBackend{}
 	var auth *api.BackendAuthPolicy
 
+	if llm.HostOverride != nil {
+		aiBackend.Override = &api.AIBackend_Override{
+			Host: llm.HostOverride.Host,
+			Port: int32(llm.HostOverride.Port),
+		}
+	}
+
+	if llm.PathOverride != nil {
+		logger.Warn("path override is not supported for agentgateway, use a URL rewrite and custom host instead")
+	}
+
+	if llm.AuthHeaderOverride != nil {
+		logger.Warn("auth header override is not supported for agentgateway")
+	}
+
 	// Extract auth token and model based on provider
 	if llm.Provider.OpenAI != nil {
 		openai := &api.AIBackend_OpenAI{}
@@ -142,7 +157,9 @@ func buildAIIr(krtctx krt.HandlerContext, be *v1alpha1.Backend, secrets *krtcoll
 	} else if llm.Provider.VertexAI != nil {
 		aiBackend.Provider = &api.AIBackend_Vertex_{
 			Vertex: &api.AIBackend_Vertex{
-				Model: &wrappers.StringValue{Value: llm.Provider.VertexAI.Model},
+				Model:     &wrappers.StringValue{Value: llm.Provider.VertexAI.Model},
+				Region:    llm.Provider.VertexAI.Location,
+				ProjectId: llm.Provider.VertexAI.ProjectId,
 			},
 		}
 		auth = buildTranslatedAuthPolicy(krtctx, &llm.Provider.VertexAI.AuthToken, secrets, be.Namespace)

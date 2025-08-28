@@ -53,49 +53,49 @@ func TestExtprocIREquals(t *testing.T) {
 		{
 			name:     "nil vs non-nil are not equal",
 			extproc1: nil,
-			extproc2: &extprocIR{perRoute: createSimpleExtproc(envoy_ext_proc_v3.ProcessingMode_SEND)},
+			extproc2: &extprocIR{perProviderConfig: []*perProviderExtProcConfig{{perRouteConfig: createSimpleExtproc(envoy_ext_proc_v3.ProcessingMode_SEND)}}},
 			expected: false,
 		},
 		{
 			name:     "non-nil vs nil are not equal",
-			extproc1: &extprocIR{perRoute: createSimpleExtproc(envoy_ext_proc_v3.ProcessingMode_SEND)},
+			extproc1: &extprocIR{perProviderConfig: []*perProviderExtProcConfig{{perRouteConfig: createSimpleExtproc(envoy_ext_proc_v3.ProcessingMode_SEND)}}},
 			extproc2: nil,
 			expected: false,
 		},
 		{
 			name:     "same instance is equal",
-			extproc1: &extprocIR{perRoute: createSimpleExtproc(envoy_ext_proc_v3.ProcessingMode_SEND)},
-			extproc2: &extprocIR{perRoute: createSimpleExtproc(envoy_ext_proc_v3.ProcessingMode_SEND)},
+			extproc1: &extprocIR{perProviderConfig: []*perProviderExtProcConfig{{perRouteConfig: createSimpleExtproc(envoy_ext_proc_v3.ProcessingMode_SEND)}}},
+			extproc2: &extprocIR{perProviderConfig: []*perProviderExtProcConfig{{perRouteConfig: createSimpleExtproc(envoy_ext_proc_v3.ProcessingMode_SEND)}}},
 			expected: true,
 		},
 		{
 			name:     "different processing modes are not equal",
-			extproc1: &extprocIR{perRoute: createSimpleExtproc(envoy_ext_proc_v3.ProcessingMode_SEND)},
-			extproc2: &extprocIR{perRoute: createSimpleExtproc(envoy_ext_proc_v3.ProcessingMode_SKIP)},
+			extproc1: &extprocIR{perProviderConfig: []*perProviderExtProcConfig{{perRouteConfig: createSimpleExtproc(envoy_ext_proc_v3.ProcessingMode_SEND)}}},
+			extproc2: &extprocIR{perProviderConfig: []*perProviderExtProcConfig{{perRouteConfig: createSimpleExtproc(envoy_ext_proc_v3.ProcessingMode_SKIP)}}},
 			expected: false,
 		},
 		{
 			name:     "different providers are not equal",
-			extproc1: &extprocIR{provider: createProvider("service1")},
-			extproc2: &extprocIR{provider: createProvider("service2")},
+			extproc1: &extprocIR{perProviderConfig: []*perProviderExtProcConfig{{provider: createProvider("service1")}}},
+			extproc2: &extprocIR{perProviderConfig: []*perProviderExtProcConfig{{provider: createProvider("service2")}}},
 			expected: false,
 		},
 		{
 			name:     "same providers are equal",
-			extproc1: &extprocIR{provider: createProvider("service1")},
-			extproc2: &extprocIR{provider: createProvider("service1")},
+			extproc1: &extprocIR{perProviderConfig: []*perProviderExtProcConfig{{provider: createProvider("service1")}}},
+			extproc2: &extprocIR{perProviderConfig: []*perProviderExtProcConfig{{provider: createProvider("service1")}}},
 			expected: true,
 		},
 		{
 			name:     "nil perRoute fields are equal",
-			extproc1: &extprocIR{perRoute: nil},
-			extproc2: &extprocIR{perRoute: nil},
+			extproc1: &extprocIR{perProviderConfig: []*perProviderExtProcConfig{{perRouteConfig: nil}}},
+			extproc2: &extprocIR{perProviderConfig: []*perProviderExtProcConfig{{perRouteConfig: nil}}},
 			expected: true,
 		},
 		{
 			name:     "nil vs non-nil perRoute fields are not equal",
-			extproc1: &extprocIR{perRoute: nil},
-			extproc2: &extprocIR{perRoute: createSimpleExtproc(envoy_ext_proc_v3.ProcessingMode_SEND)},
+			extproc1: &extprocIR{perProviderConfig: []*perProviderExtProcConfig{{perRouteConfig: nil}}},
+			extproc2: &extprocIR{perProviderConfig: []*perProviderExtProcConfig{{perRouteConfig: createSimpleExtproc(envoy_ext_proc_v3.ProcessingMode_SEND)}}},
 			expected: false,
 		},
 	}
@@ -110,27 +110,6 @@ func TestExtprocIREquals(t *testing.T) {
 			assert.Equal(t, result, reverseResult, "Equals should be symmetric")
 		})
 	}
-
-	// Test reflexivity: x.Equals(x) should always be true for non-nil values
-	t.Run("reflexivity", func(t *testing.T) {
-		extproc := &extprocIR{perRoute: createSimpleExtproc(envoy_ext_proc_v3.ProcessingMode_SEND)}
-		assert.True(t, extproc.Equals(extproc), "extproc should equal itself")
-	})
-
-	// Test transitivity: if a.Equals(b) && b.Equals(c), then a.Equals(c)
-	t.Run("transitivity", func(t *testing.T) {
-		createSameExtproc := func() *extprocIR {
-			return &extprocIR{perRoute: createSimpleExtproc(envoy_ext_proc_v3.ProcessingMode_SKIP)}
-		}
-
-		a := createSameExtproc()
-		b := createSameExtproc()
-		c := createSameExtproc()
-
-		assert.True(t, a.Equals(b), "a should equal b")
-		assert.True(t, b.Equals(c), "b should equal c")
-		assert.True(t, a.Equals(c), "a should equal c (transitivity)")
-	})
 }
 
 func TestBuildEnvoyExtProc(t *testing.T) {

@@ -18,7 +18,9 @@ type ObjWithAttachedPolicies interface {
 
 var _ ObjWithAttachedPolicies = ir.BackendObjectIR{}
 
-func generateBackendPolicyReport(in []*ir.BackendObjectIR) reports.ReportMap {
+// GenerateBackendPolicyReport generates a report map for all policies attached to the given backends.
+// Exported for testing.
+func GenerateBackendPolicyReport(in []*ir.BackendObjectIR) reports.ReportMap {
 	merged := reports.NewReportMap()
 	reporter := reports.NewReporter(&merged)
 

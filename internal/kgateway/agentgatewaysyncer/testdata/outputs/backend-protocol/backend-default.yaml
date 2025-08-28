@@ -9,7 +9,7 @@ Binds:
 Listeners:
 - bindKey: 80/default/example-gateway
   gatewayName: default/example-gateway
-  key: default/example-gateway/http
+  key: default/example-gateway.http
   name: http
   protocol: HTTP
 Routes:
@@ -19,6 +19,6 @@ Routes:
     weight: 1
   hostnames:
   - example.com
-  key: default.example-route.0.0.http
-  listenerKey: default/example-gateway/http
+  key: default/example-route.0.0.http
+  listenerKey: default/example-gateway.http
   routeName: default/example-route

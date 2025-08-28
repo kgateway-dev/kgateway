@@ -29,7 +29,7 @@ Binds:
 Listeners:
 - bindKey: 80/default/example-gateway
   gatewayName: default/example-gateway
-  key: default/example-gateway/http
+  key: default/example-gateway.http
   name: http
   protocol: HTTP
 Routes:
@@ -40,8 +40,8 @@ Routes:
     weight: 1
   hostnames:
   - foo.example.com
-  key: default.foo-route.0.0.http
-  listenerKey: default/example-gateway/http
+  key: default/foo-route.0.0.http
+  listenerKey: default/example-gateway.http
   matches:
   - path:
       pathPrefix: /login
@@ -53,8 +53,8 @@ Routes:
     weight: 1
   hostnames:
   - bar.example.com
-  key: default.bar-route.0.0.http
-  listenerKey: default/example-gateway/http
+  key: default/bar-route.0.0.http
+  listenerKey: default/example-gateway.http
   matches:
   - headers:
     - exact: canary
@@ -67,8 +67,8 @@ Routes:
     weight: 1
   hostnames:
   - bar.example.com
-  key: default.bar-route.1.0.http
-  listenerKey: default/example-gateway/http
+  key: default/bar-route.1.0.http
+  listenerKey: default/example-gateway.http
   routeName: default/bar-route
 - backends:
   - backend:
@@ -77,6 +77,6 @@ Routes:
     weight: 1
   hostnames:
   - example.com
-  key: default.example-route.0.0.http
-  listenerKey: default/example-gateway/http
+  key: default/example-route.0.0.http
+  listenerKey: default/example-gateway.http
   routeName: default/example-route

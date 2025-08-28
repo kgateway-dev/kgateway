@@ -131,7 +131,7 @@
     {
       "Kind": {
         "Listener": {
-          "key": "gwtest/http-direct-response/http",
+          "key": "gwtest/http-direct-response.http",
           "name": "http",
           "bind_key": "8080/gwtest/http-direct-response",
           "gateway_name": "gwtest/http-direct-response",
@@ -142,7 +142,7 @@
     {
       "Kind": {
         "Route": {
-          "key": "gwtest.httpbin.0.0.http",
+          "key": "gwtest/httpbin.0.0.http",
           "listener_key": "http-direct-response-http",
           "route_name": "gwtest/httpbin",
           "hostnames": [
@@ -174,7 +174,7 @@
     {
       "Kind": {
         "Route": {
-          "key": "gwtest.httpbin.1.0.http",
+          "key": "gwtest/httpbin.1.0.http",
           "listener_key": "http-direct-response-http",
           "route_name": "gwtest/httpbin",
           "hostnames": [

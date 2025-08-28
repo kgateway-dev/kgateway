@@ -21,12 +21,12 @@ Binds:
 Listeners:
   - bindKey: 90/default/example-gateway
     gatewayName: default/example-gateway
-    key: default/example-gateway/bar
+    key: default/example-gateway.bar
     name: bar
     protocol: HTTP
   - bindKey: 80/default/example-gateway
     gatewayName: default/example-gateway
-    key: default/example-gateway/foo
+    key: default/example-gateway.foo
     name: foo
     protocol: HTTP
 Routes:
@@ -37,8 +37,8 @@ Routes:
         weight: 1
     hostnames:
       - example.com
-    key: default.example-route.0.0.bar
-    listenerKey: default/example-gateway/bar
+    key: default/example-route.0.0.bar
+    listenerKey: default/example-gateway.bar
     routeName: default/example-route
   - backends:
       - backend:
@@ -47,13 +47,13 @@ Routes:
         weight: 1
     hostnames:
       - example.com
-    key: default.example-route.0.0.foo
-    listenerKey: default/example-gateway/foo
+    key: default/example-route.0.0.foo
+    listenerKey: default/example-gateway.foo
     routeName: default/example-route
 Policies:
   - name: trafficpolicy/default/secure-route-policy/example-gateway:extauth
     target:
-      listener: default/example-gateway/foo
+      listener: default/example-gateway.foo
     spec:
       ext_authz:
         target:

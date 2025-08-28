@@ -85,6 +85,8 @@ spec:
               value: {{ .Values.image.pullPolicy | default "IfNotPresent" }}
             - name: KGW_DISCOVERY_NAMESPACE_SELECTORS
               value: {{ .Values.discoveryNamespaceSelectors | toJson | quote }}
+            - name: KGW_POLICY_MERGE
+              value: {{ .Values.policyMerge | toJson | quote }}
             {{- if .Values.controller.extraEnv }}
             {{- range $key, $value := .Values.controller.extraEnv }}
             - name: {{ $key }}

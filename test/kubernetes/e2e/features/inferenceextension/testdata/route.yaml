@@ -10,7 +10,7 @@ spec:
     name: inference-gateway
   rules:
   - backendRefs:
-    - group: inference.networking.x-k8s.io
+    - group: inference.networking.k8s.io
       kind: InferencePool
       name: vllm-llama3-8b-instruct
     matches:

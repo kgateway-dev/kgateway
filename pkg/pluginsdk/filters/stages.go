@@ -54,9 +54,9 @@ func FilterStageComparison[WellKnown ~int](a, b FilterStage[WellKnown]) int {
 	} else if a.RelativeTo > b.RelativeTo {
 		return 1
 	}
-	if a.Weight < b.Weight {
+	if a.RelativeWeight < b.RelativeWeight {
 		return -1
-	} else if a.Weight > b.Weight {
+	} else if a.RelativeWeight > b.RelativeWeight {
 		return 1
 	}
 	return 0
@@ -65,28 +65,34 @@ func FilterStageComparison[WellKnown ~int](a, b FilterStage[WellKnown]) int {
 func BeforeStage[WellKnown ~int](wellKnown WellKnown) FilterStage[WellKnown] {
 	return RelativeToStage(wellKnown, -1)
 }
+
 func DuringStage[WellKnown ~int](wellKnown WellKnown) FilterStage[WellKnown] {
 	return RelativeToStage(wellKnown, 0)
 }
+
 func AfterStage[WellKnown ~int](wellKnown WellKnown) FilterStage[WellKnown] {
 	return RelativeToStage(wellKnown, 1)
 }
-func RelativeToStage[WellKnown ~int](wellKnown WellKnown, weight int) FilterStage[WellKnown] {
+
+// RelativeToStage creates a FilterStage that is relative to a well-known stage by a given weight
+func RelativeToStage[WellKnown ~int](wellKnown WellKnown, relativeWeight int) FilterStage[WellKnown] {
 	return FilterStage[WellKnown]{
-		RelativeTo: wellKnown,
-		Weight:     weight,
+		RelativeTo:     wellKnown,
+		RelativeWeight: relativeWeight,
 	}
 }
 
 type FilterStage[WellKnown ~int] struct {
-	RelativeTo WellKnown
-	Weight     int
+	RelativeTo     WellKnown
+	RelativeWeight int
 }
 
-type HTTPOrNetworkFilterStage = FilterStage[WellKnownFilterStage]
-type HTTPFilterStage = FilterStage[WellKnownFilterStage]
-type NetworkFilterStage = FilterStage[WellKnownFilterStage]
-type UpstreamHTTPFilterStage = FilterStage[WellKnownUpstreamHTTPFilterStage]
+type (
+	HTTPOrNetworkFilterStage = FilterStage[WellKnownFilterStage]
+	HTTPFilterStage          = FilterStage[WellKnownFilterStage]
+	NetworkFilterStage       = FilterStage[WellKnownFilterStage]
+	UpstreamHTTPFilterStage  = FilterStage[WellKnownUpstreamHTTPFilterStage]
+)
 
 type Filter interface {
 	proto.Message
@@ -97,6 +103,7 @@ type Filter interface {
 type StagedFilter[WellKnown ~int, FilterType Filter] struct {
 	Filter FilterType
 	Stage  FilterStage[WellKnown]
+	Weight int32
 }
 
 type StagedFilterList[WellKnown ~int, FilterType Filter] []StagedFilter[WellKnown, FilterType]
@@ -111,6 +118,16 @@ func (s StagedFilterList[WellKnown, FilterType]) Len() int {
 func (s StagedFilterList[WellKnown, FilterType]) Less(i, j int) bool {
 	if compare := FilterStageComparison(s[i].Stage, s[j].Stage); compare != 0 {
 		return compare < 0
+	}
+
+	// If the filters are of the same type, compare their weights. Higher weights are ordered
+	// before lower weights.
+	if s[i].Filter.GetTypedConfig().GetTypeUrl() == s[j].Filter.GetTypedConfig().GetTypeUrl() {
+		if s[i].Weight > s[j].Weight {
+			return true
+		} else if s[i].Weight < s[j].Weight {
+			return false
+		}
 	}
 
 	if compare := strings.Compare(s[i].Filter.GetName(), s[j].Filter.GetName()); compare != 0 {
@@ -133,13 +150,17 @@ func (s StagedFilterList[WellKnown, FilterType]) Swap(i, j int) {
 	s[i], s[j] = s[j], s[i]
 }
 
-type StagedHttpFilter = StagedFilter[WellKnownFilterStage, *envoyhttp.HttpFilter]
-type StagedNetworkFilter = StagedFilter[WellKnownFilterStage, *envoylistenerv3.Filter]
-type StagedUpstreamHttpFilter = StagedFilter[WellKnownUpstreamHTTPFilterStage, *envoyhttp.HttpFilter]
+type (
+	StagedHttpFilter         = StagedFilter[WellKnownFilterStage, *envoyhttp.HttpFilter]
+	StagedNetworkFilter      = StagedFilter[WellKnownFilterStage, *envoylistenerv3.Filter]
+	StagedUpstreamHttpFilter = StagedFilter[WellKnownUpstreamHTTPFilterStage, *envoyhttp.HttpFilter]
+)
 
-type StagedHttpFilterList = StagedFilterList[WellKnownFilterStage, *envoyhttp.HttpFilter]
-type StagedNetworkFilterList = StagedFilterList[WellKnownFilterStage, *envoylistenerv3.Filter]
-type StagedUpstreamHttpFilterList = StagedFilterList[WellKnownUpstreamHTTPFilterStage, *envoyhttp.HttpFilter]
+type (
+	StagedHttpFilterList         = StagedFilterList[WellKnownFilterStage, *envoyhttp.HttpFilter]
+	StagedNetworkFilterList      = StagedFilterList[WellKnownFilterStage, *envoylistenerv3.Filter]
+	StagedUpstreamHttpFilterList = StagedFilterList[WellKnownUpstreamHTTPFilterStage, *envoyhttp.HttpFilter]
+)
 
 // MustNewStagedFilter creates an instance of the named filter with the desired stage.
 // Returns a filter even if an error occurred.
@@ -148,6 +169,14 @@ type StagedUpstreamHttpFilterList = StagedFilterList[WellKnownUpstreamHTTPFilter
 // If not directly appending consider using NewStagedFilter instead of this function.
 func MustNewStagedFilter(name string, config proto.Message, stage FilterStage[WellKnownFilterStage]) StagedHttpFilter {
 	s, _ := NewStagedFilter(name, config, stage)
+	return s
+}
+
+// MustNewStagedFilterWithWeight creates an instance of the named filter with the desired stage and weight.
+// The weight is used to order filters of the same type within the same stage based on their weights
+func MustNewStagedFilterWithWeight(name string, config proto.Message, stage FilterStage[WellKnownFilterStage], weight int32) StagedHttpFilter {
+	s, _ := NewStagedFilter(name, config, stage)
+	s.Weight = weight
 	return s
 }
 

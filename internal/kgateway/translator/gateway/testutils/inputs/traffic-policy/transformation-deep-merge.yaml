@@ -1,0 +1,183 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: test
+spec:
+  gatewayClassName: kgateway
+  listeners:
+  - name: http
+    protocol: HTTP
+    port: 8080
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: test
+spec:
+  parentRefs:
+  - name: test
+  hostnames:
+  - "test.com"
+  rules:
+  - name: rule0
+    backendRefs:
+    - name: test
+      port: 80
+    matches:
+    - path:
+        type: PathPrefix
+        value: /route-0
+  - name: rule1
+    backendRefs:
+    - name: test
+      port: 80
+    matches:
+    - path:
+        type: PathPrefix
+        value: /route-1
+  - name: rule2
+    backendRefs:
+    - name: test
+      port: 80
+    matches:
+    - path:
+        type: PathPrefix
+        value: /route-2
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: gateway-attachment-1
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: test
+  transformation:
+    request:
+      set:
+      - name: source
+        value: gateway-attachment-1
+    response:
+      set:
+      - name: source
+        value: gateway-attachment-1
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: gateway-attachment-2
+  annotations:
+    kgateway.dev/policy-weight: "5" # higher priority than gateway-attachment-1
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: test
+  transformation:
+    request:
+      set:
+      - name: source
+        value: gateway-attachment-2
+    response:
+      set:
+      - name: source
+        value: gateway-attachment-2
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: listener-attachment-1
+  annotations:
+    kgateway.dev/policy-weight: "-1" # lower priority than listener-attachment-2
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: test
+    sectionName: http
+  transformation:
+    request:
+      set:
+      - name: source
+        value: listener-attachment-1
+    response:
+      set:
+      - name: source
+        value: listener-attachment-1
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: listener-attachment-2
+  annotations:
+    kgateway.dev/policy-weight: "1" # higher priority than listener-attachment-1  
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: test
+    sectionName: http
+  transformation:
+    request:
+      set:
+      - name: source
+        value: listener-attachment-2
+    response:
+      set:
+      - name: source
+        value: listener-attachment-2
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: route-attachment-1
+  annotations:
+    kgateway.dev/policy-weight: "5" # higher priority than route-attachment-2
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: test
+    sectionName: rule0
+  transformation:
+    request:
+      set:
+      - name: source
+        value: route-attachment-1
+    response:
+      set:
+      - name: source
+        value: route-attachment-1
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: route-attachment-2
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: test
+    sectionName: rule0
+  transformation:
+    request:
+      set:
+      - name: source
+        value: route-attachment-2
+    response:
+      set:
+      - name: source
+        value: route-attachment-2
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: test
+spec:
+  selector:
+    test: test
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: test

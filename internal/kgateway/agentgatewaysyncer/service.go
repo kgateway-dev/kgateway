@@ -34,7 +34,7 @@ import (
 	"istio.io/istio/pkg/util/sets"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
-	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
+	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 
 	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
@@ -47,11 +47,11 @@ func (a *index) ServicesCollection(
 	namespaces krt.Collection[*corev1.Namespace],
 	krtopts krtinternal.KrtOptions,
 ) krt.Collection[ServiceInfo] {
-	servicesInfo := krt.NewCollection(services, a.serviceServiceBuilder(namespaces),
+	servicesInfo := krt.NewCollection(services, a.serviceServiceBuilder(),
 		krtopts.ToOptions("ServicesInfo")...)
 	//ServiceEntriesInfo := krt.NewManyCollection(serviceEntries, a.serviceEntryServiceBuilder(namespaces),
 	//	krtopts.ToOptions("ServiceEntriesInfo")...)
-	inferencePoolsInfo := krt.NewCollection(inferencePools, a.inferencePoolBuilder(namespaces),
+	inferencePoolsInfo := krt.NewCollection(inferencePools, a.inferencePoolBuilder(),
 		krtopts.ToOptions("InferencePools")...)
 	//WorkloadServices := krt.JoinCollection([]krt.Collection[ServiceInfo]{ServicesInfo, ServiceEntriesInfo}, krtopts.ToOptions("WorkloadService")...)
 
@@ -59,9 +59,7 @@ func (a *index) ServicesCollection(
 	return WorkloadServices
 }
 
-func (a *index) serviceServiceBuilder(
-	namespaces krt.Collection[*corev1.Namespace],
-) krt.TransformationSingle[*corev1.Service, ServiceInfo] {
+func (a *index) serviceServiceBuilder() krt.TransformationSingle[*corev1.Service, ServiceInfo] {
 	return func(ctx krt.HandlerContext, s *corev1.Service) *ServiceInfo {
 		if s.Spec.Type == corev1.ServiceTypeExternalName {
 			// ExternalName services are not implemented by ambient (but will still work).
@@ -84,7 +82,14 @@ func (a *index) serviceServiceBuilder(
 			Service:       svc,
 			PortNames:     portNames,
 			LabelSelector: NewSelector(s.Spec.Selector),
-			Source:        MakeSource(s),
+			Source: TypedObject{
+				NamespacedName: types.NamespacedName{
+					Namespace: s.Namespace,
+					Name:      s.Name,
+				},
+				Kind: "Service",
+			},
+			HasSelector: len(s.Spec.Selector) > 0,
 		})
 	}
 }
@@ -94,15 +99,13 @@ func InferenceHostname(name, namespace, domainSuffix string) host.Name {
 	return host.Name(name + "." + namespace + "." + "inference" + "." + domainSuffix) // Format: "%s.%s.svc.%s"
 }
 
-func (a *index) inferencePoolBuilder(
-	namespaces krt.Collection[*corev1.Namespace],
-) krt.TransformationSingle[*inf.InferencePool, ServiceInfo] {
+func (a *index) inferencePoolBuilder() krt.TransformationSingle[*inf.InferencePool, ServiceInfo] {
 	domainSuffix := kubeutils.GetClusterDomainName()
 	return func(ctx krt.HandlerContext, s *inf.InferencePool) *ServiceInfo {
 		portNames := map[int32]ServicePortName{}
 		ports := []*api.Port{{
-			ServicePort: uint32(s.Spec.TargetPortNumber),
-			TargetPort:  uint32(s.Spec.TargetPortNumber),
+			ServicePort: uint32(s.Spec.TargetPorts[0].Number), // InferencePool v1 only supports single port
+			TargetPort:  uint32(s.Spec.TargetPorts[0].Number), // InferencePool v1 only supports single port
 			AppProtocol: api.AppProtocol_HTTP11,
 		}}
 
@@ -114,8 +117,8 @@ func (a *index) inferencePoolBuilder(
 			Ports:     ports,
 		}
 
-		selector := make(map[string]string, len(s.Spec.Selector))
-		for k, v := range s.Spec.Selector {
+		selector := make(map[string]string, len(s.Spec.Selector.MatchLabels))
+		for k, v := range s.Spec.Selector.MatchLabels {
 			selector[string(k)] = string(v)
 		}
 		return precomputeServicePtr(&ServiceInfo{
@@ -129,6 +132,7 @@ func (a *index) inferencePoolBuilder(
 				},
 				Kind: "InferencePool", // TODO: get wellknown kind
 			},
+			HasSelector: len(s.Spec.Selector.MatchLabels) > 0,
 		})
 	}
 }
@@ -702,6 +706,8 @@ type ServiceInfo struct {
 	PortNames map[int32]ServicePortName
 	// Source is the type that introduced this service.
 	Source TypedObject
+	// True if the originating K8s Service had a non-empty .spec.selector
+	HasSelector bool
 	// MarshaledAddress contains the pre-marshaled representation.
 	// Note: this is an Address -- not a Service.
 	MarshaledAddress *anypb.Any

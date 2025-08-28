@@ -255,7 +255,7 @@
     {
       "Kind": {
         "Listener": {
-          "key": "gwtest/http-httproute/http",
+          "key": "gwtest/http-httproute.http",
           "name": "http",
           "bind_key": "8080/gwtest/http-httproute",
           "gateway_name": "gwtest/http-httproute",
@@ -266,8 +266,8 @@
     {
       "Kind": {
         "Route": {
-          "key": "gwtest.my-route.0.0.http",
-          "listener_key": "gwtest/http-httproute/http",
+          "key": "gwtest/my-route.0.0.http",
+          "listener_key": "gwtest/http-httproute.http",
           "route_name": "gwtest/my-route",
           "hostnames": [
             "www.example.com"
@@ -298,8 +298,8 @@
     {
       "Kind": {
         "Route": {
-          "key": "gwtest.my-route2.0.0.http",
-          "listener_key": "gwtest/http-httproute/http",
+          "key": "gwtest/my-route2.0.0.http",
+          "listener_key": "gwtest/http-httproute.http",
           "route_name": "gwtest/my-route2",
           "hostnames": [
             "www.example2.com"

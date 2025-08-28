@@ -6,24 +6,15 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
-	infextv1a2 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
+	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
 
-// defaultInfPoolExtRefPort is the default port number (grpc-ext-proc port) for an
-// InferencePool EPP extension reference.
-const defaultInfPoolExtRefPort = 9002
-
 // validatePool verifies that the given InferencePool is valid.
-func validatePool(pool *infextv1a2.InferencePool, svcCol krt.Collection[*corev1.Service]) []error {
+func validatePool(pool *inf.InferencePool, svcCol krt.Collection[*corev1.Service]) []error {
 	var errs []error
-
-	// ExtensionRef must be defined
-	ext := pool.Spec.ExtensionRef
-	if ext == nil {
-		return append(errs, fmt.Errorf("no extensionRef is defined"))
-	}
+	ext := pool.Spec.EndpointPickerRef
 
 	// Group must be empty (core API group only)
 	if ext.Group != nil && *ext.Group != "" {
@@ -32,19 +23,21 @@ func validatePool(pool *infextv1a2.InferencePool, svcCol krt.Collection[*corev1.
 	}
 
 	// Only Service kind is allowed
-	kind := wellknown.ServiceKind
-	if ext.Kind != nil {
-		kind = string(*ext.Kind)
-	}
-	if kind != wellknown.ServiceKind {
+	if ext.Kind != wellknown.ServiceKind {
 		errs = append(errs,
-			fmt.Errorf("invalid extensionRef: Kind %q is not supported (only Service)", kind))
+			fmt.Errorf("invalid extensionRef: Kind %q is not supported (only Service)", wellknown.ServiceKind))
+	}
+
+	// Inferencepool v1 only supports a single target port
+	if len(pool.Spec.TargetPorts) != 1 {
+		errs = append(errs,
+			fmt.Errorf("invalid InferencePool: must have exactly one target port"))
 	}
 
 	// PortNumber defaults to 9002 and must be 1-65535 (rfc1340 port range)
-	port := int32(defaultInfPoolExtRefPort)
+	port := inf.PortNumber(grpcPort)
 	if ext.PortNumber != nil {
-		port = int32(*ext.PortNumber)
+		port = *ext.PortNumber
 	}
 	if port < 1 || port > 65535 {
 		errs = append(errs,
@@ -74,7 +67,7 @@ func validatePool(pool *infextv1a2.InferencePool, svcCol krt.Collection[*corev1.
 		if proto == "" {
 			proto = corev1.ProtocolTCP // default
 		}
-		if sp.Port == port && proto == corev1.ProtocolTCP {
+		if sp.Port == int32(port) && proto == corev1.ProtocolTCP {
 			found = true
 			break
 		}

@@ -16,18 +16,17 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
-	infextv1a2 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
+	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer"
-	agwbuiltin "github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer/plugins/builtin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/inferenceextension/endpointpicker"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/registry"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections/metrics"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/proxy_syncer"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/metrics"
 	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	agentgatewayplugins "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
@@ -106,14 +105,13 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 		setupLog.Info("starting log in dev mode")
 		loggingOptions.SetDefaultOutputLevel(istiolog.OverrideScopeName, istiolog.DebugLevel)
 		logging.MustSetLevel(ControllerRuntimeLogger, slog.LevelDebug)
-		loggingOptions.JSONEncoding = false
 	}
 	istiolog.Configure(loggingOptions)
 
 	setupLog.Info("initializing kgateway extensions")
 	// Extend the scheme and add the EPP plugin if the inference extension is enabled and the InferencePool CRD exists.
 	if cfg.SetupOpts.GlobalSettings.EnableInferExt {
-		exists, err := kgtwschemes.AddInferExtV1A2Scheme(cfg.RestConfig, cfg.Manager.GetScheme())
+		exists, err := kgtwschemes.AddInferExtV1Scheme(cfg.RestConfig, cfg.Manager.GetScheme())
 		switch {
 		case err != nil:
 			return nil, err
@@ -249,11 +247,8 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 
 func pluginFactoryWithBuiltin(cfg StartConfig) extensions2.K8sGatewayExtensionsFactory {
 	return func(ctx context.Context, commoncol *common.CommonCollections) sdk.Plugin {
-		plugins := registry.Plugins(ctx, commoncol, cfg.WaypointGatewayClassName)
+		plugins := registry.Plugins(ctx, commoncol, cfg.WaypointGatewayClassName, *cfg.SetupOpts.GlobalSettings)
 		plugins = append(plugins, krtcollections.NewBuiltinPlugin(ctx))
-		if cfg.SetupOpts.GlobalSettings.EnableAgentGateway {
-			plugins = append(plugins, agwbuiltin.NewBuiltinPlugin())
-		}
 		if cfg.ExtraPlugins != nil {
 			plugins = append(plugins, cfg.ExtraPlugins(ctx, commoncol)...)
 		}
@@ -325,7 +320,7 @@ func (c *ControllerBuilder) Build(ctx context.Context) error {
 	setupLog.Info("creating inferencepool controller")
 	// Create the InferencePool controller if the inference extension feature is enabled and the API group is registered.
 	if globalSettings.EnableInferExt &&
-		c.mgr.GetScheme().IsGroupRegistered(infextv1a2.GroupVersion.Group) {
+		c.mgr.GetScheme().IsGroupRegistered(inf.GroupVersion.Group) {
 		poolCfg := &InferencePoolConfig{
 			Mgr: c.mgr,
 			// TODO read this from globalSettings

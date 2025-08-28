@@ -65,8 +65,8 @@ func customFiltersHelper(
 ) *ir.CustomEnvoyFilter {
 	return &ir.CustomEnvoyFilter{
 		FilterStage: plugins.HTTPOrNetworkFilterStage{
-			RelativeTo: plugins.WellKnownFilterStage(int(stage)),
-			Weight:     int(predicate),
+			RelativeTo:     plugins.WellKnownFilterStage(int(stage)),
+			RelativeWeight: int(predicate),
 		},
 		Name:   name,
 		Config: config,

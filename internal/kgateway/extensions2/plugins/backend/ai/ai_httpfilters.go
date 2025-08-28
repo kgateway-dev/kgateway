@@ -149,8 +149,8 @@ func AddExtprocHTTPFilter() ([]plugins.StagedHttpFilter, error) {
 		wellknown.AIExtProcFilterName,
 		extProcSettings,
 		plugins.HTTPFilterStage{
-			RelativeTo: plugins.RateLimitStage,
-			Weight:     -2,
+			RelativeTo:     plugins.RateLimitStage,
+			RelativeWeight: -2,
 		},
 	)
 	if err != nil {

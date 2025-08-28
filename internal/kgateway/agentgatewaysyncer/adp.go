@@ -56,41 +56,58 @@ func createADPQueryMatch(match gwv1.HTTPRouteMatch) ([]*api.QueryMatch, *reporte
 }
 
 func createADPPathMatch(match gwv1.HTTPRouteMatch) (*api.PathMatch, *reporter.RouteCondition) {
-	tp := gwv1.PathMatchPathPrefix
 	if match.Path == nil {
 		return nil, nil
 	}
+	tp := gwv1.PathMatchPathPrefix
 	if match.Path.Type != nil {
 		tp = *match.Path.Type
 	}
+	// Path value must start with "/". If empty/nil, coerce to "/".
 	dest := "/"
-	if match.Path.Value != nil {
+	if match.Path.Value != nil && *match.Path.Value != "" {
 		dest = *match.Path.Value
+	}
+	if !strings.HasPrefix(dest, "/") {
+		dest = "/" + dest
 	}
 	switch tp {
 	case gwv1.PathMatchPathPrefix:
-		// "When specified, a trailing `/` is ignored."
+		// Spec: trailing "/" is ignored in a prefix (except the root "/").
 		if dest != "/" {
-			dest = strings.TrimSuffix(dest, "/")
+			dest = strings.TrimRight(dest, "/")
+			if dest == "" {
+				dest = "/"
+			}
 		}
-		return &api.PathMatch{Kind: &api.PathMatch_PathPrefix{
-			PathPrefix: dest,
-		}}, nil
+		return &api.PathMatch{
+			Kind: &api.PathMatch_PathPrefix{
+				PathPrefix: dest,
+			},
+		}, nil
+
 	case gwv1.PathMatchExact:
-		return &api.PathMatch{Kind: &api.PathMatch_Exact{
-			Exact: dest,
-		}}, nil
+		// EXACT: do not normalize trailing slash; it must match byte-for-byte.
+		return &api.PathMatch{
+			Kind: &api.PathMatch_Exact{
+				Exact: dest,
+			},
+		}, nil
 	case gwv1.PathMatchRegularExpression:
-		return &api.PathMatch{Kind: &api.PathMatch_Regex{
-			Regex: dest,
-		}}, nil
+		// Pass regex through unchanged.
+		return &api.PathMatch{
+			Kind: &api.PathMatch_Regex{
+				Regex: dest,
+			},
+		}, nil
 	default:
-		// Should never happen, unless a new field is added
+		// Defensive: unknown type => UnsupportedValue.
 		return nil, &reporter.RouteCondition{
 			Type:    gwv1.RouteConditionAccepted,
 			Status:  metav1.ConditionFalse,
 			Reason:  gwv1.RouteReasonUnsupportedValue,
-			Message: fmt.Sprintf("unknown type: %q is not supported Path match type", tp)}
+			Message: fmt.Sprintf("unsupported Path match type %q", tp),
+		}
 	}
 }
 
