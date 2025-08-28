@@ -70,7 +70,7 @@ runs:
 
   - name: Run the kubernetes gateway API conformance tests
     shell: bash
-    run: make conformance
+    run: make agw-conformance
 
   - name: Capture debug information when tests fail
     if: ${{ failure() }}

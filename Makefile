@@ -683,8 +683,28 @@ gie-conformance-%: gie-crds ## Run only the specified Gateway API Inference Exte
 
 # An alias to run both Gateway API and Inference Extension conformance tests.
 .PHONY: all-conformance
-all-conformance: conformance gie-conformance ## Run both Gateway API and Inference Extension conformance
+all-conformance: conformance gie-conformance agw-conformance ## Run all conformance test suites
 	@echo "All conformance suites have completed."
+
+#----------------------------------------------------------------------------------
+# Targets for running Agent Gateway conformance tests
+#----------------------------------------------------------------------------------
+
+# Agent Gateway conformance test configuration
+AGW_CONFORMANCE_UNSUPPORTED_FEATURES ?= -exempt-features=GatewayAddressEmpty,GatewayHTTPListenerIsolation,GatewayInfrastructurePropagation,GatewayPort8080,GatewayStaticAddresses,HTTPRouteBackendRequestHeaderModification,HTTPRouteDestinationPortMatching,HTTPRouteParentRefPort,HTTPRouteRequestMultipleMirrors,HTTPRouteRequestPercentageMirror
+AGW_CONFORMANCE_SUPPORTED_PROFILES ?= -conformance-profiles=GATEWAY-HTTP
+AGW_CONFORMANCE_GATEWAY_CLASS ?= agentgateway
+AGW_CONFORMANCE_REPORT_ARGS ?= -report-output=$(TEST_ASSET_DIR)/conformance/agw-$(VERSION)-report.yaml -organization=kgateway-dev -project=kgateway -version=$(VERSION) -url=github.com/kgateway-dev/kgateway -contact=github.com/kgateway-dev/kgateway/issues/new/choose
+AGW_CONFORMANCE_ARGS := -gateway-class=$(AGW_CONFORMANCE_GATEWAY_CLASS) $(AGW_CONFORMANCE_UNSUPPORTED_FEATURES) $(AGW_CONFORMANCE_SUPPORTED_PROFILES) $(AGW_CONFORMANCE_REPORT_ARGS)
+
+.PHONY: agw-conformance ## Run the agent gateway conformance test suite
+agw-conformance: $(TEST_ASSET_DIR)/conformance/conformance_test.go
+	CONFORMANCE_GATEWAY_CLASS=$(AGW_CONFORMANCE_GATEWAY_CLASS) go test -mod=mod -ldflags='$(LDFLAGS)' -tags conformance -test.v $(TEST_ASSET_DIR)/conformance/... -args $(AGW_CONFORMANCE_ARGS)
+
+# Run only the specified agent gateway conformance test
+agw-conformance-%: $(TEST_ASSET_DIR)/conformance/conformance_test.go
+	CONFORMANCE_GATEWAY_CLASS=$(AGW_CONFORMANCE_GATEWAY_CLASS) go test -mod=mod -ldflags='$(LDFLAGS)' -tags conformance -test.v $(TEST_ASSET_DIR)/conformance/... -args $(AGW_CONFORMANCE_ARGS) \
+	-run-test=$*
 
 #----------------------------------------------------------------------------------
 # Printing makefile variables utility
