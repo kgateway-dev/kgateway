@@ -36,14 +36,38 @@ runs:
       CONFORMANCE_VERSION: ${{ env.CONFORMANCE_VERSION }}
     run: ./hack/kind/setup-kind.sh
 
+  - name: Debug Environment Variables
+    shell: bash
+    run: |
+      echo "=== All Environment Variables ==="
+      env | sort
+      echo "=== Key Variables ==="
+      echo "HELM_ADDITIONAL_VALUES: '${HELM_ADDITIONAL_VALUES:-NOT_SET}'"
+      echo "CONFORMANCE_GATEWAY_CLASS: '${CONFORMANCE_GATEWAY_CLASS:-NOT_SET}'"
+      echo "VERSION: '${VERSION:-NOT_SET}'"
+      echo "================================"
+
   - name: Install kgateway via helm
     shell: bash
     run: |
+      # Debug: Show environment variables
+      echo "=== Environment Variables ==="
+      echo "HELM_ADDITIONAL_VALUES: ${HELM_ADDITIONAL_VALUES}"
+      echo "CONFORMANCE_GATEWAY_CLASS: ${CONFORMANCE_GATEWAY_CLASS}"
+      echo "VERSION: ${VERSION}"
+      echo "============================="
+      
       # Check if additional Helm values file is provided
       ADDITIONAL_VALUES=""
       if [[ -n "${HELM_ADDITIONAL_VALUES}" && -f "${HELM_ADDITIONAL_VALUES}" ]]; then
         ADDITIONAL_VALUES="-f ${HELM_ADDITIONAL_VALUES}"
         echo "Using additional Helm values from: ${HELM_ADDITIONAL_VALUES}"
+        echo "File contents:"
+        cat "${HELM_ADDITIONAL_VALUES}"
+      else
+        echo "WARNING: HELM_ADDITIONAL_VALUES not set or file not found!"
+        echo "HELM_ADDITIONAL_VALUES: '${HELM_ADDITIONAL_VALUES}'"
+        echo "File exists: $([[ -f "${HELM_ADDITIONAL_VALUES}" ]] && echo "YES" || echo "NO")"
       fi
       
       if [[ -z "${{ matrix.version }}" ]]; then
@@ -67,10 +91,26 @@ runs:
           --set image.tag=${VERSION} \
           ${ADDITIONAL_VALUES}
       fi
+      
+      # Debug: Show what was actually installed
+      echo "=== Helm Release Status ==="
+      helm list -n kgateway-system
+      echo "=== Helm Values Applied ==="
+      helm get values -n kgateway-system kgateway
+      echo "==========================="
 
   - name: Wait for GatewayClass to be created
     shell: bash
     run: |
+      # Debug: Check current state
+      echo "=== Current GatewayClasses ==="
+      kubectl get gatewayclasses
+      echo "=== Controller Pods ==="
+      kubectl get pods -n kgateway-system
+      echo "=== Controller Logs ==="
+      kubectl logs -n kgateway-system deploy/kgateway --tail=50
+      echo "============================="
+      
       # Wait for the agentgateway GatewayClass to be created by the controller
       echo "Waiting for agentgateway GatewayClass to be created..."
       kubectl wait --for=condition=Accepted gatewayclass/agentgateway --timeout=120s
