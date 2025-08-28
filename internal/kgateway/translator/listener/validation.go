@@ -144,7 +144,7 @@ func validateListeners(gw *ir.Gateway, reporter reports.Reporter) []ir.Listener 
 
 	portListeners := map[gwv1.PortNumber]*portProtocol{}
 	// The listeners are already sorted based on listener precedence
-	// The following loop groups listeners based on (i) Port (ii) Hostname
+	// The following loop groups listeners based on Port and stores the first listener with a unique hostname per port
 	// The resulting map will then be used to reject listeners that have protocol and hostname conflicts
 	// Listeners on different ports don't need to be validated for a conflict so the example shown is only for a single port
 	// Given a set of listeners :
@@ -179,10 +179,9 @@ func validateListeners(gw *ir.Gateway, reporter reports.Reporter) []ir.Listener 
 	//		},
 	//		Hostnames: {
 	//			"gateway-listener.com": [gateway-listener],
-	//			"domain-name-conflict-listener.com": [gateway-domain-name-conflict-listener,
-	// 										listenerset-domain-name-conflict-listener]
-	//			"protocol-conflict-listener.com": [gateway-protocol-conflict-listener, listenerset-protocol-conflict-listener]
-	//			"listenerset-1-listener.com": [listenerset-listener]
+	//			"domain-name-conflict-listener.com": [gateway-domain-name-conflict-listener],
+	//			"protocol-conflict-listener.com": [gateway-protocol-conflict-listener],
+	//			"listenerset-1-listener.com": [listenerset-listener],
 	//		},
 	//      Listeners: [gateway-listener, gateway-domain-name-conflict-listener,gateway-protocol-conflict-listener,
 	// 					listenerset-listener, listenerset-domain-name-conflict-listener, listenerset-protocol-conflict-listener]
@@ -326,10 +325,10 @@ func validateHostNameConflict(portProtocol portProtocol, listener ir.Listener) b
 	//			"UDP": true
 	//		},
 	//		Hostnames: {
-	//			"gateway-listener.com": {gateway-listener},
-	//			"domain-name-conflict-listener.com": {gateway-domain-name-conflict-listener, listenerset-domain-name-conflict-listener}
-	//			"protocol-conflict-listener.com": {gateway-protocol-conflict-listener, listenerset-protocol-conflict-listener}
-	//			"listenerset-1-listener.com": {listenerset-listener}
+	//			"gateway-listener.com": [gateway-listener],
+	//			"domain-name-conflict-listener.com": [gateway-domain-name-conflict-listener],
+	//			"protocol-conflict-listener.com": [gateway-protocol-conflict-listener],
+	//			"listenerset-1-listener.com": [listenerset-listener],
 	//		},
 	//      Listeners: [gateway-listener, gateway-domain-name-conflict-listener,gateway-protocol-conflict-listener,
 	// 					listenerset-listener, listenerset-domain-name-conflict-listener, listenerset-protocol-conflict-listener]
@@ -361,10 +360,10 @@ func validateProtocolConflict(portProtocol portProtocol, listener ir.Listener) b
 	//			"UDP": true
 	//		},
 	//		Hostnames: {
-	//			"gateway-listener.com": {gateway-listener},
-	//			"domain-name-conflict-listener.com": {gateway-domain-name-conflict-listener, listenerset-domain-name-conflict-listener}
-	//			"protocol-conflict-listener.com": {gateway-protocol-conflict-listener, listenerset-protocol-conflict-listener}
-	//			"listenerset-1-listener.com": {listenerset-listener}
+	//			"gateway-listener.com": [gateway-listener],
+	//			"domain-name-conflict-listener.com": [gateway-domain-name-conflict-listener],
+	//			"protocol-conflict-listener.com": [gateway-protocol-conflict-listener],
+	//			"listenerset-1-listener.com": [listenerset-listener],
 	//		},
 	//      Listeners: [gateway-listener, gateway-domain-name-conflict-listener,gateway-protocol-conflict-listener,
 	// 					listenerset-listener, listenerset-domain-name-conflict-listener, listenerset-protocol-conflict-listener]
@@ -440,7 +439,8 @@ func rejectConflictedListener(parentReporter reports.GatewayReporter, listener i
 	})
 	// Set the accepted and programmed condition now since the right reason is needed.
 	// If the gateway is eventually rejected, the condition will be overwritten
-	// TODO: Link to gep
+	// In case any listeners are invalid, this status should be set even if the gateway / listenerset is accepted
+	// https://github.com/kubernetes-sigs/gateway-api/blob/8fe8316f5792a7830a49c800f89fe689e0df042e/apisx/v1alpha1/xlistenerset_types.go#L396
 	parentReporter.SetCondition(reports.GatewayCondition{
 		Type:   gwv1.GatewayConditionAccepted,
 		Status: metav1.ConditionTrue,
