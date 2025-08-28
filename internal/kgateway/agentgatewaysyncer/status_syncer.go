@@ -10,6 +10,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"istio.io/istio/pkg/kube"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -296,6 +297,48 @@ func (s *AgentGwStatusSyncer) syncRouteStatus(ctx context.Context, logger *slog.
 	}
 }
 
+// ensureBasicGatewayConditions ensures that the required Gateway conditions exist
+// This is needed because agent-gateway bypasses normal reporter initialization
+func ensureBasicGatewayConditions(status *gwv1.GatewayStatus, generation int64) {
+	if status == nil {
+		return
+	}
+
+	// Ensure Accepted condition exists
+	if meta.FindStatusCondition(status.Conditions, string(gwv1.GatewayConditionAccepted)) == nil {
+		meta.SetStatusCondition(&status.Conditions, metav1.Condition{
+			Type:               string(gwv1.GatewayConditionAccepted),
+			Status:             metav1.ConditionTrue,
+			Reason:             string(gwv1.GatewayReasonAccepted),
+			Message:            "Gateway is accepted by agent-gateway controller",
+			ObservedGeneration: generation,
+		})
+	}
+
+	// Ensure Programmed condition exists
+	if meta.FindStatusCondition(status.Conditions, string(gwv1.GatewayConditionProgrammed)) == nil {
+		meta.SetStatusCondition(&status.Conditions, metav1.Condition{
+			Type:               string(gwv1.GatewayConditionProgrammed),
+			Status:             metav1.ConditionTrue,
+			Reason:             string(gwv1.GatewayReasonProgrammed),
+			Message:            "Gateway is programmed by agent-gateway controller",
+			ObservedGeneration: generation,
+		})
+	}
+
+	// Ensure all existing conditions have the correct observedGeneration
+	for i := range status.Conditions {
+		status.Conditions[i].ObservedGeneration = generation
+	}
+
+	// Ensure all listener conditions have the correct observedGeneration
+	for i := range status.Listeners {
+		for j := range status.Listeners[i].Conditions {
+			status.Listeners[i].Conditions[j].ObservedGeneration = generation
+		}
+	}
+}
+
 // syncGatewayStatus will build and update status for all Gateways in gateway reports
 func (s *AgentGwStatusSyncer) syncGatewayStatus(ctx context.Context, logger *slog.Logger, gatewayReports GatewayReports) {
 	stopwatch := utils.NewTranslatorStopWatch("GatewayStatusSyncer")
@@ -338,6 +381,9 @@ func (s *AgentGwStatusSyncer) syncGatewayStatus(ctx context.Context, logger *slo
 			}
 
 			if status := rm.BuildGWStatus(ctx, gw, attachedRoutesForGw); status != nil {
+				// Ensure basic Gateway conditions exist (agent-gateway bypasses normal reporter init)
+				ensureBasicGatewayConditions(status, gw.Generation)
+
 				// normalize per-listener AttachedRoutes, defaulting to 0 where absent.
 				normalizeListenerAttachedRoutes(&gw, status, attachedRoutesForGw)
 				setObservedGen(&gw, status)
