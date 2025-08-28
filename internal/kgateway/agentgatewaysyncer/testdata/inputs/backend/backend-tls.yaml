@@ -33,7 +33,7 @@ spec:
         value: /mcp-svc
     backendRefs:
     - name: mcp-svc
-      port: 80   
+      port: 80
 ---
 apiVersion: v1
 kind: Service
@@ -64,7 +64,7 @@ spec:
       static:
         host: mcp-app.foo
         port: 8000
-        protocol: StreamableHTTP    
+        protocol: StreamableHTTP
     - name: mcp-selector
       selector:
         service:
@@ -83,7 +83,7 @@ spec:
     sectionName: mcp-static
   - name: mcp-svc
     kind: Service
-    sectionName: "80"    
+    sectionName: "80"
   validation:
     hostname: mcp-app.foo
     wellKnownCACertificates: System
@@ -98,15 +98,29 @@ spec:
     kind: Service
   validation:
     caCertificateRefs:
-    - name: ca-cert
+    - name: ca-cert-1
       kind: ConfigMap
+    - name: ca-cert-2
+      kind: ConfigMap      
+    hostname: mcp-svc.foo
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: ca-cert
+  name: ca-cert-1
 data:
   ca.crt: |-
     -----BEGIN CERTIFICATE-----
     MIID...
     -----END CERTIFICATE-----
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ca-cert-2
+data:
+  ca.crt: |-
+    -----BEGIN CERTIFICATE-----
+    MIIE...
+    -----END CERTIFICATE-----
+---

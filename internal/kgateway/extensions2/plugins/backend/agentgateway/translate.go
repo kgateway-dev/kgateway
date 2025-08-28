@@ -274,7 +274,10 @@ func buildMCPIr(krtctx krt.HandlerContext, be *v1alpha1.Backend, services krt.Co
 	for _, targetSelector := range be.Spec.MCP.Targets {
 		// Handle static targets
 		if targetSelector.Static != nil {
-			staticBackendRef := be.Namespace + "/" + targetSelector.Name
+			// Since policies can target specific targets within an MCP backend using SectionName,
+			// the key for the target must include the Backend Name to prevent collisions with
+			// policies targeting the entire Backend that have the same name as the target
+			staticBackendRef := be.Namespace + "/" + be.Name + "/" + targetSelector.Name
 			staticBackend := &api.Backend{
 				Name: staticBackendRef,
 				Kind: &api.Backend_Static{

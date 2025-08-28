@@ -72,10 +72,10 @@ func TestBuildMCPIr(t *testing.T) {
 							target.Backend.Port == 8080 &&
 							target.Protocol == api.MCPTarget_SSE &&
 							target.Path == "override-sse" &&
-							target.Backend.GetBackend() == "test-ns/static-target") {
+							target.Backend.GetBackend() == "test-ns/static-mcp-backend/static-target") {
 							return false
 						}
-					} else if backend.Name == "test-ns/static-target" {
+					} else if backend.Name == "test-ns/static-mcp-backend/static-target" {
 						static := backend.GetStatic()
 						if static == nil {
 							return false

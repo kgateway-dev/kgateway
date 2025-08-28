@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/agentgateway/agentgateway/go/api"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -56,14 +57,15 @@ func translatePoliciesForBackendTLS(
 		case wellknown.BackendGVK.Kind:
 			// The target defaults to <backend-namespace>/<backend-name>.
 			// If SectionName is specified to select a specific target in the Backend,
-			// the target becomes <backend-namespace>/<section-name>
-			targetName := string(target.Name)
+			// the target becomes <backend-namespace>/<backend-name>/<section-name>
+			backendRef := btls.Namespace + "/" + string(target.Name)
 			if target.SectionName != nil {
-				targetName = string(*target.SectionName)
+				backendRef += "/" + string(*target.SectionName)
 			}
+
 			policyTarget = &api.PolicyTarget{
 				Kind: &api.PolicyTarget_Backend{
-					Backend: btls.Namespace + "/" + targetName,
+					Backend: backendRef,
 				},
 			}
 		case wellknown.ServiceKind:
@@ -88,18 +90,10 @@ func translatePoliciesForBackendTLS(
 			logger.Warn("unsupported target kind", "kind", target.Kind, "policy", btls.Name)
 			continue
 		}
-
-		// TODO: support btls.Spec.Validation.Hostname.
-		// Needs AGW support.
-
 		caCert, err := getBackendTLSCACert(krtctx, cfgmaps, btls)
 		if err != nil {
 			logger.Error("error getting backend TLS CA cert", "policy", client.ObjectKeyFromObject(btls), "error", err)
 			return nil
-		}
-		var hostname *wrapperspb.StringValue
-		if sni := string(btls.Spec.Validation.Hostname); sni != "" {
-			hostname = wrapperspb.String(sni)
 		}
 
 		policy := &api.Policy{
@@ -113,7 +107,8 @@ func translatePoliciesForBackendTLS(
 					Key:  nil,
 					// Not currently in the spec.
 					Insecure: nil,
-					Hostname: hostname,
+					// Validation.Hostname is a required value and validated with CEL
+					Hostname: wrapperspb.String(string(btls.Spec.Validation.Hostname)),
 				},
 			}},
 		}
@@ -144,25 +139,29 @@ func getBackendTLSCACert(
 		// should never happen as this is CEL validated. Only here to prevent panic in tests
 		return nil, errors.New("BackendTLSPolicy must specify either wellKnownCACertificates or caCertificateRefs")
 	}
-	// Only 1 CACertificateRefs for Gateway API Core support
-	ref := validation.CACertificateRefs[0]
-	if ref.Group != gwv1.Group(wellknown.ConfigMapGVK.Group) || ref.Kind != gwv1.Kind(wellknown.ConfigMapGVK.Kind) {
-		return nil, fmt.Errorf("BackendTLSPolicy's validation.caCertificateRefs must be a ConfigMap reference; got %s", ref)
+	var sb strings.Builder
+	for _, ref := range validation.CACertificateRefs {
+		if ref.Group != gwv1.Group(wellknown.ConfigMapGVK.Group) || ref.Kind != gwv1.Kind(wellknown.ConfigMapGVK.Kind) {
+			return nil, fmt.Errorf("BackendTLSPolicy's validation.caCertificateRefs must be a ConfigMap reference; got %s", ref)
+		}
+		nn := types.NamespacedName{
+			Name:      string(ref.Name),
+			Namespace: btls.Namespace,
+		}
+		cfgmap := krt.FetchOne(krtctx, cfgmaps, krt.FilterObjectName(nn))
+		if cfgmap == nil {
+			return nil, fmt.Errorf("ConfigMap %s not found", nn)
+		}
+		caCert, err := extractCARoot(ptr.Flatten(cfgmap))
+		if err != nil {
+			return nil, fmt.Errorf("error extracting CA cert from ConfigMap %s: %w", nn, err)
+		}
+		if sb.Len() > 0 {
+			sb.WriteString("\n")
+		}
+		sb.WriteString(caCert)
 	}
-	nn := types.NamespacedName{
-		Name:      string(ref.Name),
-		Namespace: btls.Namespace,
-	}
-	cfgmap := krt.FetchOne(krtctx, cfgmaps, krt.FilterObjectName(nn))
-	if cfgmap == nil {
-		return nil, fmt.Errorf("ConfigMap %s not found", nn)
-	}
-	cacert, err := extractCARoot(ptr.Flatten(cfgmap))
-	if err != nil {
-		return nil, fmt.Errorf("error extracting CA cert from ConfigMap %s: %w", nn, err)
-	}
-
-	return wrapperspb.Bytes([]byte(cacert)), nil
+	return wrapperspb.Bytes([]byte(sb.String())), nil
 }
 
 func extractCARoot(cm *corev1.ConfigMap) (string, error) {

@@ -5152,7 +5152,7 @@ func schema_kgateway_v2_api_v1alpha1_McpSelector(ref common.ReferenceCallback) c
 					},
 					"service": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Serrvice is the label selector in which services the MCP targets are searched for.",
+							Description: "Service is the label selector in which services the MCP targets are searched for.",
 							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.LabelSelector"),
 						},
 					},

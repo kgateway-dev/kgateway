@@ -8,6 +8,7 @@ type MCP struct {
 	// +listType=map
 	// +listMapKey=name
 	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:MaxItems=32
 	Targets []McpTargetSelector `json:"targets"`
 }
 
@@ -34,7 +35,7 @@ type McpSelector struct {
 	// +optional
 	Namespace *metav1.LabelSelector `json:"namespace,omitempty"`
 
-	// Serrvice is the label selector in which services the MCP targets
+	// Service is the label selector in which services the MCP targets
 	// are searched for.
 	// +optional
 	Service *metav1.LabelSelector `json:"service,omitempty"`
