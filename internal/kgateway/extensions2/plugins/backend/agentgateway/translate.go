@@ -19,6 +19,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 )
@@ -277,7 +278,7 @@ func buildMCPIr(krtctx krt.HandlerContext, be *v1alpha1.Backend, services krt.Co
 			// Since policies can target specific targets within an MCP backend using SectionName,
 			// the key for the target must include the Backend Name to prevent collisions with
 			// policies targeting the entire Backend that have the same name as the target
-			staticBackendRef := be.Namespace + "/" + be.Name + "/" + targetSelector.Name
+			staticBackendRef := utils.InternalMCPStaticBackendName(be.Namespace, be.Name, targetSelector.Name)
 			staticBackend := &api.Backend{
 				Name: staticBackendRef,
 				Kind: &api.Backend_Static{

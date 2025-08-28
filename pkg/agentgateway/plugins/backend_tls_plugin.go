@@ -17,6 +17,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1alpha3 "sigs.k8s.io/gateway-api/apis/v1alpha3"
 
+	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
@@ -58,14 +59,9 @@ func translatePoliciesForBackendTLS(
 			// The target defaults to <backend-namespace>/<backend-name>.
 			// If SectionName is specified to select a specific target in the Backend,
 			// the target becomes <backend-namespace>/<backend-name>/<section-name>
-			backendRef := btls.Namespace + "/" + string(target.Name)
-			if target.SectionName != nil {
-				backendRef += "/" + string(*target.SectionName)
-			}
-
 			policyTarget = &api.PolicyTarget{
 				Kind: &api.PolicyTarget_Backend{
-					Backend: backendRef,
+					Backend: utils.InternalBackendName(btls.Namespace, string(target.Name), string(ptr.OrEmpty(target.SectionName))),
 				},
 			}
 		case wellknown.ServiceKind:
