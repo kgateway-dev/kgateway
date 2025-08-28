@@ -14,7 +14,7 @@ func InternalGatewayName(gwNamespace, gwName, lName string) string {
 
 // InternalRouteRuleName returns the name of the internal Route Rule corresponding to the
 // specified route. If ruleName is not specified, returns the internal name without the route rule.
-// Format: routeNs/routeName/ruleName
+// Format: routeNs/routeName.ruleName
 func InternalRouteRuleName(routeNamespace, routeName, ruleName string) string {
 	if ruleName == "" {
 		return fmt.Sprintf("%s/%s", routeNamespace, routeName)
