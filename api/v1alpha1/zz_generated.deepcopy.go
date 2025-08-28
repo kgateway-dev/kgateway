@@ -4540,6 +4540,11 @@ func (in *TLS) DeepCopyInto(out *TLS) {
 		*out = new(TLSFiles)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.WellKnownCACertificates != nil {
+		in, out := &in.WellKnownCACertificates, &out.WellKnownCACertificates
+		*out = new(WellKnownCACertificates)
+		**out = **in
+	}
 	if in.InsecureSkipVerify != nil {
 		in, out := &in.InsecureSkipVerify, &out.InsecureSkipVerify
 		*out = new(bool)

@@ -190,7 +190,7 @@ type TCPKeepalive struct {
 	KeepAliveInterval *metav1.Duration `json:"keepAliveInterval,omitempty"`
 }
 
-// +kubebuilder:validation:ExactlyOneOf=secretRef;tlsFiles;insecureSkipVerify
+// +kubebuilder:validation:ExactlyOneOf=secretRef;tlsFiles;insecureSkipVerify;wellKnownCACertificates
 type TLS struct {
 	// Reference to the TLS secret containing the certificate, key, and optionally the root CA.
 	// +optional
@@ -199,6 +199,13 @@ type TLS struct {
 	// File paths to certificates local to the proxy.
 	// +optional
 	TLSFiles *TLSFiles `json:"tlsFiles,omitempty"`
+
+	// WellKnownCACertificates specifies whether to use a well-known set of CA
+	// certificates for validating the backend's certificate chain. Currently,
+	// only the system certificate pool is supported via SDS.
+	// +optional
+	// +kubebuilder:validation:Enum=System
+	WellKnownCACertificates *WellKnownCACertificates `json:"wellKnownCACertificates,omitempty"`
 
 	// InsecureSkipVerify originates TLS but skips verification of the backend's certificate.
 	// WARNING: This is an insecure option that should only be used if the risks are understood.
@@ -236,6 +243,17 @@ type TLS struct {
 	// +optional
 	SimpleTLS *bool `json:"simpleTLS,omitempty"`
 }
+
+// WellKnownCACertificates enumerates built-in CA bundles that can be used
+// for server certificate validation.
+// +kubebuilder:validation:Enum=System
+type WellKnownCACertificates string
+
+const (
+	// WellKnownCACertificatesSystem indicates that the host system CA bundle
+	// should be used for validating the backend server certificate.
+	WellKnownCACertificatesSystem WellKnownCACertificates = "System"
+)
 
 // TLSVersion defines the TLS version.
 // +kubebuilder:validation:Enum=AUTO;"1.0";"1.1";"1.2";"1.3"

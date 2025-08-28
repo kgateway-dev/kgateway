@@ -14,6 +14,8 @@ import (
 	"k8s.io/client-go/util/cert"
 	"k8s.io/utils/ptr"
 
+	eiutils "github.com/kgateway-dev/kgateway/v2/internal/envoyinit/pkg/utils"
+
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
@@ -78,8 +80,6 @@ func extractTLSData(tlsConfig *v1alpha1.TLS, secretGetter SecretGetter, namespac
 		}
 	} else if tlsConfig.TLSFiles != nil {
 		extractFromFiles(tlsConfig.TLSFiles, data)
-	} else {
-		return nil, errors.New("either SecretRef or TLSFiles must be provided")
 	}
 
 	return data, nil
@@ -141,6 +141,23 @@ func buildCertificateContext(tlsData *tlsData, tlsContext *envoytlsv3.CommonTlsC
 
 func buildValidationContext(tlsData *tlsData, tlsConfig *v1alpha1.TLS, tlsContext *envoytlsv3.CommonTlsContext) error {
 	sanMatchers := verifySanListToTypedMatchSanList(tlsConfig.VerifySubjectAltName)
+
+	// If the user opted to use the system CA bundle, configure a CombinedValidationContext
+	// that references the SDS secret for the system CA set, and attach SAN matchers if any.
+	if tlsConfig.WellKnownCACertificates != nil && *tlsConfig.WellKnownCACertificates == v1alpha1.WellKnownCACertificatesSystem {
+		combined := &envoytlsv3.CommonTlsContext_CombinedValidationContext{
+			CombinedValidationContext: &envoytlsv3.CommonTlsContext_CombinedCertificateValidationContext{
+				DefaultValidationContext: &envoytlsv3.CertificateValidationContext{
+					MatchTypedSubjectAltNames: sanMatchers,
+				},
+				ValidationContextSdsSecretConfig: &envoytlsv3.SdsSecretConfig{
+					Name: eiutils.SystemCaSecretName,
+				},
+			},
+		}
+		tlsContext.ValidationContextType = combined
+		return nil
+	}
 
 	if tlsData.rootCA == "" {
 		// If no root CA and no SAN verification, no validation context needed
