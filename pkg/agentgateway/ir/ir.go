@@ -1,6 +1,7 @@
 package ir
 
 import (
+	"fmt"
 	"maps"
 	"strings"
 
@@ -8,8 +9,11 @@ import (
 	"google.golang.org/protobuf/proto"
 	"k8s.io/apimachinery/pkg/types"
 
+	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
+
+var logger = logging.New("agentgateway")
 
 type ADPResourcesForGateway struct {
 	// agent gateway dataplane resources
@@ -45,8 +49,12 @@ func GetADPResourceName(r *api.Resource) string {
 		return "backend/" + t.Backend.GetName()
 	case *api.Resource_Route:
 		return "route/" + t.Route.GetKey()
+	case *api.Resource_Policy:
+		return "policy/" + t.Policy.GetName()
+	default:
+		logger.Error("unknown ADP resource", "type", fmt.Sprintf("%T", t))
+		return "unknown/" + r.String()
 	}
-	return "unknown/" + r.String()
 }
 
 func (g ADPResourcesForGateway) Equals(other ADPResourcesForGateway) bool {
@@ -64,6 +72,7 @@ func (g ADPResourcesForGateway) Equals(other ADPResourcesForGateway) bool {
 
 type ADPCacheAddress struct {
 	NamespacedName types.NamespacedName
+	ResourceNames  string
 
 	Address             proto.Message
 	AddressResourceName string
@@ -74,7 +83,7 @@ type ADPCacheAddress struct {
 }
 
 func (r ADPCacheAddress) ResourceName() string {
-	return r.NamespacedName.String()
+	return r.ResourceNames
 }
 
 func (r ADPCacheAddress) Equals(in ADPCacheAddress) bool {
