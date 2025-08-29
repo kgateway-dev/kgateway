@@ -25,7 +25,6 @@ import (
 	kubeclient "istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/kclient/clienttest"
 	"istio.io/istio/pkg/kube/krt"
-	"istio.io/istio/pkg/test"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -536,7 +535,7 @@ func AreReportsSuccess(reportsMap reports.ReportMap) error {
 type SettingsOpts func(*settings.Settings)
 
 func (tc TestCase) Run(
-	t test.Failer,
+	t *testing.T,
 	ctx context.Context,
 	scheme *runtime.Scheme,
 	extraPluginsFn ExtraPluginsFn,
