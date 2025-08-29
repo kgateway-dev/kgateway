@@ -358,6 +358,7 @@ func TestTranslationWithExtraPlugins(
 		Policies:  policies,
 		Addresses: addresses,
 	}
+	output = sortTranslationResult(output)
 	outputYaml, err := translator.MarshalAnyYaml(output)
 	fmt.Fprintf(ginkgo.GinkgoWriter, "actual result:\n %s \nerror: %v", outputYaml, err)
 	r.NoError(err)
