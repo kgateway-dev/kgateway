@@ -146,19 +146,24 @@ func buildValidationContext(tlsData *tlsData, tlsConfig *v1alpha1.TLS, tlsContex
 
 	// If the user opted to use the system CA bundle, configure a CombinedValidationContext
 	// that references the SDS secret for the system CA set, and attach SAN matchers if any.
-	if tlsConfig.WellKnownCACertificates != nil && *tlsConfig.WellKnownCACertificates == gwv1alpha3.WellKnownCACertificatesSystem {
-		combined := &envoytlsv3.CommonTlsContext_CombinedValidationContext{
-			CombinedValidationContext: &envoytlsv3.CommonTlsContext_CombinedCertificateValidationContext{
-				DefaultValidationContext: &envoytlsv3.CertificateValidationContext{
-					MatchTypedSubjectAltNames: sanMatchers,
+	if tlsConfig.WellKnownCACertificates != nil {
+		switch *tlsConfig.WellKnownCACertificates {
+		case gwv1alpha3.WellKnownCACertificatesSystem:
+			combined := &envoytlsv3.CommonTlsContext_CombinedValidationContext{
+				CombinedValidationContext: &envoytlsv3.CommonTlsContext_CombinedCertificateValidationContext{
+					DefaultValidationContext: &envoytlsv3.CertificateValidationContext{
+						MatchTypedSubjectAltNames: sanMatchers,
+					},
+					ValidationContextSdsSecretConfig: &envoytlsv3.SdsSecretConfig{
+						Name: eiutils.SystemCaSecretName,
+					},
 				},
-				ValidationContextSdsSecretConfig: &envoytlsv3.SdsSecretConfig{
-					Name: eiutils.SystemCaSecretName,
-				},
-			},
+			}
+			tlsContext.ValidationContextType = combined
+			return nil
+		default:
+			logger.Error("unsupported WellKnownCACertificates value", "value", *tlsConfig.WellKnownCACertificates)
 		}
-		tlsContext.ValidationContextType = combined
-		return nil
 	}
 
 	if tlsData.rootCA == "" {
