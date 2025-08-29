@@ -12,4 +12,5 @@ spec:
   endpointPickerRef:
     failureMode: FailOpen
     name: vllm-llama3-8b-instruct-epp
-    portNumber: 9002
+    port:
+      number: 9002

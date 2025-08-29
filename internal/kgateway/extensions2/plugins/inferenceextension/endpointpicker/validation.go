@@ -34,14 +34,16 @@ func validatePool(pool *inf.InferencePool, svcCol krt.Collection[*corev1.Service
 			fmt.Errorf("invalid InferencePool: must have exactly one target port"))
 	}
 
-	// PortNumber defaults to 9002 and must be 1-65535 (rfc1340 port range)
-	port := inf.PortNumber(grpcPort)
-	if ext.PortNumber != nil {
-		port = *ext.PortNumber
+	// PortNumber must be 1-65535 (rfc1340 port range)
+	if pool.Spec.EndpointPickerRef.Port == nil {
+		errs = append(errs,
+			fmt.Errorf("invalid extensionRef port must be specified"))
+		return errs
 	}
+	port := int32(pool.Spec.EndpointPickerRef.Port.Number)
 	if port < 1 || port > 65535 {
 		errs = append(errs,
-			fmt.Errorf("invalid extensionRef: PortNumber %d is out of range", port))
+			fmt.Errorf("invalid extensionRef port number %d is out of valid 1-65535 range", port))
 	}
 
 	svcNN := types.NamespacedName{Namespace: pool.Namespace, Name: string(ext.Name)}

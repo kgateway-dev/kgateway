@@ -45,9 +45,17 @@ func TestValidatePool(t *testing.T) {
 			wantErrs: 1,
 		},
 		{
+			name: "port unspecified",
+			modifyPool: func(p *inf.InferencePool) {
+				p.Spec.EndpointPickerRef.Port = nil
+			},
+			svc:      nil,
+			wantErrs: 1,
+		},
+		{
 			name: "port number too small",
 			modifyPool: func(p *inf.InferencePool) {
-				p.Spec.EndpointPickerRef.PortNumber = ptr.To(inf.PortNumber(0))
+				p.Spec.EndpointPickerRef.Port.Number = inf.PortNumber(0)
 			},
 			// Service exposes port 0 as well, so only the range-error is produced
 			svc:      makeSvc(ns, svcName, 0, corev1.ProtocolTCP, corev1.ServiceTypeClusterIP),
@@ -139,10 +147,10 @@ func makeBasePool(ns, svcName string) *inf.InferencePool {
 			},
 			TargetPorts: []inf.Port{{Number: 9002}},
 			EndpointPickerRef: inf.EndpointPickerRef{
-				Group:      ptr.To(inf.Group("")),
-				Kind:       inf.Kind(wellknown.ServiceKind),
-				Name:       inf.ObjectName(svcName),
-				PortNumber: ptr.To(inf.PortNumber(80)),
+				Group: ptr.To(inf.Group("")),
+				Kind:  inf.Kind(wellknown.ServiceKind),
+				Name:  inf.ObjectName(svcName),
+				Port:  &inf.Port{Number: inf.PortNumber(80)},
 			},
 		},
 	}
