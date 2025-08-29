@@ -1,24 +1,83 @@
 package trafficpolicy
 
 import (
+	"encoding/json"
 	"slices"
 
 	transformationpb "github.com/solo-io/envoy-gloo/go/config/filter/http/transformation/v2"
 
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	pluginsdkir "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/policy"
 )
 
 type mergeOpts struct {
-	TrafficPolicy trafficPolicyMergeOpts `json:"trafficPolicy,omitempty"`
+	TrafficPolicy TrafficPolicyMergeOpts `json:"trafficPolicy,omitempty"`
 }
 
-type trafficPolicyMergeOpts struct {
+type TrafficPolicyMergeOpts struct {
 	ExtAuth string `json:"extAuth,omitempty"`
 
 	ExtProc string `json:"extProc,omitempty"`
 
 	Transformation string `json:"transformation,omitempty"`
+}
+
+// MergeTrafficPolicies merges two TrafficPolicy IRs, returning a map that contains information
+// about the origin policy reference for each merged field.
+func MergeTrafficPolicies(
+	p1, p2 *TrafficPolicy,
+	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins pluginsdkir.MergeOrigins,
+	opts policy.MergeOptions,
+	mergeOrigins pluginsdkir.MergeOrigins,
+	tpOpts TrafficPolicyMergeOpts,
+) {
+	if p1 == nil || p2 == nil {
+		return
+	}
+
+	mergeFuncs := []func(*TrafficPolicy, *TrafficPolicy, *ir.AttachedPolicyRef, pluginsdkir.MergeOrigins, policy.MergeOptions, pluginsdkir.MergeOrigins, TrafficPolicyMergeOpts){
+		mergeAI,
+		mergeExtProc,
+		mergeTransformation,
+		mergeRustformation,
+		mergeExtAuth,
+		mergeLocalRateLimit,
+		mergeGlobalRateLimit,
+		mergeCORS,
+		mergeCSRF,
+		mergeHeaderModifiers,
+		mergeBuffer,
+		mergeAutoHostRewrite,
+		mergeTimeouts,
+		mergeRetry,
+		mergeRBAC,
+	}
+
+	for _, mergeFunc := range mergeFuncs {
+		mergeFunc(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, tpOpts)
+	}
+}
+
+func mergeTrafficPolicies(
+	p1, p2 *TrafficPolicy,
+	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins pluginsdkir.MergeOrigins,
+	opts policy.MergeOptions,
+	mergeOrigins pluginsdkir.MergeOrigins,
+	mergeSettingsJSON string,
+) {
+	var polMergeOpts mergeOpts
+	if mergeSettingsJSON != "" {
+		err := json.Unmarshal([]byte(mergeSettingsJSON), &polMergeOpts)
+		if err != nil {
+			logger.Error("error parsing merge settings; skipping merge", "value", mergeSettingsJSON, "error", err)
+			return
+		}
+	}
+
+	MergeTrafficPolicies(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, polMergeOpts.TrafficPolicy)
 }
 
 func mergeAI(
@@ -27,7 +86,7 @@ func mergeAI(
 	p2MergeOrigins pluginsdkir.MergeOrigins,
 	opts policy.MergeOptions,
 	mergeOrigins pluginsdkir.MergeOrigins,
-	_ trafficPolicyMergeOpts,
+	_ TrafficPolicyMergeOpts,
 ) {
 	accessor := fieldAccessor[aiPolicyIR]{
 		Get: func(spec *trafficPolicySpecIr) *aiPolicyIR { return spec.ai },
@@ -42,7 +101,7 @@ func mergeExtProc(
 	p2MergeOrigins pluginsdkir.MergeOrigins,
 	opts policy.MergeOptions,
 	mergeOrigins pluginsdkir.MergeOrigins,
-	tpOpts trafficPolicyMergeOpts,
+	tpOpts TrafficPolicyMergeOpts,
 ) {
 	accessor := fieldAccessor[extprocIR]{
 		Get: func(spec *trafficPolicySpecIr) *extprocIR { return spec.extProc },
@@ -114,7 +173,7 @@ func mergeTransformation(
 	p2MergeOrigins pluginsdkir.MergeOrigins,
 	opts policy.MergeOptions,
 	mergeOrigins pluginsdkir.MergeOrigins,
-	tpOpts trafficPolicyMergeOpts,
+	tpOpts TrafficPolicyMergeOpts,
 ) {
 	if tpOpts.Transformation != "" {
 		// this is merging 2 policies at the same hierarchical level (no parent->child relationship),
@@ -161,7 +220,7 @@ func mergeRustformation(
 	p2MergeOrigins pluginsdkir.MergeOrigins,
 	opts policy.MergeOptions,
 	mergeOrigins pluginsdkir.MergeOrigins,
-	_ trafficPolicyMergeOpts,
+	_ TrafficPolicyMergeOpts,
 ) {
 	accessor := fieldAccessor[rustformationIR]{
 		Get: func(spec *trafficPolicySpecIr) *rustformationIR { return spec.rustformation },
@@ -176,7 +235,7 @@ func mergeExtAuth(
 	p2MergeOrigins pluginsdkir.MergeOrigins,
 	opts policy.MergeOptions,
 	mergeOrigins pluginsdkir.MergeOrigins,
-	tpOpts trafficPolicyMergeOpts,
+	tpOpts TrafficPolicyMergeOpts,
 ) {
 	accessor := fieldAccessor[extAuthIR]{
 		Get: func(spec *trafficPolicySpecIr) *extAuthIR { return spec.extAuth },
@@ -249,7 +308,7 @@ func mergeLocalRateLimit(
 	p2MergeOrigins pluginsdkir.MergeOrigins,
 	opts policy.MergeOptions,
 	mergeOrigins pluginsdkir.MergeOrigins,
-	_ trafficPolicyMergeOpts,
+	_ TrafficPolicyMergeOpts,
 ) {
 	accessor := fieldAccessor[localRateLimitIR]{
 		Get: func(spec *trafficPolicySpecIr) *localRateLimitIR { return spec.localRateLimit },
@@ -264,7 +323,7 @@ func mergeGlobalRateLimit(
 	p2MergeOrigins pluginsdkir.MergeOrigins,
 	opts policy.MergeOptions,
 	mergeOrigins pluginsdkir.MergeOrigins,
-	_ trafficPolicyMergeOpts,
+	_ TrafficPolicyMergeOpts,
 ) {
 	accessor := fieldAccessor[globalRateLimitIR]{
 		Get: func(spec *trafficPolicySpecIr) *globalRateLimitIR { return spec.globalRateLimit },
@@ -279,7 +338,7 @@ func mergeCORS(
 	p2MergeOrigins pluginsdkir.MergeOrigins,
 	opts policy.MergeOptions,
 	mergeOrigins pluginsdkir.MergeOrigins,
-	_ trafficPolicyMergeOpts,
+	_ TrafficPolicyMergeOpts,
 ) {
 	accessor := fieldAccessor[corsIR]{
 		Get: func(spec *trafficPolicySpecIr) *corsIR { return spec.cors },
@@ -294,7 +353,7 @@ func mergeCSRF(
 	p2MergeOrigins pluginsdkir.MergeOrigins,
 	opts policy.MergeOptions,
 	mergeOrigins pluginsdkir.MergeOrigins,
-	_ trafficPolicyMergeOpts,
+	_ TrafficPolicyMergeOpts,
 ) {
 	accessor := fieldAccessor[csrfIR]{
 		Get: func(spec *trafficPolicySpecIr) *csrfIR { return spec.csrf },
@@ -309,7 +368,7 @@ func mergeHeaderModifiers(
 	p2MergeOrigins pluginsdkir.MergeOrigins,
 	opts policy.MergeOptions,
 	mergeOrigins pluginsdkir.MergeOrigins,
-	_ trafficPolicyMergeOpts,
+	_ TrafficPolicyMergeOpts,
 ) {
 	accessor := fieldAccessor[headerModifiersIR]{
 		Get: func(spec *trafficPolicySpecIr) *headerModifiersIR { return spec.headerModifiers },
@@ -325,7 +384,7 @@ func mergeBuffer(
 	p2MergeOrigins pluginsdkir.MergeOrigins,
 	opts policy.MergeOptions,
 	mergeOrigins pluginsdkir.MergeOrigins,
-	_ trafficPolicyMergeOpts,
+	_ TrafficPolicyMergeOpts,
 ) {
 	accessor := fieldAccessor[bufferIR]{
 		Get: func(spec *trafficPolicySpecIr) *bufferIR { return spec.buffer },
@@ -340,7 +399,7 @@ func mergeAutoHostRewrite(
 	p2MergeOrigins pluginsdkir.MergeOrigins,
 	opts policy.MergeOptions,
 	mergeOrigins pluginsdkir.MergeOrigins,
-	_ trafficPolicyMergeOpts,
+	_ TrafficPolicyMergeOpts,
 ) {
 	accessor := fieldAccessor[autoHostRewriteIR]{
 		Get: func(spec *trafficPolicySpecIr) *autoHostRewriteIR { return spec.autoHostRewrite },
@@ -355,7 +414,7 @@ func mergeTimeouts(
 	p2MergeOrigins pluginsdkir.MergeOrigins,
 	opts policy.MergeOptions,
 	mergeOrigins pluginsdkir.MergeOrigins,
-	_ trafficPolicyMergeOpts,
+	_ TrafficPolicyMergeOpts,
 ) {
 	accessor := fieldAccessor[timeoutsIR]{
 		Get: func(spec *trafficPolicySpecIr) *timeoutsIR { return spec.timeouts },
@@ -370,7 +429,7 @@ func mergeRBAC(
 	p2MergeOrigins pluginsdkir.MergeOrigins,
 	opts policy.MergeOptions,
 	mergeOrigins pluginsdkir.MergeOrigins,
-	_ trafficPolicyMergeOpts,
+	_ TrafficPolicyMergeOpts,
 ) {
 	accessor := fieldAccessor[rbacIR]{
 		Get: func(spec *trafficPolicySpecIr) *rbacIR { return spec.rbac },
@@ -385,7 +444,7 @@ func mergeRetry(
 	p2MergeOrigins pluginsdkir.MergeOrigins,
 	opts policy.MergeOptions,
 	mergeOrigins pluginsdkir.MergeOrigins,
-	_ trafficPolicyMergeOpts,
+	_ TrafficPolicyMergeOpts,
 ) {
 	accessor := fieldAccessor[retryIR]{
 		Get: func(spec *trafficPolicySpecIr) *retryIR { return spec.retry },

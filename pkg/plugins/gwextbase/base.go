@@ -25,6 +25,7 @@ type (
 	TrafficPolicyConstructor        = trafficpolicy.TrafficPolicyConstructor
 	ProviderNeededMap               = trafficpolicy.ProviderNeededMap
 	TrafficPolicyGatewayExtensionIR = trafficpolicy.TrafficPolicyGatewayExtensionIR
+	TrafficPolicyMergeOpts          = trafficpolicy.TrafficPolicyMergeOpts
 )
 
 var (

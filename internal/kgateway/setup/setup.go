@@ -63,7 +63,7 @@ func WithAgentGatewayClassName(name string) func(*setup) {
 	}
 }
 
-func WithExtraPlugins(extraPlugins func(ctx context.Context, commoncol *common.CommonCollections) []sdk.Plugin) func(*setup) {
+func WithExtraPlugins(extraPlugins func(ctx context.Context, commoncol *common.CommonCollections, mergeSettingsJSON string) []sdk.Plugin) func(*setup) {
 	return func(s *setup) {
 		s.extraPlugins = extraPlugins
 	}
@@ -136,7 +136,7 @@ type setup struct {
 	gatewayClassName         string
 	waypointClassName        string
 	agentGatewayClassName    string
-	extraPlugins             func(ctx context.Context, commoncol *common.CommonCollections) []sdk.Plugin
+	extraPlugins             func(ctx context.Context, commoncol *common.CommonCollections, mergeSettingsJSON string) []sdk.Plugin
 	extraAgentgatewayPlugins func(ctx context.Context, agw *agentgatewayplugins.AgwCollections) []agentgatewayplugins.AgentgatewayPlugin
 	extraGatewayParameters   func(cli client.Client, inputs *deployer.Inputs) []deployer.ExtraGatewayParameters
 	extraXDSCallbacks        xdsserver.Callbacks
@@ -310,7 +310,7 @@ func BuildKgatewayWithConfig(
 	commonCollections *collections.CommonCollections,
 	agwCollections *agentgatewayplugins.AgwCollections,
 	uccBuilder krtcollections.UniquelyConnectedClientsBulider,
-	extraPlugins func(ctx context.Context, commoncol *common.CommonCollections) []sdk.Plugin,
+	extraPlugins func(ctx context.Context, commoncol *common.CommonCollections, mergeSettingsJSON string) []sdk.Plugin,
 	extraAgentgatewayPlugins func(ctx context.Context, agw *agentgatewayplugins.AgwCollections) []agentgatewayplugins.AgentgatewayPlugin,
 	extraGatewayParameters func(cli client.Client, inputs *deployer.Inputs) []deployer.ExtraGatewayParameters,
 ) error {
