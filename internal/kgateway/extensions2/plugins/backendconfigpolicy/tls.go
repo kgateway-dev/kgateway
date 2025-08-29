@@ -9,6 +9,8 @@ import (
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoymatcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 
+	gwv1alpha3 "sigs.k8s.io/gateway-api/apis/v1alpha3"
+
 	"istio.io/istio/pkg/kube/krt"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/util/cert"
@@ -144,7 +146,7 @@ func buildValidationContext(tlsData *tlsData, tlsConfig *v1alpha1.TLS, tlsContex
 
 	// If the user opted to use the system CA bundle, configure a CombinedValidationContext
 	// that references the SDS secret for the system CA set, and attach SAN matchers if any.
-	if tlsConfig.WellKnownCACertificates != nil && *tlsConfig.WellKnownCACertificates == v1alpha1.WellKnownCACertificatesSystem {
+	if tlsConfig.WellKnownCACertificates != nil && *tlsConfig.WellKnownCACertificates == gwv1alpha3.WellKnownCACertificatesSystem {
 		combined := &envoytlsv3.CommonTlsContext_CombinedValidationContext{
 			CombinedValidationContext: &envoytlsv3.CommonTlsContext_CombinedCertificateValidationContext{
 				DefaultValidationContext: &envoytlsv3.CertificateValidationContext{

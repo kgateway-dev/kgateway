@@ -4,23 +4,22 @@ package v1alpha1
 
 import (
 	v1 "k8s.io/api/core/v1"
-
-	apiv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	v1alpha3 "sigs.k8s.io/gateway-api/apis/v1alpha3"
 )
 
 // TLSApplyConfiguration represents a declarative configuration of the TLS type for use
 // with apply.
 type TLSApplyConfiguration struct {
-	SecretRef               *v1.LocalObjectReference             `json:"secretRef,omitempty"`
-	TLSFiles                *TLSFilesApplyConfiguration          `json:"tlsFiles,omitempty"`
-	WellKnownCACertificates *apiv1alpha1.WellKnownCACertificates `json:"wellKnownCACertificates,omitempty"`
-	InsecureSkipVerify      *bool                                `json:"insecureSkipVerify,omitempty"`
-	Sni                     *string                              `json:"sni,omitempty"`
-	VerifySubjectAltName    []string                             `json:"verifySubjectAltName,omitempty"`
-	Parameters              *ParametersApplyConfiguration        `json:"parameters,omitempty"`
-	AlpnProtocols           []string                             `json:"alpnProtocols,omitempty"`
-	AllowRenegotiation      *bool                                `json:"allowRenegotiation,omitempty"`
-	SimpleTLS               *bool                                `json:"simpleTLS,omitempty"`
+	SecretRef               *v1.LocalObjectReference              `json:"secretRef,omitempty"`
+	TLSFiles                *TLSFilesApplyConfiguration           `json:"tlsFiles,omitempty"`
+	WellKnownCACertificates *v1alpha3.WellKnownCACertificatesType `json:"wellKnownCACertificates,omitempty"`
+	InsecureSkipVerify      *bool                                 `json:"insecureSkipVerify,omitempty"`
+	Sni                     *string                               `json:"sni,omitempty"`
+	VerifySubjectAltName    []string                              `json:"verifySubjectAltName,omitempty"`
+	Parameters              *ParametersApplyConfiguration         `json:"parameters,omitempty"`
+	AlpnProtocols           []string                              `json:"alpnProtocols,omitempty"`
+	AllowRenegotiation      *bool                                 `json:"allowRenegotiation,omitempty"`
+	SimpleTLS               *bool                                 `json:"simpleTLS,omitempty"`
 }
 
 // TLSApplyConfiguration constructs a declarative configuration of the TLS type for use with
@@ -48,7 +47,7 @@ func (b *TLSApplyConfiguration) WithTLSFiles(value *TLSFilesApplyConfiguration) 
 // WithWellKnownCACertificates sets the WellKnownCACertificates field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the WellKnownCACertificates field is set to the value of the last call.
-func (b *TLSApplyConfiguration) WithWellKnownCACertificates(value apiv1alpha1.WellKnownCACertificates) *TLSApplyConfiguration {
+func (b *TLSApplyConfiguration) WithWellKnownCACertificates(value v1alpha3.WellKnownCACertificatesType) *TLSApplyConfiguration {
 	b.WellKnownCACertificates = &value
 	return b
 }

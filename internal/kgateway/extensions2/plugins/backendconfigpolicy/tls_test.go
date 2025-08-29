@@ -7,11 +7,13 @@ import (
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoymatcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
+	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/testing/protocmp"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/utils/ptr"
+	gwv1alpha3 "sigs.k8s.io/gateway-api/apis/v1alpha3"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	eiutils "github.com/kgateway-dev/kgateway/v2/internal/envoyinit/pkg/utils"
@@ -373,7 +375,7 @@ func TestTranslateTLSConfig(t *testing.T) {
 		{
 			name: "TLS config with system ca",
 			tlsConfig: &v1alpha1.TLS{
-				WellKnownCACertificates: ptr.To(v1alpha1.WellKnownCACertificatesSystem),
+				WellKnownCACertificates: ptr.To(gwv1alpha3.WellKnownCACertificatesSystem),
 			},
 			expected: &envoytlsv3.UpstreamTlsContext{
 				CommonTlsContext: &envoytlsv3.CommonTlsContext{
@@ -389,7 +391,7 @@ func TestTranslateTLSConfig(t *testing.T) {
 		{
 			name: "TLS config with system ca and san",
 			tlsConfig: &v1alpha1.TLS{
-				WellKnownCACertificates: ptr.To(v1alpha1.WellKnownCACertificatesSystem),
+				WellKnownCACertificates: ptr.To(gwv1alpha3.WellKnownCACertificatesSystem),
 				VerifySubjectAltName:    []string{"test.example.com", "api.example.com"},
 			},
 			expected: &envoytlsv3.UpstreamTlsContext{
@@ -444,7 +446,8 @@ func TestTranslateTLSConfig(t *testing.T) {
 			}
 
 			require.NoError(t, err)
-			assert.True(t, proto.Equal(result, tt.expected), "expected proto does not match result")
+			diff := cmp.Diff(tt.expected, result, protocmp.Transform())
+			assert.Empty(t, diff)
 		})
 	}
 }

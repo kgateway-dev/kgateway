@@ -506,11 +506,8 @@ spec:
                       type: string
                     type: array
                   wellKnownCACertificates:
-                    allOf:
-                    - enum:
-                      - System
-                    - enum:
-                      - System
+                    enum:
+                    - System
                     type: string
                 type: object
                 x-kubernetes-validations:

@@ -5,6 +5,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
+	gwv1alpha3 "sigs.k8s.io/gateway-api/apis/v1alpha3"
 )
 
 // +kubebuilder:rbac:groups=gateway.kgateway.dev,resources=backendconfigpolicies,verbs=get;list;watch
@@ -204,8 +205,7 @@ type TLS struct {
 	// certificates for validating the backend's certificate chain. Currently,
 	// only the system certificate pool is supported via SDS.
 	// +optional
-	// +kubebuilder:validation:Enum=System
-	WellKnownCACertificates *WellKnownCACertificates `json:"wellKnownCACertificates,omitempty"`
+	WellKnownCACertificates *gwv1alpha3.WellKnownCACertificatesType `json:"wellKnownCACertificates,omitempty"`
 
 	// InsecureSkipVerify originates TLS but skips verification of the backend's certificate.
 	// WARNING: This is an insecure option that should only be used if the risks are understood.
@@ -243,17 +243,6 @@ type TLS struct {
 	// +optional
 	SimpleTLS *bool `json:"simpleTLS,omitempty"`
 }
-
-// WellKnownCACertificates enumerates built-in CA bundles that can be used
-// for server certificate validation.
-// +kubebuilder:validation:Enum=System
-type WellKnownCACertificates string
-
-const (
-	// WellKnownCACertificatesSystem indicates that the host system CA bundle
-	// should be used for validating the backend server certificate.
-	WellKnownCACertificatesSystem WellKnownCACertificates = "System"
-)
 
 // TLSVersion defines the TLS version.
 // +kubebuilder:validation:Enum=AUTO;"1.0";"1.1";"1.2";"1.3"
