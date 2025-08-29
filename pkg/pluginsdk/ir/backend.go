@@ -162,20 +162,74 @@ func BackendResourceName(objSource ObjectSource, port int32, extraKey string) st
 }
 
 func (c BackendObjectIR) Equals(in BackendObjectIR) bool {
-	objEq := c.ObjectSource.Equals(in.ObjectSource)
-	objVersionEq := versionEquals(c.Obj, in.Obj)
-	polEq := c.AttachedPolicies.Equals(in.AttachedPolicies)
-	nameEq := c.resourceName == in.resourceName
-
-	// objIr may currently be nil in the case of k8s Services
-	// TODO: add an IR for Services to avoid the need for this
-	// see: internal/kgateway/extensions2/plugins/kubernetes/k8s.go
-	objIrEq := true
-	if c.ObjIr != nil {
-		objIrEq = c.ObjIr.Equals(in.ObjIr)
+	if !c.ObjectSource.Equals(in.ObjectSource) {
+		return false
+	}
+	if c.Port != in.Port {
+		return false
+	}
+	if c.ExtraKey != in.ExtraKey {
+		return false
 	}
 
-	return objEq && objVersionEq && objIrEq && polEq && nameEq
+	if c.AppProtocol != in.AppProtocol {
+		return false
+	}
+	if c.GvPrefix != in.GvPrefix {
+		return false
+	}
+	if c.CanonicalHostname != in.CanonicalHostname {
+		return false
+	}
+	if !aliasesEqual(c.Aliases, in.Aliases) {
+		return false
+	}
+	if c.TrafficDistribution != in.TrafficDistribution {
+		return false
+	}
+
+	if !versionEquals(c.Obj, in.Obj) {
+		return false
+	}
+	if !c.AttachedPolicies.Equals(in.AttachedPolicies) {
+		return false
+	}
+
+	if (c.ObjIr == nil) != (in.ObjIr == nil) {
+		return false
+	}
+	if c.ObjIr != nil && !c.ObjIr.Equals(in.ObjIr) {
+		return false
+	}
+
+	return true
+}
+
+// aliasesEqual compares two alias slices in an order-insensitive manner using ObjectSource identity.
+func aliasesEqual(a, b []ObjectSource) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	if len(a) == 0 {
+		return true
+	}
+	counts := make(map[string]int, len(a))
+	for _, os := range a {
+		counts[os.ResourceName()]++
+	}
+	for _, os := range b {
+		key := os.ResourceName()
+		if counts[key] == 0 {
+			return false
+		}
+		counts[key]--
+	}
+	for _, v := range counts {
+		if v != 0 {
+			return false
+		}
+	}
+	return true
 }
 
 func (c BackendObjectIR) ClusterName() string {
