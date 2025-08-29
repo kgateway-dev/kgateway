@@ -714,15 +714,14 @@ spec:
                 type: object
               mcp:
                 properties:
-                  name:
-                    minLength: 1
-                    type: string
                   targets:
                     items:
                       properties:
-                        selectors:
+                        name:
+                          type: string
+                        selector:
                           properties:
-                            namespaceSelector:
+                            namespace:
                               properties:
                                 matchExpressions:
                                   items:
@@ -748,7 +747,7 @@ spec:
                                   type: object
                               type: object
                               x-kubernetes-map-type: atomic
-                            serviceSelector:
+                            service:
                               properties:
                                 matchExpressions:
                                   items:
@@ -776,15 +775,12 @@ spec:
                               x-kubernetes-map-type: atomic
                           type: object
                           x-kubernetes-validations:
-                          - message: at least one of namespaceSelector and serviceSelector
-                              must be set
-                            rule: has(self.namespaceSelector) || has(self.serviceSelector)
+                          - message: at least one of namespace and service must be
+                              set
+                            rule: has(self.namespace) || has(self.service)
                         static:
                           properties:
                             host:
-                              minLength: 1
-                              type: string
-                            name:
                               minLength: 1
                               type: string
                             path:
@@ -801,17 +797,23 @@ spec:
                               type: string
                           required:
                           - host
-                          - name
                           - port
                           type: object
+                      required:
+                      - name
                       type: object
                       x-kubernetes-validations:
-                      - message: exactly one of static or selectors must be set
-                        rule: '!(has(self.static) && has(self.selectors))'
+                      - message: exactly one of the fields in [selector static] must
+                          be set
+                        rule: '[has(self.selector),has(self.static)].filter(x,x==true).size()
+                          == 1'
+                    maxItems: 32
                     minItems: 1
                     type: array
+                    x-kubernetes-list-map-keys:
+                    - name
+                    x-kubernetes-list-type: map
                 required:
-                - name
                 - targets
                 type: object
               static:

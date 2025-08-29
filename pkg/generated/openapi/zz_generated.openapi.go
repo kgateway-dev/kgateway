@@ -5106,15 +5106,15 @@ func schema_kgateway_v2_api_v1alpha1_MCP(ref common.ReferenceCallback) common.Op
 				Description: "MCP configures mcp backends",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
-					"name": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Name is the backend name for this MCP configuration.",
-							Default:     "",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
 					"targets": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-map-keys": []interface{}{
+									"name",
+								},
+								"x-kubernetes-list-type": "map",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
 							Description: "Targets is a list of MCP targets to use for this backend.",
 							Type:        []string{"array"},
@@ -5129,7 +5129,7 @@ func schema_kgateway_v2_api_v1alpha1_MCP(ref common.ReferenceCallback) common.Op
 						},
 					},
 				},
-				Required: []string{"name", "targets"},
+				Required: []string{"targets"},
 			},
 		},
 		Dependencies: []string{
@@ -5144,15 +5144,15 @@ func schema_kgateway_v2_api_v1alpha1_McpSelector(ref common.ReferenceCallback) c
 				Description: "McpSelector defines the selector logic to search for MCP targets.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
-					"namespaceSelector": {
+					"namespace": {
 						SchemaProps: spec.SchemaProps{
-							Description: "NamespaceSelector is the label selector in which namespace the MCP targets are searched for.",
+							Description: "Namespace is the label selector in which namespace the MCP targets are searched for.",
 							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.LabelSelector"),
 						},
 					},
-					"serviceSelector": {
+					"service": {
 						SchemaProps: spec.SchemaProps{
-							Description: "ServiceSelector is the label selector in which services the MCP targets are searched for.",
+							Description: "Service is the label selector in which services the MCP targets are searched for.",
 							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.LabelSelector"),
 						},
 					},
@@ -5171,25 +5171,10 @@ func schema_kgateway_v2_api_v1alpha1_McpTarget(ref common.ReferenceCallback) com
 				Description: "McpTarget defines a single MCP target configuration.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
-					"name": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Name is the name of this MCP target.",
-							Default:     "",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
 					"host": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Host is the hostname or IP address of the MCP target.",
 							Default:     "",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"path": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Path is the URL path of the MCP target endpoint. Defaults to \"/sse\" for SSE protocol or \"/mcp\" for StreamableHTTP protocol if not specified.",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -5202,6 +5187,13 @@ func schema_kgateway_v2_api_v1alpha1_McpTarget(ref common.ReferenceCallback) com
 							Format:      "int32",
 						},
 					},
+					"path": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Path is the URL path of the MCP target endpoint. Defaults to \"/sse\" for SSE protocol or \"/mcp\" for StreamableHTTP protocol if not specified.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 					"protocol": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Protocol is the protocol to use for the connection to the MCP target.",
@@ -5210,7 +5202,7 @@ func schema_kgateway_v2_api_v1alpha1_McpTarget(ref common.ReferenceCallback) com
 						},
 					},
 				},
-				Required: []string{"name", "host", "port"},
+				Required: []string{"host", "port"},
 			},
 		},
 	}
@@ -5223,19 +5215,28 @@ func schema_kgateway_v2_api_v1alpha1_McpTargetSelector(ref common.ReferenceCallb
 				Description: "McpTargetSelector defines the MCP target to use for this backend.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
-					"selectors": {
+					"name": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Selectors is the selector logic to search for MCP targets with the mcp app protocol.",
+							Description: "Name of the MCP target.",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"selector": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Selector is the selector to use to select the MCP targets.",
 							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.McpSelector"),
 						},
 					},
 					"static": {
 						SchemaProps: spec.SchemaProps{
-							Description: "StaticTarget is the MCP target to use for this backend.",
+							Description: "Static is the static MCP target to use.",
 							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.McpTarget"),
 						},
 					},
 				},
+				Required: []string{"name"},
 			},
 		},
 		Dependencies: []string{

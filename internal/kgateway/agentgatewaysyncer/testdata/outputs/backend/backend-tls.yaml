@@ -1,0 +1,81 @@
+Addresses:
+- service:
+    hostname: mcp-svc.default.svc.cluster.local
+    name: mcp-svc
+    namespace: default
+    ports:
+    - servicePort: 80
+Backends:
+- name: default/mcp-backend/mcp-static
+  static:
+    host: mcp-app.foo
+    port: 8000
+- mcp:
+    targets:
+    - backend:
+        backend: default/mcp-backend/mcp-static
+        port: 8000
+      name: mcp-static
+      protocol: STREAMABLE_HTTP
+    - backend:
+        port: 80
+        service: default/mcp-svc.default.svc.cluster.local
+      name: mcp-svc-80
+      path: /test
+      protocol: STREAMABLE_HTTP
+  name: default/mcp-backend
+Binds:
+- key: 80/default/example-gateway
+  port: 80
+Listeners:
+- bindKey: 80/default/example-gateway
+  gatewayName: default/example-gateway
+  key: default/example-gateway.http
+  name: http
+  protocol: HTTP
+Policies:
+- name: default/mcp-tls-system-cert:0:backendtls
+  spec:
+    backendTls:
+      hostname: mcp-app.foo
+  target:
+    backend: default/mcp-backend/mcp-static
+- name: default/mcp-tls-system-cert:1:backendtls
+  spec:
+    backendTls:
+      hostname: mcp-app.foo
+  target:
+    backend: service/default/mcp-svc.default.svc.cluster.local:80
+- name: default/mcp-tls-ca-cert:0:backendtls
+  spec:
+    backendTls:
+      hostname: mcp-svc.foo
+      root: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUQuLi4KLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQotLS0tLUJFR0lOIENFUlRJRklDQVRFLS0tLS0KTUlJRS4uLgotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0t
+  target:
+    service: default/mcp-svc.default.svc.cluster.local
+Routes:
+- backends:
+  - backend:
+      port: 80
+      service: default/mcp-svc.default.svc.cluster.local
+    weight: 1
+  hostnames:
+  - example.com
+  key: default/example-route.1.0.http
+  listenerKey: default/example-gateway.http
+  matches:
+  - path:
+      pathPrefix: /mcp-svc
+  routeName: default/example-route
+- backends:
+  - backend:
+      backend: default/mcp-backend
+    weight: 1
+  hostnames:
+  - example.com
+  key: default/example-route.0.0.http
+  listenerKey: default/example-gateway.http
+  matches:
+  - path:
+      pathPrefix: /mcp-backend
+  routeName: default/example-route

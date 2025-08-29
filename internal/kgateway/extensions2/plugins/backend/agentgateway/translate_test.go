@@ -21,7 +21,7 @@ import (
 )
 
 func TestBuildMCPIr(t *testing.T) {
-	var krtctx = krt.TestingDummyContext{}
+	krtctx := krt.TestingDummyContext{}
 	tests := []struct {
 		name        string
 		backend     *v1alpha1.Backend
@@ -40,15 +40,14 @@ func TestBuildMCPIr(t *testing.T) {
 				Spec: v1alpha1.BackendSpec{
 					Type: v1alpha1.BackendTypeMCP,
 					MCP: &v1alpha1.MCP{
-						Name: "static-mcp",
 						Targets: []v1alpha1.McpTargetSelector{
 							{
-								StaticTarget: &v1alpha1.McpTarget{
-									Name:     "static-target",
+								Name: "static-target",
+								Static: &v1alpha1.McpTarget{
 									Host:     "mcp-server.example.com",
 									Port:     8080,
 									Path:     stringPtr("override-sse"),
-									Protocol: v1alpha1.MCPProtocolSSE,
+									Protocol: ptr.To(v1alpha1.MCPProtocolSSE),
 								},
 							},
 						},
@@ -73,10 +72,10 @@ func TestBuildMCPIr(t *testing.T) {
 							target.Backend.Port == 8080 &&
 							target.Protocol == api.MCPTarget_SSE &&
 							target.Path == "override-sse" &&
-							target.Backend.GetBackend() == "test-ns/static-target") {
+							target.Backend.GetBackend() == "test-ns/static-mcp-backend/static-target") {
 							return false
 						}
-					} else if backend.Name == "test-ns/static-target" {
+					} else if backend.Name == "test-ns/static-mcp-backend/static-target" {
 						static := backend.GetStatic()
 						if static == nil {
 							return false
@@ -100,11 +99,10 @@ func TestBuildMCPIr(t *testing.T) {
 				Spec: v1alpha1.BackendSpec{
 					Type: v1alpha1.BackendTypeMCP,
 					MCP: &v1alpha1.MCP{
-						Name: "service-mcp",
 						Targets: []v1alpha1.McpTargetSelector{
 							{
-								Selectors: &v1alpha1.McpSelector{
-									ServiceSelector: &metav1.LabelSelector{
+								Selector: &v1alpha1.McpSelector{
+									Service: &metav1.LabelSelector{
 										MatchLabels: map[string]string{
 											"app": "mcp-server",
 										},
@@ -146,16 +144,15 @@ func TestBuildMCPIr(t *testing.T) {
 				Spec: v1alpha1.BackendSpec{
 					Type: v1alpha1.BackendTypeMCP,
 					MCP: &v1alpha1.MCP{
-						Name: "namespace-mcp",
 						Targets: []v1alpha1.McpTargetSelector{
 							{
-								Selectors: &v1alpha1.McpSelector{
-									NamespaceSelector: &metav1.LabelSelector{
+								Selector: &v1alpha1.McpSelector{
+									Namespace: &metav1.LabelSelector{
 										MatchLabels: map[string]string{
 											"environment": "production",
 										},
 									},
-									ServiceSelector: &metav1.LabelSelector{
+									Service: &metav1.LabelSelector{
 										MatchLabels: map[string]string{
 											"type": "mcp",
 										},
@@ -214,11 +211,10 @@ func TestBuildMCPIr(t *testing.T) {
 				Spec: v1alpha1.BackendSpec{
 					Type: v1alpha1.BackendTypeMCP,
 					MCP: &v1alpha1.MCP{
-						Name: "invalid-mcp",
 						Targets: []v1alpha1.McpTargetSelector{
 							{
-								Selectors: &v1alpha1.McpSelector{
-									ServiceSelector: &metav1.LabelSelector{
+								Selector: &v1alpha1.McpSelector{
+									Service: &metav1.LabelSelector{
 										MatchExpressions: []metav1.LabelSelectorRequirement{
 											{
 												Key:      "invalid",
@@ -263,7 +259,7 @@ func TestBuildMCPIr(t *testing.T) {
 }
 
 func TestBuildAIBackendIr(t *testing.T) {
-	var krtctx = krt.TestingDummyContext{}
+	krtctx := krt.TestingDummyContext{}
 
 	tests := []struct {
 		name        string
@@ -902,7 +898,7 @@ func TestGetSecretValue(t *testing.T) {
 					Name:      "test-secret",
 				},
 				Data: map[string][]byte{
-					"key1": []byte{0xff, 0xfe, 0xfd},
+					"key1": {0xff, 0xfe, 0xfd},
 				},
 			},
 			key:          "key1",

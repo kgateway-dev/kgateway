@@ -8,7 +8,7 @@
           "hostname": "bar.gwtest.svc.cluster.local",
           "addresses": [
             {
-              "address": "CgAA1Q=="
+              "address": "CgAA8A=="
             }
           ],
           "ports": [
@@ -30,7 +30,7 @@
           "hostname": "foo.gwtest.svc.cluster.local",
           "addresses": [
             {
-              "address": "CgAAFw=="
+              "address": "CgAAhw=="
             }
           ],
           "ports": [
@@ -52,7 +52,7 @@
           "hostname": "http-direct-response.gwtest.svc.cluster.local",
           "addresses": [
             {
-              "address": "CgAAUg=="
+              "address": "CgAAYw=="
             }
           ],
           "ports": [
@@ -73,7 +73,7 @@
           "hostname": "http-grpcroute.gwtest.svc.cluster.local",
           "addresses": [
             {
-              "address": "CgAAcA=="
+              "address": "CgAA4A=="
             }
           ],
           "ports": [
@@ -94,7 +94,7 @@
           "hostname": "http-httproute.gwtest.svc.cluster.local",
           "addresses": [
             {
-              "address": "CgAAsA=="
+              "address": "CgAARQ=="
             }
           ],
           "ports": [
@@ -115,7 +115,7 @@
           "hostname": "http-inferencepool.gwtest.svc.cluster.local",
           "addresses": [
             {
-              "address": "CgAAWw=="
+              "address": "CgAAIw=="
             }
           ],
           "ports": [
@@ -136,7 +136,7 @@
           "hostname": "http-tcproute.gwtest.svc.cluster.local",
           "addresses": [
             {
-              "address": "CgAAnQ=="
+              "address": "CgAAhA=="
             }
           ],
           "ports": [
@@ -167,10 +167,33 @@
           "ports": [
             {
               "service_port": 443,
-              "target_port": 39789
+              "target_port": 37023
             }
           ],
           "ip_families": 1
+        }
+      }
+    },
+    {
+      "Type": {
+        "Workload": {
+          "uid": "/discovery.k8s.io/EndpointSlice/default/kubernetes/192.168.4.24",
+          "name": "kubernetes",
+          "namespace": "default",
+          "addresses": [
+            "wKgEGA=="
+          ],
+          "services": {
+            "default/kubernetes.default.svc.cluster.local": {
+              "ports": [
+                {
+                  "service_port": 443,
+                  "target_port": 37023
+                }
+              ]
+            }
+          },
+          "network_mode": 1
         }
       }
     },
@@ -298,7 +321,9 @@
           "backends": [
             {
               "backend": {
-                "service": "gwtest/foo.gwtest.svc.cluster.local",
+                "Kind": {
+                  "Service": "gwtest/foo.gwtest.svc.cluster.local"
+                },
                 "port": 3001
               },
               "weight": 1
@@ -315,7 +340,9 @@
           "backends": [
             {
               "backend": {
-                "service": "gwtest/bar.gwtest.svc.cluster.local",
+                "Kind": {
+                  "Service": "gwtest/bar.gwtest.svc.cluster.local"
+                },
                 "port": 3002
               },
               "weight": 1

@@ -5,8 +5,9 @@ package v1alpha1
 // McpTargetSelectorApplyConfiguration represents a declarative configuration of the McpTargetSelector type for use
 // with apply.
 type McpTargetSelectorApplyConfiguration struct {
-	Selectors    *McpSelectorApplyConfiguration `json:"selectors,omitempty"`
-	StaticTarget *McpTargetApplyConfiguration   `json:"static,omitempty"`
+	Name     *string                        `json:"name,omitempty"`
+	Selector *McpSelectorApplyConfiguration `json:"selector,omitempty"`
+	Static   *McpTargetApplyConfiguration   `json:"static,omitempty"`
 }
 
 // McpTargetSelectorApplyConfiguration constructs a declarative configuration of the McpTargetSelector type for use with
@@ -15,18 +16,26 @@ func McpTargetSelector() *McpTargetSelectorApplyConfiguration {
 	return &McpTargetSelectorApplyConfiguration{}
 }
 
-// WithSelectors sets the Selectors field in the declarative configuration to the given value
+// WithName sets the Name field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the Selectors field is set to the value of the last call.
-func (b *McpTargetSelectorApplyConfiguration) WithSelectors(value *McpSelectorApplyConfiguration) *McpTargetSelectorApplyConfiguration {
-	b.Selectors = value
+// If called multiple times, the Name field is set to the value of the last call.
+func (b *McpTargetSelectorApplyConfiguration) WithName(value string) *McpTargetSelectorApplyConfiguration {
+	b.Name = &value
 	return b
 }
 
-// WithStaticTarget sets the StaticTarget field in the declarative configuration to the given value
+// WithSelector sets the Selector field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the StaticTarget field is set to the value of the last call.
-func (b *McpTargetSelectorApplyConfiguration) WithStaticTarget(value *McpTargetApplyConfiguration) *McpTargetSelectorApplyConfiguration {
-	b.StaticTarget = value
+// If called multiple times, the Selector field is set to the value of the last call.
+func (b *McpTargetSelectorApplyConfiguration) WithSelector(value *McpSelectorApplyConfiguration) *McpTargetSelectorApplyConfiguration {
+	b.Selector = value
+	return b
+}
+
+// WithStatic sets the Static field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Static field is set to the value of the last call.
+func (b *McpTargetSelectorApplyConfiguration) WithStatic(value *McpTargetApplyConfiguration) *McpTargetSelectorApplyConfiguration {
+	b.Static = value
 	return b
 }

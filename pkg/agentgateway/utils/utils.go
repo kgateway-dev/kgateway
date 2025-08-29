@@ -21,3 +21,21 @@ func InternalRouteRuleName(routeNamespace, routeName, ruleName string) string {
 	}
 	return fmt.Sprintf("%s/%s.%s", routeNamespace, routeName, ruleName)
 }
+
+// InternalMCPStaticBackendName returns the name of the internal MCP Static Backend corresponding to the
+// specified backend and target.
+// Format: backendNamespace/backendName/targetName
+func InternalMCPStaticBackendName(backendNamespace, backendName, targetName string) string {
+	return backendNamespace + "/" + backendName + "/" + targetName
+}
+
+// InternalBackendName returns the name of the internal Backend corresponding to the
+// specified backend and target.
+// Format: backendNamespace/backendName when targetName is empty, otherwise backendNamespace/backendName/targetName
+func InternalBackendName(backendNamespace, backendName, targetName string) string {
+	name := backendNamespace + "/" + backendName
+	if targetName != "" {
+		name += "/" + targetName
+	}
+	return name
+}

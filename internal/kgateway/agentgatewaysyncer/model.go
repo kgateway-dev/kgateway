@@ -52,6 +52,7 @@ func (key ConfigKey) String() string {
 
 type ADPCacheAddress struct {
 	NamespacedName types.NamespacedName
+	ResourceNames  string
 
 	Address             proto.Message
 	AddressResourceName string
@@ -62,7 +63,7 @@ type ADPCacheAddress struct {
 }
 
 func (r ADPCacheAddress) ResourceName() string {
-	return r.NamespacedName.String()
+	return r.ResourceNames
 }
 
 func (r ADPCacheAddress) Equals(in ADPCacheAddress) bool {
@@ -107,8 +108,12 @@ func getADPResourceName(r *api.Resource) string {
 		return "backend/" + t.Backend.GetName()
 	case *api.Resource_Route:
 		return "route/" + t.Route.GetKey()
+	case *api.Resource_Policy:
+		return "policy/" + t.Policy.GetName()
+	default:
+		logger.Error("unknown ADP resource", "type", fmt.Sprintf("%T", t))
+		return "unknown/" + r.String()
 	}
-	return "unknown/" + r.String()
 }
 
 func (g ADPResourcesForGateway) Equals(other ADPResourcesForGateway) bool {
