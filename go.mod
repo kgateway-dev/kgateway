@@ -607,7 +607,7 @@ require (
 	k8s.io/cli-runtime v0.33.3 // indirect
 	k8s.io/code-generator v0.33.4 // indirect
 	k8s.io/component-base v0.33.4 // indirect
-	k8s.io/gengo/v2 v2.0.0-20250207200755-1244d31929d7 // indirect
+	k8s.io/gengo/v2 v2.0.0-20250829030910-f1dc67e67210 // indirect
 	k8s.io/kubectl v0.33.3 // indirect
 	lukechampine.com/blake3 v1.2.1 // indirect
 	mvdan.cc/gofumpt v0.8.0 // indirect
@@ -627,10 +627,6 @@ require (
 replace sigs.k8s.io/controller-tools => github.com/shashankram/controller-tools v0.0.0-20250626172831-f7be064a9132
 
 replace github.com/imdario/mergo => github.com/imdario/mergo v0.3.16
-
-// Use a patched version of gengo to produce consistent zz_generated.openapi.go
-// Ref: https://github.com/kubernetes/gengo/issues/292
-replace k8s.io/gengo/v2 => github.com/kgateway-dev/gengo/v2 v2.0.0-20250512195215-4fa0a9df2978
 
 tool (
 	github.com/golang/mock/mockgen

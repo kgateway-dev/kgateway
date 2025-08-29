@@ -1097,8 +1097,6 @@ github.com/kevinburke/ssh_config v1.2.0 h1:x584FjTGwHzMwvHx18PXxbBVzfnxogHaAReU4
 github.com/kevinburke/ssh_config v1.2.0/go.mod h1:CT57kijsi8u/K/BOFA39wgDQJ9CxiF4nAY/ojJ6r6mM=
 github.com/keybase/go-keychain v0.0.1 h1:way+bWYa6lDppZoZcgMbYsvC7GxljxrskdNInRtuthU=
 github.com/keybase/go-keychain v0.0.1/go.mod h1:PdEILRW3i9D8JcdM+FmY6RwkHGnhHxXwkPPMeUgOK1k=
-github.com/kgateway-dev/gengo/v2 v2.0.0-20250512195215-4fa0a9df2978 h1:UHfLeZ4Sj1OBRE4V4nSlanqC1FQnT2bg1vnu4N24Scw=
-github.com/kgateway-dev/gengo/v2 v2.0.0-20250512195215-4fa0a9df2978/go.mod h1:EJykeLsmFC60UQbYJezXkEsG2FLrt0GPNkU5iK5GWxU=
 github.com/kisielk/errcheck v1.1.0/go.mod h1:EZBBE59ingxPouuu3KfxchcWSUPOHkagtvWXihfKN4Q=
 github.com/kisielk/errcheck v1.2.0/go.mod h1:/BMXB+zMLi60iA8Vv6Ksmxu/1UDYcXs4uQLJ+jE2L00=
 github.com/kisielk/errcheck v1.5.0/go.mod h1:pFxgyoBC7bSaBwPgfKdkLd5X25qrDl4LWUI2bnpBCr8=
@@ -2352,6 +2350,8 @@ k8s.io/code-generator v0.33.4 h1:DiA801QxqApRIBh3OWULasVAUA237XnYvFNMh+E34Y8=
 k8s.io/code-generator v0.33.4/go.mod h1:ifWxKWhEl/Z1K7WmWAyOBEf3ex/i546ingCzLC8YVIY=
 k8s.io/component-base v0.33.4 h1:Jvb/aw/tl3pfgnJ0E0qPuYLT0NwdYs1VXXYQmSuxJGY=
 k8s.io/component-base v0.33.4/go.mod h1:567TeSdixWW2Xb1yYUQ7qk5Docp2kNznKL87eygY8Rc=
+k8s.io/gengo/v2 v2.0.0-20250829030910-f1dc67e67210 h1:eb8kJkkUb+oML446cQV9pTvH+yAzeimWU/LWOD4nbm8=
+k8s.io/gengo/v2 v2.0.0-20250829030910-f1dc67e67210/go.mod h1:EJykeLsmFC60UQbYJezXkEsG2FLrt0GPNkU5iK5GWxU=
 k8s.io/klog/v2 v2.130.1 h1:n9Xl7H1Xvksem4KFG4PYbdQCQxqc/tTUyrgXaOhHSzk=
 k8s.io/klog/v2 v2.130.1/go.mod h1:3Jpz1GvMt720eyJH1ckRHK1EDfpxISzJ7I9OYgaDtPE=
 k8s.io/kube-openapi v0.0.0-20250318190949-c8a335a9a2ff h1:/usPimJzUKKu+m+TE36gUyGcf03XZEP0ZIKgKj35LS4=

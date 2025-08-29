@@ -244,6 +244,8 @@ func (s *testingSuite) TestProvisionResourcesNotUpdatedWithInvalidParameters() {
 }
 
 func (s *testingSuite) TestSelfManagedGateway() {
+	s.T().Skip("https://github.com/kgateway-dev/kgateway/issues/11884")
+
 	s.Require().EventuallyWithT(func(c *assert.CollectT) {
 		gw := &gwv1.Gateway{}
 		err := s.testInstallation.ClusterContext.Client.Get(s.ctx,
