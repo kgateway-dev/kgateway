@@ -5,6 +5,7 @@ import (
 	"log/slog"
 
 	"github.com/agentgateway/agentgateway/go/api"
+	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
@@ -12,6 +13,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/utils"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
@@ -21,9 +23,10 @@ import (
 )
 
 const (
-	extauthPolicySuffix = ":extauth"
-	aiPolicySuffix      = ":ai"
-	rbacPolicySuffix    = ":rbac"
+	extauthPolicySuffix        = ":extauth"
+	aiPolicySuffix             = ":ai"
+	rbacPolicySuffix           = ":rbac"
+	localRateLimitPolicySuffix = ":rl-local"
 )
 
 var logger = logging.New("agentgateway/plugins")
@@ -589,7 +592,7 @@ func processLocalRateLimitPolicy(trafficPolicy *v1alpha1.TrafficPolicy, policyNa
 
 	// Create local rate limit policy using the proper agentgateway API
 	localRateLimitPolicy := &api.Policy{
-		Name:   policyName + ":local",
+		Name:   policyName + localRateLimitPolicySuffix,
 		Target: policyTarget,
 		Spec: &api.PolicySpec{
 			Kind: &api.PolicySpec_LocalRateLimit_{
