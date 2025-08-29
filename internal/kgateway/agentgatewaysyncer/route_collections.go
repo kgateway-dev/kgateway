@@ -41,7 +41,6 @@ func ADPRouteCollection(
 	krtopts krtinternal.KrtOptions,
 	plugins pluginsdk.Plugin,
 ) krt.Collection[ADPResourcesForGateway] {
-	// TODO(npolshak): look into using RouteIndex instead of raw collections to support targetRefs: https://github.com/kgateway-dev/kgateway/issues/11838
 	httpRoutes := createRouteCollection(httpRouteCol, inputs, krtopts, "ADPHTTPRoutes",
 		func(ctx RouteContext, obj *gwv1.HTTPRoute, rep reporter.Reporter) (RouteContext, iter.Seq2[ADPRoute, *reporter.RouteCondition]) {
 			// HTTP-specific preprocessing: attach policies and setup plugins

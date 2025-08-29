@@ -1,7 +1,7 @@
 Name|Version|License
 ---|---|---
 [cel.dev/expr](https://cel.dev/expr)|v0.24.0|Apache License 2.0
-[agentgateway/agentgateway](https://github.com/agentgateway/agentgateway)|v0.7.7|Apache License 2.0
+[agentgateway/agentgateway](https://github.com/agentgateway/agentgateway)|v0.7.8|Apache License 2.0
 [avast/retry-go](https://github.com/avast/retry-go)|v2.4.3+incompatible|MIT License
 [retry-go/v4](https://github.com/avast/retry-go)|v4.3.3|MIT License
 [xds/go](https://github.com/cncf/xds)|v0.0.0-20250501225837-2ac532fd4443|Apache License 2.0
@@ -36,7 +36,7 @@ Name|Version|License
 [helm/v3](https://helm.sh/helm/v3)|v3.18.5|Apache License 2.0
 [istio.io/api](https://istio.io/api)|v1.26.0-alpha.0.0.20250820113222-47f832b86cdd|Apache License 2.0
 [istio.io/client-go](https://istio.io/client-go)|v1.26.0-alpha.0.0.20250820113822-8b883d128bac|Apache License 2.0
-[istio.io/istio](https://istio.io/istio)|v0.0.0-20250826180013-b3d3b41bf98a|Apache License 2.0
+[istio.io/istio](https://istio.io/istio)|v0.0.0-20250826222905-45e4f30947d5|Apache License 2.0
 [k8s.io/api](https://k8s.io/api)|v0.33.4|Apache License 2.0
 [k8s.io/apiextensions-apiserver](https://k8s.io/apiextensions-apiserver)|v0.33.4|Apache License 2.0
 [k8s.io/apimachinery](https://k8s.io/apimachinery)|v0.33.4|Apache License 2.0

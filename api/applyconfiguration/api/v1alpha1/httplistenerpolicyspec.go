@@ -20,6 +20,7 @@ type HTTPListenerPolicySpecApplyConfiguration struct {
 	XffNumTrustedHops          *uint32                                        `json:"xffNumTrustedHops,omitempty"`
 	ServerHeaderTransformation *apiv1alpha1.ServerHeaderTransformation        `json:"serverHeaderTransformation,omitempty"`
 	StreamIdleTimeout          *v1.Duration                                   `json:"streamIdleTimeout,omitempty"`
+	IdleTimeout                *v1.Duration                                   `json:"idleTimeout,omitempty"`
 	HealthCheck                *EnvoyHealthCheckApplyConfiguration            `json:"healthCheck,omitempty"`
 	PreserveHttp1HeaderCase    *bool                                          `json:"preserveHttp1HeaderCase,omitempty"`
 	AcceptHttp10               *bool                                          `json:"acceptHttp10,omitempty"`
@@ -116,6 +117,14 @@ func (b *HTTPListenerPolicySpecApplyConfiguration) WithServerHeaderTransformatio
 // If called multiple times, the StreamIdleTimeout field is set to the value of the last call.
 func (b *HTTPListenerPolicySpecApplyConfiguration) WithStreamIdleTimeout(value v1.Duration) *HTTPListenerPolicySpecApplyConfiguration {
 	b.StreamIdleTimeout = &value
+	return b
+}
+
+// WithIdleTimeout sets the IdleTimeout field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the IdleTimeout field is set to the value of the last call.
+func (b *HTTPListenerPolicySpecApplyConfiguration) WithIdleTimeout(value v1.Duration) *HTTPListenerPolicySpecApplyConfiguration {
+	b.IdleTimeout = &value
 	return b
 }
 

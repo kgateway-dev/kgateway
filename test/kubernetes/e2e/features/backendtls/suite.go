@@ -32,12 +32,7 @@ import (
 )
 
 var (
-	baseManifests = []string{
-		filepath.Join(fsutils.MustGetThisDir(), "inputs/base.yaml"),
-		filepath.Join(fsutils.MustGetThisDir(), "inputs/nginx.yaml"),
-		defaults.CurlPodManifest,
-	}
-	configMapManifest = filepath.Join(fsutils.MustGetThisDir(), "inputs/configmap.yaml")
+	configMapManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata/configmap.yaml")
 
 	proxyObjMeta = metav1.ObjectMeta{
 		Name:      "gw",
@@ -69,31 +64,49 @@ var (
 	svcKind  = "Service"
 )
 
-var _ e2e.NewSuiteFunc = NewTestingSuite
-
-type clientTlsTestingSuite struct {
+type tsuite struct {
 	suite.Suite
 	ctx              context.Context
 	testInstallation *e2e.TestInstallation
+	baseManifests    []string
+	agentGateway     bool
 }
 
 func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
-	return &clientTlsTestingSuite{
+	return &tsuite{
 		ctx:              ctx,
 		testInstallation: testInst,
+		baseManifests: []string{
+			filepath.Join(fsutils.MustGetThisDir(), "testdata/base.yaml"),
+			filepath.Join(fsutils.MustGetThisDir(), "testdata/nginx.yaml"),
+			defaults.CurlPodManifest,
+		},
 	}
 }
 
-func (s *clientTlsTestingSuite) TestBackendTLSPolicyAndStatus() {
+func NewAgentGatewayTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
+	return &tsuite{
+		ctx:              ctx,
+		testInstallation: testInst,
+		agentGateway:     true,
+		baseManifests: []string{
+			filepath.Join(fsutils.MustGetThisDir(), "testdata/base-agw.yaml"),
+			filepath.Join(fsutils.MustGetThisDir(), "testdata/nginx.yaml"),
+			defaults.CurlPodManifest,
+		},
+	}
+}
+
+func (s *tsuite) TestBackendTLSPolicyAndStatus() {
 	s.T().Cleanup(func() {
-		for _, manifest := range baseManifests {
+		for _, manifest := range s.baseManifests {
 			err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, manifest)
 			s.Require().NoError(err)
 		}
 		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, proxyService, proxyDeployment, backendTlsPolicy)
 	})
 
-	toCreate := append(baseManifests, configMapManifest)
+	toCreate := append(s.baseManifests, configMapManifest)
 	for _, manifest := range toCreate {
 		err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, manifest)
 		s.Require().NoError(err)
@@ -154,6 +167,11 @@ func (s *clientTlsTestingSuite) TestBackendTLSPolicyAndStatus() {
 		},
 	)
 
+	if s.agentGateway {
+		// AgentGateway currently doesn't support Statuses for BackendTLSPolicy
+		s.T().Log("Skipping status assertions for AgentGateway as they are not currently supported")
+		return
+	}
 	s.assertPolicyStatus(metav1.Condition{
 		Type:               string(v1alpha1.PolicyConditionAccepted),
 		Status:             metav1.ConditionTrue,
@@ -182,7 +200,7 @@ func (s *clientTlsTestingSuite) TestBackendTLSPolicyAndStatus() {
 	})
 }
 
-func (s *clientTlsTestingSuite) assertPolicyStatus(inCondition metav1.Condition) {
+func (s *tsuite) assertPolicyStatus(inCondition metav1.Condition) {
 	currentTimeout, pollingInterval := helpers.GetTimeouts()
 	p := s.testInstallation.Assertions
 	p.Gomega.Eventually(func(g gomega.Gomega) {

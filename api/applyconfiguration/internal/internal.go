@@ -1199,6 +1199,9 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: healthCheck
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.EnvoyHealthCheck
+    - name: idleTimeout
+      type:
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Duration
     - name: preserveHttp1HeaderCase
       type:
         scalar: boolean
@@ -1661,33 +1664,27 @@ var schemaYAML = typed.YAMLObject(`types:
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.MCP
   map:
     fields:
-    - name: name
-      type:
-        scalar: string
-      default: ""
     - name: targets
       type:
         list:
           elementType:
             namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.McpTargetSelector
-          elementRelationship: atomic
+          elementRelationship: associative
+          keys:
+          - name
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.McpSelector
   map:
     fields:
-    - name: namespaceSelector
+    - name: namespace
       type:
         namedType: io.k8s.apimachinery.pkg.apis.meta.v1.LabelSelector
-    - name: serviceSelector
+    - name: service
       type:
         namedType: io.k8s.apimachinery.pkg.apis.meta.v1.LabelSelector
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.McpTarget
   map:
     fields:
     - name: host
-      type:
-        scalar: string
-      default: ""
-    - name: name
       type:
         scalar: string
       default: ""
@@ -1704,7 +1701,11 @@ var schemaYAML = typed.YAMLObject(`types:
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.McpTargetSelector
   map:
     fields:
-    - name: selectors
+    - name: name
+      type:
+        scalar: string
+      default: ""
+    - name: selector
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.McpSelector
     - name: static

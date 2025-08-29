@@ -1,6 +1,6 @@
 # agentgateway syncer
 
-This syncer configures xds updates for the [agentgateway](https://agentgateway.dev/) data plane. 
+This syncer configures xds updates for the [agentgateway](https://agentgateway.dev/) data plane.
 
 To use the agentgateway control plane with kgateway, you need to enable the integration in the helm chart:
 ```yaml
@@ -8,7 +8,7 @@ agentGateway:
   enabled: true # set this to true
 ```
 
-You can configure the agentgateway Gateway class to use a specific image by setting the image field on the 
+You can configure the agentgateway Gateway class to use a specific image by setting the image field on the
 GatewayClass:
 ```yaml
 kind: GatewayParameters
@@ -61,19 +61,19 @@ The workload API is originally derived from from Istio's [ztunnel](https://githu
 
 Resources contain agentgateway-specific config (Binds, Listeners, Routes, Backend, Policy, etc.).
 
-#### Bind: 
+#### Bind:
 
 Bind resources define port bindings that associate gateway listeners with specific network ports. Each Bind contains:
 - **Key**: Unique identifier in the format `port/namespace/name` (e.g., `8080/default/my-gateway`)
 - **Port**: The network port number that the gateway listens on
 
-Binds are created automatically when Gateway resources are processed, with one Bind per unique port used across all listeners. 
+Binds are created automatically when Gateway resources are processed, with one Bind per unique port used across all listeners.
 
 #### Listener:
 
 Listener resources represent individual gateway listeners with their configuration. Each Listener contains:
 - **Key**: Unique identifier for the listener
-- **Name**: The section name from the Gateway listener specification  
+- **Name**: The section name from the Gateway listener specification
 - **BindKey**: References the associated Bind resource (format: `port/namespace/name`)
 - **GatewayName**: The gateway this listener belongs to (format: `namespace/name`)
 - **Hostname**: The hostname this listener accepts traffic for
@@ -87,13 +87,13 @@ Listeners are created from Gateway API listener specifications and define how tr
 Route resources define routing rules that determine how traffic is forwarded to backend services. Routes are created from various Gateway API route types:
 
 - **HTTP Routes**: Convert from `HTTPRoute` resources with path, header, method, and query parameter matching
-- **gRPC Routes**: Convert from `GRPCRoute` resources with service/method matching  
+- **gRPC Routes**: Convert from `GRPCRoute` resources with service/method matching
 - **TCP Routes**: Convert from `TCPRoute` resources for TCP traffic (catch-all matching)
 - **TLS Routes**: Convert from `TLSRoute` resources for TLS passthrough (SNI matching at listener level)
 
 Each Route contains:
 - **Key**: Unique identifier (format: `namespace.name.rule.match`)
-- **RouteName**: Source route name (format: `namespace/name`)  
+- **RouteName**: Source route name (format: `namespace/name`)
 - **ListenerKey**: Associated listener (populated during gateway binding)
 - **RuleName**: Optional rule name from the source route
 - **Matches**: Traffic matching criteria (path, headers, method, query params)
@@ -113,7 +113,7 @@ Backends in kgateway are represented by the Backend CRD and support multiple bac
 
 **Backend Types:**
 - **AI**: Routes traffic to AI/LLM providers (OpenAI, Anthropic, etc.) with model-specific configurations
-- **Static**: Routes to static host/IP with configurable ports and protocols. Note: In agentgateway only one host is supported (not list of hosts). 
+- **Static**: Routes to static host/IP with configurable ports and protocols. Note: In agentgateway only one host is supported (not list of hosts).
 - **MCP**: Model Context Protocol backends for virtual MCP servers. Note if a static MCP backend target is used, kgateway will translate out two backends (one static, one mcp).
 
 **Usage in Routes:**
@@ -152,10 +152,10 @@ Policies are configurable rules that control traffic behavior, security, and tra
 - Timeout: Set request and backend timeouts.
 - Retry: Configure retry attempts, backoff, and which response codes should trigger retries.
 
-### Architecture 
+### Architecture
 
 The agentgateway syncer only runs if `cfg.SetupOpts.GlobalSettings.EnableAgentGateway` is set. Otherwise,
-only the Envoy proxy syncer will run by default. 
+only the Envoy proxy syncer will run by default.
 
 ```mermaid
 flowchart TD
@@ -165,28 +165,28 @@ flowchart TD
         A3 -->|true| A4["Create AgentGwSyncer"]
         A3 -->|false| A5["Skip AgentGateway"]
     end
-    
+
     subgraph "agentgateway Syncer Initialization"
         A4 --> B1["agentgatewaysyncer.NewAgentGwSyncer()"]
         B1 --> B2["Set Configuration<br/>• controllerName<br/>• agentGatewayClassName<br/>• domainSuffix<br/>• clusterID"]
         B2 --> B3["syncer.Init()<br/>Build KRT Collections"]
     end
-    
+
     subgraph "agentgateway translation"
         B3 --> C1["buildResourceCollections()"]
-        
+
         C1 --> C2["Gateway Collection<br/>Filter by agentgateway class"]
         C1 --> C3["Route Collections<br/>HTTPRoute, GRPCRoute, etc.<br/>Builtin and attached policy via plugins"]
         C1 --> C4["Backend Collections<br/>Backend CRDs via plugins"]
         C1 --> C5["Policy Collections<br/>(InferencePools, A2A, etc.)"]
         C1 --> C6["Address Collections<br/>Services & Workloads"]
-        
+
         C2 --> C7["Generate Bind Resources"]
         C2 --> C8["Generate Listener Resources"]
         C3 --> C9["Generate Route Resources"]
         C4 --> C10["Plugin Translation<br/>AI, Static, MCP backends"]
     end
-    
+
     subgraph "XDS Collection Processing"
         C5 --> D1["buildXDSCollection()"]
         C6 --> D1
@@ -194,27 +194,27 @@ flowchart TD
         C8 --> D1
         C9 --> D1
         C10 --> D1
-        
+
         D1 --> D2["Create agentGwXdsResources<br/>per Gateway"]
         D2 --> D3["ResourceConfig<br/>Bind + Listener + Route + Backend + Policy"]
         D2 --> D4["AddressConfig<br/>Services + Workloads"]
     end
-    
+
     subgraph "XDS Output"
         D3 --> E1["Create agentGwSnapshot"]
         D4 --> E1
-        
+
         E1 --> E2["xdsCache.SetSnapshot()<br/>with resource name"]
         E2 --> E3["XDS Server<br/>Serves via gRPC"]
-        
+
         E3 --> E4["AgentGateway Proxy<br/>Receives & applies config"]
     end
-    
-    subgraph "Status" 
+
+    subgraph "Status"
         D2 --> F1["Status Reporting<br/>Gateway, Listener, Route"]
         F1 --> F2["Update K8s Resource Status"]
     end
-    
+
     style A4 fill:#e1f5fe
     style B1 fill:#f3e5f5
     style C1 fill:#e8f5e8
@@ -235,10 +235,10 @@ AGENTGATEWAY=true ./hack/kind/setup-kind.sh
 Retag and load the image to match the default image tag in the values file for agentgateway, then run:
 
 ```
-make run HELM_ADDITIONAL_VALUES=test/kubernetes/e2e/tests/manifests/agent-gateway-integration.yaml; CONFORMANCE_GATEWAY_CLASS=agentgateway make conformance 
+make run HELM_ADDITIONAL_VALUES=test/kubernetes/e2e/tests/manifests/agent-gateway-integration.yaml; CONFORMANCE_GATEWAY_CLASS=agentgateway make conformance
 ```
 
-## Examples 
+## Examples
 
 Set up a kind cluster and install kgateway with the kubernetes Gateway APIs:
 ```shell
@@ -251,7 +251,7 @@ helm upgrade -i --namespace kgateway-system --version v2.1.0-main kgateway oci:/
 
 Apply the httpbin test app:
 ```shell
-kubectl apply -f  test/kubernetes/e2e/defaults/testdata/httpbin.yaml 
+kubectl apply -f  test/kubernetes/e2e/defaults/testdata/httpbin.yaml
 ```
 
 Apply the following config to set up the HTTPRoute attached to the agentgateway Gateway:
@@ -402,7 +402,7 @@ Port-forward, and send a request through the gateway:
 grpcurl \
   -plaintext \
   -authority example.com \
-  -d '{}' localhost:8080 yages.Echo/Ping 
+  -d '{}' localhost:8080 yages.Echo/Ping
 ```
 
 #### TCPRoute
@@ -623,7 +623,7 @@ curl localhost:8080/openai -H content-type:application/json -v -d'{
 ]}'
 ```
 
-With agentgateway, you get a unified API to send requests to different providers in the same format. 
+With agentgateway, you get a unified API to send requests to different providers in the same format.
 
 Modify the HTTPRoute config to add another provider:
 
@@ -711,7 +711,7 @@ curl localhost:8080/ -H content-type:application/json -v -d'{
 ]}'
 ```
 
-#### MCP Backend 
+#### MCP Backend
 
 Apply the following config to set up the HTTPRoute pointing to the MCP Backend:
 ```shell
@@ -757,8 +757,9 @@ spec:
   mcp:
     name: mcp-virtual-server
     targets:
-      - selectors:
-          serviceSelector:
+      - name: mcp-server
+        selector:
+          service:
             matchLabels:
               app: mcp-server
 ---
@@ -804,7 +805,7 @@ spec:
 EOF
 ```
 
-Note: Only streamable HTTP is currently supported for label selectors. 
+Note: Only streamable HTTP is currently supported for label selectors.
 
 Port-forward, and send a request through the gateway to start a session:
 ```shell
@@ -857,8 +858,8 @@ spec:
   mcp:
     name: mcp-server
     targets:
-    - static:
-        name: mcp-target
+    - name: mcp-target
+      static:
         host: mcp-website-fetcher.default.svc.cluster.local
         port: 80
         protocol: SSE
@@ -897,7 +898,7 @@ spec:
 EOF
 ```
 
-#### A2A Backend 
+#### A2A Backend
 
 Build the sample kgateway a2a application and load it into the kind cluster with `VERSION=$VERSION make kind-build-and-load-test-a2a-agent`.
 

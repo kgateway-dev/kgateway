@@ -12,8 +12,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	"google.golang.org/protobuf/types/known/durationpb"
+	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/utils"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
@@ -27,6 +26,8 @@ const (
 	rbacPolicySuffix    = ":rbac"
 )
 
+var logger = logging.New("agentgateway/plugins")
+
 // NewTrafficPlugin creates a new TrafficPolicy plugin
 func NewTrafficPlugin(agw *AgwCollections) AgentgatewayPlugin {
 	col := krt.WrapClient(kclient.NewFiltered[*v1alpha1.TrafficPolicy](
@@ -34,7 +35,7 @@ func NewTrafficPlugin(agw *AgwCollections) AgentgatewayPlugin {
 		kclient.Filter{ObjectFilter: agw.Client.ObjectFilter()},
 	), agw.KrtOpts.ToOptions("TrafficPolicy")...)
 	policyCol := krt.NewManyCollection(col, func(krtctx krt.HandlerContext, policyCR *v1alpha1.TrafficPolicy) []ADPPolicy {
-		return translateTrafficPolicy(krtctx, agw.GatewayExtensions, agw.Backends, policyCR)
+		return TranslateTrafficPolicy(krtctx, agw.GatewayExtensions, agw.Backends, policyCR)
 	})
 
 	return AgentgatewayPlugin{
@@ -49,13 +50,14 @@ func NewTrafficPlugin(agw *AgwCollections) AgentgatewayPlugin {
 	}
 }
 
-// translateTrafficPolicy generates policies for a single traffic policy
-func translateTrafficPolicy(
+// TranslateTrafficPolicy generates policies for a single traffic policy
+func TranslateTrafficPolicy(
 	ctx krt.HandlerContext,
 	gatewayExtensions krt.Collection[*v1alpha1.GatewayExtension],
 	backends krt.Collection[*v1alpha1.Backend],
-	trafficPolicy *v1alpha1.TrafficPolicy) []ADPPolicy {
-	logger := logging.New("agentgateway/plugins/traffic")
+	trafficPolicy *v1alpha1.TrafficPolicy,
+) []ADPPolicy {
+	logger := logger.With("plugin_kind", "traffic")
 	var adpPolicies []ADPPolicy
 
 	isMcpTarget := false
@@ -66,32 +68,30 @@ func translateTrafficPolicy(
 		case wellknown.GatewayKind:
 			policyTarget = &api.PolicyTarget{
 				Kind: &api.PolicyTarget_Gateway{
-					Gateway: trafficPolicy.Namespace + "/" + string(target.Name),
+					Gateway: utils.InternalGatewayName(trafficPolicy.Namespace, string(target.Name), ""),
 				},
 			}
-			// TODO(npolshak): add listener support once https://github.com/agentgateway/agentgateway/pull/323 goes in
-			//if target.SectionName != nil {
-			//	policyTarget = &api.PolicyTarget{
-			//		Kind: &api.PolicyTarget_Listener{
-			//			Listener: InternalGatewayName(trafficPolicy.Namespace, string(target.Name), string(*target.SectionName)),
-			//		},
-			//	}
-			//}
+			if target.SectionName != nil {
+				policyTarget = &api.PolicyTarget{
+					Kind: &api.PolicyTarget_Listener{
+						Listener: utils.InternalGatewayName(trafficPolicy.Namespace, string(target.Name), string(*target.SectionName)),
+					},
+				}
+			}
 
 		case wellknown.HTTPRouteKind:
 			policyTarget = &api.PolicyTarget{
 				Kind: &api.PolicyTarget_Route{
-					Route: trafficPolicy.Namespace + "/" + string(target.Name),
+					Route: utils.InternalRouteRuleName(trafficPolicy.Namespace, string(target.Name), ""),
 				},
 			}
-			// TODO(npolshak): add route rule support once https://github.com/agentgateway/agentgateway/pull/323 goes in
-			//if target.SectionName != nil {
-			//	policyTarget = &api.PolicyTarget{
-			//		Kind: &api.PolicyTarget_RouteRule{
-			//			RouteRule: trafficPolicy.Namespace + "/" + string(target.Name) + "/" + string(*target.SectionName),
-			//		},
-			//	}
-			//}
+			if target.SectionName != nil {
+				policyTarget = &api.PolicyTarget{
+					Kind: &api.PolicyTarget_RouteRule{
+						RouteRule: utils.InternalRouteRuleName(trafficPolicy.Namespace, string(target.Name), string(*target.SectionName)),
+					},
+				}
+			}
 
 		case wellknown.BackendGVK.Kind:
 			// kgateway backend kind (MCP, AI, etc.)
@@ -177,8 +177,6 @@ func translateTrafficPolicyToADP(
 
 // processExtAuthPolicy processes ExtAuth configuration and creates corresponding agentgateway policies
 func processExtAuthPolicy(ctx krt.HandlerContext, gatewayExtensions krt.Collection[*v1alpha1.GatewayExtension], trafficPolicy *v1alpha1.TrafficPolicy, policyName string, policyTarget *api.PolicyTarget) []ADPPolicy {
-	logger := logging.New("agentgateway/plugins/traffic")
-
 	// Look up the GatewayExtension referenced by the ExtAuth policy
 	extensionName := trafficPolicy.Spec.ExtAuth.ExtensionRef.Name
 	extensionNamespace := string(ptr.Deref(trafficPolicy.Spec.ExtAuth.ExtensionRef.Namespace, ""))
