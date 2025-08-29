@@ -5,6 +5,7 @@ Backends:
         backend: default/mcp-target
         port: 8000
       name: mcp-target
+      path: override-sse
       protocol: STREAMABLE_HTTP
   name: default/mcp-backend
 - name: default/mcp-target
@@ -17,7 +18,7 @@ Binds:
 Listeners:
 - bindKey: 80/default/example-gateway
   gatewayName: default/example-gateway
-  key: default/example-gateway/http
+  key: default/example-gateway.http
   name: http
   protocol: HTTP
 Routes:
@@ -27,6 +28,6 @@ Routes:
     weight: 1
   hostnames:
   - example.com
-  key: default.example-route.0.0.http
-  listenerKey: default/example-gateway/http
+  key: default/example-route.0.0.http
+  listenerKey: default/example-gateway.http
   routeName: default/example-route

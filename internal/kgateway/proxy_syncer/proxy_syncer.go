@@ -22,6 +22,7 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
+	kmetrics "github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections/metrics"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/irtranslator"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
@@ -249,7 +250,7 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtinternal.KrtOptions) 
 
 	s.backendPolicyReport = krt.NewSingleton(func(kctx krt.HandlerContext) *report {
 		backends := krt.Fetch(kctx, finalBackends)
-		merged := generateBackendPolicyReport(backends)
+		merged := GenerateBackendPolicyReport(backends)
 		return &report{merged}
 	}, krtopts.ToOptions("BackendsPolicyReport")...)
 
@@ -386,6 +387,8 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 
 	s.perclientSnapCollection.RegisterBatch(func(o []krt.Event[XdsSnapWrapper]) {
 		for _, e := range o {
+			cd := getDetailsFromXDSClientResourceName(e.Latest().ResourceName())
+
 			if e.Event != controllers.EventDelete {
 				snapWrap := e.Latest()
 				s.proxyTranslator.syncXds(ctx, snapWrap)
@@ -394,7 +397,22 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 				// if _, err := s.proxyTranslator.xdsCache.GetSnapshot(key); err == nil {
 				// 	s.proxyTranslator.xdsCache.ClearSnapshot(e.Latest().proxyKey)
 				// }
+
+				// On gateway deletion, there will not have been a StartResourceXDSSync() call,
+				// so it is necessary to start a resource sync here.
+				kmetrics.StartResourceXDSSync(kmetrics.ResourceSyncDetails{
+					Gateway:      cd.Gateway,
+					Namespace:    cd.Namespace,
+					ResourceType: wellknown.GatewayKind,
+					ResourceName: cd.Gateway,
+				})
 			}
+
+			kmetrics.EndResourceXDSSync(kmetrics.ResourceSyncDetails{
+				Namespace:    cd.Namespace,
+				Gateway:      cd.Gateway,
+				ResourceName: cd.Gateway,
+			})
 		}
 	}, true)
 

@@ -10,7 +10,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-	infextv1a2 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
+	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
@@ -32,7 +32,7 @@ func (r *inferencePoolReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		finishMetrics(rErr)
 	}()
 
-	pool := new(infextv1a2.InferencePool)
+	pool := new(inf.InferencePool)
 	if err := r.cli.Get(ctx, req.NamespacedName, pool); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
@@ -105,7 +105,7 @@ func (r *inferencePoolReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 // The deployer requires InferencePools to be finalized to remove cluster-scoped resources.
 // This can be removed if the endpoint picker no longer requires cluster-scoped resources.
 // See: https://github.com/kubernetes-sigs/gateway-api-inference-extension/issues/224 for details.
-func EnsureFinalizer(ctx context.Context, cli client.Client, pool *infextv1a2.InferencePool) error {
+func EnsureFinalizer(ctx context.Context, cli client.Client, pool *inf.InferencePool) error {
 	if slices.Contains(pool.Finalizers, wellknown.InferencePoolFinalizer) {
 		return nil
 	}
@@ -115,7 +115,7 @@ func EnsureFinalizer(ctx context.Context, cli client.Client, pool *infextv1a2.In
 
 // CleanupClusterScopedResources deletes the ClusterRoleBinding for the given pool.
 // TODO [danehans]: EPP should use role and rolebinding RBAC: https://github.com/kubernetes-sigs/gateway-api-inference-extension/issues/224
-func (r *inferencePoolReconciler) cleanupClusterScopedResources(ctx context.Context, pool *infextv1a2.InferencePool) error {
+func (r *inferencePoolReconciler) cleanupClusterScopedResources(ctx context.Context, pool *inf.InferencePool) error {
 	// The same release name as in the Helm template.
 	releaseName := fmt.Sprintf("%s-endpoint-picker", pool.Name)
 

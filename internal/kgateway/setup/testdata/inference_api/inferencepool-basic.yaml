@@ -29,7 +29,7 @@ spec:
     - backendRefs:
         - name: gateway-pool
           kind: InferencePool
-          group: inference.networking.x-k8s.io
+          group: inference.networking.k8s.io
           weight: 1
 ---
 # This service is auto created by the inference extension deployer but it's created
@@ -48,21 +48,23 @@ spec:
   selector:
     app: gateway
 ---
-apiVersion: inference.networking.x-k8s.io/v1alpha2
+apiVersion: inference.networking.k8s.io/v1
 kind: InferencePool
 metadata:
   name: gateway-pool
   namespace: gwtest
 spec:
-  extensionRef:
+  endpointPickerRef:
     failureMode: FailOpen
     group: ""
     kind: Service
     name: gateway-pool-endpoint-picker
     portNumber: 9002
   selector:
-    app: gateway
-  targetPortNumber: 8080
+    matchLabels:
+      app: gateway
+  targetPorts:
+  - number: 8080
 ---
 # A dummy Pod so the InferencePool has at least one endpoint.
 apiVersion: v1

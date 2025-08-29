@@ -11,6 +11,7 @@ import (
 type McpTargetApplyConfiguration struct {
 	Name     *string                  `json:"name,omitempty"`
 	Host     *string                  `json:"host,omitempty"`
+	Path     *string                  `json:"path,omitempty"`
 	Port     *int32                   `json:"port,omitempty"`
 	Protocol *apiv1alpha1.MCPProtocol `json:"protocol,omitempty"`
 }
@@ -34,6 +35,14 @@ func (b *McpTargetApplyConfiguration) WithName(value string) *McpTargetApplyConf
 // If called multiple times, the Host field is set to the value of the last call.
 func (b *McpTargetApplyConfiguration) WithHost(value string) *McpTargetApplyConfiguration {
 	b.Host = &value
+	return b
+}
+
+// WithPath sets the Path field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Path field is set to the value of the last call.
+func (b *McpTargetApplyConfiguration) WithPath(value string) *McpTargetApplyConfiguration {
+	b.Path = &value
 	return b
 }
 

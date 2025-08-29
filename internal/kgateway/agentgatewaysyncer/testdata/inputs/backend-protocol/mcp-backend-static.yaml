@@ -37,4 +37,5 @@ spec:
           name: mcp-target
           host: mcp-app.default.svc.cluster.local
           port: 8000
+          path: override-sse
           protocol: StreamableHTTP

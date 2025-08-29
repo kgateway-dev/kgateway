@@ -1,4 +1,4 @@
-package settings_test
+package settings
 
 import (
 	"fmt"
@@ -12,14 +12,13 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
-	"github.com/kgateway-dev/kgateway/v2/pkg/settings"
 )
 
 // allEnvVarsSet returns a map which contains keys corresponding to every ENV var that can be used to configure settings,
 // with values set to a non-default value.
 func allEnvVarsSet() map[string]string {
 	return map[string]string{
-		"KGW_DNS_LOOKUP_FAMILY":              string(settings.DnsLookupFamilyV4Only),
+		"KGW_DNS_LOOKUP_FAMILY":              string(DnsLookupFamilyV4Only),
 		"KGW_LISTENER_BIND_IPV6":             "false",
 		"KGW_ENABLE_ISTIO_INTEGRATION":       "true",
 		"KGW_ENABLE_ISTIO_AUTO_MTLS":         "true",
@@ -39,10 +38,11 @@ func allEnvVarsSet() map[string]string {
 		"KGW_DISCOVERY_NAMESPACE_SELECTORS":  `[{"matchExpressions":[{"key":"kubernetes.io/metadata.name","operator":"In","values":["infra"]}]},{"matchLabels":{"app":"a"}}]`,
 		"KGW_ENABLE_AGENT_GATEWAY":           "true",
 		"KGW_WEIGHTED_ROUTE_PRECEDENCE":      "true",
-		"KGW_ROUTE_REPLACEMENT_MODE":         string(settings.RouteReplacementStrict),
+		"KGW_ROUTE_REPLACEMENT_MODE":         string(RouteReplacementStrict),
 		"KGW_ENABLE_BUILTIN_DEFAULT_METRICS": "true",
 		"KGW_GLOBAL_POLICY_NAMESPACE":        "foo",
 		"KGW_DISABLE_LEADER_ELECTION":        "true",
+		"KGW_POLICY_MERGE":                   `{"TrafficPolicy":{"extProc":"DeepMerge"}}`,
 	}
 }
 
@@ -55,7 +55,7 @@ func TestSettings(t *testing.T) {
 		envVars map[string]string
 
 		// if set, then these are the expected populated settings
-		expectedSettings *settings.Settings
+		expectedSettings *Settings
 
 		// if set, then an error parsing the settings is expected to occur
 		expectedErrorStr string
@@ -65,8 +65,8 @@ func TestSettings(t *testing.T) {
 			// In this case the test will still be testing that expected default values are set, though our convention is to set it explicitly.
 			name:    "defaults to empty or default values",
 			envVars: map[string]string{},
-			expectedSettings: &settings.Settings{
-				DnsLookupFamily:             settings.DnsLookupFamilyV4Preferred,
+			expectedSettings: &Settings{
+				DnsLookupFamily:             DnsLookupFamilyV4Preferred,
 				ListenerBindIpv6:            true,
 				EnableIstioIntegration:      false,
 				EnableIstioAutoMtls:         false,
@@ -86,10 +86,11 @@ func TestSettings(t *testing.T) {
 				DiscoveryNamespaceSelectors: "[]",
 				EnableAgentGateway:          false,
 				WeightedRoutePrecedence:     false,
-				RouteReplacementMode:        settings.RouteReplacementStandard,
+				RouteReplacementMode:        RouteReplacementStandard,
 				EnableBuiltinDefaultMetrics: false,
 				GlobalPolicyNamespace:       "",
 				DisableLeaderElection:       false,
+				PolicyMerge:                 "{}",
 			},
 		},
 		{
@@ -97,8 +98,8 @@ func TestSettings(t *testing.T) {
 			// However, a separate test will fail if a new field with a non-default value is not added to the map returned by allEnvVarsSet()
 			name:    "all values set",
 			envVars: allEnvVarsSet(),
-			expectedSettings: &settings.Settings{
-				DnsLookupFamily:             settings.DnsLookupFamilyV4Only,
+			expectedSettings: &Settings{
+				DnsLookupFamily:             DnsLookupFamilyV4Only,
 				ListenerBindIpv6:            false,
 				EnableIstioIntegration:      true,
 				EnableIstioAutoMtls:         true,
@@ -118,10 +119,11 @@ func TestSettings(t *testing.T) {
 				DiscoveryNamespaceSelectors: `[{"matchExpressions":[{"key":"kubernetes.io/metadata.name","operator":"In","values":["infra"]}]},{"matchLabels":{"app":"a"}}]`,
 				EnableAgentGateway:          true,
 				WeightedRoutePrecedence:     true,
-				RouteReplacementMode:        settings.RouteReplacementStrict,
+				RouteReplacementMode:        RouteReplacementStrict,
 				EnableBuiltinDefaultMetrics: true,
 				GlobalPolicyNamespace:       "foo",
 				DisableLeaderElection:       true,
+				PolicyMerge:                 `{"TrafficPolicy":{"extProc":"DeepMerge"}}`,
 			},
 		},
 		{
@@ -159,8 +161,8 @@ func TestSettings(t *testing.T) {
 				"ANOTHER_VAR":                "abc",
 				"KGW_ENABLE_ISTIO_AUTO_MTLS": "true",
 			},
-			expectedSettings: &settings.Settings{
-				DnsLookupFamily:             settings.DnsLookupFamilyV4Preferred,
+			expectedSettings: &Settings{
+				DnsLookupFamily:             DnsLookupFamilyV4Preferred,
 				EnableIstioAutoMtls:         true,
 				ListenerBindIpv6:            true,
 				IstioNamespace:              "istio-system",
@@ -175,7 +177,8 @@ func TestSettings(t *testing.T) {
 				DiscoveryNamespaceSelectors: "[]",
 				EnableAgentGateway:          false,
 				WeightedRoutePrecedence:     false,
-				RouteReplacementMode:        settings.RouteReplacementStandard,
+				RouteReplacementMode:        RouteReplacementStandard,
+				PolicyMerge:                 "{}",
 			},
 		},
 	}
@@ -192,7 +195,7 @@ func TestSettings(t *testing.T) {
 				}
 			}
 
-			s, err := settings.BuildSettings()
+			s, err := BuildSettings()
 
 			if tc.expectedErrorStr != "" {
 				require.ErrorContains(t, err, tc.expectedErrorStr)
@@ -209,7 +212,7 @@ func TestSettings(t *testing.T) {
 
 // TestEnvVarCoverage tests that all settings are tested with non-default values.
 func TestEnvVarCoverage(t *testing.T) {
-	s := settings.Settings{}
+	s := Settings{}
 	settingsValue := reflect.ValueOf(s)
 
 	allEnvVars := allEnvVarsSet()
@@ -251,8 +254,10 @@ func cleanupEnvVars(t *testing.T, envVars map[string]string) {
 	}
 }
 
-var gatherRegexp = regexp.MustCompile("([^A-Z]+|[A-Z]+[^A-Z]+|[A-Z]+)")
-var acronymRegexp = regexp.MustCompile("([A-Z]+)([A-Z][^A-Z]+)")
+var (
+	gatherRegexp  = regexp.MustCompile("([^A-Z]+|[A-Z]+[^A-Z]+|[A-Z]+)")
+	acronymRegexp = regexp.MustCompile("([A-Z]+)([A-Z][^A-Z]+)")
+)
 
 // expectedEnvVars returns a map of all the env vars that should be set for the given Settings value.
 // The value of the map is the default value of the field.

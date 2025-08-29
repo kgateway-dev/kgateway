@@ -20,6 +20,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/serviceentry"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/trafficpolicy"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/waypoint"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/settings"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 )
 
@@ -70,11 +71,11 @@ func MergePlugins(plug ...sdk.Plugin) sdk.Plugin {
 	return ret
 }
 
-func Plugins(ctx context.Context, commoncol *common.CommonCollections, waypointGatewayClassName string) []sdk.Plugin {
+func Plugins(ctx context.Context, commoncol *common.CommonCollections, waypointGatewayClassName string, globalSettings settings.Settings) []sdk.Plugin {
 	return []sdk.Plugin{
 		// Add plugins here
 		backend.NewPlugin(ctx, commoncol),
-		trafficpolicy.NewPlugin(ctx, commoncol),
+		trafficpolicy.NewPlugin(ctx, commoncol, globalSettings.PolicyMerge),
 		directresponse.NewPlugin(ctx, commoncol),
 		kubernetes.NewPlugin(ctx, commoncol),
 		istio.NewPlugin(ctx, commoncol),

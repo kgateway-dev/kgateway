@@ -163,6 +163,8 @@ type Settings struct {
 
 	// Controls if leader election is disabled. Defaults to false.
 	DisableLeaderElection bool `split_words:"true" default:"false"`
+
+	PolicyMerge string `split_words:"true" default:"{}"`
 }
 
 // BuildSettings returns a zero-valued Settings obj if error is encountered when parsing env

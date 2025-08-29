@@ -484,9 +484,9 @@ func (s *AgentGwSyncer) buildXDSCollection(
 					Name:    getADPResourceName(res),
 					version: utils.HashProto(res),
 				})
-				for listenerName, count := range resource.attachedRoutes {
-					attachedRoutes[listenerName] += count
-				}
+			}
+			for listenerName, count := range resource.attachedRoutes {
+				attachedRoutes[listenerName] += count
 			}
 		}
 
@@ -526,24 +526,26 @@ func (s *AgentGwSyncer) buildStatusReporting() {
 	gatewayReports := krt.NewSingleton(func(kctx krt.HandlerContext) *GatewayReports {
 		proxies := krt.Fetch(kctx, s.xDS)
 		merged := make(map[types.NamespacedName]*reports.GatewayReport)
-		attachedRoutes := make(map[types.NamespacedName]map[string]uint)
 
+		attached := make(map[types.NamespacedName]map[string]uint)
 		for _, p := range proxies {
-			// Merge GW Reports for all Proxies' status reports
-			maps.Copy(merged, p.reports.Gateways)
-
-			// Collect attached routes for each gateway
-			if attachedRoutes[p.NamespacedName] == nil {
-				attachedRoutes[p.NamespacedName] = make(map[string]uint)
+			// merge GW status reports
+			if gwRep, ok := p.reports.Gateways[p.NamespacedName]; ok {
+				merged[p.NamespacedName] = gwRep
 			}
-			for listener, counts := range p.attachedRoutes {
-				attachedRoutes[p.NamespacedName][listener] += counts
+			// take max per listener across proxies
+			if attached[p.NamespacedName] == nil {
+				attached[p.NamespacedName] = make(map[string]uint)
+			}
+			for lis, c := range p.attachedRoutes {
+				if c > attached[p.NamespacedName][lis] {
+					attached[p.NamespacedName][lis] = c
+				}
 			}
 		}
-
 		return &GatewayReports{
 			Reports:        merged,
-			AttachedRoutes: attachedRoutes,
+			AttachedRoutes: attached,
 		}
 	})
 

@@ -9,12 +9,25 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/policy"
 )
 
+type mergeOpts struct {
+	TrafficPolicy trafficPolicyMergeOpts `json:"trafficPolicy,omitempty"`
+}
+
+type trafficPolicyMergeOpts struct {
+	ExtAuth string `json:"extAuth,omitempty"`
+
+	ExtProc string `json:"extProc,omitempty"`
+
+	Transformation string `json:"transformation,omitempty"`
+}
+
 func mergeAI(
 	p1, p2 *TrafficPolicy,
 	p2Ref *pluginsdkir.AttachedPolicyRef,
 	p2MergeOrigins pluginsdkir.MergeOrigins,
 	opts policy.MergeOptions,
 	mergeOrigins pluginsdkir.MergeOrigins,
+	_ trafficPolicyMergeOpts,
 ) {
 	accessor := fieldAccessor[aiPolicyIR]{
 		Get: func(spec *trafficPolicySpecIr) *aiPolicyIR { return spec.ai },
@@ -29,12 +42,70 @@ func mergeExtProc(
 	p2MergeOrigins pluginsdkir.MergeOrigins,
 	opts policy.MergeOptions,
 	mergeOrigins pluginsdkir.MergeOrigins,
+	tpOpts trafficPolicyMergeOpts,
 ) {
 	accessor := fieldAccessor[extprocIR]{
 		Get: func(spec *trafficPolicySpecIr) *extprocIR { return spec.extProc },
 		Set: func(spec *trafficPolicySpecIr, val *extprocIR) { spec.extProc = val },
 	}
-	defaultMerge(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, accessor, "extProc")
+
+	if tpOpts.ExtProc != "" {
+		// this is merging 2 policies at the same hierarchical level (no parent->child relationship),
+		// so use mergeOpts since it overrides the default merge strategy
+		opts.Strategy = policy.ToInternalMergeStrategy(tpOpts.ExtProc)
+	}
+	if !policy.IsMergeable(p1.spec.extProc, p2.spec.extProc, opts) {
+		return
+	}
+
+	switch opts.Strategy {
+	case policy.AugmentedDeepMerge:
+		if p1.spec.extProc == nil {
+			p1.spec.extProc = &extprocIR{}
+		}
+		// p2 will always have just 1 item in its providerNames, and if p1 contains that then
+		// it implies that this provider was already considered from a higher priority policy,
+		// so ignore it
+		if p2.spec.extProc.providerNames.Len() > 0 && !p1.spec.extProc.providerNames.IsSuperset(p2.spec.extProc.providerNames) {
+			// Always Concat so that the original slice in the IR is never modified
+			// Note: p1 is preferred over p2 (slice order)
+			p1.spec.extProc.perProviderConfig = slices.Concat(p1.spec.extProc.perProviderConfig, p2.spec.extProc.perProviderConfig)
+			// Always Clone so that the original slice in the IR is never modified
+			tmp := p1.spec.extProc.providerNames.Clone()
+			tmp.Insert(p2.spec.extProc.providerNames.UnsortedList()...)
+			p1.spec.extProc.providerNames = tmp
+			mergeOrigins.Append("extProc", p2Ref, p2MergeOrigins)
+		}
+		if p2.spec.extProc.disableAllProviders {
+			p1.spec.extProc.disableAllProviders = true
+			mergeOrigins.SetOne("extProc", p2Ref, p2MergeOrigins)
+		}
+
+	case policy.OverridableDeepMerge:
+		if p1.spec.extProc == nil {
+			p1.spec.extProc = &extprocIR{}
+		}
+		// p2 will always have just 1 item in its providerNames, and if p1 contains that then
+		// it implies that this provider was already considered from a higher priority policy,
+		// so ignore it
+		if p2.spec.extProc.providerNames.Len() > 0 && !p1.spec.extProc.providerNames.IsSuperset(p2.spec.extProc.providerNames) {
+			// Always Concat so that the original slice in the IR is never modified
+			// Note: p2 is preferred over p1 (slice order)
+			p1.spec.extProc.perProviderConfig = slices.Concat(p2.spec.extProc.perProviderConfig, p1.spec.extProc.perProviderConfig)
+			// Always Clone so that the original slice in the IR is never modified
+			tmp := p1.spec.extProc.providerNames.Clone()
+			tmp.Insert(p2.spec.extProc.providerNames.UnsortedList()...)
+			p1.spec.extProc.providerNames = tmp
+			mergeOrigins.Append("extProc", p2Ref, p2MergeOrigins)
+		}
+		if p2.spec.extProc.disableAllProviders {
+			p1.spec.extProc.disableAllProviders = true
+			mergeOrigins.SetOne("extProc", p2Ref, p2MergeOrigins)
+		}
+
+	default:
+		defaultMerge(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, accessor, "extProc")
+	}
 }
 
 func mergeTransformation(
@@ -43,7 +114,13 @@ func mergeTransformation(
 	p2MergeOrigins pluginsdkir.MergeOrigins,
 	opts policy.MergeOptions,
 	mergeOrigins pluginsdkir.MergeOrigins,
+	tpOpts trafficPolicyMergeOpts,
 ) {
+	if tpOpts.Transformation != "" {
+		// this is merging 2 policies at the same hierarchical level (no parent->child relationship),
+		// so use tpOpts since it overrides the default merge strategy
+		opts.Strategy = policy.ToInternalMergeStrategy(tpOpts.Transformation)
+	}
 	if !policy.IsMergeable(p1.spec.transformation, p2.spec.transformation, opts) {
 		return
 	}
@@ -53,8 +130,7 @@ func mergeTransformation(
 		if p1.spec.transformation == nil {
 			p1.spec.transformation = &transformationIR{config: &transformationpb.RouteTransformations{}}
 		}
-		// Always clone so that the original policy in p2 is not modified when
-		// the merge is invoked multiple times
+		// Always Clone so that the original slice in the IR is never modified
 		p1.spec.transformation.config.Transformations = slices.Clone(p2.spec.transformation.config.GetTransformations())
 		mergeOrigins.SetOne("transformation", p2Ref, p2MergeOrigins)
 
@@ -62,8 +138,7 @@ func mergeTransformation(
 		if p1.spec.transformation == nil {
 			p1.spec.transformation = &transformationIR{config: &transformationpb.RouteTransformations{}}
 		}
-		// Always Concat so that the original policy in p1 is not modified when
-		// the merge is invoked multiple times
+		// Always Concat so that the original slice in the IR is never modified
 		p1.spec.transformation.config.Transformations = slices.Concat(p1.spec.transformation.config.GetTransformations(), p2.spec.transformation.config.GetTransformations())
 		mergeOrigins.Append("transformation", p2Ref, p2MergeOrigins)
 
@@ -71,8 +146,7 @@ func mergeTransformation(
 		if p1.spec.transformation == nil {
 			p1.spec.transformation = &transformationIR{config: &transformationpb.RouteTransformations{}}
 		}
-		// Always Concat so that the original policy in p1/p2 is not modified when
-		// the merge is invoked multiple times
+		// Always Concat so that the original slice in the IR is never modified
 		p1.spec.transformation.config.Transformations = slices.Concat(p2.spec.transformation.config.GetTransformations(), p1.spec.transformation.config.GetTransformations())
 		mergeOrigins.Append("transformation", p2Ref, p2MergeOrigins)
 
@@ -87,6 +161,7 @@ func mergeRustformation(
 	p2MergeOrigins pluginsdkir.MergeOrigins,
 	opts policy.MergeOptions,
 	mergeOrigins pluginsdkir.MergeOrigins,
+	_ trafficPolicyMergeOpts,
 ) {
 	accessor := fieldAccessor[rustformationIR]{
 		Get: func(spec *trafficPolicySpecIr) *rustformationIR { return spec.rustformation },
@@ -101,12 +176,71 @@ func mergeExtAuth(
 	p2MergeOrigins pluginsdkir.MergeOrigins,
 	opts policy.MergeOptions,
 	mergeOrigins pluginsdkir.MergeOrigins,
+	tpOpts trafficPolicyMergeOpts,
 ) {
 	accessor := fieldAccessor[extAuthIR]{
 		Get: func(spec *trafficPolicySpecIr) *extAuthIR { return spec.extAuth },
 		Set: func(spec *trafficPolicySpecIr, val *extAuthIR) { spec.extAuth = val },
 	}
-	defaultMerge(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, accessor, "extAuth")
+
+	if tpOpts.ExtAuth != "" {
+		// this is merging 2 policies at the same hierarchical level (no parent->child relationship),
+		// so use mergeOpts since it overrides the default merge strategy
+		opts.Strategy = policy.ToInternalMergeStrategy(tpOpts.ExtAuth)
+	}
+	if !policy.IsMergeable(p1.spec.extAuth, p2.spec.extAuth, opts) {
+		return
+	}
+
+	switch opts.Strategy {
+	case policy.AugmentedDeepMerge:
+		if p1.spec.extAuth == nil {
+			p1.spec.extAuth = &extAuthIR{}
+		}
+		// as p2 is not a merged policy, it will always have just 1 item in its providerNames
+		// as each extauth policy can only reference a single provider.
+		// If p1 contains the singular provider in p2 then it implies that this provider
+		// was already considered from a higher priority policy, so ignore it
+		if p2.spec.extAuth.providerNames.Len() > 0 && !p1.spec.extAuth.providerNames.IsSuperset(p2.spec.extAuth.providerNames) {
+			// Always Concat so that the original slice in the IR is never modified
+			// Note: p1 is preferred over p2 (slice order)
+			p1.spec.extAuth.perProviderConfig = slices.Concat(p1.spec.extAuth.perProviderConfig, p2.spec.extAuth.perProviderConfig)
+			// Always Clone so that the original slice in the IR is never modified
+			tmp := p1.spec.extAuth.providerNames.Clone()
+			tmp.Insert(p2.spec.extAuth.providerNames.UnsortedList()...)
+			p1.spec.extAuth.providerNames = tmp
+			mergeOrigins.Append("extAuth", p2Ref, p2MergeOrigins)
+		}
+		if p2.spec.extAuth.disableAllProviders {
+			p1.spec.extAuth.disableAllProviders = true
+			mergeOrigins.SetOne("extAuth", p2Ref, p2MergeOrigins)
+		}
+
+	case policy.OverridableDeepMerge:
+		if p1.spec.extAuth == nil {
+			p1.spec.extAuth = &extAuthIR{}
+		}
+		// p2 will always have just 1 item in its providerNames, and if p1 contains that then
+		// it implies that this provider was already considered from a higher priority policy,
+		// so ignore it
+		if p2.spec.extAuth.providerNames.Len() > 0 && !p1.spec.extAuth.providerNames.IsSuperset(p2.spec.extAuth.providerNames) {
+			// Always Concat so that the original slice in the IR is never modified
+			// Note: p2 is preferred over p1 (slice order)
+			p1.spec.extAuth.perProviderConfig = slices.Concat(p2.spec.extAuth.perProviderConfig, p1.spec.extAuth.perProviderConfig)
+			// Always Clone so that the original slice in the IR is never modified
+			tmp := p1.spec.extAuth.providerNames.Clone()
+			tmp.Insert(p2.spec.extAuth.providerNames.UnsortedList()...)
+			p1.spec.extAuth.providerNames = tmp
+			mergeOrigins.Append("extAuth", p2Ref, p2MergeOrigins)
+		}
+		if p2.spec.extAuth.disableAllProviders {
+			p1.spec.extAuth.disableAllProviders = true
+			mergeOrigins.SetOne("extAuth", p2Ref, p2MergeOrigins)
+		}
+
+	default:
+		defaultMerge(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, accessor, "extAuth")
+	}
 }
 
 func mergeLocalRateLimit(
@@ -115,6 +249,7 @@ func mergeLocalRateLimit(
 	p2MergeOrigins pluginsdkir.MergeOrigins,
 	opts policy.MergeOptions,
 	mergeOrigins pluginsdkir.MergeOrigins,
+	_ trafficPolicyMergeOpts,
 ) {
 	accessor := fieldAccessor[localRateLimitIR]{
 		Get: func(spec *trafficPolicySpecIr) *localRateLimitIR { return spec.localRateLimit },
@@ -129,6 +264,7 @@ func mergeGlobalRateLimit(
 	p2MergeOrigins pluginsdkir.MergeOrigins,
 	opts policy.MergeOptions,
 	mergeOrigins pluginsdkir.MergeOrigins,
+	_ trafficPolicyMergeOpts,
 ) {
 	accessor := fieldAccessor[globalRateLimitIR]{
 		Get: func(spec *trafficPolicySpecIr) *globalRateLimitIR { return spec.globalRateLimit },
@@ -143,6 +279,7 @@ func mergeCORS(
 	p2MergeOrigins pluginsdkir.MergeOrigins,
 	opts policy.MergeOptions,
 	mergeOrigins pluginsdkir.MergeOrigins,
+	_ trafficPolicyMergeOpts,
 ) {
 	accessor := fieldAccessor[corsIR]{
 		Get: func(spec *trafficPolicySpecIr) *corsIR { return spec.cors },
@@ -157,6 +294,7 @@ func mergeCSRF(
 	p2MergeOrigins pluginsdkir.MergeOrigins,
 	opts policy.MergeOptions,
 	mergeOrigins pluginsdkir.MergeOrigins,
+	_ trafficPolicyMergeOpts,
 ) {
 	accessor := fieldAccessor[csrfIR]{
 		Get: func(spec *trafficPolicySpecIr) *csrfIR { return spec.csrf },
@@ -171,6 +309,7 @@ func mergeHeaderModifiers(
 	p2MergeOrigins pluginsdkir.MergeOrigins,
 	opts policy.MergeOptions,
 	mergeOrigins pluginsdkir.MergeOrigins,
+	_ trafficPolicyMergeOpts,
 ) {
 	accessor := fieldAccessor[headerModifiersIR]{
 		Get: func(spec *trafficPolicySpecIr) *headerModifiersIR { return spec.headerModifiers },
@@ -186,6 +325,7 @@ func mergeBuffer(
 	p2MergeOrigins pluginsdkir.MergeOrigins,
 	opts policy.MergeOptions,
 	mergeOrigins pluginsdkir.MergeOrigins,
+	_ trafficPolicyMergeOpts,
 ) {
 	accessor := fieldAccessor[bufferIR]{
 		Get: func(spec *trafficPolicySpecIr) *bufferIR { return spec.buffer },
@@ -200,6 +340,7 @@ func mergeAutoHostRewrite(
 	p2MergeOrigins pluginsdkir.MergeOrigins,
 	opts policy.MergeOptions,
 	mergeOrigins pluginsdkir.MergeOrigins,
+	_ trafficPolicyMergeOpts,
 ) {
 	accessor := fieldAccessor[autoHostRewriteIR]{
 		Get: func(spec *trafficPolicySpecIr) *autoHostRewriteIR { return spec.autoHostRewrite },
@@ -214,6 +355,7 @@ func mergeTimeouts(
 	p2MergeOrigins pluginsdkir.MergeOrigins,
 	opts policy.MergeOptions,
 	mergeOrigins pluginsdkir.MergeOrigins,
+	_ trafficPolicyMergeOpts,
 ) {
 	accessor := fieldAccessor[timeoutsIR]{
 		Get: func(spec *trafficPolicySpecIr) *timeoutsIR { return spec.timeouts },
@@ -228,6 +370,7 @@ func mergeRBAC(
 	p2MergeOrigins pluginsdkir.MergeOrigins,
 	opts policy.MergeOptions,
 	mergeOrigins pluginsdkir.MergeOrigins,
+	_ trafficPolicyMergeOpts,
 ) {
 	accessor := fieldAccessor[rbacIR]{
 		Get: func(spec *trafficPolicySpecIr) *rbacIR { return spec.rbac },
@@ -242,6 +385,7 @@ func mergeRetry(
 	p2MergeOrigins pluginsdkir.MergeOrigins,
 	opts policy.MergeOptions,
 	mergeOrigins pluginsdkir.MergeOrigins,
+	_ trafficPolicyMergeOpts,
 ) {
 	accessor := fieldAccessor[retryIR]{
 		Get: func(spec *trafficPolicySpecIr) *retryIR { return spec.retry },

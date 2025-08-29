@@ -10,7 +10,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
-	infextv1a2 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
+	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
@@ -24,36 +24,30 @@ func TestValidatePool(t *testing.T) {
 
 	tests := []struct {
 		name       string
-		modifyPool func(p *infextv1a2.InferencePool)
+		modifyPool func(p *inf.InferencePool)
 		svc        *corev1.Service
 		wantErrs   int
 	}{
 		{
-			name:       "missing ExtensionRef",
-			modifyPool: func(p *infextv1a2.InferencePool) { p.Spec.ExtensionRef = nil },
-			svc:        makeSvc(ns, svcName, 80, corev1.ProtocolTCP, corev1.ServiceTypeClusterIP),
-			wantErrs:   1,
-		},
-		{
 			name: "unsupported Group",
-			modifyPool: func(p *infextv1a2.InferencePool) {
-				p.Spec.ExtensionRef.Group = ptr.To(infextv1a2.Group("foo.example.com"))
+			modifyPool: func(p *inf.InferencePool) {
+				p.Spec.EndpointPickerRef.Group = ptr.To(inf.Group("foo.example.com"))
 			},
 			svc:      makeSvc(ns, svcName, 80, corev1.ProtocolTCP, corev1.ServiceTypeClusterIP),
 			wantErrs: 1,
 		},
 		{
 			name: "unsupported Kind",
-			modifyPool: func(p *infextv1a2.InferencePool) {
-				p.Spec.ExtensionRef.Kind = ptr.To(infextv1a2.Kind(wellknown.ConfigMapGVK.Kind))
+			modifyPool: func(p *inf.InferencePool) {
+				p.Spec.EndpointPickerRef.Kind = inf.Kind(wellknown.ConfigMapGVK.Kind)
 			},
 			svc:      makeSvc(ns, svcName, 80, corev1.ProtocolTCP, corev1.ServiceTypeClusterIP),
 			wantErrs: 1,
 		},
 		{
 			name: "port number too small",
-			modifyPool: func(p *infextv1a2.InferencePool) {
-				p.Spec.ExtensionRef.PortNumber = ptr.To(infextv1a2.PortNumber(0))
+			modifyPool: func(p *inf.InferencePool) {
+				p.Spec.EndpointPickerRef.PortNumber = ptr.To(inf.PortNumber(0))
 			},
 			// Service exposes port 0 as well, so only the range-error is produced
 			svc:      makeSvc(ns, svcName, 0, corev1.ProtocolTCP, corev1.ServiceTypeClusterIP),
@@ -61,27 +55,27 @@ func TestValidatePool(t *testing.T) {
 		},
 		{
 			name: "service not found",
-			modifyPool: func(p *infextv1a2.InferencePool) {
-				p.Spec.ExtensionRef.Name = infextv1a2.ObjectName("missing-svc")
+			modifyPool: func(p *inf.InferencePool) {
+				p.Spec.EndpointPickerRef.Name = inf.ObjectName("missing-svc")
 			},
 			svc:      nil,
 			wantErrs: 1,
 		},
 		{
 			name:       "happy path",
-			modifyPool: func(_ *infextv1a2.InferencePool) {},
+			modifyPool: func(_ *inf.InferencePool) {},
 			svc:        makeSvc(ns, svcName, 80, corev1.ProtocolTCP, corev1.ServiceTypeClusterIP),
 			wantErrs:   0,
 		},
 		{
 			name:       "ExternalName service rejected",
-			modifyPool: func(_ *infextv1a2.InferencePool) {},
+			modifyPool: func(_ *inf.InferencePool) {},
 			svc:        makeSvc(ns, svcName, 80, corev1.ProtocolTCP, corev1.ServiceTypeExternalName),
 			wantErrs:   1,
 		},
 		{
 			name:       "UDP port not accepted",
-			modifyPool: func(_ *infextv1a2.InferencePool) {},
+			modifyPool: func(_ *inf.InferencePool) {},
 			svc:        makeSvc(ns, svcName, 80, corev1.ProtocolUDP, corev1.ServiceTypeClusterIP),
 			wantErrs:   1,
 		},
@@ -133,24 +127,22 @@ func TestValidatePool(t *testing.T) {
 	}
 }
 
-func makeBasePool(ns, svcName string) *infextv1a2.InferencePool {
-	return &infextv1a2.InferencePool{
+func makeBasePool(ns, svcName string) *inf.InferencePool {
+	return &inf.InferencePool{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      svcName,
 			Namespace: ns,
 		},
-		Spec: infextv1a2.InferencePoolSpec{
-			Selector:         map[infextv1a2.LabelKey]infextv1a2.LabelValue{"foo": "bar"},
-			TargetPortNumber: 9002,
-			EndpointPickerConfig: infextv1a2.EndpointPickerConfig{
-				ExtensionRef: &infextv1a2.Extension{
-					ExtensionReference: infextv1a2.ExtensionReference{
-						Group:      ptr.To(infextv1a2.Group("")),
-						Kind:       ptr.To(infextv1a2.Kind(wellknown.ServiceKind)),
-						Name:       infextv1a2.ObjectName(svcName),
-						PortNumber: ptr.To(infextv1a2.PortNumber(80)),
-					},
-				},
+		Spec: inf.InferencePoolSpec{
+			Selector: inf.LabelSelector{
+				MatchLabels: map[inf.LabelKey]inf.LabelValue{"foo": "bar"},
+			},
+			TargetPorts: []inf.Port{{Number: 9002}},
+			EndpointPickerRef: inf.EndpointPickerRef{
+				Group:      ptr.To(inf.Group("")),
+				Kind:       inf.Kind(wellknown.ServiceKind),
+				Name:       inf.ObjectName(svcName),
+				PortNumber: ptr.To(inf.PortNumber(80)),
 			},
 		},
 	}

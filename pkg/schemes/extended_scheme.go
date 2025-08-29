@@ -12,7 +12,7 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 
-	infextv1a2 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
+	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 )
 
@@ -32,10 +32,10 @@ func AddGatewayV1A2Scheme(restConfig *rest.Config, scheme *runtime.Scheme) error
 	return nil
 }
 
-// AddInferExtV1A2Scheme adds the Inference Extension v1alpha2 and k8s RBAC v1 schemes to the
+// AddInferExtV1Scheme adds the Inference Extension v1 and k8s RBAC v1 schemes to the
 // provided scheme if the InferencePool CRD exists.
-func AddInferExtV1A2Scheme(restConfig *rest.Config, scheme *runtime.Scheme) (bool, error) {
-	exists, err := CRDExists(restConfig, infextv1a2.GroupVersion.Group, infextv1a2.GroupVersion.Version, wellknown.InferencePoolKind)
+func AddInferExtV1Scheme(restConfig *rest.Config, scheme *runtime.Scheme) (bool, error) {
+	exists, err := CRDExists(restConfig, inf.GroupVersion.Group, inf.GroupVersion.Version, wellknown.InferencePoolKind)
 	if err != nil {
 		return false, fmt.Errorf("error checking if %s CRD exists: %w", wellknown.InferencePoolKind, err)
 	}
@@ -45,8 +45,8 @@ func AddInferExtV1A2Scheme(restConfig *rest.Config, scheme *runtime.Scheme) (boo
 		if err := rbacv1.AddToScheme(scheme); err != nil {
 			return false, fmt.Errorf("error adding RBAC v1 to scheme: %w", err)
 		}
-		if err := infextv1a2.Install(scheme); err != nil {
-			return false, fmt.Errorf("error adding Gateway API Inference Extension v1alpha2 to scheme: %w", err)
+		if err := inf.Install(scheme); err != nil {
+			return false, fmt.Errorf("error adding Gateway API Inference Extension v1 to scheme: %w", err)
 		}
 	}
 

@@ -657,6 +657,7 @@ INFERENCE_SKIP_TESTS ?= -skip-tests EppUnAvailableFailOpen
 
 INFERENCE_CONFORMANCE_DIR := $(shell go list -m -f '{{.Dir}}' sigs.k8s.io/gateway-api-inference-extension)/conformance
 
+# TODO [danehans]: Remove `kubectl wait` when gateway-api-inference-extension/issues/1315 is fixed.
 .PHONY: gie-conformance
 gie-conformance: gie-crds ## Run the Gateway API Inference Extension conformance suite
 	@mkdir -p $(TEST_ASSET_DIR)/conformance
@@ -665,7 +666,10 @@ gie-conformance: gie-crds ## Run the Gateway API Inference Extension conformance
 	    -timeout=25m \
 	    -v $(INFERENCE_CONFORMANCE_DIR) \
 	    -args $(GIE_CONFORMANCE_ARGS) $(INFERENCE_SKIP_TESTS)
+	@echo "Waiting for gateway-conformance-infra namespace to terminate..."
+	kubectl wait ns gateway-conformance-infra --for=delete --timeout=2m || true
 
+# TODO [danehans]: Remove `kubectl wait` when gateway-api-inference-extension/issues/1315 is fixed.
 .PHONY: gie-conformance-%
 gie-conformance-%: gie-crds ## Run only the specified Gateway API Inference Extension conformance test by ShortName
 	@mkdir -p $(TEST_ASSET_DIR)/conformance
@@ -674,6 +678,8 @@ gie-conformance-%: gie-crds ## Run only the specified Gateway API Inference Exte
 	    -timeout=25m \
 	    -v $(INFERENCE_CONFORMANCE_DIR) $(INFERENCE_SKIP_TESTS) \
 	    -args $(GIE_CONFORMANCE_ARGS) -run-test=$*
+	@echo "Waiting for gateway-conformance-infra namespace to terminate..."
+	kubectl wait ns gateway-conformance-infra --for=delete --timeout=2m || true
 
 # An alias to run both Gateway API and Inference Extension conformance tests.
 .PHONY: all-conformance

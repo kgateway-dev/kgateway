@@ -21,7 +21,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
-	infv1a2 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
+	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	extplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
@@ -109,7 +109,7 @@ func buildPolicyWrapperCollection(
 
 			return &ir.PolicyWrapper{
 				ObjectSource: be.ObjectSource,
-				Policy:       be.Obj.(*infv1a2.InferencePool),
+				Policy:       be.Obj.(*inf.InferencePool),
 				PolicyIR:     irPool,
 			}
 		},
@@ -125,7 +125,9 @@ func buildBackendObjIrFromPool(pool *inferencePool) *ir.BackendObjectIR {
 		Namespace: pool.obj.GetNamespace(),
 		Name:      pool.obj.GetName(),
 	}
-	backend := ir.NewBackendObjectIR(objSrc, pool.targetPort, "")
+	// The backend's port is the first target port of the pool.
+	// InferencePool v1 only supports single port.
+	backend := ir.NewBackendObjectIR(objSrc, pool.targetPorts[0].number, "")
 	backend.GvPrefix = poolGroupKindName
 	backend.Obj = pool.obj
 	backend.ObjIr = pool
@@ -273,7 +275,7 @@ func (p *endpointPickerPass) HttpFilters(ctx context.Context, fc ir.FilterChainC
 
 	// Create a pool as placeholder for the static config
 	tmpPool := &inferencePool{
-		obj: &infv1a2.InferencePool{
+		obj: &inf.InferencePool{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "placeholder-pool",
 				Namespace: "placeholder-namespace",

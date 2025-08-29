@@ -5187,6 +5187,13 @@ func schema_kgateway_v2_api_v1alpha1_McpTarget(ref common.ReferenceCallback) com
 							Format:      "",
 						},
 					},
+					"path": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Path is the URL path of the MCP target endpoint. Defaults to \"/sse\" for SSE protocol or \"/mcp\" for StreamableHTTP protocol if not specified.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 					"port": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Port is the port number of the MCP target.",
@@ -7536,7 +7543,7 @@ func schema_kgateway_v2_api_v1alpha1_TrafficPolicySpec(ref common.ReferenceCallb
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "TrafficPolicySpec defines the desired state of a traffic policy.",
+				Description: "TrafficPolicySpec defines the desired state of a traffic policy. Note: Backend attachment is only supported for agentgateway.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"targetRefs": {

@@ -84,6 +84,13 @@ type PolicyAtt struct {
 	// that are at different levels in the config tree hierarchy.
 	HierarchicalPriority int
 
+	// PrecedenceWeight specifies the weight of the policy as an integer value (negative values are allowed).
+	// Policies with higher weight implies higher priority, and are evaluated before policies with lower weight.
+	// By default, policies have a weight of 0.
+	// The policy's weight is relevant to policy prioritization during policy merging, such that higher priority
+	// policies are preferred during a merge conflict or when ordering policies during a merge.
+	PrecedenceWeight int32
+
 	// MergeOrigins maps field names in the PolicyIr to their original source in the merged PolicyAtt.
 	// It can be used to determine which PolicyAtt a merged field came from.
 	// Only relevant to policy merging and does not contribute to KRT events
@@ -142,7 +149,8 @@ func (c PolicyAtt) Equals(in PolicyAtt) bool {
 		c.PolicyIr.Equals(in.PolicyIr) &&
 		ptrEquals(c.PolicyRef, in.PolicyRef) &&
 		c.InheritedPolicyPriority == in.InheritedPolicyPriority &&
-		c.HierarchicalPriority == in.HierarchicalPriority
+		c.HierarchicalPriority == in.HierarchicalPriority &&
+		c.PrecedenceWeight == in.PrecedenceWeight
 }
 
 func ptrEquals[T comparable](a, b *T) bool {

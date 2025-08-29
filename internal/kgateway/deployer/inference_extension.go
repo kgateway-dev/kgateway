@@ -7,7 +7,7 @@ import (
 	"helm.sh/helm/v3/pkg/chart"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	infextv1a2 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
+	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/helm"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
@@ -31,7 +31,7 @@ func (ie *InferenceExtension) GetValues(_ context.Context, obj client.Object) (m
 	if obj == nil {
 		return nil, fmt.Errorf("inference pool is not defined for deployer")
 	}
-	pool, ok := obj.(*infextv1a2.InferencePool)
+	pool, ok := obj.(*inf.InferencePool)
 	if !ok {
 		return nil, fmt.Errorf("client.Object that is not an inference pool has been passed in")
 	}

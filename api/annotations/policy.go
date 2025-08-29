@@ -1,8 +1,20 @@
 package annotations
 
-// InheritedPolicyPriority is the annotation used on a Gateway or parent HTTPRoute to specify
-// the priority of corresponding policies attached that are inherited by attached routes or child routes respectively.
-const InheritedPolicyPriority = "kgateway.dev/inherited-policy-priority"
+const (
+	// InheritedPolicyPriority is the annotation used on a Gateway or parent HTTPRoute to specify
+	// the priority of corresponding policies attached that are inherited by attached routes or child routes respectively.
+	InheritedPolicyPriority = "kgateway.dev/inherited-policy-priority"
+
+	// PolicyPrecedenceWeight is an annotation that can be set on a policy CR to specify the weight of
+	// the policy as an integer value (negative values are allowed).
+	// Policies with higher weight implies higher priority, and are evaluated before policies with lower weight.
+	// By default, policies have a weight of 0.
+	// The policy's weight is relevant to policy prioritization during policy merging, such that higher priority
+	// policies are preferred during a merge conflict or when ordering policies during a merge.
+	// Note: for policies that are implemented using GatewayExtensions (such as extAuth, etcProc), the weight specified on the GatewayExtension
+	// will be used instead.
+	PolicyPrecedenceWeight = "kgateway.dev/policy-weight"
+)
 
 // InheritedPolicyPriorityValue is the value for the InheritedPolicyPriority annotation
 type InheritedPolicyPriorityValue string
