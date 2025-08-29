@@ -72,6 +72,21 @@ replace github.com/agentgateway/agentgateway => ../local/agentgateway`,
 			expectedErr: true,
 		},
 		{
+			name: "multiple replace directives - last one is used",
+			goModContent: `module github.com/test/test
+
+go 1.24.6
+
+require (
+	github.com/agentgateway/agentgateway v0.7.5
+)
+
+replace github.com/agentgateway/agentgateway => github.com/agentgateway/agentgateway v0.8.0
+replace github.com/agentgateway/agentgateway => github.com/agentgateway/agentgateway v0.9.2`,
+			expectedVer: "0.9.2",
+			expectedErr: false,
+		},
+		{
 			name: "no agentgateway dependency",
 			goModContent: `module github.com/test/test
 
