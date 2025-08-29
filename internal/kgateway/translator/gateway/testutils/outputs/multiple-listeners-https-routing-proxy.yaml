@@ -2,13 +2,6 @@ Clusters:
 - connectTimeout: 5s
   metadata: {}
   name: test-backend-plugin_default_example-svc_80
-Listeners:
-- address:
-    socketAddress:
-      address: '::'
-      ipv4Compat: true
-      portValue: 443
-  name: listener~443
 Statuses:
   gateways:
     default/http:
