@@ -198,6 +198,8 @@ func (c BackendObjectIR) Equals(in BackendObjectIR) bool {
 	if (c.ObjIr == nil) != (in.ObjIr == nil) {
 		return false
 	}
+	// TODO: add an IR for Services to avoid the need for this
+	// see: internal/kgateway/extensions2/plugins/kubernetes/k8s.go
 	if c.ObjIr != nil && !c.ObjIr.Equals(in.ObjIr) {
 		return false
 	}
