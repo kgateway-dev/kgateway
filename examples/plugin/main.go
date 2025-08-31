@@ -220,7 +220,7 @@ func (s *ourPolicyPass) HttpFilters(ctx context.Context, fc ir.FilterChainCommon
 }
 
 // A function that initializes our plugins.
-func pluginFactory(ctx context.Context, commoncol *common.CommonCollections) []extensionsplug.Plugin {
+func pluginFactory(ctx context.Context, commoncol *common.CommonCollections, mergeSettingsJSON string) []extensionsplug.Plugin {
 	return []extensionsplug.Plugin{
 		{
 			ContributesPolicies: extensionsplug.ContributesPolicies{

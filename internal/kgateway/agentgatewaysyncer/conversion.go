@@ -39,6 +39,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	agwir "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 )
@@ -47,18 +48,24 @@ const (
 	gatewayTLSTerminateModeKey = "gateway.agentgateway.io/tls-terminate-mode"
 )
 
-func convertHTTPRouteToADP(ctx RouteContext, r gwv1.HTTPRouteRule, obj *gwv1.HTTPRoute, pos int, matchPos int) (*api.Route, *reporter.RouteCondition) {
-	// Generate route key - prefer user-provided name over position-based key
-	routeKey := getRouteKeyPosition(obj.ObjectMeta, pos) + "." + strconv.Itoa(matchPos)
+func convertHTTPRouteToADP(ctx RouteContext, r gwv1.HTTPRouteRule,
+	obj *gwv1.HTTPRoute, pos int, matchPos int,
+) (*api.Route, *reporter.RouteCondition) {
+	routeRuleKey := strconv.Itoa(pos) + "." + strconv.Itoa(matchPos)
+	var ruleName string
 	if r.Name != nil {
-		// Use the user provided name for policy attachment
-		routeKey = getRouteKeySectionName(obj.ObjectMeta, string(*r.Name))
+		// use the user provided name. this will be used to attach policies
+		routeRuleKey = string(*r.Name)
+		ruleName = utils.InternalRouteRuleName(obj.Namespace, obj.Name, string(*r.Name))
 	}
-
 	res := &api.Route{
-		Key:       routeKey,
-		RouteName: obj.Namespace + "/" + obj.Name,
-		RuleName:  defaultString(r.Name, ""),
+		// unique for route rule
+		Key: utils.InternalRouteRuleName(obj.Namespace, obj.Name, routeRuleKey),
+		// used for policy reference at route level
+		RouteName:   utils.InternalRouteRuleName(obj.Namespace, obj.Name, ""),
+		ListenerKey: "",
+		// used for policy reference at route rule (drops rule name if not specified)
+		RuleName: ruleName,
 	}
 
 	if err := processRouteMatches(&r, res); err != nil {
@@ -222,16 +229,20 @@ func isFilterErrorCritical(filterError *reporter.RouteCondition) bool {
 func convertTCPRouteToADP(ctx RouteContext, r gwv1alpha2.TCPRouteRule,
 	obj *gwv1alpha2.TCPRoute, pos int,
 ) (*api.TCPRoute, *reporter.RouteCondition) {
-	routeKey := getRouteKeyPosition(obj.ObjectMeta, pos)
+	routeRuleKey := strconv.Itoa(pos)
+	var ruleName string
 	if r.Name != nil {
 		// use the user provided name. this will be used to attach policies
-		routeKey = getRouteKeySectionName(obj.ObjectMeta, string(*r.Name))
+		routeRuleKey = getRouteKeySectionName(obj.ObjectMeta, string(*r.Name))
+		ruleName = utils.InternalRouteRuleName(obj.Namespace, obj.Name, string(*r.Name))
 	}
 	res := &api.TCPRoute{
-		Key:         routeKey,
-		RouteName:   obj.Namespace + "/" + obj.Name,
+		// unique for route rule
+		Key: utils.InternalRouteRuleName(obj.Namespace, obj.Name, routeRuleKey),
+		// used for policy reference (drops rule name if not specified)
+		RouteName:   utils.InternalRouteRuleName(obj.Namespace, obj.Name, ""),
 		ListenerKey: "",
-		RuleName:    defaultString(r.Name, ""),
+		RuleName:    ruleName,
 	}
 
 	// Build TCP destinations
@@ -248,16 +259,20 @@ func convertTCPRouteToADP(ctx RouteContext, r gwv1alpha2.TCPRouteRule,
 func convertGRPCRouteToADP(ctx RouteContext, r gwv1.GRPCRouteRule,
 	obj *gwv1.GRPCRoute, pos int,
 ) (*api.Route, *reporter.RouteCondition) {
-	routeKey := getRouteKeyPosition(obj.ObjectMeta, pos)
+	routeRuleKey := strconv.Itoa(pos)
+	var ruleName string
 	if r.Name != nil {
 		// use the user provided name. this will be used to attach policies
-		routeKey = getRouteKeySectionName(obj.ObjectMeta, string(*r.Name))
+		routeRuleKey = getRouteKeySectionName(obj.ObjectMeta, string(*r.Name))
+		ruleName = utils.InternalRouteRuleName(obj.Namespace, obj.Name, string(*r.Name))
 	}
 	res := &api.Route{
-		Key:         routeKey,
-		RouteName:   obj.Namespace + "/" + obj.Name,
+		// unique for route rule
+		Key: utils.InternalRouteRuleName(obj.Namespace, obj.Name, routeRuleKey),
+		// used for policy reference (drops rule name if not specified)
+		RouteName:   utils.InternalRouteRuleName(obj.Namespace, obj.Name, ""),
 		ListenerKey: "",
-		RuleName:    defaultString(r.Name, ""),
+		RuleName:    ruleName,
 	}
 
 	// Convert GRPC matches to ADP format
@@ -312,16 +327,20 @@ func convertGRPCRouteToADP(ctx RouteContext, r gwv1.GRPCRouteRule,
 func convertTLSRouteToADP(ctx RouteContext, r gwv1alpha2.TLSRouteRule,
 	obj *gwv1alpha2.TLSRoute, pos int,
 ) (*api.TCPRoute, *reporter.RouteCondition) {
-	routeKey := getRouteKeyPosition(obj.ObjectMeta, pos)
+	routeRuleKey := strconv.Itoa(pos)
+	var ruleName string
 	if r.Name != nil {
 		// use the user provided name. this will be used to attach policies
-		routeKey = getRouteKeySectionName(obj.ObjectMeta, string(*r.Name))
+		routeRuleKey = getRouteKeySectionName(obj.ObjectMeta, string(*r.Name))
+		ruleName = utils.InternalRouteRuleName(obj.Namespace, obj.Name, string(*r.Name))
 	}
 	res := &api.TCPRoute{
-		Key:         routeKey,
-		RouteName:   obj.Namespace + "/" + obj.Name,
+		// unique for route rule
+		Key: utils.InternalRouteRuleName(obj.Namespace, obj.Name, routeRuleKey),
+		// used for policy reference (drops rule name if not specified)
+		RouteName:   utils.InternalRouteRuleName(obj.Namespace, obj.Name, ""),
 		ListenerKey: "",
-		RuleName:    defaultString(r.Name, ""),
+		RuleName:    ruleName,
 	}
 
 	// Build TLS destinations
@@ -1476,10 +1495,6 @@ func routeGroupKindEqual(rgk1, rgk2 gwv1.RouteGroupKind) bool {
 
 func getGroup(rgk gwv1.RouteGroupKind) gwv1.Group {
 	return ptr.OrDefault(rgk.Group, wellknown.GatewayGroup)
-}
-
-func getRouteKeyPosition(obj metav1.ObjectMeta, pos int) string {
-	return obj.GetNamespace() + "." + obj.GetName() + "." + strconv.Itoa(pos)
 }
 
 func getRouteKeySectionName(obj metav1.ObjectMeta, sectionName string) string {

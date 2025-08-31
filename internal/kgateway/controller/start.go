@@ -72,7 +72,7 @@ type StartConfig struct {
 	RestConfig *rest.Config
 	// ExtensionsFactory is the factory function which will return an extensions.K8sGatewayExtensions
 	// This is responsible for producing the extension points that this controller requires
-	ExtraPlugins             func(ctx context.Context, commoncol *common.CommonCollections) []sdk.Plugin
+	ExtraPlugins             func(ctx context.Context, commoncol *common.CommonCollections, mergeSettingsJSON string) []sdk.Plugin
 	ExtraAgentgatewayPlugins func(ctx context.Context, agw *agentgatewayplugins.AgwCollections) []agentgatewayplugins.AgentgatewayPlugin
 	ExtraGatewayParameters   func(cli client.Client, inputs *deployer.Inputs) []deployer.ExtraGatewayParameters
 	Client                   istiokube.Client
@@ -119,7 +119,7 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 			setupLog.Info("adding endpoint-picker inference extension")
 
 			existingExtraPlugins := cfg.ExtraPlugins
-			cfg.ExtraPlugins = func(ctx context.Context, commoncol *common.CommonCollections) []sdk.Plugin {
+			cfg.ExtraPlugins = func(ctx context.Context, commoncol *common.CommonCollections, mergeSettingsJSON string) []sdk.Plugin {
 				var plugins []sdk.Plugin
 
 				// Add the inference extension plugin.
@@ -129,7 +129,7 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 
 				// If there was an existing ExtraPlugins function, append its plugins too.
 				if existingExtraPlugins != nil {
-					plugins = append(plugins, existingExtraPlugins(ctx, commoncol)...)
+					plugins = append(plugins, existingExtraPlugins(ctx, commoncol, cfg.SetupOpts.GlobalSettings.PolicyMerge)...)
 				}
 
 				return plugins
@@ -250,7 +250,7 @@ func pluginFactoryWithBuiltin(cfg StartConfig) extensions2.K8sGatewayExtensionsF
 		plugins := registry.Plugins(ctx, commoncol, cfg.WaypointGatewayClassName, *cfg.SetupOpts.GlobalSettings)
 		plugins = append(plugins, krtcollections.NewBuiltinPlugin(ctx))
 		if cfg.ExtraPlugins != nil {
-			plugins = append(plugins, cfg.ExtraPlugins(ctx, commoncol)...)
+			plugins = append(plugins, cfg.ExtraPlugins(ctx, commoncol, cfg.SetupOpts.GlobalSettings.PolicyMerge)...)
 		}
 		return registry.MergePlugins(plugins...)
 	}

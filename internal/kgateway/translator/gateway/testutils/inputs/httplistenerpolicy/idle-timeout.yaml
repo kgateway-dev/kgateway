@@ -2,56 +2,46 @@ apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:
   name: example-gateway
-  namespace: gwtest
 spec:
-  gatewayClassName: kgateway
+  gatewayClassName: example-gateway-class
   listeners:
   - name: http
-    port: 8080
     protocol: HTTP
-    hostname: www.example.com
-    allowedRoutes:
-      namespaces:
-        from: All
+    port: 80
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: example-svc
-  namespace: gwtest
 spec:
-  ports:
-  - port: 80
-    protocol: TCP
-    targetPort: 8080
   selector:
-    app: example
+    test: test
+  ports:
+    - protocol: HTTP
+      port: 80
+      targetPort: test
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
-  name: test-route
-  namespace: gwtest
+  name: example-route
 spec:
   parentRefs:
   - name: example-gateway
+  hostnames:
+  - "example.com"
   rules:
   - backendRefs:
     - name: example-svc
       port: 80
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
-kind: TrafficPolicy
+kind: HTTPListenerPolicy
 metadata:
-  name: gateway-level-invalid-policy
-  namespace: gwtest
+  name: idle-time
 spec:
   targetRefs:
   - group: gateway.networking.k8s.io
     kind: Gateway
     name: example-gateway
-  transformation:
-    request:
-      body:
-        parseAs: AsJson
-        value: "{{ invalid_template }"  ## Verify that STRICT mode needs to be used to catch this.
+  idleTimeout: "30s"

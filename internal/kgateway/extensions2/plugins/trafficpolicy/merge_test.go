@@ -32,7 +32,7 @@ func TestMergePoliciesPreservesErrors(t *testing.T) {
 		Errors:    []error{err2},
 	}
 
-	merged := policy.MergePolicies([]ir.PolicyAtt{p1, p2}, MergeTrafficPolicies, "")
+	merged := policy.MergePolicies([]ir.PolicyAtt{p1, p2}, mergeTrafficPolicies, "")
 	require.Len(t, merged.Errors, 2)
 	assert.Contains(t, merged.Errors, err1)
 	assert.Contains(t, merged.Errors, err2)

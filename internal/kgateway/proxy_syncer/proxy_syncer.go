@@ -250,7 +250,7 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtinternal.KrtOptions) 
 
 	s.backendPolicyReport = krt.NewSingleton(func(kctx krt.HandlerContext) *report {
 		backends := krt.Fetch(kctx, finalBackends)
-		merged := generateBackendPolicyReport(backends)
+		merged := GenerateBackendPolicyReport(backends)
 		return &report{merged}
 	}, krtopts.ToOptions("BackendsPolicyReport")...)
 

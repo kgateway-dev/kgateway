@@ -48,10 +48,11 @@ spec:
   mcp:
     name: mcp-server
     targets:
-      - selectors:
-          serviceSelector:
-            matchLabels:
-              app: mcp-app
+    - name: mcp-app
+      selector:
+        service:
+          matchLabels:
+            app: mcp-app
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: TrafficPolicy

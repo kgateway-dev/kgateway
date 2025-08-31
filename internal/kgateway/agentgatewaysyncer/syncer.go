@@ -395,6 +395,7 @@ func (s *AgentGwSyncer) buildAddressCollections(krtopts krtinternal.KrtOptions) 
 		resourceVersion := utils.HashProto(addrMessage)
 		result := &ADPCacheAddress{
 			NamespacedName:      types.NamespacedName{Name: obj.Service.GetName(), Namespace: obj.Service.GetNamespace()},
+			ResourceNames:       obj.ResourceName(),
 			Address:             addrMessage,
 			AddressResourceName: obj.ResourceName(),
 			AddressVersion:      resourceVersion,
@@ -408,6 +409,7 @@ func (s *AgentGwSyncer) buildAddressCollections(krtopts krtinternal.KrtOptions) 
 		resourceVersion := utils.HashProto(addrMessage)
 		result := &ADPCacheAddress{
 			NamespacedName:      types.NamespacedName{Name: obj.Workload.GetName(), Namespace: obj.Workload.GetNamespace()},
+			ResourceNames:       obj.ResourceName(),
 			Address:             addrMessage,
 			AddressVersion:      resourceVersion,
 			AddressResourceName: obj.ResourceName(),
@@ -651,7 +653,7 @@ func (s *AgentGwSyncer) Start(ctx context.Context) error {
 			snap := e.Latest()
 			if e.Event == controllers.EventDelete {
 				// TODO: we should probably clear, but this has been causing some undiagnosed issues.
-				//s.xdsCache.ClearSnapshot(snap.ResourceName())
+				// s.xdsCache.ClearSnapshot(snap.ResourceName())
 				continue
 			}
 			snapshot := &agentGwSnapshot{

@@ -1,0 +1,126 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: example-gateway
+spec:
+  gatewayClassName: agentgateway
+  listeners:
+  - name: http
+    protocol: HTTP
+    port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: example-route
+spec:
+  parentRefs:
+  - name: example-gateway
+  hostnames:
+  - "example.com"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /mcp-backend
+    backendRefs:
+    - group: gateway.kgateway.dev
+      kind: Backend
+      name: mcp-backend
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /mcp-svc
+    backendRefs:
+    - name: mcp-svc
+      port: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mcp-svc
+  labels:
+    app: mcp-app
+  annotations:
+    kgateway.dev/mcp-path: /test
+spec:
+  selector:
+    test: test
+  ports:
+  - protocol: TCP
+    appProtocol: kgateway.dev/mcp
+    port: 80
+    targetPort: test
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: mcp-backend
+spec:
+  type: MCP
+  mcp:
+    targets:
+    - name: mcp-static
+      static:
+        host: mcp-app.foo
+        port: 8000
+        protocol: StreamableHTTP
+    - name: mcp-selector
+      selector:
+        service:
+          matchLabels:
+            app: mcp-app
+---
+apiVersion: gateway.networking.k8s.io/v1alpha3
+kind: BackendTLSPolicy
+metadata:
+  name: mcp-tls-system-cert
+spec:
+  targetRefs:
+  - name: mcp-backend
+    kind: Backend
+    group: gateway.kgateway.dev
+    sectionName: mcp-static
+  - name: mcp-svc
+    kind: Service
+    sectionName: "80"
+  validation:
+    hostname: mcp-app.foo
+    wellKnownCACertificates: System
+---
+apiVersion: gateway.networking.k8s.io/v1alpha3
+kind: BackendTLSPolicy
+metadata:
+  name: mcp-tls-ca-cert
+spec:
+  targetRefs:
+  - name: mcp-svc
+    kind: Service
+  validation:
+    caCertificateRefs:
+    - name: ca-cert-1
+      kind: ConfigMap
+    - name: ca-cert-2
+      kind: ConfigMap      
+    hostname: mcp-svc.foo
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ca-cert-1
+data:
+  ca.crt: |-
+    -----BEGIN CERTIFICATE-----
+    MIID...
+    -----END CERTIFICATE-----
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ca-cert-2
+data:
+  ca.crt: |-
+    -----BEGIN CERTIFICATE-----
+    MIIE...
+    -----END CERTIFICATE-----
+---

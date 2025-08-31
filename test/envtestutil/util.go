@@ -40,14 +40,15 @@ import (
 var setupLogging = sync.Once{}
 
 func RunController(t *testing.T, logger *zap.Logger, globalSettings *settings.Settings, testEnv *envtest.Environment,
-	postStart func(t *testing.T, ctx context.Context, client istiokube.CLIClient) func(ctx context.Context, commoncol *common.CommonCollections) []pluginsdk.Plugin,
+	postStart func(t *testing.T, ctx context.Context, client istiokube.CLIClient) func(ctx context.Context, commoncol *common.CommonCollections, mergeSettingsJSON string) []pluginsdk.Plugin,
 	yamlFilesToApply [][]string,
 	run func(t *testing.T,
 		ctx context.Context,
 		kdbg *krt.DebugHandler,
 		client istiokube.CLIClient,
 		xdsPort int,
-	)) {
+	),
+) {
 	if globalSettings == nil {
 		st, err := settings.BuildSettings()
 		if err != nil {
@@ -88,7 +89,7 @@ func RunController(t *testing.T, logger *zap.Logger, globalSettings *settings.Se
 	}
 	istiokube.EnableCrdWatcher(client)
 
-	var extraPlugins func(ctx context.Context, commoncol *common.CommonCollections) []pluginsdk.Plugin
+	var extraPlugins func(ctx context.Context, commoncol *common.CommonCollections, mergeSettingsJSON string) []pluginsdk.Plugin
 	if postStart != nil {
 		extraPlugins = postStart(t, ctx, client)
 	}

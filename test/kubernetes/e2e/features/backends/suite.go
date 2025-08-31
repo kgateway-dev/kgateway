@@ -27,9 +27,9 @@ var _ e2e.NewSuiteFunc = NewTestingSuite
 
 var (
 	manifests = []string{
-		filepath.Join(fsutils.MustGetThisDir(), "inputs/base.yaml"),
+		filepath.Join(fsutils.MustGetThisDir(), "testdata/base.yaml"),
 		// backend in separate manifest to allow creation independently of routing config
-		filepath.Join(fsutils.MustGetThisDir(), "inputs/backend.yaml"),
+		filepath.Join(fsutils.MustGetThisDir(), "testdata/backend.yaml"),
 		defaults.CurlPodManifest,
 	}
 

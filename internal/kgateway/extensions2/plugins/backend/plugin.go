@@ -270,7 +270,7 @@ func processBackendForEnvoy(ctx context.Context, in ir.BackendObjectIR, out *env
 		logger.Error("failed to cast backend object")
 		return nil
 	}
-	ir, ok := in.ObjIr.(*BackendIr)
+	backendIr, ok := in.ObjIr.(*BackendIr)
 	if !ok {
 		logger.Error("failed to cast backend ir")
 		return nil
@@ -283,23 +283,28 @@ func processBackendForEnvoy(ctx context.Context, in ir.BackendObjectIR, out *env
 	case v1alpha1.BackendTypeStatic:
 		if err := processStaticBackendForEnvoy(spec.Static, out); err != nil {
 			logger.Error("failed to process static backend", "error", err)
+			backendIr.Errors = append(backendIr.Errors, err)
 		}
 	case v1alpha1.BackendTypeAWS:
-		if err := processAws(ir.AwsIr, out); err != nil {
+		if err := processAws(backendIr.AwsIr, out); err != nil {
 			logger.Error("failed to process aws backend", "error", err)
+			backendIr.Errors = append(backendIr.Errors, err)
 		}
 	case v1alpha1.BackendTypeAI:
-		err := ai.ProcessAIBackend(spec.AI, ir.AIIr.AISecret, ir.AIIr.AIMultiSecret, out)
+		err := ai.ProcessAIBackend(spec.AI, backendIr.AIIr.AISecret, backendIr.AIIr.AIMultiSecret, out)
 		if err != nil {
 			logger.Error("failed to process ai backend", "error", err)
+			backendIr.Errors = append(backendIr.Errors, err)
 		}
 		err = ai.AddUpstreamClusterHttpFilters(out)
 		if err != nil {
 			logger.Error("failed to add upstream cluster http filters", "error", err)
+			backendIr.Errors = append(backendIr.Errors, err)
 		}
 	case v1alpha1.BackendTypeDynamicForwardProxy:
 		if err := processDynamicForwardProxy(spec.DynamicForwardProxy, out); err != nil {
 			logger.Error("failed to process dynamic forward proxy backend", "error", err)
+			backendIr.Errors = append(backendIr.Errors, err)
 		}
 	}
 	return nil
