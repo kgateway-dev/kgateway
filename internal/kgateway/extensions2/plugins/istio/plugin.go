@@ -29,6 +29,12 @@ var VirtualIstioGK = schema.GroupKind{
 	Kind:  "istioplugin",
 }
 
+// Custom TLS annotation constants
+const (
+	// DisableIstioAutoMtlsAnnotation, if present, disables Istio auto-mTLS for a specific backend
+	DisableIstioAutoMtlsAnnotation = "istio.kgateway.io/disable-auto-mtls"
+)
+
 type IstioSettings struct {
 	EnableAutoMtls bool
 }
@@ -79,10 +85,18 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 
 type istioPlugin struct{}
 
-func isDisabledForUpstream(_ ir.BackendObjectIR) bool {
-	// return in.GetDisableIstioAutoMtls().GetValue()
+func isDisabledForUpstream(in ir.BackendObjectIR) bool {
+	if in.Obj == nil {
+		return false
+	}
 
-	// TODO: implement this; we can do it by checking annotations?
+	// Check if the backend has explicitly disabled Istio auto-mTLS
+	if val, exists := in.Obj.GetAnnotations()[DisableIstioAutoMtlsAnnotation]; exists {
+		if disabled, err := strconv.ParseBool(val); err == nil && disabled {
+			return true
+		}
+	}
+
 	return false
 }
 
@@ -104,7 +118,8 @@ func (p istioPlugin) processBackend(ctx context.Context, ir ir.PolicyIR, in ir.B
 	// Istio automtls will only be applied when:
 	// 1) automtls is enabled on the settings
 	// 2) the upstream has not disabled auto mtls
-	// 3) the upstream has no sslConfig
+	// 3) the upstream has no sslConfig (not implemented yet)
+	// 4) no explicit annotation to disable auto mtls
 	if st.EnableAutoMtls && !isDisabledForUpstream(in) && !doesClusterHaveSslConfigPresent(out) {
 		sni := buildSni(in)
 
