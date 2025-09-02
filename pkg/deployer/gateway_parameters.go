@@ -250,7 +250,7 @@ func defaultGatewayParameters(imageInfo *ImageInfo) *v1alpha1.GatewayParameters 
 					LogLevel: ptr.To("info"),
 					Image: &v1alpha1.Image{
 						Registry:   ptr.To(AgentgatewayRegistry),
-						Tag:        ptr.To(GetAgentgatewayVersion()),
+						Tag:        ptr.To(AgentgatewayDefaultTag),
 						Repository: ptr.To(AgentgatewayImage),
 						PullPolicy: (*corev1.PullPolicy)(ptr.To(imageInfo.PullPolicy)),
 					},
