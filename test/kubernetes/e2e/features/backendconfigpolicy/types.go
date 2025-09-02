@@ -23,16 +23,8 @@ var (
 		Name:      "gw",
 		Namespace: "default",
 	}
-	proxyDeployment     = &appsv1.Deployment{ObjectMeta: proxyObjectMeta}
-	proxyService        = &corev1.Service{ObjectMeta: proxyObjectMeta}
-	proxyServiceAccount = &corev1.ServiceAccount{ObjectMeta: proxyObjectMeta}
+	proxyService = &corev1.Service{ObjectMeta: proxyObjectMeta}
 
-	exampleSvc = &corev1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "example-svc",
-			Namespace: "default",
-		},
-	}
 	nginxPod = &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "nginx",
