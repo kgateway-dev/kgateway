@@ -24,73 +24,54 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/helpers"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/defaults"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/tests/base"
 )
 
 var _ e2e.NewSuiteFunc = NewTestingSuite
 
+var (
+	setup = base.TestCase{
+		Manifests: []string{
+			defaults.CurlPodManifest,
+			simpleServiceManifest,
+			gatewayManifest,
+			transformForHeadersManifest,
+			transformForBodyJsonManifest,
+			transformForBodyAsStringManifest,
+			gatewayAttachedTransformManifest,
+		},
+		Resources: []client.Object{
+			// resources from curl manifest
+			defaults.CurlPod,
+			// resources from service manifest
+			simpleSvc, simpleDeployment,
+			// resources from gateway manifest
+			gateway, gwp,
+			// deployer-generated resources
+			proxyDeployment, proxyService, proxyServiceAccount,
+			// routes and traffic policies
+			routeForHeaders, routeForBodyJson, routeForBodyAsString, routeBasic,
+			trafficPolicyForHeaders, trafficPolicyForBodyJson, trafficPolicyForBodyAsString, trafficPolicyForGatewayAttachedTransform,
+		},
+	}
+
+	// everything is applied during setup; there are no additional test-specific manifests
+	testCases = map[string]base.TestCase{}
+)
+
 // testingSuite is a suite of basic routing / "happy path" tests
 type testingSuite struct {
-	suite.Suite
-
-	ctx context.Context
-
-	// testInstallation contains all the metadata/utilities necessary to execute a series of tests
-	// against an installation of kgateway
-	testInstallation *e2e.TestInstallation
-
-	// manifests shared by all tests
-	commonManifests []string
-	// resources from manifests shared by all tests
-	commonResources []client.Object
+	*base.BaseTestingSuite
 }
 
 func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
 	return &testingSuite{
-		ctx:              ctx,
-		testInstallation: testInst,
+		base.NewBaseTestingSuite(ctx, testInst, setup, testCases),
 	}
 }
 
 func (s *testingSuite) SetupSuite() {
-	s.commonManifests = []string{
-		defaults.CurlPodManifest,
-		simpleServiceManifest,
-		gatewayManifest,
-		transformForHeadersManifest,
-		transformForBodyJsonManifest,
-		transformForBodyAsStringManifest,
-		gatewayAttachedTransformManifest,
-	}
-	s.commonResources = []client.Object{
-		// resources from curl manifest
-		defaults.CurlPod,
-		// resources from service manifest
-		simpleSvc, simpleDeployment,
-		// resources from gateway manifest
-		gateway,
-		// resources from specific routes
-		routeForHeaders, routeForBodyJson, routeBasic, routeForBodyAsString,
-		// deployer-generated resources
-		proxyDeployment, proxyService, proxyServiceAccount,
-	}
-
-	// set up common resources once
-	for _, manifest := range s.commonManifests {
-		err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, manifest)
-		s.Require().NoError(err, "can apply "+manifest)
-	}
-	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, s.commonResources...)
-
-	// make sure pods are running
-	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, defaults.CurlPod.GetNamespace(), metav1.ListOptions{
-		LabelSelector: defaults.CurlPodLabelSelector,
-	})
-	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, simpleDeployment.GetNamespace(), metav1.ListOptions{
-		LabelSelector: "app=backend-0,version=v1",
-	})
-	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, proxyObjectMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("app.kubernetes.io/name=%s", proxyObjectMeta.GetName()),
-	})
+	s.BaseTestingSuite.SetupSuite()
 
 	s.assertStatus(metav1.Condition{
 		Type:               string(v1alpha1.PolicyConditionAccepted),
@@ -101,25 +82,13 @@ func (s *testingSuite) SetupSuite() {
 	})
 }
 
-func (s *testingSuite) TearDownSuite() {
-	// clean up common resources
-	for _, manifest := range s.commonManifests {
-		err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, manifest)
-		s.Require().NoError(err, "can delete "+manifest)
-	}
-	s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, s.commonResources...)
-
-	// make sure pods are gone
-	s.testInstallation.Assertions.EventuallyPodsNotExist(s.ctx, simpleDeployment.GetNamespace(), metav1.ListOptions{
-		LabelSelector: "app=backend-0,version=v1",
-	})
-	s.testInstallation.Assertions.EventuallyPodsNotExist(s.ctx, proxyObjectMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("app.kubernetes.io/name=%s", proxyObjectMeta.GetName()),
-	})
-}
-
 func (s *testingSuite) TestGatewayWithTransformedRoute() {
-	s.hasDynamicModuleLoaded(false)
+	s.TestInstallation.Assertions.AssertEnvoyAdminApi(
+		s.Ctx,
+		proxyObjectMeta,
+		s.dynamicModuleAssertion(false),
+	)
+
 	testCases := []struct {
 		name      string
 		routeName string
@@ -199,7 +168,7 @@ func (s *testingSuite) TestGatewayWithTransformedRoute() {
 			},
 		},
 		{
-			name:      "dont pull json info  if not json", // shows we parse the body as json
+			name:      "dont pull json info if not json", // shows we parse the body as json
 			routeName: "route-for-body-json",
 			opts: []curl.Option{
 				curl.WithBody("hello"),
@@ -210,8 +179,8 @@ func (s *testingSuite) TestGatewayWithTransformedRoute() {
 		},
 	}
 	for _, tc := range testCases {
-		s.testInstallation.Assertions.AssertEventualCurlResponse(
-			s.ctx,
+		s.TestInstallation.Assertions.AssertEventualCurlResponse(
+			s.Ctx,
 			defaults.CurlPodExecOpt,
 			append(tc.opts,
 				curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
@@ -225,8 +194,8 @@ func (s *testingSuite) TestGatewayWithTransformedRoute() {
 func (s *testingSuite) TestGatewayRustformationsWithTransformedRoute() {
 	// make a copy of the original controller deployment
 	controllerDeploymentOriginal := &appsv1.Deployment{}
-	err := s.testInstallation.ClusterContext.Client.Get(s.ctx, client.ObjectKey{
-		Namespace: s.testInstallation.Metadata.InstallNamespace,
+	err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, client.ObjectKey{
+		Namespace: s.TestInstallation.Metadata.InstallNamespace,
 		Name:      helpers.DefaultKgatewayDeploymentName,
 	}, controllerDeploymentOriginal)
 	s.Assert().NoError(err, "has controller deployment")
@@ -244,36 +213,15 @@ func (s *testingSuite) TestGatewayRustformationsWithTransformedRoute() {
 
 	// patch the deployment
 	controllerDeployModified.ResourceVersion = ""
-	err = s.testInstallation.ClusterContext.Client.Patch(s.ctx, controllerDeployModified, client.MergeFrom(controllerDeploymentOriginal))
+	err = s.TestInstallation.ClusterContext.Client.Patch(s.Ctx, controllerDeployModified, client.MergeFrom(controllerDeploymentOriginal))
 	s.Assert().NoError(err, "patching controller deployment")
 
-	gwDeploymentOriginal := &appsv1.Deployment{}
-	err = s.testInstallation.ClusterContext.Client.Get(s.ctx, client.ObjectKey{
-		Namespace: "default",
-		Name:      "gw",
-	}, gwDeploymentOriginal)
-	s.Assert().NoError(err, "has gw deploymnet")
-	rustBacktraceEnv := corev1.EnvVar{
-		Name:  "RUST_BACKTRACE",
-		Value: "1",
-	}
-	gwDeploymentModified := gwDeploymentOriginal.DeepCopy()
-	gwDeploymentModified.Spec.Template.Spec.Containers[0].Env = append(
-		controllerDeployModified.Spec.Template.Spec.Containers[0].Env,
-		rustBacktraceEnv,
-	)
-
-	// patch the deployment
-	gwDeploymentModified.ResourceVersion = ""
-	err = s.testInstallation.ClusterContext.Client.Patch(s.ctx, gwDeploymentModified, client.MergeFrom(gwDeploymentOriginal))
-	s.Assert().NoError(err, "patching gateway deployment")
-
 	// wait for the changes to be reflected in pod
-	s.testInstallation.Assertions.EventuallyPodContainerContainsEnvVar(
-		s.ctx,
-		s.testInstallation.Metadata.InstallNamespace,
+	s.TestInstallation.Assertions.EventuallyPodContainerContainsEnvVar(
+		s.Ctx,
+		s.TestInstallation.Metadata.InstallNamespace,
 		metav1.ListOptions{
-			LabelSelector: "app.kubernetes.io/name=kgateway",
+			LabelSelector: defaults.ControllerLabelSelector,
 		},
 		helpers.KgatewayContainerName,
 		rustFormationsEnvVar,
@@ -282,15 +230,15 @@ func (s *testingSuite) TestGatewayRustformationsWithTransformedRoute() {
 	s.T().Cleanup(func() {
 		// revert to original version of deployment
 		controllerDeploymentOriginal.ResourceVersion = ""
-		err = s.testInstallation.ClusterContext.Client.Patch(s.ctx, controllerDeploymentOriginal, client.MergeFrom(controllerDeployModified))
+		err = s.TestInstallation.ClusterContext.Client.Patch(s.Ctx, controllerDeploymentOriginal, client.MergeFrom(controllerDeployModified))
 		s.Require().NoError(err)
 
 		// make sure the env var is removed
-		s.testInstallation.Assertions.EventuallyPodContainerDoesNotContainEnvVar(
-			s.ctx,
-			s.testInstallation.Metadata.InstallNamespace,
+		s.TestInstallation.Assertions.EventuallyPodContainerDoesNotContainEnvVar(
+			s.Ctx,
+			s.TestInstallation.Metadata.InstallNamespace,
 			metav1.ListOptions{
-				LabelSelector: "app.kubernetes.io/name=kgateway",
+				LabelSelector: defaults.ControllerLabelSelector,
 			},
 			helpers.KgatewayContainerName,
 			rustFormationsEnvVar.Name,
@@ -298,13 +246,18 @@ func (s *testingSuite) TestGatewayRustformationsWithTransformedRoute() {
 	})
 
 	// wait for pods to be running again, since controller deployment was patched
-	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, s.testInstallation.Metadata.InstallNamespace, metav1.ListOptions{
-		LabelSelector: "app.kubernetes.io/name=kgateway",
+	s.TestInstallation.Assertions.EventuallyPodsRunning(s.Ctx, s.TestInstallation.Metadata.InstallNamespace, metav1.ListOptions{
+		LabelSelector: defaults.ControllerLabelSelector,
 	})
-	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, proxyObjectMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: "app.kubernetes.io/name=gw",
+	s.TestInstallation.Assertions.EventuallyPodsRunning(s.Ctx, proxyObjectMeta.GetNamespace(), metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("%s=%s", defaults.WellKnownAppLabel, proxyObjectMeta.GetName()),
 	})
-	s.hasDynamicModuleLoaded(true)
+
+	s.TestInstallation.Assertions.AssertEnvoyAdminApi(
+		s.Ctx,
+		proxyObjectMeta,
+		s.dynamicModuleAssertion(true),
+	)
 
 	testCases := []struct {
 		name      string
@@ -341,8 +294,8 @@ func (s *testingSuite) TestGatewayRustformationsWithTransformedRoute() {
 		},
 	}
 	for _, tc := range testCases {
-		s.testInstallation.Assertions.AssertEventualCurlResponse(
-			s.ctx,
+		s.TestInstallation.Assertions.AssertEventualCurlResponse(
+			s.Ctx,
 			defaults.CurlPodExecOpt,
 			append(tc.opts,
 				curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
@@ -355,20 +308,20 @@ func (s *testingSuite) TestGatewayRustformationsWithTransformedRoute() {
 
 func (s *testingSuite) assertStatus(expected metav1.Condition) {
 	currentTimeout, pollingInterval := helpers.GetTimeouts()
-	p := s.testInstallation.Assertions
+	p := s.TestInstallation.Assertions
 	p.Gomega.Eventually(func(g gomega.Gomega) {
 		be := &v1alpha1.TrafficPolicy{}
 		objKey := client.ObjectKeyFromObject(trafficPolicyForHeaders)
-		err := s.testInstallation.ClusterContext.Client.Get(s.ctx, objKey, be)
+		err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, objKey, be)
 		g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get route policy %s", objKey)
 		objKey = client.ObjectKeyFromObject(trafficPolicyForBodyJson)
-		err = s.testInstallation.ClusterContext.Client.Get(s.ctx, objKey, be)
+		err = s.TestInstallation.ClusterContext.Client.Get(s.Ctx, objKey, be)
 		g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get route policy %s", objKey)
 		objKey = client.ObjectKeyFromObject(trafficPolicyForBodyAsString)
-		err = s.testInstallation.ClusterContext.Client.Get(s.ctx, objKey, be)
+		err = s.TestInstallation.ClusterContext.Client.Get(s.Ctx, objKey, be)
 		g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get route policy %s", objKey)
 		objKey = client.ObjectKeyFromObject(trafficPolicyForGatewayAttachedTransform)
-		err = s.testInstallation.ClusterContext.Client.Get(s.ctx, objKey, be)
+		err = s.TestInstallation.ClusterContext.Client.Get(s.Ctx, objKey, be)
 		g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get route policy %s", objKey)
 
 		actual := be.Status
@@ -383,27 +336,26 @@ func (s *testingSuite) assertStatus(expected metav1.Condition) {
 	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 }
 
-func (s *testingSuite) hasDynamicModuleLoaded(shouldBeLoaded bool) {
-	adminClient, closeFwd, err := envoyadmincli.NewPortForwardedClient(s.ctx, "deploy/"+proxyObjectMeta.Name, proxyObjectMeta.Namespace)
-	s.Assert().NoError(err, "get admin cli for envoy")
+func (s *testingSuite) dynamicModuleAssertion(shouldBeLoaded bool) func(ctx context.Context, adminClient *envoyadmincli.Client) {
+	return func(ctx context.Context, adminClient *envoyadmincli.Client) {
+		s.TestInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
+			listener, err := adminClient.GetSingleListenerFromDynamicListeners(ctx, "listener~8080")
+			g.Expect(err).ToNot(gomega.HaveOccurred(), "failed to get listener")
 
-	s.testInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
-		listener, err := adminClient.GetSingleListenerFromDynamicListeners(context.Background(), "listener~8080")
-		g.Expect(err).ToNot(gomega.HaveOccurred(), "failed to get listener")
-
-		// use a weak filter name check for cyclic imports
-		// also we dont intend for this to be long term so dont worry about pulling it out to wellknown or something like that for now
-		dynamicModuleLoaded := strings.Contains(listener.String(), "dynamic_modules/")
-		if shouldBeLoaded {
-			g.Expect(dynamicModuleLoaded).To(gomega.BeTrue(), fmt.Sprintf("dynamic module not loaded: %v", listener.String()))
-			dynamicModuleRouteConfigured := strings.Contains(listener.String(), "transformation/helper")
-			g.Expect(dynamicModuleRouteConfigured).To(gomega.BeTrue(), fmt.Sprintf("dynamic module routespecific not loaded: %v", listener.String()))
-		} else {
-			g.Expect(dynamicModuleLoaded).To(gomega.BeFalse(), fmt.Sprintf("dynamic module should not be loaded: %v", listener.String()))
-		}
-	}).
-		WithTimeout(time.Second*20).
-		WithPolling(time.Second).Should(gomega.Succeed(), "failed to get expected load of dynamic modules")
-
-	closeFwd()
+			// use a weak filter name check for cyclic imports
+			// also we dont intend for this to be long term so dont worry about pulling it out to wellknown or something like that for now
+			dynamicModuleLoaded := strings.Contains(listener.String(), "dynamic_modules/")
+			if shouldBeLoaded {
+				g.Expect(dynamicModuleLoaded).To(gomega.BeTrue(), fmt.Sprintf("dynamic module not loaded: %v", listener.String()))
+				dynamicModuleRouteConfigured := strings.Contains(listener.String(), "transformation/helper")
+				g.Expect(dynamicModuleRouteConfigured).To(gomega.BeTrue(), fmt.Sprintf("dynamic module routespecific not loaded: %v", listener.String()))
+			} else {
+				g.Expect(dynamicModuleLoaded).To(gomega.BeFalse(), fmt.Sprintf("dynamic module should not be loaded: %v", listener.String()))
+			}
+		}).
+			WithContext(ctx).
+			WithTimeout(time.Second*20).
+			WithPolling(time.Second).
+			Should(gomega.Succeed(), "failed to get expected load of dynamic modules")
+	}
 }
