@@ -14,10 +14,12 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/utils/ptr"
 
+	apiannotations "github.com/kgateway-dev/kgateway/v2/api/annotations"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 )
@@ -272,34 +274,35 @@ func buildMCPIr(krtctx krt.HandlerContext, be *v1alpha1.Backend, services krt.Co
 	// Process each target selector
 	for _, targetSelector := range be.Spec.MCP.Targets {
 		// Handle static targets
-		if targetSelector.StaticTarget != nil {
-			staticBackendRef := be.Namespace + "/" + targetSelector.StaticTarget.Name
+		if targetSelector.Static != nil {
+			// Since policies can target specific targets within an MCP backend using SectionName,
+			// the key for the target must include the Backend Name to prevent collisions with
+			// policies targeting the entire Backend that have the same name as the target
+			staticBackendRef := utils.InternalMCPStaticBackendName(be.Namespace, be.Name, targetSelector.Name)
 			staticBackend := &api.Backend{
 				Name: staticBackendRef,
 				Kind: &api.Backend_Static{
 					Static: &api.StaticBackend{
-						Host: targetSelector.StaticTarget.Host,
-						Port: targetSelector.StaticTarget.Port,
+						Host: targetSelector.Static.Host,
+						Port: targetSelector.Static.Port,
 					},
 				},
 			}
 			backends = append(backends, staticBackend)
 
 			mcpTarget := &api.MCPTarget{
-				Name: targetSelector.StaticTarget.Name,
+				Name: targetSelector.Name,
 				Backend: &api.BackendReference{
 					Kind: &api.BackendReference_Backend{
 						Backend: staticBackendRef,
 					},
-					Port: uint32(targetSelector.StaticTarget.Port),
+					Port: uint32(targetSelector.Static.Port),
 				},
-			}
-			if targetSelector.StaticTarget.Path != nil {
-				mcpTarget.Path = *targetSelector.StaticTarget.Path
+				Path: ptr.Deref(targetSelector.Static.Path, ""),
 			}
 
 			// Convert protocol if specified
-			switch targetSelector.StaticTarget.Protocol {
+			switch ptr.Deref(targetSelector.Static.Protocol, v1alpha1.MCPProtocol("")) {
 			case v1alpha1.MCPProtocolSSE:
 				mcpTarget.Protocol = api.MCPTarget_SSE
 			case v1alpha1.MCPProtocolStreamableHTTP:
@@ -312,14 +315,14 @@ func buildMCPIr(krtctx krt.HandlerContext, be *v1alpha1.Backend, services krt.Co
 
 			// Store static endpoint info
 			serviceEndpoints[staticBackendRef] = &ServiceEndpoint{
-				Host:      targetSelector.StaticTarget.Host,
-				Port:      targetSelector.StaticTarget.Port,
+				Host:      targetSelector.Static.Host,
+				Port:      targetSelector.Static.Port,
 				Namespace: be.Namespace,
 			}
 		}
 
 		// Handle service selectors
-		if targetSelector.Selectors != nil {
+		if targetSelector.Selector != nil {
 			// Build filters for service discovery
 			// Krt only allows 1 filter per type, so we build a composite filter here
 			generic := func(svc any) bool {
@@ -333,8 +336,8 @@ func buildMCPIr(krtctx krt.HandlerContext, be *v1alpha1.Backend, services krt.Co
 			}
 
 			// Apply service label selector
-			if targetSelector.Selectors.ServiceSelector != nil {
-				serviceSelector, err := metav1.LabelSelectorAsSelector(targetSelector.Selectors.ServiceSelector)
+			if targetSelector.Selector.Service != nil {
+				serviceSelector, err := metav1.LabelSelectorAsSelector(targetSelector.Selector.Service)
 				if err != nil {
 					return nil, fmt.Errorf("invalid service selector: %w", err)
 				}
@@ -347,8 +350,8 @@ func buildMCPIr(krtctx krt.HandlerContext, be *v1alpha1.Backend, services krt.Co
 			}
 
 			// Apply namespace selector
-			if targetSelector.Selectors.NamespaceSelector != nil {
-				namespaceSelector, err := metav1.LabelSelectorAsSelector(targetSelector.Selectors.NamespaceSelector)
+			if targetSelector.Selector.Namespace != nil {
+				namespaceSelector, err := metav1.LabelSelectorAsSelector(targetSelector.Selector.Namespace)
 				if err != nil {
 					return nil, fmt.Errorf("invalid namespace selector: %w", err)
 				}
@@ -402,6 +405,7 @@ func buildMCPIr(krtctx krt.HandlerContext, be *v1alpha1.Backend, services krt.Co
 							Port: uint32(port.Port),
 						},
 						Protocol: toMCPProtocol(appProtocol),
+						Path:     service.Annotations[apiannotations.MCPServiceHTTPPath],
 					}
 
 					mcpTargets = append(mcpTargets, mcpTarget)

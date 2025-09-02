@@ -10,7 +10,7 @@ spec:
       port: 8080
       targetPort: 3000
   selector:
-    app: backend-0
+    app.kubernetes.io/name: backend-0
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -20,12 +20,12 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      app: backend-0
+      app.kubernetes.io/name: backend-0
       version: v1
   template:
     metadata:
       labels:
-        app: backend-0
+        app.kubernetes.io/name: backend-0
         version: v1
     spec:
       containers:

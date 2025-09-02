@@ -27,6 +27,8 @@ const (
 	rbacPolicySuffix    = ":rbac"
 )
 
+var logger = logging.New("agentgateway/plugins")
+
 // NewTrafficPlugin creates a new TrafficPolicy plugin
 func NewTrafficPlugin(agw *AgwCollections) AgentgatewayPlugin {
 	col := krt.WrapClient(kclient.NewFiltered[*v1alpha1.TrafficPolicy](
@@ -54,8 +56,9 @@ func TranslateTrafficPolicy(
 	ctx krt.HandlerContext,
 	gatewayExtensions krt.Collection[*v1alpha1.GatewayExtension],
 	backends krt.Collection[*v1alpha1.Backend],
-	trafficPolicy *v1alpha1.TrafficPolicy) []ADPPolicy {
-	logger := logging.New("agentgateway/plugins/traffic")
+	trafficPolicy *v1alpha1.TrafficPolicy,
+) []ADPPolicy {
+	logger := logger.With("plugin_kind", "traffic")
 	var adpPolicies []ADPPolicy
 
 	isMcpTarget := false
@@ -169,8 +172,6 @@ func translateTrafficPolicyToADP(
 
 // processExtAuthPolicy processes ExtAuth configuration and creates corresponding agentgateway policies
 func processExtAuthPolicy(ctx krt.HandlerContext, gatewayExtensions krt.Collection[*v1alpha1.GatewayExtension], trafficPolicy *v1alpha1.TrafficPolicy, policyName string, policyTarget *api.PolicyTarget) []ADPPolicy {
-	logger := logging.New("agentgateway/plugins/traffic")
-
 	// Look up the GatewayExtension referenced by the ExtAuth policy
 	extensionName := trafficPolicy.Spec.ExtAuth.ExtensionRef.Name
 	extensionNamespace := string(ptr.Deref(trafficPolicy.Spec.ExtAuth.ExtensionRef.Namespace, ""))

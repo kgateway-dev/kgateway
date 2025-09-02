@@ -37,7 +37,7 @@ require (
 	helm.sh/helm/v3 v3.18.5
 	istio.io/api v1.26.0-alpha.0.0.20250820113222-47f832b86cdd
 	istio.io/client-go v1.26.0-alpha.0.0.20250820113822-8b883d128bac
-	istio.io/istio v0.0.0-20250728092114-6111de93199e
+	istio.io/istio v0.0.0-20250826222905-45e4f30947d5
 	k8s.io/api v0.33.4
 	k8s.io/apiextensions-apiserver v0.33.4
 	k8s.io/apimachinery v0.33.4
@@ -607,7 +607,7 @@ require (
 	k8s.io/cli-runtime v0.33.3 // indirect
 	k8s.io/code-generator v0.33.4 // indirect
 	k8s.io/component-base v0.33.4 // indirect
-	k8s.io/gengo/v2 v2.0.0-20250207200755-1244d31929d7 // indirect
+	k8s.io/gengo/v2 v2.0.0-20250829030910-f1dc67e67210 // indirect
 	k8s.io/kubectl v0.33.3 // indirect
 	lukechampine.com/blake3 v1.2.1 // indirect
 	mvdan.cc/gofumpt v0.8.0 // indirect
@@ -628,10 +628,6 @@ replace sigs.k8s.io/controller-tools => github.com/shashankram/controller-tools 
 
 replace github.com/imdario/mergo => github.com/imdario/mergo v0.3.16
 
-// Use a patched version of gengo to produce consistent zz_generated.openapi.go
-// Ref: https://github.com/kubernetes/gengo/issues/292
-replace k8s.io/gengo/v2 => github.com/kgateway-dev/gengo/v2 v2.0.0-20250512195215-4fa0a9df2978
-
 tool (
 	github.com/golang/mock/mockgen
 	github.com/golangci/golangci-lint/v2/cmd/golangci-lint
@@ -648,5 +644,3 @@ tool (
 	sigs.k8s.io/controller-tools/cmd/controller-gen
 	sigs.k8s.io/kind
 )
-
-replace istio.io/istio => github.com/danehans/istio v0.0.0-20250826180013-b3d3b41bf98a

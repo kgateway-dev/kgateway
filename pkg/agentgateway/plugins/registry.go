@@ -45,6 +45,7 @@ func Plugins(agw *AgwCollections) []AgentgatewayPlugin {
 		NewTrafficPlugin(agw),
 		NewInferencePlugin(agw),
 		NewA2APlugin(agw),
+		NewBackendTLSPlugin(agw),
 	}
 }
 

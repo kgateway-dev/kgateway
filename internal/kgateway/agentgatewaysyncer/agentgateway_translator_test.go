@@ -156,8 +156,8 @@ func TestBasic(t *testing.T) {
 
 	t.Run("Service with appProtocol=anything", func(t *testing.T) {
 		test(t, translatorTestCase{
-			inputFile:  "backend-protocol/svc-default.yaml",
-			outputFile: "backend-protocol/svc-default.yaml",
+			inputFile:  "backend/svc-default.yaml",
+			outputFile: "backend/svc-default.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
@@ -167,8 +167,8 @@ func TestBasic(t *testing.T) {
 
 	t.Run("Static Backend with no appProtocol", func(t *testing.T) {
 		test(t, translatorTestCase{
-			inputFile:  "backend-protocol/backend-default.yaml",
-			outputFile: "backend-protocol/backend-default.yaml",
+			inputFile:  "backend/backend-default.yaml",
+			outputFile: "backend/backend-default.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
@@ -178,8 +178,8 @@ func TestBasic(t *testing.T) {
 
 	t.Run("MCP Backend with selector target", func(t *testing.T) {
 		test(t, translatorTestCase{
-			inputFile:  "backend-protocol/mcp-backend-selector.yaml",
-			outputFile: "backend-protocol/mcp-backend-selector.yaml",
+			inputFile:  "backend/mcp-backend-selector.yaml",
+			outputFile: "backend/mcp-backend-selector.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
@@ -189,8 +189,8 @@ func TestBasic(t *testing.T) {
 
 	t.Run("MCP Backend with static target", func(t *testing.T) {
 		test(t, translatorTestCase{
-			inputFile:  "backend-protocol/mcp-backend-static.yaml",
-			outputFile: "backend-protocol/mcp-backend-static.yaml",
+			inputFile:  "backend/mcp-backend-static.yaml",
+			outputFile: "backend/mcp-backend-static.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
@@ -200,8 +200,8 @@ func TestBasic(t *testing.T) {
 
 	t.Run("AI Backend with openai provider", func(t *testing.T) {
 		test(t, translatorTestCase{
-			inputFile:  "backend-protocol/openai-backend.yaml",
-			outputFile: "backend-protocol/openai-backend.yaml",
+			inputFile:  "backend/openai-backend.yaml",
+			outputFile: "backend/openai-backend.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
@@ -211,8 +211,8 @@ func TestBasic(t *testing.T) {
 
 	t.Run("Backend with a2a provider", func(t *testing.T) {
 		test(t, translatorTestCase{
-			inputFile:  "backend-protocol/a2a-backend.yaml",
-			outputFile: "backend-protocol/a2a-backend.yaml",
+			inputFile:  "backend/a2a-backend.yaml",
+			outputFile: "backend/a2a-backend.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
@@ -222,8 +222,19 @@ func TestBasic(t *testing.T) {
 
 	t.Run("AI Backend with bedrock provider", func(t *testing.T) {
 		test(t, translatorTestCase{
-			inputFile:  "backend-protocol/bedrock-backend.yaml",
-			outputFile: "backend-protocol/bedrock-backend.yaml",
+			inputFile:  "backend/bedrock-backend.yaml",
+			outputFile: "backend/bedrock-backend.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("Backend TLS", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "backend/backend-tls.yaml",
+			outputFile: "backend/backend-tls.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
@@ -380,7 +391,8 @@ func TestBasic(t *testing.T) {
 			},
 		})
 	})
-	t.Run("TrafficPolicy with rbac on http route", func(t *testing.T) {
+
+	t.Run("TrafficPolicy with rbac on http route with Static backend", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "trafficpolicy/rbac/http-rbac.yaml",
 			outputFile: "trafficpolicy/rbac/http-rbac.yaml",
@@ -390,7 +402,8 @@ func TestBasic(t *testing.T) {
 			},
 		})
 	})
-	t.Run("TrafficPolicy with rbac on http route", func(t *testing.T) {
+
+	t.Run("TrafficPolicy with rbac on http route with MCP backend", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "trafficpolicy/rbac/mcp-rbac.yaml",
 			outputFile: "trafficpolicy/rbac/mcp-rbac.yaml",

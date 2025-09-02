@@ -216,7 +216,7 @@ func marshalProtoMessages[T proto.Message](messages []T, m protojson.MarshalOpti
 	return result, nil
 }
 
-type ExtraPluginsFn func(ctx context.Context, commoncol *common.CommonCollections) []pluginsdk.Plugin
+type ExtraPluginsFn func(ctx context.Context, commoncol *common.CommonCollections, mergeSettingsJSON string) []pluginsdk.Plugin
 
 func NewScheme(extraSchemes runtime.SchemeBuilder) *runtime.Scheme {
 	scheme := schemes.GatewayScheme()
@@ -664,7 +664,7 @@ func (tc TestCase) Run(
 
 	var extraPlugs []pluginsdk.Plugin
 	if extraPluginsFn != nil {
-		extraPlugins := extraPluginsFn(ctx, commoncol)
+		extraPlugins := extraPluginsFn(ctx, commoncol, settings.PolicyMerge)
 		extraPlugs = append(extraPlugs, extraPlugins...)
 	}
 	plugins = append(plugins, extraPlugs...)

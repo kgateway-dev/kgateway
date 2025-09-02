@@ -36,19 +36,6 @@ Routes:
 - backends:
   - backend:
       port: 80
-      service: default/foo-svc.default.svc.cluster.local
-    weight: 1
-  hostnames:
-  - foo.example.com
-  key: default/foo-route.0.0.http
-  listenerKey: default/example-gateway.http
-  matches:
-  - path:
-      pathPrefix: /login
-  routeName: default/foo-route
-- backends:
-  - backend:
-      port: 80
       service: default/bar-svc-canary.default.svc.cluster.local
     weight: 1
   hostnames:
@@ -80,3 +67,16 @@ Routes:
   key: default/example-route.0.0.http
   listenerKey: default/example-gateway.http
   routeName: default/example-route
+- backends:
+  - backend:
+      port: 80
+      service: default/foo-svc.default.svc.cluster.local
+    weight: 1
+  hostnames:
+  - foo.example.com
+  key: default/foo-route.0.0.http
+  listenerKey: default/example-gateway.http
+  matches:
+  - path:
+      pathPrefix: /login
+  routeName: default/foo-route

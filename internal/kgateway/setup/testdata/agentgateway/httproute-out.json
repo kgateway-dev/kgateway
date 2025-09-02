@@ -8,7 +8,7 @@
           "hostname": "http-direct-response.gwtest.svc.cluster.local",
           "addresses": [
             {
-              "address": "CgAAZw=="
+              "address": "CgAAYw=="
             }
           ],
           "ports": [
@@ -29,7 +29,7 @@
           "hostname": "http-grpcroute.gwtest.svc.cluster.local",
           "addresses": [
             {
-              "address": "CgAAJA=="
+              "address": "CgAA4A=="
             }
           ],
           "ports": [
@@ -50,7 +50,7 @@
           "hostname": "http-httproute.gwtest.svc.cluster.local",
           "addresses": [
             {
-              "address": "CgAAng=="
+              "address": "CgAARQ=="
             }
           ],
           "ports": [
@@ -77,7 +77,7 @@
           "ports": [
             {
               "service_port": 443,
-              "target_port": 44805
+              "target_port": 37023
             }
           ],
           "ip_families": 1
@@ -92,7 +92,7 @@
           "hostname": "reviews.gwtest.svc.cluster.local",
           "addresses": [
             {
-              "address": "CgAASQ=="
+              "address": "CgAAYA=="
             }
           ],
           "ports": [
@@ -113,6 +113,29 @@
     {
       "Type": {
         "Workload": {
+          "uid": "/discovery.k8s.io/EndpointSlice/default/kubernetes/192.168.4.24",
+          "name": "kubernetes",
+          "namespace": "default",
+          "addresses": [
+            "wKgEGA=="
+          ],
+          "services": {
+            "default/kubernetes.default.svc.cluster.local": {
+              "ports": [
+                {
+                  "service_port": 443,
+                  "target_port": 37023
+                }
+              ]
+            }
+          },
+          "network_mode": 1
+        }
+      }
+    },
+    {
+      "Type": {
+        "Workload": {
           "uid": "//Pod/gwtest/reviews-1",
           "name": "reviews-1",
           "namespace": "gwtest",
@@ -122,7 +145,7 @@
           "service_account": "default",
           "node": "worker",
           "canonical_name": "reviews",
-          "canonical_revision": "latest",
+          "canonical_revision": "v1",
           "workload_type": 2,
           "workload_name": "reviews-1",
           "services": {
@@ -155,7 +178,7 @@
           "service_account": "default",
           "node": "worker2",
           "canonical_name": "reviews",
-          "canonical_revision": "latest",
+          "canonical_revision": "v2",
           "workload_type": 2,
           "workload_name": "reviews-2",
           "services": {
@@ -221,7 +244,7 @@
           "service_account": "default",
           "node": "worker4",
           "canonical_name": "reviews",
-          "canonical_revision": "latest",
+          "canonical_revision": "v1",
           "workload_type": 2,
           "workload_name": "reviews-4",
           "services": {

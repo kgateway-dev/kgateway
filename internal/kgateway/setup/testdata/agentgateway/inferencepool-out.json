@@ -8,7 +8,7 @@
           "hostname": "gateway-pool-endpoint-picker.gwtest.svc.cluster.local",
           "addresses": [
             {
-              "address": "CgAALA=="
+              "address": "CgAAlQ=="
             }
           ],
           "ports": [
@@ -46,7 +46,7 @@
           "hostname": "http-direct-response.gwtest.svc.cluster.local",
           "addresses": [
             {
-              "address": "CgAAZw=="
+              "address": "CgAAYw=="
             }
           ],
           "ports": [
@@ -67,7 +67,7 @@
           "hostname": "http-grpcroute.gwtest.svc.cluster.local",
           "addresses": [
             {
-              "address": "CgAAJA=="
+              "address": "CgAA4A=="
             }
           ],
           "ports": [
@@ -88,7 +88,7 @@
           "hostname": "http-httproute.gwtest.svc.cluster.local",
           "addresses": [
             {
-              "address": "CgAAng=="
+              "address": "CgAARQ=="
             }
           ],
           "ports": [
@@ -109,7 +109,7 @@
           "hostname": "http-inferencepool.gwtest.svc.cluster.local",
           "addresses": [
             {
-              "address": "CgAAQg=="
+              "address": "CgAAIw=="
             }
           ],
           "ports": [
@@ -136,10 +136,33 @@
           "ports": [
             {
               "service_port": 443,
-              "target_port": 44805
+              "target_port": 37023
             }
           ],
           "ip_families": 1
+        }
+      }
+    },
+    {
+      "Type": {
+        "Workload": {
+          "uid": "/discovery.k8s.io/EndpointSlice/default/kubernetes/192.168.4.24",
+          "name": "kubernetes",
+          "namespace": "default",
+          "addresses": [
+            "wKgEGA=="
+          ],
+          "services": {
+            "default/kubernetes.default.svc.cluster.local": {
+              "ports": [
+                {
+                  "service_port": 443,
+                  "target_port": 37023
+                }
+              ]
+            }
+          },
+          "network_mode": 1
         }
       }
     },
@@ -155,7 +178,7 @@
           "service_account": "default",
           "node": "worker",
           "canonical_name": "reviews",
-          "canonical_revision": "latest",
+          "canonical_revision": "v1",
           "workload_type": 2,
           "workload_name": "reviews-1",
           "status": 1
@@ -174,7 +197,7 @@
           "service_account": "default",
           "node": "worker2",
           "canonical_name": "reviews",
-          "canonical_revision": "latest",
+          "canonical_revision": "v2",
           "workload_type": 2,
           "workload_name": "reviews-2",
           "status": 1
@@ -212,7 +235,7 @@
           "service_account": "default",
           "node": "worker4",
           "canonical_name": "reviews",
-          "canonical_revision": "latest",
+          "canonical_revision": "v1",
           "workload_type": 2,
           "workload_name": "reviews-4",
           "status": 1
@@ -308,7 +331,7 @@
             {
               "backend": {
                 "Kind": {
-                  "Service": "gwtest/gateway-pool.gwtest.svc.cluster.local"
+                  "Service": "gwtest/gateway-pool.gwtest.inference.cluster.local"
                 },
                 "port": 8080
               },
