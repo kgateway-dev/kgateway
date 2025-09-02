@@ -41,7 +41,7 @@ func TestBasic(t *testing.T) {
 		translatortest.TestTranslation(t, ctx, inputFiles, expectedProxyFile, in.gwNN, in.assertReports, settingOpts...)
 	}
 
-	t.Run("gateway with no routes", func(t *testing.T) {
+	t.Run("gateway with no routes should not add empty filter chain", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "gateway-only/gateway.yaml",
 			outputFile: "gateway-only/proxy.yaml",
@@ -51,6 +51,7 @@ func TestBasic(t *testing.T) {
 			},
 		})
 	})
+
 	t.Run("http gateway with per connection buffer limit", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "gateway-per-conn-buf-lim/gateway.yaml",
