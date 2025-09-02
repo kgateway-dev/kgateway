@@ -28,6 +28,12 @@ var (
 			Namespace: "default",
 		},
 	}
+	gwp = &v1alpha1.GatewayParameters{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "gw-params",
+			Namespace: "default",
+		},
+	}
 
 	routeForName = func(name string) *gwv1.HTTPRoute {
 		return &gwv1.HTTPRoute{
