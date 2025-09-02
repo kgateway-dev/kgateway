@@ -237,7 +237,7 @@ func (s *AgentGwSyncer) buildADPResources(
 	}
 	adpRoutes := ADPRouteCollection(s.agwCollections.HTTPRoutes, s.agwCollections.GRPCRoutes, s.agwCollections.TCPRoutes, s.agwCollections.TLSRoutes, routeInputs, krtopts, s.plugins)
 	if s.agwPlugins.AdditionalResources != nil && s.agwPlugins.AdditionalResources.AdditionalRoutes != nil {
-		listeners = krt.JoinCollection([]krt.Collection[agwir.ADPResourcesForGateway]{adpRoutes, s.agwPlugins.AdditionalResources.AdditionalRoutes})
+		adpRoutes = krt.JoinCollection([]krt.Collection[agwir.ADPResourcesForGateway]{adpRoutes, s.agwPlugins.AdditionalResources.AdditionalRoutes})
 	}
 
 	adpPolicies := ADPPolicyCollection(binds, s.agwPlugins)
