@@ -261,6 +261,52 @@ func (s *testingSuite) TestBackendConfigPolicySimpleTLS() {
 	)
 }
 
+func (s *testingSuite) TestBackendConfigPolicyTLSSystemCA() {
+	manifests := []string{
+		testdefaults.CurlPodManifest,
+		nginxManifest,
+		systemCAManifest,
+	}
+	manifestObjects := []client.Object{
+		testdefaults.CurlPod,
+		proxyService, proxyServiceAccount, proxyDeployment,
+		nginxPod,
+	}
+
+	s.T().Cleanup(func() {
+		for _, m := range manifests {
+			_ = s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, m)
+		}
+		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, manifestObjects...)
+	})
+
+	for _, m := range manifests {
+		s.Require().NoError(s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, m))
+	}
+	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, manifestObjects...)
+
+	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, testdefaults.CurlPod.GetNamespace(), metav1.ListOptions{
+		LabelSelector: testdefaults.CurlPodLabelSelector,
+	})
+	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, nginxPod.ObjectMeta.GetNamespace(), metav1.ListOptions{
+		LabelSelector: "app.kubernetes.io/name=nginx",
+	})
+
+	// self-signed upstream should fail when using system CA certificates
+	s.testInstallation.Assertions.AssertEventualCurlResponse(
+		s.ctx,
+		testdefaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
+			curl.WithPort(8080),
+			curl.WithHeadersOnly(),
+		},
+		&testmatchers.HttpResponse{
+			StatusCode: http.StatusBadGateway, // 502 expected on TLS validation failure
+		},
+	)
+}
+
 func (s *testingSuite) TestBackendConfigPolicyOutlierDetection() {
 	// This test assumes that the `outlierDetectionManifest` sets up a
 	// deployment with two httpbin pods, and we always ask them to respond with

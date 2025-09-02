@@ -16,6 +16,7 @@ var (
 	nginxManifest            = filepath.Join(fsutils.MustGetThisDir(), "testdata", "nginx.yaml")
 	tlsInsecureManifest      = filepath.Join(fsutils.MustGetThisDir(), "testdata", "tls-insecure.yaml")
 	simpleTLSManifest        = filepath.Join(fsutils.MustGetThisDir(), "testdata", "simple-tls.yaml")
+	systemCAManifest         = filepath.Join(fsutils.MustGetThisDir(), "testdata", "system-ca.yaml")
 	outlierDetectionManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "outlierdetection.yaml")
 	// objects
 	proxyObjectMeta = metav1.ObjectMeta{
