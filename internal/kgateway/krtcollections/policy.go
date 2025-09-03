@@ -39,6 +39,7 @@ var (
 	ErrMissingReferenceGrant = errors.New("missing reference grant")
 	ErrUnknownBackendKind    = errors.New("unknown backend kind")
 	ErrPolicyNotFound        = errors.New("policy not found")
+	ErrBackendPortNotAllowed = errors.New("backend reference should not specify a port")
 )
 
 type NotFoundError struct {
@@ -159,6 +160,11 @@ func (i *BackendIndex) getBackend(kctx krt.HandlerContext, gk schema.GroupKind, 
 		Kind:      gk.Kind,
 		Namespace: n.Namespace,
 		Name:      n.Name,
+	}
+
+	// Check if this is a Backend reference and validate that it doesn't specify a port
+	if gk.Group == wellknown.BackendGVK.Group && gk.Kind == wellknown.BackendGVK.Kind && gwport != nil {
+		return nil, fmt.Errorf("%s \"%s\": %w", key.Kind, key.Name, ErrBackendPortNotAllowed)
 	}
 
 	var port int32
