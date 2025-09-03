@@ -6,6 +6,7 @@ import (
 	"slices"
 
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -96,7 +97,16 @@ func (r *gatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (re
 	log.Info("reconciling gateway")
 	objs, err := r.deployer.GetObjsToDeploy(ctx, &gw)
 	if err != nil {
-		return ctrl.Result{}, err
+		// if we fail to either reference a valid GatewayParameters or
+		// the GatewayParameters configuration leads to issues building the
+		// objects, we want to set the status to InvalidParameters.
+		meta.SetStatusCondition(&gw.Status.Conditions, metav1.Condition{
+			Type:    string(api.GatewayConditionAccepted),
+			Status:  metav1.ConditionFalse,
+			Reason:  string(api.GatewayReasonInvalidParameters),
+			Message: err.Error(),
+		})
+		return ctrl.Result{}, r.cli.Status().Update(ctx, &gw)
 	}
 	objs = r.deployer.SetNamespaceAndOwner(&gw, objs)
 
