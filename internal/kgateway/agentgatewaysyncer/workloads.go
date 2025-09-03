@@ -489,7 +489,6 @@ func (a *index) endpointSlicesBuilder(
 		if !f {
 			return nil
 		}
-		serviceKey := es.Namespace + "/" + kubeutils.GetServiceHostname(serviceName, es.Namespace)
 		if es.AddressType == discovery.AddressTypeFQDN {
 			// Currently we do not support FQDN. In theory, we could, but its' support in Kubernetes entirely is questionable and
 			// may be removed in the near future.
@@ -498,6 +497,8 @@ func (a *index) endpointSlicesBuilder(
 		var res []WorkloadInfo
 		seen := sets.New[string]()
 
+		// The slice must be for a single service, based on the label above.
+		serviceKey := es.Namespace + "/" + kubeutils.GetServiceHostname(serviceName, es.Namespace)
 		svcs := krt.Fetch(ctx, workloadServices, krt.FilterKey(serviceKey), krt.FilterGeneric(func(a any) bool {
 			// Only find Service, not Service Entry
 			return a.(ServiceInfo).Source.Kind == kind.Service.String()
@@ -508,28 +509,25 @@ func (a *index) endpointSlicesBuilder(
 		}
 		// There SHOULD only be one. This is only Service which has unique hostnames.
 		svc := svcs[0]
-		// Services without a selector rely solely on EndpointSlices for membership.
-		// For those, do NOT skip Pod TargetRefs.
-		manualSvc := !svc.HasSelector
 
 		// Translate slice ports to our port.
 		pl := &api.PortList{Ports: make([]*api.Port, 0, len(es.Ports))}
-
 		for _, p := range es.Ports {
+			// We must have name and port (Kubernetes should always set these)
+			if p.Name == nil {
+				continue
+			}
 			if p.Port == nil {
 				continue
 			}
-			// Treat nil protocol as TCP (common in manual EndpointSlices). Only skip if explicitly non-TCP.
-			if p.Protocol != nil && *p.Protocol != corev1.ProtocolTCP {
+			// We only support TCP for now
+			if p.Protocol == nil || *p.Protocol != corev1.ProtocolTCP {
 				continue
 			}
 			// Endpoint slice port has name (service port name, not containerPort) and port (targetPort)
 			// We need to join with the Service port list to translate the port name to
 			for _, svcPort := range svc.Service.Ports {
 				portName := svc.PortNames[int32(svcPort.ServicePort)]
-				if p.Name == nil {
-					continue
-				}
 				if portName.PortName != *p.Name {
 					continue
 				}
@@ -546,8 +544,8 @@ func (a *index) endpointSlicesBuilder(
 
 		// Each endpoint in the slice is going to create a Workload
 		for _, ep := range es.Endpoints {
-			if ep.TargetRef != nil && ep.TargetRef.Kind == gvk.Pod.Kind && !manualSvc {
-				// Selector-based Service: we already attach it via Pod workload; skip to avoid duplication.
+			if ep.TargetRef != nil && ep.TargetRef.Kind == gvk.Pod.Kind {
+				// Normal case; this is a slice for a pod. We already handle pods, with much more information, so we can skip them
 				continue
 			}
 			// This should not be possible
@@ -557,6 +555,7 @@ func (a *index) endpointSlicesBuilder(
 			// We currently only support 1 address. Kubernetes will never set more (IPv4 and IPv6 will be two slices), so its mostly undefined.
 			key := ep.Addresses[0]
 			if seen.InsertContains(key) {
+				// Shouldn't happen. Make sure our UID is actually unique
 				log.Warnf("IP address %v seen twice in %v/%v", key, es.Namespace, es.Name)
 				continue
 			}
@@ -603,6 +602,7 @@ func (a *index) endpointSlicesBuilder(
 				CreationTime: es.CreationTimestamp.Time,
 			}))
 		}
+
 		return res
 	}
 }
