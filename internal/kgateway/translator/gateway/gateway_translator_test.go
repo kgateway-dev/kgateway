@@ -1806,7 +1806,7 @@ func TestRouteReplacement(t *testing.T) {
 			},
 		},
 		{
-			name:      "Gateway/Listener Merge",
+			name:      "Gateway/Listener/Merge",
 			category:  "attachment",
 			inputFile: "gateway-listener-merge-invalid.yaml",
 			minMode:   settings.RouteReplacementStandard,

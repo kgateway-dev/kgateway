@@ -112,3 +112,34 @@ func addMergeOriginsToFilterMetadata(
 	metadata.FilterMetadata[mergeMetadataKeyPrefix+gk.String()] = pb
 	return metadata
 }
+
+// reportRouteConfigPolicyErrors reports policy errors to the appropriate reporter based on attachment level.
+// we can infer the attachment level of the policy using PolicyRef.SectionName: empty sectionName indicates a
+// gateway-wide policy attachment, non-empty sectionName indicates a listener-level policy attachment.
+func reportRouteConfigPolicyErrors(r reporter.Reporter, gw ir.GatewayIR, routeConfigName string, policies ...ir.PolicyAtt) {
+	for _, policy := range policies {
+		if policy.PolicyRef == nil {
+			// Not a policy associated with a CR, can't report status on it
+			continue
+		}
+		if len(policy.Errors) == 0 {
+			continue
+		}
+		if policy.PolicyRef.SectionName != "" {
+			listenerReporter := getReporterForFilterChain(gw, r, routeConfigName)
+			listenerReporter.SetCondition(reporter.ListenerCondition{
+				Type:    gwv1.ListenerConditionAccepted,
+				Status:  metav1.ConditionFalse,
+				Reason:  reporter.ListenerReplacedReason,
+				Message: policy.FormatErrors(),
+			})
+			continue
+		}
+		r.Gateway(gw.SourceObject.Obj).SetCondition(reporter.GatewayCondition{
+			Type:    gwv1.GatewayConditionAccepted,
+			Status:  metav1.ConditionFalse,
+			Reason:  gwv1.GatewayReasonInvalid,
+			Message: policy.FormatErrors(),
+		})
+	}
+}

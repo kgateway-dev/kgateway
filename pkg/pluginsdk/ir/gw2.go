@@ -72,6 +72,9 @@ type VirtualHost struct {
 	Hostname         string
 	Rules            []HttpRouteRuleMatchIR
 	AttachedPolicies AttachedPolicies
+	// ParentRef is the parent reference of the virtual host. Used to report status
+	// to the correct parent. This is either a listener from a gateway or a listener set.
+	ParentRef Listener
 }
 
 type FilterChainMatch struct {

@@ -36,7 +36,7 @@ type filterChainTranslator struct {
 	routeConfigName string
 	reporter        sdkreporter.Reporter
 
-	PluginPass TranslationPassPlugins
+	pluginPass TranslationPassPlugins
 }
 
 func computeListenerAddress(bindAddress string, port uint32, reporter sdkreporter.GatewayReporter) *envoycorev3.Address {
@@ -79,7 +79,7 @@ func tlsInspectorFilter() *envoylistenerv3.ListenerFilter {
 	}
 }
 
-func (h *filterChainTranslator) initFilterChain(ctx context.Context, fcc ir.FilterChainCommon, reporter sdkreporter.ListenerReporter) *envoylistenerv3.FilterChain {
+func (h *filterChainTranslator) initFilterChain(fcc ir.FilterChainCommon) *envoylistenerv3.FilterChain {
 	info := &FilterChainInfo{
 		Match: fcc.Matcher,
 		TLS:   fcc.TLS,
@@ -112,7 +112,7 @@ func (h *filterChainTranslator) computeHttpFilters(ctx context.Context, l ir.Htt
 func (n *filterChainTranslator) computeNetworkFiltersForHttp(ctx context.Context, l ir.HttpFilterChainIR, listenerReporter sdkreporter.ListenerReporter) ([]*envoylistenerv3.Filter, error) {
 	hcm := hcmNetworkFilterTranslator{
 		routeConfigName:   n.routeConfigName,
-		PluginPass:        n.PluginPass,
+		pluginPass:        n.pluginPass,
 		listenerReporter:  listenerReporter,
 		reporter:          n.reporter,
 		gateway:           n.gateway, // corresponds to Gateway API listener
@@ -137,7 +137,7 @@ func (n *filterChainTranslator) computeCustomFilters(
 ) []plugins.StagedNetworkFilter {
 	var networkFilters []plugins.StagedNetworkFilter
 	// Process the network filters.
-	for _, plug := range n.PluginPass {
+	for _, plug := range n.pluginPass {
 		stagedFilters, err := plug.NetworkFilters(ctx)
 		if err != nil {
 			listenerReporter.SetCondition(sdkreporter.ListenerCondition{
@@ -187,7 +187,7 @@ func sortNetworkFilters(filters plugins.StagedNetworkFilterList) []*envoylistene
 
 type hcmNetworkFilterTranslator struct {
 	routeConfigName   string
-	PluginPass        TranslationPassPlugins
+	pluginPass        TranslationPassPlugins
 	listenerReporter  sdkreporter.ListenerReporter
 	reporter          sdkreporter.Reporter
 	listener          ir.HttpFilterChainIR // policies attached to listener
@@ -203,15 +203,13 @@ func (h *hcmNetworkFilterTranslator) computeNetworkFilters(ctx context.Context, 
 	var err error
 	httpConnectionManager.HttpFilters = h.computeHttpFilters(ctx, l)
 
-	pass := h.PluginPass
-
 	// 3. Allow any HCM plugins to make their changes, with respect to any changes the core plugin made
 	var attachedPolicies ir.AttachedPolicies
 	// Listener policies take precedence over gateway policies, so they are ordered first
 	attachedPolicies.Append(l.AttachedPolicies, h.gateway.AttachedHttpPolicies)
 	for _, gk := range attachedPolicies.ApplyOrderedGroupKinds() {
 		pols := attachedPolicies.Policies[gk]
-		pass := pass[gk]
+		pass := h.pluginPass[gk]
 		if pass == nil {
 			// TODO: report user error - they attached a non http policy
 			continue
@@ -277,7 +275,7 @@ func (h *hcmNetworkFilterTranslator) computeHttpFilters(ctx context.Context, l i
 	var httpFilters plugins.StagedHttpFilterList
 
 	// run the HttpFilter Plugins
-	for _, plug := range h.PluginPass {
+	for _, plug := range h.pluginPass {
 		stagedFilters, err := plug.HttpFilters(ctx, l.FilterChainCommon)
 		if err != nil {
 			// what to do with errors here? ignore the listener??
