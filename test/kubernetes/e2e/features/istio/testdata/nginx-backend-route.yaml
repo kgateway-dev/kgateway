@@ -36,7 +36,7 @@ metadata:
   name: nginx-backend
   namespace: nginx
   annotations:
-    istio.kgateway.io/disable-auto-mtls: "true"
+    kgateway.dev/disable-istio-auto-mtls: "true"
 spec:
   type: Static
   static:
@@ -68,7 +68,7 @@ metadata:
   name: nginx-backend-simple
   namespace: nginx
   annotations:
-    istio.kgateway.io/disable-auto-mtls: "true"
+    kgateway.dev/disable-istio-auto-mtls: "true"
 spec:
   type: Static
   static:
@@ -100,7 +100,7 @@ metadata:
   name: nginx-backend-mtls
   namespace: nginx
   annotations:
-    istio.kgateway.io/disable-auto-mtls: "true"
+    kgateway.dev/disable-istio-auto-mtls: "true"
 spec:
   type: Static
   static:

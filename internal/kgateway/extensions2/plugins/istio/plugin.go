@@ -17,6 +17,7 @@ import (
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	corev1 "k8s.io/api/core/v1"
 
+	"github.com/kgateway-dev/kgateway/v2/api/annotations"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
@@ -28,12 +29,6 @@ var VirtualIstioGK = schema.GroupKind{
 	Group: "istioplugin",
 	Kind:  "istioplugin",
 }
-
-// Custom TLS annotation constants
-const (
-	// DisableIstioAutoMtlsAnnotation, if present, disables Istio auto-mTLS for a specific backend
-	DisableIstioAutoMtlsAnnotation = "istio.kgateway.io/disable-auto-mtls"
-)
 
 type IstioSettings struct {
 	EnableAutoMtls bool
@@ -91,7 +86,7 @@ func isDisabledForUpstream(in ir.BackendObjectIR) bool {
 	}
 
 	// Check if the backend has explicitly disabled Istio auto-mTLS
-	if val, exists := in.Obj.GetAnnotations()[DisableIstioAutoMtlsAnnotation]; exists {
+	if val, exists := in.Obj.GetAnnotations()[annotations.DisableIstioAutoMtls]; exists {
 		if disabled, err := strconv.ParseBool(val); err == nil && disabled {
 			return true
 		}

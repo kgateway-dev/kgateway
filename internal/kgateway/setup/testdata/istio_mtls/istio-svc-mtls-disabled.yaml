@@ -37,7 +37,7 @@ metadata:
     app: httpbin
     service: httpbin
   annotations:
-    istio.kgateway.io/disable-auto-mtls: "true"
+    kgateway.dev/disable-istio-auto-mtls: "true"
 spec:
   ports:
     - name: http

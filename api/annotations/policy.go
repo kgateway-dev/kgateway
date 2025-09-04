@@ -14,6 +14,11 @@ const (
 	// Note: for policies that are implemented using GatewayExtensions (such as extAuth, etcProc), the weight specified on the GatewayExtension
 	// will be used instead.
 	PolicyPrecedenceWeight = "kgateway.dev/policy-weight"
+
+	// DisableIstioAutoMtls, if present on a backend, disables Istio auto-mTLS for a specific backend.
+	// This is useful for cases where you want to disable Istio auto-mTLS for a specific backend, but still use other TLS mechanisms
+	// (by applying a BackendConfigPolicy or BackendTLSPolicy).
+	DisableIstioAutoMtls = "kgateway.dev/disable-istio-auto-mtls"
 )
 
 // InheritedPolicyPriorityValue is the value for the InheritedPolicyPriority annotation

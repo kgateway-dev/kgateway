@@ -6,6 +6,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/kgateway-dev/kgateway/v2/api/annotations"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 )
 
@@ -32,7 +33,7 @@ func TestIsDisabledForUpstream(t *testing.T) {
 				Obj: &corev1.Service{
 					ObjectMeta: metav1.ObjectMeta{
 						Annotations: map[string]string{
-							DisableIstioAutoMtlsAnnotation: "true",
+							annotations.DisableIstioAutoMtls: "true",
 						},
 					},
 				},
@@ -45,7 +46,7 @@ func TestIsDisabledForUpstream(t *testing.T) {
 				Obj: &corev1.Service{
 					ObjectMeta: metav1.ObjectMeta{
 						Annotations: map[string]string{
-							DisableIstioAutoMtlsAnnotation: "false",
+							annotations.DisableIstioAutoMtls: "false",
 						},
 					},
 				},
