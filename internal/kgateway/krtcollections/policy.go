@@ -39,7 +39,7 @@ var (
 	ErrMissingReferenceGrant = errors.New("missing reference grant")
 	ErrUnknownBackendKind    = errors.New("unknown backend kind")
 	ErrPolicyNotFound        = errors.New("policy not found")
-	ErrBackendPortNotAllowed = errors.New("backend reference should not specify a port")
+	ErrBackendPortNotAllowed = errors.New("do not specify a port when referencing a Backend resource, as it defines its own")
 )
 
 type NotFoundError struct {
