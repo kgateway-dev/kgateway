@@ -23,6 +23,7 @@ Name|Version|License
 [onsi/gomega](https://github.com/onsi/gomega)|v1.38.0|MIT License
 [prometheus/client_golang](https://github.com/prometheus/client_golang)|v1.23.0|Apache License 2.0
 [prometheus/client_model](https://github.com/prometheus/client_model)|v0.6.2|Apache License 2.0
+[prometheus/common](https://github.com/prometheus/common)|v0.65.0|Apache License 2.0
 [spf13/afero](https://github.com/spf13/afero)|v1.14.0|Apache License 2.0
 [spf13/cobra](https://github.com/spf13/cobra)|v1.9.1|Apache License 2.0
 [stretchr/testify](https://github.com/stretchr/testify)|v1.10.0|MIT License
