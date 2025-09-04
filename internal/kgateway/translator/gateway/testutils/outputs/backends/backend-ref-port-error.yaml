@@ -112,8 +112,9 @@ Statuses:
       parents:
       - conditions:
         - lastTransitionTime: null
-          message: 'Backend "example-backend": do not specify a port when referencing
-            a Backend resource, as it defines its own'
+          message: BackendRef to "example-backend" includes a port. Do not specify
+            a port when referencing a Backend resource, as it defines its own port
+            configuration
           reason: BackendNotFound
           status: "False"
           type: ResolvedRefs

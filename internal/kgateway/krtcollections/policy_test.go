@@ -475,8 +475,7 @@ func TestBackendPortNotAllowed(t *testing.T) {
 			b := getBackends(ir)[0]
 
 			require.Error(t, b.Err)
-			assert.Contains(t, b.Err.Error(), ErrBackendPortNotAllowed.Error())
-			assert.Contains(t, b.Err.Error(), "test-backend")
+			assert.Contains(t, b.Err.Error(), (&BackendPortNotAllowedError{BackendName: "test-backend"}).Error())
 		})
 	}
 }

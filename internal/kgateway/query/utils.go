@@ -20,7 +20,7 @@ func ProcessBackendError(err error, reporter reports.ParentRefReporter) {
 			Reason:  gwv1.RouteReasonInvalidKind,
 			Message: err.Error(),
 		})
-	case errors.Is(err, krtcollections.ErrBackendPortNotAllowed):
+	case errors.Is(err, &krtcollections.BackendPortNotAllowedError{}):
 		reporter.SetCondition(reports.RouteCondition{
 			Type:    gwv1.RouteConditionResolvedRefs,
 			Status:  metav1.ConditionFalse,

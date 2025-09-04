@@ -288,7 +288,7 @@ func TestBasic(t *testing.T) {
 				a.NotNil(resolvedRefs)
 				a.Equal(string(gwv1.RouteReasonBackendNotFound), resolvedRefs.Reason)
 				a.Equal(metav1.ConditionFalse, resolvedRefs.Status)
-				a.Equal(`Backend "example-backend": `+krtcollections.ErrBackendPortNotAllowed.Error(), resolvedRefs.Message)
+				a.Equal((&krtcollections.BackendPortNotAllowedError{BackendName: "example-backend"}).Error(), resolvedRefs.Message)
 				a.Equal(int64(0), resolvedRefs.ObservedGeneration)
 			},
 		})
