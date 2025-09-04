@@ -24,31 +24,3 @@ spec:
       port: 8543
       targetPort: https-mtls
       name: https-mtls
----
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: curl
----
-apiVersion: v1
-kind: Pod
-metadata:
-  name: curl
-  namespace: curl
-  labels:
-    app: curl
-    version: v1
-spec:
-  containers:
-    - name: curl
-      image: ghcr.io/kgateway-dev/curl:7.83.1
-      imagePullPolicy: IfNotPresent
-      command:
-        - "tail"
-        - "-f"
-        - "/dev/null"
-      resources:
-        requests:
-          cpu: "100m"
-        limits:
-          cpu: "200m"
