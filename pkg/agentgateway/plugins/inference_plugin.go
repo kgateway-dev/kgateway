@@ -59,11 +59,6 @@ func translatePoliciesForInferencePool(pool *inf.InferencePool, domainSuffix str
 		return nil
 	}
 
-	if epr.Port.Number < 1 || epr.Port.Number > 65535 {
-		logger.Warn("inference pool extension ref port number must be 1-65535, skipping", "pool", pool.Name, "kind", epr.Kind)
-		return nil
-	}
-
 	eppPort := epr.Port.Number
 
 	eppSvc := fmt.Sprintf("%v/%v.%v.svc.%v",

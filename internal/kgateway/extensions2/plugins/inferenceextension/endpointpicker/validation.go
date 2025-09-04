@@ -34,16 +34,11 @@ func validatePool(pool *inf.InferencePool, svcCol krt.Collection[*corev1.Service
 			fmt.Errorf("invalid InferencePool: must have exactly one target port"))
 	}
 
-	// PortNumber must be 1-65535 (rfc1340 port range)
+	// Port must be specified when kind is Service
 	if pool.Spec.EndpointPickerRef.Port == nil {
 		errs = append(errs,
 			fmt.Errorf("invalid extensionRef port must be specified"))
 		return errs
-	}
-	port := int32(pool.Spec.EndpointPickerRef.Port.Number)
-	if port < 1 || port > 65535 {
-		errs = append(errs,
-			fmt.Errorf("invalid extensionRef port number %d is out of valid 1-65535 range", port))
 	}
 
 	svcNN := types.NamespacedName{Namespace: pool.Namespace, Name: string(ext.Name)}
@@ -64,12 +59,13 @@ func validatePool(pool *inf.InferencePool, svcCol krt.Collection[*corev1.Service
 
 	// Service must expose the requested TCP port
 	found := false
+	eppPort := int32(pool.Spec.EndpointPickerRef.Port.Number)
 	for _, sp := range svc.Spec.Ports {
 		proto := sp.Protocol
 		if proto == "" {
 			proto = corev1.ProtocolTCP // default
 		}
-		if sp.Port == int32(port) && proto == corev1.ProtocolTCP {
+		if sp.Port == int32(eppPort) && proto == corev1.ProtocolTCP {
 			found = true
 			break
 		}
@@ -77,7 +73,7 @@ func validatePool(pool *inf.InferencePool, svcCol krt.Collection[*corev1.Service
 	if !found {
 		errs = append(errs,
 			fmt.Errorf("TCP port %d not found on Service %s/%s",
-				port, pool.Namespace, ext.Name))
+				eppPort, pool.Namespace, ext.Name))
 	}
 
 	return errs
