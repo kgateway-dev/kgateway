@@ -6,7 +6,6 @@ import (
 	"github.com/agentgateway/agentgateway/go/api"
 	wrappers "google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/kube/krt"
-	"istio.io/istio/pkg/ptr"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 
@@ -55,7 +54,12 @@ func translatePoliciesForInferencePool(pool *inf.InferencePool, domainSuffix str
 		return nil
 	}
 
-	eppPort := ptr.OrDefault(epr.PortNumber, 9002)
+	if epr.Port == nil {
+		logger.Warn("inference pool extension ref port must be specified, skipping", "pool", pool.Name, "kind", epr.Kind)
+		return nil
+	}
+
+	eppPort := epr.Port.Number
 
 	eppSvc := fmt.Sprintf("%v/%v.%v.svc.%v",
 		pool.Namespace, epr.Name, pool.Namespace, domainSuffix)

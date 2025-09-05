@@ -9,6 +9,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/prometheus/client_golang/prometheus/testutil/promlint"
 	dto "github.com/prometheus/client_model/go"
+	"github.com/prometheus/common/expfmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -179,6 +180,27 @@ func MustGatherPrometheusMetrics(t require.TestingT) GatheredMetrics {
 	return &gathered
 }
 
+// MustParseGatheredMetrics parses gathered metrics from the provided data reader.
+func MustParseGatheredMetrics(t require.TestingT, data io.Reader) GatheredMetrics {
+	gathered := prometheusGatheredMetrics{
+		metrics: make(map[string][]*dto.Metric),
+		t:       t,
+	}
+
+	parser := expfmt.TextParser{}
+
+	metricFamilies, err := parser.TextToMetricFamilies(data)
+	require.NoError(t, err)
+
+	for _, mf := range metricFamilies {
+		metrics := make([]*dto.Metric, len(mf.GetMetric()))
+		copy(metrics, mf.GetMetric())
+		gathered.metrics[mf.GetName()] = metrics
+	}
+
+	return &gathered
+}
+
 // mustGetMetric retrieves a single metric by name, ensuring it exists and has exactly one instance.
 func (g *prometheusGatheredMetrics) mustGetMetric(name string) *dto.Metric {
 	m, ok := g.metrics[name]
@@ -311,9 +333,12 @@ func (g *prometheusGatheredMetrics) AssertMetricHistogramValue(name string, expe
 	})
 }
 
-// AssertHistogramPopulated asserts that a histogram metric is populated (has non-zero sample count).
+// AssertHistogramPopulated asserts that a histogram metric is populated
+// (any histogram metric that has a non-zero sample count).
 func (g *prometheusGatheredMetrics) AssertHistogramPopulated(name string) {
-	metric := g.mustGetMetric(name)
+	metric := g.getFirstMetric(name)
+	assert.NotNil(g.t, metric, "Metric %s not found", name)
+	assert.NotNil(g.t, metric.GetHistogram(), "Metric %s is not a histogram", name)
 	assert.True(g.t, metric.GetHistogram().GetSampleCount() > 0, "Histogram %s is not populated", name)
 }
 
@@ -393,7 +418,7 @@ func GatherAndLint(metricNames ...string) ([]promlint.Problem, error) {
 	return testutil.GatherAndLint(metrics.Registry(), metricNames...)
 }
 
-// GatherAndCompare gathers metrics and runs a linter on them.
+// GatherAndCompare gathers metrics and compares them against expected values.
 func GatherAndCompare(expected io.Reader, metricNames ...string) error {
 	return testutil.GatherAndCompare(metrics.Registry(), expected, metricNames...)
 }

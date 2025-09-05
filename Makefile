@@ -495,7 +495,11 @@ CONFORMANCE_CHANNEL ?= experimental
 CONFORMANCE_VERSION ?= v1.3.0
 .PHONY: gw-api-crds
 gw-api-crds: ## Install the Gateway API CRDs
+ifeq ($(CONFORMANCE_CHANNEL), standard)
+	kubectl apply --kustomize "https://github.com/kubernetes-sigs/gateway-api/config/crd?ref=$(CONFORMANCE_VERSION)"
+else
 	kubectl apply --kustomize "https://github.com/kubernetes-sigs/gateway-api/config/crd/$(CONFORMANCE_CHANNEL)?ref=$(CONFORMANCE_VERSION)"
+endif
 
 # The version of the k8s gateway api inference extension CRDs to install.
 GIE_CRD_VERSION ?= $(shell go list -m sigs.k8s.io/gateway-api-inference-extension | awk '{print $$2}')

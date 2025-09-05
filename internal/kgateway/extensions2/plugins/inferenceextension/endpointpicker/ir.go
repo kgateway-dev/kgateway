@@ -16,11 +16,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
 
-const (
-	// grpcPort is the default port number for a gRPC service.
-	grpcPort = 9002
-)
-
 // inferencePool defines the internal representation of an inferencePool resource.
 type inferencePool struct {
 	// obj is the original object. Opaque to us other than metadata.
@@ -56,10 +51,9 @@ type targetPort struct {
 
 // newInferencePool returns the internal representation of the given pool.
 func newInferencePool(pool *inf.InferencePool) *inferencePool {
-	// Start with the default port and only override if non-zero.
-	port := servicePort{name: "grpc", portNum: int32(grpcPort)}
-	if pool.Spec.EndpointPickerRef.PortNumber != nil {
-		port.portNum = int32(*pool.Spec.EndpointPickerRef.PortNumber)
+	port := servicePort{
+		name:   "grpc",
+		number: int32(pool.Spec.EndpointPickerRef.Port.Number),
 	}
 
 	svcIR := &service{
@@ -246,8 +240,8 @@ type service struct {
 type servicePort struct {
 	// name is the name of the port.
 	name string
-	// portNum is the port number used to expose the service port.
-	portNum int32
+	// number is the port number used to expose the service port.
+	number int32
 }
 
 func (s service) ResourceName() string {

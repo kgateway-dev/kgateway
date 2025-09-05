@@ -15,6 +15,7 @@ import (
 	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
@@ -270,6 +271,35 @@ func TestBasic(t *testing.T) {
 				a.Equal(string(gwv1.RouteReasonInvalidKind), resolvedRefs.Reason)
 				a.Equal(metav1.ConditionFalse, resolvedRefs.Status)
 				a.Equal(`unknown backend kind`, resolvedRefs.Message)
+				a.Equal(int64(0), resolvedRefs.ObservedGeneration)
+			},
+		})
+	})
+
+	t.Run("httproute with backend port error reports correctly", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "backends/backend-ref-port-error.yaml",
+			outputFile: "backends/backend-ref-port-error.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
+				a := assert.New(t)
+				route := &gwv1.HTTPRoute{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "example-route",
+						Namespace: "default",
+					},
+				}
+				routeStatus := reportsMap.BuildRouteStatus(context.Background(), route, wellknown.DefaultGatewayClassName)
+				a.NotNil(routeStatus)
+				a.Len(routeStatus.Parents, 1)
+				resolvedRefs := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionResolvedRefs))
+				a.NotNil(resolvedRefs)
+				a.Equal(string(gwv1.RouteReasonBackendNotFound), resolvedRefs.Reason)
+				a.Equal(metav1.ConditionFalse, resolvedRefs.Status)
+				a.Equal((&krtcollections.BackendPortNotAllowedError{BackendName: "example-backend"}).Error(), resolvedRefs.Message)
 				a.Equal(int64(0), resolvedRefs.ObservedGeneration)
 			},
 		})

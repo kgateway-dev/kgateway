@@ -10,7 +10,6 @@ import (
 	"istio.io/istio/pkg/kube/krt/krttest"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
@@ -30,8 +29,8 @@ func makePool(opts ...func(*inf.InferencePool)) *inferencePool {
 			},
 			TargetPorts: []inf.Port{{Number: 8080}},
 			EndpointPickerRef: inf.EndpointPickerRef{
-				Name:       "svc",
-				PortNumber: ptr.To(inf.PortNumber(1234)),
+				Name: "svc",
+				Port: &inf.Port{Number: inf.PortNumber(1234)},
 				FailureMode: func() inf.EndpointPickerFailureMode {
 					m := inf.EndpointPickerFailClose
 					return m
@@ -44,22 +43,6 @@ func makePool(opts ...func(*inf.InferencePool)) *inferencePool {
 		o(base)
 	}
 	return newInferencePool(base)
-}
-
-func TestNewInferencePool_DefaultAndOverridePort(t *testing.T) {
-	// Set the default grpcPort
-	p := makePool(func(pool *inf.InferencePool) {
-		pool.Spec.EndpointPickerRef.PortNumber = ptr.To(inf.PortNumber(grpcPort))
-	})
-
-	// We should have exactly one port (grpcPort 9002)
-	assert.Len(t, p.configRef.ports, 1)
-	assert.Equal(t, int32(grpcPort), p.configRef.ports[0].portNum)
-
-	// Now override the port number
-	q := makePool()
-	assert.Len(t, q.configRef.ports, 1)
-	assert.Equal(t, int32(1234), q.configRef.ports[0].portNum)
 }
 
 func TestIsFailOpen(t *testing.T) {
