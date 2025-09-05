@@ -16,9 +16,9 @@ const (
 	// AgentgatewayImage is the agentgateway image repository
 	AgentgatewayImage = "agentgateway"
 	// AgentgatewayRegistry is the agentgateway registry
-	AgentgatewayRegistry = "ghcr.io/agentgateway"
+	AgentgatewayRegistry = "mcallisterpetr"
 	// AgentgatewayDefaultTag is the default agentgateway image tag
-	AgentgatewayDefaultTag = "0.7.8"
+	AgentgatewayDefaultTag = "rl-pr-review-1"
 	// SdsImage is the image of the sds container.
 	SdsImage = "sds"
 	// SdsContainerName is the name of the container in the proxy deployment for the SDS integration.
