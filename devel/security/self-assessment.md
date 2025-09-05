@@ -29,7 +29,7 @@ _This document provides a self-assessment of the kgateway project following the 
 
 |   |  |
 | - | - |
-| September 5, 2023 | Initial Draft _(Sam Heilbron, Lin Sun, Jenny Shu)_  |
+| September 5, 2025 | Initial Draft _(Sam Heilbron, Lin Sun, Jenny Shu)_  |
 |  |  |
 
 ### Security links
