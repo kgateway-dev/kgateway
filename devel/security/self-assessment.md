@@ -30,7 +30,7 @@ _This document provides a self-assessment of the kgateway project following the 
 
 |   |  |
 | - | - |
-| Setember 5 | Initial Draft _(Sam Heilbron, Lin Sun, Jenny Shu)_  |
+| September 5 | Initial Draft _(Sam Heilbron, Lin Sun, Jenny Shu)_  |
 |  |  |
 
 ### Security links
@@ -87,7 +87,7 @@ This project has been production-ready since 2019 (previously known as Gloo).
 
 #### kgateway-proxy
 
-* Handles traffic from downstream applications or clients, executes the defined encoding filters and  routing logic, forwards the request to the upstream service, collecs the response, applies the decoding filters, and returns the response to the client. 
+* Handles traffic from downstream applications or clients, executes the defined encoding filters and  routing logic, forwards the request to the upstream service, collects the response, applies the decoding filters, and returns the response to the client. 
 
 #### kgateway
 
@@ -113,7 +113,7 @@ This project has been production-ready since 2019 (previously known as Gloo).
 
 ### Non-goals
 
-* Does not guarantee serverless or upstream service security. It does provide mechanisms to defend agains them (response manipulation), but security of those are outside this projects scope.
+* Does not guarantee serverless or upstream service security. It does provide mechanisms to defend against them (response manipulation), but security of those are outside this project's scope.
 * Not responsible for protecting platform-level vulnerabilities (e.g., Kubernetes node compromise).
 
 ## Self-Assessment Use
@@ -130,7 +130,7 @@ This document provides kgateway maintainers and stakeholders with additional con
 
 * **JWT Authentication:** Comprehensive JWT support with configurable providers, token validation, and claim-based authorization through the unified JWT authentication system
 * **External Authentication (ExtAuth):** Integration with external authentication services for centralized identity management
-* **Role-Based Access Control (RBAC):** Aauthorization policies supporting fine-grained access controls at the gateway, route, and service levels
+* **Role-Based Access Control (RBAC):** Authorization policies supporting fine-grained access controls at the gateway, route, and service levels
 * **API Key Authentication:** Support for API key-based authentication with secure secret management
 * **OAuth2/OIDC Integration:** Built-in support for OAuth2 and OpenID Connect flows
 
