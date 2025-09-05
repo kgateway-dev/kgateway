@@ -10,6 +10,7 @@ import (
 	"github.com/agentgateway/agentgateway/go/api"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
+	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
 	corev1 "k8s.io/api/core/v1"
@@ -38,24 +39,40 @@ const (
 
 var logger = logging.New("agentgateway/plugins")
 
+// convertStatusCollection converts the specific TrafficPolicy status collection
+// to the generic controllers.Object status collection expected by the interface
+func convertStatusCollection(col krt.Collection[krt.ObjectWithStatus[*v1alpha1.TrafficPolicy, v1alpha1.PolicyStatus]]) krt.StatusCollection[controllers.Object, v1alpha1.PolicyStatus] {
+	// Use krt.NewCollection to transform the collection
+	return krt.NewCollection(col, func(ctx krt.HandlerContext, item krt.ObjectWithStatus[*v1alpha1.TrafficPolicy, v1alpha1.PolicyStatus]) *krt.ObjectWithStatus[controllers.Object, v1alpha1.PolicyStatus] {
+		return &krt.ObjectWithStatus[controllers.Object, v1alpha1.PolicyStatus]{
+			Obj:    controllers.Object(item.Obj),
+			Status: item.Status,
+		}
+	})
+}
+
 // NewTrafficPlugin creates a new TrafficPolicy plugin
 func NewTrafficPlugin(agw *AgwCollections) AgentgatewayPlugin {
 	col := krt.WrapClient(kclient.NewFiltered[*v1alpha1.TrafficPolicy](
 		agw.Client,
 		kclient.Filter{ObjectFilter: agw.Client.ObjectFilter()},
 	), agw.KrtOpts.ToOptions("TrafficPolicy")...)
-	policyCol := krt.NewManyCollection(col, func(krtctx krt.HandlerContext, policyCR *v1alpha1.TrafficPolicy) []ADPPolicy {
+	policyStatusCol, policyCol := krt.NewStatusManyCollection(col, func(krtctx krt.HandlerContext, policyCR *v1alpha1.TrafficPolicy) (
+		*v1alpha1.PolicyStatus,
+		[]ADPPolicy,
+	) {
 		return TranslateTrafficPolicy(krtctx, agw.GatewayExtensions, agw.Backends, agw.Secrets, policyCR)
 	})
 
 	return AgentgatewayPlugin{
 		ContributesPolicies: map[schema.GroupKind]PolicyPlugin{
 			wellknown.TrafficPolicyGVK.GroupKind(): {
-				Policies: policyCol,
+				Policies:       policyCol,
+				PolicyStatuses: convertStatusCollection(policyStatusCol),
 			},
 		},
 		ExtraHasSynced: func() bool {
-			return policyCol.HasSynced()
+			return policyCol.HasSynced() && policyStatusCol.HasSynced()
 		},
 	}
 }
@@ -67,7 +84,7 @@ func TranslateTrafficPolicy(
 	backends krt.Collection[*v1alpha1.Backend],
 	secrets krt.Collection[*corev1.Secret],
 	trafficPolicy *v1alpha1.TrafficPolicy,
-) []ADPPolicy {
+) (*v1alpha1.PolicyStatus, []ADPPolicy) {
 	var adpPolicies []ADPPolicy
 
 	isMcpTarget := false
@@ -113,7 +130,22 @@ func TranslateTrafficPolicy(
 				logger.Error("backend not found",
 					"target", target.Name,
 					"policy", client.ObjectKeyFromObject(trafficPolicy))
-				return nil
+				// Return an error status when backend is not found
+				status := v1alpha1.PolicyStatus{
+					Ancestors: []v1alpha1.PolicyAncestorStatus{
+						{
+							Conditions: []metav1.Condition{
+								{
+									Type:    string(v1alpha1.PolicyConditionAccepted),
+									Status:  metav1.ConditionFalse,
+									Reason:  string(v1alpha1.PolicyReasonInvalid),
+									Message: fmt.Sprintf("Backend %s not found", target.Name),
+								},
+							},
+						},
+					},
+				}
+				return &status, nil
 			}
 			backendSpec := (*backend).Spec
 			if backendSpec.Type == v1alpha1.BackendTypeMCP {
@@ -141,7 +173,29 @@ func TranslateTrafficPolicy(
 		}
 	}
 
-	return adpPolicies
+	// Create a successful status for the traffic policy
+	status := v1alpha1.PolicyStatus{
+		Ancestors: []v1alpha1.PolicyAncestorStatus{
+			{
+				Conditions: []metav1.Condition{
+					{
+						Type:    string(v1alpha1.PolicyConditionAccepted),
+						Status:  metav1.ConditionTrue,
+						Reason:  string(v1alpha1.PolicyReasonValid),
+						Message: "TrafficPolicy successfully processed",
+					},
+					{
+						Type:    string(v1alpha1.PolicyConditionAttached),
+						Status:  metav1.ConditionTrue,
+						Reason:  string(v1alpha1.PolicyReasonAttached),
+						Message: "TrafficPolicy attached to targets",
+					},
+				},
+			},
+		},
+	}
+
+	return &status, adpPolicies
 }
 
 // translateTrafficPolicyToADP converts a TrafficPolicy to agentgateway Policy resources

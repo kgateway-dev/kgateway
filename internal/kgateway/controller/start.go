@@ -202,6 +202,9 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 			return nil, err
 		}
 
+		policyStatusAsyncQueue := agentgatewaysyncer.NewPolicyStatusCollections()
+		agentGatewaySyncer.PolicyStatusQueue().SetQueue(policyStatusAsyncQueue)
+
 		agentGatewayStatusSyncer := agentgatewaysyncer.NewAgentGwStatusSyncer(
 			cfg.ControllerName,
 			cfg.AgentGatewayClassName,
@@ -210,6 +213,7 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 			agentGatewaySyncer.GatewayReportQueue(),
 			agentGatewaySyncer.ListenerSetReportQueue(),
 			agentGatewaySyncer.RouteReportQueue(),
+			policyStatusAsyncQueue.GetAsyncQueue(),
 			agentGatewaySyncer.CacheSyncs(),
 		)
 		if err := cfg.Manager.Add(agentGatewayStatusSyncer); err != nil {
