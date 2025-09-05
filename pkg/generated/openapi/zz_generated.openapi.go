@@ -3219,7 +3219,7 @@ func schema_kgateway_v2_api_v1alpha1_FieldDefault(ref common.ReferenceCallback) 
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "FieldDefault provides default values for specific fields in the JSON request body sent to the LLM provider. These defaults are merged with the user-provided request to ensure missing fields are populated.\n\nUser input fields here refer to the fields in the JSON request body that a client sends when making a request to the LLM provider. Defaults set here do _not_ override those user-provided values unless you explicitly set `override` to `true`.\n\nExample: Setting a default system field for Anthropic, which does not support system role messages: ```yaml defaults:\n  - field: \"system\"\n    value: \"answer all questions in French\"\n\n```\n\nExample: Setting a default temperature and overriding `max_tokens`: ```yaml defaults:\n  - field: \"temperature\"\n    value: \"0.5\"\n  - field: \"max_tokens\"\n    value: \"100\"\n    override: true\n\n```\n\nExample: Overriding a custom list field: ```yaml defaults:\n  - field: \"custom_list\"\n    value: \"[a,b,c]\"\n\n```\n\nNote: The `field` values correspond to keys in the JSON request body, not fields in this CRD.",
+				Description: "FieldDefault provides default values for specific fields in the JSON request body sent to the LLM provider. These defaults are merged with the user-provided request to ensure missing fields are populated.\n\nUser input fields here refer to the fields in the JSON request body that a client sends when making a request to the LLM provider. Defaults set here do _not_ override those user-provided values unless you explicitly set `override` to `true`.\n\nExample: Setting a default system field for Anthropic, which does not support system role messages: ```yaml defaults:\n  - field: \"system\"\n    value: \"answer all questions in French\"\n\n```\n\nExample: Setting a default temperature and overriding `max_tokens`: ```yaml defaults:\n  - field: \"temperature\"\n    value: \"0.5\"\n  - field: \"max_tokens\"\n    value: \"100\"\n    override: true\n\n```\n\nExample: Setting custom lists fields: ```yaml defaults:\n  - field: \"custom_integer_list\"\n    value: \"[1,2,3]\"\n  - field: \"custom_string_list\"\n    value: '[\"one\",\"two\",\"three\"]'\n    override: true\n\n```\n\nNote: The `field` values correspond to keys in the JSON request body, not fields in this CRD.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"field": {
@@ -7899,9 +7899,9 @@ func schema_kgateway_v2_api_v1alpha1_Webhook(ref common.ReferenceCallback) commo
 							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Host"),
 						},
 					},
-					"forwardHeaders": {
+					"forwardHeaderMatches": {
 						SchemaProps: spec.SchemaProps{
-							Description: "ForwardHeaders define headers to forward with the request to the webhook. Note: This is not yet supported for agentgateway.",
+							Description: "ForwardHeaderMatches defines a list of HTTP header matches that will be used to select the headers to forward to the webhook. Request headers are used when forwarding requests and response headers are used when forwarding responses. By default, no headers are forwarded.",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{

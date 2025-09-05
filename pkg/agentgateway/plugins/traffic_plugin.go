@@ -1,11 +1,13 @@
 package plugins
 
 import (
+	"encoding/json"
 	"fmt"
 	"log/slog"
 
 	"github.com/agentgateway/agentgateway/go/api"
 	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
@@ -13,11 +15,11 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/utils"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 )
@@ -60,7 +62,6 @@ func TranslateTrafficPolicy(
 	backends krt.Collection[*v1alpha1.Backend],
 	trafficPolicy *v1alpha1.TrafficPolicy,
 ) []ADPPolicy {
-	logger := logger.With("plugin_kind", "traffic")
 	var adpPolicies []ADPPolicy
 
 	isMcpTarget := false
@@ -165,7 +166,7 @@ func translateTrafficPolicyToADP(
 
 	// Process AI policies if present
 	if trafficPolicy.Spec.AI != nil {
-		aiPolicies := processAIPolicy(ctx, trafficPolicy, policyName, policyTarget)
+		aiPolicies := processAIPolicy(trafficPolicy, policyName, policyTarget)
 		adpPolicies = append(adpPolicies, aiPolicies...)
 	}
 
@@ -243,9 +244,7 @@ func processExtAuthPolicy(ctx krt.HandlerContext, gatewayExtensions krt.Collecti
 }
 
 // processAIPolicy processes AI configuration and creates corresponding ADP policies
-func processAIPolicy(ctx krt.HandlerContext, trafficPolicy *v1alpha1.TrafficPolicy, policyName string, policyTarget *api.PolicyTarget) []ADPPolicy {
-	logger := logging.New("agentgateway/plugins/traffic")
-
+func processAIPolicy(trafficPolicy *v1alpha1.TrafficPolicy, policyName string, policyTarget *api.PolicyTarget) []ADPPolicy {
 	aiSpec := trafficPolicy.Spec.AI
 
 	aiPolicy := &api.Policy{
@@ -262,19 +261,22 @@ func processAIPolicy(ctx krt.HandlerContext, trafficPolicy *v1alpha1.TrafficPoli
 		aiPolicy.GetSpec().GetAi().Prompts = processPromptEnrichment(aiSpec.PromptEnrichment)
 	}
 
-	if len(aiSpec.Defaults) > 0 {
-		for _, def := range aiSpec.Defaults {
-			if def.Override != nil && *def.Override {
-				if aiPolicy.GetSpec().GetAi().Overrides == nil {
-					aiPolicy.GetSpec().GetAi().Overrides = make(map[string]string)
-				}
-				aiPolicy.GetSpec().GetAi().Overrides[def.Field] = def.Value
-			} else {
-				if aiPolicy.GetSpec().GetAi().Defaults == nil {
-					aiPolicy.GetSpec().GetAi().Defaults = make(map[string]string)
-				}
-				aiPolicy.GetSpec().GetAi().Defaults[def.Field] = def.Value
+	for _, def := range aiSpec.Defaults {
+		protoValue, err := toProtoValue(def.Value)
+		if err != nil {
+			logger.Error("error parsing spec.defaults", "field", def.Field, "ref", trafficPolicy.Namespace+"/"+trafficPolicy.Name, "error", err)
+			continue
+		}
+		if def.Override {
+			if aiPolicy.GetSpec().GetAi().Overrides == nil {
+				aiPolicy.GetSpec().GetAi().Overrides = make(map[string]*structpb.Value)
 			}
+			aiPolicy.GetSpec().GetAi().Overrides[def.Field] = protoValue
+		} else {
+			if aiPolicy.GetSpec().GetAi().Defaults == nil {
+				aiPolicy.GetSpec().GetAi().Defaults = make(map[string]*structpb.Value)
+			}
+			aiPolicy.GetSpec().GetAi().Defaults[def.Field] = protoValue
 		}
 	}
 
@@ -283,11 +285,11 @@ func processAIPolicy(ctx krt.HandlerContext, trafficPolicy *v1alpha1.TrafficPoli
 			aiPolicy.GetSpec().GetAi().PromptGuard = &api.PolicySpec_Ai_PromptGuard{}
 		}
 		if aiSpec.PromptGuard.Request != nil {
-			aiPolicy.GetSpec().GetAi().PromptGuard.Request = processRequestGuard(aiSpec.PromptGuard.Request, logger)
+			aiPolicy.GetSpec().GetAi().PromptGuard.Request = processRequestGuard(aiSpec.PromptGuard.Request)
 		}
 
 		if aiSpec.PromptGuard.Response != nil {
-			aiPolicy.GetSpec().GetAi().PromptGuard.Response = processResponseGuard(aiSpec.PromptGuard.Response, logger)
+			aiPolicy.GetSpec().GetAi().PromptGuard.Response = processResponseGuard(aiSpec.PromptGuard.Response)
 		}
 	}
 
@@ -298,12 +300,16 @@ func processAIPolicy(ctx krt.HandlerContext, trafficPolicy *v1alpha1.TrafficPoli
 	return []ADPPolicy{{Policy: aiPolicy}}
 }
 
-func processRequestGuard(req *v1alpha1.PromptguardRequest, logger *slog.Logger) *api.PolicySpec_Ai_RequestGuard {
+func processRequestGuard(req *v1alpha1.PromptguardRequest) *api.PolicySpec_Ai_RequestGuard {
 	if req == nil {
 		return nil
 	}
 
-	pgReq := &api.PolicySpec_Ai_RequestGuard{}
+	pgReq := &api.PolicySpec_Ai_RequestGuard{
+		Webhook:          processWebhook(req.Webhook),
+		Regex:            processRegex(req.Regex, req.CustomResponse),
+		OpenaiModeration: processModeration(req.Moderation),
+	}
 
 	if req.CustomResponse != nil {
 		pgReq.Rejection = &api.PolicySpec_Ai_RequestRejection{
@@ -312,33 +318,14 @@ func processRequestGuard(req *v1alpha1.PromptguardRequest, logger *slog.Logger) 
 		}
 	}
 
-	if req.Webhook != nil {
-		pgReq.Webhook = processWebhook(req.Webhook)
-	}
-
-	if req.Regex != nil {
-		pgReq.Regex = processRegex(req.Regex, req.CustomResponse, logger)
-	}
-
-	if req.Moderation != nil {
-		pgReq.OpenaiModeration = processModeration(req.Moderation)
-	}
-
 	return pgReq
 }
 
-func processResponseGuard(resp *v1alpha1.PromptguardResponse, logger *slog.Logger) *api.PolicySpec_Ai_ResponseGuard {
-	pgResp := &api.PolicySpec_Ai_ResponseGuard{}
-
-	if resp.Webhook != nil {
-		pgResp.Webhook = processWebhook(resp.Webhook)
+func processResponseGuard(resp *v1alpha1.PromptguardResponse) *api.PolicySpec_Ai_ResponseGuard {
+	return &api.PolicySpec_Ai_ResponseGuard{
+		Webhook: processWebhook(resp.Webhook),
+		Regex:   processRegex(resp.Regex, nil),
 	}
-
-	if resp.Regex != nil {
-		pgResp.Regex = processRegex(resp.Regex, nil, logger)
-	}
-
-	return pgResp
 }
 
 func processPromptEnrichment(enrichment *v1alpha1.AIPromptEnrichment) *api.PolicySpec_Ai_PromptEnrichment {
@@ -367,10 +354,33 @@ func processWebhook(webhook *v1alpha1.Webhook) *api.PolicySpec_Ai_Webhook {
 	if webhook == nil {
 		return nil
 	}
-	return &api.PolicySpec_Ai_Webhook{
+
+	w := &api.PolicySpec_Ai_Webhook{
 		Host: webhook.Host.Host,
 		Port: uint32(webhook.Host.Port),
 	}
+
+	if len(webhook.ForwardHeaderMatches) > 0 {
+		headers := make([]*api.HeaderMatch, 0, len(webhook.ForwardHeaderMatches))
+		for _, match := range webhook.ForwardHeaderMatches {
+			switch ptr.Deref(match.Type, gwv1.HeaderMatchExact) {
+			case gwv1.HeaderMatchExact:
+				headers = append(headers, &api.HeaderMatch{
+					Name:  string(match.Name),
+					Value: &api.HeaderMatch_Exact{Exact: match.Value},
+				})
+
+			case gwv1.HeaderMatchRegularExpression:
+				headers = append(headers, &api.HeaderMatch{
+					Name:  string(match.Name),
+					Value: &api.HeaderMatch_Regex{Regex: match.Value},
+				})
+			}
+		}
+		w.ForwardHeaderMatches = headers
+	}
+
+	return w
 }
 
 func processBuiltinRegexRule(builtin v1alpha1.BuiltIn, logger *slog.Logger) *api.PolicySpec_Ai_RegexRule {
@@ -397,7 +407,7 @@ func processNamedRegexRule(pattern, name string) *api.PolicySpec_Ai_RegexRule {
 	}
 }
 
-func processRegex(regex *v1alpha1.Regex, customResponse *v1alpha1.CustomResponse, logger *slog.Logger) *api.PolicySpec_Ai_RegexRules {
+func processRegex(regex *v1alpha1.Regex, customResponse *v1alpha1.CustomResponse) *api.PolicySpec_Ai_RegexRules {
 	if regex == nil {
 		return nil
 	}
@@ -405,9 +415,10 @@ func processRegex(regex *v1alpha1.Regex, customResponse *v1alpha1.CustomResponse
 	rules := &api.PolicySpec_Ai_RegexRules{}
 	if regex.Action != nil {
 		rules.Action = &api.PolicySpec_Ai_Action{}
-		if *regex.Action == v1alpha1.MASK {
+		switch *regex.Action {
+		case v1alpha1.MASK:
 			rules.Action.Kind = api.PolicySpec_Ai_MASK
-		} else if *regex.Action == v1alpha1.REJECT {
+		case v1alpha1.REJECT:
 			rules.Action.Kind = api.PolicySpec_Ai_REJECT
 			rules.Action.RejectResponse = &api.PolicySpec_Ai_RequestRejection{}
 			if customResponse != nil {
@@ -418,7 +429,7 @@ func processRegex(regex *v1alpha1.Regex, customResponse *v1alpha1.CustomResponse
 					rules.Action.RejectResponse.Status = *customResponse.StatusCode
 				}
 			}
-		} else {
+		default:
 			logger.Warn("unsupported regex action", "action", *regex.Action)
 			rules.Action.Kind = api.PolicySpec_Ai_ACTION_UNSPECIFIED
 		}
@@ -503,8 +514,6 @@ func processRBACPolicy(
 	policyTarget *api.PolicyTarget,
 	isMCP bool,
 ) []ADPPolicy {
-	logger := logging.New("agentgateway/plugins/traffic/rbac")
-
 	var allowPolicies, denyPolicies []string
 	if trafficPolicy.Spec.RBAC.Action == v1alpha1.AuthorizationPolicyActionDeny {
 		denyPolicies = append(denyPolicies, trafficPolicy.Spec.RBAC.Policy.MatchExpressions...)
@@ -607,4 +616,28 @@ func processLocalRateLimitPolicy(trafficPolicy *v1alpha1.TrafficPolicy, policyNa
 	}
 
 	return &ADPPolicy{Policy: localRateLimitPolicy}
+}
+
+// toProtoValue converts a raw string to a protobuf Value
+func toProtoValue(raw string) (*structpb.Value, error) {
+	rawBytes := []byte(raw)
+	v := &structpb.Value{}
+	if json.Valid(rawBytes) {
+		err := v.UnmarshalJSON(rawBytes)
+		if err != nil {
+			return nil, err
+		}
+		return v, nil
+	}
+
+	// not an encoded JSON value, this could be a an unquoted string so try encoding to JSON and unmarshal again
+	js, err := json.Marshal(raw)
+	if err != nil {
+		return nil, err
+	}
+	err = v.UnmarshalJSON(js)
+	if err != nil {
+		return nil, err
+	}
+	return v, nil
 }

@@ -65,6 +65,7 @@ type AIPolicy struct {
 type AIPromptEnrichment struct {
 	// A list of messages to be prepended to the prompt sent by the client.
 	Prepend []Message `json:"prepend,omitempty"`
+
 	// A list of messages to be appended to the prompt sent by the client.
 	Append []Message `json:"append,omitempty"`
 }
@@ -75,6 +76,7 @@ type RouteType string
 const (
 	// The LLM generates the full response before responding to a client.
 	CHAT RouteType = "CHAT"
+
 	// Stream responses to a client, which allows the LLM to stream out tokens as they are generated.
 	CHAT_STREAMING RouteType = "CHAT_STREAMING"
 )
@@ -84,6 +86,7 @@ type Message struct {
 	// Role of the message. The available roles depend on the backend
 	// LLM provider model, such as `SYSTEM` or `USER` in the OpenAI API.
 	Role string `json:"role"`
+
 	// String content of the message.
 	Content string `json:"content"`
 }
@@ -97,10 +100,13 @@ type BuiltIn string
 const (
 	// Default regex matching for Social Security numbers.
 	SSN BuiltIn = "SSN"
+
 	// Default regex matching for credit card numbers.
 	CREDIT_CARD BuiltIn = "CREDIT_CARD"
+
 	// Default regex matching for phone numbers.
 	PHONE_NUMBER BuiltIn = "PHONE_NUMBER"
+
 	// Default regex matching for email addresses.
 	EMAIL BuiltIn = "EMAIL"
 )
@@ -109,6 +115,7 @@ const (
 type RegexMatch struct {
 	// The regex pattern to match against the request or response.
 	Pattern *string `json:"pattern,omitempty"`
+
 	// An optional name for this match, which can be used for debugging purposes.
 	Name *string `json:"name,omitempty"`
 }
@@ -120,6 +127,7 @@ type Action string
 const (
 	// Mask the matched data in the request.
 	MASK Action = "MASK"
+
 	// Reject the request if the regex matches content in the request.
 	REJECT Action = "REJECT"
 )
@@ -129,9 +137,11 @@ type Regex struct {
 	// A list of regex patterns to match against the request or response.
 	// Matches and built-ins are additive.
 	Matches []RegexMatch `json:"matches,omitempty"`
+
 	// A list of built-in regex patterns to match against the request or response.
 	// Matches and built-ins are additive.
 	Builtins []BuiltIn `json:"builtins,omitempty"`
+
 	// The action to take if a regex pattern is matched in a request or response.
 	// This setting applies only to request matches. PromptguardResponse matches are always masked by default.
 	// Defaults to `MASK`.
@@ -152,9 +162,12 @@ type Webhook struct {
 	// +required
 	Host Host `json:"host"`
 
-	// ForwardHeaders define headers to forward with the request to the webhook.
-	// Note: This is not yet supported for agentgateway.
-	ForwardHeaders []gwv1.HTTPHeaderMatch `json:"forwardHeaders,omitempty"`
+	// ForwardHeaderMatches defines a list of HTTP header matches that will be
+	// used to select the headers to forward to the webhook.
+	// Request headers are used when forwarding requests and response headers
+	// are used when forwarding responses.
+	// By default, no headers are forwarded.
+	ForwardHeaderMatches []gwv1.HTTPHeaderMatch `json:"forwardHeaderMatches,omitempty"`
 }
 
 // CustomResponse configures a response to return to the client if request content
@@ -249,6 +262,7 @@ type PromptguardResponse struct {
 type AIPromptGuard struct {
 	// Prompt guards to apply to requests sent by the client.
 	Request *PromptguardRequest `json:"request,omitempty"`
+
 	// Prompt guards to apply to responses returned by the LLM provider.
 	Response *PromptguardResponse `json:"response,omitempty"`
 }
@@ -278,26 +292,30 @@ type AIPromptGuard struct {
 //
 // ```
 //
-// Example: Overriding a custom list field:
+// Example: Setting custom lists fields:
 // ```yaml
 // defaults:
-//   - field: "custom_list"
-//     value: "[a,b,c]"
+//   - field: "custom_integer_list"
+//     value: "[1,2,3]"
+//   - field: "custom_string_list"
+//     value: '["one","two","three"]'
+//     override: true
 //
 // ```
 //
 // Note: The `field` values correspond to keys in the JSON request body, not fields in this CRD.
 type FieldDefault struct {
 	// The name of the field.
-	// +required
 	// +kubebuilder:validation:MinLength=1
 	Field string `json:"field"`
+
 	// The field default value, which can be any JSON Data Type.
-	// +required
 	// +kubebuilder:validation:MinLength=1
 	Value string `json:"value"`
+
 	// Whether to override the field's value if it already exists.
 	// Defaults to false.
+	// +optional
 	// +kubebuilder:default=false
-	Override *bool `json:"override,omitempty"`
+	Override bool `json:"override,omitempty"`
 }

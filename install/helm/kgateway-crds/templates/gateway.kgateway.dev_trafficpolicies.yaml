@@ -156,7 +156,7 @@ spec:
                             type: object
                           webhook:
                             properties:
-                              forwardHeaders:
+                              forwardHeaderMatches:
                                 items:
                                   properties:
                                     name:
@@ -225,7 +225,7 @@ spec:
                             type: object
                           webhook:
                             properties:
-                              forwardHeaders:
+                              forwardHeaderMatches:
                                 items:
                                   properties:
                                     name:

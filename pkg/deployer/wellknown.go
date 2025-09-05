@@ -18,7 +18,8 @@ const (
 	// AgentgatewayRegistry is the agentgateway registry
 	AgentgatewayRegistry = "ghcr.io/agentgateway"
 	// AgentgatewayDefaultTag is the default agentgateway image tag
-	AgentgatewayDefaultTag = "0.7.8"
+	// Note: should be in sync with version in go.mod
+	AgentgatewayDefaultTag = "0.8.0"
 	// SdsImage is the image of the sds container.
 	SdsImage = "sds"
 	// SdsContainerName is the name of the container in the proxy deployment for the SDS integration.
