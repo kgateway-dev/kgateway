@@ -16,22 +16,15 @@ var (
 	nginxManifest            = filepath.Join(fsutils.MustGetThisDir(), "testdata", "nginx.yaml")
 	tlsInsecureManifest      = filepath.Join(fsutils.MustGetThisDir(), "testdata", "tls-insecure.yaml")
 	simpleTLSManifest        = filepath.Join(fsutils.MustGetThisDir(), "testdata", "simple-tls.yaml")
+	systemCAManifest         = filepath.Join(fsutils.MustGetThisDir(), "testdata", "system-ca.yaml")
 	outlierDetectionManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "outlierdetection.yaml")
 	// objects
 	proxyObjectMeta = metav1.ObjectMeta{
 		Name:      "gw",
 		Namespace: "default",
 	}
-	proxyDeployment     = &appsv1.Deployment{ObjectMeta: proxyObjectMeta}
-	proxyService        = &corev1.Service{ObjectMeta: proxyObjectMeta}
-	proxyServiceAccount = &corev1.ServiceAccount{ObjectMeta: proxyObjectMeta}
+	proxyService = &corev1.Service{ObjectMeta: proxyObjectMeta}
 
-	exampleSvc = &corev1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "example-svc",
-			Namespace: "default",
-		},
-	}
 	nginxPod = &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "nginx",

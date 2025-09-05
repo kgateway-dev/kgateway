@@ -1,14 +1,5 @@
 Clusters:
 - connectTimeout: 5s
-  edsClusterConfig:
-    edsConfig:
-      ads: {}
-      resourceApiVersion: V3
-  ignoreHealthOnHostRemoval: true
-  metadata: {}
-  name: kube_default_example-svc_80
-  type: EDS
-- connectTimeout: 5s
   metadata: {}
   name: test-backend-plugin_default_example-svc_80
 Listeners:
@@ -16,7 +7,7 @@ Listeners:
     socketAddress:
       address: '::'
       ipv4Compat: true
-      portValue: 80
+      portValue: 8080
   filterChains:
   - filters:
     - name: envoy.filters.network.http_connection_manager
@@ -32,25 +23,14 @@ Listeners:
           configSource:
             ads: {}
             resourceApiVersion: V3
-          routeConfigName: listener~80
+          routeConfigName: listener~8080
         statPrefix: http
         useRemoteAddress: true
-    name: listener~80
-  name: listener~80
+    name: listener~8080
+  name: listener~8080
 Routes:
 - ignorePortInHostMatching: true
-  name: listener~80
-  virtualHosts:
-  - domains:
-    - example.com
-    name: listener~80~example_com
-    routes:
-    - match:
-        prefix: /
-      name: listener~80~example_com-route-0-httproute-example-route-default-0-0-matcher-0
-      route:
-        cluster: kube_default_example-svc_80
-        clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+  name: listener~8080
 Statuses:
   gateways:
     default/example-gateway:
@@ -71,7 +51,7 @@ Statuses:
         status: "True"
         type: Programmed
       listeners:
-      - attachedRoutes: 1
+      - attachedRoutes: 0
         conditions:
         - lastTransitionTime: null
           message: Listener is accepted
@@ -99,18 +79,8 @@ Statuses:
           kind: HTTPRoute
         - group: gateway.networking.k8s.io
           kind: GRPCRoute
-      - attachedRoutes: 1
+      - attachedRoutes: 0
         conditions:
-        - lastTransitionTime: null
-          message: Secret default/missing-cert not found.
-          reason: InvalidCertificateRef
-          status: "False"
-          type: ResolvedRefs
-        - lastTransitionTime: null
-          message: Secret default/missing-cert not found.
-          reason: Invalid
-          status: "False"
-          type: Programmed
         - lastTransitionTime: null
           message: Listener is accepted
           reason: Accepted
@@ -121,54 +91,43 @@ Statuses:
           reason: NoConflicts
           status: "False"
           type: Conflicted
-        name: https
-        supportedKinds:
-        - group: gateway.networking.k8s.io
-          kind: HTTPRoute
-      - attachedRoutes: 1
-        conditions:
         - lastTransitionTime: null
-          message: 'invalid TLS secret default/invalid-cert: tls: failed to find any
-            PEM data in key input'
-          reason: InvalidCertificateRef
-          status: "False"
-          type: ResolvedRefs
-        - lastTransitionTime: null
-          message: 'invalid TLS secret default/invalid-cert: tls: failed to find any
-            PEM data in key input'
-          reason: Invalid
-          status: "False"
-          type: Programmed
-        - lastTransitionTime: null
-          message: Listener is accepted
-          reason: Accepted
-          status: "True"
-          type: Accepted
-        - lastTransitionTime: null
-          message: Listener does not have conflicts
-          reason: NoConflicts
-          status: "False"
-          type: Conflicted
-        name: https2
-        supportedKinds:
-        - group: gateway.networking.k8s.io
-          kind: HTTPRoute
-  httpRoutes:
-    default/example-route:
-      parents:
-      - conditions:
-        - lastTransitionTime: null
-          message: Route is accepted
-          reason: Accepted
-          status: "True"
-          type: Accepted
-        - lastTransitionTime: null
-          message: Route has valid refs
+          message: Listener has valid refs
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
-        controllerName: kgateway
-        parentRef:
-          group: ""
-          kind: ""
-          name: example-gateway
+        - lastTransitionTime: null
+          message: Listener is programmed
+          reason: Programmed
+          status: "True"
+          type: Programmed
+        name: tcp
+        supportedKinds:
+        - group: gateway.networking.k8s.io
+          kind: TCPRoute
+      - attachedRoutes: 0
+        conditions:
+        - lastTransitionTime: null
+          message: Listener is accepted
+          reason: Accepted
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Listener does not have conflicts
+          reason: NoConflicts
+          status: "False"
+          type: Conflicted
+        - lastTransitionTime: null
+          message: Listener has valid refs
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Listener is programmed
+          reason: Programmed
+          status: "True"
+          type: Programmed
+        name: tls
+        supportedKinds:
+        - group: gateway.networking.k8s.io
+          kind: TLSRoute

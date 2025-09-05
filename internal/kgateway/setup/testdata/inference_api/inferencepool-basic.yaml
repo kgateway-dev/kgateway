@@ -59,7 +59,8 @@ spec:
     group: ""
     kind: Service
     name: gateway-pool-endpoint-picker
-    portNumber: 9002
+    port:
+      number: 9002
   selector:
     matchLabels:
       app: gateway

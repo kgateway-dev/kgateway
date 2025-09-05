@@ -40,6 +40,10 @@ var (
 		Group: inf.GroupVersion.Group,
 		Kind:  wellknown.InferencePoolKind,
 	}
+	backendGk = schema.GroupKind{
+		Group: wellknown.BackendGVK.Group,
+		Kind:  wellknown.BackendGVK.Kind,
+	}
 )
 
 func backends(refN, refNs string) []any {
@@ -425,6 +429,57 @@ func TestInferencePoolPortOverride(t *testing.T) {
 	}
 }
 
+func TestBackendPortNotAllowed(t *testing.T) {
+	cases := []struct {
+		name        string
+		backendNs   string
+		refGrant    *gwv1beta1.ReferenceGrant
+		expectError bool
+	}{
+		{
+			name:        "same namespace with port",
+			backendNs:   "",
+			refGrant:    nil,
+			expectError: true,
+		},
+		{
+			name:        "cross namespace with port and ref grant",
+			backendNs:   "default2",
+			refGrant:    refGrantWithBackend(),
+			expectError: true,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Determine the actual namespace for the backend
+			backendNs := tc.backendNs
+			if backendNs == "" {
+				backendNs = "default"
+			}
+
+			inputs := []any{
+				backend(backendNs),
+			}
+			if tc.refGrant != nil {
+				inputs = append(inputs, tc.refGrant)
+			}
+
+			// Create HTTPRoute with Backend reference with port (this should always fail)
+			portVal := gwv1.PortNumber(8080)
+			route := httpRouteWithBackendRef("test-backend", tc.backendNs, &portVal)
+			inputs = append(inputs, route)
+
+			ir := translateRoute(t, inputs)
+			require.NotNil(t, ir)
+			b := getBackends(ir)[0]
+
+			require.Error(t, b.Err)
+			assert.Contains(t, b.Err.Error(), (&BackendPortNotAllowedError{BackendName: "test-backend"}).Error())
+		})
+	}
+}
+
 // Helper to build a Namespace pointer, or nil if empty
 func ptrToNamespace(ns string) *gwv1.Namespace {
 	if ns == "" {
@@ -520,6 +575,89 @@ func refGrantWithNs(ns string) *gwv1beta1.ReferenceGrant {
 	return rg
 }
 
+// Helper that creates a ReferenceGrant for Backend resources
+func refGrantWithBackend() *gwv1beta1.ReferenceGrant {
+	return &gwv1beta1.ReferenceGrant{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "default2",
+			Name:      "backend-ref-grant",
+		},
+		Spec: gwv1beta1.ReferenceGrantSpec{
+			From: []gwv1beta1.ReferenceGrantFrom{
+				{
+					Group:     gwv1.Group("gateway.networking.k8s.io"),
+					Kind:      gwv1.Kind("HTTPRoute"),
+					Namespace: gwv1.Namespace("default"),
+				},
+			},
+			To: []gwv1beta1.ReferenceGrantTo{
+				{
+					Group: gwv1.Group(wellknown.BackendGVK.Group),
+					Kind:  gwv1.Kind(wellknown.BackendGVK.Kind),
+				},
+			},
+		},
+	}
+}
+
+// Helper that creates a Backend resource
+func backend(ns string) *v1alpha1.Backend {
+	if ns == "" {
+		ns = "default"
+	}
+	return &v1alpha1.Backend{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-backend",
+			Namespace: ns,
+		},
+		Spec: v1alpha1.BackendSpec{
+			Type: v1alpha1.BackendTypeStatic,
+			Static: &v1alpha1.StaticBackend{
+				Hosts: []v1alpha1.Host{
+					{
+						Host: "1.2.3.4",
+						Port: gwv1.PortNumber(8080),
+					},
+				},
+			},
+		},
+	}
+}
+
+// Helper that creates an HTTPRoute with a Backend reference
+func httpRouteWithBackendRef(refN, refNs string, port *gwv1.PortNumber) *gwv1.HTTPRoute {
+	var ns *gwv1.Namespace
+	if refNs != "" {
+		n := gwv1.Namespace(refNs)
+		ns = &n
+	}
+	return &gwv1.HTTPRoute{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "httproute",
+			Namespace: "default",
+		},
+		Spec: gwv1.HTTPRouteSpec{
+			Rules: []gwv1.HTTPRouteRule{
+				{
+					BackendRefs: []gwv1.HTTPBackendRef{
+						{
+							BackendRef: gwv1.BackendRef{
+								BackendObjectReference: gwv1.BackendObjectReference{
+									Group:     ptr.To(gwv1.Group(wellknown.BackendGVK.Group)),
+									Kind:      ptr.To(gwv1.Kind(wellknown.BackendGVK.Kind)),
+									Name:      gwv1.ObjectName(refN),
+									Namespace: ns,
+									Port:      port,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
 func k8sSvcUpstreams(services krt.Collection[*corev1.Service]) krt.Collection[ir.BackendObjectIR] {
 	return krt.NewManyCollection(services, func(kctx krt.HandlerContext, svc *corev1.Service) []ir.BackendObjectIR {
 		uss := []ir.BackendObjectIR{}
@@ -551,6 +689,26 @@ func infPoolUpstreams(poolCol krt.Collection[*inf.InferencePool]) krt.Collection
 		backend.GvPrefix = "endpoint-picker"
 		backend.CanonicalHostname = ""
 		return &backend
+	})
+}
+
+func backendUpstreams(backendCol krt.Collection[*v1alpha1.Backend]) krt.Collection[ir.BackendObjectIR] {
+	return krt.NewCollection(backendCol, func(kctx krt.HandlerContext, backend *v1alpha1.Backend) *ir.BackendObjectIR {
+		// Create a BackendObjectIR IR representation from the given Backend.
+		// For static backends, use the port from the first host
+		var port int32 = 8080 // default port
+		if backend.Spec.Static != nil && len(backend.Spec.Static.Hosts) > 0 {
+			port = int32(backend.Spec.Static.Hosts[0].Port)
+		}
+
+		backendIR := ir.NewBackendObjectIR(ir.ObjectSource{
+			Kind:      backendGk.Kind,
+			Group:     backendGk.Group,
+			Namespace: backend.Namespace,
+			Name:      backend.Name,
+		}, port, "")
+		backendIR.Obj = backend
+		return &backendIR
 	})
 }
 
@@ -699,6 +857,8 @@ func preRouteIndex(t test.Failer, inputs []any) *RoutesIndex {
 	upstreams.AddBackends(svcGk, k8sSvcUpstreams(services))
 	pools := krttest.GetMockCollection[*inf.InferencePool](mock)
 	upstreams.AddBackends(infPoolGk, infPoolUpstreams(pools))
+	backends := krttest.GetMockCollection[*v1alpha1.Backend](mock)
+	upstreams.AddBackends(backendGk, backendUpstreams(backends))
 
 	httproutes := krttest.GetMockCollection[*gwv1.HTTPRoute](mock)
 	tcpproutes := krttest.GetMockCollection[*gwv1a2.TCPRoute](mock)

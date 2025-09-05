@@ -6,7 +6,43 @@ Clusters:
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
   metadata: {}
-  name: kube_default_example-svc_80
+  name: kube_default_backend-service2_443
+  transportSocket:
+    name: envoy.transport_sockets.tls
+    typedConfig:
+      '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+      commonTlsContext:
+        combinedValidationContext:
+          defaultValidationContext:
+            matchTypedSubjectAltNames:
+            - matcher:
+                exact: test.example.com
+              sanType: DNS
+            - matcher:
+                exact: api.example.com
+              sanType: DNS
+          validationContextSdsSecretConfig:
+            name: SYSTEM_CA_CERT
+      sni: test.example.com
+  type: EDS
+- connectTimeout: 5s
+  edsClusterConfig:
+    edsConfig:
+      ads: {}
+      resourceApiVersion: V3
+  ignoreHealthOnHostRemoval: true
+  metadata: {}
+  name: kube_default_backend-service_443
+  transportSocket:
+    name: envoy.transport_sockets.tls
+    typedConfig:
+      '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+      commonTlsContext:
+        combinedValidationContext:
+          defaultValidationContext: {}
+          validationContextSdsSecretConfig:
+            name: SYSTEM_CA_CERT
+      sni: test.example.com
   type: EDS
 - connectTimeout: 5s
   metadata: {}
@@ -16,7 +52,7 @@ Listeners:
     socketAddress:
       address: '::'
       ipv4Compat: true
-      portValue: 80
+      portValue: 8080
   filterChains:
   - filters:
     - name: envoy.filters.network.http_connection_manager
@@ -32,24 +68,24 @@ Listeners:
           configSource:
             ads: {}
             resourceApiVersion: V3
-          routeConfigName: listener~80
+          routeConfigName: listener~8080
         statPrefix: http
         useRemoteAddress: true
-    name: listener~80
-  name: listener~80
+    name: listener~8080
+  name: listener~8080
 Routes:
 - ignorePortInHostMatching: true
-  name: listener~80
+  name: listener~8080
   virtualHosts:
   - domains:
     - example.com
-    name: listener~80~example_com
+    name: listener~8080~example_com
     routes:
     - match:
         prefix: /
-      name: listener~80~example_com-route-0-httproute-example-route-default-0-0-matcher-0
+      name: listener~8080~example_com-route-0-httproute-backend-route-default-0-0-matcher-0
       route:
-        cluster: kube_default_example-svc_80
+        cluster: kube_default_backend-service_443
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
 Statuses:
   gateways:
@@ -99,62 +135,8 @@ Statuses:
           kind: HTTPRoute
         - group: gateway.networking.k8s.io
           kind: GRPCRoute
-      - attachedRoutes: 1
-        conditions:
-        - lastTransitionTime: null
-          message: Secret default/missing-cert not found.
-          reason: InvalidCertificateRef
-          status: "False"
-          type: ResolvedRefs
-        - lastTransitionTime: null
-          message: Secret default/missing-cert not found.
-          reason: Invalid
-          status: "False"
-          type: Programmed
-        - lastTransitionTime: null
-          message: Listener is accepted
-          reason: Accepted
-          status: "True"
-          type: Accepted
-        - lastTransitionTime: null
-          message: Listener does not have conflicts
-          reason: NoConflicts
-          status: "False"
-          type: Conflicted
-        name: https
-        supportedKinds:
-        - group: gateway.networking.k8s.io
-          kind: HTTPRoute
-      - attachedRoutes: 1
-        conditions:
-        - lastTransitionTime: null
-          message: 'invalid TLS secret default/invalid-cert: tls: failed to find any
-            PEM data in key input'
-          reason: InvalidCertificateRef
-          status: "False"
-          type: ResolvedRefs
-        - lastTransitionTime: null
-          message: 'invalid TLS secret default/invalid-cert: tls: failed to find any
-            PEM data in key input'
-          reason: Invalid
-          status: "False"
-          type: Programmed
-        - lastTransitionTime: null
-          message: Listener is accepted
-          reason: Accepted
-          status: "True"
-          type: Accepted
-        - lastTransitionTime: null
-          message: Listener does not have conflicts
-          reason: NoConflicts
-          status: "False"
-          type: Conflicted
-        name: https2
-        supportedKinds:
-        - group: gateway.networking.k8s.io
-          kind: HTTPRoute
   httpRoutes:
-    default/example-route:
+    default/backend-route:
       parents:
       - conditions:
         - lastTransitionTime: null
@@ -172,3 +154,42 @@ Statuses:
           group: ""
           kind: ""
           name: example-gateway
+  policies:
+    BackendConfigPolicy/default/system-ca-san:
+      ancestors:
+      - ancestorRef:
+          group: ""
+          kind: Service
+          name: backend-service2
+          namespace: default
+        conditions:
+        - lastTransitionTime: null
+          message: Policy accepted
+          reason: Valid
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Attached to all targets
+          reason: Attached
+          status: "True"
+          type: Attached
+        controllerName: kgateway.dev/kgateway
+    BackendConfigPolicy/default/systemca:
+      ancestors:
+      - ancestorRef:
+          group: ""
+          kind: Service
+          name: backend-service
+          namespace: default
+        conditions:
+        - lastTransitionTime: null
+          message: Policy accepted
+          reason: Valid
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Attached to all targets
+          reason: Attached
+          status: "True"
+          type: Attached
+        controllerName: kgateway.dev/kgateway

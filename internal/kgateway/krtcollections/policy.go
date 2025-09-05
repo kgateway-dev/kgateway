@@ -50,6 +50,14 @@ func (n *NotFoundError) Error() string {
 	return fmt.Sprintf("%s \"%s\" not found", n.NotFoundObj.Kind, n.NotFoundObj.Name)
 }
 
+type BackendPortNotAllowedError struct {
+	BackendName string
+}
+
+func (e *BackendPortNotAllowedError) Error() string {
+	return fmt.Sprintf("BackendRef to \"%s\" includes a port. Do not specify a port when referencing a Backend resource, as it defines its own port configuration", e.BackendName)
+}
+
 // MARK: BackendIndex
 
 type BackendIndex struct {
@@ -159,6 +167,11 @@ func (i *BackendIndex) getBackend(kctx krt.HandlerContext, gk schema.GroupKind, 
 		Kind:      gk.Kind,
 		Namespace: n.Namespace,
 		Name:      n.Name,
+	}
+
+	// Check if this is a Backend reference and validate that it doesn't specify a port
+	if gk.Group == wellknown.BackendGVK.Group && gk.Kind == wellknown.BackendGVK.Kind && gwport != nil {
+		return nil, &BackendPortNotAllowedError{BackendName: key.Name}
 	}
 
 	var port int32

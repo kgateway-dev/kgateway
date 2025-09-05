@@ -34,7 +34,7 @@ type McpTargetSelector struct {
 }
 
 // McpSelector defines the selector logic to search for MCP targets.
-// +kubebuilder:validation:XValidation:message="at least one of namespace and service must be set",rule="has(self.namespace) || has(self.service)"
+// +kubebuilder:validation:XValidation:message="at least one of namespace or service must be set",rule="has(self.__namespace__) || has(self.service)"
 type McpSelector struct {
 	// Namespace is the label selector in which namespace the MCP targets
 	// are searched for.

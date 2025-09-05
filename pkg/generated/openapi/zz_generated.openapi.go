@@ -7187,6 +7187,13 @@ func schema_kgateway_v2_api_v1alpha1_TLS(ref common.ReferenceCallback) common.Op
 							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.TLSFiles"),
 						},
 					},
+					"wellKnownCACertificates": {
+						SchemaProps: spec.SchemaProps{
+							Description: "WellKnownCACertificates specifies whether to use a well-known set of CA certificates for validating the backend's certificate chain. Currently, only the system certificate pool is supported via SDS.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 					"insecureSkipVerify": {
 						SchemaProps: spec.SchemaProps{
 							Description: "InsecureSkipVerify originates TLS but skips verification of the backend's certificate. WARNING: This is an insecure option that should only be used if the risks are understood.",

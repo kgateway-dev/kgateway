@@ -4,12 +4,14 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"time"
 
 	"github.com/avast/retry-go/v4"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"istio.io/istio/pkg/kube"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -134,6 +136,7 @@ func (s *AgentGwStatusSyncer) syncRouteStatus(ctx context.Context, logger *slog.
 	stopwatch := utils.NewTranslatorStopWatch("RouteStatusSyncer")
 	stopwatch.Start()
 	defer stopwatch.Stop(ctx)
+	startTime := time.Now()
 
 	// TODO: add routeStatusMetrics
 
@@ -150,8 +153,11 @@ func (s *AgentGwStatusSyncer) syncRouteStatus(ctx context.Context, logger *slog.
 				err := s.mgr.GetClient().Get(ctx, routeKey, route)
 				if err != nil {
 					if apierrors.IsNotFound(err) {
-						// the route is not found, we can't report status on it
-						// if it's recreated, we'll retranslate it anyway
+						if time.Since(startTime) < 5*time.Second {
+							return err // Retry
+						}
+						// After timeout, assume genuinely deleted
+						logger.Error("route not found after timeout, skipping", logKeyResourceRef, routeKey)
 						return nil
 					}
 					logger.Error("error getting route", logKeyError, err, logKeyResourceRef, routeKey, logKeyRouteType, routeType)
@@ -296,11 +302,53 @@ func (s *AgentGwStatusSyncer) syncRouteStatus(ctx context.Context, logger *slog.
 	}
 }
 
+// ensureBasicGatewayConditions ensures that the required Gateway conditions exist
+// This is needed because agent-gateway bypasses normal reporter initialization
+func ensureBasicGatewayConditions(status *gwv1.GatewayStatus, generation int64) {
+	if status == nil {
+		return
+	}
+
+	// Ensure Accepted condition exists
+	if meta.FindStatusCondition(status.Conditions, string(gwv1.GatewayConditionAccepted)) == nil {
+		meta.SetStatusCondition(&status.Conditions, metav1.Condition{
+			Type:               string(gwv1.GatewayConditionAccepted),
+			Status:             metav1.ConditionTrue,
+			Reason:             string(gwv1.GatewayReasonAccepted),
+			Message:            "Gateway is accepted by agent-gateway controller",
+			ObservedGeneration: generation,
+		})
+	}
+
+	// Ensure Programmed condition exists
+	if meta.FindStatusCondition(status.Conditions, string(gwv1.GatewayConditionProgrammed)) == nil {
+		meta.SetStatusCondition(&status.Conditions, metav1.Condition{
+			Type:               string(gwv1.GatewayConditionProgrammed),
+			Status:             metav1.ConditionTrue,
+			Reason:             string(gwv1.GatewayReasonProgrammed),
+			Message:            "Gateway is programmed by agent-gateway controller",
+			ObservedGeneration: generation,
+		})
+	}
+
+	// Ensure all existing conditions have the correct observedGeneration
+	for i := range status.Conditions {
+		status.Conditions[i].ObservedGeneration = generation
+	}
+
+	// Ensure all listener conditions have the correct observedGeneration
+	for i := range status.Listeners {
+		for j := range status.Listeners[i].Conditions {
+			status.Listeners[i].Conditions[j].ObservedGeneration = generation
+		}
+	}
+}
+
 // syncGatewayStatus will build and update status for all Gateways in gateway reports
 func (s *AgentGwStatusSyncer) syncGatewayStatus(ctx context.Context, logger *slog.Logger, gatewayReports GatewayReports) {
 	stopwatch := utils.NewTranslatorStopWatch("GatewayStatusSyncer")
 	stopwatch.Start()
-
+	startTime := time.Now()
 	// Create a minimal ReportMap with just the gateway reports for BuildGWStatus to work
 	rm := reports.ReportMap{
 		Gateways: gatewayReports.Reports,
@@ -312,6 +360,11 @@ func (s *AgentGwStatusSyncer) syncGatewayStatus(ctx context.Context, logger *slo
 			err := s.mgr.GetClient().Get(ctx, gwnn, &gw)
 			if err != nil {
 				if apierrors.IsNotFound(err) {
+					if time.Since(startTime) < 5*time.Second {
+						return err // Retry
+					}
+					// After timeout, assume genuinely deleted
+					logger.Error("gateway not found after timeout, skipping", logKeyGateway, gwnn.String())
 					continue
 				}
 
@@ -338,6 +391,9 @@ func (s *AgentGwStatusSyncer) syncGatewayStatus(ctx context.Context, logger *slo
 			}
 
 			if status := rm.BuildGWStatus(ctx, gw, attachedRoutesForGw); status != nil {
+				// Ensure basic Gateway conditions exist (agent-gateway bypasses normal reporter init)
+				ensureBasicGatewayConditions(status, gw.Generation)
+
 				// normalize per-listener AttachedRoutes, defaulting to 0 where absent.
 				normalizeListenerAttachedRoutes(&gw, status, attachedRoutesForGw)
 				setObservedGen(&gw, status)
@@ -410,6 +466,7 @@ func normalizeListenerAttachedRoutes(gw *gwv1.Gateway, st *gwv1.GatewayStatus, c
 func (s *AgentGwStatusSyncer) syncListenerSetStatus(ctx context.Context, logger *slog.Logger, listenerSetReports ListenerSetReports) {
 	stopwatch := utils.NewTranslatorStopWatch("ListenerSetStatusSyncer")
 	stopwatch.Start()
+	startTime := time.Now()
 
 	// TODO: add listenerStatusMetrics
 
@@ -427,6 +484,14 @@ func (s *AgentGwStatusSyncer) syncListenerSetStatus(ctx context.Context, logger 
 				if apierrors.IsNotFound(err) {
 					// the listener set is not found, we can't report status on it
 					// if it's recreated, we'll retranslate it anyway
+					continue
+				}
+				if apierrors.IsNotFound(err) {
+					if time.Since(startTime) < 5*time.Second {
+						return err // Retry
+					}
+					// After timeout, assume genuinely deleted
+					logger.Error("listener set not found after timeout, skipping", "listenerset", lsnn.String())
 					continue
 				}
 				logger.Info("error getting ls", "error", err.Error())

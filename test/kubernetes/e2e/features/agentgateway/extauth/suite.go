@@ -30,6 +30,7 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 			testdefaults.CurlPodManifest,
 			simpleServiceManifest,
 			extAuthManifest,
+			gatewayWithRouteManifest,
 		},
 		Resources: []client.Object{
 			// resources from curl manifest
@@ -38,6 +39,8 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 			basicSecureRoute, simpleSvc, simpleDeployment,
 			// extauth resources
 			extAuthSvc, extAuthExtension,
+			// deployer-generated resources
+			proxyDeployment, proxyService,
 		},
 	}
 
@@ -45,26 +48,20 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 	testCases := map[string]base.TestCase{
 		"TestExtAuthPolicy": {
 			Manifests: []string{
-				gatewayWithRouteManifest,
 				securedGatewayPolicyManifest,
 				insecureRouteManifest,
 			},
 			Resources: []client.Object{
-				// deployer-generated resources
-				proxyDeployment, proxyService,
 				gatewayAttachedTrafficPolicy,
 				insecureRoute,
 			},
 		},
 		"TestRouteTargetedExtAuthPolicy": {
 			Manifests: []string{
-				gatewayWithRouteManifest,
 				securedRouteManifest,
 				insecureRouteManifest,
 			},
 			Resources: []client.Object{
-				// deployer-generated resources
-				proxyDeployment, proxyService,
 				secureRoute, secureTrafficPolicy,
 				insecureRoute, insecureTrafficPolicy,
 			},
