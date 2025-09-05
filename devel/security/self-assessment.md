@@ -29,7 +29,7 @@ _This document provides a self-assessment of the kgateway project following the 
 
 |   |  |
 | - | - |
-| September 5 | Initial Draft _(Sam Heilbron, Lin Sun, Jenny Shu)_  |
+| September 5, 2023 | Initial Draft _(Sam Heilbron, Lin Sun, Jenny Shu)_  |
 |  |  |
 
 ### Security links
@@ -74,7 +74,7 @@ This project has been production-ready since 2019 (previously known as Gloo).
 
 #### kgateway-ai-extension
 
-* Role: data plane extension to integrate with LLM's.
+* Role: data plane extension to integrate with LLMs.
 * Isolation: runs as a sidecar to kgateway-proxy
 
 #### kgwctl
@@ -90,7 +90,7 @@ This project has been production-ready since 2019 (previously known as Gloo).
 
 #### kgateway
 
-* Processes user-defined routing APIs (Kuberetes Gateway API) and policy APIs (kgateway CRDs) and produces xDS snapshot to serve to kgateway-proxy
+* Processes user-defined routing APIs (Kubernetes Gateway API) and policy APIs (kgateway CRDs) and produces xDS snapshot to serve to kgateway-proxy
 
 #### sds
 
@@ -98,7 +98,7 @@ This project has been production-ready since 2019 (previously known as Gloo).
 
 #### kgateway-ai-extension
 
-* Routes traffic to LLM's
+* Routes traffic to LLMs
 
 #### kgwctl
 
