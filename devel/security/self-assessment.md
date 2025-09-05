@@ -22,7 +22,6 @@ _This document provides a self-assessment of the kgateway project following the 
   * [Communication channels](#communication-channels)
 * [Security issue resolution](#security-issue-resolution)
 * [Appendix](#appendix)
-  * [Future Work](#roadmap)
 
 ## Metadata
 
@@ -40,10 +39,10 @@ _This document provides a self-assessment of the kgateway project following the 
 | Software | https://github.com/kgateway-dev/kgateway  |
 | Security Provider |  No. kgateway is designed to facilitate security and compliance validation, but it should not be considered a security provider.  |
 | Languages | Golang, Yaml, Python |
-| SBOM | See [Roadmap](#roadmap) |
-| Security Insights | See [Roadmap](#roadmap) |
-| Security File | See [Roadmap](#roadmap) |
-| Cosign pub-key | See [Roadmap](#roadmap) |
+| SBOM | See [Project Compliance > Future State](#future-state) |
+| Security Insights | See [Project Compliance > Future State](#future-state) |
+| Security File | See [Project Compliance > Future State](#future-state) |
+| Cosign pub-key | See [Project Compliance > Future State](#future-state) |
 | | |
 
 ## Overview
@@ -87,19 +86,19 @@ This project has been production-ready since 2019 (previously known as Gloo).
 
 #### kgateway-proxy
 
-* Handles traffic from downstream applications or clients, executes the defined encoding filters and  routing logic, forwards the request to the upstream service, collects the response, applies the decoding filters, and returns the response to the client. 
+* Handles traffic from downstream applications or clients, executes the defined encoding filters and  routing logic, forwards the request to the upstream service, collects the response, applies the decoding filters, and returns the response to the client.
 
 #### kgateway
 
-* TODO
+* Processes user-defined routing APIs (Kuberetes Gateway API) and policy APIs (kgateway CRDs) and produces xDS snapshot to serve to kgateway-proxy
 
 #### sds
 
-* TODO
+* Serves certificates via SDS to the kgateway-proxy
 
 #### kgateway-ai-extension
 
-* TODO
+* Routes traffic to LLM's
 
 #### kgwctl
 
@@ -172,14 +171,17 @@ kgateway is not currently targeting formal standards (PCI-DSS, GDPR). However, t
 In the future, kgateway intends to build and maintain compliance with several industry standards and frameworks:
 
 **Supply Chain Levels for Software Artifacts (SLSA)**:
+
 * All release artifacts include signed provenance attestations with cryptographic verification
 * Build process isolation and non-falsifiable provenance are implemented
 * Both container images and release binaries have complete SLSA provenance chains
 
 **OpenSSF Scorecard Compliance**:
+
 * Maintains a strong OpenSSF Scorecard score with continuous monitoring via automated pipelines
 
 **Container Security Standards**:
+
 * All container images are signed with Cosign using keyless signing
 * Software Bill of Materials (SBOM) generation for all releases
 * Multi-architecture container builds with attestation
@@ -242,23 +244,19 @@ kgateway does not yet integrate with the OpenSSF badge. This is on the projects 
 
 ### Case studies
 
-TODO
+#### Case Study 1: Securing Internal Microservices with mTLS
+
+A company adopted kgateway to secure communication between microservices in their internal Kubernetes cluster. They needed strong service-to-service authentication without relying on a service mesh. By enabling mTLS support in kgateway, they ensured that only authorized services could connect to backend APIs.
+
+#### Case Study 2: Rate Limiting to Thwart Credential Stuffing Attacks
+
+A company experienced credential stuffing attacks targeting their login endpoints. Rather than modify core applications, they deployed kgateway in front of the API and configured IP-based and user-based rate limiting policies.
+
+#### Case Study 3: Audit Logging for Compliance in a Regulated Environment
+
+A healthcare provider needed to implement audit logging for all external API requests as part of HIPAA compliance. They used kgateway’s pluggable logging capabilities to log request metadata (e.g., IP, user agent, endpoint accessed, response status) in a structured format. This enabled easy querying of suspicious patterns and helped pass third-party audits.
 
 ### Related projects/vendors
 
 * [Envoy Gateway](https://gateway.envoyproxy.io/)
 * [Kong](https://developer.konghq.com/gateway/)
-
-### Roadmap
-
-TODO, flush out
-
-- Introduce SBOM
-- SECURITY-INSIGHTS.yml
-- https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/security/threat_model 
-- https://github.com/solo-io/gloo/blob/main/docs/content/reference/security-posture.yaml
-- https://github.com/solo-io/solo-projects/blob/main/SECURITY_POLICY.md 
-- SECURITY.md
-- Cosign public key (cosign.pub). we addded this support in GG enterprise (https://github.com/solo-io/gloo-gateway/pull/522), but we liekly need to add to oss here
-- add gosec (https://github.com/securego/gosec)
-- define CLI in kgateway repository (or in kgateway-dev org)
