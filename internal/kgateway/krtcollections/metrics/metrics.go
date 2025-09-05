@@ -614,6 +614,15 @@ func GetResourceMetricEventHandler[T any]() func(krt.Event[T]) {
 					Resource:  resourceType,
 				}.toMetricsLabels()...)
 
+				startResourceSync(ResourceSyncDetails{
+					Gateway:      name,
+					Namespace:    namespace,
+					ResourceType: resourceType,
+					ResourceName: resourceName,
+				})
+
+				// There will not be a status sync for a deleted resource,
+				// so end the resource status sync immediately.
 				EndResourceStatusSync(ResourceSyncDetails{
 					Gateway:      name,
 					Namespace:    namespace,

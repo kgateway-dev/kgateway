@@ -397,15 +397,6 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 				// if _, err := s.proxyTranslator.xdsCache.GetSnapshot(key); err == nil {
 				// 	s.proxyTranslator.xdsCache.ClearSnapshot(e.Latest().proxyKey)
 				// }
-
-				// On gateway deletion, there will not have been a StartResourceXDSSync() call,
-				// so it is necessary to start a resource sync here.
-				kmetrics.StartResourceXDSSync(kmetrics.ResourceSyncDetails{
-					Gateway:      cd.Gateway,
-					Namespace:    cd.Namespace,
-					ResourceType: wellknown.GatewayKind,
-					ResourceName: cd.Gateway,
-				})
 			}
 
 			kmetrics.EndResourceXDSSync(kmetrics.ResourceSyncDetails{
