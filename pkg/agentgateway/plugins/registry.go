@@ -34,9 +34,6 @@ func MergePlugins(plug ...AgentgatewayPlugin) AgentgatewayPlugin {
 			if p.AdditionalResources.AdditionalRoutes != nil {
 				ret.AdditionalResources.AdditionalRoutes = p.AdditionalResources.AdditionalRoutes
 			}
-			if p.AdditionalResources.AdditionalWorkloads != nil {
-				ret.AdditionalResources.AdditionalWorkloads = p.AdditionalResources.AdditionalWorkloads
-			}
 		}
 		if p.ExtraHasSynced != nil {
 			hasSynced = append(hasSynced, p.ExtraHasSynced)

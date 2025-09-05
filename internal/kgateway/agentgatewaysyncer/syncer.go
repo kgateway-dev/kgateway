@@ -432,13 +432,7 @@ func (s *AgentGwSyncer) buildAddressCollections(krtopts krtinternal.KrtOptions) 
 		return result
 	})
 
-	var adpAddresses krt.Collection[agwir.ADPCacheAddress]
-	if s.agwPlugins.AdditionalResources != nil && s.agwPlugins.AdditionalResources.AdditionalWorkloads != nil {
-		adpAddresses = krt.JoinCollection([]krt.Collection[agwir.ADPCacheAddress]{svcAddresses, workloadAddresses, s.agwPlugins.AdditionalResources.AdditionalWorkloads}, krtopts.ToOptions("ADPAddresses")...)
-	} else {
-		adpAddresses = krt.JoinCollection([]krt.Collection[agwir.ADPCacheAddress]{svcAddresses, workloadAddresses}, krtopts.ToOptions("ADPAddresses")...)
-
-	}
+	adpAddresses := krt.JoinCollection([]krt.Collection[agwir.ADPCacheAddress]{svcAddresses, workloadAddresses}, krtopts.ToOptions("ADPAddresses")...)
 	return krt.NewCollection(adpAddresses, func(kctx krt.HandlerContext, obj agwir.ADPCacheAddress) *envoyResourceWithCustomName {
 		return &envoyResourceWithCustomName{
 			Message: obj.Address,

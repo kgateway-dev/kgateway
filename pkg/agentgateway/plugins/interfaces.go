@@ -55,7 +55,6 @@ type AddResourcesPlugin struct {
 	AdditionalBinds     krt.Collection[ir.ADPResourcesForGateway]
 	AdditionalListeners krt.Collection[ir.ADPResourcesForGateway]
 	AdditionalRoutes    krt.Collection[ir.ADPResourcesForGateway]
-	AdditionalWorkloads krt.Collection[ir.ADPCacheAddress]
 }
 
 // AddBinds extracts all bind resources from the collection
@@ -66,11 +65,6 @@ func (p *AddResourcesPlugin) AddBinds() krt.Collection[ir.ADPResourcesForGateway
 // AddListeners extracts all routes resources from the collection
 func (p *AddResourcesPlugin) AddListeners() krt.Collection[ir.ADPResourcesForGateway] {
 	return p.AdditionalListeners
-}
-
-// AddWorkloads extracts all workloads resources from the collection
-func (p *AddResourcesPlugin) AddWorkloads() krt.Collection[ir.ADPCacheAddress] {
-	return p.AdditionalWorkloads
 }
 
 // AddRoutes extracts all routes resources from the collection
