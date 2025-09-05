@@ -13,7 +13,7 @@ import (
 var (
 	defaultEnvoyPath = "/usr/local/bin/envoy"
 	// TODO(tim): avoid hardcoding the envoy image version in multiple places.
-	defaultEnvoyImage = "quay.io/solo-io/envoy-gloo:1.34.1-patch3"
+	defaultEnvoyImage = "quay.io/solo-io/envoy-gloo:1.35.2-patch1"
 )
 
 // ErrInvalidXDS is returned when Envoy rejects the supplied YAML.
