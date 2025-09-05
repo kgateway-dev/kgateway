@@ -18,7 +18,7 @@ const (
 	// AgentgatewayRegistry is the agentgateway registry
 	AgentgatewayRegistry = "mcallisterpetr"
 	// AgentgatewayDefaultTag is the default agentgateway image tag
-	AgentgatewayDefaultTag = "rl-pr-review-1"
+	AgentgatewayDefaultTag = "rl-ip-addr"
 	// SdsImage is the image of the sds container.
 	SdsImage = "sds"
 	// SdsContainerName is the name of the container in the proxy deployment for the SDS integration.

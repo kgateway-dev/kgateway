@@ -15,19 +15,19 @@ import (
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/utils"
-	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
 const (
-	extauthPolicySuffix        = ":extauth"
-	aiPolicySuffix             = ":ai"
-	rbacPolicySuffix           = ":rbac"
-	localRateLimitPolicySuffix = ":rl-local"
+	extauthPolicySuffix         = ":extauth"
+	aiPolicySuffix              = ":ai"
+	rbacPolicySuffix            = ":rbac"
+	localRateLimitPolicySuffix  = ":rl-local"
 	globalRateLimitPolicySuffix = ":rl-global"
 )
 
@@ -191,7 +191,6 @@ func translateTrafficPolicyToADP(
 
 	return adpPolicies
 }
-
 
 // processExtAuthPolicy processes ExtAuth configuration and creates corresponding agentgateway policies
 func processExtAuthPolicy(ctx krt.HandlerContext, gatewayExtensions krt.Collection[*v1alpha1.GatewayExtension], trafficPolicy *v1alpha1.TrafficPolicy, policyName string, policyTarget *api.PolicyTarget) []ADPPolicy {
@@ -589,22 +588,9 @@ func processRateLimitPolicy(ctx krt.HandlerContext, gatewayExtensions krt.Collec
 		localPolicy := processLocalRateLimitPolicy(trafficPolicy, policyName, policyTarget)
 		if localPolicy != nil {
 			adpPolicies = append(adpPolicies, *localPolicy)
-			} else {
-				logger.Warn("failed to create local rate limit policy")
-			}
+		} else {
+			logger.Warn("failed to create local rate limit policy")
 		}
-	
-		// Process global rate limiting if present
-		if trafficPolicy.Spec.RateLimit.Global != nil {
-			globalPolicy := processGlobalRateLimitPolicy(ctx, gatewayExtensions, trafficPolicy, policyName, policyTarget)
-			if globalPolicy != nil {
-				adpPolicies = append(adpPolicies, *globalPolicy)
-			} else {
-				logger.Warn("failed to create global rate limit policy")
-
-		}
-	} else {
-		logger.Debug("no local rate limit configuration found")
 	}
 
 	// Process global rate limiting if present
@@ -631,11 +617,11 @@ func processLocalRateLimitPolicy(trafficPolicy *v1alpha1.TrafficPolicy, policyNa
 
 	tokenBucket := trafficPolicy.Spec.RateLimit.Local.TokenBucket
 
-		// Validate configuration
-		if tokenBucket.MaxTokens <= 0 {
-			logger.Warn("invalid max tokens value", "maxTokens", tokenBucket.MaxTokens)
-			return nil
-		}
+	// Validate configuration
+	if tokenBucket.MaxTokens <= 0 {
+		logger.Warn("invalid max tokens value", "max_tokens", tokenBucket.MaxTokens)
+		return nil
+	}
 	// Convert duration to seconds for agentgateway
 	fillIntervalSeconds := uint32(tokenBucket.FillInterval.Duration.Seconds())
 	if fillIntervalSeconds == 0 {
@@ -647,7 +633,7 @@ func processLocalRateLimitPolicy(trafficPolicy *v1alpha1.TrafficPolicy, policyNa
 	if tokensPerFill == 0 {
 		tokensPerFill = 1
 	}
-	
+
 	localRateLimitPolicy := &api.Policy{
 		Name:   policyName + localRateLimitPolicySuffix,
 		Target: policyTarget,
@@ -849,7 +835,7 @@ func celHeaderExpr(name string) string {
 
 // celRemoteIPExpr returns a CEL expression for the client IP.
 func celRemoteIPExpr() string {
-	return "request.remoteIp"
+	return "source.address"
 }
 
 // celPathExpr returns a CEL expression for the request path (if supported in your env).
