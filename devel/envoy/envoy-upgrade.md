@@ -1,4 +1,3 @@
-
 # Envoy Dependency
 
 ## Envoy version
@@ -23,7 +22,7 @@ The following files should be updated:
 ### go-control-plane
 
 When upgrading envoy to a new minor version, most likely the go-control-plane version also needs to be updated. Envoy has auto sync job that sync new envoy commits to [go-control-plane](https://github.com/envoyproxy/go-control-plane/actions/workflows/envoy-sync.yaml). It seems to only sync commit in main, so
-find the commit hash that's closes to the envoy release date and do:
+find the commit hash that is closest to the envoy release date and do:
 
 ```
 go get github.com/envoyproxy/go-control-plane@<commit_hash>
