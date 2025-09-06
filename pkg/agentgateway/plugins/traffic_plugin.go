@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 	"strconv"
+	"strings"
 
 	"github.com/agentgateway/agentgateway/go/api"
 	"google.golang.org/protobuf/types/known/durationpb"
@@ -816,7 +817,6 @@ func processRateLimitDescriptor(descriptor v1alpha1.RateLimitDescriptor) *api.Po
 	if len(entries) == 0 {
 		return nil
 	}
-
 	return &api.PolicySpec_RemoteRateLimit_Descriptor{
 		Entries: entries,
 		Type:    api.PolicySpec_RemoteRateLimit_REQUESTS,
@@ -830,7 +830,8 @@ func celConst(s string) string {
 
 // celHeaderExpr returns a CEL expression that reads a request header.
 func celHeaderExpr(name string) string {
-	return fmt.Sprintf(`http.request.headers[%q]`, name)
+	// Convert to lowercase to match how HTTP headers are stored
+	return fmt.Sprintf(`request.headers[%q]`, strings.ToLower(name))
 }
 
 // celRemoteIPExpr returns a CEL expression for the client IP.
