@@ -1023,3 +1023,60 @@ class TestInstrumentation:
         assert actual_attrs.get(
             gen_ai_attributes.GEN_AI_USAGE_OUTPUT_TOKENS
         ) == expected_attrs.get(gen_ai_attributes.GEN_AI_USAGE_OUTPUT_TOKENS)
+
+
+def test_webhook_config_parsing():
+    req_webhook_json = """
+    {
+        "webhook": {
+            "endpoint": {
+                "host": "ai-guardrail-webhook.kgateway-system.svc.cluster.local",
+                "port": 8000
+            }
+        }
+    }
+    """
+    
+    metadict = {
+        "x-llm-provider": "openai",
+        "x-req-guardrails-config": req_webhook_json,
+        "x-req-guardrails-config-hash": "test-hash"
+    }
+    
+    headers = external_processor_pb2.HttpHeaders()
+    handler = asyncio.run(
+        extproc_server.parse_handler_config(
+            StreamHandler.from_metadata(metadict), metadict, headers
+        )
+    )
+    
+    assert handler.req_webhook is not None
+    assert handler.req_webhook.endpoint.host == "ai-guardrail-webhook.kgateway-system.svc.cluster.local"
+    assert handler.req_webhook.endpoint.port == 8000
+    
+    resp_webhook_json = """
+    {
+        "webhook": {
+            "endpoint": {
+                "host": "response-webhook.example.com",
+                "port": 9000
+            }
+        }
+    }
+    """
+    
+    metadict_resp = {
+        "x-llm-provider": "openai",
+        "x-resp-guardrails-config": resp_webhook_json,
+        "x-resp-guardrails-config-hash": "test-hash-resp"
+    }
+    
+    handler_resp = asyncio.run(
+        extproc_server.parse_handler_config(
+            StreamHandler.from_metadata(metadict_resp), metadict_resp, headers
+        )
+    )
+    
+    assert handler_resp.resp_webhook is not None
+    assert handler_resp.resp_webhook.endpoint.host == "response-webhook.example.com"
+    assert handler_resp.resp_webhook.endpoint.port == 9000
