@@ -177,19 +177,6 @@ func translateTrafficPolicyToADP(
 		adpPolicies = append(adpPolicies, rateLimitPolicies...)
 	}
 
-	// Debug: Log all policies being returned
-	logger := logging.New("agentgateway/plugins/traffic")
-	logger.Debug("returning traffic policy policies",
-		"traffic_policy", trafficPolicy.Name,
-		"total_policies", len(adpPolicies),
-		"policy_names", func() []string {
-			names := make([]string, len(adpPolicies))
-			for i, p := range adpPolicies {
-				names[i] = p.Policy.Name
-			}
-			return names
-		}())
-
 	return adpPolicies
 }
 
@@ -663,7 +650,6 @@ func processGlobalRateLimitPolicy(
 
 	grl := trafficPolicy.Spec.RateLimit.Global
 	if grl == nil {
-		logger.Warn("global rate limit configuration is nil")
 		return nil
 	}
 
@@ -711,9 +697,6 @@ func processGlobalRateLimitPolicy(
 		},
 	}
 
-	if p.Spec.GetRemoteRateLimit() == nil {
-		logger.Warn("failed to get remote rate limit spec from policy")
-	}
 	return &ADPPolicy{Policy: p}
 }
 
@@ -794,7 +777,7 @@ func processRateLimitDescriptor(descriptor v1alpha1.RateLimitDescriptor) *api.Po
 		case v1alpha1.RateLimitDescriptorEntryTypeGeneric:
 			if entry.Generic != nil {
 				// Constant literal -> quote for CEL
-				value = celConst(entry.Generic.Value)
+				value = strconv.Quote(entry.Generic.Value)
 			}
 		case v1alpha1.RateLimitDescriptorEntryTypeHeader:
 			if entry.Header != nil {
@@ -821,11 +804,6 @@ func processRateLimitDescriptor(descriptor v1alpha1.RateLimitDescriptor) *api.Po
 		Entries: entries,
 		Type:    api.PolicySpec_RemoteRateLimit_REQUESTS,
 	}
-}
-
-// -------- CEL helpers --------
-func celConst(s string) string {
-	return strconv.Quote(s)
 }
 
 // celHeaderExpr returns a CEL expression that reads a request header.
