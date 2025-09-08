@@ -359,8 +359,8 @@ func processWebhook(webhook *v1alpha1.Webhook) *api.PolicySpec_Ai_Webhook {
 	}
 
 	w := &api.PolicySpec_Ai_Webhook{
-		Host: webhook.Host.Host,
-		Port: uint32(webhook.Host.Port),
+		Host: webhook.Endpoint.Host,
+		Port: uint32(webhook.Endpoint.Port),
 	}
 
 	if len(webhook.ForwardHeaderMatches) > 0 {

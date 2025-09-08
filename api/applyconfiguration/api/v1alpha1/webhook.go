@@ -9,7 +9,7 @@ import (
 // WebhookApplyConfiguration represents a declarative configuration of the Webhook type for use
 // with apply.
 type WebhookApplyConfiguration struct {
-	Host                 *HostApplyConfiguration `json:"endpoint,omitempty"`
+	Endpoint                 *HostApplyConfiguration `json:"endpoint,omitempty"`
 	ForwardHeaderMatches []v1.HTTPHeaderMatch    `json:"forwardHeaderMatches,omitempty"`
 }
 
@@ -19,11 +19,11 @@ func Webhook() *WebhookApplyConfiguration {
 	return &WebhookApplyConfiguration{}
 }
 
-// WithHost sets the Host field in the declarative configuration to the given value
+// WithEndpoint sets the Endpoint field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the Host field is set to the value of the last call.
-func (b *WebhookApplyConfiguration) WithHost(value *HostApplyConfiguration) *WebhookApplyConfiguration {
-	b.Host = value
+// If called multiple times, the Endpoint field is set to the value of the last call.
+func (b *WebhookApplyConfiguration) WithEndpoint(value *HostApplyConfiguration) *WebhookApplyConfiguration {
+	b.Endpoint = value
 	return b
 }
 

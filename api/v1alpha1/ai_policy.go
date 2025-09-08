@@ -151,7 +151,7 @@ type Regex struct {
 
 // Webhook configures a webhook to forward requests or responses to for prompt guarding.
 type Webhook struct {
-	// Host to send the traffic to.
+	// Endpoint to send the traffic to.
 	// Note: TLS is not currently supported for webhook.
 	// Example:
 	// ```yaml
@@ -160,7 +160,7 @@ type Webhook struct {
 	//   port: 443 	        #The port number on which the webhook is listening.
 	// ```
 	// +required
-	Host Host `json:"endpoint"`
+	Endpoint Host `json:"endpoint"`
 
 	// ForwardHeaderMatches defines a list of HTTP header matches that will be
 	// used to select the headers to forward to the webhook.
