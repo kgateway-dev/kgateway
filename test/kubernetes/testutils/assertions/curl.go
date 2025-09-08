@@ -145,21 +145,7 @@ func (p *Provider) AssertEventuallyConsistentCurlResponse(
 	}
 
 	p.Gomega.Consistently(func(g Gomega) {
-		res, err := p.clusterContext.Cli.CurlFromPod(ctx, podOpts, curlOptions...)
-		fmt.Printf("want:\n%+v\nstdout:\n%s\nstderr:%s\n\n", expectedResponse, res.StdOut, res.StdErr)
-		// Ignore certain errors that are expected to occur when the curl command times out
-		if err != nil {
-			var exitErr *exec.ExitError
-			if errors.As(err, &exitErr) && exitErr.ExitCode() == expectedResponse.IgnoreExitCode {
-				fmt.Printf("Ignoring curl exit code %d: %v\n", expectedResponse.IgnoreExitCode, err)
-			} else {
-				g.Expect(err).NotTo(HaveOccurred())
-			}
-		}
-
-		expectedResponseMatcher := WithTransform(transforms.WithCurlResponse, matchers.HaveHttpResponse(expectedResponse))
-		g.Expect(res).To(expectedResponseMatcher)
-		fmt.Printf("success: %+v", res)
+		p.assertCurlResponse(ctx, podOpts, curlOptions, expectedResponse)
 	}).
 		WithTimeout(pollTimeout).
 		WithPolling(pollInterval).
