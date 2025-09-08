@@ -164,9 +164,6 @@ spec:
         volumeMounts:
           - mountPath: /etc/envoy
             name: envoy-config
-          {{- with $gateway.extraVolumeMounts }}
-          {{- toYaml . | nindent 10 }}
-          {{- end }}
 {{- end }} {{/* if $gateway.istio.enabled */}}
 {{- if and $gateway.istio.enabled ($gateway.istioContainer).image }}
           - mountPath: /etc/istio-certs/
@@ -269,9 +266,6 @@ spec:
             name: workload-socket
           - mountPath: /var/run/secrets/workload-spiffe-credentials
             name: workload-certs
-          {{- with $gateway.extraVolumeMounts }}
-          {{- toYaml . | nindent 10 }}
-          {{- end }}
 {{- end }} {{/* if $gateway.istio.enabled */}}
 {{- if and ($gateway.aiExtension).enabled ($gateway.aiExtension).image }}
       - name: kgateway-ai-extension
@@ -312,9 +306,6 @@ spec:
           - mountPath: /var/run/ai-otel-config
             name: ai-otel-config
 {{- end }}
-          {{- with $gateway.extraVolumeMounts }}
-          {{- toYaml . | nindent 10 }}
-          {{- end }}
 {{- end }} {{/* if (($gateway.aiExtension).enabled) */}}
       {{- with $gateway.nodeSelector }}
       nodeSelector:
