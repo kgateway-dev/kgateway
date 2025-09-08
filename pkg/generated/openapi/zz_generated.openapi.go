@@ -5842,7 +5842,7 @@ func schema_kgateway_v2_api_v1alpha1_Pod(ref common.ReferenceCallback) common.Op
 					},
 					"extraVolumeMounts": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Additional volume mounts to add to all containers in the pod. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#volumemount-v1-core for details.",
+							Description: "Additional volume mounts to add to the pod. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#volumemount-v1-core for details.",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{

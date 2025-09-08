@@ -297,7 +297,7 @@ type Pod struct {
 	// +optional
 	ExtraVolumes []corev1.Volume `json:"extraVolumes,omitempty"`
 
-	// Additional volume mounts to add to all containers in the pod. See
+	// Additional volume mounts to add to the pod. See
 	// https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#volumemount-v1-core
 	// for details.
 	//
