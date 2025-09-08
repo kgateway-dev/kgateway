@@ -77,7 +77,7 @@ type ADPCacheAddress struct {
 	Address             proto.Message
 	AddressResourceName string
 	AddressVersion      uint64
-	
+
 	VersionMap map[string]map[string]string
 }
 
