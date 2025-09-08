@@ -165,7 +165,7 @@ func (s *tsuite) TestPromptGuardStreaming() {
 }
 
 func (s *tsuite) TestPromptGuardWebhook() {
-	s.invokePytest("prompt_guard.py")
+	s.invokePytest("prompt_guard_webhook.py")
 }
 
 func (s *tsuite) invokePytest(test string, extraEnv ...string) {

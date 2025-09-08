@@ -44,6 +44,9 @@ var mockData = map[string]MockResponse{
 	"38e35f6adfbc50177014a04cf6484c7cf6b91cc7ccf1328ca246519892cbfd53": {FilePath: "mocks/promptguard-streaming/openai-no-guard.txt", IsGzip: false},
 	"6b473280b6aa5b35b8de94f6a5212811f8fb624785695b3234cf9a88d3075b38": {FilePath: "mocks/promptguard-streaming/vertex-ai-mask.txt", IsGzip: false},
 	"0d86bb4c7d7d3638e251c1fc6d09ef515df3aec19d3a10895dd75c4e30ff505e": {FilePath: "mocks/promptguard-streaming/vertex-ai-no-guard.txt", IsGzip: false},
+	// Prompt Guard Webhook
+	"4adf65ec7eda2e288f5fe709d08a0b8f11d956cc7090d27c1416ee3ffb285e2b": {FilePath: "mocks/promptguard-webhook/openai-reject.json", IsGzip: false},
+	"6788dd17ee6525210ac7698f3143d1e39ddf7922eee8b3577f22efdc35596b3f": {FilePath: "mocks/promptguard-webhook/openai-mask.json", IsGzip: false},
 }
 
 func getJSONHash(data map[string]interface{}, provider string, stream bool) string {
@@ -252,6 +255,15 @@ func main() {
 			"method":  c.Request.Method,
 			"headers": c.Request.Header,
 		})
+	})
+
+	r.POST("/request", func(c *gin.Context) {
+		var requestData map[string]interface{}
+		if err := c.BindJSON(&requestData); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		handleModelResponse(c, requestData, "openai", false)
 	})
 
 	srv := &http.Server{
