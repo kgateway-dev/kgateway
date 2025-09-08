@@ -499,9 +499,9 @@ func (s *AgentGwSyncer) buildXDSCollection(
 					Name:    agwir.GetADPResourceName(res),
 					version: utils.HashProto(res),
 				})
-				for listenerName, count := range resource.AttachedRoutes {
-					attachedRoutes[listenerName] += count
-				}
+			}
+			for listenerName, count := range resource.AttachedRoutes {
+				attachedRoutes[listenerName] += count
 			}
 		}
 
