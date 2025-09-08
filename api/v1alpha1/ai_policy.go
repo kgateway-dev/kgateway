@@ -155,12 +155,12 @@ type Webhook struct {
 	// Note: TLS is not currently supported for webhook.
 	// Example:
 	// ```yaml
-	// host:
+	// endpoint:
 	//   host: example.com  #The host name of the webhook endpoint.
 	//   port: 443 	        #The port number on which the webhook is listening.
 	// ```
 	// +required
-	Host Host `json:"host"`
+	Host Host `json:"endpoint"`
 
 	// ForwardHeaderMatches defines a list of HTTP header matches that will be
 	// used to select the headers to forward to the webhook.

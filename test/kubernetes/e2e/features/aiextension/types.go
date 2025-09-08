@@ -38,4 +38,7 @@ var (
 
 	// prompt guard (streaming response) on the routes
 	promptGuardStreamingManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "prompt-guard-streaming.yaml")
+
+	// prompt guard webhook on the routes
+	promptGuardWebhookManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "prompt-guard-webhook.yaml")
 )

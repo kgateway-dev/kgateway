@@ -9,7 +9,7 @@ import (
 // WebhookApplyConfiguration represents a declarative configuration of the Webhook type for use
 // with apply.
 type WebhookApplyConfiguration struct {
-	Host                 *HostApplyConfiguration `json:"host,omitempty"`
+	Host                 *HostApplyConfiguration `json:"endpoint,omitempty"`
 	ForwardHeaderMatches []v1.HTTPHeaderMatch    `json:"forwardHeaderMatches,omitempty"`
 }
 
