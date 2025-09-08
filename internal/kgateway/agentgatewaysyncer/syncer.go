@@ -379,11 +379,21 @@ func (s *AgentGwSyncer) buildAddressCollections(krtopts krtinternal.KrtOptions) 
 		SystemNamespace: s.systemNamespace,
 		ClusterID:       s.clusterID,
 	}
+	waypoints := workloadIndex.WaypointsCollection(s.agwCollections.Gateways, s.agwCollections.GatewayClasses, s.agwCollections.Pods, krtopts)
 
 	// Build service and workload collections
-	workloadServices := workloadIndex.ServicesCollection(s.agwCollections.Services, nil, s.agwCollections.InferencePools, s.agwCollections.Namespaces, krtopts)
+	workloadServices := workloadIndex.ServicesCollection(
+		s.agwCollections.Services,
+		nil,
+		waypoints,
+		s.agwCollections.InferencePools,
+		s.agwCollections.Namespaces,
+		krtopts,
+	)
+	NodeLocality := NodesCollection(s.agwCollections.Nodes, krtopts.ToOptions("NodeLocality")...)
 	workloads := workloadIndex.WorkloadsCollection(
-		s.agwCollections.WrappedPods,
+		s.agwCollections.Pods,
+		NodeLocality,
 		workloadServices,
 		s.agwCollections.EndpointSlices,
 		krtopts,

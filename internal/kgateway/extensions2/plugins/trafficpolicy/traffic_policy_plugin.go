@@ -41,7 +41,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	sdkfilters "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/filters"
-	pluginsdkir "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/policy"
 	pluginsdkutils "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
@@ -275,7 +274,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections, mergeSe
 				NewGatewayTranslationPass: NewGatewayTranslationPass,
 				Policies:                  policyCol,
 				MergePolicies: func(pols []ir.PolicyAtt) ir.PolicyAtt {
-					return policy.MergePolicies(pols, MergeTrafficPolicies, mergeSettings)
+					return policy.MergePolicies(pols, mergeTrafficPolicies, mergeSettings)
 				},
 				GetPolicyStatus:   getPolicyStatusFn(commoncol.CrudClient),
 				PatchPolicyStatus: patchPolicyStatusFn(commoncol.CrudClient),
@@ -687,50 +686,4 @@ func (p *trafficPolicyPluginGwPass) handlePerVHostPolicies(
 
 func (p *trafficPolicyPluginGwPass) SupportsPolicyMerge() bool {
 	return true
-}
-
-// MergeTrafficPolicies merges two TrafficPolicy IRs, returning a map that contains information
-// about the origin policy reference for each merged field.
-func MergeTrafficPolicies(
-	p1, p2 *TrafficPolicy,
-	p2Ref *ir.AttachedPolicyRef,
-	p2MergeOrigins pluginsdkir.MergeOrigins,
-	opts policy.MergeOptions,
-	mergeOrigins pluginsdkir.MergeOrigins,
-	mergeSettingsJSON string,
-) {
-	if p1 == nil || p2 == nil {
-		return
-	}
-
-	var polMergeOpts mergeOpts
-	if mergeSettingsJSON != "" {
-		err := json.Unmarshal([]byte(mergeSettingsJSON), &polMergeOpts)
-		if err != nil {
-			logger.Error("error parsing merge settings; skipping merge", "value", mergeSettingsJSON, "error", err)
-			return
-		}
-	}
-
-	mergeFuncs := []func(*TrafficPolicy, *TrafficPolicy, *ir.AttachedPolicyRef, pluginsdkir.MergeOrigins, policy.MergeOptions, pluginsdkir.MergeOrigins, trafficPolicyMergeOpts){
-		mergeAI,
-		mergeExtProc,
-		mergeTransformation,
-		mergeRustformation,
-		mergeExtAuth,
-		mergeLocalRateLimit,
-		mergeGlobalRateLimit,
-		mergeCORS,
-		mergeCSRF,
-		mergeHeaderModifiers,
-		mergeBuffer,
-		mergeAutoHostRewrite,
-		mergeTimeouts,
-		mergeRetry,
-		mergeRBAC,
-	}
-
-	for _, mergeFunc := range mergeFuncs {
-		mergeFunc(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, polMergeOpts.TrafficPolicy)
-	}
 }

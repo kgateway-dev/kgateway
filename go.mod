@@ -22,6 +22,9 @@ require (
 	github.com/mitchellh/hashstructure v1.0.0
 	github.com/onsi/ginkgo/v2 v2.24.0
 	github.com/onsi/gomega v1.38.0
+	github.com/prometheus/client_golang v1.23.0
+	github.com/prometheus/client_model v0.6.2
+	github.com/prometheus/common v0.65.0
 	github.com/solo-io/envoy-gloo/go v0.0.0-20250102165327-33a74fcf9966
 	github.com/solo-io/go-list-licenses v0.1.4
 	github.com/solo-io/go-utils v0.27.3
@@ -37,7 +40,7 @@ require (
 	helm.sh/helm/v3 v3.18.5
 	istio.io/api v1.26.0-alpha.0.0.20250820113222-47f832b86cdd
 	istio.io/client-go v1.26.0-alpha.0.0.20250820113822-8b883d128bac
-	istio.io/istio v0.0.0-20250728092114-6111de93199e
+	istio.io/istio v0.0.0-20250826222905-45e4f30947d5
 	k8s.io/api v0.33.4
 	k8s.io/apiextensions-apiserver v0.33.4
 	k8s.io/apimachinery v0.33.4
@@ -47,7 +50,7 @@ require (
 	k8s.io/utils v0.0.0-20250604170112-4c0f3b243397
 	sigs.k8s.io/controller-runtime v0.21.0
 	sigs.k8s.io/gateway-api v1.3.0
-	sigs.k8s.io/gateway-api-inference-extension v1.0.0-rc.1
+	sigs.k8s.io/gateway-api-inference-extension v1.0.0-rc.2
 	sigs.k8s.io/structured-merge-diff/v4 v4.7.0
 	sigs.k8s.io/yaml v1.6.0
 )
@@ -481,9 +484,6 @@ require (
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/polydawn/refmt v0.89.1-0.20221221234430-40501e09de1f // indirect
 	github.com/polyfloyd/go-errorlint v1.8.0 // indirect
-	github.com/prometheus/client_golang v1.23.0
-	github.com/prometheus/client_model v0.6.2
-	github.com/prometheus/common v0.65.0 // indirect
 	github.com/prometheus/procfs v0.17.0 // indirect
 	github.com/prometheus/statsd_exporter v0.25.0 // indirect
 	github.com/quasilyte/go-ruleguard v0.4.4 // indirect
@@ -607,7 +607,7 @@ require (
 	k8s.io/cli-runtime v0.33.3 // indirect
 	k8s.io/code-generator v0.33.4 // indirect
 	k8s.io/component-base v0.33.4 // indirect
-	k8s.io/gengo/v2 v2.0.0-20250207200755-1244d31929d7 // indirect
+	k8s.io/gengo/v2 v2.0.0-20250829030910-f1dc67e67210 // indirect
 	k8s.io/kubectl v0.33.3 // indirect
 	lukechampine.com/blake3 v1.2.1 // indirect
 	mvdan.cc/gofumpt v0.8.0 // indirect
@@ -628,10 +628,6 @@ replace sigs.k8s.io/controller-tools => github.com/shashankram/controller-tools 
 
 replace github.com/imdario/mergo => github.com/imdario/mergo v0.3.16
 
-// Use a patched version of gengo to produce consistent zz_generated.openapi.go
-// Ref: https://github.com/kubernetes/gengo/issues/292
-replace k8s.io/gengo/v2 => github.com/kgateway-dev/gengo/v2 v2.0.0-20250512195215-4fa0a9df2978
-
 tool (
 	github.com/golang/mock/mockgen
 	github.com/golangci/golangci-lint/v2/cmd/golangci-lint
@@ -648,5 +644,3 @@ tool (
 	sigs.k8s.io/controller-tools/cmd/controller-gen
 	sigs.k8s.io/kind
 )
-
-replace istio.io/istio => github.com/danehans/istio v0.0.0-20250826180013-b3d3b41bf98a

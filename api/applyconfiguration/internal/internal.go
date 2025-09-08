@@ -1199,6 +1199,9 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: healthCheck
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.EnvoyHealthCheck
+    - name: idleTimeout
+      type:
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Duration
     - name: preserveHttp1HeaderCase
       type:
         scalar: boolean
@@ -2411,6 +2414,9 @@ var schemaYAML = typed.YAMLObject(`types:
           elementType:
             scalar: string
           elementRelationship: atomic
+    - name: wellKnownCACertificates
+      type:
+        scalar: string
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.TLSFiles
   map:
     fields:

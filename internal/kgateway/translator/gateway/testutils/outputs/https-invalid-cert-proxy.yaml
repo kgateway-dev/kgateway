@@ -16,12 +16,6 @@ Listeners:
     socketAddress:
       address: '::'
       ipv4Compat: true
-      portValue: 443
-  name: listener~443
-- address:
-    socketAddress:
-      address: '::'
-      ipv4Compat: true
       portValue: 80
   filterChains:
   - filters:
@@ -43,12 +37,6 @@ Listeners:
         useRemoteAddress: true
     name: listener~80
   name: listener~80
-- address:
-    socketAddress:
-      address: '::'
-      ipv4Compat: true
-      portValue: 8443
-  name: listener~8443
 Routes:
 - ignorePortInHostMatching: true
   name: listener~80

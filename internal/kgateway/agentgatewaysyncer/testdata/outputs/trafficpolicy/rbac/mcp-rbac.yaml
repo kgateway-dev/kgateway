@@ -1,45 +1,45 @@
 Addresses:
-  - service:
-      hostname: example-svc.default.svc.cluster.local
-      name: example-svc
-      namespace: default
-      ports:
-        - servicePort: 80
-Binds:
-  - key: 80/default/example-gateway
-    port: 80
-Listeners:
-  - bindKey: 80/default/example-gateway
-    gatewayName: default/example-gateway
-    key: default/example-gateway.http
-    name: http
-    protocol: HTTP
-Routes:
-  - backends:
-      - backend:
-          backend: default/mcp-backend
-        weight: 1
-    hostnames:
-      - example.com
-    key: default/example-route.0.0.http
-    listenerKey: default/example-gateway.http
-    routeName: default/example-route
+- service:
+    hostname: example-svc.default.svc.cluster.local
+    name: example-svc
+    namespace: default
+    ports:
+    - servicePort: 80
 Backends:
-  - name: default/mcp-backend
-    mcp:
-      targets:
-        - name: example-svc-80
-          protocol: STREAMABLE_HTTP
-          backend:
-            service: default/example-svc.default.svc.cluster.local
-            port: 80
+- mcp:
+    targets:
+    - backend:
+        port: 80
+        service: default/example-svc.default.svc.cluster.local
+      name: example-svc-80
+      protocol: STREAMABLE_HTTP
+  name: default/mcp-backend
+Binds:
+- key: 80/default/example-gateway
+  port: 80
+Listeners:
+- bindKey: 80/default/example-gateway
+  gatewayName: default/example-gateway
+  key: default/example-gateway.http
+  name: http
+  protocol: HTTP
 Policies:
-  - name: trafficpolicy/default/cel-rbac-policy/mcp-backend:rbac
-    target:
+- name: trafficpolicy/default/cel-rbac-policy/mcp-backend:rbac
+  spec:
+    mcpAuthorization:
+      allow:
+      - mcp.tool.name == "echo"
+      - jwt.sub == "test-user" && mcp.tool.name == "add"
+      - mcp.tool.name == "printEnv" && jwt.nested.key == "value"
+  target:
+    backend: default/mcp-backend
+Routes:
+- backends:
+  - backend:
       backend: default/mcp-backend
-    spec:
-      mcp_authorization:
-        allow:
-          - "mcp.tool.name == \"echo\""
-          - "jwt.sub == \"test-user\" && mcp.tool.name == \"add\""
-          - "mcp.tool.name == \"printEnv\" && jwt.nested.key == \"value\""
+    weight: 1
+  hostnames:
+  - example.com
+  key: default/example-route.0.0.http
+  listenerKey: default/example-gateway.http
+  routeName: default/example-route

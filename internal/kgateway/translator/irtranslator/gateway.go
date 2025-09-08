@@ -47,8 +47,12 @@ func (t *Translator) Translate(gw ir.GatewayIR, reporter sdkreporter.Reporter) T
 
 	for _, l := range gw.Listeners {
 		// TODO: propagate errors so we can allow the retain last config mode
-		l, routes := t.ComputeListener(context.TODO(), pass, gw, l, reporter)
-		res.Listeners = append(res.Listeners, l)
+		outListener, routes := t.ComputeListener(context.TODO(), pass, gw, l, reporter)
+		// Envoy rejects listeners with no filter chains; skip adding such listeners.
+		if outListener == nil || len(outListener.GetFilterChains()) == 0 {
+			continue
+		}
+		res.Listeners = append(res.Listeners, outListener)
 		res.Routes = append(res.Routes, routes...)
 	}
 

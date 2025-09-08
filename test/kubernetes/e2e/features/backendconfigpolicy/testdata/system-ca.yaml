@@ -1,0 +1,11 @@
+kind: BackendConfigPolicy
+apiVersion: gateway.kgateway.dev/v1alpha1
+metadata:
+  name: backend-tls-systemca
+spec:
+  targetRefs:
+    - name: nginx
+      group: ""
+      kind: Service
+  tls:
+    wellKnownCACertificates: System

@@ -1,0 +1,96 @@
+name: Agent Gateway Conformance Tests
+description: run kubernetes gateway api conformance tests for agent-gateway
+inputs:
+  api-version:
+    description: "Override of the sig Gateway API to test against."
+    required: false
+runs:
+  using: "composite"
+  steps:
+  - name: Prep Go Runner
+    uses: ./.github/actions/prep-go-runner
+  - uses: azure/setup-kubectl@v4
+    id: kubectl
+    with:
+      version: ${{ matrix.kube-version.kubectl }}
+  - name: Set and retrieve environment variables
+    shell: bash
+    run: |
+      # We want to conditionally set the VERSION variable based on the matrix value
+      if [[ -z "${{ matrix.version }}" ]]; then
+        echo "VERSION=$(make print-VERSION)" >> $GITHUB_ENV
+      else
+        # else, set the VERSION variable to the matrix value and
+        # skip the docker build step so we use real image tags from
+        # the helm repository.
+        echo "VERSION=${{ matrix.version }}" >> $GITHUB_ENV
+        echo "SKIP_DOCKER=true" >> $GITHUB_ENV
+      fi
+      echo "CONFORMANCE_VERSION=${{ inputs.API_VERSION }}" >> $GITHUB_ENV
+
+  - name: Setup test env
+    shell: bash
+    env:
+      CLUSTER_NODE_VERSION: ${{ matrix.kube-version.node }}
+      CONFORMANCE: "true"
+      CONFORMANCE_VERSION: ${{ env.CONFORMANCE_VERSION }}
+    run: ./hack/kind/setup-kind.sh
+
+  - name: Install kgateway via helm
+    shell: bash
+    run: |
+      # Check if additional Helm values file is provided
+      ADDITIONAL_VALUES=""
+      if [[ -n "${HELM_ADDITIONAL_VALUES}" && -f "${HELM_ADDITIONAL_VALUES}" ]]; then
+        ADDITIONAL_VALUES="-f ${HELM_ADDITIONAL_VALUES}"
+        echo "Using additional Helm values from: ${HELM_ADDITIONAL_VALUES}"
+      fi
+      
+      if [[ -z "${{ matrix.version }}" ]]; then
+        # If matrix.version is empty, use the local chart path specified in the Makefile.
+          helm upgrade -i -n kgateway-system kgateway-crds ./install/helm/kgateway-crds/ \
+          --create-namespace
+        helm upgrade -i -n kgateway-system kgateway ./install/helm/kgateway/ \
+          --create-namespace \
+          --set image.tag=${VERSION} --set image.registry=ghcr.io/kgateway-dev \
+          ${ADDITIONAL_VALUES}
+      else
+        # TODO(tim): this will require changes once the new helm chart is integrated
+        # and published with the release pipeline.
+        # Else, use the provided version to install Gloo from the helm repository.
+        helm upgrade -i -n kgateway-system kgateway-crds oci://${{ env.IMAGE_REGISTRY }}/charts/kgateway-crds \
+          --version ${VERSION} \
+          --create-namespace
+        helm upgrade -i -n kgateway-system kgateway oci://${{ env.IMAGE_REGISTRY }}/charts/kgateway \
+          --version ${VERSION} \
+          --create-namespace \
+          --set image.tag=${VERSION} \
+          ${ADDITIONAL_VALUES}
+      fi
+
+  - name: Run the kubernetes gateway API conformance tests
+    shell: bash
+    run: make agw-conformance
+
+  - name: Capture debug information when tests fail
+    if: ${{ failure() }}
+    shell: bash
+    run: |
+      kubectl -n kgateway-system get events --sort-by='{.lastTimestamp}'
+      echo
+      kubectl -n gateway-conformance-infra get events --sort-by='{.lastTimestamp}'
+      echo
+      kubectl -n gateway-conformance-app-backend get events --sort-by='{.lastTimestamp}'
+      echo
+      kubectl -n gateway-conformance-web-backend get events --sort-by='{.lastTimestamp}'
+      echo
+      kubectl -n kgateway-system logs deploy/kgateway
+
+  - name: Upload reports
+    if: ${{ failure() }}
+    uses: ./.github/actions/upload-artifact
+    with:
+      # Name of the path to upload. The VERSION variable refers to the Makefile
+      # VERSION variable.
+      name: conformance-kgateway-agentgateway-report@k8s${{ matrix.kube-version.kubectl }}
+      path: _test/conformance/${{ env.VERSION }}-report.yaml
