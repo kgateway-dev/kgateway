@@ -52,7 +52,7 @@ spec:
               - pattern: "phone"
           webhook:
             endpoint:
-              host: test-ai-provider
+              host: test-ai-provider.ai-test
               port: 443
         response:
           regex:
@@ -63,7 +63,7 @@ spec:
               - CREDIT_CARD
           webhook:
             endpoint:
-              host: test-ai-provider
+              host: test-ai-provider.ai-test
               port: 443
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
@@ -88,7 +88,7 @@ spec:
               - CREDIT_CARD
           webhook:
             endpoint:
-              host: test-ai-provider
+              host: test-ai-provider.ai-test
               port: 443
         response:
           regex:
@@ -99,5 +99,5 @@ spec:
               - CREDIT_CARD
           webhook:
             endpoint:
-              host: test-ai-provider
+              host: test-ai-provider.ai-test
               port: 443
