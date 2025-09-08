@@ -44,6 +44,8 @@ type AgwCollections struct {
 
 	// Core Kubernetes resources
 	Namespaces     krt.Collection[*corev1.Namespace]
+	Nodes          krt.Collection[*corev1.Node]
+	Pods           krt.Collection[*corev1.Pod]
 	Services       krt.Collection[*corev1.Service]
 	Secrets        krt.Collection[*corev1.Secret]
 	ConfigMaps     krt.Collection[*corev1.ConfigMap]
@@ -254,6 +256,14 @@ func NewAgwCollections(
 
 		// Core Kubernetes resources
 		Namespaces: krt.NewInformer[*corev1.Namespace](commoncol.Client),
+		Nodes: krt.NewInformerFiltered[*corev1.Node](commoncol.Client, kclient.Filter{
+			ObjectFilter: commoncol.Client.ObjectFilter(),
+		}, commoncol.KrtOpts.ToOptions("informer/Nodes")...),
+		Pods: krt.NewInformerFiltered[*corev1.Pod](commoncol.Client, kclient.Filter{
+			ObjectTransform: istiokube.StripPodUnusedFields,
+			ObjectFilter:    commoncol.Client.ObjectFilter(),
+		}, commoncol.KrtOpts.ToOptions("informer/Pods")...),
+
 		Secrets: krt.WrapClient[*corev1.Secret](
 			kclient.NewFiltered[*corev1.Secret](commoncol.Client, kubetypes.Filter{
 				ObjectFilter: commoncol.Client.ObjectFilter(),

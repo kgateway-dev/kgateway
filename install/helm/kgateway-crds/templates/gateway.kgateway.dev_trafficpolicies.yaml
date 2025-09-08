@@ -289,7 +289,9 @@ spec:
                     x-kubernetes-validations:
                     - message: maxRequestSize must be greater than 0 and less than
                         4Gi
-                      rule: quantity(self).isGreaterThan(quantity('0')) && quantity(self).isLessThan(quantity('4Gi'))
+                      rule: (type(self) == int && int(self) > 0 && int(self) < 4294967296)
+                        || (type(self) == string && quantity(self).isGreaterThan(quantity('0'))
+                        && quantity(self).isLessThan(quantity('4Gi')))
                 type: object
                 x-kubernetes-validations:
                 - message: exactly one of the fields in [maxRequestSize disable] must
