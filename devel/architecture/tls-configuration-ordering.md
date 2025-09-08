@@ -31,7 +31,7 @@ This document describes the order in which TLS-related plugins are applied when 
 
 ## Istio Plugin Integration
 
-The **Istio plugin** ([applied in the plugin registry](https://github.com/kgateway-dev/kgateway/blob/main/internal/kgateway/extensions2/registry/registry.go)) can also configure TLS through:
+The Istio plugin can also configure TLS through:
 
 - **Istio mTLS**: Uses `ISTIO_MUTUAL` mode for automatic mutual TLS
 - **Transport Socket Matches**: Creates two transport socket matches - one for Istio mTLS and one for cleartext
@@ -47,37 +47,50 @@ However, this behavior can be **disabled per-backend** using the `kgateway.dev/d
 - **Kubernetes Services** (for in-mesh backends)
 - **Backend resources** (for external backends)
 - **ServiceEntry resources** (for external services)
+- **Other backend object types**
 
 ## Conflict Resolution
 
-### TLS Transport Socket Conflicts
+### Current Implementation: No Plugin Ordering
 
-When both `BackendTLSPolicy` and `BackendConfigPolicy` are applied to the same backend:
+**Important**: The current implementation has **no ordering enforcement** between backend/istio plugins.
 
-1. **BackendTLSPolicy** is applied first and sets the initial `TransportSocket`
-2. **BackendConfigPolicy** is applied second and **overwrites** the `TransportSocket` if it has TLS configuration
+#### How Backend Processing Works Today
 
-This means that **BackendConfigPolicy takes precedence** over BackendTLSPolicy for TLS configuration.
+Backend processing iterates over plugins using Go map iteration:
 
-**Note**: This ordering is from lower→higher priority (BackendConfigPolicy overwrites BackendTLSPolicy), which is the opposite of built-in vs TrafficPolicy where built-in has higher priority and TrafficPolicy must check if fields are set before overwriting.
+```go
+for gk, policyPlugin := range t.ContributedPolicies {
+    // Process each plugin
+}
+```
 
-### TLS Configuration Precedence with Istio
+Since Go map iteration order is non-deterministic, the order in which TLS plugins are applied is **completely random**.
 
-The Istio plugin's TLS configuration is applied before both BackendTLSPolicy and BackendConfigPolicy. The precedence depends on whether auto-mTLS is disabled:
+#### TLS Configuration Fields
 
-1. **When auto-mTLS is enabled** (default): Istio's TransportSocketMatches take precedence
-2. **When auto-mTLS is disabled** (via annotation): BackendConfigPolicy and BackendTLSPolicy can take effect
-3. **When both are present**: BackendConfigPolicy > BackendTLSPolicy > Istio (if disabled)
+**Important distinction**: Different plugins configure different Envoy fields:
 
-## Policy Application Ordering
+- **BackendTLSPolicy** and **BackendConfigPolicy**: Set `TransportSocket` on the cluster
+- **Istio plugin**: Sets `TransportSocketMatches` on the cluster
 
-As of [PR #11297](https://github.com/kgateway-dev/kgateway/pull/11297), the policy application system uses `ApplyOrderedGroupKinds()` which ensures:
+Since these are different fields, **BackendTLSPolicy/BackendConfigPolicy do NOT overwrite Istio's configuration** and vice versa.
 
-1. **Built-in policies** (VirtualBuiltInGK) are applied first (highest priority)
-2. **Other policies** are applied in their registration order
-3. **Policy merging** is performed by GroupKind before application
+#### Impact on TLS Configuration
 
-This means that within each plugin, multiple policies of the same type are merged before being applied, ensuring consistent behavior.
+1. **When auto-mTLS is enabled** (default): 
+   - Istio sets `TransportSocketMatches` for automatic mTLS
+   - BackendTLSPolicy/BackendConfigPolicy can still set `TransportSocket` (but this may conflict with Istio's behavior)
+   - **Result: Potential conflicts between TransportSocket and TransportSocketMatches**
+
+2. **When auto-mTLS is disabled** (via annotation):
+   - Istio does not set `TransportSocketMatches`
+   - BackendTLSPolicy/BackendConfigPolicy can set `TransportSocket` without conflicts
+   - **Result: Clean separation, no conflicts**
+
+3. **When multiple backend TLS plugins are present**:
+   - BackendConfigPolicy overwrites BackendTLSPolicy's `TransportSocket` (last wins)
+   - **Result: Unpredictable which backend TLS plugin wins**
 
 ## Disabling Istio Auto-mTLS
 
@@ -99,14 +112,6 @@ This annotation:
 - **Allows** BackendConfigPolicy and BackendTLSPolicy to configure TLS instead
 - **Applies** only to the annotated resource, not globally
 
-## Best Practices
-
-1. **Use BackendConfigPolicy for advanced TLS features** - It supports more comprehensive TLS configuration options
-2. **Avoid mixing BackendTLSPolicy and BackendConfigPolicy** - BackendConfigPolicy will override BackendTLSPolicy
-3. **Disable Istio auto-mTLS when needed** - Use the `kgateway.dev/disable-istio-auto-mtls` annotation to allow custom TLS policies
-4. **Consider Istio integration** - If using Istio mTLS, ensure your policies don't conflict with Istio's automatic TLS configuration
-5. **Test TLS configuration thoroughly** - The last-applied policy wins, so verify the final configuration meets your security requirements
-
 ## TLS Configuration Behavior
 
 ### Default Behavior (Istio Auto-mTLS Enabled)
@@ -115,25 +120,13 @@ When Istio is enabled and the `kgateway.dev/disable-istio-auto-mtls` annotation 
 
 - **In-mesh backends** (Kubernetes Services): Istio automatically applies mTLS using TransportSocketMatches
 - **External backends** (Backend resources): Traffic uses cleartext (no TLS)
-- **BackendConfigPolicy and BackendTLSPolicy**: Are ignored for TLS configuration
+- **BackendConfigPolicy and BackendTLSPolicy**: Can still set TransportSocket (may conflict with Istio)
 
 ### Custom TLS Behavior (Istio Auto-mTLS Disabled)
 
 When the `kgateway.dev/disable-istio-auto-mtls: "true"` annotation is **present** on the backend resource:
 
 - **Istio auto-mTLS**: Is disabled for this specific backend
-- **BackendConfigPolicy**: Can configure TLS and will take precedence over BackendTLSPolicy
-- **BackendTLSPolicy**: Can configure TLS but will be overridden by BackendConfigPolicy if both are present
-- **Plugin application order**: BackendTLSPolicy → BackendConfigPolicy (last wins for TLS)
-
-### Key Points
-
-1. **Per-backend control**: The annotation works on both Kubernetes Services and Backend resources
-2. **Selective disabling**: You can disable auto-mTLS for specific backends while keeping it enabled for others
-3. **Policy precedence**: When auto-mTLS is disabled, BackendConfigPolicy > BackendTLSPolicy > Istio
-4. **TransportSocket vs TransportSocketMatches**: BackendConfigPolicy/BackendTLSPolicy set `TransportSocket`, while Istio uses `TransportSocketMatches`
-
-## References
-
-- [PR #11297: plugins: export trafficpolicy merge, order plugin application](https://github.com/kgateway-dev/kgateway/pull/11297)
-- [Design Document 11268: Policy Precedence and Application](design/11268.md)
+- **BackendConfigPolicy**: Can configure TLS via TransportSocket
+- **BackendTLSPolicy**: Can configure TLS via TransportSocket but will be overridden by BackendConfigPolicy if both are present
+- **Plugin application order**: BackendTLSPolicy → BackendConfigPolicy (last wins for TransportSocket)
