@@ -27,6 +27,15 @@ import (
 
 var _ manager.LeaderElectionRunnable = &AgentGwStatusSyncer{}
 
+const (
+	// Retry configuration constants for status updates
+	maxRetryAttempts = 5
+	retryDelay       = 100 * time.Millisecond
+
+	// Log message keys
+	logKeyError = "error"
+)
+
 // AgentGwStatusSyncer runs only on the leader and syncs the status of agent gateway resources.
 // It subscribes to the report queues, parses and updates the resource status.
 type AgentGwStatusSyncer struct {
