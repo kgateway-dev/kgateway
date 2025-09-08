@@ -567,10 +567,6 @@ func getGatewayExtensionKey(extensionNamespace, extensionName string) string {
 func processRateLimitPolicy(ctx krt.HandlerContext, gatewayExtensions krt.Collection[*v1alpha1.GatewayExtension], trafficPolicy *v1alpha1.TrafficPolicy, policyName string, policyTarget *api.PolicyTarget) []ADPPolicy {
 	var adpPolicies []ADPPolicy
 
-	if trafficPolicy.Spec.RateLimit == nil {
-		return adpPolicies
-	}
-
 	// Process local rate limiting if present
 	if trafficPolicy.Spec.RateLimit.Local != nil {
 		localPolicy := processLocalRateLimitPolicy(trafficPolicy, policyName, policyTarget)
@@ -598,8 +594,8 @@ func processRateLimitPolicy(ctx krt.HandlerContext, gatewayExtensions krt.Collec
 func processLocalRateLimitPolicy(trafficPolicy *v1alpha1.TrafficPolicy, policyName string, policyTarget *api.PolicyTarget) *ADPPolicy {
 	logger := logging.New("agentgateway/plugins/traffic")
 
-	if trafficPolicy.Spec.RateLimit.Local == nil || trafficPolicy.Spec.RateLimit.Local.TokenBucket == nil {
-		logger.Warn("local rate limit or token bucket configuration is nil")
+	if trafficPolicy.Spec.RateLimit.Local.TokenBucket == nil {
+		logger.Warn("token bucket configuration is nil")
 		return nil
 	}
 
