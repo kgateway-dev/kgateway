@@ -14,11 +14,11 @@ import (
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
@@ -61,7 +61,7 @@ func NewTrafficPlugin(agw *AgwCollections) AgentgatewayPlugin {
 		*v1alpha1.PolicyStatus,
 		[]ADPPolicy,
 	) {
-		return TranslateTrafficPolicy(krtctx, agw.GatewayExtensions, agw.Backends, agw.Secrets, policyCR)
+		return TranslateTrafficPolicy(krtctx, agw.GatewayExtensions, agw.Backends, agw.Secrets, policyCR, agw.ControllerName)
 	})
 
 	return AgentgatewayPlugin{
@@ -84,15 +84,29 @@ func TranslateTrafficPolicy(
 	backends krt.Collection[*v1alpha1.Backend],
 	secrets krt.Collection[*corev1.Secret],
 	trafficPolicy *v1alpha1.TrafficPolicy,
+	controllerName string,
 ) (*v1alpha1.PolicyStatus, []ADPPolicy) {
 	var adpPolicies []ADPPolicy
 
 	isMcpTarget := false
+	var ancestors []v1alpha1.PolicyAncestorStatus
 	for _, target := range trafficPolicy.Spec.TargetRefs {
 		var policyTarget *api.PolicyTarget
+		// Build a base ParentReference for status
+		parentRef := gwv1.ParentReference{
+			Name:      gwv1.ObjectName(target.Name),
+			Namespace: ptr.To(gwv1.Namespace(trafficPolicy.Namespace)),
+		}
+		if target.SectionName != nil {
+			parentRef.SectionName = (*gwv1.SectionName)(target.SectionName)
+		}
 
 		switch string(target.Kind) {
 		case wellknown.GatewayKind:
+			group := gwv1.Group("gateway.networking.k8s.io")
+			kind := gwv1.Kind("Gateway")
+			parentRef.Group = &group
+			parentRef.Kind = &kind
 			policyTarget = &api.PolicyTarget{
 				Kind: &api.PolicyTarget_Gateway{
 					Gateway: utils.InternalGatewayName(trafficPolicy.Namespace, string(target.Name), ""),
@@ -107,6 +121,10 @@ func TranslateTrafficPolicy(
 			}
 
 		case wellknown.HTTPRouteKind:
+			group := gwv1.Group("gateway.networking.k8s.io")
+			kind := gwv1.Kind("HTTPRoute")
+			parentRef.Group = &group
+			parentRef.Kind = &kind
 			policyTarget = &api.PolicyTarget{
 				Kind: &api.PolicyTarget_Route{
 					Route: utils.InternalRouteRuleName(trafficPolicy.Namespace, string(target.Name), ""),
@@ -122,6 +140,10 @@ func TranslateTrafficPolicy(
 
 		case wellknown.BackendGVK.Kind:
 			// kgateway backend kind (MCP, AI, etc.)
+			group := gwv1.Group("gateway.kgateway.dev")
+			kind := gwv1.Kind("Backend")
+			parentRef.Group = &group
+			parentRef.Kind = &kind
 
 			// Look up the Backend referenced by the policy
 			backendKey := getBackendKey(trafficPolicy.Namespace, string(target.Name))
@@ -131,17 +153,19 @@ func TranslateTrafficPolicy(
 					"target", target.Name,
 					"policy", client.ObjectKeyFromObject(trafficPolicy))
 				// Return an error status when backend is not found
+				conds := []metav1.Condition{}
+				meta.SetStatusCondition(&conds, metav1.Condition{
+					Type:    string(v1alpha1.PolicyConditionAccepted),
+					Status:  metav1.ConditionFalse,
+					Reason:  string(v1alpha1.PolicyReasonInvalid),
+					Message: fmt.Sprintf("Backend %s not found", target.Name),
+				})
 				status := v1alpha1.PolicyStatus{
 					Ancestors: []v1alpha1.PolicyAncestorStatus{
 						{
-							Conditions: []metav1.Condition{
-								{
-									Type:    string(v1alpha1.PolicyConditionAccepted),
-									Status:  metav1.ConditionFalse,
-									Reason:  string(v1alpha1.PolicyReasonInvalid),
-									Message: fmt.Sprintf("Backend %s not found", target.Name),
-								},
-							},
+							AncestorRef:    parentRef,
+							ControllerName: controllerName,
+							Conditions:     conds,
 						},
 					},
 				}
@@ -170,29 +194,43 @@ func TranslateTrafficPolicy(
 		if policyTarget != nil {
 			translatedPolicies := translateTrafficPolicyToADP(ctx, gatewayExtensions, secrets, trafficPolicy, string(target.Name), policyTarget, isMcpTarget)
 			adpPolicies = append(adpPolicies, translatedPolicies...)
+			// Build success conditions per ancestor
+			conds := []metav1.Condition{}
+			meta.SetStatusCondition(&conds, metav1.Condition{
+				Type:    string(v1alpha1.PolicyConditionAccepted),
+				Status:  metav1.ConditionTrue,
+				Reason:  string(v1alpha1.PolicyReasonValid),
+				Message: "TrafficPolicy successfully processed",
+			})
+			meta.SetStatusCondition(&conds, metav1.Condition{
+				Type:    string(v1alpha1.PolicyConditionAttached),
+				Status:  metav1.ConditionTrue,
+				Reason:  string(v1alpha1.PolicyReasonAttached),
+				Message: "TrafficPolicy attached to targets",
+			})
+			// Ensure LastTransitionTime is set for all conditions
+			for i := range conds {
+				if conds[i].LastTransitionTime.IsZero() {
+					conds[i].LastTransitionTime = metav1.Now()
+				}
+			}
+			// Only append valid ancestors: require non-empty controllerName and parentRef name
+			if controllerName != "" && string(parentRef.Name) != "" {
+				ancestors = append(ancestors, v1alpha1.PolicyAncestorStatus{
+					AncestorRef:    parentRef,
+					ControllerName: controllerName,
+					Conditions:     conds,
+				})
+			}
 		}
 	}
 
-	// Create a successful status for the traffic policy
-	status := v1alpha1.PolicyStatus{
-		Ancestors: []v1alpha1.PolicyAncestorStatus{
-			{
-				Conditions: []metav1.Condition{
-					{
-						Type:    string(v1alpha1.PolicyConditionAccepted),
-						Status:  metav1.ConditionTrue,
-						Reason:  string(v1alpha1.PolicyReasonValid),
-						Message: "TrafficPolicy successfully processed",
-					},
-					{
-						Type:    string(v1alpha1.PolicyConditionAttached),
-						Status:  metav1.ConditionTrue,
-						Reason:  string(v1alpha1.PolicyReasonAttached),
-						Message: "TrafficPolicy attached to targets",
-					},
-				},
-			},
-		},
+	// Build final status from accumulated ancestors
+	var status v1alpha1.PolicyStatus
+	if len(ancestors) == 0 {
+		status = v1alpha1.PolicyStatus{Ancestors: []v1alpha1.PolicyAncestorStatus{}}
+	} else {
+		status = v1alpha1.PolicyStatus{Ancestors: ancestors}
 	}
 
 	return &status, adpPolicies
