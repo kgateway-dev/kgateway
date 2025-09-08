@@ -73,7 +73,7 @@ spec:
       promptGuard:
         request:
           regex:
-            action: REJECT
+            action: MASK
             builtins:
               - PHONE_NUMBER
               - EMAIL

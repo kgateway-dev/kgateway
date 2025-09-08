@@ -311,11 +311,12 @@ func (s *tsuite) testRouteSpan() {
 func (s *tsuite) testPromptGuardSpan() {
 	providers := []testProvider{
 		{
-			name: "prompt reject",
+			name: "prompt guard",
 			exceptedLogs: [][]string{
 				{
 					`handle_request_body_req_regex`,
 					`-> ai.regex.action: Str(REJECT)`,
+					`-> ai.regex.action: Str(MASK)`,
 					`-> ai.regex.result: Str(passed)`,
 					`-> ai.regex.result: Str(rejected)`,
 				},
