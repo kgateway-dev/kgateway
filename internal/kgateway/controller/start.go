@@ -66,7 +66,7 @@ type StartConfig struct {
 	GatewayClassName         string
 	WaypointGatewayClassName string
 	AgentGatewayClassName    string
-	AdditionalGatewayClasses map[string]*deployer.ClassInfo
+	AdditionalGatewayClasses map[string]*deployer.GatewayClassInfo
 
 	Dev        bool
 	SetupOpts  *SetupOpts
@@ -356,8 +356,8 @@ func (c *ControllerBuilder) HasSynced() bool {
 // Exported for testing.
 func GetDefaultClassInfo(globalSettings *settings.Settings,
 	gatewayClassName, waypointGatewayClassName, agentGatewayClassName string,
-	additionalClassInfos map[string]*deployer.ClassInfo) map[string]*deployer.ClassInfo {
-	classInfos := map[string]*deployer.ClassInfo{
+	additionalClassInfos map[string]*deployer.GatewayClassInfo) map[string]*deployer.GatewayClassInfo {
+	classInfos := map[string]*deployer.GatewayClassInfo{
 		gatewayClassName: {
 			Description: "Standard class for managing Gateway API ingress traffic.",
 			Labels:      map[string]string{},
@@ -373,7 +373,7 @@ func GetDefaultClassInfo(globalSettings *settings.Settings,
 	}
 	// Only enable agentgateway gateway class if it's enabled in the settings
 	if globalSettings.EnableAgentGateway {
-		classInfos[agentGatewayClassName] = &deployer.ClassInfo{
+		classInfos[agentGatewayClassName] = &deployer.GatewayClassInfo{
 			Description: "Specialized class for agentgateway.",
 			Labels:      map[string]string{},
 			Annotations: map[string]string{},

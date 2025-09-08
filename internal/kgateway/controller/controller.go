@@ -70,7 +70,7 @@ type GatewayConfig struct {
 	// AgentGatewayClassName is the configured agent gateway class name.
 	AgentGatewayClassName string
 	// Additional GatewayClass definitions to support extending to other well-known gateway classes
-	AdditionalGatewayClasses map[string]*deployer.ClassInfo
+	AdditionalGatewayClasses map[string]*deployer.GatewayClassInfo
 }
 
 type ExtraGatewayParametersFunc func(cli client.Client, inputs *deployer.Inputs) []deployer.ExtraGatewayParameters

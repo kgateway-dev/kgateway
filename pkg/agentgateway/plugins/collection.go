@@ -81,9 +81,12 @@ type AgwCollections struct {
 	Endpoints    krt.Collection[ir.EndpointsForBackend]
 	GatewayIndex *krtcollections.GatewayIndex
 
-	ControllerName  string
+	// ControllerName is the name of the Gateway controller.
+	ControllerName string
+	// SystemNamespace is control plane system namespace (default is kgateway-system)
 	SystemNamespace string
-	ClusterID       string
+	// ClusterID is the cluster ID of the cluster the proxy is running in.
+	ClusterID string
 }
 
 func registerKgwResources(kgwClient kgwversioned.Interface) {

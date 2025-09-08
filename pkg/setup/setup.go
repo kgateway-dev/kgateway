@@ -22,7 +22,7 @@ type Options struct {
 	GatewayClassName         string
 	WaypointGatewayClassName string
 	AgentGatewayClassName    string
-	AdditionalGatewayClasses map[string]*deployer.ClassInfo
+	AdditionalGatewayClasses map[string]*deployer.GatewayClassInfo
 	ExtraPlugins             func(ctx context.Context, commoncol *common.CommonCollections, mergeSettingsJSON string) []sdk.Plugin
 	ExtraAgentgatewayPlugins func(ctx context.Context, agw *agentgatewayplugins.AgwCollections) []agentgatewayplugins.AgentgatewayPlugin
 	ExtraGatewayParameters   func(cli client.Client, inputs *deployer.Inputs) []deployer.ExtraGatewayParameters

@@ -5,8 +5,8 @@ import (
 )
 
 type AgentgatewayPlugin struct {
-	AdditionalResources *AddResourcesPlugin
-	ContributesPolicies map[schema.GroupKind]PolicyPlugin
+	AddResourceExtension *AddResourcesPlugin
+	ContributesPolicies  map[schema.GroupKind]PolicyPlugin
 	// extra has sync beyond primary resources in the collections above
 	ExtraHasSynced func() bool
 }
@@ -21,18 +21,18 @@ func MergePlugins(plug ...AgentgatewayPlugin) AgentgatewayPlugin {
 		for gk, policy := range p.ContributesPolicies {
 			ret.ContributesPolicies[gk] = policy
 		}
-		if p.AdditionalResources != nil {
-			if ret.AdditionalResources == nil {
-				ret.AdditionalResources = &AddResourcesPlugin{}
+		if p.AddResourceExtension != nil {
+			if ret.AddResourceExtension == nil {
+				ret.AddResourceExtension = &AddResourcesPlugin{}
 			}
-			if ret.AdditionalResources.AdditionalBinds == nil {
-				ret.AdditionalResources.AdditionalBinds = p.AdditionalResources.AdditionalBinds
+			if ret.AddResourceExtension.Binds == nil {
+				ret.AddResourceExtension.Binds = p.AddResourceExtension.Binds
 			}
-			if p.AdditionalResources.AdditionalListeners != nil {
-				ret.AdditionalResources.AdditionalListeners = p.AdditionalResources.AdditionalListeners
+			if p.AddResourceExtension.Listeners != nil {
+				ret.AddResourceExtension.Listeners = p.AddResourceExtension.Listeners
 			}
-			if p.AdditionalResources.AdditionalRoutes != nil {
-				ret.AdditionalResources.AdditionalRoutes = p.AdditionalResources.AdditionalRoutes
+			if p.AddResourceExtension.Routes != nil {
+				ret.AddResourceExtension.Routes = p.AddResourceExtension.Routes
 			}
 		}
 		if p.ExtraHasSynced != nil {

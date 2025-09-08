@@ -65,7 +65,7 @@ func WithAgentGatewayClassName(name string) func(*setup) {
 	}
 }
 
-func WithAdditionalGatewayClasses(classes map[string]*deployer.ClassInfo) func(*setup) {
+func WithAdditionalGatewayClasses(classes map[string]*deployer.GatewayClassInfo) func(*setup) {
 	return func(s *setup) {
 		s.additionalGatewayClasses = classes
 	}
@@ -144,7 +144,7 @@ type setup struct {
 	gatewayClassName         string
 	waypointClassName        string
 	agentGatewayClassName    string
-	additionalGatewayClasses map[string]*deployer.ClassInfo
+	additionalGatewayClasses map[string]*deployer.GatewayClassInfo
 	extraPlugins             func(ctx context.Context, commoncol *common.CommonCollections, mergeSettingsJSON string) []sdk.Plugin
 	extraAgentgatewayPlugins func(ctx context.Context, agw *agentgatewayplugins.AgwCollections) []agentgatewayplugins.AgentgatewayPlugin
 	extraGatewayParameters   func(cli client.Client, inputs *deployer.Inputs) []deployer.ExtraGatewayParameters
@@ -277,6 +277,7 @@ func (s *setup) Start(ctx context.Context) error {
 
 	agwCollections, err := agentgatewayplugins.NewAgwCollections(
 		commoncol,
+		// control plane system namespace (default is kgateway-system)
 		namespaces.GetPodNamespace(),
 		istioClient.ClusterID().String(),
 	)
@@ -315,7 +316,7 @@ func BuildKgatewayWithConfig(
 	gatewayClassName string,
 	waypointClassName string,
 	agentGatewayClassName string,
-	additionalGatewayClasses map[string]*deployer.ClassInfo,
+	additionalGatewayClasses map[string]*deployer.GatewayClassInfo,
 	setupOpts *controller.SetupOpts,
 	restConfig *rest.Config,
 	kubeClient istiokube.Client,

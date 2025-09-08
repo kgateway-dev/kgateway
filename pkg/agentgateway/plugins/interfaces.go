@@ -52,22 +52,22 @@ func attachmentName(target *api.PolicyTarget) string {
 }
 
 type AddResourcesPlugin struct {
-	AdditionalBinds     krt.Collection[ir.ADPResourcesForGateway]
-	AdditionalListeners krt.Collection[ir.ADPResourcesForGateway]
-	AdditionalRoutes    krt.Collection[ir.ADPResourcesForGateway]
+	Binds     krt.Collection[ir.ADPResourcesForGateway]
+	Listeners krt.Collection[ir.ADPResourcesForGateway]
+	Routes    krt.Collection[ir.ADPResourcesForGateway]
 }
 
 // AddBinds extracts all bind resources from the collection
 func (p *AddResourcesPlugin) AddBinds() krt.Collection[ir.ADPResourcesForGateway] {
-	return p.AdditionalBinds
+	return p.Binds
 }
 
 // AddListeners extracts all routes resources from the collection
 func (p *AddResourcesPlugin) AddListeners() krt.Collection[ir.ADPResourcesForGateway] {
-	return p.AdditionalListeners
+	return p.Listeners
 }
 
 // AddRoutes extracts all routes resources from the collection
 func (p *AddResourcesPlugin) AddRoutes() krt.Collection[ir.ADPResourcesForGateway] {
-	return p.AdditionalRoutes
+	return p.Routes
 }

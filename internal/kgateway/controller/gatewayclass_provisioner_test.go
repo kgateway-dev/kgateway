@@ -218,10 +218,10 @@ var _ = Describe("GatewayClassProvisioner", func() {
 	})
 
 	When("custom GatewayClass configurations are provided", func() {
-		var customClassConfigs map[string]*deployer.ClassInfo
+		var customClassConfigs map[string]*deployer.GatewayClassInfo
 
 		BeforeEach(func() {
-			customClassConfigs = map[string]*deployer.ClassInfo{
+			customClassConfigs = map[string]*deployer.GatewayClassInfo{
 				"custom-class": {
 					Description: "custom gateway class",
 					Labels: map[string]string{

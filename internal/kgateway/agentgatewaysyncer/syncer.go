@@ -211,16 +211,16 @@ func (s *AgentGwSyncer) buildADPResources(
 		}
 		return results
 	}, krtopts.ToOptions("Binds")...)
-	if s.agwPlugins.AdditionalResources != nil && s.agwPlugins.AdditionalResources.AdditionalBinds != nil {
-		binds = krt.JoinCollection([]krt.Collection[agwir.ADPResourcesForGateway]{binds, s.agwPlugins.AdditionalResources.AdditionalBinds})
+	if s.agwPlugins.AddResourceExtension != nil && s.agwPlugins.AddResourceExtension.Binds != nil {
+		binds = krt.JoinCollection([]krt.Collection[agwir.ADPResourcesForGateway]{binds, s.agwPlugins.AddResourceExtension.Binds})
 	}
 
 	// Build listeners
 	listeners := krt.NewCollection(gateways, func(ctx krt.HandlerContext, obj GatewayListener) *agwir.ADPResourcesForGateway {
 		return s.buildListenerFromGateway(obj)
 	}, krtopts.ToOptions("Listeners")...)
-	if s.agwPlugins.AdditionalResources != nil && s.agwPlugins.AdditionalResources.AdditionalListeners != nil {
-		listeners = krt.JoinCollection([]krt.Collection[agwir.ADPResourcesForGateway]{listeners, s.agwPlugins.AdditionalResources.AdditionalListeners})
+	if s.agwPlugins.AddResourceExtension != nil && s.agwPlugins.AddResourceExtension.Listeners != nil {
+		listeners = krt.JoinCollection([]krt.Collection[agwir.ADPResourcesForGateway]{listeners, s.agwPlugins.AddResourceExtension.Listeners})
 	}
 
 	// Build routes
@@ -236,8 +236,8 @@ func (s *AgentGwSyncer) buildADPResources(
 		DirectResponses: s.agwCollections.DirectResponses,
 	}
 	adpRoutes := ADPRouteCollection(s.agwCollections.HTTPRoutes, s.agwCollections.GRPCRoutes, s.agwCollections.TCPRoutes, s.agwCollections.TLSRoutes, routeInputs, krtopts, s.plugins)
-	if s.agwPlugins.AdditionalResources != nil && s.agwPlugins.AdditionalResources.AdditionalRoutes != nil {
-		adpRoutes = krt.JoinCollection([]krt.Collection[agwir.ADPResourcesForGateway]{adpRoutes, s.agwPlugins.AdditionalResources.AdditionalRoutes})
+	if s.agwPlugins.AddResourceExtension != nil && s.agwPlugins.AddResourceExtension.Routes != nil {
+		adpRoutes = krt.JoinCollection([]krt.Collection[agwir.ADPResourcesForGateway]{adpRoutes, s.agwPlugins.AddResourceExtension.Routes})
 	}
 
 	adpPolicies := ADPPolicyCollection(binds, s.agwPlugins)
