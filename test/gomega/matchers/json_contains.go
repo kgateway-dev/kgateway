@@ -2,7 +2,6 @@ package matchers
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 
 	"github.com/onsi/gomega"
@@ -28,24 +27,17 @@ func JSONContains(expectedJSON any) gomega.OmegaMatcher {
 	matchers = append(matchers, ContainsDeepMapElements(expected))
 
 	return &JSONContainsMatcher{
-		expected:  expected,
-		matchers:  gomega.And(matchers...),
-		evaluated: false,
+		expected: expected,
+		matchers: gomega.And(matchers...),
 	}
 }
 
 type JSONContainsMatcher struct {
-	expected  interface{}
-	matchers  gomega.OmegaMatcher
-	evaluated bool
+	expected interface{}
+	matchers gomega.OmegaMatcher
 }
 
 func (matcher *JSONContainsMatcher) Match(actualBytes interface{}) (success bool, err error) {
-	if matcher.evaluated {
-		return false, errors.New("using the same matcher twice can lead to inconsistent behaviors")
-	}
-	matcher.evaluated = true
-
 	actualJSON, ok := actualBytes.([]byte)
 	if !ok {
 		return false, nil
