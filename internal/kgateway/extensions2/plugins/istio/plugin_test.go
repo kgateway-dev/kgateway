@@ -33,7 +33,7 @@ func TestIsDisabledForUpstream(t *testing.T) {
 				Obj: &corev1.Service{
 					ObjectMeta: metav1.ObjectMeta{
 						Annotations: map[string]string{
-							annotations.DisableIstioAutoMtls: "true",
+							annotations.DisableIstioAutoMTLS: "true",
 						},
 					},
 				},
@@ -46,7 +46,7 @@ func TestIsDisabledForUpstream(t *testing.T) {
 				Obj: &corev1.Service{
 					ObjectMeta: metav1.ObjectMeta{
 						Annotations: map[string]string{
-							annotations.DisableIstioAutoMtls: "false",
+							annotations.DisableIstioAutoMTLS: "false",
 						},
 					},
 				},

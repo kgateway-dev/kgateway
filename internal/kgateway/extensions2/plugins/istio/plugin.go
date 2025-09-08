@@ -23,6 +23,11 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	ourwellknown "github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
+)
+
+var (
+	logger = logging.New("plugin/istio")
 )
 
 var VirtualIstioGK = schema.GroupKind{
@@ -86,9 +91,11 @@ func isDisabledForUpstream(in ir.BackendObjectIR) bool {
 	}
 
 	// Check if the backend has explicitly disabled Istio auto-mTLS
-	if val, exists := in.Obj.GetAnnotations()[annotations.DisableIstioAutoMtls]; exists {
+	if val, exists := in.Obj.GetAnnotations()[annotations.DisableIstioAutoMTLS]; exists {
 		if disabled, err := strconv.ParseBool(val); err == nil && disabled {
 			return true
+		} else if err != nil {
+			logger.Error("error parsing annotation value as a boolean", "annotation", annotations.DisableIstioAutoMTLS, "value", val)
 		}
 	}
 
