@@ -5,10 +5,11 @@ import (
 	"fmt"
 
 	"github.com/onsi/gomega"
+	"github.com/onsi/gomega/types"
 )
 
-func JSONContains(expectedJSON any) gomega.OmegaMatcher {
-	matchers := []gomega.OmegaMatcher{
+func JSONContains(expectedJSON any) types.GomegaMatcher {
+	matchers := []types.GomegaMatcher{
 		gomega.Not(gomega.BeNil()),
 		gomega.Not(gomega.BeEmpty()),
 	}
@@ -34,7 +35,7 @@ func JSONContains(expectedJSON any) gomega.OmegaMatcher {
 
 type JSONContainsMatcher struct {
 	expected interface{}
-	matchers gomega.OmegaMatcher
+	matchers types.GomegaMatcher
 }
 
 func (matcher *JSONContainsMatcher) Match(actualBytes interface{}) (success bool, err error) {
