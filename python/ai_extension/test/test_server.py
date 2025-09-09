@@ -745,7 +745,7 @@ class TestInstrumentation:
 
         # Setup HTTP mock
         httpx_mock.add_response(
-            url="http://example.com:443/request",
+            url="https://example.com:443/request",
             method="POST",
             json=webhook_response,
             status_code=200,
@@ -936,7 +936,7 @@ class TestInstrumentation:
 
         # Mock HTTP response
         httpx_mock.add_response(
-            url="http://example.com:443/response",
+            url="https://example.com:443/response",
             method="POST",
             json=webhook_response,
             status_code=200,
