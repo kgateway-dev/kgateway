@@ -179,7 +179,7 @@ func (f fakeDiscoveryNamespaceFilter) AddHandler(func(selected, deselected istio
 func createManager(
 	parentCtx context.Context,
 	inferenceExt *deployer.InferenceExtInfo,
-	classConfigs map[string]*controller.ClassInfo,
+	classConfigs map[string]*deployer.GatewayClassInfo,
 ) (context.CancelFunc, error) {
 	mgr, err := ctrl.NewManager(cfg, ctrl.Options{
 		Scheme: scheme,
@@ -235,14 +235,14 @@ func createManager(
 
 	// Use the default & alt GCs when no class configs are provided.
 	if classConfigs == nil {
-		classConfigs = map[string]*controller.ClassInfo{}
-		classConfigs[altGatewayClassName] = &controller.ClassInfo{
+		classConfigs = map[string]*deployer.GatewayClassInfo{}
+		classConfigs[altGatewayClassName] = &deployer.GatewayClassInfo{
 			Description: "alt gateway class",
 		}
-		classConfigs[gatewayClassName] = &controller.ClassInfo{
+		classConfigs[gatewayClassName] = &deployer.GatewayClassInfo{
 			Description: "default gateway class",
 		}
-		classConfigs[selfManagedGatewayClassName] = &controller.ClassInfo{
+		classConfigs[selfManagedGatewayClassName] = &deployer.GatewayClassInfo{
 			Description: "self managed gw",
 			ParametersRef: &apiv1.ParametersReference{
 				Group:     apiv1.Group(wellknown.GatewayParametersGVK.Group),

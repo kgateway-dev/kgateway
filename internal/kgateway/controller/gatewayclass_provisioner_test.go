@@ -11,7 +11,8 @@ import (
 	"k8s.io/utils/ptr"
 	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/controller"
+	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
+
 	"github.com/kgateway-dev/kgateway/v2/test/gomega/assertions"
 )
 
@@ -217,10 +218,10 @@ var _ = Describe("GatewayClassProvisioner", func() {
 	})
 
 	When("custom GatewayClass configurations are provided", func() {
-		var customClassConfigs map[string]*controller.ClassInfo
+		var customClassConfigs map[string]*deployer.GatewayClassInfo
 
 		BeforeEach(func() {
-			customClassConfigs = map[string]*controller.ClassInfo{
+			customClassConfigs = map[string]*deployer.GatewayClassInfo{
 				"custom-class": {
 					Description: "custom gateway class",
 					Labels: map[string]string{

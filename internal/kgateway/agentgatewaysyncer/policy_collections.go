@@ -5,10 +5,12 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/slices"
 
+	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/ir"
+
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
 )
 
-func ADPPolicyCollection(binds krt.Collection[ADPResourcesForGateway], agwPlugins plugins.AgentgatewayPlugin) krt.Collection[ADPResourcesForGateway] {
+func ADPPolicyCollection(binds krt.Collection[ir.ADPResourcesForGateway], agwPlugins plugins.AgentgatewayPlugin) krt.Collection[ir.ADPResourcesForGateway] {
 	var allPolicies []krt.Collection[plugins.ADPPolicy]
 	// Collect all policies from registered plugins.
 	// Note: Only one plugin should be used per source GVK.
@@ -19,7 +21,7 @@ func ADPPolicyCollection(binds krt.Collection[ADPResourcesForGateway], agwPlugin
 	joinPolicies := krt.JoinCollection(allPolicies, krt.WithName("AllPolicies"))
 
 	// Generate all policies using the plugin system
-	allPoliciesCol := krt.NewCollection(binds, func(ctx krt.HandlerContext, i ADPResourcesForGateway) *ADPResourcesForGateway {
+	allPoliciesCol := krt.NewCollection(binds, func(ctx krt.HandlerContext, i ir.ADPResourcesForGateway) *ir.ADPResourcesForGateway {
 		logger.Debug("generating policies for gateway", "gateway", i.Gateway)
 
 		// Convert all plugins.ADPPolicy structs to api.Resource structs
@@ -28,7 +30,7 @@ func ADPPolicyCollection(binds krt.Collection[ADPResourcesForGateway], agwPlugin
 			return toADPResource(ADPPolicy{policy.Policy})
 		})
 
-		return &ADPResourcesForGateway{
+		return &ir.ADPResourcesForGateway{
 			Resources: allResources,
 			Gateway:   i.Gateway,
 		}
