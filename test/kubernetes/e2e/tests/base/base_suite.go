@@ -41,12 +41,6 @@ type TestCase struct {
 	// dynamicResources contains the expected dynamically provisioned resources for any Gateways
 	// contained in this test case's manifests.
 	dynamicResources []client.Object
-
-	// values file passed during an upgrade
-	// UpgradeValues string
-	// Rollback method to be called during cleanup.
-	// Do not provide this. Calling an upgrade returns this method which we save
-	//Rollback func() error
 }
 
 type BaseTestingSuite struct {
