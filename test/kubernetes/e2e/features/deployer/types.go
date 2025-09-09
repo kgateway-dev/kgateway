@@ -13,6 +13,7 @@ import (
 )
 
 var (
+	// manifests
 	gatewayWithoutParameters = filepath.Join(fsutils.MustGetThisDir(), "testdata", "gateway-without-parameters.yaml")
 	gatewayWithParameters    = filepath.Join(fsutils.MustGetThisDir(), "testdata", "gateway-with-parameters.yaml")
 	gatewayParametersCustom  = filepath.Join(fsutils.MustGetThisDir(), "testdata", "gatewayparameters-custom.yaml")
@@ -20,7 +21,7 @@ var (
 	//istioGatewayParameters   = filepath.Join(fsutils.MustGetThisDir(), "testdata", "istio-gateway-parameters.yaml")
 	selfManagedGateway = filepath.Join(fsutils.MustGetThisDir(), "testdata", "self-managed-gateway.yaml")
 
-	// When we apply the deployer-provision.yaml file, we expect resources to be created with this metadata
+	// objects
 	proxyObjectMeta = metav1.ObjectMeta{
 		Name:      "gw",
 		Namespace: "default",
@@ -46,6 +47,12 @@ var (
 	gw = &gwapiv1.Gateway{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "gw",
+			Namespace: "default",
+		},
+	}
+	route = &gwapiv1.HTTPRoute{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "example-route",
 			Namespace: "default",
 		},
 	}

@@ -55,7 +55,7 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 	}
 
 	return &testingSuite{
-		BaseTestingSuite: base.NewBaseTestingSuiteWithoutUpgrades(ctx, testInst, setupTestCase, testCases),
+		BaseTestingSuite: base.NewBaseTestingSuite(ctx, testInst, setupTestCase, testCases),
 	}
 }
 
