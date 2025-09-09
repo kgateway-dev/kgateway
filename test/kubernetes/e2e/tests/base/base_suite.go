@@ -22,11 +22,6 @@ type TestCase struct {
 	Manifests []string
 	// Resources contains a list of objects that are expected to be created by the manifest files.
 	Resources []client.Object
-	// values file passed during an upgrade
-	// UpgradeValues string
-	// Rollback method to be called during cleanup.
-	// Do not provide this. Calling an upgrade returns this method which we save
-	//Rollback func() error
 }
 
 type BaseTestingSuite struct {
@@ -40,20 +35,7 @@ type BaseTestingSuite struct {
 // NewBaseTestingSuite returns a BaseTestingSuite that performs all the pre-requisites of upgrading helm installations,
 // applying manifests and verifying resources exist before a suite and tests and the corresponding post-run cleanup.
 // The pre-requisites for the suite are defined in the setup parameter and for each test in the individual testCase.
-// Currently, tests that require upgrades (eg: to change settings) can not be run in Enterprise. To do so,
-// the test must be written without upgrades and call the `NewBaseTestingSuiteWithoutUpgrades` constructor.
 func NewBaseTestingSuite(ctx context.Context, testInst *e2e.TestInstallation, setupTestCase TestCase, testCases map[string]TestCase) *BaseTestingSuite {
-	return &BaseTestingSuite{
-		Ctx:              ctx,
-		TestInstallation: testInst,
-		TestCases:        testCases,
-		Setup:            setupTestCase,
-	}
-}
-
-// NewBaseTestingSuiteWithoutUpgrades returns a BaseTestingSuite without allowing upgrades and reverts before the suite and tests.
-// This is useful when creating tests that need to run in Enterprise since the helm values change between OSS and Enterprise installations.
-func NewBaseTestingSuiteWithoutUpgrades(ctx context.Context, testInst *e2e.TestInstallation, setupTestCase TestCase, testCases map[string]TestCase) *BaseTestingSuite {
 	return &BaseTestingSuite{
 		Ctx:              ctx,
 		TestInstallation: testInst,
@@ -64,29 +46,9 @@ func NewBaseTestingSuiteWithoutUpgrades(ctx context.Context, testInst *e2e.TestI
 
 func (s *BaseTestingSuite) SetupSuite() {
 	s.ApplyManifests(s.Setup)
-
-	// TODO handle upgrades https://github.com/kgateway-dev/kgateway/issues/10609
-	// if s.Setup.UpgradeValues != "" {
-	// 	// Perform an upgrade to change settings, deployments, etc.
-	// 	var err error
-	// 	s.Setup.Rollback, err = s.TestHelper.UpgradeGloo(s.Ctx, 600*time.Second, helper.WithExtraArgs([]string{
-	// 		// Reuse values so there's no need to know the prior values used
-	// 		"--reuse-values",
-	// 		"--values", s.Setup.UpgradeValues,
-	// 	}...))
-	// 	s.TestInstallation.Assertions.Require.NoError(err)
-	// }
 }
 
 func (s *BaseTestingSuite) TearDownSuite() {
-	// TODO handle upgrades https://github.com/kgateway-dev/kgateway/issues/10609
-	// if s.Setup.UpgradeValues != "" {
-	// 	// Revet the upgrade applied before this test. This way we are sure that any changes
-	// 	// made are undone and we go back to a clean state
-	// 	err := s.Setup.Rollback()
-	// 	s.TestInstallation.Assertions.Require.NoError(err)
-	// }
-
 	s.DeleteManifests(s.Setup)
 }
 
@@ -96,18 +58,6 @@ func (s *BaseTestingSuite) BeforeTest(suiteName, testName string) {
 	if !ok {
 		return
 	}
-
-	// TODO handle upgrades https://github.com/kgateway-dev/kgateway/issues/10609
-	// if testCase.UpgradeValues != "" {
-	// 	// Perform an upgrade to change settings, deployments, etc.
-	// 	var err error
-	// 	testCase.Rollback, err = s.TestHelper.UpgradeGloo(s.Ctx, 600*time.Second, helper.WithExtraArgs([]string{
-	// 		// Reuse values so there's no need to know the prior values used
-	// 		"--reuse-values",
-	// 		"--values", testCase.UpgradeValues,
-	// 	}...))
-	// 	s.TestInstallation.Assertions.Require.NoError(err)
-	// }
 
 	s.ApplyManifests(testCase)
 }
@@ -119,14 +69,6 @@ func (s *BaseTestingSuite) AfterTest(suiteName, testName string) {
 		return
 	}
 
-	// TODO handle upgrades https://github.com/kgateway-dev/kgateway/issues/10609
-	// if testCase.UpgradeValues != "" {
-	// 	// Revet the upgrade applied before this test. This way we are sure that any changes
-	// 	// made are undone and we go back to a clean state
-	// 	err := testCase.Rollback()
-	// 	s.TestInstallation.Assertions.Require.NoError(err)
-	// }
-
 	s.DeleteManifests(testCase)
 }
 
@@ -136,15 +78,6 @@ func (s *BaseTestingSuite) GetKubectlOutput(command ...string) string {
 
 	return out
 }
-
-// TODO handle upgrades https://github.com/kgateway-dev/kgateway/issues/10609
-// func (s *BaseTestingSuite) UpgradeWithCustomValuesFile(valuesFile string) {
-// 	_, err := s.TestHelper.UpgradeGloo(s.Ctx, 600*time.Second, helper.WithExtraArgs([]string{
-// 		// Do not reuse the existing values as we need to install the new chart with the new version of the images
-// 		"--values", valuesFile,
-// 	}...))
-// 	s.TestInstallation.Assertions.Require.NoError(err)
-// }
 
 // ApplyManifests applies the manifests and waits until the resources are created and ready.
 func (s *BaseTestingSuite) ApplyManifests(testCase TestCase) {
