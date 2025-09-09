@@ -17,6 +17,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
@@ -24,7 +25,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
-	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
 const (
@@ -843,7 +843,7 @@ func buildAGWServiceRef(br *gwv1.BackendRef, defaultNS string) (*api.BackendRefe
 		Kind: &api.BackendReference_Service{Service: ns + "/" + fqdn},
 		Port: port,
 	}, nil
-=======
+}
 
 // toProtoValue converts a raw string to a protobuf Value
 func toProtoValue(raw string) (*structpb.Value, error) {
