@@ -64,6 +64,13 @@ spec:
           host:
             host: "prompt-guard.example.com"
             port: 8443
+          forwardHeaderMatches:
+          - type: Exact
+            name: x-foo
+            value: bar
+          - type: RegularExpression
+            name: x-baz
+            value: ^baz-.*
         regex:
           action: REJECT
           matches:
@@ -115,6 +122,12 @@ spec:
       - field: temperature
         value: "0.5"
         override: true
+      - field: string
+        value: "some_string"
+      - field: array_int
+        value: "[1,2,3]"
+      - field: array_string
+        value: '["one","two","three"]'
   targetRefs:
   - group: gateway.networking.k8s.io
     kind: HTTPRoute

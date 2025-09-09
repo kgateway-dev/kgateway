@@ -9,6 +9,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
 )
 
@@ -29,7 +30,7 @@ var (
 	}
 	httpbinTeam1Deployment = &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "httpbin",
+			Name:      "httpbin-v1",
 			Namespace: "team1",
 		},
 	}
@@ -41,7 +42,7 @@ var (
 	}
 	httpbinTeam2Deployment = &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "httpbin",
+			Name:      "httpbin-v2",
 			Namespace: "team2",
 		},
 	}
@@ -108,6 +109,9 @@ var (
 		Name:      "http-gateway-test",
 		Namespace: "infra",
 	}
+	gatewayTest = &gwv1.Gateway{
+		ObjectMeta: proxyTestMeta,
+	}
 	proxyTestDeployment = &appsv1.Deployment{ObjectMeta: proxyTestMeta}
 	proxyTestService    = &corev1.Service{ObjectMeta: proxyTestMeta}
 
@@ -115,6 +119,44 @@ var (
 
 	routeParentHost = "parent.com"
 	routeTeam2Host  = "team2.com"
+)
+
+// ref: cyclic.yaml / recursive.yaml
+var (
+	routeTeam2Root = &gwv1.HTTPRoute{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "team2-root",
+			Namespace: "team2-root",
+		},
+	}
+)
+
+// ref: policy_merging.yaml
+var (
+	trafficPolicyParent1Transform = &v1alpha1.TrafficPolicy{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "parent1-transform",
+			Namespace: "infra",
+		},
+	}
+	trafficPolicyParent2Transform = &v1alpha1.TrafficPolicy{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "parent2-transform",
+			Namespace: "infra",
+		},
+	}
+	trafficPolicySvc1Transform = &v1alpha1.TrafficPolicy{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "svc1-transform",
+			Namespace: "team1",
+		},
+	}
+	trafficPolicySvc2Transform = &v1alpha1.TrafficPolicy{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "svc2-transform",
+			Namespace: "team2",
+		},
+	}
 )
 
 var (

@@ -34,7 +34,7 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: httpbin
+  name: httpbin-v1
   namespace: team1
 spec:
   replicas: 1
@@ -42,11 +42,13 @@ spec:
     matchLabels:
       app: httpbin
       version: v1
+      app.kubernetes.io/name: httpbin-v1
   template:
     metadata:
       labels:
         app: httpbin
         version: v1
+        app.kubernetes.io/name: httpbin-v1
     spec:
       containers:
       - image: docker.io/kennethreitz/httpbin
@@ -89,7 +91,7 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: httpbin
+  name: httpbin-v2
   namespace: team2
 spec:
   replicas: 1
@@ -97,11 +99,13 @@ spec:
     matchLabels:
       app: httpbin
       version: v2
+      app.kubernetes.io/name: httpbin-v2
   template:
     metadata:
       labels:
         app: httpbin
         version: v2
+        app.kubernetes.io/name: httpbin-v2
     spec:
       containers:
       - image: docker.io/kennethreitz/httpbin
