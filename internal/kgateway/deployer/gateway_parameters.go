@@ -66,6 +66,30 @@ func (gp *GatewayParameters) AllKnownGatewayParameters() []client.Object {
 	return slices.Clone(gp.knownGWParameters)
 }
 
+func (gp *GatewayParameters) IsSelfManaged(ctx context.Context, obj client.Object) (bool, error) {
+	logger := log.FromContext(ctx)
+
+	gw, ok := obj.(*api.Gateway)
+	if !ok {
+		return false, fmt.Errorf("expected a Gateway resource, got %s", obj.GetObjectKind().GroupVersionKind().String())
+	}
+
+	ref, err := gp.getGatewayParametersGK(ctx, gw)
+	if err != nil {
+		return false, err
+	}
+
+	if g, ok := gp.extraHVGenerators[ref]; ok {
+		return g.IsSelfManaged(ctx, gw)
+	}
+	logger.V(1).Info("using default GatewayParameters for Gateway",
+		"gatewayName", gw.GetName(),
+		"gatewayNamespace", gw.GetNamespace(),
+	)
+
+	return newKGatewayParameters(gp.cli, gp.inputs).isSelfManaged(ctx, gw)
+}
+
 func (gp *GatewayParameters) GetValues(ctx context.Context, obj client.Object) (map[string]any, error) {
 	logger := log.FromContext(ctx)
 
@@ -131,6 +155,14 @@ func (gp *GatewayParameters) getDefaultGatewayParametersGK(ctx context.Context, 
 
 func newKGatewayParameters(cli client.Client, inputs *deployer.Inputs) *kGatewayParameters {
 	return &kGatewayParameters{cli: cli, inputs: inputs}
+}
+
+func (h *kGatewayParameters) isSelfManaged(ctx context.Context, gw *api.Gateway) (bool, error) {
+	gwParam, err := h.getGatewayParametersForGateway(ctx, gw)
+	if err != nil {
+		return false, err
+	}
+	return gwParam != nil && gwParam.Spec.SelfManaged != nil, nil
 }
 
 func (h *kGatewayParameters) GetValues(ctx context.Context, gw *api.Gateway) (map[string]any, error) {

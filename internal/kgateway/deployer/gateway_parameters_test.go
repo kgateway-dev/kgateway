@@ -37,6 +37,10 @@ const (
 
 type testHelmValuesGenerator struct{}
 
+func (thv *testHelmValuesGenerator) IsSelfManaged(ctx context.Context, gw client.Object) (bool, error) {
+	return false, nil
+}
+
 func (thv *testHelmValuesGenerator) GetValues(ctx context.Context, gw client.Object) (map[string]any, error) {
 	return map[string]any{
 		"testHelmValuesGenerator": struct{}{},

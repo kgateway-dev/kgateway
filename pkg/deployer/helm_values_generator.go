@@ -10,4 +10,5 @@ import (
 // when rendering a Helm chart
 type HelmValuesGenerator interface {
 	GetValues(ctx context.Context, obj client.Object) (map[string]any, error)
+	IsSelfManaged(ctx context.Context, obj client.Object) (bool, error)
 }
