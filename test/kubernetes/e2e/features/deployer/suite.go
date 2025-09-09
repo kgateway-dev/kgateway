@@ -9,6 +9,7 @@ import (
 	"github.com/onsi/gomega/gstruct"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -30,30 +31,24 @@ var _ e2e.NewSuiteFunc = NewTestingSuite
 var (
 	setup = base.TestCase{
 		Manifests: []string{defaults.HttpbinManifest},
-		Resources: []client.Object{defaults.HttpbinDeployment},
 	}
 
 	// test cases
 	testCases = map[string]*base.TestCase{
 		"TestProvisionDeploymentAndService": {
 			Manifests: []string{gatewayWithoutParameters},
-			Resources: []client.Object{gw, route, proxyService, proxyServiceAccount, proxyDeployment},
 		},
 		"TestConfigureProxiesFromGatewayParameters": {
 			Manifests: []string{gatewayParametersCustom, gatewayWithParameters},
-			Resources: []client.Object{gwParamsCustom, gw, route, proxyService, proxyServiceAccount, proxyDeployment, gwParamsDefault},
 		},
 		"TestProvisionResourcesUpdatedWithValidParameters": {
 			Manifests: []string{gatewayWithParameters},
-			Resources: []client.Object{gw, route, proxyService, proxyServiceAccount, proxyDeployment, gwParamsDefault},
 		},
 		"TestProvisionResourcesNotUpdatedWithInvalidParameters": {
 			Manifests: []string{gatewayWithParameters},
-			Resources: []client.Object{gw, route, proxyService, proxyServiceAccount, proxyDeployment, gwParamsDefault},
 		},
 		"TestSelfManagedGateway": {
 			Manifests: []string{selfManagedGateway},
-			Resources: []client.Object{gw, gwParamsDefault},
 		},
 	}
 )
@@ -71,17 +66,20 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 }
 
 func (s *testingSuite) TestProvisionDeploymentAndService() {
-	s.TestInstallation.Assertions.EventuallyReadyReplicas(s.Ctx, proxyDeployment.ObjectMeta, gomega.Equal(1))
+	s.TestInstallation.Assertions.EventuallyReadyReplicas(s.Ctx, proxyObjectMeta, gomega.Equal(1))
 }
 
 func (s *testingSuite) TestConfigureProxiesFromGatewayParameters() {
-	s.TestInstallation.Assertions.EventuallyReadyReplicas(s.Ctx, proxyDeployment.ObjectMeta, gomega.Equal(1))
+	s.TestInstallation.Assertions.EventuallyReadyReplicas(s.Ctx, proxyObjectMeta, gomega.Equal(1))
 
 	// check that the labels and annotations got passed through from GatewayParameters to the ServiceAccount
 	sa := &corev1.ServiceAccount{}
 	err := s.TestInstallation.ClusterContext.Client.Get(
 		s.Ctx,
-		client.ObjectKeyFromObject(proxyServiceAccount),
+		client.ObjectKey{
+			Namespace: proxyObjectMeta.Namespace,
+			Name:      proxyObjectMeta.Name,
+		},
 		sa,
 	)
 	s.Require().NoError(err)
@@ -95,7 +93,10 @@ func (s *testingSuite) TestConfigureProxiesFromGatewayParameters() {
 	svc := &corev1.Service{}
 	err = s.TestInstallation.ClusterContext.Client.Get(
 		s.Ctx,
-		client.ObjectKeyFromObject(proxyService),
+		client.ObjectKey{
+			Namespace: proxyObjectMeta.Namespace,
+			Name:      proxyObjectMeta.Name,
+		},
 		svc,
 	)
 	s.Require().NoError(err)
@@ -105,35 +106,39 @@ func (s *testingSuite) TestConfigureProxiesFromGatewayParameters() {
 		gomega.HaveKeyWithValue("svc-anno-key", "svc-anno-val"))
 
 	// check that the proxy pod has the expected labels
-	pods, err := kubeutils.GetReadyPodsForDeployment(s.Ctx, s.TestInstallation.ClusterContext.Clientset, proxyDeployment.ObjectMeta)
+	pods, err := kubeutils.GetReadyPodsForDeployment(s.Ctx, s.TestInstallation.ClusterContext.Clientset, proxyObjectMeta)
 	s.Require().NoError(err)
 	s.Require().Len(pods, 1)
 	pod := &corev1.Pod{}
 	err = s.TestInstallation.ClusterContext.Client.Get(s.Ctx, client.ObjectKey{
-		Namespace: proxyDeployment.Namespace,
+		Namespace: proxyObjectMeta.Namespace,
 		Name:      pods[0],
 	}, pod)
 	s.Require().NoError(err)
 	s.Require().Subset(pod.Labels, map[string]string{
-		"app.kubernetes.io/instance":             proxyDeployment.Name,
-		"app.kubernetes.io/name":                 proxyDeployment.Name,
-		"gateway.networking.k8s.io/gateway-name": proxyDeployment.Name,
+		"app.kubernetes.io/instance":             proxyObjectMeta.Name,
+		"app.kubernetes.io/name":                 proxyObjectMeta.Name,
+		"gateway.networking.k8s.io/gateway-name": proxyObjectMeta.Name,
 		"kgateway":                               "kube-gateway",
 	})
 
 	// Update the Gateway to use the custom GatewayParameters
-	err = s.TestInstallation.ClusterContext.Client.Get(s.Ctx, client.ObjectKeyFromObject(gw), gw)
+	gw := &gwv1.Gateway{}
+	err = s.TestInstallation.ClusterContext.Client.Get(s.Ctx, client.ObjectKey{
+		Namespace: proxyObjectMeta.Namespace,
+		Name:      proxyObjectMeta.Name,
+	}, gw)
 	s.Require().NoError(err)
-	s.patchGateway(gw.ObjectMeta, func(gw *gwv1.Gateway) {
+	s.patchGateway(proxyObjectMeta, func(gw *gwv1.Gateway) {
 		gw.Spec.Infrastructure.ParametersRef = &gwv1.LocalParametersReference{
 			Group: "gateway.kgateway.dev",
 			Kind:  "GatewayParameters",
-			Name:  gwParamsCustom.Name,
+			Name:  gwParamsCustomObjectMeta.Name,
 		}
 	})
 
 	// Assert that the expected custom configuration exists.
-	s.TestInstallation.Assertions.EventuallyReadyReplicas(s.Ctx, proxyDeployment.ObjectMeta, gomega.Equal(2))
+	s.TestInstallation.Assertions.EventuallyReadyReplicas(s.Ctx, proxyObjectMeta, gomega.Equal(2))
 
 	s.TestInstallation.Assertions.AssertEnvoyAdminApi(
 		s.Ctx,
@@ -144,33 +149,36 @@ func (s *testingSuite) TestConfigureProxiesFromGatewayParameters() {
 }
 
 func (s *testingSuite) TestProvisionResourcesUpdatedWithValidParameters() {
-	s.TestInstallation.Assertions.EventuallyReadyReplicas(s.Ctx, proxyDeployment.ObjectMeta, gomega.Equal(1))
+	s.TestInstallation.Assertions.EventuallyReadyReplicas(s.Ctx, proxyObjectMeta, gomega.Equal(1))
 
 	// modify the number of replicas in the GatewayParameters
-	s.patchGatewayParameters(gwParamsDefault.ObjectMeta, func(parameters *v1alpha1.GatewayParameters) {
+	s.patchGatewayParameters(gwParamsDefaultObjectMeta, func(parameters *v1alpha1.GatewayParameters) {
 		parameters.Spec.Kube.Deployment.Replicas = ptr.To(uint32(2))
 	})
 
 	// the GatewayParameters modification should cause the deployer to re-run and update the
 	// deployment to have 2 replicas
-	s.TestInstallation.Assertions.EventuallyReadyReplicas(s.Ctx, proxyDeployment.ObjectMeta, gomega.Equal(2))
+	s.TestInstallation.Assertions.EventuallyReadyReplicas(s.Ctx, proxyObjectMeta, gomega.Equal(2))
 }
 
 func (s *testingSuite) TestProvisionResourcesNotUpdatedWithInvalidParameters() {
-	s.TestInstallation.Assertions.EventuallyReadyReplicas(s.Ctx, proxyDeployment.ObjectMeta, gomega.Equal(1))
+	s.TestInstallation.Assertions.EventuallyReadyReplicas(s.Ctx, proxyObjectMeta, gomega.Equal(1))
 
-	var (
-		// initially, allowPrivilegeEscalation should be true and privileged should not be set
-		origAllowPrivilegeEscalation = gstruct.PointTo(gomega.BeTrue())
-		origPrivileged               = gomega.BeNil()
-	)
+	proxyDeployment := &appsv1.Deployment{}
+	err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, client.ObjectKey{
+		Namespace: proxyObjectMeta.Namespace,
+		Name:      proxyObjectMeta.Name,
+	}, proxyDeployment)
+	s.Require().NoError(err)
 
-	s.patchGatewayParameters(gwParamsDefault.ObjectMeta, func(parameters *v1alpha1.GatewayParameters) {
-		gomega.Expect(proxyDeployment.Spec.Template.Spec.Containers).To(gomega.HaveLen(1))
-		envoyContainer := proxyDeployment.Spec.Template.Spec.Containers[0]
-		gomega.Expect(envoyContainer.SecurityContext.AllowPrivilegeEscalation).To(origAllowPrivilegeEscalation)
-		gomega.Expect(envoyContainer.SecurityContext.Privileged).To(origPrivileged)
+	// initially, allowPrivilegeEscalation should be true and privileged should not be set
+	origAllowPrivilegeEscalation := proxyDeployment.Spec.Template.Spec.Containers[0].SecurityContext.AllowPrivilegeEscalation
+	s.Assert().NotNil(origAllowPrivilegeEscalation)
+	s.Assert().True(*origAllowPrivilegeEscalation)
+	origPrivileged := proxyDeployment.Spec.Template.Spec.Containers[0].SecurityContext.Privileged
+	s.Assert().Nil(origPrivileged)
 
+	s.patchGatewayParameters(gwParamsDefaultObjectMeta, func(parameters *v1alpha1.GatewayParameters) {
 		// try to modify GatewayParameters with invalid values
 		// K8s won't allow setting both allowPrivilegeEscalation=false and privileged=true,
 		// so the proposed patch should fail and the original values should be retained.
@@ -190,10 +198,14 @@ func (s *testingSuite) TestProvisionResourcesNotUpdatedWithInvalidParameters() {
 	// retained after that amount of time, we can be confident that the deployer has had time to
 	// consume the new values and fail to apply them.
 	s.TestInstallation.Assertions.Gomega.Consistently(func(g gomega.Gomega) {
-		err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, client.ObjectKeyFromObject(proxyDeployment), proxyDeployment)
+		proxyDeployment := &appsv1.Deployment{}
+		err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, client.ObjectKey{
+			Namespace: proxyObjectMeta.Namespace,
+			Name:      proxyObjectMeta.Name,
+		}, proxyDeployment)
 		g.Expect(err).NotTo(gomega.HaveOccurred())
-		g.Expect(proxyDeployment.Spec.Template.Spec.Containers[0].SecurityContext.AllowPrivilegeEscalation).To(origAllowPrivilegeEscalation)
-		g.Expect(proxyDeployment.Spec.Template.Spec.Containers[0].SecurityContext.Privileged).To(origPrivileged)
+		g.Expect(proxyDeployment.Spec.Template.Spec.Containers[0].SecurityContext.AllowPrivilegeEscalation).To(gomega.Equal(origAllowPrivilegeEscalation))
+		g.Expect(proxyDeployment.Spec.Template.Spec.Containers[0].SecurityContext.Privileged).To(gomega.Equal(origPrivileged))
 		g.Expect(proxyDeployment.Spec.Replicas).To(gstruct.PointTo(gomega.Equal(int32(1))))
 	}, "30s", "1s").Should(gomega.Succeed())
 }
@@ -220,7 +232,11 @@ func (s *testingSuite) TestSelfManagedGateway() {
 		assert.True(c, accepted, "gateway status not accepted")
 	}, 60*time.Second, 1*time.Second)
 
-	s.TestInstallation.Assertions.ConsistentlyObjectsNotExist(s.Ctx, proxyService, proxyServiceAccount, proxyDeployment)
+	s.TestInstallation.Assertions.ConsistentlyObjectsNotExist(s.Ctx,
+		&appsv1.Deployment{ObjectMeta: proxyObjectMeta},
+		&corev1.Service{ObjectMeta: proxyObjectMeta},
+		&corev1.ServiceAccount{ObjectMeta: proxyObjectMeta},
+	)
 }
 
 // patchGateway accepts a reference to an object, and a patch function. It then queries the object,
