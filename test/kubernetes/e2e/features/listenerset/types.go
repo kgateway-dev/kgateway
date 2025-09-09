@@ -141,7 +141,7 @@ var (
 	}
 
 	// test cases
-	testCases = map[string]base.TestCase{
+	testCases = map[string]*base.TestCase{
 		"TestValidListenerSet": {
 			Manifests: []string{validListenerSetManifest},
 			Resources: []client.Object{validListenerSet},

@@ -55,7 +55,7 @@ var (
 	}
 
 	// Individual test cases - test-specific manifests and resources
-	testCases = map[string]base.TestCase{
+	testCases = map[string]*base.TestCase{
 		"TestRBACHeaderAuthorization": {
 			Manifests: []string{rbacManifest},
 			Resources: []client.Object{},

@@ -49,7 +49,7 @@ var (
 		"TestStrictModeInvalidRouteReplacement":    settings.RouteReplacementStrict,
 	}
 
-	testCases = map[string]base.TestCase{
+	testCases = map[string]*base.TestCase{
 		"TestStrictModeInvalidPolicyReplacement": {
 			Manifests: []string{strictModeInvalidPolicyManifest},
 			Resources: []client.Object{invalidPolicyRoute, invalidTrafficPolicy},

@@ -31,7 +31,7 @@ var (
 		},
 	}
 
-	testCases = map[string]base.TestCase{
+	testCases = map[string]*base.TestCase{
 		"TestBasic": {
 			Manifests: []string{basicRoutesManifest},
 			Resources: []client.Object{routeRoot, routeTeam1, routeTeam2},

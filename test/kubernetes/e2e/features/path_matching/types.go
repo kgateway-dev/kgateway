@@ -49,20 +49,20 @@ var (
 	}
 
 	// test cases
-	testCases = map[string]base.TestCase{
-		"TestExactMatch": base.TestCase{
+	testCases = map[string]*base.TestCase{
+		"TestExactMatch": {
 			Manifests: []string{exactManifest},
 			Resources: []client.Object{route},
 		},
-		"TestPrefixMatch": base.TestCase{
+		"TestPrefixMatch": {
 			Manifests: []string{prefixManifest},
 			Resources: []client.Object{route},
 		},
-		"TestRegexMatch": base.TestCase{
+		"TestRegexMatch": {
 			Manifests: []string{regexManifest},
 			Resources: []client.Object{route},
 		},
-		"TestPrefixRewrite": base.TestCase{
+		"TestPrefixRewrite": {
 			Manifests: []string{prefixRewriteManifest},
 			Resources: []client.Object{route},
 		},

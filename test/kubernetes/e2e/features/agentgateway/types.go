@@ -32,7 +32,7 @@ var (
 	}
 	gatewayService = &corev1.Service{ObjectMeta: gatewayObjectMeta}
 
-	testCases = map[string]base.TestCase{
+	testCases = map[string]*base.TestCase{
 		"TestAgentGatewayDeployment": {
 			Manifests: []string{defaults.HttpbinManifest, defaults.CurlPodManifest, deployAgentGatewayManifest},
 			Resources: []client.Object{proxyService, proxyDeployment, defaults.CurlPod},

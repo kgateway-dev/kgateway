@@ -56,7 +56,7 @@ var (
 	}
 
 	// everything is applied during setup; there are no additional test-specific manifests
-	testCases = map[string]base.TestCase{}
+	testCases = map[string]*base.TestCase{}
 )
 
 // testingSuite is a suite of basic routing / "happy path" tests

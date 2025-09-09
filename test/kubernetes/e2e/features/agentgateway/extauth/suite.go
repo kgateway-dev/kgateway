@@ -45,7 +45,7 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 	}
 
 	// Define test-specific TestCases
-	testCases := map[string]base.TestCase{
+	testCases := map[string]*base.TestCase{
 		"TestExtAuthPolicy": {
 			Manifests: []string{
 				securedGatewayPolicyManifest,
