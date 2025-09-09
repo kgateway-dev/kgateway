@@ -89,6 +89,9 @@ spec:
             # Make /tmp writeable, needed for pprof
             - name: tmp
               mountPath: /tmp
+            {{- with $gateway.extraVolumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
       volumes:
         - name: config-volume
           configMap:
@@ -99,6 +102,9 @@ spec:
             {{- end }}
         - name: tmp
           emptyDir: {}
+        {{- with $gateway.extraVolumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
       {{- with $gateway.affinity }}
       affinity:
       {{- toYaml . | nindent 8 }}

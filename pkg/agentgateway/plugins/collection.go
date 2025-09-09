@@ -81,7 +81,12 @@ type AgwCollections struct {
 	Endpoints    krt.Collection[ir.EndpointsForBackend]
 	GatewayIndex *krtcollections.GatewayIndex
 
+	// ControllerName is the name of the Gateway controller.
 	ControllerName string
+	// SystemNamespace is control plane system namespace (default is kgateway-system)
+	SystemNamespace string
+	// ClusterID is the cluster ID of the cluster the proxy is running in.
+	ClusterID string
 }
 
 func registerKgwResources(kgwClient kgwversioned.Interface) {
@@ -244,6 +249,8 @@ func (c *AgwCollections) HasSynced() bool {
 // and InitPlugins must be called.
 func NewAgwCollections(
 	commoncol *collections.CommonCollections,
+	systemNamespace string,
+	clusterID string,
 ) (*AgwCollections, error) {
 	// Register Gateway API and kgateway types with Istio kubeclient system
 	registerGatewayAPITypes()
@@ -251,8 +258,10 @@ func NewAgwCollections(
 	registerKgwResources(commoncol.OurClient)
 
 	agwCollections := &AgwCollections{
-		Client:         commoncol.Client,
-		ControllerName: commoncol.ControllerName,
+		Client:          commoncol.Client,
+		ControllerName:  commoncol.ControllerName,
+		SystemNamespace: systemNamespace,
+		ClusterID:       clusterID,
 
 		// Core Kubernetes resources
 		Namespaces: krt.NewInformer[*corev1.Namespace](commoncol.Client),

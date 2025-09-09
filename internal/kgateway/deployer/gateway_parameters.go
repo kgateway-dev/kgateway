@@ -82,6 +82,28 @@ func (gp *GatewayParameters) GetValues(ctx context.Context, obj client.Object) (
 	if g, ok := gp.extraHVGenerators[ref]; ok {
 		return g.GetValues(ctx, gw)
 	}
+
+	// Before falling back to built-in defaults, check if ExtraGatewayParameters
+	// can handle this gateway class specifically
+	gwc, err := getGatewayClassFromGateway(ctx, gp.cli, gw)
+	if err == nil {
+		gatewayClassName := string(gwc.GetName())
+
+		// Try to find ExtraGatewayParameters for this specific gateway class
+		// This allows overriding built-in defaults for specific gateway classes
+		fallbackRef := schema.GroupKind{
+			Group: "gateway.class.kgateway.dev",
+			Kind:  gatewayClassName,
+		}
+		if g, ok := gp.extraHVGenerators[fallbackRef]; ok {
+			logger.V(1).Info("using ExtraGatewayParameters fallback for gateway class",
+				"gatewayName", gw.GetName(),
+				"gatewayClassName", gatewayClassName,
+			)
+			return g.GetValues(ctx, gw)
+		}
+	}
+
 	logger.V(1).Info("using default GatewayParameters for Gateway",
 		"gatewayName", gw.GetName(),
 		"gatewayNamespace", gw.GetNamespace(),
@@ -126,7 +148,12 @@ func (gp *GatewayParameters) getDefaultGatewayParametersGK(ctx context.Context, 
 			nil
 	}
 
-	return schema.GroupKind{}, nil
+	// For gateways without explicit parametersRef, use a default GroupKind
+	// that ExtraGatewayParameters can register for based on gateway class name
+	return schema.GroupKind{
+		Group: "default.gateway.kgateway.dev",
+		Kind:  string(gwc.GetName()), // Use gateway class name as Kind
+	}, nil
 }
 
 func newKGatewayParameters(cli client.Client, inputs *deployer.Inputs) *kGatewayParameters {
@@ -323,6 +350,8 @@ func (k *kGatewayParameters) getValues(gw *api.Gateway, gwParam *v1alpha1.Gatewa
 	gateway.GracefulShutdown = podConfig.GetGracefulShutdown()
 	gateway.TerminationGracePeriodSeconds = podConfig.GetTerminationGracePeriodSeconds()
 	gateway.TopologySpreadConstraints = podConfig.GetTopologySpreadConstraints()
+	gateway.ExtraVolumes = podConfig.GetExtraVolumes()
+	gateway.ExtraVolumeMounts = podConfig.GetExtraVolumeMounts()
 
 	// envoy container values
 	logLevel := envoyContainerConfig.GetBootstrap().GetLogLevel()

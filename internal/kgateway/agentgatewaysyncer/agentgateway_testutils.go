@@ -670,6 +670,8 @@ func (tc TestCase) Run(
 	// Create AgwCollections with the necessary input collections
 	agwCollections, err := agentgatewayplugins.NewAgwCollections(
 		commoncol,
+		"istio-system",
+		"Kubernetes",
 	)
 	if err != nil {
 		return nil, err
@@ -688,9 +690,7 @@ func (tc TestCase) Run(
 		agwCollections,
 		proxySyncerPlugins,
 		agwMergedPlugins,
-		nil, // xdsCache not needed for test
-		"istio-system",
-		"Kubernetes",
+		nil,  // xdsCache not needed for test
 		true, // enableInferExt
 	)
 	agentGwSyncer.translator.Init()

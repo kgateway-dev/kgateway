@@ -6,10 +6,9 @@ import (
 	xdsserver "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 	"istio.io/istio/pkg/kube/kubetypes"
 	"k8s.io/client-go/rest"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
-
-	ctrl "sigs.k8s.io/controller-runtime"
 
 	core "github.com/kgateway-dev/kgateway/v2/internal/kgateway/setup"
 	agentgatewayplugins "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
@@ -23,6 +22,7 @@ type Options struct {
 	GatewayClassName         string
 	WaypointGatewayClassName string
 	AgentGatewayClassName    string
+	AdditionalGatewayClasses map[string]*deployer.GatewayClassInfo
 	ExtraPlugins             func(ctx context.Context, commoncol *common.CommonCollections, mergeSettingsJSON string) []sdk.Plugin
 	ExtraAgentgatewayPlugins func(ctx context.Context, agw *agentgatewayplugins.AgwCollections) []agentgatewayplugins.AgentgatewayPlugin
 	ExtraGatewayParameters   func(cli client.Client, inputs *deployer.Inputs) []deployer.ExtraGatewayParameters
@@ -43,6 +43,7 @@ func New(opts Options) (core.Server, error) {
 		core.WithGatewayClassName(opts.GatewayClassName),
 		core.WithWaypointClassName(opts.WaypointGatewayClassName),
 		core.WithAgentGatewayClassName(opts.AgentGatewayClassName),
+		core.WithAdditionalGatewayClasses(opts.AdditionalGatewayClasses),
 		core.WithExtraXDSCallbacks(opts.ExtraXDSCallbacks),
 		core.WithRestConfig(opts.RestConfig),
 		core.WithControllerManagerOptions(opts.CtrlMgrOptions),
