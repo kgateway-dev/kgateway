@@ -602,10 +602,8 @@ func processRateLimitPolicy(ctx krt.HandlerContext, gatewayExtensions krt.Collec
 
 // processLocalRateLimitPolicy processes local rate limiting configuration
 func processLocalRateLimitPolicy(trafficPolicy *v1alpha1.TrafficPolicy, policyName string, policyTarget *api.PolicyTarget) *ADPPolicy {
-	logger := logging.New("agentgateway/plugins/traffic")
-
 	if trafficPolicy.Spec.RateLimit.Local.TokenBucket == nil {
-		logger.Warn("token bucket configuration is nil")
+		logger.Error("token bucket configuration is nil")
 		return nil
 	}
 
@@ -613,7 +611,7 @@ func processLocalRateLimitPolicy(trafficPolicy *v1alpha1.TrafficPolicy, policyNa
 
 	// Validate configuration
 	if tokenBucket.MaxTokens <= 0 {
-		logger.Warn("invalid max tokens value", "max_tokens", tokenBucket.MaxTokens)
+		logger.Error("invalid max tokens value", "max_tokens", tokenBucket.MaxTokens)
 		return nil
 	}
 	// Convert duration to seconds for agentgateway
@@ -653,8 +651,6 @@ func processGlobalRateLimitPolicy(
 	policyName string,
 	policyTarget *api.PolicyTarget,
 ) *ADPPolicy {
-	logger := logging.New("agentgateway/plugins/traffic")
-
 	grl := trafficPolicy.Spec.RateLimit.Global
 	if grl == nil {
 		return nil
