@@ -11,9 +11,6 @@ spec:
   ai:
       promptGuard:
         request:
-          customResponse:
-            message: "{ \"message\": \"Please provide a valid input.\" }"
-            statusCode: 400
           regex:
             action: REJECT
             matches:
@@ -29,3 +26,7 @@ spec:
               - EMAIL
               - SSN
               - CREDIT_CARD
+          webhook:
+            endpoint:
+              host: test-ai-provider.ai-test
+              port: 443
