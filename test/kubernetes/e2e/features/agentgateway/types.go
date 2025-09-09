@@ -13,7 +13,6 @@ import (
 var (
 	// kgateway managed deployment for the agentgateway
 	deployAgentGatewayManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "agentgateway-deploy.yaml")
-	gwcManifest                = filepath.Join(fsutils.MustGetThisDir(), "testdata", "gatewayclass.yaml")
 
 	// Core infrastructure objects that we need to track
 	gatewayObjectMeta = metav1.ObjectMeta{
@@ -21,8 +20,9 @@ var (
 		Namespace: "default",
 	}
 
-	gwcTestCase = &base.TestCase{
-		Manifests: []string{gwcManifest},
+	gatewayParamsObjectMeta = metav1.ObjectMeta{
+		Name:      "kgateway",
+		Namespace: "default",
 	}
 
 	testCases = map[string]*base.TestCase{

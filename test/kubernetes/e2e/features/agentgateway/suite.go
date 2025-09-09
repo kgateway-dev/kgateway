@@ -2,13 +2,15 @@ package agentgateway
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"github.com/stretchr/testify/suite"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
@@ -27,23 +29,22 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 	}
 }
 
-func (s *testingSuite) BeforeTest(suiteName, testName string) {
-	// Create the GatewayClass separately because it needs to be cleaned up separately
-	// at the end, after all Gateways using it are cleaned up (otherwise the GatewayClass
-	// will automatically get re-created by the controller)
-	s.ApplyManifests(gwcTestCase)
-
-	s.BaseTestingSuite.BeforeTest(suiteName, testName)
-}
-
-func (s *testingSuite) AfterTest(suiteName, testName string) {
-	s.BaseTestingSuite.AfterTest(suiteName, testName)
-
-	// Delete the GatewayClass
-	s.DeleteManifests(gwcTestCase)
-}
-
 func (s *testingSuite) TestAgentGatewayDeployment() {
+	// modify the default agentgateway GatewayClass to point to the custom GatewayParameters
+	err := s.TestInstallation.Actions.Kubectl().RunCommand(s.Ctx, "patch", "--type", "json",
+		"gatewayclass", wellknown.DefaultAgentGatewayClassName, "-p",
+		fmt.Sprintf(`[{"op": "add", "path": "/spec/parametersRef", "value": {"group":"%s", "kind":"%s", "name":"%s", "namespace":"%s"}}]`,
+			v1alpha1.GroupName, wellknown.GatewayParametersGVK.Kind, gatewayParamsObjectMeta.GetName(), gatewayParamsObjectMeta.GetNamespace()))
+	s.Require().NoError(err, "patching gatewayclass %s", wellknown.DefaultAgentGatewayClassName)
+
+	s.T().Cleanup(func() {
+		// revert to the original GatewayClass (by removing the parametersRef)
+		err := s.TestInstallation.Actions.Kubectl().RunCommand(s.Ctx, "patch", "--type", "json",
+			"gatewayclass", wellknown.DefaultAgentGatewayClassName, "-p",
+			`[{"op": "remove", "path": "/spec/parametersRef"}]`)
+		s.Require().NoError(err, "patching gatewayclass %s", wellknown.DefaultAgentGatewayClassName)
+	})
+
 	s.TestInstallation.Assertions.EventuallyGatewayCondition(
 		s.Ctx,
 		gatewayObjectMeta.Name,
