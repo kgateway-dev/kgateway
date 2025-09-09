@@ -27,6 +27,22 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 	}
 }
 
+func (s *testingSuite) BeforeTest(suiteName, testName string) {
+	// Create the GatewayClass separately because it needs to be cleaned up separately
+	// at the end, after all Gateways using it are cleaned up (otherwise the GatewayClass
+	// will automatically get re-created by the controller)
+	s.ApplyManifests(gwcTestCase)
+
+	s.BaseTestingSuite.BeforeTest(suiteName, testName)
+}
+
+func (s *testingSuite) AfterTest(suiteName, testName string) {
+	s.BaseTestingSuite.AfterTest(suiteName, testName)
+
+	// Delete the GatewayClass
+	s.DeleteManifests(gwcTestCase)
+}
+
 func (s *testingSuite) TestAgentGatewayDeployment() {
 	s.TestInstallation.Assertions.EventuallyGatewayCondition(
 		s.Ctx,
@@ -42,7 +58,6 @@ func (s *testingSuite) TestAgentGatewayDeployment() {
 		gwv1.GatewayConditionAccepted,
 		metav1.ConditionTrue,
 	)
-	// TODO: Add this once https://github.com/kgateway-dev/kgateway/issues/11929 has been resolved
 	s.TestInstallation.Assertions.EventuallyGatewayListenerAttachedRoutes(
 		s.Ctx,
 		gatewayObjectMeta.Name,
@@ -55,7 +70,7 @@ func (s *testingSuite) TestAgentGatewayDeployment() {
 		s.Ctx,
 		defaults.CurlPodExecOpt,
 		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(gatewayService.ObjectMeta)),
+			curl.WithHost(kubeutils.ServiceFQDN(gatewayObjectMeta)),
 			curl.VerboseOutput(),
 			curl.WithHostHeader("www.example.com"),
 			curl.WithPath("/status/200"),

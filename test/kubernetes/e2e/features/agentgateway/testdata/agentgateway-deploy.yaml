@@ -10,18 +10,6 @@ spec:
 #      image:
 #        tag: b1b9c00
 ---
-kind: GatewayClass
-apiVersion: gateway.networking.k8s.io/v1
-metadata:
-  name: agentgateway
-spec:
-  controllerName: kgateway.dev/kgateway
-  parametersRef:
-    group: gateway.kgateway.dev
-    kind: GatewayParameters
-    name: kgateway
-    namespace: default
----
 kind: Gateway
 apiVersion: gateway.networking.k8s.io/v1
 metadata:
