@@ -208,7 +208,6 @@ func (s *BaseTestingSuite) loadManifestResources(testCase *TestCase) {
 		objs, err := translator.LoadFromFiles(manifest, s.TestInstallation.ClusterContext.Client.Scheme(), s.gvkToStructuralSchema)
 		s.Require().NoError(err)
 		resources = append(resources, objs...)
-
 	}
 	testCase.manifestResources = resources
 }
