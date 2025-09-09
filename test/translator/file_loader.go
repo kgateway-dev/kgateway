@@ -39,7 +39,7 @@ func LoadFromFiles(
 
 	var yamlFiles []string
 	if fileOrDir.IsDir() {
-		slog.Info("looking for YAML files", "path", fileOrDir.Name())
+		slog.Debug("looking for YAML files", "path", fileOrDir.Name())
 		err := filepath.WalkDir(filename, func(path string, d fs.DirEntry, _ error) error {
 			if strings.HasSuffix(path, ".yml") || strings.HasSuffix(path, ".yaml") {
 				yamlFiles = append(yamlFiles, path)
@@ -57,7 +57,7 @@ func LoadFromFiles(
 		return nil, ErrNoFilesFound
 	}
 
-	slog.Info("user configuration YAML files found", "files", yamlFiles)
+	slog.Debug("user configuration YAML files found", "files", yamlFiles)
 
 	var resources []client.Object
 	for _, file := range yamlFiles {
