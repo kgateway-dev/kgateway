@@ -3122,6 +3122,14 @@ func schema_kgateway_v2_api_v1alpha1_ExtAuthProvider(ref common.ReferenceCallbac
 							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtGrpcService"),
 						},
 					},
+					"failOpen": {
+						SchemaProps: spec.SchemaProps{
+							Description: "FailOpen determines if requests are allowed when the ext auth service is unavailable. Defaults to false, meaning requests will be denied if the ext auth service is unavailable.",
+							Default:     false,
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
 				},
 				Required: []string{"grpcService"},
 			},
@@ -3151,12 +3159,18 @@ func schema_kgateway_v2_api_v1alpha1_ExtGrpcService(ref common.ReferenceCallback
 							Format:      "",
 						},
 					},
+					"requestTimeout": {
+						SchemaProps: spec.SchemaProps{
+							Description: "RequestTimeout is the timeout for the gRPC request. This is the timeout for a specific request.",
+							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Duration"),
+						},
+					},
 				},
 				Required: []string{"backendRef"},
 			},
 		},
 		Dependencies: []string{
-			"sigs.k8s.io/gateway-api/apis/v1.BackendRef"},
+			"k8s.io/apimachinery/pkg/apis/meta/v1.Duration", "sigs.k8s.io/gateway-api/apis/v1.BackendRef"},
 	}
 }
 
@@ -3204,6 +3218,14 @@ func schema_kgateway_v2_api_v1alpha1_ExtProcProvider(ref common.ReferenceCallbac
 						SchemaProps: spec.SchemaProps{
 							Description: "GrpcService is the GRPC service that will handle the processing.",
 							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtGrpcService"),
+						},
+					},
+					"failOpen": {
+						SchemaProps: spec.SchemaProps{
+							Description: "FailOpen determines if requests are allowed when the ext proc service is unavailable. Defaults to true, meaning requests are allowed upstream even if the ext proc service is unavailable.",
+							Default:     false,
+							Type:        []string{"boolean"},
+							Format:      "",
 						},
 					},
 				},
@@ -6421,14 +6443,15 @@ func schema_kgateway_v2_api_v1alpha1_RateLimitProvider(ref common.ReferenceCallb
 					},
 					"failOpen": {
 						SchemaProps: spec.SchemaProps{
-							Description: "FailOpen determines if requests are limited when the rate limit service is unavailable. When true, requests are not limited if the rate limit service is unavailable.",
+							Description: "FailOpen determines if requests are limited when the rate limit service is unavailable. Defaults to true, meaning requests are allowed upstream and not limited if the rate limit service is unavailable.",
+							Default:     false,
 							Type:        []string{"boolean"},
 							Format:      "",
 						},
 					},
 					"timeout": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Timeout for requests to the rate limit service.",
+							Description: "Timeout provides an optional timeout value for requests to the rate limit service. For rate limiting, prefer using this timeout rather than setting the generic `timeout` on the `GrpcService`. See [envoy issue](https://github.com/envoyproxy/envoy/issues/20070) for more info.",
 							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Duration"),
 						},
 					},

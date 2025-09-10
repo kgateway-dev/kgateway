@@ -41,6 +41,12 @@ type ExtAuthProvider struct {
 	// GrpcService is the GRPC service that will handle the authentication.
 	// +required
 	GrpcService *ExtGrpcService `json:"grpcService"`
+
+	// FailOpen determines if requests are allowed when the ext auth service is unavailable.
+	// Defaults to false, meaning requests will be denied if the ext auth service is unavailable.
+	// +optional
+	// +kubebuilder:default=false
+	FailOpen bool `json:"failOpen"`
 }
 
 // ExtProcProvider defines the configuration for an ExtProc provider.
@@ -48,6 +54,12 @@ type ExtProcProvider struct {
 	// GrpcService is the GRPC service that will handle the processing.
 	// +required
 	GrpcService *ExtGrpcService `json:"grpcService"`
+
+	// FailOpen determines if requests are allowed when the ext proc service is unavailable.
+	// Defaults to true, meaning requests are allowed upstream even if the ext proc service is unavailable.
+	// +optional
+	// +kubebuilder:default=true
+	FailOpen bool `json:"failOpen"`
 }
 
 // ExtGrpcService defines the GRPC service that will handle the processing.
@@ -59,6 +71,12 @@ type ExtGrpcService struct {
 	// Authority is the authority header to use for the GRPC service.
 	// +optional
 	Authority *string `json:"authority,omitempty"`
+
+	// RequestTimeout is the timeout for the gRPC request. This is the timeout for a specific request.
+	// +optional
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid timeout value"
+	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="timeout must be at least 1ms."
+	RequestTimeout *metav1.Duration `json:"requestTimeout,omitempty"`
 }
 
 // RateLimitProvider defines the configuration for a RateLimit service provider.
@@ -74,12 +92,14 @@ type RateLimitProvider struct {
 	Domain string `json:"domain"`
 
 	// FailOpen determines if requests are limited when the rate limit service is unavailable.
-	// When true, requests are not limited if the rate limit service is unavailable.
+	// Defaults to true, meaning requests are allowed upstream and not limited if the rate limit service is unavailable.
 	// +optional
 	// +kubebuilder:default=true
-	FailOpen bool `json:"failOpen,omitempty"`
+	FailOpen bool `json:"failOpen"`
 
-	// Timeout for requests to the rate limit service.
+	// Timeout provides an optional timeout value for requests to the rate limit service.
+	// For rate limiting, prefer using this timeout rather than setting the generic `timeout` on the `GrpcService`.
+	// See [envoy issue](https://github.com/envoyproxy/envoy/issues/20070) for more info.
 	// +optional
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	// +kubebuilder:default="100ms"
