@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"strconv"
+	"strings"
 
 	"github.com/agentgateway/agentgateway/go/api"
 	"google.golang.org/protobuf/types/known/durationpb"
@@ -15,6 +17,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
@@ -25,10 +28,11 @@ import (
 )
 
 const (
-	extauthPolicySuffix        = ":extauth"
-	aiPolicySuffix             = ":ai"
-	rbacPolicySuffix           = ":rbac"
-	localRateLimitPolicySuffix = ":rl-local"
+	extauthPolicySuffix         = ":extauth"
+	aiPolicySuffix              = ":ai"
+	rbacPolicySuffix            = ":rbac"
+	localRateLimitPolicySuffix  = ":rl-local"
+	globalRateLimitPolicySuffix = ":rl-global"
 )
 
 var logger = logging.New("agentgateway/plugins")
@@ -169,10 +173,9 @@ func translateTrafficPolicyToADP(
 		aiPolicies := processAIPolicy(trafficPolicy, policyName, policyTarget)
 		adpPolicies = append(adpPolicies, aiPolicies...)
 	}
-
 	// Process RateLimit policies if present
 	if trafficPolicy.Spec.RateLimit != nil {
-		rateLimitPolicies := processRateLimitPolicy(trafficPolicy, policyName, policyTarget)
+		rateLimitPolicies := processRateLimitPolicy(ctx, gatewayExtensions, trafficPolicy, policyName, policyTarget)
 		adpPolicies = append(adpPolicies, rateLimitPolicies...)
 	}
 
@@ -571,7 +574,7 @@ func getGatewayExtensionKey(extensionNamespace, extensionName string) string {
 }
 
 // processRateLimitPolicy processes RateLimit configuration and creates corresponding agentgateway policies
-func processRateLimitPolicy(trafficPolicy *v1alpha1.TrafficPolicy, policyName string, policyTarget *api.PolicyTarget) []ADPPolicy {
+func processRateLimitPolicy(ctx krt.HandlerContext, gatewayExtensions krt.Collection[*v1alpha1.GatewayExtension], trafficPolicy *v1alpha1.TrafficPolicy, policyName string, policyTarget *api.PolicyTarget) []ADPPolicy {
 	var adpPolicies []ADPPolicy
 
 	// Process local rate limiting if present
@@ -579,6 +582,18 @@ func processRateLimitPolicy(trafficPolicy *v1alpha1.TrafficPolicy, policyName st
 		localPolicy := processLocalRateLimitPolicy(trafficPolicy, policyName, policyTarget)
 		if localPolicy != nil {
 			adpPolicies = append(adpPolicies, *localPolicy)
+		} else {
+			logger.Warn("failed to create local rate limit policy")
+		}
+	}
+
+	// Process global rate limiting if present
+	if trafficPolicy.Spec.RateLimit.Global != nil {
+		globalPolicy := processGlobalRateLimitPolicy(ctx, gatewayExtensions, trafficPolicy, policyName, policyTarget)
+		if globalPolicy != nil {
+			adpPolicies = append(adpPolicies, *globalPolicy)
+		} else {
+			logger.Warn("failed to create global rate limit policy")
 		}
 	}
 
@@ -588,11 +603,17 @@ func processRateLimitPolicy(trafficPolicy *v1alpha1.TrafficPolicy, policyName st
 // processLocalRateLimitPolicy processes local rate limiting configuration
 func processLocalRateLimitPolicy(trafficPolicy *v1alpha1.TrafficPolicy, policyName string, policyTarget *api.PolicyTarget) *ADPPolicy {
 	if trafficPolicy.Spec.RateLimit.Local.TokenBucket == nil {
+		logger.Error("token bucket configuration is nil")
 		return nil
 	}
 
 	tokenBucket := trafficPolicy.Spec.RateLimit.Local.TokenBucket
 
+	// Validate configuration
+	if tokenBucket.MaxTokens <= 0 {
+		logger.Error("invalid max tokens value", "max_tokens", tokenBucket.MaxTokens)
+		return nil
+	}
 	// Convert duration to seconds for agentgateway
 	fillIntervalSeconds := uint32(tokenBucket.FillInterval.Duration.Seconds())
 	if fillIntervalSeconds == 0 {
@@ -600,6 +621,11 @@ func processLocalRateLimitPolicy(trafficPolicy *v1alpha1.TrafficPolicy, policyNa
 	}
 
 	// Create local rate limit policy using the proper agentgateway API
+	tokensPerFill := uint64(ptr.Deref(tokenBucket.TokensPerFill, 1))
+	if tokensPerFill == 0 {
+		tokensPerFill = 1
+	}
+
 	localRateLimitPolicy := &api.Policy{
 		Name:   policyName + localRateLimitPolicySuffix,
 		Target: policyTarget,
@@ -607,7 +633,7 @@ func processLocalRateLimitPolicy(trafficPolicy *v1alpha1.TrafficPolicy, policyNa
 			Kind: &api.PolicySpec_LocalRateLimit_{
 				LocalRateLimit: &api.PolicySpec_LocalRateLimit{
 					MaxTokens:     uint64(tokenBucket.MaxTokens),
-					TokensPerFill: uint64(ptr.Deref(tokenBucket.TokensPerFill, 1)),
+					TokensPerFill: tokensPerFill,
 					FillInterval:  &durationpb.Duration{Seconds: int64(fillIntervalSeconds)},
 					Type:          api.PolicySpec_LocalRateLimit_REQUEST,
 				},
@@ -616,6 +642,203 @@ func processLocalRateLimitPolicy(trafficPolicy *v1alpha1.TrafficPolicy, policyNa
 	}
 
 	return &ADPPolicy{Policy: localRateLimitPolicy}
+}
+
+func processGlobalRateLimitPolicy(
+	ctx krt.HandlerContext,
+	gatewayExtensions krt.Collection[*v1alpha1.GatewayExtension],
+	trafficPolicy *v1alpha1.TrafficPolicy,
+	policyName string,
+	policyTarget *api.PolicyTarget,
+) *ADPPolicy {
+	grl := trafficPolicy.Spec.RateLimit.Global
+	if grl == nil {
+		return nil
+	}
+
+	gwExt, err := lookupGatewayExtension(
+		ctx, gatewayExtensions, grl.ExtensionRef, trafficPolicy.Namespace, v1alpha1.GatewayExtensionTypeRateLimit,
+	)
+	if err != nil {
+		logger.Error("failed to lookup rate limit extension", "error", err)
+		return nil
+	}
+	if gwExt.Spec.RateLimit == nil ||
+		gwExt.Spec.RateLimit.GrpcService == nil ||
+		gwExt.Spec.RateLimit.GrpcService.BackendRef == nil {
+		logger.Error("rate limit extension missing grpcService.backendRef", "extension", gwExt.Name)
+		return nil
+	}
+
+	// Build BackendReference for agentgateway (service/ns + port)
+	agwRef, err := buildAGWServiceRef(gwExt.Spec.RateLimit.GrpcService.BackendRef, trafficPolicy.Namespace)
+	if err != nil {
+		logger.Error("failed to build AGW service reference", "error", err)
+		return nil
+	}
+
+	// Translate descriptors
+	descriptors := make([]*api.PolicySpec_RemoteRateLimit_Descriptor, 0, len(grl.Descriptors))
+	for _, d := range grl.Descriptors {
+		if adp := processRateLimitDescriptor(d); adp != nil {
+			descriptors = append(descriptors, adp)
+		}
+	}
+
+	// Build the RemoteRateLimit policy that agentgateway expects
+	p := &api.Policy{
+		Name:   policyName + globalRateLimitPolicySuffix,
+		Target: policyTarget,
+		Spec: &api.PolicySpec{
+			Kind: &api.PolicySpec_RemoteRateLimit_{
+				RemoteRateLimit: &api.PolicySpec_RemoteRateLimit{
+					Domain:      gwExt.Spec.RateLimit.Domain,
+					Target:      agwRef,
+					Descriptors: descriptors,
+				},
+			},
+		},
+	}
+
+	return &ADPPolicy{Policy: p}
+}
+
+// getDescriptorEntryKey extracts the key from a rate limit descriptor entry
+func getDescriptorEntryKey(entry v1alpha1.RateLimitDescriptorEntry) string {
+	switch entry.Type {
+	case v1alpha1.RateLimitDescriptorEntryTypeGeneric:
+		if entry.Generic != nil {
+			return entry.Generic.Key
+		}
+	case v1alpha1.RateLimitDescriptorEntryTypeHeader:
+		if entry.Header != nil {
+			return *entry.Header
+		}
+	case v1alpha1.RateLimitDescriptorEntryTypeRemoteAddress:
+		return "remote_address"
+	case v1alpha1.RateLimitDescriptorEntryTypePath:
+		return "path"
+	}
+	return ""
+}
+
+func lookupGatewayExtension(ctx krt.HandlerContext, gatewayExtensions krt.Collection[*v1alpha1.GatewayExtension], extensionRef v1alpha1.NamespacedObjectReference, defaultNamespace string, expectedType v1alpha1.GatewayExtensionType) (*v1alpha1.GatewayExtension, error) {
+	extensionName := extensionRef.Name
+	extensionNamespace := string(ptr.Deref(extensionRef.Namespace, ""))
+	if extensionNamespace == "" {
+		extensionNamespace = defaultNamespace
+	}
+
+	gwExtKey := fmt.Sprintf("%s/%s", extensionNamespace, extensionName)
+	gwExt := krt.FetchOne(ctx, gatewayExtensions, krt.FilterKey(gwExtKey))
+
+	if gwExt == nil {
+		return nil, fmt.Errorf("gateway extension not found: %s", gwExtKey)
+	}
+
+	if (*gwExt).Spec.Type != expectedType {
+		return nil, fmt.Errorf("gateway extension is not of type %s: %s", expectedType, gwExtKey)
+	}
+
+	return *gwExt, nil
+}
+
+func buildServiceHost(backendRef *gwv1.BackendRef, defaultNamespace string) (serviceName, namespace string, port uint32, err error) {
+	if backendRef == nil {
+		return "", "", 0, fmt.Errorf("backend reference is nil")
+	}
+
+	serviceName = string(backendRef.Name)
+	if serviceName == "" {
+		return "", "", 0, fmt.Errorf("service name is empty")
+	}
+
+	port = uint32(80) // default port
+	if backendRef.Port != nil {
+		port = uint32(*backendRef.Port)
+	}
+
+	namespace = defaultNamespace
+	if backendRef.Namespace != nil {
+		namespace = string(*backendRef.Namespace)
+	}
+	return serviceName, namespace, port, nil
+}
+
+func processRateLimitDescriptor(descriptor v1alpha1.RateLimitDescriptor) *api.PolicySpec_RemoteRateLimit_Descriptor {
+	if len(descriptor.Entries) == 0 {
+		return nil
+	}
+
+	entries := make([]*api.PolicySpec_RemoteRateLimit_Entry, 0, len(descriptor.Entries))
+
+	for _, entry := range descriptor.Entries {
+		// Map TrafficPolicy entry -> CEL expression or literal expected by the agent.
+		var value string
+		key := getDescriptorEntryKey(entry)
+		switch entry.Type {
+		case v1alpha1.RateLimitDescriptorEntryTypeGeneric:
+			if entry.Generic != nil {
+				// Constant literal -> quote for CEL
+				value = strconv.Quote(entry.Generic.Value)
+			}
+		case v1alpha1.RateLimitDescriptorEntryTypeHeader:
+			if entry.Header != nil {
+				// Dynamic: header value expression
+				value = celHeaderExpr(*entry.Header)
+			}
+		case v1alpha1.RateLimitDescriptorEntryTypeRemoteAddress:
+			value = celRemoteIPExpr()
+		case v1alpha1.RateLimitDescriptorEntryTypePath:
+			value = celPathExpr()
+		}
+		if key != "" && value != "" {
+			entries = append(entries, &api.PolicySpec_RemoteRateLimit_Entry{
+				Key:   key,
+				Value: value,
+			})
+		}
+	}
+
+	if len(entries) == 0 {
+		return nil
+	}
+	return &api.PolicySpec_RemoteRateLimit_Descriptor{
+		Entries: entries,
+		Type:    api.PolicySpec_RemoteRateLimit_REQUESTS,
+	}
+}
+
+// celHeaderExpr returns a CEL expression that reads a request header.
+func celHeaderExpr(name string) string {
+	// Convert to lowercase to match how HTTP headers are stored
+	return fmt.Sprintf(`request.headers[%q]`, strings.ToLower(name))
+}
+
+// celRemoteIPExpr returns a CEL expression for the client IP.
+func celRemoteIPExpr() string {
+	return "source.address"
+}
+
+// celPathExpr returns a CEL expression for the request path (if supported in your env).
+func celPathExpr() string {
+	return "request.path"
+}
+
+// Returns an agentgateway BackendReference.Service in the "<ns>/<fqdn>" form + Port.
+func buildAGWServiceRef(br *gwv1.BackendRef, defaultNS string) (*api.BackendReference, error) {
+	if br == nil {
+		return nil, fmt.Errorf("backendRef is nil")
+	}
+	name, ns, port, err := buildServiceHost(br, defaultNS)
+	if err != nil {
+		return nil, err
+	}
+	fqdn := kubeutils.ServiceFQDN(metav1.ObjectMeta{Namespace: ns, Name: name})
+	return &api.BackendReference{
+		Kind: &api.BackendReference_Service{Service: ns + "/" + fqdn},
+		Port: port,
+	}, nil
 }
 
 // toProtoValue converts a raw string to a protobuf Value

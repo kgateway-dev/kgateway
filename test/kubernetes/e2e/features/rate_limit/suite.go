@@ -32,6 +32,7 @@ type testingSuite struct {
 	commonManifests []string
 	// resources from manifests shared by all tests
 	commonResources []client.Object
+	agentGateway    bool
 }
 
 func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
@@ -41,12 +42,29 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 	}
 }
 
+func NewAgentGatewayTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
+	return &testingSuite{
+		ctx:              ctx,
+		testInstallation: testInst,
+		agentGateway:     true,
+	}
+}
+
 func (s *testingSuite) SetupSuite() {
-	s.commonManifests = []string{
-		testdefaults.CurlPodManifest,
-		commonManifest,
-		simpleServiceManifest,
-		rateLimitServerManifest,
+	if s.agentGateway {
+		s.commonManifests = []string{
+			testdefaults.CurlPodManifest,
+			getTestFileAgentGateway("common.yaml"),
+			simpleServiceManifest,
+			rateLimitServerManifest,
+		}
+	} else {
+		s.commonManifests = []string{
+			testdefaults.CurlPodManifest,
+			commonManifest,
+			simpleServiceManifest,
+			rateLimitServerManifest,
+		}
 	}
 	s.commonResources = []client.Object{
 		// resources from curl manifest
