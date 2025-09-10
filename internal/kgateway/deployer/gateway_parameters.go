@@ -100,8 +100,8 @@ func (gp *GatewayParameters) getHelmValuesGenerator(ctx context.Context, obj cli
 
 	if g, ok := gp.extraHVGenerators[ref]; ok {
 		slog.Debug("using custom HelmValuesGenerator for Gateway",
-			"gatewayName", gw.GetName(),
-			"gatewayNamespace", gw.GetNamespace(),
+			"gateway_name", gw.GetName(),
+			"gateway_namespace", gw.GetNamespace(),
 		)
 		return g, nil
 	}
@@ -120,16 +120,16 @@ func (gp *GatewayParameters) getHelmValuesGenerator(ctx context.Context, obj cli
 		}
 		if g, ok := gp.extraHVGenerators[fallbackRef]; ok {
 			slog.Debug("using ExtraGatewayParameters fallback for gateway class",
-				"gatewayName", gw.GetName(),
-				"gatewayClassName", gatewayClassName,
+				"gateway_name", gw.GetName(),
+				"gateway_class_name", gatewayClassName,
 			)
 			return g, nil
 		}
 	}
 
 	slog.Debug("using default HelmValuesGenerator for Gateway",
-		"gatewayName", gw.GetName(),
-		"gatewayNamespace", gw.GetNamespace(),
+		"gateway_name", gw.GetName(),
+		"gateway_namespace", gw.GetNamespace(),
 	)
 	return newKGatewayParameters(gp.cli, gp.inputs), nil
 }
@@ -139,8 +139,8 @@ func (gp *GatewayParameters) getGatewayParametersGK(ctx context.Context, gw *api
 	// we'll check for the default GWP for the GatewayClass.
 	if gw.Spec.Infrastructure == nil || gw.Spec.Infrastructure.ParametersRef == nil {
 		slog.Debug("no GatewayParameters found for Gateway, using default",
-			"gatewayName", gw.GetName(),
-			"gatewayNamespace", gw.GetNamespace(),
+			"gateway_name", gw.GetName(),
+			"gateway_namespace", gw.GetNamespace(),
 		)
 		return gp.getDefaultGatewayParametersGK(ctx, gw)
 	}
@@ -220,8 +220,8 @@ func (k *kGatewayParameters) getGatewayParametersForGateway(ctx context.Context,
 	// we'll check for the default GWP for the GatewayClass.
 	if gw.Spec.Infrastructure == nil || gw.Spec.Infrastructure.ParametersRef == nil {
 		slog.Debug("no GatewayParameters found for Gateway, using default",
-			"gatewayName", gw.GetName(),
-			"gatewayNamespace", gw.GetNamespace(),
+			"gateway_name", gw.GetName(),
+			"gateway_namespace", gw.GetNamespace(),
 		)
 		return k.getDefaultGatewayParameters(ctx, gw)
 	}
