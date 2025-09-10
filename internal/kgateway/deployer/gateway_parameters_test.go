@@ -38,7 +38,7 @@ const (
 type testHelmValuesGenerator struct{}
 
 func (thv *testHelmValuesGenerator) IsSelfManaged(ctx context.Context, gw client.Object) (bool, error) {
-	return false, nil
+	return true, nil
 }
 
 func (thv *testHelmValuesGenerator) GetValues(ctx context.Context, gw client.Object) (map[string]any, error) {
@@ -106,6 +106,42 @@ func TestIsSelfManagedOnGateway(t *testing.T) {
 	}
 
 	gwp := NewGatewayParameters(newFakeClientWithObjs(gwc, defaultGwp, customGwp), defaultInputs(t, gwc, gw))
+	selfManaged, err := gwp.IsSelfManaged(context.Background(), gw)
+	assert.NoError(t, err)
+	assert.True(t, selfManaged)
+}
+
+func TestIsSelfManagedWithExtendedGatewayParameters(t *testing.T) {
+	gwc := defaultGatewayClass()
+	gwParams := emptyGatewayParameters()
+	extraGwParams := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{Namespace: defaultNamespace},
+	}
+
+	gw := &api.Gateway{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "foo",
+			Namespace: defaultNamespace,
+			UID:       "1235",
+		},
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Gateway",
+			APIVersion: "gateway.networking.k8s.io",
+		},
+		Spec: api.GatewaySpec{
+			Infrastructure: &api.GatewayInfrastructure{
+				ParametersRef: &api.LocalParametersReference{
+					Group: "v1",
+					Kind:  "ConfigMap",
+					Name:  "testing",
+				},
+			},
+			GatewayClassName: wellknown.DefaultGatewayClassName,
+		},
+	}
+
+	gwp := NewGatewayParameters(newFakeClientWithObjs(gwc, gwParams, extraGwParams), defaultInputs(t, gwc, gw)).
+		WithExtraGatewayParameters(deployer.ExtraGatewayParameters{Group: "v1", Kind: "ConfigMap", Object: extraGwParams, Generator: &testHelmValuesGenerator{}})
 	selfManaged, err := gwp.IsSelfManaged(context.Background(), gw)
 	assert.NoError(t, err)
 	assert.True(t, selfManaged)
