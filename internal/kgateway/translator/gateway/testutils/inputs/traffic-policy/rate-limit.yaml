@@ -1,6 +1,3 @@
-# This test contains a route that has multiple TrafficPolicies targeting it.
-#
-# The expected output must contain the merged policies
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:
@@ -23,6 +20,29 @@ spec:
   - "example.com"
   rules:
   - name: rule0
+    matches:
+    - path:
+        type: PathPrefix
+        value: /example-route
+    backendRefs:
+    - name: example-svc
+      port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: example-route-2
+spec:
+  parentRefs:
+  - name: example-gateway
+  hostnames:
+  - "example.com"
+  rules:
+  - name: rule0
+    matches:
+    - path:
+        type: PathPrefix
+        value: /example-route-2
     backendRefs:
     - name: example-svc
       port: 80
@@ -50,6 +70,28 @@ spec:
         name: global-ratelimit
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: rate-limit-2
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: example-route-2
+  rateLimit:
+    local:
+      tokenBucket:
+        maxTokens: 99
+        tokensPerFill: 1
+        fillInterval: 33s
+    global:
+      descriptors:
+      - entries:
+        - type: Path
+      extensionRef:
+        name: global-ratelimit-2
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
 kind: GatewayExtension
 metadata:
   name: global-ratelimit
@@ -60,9 +102,26 @@ spec:
       backendRef:
         name: ratelimit
         port: 8081
+      requestTimeout: 200ms # this timeout is specific to the grpcService
     domain: "api-gateway"
     timeout: "50ms"
-    failOpen: true
+    failOpen: true # true is CRD default, but setting explicitly for translator test
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: global-ratelimit-2
+spec:
+  type: RateLimit
+  rateLimit:
+    grpcService:
+      backendRef:
+        name: ratelimit
+        port: 8081
+      requestTimeout: 200ms # this timeout is specific to the grpcService
+    domain: "api-gateway"
+    timeout: "50ms"
+    failOpen: false
 ---
 apiVersion: v1
 kind: Service

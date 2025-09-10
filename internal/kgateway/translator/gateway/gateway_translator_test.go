@@ -383,6 +383,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("TrafficPolicy ExtAuth Simple", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/extauth-simple.yaml",
+			outputFile: "traffic-policy/extauth-simple.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "infra",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("TrafficPolicy ExtProc different attachment points", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "traffic-policy/extproc.yaml",
@@ -390,6 +401,17 @@ func TestBasic(t *testing.T) {
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "test",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy ExtProc Simple", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/extproc-simple.yaml",
+			outputFile: "traffic-policy/extproc-simple.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "infra",
+				Name:      "example-gateway",
 			},
 		})
 	})
@@ -1390,7 +1412,7 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
-	t.Run("TrafficPolicy: rate limit", func(t *testing.T) {
+	t.Run("TrafficPolicy RateLimit Simple", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "traffic-policy/rate-limit.yaml",
 			outputFile: "traffic-policy/rate-limit.yaml",

@@ -42,6 +42,9 @@ spec:
             properties:
               extAuth:
                 properties:
+                  failOpen:
+                    default: false
+                    type: boolean
                   grpcService:
                     properties:
                       authority:
@@ -86,6 +89,13 @@ spec:
                         - message: Must have port for Service reference
                           rule: '(size(self.group) == 0 && self.kind == ''Service'')
                             ? has(self.port) : true'
+                      requestTimeout:
+                        type: string
+                        x-kubernetes-validations:
+                        - message: invalid timeout value
+                          rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                        - message: timeout must be at least 1ms.
+                          rule: duration(self) >= duration('1ms')
                     required:
                     - backendRef
                     type: object
@@ -94,6 +104,9 @@ spec:
                 type: object
               extProc:
                 properties:
+                  failOpen:
+                    default: true
+                    type: boolean
                   grpcService:
                     properties:
                       authority:
@@ -138,6 +151,13 @@ spec:
                         - message: Must have port for Service reference
                           rule: '(size(self.group) == 0 && self.kind == ''Service'')
                             ? has(self.port) : true'
+                      requestTimeout:
+                        type: string
+                        x-kubernetes-validations:
+                        - message: invalid timeout value
+                          rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                        - message: timeout must be at least 1ms.
+                          rule: duration(self) >= duration('1ms')
                     required:
                     - backendRef
                     type: object
@@ -195,6 +215,13 @@ spec:
                         - message: Must have port for Service reference
                           rule: '(size(self.group) == 0 && self.kind == ''Service'')
                             ? has(self.port) : true'
+                      requestTimeout:
+                        type: string
+                        x-kubernetes-validations:
+                        - message: invalid timeout value
+                          rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                        - message: timeout must be at least 1ms.
+                          rule: duration(self) >= duration('1ms')
                     required:
                     - backendRef
                     type: object
