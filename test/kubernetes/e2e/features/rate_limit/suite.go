@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -210,21 +211,6 @@ func (s *testingSuite) assertResponse(path string, expectedStatus int) {
 		})
 }
 
-func (s *testingSuite) assertConsistentResponse(path string, expectedStatus int) {
-	s.testInstallation.Assertions.AssertEventuallyConsistentCurlResponse(
-		s.ctx,
-		testdefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithPath(path),
-			curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
-			curl.WithHostHeader("example.com"),
-			curl.WithPort(8080),
-		},
-		&testmatchers.HttpResponse{
-			StatusCode: expectedStatus,
-		})
-}
-
 func (s *testingSuite) assertResponseWithHeader(path string, headerName string, headerValue string, expectedStatus int) {
 	s.testInstallation.Assertions.AssertEventualCurlResponse(
 		s.ctx,
@@ -241,18 +227,42 @@ func (s *testingSuite) assertResponseWithHeader(path string, headerName string, 
 		})
 }
 
-func (s *testingSuite) assertConsistentResponseWithHeader(path string, headerName string, headerValue string, expectedStatus int) {
-	s.testInstallation.Assertions.AssertEventuallyConsistentCurlResponse(
-		s.ctx,
-		testdefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithPath(path),
-			curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
-			curl.WithHostHeader("example.com"),
-			curl.WithHeader(headerName, headerValue),
-			curl.WithPort(8080),
-		},
-		&testmatchers.HttpResponse{
-			StatusCode: expectedStatus,
-		})
+func (s *testingSuite) assertConsistentResponse(path string, expectedStatus int) {
+	// Short burst (3 tries) inside one RL window; each try waits until status matches.
+	for i := 0; i < 3; i++ {
+		s.testInstallation.Assertions.AssertEventualCurlResponse(
+			s.ctx,
+			testdefaults.CurlPodExecOpt,
+			[]curl.Option{
+				curl.WithPath(path),
+				curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
+				curl.WithHostHeader("example.com"),
+				curl.WithPort(8080),
+			},
+			&testmatchers.HttpResponse{StatusCode: expectedStatus},
+		)
+		if i < 2 {
+			time.Sleep(40 * time.Millisecond)
+		}
+	}
+}
+func (s *testingSuite) assertConsistentResponseWithHeader(path, headerName, headerValue string, expectedStatus int) {
+	// Short burst (3 tries) inside one RL window; each try waits until status matches.
+	for i := 0; i < 3; i++ {
+		s.testInstallation.Assertions.AssertEventualCurlResponse(
+			s.ctx,
+			testdefaults.CurlPodExecOpt,
+			[]curl.Option{
+				curl.WithPath(path),
+				curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
+				curl.WithHostHeader("example.com"),
+				curl.WithHeader(headerName, headerValue),
+				curl.WithPort(8080),
+			},
+			&testmatchers.HttpResponse{StatusCode: expectedStatus},
+		)
+		if i < 2 {
+			time.Sleep(40 * time.Millisecond)
+		}
+	}
 }
