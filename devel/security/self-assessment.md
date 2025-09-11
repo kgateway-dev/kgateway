@@ -131,7 +131,6 @@ This document provides kgateway maintainers and stakeholders with additional con
 * **External Authentication (ExtAuth):** Integration with external authentication services for centralized identity management
 * **Role-Based Access Control (RBAC):** Authorization policies supporting fine-grained access controls at the gateway, route, and service levels
 * **API Key Authentication:** Support for API key-based authentication with secure secret management
-* **OAuth2/OIDC Integration:** Built-in support for OAuth2 and OpenID Connect flows
 
 ### Data Encryption
 
@@ -176,10 +175,6 @@ In the future, kgateway intends to build and maintain compliance with several in
 * Build process isolation and non-falsifiable provenance are implemented
 * Both container images and release binaries have complete SLSA provenance chains
 
-**OpenSSF Scorecard Compliance**:
-
-* Maintains a strong OpenSSF Scorecard score with continuous monitoring via automated pipelines
-
 **Container Security Standards**:
 
 * All container images are signed with Cosign using keyless signing
@@ -198,7 +193,6 @@ In the future, kgateway intends to build and maintain compliance with several in
 #### Code Security
 
 * **Static Code Analysis:** Integrated golangci-lint with security-focused linters
-* **Dependency Management:** Regular dependency updates and vulnerability scanning through automated tools
 * **Code Reviews:** Mandatory peer code reviews with security considerations as part of the review process
 * **Secure Development Lifecycle:** Security considerations integrated throughout the development process
 
@@ -206,7 +200,6 @@ In the future, kgateway intends to build and maintain compliance with several in
 
 * **End-to-End Testing:** Extensive end-to-end testing including security-focused test cases
 * **Load Testing:** Performance and security testing under various load conditions
-* **Fuzzing:** Input validation and fuzzing tests to identify potential security vulnerabilities
 
 #### CI/CD
 
@@ -235,26 +228,28 @@ See [kgateway community CVE document](https://github.com/kgateway-dev/community/
 ### Known issues over time
 
 * Known issues are currently tracked in the project roadmap.
-* kgateway has not had any reported security vulnerabilities to date. All known issues and bugs are tracked in the project's GitHub Issues and are addressed promptly by the maintainers.
+* kgateway does not have any reported security vulnerabilities to date. All known issues and bugs are tracked in the project's GitHub Issues and are addressed promptly by the maintainers.
 * The project has a strong track record of catching issues during code review and automated testing, with no critical vulnerabilities discovered post-release.
 
 ### OpenSSF best practices
 
-kgateway does not yet integrate with the OpenSSF badge. This is on the projects roadmap.
+[![OpenSSF Best Practices](https://bestpractices.coreinfrastructure.org/projects/10534/badge)](https://bestpractices.coreinfrastructure.org/projects/10534)
+
+kgateway already has a passing openSSF badge for supporting best practices.
 
 ### Case studies
 
-#### Case Study 1: Securing Internal Microservices with mTLS
-
-A company adopted kgateway to secure communication between microservices in their internal Kubernetes cluster. They needed strong service-to-service authentication without relying on a service mesh. By enabling mTLS support in kgateway, they ensured that only authorized services could connect to backend APIs.
-
-#### Case Study 2: Rate Limiting to Thwart Credential Stuffing Attacks
+#### Case Study 1: Rate Limiting to Protect Credential Stuffing Attacks
 
 A company experienced credential stuffing attacks targeting their login endpoints. Rather than modify core applications, they deployed kgateway in front of the API and configured IP-based and user-based rate limiting policies.
 
-#### Case Study 3: Audit Logging for Compliance in a Regulated Environment
+ref: https://kgateway.dev/docs/main/security/ratelimit/global/
+
+#### Case Study 2: Audit Logging for Compliance in a Regulated Environment
 
 A healthcare provider needed to implement audit logging for all external API requests as part of HIPAA compliance. They used kgateway’s pluggable logging capabilities to log request metadata (e.g., IP, user agent, endpoint accessed, response status) in a structured format. This enabled easy querying of suspicious patterns and helped pass third-party audits.
+
+ref: https://kgateway.dev/docs/main/security/access-logging/
 
 ### Related projects/vendors
 

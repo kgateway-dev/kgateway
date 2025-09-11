@@ -8,6 +8,8 @@
   An Envoy-Powered, Kubernetes-Native API Gateway
 </h1>
 
+[![OpenSSF Best Practices](https://bestpractices.coreinfrastructure.org/projects/10534/badge)](https://bestpractices.coreinfrastructure.org/projects/10534)
+
 ## About kgateway
 
 Kgateway is:
