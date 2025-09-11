@@ -429,12 +429,14 @@ spec:
                   withRequestBody:
                     properties:
                       allowPartialMessage:
+                        default: false
                         type: boolean
                       maxRequestBytes:
                         format: int32
                         minimum: 1
                         type: integer
                       packAsBytes:
+                        default: false
                         type: boolean
                     required:
                     - maxRequestBytes

@@ -575,6 +575,7 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: allowPartialMessage
       type:
         scalar: boolean
+      default: false
     - name: maxRequestBytes
       type:
         scalar: numeric
@@ -582,6 +583,7 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: packAsBytes
       type:
         scalar: boolean
+      default: false
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.CELFilter
   map:
     fields:
@@ -950,6 +952,10 @@ var schemaYAML = typed.YAMLObject(`types:
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtAuthProvider
   map:
     fields:
+    - name: clearRouteCache
+      type:
+        scalar: boolean
+      default: false
     - name: failOpen
       type:
         scalar: boolean
@@ -957,6 +963,16 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: grpcService
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtGrpcService
+    - name: statPrefix
+      type:
+        scalar: string
+    - name: statusOnError
+      type:
+        scalar: numeric
+      default: 0
+    - name: withRequestBody
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.BufferSettings
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtGrpcService
   map:
     fields:

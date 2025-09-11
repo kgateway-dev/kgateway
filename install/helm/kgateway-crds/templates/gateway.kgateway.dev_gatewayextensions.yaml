@@ -42,6 +42,9 @@ spec:
             properties:
               extAuth:
                 properties:
+                  clearRouteCache:
+                    default: false
+                    type: boolean
                   failOpen:
                     default: false
                     type: boolean
@@ -98,6 +101,30 @@ spec:
                           rule: duration(self) >= duration('1ms')
                     required:
                     - backendRef
+                    type: object
+                  statPrefix:
+                    minLength: 1
+                    type: string
+                  statusOnError:
+                    default: 403
+                    format: int32
+                    maximum: 511
+                    minimum: 100
+                    type: integer
+                  withRequestBody:
+                    properties:
+                      allowPartialMessage:
+                        default: false
+                        type: boolean
+                      maxRequestBytes:
+                        format: int32
+                        minimum: 1
+                        type: integer
+                      packAsBytes:
+                        default: false
+                        type: boolean
+                    required:
+                    - maxRequestBytes
                     type: object
                 required:
                 - grpcService

@@ -147,19 +147,14 @@ func buildExtAuthPerRouteFilterConfig(
 ) *envoy_ext_authz_v3.ExtAuthzPerRoute {
 	checkSettings := &envoy_ext_authz_v3.CheckSettings{}
 
-	// Create the ExtAuthz configuration
-	// Configure request body buffering if specified
 	if spec.WithRequestBody != nil {
 		checkSettings.WithRequestBody = &envoy_ext_authz_v3.BufferSettings{
-			MaxRequestBytes: spec.WithRequestBody.MaxRequestBytes,
-		}
-		if spec.WithRequestBody.AllowPartialMessage != nil {
-			checkSettings.GetWithRequestBody().AllowPartialMessage = *spec.WithRequestBody.AllowPartialMessage
-		}
-		if spec.WithRequestBody.PackAsBytes != nil {
-			checkSettings.GetWithRequestBody().PackAsBytes = *spec.WithRequestBody.PackAsBytes
+			MaxRequestBytes:     spec.WithRequestBody.MaxRequestBytes,
+			AllowPartialMessage: spec.WithRequestBody.AllowPartialMessage,
+			PackAsBytes:         spec.WithRequestBody.PackAsBytes,
 		}
 	}
+
 	checkSettings.ContextExtensions = spec.ContextExtensions
 
 	if proto.Size(checkSettings) > 0 {

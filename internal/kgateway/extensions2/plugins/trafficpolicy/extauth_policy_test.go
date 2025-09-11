@@ -129,7 +129,6 @@ func TestExtAuthIREquals(t *testing.T) {
 
 func TestExtAuthForSpec(t *testing.T) {
 	t.Run("configures request body settings", func(t *testing.T) {
-		truthy := true
 		// Setup
 		spec := &v1alpha1.TrafficPolicy{Spec: v1alpha1.TrafficPolicySpec{
 			ExtAuth: &v1alpha1.ExtAuthPolicy{
@@ -138,8 +137,8 @@ func TestExtAuthForSpec(t *testing.T) {
 				},
 				WithRequestBody: &v1alpha1.BufferSettings{
 					MaxRequestBytes:     1024,
-					AllowPartialMessage: &truthy,
-					PackAsBytes:         &truthy,
+					AllowPartialMessage: true,
+					PackAsBytes:         true,
 				},
 			},
 		}}

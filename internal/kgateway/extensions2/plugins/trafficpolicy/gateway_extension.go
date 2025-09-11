@@ -16,6 +16,7 @@ import (
 	envoynetworkv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/matching/common_inputs/network/v3"
 	envoymetadatav3 "github.com/envoyproxy/go-control-plane/envoy/extensions/matching/input_matchers/metadata/v3"
 	envoymatcherv3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
+	envoytypev3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"istio.io/istio/pkg/kube/krt"
@@ -120,6 +121,19 @@ func TranslateGatewayExtensionBuilder(commoncol *common.CommonCollections) func(
 				},
 				FilterEnabledMetadata: ExtAuthzEnabledMetadataMatcher,
 				FailureModeAllow:      gExt.ExtAuth.FailOpen,
+				ClearRouteCache:       gExt.ExtAuth.ClearRouteCache,
+				StatusOnError:         &envoytypev3.HttpStatus{Code: envoytypev3.StatusCode(gExt.ExtAuth.StatusOnError)},
+			}
+
+			if gExt.ExtAuth.WithRequestBody != nil {
+				p.ExtAuth.WithRequestBody = &envoy_ext_authz_v3.BufferSettings{
+					MaxRequestBytes:     gExt.ExtAuth.WithRequestBody.MaxRequestBytes,
+					AllowPartialMessage: gExt.ExtAuth.WithRequestBody.AllowPartialMessage,
+					PackAsBytes:         gExt.ExtAuth.WithRequestBody.PackAsBytes,
+				}
+			}
+			if gExt.ExtAuth.StatPrefix != nil {
+				p.ExtAuth.StatPrefix = *gExt.ExtAuth.StatPrefix
 			}
 
 		case v1alpha1.GatewayExtensionTypeExtProc:

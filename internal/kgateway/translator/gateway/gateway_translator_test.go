@@ -383,10 +383,11 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
-	t.Run("TrafficPolicy ExtAuth Simple", func(t *testing.T) {
+	// test the default and fully configured values for ExtAuth
+	t.Run("TrafficPolicy ExtAuth Full Config", func(t *testing.T) {
 		test(t, translatorTestCase{
-			inputFile:  "traffic-policy/extauth-simple.yaml",
-			outputFile: "traffic-policy/extauth-simple.yaml",
+			inputFile:  "traffic-policy/extauth-full-config.yaml",
+			outputFile: "traffic-policy/extauth-full-config.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "infra",
 				Name:      "example-gateway",

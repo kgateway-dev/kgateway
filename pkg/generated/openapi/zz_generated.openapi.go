@@ -2051,14 +2051,16 @@ func schema_kgateway_v2_api_v1alpha1_BufferSettings(ref common.ReferenceCallback
 					},
 					"allowPartialMessage": {
 						SchemaProps: spec.SchemaProps{
-							Description: "AllowPartialMessage determines if partial messages should be allowed. When true, requests will be sent to the authorization service even if they exceed maxRequestBytes. When unset, the default behavior is false.",
+							Description: "AllowPartialMessage determines if partial messages should be allowed. When true, requests will be sent to the authorization service even if they exceed maxRequestBytes. The default behavior is false.",
+							Default:     false,
 							Type:        []string{"boolean"},
 							Format:      "",
 						},
 					},
 					"packAsBytes": {
 						SchemaProps: spec.SchemaProps{
-							Description: "PackAsBytes determines if the body should be sent as raw bytes. When true, the body is sent as raw bytes in the raw_body field. When false, the body is sent as UTF-8 string in the body field. When unset, the default behavior is false.",
+							Description: "PackAsBytes determines if the body should be sent as raw bytes. When true, the body is sent as raw bytes in the raw_body field. When false, the body is sent as UTF-8 string in the body field. The default behavior is false.",
+							Default:     false,
 							Type:        []string{"boolean"},
 							Format:      "",
 						},
@@ -3130,12 +3132,41 @@ func schema_kgateway_v2_api_v1alpha1_ExtAuthProvider(ref common.ReferenceCallbac
 							Format:      "",
 						},
 					},
+					"clearRouteCache": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ClearRouteCache determines if the route cache should be cleared to allow the external authorization service to correctly affect routing decisions.",
+							Default:     false,
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
+					"withRequestBody": {
+						SchemaProps: spec.SchemaProps{
+							Description: "WithRequestBody allows the request body to be buffered and sent to the authorization service. Warning: buffering has implications for streaming and therefore performance.",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.BufferSettings"),
+						},
+					},
+					"statusOnError": {
+						SchemaProps: spec.SchemaProps{
+							Description: "StatusOnError sets the HTTP status response code that is returned to the client when the authorization server returns an error or cannot be reached. Must be in the range of 100-511 inclusive. The default matches the deny response code of 403 Forbidden.",
+							Default:     0,
+							Type:        []string{"integer"},
+							Format:      "int64",
+						},
+					},
+					"statPrefix": {
+						SchemaProps: spec.SchemaProps{
+							Description: "StatPrefix is an optional prefix to include when emitting stats from the extauth filter, enabling different instances of the filter to have unique stats.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 				},
 				Required: []string{"grpcService"},
 			},
 		},
 		Dependencies: []string{
-			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtGrpcService"},
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.BufferSettings", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtGrpcService"},
 	}
 }
 
