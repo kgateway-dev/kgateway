@@ -5,7 +5,6 @@ import (
 	"path/filepath"
 
 	"github.com/onsi/gomega"
-	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -24,8 +23,7 @@ var (
 		Name:      "gw",
 		Namespace: "default",
 	}
-	gatewayService    = &corev1.Service{ObjectMeta: gatewayObjectMeta}
-	gatewayDeployment = &appsv1.Deployment{ObjectMeta: gatewayObjectMeta}
+	gatewayService = &corev1.Service{ObjectMeta: gatewayObjectMeta}
 
 	expectStatus200Success = &matchers.HttpResponse{
 		StatusCode: http.StatusOK,
