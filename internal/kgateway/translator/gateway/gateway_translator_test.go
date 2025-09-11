@@ -1413,10 +1413,10 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
-	t.Run("TrafficPolicy RateLimit Simple", func(t *testing.T) {
+	t.Run("TrafficPolicy RateLimit Full Config", func(t *testing.T) {
 		test(t, translatorTestCase{
-			inputFile:  "traffic-policy/rate-limit.yaml",
-			outputFile: "traffic-policy/rate-limit.yaml",
+			inputFile:  "traffic-policy/rate-limit-full-config.yaml",
+			outputFile: "traffic-policy/rate-limit-full-config.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",

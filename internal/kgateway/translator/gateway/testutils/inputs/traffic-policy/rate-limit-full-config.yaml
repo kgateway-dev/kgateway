@@ -67,7 +67,7 @@ spec:
       - entries:
         - type: Path
       extensionRef:
-        name: global-ratelimit
+        name: default-ratelimit
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: TrafficPolicy
@@ -89,12 +89,12 @@ spec:
       - entries:
         - type: Path
       extensionRef:
-        name: global-ratelimit-2
+        name: full-ratelimit
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: GatewayExtension
 metadata:
-  name: global-ratelimit
+  name: default-ratelimit
 spec:
   type: RateLimit
   rateLimit:
@@ -102,15 +102,12 @@ spec:
       backendRef:
         name: ratelimit
         port: 8081
-      requestTimeout: 200ms # this timeout is specific to the grpcService
     domain: "api-gateway"
-    timeout: "50ms"
-    failOpen: true # true is CRD default, but setting explicitly for translator test
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: GatewayExtension
 metadata:
-  name: global-ratelimit-2
+  name: full-ratelimit
 spec:
   type: RateLimit
   rateLimit:
@@ -122,6 +119,7 @@ spec:
     domain: "api-gateway"
     timeout: "50ms"
     failOpen: false
+    xRateLimitHeaders: DraftVersion03
 ---
 apiVersion: v1
 kind: Service

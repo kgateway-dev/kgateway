@@ -157,7 +157,7 @@ func TranslateGatewayExtensionBuilder(commoncol *common.CommonCollections) func(
 			}
 
 			// Use the specialized function for rate limit service resolution
-			rateLimitConfig := resolveRateLimitService(grpcService, gExt.RateLimit)
+			rateLimitConfig := buildRateLimitFilter(grpcService, gExt.RateLimit)
 
 			p.RateLimit = rateLimitConfig
 		}
@@ -219,7 +219,7 @@ func ResolveExtGrpcService(
 }
 
 // FIXME: Should this live here instead of the global rate limit plugin?
-func resolveRateLimitService(grpcService *envoycorev3.GrpcService, rateLimit *v1alpha1.RateLimitProvider) *ratev3.RateLimit {
+func buildRateLimitFilter(grpcService *envoycorev3.GrpcService, rateLimit *v1alpha1.RateLimitProvider) *ratev3.RateLimit {
 	envoyRateLimit := &ratev3.RateLimit{
 		Domain:          rateLimit.Domain,
 		FailureModeDeny: !rateLimit.FailOpen,
@@ -227,12 +227,25 @@ func resolveRateLimitService(grpcService *envoycorev3.GrpcService, rateLimit *v1
 			GrpcService:         grpcService,
 			TransportApiVersion: envoycorev3.ApiVersion_V3,
 		},
+		EnableXRatelimitHeaders: convertXRL(rateLimit.XRateLimitHeaders),
 	}
 
 	// Set timeout (we expect it always to have a valid value or default due to CRD validation)
 	envoyRateLimit.Timeout = durationpb.New(rateLimit.Timeout.Duration)
 
 	return envoyRateLimit
+}
+
+func convertXRL(in v1alpha1.XRLHeadersStandard) ratev3.RateLimit_XRateLimitHeadersRFCVersion {
+	switch in {
+	case v1alpha1.XRLHeaderOff:
+		return ratev3.RateLimit_OFF
+	case v1alpha1.XRLHeaderDraftV03:
+		return ratev3.RateLimit_DRAFT_VERSION_03
+	}
+
+	// defensive return, enum validation exists on CRD
+	return ratev3.RateLimit_OFF
 }
 
 // buildCompositeExtProcFilter builds a composite filter for external processing so that

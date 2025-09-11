@@ -130,7 +130,24 @@ type RateLimitProvider struct {
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	// +kubebuilder:default="100ms"
 	Timeout metav1.Duration `json:"timeout,omitempty"`
+
+	// XRateLimitHeaders configures the standard version to use for X-RateLimit headers emitted.
+	// See [envoy docs](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/ratelimit/v3/rate_limit.proto#envoy-v3-api-field-extensions-filters-http-ratelimit-v3-ratelimit-enable-x-ratelimit-headers) for more info.
+	// Disabled by default.
+	// +kubebuilder:validation:Enum=Off;DraftVersion03
+	// +kubebuilder:default="Off"
+	XRateLimitHeaders XRLHeadersStandard `json:"xRateLimitHeaders,omitempty"`
 }
+
+// XRLHeadersStandard controls how XRateLimit headers will emitted.
+type XRLHeadersStandard string
+
+const (
+	// XRLHeaderOff disables emitting of XRateLimit headers.
+	XRLHeaderOff XRLHeadersStandard = "Off"
+	// XRLHeaderDraftV03 outputs headers as described in [draft RFC version 03](https://tools.ietf.org/id/draft-polli-ratelimit-headers-03.html).
+	XRLHeaderDraftV03 XRLHeadersStandard = "DraftVersion03"
+)
 
 // GatewayExtensionSpec defines the desired state of GatewayExtension.
 // +kubebuilder:validation:XValidation:message="ExtAuth must be set when type is ExtAuth",rule="self.type != 'ExtAuth' || has(self.extAuth)"

@@ -258,6 +258,12 @@ spec:
                     x-kubernetes-validations:
                     - message: invalid duration value
                       rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                  xRateLimitHeaders:
+                    default: "Off"
+                    enum:
+                    - "Off"
+                    - DraftVersion03
+                    type: string
                 required:
                 - domain
                 - grpcService
