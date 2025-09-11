@@ -50,9 +50,6 @@ func (t *AgentGatewayBackendTranslator) TranslateBackend(
 	if process.InitAgentBackend == nil {
 		return nil, nil, errors.New("no agent gateway backend plugin found for " + gk.String())
 	}
-	if backend.Errors != nil {
-		return nil, nil, fmt.Errorf("backend has errors: %w", errors.Join(backend.Errors...))
-	}
 
 	backends, policies, err := process.InitAgentBackend(*backend)
 	if err != nil {

@@ -63,12 +63,12 @@ var (
 	}
 
 	// test cases
-	testCases = map[string]base.TestCase{
-		"TestOTelTracing": base.TestCase{
+	testCases = map[string]*base.TestCase{
+		"TestOTelTracing": {
 			Manifests: []string{otelCollectorManifest, policyManifest},
 			Resources: []client.Object{otelCollectorPod, tracingPolicy},
 		},
-		"TestOTelTracingSecure": base.TestCase{
+		"TestOTelTracingSecure": {
 			Manifests: []string{otelCollectorSecureManifest, policyManifest},
 			Resources: []client.Object{otelCollectorPod, tracingPolicy},
 		},

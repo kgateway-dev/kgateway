@@ -1,0 +1,102 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: example-gateway
+spec:
+  gatewayClassName: agentgateway
+  listeners:
+    - name: http
+      protocol: HTTP
+      port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: example-route
+spec:
+  parentRefs:
+    - name: example-gateway
+  hostnames:
+    - "example.com"
+  rules:
+    - backendRefs:
+        - group: gateway.kgateway.dev
+          kind: Backend
+          name: multipool-priority
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  labels:
+    app: kgateway
+  name: multipool-priority
+spec:
+  type: AI
+  ai:
+    multiPool:
+      priorities:
+        # Priority 0 - Primary providers
+        - pool:
+            - provider:
+                openai:
+                  model: "gpt-4o"
+                  authToken:
+                    kind: "SecretRef"
+                    secretRef:
+                      name: openai-primary-secret
+            - provider:
+                anthropic:
+                  model: "claude-3-opus-20240229"
+                  authToken:
+                    kind: "Inline"
+                    inline: "sk-anthropic-primary"
+        # Priority 1 - Secondary fallback providers
+        - pool:
+            - provider:
+                gemini:
+                  model: "gemini-1.5-flash"
+                  authToken:
+                    kind: "SecretRef"
+                    secretRef:
+                      name: gemini-fallback-secret
+            - provider:
+                vertexai:
+                  model: "gemini-pro"
+                  authToken:
+                    kind: "Passthrough"
+        # Priority 2 - Tertiary fallback provider
+        - pool:
+            - provider:
+                bedrock:
+                  model: "anthropic.claude-3-haiku-20240307-v1:0"
+                  region: "us-east-1"
+                  auth:
+                    type: "Secret"
+                    secretRef:
+                      name: aws-bedrock-secret
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: openai-primary-secret
+type: Opaque
+data:
+  Authorization: QmVhcmVyIHNrLW9wZW5haS1wcmltYXJ5LWtleQ== # Bearer sk-openai-primary-key
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: gemini-fallback-secret
+type: Opaque
+data:
+  Authorization: Z2VtaW5pLWZhbGxiYWNrLWtleQ== # gemini-fallback-key
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: aws-bedrock-secret
+type: Opaque
+data:
+  accessKey: QUtJQUJFRFJPQ0s= # AKIABEDROCK
+  secretKey: YmVkcm9jay1zZWNyZXQta2V5 # bedrock-secret-key
+  region: dXMtZWFzdC0x # us-east-1

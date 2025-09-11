@@ -119,6 +119,7 @@ func TranslateGatewayExtensionBuilder(commoncol *common.CommonCollections) func(
 					GrpcService: envoyGrpcService,
 				},
 				FilterEnabledMetadata: ExtAuthzEnabledMetadataMatcher,
+				FailureModeAllow:      gExt.ExtAuth.FailOpen,
 			}
 
 		case v1alpha1.GatewayExtensionTypeExtProc:
@@ -127,7 +128,7 @@ func TranslateGatewayExtensionBuilder(commoncol *common.CommonCollections) func(
 				p.Err = fmt.Errorf("failed to resolve ExtProc backend: %w", err)
 				return p
 			}
-			p.ExtProc = buildCompositeExtProcFilter(envoyGrpcService)
+			p.ExtProc = buildCompositeExtProcFilter(*gExt.ExtProc, envoyGrpcService)
 
 		case v1alpha1.GatewayExtensionTypeRateLimit:
 			if gExt.RateLimit == nil {
@@ -150,35 +151,45 @@ func TranslateGatewayExtensionBuilder(commoncol *common.CommonCollections) func(
 	}
 }
 
-func ResolveExtGrpcService(krtctx krt.HandlerContext, backends *krtcollections.BackendIndex, disableExtensionRefValidation bool, objectSource ir.ObjectSource, grpcService *v1alpha1.ExtGrpcService) (*envoycorev3.GrpcService, error) {
-	var clusterName string
-	var authority string
-	if grpcService != nil {
-		if grpcService.BackendRef == nil {
-			return nil, errors.New("backend not provided")
-		}
-		backendRef := grpcService.BackendRef.BackendObjectReference
+func ResolveExtGrpcService(
+	krtctx krt.HandlerContext,
+	backends *krtcollections.BackendIndex,
+	disableExtensionRefValidation bool,
+	objectSource ir.ObjectSource,
+	grpcService *v1alpha1.ExtGrpcService,
+) (*envoycorev3.GrpcService, error) {
+	// defensive checks, both of these fields are required
+	if grpcService == nil {
+		return nil, errors.New("grpcService not provided")
+	}
+	if grpcService.BackendRef == nil {
+		return nil, errors.New("backend not provided")
+	}
 
-		var backend *ir.BackendObjectIR
-		var err error
-		if disableExtensionRefValidation {
-			backend, err = backends.GetBackendFromRefWithoutRefGrantValidation(krtctx, objectSource, backendRef)
-		} else {
-			backend, err = backends.GetBackendFromRef(krtctx, objectSource, backendRef)
-		}
-		if err != nil {
-			return nil, err
-		}
-		if backend != nil {
-			clusterName = backend.ClusterName()
-		}
-		if grpcService.Authority != nil {
-			authority = *grpcService.Authority
-		}
+	var backend *ir.BackendObjectIR
+	var err error
+	backendRef := grpcService.BackendRef.BackendObjectReference
+	if disableExtensionRefValidation {
+		backend, err = backends.GetBackendFromRefWithoutRefGrantValidation(krtctx, objectSource, backendRef)
+	} else {
+		backend, err = backends.GetBackendFromRef(krtctx, objectSource, backendRef)
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	var clusterName string
+	if backend != nil {
+		clusterName = backend.ClusterName()
 	}
 	if clusterName == "" {
 		return nil, errors.New("backend not found")
 	}
+	var authority string
+	if grpcService.Authority != nil {
+		authority = *grpcService.Authority
+	}
+
 	envoyGrpcService := &envoycorev3.GrpcService{
 		TargetSpecifier: &envoycorev3.GrpcService_EnvoyGrpc_{
 			EnvoyGrpc: &envoycorev3.GrpcService_EnvoyGrpc{
@@ -186,6 +197,9 @@ func ResolveExtGrpcService(krtctx krt.HandlerContext, backends *krtcollections.B
 				Authority:   authority,
 			},
 		},
+	}
+	if grpcService.RequestTimeout != nil {
+		envoyGrpcService.Timeout = durationpb.New(grpcService.RequestTimeout.Duration)
 	}
 	return envoyGrpcService, nil
 }
@@ -209,7 +223,7 @@ func resolveRateLimitService(grpcService *envoycorev3.GrpcService, rateLimit *v1
 
 // buildCompositeExtProcFilter builds a composite filter for external processing so that
 // the filter can be conditionally disabled with the global_disable/ext_proc filter is enabled
-func buildCompositeExtProcFilter(envoyGrpcService *envoycorev3.GrpcService) *envoymatchingv3.ExtensionWithMatcher {
+func buildCompositeExtProcFilter(provider v1alpha1.ExtProcProvider, envoyGrpcService *envoycorev3.GrpcService) *envoymatchingv3.ExtensionWithMatcher {
 	return &envoymatchingv3.ExtensionWithMatcher{
 		ExtensionConfig: &envoycorev3.TypedExtensionConfig{
 			Name:        "composite_ext_proc",
@@ -262,7 +276,8 @@ func buildCompositeExtProcFilter(envoyGrpcService *envoycorev3.GrpcService) *env
 											TypedConfig: &envoycorev3.TypedExtensionConfig{
 												Name: "envoy.filters.http.ext_proc",
 												TypedConfig: utils.MustMessageToAny(&envoyextprocv3.ExternalProcessor{
-													GrpcService: envoyGrpcService,
+													GrpcService:      envoyGrpcService,
+													FailureModeAllow: provider.FailOpen,
 												}),
 											},
 										}),

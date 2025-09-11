@@ -1,0 +1,50 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: example-gateway
+spec:
+  gatewayClassName: agentgateway
+  listeners:
+    - name: http
+      protocol: HTTP
+      port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: example-route
+spec:
+  parentRefs:
+    - name: example-gateway
+  hostnames:
+    - "example.com"
+  rules:
+    - backendRefs:
+        - group: gateway.kgateway.dev
+          kind: Backend
+          name: multipool-inline
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  labels:
+    app: kgateway
+  name: multipool-inline
+spec:
+  type: AI
+  ai:
+    multiPool:
+      priorities:
+        - pool:
+            - provider:
+                openai:
+                  model: "gpt-4"
+                  authToken:
+                    kind: "Inline"
+                    inline: "sk-openai-primary-key"
+            - provider:
+                anthropic:
+                  model: "claude-3-opus-20240229"
+                  authToken:
+                    kind: "Inline"
+                    inline: "sk-anthropic-primary-key"

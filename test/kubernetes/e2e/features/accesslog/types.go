@@ -65,16 +65,16 @@ var (
 	}
 
 	// test cases
-	testCases = map[string]base.TestCase{
-		"TestAccessLogWithFileSink": base.TestCase{
+	testCases = map[string]*base.TestCase{
+		"TestAccessLogWithFileSink": {
 			Manifests: []string{fileSinkManifest},
 			Resources: []client.Object{fileSinkConfig},
 		},
-		"TestAccessLogWithGrpcSink": base.TestCase{
+		"TestAccessLogWithGrpcSink": {
 			Manifests: []string{grpcServiceManifest},
 			Resources: []client.Object{accessLoggerService, accessLoggerDeployment},
 		},
-		"TestAccessLogWithOTelSink": base.TestCase{
+		"TestAccessLogWithOTelSink": {
 			Manifests: []string{oTelManifest},
 			Resources: []client.Object{otelCollectorPod},
 		},

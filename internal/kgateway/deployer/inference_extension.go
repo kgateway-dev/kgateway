@@ -15,6 +15,10 @@ import (
 
 type InferenceExtension struct{}
 
+func (ie *InferenceExtension) IsSelfManaged(_ context.Context, _ client.Object) (bool, error) {
+	return false, nil
+}
+
 func LoadInferencePoolChart() (*chart.Chart, error) {
 	return loadChart(helm.InferenceExtensionHelmChart)
 }

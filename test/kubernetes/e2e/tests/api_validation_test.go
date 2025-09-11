@@ -566,6 +566,43 @@ spec:
 			},
 		},
 		{
+			name: "TrafficPolicy Buffer maxRequestSize with integer",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: test
+spec:
+  buffer:
+    maxRequestSize: 65536
+`,
+		},
+		{
+			name: "TrafficPolicy Buffer maxRequestSize with string",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: test
+spec:
+  buffer:
+    maxRequestSize: 64Ki
+`,
+		},
+		{
+			name: "TrafficPolicy Buffer maxRequestSize with invalid value",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: test
+spec:
+  buffer:
+    maxRequestSize: 4Gi
+`,
+			wantErrors: []string{"maxRequestSize must be greater than 0 and less than 4Gi"},
+		},
+		{
 			name: "ProxyDeployment: enforce ExactlyOneOf for replicas and omitReplicas",
 			input: `---
 apiVersion: gateway.kgateway.dev/v1alpha1

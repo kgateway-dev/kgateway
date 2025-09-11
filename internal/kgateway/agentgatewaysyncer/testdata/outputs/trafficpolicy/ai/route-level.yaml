@@ -1,7 +1,10 @@
 Backends:
 - ai:
-    openai:
-      model: gpt-4o-mini
+    providerGroups:
+    - providers:
+      - name: openai_0
+        openai:
+          model: gpt-4o-mini
   name: default/openai
 Binds:
 - key: 8080/default/example-gateway
@@ -13,23 +16,32 @@ Listeners:
   name: http
   protocol: HTTP
 Policies:
-- name: auth-default/openai
+- name: auth-default/openai-openai_0
   spec:
     auth:
       key:
         secret: mysecretkey
   target:
-    backend: default/openai
+    subBackend: default/openai/openai_0
 - name: trafficpolicy/default/ai-policy/openai-test:ai
   spec:
     ai:
       defaults:
-        frequency_penalty: "0.1"
-        presence_penalty: "0.1"
-        top_p: "0.95"
+        array_int:
+        - 1
+        - 2
+        - 3
+        array_string:
+        - one
+        - two
+        - three
+        frequency_penalty: 0.1
+        presence_penalty: 0.1
+        string: some_string
+        top_p: 0.95
       overrides:
-        max_tokens: "2000"
-        temperature: "0.5"
+        max_tokens: 2000
+        temperature: 0.5
       promptGuard:
         request:
           openaiModeration:
@@ -54,6 +66,11 @@ Policies:
             body: WW91ciByZXF1ZXN0IHdhcyByZWplY3RlZCBkdWUgdG8gaW5hcHByb3ByaWF0ZSBjb250ZW50
             status: 403
           webhook:
+            forwardHeaderMatches:
+            - exact: bar
+              name: x-foo
+            - name: x-baz
+              regex: ^baz-.*
             host: prompt-guard.example.com
             port: 8443
         response:

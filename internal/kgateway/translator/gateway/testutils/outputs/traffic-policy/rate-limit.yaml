@@ -46,6 +46,20 @@ Listeners:
               grpcService:
                 envoyGrpc:
                   clusterName: kube_default_ratelimit_8081
+                timeout: 0.200s
+              transportApiVersion: V3
+            timeout: 0.050s
+        - disabled: true
+          name: ratelimit/default/global-ratelimit-2
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.ratelimit.v3.RateLimit
+            domain: api-gateway
+            failureModeDeny: true
+            rateLimitService:
+              grpcService:
+                envoyGrpc:
+                  clusterName: kube_default_ratelimit_8081
+                timeout: 0.200s
               transportApiVersion: V3
             timeout: 0.050s
         - disabled: true
@@ -76,7 +90,43 @@ Routes:
     name: listener~80~example_com
     routes:
     - match:
-        prefix: /
+        pathSeparatedPrefix: /example-route-2
+      metadata:
+        filterMetadata:
+          merge.TrafficPolicy.gateway.kgateway.dev:
+            rateLimit.global:
+            - gateway.kgateway.dev/TrafficPolicy/default/rate-limit-2
+            rateLimit.local:
+            - gateway.kgateway.dev/TrafficPolicy/default/rate-limit-2
+      name: listener~80~example_com-route-0-httproute-example-route-2-default-0-0-rule0-matcher-0
+      route:
+        cluster: kube_default_example-svc_80
+        clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+      typedPerFilterConfig:
+        ratelimit/default/global-ratelimit-2:
+          '@type': type.googleapis.com/envoy.extensions.filters.http.ratelimit.v3.RateLimitPerRoute
+          rateLimits:
+          - actions:
+            - requestHeaders:
+                descriptorKey: path
+                headerName: :path
+        ratelimit/local:
+          '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
+          filterEnabled:
+            defaultValue:
+              numerator: 100
+            runtimeKey: local_rate_limit_enabled
+          filterEnforced:
+            defaultValue:
+              numerator: 100
+            runtimeKey: local_rate_limit_enforced
+          statPrefix: http_local_rate_limiter
+          tokenBucket:
+            fillInterval: 33s
+            maxTokens: 99
+            tokensPerFill: 1
+    - match:
+        pathSeparatedPrefix: /example-route
       metadata:
         filterMetadata:
           merge.TrafficPolicy.gateway.kgateway.dev:
@@ -84,7 +134,7 @@ Routes:
             - gateway.kgateway.dev/TrafficPolicy/default/rate-limit
             rateLimit.local:
             - gateway.kgateway.dev/TrafficPolicy/default/rate-limit
-      name: listener~80~example_com-route-0-httproute-example-route-default-0-0-rule0-matcher-0
+      name: listener~80~example_com-route-1-httproute-example-route-default-0-0-rule0-matcher-0
       route:
         cluster: kube_default_example-svc_80
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
@@ -131,7 +181,7 @@ Statuses:
         status: "True"
         type: Programmed
       listeners:
-      - attachedRoutes: 1
+      - attachedRoutes: 2
         conditions:
         - lastTransitionTime: null
           message: Listener is accepted
@@ -178,8 +228,45 @@ Statuses:
           group: ""
           kind: ""
           name: example-gateway
+    default/example-route-2:
+      parents:
+      - conditions:
+        - lastTransitionTime: null
+          message: Route is accepted
+          reason: Accepted
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Route has valid refs
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
+        controllerName: kgateway
+        parentRef:
+          group: ""
+          kind: ""
+          name: example-gateway
   policies:
     TrafficPolicy/default/rate-limit:
+      ancestors:
+      - ancestorRef:
+          group: gateway.networking.k8s.io
+          kind: Gateway
+          name: example-gateway
+          namespace: default
+        conditions:
+        - lastTransitionTime: null
+          message: Policy accepted
+          reason: Valid
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Attached to all targets
+          reason: Attached
+          status: "True"
+          type: Attached
+        controllerName: kgateway.dev/kgateway
+    TrafficPolicy/default/rate-limit-2:
       ancestors:
       - ancestorRef:
           group: gateway.networking.k8s.io

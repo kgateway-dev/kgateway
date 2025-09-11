@@ -41,7 +41,7 @@ var (
 	}
 
 	// test cases
-	testCases = map[string]base.TestCase{
+	testCases = map[string]*base.TestCase{
 		"TestLeaderAndFollowerAction": {
 			Manifests: []string{gatewayManifest},
 		},

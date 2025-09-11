@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -14,10 +15,12 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	reports "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	envoyadmincli "github.com/kgateway-dev/kgateway/v2/pkg/utils/envoyutils/admincli"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	testmatchers "github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
@@ -30,6 +33,20 @@ import (
 var _ e2e.NewSuiteFunc = NewTestingSuite
 
 var (
+	// manifests
+	simpleServiceManifest            = filepath.Join(fsutils.MustGetThisDir(), "testdata", "service.yaml")
+	gatewayManifest                  = filepath.Join(fsutils.MustGetThisDir(), "testdata", "gateway.yaml")
+	transformForHeadersManifest      = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-headers.yaml")
+	transformForBodyJsonManifest     = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-body-json.yaml")
+	transformForBodyAsStringManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-body-as-string.yaml")
+	gatewayAttachedTransformManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "gateway-attached-transform.yaml")
+
+	proxyObjectMeta = metav1.ObjectMeta{
+		Name:      "gw",
+		Namespace: "default",
+	}
+
+	// test cases
 	setup = base.TestCase{
 		Manifests: []string{
 			defaults.CurlPodManifest,
@@ -40,23 +57,10 @@ var (
 			transformForBodyAsStringManifest,
 			gatewayAttachedTransformManifest,
 		},
-		Resources: []client.Object{
-			// resources from curl manifest
-			defaults.CurlPod,
-			// resources from service manifest
-			simpleSvc, simpleDeployment,
-			// resources from gateway manifest
-			gateway, gwp,
-			// deployer-generated resources
-			proxyDeployment, proxyService, proxyServiceAccount,
-			// routes and traffic policies
-			routeForHeaders, routeForBodyJson, routeForBodyAsString, routeBasic,
-			trafficPolicyForHeaders, trafficPolicyForBodyJson, trafficPolicyForBodyAsString, trafficPolicyForGatewayAttachedTransform,
-		},
 	}
 
 	// everything is applied during setup; there are no additional test-specific manifests
-	testCases = map[string]base.TestCase{}
+	testCases = map[string]*base.TestCase{}
 )
 
 // testingSuite is a suite of basic routing / "happy path" tests
@@ -73,13 +77,7 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 func (s *testingSuite) SetupSuite() {
 	s.BaseTestingSuite.SetupSuite()
 
-	s.assertStatus(metav1.Condition{
-		Type:               string(v1alpha1.PolicyConditionAccepted),
-		Status:             metav1.ConditionTrue,
-		Reason:             string(v1alpha1.PolicyReasonValid),
-		Message:            reports.PolicyAcceptedMsg,
-		ObservedGeneration: routeForHeaders.Generation,
-	})
+	s.assertStatus()
 }
 
 func (s *testingSuite) TestGatewayWithTransformedRoute() {
@@ -306,34 +304,63 @@ func (s *testingSuite) TestGatewayRustformationsWithTransformedRoute() {
 	}
 }
 
-func (s *testingSuite) assertStatus(expected metav1.Condition) {
+func (s *testingSuite) assertStatus() {
 	currentTimeout, pollingInterval := helpers.GetTimeouts()
-	p := s.TestInstallation.Assertions
-	p.Gomega.Eventually(func(g gomega.Gomega) {
-		be := &v1alpha1.TrafficPolicy{}
-		objKey := client.ObjectKeyFromObject(trafficPolicyForHeaders)
-		err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, objKey, be)
-		g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get route policy %s", objKey)
-		objKey = client.ObjectKeyFromObject(trafficPolicyForBodyJson)
-		err = s.TestInstallation.ClusterContext.Client.Get(s.Ctx, objKey, be)
-		g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get route policy %s", objKey)
-		objKey = client.ObjectKeyFromObject(trafficPolicyForBodyAsString)
-		err = s.TestInstallation.ClusterContext.Client.Get(s.Ctx, objKey, be)
-		g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get route policy %s", objKey)
-		objKey = client.ObjectKeyFromObject(trafficPolicyForGatewayAttachedTransform)
-		err = s.TestInstallation.ClusterContext.Client.Get(s.Ctx, objKey, be)
-		g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get route policy %s", objKey)
+	routesToCheck := []string{
+		"example-route-for-headers",
+		"example-route-for-body-json",
+		"example-route-for-body-as-string",
+		"example-route-for-gateway-attached-transform",
+	}
+	trafficPoliciesToCheck := []string{
+		"example-traffic-policy-for-headers",
+		"example-traffic-policy-for-body-json",
+		"example-traffic-policy-for-body-as-string",
+		"example-traffic-policy-for-gateway-attached-transform",
+	}
 
-		actual := be.Status
-		g.Expect(actual.Ancestors).To(gomega.HaveLen(1), "should have one ancestor")
-		ancestorStatus := actual.Ancestors[0]
-		cond := meta.FindStatusCondition(ancestorStatus.Conditions, expected.Type)
-		g.Expect(cond).NotTo(gomega.BeNil())
-		g.Expect(cond.Status).To(gomega.Equal(expected.Status))
-		g.Expect(cond.Reason).To(gomega.Equal(expected.Reason))
-		g.Expect(cond.Message).To(gomega.Equal(expected.Message))
-		g.Expect(cond.ObservedGeneration).To(gomega.Equal(expected.ObservedGeneration))
-	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
+	for i, routeName := range routesToCheck {
+		trafficPolicyName := trafficPoliciesToCheck[i]
+
+		// get the traffic policy
+		s.TestInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
+			tp := &v1alpha1.TrafficPolicy{}
+			tpObjKey := client.ObjectKey{
+				Name:      trafficPolicyName,
+				Namespace: "default",
+			}
+			err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, tpObjKey, tp)
+			g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get route policy %s", tpObjKey)
+
+			// get the route
+			route := &gwv1.HTTPRoute{}
+			routeObjKey := client.ObjectKey{
+				Name:      routeName,
+				Namespace: "default",
+			}
+			err = s.TestInstallation.ClusterContext.Client.Get(s.Ctx, routeObjKey, route)
+			g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get route %s", routeObjKey)
+
+			// this is the expected traffic policy status condition
+			expectedCond := metav1.Condition{
+				Type:               string(v1alpha1.PolicyConditionAccepted),
+				Status:             metav1.ConditionTrue,
+				Reason:             string(v1alpha1.PolicyReasonValid),
+				Message:            reports.PolicyAcceptedMsg,
+				ObservedGeneration: route.Generation,
+			}
+
+			actualPolicyStatus := tp.Status
+			g.Expect(actualPolicyStatus.Ancestors).To(gomega.HaveLen(1), "should have one ancestor")
+			ancestorStatus := actualPolicyStatus.Ancestors[0]
+			cond := meta.FindStatusCondition(ancestorStatus.Conditions, expectedCond.Type)
+			g.Expect(cond).NotTo(gomega.BeNil())
+			g.Expect(cond.Status).To(gomega.Equal(expectedCond.Status))
+			g.Expect(cond.Reason).To(gomega.Equal(expectedCond.Reason))
+			g.Expect(cond.Message).To(gomega.Equal(expectedCond.Message))
+			g.Expect(cond.ObservedGeneration).To(gomega.Equal(expectedCond.ObservedGeneration))
+		}, currentTimeout, pollingInterval).Should(gomega.Succeed())
+	}
 }
 
 func (s *testingSuite) dynamicModuleAssertion(shouldBeLoaded bool) func(ctx context.Context, adminClient *envoyadmincli.Client) {

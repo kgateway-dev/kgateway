@@ -1,0 +1,80 @@
+Backends:
+- ai:
+    providerGroups:
+    - providers:
+      - name: multipool-priority_0
+        openai:
+          model: gpt-4o
+      - anthropic:
+          model: claude-3-opus-20240229
+        name: multipool-priority_1
+    - providers:
+      - gemini:
+          model: gemini-1.5-flash
+        name: multipool-priority_2
+      - name: multipool-priority_3
+        vertex:
+          model: gemini-pro
+    - providers:
+      - bedrock:
+          model: anthropic.claude-3-haiku-20240307-v1:0
+          region: us-east-1
+        name: multipool-priority_4
+  name: default/multipool-priority
+Binds:
+- key: 80/default/example-gateway
+  port: 80
+Listeners:
+- bindKey: 80/default/example-gateway
+  gatewayName: default/example-gateway
+  key: default/example-gateway.http
+  name: http
+  protocol: HTTP
+Policies:
+- name: auth-default/multipool-priority-multipool-priority_0
+  spec:
+    auth:
+      key:
+        secret: sk-openai-primary-key
+  target:
+    subBackend: default/multipool-priority/multipool-priority_0
+- name: auth-default/multipool-priority-multipool-priority_1
+  spec:
+    auth:
+      key:
+        secret: sk-anthropic-primary
+  target:
+    subBackend: default/multipool-priority/multipool-priority_1
+- name: auth-default/multipool-priority-multipool-priority_2
+  spec:
+    auth:
+      key:
+        secret: gemini-fallback-key
+  target:
+    subBackend: default/multipool-priority/multipool-priority_2
+- name: auth-default/multipool-priority-multipool-priority_3
+  spec:
+    auth:
+      passthrough: {}
+  target:
+    subBackend: default/multipool-priority/multipool-priority_3
+- name: auth-default/multipool-priority-multipool-priority_4
+  spec:
+    auth:
+      aws:
+        explicitConfig:
+          accessKeyId: AKIABEDROCK
+          region: us-east-1
+          secretAccessKey: bedrock-secret-key
+  target:
+    subBackend: default/multipool-priority/multipool-priority_4
+Routes:
+- backends:
+  - backend:
+      backend: default/multipool-priority
+    weight: 1
+  hostnames:
+  - example.com
+  key: default/example-route.0.0.http
+  listenerKey: default/example-gateway.http
+  routeName: default/example-route

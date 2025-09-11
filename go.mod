@@ -3,7 +3,8 @@ module github.com/kgateway-dev/kgateway/v2
 go 1.24.6
 
 require (
-	github.com/agentgateway/agentgateway v0.7.8
+	// Also update AgentgatewayDefaultTag in pkg/deployer/wellknown.go
+	github.com/agentgateway/agentgateway v0.8.2
 	github.com/avast/retry-go v2.4.3+incompatible
 	github.com/avast/retry-go/v4 v4.3.3
 	github.com/cncf/xds/go v0.0.0-20250501225837-2ac532fd4443
@@ -50,7 +51,7 @@ require (
 	k8s.io/utils v0.0.0-20250604170112-4c0f3b243397
 	sigs.k8s.io/controller-runtime v0.21.0
 	sigs.k8s.io/gateway-api v1.3.0
-	sigs.k8s.io/gateway-api-inference-extension v1.0.0-rc.2
+	sigs.k8s.io/gateway-api-inference-extension v1.0.0
 	sigs.k8s.io/structured-merge-diff/v4 v4.7.0
 	sigs.k8s.io/yaml v1.6.0
 )

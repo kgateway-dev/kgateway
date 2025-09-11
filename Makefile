@@ -39,7 +39,7 @@ export VERSION
 SOURCES := $(shell find . -name "*.go" | grep -v test.go)
 
 # Note: When bumping this version, update the version in pkg/validator/validator.go as well.
-export ENVOY_IMAGE ?= quay.io/solo-io/envoy-gloo:1.35.0-patch1
+export ENVOY_IMAGE ?= quay.io/solo-io/envoy-gloo:1.35.2-patch1
 export LDFLAGS := -X 'github.com/kgateway-dev/kgateway/v2/internal/version.Version=$(VERSION)'
 export GCFLAGS ?=
 
@@ -656,9 +656,6 @@ GIE_CONFORMANCE_ARGS := \
     -gateway-class=$(CONFORMANCE_GATEWAY_CLASS) \
     $(GIE_CONFORMANCE_REPORT_ARGS)
 
-# Allow skipping known‐failing tests.
-INFERENCE_SKIP_TESTS ?= -skip-tests EppUnAvailableFailOpen
-
 INFERENCE_CONFORMANCE_DIR := $(shell go list -m -f '{{.Dir}}' sigs.k8s.io/gateway-api-inference-extension)/conformance
 
 # TODO [danehans]: Remove `kubectl wait` when gateway-api-inference-extension/issues/1315 is fixed.
@@ -669,7 +666,7 @@ gie-conformance: gie-crds ## Run the Gateway API Inference Extension conformance
 	    -tags conformance \
 	    -timeout=25m \
 	    -v $(INFERENCE_CONFORMANCE_DIR) \
-	    -args $(GIE_CONFORMANCE_ARGS) $(INFERENCE_SKIP_TESTS)
+	    -args $(GIE_CONFORMANCE_ARGS)
 	@echo "Waiting for gateway-conformance-infra namespace to terminate..."
 	kubectl wait ns gateway-conformance-infra --for=delete --timeout=2m || true
 
@@ -680,7 +677,7 @@ gie-conformance-%: gie-crds ## Run only the specified Gateway API Inference Exte
 	go test -mod=mod -ldflags='$(LDFLAGS)' \
 	    -tags conformance \
 	    -timeout=25m \
-	    -v $(INFERENCE_CONFORMANCE_DIR) $(INFERENCE_SKIP_TESTS) \
+	    -v $(INFERENCE_CONFORMANCE_DIR) \
 	    -args $(GIE_CONFORMANCE_ARGS) -run-test=$*
 	@echo "Waiting for gateway-conformance-infra namespace to terminate..."
 	kubectl wait ns gateway-conformance-infra --for=delete --timeout=2m || true

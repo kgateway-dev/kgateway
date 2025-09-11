@@ -22,7 +22,6 @@ data:
     t/kdgLKhf4gU2wXq/WbeqxlDSpjo7q/emNl59v1FHeR3eITSSjESU+dQgRsYaGEn
     SWP+58ApfCcURLpMxUmxkO1ayfecNJbmSQ==
     -----END CERTIFICATE-----
-
 kind: ConfigMap
 metadata:
   name: ca
