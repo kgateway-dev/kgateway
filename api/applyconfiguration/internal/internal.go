@@ -2666,16 +2666,16 @@ var schemaYAML = typed.YAMLObject(`types:
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Webhook
   map:
     fields:
+    - name: endpoint
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Host
+      default: {}
     - name: forwardHeaderMatches
       type:
         list:
           elementType:
             namedType: io.k8s.sigs.gateway-api.apis.v1.HTTPHeaderMatch
           elementRelationship: atomic
-    - name: host
-      type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Host
-      default: {}
 - name: io.k8s.api.core.v1.AWSElasticBlockStoreVolumeSource
   map:
     fields:
