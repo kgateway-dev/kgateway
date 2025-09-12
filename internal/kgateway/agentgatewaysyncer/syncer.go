@@ -126,16 +126,6 @@ func (b *PolicyStatusAsyncQueue) Enqueue(obj krt.ObjectWithStatus[controllers.Ob
 	b.queue.Enqueue(obj)
 }
 
-func (b *PolicyStatusCollections) Enqueue(obj krt.ObjectWithStatus[controllers.Object, v1alpha1.PolicyStatus]) {
-	b.queue.Enqueue(obj)
-}
-
-func NewPolicyStatusCollections() *PolicyStatusCollections {
-	return &PolicyStatusCollections{
-		queue: utils.NewAsyncQueue[krt.ObjectWithStatus[controllers.Object, v1alpha1.PolicyStatus]](),
-	}
-}
-
 // GetAsyncQueue returns the underlying AsyncQueue for use in status syncer
 func (b *PolicyStatusAsyncQueue) GetAsyncQueue() utils.AsyncQueue[krt.ObjectWithStatus[controllers.Object, v1alpha1.PolicyStatus]] {
 	return b.queue
