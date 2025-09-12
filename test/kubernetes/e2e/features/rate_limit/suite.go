@@ -35,9 +35,10 @@ type testingSuite struct {
 	agentGateway    bool
 }
 
-// rlBurstTries keeps the requests within ratelimiter window
-// rateLimiter will not count 60 sercond for 1 minute, but will reset at 00 second for next minute
-
+// rlBurstTries: run a tiny burst so all checks stay in one fixed RL window.
+// The external rate limiter uses clock-aligned windows (per-minute resets at :00),
+// so long loops can straddle the boundary and flake.
+// 3 = one to establish state, two to confirm; fewer risks a transient, more risks crossing the window.
 var rlBurstTries = 3
 
 func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
