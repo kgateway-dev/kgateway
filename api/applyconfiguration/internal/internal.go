@@ -1007,6 +1007,24 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: grpcService
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtGrpcService
+    - name: maxMessageTimeout
+      type:
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Duration
+    - name: messageTimeout
+      type:
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Duration
+    - name: metadataOptions
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.MetadataOptions
+    - name: processingMode
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ProcessingMode
+    - name: routeCacheAction
+      type:
+        scalar: string
+    - name: statPrefix
+      type:
+        scalar: string
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.FieldDefault
   map:
     fields:
@@ -1762,6 +1780,27 @@ var schemaYAML = typed.YAMLObject(`types:
           elementType:
             namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.MetadataPathSegment
           elementRelationship: atomic
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.MetadataNamespaces
+  map:
+    fields:
+    - name: typed
+      type:
+        list:
+          elementType:
+            scalar: string
+          elementRelationship: atomic
+    - name: untyped
+      type:
+        list:
+          elementType:
+            scalar: string
+          elementRelationship: atomic
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.MetadataOptions
+  map:
+    fields:
+    - name: forwarding
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.MetadataNamespaces
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.MetadataPathSegment
   map:
     fields:

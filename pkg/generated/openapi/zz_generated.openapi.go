@@ -131,6 +131,8 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.McpTargetSelector":                         schema_kgateway_v2_api_v1alpha1_McpTargetSelector(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Message":                                   schema_kgateway_v2_api_v1alpha1_Message(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.MetadataKey":                               schema_kgateway_v2_api_v1alpha1_MetadataKey(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.MetadataNamespaces":                        schema_kgateway_v2_api_v1alpha1_MetadataNamespaces(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.MetadataOptions":                           schema_kgateway_v2_api_v1alpha1_MetadataOptions(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.MetadataPathSegment":                       schema_kgateway_v2_api_v1alpha1_MetadataPathSegment(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Moderation":                                schema_kgateway_v2_api_v1alpha1_Moderation(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.MultiPoolConfig":                           schema_kgateway_v2_api_v1alpha1_MultiPoolConfig(ref),
@@ -3259,12 +3261,50 @@ func schema_kgateway_v2_api_v1alpha1_ExtProcProvider(ref common.ReferenceCallbac
 							Format:      "",
 						},
 					},
+					"processingMode": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ProcessingMode defines how the filter should interact with the request/response streams.",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ProcessingMode"),
+						},
+					},
+					"messageTimeout": {
+						SchemaProps: spec.SchemaProps{
+							Description: "MessageTimeout is the timeout for each message sent to the external processing server.",
+							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Duration"),
+						},
+					},
+					"maxMessageTimeout": {
+						SchemaProps: spec.SchemaProps{
+							Description: "MaxMessageTimeout specifies the upper bound of override_message_timeout that may be sent from the external processing server. The default value 0, which effectively disables the override_message_timeout API.",
+							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Duration"),
+						},
+					},
+					"statPrefix": {
+						SchemaProps: spec.SchemaProps{
+							Description: "StatPrefix is an optional prefix to include when emitting stats from the extproc filter, enabling different instances of the filter to have unique stats.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"routeCacheAction": {
+						SchemaProps: spec.SchemaProps{
+							Description: "RouteCacheAction describes the route cache action to be taken when an external processor response is received in response to request headers.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"metadataOptions": {
+						SchemaProps: spec.SchemaProps{
+							Description: "MetadataOptions allows configuring metadata namespaces to forwarded or received from the external processing server.",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.MetadataOptions"),
+						},
+					},
 				},
 				Required: []string{"grpcService"},
 			},
 		},
 		Dependencies: []string{
-			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtGrpcService"},
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtGrpcService", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.MetadataOptions", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ProcessingMode", "k8s.io/apimachinery/pkg/apis/meta/v1.Duration"},
 	}
 }
 
@@ -5368,6 +5408,68 @@ func schema_kgateway_v2_api_v1alpha1_MetadataKey(ref common.ReferenceCallback) c
 		},
 		Dependencies: []string{
 			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.MetadataPathSegment"},
+	}
+}
+
+func schema_kgateway_v2_api_v1alpha1_MetadataNamespaces(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "MetadataNamespaces configures which metadata namespaces to use. See [envoy docs](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/ext_proc/v3/ext_proc.proto#envoy-v3-api-msg-extensions-filters-http-ext-proc-v3-metadataoptions-metadatanamespaces) for specifics.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"typed": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
+									},
+								},
+							},
+						},
+					},
+					"untyped": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func schema_kgateway_v2_api_v1alpha1_MetadataOptions(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "MetadataOptions allows configuring metadata namespaces to forwarded or received from the external processing server.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"forwarding": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Forwarding defines the typed or untyped dynamic metadata namespaces to forward to the external processing server.",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.MetadataNamespaces"),
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.MetadataNamespaces"},
 	}
 }
 

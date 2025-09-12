@@ -188,6 +188,95 @@ spec:
                     required:
                     - backendRef
                     type: object
+                  maxMessageTimeout:
+                    type: string
+                    x-kubernetes-validations:
+                    - message: invalid timeout value
+                      rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                    - message: timeout must be at least 1ms.
+                      rule: duration(self) >= duration('1ms')
+                  messageTimeout:
+                    type: string
+                    x-kubernetes-validations:
+                    - message: invalid timeout value
+                      rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                    - message: timeout must be at least 1ms.
+                      rule: duration(self) >= duration('1ms')
+                  metadataOptions:
+                    properties:
+                      forwarding:
+                        properties:
+                          typed:
+                            items:
+                              type: string
+                            minItems: 1
+                            type: array
+                          untyped:
+                            items:
+                              type: string
+                            minItems: 1
+                            type: array
+                        type: object
+                    type: object
+                  processingMode:
+                    properties:
+                      requestBodyMode:
+                        default: NONE
+                        enum:
+                        - NONE
+                        - STREAMED
+                        - BUFFERED
+                        - BUFFERED_PARTIAL
+                        - FULL_DUPLEX_STREAMED
+                        type: string
+                      requestHeaderMode:
+                        default: SEND
+                        enum:
+                        - DEFAULT
+                        - SEND
+                        - SKIP
+                        type: string
+                      requestTrailerMode:
+                        default: SKIP
+                        enum:
+                        - DEFAULT
+                        - SEND
+                        - SKIP
+                        type: string
+                      responseBodyMode:
+                        default: NONE
+                        enum:
+                        - NONE
+                        - STREAMED
+                        - BUFFERED
+                        - BUFFERED_PARTIAL
+                        - FULL_DUPLEX_STREAMED
+                        type: string
+                      responseHeaderMode:
+                        default: SEND
+                        enum:
+                        - DEFAULT
+                        - SEND
+                        - SKIP
+                        type: string
+                      responseTrailerMode:
+                        default: SKIP
+                        enum:
+                        - DEFAULT
+                        - SEND
+                        - SKIP
+                        type: string
+                    type: object
+                  routeCacheAction:
+                    default: Default
+                    enum:
+                    - Default
+                    - Clear
+                    - Retain
+                    type: string
+                  statPrefix:
+                    minLength: 1
+                    type: string
                 required:
                 - grpcService
                 type: object

@@ -223,6 +223,10 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.MessageApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("MetadataKey"):
 		return &apiv1alpha1.MetadataKeyApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("MetadataNamespaces"):
+		return &apiv1alpha1.MetadataNamespacesApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("MetadataOptions"):
+		return &apiv1alpha1.MetadataOptionsApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("MetadataPathSegment"):
 		return &apiv1alpha1.MetadataPathSegmentApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("Moderation"):

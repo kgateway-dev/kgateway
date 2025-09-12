@@ -406,10 +406,10 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
-	t.Run("TrafficPolicy ExtProc Simple", func(t *testing.T) {
+	t.Run("TrafficPolicy ExtProc Full Config", func(t *testing.T) {
 		test(t, translatorTestCase{
-			inputFile:  "traffic-policy/extproc-simple.yaml",
-			outputFile: "traffic-policy/extproc-simple.yaml",
+			inputFile:  "traffic-policy/extproc-full-config.yaml",
+			outputFile: "traffic-policy/extproc-full-config.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "infra",
 				Name:      "example-gateway",

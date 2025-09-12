@@ -18,6 +18,26 @@ type ExtProcPolicy struct {
 	Disable *PolicyDisable `json:"disable,omitempty"`
 }
 
+// MetadataOptions allows configuring metadata namespaces to forwarded or received from the external
+// processing server.
+type MetadataOptions struct {
+	// Forwarding defines the typed or untyped dynamic metadata namespaces to forward to the external processing server.
+	// +optional
+	Forwarding *MetadataNamespaces `json:"forwarding,omitempty"`
+}
+
+// MetadataNamespaces configures which metadata namespaces to use.
+// See [envoy docs](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/ext_proc/v3/ext_proc.proto#envoy-v3-api-msg-extensions-filters-http-ext-proc-v3-metadataoptions-metadatanamespaces)
+// for specifics.
+type MetadataNamespaces struct {
+	// +optional
+	// +kubebuilder:validation:MinItems=1
+	Typed []string `json:"typed,omitempty"`
+	// +optional
+	// +kubebuilder:validation:MinItems=1
+	Untyped []string `json:"untyped,omitempty"`
+}
+
 // ProcessingMode defines how the filter should interact with the request/response streams
 type ProcessingMode struct {
 	// RequestHeaderMode determines how to handle the request headers

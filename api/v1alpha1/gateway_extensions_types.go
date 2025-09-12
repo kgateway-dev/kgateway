@@ -86,7 +86,56 @@ type ExtProcProvider struct {
 	// +optional
 	// +kubebuilder:default=true
 	FailOpen bool `json:"failOpen"`
+
+	// ProcessingMode defines how the filter should interact with the request/response streams.
+	// +optional
+	ProcessingMode *ProcessingMode `json:"processingMode,omitempty"`
+
+	// MessageTimeout is the timeout for each message sent to the external processing server.
+	// +optional
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid timeout value"
+	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="timeout must be at least 1ms."
+	MessageTimeout *metav1.Duration `json:"messageTimeout,omitempty"`
+
+	// MaxMessageTimeout specifies the upper bound of override_message_timeout that may be sent from the external processing server.
+	// The default value 0, which effectively disables the override_message_timeout API.
+	// +optional
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid timeout value"
+	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="timeout must be at least 1ms."
+	MaxMessageTimeout *metav1.Duration `json:"maxMessageTimeout,omitempty"`
+
+	// StatPrefix is an optional prefix to include when emitting stats from the extproc filter,
+	// enabling different instances of the filter to have unique stats.
+	// +optional
+	// +kubebuilder:validation:MinLength=1
+	StatPrefix *string `json:"statPrefix,omitempty"`
+
+	// RouteCacheAction describes the route cache action to be taken when an
+	// external processor response is received in response to request headers.
+	// +optional
+	// +kubebuilder:validation:Enum=Default;Clear;Retain
+	// +kubebuilder:default=Default
+	RouteCacheAction RouteCacheAction `json:"routeCacheAction,omitempty"`
+
+	// MetadataOptions allows configuring metadata namespaces to forwarded or received from the external
+	// processing server.
+	// +optional
+	MetadataOptions *MetadataOptions `json:"metadataOptions"`
 }
+
+type RouteCacheAction string
+
+const (
+	// RouteCacheActionDefault is the default behavior of clearing the route cache only
+	// when the clear_route_cache field is set in an external processor response.
+	RouteCacheActionDefault RouteCacheAction = "Default"
+	// RouteCacheActionClear always clears the route cache irrespective of the
+	// clear_route_cache bit in the external processor response.
+	RouteCacheActionClear RouteCacheAction = "Clear"
+	// RouteCacheActionRetain never clears the route cache irrespective of the
+	// clear_route_cache bit in the external processor response.
+	RouteCacheActionRetain RouteCacheAction = "Retain"
+)
 
 // ExtGrpcService defines the GRPC service that will handle the processing.
 type ExtGrpcService struct {
