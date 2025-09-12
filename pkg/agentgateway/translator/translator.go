@@ -15,11 +15,9 @@ type AgentGatewayTranslator struct {
 // NewAgentGatewayTranslator creates a new AgentGatewayTranslator
 func NewAgentGatewayTranslator(
 	agwCollection *agentgatewayplugins.AgwCollections,
-	extensions extensionsplug.Plugin,
 ) *AgentGatewayTranslator {
 	return &AgentGatewayTranslator{
 		agwCollection: agwCollection,
-		extensions:    extensions,
 	}
 }
 

@@ -38,10 +38,10 @@ require (
 	golang.org/x/net v0.43.0
 	google.golang.org/grpc v1.74.2
 	google.golang.org/protobuf v1.36.7
-	helm.sh/helm/v3 v3.18.5
-	istio.io/api v1.26.0-alpha.0.0.20250820113222-47f832b86cdd
-	istio.io/client-go v1.26.0-alpha.0.0.20250820113822-8b883d128bac
-	istio.io/istio v0.0.0-20250826222905-45e4f30947d5
+	helm.sh/helm/v3 v3.18.6
+	istio.io/api v1.26.0-alpha.0.0.20250908200844-f7a34ed800ee
+	istio.io/client-go v1.26.0-alpha.0.0.20250908201345-99e026bfe54f
+	istio.io/istio v0.0.0-20250910161727-ec841334dbad
 	k8s.io/api v0.33.4
 	k8s.io/apiextensions-apiserver v0.33.4
 	k8s.io/apimachinery v0.33.4

@@ -1,0 +1,139 @@
+# Validate that invalid policy attached to multiple targets (Gateway + HTTPRoute)
+# handles error reporting correctly at different attachment levels.
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: example-gateway
+  namespace: gwtest
+spec:
+  gatewayClassName: kgateway
+  listeners:
+  - name: http
+    port: 8080
+    protocol: HTTP
+    hostname: www.example.com
+    allowedRoutes:
+      namespaces:
+        from: All
+  - name: https
+    port: 8443
+    protocol: HTTPS
+    hostname: secure.example.com
+    allowedRoutes:
+      namespaces:
+        from: All
+  allowedListeners:
+    namespaces:
+      from: All
+---
+apiVersion: gateway.networking.x-k8s.io/v1alpha1
+kind: XListenerSet
+metadata:
+  name: test-listenerset
+  namespace: gwtest
+spec:
+  parentRef:
+    name: example-gateway
+    kind: Gateway
+    group: gateway.networking.k8s.io
+  listeners:
+  - name: http-additional
+    protocol: HTTP
+    port: 9090
+    allowedRoutes:
+      namespaces:
+        from: All
+  - name: https-additional
+    protocol: HTTPS
+    port: 9443
+    allowedRoutes:
+      namespaces:
+        from: All
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: example-svc
+  namespace: gwtest
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: example
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: test-route-gateway
+  namespace: gwtest
+spec:
+  parentRefs:
+  - name: example-gateway
+    group: gateway.networking.k8s.io
+    kind: Gateway
+  hostnames:
+  - "www.example.com"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /gateway
+    backendRefs:
+    - name: example-svc
+      port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: test-route-xlistenerset
+  namespace: gwtest
+spec:
+  parentRefs:
+  - name: test-listenerset
+    group: gateway.networking.x-k8s.io
+    kind: XListenerSet
+    sectionName: http-additional
+  hostnames:
+  - "www.example.com"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /xlistenerset
+    backendRefs:
+    - name: example-svc
+      port: 80
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: gateway-wide-invalid-policy
+  namespace: gwtest
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: example-gateway
+  transformation:
+    request:
+      body:
+        parseAs: AsJson
+        value: "{{ invalid_gateway_template }"
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: xlistenerset-wide-invalid-policy
+  namespace: gwtest
+spec:
+  targetRefs:
+  - group: gateway.networking.x-k8s.io
+    kind: XListenerSet
+    name: test-listenerset
+  ai:
+    defaults:
+      - field: "invalid_object"
+        value: "\"model\":\"gpt-4\"}"

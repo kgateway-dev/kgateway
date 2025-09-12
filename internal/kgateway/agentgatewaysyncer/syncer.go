@@ -6,7 +6,6 @@ import (
 	"maps"
 	"strconv"
 	"sync/atomic"
-	"time"
 
 	"github.com/agentgateway/agentgateway/go/api"
 	envoytypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
@@ -15,20 +14,20 @@ import (
 	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/krt"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	agwir "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/translator"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
-	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
-	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 	krtpkg "github.com/kgateway-dev/kgateway/v2/pkg/utils/krtutil"
 )
@@ -39,10 +38,6 @@ var (
 )
 
 const (
-	// Retry configuration constants
-	maxRetryAttempts = 5
-	retryDelay       = 100 * time.Millisecond
-
 	// Resource name format strings
 	resourceNameFormat = "%s~%s"
 	bindKeyFormat      = "%s/%s"
@@ -50,7 +45,6 @@ const (
 
 	// Log message keys
 	logKeyControllerName = "controllername"
-	logKeyError          = "error"
 	logKeyGateway        = "gateway"
 	logKeyResourceRef    = "resource_ref"
 	logKeyRouteType      = "route_type"
@@ -63,7 +57,6 @@ type AgentGwSyncer struct {
 	agwCollections *plugins.AgwCollections
 	mgr            manager.Manager
 	client         kube.Client
-	plugins        pluginsdk.Plugin
 	agwPlugins     plugins.AgentgatewayPlugin
 	translator     *translator.AgentGatewayTranslator
 
@@ -83,6 +76,10 @@ type AgentGwSyncer struct {
 	listenerSetReportQueue utils.AsyncQueue[ListenerSetReports]
 	routeReportQueue       utils.AsyncQueue[RouteReports]
 
+	// Collection status reporting
+	// TODO(npolshak): report these separately from proxy_syncer backends https://github.com/kgateway-dev/kgateway/issues/11966
+	//backendStatuses krt.StatusCollection[*v1alpha1.Backend, v1alpha1.BackendStatus]
+
 	// Synchronization
 	waitForSync []cache.InformerSynced
 	ready       atomic.Bool
@@ -97,7 +94,6 @@ func NewAgentGwSyncer(
 	client kube.Client,
 	mgr manager.Manager,
 	agwCollections *plugins.AgwCollections,
-	plugins pluginsdk.Plugin,
 	agwPlugins plugins.AgentgatewayPlugin,
 	xdsCache envoycache.SnapshotCache,
 	enableInferExt bool,
@@ -106,9 +102,8 @@ func NewAgentGwSyncer(
 		agwCollections:         agwCollections,
 		controllerName:         controllerName,
 		agentGatewayClassName:  agentGatewayClassName,
-		plugins:                plugins,
 		agwPlugins:             agwPlugins,
-		translator:             translator.NewAgentGatewayTranslator(agwCollections, plugins),
+		translator:             translator.NewAgentGatewayTranslator(agwCollections),
 		xdsCache:               xdsCache,
 		client:                 client,
 		mgr:                    mgr,
@@ -123,14 +118,10 @@ func (s *AgentGwSyncer) Init(krtopts krtinternal.KrtOptions) {
 	logger.Debug("init agentgateway Syncer", "controllername", s.controllerName)
 
 	s.translator.Init()
-
-	finalBackends, _ := s.buildBackendCollections(krtopts)
-
-	// Pass finalBackends into buildResourceCollections instead of storing on syncer
-	s.buildResourceCollections(finalBackends, krtopts)
+	s.buildResourceCollections(krtopts)
 }
 
-func (s *AgentGwSyncer) buildResourceCollections(finalBackends krt.Collection[ir.BackendObjectIR], krtopts krtinternal.KrtOptions) {
+func (s *AgentGwSyncer) buildResourceCollections(krtopts krtinternal.KrtOptions) {
 	// Build core collections for irs
 	gatewayClasses := GatewayClassesCollection(s.agwCollections.GatewayClasses, krtopts)
 	refGrants := BuildReferenceGrants(ReferenceGrantsCollection(s.agwCollections.ReferenceGrants, krtopts))
@@ -139,8 +130,8 @@ func (s *AgentGwSyncer) buildResourceCollections(finalBackends krt.Collection[ir
 	// Build ADP resources for gateway
 	adpResources := s.buildADPResources(gateways, refGrants, krtopts)
 
-	// Create ADP backend collection from finalBackends
-	adpBackends := s.newADPBackendCollection(finalBackends, krtopts)
+	// Create an agentgateway backend collection from the kgateway backend resources
+	_, adpBackends := s.newADPBackendCollection(s.agwCollections.Backends, krtopts)
 
 	// Build address collections
 	addresses := s.buildAddressCollections(krtopts)
@@ -231,11 +222,10 @@ func (s *AgentGwSyncer) buildADPResources(
 		Services:        s.agwCollections.Services,
 		Namespaces:      s.agwCollections.Namespaces,
 		InferencePools:  s.agwCollections.InferencePools,
-		Backends:        s.agwCollections.BackendIndex,
-		Plugins:         s.plugins,
+		Backends:        s.agwCollections.Backends,
 		DirectResponses: s.agwCollections.DirectResponses,
 	}
-	adpRoutes := ADPRouteCollection(s.agwCollections.HTTPRoutes, s.agwCollections.GRPCRoutes, s.agwCollections.TCPRoutes, s.agwCollections.TLSRoutes, routeInputs, krtopts, s.plugins)
+	adpRoutes := ADPRouteCollection(s.agwCollections.HTTPRoutes, s.agwCollections.GRPCRoutes, s.agwCollections.TCPRoutes, s.agwCollections.TLSRoutes, routeInputs, krtopts)
 	if s.agwPlugins.AddResourceExtension != nil && s.agwPlugins.AddResourceExtension.Routes != nil {
 		adpRoutes = krt.JoinCollection([]krt.Collection[agwir.ADPResourcesForGateway]{adpRoutes, s.agwPlugins.AddResourceExtension.Routes})
 	}
@@ -274,13 +264,28 @@ func (s *AgentGwSyncer) buildListenerFromGateway(obj GatewayListener) *agwir.ADP
 	}, resources, obj.report)
 }
 
-// buildBackendFromBackendIR creates a backend resource from BackendObjectIR
-func (s *AgentGwSyncer) buildBackendFromBackendIR(ctx krt.HandlerContext, backendIR *ir.BackendObjectIR, svcCol krt.Collection[*corev1.Service], secretsCol krt.Collection[*corev1.Secret], nsCol krt.Collection[*corev1.Namespace]) []envoyResourceWithCustomName {
+// buildBackendFromBackendIR creates a backend resource from Backend
+func (s *AgentGwSyncer) buildBackendFromBackend(ctx krt.HandlerContext,
+	backend *v1alpha1.Backend, svcCol krt.Collection[*corev1.Service],
+	secretsCol krt.Collection[*corev1.Secret],
+	nsCol krt.Collection[*corev1.Namespace]) ([]envoyResourceWithCustomName, *v1alpha1.BackendStatus) {
 	var results []envoyResourceWithCustomName
-	backends, backendPolicies, err := s.translator.BackendTranslator().TranslateBackend(ctx, backendIR, svcCol, secretsCol, nsCol)
+	var backendStatus *v1alpha1.BackendStatus
+	backends, backendPolicies, err := s.translator.BackendTranslator().TranslateBackend(ctx, backend, svcCol, secretsCol, nsCol)
 	if err != nil {
-		logger.Error("failed to translate backend", "backend", backendIR.Name, "namespace", backendIR.Namespace, "error", err)
-		return results
+		logger.Error("failed to translate backend", "backend", backend.Name, "namespace", backend.Namespace, "error", err)
+		backendStatus = &v1alpha1.BackendStatus{
+			Conditions: []metav1.Condition{
+				{
+					Type:               "Accepted",
+					Status:             metav1.ConditionFalse,
+					Reason:             "TranslationError",
+					Message:            fmt.Sprintf("failed to translate backend %v", err),
+					ObservedGeneration: backend.Generation,
+				},
+			},
+		}
+		return results, backendStatus
 	}
 	// handle all backends created as an MCP backend may create multiple backends
 	for _, backend := range backends {
@@ -309,39 +314,28 @@ func (s *AgentGwSyncer) buildBackendFromBackendIR(ctx krt.HandlerContext, backen
 			version: utils.HashProto(resourceWrapper),
 		})
 	}
-	return results
+	backendStatus = &v1alpha1.BackendStatus{
+		Conditions: []metav1.Condition{
+			{
+				Type:               "Accepted",
+				Status:             metav1.ConditionTrue,
+				Reason:             "Accepted",
+				ObservedGeneration: backend.Generation,
+			},
+		},
+	}
+	return results, backendStatus
 }
 
 // newADPBackendCollection creates the ADP backend collection for agent gateway resources
-func (s *AgentGwSyncer) newADPBackendCollection(finalBackends krt.Collection[ir.BackendObjectIR], krtopts krtinternal.KrtOptions) krt.Collection[envoyResourceWithCustomName] {
-	backends := krt.NewManyCollection(finalBackends, func(ctx krt.HandlerContext, backendIR ir.BackendObjectIR) []envoyResourceWithCustomName {
-		if backendIR.Group == wellknown.ServiceGVK.Group && backendIR.Kind == wellknown.ServiceGVK.Kind {
-			return nil
-		}
-		return s.buildBackendFromBackendIR(ctx, &backendIR, s.agwCollections.Services, s.agwCollections.Secrets, s.agwCollections.Namespaces)
+func (s *AgentGwSyncer) newADPBackendCollection(finalBackends krt.Collection[*v1alpha1.Backend], krtopts krtinternal.KrtOptions) (krt.StatusCollection[*v1alpha1.Backend, v1alpha1.BackendStatus], krt.Collection[envoyResourceWithCustomName]) {
+	return krt.NewStatusManyCollection(finalBackends, func(krtctx krt.HandlerContext, backend *v1alpha1.Backend) (
+		*v1alpha1.BackendStatus,
+		[]envoyResourceWithCustomName,
+	) {
+		resources, status := s.buildBackendFromBackend(krtctx, backend, s.agwCollections.Services, s.agwCollections.Secrets, s.agwCollections.Namespaces)
+		return status, resources
 	}, krtopts.ToOptions("ADPBackends")...)
-
-	return backends
-}
-
-// buildBackendCollections builds the filtered backend IR collection and the corresponding ADP backend collection
-func (s *AgentGwSyncer) buildBackendCollections(
-	krtopts krtinternal.KrtOptions,
-) (krt.Collection[ir.BackendObjectIR], krt.Collection[envoyResourceWithCustomName]) {
-	// Get all backends with attached policies, filtering out Service backends
-	// Agent gateway handles Service references directly in routes and doesn't need separate backend objects
-	allBackends := krt.JoinCollection(s.agwCollections.BackendIndex.BackendsWithPolicy(),
-		append(krtopts.ToOptions("AllBackends"), krt.WithJoinUnchecked())...)
-
-	finalBackends := krt.NewCollection(allBackends, func(kctx krt.HandlerContext, backend *ir.BackendObjectIR) *ir.BackendObjectIR {
-		if backend.Group == wellknown.ServiceGVK.Group && backend.Kind == wellknown.ServiceGVK.Kind {
-			return nil
-		}
-		return backend
-	}, krtopts.ToOptions("FinalBackends")...)
-
-	adpBackends := s.newADPBackendCollection(finalBackends, krtopts)
-	return finalBackends, adpBackends
 }
 
 // getProtocolAndTLSConfig extracts protocol and TLS configuration from a gateway

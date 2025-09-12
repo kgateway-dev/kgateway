@@ -184,7 +184,6 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 	var agentGatewaySyncer *agentgatewaysyncer.AgentGwSyncer
 	if cfg.SetupOpts.GlobalSettings.EnableAgentGateway {
 		agentgatewayMergedPlugins := agentGatewayPluginFactory(cfg)(ctx, cfg.AgwCollections)
-		cfg.AgwCollections.InitPlugins(ctx, mergedPlugins, globalSettings)
 
 		agentGatewaySyncer = agentgatewaysyncer.NewAgentGwSyncer(
 			cfg.ControllerName,
@@ -192,8 +191,6 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 			cfg.Client,
 			cfg.Manager,
 			cfg.AgwCollections,
-			// TODO(npolshak): move away from shared mergedPlugins to agentGatewayPlugins https://github.com/kgateway-dev/kgateway/issues/12052
-			mergedPlugins,
 			agentgatewayMergedPlugins,
 			cfg.SetupOpts.Cache,
 			cfg.SetupOpts.GlobalSettings.EnableInferExt,
