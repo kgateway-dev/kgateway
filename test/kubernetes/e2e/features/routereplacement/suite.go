@@ -20,96 +20,70 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/helpers"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
 	testdefaults "github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/defaults"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/tests/base"
 )
 
-// testConfig maps a manifest to a route replacement mode
-type testConfig struct {
-	manifest string
-	mode     settings.RouteReplacementMode
-}
+var _ e2e.NewSuiteFunc = NewTestingSuite
+
+var (
+	setup = base.TestCase{
+		Manifests: []string{
+			testdefaults.CurlPodManifest,
+			testdefaults.HttpbinManifest,
+			setupManifest,
+		},
+	}
+
+	testModes = map[string]settings.RouteReplacementMode{
+		"TestStrictModeInvalidPolicyReplacement":   settings.RouteReplacementStrict,
+		"TestStandardModeInvalidPolicyReplacement": settings.RouteReplacementStandard,
+		"TestStrictModeInvalidMatcherDropsRoute":   settings.RouteReplacementStrict,
+		"TestStrictModeInvalidRouteReplacement":    settings.RouteReplacementStrict,
+	}
+
+	testCases = map[string]*base.TestCase{
+		"TestStrictModeInvalidPolicyReplacement": {
+			Manifests: []string{strictModeInvalidPolicyManifest},
+		},
+		"TestStandardModeInvalidPolicyReplacement": {
+			Manifests: []string{standardModeInvalidPolicyManifest},
+		},
+		"TestStrictModeInvalidMatcherDropsRoute": {
+			Manifests: []string{strictModeInvalidMatcherManifest},
+		},
+		"TestStrictModeInvalidRouteReplacement": {
+			Manifests: []string{strictModeInvalidRouteManifest},
+		},
+	}
+)
 
 // testingSuite is a suite of route replacement tests that verify the guardrail behavior
 // for invalid route configurations in both STANDARD and STRICT modes
 type testingSuite struct {
-	suite.Suite
+	*base.BaseTestingSuite
 
-	ctx context.Context
-
-	// testInstallation contains all the metadata/utilities necessary to execute a series of tests
-	// against an installation of kgateway
-	testInstallation *e2e.TestInstallation
-
-	// setupManifests to apply once the suite is set up
-	setupManifests []string
-
-	// testManifests maps test name to its configuration including manifest and required mode
-	testManifests map[string]testConfig
+	// testModes maps test name to its route replacement mode
+	testModes map[string]settings.RouteReplacementMode
 
 	// original deployment state for cleanup
 	originalDeployment *appsv1.Deployment
 }
 
-var _ e2e.NewSuiteFunc = NewTestingSuite
-
 func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
 	return &testingSuite{
-		ctx:              ctx,
-		testInstallation: testInst,
-		setupManifests: []string{
-			testdefaults.CurlPodManifest,
-			testdefaults.HttpbinManifest,
-			setupManifest,
-		},
-		testManifests: map[string]testConfig{
-			"TestStrictModeInvalidPolicyReplacement": {
-				manifest: strictModeInvalidPolicyManifest,
-				mode:     settings.RouteReplacementStrict,
-			},
-			"TestStandardModeInvalidPolicyReplacement": {
-				manifest: standardModeInvalidPolicyManifest,
-				mode:     settings.RouteReplacementStandard,
-			},
-			"TestStrictModeInvalidMatcherDropsRoute": {
-				manifest: strictModeInvalidMatcherManifest,
-				mode:     settings.RouteReplacementStrict,
-			},
-			"TestStrictModeInvalidRouteReplacement": {
-				manifest: strictModeInvalidRouteManifest,
-				mode:     settings.RouteReplacementStrict,
-			},
-		},
+		BaseTestingSuite: base.NewBaseTestingSuite(ctx, testInst, setup, testCases),
+		testModes:        testModes,
 	}
 }
 
 func (s *testingSuite) SetupSuite() {
-	for _, manifest := range s.setupManifests {
-		err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, manifest)
-		s.Require().NoError(err, "can apply "+manifest)
-	}
-	s.testInstallation.Assertions.EventuallyObjectsExist(
-		s.ctx,
-		proxyDeployment,
-		proxyService,
-		proxyServiceAccount,
-		gateway,
-	)
-
-	// make sure pods are running
-	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, testdefaults.CurlPod.GetNamespace(), metav1.ListOptions{
-		LabelSelector: testdefaults.CurlPodLabelSelector,
-	})
-	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, testdefaults.HttpbinDeployment.GetNamespace(), metav1.ListOptions{
-		LabelSelector: testdefaults.HttpbinLabelSelector,
-	})
-	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, proxyObjectMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("app.kubernetes.io/name=%s", proxyObjectMeta.GetName()),
-	})
+	s.BaseTestingSuite.SetupSuite()
 
 	// Store original deployment state for cleanup
-	controllerNamespace := s.testInstallation.Metadata.InstallNamespace
+	controllerNamespace := s.TestInstallation.Metadata.InstallNamespace
 
 	s.originalDeployment = &appsv1.Deployment{}
-	err := s.testInstallation.ClusterContext.Client.Get(s.ctx, client.ObjectKey{
+	err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, client.ObjectKey{
 		Namespace: controllerNamespace,
 		Name:      helpers.DefaultKgatewayDeploymentName,
 	}, s.originalDeployment)
@@ -117,63 +91,30 @@ func (s *testingSuite) SetupSuite() {
 }
 
 func (s *testingSuite) TearDownSuite() {
-	for _, manifest := range s.setupManifests {
-		err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, manifest)
-		s.Require().NoError(err, "can delete "+manifest)
-	}
-	s.testInstallation.Assertions.EventuallyObjectsNotExist(
-		s.ctx,
-		proxyDeployment,
-		proxyService,
-		proxyServiceAccount,
-		gateway,
-	)
+	// Restore original deployment state
+	s.restoreOriginalDeployment()
 
-	s.testInstallation.Assertions.EventuallyPodsNotExist(s.ctx, testdefaults.CurlPod.GetNamespace(), metav1.ListOptions{
-		LabelSelector: testdefaults.CurlPodLabelSelector,
-	})
-	s.testInstallation.Assertions.EventuallyPodsNotExist(s.ctx, testdefaults.HttpbinDeployment.GetNamespace(), metav1.ListOptions{
-		LabelSelector: testdefaults.HttpbinLabelSelector,
-	})
-	s.testInstallation.Assertions.EventuallyPodsNotExist(s.ctx, proxyObjectMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("app.kubernetes.io/name=%s", proxyObjectMeta.GetName()),
-	})
+	s.BaseTestingSuite.TearDownSuite()
 }
 
 func (s *testingSuite) BeforeTest(suiteName, testName string) {
-	config, exists := s.testManifests[testName]
+	mode, exists := s.testModes[testName]
 	if !exists {
-		s.FailNow(fmt.Sprintf("no configuration found for test %s", testName))
+		s.FailNow(fmt.Sprintf("no mode configuration found for test %s", testName))
 	}
 
 	// Patch deployment with required route replacement mode
-	s.patchDeploymentWithMode(config.mode)
+	s.patchDeploymentWithMode(mode)
 
-	// Apply test-specific manifest
-	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, config.manifest)
-	s.Require().NoError(err)
-}
-
-func (s *testingSuite) AfterTest(suiteName, testName string) {
-	config, exists := s.testManifests[testName]
-	if !exists {
-		s.FailNow(fmt.Sprintf("no configuration found for test %s", testName))
-	}
-
-	// Clean up test-specific manifest
-	err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, config.manifest)
-	s.Require().NoError(err)
-
-	// Restore original deployment state
-	s.restoreOriginalDeployment()
+	s.BaseTestingSuite.BeforeTest(suiteName, testName)
 }
 
 // TestStrictModeInvalidPolicyReplacement tests that in STRICT mode,
 // routes with valid configuration but invalid custom policies are replaced with direct responses
 func (s *testingSuite) TestStrictModeInvalidPolicyReplacement() {
 	// Verify route status shows Accepted=False with RouteRuleDropped reason (for replacement)
-	s.testInstallation.Assertions.EventuallyHTTPRouteCondition(
-		s.ctx,
+	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
+		s.Ctx,
 		invalidPolicyRoute.Name,
 		invalidPolicyRoute.Namespace,
 		gwv1.RouteConditionAccepted,
@@ -181,8 +122,8 @@ func (s *testingSuite) TestStrictModeInvalidPolicyReplacement() {
 	)
 
 	// Verify that a route with an invalid policy is replaced with a 500 direct response
-	s.testInstallation.Assertions.AssertEventualCurlResponse(
-		s.ctx,
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
@@ -202,8 +143,8 @@ func (s *testingSuite) TestStrictModeInvalidPolicyReplacement() {
 // routes with invalid policies are handled differently than in STRICT mode
 func (s *testingSuite) TestStandardModeInvalidPolicyReplacement() {
 	// Verify route status shows Accepted=True (STANDARD mode accepts despite invalid policy)
-	s.testInstallation.Assertions.EventuallyHTTPRouteCondition(
-		s.ctx,
+	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
+		s.Ctx,
 		invalidPolicyRoute.Name,
 		invalidPolicyRoute.Namespace,
 		gwv1.RouteConditionAccepted,
@@ -211,8 +152,8 @@ func (s *testingSuite) TestStandardModeInvalidPolicyReplacement() {
 	)
 
 	// Verify that the route works normally (STANDARD mode doesn't replace with 500)
-	s.testInstallation.Assertions.AssertEventualCurlResponse(
-		s.ctx,
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
@@ -231,8 +172,8 @@ func (s *testingSuite) TestStandardModeInvalidPolicyReplacement() {
 // routes with invalid matchers are dropped entirely
 func (s *testingSuite) TestStrictModeInvalidMatcherDropsRoute() {
 	// Verify route status shows Accepted=False with RouteRuleDropped reason
-	s.testInstallation.Assertions.EventuallyHTTPRouteCondition(
-		s.ctx,
+	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
+		s.Ctx,
 		invalidMatcherRoute.Name,
 		invalidMatcherRoute.Namespace,
 		gwv1.RouteConditionAccepted,
@@ -240,8 +181,8 @@ func (s *testingSuite) TestStrictModeInvalidMatcherDropsRoute() {
 	)
 
 	// Verify that the route was dropped (no route should exist, so we should get 404)
-	s.testInstallation.Assertions.AssertEventualCurlResponse(
-		s.ctx,
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
@@ -260,8 +201,8 @@ func (s *testingSuite) TestStrictModeInvalidMatcherDropsRoute() {
 // routes with invalid built-in policies are replaced with direct responses
 func (s *testingSuite) TestStrictModeInvalidRouteReplacement() {
 	// Verify route status shows Accepted=False with RouteRuleDropped reason (for replacement)
-	s.testInstallation.Assertions.EventuallyHTTPRouteCondition(
-		s.ctx,
+	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
+		s.Ctx,
 		invalidConfigRoute.Name,
 		invalidConfigRoute.Namespace,
 		gwv1.RouteConditionAccepted,
@@ -269,8 +210,8 @@ func (s *testingSuite) TestStrictModeInvalidRouteReplacement() {
 	)
 
 	// Verify that a route with an invalid built-in policy is replaced with a 500 direct response
-	s.testInstallation.Assertions.AssertEventualCurlResponse(
-		s.ctx,
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
@@ -286,10 +227,10 @@ func (s *testingSuite) TestStrictModeInvalidRouteReplacement() {
 }
 
 func (s *testingSuite) patchDeploymentWithMode(mode settings.RouteReplacementMode) {
-	controllerNamespace := s.testInstallation.Metadata.InstallNamespace
+	controllerNamespace := s.TestInstallation.Metadata.InstallNamespace
 
 	currentDeployment := &appsv1.Deployment{}
-	err := s.testInstallation.ClusterContext.Client.Get(s.ctx, client.ObjectKey{
+	err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, client.ObjectKey{
 		Namespace: controllerNamespace,
 		Name:      helpers.DefaultKgatewayDeploymentName,
 	}, currentDeployment)
@@ -328,11 +269,11 @@ func (s *testingSuite) patchDeploymentWithMode(mode settings.RouteReplacementMod
 	}
 
 	modifiedDeployment.ResourceVersion = ""
-	err = s.testInstallation.ClusterContext.Client.Patch(s.ctx, modifiedDeployment, client.MergeFrom(currentDeployment))
+	err = s.TestInstallation.ClusterContext.Client.Patch(s.Ctx, modifiedDeployment, client.MergeFrom(currentDeployment))
 	s.Require().NoError(err, "can patch controller deployment")
 
-	s.testInstallation.Assertions.EventuallyPodContainerContainsEnvVar(
-		s.ctx,
+	s.TestInstallation.Assertions.EventuallyPodContainerContainsEnvVar(
+		s.Ctx,
 		controllerNamespace,
 		metav1.ListOptions{
 			LabelSelector: "app.kubernetes.io/name=kgateway",
@@ -340,29 +281,29 @@ func (s *testingSuite) patchDeploymentWithMode(mode settings.RouteReplacementMod
 		helpers.KgatewayContainerName,
 		envVar,
 	)
-	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, controllerNamespace, metav1.ListOptions{
+	s.TestInstallation.Assertions.EventuallyPodsRunning(s.Ctx, controllerNamespace, metav1.ListOptions{
 		LabelSelector: "app.kubernetes.io/name=kgateway",
 	})
 
 	// Wait until there is only one pod. This way the new pod with the updated env var becomes the leader
 	// and can write the correct status.
-	s.testInstallation.Assertions.EventuallyReadyReplicas(s.ctx, metav1.ObjectMeta{
+	s.TestInstallation.Assertions.EventuallyReadyReplicas(s.Ctx, metav1.ObjectMeta{
 		Name:      "kgateway",
-		Namespace: s.testInstallation.Metadata.InstallNamespace,
+		Namespace: s.TestInstallation.Metadata.InstallNamespace,
 	}, gomega.Equal(1))
-	s.testInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
-		out, err := s.testInstallation.Actions.Kubectl().GetContainerLogs(s.ctx, s.testInstallation.Metadata.InstallNamespace, testdefaults.KGatewayDeployment)
+	s.TestInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
+		out, err := s.TestInstallation.Actions.Kubectl().GetContainerLogs(s.Ctx, s.TestInstallation.Metadata.InstallNamespace, testdefaults.KGatewayDeployment)
 		g.Expect(err).NotTo(gomega.HaveOccurred(), "Failed to get pod logs")
 		g.Expect(out).To(gomega.ContainSubstring("successfully acquired lease"))
 	}, "60s", "10s").Should(gomega.Succeed())
 }
 
 func (s *testingSuite) restoreOriginalDeployment() {
-	controllerNamespace := s.testInstallation.Metadata.InstallNamespace
+	controllerNamespace := s.TestInstallation.Metadata.InstallNamespace
 
 	// Get current deployment state
 	currentDeployment := &appsv1.Deployment{}
-	err := s.testInstallation.ClusterContext.Client.Get(s.ctx, client.ObjectKey{
+	err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, client.ObjectKey{
 		Namespace: controllerNamespace,
 		Name:      helpers.DefaultKgatewayDeploymentName,
 	}, currentDeployment)
@@ -370,11 +311,11 @@ func (s *testingSuite) restoreOriginalDeployment() {
 
 	// Restore original deployment
 	s.originalDeployment.ResourceVersion = ""
-	err = s.testInstallation.ClusterContext.Client.Patch(s.ctx, s.originalDeployment, client.MergeFrom(currentDeployment))
+	err = s.TestInstallation.ClusterContext.Client.Patch(s.Ctx, s.originalDeployment, client.MergeFrom(currentDeployment))
 	s.Require().NoError(err, "can restore original controller deployment")
 
 	// Wait for pods to be running again
-	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, controllerNamespace, metav1.ListOptions{
+	s.TestInstallation.Assertions.EventuallyPodsRunning(s.Ctx, controllerNamespace, metav1.ListOptions{
 		LabelSelector: "app.kubernetes.io/name=kgateway",
 	})
 }

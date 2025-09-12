@@ -70,6 +70,9 @@ spec:
         volumeMounts:
         - mountPath: /etc/envoy
           name: envoy-config
+        {{- with $gateway.extraVolumeMounts }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
         env:
         - name: POD_NAME
           valueFrom:
@@ -360,6 +363,9 @@ spec:
       - name: workload-certs
         emptyDir: {}
 {{- end }} {{/* if $gateway.istio.enabled */}}
+      {{- with $gateway.extraVolumes }}
+      {{- toYaml . | nindent 6 }}
+      {{- end }}
 ---
 apiVersion: v1
 kind: ServiceAccount

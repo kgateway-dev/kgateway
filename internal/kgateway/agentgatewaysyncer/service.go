@@ -25,10 +25,14 @@ import (
 	"istio.io/istio/pkg/config/host"
 	kubeutil "istio.io/istio/pkg/config/kube"
 	"istio.io/istio/pkg/config/protocol"
+	"istio.io/istio/pkg/config/schema/gvk"
 	"istio.io/istio/pkg/config/schema/kind"
+	"istio.io/istio/pkg/config/schema/kubetypes"
 	"istio.io/istio/pkg/config/visibility"
+	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/maps"
+	"istio.io/istio/pkg/ptr"
 	"istio.io/istio/pkg/slices"
 	"istio.io/istio/pkg/util/protomarshal"
 	"istio.io/istio/pkg/util/sets"
@@ -43,15 +47,16 @@ import (
 func (a *index) ServicesCollection(
 	services krt.Collection[*corev1.Service],
 	serviceEntries krt.Collection[*networkingclient.ServiceEntry],
+	waypoints krt.Collection[Waypoint],
 	inferencePools krt.Collection[*inf.InferencePool],
 	namespaces krt.Collection[*corev1.Namespace],
 	krtopts krtinternal.KrtOptions,
 ) krt.Collection[ServiceInfo] {
-	servicesInfo := krt.NewCollection(services, a.serviceServiceBuilder(),
+	servicesInfo := krt.NewCollection(services, a.serviceServiceBuilder(waypoints, namespaces),
 		krtopts.ToOptions("ServicesInfo")...)
 	//ServiceEntriesInfo := krt.NewManyCollection(serviceEntries, a.serviceEntryServiceBuilder(namespaces),
 	//	krtopts.ToOptions("ServiceEntriesInfo")...)
-	inferencePoolsInfo := krt.NewCollection(inferencePools, a.inferencePoolBuilder(),
+	inferencePoolsInfo := krt.NewCollection(inferencePools, a.inferencePoolBuilder(namespaces),
 		krtopts.ToOptions("InferencePools")...)
 	//WorkloadServices := krt.JoinCollection([]krt.Collection[ServiceInfo]{ServicesInfo, ServiceEntriesInfo}, krtopts.ToOptions("WorkloadService")...)
 
@@ -59,7 +64,10 @@ func (a *index) ServicesCollection(
 	return WorkloadServices
 }
 
-func (a *index) serviceServiceBuilder() krt.TransformationSingle[*corev1.Service, ServiceInfo] {
+func (a *index) serviceServiceBuilder(
+	waypoints krt.Collection[Waypoint],
+	namespaces krt.Collection[*corev1.Namespace],
+) krt.TransformationSingle[*corev1.Service, ServiceInfo] {
 	return func(ctx krt.HandlerContext, s *corev1.Service) *ServiceInfo {
 		if s.Spec.Type == corev1.ServiceTypeExternalName {
 			// ExternalName services are not implemented by ambient (but will still work).
@@ -76,20 +84,26 @@ func (a *index) serviceServiceBuilder() krt.TransformationSingle[*corev1.Service
 				TargetPortName: p.TargetPort.StrVal,
 			}
 		}
+		waypointStatus := WaypointBindingStatus{}
+		waypoint, wperr := fetchWaypointForService(ctx, waypoints, namespaces, s.ObjectMeta)
+		if waypoint != nil {
+			waypointStatus.ResourceName = waypoint.ResourceName()
 
-		svc := a.constructService(ctx, s)
+			// TODO: add this label to the istio api labels so we have constants to use
+			if val, ok := s.Labels["istio.io/ingress-use-waypoint"]; ok {
+				waypointStatus.IngressLabelPresent = true
+				waypointStatus.IngressUseWaypoint = strings.EqualFold(val, "true")
+			}
+		}
+		waypointStatus.Error = wperr
+
+		svc := a.constructService(ctx, s, waypoint)
 		return precomputeServicePtr(&ServiceInfo{
 			Service:       svc,
 			PortNames:     portNames,
 			LabelSelector: NewSelector(s.Spec.Selector),
-			Source: TypedObject{
-				NamespacedName: types.NamespacedName{
-					Namespace: s.Namespace,
-					Name:      s.Name,
-				},
-				Kind: "Service",
-			},
-			HasSelector: len(s.Spec.Selector) > 0,
+			Source:        MakeSource(s),
+			Waypoint:      waypointStatus,
 		})
 	}
 }
@@ -99,7 +113,9 @@ func InferenceHostname(name, namespace, domainSuffix string) host.Name {
 	return host.Name(name + "." + namespace + "." + "inference" + "." + domainSuffix) // Format: "%s.%s.svc.%s"
 }
 
-func (a *index) inferencePoolBuilder() krt.TransformationSingle[*inf.InferencePool, ServiceInfo] {
+func (a *index) inferencePoolBuilder(
+	namespaces krt.Collection[*corev1.Namespace],
+) krt.TransformationSingle[*inf.InferencePool, ServiceInfo] {
 	domainSuffix := kubeutils.GetClusterDomainName()
 	return func(ctx krt.HandlerContext, s *inf.InferencePool) *ServiceInfo {
 		portNames := map[int32]ServicePortName{}
@@ -132,7 +148,6 @@ func (a *index) inferencePoolBuilder() krt.TransformationSingle[*inf.InferencePo
 				},
 				Kind: "InferencePool", // TODO: get wellknown kind
 			},
-			HasSelector: len(s.Spec.Selector.MatchLabels) > 0,
 		})
 	}
 }
@@ -161,7 +176,7 @@ func toAppProtocolFromProtocol(p protocol.Instance) api.AppProtocol {
 	return api.AppProtocol_UNKNOWN
 }
 
-func (a *index) constructService(ctx krt.HandlerContext, svc *corev1.Service) *api.Service {
+func (a *index) constructService(ctx krt.HandlerContext, svc *corev1.Service, w *Waypoint) *api.Service {
 	ports := make([]*api.Port, 0, len(svc.Spec.Ports))
 	for _, p := range svc.Spec.Ports {
 		ports = append(ports, &api.Port{
@@ -223,6 +238,7 @@ func (a *index) constructService(ctx krt.HandlerContext, svc *corev1.Service) *a
 		Hostname:      kubeutils.ServiceFQDN(svc.ObjectMeta),
 		Addresses:     addresses,
 		Ports:         ports,
+		Waypoint:      w.GetAddress(),
 		LoadBalancing: lb,
 		IpFamilies:    ipFamily,
 	}
@@ -411,7 +427,7 @@ const (
 	DisabledTLSModeLabel = "disabled"
 
 	// MutualTLSModeLabel implies that the endpoint is ready to receive agent mTLS connections.
-	MutualTLSModeLabel = "mtls"
+	MutualTLSModeLabel = "istio"
 )
 
 func SupportsTunnel(labels map[string]string, tunnelType string) bool {
@@ -705,9 +721,8 @@ type ServiceInfo struct {
 	// PortNames provides a mapping of ServicePort -> port names. Note these are only used internally, not sent over XDS
 	PortNames map[int32]ServicePortName
 	// Source is the type that introduced this service.
-	Source TypedObject
-	// True if the originating K8s Service had a non-empty .spec.selector
-	HasSelector bool
+	Source   TypedObject
+	Waypoint WaypointBindingStatus
 	// MarshaledAddress contains the pre-marshaled representation.
 	// Note: this is an Address -- not a Service.
 	MarshaledAddress *anypb.Any
@@ -727,6 +742,24 @@ func (i ServiceInfo) GetStatusTarget() TypedObject {
 type StatusMessage struct {
 	Reason  string
 	Message string
+}
+
+type WaypointBindingStatus struct {
+	// ResourceName that clients should use when addressing traffic to this Service.
+	ResourceName string
+	// IngressUseWaypoint specifies whether ingress gateways should use the waypoint for this service.
+	IngressUseWaypoint bool
+	// IngressLabelPresent specifies whether the istio.io/ingress-use-waypoint label is set on the service.
+	IngressLabelPresent bool
+	// Error represents some error
+	Error *StatusMessage
+}
+
+func (i WaypointBindingStatus) Equals(other WaypointBindingStatus) bool {
+	return i.ResourceName == other.ResourceName &&
+		i.IngressUseWaypoint == other.IngressUseWaypoint &&
+		i.IngressLabelPresent == other.IngressLabelPresent &&
+		ptr.Equal(i.Error, other.Error)
 }
 
 func (i ServiceInfo) NamespacedName() types.NamespacedName {
@@ -1106,4 +1139,46 @@ func (m *AddressMap) ForEach(fn func(c cluster.ID, addresses []string)) {
 	for c, addresses := range m.Addresses {
 		fn(c, addresses)
 	}
+}
+
+func precomputeServicePtr(w *ServiceInfo) *ServiceInfo {
+	return ptr.Of(precomputeService(*w))
+}
+
+func precomputeService(w ServiceInfo) ServiceInfo {
+	addr := serviceToAddress(w.Service)
+	w.MarshaledAddress = protoconv.MessageToAny(addr)
+	w.AsAddress = AddressInfo{
+		Address:   addr,
+		Marshaled: w.MarshaledAddress,
+	}
+	return w
+}
+
+func serviceToAddress(s *api.Service) *api.Address {
+	return &api.Address{
+		Type: &api.Address_Service{
+			Service: s,
+		},
+	}
+}
+
+// MakeSource is a helper to turn an Object into a model.TypedObject.
+func MakeSource(o controllers.Object) TypedObject {
+	kind := gvk.MustToKind(kubetypes.GvkFromObject(o)).String()
+	return TypedObject{
+		NamespacedName: config.NamespacedName(o),
+		Kind:           kind,
+	}
+}
+
+func (a *index) toNetworkAddress(ctx krt.HandlerContext, vip string) (*api.NetworkAddress, error) {
+	ip, err := netip.ParseAddr(vip)
+	if err != nil {
+		return nil, fmt.Errorf("parse %v: %v", vip, err)
+	}
+	return &api.NetworkAddress{
+		// TODO: calculate network
+		Address: ip.AsSlice(),
+	}, nil
 }

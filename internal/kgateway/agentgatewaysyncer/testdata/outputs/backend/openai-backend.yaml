@@ -1,7 +1,10 @@
 Backends:
 - ai:
-    openai:
-      model: gpt-4o-mini
+    providerGroups:
+    - providers:
+      - name: openai_0
+        openai:
+          model: gpt-4o-mini
   name: default/openai
 Binds:
 - key: 80/default/example-gateway
@@ -13,13 +16,13 @@ Listeners:
   name: http
   protocol: HTTP
 Policies:
-- name: auth-default/openai
+- name: auth-default/openai-openai_0
   spec:
     auth:
       key:
         secret: mysecretkey
   target:
-    backend: default/openai
+    subBackend: default/openai/openai_0
 Routes:
 - backends:
   - backend:

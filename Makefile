@@ -39,7 +39,7 @@ export VERSION
 SOURCES := $(shell find . -name "*.go" | grep -v test.go)
 
 # Note: When bumping this version, update the version in pkg/validator/validator.go as well.
-export ENVOY_IMAGE ?= quay.io/solo-io/envoy-gloo:1.35.0-patch1
+export ENVOY_IMAGE ?= quay.io/solo-io/envoy-gloo:1.35.2-patch1
 export LDFLAGS := -X 'github.com/kgateway-dev/kgateway/v2/internal/version.Version=$(VERSION)'
 export GCFLAGS ?=
 
@@ -341,12 +341,11 @@ kgateway-ai-extension-docker:
 # Controller
 #----------------------------------------------------------------------------------
 
-K8S_GATEWAY_DIR=internal/kgateway
-K8S_GATEWAY_SOURCES=$(call get_sources,$(K8S_GATEWAY_DIR))
-CONTROLLER_OUTPUT_DIR=$(OUTPUT_DIR)/$(K8S_GATEWAY_DIR)
+K8S_GATEWAY_SOURCES=$(call get_sources,cmd/kgateway internal/kgateway pkg/ api/)
+CONTROLLER_OUTPUT_DIR=$(OUTPUT_DIR)/internal/kgateway
 export CONTROLLER_IMAGE_REPO ?= kgateway
 
-# We include the files in K8S_GATEWAY_DIR as dependencies to the kgateway build
+# We include the files in K8S_GATEWAY_SOURCES as dependencies to the kgateway build
 # so changes in those directories cause the make target to rebuild
 $(CONTROLLER_OUTPUT_DIR)/kgateway-linux-$(GOARCH): $(K8S_GATEWAY_SOURCES)
 	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags='$(LDFLAGS)' -gcflags='$(GCFLAGS)' -o $@ ./cmd/kgateway/...
@@ -495,7 +494,11 @@ CONFORMANCE_CHANNEL ?= experimental
 CONFORMANCE_VERSION ?= v1.3.0
 .PHONY: gw-api-crds
 gw-api-crds: ## Install the Gateway API CRDs
+ifeq ($(CONFORMANCE_CHANNEL), standard)
+	kubectl apply --kustomize "https://github.com/kubernetes-sigs/gateway-api/config/crd?ref=$(CONFORMANCE_VERSION)"
+else
 	kubectl apply --kustomize "https://github.com/kubernetes-sigs/gateway-api/config/crd/$(CONFORMANCE_CHANNEL)?ref=$(CONFORMANCE_VERSION)"
+endif
 
 # The version of the k8s gateway api inference extension CRDs to install.
 GIE_CRD_VERSION ?= $(shell go list -m sigs.k8s.io/gateway-api-inference-extension | awk '{print $$2}')
@@ -652,9 +655,6 @@ GIE_CONFORMANCE_ARGS := \
     -gateway-class=$(CONFORMANCE_GATEWAY_CLASS) \
     $(GIE_CONFORMANCE_REPORT_ARGS)
 
-# Allow skipping known‐failing tests.
-INFERENCE_SKIP_TESTS ?= -skip-tests EppUnAvailableFailOpen
-
 INFERENCE_CONFORMANCE_DIR := $(shell go list -m -f '{{.Dir}}' sigs.k8s.io/gateway-api-inference-extension)/conformance
 
 # TODO [danehans]: Remove `kubectl wait` when gateway-api-inference-extension/issues/1315 is fixed.
@@ -665,7 +665,7 @@ gie-conformance: gie-crds ## Run the Gateway API Inference Extension conformance
 	    -tags conformance \
 	    -timeout=25m \
 	    -v $(INFERENCE_CONFORMANCE_DIR) \
-	    -args $(GIE_CONFORMANCE_ARGS) $(INFERENCE_SKIP_TESTS)
+	    -args $(GIE_CONFORMANCE_ARGS)
 	@echo "Waiting for gateway-conformance-infra namespace to terminate..."
 	kubectl wait ns gateway-conformance-infra --for=delete --timeout=2m || true
 
@@ -676,15 +676,35 @@ gie-conformance-%: gie-crds ## Run only the specified Gateway API Inference Exte
 	go test -mod=mod -ldflags='$(LDFLAGS)' \
 	    -tags conformance \
 	    -timeout=25m \
-	    -v $(INFERENCE_CONFORMANCE_DIR) $(INFERENCE_SKIP_TESTS) \
+	    -v $(INFERENCE_CONFORMANCE_DIR) \
 	    -args $(GIE_CONFORMANCE_ARGS) -run-test=$*
 	@echo "Waiting for gateway-conformance-infra namespace to terminate..."
 	kubectl wait ns gateway-conformance-infra --for=delete --timeout=2m || true
 
 # An alias to run both Gateway API and Inference Extension conformance tests.
 .PHONY: all-conformance
-all-conformance: conformance gie-conformance ## Run both Gateway API and Inference Extension conformance
+all-conformance: conformance gie-conformance agw-conformance ## Run all conformance test suites
 	@echo "All conformance suites have completed."
+
+#----------------------------------------------------------------------------------
+# Targets for running Agent Gateway conformance tests
+#----------------------------------------------------------------------------------
+
+# Agent Gateway conformance test configuration
+AGW_CONFORMANCE_UNSUPPORTED_FEATURES ?= -exempt-features=GatewayAddressEmpty,GatewayHTTPListenerIsolation,GatewayInfrastructurePropagation,GatewayPort8080,GatewayStaticAddresses,HTTPRouteBackendRequestHeaderModification,HTTPRouteDestinationPortMatching,HTTPRouteParentRefPort,HTTPRouteRequestMultipleMirrors,HTTPRouteRequestPercentageMirror
+AGW_CONFORMANCE_SUPPORTED_PROFILES ?= -conformance-profiles=GATEWAY-HTTP
+AGW_CONFORMANCE_GATEWAY_CLASS ?= agentgateway
+AGW_CONFORMANCE_REPORT_ARGS ?= -report-output=$(TEST_ASSET_DIR)/conformance/agw-$(VERSION)-report.yaml -organization=kgateway-dev -project=kgateway -version=$(VERSION) -url=github.com/kgateway-dev/kgateway -contact=github.com/kgateway-dev/kgateway/issues/new/choose
+AGW_CONFORMANCE_ARGS := -gateway-class=$(AGW_CONFORMANCE_GATEWAY_CLASS) $(AGW_CONFORMANCE_UNSUPPORTED_FEATURES) $(AGW_CONFORMANCE_SUPPORTED_PROFILES) $(AGW_CONFORMANCE_REPORT_ARGS)
+
+.PHONY: agw-conformance ## Run the agent gateway conformance test suite
+agw-conformance: $(TEST_ASSET_DIR)/conformance/conformance_test.go
+	CONFORMANCE_GATEWAY_CLASS=$(AGW_CONFORMANCE_GATEWAY_CLASS) go test -mod=mod -ldflags='$(LDFLAGS)' -tags conformance -test.v $(TEST_ASSET_DIR)/conformance/... -args $(AGW_CONFORMANCE_ARGS)
+
+# Run only the specified agent gateway conformance test
+agw-conformance-%: $(TEST_ASSET_DIR)/conformance/conformance_test.go
+	CONFORMANCE_GATEWAY_CLASS=$(AGW_CONFORMANCE_GATEWAY_CLASS) go test -mod=mod -ldflags='$(LDFLAGS)' -tags conformance -test.v $(TEST_ASSET_DIR)/conformance/... -args $(AGW_CONFORMANCE_ARGS) \
+	-run-test=$*
 
 #----------------------------------------------------------------------------------
 # Printing makefile variables utility

@@ -283,7 +283,7 @@ func (p *endpointPickerPass) HttpFilters(ctx context.Context, fc ir.FilterChainC
 		},
 		configRef: &service{
 			ObjectSource: ir.ObjectSource{Name: "placeholder-service"},
-			ports:        []servicePort{{name: "grpc", portNum: 9002}},
+			ports:        []servicePort{{name: "grpc", number: 9002}},
 		},
 	}
 
@@ -390,7 +390,7 @@ func buildExtProcCluster(pool *inferencePool) *envoyclusterv3.Cluster {
 										Address:  fmt.Sprintf("%s.%s.svc", pool.configRef.Name, pool.obj.GetNamespace()),
 										Protocol: envoycorev3.SocketAddress_TCP,
 										PortSpecifier: &envoycorev3.SocketAddress_PortValue{
-											PortValue: uint32(pool.configRef.ports[0].portNum),
+											PortValue: uint32(pool.configRef.ports[0].number),
 										},
 									},
 								},
@@ -443,6 +443,6 @@ func clusterNameExtProc(name, ns string) string {
 func authorityForPool(pool *inferencePool) string {
 	ns := pool.obj.GetNamespace()
 	svc := pool.configRef.Name
-	port := pool.configRef.ports[0].portNum
+	port := pool.configRef.ports[0].number
 	return fmt.Sprintf("%s.%s.svc:%d", svc, ns, port)
 }

@@ -5,6 +5,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
+	gwv1alpha3 "sigs.k8s.io/gateway-api/apis/v1alpha3"
 )
 
 // +kubebuilder:rbac:groups=gateway.kgateway.dev,resources=backendconfigpolicies,verbs=get;list;watch
@@ -190,7 +191,7 @@ type TCPKeepalive struct {
 	KeepAliveInterval *metav1.Duration `json:"keepAliveInterval,omitempty"`
 }
 
-// +kubebuilder:validation:ExactlyOneOf=secretRef;tlsFiles;insecureSkipVerify
+// +kubebuilder:validation:ExactlyOneOf=secretRef;tlsFiles;insecureSkipVerify;wellKnownCACertificates
 type TLS struct {
 	// Reference to the TLS secret containing the certificate, key, and optionally the root CA.
 	// +optional
@@ -199,6 +200,12 @@ type TLS struct {
 	// File paths to certificates local to the proxy.
 	// +optional
 	TLSFiles *TLSFiles `json:"tlsFiles,omitempty"`
+
+	// WellKnownCACertificates specifies whether to use a well-known set of CA
+	// certificates for validating the backend's certificate chain. Currently,
+	// only the system certificate pool is supported via SDS.
+	// +optional
+	WellKnownCACertificates *gwv1alpha3.WellKnownCACertificatesType `json:"wellKnownCACertificates,omitempty"`
 
 	// InsecureSkipVerify originates TLS but skips verification of the backend's certificate.
 	// WARNING: This is an insecure option that should only be used if the risks are understood.

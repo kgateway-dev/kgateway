@@ -72,10 +72,8 @@ func (s *StaticIr) Equals(other *StaticIr) bool {
 
 // AIIr contains pre-resolved data for AI backends
 type AIIr struct {
-	// Pre-resolved AI backend and auth policy
-	Name       string
-	Backend    *api.AIBackend
-	AuthPolicy *api.BackendAuthPolicy
+	Backend  *api.Backend
+	Policies []*api.Policy
 }
 
 func (a *AIIr) Equals(other *AIIr) bool {
@@ -86,19 +84,19 @@ func (a *AIIr) Equals(other *AIIr) bool {
 		return false
 	}
 
-	// Compare Name
-	if a.Name != other.Name {
-		return false
-	}
-
-	// Use protobuf equality for api.AIBackend
+	// Compare Backend
 	if !proto.Equal(a.Backend, other.Backend) {
 		return false
 	}
 
-	// Use protobuf equality for api.BackendAuthPolicy
-	if !proto.Equal(a.AuthPolicy, other.AuthPolicy) {
+	// Compare Policies slice
+	if len(a.Policies) != len(other.Policies) {
 		return false
+	}
+	for i, policy := range a.Policies {
+		if !proto.Equal(policy, other.Policies[i]) {
+			return false
+		}
 	}
 
 	return true

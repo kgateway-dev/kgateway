@@ -4,12 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"slices"
 
 	"helm.sh/helm/v3/pkg/chart"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 	api "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
@@ -66,9 +66,28 @@ func (gp *GatewayParameters) AllKnownGatewayParameters() []client.Object {
 	return slices.Clone(gp.knownGWParameters)
 }
 
-func (gp *GatewayParameters) GetValues(ctx context.Context, obj client.Object) (map[string]any, error) {
-	logger := log.FromContext(ctx)
+func (gp *GatewayParameters) IsSelfManaged(ctx context.Context, obj client.Object) (bool, error) {
+	generator, err := gp.getHelmValuesGenerator(ctx, obj)
+	if err != nil {
+		return false, err
+	}
+	return generator.IsSelfManaged(ctx, obj)
+}
 
+func (gp *GatewayParameters) GetValues(ctx context.Context, obj client.Object) (map[string]any, error) {
+	generator, err := gp.getHelmValuesGenerator(ctx, obj)
+	if err != nil {
+		return nil, err
+	}
+
+	return generator.GetValues(ctx, obj)
+}
+
+func GatewayReleaseNameAndNamespace(obj client.Object) (string, string) {
+	return obj.GetName(), obj.GetNamespace()
+}
+
+func (gp *GatewayParameters) getHelmValuesGenerator(ctx context.Context, obj client.Object) (deployer.HelmValuesGenerator, error) {
 	gw, ok := obj.(*api.Gateway)
 	if !ok {
 		return nil, fmt.Errorf("expected a Gateway resource, got %s", obj.GetObjectKind().GroupVersionKind().String())
@@ -80,29 +99,48 @@ func (gp *GatewayParameters) GetValues(ctx context.Context, obj client.Object) (
 	}
 
 	if g, ok := gp.extraHVGenerators[ref]; ok {
-		return g.GetValues(ctx, gw)
+		slog.Debug("using custom HelmValuesGenerator for Gateway",
+			"gateway_name", gw.GetName(),
+			"gateway_namespace", gw.GetNamespace(),
+		)
+		return g, nil
 	}
-	logger.V(1).Info("using default GatewayParameters for Gateway",
-		"gatewayName", gw.GetName(),
-		"gatewayNamespace", gw.GetNamespace(),
+
+	// Before falling back to built-in defaults, check if ExtraGatewayParameters
+	// can handle this gateway class specifically
+	gwc, err := getGatewayClassFromGateway(ctx, gp.cli, gw)
+	if err == nil {
+		gatewayClassName := string(gwc.GetName())
+
+		// Try to find ExtraGatewayParameters for this specific gateway class
+		// This allows overriding built-in defaults for specific gateway classes
+		fallbackRef := schema.GroupKind{
+			Group: "gateway.class.kgateway.dev",
+			Kind:  gatewayClassName,
+		}
+		if g, ok := gp.extraHVGenerators[fallbackRef]; ok {
+			slog.Debug("using ExtraGatewayParameters fallback for gateway class",
+				"gateway_name", gw.GetName(),
+				"gateway_class_name", gatewayClassName,
+			)
+			return g, nil
+		}
+	}
+
+	slog.Debug("using default HelmValuesGenerator for Gateway",
+		"gateway_name", gw.GetName(),
+		"gateway_namespace", gw.GetNamespace(),
 	)
-
-	return newKGatewayParameters(gp.cli, gp.inputs).GetValues(ctx, gw)
-}
-
-func GatewayReleaseNameAndNamespace(obj client.Object) (string, string) {
-	return obj.GetName(), obj.GetNamespace()
+	return newKGatewayParameters(gp.cli, gp.inputs), nil
 }
 
 func (gp *GatewayParameters) getGatewayParametersGK(ctx context.Context, gw *api.Gateway) (schema.GroupKind, error) {
-	logger := log.FromContext(ctx)
-
 	// attempt to get the GatewayParameters name from the Gateway. If we can't find it,
 	// we'll check for the default GWP for the GatewayClass.
 	if gw.Spec.Infrastructure == nil || gw.Spec.Infrastructure.ParametersRef == nil {
-		logger.V(1).Info("no GatewayParameters found for Gateway, using default",
-			"gatewayName", gw.GetName(),
-			"gatewayNamespace", gw.GetNamespace(),
+		slog.Debug("no GatewayParameters found for Gateway, using default",
+			"gateway_name", gw.GetName(),
+			"gateway_namespace", gw.GetNamespace(),
 		)
 		return gp.getDefaultGatewayParametersGK(ctx, gw)
 	}
@@ -126,14 +164,37 @@ func (gp *GatewayParameters) getDefaultGatewayParametersGK(ctx context.Context, 
 			nil
 	}
 
-	return schema.GroupKind{}, nil
+	// For gateways without explicit parametersRef, use a default GroupKind
+	// that ExtraGatewayParameters can register for based on gateway class name
+	return schema.GroupKind{
+		Group: "default.gateway.kgateway.dev",
+		Kind:  string(gwc.GetName()), // Use gateway class name as Kind
+	}, nil
 }
 
 func newKGatewayParameters(cli client.Client, inputs *deployer.Inputs) *kGatewayParameters {
 	return &kGatewayParameters{cli: cli, inputs: inputs}
 }
 
-func (h *kGatewayParameters) GetValues(ctx context.Context, gw *api.Gateway) (map[string]any, error) {
+func (h *kGatewayParameters) IsSelfManaged(ctx context.Context, obj client.Object) (bool, error) {
+	gw, ok := obj.(*api.Gateway)
+	if !ok {
+		return false, fmt.Errorf("expected a Gateway resource, got %s", obj.GetObjectKind().GroupVersionKind().String())
+	}
+
+	gwParam, err := h.getGatewayParametersForGateway(ctx, gw)
+	if err != nil {
+		return false, err
+	}
+	return gwParam != nil && gwParam.Spec.SelfManaged != nil, nil
+}
+
+func (h *kGatewayParameters) GetValues(ctx context.Context, obj client.Object) (map[string]any, error) {
+	gw, ok := obj.(*api.Gateway)
+	if !ok {
+		return nil, fmt.Errorf("expected a Gateway resource, got %s", obj.GetObjectKind().GroupVersionKind().String())
+	}
+
 	gwParam, err := h.getGatewayParametersForGateway(ctx, gw)
 	if err != nil {
 		return nil, err
@@ -155,14 +216,12 @@ func (h *kGatewayParameters) GetValues(ctx context.Context, gw *api.Gateway) (ma
 // getGatewayParametersForGateway returns the merged GatewayParameters object resulting from the default GwParams object and
 // the GwParam object specifically associated with the given Gateway (if one exists).
 func (k *kGatewayParameters) getGatewayParametersForGateway(ctx context.Context, gw *api.Gateway) (*v1alpha1.GatewayParameters, error) {
-	logger := log.FromContext(ctx)
-
 	// attempt to get the GatewayParameters name from the Gateway. If we can't find it,
 	// we'll check for the default GWP for the GatewayClass.
 	if gw.Spec.Infrastructure == nil || gw.Spec.Infrastructure.ParametersRef == nil {
-		logger.V(1).Info("no GatewayParameters found for Gateway, using default",
-			"gatewayName", gw.GetName(),
-			"gatewayNamespace", gw.GetNamespace(),
+		slog.Debug("no GatewayParameters found for Gateway, using default",
+			"gateway_name", gw.GetName(),
+			"gateway_namespace", gw.GetNamespace(),
 		)
 		return k.getDefaultGatewayParameters(ctx, gw)
 	}
@@ -180,7 +239,7 @@ func (k *kGatewayParameters) getGatewayParametersForGateway(ctx context.Context,
 	gwp := &v1alpha1.GatewayParameters{}
 	err := k.cli.Get(ctx, client.ObjectKey{Namespace: gwpNamespace, Name: gwpName}, gwp)
 	if err != nil {
-		return nil, deployer.GetGatewayParametersError(err, gwpNamespace, gwpName, gw.GetNamespace(), gw.GetName(), "Gateway")
+		return nil, deployer.GetGatewayParametersForGatewayError(err, gwpNamespace, gwpName, gw.GetNamespace(), gw.GetName(), "Gateway")
 	}
 
 	defaultGwp, err := k.getDefaultGatewayParameters(ctx, gw)
@@ -204,8 +263,6 @@ func (k *kGatewayParameters) getDefaultGatewayParameters(ctx context.Context, gw
 
 // Gets the GatewayParameters object associated with a given GatewayClass.
 func (k *kGatewayParameters) getGatewayParametersForGatewayClass(ctx context.Context, gwc *api.GatewayClass) (*v1alpha1.GatewayParameters, error) {
-	logger := log.FromContext(ctx)
-
 	defaultGwp := deployer.GetInMemoryGatewayParameters(gwc.GetName(), k.inputs.ImageInfo, k.inputs.GatewayClassName, k.inputs.WaypointGatewayClassName, k.inputs.AgentGatewayClassName)
 
 	paramRef := gwc.Spec.ParametersRef
@@ -217,9 +274,9 @@ func (k *kGatewayParameters) getGatewayParametersForGatewayClass(ctx context.Con
 	gwpName := paramRef.Name
 	if gwpName == "" {
 		err := errors.New("parametersRef.name cannot be empty when parametersRef is specified")
-		logger.Error(err,
+		slog.Error("could not get gateway parameters for gateway class",
+			"error", err,
 			"gatewayClassName", gwc.GetName(),
-			"gatewayClassNamespace", gwc.GetNamespace(),
 		)
 		return nil, err
 	}
@@ -232,10 +289,10 @@ func (k *kGatewayParameters) getGatewayParametersForGatewayClass(ctx context.Con
 	gwp := &v1alpha1.GatewayParameters{}
 	err := k.cli.Get(ctx, client.ObjectKey{Namespace: gwpNamespace, Name: gwpName}, gwp)
 	if err != nil {
-		return nil, deployer.GetGatewayParametersError(
+		return nil, deployer.GetGatewayParametersForGatewayClassError(
 			err,
 			gwpNamespace, gwpName,
-			gwc.GetNamespace(), gwc.GetName(),
+			gwc.GetName(),
 			"GatewayClass",
 		)
 	}
@@ -323,6 +380,8 @@ func (k *kGatewayParameters) getValues(gw *api.Gateway, gwParam *v1alpha1.Gatewa
 	gateway.GracefulShutdown = podConfig.GetGracefulShutdown()
 	gateway.TerminationGracePeriodSeconds = podConfig.GetTerminationGracePeriodSeconds()
 	gateway.TopologySpreadConstraints = podConfig.GetTopologySpreadConstraints()
+	gateway.ExtraVolumes = podConfig.GetExtraVolumes()
+	gateway.ExtraVolumeMounts = podConfig.GetExtraVolumeMounts()
 
 	// envoy container values
 	logLevel := envoyContainerConfig.GetBootstrap().GetLogLevel()

@@ -566,6 +566,43 @@ spec:
 			},
 		},
 		{
+			name: "TrafficPolicy Buffer maxRequestSize with integer",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: test
+spec:
+  buffer:
+    maxRequestSize: 65536
+`,
+		},
+		{
+			name: "TrafficPolicy Buffer maxRequestSize with string",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: test
+spec:
+  buffer:
+    maxRequestSize: 64Ki
+`,
+		},
+		{
+			name: "TrafficPolicy Buffer maxRequestSize with invalid value",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: test
+spec:
+  buffer:
+    maxRequestSize: 4Gi
+`,
+			wantErrors: []string{"maxRequestSize must be greater than 0 and less than 4Gi"},
+		},
+		{
 			name: "ProxyDeployment: enforce ExactlyOneOf for replicas and omitReplicas",
 			input: `---
 apiVersion: gateway.kgateway.dev/v1alpha1
@@ -620,6 +657,40 @@ spec:
       omitReplicas: true
 `,
 			wantErrors: []string{},
+		},
+		{
+			name: "MCP backend selector requires namespace|service to be set",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: mcp-backend
+spec:
+  type: MCP
+  mcp:
+    targets:
+    - name: mcp-app
+      selector: {}
+`,
+			wantErrors: []string{`spec.mcp.targets[0].selector: Invalid value: "object": at least one of namespace or service must be set`},
+		},
+		{
+			name: "MCP backend namespace selector resolves to the reserved CEL keyword __namespace__",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: mcp-backend
+spec:
+  type: MCP
+  mcp:
+    targets:
+    - name: mcp-app
+      selector:
+        namespace:
+          matchLabels:
+            app: mcp-app
+`,
 		},
 	}
 

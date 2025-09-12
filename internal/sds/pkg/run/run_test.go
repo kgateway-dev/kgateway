@@ -3,6 +3,7 @@ package run
 import (
 	"context"
 	"log/slog"
+	"net"
 	"os"
 	"path/filepath"
 	"testing"
@@ -99,6 +100,12 @@ func TestCertRotation(t *testing.T) {
 
 			data := setup(t)
 			ctx := t.Context()
+
+			r.EventuallyWithT(func(c *assert.CollectT) {
+				open, err := isPortOpen(testServerAddress)
+				require.NoError(c, err, "error checking if port is open")
+				require.False(c, open, "expected server port to be closed")
+			}, 5*time.Second, 500*time.Millisecond)
 
 			go func() {
 				ocsp := ""
@@ -263,4 +270,13 @@ func setup(t *testing.T) setupData {
 			SslOcspFile:       ocspName,
 		},
 	}
+}
+
+func isPortOpen(address string) (bool, error) {
+	conn, err := net.Dial("tcp", address)
+	if err == nil {
+		err := conn.Close()
+		return true, err
+	}
+	return false, nil
 }

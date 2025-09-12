@@ -48,6 +48,7 @@ func TestProcessPoolBackendObjIR_BuildsLoadAssignment(t *testing.T) {
 			TargetPorts: []inf.Port{inf.Port{Number: 9000}},
 			EndpointPickerRef: inf.EndpointPickerRef{
 				Name: "svc",
+				Port: &inf.Port{Number: inf.PortNumber(9002)},
 			},
 		},
 	}
@@ -109,6 +110,7 @@ func TestProcessPoolBackendObjIR_SkipsOnErrors(t *testing.T) {
 			TargetPorts: []inf.Port{inf.Port{Number: 9000}},
 			EndpointPickerRef: inf.EndpointPickerRef{
 				Name: "svc",
+				Port: &inf.Port{Number: inf.PortNumber(9002)},
 			},
 		},
 	}

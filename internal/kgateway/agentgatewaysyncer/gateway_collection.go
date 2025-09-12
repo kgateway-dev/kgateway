@@ -13,15 +13,15 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/utils"
-
 	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
 
-func toResourcep(gw types.NamespacedName, resources []*api.Resource, rm reports.ReportMap) *ADPResourcesForGateway {
+func toResourcep(gw types.NamespacedName, resources []*api.Resource, rm reports.ReportMap) *ir.ADPResourcesForGateway {
 	res := toResource(gw, resources, rm)
 	return &res
 }
@@ -42,20 +42,20 @@ func toADPResource(t any) *api.Resource {
 	panic("unknown resource kind")
 }
 
-func toResourceWithRoutes(gw types.NamespacedName, resources []*api.Resource, attachedRoutes map[string]uint, rm reports.ReportMap) ADPResourcesForGateway {
-	return ADPResourcesForGateway{
+func toResourceWithRoutes(gw types.NamespacedName, resources []*api.Resource, attachedRoutes map[string]uint, rm reports.ReportMap) ir.ADPResourcesForGateway {
+	return ir.ADPResourcesForGateway{
 		Resources:      resources,
 		Gateway:        gw,
-		report:         rm,
-		attachedRoutes: attachedRoutes,
+		Report:         rm,
+		AttachedRoutes: attachedRoutes,
 	}
 }
 
-func toResource(gw types.NamespacedName, resources []*api.Resource, rm reports.ReportMap) ADPResourcesForGateway {
-	return ADPResourcesForGateway{
+func toResource(gw types.NamespacedName, resources []*api.Resource, rm reports.ReportMap) ir.ADPResourcesForGateway {
+	return ir.ADPResourcesForGateway{
 		Resources: resources,
 		Gateway:   gw,
-		report:    rm,
+		Report:    rm,
 	}
 }
 

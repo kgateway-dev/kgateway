@@ -3,8 +3,6 @@ package routereplacement
 import (
 	"path/filepath"
 
-	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
@@ -23,19 +21,8 @@ var (
 		Name:      "gw",
 		Namespace: "default",
 	}
-	proxyDeployment     = &appsv1.Deployment{ObjectMeta: proxyObjectMeta}
-	proxyService        = &corev1.Service{ObjectMeta: proxyObjectMeta}
-	proxyServiceAccount = &corev1.ServiceAccount{ObjectMeta: proxyObjectMeta}
 
 	gatewayPort = 8080
-
-	// gateway object
-	gateway = &gwv1.Gateway{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "gw",
-			Namespace: "default",
-		},
-	}
 
 	// route objects for testing
 	invalidPolicyRoute = &gwv1.HTTPRoute{

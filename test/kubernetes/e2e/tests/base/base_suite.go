@@ -3,91 +3,83 @@ package base
 import (
 	"context"
 	"fmt"
+	"path/filepath"
+	"slices"
 	"time"
 
 	"github.com/onsi/gomega"
 	"github.com/stretchr/testify/suite"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	apiserverschema "k8s.io/apiextensions-apiserver/pkg/apiserver/schema"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	deployerinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/deployer"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/defaults"
+	"github.com/kgateway-dev/kgateway/v2/test/testutils"
+	"github.com/kgateway-dev/kgateway/v2/test/translator"
 )
 
 // TestCase defines the manifests and resources used by a test or test suite.
 type TestCase struct {
 	// Manifests contains a list of manifest filenames.
 	Manifests []string
-	// Resources contains a list of objects that are expected to be created by the manifest files.
-	Resources []client.Object
-	// values file passed during an upgrade
-	// UpgradeValues string
-	// Rollback method to be called during cleanup.
-	// Do not provide this. Calling an upgrade returns this method which we save
-	//Rollback func() error
+
+	// manifestResources contains the resources automatically loaded from the manifest files for
+	// this test case.
+	manifestResources []client.Object
+
+	// dynamicResources contains the expected dynamically provisioned resources for any Gateways
+	// contained in this test case's manifests.
+	dynamicResources []client.Object
 }
 
 type BaseTestingSuite struct {
 	suite.Suite
 	Ctx              context.Context
 	TestInstallation *e2e.TestInstallation
-	TestCases        map[string]TestCase
 	Setup            TestCase
+	TestCases        map[string]*TestCase
+
+	// (Optional) Path of directory (relative to git root) containing the CRDs that will be used to read
+	// the objects from the manifests. If empty then defaults to "install/helm/kgateway-crds/templates"
+	CrdPath string
+
+	// (Optional) Helper to determine if a Gateway is self-managed. If not provided, a default implementation
+	// is used.
+	GatewayHelper GatewayHelper
+
+	// used internally to parse the manifest files
+	gvkToStructuralSchema map[schema.GroupVersionKind]*apiserverschema.Structural
 }
 
 // NewBaseTestingSuite returns a BaseTestingSuite that performs all the pre-requisites of upgrading helm installations,
 // applying manifests and verifying resources exist before a suite and tests and the corresponding post-run cleanup.
 // The pre-requisites for the suite are defined in the setup parameter and for each test in the individual testCase.
-// Currently, tests that require upgrades (eg: to change settings) can not be run in Enterprise. To do so,
-// the test must be written without upgrades and call the `NewBaseTestingSuiteWithoutUpgrades` constructor.
-func NewBaseTestingSuite(ctx context.Context, testInst *e2e.TestInstallation, setupTestCase TestCase, testCases map[string]TestCase) *BaseTestingSuite {
+func NewBaseTestingSuite(ctx context.Context, testInst *e2e.TestInstallation, setupTestCase TestCase, testCases map[string]*TestCase) *BaseTestingSuite {
 	return &BaseTestingSuite{
 		Ctx:              ctx,
 		TestInstallation: testInst,
-		TestCases:        testCases,
 		Setup:            setupTestCase,
-	}
-}
-
-// NewBaseTestingSuiteWithoutUpgrades returns a BaseTestingSuite without allowing upgrades and reverts before the suite and tests.
-// This is useful when creating tests that need to run in Enterprise since the helm values change between OSS and Enterprise installations.
-func NewBaseTestingSuiteWithoutUpgrades(ctx context.Context, testInst *e2e.TestInstallation, setupTestCase TestCase, testCases map[string]TestCase) *BaseTestingSuite {
-	return &BaseTestingSuite{
-		Ctx:              ctx,
-		TestInstallation: testInst,
 		TestCases:        testCases,
-		Setup:            setupTestCase,
 	}
 }
 
 func (s *BaseTestingSuite) SetupSuite() {
-	s.ApplyManifests(s.Setup)
+	// set up the helpers once and store them on the suite
+	s.setupHelpers()
 
-	// TODO handle upgrades https://github.com/kgateway-dev/kgateway/issues/10609
-	// if s.Setup.UpgradeValues != "" {
-	// 	// Perform an upgrade to change settings, deployments, etc.
-	// 	var err error
-	// 	s.Setup.Rollback, err = s.TestHelper.UpgradeGloo(s.Ctx, 600*time.Second, helper.WithExtraArgs([]string{
-	// 		// Reuse values so there's no need to know the prior values used
-	// 		"--reuse-values",
-	// 		"--values", s.Setup.UpgradeValues,
-	// 	}...))
-	// 	s.TestInstallation.Assertions.Require.NoError(err)
-	// }
+	s.ApplyManifests(&s.Setup)
 }
 
 func (s *BaseTestingSuite) TearDownSuite() {
-	// TODO handle upgrades https://github.com/kgateway-dev/kgateway/issues/10609
-	// if s.Setup.UpgradeValues != "" {
-	// 	// Revet the upgrade applied before this test. This way we are sure that any changes
-	// 	// made are undone and we go back to a clean state
-	// 	err := s.Setup.Rollback()
-	// 	s.TestInstallation.Assertions.Require.NoError(err)
-	// }
-
-	s.DeleteManifests(s.Setup)
+	s.DeleteManifests(&s.Setup)
 }
 
 func (s *BaseTestingSuite) BeforeTest(suiteName, testName string) {
@@ -96,18 +88,6 @@ func (s *BaseTestingSuite) BeforeTest(suiteName, testName string) {
 	if !ok {
 		return
 	}
-
-	// TODO handle upgrades https://github.com/kgateway-dev/kgateway/issues/10609
-	// if testCase.UpgradeValues != "" {
-	// 	// Perform an upgrade to change settings, deployments, etc.
-	// 	var err error
-	// 	testCase.Rollback, err = s.TestHelper.UpgradeGloo(s.Ctx, 600*time.Second, helper.WithExtraArgs([]string{
-	// 		// Reuse values so there's no need to know the prior values used
-	// 		"--reuse-values",
-	// 		"--values", testCase.UpgradeValues,
-	// 	}...))
-	// 	s.TestInstallation.Assertions.Require.NoError(err)
-	// }
 
 	s.ApplyManifests(testCase)
 }
@@ -119,14 +99,6 @@ func (s *BaseTestingSuite) AfterTest(suiteName, testName string) {
 		return
 	}
 
-	// TODO handle upgrades https://github.com/kgateway-dev/kgateway/issues/10609
-	// if testCase.UpgradeValues != "" {
-	// 	// Revet the upgrade applied before this test. This way we are sure that any changes
-	// 	// made are undone and we go back to a clean state
-	// 	err := testCase.Rollback()
-	// 	s.TestInstallation.Assertions.Require.NoError(err)
-	// }
-
 	s.DeleteManifests(testCase)
 }
 
@@ -137,17 +109,8 @@ func (s *BaseTestingSuite) GetKubectlOutput(command ...string) string {
 	return out
 }
 
-// TODO handle upgrades https://github.com/kgateway-dev/kgateway/issues/10609
-// func (s *BaseTestingSuite) UpgradeWithCustomValuesFile(valuesFile string) {
-// 	_, err := s.TestHelper.UpgradeGloo(s.Ctx, 600*time.Second, helper.WithExtraArgs([]string{
-// 		// Do not reuse the existing values as we need to install the new chart with the new version of the images
-// 		"--values", valuesFile,
-// 	}...))
-// 	s.TestInstallation.Assertions.Require.NoError(err)
-// }
-
 // ApplyManifests applies the manifests and waits until the resources are created and ready.
-func (s *BaseTestingSuite) ApplyManifests(testCase TestCase) {
+func (s *BaseTestingSuite) ApplyManifests(testCase *TestCase) {
 	// apply the manifests
 	for _, manifest := range testCase.Manifests {
 		gomega.Eventually(func() error {
@@ -156,12 +119,19 @@ func (s *BaseTestingSuite) ApplyManifests(testCase TestCase) {
 		}, 10*time.Second, 1*time.Second).Should(gomega.Succeed(), "can apply "+manifest)
 	}
 
-	// wait until the resources are created
-	s.TestInstallation.Assertions.EventuallyObjectsExist(s.Ctx, testCase.Resources...)
+	// parse the expected resources and dynamic resources from the manifests, and wait until the resources are created.
+	// we must wait until the resources from the manifest exist on the cluster before calling loadDynamicResources,
+	// because in order to determine what dynamic resources are expected, certain resources (e.g. Gateways and
+	// GatewayParameters) must already exist on the cluster.
+	s.loadManifestResources(testCase)
+	s.TestInstallation.Assertions.EventuallyObjectsExist(s.Ctx, testCase.manifestResources...)
+	s.loadDynamicResources(testCase)
+	s.TestInstallation.Assertions.EventuallyObjectsExist(s.Ctx, testCase.dynamicResources...)
 
 	// wait until pods are ready; this assumes that pods use a well-known label
 	// app.kubernetes.io/name=<name>
-	for _, resource := range testCase.Resources {
+	allResources := slices.Concat(testCase.manifestResources, testCase.dynamicResources)
+	for _, resource := range allResources {
 		var ns, name string
 		if pod, ok := resource.(*corev1.Pod); ok {
 			ns = pod.Namespace
@@ -180,7 +150,14 @@ func (s *BaseTestingSuite) ApplyManifests(testCase TestCase) {
 }
 
 // DeleteManifests deletes the manifests and waits until the resources are deleted.
-func (s *BaseTestingSuite) DeleteManifests(testCase TestCase) {
+func (s *BaseTestingSuite) DeleteManifests(testCase *TestCase) {
+	// parse the expected resources and dynamic resources from the manifests (this normally would already
+	// have been done via ApplyManifests, but we check again here just in case ApplyManifests was not called).
+	// we need to do this before calling delete on the manifests, so we can accurately determine which dynamic
+	// resources need to be deleted.
+	s.loadManifestResources(testCase)
+	s.loadDynamicResources(testCase)
+
 	for _, manifest := range testCase.Manifests {
 		gomega.Eventually(func() error {
 			err := s.TestInstallation.Actions.Kubectl().DeleteFileSafe(s.Ctx, manifest)
@@ -188,15 +165,112 @@ func (s *BaseTestingSuite) DeleteManifests(testCase TestCase) {
 		}, 10*time.Second, 1*time.Second).Should(gomega.Succeed(), "can delete "+manifest)
 	}
 
-	s.TestInstallation.Assertions.EventuallyObjectsNotExist(s.Ctx, testCase.Resources...)
+	// wait until the resources are deleted
+	allResources := slices.Concat(testCase.manifestResources, testCase.dynamicResources)
+	s.TestInstallation.Assertions.EventuallyObjectsNotExist(s.Ctx, allResources...)
 
 	// wait until pods created by deployments are deleted; this assumes that pods use a well-known label
 	// app.kubernetes.io/name=<name>
-	for _, resource := range testCase.Resources {
+	for _, resource := range allResources {
 		if deployment, ok := resource.(*appsv1.Deployment); ok {
 			s.TestInstallation.Assertions.EventuallyPodsNotExist(s.Ctx, deployment.Namespace, metav1.ListOptions{
 				LabelSelector: fmt.Sprintf("%s=%s", defaults.WellKnownAppLabel, deployment.Name),
 			}, time.Second*120, time.Second*2)
 		}
 	}
+}
+
+func (s *BaseTestingSuite) setupHelpers() {
+	if s.GatewayHelper == nil {
+		s.GatewayHelper = newGatewayHelper(s.TestInstallation)
+	}
+	if s.CrdPath == "" {
+		s.CrdPath = translator.CRDPath
+	}
+	var err error
+	s.gvkToStructuralSchema, err = translator.GetStructuralSchemas(filepath.Join(testutils.GitRootDirectory(), s.CrdPath))
+	s.Require().NoError(err)
+}
+
+// loadManifestResources populates the `manifestResources` for the given test case, by parsing each
+// manifest file into a list of resources
+func (s *BaseTestingSuite) loadManifestResources(testCase *TestCase) {
+	if len(testCase.manifestResources) > 0 {
+		// resources have already been loaded
+		return
+	}
+
+	var resources []client.Object
+	for _, manifest := range testCase.Manifests {
+		objs, err := translator.LoadFromFiles(manifest, s.TestInstallation.ClusterContext.Client.Scheme(), s.gvkToStructuralSchema)
+		s.Require().NoError(err)
+		resources = append(resources, objs...)
+	}
+	testCase.manifestResources = resources
+}
+
+// loadDynamicResources populates the `dynamicResources` for the given test case. For each Gateway
+// in the test case, if it is not self-managed, then the expected dynamically provisioned resources
+// are added to dynamicResources.
+//
+// This should only be called *after* loadManifestResources has been called and we have waited
+// for all the manifest objects to be created. This is because the "is self-managed" check requires
+// any dependent Gateways and GatewayParameters to exist on the cluster already.
+func (s *BaseTestingSuite) loadDynamicResources(testCase *TestCase) {
+	if len(testCase.dynamicResources) > 0 {
+		// resources have already been loaded
+		return
+	}
+
+	var dynamicResources []client.Object
+	for _, obj := range testCase.manifestResources {
+		if gw, ok := obj.(*gwv1.Gateway); ok {
+			selfManaged, err := s.GatewayHelper.IsSelfManaged(s.Ctx, gw)
+			s.Require().NoError(err)
+
+			// if the gateway is not self-managed, then we expect a proxy deployment and service
+			// to be created, so add them to the dynamic resource list
+			if !selfManaged {
+				proxyObjectMeta := metav1.ObjectMeta{
+					Name:      gw.GetName(),
+					Namespace: gw.GetNamespace(),
+				}
+				proxyResources := []client.Object{
+					&appsv1.Deployment{ObjectMeta: proxyObjectMeta},
+					&corev1.Service{ObjectMeta: proxyObjectMeta},
+				}
+				dynamicResources = append(dynamicResources, proxyResources...)
+			}
+		}
+	}
+	testCase.dynamicResources = dynamicResources
+}
+
+// GatewayHelper is an interface that can be implemented to provide a custom way to determine if a
+// Gateway is self-managed.
+type GatewayHelper interface {
+	IsSelfManaged(ctx context.Context, gw *gwv1.Gateway) (bool, error)
+}
+
+type defaultGatewayHelper struct {
+	gwpClient *deployerinternal.GatewayParameters
+}
+
+func newGatewayHelper(testInst *e2e.TestInstallation) *defaultGatewayHelper {
+	gwpClient := deployerinternal.NewGatewayParameters(
+		testInst.ClusterContext.Client,
+
+		// empty is ok as we only care whether it's self-managed or not
+		&deployer.Inputs{
+			ImageInfo:                &deployer.ImageInfo{},
+			GatewayClassName:         wellknown.DefaultGatewayClassName,
+			WaypointGatewayClassName: wellknown.DefaultWaypointClassName,
+			AgentGatewayClassName:    wellknown.DefaultAgentGatewayClassName,
+		},
+	)
+	return &defaultGatewayHelper{gwpClient: gwpClient}
+}
+
+func (h *defaultGatewayHelper) IsSelfManaged(ctx context.Context, gw *gwv1.Gateway) (bool, error) {
+	return h.gwpClient.IsSelfManaged(ctx, gw)
 }

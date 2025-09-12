@@ -505,11 +505,15 @@ spec:
                     items:
                       type: string
                     type: array
+                  wellKnownCACertificates:
+                    enum:
+                    - System
+                    type: string
                 type: object
                 x-kubernetes-validations:
-                - message: exactly one of the fields in [secretRef tlsFiles insecureSkipVerify]
-                    must be set
-                  rule: '[has(self.secretRef),has(self.tlsFiles),has(self.insecureSkipVerify)].filter(x,x==true).size()
+                - message: exactly one of the fields in [secretRef tlsFiles insecureSkipVerify
+                    wellKnownCACertificates] must be set
+                  rule: '[has(self.secretRef),has(self.tlsFiles),has(self.insecureSkipVerify),has(self.wellKnownCACertificates)].filter(x,x==true).size()
                     == 1'
             type: object
             x-kubernetes-validations:

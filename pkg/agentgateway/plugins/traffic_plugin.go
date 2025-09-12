@@ -1,10 +1,15 @@
 package plugins
 
 import (
+	"encoding/json"
 	"fmt"
 	"log/slog"
+	"strconv"
+	"strings"
 
 	"github.com/agentgateway/agentgateway/go/api"
+	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
@@ -13,18 +18,21 @@ import (
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/utils"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 )
 
 const (
-	extauthPolicySuffix = ":extauth"
-	aiPolicySuffix      = ":ai"
-	rbacPolicySuffix    = ":rbac"
+	extauthPolicySuffix         = ":extauth"
+	aiPolicySuffix              = ":ai"
+	rbacPolicySuffix            = ":rbac"
+	localRateLimitPolicySuffix  = ":rl-local"
+	globalRateLimitPolicySuffix = ":rl-global"
 )
 
 var logger = logging.New("agentgateway/plugins")
@@ -58,7 +66,6 @@ func TranslateTrafficPolicy(
 	backends krt.Collection[*v1alpha1.Backend],
 	trafficPolicy *v1alpha1.TrafficPolicy,
 ) []ADPPolicy {
-	logger := logger.With("plugin_kind", "traffic")
 	var adpPolicies []ADPPolicy
 
 	isMcpTarget := false
@@ -163,8 +170,13 @@ func translateTrafficPolicyToADP(
 
 	// Process AI policies if present
 	if trafficPolicy.Spec.AI != nil {
-		aiPolicies := processAIPolicy(ctx, trafficPolicy, policyName, policyTarget)
+		aiPolicies := processAIPolicy(trafficPolicy, policyName, policyTarget)
 		adpPolicies = append(adpPolicies, aiPolicies...)
+	}
+	// Process RateLimit policies if present
+	if trafficPolicy.Spec.RateLimit != nil {
+		rateLimitPolicies := processRateLimitPolicy(ctx, gatewayExtensions, trafficPolicy, policyName, policyTarget)
+		adpPolicies = append(adpPolicies, rateLimitPolicies...)
 	}
 
 	return adpPolicies
@@ -235,9 +247,7 @@ func processExtAuthPolicy(ctx krt.HandlerContext, gatewayExtensions krt.Collecti
 }
 
 // processAIPolicy processes AI configuration and creates corresponding ADP policies
-func processAIPolicy(ctx krt.HandlerContext, trafficPolicy *v1alpha1.TrafficPolicy, policyName string, policyTarget *api.PolicyTarget) []ADPPolicy {
-	logger := logging.New("agentgateway/plugins/traffic")
-
+func processAIPolicy(trafficPolicy *v1alpha1.TrafficPolicy, policyName string, policyTarget *api.PolicyTarget) []ADPPolicy {
 	aiSpec := trafficPolicy.Spec.AI
 
 	aiPolicy := &api.Policy{
@@ -254,19 +264,22 @@ func processAIPolicy(ctx krt.HandlerContext, trafficPolicy *v1alpha1.TrafficPoli
 		aiPolicy.GetSpec().GetAi().Prompts = processPromptEnrichment(aiSpec.PromptEnrichment)
 	}
 
-	if len(aiSpec.Defaults) > 0 {
-		for _, def := range aiSpec.Defaults {
-			if def.Override != nil && *def.Override {
-				if aiPolicy.GetSpec().GetAi().Overrides == nil {
-					aiPolicy.GetSpec().GetAi().Overrides = make(map[string]string)
-				}
-				aiPolicy.GetSpec().GetAi().Overrides[def.Field] = def.Value
-			} else {
-				if aiPolicy.GetSpec().GetAi().Defaults == nil {
-					aiPolicy.GetSpec().GetAi().Defaults = make(map[string]string)
-				}
-				aiPolicy.GetSpec().GetAi().Defaults[def.Field] = def.Value
+	for _, def := range aiSpec.Defaults {
+		protoValue, err := toProtoValue(def.Value)
+		if err != nil {
+			logger.Error("error parsing spec.defaults", "field", def.Field, "ref", trafficPolicy.Namespace+"/"+trafficPolicy.Name, "error", err)
+			continue
+		}
+		if def.Override {
+			if aiPolicy.GetSpec().GetAi().Overrides == nil {
+				aiPolicy.GetSpec().GetAi().Overrides = make(map[string]*structpb.Value)
 			}
+			aiPolicy.GetSpec().GetAi().Overrides[def.Field] = protoValue
+		} else {
+			if aiPolicy.GetSpec().GetAi().Defaults == nil {
+				aiPolicy.GetSpec().GetAi().Defaults = make(map[string]*structpb.Value)
+			}
+			aiPolicy.GetSpec().GetAi().Defaults[def.Field] = protoValue
 		}
 	}
 
@@ -275,11 +288,11 @@ func processAIPolicy(ctx krt.HandlerContext, trafficPolicy *v1alpha1.TrafficPoli
 			aiPolicy.GetSpec().GetAi().PromptGuard = &api.PolicySpec_Ai_PromptGuard{}
 		}
 		if aiSpec.PromptGuard.Request != nil {
-			aiPolicy.GetSpec().GetAi().PromptGuard.Request = processRequestGuard(aiSpec.PromptGuard.Request, logger)
+			aiPolicy.GetSpec().GetAi().PromptGuard.Request = processRequestGuard(aiSpec.PromptGuard.Request)
 		}
 
 		if aiSpec.PromptGuard.Response != nil {
-			aiPolicy.GetSpec().GetAi().PromptGuard.Response = processResponseGuard(aiSpec.PromptGuard.Response, logger)
+			aiPolicy.GetSpec().GetAi().PromptGuard.Response = processResponseGuard(aiSpec.PromptGuard.Response)
 		}
 	}
 
@@ -290,12 +303,16 @@ func processAIPolicy(ctx krt.HandlerContext, trafficPolicy *v1alpha1.TrafficPoli
 	return []ADPPolicy{{Policy: aiPolicy}}
 }
 
-func processRequestGuard(req *v1alpha1.PromptguardRequest, logger *slog.Logger) *api.PolicySpec_Ai_RequestGuard {
+func processRequestGuard(req *v1alpha1.PromptguardRequest) *api.PolicySpec_Ai_RequestGuard {
 	if req == nil {
 		return nil
 	}
 
-	pgReq := &api.PolicySpec_Ai_RequestGuard{}
+	pgReq := &api.PolicySpec_Ai_RequestGuard{
+		Webhook:          processWebhook(req.Webhook),
+		Regex:            processRegex(req.Regex, req.CustomResponse),
+		OpenaiModeration: processModeration(req.Moderation),
+	}
 
 	if req.CustomResponse != nil {
 		pgReq.Rejection = &api.PolicySpec_Ai_RequestRejection{
@@ -304,33 +321,14 @@ func processRequestGuard(req *v1alpha1.PromptguardRequest, logger *slog.Logger) 
 		}
 	}
 
-	if req.Webhook != nil {
-		pgReq.Webhook = processWebhook(req.Webhook)
-	}
-
-	if req.Regex != nil {
-		pgReq.Regex = processRegex(req.Regex, req.CustomResponse, logger)
-	}
-
-	if req.Moderation != nil {
-		pgReq.OpenaiModeration = processModeration(req.Moderation)
-	}
-
 	return pgReq
 }
 
-func processResponseGuard(resp *v1alpha1.PromptguardResponse, logger *slog.Logger) *api.PolicySpec_Ai_ResponseGuard {
-	pgResp := &api.PolicySpec_Ai_ResponseGuard{}
-
-	if resp.Webhook != nil {
-		pgResp.Webhook = processWebhook(resp.Webhook)
+func processResponseGuard(resp *v1alpha1.PromptguardResponse) *api.PolicySpec_Ai_ResponseGuard {
+	return &api.PolicySpec_Ai_ResponseGuard{
+		Webhook: processWebhook(resp.Webhook),
+		Regex:   processRegex(resp.Regex, nil),
 	}
-
-	if resp.Regex != nil {
-		pgResp.Regex = processRegex(resp.Regex, nil, logger)
-	}
-
-	return pgResp
 }
 
 func processPromptEnrichment(enrichment *v1alpha1.AIPromptEnrichment) *api.PolicySpec_Ai_PromptEnrichment {
@@ -359,10 +357,33 @@ func processWebhook(webhook *v1alpha1.Webhook) *api.PolicySpec_Ai_Webhook {
 	if webhook == nil {
 		return nil
 	}
-	return &api.PolicySpec_Ai_Webhook{
+
+	w := &api.PolicySpec_Ai_Webhook{
 		Host: webhook.Host.Host,
 		Port: uint32(webhook.Host.Port),
 	}
+
+	if len(webhook.ForwardHeaderMatches) > 0 {
+		headers := make([]*api.HeaderMatch, 0, len(webhook.ForwardHeaderMatches))
+		for _, match := range webhook.ForwardHeaderMatches {
+			switch ptr.Deref(match.Type, gwv1.HeaderMatchExact) {
+			case gwv1.HeaderMatchExact:
+				headers = append(headers, &api.HeaderMatch{
+					Name:  string(match.Name),
+					Value: &api.HeaderMatch_Exact{Exact: match.Value},
+				})
+
+			case gwv1.HeaderMatchRegularExpression:
+				headers = append(headers, &api.HeaderMatch{
+					Name:  string(match.Name),
+					Value: &api.HeaderMatch_Regex{Regex: match.Value},
+				})
+			}
+		}
+		w.ForwardHeaderMatches = headers
+	}
+
+	return w
 }
 
 func processBuiltinRegexRule(builtin v1alpha1.BuiltIn, logger *slog.Logger) *api.PolicySpec_Ai_RegexRule {
@@ -389,7 +410,7 @@ func processNamedRegexRule(pattern, name string) *api.PolicySpec_Ai_RegexRule {
 	}
 }
 
-func processRegex(regex *v1alpha1.Regex, customResponse *v1alpha1.CustomResponse, logger *slog.Logger) *api.PolicySpec_Ai_RegexRules {
+func processRegex(regex *v1alpha1.Regex, customResponse *v1alpha1.CustomResponse) *api.PolicySpec_Ai_RegexRules {
 	if regex == nil {
 		return nil
 	}
@@ -397,9 +418,10 @@ func processRegex(regex *v1alpha1.Regex, customResponse *v1alpha1.CustomResponse
 	rules := &api.PolicySpec_Ai_RegexRules{}
 	if regex.Action != nil {
 		rules.Action = &api.PolicySpec_Ai_Action{}
-		if *regex.Action == v1alpha1.MASK {
+		switch *regex.Action {
+		case v1alpha1.MASK:
 			rules.Action.Kind = api.PolicySpec_Ai_MASK
-		} else if *regex.Action == v1alpha1.REJECT {
+		case v1alpha1.REJECT:
 			rules.Action.Kind = api.PolicySpec_Ai_REJECT
 			rules.Action.RejectResponse = &api.PolicySpec_Ai_RequestRejection{}
 			if customResponse != nil {
@@ -410,7 +432,7 @@ func processRegex(regex *v1alpha1.Regex, customResponse *v1alpha1.CustomResponse
 					rules.Action.RejectResponse.Status = *customResponse.StatusCode
 				}
 			}
-		} else {
+		default:
 			logger.Warn("unsupported regex action", "action", *regex.Action)
 			rules.Action.Kind = api.PolicySpec_Ai_ACTION_UNSPECIFIED
 		}
@@ -495,8 +517,6 @@ func processRBACPolicy(
 	policyTarget *api.PolicyTarget,
 	isMCP bool,
 ) []ADPPolicy {
-	logger := logging.New("agentgateway/plugins/traffic/rbac")
-
 	var allowPolicies, denyPolicies []string
 	if trafficPolicy.Spec.RBAC.Action == v1alpha1.AuthorizationPolicyActionDeny {
 		denyPolicies = append(denyPolicies, trafficPolicy.Spec.RBAC.Policy.MatchExpressions...)
@@ -551,4 +571,296 @@ func getBackendKey(targetPolicyNs, targetName string) string {
 
 func getGatewayExtensionKey(extensionNamespace, extensionName string) string {
 	return fmt.Sprintf("%s/%s", extensionNamespace, extensionName)
+}
+
+// processRateLimitPolicy processes RateLimit configuration and creates corresponding agentgateway policies
+func processRateLimitPolicy(ctx krt.HandlerContext, gatewayExtensions krt.Collection[*v1alpha1.GatewayExtension], trafficPolicy *v1alpha1.TrafficPolicy, policyName string, policyTarget *api.PolicyTarget) []ADPPolicy {
+	var adpPolicies []ADPPolicy
+
+	// Process local rate limiting if present
+	if trafficPolicy.Spec.RateLimit.Local != nil {
+		localPolicy := processLocalRateLimitPolicy(trafficPolicy, policyName, policyTarget)
+		if localPolicy != nil {
+			adpPolicies = append(adpPolicies, *localPolicy)
+		} else {
+			logger.Warn("failed to create local rate limit policy")
+		}
+	}
+
+	// Process global rate limiting if present
+	if trafficPolicy.Spec.RateLimit.Global != nil {
+		globalPolicy := processGlobalRateLimitPolicy(ctx, gatewayExtensions, trafficPolicy, policyName, policyTarget)
+		if globalPolicy != nil {
+			adpPolicies = append(adpPolicies, *globalPolicy)
+		} else {
+			logger.Warn("failed to create global rate limit policy")
+		}
+	}
+
+	return adpPolicies
+}
+
+// processLocalRateLimitPolicy processes local rate limiting configuration
+func processLocalRateLimitPolicy(trafficPolicy *v1alpha1.TrafficPolicy, policyName string, policyTarget *api.PolicyTarget) *ADPPolicy {
+	if trafficPolicy.Spec.RateLimit.Local.TokenBucket == nil {
+		logger.Error("token bucket configuration is nil")
+		return nil
+	}
+
+	tokenBucket := trafficPolicy.Spec.RateLimit.Local.TokenBucket
+
+	// Validate configuration
+	if tokenBucket.MaxTokens <= 0 {
+		logger.Error("invalid max tokens value", "max_tokens", tokenBucket.MaxTokens)
+		return nil
+	}
+	// Convert duration to seconds for agentgateway
+	fillIntervalSeconds := uint32(tokenBucket.FillInterval.Duration.Seconds())
+	if fillIntervalSeconds == 0 {
+		fillIntervalSeconds = 1 // minimum 1 second
+	}
+
+	// Create local rate limit policy using the proper agentgateway API
+	tokensPerFill := uint64(ptr.Deref(tokenBucket.TokensPerFill, 1))
+	if tokensPerFill == 0 {
+		tokensPerFill = 1
+	}
+
+	localRateLimitPolicy := &api.Policy{
+		Name:   policyName + localRateLimitPolicySuffix,
+		Target: policyTarget,
+		Spec: &api.PolicySpec{
+			Kind: &api.PolicySpec_LocalRateLimit_{
+				LocalRateLimit: &api.PolicySpec_LocalRateLimit{
+					MaxTokens:     uint64(tokenBucket.MaxTokens),
+					TokensPerFill: tokensPerFill,
+					FillInterval:  &durationpb.Duration{Seconds: int64(fillIntervalSeconds)},
+					Type:          api.PolicySpec_LocalRateLimit_REQUEST,
+				},
+			},
+		},
+	}
+
+	return &ADPPolicy{Policy: localRateLimitPolicy}
+}
+
+func processGlobalRateLimitPolicy(
+	ctx krt.HandlerContext,
+	gatewayExtensions krt.Collection[*v1alpha1.GatewayExtension],
+	trafficPolicy *v1alpha1.TrafficPolicy,
+	policyName string,
+	policyTarget *api.PolicyTarget,
+) *ADPPolicy {
+	grl := trafficPolicy.Spec.RateLimit.Global
+	if grl == nil {
+		return nil
+	}
+
+	gwExt, err := lookupGatewayExtension(
+		ctx, gatewayExtensions, grl.ExtensionRef, trafficPolicy.Namespace, v1alpha1.GatewayExtensionTypeRateLimit,
+	)
+	if err != nil {
+		logger.Error("failed to lookup rate limit extension", "error", err)
+		return nil
+	}
+	if gwExt.Spec.RateLimit == nil ||
+		gwExt.Spec.RateLimit.GrpcService == nil ||
+		gwExt.Spec.RateLimit.GrpcService.BackendRef == nil {
+		logger.Error("rate limit extension missing grpcService.backendRef", "extension", gwExt.Name)
+		return nil
+	}
+
+	// Build BackendReference for agentgateway (service/ns + port)
+	agwRef, err := buildAGWServiceRef(gwExt.Spec.RateLimit.GrpcService.BackendRef, trafficPolicy.Namespace)
+	if err != nil {
+		logger.Error("failed to build AGW service reference", "error", err)
+		return nil
+	}
+
+	// Translate descriptors
+	descriptors := make([]*api.PolicySpec_RemoteRateLimit_Descriptor, 0, len(grl.Descriptors))
+	for _, d := range grl.Descriptors {
+		if adp := processRateLimitDescriptor(d); adp != nil {
+			descriptors = append(descriptors, adp)
+		}
+	}
+
+	// Build the RemoteRateLimit policy that agentgateway expects
+	p := &api.Policy{
+		Name:   policyName + globalRateLimitPolicySuffix,
+		Target: policyTarget,
+		Spec: &api.PolicySpec{
+			Kind: &api.PolicySpec_RemoteRateLimit_{
+				RemoteRateLimit: &api.PolicySpec_RemoteRateLimit{
+					Domain:      gwExt.Spec.RateLimit.Domain,
+					Target:      agwRef,
+					Descriptors: descriptors,
+				},
+			},
+		},
+	}
+
+	return &ADPPolicy{Policy: p}
+}
+
+// getDescriptorEntryKey extracts the key from a rate limit descriptor entry
+func getDescriptorEntryKey(entry v1alpha1.RateLimitDescriptorEntry) string {
+	switch entry.Type {
+	case v1alpha1.RateLimitDescriptorEntryTypeGeneric:
+		if entry.Generic != nil {
+			return entry.Generic.Key
+		}
+	case v1alpha1.RateLimitDescriptorEntryTypeHeader:
+		if entry.Header != nil {
+			return *entry.Header
+		}
+	case v1alpha1.RateLimitDescriptorEntryTypeRemoteAddress:
+		return "remote_address"
+	case v1alpha1.RateLimitDescriptorEntryTypePath:
+		return "path"
+	}
+	return ""
+}
+
+func lookupGatewayExtension(ctx krt.HandlerContext, gatewayExtensions krt.Collection[*v1alpha1.GatewayExtension], extensionRef v1alpha1.NamespacedObjectReference, defaultNamespace string, expectedType v1alpha1.GatewayExtensionType) (*v1alpha1.GatewayExtension, error) {
+	extensionName := extensionRef.Name
+	extensionNamespace := string(ptr.Deref(extensionRef.Namespace, ""))
+	if extensionNamespace == "" {
+		extensionNamespace = defaultNamespace
+	}
+
+	gwExtKey := fmt.Sprintf("%s/%s", extensionNamespace, extensionName)
+	gwExt := krt.FetchOne(ctx, gatewayExtensions, krt.FilterKey(gwExtKey))
+
+	if gwExt == nil {
+		return nil, fmt.Errorf("gateway extension not found: %s", gwExtKey)
+	}
+
+	if (*gwExt).Spec.Type != expectedType {
+		return nil, fmt.Errorf("gateway extension is not of type %s: %s", expectedType, gwExtKey)
+	}
+
+	return *gwExt, nil
+}
+
+func buildServiceHost(backendRef *gwv1.BackendRef, defaultNamespace string) (serviceName, namespace string, port uint32, err error) {
+	if backendRef == nil {
+		return "", "", 0, fmt.Errorf("backend reference is nil")
+	}
+
+	serviceName = string(backendRef.Name)
+	if serviceName == "" {
+		return "", "", 0, fmt.Errorf("service name is empty")
+	}
+
+	port = uint32(80) // default port
+	if backendRef.Port != nil {
+		port = uint32(*backendRef.Port)
+	}
+
+	namespace = defaultNamespace
+	if backendRef.Namespace != nil {
+		namespace = string(*backendRef.Namespace)
+	}
+	return serviceName, namespace, port, nil
+}
+
+func processRateLimitDescriptor(descriptor v1alpha1.RateLimitDescriptor) *api.PolicySpec_RemoteRateLimit_Descriptor {
+	if len(descriptor.Entries) == 0 {
+		return nil
+	}
+
+	entries := make([]*api.PolicySpec_RemoteRateLimit_Entry, 0, len(descriptor.Entries))
+
+	for _, entry := range descriptor.Entries {
+		// Map TrafficPolicy entry -> CEL expression or literal expected by the agent.
+		var value string
+		key := getDescriptorEntryKey(entry)
+		switch entry.Type {
+		case v1alpha1.RateLimitDescriptorEntryTypeGeneric:
+			if entry.Generic != nil {
+				// Constant literal -> quote for CEL
+				value = strconv.Quote(entry.Generic.Value)
+			}
+		case v1alpha1.RateLimitDescriptorEntryTypeHeader:
+			if entry.Header != nil {
+				// Dynamic: header value expression
+				value = celHeaderExpr(*entry.Header)
+			}
+		case v1alpha1.RateLimitDescriptorEntryTypeRemoteAddress:
+			value = celRemoteIPExpr()
+		case v1alpha1.RateLimitDescriptorEntryTypePath:
+			value = celPathExpr()
+		}
+		if key != "" && value != "" {
+			entries = append(entries, &api.PolicySpec_RemoteRateLimit_Entry{
+				Key:   key,
+				Value: value,
+			})
+		}
+	}
+
+	if len(entries) == 0 {
+		return nil
+	}
+	return &api.PolicySpec_RemoteRateLimit_Descriptor{
+		Entries: entries,
+		Type:    api.PolicySpec_RemoteRateLimit_REQUESTS,
+	}
+}
+
+// celHeaderExpr returns a CEL expression that reads a request header.
+func celHeaderExpr(name string) string {
+	// Convert to lowercase to match how HTTP headers are stored
+	return fmt.Sprintf(`request.headers[%q]`, strings.ToLower(name))
+}
+
+// celRemoteIPExpr returns a CEL expression for the client IP.
+func celRemoteIPExpr() string {
+	return "source.address"
+}
+
+// celPathExpr returns a CEL expression for the request path (if supported in your env).
+func celPathExpr() string {
+	return "request.path"
+}
+
+// Returns an agentgateway BackendReference.Service in the "<ns>/<fqdn>" form + Port.
+func buildAGWServiceRef(br *gwv1.BackendRef, defaultNS string) (*api.BackendReference, error) {
+	if br == nil {
+		return nil, fmt.Errorf("backendRef is nil")
+	}
+	name, ns, port, err := buildServiceHost(br, defaultNS)
+	if err != nil {
+		return nil, err
+	}
+	fqdn := kubeutils.ServiceFQDN(metav1.ObjectMeta{Namespace: ns, Name: name})
+	return &api.BackendReference{
+		Kind: &api.BackendReference_Service{Service: ns + "/" + fqdn},
+		Port: port,
+	}, nil
+}
+
+// toProtoValue converts a raw string to a protobuf Value
+func toProtoValue(raw string) (*structpb.Value, error) {
+	rawBytes := []byte(raw)
+	v := &structpb.Value{}
+	if json.Valid(rawBytes) {
+		err := v.UnmarshalJSON(rawBytes)
+		if err != nil {
+			return nil, err
+		}
+		return v, nil
+	}
+
+	// not an encoded JSON value, this could be a an unquoted string so try encoding to JSON and unmarshal again
+	js, err := json.Marshal(raw)
+	if err != nil {
+		return nil, err
+	}
+	err = v.UnmarshalJSON(js)
+	if err != nil {
+		return nil, err
+	}
+	return v, nil
 }

@@ -113,7 +113,11 @@ type TrafficPolicySpec struct {
 
 	// RBAC specifies the role-based access control configuration for the policy.
 	// This defines the rules for authorization based on roles and permissions.
-	// +optional
+	// With an Envoy-based Gateway, RBAC policies applied at different attachment points in the configuration
+	// hierarchy are not cumulative, and only the most specific policy is enforced. In Envoy, this means an RBAC policy
+	// attached to a route will override any RBAC policies applied to the gateway or listener. In contrast, an
+	// Agentgateway-based Gateway supports cumulative RBAC policies across different attachment points, such that
+	// an RBAC policy attached to a route augments policies applied to the gateway or listener without overriding them.
 	RBAC *RBAC `json:"rbac,omitempty"`
 }
 
@@ -426,7 +430,7 @@ type Buffer struct {
 	// Requests exceeding this size will receive HTTP 413.
 	// Example format: "1Mi", "512Ki", "1Gi"
 	// +optional
-	// +kubebuilder:validation:XValidation:message="maxRequestSize must be greater than 0 and less than 4Gi",rule="quantity(self).isGreaterThan(quantity('0')) && quantity(self).isLessThan(quantity('4Gi'))"
+	// +kubebuilder:validation:XValidation:message="maxRequestSize must be greater than 0 and less than 4Gi",rule="(type(self) == int && int(self) > 0 && int(self) < 4294967296) || (type(self) == string && quantity(self).isGreaterThan(quantity('0')) && quantity(self).isLessThan(quantity('4Gi')))"
 	MaxRequestSize *resource.Quantity `json:"maxRequestSize,omitempty"`
 
 	// Disable the buffer filter.

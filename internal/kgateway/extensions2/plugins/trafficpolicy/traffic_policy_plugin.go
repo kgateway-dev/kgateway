@@ -235,7 +235,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections, mergeSe
 	), commoncol.KrtOpts.ToOptions("TrafficPolicy")...)
 	gk := wellknown.TrafficPolicyGVK.GroupKind()
 
-	translator := NewTrafficPolicyConstructor(ctx, commoncol)
+	constructor := NewTrafficPolicyConstructor(ctx, commoncol)
 	v := validator.New()
 
 	// TrafficPolicy IR will have TypedConfig -> implement backendroute method to add prompt guard, etc.
@@ -247,7 +247,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections, mergeSe
 			Name:      policyCR.Name,
 		}
 
-		policyIR, errors := translator.ConstructIR(krtctx, policyCR)
+		policyIR, errors := constructor.ConstructIR(krtctx, policyCR)
 		if err := validateWithRouteReplacementMode(ctx, policyIR, v, commoncol.Settings.RouteReplacementMode); err != nil {
 			logger.Error("validation failed", "policy", policyCR.Name, "error", err)
 			errors = append(errors, err)
@@ -280,7 +280,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections, mergeSe
 				PatchPolicyStatus: patchPolicyStatusFn(commoncol.CrudClient),
 			},
 		},
-		ExtraHasSynced: translator.HasSynced,
+		ExtraHasSynced: constructor.HasSynced,
 	}
 }
 

@@ -5,10 +5,8 @@ import (
 	"maps"
 	"reflect"
 	"slices"
-	"strings"
 	"time"
 
-	"github.com/agentgateway/agentgateway/go/api"
 	udpa "github.com/cncf/xds/go/udpa/type/v1"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -18,8 +16,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
-
-	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
 
 // Statically link protobuf descriptors from UDPA
@@ -48,85 +44,6 @@ func (key ConfigKey) HashCode() ConfigHash {
 
 func (key ConfigKey) String() string {
 	return key.Kind.String() + "/" + key.Namespace + "/" + key.Name
-}
-
-type ADPCacheAddress struct {
-	NamespacedName types.NamespacedName
-	ResourceNames  string
-
-	Address             proto.Message
-	AddressResourceName string
-	AddressVersion      uint64
-
-	reports    reports.ReportMap
-	VersionMap map[string]map[string]string
-}
-
-func (r ADPCacheAddress) ResourceName() string {
-	return r.ResourceNames
-}
-
-func (r ADPCacheAddress) Equals(in ADPCacheAddress) bool {
-	return report{reportMap: r.reports}.Equals(report{reportMap: in.reports}) &&
-		r.NamespacedName.Name == in.NamespacedName.Name && r.NamespacedName.Namespace == in.NamespacedName.Namespace &&
-		proto.Equal(r.Address, in.Address) &&
-		r.AddressVersion == in.AddressVersion &&
-		r.AddressResourceName == in.AddressResourceName
-}
-
-type ADPResourcesForGateway struct {
-	// agent gateway dataplane resources
-	Resources []*api.Resource
-	// gateway name
-	Gateway types.NamespacedName
-	// status for the gateway
-	report reports.ReportMap
-	// track which routes are attached to the gateway listener for each resource type (HTTPRoute, TCPRoute, etc)
-	attachedRoutes map[string]uint
-}
-
-func (g ADPResourcesForGateway) ResourceName() string {
-	// need a unique name per resource
-	return g.Gateway.String() + getResourceListName(g.Resources)
-}
-
-func getResourceListName(resources []*api.Resource) string {
-	names := make([]string, len(resources))
-	for i, res := range resources {
-		names[i] = getADPResourceName(res)
-	}
-	return strings.Join(names, ",")
-}
-
-func getADPResourceName(r *api.Resource) string {
-	switch t := r.GetKind().(type) {
-	case *api.Resource_Bind:
-		return "bind/" + t.Bind.GetKey()
-	case *api.Resource_Listener:
-		return "listener/" + t.Listener.GetKey()
-	case *api.Resource_Backend:
-		return "backend/" + t.Backend.GetName()
-	case *api.Resource_Route:
-		return "route/" + t.Route.GetKey()
-	case *api.Resource_Policy:
-		return "policy/" + t.Policy.GetName()
-	default:
-		logger.Error("unknown ADP resource", "type", fmt.Sprintf("%T", t))
-		return "unknown/" + r.String()
-	}
-}
-
-func (g ADPResourcesForGateway) Equals(other ADPResourcesForGateway) bool {
-	// Don't compare reports, as they are not part of the ADPResource equality and synced separately
-	for i := range g.Resources {
-		if !proto.Equal(g.Resources[i], other.Resources[i]) {
-			return false
-		}
-	}
-	if !maps.Equal(g.attachedRoutes, other.attachedRoutes) {
-		return false
-	}
-	return g.Gateway == other.Gateway
 }
 
 // Meta is metadata attached to each configuration unit.

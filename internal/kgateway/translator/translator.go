@@ -97,7 +97,7 @@ func (s *CombinedTranslator) HasSynced() bool {
 	return true
 }
 
-// buildProxy performs translation of a kube Gateway -> gloov1.Proxy (really a wrapper type)
+// buildProxy performs translation of a kube Gateway -> GatewayIR
 func (s *CombinedTranslator) buildProxy(kctx krt.HandlerContext, ctx context.Context, gw ir.Gateway, r reports.Reporter) *ir.GatewayIR {
 	stopwatch := utils.NewTranslatorStopWatch("CombinedTranslator")
 	stopwatch.Start()
@@ -116,11 +116,6 @@ func (s *CombinedTranslator) buildProxy(kctx krt.HandlerContext, ctx context.Con
 
 	duration := stopwatch.Stop(ctx)
 	logger.Debug("translated proxy", "namespace", gw.Namespace, "name", gw.Name, "duration", duration.String())
-
-	// TODO: these are likely unnecessary and should be removed!
-	//	applyPostTranslationPlugins(ctx, pluginRegistry, &gwplugins.PostTranslationContext{
-	//		TranslatedGateways: translatedGateways,
-	//	})
 
 	return proxy
 }

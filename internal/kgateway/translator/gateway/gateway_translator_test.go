@@ -15,6 +15,7 @@ import (
 	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
@@ -40,6 +41,17 @@ func TestBasic(t *testing.T) {
 		expectedProxyFile := filepath.Join(dir, "testutils/outputs/", in.outputFile)
 		translatortest.TestTranslation(t, ctx, inputFiles, expectedProxyFile, in.gwNN, in.assertReports, settingOpts...)
 	}
+
+	t.Run("gateway with no routes should not add empty filter chain", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "gateway-only/gateway.yaml",
+			outputFile: "gateway-only/proxy.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
 
 	t.Run("http gateway with per connection buffer limit", func(t *testing.T) {
 		test(t, translatorTestCase{
@@ -264,6 +276,35 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("httproute with backend port error reports correctly", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "backends/backend-ref-port-error.yaml",
+			outputFile: "backends/backend-ref-port-error.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
+				a := assert.New(t)
+				route := &gwv1.HTTPRoute{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "example-route",
+						Namespace: "default",
+					},
+				}
+				routeStatus := reportsMap.BuildRouteStatus(context.Background(), route, wellknown.DefaultGatewayClassName)
+				a.NotNil(routeStatus)
+				a.Len(routeStatus.Parents, 1)
+				resolvedRefs := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionResolvedRefs))
+				a.NotNil(resolvedRefs)
+				a.Equal(string(gwv1.RouteReasonBackendNotFound), resolvedRefs.Reason)
+				a.Equal(metav1.ConditionFalse, resolvedRefs.Status)
+				a.Equal((&krtcollections.BackendPortNotAllowedError{BackendName: "example-backend"}).Error(), resolvedRefs.Message)
+				a.Equal(int64(0), resolvedRefs.ObservedGeneration)
+			},
+		})
+	})
+
 	t.Run("TrafficPolicy merging", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "traffic-policy/merge.yaml",
@@ -342,6 +383,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("TrafficPolicy ExtAuth Simple", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/extauth-simple.yaml",
+			outputFile: "traffic-policy/extauth-simple.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "infra",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("TrafficPolicy ExtProc different attachment points", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "traffic-policy/extproc.yaml",
@@ -349,6 +401,17 @@ func TestBasic(t *testing.T) {
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "test",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy ExtProc Simple", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/extproc-simple.yaml",
+			outputFile: "traffic-policy/extproc-simple.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "infra",
+				Name:      "example-gateway",
 			},
 		})
 	})
@@ -1221,6 +1284,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("Backend Config Policy with system ca TLS", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "backendconfigpolicy/tls-system-ca.yaml",
+			outputFile: "backendconfigpolicy/tls-system-ca.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("TrafficPolicy with explicit generation", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "traffic-policy/generation.yaml",
@@ -1338,7 +1412,7 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
-	t.Run("TrafficPolicy: rate limit", func(t *testing.T) {
+	t.Run("TrafficPolicy RateLimit Simple", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "traffic-policy/rate-limit.yaml",
 			outputFile: "traffic-policy/rate-limit.yaml",

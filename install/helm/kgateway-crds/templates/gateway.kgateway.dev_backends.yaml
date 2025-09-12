@@ -775,9 +775,9 @@ spec:
                               x-kubernetes-map-type: atomic
                           type: object
                           x-kubernetes-validations:
-                          - message: at least one of namespace and service must be
+                          - message: at least one of namespace or service must be
                               set
-                            rule: has(self.namespace) || has(self.service)
+                            rule: has(self.__namespace__) || has(self.service)
                         static:
                           properties:
                             host:
