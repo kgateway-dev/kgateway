@@ -102,10 +102,11 @@ func (r *gatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (re
 		// objects, we want to set the status to InvalidParameters.
 		original := gw.DeepCopy()
 		meta.SetStatusCondition(&gw.Status.Conditions, metav1.Condition{
-			Type:    string(api.GatewayConditionAccepted),
-			Status:  metav1.ConditionFalse,
-			Reason:  string(api.GatewayReasonInvalidParameters),
-			Message: err.Error(),
+			Type:               string(api.GatewayConditionAccepted),
+			Status:             metav1.ConditionFalse,
+			ObservedGeneration: gw.Generation,
+			Reason:             string(api.GatewayReasonInvalidParameters),
+			Message:            err.Error(),
 		})
 		return ctrl.Result{}, r.cli.Status().Patch(ctx, &gw, client.MergeFrom(original))
 	}
