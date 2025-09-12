@@ -41,8 +41,9 @@ Statuses:
         status: Unknown
         type: AttachedListenerSets
       - lastTransitionTime: null
-        message: Gateway is accepted
-        reason: Accepted
+        message: Gateway accepted but listener listener~8443 was skipped due to no
+          filter chains
+        reason: ListenersNotValid
         status: "True"
         type: Accepted
       - lastTransitionTime: null

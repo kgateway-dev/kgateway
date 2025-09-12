@@ -1,6 +1,7 @@
 package irtranslator
 
 import (
+	"fmt"
 	"sort"
 	"strconv"
 
@@ -10,6 +11,7 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/slices"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -50,6 +52,16 @@ func (t *Translator) Translate(gw ir.GatewayIR, reporter sdkreporter.Reporter) T
 		outListener, routes := t.ComputeListener(context.TODO(), pass, gw, l, reporter)
 		// Envoy rejects listeners with no filter chains; skip adding such listeners.
 		if outListener == nil || len(outListener.GetFilterChains()) == 0 {
+			// Report a warning-level condition on the gateway
+			gwreporter := reporter.Gateway(gw.SourceObject.Obj)
+			gwreporter.SetCondition(sdkreporter.GatewayCondition{
+				Type:    gwv1.GatewayConditionAccepted,
+				Status:  metav1.ConditionTrue,
+				Reason:  gwv1.GatewayReasonListenersNotValid,
+				Message: fmt.Sprintf("Gateway accepted but listener %s was skipped due to no filter chains", l.Name),
+			})
+
+			logger.Warn("skipping listener with no filter chains", "listener_name", l.Name, "gateway", gw.SourceObject.GetName())
 			continue
 		}
 		res.Listeners = append(res.Listeners, outListener)
