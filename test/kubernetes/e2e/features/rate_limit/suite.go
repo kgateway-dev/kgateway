@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -35,6 +34,11 @@ type testingSuite struct {
 	commonResources []client.Object
 	agentGateway    bool
 }
+
+// rlBurstTries keeps the requests within ratelimiter window
+// rateLimiter will not count 60 sercond for 1 minute, but will reset at 00 second for next minute
+
+var rlBurstTries = 3
 
 func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
 	return &testingSuite{
@@ -227,9 +231,9 @@ func (s *testingSuite) assertResponseWithHeader(path string, headerName string, 
 		})
 }
 
+// Burst a few quick checks so the test doesn't cross a rate-limit window boundary.
 func (s *testingSuite) assertConsistentResponse(path string, expectedStatus int) {
-	// Short burst (3 tries) inside one RL window; each try waits until status matches.
-	for i := 0; i < 3; i++ {
+	for i := 0; i < rlBurstTries; i++ {
 		s.testInstallation.Assertions.AssertEventualCurlResponse(
 			s.ctx,
 			testdefaults.CurlPodExecOpt,
@@ -241,14 +245,12 @@ func (s *testingSuite) assertConsistentResponse(path string, expectedStatus int)
 			},
 			&testmatchers.HttpResponse{StatusCode: expectedStatus},
 		)
-		if i < 2 {
-			time.Sleep(40 * time.Millisecond)
-		}
 	}
 }
+
+// Safe burst a few quick checks so the test doesn't cross a rate-limit window boundary.
 func (s *testingSuite) assertConsistentResponseWithHeader(path, headerName, headerValue string, expectedStatus int) {
-	// Short burst (3 tries) inside one RL window; each try waits until status matches.
-	for i := 0; i < 3; i++ {
+	for i := 0; i < rlBurstTries; i++ {
 		s.testInstallation.Assertions.AssertEventualCurlResponse(
 			s.ctx,
 			testdefaults.CurlPodExecOpt,
@@ -261,8 +263,5 @@ func (s *testingSuite) assertConsistentResponseWithHeader(path, headerName, head
 			},
 			&testmatchers.HttpResponse{StatusCode: expectedStatus},
 		)
-		if i < 2 {
-			time.Sleep(40 * time.Millisecond)
-		}
 	}
 }
