@@ -41,7 +41,7 @@ Statuses:
         status: Unknown
         type: AttachedListenerSets
       - lastTransitionTime: null
-        message: Listener tls was skipped because it has no filter chains
+        message: 'Listeners skipped because they have no filter chains: tls, tcp'
         reason: ListenersNotValid
         status: "True"
         type: Accepted

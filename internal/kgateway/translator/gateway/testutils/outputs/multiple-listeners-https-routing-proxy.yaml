@@ -12,7 +12,7 @@ Statuses:
         status: Unknown
         type: AttachedListenerSets
       - lastTransitionTime: null
-        message: Listener https-httpbin was skipped because it has no filter chains
+        message: 'Listeners skipped because they have no filter chains: https-httpbin'
         reason: ListenersNotValid
         status: "True"
         type: Accepted

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"sort"
 	"strconv"
+	"strings"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
@@ -28,6 +29,11 @@ import (
 
 var logger = logging.New("translator/ir")
 
+const (
+	listenerNoFilterChainsReason    = "Listener has no filter chains and cannot be programmed"
+	gatewayListenersNotValidMessage = "Listeners skipped because they have no filter chains: %s"
+)
+
 type Translator struct {
 	ContributedPolicies  map[schema.GroupKind]extensionsplug.PolicyPlugin
 	RouteReplacementMode settings.RouteReplacementMode
@@ -47,6 +53,7 @@ func (t *Translator) Translate(gw ir.GatewayIR, reporter sdkreporter.Reporter) T
 	pass := t.newPass(reporter)
 	var res TranslationResult
 
+	var skippedListeners []string
 	for _, l := range gw.Listeners {
 		// TODO: propagate errors so we can allow the retain last config mode
 		outListener, routes := t.ComputeListener(context.TODO(), pass, gw, l, reporter)
@@ -60,22 +67,27 @@ func (t *Translator) Translate(gw ir.GatewayIR, reporter sdkreporter.Reporter) T
 				Type:    gwv1.ListenerConditionProgrammed,
 				Status:  metav1.ConditionFalse,
 				Reason:  gwv1.ListenerReasonPending,
-				Message: "Listener has no filter chains and cannot be programmed",
+				Message: listenerNoFilterChainsReason,
 			})
 
-			// Report a warning-level condition on the gateway
-			gwreporter := reporter.Gateway(gw.SourceObject.Obj)
-			gwreporter.SetCondition(sdkreporter.GatewayCondition{
-				Type:    gwv1.GatewayConditionAccepted,
-				Status:  metav1.ConditionTrue,
-				Reason:  gwv1.GatewayReasonListenersNotValid,
-				Message: fmt.Sprintf("Listener %s was skipped because it has no filter chains", originalListenerName),
-			})
+			// Collect the names of the skipped listeners so they can all be reported at once on the gateway
+			skippedListeners = append(skippedListeners, originalListenerName)
 
 			continue
 		}
 		res.Listeners = append(res.Listeners, outListener)
 		res.Routes = append(res.Routes, routes...)
+	}
+
+	// Report on the gateway if some listeners were skipped because they have no filter chains
+	if len(skippedListeners) > 0 {
+		gwreporter := reporter.Gateway(gw.SourceObject.Obj)
+		gwreporter.SetCondition(sdkreporter.GatewayCondition{
+			Type:    gwv1.GatewayConditionAccepted,
+			Status:  metav1.ConditionTrue,
+			Reason:  gwv1.GatewayReasonListenersNotValid,
+			Message: fmt.Sprintf(gatewayListenersNotValidMessage, strings.Join(skippedListeners, ", ")),
+		})
 	}
 
 	for _, c := range pass {
