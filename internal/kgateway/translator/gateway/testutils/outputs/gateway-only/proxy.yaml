@@ -41,8 +41,7 @@ Statuses:
         status: Unknown
         type: AttachedListenerSets
       - lastTransitionTime: null
-        message: Gateway accepted but listener listener~8443 was skipped due to no
-          filter chains
+        message: Listener tls was skipped because it has no filter chains
         reason: ListenersNotValid
         status: "True"
         type: Accepted
@@ -83,6 +82,11 @@ Statuses:
       - attachedRoutes: 0
         conditions:
         - lastTransitionTime: null
+          message: Listener has no filter chains and cannot be programmed
+          reason: Pending
+          status: "False"
+          type: Programmed
+        - lastTransitionTime: null
           message: Listener is accepted
           reason: Accepted
           status: "True"
@@ -97,11 +101,6 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
-        - lastTransitionTime: null
-          message: Listener is programmed
-          reason: Programmed
-          status: "True"
-          type: Programmed
         name: tcp
         supportedKinds:
         - group: gateway.networking.k8s.io
@@ -109,6 +108,11 @@ Statuses:
       - attachedRoutes: 0
         conditions:
         - lastTransitionTime: null
+          message: Listener has no filter chains and cannot be programmed
+          reason: Pending
+          status: "False"
+          type: Programmed
+        - lastTransitionTime: null
           message: Listener is accepted
           reason: Accepted
           status: "True"
@@ -123,11 +127,6 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
-        - lastTransitionTime: null
-          message: Listener is programmed
-          reason: Programmed
-          status: "True"
-          type: Programmed
         name: tls
         supportedKinds:
         - group: gateway.networking.k8s.io

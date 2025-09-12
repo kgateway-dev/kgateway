@@ -52,16 +52,26 @@ func (t *Translator) Translate(gw ir.GatewayIR, reporter sdkreporter.Reporter) T
 		outListener, routes := t.ComputeListener(context.TODO(), pass, gw, l, reporter)
 		// Envoy rejects listeners with no filter chains; skip adding such listeners.
 		if outListener == nil || len(outListener.GetFilterChains()) == 0 {
+			// Report that listener is not programmed due to no filter chains
+			// Need to use the original listener name to report the condition
+			originalListenerName := findOriginalListenerName(gw, reporter, l)
+			listenerReporter := getReporterForFilterChain(gw, reporter, originalListenerName)
+			listenerReporter.SetCondition(sdkreporter.ListenerCondition{
+				Type:    gwv1.ListenerConditionProgrammed,
+				Status:  metav1.ConditionFalse,
+				Reason:  gwv1.ListenerReasonPending,
+				Message: "Listener has no filter chains and cannot be programmed",
+			})
+
 			// Report a warning-level condition on the gateway
 			gwreporter := reporter.Gateway(gw.SourceObject.Obj)
 			gwreporter.SetCondition(sdkreporter.GatewayCondition{
 				Type:    gwv1.GatewayConditionAccepted,
 				Status:  metav1.ConditionTrue,
 				Reason:  gwv1.GatewayReasonListenersNotValid,
-				Message: fmt.Sprintf("Gateway accepted but listener %s was skipped due to no filter chains", l.Name),
+				Message: fmt.Sprintf("Listener %s was skipped because it has no filter chains", originalListenerName),
 			})
 
-			logger.Warn("skipping listener with no filter chains", "listener_name", l.Name, "gateway", gw.SourceObject.GetName())
 			continue
 		}
 		res.Listeners = append(res.Listeners, outListener)
@@ -76,6 +86,15 @@ func (t *Translator) Translate(gw ir.GatewayIR, reporter sdkreporter.Reporter) T
 	}
 
 	return res
+}
+
+func findOriginalListenerName(gw ir.GatewayIR, reporter sdkreporter.Reporter, listener ir.ListenerIR) string {
+	for _, origListener := range gw.SourceObject.Listeners {
+		if uint32(origListener.Port) == listener.BindPort {
+			return string(origListener.Name)
+		}
+	}
+	return ""
 }
 
 func getReporterForFilterChain(gw ir.GatewayIR, reporter sdkreporter.Reporter, filterChainName string) sdkreporter.ListenerReporter {

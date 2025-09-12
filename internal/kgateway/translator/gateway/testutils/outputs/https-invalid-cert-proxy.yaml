@@ -61,8 +61,7 @@ Statuses:
         status: Unknown
         type: AttachedListenerSets
       - lastTransitionTime: null
-        message: Gateway accepted but listener listener~8443 was skipped due to no
-          filter chains
+        message: Listener https2 was skipped because it has no filter chains
         reason: ListenersNotValid
         status: "True"
         type: Accepted
@@ -108,8 +107,8 @@ Statuses:
           status: "False"
           type: ResolvedRefs
         - lastTransitionTime: null
-          message: Secret default/missing-cert not found.
-          reason: Invalid
+          message: Listener has no filter chains and cannot be programmed
+          reason: Pending
           status: "False"
           type: Programmed
         - lastTransitionTime: null
@@ -135,9 +134,8 @@ Statuses:
           status: "False"
           type: ResolvedRefs
         - lastTransitionTime: null
-          message: 'invalid TLS secret default/invalid-cert: tls: failed to find any
-            PEM data in key input'
-          reason: Invalid
+          message: Listener has no filter chains and cannot be programmed
+          reason: Pending
           status: "False"
           type: Programmed
         - lastTransitionTime: null
