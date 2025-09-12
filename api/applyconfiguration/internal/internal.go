@@ -959,7 +959,6 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: failOpen
       type:
         scalar: boolean
-      default: false
     - name: grpcService
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtGrpcService
@@ -969,7 +968,6 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: statusOnError
       type:
         scalar: numeric
-      default: 0
     - name: withRequestBody
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.BufferSettings
@@ -1003,7 +1001,6 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: failOpen
       type:
         scalar: boolean
-      default: false
     - name: grpcService
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtGrpcService
@@ -2167,7 +2164,6 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: failOpen
       type:
         scalar: boolean
-      default: false
     - name: grpcService
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtGrpcService

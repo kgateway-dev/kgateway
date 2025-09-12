@@ -46,7 +46,7 @@ type ExtAuthProvider struct {
 	// Defaults to false, meaning requests will be denied if the ext auth service is unavailable.
 	// +optional
 	// +kubebuilder:default=false
-	FailOpen bool `json:"failOpen"`
+	FailOpen bool `json:"failOpen,omitempty"`
 
 	// ClearRouteCache determines if the route cache should be cleared to allow the
 	// external authorization service to correctly affect routing decisions.
@@ -66,7 +66,7 @@ type ExtAuthProvider struct {
 	// +kubebuilder:default=403
 	// +kubebuilder:validation:Minimum=100
 	// +kubebuilder:validation:Maximum=511
-	StatusOnError uint32 `json:"statusOnError"`
+	StatusOnError uint32 `json:"statusOnError,omitempty"`
 
 	// StatPrefix is an optional prefix to include when emitting stats from the extauth filter,
 	// enabling different instances of the filter to have unique stats.
@@ -85,7 +85,7 @@ type ExtProcProvider struct {
 	// Defaults to true, meaning requests are allowed upstream even if the ext proc service is unavailable.
 	// +optional
 	// +kubebuilder:default=true
-	FailOpen bool `json:"failOpen"`
+	FailOpen bool `json:"failOpen,omitempty"`
 
 	// ProcessingMode defines how the filter should interact with the request/response streams.
 	// +optional
@@ -170,7 +170,7 @@ type RateLimitProvider struct {
 	// Defaults to true, meaning requests are allowed upstream and not limited if the rate limit service is unavailable.
 	// +optional
 	// +kubebuilder:default=true
-	FailOpen bool `json:"failOpen"`
+	FailOpen bool `json:"failOpen,omitempty"`
 
 	// Timeout provides an optional timeout value for requests to the rate limit service.
 	// For rate limiting, prefer using this timeout rather than setting the generic `timeout` on the `GrpcService`.

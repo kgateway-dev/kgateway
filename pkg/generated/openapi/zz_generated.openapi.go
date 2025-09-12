@@ -3129,7 +3129,6 @@ func schema_kgateway_v2_api_v1alpha1_ExtAuthProvider(ref common.ReferenceCallbac
 					"failOpen": {
 						SchemaProps: spec.SchemaProps{
 							Description: "FailOpen determines if requests are allowed when the ext auth service is unavailable. Defaults to false, meaning requests will be denied if the ext auth service is unavailable.",
-							Default:     false,
 							Type:        []string{"boolean"},
 							Format:      "",
 						},
@@ -3151,7 +3150,6 @@ func schema_kgateway_v2_api_v1alpha1_ExtAuthProvider(ref common.ReferenceCallbac
 					"statusOnError": {
 						SchemaProps: spec.SchemaProps{
 							Description: "StatusOnError sets the HTTP status response code that is returned to the client when the authorization server returns an error or cannot be reached. Must be in the range of 100-511 inclusive. The default matches the deny response code of 403 Forbidden.",
-							Default:     0,
 							Type:        []string{"integer"},
 							Format:      "int64",
 						},
@@ -3256,7 +3254,6 @@ func schema_kgateway_v2_api_v1alpha1_ExtProcProvider(ref common.ReferenceCallbac
 					"failOpen": {
 						SchemaProps: spec.SchemaProps{
 							Description: "FailOpen determines if requests are allowed when the ext proc service is unavailable. Defaults to true, meaning requests are allowed upstream even if the ext proc service is unavailable.",
-							Default:     false,
 							Type:        []string{"boolean"},
 							Format:      "",
 						},
@@ -6577,7 +6574,6 @@ func schema_kgateway_v2_api_v1alpha1_RateLimitProvider(ref common.ReferenceCallb
 					"failOpen": {
 						SchemaProps: spec.SchemaProps{
 							Description: "FailOpen determines if requests are limited when the rate limit service is unavailable. Defaults to true, meaning requests are allowed upstream and not limited if the rate limit service is unavailable.",
-							Default:     false,
 							Type:        []string{"boolean"},
 							Format:      "",
 						},

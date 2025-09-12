@@ -30,24 +30,24 @@ spec:
         type: PathPrefix
         value: /example-route
 ---
-# apiVersion: gateway.networking.k8s.io/v1
-# kind: HTTPRoute
-# metadata:
-#   name: example-route-2
-#   namespace: infra
-# spec:
-#   parentRefs:
-#   - name: example-gateway
-#   hostnames:
-#   - "example.com"
-#   rules:
-#   - backendRefs:
-#     - name: example-svc
-#       port: 80
-#     matches:
-#     - path:
-#         type: PathPrefix
-#         value: /example-route-2
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: example-route-2
+  namespace: infra
+spec:
+  parentRefs:
+  - name: example-gateway
+  hostnames:
+  - "example.com"
+  rules:
+  - backendRefs:
+    - name: example-svc
+      port: 80
+    matches:
+    - path:
+        type: PathPrefix
+        value: /example-route-2
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: TrafficPolicy
@@ -67,19 +67,19 @@ spec:
     contextExtensions:
       my-key: my-val
 ---
-# apiVersion: gateway.kgateway.dev/v1alpha1
-# kind: TrafficPolicy
-# metadata:
-#   name: extauth-for-http-route-2
-#   namespace: infra
-# spec:
-#   targetRefs:
-#   - group: gateway.networking.k8s.io
-#     kind: HTTPRoute
-#     name: example-route-2
-#   extAuth:
-#     extensionRef:
-#       name: default-extauth
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: extauth-for-http-route-2
+  namespace: infra
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: example-route-2
+  extAuth:
+    extensionRef:
+      name: default-extauth
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: GatewayExtension
@@ -103,22 +103,18 @@ spec:
       allowPartialMessage: true
       packAsBytes: true
 ---
-# This will act as a baseline for the fully default GwExt values
-# Currently causes issues with CRD defaults/validation in translator tests,
-# so commenting out for now
-#
-# apiVersion: gateway.kgateway.dev/v1alpha1
-# kind: GatewayExtension
-# metadata:
-#   name: default-extauth
-#   namespace: infra
-# spec:
-#   type: ExtAuth
-#   extAuth:
-#     grpcService:
-#       backendRef:
-#         name: ext-authz
-#         port: 9000
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: default-extauth
+  namespace: infra
+spec:
+  type: ExtAuth
+  extAuth:
+    grpcService:
+      backendRef:
+        name: ext-authz
+        port: 9000
 ---
 apiVersion: v1
 kind: Service
