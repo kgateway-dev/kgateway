@@ -7,7 +7,6 @@ import (
 
 	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/suite"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
@@ -22,59 +21,41 @@ var _ e2e.NewSuiteFunc = NewTestingSuite
 var (
 	setup = base.TestCase{
 		Manifests: []string{defaults.CurlPodManifest, commonManifest},
-		Resources: []client.Object{
-			defaults.CurlPod,
-			// resources from common manifest
-			httpbinTeam1Service, httpbinTeam1Deployment, httpbinTeam2Service, httpbinTeam2Deployment, gateway,
-			// deployer-generated resources
-			proxyDeployment, proxyService,
-		},
 	}
 
 	testCases = map[string]*base.TestCase{
 		"TestBasic": {
 			Manifests: []string{basicRoutesManifest},
-			Resources: []client.Object{routeRoot, routeTeam1, routeTeam2},
 		},
 		"TestRecursive": {
 			Manifests: []string{recursiveRoutesManifest},
-			Resources: []client.Object{routeRoot, routeTeam1, routeTeam2Root, routeTeam2},
 		},
 		"TestCyclic": {
 			Manifests: []string{cyclicRoutesManifest},
-			Resources: []client.Object{routeRoot, routeTeam1, routeTeam2Root, routeTeam2},
 		},
 		"TestInvalidChild": {
 			Manifests: []string{invalidChildRoutesManifest},
-			Resources: []client.Object{routeRoot, routeTeam1, routeTeam2},
 		},
 		"TestHeaderQueryMatch": {
 			Manifests: []string{headerQueryMatchRoutesManifest},
-			Resources: []client.Object{routeRoot, routeTeam1, routeTeam2},
 		},
 		"TestMultipleParents": {
 			Manifests: []string{multipleParentsManifest},
-			Resources: []client.Object{routeParent1, routeParent2, routeTeam1, routeTeam2},
 		},
 		"TestInvalidChildValidStandalone": {
 			Manifests: []string{invalidChildValidStandaloneManifest},
-			Resources: []client.Object{gatewayTest, proxyTestService, proxyTestDeployment, routeRoot, routeTeam1, routeTeam2},
 		},
 		"TestUnresolvedChild": {
 			Manifests: []string{unresolvedChildManifest},
-			Resources: []client.Object{routeRoot},
 		},
 		"TestMatcherInheritance": {
 			Manifests: []string{matcherInheritanceManifest},
-			Resources: []client.Object{routeParent1, routeParent2, routeTeam1},
 		},
 		"TestRouteWeight": {
 			Manifests: []string{routeWeightManifest},
-			Resources: []client.Object{routeRoot, routeTeam1, routeTeam2},
 		},
 		"TestPolicyMerging": {
 			Manifests: []string{policyMergingManifest},
-			Resources: []client.Object{routeParent1, routeParent2, routeTeam1, routeTeam2, trafficPolicyParent1Transform, trafficPolicyParent2Transform, trafficPolicySvc1Transform, trafficPolicySvc2Transform},
 		},
 	}
 )

@@ -25,14 +25,11 @@ import (
 	gwv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	kgwversioned "github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
-	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
-	"github.com/kgateway-dev/kgateway/v2/pkg/settings"
 )
 
 type AgwCollections struct {
@@ -69,17 +66,10 @@ type AgwCollections struct {
 	RefGrants   *krtcollections.RefGrantIndex
 
 	// kgateway resources
-	// TODO(npolshak): remove backendindex as part of https://github.com/kgateway-dev/kgateway/issues/12052
-	BackendIndex      *krtcollections.BackendIndex
 	Backends          krt.Collection[*v1alpha1.Backend]
 	TrafficPolicies   krt.Collection[*v1alpha1.TrafficPolicy]
 	DirectResponses   krt.Collection[*v1alpha1.DirectResponse]
 	GatewayExtensions krt.Collection[*v1alpha1.GatewayExtension]
-
-	// Plugin-initialized collections (set by InitPlugins)
-	Routes       *krtcollections.RoutesIndex
-	Endpoints    krt.Collection[ir.EndpointsForBackend]
-	GatewayIndex *krtcollections.GatewayIndex
 
 	// ControllerName is the name of the Gateway controller.
 	ControllerName string
@@ -234,14 +224,10 @@ func (c *AgwCollections) HasSynced() bool {
 		c.InferencePools != nil && c.InferencePools.HasSynced() &&
 		c.WrappedPods != nil && c.WrappedPods.HasSynced() &&
 		c.RefGrants != nil && c.RefGrants.HasSynced() &&
-		c.BackendIndex != nil && c.BackendIndex.HasSynced() &&
 		c.Backends != nil && c.Backends.HasSynced() &&
 		c.TrafficPolicies != nil && c.TrafficPolicies.HasSynced() &&
 		c.DirectResponses != nil && c.DirectResponses.HasSynced() &&
-		c.GatewayExtensions != nil && c.GatewayExtensions.HasSynced() &&
-		c.Routes != nil && c.Routes.HasSynced() &&
-		c.Endpoints != nil && c.Endpoints.HasSynced() &&
-		c.GatewayIndex != nil && c.GatewayIndex.Gateways.HasSynced()
+		c.GatewayExtensions != nil && c.GatewayExtensions.HasSynced()
 }
 
 // NewAgwCollections initializes the core krt collections.
@@ -316,7 +302,6 @@ func NewAgwCollections(
 		TrafficPolicies:   krt.NewInformer[*v1alpha1.TrafficPolicy](commoncol.Client),
 		GatewayExtensions: krt.NewInformer[*v1alpha1.GatewayExtension](commoncol.Client),
 		Backends:          krt.NewInformer[*v1alpha1.Backend](commoncol.Client),
-		BackendIndex:      commoncol.BackendIndex,
 	}
 
 	if commoncol.Settings.EnableInferExt {
@@ -326,30 +311,4 @@ func NewAgwCollections(
 	}
 
 	return agwCollections, nil
-}
-
-// InitPlugins set up collections that rely on plugins.
-// This can't be part of NewAgwCollections because the setup
-// of plugins themselves rely on a reference to AgwCollections.
-func (c *AgwCollections) InitPlugins(
-	ctx context.Context,
-	mergedPlugins extensionsplug.Plugin,
-	globalSettings settings.Settings,
-) {
-	gateways, routeIndex, backendIndex, endpointIRs := krtcollections.InitCollections(
-		ctx,
-		c.ControllerName,
-		mergedPlugins,
-		c.Client,
-		c.OurClient,
-		c.RefGrants,
-		c.KrtOpts,
-		globalSettings,
-	)
-
-	// init plugin-extended collections
-	c.BackendIndex = backendIndex
-	c.Routes = routeIndex
-	c.Endpoints = endpointIRs
-	c.GatewayIndex = gateways
 }
