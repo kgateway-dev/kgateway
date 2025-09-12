@@ -46,7 +46,6 @@ func (t *Translator) Translate(ctx context.Context, gw ir.GatewayIR, reporter sd
 	var res TranslationResult
 
 	for _, l := range gw.Listeners {
-		// TODO: propagate errors so we can allow the retain last config mode
 		outListener, routes := t.ComputeListener(ctx, pass, gw, l, reporter)
 		// Envoy rejects listeners with no filter chains; skip adding such listeners.
 		if outListener == nil || len(outListener.GetFilterChains()) == 0 {
