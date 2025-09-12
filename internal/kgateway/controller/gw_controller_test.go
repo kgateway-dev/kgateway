@@ -132,8 +132,9 @@ var _ = Describe("GwController", func() {
 
 			gw = api.Gateway{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "gw",
-					Namespace: "default",
+					Name:       "gw",
+					Namespace:  "default",
+					Generation: 1,
 				},
 				Spec: api.GatewaySpec{
 					GatewayClassName: api.ObjectName(gatewayClassName),
@@ -171,6 +172,7 @@ var _ = Describe("GwController", func() {
 				Not(BeNil()),
 				WithTransform(func(c *metav1.Condition) string { return c.Type }, Equal(string(api.GatewayConditionAccepted))),
 				WithTransform(func(c *metav1.Condition) bool { return c.Status == metav1.ConditionFalse }, BeTrue()),
+				WithTransform(func(c *metav1.Condition) int64 { return c.ObservedGeneration }, Equal(gw.Generation)),
 				WithTransform(func(c *metav1.Condition) string { return c.Reason }, Equal(string(api.GatewayReasonInvalidParameters))),
 				WithTransform(func(c *metav1.Condition) string { return c.Message }, ContainSubstring(`invalid kind`)),
 			))
