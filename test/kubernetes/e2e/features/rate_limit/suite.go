@@ -37,6 +37,7 @@ type testingSuite struct {
 
 // rlBurstTries: run a tiny burst so all checks stay in one fixed RL window.
 // The external rate limiter uses clock-aligned windows (per-minute resets at :00),
+// good explanation: https://redis.io/learn/develop/java/spring/rate-limiting/fixed-window
 // so long loops can straddle the boundary and flake.
 // 3 = one to establish state, two to confirm; fewer risks a transient, more risks crossing the window.
 var rlBurstTries = 3
