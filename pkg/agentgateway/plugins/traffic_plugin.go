@@ -500,13 +500,13 @@ func processModeration(krtctx krt.HandlerContext, secrets krt.Collection[*corev1
 				logger.Error("failed to get secret for OpenAI moderation", "secret", moderation.OpenAIModeration.AuthToken.SecretRef.Name, "namespace", namespace, "error", err)
 				return nil
 			}
-			
+
 			authKey, exists := kubeutils.GetSecretAuth(secret)
 			if !exists {
 				logger.Error("secret does not contain valid Authorization value", "secret", moderation.OpenAIModeration.AuthToken.SecretRef.Name, "namespace", namespace)
 				return nil
 			}
-			
+
 			pgModeration.Auth = &api.BackendAuthPolicy{
 				Kind: &api.BackendAuthPolicy_Key{
 					Key: &api.Key{
@@ -880,4 +880,3 @@ func toProtoValue(raw string) (*structpb.Value, error) {
 	}
 	return v, nil
 }
-

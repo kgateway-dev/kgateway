@@ -334,7 +334,6 @@ func buildTranslatedAuthPolicy(krtctx krt.HandlerContext, authToken *v1alpha1.Si
 	}
 }
 
-
 // buildMCPIr pre-resolves MCP backend configuration including service discovery
 func buildMCPIr(krtctx krt.HandlerContext, be *v1alpha1.Backend, services krt.Collection[*corev1.Service], namespaces krt.Collection[*corev1.Namespace]) (*MCPIr, error) {
 	if be.Spec.MCP == nil {
@@ -527,7 +526,6 @@ func toMCPProtocol(appProtocol string) api.MCPTarget_Protocol {
 		return api.MCPTarget_UNDEFINED
 	}
 }
-
 
 func buildBedrockAuthPolicy(krtctx krt.HandlerContext, region string, auth *v1alpha1.AwsAuth, secrets krt.Collection[*corev1.Secret], namespace string) (*api.BackendAuthPolicy, error) {
 	var errs []error
