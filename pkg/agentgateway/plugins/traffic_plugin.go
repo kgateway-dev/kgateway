@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/agentgateway/agentgateway/go/api"
 	"google.golang.org/protobuf/types/known/durationpb"
@@ -13,6 +14,7 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/ptr"
@@ -44,7 +46,7 @@ func NewTrafficPlugin(agw *AgwCollections) AgentgatewayPlugin {
 		kclient.Filter{ObjectFilter: agw.Client.ObjectFilter()},
 	), agw.KrtOpts.ToOptions("TrafficPolicy")...)
 	policyCol := krt.NewManyCollection(col, func(krtctx krt.HandlerContext, policyCR *v1alpha1.TrafficPolicy) []ADPPolicy {
-		return TranslateTrafficPolicy(krtctx, agw.GatewayExtensions, agw.Backends, policyCR)
+		return TranslateTrafficPolicy(krtctx, agw.GatewayExtensions, agw.Backends, agw.Secrets, policyCR)
 	})
 
 	return AgentgatewayPlugin{
@@ -64,6 +66,7 @@ func TranslateTrafficPolicy(
 	ctx krt.HandlerContext,
 	gatewayExtensions krt.Collection[*v1alpha1.GatewayExtension],
 	backends krt.Collection[*v1alpha1.Backend],
+	secrets krt.Collection[*corev1.Secret],
 	trafficPolicy *v1alpha1.TrafficPolicy,
 ) []ADPPolicy {
 	var adpPolicies []ADPPolicy
@@ -134,7 +137,7 @@ func TranslateTrafficPolicy(
 		}
 
 		if policyTarget != nil {
-			translatedPolicies := translateTrafficPolicyToADP(ctx, gatewayExtensions, trafficPolicy, string(target.Name), policyTarget, isMcpTarget)
+			translatedPolicies := translateTrafficPolicyToADP(ctx, gatewayExtensions, secrets, trafficPolicy, string(target.Name), policyTarget, isMcpTarget)
 			adpPolicies = append(adpPolicies, translatedPolicies...)
 		}
 	}
@@ -146,6 +149,7 @@ func TranslateTrafficPolicy(
 func translateTrafficPolicyToADP(
 	ctx krt.HandlerContext,
 	gatewayExtensions krt.Collection[*v1alpha1.GatewayExtension],
+	secrets krt.Collection[*corev1.Secret],
 	trafficPolicy *v1alpha1.TrafficPolicy,
 	policyTargetName string,
 	policyTarget *api.PolicyTarget,
@@ -170,7 +174,7 @@ func translateTrafficPolicyToADP(
 
 	// Process AI policies if present
 	if trafficPolicy.Spec.AI != nil {
-		aiPolicies := processAIPolicy(trafficPolicy, policyName, policyTarget)
+		aiPolicies := processAIPolicy(ctx, secrets, trafficPolicy, policyName, policyTarget)
 		adpPolicies = append(adpPolicies, aiPolicies...)
 	}
 	// Process RateLimit policies if present
@@ -247,7 +251,7 @@ func processExtAuthPolicy(ctx krt.HandlerContext, gatewayExtensions krt.Collecti
 }
 
 // processAIPolicy processes AI configuration and creates corresponding ADP policies
-func processAIPolicy(trafficPolicy *v1alpha1.TrafficPolicy, policyName string, policyTarget *api.PolicyTarget) []ADPPolicy {
+func processAIPolicy(krtctx krt.HandlerContext, secrets krt.Collection[*corev1.Secret], trafficPolicy *v1alpha1.TrafficPolicy, policyName string, policyTarget *api.PolicyTarget) []ADPPolicy {
 	aiSpec := trafficPolicy.Spec.AI
 
 	aiPolicy := &api.Policy{
@@ -288,7 +292,7 @@ func processAIPolicy(trafficPolicy *v1alpha1.TrafficPolicy, policyName string, p
 			aiPolicy.GetSpec().GetAi().PromptGuard = &api.PolicySpec_Ai_PromptGuard{}
 		}
 		if aiSpec.PromptGuard.Request != nil {
-			aiPolicy.GetSpec().GetAi().PromptGuard.Request = processRequestGuard(aiSpec.PromptGuard.Request)
+			aiPolicy.GetSpec().GetAi().PromptGuard.Request = processRequestGuard(krtctx, secrets, trafficPolicy.Namespace, aiSpec.PromptGuard.Request)
 		}
 
 		if aiSpec.PromptGuard.Response != nil {
@@ -303,7 +307,7 @@ func processAIPolicy(trafficPolicy *v1alpha1.TrafficPolicy, policyName string, p
 	return []ADPPolicy{{Policy: aiPolicy}}
 }
 
-func processRequestGuard(req *v1alpha1.PromptguardRequest) *api.PolicySpec_Ai_RequestGuard {
+func processRequestGuard(krtctx krt.HandlerContext, secrets krt.Collection[*corev1.Secret], namespace string, req *v1alpha1.PromptguardRequest) *api.PolicySpec_Ai_RequestGuard {
 	if req == nil {
 		return nil
 	}
@@ -311,7 +315,7 @@ func processRequestGuard(req *v1alpha1.PromptguardRequest) *api.PolicySpec_Ai_Re
 	pgReq := &api.PolicySpec_Ai_RequestGuard{
 		Webhook:          processWebhook(req.Webhook),
 		Regex:            processRegex(req.Regex, req.CustomResponse),
-		OpenaiModeration: processModeration(req.Moderation),
+		OpenaiModeration: processModeration(krtctx, secrets, namespace, req.Moderation),
 	}
 
 	if req.CustomResponse != nil {
@@ -464,7 +468,7 @@ func processRegex(regex *v1alpha1.Regex, customResponse *v1alpha1.CustomResponse
 	return rules
 }
 
-func processModeration(moderation *v1alpha1.Moderation) *api.PolicySpec_Ai_Moderation {
+func processModeration(krtctx krt.HandlerContext, secrets krt.Collection[*corev1.Secret], namespace string, moderation *v1alpha1.Moderation) *api.PolicySpec_Ai_Moderation {
 	// right now we only support OpenAI moderation, so we can return nil if the moderation is nil or the OpenAIModeration is nil
 	if moderation == nil || moderation.OpenAIModeration == nil {
 		return nil
@@ -491,10 +495,29 @@ func processModeration(moderation *v1alpha1.Moderation) *api.PolicySpec_Ai_Moder
 		}
 	case v1alpha1.SecretRef:
 		if moderation.OpenAIModeration.AuthToken.SecretRef != nil {
+			// Resolve the actual secret value from Kubernetes
+			secret, err := getSecret(secrets, krtctx, moderation.OpenAIModeration.AuthToken.SecretRef.Name, namespace)
+			if err != nil {
+				logger.Error("failed to get secret for OpenAI moderation", "secret", moderation.OpenAIModeration.AuthToken.SecretRef.Name, "namespace", namespace, "error", err)
+				return nil
+			}
+			
+			authKey := ""
+			if authValue, exists := getSecretValue(secret, "Authorization"); exists {
+				// Strip the "Bearer " prefix if present, as it will be added by the provider
+				authValue = strings.TrimSpace(authValue)
+				authKey = strings.TrimSpace(strings.TrimPrefix(authValue, "Bearer "))
+			}
+			
+			if authKey == "" {
+				logger.Error("secret does not contain valid Authorization value", "secret", moderation.OpenAIModeration.AuthToken.SecretRef.Name, "namespace", namespace)
+				return nil
+			}
+			
 			pgModeration.Auth = &api.BackendAuthPolicy{
 				Kind: &api.BackendAuthPolicy_Key{
 					Key: &api.Key{
-						Secret: moderation.OpenAIModeration.AuthToken.SecretRef.Name,
+						Secret: authKey,
 					},
 				},
 			}
@@ -863,4 +886,24 @@ func toProtoValue(raw string) (*structpb.Value, error) {
 		return nil, err
 	}
 	return v, nil
+}
+
+// getSecret fetches a Kubernetes secret by name and namespace
+func getSecret(secrets krt.Collection[*corev1.Secret], krtctx krt.HandlerContext, secretName, ns string) (*corev1.Secret, error) {
+	secretKey := ns + "/" + secretName
+	secret := krt.FetchOne(krtctx, secrets, krt.FilterKey(secretKey))
+	if secret == nil {
+		return nil, fmt.Errorf("failed to find secret %s", secretName)
+	}
+	return *secret, nil
+}
+
+// getSecretValue extracts a value from a Kubernetes secret, handling both Data and StringData fields.
+// It prioritizes StringData over Data if both are present.
+func getSecretValue(secret *corev1.Secret, key string) (string, bool) {
+	if value, exists := secret.Data[key]; exists && utf8.Valid(value) {
+		return strings.TrimSpace(string(value)), true
+	}
+
+	return "", false
 }
