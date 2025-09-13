@@ -42,7 +42,6 @@ Listeners:
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.ratelimit.v3.RateLimit
             domain: api-gateway
-            failureModeDeny: true
             rateLimitService:
               grpcService:
                 envoyGrpc:
@@ -55,7 +54,6 @@ Listeners:
             '@type': type.googleapis.com/envoy.extensions.filters.http.ratelimit.v3.RateLimit
             domain: api-gateway
             enableXRatelimitHeaders: DRAFT_VERSION_03
-            failureModeDeny: true
             rateLimitService:
               grpcService:
                 envoyGrpc:
