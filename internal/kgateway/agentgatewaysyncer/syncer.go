@@ -711,7 +711,7 @@ func registerPolicyStatus(s *PolicyStatusCollections, statusCols map[schema.Grou
 				// The status collection already handles change detection and conversion from different policy types
 				// to v1alpha1.PolicyStatus, so we can trust that we only get events when status actually changes
 				statusWriter.Enqueue(l)
-				logger.Debug("Enqueued policy status update", "resource", l.ResourceName(), "version", l.Obj.GetResourceVersion(), "status", l.Status, "kind", currentGVK.Kind)
+				logger.Debug("enqueued policy status update", "resource", l.ResourceName(), "version", l.Obj.GetResourceVersion(), "status", l.Status, "kind", currentGVK.Kind)
 			})
 			return h
 		}
