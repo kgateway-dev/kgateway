@@ -3136,7 +3136,6 @@ func schema_kgateway_v2_api_v1alpha1_ExtAuthProvider(ref common.ReferenceCallbac
 					"clearRouteCache": {
 						SchemaProps: spec.SchemaProps{
 							Description: "ClearRouteCache determines if the route cache should be cleared to allow the external authorization service to correctly affect routing decisions.",
-							Default:     false,
 							Type:        []string{"boolean"},
 							Format:      "",
 						},

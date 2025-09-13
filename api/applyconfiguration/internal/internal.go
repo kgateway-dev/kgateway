@@ -955,7 +955,6 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: clearRouteCache
       type:
         scalar: boolean
-      default: false
     - name: failOpen
       type:
         scalar: boolean

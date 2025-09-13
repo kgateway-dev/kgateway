@@ -52,7 +52,7 @@ type ExtAuthProvider struct {
 	// external authorization service to correctly affect routing decisions.
 	// +optional
 	// +kubebuilder:default=false
-	ClearRouteCache bool `json:"clearRouteCache"`
+	ClearRouteCache bool `json:"clearRouteCache,omitempty"`
 
 	// WithRequestBody allows the request body to be buffered and sent to the authorization service.
 	// Warning: buffering has implications for streaming and therefore performance.
