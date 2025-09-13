@@ -6,7 +6,6 @@ import (
 	"log/slog"
 	"strconv"
 	"strings"
-	"unicode/utf8"
 
 	"github.com/agentgateway/agentgateway/go/api"
 	"google.golang.org/protobuf/types/known/durationpb"
@@ -496,20 +495,14 @@ func processModeration(krtctx krt.HandlerContext, secrets krt.Collection[*corev1
 	case v1alpha1.SecretRef:
 		if moderation.OpenAIModeration.AuthToken.SecretRef != nil {
 			// Resolve the actual secret value from Kubernetes
-			secret, err := getSecret(secrets, krtctx, moderation.OpenAIModeration.AuthToken.SecretRef.Name, namespace)
+			secret, err := kubeutils.GetSecret(secrets, krtctx, moderation.OpenAIModeration.AuthToken.SecretRef.Name, namespace)
 			if err != nil {
 				logger.Error("failed to get secret for OpenAI moderation", "secret", moderation.OpenAIModeration.AuthToken.SecretRef.Name, "namespace", namespace, "error", err)
 				return nil
 			}
 			
-			authKey := ""
-			if authValue, exists := getSecretValue(secret, "Authorization"); exists {
-				// Strip the "Bearer " prefix if present, as it will be added by the provider
-				authValue = strings.TrimSpace(authValue)
-				authKey = strings.TrimSpace(strings.TrimPrefix(authValue, "Bearer "))
-			}
-			
-			if authKey == "" {
+			authKey, exists := kubeutils.GetSecretAuth(secret)
+			if !exists {
 				logger.Error("secret does not contain valid Authorization value", "secret", moderation.OpenAIModeration.AuthToken.SecretRef.Name, "namespace", namespace)
 				return nil
 			}
@@ -888,22 +881,3 @@ func toProtoValue(raw string) (*structpb.Value, error) {
 	return v, nil
 }
 
-// getSecret fetches a Kubernetes secret by name and namespace
-func getSecret(secrets krt.Collection[*corev1.Secret], krtctx krt.HandlerContext, secretName, ns string) (*corev1.Secret, error) {
-	secretKey := ns + "/" + secretName
-	secret := krt.FetchOne(krtctx, secrets, krt.FilterKey(secretKey))
-	if secret == nil {
-		return nil, fmt.Errorf("failed to find secret %s", secretName)
-	}
-	return *secret, nil
-}
-
-// getSecretValue extracts a value from a Kubernetes secret, handling both Data and StringData fields.
-// It prioritizes StringData over Data if both are present.
-func getSecretValue(secret *corev1.Secret, key string) (string, bool) {
-	if value, exists := secret.Data[key]; exists && utf8.Valid(value) {
-		return strings.TrimSpace(string(value)), true
-	}
-
-	return "", false
-}
