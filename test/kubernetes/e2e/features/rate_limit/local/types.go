@@ -14,20 +14,20 @@ import (
 
 var (
 	// manifests
-	simpleServiceManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "service.yaml")
+	simpleServiceManifest = getTestFile("service.yaml")
 	commonManifest        = filepath.Join(fsutils.MustGetThisDir(), "testdata", "common.yaml")
-
+	agwCommonManifest     = getTestFileAgentGateway("common.yaml")
 	// local rate limit traffic policies
-	routeLocalRateLimitManifest         = filepath.Join(fsutils.MustGetThisDir(), "testdata", "route-local-rate-limit.yaml")
-	gwLocalRateLimitManifest            = filepath.Join(fsutils.MustGetThisDir(), "testdata", "gw-local-rate-limit.yaml")
-	disabledRouteLocalRateLimitManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "route-local-rate-limit-disabled.yaml")
-	httpRoutesManifest                  = filepath.Join(fsutils.MustGetThisDir(), "testdata", "httproutes.yaml")
-	extensionRefManifest                = filepath.Join(fsutils.MustGetThisDir(), "testdata", "extensionref-rl.yaml")
+	routeLocalRateLimitManifest         = getTestFile("route-local-rate-limit.yaml")
+	gwLocalRateLimitManifest            = getTestFile("gw-local-rate-limit.yaml")
+	disabledRouteLocalRateLimitManifest = getTestFile("route-local-rate-limit-disabled.yaml")
+	httpRoutesManifest                  = getTestFile("httproutes.yaml")
+	extensionRefManifest                = getTestFile("extensionref-rl.yaml")
 
 	// objects from gateway manifest
 	gateway = &gwv1.Gateway{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "gw",
+			Name:      "super-gateway",
 			Namespace: "default",
 		},
 	}
@@ -45,7 +45,7 @@ var (
 	}
 	// objects created by deployer after applying gateway manifest
 	proxyObjectMeta = metav1.ObjectMeta{
-		Name:      "gw",
+		Name:      "super-gateway",
 		Namespace: "default",
 	}
 	proxyDeployment     = &appsv1.Deployment{ObjectMeta: proxyObjectMeta}
@@ -80,3 +80,11 @@ var (
 		},
 	}
 )
+
+func getTestFile(filename string) string {
+	return filepath.Join(fsutils.MustGetThisDir(), "testdata", filename)
+}
+
+func getTestFileAgentGateway(filename string) string {
+	return filepath.Join(fsutils.MustGetThisDir(), "../../agentgateway/rate_limit/testdata", filename)
+}
