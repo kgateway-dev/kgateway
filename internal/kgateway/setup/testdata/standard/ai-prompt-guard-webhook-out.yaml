@@ -172,13 +172,13 @@ routes:
             - key: x-request-id
               value: '%REQ(X-REQUEST-ID)%'
             - key: x-req-guardrails-config
-              value: '{"regex":{"matches":[{"pattern":"phone"}],"action":"REJECT"},"webhook":{"endpoint":{"host":"test-ai-provider","port":443}}}'
+              value: '{"regex":{"matches":[{"pattern":"phone"}],"action":"REJECT"},"webhook":{"host":{"host":"test-ai-provider","port":443}}}'
             - key: x-req-guardrails-config-hash
-              value: "17354545801775298892"
+              value: "13954042988663248794"
             - key: x-resp-guardrails-config
-              value: '{"regex":{"builtins":["PHONE_NUMBER","EMAIL","SSN","CREDIT_CARD"],"action":"MASK"},"webhook":{"endpoint":{"host":"test-ai-provider","port":443}}}'
+              value: '{"regex":{"builtins":["PHONE_NUMBER","EMAIL","SSN","CREDIT_CARD"],"action":"MASK"},"webhook":{"host":{"host":"test-ai-provider","port":443}}}'
             - key: x-resp-guardrails-config-hash
-              value: "7412165685101663012"
+              value: "348315085255688014"
         ai.policy.transformation.kgateway.io:
           '@type': type.googleapis.com/envoy.api.v2.filter.http.RouteTransformations
           transformations:

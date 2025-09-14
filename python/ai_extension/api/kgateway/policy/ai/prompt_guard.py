@@ -95,7 +95,7 @@ class Webhook:
 
     @staticmethod
     def from_json(data: dict) -> "Webhook":
-        endpoint = Endpoint.from_json(data["endpoint"])
+        endpoint = Endpoint.from_json(data["host"])
         forward_headers = [
             HTTPHeaderMatch.from_json(h) for h in data.get("forwardHeaders", [])
         ]

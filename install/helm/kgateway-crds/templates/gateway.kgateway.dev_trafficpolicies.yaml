@@ -156,20 +156,6 @@ spec:
                             type: object
                           webhook:
                             properties:
-                              endpoint:
-                                properties:
-                                  host:
-                                    minLength: 1
-                                    type: string
-                                  port:
-                                    format: int32
-                                    maximum: 65535
-                                    minimum: 1
-                                    type: integer
-                                required:
-                                - host
-                                - port
-                                type: object
                               forwardHeaderMatches:
                                 items:
                                   properties:
@@ -193,8 +179,22 @@ spec:
                                   - value
                                   type: object
                                 type: array
+                              host:
+                                properties:
+                                  host:
+                                    minLength: 1
+                                    type: string
+                                  port:
+                                    format: int32
+                                    maximum: 65535
+                                    minimum: 1
+                                    type: integer
+                                required:
+                                - host
+                                - port
+                                type: object
                             required:
-                            - endpoint
+                            - host
                             type: object
                         type: object
                       response:
@@ -225,20 +225,6 @@ spec:
                             type: object
                           webhook:
                             properties:
-                              endpoint:
-                                properties:
-                                  host:
-                                    minLength: 1
-                                    type: string
-                                  port:
-                                    format: int32
-                                    maximum: 65535
-                                    minimum: 1
-                                    type: integer
-                                required:
-                                - host
-                                - port
-                                type: object
                               forwardHeaderMatches:
                                 items:
                                   properties:
@@ -262,8 +248,22 @@ spec:
                                   - value
                                   type: object
                                 type: array
+                              host:
+                                properties:
+                                  host:
+                                    minLength: 1
+                                    type: string
+                                  port:
+                                    format: int32
+                                    maximum: 65535
+                                    minimum: 1
+                                    type: integer
+                                required:
+                                - host
+                                - port
+                                type: object
                             required:
-                            - endpoint
+                            - host
                             type: object
                         type: object
                     type: object

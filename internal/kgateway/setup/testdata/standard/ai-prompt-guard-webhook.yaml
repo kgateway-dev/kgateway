@@ -83,7 +83,7 @@ spec:
           matches:
             - pattern: "phone"
         webhook:
-          endpoint:
+          host:
             host: test-ai-provider
             port: 443
       response:
@@ -94,6 +94,6 @@ spec:
             - SSN
             - CREDIT_CARD
         webhook:
-          endpoint:
+          host:
             host: test-ai-provider
             port: 443
