@@ -499,13 +499,14 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
             with tracer.start_as_current_span(
                 f"gen_ai.request {operation_name} {handler.request_model}",
                 context=trace.set_span_in_context(parent_span),
-                attributes=handler.get_attributes_for_request_body(body),
+                attributes=handler.provider.get_attributes_for_request_body(body),
             ) as gen_ai_client_span:
                 # follow two attributes don't contain in request body directly.
                 gen_ai_client_span.set_attributes(
                     {
                         gen_ai_attributes.GEN_AI_OPERATION_NAME: operation_name,
                         gen_ai_attributes.GEN_AI_SYSTEM: handler.get_ai_system(),
+                        gen_ai_attributes.GEN_AI_REQUEST_MODEL: handler.request_model,
                     }
                 )
                 gen_ai_client_span.set_status(trace.StatusCode.OK)

@@ -107,6 +107,10 @@ class Provider(ABC):
     """
 
     @abstractmethod
+    def get_attributes_for_request_body(self, jsn: dict) -> Attributes:
+        pass
+
+    @abstractmethod
     def get_attributes_for_response_body(self, jsn: dict) -> Attributes:
         pass
 
@@ -319,6 +323,27 @@ def content_from_dict(content: dict) -> str:
 
 
 class OpenAI(Provider):
+    def get_attributes_for_request_body(self, body: dict) -> Attributes:
+        return {
+            gen_ai_attributes.GEN_AI_OUTPUT_TYPE: body.get("response_format", {}).get(
+                "type", ""
+            ),
+            gen_ai_attributes.GEN_AI_REQUEST_CHOICE_COUNT: body.get("n", 0),
+            gen_ai_attributes.GEN_AI_REQUEST_MODEL: body.get("model", None),
+            gen_ai_attributes.GEN_AI_REQUEST_SEED: body.get("seed", 0),
+            gen_ai_attributes.GEN_AI_REQUEST_FREQUENCY_PENALTY: body.get(
+                "frequency_penalty", 0
+            ),
+            gen_ai_attributes.GEN_AI_REQUEST_MAX_TOKENS: body.get("max_tokens", 0),
+            gen_ai_attributes.GEN_AI_REQUEST_PRESENCE_PENALTY: body.get(
+                "presence_penalty", 0
+            ),
+            gen_ai_attributes.GEN_AI_REQUEST_STOP_SEQUENCES: body.get("stop", []),
+            gen_ai_attributes.GEN_AI_REQUEST_TEMPERATURE: body.get("temperature", 0),
+            gen_ai_attributes.GEN_AI_REQUEST_TOP_K: body.get("top_k", 0),
+            gen_ai_attributes.GEN_AI_REQUEST_TOP_P: body.get("top_p", 0),
+        }
+
     def get_attributes_for_response_body(self, body: dict) -> Attributes:
         finish_reason = ""
 
@@ -722,6 +747,15 @@ class OpenAI(Provider):
 
 
 class Anthropic(OpenAI):
+    def get_attributes_for_request_body(self, body: dict) -> Attributes:
+        return {
+            gen_ai_attributes.GEN_AI_REQUEST_MODEL: body.get("model"),
+            gen_ai_attributes.GEN_AI_REQUEST_STOP_SEQUENCES: body.get("stop_sequences"),
+            gen_ai_attributes.GEN_AI_REQUEST_TEMPERATURE: body.get("temperature"),
+            gen_ai_attributes.GEN_AI_REQUEST_TOP_P: body.get("top_p"),
+            gen_ai_attributes.GEN_AI_REQUEST_TOP_K: body.get("top_k"),
+        }
+
     def get_attributes_for_response_body(self, body: dict) -> Attributes:
         # TODO Add output type once we support more type.
         # if isinstance(body.get("content"), list) and len(body["content"]) > 0:
@@ -904,6 +938,35 @@ class Anthropic(OpenAI):
 
 
 class Gemini(Provider):
+    def get_attributes_for_request_body(self, body: dict) -> Attributes:
+        generationConfig = body.get("generationConfig", {})
+        return {
+            gen_ai_attributes.GEN_AI_OUTPUT_TYPE: generationConfig.get(
+                "responseMimeType", {}
+            ),
+            gen_ai_attributes.GEN_AI_REQUEST_CHOICE_COUNT: generationConfig.get(
+                "candidateCount", 0
+            ),
+            gen_ai_attributes.GEN_AI_REQUEST_SEED: generationConfig.get("seed", 0),
+            gen_ai_attributes.GEN_AI_REQUEST_FREQUENCY_PENALTY: generationConfig.get(
+                "frequencyPenalty", 0
+            ),
+            gen_ai_attributes.GEN_AI_REQUEST_MAX_TOKENS: generationConfig.get(
+                "maxOutputTokens", 0
+            ),
+            gen_ai_attributes.GEN_AI_REQUEST_PRESENCE_PENALTY: generationConfig.get(
+                "presencePenalty", 0
+            ),
+            gen_ai_attributes.GEN_AI_REQUEST_STOP_SEQUENCES: generationConfig.get(
+                "stopSequences", []
+            ),
+            gen_ai_attributes.GEN_AI_REQUEST_TEMPERATURE: generationConfig.get(
+                "temperature", 0
+            ),
+            gen_ai_attributes.GEN_AI_REQUEST_TOP_K: generationConfig.get("topK", 0),
+            gen_ai_attributes.GEN_AI_REQUEST_TOP_P: generationConfig.get("topP", 0),
+        }
+
     def get_attributes_for_response_body(self, body: dict) -> Attributes:
         finish_reason = ""
         if isinstance(body.get("candidates"), list) and len(body["candidates"]) > 0:

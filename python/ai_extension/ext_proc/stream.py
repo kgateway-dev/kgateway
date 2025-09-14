@@ -29,8 +29,6 @@ from openai.resources import AsyncModerations
 from ext_proc.streamchunks import StreamChunks
 from util.http import parse_content_type
 from guardrails.regex import regex_transform
-from opentelemetry.semconv._incubating.attributes import gen_ai_attributes
-from opentelemetry.util.types import Attributes
 
 logger = logging.getLogger().getChild("kgateway-ai-ext.external_processor.handler")
 
@@ -310,24 +308,3 @@ class Handler:
         elif self.llm_provider == OPENAI_LLM_STR:
             return "openai"
         return ""
-
-    def get_attributes_for_request_body(self, body: dict) -> Attributes:
-        return {
-            gen_ai_attributes.GEN_AI_OUTPUT_TYPE: body.get("response_format", {}).get(
-                "type", ""
-            ),
-            gen_ai_attributes.GEN_AI_REQUEST_CHOICE_COUNT: body.get("n", 0),
-            gen_ai_attributes.GEN_AI_REQUEST_MODEL: body.get("model", None),
-            gen_ai_attributes.GEN_AI_REQUEST_SEED: body.get("seed", 0),
-            gen_ai_attributes.GEN_AI_REQUEST_FREQUENCY_PENALTY: body.get(
-                "frequency_penalty", 0
-            ),
-            gen_ai_attributes.GEN_AI_REQUEST_MAX_TOKENS: body.get("max_tokens", 0),
-            gen_ai_attributes.GEN_AI_REQUEST_PRESENCE_PENALTY: body.get(
-                "presence_penalty", 0
-            ),
-            gen_ai_attributes.GEN_AI_REQUEST_STOP_SEQUENCES: body.get("stop", []),
-            gen_ai_attributes.GEN_AI_REQUEST_TEMPERATURE: body.get("temperature", 0),
-            gen_ai_attributes.GEN_AI_REQUEST_TOP_K: body.get("top_k", 0),
-            gen_ai_attributes.GEN_AI_REQUEST_TOP_P: body.get("top_p", 0),
-        }

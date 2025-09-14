@@ -361,32 +361,117 @@ def stream_handler(metadict: dict) -> StreamHandler:
 
 
 class TestInstrumentation:
-    # TODO(zhengke): Refactor the test fixture to simplify testing for multiple providers,just like provider_response_test_data
     @pytest.fixture(scope="class")
-    def request_body_content(self):
-        """Fixture for common OpenAI request body content."""
+    def provider_request_test_data(self):
+        """
+        Unified provider test data for table-driven testing.
+        This fixture contains request body examples for each supported AI provider
+        (OpenAI, Gemini, Anthropic). Each provider entry includes:
+        - request_body: A realistic JSON request body for the provider's API
+
+        This approach enables parameterized testing across multiple providers while
+        maintaining consistency in test structure and validation logic.
+        """
         return {
-            "model": "openai/gpt-4o",
-            "messages": [
-                {
-                    "role": "system",
-                    "content": "You are a helpful assistant that answers questions concisely.",
+            "openai": {
+                "request_body": r"""{
+                    "model": "openai/gpt-4o",
+                    "messages": [
+                        {
+                            "role": "system",
+                            "content": "You are a helpful assistant that answers questions concisely."
+                        },
+                        {
+                            "role": "user",
+                            "content": "What is the meaning of life? Please elaborate in a few sentences."
+                        }
+                    ],
+                    "response_format": {"type": "text"},
+                    "n": 2,
+                    "seed": 12345,
+                    "frequency_penalty": 0.5,
+                    "max_tokens": 150,
+                    "presence_penalty": 0.3,
+                    "stop": ["\n\n", "END"],
+                    "temperature": 0.7,
+                    "top_p": 0.9
+                }""",
+                "expected_attributes": {
+                    gen_ai_attributes.GEN_AI_OPERATION_NAME: "chat",
+                    gen_ai_attributes.GEN_AI_SYSTEM: "openai",
+                    gen_ai_attributes.GEN_AI_OUTPUT_TYPE: "text",
+                    gen_ai_attributes.GEN_AI_REQUEST_CHOICE_COUNT: 2,
+                    gen_ai_attributes.GEN_AI_REQUEST_MODEL: "openai/gpt-4o",
+                    gen_ai_attributes.GEN_AI_REQUEST_SEED: 12345,
+                    gen_ai_attributes.GEN_AI_REQUEST_FREQUENCY_PENALTY: 0.5,
+                    gen_ai_attributes.GEN_AI_REQUEST_MAX_TOKENS: 150,
+                    gen_ai_attributes.GEN_AI_REQUEST_PRESENCE_PENALTY: 0.3,
+                    gen_ai_attributes.GEN_AI_REQUEST_STOP_SEQUENCES: ["\n\n", "END"],
+                    gen_ai_attributes.GEN_AI_REQUEST_TOP_P: 0.9,
                 },
-                {
-                    "role": "user",
-                    "content": "What is the meaning of life? Please elaborate in a few sentences.",
+            },
+            "gemini": {
+                "request_body": r"""{
+                    "contents": [
+                        {
+                            "parts": [
+                                {
+                                    "text": "How does AI work?"
+                                }
+                            ]
+                        }
+                    ],
+                    "generationConfig": {
+                        "stopSequences": ["\n\n", "END"],
+                        "responseMimeType": "text/plain",
+                        "candidateCount": 3,
+                        "maxOutputTokens": 5000,
+                        "temperature": 0.7,
+                        "topP": 0.9,
+                        "topK": 0.9,
+                        "seed": 12345,
+                        "presencePenalty": 0.3,
+                        "frequencyPenalty": 0.5
+                    }
+                }""",
+                "expected_attributes": {
+                    gen_ai_attributes.GEN_AI_OPERATION_NAME: "generate_content",
+                    gen_ai_attributes.GEN_AI_SYSTEM: "gcp.gemini",
+                    gen_ai_attributes.GEN_AI_OUTPUT_TYPE: "text/plain",
+                    gen_ai_attributes.GEN_AI_REQUEST_STOP_SEQUENCES: ["\n\n", "END"],
+                    gen_ai_attributes.GEN_AI_REQUEST_MODEL: "gemini-2.5-flash",
+                    gen_ai_attributes.GEN_AI_REQUEST_CHOICE_COUNT: 3,
+                    gen_ai_attributes.GEN_AI_REQUEST_MAX_TOKENS: 5000,
+                    gen_ai_attributes.GEN_AI_REQUEST_TEMPERATURE: 0.7,
+                    gen_ai_attributes.GEN_AI_REQUEST_TOP_P: 0.9,
+                    gen_ai_attributes.GEN_AI_REQUEST_TOP_K: 0.9,
+                    gen_ai_attributes.GEN_AI_REQUEST_SEED: 12345,
+                    gen_ai_attributes.GEN_AI_REQUEST_PRESENCE_PENALTY: 0.3,
+                    gen_ai_attributes.GEN_AI_REQUEST_FREQUENCY_PENALTY: 0.5,
                 },
-            ],
-            "response_format": {"type": "text"},
-            "n": 2,
-            "seed": 12345,
-            "frequency_penalty": 0.5,
-            "max_tokens": 150,
-            "presence_penalty": 0.3,
-            "stop": ["\n\n", "END"],
-            "temperature": 0.7,
-            "top_k": 50,
-            "top_p": 0.9,
+            },
+            "anthropic": {
+                "request_body": r"""{
+                    "model": "claude-sonnet-4-20250514",
+                    "max_tokens": 1024,
+                    "messages": [
+                        {"role": "user", "content": "Hello, world"}
+                    ],
+                    "stop_sequences": ["\n\n", "END"],
+                    "temperature": 0.7,
+                    "top_k": 0.9,
+                    "top_p": 0.9
+                }""",
+                "expected_attributes": {
+                    gen_ai_attributes.GEN_AI_OPERATION_NAME: "generate_content",
+                    gen_ai_attributes.GEN_AI_SYSTEM: "anthropic",
+                    gen_ai_attributes.GEN_AI_REQUEST_STOP_SEQUENCES: ["\n\n", "END"],
+                    gen_ai_attributes.GEN_AI_REQUEST_MODEL: "claude-sonnet-4-20250514",
+                    gen_ai_attributes.GEN_AI_REQUEST_TEMPERATURE: 0.7,
+                    gen_ai_attributes.GEN_AI_REQUEST_TOP_P: 0.9,
+                    gen_ai_attributes.GEN_AI_REQUEST_TOP_K: 0.9,
+                },
+            },
         }
 
     @pytest.fixture(scope="class")
@@ -406,7 +491,7 @@ class TestInstrumentation:
         """
         return {
             "openai": {
-                "response_body": """{
+                "response_body": r"""{
                         "id": "fake",
                         "object": "chat.completion",
                         "created": 1722966273,
@@ -441,7 +526,7 @@ class TestInstrumentation:
                 },
             },
             "gemini": {
-                "response_body": """{
+                "response_body": r"""{
                         "candidates": [
                             {
                                 "content": {
@@ -482,7 +567,7 @@ class TestInstrumentation:
                 },
             },
             "anthropic": {
-                "response_body": """{
+                "response_body": r"""{
                         "id": "msg_01XFDUDYJgAACzvnptvVoYEL",
                         "type": "message",
                         "role": "assistant",
@@ -520,15 +605,7 @@ class TestInstrumentation:
         return handler
 
     # ========== Helper Methods ==========
-    def _create_request_body(
-        self, content: dict[str, any]
-    ) -> external_processor_pb2.HttpBody:
-        return external_processor_pb2.HttpBody(
-            body=json.dumps(content).encode("utf-8"),
-            end_of_stream=True,
-        )
-
-    def _create_response_body(self, content: str) -> external_processor_pb2.HttpBody:
+    def _create_http_body(self, content: str) -> external_processor_pb2.HttpBody:
         return external_processor_pb2.HttpBody(
             body=content.encode("utf-8"), end_of_stream=True
         )
@@ -542,6 +619,8 @@ class TestInstrumentation:
     ) -> external_processor_pb2.ProcessingResponse:
         if metadict is None:
             metadict = {"x-llm-provider": "openai"}
+        if metadict.get("x-llm-provider") == "gemini":
+            metadict = {"x-llm-model": "gemini-2.5-flash"}
 
         with test_tracer.start_as_current_span("test_parent_span"):
             response = asyncio.run(
@@ -630,78 +709,82 @@ class TestInstrumentation:
         return ParameterizedMockModerationClient(client=MockAsyncOpenAI(client=None))
 
     # ========== Test Methods ==========
+    @pytest.mark.parametrize(
+        "provider,path",
+        [
+            ("openai", "/chat/completions"),
+            ("gemini", "/v1beta/models/gemini-2.5-flash:generateContent"),
+            ("anthropic", "/v1/messages"),
+        ],
+    )
     def test_handle_request_body(
-        self, setup_in_memory_tracer, request_body_content, base_handler
+        self, setup_in_memory_tracer, provider_request_test_data, provider, path
     ):
         """Test that request body handling creates proper spans with attributes"""
         memory_exporter, test_tracer = setup_in_memory_tracer
         self._verify_tracer_setup(test_tracer, setup_in_memory_tracer)
 
-        req_body = self._create_request_body(request_body_content)
-        base_handler.req_webhook = None
+        memory_exporter, test_tracer = setup_in_memory_tracer
 
-        response = self._execute_request_body_test(test_tracer, req_body, base_handler)
+        metadict = {"x-llm-provider": provider}
+        handler = stream_handler(metadict)
+        handler.req.path = path
+        handler.resp_webhook = None
+
+        test_data = provider_request_test_data[provider]
+        request_body = self._create_http_body(test_data["request_body"])
+        response = self._execute_request_body_test(
+            test_tracer, request_body, handler, metadict
+        )
         self._verify_basic_response(response)
 
-        # Verify instrumentation
         spans = memory_exporter.get_finished_spans()
-        assert len(spans) >= 1, "Expected at least one span to be created"
+        gen_ai_request_span = self._find_span_by_name_prefix(spans, "gen_ai.request")
+        self._verify_request_body_attributes(
+            gen_ai_request_span.attributes, test_data["expected_attributes"]
+        )
 
-        gen_ai_client_span = self._find_span_by_name_prefix(spans, "gen_ai.request")
-
-        # Verify attributes
-        attributes = gen_ai_client_span.attributes
-        self._verify_request_attributes(attributes, request_body_content, base_handler)
-
-    def _verify_request_attributes(self, attributes, request_body_content, handler):
-        """Verify request attributes"""
-        assert attributes.get(gen_ai_attributes.GEN_AI_OPERATION_NAME) == "chat"
-        assert (
-            attributes.get(gen_ai_attributes.GEN_AI_SYSTEM) == handler.get_ai_system()
+    def _verify_request_body_attributes(self, actual_attrs, expected_attrs: dict):
+        assert actual_attrs.get(
+            gen_ai_attributes.GEN_AI_OPERATION_NAME
+        ) == expected_attrs.get(gen_ai_attributes.GEN_AI_OPERATION_NAME)
+        assert actual_attrs.get(gen_ai_attributes.GEN_AI_SYSTEM) == expected_attrs.get(
+            gen_ai_attributes.GEN_AI_SYSTEM
         )
-        assert (
-            attributes.get(gen_ai_attributes.GEN_AI_OUTPUT_TYPE)
-            == request_body_content["response_format"]["type"]
+        assert actual_attrs.get(
+            gen_ai_attributes.GEN_AI_OUTPUT_TYPE
+        ) == expected_attrs.get(gen_ai_attributes.GEN_AI_OUTPUT_TYPE)
+        assert actual_attrs.get(
+            gen_ai_attributes.GEN_AI_REQUEST_CHOICE_COUNT
+        ) == expected_attrs.get(gen_ai_attributes.GEN_AI_REQUEST_CHOICE_COUNT)
+        assert actual_attrs.get(
+            gen_ai_attributes.GEN_AI_REQUEST_MODEL
+        ) == expected_attrs.get(gen_ai_attributes.GEN_AI_REQUEST_MODEL)
+        assert actual_attrs.get(
+            gen_ai_attributes.GEN_AI_REQUEST_SEED
+        ) == expected_attrs.get(gen_ai_attributes.GEN_AI_REQUEST_SEED)
+        assert actual_attrs.get(
+            gen_ai_attributes.GEN_AI_REQUEST_FREQUENCY_PENALTY
+        ) == expected_attrs.get(gen_ai_attributes.GEN_AI_REQUEST_FREQUENCY_PENALTY)
+        assert actual_attrs.get(
+            gen_ai_attributes.GEN_AI_REQUEST_MAX_TOKENS
+        ) == expected_attrs.get(gen_ai_attributes.GEN_AI_REQUEST_MAX_TOKENS)
+        assert actual_attrs.get(
+            gen_ai_attributes.GEN_AI_REQUEST_PRESENCE_PENALTY
+        ) == expected_attrs.get(gen_ai_attributes.GEN_AI_REQUEST_PRESENCE_PENALTY)
+        # Normalize stop sequences to list for comparison (might be tuple from parsed JSON)
+        actual_stop = actual_attrs.get(gen_ai_attributes.GEN_AI_REQUEST_STOP_SEQUENCES)
+        expected_stop = expected_attrs.get(
+            gen_ai_attributes.GEN_AI_REQUEST_STOP_SEQUENCES
         )
-        assert (
-            attributes.get(gen_ai_attributes.GEN_AI_REQUEST_CHOICE_COUNT)
-            == request_body_content["n"]
-        )
-        assert (
-            attributes.get(gen_ai_attributes.GEN_AI_REQUEST_MODEL)
-            == handler.request_model
-        )
-        assert (
-            attributes.get(gen_ai_attributes.GEN_AI_REQUEST_SEED)
-            == request_body_content["seed"]
-        )
-        assert (
-            attributes.get(gen_ai_attributes.GEN_AI_REQUEST_FREQUENCY_PENALTY)
-            == request_body_content["frequency_penalty"]
-        )
-        assert (
-            attributes.get(gen_ai_attributes.GEN_AI_REQUEST_MAX_TOKENS)
-            == request_body_content["max_tokens"]
-        )
-        assert (
-            attributes.get(gen_ai_attributes.GEN_AI_REQUEST_PRESENCE_PENALTY)
-            == request_body_content["presence_penalty"]
-        )
-        assert attributes.get(gen_ai_attributes.GEN_AI_REQUEST_STOP_SEQUENCES) == tuple(
-            request_body_content["stop"]
-        )
-        assert (
-            attributes.get(gen_ai_attributes.GEN_AI_REQUEST_TEMPERATURE)
-            == request_body_content["temperature"]
-        )
-        assert (
-            attributes.get(gen_ai_attributes.GEN_AI_REQUEST_TOP_K)
-            == request_body_content["top_k"]
-        )
-        assert (
-            attributes.get(gen_ai_attributes.GEN_AI_REQUEST_TOP_P)
-            == request_body_content["top_p"]
-        )
+        if isinstance(actual_stop, tuple):
+            actual_stop = list(actual_stop)
+        if isinstance(expected_stop, tuple):
+            expected_stop = list(expected_stop)
+        assert actual_stop == expected_stop
+        assert actual_attrs.get(
+            gen_ai_attributes.GEN_AI_REQUEST_TOP_P
+        ) == expected_attrs.get(gen_ai_attributes.GEN_AI_REQUEST_TOP_P)
 
     @pytest.mark.parametrize(
         "webhook_response,expected_result",
@@ -734,7 +817,7 @@ class TestInstrumentation:
         self,
         httpx_mock,
         setup_in_memory_tracer,
-        request_body_content,
+        provider_request_test_data,
         base_handler,
         webhook_response,
         expected_result,
@@ -751,7 +834,8 @@ class TestInstrumentation:
             status_code=200,
         )
 
-        req_body = self._create_request_body(request_body_content)
+        test_data = provider_request_test_data["openai"]
+        req_body = self._create_http_body(test_data["request_body"])
         base_handler.req_webhook = self._create_webhook_config()
 
         response = self._execute_request_body_test(test_tracer, req_body, base_handler)
@@ -802,7 +886,7 @@ class TestInstrumentation:
     def test_handle_request_body_regex(
         self,
         setup_in_memory_tracer,
-        request_body_content,
+        provider_request_test_data,
         base_handler,
         regex_config,
         test_content,
@@ -811,8 +895,8 @@ class TestInstrumentation:
         """Test regex filtering instrumentation with different patterns and actions."""
         memory_exporter, test_tracer = setup_in_memory_tracer
         self._verify_tracer_setup(test_tracer, setup_in_memory_tracer)
-
-        req_body = self._create_request_body(request_body_content)
+        test_data = provider_request_test_data["openai"]
+        req_body = self._create_http_body(test_data["request_body"])
 
         # Configure regex filtering
         regex_config_obj = prompt_guard.Regex.from_json(regex_config)
@@ -848,7 +932,7 @@ class TestInstrumentation:
     def test_handle_request_body_moderation(
         self,
         setup_in_memory_tracer,
-        request_body_content,
+        provider_request_test_data,
         base_handler,
         moderation_flagged,
         expected_result,
@@ -858,7 +942,8 @@ class TestInstrumentation:
         self._verify_tracer_setup(test_tracer, setup_in_memory_tracer)
 
         model = "text-moderation-latest"
-        req_body = self._create_request_body(request_body_content)
+        test_data = provider_request_test_data["openai"]
+        req_body = self._create_http_body(test_data["request_body"])
 
         base_handler.req_webhook = None
         base_handler.req_regex = None
@@ -943,7 +1028,7 @@ class TestInstrumentation:
         )
 
         test_data = provider_response_test_data["openai"]
-        resp_body = self._create_response_body(test_data["response_body"])
+        resp_body = self._create_http_body(test_data["response_body"])
         base_handler.resp_webhook = self._create_webhook_config()
 
         response = self._execute_response_body_test(
@@ -973,9 +1058,8 @@ class TestInstrumentation:
         [
             ("openai", "/chat/completions"),
             ("gemini", "/v1beta/models/gemini-2.5-flash:generateContent"),
-            ("anthropic", "api.anthropic.com/v1/messages"),
+            ("anthropic", "/v1/messages"),
         ],
-        ids=["openai", "gemini", "anthropic"],
     )
     def test_handle_response(
         self, setup_in_memory_tracer, provider_response_test_data, provider, path
@@ -989,7 +1073,7 @@ class TestInstrumentation:
         handler.resp_webhook = None
 
         test_data = provider_response_test_data[provider]
-        resp_body = self._create_response_body(test_data["response_body"])
+        resp_body = self._create_http_body(test_data["response_body"])
 
         response = self._execute_response_body_test(test_tracer, resp_body, handler)
         self._verify_basic_response(response)
@@ -1036,24 +1120,27 @@ def test_webhook_config_parsing():
         }
     }
     """
-    
+
     metadict = {
         "x-llm-provider": "openai",
         "x-req-guardrails-config": req_webhook_json,
-        "x-req-guardrails-config-hash": "test-hash"
+        "x-req-guardrails-config-hash": "test-hash",
     }
-    
+
     headers = external_processor_pb2.HttpHeaders()
     handler = asyncio.run(
         extproc_server.parse_handler_config(
             StreamHandler.from_metadata(metadict), metadict, headers
         )
     )
-    
+
     assert handler.req_webhook is not None
-    assert handler.req_webhook.endpoint.host == "ai-guardrail-webhook.kgateway-system.svc.cluster.local"
+    assert (
+        handler.req_webhook.endpoint.host
+        == "ai-guardrail-webhook.kgateway-system.svc.cluster.local"
+    )
     assert handler.req_webhook.endpoint.port == 8000
-    
+
     resp_webhook_json = """
     {
         "webhook": {
@@ -1064,19 +1151,19 @@ def test_webhook_config_parsing():
         }
     }
     """
-    
+
     metadict_resp = {
         "x-llm-provider": "openai",
         "x-resp-guardrails-config": resp_webhook_json,
-        "x-resp-guardrails-config-hash": "test-hash-resp"
+        "x-resp-guardrails-config-hash": "test-hash-resp",
     }
-    
+
     handler_resp = asyncio.run(
         extproc_server.parse_handler_config(
             StreamHandler.from_metadata(metadict_resp), metadict_resp, headers
         )
     )
-    
+
     assert handler_resp.resp_webhook is not None
     assert handler_resp.resp_webhook.endpoint.host == "response-webhook.example.com"
     assert handler_resp.resp_webhook.endpoint.port == 9000
