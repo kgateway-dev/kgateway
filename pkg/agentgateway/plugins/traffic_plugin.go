@@ -9,7 +9,6 @@ import (
 
 	"github.com/agentgateway/agentgateway/go/api"
 	"google.golang.org/protobuf/types/known/durationpb"
-	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
@@ -265,21 +264,21 @@ func processAIPolicy(trafficPolicy *v1alpha1.TrafficPolicy, policyName string, p
 	}
 
 	for _, def := range aiSpec.Defaults {
-		protoValue, err := toProtoValue(def.Value)
+		val, err := toJSONValue(def.Value)
 		if err != nil {
-			logger.Error("error parsing spec.defaults", "field", def.Field, "ref", trafficPolicy.Namespace+"/"+trafficPolicy.Name, "error", err)
+			logger.Error("error parsing field value", "field", def.Field, "error", err)
 			continue
 		}
 		if def.Override {
 			if aiPolicy.GetSpec().GetAi().Overrides == nil {
-				aiPolicy.GetSpec().GetAi().Overrides = make(map[string]*structpb.Value)
+				aiPolicy.GetSpec().GetAi().Overrides = make(map[string]string)
 			}
-			aiPolicy.GetSpec().GetAi().Overrides[def.Field] = protoValue
+			aiPolicy.GetSpec().GetAi().Overrides[def.Field] = val
 		} else {
 			if aiPolicy.GetSpec().GetAi().Defaults == nil {
-				aiPolicy.GetSpec().GetAi().Defaults = make(map[string]*structpb.Value)
+				aiPolicy.GetSpec().GetAi().Defaults = make(map[string]string)
 			}
-			aiPolicy.GetSpec().GetAi().Defaults[def.Field] = protoValue
+			aiPolicy.GetSpec().GetAi().Defaults[def.Field] = val
 		}
 	}
 
@@ -841,26 +840,19 @@ func buildAGWServiceRef(br *gwv1.BackendRef, defaultNS string) (*api.BackendRefe
 	}, nil
 }
 
-// toProtoValue converts a raw string to a protobuf Value
-func toProtoValue(raw string) (*structpb.Value, error) {
-	rawBytes := []byte(raw)
-	v := &structpb.Value{}
-	if json.Valid(rawBytes) {
-		err := v.UnmarshalJSON(rawBytes)
-		if err != nil {
-			return nil, err
-		}
-		return v, nil
+func toJSONValue(value string) (string, error) {
+	if json.Valid([]byte(value)) {
+		return value, nil
 	}
 
-	// not an encoded JSON value, this could be a an unquoted string so try encoding to JSON and unmarshal again
-	js, err := json.Marshal(raw)
-	if err != nil {
-		return nil, err
+	if strings.HasPrefix(value, "{") || strings.HasPrefix(value, "[") {
+		return "", fmt.Errorf("invalid JSON value: %s", value)
 	}
-	err = v.UnmarshalJSON(js)
+
+	// Treat this as an unquoted string and marshal it to JSON
+	marshaled, err := json.Marshal(value)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
-	return v, nil
+	return string(marshaled), nil
 }
