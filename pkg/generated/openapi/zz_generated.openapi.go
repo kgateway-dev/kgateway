@@ -2046,7 +2046,6 @@ func schema_kgateway_v2_api_v1alpha1_BufferSettings(ref common.ReferenceCallback
 					"maxRequestBytes": {
 						SchemaProps: spec.SchemaProps{
 							Description: "MaxRequestBytes sets the maximum size of a message body to buffer. Requests exceeding this size will receive HTTP 413 and not be sent to the authorization service.",
-							Default:     0,
 							Type:        []string{"integer"},
 							Format:      "int64",
 						},
@@ -2054,7 +2053,6 @@ func schema_kgateway_v2_api_v1alpha1_BufferSettings(ref common.ReferenceCallback
 					"allowPartialMessage": {
 						SchemaProps: spec.SchemaProps{
 							Description: "AllowPartialMessage determines if partial messages should be allowed. When true, requests will be sent to the authorization service even if they exceed maxRequestBytes. The default behavior is false.",
-							Default:     false,
 							Type:        []string{"boolean"},
 							Format:      "",
 						},
@@ -2062,7 +2060,6 @@ func schema_kgateway_v2_api_v1alpha1_BufferSettings(ref common.ReferenceCallback
 					"packAsBytes": {
 						SchemaProps: spec.SchemaProps{
 							Description: "PackAsBytes determines if the body should be sent as raw bytes. When true, the body is sent as raw bytes in the raw_body field. When false, the body is sent as UTF-8 string in the body field. The default behavior is false.",
-							Default:     false,
 							Type:        []string{"boolean"},
 							Format:      "",
 						},

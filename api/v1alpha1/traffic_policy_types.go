@@ -204,33 +204,6 @@ type BodyTransformation struct {
 	Value *InjaTemplate `json:"value,omitempty"`
 }
 
-// ExtAuthPolicy configures external authentication for a route.
-// This policy will determine the ext auth server to use and how to  talk to it.
-// Note that most of these fields are passed along as is to Envoy.
-// For more details on particular fields please see the Envoy ExtAuth documentation.
-// https://raw.githubusercontent.com/envoyproxy/envoy/f910f4abea24904aff04ec33a00147184ea7cffa/api/envoy/extensions/filters/http/ext_authz/v3/ext_authz.proto
-//
-// +kubebuilder:validation:ExactlyOneOf=extensionRef;disable
-type ExtAuthPolicy struct {
-	// ExtensionRef references the GatewayExtension that should be used for authentication.
-	// +optional
-	ExtensionRef *NamespacedObjectReference `json:"extensionRef,omitempty"`
-
-	// WithRequestBody allows the request body to be buffered and sent to the authorization service.
-	// Warning buffering has implications for streaming and therefore performance.
-	// +optional
-	WithRequestBody *BufferSettings `json:"withRequestBody,omitempty"`
-
-	// Additional context for the authorization service.
-	// +optional
-	ContextExtensions map[string]string `json:"contextExtensions,omitempty"`
-
-	// Disable all external authorization filters.
-	// Can be used to disable external authorization policies applied at a higher level in the config hierarchy.
-	// +optional
-	Disable *PolicyDisable `json:"disable,omitempty"`
-}
-
 // RateLimit defines a rate limiting policy.
 type RateLimit struct {
 	// Local defines a local rate limiting policy.

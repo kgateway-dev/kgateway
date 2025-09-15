@@ -120,7 +120,7 @@ type ExtProcProvider struct {
 	// MetadataOptions allows configuring metadata namespaces to forwarded or received from the external
 	// processing server.
 	// +optional
-	MetadataOptions *MetadataOptions `json:"metadataOptions"`
+	MetadataOptions *MetadataOptions `json:"metadataOptions,omitempty"`
 }
 
 type RouteCacheAction string

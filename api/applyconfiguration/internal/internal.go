@@ -575,15 +575,12 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: allowPartialMessage
       type:
         scalar: boolean
-      default: false
     - name: maxRequestBytes
       type:
         scalar: numeric
-      default: 0
     - name: packAsBytes
       type:
         scalar: boolean
-      default: false
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.CELFilter
   map:
     fields:
