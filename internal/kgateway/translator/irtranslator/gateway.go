@@ -96,9 +96,9 @@ func (t *Translator) Translate(ctx context.Context, gw ir.GatewayIR, reporter sd
 			noRouteListeners = append(noRouteListeners, originalListenerName)
 
 			// Only skip listeners that will cause Envoy errors (TCP listeners). Including HTTP listeners makes translation testing simpler.
-			if outListener == nil || len(outListener.GetFilterChains()) == 0 {
-				continue
-			}
+			//if outListener == nil || len(outListener.GetFilterChains()) == 0 {
+			continue
+			//}
 		}
 		res.Listeners = append(res.Listeners, outListener)
 		res.Routes = append(res.Routes, routes...)

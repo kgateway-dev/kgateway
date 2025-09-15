@@ -20,26 +20,6 @@ Clusters:
 - connectTimeout: 5s
   metadata: {}
   name: test-backend-plugin_default_example-svc_80
-Listeners:
-- address:
-    socketAddress:
-      address: '::'
-      ipv4Compat: true
-      portValue: 8080
-  filterChains:
-  - filters:
-    - name: envoy.filters.network.tcp_proxy
-      typedConfig:
-        '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-        statPrefix: listener~8080-default.example-tcp-route-rule-0
-        weightedClusters:
-          clusters:
-          - name: kube_default_example-tcp-svc-1_8080
-            weight: 65
-          - name: kube_default_example-tcp-svc-2_8081
-            weight: 35
-    name: listener~8080-default.example-tcp-route-rule-0
-  name: listener~8080
 Statuses:
   gateways:
     default/example-tcp-gateway:

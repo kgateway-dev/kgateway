@@ -11,28 +11,6 @@ Clusters:
 - connectTimeout: 5s
   metadata: {}
   name: test-backend-plugin_default_example-svc_80
-Listeners:
-- address:
-    socketAddress:
-      address: '::'
-      ipv4Compat: true
-      portValue: 8443
-  filterChains:
-  - filterChainMatch:
-      serverNames:
-      - example.com
-    filters:
-    - name: envoy.filters.network.tcp_proxy
-      typedConfig:
-        '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-        cluster: kube_default_example-tls-svc_443
-        statPrefix: listener~8443-default.example-tls-route-rule-0
-    name: listener~8443-default.example-tls-route-rule-0
-  listenerFilters:
-  - name: envoy.filters.listener.tls_inspector
-    typedConfig:
-      '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
-  name: listener~8443
 Statuses:
   gateways:
     default/example-gateway:

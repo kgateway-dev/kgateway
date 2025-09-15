@@ -16,31 +16,6 @@ Listeners:
     socketAddress:
       address: '::'
       ipv4Compat: true
-      portValue: 8080
-  filterChains:
-  - filters:
-    - name: envoy.filters.network.http_connection_manager
-      typedConfig:
-        '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
-        httpFilters:
-        - name: envoy.filters.http.router
-          typedConfig:
-            '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
-        mergeSlashes: true
-        normalizePath: true
-        rds:
-          configSource:
-            ads: {}
-            resourceApiVersion: V3
-          routeConfigName: listener~8080
-        statPrefix: http
-        useRemoteAddress: true
-    name: listener~8080
-  name: listener~8080
-- address:
-    socketAddress:
-      address: '::'
-      ipv4Compat: true
       portValue: 9090
   filterChains:
   - filters:
@@ -63,8 +38,6 @@ Listeners:
     name: listener~9090
   name: listener~9090
 Routes:
-- ignorePortInHostMatching: true
-  name: listener~8080
 - ignorePortInHostMatching: true
   name: listener~9090
   virtualHosts:
