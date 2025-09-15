@@ -22,7 +22,6 @@ type PodApplyConfiguration struct {
 	LivenessProbe                 *v1.Probe                               `json:"livenessProbe,omitempty"`
 	TopologySpreadConstraints     []v1.TopologySpreadConstraint           `json:"topologySpreadConstraints,omitempty"`
 	ExtraVolumes                  []v1.Volume                             `json:"extraVolumes,omitempty"`
-	ExtraVolumeMounts             []v1.VolumeMount                        `json:"extraVolumeMounts,omitempty"`
 }
 
 // PodApplyConfiguration constructs a declarative configuration of the Pod type for use with
@@ -157,16 +156,6 @@ func (b *PodApplyConfiguration) WithTopologySpreadConstraints(values ...v1.Topol
 func (b *PodApplyConfiguration) WithExtraVolumes(values ...v1.Volume) *PodApplyConfiguration {
 	for i := range values {
 		b.ExtraVolumes = append(b.ExtraVolumes, values[i])
-	}
-	return b
-}
-
-// WithExtraVolumeMounts adds the given value to the ExtraVolumeMounts field in the declarative configuration
-// and returns the receiver, so that objects can be build by chaining "With" function invocations.
-// If called multiple times, values provided by each call will be appended to the ExtraVolumeMounts field.
-func (b *PodApplyConfiguration) WithExtraVolumeMounts(values ...v1.VolumeMount) *PodApplyConfiguration {
-	for i := range values {
-		b.ExtraVolumeMounts = append(b.ExtraVolumeMounts, values[i])
 	}
 	return b
 }

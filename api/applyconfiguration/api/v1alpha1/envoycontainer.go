@@ -9,11 +9,12 @@ import (
 // EnvoyContainerApplyConfiguration represents a declarative configuration of the EnvoyContainer type for use
 // with apply.
 type EnvoyContainerApplyConfiguration struct {
-	Bootstrap       *EnvoyBootstrapApplyConfiguration `json:"bootstrap,omitempty"`
-	Image           *ImageApplyConfiguration          `json:"image,omitempty"`
-	SecurityContext *v1.SecurityContext               `json:"securityContext,omitempty"`
-	Resources       *v1.ResourceRequirements          `json:"resources,omitempty"`
-	Env             []v1.EnvVar                       `json:"env,omitempty"`
+	Bootstrap         *EnvoyBootstrapApplyConfiguration `json:"bootstrap,omitempty"`
+	Image             *ImageApplyConfiguration          `json:"image,omitempty"`
+	SecurityContext   *v1.SecurityContext               `json:"securityContext,omitempty"`
+	Resources         *v1.ResourceRequirements          `json:"resources,omitempty"`
+	Env               []v1.EnvVar                       `json:"env,omitempty"`
+	ExtraVolumeMounts []v1.VolumeMount                  `json:"extraVolumeMounts,omitempty"`
 }
 
 // EnvoyContainerApplyConfiguration constructs a declarative configuration of the EnvoyContainer type for use with
@@ -60,6 +61,16 @@ func (b *EnvoyContainerApplyConfiguration) WithResources(value v1.ResourceRequir
 func (b *EnvoyContainerApplyConfiguration) WithEnv(values ...v1.EnvVar) *EnvoyContainerApplyConfiguration {
 	for i := range values {
 		b.Env = append(b.Env, values[i])
+	}
+	return b
+}
+
+// WithExtraVolumeMounts adds the given value to the ExtraVolumeMounts field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the ExtraVolumeMounts field.
+func (b *EnvoyContainerApplyConfiguration) WithExtraVolumeMounts(values ...v1.VolumeMount) *EnvoyContainerApplyConfiguration {
+	for i := range values {
+		b.ExtraVolumeMounts = append(b.ExtraVolumeMounts, values[i])
 	}
 	return b
 }
