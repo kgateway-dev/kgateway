@@ -109,25 +109,6 @@ spec:
               secretRef:
                 name: openai-secret
             model: text-moderation-latest
-    defaults:
-      - field: top_p
-        value: "0.95"
-      - field: frequency_penalty
-        value: "0.1"
-      - field: presence_penalty
-        value: "0.1"
-      - field: max_tokens
-        value: "2000"
-        override: true
-      - field: temperature
-        value: "0.5"
-        override: true
-      - field: string
-        value: "some_string"
-      - field: array_int
-        value: "[1,2,3]"
-      - field: array_string
-        value: '["one","two","three"]'
   targetRefs:
   - group: gateway.networking.k8s.io
     kind: HTTPRoute
