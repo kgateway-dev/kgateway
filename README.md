@@ -41,7 +41,7 @@ Please refer to [devel/contributing/README.md](/devel/contributing/README.md) as
 
 ## Releasing kgateway
 
-Please refer to [RELEASE.md](RELEASE.md) as a starting point for understanding releases of the project.
+Please refer to [devel/contributing/releasing.md](devel/contributing/releasing.md) as a starting point for understanding releases of the project.
 
 ## Thanks
 
