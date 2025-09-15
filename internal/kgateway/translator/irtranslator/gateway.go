@@ -78,8 +78,10 @@ func (t *Translator) Translate(ctx context.Context, gw ir.GatewayIR, reporter sd
 
 			// Collect the names of the skipped listeners so they can all be reported at once on the gateway
 			skippedListeners = append(skippedListeners, originalListenerName)
-
-			continue
+			// Only skip TCP listeners, skipping HTTP listeners breaks conformance tests (??)
+			if outListener == nil || len(outListener.GetFilterChains()) == 0 {
+				continue
+			}
 		}
 		res.Listeners = append(res.Listeners, outListener)
 		res.Routes = append(res.Routes, routes...)
