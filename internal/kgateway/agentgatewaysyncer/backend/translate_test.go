@@ -11,13 +11,9 @@ import (
 	"istio.io/istio/pkg/test"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/ptr"
-	gwv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
-	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
 func TestBuildMCPIr(t *testing.T) {
@@ -26,7 +22,7 @@ func TestBuildMCPIr(t *testing.T) {
 		name        string
 		backend     *v1alpha1.Backend
 		services    krt.Collection[*corev1.Service]
-		namespaces  krt.Collection[krtcollections.NamespaceMetadata]
+		namespaces  krt.Collection[*corev1.Namespace]
 		expectError bool
 		validate    func(mcpIr *MCPIr) bool
 	}{
@@ -264,7 +260,7 @@ func TestBuildAIBackendIr(t *testing.T) {
 	tests := []struct {
 		name        string
 		backend     *v1alpha1.Backend
-		secrets     *krtcollections.SecretIndex
+		secrets     krt.Collection[*corev1.Secret]
 		expectError bool
 		validate    func(aiIr *AIIr) bool
 	}{
@@ -468,7 +464,7 @@ func TestBuildAIBackendIr(t *testing.T) {
 					},
 				},
 			},
-			secrets: createMockSecretIndex(t, "test-ns", "aws-secret-custom", map[string]string{
+			secrets: createMockSecretCol(t, "test-ns", "aws-secret-custom", map[string]string{
 				"accessKey":    "AKIACUSTOM",
 				"secretKey":    "secretcustom",
 				"sessionToken": "token123",
@@ -522,7 +518,7 @@ func TestBuildAIBackendIr(t *testing.T) {
 					},
 				},
 			},
-			secrets: createMockSecretIndex(t, "test-ns", "openai-secret", map[string]string{
+			secrets: createMockSecretCol(t, "test-ns", "openai-secret", map[string]string{
 				"Authorization": "Bearer sk-secret-token",
 			}),
 			expectError: false,
@@ -811,7 +807,7 @@ func stringPtr(s string) *string {
 }
 
 // Helper function to create a mock SecretIndex for testing
-func createMockSecretIndex(t test.Failer, namespace, name string, data map[string]string) *krtcollections.SecretIndex {
+func createMockSecretCol(t test.Failer, namespace, name string, data map[string]string) krt.Collection[*corev1.Secret] {
 	// Create mock secret data
 	secretData := make(map[string][]byte)
 	for k, v := range data {
@@ -835,50 +831,13 @@ func createMockSecretIndex(t test.Failer, namespace, name string, data map[strin
 
 	// Get the underlying mock collections
 	mockSecretCollection := krttest.GetMockCollection[*corev1.Secret](mock)
-	mockRefGrantCollection := krttest.GetMockCollection[*gwv1beta1.ReferenceGrant](mock)
 
 	// Wait for the mock collections to sync
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second) // long timeout - just in case. we should never reach it.
 	defer cancel()
 	mockSecretCollection.WaitUntilSynced(ctx.Done())
-	mockRefGrantCollection.WaitUntilSynced(ctx.Done())
 
-	// Create the secret collection
-	secretsCol := map[schema.GroupKind]krt.Collection[ir.Secret]{
-		corev1.SchemeGroupVersion.WithKind("Secret").GroupKind(): krt.NewCollection(
-			mockSecretCollection,
-			func(kctx krt.HandlerContext, i *corev1.Secret) *ir.Secret {
-				res := ir.Secret{
-					ObjectSource: ir.ObjectSource{
-						Group:     "",
-						Kind:      "Secret",
-						Namespace: i.Namespace,
-						Name:      i.Name,
-					},
-					Obj:  i,
-					Data: i.Data,
-				}
-				return &res
-			},
-		),
-	}
-
-	// Create a minimal RefGrantIndex for the SecretIndex
-	refgrants := krtcollections.NewRefGrantIndex(mockRefGrantCollection)
-
-	// Wait for the transformed secret collection to sync
-	secretCollection := secretsCol[corev1.SchemeGroupVersion.WithKind("Secret").GroupKind()]
-	secretCollection.WaitUntilSynced(ctx.Done())
-
-	// Create the SecretIndex
-	index := krtcollections.NewSecretIndex(secretsCol, refgrants)
-
-	// Ensure the index is fully synced before returning
-	for !index.HasSynced() {
-		time.Sleep(50 * time.Millisecond)
-	}
-
-	return index
+	return mockSecretCollection
 }
 
 func TestBuildStaticIr(t *testing.T) {
@@ -974,17 +933,15 @@ func TestBuildStaticIr(t *testing.T) {
 func TestGetSecretValue(t *testing.T) {
 	tests := []struct {
 		name         string
-		secret       *ir.Secret
+		secret       *corev1.Secret
 		key          string
 		expectedVal  string
 		expectedBool bool
 	}{
 		{
 			name: "Valid secret value",
-			secret: &ir.Secret{
-				ObjectSource: ir.ObjectSource{
-					Group:     "",
-					Kind:      "Secret",
+			secret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
 					Namespace: "test-ns",
 					Name:      "test-secret",
 				},
@@ -998,10 +955,8 @@ func TestGetSecretValue(t *testing.T) {
 		},
 		{
 			name: "Secret value with spaces",
-			secret: &ir.Secret{
-				ObjectSource: ir.ObjectSource{
-					Group:     "",
-					Kind:      "Secret",
+			secret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
 					Namespace: "test-ns",
 					Name:      "test-secret",
 				},
@@ -1015,10 +970,8 @@ func TestGetSecretValue(t *testing.T) {
 		},
 		{
 			name: "Key not found",
-			secret: &ir.Secret{
-				ObjectSource: ir.ObjectSource{
-					Group:     "",
-					Kind:      "Secret",
+			secret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
 					Namespace: "test-ns",
 					Name:      "test-secret",
 				},
@@ -1032,10 +985,8 @@ func TestGetSecretValue(t *testing.T) {
 		},
 		{
 			name: "Invalid UTF-8",
-			secret: &ir.Secret{
-				ObjectSource: ir.ObjectSource{
-					Group:     "",
-					Kind:      "Secret",
+			secret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
 					Namespace: "test-ns",
 					Name:      "test-secret",
 				},
@@ -1049,10 +1000,8 @@ func TestGetSecretValue(t *testing.T) {
 		},
 		{
 			name: "Empty secret data",
-			secret: &ir.Secret{
-				ObjectSource: ir.ObjectSource{
-					Group:     "",
-					Kind:      "Secret",
+			secret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
 					Namespace: "test-ns",
 					Name:      "test-secret",
 				},
@@ -1088,9 +1037,9 @@ func createMockServiceCollection(t test.Failer) krt.Collection[*corev1.Service] 
 }
 
 // createMockNamespaceCollection creates a basic mock namespace collection
-func createMockNamespaceCollection(t test.Failer) krt.Collection[krtcollections.NamespaceMetadata] {
+func createMockNamespaceCollection(t test.Failer) krt.Collection[*corev1.Namespace] {
 	mock := krttest.NewMock(t, []any{})
-	return krttest.GetMockCollection[krtcollections.NamespaceMetadata](mock)
+	return krttest.GetMockCollection[*corev1.Namespace](mock)
 }
 
 // createMockServiceCollectionWithMCPService creates a mock service collection with a specific MCP service
@@ -1209,24 +1158,30 @@ func createMockServiceCollectionMultiNamespace(t test.Failer) krt.Collection[*co
 }
 
 // createMockNamespaceCollectionWithLabels creates a mock namespace collection with labeled namespaces
-func createMockNamespaceCollectionWithLabels(t test.Failer) krt.Collection[krtcollections.NamespaceMetadata] {
-	namespaces := []krtcollections.NamespaceMetadata{
+func createMockNamespaceCollectionWithLabels(t test.Failer) krt.Collection[*corev1.Namespace] {
+	namespaces := []*corev1.Namespace{
 		{
-			Name: "test-ns",
-			Labels: map[string]string{
-				"environment": "test",
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "test-ns",
+				Labels: map[string]string{
+					"environment": "test",
+				},
 			},
 		},
 		{
-			Name: "prod-ns",
-			Labels: map[string]string{
-				"environment": "production",
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "prod-ns",
+				Labels: map[string]string{
+					"environment": "production",
+				},
 			},
 		},
 		{
-			Name: "dev-ns",
-			Labels: map[string]string{
-				"environment": "development",
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "dev-ns",
+				Labels: map[string]string{
+					"environment": "development",
+				},
 			},
 		},
 	}
@@ -1237,7 +1192,7 @@ func createMockNamespaceCollectionWithLabels(t test.Failer) krt.Collection[krtco
 	}
 
 	mock := krttest.NewMock(t, inputs)
-	mockCol := krttest.GetMockCollection[krtcollections.NamespaceMetadata](mock)
+	mockCol := krttest.GetMockCollection[*corev1.Namespace](mock)
 	// Ensure the index is fully synced before returning
 	for !mockCol.HasSynced() {
 		time.Sleep(50 * time.Millisecond)

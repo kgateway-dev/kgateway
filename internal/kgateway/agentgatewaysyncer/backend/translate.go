@@ -16,13 +16,13 @@ import (
 
 	apiannotations "github.com/kgateway-dev/kgateway/v2/api/annotations"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/pluginutils"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/utils"
-	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 )
+
+var logger = logging.New("agentgateway/backend")
 
 const (
 	authPolicyPrefix = "auth"
@@ -31,37 +31,37 @@ const (
 // BuildAgentGatewayBackendIr translates a Backend to an AgentGatewayBackendIr
 func BuildAgentGatewayBackendIr(
 	krtctx krt.HandlerContext,
-	secrets *krtcollections.SecretIndex,
+	secrets krt.Collection[*corev1.Secret],
 	services krt.Collection[*corev1.Service],
-	namespaces krt.Collection[krtcollections.NamespaceMetadata],
-	i *v1alpha1.Backend,
+	namespaces krt.Collection[*corev1.Namespace],
+	backend *v1alpha1.Backend,
 ) *AgentGatewayBackendIr {
 	backendIr := &AgentGatewayBackendIr{}
 
-	switch i.Spec.Type {
+	switch backend.Spec.Type {
 	case v1alpha1.BackendTypeStatic:
-		staticIr, err := buildStaticIr(i)
+		staticIr, err := buildStaticIr(backend)
 		if err != nil {
 			backendIr.Errors = append(backendIr.Errors, err)
 		}
 		backendIr.StaticIr = staticIr
 
 	case v1alpha1.BackendTypeAI:
-		aiIr, err := buildAIIr(krtctx, i, secrets)
+		aiIr, err := buildAIIr(krtctx, backend, secrets)
 		if err != nil {
 			backendIr.Errors = append(backendIr.Errors, err)
 		}
 		backendIr.AIIr = aiIr
 
 	case v1alpha1.BackendTypeMCP:
-		mcpIr, err := buildMCPIr(krtctx, i, services, namespaces)
+		mcpIr, err := buildMCPIr(krtctx, backend, services, namespaces)
 		if err != nil {
 			backendIr.Errors = append(backendIr.Errors, err)
 		}
 		backendIr.MCPIr = mcpIr
 
 	default:
-		backendIr.Errors = append(backendIr.Errors, fmt.Errorf("unsupported backend type: %s", i.Spec.Type))
+		backendIr.Errors = append(backendIr.Errors, fmt.Errorf("unsupported backend type: %s", backend.Spec.Type))
 	}
 
 	return backendIr
@@ -94,13 +94,11 @@ func buildStaticIr(be *v1alpha1.Backend) (*StaticIr, error) {
 	}, nil
 }
 
-// buildAIIr pre-resolves AI backend configuration including secrets
-
-// translateLLMProviderToProvider translates a single LLM provider configuration to AIBackend_Provider and auth policy
-func translateLLMProviderToProvider(krtctx krt.HandlerContext, llm *v1alpha1.LLMProvider, providerName string, secrets *krtcollections.SecretIndex, namespace string) (*api.AIBackend_Provider, *api.BackendAuthPolicy, error) {
+func translateLLMProviderToProvider(krtctx krt.HandlerContext, llm *v1alpha1.LLMProvider, providerName string, secrets krt.Collection[*corev1.Secret], namespace string) (*api.AIBackend_Provider, *api.BackendAuthPolicy, error) {
 	provider := &api.AIBackend_Provider{
 		Name: providerName,
 	}
+
 	var auth *api.BackendAuthPolicy
 
 	if llm.HostOverride != nil {
@@ -215,7 +213,7 @@ func createAuthPolicy(authPolicy *api.BackendAuthPolicy, backendName, providerNa
 	}
 }
 
-func buildAIIr(krtctx krt.HandlerContext, be *v1alpha1.Backend, secrets *krtcollections.SecretIndex) (*AIIr, error) {
+func buildAIIr(krtctx krt.HandlerContext, be *v1alpha1.Backend, secrets krt.Collection[*corev1.Secret]) (*AIIr, error) {
 	backendName := utils.InternalBackendName(be.Namespace, be.Name, "")
 	aiBackend := &api.AIBackend{
 		ProviderGroups: []*api.AIBackend_ProviderGroup{},
@@ -289,7 +287,7 @@ func buildAIIr(krtctx krt.HandlerContext, be *v1alpha1.Backend, secrets *krtcoll
 }
 
 // buildTranslatedAuthPolicy creates auth policy for the given auth token configuration
-func buildTranslatedAuthPolicy(krtctx krt.HandlerContext, authToken *v1alpha1.SingleAuthToken, secrets *krtcollections.SecretIndex, namespace string) *api.BackendAuthPolicy {
+func buildTranslatedAuthPolicy(krtctx krt.HandlerContext, authToken *v1alpha1.SingleAuthToken, secrets krt.Collection[*corev1.Secret], namespace string) *api.BackendAuthPolicy {
 	if authToken == nil {
 		return nil
 	}
@@ -301,7 +299,7 @@ func buildTranslatedAuthPolicy(krtctx krt.HandlerContext, authToken *v1alpha1.Si
 		}
 
 		// Get secret using the SecretIndex
-		secret, err := pluginutils.GetSecretIr(secrets, krtctx, authToken.SecretRef.Name, namespace)
+		secret, err := getSecret(secrets, krtctx, authToken.SecretRef.Name, namespace)
 		if err != nil {
 			// Return nil auth policy if secret not found - this will be handled upstream
 			// TODO(npolshak): Add backend status errors https://github.com/kgateway-dev/kgateway/issues/11966
@@ -344,8 +342,17 @@ func buildTranslatedAuthPolicy(krtctx krt.HandlerContext, authToken *v1alpha1.Si
 	}
 }
 
+func getSecret(secrets krt.Collection[*corev1.Secret], krtctx krt.HandlerContext, secretName, ns string) (*corev1.Secret, error) {
+	secretKey := ns + "/" + secretName
+	secret := krt.FetchOne(krtctx, secrets, krt.FilterKey(secretKey))
+	if secret == nil {
+		return nil, fmt.Errorf("failed to find secret %s", secretName)
+	}
+	return *secret, nil
+}
+
 // buildMCPIr pre-resolves MCP backend configuration including service discovery
-func buildMCPIr(krtctx krt.HandlerContext, be *v1alpha1.Backend, services krt.Collection[*corev1.Service], namespaces krt.Collection[krtcollections.NamespaceMetadata]) (*MCPIr, error) {
+func buildMCPIr(krtctx krt.HandlerContext, be *v1alpha1.Backend, services krt.Collection[*corev1.Service], namespaces krt.Collection[*corev1.Namespace]) (*MCPIr, error) {
 	if be.Spec.MCP == nil {
 		return nil, fmt.Errorf("mcp backend spec must not be nil for MCP backend type")
 	}
@@ -539,7 +546,7 @@ func toMCPProtocol(appProtocol string) api.MCPTarget_Protocol {
 
 // getSecretValue extracts a value from a Kubernetes secret, handling both Data and StringData fields.
 // It prioritizes StringData over Data if both are present.
-func getSecretValue(secret *ir.Secret, key string) (string, bool) {
+func getSecretValue(secret *corev1.Secret, key string) (string, bool) {
 	if value, exists := secret.Data[key]; exists && utf8.Valid(value) {
 		return strings.TrimSpace(string(value)), true
 	}
@@ -547,7 +554,7 @@ func getSecretValue(secret *ir.Secret, key string) (string, bool) {
 	return "", false
 }
 
-func buildBedrockAuthPolicy(krtctx krt.HandlerContext, region string, auth *v1alpha1.AwsAuth, secrets *krtcollections.SecretIndex, namespace string) (*api.BackendAuthPolicy, error) {
+func buildBedrockAuthPolicy(krtctx krt.HandlerContext, region string, auth *v1alpha1.AwsAuth, secrets krt.Collection[*corev1.Secret], namespace string) (*api.BackendAuthPolicy, error) {
 	var errs []error
 	if auth == nil {
 		logger.Warn("using implicit AWS auth for AI backend")
@@ -569,7 +576,7 @@ func buildBedrockAuthPolicy(krtctx krt.HandlerContext, region string, auth *v1al
 		}
 
 		// Get secret using the SecretIndex
-		secret, err := pluginutils.GetSecretIr(secrets, krtctx, auth.SecretRef.Name, namespace)
+		secret, err := getSecret(secrets, krtctx, auth.SecretRef.Name, namespace)
 		if err != nil {
 			// Return nil auth policy if secret not found - this will be handled upstream
 			// TODO(npolshak): Add backend status errors https://github.com/kgateway-dev/kgateway/issues/11966

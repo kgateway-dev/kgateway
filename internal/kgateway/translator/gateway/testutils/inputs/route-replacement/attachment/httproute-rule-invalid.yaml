@@ -1,5 +1,4 @@
-# Validate that HTTPRoute rule-level invalid policy affects only the targeted rule
-# in strict mode but is ignored in standard mode.
+# Validate that HTTPRoute rule-level invalid policy affects only the targeted rule.
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:
@@ -70,4 +69,4 @@ spec:
     request:
       body:
         parseAs: AsJson
-        value: "{{ invalid_template }"  ## Verify that STRICT mode needs to be used to catch this.
+        value: "{{ invalid_template }"

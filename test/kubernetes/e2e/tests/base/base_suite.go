@@ -30,9 +30,6 @@ import (
 type TestCase struct {
 	// Manifests contains a list of manifest filenames.
 	Manifests []string
-	// Resources contains a list of objects that are expected to be created by the manifest files.
-	// DEPRECATED: This field no longer has any effect and will be removed soon.
-	Resources []client.Object
 
 	// manifestResources contains the resources automatically loaded from the manifest files for
 	// this test case.

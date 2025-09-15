@@ -35,8 +35,6 @@ import (
 	gwv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	agwir "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/utils"
@@ -579,7 +577,7 @@ func buildADPDestination(
 	to gwv1.HTTPBackendRef,
 	ns string,
 	k schema.GroupVersionKind,
-	backendCol *krtcollections.BackendIndex,
+	backendCol krt.Collection[*v1alpha1.Backend],
 ) (*api.RouteBackend, *reporter.RouteCondition) {
 	ref := normalizeReference(to.Group, to.Kind, wellknown.ServiceGVK)
 	// check if the reference is allowed
@@ -673,37 +671,22 @@ func buildADPDestination(
 			Port: uint32(*port),
 		}
 	case wellknown.BackendGVK.GroupKind():
-		// Create the source ObjectSource representing the route object making the reference
-		routeSrc := ir.ObjectSource{
-			Group:     k.Group,
-			Kind:      k.Kind,
-			Namespace: ns,
-		}
-
-		// Create the backend reference from the 'to' parameter
-		backendRef := gwv1.BackendObjectReference{
-			Group:     to.Group,
-			Kind:      to.Kind,
-			Name:      to.Name,
-			Namespace: to.Namespace,
-			Port:      to.Port,
-		}
-
-		kgwBackend, err := backendCol.GetBackendFromRef(ctx.Krt, routeSrc, backendRef)
-		if err != nil {
-			logger.Error("failed to get kgateway Backend", "error", err)
+		backendRefKey := ns + "/" + string(to.Name)
+		fetchedKgwBackend := krt.FetchOne(ctx.Krt, backendCol, krt.FilterKey(backendRefKey))
+		if fetchedKgwBackend == nil {
+			logger.Error("failed to get kgateway Backend", "backend", backendRefKey)
 			return nil, &reporter.RouteCondition{
 				Type:    gwv1.RouteConditionResolvedRefs,
 				Status:  metav1.ConditionFalse,
 				Reason:  gwv1.RouteReasonBackendNotFound,
-				Message: fmt.Sprintf("kgateway Backend not found: %v", err),
+				Message: fmt.Sprintf("kgateway Backend not found: %s", backendRefKey),
 			}
 		}
-
+		kgwBackend := *fetchedKgwBackend
 		logger.Debug("successfully resolved kgateway Backend", "backend", kgwBackend.Name)
 		rb.Backend = &api.BackendReference{
 			Kind: &api.BackendReference_Backend{
-				Backend: kgwBackend.Namespace + "/" + kgwBackend.Name,
+				Backend: backendRefKey,
 			},
 		}
 	default:

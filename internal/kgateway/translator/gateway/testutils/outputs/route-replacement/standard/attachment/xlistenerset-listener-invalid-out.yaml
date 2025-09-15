@@ -43,10 +43,7 @@ Listeners:
       ipv4Compat: true
       portValue: 8443
   filterChains:
-  - filterChainMatch:
-      serverNames:
-      - www.example.com
-    filters:
+  - filters:
     - name: envoy.filters.network.http_connection_manager
       typedConfig:
         '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
@@ -60,62 +57,160 @@ Listeners:
           configSource:
             ads: {}
             resourceApiVersion: V3
-          routeConfigName: https
+          routeConfigName: gwtest/test-listenerset/https-8443
         statPrefix: http
         useRemoteAddress: true
-    name: https
-  listenerFilters:
-  - name: envoy.filters.listener.tls_inspector
-    typedConfig:
-      '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
+    name: gwtest/test-listenerset/https-8443
   name: listener~8443
+- address:
+    socketAddress:
+      address: '::'
+      ipv4Compat: true
+      portValue: 9090
+  filterChains:
+  - filters:
+    - name: envoy.filters.network.http_connection_manager
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+        httpFilters:
+        - disabled: true
+          name: transformation
+          typedConfig:
+            '@type': type.googleapis.com/envoy.api.v2.filter.http.FilterTransformations
+        - name: envoy.filters.http.router
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+        mergeSlashes: true
+        normalizePath: true
+        rds:
+          configSource:
+            ads: {}
+            resourceApiVersion: V3
+          routeConfigName: listener~9090
+        statPrefix: http
+        useRemoteAddress: true
+    name: listener~9090
+  name: listener~9090
 Routes:
 - ignorePortInHostMatching: true
-  name: https
+  name: gwtest/test-listenerset/https-8443
   virtualHosts:
   - domains:
-    - '*'
-    name: default
+    - www.example.com
+    name: gwtest/test-listenerset/https-8443~www_example_com
     routes:
-    - directResponse:
-        body:
-          inlineString: invalid route configuration detected and replaced with a direct
-            response.
-        status: 500
-      match:
+    - match:
         prefix: /
+      name: gwtest/test-listenerset/https-8443~www_example_com-route-0-httproute-test-route-gwtest-0-0-matcher-0
+      route:
+        cluster: kube_gwtest_example-svc_80
+        clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
 - ignorePortInHostMatching: true
   name: listener~8080
+- ignorePortInHostMatching: true
+  name: listener~9090
   virtualHosts:
   - domains:
-    - '*'
-    name: default
+    - www.example.com
+    metadata:
+      filterMetadata:
+        merge.TrafficPolicy.gateway.kgateway.dev:
+          transformation:
+          - gateway.kgateway.dev/TrafficPolicy/gwtest/invalid-traffic-policy
+    name: listener~9090~www_example_com
     routes:
-    - directResponse:
-        body:
-          inlineString: invalid route configuration detected and replaced with a direct
-            response.
-        status: 500
-      match:
+    - match:
         prefix: /
+      name: listener~9090~www_example_com-route-0-httproute-test-route-gwtest-0-0-matcher-0
+      route:
+        cluster: kube_gwtest_example-svc_80
+        clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+    typedPerFilterConfig:
+      transformation:
+        '@type': type.googleapis.com/envoy.api.v2.filter.http.RouteTransformations
+        transformations:
+        - requestMatch:
+            requestTransformation:
+              transformationTemplate:
+                body:
+                  text: '{{ invalid_template }'
 Statuses:
   gateways:
     gwtest/example-gateway:
       conditions:
       - lastTransitionTime: null
         message: ""
-        reason: ListenerSetsNotAllowed
-        status: Unknown
+        reason: ListenerSetsAttached
+        status: "True"
         type: AttachedListenerSets
       - lastTransitionTime: null
-        message: 'invalid xds configuration: error initializing configuration '''':
-          Failed to parse request template: Failed to parse body template [inja.exception.parser_error]
-          (at 1:21) unexpected ''}'''
-        reason: Invalid
-        status: "False"
+        message: Gateway is accepted
+        reason: Accepted
+        status: "True"
         type: Accepted
       - lastTransitionTime: null
         message: Gateway is programmed
+        reason: Programmed
+        status: "True"
+        type: Programmed
+      listeners:
+      - attachedRoutes: 0
+        conditions:
+        - lastTransitionTime: null
+          message: Listener is accepted
+          reason: Accepted
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Listener does not have conflicts
+          reason: NoConflicts
+          status: "False"
+          type: Conflicted
+        - lastTransitionTime: null
+          message: Listener has valid refs
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Listener is programmed
+          reason: Programmed
+          status: "True"
+          type: Programmed
+        name: http-8080
+        supportedKinds:
+        - group: gateway.networking.k8s.io
+          kind: HTTPRoute
+        - group: gateway.networking.k8s.io
+          kind: GRPCRoute
+  httpRoutes:
+    gwtest/test-route:
+      parents:
+      - conditions:
+        - lastTransitionTime: null
+          message: Route is accepted
+          reason: Accepted
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Route has valid refs
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
+        controllerName: kgateway
+        parentRef:
+          group: gateway.networking.x-k8s.io
+          kind: XListenerSet
+          name: test-listenerset
+  listenerSets:
+    gwtest/test-listenerset:
+      conditions:
+      - lastTransitionTime: null
+        message: ListenerSet is accepted
+        reason: Accepted
+        status: "True"
+        type: Accepted
+      - lastTransitionTime: null
+        message: ListenerSet is programmed
         reason: Programmed
         status: "True"
         type: Programmed
@@ -142,7 +237,8 @@ Statuses:
           reason: Programmed
           status: "True"
           type: Programmed
-        name: http
+        name: http-9090
+        port: 9090
         supportedKinds:
         - group: gateway.networking.k8s.io
           kind: HTTPRoute
@@ -170,44 +266,24 @@ Statuses:
           reason: Programmed
           status: "True"
           type: Programmed
-        name: https
+        name: https-8443
+        port: 8443
         supportedKinds:
         - group: gateway.networking.k8s.io
           kind: HTTPRoute
-  httpRoutes:
-    gwtest/test-route:
-      parents:
-      - conditions:
-        - lastTransitionTime: null
-          message: Route is accepted
-          reason: Accepted
-          status: "True"
-          type: Accepted
-        - lastTransitionTime: null
-          message: Route has valid refs
-          reason: ResolvedRefs
-          status: "True"
-          type: ResolvedRefs
-        controllerName: kgateway
-        parentRef:
-          group: ""
-          kind: ""
-          name: example-gateway
   policies:
-    TrafficPolicy/gwtest/gateway-level-invalid-policy:
+    TrafficPolicy/gwtest/invalid-traffic-policy:
       ancestors:
       - ancestorRef:
-          group: gateway.networking.k8s.io
-          kind: Gateway
-          name: example-gateway
+          group: gateway.networking.x-k8s.io
+          kind: XListenerSet
+          name: test-listenerset
           namespace: gwtest
         conditions:
         - lastTransitionTime: null
-          message: 'invalid xds configuration: error initializing configuration '''':
-            Failed to parse request template: Failed to parse body template [inja.exception.parser_error]
-            (at 1:21) unexpected ''}'''
-          reason: Invalid
-          status: "False"
+          message: Policy accepted
+          reason: Valid
+          status: "True"
           type: Accepted
         - lastTransitionTime: null
           message: Attached to all targets

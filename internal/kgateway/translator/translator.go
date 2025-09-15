@@ -129,14 +129,14 @@ func (s *CombinedTranslator) TranslateGateway(kctx krt.HandlerContext, ctx conte
 	rm := reports.NewReportMap()
 	r := reports.NewReporter(&rm)
 	logger.Debug("translating Gateway", "resource_ref", gw.ResourceName(), "resource_version", gw.Obj.GetResourceVersion())
-	gwir := s.buildProxy(kctx, ctx, gw, r)
 
+	gwir := s.buildProxy(kctx, ctx, gw, r)
 	if gwir == nil {
 		return nil, reports.ReportMap{}
 	}
 
 	// we are recomputing xds snapshots as proxies have changed, signal that we need to sync xds with these new snapshots
-	xdsSnap := s.irtranslator.Translate(*gwir, r)
+	xdsSnap := s.irtranslator.Translate(ctx, *gwir, r)
 
 	return &xdsSnap, rm
 }

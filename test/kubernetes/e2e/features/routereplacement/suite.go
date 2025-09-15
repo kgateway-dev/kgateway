@@ -32,14 +32,6 @@ var (
 			testdefaults.HttpbinManifest,
 			setupManifest,
 		},
-		Resources: []client.Object{
-			testdefaults.CurlPod,
-			testdefaults.HttpbinDeployment,
-			gateway,
-			proxyDeployment,
-			proxyService,
-			proxyServiceAccount,
-		},
 	}
 
 	testModes = map[string]settings.RouteReplacementMode{
@@ -52,19 +44,15 @@ var (
 	testCases = map[string]*base.TestCase{
 		"TestStrictModeInvalidPolicyReplacement": {
 			Manifests: []string{strictModeInvalidPolicyManifest},
-			Resources: []client.Object{invalidPolicyRoute, invalidTrafficPolicy},
 		},
 		"TestStandardModeInvalidPolicyReplacement": {
 			Manifests: []string{standardModeInvalidPolicyManifest},
-			Resources: []client.Object{invalidPolicyRoute, invalidTrafficPolicy},
 		},
 		"TestStrictModeInvalidMatcherDropsRoute": {
 			Manifests: []string{strictModeInvalidMatcherManifest},
-			Resources: []client.Object{invalidMatcherRoute},
 		},
 		"TestStrictModeInvalidRouteReplacement": {
 			Manifests: []string{strictModeInvalidRouteManifest},
-			Resources: []client.Object{invalidConfigRoute},
 		},
 	}
 )

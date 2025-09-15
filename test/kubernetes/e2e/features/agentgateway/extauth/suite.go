@@ -6,7 +6,6 @@ import (
 
 	"github.com/onsi/gomega"
 	"github.com/stretchr/testify/suite"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
@@ -32,16 +31,6 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 			extAuthManifest,
 			gatewayWithRouteManifest,
 		},
-		Resources: []client.Object{
-			// resources from curl manifest
-			testdefaults.CurlPod,
-			// resources from service manifest
-			basicSecureRoute, simpleSvc, simpleDeployment,
-			// extauth resources
-			extAuthSvc, extAuthExtension,
-			// deployer-generated resources
-			proxyDeployment, proxyService,
-		},
 	}
 
 	// Define test-specific TestCases
@@ -51,19 +40,11 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 				securedGatewayPolicyManifest,
 				insecureRouteManifest,
 			},
-			Resources: []client.Object{
-				gatewayAttachedTrafficPolicy,
-				insecureRoute,
-			},
 		},
 		"TestRouteTargetedExtAuthPolicy": {
 			Manifests: []string{
 				securedRouteManifest,
 				insecureRouteManifest,
-			},
-			Resources: []client.Object{
-				secureRoute, secureTrafficPolicy,
-				insecureRoute, insecureTrafficPolicy,
 			},
 		},
 	}

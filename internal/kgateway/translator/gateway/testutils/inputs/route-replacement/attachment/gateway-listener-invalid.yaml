@@ -1,3 +1,5 @@
+# Validate that listener-level invalid policy reports to listener status
+# and affects only that listener's virtual hosts.
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:
@@ -10,6 +12,13 @@ spec:
     port: 8080
     protocol: HTTP
     hostname: www.example.com
+    allowedRoutes:
+      namespaces:
+        from: All
+  - name: http-alt
+    port: 8081
+    protocol: HTTP
+    hostname: alt.example.com
     allowedRoutes:
       namespaces:
         from: All
@@ -66,4 +75,4 @@ spec:
     request:
       body:
         parseAs: AsJson
-        value: "{{ invalid_template }"  ## Verify that STRICT mode doesn't catch higher-level attachment errors.
+        value: "{{ invalid_template }"

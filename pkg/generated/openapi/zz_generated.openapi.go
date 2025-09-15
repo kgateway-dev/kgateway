@@ -7714,7 +7714,7 @@ func schema_kgateway_v2_api_v1alpha1_TrafficPolicySpec(ref common.ReferenceCallb
 					},
 					"rbac": {
 						SchemaProps: spec.SchemaProps{
-							Description: "RBAC specifies the role-based access control configuration for the policy. This defines the rules for authorization based on roles and permissions.",
+							Description: "RBAC specifies the role-based access control configuration for the policy. This defines the rules for authorization based on roles and permissions. With an Envoy-based Gateway, RBAC policies applied at different attachment points in the configuration hierarchy are not cumulative, and only the most specific policy is enforced. In Envoy, this means an RBAC policy attached to a route will override any RBAC policies applied to the gateway or listener. In contrast, an Agentgateway-based Gateway supports cumulative RBAC policies across different attachment points, such that an RBAC policy attached to a route augments policies applied to the gateway or listener without overriding them.",
 							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.RBAC"),
 						},
 					},

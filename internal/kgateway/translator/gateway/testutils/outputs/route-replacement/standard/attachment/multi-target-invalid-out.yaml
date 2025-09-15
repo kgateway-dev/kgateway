@@ -23,6 +23,10 @@ Listeners:
       typedConfig:
         '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
         httpFilters:
+        - disabled: true
+          name: transformation
+          typedConfig:
+            '@type': type.googleapis.com/envoy.api.v2.filter.http.FilterTransformations
         - name: envoy.filters.http.router
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -36,6 +40,11 @@ Listeners:
         statPrefix: http
         useRemoteAddress: true
     name: listener~8080
+  metadata:
+    filterMetadata:
+      merge.TrafficPolicy.gateway.kgateway.dev:
+        transformation:
+        - gateway.kgateway.dev/TrafficPolicy/gwtest/gateway-wide-invalid-policy
   name: listener~8080
 - address:
     socketAddress:
@@ -43,11 +52,18 @@ Listeners:
       ipv4Compat: true
       portValue: 8443
   filterChains:
-  - filters:
+  - filterChainMatch:
+      serverNames:
+      - secure.example.com
+    filters:
     - name: envoy.filters.network.http_connection_manager
       typedConfig:
         '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
         httpFilters:
+        - disabled: true
+          name: transformation
+          typedConfig:
+            '@type': type.googleapis.com/envoy.api.v2.filter.http.FilterTransformations
         - name: envoy.filters.http.router
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -57,10 +73,19 @@ Listeners:
           configSource:
             ads: {}
             resourceApiVersion: V3
-          routeConfigName: gwtest/test-listenerset/https-8443
+          routeConfigName: https
         statPrefix: http
         useRemoteAddress: true
-    name: gwtest/test-listenerset/https-8443
+    name: https
+  listenerFilters:
+  - name: envoy.filters.listener.tls_inspector
+    typedConfig:
+      '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
+  metadata:
+    filterMetadata:
+      merge.TrafficPolicy.gateway.kgateway.dev:
+        transformation:
+        - gateway.kgateway.dev/TrafficPolicy/gwtest/gateway-wide-invalid-policy
   name: listener~8443
 - address:
     socketAddress:
@@ -73,6 +98,10 @@ Listeners:
       typedConfig:
         '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
         httpFilters:
+        - disabled: true
+          name: transformation
+          typedConfig:
+            '@type': type.googleapis.com/envoy.api.v2.filter.http.FilterTransformations
         - name: envoy.filters.http.router
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -86,10 +115,45 @@ Listeners:
         statPrefix: http
         useRemoteAddress: true
     name: listener~9090
+  metadata:
+    filterMetadata:
+      merge.TrafficPolicy.gateway.kgateway.dev:
+        transformation:
+        - gateway.kgateway.dev/TrafficPolicy/gwtest/gateway-wide-invalid-policy
   name: listener~9090
+- address:
+    socketAddress:
+      address: '::'
+      ipv4Compat: true
+      portValue: 9443
+  filterChains:
+  - filters:
+    - name: envoy.filters.network.http_connection_manager
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+        httpFilters:
+        - name: envoy.filters.http.router
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+        mergeSlashes: true
+        normalizePath: true
+        rds:
+          configSource:
+            ads: {}
+            resourceApiVersion: V3
+          routeConfigName: gwtest/test-listenerset/https-additional
+        statPrefix: http
+        useRemoteAddress: true
+    name: gwtest/test-listenerset/https-additional
+  metadata:
+    filterMetadata:
+      merge.TrafficPolicy.gateway.kgateway.dev:
+        transformation:
+        - gateway.kgateway.dev/TrafficPolicy/gwtest/gateway-wide-invalid-policy
+  name: listener~9443
 Routes:
 - ignorePortInHostMatching: true
-  name: gwtest/test-listenerset/https-8443
+  name: gwtest/test-listenerset/https-additional
   virtualHosts:
   - domains:
     - '*'
@@ -103,9 +167,64 @@ Routes:
       match:
         prefix: /
 - ignorePortInHostMatching: true
-  name: listener~8080
+  metadata:
+    filterMetadata:
+      merge.TrafficPolicy.gateway.kgateway.dev:
+        transformation:
+        - gateway.kgateway.dev/TrafficPolicy/gwtest/gateway-wide-invalid-policy
+  name: https
+  typedPerFilterConfig:
+    transformation:
+      '@type': type.googleapis.com/envoy.api.v2.filter.http.RouteTransformations
+      transformations:
+      - requestMatch:
+          requestTransformation:
+            transformationTemplate:
+              body:
+                text: '{{ invalid_gateway_template }'
 - ignorePortInHostMatching: true
+  metadata:
+    filterMetadata:
+      merge.TrafficPolicy.gateway.kgateway.dev:
+        transformation:
+        - gateway.kgateway.dev/TrafficPolicy/gwtest/gateway-wide-invalid-policy
+  name: listener~8080
+  typedPerFilterConfig:
+    transformation:
+      '@type': type.googleapis.com/envoy.api.v2.filter.http.RouteTransformations
+      transformations:
+      - requestMatch:
+          requestTransformation:
+            transformationTemplate:
+              body:
+                text: '{{ invalid_gateway_template }'
+  virtualHosts:
+  - domains:
+    - www.example.com
+    name: listener~8080~www_example_com
+    routes:
+    - match:
+        pathSeparatedPrefix: /gateway
+      name: listener~8080~www_example_com-route-0-httproute-test-route-gateway-gwtest-0-0-matcher-0
+      route:
+        cluster: kube_gwtest_example-svc_80
+        clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+- ignorePortInHostMatching: true
+  metadata:
+    filterMetadata:
+      merge.TrafficPolicy.gateway.kgateway.dev:
+        transformation:
+        - gateway.kgateway.dev/TrafficPolicy/gwtest/gateway-wide-invalid-policy
   name: listener~9090
+  typedPerFilterConfig:
+    transformation:
+      '@type': type.googleapis.com/envoy.api.v2.filter.http.RouteTransformations
+      transformations:
+      - requestMatch:
+          requestTransformation:
+            transformationTemplate:
+              body:
+                text: '{{ invalid_gateway_template }'
   virtualHosts:
   - domains:
     - www.example.com
@@ -128,9 +247,7 @@ Statuses:
         status: "True"
         type: AttachedListenerSets
       - lastTransitionTime: null
-        message: 'invalid xds configuration: error initializing configuration '''':
-          Failed to parse request template: Failed to parse body template [inja.exception.parser_error]
-          (at 1:21) unexpected ''}'''
+        message: 'ai: field invalid_object contains invalid JSON string: "model":"gpt-4"}'
         reason: Invalid
         status: "False"
         type: Accepted
@@ -140,6 +257,34 @@ Statuses:
         status: "True"
         type: Programmed
       listeners:
+      - attachedRoutes: 1
+        conditions:
+        - lastTransitionTime: null
+          message: Listener is accepted
+          reason: Accepted
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Listener does not have conflicts
+          reason: NoConflicts
+          status: "False"
+          type: Conflicted
+        - lastTransitionTime: null
+          message: Listener has valid refs
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Listener is programmed
+          reason: Programmed
+          status: "True"
+          type: Programmed
+        name: http
+        supportedKinds:
+        - group: gateway.networking.k8s.io
+          kind: HTTPRoute
+        - group: gateway.networking.k8s.io
+          kind: GRPCRoute
       - attachedRoutes: 0
         conditions:
         - lastTransitionTime: null
@@ -162,14 +307,30 @@ Statuses:
           reason: Programmed
           status: "True"
           type: Programmed
-        name: http-8080
+        name: https
         supportedKinds:
         - group: gateway.networking.k8s.io
           kind: HTTPRoute
-        - group: gateway.networking.k8s.io
-          kind: GRPCRoute
   httpRoutes:
-    gwtest/test-route:
+    gwtest/test-route-gateway:
+      parents:
+      - conditions:
+        - lastTransitionTime: null
+          message: Route is accepted
+          reason: Accepted
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Route has valid refs
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
+        controllerName: kgateway
+        parentRef:
+          group: gateway.networking.k8s.io
+          kind: Gateway
+          name: example-gateway
+    gwtest/test-route-xlistenerset:
       parents:
       - conditions:
         - lastTransitionTime: null
@@ -204,9 +365,7 @@ Statuses:
       - attachedRoutes: 1
         conditions:
         - lastTransitionTime: null
-          message: 'invalid xds configuration: error initializing configuration '''':
-            Failed to parse request template: Failed to parse body template [inja.exception.parser_error]
-            (at 1:21) unexpected ''}'''
+          message: 'ai: field invalid_object contains invalid JSON string: "model":"gpt-4"}'
           reason: ListenerReplaced
           status: "False"
           type: Accepted
@@ -225,14 +384,14 @@ Statuses:
           reason: Programmed
           status: "True"
           type: Programmed
-        name: http-9090
+        name: http-additional
         port: 9090
         supportedKinds:
         - group: gateway.networking.k8s.io
           kind: HTTPRoute
         - group: gateway.networking.k8s.io
           kind: GRPCRoute
-      - attachedRoutes: 1
+      - attachedRoutes: 0
         conditions:
         - lastTransitionTime: null
           message: Listener is accepted
@@ -254,13 +413,49 @@ Statuses:
           reason: Programmed
           status: "True"
           type: Programmed
-        name: https-8443
-        port: 8443
+        name: https-additional
+        port: 9443
         supportedKinds:
         - group: gateway.networking.k8s.io
           kind: HTTPRoute
   policies:
-    TrafficPolicy/gwtest/invalid-traffic-policy:
+    TrafficPolicy/gwtest/gateway-wide-invalid-policy:
+      ancestors:
+      - ancestorRef:
+          group: gateway.networking.k8s.io
+          kind: Gateway
+          name: example-gateway
+          namespace: gwtest
+        conditions:
+        - lastTransitionTime: null
+          message: Policy accepted
+          reason: Valid
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Attached to all targets
+          reason: Attached
+          status: "True"
+          type: Attached
+        controllerName: kgateway.dev/kgateway
+      - ancestorRef:
+          group: gateway.networking.x-k8s.io
+          kind: XListenerSet
+          name: test-listenerset
+          namespace: gwtest
+        conditions:
+        - lastTransitionTime: null
+          message: Policy accepted
+          reason: Valid
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Attached to all targets
+          reason: Attached
+          status: "True"
+          type: Attached
+        controllerName: kgateway.dev/kgateway
+    TrafficPolicy/gwtest/xlistenerset-wide-invalid-policy:
       ancestors:
       - ancestorRef:
           group: gateway.networking.x-k8s.io
@@ -269,9 +464,7 @@ Statuses:
           namespace: gwtest
         conditions:
         - lastTransitionTime: null
-          message: 'invalid xds configuration: error initializing configuration '''':
-            Failed to parse request template: Failed to parse body template [inja.exception.parser_error]
-            (at 1:21) unexpected ''}'''
+          message: 'ai: field invalid_object contains invalid JSON string: "model":"gpt-4"}'
           reason: Invalid
           status: "False"
           type: Accepted
