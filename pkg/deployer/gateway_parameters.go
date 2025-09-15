@@ -7,6 +7,7 @@ import (
 	"istio.io/api/annotation"
 	"istio.io/api/label"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -133,6 +134,9 @@ func GetInMemoryGatewayParameters(name string, imageInfo *ImageInfo, gatewayClas
 func defaultAgentgatewayParameters(imageInfo *ImageInfo, omitDefaultSecurityContext bool) *v1alpha1.GatewayParameters {
 	gwp := defaultGatewayParameters(imageInfo, omitDefaultSecurityContext)
 	gwp.Spec.Kube.Agentgateway.Enabled = ptr.To(true)
+	gwp.Spec.Kube.PodTemplate.ReadinessProbe.HTTPGet.Path = "/healthz/ready"
+	gwp.Spec.Kube.PodTemplate.ReadinessProbe.HTTPGet.Port = intstr.FromInt(15021)
+	gwp.Spec.Kube.PodTemplate.GracefulShutdown.Enabled = ptr.To(true)
 	return gwp
 }
 
@@ -202,6 +206,26 @@ func defaultGatewayParameters(imageInfo *ImageInfo, omitDefaultSecurityContext b
 				},
 				Service: &v1alpha1.Service{
 					Type: (*corev1.ServiceType)(ptr.To(string(corev1.ServiceTypeLoadBalancer))),
+				},
+				PodTemplate: &v1alpha1.Pod{
+					TerminationGracePeriodSeconds: ptr.To(60),
+					GracefulShutdown: &v1alpha1.GracefulShutdownSpec{
+						Enabled:          ptr.To(true),
+						SleepTimeSeconds: ptr.To(10),
+					},
+					ReadinessProbe: &corev1.Probe{
+						ProbeHandler: corev1.ProbeHandler{
+							HTTPGet: &corev1.HTTPGetAction{
+								Path: "/ready",
+								Port: intstr.FromInt(8082),
+							},
+						},
+						InitialDelaySeconds: 5,
+						PeriodSeconds:       10,
+						TimeoutSeconds:      2,
+						FailureThreshold:    3,
+						SuccessThreshold:    1,
+					},
 				},
 				EnvoyContainer: &v1alpha1.EnvoyContainer{
 					Bootstrap: &v1alpha1.EnvoyBootstrap{
