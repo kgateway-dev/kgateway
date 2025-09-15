@@ -44,6 +44,9 @@ var (
 		"TestProvisionResourcesUpdatedWithValidParameters": {
 			Manifests: []string{gatewayWithParameters},
 		},
+		"TestMissingGatewayParameters": {
+			Manifests: []string{gatewayWithoutParameters},
+		},
 		"TestProvisionResourcesNotUpdatedWithInvalidParameters": {
 			Manifests: []string{gatewayWithParameters},
 		},
@@ -159,6 +162,58 @@ func (s *testingSuite) TestProvisionResourcesUpdatedWithValidParameters() {
 	// the GatewayParameters modification should cause the deployer to re-run and update the
 	// deployment to have 2 replicas
 	s.TestInstallation.Assertions.EventuallyReadyReplicas(s.Ctx, proxyObjectMeta, gomega.Equal(2))
+}
+
+// TestMissingGatewayParameters tests that a Gateway referencing a missing GatewayParameters
+// is not accepted, and once the GatewayParameters is created, the Gateway is accepted.
+// This is to make sure that the controller and status syncer are working properly
+// until this is fixed: https://github.com/kgateway-dev/kgateway/issues/12207
+func (s *testingSuite) TestMissingGatewayParameters() {
+	s.TestInstallation.Assertions.EventuallyReadyReplicas(s.Ctx, proxyObjectMeta, gomega.Equal(1))
+
+	// patch the Gateway to reference a missing GatewayParameters
+	gw := &gwv1.Gateway{}
+	err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, client.ObjectKey{
+		Namespace: proxyObjectMeta.Namespace,
+		Name:      proxyObjectMeta.Name,
+	}, gw)
+	s.Require().NoError(err)
+	s.patchGateway(proxyObjectMeta, func(gw *gwv1.Gateway) {
+		gw.Spec.Infrastructure = &gwv1.GatewayInfrastructure{}
+		gw.Spec.Infrastructure.ParametersRef = &gwv1.LocalParametersReference{
+			Group: "gateway.kgateway.dev",
+			Kind:  "GatewayParameters",
+			Name:  gwParamsCustomObjectMeta.Name,
+		}
+	})
+
+	// initially, the Gateway should not be accepted
+	// because the GatewayParameters is missing
+	s.TestInstallation.Assertions.EventuallyGatewayCondition(
+		s.Ctx,
+		proxyObjectMeta.Name,
+		proxyObjectMeta.Namespace,
+		gwv1.GatewayConditionAccepted,
+		metav1.ConditionFalse,
+	)
+
+	// create the missing GatewayParameters
+	s.ApplyManifests(&base.TestCase{
+		Manifests: []string{gatewayParametersCustom},
+	})
+
+	// the Gateway should be accepted once the GatewayParameters is created
+	s.TestInstallation.Assertions.EventuallyGatewayCondition(
+		s.Ctx,
+		proxyObjectMeta.Name,
+		proxyObjectMeta.Namespace,
+		gwv1.GatewayConditionAccepted,
+		metav1.ConditionTrue,
+	)
+
+	s.DeleteManifests(&base.TestCase{
+		Manifests: []string{gatewayParametersCustom},
+	})
 }
 
 func (s *testingSuite) TestProvisionResourcesNotUpdatedWithInvalidParameters() {
