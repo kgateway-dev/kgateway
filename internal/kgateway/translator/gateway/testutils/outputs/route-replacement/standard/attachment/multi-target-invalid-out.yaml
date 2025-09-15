@@ -247,9 +247,9 @@ Statuses:
         status: "True"
         type: AttachedListenerSets
       - lastTransitionTime: null
-        message: 'Listeners skipped because they have no routes: https'
-        reason: ListenersNotValid
-        status: "True"
+        message: 'ai: field invalid_object contains invalid JSON string: "model":"gpt-4"}'
+        reason: Invalid
+        status: "False"
         type: Accepted
       - lastTransitionTime: null
         message: Gateway is programmed

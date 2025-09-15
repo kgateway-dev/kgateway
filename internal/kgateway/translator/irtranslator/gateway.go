@@ -61,19 +61,17 @@ func (t *Translator) Translate(ctx context.Context, gw ir.GatewayIR, reporter sd
 	for _, l := range gw.Listeners {
 		// TODO: propagate errors so we can allow the retain last config mode
 		outListener, routes := t.ComputeListener(ctx, pass, gw, l, reporter)
-		logger.Info("DEBUG: Listener computed", "gatewayName", gw.SourceObject.GetName(), "listenerName", l.Name, "routes", len(routes))
-		if len(routes) > 0 {
-			logger.Info("DEBUG: Listener has routes", "gatewayName", gw.SourceObject.GetName(), "listenerName", l.Name, "routes", routes[0].GetName())
-		}
-		// Envoy rejects listeners with no filter chains; skip adding listeners with no routes (HTTP listeners get an HCM filter automatically, but we will still skip)
+
+		// Envoy rejects listeners with no filter chains; skip adding listeners with no filter chains
+		// HTTP listeners get an HCM filter automatically so will not cause configuration errors, but we still want to add messaging.
+		// HTTP listeners will not be skipped if they have no routes, as it makes translation testing simpler.
 		if outListener == nil || !hasAttachedRoutes(routes) {
 			// Report that listener is not programmed due to no filter chains
 			// Need to use the original listener name to report the condition
-			logger.Info("DEBUG: Listener has no routes, skipping and reporting", "gatewayName", gw.SourceObject.GetName(), "listenerName", l.Name)
 			originalListenerName := findOriginalListenerName(gw, reporter, l)
 			listenerReporter := getReporterForFilterChain(gw, reporter, originalListenerName)
 
-			setListenerReport := func() {
+			setListenerCondition := func() {
 				listenerReporter.SetCondition(sdkreporter.ListenerCondition{
 					Type:    gwv1.ListenerConditionProgrammed,
 					Status:  metav1.ConditionTrue,
@@ -87,11 +85,11 @@ func (t *Translator) Translate(ctx context.Context, gw ir.GatewayIR, reporter sd
 			if lr, ok := listenerReporter.(*reports.ListenerReport); ok {
 				existingCondition := meta.FindStatusCondition(lr.Status.Conditions, string(gwv1.ListenerConditionProgrammed))
 				if existingCondition == nil {
-					setListenerReport()
+					setListenerCondition()
 				}
 			} else {
 				// Fallback to always setting the condition if we can't access the underlying type
-				setListenerReport()
+				setListenerCondition()
 			}
 
 			// Collect the names of the listeners with no routes so they can all be reported at once on the gateway
@@ -105,10 +103,8 @@ func (t *Translator) Translate(ctx context.Context, gw ir.GatewayIR, reporter sd
 		res.Routes = append(res.Routes, routes...)
 	}
 
-	// Report on the gateway if some listeners were skipped because they have no routes
-	logger.Info("DEBUG: Reporting skipped listeners", "gatewayName", gw.SourceObject.GetName(), "skipped_listeners", noRouteListeners)
-
 	if len(noRouteListeners) > 0 {
+		sort.Strings(noRouteListeners) // Sort the listener names to ensure consistent ordering
 		gwreporter := reporter.Gateway(gw.SourceObject.Obj)
 
 		// Different message for all listeners vs some listeners
@@ -116,12 +112,26 @@ func (t *Translator) Translate(ctx context.Context, gw ir.GatewayIR, reporter sd
 		if len(noRouteListeners) == len(gw.Listeners) {
 			message = fmt.Sprintf(gatewayAllListenersNoRoutesMessage, strings.Join(noRouteListeners, ", "))
 		}
-		gwreporter.SetCondition(sdkreporter.GatewayCondition{
-			Type:    gwv1.GatewayConditionAccepted,
-			Status:  metav1.ConditionTrue,
-			Reason:  gwv1.GatewayReasonListenersNotValid,
-			Message: message,
-		})
+
+		setGatewayCondition := func() {
+			gwreporter.SetCondition(sdkreporter.GatewayCondition{
+				Type:    gwv1.GatewayConditionAccepted,
+				Status:  metav1.ConditionTrue,
+				Reason:  gwv1.GatewayReasonListenersNotValid,
+				Message: message,
+			})
+		}
+
+		// Check if there's already a condition of the same type before setting it. This avoids overwriting the condition if it already exists.
+		if gr, ok := gwreporter.(*reports.GatewayReport); ok {
+			existingCondition := meta.FindStatusCondition(gr.GetConditions(), string(gwv1.GatewayConditionAccepted))
+			if existingCondition == nil {
+				setGatewayCondition()
+			}
+		} else {
+			// Fallback to always setting the condition if we can't access the underlying type
+			setGatewayCondition()
+		}
 	}
 
 	for _, c := range pass {
