@@ -100,15 +100,30 @@ func (r *gatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (re
 		// if we fail to either reference a valid GatewayParameters or
 		// the GatewayParameters configuration leads to issues building the
 		// objects, we want to set the status to InvalidParameters.
-		original := gw.DeepCopy()
-		meta.SetStatusCondition(&gw.Status.Conditions, metav1.Condition{
+		condition := metav1.Condition{
 			Type:               string(api.GatewayConditionAccepted),
 			Status:             metav1.ConditionFalse,
 			ObservedGeneration: gw.Generation,
 			Reason:             string(api.GatewayReasonInvalidParameters),
 			Message:            err.Error(),
-		})
-		return ctrl.Result{}, r.cli.Status().Patch(ctx, &gw, client.MergeFrom(original))
+		}
+		if statusErr := r.updateGatewayStatusWithRetry(ctx, &gw, condition); statusErr != nil {
+			log.Error(statusErr, "failed to update Gateway status after retries")
+			return ctrl.Result{}, statusErr
+		}
+		return ctrl.Result{}, err
+	} else {
+		condition := metav1.Condition{
+			Type:               string(api.GatewayConditionAccepted),
+			Status:             metav1.ConditionTrue,
+			ObservedGeneration: gw.Generation,
+			Reason:             string(api.GatewayReasonAccepted),
+			Message:            "Gateway is accepted",
+		}
+		if statusErr := r.updateGatewayStatusWithRetry(ctx, &gw, condition); statusErr != nil {
+			log.Error(statusErr, "failed to update Gateway status after retries")
+			return ctrl.Result{}, statusErr
+		}
 	}
 	objs = r.deployer.SetNamespaceAndOwner(&gw, objs)
 
@@ -264,4 +279,19 @@ func convertIngressAddr(ing corev1.LoadBalancerIngress) (api.GatewayStatusAddres
 		}, true
 	}
 	return api.GatewayStatusAddress{}, false
+}
+
+// updateGatewayStatusWithRetry attempts to update the Gateway status with retry logic
+// to handle transient failures when updating the status subresource
+func (r *gatewayReconciler) updateGatewayStatusWithRetry(ctx context.Context, gw *api.Gateway, condition metav1.Condition) error {
+	return utilretry.RetryOnConflict(utilretry.DefaultRetry, func() error {
+		// Get the latest version of the Gateway to avoid conflicts
+		latest := &api.Gateway{}
+		if err := r.cli.Get(ctx, client.ObjectKeyFromObject(gw), latest); err != nil {
+			return err
+		}
+		original := latest.DeepCopy()
+		meta.SetStatusCondition(&latest.Status.Conditions, condition)
+		return r.cli.Status().Patch(ctx, latest, client.MergeFrom(original))
+	})
 }

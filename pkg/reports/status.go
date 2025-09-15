@@ -302,6 +302,7 @@ func parentString(ref gwv1.ParentReference) string {
 func addMissingGatewayConditions(gwReport *GatewayReport, gw *gwv1.Gateway) {
 	// If the existing Gateway status contains an Accepted=False with Reason=InvalidParameters,
 	// propagate that into the reporter so it persists and is considered owned by the reporter.
+	// HACK: This is because both the controller and reporter set Accepted status.
 	if existing := meta.FindStatusCondition(gw.Status.Conditions, string(gwv1.GatewayConditionAccepted)); existing != nil &&
 		existing.Status == metav1.ConditionFalse &&
 		existing.Reason == string(gwv1.GatewayReasonInvalidParameters) {
