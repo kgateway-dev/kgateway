@@ -88,8 +88,8 @@ Statuses:
         status: Unknown
         type: AttachedListenerSets
       - lastTransitionTime: null
-        message: Gateway is accepted
-        reason: Accepted
+        message: 'All Listeners skipped because they have no routes: http'
+        reason: ListenersNotValid
         status: "True"
         type: Accepted
       - lastTransitionTime: null
@@ -100,6 +100,11 @@ Statuses:
       listeners:
       - attachedRoutes: 0
         conditions:
+        - lastTransitionTime: null
+          message: Listener has no routes
+          reason: Programmed
+          status: "True"
+          type: Programmed
         - lastTransitionTime: null
           message: Listener is accepted
           reason: Accepted
@@ -115,11 +120,6 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
-        - lastTransitionTime: null
-          message: Listener is programmed
-          reason: Programmed
-          status: "True"
-          type: Programmed
         name: http
         supportedKinds:
         - group: gateway.networking.k8s.io

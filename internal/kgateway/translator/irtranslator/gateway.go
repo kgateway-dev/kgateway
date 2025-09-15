@@ -17,6 +17,8 @@ import (
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	"k8s.io/apimachinery/pkg/api/meta"
+
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/query"
@@ -26,13 +28,12 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 	"github.com/kgateway-dev/kgateway/v2/pkg/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
-	"k8s.io/apimachinery/pkg/api/meta"
 )
 
 var logger = logging.New("translator/ir")
 
 const (
-	listenerNoRoutesReason             = "Listener has no routes"
+	listenerNoRoutesMessage            = "Listener has no routes"
 	gatewayListenersNoRoutesMessage    = "Listeners skipped because they have no routes: %s"
 	gatewayAllListenersNoRoutesMessage = "All Listeners skipped because they have no routes: %s"
 )
@@ -60,15 +61,15 @@ func (t *Translator) Translate(ctx context.Context, gw ir.GatewayIR, reporter sd
 	for _, l := range gw.Listeners {
 		// TODO: propagate errors so we can allow the retain last config mode
 		outListener, routes := t.ComputeListener(ctx, pass, gw, l, reporter)
-		logger.Info("DEBUG: Listener computed", "gateway name", gw.SourceObject.GetName(), "listener_name", l.Name, "routes", len(routes))
+		logger.Info("DEBUG: Listener computed", "gatewayName", gw.SourceObject.GetName(), "listenerName", l.Name, "routes", len(routes))
 		if len(routes) > 0 {
-			logger.Info("DEBUG: Listener has routes", "gateway name", gw.SourceObject.GetName(), "listener_name", l.Name, "routes", routes[0].GetName())
+			logger.Info("DEBUG: Listener has routes", "gatewayName", gw.SourceObject.GetName(), "listenerName", l.Name, "routes", routes[0].GetName())
 		}
 		// Envoy rejects listeners with no filter chains; skip adding listeners with no routes (HTTP listeners get an HCM filter automatically, but we will still skip)
 		if outListener == nil || !hasAttachedRoutes(routes) {
 			// Report that listener is not programmed due to no filter chains
 			// Need to use the original listener name to report the condition
-			logger.Info("DEBUG: Listener has no routes, skipping and reporting", "gateway name", gw.SourceObject.GetName(), "listener_name", l.Name)
+			logger.Info("DEBUG: Listener has no routes, skipping and reporting", "gatewayName", gw.SourceObject.GetName(), "listenerName", l.Name)
 			originalListenerName := findOriginalListenerName(gw, reporter, l)
 			listenerReporter := getReporterForFilterChain(gw, reporter, originalListenerName)
 
@@ -77,7 +78,7 @@ func (t *Translator) Translate(ctx context.Context, gw ir.GatewayIR, reporter sd
 					Type:    gwv1.ListenerConditionProgrammed,
 					Status:  metav1.ConditionTrue,
 					Reason:  gwv1.ListenerReasonProgrammed,
-					Message: listenerNoRoutesReason,
+					Message: listenerNoRoutesMessage,
 				})
 			}
 
@@ -105,27 +106,22 @@ func (t *Translator) Translate(ctx context.Context, gw ir.GatewayIR, reporter sd
 	}
 
 	// Report on the gateway if some listeners were skipped because they have no routes
-	logger.Info("DEBUG: Reporting skipped listeners", "gateway name", gw.SourceObject.GetName(), "skipped_listeners", noRouteListeners)
+	logger.Info("DEBUG: Reporting skipped listeners", "gatewayName", gw.SourceObject.GetName(), "skipped_listeners", noRouteListeners)
 
 	if len(noRouteListeners) > 0 {
 		gwreporter := reporter.Gateway(gw.SourceObject.Obj)
 
-		// Check if it's all the listeners
+		// Different message for all listeners vs some listeners
+		message := fmt.Sprintf(gatewayListenersNoRoutesMessage, strings.Join(noRouteListeners, ", "))
 		if len(noRouteListeners) == len(gw.Listeners) {
-			gwreporter.SetCondition(sdkreporter.GatewayCondition{
-				Type:    gwv1.GatewayConditionAccepted,
-				Status:  metav1.ConditionTrue, //metav1.ConditionFalse,
-				Reason:  gwv1.GatewayReasonListenersNotValid,
-				Message: fmt.Sprintf(gatewayAllListenersNoRoutesMessage, strings.Join(noRouteListeners, ", ")),
-			})
-		} else {
-			gwreporter.SetCondition(sdkreporter.GatewayCondition{
-				Type:    gwv1.GatewayConditionAccepted,
-				Status:  metav1.ConditionTrue,
-				Reason:  gwv1.GatewayReasonListenersNotValid,
-				Message: fmt.Sprintf(gatewayListenersNoRoutesMessage, strings.Join(noRouteListeners, ", ")),
-			})
+			message = fmt.Sprintf(gatewayAllListenersNoRoutesMessage, strings.Join(noRouteListeners, ", "))
 		}
+		gwreporter.SetCondition(sdkreporter.GatewayCondition{
+			Type:    gwv1.GatewayConditionAccepted,
+			Status:  metav1.ConditionTrue,
+			Reason:  gwv1.GatewayReasonListenersNotValid,
+			Message: message,
+		})
 	}
 
 	for _, c := range pass {

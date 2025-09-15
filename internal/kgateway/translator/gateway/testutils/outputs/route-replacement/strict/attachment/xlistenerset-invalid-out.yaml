@@ -128,11 +128,9 @@ Statuses:
         status: "True"
         type: AttachedListenerSets
       - lastTransitionTime: null
-        message: 'invalid xds configuration: error initializing configuration '''':
-          Failed to parse request template: Failed to parse body template [inja.exception.parser_error]
-          (at 1:21) unexpected ''}'''
-        reason: Invalid
-        status: "False"
+        message: 'Listeners skipped because they have no routes: http-8080'
+        reason: ListenersNotValid
+        status: "True"
         type: Accepted
       - lastTransitionTime: null
         message: Gateway is programmed
@@ -142,6 +140,11 @@ Statuses:
       listeners:
       - attachedRoutes: 0
         conditions:
+        - lastTransitionTime: null
+          message: Listener has no routes
+          reason: Programmed
+          status: "True"
+          type: Programmed
         - lastTransitionTime: null
           message: Listener is accepted
           reason: Accepted
@@ -157,11 +160,6 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
-        - lastTransitionTime: null
-          message: Listener is programmed
-          reason: Programmed
-          status: "True"
-          type: Programmed
         name: http-8080
         supportedKinds:
         - group: gateway.networking.k8s.io

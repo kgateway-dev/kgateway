@@ -247,9 +247,9 @@ Statuses:
         status: "True"
         type: AttachedListenerSets
       - lastTransitionTime: null
-        message: 'ai: field invalid_object contains invalid JSON string: "model":"gpt-4"}'
-        reason: Invalid
-        status: "False"
+        message: 'Listeners skipped because they have no routes: https'
+        reason: ListenersNotValid
+        status: "True"
         type: Accepted
       - lastTransitionTime: null
         message: Gateway is programmed
@@ -288,6 +288,11 @@ Statuses:
       - attachedRoutes: 0
         conditions:
         - lastTransitionTime: null
+          message: Listener has no routes
+          reason: Programmed
+          status: "True"
+          type: Programmed
+        - lastTransitionTime: null
           message: Listener is accepted
           reason: Accepted
           status: "True"
@@ -302,11 +307,6 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
-        - lastTransitionTime: null
-          message: Listener is programmed
-          reason: Programmed
-          status: "True"
-          type: Programmed
         name: https
         supportedKinds:
         - group: gateway.networking.k8s.io

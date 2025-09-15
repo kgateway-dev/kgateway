@@ -41,7 +41,7 @@ Statuses:
         status: Unknown
         type: AttachedListenerSets
       - lastTransitionTime: null
-        message: 'Listeners skipped because they have no filter chains: tls, tcp'
+        message: 'All Listeners skipped because they have no routes: tcp, tls, http'
         reason: ListenersNotValid
         status: "True"
         type: Accepted
@@ -53,6 +53,11 @@ Statuses:
       listeners:
       - attachedRoutes: 0
         conditions:
+        - lastTransitionTime: null
+          message: Listener has no routes
+          reason: Programmed
+          status: "True"
+          type: Programmed
         - lastTransitionTime: null
           message: Listener is accepted
           reason: Accepted
@@ -68,11 +73,6 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
-        - lastTransitionTime: null
-          message: Listener is programmed
-          reason: Programmed
-          status: "True"
-          type: Programmed
         name: http
         supportedKinds:
         - group: gateway.networking.k8s.io
@@ -82,9 +82,9 @@ Statuses:
       - attachedRoutes: 0
         conditions:
         - lastTransitionTime: null
-          message: Listener has no filter chains and cannot be programmed
-          reason: Pending
-          status: "False"
+          message: Listener has no routes
+          reason: Programmed
+          status: "True"
           type: Programmed
         - lastTransitionTime: null
           message: Listener is accepted
@@ -108,9 +108,9 @@ Statuses:
       - attachedRoutes: 0
         conditions:
         - lastTransitionTime: null
-          message: Listener has no filter chains and cannot be programmed
-          reason: Pending
-          status: "False"
+          message: Listener has no routes
+          reason: Programmed
+          status: "True"
           type: Programmed
         - lastTransitionTime: null
           message: Listener is accepted
