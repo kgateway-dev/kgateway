@@ -57,7 +57,7 @@ func (t *Translator) Translate(ctx context.Context, gw ir.GatewayIR, reporter sd
 	pass := t.newPass(reporter)
 	var res TranslationResult
 
-	var noRouteListeners []string
+	var noRouteListeners []string // Slice of listener names that have no routes, used for reporting on gateway status
 	for _, l := range gw.Listeners {
 		// TODO: propagate errors so we can allow the retain last config mode
 		outListener, routes := t.ComputeListener(ctx, pass, gw, l, reporter)
@@ -94,7 +94,8 @@ func (t *Translator) Translate(ctx context.Context, gw ir.GatewayIR, reporter sd
 
 			// Collect the names of the listeners with no routes so they can all be reported at once on the gateway
 			noRouteListeners = append(noRouteListeners, originalListenerName)
-			// Only skip TCP listeners, skipping HTTP listeners breaks conformance tests (??)
+
+			// Only skip listeners that will cause Envoy errors (TCP listeners). Including HTTP listeners makes translation testing simpler.
 			if outListener == nil || len(outListener.GetFilterChains()) == 0 {
 				continue
 			}
