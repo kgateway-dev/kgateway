@@ -30,8 +30,9 @@ import (
 var logger = logging.New("translator/ir")
 
 const (
-	listenerNoRoutesReason          = "Listener has no routes and cannot be programmed"
-	gatewayListenersNoRoutesMessage = "Listeners skipped because they have no routes: %s"
+	listenerNoRoutesReason             = "Listener has no routes and cannot be programmed"
+	gatewayListenersNoRoutesMessage    = "Listeners skipped because they have no routes: %s"
+	gatewayAllListenersNoRoutesMessage = "All Listeners skipped because they have no routes: %s"
 )
 
 type Translator struct {
@@ -70,8 +71,8 @@ func (t *Translator) Translate(ctx context.Context, gw ir.GatewayIR, reporter sd
 			listenerReporter := getReporterForFilterChain(gw, reporter, originalListenerName)
 			listenerReporter.SetCondition(sdkreporter.ListenerCondition{
 				Type:    gwv1.ListenerConditionProgrammed,
-				Status:  metav1.ConditionFalse,
-				Reason:  gwv1.ListenerReasonPending,
+				Status:  metav1.ConditionTrue,          //metav1.ConditionFalse,
+				Reason:  gwv1.ListenerReasonProgrammed, //gwv1.ListenerReasonPending,
 				Message: listenerNoRoutesReason,
 			})
 
@@ -86,14 +87,26 @@ func (t *Translator) Translate(ctx context.Context, gw ir.GatewayIR, reporter sd
 
 	// Report on the gateway if some listeners were skipped because they have no routes
 	logger.Info("DEBUG: Reporting skipped listeners", "gateway name", gw.SourceObject.GetName(), "skipped_listeners", skippedListeners)
+
 	if len(skippedListeners) > 0 {
 		gwreporter := reporter.Gateway(gw.SourceObject.Obj)
-		gwreporter.SetCondition(sdkreporter.GatewayCondition{
-			Type:    gwv1.GatewayConditionAccepted,
-			Status:  metav1.ConditionTrue,
-			Reason:  gwv1.GatewayReasonListenersNotValid,
-			Message: fmt.Sprintf(gatewayListenersNoRoutesMessage, strings.Join(skippedListeners, ", ")),
-		})
+
+		// Check if it's all the listeners
+		if len(skippedListeners) == len(gw.Listeners) {
+			gwreporter.SetCondition(sdkreporter.GatewayCondition{
+				Type:    gwv1.GatewayConditionAccepted,
+				Status:  metav1.ConditionFalse,
+				Reason:  gwv1.GatewayReasonListenersNotValid,
+				Message: fmt.Sprintf(gatewayAllListenersNoRoutesMessage, strings.Join(skippedListeners, ", ")),
+			})
+		} else {
+			gwreporter.SetCondition(sdkreporter.GatewayCondition{
+				Type:    gwv1.GatewayConditionAccepted,
+				Status:  metav1.ConditionTrue,
+				Reason:  gwv1.GatewayReasonListenersNotValid,
+				Message: fmt.Sprintf(gatewayListenersNoRoutesMessage, strings.Join(skippedListeners, ", ")),
+			})
+		}
 	}
 
 	for _, c := range pass {
@@ -296,6 +309,11 @@ func hasAttachedRoutes(lis ir.ListenerIR) bool {
 	// Count any route objects that reference this listener, regardless of backend validity
 	// This matches the status reporting logic
 
+	// Check if any TCP filter chains exist (they're only created when TCPRoutes are attached)
+	if len(lis.TcpFilterChain) > 0 {
+		return true
+	}
+
 	// Check if any HTTP filter chains have virtual hosts with rules
 	for _, hfc := range lis.HttpFilterChain {
 		for _, vhost := range hfc.Vhosts {
@@ -304,11 +322,6 @@ func hasAttachedRoutes(lis ir.ListenerIR) bool {
 				return true
 			}
 		}
-	}
-
-	// Check if any TCP filter chains exist (they're only created when TCPRoutes are attached)
-	if len(lis.TcpFilterChain) > 0 {
-		return true
 	}
 
 	return false
