@@ -20,11 +20,13 @@ import (
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/query"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	kgwwellknown "github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	sdkreporter "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
+	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 	"github.com/kgateway-dev/kgateway/v2/pkg/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
+	"k8s.io/apimachinery/pkg/api/meta"
 )
 
 var logger = logging.New("translator/ir")
@@ -54,7 +56,7 @@ func (t *Translator) Translate(ctx context.Context, gw ir.GatewayIR, reporter sd
 	pass := t.newPass(reporter)
 	var res TranslationResult
 
-	var skippedListeners []string
+	var noRouteListeners []string
 	for _, l := range gw.Listeners {
 		// TODO: propagate errors so we can allow the retain last config mode
 		outListener, routes := t.ComputeListener(ctx, pass, gw, l, reporter)
@@ -63,21 +65,36 @@ func (t *Translator) Translate(ctx context.Context, gw ir.GatewayIR, reporter sd
 			logger.Info("DEBUG: Listener has routes", "gateway name", gw.SourceObject.GetName(), "listener_name", l.Name, "routes", routes[0].GetName())
 		}
 		// Envoy rejects listeners with no filter chains; skip adding listeners with no routes (HTTP listeners get an HCM filter automatically, but we will still skip)
-		if outListener == nil || !hasAttachedRoutes(l) {
+		if outListener == nil || !hasAttachedRoutes(routes) {
 			// Report that listener is not programmed due to no filter chains
 			// Need to use the original listener name to report the condition
 			logger.Info("DEBUG: Listener has no routes, skipping and reporting", "gateway name", gw.SourceObject.GetName(), "listener_name", l.Name)
 			originalListenerName := findOriginalListenerName(gw, reporter, l)
 			listenerReporter := getReporterForFilterChain(gw, reporter, originalListenerName)
-			listenerReporter.SetCondition(sdkreporter.ListenerCondition{
-				Type:    gwv1.ListenerConditionProgrammed,
-				Status:  metav1.ConditionTrue,          //metav1.ConditionFalse,
-				Reason:  gwv1.ListenerReasonProgrammed, //gwv1.ListenerReasonPending,
-				Message: listenerNoRoutesReason,
-			})
 
-			// Collect the names of the skipped listeners so they can all be reported at once on the gateway
-			skippedListeners = append(skippedListeners, originalListenerName)
+			setListenerReport := func() {
+				listenerReporter.SetCondition(sdkreporter.ListenerCondition{
+					Type:    gwv1.ListenerConditionProgrammed,
+					Status:  metav1.ConditionTrue,
+					Reason:  gwv1.ListenerReasonProgrammed,
+					Message: listenerNoRoutesReason,
+				})
+			}
+
+			// Set the programmed condition to true
+			// Check if there's already a condition of the same type before setting it. This avoids overwriting the condition if it already exists.
+			if lr, ok := listenerReporter.(*reports.ListenerReport); ok {
+				existingCondition := meta.FindStatusCondition(lr.Status.Conditions, string(gwv1.ListenerConditionProgrammed))
+				if existingCondition == nil {
+					setListenerReport()
+				}
+			} else {
+				// Fallback to always setting the condition if we can't access the underlying type
+				setListenerReport()
+			}
+
+			// Collect the names of the listeners with no routes so they can all be reported at once on the gateway
+			noRouteListeners = append(noRouteListeners, originalListenerName)
 			// Only skip TCP listeners, skipping HTTP listeners breaks conformance tests (??)
 			if outListener == nil || len(outListener.GetFilterChains()) == 0 {
 				continue
@@ -88,25 +105,25 @@ func (t *Translator) Translate(ctx context.Context, gw ir.GatewayIR, reporter sd
 	}
 
 	// Report on the gateway if some listeners were skipped because they have no routes
-	logger.Info("DEBUG: Reporting skipped listeners", "gateway name", gw.SourceObject.GetName(), "skipped_listeners", skippedListeners)
+	logger.Info("DEBUG: Reporting skipped listeners", "gateway name", gw.SourceObject.GetName(), "skipped_listeners", noRouteListeners)
 
-	if len(skippedListeners) > 0 {
+	if len(noRouteListeners) > 0 {
 		gwreporter := reporter.Gateway(gw.SourceObject.Obj)
 
 		// Check if it's all the listeners
-		if len(skippedListeners) == len(gw.Listeners) {
+		if len(noRouteListeners) == len(gw.Listeners) {
 			gwreporter.SetCondition(sdkreporter.GatewayCondition{
 				Type:    gwv1.GatewayConditionAccepted,
 				Status:  metav1.ConditionTrue, //metav1.ConditionFalse,
 				Reason:  gwv1.GatewayReasonListenersNotValid,
-				Message: fmt.Sprintf(gatewayAllListenersNoRoutesMessage, strings.Join(skippedListeners, ", ")),
+				Message: fmt.Sprintf(gatewayAllListenersNoRoutesMessage, strings.Join(noRouteListeners, ", ")),
 			})
 		} else {
 			gwreporter.SetCondition(sdkreporter.GatewayCondition{
 				Type:    gwv1.GatewayConditionAccepted,
 				Status:  metav1.ConditionTrue,
 				Reason:  gwv1.GatewayReasonListenersNotValid,
-				Message: fmt.Sprintf(gatewayListenersNoRoutesMessage, strings.Join(skippedListeners, ", ")),
+				Message: fmt.Sprintf(gatewayListenersNoRoutesMessage, strings.Join(noRouteListeners, ", ")),
 			})
 		}
 	}
@@ -267,8 +284,8 @@ func (t *Translator) runListenerPlugins(
 			pctx := &ir.ListenerContext{
 				Policy: pol.PolicyIr,
 				PolicyAncestorRef: gwv1.ParentReference{
-					Group:     ptr.To(gwv1.Group(wellknown.GatewayGVK.Group)),
-					Kind:      ptr.To(gwv1.Kind(wellknown.GatewayGVK.Kind)),
+					Group:     ptr.To(gwv1.Group(kgwwellknown.GatewayGVK.Group)),
+					Kind:      ptr.To(gwv1.Kind(kgwwellknown.GatewayGVK.Kind)),
 					Namespace: ptr.To(gwv1.Namespace(gw.SourceObject.GetNamespace())),
 					Name:      gwv1.ObjectName(gw.SourceObject.GetName()),
 				},
@@ -307,20 +324,12 @@ type TranslationPass struct {
 	MergePolicies func(policies []ir.PolicyAtt) ir.PolicyAtt
 }
 
-func hasAttachedRoutes(lis ir.ListenerIR) bool {
-	// Count any route objects that reference this listener, regardless of backend validity
-	// This matches the status reporting logic
-
-	// Check if any TCP filter chains exist (they're only created when TCPRoutes are attached)
-	if len(lis.TcpFilterChain) > 0 {
-		return true
-	}
-
-	// Check if any HTTP filter chains have virtual hosts with rules
-	for _, hfc := range lis.HttpFilterChain {
-		for _, vhost := range hfc.Vhosts {
-			if len(vhost.Rules) > 0 {
-				// Rules exist, meaning routes were attached (even if backends are invalid)
+func hasAttachedRoutes(routes []*envoyroutev3.RouteConfiguration) bool {
+	// Check if any route configurations have virtual hosts with actual routes
+	for _, routeConfig := range routes {
+		for _, vhost := range routeConfig.GetVirtualHosts() {
+			if len(vhost.GetRoutes()) > 0 {
+				// Routes exist, meaning routes were attached
 				return true
 			}
 		}
