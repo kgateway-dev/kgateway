@@ -8,11 +8,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
-	gwv1a3 "sigs.k8s.io/gateway-api/apis/v1alpha3"
-	gwv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
 	testmatchers "github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 
@@ -49,89 +45,6 @@ var (
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "httpbin",
 			Namespace: "httpbin",
-		},
-	}
-
-	// Resources from setup-nginx-mtls.yml
-	nginxNamespace = &corev1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "nginx",
-		},
-	}
-	nginxService = &corev1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "nginx",
-			Namespace: "nginx",
-		},
-	}
-	nginxConfigMap = &corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "nginx-conf",
-			Namespace: "nginx",
-		},
-	}
-
-	// Resources from nginx-backend-route.yaml
-	gateway = &gwv1.Gateway{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "gw",
-			Namespace: "default",
-		},
-	}
-	nginxRoute = &gwv1beta1.HTTPRoute{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "nginx-route",
-			Namespace: "nginx",
-		},
-	}
-	nginxBackend = &v1alpha1.Backend{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "nginx-backend",
-			Namespace: "nginx",
-		},
-	}
-	nginxRouteSimple = &gwv1beta1.HTTPRoute{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "nginx-route-simple",
-			Namespace: "nginx",
-		},
-	}
-	nginxBackendSimple = &v1alpha1.Backend{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "nginx-backend-simple",
-			Namespace: "nginx",
-		},
-	}
-	nginxRouteMtls = &gwv1beta1.HTTPRoute{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "nginx-route-mtls",
-			Namespace: "nginx",
-		},
-	}
-	nginxBackendMtls = &v1alpha1.Backend{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "nginx-backend-mtls",
-			Namespace: "nginx",
-		},
-	}
-	nginxTlsSecret = &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "nginx-tls",
-			Namespace: "nginx",
-		},
-	}
-
-	backendBcpPolicy = &v1alpha1.BackendConfigPolicy{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "backend-tls-policy",
-			Namespace: "nginx",
-		},
-	}
-
-	backendBtpPolicy = &gwv1a3.BackendTLSPolicy{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "backend-tls-policy",
-			Namespace: "nginx",
 		},
 	}
 

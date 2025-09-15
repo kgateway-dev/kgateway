@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/suite"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
@@ -22,41 +21,21 @@ var (
 	// Setup configuration for the entire suite
 	setup = base.TestCase{
 		Manifests: []string{setupNginxMtlsManifest, nginxBackendRouteManifest, nginxMtlsConfigManifest, defaults.CurlPodManifest},
-		Resources: []client.Object{
-			// Resources from setup-nginx-mtls.yml
-			nginxNamespace, nginxService,
-			// Resources from nginx-backend-route.yaml
-			gateway, nginxRoute, nginxBackend, nginxRouteSimple, nginxBackendSimple, nginxRouteMtls, nginxBackendMtls,
-			// Resources from nginx-mtls-config.yml
-			nginxConfigMap,
-			// Resources from curl pod
-			defaults.CurlPod,
-		},
 	}
 
 	// Test cases configuration
-	testCases = map[string]base.TestCase{
+	testCases = map[string]*base.TestCase{
 		"TestCleartextWithIstio": {
 			Manifests: []string{},
-			Resources: []client.Object{},
 		},
 		"TestSimpleTlsWithIstioAndBcp": {
 			Manifests: []string{nginxBcpSimpleTlsManifest},
-			Resources: []client.Object{
-				backendBcpPolicy, nginxTlsSecret,
-			},
 		},
 		"TestCustomMtlsWithIstioAndBcp": {
 			Manifests: []string{nginxBcpMtlsManifest},
-			Resources: []client.Object{
-				backendBcpPolicy, nginxTlsSecret,
-			},
 		},
 		"TestSimpleTlsWithIstioAndBtp": {
 			Manifests: []string{nginxBtpSimpleTlsManifest},
-			Resources: []client.Object{
-				backendBtpPolicy,
-			},
 		},
 	}
 )
