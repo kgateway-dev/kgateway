@@ -425,6 +425,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("AI TrafficPolicy on route level with Bearer secret and OpenAI Moderation", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "trafficpolicy/ai/route-level-bearer.yaml",
+			outputFile: "trafficpolicy/ai/route-level-bearer.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("TrafficPolicy with rbac on http route with Static backend", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "trafficpolicy/rbac/http-rbac.yaml",
