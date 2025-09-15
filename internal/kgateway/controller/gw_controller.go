@@ -112,7 +112,10 @@ func (r *gatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (re
 			return ctrl.Result{}, statusErr
 		}
 		return ctrl.Result{}, err
-	} else {
+	} else if existing := meta.FindStatusCondition(gw.Status.Conditions, string(api.GatewayConditionAccepted)); existing != nil &&
+		existing.Status == metav1.ConditionFalse &&
+		existing.Reason == string(api.GatewayReasonInvalidParameters) {
+		// set the status Accepted=true if it had been set to false due to InvalidParameters
 		condition := metav1.Condition{
 			Type:               string(api.GatewayConditionAccepted),
 			Status:             metav1.ConditionTrue,
