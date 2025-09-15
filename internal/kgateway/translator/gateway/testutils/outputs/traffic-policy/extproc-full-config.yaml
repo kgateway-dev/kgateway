@@ -123,6 +123,7 @@ Listeners:
                               responseBodyMode: BUFFERED
                               responseHeaderMode: SKIP
                               responseTrailerMode: SEND
+                            routeCacheAction: CLEAR
                             statPrefix: my_extproc
                   predicate:
                     singlePredicate:

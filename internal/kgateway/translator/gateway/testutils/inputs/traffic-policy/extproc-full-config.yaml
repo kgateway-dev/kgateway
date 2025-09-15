@@ -101,7 +101,7 @@ spec:
     messageTimeout: 100ms
     maxMessageTimeout: 500ms
     statPrefix: my_extproc
-    disableClearRouteCache: true
+    routeCacheAction: Clear
     metadataOptions:
       forwarding:
         typed:
