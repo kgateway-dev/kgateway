@@ -30,7 +30,7 @@ import (
 var logger = logging.New("translator/ir")
 
 const (
-	listenerNoRoutesReason             = "Listener has no routes and cannot be programmed"
+	listenerNoRoutesReason             = "Listener has no routes"
 	gatewayListenersNoRoutesMessage    = "Listeners skipped because they have no routes: %s"
 	gatewayAllListenersNoRoutesMessage = "All Listeners skipped because they have no routes: %s"
 )
@@ -95,7 +95,7 @@ func (t *Translator) Translate(ctx context.Context, gw ir.GatewayIR, reporter sd
 		if len(skippedListeners) == len(gw.Listeners) {
 			gwreporter.SetCondition(sdkreporter.GatewayCondition{
 				Type:    gwv1.GatewayConditionAccepted,
-				Status:  metav1.ConditionFalse,
+				Status:  metav1.ConditionTrue, //metav1.ConditionFalse,
 				Reason:  gwv1.GatewayReasonListenersNotValid,
 				Message: fmt.Sprintf(gatewayAllListenersNoRoutesMessage, strings.Join(skippedListeners, ", ")),
 			})
