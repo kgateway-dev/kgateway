@@ -23,5 +23,5 @@ spec:
     - "example.com"
   rules:
     - backendRefs:
-        - name: nginx
-          port: 8080
+        - name: httpbin
+          port: 8000

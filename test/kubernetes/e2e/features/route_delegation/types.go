@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"path/filepath"
 
-	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -20,46 +19,14 @@ const (
 var (
 	commonManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "common.yaml")
 
-	// resources from common manifest
-	httpbinTeam1Service = &corev1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "svc1",
-			Namespace: "team1",
-		},
-	}
-	httpbinTeam1Deployment = &appsv1.Deployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "httpbin",
-			Namespace: "team1",
-		},
-	}
-	httpbinTeam2Service = &corev1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "svc2",
-			Namespace: "team2",
-		},
-	}
-	httpbinTeam2Deployment = &appsv1.Deployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "httpbin",
-			Namespace: "team2",
-		},
-	}
-	gateway = &gwv1.Gateway{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "http-gateway",
-			Namespace: "infra",
-		},
-	}
-
 	// resources produced by deployer when Gateway is applied
 	proxyMeta = metav1.ObjectMeta{
 		Name:      "http-gateway",
 		Namespace: "infra",
 	}
-	proxyDeployment = &appsv1.Deployment{ObjectMeta: proxyMeta}
-	proxyService    = &corev1.Service{ObjectMeta: proxyMeta}
-	proxyHostPort   = fmt.Sprintf("%s.%s.svc:%d", proxyService.Name, proxyService.Namespace, gatewayPort)
+	// proxyDeployment = &appsv1.Deployment{ObjectMeta: proxyMeta}
+	proxyService  = &corev1.Service{ObjectMeta: proxyMeta}
+	proxyHostPort = fmt.Sprintf("%s.%s.svc:%d", proxyService.Name, proxyService.Namespace, gatewayPort)
 )
 
 // ref: basic.yaml
@@ -108,8 +75,7 @@ var (
 		Name:      "http-gateway-test",
 		Namespace: "infra",
 	}
-	proxyTestDeployment = &appsv1.Deployment{ObjectMeta: proxyTestMeta}
-	proxyTestService    = &corev1.Service{ObjectMeta: proxyTestMeta}
+	proxyTestService = &corev1.Service{ObjectMeta: proxyTestMeta}
 
 	proxyTestHostPort = fmt.Sprintf("%s.%s.svc:%d", proxyTestService.Name, proxyTestService.Namespace, gatewayTestPort)
 

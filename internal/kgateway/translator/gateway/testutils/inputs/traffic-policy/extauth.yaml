@@ -61,7 +61,7 @@ spec:
         name: ext-authz
         port: 9000
 ---
-# gateway extension that will be applied  routes
+# gateway extension that will be applied to routes
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: GatewayExtension
 metadata:

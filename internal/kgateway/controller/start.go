@@ -66,6 +66,7 @@ type StartConfig struct {
 	GatewayClassName         string
 	WaypointGatewayClassName string
 	AgentGatewayClassName    string
+	AdditionalGatewayClasses map[string]*deployer.GatewayClassInfo
 
 	Dev        bool
 	SetupOpts  *SetupOpts
@@ -183,7 +184,6 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 	var agentGatewaySyncer *agentgatewaysyncer.AgentGwSyncer
 	if cfg.SetupOpts.GlobalSettings.EnableAgentGateway {
 		agentgatewayMergedPlugins := agentGatewayPluginFactory(cfg)(ctx, cfg.AgwCollections)
-		cfg.AgwCollections.InitPlugins(ctx, mergedPlugins, globalSettings)
 
 		agentGatewaySyncer = agentgatewaysyncer.NewAgentGwSyncer(
 			cfg.ControllerName,
@@ -191,12 +191,8 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 			cfg.Client,
 			cfg.Manager,
 			cfg.AgwCollections,
-			// TODO(npolshak): move away from shared mergedPlugins to agentGatewayPlugins https://github.com/kgateway-dev/kgateway/issues/12052
-			mergedPlugins,
 			agentgatewayMergedPlugins,
 			cfg.SetupOpts.Cache,
-			namespaces.GetPodNamespace(),
-			cfg.Client.ClusterID().String(),
 			cfg.SetupOpts.GlobalSettings.EnableInferExt,
 		)
 		agentGatewaySyncer.Init(cfg.KrtOptions)
@@ -306,7 +302,7 @@ func (c *ControllerBuilder) Build(ctx context.Context) error {
 	}
 
 	setupLog.Info("creating gateway class provisioner")
-	if err := NewGatewayClassProvisioner(c.mgr, c.cfg.ControllerName, GetDefaultClassInfo(globalSettings, c.cfg.GatewayClassName, c.cfg.WaypointGatewayClassName, c.cfg.AgentGatewayClassName)); err != nil {
+	if err := NewGatewayClassProvisioner(c.mgr, c.cfg.ControllerName, GetDefaultClassInfo(globalSettings, c.cfg.GatewayClassName, c.cfg.WaypointGatewayClassName, c.cfg.AgentGatewayClassName, c.cfg.AdditionalGatewayClasses)); err != nil {
 		setupLog.Error(err, "unable to create gateway class provisioner")
 		return err
 	}
@@ -355,8 +351,10 @@ func (c *ControllerBuilder) HasSynced() bool {
 
 // GetDefaultClassInfo returns the default GatewayClass for the kgateway controller.
 // Exported for testing.
-func GetDefaultClassInfo(globalSettings *settings.Settings, gatewayClassName string, waypointGatewayClassName string, agentGatewayClassName string) map[string]*ClassInfo {
-	classInfos := map[string]*ClassInfo{
+func GetDefaultClassInfo(globalSettings *settings.Settings,
+	gatewayClassName, waypointGatewayClassName, agentGatewayClassName string,
+	additionalClassInfos map[string]*deployer.GatewayClassInfo) map[string]*deployer.GatewayClassInfo {
+	classInfos := map[string]*deployer.GatewayClassInfo{
 		gatewayClassName: {
 			Description: "Standard class for managing Gateway API ingress traffic.",
 			Labels:      map[string]string{},
@@ -372,11 +370,14 @@ func GetDefaultClassInfo(globalSettings *settings.Settings, gatewayClassName str
 	}
 	// Only enable agentgateway gateway class if it's enabled in the settings
 	if globalSettings.EnableAgentGateway {
-		classInfos[agentGatewayClassName] = &ClassInfo{
+		classInfos[agentGatewayClassName] = &deployer.GatewayClassInfo{
 			Description: "Specialized class for agentgateway.",
 			Labels:      map[string]string{},
 			Annotations: map[string]string{},
 		}
+	}
+	for class, classInfo := range additionalClassInfos {
+		classInfos[class] = classInfo
 	}
 	return classInfos
 }

@@ -92,15 +92,16 @@ Routes:
   name: gwtest/test-listenerset/https-8443
   virtualHosts:
   - domains:
-    - www.example.com
-    name: gwtest/test-listenerset/https-8443~www_example_com
+    - '*'
+    name: default
     routes:
-    - match:
+    - directResponse:
+        body:
+          inlineString: invalid route configuration detected and replaced with a direct
+            response.
+        status: 500
+      match:
         prefix: /
-      name: gwtest/test-listenerset/https-8443~www_example_com-route-0-httproute-test-route-gwtest-0-0-matcher-0
-      route:
-        cluster: kube_gwtest_example-svc_80
-        clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
 - ignorePortInHostMatching: true
   name: listener~8080
 - ignorePortInHostMatching: true
@@ -110,12 +111,13 @@ Routes:
     - www.example.com
     name: listener~9090~www_example_com
     routes:
-    - match:
+    - directResponse:
+        body:
+          inlineString: invalid route configuration detected and replaced with a direct
+            response.
+        status: 500
+      match:
         prefix: /
-      name: listener~9090~www_example_com-route-0-httproute-test-route-gwtest-0-0-matcher-0
-      route:
-        cluster: kube_gwtest_example-svc_80
-        clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
 Statuses:
   gateways:
     gwtest/example-gateway:
@@ -126,9 +128,11 @@ Statuses:
         status: "True"
         type: AttachedListenerSets
       - lastTransitionTime: null
-        message: Gateway is accepted
-        reason: Accepted
-        status: "True"
+        message: 'invalid xds configuration: error initializing configuration '''':
+          Failed to parse request template: Failed to parse body template [inja.exception.parser_error]
+          (at 1:21) unexpected ''}'''
+        reason: Invalid
+        status: "False"
         type: Accepted
       - lastTransitionTime: null
         message: Gateway is programmed
@@ -200,9 +204,11 @@ Statuses:
       - attachedRoutes: 1
         conditions:
         - lastTransitionTime: null
-          message: Listener is accepted
-          reason: Accepted
-          status: "True"
+          message: 'invalid xds configuration: error initializing configuration '''':
+            Failed to parse request template: Failed to parse body template [inja.exception.parser_error]
+            (at 1:21) unexpected ''}'''
+          reason: ListenerReplaced
+          status: "False"
           type: Accepted
         - lastTransitionTime: null
           message: Listener does not have conflicts

@@ -102,6 +102,7 @@ func (s *StatusSyncer) Start(ctx context.Context) error {
 		for {
 			latestReport, err := s.latestReportQueue.Dequeue(ctx)
 			if err != nil {
+				logger.Error("failed to dequeue gateway reports", "error", err)
 				return
 			}
 			s.syncGatewayStatus(ctx, gatewayStatusLogger, latestReport)
@@ -114,6 +115,7 @@ func (s *StatusSyncer) Start(ctx context.Context) error {
 		for {
 			latestReport, err := s.latestBackendPolicyReportQueue.Dequeue(ctx)
 			if err != nil {
+				logger.Error("failed to dequeue backend policy reports", "error", err)
 				return
 			}
 			s.syncPolicyStatus(ctx, latestReport)
@@ -366,11 +368,13 @@ func (s *StatusSyncer) syncGatewayStatus(ctx context.Context, logger *slog.Logge
 			// Skip agentgateway classes, they are handled by agentgateway syncer
 			if string(gw.Spec.GatewayClassName) == s.agentGatewayClassName {
 				logger.Debug("skipping status sync for agentgateway", "gateway", gwnn.String())
+				return nil
 			}
 
 			// Build the desired status
 			newStatus := rm.BuildGWStatus(ctx, gw, nil)
 			if newStatus == nil {
+				logger.Debug("new status is nil; skipping status update", "gateway", gwnn.String())
 				return nil
 			}
 
@@ -400,6 +404,8 @@ func (s *StatusSyncer) syncGatewayStatus(ctx context.Context, logger *slog.Logge
 				if cond.Reason != string(gwv1.GatewayReasonAccepted) &&
 					cond.Reason != string(gwv1.GatewayReasonProgrammed) &&
 					cond.Reason != string(gwv1.GatewayReasonPending) {
+					logger.Debug("invalid status condition reason", "reason", cond.Reason, "gateway", gwnn.String())
+
 					statusErr = fmt.Errorf("invalid gateway condition")
 
 					break

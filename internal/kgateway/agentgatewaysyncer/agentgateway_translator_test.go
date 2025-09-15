@@ -242,6 +242,39 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("MultiPool Backend with inline auth", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "backend/multipool-inline-auth.yaml",
+			outputFile: "backend/multipool-inline-auth.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("MultiPool Backend with secret auth", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "backend/multipool-secret-auth.yaml",
+			outputFile: "backend/multipool-secret-auth.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("MultiPool Backend with multiple priority levels", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "backend/multipool-priority-levels.yaml",
+			outputFile: "backend/multipool-priority-levels.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("Direct response", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "direct-response/manifest.yaml",

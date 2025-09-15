@@ -105,6 +105,10 @@ func AssertPolicyNotAccepted(t *testing.T, policyName, routeName string) AssertR
 		r.Equal(string(v1alpha1.PolicyReasonInvalid), acceptedCondition.Reason, "Policy should have Invalid reason")
 		r.Contains(acceptedCondition.Message, "invalid xds configuration", "Policy message should contain validation error")
 
+		if routeName == "" {
+			return
+		}
+
 		route := &gwv1.HTTPRoute{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      routeName,

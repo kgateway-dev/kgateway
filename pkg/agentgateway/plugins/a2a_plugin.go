@@ -9,7 +9,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
-	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 )
 
 const (
@@ -35,7 +34,6 @@ func NewA2APlugin(agw *AgwCollections) AgentgatewayPlugin {
 
 // translatePoliciesForService generates A2A policies for a single service
 func translatePoliciesForService(svc *corev1.Service) []ADPPolicy {
-	logger := logging.New("agentgateway/plugins/a2a")
 	var a2aPolicies []ADPPolicy
 
 	for _, port := range svc.Spec.Ports {

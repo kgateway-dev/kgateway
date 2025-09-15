@@ -265,7 +265,7 @@ func applyDefaults(
 		// When field.Value is a primitive type, deserialization from byte array works normally, tmpl value is: tmpl = string(marshalled)
 		// When field.Value is an object/array, deserialization treats it as a plain string, tmpl value should use the original value: tmpl = field.Value
 		var tmpl string
-		if field.Override != nil && *field.Override {
+		if field.Override {
 			if hasJsonPrefix(value) {
 				tmpl = field.Value
 			} else {

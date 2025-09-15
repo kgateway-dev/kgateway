@@ -86,7 +86,7 @@ func translateRBAC(rbac *v1alpha1.RBAC) (*envoyauthz.RBACPerRoute, error) {
 	// Create matcher-based RBAC configuration
 	var matchers []*cncfmatcherv3.Matcher_MatcherList_FieldMatcher
 
-	if rbac.Policy.MatchExpressions != nil && len(rbac.Policy.MatchExpressions) > 0 {
+	if len(rbac.Policy.MatchExpressions) > 0 {
 		matcher, err := createCELMatcher(rbac.Policy.MatchExpressions, rbac.Action)
 		if err != nil {
 			errs = append(errs, err)
@@ -243,6 +243,7 @@ func createCELMatcher(celExprs []string, action v1alpha1.AuthorizationPolicyActi
 		OnMatch:   onMatchAction,
 	}, nil
 }
+
 func createMatchAction(action envoyrbacv3.RBAC_Action) *cncfmatcherv3.Matcher_OnMatch {
 	actionName := "allow-request"
 	if action == envoyrbacv3.RBAC_DENY {

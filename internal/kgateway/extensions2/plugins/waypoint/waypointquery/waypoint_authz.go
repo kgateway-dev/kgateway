@@ -76,7 +76,8 @@ func (w *waypointQueries) GetAuthorizationPoliciesForGateway(
 	kctx krt.HandlerContext,
 	ctx context.Context,
 	gateway *gwapi.Gateway,
-	settingRootNamespace string) []*authcr.AuthorizationPolicy {
+	settingRootNamespace string,
+) []*authcr.AuthorizationPolicy {
 	rootNamespace := getRootNamespace(settingRootNamespace)
 	// Get policies targeting this gateway directly using the index
 	gwKey := ir.ObjectSource{

@@ -3122,6 +3122,14 @@ func schema_kgateway_v2_api_v1alpha1_ExtAuthProvider(ref common.ReferenceCallbac
 							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtGrpcService"),
 						},
 					},
+					"failOpen": {
+						SchemaProps: spec.SchemaProps{
+							Description: "FailOpen determines if requests are allowed when the ext auth service is unavailable. Defaults to false, meaning requests will be denied if the ext auth service is unavailable.",
+							Default:     false,
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
 				},
 				Required: []string{"grpcService"},
 			},
@@ -3151,12 +3159,18 @@ func schema_kgateway_v2_api_v1alpha1_ExtGrpcService(ref common.ReferenceCallback
 							Format:      "",
 						},
 					},
+					"requestTimeout": {
+						SchemaProps: spec.SchemaProps{
+							Description: "RequestTimeout is the timeout for the gRPC request. This is the timeout for a specific request.",
+							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Duration"),
+						},
+					},
 				},
 				Required: []string{"backendRef"},
 			},
 		},
 		Dependencies: []string{
-			"sigs.k8s.io/gateway-api/apis/v1.BackendRef"},
+			"k8s.io/apimachinery/pkg/apis/meta/v1.Duration", "sigs.k8s.io/gateway-api/apis/v1.BackendRef"},
 	}
 }
 
@@ -3206,6 +3220,14 @@ func schema_kgateway_v2_api_v1alpha1_ExtProcProvider(ref common.ReferenceCallbac
 							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtGrpcService"),
 						},
 					},
+					"failOpen": {
+						SchemaProps: spec.SchemaProps{
+							Description: "FailOpen determines if requests are allowed when the ext proc service is unavailable. Defaults to true, meaning requests are allowed upstream even if the ext proc service is unavailable.",
+							Default:     false,
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
 				},
 				Required: []string{"grpcService"},
 			},
@@ -3219,7 +3241,7 @@ func schema_kgateway_v2_api_v1alpha1_FieldDefault(ref common.ReferenceCallback) 
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "FieldDefault provides default values for specific fields in the JSON request body sent to the LLM provider. These defaults are merged with the user-provided request to ensure missing fields are populated.\n\nUser input fields here refer to the fields in the JSON request body that a client sends when making a request to the LLM provider. Defaults set here do _not_ override those user-provided values unless you explicitly set `override` to `true`.\n\nExample: Setting a default system field for Anthropic, which does not support system role messages: ```yaml defaults:\n  - field: \"system\"\n    value: \"answer all questions in French\"\n\n```\n\nExample: Setting a default temperature and overriding `max_tokens`: ```yaml defaults:\n  - field: \"temperature\"\n    value: \"0.5\"\n  - field: \"max_tokens\"\n    value: \"100\"\n    override: true\n\n```\n\nExample: Overriding a custom list field: ```yaml defaults:\n  - field: \"custom_list\"\n    value: \"[a,b,c]\"\n\n```\n\nNote: The `field` values correspond to keys in the JSON request body, not fields in this CRD.",
+				Description: "FieldDefault provides default values for specific fields in the JSON request body sent to the LLM provider. These defaults are merged with the user-provided request to ensure missing fields are populated.\n\nUser input fields here refer to the fields in the JSON request body that a client sends when making a request to the LLM provider. Defaults set here do _not_ override those user-provided values unless you explicitly set `override` to `true`.\n\nExample: Setting a default system field for Anthropic, which does not support system role messages: ```yaml defaults:\n  - field: \"system\"\n    value: \"answer all questions in French\"\n\n```\n\nExample: Setting a default temperature and overriding `max_tokens`: ```yaml defaults:\n  - field: \"temperature\"\n    value: \"0.5\"\n  - field: \"max_tokens\"\n    value: \"100\"\n    override: true\n\n```\n\nExample: Setting custom lists fields: ```yaml defaults:\n  - field: \"custom_integer_list\"\n    value: \"[1,2,3]\"\n  - field: \"custom_string_list\"\n    value: '[\"one\",\"two\",\"three\"]'\n    override: true\n\n```\n\nNote: The `field` values correspond to keys in the JSON request body, not fields in this CRD.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"field": {
@@ -5826,11 +5848,39 @@ func schema_kgateway_v2_api_v1alpha1_Pod(ref common.ReferenceCallback) common.Op
 							},
 						},
 					},
+					"extraVolumes": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Additional volumes to add to the pod. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#volume-v1-core for details.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("k8s.io/api/core/v1.Volume"),
+									},
+								},
+							},
+						},
+					},
+					"extraVolumeMounts": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Additional volume mounts to add to the pod. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#volumemount-v1-core for details.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("k8s.io/api/core/v1.VolumeMount"),
+									},
+								},
+							},
+						},
+					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.GracefulShutdownSpec", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.LocalObjectReference", "k8s.io/api/core/v1.PodSecurityContext", "k8s.io/api/core/v1.Probe", "k8s.io/api/core/v1.Toleration", "k8s.io/api/core/v1.TopologySpreadConstraint"},
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.GracefulShutdownSpec", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.LocalObjectReference", "k8s.io/api/core/v1.PodSecurityContext", "k8s.io/api/core/v1.Probe", "k8s.io/api/core/v1.Toleration", "k8s.io/api/core/v1.TopologySpreadConstraint", "k8s.io/api/core/v1.Volume", "k8s.io/api/core/v1.VolumeMount"},
 	}
 }
 
@@ -6393,14 +6443,15 @@ func schema_kgateway_v2_api_v1alpha1_RateLimitProvider(ref common.ReferenceCallb
 					},
 					"failOpen": {
 						SchemaProps: spec.SchemaProps{
-							Description: "FailOpen determines if requests are limited when the rate limit service is unavailable. When true, requests are not limited if the rate limit service is unavailable.",
+							Description: "FailOpen determines if requests are limited when the rate limit service is unavailable. Defaults to true, meaning requests are allowed upstream and not limited if the rate limit service is unavailable.",
+							Default:     false,
 							Type:        []string{"boolean"},
 							Format:      "",
 						},
 					},
 					"timeout": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Timeout for requests to the rate limit service.",
+							Description: "Timeout provides an optional timeout value for requests to the rate limit service. For rate limiting, prefer using this timeout rather than setting the generic `timeout` on the `GrpcService`. See [envoy issue](https://github.com/envoyproxy/envoy/issues/20070) for more info.",
 							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Duration"),
 						},
 					},
@@ -7663,7 +7714,7 @@ func schema_kgateway_v2_api_v1alpha1_TrafficPolicySpec(ref common.ReferenceCallb
 					},
 					"rbac": {
 						SchemaProps: spec.SchemaProps{
-							Description: "RBAC specifies the role-based access control configuration for the policy. This defines the rules for authorization based on roles and permissions.",
+							Description: "RBAC specifies the role-based access control configuration for the policy. This defines the rules for authorization based on roles and permissions. With an Envoy-based Gateway, RBAC policies applied at different attachment points in the configuration hierarchy are not cumulative, and only the most specific policy is enforced. In Envoy, this means an RBAC policy attached to a route will override any RBAC policies applied to the gateway or listener. In contrast, an Agentgateway-based Gateway supports cumulative RBAC policies across different attachment points, such that an RBAC policy attached to a route augments policies applied to the gateway or listener without overriding them.",
 							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.RBAC"),
 						},
 					},
@@ -7899,9 +7950,9 @@ func schema_kgateway_v2_api_v1alpha1_Webhook(ref common.ReferenceCallback) commo
 							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Host"),
 						},
 					},
-					"forwardHeaders": {
+					"forwardHeaderMatches": {
 						SchemaProps: spec.SchemaProps{
-							Description: "ForwardHeaders define headers to forward with the request to the webhook. Note: This is not yet supported for agentgateway.",
+							Description: "ForwardHeaderMatches defines a list of HTTP header matches that will be used to select the headers to forward to the webhook. Request headers are used when forwarding requests and response headers are used when forwarding responses. By default, no headers are forwarded.",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{

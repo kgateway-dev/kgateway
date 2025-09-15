@@ -4,6 +4,8 @@ import (
 	"github.com/agentgateway/agentgateway/go/api"
 	"istio.io/istio/pilot/pkg/util/protoconv"
 	"istio.io/istio/pkg/kube/krt"
+
+	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/ir"
 )
 
 type PolicyPlugin struct {
@@ -47,4 +49,25 @@ func attachmentName(target *api.PolicyTarget) string {
 	default:
 		return ""
 	}
+}
+
+type AddResourcesPlugin struct {
+	Binds     krt.Collection[ir.ADPResourcesForGateway]
+	Listeners krt.Collection[ir.ADPResourcesForGateway]
+	Routes    krt.Collection[ir.ADPResourcesForGateway]
+}
+
+// AddBinds extracts all bind resources from the collection
+func (p *AddResourcesPlugin) AddBinds() krt.Collection[ir.ADPResourcesForGateway] {
+	return p.Binds
+}
+
+// AddListeners extracts all routes resources from the collection
+func (p *AddResourcesPlugin) AddListeners() krt.Collection[ir.ADPResourcesForGateway] {
+	return p.Listeners
+}
+
+// AddRoutes extracts all routes resources from the collection
+func (p *AddResourcesPlugin) AddRoutes() krt.Collection[ir.ADPResourcesForGateway] {
+	return p.Routes
 }

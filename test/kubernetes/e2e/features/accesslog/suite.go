@@ -50,7 +50,7 @@ func (s *testingSuite) TestAccessLogWithFileSink() {
 	s.sendTestRequest()
 
 	s.Require().EventuallyWithT(func(c *assert.CollectT) {
-		logs, err := s.TestInstallation.Actions.Kubectl().GetContainerLogs(s.Ctx, gatewayService.ObjectMeta.GetNamespace(), pods[0])
+		logs, err := s.TestInstallation.Actions.Kubectl().GetContainerLogs(s.Ctx, gatewayObjectMeta.GetNamespace(), pods[0])
 		s.Require().NoError(err)
 
 		// Verify the log contains the expected JSON pattern
@@ -69,7 +69,7 @@ func (s *testingSuite) TestAccessLogWithGrpcSink() {
 	s.sendTestRequest()
 
 	s.Require().EventuallyWithT(func(c *assert.CollectT) {
-		logs, err := s.TestInstallation.Actions.Kubectl().GetContainerLogs(s.Ctx, accessLoggerDeployment.ObjectMeta.GetNamespace(), pods[0])
+		logs, err := s.TestInstallation.Actions.Kubectl().GetContainerLogs(s.Ctx, accessLoggerObjectMeta.GetNamespace(), pods[0])
 		s.Require().NoError(err)
 
 		// Verify the log contains the expected JSON pattern
@@ -84,7 +84,7 @@ func (s *testingSuite) TestAccessLogWithOTelSink() {
 	s.sendTestRequest()
 
 	s.Require().EventuallyWithT(func(c *assert.CollectT) {
-		logs, err := s.TestInstallation.Actions.Kubectl().GetContainerLogs(s.Ctx, accessLoggerDeployment.ObjectMeta.GetNamespace(), pods[0])
+		logs, err := s.TestInstallation.Actions.Kubectl().GetContainerLogs(s.Ctx, accessLoggerObjectMeta.GetNamespace(), pods[0])
 		s.Require().NoError(err)
 
 		// Example log line for the access log
@@ -109,7 +109,7 @@ func (s *testingSuite) sendTestRequest() {
 		s.Ctx,
 		defaults.CurlPodExecOpt,
 		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(gatewayService.ObjectMeta)),
+			curl.WithHost(kubeutils.ServiceFQDN(gatewayObjectMeta)),
 			curl.VerboseOutput(),
 			curl.WithHostHeader("www.example.com"),
 			curl.WithPath("/status/200"),
@@ -124,7 +124,7 @@ func (s *testingSuite) sendTestRequest() {
 func (s *testingSuite) getPods(label string) []string {
 	s.TestInstallation.Assertions.EventuallyPodsRunning(
 		s.Ctx,
-		accessLoggerDeployment.ObjectMeta.GetNamespace(),
+		accessLoggerObjectMeta.GetNamespace(),
 		metav1.ListOptions{
 			LabelSelector: label,
 		},
@@ -132,7 +132,7 @@ func (s *testingSuite) getPods(label string) []string {
 
 	pods, err := s.TestInstallation.Actions.Kubectl().GetPodsInNsWithLabel(
 		s.Ctx,
-		accessLoggerDeployment.ObjectMeta.GetNamespace(),
+		accessLoggerObjectMeta.GetNamespace(),
 		label,
 	)
 	s.Require().NoError(err)

@@ -11,13 +11,9 @@ import (
 	"istio.io/istio/pkg/test"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/ptr"
-	gwv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
-	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
 func TestBuildMCPIr(t *testing.T) {
@@ -26,7 +22,7 @@ func TestBuildMCPIr(t *testing.T) {
 		name        string
 		backend     *v1alpha1.Backend
 		services    krt.Collection[*corev1.Service]
-		namespaces  krt.Collection[krtcollections.NamespaceMetadata]
+		namespaces  krt.Collection[*corev1.Namespace]
 		expectError bool
 		validate    func(mcpIr *MCPIr) bool
 	}{
@@ -264,7 +260,7 @@ func TestBuildAIBackendIr(t *testing.T) {
 	tests := []struct {
 		name        string
 		backend     *v1alpha1.Backend
-		secrets     *krtcollections.SecretIndex
+		secrets     krt.Collection[*corev1.Secret]
 		expectError bool
 		validate    func(aiIr *AIIr) bool
 	}{
@@ -296,14 +292,18 @@ func TestBuildAIBackendIr(t *testing.T) {
 			expectError: false,
 			validate: func(aiIr *AIIr) bool {
 				return aiIr != nil &&
-					aiIr.Name == "test-ns/openai-backend" &&
 					aiIr.Backend != nil &&
-					aiIr.Backend.GetOpenai() != nil &&
-					aiIr.Backend.GetOpenai().Model != nil &&
-					aiIr.Backend.GetOpenai().Model.Value == "gpt-4" &&
-					aiIr.AuthPolicy != nil &&
-					aiIr.AuthPolicy.GetKey() != nil &&
-					aiIr.AuthPolicy.GetKey().Secret == "sk-test-token"
+					aiIr.Backend.Name == "test-ns/openai-backend" &&
+					aiIr.Backend.GetAi() != nil &&
+					len(aiIr.Backend.GetAi().ProviderGroups) == 1 &&
+					len(aiIr.Backend.GetAi().ProviderGroups[0].Providers) == 1 &&
+					aiIr.Backend.GetAi().ProviderGroups[0].Providers[0].GetOpenai() != nil &&
+					aiIr.Backend.GetAi().ProviderGroups[0].Providers[0].GetOpenai().Model != nil &&
+					aiIr.Backend.GetAi().ProviderGroups[0].Providers[0].GetOpenai().Model.Value == "gpt-4" &&
+					len(aiIr.Policies) == 1 &&
+					aiIr.Policies[0].GetSpec().GetAuth() != nil &&
+					aiIr.Policies[0].GetSpec().GetAuth().GetKey() != nil &&
+					aiIr.Policies[0].GetSpec().GetAuth().GetKey().Secret == "sk-test-token"
 			},
 		},
 		{
@@ -334,14 +334,18 @@ func TestBuildAIBackendIr(t *testing.T) {
 			expectError: false,
 			validate: func(aiIr *AIIr) bool {
 				return aiIr != nil &&
-					aiIr.Name == "test-ns/anthropic-backend" &&
 					aiIr.Backend != nil &&
-					aiIr.Backend.GetAnthropic() != nil &&
-					aiIr.Backend.GetAnthropic().Model != nil &&
-					aiIr.Backend.GetAnthropic().Model.Value == "claude-3-sonnet" &&
-					aiIr.AuthPolicy != nil &&
-					aiIr.AuthPolicy.GetKey() != nil &&
-					aiIr.AuthPolicy.GetKey().Secret == "test-api-key"
+					aiIr.Backend.Name == "test-ns/anthropic-backend" &&
+					aiIr.Backend.GetAi() != nil &&
+					len(aiIr.Backend.GetAi().ProviderGroups) == 1 &&
+					len(aiIr.Backend.GetAi().ProviderGroups[0].Providers) == 1 &&
+					aiIr.Backend.GetAi().ProviderGroups[0].Providers[0].GetAnthropic() != nil &&
+					aiIr.Backend.GetAi().ProviderGroups[0].Providers[0].GetAnthropic().Model != nil &&
+					aiIr.Backend.GetAi().ProviderGroups[0].Providers[0].GetAnthropic().Model.Value == "claude-3-sonnet" &&
+					len(aiIr.Policies) == 1 &&
+					aiIr.Policies[0].GetSpec().GetAuth() != nil &&
+					aiIr.Policies[0].GetSpec().GetAuth().GetKey() != nil &&
+					aiIr.Policies[0].GetSpec().GetAuth().GetKey().Secret == "test-api-key"
 			},
 		},
 		{
@@ -372,14 +376,18 @@ func TestBuildAIBackendIr(t *testing.T) {
 			expectError: false,
 			validate: func(aiIr *AIIr) bool {
 				return aiIr != nil &&
-					aiIr.Name == "test-ns/gemini-backend" &&
 					aiIr.Backend != nil &&
-					aiIr.Backend.GetGemini() != nil &&
-					aiIr.Backend.GetGemini().Model != nil &&
-					aiIr.Backend.GetGemini().Model.Value == "gemini-pro" &&
-					aiIr.AuthPolicy != nil &&
-					aiIr.AuthPolicy.GetKey() != nil &&
-					aiIr.AuthPolicy.GetKey().Secret == "gemini-api-key"
+					aiIr.Backend.Name == "test-ns/gemini-backend" &&
+					aiIr.Backend.GetAi() != nil &&
+					len(aiIr.Backend.GetAi().ProviderGroups) == 1 &&
+					len(aiIr.Backend.GetAi().ProviderGroups[0].Providers) == 1 &&
+					aiIr.Backend.GetAi().ProviderGroups[0].Providers[0].GetGemini() != nil &&
+					aiIr.Backend.GetAi().ProviderGroups[0].Providers[0].GetGemini().Model != nil &&
+					aiIr.Backend.GetAi().ProviderGroups[0].Providers[0].GetGemini().Model.Value == "gemini-pro" &&
+					len(aiIr.Policies) == 1 &&
+					aiIr.Policies[0].GetSpec().GetAuth() != nil &&
+					aiIr.Policies[0].GetSpec().GetAuth().GetKey() != nil &&
+					aiIr.Policies[0].GetSpec().GetAuth().GetKey().Secret == "gemini-api-key"
 			},
 		},
 		{
@@ -408,15 +416,21 @@ func TestBuildAIBackendIr(t *testing.T) {
 			secrets:     nil,
 			expectError: false,
 			validate: func(aiIr *AIIr) bool {
-				print(aiIr.AuthPolicy.GetPassthrough().String())
+				if aiIr != nil && len(aiIr.Policies) > 0 && aiIr.Policies[0].GetSpec().GetAuth() != nil {
+					print(aiIr.Policies[0].GetSpec().GetAuth().GetPassthrough().String())
+				}
 				return aiIr != nil &&
-					aiIr.Name == "test-ns/vertex-backend" &&
 					aiIr.Backend != nil &&
-					aiIr.Backend.GetVertex() != nil &&
-					aiIr.Backend.GetVertex().Model != nil &&
-					aiIr.Backend.GetVertex().Model.Value == "gemini-pro" &&
-					aiIr.AuthPolicy != nil &&
-					aiIr.AuthPolicy.GetPassthrough() != nil
+					aiIr.Backend.Name == "test-ns/vertex-backend" &&
+					aiIr.Backend.GetAi() != nil &&
+					len(aiIr.Backend.GetAi().ProviderGroups) == 1 &&
+					len(aiIr.Backend.GetAi().ProviderGroups[0].Providers) == 1 &&
+					aiIr.Backend.GetAi().ProviderGroups[0].Providers[0].GetVertex() != nil &&
+					aiIr.Backend.GetAi().ProviderGroups[0].Providers[0].GetVertex().Model != nil &&
+					aiIr.Backend.GetAi().ProviderGroups[0].Providers[0].GetVertex().Model.Value == "gemini-pro" &&
+					len(aiIr.Policies) == 1 &&
+					aiIr.Policies[0].GetSpec().GetAuth() != nil &&
+					aiIr.Policies[0].GetSpec().GetAuth().GetPassthrough() != nil
 			},
 		},
 		{
@@ -450,17 +464,19 @@ func TestBuildAIBackendIr(t *testing.T) {
 					},
 				},
 			},
-			secrets: createMockSecretIndex(t, "test-ns", "aws-secret-custom", map[string]string{
+			secrets: createMockSecretCol(t, "test-ns", "aws-secret-custom", map[string]string{
 				"accessKey":    "AKIACUSTOM",
 				"secretKey":    "secretcustom",
 				"sessionToken": "token123",
 			}),
 			expectError: false,
 			validate: func(aiIr *AIIr) bool {
-				bedrock := aiIr.Backend.GetBedrock()
-				aws := aiIr.AuthPolicy.GetAws().GetExplicitConfig()
-				return aiIr != nil &&
-					aiIr.Name == "test-ns/bedrock-backend-custom" &&
+				if aiIr == nil || aiIr.Backend == nil || len(aiIr.Backend.GetAi().ProviderGroups) != 1 || len(aiIr.Backend.GetAi().ProviderGroups[0].Providers) != 1 {
+					return false
+				}
+				bedrock := aiIr.Backend.GetAi().ProviderGroups[0].Providers[0].GetBedrock()
+				aws := aiIr.Policies[0].GetSpec().GetAuth().GetAws().GetExplicitConfig()
+				return aiIr.Backend.Name == "test-ns/bedrock-backend-custom" &&
 					bedrock != nil &&
 					bedrock.Model.Value == "anthropic.claude-3-haiku-20240307-v1:0" &&
 					bedrock.Region == "eu-west-1" &&
@@ -502,19 +518,23 @@ func TestBuildAIBackendIr(t *testing.T) {
 					},
 				},
 			},
-			secrets: createMockSecretIndex(t, "test-ns", "openai-secret", map[string]string{
+			secrets: createMockSecretCol(t, "test-ns", "openai-secret", map[string]string{
 				"Authorization": "Bearer sk-secret-token",
 			}),
 			expectError: false,
 			validate: func(aiIr *AIIr) bool {
 				return aiIr != nil &&
-					aiIr.Name == "test-ns/openai-secret-backend" &&
-					aiIr.Backend.GetOpenai().Model.Value == "gpt-3.5-turbo" &&
-					aiIr.AuthPolicy.GetKey().Secret == "sk-secret-token" // Bearer prefix should be stripped
+					aiIr.Backend != nil &&
+					aiIr.Backend.Name == "test-ns/openai-secret-backend" &&
+					len(aiIr.Backend.GetAi().ProviderGroups) == 1 &&
+					len(aiIr.Backend.GetAi().ProviderGroups[0].Providers) == 1 &&
+					aiIr.Backend.GetAi().ProviderGroups[0].Providers[0].GetOpenai().Model.Value == "gpt-3.5-turbo" &&
+					len(aiIr.Policies) == 1 &&
+					aiIr.Policies[0].GetSpec().GetAuth().GetKey().Secret == "sk-secret-token" // Bearer prefix should be stripped
 			},
 		},
 		{
-			name: "MultiPool backend - uses first priority",
+			name: "MultiPool backend - translates all providers for failover",
 			backend: &v1alpha1.Backend{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "multipool-backend",
@@ -559,27 +579,145 @@ func TestBuildAIBackendIr(t *testing.T) {
 			secrets:     nil,
 			expectError: false,
 			validate: func(aiIr *AIIr) bool {
-				return aiIr != nil &&
-					aiIr.Name == "test-ns/multipool-backend" &&
-					aiIr.Backend.GetOpenai() != nil &&
-					aiIr.Backend.GetOpenai().Model.Value == "gpt-4" &&
-					aiIr.AuthPolicy.GetKey().Secret == "first-token"
+				if aiIr == nil || aiIr.Backend == nil || aiIr.Backend.Name != "test-ns/multipool-backend" {
+					return false
+				}
+				// Should have a single backend with one provider group containing two providers
+				if aiIr.Backend == nil || aiIr.Backend.GetAi() == nil {
+					return false
+				}
+				if len(aiIr.Backend.GetAi().ProviderGroups) != 1 {
+					return false
+				}
+				if len(aiIr.Backend.GetAi().ProviderGroups[0].Providers) != 2 {
+					return false
+				}
+				// Check first provider (OpenAI)
+				if aiIr.Backend.GetAi().ProviderGroups[0].Providers[0].GetOpenai() == nil ||
+					aiIr.Backend.GetAi().ProviderGroups[0].Providers[0].GetOpenai().Model.Value != "gpt-4" {
+					return false
+				}
+				// Check second provider (Anthropic)
+				if aiIr.Backend.GetAi().ProviderGroups[0].Providers[1].GetAnthropic() == nil ||
+					aiIr.Backend.GetAi().ProviderGroups[0].Providers[1].GetAnthropic().Model.Value != "claude-3" {
+					return false
+				}
+				// Check auth policies
+				if len(aiIr.Policies) != 2 {
+					return false
+				}
+				if aiIr.Policies[0].GetSpec().GetAuth().GetKey().Secret != "first-token" ||
+					aiIr.Policies[1].GetSpec().GetAuth().GetKey().Secret != "second-token" {
+					return false
+				}
+				return true
 			},
 		},
 		{
-			name: "Error case - nil AI spec",
+			name: "MultiPool backend with multiple priority levels - creates separate provider groups",
 			backend: &v1alpha1.Backend{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "invalid-backend",
+					Name:      "multipool-priority-backend",
 					Namespace: "test-ns",
 				},
 				Spec: v1alpha1.BackendSpec{
 					Type: v1alpha1.BackendTypeAI,
-					AI:   nil,
+					AI: &v1alpha1.AIBackend{
+						MultiPool: &v1alpha1.MultiPoolConfig{
+							Priorities: []v1alpha1.Priority{
+								{
+									Pool: []v1alpha1.LLMProvider{
+										{
+											Provider: v1alpha1.SupportedLLMProvider{
+												OpenAI: &v1alpha1.OpenAIConfig{
+													Model: stringPtr("gpt-4"),
+													AuthToken: v1alpha1.SingleAuthToken{
+														Kind:   v1alpha1.Inline,
+														Inline: stringPtr("openai-primary"),
+													},
+												},
+											},
+										},
+										{
+											Provider: v1alpha1.SupportedLLMProvider{
+												Anthropic: &v1alpha1.AnthropicConfig{
+													Model: stringPtr("claude-3-opus"),
+													AuthToken: v1alpha1.SingleAuthToken{
+														Kind:   v1alpha1.Inline,
+														Inline: stringPtr("anthropic-primary"),
+													},
+												},
+											},
+										},
+									},
+								},
+								{
+									Pool: []v1alpha1.LLMProvider{
+										{
+											Provider: v1alpha1.SupportedLLMProvider{
+												Gemini: &v1alpha1.GeminiConfig{
+													Model: "gemini-pro",
+													AuthToken: v1alpha1.SingleAuthToken{
+														Kind:   v1alpha1.Inline,
+														Inline: stringPtr("gemini-fallback"),
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
 				},
 			},
 			secrets:     nil,
-			expectError: true,
+			expectError: false,
+			validate: func(aiIr *AIIr) bool {
+				if aiIr == nil || aiIr.Backend == nil || aiIr.Backend.Name != "test-ns/multipool-priority-backend" {
+					return false
+				}
+				// Should have 2 provider groups (one for each priority level)
+				if aiIr.Backend == nil || aiIr.Backend.GetAi() == nil {
+					return false
+				}
+				if len(aiIr.Backend.GetAi().ProviderGroups) != 2 {
+					return false
+				}
+				// First group should have 2 providers (OpenAI and Anthropic)
+				if len(aiIr.Backend.GetAi().ProviderGroups[0].Providers) != 2 {
+					return false
+				}
+				// Check first provider in first group (OpenAI)
+				if aiIr.Backend.GetAi().ProviderGroups[0].Providers[0].GetOpenai() == nil ||
+					aiIr.Backend.GetAi().ProviderGroups[0].Providers[0].GetOpenai().Model.Value != "gpt-4" {
+					return false
+				}
+				// Check second provider in first group (Anthropic)
+				if aiIr.Backend.GetAi().ProviderGroups[0].Providers[1].GetAnthropic() == nil ||
+					aiIr.Backend.GetAi().ProviderGroups[0].Providers[1].GetAnthropic().Model.Value != "claude-3-opus" {
+					return false
+				}
+				// Second group should have 1 provider (Gemini)
+				if len(aiIr.Backend.GetAi().ProviderGroups[1].Providers) != 1 {
+					return false
+				}
+				// Check provider in second group (Gemini)
+				if aiIr.Backend.GetAi().ProviderGroups[1].Providers[0].GetGemini() == nil ||
+					aiIr.Backend.GetAi().ProviderGroups[1].Providers[0].GetGemini().Model.Value != "gemini-pro" {
+					return false
+				}
+				// Check auth policies
+				if len(aiIr.Policies) != 3 {
+					return false
+				}
+				if aiIr.Policies[0].GetSpec().GetAuth().GetKey().Secret != "openai-primary" ||
+					aiIr.Policies[1].GetSpec().GetAuth().GetKey().Secret != "anthropic-primary" ||
+					aiIr.Policies[2].GetSpec().GetAuth().GetKey().Secret != "gemini-fallback" {
+					return false
+				}
+				return true
+			},
 		},
 		{
 			name: "Error case - no LLM or MultiPool configured",
@@ -669,7 +807,7 @@ func stringPtr(s string) *string {
 }
 
 // Helper function to create a mock SecretIndex for testing
-func createMockSecretIndex(t test.Failer, namespace, name string, data map[string]string) *krtcollections.SecretIndex {
+func createMockSecretCol(t test.Failer, namespace, name string, data map[string]string) krt.Collection[*corev1.Secret] {
 	// Create mock secret data
 	secretData := make(map[string][]byte)
 	for k, v := range data {
@@ -693,50 +831,13 @@ func createMockSecretIndex(t test.Failer, namespace, name string, data map[strin
 
 	// Get the underlying mock collections
 	mockSecretCollection := krttest.GetMockCollection[*corev1.Secret](mock)
-	mockRefGrantCollection := krttest.GetMockCollection[*gwv1beta1.ReferenceGrant](mock)
 
 	// Wait for the mock collections to sync
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second) // long timeout - just in case. we should never reach it.
 	defer cancel()
 	mockSecretCollection.WaitUntilSynced(ctx.Done())
-	mockRefGrantCollection.WaitUntilSynced(ctx.Done())
 
-	// Create the secret collection
-	secretsCol := map[schema.GroupKind]krt.Collection[ir.Secret]{
-		corev1.SchemeGroupVersion.WithKind("Secret").GroupKind(): krt.NewCollection(
-			mockSecretCollection,
-			func(kctx krt.HandlerContext, i *corev1.Secret) *ir.Secret {
-				res := ir.Secret{
-					ObjectSource: ir.ObjectSource{
-						Group:     "",
-						Kind:      "Secret",
-						Namespace: i.Namespace,
-						Name:      i.Name,
-					},
-					Obj:  i,
-					Data: i.Data,
-				}
-				return &res
-			},
-		),
-	}
-
-	// Create a minimal RefGrantIndex for the SecretIndex
-	refgrants := krtcollections.NewRefGrantIndex(mockRefGrantCollection)
-
-	// Wait for the transformed secret collection to sync
-	secretCollection := secretsCol[corev1.SchemeGroupVersion.WithKind("Secret").GroupKind()]
-	secretCollection.WaitUntilSynced(ctx.Done())
-
-	// Create the SecretIndex
-	index := krtcollections.NewSecretIndex(secretsCol, refgrants)
-
-	// Ensure the index is fully synced before returning
-	for !index.HasSynced() {
-		time.Sleep(50 * time.Millisecond)
-	}
-
-	return index
+	return mockSecretCollection
 }
 
 func TestBuildStaticIr(t *testing.T) {
@@ -832,17 +933,15 @@ func TestBuildStaticIr(t *testing.T) {
 func TestGetSecretValue(t *testing.T) {
 	tests := []struct {
 		name         string
-		secret       *ir.Secret
+		secret       *corev1.Secret
 		key          string
 		expectedVal  string
 		expectedBool bool
 	}{
 		{
 			name: "Valid secret value",
-			secret: &ir.Secret{
-				ObjectSource: ir.ObjectSource{
-					Group:     "",
-					Kind:      "Secret",
+			secret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
 					Namespace: "test-ns",
 					Name:      "test-secret",
 				},
@@ -856,10 +955,8 @@ func TestGetSecretValue(t *testing.T) {
 		},
 		{
 			name: "Secret value with spaces",
-			secret: &ir.Secret{
-				ObjectSource: ir.ObjectSource{
-					Group:     "",
-					Kind:      "Secret",
+			secret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
 					Namespace: "test-ns",
 					Name:      "test-secret",
 				},
@@ -873,10 +970,8 @@ func TestGetSecretValue(t *testing.T) {
 		},
 		{
 			name: "Key not found",
-			secret: &ir.Secret{
-				ObjectSource: ir.ObjectSource{
-					Group:     "",
-					Kind:      "Secret",
+			secret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
 					Namespace: "test-ns",
 					Name:      "test-secret",
 				},
@@ -890,10 +985,8 @@ func TestGetSecretValue(t *testing.T) {
 		},
 		{
 			name: "Invalid UTF-8",
-			secret: &ir.Secret{
-				ObjectSource: ir.ObjectSource{
-					Group:     "",
-					Kind:      "Secret",
+			secret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
 					Namespace: "test-ns",
 					Name:      "test-secret",
 				},
@@ -907,10 +1000,8 @@ func TestGetSecretValue(t *testing.T) {
 		},
 		{
 			name: "Empty secret data",
-			secret: &ir.Secret{
-				ObjectSource: ir.ObjectSource{
-					Group:     "",
-					Kind:      "Secret",
+			secret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
 					Namespace: "test-ns",
 					Name:      "test-secret",
 				},
@@ -946,9 +1037,9 @@ func createMockServiceCollection(t test.Failer) krt.Collection[*corev1.Service] 
 }
 
 // createMockNamespaceCollection creates a basic mock namespace collection
-func createMockNamespaceCollection(t test.Failer) krt.Collection[krtcollections.NamespaceMetadata] {
+func createMockNamespaceCollection(t test.Failer) krt.Collection[*corev1.Namespace] {
 	mock := krttest.NewMock(t, []any{})
-	return krttest.GetMockCollection[krtcollections.NamespaceMetadata](mock)
+	return krttest.GetMockCollection[*corev1.Namespace](mock)
 }
 
 // createMockServiceCollectionWithMCPService creates a mock service collection with a specific MCP service
@@ -1067,24 +1158,30 @@ func createMockServiceCollectionMultiNamespace(t test.Failer) krt.Collection[*co
 }
 
 // createMockNamespaceCollectionWithLabels creates a mock namespace collection with labeled namespaces
-func createMockNamespaceCollectionWithLabels(t test.Failer) krt.Collection[krtcollections.NamespaceMetadata] {
-	namespaces := []krtcollections.NamespaceMetadata{
+func createMockNamespaceCollectionWithLabels(t test.Failer) krt.Collection[*corev1.Namespace] {
+	namespaces := []*corev1.Namespace{
 		{
-			Name: "test-ns",
-			Labels: map[string]string{
-				"environment": "test",
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "test-ns",
+				Labels: map[string]string{
+					"environment": "test",
+				},
 			},
 		},
 		{
-			Name: "prod-ns",
-			Labels: map[string]string{
-				"environment": "production",
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "prod-ns",
+				Labels: map[string]string{
+					"environment": "production",
+				},
 			},
 		},
 		{
-			Name: "dev-ns",
-			Labels: map[string]string{
-				"environment": "development",
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "dev-ns",
+				Labels: map[string]string{
+					"environment": "development",
+				},
 			},
 		},
 	}
@@ -1095,7 +1192,7 @@ func createMockNamespaceCollectionWithLabels(t test.Failer) krt.Collection[krtco
 	}
 
 	mock := krttest.NewMock(t, inputs)
-	mockCol := krttest.GetMockCollection[krtcollections.NamespaceMetadata](mock)
+	mockCol := krttest.GetMockCollection[*corev1.Namespace](mock)
 	// Ensure the index is fully synced before returning
 	for !mockCol.HasSynced() {
 		time.Sleep(50 * time.Millisecond)

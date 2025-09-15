@@ -12,7 +12,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
-	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 )
 
 // NewInferencePlugin creates a new InferencePool policy plugin
@@ -35,7 +34,6 @@ func NewInferencePlugin(agw *AgwCollections) AgentgatewayPlugin {
 
 // translatePoliciesForInferencePool generates policies for a single inference pool
 func translatePoliciesForInferencePool(pool *inf.InferencePool, domainSuffix string) []ADPPolicy {
-	logger := logging.New("agentgateway/plugins/inference")
 	var infPolicies []ADPPolicy
 
 	// 'service/{namespace}/{hostname}:{port}'

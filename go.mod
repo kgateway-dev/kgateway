@@ -3,7 +3,8 @@ module github.com/kgateway-dev/kgateway/v2
 go 1.24.6
 
 require (
-	github.com/agentgateway/agentgateway v0.7.8
+	// Also update AgentgatewayDefaultTag in pkg/deployer/wellknown.go
+	github.com/agentgateway/agentgateway v0.8.2
 	github.com/avast/retry-go v2.4.3+incompatible
 	github.com/avast/retry-go/v4 v4.3.3
 	github.com/cncf/xds/go v0.0.0-20250501225837-2ac532fd4443
@@ -37,10 +38,10 @@ require (
 	golang.org/x/net v0.43.0
 	google.golang.org/grpc v1.74.2
 	google.golang.org/protobuf v1.36.7
-	helm.sh/helm/v3 v3.18.5
-	istio.io/api v1.26.0-alpha.0.0.20250820113222-47f832b86cdd
-	istio.io/client-go v1.26.0-alpha.0.0.20250820113822-8b883d128bac
-	istio.io/istio v0.0.0-20250826222905-45e4f30947d5
+	helm.sh/helm/v3 v3.18.6
+	istio.io/api v1.26.0-alpha.0.0.20250908200844-f7a34ed800ee
+	istio.io/client-go v1.26.0-alpha.0.0.20250908201345-99e026bfe54f
+	istio.io/istio v0.0.0-20250910161727-ec841334dbad
 	k8s.io/api v0.33.4
 	k8s.io/apiextensions-apiserver v0.33.4
 	k8s.io/apimachinery v0.33.4
@@ -50,7 +51,7 @@ require (
 	k8s.io/utils v0.0.0-20250604170112-4c0f3b243397
 	sigs.k8s.io/controller-runtime v0.21.0
 	sigs.k8s.io/gateway-api v1.3.0
-	sigs.k8s.io/gateway-api-inference-extension v1.0.0-rc.2
+	sigs.k8s.io/gateway-api-inference-extension v1.0.0
 	sigs.k8s.io/structured-merge-diff/v4 v4.7.0
 	sigs.k8s.io/yaml v1.6.0
 )

@@ -18,6 +18,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/namespaces"
+
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/admin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/controller"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
@@ -60,6 +62,12 @@ func WithWaypointClassName(name string) func(*setup) {
 func WithAgentGatewayClassName(name string) func(*setup) {
 	return func(s *setup) {
 		s.agentGatewayClassName = name
+	}
+}
+
+func WithAdditionalGatewayClasses(classes map[string]*deployer.GatewayClassInfo) func(*setup) {
+	return func(s *setup) {
+		s.additionalGatewayClasses = classes
 	}
 }
 
@@ -136,6 +144,7 @@ type setup struct {
 	gatewayClassName         string
 	waypointClassName        string
 	agentGatewayClassName    string
+	additionalGatewayClasses map[string]*deployer.GatewayClassInfo
 	extraPlugins             func(ctx context.Context, commoncol *common.CommonCollections, mergeSettingsJSON string) []sdk.Plugin
 	extraAgentgatewayPlugins func(ctx context.Context, agw *agentgatewayplugins.AgwCollections) []agentgatewayplugins.AgentgatewayPlugin
 	extraGatewayParameters   func(cli client.Client, inputs *deployer.Inputs) []deployer.ExtraGatewayParameters
@@ -268,6 +277,9 @@ func (s *setup) Start(ctx context.Context) error {
 
 	agwCollections, err := agentgatewayplugins.NewAgwCollections(
 		commoncol,
+		// control plane system namespace (default is kgateway-system)
+		namespaces.GetPodNamespace(),
+		istioClient.ClusterID().String(),
 	)
 	if err != nil {
 		slog.Error("error creating agw common collections", "error", err)
@@ -283,7 +295,7 @@ func (s *setup) Start(ctx context.Context) error {
 
 	BuildKgatewayWithConfig(
 		ctx, mgr, s.gatewayControllerName, s.gatewayClassName, s.waypointClassName,
-		s.agentGatewayClassName, setupOpts, s.restConfig, istioClient, commoncol, agwCollections, uccBuilder, s.extraPlugins, s.extraAgentgatewayPlugins, s.extraGatewayParameters)
+		s.agentGatewayClassName, s.additionalGatewayClasses, setupOpts, s.restConfig, istioClient, commoncol, agwCollections, uccBuilder, s.extraPlugins, s.extraAgentgatewayPlugins, s.extraGatewayParameters)
 
 	slog.Info("starting admin server")
 	go admin.RunAdminServer(ctx, setupOpts)
@@ -304,6 +316,7 @@ func BuildKgatewayWithConfig(
 	gatewayClassName string,
 	waypointClassName string,
 	agentGatewayClassName string,
+	additionalGatewayClasses map[string]*deployer.GatewayClassInfo,
 	setupOpts *controller.SetupOpts,
 	restConfig *rest.Config,
 	kubeClient istiokube.Client,
@@ -332,6 +345,7 @@ func BuildKgatewayWithConfig(
 		GatewayClassName:         gatewayClassName,
 		WaypointGatewayClassName: waypointClassName,
 		AgentGatewayClassName:    agentGatewayClassName,
+		AdditionalGatewayClasses: additionalGatewayClasses,
 		ExtraPlugins:             extraPlugins,
 		ExtraAgentgatewayPlugins: extraAgentgatewayPlugins,
 		ExtraGatewayParameters:   extraGatewayParameters,

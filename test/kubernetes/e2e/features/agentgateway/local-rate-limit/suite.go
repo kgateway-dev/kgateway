@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/stretchr/testify/suite"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
@@ -30,32 +29,19 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 			simpleServiceManifest,
 			commonManifest,
 		},
-		Resources: []client.Object{
-			// resources from curl manifest
-			testdefaults.CurlPod,
-			// resources from service manifest
-			simpleSvc, simpleDeployment,
-			// resources from gateway manifest
-			gateway, route,
-			// deployer-generated resources
-			proxyDeployment, proxyService, proxyServiceAccount,
-		},
 	}
 
 	// Define test-specific TestCases
-	testCases := map[string]base.TestCase{
+	testCases := map[string]*base.TestCase{
 		"TestSimpleLocalRateLimit": {
 			Manifests: []string{
 				rateLimitManifest,
-			},
-			Resources: []client.Object{
-				rateLimitTrafficPolicy,
 			},
 		},
 	}
 
 	return &testingSuite{
-		BaseTestingSuite: base.NewBaseTestingSuiteWithoutUpgrades(ctx, testInst, setupTestCase, testCases),
+		BaseTestingSuite: base.NewBaseTestingSuite(ctx, testInst, setupTestCase, testCases),
 	}
 }
 

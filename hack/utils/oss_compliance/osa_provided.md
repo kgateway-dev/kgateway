@@ -1,7 +1,7 @@
 Name|Version|License
 ---|---|---
 [cel.dev/expr](https://cel.dev/expr)|v0.24.0|Apache License 2.0
-[agentgateway/agentgateway](https://github.com/agentgateway/agentgateway)|v0.7.8|Apache License 2.0
+[agentgateway/agentgateway](https://github.com/agentgateway/agentgateway)|v0.8.2|Apache License 2.0
 [avast/retry-go](https://github.com/avast/retry-go)|v2.4.3+incompatible|MIT License
 [retry-go/v4](https://github.com/avast/retry-go)|v4.3.3|MIT License
 [xds/go](https://github.com/cncf/xds)|v0.0.0-20250501225837-2ac532fd4443|Apache License 2.0
@@ -34,10 +34,10 @@ Name|Version|License
 [x/net](https://golang.org/x/net)|v0.43.0|BSD 3-clause "New" or "Revised" License
 [google.golang.org/grpc](https://google.golang.org/grpc)|v1.74.2|Apache License 2.0
 [google.golang.org/protobuf](https://google.golang.org/protobuf)|v1.36.7|BSD 3-clause "New" or "Revised" License
-[helm/v3](https://helm.sh/helm/v3)|v3.18.5|Apache License 2.0
-[istio.io/api](https://istio.io/api)|v1.26.0-alpha.0.0.20250820113222-47f832b86cdd|Apache License 2.0
-[istio.io/client-go](https://istio.io/client-go)|v1.26.0-alpha.0.0.20250820113822-8b883d128bac|Apache License 2.0
-[istio.io/istio](https://istio.io/istio)|v0.0.0-20250826222905-45e4f30947d5|Apache License 2.0
+[helm/v3](https://helm.sh/helm/v3)|v3.18.6|Apache License 2.0
+[istio.io/api](https://istio.io/api)|v1.26.0-alpha.0.0.20250908200844-f7a34ed800ee|Apache License 2.0
+[istio.io/client-go](https://istio.io/client-go)|v1.26.0-alpha.0.0.20250908201345-99e026bfe54f|Apache License 2.0
+[istio.io/istio](https://istio.io/istio)|v0.0.0-20250910161727-ec841334dbad|Apache License 2.0
 [k8s.io/api](https://k8s.io/api)|v0.33.4|Apache License 2.0
 [k8s.io/apiextensions-apiserver](https://k8s.io/apiextensions-apiserver)|v0.33.4|Apache License 2.0
 [k8s.io/apimachinery](https://k8s.io/apimachinery)|v0.33.4|Apache License 2.0
@@ -47,7 +47,7 @@ Name|Version|License
 [k8s.io/utils](https://k8s.io/utils)|v0.0.0-20250604170112-4c0f3b243397|Apache License 2.0
 [sigs.k8s.io/controller-runtime](https://sigs.k8s.io/controller-runtime)|v0.21.0|Apache License 2.0
 [sigs.k8s.io/gateway-api](https://sigs.k8s.io/gateway-api)|v1.3.0|Apache License 2.0
-[sigs.k8s.io/gateway-api-inference-extension](https://sigs.k8s.io/gateway-api-inference-extension)|v1.0.0-rc.2|Apache License 2.0
+[sigs.k8s.io/gateway-api-inference-extension](https://sigs.k8s.io/gateway-api-inference-extension)|v1.0.0|Apache License 2.0
 [structured-merge-diff/v4](https://sigs.k8s.io/structured-merge-diff/v4)|v4.7.0|Apache License 2.0
 [sigs.k8s.io/yaml](https://sigs.k8s.io/yaml)|v1.6.0|MIT License
 [cmd/goimports](https://golang.org/x/tools/cmd/goimports)|latest|MIT License

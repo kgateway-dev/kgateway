@@ -21,7 +21,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
-	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
+	agwir "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/ir"
 )
 
 var (
@@ -850,7 +850,7 @@ func TestADPRouteCollection(t *testing.T) {
 			krtopts := krtinternal.KrtOptions{}
 
 			// Call ADPRouteCollection
-			adpRoutes := ADPRouteCollection(httpRoutes, grpcRoutes, tcpRoutes, tlsRoutes, routeInputs, krtopts, pluginsdk.Plugin{})
+			adpRoutes := ADPRouteCollection(httpRoutes, grpcRoutes, tcpRoutes, tlsRoutes, routeInputs, krtopts)
 
 			// Wait for the collection to process
 			adpRoutes.WaitUntilSynced(context.Background().Done())
@@ -1458,7 +1458,7 @@ func TestADPRouteCollectionGRPC(t *testing.T) {
 			krtopts := krtinternal.KrtOptions{}
 
 			// Call ADPRouteCollection
-			adpRoutes := ADPRouteCollection(httpRoutes, grpcRoutes, tcpRoutes, tlsRoutes, routeInputs, krtopts, pluginsdk.Plugin{})
+			adpRoutes := ADPRouteCollection(httpRoutes, grpcRoutes, tcpRoutes, tlsRoutes, routeInputs, krtopts)
 
 			// Wait for the collection to process
 			adpRoutes.WaitUntilSynced(context.Background().Done())
@@ -1904,7 +1904,7 @@ func TestADPRouteCollectionWithFilters(t *testing.T) {
 			krtopts := krtinternal.KrtOptions{}
 
 			// Call ADPRouteCollection
-			adpRoutes := ADPRouteCollection(httpRoutes, grpcRoutes, tcpRoutes, tlsRoutes, routeInputs, krtopts, pluginsdk.Plugin{})
+			adpRoutes := ADPRouteCollection(httpRoutes, grpcRoutes, tcpRoutes, tlsRoutes, routeInputs, krtopts)
 
 			// Wait for the collection to process
 			adpRoutes.WaitUntilSynced(context.Background().Done())
@@ -2006,7 +2006,7 @@ func TestADPRouteCollectionEquals(t *testing.T) {
 		Namespace: "default",
 	}
 
-	adpResource1 := ADPResourcesForGateway{
+	adpResource1 := agwir.ADPResourcesForGateway{
 		Resources: []*api.Resource{
 			{
 				Kind: &api.Resource_Route{
@@ -2017,7 +2017,7 @@ func TestADPRouteCollectionEquals(t *testing.T) {
 		Gateway: gateway,
 	}
 
-	adpResource2 := ADPResourcesForGateway{
+	adpResource2 := agwir.ADPResourcesForGateway{
 		Resources: []*api.Resource{
 			{
 				Kind: &api.Resource_Route{
@@ -2028,7 +2028,7 @@ func TestADPRouteCollectionEquals(t *testing.T) {
 		Gateway: gateway,
 	}
 
-	adpResource3 := ADPResourcesForGateway{
+	adpResource3 := agwir.ADPResourcesForGateway{
 		Resources: []*api.Resource{
 			{
 				Kind: &api.Resource_Route{

@@ -1,10 +1,13 @@
 Backends:
 - ai:
-    bedrock:
-      guardrailIdentifier: guardrail-policy-id
-      guardrailVersion: guardrail-policy-version
-      model: anthropic.claude-3-5-haiku-20241022-v1:0
-      region: us-west-2
+    providerGroups:
+    - providers:
+      - bedrock:
+          guardrailIdentifier: guardrail-policy-id
+          guardrailVersion: guardrail-policy-version
+          model: anthropic.claude-3-5-haiku-20241022-v1:0
+          region: us-west-2
+        name: bedrock_0
   name: default/bedrock
 Binds:
 - key: 80/default/example-gateway
@@ -16,7 +19,7 @@ Listeners:
   name: http
   protocol: HTTP
 Policies:
-- name: auth-default/bedrock
+- name: auth-default/bedrock-bedrock_0
   spec:
     auth:
       aws:
@@ -26,7 +29,7 @@ Policies:
           secretAccessKey: fakeSecretKeyString
           sessionToken: ""
   target:
-    backend: default/bedrock
+    subBackend: default/bedrock/bedrock_0
 Routes:
 - backends:
   - backend:

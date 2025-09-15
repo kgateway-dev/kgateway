@@ -341,12 +341,11 @@ kgateway-ai-extension-docker:
 # Controller
 #----------------------------------------------------------------------------------
 
-K8S_GATEWAY_DIR=internal/kgateway
-K8S_GATEWAY_SOURCES=$(call get_sources,$(K8S_GATEWAY_DIR))
-CONTROLLER_OUTPUT_DIR=$(OUTPUT_DIR)/$(K8S_GATEWAY_DIR)
+K8S_GATEWAY_SOURCES=$(call get_sources,cmd/kgateway internal/kgateway pkg/ api/)
+CONTROLLER_OUTPUT_DIR=$(OUTPUT_DIR)/internal/kgateway
 export CONTROLLER_IMAGE_REPO ?= kgateway
 
-# We include the files in K8S_GATEWAY_DIR as dependencies to the kgateway build
+# We include the files in K8S_GATEWAY_SOURCES as dependencies to the kgateway build
 # so changes in those directories cause the make target to rebuild
 $(CONTROLLER_OUTPUT_DIR)/kgateway-linux-$(GOARCH): $(K8S_GATEWAY_SOURCES)
 	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags='$(LDFLAGS)' -gcflags='$(GCFLAGS)' -o $@ ./cmd/kgateway/...
@@ -656,9 +655,6 @@ GIE_CONFORMANCE_ARGS := \
     -gateway-class=$(CONFORMANCE_GATEWAY_CLASS) \
     $(GIE_CONFORMANCE_REPORT_ARGS)
 
-# Allow skipping known‐failing tests.
-INFERENCE_SKIP_TESTS ?= -skip-tests EppUnAvailableFailOpen
-
 INFERENCE_CONFORMANCE_DIR := $(shell go list -m -f '{{.Dir}}' sigs.k8s.io/gateway-api-inference-extension)/conformance
 
 # TODO [danehans]: Remove `kubectl wait` when gateway-api-inference-extension/issues/1315 is fixed.
@@ -669,7 +665,7 @@ gie-conformance: gie-crds ## Run the Gateway API Inference Extension conformance
 	    -tags conformance \
 	    -timeout=25m \
 	    -v $(INFERENCE_CONFORMANCE_DIR) \
-	    -args $(GIE_CONFORMANCE_ARGS) $(INFERENCE_SKIP_TESTS)
+	    -args $(GIE_CONFORMANCE_ARGS)
 	@echo "Waiting for gateway-conformance-infra namespace to terminate..."
 	kubectl wait ns gateway-conformance-infra --for=delete --timeout=2m || true
 
@@ -680,7 +676,7 @@ gie-conformance-%: gie-crds ## Run only the specified Gateway API Inference Exte
 	go test -mod=mod -ldflags='$(LDFLAGS)' \
 	    -tags conformance \
 	    -timeout=25m \
-	    -v $(INFERENCE_CONFORMANCE_DIR) $(INFERENCE_SKIP_TESTS) \
+	    -v $(INFERENCE_CONFORMANCE_DIR) \
 	    -args $(GIE_CONFORMANCE_ARGS) -run-test=$*
 	@echo "Waiting for gateway-conformance-infra namespace to terminate..."
 	kubectl wait ns gateway-conformance-infra --for=delete --timeout=2m || true
@@ -709,6 +705,30 @@ agw-conformance: $(TEST_ASSET_DIR)/conformance/conformance_test.go
 agw-conformance-%: $(TEST_ASSET_DIR)/conformance/conformance_test.go
 	CONFORMANCE_GATEWAY_CLASS=$(AGW_CONFORMANCE_GATEWAY_CLASS) go test -mod=mod -ldflags='$(LDFLAGS)' -tags conformance -test.v $(TEST_ASSET_DIR)/conformance/... -args $(AGW_CONFORMANCE_ARGS) \
 	-run-test=$*
+
+#----------------------------------------------------------------------------------
+# Dependency Bumping
+#----------------------------------------------------------------------------------
+
+.PHONY: bump-gtw
+bump-gtw: ## Bump Gateway API deps to $DEP_VERSION
+ifndef DEP_VERSION
+	$(error DEP_VERSION is not set, e.g. make bump-gtw DEP_VERSION=v1.3.0)
+endif
+	@echo "Bumping Gateway API to $(DEP_VERSION)"
+	@$(SHELL) hack/bump_deps.sh gtw $(DEP_VERSION)
+	@echo "Updating licensing..."
+	@$(MAKE) generate-licenses
+
+.PHONY: bump-gie
+bump-gie: ## Bump Gateway API Inference Extension to $DEP_VERSION
+ifndef DEP_VERSION
+	$(error DEP_VERSION is not set, e.g. make bump-gie DEP_VERSION=v0.5.0)
+endif
+	@echo ">>> Bumping Gateway API Inference Extension to $(DEP_VERSION)"
+	@$(SHELL) hack/bump_deps.sh gie $(DEP_VERSION)
+	@echo "Updating licensing..."
+	@$(MAKE) generate-licenses
 
 #----------------------------------------------------------------------------------
 # Printing makefile variables utility

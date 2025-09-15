@@ -19,6 +19,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
+
+	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 )
 
 // gatewayClassProvisioner reconciles the provisioned GatewayClass objects
@@ -27,7 +29,7 @@ type gatewayClassProvisioner struct {
 	client.Client
 	cache.Informers
 	// classConfigs maps a GatewayClass name to its desired configuration.
-	classConfigs map[string]*ClassInfo
+	classConfigs map[string]*deployer.GatewayClassInfo
 	// controllerName is the name of the controller that is managing the GatewayClass objects.
 	controllerName string
 	// initialReconcileCh is a channel that is used to trigger initial reconciliation when
@@ -43,7 +45,7 @@ var _ manager.LeaderElectionRunnable = &gatewayClassProvisioner{}
 // events to trigger the re-creation of the GatewayClass. Additionally, it ignores
 // update events to allow users to modify the GatewayClasses without this controller
 // overwriting them.
-func NewGatewayClassProvisioner(mgr ctrl.Manager, controllerName string, classConfigs map[string]*ClassInfo) error {
+func NewGatewayClassProvisioner(mgr ctrl.Manager, controllerName string, classConfigs map[string]*deployer.GatewayClassInfo) error {
 	initialReconcileCh := make(chan event.TypedGenericEvent[client.Object], 1)
 	provisioner := &gatewayClassProvisioner{
 		Client:             mgr.GetClient(),
@@ -99,7 +101,7 @@ func (r *gatewayClassProvisioner) Reconcile(ctx context.Context, req ctrl.Reques
 	return ctrl.Result{}, errors.Join(errs...)
 }
 
-func (r *gatewayClassProvisioner) createGatewayClass(ctx context.Context, name string, config *ClassInfo) error {
+func (r *gatewayClassProvisioner) createGatewayClass(ctx context.Context, name string, config *deployer.GatewayClassInfo) error {
 	gc := &apiv1.GatewayClass{}
 	err := r.Get(ctx, client.ObjectKey{Name: name}, gc)
 	if err != nil && !apierrors.IsNotFound(err) {

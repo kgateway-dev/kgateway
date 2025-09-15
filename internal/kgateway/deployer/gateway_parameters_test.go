@@ -37,10 +37,114 @@ const (
 
 type testHelmValuesGenerator struct{}
 
+func (thv *testHelmValuesGenerator) IsSelfManaged(ctx context.Context, gw client.Object) (bool, error) {
+	return true, nil
+}
+
 func (thv *testHelmValuesGenerator) GetValues(ctx context.Context, gw client.Object) (map[string]any, error) {
 	return map[string]any{
 		"testHelmValuesGenerator": struct{}{},
 	}, nil
+}
+
+func TestIsSelfManagedOnGatewayClass(t *testing.T) {
+	gwc := defaultGatewayClass()
+	gwParams := emptyGatewayParameters()
+	gwParams.Spec.SelfManaged = &gw2_v1alpha1.SelfManagedGateway{}
+
+	gw := &api.Gateway{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "foo",
+			Namespace: defaultNamespace,
+			UID:       "1235",
+		},
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Gateway",
+			APIVersion: "gateway.networking.k8s.io",
+		},
+		Spec: api.GatewaySpec{
+			GatewayClassName: wellknown.DefaultGatewayClassName,
+		},
+	}
+
+	gwp := NewGatewayParameters(newFakeClientWithObjs(gwc, gwParams), defaultInputs(t, gwc, gw))
+	selfManaged, err := gwp.IsSelfManaged(context.Background(), gw)
+	assert.NoError(t, err)
+	assert.True(t, selfManaged)
+}
+
+func TestIsSelfManagedOnGateway(t *testing.T) {
+	gwc := defaultGatewayClass()
+	defaultGwp := emptyGatewayParameters()
+
+	// gateway params attached to gateway
+	customGwp := emptyGatewayParameters()
+	customGwp.ObjectMeta.Name = "custom-gwp"
+	customGwp.ObjectMeta.Namespace = defaultNamespace
+	customGwp.Spec.SelfManaged = &gw2_v1alpha1.SelfManagedGateway{}
+
+	gw := &api.Gateway{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "foo",
+			Namespace: defaultNamespace,
+			UID:       "1235",
+		},
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Gateway",
+			APIVersion: "gateway.networking.k8s.io",
+		},
+		Spec: api.GatewaySpec{
+			GatewayClassName: wellknown.DefaultGatewayClassName,
+			Infrastructure: &api.GatewayInfrastructure{
+				ParametersRef: &api.LocalParametersReference{
+					Group: gw2_v1alpha1.GroupName,
+					Kind:  api.Kind(wellknown.GatewayParametersGVK.Kind),
+					Name:  "custom-gwp",
+				},
+			},
+		},
+	}
+
+	gwp := NewGatewayParameters(newFakeClientWithObjs(gwc, defaultGwp, customGwp), defaultInputs(t, gwc, gw))
+	selfManaged, err := gwp.IsSelfManaged(context.Background(), gw)
+	assert.NoError(t, err)
+	assert.True(t, selfManaged)
+}
+
+func TestIsSelfManagedWithExtendedGatewayParameters(t *testing.T) {
+	gwc := defaultGatewayClass()
+	gwParams := emptyGatewayParameters()
+	extraGwParams := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{Namespace: defaultNamespace},
+	}
+
+	gw := &api.Gateway{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "foo",
+			Namespace: defaultNamespace,
+			UID:       "1235",
+		},
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Gateway",
+			APIVersion: "gateway.networking.k8s.io",
+		},
+		Spec: api.GatewaySpec{
+			Infrastructure: &api.GatewayInfrastructure{
+				ParametersRef: &api.LocalParametersReference{
+					Group: "v1",
+					Kind:  "ConfigMap",
+					Name:  "testing",
+				},
+			},
+			GatewayClassName: wellknown.DefaultGatewayClassName,
+		},
+	}
+
+	gwp := NewGatewayParameters(newFakeClientWithObjs(gwc, gwParams, extraGwParams), defaultInputs(t, gwc, gw)).
+		WithExtraGatewayParameters(deployer.ExtraGatewayParameters{Group: "v1", Kind: "ConfigMap", Object: extraGwParams, Generator: &testHelmValuesGenerator{}})
+	selfManaged, err := gwp.IsSelfManaged(context.Background(), gw)
+	assert.NoError(t, err)
+	assert.True(t, selfManaged)
 }
 
 func TestShouldUseDefaultGatewayParameters(t *testing.T) {
@@ -67,6 +171,10 @@ func TestShouldUseDefaultGatewayParameters(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Contains(t, vals, "gateway")
+
+	selfManaged, err := gwp.IsSelfManaged(context.Background(), gw)
+	assert.NoError(t, err)
+	assert.False(t, selfManaged)
 }
 
 func TestShouldUseExtendedGatewayParameters(t *testing.T) {
