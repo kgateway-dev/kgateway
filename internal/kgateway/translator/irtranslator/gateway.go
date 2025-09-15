@@ -10,6 +10,7 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/slices"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -25,6 +26,12 @@ import (
 )
 
 var logger = logging.New("translator/ir")
+
+const (
+	listenerNoRoutesReason = "Listener has no routes"
+	// gatewayListenersNoRoutesMessage    = "Listeners skipped because they have no routes: %s"
+	// gatewayAllListenersNoRoutesMessage = "All Listeners skipped because they have no routes: %s"
+)
 
 type Translator struct {
 	ContributedPolicies  map[schema.GroupKind]extensionsplug.PolicyPlugin
@@ -49,6 +56,15 @@ func (t *Translator) Translate(ctx context.Context, gw ir.GatewayIR, reporter sd
 		outListener, routes := t.ComputeListener(ctx, pass, gw, l, reporter)
 		// Envoy rejects listeners with no filter chains; skip adding such listeners.
 		if outListener == nil || len(outListener.GetFilterChains()) == 0 {
+			originalListenerName := findOriginalListenerName(gw, reporter, l)
+			listenerReporter := getReporterForFilterChain(gw, reporter, originalListenerName)
+			listenerReporter.SetCondition(sdkreporter.ListenerCondition{
+				Type:    gwv1.ListenerConditionProgrammed,
+				Status:  metav1.ConditionFalse,
+				Reason:  gwv1.ListenerReasonPending,
+				Message: listenerNoRoutesReason,
+			})
+
 			continue
 		}
 		res.Listeners = append(res.Listeners, outListener)
@@ -63,6 +79,15 @@ func (t *Translator) Translate(ctx context.Context, gw ir.GatewayIR, reporter sd
 	}
 
 	return res
+}
+
+func findOriginalListenerName(gw ir.GatewayIR, reporter sdkreporter.Reporter, listener ir.ListenerIR) string {
+	for _, origListener := range gw.SourceObject.Listeners {
+		if uint32(origListener.Port) == listener.BindPort {
+			return string(origListener.Name)
+		}
+	}
+	return ""
 }
 
 func getReporterForFilterChain(gw ir.GatewayIR, reporter sdkreporter.Reporter, filterChainName string) sdkreporter.ListenerReporter {
