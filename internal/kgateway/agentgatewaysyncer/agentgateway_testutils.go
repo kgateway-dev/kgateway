@@ -700,6 +700,7 @@ func (tc TestCase) Run(
 	addressesCollection := agentGwSyncer.buildAddressCollections(krtOpts)
 
 	// Wait for collections to sync
+	kubeclient.WaitForCacheSync("secrets", ctx.Done(), agwCollections.Secrets.HasSynced)
 	kubeclient.WaitForCacheSync("adp-resources", ctx.Done(), adpResourcesCollection.HasSynced)
 	kubeclient.WaitForCacheSync("addresses", ctx.Done(), addressesCollection.HasSynced)
 
