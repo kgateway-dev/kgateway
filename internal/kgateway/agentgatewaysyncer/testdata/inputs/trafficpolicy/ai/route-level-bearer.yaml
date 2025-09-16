@@ -1,0 +1,137 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: example-gateway
+  namespace: default
+spec:
+  gatewayClassName: agentgateway
+  listeners:
+  - allowedRoutes:
+      namespaces:
+        from: Same
+    name: http
+    port: 8080
+    protocol: HTTP
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  labels:
+    app: kgateway
+  name: openai
+spec:
+  type: AI
+  ai:
+    llm:
+      provider:
+        openai:
+          model: "gpt-4o-mini"
+          authToken:
+            kind: "SecretRef"
+            secretRef:
+              name: openai-secret
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: openai-secret
+type: Opaque
+data:
+  Authorization: QmVhcmVyIG15c2VjcmV0a2V5
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: ai-policy
+  namespace: default
+spec:
+  ai:
+    promptEnrichment:
+      prepend:
+      - content: "You are a helpful assistant. Always be polite and professional."
+        role: system
+      - content: "Remember to follow company guidelines."
+        role: system
+      append:
+      - content: "Please provide a concise response."
+        role: user
+    promptGuard:
+      request:
+        customResponse:
+          message: "Your request was rejected due to inappropriate content"
+          statusCode: 403
+        webhook:
+          host:
+            host: "prompt-guard.example.com"
+            port: 8443
+          forwardHeaderMatches:
+          - type: Exact
+            name: x-foo
+            value: bar
+          - type: RegularExpression
+            name: x-baz
+            value: ^baz-.*
+        regex:
+          action: REJECT
+          matches:
+          - name: harmful-content
+            pattern: (?i)(hate|kill|harm)
+          - name: profanity
+            pattern: (?i)(bad|words)
+        builtins:
+          - CREDIT_CARD
+          - SSN
+        moderation:
+          openAIModeration:
+            authToken:
+              kind: SecretRef
+              secretRef:
+                name: openai-secret
+            model: text-moderation-latest
+      response:
+        webhook:
+          host:
+            host: "response-guard.example.com"
+            port: 8444
+        regex:
+          action: MASK
+          builtins:
+          - EMAIL
+          - PHONE_NUMBER
+          matches:
+          - name: mask-numbers
+            pattern: \b\d{4}\b
+          - name: mask-sensitive
+            pattern: (?i)(password|secret)
+          openAIModeration:
+            authToken:
+              kind: SecretRef
+              secretRef:
+                name: openai-secret
+            model: text-moderation-latest
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: openai-test
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: openai-test
+  namespace: default
+spec:
+  parentRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: example-gateway
+  rules:
+  - backendRefs:
+    - group: gateway.kgateway.dev
+      kind: Backend
+      name: openai
+      weight: 1
+    matches:
+    - path:
+        type: PathPrefix
+        value: /v1/chat/completions
+

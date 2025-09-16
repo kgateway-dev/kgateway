@@ -14,6 +14,7 @@ import (
 	"k8s.io/utils/ptr"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 )
 
 func TestBuildMCPIr(t *testing.T) {
@@ -1015,7 +1016,7 @@ func TestGetSecretValue(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			val, found := getSecretValue(tt.secret, tt.key)
+			val, found := kubeutils.GetSecretValue(tt.secret, tt.key)
 
 			if found != tt.expectedBool {
 				t.Errorf("found = %v, expected %v", found, tt.expectedBool)

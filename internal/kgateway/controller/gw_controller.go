@@ -6,6 +6,7 @@ import (
 	"slices"
 
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -96,7 +97,36 @@ func (r *gatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (re
 	log.Info("reconciling gateway")
 	objs, err := r.deployer.GetObjsToDeploy(ctx, &gw)
 	if err != nil {
+		// if we fail to either reference a valid GatewayParameters or
+		// the GatewayParameters configuration leads to issues building the
+		// objects, we want to set the status to InvalidParameters.
+		condition := metav1.Condition{
+			Type:               string(api.GatewayConditionAccepted),
+			Status:             metav1.ConditionFalse,
+			ObservedGeneration: gw.Generation,
+			Reason:             string(api.GatewayReasonInvalidParameters),
+			Message:            err.Error(),
+		}
+		if statusErr := r.updateGatewayStatusWithRetry(ctx, &gw, condition); statusErr != nil {
+			log.Error(statusErr, "failed to update Gateway status after retries")
+			return ctrl.Result{}, statusErr
+		}
 		return ctrl.Result{}, err
+	} else if existing := meta.FindStatusCondition(gw.Status.Conditions, string(api.GatewayConditionAccepted)); existing != nil &&
+		existing.Status == metav1.ConditionFalse &&
+		existing.Reason == string(api.GatewayReasonInvalidParameters) {
+		// set the status Accepted=true if it had been set to false due to InvalidParameters
+		condition := metav1.Condition{
+			Type:               string(api.GatewayConditionAccepted),
+			Status:             metav1.ConditionTrue,
+			ObservedGeneration: gw.Generation,
+			Reason:             string(api.GatewayReasonAccepted),
+			Message:            "Gateway is accepted",
+		}
+		if statusErr := r.updateGatewayStatusWithRetry(ctx, &gw, condition); statusErr != nil {
+			log.Error(statusErr, "failed to update Gateway status after retries")
+			return ctrl.Result{}, statusErr
+		}
 	}
 	objs = r.deployer.SetNamespaceAndOwner(&gw, objs)
 
@@ -202,6 +232,34 @@ func getDesiredAddresses(gw *api.Gateway, svc *corev1.Service) []api.GatewayStat
 	return ret
 }
 
+// updateGatewayStatusWithRetryFunc updates a Gateway's status with retry logic.
+// The updateFunc receives the latest Gateway and should modify its status as needed.
+// If updateFunc returns false, the update is skipped (no changes needed).
+func updateGatewayStatusWithRetryFunc(
+	ctx context.Context,
+	cli client.Client,
+	gwNN types.NamespacedName,
+	updateFunc func(*api.Gateway) bool,
+) error {
+	err := utilretry.RetryOnConflict(utilretry.DefaultRetry, func() error {
+		var gw api.Gateway
+		if err := cli.Get(ctx, gwNN, &gw); err != nil {
+			return err
+		}
+		original := gw.DeepCopy()
+		if !updateFunc(&gw) {
+			return nil // No update needed
+		}
+		return cli.Status().Patch(ctx, &gw, client.MergeFrom(original))
+	})
+
+	if err != nil {
+		return fmt.Errorf("failed to update gateway status: %w", err)
+	}
+
+	return nil
+}
+
 // updateGatewayAddresses updates the addresses of a Gateway resource.
 func updateGatewayAddresses(
 	ctx context.Context,
@@ -209,31 +267,33 @@ func updateGatewayAddresses(
 	gwNN types.NamespacedName,
 	desired []api.GatewayStatusAddress,
 ) error {
-	err := utilretry.RetryOnConflict(utilretry.DefaultRetry, func() error {
-		// Get the latest Gateway
-		var gw api.Gateway
-		if err := cli.Get(ctx, gwNN, &gw); err != nil {
-			return err
-		}
+	return updateGatewayStatusWithRetryFunc(
+		ctx,
+		cli,
+		gwNN,
+		func(gw *api.Gateway) bool {
+			// Check if an update is needed
+			if slices.Equal(desired, gw.Status.Addresses) {
+				return false
+			}
+			gw.Status.Addresses = desired
+			return true
+		},
+	)
+}
 
-		// Check if an update is needed
-		if slices.Equal(desired, gw.Status.Addresses) {
-			return nil
-		}
-
-		// Prepare a three-way merge patch
-		original := gw.DeepCopy()
-		gw.Status.Addresses = desired
-
-		// Patch only the status subresource
-		return cli.Status().Patch(ctx, &gw, client.MergeFrom(original))
-	})
-
-	if err != nil {
-		return fmt.Errorf("failed to update gateway addresses after retries: %w", err)
-	}
-
-	return nil
+// updateGatewayStatusWithRetry attempts to update the Gateway status with retry logic
+// to handle transient failures when updating the status subresource
+func (r *gatewayReconciler) updateGatewayStatusWithRetry(ctx context.Context, gw *api.Gateway, condition metav1.Condition) error {
+	return updateGatewayStatusWithRetryFunc(
+		ctx,
+		r.cli,
+		client.ObjectKeyFromObject(gw),
+		func(latest *api.Gateway) bool {
+			meta.SetStatusCondition(&latest.Status.Conditions, condition)
+			return true
+		},
+	)
 }
 
 func convertIngressAddr(ing corev1.LoadBalancerIngress) (api.GatewayStatusAddress, bool) {

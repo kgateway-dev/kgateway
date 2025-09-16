@@ -58,7 +58,7 @@ func (r *ReportMap) BuildGWStatus(ctx context.Context, gw gwv1.Gateway, attached
 		finalListeners = append(finalListeners, lisReport.Status)
 	}
 
-	addMissingGatewayConditions(r.Gateway(&gw))
+	addMissingGatewayConditions(r.Gateway(&gw), &gw)
 
 	finalConditions := make([]metav1.Condition, 0)
 	for _, gwCondition := range gwReport.GetConditions() {
@@ -299,7 +299,21 @@ func parentString(ref gwv1.ParentReference) string {
 // Reports will initially only contain negative conditions found during translation,
 // so all missing conditions are assumed to be positive. Here we will add all missing conditions
 // to a given report, i.e. set healthy conditions
-func addMissingGatewayConditions(gwReport *GatewayReport) {
+func addMissingGatewayConditions(gwReport *GatewayReport, gw *gwv1.Gateway) {
+	// If the existing Gateway status contains an Accepted=False with Reason=InvalidParameters,
+	// propagate that into the reporter so it persists and is considered owned by the reporter.
+	// HACK: This is because both the controller and reporter set Accepted status.
+	if existing := meta.FindStatusCondition(gw.Status.Conditions, string(gwv1.GatewayConditionAccepted)); existing != nil &&
+		existing.Status == metav1.ConditionFalse &&
+		existing.Reason == string(gwv1.GatewayReasonInvalidParameters) {
+		gwReport.SetCondition(pluginsdkreporter.GatewayCondition{
+			Type:    gwv1.GatewayConditionAccepted,
+			Status:  metav1.ConditionFalse,
+			Reason:  gwv1.GatewayConditionReason(existing.Reason),
+			Message: existing.Message,
+		})
+	}
+
 	if cond := meta.FindStatusCondition(gwReport.GetConditions(), string(gwv1.GatewayConditionAccepted)); cond == nil {
 		gwReport.SetCondition(pluginsdkreporter.GatewayCondition{
 			Type:    gwv1.GatewayConditionAccepted,

@@ -411,10 +411,11 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
-	t.Run("TrafficPolicy ExtAuth Simple", func(t *testing.T) {
+	// test the default and fully configured values for ExtAuth
+	t.Run("TrafficPolicy ExtAuth Full Config", func(t *testing.T) {
 		test(t, translatorTestCase{
-			inputFile:  "traffic-policy/extauth-simple.yaml",
-			outputFile: "traffic-policy/extauth-simple.yaml",
+			inputFile:  "traffic-policy/extauth-full-config.yaml",
+			outputFile: "traffic-policy/extauth-full-config.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "infra",
 				Name:      "example-gateway",
@@ -433,10 +434,10 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
-	t.Run("TrafficPolicy ExtProc Simple", func(t *testing.T) {
+	t.Run("TrafficPolicy ExtProc Full Config", func(t *testing.T) {
 		test(t, translatorTestCase{
-			inputFile:  "traffic-policy/extproc-simple.yaml",
-			outputFile: "traffic-policy/extproc-simple.yaml",
+			inputFile:  "traffic-policy/extproc-full-config.yaml",
+			outputFile: "traffic-policy/extproc-full-config.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "infra",
 				Name:      "example-gateway",
@@ -1440,10 +1441,10 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
-	t.Run("TrafficPolicy RateLimit Simple", func(t *testing.T) {
+	t.Run("TrafficPolicy RateLimit Full Config", func(t *testing.T) {
 		test(t, translatorTestCase{
-			inputFile:  "traffic-policy/rate-limit.yaml",
-			outputFile: "traffic-policy/rate-limit.yaml",
+			inputFile:  "traffic-policy/rate-limit-full-config.yaml",
+			outputFile: "traffic-policy/rate-limit-full-config.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",

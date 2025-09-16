@@ -61,7 +61,11 @@ spec:
     name: example-route
   extAuth:
     extensionRef:
-      name: basic-extauth
+      name: full-extauth
+    withRequestBody:
+      maxRequestBytes: 100000
+    contextExtensions:
+      my-key: my-val
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: TrafficPolicy
@@ -75,12 +79,12 @@ spec:
     name: example-route-2
   extAuth:
     extensionRef:
-      name: basic-extauth-2
+      name: default-extauth
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: GatewayExtension
 metadata:
-  name: basic-extauth
+  name: full-extauth
   namespace: infra
 spec:
   type: ExtAuth
@@ -91,11 +95,18 @@ spec:
         port: 9000
       requestTimeout: 200ms
     failOpen: true
+    clearRouteCache: true
+    statusOnError: 400
+    statPrefix: my_prefix
+    withRequestBody:
+      maxRequestBytes: 420000
+      allowPartialMessage: true
+      packAsBytes: true
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: GatewayExtension
 metadata:
-  name: basic-extauth-2
+  name: default-extauth
   namespace: infra
 spec:
   type: ExtAuth
@@ -104,8 +115,6 @@ spec:
       backendRef:
         name: ext-authz
         port: 9000
-      requestTimeout: 200ms
-    failOpen: false # this is the CRD default but setting explicitly for translator tests
 ---
 apiVersion: v1
 kind: Service

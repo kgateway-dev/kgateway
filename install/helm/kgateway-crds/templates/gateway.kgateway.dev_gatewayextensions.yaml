@@ -42,6 +42,9 @@ spec:
             properties:
               extAuth:
                 properties:
+                  clearRouteCache:
+                    default: false
+                    type: boolean
                   failOpen:
                     default: false
                     type: boolean
@@ -98,6 +101,30 @@ spec:
                           rule: duration(self) >= duration('1ms')
                     required:
                     - backendRef
+                    type: object
+                  statPrefix:
+                    minLength: 1
+                    type: string
+                  statusOnError:
+                    default: 403
+                    format: int32
+                    maximum: 511
+                    minimum: 100
+                    type: integer
+                  withRequestBody:
+                    properties:
+                      allowPartialMessage:
+                        default: false
+                        type: boolean
+                      maxRequestBytes:
+                        format: int32
+                        minimum: 1
+                        type: integer
+                      packAsBytes:
+                        default: false
+                        type: boolean
+                    required:
+                    - maxRequestBytes
                     type: object
                 required:
                 - grpcService
@@ -161,6 +188,95 @@ spec:
                     required:
                     - backendRef
                     type: object
+                  maxMessageTimeout:
+                    type: string
+                    x-kubernetes-validations:
+                    - message: invalid timeout value
+                      rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                    - message: timeout must be at least 1ms.
+                      rule: duration(self) >= duration('1ms')
+                  messageTimeout:
+                    type: string
+                    x-kubernetes-validations:
+                    - message: invalid timeout value
+                      rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                    - message: timeout must be at least 1ms.
+                      rule: duration(self) >= duration('1ms')
+                  metadataOptions:
+                    properties:
+                      forwarding:
+                        properties:
+                          typed:
+                            items:
+                              type: string
+                            minItems: 1
+                            type: array
+                          untyped:
+                            items:
+                              type: string
+                            minItems: 1
+                            type: array
+                        type: object
+                    type: object
+                  processingMode:
+                    properties:
+                      requestBodyMode:
+                        default: NONE
+                        enum:
+                        - NONE
+                        - STREAMED
+                        - BUFFERED
+                        - BUFFERED_PARTIAL
+                        - FULL_DUPLEX_STREAMED
+                        type: string
+                      requestHeaderMode:
+                        default: SEND
+                        enum:
+                        - DEFAULT
+                        - SEND
+                        - SKIP
+                        type: string
+                      requestTrailerMode:
+                        default: SKIP
+                        enum:
+                        - DEFAULT
+                        - SEND
+                        - SKIP
+                        type: string
+                      responseBodyMode:
+                        default: NONE
+                        enum:
+                        - NONE
+                        - STREAMED
+                        - BUFFERED
+                        - BUFFERED_PARTIAL
+                        - FULL_DUPLEX_STREAMED
+                        type: string
+                      responseHeaderMode:
+                        default: SEND
+                        enum:
+                        - DEFAULT
+                        - SEND
+                        - SKIP
+                        type: string
+                      responseTrailerMode:
+                        default: SKIP
+                        enum:
+                        - DEFAULT
+                        - SEND
+                        - SKIP
+                        type: string
+                    type: object
+                  routeCacheAction:
+                    default: FromResponse
+                    enum:
+                    - FromResponse
+                    - Clear
+                    - Retain
+                    type: string
+                  statPrefix:
+                    minLength: 1
+                    type: string
                 required:
                 - grpcService
                 type: object
@@ -231,6 +347,12 @@ spec:
                     x-kubernetes-validations:
                     - message: invalid duration value
                       rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                  xRateLimitHeaders:
+                    default: "Off"
+                    enum:
+                    - "Off"
+                    - DraftVersion03
+                    type: string
                 required:
                 - domain
                 - grpcService

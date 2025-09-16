@@ -15,7 +15,7 @@ Clusters:
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
   metadata: {}
-  name: kube_infra_extproc_9000
+  name: kube_infra_ext-authz_9000
   type: EDS
   typedExtensionProtocolOptions:
     envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
@@ -38,94 +38,53 @@ Listeners:
         '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
         httpFilters:
         - disabled: true
-          name: global_disable/ext_proc
+          name: global_disable/ext_auth
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.set_metadata.v3.Config
             metadata:
-            - metadataNamespace: dev.kgateway.disable_ext_proc
+            - metadataNamespace: dev.kgateway.disable_ext_auth
               value:
                 disable: true
         - disabled: true
-          name: ext_proc/infra/basic-extproc
+          name: ext_auth/infra/default-extauth
           typedConfig:
-            '@type': type.googleapis.com/envoy.extensions.common.matching.v3.ExtensionWithMatcher
-            extensionConfig:
-              name: composite_ext_proc
-              typedConfig:
-                '@type': type.googleapis.com/envoy.extensions.filters.http.composite.v3.Composite
-            xdsMatcher:
-              matcherList:
-                matchers:
-                - onMatch:
-                    action:
-                      name: composite-action
-                      typedConfig:
-                        '@type': type.googleapis.com/envoy.extensions.filters.http.composite.v3.ExecuteFilterAction
-                        typedConfig:
-                          name: envoy.filters.http.ext_proc
-                          typedConfig:
-                            '@type': type.googleapis.com/envoy.extensions.filters.http.ext_proc.v3.ExternalProcessor
-                            grpcService:
-                              envoyGrpc:
-                                clusterName: kube_infra_extproc_9000
-                              timeout: 0.300s
-                  predicate:
-                    singlePredicate:
-                      customMatch:
-                        name: envoy.matching.matchers.metadata_matcher
-                        typedConfig:
-                          '@type': type.googleapis.com/envoy.extensions.matching.input_matchers.metadata.v3.Metadata
-                          invert: true
-                          value:
-                            boolMatch: true
-                      input:
-                        name: disable
-                        typedConfig:
-                          '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.network.v3.DynamicMetadataInput
-                          filter: dev.kgateway.disable_ext_proc
-                          path:
-                          - key: disable
+            '@type': type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthz
+            filterEnabledMetadata:
+              filter: dev.kgateway.disable_ext_auth
+              invert: true
+              path:
+              - key: disable
+              value:
+                boolMatch: true
+            grpcService:
+              envoyGrpc:
+                clusterName: kube_infra_ext-authz_9000
+            statusOnError:
+              code: Forbidden
         - disabled: true
-          name: ext_proc/infra/basic-extproc-2
+          name: ext_auth/infra/full-extauth
           typedConfig:
-            '@type': type.googleapis.com/envoy.extensions.common.matching.v3.ExtensionWithMatcher
-            extensionConfig:
-              name: composite_ext_proc
-              typedConfig:
-                '@type': type.googleapis.com/envoy.extensions.filters.http.composite.v3.Composite
-            xdsMatcher:
-              matcherList:
-                matchers:
-                - onMatch:
-                    action:
-                      name: composite-action
-                      typedConfig:
-                        '@type': type.googleapis.com/envoy.extensions.filters.http.composite.v3.ExecuteFilterAction
-                        typedConfig:
-                          name: envoy.filters.http.ext_proc
-                          typedConfig:
-                            '@type': type.googleapis.com/envoy.extensions.filters.http.ext_proc.v3.ExternalProcessor
-                            failureModeAllow: true
-                            grpcService:
-                              envoyGrpc:
-                                clusterName: kube_infra_extproc_9000
-                              timeout: 0.200s
-                  predicate:
-                    singlePredicate:
-                      customMatch:
-                        name: envoy.matching.matchers.metadata_matcher
-                        typedConfig:
-                          '@type': type.googleapis.com/envoy.extensions.matching.input_matchers.metadata.v3.Metadata
-                          invert: true
-                          value:
-                            boolMatch: true
-                      input:
-                        name: disable
-                        typedConfig:
-                          '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.network.v3.DynamicMetadataInput
-                          filter: dev.kgateway.disable_ext_proc
-                          path:
-                          - key: disable
+            '@type': type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthz
+            clearRouteCache: true
+            failureModeAllow: true
+            filterEnabledMetadata:
+              filter: dev.kgateway.disable_ext_auth
+              invert: true
+              path:
+              - key: disable
+              value:
+                boolMatch: true
+            grpcService:
+              envoyGrpc:
+                clusterName: kube_infra_ext-authz_9000
+              timeout: 0.200s
+            statPrefix: my_prefix
+            statusOnError:
+              code: BadRequest
+            withRequestBody:
+              allowPartialMessage: true
+              maxRequestBytes: 420000
+              packAsBytes: true
         - name: envoy.filters.http.router
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -153,31 +112,35 @@ Routes:
       metadata:
         filterMetadata:
           merge.TrafficPolicy.gateway.kgateway.dev:
-            extProc:
-            - gateway.kgateway.dev/TrafficPolicy/infra/extproc-for-http-route-2
+            extAuth:
+            - gateway.kgateway.dev/TrafficPolicy/infra/extauth-for-http-route-2
       name: listener~80~example_com-route-0-httproute-example-route-2-infra-0-0-matcher-0
       route:
         cluster: kube_infra_example-svc_80
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
       typedPerFilterConfig:
-        ext_proc/infra/basic-extproc-2:
-          '@type': type.googleapis.com/envoy.extensions.filters.http.ext_proc.v3.ExtProcPerRoute
-          overrides: {}
+        ext_auth/infra/default-extauth:
+          '@type': type.googleapis.com/envoy.config.route.v3.FilterConfig
+          config: {}
     - match:
         pathSeparatedPrefix: /example-route
       metadata:
         filterMetadata:
           merge.TrafficPolicy.gateway.kgateway.dev:
-            extProc:
-            - gateway.kgateway.dev/TrafficPolicy/infra/extproc-for-http-route
+            extAuth:
+            - gateway.kgateway.dev/TrafficPolicy/infra/extauth-for-http-route
       name: listener~80~example_com-route-1-httproute-example-route-infra-0-0-matcher-0
       route:
         cluster: kube_infra_example-svc_80
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
       typedPerFilterConfig:
-        ext_proc/infra/basic-extproc:
-          '@type': type.googleapis.com/envoy.extensions.filters.http.ext_proc.v3.ExtProcPerRoute
-          overrides: {}
+        ext_auth/infra/full-extauth:
+          '@type': type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthzPerRoute
+          checkSettings:
+            contextExtensions:
+              my-key: my-val
+            withRequestBody:
+              maxRequestBytes: 100000
 Statuses:
   gateways:
     infra/example-gateway:
@@ -264,7 +227,7 @@ Statuses:
           kind: ""
           name: example-gateway
   policies:
-    TrafficPolicy/infra/extproc-for-http-route:
+    TrafficPolicy/infra/extauth-for-http-route:
       ancestors:
       - ancestorRef:
           group: gateway.networking.k8s.io
@@ -283,7 +246,7 @@ Statuses:
           status: "True"
           type: Attached
         controllerName: kgateway.dev/kgateway
-    TrafficPolicy/infra/extproc-for-http-route-2:
+    TrafficPolicy/infra/extauth-for-http-route-2:
       ancestors:
       - ancestorRef:
           group: gateway.networking.k8s.io

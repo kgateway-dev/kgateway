@@ -314,9 +314,28 @@ func (c *Cli) CurlFromPod(ctx context.Context, podOpts PodExecOptions, options .
 	}, curlArgs...)
 
 	stdout, stderr, err := c.ExecuteOn(ctx, c.kubeContext, args...)
-	log.Printf("executing curl with args: %v", args)
+	log.Printf("executing curl with args: %s", argsQuotedForShell(args))
 
 	return &CurlResponse{StdOut: stdout, StdErr: stderr}, err
+}
+
+func argsQuotedForShell(args []string) string {
+	var builder strings.Builder
+	for i, arg := range args {
+		if i > 0 {
+			builder.WriteString(" ")
+		}
+		if strings.Contains(arg, "'") {
+			builder.WriteString(fmt.Sprintf("%q", arg))
+		} else if strings.Contains(arg, " ") || strings.Contains(arg, "\"") || arg == "" {
+			builder.WriteString("'")
+			builder.WriteString(arg)
+			builder.WriteString("'")
+		} else {
+			builder.WriteString(arg)
+		}
+	}
+	return builder.String()
 }
 
 func (c *Cli) ExecuteOn(ctx context.Context, kubeContext string, args ...string) (string, string, error) {

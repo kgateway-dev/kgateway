@@ -429,12 +429,14 @@ spec:
                   withRequestBody:
                     properties:
                       allowPartialMessage:
+                        default: false
                         type: boolean
                       maxRequestBytes:
                         format: int32
                         minimum: 1
                         type: integer
                       packAsBytes:
+                        default: false
                         type: boolean
                     required:
                     - maxRequestBytes
@@ -704,6 +706,8 @@ spec:
                             x-kubernetes-validations:
                             - message: invalid duration value
                               rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                            - message: must be at least 50ms
+                              rule: duration(self) >= duration('50ms')
                           maxTokens:
                             format: int32
                             minimum: 1

@@ -2,11 +2,23 @@
 
 package v1alpha1
 
+import (
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	apiv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+)
+
 // ExtProcProviderApplyConfiguration represents a declarative configuration of the ExtProcProvider type for use
 // with apply.
 type ExtProcProviderApplyConfiguration struct {
-	GrpcService *ExtGrpcServiceApplyConfiguration `json:"grpcService,omitempty"`
-	FailOpen    *bool                             `json:"failOpen,omitempty"`
+	GrpcService       *ExtGrpcServiceApplyConfiguration    `json:"grpcService,omitempty"`
+	FailOpen          *bool                                `json:"failOpen,omitempty"`
+	ProcessingMode    *ProcessingModeApplyConfiguration    `json:"processingMode,omitempty"`
+	MessageTimeout    *v1.Duration                         `json:"messageTimeout,omitempty"`
+	MaxMessageTimeout *v1.Duration                         `json:"maxMessageTimeout,omitempty"`
+	StatPrefix        *string                              `json:"statPrefix,omitempty"`
+	RouteCacheAction  *apiv1alpha1.ExtProcRouteCacheAction `json:"routeCacheAction,omitempty"`
+	MetadataOptions   *MetadataOptionsApplyConfiguration   `json:"metadataOptions,omitempty"`
 }
 
 // ExtProcProviderApplyConfiguration constructs a declarative configuration of the ExtProcProvider type for use with
@@ -28,5 +40,53 @@ func (b *ExtProcProviderApplyConfiguration) WithGrpcService(value *ExtGrpcServic
 // If called multiple times, the FailOpen field is set to the value of the last call.
 func (b *ExtProcProviderApplyConfiguration) WithFailOpen(value bool) *ExtProcProviderApplyConfiguration {
 	b.FailOpen = &value
+	return b
+}
+
+// WithProcessingMode sets the ProcessingMode field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the ProcessingMode field is set to the value of the last call.
+func (b *ExtProcProviderApplyConfiguration) WithProcessingMode(value *ProcessingModeApplyConfiguration) *ExtProcProviderApplyConfiguration {
+	b.ProcessingMode = value
+	return b
+}
+
+// WithMessageTimeout sets the MessageTimeout field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the MessageTimeout field is set to the value of the last call.
+func (b *ExtProcProviderApplyConfiguration) WithMessageTimeout(value v1.Duration) *ExtProcProviderApplyConfiguration {
+	b.MessageTimeout = &value
+	return b
+}
+
+// WithMaxMessageTimeout sets the MaxMessageTimeout field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the MaxMessageTimeout field is set to the value of the last call.
+func (b *ExtProcProviderApplyConfiguration) WithMaxMessageTimeout(value v1.Duration) *ExtProcProviderApplyConfiguration {
+	b.MaxMessageTimeout = &value
+	return b
+}
+
+// WithStatPrefix sets the StatPrefix field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the StatPrefix field is set to the value of the last call.
+func (b *ExtProcProviderApplyConfiguration) WithStatPrefix(value string) *ExtProcProviderApplyConfiguration {
+	b.StatPrefix = &value
+	return b
+}
+
+// WithRouteCacheAction sets the RouteCacheAction field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the RouteCacheAction field is set to the value of the last call.
+func (b *ExtProcProviderApplyConfiguration) WithRouteCacheAction(value apiv1alpha1.ExtProcRouteCacheAction) *ExtProcProviderApplyConfiguration {
+	b.RouteCacheAction = &value
+	return b
+}
+
+// WithMetadataOptions sets the MetadataOptions field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the MetadataOptions field is set to the value of the last call.
+func (b *ExtProcProviderApplyConfiguration) WithMetadataOptions(value *MetadataOptionsApplyConfiguration) *ExtProcProviderApplyConfiguration {
+	b.MetadataOptions = value
 	return b
 }

@@ -27,6 +27,7 @@ These are the steps required to add a new CRD to be used in the Kubernetes Gatew
     - Use the `omitempty` json struct tag.
     - Use pointer types (e.g. `*string`), unless the type has a nil zero value (e.g. slices/maps). An exception is if the field has a default value (`+kubebuilder:default=...`); then it it acceptable to use a non-pointer type.
 - If a field is not marked as optional, then it is implicitly required.
+    - Required fields MUST NOT set the `omitempty` json struct tag.
 - Avoid using slices with pointers (e.g. use `[]string` instead of `[]*string`). See: https://github.com/kubernetes/code-generator/issues/166
 - For time duration fields, use the `metav1.Duration` type and use CEL validation rules to ensure it is within the correct range.
 

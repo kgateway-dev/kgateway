@@ -67,7 +67,7 @@ spec:
       - entries:
         - type: Path
       extensionRef:
-        name: global-ratelimit
+        name: default-ratelimit
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: TrafficPolicy
@@ -89,12 +89,25 @@ spec:
       - entries:
         - type: Path
       extensionRef:
-        name: global-ratelimit-2
+        name: full-ratelimit
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: GatewayExtension
 metadata:
-  name: global-ratelimit
+  name: default-ratelimit
+spec:
+  type: RateLimit
+  rateLimit:
+    grpcService:
+      backendRef:
+        name: ratelimit
+        port: 8081
+    domain: "api-gateway"
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: full-ratelimit
 spec:
   type: RateLimit
   rateLimit:
@@ -105,23 +118,11 @@ spec:
       requestTimeout: 200ms # this timeout is specific to the grpcService
     domain: "api-gateway"
     timeout: "50ms"
-    failOpen: true # true is CRD default, but setting explicitly for translator test
----
-apiVersion: gateway.kgateway.dev/v1alpha1
-kind: GatewayExtension
-metadata:
-  name: global-ratelimit-2
-spec:
-  type: RateLimit
-  rateLimit:
-    grpcService:
-      backendRef:
-        name: ratelimit
-        port: 8081
-      requestTimeout: 200ms # this timeout is specific to the grpcService
-    domain: "api-gateway"
-    timeout: "50ms"
-    failOpen: false
+    # this should be tested, but due to a bug in how the translator tests process
+    # resources, types of `bool` with a value of false don't work correctly.
+    # ref: https://github.com/kgateway-dev/kgateway/issues/12264
+    # failOpen: false
+    xRateLimitHeaders: DraftVersion03
 ---
 apiVersion: v1
 kind: Service

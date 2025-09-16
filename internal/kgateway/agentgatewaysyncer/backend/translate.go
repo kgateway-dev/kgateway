@@ -3,8 +3,6 @@ package agentgatewaybackend
 import (
 	"errors"
 	"fmt"
-	"strings"
-	"unicode/utf8"
 
 	"github.com/agentgateway/agentgateway/go/api"
 	wrappers "google.golang.org/protobuf/types/known/wrapperspb"
@@ -299,21 +297,15 @@ func buildTranslatedAuthPolicy(krtctx krt.HandlerContext, authToken *v1alpha1.Si
 		}
 
 		// Get secret using the SecretIndex
-		secret, err := getSecret(secrets, krtctx, authToken.SecretRef.Name, namespace)
+		secret, err := kubeutils.GetSecret(secrets, krtctx, authToken.SecretRef.Name, namespace)
 		if err != nil {
 			// Return nil auth policy if secret not found - this will be handled upstream
 			// TODO(npolshak): Add backend status errors https://github.com/kgateway-dev/kgateway/issues/11966
 			return nil
 		}
 
-		authKey := ""
-		if authValue, exists := getSecretValue(secret, "Authorization"); exists {
-			// Strip the "Bearer " prefix if present, as it will be added by the provider
-			authValue = strings.TrimSpace(authValue)
-			authKey = strings.TrimSpace(strings.TrimPrefix(authValue, "Bearer "))
-		}
-
-		if authKey == "" {
+		authKey, exists := kubeutils.GetSecretAuth(secret)
+		if !exists {
 			return nil
 		}
 
@@ -340,15 +332,6 @@ func buildTranslatedAuthPolicy(krtctx krt.HandlerContext, authToken *v1alpha1.Si
 	default:
 		return nil
 	}
-}
-
-func getSecret(secrets krt.Collection[*corev1.Secret], krtctx krt.HandlerContext, secretName, ns string) (*corev1.Secret, error) {
-	secretKey := ns + "/" + secretName
-	secret := krt.FetchOne(krtctx, secrets, krt.FilterKey(secretKey))
-	if secret == nil {
-		return nil, fmt.Errorf("failed to find secret %s", secretName)
-	}
-	return *secret, nil
 }
 
 // buildMCPIr pre-resolves MCP backend configuration including service discovery
@@ -544,16 +527,6 @@ func toMCPProtocol(appProtocol string) api.MCPTarget_Protocol {
 	}
 }
 
-// getSecretValue extracts a value from a Kubernetes secret, handling both Data and StringData fields.
-// It prioritizes StringData over Data if both are present.
-func getSecretValue(secret *corev1.Secret, key string) (string, bool) {
-	if value, exists := secret.Data[key]; exists && utf8.Valid(value) {
-		return strings.TrimSpace(string(value)), true
-	}
-
-	return "", false
-}
-
 func buildBedrockAuthPolicy(krtctx krt.HandlerContext, region string, auth *v1alpha1.AwsAuth, secrets krt.Collection[*corev1.Secret], namespace string) (*api.BackendAuthPolicy, error) {
 	var errs []error
 	if auth == nil {
@@ -576,7 +549,7 @@ func buildBedrockAuthPolicy(krtctx krt.HandlerContext, region string, auth *v1al
 		}
 
 		// Get secret using the SecretIndex
-		secret, err := getSecret(secrets, krtctx, auth.SecretRef.Name, namespace)
+		secret, err := kubeutils.GetSecret(secrets, krtctx, auth.SecretRef.Name, namespace)
 		if err != nil {
 			// Return nil auth policy if secret not found - this will be handled upstream
 			// TODO(npolshak): Add backend status errors https://github.com/kgateway-dev/kgateway/issues/11966
@@ -587,21 +560,21 @@ func buildBedrockAuthPolicy(krtctx krt.HandlerContext, region string, auth *v1al
 		var sessionToken *string
 
 		// Extract access key
-		if value, exists := getSecretValue(secret, wellknown.AccessKey); !exists {
+		if value, exists := kubeutils.GetSecretValue(secret, wellknown.AccessKey); !exists {
 			errs = append(errs, errors.New("accessKey is missing or not a valid string"))
 		} else {
 			accessKeyId = value
 		}
 
 		// Extract secret key
-		if value, exists := getSecretValue(secret, wellknown.SecretKey); !exists {
+		if value, exists := kubeutils.GetSecretValue(secret, wellknown.SecretKey); !exists {
 			errs = append(errs, errors.New("secretKey is missing or not a valid string"))
 		} else {
 			secretAccessKey = value
 		}
 
 		// Extract session token (optional)
-		if value, exists := getSecretValue(secret, wellknown.SessionToken); exists {
+		if value, exists := kubeutils.GetSecretValue(secret, wellknown.SessionToken); exists {
 			sessionToken = ptr.To(value)
 		}
 

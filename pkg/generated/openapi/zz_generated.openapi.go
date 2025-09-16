@@ -47,7 +47,6 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.BedrockConfig":                             schema_kgateway_v2_api_v1alpha1_BedrockConfig(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.BodyTransformation":                        schema_kgateway_v2_api_v1alpha1_BodyTransformation(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Buffer":                                    schema_kgateway_v2_api_v1alpha1_Buffer(ref),
-		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.BufferSettings":                            schema_kgateway_v2_api_v1alpha1_BufferSettings(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CELFilter":                                 schema_kgateway_v2_api_v1alpha1_CELFilter(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CSRFPolicy":                                schema_kgateway_v2_api_v1alpha1_CSRFPolicy(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CommonAccessLogGrpcService":                schema_kgateway_v2_api_v1alpha1_CommonAccessLogGrpcService(ref),
@@ -73,6 +72,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.EnvoyBootstrap":                            schema_kgateway_v2_api_v1alpha1_EnvoyBootstrap(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.EnvoyContainer":                            schema_kgateway_v2_api_v1alpha1_EnvoyContainer(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.EnvoyHealthCheck":                          schema_kgateway_v2_api_v1alpha1_EnvoyHealthCheck(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtAuthBufferSettings":                     schema_kgateway_v2_api_v1alpha1_ExtAuthBufferSettings(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtAuthPolicy":                             schema_kgateway_v2_api_v1alpha1_ExtAuthPolicy(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtAuthProvider":                           schema_kgateway_v2_api_v1alpha1_ExtAuthProvider(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtGrpcService":                            schema_kgateway_v2_api_v1alpha1_ExtGrpcService(ref),
@@ -131,6 +131,8 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.McpTargetSelector":                         schema_kgateway_v2_api_v1alpha1_McpTargetSelector(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Message":                                   schema_kgateway_v2_api_v1alpha1_Message(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.MetadataKey":                               schema_kgateway_v2_api_v1alpha1_MetadataKey(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.MetadataNamespaces":                        schema_kgateway_v2_api_v1alpha1_MetadataNamespaces(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.MetadataOptions":                           schema_kgateway_v2_api_v1alpha1_MetadataOptions(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.MetadataPathSegment":                       schema_kgateway_v2_api_v1alpha1_MetadataPathSegment(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Moderation":                                schema_kgateway_v2_api_v1alpha1_Moderation(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.MultiPoolConfig":                           schema_kgateway_v2_api_v1alpha1_MultiPoolConfig(ref),
@@ -2048,42 +2050,6 @@ func schema_kgateway_v2_api_v1alpha1_Buffer(ref common.ReferenceCallback) common
 	}
 }
 
-func schema_kgateway_v2_api_v1alpha1_BufferSettings(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "BufferSettings configures how the request body should be buffered.",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"maxRequestBytes": {
-						SchemaProps: spec.SchemaProps{
-							Description: "MaxRequestBytes sets the maximum size of a message body to buffer. Requests exceeding this size will receive HTTP 413 and not be sent to the authorization service.",
-							Default:     0,
-							Type:        []string{"integer"},
-							Format:      "int64",
-						},
-					},
-					"allowPartialMessage": {
-						SchemaProps: spec.SchemaProps{
-							Description: "AllowPartialMessage determines if partial messages should be allowed. When true, requests will be sent to the authorization service even if they exceed maxRequestBytes. When unset, the default behavior is false.",
-							Type:        []string{"boolean"},
-							Format:      "",
-						},
-					},
-					"packAsBytes": {
-						SchemaProps: spec.SchemaProps{
-							Description: "PackAsBytes determines if the body should be sent as raw bytes. When true, the body is sent as raw bytes in the raw_body field. When false, the body is sent as UTF-8 string in the body field. When unset, the default behavior is false.",
-							Type:        []string{"boolean"},
-							Format:      "",
-						},
-					},
-				},
-				Required: []string{"maxRequestBytes"},
-			},
-		},
-	}
-}
-
 func schema_kgateway_v2_api_v1alpha1_CELFilter(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -3088,6 +3054,42 @@ func schema_kgateway_v2_api_v1alpha1_EnvoyHealthCheck(ref common.ReferenceCallba
 	}
 }
 
+func schema_kgateway_v2_api_v1alpha1_ExtAuthBufferSettings(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "ExtAuthBufferSettings configures how the request body should be buffered.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"maxRequestBytes": {
+						SchemaProps: spec.SchemaProps{
+							Description: "MaxRequestBytes sets the maximum size of a message body to buffer. Requests exceeding this size will receive HTTP 413 and not be sent to the authorization service.",
+							Default:     0,
+							Type:        []string{"integer"},
+							Format:      "int64",
+						},
+					},
+					"allowPartialMessage": {
+						SchemaProps: spec.SchemaProps{
+							Description: "AllowPartialMessage determines if partial messages should be allowed. When true, requests will be sent to the authorization service even if they exceed maxRequestBytes. The default behavior is false.",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
+					"packAsBytes": {
+						SchemaProps: spec.SchemaProps{
+							Description: "PackAsBytes determines if the body should be sent as raw bytes. When true, the body is sent as raw bytes in the raw_body field. When false, the body is sent as UTF-8 string in the body field. The default behavior is false.",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
+				},
+				Required: []string{"maxRequestBytes"},
+			},
+		},
+	}
+}
+
 func schema_kgateway_v2_api_v1alpha1_ExtAuthPolicy(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -3104,7 +3106,7 @@ func schema_kgateway_v2_api_v1alpha1_ExtAuthPolicy(ref common.ReferenceCallback)
 					"withRequestBody": {
 						SchemaProps: spec.SchemaProps{
 							Description: "WithRequestBody allows the request body to be buffered and sent to the authorization service. Warning buffering has implications for streaming and therefore performance.",
-							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.BufferSettings"),
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtAuthBufferSettings"),
 						},
 					},
 					"contextExtensions": {
@@ -3133,7 +3135,7 @@ func schema_kgateway_v2_api_v1alpha1_ExtAuthPolicy(ref common.ReferenceCallback)
 			},
 		},
 		Dependencies: []string{
-			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.BufferSettings", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.NamespacedObjectReference", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.PolicyDisable"},
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtAuthBufferSettings", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.NamespacedObjectReference", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.PolicyDisable"},
 	}
 }
 
@@ -3153,8 +3155,34 @@ func schema_kgateway_v2_api_v1alpha1_ExtAuthProvider(ref common.ReferenceCallbac
 					"failOpen": {
 						SchemaProps: spec.SchemaProps{
 							Description: "FailOpen determines if requests are allowed when the ext auth service is unavailable. Defaults to false, meaning requests will be denied if the ext auth service is unavailable.",
-							Default:     false,
 							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
+					"clearRouteCache": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ClearRouteCache determines if the route cache should be cleared to allow the external authorization service to correctly affect routing decisions.",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
+					"withRequestBody": {
+						SchemaProps: spec.SchemaProps{
+							Description: "WithRequestBody allows the request body to be buffered and sent to the authorization service. Warning: buffering has implications for streaming and therefore performance.",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtAuthBufferSettings"),
+						},
+					},
+					"statusOnError": {
+						SchemaProps: spec.SchemaProps{
+							Description: "StatusOnError sets the HTTP status response code that is returned to the client when the authorization server returns an error or cannot be reached. Must be in the range of 100-511 inclusive. The default matches the deny response code of 403 Forbidden.",
+							Type:        []string{"integer"},
+							Format:      "int64",
+						},
+					},
+					"statPrefix": {
+						SchemaProps: spec.SchemaProps{
+							Description: "StatPrefix is an optional prefix to include when emitting stats from the extauth filter, enabling different instances of the filter to have unique stats.",
+							Type:        []string{"string"},
 							Format:      "",
 						},
 					},
@@ -3163,7 +3191,7 @@ func schema_kgateway_v2_api_v1alpha1_ExtAuthProvider(ref common.ReferenceCallbac
 			},
 		},
 		Dependencies: []string{
-			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtGrpcService"},
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtAuthBufferSettings", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtGrpcService"},
 	}
 }
 
@@ -3251,9 +3279,46 @@ func schema_kgateway_v2_api_v1alpha1_ExtProcProvider(ref common.ReferenceCallbac
 					"failOpen": {
 						SchemaProps: spec.SchemaProps{
 							Description: "FailOpen determines if requests are allowed when the ext proc service is unavailable. Defaults to true, meaning requests are allowed upstream even if the ext proc service is unavailable.",
-							Default:     false,
 							Type:        []string{"boolean"},
 							Format:      "",
+						},
+					},
+					"processingMode": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ProcessingMode defines how the filter should interact with the request/response streams.",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ProcessingMode"),
+						},
+					},
+					"messageTimeout": {
+						SchemaProps: spec.SchemaProps{
+							Description: "MessageTimeout is the timeout for each message sent to the external processing server.",
+							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Duration"),
+						},
+					},
+					"maxMessageTimeout": {
+						SchemaProps: spec.SchemaProps{
+							Description: "MaxMessageTimeout specifies the upper bound of override_message_timeout that may be sent from the external processing server. The default value 0, which effectively disables the override_message_timeout API.",
+							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Duration"),
+						},
+					},
+					"statPrefix": {
+						SchemaProps: spec.SchemaProps{
+							Description: "StatPrefix is an optional prefix to include when emitting stats from the extproc filter, enabling different instances of the filter to have unique stats.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"routeCacheAction": {
+						SchemaProps: spec.SchemaProps{
+							Description: "RouteCacheAction describes the route cache action to be taken when an external processor response is received in response to request headers. The default behavior is \"FromResponse\" which will only clear the route cache when an external processing response has the clear_route_cache field set.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"metadataOptions": {
+						SchemaProps: spec.SchemaProps{
+							Description: "MetadataOptions allows configuring metadata namespaces to forwarded or received from the external processing server.",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.MetadataOptions"),
 						},
 					},
 				},
@@ -3261,7 +3326,7 @@ func schema_kgateway_v2_api_v1alpha1_ExtProcProvider(ref common.ReferenceCallbac
 			},
 		},
 		Dependencies: []string{
-			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtGrpcService"},
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtGrpcService", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.MetadataOptions", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ProcessingMode", "k8s.io/apimachinery/pkg/apis/meta/v1.Duration"},
 	}
 }
 
@@ -5368,6 +5433,68 @@ func schema_kgateway_v2_api_v1alpha1_MetadataKey(ref common.ReferenceCallback) c
 	}
 }
 
+func schema_kgateway_v2_api_v1alpha1_MetadataNamespaces(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "MetadataNamespaces configures which metadata namespaces to use. See [envoy docs](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/ext_proc/v3/ext_proc.proto#envoy-v3-api-msg-extensions-filters-http-ext-proc-v3-metadataoptions-metadatanamespaces) for specifics.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"typed": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
+									},
+								},
+							},
+						},
+					},
+					"untyped": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func schema_kgateway_v2_api_v1alpha1_MetadataOptions(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "MetadataOptions allows configuring metadata namespaces to forward or receive from the external processing server.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"forwarding": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Forwarding defines the typed or untyped dynamic metadata namespaces to forward to the external processing server.",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.MetadataNamespaces"),
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.MetadataNamespaces"},
+	}
+}
+
 func schema_kgateway_v2_api_v1alpha1_MetadataPathSegment(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -6458,7 +6585,6 @@ func schema_kgateway_v2_api_v1alpha1_RateLimitProvider(ref common.ReferenceCallb
 					"failOpen": {
 						SchemaProps: spec.SchemaProps{
 							Description: "FailOpen determines if requests are limited when the rate limit service is unavailable. Defaults to true, meaning requests are allowed upstream and not limited if the rate limit service is unavailable.",
-							Default:     false,
 							Type:        []string{"boolean"},
 							Format:      "",
 						},
@@ -6467,6 +6593,13 @@ func schema_kgateway_v2_api_v1alpha1_RateLimitProvider(ref common.ReferenceCallb
 						SchemaProps: spec.SchemaProps{
 							Description: "Timeout provides an optional timeout value for requests to the rate limit service. For rate limiting, prefer using this timeout rather than setting the generic `timeout` on the `GrpcService`. See [envoy issue](https://github.com/envoyproxy/envoy/issues/20070) for more info.",
 							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Duration"),
+						},
+					},
+					"xRateLimitHeaders": {
+						SchemaProps: spec.SchemaProps{
+							Description: "XRateLimitHeaders configures the standard version to use for X-RateLimit headers emitted. See [envoy docs](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/ratelimit/v3/rate_limit.proto#envoy-v3-api-field-extensions-filters-http-ratelimit-v3-ratelimit-enable-x-ratelimit-headers) for more info. Disabled by default.",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 				},

@@ -2,24 +2,24 @@
 
 package v1alpha1
 
-// BufferSettingsApplyConfiguration represents a declarative configuration of the BufferSettings type for use
+// ExtAuthBufferSettingsApplyConfiguration represents a declarative configuration of the ExtAuthBufferSettings type for use
 // with apply.
-type BufferSettingsApplyConfiguration struct {
+type ExtAuthBufferSettingsApplyConfiguration struct {
 	MaxRequestBytes     *uint32 `json:"maxRequestBytes,omitempty"`
 	AllowPartialMessage *bool   `json:"allowPartialMessage,omitempty"`
 	PackAsBytes         *bool   `json:"packAsBytes,omitempty"`
 }
 
-// BufferSettingsApplyConfiguration constructs a declarative configuration of the BufferSettings type for use with
+// ExtAuthBufferSettingsApplyConfiguration constructs a declarative configuration of the ExtAuthBufferSettings type for use with
 // apply.
-func BufferSettings() *BufferSettingsApplyConfiguration {
-	return &BufferSettingsApplyConfiguration{}
+func ExtAuthBufferSettings() *ExtAuthBufferSettingsApplyConfiguration {
+	return &ExtAuthBufferSettingsApplyConfiguration{}
 }
 
 // WithMaxRequestBytes sets the MaxRequestBytes field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the MaxRequestBytes field is set to the value of the last call.
-func (b *BufferSettingsApplyConfiguration) WithMaxRequestBytes(value uint32) *BufferSettingsApplyConfiguration {
+func (b *ExtAuthBufferSettingsApplyConfiguration) WithMaxRequestBytes(value uint32) *ExtAuthBufferSettingsApplyConfiguration {
 	b.MaxRequestBytes = &value
 	return b
 }
@@ -27,7 +27,7 @@ func (b *BufferSettingsApplyConfiguration) WithMaxRequestBytes(value uint32) *Bu
 // WithAllowPartialMessage sets the AllowPartialMessage field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the AllowPartialMessage field is set to the value of the last call.
-func (b *BufferSettingsApplyConfiguration) WithAllowPartialMessage(value bool) *BufferSettingsApplyConfiguration {
+func (b *ExtAuthBufferSettingsApplyConfiguration) WithAllowPartialMessage(value bool) *ExtAuthBufferSettingsApplyConfiguration {
 	b.AllowPartialMessage = &value
 	return b
 }
@@ -35,7 +35,7 @@ func (b *BufferSettingsApplyConfiguration) WithAllowPartialMessage(value bool) *
 // WithPackAsBytes sets the PackAsBytes field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the PackAsBytes field is set to the value of the last call.
-func (b *BufferSettingsApplyConfiguration) WithPackAsBytes(value bool) *BufferSettingsApplyConfiguration {
+func (b *ExtAuthBufferSettingsApplyConfiguration) WithPackAsBytes(value bool) *ExtAuthBufferSettingsApplyConfiguration {
 	b.PackAsBytes = &value
 	return b
 }

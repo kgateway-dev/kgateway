@@ -6,54 +6,22 @@ Clusters:
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
   metadata: {}
-  name: kube_a_extproc1_9091
-  type: EDS
-  typedExtensionProtocolOptions:
-    envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
-      '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
-      explicitHttpConfig:
-        http2ProtocolOptions: {}
-- connectTimeout: 5s
-  edsClusterConfig:
-    edsConfig:
-      ads: {}
-      resourceApiVersion: V3
-  ignoreHealthOnHostRemoval: true
-  metadata: {}
-  name: kube_a_extproc2_9091
-  type: EDS
-  typedExtensionProtocolOptions:
-    envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
-      '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
-      explicitHttpConfig:
-        http2ProtocolOptions: {}
-- connectTimeout: 5s
-  edsClusterConfig:
-    edsConfig:
-      ads: {}
-      resourceApiVersion: V3
-  ignoreHealthOnHostRemoval: true
-  metadata: {}
-  name: kube_a_svc-a_8080
-  type: EDS
-- connectTimeout: 5s
-  edsClusterConfig:
-    edsConfig:
-      ads: {}
-      resourceApiVersion: V3
-  ignoreHealthOnHostRemoval: true
-  metadata: {}
-  name: kube_b_svc-b_8080
-  type: EDS
-- connectTimeout: 5s
-  edsClusterConfig:
-    edsConfig:
-      ads: {}
-      resourceApiVersion: V3
-  ignoreHealthOnHostRemoval: true
-  metadata: {}
   name: kube_infra_example-svc_80
   type: EDS
+- connectTimeout: 5s
+  edsClusterConfig:
+    edsConfig:
+      ads: {}
+      resourceApiVersion: V3
+  ignoreHealthOnHostRemoval: true
+  metadata: {}
+  name: kube_infra_extproc_9000
+  type: EDS
+  typedExtensionProtocolOptions:
+    envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+      '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+      explicitHttpConfig:
+        http2ProtocolOptions: {}
 - connectTimeout: 5s
   metadata: {}
   name: test-backend-plugin_default_example-svc_80
@@ -78,7 +46,7 @@ Listeners:
               value:
                 disable: true
         - disabled: true
-          name: ext_proc/a/extproc-ext1
+          name: ext_proc/infra/default-extproc
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.common.matching.v3.ExtensionWithMatcher
             extensionConfig:
@@ -100,7 +68,7 @@ Listeners:
                             failureModeAllow: true
                             grpcService:
                               envoyGrpc:
-                                clusterName: kube_a_extproc1_9091
+                                clusterName: kube_infra_extproc_9000
                   predicate:
                     singlePredicate:
                       customMatch:
@@ -118,14 +86,61 @@ Listeners:
                           path:
                           - key: disable
         - disabled: true
-          name: ratelimit/local
+          name: ext_proc/infra/full-extproc
           typedConfig:
-            '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
-            statPrefix: http_local_rate_limiter
-        - disabled: true
-          name: transformation
-          typedConfig:
-            '@type': type.googleapis.com/envoy.api.v2.filter.http.FilterTransformations
+            '@type': type.googleapis.com/envoy.extensions.common.matching.v3.ExtensionWithMatcher
+            extensionConfig:
+              name: composite_ext_proc
+              typedConfig:
+                '@type': type.googleapis.com/envoy.extensions.filters.http.composite.v3.Composite
+            xdsMatcher:
+              matcherList:
+                matchers:
+                - onMatch:
+                    action:
+                      name: composite-action
+                      typedConfig:
+                        '@type': type.googleapis.com/envoy.extensions.filters.http.composite.v3.ExecuteFilterAction
+                        typedConfig:
+                          name: envoy.filters.http.ext_proc
+                          typedConfig:
+                            '@type': type.googleapis.com/envoy.extensions.filters.http.ext_proc.v3.ExternalProcessor
+                            failureModeAllow: true
+                            grpcService:
+                              envoyGrpc:
+                                clusterName: kube_infra_extproc_9000
+                              timeout: 0.300s
+                            maxMessageTimeout: 0.500s
+                            messageTimeout: 0.100s
+                            metadataOptions:
+                              forwardingNamespaces:
+                                typed:
+                                - io.transformation
+                            processingMode:
+                              requestBodyMode: BUFFERED
+                              requestHeaderMode: SKIP
+                              requestTrailerMode: SEND
+                              responseBodyMode: BUFFERED
+                              responseHeaderMode: SKIP
+                              responseTrailerMode: SEND
+                            routeCacheAction: CLEAR
+                            statPrefix: my_extproc
+                  predicate:
+                    singlePredicate:
+                      customMatch:
+                        name: envoy.matching.matchers.metadata_matcher
+                        typedConfig:
+                          '@type': type.googleapis.com/envoy.extensions.matching.input_matchers.metadata.v3.Metadata
+                          invert: true
+                          value:
+                            boolMatch: true
+                      input:
+                        name: disable
+                        typedConfig:
+                          '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.network.v3.DynamicMetadataInput
+                          filter: dev.kgateway.disable_ext_proc
+                          path:
+                          - key: disable
         - name: envoy.filters.http.router
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -149,92 +164,35 @@ Routes:
     name: listener~80~example_com
     routes:
     - match:
-        pathSeparatedPrefix: /a/1
+        pathSeparatedPrefix: /example-route-2
       metadata:
         filterMetadata:
           merge.TrafficPolicy.gateway.kgateway.dev:
             extProc:
-            - gateway.kgateway.dev/TrafficPolicy/a/child-policy-filter
-            rateLimit.local:
-            - gateway.kgateway.dev/TrafficPolicy/infra/parent-policy-targetref
-            transformation:
-            - gateway.kgateway.dev/TrafficPolicy/infra/parent-policy-filter
-      name: listener~80~example_com-route-0-httproute-child-a-0-0-matcher-0
-      route:
-        cluster: kube_a_svc-a_8080
-        clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
-      typedPerFilterConfig:
-        ext_proc/a/extproc-ext1:
-          '@type': type.googleapis.com/envoy.extensions.filters.http.ext_proc.v3.ExtProcPerRoute
-          overrides: {}
-        ratelimit/local:
-          '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
-          filterEnabled:
-            defaultValue:
-              numerator: 100
-            runtimeKey: local_rate_limit_enabled
-          filterEnforced:
-            defaultValue:
-              numerator: 100
-            runtimeKey: local_rate_limit_enforced
-          statPrefix: http_local_rate_limiter
-          tokenBucket:
-            fillInterval: 33s
-            maxTokens: 11
-            tokensPerFill: 2
-        transformation:
-          '@type': type.googleapis.com/envoy.api.v2.filter.http.RouteTransformations
-          transformations:
-          - requestMatch:
-              responseTransformation:
-                transformationTemplate:
-                  headersToAppend:
-                  - key: abc
-                    value:
-                      text: custom-value-abc
-                  parseBodyBehavior: DontParse
-                  passthrough: {}
-    - match:
-        prefix: /
-      metadata:
-        filterMetadata:
-          merge.TrafficPolicy.gateway.kgateway.dev:
-            rateLimit.local:
-            - gateway.kgateway.dev/TrafficPolicy/infra/parent-policy-targetref
-            transformation:
-            - gateway.kgateway.dev/TrafficPolicy/infra/parent-policy-targetref
-      name: listener~80~example_com-route-2-httproute-parent-infra-0-0-matcher-0
+            - gateway.kgateway.dev/TrafficPolicy/infra/extproc-for-http-route-2
+      name: listener~80~example_com-route-0-httproute-example-route-2-infra-0-0-matcher-0
       route:
         cluster: kube_infra_example-svc_80
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
       typedPerFilterConfig:
-        ratelimit/local:
-          '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
-          filterEnabled:
-            defaultValue:
-              numerator: 100
-            runtimeKey: local_rate_limit_enabled
-          filterEnforced:
-            defaultValue:
-              numerator: 100
-            runtimeKey: local_rate_limit_enforced
-          statPrefix: http_local_rate_limiter
-          tokenBucket:
-            fillInterval: 33s
-            maxTokens: 11
-            tokensPerFill: 2
-        transformation:
-          '@type': type.googleapis.com/envoy.api.v2.filter.http.RouteTransformations
-          transformations:
-          - requestMatch:
-              responseTransformation:
-                transformationTemplate:
-                  headersToAppend:
-                  - key: def
-                    value:
-                      text: custom-value-def
-                  parseBodyBehavior: DontParse
-                  passthrough: {}
+        ext_proc/infra/default-extproc:
+          '@type': type.googleapis.com/envoy.extensions.filters.http.ext_proc.v3.ExtProcPerRoute
+          overrides: {}
+    - match:
+        pathSeparatedPrefix: /example-route
+      metadata:
+        filterMetadata:
+          merge.TrafficPolicy.gateway.kgateway.dev:
+            extProc:
+            - gateway.kgateway.dev/TrafficPolicy/infra/extproc-for-http-route
+      name: listener~80~example_com-route-1-httproute-example-route-infra-0-0-matcher-0
+      route:
+        cluster: kube_infra_example-svc_80
+        clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+      typedPerFilterConfig:
+        ext_proc/infra/full-extproc:
+          '@type': type.googleapis.com/envoy.extensions.filters.http.ext_proc.v3.ExtProcPerRoute
+          overrides: {}
 Statuses:
   gateways:
     infra/example-gateway:
@@ -255,7 +213,7 @@ Statuses:
         status: "True"
         type: Programmed
       listeners:
-      - attachedRoutes: 1
+      - attachedRoutes: 2
         conditions:
         - lastTransitionTime: null
           message: Listener is accepted
@@ -277,14 +235,14 @@ Statuses:
           reason: Programmed
           status: "True"
           type: Programmed
-        name: http
+        name: http1
         supportedKinds:
         - group: gateway.networking.k8s.io
           kind: HTTPRoute
         - group: gateway.networking.k8s.io
           kind: GRPCRoute
   httpRoutes:
-    a/child:
+    infra/example-route:
       parents:
       - conditions:
         - lastTransitionTime: null
@@ -299,11 +257,10 @@ Statuses:
           type: ResolvedRefs
         controllerName: kgateway
         parentRef:
-          group: gateway.networking.k8s.io
-          kind: HTTPRoute
-          name: parent
-          namespace: infra
-    infra/parent:
+          group: ""
+          kind: ""
+          name: example-gateway
+    infra/example-route-2:
       parents:
       - conditions:
         - lastTransitionTime: null
@@ -322,7 +279,7 @@ Statuses:
           kind: ""
           name: example-gateway
   policies:
-    TrafficPolicy/a/child-policy-filter:
+    TrafficPolicy/infra/extproc-for-http-route:
       ancestors:
       - ancestorRef:
           group: gateway.networking.k8s.io
@@ -336,12 +293,12 @@ Statuses:
           status: "True"
           type: Accepted
         - lastTransitionTime: null
-          message: Merged with other policies in target(s) and attached
-          reason: Merged
+          message: Attached to all targets
+          reason: Attached
           status: "True"
           type: Attached
         controllerName: kgateway.dev/kgateway
-    TrafficPolicy/a/child-policy-targetref:
+    TrafficPolicy/infra/extproc-for-http-route-2:
       ancestors:
       - ancestorRef:
           group: gateway.networking.k8s.io
@@ -355,46 +312,8 @@ Statuses:
           status: "True"
           type: Accepted
         - lastTransitionTime: null
-          message: Overridden due to conflict with higher priority policy in target(s)
-          reason: Overridden
-          status: "False"
-          type: Attached
-        controllerName: kgateway.dev/kgateway
-    TrafficPolicy/infra/parent-policy-filter:
-      ancestors:
-      - ancestorRef:
-          group: gateway.networking.k8s.io
-          kind: Gateway
-          name: example-gateway
-          namespace: infra
-        conditions:
-        - lastTransitionTime: null
-          message: Policy accepted
-          reason: Valid
-          status: "True"
-          type: Accepted
-        - lastTransitionTime: null
-          message: Merged with other policies in target(s) and attached
-          reason: Merged
-          status: "True"
-          type: Attached
-        controllerName: kgateway.dev/kgateway
-    TrafficPolicy/infra/parent-policy-targetref:
-      ancestors:
-      - ancestorRef:
-          group: gateway.networking.k8s.io
-          kind: Gateway
-          name: example-gateway
-          namespace: infra
-        conditions:
-        - lastTransitionTime: null
-          message: Policy accepted
-          reason: Valid
-          status: "True"
-          type: Accepted
-        - lastTransitionTime: null
-          message: Merged with other policies in target(s) and attached
-          reason: Merged
+          message: Attached to all targets
+          reason: Attached
           status: "True"
           type: Attached
         controllerName: kgateway.dev/kgateway

@@ -83,6 +83,7 @@ Listeners:
                           name: envoy.filters.http.ext_proc
                           typedConfig:
                             '@type': type.googleapis.com/envoy.extensions.filters.http.ext_proc.v3.ExternalProcessor
+                            failureModeAllow: true
                             grpcService:
                               envoyGrpc:
                                 clusterName: kube_a_extproc_9091

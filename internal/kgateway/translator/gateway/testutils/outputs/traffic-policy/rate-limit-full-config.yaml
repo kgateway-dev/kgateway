@@ -38,7 +38,7 @@ Listeners:
         '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
         httpFilters:
         - disabled: true
-          name: ratelimit/default/global-ratelimit
+          name: ratelimit/default/default-ratelimit
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.ratelimit.v3.RateLimit
             domain: api-gateway
@@ -46,15 +46,14 @@ Listeners:
               grpcService:
                 envoyGrpc:
                   clusterName: kube_default_ratelimit_8081
-                timeout: 0.200s
               transportApiVersion: V3
-            timeout: 0.050s
+            timeout: 0s
         - disabled: true
-          name: ratelimit/default/global-ratelimit-2
+          name: ratelimit/default/full-ratelimit
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.ratelimit.v3.RateLimit
             domain: api-gateway
-            failureModeDeny: true
+            enableXRatelimitHeaders: DRAFT_VERSION_03
             rateLimitService:
               grpcService:
                 envoyGrpc:
@@ -103,7 +102,7 @@ Routes:
         cluster: kube_default_example-svc_80
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
       typedPerFilterConfig:
-        ratelimit/default/global-ratelimit-2:
+        ratelimit/default/full-ratelimit:
           '@type': type.googleapis.com/envoy.extensions.filters.http.ratelimit.v3.RateLimitPerRoute
           rateLimits:
           - actions:
@@ -139,7 +138,7 @@ Routes:
         cluster: kube_default_example-svc_80
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
       typedPerFilterConfig:
-        ratelimit/default/global-ratelimit:
+        ratelimit/default/default-ratelimit:
           '@type': type.googleapis.com/envoy.extensions.filters.http.ratelimit.v3.RateLimitPerRoute
           rateLimits:
           - actions:

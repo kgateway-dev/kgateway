@@ -87,6 +87,8 @@ Listeners:
             grpcService:
               envoyGrpc:
                 clusterName: kube_default_extauth_9091
+            statusOnError:
+              code: Forbidden
         - disabled: true
           name: ext_auth/default/extauth-gateway-1
           typedConfig:
@@ -101,6 +103,8 @@ Listeners:
             grpcService:
               envoyGrpc:
                 clusterName: kube_default_extauth_9091
+            statusOnError:
+              code: Forbidden
         - disabled: true
           name: ext_auth/default/extauth-listener-2
           typedConfig:
@@ -115,6 +119,8 @@ Listeners:
             grpcService:
               envoyGrpc:
                 clusterName: kube_default_extauth_9092
+            statusOnError:
+              code: Forbidden
         - disabled: true
           name: ext_auth/default/extauth-route-1
           typedConfig:
@@ -129,6 +135,8 @@ Listeners:
             grpcService:
               envoyGrpc:
                 clusterName: kube_default_extauth_9093
+            statusOnError:
+              code: Forbidden
         - disabled: true
           name: ext_auth/default/extauth-route-2
           typedConfig:
@@ -143,6 +151,8 @@ Listeners:
             grpcService:
               envoyGrpc:
                 clusterName: kube_default_extauth_9093
+            statusOnError:
+              code: Forbidden
         - disabled: true
           name: ext_auth/default/extauth-listener-1
           typedConfig:
@@ -157,6 +167,8 @@ Listeners:
             grpcService:
               envoyGrpc:
                 clusterName: kube_default_extauth_9092
+            statusOnError:
+              code: Forbidden
         - name: envoy.filters.http.router
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
