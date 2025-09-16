@@ -120,6 +120,13 @@ func addMergeOriginsToFilterMetadata(
 // sectionName indicates a listener-level policy attachment. For XListenerSet reporting, we cannot rely on the
 // sectionName value alone, so we check the ancestor reference kind to make sure we report on that resource
 // instead of the Gateway.
+//
+// Note: this function has different reporting behavior for HTTP vs HTTPS listeners due to how policy attachment
+// is handled at higher levels. For HTTPS listeners, this function is called from ComputeRouteConfiguration for
+// each GroupKind, which can result in condition message overwrites when both Gateway-wide and listener-level
+// policies fail. The last SetCondition call wins (typically Gateway-wide due to processing order). For HTTP
+// listeners, policy errors are handled in runVhostPlugins at the vhost scope and do not call this function,
+// avoiding the overwrite issue.
 func reportRouteConfigPolicyErrors(r reporter.Reporter, gw ir.GatewayIR, listener ir.ListenerIR, routeConfigName string, policies ...ir.PolicyAtt) {
 	for _, policy := range policies {
 		if policy.PolicyRef == nil {
