@@ -12,14 +12,12 @@ spec:
   - name: http
     port: 8080
     protocol: HTTP
-    hostname: www.example.com
     allowedRoutes:
       namespaces:
         from: All
   - name: https
     port: 8443
     protocol: HTTPS
-    hostname: secure.example.com
     allowedRoutes:
       namespaces:
         from: All
@@ -95,7 +93,6 @@ spec:
   - name: test-listenerset
     group: gateway.networking.x-k8s.io
     kind: XListenerSet
-    sectionName: http-additional
   hostnames:
   - "www.example.com"
   rules:
