@@ -105,6 +105,28 @@ spec:
                           - name
                           type: object
                         type: array
+                      extraVolumeMounts:
+                        items:
+                          properties:
+                            mountPath:
+                              type: string
+                            mountPropagation:
+                              type: string
+                            name:
+                              type: string
+                            readOnly:
+                              type: boolean
+                            recursiveReadOnly:
+                              type: string
+                            subPath:
+                              type: string
+                            subPathExpr:
+                              type: string
+                          required:
+                          - mountPath
+                          - name
+                          type: object
+                        type: array
                       image:
                         properties:
                           digest:
@@ -582,6 +604,28 @@ spec:
                                   x-kubernetes-map-type: atomic
                               type: object
                           required:
+                          - name
+                          type: object
+                        type: array
+                      extraVolumeMounts:
+                        items:
+                          properties:
+                            mountPath:
+                              type: string
+                            mountPropagation:
+                              type: string
+                            name:
+                              type: string
+                            readOnly:
+                              type: boolean
+                            recursiveReadOnly:
+                              type: string
+                            subPath:
+                              type: string
+                            subPathExpr:
+                              type: string
+                          required:
+                          - mountPath
                           - name
                           type: object
                         type: array
@@ -1969,28 +2013,6 @@ spec:
                         additionalProperties:
                           type: string
                         type: object
-                      extraVolumeMounts:
-                        items:
-                          properties:
-                            mountPath:
-                              type: string
-                            mountPropagation:
-                              type: string
-                            name:
-                              type: string
-                            readOnly:
-                              type: boolean
-                            recursiveReadOnly:
-                              type: string
-                            subPath:
-                              type: string
-                            subPathExpr:
-                              type: string
-                          required:
-                          - mountPath
-                          - name
-                          type: object
-                        type: array
                       extraVolumes:
                         items:
                           properties:

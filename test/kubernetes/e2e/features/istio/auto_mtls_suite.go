@@ -1,5 +1,3 @@
-//go:build ignore
-
 package istio
 
 import (
@@ -23,7 +21,7 @@ type istioAutoMtlsTestingSuite struct {
 	ctx context.Context
 
 	// testInstallation contains all the metadata/utilities necessary to execute a series of tests
-	// against an installation of Gloo Gateway
+	// against an installation of kgateway
 	testInstallation *e2e.TestInstallation
 
 	// maps test name to a list of manifests to apply before the test
@@ -80,7 +78,7 @@ func (s *istioAutoMtlsTestingSuite) SetupSuite() {
 	s.manifests = map[string][]string{
 		"TestMtlsStrictPeerAuth":     {strictPeerAuthManifest, k8sRoutingSvcManifest},
 		"TestMtlsPermissivePeerAuth": {permissivePeerAuthManifest, k8sRoutingSvcManifest},
-		"TestMtlsDisablePeerAuth":    {disablePeerAuthManifest, k8sRoutingUpstreamManifest},
+		"TestMtlsDisablePeerAuth":    {disablePeerAuthManifest, k8sRoutingBackendManifest},
 	}
 }
 

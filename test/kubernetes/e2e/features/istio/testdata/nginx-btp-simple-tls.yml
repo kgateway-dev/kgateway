@@ -1,0 +1,16 @@
+apiVersion: gateway.networking.k8s.io/v1alpha3
+kind: BackendTLSPolicy
+metadata:
+  name: backend-tls-policy
+  namespace: nginx
+spec:
+  targetRefs:
+  - group: gateway.kgateway.dev
+    kind: Backend
+    name: nginx-backend-simple
+  validation:
+    hostname: "nginx.nginx"
+    caCertificateRefs:
+    - group: ""
+      kind: ConfigMap
+      name: nginx-conf # Will use the ca.crt from the nginx configmap

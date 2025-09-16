@@ -23,7 +23,7 @@ import (
 )
 
 type UpstreamConfigOpts struct {
-	DisableIstioAutoMtls bool
+	DisableIstioAutoMTLS bool
 	SetSslConfig         bool
 }
 
@@ -40,11 +40,11 @@ var (
 	}
 
 	getGlooGatewayEdgeResourceName = func(config UpstreamConfigOpts) string {
-		if config.SetSslConfig && config.DisableIstioAutoMtls {
+		if config.SetSslConfig && config.DisableIstioAutoMTLS {
 			return UpstreamSslConfigAndDisableAutomtlsFileName
 		} else if config.SetSslConfig {
 			return UpstreamSslConfigEdgeApisFileName
-		} else if config.DisableIstioAutoMtls {
+		} else if config.DisableIstioAutoMTLS {
 			return DisableAutomtlsEdgeApisFileName
 		} else {
 			return EdgeApisRoutingFileName
@@ -92,7 +92,7 @@ var (
 				Namespace: installNamespace,
 			},
 			Spec: soloapis_gloov1.UpstreamSpec{
-				DisableIstioAutoMtls: &wrappers.BoolValue{Value: config.DisableIstioAutoMtls},
+				DisableIstioAutoMTLS: &wrappers.BoolValue{Value: config.DisableIstioAutoMTLS},
 				UpstreamType: &soloapis_gloov1.UpstreamSpec_Kube{
 					Kube: &soloapis_kubernetes.UpstreamSpec{
 						Selector: map[string]string{

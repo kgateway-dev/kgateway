@@ -106,6 +106,10 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 		backend.Obj = i
 		backend.ObjIr = backendIR
 		backend.Errors = backendIR.Errors
+
+		// Parse common annotations
+		ir.ParseObjectAnnotations(&backend, i)
+
 		return &backend
 	})
 	endpoints := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *v1alpha1.Backend) *ir.EndpointsForBackend {

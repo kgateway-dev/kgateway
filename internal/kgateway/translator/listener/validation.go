@@ -264,20 +264,21 @@ func validateListeners(gw *ir.Gateway, reporter reports.Reporter) []ir.Listener 
 	}
 
 	// Add the final conditions on the Gateway
-	if gw.Obj.Spec.AllowedListeners == nil {
+	noAllowedListeners := gw.Obj.Spec.AllowedListeners == nil
+	if noAllowedListeners {
 		reporter.Gateway(gw.Obj).SetCondition(reports.GatewayCondition{
 			Type:   GatewayConditionAttachedListenerSets,
 			Status: metav1.ConditionUnknown,
 			Reason: GatewayReasonListenerSetsNotAllowed,
 		})
-		return validListeners
 	}
 
 	if len(validListeners) == 0 {
 		reporter.Gateway(gw.Obj).SetCondition(reports.GatewayCondition{
-			Type:   gwv1.GatewayConditionAccepted,
-			Status: metav1.ConditionFalse,
-			Reason: gwv1.GatewayReasonListenersNotValid,
+			Type:    gwv1.GatewayConditionAccepted,
+			Status:  metav1.ConditionFalse,
+			Reason:  gwv1.GatewayReasonListenersNotValid,
+			Message: "No valid listeners",
 		})
 		reporter.Gateway(gw.Obj).SetCondition(reports.GatewayCondition{
 			Type:   gwv1.GatewayConditionProgrammed,
@@ -287,13 +288,10 @@ func validateListeners(gw *ir.Gateway, reporter reports.Reporter) []ir.Listener 
 		return validListeners
 	}
 
-	listenerSetListenerExists := false
-	for _, listener := range validListeners {
-		if _, ok := listener.Parent.(*gwxv1a1.XListenerSet); ok {
-			listenerSetListenerExists = true
-			break
-		}
-	}
+	listenerSetListenerExists := slices.ContainsFunc(validListeners, func(l ir.Listener) bool {
+		_, ok := l.Parent.(*gwxv1a1.XListenerSet)
+		return ok
+	})
 
 	if listenerSetListenerExists {
 		reporter.Gateway(gw.Obj).SetCondition(reports.GatewayCondition{
@@ -301,7 +299,8 @@ func validateListeners(gw *ir.Gateway, reporter reports.Reporter) []ir.Listener 
 			Status: metav1.ConditionTrue,
 			Reason: GatewayReasonListenerSetsAttached,
 		})
-	} else {
+	} else if !noAllowedListeners {
+		// if there are allowed listeners, but no listener sets, then the gateway is not attached to any listener sets
 		reporter.Gateway(gw.Obj).SetCondition(reports.GatewayCondition{
 			Type:   GatewayConditionAttachedListenerSets,
 			Status: metav1.ConditionFalse,

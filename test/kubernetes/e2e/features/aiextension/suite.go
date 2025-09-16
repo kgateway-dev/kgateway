@@ -63,6 +63,7 @@ func (s *tsuite) SetupSuite() {
 		"TestPromptGuardRejectExtRef": {commonManifest, backendManifest, trafficPolicyPGRegexPatternRejectManifest, routesWitPGRegexPatternRejectManifest},
 		"TestPromptGuard":             {commonManifest, backendManifest, routesBasicManifest, promptGuardManifest},
 		"TestPromptGuardStreaming":    {commonManifest, backendManifest, routesBasicManifest, promptGuardStreamingManifest},
+		"TestPromptGuardWebhook":      {commonManifest, backendManifest, routesBasicManifest, promptGuardWebhookManifest},
 	}
 }
 
@@ -161,6 +162,10 @@ func (s *tsuite) TestPromptGuard() {
 
 func (s *tsuite) TestPromptGuardStreaming() {
 	s.invokePytest("prompt_guard_streaming.py")
+}
+
+func (s *tsuite) TestPromptGuardWebhook() {
+	s.invokePytest("prompt_guard_webhook.py")
 }
 
 func (s *tsuite) invokePytest(test string, extraEnv ...string) {

@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	DefaultTimeout         = time.Second * 20
+	DefaultTimeout         = time.Second * 60
 	DefaultPollingInterval = time.Second * 2
 )
 

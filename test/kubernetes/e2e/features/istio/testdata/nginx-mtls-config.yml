@@ -1,0 +1,199 @@
+# Generate a set of self-signed CA, tls.key, tls.crt, example.key, example.crt for the mtls tests:
+
+# openssl genrsa -out ca.key 2048
+# openssl req -x509 -new -nodes -key ca.key -sha256 -days 3650 -out ca.crt \
+#  -subj '/CN=kgateway-root-ca/O=kgateway/C=US' \
+#  -extensions v3_ca \
+#  -config <(printf "[v3_ca]\nbasicConstraints=CA:TRUE\nkeyUsage=keyCertSign,cRLSign\nsubjectKeyIdentifier=hash\nauthorityKeyIdentifier=keyid:always,issuer")
+
+# openssl genrsa -out tls.key 2048
+# openssl req -new -key tls.key -out tls.csr \
+#  -subj '/CN=kgateway-client/O=kgateway/C=US' \
+#  -config <(printf "[req]\ndistinguished_name = req\n[req]\nCN=kgateway-client\nO=kgateway\nC=US\nreq_extensions = v3_req\n[v3_req]\nkeyUsage=digitalSignature,keyEncipherment\nextendedKeyUsage=clientAuth")
+# openssl x509 -req -in tls.csr -CA ca.crt -CAkey ca.key -CAcreateserial \
+#  -out tls.crt -days 365 -sha256 \
+#  -extensions v3_req \
+#  -extfile <(printf "[v3_req]\nkeyUsage=digitalSignature,keyEncipherment\nextendedKeyUsage=clientAuth")
+
+# openssl genrsa -out example.key 2048
+# openssl req -new -key example.key -out example.csr \
+#  -subj '/CN=nginx.nginx/O=nginx/C=US' \
+#  -config <(printf "[req]\ndistinguished_name = req\n[req]\nCN=nginx.nginx\nO=nginx\nC=US\nreq_extensions = v3_req\n[v3_req]\nkeyUsage=digitalSignature,keyEncipherment\nextendedKeyUsage=serverAuth")
+# openssl x509 -req -in example.csr -CA ca.crt -CAkey ca.key -CAcreateserial \
+#  -out example.crt -days 365 -sha256 \
+#  -extensions v3_req \
+#  -extfile <(printf "[v3_req]\nkeyUsage=digitalSignature,keyEncipherment\nextendedKeyUsage=serverAuth\nsubjectAltName=DNS:nginx.nginx")
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-conf
+  namespace: nginx
+data:
+  nginx.conf: |
+    user nginx;
+    worker_processes  1;
+    events {
+      worker_connections  10240;
+    }
+    http {
+      # cleartext server
+      server {
+        listen              80;
+        server_name         nginx.nginx;
+
+        location / {
+          root   /usr/share/nginx/html;
+          index  index.html index.htm;
+        }
+      }
+
+      # Simple TLS server
+      server {
+        listen              443 ssl;
+        server_name         nginx.nginx;
+        ssl_certificate     /etc/nginx/example.crt;
+        ssl_certificate_key /etc/nginx/example.key;
+
+        location / {
+          root   /usr/share/nginx/html;
+          index  index.html index.htm;
+        }
+      }
+
+      # mTLS server
+      server {
+        listen              543 ssl;
+        server_name         nginx.nginx;
+        ssl_certificate     /etc/nginx/example.crt;
+        ssl_certificate_key /etc/nginx/example.key;
+
+        # Client certificate verification (for mTLS)
+        ssl_client_certificate /etc/nginx/ca.crt;  # CA to validate client certs
+        ssl_verify_client      on;                 # Require client certs
+        ssl_verify_depth       2;
+
+        location / {
+          root   /usr/share/nginx/html;
+          index  index.html index.htm;
+        }
+      }
+    }
+  example.crt: |
+    -----BEGIN CERTIFICATE-----
+    MIIDeDCCAmCgAwIBAgIUaIzxtkMI8ou8dRZE8Eg80VZZ9iEwDQYJKoZIhvcNAQEL
+    BQAwOzEZMBcGA1UEAwwQa2dhdGV3YXktcm9vdC1jYTERMA8GA1UECgwIa2dhdGV3
+    YXkxCzAJBgNVBAYTAlVTMB4XDTI1MDgyODEyNDMzMloXDTI2MDgyODEyNDMzMlow
+    MzEUMBIGA1UEAwwLbmdpbngubmdpbngxDjAMBgNVBAoMBW5naW54MQswCQYDVQQG
+    EwJVUzCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAKeQYTWg2q10dy/2
+    FRjqvIR6G/6PSywKyBaaBF70B8pU0zw2AuolwyhseXRLVzKzkU7/yeiJZtTEq7tK
+    2ACqfbC2MIdB+gLuKOW7r547kiRFCgvFL55Zjibog+gVptO9D+iPwA1yAWQj5FQl
+    uJSdou1xOt18HbmN5mtrbJ2sXJUd1FjVpKJQi2VmtHCMq3wK9FF6i5jWrldtsNYZ
+    5iUQ4f/lsO6etOtQlpLeJyqD2dYgf2AHeA6K/I/x7/HC6x2OeG6K3m8auWCgzBZb
+    btRtQmn/Cf2Zm3SWuhtbDkxbnUx3nmQha2Yob5ijjOxSGEteSGNxtLTUK8ZamQiQ
+    eHzK8vECAwEAAaN8MHowCwYDVR0PBAQDAgWgMBMGA1UdJQQMMAoGCCsGAQUFBwMB
+    MBYGA1UdEQQPMA2CC25naW54Lm5naW54MB0GA1UdDgQWBBQTsp+1MTOrtsh/SW4T
+    QvYSueL2bTAfBgNVHSMEGDAWgBQNW1v9GQpm5Z9diri3gN1nP6lu7TANBgkqhkiG
+    9w0BAQsFAAOCAQEAsZEeWkAtkYAHrAJB1AKQjxDrK8nMn0MqkQW/N79XfWhw+keU
+    gsa4AEN7i8d0Ko9OnEIcfNvFZVgbt64VROJOs1sE2yFDpE9Cl3E1+ZudPiCpDj0N
+    cxoOMod79Xx1hBdWUfqoA4Be9zBxxhQ3IaduvfsVMaj0k1z90SuxLxdYkMVWNDHx
+    LoJqeXjGlHChJkPzC0xeBveP/dE4IqUCcbOGcn2siRE7h+GLgl/r7AyvqaSFpQNN
+    wLHgNzeoHnYiVs+6yoYFaOkyKSxhrMbrjjuYHKmzJEz3BkB533p2UAqUXDLfGUNj
+    1ZAEbJhjj1DsbdjxnVfn/aj9OhAPE7/QkJLsrw==
+    -----END CERTIFICATE-----
+
+  example.key: |
+    -----BEGIN PRIVATE KEY-----
+    MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCnkGE1oNqtdHcv
+    9hUY6ryEehv+j0ssCsgWmgRe9AfKVNM8NgLqJcMobHl0S1cys5FO/8noiWbUxKu7
+    StgAqn2wtjCHQfoC7ijlu6+eO5IkRQoLxS+eWY4m6IPoFabTvQ/oj8ANcgFkI+RU
+    JbiUnaLtcTrdfB25jeZra2ydrFyVHdRY1aSiUItlZrRwjKt8CvRReouY1q5XbbDW
+    GeYlEOH/5bDunrTrUJaS3icqg9nWIH9gB3gOivyP8e/xwusdjnhuit5vGrlgoMwW
+    W27UbUJp/wn9mZt0lrobWw5MW51Md55kIWtmKG+Yo4zsUhhLXkhjcbS01CvGWpkI
+    kHh8yvLxAgMBAAECggEAJiUy0AHOjlqbUG6JlnrHkDP5H/3wa7YHn0eQE6qjhF7D
+    mKsmBjYzA4aQLpaBIwBoZa7KwNZYs7qS6qfq3NnzE5GiIgR1vQmJA2Vy4QdoKTwT
+    QaMxyC9UckyPzLtzFzQsxTFGU/k+UlTuY26T4rcxEjMq5qVc4fMo/468svc8O1Co
+    9dw5ryHpde0+ykdSQimQ75DSOpocTZYY+hIcxHTEHXlI0Z1W7esQiKyYNR8TJRa+
+    9cfA8oajtdkHuvg8OvZyWTuLqG5MxSa9H5wZ0X38xCKb5gbJRUCFnYxcW4yKtcqf
+    KG99Sh5HVFG1jfNYNQpRLLvjFkPjXdG3OqFj91US7QKBgQDYOvHYzbuBQAkHY2YE
+    b72EPjM+CVFjhqMzPD7Zl9kuY3fSfXhl3e+gwHPu8oakW0CGe6iEqh8KTq6rF3kH
+    E4al//5gEOJQgiAdFm2qJndqFoXryIUGcxKI2qo+g4NqemcVE30wovsGj44kCYEH
+    FrSJsp0IVhfTS8X2aQWx1yF7TQKBgQDGYgRAdEnN4cOslnFd3FmrpjPjAjOannCB
+    7kbPgdYWPuSG+KJ71TrtlNz9aBxvDM9jHnNZVE7OY3Kx+KgMLepn898/z5YorZLR
+    /VaUypW+5O60OxU4bY669hv7/fh7rBCC8rF48v+a6kYfQhOpvAEruQKg2FwDNBO1
+    wP7x/uAcNQKBgE8lJCirBRrGCYf+xfSRwdiJu8/VMUkwmsPCJW8XuZLVLaKJ8mu2
+    1GMOjmDDvKykCfYvhPsqGbp4Gk7dhJsmdn6EOOOIyo2VU5PSBcnl0oeuPs6S0r4N
+    mJcnEnFXSd7LdresLoKC5Ub9fJWMNQIXOXW9PuUyPf5FGeybfE4f5E1xAoGABTf2
+    3KsyddQGjbe3a7ysLzPEEaixKtQYKZLXEgZcV2F4KYTI4XEOh8lutsvSU6mGmxjl
+    9+eb2xoKnlvoL8nVbL6hlNAlJxTJ0/RSHr/liIwFK4CSYlWfd5OZ0Nsxei9gj9FK
+    kd/ykWSwS4o1cjWb4kaPpyOJ6BuqmRFmo38M7jECgYEAsiSfcUcaqZuIQL/zJ1W4
+    KXAnKMFcI+bYd1hq6zO/ECpX1arEImPGACdwN/8wOnAfusnKsJN5bDYSEjL8w8Hh
+    KZTC2mfSmhBAwMkQqjKRaqTwjUl4l1SpFxIchSPUlczVSygk1DXNtEfGWWIuot7k
+    41J38JLpb4nUoHqDAHfnP/c=
+    -----END PRIVATE KEY-----
+
+  ca.crt: |
+    -----BEGIN CERTIFICATE-----
+    MIIDYTCCAkmgAwIBAgIUQqkH0iJ50yIAL/zi7vFyVHHm5EEwDQYJKoZIhvcNAQEL
+    BQAwOzEZMBcGA1UEAwwQa2dhdGV3YXktcm9vdC1jYTERMA8GA1UECgwIa2dhdGV3
+    YXkxCzAJBgNVBAYTAlVTMB4XDTI1MDgyODEyNDEwOFoXDTM1MDgyNjEyNDEwOFow
+    OzEZMBcGA1UEAwwQa2dhdGV3YXktcm9vdC1jYTERMA8GA1UECgwIa2dhdGV3YXkx
+    CzAJBgNVBAYTAlVTMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAs/XH
+    tGTENkxX2KqSAmY5kmrEn1wBLgPCQW56wDowjuLQsGOSCeHs602K1LvRSdWGXMx/
+    pLIRQxfQErVCPFBCCKpxIZsv0eNegPuiLP5gYoypAxs+AI3uroyVBN10dYgpaGFB
+    tEPCG9Q8vRQ9VNIiseHm6csxmOY4MvCpI/DxspIe1Q0KNDZ/t1bNJMFbeftCsuAu
+    qR1iKw+SZosv9s8c0Z82nqTQ79Y4pU7BrwqDvm493OGBcSIADuLIVSWTgDnbuhzW
+    yCjn1z9Z78xPjeUUcPniGhkrxat/4+tsRkFo8ios4abdZiNvbvl3Y5UXPKHe3DJ9
+    cnevrUApzfIa5WBTmwIDAQABo10wWzAMBgNVHRMEBTADAQH/MAsGA1UdDwQEAwIB
+    BjAdBgNVHQ4EFgQUDVtb/RkKZuWfXYq4t4DdZz+pbu0wHwYDVR0jBBgwFoAUDVtb
+    /RkKZuWfXYq4t4DdZz+pbu0wDQYJKoZIhvcNAQELBQADggEBAIrz+OKylQVCV5EH
+    RT3Z/InSfYfwrCytgphb1CiO5cOHazca+ZK9j/GwwrXC85xOM2ylISfbQZVb5Fi5
+    qX3so595YMZeWxsut/s8Kks96u6KFBMh2+wV3l6FExs5lW4XbXu6tlYyQpMvZAVf
+    3URdhSovUpYZFja0J+LyXdWkZQovNF6+SGHAtRm1ADpGCA3pc83dOo9pnqeUB4i3
+    I16QnEzZtPaK8C14hPdIMvDoIlhNcPwyFtitwNvSW3UGipbpADfiyC2DvDsKrC57
+    h2B3zlJEb+dgLnbXehCsCka4+fwde+Ukg/XQ5v5dUEwnHRFmPHnbYQrEYiM9342x
+    zbuEWrI=
+    -----END CERTIFICATE-----
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx
+  namespace: nginx
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: nginx
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:stable
+        ports:
+        - containerPort: 80
+          name: http-web-svc
+        - containerPort: 443
+          name: https-simple
+        - containerPort: 543
+          name: https-mtls
+        volumeMounts:
+        - name: nginx-conf
+          mountPath: /etc/nginx/
+          readOnly: true
+      volumes:
+      - name: nginx-conf
+        configMap:
+          name: nginx-conf
+          items:
+          - key: nginx.conf
+            path: nginx.conf
+          - key: example.crt
+            path: example.crt
+          - key: example.key
+            path: example.key
+          - key: ca.crt
+            path: ca.crt

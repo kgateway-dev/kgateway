@@ -598,7 +598,7 @@ class TestInstrumentation:
         """Create webhook config"""
         return prompt_guard.Webhook.from_json(
             {
-                "endpoint": {"host": host, "port": port},
+                "host": {"host": host, "port": port},
                 "forwardHeaders": [
                     {
                         "type": "Exact",
@@ -745,7 +745,7 @@ class TestInstrumentation:
 
         # Setup HTTP mock
         httpx_mock.add_response(
-            url="http://example.com:443/request",
+            url="https://example.com:443/request",
             method="POST",
             json=webhook_response,
             status_code=200,
@@ -936,7 +936,7 @@ class TestInstrumentation:
 
         # Mock HTTP response
         httpx_mock.add_response(
-            url="http://example.com:443/response",
+            url="https://example.com:443/response",
             method="POST",
             json=webhook_response,
             status_code=200,
@@ -1029,7 +1029,7 @@ def test_webhook_config_parsing():
     req_webhook_json = """
     {
         "webhook": {
-            "endpoint": {
+            "host": {
                 "host": "ai-guardrail-webhook.kgateway-system.svc.cluster.local",
                 "port": 8000
             }
@@ -1057,7 +1057,7 @@ def test_webhook_config_parsing():
     resp_webhook_json = """
     {
         "webhook": {
-            "endpoint": {
+            "host": {
                 "host": "response-webhook.example.com",
                 "port": 9000
             }

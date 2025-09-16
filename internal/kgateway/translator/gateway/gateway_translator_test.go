@@ -55,6 +55,32 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("gateway with no valid listeners should report correctly", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "gateway-only/gateway-invalid-listener.yaml",
+			outputFile: "gateway-only/gateway-invalid-listener-proxy.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
+				a := assert.New(t)
+				gateway := &gwv1.Gateway{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "example-gateway",
+						Namespace: "default",
+					},
+				}
+				gatewayStatus := reportsMap.BuildGWStatus(context.Background(), *gateway, nil)
+				a.NotNil(gatewayStatus)
+				condition := meta.FindStatusCondition(gatewayStatus.Conditions, string(gwv1.GatewayConditionAccepted))
+				a.NotNil(condition)
+				a.Equal(metav1.ConditionFalse, condition.Status)
+				a.Equal(string(gwv1.GatewayReasonListenersNotValid), condition.Reason)
+			},
+		})
+	})
+
 	t.Run("http gateway with per connection buffer limit", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "gateway-per-conn-buf-lim/gateway.yaml",

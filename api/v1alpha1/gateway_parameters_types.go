@@ -275,6 +275,13 @@ type EnvoyContainer struct {
 	//
 	// +optional
 	Env []corev1.EnvVar `json:"env,omitempty"`
+
+	// Additional volume mounts to add to the container. See
+	// https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#volumemount-v1-core
+	// for details.
+	//
+	// +optional
+	ExtraVolumeMounts []corev1.VolumeMount `json:"extraVolumeMounts,omitempty"`
 }
 
 func (in *EnvoyContainer) GetBootstrap() *EnvoyBootstrap {
@@ -1043,6 +1050,13 @@ type AgentGateway struct {
 	//
 	// +optional
 	CustomConfigMapName *string `json:"customConfigMapName,omitempty"`
+
+	// Additional volume mounts to add to the container. See
+	// https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#volumemount-v1-core
+	// for details.
+	//
+	// +optional
+	ExtraVolumeMounts []corev1.VolumeMount `json:"extraVolumeMounts,omitempty"`
 }
 
 func (in *AgentGateway) GetEnabled() *bool {

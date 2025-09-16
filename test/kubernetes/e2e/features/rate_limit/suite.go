@@ -32,7 +32,7 @@ type testingSuite struct {
 	commonManifests []string
 	// resources from manifests shared by all tests
 	commonResources []client.Object
-	agentGateway    bool
+	agentgateway    bool
 }
 
 // rlBurstTries: run a tiny burst so all checks stay in one fixed RL window.
@@ -53,12 +53,12 @@ func NewAgentGatewayTestingSuite(ctx context.Context, testInst *e2e.TestInstalla
 	return &testingSuite{
 		ctx:              ctx,
 		testInstallation: testInst,
-		agentGateway:     true,
+		agentgateway:     true,
 	}
 }
 
 func (s *testingSuite) SetupSuite() {
-	if s.agentGateway {
+	if s.agentgateway {
 		s.commonManifests = []string{
 			testdefaults.CurlPodManifest,
 			getTestFileAgentGateway("common.yaml"),

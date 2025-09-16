@@ -8,6 +8,8 @@
   An Envoy-Powered, Kubernetes-Native API Gateway
 </h1>
 
+[![OpenSSF Best Practices](https://bestpractices.coreinfrastructure.org/projects/10534/badge)](https://bestpractices.coreinfrastructure.org/projects/10534)
+
 ## About kgateway
 
 Kgateway is:
@@ -25,6 +27,7 @@ Kgateway is feature-rich, fast, and flexible. It excels in function-level routin
 The project was previously known as Gloo, and has been [production-ready since 2019](https://www.solo.io/blog/announcing-gloo-1-0-a-production-ready-envoy-based-api-gateway). Please see [the migration plan](https://github.com/kgateway-dev/kgateway/issues/10363) for more information and the current status of the change from Gloo to kgateway.
 
 ## Get involved
+
 - [Join us on our Slack channel](https://kgateway.dev/slack/)
 - [Check out the docs](https://kgateway.dev/docs)
 - [Read the kgateway blog](https://kgateway.dev/blog/)
@@ -33,12 +36,19 @@ The project was previously known as Gloo, and has been [production-ready since 2
 - Follow us on [X](https://x.com/kgatewaydev), [Bluesky](https://bsky.app/profile/kgateway.dev), [Mastodon](https://mastodon.social/@kgateway) or [LinkedIn](https://www.linkedin.com/company/kgateway/)
 
 ## Contributing to kgateway
+
 Please refer to [devel/contributing/README.md](/devel/contributing/README.md) as a starting point for contributing to the project.
 
+## Releasing kgateway
+
+Please refer to [devel/contributing/releasing.md](devel/contributing/releasing.md) as a starting point for understanding releases of the project.
+
 ## Thanks
+
 Kgateway would not be possible without the valuable open source work of projects in the community. We would like to extend a special thank-you to [Envoy](https://www.envoyproxy.io), upon whose shoulders we stand.
 
 ## Security
+
 *Reporting security issues* : We take kgateway's security very seriously. If you've found a security issue or a potential security issue in kgateway, please DO NOT file a public GitHub issue. Instead follow [the directions laid out in the kgateway/community repository](https://github.com/kgateway-dev/community/blob/main/CVE.md).
 
 ---

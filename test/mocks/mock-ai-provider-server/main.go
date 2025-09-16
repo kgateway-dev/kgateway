@@ -44,6 +44,16 @@ var mockData = map[string]MockResponse{
 	"38e35f6adfbc50177014a04cf6484c7cf6b91cc7ccf1328ca246519892cbfd53": {FilePath: "mocks/promptguard-streaming/openai-no-guard.txt", IsGzip: false},
 	"6b473280b6aa5b35b8de94f6a5212811f8fb624785695b3234cf9a88d3075b38": {FilePath: "mocks/promptguard-streaming/vertex-ai-mask.txt", IsGzip: false},
 	"0d86bb4c7d7d3638e251c1fc6d09ef515df3aec19d3a10895dd75c4e30ff505e": {FilePath: "mocks/promptguard-streaming/vertex-ai-no-guard.txt", IsGzip: false},
+	// Prompt Guard Webhook
+	// Mask response, prompt message will be modfity or not.
+	"6788dd17ee6525210ac7698f3143d1e39ddf7922eee8b3577f22efdc35596b3f": {FilePath: "mocks/promptguard-webhook/request/openai-mask.json", IsGzip: false},
+	"f6d42b768e8a8575baef11d2f4ad6de89c8c7c214c4efdd62dfd7f51c5f84d07": {FilePath: "mocks/promptguard-webhook/response/openai-mask.json"},
+	// Reject request, prompt message will be reject.
+	"36d87ea92cc00250b16af727c93159edaf465dd579df644cd20bae867ed4486f": {FilePath: "mocks/promptguard-webhook/request/openai-reject.json", IsGzip: false},
+	"4adf65ec7eda2e288f5fe709d08a0b8f11d956cc7090d27c1416ee3ffb285e2b": {FilePath: "mocks/promptguard-webhook/request/openai-reject.json", IsGzip: false},
+	// Nothing happen, Webhook will don't anything with prompt message or llm provider response.
+	"b9e988c276ac93ab8a7a5f8ff4344a05b6383825085d84b31d621208169109f3": {FilePath: "mocks/promptguard-webhook/request/openai-pass.json", IsGzip: false},
+	"31a7c5509b5597f3af850fdbd659ae1e810c30f8fa694f4975f0a63f8f8e2c8f": {FilePath: "mocks/promptguard-webhook/request/openai-pass.json", IsGzip: false},
 }
 
 func getJSONHash(data map[string]interface{}, provider string, stream bool) string {
@@ -252,6 +262,24 @@ func main() {
 			"method":  c.Request.Method,
 			"headers": c.Request.Header,
 		})
+	})
+
+	r.POST("/request", func(c *gin.Context) {
+		var requestData map[string]interface{}
+		if err := c.BindJSON(&requestData); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		handleModelResponse(c, requestData, "openai", false)
+	})
+
+	r.POST("/response", func(c *gin.Context) {
+		var requestData map[string]interface{}
+		if err := c.BindJSON(&requestData); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		handleModelResponse(c, requestData, "openai", false)
 	})
 
 	srv := &http.Server{

@@ -34,9 +34,9 @@ async def make_request_webhook_request(
 ) -> PromptMessages | RejectAction | None:
     req = GuardrailsPromptRequest(body=promptMessages)
     try:
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(verify=False) as client:
             response = await client.post(
-                url=f"http://{webhook_host}:{webhook_port}/request",
+                url=f"https://{webhook_host}:{webhook_port}/request",
                 json=req.model_dump(),
                 headers=headers,
             )
@@ -81,9 +81,9 @@ async def make_response_webhook_request(
     """
     req = GuardrailsResponseRequest(body=rc)
     try:
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(verify=False) as client:
             response = await client.post(
-                url=f"http://{webhook_host}:{webhook_port}/response",
+                url=f"https://{webhook_host}:{webhook_port}/response",
                 json=req.model_dump(),
                 headers=headers,
             )

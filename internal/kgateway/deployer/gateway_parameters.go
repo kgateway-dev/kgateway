@@ -147,7 +147,8 @@ func (gp *GatewayParameters) getGatewayParametersGK(ctx context.Context, gw *api
 
 	return schema.GroupKind{
 			Group: string(gw.Spec.Infrastructure.ParametersRef.Group),
-			Kind:  string(gw.Spec.Infrastructure.ParametersRef.Kind)},
+			Kind:  string(gw.Spec.Infrastructure.ParametersRef.Kind),
+		},
 		nil
 }
 
@@ -160,7 +161,8 @@ func (gp *GatewayParameters) getDefaultGatewayParametersGK(ctx context.Context, 
 	if gwc.Spec.ParametersRef != nil {
 		return schema.GroupKind{
 				Group: string(gwc.Spec.ParametersRef.Group),
-				Kind:  string(gwc.Spec.ParametersRef.Kind)},
+				Kind:  string(gwc.Spec.ParametersRef.Kind),
+			},
 			nil
 	}
 
@@ -381,7 +383,6 @@ func (k *kGatewayParameters) getValues(gw *api.Gateway, gwParam *v1alpha1.Gatewa
 	gateway.TerminationGracePeriodSeconds = podConfig.GetTerminationGracePeriodSeconds()
 	gateway.TopologySpreadConstraints = podConfig.GetTopologySpreadConstraints()
 	gateway.ExtraVolumes = podConfig.GetExtraVolumes()
-	gateway.ExtraVolumeMounts = podConfig.GetExtraVolumeMounts()
 
 	// envoy container values
 	logLevel := envoyContainerConfig.GetBootstrap().GetLogLevel()
@@ -399,11 +400,13 @@ func (k *kGatewayParameters) getValues(gw *api.Gateway, gwParam *v1alpha1.Gatewa
 		gateway.SecurityContext = agentGatewayConfig.GetSecurityContext()
 		gateway.Image = deployer.GetImageValues(agentGatewayConfig.GetImage())
 		gateway.Env = agentGatewayConfig.GetEnv()
+		gateway.ExtraVolumeMounts = agentGatewayConfig.ExtraVolumeMounts
 	} else {
 		gateway.Resources = envoyContainerConfig.GetResources()
 		gateway.SecurityContext = envoyContainerConfig.GetSecurityContext()
 		gateway.Image = deployer.GetImageValues(envoyContainerConfig.GetImage())
 		gateway.Env = envoyContainerConfig.GetEnv()
+		gateway.ExtraVolumeMounts = envoyContainerConfig.ExtraVolumeMounts
 	}
 
 	// istio values
