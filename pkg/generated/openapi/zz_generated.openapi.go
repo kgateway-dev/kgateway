@@ -3282,7 +3282,7 @@ func schema_kgateway_v2_api_v1alpha1_ExtProcProvider(ref common.ReferenceCallbac
 					},
 					"routeCacheAction": {
 						SchemaProps: spec.SchemaProps{
-							Description: "RouteCacheAction describes the route cache action to be taken when an external processor response is received in response to request headers. The default behavior is to only clear the route cache when an external processing response has the clear_route_cache field set.",
+							Description: "RouteCacheAction describes the route cache action to be taken when an external processor response is received in response to request headers. The default behavior is \"FromResponse\" which will only clear the route cache when an external processing response has the clear_route_cache field set.",
 							Type:        []string{"string"},
 							Format:      "",
 						},

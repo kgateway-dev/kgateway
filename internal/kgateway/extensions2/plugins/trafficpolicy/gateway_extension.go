@@ -253,7 +253,7 @@ func convertRCA(in v1alpha1.ExtProcRouteCacheAction) envoyextprocv3.ExternalProc
 		return envoyextprocv3.ExternalProcessor_CLEAR
 	case v1alpha1.RouteCacheActionRetain:
 		return envoyextprocv3.ExternalProcessor_RETAIN
-	case v1alpha1.RouteCacheActionDefault:
+	case v1alpha1.RouteCacheActionFromResponse:
 		return envoyextprocv3.ExternalProcessor_DEFAULT
 	default:
 		return envoyextprocv3.ExternalProcessor_DEFAULT

@@ -41,11 +41,11 @@ type ExtProcProvider struct {
 
 	// RouteCacheAction describes the route cache action to be taken when an
 	// external processor response is received in response to request headers.
-	// The default behavior is to only clear the route cache when an external processing
-	// response has the clear_route_cache field set.
+	// The default behavior is "FromResponse" which will only clear the route cache when
+	// an external processing response has the clear_route_cache field set.
 	// +optional
-	// +kubebuilder:validation:Enum=Default;Clear;Retain
-	// +kubebuilder:default=Default
+	// +kubebuilder:validation:Enum=FromResponse;Clear;Retain
+	// +kubebuilder:default=FromResponse
 	RouteCacheAction ExtProcRouteCacheAction `json:"routeCacheAction,omitempty"`
 
 	// MetadataOptions allows configuring metadata namespaces to forwarded or received from the external
@@ -57,9 +57,9 @@ type ExtProcProvider struct {
 type ExtProcRouteCacheAction string
 
 const (
-	// RouteCacheActionDefault is the default behavior, which clears the route cache only
+	// RouteCacheActionFromResponse is the default behavior, which clears the route cache only
 	// when the clear_route_cache field is set in an external processor response.
-	RouteCacheActionDefault ExtProcRouteCacheAction = "Default"
+	RouteCacheActionFromResponse ExtProcRouteCacheAction = "FromResponse"
 	// RouteCacheActionClear always clears the route cache irrespective of the
 	// clear_route_cache field in the external processor response.
 	RouteCacheActionClear ExtProcRouteCacheAction = "Clear"

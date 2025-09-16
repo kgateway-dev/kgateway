@@ -268,9 +268,9 @@ spec:
                         type: string
                     type: object
                   routeCacheAction:
-                    default: Default
+                    default: FromResponse
                     enum:
-                    - Default
+                    - FromResponse
                     - Clear
                     - Retain
                     type: string
