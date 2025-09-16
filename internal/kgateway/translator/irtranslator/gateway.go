@@ -33,9 +33,10 @@ import (
 var logger = logging.New("translator/ir")
 
 const (
-	listenerNoRoutesMessage            = "Listener has no routes"
-	gatewayListenersNoRoutesMessage    = "Listeners skipped because they have no routes: %s"
-	gatewayAllListenersNoRoutesMessage = "All Listeners skipped because they have no routes: %s"
+	listenerNoRoutesMessage         = "Listener has no routes"
+	listenerNilMessage              = "Listener is nil"
+	gatewayListenersNoRoutesMessage = "Listeners skipped because they have no routes: %s"
+	gatewayListenersNilMessage      = "Listeners skipped because they are nil: %s"
 )
 
 type Translator struct {
@@ -58,45 +59,50 @@ func (t *Translator) Translate(ctx context.Context, gw ir.GatewayIR, reporter sd
 	var res TranslationResult
 
 	var noRouteListeners []string // Slice of listener names that have no routes, used for reporting on gateway status
+	var nilListeners []string     // Slice of listener names that are nil, used for reporting on gateway status
+
 	for _, l := range gw.Listeners {
 		// TODO: propagate errors so we can allow the retain last config mode
 		outListener, routes := t.ComputeListener(ctx, pass, gw, l, reporter)
 
-		// Envoy rejects listeners with no filter chains; skip adding listeners with no filter chains
-		// HTTP listeners get an HCM filter automatically so will not cause configuration errors, but we still want to add messaging.
-		// HTTP listeners will not be skipped if they have no routes, as it makes translation testing simpler.
-		if outListener == nil || !hasAttachedRoutes(routes) {
-			// Report that listener is not programmed due to no filter chains
-			// Need to use the original listener name to report the condition
+		// Handle invalid/empty listeners
+		switch {
+		// The current implementation of the translator can't produce nil listeners, but handle it gracefully
+		case outListener == nil:
+			// Report that listener is nil
 			originalListenerName := findOriginalListenerName(gw, reporter, l)
 			listenerReporter := getReporterForFilterChain(gw, reporter, originalListenerName)
 
-			setListenerCondition := func() {
-				listenerReporter.SetCondition(sdkreporter.ListenerCondition{
-					Type:    gwv1.ListenerConditionProgrammed,
-					Status:  metav1.ConditionTrue,
-					Reason:  gwv1.ListenerReasonProgrammed,
-					Message: listenerNoRoutesMessage,
-				})
+			setConditionIfNotExists(listenerReporter, sdkreporter.ListenerCondition{
+				Type:    gwv1.ListenerConditionProgrammed,
+				Status:  metav1.ConditionTrue,
+				Reason:  gwv1.ListenerReasonProgrammed,
+				Message: listenerNilMessage,
+			})
+
+			nilListeners = append(nilListeners, originalListenerName)
+
+			continue
+
+		case !hasAttachedRoutes(routes):
+			// Report that listener has no routes
+			originalListenerName := findOriginalListenerName(gw, reporter, l)
+			listenerReporter := getReporterForFilterChain(gw, reporter, originalListenerName)
+
+			listenerCondition := sdkreporter.ListenerCondition{
+				Type:    gwv1.ListenerConditionProgrammed,
+				Status:  metav1.ConditionTrue,
+				Reason:  gwv1.ListenerReasonProgrammed,
+				Message: listenerNoRoutesMessage,
 			}
 
-			// Set the programmed condition to true
-			// Check if there's already a condition of the same type before setting it. This avoids overwriting the condition if it already exists.
-			if lr, ok := listenerReporter.(*reports.ListenerReport); ok {
-				existingCondition := meta.FindStatusCondition(lr.Status.Conditions, string(gwv1.ListenerConditionProgrammed))
-				if existingCondition == nil {
-					setListenerCondition()
-				}
-			} else {
-				// Fallback to always setting the condition if we can't access the underlying type
-				setListenerCondition()
-			}
+			setConditionIfNotExists(listenerReporter, listenerCondition)
 
 			// Collect the names of the listeners with no routes so they can all be reported at once on the gateway
 			noRouteListeners = append(noRouteListeners, originalListenerName)
 
 			// Only skip listeners that will cause Envoy errors (TCP listeners). Including HTTP listeners makes translation testing simpler.
-			if outListener == nil || len(outListener.GetFilterChains()) == 0 {
+			if len(outListener.GetFilterChains()) == 0 {
 				continue
 			}
 		}
@@ -104,35 +110,26 @@ func (t *Translator) Translate(ctx context.Context, gw ir.GatewayIR, reporter sd
 		res.Routes = append(res.Routes, routes...)
 	}
 
-	if len(noRouteListeners) > 0 {
+	// Update gateway status if there are listeners with no routes or nil
+	if len(noRouteListeners) > 0 || len(nilListeners) > 0 {
 		sort.Strings(noRouteListeners) // Sort the listener names to ensure consistent ordering
 		gwreporter := reporter.Gateway(gw.SourceObject.Obj)
 
-		// Different message for all listeners vs some listeners
-		message := fmt.Sprintf(gatewayListenersNoRoutesMessage, strings.Join(noRouteListeners, ", "))
-		if len(noRouteListeners) == len(gw.Listeners) {
-			message = fmt.Sprintf(gatewayAllListenersNoRoutesMessage, strings.Join(noRouteListeners, ", "))
+		var msgs []string
+
+		if len(noRouteListeners) > 0 {
+			msgs = append(msgs, fmt.Sprintf(gatewayListenersNoRoutesMessage, strings.Join(noRouteListeners, ", ")))
+		}
+		if len(nilListeners) > 0 {
+			msgs = append(msgs, fmt.Sprintf(gatewayListenersNilMessage, strings.Join(nilListeners, ", ")))
 		}
 
-		setGatewayCondition := func() {
-			gwreporter.SetCondition(sdkreporter.GatewayCondition{
-				Type:    gwv1.GatewayConditionAccepted,
-				Status:  metav1.ConditionTrue,
-				Reason:  gwv1.GatewayReasonListenersNotValid,
-				Message: message,
-			})
-		}
-
-		// Check if there's already a condition of the same type before setting it. This avoids overwriting the condition if it already exists.
-		if gr, ok := gwreporter.(*reports.GatewayReport); ok {
-			existingCondition := meta.FindStatusCondition(gr.GetConditions(), string(gwv1.GatewayConditionAccepted))
-			if existingCondition == nil {
-				setGatewayCondition()
-			}
-		} else {
-			// Fallback to always setting the condition if we can't access the underlying type
-			setGatewayCondition()
-		}
+		setConditionIfNotExists(gwreporter, sdkreporter.GatewayCondition{
+			Type:    gwv1.GatewayConditionAccepted,
+			Status:  metav1.ConditionTrue,
+			Reason:  gwv1.GatewayReasonListenersNotValid,
+			Message: strings.Join(msgs, ";"),
+		})
 	}
 
 	for _, c := range pass {
@@ -143,6 +140,44 @@ func (t *Translator) Translate(ctx context.Context, gw ir.GatewayIR, reporter sd
 	}
 
 	return res
+}
+
+// setConditionIfNotExists is a generic function that sets a condition only if it doesn't already exist.
+// It works with both GatewayReporter and ListenerReporter types by using type assertions.
+func setConditionIfNotExists[T any, R interface{ SetCondition(T) }](reporter R, condition T) {
+	var existingCondition *metav1.Condition
+	var conditionType string
+
+	// Extract the condition type based on the condition's concrete type
+	switch c := any(condition).(type) {
+	case sdkreporter.GatewayCondition:
+		conditionType = string(c.Type)
+	case sdkreporter.ListenerCondition:
+		conditionType = string(c.Type)
+	default:
+		// The condition type is not supported. Currently all calls to this function are local and use a hardcoded supported type.
+		logger.Error("condition type not supported", "condition_type", fmt.Sprintf("%T", c))
+		return
+	}
+
+	// Handle different reporter types based on their underlying concrete types
+	switch r := any(reporter).(type) {
+	case *reports.GatewayReport:
+		existingCondition = meta.FindStatusCondition(r.GetConditions(), conditionType)
+	case *reports.ListenerSetReport:
+		existingCondition = meta.FindStatusCondition(r.GetConditions(), conditionType)
+	case *reports.ListenerReport:
+		existingCondition = meta.FindStatusCondition(r.Status.Conditions, conditionType)
+	default:
+		// The condition type is not supported. Currently all calls to this function are local and use a hardcoded supported type.
+		logger.Error("reporter type not supported", "reporter", fmt.Sprintf("%T", r))
+		return
+	}
+
+	// Only set the condition if it doesn't already exist
+	if existingCondition == nil {
+		reporter.SetCondition(condition)
+	}
 }
 
 func findOriginalListenerName(gw ir.GatewayIR, reporter sdkreporter.Reporter, listener ir.ListenerIR) string {
@@ -332,7 +367,7 @@ type TranslationPass struct {
 }
 
 func hasAttachedRoutes(routes []*envoyroutev3.RouteConfiguration) bool {
-	// Check if any route configurations have virtual hosts with actual routes
+	// Check if any route configurations have virtual hosts with routes attached
 	for _, routeConfig := range routes {
 		for _, vhost := range routeConfig.GetVirtualHosts() {
 			if len(vhost.GetRoutes()) > 0 {

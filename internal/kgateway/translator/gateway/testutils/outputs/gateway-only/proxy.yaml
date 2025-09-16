@@ -41,7 +41,7 @@ Statuses:
         status: Unknown
         type: AttachedListenerSets
       - lastTransitionTime: null
-        message: 'All Listeners skipped because they have no routes: http, tcp, tls'
+        message: 'Listeners skipped because they have no routes: http, tcp, tls'
         reason: ListenersNotValid
         status: "True"
         type: Accepted
