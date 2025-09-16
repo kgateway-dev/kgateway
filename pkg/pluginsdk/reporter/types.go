@@ -27,8 +27,12 @@ const (
 	RouteRuleReplacedReason = "RouteRuleReplaced"
 
 	// ListenerReplacedReason is used with the Accepted=False condition when an individual listener
-	// attached to a Gateway is replaced. This is typically due to a policy error.
+	// attached to a Gateway is replaced. This is typically due to a policy error attached to the listener.
 	ListenerReplacedReason = "ListenerReplaced"
+
+	// GatewayReplacedReason is used with the Accepted=False condition when the entire Gateway is replaced
+	// with a direct response. This is typically due to a policy error attached to the entire Gateway.
+	GatewayReplacedReason = "GatewayReplaced"
 )
 
 // PolicyAttachmentState represents the state of a policy attachment

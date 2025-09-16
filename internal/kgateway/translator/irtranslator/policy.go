@@ -141,7 +141,7 @@ func reportRouteConfigPolicyErrors(r reporter.Reporter, gw ir.GatewayIR, listene
 		r.Gateway(gw.SourceObject.Obj).SetCondition(reporter.GatewayCondition{
 			Type:    gwv1.GatewayConditionAccepted,
 			Status:  metav1.ConditionFalse,
-			Reason:  gwv1.GatewayReasonInvalid,
+			Reason:  reporter.GatewayReplacedReason,
 			Message: policy.FormatErrors(),
 		})
 	}
