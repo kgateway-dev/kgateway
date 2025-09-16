@@ -1,0 +1,43 @@
+Addresses:
+- service:
+    hostname: simple-svc.default.svc.cluster.local
+    name: simple-svc
+    namespace: default
+    ports:
+    - appProtocol: HTTP11
+      servicePort: 8080
+      targetPort: 3000
+Binds:
+- key: 8080/default/example-gateway
+  port: 8080
+Listeners:
+- bindKey: 8080/default/example-gateway
+  gatewayName: default/example-gateway
+  key: default/example-gateway.http
+  name: http
+  protocol: HTTP
+Policies:
+- name: trafficpolicy/default/example-traffic-policy-for-gateway-attached-transform/example-gateway:transformation
+  spec:
+    transformation:
+      request:
+        set:
+        - expression: '''hello'''
+          name: request-gateway
+      response:
+        set:
+        - expression: '''goodbye'''
+          name: response-gateway
+  target:
+    gateway: default/example-gateway
+Routes:
+- backends:
+  - backend:
+      port: 8080
+      service: default/simple-svc.default.svc.cluster.local
+    weight: 1
+  hostnames:
+  - example-gateway-attached-transform.com
+  key: default/example-route.0.0.http
+  listenerKey: default/example-gateway.http
+  routeName: default/example-route

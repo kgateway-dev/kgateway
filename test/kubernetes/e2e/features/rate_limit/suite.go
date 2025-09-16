@@ -35,6 +35,13 @@ type testingSuite struct {
 	agentGateway    bool
 }
 
+// rlBurstTries: run a tiny burst so all checks stay in one fixed RL window.
+// The external rate limiter uses clock-aligned windows (per-minute resets at :00),
+// good explanation: https://redis.io/learn/develop/java/spring/rate-limiting/fixed-window
+// so long loops can straddle the boundary and flake.
+// 3 = one to establish state, two to confirm; fewer risks a transient, more risks crossing the window.
+var rlBurstTries = 3
+
 func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
 	return &testingSuite{
 		ctx:              ctx,
@@ -210,21 +217,6 @@ func (s *testingSuite) assertResponse(path string, expectedStatus int) {
 		})
 }
 
-func (s *testingSuite) assertConsistentResponse(path string, expectedStatus int) {
-	s.testInstallation.Assertions.AssertEventuallyConsistentCurlResponse(
-		s.ctx,
-		testdefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithPath(path),
-			curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
-			curl.WithHostHeader("example.com"),
-			curl.WithPort(8080),
-		},
-		&testmatchers.HttpResponse{
-			StatusCode: expectedStatus,
-		})
-}
-
 func (s *testingSuite) assertResponseWithHeader(path string, headerName string, headerValue string, expectedStatus int) {
 	s.testInstallation.Assertions.AssertEventualCurlResponse(
 		s.ctx,
@@ -241,18 +233,37 @@ func (s *testingSuite) assertResponseWithHeader(path string, headerName string, 
 		})
 }
 
-func (s *testingSuite) assertConsistentResponseWithHeader(path string, headerName string, headerValue string, expectedStatus int) {
-	s.testInstallation.Assertions.AssertEventuallyConsistentCurlResponse(
-		s.ctx,
-		testdefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithPath(path),
-			curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
-			curl.WithHostHeader("example.com"),
-			curl.WithHeader(headerName, headerValue),
-			curl.WithPort(8080),
-		},
-		&testmatchers.HttpResponse{
-			StatusCode: expectedStatus,
-		})
+// Burst a few quick checks so the test doesn't cross a rate-limit window boundary.
+func (s *testingSuite) assertConsistentResponse(path string, expectedStatus int) {
+	for i := 0; i < rlBurstTries; i++ {
+		s.testInstallation.Assertions.AssertEventualCurlResponse(
+			s.ctx,
+			testdefaults.CurlPodExecOpt,
+			[]curl.Option{
+				curl.WithPath(path),
+				curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
+				curl.WithHostHeader("example.com"),
+				curl.WithPort(8080),
+			},
+			&testmatchers.HttpResponse{StatusCode: expectedStatus},
+		)
+	}
+}
+
+// Safe burst a few quick checks so the test doesn't cross a rate-limit window boundary.
+func (s *testingSuite) assertConsistentResponseWithHeader(path, headerName, headerValue string, expectedStatus int) {
+	for i := 0; i < rlBurstTries; i++ {
+		s.testInstallation.Assertions.AssertEventualCurlResponse(
+			s.ctx,
+			testdefaults.CurlPodExecOpt,
+			[]curl.Option{
+				curl.WithPath(path),
+				curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
+				curl.WithHostHeader("example.com"),
+				curl.WithHeader(headerName, headerValue),
+				curl.WithPort(8080),
+			},
+			&testmatchers.HttpResponse{StatusCode: expectedStatus},
+		)
+	}
 }

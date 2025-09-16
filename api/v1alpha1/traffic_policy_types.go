@@ -164,7 +164,7 @@ type Transform struct {
 	Body *BodyTransformation `json:"body,omitempty"`
 }
 
-type InjaTemplate string
+type Template string
 
 // EnvoyHeaderName is the name of a header or pseudo header
 // Based on gateway api v1.Headername but allows a singular : at the start
@@ -180,7 +180,10 @@ type (
 		// +required
 		Name HeaderName `json:"name,omitempty"`
 		// Value is the template to apply to generate the output value for the header.
-		Value InjaTemplate `json:"value,omitempty"`
+		// Inja templates are supported for Envoy-based data planes only.
+		// CEL expressions are supported for agentgateway data plane only.
+		// The system will auto-detect the appropriate template format based on the data plane.
+		Value Template `json:"value,omitempty"`
 	}
 )
 
@@ -200,12 +203,17 @@ const (
 type BodyTransformation struct {
 	// ParseAs defines what auto formatting should be applied to the body.
 	// This can make interacting with keys within a json body much easier if AsJson is selected.
+	// This field is only supported for kgateway (Envoy) data plane and is ignored by agentgateway.
+	// For agentgateway, use json(request.body) or json(response.body) directly in CEL expressions.
 	// +kubebuilder:default=AsString
 	ParseAs BodyParseBehavior `json:"parseAs"`
 
 	// Value is the template to apply to generate the output value for the body.
+	// Inja templates are supported for Envoy-based data planes only.
+	// CEL expressions are supported for agentgateway data plane only.
+	// The system will auto-detect the appropriate template format based on the data plane.
 	// +optional
-	Value *InjaTemplate `json:"value,omitempty"`
+	Value *Template `json:"value,omitempty"`
 }
 
 // ExtAuthPolicy configures external authentication for a route.

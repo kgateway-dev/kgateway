@@ -9,7 +9,6 @@ import (
 
 	"github.com/agentgateway/agentgateway/go/api"
 	"google.golang.org/protobuf/types/known/durationpb"
-	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
@@ -33,6 +32,7 @@ const (
 	rbacPolicySuffix            = ":rbac"
 	localRateLimitPolicySuffix  = ":rl-local"
 	globalRateLimitPolicySuffix = ":rl-global"
+	transformationPolicySuffix  = ":transformation"
 )
 
 var logger = logging.New("agentgateway/plugins")
@@ -162,7 +162,7 @@ func translateTrafficPolicyToADP(
 		adpPolicies = append(adpPolicies, extAuthPolicies...)
 	}
 
-	// Conver RBAC policy if present
+	// Convert RBAC policy if present
 	if trafficPolicy.Spec.RBAC != nil {
 		rbacPolicies := processRBACPolicy(trafficPolicy, policyName, policyTarget, isMcpTarget)
 		adpPolicies = append(adpPolicies, rbacPolicies...)
@@ -177,6 +177,12 @@ func translateTrafficPolicyToADP(
 	if trafficPolicy.Spec.RateLimit != nil {
 		rateLimitPolicies := processRateLimitPolicy(ctx, gatewayExtensions, trafficPolicy, policyName, policyTarget)
 		adpPolicies = append(adpPolicies, rateLimitPolicies...)
+	}
+
+	// Process transformation policies if present
+	if trafficPolicy.Spec.Transformation != nil {
+		transformationPolicies := processTransformationPolicy(trafficPolicy, policyName, policyTarget)
+		adpPolicies = append(adpPolicies, transformationPolicies...)
 	}
 
 	return adpPolicies
@@ -265,21 +271,21 @@ func processAIPolicy(trafficPolicy *v1alpha1.TrafficPolicy, policyName string, p
 	}
 
 	for _, def := range aiSpec.Defaults {
-		protoValue, err := toProtoValue(def.Value)
+		val, err := toJSONValue(def.Value)
 		if err != nil {
-			logger.Error("error parsing spec.defaults", "field", def.Field, "ref", trafficPolicy.Namespace+"/"+trafficPolicy.Name, "error", err)
+			logger.Error("error parsing field value", "field", def.Field, "error", err)
 			continue
 		}
 		if def.Override {
 			if aiPolicy.GetSpec().GetAi().Overrides == nil {
-				aiPolicy.GetSpec().GetAi().Overrides = make(map[string]*structpb.Value)
+				aiPolicy.GetSpec().GetAi().Overrides = make(map[string]string)
 			}
-			aiPolicy.GetSpec().GetAi().Overrides[def.Field] = protoValue
+			aiPolicy.GetSpec().GetAi().Overrides[def.Field] = val
 		} else {
 			if aiPolicy.GetSpec().GetAi().Defaults == nil {
-				aiPolicy.GetSpec().GetAi().Defaults = make(map[string]*structpb.Value)
+				aiPolicy.GetSpec().GetAi().Defaults = make(map[string]string)
 			}
-			aiPolicy.GetSpec().GetAi().Defaults[def.Field] = protoValue
+			aiPolicy.GetSpec().GetAi().Defaults[def.Field] = val
 		}
 	}
 
@@ -841,26 +847,88 @@ func buildAGWServiceRef(br *gwv1.BackendRef, defaultNS string) (*api.BackendRefe
 	}, nil
 }
 
-// toProtoValue converts a raw string to a protobuf Value
-func toProtoValue(raw string) (*structpb.Value, error) {
-	rawBytes := []byte(raw)
-	v := &structpb.Value{}
-	if json.Valid(rawBytes) {
-		err := v.UnmarshalJSON(rawBytes)
-		if err != nil {
-			return nil, err
-		}
-		return v, nil
+func toJSONValue(value string) (string, error) {
+	if json.Valid([]byte(value)) {
+		return value, nil
 	}
 
-	// not an encoded JSON value, this could be a an unquoted string so try encoding to JSON and unmarshal again
-	js, err := json.Marshal(raw)
-	if err != nil {
-		return nil, err
+	if strings.HasPrefix(value, "{") || strings.HasPrefix(value, "[") {
+		return "", fmt.Errorf("invalid JSON value: %s", value)
 	}
-	err = v.UnmarshalJSON(js)
+
+	// Treat this as an unquoted string and marshal it to JSON
+	marshaled, err := json.Marshal(value)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
-	return v, nil
+	return string(marshaled), nil
+}
+
+// processTransformationPolicy processes transformation configuration and creates corresponding ADP policies
+func processTransformationPolicy(
+	trafficPolicy *v1alpha1.TrafficPolicy,
+	policyName string,
+	policyTarget *api.PolicyTarget,
+) []ADPPolicy {
+	transformation := trafficPolicy.Spec.Transformation
+
+	transformationPolicy := &api.Policy{
+		Name:   policyName + transformationPolicySuffix,
+		Target: policyTarget,
+		Spec: &api.PolicySpec{
+			Kind: &api.PolicySpec_Transformation{
+				Transformation: &api.PolicySpec_TransformationPolicy{
+					Request:  convertTransformSpec(transformation.Request),
+					Response: convertTransformSpec(transformation.Response),
+				},
+			},
+		},
+	}
+
+	logger.Debug("generated transformation policy",
+		"policy", trafficPolicy.Name,
+		"agentgateway_policy", transformationPolicy.Name,
+		"target", policyTarget)
+
+	return []ADPPolicy{{Policy: transformationPolicy}}
+}
+
+// convertTransformSpec converts transformation specs to agentgateway format
+func convertTransformSpec(spec *v1alpha1.Transform) *api.PolicySpec_TransformationPolicy_Transform {
+	if spec == nil {
+		return nil
+	}
+
+	transform := &api.PolicySpec_TransformationPolicy_Transform{}
+
+	for _, header := range spec.Set {
+		transform.Set = append(transform.Set, &api.PolicySpec_HeaderTransformation{
+			Name:       string(header.Name),
+			Expression: string(header.Value),
+		})
+	}
+
+	for _, header := range spec.Add {
+		transform.Add = append(transform.Add, &api.PolicySpec_HeaderTransformation{
+			Name:       string(header.Name),
+			Expression: string(header.Value),
+		})
+	}
+
+	transform.Remove = spec.Remove
+
+	// Handle body transformation if present
+	if spec.Body != nil && spec.Body.Value != nil {
+		// Warn if ParseAs is set since it's not supported for agentgateway
+		if spec.Body.ParseAs != "" {
+			logger.Warn("parseAs field is ignored for agentgateway, use json() function directly in CEL expressions",
+				"parse_as", spec.Body.ParseAs)
+		}
+
+		transform.Body = &api.PolicySpec_BodyTransformation{
+			Expression: string(*spec.Body.Value),
+		}
+	}
+
+	return transform
 }

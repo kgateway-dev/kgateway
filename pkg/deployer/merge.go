@@ -148,7 +148,6 @@ func deepMergePodTemplate(dst, src *v1alpha1.Pod) *v1alpha1.Pod {
 	dst.LivenessProbe = deepMergeProbe(dst.GetLivenessProbe(), src.GetLivenessProbe())
 	dst.TopologySpreadConstraints = DeepMergeSlices(dst.GetTopologySpreadConstraints(), src.GetTopologySpreadConstraints())
 	dst.ExtraVolumes = DeepMergeSlices(dst.GetExtraVolumes(), src.GetExtraVolumes())
-	dst.ExtraVolumeMounts = DeepMergeSlices(dst.GetExtraVolumeMounts(), src.GetExtraVolumeMounts())
 
 	return dst
 }
@@ -580,6 +579,7 @@ func deepMergeEnvoyContainer(dst, src *v1alpha1.EnvoyContainer) *v1alpha1.EnvoyC
 	dst.SecurityContext = deepMergeSecurityContext(dst.GetSecurityContext(), src.GetSecurityContext())
 	dst.Resources = DeepMergeResourceRequirements(dst.GetResources(), src.GetResources())
 	dst.Env = DeepMergeSlices(dst.GetEnv(), src.GetEnv())
+	dst.ExtraVolumeMounts = DeepMergeSlices(dst.ExtraVolumeMounts, src.ExtraVolumeMounts)
 
 	return dst
 }
@@ -786,6 +786,7 @@ func deepMergeAgentGateway(dst, src *v1alpha1.AgentGateway) *v1alpha1.AgentGatew
 	dst.Resources = DeepMergeResourceRequirements(dst.GetResources(), src.GetResources())
 	dst.Env = DeepMergeSlices(dst.GetEnv(), src.GetEnv())
 	dst.CustomConfigMapName = MergePointers(dst.GetCustomConfigMapName(), src.GetCustomConfigMapName())
+	dst.ExtraVolumeMounts = DeepMergeSlices(dst.ExtraVolumeMounts, src.ExtraVolumeMounts)
 
 	return dst
 }

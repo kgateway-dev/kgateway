@@ -25,22 +25,18 @@ spec:
     - "httpbin"
   rules:
     - backendRefs:
-        - name: httpbin-upstream
-          namespace: httpbin
-          port: 8000
-          kind: Upstream
-          group: gloo.solo.io
+        - name: httpbin-backend
+          kind: Backend
+          group: gateway.kgateway.dev
 ---
-apiVersion: gloo.solo.io/v1
-kind: Upstream
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
 metadata:
-  name: httpbin-upstream
+  name: httpbin-backend
   namespace: httpbin
 spec:
-  disableIstioAutoMtls: true
-  kube:
-    selector:
-      app: httpbin
-    serviceName: httpbin
-    serviceNamespace: httpbin
-    servicePort: 8000
+  type: Static
+  static:
+    hosts:
+      - host: httpbin.httpbin
+        port: 8000

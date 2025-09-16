@@ -93,6 +93,9 @@ func BuildServiceBackendObjectIR(svc *corev1.Service, svcPort int32, svcProtocol
 		backend.TrafficDistribution = wellknown.ParseTrafficDistribution(val)
 	}
 
+	// Parse common annotations
+	ir.ParseObjectAnnotations(&backend, svc)
+
 	return backend
 }
 

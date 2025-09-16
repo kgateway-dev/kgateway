@@ -58,7 +58,7 @@ jobs:
         # August 29, 2025: ~9 minutes
         - cluster-name: 'cluster-six'
           go-test-args: '-v -timeout=25m'
-          go-test-run-regex: '^TestInferenceExtension$$|^TestListenerSet$$|^TestKgateway$$/^TCPRouteServices$$'
+          go-test-run-regex: '^TestInferenceExtension$$|^TestListenerSet$$|^TestKgateway$$/^TCPRouteServices$$|^TestKgatewayIstioAutoMtls$$'
           localstack: 'false'
         # August 29, 2025: ~7 minutes
         - cluster-name: 'cluster-ai'

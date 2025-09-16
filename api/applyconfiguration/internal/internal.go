@@ -203,6 +203,12 @@ var schemaYAML = typed.YAMLObject(`types:
           elementType:
             namedType: io.k8s.api.core.v1.EnvVar
           elementRelationship: atomic
+    - name: extraVolumeMounts
+      type:
+        list:
+          elementType:
+            namedType: io.k8s.api.core.v1.VolumeMount
+          elementRelationship: atomic
     - name: image
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Image
@@ -913,6 +919,12 @@ var schemaYAML = typed.YAMLObject(`types:
         list:
           elementType:
             namedType: io.k8s.api.core.v1.EnvVar
+          elementRelationship: atomic
+    - name: extraVolumeMounts
+      type:
+        list:
+          elementType:
+            namedType: io.k8s.api.core.v1.VolumeMount
           elementRelationship: atomic
     - name: image
       type:
@@ -1893,12 +1905,6 @@ var schemaYAML = typed.YAMLObject(`types:
         map:
           elementType:
             scalar: string
-    - name: extraVolumeMounts
-      type:
-        list:
-          elementType:
-            namedType: io.k8s.api.core.v1.VolumeMount
-          elementRelationship: atomic
     - name: extraVolumes
       type:
         list:

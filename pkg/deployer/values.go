@@ -42,7 +42,6 @@ type HelmGateway struct {
 	ReadinessProbe                *corev1.Probe                     `json:"readinessProbe,omitempty"`
 	LivenessProbe                 *corev1.Probe                     `json:"livenessProbe,omitempty"`
 	ExtraVolumes                  []corev1.Volume                   `json:"extraVolumes,omitempty"`
-	ExtraVolumeMounts             []corev1.VolumeMount              `json:"extraVolumeMounts,omitempty"`
 	GracefulShutdown              *v1alpha1.GracefulShutdownSpec    `json:"gracefulShutdown,omitempty"`
 	TerminationGracePeriodSeconds *int                              `json:"terminationGracePeriodSeconds,omitempty"`
 	TopologySpreadConstraints     []corev1.TopologySpreadConstraint `json:"topologySpreadConstraints,omitempty"`
@@ -59,10 +58,13 @@ type HelmGateway struct {
 	ComponentLogLevel *string `json:"componentLogLevel,omitempty"`
 
 	// envoy or agentgateway container values
-	Image           *HelmImage                   `json:"image,omitempty"`
-	Resources       *corev1.ResourceRequirements `json:"resources,omitempty"`
-	SecurityContext *corev1.SecurityContext      `json:"securityContext,omitempty"`
-	Env             []corev1.EnvVar              `json:"env,omitempty"`
+	// Note: ideally, these should be mapped to container specific values, but right now they
+	// map the the proxy container
+	Image             *HelmImage                   `json:"image,omitempty"`
+	Resources         *corev1.ResourceRequirements `json:"resources,omitempty"`
+	SecurityContext   *corev1.SecurityContext      `json:"securityContext,omitempty"`
+	Env               []corev1.EnvVar              `json:"env,omitempty"`
+	ExtraVolumeMounts []corev1.VolumeMount         `json:"extraVolumeMounts,omitempty"`
 
 	// xds values
 	Xds *HelmXds `json:"xds,omitempty"`

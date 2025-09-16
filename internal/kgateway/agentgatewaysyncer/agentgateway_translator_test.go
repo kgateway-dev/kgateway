@@ -446,4 +446,15 @@ func TestBasic(t *testing.T) {
 			},
 		})
 	})
+
+	t.Run("TrafficPolicy with transformation", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "trafficpolicy/transformation.yaml",
+			outputFile: "trafficpolicy/transformation.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
 }

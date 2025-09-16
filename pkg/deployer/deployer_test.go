@@ -628,6 +628,82 @@ var _ = Describe("Deployer", func() {
 			cm := objs.findConfigMap(defaultNamespace, "agent-gateway")
 			Expect(cm).ToNot(BeNil())
 		})
+
+		It("clears RunAsUser for agentgateway when FloatingUserId=true", func() {
+			// enable floating user on kube config
+			gwp.Spec.Kube.FloatingUserId = ptr.To(true)
+			// also set a PodSecurityContext and ensure it flows to the pod
+			uid := int64(12345)
+			gid := int64(23456)
+			fsGroup := int64(34567)
+			gwp.Spec.Kube.PodTemplate = &gw2_v1alpha1.Pod{
+				SecurityContext: &corev1.PodSecurityContext{
+					RunAsUser:  &uid,
+					RunAsGroup: &gid,
+					FSGroup:    &fsGroup,
+				},
+			}
+			gw := &api.Gateway{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "agent-gateway",
+					Namespace: defaultNamespace,
+				},
+				Spec: api.GatewaySpec{
+					GatewayClassName: "agentgateway",
+					Infrastructure: &api.GatewayInfrastructure{
+						ParametersRef: &api.LocalParametersReference{
+							Group: gw2_v1alpha1.GroupName,
+							Kind:  api.Kind(wellknown.GatewayParametersGVK.Kind),
+							Name:  gwp.GetName(),
+						},
+					},
+					Listeners: []api.Listener{{
+						Name: "listener-1",
+						Port: 80,
+					}},
+				},
+			}
+			gwParams := internaldeployer.NewGatewayParameters(newFakeClientWithObjs(gwc, gwp), &deployer.Inputs{
+				CommonCollections: newCommonCols(GinkgoT(), gwc, gw),
+				Dev:               false,
+				ControlPlane: deployer.ControlPlaneInfo{
+					XdsHost: "something.cluster.local",
+					XdsPort: 1234,
+				},
+				ImageInfo: &deployer.ImageInfo{
+					Registry: "foo",
+					Tag:      "bar",
+				},
+				GatewayClassName:         wellknown.DefaultGatewayClassName,
+				WaypointGatewayClassName: wellknown.DefaultWaypointClassName,
+				AgentGatewayClassName:    wellknown.DefaultAgentGatewayClassName,
+			})
+			chart, err := internaldeployer.LoadGatewayChart()
+			Expect(err).NotTo(HaveOccurred())
+			d := deployer.NewDeployer(wellknown.DefaultGatewayControllerName, newFakeClientWithObjs(gwc, gwp), chart,
+				gwParams,
+				internaldeployer.GatewayReleaseNameAndNamespace)
+
+			objsSlice, err := d.GetObjsToDeploy(context.Background(), gw)
+			Expect(err).NotTo(HaveOccurred())
+			objsSlice = d.SetNamespaceAndOwner(gw, objsSlice)
+
+			objs := clientObjects(objsSlice)
+			dep := objs.findDeployment(defaultNamespace, "agent-gateway")
+			Expect(dep).ToNot(BeNil())
+			expectedSecurityContext := dep.Spec.Template.Spec.Containers[0].SecurityContext
+			Expect(expectedSecurityContext).To(Not(BeNil()))
+			Expect(expectedSecurityContext.RunAsUser).To(BeNil())
+			// assert pod-level security context is rendered and RunAsUser cleared while other fields preserved
+			psc := dep.Spec.Template.Spec.SecurityContext
+			Expect(psc).ToNot(BeNil())
+			Expect(psc.RunAsUser).To(BeNil())
+			Expect(psc.RunAsGroup).ToNot(BeNil())
+			Expect(psc.FSGroup).ToNot(BeNil())
+			Expect(*psc.RunAsGroup).To(Equal(gid))
+			Expect(*psc.FSGroup).To(Equal(fsGroup))
+		})
+
 	})
 
 	Context("special cases", func() {
@@ -1851,7 +1927,7 @@ var _ = Describe("Deployer", func() {
 		}
 
 		aiSdsAndFloatingUserIdValidationFunc := func(objs clientObjects, inp *input) error {
-			return generalAiAndSdsValidationFunc(objs, inp, true) // true: don't expect null runAsUser
+			return generalAiAndSdsValidationFunc(objs, inp, true) // true: expect null runAsUser
 		}
 
 		DescribeTable("create and validate objs", func(inp *input, expected *expectedOutput) {

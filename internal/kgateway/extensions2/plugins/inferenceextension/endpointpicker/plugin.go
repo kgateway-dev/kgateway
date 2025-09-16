@@ -133,6 +133,10 @@ func buildBackendObjIrFromPool(pool *inferencePool) *ir.BackendObjectIR {
 	backend.ObjIr = pool
 	// TODO [danehans]: Look into using backend.AppProtocol to set H1/H2 for the static cluster.
 	backend.CanonicalHostname = kubeutils.GetServiceHostname(objSrc.Name, objSrc.Namespace)
+
+	// Parse common annotations
+	ir.ParseObjectAnnotations(&backend, pool.obj)
+
 	return &backend
 }
 

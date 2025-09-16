@@ -1,5 +1,3 @@
-//go:build ignore
-
 package istio
 
 import (
@@ -24,16 +22,23 @@ var (
 	permissivePeerAuthManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "permissive-peer-auth.yaml")
 	disablePeerAuthManifest    = filepath.Join(fsutils.MustGetThisDir(), "testdata", "disable-peer-auth.yaml")
 
-	k8sRoutingSvcManifest      = filepath.Join(fsutils.MustGetThisDir(), "testdata", "k8s-routing-svc.yaml")
-	k8sRoutingUpstreamManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "k8s-routing-upstream.yaml")
+	k8sRoutingSvcManifest     = filepath.Join(fsutils.MustGetThisDir(), "testdata", "k8s-routing-svc.yaml")
+	k8sRoutingBackendManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "k8s-routing-backend.yaml")
+
+	setupNginxMtlsManifest    = filepath.Join(fsutils.MustGetThisDir(), "testdata", "setup-nginx-mtls.yml")
+	nginxBackendRouteManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "nginx-backend-route.yaml")
+	nginxBcpMtlsManifest      = filepath.Join(fsutils.MustGetThisDir(), "testdata", "nginx-bcp-mtls.yml")
+	nginxBcpSimpleTlsManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "nginx-bcp-simple-tls.yml")
+	nginxBtpSimpleTlsManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "nginx-btp-simple-tls.yml")
+	nginxMtlsConfigManifest   = filepath.Join(fsutils.MustGetThisDir(), "testdata", "nginx-mtls-config.yml")
 
 	// When we apply the fault injection manifest files, we expect resources to be created with this metadata
-	glooProxyObjectMeta = metav1.ObjectMeta{
+	kgwProxyObjectMeta = metav1.ObjectMeta{
 		Name:      "gw",
 		Namespace: "default",
 	}
-	proxyDeployment = &appsv1.Deployment{ObjectMeta: glooProxyObjectMeta}
-	proxyService    = &corev1.Service{ObjectMeta: glooProxyObjectMeta}
+	proxyDeployment = &appsv1.Deployment{ObjectMeta: kgwProxyObjectMeta}
+	proxyService    = &corev1.Service{ObjectMeta: kgwProxyObjectMeta}
 
 	// httpbinDeployment is the Deployment that is in the Istio mesh
 	httpbinDeployment = &appsv1.Deployment{
@@ -60,8 +65,9 @@ var (
 		Body:       gomega.Not(gomega.ContainSubstring("X-Forwarded-Client-Cert")),
 	}
 
-	expectedServiceUnavailableResponse = &testmatchers.HttpResponse{
-		StatusCode: http.StatusServiceUnavailable,
-		Body:       gomega.ContainSubstring("upstream connect error or disconnect/reset before headers"),
-	}
+	// Keeping this here for reference, but it's not used in the tests
+	// expectedServiceUnavailableResponse = &testmatchers.HttpResponse{
+	// 	StatusCode: http.StatusServiceUnavailable,
+	// 	Body:       gomega.ContainSubstring("upstream connect error or disconnect/reset before headers"),
+	// }
 )
