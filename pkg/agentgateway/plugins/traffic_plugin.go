@@ -109,8 +109,8 @@ func TranslateTrafficPolicy(
 
 		switch string(target.Kind) {
 		case wellknown.GatewayKind:
-			group := gwv1.Group("gateway.networking.k8s.io")
-			kind := gwv1.Kind("Gateway")
+			group := gwv1.Group(wellknown.GatewayGVK.Group)
+			kind := gwv1.Kind(wellknown.GatewayGVK.Kind)
 			parentRef.Group = &group
 			parentRef.Kind = &kind
 			policyTarget = &api.PolicyTarget{
@@ -127,8 +127,8 @@ func TranslateTrafficPolicy(
 			}
 
 		case wellknown.HTTPRouteKind:
-			group := gwv1.Group("gateway.networking.k8s.io")
-			kind := gwv1.Kind("HTTPRoute")
+			group := gwv1.Group(wellknown.HTTPRouteGVK.Group)
+			kind := gwv1.Kind(wellknown.HTTPRouteGVK.Kind)
 			parentRef.Group = &group
 			parentRef.Kind = &kind
 			policyTarget = &api.PolicyTarget{
@@ -146,8 +146,8 @@ func TranslateTrafficPolicy(
 
 		case wellknown.BackendGVK.Kind:
 			// kgateway backend kind (MCP, AI, etc.)
-			group := gwv1.Group("gateway.kgateway.dev")
-			kind := gwv1.Kind("Backend")
+			group := gwv1.Group(wellknown.BackendGVK.Group)
+			kind := gwv1.Kind(wellknown.BackendGVK.Kind)
 			parentRef.Group = &group
 			parentRef.Kind = &kind
 
@@ -275,6 +275,7 @@ func translateTrafficPolicyToADP(
 	if trafficPolicy.Spec.ExtAuth != nil && trafficPolicy.Spec.ExtAuth.ExtensionRef != nil {
 		extAuthPolicies, err := processExtAuthPolicy(ctx, gatewayExtensions, trafficPolicy, policyName, policyTarget)
 		if err != nil {
+			logger.Error("error processing ExtAuth policy", "error", err)
 			errs = append(errs, err)
 		}
 		adpPolicies = append(adpPolicies, extAuthPolicies...)
@@ -284,6 +285,7 @@ func translateTrafficPolicyToADP(
 	if trafficPolicy.Spec.RBAC != nil {
 		rbacPolicies, err := processRBACPolicy(trafficPolicy, policyName, policyTarget, isMcpTarget)
 		if err != nil {
+			logger.Error("error processing RBAC policy", "error", err)
 			errs = append(errs, err)
 		}
 		adpPolicies = append(adpPolicies, rbacPolicies...)
@@ -293,6 +295,7 @@ func translateTrafficPolicyToADP(
 	if trafficPolicy.Spec.AI != nil {
 		aiPolicies, err := processAIPolicy(ctx, secrets, trafficPolicy, policyName, policyTarget)
 		if err != nil {
+			logger.Error("error processing AI policy", "error", err)
 			errs = append(errs, err)
 		}
 		adpPolicies = append(adpPolicies, aiPolicies...)
@@ -301,6 +304,7 @@ func translateTrafficPolicyToADP(
 	if trafficPolicy.Spec.RateLimit != nil {
 		rateLimitPolicies, err := processRateLimitPolicy(ctx, gatewayExtensions, trafficPolicy, policyName, policyTarget)
 		if err != nil {
+			logger.Error("error processing rate limit policy", "error", err)
 			errs = append(errs, err)
 		}
 		adpPolicies = append(adpPolicies, rateLimitPolicies...)
@@ -310,6 +314,7 @@ func translateTrafficPolicyToADP(
 	if trafficPolicy.Spec.Transformation != nil {
 		transformationPolicies, err := processTransformationPolicy(trafficPolicy, policyName, policyTarget)
 		if err != nil {
+			logger.Error("error processing transformation policy", "error", err)
 			errs = append(errs, err)
 		}
 		adpPolicies = append(adpPolicies, transformationPolicies...)
@@ -330,7 +335,6 @@ func processExtAuthPolicy(ctx krt.HandlerContext, gatewayExtensions krt.Collecti
 	gwExt := krt.FetchOne(ctx, gatewayExtensions, krt.FilterKey(gwExtKey))
 
 	if gwExt == nil || (*gwExt).Spec.Type != v1alpha1.GatewayExtensionTypeExtAuth || (*gwExt).Spec.ExtAuth == nil {
-		logger.Error("gateway extension not found or not of type ExtAuth", "extension", gwExtKey)
 		return nil, fmt.Errorf("gateway extension not found or not of type ExtAuth: %s", gwExtKey)
 	}
 	extAuth := (*gwExt).Spec.ExtAuth
@@ -357,7 +361,6 @@ func processExtAuthPolicy(ctx krt.HandlerContext, gatewayExtensions krt.Collecti
 	}
 
 	if extauthSvcTarget == nil {
-		logger.Error("failed to translate traffic policy", "policy", trafficPolicy.Name, "target", policyTarget, "error", "missing extauthservice target")
 		return nil, fmt.Errorf("failed to translate traffic policy: %s: missing extauthservice target", trafficPolicy.Name)
 	}
 
@@ -734,7 +737,6 @@ func processRateLimitPolicy(ctx krt.HandlerContext, gatewayExtensions krt.Collec
 		if localPolicy != nil && err == nil {
 			adpPolicies = append(adpPolicies, *localPolicy)
 		} else {
-			logger.Warn("failed to create local rate limit policy")
 			return nil, err
 		}
 	}
@@ -745,7 +747,6 @@ func processRateLimitPolicy(ctx krt.HandlerContext, gatewayExtensions krt.Collec
 		if globalPolicy != nil && err == nil {
 			adpPolicies = append(adpPolicies, *globalPolicy)
 		} else {
-			logger.Warn("failed to create global rate limit policy")
 			return nil, err
 		}
 	}
@@ -764,7 +765,6 @@ func processLocalRateLimitPolicy(trafficPolicy *v1alpha1.TrafficPolicy, policyNa
 
 	// Validate configuration
 	if tokenBucket.MaxTokens <= 0 {
-		logger.Error("invalid max tokens value", "max_tokens", tokenBucket.MaxTokens)
 		return nil, fmt.Errorf("invalid max tokens value: %d", tokenBucket.MaxTokens)
 	}
 	// Convert duration to seconds for agentgateway
@@ -813,20 +813,17 @@ func processGlobalRateLimitPolicy(
 		ctx, gatewayExtensions, grl.ExtensionRef, trafficPolicy.Namespace, v1alpha1.GatewayExtensionTypeRateLimit,
 	)
 	if err != nil {
-		logger.Error("failed to lookup rate limit extension", "error", err)
 		return nil, fmt.Errorf("failed to lookup rate limit extension: %w", err)
 	}
 	if gwExt.Spec.RateLimit == nil ||
 		gwExt.Spec.RateLimit.GrpcService == nil ||
 		gwExt.Spec.RateLimit.GrpcService.BackendRef == nil {
-		logger.Error("rate limit extension missing grpcService.backendRef", "extension", gwExt.Name)
 		return nil, fmt.Errorf("rate limit extension missing grpcService.backendRef: %s", gwExt.Name)
 	}
 
 	// Build BackendReference for agentgateway (service/ns + port)
 	agwRef, err := buildAGWServiceRef(gwExt.Spec.RateLimit.GrpcService.BackendRef, trafficPolicy.Namespace)
 	if err != nil {
-		logger.Error("failed to build AGW service reference", "error", err)
 		return nil, fmt.Errorf("failed to build AGW service reference: %w", err)
 	}
 

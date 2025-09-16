@@ -121,8 +121,9 @@ func (s *AgentGwStatusSyncer) Start(ctx context.Context) error {
 	psq := NewPolicyStatusAsyncQueue()
 	s.policyStatusQueue = psq.GetAsyncQueue()
 	// Create a controllers.Queue that wraps our async queue for Istio's StatusCollections
-	istioQueue := &policyStatusQueue{asyncQueue: psq}
-	s.policyStatusCollections.SetQueue(istioQueue)
+	// The policyStatusQueue implements https://github.com/istio/istio/blob/531c61709aaa9bc9187c625e9e460be98f2abf2e/pilot/pkg/status/manager.go#L107
+	polStatusQueue := &policyStatusQueue{asyncQueue: psq}
+	s.policyStatusCollections.SetQueue(polStatusQueue)
 
 	// Start separate goroutines for each status syncer
 	routeStatusLogger := logger.With("subcomponent", "routeStatusSyncer")

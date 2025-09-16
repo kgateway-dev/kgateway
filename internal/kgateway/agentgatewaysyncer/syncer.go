@@ -119,6 +119,7 @@ func NewAgentGwSyncer(
 }
 
 // PolicyStatusAsyncQueue wraps AsyncQueue to implement controllers.Writer interface for Istio's StatusCollections
+// See: https://github.com/istio/istio/blob/531c61709aaa9bc9187c625e9e460be98f2abf2e/pilot/pkg/status/manager.go#L107
 type PolicyStatusAsyncQueue struct {
 	queue utils.AsyncQueue[krt.ObjectWithStatus[controllers.Object, gwv1alpha2.PolicyStatus]]
 }
