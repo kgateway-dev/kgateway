@@ -35,7 +35,7 @@ var logger = logging.New("translator/ir")
 const (
 	listenerNoRoutesMessage         = "Listener has no routes"
 	listenerNilMessage              = "Listener is nil"
-	gatewayListenersNoRoutesMessage = "Listeners skipped because they have no routes: %s"
+	gatewayListenersNoRoutesMessage = "Listeners with no routes: %s"
 	gatewayListenersNilMessage      = "Listeners skipped because they are nil: %s"
 )
 

@@ -88,7 +88,7 @@ Statuses:
         status: "True"
         type: AttachedListenerSets
       - lastTransitionTime: null
-        message: 'Listeners skipped because they have no routes: http-8080'
+        message: 'Listeners with no routes: http-8080'
         reason: ListenersNotValid
         status: "True"
         type: Accepted
