@@ -1064,17 +1064,19 @@ func convertTransformSpec(spec *v1alpha1.Transform) *api.PolicySpec_Transformati
 
 	transform.Remove = spec.Remove
 
-	// Warn if ParseAs is set since it's not supported for agentgateway
-	// default is set to AsString
-	if spec.Body.ParseAs == v1alpha1.BodyParseBehaviorAsJSON {
-		logger.Warn("parseAs field is ignored for agentgateway, use json() function directly in CEL expressions",
-			"parse_as", spec.Body.ParseAs)
-	}
+	if spec.Body != nil {
+		// Warn if ParseAs is set since it's not supported for agentgateway
+		// default is set to AsString
+		if spec.Body.ParseAs == v1alpha1.BodyParseBehaviorAsJSON {
+			logger.Warn("parseAs field is ignored for agentgateway, use json() function directly in CEL expressions",
+				"parse_as", spec.Body.ParseAs)
+		}
 
-	// Handle body transformation if present
-	if spec.Body != nil && spec.Body.Value != nil {
-		transform.Body = &api.PolicySpec_BodyTransformation{
-			Expression: string(*spec.Body.Value),
+		// Handle body transformation if present
+		if spec.Body.Value != nil {
+			transform.Body = &api.PolicySpec_BodyTransformation{
+				Expression: string(*spec.Body.Value),
+			}
 		}
 	}
 
