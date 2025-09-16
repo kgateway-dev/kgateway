@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -22,6 +23,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	"sigs.k8s.io/gateway-api/apis/v1alpha2"
+
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
+	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
@@ -211,7 +215,7 @@ func TranslateTrafficPolicy(
 					Type:    string(v1alpha1.PolicyConditionAccepted),
 					Status:  metav1.ConditionTrue,
 					Reason:  string(v1alpha1.PolicyReasonValid),
-					Message: "TrafficPolicy successfully processed",
+					Message: reporter.PolicyAcceptedMsg,
 				})
 			}
 			// TODO: validate the target exists with dataplane https://github.com/kgateway-dev/kgateway/issues/12275
@@ -219,7 +223,7 @@ func TranslateTrafficPolicy(
 				Type:    string(v1alpha1.PolicyConditionAttached),
 				Status:  metav1.ConditionTrue,
 				Reason:  string(v1alpha1.PolicyReasonAttached),
-				Message: "TrafficPolicy attached to targets",
+				Message: reporter.PolicyAttachedMsg,
 			})
 			// Ensure LastTransitionTime is set for all conditions
 			for i := range conds {
@@ -239,12 +243,14 @@ func TranslateTrafficPolicy(
 	}
 
 	// Build final status from accumulated ancestors
-	var status v1alpha2.PolicyStatus
-	if len(ancestors) == 0 {
-		status = v1alpha2.PolicyStatus{Ancestors: []v1alpha2.PolicyAncestorStatus{}}
-	} else {
-		status = v1alpha2.PolicyStatus{Ancestors: ancestors}
-	}
+	status := v1alpha2.PolicyStatus{Ancestors: ancestors}
+
+	// sort all parents for consistency with Equals and for Update
+	// match sorting semantics of istio/istio, see:
+	// https://github.com/istio/istio/blob/6dcaa0206bcaf20e3e3b4e45e9376f0f96365571/pilot/pkg/config/kube/gateway/conditions.go#L188-L193
+	slices.SortStableFunc(status.Ancestors, func(a, b v1alpha2.PolicyAncestorStatus) int {
+		return strings.Compare(reports.ParentString(a.AncestorRef), reports.ParentString(b.AncestorRef))
+	})
 
 	return &status, adpPolicies
 }
