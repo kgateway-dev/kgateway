@@ -9,10 +9,14 @@ import (
 	"github.com/avast/retry-go/v4"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"istio.io/istio/pilot/pkg/status"
 	"istio.io/istio/pkg/kube"
+	"istio.io/istio/pkg/kube/controllers"
+	"istio.io/istio/pkg/kube/krt"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -20,12 +24,25 @@ import (
 	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
 
 var _ manager.LeaderElectionRunnable = &AgentGwStatusSyncer{}
+
+// policyStatusQueue implements status.Queue interface for Istio's StatusCollections
+type policyStatusQueue struct {
+	asyncQueue *PolicyStatusAsyncQueue
+}
+
+func (q *policyStatusQueue) EnqueueStatusUpdateResource(context any, resource status.Resource) {
+	// Convert the context back to our expected type
+	if obj, ok := context.(krt.ObjectWithStatus[controllers.Object, gwv1alpha2.PolicyStatus]); ok {
+		q.asyncQueue.Enqueue(obj)
+	}
+}
 
 const (
 	// Retry configuration constants for status updates
@@ -48,9 +65,11 @@ type AgentGwStatusSyncer struct {
 	agentGatewayClassName string
 
 	// Report queues
-	gatewayReportQueue     utils.AsyncQueue[GatewayReports]
-	listenerSetReportQueue utils.AsyncQueue[ListenerSetReports]
-	routeReportQueue       utils.AsyncQueue[RouteReports]
+	gatewayReportQueue      utils.AsyncQueue[GatewayReports]
+	listenerSetReportQueue  utils.AsyncQueue[ListenerSetReports]
+	routeReportQueue        utils.AsyncQueue[RouteReports]
+	policyStatusQueue       utils.AsyncQueue[krt.ObjectWithStatus[controllers.Object, gwv1alpha2.PolicyStatus]]
+	policyStatusCollections *status.StatusCollections
 
 	// Synchronization
 	cacheSyncs []cache.InformerSynced
@@ -64,17 +83,19 @@ func NewAgentGwStatusSyncer(
 	gatewayReportQueue utils.AsyncQueue[GatewayReports],
 	listenerSetReportQueue utils.AsyncQueue[ListenerSetReports],
 	routeReportQueue utils.AsyncQueue[RouteReports],
+	policyStatusCollections *status.StatusCollections,
 	cacheSyncs []cache.InformerSynced,
 ) *AgentGwStatusSyncer {
 	return &AgentGwStatusSyncer{
-		controllerName:         controllerName,
-		agentGatewayClassName:  agentGatewayClassName,
-		client:                 client,
-		mgr:                    mgr,
-		gatewayReportQueue:     gatewayReportQueue,
-		listenerSetReportQueue: listenerSetReportQueue,
-		routeReportQueue:       routeReportQueue,
-		cacheSyncs:             cacheSyncs,
+		controllerName:          controllerName,
+		agentGatewayClassName:   agentGatewayClassName,
+		client:                  client,
+		mgr:                     mgr,
+		gatewayReportQueue:      gatewayReportQueue,
+		listenerSetReportQueue:  listenerSetReportQueue,
+		routeReportQueue:        routeReportQueue,
+		policyStatusCollections: policyStatusCollections,
+		cacheSyncs:              cacheSyncs,
 	}
 }
 
@@ -96,10 +117,19 @@ func (s *AgentGwStatusSyncer) Start(ctx context.Context) error {
 	}
 	logger.Info("caches warm!")
 
+	// Initialize policy status queue from collections
+	psq := NewPolicyStatusAsyncQueue()
+	s.policyStatusQueue = psq.GetAsyncQueue()
+	// Create a controllers.Queue that wraps our async queue for Istio's StatusCollections
+	// The policyStatusQueue implements https://github.com/istio/istio/blob/531c61709aaa9bc9187c625e9e460be98f2abf2e/pilot/pkg/status/manager.go#L107
+	polStatusQueue := &policyStatusQueue{asyncQueue: psq}
+	s.policyStatusCollections.SetQueue(polStatusQueue)
+
 	// Start separate goroutines for each status syncer
 	routeStatusLogger := logger.With("subcomponent", "routeStatusSyncer")
 	listenerSetStatusLogger := logger.With("subcomponent", "listenerSetStatusSyncer")
 	gatewayStatusLogger := logger.With("subcomponent", "gatewayStatusSyncer")
+	policyStatusLogger := logger.With("subcomponent", "policyStatusSyncer")
 
 	// Gateway status syncer
 	go func() {
@@ -137,8 +167,68 @@ func (s *AgentGwStatusSyncer) Start(ctx context.Context) error {
 		}
 	}()
 
+	// TrafficPolicy status syncer
+	go func() {
+		for {
+			policyStatusUpdate, err := s.policyStatusQueue.Dequeue(ctx)
+			if err != nil {
+				logger.Error("failed to dequeue trafficpolicy status", "error", err)
+				return
+			}
+			s.syncTrafficPolicyStatus(ctx, policyStatusLogger, policyStatusUpdate)
+		}
+	}()
+
 	<-ctx.Done()
 	return nil
+}
+
+func (s *AgentGwStatusSyncer) syncTrafficPolicyStatus(ctx context.Context, logger *slog.Logger, policyStatusUpdate krt.ObjectWithStatus[controllers.Object, gwv1alpha2.PolicyStatus]) {
+	stopwatch := utils.NewTranslatorStopWatch("PolicyStatusSyncer")
+	stopwatch.Start()
+	defer stopwatch.Stop(ctx)
+
+	policyNameNs := types.NamespacedName{
+		Namespace: policyStatusUpdate.Obj.GetNamespace(),
+		Name:      policyStatusUpdate.Obj.GetName(),
+	}
+
+	err := retry.Do(func() error {
+		trafficpolicy := v1alpha1.TrafficPolicy{}
+		err := s.mgr.GetClient().Get(ctx, policyNameNs, &trafficpolicy)
+		if err != nil {
+			if apierrors.IsNotFound(err) {
+				logger.Debug("policy not found, skipping status update", "trafficpolicy", policyNameNs.String())
+				return nil
+			}
+			logger.Error("error getting trafficpolicy", logKeyError, err, "trafficpolicy", policyNameNs.String())
+			return err
+		}
+
+		// Update the trafficpolicy status directly
+		var ancestors []gwv1alpha2.PolicyAncestorStatus
+		for _, ancestor := range policyStatusUpdate.Status.Ancestors {
+			ancestors = append(ancestors, gwv1alpha2.PolicyAncestorStatus{
+				AncestorRef:    ancestor.AncestorRef,
+				ControllerName: gwv1.GatewayController(ancestor.ControllerName),
+				Conditions:     ancestor.Conditions,
+			})
+		}
+		trafficpolicy.Status = gwv1alpha2.PolicyStatus{
+			Ancestors: ancestors,
+		}
+		err = s.mgr.GetClient().Status().Update(ctx, &trafficpolicy)
+		if err != nil {
+			logger.Error("error updating trafficpolicy status", logKeyError, err, "trafficpolicy", policyNameNs.String())
+			return err
+		}
+		logger.Debug("updated trafficpolicy status", "trafficpolicy", policyNameNs.String(), "status", trafficpolicy.Status)
+		return nil
+	}, retry.Attempts(maxRetryAttempts), retry.Delay(retryDelay))
+
+	if err != nil {
+		logger.Error("failed to sync trafficpolicy status after retries", logKeyError, err, "trafficpolicy", policyNameNs.String())
+	}
 }
 
 func (s *AgentGwStatusSyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger, routeReports RouteReports) {

@@ -10,18 +10,20 @@ import (
 	"github.com/agentgateway/agentgateway/go/api"
 	envoytypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
+	"istio.io/istio/pilot/pkg/status"
 	"istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/krt"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	agwir "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/ir"
@@ -75,6 +77,7 @@ type AgentGwSyncer struct {
 	gatewayReportQueue     utils.AsyncQueue[GatewayReports]
 	listenerSetReportQueue utils.AsyncQueue[ListenerSetReports]
 	routeReportQueue       utils.AsyncQueue[RouteReports]
+	policyStatusQueue      *status.StatusCollections
 
 	// Collection status reporting
 	// TODO(npolshak): report these separately from proxy_syncer backends https://github.com/kgateway-dev/kgateway/issues/11966
@@ -111,6 +114,29 @@ func NewAgentGwSyncer(
 		gatewayReportQueue:     utils.NewAsyncQueue[GatewayReports](),
 		listenerSetReportQueue: utils.NewAsyncQueue[ListenerSetReports](),
 		routeReportQueue:       utils.NewAsyncQueue[RouteReports](),
+		policyStatusQueue:      &status.StatusCollections{},
+	}
+}
+
+// PolicyStatusAsyncQueue wraps AsyncQueue to implement controllers.Writer interface for Istio's StatusCollections
+// See: https://github.com/istio/istio/blob/531c61709aaa9bc9187c625e9e460be98f2abf2e/pilot/pkg/status/manager.go#L107
+type PolicyStatusAsyncQueue struct {
+	queue utils.AsyncQueue[krt.ObjectWithStatus[controllers.Object, gwv1alpha2.PolicyStatus]]
+}
+
+func (b *PolicyStatusAsyncQueue) Enqueue(obj krt.ObjectWithStatus[controllers.Object, gwv1alpha2.PolicyStatus]) {
+	b.queue.Enqueue(obj)
+}
+
+// GetAsyncQueue returns the underlying AsyncQueue for use in status syncer
+func (b *PolicyStatusAsyncQueue) GetAsyncQueue() utils.AsyncQueue[krt.ObjectWithStatus[controllers.Object, gwv1alpha2.PolicyStatus]] {
+	return b.queue
+}
+
+// NewPolicyStatusAsyncQueue creates a new PolicyStatusAsyncQueue
+func NewPolicyStatusAsyncQueue() *PolicyStatusAsyncQueue {
+	return &PolicyStatusAsyncQueue{
+		queue: utils.NewAsyncQueue[krt.ObjectWithStatus[controllers.Object, gwv1alpha2.PolicyStatus]](),
 	}
 }
 
@@ -121,6 +147,10 @@ func (s *AgentGwSyncer) Init(krtopts krtinternal.KrtOptions) {
 	s.buildResourceCollections(krtopts)
 }
 
+func (s *AgentGwSyncer) PolicyStatusQueue() *status.StatusCollections {
+	return s.policyStatusQueue
+}
+
 func (s *AgentGwSyncer) buildResourceCollections(krtopts krtinternal.KrtOptions) {
 	// Build core collections for irs
 	gatewayClasses := GatewayClassesCollection(s.agwCollections.GatewayClasses, krtopts)
@@ -128,7 +158,7 @@ func (s *AgentGwSyncer) buildResourceCollections(krtopts krtinternal.KrtOptions)
 	gateways := s.buildGatewayCollection(gatewayClasses, refGrants, krtopts)
 
 	// Build ADP resources for gateway
-	adpResources := s.buildADPResources(gateways, refGrants, krtopts)
+	adpResources, policyStatuses := s.buildADPResources(gateways, refGrants, krtopts)
 
 	// Create an agentgateway backend collection from the kgateway backend resources
 	_, adpBackends := s.newADPBackendCollection(s.agwCollections.Backends, krtopts)
@@ -140,7 +170,7 @@ func (s *AgentGwSyncer) buildResourceCollections(krtopts krtinternal.KrtOptions)
 	s.buildXDSCollection(adpResources, adpBackends, addresses, krtopts)
 
 	// Build status reporting
-	s.buildStatusReporting()
+	s.buildStatusReporting(policyStatuses)
 
 	// Set up sync dependencies
 	s.setupSyncDependencies(gateways, adpResources, adpBackends, addresses)
@@ -166,7 +196,7 @@ func (s *AgentGwSyncer) buildADPResources(
 	gateways krt.Collection[GatewayListener],
 	refGrants ReferenceGrants,
 	krtopts krtinternal.KrtOptions,
-) krt.Collection[agwir.ADPResourcesForGateway] {
+) (krt.Collection[agwir.ADPResourcesForGateway], map[schema.GroupKind]krt.StatusCollection[controllers.Object, gwv1alpha2.PolicyStatus]) {
 	// Build ports and binds
 	ports := krtpkg.UnnamedIndex(gateways, func(l GatewayListener) []string {
 		return []string{fmt.Sprint(l.parentInfo.Port)}
@@ -230,12 +260,12 @@ func (s *AgentGwSyncer) buildADPResources(
 		adpRoutes = krt.JoinCollection([]krt.Collection[agwir.ADPResourcesForGateway]{adpRoutes, s.agwPlugins.AddResourceExtension.Routes})
 	}
 
-	adpPolicies := ADPPolicyCollection(binds, s.agwPlugins)
+	adpPolicies, policyStatuses := ADPPolicyCollection(binds, s.agwPlugins)
 
 	// Join all ADP resources
 	allADPResources := krt.JoinCollection([]krt.Collection[agwir.ADPResourcesForGateway]{binds, listeners, adpRoutes, adpPolicies}, krtopts.ToOptions("ADPResources")...)
 
-	return allADPResources
+	return allADPResources, policyStatuses
 }
 
 // buildListenerFromGateway creates a listener resource from a gateway
@@ -528,7 +558,7 @@ func (s *AgentGwSyncer) buildXDSCollection(
 	}, krtopts.ToOptions("agent-xds")...)
 }
 
-func (s *AgentGwSyncer) buildStatusReporting() {
+func (s *AgentGwSyncer) buildStatusReporting(policyStatuses map[schema.GroupKind]krt.StatusCollection[controllers.Object, gwv1alpha2.PolicyStatus]) {
 	// TODO(npolshak): Move away from report map and separately fetch resource reports
 	// Create separate singleton collections for each resource type instead of merging everything
 	// This avoids the overhead of creating and processing a single large merged report
@@ -596,6 +626,52 @@ func (s *AgentGwSyncer) buildStatusReporting() {
 	s.gatewayReports = gatewayReports
 	s.listenerSetReports = listenerSetReports
 	s.routeReports = routeReports
+
+	// Register policy status collection with the policy status queue
+	registerPolicyStatus(s.policyStatusQueue, policyStatuses)
+}
+
+// registerPolicyStatus takes a policy status collection and registers it to be managed by Istio's StatusCollections.
+func registerPolicyStatus(s *status.StatusCollections, statusCols map[schema.GroupKind]krt.StatusCollection[controllers.Object, gwv1alpha2.PolicyStatus]) {
+	for gvk, statusCol := range statusCols {
+		// Capture the GVK for the closure
+		currentGVK := gvk
+		currentStatusCol := statusCol
+
+		// Create a writer function that matches Istio's StatusCollections interface
+		writer := func(queue status.Queue) krt.HandlerRegistration {
+			// Register the status collection to write to the queue
+			h := currentStatusCol.Register(func(o krt.Event[krt.ObjectWithStatus[controllers.Object, gwv1alpha2.PolicyStatus]]) {
+				l := o.Latest()
+
+				// Cast controllers.Object to TrafficPolicy for validation (following the pattern requested)
+				switch currentGVK.Kind {
+				case "TrafficPolicy":
+					if _, ok := l.Obj.(*v1alpha1.TrafficPolicy); !ok {
+						logger.Error("failed to cast to TrafficPolicy", "resource", l.ResourceName(), "kind", currentGVK.Kind)
+						return
+					}
+				default:
+					// For other policy types that might be added in the future
+					logger.Debug("handling policy type", "kind", currentGVK.Kind, "resource", l.ResourceName())
+				}
+
+				if o.Event == controllers.EventDelete {
+					// if the object is being deleted, we should not reset status
+					return
+				}
+				// Create a status.Resource from our object and pass the object as context
+				resource := status.Resource{
+					Name:      l.Obj.GetName(),
+					Namespace: l.Obj.GetNamespace(),
+				}
+				queue.EnqueueStatusUpdateResource(l, resource)
+				logger.Debug("enqueued policy status update", "resource", l.ResourceName(), "version", l.Obj.GetResourceVersion(), "status", l.Status, "kind", currentGVK.Kind)
+			})
+			return h
+		}
+		s.Register(writer)
+	}
 }
 
 func (s *AgentGwSyncer) setupSyncDependencies(gateways krt.Collection[GatewayListener], adpResources krt.Collection[agwir.ADPResourcesForGateway], adpBackends krt.Collection[envoyResourceWithCustomName], addresses krt.Collection[envoyResourceWithCustomName]) {

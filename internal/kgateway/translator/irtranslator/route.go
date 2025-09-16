@@ -67,7 +67,8 @@ func (h *httpRouteConfigurationTranslator) ComputeRouteConfiguration(
 	// See https://gateway-api.sigs.k8s.io/reference/spec/#gateway.networking.k8s.io/v1.HTTPRouteSpec - hostnames field
 	cfg.IgnorePortInHostMatching = true
 
-	// Combine policies by precedence (listener, then gateway) so policies with the same
+	// Combine policies by priority and specificity (listener policies first as they are more
+	// specific and thus higher priority, then gateway policies) so policies with the same
 	// GK end up in a single slice. This is necessary to make sure that merging attached
 	// policies with the same GK across different levels of the config hierarchy works correctly.
 	var attachedPolicies ir.AttachedPolicies
@@ -84,7 +85,7 @@ func (h *httpRouteConfigurationTranslator) ComputeRouteConfiguration(
 		}
 		policies, mergeOrigins := mergePolicies(pass, pols)
 		reportPolicyAcceptanceStatus(h.reporter, h.listener.PolicyAncestorRef, pols...)
-		reportRouteConfigPolicyErrors(h.reporter, h.gw, h.routeConfigName, pols...)
+		reportRouteConfigPolicyErrors(h.reporter, h.gw, h.listener, h.routeConfigName, pols...)
 		for _, pol := range policies {
 			if len(pol.Errors) > 0 {
 				errs = append(errs, pol.Errors...)

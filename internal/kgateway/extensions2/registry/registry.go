@@ -20,8 +20,8 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/serviceentry"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/trafficpolicy"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/waypoint"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/settings"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
+	"github.com/kgateway-dev/kgateway/v2/pkg/settings"
 )
 
 func mergedGw(funcs []sdk.GwTranslatorFactory) sdk.GwTranslatorFactory {

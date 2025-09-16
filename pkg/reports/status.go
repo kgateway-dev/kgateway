@@ -278,7 +278,7 @@ func (r *ReportMap) BuildRouteStatus(
 	// match sorting semantics of istio/istio, see:
 	// https://github.com/istio/istio/blob/6dcaa0206bcaf20e3e3b4e45e9376f0f96365571/pilot/pkg/config/kube/gateway/conditions.go#L188-L193
 	slices.SortStableFunc(kgwStatus.Parents, func(a, b gwv1.RouteParentStatus) int {
-		return strings.Compare(parentString(a.ParentRef), parentString(b.ParentRef))
+		return strings.Compare(ParentString(a.ParentRef), ParentString(b.ParentRef))
 	})
 
 	return &newStatus
@@ -286,7 +286,7 @@ func (r *ReportMap) BuildRouteStatus(
 
 // match istio/istio logic, see:
 // https://github.com/istio/istio/blob/6dcaa0206bcaf20e3e3b4e45e9376f0f96365571/pilot/pkg/config/kube/gateway/conversion.go#L2714-L2722
-func parentString(ref gwv1.ParentReference) string {
+func ParentString(ref gwv1.ParentReference) string {
 	return fmt.Sprintf("%s/%s/%s/%s/%d.%s",
 		ptr.OrEmpty(ref.Group),
 		ptr.OrEmpty(ref.Kind),

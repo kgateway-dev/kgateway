@@ -43,10 +43,7 @@ Listeners:
       ipv4Compat: true
       portValue: 8443
   filterChains:
-  - filterChainMatch:
-      serverNames:
-      - secure.example.com
-    filters:
+  - filters:
     - name: envoy.filters.network.http_connection_manager
       typedConfig:
         '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
@@ -64,10 +61,6 @@ Listeners:
         statPrefix: http
         useRemoteAddress: true
     name: https
-  listenerFilters:
-  - name: envoy.filters.listener.tls_inspector
-    typedConfig:
-      '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
   name: listener~8443
 - address:
     socketAddress:
@@ -189,7 +182,7 @@ Statuses:
         message: 'invalid xds configuration: error initializing configuration '''':
           Failed to parse request template: Failed to parse body template [inja.exception.parser_error]
           (at 1:29) unexpected ''}'''
-        reason: Invalid
+        reason: GatewayReplaced
         status: "False"
         type: Accepted
       - lastTransitionTime: null
@@ -226,7 +219,7 @@ Statuses:
           kind: HTTPRoute
         - group: gateway.networking.k8s.io
           kind: GRPCRoute
-      - attachedRoutes: 0
+      - attachedRoutes: 1
         conditions:
         - lastTransitionTime: null
           message: Listener is accepted
@@ -332,12 +325,14 @@ Statuses:
           kind: HTTPRoute
         - group: gateway.networking.k8s.io
           kind: GRPCRoute
-      - attachedRoutes: 0
+      - attachedRoutes: 1
         conditions:
         - lastTransitionTime: null
-          message: Listener is accepted
-          reason: Accepted
-          status: "True"
+          message: 'invalid xds configuration: error initializing configuration '''':
+            Failed to parse request template: Failed to parse body template [inja.exception.parser_error]
+            (at 1:29) unexpected ''}'''
+          reason: ListenerReplaced
+          status: "False"
           type: Accepted
         - lastTransitionTime: null
           message: Listener does not have conflicts

@@ -111,7 +111,7 @@ Statuses:
         message: 'invalid xds configuration: error initializing configuration '''':
           Failed to parse request template: Failed to parse body template [inja.exception.parser_error]
           (at 1:21) unexpected ''}'''
-        reason: Invalid
+        reason: GatewayReplaced
         status: "False"
         type: Accepted
       - lastTransitionTime: null

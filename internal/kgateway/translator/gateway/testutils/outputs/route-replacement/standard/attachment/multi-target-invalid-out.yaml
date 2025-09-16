@@ -52,10 +52,7 @@ Listeners:
       ipv4Compat: true
       portValue: 8443
   filterChains:
-  - filterChainMatch:
-      serverNames:
-      - secure.example.com
-    filters:
+  - filters:
     - name: envoy.filters.network.http_connection_manager
       typedConfig:
         '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
@@ -77,10 +74,6 @@ Listeners:
         statPrefix: http
         useRemoteAddress: true
     name: https
-  listenerFilters:
-  - name: envoy.filters.listener.tls_inspector
-    typedConfig:
-      '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
   metadata:
     filterMetadata:
       merge.TrafficPolicy.gateway.kgateway.dev:
@@ -182,6 +175,17 @@ Routes:
             transformationTemplate:
               body:
                 text: '{{ invalid_gateway_template }'
+  virtualHosts:
+  - domains:
+    - www.example.com
+    name: https~www_example_com
+    routes:
+    - match:
+        pathSeparatedPrefix: /gateway
+      name: https~www_example_com-route-0-httproute-test-route-gateway-gwtest-0-0-matcher-0
+      route:
+        cluster: kube_gwtest_example-svc_80
+        clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
 - ignorePortInHostMatching: true
   metadata:
     filterMetadata:
@@ -247,9 +251,9 @@ Statuses:
         status: "True"
         type: AttachedListenerSets
       - lastTransitionTime: null
-        message: 'ai: field invalid_object contains invalid JSON string: "model":"gpt-4"}'
-        reason: Invalid
-        status: "False"
+        message: Gateway is accepted
+        reason: Accepted
+        status: "True"
         type: Accepted
       - lastTransitionTime: null
         message: Gateway is programmed
@@ -285,7 +289,7 @@ Statuses:
           kind: HTTPRoute
         - group: gateway.networking.k8s.io
           kind: GRPCRoute
-      - attachedRoutes: 0
+      - attachedRoutes: 1
         conditions:
         - lastTransitionTime: null
           message: Listener is accepted
@@ -391,12 +395,12 @@ Statuses:
           kind: HTTPRoute
         - group: gateway.networking.k8s.io
           kind: GRPCRoute
-      - attachedRoutes: 0
+      - attachedRoutes: 1
         conditions:
         - lastTransitionTime: null
-          message: Listener is accepted
-          reason: Accepted
-          status: "True"
+          message: 'ai: field invalid_object contains invalid JSON string: "model":"gpt-4"}'
+          reason: ListenerReplaced
+          status: "False"
           type: Accepted
         - lastTransitionTime: null
           message: Listener does not have conflicts
