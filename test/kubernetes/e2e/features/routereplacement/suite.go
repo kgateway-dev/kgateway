@@ -34,11 +34,15 @@ var (
 		},
 	}
 
+	// TODO(tim): remove mode here, only test in strict mode.
 	testModes = map[string]settings.RouteReplacementMode{
-		"TestStrictModeInvalidPolicyReplacement":   settings.RouteReplacementStrict,
-		"TestStandardModeInvalidPolicyReplacement": settings.RouteReplacementStandard,
-		"TestStrictModeInvalidMatcherDropsRoute":   settings.RouteReplacementStrict,
-		"TestStrictModeInvalidRouteReplacement":    settings.RouteReplacementStrict,
+		"TestStrictModeInvalidPolicyReplacement":      settings.RouteReplacementStrict,
+		"TestStandardModeInvalidPolicyReplacement":    settings.RouteReplacementStandard,
+		"TestStrictModeInvalidMatcherDropsRoute":      settings.RouteReplacementStrict,
+		"TestStrictModeInvalidRouteReplacement":       settings.RouteReplacementStrict,
+		"TestStrictModeGatewayWideInvalidPolicy":      settings.RouteReplacementStrict,
+		"TestStrictModeListenerSpecificInvalidPolicy": settings.RouteReplacementStrict,
+		"TestStrictModeListenerSpecificIsolation":     settings.RouteReplacementStrict,
 	}
 
 	testCases = map[string]*base.TestCase{
@@ -53,6 +57,15 @@ var (
 		},
 		"TestStrictModeInvalidRouteReplacement": {
 			Manifests: []string{strictModeInvalidRouteManifest},
+		},
+		"TestStrictModeGatewayWideInvalidPolicy": {
+			Manifests: []string{gatewayWideInvalidPolicyManifest},
+		},
+		"TestStrictModeListenerSpecificInvalidPolicy": {
+			Manifests: []string{listenerSpecificInvalidPolicyManifest},
+		},
+		"TestStrictModeListenerSpecificIsolation": {
+			Manifests: []string{listenerMergeBlastRadiusManifest},
 		},
 	}
 )
@@ -222,6 +235,211 @@ func (s *testingSuite) TestStrictModeInvalidRouteReplacement() {
 		&testmatchers.HttpResponse{
 			StatusCode: http.StatusInternalServerError,
 			Body:       gomega.ContainSubstring(`invalid route configuration detected and replaced with a direct response.`),
+		},
+	)
+}
+
+// TestStrictModeGatewayWideInvalidPolicy tests that in STRICT mode, when an invalid policy
+// is attached to the entire gateway, all routes across all listeners are replaced with 500 responses
+func (s *testingSuite) TestStrictModeGatewayWideInvalidPolicy() {
+	// Verify Gateway shows Accepted=False with GatewayReplaced reason
+	s.TestInstallation.Assertions.EventuallyGatewayCondition(
+		s.Ctx,
+		gatewayWideProxyObjectMeta.Name,
+		gatewayWideProxyObjectMeta.Namespace,
+		gwv1.GatewayConditionAccepted,
+		metav1.ConditionFalse,
+	)
+
+	// Verify both routes still show Accepted=True (routes themselves are valid, gateway policy is invalid)
+	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
+		s.Ctx,
+		gatewayWideRoute8080.Name,
+		gatewayWideRoute8080.Namespace,
+		gwv1.RouteConditionAccepted,
+		metav1.ConditionTrue,
+	)
+	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
+		s.Ctx,
+		gatewayWideRoute8081.Name,
+		gatewayWideRoute8081.Namespace,
+		gwv1.RouteConditionAccepted,
+		metav1.ConditionTrue,
+	)
+
+	// Verify that route on port 8080 is replaced with 500 response
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
+		testdefaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(gatewayWideProxyObjectMeta)),
+			curl.WithHostHeader("gateway-wide-8080.example.com"),
+			curl.WithPort(8080),
+			curl.WithPath("/headers"),
+		},
+		&testmatchers.HttpResponse{
+			StatusCode: http.StatusInternalServerError,
+			Body:       gomega.ContainSubstring(`invalid route configuration detected and replaced with a direct response.`),
+		},
+	)
+
+	// Verify that route on port 8081 is also replaced with 500 response (gateway-wide effect)
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
+		testdefaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(gatewayWideProxyObjectMeta)),
+			curl.WithHostHeader("gateway-wide-8081.example.com"),
+			curl.WithPort(8081),
+			curl.WithPath("/headers"),
+		},
+		&testmatchers.HttpResponse{
+			StatusCode: http.StatusInternalServerError,
+			Body:       gomega.ContainSubstring(`invalid route configuration detected and replaced with a direct response.`),
+		},
+	)
+}
+
+// TestStrictModeListenerSpecificInvalidPolicy tests that in STRICT mode, when an invalid
+// policy is attached to a specific listener, only routes on that listener are affected
+func (s *testingSuite) TestStrictModeListenerSpecificInvalidPolicy() {
+	// Verify Gateway itself remains Accepted=True (listener-specific policy doesn't affect gateway)
+	s.TestInstallation.Assertions.EventuallyGatewayCondition(
+		s.Ctx,
+		listenerSpecificProxyObjectMeta.Name,
+		listenerSpecificProxyObjectMeta.Namespace,
+		gwv1.GatewayConditionAccepted,
+		metav1.ConditionTrue,
+	)
+
+	// Verify both routes still show Accepted=True (routes themselves are valid, listener policy is invalid)
+	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
+		s.Ctx,
+		listenerAffectedRoute.Name,
+		listenerAffectedRoute.Namespace,
+		gwv1.RouteConditionAccepted,
+		metav1.ConditionTrue,
+	)
+	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
+		s.Ctx,
+		listenerUnaffectedRoute.Name,
+		listenerUnaffectedRoute.Namespace,
+		gwv1.RouteConditionAccepted,
+		metav1.ConditionTrue,
+	)
+
+	// Verify that route on affected listener is replaced with 500 response
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
+		testdefaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(listenerSpecificProxyObjectMeta)),
+			curl.WithHostHeader("listener-affected.example.com"),
+			curl.WithPort(8080),
+			curl.WithPath("/headers"),
+		},
+		&testmatchers.HttpResponse{
+			StatusCode: http.StatusInternalServerError,
+			Body:       gomega.ContainSubstring(`invalid route configuration detected and replaced with a direct response.`),
+		},
+	)
+
+	// Verify that route on unaffected listener continues to work normally
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
+		testdefaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(listenerSpecificProxyObjectMeta)),
+			curl.WithHostHeader("listener-unaffected.example.com"),
+			curl.WithPort(8081),
+			curl.WithPath("/headers"),
+		},
+		&testmatchers.HttpResponse{
+			StatusCode: http.StatusOK,
+		},
+	)
+}
+
+// TestStrictModeListenerSpecificIsolation tests that in STRICT mode, when listeners share the same
+// port and one has an invalid policy, only the specific listener with the invalid policy is affected
+// (i.e. no collateral damage to other listeners on same port).
+func (s *testingSuite) TestStrictModeListenerSpecificIsolation() {
+	// Verify Gateway itself remains Accepted=True (listener-specific policy doesn't affect gateway)
+	s.TestInstallation.Assertions.EventuallyGatewayCondition(
+		s.Ctx,
+		listenerIsolationProxyObjectMeta.Name,
+		listenerIsolationProxyObjectMeta.Namespace,
+		gwv1.GatewayConditionAccepted,
+		metav1.ConditionTrue,
+	)
+
+	// Verify all routes still show Accepted=True (routes themselves are valid, listener policy is invalid)
+	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
+		s.Ctx,
+		mergeAffectedRoute.Name,
+		mergeAffectedRoute.Namespace,
+		gwv1.RouteConditionAccepted,
+		metav1.ConditionTrue,
+	)
+	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
+		s.Ctx,
+		mergeUnaffectedRoute.Name,
+		mergeUnaffectedRoute.Namespace,
+		gwv1.RouteConditionAccepted,
+		metav1.ConditionTrue,
+	)
+	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
+		s.Ctx,
+		mergeIsolatedRoute.Name,
+		mergeIsolatedRoute.Namespace,
+		gwv1.RouteConditionAccepted,
+		metav1.ConditionTrue,
+	)
+
+	// Verify that route on affected listener (port 8080) is replaced with 500 response
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
+		testdefaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(listenerIsolationProxyObjectMeta)),
+			curl.WithHostHeader("affected.example.com"),
+			curl.WithPort(8080),
+			curl.WithPath("/headers"),
+		},
+		&testmatchers.HttpResponse{
+			StatusCode: http.StatusInternalServerError,
+			Body:       gomega.ContainSubstring(`invalid route configuration detected and replaced with a direct response.`),
+		},
+	)
+
+	// Verify that unaffected route on same port (port 8080) continues working normally
+	// (policy is attached specifically to listener, not port-wide)
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
+		testdefaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(listenerIsolationProxyObjectMeta)),
+			curl.WithHostHeader("unaffected.example.com"),
+			curl.WithPort(8080),
+			curl.WithPath("/headers"),
+		},
+		&testmatchers.HttpResponse{
+			StatusCode: http.StatusOK,
+		},
+	)
+
+	// Verify that isolated route on different port (port 8081) continues to work normally
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
+		testdefaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(listenerIsolationProxyObjectMeta)),
+			curl.WithHostHeader("isolated.example.com"),
+			curl.WithPort(8081),
+			curl.WithPath("/headers"),
+		},
+		&testmatchers.HttpResponse{
+			StatusCode: http.StatusOK,
 		},
 	)
 }
