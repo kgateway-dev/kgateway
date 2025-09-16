@@ -78,9 +78,9 @@ spec:
             pattern: (?i)(hate|kill|harm)
           - name: profanity
             pattern: (?i)(bad|words)
-        builtins:
-          - CREDIT_CARD
-          - SSN
+          builtins:
+            - CREDIT_CARD
+            - SSN
         moderation:
           openAIModeration:
             authToken:
@@ -103,12 +103,6 @@ spec:
             pattern: \b\d{4}\b
           - name: mask-sensitive
             pattern: (?i)(password|secret)
-          openAIModeration:
-            authToken:
-              kind: SecretRef
-              secretRef:
-                name: openai-secret
-            model: text-moderation-latest
     defaults:
       - field: top_p
         value: "0.95"

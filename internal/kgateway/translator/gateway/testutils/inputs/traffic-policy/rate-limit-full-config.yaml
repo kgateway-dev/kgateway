@@ -118,10 +118,7 @@ spec:
       requestTimeout: 200ms # this timeout is specific to the grpcService
     domain: "api-gateway"
     timeout: "50ms"
-    # this should be tested, but due to a bug in how the translator tests process
-    # resources, types of `bool` with a value of false don't work correctly.
-    # ref: https://github.com/kgateway-dev/kgateway/issues/12264
-    # failOpen: false
+    failOpen: false
     xRateLimitHeaders: DraftVersion03
 ---
 apiVersion: v1
