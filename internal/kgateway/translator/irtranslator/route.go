@@ -85,7 +85,7 @@ func (h *httpRouteConfigurationTranslator) ComputeRouteConfiguration(
 		}
 		policies, mergeOrigins := mergePolicies(pass, pols)
 		reportPolicyAcceptanceStatus(h.reporter, h.listener.PolicyAncestorRef, pols...)
-		reportRouteConfigPolicyErrors(h.reporter, h.gw, h.routeConfigName, pols...)
+		reportRouteConfigPolicyErrors(h.reporter, h.gw, h.listener, h.routeConfigName, pols...)
 		for _, pol := range policies {
 			if len(pol.Errors) > 0 {
 				errs = append(errs, pol.Errors...)

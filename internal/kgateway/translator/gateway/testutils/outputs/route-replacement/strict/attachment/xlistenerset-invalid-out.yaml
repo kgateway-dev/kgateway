@@ -128,11 +128,9 @@ Statuses:
         status: "True"
         type: AttachedListenerSets
       - lastTransitionTime: null
-        message: 'invalid xds configuration: error initializing configuration '''':
-          Failed to parse request template: Failed to parse body template [inja.exception.parser_error]
-          (at 1:21) unexpected ''}'''
-        reason: Invalid
-        status: "False"
+        message: Gateway is accepted
+        reason: Accepted
+        status: "True"
         type: Accepted
       - lastTransitionTime: null
         message: Gateway is programmed
@@ -235,9 +233,11 @@ Statuses:
       - attachedRoutes: 1
         conditions:
         - lastTransitionTime: null
-          message: Listener is accepted
-          reason: Accepted
-          status: "True"
+          message: 'invalid xds configuration: error initializing configuration '''':
+            Failed to parse request template: Failed to parse body template [inja.exception.parser_error]
+            (at 1:21) unexpected ''}'''
+          reason: ListenerReplaced
+          status: "False"
           type: Accepted
         - lastTransitionTime: null
           message: Listener does not have conflicts

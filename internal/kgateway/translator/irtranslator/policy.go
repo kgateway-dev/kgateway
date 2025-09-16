@@ -8,6 +8,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
@@ -114,18 +115,20 @@ func addMergeOriginsToFilterMetadata(
 }
 
 // reportRouteConfigPolicyErrors reports policy errors to the appropriate reporter based on attachment level.
-// we can infer the attachment level of the policy using PolicyRef.SectionName: empty sectionName indicates a
-// gateway-wide policy attachment, non-empty sectionName indicates a listener-level policy attachment.
-func reportRouteConfigPolicyErrors(r reporter.Reporter, gw ir.GatewayIR, routeConfigName string, policies ...ir.PolicyAtt) {
+// we can infer the attachment level of the policy based on a combination of PolicyRef.SectionName and the
+// listener's PolicyAncestorRef kind: empty sectionName indicates a gateway-wide policy attachment, non-empty
+// sectionName indicates a listener-level policy attachment. For XListenerSet reporting, we cannot rely on the
+// sectionName value alone, so we check the ancestor reference kind to make sure we report on that resource
+// instead of the Gateway.
+func reportRouteConfigPolicyErrors(r reporter.Reporter, gw ir.GatewayIR, listener ir.ListenerIR, routeConfigName string, policies ...ir.PolicyAtt) {
 	for _, policy := range policies {
 		if policy.PolicyRef == nil {
-			// Not a policy associated with a CR, can't report status on it
 			continue
 		}
 		if len(policy.Errors) == 0 {
 			continue
 		}
-		if policy.PolicyRef.SectionName != "" {
+		if policy.PolicyRef.SectionName != "" || *listener.PolicyAncestorRef.Kind == wellknown.XListenerSetKind {
 			listenerReporter := getReporterForFilterChain(gw, r, routeConfigName)
 			listenerReporter.SetCondition(reporter.ListenerCondition{
 				Type:    gwv1.ListenerConditionAccepted,

@@ -251,9 +251,9 @@ Statuses:
         status: "True"
         type: AttachedListenerSets
       - lastTransitionTime: null
-        message: 'ai: field invalid_object contains invalid JSON string: "model":"gpt-4"}'
-        reason: Invalid
-        status: "False"
+        message: Gateway is accepted
+        reason: Accepted
+        status: "True"
         type: Accepted
       - lastTransitionTime: null
         message: Gateway is programmed
@@ -398,9 +398,9 @@ Statuses:
       - attachedRoutes: 1
         conditions:
         - lastTransitionTime: null
-          message: Listener is accepted
-          reason: Accepted
-          status: "True"
+          message: 'ai: field invalid_object contains invalid JSON string: "model":"gpt-4"}'
+          reason: ListenerReplaced
+          status: "False"
           type: Accepted
         - lastTransitionTime: null
           message: Listener does not have conflicts
