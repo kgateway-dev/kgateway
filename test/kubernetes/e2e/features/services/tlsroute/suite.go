@@ -206,14 +206,12 @@ func (s *testingSuite) TestConfigureTLSRouteBackingDestinations() {
 				tc.svcManifest,
 				tc.proxyService,
 				tc.proxyDeployment,
+				tc.tlsRouteManifest,
 			)
 
 			fmt.Println("Applying TLS Secret manifest")
 			fmt.Println(tc.tlsSecretManifest)
 			s.applyManifests(tc.gtwNs, tc.tlsSecretManifest)
-
-			// Apply TLSRoute manifest
-			s.applyManifests(tc.gtwNs, tc.tlsRouteManifest)
 
 			// Set the expected status conditions based on the test case
 			expected := metav1.ConditionTrue
@@ -279,14 +277,19 @@ func validateManifestFile(path string) error {
 	return nil
 }
 
-func (s *testingSuite) setupTestEnvironment(nsManifest, gtwName, gtwNs, gtwManifest, svcManifest string, proxySvc *corev1.Service, proxyDeploy *appsv1.Deployment) {
+func (s *testingSuite) setupTestEnvironment(nsManifest, gtwName, gtwNs, gtwManifest, svcManifest string, proxySvc *corev1.Service, proxyDeploy *appsv1.Deployment, tlsRouteManifest string) {
 	s.applyManifests(gtwNs, nsManifest)
 
 	s.applyManifests(gtwNs, gtwManifest)
-	s.testInstallation.Assertions.EventuallyGatewayCondition(s.ctx, gtwName, gtwNs, v1.GatewayConditionAccepted, metav1.ConditionTrue, timeout)
+	// TLS gateway won't be accepted until there is a listener with a route
+	s.testInstallation.Assertions.EventuallyGatewayCondition(s.ctx, gtwName, gtwNs, v1.GatewayConditionAccepted, metav1.ConditionFalse, timeout)
 
 	s.applyManifests(gtwNs, svcManifest)
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxySvc, proxyDeploy)
+
+	// Create the TLSRoute, gateway will be accepted
+	s.applyManifests(gtwNs, tlsRouteManifest)
+	s.testInstallation.Assertions.EventuallyGatewayCondition(s.ctx, gtwName, gtwNs, v1.GatewayConditionAccepted, metav1.ConditionTrue, timeout)
 
 	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, proxyDeploy.GetNamespace(), metav1.ListOptions{
 		LabelSelector: fmt.Sprintf("app.kubernetes.io/name=%s", proxyDeploy.GetName()),
