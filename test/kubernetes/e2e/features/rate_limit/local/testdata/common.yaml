@@ -1,7 +1,7 @@
 kind: Gateway
 apiVersion: gateway.networking.k8s.io/v1
 metadata:
-  name: gw
+  name: super-gateway
 spec:
   gatewayClassName: kgateway
   listeners:

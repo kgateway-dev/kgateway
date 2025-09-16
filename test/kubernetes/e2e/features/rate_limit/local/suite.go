@@ -32,6 +32,7 @@ type testingSuite struct {
 	commonManifests []string
 	// resources from manifests shared by all tests
 	commonResources []client.Object
+	agentGateway    bool
 }
 
 func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
@@ -41,11 +42,27 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 	}
 }
 
+func NewAgentGatewayTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
+	return &testingSuite{
+		ctx:              ctx,
+		testInstallation: testInst,
+		agentGateway:     true,
+	}
+}
+
 func (s *testingSuite) SetupSuite() {
-	s.commonManifests = []string{
-		testdefaults.CurlPodManifest,
-		simpleServiceManifest,
-		commonManifest,
+	if s.agentGateway {
+		s.commonManifests = []string{
+			testdefaults.CurlPodManifest,
+			simpleServiceManifest,
+			agwCommonManifest,
+		}
+	} else {
+		s.commonManifests = []string{
+			testdefaults.CurlPodManifest,
+			simpleServiceManifest,
+			commonManifest,
+		}
 	}
 	s.commonResources = []client.Object{
 		// resources from curl manifest
@@ -148,6 +165,7 @@ func (s *testingSuite) TestLocalRateLimitForGatewayAndRoute() {
 // Test cases for local rate limit on a gateway and route (/path1) with disabled
 // local rate limit
 func (s *testingSuite) TestLocalRateLimitDisabledForRoute() {
+	s.skipIfAgentGatewayUnsupported("LocalRateLimit disabled at Route level")
 	s.setupTest([]string{httpRoutesManifest, gwLocalRateLimitManifest, disabledRouteLocalRateLimitManifest},
 		[]client.Object{route, route2, gwRateLimitTrafficPolicy, routeRateLimitTrafficPolicy})
 
@@ -163,6 +181,7 @@ func (s *testingSuite) TestLocalRateLimitDisabledForRoute() {
 
 // Test cases for local rate limit on a route (/path2) using extensionref in the HTTPRoute
 func (s *testingSuite) TestLocalRateLimitForRouteUsingExtensionRef() {
+	s.skipIfAgentGatewayUnsupported("LocalRateLimit using extensionRef in HTTPRoute")
 	s.setupTest([]string{extensionRefManifest}, []client.Object{route, routeRateLimitTrafficPolicy})
 
 	// First request should be successful
@@ -235,4 +254,13 @@ func (s *testingSuite) assertEventualResponse(path string, expectedStatus int) {
 			StatusCode: expectedStatus,
 		})
 	defer resp.Body.Close()
+}
+
+// skipIfAgentGatewayUnsupported skips a test when the agentgateway class
+// is running and the feature isn't supported there yet.
+func (s *testingSuite) skipIfAgentGatewayUnsupported(feature string) {
+	if s.agentGateway {
+		s.T().Helper()
+		s.T().Skipf("Skipping %s on AgentGateway: not supported yet", feature)
+	}
 }

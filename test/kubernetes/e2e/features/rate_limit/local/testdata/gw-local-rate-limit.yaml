@@ -1,15 +1,15 @@
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: TrafficPolicy
 metadata:
-  name: rate-limit-policy
+  name: gw-rl-policy
 spec:
   targetRefs:
   - group: gateway.networking.k8s.io
-    kind: HTTPRoute
-    name: svc-route
+    kind: Gateway
+    name: super-gateway
   rateLimit:
     local:
       tokenBucket:
         maxTokens: 1
         tokensPerFill: 1
-        fillInterval: 10s
+        fillInterval: 300s

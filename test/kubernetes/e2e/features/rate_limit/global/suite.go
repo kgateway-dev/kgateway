@@ -1,4 +1,4 @@
-package rate_limit
+package global_rate_limit
 
 import (
 	"context"
@@ -32,12 +32,11 @@ type testingSuite struct {
 	commonManifests []string
 	// resources from manifests shared by all tests
 	commonResources []client.Object
-	agentgateway    bool
+	agentGateway    bool
 }
 
 // rlBurstTries: run a tiny burst so all checks stay in one fixed RL window.
 // The external rate limiter uses clock-aligned windows (per-minute resets at :00),
-// good explanation: https://redis.io/learn/develop/java/spring/rate-limiting/fixed-window
 // so long loops can straddle the boundary and flake.
 // 3 = one to establish state, two to confirm; fewer risks a transient, more risks crossing the window.
 var rlBurstTries = 3
@@ -53,15 +52,15 @@ func NewAgentGatewayTestingSuite(ctx context.Context, testInst *e2e.TestInstalla
 	return &testingSuite{
 		ctx:              ctx,
 		testInstallation: testInst,
-		agentgateway:     true,
+		agentGateway:     true,
 	}
 }
 
 func (s *testingSuite) SetupSuite() {
-	if s.agentgateway {
+	if s.agentGateway {
 		s.commonManifests = []string{
 			testdefaults.CurlPodManifest,
-			getTestFileAgentGateway("common.yaml"),
+			agwCommonManifest,
 			simpleServiceManifest,
 			rateLimitServerManifest,
 		}

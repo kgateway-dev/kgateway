@@ -4,7 +4,7 @@ metadata:
   name: svc-route
 spec:
   parentRefs:
-    - name: gw
+    - name: super-gateway
   hostnames:
     - "example.com"
   rules:
@@ -22,7 +22,7 @@ metadata:
   name: svc-route-2
 spec:
   parentRefs:
-    - name: gw
+    - name: super-gateway
   hostnames:
     - "example.com"
   rules:
