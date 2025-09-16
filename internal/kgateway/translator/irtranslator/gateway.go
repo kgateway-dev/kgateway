@@ -1,8 +1,12 @@
 package irtranslator
 
 import (
+	"fmt"
 	"sort"
 	"strconv"
+	"strings"
+
+	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
@@ -10,6 +14,7 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/slices"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -22,6 +27,13 @@ import (
 	sdkreporter "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
+
+	"k8s.io/apimachinery/pkg/api/meta"
+)
+
+const (
+	listenerNoFcsMessage        = "Listener has no filter chains"
+	gatewayListenersNoFcMessage = "Listeners with no filter chains skipped: %s"
 )
 
 var logger = logging.New("translator/ir")
@@ -45,14 +57,58 @@ func (t *Translator) Translate(ctx context.Context, gw ir.GatewayIR, reporter sd
 	pass := t.newPass(reporter)
 	var res TranslationResult
 
+	var noFcListeners []string
 	for _, l := range gw.Listeners {
 		outListener, routes := t.ComputeListener(ctx, pass, gw, l, reporter)
 		// Envoy rejects listeners with no filter chains; skip adding such listeners.
 		if outListener == nil || len(outListener.GetFilterChains()) == 0 {
+			originalListenerName := findOriginalListenerName(gw, reporter, l)
+			listenerReporter := getReporterForFilterChain(gw, reporter, originalListenerName)
+			listenerCondition := sdkreporter.ListenerCondition{
+				Type:    gwv1.ListenerConditionProgrammed,
+				Status:  metav1.ConditionFalse,
+				Reason:  gwv1.ListenerReasonInvalid,
+				Message: listenerNoFcsMessage,
+			}
+
+			// Set the programmed condition to true
+			// Check if there's already a condition of the same type before setting it. This avoids overwriting the condition if it already exists.
+			if lr, ok := listenerReporter.(*reports.ListenerReport); ok {
+				existingCondition := meta.FindStatusCondition(lr.Status.Conditions, string(gwv1.ListenerConditionProgrammed))
+				if existingCondition == nil {
+					listenerReporter.SetCondition(listenerCondition)
+				}
+			} else {
+				logger.Error("listener reporter type not supported", "reporter", fmt.Sprintf("%T", listenerReporter))
+			}
+
+			noFcListeners = append(noFcListeners, originalListenerName)
 			continue
 		}
 		res.Listeners = append(res.Listeners, outListener)
 		res.Routes = append(res.Routes, routes...)
+	}
+
+	if len(noFcListeners) > 0 {
+		gwreporter := reporter.Gateway(gw.SourceObject.Obj)
+
+		message := fmt.Sprintf(gatewayListenersNoFcMessage, strings.Join(noFcListeners, ", "))
+
+		// Check if there's already a condition of the same type before setting it. This avoids overwriting the condition if it already exists.
+		if gr, ok := gwreporter.(*reports.GatewayReport); ok {
+			existingCondition := meta.FindStatusCondition(gr.GetConditions(), string(gwv1.GatewayConditionAccepted))
+			if existingCondition == nil {
+				gwreporter.SetCondition(sdkreporter.GatewayCondition{
+					Type:    gwv1.GatewayConditionAccepted,
+					Status:  metav1.ConditionTrue,
+					Reason:  gwv1.GatewayReasonListenersNotValid,
+					Message: message,
+				})
+			}
+		} else {
+			// Fallback to always setting the condition if we can't access the underlying type
+			logger.Error("gateway reporter type not supported", "reporter", fmt.Sprintf("%T", gwreporter))
+		}
 	}
 
 	for _, c := range pass {
@@ -63,6 +119,15 @@ func (t *Translator) Translate(ctx context.Context, gw ir.GatewayIR, reporter sd
 	}
 
 	return res
+}
+
+func findOriginalListenerName(gw ir.GatewayIR, reporter sdkreporter.Reporter, listener ir.ListenerIR) string {
+	for _, origListener := range gw.SourceObject.Listeners {
+		if uint32(origListener.Port) == listener.BindPort {
+			return string(origListener.Name)
+		}
+	}
+	return ""
 }
 
 func getReporterForFilterChain(gw ir.GatewayIR, reporter sdkreporter.Reporter, filterChainName string) sdkreporter.ListenerReporter {

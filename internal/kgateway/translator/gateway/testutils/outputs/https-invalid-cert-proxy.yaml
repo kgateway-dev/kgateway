@@ -61,8 +61,8 @@ Statuses:
         status: Unknown
         type: AttachedListenerSets
       - lastTransitionTime: null
-        message: Gateway is accepted
-        reason: Accepted
+        message: 'Listeners with no filter chains skipped: https, https2'
+        reason: ListenersNotValid
         status: "True"
         type: Accepted
       - lastTransitionTime: null
