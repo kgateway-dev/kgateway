@@ -62,7 +62,7 @@ func (t *Translator) Translate(ctx context.Context, gw ir.GatewayIR, reporter sd
 		outListener, routes := t.ComputeListener(ctx, pass, gw, l, reporter)
 		// Envoy rejects listeners with no filter chains; skip adding such listeners.
 		if outListener == nil || len(outListener.GetFilterChains()) == 0 {
-			originalListenerName := findOriginalListenerName(gw, reporter, l)
+			originalListenerName := findOriginalListenerName(gw, l)
 			listenerReporter := getReporterForFilterChain(gw, reporter, originalListenerName)
 			listenerCondition := sdkreporter.ListenerCondition{
 				Type:    gwv1.ListenerConditionProgrammed,
@@ -71,7 +71,7 @@ func (t *Translator) Translate(ctx context.Context, gw ir.GatewayIR, reporter sd
 				Message: listenerNoFcsMessage,
 			}
 
-			// Set the programmed condition to true
+			// Set the programmed condition to false
 			// Check if there's already a condition of the same type before setting it. This avoids overwriting the condition if it already exists.
 			if lr, ok := listenerReporter.(*reports.ListenerReport); ok {
 				existingCondition := meta.FindStatusCondition(lr.Status.Conditions, string(gwv1.ListenerConditionProgrammed))
@@ -106,7 +106,6 @@ func (t *Translator) Translate(ctx context.Context, gw ir.GatewayIR, reporter sd
 				})
 			}
 		} else {
-			// Fallback to always setting the condition if we can't access the underlying type
 			logger.Error("gateway reporter type not supported", "reporter", fmt.Sprintf("%T", gwreporter))
 		}
 	}
@@ -121,7 +120,7 @@ func (t *Translator) Translate(ctx context.Context, gw ir.GatewayIR, reporter sd
 	return res
 }
 
-func findOriginalListenerName(gw ir.GatewayIR, reporter sdkreporter.Reporter, listener ir.ListenerIR) string {
+func findOriginalListenerName(gw ir.GatewayIR, listener ir.ListenerIR) string {
 	for _, origListener := range gw.SourceObject.Listeners {
 		if uint32(origListener.Port) == listener.BindPort {
 			return string(origListener.Name)
