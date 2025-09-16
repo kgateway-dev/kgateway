@@ -322,6 +322,7 @@ func (ml *MergedListener) TranslateListener(
 			queries,
 			reporter,
 			ml.listenerReporter,
+			&ml.gateway,
 		)
 		if err != nil {
 			// Log and skip invalid HTTPS filter chains
@@ -642,6 +643,7 @@ func (httpsFilterChain *httpsFilterChain) translateHttpsFilterChain(
 	queries query.GatewayQueries,
 	reporter reports.Reporter,
 	listenerReporter reports.ListenerReporter,
+	gateway *ir.Gateway,
 ) (*ir.HttpFilterChainIR, error) {
 	// process routes first, so any route related errors are reported on the httproute.
 	routesByHost := map[string]routeutils.SortableRoutes{}
@@ -707,6 +709,12 @@ func (httpsFilterChain *httpsFilterChain) translateHttpsFilterChain(
 			Type:    gwv1.ListenerConditionProgrammed,
 			Status:  metav1.ConditionFalse,
 			Reason:  gwv1.ListenerReasonInvalid,
+			Message: message,
+		})
+		reporter.Gateway(gateway.Obj).SetCondition(reports.GatewayCondition{
+			Type:    gwv1.GatewayConditionAccepted,
+			Status:  metav1.ConditionFalse,
+			Reason:  gwv1.GatewayReasonListenersNotValid,
 			Message: message,
 		})
 		return nil, err
