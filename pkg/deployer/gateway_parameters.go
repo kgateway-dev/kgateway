@@ -127,7 +127,7 @@ func GetInMemoryGatewayParameters(name string, imageInfo *ImageInfo, gatewayClas
 // set for the agentgateway deployment.
 func defaultAgentGatewayParameters(imageInfo *ImageInfo) *v1alpha1.GatewayParameters {
 	gwp := defaultGatewayParameters(imageInfo)
-	gwp.Spec.Kube.AgentGateway.Enabled = ptr.To(true)
+	gwp.Spec.Kube.Agentgateway.Enabled = ptr.To(true)
 	return gwp
 }
 
@@ -246,7 +246,7 @@ func defaultGatewayParameters(imageInfo *ImageInfo) *v1alpha1.GatewayParameters 
 						PullPolicy: (*corev1.PullPolicy)(ptr.To(imageInfo.PullPolicy)),
 					},
 				},
-				AgentGateway: &v1alpha1.AgentGateway{
+				Agentgateway: &v1alpha1.Agentgateway{
 					Enabled:  ptr.To(false),
 					LogLevel: ptr.To("info"),
 					Image: &v1alpha1.Image{

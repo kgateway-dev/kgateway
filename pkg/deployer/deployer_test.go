@@ -310,7 +310,7 @@ var _ = Describe("Deployer", func() {
 				},
 				Spec: gw2_v1alpha1.GatewayParametersSpec{
 					Kube: &gw2_v1alpha1.KubernetesProxyConfig{
-						AgentGateway: &gw2_v1alpha1.AgentGateway{
+						Agentgateway: &gw2_v1alpha1.Agentgateway{
 							Enabled: ptr.To(true),
 							Image: &gw2_v1alpha1.Image{
 								Tag: ptr.To("0.4.0"),

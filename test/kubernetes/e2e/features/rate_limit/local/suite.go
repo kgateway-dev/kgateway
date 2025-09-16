@@ -32,7 +32,7 @@ type testingSuite struct {
 	commonManifests []string
 	// resources from manifests shared by all tests
 	commonResources []client.Object
-	agentGateway    bool
+	agentgateway    bool
 }
 
 func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
@@ -46,12 +46,12 @@ func NewAgentGatewayTestingSuite(ctx context.Context, testInst *e2e.TestInstalla
 	return &testingSuite{
 		ctx:              ctx,
 		testInstallation: testInst,
-		agentGateway:     true,
+		agentgateway:     true,
 	}
 }
 
 func (s *testingSuite) SetupSuite() {
-	if s.agentGateway {
+	if s.agentgateway {
 		s.commonManifests = []string{
 			testdefaults.CurlPodManifest,
 			simpleServiceManifest,
@@ -258,9 +258,9 @@ func (s *testingSuite) assertEventualResponse(path string, expectedStatus int) {
 
 // skipIfAgentGatewayUnsupported skips a test when the agentgateway class
 // is running and the feature isn't supported there yet.
-func (s *testingSuite) skipIfAgentGatewayUnsupported(feature string) {
-	if s.agentGateway {
+func (s *testingSuite) skipIfAgentgatewayUnsupported(feature string) {
+	if s.agentgateway {
 		s.T().Helper()
-		s.T().Skipf("Skipping %s on AgentGateway: not supported yet", feature)
+		s.T().Skipf("Skipping %s on agentgateway: not supported yet", feature)
 	}
 }

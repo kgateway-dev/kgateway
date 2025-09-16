@@ -93,7 +93,7 @@ spec:
               value: {{ $value | quote }}
             {{- end }}
             {{- end }}
-            {{- if .Values.agentGateway.enabled }}
+            {{- if .Values.agentgateway.enabled }}
             - name: KGW_ENABLE_AGENT_GATEWAY
               value: "true"
             {{- end }}

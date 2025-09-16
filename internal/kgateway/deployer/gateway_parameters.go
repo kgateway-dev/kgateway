@@ -422,7 +422,7 @@ func (k *kGatewayParameters) getValues(gw *api.Gateway, gwParam *v1alpha1.Gatewa
 
 	// TODO(npolshak): Currently we are using the same chart for both data planes. Should revisit having a separate chart for agentgateway: https://github.com/kgateway-dev/kgateway/issues/11240
 	// agentgateway integration values
-	gateway.AgentGateway, err = deployer.GetAgentGatewayValues(agentGatewayConfig)
+	gateway.Agentgateway, err = deployer.GetAgentGatewayValues(agentGatewayConfig)
 	if err != nil {
 		return nil, err
 	}
