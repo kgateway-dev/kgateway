@@ -32,8 +32,9 @@ import (
 )
 
 const (
-	listenerNoFcsMessage        = "Listener has no filter chains"
-	gatewayListenersNoFcMessage = "Listeners with no filter chains skipped: %s"
+	listenerNoFcsMessage           = "Listener has no filter chains"
+	gatewayListenersNoFcMessage    = "Listeners with no filter chains skipped: %s"
+	gatewayListenersAllNoFcMessage = "No valid listeners. " + gatewayListenersNoFcMessage
 )
 
 var logger = logging.New("translator/ir")
@@ -92,18 +93,30 @@ func (t *Translator) Translate(ctx context.Context, gw ir.GatewayIR, reporter sd
 	if len(noFcListeners) > 0 {
 		gwreporter := reporter.Gateway(gw.SourceObject.Obj)
 
-		message := fmt.Sprintf(gatewayListenersNoFcMessage, strings.Join(noFcListeners, ", "))
+		sort.Strings(noFcListeners) // Sort for idempotenc
+		var condition sdkreporter.GatewayCondition
+
+		if len(noFcListeners) == len(gw.Listeners) {
+			condition = sdkreporter.GatewayCondition{
+				Type:    gwv1.GatewayConditionAccepted,
+				Status:  metav1.ConditionFalse,
+				Reason:  gwv1.GatewayReasonListenersNotValid,
+				Message: fmt.Sprintf(gatewayListenersAllNoFcMessage, strings.Join(noFcListeners, ", ")),
+			}
+		} else {
+			condition = sdkreporter.GatewayCondition{
+				Type:    gwv1.GatewayConditionAccepted,
+				Status:  metav1.ConditionTrue,
+				Reason:  gwv1.GatewayReasonListenersNotValid,
+				Message: fmt.Sprintf(gatewayListenersNoFcMessage, strings.Join(noFcListeners, ", ")),
+			}
+		}
 
 		// Check if there's already a condition of the same type before setting it. This avoids overwriting the condition if it already exists.
 		if gr, ok := gwreporter.(*reports.GatewayReport); ok {
 			existingCondition := meta.FindStatusCondition(gr.GetConditions(), string(gwv1.GatewayConditionAccepted))
 			if existingCondition == nil {
-				gwreporter.SetCondition(sdkreporter.GatewayCondition{
-					Type:    gwv1.GatewayConditionAccepted,
-					Status:  metav1.ConditionTrue,
-					Reason:  gwv1.GatewayReasonListenersNotValid,
-					Message: message,
-				})
+				gwreporter.SetCondition(condition)
 			}
 		} else {
 			logger.Error("gateway reporter type not supported", "reporter", fmt.Sprintf("%T", gwreporter))

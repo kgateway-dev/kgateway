@@ -12,9 +12,9 @@ Statuses:
         status: Unknown
         type: AttachedListenerSets
       - lastTransitionTime: null
-        message: 'Listeners with no filter chains skipped: https-httpbin'
+        message: 'No valid listeners. Listeners with no filter chains skipped: https-httpbin'
         reason: ListenersNotValid
-        status: "True"
+        status: "False"
         type: Accepted
       - lastTransitionTime: null
         message: Gateway is programmed
