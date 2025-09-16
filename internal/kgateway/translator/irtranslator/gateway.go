@@ -32,9 +32,9 @@ import (
 )
 
 const (
-	listenerNoFcsMessage           = "Listener has no filter chains"
-	gatewayListenersNoFcMessage    = "Listeners with no filter chains skipped: %s"
-	gatewayListenersAllNoFcMessage = "No valid listeners. " + gatewayListenersNoFcMessage
+	ListenerNoFcsMessage           = "Listener has no filter chains"
+	GatewayListenersNoFcMessage    = "Listeners with no filter chains skipped: %s"
+	GatewayListenersAllNoFcMessage = "No valid listeners. " + GatewayListenersNoFcMessage
 )
 
 var logger = logging.New("translator/ir")
@@ -69,7 +69,7 @@ func (t *Translator) Translate(ctx context.Context, gw ir.GatewayIR, reporter sd
 				Type:    gwv1.ListenerConditionProgrammed,
 				Status:  metav1.ConditionFalse,
 				Reason:  gwv1.ListenerReasonInvalid,
-				Message: listenerNoFcsMessage,
+				Message: ListenerNoFcsMessage,
 			}
 
 			// Set the programmed condition to false
@@ -96,19 +96,21 @@ func (t *Translator) Translate(ctx context.Context, gw ir.GatewayIR, reporter sd
 		sort.Strings(noFcListeners) // Sort for idempotenc
 		var condition sdkreporter.GatewayCondition
 
+		// If all listeners have no filter chains, set the accepted condition to false
 		if len(noFcListeners) == len(gw.Listeners) {
 			condition = sdkreporter.GatewayCondition{
 				Type:    gwv1.GatewayConditionAccepted,
 				Status:  metav1.ConditionFalse,
 				Reason:  gwv1.GatewayReasonListenersNotValid,
-				Message: fmt.Sprintf(gatewayListenersAllNoFcMessage, strings.Join(noFcListeners, ", ")),
+				Message: fmt.Sprintf(GatewayListenersAllNoFcMessage, strings.Join(noFcListeners, ", ")),
 			}
 		} else {
+			// If some listeners have filter chains, set the accepted condition to true
 			condition = sdkreporter.GatewayCondition{
 				Type:    gwv1.GatewayConditionAccepted,
 				Status:  metav1.ConditionTrue,
 				Reason:  gwv1.GatewayReasonListenersNotValid,
-				Message: fmt.Sprintf(gatewayListenersNoFcMessage, strings.Join(noFcListeners, ", ")),
+				Message: fmt.Sprintf(GatewayListenersNoFcMessage, strings.Join(noFcListeners, ", ")),
 			}
 		}
 

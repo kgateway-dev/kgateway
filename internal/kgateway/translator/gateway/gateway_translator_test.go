@@ -18,6 +18,7 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
+	irtranslator "github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/irtranslator"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
@@ -1445,6 +1446,236 @@ func TestBasic(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "traffic-policy/rate-limit-full-config.yaml",
 			outputFile: "traffic-policy/rate-limit-full-config.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TLS listener with no routes", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "invalid-filter-chains/tls-listener-no-routes.yaml",
+			outputFile: "invalid-filter-chains/tls-listener-no-routes.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
+				a := assert.New(t)
+				gateway := &gwv1.Gateway{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "example-gateway",
+						Namespace: "default",
+					},
+					Spec: gwv1.GatewaySpec{
+						Listeners: []gwv1.Listener{
+							{
+								Name: "tls",
+							},
+						},
+					},
+				}
+				gatewayStatus := reportsMap.BuildGWStatus(context.Background(), *gateway, nil)
+				a.NotNil(gatewayStatus)
+
+				// Check gateway-level condition
+				condition := meta.FindStatusCondition(gatewayStatus.Conditions, string(gwv1.GatewayConditionAccepted))
+				a.NotNil(condition)
+				a.Equal(metav1.ConditionFalse, condition.Status)
+				a.Equal(string(gwv1.GatewayReasonListenersNotValid), condition.Reason)
+				a.Equal(fmt.Sprintf(irtranslator.GatewayListenersAllNoFcMessage, "tls"), condition.Message)
+
+				// Check listener-level condition
+				a.Len(gatewayStatus.Listeners, 1)
+				tlsListener := gatewayStatus.Listeners[0]
+				programmed := meta.FindStatusCondition(tlsListener.Conditions, string(gwv1.ListenerConditionProgrammed))
+				a.NotNil(programmed)
+				a.Equal(metav1.ConditionFalse, programmed.Status)
+				a.Equal(string(gwv1.ListenerReasonInvalid), programmed.Reason)
+				a.Equal(irtranslator.ListenerNoFcsMessage, programmed.Message)
+			},
+		})
+	})
+
+	t.Run("TLS listener with missing secret ref", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "invalid-filter-chains/tls-listener-invalid-secret.yaml",
+			outputFile: "invalid-filter-chains/tls-listener-invalid-secret.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
+				a := assert.New(t)
+				gateway := &gwv1.Gateway{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "example-gateway",
+						Namespace: "default",
+					},
+					Spec: gwv1.GatewaySpec{
+						Listeners: []gwv1.Listener{
+							{
+								Name: "tls",
+							},
+						},
+					},
+				}
+				gatewayStatus := reportsMap.BuildGWStatus(context.Background(), *gateway, nil)
+				a.NotNil(gatewayStatus)
+
+				// Check gateway-level condition
+				condition := meta.FindStatusCondition(gatewayStatus.Conditions, string(gwv1.GatewayConditionAccepted))
+				a.NotNil(condition)
+				a.Equal(metav1.ConditionFalse, condition.Status)
+				a.Equal(string(gwv1.GatewayReasonListenersNotValid), condition.Reason)
+				a.Equal(fmt.Sprintf(irtranslator.GatewayListenersAllNoFcMessage, "tls"), condition.Message)
+
+				// Check listener-level condition
+				a.Len(gatewayStatus.Listeners, 1)
+				tlsListener := gatewayStatus.Listeners[0]
+				programmed := meta.FindStatusCondition(tlsListener.Conditions, string(gwv1.ListenerConditionProgrammed))
+				a.NotNil(programmed)
+				a.Equal(metav1.ConditionFalse, programmed.Status)
+				a.Equal(string(gwv1.ListenerReasonInvalid), programmed.Reason)
+				a.Equal(irtranslator.ListenerNoFcsMessage, programmed.Message)
+			},
+		})
+	})
+
+	t.Run("TLS mixed listeners - no routes and with routes", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "invalid-filter-chains/tls-mixed-listeners.yaml",
+			outputFile: "invalid-filter-chains/tls-mixed-listeners.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TCP listener with no routes", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "invalid-filter-chains/tcp-listener-no-routes.yaml",
+			outputFile: "invalid-filter-chains/tcp-listener-no-routes.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
+				a := assert.New(t)
+				gateway := &gwv1.Gateway{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "example-gateway",
+						Namespace: "default",
+					},
+					Spec: gwv1.GatewaySpec{
+						Listeners: []gwv1.Listener{
+							{
+								Name: "tcp",
+							},
+						},
+					},
+				}
+				gatewayStatus := reportsMap.BuildGWStatus(context.Background(), *gateway, nil)
+				a.NotNil(gatewayStatus)
+
+				// Check gateway-level condition
+				condition := meta.FindStatusCondition(gatewayStatus.Conditions, string(gwv1.GatewayConditionAccepted))
+				a.NotNil(condition)
+				a.Equal(metav1.ConditionFalse, condition.Status)
+				a.Equal(string(gwv1.GatewayReasonListenersNotValid), condition.Reason)
+				a.Equal(fmt.Sprintf(irtranslator.GatewayListenersAllNoFcMessage, "tcp"), condition.Message)
+
+				// Check listener-level condition
+				a.Len(gatewayStatus.Listeners, 1)
+				tcpListener := gatewayStatus.Listeners[0]
+				programmed := meta.FindStatusCondition(tcpListener.Conditions, string(gwv1.ListenerConditionProgrammed))
+				a.NotNil(programmed)
+				a.Equal(metav1.ConditionFalse, programmed.Status)
+				a.Equal(string(gwv1.ListenerReasonInvalid), programmed.Reason)
+				a.Equal(irtranslator.ListenerNoFcsMessage, programmed.Message)
+			},
+		})
+	})
+
+	t.Run("TCP mixed listeners - no routes and with routes", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "invalid-filter-chains/tcp-mixed-listeners.yaml",
+			outputFile: "invalid-filter-chains/tcp-mixed-listeners.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("HTTPS listener with invalid secret ref", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "invalid-filter-chains/https-listener-invalid-secret.yaml",
+			outputFile: "invalid-filter-chains/https-listener-invalid-secret.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
+				a := assert.New(t)
+				gateway := &gwv1.Gateway{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "example-gateway",
+						Namespace: "default",
+					},
+					Spec: gwv1.GatewaySpec{
+						Listeners: []gwv1.Listener{
+							{
+								Name: "https",
+							},
+						},
+					},
+				}
+				gatewayStatus := reportsMap.BuildGWStatus(context.Background(), *gateway, nil)
+				a.NotNil(gatewayStatus)
+
+				// Check gateway-level condition
+				condition := meta.FindStatusCondition(gatewayStatus.Conditions, string(gwv1.GatewayConditionAccepted))
+				a.NotNil(condition)
+				a.Equal(metav1.ConditionFalse, condition.Status)
+				a.Equal(string(gwv1.GatewayReasonListenersNotValid), condition.Reason)
+				a.Equal(fmt.Sprintf(irtranslator.GatewayListenersAllNoFcMessage, "https"), condition.Message)
+
+				// Check listener-level conditions
+				a.Len(gatewayStatus.Listeners, 1)
+				httpsListener := gatewayStatus.Listeners[0]
+				a.Equal(int32(1), httpsListener.AttachedRoutes) // Route is attached but listener is invalid
+
+				// Check ResolvedRefs condition - keep dynamic message as is
+				resolvedRefs := meta.FindStatusCondition(httpsListener.Conditions, string(gwv1.ListenerConditionResolvedRefs))
+				a.NotNil(resolvedRefs)
+				a.Equal(metav1.ConditionFalse, resolvedRefs.Status)
+				a.Equal(string(gwv1.ListenerReasonInvalidCertificateRef), resolvedRefs.Reason)
+				a.Equal("Secret default/invalid-https-secret not found.", resolvedRefs.Message)
+
+				// Check Programmed condition - keep dynamic message as is
+				programmed := meta.FindStatusCondition(httpsListener.Conditions, string(gwv1.ListenerConditionProgrammed))
+				a.NotNil(programmed)
+				a.Equal(metav1.ConditionFalse, programmed.Status)
+				a.Equal(string(gwv1.ListenerReasonInvalid), programmed.Reason)
+				a.Equal("Secret default/invalid-https-secret not found.", programmed.Message)
+
+				// Check Accepted condition - should be True
+				accepted := meta.FindStatusCondition(httpsListener.Conditions, string(gwv1.ListenerConditionAccepted))
+				a.NotNil(accepted)
+				a.Equal(metav1.ConditionTrue, accepted.Status)
+				a.Equal(string(gwv1.ListenerReasonAccepted), accepted.Reason)
+				a.Equal("Listener is accepted", accepted.Message)
+			},
+		})
+	})
+
+	t.Run("HTTPS mixed listeners - invalid and valid secret refs", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "invalid-filter-chains/https-mixed-listeners.yaml",
+			outputFile: "invalid-filter-chains/https-mixed-listeners.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",

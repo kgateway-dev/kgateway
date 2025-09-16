@@ -95,4 +95,3 @@ Routes:
   - path:
       pathPrefix: /v1/chat/completions
   routeName: default/openai-test
-
