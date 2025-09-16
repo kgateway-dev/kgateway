@@ -123,8 +123,8 @@ func addMergeOriginsToFilterMetadata(
 //
 // Note: this function has different reporting behavior for HTTP vs HTTPS listeners due to how policy attachment
 // is handled at higher levels. For HTTPS listeners, this function is called from ComputeRouteConfiguration for
-// each GroupKind, which can result in condition message overwrites when both Gateway-wide and listener-level
-// policies fail. The last SetCondition call wins (typically Gateway-wide due to processing order). For HTTP
+// each attached GK, which can result in condition message overwrites when both Gateway-wide and listener-level
+// policies fail. The last SetCondition call wins, which is typically Gateway-wide due to processing order. For HTTP
 // listeners, policy errors are handled in runVhostPlugins at the vhost scope and do not call this function,
 // avoiding the overwrite issue.
 func reportRouteConfigPolicyErrors(r reporter.Reporter, gw ir.GatewayIR, listener ir.ListenerIR, routeConfigName string, policies ...ir.PolicyAtt) {
