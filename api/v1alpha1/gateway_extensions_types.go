@@ -24,6 +24,36 @@ type GatewayExtension struct {
 	Status GatewayExtensionStatus `json:"status,omitempty"`
 }
 
+// GatewayExtensionSpec defines the desired state of GatewayExtension.
+// +kubebuilder:validation:XValidation:message="ExtAuth must be set when type is ExtAuth",rule="self.type != 'ExtAuth' || has(self.extAuth)"
+// +kubebuilder:validation:XValidation:message="ExtProc must be set when type is ExtProc",rule="self.type != 'ExtProc' || has(self.extProc)"
+// +kubebuilder:validation:XValidation:message="RateLimit must be set when type is RateLimit",rule="self.type != 'RateLimit' || has(self.rateLimit)"
+// +kubebuilder:validation:XValidation:message="ExtAuth must not be set when type is not ExtAuth",rule="self.type == 'ExtAuth' || !has(self.extAuth)"
+// +kubebuilder:validation:XValidation:message="ExtProc must not be set when type is not ExtProc",rule="self.type == 'ExtProc' || !has(self.extProc)"
+// +kubebuilder:validation:XValidation:message="RateLimit must not be set when type is not RateLimit",rule="self.type == 'RateLimit' || !has(self.rateLimit)"
+type GatewayExtensionSpec struct {
+	// Type indicates the type of the GatewayExtension to be used.
+	// +unionDiscriminator
+	// +kubebuilder:validation:Enum=ExtAuth;ExtProc;RateLimit
+	// +required
+	Type GatewayExtensionType `json:"type"`
+
+	// ExtAuth configuration for ExtAuth extension type.
+	// +optional
+	// +unionMember:type=ExtAuth
+	ExtAuth *ExtAuthProvider `json:"extAuth,omitempty"`
+
+	// ExtProc configuration for ExtProc extension type.
+	// +optional
+	// +unionMember:type=ExtProc
+	ExtProc *ExtProcProvider `json:"extProc,omitempty"`
+
+	// RateLimit configuration for RateLimit extension type.
+	// +optional
+	// +unionMember:type=RateLimit
+	RateLimit *RateLimitProvider `json:"rateLimit,omitempty"`
+}
+
 // GatewayExtensionType indicates the type of the GatewayExtension.
 type GatewayExtensionType string
 
@@ -34,109 +64,6 @@ const (
 	GatewayExtensionTypeExtProc GatewayExtensionType = "ExtProc"
 	// GatewayExtensionTypeRateLimit is the type for RateLimit extensions.
 	GatewayExtensionTypeRateLimit GatewayExtensionType = "RateLimit"
-)
-
-// ExtAuthProvider defines the configuration for an ExtAuth provider.
-type ExtAuthProvider struct {
-	// GrpcService is the GRPC service that will handle the authentication.
-	// +required
-	GrpcService *ExtGrpcService `json:"grpcService"`
-
-	// FailOpen determines if requests are allowed when the ext auth service is unavailable.
-	// Defaults to false, meaning requests will be denied if the ext auth service is unavailable.
-	// +optional
-	// +kubebuilder:default=false
-	FailOpen bool `json:"failOpen,omitempty"`
-
-	// ClearRouteCache determines if the route cache should be cleared to allow the
-	// external authorization service to correctly affect routing decisions.
-	// +optional
-	// +kubebuilder:default=false
-	ClearRouteCache bool `json:"clearRouteCache,omitempty"`
-
-	// WithRequestBody allows the request body to be buffered and sent to the authorization service.
-	// Warning: buffering has implications for streaming and therefore performance.
-	// +optional
-	WithRequestBody *ExtAuthBufferSettings `json:"withRequestBody,omitempty"`
-
-	// StatusOnError sets the HTTP status response code that is returned to the client when the
-	// authorization server returns an error or cannot be reached. Must be in the range of 100-511 inclusive.
-	// The default matches the deny response code of 403 Forbidden.
-	// +optional
-	// +kubebuilder:default=403
-	// +kubebuilder:validation:Minimum=100
-	// +kubebuilder:validation:Maximum=511
-	StatusOnError uint32 `json:"statusOnError,omitempty"`
-
-	// StatPrefix is an optional prefix to include when emitting stats from the extauth filter,
-	// enabling different instances of the filter to have unique stats.
-	// +optional
-	// +kubebuilder:validation:MinLength=1
-	StatPrefix *string `json:"statPrefix,omitempty"`
-}
-
-// ExtProcProvider defines the configuration for an ExtProc provider.
-type ExtProcProvider struct {
-	// GrpcService is the GRPC service that will handle the processing.
-	// +required
-	GrpcService *ExtGrpcService `json:"grpcService"`
-
-	// FailOpen determines if requests are allowed when the ext proc service is unavailable.
-	// Defaults to true, meaning requests are allowed upstream even if the ext proc service is unavailable.
-	// +optional
-	// +kubebuilder:default=true
-	FailOpen bool `json:"failOpen,omitempty"`
-
-	// ProcessingMode defines how the filter should interact with the request/response streams.
-	// +optional
-	ProcessingMode *ProcessingMode `json:"processingMode,omitempty"`
-
-	// MessageTimeout is the timeout for each message sent to the external processing server.
-	// +optional
-	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid timeout value"
-	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="timeout must be at least 1ms."
-	MessageTimeout *metav1.Duration `json:"messageTimeout,omitempty"`
-
-	// MaxMessageTimeout specifies the upper bound of override_message_timeout that may be sent from the external processing server.
-	// The default value 0, which effectively disables the override_message_timeout API.
-	// +optional
-	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid timeout value"
-	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="timeout must be at least 1ms."
-	MaxMessageTimeout *metav1.Duration `json:"maxMessageTimeout,omitempty"`
-
-	// StatPrefix is an optional prefix to include when emitting stats from the extproc filter,
-	// enabling different instances of the filter to have unique stats.
-	// +optional
-	// +kubebuilder:validation:MinLength=1
-	StatPrefix *string `json:"statPrefix,omitempty"`
-
-	// RouteCacheAction describes the route cache action to be taken when an
-	// external processor response is received in response to request headers.
-	// The default behavior is to only clear the route cache when an external processing
-	// response has the clear_route_cache field set.
-	// +optional
-	// +kubebuilder:validation:Enum=Default;Clear;Retain
-	// +kubebuilder:default=Default
-	RouteCacheAction ExtProcRouteCacheAction `json:"routeCacheAction,omitempty"`
-
-	// MetadataOptions allows configuring metadata namespaces to forwarded or received from the external
-	// processing server.
-	// +optional
-	MetadataOptions *MetadataOptions `json:"metadataOptions,omitempty"`
-}
-
-type ExtProcRouteCacheAction string
-
-const (
-	// RouteCacheActionDefault is the default behavior, which clears the route cache only
-	// when the clear_route_cache field is set in an external processor response.
-	RouteCacheActionDefault ExtProcRouteCacheAction = "Default"
-	// RouteCacheActionClear always clears the route cache irrespective of the
-	// clear_route_cache field in the external processor response.
-	RouteCacheActionClear ExtProcRouteCacheAction = "Clear"
-	// RouteCacheActionRetain never clears the route cache irrespective of the
-	// clear_route_cache field in the external processor response.
-	RouteCacheActionRetain ExtProcRouteCacheAction = "Retain"
 )
 
 // ExtGrpcService defines the GRPC service that will handle the processing.
@@ -199,36 +126,6 @@ const (
 	// XRateLimitHeaderDraftV03 outputs headers as described in [draft RFC version 03](https://tools.ietf.org/id/draft-polli-ratelimit-headers-03.html).
 	XRateLimitHeaderDraftV03 XRateLimitHeadersStandard = "DraftVersion03"
 )
-
-// GatewayExtensionSpec defines the desired state of GatewayExtension.
-// +kubebuilder:validation:XValidation:message="ExtAuth must be set when type is ExtAuth",rule="self.type != 'ExtAuth' || has(self.extAuth)"
-// +kubebuilder:validation:XValidation:message="ExtProc must be set when type is ExtProc",rule="self.type != 'ExtProc' || has(self.extProc)"
-// +kubebuilder:validation:XValidation:message="RateLimit must be set when type is RateLimit",rule="self.type != 'RateLimit' || has(self.rateLimit)"
-// +kubebuilder:validation:XValidation:message="ExtAuth must not be set when type is not ExtAuth",rule="self.type == 'ExtAuth' || !has(self.extAuth)"
-// +kubebuilder:validation:XValidation:message="ExtProc must not be set when type is not ExtProc",rule="self.type == 'ExtProc' || !has(self.extProc)"
-// +kubebuilder:validation:XValidation:message="RateLimit must not be set when type is not RateLimit",rule="self.type == 'RateLimit' || !has(self.rateLimit)"
-type GatewayExtensionSpec struct {
-	// Type indicates the type of the GatewayExtension to be used.
-	// +unionDiscriminator
-	// +kubebuilder:validation:Enum=ExtAuth;ExtProc;RateLimit
-	// +required
-	Type GatewayExtensionType `json:"type"`
-
-	// ExtAuth configuration for ExtAuth extension type.
-	// +optional
-	// +unionMember:type=ExtAuth
-	ExtAuth *ExtAuthProvider `json:"extAuth,omitempty"`
-
-	// ExtProc configuration for ExtProc extension type.
-	// +optional
-	// +unionMember:type=ExtProc
-	ExtProc *ExtProcProvider `json:"extProc,omitempty"`
-
-	// RateLimit configuration for RateLimit extension type.
-	// +optional
-	// +unionMember:type=RateLimit
-	RateLimit *RateLimitProvider `json:"rateLimit,omitempty"`
-}
 
 // GatewayExtensionStatus defines the observed state of GatewayExtension.
 type GatewayExtensionStatus struct {

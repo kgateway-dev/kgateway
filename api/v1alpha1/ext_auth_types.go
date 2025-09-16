@@ -50,3 +50,42 @@ type ExtAuthBufferSettings struct {
 	// +kubebuilder:default=false
 	PackAsBytes bool `json:"packAsBytes,omitempty"`
 }
+
+// ExtAuthProvider defines the configuration for an ExtAuth provider.
+type ExtAuthProvider struct {
+	// GrpcService is the GRPC service that will handle the authentication.
+	// +required
+	GrpcService *ExtGrpcService `json:"grpcService"`
+
+	// FailOpen determines if requests are allowed when the ext auth service is unavailable.
+	// Defaults to false, meaning requests will be denied if the ext auth service is unavailable.
+	// +optional
+	// +kubebuilder:default=false
+	FailOpen bool `json:"failOpen,omitempty"`
+
+	// ClearRouteCache determines if the route cache should be cleared to allow the
+	// external authorization service to correctly affect routing decisions.
+	// +optional
+	// +kubebuilder:default=false
+	ClearRouteCache bool `json:"clearRouteCache,omitempty"`
+
+	// WithRequestBody allows the request body to be buffered and sent to the authorization service.
+	// Warning: buffering has implications for streaming and therefore performance.
+	// +optional
+	WithRequestBody *ExtAuthBufferSettings `json:"withRequestBody,omitempty"`
+
+	// StatusOnError sets the HTTP status response code that is returned to the client when the
+	// authorization server returns an error or cannot be reached. Must be in the range of 100-511 inclusive.
+	// The default matches the deny response code of 403 Forbidden.
+	// +optional
+	// +kubebuilder:default=403
+	// +kubebuilder:validation:Minimum=100
+	// +kubebuilder:validation:Maximum=511
+	StatusOnError uint32 `json:"statusOnError,omitempty"`
+
+	// StatPrefix is an optional prefix to include when emitting stats from the extauth filter,
+	// enabling different instances of the filter to have unique stats.
+	// +optional
+	// +kubebuilder:validation:MinLength=1
+	StatPrefix *string `json:"statPrefix,omitempty"`
+}
