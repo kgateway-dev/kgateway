@@ -236,30 +236,28 @@ func buildRateLimitFilter(grpcService *envoycorev3.GrpcService, rateLimit *v1alp
 	return envoyRateLimit
 }
 
-func convertXRL(in v1alpha1.XRLHeadersStandard) ratev3.RateLimit_XRateLimitHeadersRFCVersion {
+func convertXRL(in v1alpha1.XRateLimitHeadersStandard) ratev3.RateLimit_XRateLimitHeadersRFCVersion {
 	switch in {
-	case v1alpha1.XRLHeaderOff:
-		return ratev3.RateLimit_OFF
-	case v1alpha1.XRLHeaderDraftV03:
+	case v1alpha1.XRateLimitHeaderDraftV03:
 		return ratev3.RateLimit_DRAFT_VERSION_03
+	case v1alpha1.XRateLimitHeaderOff:
+		return ratev3.RateLimit_OFF
+	default:
+		return ratev3.RateLimit_OFF
 	}
-
-	// defensive return, enum validation exists on CRD
-	return ratev3.RateLimit_OFF
 }
 
-func convertRCA(in v1alpha1.RouteCacheAction) envoyextprocv3.ExternalProcessor_RouteCacheAction {
+func convertRCA(in v1alpha1.ExtProcRouteCacheAction) envoyextprocv3.ExternalProcessor_RouteCacheAction {
 	switch in {
-	case v1alpha1.RouteCacheActionDefault:
-		return envoyextprocv3.ExternalProcessor_DEFAULT
 	case v1alpha1.RouteCacheActionClear:
 		return envoyextprocv3.ExternalProcessor_CLEAR
 	case v1alpha1.RouteCacheActionRetain:
 		return envoyextprocv3.ExternalProcessor_RETAIN
+	case v1alpha1.RouteCacheActionDefault:
+		return envoyextprocv3.ExternalProcessor_DEFAULT
+	default:
+		return envoyextprocv3.ExternalProcessor_DEFAULT
 	}
-
-	// defensive return, enum validation exists on CRD
-	return envoyextprocv3.ExternalProcessor_DEFAULT
 }
 
 // buildCompositeExtProcFilter builds a composite filter for external processing so that

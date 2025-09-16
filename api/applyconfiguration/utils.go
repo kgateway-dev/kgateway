@@ -73,8 +73,6 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.BodyTransformationApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("Buffer"):
 		return &apiv1alpha1.BufferApplyConfiguration{}
-	case v1alpha1.SchemeGroupVersion.WithKind("BufferSettings"):
-		return &apiv1alpha1.BufferSettingsApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("CELFilter"):
 		return &apiv1alpha1.CELFilterApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("CommonAccessLogGrpcService"):
@@ -117,6 +115,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.EnvoyContainerApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("EnvoyHealthCheck"):
 		return &apiv1alpha1.EnvoyHealthCheckApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("ExtAuthBufferSettings"):
+		return &apiv1alpha1.ExtAuthBufferSettingsApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("ExtAuthPolicy"):
 		return &apiv1alpha1.ExtAuthPolicyApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("ExtAuthProvider"):

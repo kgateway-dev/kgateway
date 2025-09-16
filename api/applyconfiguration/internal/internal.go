@@ -569,18 +569,6 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: maxRequestSize
       type:
         namedType: io.k8s.apimachinery.pkg.api.resource.Quantity
-- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.BufferSettings
-  map:
-    fields:
-    - name: allowPartialMessage
-      type:
-        scalar: boolean
-    - name: maxRequestBytes
-      type:
-        scalar: numeric
-    - name: packAsBytes
-      type:
-        scalar: boolean
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.CELFilter
   map:
     fields:
@@ -929,6 +917,19 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         scalar: string
       default: ""
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtAuthBufferSettings
+  map:
+    fields:
+    - name: allowPartialMessage
+      type:
+        scalar: boolean
+    - name: maxRequestBytes
+      type:
+        scalar: numeric
+      default: 0
+    - name: packAsBytes
+      type:
+        scalar: boolean
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtAuthPolicy
   map:
     fields:
@@ -945,7 +946,7 @@ var schemaYAML = typed.YAMLObject(`types:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.NamespacedObjectReference
     - name: withRequestBody
       type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.BufferSettings
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtAuthBufferSettings
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtAuthProvider
   map:
     fields:
@@ -966,7 +967,7 @@ var schemaYAML = typed.YAMLObject(`types:
         scalar: numeric
     - name: withRequestBody
       type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.BufferSettings
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtAuthBufferSettings
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtGrpcService
   map:
     fields:

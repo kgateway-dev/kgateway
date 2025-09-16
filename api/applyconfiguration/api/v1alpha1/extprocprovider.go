@@ -11,14 +11,14 @@ import (
 // ExtProcProviderApplyConfiguration represents a declarative configuration of the ExtProcProvider type for use
 // with apply.
 type ExtProcProviderApplyConfiguration struct {
-	GrpcService       *ExtGrpcServiceApplyConfiguration  `json:"grpcService,omitempty"`
-	FailOpen          *bool                              `json:"failOpen,omitempty"`
-	ProcessingMode    *ProcessingModeApplyConfiguration  `json:"processingMode,omitempty"`
-	MessageTimeout    *v1.Duration                       `json:"messageTimeout,omitempty"`
-	MaxMessageTimeout *v1.Duration                       `json:"maxMessageTimeout,omitempty"`
-	StatPrefix        *string                            `json:"statPrefix,omitempty"`
-	RouteCacheAction  *apiv1alpha1.RouteCacheAction      `json:"routeCacheAction,omitempty"`
-	MetadataOptions   *MetadataOptionsApplyConfiguration `json:"metadataOptions,omitempty"`
+	GrpcService       *ExtGrpcServiceApplyConfiguration    `json:"grpcService,omitempty"`
+	FailOpen          *bool                                `json:"failOpen,omitempty"`
+	ProcessingMode    *ProcessingModeApplyConfiguration    `json:"processingMode,omitempty"`
+	MessageTimeout    *v1.Duration                         `json:"messageTimeout,omitempty"`
+	MaxMessageTimeout *v1.Duration                         `json:"maxMessageTimeout,omitempty"`
+	StatPrefix        *string                              `json:"statPrefix,omitempty"`
+	RouteCacheAction  *apiv1alpha1.ExtProcRouteCacheAction `json:"routeCacheAction,omitempty"`
+	MetadataOptions   *MetadataOptionsApplyConfiguration   `json:"metadataOptions,omitempty"`
 }
 
 // ExtProcProviderApplyConfiguration constructs a declarative configuration of the ExtProcProvider type for use with
@@ -78,7 +78,7 @@ func (b *ExtProcProviderApplyConfiguration) WithStatPrefix(value string) *ExtPro
 // WithRouteCacheAction sets the RouteCacheAction field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the RouteCacheAction field is set to the value of the last call.
-func (b *ExtProcProviderApplyConfiguration) WithRouteCacheAction(value apiv1alpha1.RouteCacheAction) *ExtProcProviderApplyConfiguration {
+func (b *ExtProcProviderApplyConfiguration) WithRouteCacheAction(value apiv1alpha1.ExtProcRouteCacheAction) *ExtProcProviderApplyConfiguration {
 	b.RouteCacheAction = &value
 	return b
 }

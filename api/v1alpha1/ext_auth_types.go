@@ -15,7 +15,7 @@ type ExtAuthPolicy struct {
 	// WithRequestBody allows the request body to be buffered and sent to the authorization service.
 	// Warning buffering has implications for streaming and therefore performance.
 	// +optional
-	WithRequestBody *BufferSettings `json:"withRequestBody,omitempty"`
+	WithRequestBody *ExtAuthBufferSettings `json:"withRequestBody,omitempty"`
 
 	// Additional context for the authorization service.
 	// +optional
@@ -27,13 +27,13 @@ type ExtAuthPolicy struct {
 	Disable *PolicyDisable `json:"disable,omitempty"`
 }
 
-// BufferSettings configures how the request body should be buffered.
-type BufferSettings struct {
+// ExtAuthBufferSettings configures how the request body should be buffered.
+type ExtAuthBufferSettings struct {
 	// MaxRequestBytes sets the maximum size of a message body to buffer.
 	// Requests exceeding this size will receive HTTP 413 and not be sent to the authorization service.
 	// +required
 	// +kubebuilder:validation:Minimum=1
-	MaxRequestBytes uint32 `json:"maxRequestBytes,omitempty"`
+	MaxRequestBytes uint32 `json:"maxRequestBytes"`
 
 	// AllowPartialMessage determines if partial messages should be allowed.
 	// When true, requests will be sent to the authorization service even if they exceed maxRequestBytes.

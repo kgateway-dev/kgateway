@@ -57,7 +57,7 @@ type ExtAuthProvider struct {
 	// WithRequestBody allows the request body to be buffered and sent to the authorization service.
 	// Warning: buffering has implications for streaming and therefore performance.
 	// +optional
-	WithRequestBody *BufferSettings `json:"withRequestBody,omitempty"`
+	WithRequestBody *ExtAuthBufferSettings `json:"withRequestBody,omitempty"`
 
 	// StatusOnError sets the HTTP status response code that is returned to the client when the
 	// authorization server returns an error or cannot be reached. Must be in the range of 100-511 inclusive.
@@ -112,10 +112,12 @@ type ExtProcProvider struct {
 
 	// RouteCacheAction describes the route cache action to be taken when an
 	// external processor response is received in response to request headers.
+	// The default behavior is to only clear the route cache when an external processing
+	// response has the clear_route_cache field set.
 	// +optional
 	// +kubebuilder:validation:Enum=Default;Clear;Retain
 	// +kubebuilder:default=Default
-	RouteCacheAction RouteCacheAction `json:"routeCacheAction,omitempty"`
+	RouteCacheAction ExtProcRouteCacheAction `json:"routeCacheAction,omitempty"`
 
 	// MetadataOptions allows configuring metadata namespaces to forwarded or received from the external
 	// processing server.
@@ -123,18 +125,18 @@ type ExtProcProvider struct {
 	MetadataOptions *MetadataOptions `json:"metadataOptions,omitempty"`
 }
 
-type RouteCacheAction string
+type ExtProcRouteCacheAction string
 
 const (
-	// RouteCacheActionDefault is the default behavior of clearing the route cache only
+	// RouteCacheActionDefault is the default behavior, which clears the route cache only
 	// when the clear_route_cache field is set in an external processor response.
-	RouteCacheActionDefault RouteCacheAction = "Default"
+	RouteCacheActionDefault ExtProcRouteCacheAction = "Default"
 	// RouteCacheActionClear always clears the route cache irrespective of the
-	// clear_route_cache bit in the external processor response.
-	RouteCacheActionClear RouteCacheAction = "Clear"
+	// clear_route_cache field in the external processor response.
+	RouteCacheActionClear ExtProcRouteCacheAction = "Clear"
 	// RouteCacheActionRetain never clears the route cache irrespective of the
-	// clear_route_cache bit in the external processor response.
-	RouteCacheActionRetain RouteCacheAction = "Retain"
+	// clear_route_cache field in the external processor response.
+	RouteCacheActionRetain ExtProcRouteCacheAction = "Retain"
 )
 
 // ExtGrpcService defines the GRPC service that will handle the processing.
@@ -185,17 +187,17 @@ type RateLimitProvider struct {
 	// Disabled by default.
 	// +kubebuilder:validation:Enum=Off;DraftVersion03
 	// +kubebuilder:default="Off"
-	XRateLimitHeaders XRLHeadersStandard `json:"xRateLimitHeaders,omitempty"`
+	XRateLimitHeaders XRateLimitHeadersStandard `json:"xRateLimitHeaders,omitempty"`
 }
 
-// XRLHeadersStandard controls how XRateLimit headers will emitted.
-type XRLHeadersStandard string
+// XRateLimitHeadersStandard controls how XRateLimit headers will emitted.
+type XRateLimitHeadersStandard string
 
 const (
-	// XRLHeaderOff disables emitting of XRateLimit headers.
-	XRLHeaderOff XRLHeadersStandard = "Off"
-	// XRLHeaderDraftV03 outputs headers as described in [draft RFC version 03](https://tools.ietf.org/id/draft-polli-ratelimit-headers-03.html).
-	XRLHeaderDraftV03 XRLHeadersStandard = "DraftVersion03"
+	// XRateLimitHeaderOff disables emitting of XRateLimit headers.
+	XRateLimitHeaderOff XRateLimitHeadersStandard = "Off"
+	// XRateLimitHeaderDraftV03 outputs headers as described in [draft RFC version 03](https://tools.ietf.org/id/draft-polli-ratelimit-headers-03.html).
+	XRateLimitHeaderDraftV03 XRateLimitHeadersStandard = "DraftVersion03"
 )
 
 // GatewayExtensionSpec defines the desired state of GatewayExtension.

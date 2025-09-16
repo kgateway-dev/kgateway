@@ -135,7 +135,7 @@ func TestExtAuthForSpec(t *testing.T) {
 				ExtensionRef: &v1alpha1.NamespacedObjectReference{
 					Name: "test-extension",
 				},
-				WithRequestBody: &v1alpha1.BufferSettings{
+				WithRequestBody: &v1alpha1.ExtAuthBufferSettings{
 					MaxRequestBytes:     1024,
 					AllowPartialMessage: true,
 					PackAsBytes:         true,

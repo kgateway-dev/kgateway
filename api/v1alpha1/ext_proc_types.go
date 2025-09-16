@@ -18,7 +18,7 @@ type ExtProcPolicy struct {
 	Disable *PolicyDisable `json:"disable,omitempty"`
 }
 
-// MetadataOptions allows configuring metadata namespaces to forwarded or received from the external
+// MetadataOptions allows configuring metadata namespaces to forward or receive from the external
 // processing server.
 type MetadataOptions struct {
 	// Forwarding defines the typed or untyped dynamic metadata namespaces to forward to the external processing server.

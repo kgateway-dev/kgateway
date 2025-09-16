@@ -10,7 +10,7 @@ import (
 // with apply.
 type ExtAuthPolicyApplyConfiguration struct {
 	ExtensionRef      *NamespacedObjectReferenceApplyConfiguration `json:"extensionRef,omitempty"`
-	WithRequestBody   *BufferSettingsApplyConfiguration            `json:"withRequestBody,omitempty"`
+	WithRequestBody   *ExtAuthBufferSettingsApplyConfiguration     `json:"withRequestBody,omitempty"`
 	ContextExtensions map[string]string                            `json:"contextExtensions,omitempty"`
 	Disable           *apiv1alpha1.PolicyDisable                   `json:"disable,omitempty"`
 }
@@ -32,7 +32,7 @@ func (b *ExtAuthPolicyApplyConfiguration) WithExtensionRef(value *NamespacedObje
 // WithWithRequestBody sets the WithRequestBody field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the WithRequestBody field is set to the value of the last call.
-func (b *ExtAuthPolicyApplyConfiguration) WithWithRequestBody(value *BufferSettingsApplyConfiguration) *ExtAuthPolicyApplyConfiguration {
+func (b *ExtAuthPolicyApplyConfiguration) WithWithRequestBody(value *ExtAuthBufferSettingsApplyConfiguration) *ExtAuthPolicyApplyConfiguration {
 	b.WithRequestBody = value
 	return b
 }
