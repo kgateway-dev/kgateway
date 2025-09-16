@@ -35,6 +35,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/namespaces"
+	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 )
 
 const (
@@ -75,6 +76,7 @@ type StartConfig struct {
 	ExtraAgentgatewayPlugins func(ctx context.Context, agw *agentgatewayplugins.AgwCollections) []agentgatewayplugins.AgentgatewayPlugin
 	ExtraGatewayParameters   func(cli client.Client, inputs *deployer.Inputs) []deployer.ExtraGatewayParameters
 	Client                   istiokube.Client
+	Validator                validator.Validator
 
 	AgwCollections    *agentgatewayplugins.AgwCollections
 	CommonCollections *common.CommonCollections
@@ -155,6 +157,7 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 		cfg.CommonCollections,
 		cfg.SetupOpts.Cache,
 		cfg.AgentGatewayClassName,
+		cfg.Validator,
 	)
 	proxySyncer.Init(ctx, cfg.KrtOptions)
 	if err := cfg.Manager.Add(proxySyncer); err != nil {
@@ -241,7 +244,13 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 
 func pluginFactoryWithBuiltin(cfg StartConfig) extensions2.K8sGatewayExtensionsFactory {
 	return func(ctx context.Context, commoncol *common.CommonCollections) sdk.Plugin {
-		plugins := registry.Plugins(ctx, commoncol, cfg.WaypointGatewayClassName, *cfg.SetupOpts.GlobalSettings)
+		plugins := registry.Plugins(
+			ctx,
+			commoncol,
+			cfg.WaypointGatewayClassName,
+			*cfg.SetupOpts.GlobalSettings,
+			cfg.Validator,
+		)
 		plugins = append(plugins, krtcollections.NewBuiltinPlugin(ctx))
 		if cfg.ExtraPlugins != nil {
 			plugins = append(plugins, cfg.ExtraPlugins(ctx, commoncol, cfg.SetupOpts.GlobalSettings.PolicyMerge)...)

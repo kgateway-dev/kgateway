@@ -15,6 +15,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	common "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
+	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 )
 
 type Options struct {
@@ -31,6 +32,8 @@ type Options struct {
 	CtrlMgrOptions           func(context.Context) *ctrl.Options
 	// extra controller manager config, like registering additional controllers
 	ExtraManagerConfig []func(ctx context.Context, mgr manager.Manager, objectFilter kubetypes.DynamicObjectFilter) error
+	// Validator is the validator to use for the controller.
+	Validator validator.Validator
 }
 
 func New(opts Options) (core.Server, error) {
@@ -48,5 +51,6 @@ func New(opts Options) (core.Server, error) {
 		core.WithRestConfig(opts.RestConfig),
 		core.WithControllerManagerOptions(opts.CtrlMgrOptions),
 		core.WithExtraManagerConfig(opts.ExtraManagerConfig...),
+		core.WithValidator(opts.Validator),
 	)
 }
