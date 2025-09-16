@@ -245,6 +245,26 @@ func TranslateTrafficPolicy(
 	// Build final status from accumulated ancestors
 	status := v1alpha2.PolicyStatus{Ancestors: ancestors}
 
+	if len(status.Ancestors) > 15 {
+		ignored := status.Ancestors[15:]
+		status.Ancestors = status.Ancestors[:15]
+		status.Ancestors = append(status.Ancestors, v1alpha2.PolicyAncestorStatus{
+			AncestorRef: gwv1.ParentReference{
+				Group: ptr.To(gwv1.Group("gateway.kgateway.dev")),
+				Name:  "StatusSummary",
+			},
+			ControllerName: gwv1.GatewayController(controllerName),
+			Conditions: []metav1.Condition{
+				{
+					Type:    "StatusSummarized",
+					Status:  metav1.ConditionTrue,
+					Reason:  "StatusSummary",
+					Message: fmt.Sprintf("%d AncestorRefs ignored due to max status size", len(ignored)),
+				},
+			},
+		})
+	}
+
 	// sort all parents for consistency with Equals and for Update
 	// match sorting semantics of istio/istio, see:
 	// https://github.com/istio/istio/blob/6dcaa0206bcaf20e3e3b4e45e9376f0f96365571/pilot/pkg/config/kube/gateway/conditions.go#L188-L193
