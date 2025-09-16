@@ -6,15 +6,15 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/slices"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"sigs.k8s.io/gateway-api/apis/v1alpha2"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
 )
 
-func ADPPolicyCollection(binds krt.Collection[ir.ADPResourcesForGateway], agwPlugins plugins.AgentgatewayPlugin) (krt.Collection[ir.ADPResourcesForGateway], map[schema.GroupKind]krt.StatusCollection[controllers.Object, v1alpha1.PolicyStatus]) {
+func ADPPolicyCollection(binds krt.Collection[ir.ADPResourcesForGateway], agwPlugins plugins.AgentgatewayPlugin) (krt.Collection[ir.ADPResourcesForGateway], map[schema.GroupKind]krt.StatusCollection[controllers.Object, v1alpha2.PolicyStatus]) {
 	var allPolicies []krt.Collection[plugins.ADPPolicy]
-	policyStatusMap := map[schema.GroupKind]krt.StatusCollection[controllers.Object, v1alpha1.PolicyStatus]{}
+	policyStatusMap := map[schema.GroupKind]krt.StatusCollection[controllers.Object, v1alpha2.PolicyStatus]{}
 	// Collect all policies from registered plugins.
 	// Note: Only one plugin should be used per source GVK.
 	// Avoid joining collections per-GVK before passing them to a plugin.

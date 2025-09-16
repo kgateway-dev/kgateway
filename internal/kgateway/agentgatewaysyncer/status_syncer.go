@@ -9,6 +9,7 @@ import (
 	"github.com/avast/retry-go/v4"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"istio.io/istio/pilot/pkg/status"
 	"istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/krt"
@@ -30,6 +31,18 @@ import (
 )
 
 var _ manager.LeaderElectionRunnable = &AgentGwStatusSyncer{}
+
+// policyStatusQueue implements status.Queue interface for Istio's StatusCollections
+type policyStatusQueue struct {
+	asyncQueue *PolicyStatusAsyncQueue
+}
+
+func (q *policyStatusQueue) EnqueueStatusUpdateResource(context any, resource status.Resource) {
+	// Convert the context back to our expected type
+	if obj, ok := context.(krt.ObjectWithStatus[controllers.Object, gwv1alpha2.PolicyStatus]); ok {
+		q.asyncQueue.Enqueue(obj)
+	}
+}
 
 const (
 	// Retry configuration constants for status updates
@@ -55,8 +68,8 @@ type AgentGwStatusSyncer struct {
 	gatewayReportQueue      utils.AsyncQueue[GatewayReports]
 	listenerSetReportQueue  utils.AsyncQueue[ListenerSetReports]
 	routeReportQueue        utils.AsyncQueue[RouteReports]
-	policyStatusQueue       utils.AsyncQueue[krt.ObjectWithStatus[controllers.Object, v1alpha1.PolicyStatus]]
-	policyStatusCollections *PolicyStatusCollections
+	policyStatusQueue       utils.AsyncQueue[krt.ObjectWithStatus[controllers.Object, gwv1alpha2.PolicyStatus]]
+	policyStatusCollections *status.StatusCollections
 
 	// Synchronization
 	cacheSyncs []cache.InformerSynced
@@ -70,7 +83,7 @@ func NewAgentGwStatusSyncer(
 	gatewayReportQueue utils.AsyncQueue[GatewayReports],
 	listenerSetReportQueue utils.AsyncQueue[ListenerSetReports],
 	routeReportQueue utils.AsyncQueue[RouteReports],
-	policyStatusCollections *PolicyStatusCollections,
+	policyStatusCollections *status.StatusCollections,
 	cacheSyncs []cache.InformerSynced,
 ) *AgentGwStatusSyncer {
 	return &AgentGwStatusSyncer{
@@ -107,7 +120,9 @@ func (s *AgentGwStatusSyncer) Start(ctx context.Context) error {
 	// Initialize policy status queue from collections
 	psq := NewPolicyStatusAsyncQueue()
 	s.policyStatusQueue = psq.GetAsyncQueue()
-	_ = s.policyStatusCollections.SetQueue(psq)
+	// Create a controllers.Queue that wraps our async queue for Istio's StatusCollections
+	istioQueue := &policyStatusQueue{asyncQueue: psq}
+	s.policyStatusCollections.SetQueue(istioQueue)
 
 	// Start separate goroutines for each status syncer
 	routeStatusLogger := logger.With("subcomponent", "routeStatusSyncer")
@@ -167,7 +182,7 @@ func (s *AgentGwStatusSyncer) Start(ctx context.Context) error {
 	return nil
 }
 
-func (s *AgentGwStatusSyncer) syncTrafficPolicyStatus(ctx context.Context, logger *slog.Logger, policyStatusUpdate krt.ObjectWithStatus[controllers.Object, v1alpha1.PolicyStatus]) {
+func (s *AgentGwStatusSyncer) syncTrafficPolicyStatus(ctx context.Context, logger *slog.Logger, policyStatusUpdate krt.ObjectWithStatus[controllers.Object, gwv1alpha2.PolicyStatus]) {
 	stopwatch := utils.NewTranslatorStopWatch("PolicyStatusSyncer")
 	stopwatch.Start()
 	defer stopwatch.Stop(ctx)
@@ -189,17 +204,24 @@ func (s *AgentGwStatusSyncer) syncTrafficPolicyStatus(ctx context.Context, logge
 			return err
 		}
 
-		// Convert v1alpha1.PolicyStatus to gwv1alpha2.PolicyStatus and update the status if it's different
-		convertedStatus := convertToGatewayPolicyStatus(policyStatusUpdate.Status)
-		if !cmp.Equal(trafficpolicy.Status, convertedStatus, cmpopts.IgnoreFields(metav1.Condition{}, "LastTransitionTime")) {
-			trafficpolicy.Status = convertedStatus
-			err = s.mgr.GetClient().Status().Update(ctx, &trafficpolicy)
-			if err != nil {
-				logger.Error("error updating trafficpolicy status", logKeyError, err, "trafficpolicy", policyNameNs.String())
-				return err
-			}
-			logger.Debug("updated trafficpolicy status", "trafficpolicy", policyNameNs.String(), "status", trafficpolicy.Status)
+		// Update the trafficpolicy status directly
+		var ancestors []gwv1alpha2.PolicyAncestorStatus
+		for _, ancestor := range policyStatusUpdate.Status.Ancestors {
+			ancestors = append(ancestors, gwv1alpha2.PolicyAncestorStatus{
+				AncestorRef:    ancestor.AncestorRef,
+				ControllerName: gwv1.GatewayController(ancestor.ControllerName),
+				Conditions:     ancestor.Conditions,
+			})
 		}
+		trafficpolicy.Status = gwv1alpha2.PolicyStatus{
+			Ancestors: ancestors,
+		}
+		err = s.mgr.GetClient().Status().Update(ctx, &trafficpolicy)
+		if err != nil {
+			logger.Error("error updating trafficpolicy status", logKeyError, err, "trafficpolicy", policyNameNs.String())
+			return err
+		}
+		logger.Debug("updated trafficpolicy status", "trafficpolicy", policyNameNs.String(), "status", trafficpolicy.Status)
 		return nil
 	}, retry.Attempts(maxRetryAttempts), retry.Delay(retryDelay))
 
@@ -668,22 +690,6 @@ func calculateSupportedKinds(listener gwv1.Listener) []gwv1.RouteGroupKind {
 		}
 	}
 	return supportedKinds
-}
-
-// convertToGatewayPolicyStatus converts v1alpha1.PolicyStatus to gwv1alpha2.PolicyStatus
-func convertToGatewayPolicyStatus(src v1alpha1.PolicyStatus) gwv1alpha2.PolicyStatus {
-	var ancestors []gwv1alpha2.PolicyAncestorStatus
-	for _, ancestor := range src.Ancestors {
-		ancestors = append(ancestors, gwv1alpha2.PolicyAncestorStatus{
-			AncestorRef:    ancestor.AncestorRef,
-			ControllerName: gwv1.GatewayController(ancestor.ControllerName),
-			Conditions:     ancestor.Conditions,
-		})
-	}
-
-	return gwv1alpha2.PolicyStatus{
-		Ancestors: ancestors,
-	}
 }
 
 func ensureParentRefNamespaces(parentRefs []gwv1.ParentReference, routeNamespace string) {

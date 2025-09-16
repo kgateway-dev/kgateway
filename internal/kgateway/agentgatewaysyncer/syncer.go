@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"maps"
 	"strconv"
-	"sync"
 	"sync/atomic"
 
 	"github.com/agentgateway/agentgateway/go/api"
 	envoytypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
+	"istio.io/istio/pilot/pkg/status"
 	"istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/krt"
@@ -21,6 +21,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
@@ -76,7 +77,7 @@ type AgentGwSyncer struct {
 	gatewayReportQueue     utils.AsyncQueue[GatewayReports]
 	listenerSetReportQueue utils.AsyncQueue[ListenerSetReports]
 	routeReportQueue       utils.AsyncQueue[RouteReports]
-	policyStatusQueue      *PolicyStatusCollections
+	policyStatusQueue      *status.StatusCollections
 
 	// Collection status reporting
 	// TODO(npolshak): report these separately from proxy_syncer backends https://github.com/kgateway-dev/kgateway/issues/11966
@@ -113,80 +114,29 @@ func NewAgentGwSyncer(
 		gatewayReportQueue:     utils.NewAsyncQueue[GatewayReports](),
 		listenerSetReportQueue: utils.NewAsyncQueue[ListenerSetReports](),
 		routeReportQueue:       utils.NewAsyncQueue[RouteReports](),
-		policyStatusQueue:      &PolicyStatusCollections{},
+		policyStatusQueue:      &status.StatusCollections{},
 	}
 }
 
-// PolicyStatusAsyncQueue wraps AsyncQueue to implement StatusQueue interface
+// PolicyStatusAsyncQueue wraps AsyncQueue to implement controllers.Writer interface for Istio's StatusCollections
 type PolicyStatusAsyncQueue struct {
-	queue utils.AsyncQueue[krt.ObjectWithStatus[controllers.Object, v1alpha1.PolicyStatus]]
+	queue utils.AsyncQueue[krt.ObjectWithStatus[controllers.Object, gwv1alpha2.PolicyStatus]]
 }
 
-func (b *PolicyStatusAsyncQueue) Enqueue(obj krt.ObjectWithStatus[controllers.Object, v1alpha1.PolicyStatus]) {
+func (b *PolicyStatusAsyncQueue) Enqueue(obj krt.ObjectWithStatus[controllers.Object, gwv1alpha2.PolicyStatus]) {
 	b.queue.Enqueue(obj)
 }
 
 // GetAsyncQueue returns the underlying AsyncQueue for use in status syncer
-func (b *PolicyStatusAsyncQueue) GetAsyncQueue() utils.AsyncQueue[krt.ObjectWithStatus[controllers.Object, v1alpha1.PolicyStatus]] {
+func (b *PolicyStatusAsyncQueue) GetAsyncQueue() utils.AsyncQueue[krt.ObjectWithStatus[controllers.Object, gwv1alpha2.PolicyStatus]] {
 	return b.queue
 }
 
 // NewPolicyStatusAsyncQueue creates a new PolicyStatusAsyncQueue
 func NewPolicyStatusAsyncQueue() *PolicyStatusAsyncQueue {
 	return &PolicyStatusAsyncQueue{
-		queue: utils.NewAsyncQueue[krt.ObjectWithStatus[controllers.Object, v1alpha1.PolicyStatus]](),
+		queue: utils.NewAsyncQueue[krt.ObjectWithStatus[controllers.Object, gwv1alpha2.PolicyStatus]](),
 	}
-}
-
-// PolicyStatusQueue defines an interface for queuing policy status updates
-type PolicyStatusQueue interface {
-	Enqueue(krt.ObjectWithStatus[controllers.Object, v1alpha1.PolicyStatus])
-}
-
-// PolicyStatusRegistration is a function that creates a handler registration for a policy status queue
-type PolicyStatusRegistration func(statusWriter PolicyStatusQueue) krt.HandlerRegistration
-
-// PolicyStatusCollections stores a variety of policy status collections that can write status.
-// These can be fed into a queue which can be dynamically changed (to handle leader election)
-type PolicyStatusCollections struct {
-	mu           sync.Mutex
-	constructors []PolicyStatusRegistration
-	active       []krt.HandlerRegistration
-	queue        PolicyStatusQueue
-}
-
-func (s *PolicyStatusCollections) Register(sr PolicyStatusRegistration) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.constructors = append(s.constructors, sr)
-}
-
-func (s *PolicyStatusCollections) UnsetQueue() {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	// Now we are disabled
-	s.queue = nil
-	for _, act := range s.active {
-		act.UnregisterHandler()
-	}
-	s.active = nil
-}
-
-func (s *PolicyStatusCollections) SetQueue(queue PolicyStatusQueue) []krt.Syncer {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	// Now we are enabled!
-	s.queue = queue
-	// Register all constructors
-	s.active = make([]krt.HandlerRegistration, len(s.constructors))
-	for i, reg := range s.constructors {
-		s.active[i] = reg(queue)
-	}
-	syncers := make([]krt.Syncer, len(s.active))
-	for i, e := range s.active {
-		syncers[i] = e
-	}
-	return syncers
 }
 
 func (s *AgentGwSyncer) Init(krtopts krtinternal.KrtOptions) {
@@ -196,7 +146,7 @@ func (s *AgentGwSyncer) Init(krtopts krtinternal.KrtOptions) {
 	s.buildResourceCollections(krtopts)
 }
 
-func (s *AgentGwSyncer) PolicyStatusQueue() *PolicyStatusCollections {
+func (s *AgentGwSyncer) PolicyStatusQueue() *status.StatusCollections {
 	return s.policyStatusQueue
 }
 
@@ -245,7 +195,7 @@ func (s *AgentGwSyncer) buildADPResources(
 	gateways krt.Collection[GatewayListener],
 	refGrants ReferenceGrants,
 	krtopts krtinternal.KrtOptions,
-) (krt.Collection[agwir.ADPResourcesForGateway], map[schema.GroupKind]krt.StatusCollection[controllers.Object, v1alpha1.PolicyStatus]) {
+) (krt.Collection[agwir.ADPResourcesForGateway], map[schema.GroupKind]krt.StatusCollection[controllers.Object, gwv1alpha2.PolicyStatus]) {
 	// Build ports and binds
 	ports := krtpkg.UnnamedIndex(gateways, func(l GatewayListener) []string {
 		return []string{fmt.Sprint(l.parentInfo.Port)}
@@ -607,7 +557,7 @@ func (s *AgentGwSyncer) buildXDSCollection(
 	}, krtopts.ToOptions("agent-xds")...)
 }
 
-func (s *AgentGwSyncer) buildStatusReporting(policyStatuses map[schema.GroupKind]krt.StatusCollection[controllers.Object, v1alpha1.PolicyStatus]) {
+func (s *AgentGwSyncer) buildStatusReporting(policyStatuses map[schema.GroupKind]krt.StatusCollection[controllers.Object, gwv1alpha2.PolicyStatus]) {
 	// TODO(npolshak): Move away from report map and separately fetch resource reports
 	// Create separate singleton collections for each resource type instead of merging everything
 	// This avoids the overhead of creating and processing a single large merged report
@@ -680,15 +630,17 @@ func (s *AgentGwSyncer) buildStatusReporting(policyStatuses map[schema.GroupKind
 	registerPolicyStatus(s.policyStatusQueue, policyStatuses)
 }
 
-// registerPolicyStatus takes a policy status collection and registers it to be managed by the policy status queue.
-func registerPolicyStatus(s *PolicyStatusCollections, statusCols map[schema.GroupKind]krt.StatusCollection[controllers.Object, v1alpha1.PolicyStatus]) {
+// registerPolicyStatus takes a policy status collection and registers it to be managed by Istio's StatusCollections.
+func registerPolicyStatus(s *status.StatusCollections, statusCols map[schema.GroupKind]krt.StatusCollection[controllers.Object, gwv1alpha2.PolicyStatus]) {
 	for gvk, statusCol := range statusCols {
 		// Capture the GVK for the closure
 		currentGVK := gvk
 		currentStatusCol := statusCol
 
-		reg := func(statusWriter PolicyStatusQueue) krt.HandlerRegistration {
-			h := currentStatusCol.Register(func(o krt.Event[krt.ObjectWithStatus[controllers.Object, v1alpha1.PolicyStatus]]) {
+		// Create a writer function that matches Istio's StatusCollections interface
+		writer := func(queue status.Queue) krt.HandlerRegistration {
+			// Register the status collection to write to the queue
+			h := currentStatusCol.Register(func(o krt.Event[krt.ObjectWithStatus[controllers.Object, gwv1alpha2.PolicyStatus]]) {
 				l := o.Latest()
 
 				// Cast controllers.Object to TrafficPolicy for validation (following the pattern requested)
@@ -707,15 +659,17 @@ func registerPolicyStatus(s *PolicyStatusCollections, statusCols map[schema.Grou
 					// if the object is being deleted, we should not reset status
 					return
 				}
-
-				// The status collection already handles change detection and conversion from different policy types
-				// to v1alpha1.PolicyStatus, so we can trust that we only get events when status actually changes
-				statusWriter.Enqueue(l)
+				// Create a status.Resource from our object and pass the object as context
+				resource := status.Resource{
+					Name:      l.Obj.GetName(),
+					Namespace: l.Obj.GetNamespace(),
+				}
+				queue.EnqueueStatusUpdateResource(l, resource)
 				logger.Debug("enqueued policy status update", "resource", l.ResourceName(), "version", l.Obj.GetResourceVersion(), "status", l.Status, "kind", currentGVK.Kind)
 			})
 			return h
 		}
-		s.Register(reg)
+		s.Register(writer)
 	}
 }
 

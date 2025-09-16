@@ -5,18 +5,18 @@ import (
 	"istio.io/istio/pilot/pkg/util/protoconv"
 	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/krt"
+	"sigs.k8s.io/gateway-api/apis/v1alpha2"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/ir"
 )
 
 type PolicyPlugin struct {
 	Policies       krt.Collection[ADPPolicy]
-	PolicyStatuses krt.StatusCollection[controllers.Object, v1alpha1.PolicyStatus]
+	PolicyStatuses krt.StatusCollection[controllers.Object, v1alpha2.PolicyStatus]
 }
 
 // ApplyPolicies extracts all policies from the collection
-func (p *PolicyPlugin) ApplyPolicies() (krt.Collection[ADPPolicy], krt.StatusCollection[controllers.Object, v1alpha1.PolicyStatus]) {
+func (p *PolicyPlugin) ApplyPolicies() (krt.Collection[ADPPolicy], krt.StatusCollection[controllers.Object, v1alpha2.PolicyStatus]) {
 	return p.Policies, p.PolicyStatuses
 }
 
