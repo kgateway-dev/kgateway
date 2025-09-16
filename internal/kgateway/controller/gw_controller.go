@@ -232,6 +232,34 @@ func getDesiredAddresses(gw *api.Gateway, svc *corev1.Service) []api.GatewayStat
 	return ret
 }
 
+// updateGatewayStatusWithRetryFunc updates a Gateway's status with retry logic.
+// The updateFunc receives the latest Gateway and should modify its status as needed.
+// If updateFunc returns false, the update is skipped (no changes needed).
+func updateGatewayStatusWithRetryFunc(
+	ctx context.Context,
+	cli client.Client,
+	gwNN types.NamespacedName,
+	updateFunc func(*api.Gateway) bool,
+) error {
+	err := utilretry.RetryOnConflict(utilretry.DefaultRetry, func() error {
+		var gw api.Gateway
+		if err := cli.Get(ctx, gwNN, &gw); err != nil {
+			return err
+		}
+		original := gw.DeepCopy()
+		if !updateFunc(&gw) {
+			return nil // No update needed
+		}
+		return cli.Status().Patch(ctx, &gw, client.MergeFrom(original))
+	})
+
+	if err != nil {
+		return fmt.Errorf("failed to update gateway status: %w", err)
+	}
+
+	return nil
+}
+
 // updateGatewayAddresses updates the addresses of a Gateway resource.
 func updateGatewayAddresses(
 	ctx context.Context,
@@ -239,31 +267,33 @@ func updateGatewayAddresses(
 	gwNN types.NamespacedName,
 	desired []api.GatewayStatusAddress,
 ) error {
-	err := utilretry.RetryOnConflict(utilretry.DefaultRetry, func() error {
-		// Get the latest Gateway
-		var gw api.Gateway
-		if err := cli.Get(ctx, gwNN, &gw); err != nil {
-			return err
-		}
+	return updateGatewayStatusWithRetryFunc(
+		ctx,
+		cli,
+		gwNN,
+		func(gw *api.Gateway) bool {
+			// Check if an update is needed
+			if slices.Equal(desired, gw.Status.Addresses) {
+				return false
+			}
+			gw.Status.Addresses = desired
+			return true
+		},
+	)
+}
 
-		// Check if an update is needed
-		if slices.Equal(desired, gw.Status.Addresses) {
-			return nil
-		}
-
-		// Prepare a three-way merge patch
-		original := gw.DeepCopy()
-		gw.Status.Addresses = desired
-
-		// Patch only the status subresource
-		return cli.Status().Patch(ctx, &gw, client.MergeFrom(original))
-	})
-
-	if err != nil {
-		return fmt.Errorf("failed to update gateway addresses after retries: %w", err)
-	}
-
-	return nil
+// updateGatewayStatusWithRetry attempts to update the Gateway status with retry logic
+// to handle transient failures when updating the status subresource
+func (r *gatewayReconciler) updateGatewayStatusWithRetry(ctx context.Context, gw *api.Gateway, condition metav1.Condition) error {
+	return updateGatewayStatusWithRetryFunc(
+		ctx,
+		r.cli,
+		client.ObjectKeyFromObject(gw),
+		func(latest *api.Gateway) bool {
+			meta.SetStatusCondition(&latest.Status.Conditions, condition)
+			return true
+		},
+	)
 }
 
 func convertIngressAddr(ing corev1.LoadBalancerIngress) (api.GatewayStatusAddress, bool) {
@@ -282,19 +312,4 @@ func convertIngressAddr(ing corev1.LoadBalancerIngress) (api.GatewayStatusAddres
 		}, true
 	}
 	return api.GatewayStatusAddress{}, false
-}
-
-// updateGatewayStatusWithRetry attempts to update the Gateway status with retry logic
-// to handle transient failures when updating the status subresource
-func (r *gatewayReconciler) updateGatewayStatusWithRetry(ctx context.Context, gw *api.Gateway, condition metav1.Condition) error {
-	return utilretry.RetryOnConflict(utilretry.DefaultRetry, func() error {
-		// Get the latest version of the Gateway to avoid conflicts
-		latest := &api.Gateway{}
-		if err := r.cli.Get(ctx, client.ObjectKeyFromObject(gw), latest); err != nil {
-			return err
-		}
-		original := latest.DeepCopy()
-		meta.SetStatusCondition(&latest.Status.Conditions, condition)
-		return r.cli.Status().Patch(ctx, latest, client.MergeFrom(original))
-	})
 }
