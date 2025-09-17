@@ -33,7 +33,7 @@ metadata:
 spec:
   type: AI
   ai:
-    multiPool:
+    multipool:
       priorities:
         - pool:
             - provider:

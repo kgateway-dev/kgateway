@@ -12,6 +12,7 @@ import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apiserverschema "k8s.io/apiextensions-apiserver/pkg/apiserver/schema"
 	structuraldefaulting "k8s.io/apiextensions-apiserver/pkg/apiserver/schema/defaulting"
+	structuralpruning "k8s.io/apiextensions-apiserver/pkg/apiserver/schema/pruning"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -64,10 +65,12 @@ func GetStructuralSchemas(
 // applyDefaults applies default values to the given object using the provided structural schema.
 // The API defaults are a part of the structural schema.
 func applyDefaults(
-	obj runtime.Object,
+	objYAML []byte,
 	structuralSchema *apiserverschema.Structural,
 ) ([]byte, error) {
-	raw, err := runtime.DefaultUnstructuredConverter.ToUnstructured(obj)
+	// Convert YAML to map without losing any fields (using the Go type with omitempty will drop zero-value fields)
+	raw := make(map[string]interface{})
+	err := yaml.Unmarshal(objYAML, &raw)
 	if err != nil {
 		return nil, err
 	}
@@ -75,12 +78,25 @@ func applyDefaults(
 		Object: raw,
 	}
 
+	// Pruning:
+	// 1. Detect unknown fields
+	// 2. Drop null values for non-nullable and non-defaultable fields values
+	pruneOpts := apiserverschema.UnknownFieldPathOptions{
+		TrackUnknownFieldPaths: true,
+	}
+	unknownFields := structuralpruning.PruneWithOptions(u.Object, structuralSchema, true, pruneOpts)
+	if len(unknownFields) > 0 {
+		return nil, fmt.Errorf("got unknown fields: %v", unknownFields)
+	}
+	structuraldefaulting.PruneNonNullableNullsWithoutDefaults(u.Object, structuralSchema)
+
+	// Apply defaults
 	structuraldefaulting.Default(u.UnstructuredContent(), structuralSchema)
-	objYaml, err := yaml.Marshal(u.Object)
+	objYAML, err = yaml.Marshal(u.Object)
 	if err != nil {
 		return nil, err
 	}
-	return objYaml, nil
+	return objYAML, nil
 }
 
 func parseCRDs(path string) ([]*apiextensions.CustomResourceDefinition, error) {

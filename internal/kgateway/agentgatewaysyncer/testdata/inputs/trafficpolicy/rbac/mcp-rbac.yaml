@@ -46,7 +46,6 @@ metadata:
 spec:
   type: MCP
   mcp:
-    name: mcp-server
     targets:
     - name: mcp-app
       selector:
