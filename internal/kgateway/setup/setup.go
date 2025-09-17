@@ -78,9 +78,9 @@ func WithExtraPlugins(extraPlugins func(ctx context.Context, commoncol *common.C
 	}
 }
 
-func WithExtraAgentgatewayPlugins(extraAgentgatewayPlugins func(ctx context.Context, agw *agwplugins.AgwCollections) []agwplugins.AgwPlugin) func(*setup) {
+func WithExtraAgwPlugins(extraAgwPlugins func(ctx context.Context, agw *agwplugins.AgwCollections) []agwplugins.AgwPlugin) func(*setup) {
 	return func(s *setup) {
-		s.extraAgentgatewayPlugins = extraAgentgatewayPlugins
+		s.extraAgwPlugins = extraAgwPlugins
 	}
 }
 
@@ -153,7 +153,7 @@ type setup struct {
 	agentgatewayClassName    string
 	additionalGatewayClasses map[string]*deployer.GatewayClassInfo
 	extraPlugins             func(ctx context.Context, commoncol *common.CommonCollections, mergeSettingsJSON string) []sdk.Plugin
-	extraAgentgatewayPlugins func(ctx context.Context, agw *agwplugins.AgwCollections) []agwplugins.AgwPlugin
+	extraAgwPlugins          func(ctx context.Context, agw *agwplugins.AgwCollections) []agwplugins.AgwPlugin
 	extraGatewayParameters   func(cli client.Client, inputs *deployer.Inputs) []deployer.ExtraGatewayParameters
 	extraXDSCallbacks        xdsserver.Callbacks
 	xdsListener              net.Listener
@@ -308,7 +308,7 @@ func (s *setup) Start(ctx context.Context) error {
 	BuildKgatewayWithConfig(
 		ctx, mgr, s.gatewayControllerName, s.gatewayClassName, s.waypointClassName,
 		s.agentgatewayClassName, s.additionalGatewayClasses, setupOpts, s.restConfig,
-		istioClient, commoncol, agwCollections, uccBuilder, s.extraPlugins, s.extraAgentgatewayPlugins,
+		istioClient, commoncol, agwCollections, uccBuilder, s.extraPlugins, s.extraAgwPlugins,
 		s.extraGatewayParameters,
 		s.validator,
 	)
@@ -340,7 +340,7 @@ func BuildKgatewayWithConfig(
 	agwCollections *agwplugins.AgwCollections,
 	uccBuilder krtcollections.UniquelyConnectedClientsBulider,
 	extraPlugins func(ctx context.Context, commoncol *common.CommonCollections, mergeSettingsJSON string) []sdk.Plugin,
-	extraAgentgatewayPlugins func(ctx context.Context, agw *agwplugins.AgwCollections) []agwplugins.AgwPlugin,
+	extraAgwPlugins func(ctx context.Context, agw *agwplugins.AgwCollections) []agwplugins.AgwPlugin,
 	extraGatewayParameters func(cli client.Client, inputs *deployer.Inputs) []deployer.ExtraGatewayParameters,
 	validator validator.Validator,
 ) error {
@@ -364,7 +364,7 @@ func BuildKgatewayWithConfig(
 		AgentgatewayClassName:    agentgatewayClassName,
 		AdditionalGatewayClasses: additionalGatewayClasses,
 		ExtraPlugins:             extraPlugins,
-		ExtraAgwPlugins:          extraAgentgatewayPlugins,
+		ExtraAgwPlugins:          extraAgwPlugins,
 		ExtraGatewayParameters:   extraGatewayParameters,
 		RestConfig:               restConfig,
 		SetupOpts:                setupOpts,

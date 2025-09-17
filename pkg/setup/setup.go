@@ -25,7 +25,7 @@ type Options struct {
 	AgentgatewayClassName    string
 	AdditionalGatewayClasses map[string]*deployer.GatewayClassInfo
 	ExtraPlugins             func(ctx context.Context, commoncol *common.CommonCollections, mergeSettingsJSON string) []sdk.Plugin
-	ExtraAgentgatewayPlugins func(ctx context.Context, agw *agwplugins.AgwCollections) []agwplugins.AgwPlugin
+	ExtraAgwPlugins          func(ctx context.Context, agw *agwplugins.AgwCollections) []agwplugins.AgwPlugin
 	ExtraGatewayParameters   func(cli client.Client, inputs *deployer.Inputs) []deployer.ExtraGatewayParameters
 	ExtraXDSCallbacks        xdsserver.Callbacks
 	RestConfig               *rest.Config
@@ -40,7 +40,7 @@ func New(opts Options) (core.Server, error) {
 	// internal setup already accepted functional-options; we wrap only extras.
 	return core.New(
 		core.WithExtraPlugins(opts.ExtraPlugins),
-		core.WithExtraAgentgatewayPlugins(opts.ExtraAgentgatewayPlugins),
+		core.WithExtraAgwPlugins(opts.ExtraAgwPlugins),
 		core.ExtraGatewayParameters(opts.ExtraGatewayParameters),
 		core.WithGatewayControllerName(opts.GatewayControllerName),
 		core.WithGatewayClassName(opts.GatewayClassName),

@@ -183,7 +183,7 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 
 	var agwSyncer *agentgatewaysyncer.Syncer
 	if cfg.SetupOpts.GlobalSettings.EnableAgentgateway {
-		agentgatewayMergedPlugins := agwPluginFactory(cfg)(ctx, cfg.AgwCollections)
+		agwMergedPlugins := agwPluginFactory(cfg)(ctx, cfg.AgwCollections)
 
 		agwSyncer = agentgatewaysyncer.NewAgwSyncer(
 			cfg.ControllerName,
@@ -191,7 +191,7 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 			cfg.Client,
 			cfg.Manager,
 			cfg.AgwCollections,
-			agentgatewayMergedPlugins,
+			agwMergedPlugins,
 			cfg.SetupOpts.Cache,
 			cfg.SetupOpts.GlobalSettings.EnableInferExt,
 		)
