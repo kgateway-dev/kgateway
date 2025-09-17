@@ -20,7 +20,12 @@ spec:
     singular: trafficpolicy
   scope: Namespaced
   versions:
-  - name: v1alpha1
+  - additionalPrinterColumns:
+    - description: Traffic policy acceptance status
+      jsonPath: .status.conditions[?(@.type=='Accepted')].status
+      name: Accepted
+      type: string
+    name: v1alpha1
     schema:
       openAPIV3Schema:
         properties:

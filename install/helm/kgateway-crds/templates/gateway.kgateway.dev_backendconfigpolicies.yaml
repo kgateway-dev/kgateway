@@ -20,7 +20,12 @@ spec:
     singular: backendconfigpolicy
   scope: Namespaced
   versions:
-  - name: v1alpha1
+  - additionalPrinterColumns:
+    - description: Backend config policy acceptance status
+      jsonPath: .status.conditions[?(@.type=='Accepted')].status
+      name: Accepted
+      type: string
+    name: v1alpha1
     schema:
       openAPIV3Schema:
         properties:
