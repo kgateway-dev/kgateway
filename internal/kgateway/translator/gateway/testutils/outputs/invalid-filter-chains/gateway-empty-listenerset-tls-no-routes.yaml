@@ -1,0 +1,23 @@
+Clusters:
+- connectTimeout: 5s
+  metadata: {}
+  name: test-backend-plugin_default_example-svc_80
+Statuses:
+  gateways:
+    default/example-gateway:
+      conditions:
+      - lastTransitionTime: null
+        message: ""
+        reason: ListenerSetsNotAllowed
+        status: Unknown
+        type: AttachedListenerSets
+      - lastTransitionTime: null
+        message: No valid listeners
+        reason: ListenersNotValid
+        status: "False"
+        type: Accepted
+      - lastTransitionTime: null
+        message: ""
+        reason: Invalid
+        status: "False"
+        type: Programmed

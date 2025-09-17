@@ -1,0 +1,19 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: example-gateway
+spec:
+  gatewayClassName: kgateway
+  listeners: []
+---
+apiVersion: gateway.networking.k8s.io/apisx/v1alpha1
+kind: XListenerSet
+metadata:
+  name: example-listenerset
+spec:
+  gatewayRefs:
+  - name: example-gateway
+  listeners:
+  - name: tcp
+    protocol: TCP
+    port: 8080

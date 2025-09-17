@@ -17,7 +17,7 @@ Statuses:
         status: "True"
         type: Accepted
       - lastTransitionTime: null
-        message: 'Listeners not programmed: tls'
+        message: 'No Listeners programmed. Listeners not programmed: tls'
         reason: ListenersNotValid
         status: "False"
         type: Programmed

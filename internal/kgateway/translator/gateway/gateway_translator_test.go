@@ -1751,6 +1751,76 @@ func TestBasic(t *testing.T) {
 			},
 		})
 	})
+
+	t.Run("Gateway empty with ListenerSet TCP listener no routes", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "invalid-filter-chains/gateway-empty-listenerset-tcp-no-routes.yaml",
+			outputFile: "invalid-filter-chains/gateway-empty-listenerset-tcp-no-routes.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
+				// No-op: Expected statuses are validated via the output file comparison
+			},
+		})
+	})
+
+	t.Run("Gateway empty with ListenerSet TLS listener no routes", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "invalid-filter-chains/gateway-empty-listenerset-tls-no-routes.yaml",
+			outputFile: "invalid-filter-chains/gateway-empty-listenerset-tls-no-routes.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
+				// No-op: Expected statuses are validated via the output file comparison
+			},
+		})
+	})
+
+	t.Run("Gateway empty with ListenerSet TLS mixed listeners", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "invalid-filter-chains/gateway-empty-listenerset-tls-mixed.yaml",
+			outputFile: "invalid-filter-chains/gateway-empty-listenerset-tls-mixed.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
+				// No-op: Expected statuses are validated via the output file comparison
+			},
+		})
+	})
+
+	t.Run("Gateway HTTP listener with ListenerSet TCP listener no routes", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "invalid-filter-chains/gateway-http-listenerset-tcp-no-routes.yaml",
+			outputFile: "invalid-filter-chains/gateway-http-listenerset-tcp-no-routes.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
+				// No-op: Expected statuses are validated via the output file comparison
+			},
+		})
+	})
+
+	t.Run("Gateway TCP listener no routes with ListenerSet HTTP listener", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "invalid-filter-chains/gateway-tcp-no-routes-listenerset-http.yaml",
+			outputFile: "invalid-filter-chains/gateway-tcp-no-routes-listenerset-http.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
+				// No-op: Expected statuses are validated via the output file comparison
+			},
+		})
+	})
 }
 
 func TestRouteReplacement(t *testing.T) {
