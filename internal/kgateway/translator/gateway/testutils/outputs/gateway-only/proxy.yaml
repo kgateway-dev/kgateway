@@ -46,8 +46,8 @@ Statuses:
         status: "True"
         type: Accepted
       - lastTransitionTime: null
-        message: Gateway is programmed
-        reason: Programmed
+        message: 'Listeners with no filter chains skipped: tcp, tls'
+        reason: ListenersNotValid
         status: "True"
         type: Programmed
       listeners:

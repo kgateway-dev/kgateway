@@ -93,21 +93,34 @@ func (t *Translator) Translate(ctx context.Context, gw ir.GatewayIR, reporter sd
 	if len(noFcListeners) > 0 {
 		gwreporter := reporter.Gateway(gw.SourceObject.Obj)
 
-		sort.Strings(noFcListeners) // Sort for idempotenc
-		var condition sdkreporter.GatewayCondition
+		sort.Strings(noFcListeners) // Sort for idempotency
+		var acceptedCondition sdkreporter.GatewayCondition
+		var programmedCondition sdkreporter.GatewayCondition
 
 		// If all listeners have no filter chains, set the accepted condition to false
 		if len(noFcListeners) == len(gw.Listeners) {
-			condition = sdkreporter.GatewayCondition{
+			acceptedCondition = sdkreporter.GatewayCondition{
 				Type:    gwv1.GatewayConditionAccepted,
 				Status:  metav1.ConditionFalse,
 				Reason:  gwv1.GatewayReasonListenersNotValid,
 				Message: fmt.Sprintf(GatewayListenersAllNoFcMessage, strings.Join(noFcListeners, ", ")),
 			}
+			programmedCondition = sdkreporter.GatewayCondition{
+				Type:    gwv1.GatewayConditionProgrammed,
+				Status:  metav1.ConditionFalse,
+				Reason:  gwv1.GatewayReasonInvalid,
+				Message: fmt.Sprintf(GatewayListenersAllNoFcMessage, strings.Join(noFcListeners, ", ")),
+			}
 		} else {
 			// If some listeners have filter chains, set the accepted condition to true
-			condition = sdkreporter.GatewayCondition{
+			acceptedCondition = sdkreporter.GatewayCondition{
 				Type:    gwv1.GatewayConditionAccepted,
+				Status:  metav1.ConditionTrue,
+				Reason:  gwv1.GatewayReasonListenersNotValid,
+				Message: fmt.Sprintf(GatewayListenersNoFcMessage, strings.Join(noFcListeners, ", ")),
+			}
+			programmedCondition = sdkreporter.GatewayCondition{
+				Type:    gwv1.GatewayConditionProgrammed,
 				Status:  metav1.ConditionTrue,
 				Reason:  gwv1.GatewayReasonListenersNotValid,
 				Message: fmt.Sprintf(GatewayListenersNoFcMessage, strings.Join(noFcListeners, ", ")),
@@ -116,9 +129,13 @@ func (t *Translator) Translate(ctx context.Context, gw ir.GatewayIR, reporter sd
 
 		// Check if there's already a condition of the same type before setting it. This avoids overwriting the condition if it already exists.
 		if gr, ok := gwreporter.(*reports.GatewayReport); ok {
-			existingCondition := meta.FindStatusCondition(gr.GetConditions(), string(gwv1.GatewayConditionAccepted))
-			if existingCondition == nil {
-				gwreporter.SetCondition(condition)
+			existingAcceptedCondition := meta.FindStatusCondition(gr.GetConditions(), string(gwv1.GatewayConditionAccepted))
+			if existingAcceptedCondition == nil {
+				gwreporter.SetCondition(acceptedCondition)
+			}
+			existingProgrammedCondition := meta.FindStatusCondition(gr.GetConditions(), string(gwv1.GatewayConditionProgrammed))
+			if existingProgrammedCondition == nil {
+				gwreporter.SetCondition(programmedCondition)
 			}
 		} else {
 			logger.Error("gateway reporter type not supported", "reporter", fmt.Sprintf("%T", gwreporter))
