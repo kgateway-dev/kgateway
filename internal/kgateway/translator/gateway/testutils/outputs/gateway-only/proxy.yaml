@@ -41,13 +41,14 @@ Statuses:
         status: Unknown
         type: AttachedListenerSets
       - lastTransitionTime: null
-        message: 'Listeners with no filter chains skipped: tcp, tls'
+        message: 'No Listeners generated. Listeners could not be generated for data
+          plane: tcp, tls'
         reason: ListenersNotValid
         status: "True"
         type: Accepted
       - lastTransitionTime: null
-        message: 'Listeners with no filter chains skipped: tcp, tls'
-        reason: ListenersNotValid
+        message: 'Listeners could not be generated for data plane: tcp, tls'
+        reason: Programmed
         status: "True"
         type: Programmed
       listeners:
@@ -82,7 +83,7 @@ Statuses:
       - attachedRoutes: 0
         conditions:
         - lastTransitionTime: null
-          message: Listener has no filter chains
+          message: Listener could not be generated for data plane
           reason: Invalid
           status: "False"
           type: Programmed
@@ -108,7 +109,7 @@ Statuses:
       - attachedRoutes: 0
         conditions:
         - lastTransitionTime: null
-          message: Listener has no filter chains
+          message: Listener could not be generated for data plane
           reason: Invalid
           status: "False"
           type: Programmed

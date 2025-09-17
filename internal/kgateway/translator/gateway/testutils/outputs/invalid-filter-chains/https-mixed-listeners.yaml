@@ -80,13 +80,14 @@ Statuses:
         status: Unknown
         type: AttachedListenerSets
       - lastTransitionTime: null
-        message: 'Listeners with no filter chains skipped: https-invalid-secret'
+        message: 'No Listeners generated. Listeners could not be generated for data
+          plane: https-invalid-secret'
         reason: ListenersNotValid
         status: "True"
         type: Accepted
       - lastTransitionTime: null
-        message: 'Listeners with no filter chains skipped: https-invalid-secret'
-        reason: ListenersNotValid
+        message: 'Listeners could not be generated for data plane: https-invalid-secret'
+        reason: Programmed
         status: "True"
         type: Programmed
       listeners:

@@ -1479,12 +1479,19 @@ func TestBasic(t *testing.T) {
 				gatewayStatus := reportsMap.BuildGWStatus(context.Background(), *gateway, nil)
 				a.NotNil(gatewayStatus)
 
-				// Check gateway-level condition
-				condition := meta.FindStatusCondition(gatewayStatus.Conditions, string(gwv1.GatewayConditionAccepted))
-				a.NotNil(condition)
-				a.Equal(metav1.ConditionFalse, condition.Status)
-				a.Equal(string(gwv1.GatewayReasonListenersNotValid), condition.Reason)
-				a.Equal(fmt.Sprintf(irtranslator.GatewayListenersAllNoFcMessage, "tls"), condition.Message)
+				// Check gateway-level Accepted condition
+				acceptedCondition := meta.FindStatusCondition(gatewayStatus.Conditions, string(gwv1.GatewayConditionAccepted))
+				a.NotNil(acceptedCondition)
+				a.Equal(metav1.ConditionTrue, acceptedCondition.Status)
+				a.Equal(string(gwv1.GatewayReasonListenersNotValid), acceptedCondition.Reason)
+				a.Equal(fmt.Sprintf(irtranslator.GatewayListenersAllOmittedMessage, "tls"), acceptedCondition.Message)
+
+				// Check gateway-level Programmed condition
+				programmedCondition := meta.FindStatusCondition(gatewayStatus.Conditions, string(gwv1.GatewayConditionProgrammed))
+				a.NotNil(programmedCondition)
+				a.Equal(metav1.ConditionFalse, programmedCondition.Status)
+				a.Equal(string(gwv1.GatewayReasonInvalid), programmedCondition.Reason)
+				a.Equal(fmt.Sprintf(irtranslator.GatewayListenersAllOmittedMessage, "tls"), programmedCondition.Message)
 
 				// Check listener-level condition
 				a.Len(gatewayStatus.Listeners, 1)
@@ -1493,7 +1500,7 @@ func TestBasic(t *testing.T) {
 				a.NotNil(programmed)
 				a.Equal(metav1.ConditionFalse, programmed.Status)
 				a.Equal(string(gwv1.ListenerReasonInvalid), programmed.Reason)
-				a.Equal(irtranslator.ListenerNoFcsMessage, programmed.Message)
+				a.Equal(irtranslator.ListenerOmittedMessage, programmed.Message)
 			},
 		})
 	})
@@ -1524,12 +1531,19 @@ func TestBasic(t *testing.T) {
 				gatewayStatus := reportsMap.BuildGWStatus(context.Background(), *gateway, nil)
 				a.NotNil(gatewayStatus)
 
-				// Check gateway-level condition
-				condition := meta.FindStatusCondition(gatewayStatus.Conditions, string(gwv1.GatewayConditionAccepted))
-				a.NotNil(condition)
-				a.Equal(metav1.ConditionFalse, condition.Status)
-				a.Equal(string(gwv1.GatewayReasonListenersNotValid), condition.Reason)
-				a.Equal(fmt.Sprintf(irtranslator.GatewayListenersAllNoFcMessage, "tls"), condition.Message)
+				// Check gateway-level Accepted condition
+				acceptedCondition := meta.FindStatusCondition(gatewayStatus.Conditions, string(gwv1.GatewayConditionAccepted))
+				a.NotNil(acceptedCondition)
+				a.Equal(metav1.ConditionTrue, acceptedCondition.Status)
+				a.Equal(string(gwv1.GatewayReasonListenersNotValid), acceptedCondition.Reason)
+				a.Equal(fmt.Sprintf(irtranslator.GatewayListenersAllOmittedMessage, "tls"), acceptedCondition.Message)
+
+				// Check gateway-level Programmed condition
+				programmedCondition := meta.FindStatusCondition(gatewayStatus.Conditions, string(gwv1.GatewayConditionProgrammed))
+				a.NotNil(programmedCondition)
+				a.Equal(metav1.ConditionFalse, programmedCondition.Status)
+				a.Equal(string(gwv1.GatewayReasonInvalid), programmedCondition.Reason)
+				a.Equal(fmt.Sprintf(irtranslator.GatewayListenersAllOmittedMessage, "tls"), programmedCondition.Message)
 
 				// Check listener-level condition
 				a.Len(gatewayStatus.Listeners, 1)
@@ -1538,7 +1552,7 @@ func TestBasic(t *testing.T) {
 				a.NotNil(programmed)
 				a.Equal(metav1.ConditionFalse, programmed.Status)
 				a.Equal(string(gwv1.ListenerReasonInvalid), programmed.Reason)
-				a.Equal(irtranslator.ListenerNoFcsMessage, programmed.Message)
+				a.Equal(irtranslator.ListenerOmittedMessage, programmed.Message)
 			},
 		})
 	})
@@ -1580,12 +1594,19 @@ func TestBasic(t *testing.T) {
 				gatewayStatus := reportsMap.BuildGWStatus(context.Background(), *gateway, nil)
 				a.NotNil(gatewayStatus)
 
-				// Check gateway-level condition
-				condition := meta.FindStatusCondition(gatewayStatus.Conditions, string(gwv1.GatewayConditionAccepted))
-				a.NotNil(condition)
-				a.Equal(metav1.ConditionFalse, condition.Status)
-				a.Equal(string(gwv1.GatewayReasonListenersNotValid), condition.Reason)
-				a.Equal(fmt.Sprintf(irtranslator.GatewayListenersAllNoFcMessage, "tcp"), condition.Message)
+				// Check gateway-level Accepted condition
+				acceptedCondition := meta.FindStatusCondition(gatewayStatus.Conditions, string(gwv1.GatewayConditionAccepted))
+				a.NotNil(acceptedCondition)
+				a.Equal(metav1.ConditionTrue, acceptedCondition.Status)
+				a.Equal(string(gwv1.GatewayReasonListenersNotValid), acceptedCondition.Reason)
+				a.Equal(fmt.Sprintf(irtranslator.GatewayListenersAllOmittedMessage, "tcp"), acceptedCondition.Message)
+
+				// Check gateway-level Programmed condition
+				programmedCondition := meta.FindStatusCondition(gatewayStatus.Conditions, string(gwv1.GatewayConditionProgrammed))
+				a.NotNil(programmedCondition)
+				a.Equal(metav1.ConditionFalse, programmedCondition.Status)
+				a.Equal(string(gwv1.GatewayReasonInvalid), programmedCondition.Reason)
+				a.Equal(fmt.Sprintf(irtranslator.GatewayListenersAllOmittedMessage, "tcp"), programmedCondition.Message)
 
 				// Check listener-level condition
 				a.Len(gatewayStatus.Listeners, 1)
@@ -1594,7 +1615,7 @@ func TestBasic(t *testing.T) {
 				a.NotNil(programmed)
 				a.Equal(metav1.ConditionFalse, programmed.Status)
 				a.Equal(string(gwv1.ListenerReasonInvalid), programmed.Reason)
-				a.Equal(irtranslator.ListenerNoFcsMessage, programmed.Message)
+				a.Equal(irtranslator.ListenerOmittedMessage, programmed.Message)
 			},
 		})
 	})
@@ -1636,33 +1657,40 @@ func TestBasic(t *testing.T) {
 				gatewayStatus := reportsMap.BuildGWStatus(context.Background(), *gateway, nil)
 				a.NotNil(gatewayStatus)
 
-				// Check gateway-level condition
-				condition := meta.FindStatusCondition(gatewayStatus.Conditions, string(gwv1.GatewayConditionAccepted))
-				a.NotNil(condition)
-				a.Equal(metav1.ConditionFalse, condition.Status)
-				a.Equal(string(gwv1.GatewayReasonListenersNotValid), condition.Reason)
-				a.Equal(fmt.Sprintf(irtranslator.GatewayListenersAllNoFcMessage, "https"), condition.Message)
+				// Check gateway-level Accepted condition
+				acceptedCondition := meta.FindStatusCondition(gatewayStatus.Conditions, string(gwv1.GatewayConditionAccepted))
+				a.NotNil(acceptedCondition)
+				a.Equal(metav1.ConditionTrue, acceptedCondition.Status)
+				a.Equal(string(gwv1.GatewayReasonListenersNotValid), acceptedCondition.Reason)
+				a.Equal(fmt.Sprintf(irtranslator.GatewayListenersAllOmittedMessage, "https"), acceptedCondition.Message)
+
+				// Check gateway-level Programmed condition
+				programmedCondition := meta.FindStatusCondition(gatewayStatus.Conditions, string(gwv1.GatewayConditionProgrammed))
+				a.NotNil(programmedCondition)
+				a.Equal(metav1.ConditionFalse, programmedCondition.Status)
+				a.Equal(string(gwv1.GatewayReasonInvalid), programmedCondition.Reason)
+				a.Equal(fmt.Sprintf(irtranslator.GatewayListenersAllOmittedMessage, "https"), programmedCondition.Message)
 
 				// Check listener-level conditions
 				a.Len(gatewayStatus.Listeners, 1)
 				httpsListener := gatewayStatus.Listeners[0]
 				a.Equal(int32(1), httpsListener.AttachedRoutes) // Route is attached but listener is invalid
 
-				// Check ResolvedRefs condition - keep dynamic message as is
+				// Check ResolvedRefs condition
 				resolvedRefs := meta.FindStatusCondition(httpsListener.Conditions, string(gwv1.ListenerConditionResolvedRefs))
 				a.NotNil(resolvedRefs)
 				a.Equal(metav1.ConditionFalse, resolvedRefs.Status)
 				a.Equal(string(gwv1.ListenerReasonInvalidCertificateRef), resolvedRefs.Reason)
 				a.Equal("Secret default/invalid-https-secret not found.", resolvedRefs.Message)
 
-				// Check Programmed condition - keep dynamic message as is
+				// Check Programmed condition
 				programmed := meta.FindStatusCondition(httpsListener.Conditions, string(gwv1.ListenerConditionProgrammed))
 				a.NotNil(programmed)
 				a.Equal(metav1.ConditionFalse, programmed.Status)
 				a.Equal(string(gwv1.ListenerReasonInvalid), programmed.Reason)
 				a.Equal("Secret default/invalid-https-secret not found.", programmed.Message)
 
-				// Check Accepted condition - should be True
+				// Check Accepted condition
 				accepted := meta.FindStatusCondition(httpsListener.Conditions, string(gwv1.ListenerConditionAccepted))
 				a.NotNil(accepted)
 				a.Equal(metav1.ConditionTrue, accepted.Status)

@@ -32,9 +32,9 @@ import (
 )
 
 const (
-	ListenerNoFcsMessage           = "Listener has no filter chains"
-	GatewayListenersNoFcMessage    = "Listeners with no filter chains skipped: %s"
-	GatewayListenersAllNoFcMessage = "No valid listeners. " + GatewayListenersNoFcMessage
+	ListenerOmittedMessage            = "Listener could not be generated for data plane"
+	GatewayListenersOmittedMessage    = "Listeners could not be generated for data plane: %s"
+	GatewayListenersAllOmittedMessage = "No Listeners generated. " + GatewayListenersOmittedMessage
 )
 
 var logger = logging.New("translator/ir")
@@ -58,7 +58,7 @@ func (t *Translator) Translate(ctx context.Context, gw ir.GatewayIR, reporter sd
 	pass := t.newPass(reporter)
 	var res TranslationResult
 
-	var noFcListeners []string
+	var omittedListeners []string
 	for _, l := range gw.Listeners {
 		outListener, routes := t.ComputeListener(ctx, pass, gw, l, reporter)
 		// Envoy rejects listeners with no filter chains; skip adding such listeners.
@@ -69,11 +69,11 @@ func (t *Translator) Translate(ctx context.Context, gw ir.GatewayIR, reporter sd
 				Type:    gwv1.ListenerConditionProgrammed,
 				Status:  metav1.ConditionFalse,
 				Reason:  gwv1.ListenerReasonInvalid,
-				Message: ListenerNoFcsMessage,
+				Message: ListenerOmittedMessage,
 			}
 
 			// Set the programmed condition to false
-			// Check if there's already a condition of the same type before setting it. This avoids overwriting the condition if it already exists.
+			// Check if there's already a condition of the same type before setting it. This avoids overwriting a more specific status if it already exists.
 			if lr, ok := listenerReporter.(*reports.ListenerReport); ok {
 				existingCondition := meta.FindStatusCondition(lr.Status.Conditions, string(gwv1.ListenerConditionProgrammed))
 				if existingCondition == nil {
@@ -83,51 +83,48 @@ func (t *Translator) Translate(ctx context.Context, gw ir.GatewayIR, reporter sd
 				logger.Error("listener reporter type not supported", "reporter", fmt.Sprintf("%T", listenerReporter))
 			}
 
-			noFcListeners = append(noFcListeners, originalListenerName)
+			omittedListeners = append(omittedListeners, originalListenerName)
 			continue
 		}
 		res.Listeners = append(res.Listeners, outListener)
 		res.Routes = append(res.Routes, routes...)
 	}
 
-	if len(noFcListeners) > 0 {
+	// Gateway status when listeners were omitted
+	if len(omittedListeners) > 0 {
 		gwreporter := reporter.Gateway(gw.SourceObject.Obj)
 
-		sort.Strings(noFcListeners) // Sort for idempotency
-		var acceptedCondition sdkreporter.GatewayCondition
+		sort.Strings(omittedListeners) // Sort for idempotency
+
+		// Always set the accepted condition to true
+		acceptedCondition := sdkreporter.GatewayCondition{
+			Type:    gwv1.GatewayConditionAccepted,
+			Status:  metav1.ConditionTrue,
+			Reason:  gwv1.GatewayReasonListenersNotValid,
+			Message: fmt.Sprintf(GatewayListenersAllOmittedMessage, strings.Join(omittedListeners, ", ")),
+		}
+
 		var programmedCondition sdkreporter.GatewayCondition
 
-		// If all listeners have no filter chains, set the accepted condition to false
-		if len(noFcListeners) == len(gw.Listeners) {
-			acceptedCondition = sdkreporter.GatewayCondition{
-				Type:    gwv1.GatewayConditionAccepted,
-				Status:  metav1.ConditionFalse,
-				Reason:  gwv1.GatewayReasonListenersNotValid,
-				Message: fmt.Sprintf(GatewayListenersAllNoFcMessage, strings.Join(noFcListeners, ", ")),
-			}
+		// If all listeners were omitted, set the programmed conditions to false
+		if len(omittedListeners) == len(gw.Listeners) {
 			programmedCondition = sdkreporter.GatewayCondition{
 				Type:    gwv1.GatewayConditionProgrammed,
 				Status:  metav1.ConditionFalse,
 				Reason:  gwv1.GatewayReasonInvalid,
-				Message: fmt.Sprintf(GatewayListenersAllNoFcMessage, strings.Join(noFcListeners, ", ")),
+				Message: fmt.Sprintf(GatewayListenersAllOmittedMessage, strings.Join(omittedListeners, ", ")),
 			}
 		} else {
-			// If some listeners have filter chains, set the accepted condition to true
-			acceptedCondition = sdkreporter.GatewayCondition{
-				Type:    gwv1.GatewayConditionAccepted,
-				Status:  metav1.ConditionTrue,
-				Reason:  gwv1.GatewayReasonListenersNotValid,
-				Message: fmt.Sprintf(GatewayListenersNoFcMessage, strings.Join(noFcListeners, ", ")),
-			}
+			// If not all listeners were omitted, set the programmed condition to true
 			programmedCondition = sdkreporter.GatewayCondition{
 				Type:    gwv1.GatewayConditionProgrammed,
 				Status:  metav1.ConditionTrue,
-				Reason:  gwv1.GatewayReasonListenersNotValid,
-				Message: fmt.Sprintf(GatewayListenersNoFcMessage, strings.Join(noFcListeners, ", ")),
+				Reason:  gwv1.GatewayReasonProgrammed,
+				Message: fmt.Sprintf(GatewayListenersOmittedMessage, strings.Join(omittedListeners, ", ")),
 			}
 		}
 
-		// Check if there's already a condition of the same type before setting it. This avoids overwriting the condition if it already exists.
+		// Check if there's already a condition of the same type before setting it. This avoids overwriting a more specific status if it already exists.
 		if gr, ok := gwreporter.(*reports.GatewayReport); ok {
 			existingAcceptedCondition := meta.FindStatusCondition(gr.GetConditions(), string(gwv1.GatewayConditionAccepted))
 			if existingAcceptedCondition == nil {

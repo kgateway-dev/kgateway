@@ -61,13 +61,14 @@ Statuses:
         status: Unknown
         type: AttachedListenerSets
       - lastTransitionTime: null
-        message: 'Listeners with no filter chains skipped: https, https2'
+        message: 'No Listeners generated. Listeners could not be generated for data
+          plane: https, https2'
         reason: ListenersNotValid
         status: "True"
         type: Accepted
       - lastTransitionTime: null
-        message: 'Listeners with no filter chains skipped: https, https2'
-        reason: ListenersNotValid
+        message: 'Listeners could not be generated for data plane: https, https2'
+        reason: Programmed
         status: "True"
         type: Programmed
       listeners:

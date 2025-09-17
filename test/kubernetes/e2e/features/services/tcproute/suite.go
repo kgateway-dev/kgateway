@@ -199,8 +199,10 @@ func (s *testingSuite) TestConfigureTCPRouteBackingDestinations() {
 				tc.svcManifest,
 				tc.proxyService,
 				tc.proxyDeployment,
-				tc.tcpRouteManifest,
 			)
+
+			// Apply TCPRoute manifest
+			s.applyManifests(tc.gtwNs, tc.tcpRouteManifest)
 
 			// Set the expected status conditions based on the test case
 			expected := metav1.ConditionTrue
@@ -258,19 +260,14 @@ func validateManifestFile(path string) error {
 	return nil
 }
 
-func (s *testingSuite) setupTestEnvironment(nsManifest, gtwName, gtwNs, gtwManifest, svcManifest string, proxySvc *corev1.Service, proxyDeploy *appsv1.Deployment, tcpRouteManifest string) {
+func (s *testingSuite) setupTestEnvironment(nsManifest, gtwName, gtwNs, gtwManifest, svcManifest string, proxySvc *corev1.Service, proxyDeploy *appsv1.Deployment) {
 	s.applyManifests(gtwNs, nsManifest)
 
-	// TCP gateway won't be accepted until there is a listener with a route
 	s.applyManifests(gtwNs, gtwManifest)
-	s.testInstallation.Assertions.EventuallyGatewayCondition(s.ctx, gtwName, gtwNs, v1.GatewayConditionAccepted, metav1.ConditionFalse, timeout)
+	s.testInstallation.Assertions.EventuallyGatewayCondition(s.ctx, gtwName, gtwNs, v1.GatewayConditionAccepted, metav1.ConditionTrue, timeout)
 
 	s.applyManifests(gtwNs, svcManifest)
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxySvc, proxyDeploy)
-
-	// Create the TCPRoute, gateway will be accepted
-	s.applyManifests(gtwNs, tcpRouteManifest)
-	s.testInstallation.Assertions.EventuallyGatewayCondition(s.ctx, gtwName, gtwNs, v1.GatewayConditionAccepted, metav1.ConditionTrue, timeout)
 }
 
 func (s *testingSuite) applyManifests(ns string, manifests ...string) {
