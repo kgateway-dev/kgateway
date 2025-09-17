@@ -20,6 +20,20 @@ import (
 	pluginsdkreporter "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
 
+// Status message constants
+const (
+	GatewayAcceptedMessage       = "Gateway is accepted"
+	GatewayProgrammedMessage     = "Gateway is programmed"
+	ListenerSetAcceptedMessage   = "ListenerSet is accepted"
+	ListenerSetProgrammedMessage = "ListenerSet is programmed"
+	ListenerAcceptedMessage      = "Listener is accepted"
+	ListenerNoConflictsMessage   = "Listener does not have conflicts"
+	ListenerValidRefsMessage     = "Listener has valid refs"
+	ListenerProgrammedMessage    = "Listener is programmed"
+	RouteAcceptedMessage         = "Route is accepted"
+	RouteValidRefsMessage        = "Route has valid refs"
+)
+
 // TODO: refactor this struct + methods to better reflect the usage now in proxy_syncer
 
 func (r *ReportMap) BuildGWStatus(ctx context.Context, gw gwv1.Gateway, attachedRoutes map[string]uint) *gwv1.GatewayStatus {
@@ -319,7 +333,7 @@ func addMissingGatewayConditions(gwReport *GatewayReport, gw *gwv1.Gateway) {
 			Type:    gwv1.GatewayConditionAccepted,
 			Status:  metav1.ConditionTrue,
 			Reason:  gwv1.GatewayReasonAccepted,
-			Message: "Gateway is accepted",
+			Message: GatewayAcceptedMessage,
 		})
 	}
 	if cond := meta.FindStatusCondition(gwReport.GetConditions(), string(gwv1.GatewayConditionProgrammed)); cond == nil {
@@ -327,7 +341,7 @@ func addMissingGatewayConditions(gwReport *GatewayReport, gw *gwv1.Gateway) {
 			Type:    gwv1.GatewayConditionProgrammed,
 			Status:  metav1.ConditionTrue,
 			Reason:  gwv1.GatewayReasonProgrammed,
-			Message: "Gateway is programmed",
+			Message: GatewayProgrammedMessage,
 		})
 	}
 }
@@ -341,7 +355,7 @@ func addMissingListenerSetConditions(lsReport *ListenerSetReport) {
 			Type:    gwv1.GatewayConditionAccepted,
 			Status:  metav1.ConditionTrue,
 			Reason:  gwv1.GatewayReasonAccepted,
-			Message: "ListenerSet is accepted",
+			Message: ListenerSetAcceptedMessage,
 		})
 	}
 	if cond := meta.FindStatusCondition(lsReport.GetConditions(), string(gwv1.GatewayConditionProgrammed)); cond == nil {
@@ -349,7 +363,7 @@ func addMissingListenerSetConditions(lsReport *ListenerSetReport) {
 			Type:    gwv1.GatewayConditionProgrammed,
 			Status:  metav1.ConditionTrue,
 			Reason:  gwv1.GatewayReasonProgrammed,
-			Message: "ListenerSet is programmed",
+			Message: ListenerSetProgrammedMessage,
 		})
 	}
 }
@@ -364,7 +378,7 @@ func addMissingListenerConditions(lisReport *ListenerReport) {
 			Type:    gwv1.ListenerConditionAccepted,
 			Status:  metav1.ConditionTrue,
 			Reason:  gwv1.ListenerReasonAccepted,
-			Message: "Listener is accepted",
+			Message: ListenerAcceptedMessage,
 		})
 	}
 	if cond := meta.FindStatusCondition(lisReport.Status.Conditions, string(gwv1.ListenerConditionConflicted)); cond == nil {
@@ -372,7 +386,7 @@ func addMissingListenerConditions(lisReport *ListenerReport) {
 			Type:    gwv1.ListenerConditionConflicted,
 			Status:  metav1.ConditionFalse,
 			Reason:  gwv1.ListenerReasonNoConflicts,
-			Message: "Listener does not have conflicts",
+			Message: ListenerNoConflictsMessage,
 		})
 	}
 	if cond := meta.FindStatusCondition(lisReport.Status.Conditions, string(gwv1.ListenerConditionResolvedRefs)); cond == nil {
@@ -380,7 +394,7 @@ func addMissingListenerConditions(lisReport *ListenerReport) {
 			Type:    gwv1.ListenerConditionResolvedRefs,
 			Status:  metav1.ConditionTrue,
 			Reason:  gwv1.ListenerReasonResolvedRefs,
-			Message: "Listener has valid refs",
+			Message: ListenerValidRefsMessage,
 		})
 	}
 	if cond := meta.FindStatusCondition(lisReport.Status.Conditions, string(gwv1.ListenerConditionProgrammed)); cond == nil {
@@ -388,7 +402,7 @@ func addMissingListenerConditions(lisReport *ListenerReport) {
 			Type:    gwv1.ListenerConditionProgrammed,
 			Status:  metav1.ConditionTrue,
 			Reason:  gwv1.ListenerReasonProgrammed,
-			Message: "Listener is programmed",
+			Message: ListenerProgrammedMessage,
 		})
 	}
 }
@@ -402,7 +416,7 @@ func addMissingParentRefConditions(report *ParentRefReport) {
 			Type:    gwv1.RouteConditionAccepted,
 			Status:  metav1.ConditionTrue,
 			Reason:  gwv1.RouteReasonAccepted,
-			Message: "Route is accepted",
+			Message: RouteAcceptedMessage,
 		})
 	}
 	if cond := meta.FindStatusCondition(report.Conditions, string(gwv1.RouteConditionResolvedRefs)); cond == nil {
@@ -410,7 +424,7 @@ func addMissingParentRefConditions(report *ParentRefReport) {
 			Type:    gwv1.RouteConditionResolvedRefs,
 			Status:  metav1.ConditionTrue,
 			Reason:  gwv1.RouteReasonResolvedRefs,
-			Message: "Route has valid refs",
+			Message: RouteValidRefsMessage,
 		})
 	}
 }
