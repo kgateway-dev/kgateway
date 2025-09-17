@@ -25,6 +25,10 @@ spec:
       jsonPath: .status.ancestors[*].conditions[?(@.type=='Accepted')].status
       name: Accepted
       type: string
+    - description: Traffic policy attachment status
+      jsonPath: .status.ancestors[*].conditions[?(@.type=='Attached')].status
+      name: Attached
+      type: string
     name: v1alpha1
     schema:
       openAPIV3Schema:
