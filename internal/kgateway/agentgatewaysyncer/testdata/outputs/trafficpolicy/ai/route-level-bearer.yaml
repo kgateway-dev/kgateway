@@ -46,6 +46,8 @@ Policies:
             - regex:
                 name: profanity
                 pattern: (?i)(bad|words)
+            - builtin: CREDIT_CARD
+            - builtin: SSN
           rejection:
             body: WW91ciByZXF1ZXN0IHdhcyByZWplY3RlZCBkdWUgdG8gaW5hcHByb3ByaWF0ZSBjb250ZW50
             status: 403
@@ -95,4 +97,3 @@ Routes:
   - path:
       pathPrefix: /v1/chat/completions
   routeName: default/openai-test
-
