@@ -249,7 +249,7 @@ func TestHttpFilters(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, filters)
 		assert.Equal(t, 2, len(filters)) // extauth and metadata filter
-		assert.Equal(t, plugins.DuringStage(plugins.AuthZStage), filters[1].Stage)
+		assert.Equal(t, plugins.DuringStage(plugins.AuthNStage), filters[1].Stage)
 	})
 }
 
