@@ -494,7 +494,7 @@ type RouteContext struct {
 	Krt krt.HandlerContext
 	RouteContextInputs
 	AttachedPolicies pluginsdkir.AttachedPolicies
-	pluginPasses     []agwir.AgentGatewayTranslationPass
+	pluginPasses     []agwir.AgentgatewayTranslationPass
 }
 
 type RouteContextInputs struct {

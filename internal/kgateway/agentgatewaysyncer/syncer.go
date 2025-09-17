@@ -60,7 +60,7 @@ type AgentGwSyncer struct {
 	mgr            manager.Manager
 	client         kube.Client
 	agwPlugins     plugins.AgentgatewayPlugin
-	translator     *translator.AgentGatewayTranslator
+	translator     *translator.AgentgatewayTranslator
 
 	// Configuration
 	controllerName        string
@@ -106,7 +106,7 @@ func NewAgentGwSyncer(
 		controllerName:         controllerName,
 		agentGatewayClassName:  agentGatewayClassName,
 		agwPlugins:             agwPlugins,
-		translator:             translator.NewAgentGatewayTranslator(agwCollections),
+		translator:             translator.NewAgentgatewayTranslator(agwCollections),
 		xdsCache:               xdsCache,
 		client:                 client,
 		mgr:                    mgr,

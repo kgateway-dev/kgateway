@@ -67,8 +67,8 @@ type GatewayConfig struct {
 	GatewayClassName string
 	// WaypointGatewayClassName is the configured waypoint gateway class name.
 	WaypointGatewayClassName string
-	// AgentGatewayClassName is the configured agent gateway class name.
-	AgentGatewayClassName string
+	// AgentgatewayClassName is the configured agent gateway class name.
+	AgentgatewayClassName string
 	// Additional GatewayClass definitions to support extending to other well-known gateway classes
 	AdditionalGatewayClasses map[string]*deployer.GatewayClassInfo
 }
@@ -190,7 +190,7 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 		CommonCollections:        c.cfg.CommonCollections,
 		GatewayClassName:         c.cfg.GatewayClassName,
 		WaypointGatewayClassName: c.cfg.WaypointGatewayClassName,
-		AgentGatewayClassName:    c.cfg.AgentGatewayClassName,
+		AgentgatewayClassName:    c.cfg.AgentgatewayClassName,
 	}
 	gwParams := internaldeployer.NewGatewayParameters(c.cfg.Mgr.GetClient(), inputs)
 	if c.extraGatewayParameters != nil {

@@ -157,7 +157,7 @@ func processRouteMatches(r *gwv1.HTTPRouteRule, res *api.Route) error {
 
 // Helper function to apply plugin passes
 func applyPluginPasses(ctx RouteContext, r *gwv1.HTTPRouteRule, res *api.Route) *reporter.RouteCondition {
-	agentGatewayRouteContext := agwir.AgentGatewayRouteContext{
+	agentGatewayRouteContext := agwir.AgentgatewayRouteContext{
 		Rule: r,
 	}
 

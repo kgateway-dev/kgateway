@@ -154,7 +154,7 @@ Policies are configurable rules that control traffic behavior, security, and tra
 
 ### Architecture
 
-The agentgateway syncer only runs if `cfg.SetupOpts.GlobalSettings.EnableAgentGateway` is set. Otherwise,
+The agentgateway syncer only runs if `cfg.SetupOpts.GlobalSettings.EnableAgentgateway` is set. Otherwise,
 only the Envoy proxy syncer will run by default.
 
 ```mermaid

@@ -193,7 +193,7 @@ func (in *KubernetesProxyConfig) GetAiExtension() *AiExtension {
 	return in.AiExtension
 }
 
-func (in *KubernetesProxyConfig) GetAgentGateway() *Agentgateway {
+func (in *KubernetesProxyConfig) GetAgentgateway() *Agentgateway {
 	if in == nil {
 		return nil
 	}

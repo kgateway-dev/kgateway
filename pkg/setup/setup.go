@@ -22,7 +22,7 @@ type Options struct {
 	GatewayControllerName    string
 	GatewayClassName         string
 	WaypointGatewayClassName string
-	AgentGatewayClassName    string
+	AgentgatewayClassName    string
 	AdditionalGatewayClasses map[string]*deployer.GatewayClassInfo
 	ExtraPlugins             func(ctx context.Context, commoncol *common.CommonCollections, mergeSettingsJSON string) []sdk.Plugin
 	ExtraAgentgatewayPlugins func(ctx context.Context, agw *agentgatewayplugins.AgwCollections) []agentgatewayplugins.AgentgatewayPlugin
@@ -45,7 +45,7 @@ func New(opts Options) (core.Server, error) {
 		core.WithGatewayControllerName(opts.GatewayControllerName),
 		core.WithGatewayClassName(opts.GatewayClassName),
 		core.WithWaypointClassName(opts.WaypointGatewayClassName),
-		core.WithAgentGatewayClassName(opts.AgentGatewayClassName),
+		core.WithAgentgatewayClassName(opts.AgentgatewayClassName),
 		core.WithAdditionalGatewayClasses(opts.AdditionalGatewayClasses),
 		core.WithExtraXDSCallbacks(opts.ExtraXDSCallbacks),
 		core.WithRestConfig(opts.RestConfig),

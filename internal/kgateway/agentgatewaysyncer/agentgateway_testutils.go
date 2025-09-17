@@ -611,7 +611,7 @@ func (tc TestCase) Run(
 	gwClasses := []string{
 		wellknown.DefaultGatewayClassName,
 		wellknown.DefaultWaypointClassName,
-		wellknown.DefaultAgentGatewayClassName,
+		wellknown.DefaultAgentgatewayClassName,
 	}
 	for _, className := range gwClasses {
 		cli.GatewayAPI().GatewayV1().GatewayClasses().Create(ctx, &gwv1.GatewayClass{
@@ -630,7 +630,7 @@ func (tc TestCase) Run(
 
 	settings, err := settings.BuildSettings()
 	// enable agent gateway translation
-	settings.EnableAgentGateway = true
+	settings.EnableAgentgateway = true
 	settings.EnableInferExt = true
 	if err != nil {
 		return nil, err
@@ -652,7 +652,7 @@ func (tc TestCase) Run(
 	if err != nil {
 		return nil, err
 	}
-	proxySyncerPlugins := proxySyncerPluginFactory(ctx, commoncol, wellknown.DefaultAgentGatewayClassName, extraPluginsFn, *settings)
+	proxySyncerPlugins := proxySyncerPluginFactory(ctx, commoncol, wellknown.DefaultAgentgatewayClassName, extraPluginsFn, *settings)
 	commoncol.InitPlugins(ctx, proxySyncerPlugins, *settings)
 
 	cli.RunAndWait(ctx.Done())
@@ -681,7 +681,7 @@ func (tc TestCase) Run(
 	// to avoid race conditions with XDS collection building
 	agentGwSyncer := NewAgentGwSyncer(
 		wellknown.DefaultGatewayControllerName,
-		wellknown.DefaultAgentGatewayClassName,
+		wellknown.DefaultAgentgatewayClassName,
 		cli,
 		nil, // mgr not needed for test
 		agwCollections,
@@ -765,7 +765,7 @@ func (tc TestCase) Run(
 }
 
 func proxySyncerPluginFactory(ctx context.Context, commoncol *collections.CommonCollections, name string, extraPluginsFn ExtraPluginsFn, globalSettings settings.Settings) pluginsdk.Plugin {
-	plugins := registry.Plugins(ctx, commoncol, wellknown.DefaultAgentGatewayClassName, globalSettings, nil)
+	plugins := registry.Plugins(ctx, commoncol, wellknown.DefaultAgentgatewayClassName, globalSettings, nil)
 
 	var extraPlugs []pluginsdk.Plugin
 	if extraPluginsFn != nil {

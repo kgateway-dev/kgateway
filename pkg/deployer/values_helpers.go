@@ -285,7 +285,7 @@ func GetAIExtensionValues(config *v1alpha1.AiExtension) (*HelmAIExtension, error
 	}, nil
 }
 
-func GetAgentGatewayValues(config *v1alpha1.Agentgateway) (*HelmAgentgateway, error) {
+func GetAgentgatewayValues(config *v1alpha1.Agentgateway) (*HelmAgentgateway, error) {
 	if config == nil {
 		return nil, nil
 	}

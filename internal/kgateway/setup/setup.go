@@ -60,7 +60,7 @@ func WithWaypointClassName(name string) func(*setup) {
 	}
 }
 
-func WithAgentGatewayClassName(name string) func(*setup) {
+func WithAgentgatewayClassName(name string) func(*setup) {
 	return func(s *setup) {
 		s.agentGatewayClassName = name
 	}
@@ -174,7 +174,7 @@ func New(opts ...func(*setup)) (*setup, error) {
 		gatewayControllerName: wellknown.DefaultGatewayControllerName,
 		gatewayClassName:      wellknown.DefaultGatewayClassName,
 		waypointClassName:     wellknown.DefaultWaypointClassName,
-		agentGatewayClassName: wellknown.DefaultAgentGatewayClassName,
+		agentGatewayClassName: wellknown.DefaultAgentgatewayClassName,
 		leaderElectionID:      wellknown.LeaderElectionID,
 	}
 	for _, opt := range opts {
@@ -361,7 +361,7 @@ func BuildKgatewayWithConfig(
 		ControllerName:           gatewayControllerName,
 		GatewayClassName:         gatewayClassName,
 		WaypointGatewayClassName: waypointClassName,
-		AgentGatewayClassName:    agentGatewayClassName,
+		AgentgatewayClassName:    agentGatewayClassName,
 		AdditionalGatewayClasses: additionalGatewayClasses,
 		ExtraPlugins:             extraPlugins,
 		ExtraAgentgatewayPlugins: extraAgentgatewayPlugins,

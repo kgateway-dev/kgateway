@@ -64,7 +64,7 @@ type StartConfig struct {
 	ControllerName           string
 	GatewayClassName         string
 	WaypointGatewayClassName string
-	AgentGatewayClassName    string
+	AgentgatewayClassName    string
 	AdditionalGatewayClasses map[string]*deployer.GatewayClassInfo
 
 	Dev        bool
@@ -156,7 +156,7 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 		mergedPlugins,
 		cfg.CommonCollections,
 		cfg.SetupOpts.Cache,
-		cfg.AgentGatewayClassName,
+		cfg.AgentgatewayClassName,
 		cfg.Validator,
 	)
 	proxySyncer.Init(ctx, cfg.KrtOptions)
@@ -169,7 +169,7 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 		cfg.Manager,
 		mergedPlugins,
 		cfg.ControllerName,
-		cfg.AgentGatewayClassName,
+		cfg.AgentgatewayClassName,
 		cfg.Client,
 		cfg.CommonCollections,
 		proxySyncer.ReportQueue(),
@@ -182,12 +182,12 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 	}
 
 	var agentGatewaySyncer *agentgatewaysyncer.AgentGwSyncer
-	if cfg.SetupOpts.GlobalSettings.EnableAgentGateway {
+	if cfg.SetupOpts.GlobalSettings.EnableAgentgateway {
 		agentgatewayMergedPlugins := agentGatewayPluginFactory(cfg)(ctx, cfg.AgwCollections)
 
 		agentGatewaySyncer = agentgatewaysyncer.NewAgentGwSyncer(
 			cfg.ControllerName,
-			cfg.AgentGatewayClassName,
+			cfg.AgentgatewayClassName,
 			cfg.Client,
 			cfg.Manager,
 			cfg.AgwCollections,
@@ -204,7 +204,7 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 
 		agentGatewayStatusSyncer := agentgatewaysyncer.NewAgentGwStatusSyncer(
 			cfg.ControllerName,
-			cfg.AgentGatewayClassName,
+			cfg.AgentgatewayClassName,
 			cfg.Client,
 			cfg.Manager,
 			agentGatewaySyncer.GatewayReportQueue(),
@@ -305,11 +305,11 @@ func (c *ControllerBuilder) Build(ctx context.Context) error {
 		CommonCollections:        c.commoncol,
 		GatewayClassName:         c.cfg.GatewayClassName,
 		WaypointGatewayClassName: c.cfg.WaypointGatewayClassName,
-		AgentGatewayClassName:    c.cfg.AgentGatewayClassName,
+		AgentgatewayClassName:    c.cfg.AgentgatewayClassName,
 	}
 
 	setupLog.Info("creating gateway class provisioner")
-	if err := NewGatewayClassProvisioner(c.mgr, c.cfg.ControllerName, GetDefaultClassInfo(globalSettings, c.cfg.GatewayClassName, c.cfg.WaypointGatewayClassName, c.cfg.AgentGatewayClassName, c.cfg.AdditionalGatewayClasses)); err != nil {
+	if err := NewGatewayClassProvisioner(c.mgr, c.cfg.ControllerName, GetDefaultClassInfo(globalSettings, c.cfg.GatewayClassName, c.cfg.WaypointGatewayClassName, c.cfg.AgentgatewayClassName, c.cfg.AdditionalGatewayClasses)); err != nil {
 		setupLog.Error(err, "unable to create gateway class provisioner")
 		return err
 	}
@@ -376,7 +376,7 @@ func GetDefaultClassInfo(globalSettings *settings.Settings,
 		},
 	}
 	// Only enable agentgateway gateway class if it's enabled in the settings
-	if globalSettings.EnableAgentGateway {
+	if globalSettings.EnableAgentgateway {
 		classInfos[agentGatewayClassName] = &deployer.GatewayClassInfo{
 			Description: "Specialized class for agentgateway.",
 			Labels:      map[string]string{},

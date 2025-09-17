@@ -20,7 +20,7 @@ type Inputs struct {
 	CommonCollections        *common.CommonCollections
 	GatewayClassName         string
 	WaypointGatewayClassName string
-	AgentGatewayClassName    string
+	AgentgatewayClassName    string
 }
 
 type ExtraGatewayParameters struct {
@@ -99,7 +99,7 @@ func applyFloatingUserId(dstKube *v1alpha1.KubernetesProxyConfig) {
 		dstKube.GetSdsContainer().GetSecurityContext(),
 		dstKube.GetIstio().GetIstioProxyContainer().GetSecurityContext(),
 		dstKube.GetAiExtension().GetSecurityContext(),
-		dstKube.GetAgentGateway().GetSecurityContext(),
+		dstKube.GetAgentgateway().GetSecurityContext(),
 	}
 
 	for _, securityContext := range securityContexts {
@@ -117,15 +117,15 @@ func GetInMemoryGatewayParameters(name string, imageInfo *ImageInfo, gatewayClas
 	case gatewayClassName:
 		return defaultGatewayParameters(imageInfo)
 	case agentGatewayClassName:
-		return defaultAgentGatewayParameters(imageInfo)
+		return defaultAgentgatewayParameters(imageInfo)
 	default:
 		return defaultGatewayParameters(imageInfo)
 	}
 }
 
-// defaultAgentGatewayParameters returns an in-memory GatewayParameters with default values
+// defaultAgentgatewayParameters returns an in-memory GatewayParameters with default values
 // set for the agentgateway deployment.
-func defaultAgentGatewayParameters(imageInfo *ImageInfo) *v1alpha1.GatewayParameters {
+func defaultAgentgatewayParameters(imageInfo *ImageInfo) *v1alpha1.GatewayParameters {
 	gwp := defaultGatewayParameters(imageInfo)
 	gwp.Spec.Kube.Agentgateway.Enabled = ptr.To(true)
 	return gwp

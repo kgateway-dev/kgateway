@@ -265,7 +265,7 @@ func (k *kGatewayParameters) getDefaultGatewayParameters(ctx context.Context, gw
 
 // Gets the GatewayParameters object associated with a given GatewayClass.
 func (k *kGatewayParameters) getGatewayParametersForGatewayClass(ctx context.Context, gwc *api.GatewayClass) (*v1alpha1.GatewayParameters, error) {
-	defaultGwp := deployer.GetInMemoryGatewayParameters(gwc.GetName(), k.inputs.ImageInfo, k.inputs.GatewayClassName, k.inputs.WaypointGatewayClassName, k.inputs.AgentGatewayClassName)
+	defaultGwp := deployer.GetInMemoryGatewayParameters(gwc.GetName(), k.inputs.ImageInfo, k.inputs.GatewayClassName, k.inputs.WaypointGatewayClassName, k.inputs.AgentgatewayClassName)
 
 	paramRef := gwc.Spec.ParametersRef
 	if paramRef == nil {
@@ -353,7 +353,7 @@ func (k *kGatewayParameters) getValues(gw *api.Gateway, gwParam *v1alpha1.Gatewa
 	statsConfig := kubeProxyConfig.GetStats()
 	istioContainerConfig := istioConfig.GetIstioProxyContainer()
 	aiExtensionConfig := kubeProxyConfig.GetAiExtension()
-	agentGatewayConfig := kubeProxyConfig.GetAgentGateway()
+	agentGatewayConfig := kubeProxyConfig.GetAgentgateway()
 
 	gateway := vals.Gateway
 	// deployment values
@@ -422,7 +422,7 @@ func (k *kGatewayParameters) getValues(gw *api.Gateway, gwParam *v1alpha1.Gatewa
 
 	// TODO(npolshak): Currently we are using the same chart for both data planes. Should revisit having a separate chart for agentgateway: https://github.com/kgateway-dev/kgateway/issues/11240
 	// agentgateway integration values
-	gateway.Agentgateway, err = deployer.GetAgentGatewayValues(agentGatewayConfig)
+	gateway.Agentgateway, err = deployer.GetAgentgatewayValues(agentGatewayConfig)
 	if err != nil {
 		return nil, err
 	}

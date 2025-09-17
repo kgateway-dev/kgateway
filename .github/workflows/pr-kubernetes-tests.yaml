@@ -78,7 +78,7 @@ jobs:
         # August 29, 2025: ~4 minutes
         - cluster-name: 'agent-gateway-cluster'
           go-test-args: '-v -timeout=25m'
-          go-test-run-regex: '^TestAgentGatewayIntegration'
+          go-test-run-regex: '^TestAgentgatewayIntegration'
           agentgateway: 'true'
         # August 29, 2025: ~3 minutes
         - cluster-name: 'api-validation'

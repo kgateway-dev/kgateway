@@ -39,7 +39,7 @@ type (
 	Route                    = ir.Route
 	RouteBackendContext      = ir.RouteBackendContext
 	RouteContext             = ir.RouteContext
-	AgentGatewayRouteContext = ir.AgentGatewayRouteContext
+	AgentgatewayRouteContext = ir.AgentgatewayRouteContext
 	Secret                   = ir.Secret
 	VirtualHostContext       = ir.VirtualHostContext
 
