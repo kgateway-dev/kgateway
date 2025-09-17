@@ -1526,7 +1526,7 @@ func TestBasic(t *testing.T) {
 			a.Equal(string(gwv1.GatewayReasonListenersNotValid), programmedCondition.Reason)
 			// Extract listener name from the expected message and format for programmed message
 			listenerName := strings.Split(expected.message, ": ")[1]
-			expectedProgrammedMessage := fmt.Sprintf(irtranslator.GatewayProgrammedListenersOmittedMessage, listenerName)
+			expectedProgrammedMessage := fmt.Sprintf(irtranslator.GatewayProgrammedAllListenersOmittedMessage, listenerName)
 			a.Equal(expectedProgrammedMessage, programmedCondition.Message)
 		} else {
 			a.Equal(string(gwv1.GatewayReasonProgrammed), programmedCondition.Reason)

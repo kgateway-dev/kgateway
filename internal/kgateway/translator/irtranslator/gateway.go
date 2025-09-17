@@ -30,6 +30,7 @@ import (
 )
 
 const (
+	// ListenerOmittedMessage is a fallback message for when no specific reason was provided in translation
 	ListenerOmittedMessage                      = "Listener could not be generated for data plane"
 	GatewayAcceptedListenersOmittedMessage      = "Listeners not accepted: %s"
 	GatewayProgrammedListenersOmittedMessage    = "Listeners not programmed: %s"
