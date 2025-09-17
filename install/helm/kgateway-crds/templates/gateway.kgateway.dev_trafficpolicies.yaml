@@ -22,7 +22,7 @@ spec:
   versions:
   - additionalPrinterColumns:
     - description: Traffic policy acceptance status
-      jsonPath: .status.conditions[?(@.type=='Accepted')].status
+      jsonPath: .status.ancestors[*].conditions[?(@.type=='Accepted')].status
       name: Accepted
       type: string
     name: v1alpha1
