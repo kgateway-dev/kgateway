@@ -372,13 +372,10 @@ func BuildKgatewayWithConfig(
 
 // SetupLogging configures the global slog logger
 func SetupLogging(levelStr string) {
-	if levelStr == "" {
-		return
-	}
 	level, err := logging.ParseLevel(levelStr)
 	if err != nil {
 		slog.Error("failed to parse log level, defaulting to info", "error", err)
-		return
+		level = slog.LevelInfo
 	}
 	// set all loggers to the specified level
 	logging.Reset(level)
