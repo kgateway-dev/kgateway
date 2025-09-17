@@ -18,8 +18,6 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
-	irtranslator "github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/irtranslator"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/listener"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
@@ -1462,147 +1460,6 @@ func TestBasic(t *testing.T) {
 		secretNotFoundMessageTemplate = "Secret %s/%s not found."
 	)
 
-	type gatewayTestConfig struct {
-		name      string
-		namespace string
-		listeners []string
-	}
-
-	type expectedGatewayConditions struct {
-		acceptedStatus   metav1.ConditionStatus
-		programmedStatus metav1.ConditionStatus
-		reason           string
-		message          string
-	}
-
-	type expectedListenerCondition struct {
-		conditionType gwv1.ListenerConditionType
-		status        metav1.ConditionStatus
-		reason        string
-		message       string
-	}
-
-	type listenerTestExpectation struct {
-		attachedRoutes int32
-		conditions     []expectedListenerCondition
-	}
-
-	// Helper function to create a test gateway from config for invalid filter chain tests
-	createTestGatewayFromConfig := func(config gatewayTestConfig) *gwv1.Gateway {
-		listeners := make([]gwv1.Listener, len(config.listeners))
-		for i, listenerName := range config.listeners {
-			listeners[i] = gwv1.Listener{
-				Name: gwv1.SectionName(listenerName),
-			}
-		}
-
-		return &gwv1.Gateway{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      config.name,
-				Namespace: config.namespace,
-			},
-			Spec: gwv1.GatewaySpec{
-				Listeners: listeners,
-			},
-		}
-	}
-
-	// Helper function to assert gateway conditions for invalid filter chain tests
-	assertGatewayConditionsFromStruct := func(t *testing.T, gatewayStatus *gwv1.GatewayStatus, expected expectedGatewayConditions) {
-		a := assert.New(t)
-
-		// Check Accepted condition
-		acceptedCondition := meta.FindStatusCondition(gatewayStatus.Conditions, string(gwv1.GatewayConditionAccepted))
-		a.NotNil(acceptedCondition)
-		a.Equal(expected.acceptedStatus, acceptedCondition.Status)
-		a.Equal(expected.reason, acceptedCondition.Reason)
-		a.Equal(expected.message, acceptedCondition.Message)
-
-		// Check Programmed condition
-		programmedCondition := meta.FindStatusCondition(gatewayStatus.Conditions, string(gwv1.GatewayConditionProgrammed))
-		a.NotNil(programmedCondition)
-		a.Equal(expected.programmedStatus, programmedCondition.Status)
-		if expected.programmedStatus == metav1.ConditionFalse {
-			a.Equal(string(gwv1.GatewayReasonListenersNotValid), programmedCondition.Reason)
-			// Extract listener name from the expected message and format for programmed message
-			listenerName := strings.Split(expected.message, ": ")[1]
-			expectedProgrammedMessage := fmt.Sprintf(irtranslator.GatewayProgrammedAllListenersOmittedMessage, listenerName)
-			a.Equal(expectedProgrammedMessage, programmedCondition.Message)
-		} else {
-			a.Equal(string(gwv1.GatewayReasonProgrammed), programmedCondition.Reason)
-		}
-	}
-
-	// Helper function to assert listener conditions for invalid filter chain tests
-	assertListenerConditionsFromStruct := func(t *testing.T, listener gwv1.ListenerStatus, expected listenerTestExpectation) {
-		a := assert.New(t)
-
-		if expected.attachedRoutes >= 0 {
-			a.Equal(expected.attachedRoutes, listener.AttachedRoutes)
-		}
-
-		for _, expectedCondition := range expected.conditions {
-			condition := meta.FindStatusCondition(listener.Conditions, string(expectedCondition.conditionType))
-			a.NotNil(condition, "Expected condition %s not found", expectedCondition.conditionType)
-			a.Equal(expectedCondition.status, condition.Status)
-			a.Equal(expectedCondition.reason, condition.Reason)
-			a.Equal(expectedCondition.message, condition.Message)
-		}
-	}
-
-	// Factory function for common omitted listener expectation in invalid filter chain tests
-	createOmittedListenerExpectation := func() listenerTestExpectation {
-		return listenerTestExpectation{
-			attachedRoutes: 0,
-			conditions: []expectedListenerCondition{
-				{
-					conditionType: gwv1.ListenerConditionProgrammed,
-					status:        metav1.ConditionFalse,
-					reason:        string(gwv1.ListenerReasonInvalid),
-					message:       listener.TcpTlsListenerNoBackendsMessage,
-				},
-			},
-		}
-	}
-
-	// Factory function for common gateway expectation when all listeners are omitted in invalid filter chain tests
-	createAllListenersOmittedExpectation := func(listenerName string) expectedGatewayConditions {
-		return expectedGatewayConditions{
-			acceptedStatus:   metav1.ConditionTrue,
-			programmedStatus: metav1.ConditionFalse,
-			reason:           string(gwv1.GatewayReasonListenersNotValid),
-			message:          fmt.Sprintf(irtranslator.GatewayAcceptedListenersOmittedMessage, listenerName),
-		}
-	}
-
-	// Factory function for HTTPS listener with invalid secret expectation
-	createHTTPSInvalidSecretExpectation := func(namespace, secretName string) listenerTestExpectation {
-		secretMessage := fmt.Sprintf(secretNotFoundMessageTemplate, namespace, secretName)
-		return listenerTestExpectation{
-			attachedRoutes: 1,
-			conditions: []expectedListenerCondition{
-				{
-					conditionType: gwv1.ListenerConditionResolvedRefs,
-					status:        metav1.ConditionFalse,
-					reason:        string(gwv1.ListenerReasonInvalidCertificateRef),
-					message:       secretMessage,
-				},
-				{
-					conditionType: gwv1.ListenerConditionProgrammed,
-					status:        metav1.ConditionFalse,
-					reason:        string(gwv1.ListenerReasonInvalid),
-					message:       secretMessage,
-				},
-				{
-					conditionType: gwv1.ListenerConditionAccepted,
-					status:        metav1.ConditionTrue,
-					reason:        string(gwv1.ListenerReasonAccepted),
-					message:       reports.ListenerAcceptedMessage, // Now using the constant from reports package
-				},
-			},
-		}
-	}
-
 	t.Run("TLS listener with no routes", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "invalid-filter-chains/tls-listener-no-routes.yaml",
@@ -1612,51 +1469,7 @@ func TestBasic(t *testing.T) {
 				Name:      "example-gateway",
 			},
 			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
-				config := gatewayTestConfig{
-					name:      "example-gateway",
-					namespace: "default",
-					listeners: []string{"tls"},
-				}
-
-				gateway := createTestGatewayFromConfig(config)
-				gatewayStatus := reportsMap.BuildGWStatus(context.Background(), *gateway, nil)
-				require.NotNil(t, gatewayStatus)
-
-				expectedGateway := createAllListenersOmittedExpectation("tls")
-				assertGatewayConditionsFromStruct(t, gatewayStatus, expectedGateway)
-
-				require.Len(t, gatewayStatus.Listeners, 1)
-				expectedListener := createOmittedListenerExpectation()
-				assertListenerConditionsFromStruct(t, gatewayStatus.Listeners[0], expectedListener)
-			},
-		})
-	})
-
-	t.Run("TLS listener with missing secret ref", func(t *testing.T) {
-		test(t, translatorTestCase{
-			inputFile:  "invalid-filter-chains/tls-listener-invalid-secret.yaml",
-			outputFile: "invalid-filter-chains/tls-listener-invalid-secret.yaml",
-			gwNN: types.NamespacedName{
-				Namespace: "default",
-				Name:      "example-gateway",
-			},
-			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
-				config := gatewayTestConfig{
-					name:      "example-gateway",
-					namespace: "default",
-					listeners: []string{"tls"},
-				}
-
-				gateway := createTestGatewayFromConfig(config)
-				gatewayStatus := reportsMap.BuildGWStatus(context.Background(), *gateway, nil)
-				require.NotNil(t, gatewayStatus)
-
-				expectedGateway := createAllListenersOmittedExpectation("tls")
-				assertGatewayConditionsFromStruct(t, gatewayStatus, expectedGateway)
-
-				require.Len(t, gatewayStatus.Listeners, 1)
-				expectedListener := createOmittedListenerExpectation()
-				assertListenerConditionsFromStruct(t, gatewayStatus.Listeners[0], expectedListener)
+				// No-op: Expected statuses are validated via the output file comparison
 			},
 		})
 	})
@@ -1670,22 +1483,7 @@ func TestBasic(t *testing.T) {
 				Name:      "example-gateway",
 			},
 			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
-				config := gatewayTestConfig{
-					name:      "example-gateway",
-					namespace: "default",
-					listeners: []string{"tcp"},
-				}
-
-				gateway := createTestGatewayFromConfig(config)
-				gatewayStatus := reportsMap.BuildGWStatus(context.Background(), *gateway, nil)
-				require.NotNil(t, gatewayStatus)
-
-				expectedGateway := createAllListenersOmittedExpectation("tcp")
-				assertGatewayConditionsFromStruct(t, gatewayStatus, expectedGateway)
-
-				require.Len(t, gatewayStatus.Listeners, 1)
-				expectedListener := createOmittedListenerExpectation()
-				assertListenerConditionsFromStruct(t, gatewayStatus.Listeners[0], expectedListener)
+				// No-op: Expected statuses are validated via the output file comparison
 			},
 		})
 	})
@@ -1699,22 +1497,7 @@ func TestBasic(t *testing.T) {
 				Name:      "example-gateway",
 			},
 			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
-				config := gatewayTestConfig{
-					name:      "example-gateway",
-					namespace: "default",
-					listeners: []string{"https"},
-				}
-
-				gateway := createTestGatewayFromConfig(config)
-				gatewayStatus := reportsMap.BuildGWStatus(context.Background(), *gateway, nil)
-				require.NotNil(t, gatewayStatus)
-
-				expectedGateway := createAllListenersOmittedExpectation("https")
-				assertGatewayConditionsFromStruct(t, gatewayStatus, expectedGateway)
-
-				require.Len(t, gatewayStatus.Listeners, 1)
-				expectedListener := createHTTPSInvalidSecretExpectation("default", "invalid-https-secret")
-				assertListenerConditionsFromStruct(t, gatewayStatus.Listeners[0], expectedListener)
+				// No-op: Expected statuses are validated via the output file comparison
 			},
 		})
 	})

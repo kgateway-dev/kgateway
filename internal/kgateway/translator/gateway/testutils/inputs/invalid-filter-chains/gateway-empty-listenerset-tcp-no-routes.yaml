@@ -5,14 +5,19 @@ metadata:
 spec:
   gatewayClassName: kgateway
   listeners: []
+  allowedListeners:
+    namespaces:
+      from: All
 ---
-apiVersion: gateway.networking.k8s.io/apisx/v1alpha1
+apiVersion: gateway.networking.x-k8s.io/v1alpha1
 kind: XListenerSet
 metadata:
   name: example-listenerset
 spec:
-  gatewayRefs:
-  - name: example-gateway
+  parentRef:
+    name: example-gateway
+    kind: Gateway
+    group: gateway.networking.k8s.io
   listeners:
   - name: tcp
     protocol: TCP

@@ -8,14 +8,19 @@ spec:
   - name: tcp
     protocol: TCP
     port: 8080
+  allowedListeners:
+    namespaces:
+      from: All
 ---
-apiVersion: gateway.networking.k8s.io/apisx/v1alpha1
+apiVersion: gateway.networking.x-k8s.io/v1alpha1
 kind: XListenerSet
 metadata:
   name: example-listenerset
 spec:
-  gatewayRefs:
-  - name: example-gateway
+  parentRef:
+    name: example-gateway
+    kind: Gateway
+    group: gateway.networking.k8s.io
   listeners:
   - name: http
     protocol: HTTP
@@ -29,7 +34,7 @@ spec:
   parentRefs:
   - name: example-listenerset
     kind: XListenerSet
-    group: gateway.networking.k8s.io
+    group: gateway.networking.x-k8s.io
     sectionName: http
   rules:
   - backendRefs:
