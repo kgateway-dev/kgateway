@@ -368,13 +368,19 @@ func setupEnvTestAndRun(t *testing.T, globalSettings *settings.Settings, run fun
 		ControlPlaneStopTimeout: time.Millisecond,
 		// web hook to add cluster ips to services
 	}
-	envtestutil.RunController(t, logger, globalSettings, testEnv,
+	envtestutil.RunController(
+		t,
+		logger,
+		globalSettings,
+		testEnv,
 		nil,
 		[][]string{
 			{"default", "testdata/setup_yaml/setup.yaml"},
 			{"gwtest", "testdata/setup_yaml/pods.yaml"},
 		},
-		run)
+		nil, // no tests need a validator right now.
+		run,
+	)
 }
 
 func testScenario(

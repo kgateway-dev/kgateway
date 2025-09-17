@@ -35,6 +35,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 )
 
 type Server interface {
@@ -139,6 +140,12 @@ func WithGlobalSettings(settings *settings.Settings) func(*setup) {
 	}
 }
 
+func WithValidator(v validator.Validator) func(*setup) {
+	return func(s *setup) {
+		s.validator = v
+	}
+}
+
 type setup struct {
 	gatewayControllerName    string
 	gatewayClassName         string
@@ -157,6 +164,7 @@ type setup struct {
 	krtDebugger        *krt.DebugHandler
 	globalSettings     *settings.Settings
 	leaderElectionID   string
+	validator          validator.Validator
 }
 
 var _ Server = &setup{}
@@ -214,6 +222,10 @@ func New(opts ...func(*setup)) (*setup, error) {
 			slog.Error("error creating xds listener", "error", err)
 			return nil, err
 		}
+	}
+
+	if s.validator == nil {
+		s.validator = validator.NewBinary()
 	}
 
 	return s, nil
@@ -295,7 +307,11 @@ func (s *setup) Start(ctx context.Context) error {
 
 	BuildKgatewayWithConfig(
 		ctx, mgr, s.gatewayControllerName, s.gatewayClassName, s.waypointClassName,
-		s.agentGatewayClassName, s.additionalGatewayClasses, setupOpts, s.restConfig, istioClient, commoncol, agwCollections, uccBuilder, s.extraPlugins, s.extraAgentgatewayPlugins, s.extraGatewayParameters)
+		s.agentGatewayClassName, s.additionalGatewayClasses, setupOpts, s.restConfig,
+		istioClient, commoncol, agwCollections, uccBuilder, s.extraPlugins, s.extraAgentgatewayPlugins,
+		s.extraGatewayParameters,
+		s.validator,
+	)
 
 	slog.Info("starting admin server")
 	go admin.RunAdminServer(ctx, setupOpts)
@@ -326,6 +342,7 @@ func BuildKgatewayWithConfig(
 	extraPlugins func(ctx context.Context, commoncol *common.CommonCollections, mergeSettingsJSON string) []sdk.Plugin,
 	extraAgentgatewayPlugins func(ctx context.Context, agw *agentgatewayplugins.AgwCollections) []agentgatewayplugins.AgentgatewayPlugin,
 	extraGatewayParameters func(cli client.Client, inputs *deployer.Inputs) []deployer.ExtraGatewayParameters,
+	validator validator.Validator,
 ) error {
 	slog.Info("creating krt collections")
 	krtOpts := krtutil.NewKrtOptions(ctx.Done(), setupOpts.KrtDebugger)
@@ -358,6 +375,7 @@ func BuildKgatewayWithConfig(
 		KrtOptions:               krtOpts,
 		CommonCollections:        commonCollections,
 		AgwCollections:           agwCollections,
+		Validator:                validator,
 	})
 	if err != nil {
 		slog.Error("failed initializing controller: ", "error", err)

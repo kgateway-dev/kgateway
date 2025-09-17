@@ -765,7 +765,7 @@ func (tc TestCase) Run(
 }
 
 func proxySyncerPluginFactory(ctx context.Context, commoncol *collections.CommonCollections, name string, extraPluginsFn ExtraPluginsFn, globalSettings settings.Settings) pluginsdk.Plugin {
-	plugins := registry.Plugins(ctx, commoncol, wellknown.DefaultAgentGatewayClassName, globalSettings)
+	plugins := registry.Plugins(ctx, commoncol, wellknown.DefaultAgentGatewayClassName, globalSettings, nil)
 
 	var extraPlugs []pluginsdk.Plugin
 	if extraPluginsFn != nil {
